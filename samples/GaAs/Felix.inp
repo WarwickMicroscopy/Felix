@@ -1,0 +1,47 @@
+# Input file for BER $Revision: 1.4 $
+# ------------------------------------
+
+# ------------------------------------
+# BLOCH input
+
+# control flags
+IWriteFLAG                = 1
+IImageFLAG                = 0
+IOutputFLAG               = 0  
+IScatterFactorMethodFLAG  = 0
+ICentralBeamFLAG          = 1
+IMaskFLAG                 = 0
+IZolzFLAG                 = 1
+IAbsorbFLAG               = 1
+IAnisoDebyeWallerFlag     = 0
+
+# radius of the beam in pixels
+IPixelCount               = 64
+
+# beam selection criteria
+IMinReflectionPool        = 100
+IMinStrongBeams           = 7
+IMinWeakBeams             = 10
+
+# crystal settings
+RDebyeWallerConstant      = 0.4668
+RAbsorptionPer            = 2.9
+
+# microscope settings
+RConvergenceAngle         = 3.0
+IIncidentBeamDirectionX   = 0
+IIncidentBeamDirectionY   = 0
+IIncidentBeamDirectionZ   = 1
+IXDirectionX              = 0
+IXDirectionY              = 1
+IXDirectionZ              = 0
+RAcceleratingVoltage (kV) = 200.0
+
+# ------------------------------------
+# LACBED input
+
+# sample thickness loop (Angstrom)
+RInitialThickness        = 500.0
+RFinalThickness          = 500.0
+RDeltaThickness          = 50.0
+IReflectOut              = 100

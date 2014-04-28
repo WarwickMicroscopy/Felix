@@ -1,0 +1,458 @@
+C
+C
+C >>>>>> Common declararations 'ciftbx.sys'
+C               
+C        For inclusion in 'ciftbx.f'
+C
+C        Include all user common definitions, but not functions
+         include 'ciftbx.cmv'
+C
+C        Define parameters controlling the sizes of things
+C
+         integer NUMDICT,NUMHASH,NUMBLOCK,NUMLOOP,NUMITEM,NUMCIP,
+     *     NUMIP1,MAXTAB,MAXBOOK,NUMPAGE,NUMCPP,
+     *     XMLDEFS,XMLCHAR,MAXDEPTH,NUMIVALS,NUMCSTB,NUMSTB,
+     *     NUMLP1,NUMSIP,NUMMIP
+         character*1 XXFLAG
+         integer XXRADIX
+C
+C                                 Flag character for RLE
+         PARAMETER (XXFLAG='`')
+C                                 Radix for RLE
+         PARAMETER (XXRADIX=64)
+C                                 Maximum number of tabs in output cif line
+         PARAMETER (MAXTAB=10)
+C                                 Maximum number of simultaneous bookmarks
+         PARAMETER (MAXBOOK=1000)
+
+C                                 Number of entries in data block tables
+         PARAMETER (NUMBLOCK=2500)
+C                                 Number of characters per page
+         PARAMETER (NUMCPP=8192)
+C                                 Number of characters per index pointer
+         PARAMETER (NUMCIP=8)
+C                                 Number of entries in dictionary tables
+         PARAMETER (NUMDICT=11000)
+C                                 Number of entries in item value range tables
+         PARAMETER (NUMIVALS=16000)
+C                                 Number of characters in a string table block
+         PARAMETER (NUMCSTB=2048)
+C                                 Number of blocks in the string table
+         PARAMETER (NUMSTB=100)
+C                                 Number of hash table entries (a modest prime)
+         PARAMETER (NUMHASH=53)
+C                                 Number of items in a loop
+         PARAMETER (NUMITEM=50)
+C                                 Derived value for loop arrays
+         PARAMETER (NUMIP1=NUMITEM+1)
+
+
+C                                 Derived master index values per page
+         PARAMETER (NUMMIP=(NUMCPP/NUMCIP)-1)
+C                                 Derived sub index values per page
+         PARAMETER (NUMSIP=NUMCPP/NUMCIP)
+C                                 Number of memory resident pages
+         PARAMETER (NUMPAGE=200)
+C                                 Number of loops in a data block
+         PARAMETER (NUMLOOP=50)
+C                                 Derived value for XML header
+         PARAMETER (NUMLP1=NUMLOOP+1)
+C
+
+C                                 Number of XML translation definitions
+         PARAMETER (XMLDEFS=500)
+C                                 Maximum number of characters per definition
+         PARAMETER (XMLCHAR=60)
+C                                 Maximum depth for a list, array, tuple or table
+         PARAMETER (MAXDEPTH=20)
+         
+C                                 Reverse solidus
+         character*2 rsolidus
+C                                 Stack of list, array, tuple or table types
+         character*4 typestack(MAXDEPTH)
+C                                 Stack of actual bracket characters on read
+         character*1 brackstack(MAXDEPTH)
+C                                 Stack of actual bracket characters on write
+         character*1 pbrackstack(MAXDEPTH)
+C                                 Stack of actual bracket character pos on read
+         integer posbrkstk(MAXDEPTH)
+C                                 Stack of actual bracket character pos on write
+         integer pposbrkstk(MAXDEPTH)
+C                                 Stack of delimiters before current item on read
+         character*1 delimstack(MAXDEPTH+1)
+C                                 Stack of delimiters before current item on write
+         character*1 pdelimstack(MAXDEPTH+1)
+C                                 Stack of positions of delimiters on read
+         integer posdlmstk(MAXDEPTH+1)
+C                                 Stack of record number of delimiters on read
+         integer recdlmstk(MAXDEPTH+1)
+C                                 Stack of positions of delimiters on write
+         integer pposdlmstk(MAXDEPTH+1)
+C                                 Stack of linear positions in list, array, tuple or table
+         integer indexstack(MAXDEPTH)
+C                                 Stack of state of scan for list, arry, tuple or table
+C                                 0 - scan not started
+C                                 1 - scan has encountered the opening tag and stored
+C                                     it in brackstack(depth_)
+C                                 2 - scan has encountered a value, or one of , ( { [
+         integer statestack(MAXDEPTH)
+C                                 Stack of state of write for list, arry, tuple or table
+C                                 1 - just emitted { [ ( or , 
+C                                 2 - just emitted a value
+         integer pstatestack(MAXDEPTH)
+C                                 Table of xml translations
+         character*(XMLCHAR) xmlate(XMLDEFS)
+C                                 Memory resident page buffer
+         character*(NUMCPP) pagebuf(NUMPAGE)
+C                                 Scratch page buffer
+         character*(NUMCPP) scrbuf
+C                                 Name of current data item
+         character nametb*(NUMCHAR)
+C                                 Tab character for this machine
+         character tab*1
+C                                 Character buffer for reading lines
+         character buffer*(MAXBUF)
+C                                 Character buffer for tab-expanded lines
+         character bufntb*(MAXBUF)
+C                                 Dictionary validation check
+         character vcheck*3
+C                                 Dictionary category check flag
+         character catchk*3
+C                                 Dictionary parent check flag
+         character parchk*3
+C                                 Dictionary flag             
+         character dictfl*3
+C                                 Dictionary names
+         character*(NUMCHAR) dicnam(NUMDICT)
+C                                 Dictionary names with upper/lower case
+         character*(NUMCHAR) dictag(NUMDICT)
+C                                 Dictionary data types
+         character dictyp(NUMDICT)*4
+C                                 Data names in data block
+         character*(NUMCHAR) dname(NUMBLOCK)
+C                                 Data names in data block with u/l case
+         character*(NUMCHAR) dtag(NUMBLOCK)
+C                                 Data type of data item 
+         character dtype(NUMBLOCK)*4
+C                                 Format for single precision esd's
+         character*13 esdfmt
+C                                 Format for double precision esd's
+         character*13 edpfmt
+C                                 Category names in use
+         character*(NUMCHAR) cname(NUMBLOCK)
+C                                 Dictionary category names
+         character*(NUMCHAR) dcname(NUMDICT)
+C                                 Dictionary extended types
+         character*(NUMCHAR) dicxtyp(NUMDICT)
+C                                 Datablock extended types
+         character*(NUMCHAR) dxtyp(NUMBLOCK)
+C                                 Format for writing double precision numbers
+         character*8 ndpfmt       
+C                                 Output string buffer
+         character obuf*(MAXBUF)
+C                                 Data block name of the current block
+         character pdblok*(NUMCHAR)
+C                                 Category of the current loop
+         character plcat*(NUMCHAR)
+C                                 Tags in the current loop header
+         character*(NUMCHAR) plhead(NUMLP1)
+C                                 Category of the current loop, translated
+         character plxcat*(NUMCHAR)
+C                                 Tags in the current loop header, translated
+         character*(NUMCHAR) plxhead(NUMLP1)
+C                                 Flag signalling output CIF open
+         character pfilef*3
+C                                 Flag signalling loop_ being loaded
+         character ploopf*3
+C                                 Flag signalling text being loaded
+         character ptextf*3
+C                                 Output prefix string
+         character prefx*(MAXBUF)
+C                                 Dictionary data type check
+         character tcheck*3
+C                                 Flag if test_ last called (yes/no )
+         character testfl*3
+C                                 Flag if the text_ field is folded
+         character textfl*3
+C                                 String table
+         character*(NUMCSTB) stable(NUMSTB)
+C                                 Pointers to xml translations for categories
+         integer   xmcind(NUMBLOCK)
+C
+C        Variables for management of direct acccess file paging
+C
+C                                 Next free block
+         integer   nfblock
+C                                 Next free word (NUMCIP chars)
+         integer   nfword
+C                                 Master index pointer buffer
+         integer   mippoint(NUMMIP)
+C                                 Subindex pointer buffer
+         integer   ippoint(NUMSIP)
+C                                 Master index chain pointer
+         integer   mipcp
+C                                 Master index page in memory
+         integer   mipim
+C                                 Master index record in memory
+         integer   miprim
+C                                 Sub index page in memory
+         integer   ipim
+C                                 Sub index record in memory
+         integer   iprim
+C                                 Pointers to memory resident pages
+         integer   mppoint(NUMPAGE)
+C
+C                                 Record number containing data item
+         integer   drecd(NUMBLOCK)
+C                                 Character position of item in record
+         integer   dchar(NUMBLOCK)
+C                                 Record number containing tag of item
+         integer   trecd(NUMBLOCK)
+C                                 Character position of tag of item in record
+         integer   tchar(NUMBLOCK)
+C                                 Character position of tag of item in record
+C                                 tab-expanded
+         integer   xchar(NUMBLOCK)
+C                                 Loop block number (0 for non-loop)
+         integer   nloop(NUMBLOCK)
+C                                 Item count in loop packet
+         integer   iloop(NUMBLOCK)
+C                                 Loop line counter; initially zero
+         integer   lloop(NUMBLOCK)
+C                                 Number of items per packet in each loop
+         integer   loopni(NUMLOOP)
+C                                 Number of packets per loop    
+         integer   loopnp(NUMLOOP)
+C                                 Record number of loop header    
+         integer   loorec(NUMLOOP)
+C                                 Character position of loop header    
+         integer   loopos(NUMLOOP)
+C                                 Character position of loop header
+C                                 tab-expanded    
+         integer   loopox(NUMLOOP)
+C                                 Number of last non-blank chars in input 
+         integer   lastch
+C                                 Number of items in current loop packet
+         integer   ploopc
+C                                 Number of items in output loop packet
+         integer   ploopn
+C                                 Number of current loop block
+         integer   loopnl
+C                                 Count of packets in current loop
+         integer   loopct
+C                                 Length of nametb
+         integer   lnametb
+C                                 Number of data names in hash table 
+         integer   nhash 
+C                                 Number of data names in data block
+         integer   nname
+C                                 Current number of data name in block
+         integer   iname
+C                                 Number of dictionary names
+         integer   ndict 
+C                                 Number of records in CIF
+         integer   nrecd
+C                                 Record number of requested line
+         integer   irecd
+C                                 Record number of current line
+         integer   jrecd
+C                                 Record number of tab-expanded line
+         integer   jrect
+C                                 Last record number of current block
+         integer   lrecd
+C                                 Record no. of start of bracketed construct
+         integer   srecd
+C                                 Character pointer of current input line
+         integer   jchar
+C                                 Character pointer of output CIF line
+C                                 next location to store
+         integer   pchar
+C                                 Character pointer of output CIF line
+C                                 last location stored
+         integer   pcharl
+C                                 Number of data block names stored
+         integer   nbloc
+C                                 Device number of input CIF 
+         integer   cifdev
+C                                 Device number of direct access file
+         integer   dirdev
+C                                 Device number of error message file
+         integer   errdev
+C                                 Device number of output CIF
+         integer   outdev
+C                                 Cached copy of esdlim_
+         integer   esdcac
+C                                 Cached esd digits
+         integer   esddigx
+C                                 Number of Dictionary Category names stored
+         integer   ndcname
+C                                 Bookmark data
+         integer   ibkmrk(6,MAXBOOK)
+C                                 Indices of XML translations for
+C                                 items
+         integer   xmindex(NUMDICT)
+C                                 Dictionary category name indices
+         integer   dcindex(NUMDICT)
+C                                 Dictionary value enumerations list index       
+         integer   deindex(NUMDICT)
+C                                 Dictionary parent name indices
+         integer   dpindex(NUMDICT)
+C                                 Dictionary mandatory code (-1,0,1 implicit,no,yes) 
+         integer   dmcode(NUMDICT)
+C                                 Hash Table for Dic. Category names
+         integer   dchash(NUMHASH)
+C                                 Chain pointers for hash searches
+C                                 of Dictionary Category names
+         integer   dcchain(NUMDICT)
+C                                 Hash table for Dictionary name
+         integer   dichash(NUMHASH)
+C                                 Chain pointers for hash search of
+C                                 Dictionary names
+         integer   dicchain(NUMDICT)
+C                                 Block hash table
+         integer   dhash(NUMHASH)
+C                                 Category hash table
+         integer   chash(NUMHASH)
+C                                 Chain pointers for hash search of
+C                                 block names
+         integer   dchain(NUMBLOCK)
+C                                 Chain pointers for hash search of
+C                                 categories
+         integer   cchain(NUMBLOCK)
+C                                 Number of xml translations stored
+         integer   xmnxlat
+C                                 Number of Category names stored
+         integer   ncname
+C                                 Character starting position of loop items
+         integer   loopch(NUMIP1)
+C                                 String length of loop items
+         integer   loopln(NUMIP1)
+C                                 Record number of loop items
+         integer   looprd(NUMIP1)
+C                                 Indices of Category 
+C                                 names for items
+         integer   cindex(NUMBLOCK)
+C                                 Dictionary pointer from data block
+         integer   ddict(NUMBLOCK)
+C                                 Alias links, 0 for no alias or index
+C                                 of item name in dicnam which
+C                                 is the root of its definitions
+         integer   aroot(NUMDICT)
+C                                 Alias links, 0 for no next alias or
+C                                 index of next alias in dicnam
+         integer   alias(NUMDICT)
+C                                 dcheck result from dicnam
+         integer   xdchk
+C                                 minimum exponent for DP calculations
+         integer   minexp
+C                                 length of output prefix string
+         integer   lprefx
+C                                 Potential tabs in output line
+         integer   itabp(MAXTAB)
+C                                 Count of potential tabs
+         integer   numtab
+C                                 Pointer to xml DATA_ translation
+         integer   xmdata
+C                                 Returned number
+         double precision numbtb
+C                                 Returned standard deviation
+         double precision sdevtb
+C                                 Decimal double precision precision
+         double precision dpprc
+C                                 Decimal double precision minimum power of 10
+         double precision dpmin
+C                                 Decimal single precision precision
+         real      decprc
+C                                 Decimal single precision minimum power of 10
+         real      decmin
+C                                 Internal result save
+         logical   tbxxrslt
+C                                 Internal save of saveo_
+         logical   psaveo
+C                                 Flag for tag being a category key (DDL2) or
+C                                 list_reference (DDL1)
+         logical   catkey(NUMDICT)
+C                                 Internal result save
+         integer   tbxxintr
+C                                 category pointers to keys
+         integer   ccatkey(NUMDICT)
+C                                 linked list of multiple keys
+         integer   keychain(NUMDICT)
+C                                 nstable -- number of characters on stable
+         integer   nstable
+C                                 item value range table
+C                                   nivt   -- number of items in item value table
+         integer   nivt
+C                                   ivtnxt -- next relevant entry
+         integer   ivtnxt(NUMIVALS)
+C                                   ivtvet -  value enumeration type
+C                                             -1 closed range
+C                                              0 value
+C                                              1 open range
+         integer   ivtvet(NUMIVALS)
+C                                   ivtsbp -  string buffer pointer for value
+         integer   ivtsbp(NUMIVALS)
+C
+         common/tbxc/ buffer,dname,dtype,tab,dicnam,dictag,dictyp
+
+         common/tbxc1/ dictfl,nametb
+         
+         common/tbxc2/ dtag
+
+         common/tbxc3/ testfl,vcheck,tcheck,pfilef               
+
+         common/tbxc4/ pagebuf, scrbuf
+
+         common/tbxc5/ ploopf,ptextf
+
+         common/tbxc6/ dcname
+
+         common/tbxc7/ cname
+
+         common/tbxc8/ dicxtyp
+
+         common/tbxc9/ dxtyp
+
+         common/tbxc10/ esdfmt,edpfmt,ndpfmt,prefx
+ 
+         common/tbxc11/ obuf,bufntb,catchk,parchk,plcat,pdblok,plhead
+
+         common/tbxc12/ xmlate,plxcat,plxhead,textfl
+         
+         common/tbxc13/ stable
+         
+         common/tbxc14/ rsolidus
+         
+         common/tbxc15 /brackstack,pbrackstack,delimstack,pdelimstack,
+     *                  typestack
+C
+         common/tbxi/ nrecd,drecd,trecd,irecd,lrecd,dchar,tchar,xchar,
+     *                ndict,outdev,nloop,iloop,lloop,loopct,loopni,
+     *                loopnp,loopnl,nname,nhash,cifdev,dirdev,errdev,
+     *                jchar,pchar,iname,ploopn,ploopc,nbloc,jrecd,
+     *                lastch,esdcac,esddigx,ndcname,dcindex,ncname,
+     *                cindex,aroot,alias,dchash,dcchain,dichash,
+     *                srecd,tbxxintr
+
+         common/tbxi1/ dicchain,dhash,dchain,ddict,xdchk,loopln,
+     *                looprd,minexp,lprefx,numtab,pcharl,loopos,
+     *                loopox,loorec,jrect,ibkmrk,chash,cchain,mppoint,
+     *                keychain,ccatkey,statestack,pstatestack,
+     *                indexstack,posdlmstk,pposdlmstk,posbrkstk,
+     *                pposbrkstk,recdlmstk
+
+         common/tbxi2/ mippoint,ippoint,xmcind,xmnxlat,xmdata,nfblock,
+     *                nfword,mipcp,mipim,miprim,ipim,iprim,xmindex,
+     *                lnametb
+         common/tbxi3/ dpindex,deindex,nstable,nivt,ivtnxt,ivtvet,
+     *                ivtsbp,dmcode
+         common/tbxi4/ itabp
+         common/tbxi5/ loopch
+
+C
+         common/tbxdp/numbtb,sdevtb,dpprc,dpmin
+C
+         common/tbxr/ decprc,decmin
+C
+         common/tbxl/ catkey,psaveo,tbxxrslt
+C
