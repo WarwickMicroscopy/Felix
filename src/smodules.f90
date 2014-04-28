@@ -255,7 +255,7 @@ MODULE IConst
        THREEDIM= 3, &
        ADD_OUT_INFO=6, &
        IParallelFLAG=0, &
-       IHKLMAXValue=35
+       IHKLMAXValue=100
 END MODULE IConst
 
 !--------------------------------------------------------------------

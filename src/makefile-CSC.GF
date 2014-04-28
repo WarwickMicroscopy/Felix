@@ -44,9 +44,9 @@ LIBFLAGS= -llapack -lblas
 # LD_LIBRARY_PATH=/warwick/mathlib/nag/ifort-x86_64/lib:$LD_LIBRARY_PATH
 # in order to run the code
 
-BLOCHOBJECTFILES = gmodules.o smodules.o main.o util.o inout.o inpcif.o ciftbx.o hash_funcs.o eigen.o invert.o
+BLOCHOBJECTFILES = gmodules.o smodules.o main.o util.o inout.o inpcif.o ciftbx.o hash_funcs.o eigen.o invert.o microscopy.o diffraction.o crystallography.o bloch.o Ug.o image.o
 LACBEDOBJECTFILES = gmodules.o smodules.o lacbed.o util.o inout.o \
-eigen.o invert.o inpcif.o ciftbx.o hash_funcs.o 
+eigen.o invert.o microscopy.o diffraction.o crystallography.o bloch.o Ug.o image.o inpcif.o ciftbx.o hash_funcs.o 
 
 %.o: %.f90
 	$(F90) $(F90FLAGS) -DF90 -c $< -I$(INCLUDEDIR) $(LIBFLAGS)
@@ -72,7 +72,7 @@ FelixDraw: $(LACBEDOBJECTFILES)
 #	$(F90) -o $@ $(LACBEDOBJECTFILES) $(LIBFLAGS)
 
 print:	
-	a2ps -E -o print.ps gmodules.f90 smodules.f90 random.f90 main.f90 util.f90 inout.f90 inpcif.f90 eigen.f90 invert.f90 makefile; convert -density 150 print.ps print.pdf
+	a2ps -E -o print.ps gmodules.f90 smodules.f90 random.f90 main.f90 util.f90 inout.f90 inpcif.f90 eigen.f90 invert.f90 microscopy.f90 diffraction.f90 crystallography.f90 bloch.f90 Ug.f90 image.f90 makefile; convert -density 150 print.ps print.pdf
 
 clean:	
 	rm -f core *.mod *.o
