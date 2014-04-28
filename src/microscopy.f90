@@ -24,3 +24,57 @@
 !  along with FelixSim.  If not, see <http://www.gnu.org/licenses/>.
 !
 !%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+SUBROUTINE MicroscopySettings( IErr )
+
+  USE MyNumbers
+  
+  USE CConst; USE IConst
+  USE IPara; USE RPara
+  USE IChannels
+  USE MPI
+  USE MyMPI
+
+  IMPLICIT NONE
+
+  REAL(RKIND) norm,dummy
+
+  INTEGER IErr
+
+  IF(((IWriteFLAG.GE.0).AND.(my_rank.EQ.0)).OR.IWriteFLAG.GE.10) THEN
+     PRINT*,"MicroscopySettings(",my_rank,")"
+  END IF
+
+  RElectronVelocity= &
+       RSpeedOfLight * &
+       SQRT( 1.0D0 - ( &
+       (RElectronMass*RSpeedOfLight**2) / &
+       (RElectronCharge*RAcceleratingVoltage*1.0D3 + &
+        RElectronMass*RSpeedOfLight**2) &
+       )**2 )
+
+  RElectronWaveLength= RPlanckConstant / &
+       ( SQRT(2.0D0*RElectronMass*RElectronCharge*RAcceleratingVoltage*1.D3) * &
+         SQRT(1.0D0 + (RElectronCharge*RAcceleratingVoltage*1.D3) / &
+          (2.D0*RElectronMass*RSpeedOfLight**2) &
+       )) * RAngstromConversion
+
+  RElectronWaveVectorMagnitude=TWOPI/RElectronWaveLength
+
+  RRelativisticCorrection= &
+       1.D0 / SQRT( 1.D0 - (RElectronVelocity/RSpeedOfLight)**2 )
+
+  RRelativisticMass= RRelativisticCorrection*RElectronMass
+
+  IF(((IWriteFLAG.GE.1).AND.(my_rank.EQ.0)).OR.IWriteFLAG.GE.10) THEN
+     
+     PRINT*,"MicroscopySettings(",my_rank,") ElectronVelocity =", RElectronVelocity
+     PRINT*,"MicroscopySettings(",my_rank,") ElectronWaveLength =", RElectronWaveLength
+     PRINT*,"MicroscopySettings(",my_rank,") ElectronWaveVectorMagnitude =", RElectronWaveVectorMagnitude
+     PRINT*,"MicroscopySettings(",my_rank,") RelativisticCorrection =", RRelativisticCorrection
+
+  END IF
+     
+  RETURN
+
+END SUBROUTINE MicroscopySettings
