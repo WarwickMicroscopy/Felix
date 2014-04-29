@@ -254,8 +254,7 @@ MODULE IConst
        MAXWriteFLAG= 10, &
        THREEDIM= 3, &
        ADD_OUT_INFO=6, &
-       IParallelFLAG=0, &
-       IHKLMAXValue=100
+       IParallelFLAG=0
 END MODULE IConst
 
 !--------------------------------------------------------------------
@@ -399,7 +398,7 @@ MODULE IPara
   !Beams from selection criteria
 
   INTEGER(IKIND) :: &  
-       nReflections,nStrongBeams,nWeakBeams,nBeams
+       nReflections,nStrongBeams,nWeakBeams,nBeams,IHKLMAXValue
   INTEGER(IKIND), DIMENSION(:), ALLOCATABLE :: &
        IAnisotropicDWFTensor, IAnisoDWFT
 

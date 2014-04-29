@@ -717,7 +717,7 @@ PROGRAM FelixSim
   
   DEALLOCATE( &
        RScattFactors, &
-       RrVecMat, Rsg,RgVecMat, &
+       RrVecMat, Rsg, &
        STAT=IErr)
   IF( IErr.NE.0 ) THEN
      PRINT*,"main(", my_rank, ") error ", IErr, &
