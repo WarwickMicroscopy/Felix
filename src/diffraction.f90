@@ -42,49 +42,107 @@ SUBROUTINE DiffractionPatternDefinitions( IErr )
 
   REAL(RKIND) norm, dummyVec(THREEDIM),dummy
 
-  INTEGER IErr, ind,jnd
+  INTEGER IErr, ind,jnd,icheck,ihklrun
   
-  PRINT*,"DBG: DiffractionPatternDefinitions()"
+  IF((IWriteFLAG.GE.0.AND.my_rank.EQ.0).OR.IWriteFLAG.GE.10) THEN
+     PRINT*,"DBG: DiffractionPatternDefinitions()"
+  END IF
 
-  CALL NewHKLMake(IHKLMAXValue,RZDirC,2*PI/180.0D0,IErr)
-  IF( IErr.NE.0 ) THEN
-     PRINT*,"DiffractionPatternDefinitions(", my_rank, ") error in NewHKLMake()"
-     RETURN
-  ENDIF
-
-  CALL ReSortHKL( RHKL, SIZE(RHKL,1))
-  IF( IErr.NE.0 ) THEN
-     PRINT*,"DiffractionPatternDefintions(): error in ReSortHKL()"
-     RETURN
-  ENDIF
+  icheck = 0
   
-  ALLOCATE(&
-       RgVecMat(SIZE(RHKL,DIM=1),THREEDIM), &
-       STAT=IErr)
-  IF( IErr.NE.0 ) THEN
-     PRINT*,"DiffractionPatternDefinitions(", my_rank, ") error ", IErr, &
-          " in ALLOCATE() of DYNAMIC variables RgVecMat(HKL)"
-     RETURN
-  ENDIF
-
-  ALLOCATE(&
-       RgVecMatT(SIZE(RHKL,DIM=1),THREEDIM), &
-       STAT=IErr)
-  IF( IErr.NE.0 ) THEN
-     PRINT*,"DiffractionPatternDefinitions(", my_rank, ") error ", IErr, &
-          " in ALLOCATE() of DYNAMIC variables RgVecMatT(HKL)"
-     RETURN
-  ENDIF
-
-  ALLOCATE(&
-       RgVecMag(SIZE(RHKL,DIM=1)), &
-       STAT=IErr)
-  IF( IErr.NE.0 ) THEN
-     PRINT*,"DiffractionPatternDefinitions(", my_rank, ") error ", IErr, &
-          " in ALLOCATE() of DYNAMIC variables RgVecMag(HKL)"
-     RETURN
-  ENDIF
-
+  IHKLMAXValue = 15
+  ihklrun = 0
+  DO WHILE (icheck.EQ.0)
+     ihklrun = ihklrun+1
+     
+     IF((IWriteFLAG.GE.1.AND.my_rank.EQ.0).OR.IWriteFLAG.GE.10) THEN
+        PRINT*,"DiffractionPatternDefinitions(",my_rank,") hklrun = ",ihklrun
+     END IF
+     
+     CALL NewHKLMake(IHKLMAXValue,RZDirC,2*PI/180.0D0,IErr)
+     IF( IErr.NE.0 ) THEN
+        PRINT*,"DiffractionPatternDefinitions(", my_rank, ") error in NewHKLMake()"
+        RETURN
+     ENDIF
+     
+     IF(SIZE(RHKl,DIM=1).LT.IMinReflectionPool) THEN
+        IHKLMAXValue = IHKLMAXValue*2
+        Deallocate(RHKL,STAT=ierr)
+        IF( IErr.NE.0 ) THEN
+           PRINT*,"DiffractionPatternDefinitions(", my_rank, ") error ", IErr, &
+                " in DEALLOCATE() of DYNAMIC variables RHKL"
+           RETURN
+        ENDIF
+        
+        CYCLE
+        
+     ELSE
+        icheck = 1
+     END IF
+     
+     CALL ReSortHKL( RHKL, SIZE(RHKL,1))
+     IF( IErr.NE.0 ) THEN
+        PRINT*,"DiffractionPatternDefintions(): error in ReSortHKL()"
+        RETURN
+     ENDIF
+     
+     ALLOCATE(&
+          RgVecMatT(SIZE(RHKL,DIM=1),THREEDIM), &
+          STAT=IErr)
+     IF( IErr.NE.0 ) THEN
+        PRINT*,"DiffractionPatternDefinitions(", my_rank, ") error ", IErr, &
+             " in ALLOCATE() of DYNAMIC variables RgVecMatT(HKL)"
+        RETURN
+     ENDIF
+     
+     ALLOCATE(&
+          RgVecMag(SIZE(RHKL,DIM=1)), &
+          STAT=IErr)
+     IF( IErr.NE.0 ) THEN
+        PRINT*,"DiffractionPatternDefinitions(", my_rank, ") error ", IErr, &
+             " in ALLOCATE() of DYNAMIC variables RgVecMag(HKL)"
+        RETURN
+     ENDIF
+     
+     DO ind=1,SIZE(RHKL,DIM=1)
+        DO jnd=1,THREEDIM
+           RgVecMatT(ind,jnd)= &
+                RHKL(ind,1)*RarVecM(jnd) + &
+                RHKL(ind,2)*RbrVecM(jnd) + &
+                RHKL(ind,3)*RcrVecM(jnd)
+        ENDDO
+     ENDDO
+     
+     ! G vector magnitudes in 1/Angstrom units
+     
+     DO ind=1,SIZE(RHKL,DIM=1)
+        RgVecMag(ind)= SQRT(DOT(RgVecMatT(ind,:),RgVecMatT(ind,:)))
+     ENDDO
+     
+     RBSMaxGVecAmp = RgVecMag(IMinReflectionPool)
+     
+     nReflections = 0
+     nStrongBeams = 0
+     nWeakBeams = 0
+     
+     DO ind=1,SIZE(RHKL,DIM=1)
+        IF (RgVecMag(ind).LE.RBSMaxGVecAmp) THEN
+           nReflections = nReflections + 1
+        ENDIF
+     ENDDO
+     
+     !IF(nReflections.GE.IMin
+  END DO
+  
+!!$  ALLOCATE(&
+!!$       RgVecMat(SIZE(RHKL,DIM=1),THREEDIM), &
+!!$       STAT=IErr)
+!!$  IF( IErr.NE.0 ) THEN
+!!$     PRINT*,"DiffractionPatternDefinitions(", my_rank, ") error ", IErr, &
+!!$          " in ALLOCATE() of DYNAMIC variables RgVecMat(HKL)"
+!!$     RETURN
+!!$  ENDIF
+  
   ALLOCATE(&
        RSg(SIZE(RHKL,DIM=1)), &
        STAT=IErr)
@@ -110,22 +168,6 @@ SUBROUTINE DiffractionPatternDefinitions( IErr )
      PRINT*,"DBG: BraggCentral=", RBraggCentral
   END IF
 
-  DO ind=1,SIZE(RHKL,DIM=1)
-     DO jnd=1,THREEDIM
-        RgVecMatT(ind,jnd)= &
-             RHKL(ind,1)*RarVecM(jnd) + &
-             RHKL(ind,2)*RbrVecM(jnd) + &
-             RHKL(ind,3)*RcrVecM(jnd)
-     ENDDO
-  ENDDO
-  
-  ! G vector magnitudes in 1/Angstrom units
-
-  DO ind=1,SIZE(RHKL,DIM=1)
-     RgVecMag(ind)= SQRT(DOT(RgVecMatT(ind,:),RgVecMatT(ind,:)))
-  ENDDO
-
-  RBSMaxGVecAmp = RgVecMag(IMinReflectionPool)
 
   IF((IWriteFLAG.GE.1.AND.my_rank.EQ.0).OR.IWriteFLAG.GE.10) THEN
      PRINT*,"DiffractionPatternDefinitions (",my_rank,") GMax = ",RBSMaxGVecAmp
@@ -154,19 +196,6 @@ SUBROUTINE DiffractionPatternDefinitions( IErr )
   
   ! Determine the number of Gs within GMax (input variable) 
   ! Furthermore, determine which Gs have Sg < SgMax (Strong Beams)
-  
-  nReflections = 0
-  nStrongBeams = 0
-  nWeakBeams = 0
-  
-  DO ind=1,SIZE(RHKL,DIM=1)
-     IF (RgVecMag(ind).LE.RBSMaxGVecAmp) THEN
-        nReflections = nReflections + 1
-        IF (RSg(ind).LE.RBSMaxDeviationPara) THEN
-           nStrongBeams = nStrongBeams + 1
-        ENDIF
-     ENDIF
-  ENDDO
   
   IF (nReflections.LT.IReflectOut) THEN
 
