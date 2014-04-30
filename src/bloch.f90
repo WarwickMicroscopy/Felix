@@ -47,6 +47,8 @@ SUBROUTINE BlochCoefficientCalculation(ind,jnd,IErr)
   REAL(RKIND) Rx0,Ry0, RThickness
 
   CHARACTER*40 surname
+
+  COMPLEX(CKIND) sumC,sumD
   
   COMPLEX(CKIND), DIMENSION(:,:), ALLOCATABLE :: &
        CGeneralSolutionMatrix, CGeneralEigenVectors
@@ -272,7 +274,7 @@ SUBROUTINE BlochCoefficientCalculation(ind,jnd,IErr)
        CBeamProjectionMatrix, &
        MATMUL(CUgMat,TRANSPOSE(CBeamProjectionMatrix)) &
        )
-  
+    
   IF (IZolzFLAG.EQ.0) THEN
   
      
@@ -318,6 +320,30 @@ SUBROUTINE BlochCoefficientCalculation(ind,jnd,IErr)
      ! strong beam deviation parameters (*2 BigK) 
      DO hnd=1,nBeams
         CUgMatEffective(hnd,hnd) = RDevPara(IStrongBeamList(hnd))
+     ENDDO
+     
+     
+     ! add the weak beams perturbatively for the 1st column (sumC) and
+     ! the diagonal elements (sumD)
+     
+     DO knd=2,nBeams
+        sumC= CZERO
+        sumD= CZERO
+        DO hnd=1,IWeakBeamIndex
+           
+           sumC = sumC + &
+                REAL(CUgMat(IStrongBeamList(knd),IWeakBeamList(hnd))) * &
+                REAL(CUgMat(IWeakBeamList(hnd),1)) / &
+                (4*RBigK*RBigK*RDevPara(IWeakBeamList(hnd)))
+           
+           sumD = sumD + &
+                REAL(CUgMat(IStrongBeamList(knd),IWeakBeamList(hnd))) * &
+                REAL(CUgMat(IWeakBeamList(hnd),IStrongBeamList(knd))) / &
+                (4*RBigK*RBigK*RDevPara(IWeakBeamList(hnd)))
+           
+        ENDDO
+        CUgMatEffective(knd,1)= CUgMatEffective(knd,1) - sumC
+        CUgMatEffective(knd,knd)= CUgMatEffective(knd,knd) - sumD
      ENDDO
      
   END IF
