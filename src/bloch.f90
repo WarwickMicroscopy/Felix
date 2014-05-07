@@ -54,6 +54,8 @@ SUBROUTINE BlochCoefficientCalculation(ind,jnd,IErr)
        CGeneralSolutionMatrix, CGeneralEigenVectors
   COMPLEX(CKIND),DIMENSION(:),ALLOCATABLE :: &
        CGeneralEigenValues
+  REAL(RKIND),DIMENSION(IReflectOut) ::  RTolerance, &
+       RPreviousWaveIntensity
 
   Rx0=(ind-IPixelCount-0.5D0)*RDeltaK ! x-position in the disk
   
@@ -98,6 +100,12 @@ SUBROUTINE BlochCoefficientCalculation(ind,jnd,IErr)
   ! select only those beams where the Ewald sphere is close to the
   ! reciprocal lattice, i.e. within RBSMaxDeviationPara
 
+!!$  RPreviousWaveIntensity
+!!$
+!!$100 RPast
+!!$
+!!$  DO WHILE (RTolerance
+
   CALL DetermineStrongAndWeakBeams(IErr)
   IF( IErr.NE.0 ) THEN
      PRINT*,"BlochCoefficientCalculation(", my_rank, ") error ", IErr, &
@@ -107,6 +115,8 @@ SUBROUTINE BlochCoefficientCalculation(ind,jnd,IErr)
  
   ! select the highest reflection that corresponds to a strong beam
   nBeams= IStrongBeamIndex
+
+  !PRINT*,nbeams
 
   !--------------------------------------------------------------------
   ! ALLOCATE memory for eigen problem
@@ -616,10 +626,19 @@ SUBROUTINE DetermineStrongAndWeakBeams(IErr)
   USE MPI
   USE MyMPI
   
-  INTEGER(IKIND) ind,knd,IErr,IMinimum,IMaximum,ICheck,jnd
+  INTEGER(IKIND) ind,knd,IErr,IMinimum,IMaximum,ICheck,jnd,hnd, &
+       IAdditionalBmaxStrongBeams,IAdditionalPmaxStrongBeams,&
+       IBeamIterationCounter,IFound
   REAL(RKIND) RDummySg(nReflections)
+  REAL(RKIND) sumC
+  INTEGER(IKIND), DIMENSION(:),ALLOCATABLE  :: &
+       IAdditionalBmaxStrongBeamList,IAdditionalPmaxStrongBeamList
 
-  !Determine RBSMaxDeviationPara
+  !----------------------------------------------------------------------------
+  ! Determine RBSMaxDeviationPara
+  !----------------------------------------------------------------------------
+
+  IStrongBeamList = 0
 
   RDummySg = ABS(RDevPara)
 
@@ -647,34 +666,215 @@ SUBROUTINE DetermineStrongAndWeakBeams(IErr)
 
   !Determine RBSBethePara
 
+  !IAdditionalStrongBeams = 1
+
+  !IBeamIterationCounter = 0
+
+  !DO WHILE(IAdditionalStrongBeams.NE.0)
+   !  IBeamIterationCounter = IBeamIterationCounter +1
+
+  !----------------------------------------------------------------------------
+  ! Apply Bmax Criteria 
+  !----------------------------------------------------------------------------
+
+  IAdditionalBmaxStrongBeams = 0
+  IAdditionalPmaxStrongBeams = 0
+  
+  IF(IStrongBeamIndex+IMinWeakBeams.GT.nReflections) THEN
+     IErr = 1
+  END IF
+  IF( IErr.NE.0 ) THEN
+     PRINT*,"DetermineStrongAndWeakBeams(", my_rank, ") error ", IErr, &
+          " Insufficient reflections to accommodate all Strong and Weak Beams"
+     RETURN
+  ENDIF
+    
   DO ind=1,nReflections
      ICheck = 0
      IMaximum = MAXLOC(RDummySg,1)
-
+     
      DO knd = 1,IStrongBeamIndex
         IF(IMaximum.EQ.IStrongBeamList(knd)) THEN
            ICheck = 1
            EXIT
         END IF
      END DO
-
+     
      IF(ICheck.EQ.0) THEN
         jnd = jnd+1
      END IF
-
+     
      IF(jnd.EQ.IMinWeakBeams) THEN
         RBSBethePara = (RDummySg(IMaximum))
      ELSE
         RDummySg(IMaximum) = 0.D0 !Large number
      END IF
   END DO
+  
+  IWeakBeamIndex=0
+  IWeakBeamList = 0
+  
+  DO knd=1,nReflections
+     IFound = 0
+     IF( (ABS(RDevPara(knd)) .GT. RBSMaxDeviationPara).AND. &
+          (ABS(RMeanInnerCrystalPotential/RDevPara(knd)) .GE. RBSBethePara)) THEN
+        DO ind = 1,IStrongBeamIndex
+           IF(IStrongBeamList(ind).EQ.knd) THEN
+              IFound = IFound + 1
+           END IF
+        END DO
+        
+        IF(IFound.EQ.0) THEN
+           IWeakBeamIndex= IWeakBeamIndex +1
+           IWeakBeamList(IWeakBeamIndex)= knd
+        END IF
+        IFound = 0
+     ENDIF
+  ENDDO
+  
+  ALLOCATE(&
+       IAdditionalBmaxStrongBeamList(IWeakBeamIndex),&
+       STAT=IErr)
+  IF( IErr.NE.0 ) THEN
+     PRINT*,"DetermineStrongAndWeakBeams(", my_rank, ") error ", IErr, &
+          " in ALLOCATE() of DYNAMIC variables IAdditionalBmaxStrongBeamList"
+     RETURN
+  ENDIF
+  
+  IAdditionalBmaxStrongBeamList = 0
+  
+  DO knd = 2,IStrongBeamIndex
+     DO hnd = 1,IWeakBeamIndex
+        IFound = 0
+        sumC = ZERO
+        sumC = sumC + &
+             REAL(CUgMat(IStrongBeamList(knd),IWeakBeamList(hnd)))* &
+             REAL(CUgMat(IWeakBeamList(hnd),1)) / &
+             (2*RBigK*RDevPara(IWeakBeamList(hnd)))
+        
+        sumC = sumC/REAL(CUgMat(IStrongBeamList(knd),1))
+        
+        !PRINT*,"Perturbation Strength = ",REAL(CUgMat(IStrongBeamList(knd),IWeakBeamList(hnd))), &
+        !     RDevPara(IWeakBeamList(hnd)),REAL(CUgMat(IWeakBeamList(hnd),1)),sumC,REAL(sumC) 
+        
+        IF(ABS(sumC).GE.RBSBmax) THEN
+           DO ind =1,IWeakBeamIndex
+              IF(IAdditionalBmaxStrongBeamList(ind).EQ.IWeakBeamList(hnd)) THEN
+                 IFound = IFound+1
+              END IF
+           END DO
+           IF(IFound.EQ.0) THEN
+              IAdditionalBmaxStrongBeams = IAdditionalBmaxStrongBeams + 1
+              IAdditionalBmaxStrongBeamList(IAdditionalBmaxStrongBeams) = IWeakBeamList(hnd)
+           END IF
+        END IF
+     END DO
+  END DO
+  
+  IF(IAdditionalBmaxStrongBeams.NE.0) THEN
+     IStrongBeamList((IStrongBeamIndex+1):(IStrongBeamIndex+IAdditionalBmaxStrongBeams)) = &
+          IAdditionalBmaxStrongBeamList(:IAdditionalBmaxStrongBeams)
+     IStrongBeamIndex = IStrongBeamIndex  +IAdditionalBmaxStrongBeams
+  END IF
+  !DEALLOCATE(&
+  !     IAdditionalBmaxStrongBeamList, &
+  !     STAT=IErr)
+  !IF( IErr.NE.0 ) THEN
+  !   PRINT*,"DetermineStrongAndWeakBeams(", my_rank, ") error ", IErr, &
+  !        " in DEALLOCATE() of DYNAMIC variables IAdditionalBmaxStrongBeamList"
+  !   RETURN
+  !ENDIF  
+  
+  ! END DO
+
+  !----------------------------------------------------------------------------
+  ! Apply Pmax Criteria 
+  !----------------------------------------------------------------------------
+  
+  IWeakBeamIndex=0
+  IWeakBeamList = 0
+  
+  DO knd=1,nReflections
+     IFound = 0
+     IF( (ABS(RDevPara(knd)) .GT. RBSMaxDeviationPara).AND. &
+          (ABS(RMeanInnerCrystalPotential/RDevPara(knd)) .GE. RBSBethePara)) THEN
+        DO ind = 1,IStrongBeamIndex
+           IF(IStrongBeamList(ind).EQ.knd) THEN
+              IFound = IFound + 1
+           END IF
+        END DO
+        
+        IF(IFound.EQ.0) THEN
+           IWeakBeamIndex= IWeakBeamIndex +1
+           IWeakBeamList(IWeakBeamIndex)= knd
+        END IF
+        IFound = 0
+     ENDIF
+  ENDDO
+
+  ALLOCATE(&
+       IAdditionalPmaxStrongBeamList(IWeakBeamIndex),&
+       STAT=IErr)
+  IF( IErr.NE.0 ) THEN
+     PRINT*,"DetermineStrongAndWeakBeams(", my_rank, ") error ", IErr, &
+          " in ALLOCATE() of DYNAMIC variables IAdditionalPmaxStrongBeamList"
+     RETURN
+  ENDIF
+  
+  IAdditionalPmaxStrongBeamList = 0
+  
+  DO knd = 1,IAdditionalBmaxStrongBeams
+     DO hnd = 1,IWeakBeamIndex
+        IFound = 0
+        sumC = ZERO
+        sumC = sumC + &
+             REAL(CUgMat(IAdditionalBmaxStrongBeamList(knd),IWeakBeamList(hnd)))* &
+             REAL(CUgMat(IWeakBeamList(hnd),1)) / &
+             (2*RBigK*RDevPara(IWeakBeamList(hnd)))
+        
+        sumC = sumC/REAL(CUgMat(IAdditionalBmaxStrongBeamList(knd),1))
+        
+        IF(ABS(REAL(sumC)).GE.RBSPmax) THEN
+           DO ind =1,IWeakBeamIndex
+              IF(IAdditionalPmaxStrongBeamList(ind).EQ.IWeakBeamList(hnd)) THEN
+                 IFound = IFound+1
+              END IF
+           END DO
+           IF(IFound.EQ.0) THEN
+              IAdditionalPmaxStrongBeams = IAdditionalPmaxStrongBeams + 1
+              IAdditionalPmaxStrongBeamList(IAdditionalPmaxStrongBeams) = IWeakBeamList(hnd)
+           END IF
+        END IF
+     END DO
+  END DO
+  
+  IF(IAdditionalPmaxStrongBeams.NE.0) THEN
+     IStrongBeamList((IStrongBeamIndex+1):(IStrongBeamIndex+IAdditionalPmaxStrongBeams)) = &
+          IAdditionalPmaxStrongBeamList(:IAdditionalPmaxStrongBeams)
+     IStrongBeamIndex = IStrongBeamIndex  + IAdditionalPmaxStrongBeams
+  END IF
+  
+  !PRINT*,IStrongBeamIndex,IAdditionalBmaxStrongBeams,IAdditionalPmaxStrongBeams
+!!$  PRINT*,IStrongBeamList
 
   IWeakBeamIndex=0
+  IWeakBeamList = 0
+  
   DO knd=1,nReflections
+     IFound = 0
      IF( (ABS(RDevPara(knd)) .GT. RBSMaxDeviationPara).AND. &
-          (ABS(RMeanInnerCrystalPotential/RDevPara(knd)) .GE. RBSBethePara) ) THEN
-        IWeakBeamIndex= IWeakBeamIndex +1
-        IWeakBeamList(IWeakBeamIndex)= knd
+          (ABS(RMeanInnerCrystalPotential/RDevPara(knd)) .GE. RBSBethePara)) THEN
+        DO ind = 1,IStrongBeamIndex
+           IF(IStrongBeamList(ind).EQ.knd) THEN
+              IFound = IFound + 1
+           END IF
+        END DO
+        
+        IF(IFound.EQ.0) THEN
+           IWeakBeamIndex= IWeakBeamIndex +1
+           IWeakBeamList(IWeakBeamIndex)= knd
+        END IF
+        IFound = 0
      ENDIF
   ENDDO
 

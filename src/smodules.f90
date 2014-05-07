@@ -363,7 +363,7 @@ MODULE IPara
        IWriteFLAG, IScatterFactorMethodFLAG, &
        ICentralBeamFLAG, IMaskFLAG, IVolumeFLAG, &
        IZolzFLAG,IAbsorbFLAG, IAnisoDebyeWallerFactorFlag, &
-       IImageFLAG,IOutputFLAG
+       IImageFLAG,IOutputFLAG,IBeamConvergenceFLAG
 
   !Minimum Reflections etc
   INTEGER(IKIND) :: &
@@ -453,7 +453,8 @@ MODULE RPara
   !Beam Selection Criteria
   
   REAL(RKIND) :: &
-       RBSMaxDeviationPara, RBSMaxGVecAmp, RBSBethePara
+       RBSMaxDeviationPara, RBSMaxGVecAmp, RBSBethePara, &
+       RConvergenceTolerance,RBSBmax, RBSPMax
   
   !Crystal Settings
   
