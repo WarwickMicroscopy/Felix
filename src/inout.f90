@@ -299,6 +299,12 @@ SUBROUTINE Input( IErr )
      PRINT*,"IAnisoDebyeWallerFactorFlag = ", IAnisoDebyeWallerFactorFlag
   END IF
 
+  ILine= ILine+1
+  READ(IChInp,10,ERR=20,END=30) IBeamConvergenceFLAG
+  IF((IWriteFLAG.GE.1.AND.my_rank.EQ.0).OR.IWriteFLAG.GE.10) THEN
+     PRINT*,"IBeamConvergenceFLAG = ", IBeamConvergenceFLAG
+  END IF
+
   ! ----------------------------------------------------------------------
   ! beam details
   
@@ -351,6 +357,24 @@ SUBROUTINE Input( IErr )
   READ(IChInp,10,ERR=20,END=30) IMinWeakBeams
   IF((IWriteFLAG.GE.1.AND.my_rank.EQ.0).OR.IWriteFLAG.GE.10) THEN
      PRINT*,"IMinWeakBeams = ", IMinWeakBeams
+  END IF
+
+  ILine= ILine+1
+  READ(IChInp,15,ERR=20,END=30) RBSBMax
+  IF((IWriteFLAG.GE.1.AND.my_rank.EQ.0).OR.IWriteFLAG.GE.10) THEN
+     PRINT*,"RBSBMax = ", RBSBMax
+  END IF
+
+  ILine= ILine+1
+  READ(IChInp,15,ERR=20,END=30) RBSPMax
+  IF((IWriteFLAG.GE.1.AND.my_rank.EQ.0).OR.IWriteFLAG.GE.10) THEN
+     PRINT*,"RBSPMax = ", RBSPMax
+  END IF
+
+  ILine= ILine+1
+  READ(IChInp,15,ERR=20,END=30) RConvergenceTolerance
+  IF((IWriteFLAG.GE.1.AND.my_rank.EQ.0).OR.IWriteFLAG.GE.10) THEN
+     PRINT*,"RConvergenceTolerance = ", RConvergenceTolerance
   END IF
 
   ! ----------------------------------------------------------------------
