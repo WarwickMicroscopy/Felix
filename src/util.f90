@@ -312,7 +312,9 @@ SUBROUTINE ReSortHKL( RHKLarray, N )
   USE CConst; USE IConst
   USE IPara; USE RPara
   USE IChannels
-  
+  USE MPI
+  USE MyMPI
+
   IMPLICIT NONE
 
   INTEGER N
@@ -324,8 +326,10 @@ SUBROUTINE ReSortHKL( RHKLarray, N )
   
   INTEGER NN,M,L,K,J,I,LOGNB2, index
   REAL(KIND=RKIND) dummy
-  
-  PRINT*,"DBG: ReSort()"
+
+  IF((IWriteFLAG.EQ.6.AND.my_rank.EQ.0).OR.IWriteFLAG.GE.10) THEN
+     PRINT*,"ReSort()"
+  END IF
   
   LOGNB2=INT(LOG(REAL(N))*ALN2I+LocalTINY)
   M=N
@@ -430,7 +434,9 @@ SUBROUTINE ImageMask (IErr)
   INTEGER ind,jnd, ierr
   REAL(RKIND) :: Rradius, RImageRadius
   
-  PRINT*,"DBG: ImageMask()"
+  IF((IWriteFLAG.EQ.6.AND.my_rank.EQ.0).OR.IWriteFLAG.GE.10) THEN
+     PRINT*,"DBG: ImageMask()"
+  END IF
 
   IPixelTotal =0
   SELECT CASE (IMaskFLAG)
@@ -513,6 +519,11 @@ SUBROUTINE CountTotalAtoms(IErr)
   
   INTEGER ind,jnd,knd,hnd,ierr, ifullind, iuniind
   LOGICAL Lunique
+
+  
+  IF((IWriteFLAG.EQ.6.AND.my_rank.EQ.0).OR.IWriteFLAG.GE.10) THEN
+     PRINT*,"CountTotalAtoms()"
+  END IF
 
   ALLOCATE( &
        RFullAtomicFracCoordVec( &

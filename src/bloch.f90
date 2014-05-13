@@ -44,7 +44,8 @@ SUBROUTINE BlochCoefficientCalculation(ind,jnd,IErr)
        IThicknessIndex, ILowerLimit, &
        IUpperLimit
        
-  REAL(RKIND) Rx0,Ry0, RThickness
+  REAL(RKIND) :: &
+       Rx0,Ry0, RThickness,RKn
 
   CHARACTER*40 surname
 
@@ -56,6 +57,8 @@ SUBROUTINE BlochCoefficientCalculation(ind,jnd,IErr)
        CGeneralEigenValues
   REAL(RKIND),DIMENSION(IReflectOut) ::  RTolerance, &
        RPreviousWaveIntensity
+!!$  REAL(RKIND) :: &
+!!$       RGComponent
 
   Rx0=(ind-IPixelCount-0.5D0)*RDeltaK ! x-position in the disk
   
@@ -86,6 +89,9 @@ SUBROUTINE BlochCoefficientCalculation(ind,jnd,IErr)
           " In Calculation of KVectors"
      RETURN
   ENDIF
+
+  RKn = DOT_PRODUCT(RTiltedK,RNormDirM)
+  !PRINT*,"RKn = ",RKn
 
   ! Compute the deviation parameter for ALL reflections
   ! within RBSMaxGVecAmp
@@ -150,34 +156,34 @@ SUBROUTINE BlochCoefficientCalculation(ind,jnd,IErr)
   
   !Allocate General Solution Specific Arrays
   
-  IF(IZolzFLAG.EQ.0) THEN
-     
-     ALLOCATE( &
-          CGeneralSolutionMatrix(2*nBeams,2*nBeams), & 
-          STAT=IErr)
-     IF( IErr.NE.0 ) THEN
-        PRINT*,"BlochCoefficientCalculation(", my_rank, ") error ", IErr, &
-             " in ALLOCATE() of DYNAMIC variables General Solution Matrix"
-        PRINT*,"Failure Occured at Thickness,ChunkPixel,nBeams = ",IPixelCountTotal,nBeams
-        RETURN
-     ENDIF
-     ALLOCATE( &
-          CGeneralEigenVectors(2*nBeams,2*nBeams), &
-          STAT=IErr)
-     IF( IErr.NE.0 ) THEN
-        PRINT*,"BlochCoefficientCalculation(", my_rank, ") error ", IErr, &
-             " in ALLOCATE() of DYNAMIC variables CEigenVectors"
-        RETURN
-     ENDIF
-     ALLOCATE(&
-          CGeneralEigenValues(2*nBeams), &
-          STAT=IErr)
-     IF( IErr.NE.0 ) THEN
-        PRINT*,"BlochCoefficientCalculation(", my_rank, ") error ", IErr, &
-             " in ALLOCATE() of DYNAMIC variables CEigenVectors"
-        RETURN
-     ENDIF
-  END IF
+!!$  IF(IZolzFLAG.EQ.0) THEN
+!!$     
+!!$     ALLOCATE( &
+!!$          CGeneralSolutionMatrix(2*nBeams,2*nBeams), & 
+!!$          STAT=IErr)
+!!$     IF( IErr.NE.0 ) THEN
+!!$        PRINT*,"BlochCoefficientCalculation(", my_rank, ") error ", IErr, &
+!!$             " in ALLOCATE() of DYNAMIC variables General Solution Matrix"
+!!$        PRINT*,"Failure Occured at Thickness,ChunkPixel,nBeams = ",IPixelCountTotal,nBeams
+!!$        RETURN
+!!$     ENDIF
+!!$     ALLOCATE( &
+!!$          CGeneralEigenVectors(2*nBeams,2*nBeams), &
+!!$          STAT=IErr)
+!!$     IF( IErr.NE.0 ) THEN
+!!$        PRINT*,"BlochCoefficientCalculation(", my_rank, ") error ", IErr, &
+!!$             " in ALLOCATE() of DYNAMIC variables CEigenVectors"
+!!$        RETURN
+!!$     ENDIF
+!!$     ALLOCATE(&
+!!$          CGeneralEigenValues(2*nBeams), &
+!!$          STAT=IErr)
+!!$     IF( IErr.NE.0 ) THEN
+!!$        PRINT*,"BlochCoefficientCalculation(", my_rank, ") error ", IErr, &
+!!$             " in ALLOCATE() of DYNAMIC variables CEigenVectors"
+!!$        RETURN
+!!$     ENDIF
+!!$  END IF
   
   
   ALLOCATE( & 
@@ -294,34 +300,47 @@ SUBROUTINE BlochCoefficientCalculation(ind,jnd,IErr)
      
      !FILL 0 sub-Maxtrix 
      
-     CGeneralSolutionMatrix = CZERO
-
-     CGeneralSolutionMatrix(1:nBeams,(nBeams+1):(nBeams*2)) = CUgMatEffective
-
-     DO hnd = 1,nBeams
-
-        ! FILL I sub-Matrix
+!!$     CGeneralSolutionMatrix = CZERO
+!!$
+!!$     CGeneralSolutionMatrix(1:nBeams,(nBeams+1):(nBeams*2)) = CUgMatEffective
+!!$
+!!$     DO hnd = 1,nBeams
+!!$
+!!$        ! FILL I sub-Matrix
+!!$        
+!!$        CGeneralSolutionMatrix(hnd+nBeams,hnd) = CONE
+!!$
+!!$        ! Fill B sub-Matrix
+!!$        CGeneralSolutionMatrix(hnd+nBeams,hnd+nBeams) = &
+!!$            -2*RgVecMatT(IStrongBeamList(hnd),3) !2*gz Terms
+!!$        
+!!$        ! Calculate Beta Values for D sub-Matrix
+!!$        
+!!$        CGeneralSolutionMatrix(hnd,hnd+nBeams) = &
+!!$             (RBigK**2 - & !K^2
+!!$             ( &
+!!$             (RTiltedK(1))**2 + & !kx^2
+!!$             (RTiltedK(2))**2 + & !ky^2
+!!$             2*(RTiltedK(1))*RgVecMatT(IStrongBeamList(hnd),1) + & !2*kx*gx
+!!$             2*(RTiltedK(2))*RgVecMatT(IStrongBeamList(hnd),2) + & !2*ky*gy
+!!$             RgVecMatT(IStrongBeamList(hnd),1)**2 + &  !gx^2
+!!$             RgVecMatT(IStrongBeamList(hnd),2)**2 + &  !gx^2
+!!$             RgVecMatT(IStrongBeamList(hnd),3)**2 & !gx^2
+!!$             ))
+     DO hnd=1,nBeams
+        CUgMatEffective(hnd,hnd) = TWO*RBigK*RDevPara(IStrongBeamList(hnd))
+     ENDDO
+     DO knd =1,nBeams ! Columns
         
-        CGeneralSolutionMatrix(hnd+nBeams,hnd) = CONE
+        DO hnd = 1,nBeams ! Rows
 
-        ! Fill B sub-Matrix
-        CGeneralSolutionMatrix(hnd+nBeams,hnd+nBeams) = &
-            -2*RgVecMatT(IStrongBeamList(hnd),3) !2*gz Terms
-        
-        ! Calculate Beta Values for D sub-Matrix
-        
-        CGeneralSolutionMatrix(hnd,hnd+nBeams) = &
-             (RBigK**2 - & !K^2
-             ( &
-             (RTiltedK(1))**2 + & !kx^2
-             (RTiltedK(2))**2 + & !ky^2
-             2*(RTiltedK(1))*RgVecMatT(IStrongBeamList(hnd),1) + & !2*kx*gx
-             2*(RTiltedK(2))*RgVecMatT(IStrongBeamList(hnd),2) + & !2*ky*gy
-             RgVecMatT(IStrongBeamList(hnd),1)**2 + &  !gx^2
-             RgVecMatT(IStrongBeamList(hnd),2)**2 + &  !gx^2
-             RgVecMatT(IStrongBeamList(hnd),3)**2 & !gx^2
-             ))
+           CUgMatEffective(knd,hnd) = CUgMatEffective(knd,hnd) / &
+                (SQRT(1+RGn(IStrongBeamList(knd))/RKn)*SQRT(1+RGn(IStrongBeamList(hnd))/RKn))
+           
+        END DO
      END DO
+     
+     CUgMatEffective = CUgMatEffective/(TWO*RBigK)
   ELSE
      
      CUgMatEffective = CUgMatEffective/(TWO*RBigK)
@@ -365,22 +384,35 @@ SUBROUTINE BlochCoefficientCalculation(ind,jnd,IErr)
   !--------------------------------------------------------------------
    
   IF (IZolzFLAG.EQ.0) THEN
-     CALL EigenSpectrum(2*nBeams, &
-          CGeneralSolutionMatrix, &
-          CGeneralEigenValues(:), CGeneralEigenVectors(:,:), &
+!!$     CALL EigenSpectrum(2*nBeams, &
+!!$          CGeneralSolutionMatrix, &
+!!$          CGeneralEigenValues(:), CGeneralEigenVectors(:,:), &
+!!$          IErr)
+!!$     IF( IErr.NE.0 ) THEN
+!!$        PRINT*,"BlochCoefficientCalculation(", my_rank, ") error in EigenSpectrum()"
+!!$        RETURN
+!!$     ENDIF
+!!$
+!!$     CEigenValues = CGeneralEigenValues((nBeams+1):(2*nBeams))
+!!$     CEigenVectors = CGeneralEigenVectors((nBeams+1):(nBeams*2),1:nBeams)
+!!$
+!!$     DEALLOCATE(&
+!!$          CGeneralEigenVectors, &
+!!$          CGeneralEigenValues, &
+!!$          CGeneralSolutionMatrix)
+     CALL EigenSpectrum(nBeams, &
+          CUgMatEffective, &
+          CEigenValues(:), CEigenVectors(:,:), &
           IErr)
      IF( IErr.NE.0 ) THEN
         PRINT*,"BlochCoefficientCalculation(", my_rank, ") error in EigenSpectrum()"
         RETURN
      ENDIF
-
-     CEigenValues = CGeneralEigenValues((nBeams+1):(2*nBeams))
-     CEigenVectors = CGeneralEigenVectors((nBeams+1):(nBeams*2),1:nBeams)
-
-     DEALLOCATE(&
-          CGeneralEigenVectors, &
-          CGeneralEigenValues, &
-          CGeneralSolutionMatrix)
+     CEigenValues = CEigenValues * RKn/RBigK
+     DO knd = 1,nBeams
+        CEigenVectors(knd,:) = CEigenVectors(knd,:) / &
+             SQRT(1+RGn(IStrongBeamList(knd))/RKn)
+     END DO
   ELSE
      CALL EigenSpectrum(nBeams, &
           CUgMatEffective, &
@@ -397,6 +429,8 @@ SUBROUTINE BlochCoefficientCalculation(ind,jnd,IErr)
      RThickness = RInitialThickness + (IThicknessIndex-1)*RDeltaThickness 
      IThickness = RInitialThickness + (IThicknessIndex-1)*RDeltaThickness 
      
+     !PRINT*,"RThickness = ",RThickness
+
      CALL CreateWaveFunctions(rthickness,IErr)
      IF( IErr.NE.0 ) THEN
         PRINT*,"BlochCoefficientCalculation(", my_rank, ") error in CreateWavefunction()"
@@ -510,7 +544,9 @@ SUBROUTINE CreateWavefunctions(rthickness,IErr)
   
   INTEGER ind,jnd,knd,hnd,ierr, ifullind, iuniind,gnd,ichnk
   REAL(RKIND) rthickness 
-   
+  COMPLEX(CKIND),DIMENSION(:,:),ALLOCATABLE :: &
+       CDummyEigenVectors
+  
   !--------------------------------------------------------------------
   ! calculate wavefunctions
   !--------------------------------------------------------------------
@@ -518,19 +554,33 @@ SUBROUTINE CreateWavefunctions(rthickness,IErr)
   CPsi0= CZERO
   IF(nBeams .GE. 0) CPsi0(1) = CONE
   
+  ALLOCATE( &
+       CDummyEigenVectors(nBeams,nBeams), &
+       STAT=IErr)
+  IF( IErr.NE.0 ) THEN
+     PRINT*,"CreateWavefunctions(", my_rank, ") error ", IErr, &
+          " in ALLOCATE() of DYNAMIC variables CDummyEigenVectors"
+     RETURN
+  ENDIF
+  
   ! Invert the EigenVector matrix
-  CInvertedEigenVectors= CONJG(TRANSPOSE(CEigenVectors(:,:)))
+  !InvertedEigenVectors= CONJG(TRANSPOSE(CEigenVectors(:,:)))
+  CDummyEigenVectors = CEigenVectors
+
+  CALL INVERT(nBeams,CDummyEigenVectors(:,:),CInvertedEigenVectors,IErr)
+
+  !PRINT*,MATMUL(CEigenVectors,CInvertedEigenVectors)
   
   !From EQ 6.32 in Kirkland Advance Computing in EM
   CAlphaWeightingCoefficients = MATMUL(CInvertedEigenVectors(1:nBeams,1:nBeams),CPsi0) 
   
-  CEigenValueDependentTerms= ZERO
-  
+  CEigenValueDependentTerms= CZERO
+ 
   DO hnd=1,nBeams !IReflectOut 
      
      ! This needs to be a diagonal matrix
      CEigenValueDependentTerms(hnd,hnd) = &
-          EXP(CIMAGONE*RThickness*CEigenValues(hnd)) 
+          EXP(CIMAGONE*CMPLX(RThickness,ZERO,CKIND)*CEigenValues(hnd)) 
      
   ENDDO
   
@@ -562,6 +612,15 @@ SUBROUTINE CreateWavefunctions(rthickness,IErr)
      CFullWaveFunctions(IStrongBeamList(knd))=CWaveFunctions(knd)
      RFullWaveIntensity(IStrongBeamList(knd))=RWaveIntensity(knd)
   ENDDO
+  
+  DEALLOCATE(&
+       CDummyEigenVectors, &
+       STAT=IErr)
+  IF( IErr.NE.0 ) THEN
+     PRINT*,"CreateWavefunctions(", my_rank, ") error ", IErr, &
+          " in DEALLOCATE() of DYNAMIC variables CDummyEigenVectors"
+     RETURN
+  ENDIF
   
 END SUBROUTINE CreateWavefunctions
 

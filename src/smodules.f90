@@ -269,82 +269,82 @@ MODULE RConst
        RElectronCharge=1.602176565D-19, &
        RAngstromConversion=1.D10
   
-  REAL(RKIND) RBaseVecF(3,3), RBaseVecI(3,3), RBaseVecA(3,3), RBaseVecB(3,3), &
-       RBaseVecC(3,3), RBaseVecR(3,3), RBaseVecV(3,3), RBaseVecP(3,3)
-  DATA RBaseVecF(1,1), RBaseVecF(2,1), RBaseVecF(3,1), &
-       RBaseVecF(1,2), RBaseVecF(2,2), RBaseVecF(3,2), &
-       RBaseVecF(1,3), RBaseVecF(2,3), RBaseVecF(3,3)  &
-       /-1.D0,1.D0,1.D0, 1.D0,-1.D0,1.D0, 1.D0,1.D0,-1.D0/
-  DATA RBaseVecI(1,1), RBaseVecI(2,1), RBaseVecI(3,1), &
-       RBaseVecI(1,2), RBaseVecI(2,2), RBaseVecI(3,2), &
-       RBaseVecI(1,3), RBaseVecI(2,3), RBaseVecI(3,3)  &
-       / 0.D0,1.D0,1.D0, 1.D0, 0.D0,1.D0, 1.D0,1.D0, 0.D0/
-  DATA RBaseVecA(1,1), RBaseVecA(2,1), RBaseVecA(3,1), &
-       RBaseVecA(1,2), RBaseVecA(2,2), RBaseVecA(3,2), &
-       RBaseVecA(1,3), RBaseVecA(2,3), RBaseVecA(3,3)  &
-       / 1.D0,0.D0,0.D0, 0.D0, 1.D0,1.D0, 0.D0,-1.D0, 1.D0/
-  DATA RBaseVecB(1,1), RBaseVecB(2,1), RBaseVecB(3,1), &
-       RBaseVecB(1,2), RBaseVecB(2,2), RBaseVecB(3,2), &
-       RBaseVecB(1,3), RBaseVecB(2,3), RBaseVecB(3,3)  &
-       / 1.D0,0.D0,1.D0, 0.D0, 1.D0,0.D0, -1.D0,0.D0, 1.D0/
-  DATA RBaseVecC(1,1), RBaseVecC(2,1), RBaseVecC(3,1), &
-       RBaseVecC(1,2), RBaseVecC(2,2), RBaseVecC(3,2), &
-       RBaseVecC(1,3), RBaseVecC(2,3), RBaseVecC(3,3)  &
-       / 1.D0,1.D0,0.D0, -1.D0, 1.D0,0.D0, 0.D0,0.D0, 1.D0/
-  DATA RBaseVecR(1,1), RBaseVecR(2,1), RBaseVecR(3,1), &
-       RBaseVecR(1,2), RBaseVecR(2,2), RBaseVecR(3,2), &
-       RBaseVecR(1,3), RBaseVecR(2,3), RBaseVecR(3,3)  &
-       / 0.D0,1.D0,1.D0, 1.D0, 0.D0,1.D0, 1.D0,-1.D0, 1.D0/
-  DATA RBaseVecV(1,1), RBaseVecV(2,1), RBaseVecV(3,1), &
-       RBaseVecV(1,2), RBaseVecV(2,2), RBaseVecV(3,2), &
-       RBaseVecV(1,3), RBaseVecV(2,3), RBaseVecV(3,3)  &
-       / 0.D0,-1.D0,1.D0, 1.D0, 0.D0,1.D0, -1.D0,1.D0, 1.D0/      
-  DATA RBaseVecP(1,1), RBaseVecP(2,1), RBaseVecP(3,1), &
-       RBaseVecP(1,2), RBaseVecP(2,2), RBaseVecP(3,2), &
-       RBaseVecP(1,3), RBaseVecP(2,3), RBaseVecP(3,3)  &
-       / 1.D0,0.D0,0.D0, 0.D0, 1.D0,0.D0, 0.D0,0.D0, 1.D0/
-  
-  REAL(RKIND) RInvBaseVecF(3,3), RInvBaseVecI(3,3), RInvBaseVecA(3,3), RInvBaseVecB(3,3), &
-       RInvBaseVecC(3,3), RInvBaseVecR(3,3), RInvBaseVecV(3,3), RInvBaseVecP(3,3)
-  DATA RInvBaseVecF(1,1), RInvBaseVecF(2,1), RInvBaseVecF(3,1), &
-       RInvBaseVecF(1,2), RInvBaseVecF(2,2), RInvBaseVecF(3,2), &
-       RInvBaseVecF(1,3), RInvBaseVecF(2,3), RInvBaseVecF(3,3)  &
-       / 0.D0,0.5D0,0.5D0, 0.5D0,0.D0,0.5D0, 0.5D0,0.5D0,0.D0/
-  DATA RInvBaseVecI(1,1), RInvBaseVecI(2,1), RInvBaseVecI(3,1), &
-       RInvBaseVecI(1,2), RInvBaseVecI(2,2), RInvBaseVecI(3,2), &
-       RInvBaseVecI(1,3), RInvBaseVecI(2,3), RInvBaseVecI(3,3)  &
-       / -0.5D0,0.5D0,0.5D0, 0.5D0, -0.5D0,0.5D0, 0.5D0,0.5D0, -0.5D0/
-  DATA RInvBaseVecA(1,1), RInvBaseVecA(2,1), RInvBaseVecA(3,1), &
-       RInvBaseVecA(1,2), RInvBaseVecA(2,2), RInvBaseVecA(3,2), &
-       RInvBaseVecA(1,3), RInvBaseVecA(2,3), RInvBaseVecA(3,3)  &
-       / 1.D0,0.D0,0.D0, 0.D0, 0.5D0,-0.5D0, 0.D0,0.5D0, 0.5D0/
-  DATA RInvBaseVecB(1,1), RInvBaseVecB(2,1), RInvBaseVecB(3,1), &
-       RInvBaseVecB(1,2), RInvBaseVecB(2,2), RInvBaseVecB(3,2), &
-       RInvBaseVecB(1,3), RInvBaseVecB(2,3), RInvBaseVecB(3,3)  &
-       / 0.5D0,0.D0,-0.5D0, 0.D0, 1.D0,0.D0, 0.5D0,0.D0, 0.5D0/
-  DATA RInvBaseVecC(1,1), RInvBaseVecC(2,1), RInvBaseVecC(3,1), &
-       RInvBaseVecC(1,2), RInvBaseVecC(2,2), RInvBaseVecC(3,2), &
-       RInvBaseVecC(1,3), RInvBaseVecC(2,3), RInvBaseVecC(3,3)  &
-       / 0.5D0,-0.5D0,0.D0, 0.5D0, 0.5D0,0.D0, 0.D0,0.D0, 1.D0/
-  DATA RInvBaseVecR(1,1), RInvBaseVecR(2,1), RInvBaseVecR(3,1), &
-       RInvBaseVecR(1,2), RInvBaseVecR(2,2), RInvBaseVecR(3,2), &
-       RInvBaseVecR(1,3), RInvBaseVecR(2,3), RInvBaseVecR(3,3)  &
-       / 1.D0,0.D0,0.D0, 0.D0, 1.D0,0.D0, 0.D0,0.D0, 1.D0/
-  
-  !      DATA RInvBaseVecR(1,1), RInvBaseVecR(2,1), RInvBaseVecR(3,1), &
-  !          RInvBaseVecR(1,2), RInvBaseVecR(2,2), RInvBaseVecR(3,2), &
-  !         RInvBaseVecR(1,3), RInvBaseVecR(2,3), RInvBaseVecR(3,3)  &
-  !          /-1.D0,2.D0,-1.D0,0.D0,1.D0,-1.D0,1.D0,-1.D0,1.D0/
-  !          / THIRD,NEGTWOTHIRD,THIRD, TWOTHIRD,NEGTHIRD,NEGTHIRD, THIRD,THIRD,THIRD/
-  !          / THIRD,NEGTWOTHIRD,NEGTHIRD, NEGTWOTHIRD,THIRD,NEGTHIRD, THIRD,THIRD,NEGTHIRD/
-  DATA RInvBaseVecV(1,1), RInvBaseVecV(2,1), RInvBaseVecV(3,1), &
-       RInvBaseVecV(1,2), RInvBaseVecV(2,2), RInvBaseVecV(3,2), &
-       RInvBaseVecV(1,3), RInvBaseVecV(2,3), RInvBaseVecV(3,3)  &
-       / -0.5D0,-1.0D0,0.5D0, 1.0D0,1.0D0,0.0D0, -0.5D0,0.0D0,0.5D0/ 
-  DATA RInvBaseVecP(1,1), RInvBaseVecP(2,1), RInvBaseVecP(3,1), &
-       RInvBaseVecP(1,2), RInvBaseVecP(2,2), RInvBaseVecP(3,2), &
-       RInvBaseVecP(1,3), RInvBaseVecP(2,3), RInvBaseVecP(3,3)  &
-       / 1.D0,0.D0,0.D0, 0.D0, 1.D0,0.D0, 0.D0,0.D0, 1.D0/
+!!$  REAL(RKIND) RBaseVecF(3,3), RBaseVecI(3,3), RBaseVecA(3,3), RBaseVecB(3,3), &
+!!$       RBaseVecC(3,3), RBaseVecR(3,3), RBaseVecV(3,3), RBaseVecP(3,3)
+!!$  DATA RBaseVecF(1,1), RBaseVecF(2,1), RBaseVecF(3,1), &
+!!$       RBaseVecF(1,2), RBaseVecF(2,2), RBaseVecF(3,2), &
+!!$       RBaseVecF(1,3), RBaseVecF(2,3), RBaseVecF(3,3)  &
+!!$       /-1.D0,1.D0,1.D0, 1.D0,-1.D0,1.D0, 1.D0,1.D0,-1.D0/
+!!$  DATA RBaseVecI(1,1), RBaseVecI(2,1), RBaseVecI(3,1), &
+!!$       RBaseVecI(1,2), RBaseVecI(2,2), RBaseVecI(3,2), &
+!!$       RBaseVecI(1,3), RBaseVecI(2,3), RBaseVecI(3,3)  &
+!!$       / 0.D0,1.D0,1.D0, 1.D0, 0.D0,1.D0, 1.D0,1.D0, 0.D0/
+!!$  DATA RBaseVecA(1,1), RBaseVecA(2,1), RBaseVecA(3,1), &
+!!$       RBaseVecA(1,2), RBaseVecA(2,2), RBaseVecA(3,2), &
+!!$       RBaseVecA(1,3), RBaseVecA(2,3), RBaseVecA(3,3)  &
+!!$       / 1.D0,0.D0,0.D0, 0.D0, 1.D0,1.D0, 0.D0,-1.D0, 1.D0/
+!!$  DATA RBaseVecB(1,1), RBaseVecB(2,1), RBaseVecB(3,1), &
+!!$       RBaseVecB(1,2), RBaseVecB(2,2), RBaseVecB(3,2), &
+!!$       RBaseVecB(1,3), RBaseVecB(2,3), RBaseVecB(3,3)  &
+!!$       / 1.D0,0.D0,1.D0, 0.D0, 1.D0,0.D0, -1.D0,0.D0, 1.D0/
+!!$  DATA RBaseVecC(1,1), RBaseVecC(2,1), RBaseVecC(3,1), &
+!!$       RBaseVecC(1,2), RBaseVecC(2,2), RBaseVecC(3,2), &
+!!$       RBaseVecC(1,3), RBaseVecC(2,3), RBaseVecC(3,3)  &
+!!$       / 1.D0,1.D0,0.D0, -1.D0, 1.D0,0.D0, 0.D0,0.D0, 1.D0/
+!!$  DATA RBaseVecR(1,1), RBaseVecR(2,1), RBaseVecR(3,1), &
+!!$       RBaseVecR(1,2), RBaseVecR(2,2), RBaseVecR(3,2), &
+!!$       RBaseVecR(1,3), RBaseVecR(2,3), RBaseVecR(3,3)  &
+!!$       / 0.D0,1.D0,1.D0, 1.D0, 0.D0,1.D0, 1.D0,-1.D0, 1.D0/
+!!$  DATA RBaseVecV(1,1), RBaseVecV(2,1), RBaseVecV(3,1), &
+!!$       RBaseVecV(1,2), RBaseVecV(2,2), RBaseVecV(3,2), &
+!!$       RBaseVecV(1,3), RBaseVecV(2,3), RBaseVecV(3,3)  &
+!!$       / 0.D0,-1.D0,1.D0, 1.D0, 0.D0,1.D0, -1.D0,1.D0, 1.D0/      
+!!$  DATA RBaseVecP(1,1), RBaseVecP(2,1), RBaseVecP(3,1), &
+!!$       RBaseVecP(1,2), RBaseVecP(2,2), RBaseVecP(3,2), &
+!!$       RBaseVecP(1,3), RBaseVecP(2,3), RBaseVecP(3,3)  &
+!!$       / 1.D0,0.D0,0.D0, 0.D0, 1.D0,0.D0, 0.D0,0.D0, 1.D0/
+!!$  
+!!$  REAL(RKIND) RInvBaseVecF(3,3), RInvBaseVecI(3,3), RInvBaseVecA(3,3), RInvBaseVecB(3,3), &
+!!$       RInvBaseVecC(3,3), RInvBaseVecR(3,3), RInvBaseVecV(3,3), RInvBaseVecP(3,3)
+!!$  DATA RInvBaseVecF(1,1), RInvBaseVecF(2,1), RInvBaseVecF(3,1), &
+!!$       RInvBaseVecF(1,2), RInvBaseVecF(2,2), RInvBaseVecF(3,2), &
+!!$       RInvBaseVecF(1,3), RInvBaseVecF(2,3), RInvBaseVecF(3,3)  &
+!!$       / 0.D0,0.5D0,0.5D0, 0.5D0,0.D0,0.5D0, 0.5D0,0.5D0,0.D0/
+!!$  DATA RInvBaseVecI(1,1), RInvBaseVecI(2,1), RInvBaseVecI(3,1), &
+!!$       RInvBaseVecI(1,2), RInvBaseVecI(2,2), RInvBaseVecI(3,2), &
+!!$       RInvBaseVecI(1,3), RInvBaseVecI(2,3), RInvBaseVecI(3,3)  &
+!!$       / -0.5D0,0.5D0,0.5D0, 0.5D0, -0.5D0,0.5D0, 0.5D0,0.5D0, -0.5D0/
+!!$  DATA RInvBaseVecA(1,1), RInvBaseVecA(2,1), RInvBaseVecA(3,1), &
+!!$       RInvBaseVecA(1,2), RInvBaseVecA(2,2), RInvBaseVecA(3,2), &
+!!$       RInvBaseVecA(1,3), RInvBaseVecA(2,3), RInvBaseVecA(3,3)  &
+!!$       / 1.D0,0.D0,0.D0, 0.D0, 0.5D0,-0.5D0, 0.D0,0.5D0, 0.5D0/
+!!$  DATA RInvBaseVecB(1,1), RInvBaseVecB(2,1), RInvBaseVecB(3,1), &
+!!$       RInvBaseVecB(1,2), RInvBaseVecB(2,2), RInvBaseVecB(3,2), &
+!!$       RInvBaseVecB(1,3), RInvBaseVecB(2,3), RInvBaseVecB(3,3)  &
+!!$       / 0.5D0,0.D0,-0.5D0, 0.D0, 1.D0,0.D0, 0.5D0,0.D0, 0.5D0/
+!!$  DATA RInvBaseVecC(1,1), RInvBaseVecC(2,1), RInvBaseVecC(3,1), &
+!!$       RInvBaseVecC(1,2), RInvBaseVecC(2,2), RInvBaseVecC(3,2), &
+!!$       RInvBaseVecC(1,3), RInvBaseVecC(2,3), RInvBaseVecC(3,3)  &
+!!$       / 0.5D0,-0.5D0,0.D0, 0.5D0, 0.5D0,0.D0, 0.D0,0.D0, 1.D0/
+!!$  DATA RInvBaseVecR(1,1), RInvBaseVecR(2,1), RInvBaseVecR(3,1), &
+!!$       RInvBaseVecR(1,2), RInvBaseVecR(2,2), RInvBaseVecR(3,2), &
+!!$       RInvBaseVecR(1,3), RInvBaseVecR(2,3), RInvBaseVecR(3,3)  &
+!!$       / 1.D0,0.D0,0.D0, 0.D0, 1.D0,0.D0, 0.D0,0.D0, 1.D0/
+!!$  
+!!$  !      DATA RInvBaseVecR(1,1), RInvBaseVecR(2,1), RInvBaseVecR(3,1), &
+!!$  !          RInvBaseVecR(1,2), RInvBaseVecR(2,2), RInvBaseVecR(3,2), &
+!!$  !         RInvBaseVecR(1,3), RInvBaseVecR(2,3), RInvBaseVecR(3,3)  &
+!!$  !          /-1.D0,2.D0,-1.D0,0.D0,1.D0,-1.D0,1.D0,-1.D0,1.D0/
+!!$  !          / THIRD,NEGTWOTHIRD,THIRD, TWOTHIRD,NEGTHIRD,NEGTHIRD, THIRD,THIRD,THIRD/
+!!$  !          / THIRD,NEGTWOTHIRD,NEGTHIRD, NEGTWOTHIRD,THIRD,NEGTHIRD, THIRD,THIRD,NEGTHIRD/
+!!$  DATA RInvBaseVecV(1,1), RInvBaseVecV(2,1), RInvBaseVecV(3,1), &
+!!$       RInvBaseVecV(1,2), RInvBaseVecV(2,2), RInvBaseVecV(3,2), &
+!!$       RInvBaseVecV(1,3), RInvBaseVecV(2,3), RInvBaseVecV(3,3)  &
+!!$       / -0.5D0,-1.0D0,0.5D0, 1.0D0,1.0D0,0.0D0, -0.5D0,0.0D0,0.5D0/ 
+!!$  DATA RInvBaseVecP(1,1), RInvBaseVecP(2,1), RInvBaseVecP(3,1), &
+!!$       RInvBaseVecP(1,2), RInvBaseVecP(2,2), RInvBaseVecP(3,2), &
+!!$       RInvBaseVecP(1,3), RInvBaseVecP(2,3), RInvBaseVecP(3,3)  &
+!!$       / 1.D0,0.D0,0.D0, 0.D0, 1.D0,0.D0, 0.D0,0.D0, 1.D0/
   
 END MODULE RConst
 
@@ -388,7 +388,8 @@ MODULE IPara
   INTEGER(IKIND) :: &
        IIncidentBeamDirectionX, IIncidentBeamDirectionY, &
        IIncidentBeamDirectionZ, &
-       IXDirectionX, IXDirectionY, IXDirectionZ
+       IXDirectionX, IXDirectionY, IXDirectionZ, &
+       INormalDirectionX,INormalDirectionY,INormalDirectionZ
 
   !LACBED Input
 
@@ -513,7 +514,8 @@ MODULE RPara
        RaVecM, RbVecM, RcVecM, &
        RarVecO, RbrVecO, RcrVecO, &
        RarVecM, RbrVecM, RcrVecM, &
-       RXDirC, RZDirC
+       RXDirC, RZDirC, &
+       RNormDirC,RNormDirM
   
   REAL(RKIND), DIMENSION(:,:), ALLOCATABLE :: &
        RrVecMat
@@ -538,6 +540,9 @@ MODULE RPara
   REAL(RKIND) :: &
        RDeltaK, RMinimumGMag
   
+  REAL(RKIND),DIMENSION(:),ALLOCATABLE :: &
+       RGn
+
   !Image Initialisation
   
   REAL(RKIND),DIMENSION(:,:),ALLOCATABLE :: & 

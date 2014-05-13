@@ -1,6 +1,6 @@
 !%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 !
-! BlochSim
+! FelixSim
 !
 ! Richard Beanland, Keith Evans and Rudolf A Roemer
 !
@@ -8,20 +8,20 @@
 !
 !%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 !
-!  This file is part of BlochSim.
+!  This file is part of FelixSim.
 !
-!  BlochSim is free software: you can redistribute it and/or modify
+!  FelixSim is free software: you can redistribute it and/or modify
 !  it under the terms of the GNU General Public License as published by
 !  the Free Software Foundation, either version 3 of the License, or
 !  (at your option) any later version.
 !  
-!  BlochSim is distributed in the hope that it will be useful,
+!  FelixSim is distributed in the hope that it will be useful,
 !  but WITHOUT ANY WARRANTY; without even the implied warranty of
 !  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 !  GNU General Public License for more details.
 !  
 !  You should have received a copy of the GNU General Public License
-!  along with BlochSim.  If not, see <http://www.gnu.org/licenses/>.
+!  along with FelixSim.  If not, see <http://www.gnu.org/licenses/>.
 !
 !%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
@@ -487,13 +487,13 @@ SUBROUTINE InpCIF(IErr)
      f2 = numb_('_atom_site_B_iso_or_equiv',B,sB)
      f2 = numb_('_atom_site_U_iso_or_equiv', Uso, suso)
      IF(ABS(B).GT.TINY) THEN
-        RIsotropicDebyeWallerFactors(ind) = B/(8*PI**2)
+        RIsotropicDebyeWallerFactors(ind) = B
      ELSEIF(ABS(Uso).GT.TINY) THEN
-        RIsotropicDebyeWallerFactors(ind) = Uso
+        RIsotropicDebyeWallerFactors(ind) = Uso*(8*PI**2)
      END IF
      
      IF(ABS(B).LT.TINY.AND.ABS(Uso).LT.TINY) THEN
-        B = RDebyeWallerConstant/(8*PI**2)
+        B = RDebyeWallerConstant
         IF((IWriteFLAG.GE.1.AND.my_rank.EQ.0).OR.IWriteFLAG.GE.10) THEN
            PRINT*,"Thar be no Debye Waller Factor in Yar Cif File matey"
         END IF

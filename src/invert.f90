@@ -41,51 +41,60 @@
 ! are also correct, just eigenvectors not yet.
 !%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-SUBROUTINE INVERT(M,A,B)  
+SUBROUTINE INVERT(MatrixSize,Matrix,InvertedMatrix,IErr)  
 !
 !   Invert an M*M Complex Matrix
-!   A: the Matrix (Destroyed)
-!   B: the Inverse
+!   Matrix: the Matrix (Destroyed)
+!   InvertedMatrix: the Inverse
   USE MyNUMBERS
   IMPLICIT NONE
   
-  INTEGER :: M, LWORK, INFO, I, IErr
-  COMPLEX(KIND=RKIND), DIMENSION(1:M,1:M) :: A
-  COMPLEX(KIND=RKIND), DIMENSION(1:M,1:M) :: B
+  INTEGER :: MatrixSize, LWORK, INFO, I, IErr
+  COMPLEX(KIND=CKIND), DIMENSION(1:MatrixSize,1:MatrixSize) :: Matrix
+  COMPLEX(KIND=CKIND), DIMENSION(1:MatrixSize,1:MatrixSize) :: InvertedMatrix
   
   INTEGER, DIMENSION(:), ALLOCATABLE :: IPIV
-  COMPLEX(KIND=RKIND), DIMENSION(:), ALLOCATABLE :: WORK
+  COMPLEX(KIND=CKIND), DIMENSION(:), ALLOCATABLE :: WORK
   
-  PRINT*,"DBG: Invert()"
-
-  B = CZERO 
-  DO I=1,M
-     B(I,I) = CONE
-  END DO
-  INFO=0
+  !PRINT*,"DBG: Invert()"
+!!$
+!!$  B = CZERO 
+!!$  DO I=1,M
+!!$     B(I,I) = CONE
+!!$  END DO
+  !INFO=0
   
-  ALLOCATE(IPIV(M),STAT=IErr)
+  ALLOCATE(IPIV(MatrixSize),STAT=IErr)
   IF( IErr.NE.0 ) THEN
-     PRINT*,"Invert(): ERR in ALLOCATE(IPIV(M)) statement, M=", M
-     STOP
+     PRINT*,"Invert(): ERR in ALLOCATE(IPIV(MatrixSize)) statement, MatrixSize=", MatrixSize
+     RETURN
   ENDIF
   
-  CALL ZGETRF(M,M,A,M,IPIV,INFO)
-  LWORK = M*M
-  
+  CALL ZGETRF(MatrixSize,MatrixSize,Matrix,MatrixSize,IPIV,IErr)
+  LWORK = MatrixSize*MatrixSize
+  !LWORK = 0
+  IF ( IErr.NE.0 ) THEN
+     PRINT *,'Invert() : Datatype Error: IFAIL=',INFO
+     RETURN
+  END IF
   ALLOCATE(WORK(LWORK),STAT=IErr)   
   IF( IErr.NE.0 ) THEN
      PRINT*,"Invert(): ERR in ALLOCATE(WORK(LWORK)) statement, LWORK=", LWORK
-     STOP
+     RETURN
   ENDIF
   
-  CALL ZGETRI(M,A,M,IPIV,WORK,LWORK,INFO)
-  IF ( INFO.NE.0 ) THEN
+  CALL ZGETRI(MatrixSize,Matrix,MatrixSize,IPIV,WORK,LWORK,IErr)
+  IF ( IErr.NE.0 ) THEN
      PRINT *,'Inversion Error: IFAIL=',INFO
-     STOP
+     RETURN
   END IF
-  DEALLOCATE(IPIV,WORK)
-  B = A  
+  DEALLOCATE(IPIV,WORK,STAT=IErr)
+  IF ( IErr.NE.0 ) THEN
+     PRINT *,'Invert : Deallocation Error',INFO
+     RETURN
+  END IF
+  !DEALLOCATE(IPIV,WORK)
+  InvertedMatrix = Matrix  
   RETURN
 END SUBROUTINE INVERT
 
