@@ -450,7 +450,29 @@ SUBROUTINE Input( IErr )
 
   RXDirC(1)= IXDirectionX
   RXDirC(2)= IXDirectionY
-  RXDirC(3)= IXDirectionZ
+  RXDirC(3)= IXDirectionZ  
+
+  ILine= ILine+1
+  READ(IChInp,10,ERR=20,END=30) INormalDirectionX
+  IF((IWriteFLAG.GE.1.AND.my_rank.EQ.0).OR.IWriteFLAG.GE.10) THEN
+     PRINT*,"INormalDirectionX = ", INormalDirectionX
+  END IF
+
+  ILine= ILine+1
+  READ(IChInp,10,ERR=20,END=30) INormalDirectionY
+  IF((IWriteFLAG.GE.1.AND.my_rank.EQ.0).OR.IWriteFLAG.GE.10) THEN
+     PRINT*,"INormalDirectionY = ", INormalDirectionY
+  END IF
+  
+  ILine= ILine+1
+  READ(IChInp,10,ERR=20,END=30) INormalDirectionZ
+  IF((IWriteFLAG.GE.1.AND.my_rank.EQ.0).OR.IWriteFLAG.GE.10) THEN
+     PRINT*,"INormalDirectionZ = ", INormalDirectionZ
+  END IF
+
+  RNormDirC(1)= INormalDirectionX
+  RNormDirC(2)= INormalDirectionY
+  RNormDirC(3)= INormalDirectionZ
   
   ILine= ILine+1
   READ(IChInp,15,ERR=20,END=30) RAcceleratingVoltage
@@ -540,77 +562,77 @@ END SUBROUTINE Input
 !	IErr	error code
 ! ----------------------------------------------------------------------
 
-SUBROUTINE InputHKL( IErr )
-
-  USE MyNumbers
-  
-  USE CConst; USE IConst
-  USE IPara; USE RPara
-  USE IChannels
-  USE MPI
-  USE MyMPI
-  
-  IMPLICIT NONE
-
-  CHARACTER*80 dummy
-
-  INTEGER IErr, ILine, ILength
-  IF((IWriteFLAG.GE.2.AND.my_rank.EQ.0).OR.IWriteFLAG.GE.10) THEN
-
-     PRINT*,"DBG: InputHKL()"
-  
-  END IF
-  ILine= 0
-  
-  OPEN(UNIT= IChInp, ERR= 120, FILE= "111reflections.txt",&
-       STATUS= 'OLD')
-
-  DO
-     READ(UNIT= IChInp, END=100, ERR=20, FMT='(a)') dummy
-     ILine=ILine+1
-  ENDDO
-100 ILength=ILine-1
-  PRINT*,"DBG: InputKHL(): ILength=", ILength
-
-  ALLOCATE(RHKL(ILength,3), STAT=IErr)
-  IF( IErr.NE.0 ) THEN
-     PRINT*,"main: error in memory ALLOCATION()"
-     STOP
-  ENDIF
-
-  REWIND(UNIT=IChInp)
-
-  DO ILine=1,ILength,1
-     READ(UNIT= IChInp, END=30, ERR=20, FMT='(1X,3F4.0)') &
-          RHKL(ILine,1), RHKL(ILine,2), RHKL(ILine,3) 
-  ENDDO
-
-  RETURN
-
-  !	error in OPEN detected
-120 PRINT*,"InputHKL(): ERR in OPEN"
-  GOTO 1000
-  
-  !	error in CLOSE detected
-130 PRINT*,"InputHKL(): ERR in CLOSE"
-  GOTO 1000
-  
-  !	error in READ detected
-20 PRINT*,"InputHKL(): ERR in READ at line", ILine
-  GOTO 1000
-  
-  !	EOF in READ occured prematurely
-30 PRINT*,"InputHKL(): EOF in READ at line", ILine
-  
-1000 &
-  PRINT*,"InputHKL expects a file such as"
-  PRINT*,"--------------------------------------------------------------------"
-  PRINT*," 38 -28  4"
-  PRINT*," 39 -31 -14"
-  
-  IErr= 1
-  RETURN
-END SUBROUTINE InputHKL
+!!$SUBROUTINE InputHKL( IErr )
+!!$
+!!$  USE MyNumbers
+!!$  
+!!$  USE CConst; USE IConst
+!!$  USE IPara; USE RPara
+!!$  USE IChannels
+!!$  USE MPI
+!!$  USE MyMPI
+!!$  
+!!$  IMPLICIT NONE
+!!$
+!!$  CHARACTER*80 dummy
+!!$
+!!$  INTEGER IErr, ILine, ILength
+!!$  IF((IWriteFLAG.GE.2.AND.my_rank.EQ.0).OR.IWriteFLAG.GE.10) THEN
+!!$
+!!$     PRINT*,"DBG: InputHKL()"
+!!$  
+!!$  END IF
+!!$  ILine= 0
+!!$  
+!!$  OPEN(UNIT= IChInp, ERR= 120, FILE= "111reflections.txt",&
+!!$       STATUS= 'OLD')
+!!$
+!!$  DO
+!!$     READ(UNIT= IChInp, END=100, ERR=20, FMT='(a)') dummy
+!!$     ILine=ILine+1
+!!$  ENDDO
+!!$100 ILength=ILine-1
+!!$  PRINT*,"DBG: InputKHL(): ILength=", ILength
+!!$
+!!$  ALLOCATE(RHKL(ILength,3), STAT=IErr)
+!!$  IF( IErr.NE.0 ) THEN
+!!$     PRINT*,"main: error in memory ALLOCATION()"
+!!$     STOP
+!!$  ENDIF
+!!$
+!!$  REWIND(UNIT=IChInp)
+!!$
+!!$  DO ILine=1,ILength,1
+!!$     READ(UNIT= IChInp, END=30, ERR=20, FMT='(1X,3F4.0)') &
+!!$          RHKL(ILine,1), RHKL(ILine,2), RHKL(ILine,3) 
+!!$  ENDDO
+!!$
+!!$  RETURN
+!!$
+!!$  !	error in OPEN detected
+!!$120 PRINT*,"InputHKL(): ERR in OPEN"
+!!$  GOTO 1000
+!!$  
+!!$  !	error in CLOSE detected
+!!$130 PRINT*,"InputHKL(): ERR in CLOSE"
+!!$  GOTO 1000
+!!$  
+!!$  !	error in READ detected
+!!$20 PRINT*,"InputHKL(): ERR in READ at line", ILine
+!!$  GOTO 1000
+!!$  
+!!$  !	EOF in READ occured prematurely
+!!$30 PRINT*,"InputHKL(): EOF in READ at line", ILine
+!!$  
+!!$1000 &
+!!$  PRINT*,"InputHKL expects a file such as"
+!!$  PRINT*,"--------------------------------------------------------------------"
+!!$  PRINT*," 38 -28  4"
+!!$  PRINT*," 39 -31 -14"
+!!$  
+!!$  IErr= 1
+!!$  RETURN
+!!$END SUBROUTINE InputHKL
 
 ! -----------------------------------------------------------------------
 !
@@ -631,7 +653,8 @@ SUBROUTINE InputScatteringFactors( IErr )
   IMPLICIT NONE
 
   CHARACTER*200 dummy
-  REAL(RKIND) rdummy
+  REAL(RKIND),DIMENSION(:),ALLOCATABLE :: &
+       rdummy
 
   INTEGER IErr, ILine, ILength, ind
   IF((IWriteFLAG.GE.2.AND.my_rank.EQ.0).OR.IWriteFLAG.GE.10) THEN
@@ -641,8 +664,10 @@ SUBROUTINE InputScatteringFactors( IErr )
   END IF
   ILine= 0
   
-  OPEN(UNIT= IChInp, ERR= 120, FILE= "Felix.sca",&
+  OPEN(UNIT= IChInp, ERR= 120, FILE= "FelixDoyle.sca",&
        STATUS= 'OLD')
+!!$  OPEN(UNIT= IChInp, ERR= 120, FILE= "Felix.sca",&
+!!$       STATUS= 'OLD')
   
   DO
      READ(UNIT= IChInp, END=100, ERR=20, FMT='(a)') dummy
@@ -655,22 +680,90 @@ SUBROUTINE InputScatteringFactors( IErr )
      PRINT*,"DBG: InputScatteringFactors(): ILength=", ILength
      
   END IF
-  ALLOCATE(RScattFactors(ILength,12), STAT=IErr)
-  IF( IErr.NE.0 ) THEN
-     PRINT*,"InputScatteringFactors(): error in memory ALLOCATE()"
-     STOP
-  ENDIF
   
   REWIND(UNIT=IChInp)
   IF(IWriteFLAG.GE.10) THEN
      
      PRINT*,"DBG: actual reading of data"
   END IF
-  DO ILine=1,ILength,1
-     READ(UNIT= IChInp, FMT='(13(E15.11,1X))') &
-          rdummy, RScattFactors(ILine,:)     
-     !PRINT*,rdummy, RScattFactors(ILine,:)
-  ENDDO
+
+  SELECT CASE (IScatterFactorMethodFLAG)
+
+  CASE(0)
+
+     ALLOCATE( &
+          rdummy(1),&
+          STAT=IErr)
+     IF( IErr.NE.0 ) THEN
+        PRINT*,"InputScatteringFactors(): error in memory ALLOCATE()"
+        RETURN
+     ENDIF
+
+     ALLOCATE(RScattFactors(ILength,12), STAT=IErr)
+     IF( IErr.NE.0 ) THEN
+        PRINT*,"InputScatteringFactors(): error in memory ALLOCATE()"
+        RETURN
+     ENDIF
+
+     DO ILine=1,ILength,1
+        READ(UNIT= IChInp, FMT='(13(E15.11,1X))') &
+             rdummy, RScattFactors(ILine,:)     
+        !PRINT*,rdummy, RScattFactors(ILine,:)
+     ENDDO
+
+  CASE(1)
+
+     ALLOCATE( &
+          rdummy(13),&
+          STAT=IErr)
+     IF( IErr.NE.0 ) THEN
+        PRINT*,"InputScatteringFactors(): error in memory ALLOCATE()"
+        RETURN
+     ENDIF
+
+     ALLOCATE(RScattFactors(ILength,8), STAT=IErr)
+     IF( IErr.NE.0 ) THEN
+        PRINT*,"InputScatteringFactors(): error in memory ALLOCATE()"
+        RETURN
+     ENDIF
+     
+     DO ILine=1,ILength,1
+        READ(UNIT= IChInp, FMT='(21(E15.11,1X))') &
+             rdummy(:), RScattFactors(ILine,:)     
+        !PRINT*,rdummy, RScattFactors(ILine,:)
+     ENDDO
+
+  CASE(2)
+
+     ALLOCATE( &
+          rdummy(21),&
+          STAT=IErr)
+     IF( IErr.NE.0 ) THEN
+        PRINT*,"InputScatteringFactors(): error in memory ALLOCATE()"
+        RETURN
+     ENDIF
+
+     ALLOCATE(RScattFactors(ILength,8), STAT=IErr)
+     IF( IErr.NE.0 ) THEN
+        PRINT*,"InputScatteringFactors(): error in memory ALLOCATE()"
+        RETURN
+     ENDIF
+     
+     DO ILine=1,ILength,1
+        READ(UNIT= IChInp, FMT='(29(E15.11,1X))') &
+             rdummy(:), RScattFactors(ILine,:)     
+        !PRINT*,rdummy, RScattFactors(ILine,:)
+     ENDDO
+
+  END SELECT
+
+  DEALLOCATE( &
+       rdummy,&
+       STAT=IErr)
+  IF( IErr.NE.0 ) THEN
+     PRINT*,"InputScatteringFactors(): error in memory DEALLOCATE()"
+     RETURN
+  ENDIF  
   
   CLOSE(IChInp)
   

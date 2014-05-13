@@ -41,12 +41,14 @@ SUBROUTINE ImageInitialization( IErr )
 
   INTEGER IErr, ind
   
-  PRINT*,"DBG: ImageInitialization()"
-
-  !Determine Positions of reflections in final image (may not need to be here)
+  IF((IWriteFLAG.GE.0.AND.my_rank.EQ.0).OR.IWriteFLAG.GE.10) THEN
+     PRINT*,"ImageInitialization()"
+  END IF
+  
+!Determine Positions of reflections in final image (may not need to be here)
 
   IF((IWriteFLAG.GE.1.AND.my_rank.EQ.0).OR.IWriteFLAG.GE.10) THEN
-     PRINT*,"DBG: nReflections,MinGMag=", nReflections, RMinimumGMag
+     PRINT*,"ImageInitialization(",my_rank,") nReflections,MinGMag =", nReflections, RMinimumGMag
   END IF
 
   ! positions of the centres of the disks
@@ -73,7 +75,7 @@ DO ind=1,SIZE(Rhklpositions,DIM=2)
   ENDDO
   
   IF((IWriteFLAG.GE.1.AND.my_rank.EQ.0).OR.IWriteFLAG.GE.10) THEN
-     PRINT*,"DBG: IImageSizeXY=", IImageSizeXY
+     PRINT*,"ImageInitialization(",my_rank,") IImageSizeXY=", IImageSizeXY
   END IF
     
   RETURN

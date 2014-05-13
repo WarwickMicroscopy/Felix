@@ -32,18 +32,22 @@ SUBROUTINE GMatrixInitialisation (IErr)
   USE CConst; USE IConst
   USE IPara; USE RPara
   USE IChannels
+  USE MPI
+  USE MyMPI
   
   IMPLICIT NONE
   
   INTEGER ind,jnd,ierr
 
-  PRINT*,"DBG: GMatrixInitialisation()"
+  IF((IWriteFLAG.GE.0.AND.my_rank.EQ.0).OR.IWriteFLAG.GE.10) THEN
+     PRINT*,"GMatrixInitialisation()"
+  END IF
   
   DO ind=1,nReflections
      DO jnd=1,nReflections
         
         RgMatMat(ind,jnd,:)= RgVecMatT(ind,:)-RgVecMatT(jnd,:)
-        RgMatMag(ind,jnd)= SQRT(DOT(RgMatMat(ind,jnd,:),RgMatMat(ind,jnd,:)))
+        RgMatMag(ind,jnd)= SQRT(DOT_PRODUCT(RgMatMat(ind,jnd,:),RgMatMat(ind,jnd,:)))
         
      ENDDO
   ENDDO
@@ -68,8 +72,12 @@ SUBROUTINE UgCalculation (IErr)
   INTEGER(IKIND) ind,jnd,ierr, currentatom, iAtom
   COMPLEX(CKIND) CVgij
   REAL(RKIND) RAtomicFormFactor
+  REAL(RKIND) :: &
+       RMeanInnerPotentialVolts
 
-  PRINT*,"DBG: UgCalculation()"
+  IF((IWriteFLAG.GE.0.AND.my_rank.EQ.0).OR.IWriteFLAG.GE.10) THEN
+     PRINT*,"UgCalculation()"
+  END IF
   
   DO ind=1,nReflections
      DO jnd=1,nReflections
@@ -80,24 +88,51 @@ SUBROUTINE UgCalculation (IErr)
            currentatom = IAtoms(iAtom)
            ! calculate f_e(q) as in Eq. (C.15) of Kirkland, "Advanced Computing in EM"
            
-           ! for siplicity, we only use Si data from the structure factor data
-           ! needs to be made more general later
-           RAtomicFormFactor = &
-                ! 3 Lorentzians
-                RScattFactors(currentatom,1) / &
-                (RgMatMag(ind,jnd)**2 + RScattFactors(currentatom,2)) + &
-                RScattFactors(currentatom,3) / &
-                (RgMatMag(ind,jnd)**2 + RScattFactors(currentatom,4)) + &
-                RScattFactors(currentatom,5) / &
-                (RgMatMag(ind,jnd)**2 + RScattFactors(currentatom,6)) + &
-             ! 3 Gaussians
-                RScattFactors(currentatom,7) * &
-                EXP(-RgMatMag(ind,jnd)**2 * RScattFactors(currentatom,8)) + &
-                RScattFactors(currentatom,9) * &
-                EXP(-RgMatMag(ind,jnd)**2 * RScattFactors(currentatom,10)) + &
-                RScattFactors(currentatom,11) * &
-                EXP(-RgMatMag(ind,jnd)**2 * RScattFactors(currentatom,12))
-            
+           SELECT CASE (IScatterFactorMethodFLAG)
+              
+           CASE(0) ! Kirkland Method using 3 Gaussians and 3 Lorentzians 
+              
+              RAtomicFormFactor = &
+                   ! 3 Lorentzians
+                   RScattFactors(currentatom,1) / &
+                   (RgMatMag(ind,jnd)**2 + RScattFactors(currentatom,2)) + &
+                   RScattFactors(currentatom,3) / &
+                   (RgMatMag(ind,jnd)**2 + RScattFactors(currentatom,4)) + &
+                   RScattFactors(currentatom,5) / &
+                   (RgMatMag(ind,jnd)**2 + RScattFactors(currentatom,6)) + &
+                   ! 3 Gaussians
+                   RScattFactors(currentatom,7) * &
+                   EXP(-RgMatMag(ind,jnd)**2 * RScattFactors(currentatom,8)) + &
+                   RScattFactors(currentatom,9) * &
+                   EXP(-RgMatMag(ind,jnd)**2 * RScattFactors(currentatom,10)) + &
+                   RScattFactors(currentatom,11) * &
+                   EXP(-RgMatMag(ind,jnd)**2 * RScattFactors(currentatom,12))
+              
+           CASE(1) ! 8 Parameter Method with Scattering Parameters from Peng et al 1996 
+              RAtomicFormFactor = &
+                   RScattFactors(currentatom,1) * &
+                   EXP(-(RgMatMag(ind,jnd)**2)/4 * RScattFactors(currentatom,5)) + &
+                   RScattFactors(currentatom,2) * &
+                   EXP(-(RgMatMag(ind,jnd)**2)/4 * RScattFactors(currentatom,6)) + &
+                   RScattFactors(currentatom,3) * &
+                   EXP(-(RgMatMag(ind,jnd)**2)/4 * RScattFactors(currentatom,7)) + &
+                   RScattFactors(currentatom,4) * &
+                   EXP(-(RgMatMag(ind,jnd)**2)/4 * RScattFactors(currentatom,8))
+
+           CASE(2) ! 8 Parameter Method with Scattering Parameters from Doyle and Turner Method (1968)
+
+              RAtomicFormFactor = &
+                   RScattFactors(currentatom,1) * &
+                   EXP(-(RgMatMag(ind,jnd)**2)/4 * RScattFactors(currentatom,2)) + &
+                   RScattFactors(currentatom,3) * &
+                   EXP(-(RgMatMag(ind,jnd)**2)/4 * RScattFactors(currentatom,4)) + &
+                   RScattFactors(currentatom,5) * &
+                   EXP(-(RgMatMag(ind,jnd)**2)/4 * RScattFactors(currentatom,6)) + &
+                   RScattFactors(currentatom,7) * &
+                   EXP(-(RgMatMag(ind,jnd)**2)/4 * RScattFactors(currentatom,8))
+
+           END SELECT
+              
           ! initialize potential as in Eq. (6.10) of Kirkland
 
            RAtomicFormFactor = RAtomicFormFactor*ROcc(iAtom)
@@ -105,10 +140,31 @@ SUBROUTINE UgCalculation (IErr)
            IF (IAnisoDebyeWallerFactorFlag.EQ.0) THEN
               
               IF(RDWF(iAtom).GT.1.OR.RDWF(iAtom).LT.0) THEN
-                 RDWF(iAtom) = RDebyeWallerConstant/(8*PI**2)
+                 RDWF(iAtom) = RDebyeWallerConstant
               END IF
+              
+              SELECT CASE (IScatterFactorMethodFLAG)
+
+              CASE (0)
+
               RAtomicFormFactor = RAtomicFormFactor * &
-                   EXP(-RgMatMag(ind,jnd)**2*RDWF(iAtom)/3)
+                   EXP(-((RgMatMag(ind,jnd)/2.D0)**2)*RDWF(iAtom))
+                               
+              CASE(1)
+
+              RAtomicFormFactor = RAtomicFormFactor * &
+                   EXP(-((RgMatMag(ind,jnd)/2.D0)**2)*RDWF(iAtom))
+                          
+                               
+              CASE(2)
+
+              RAtomicFormFactor = RAtomicFormFactor * &
+                   EXP(-((RgMatMag(ind,jnd)/2.D0)**2)*RDWF(iAtom))
+                               
+              END SELECT
+              
+              !RAtomicFormFactor = RAtomicFormFactor * &
+              !     EXP(-RgMatMag(ind,jnd)**2*RDWF(iAtom))
               
            ELSE
               
@@ -126,28 +182,31 @@ SUBROUTINE UgCalculation (IErr)
                 DOT_PRODUCT(RgMatMat(ind,jnd,:), RrVecMat(iAtom,:)) &
                 )
         ENDDO
-        
-        CUgMat(ind,jnd)=(((TWOPI**2)* RRelativisticCorrection) / &
-             (PI * RVolume)) * CVgij
 
+        CUgMat(ind,jnd)=((((TWOPI**2)* RRelativisticCorrection) / &
+             (PI * RVolume)) * CVgij)
+                
         IF (IAbsorbFlag.EQ.1) THEN
            CUgMat(ind,jnd) = &
                 CUgMat(ind,jnd) + &
-                ABS(CUgMat(ind,jnd))*(RAbsorptionPercentage/100.D0)*CONE       
+                ABS(CUgMat(ind,jnd))*(RAbsorptionPercentage/100.D0)*CIMAGONE       
         END IF
         
      ENDDO
   ENDDO
 
   RMeanInnerCrystalPotential= REAL(CUgMat(1,1))
-  
+  RMeanInnerPotentialVolts = ((RMeanInnerCrystalPotential*RPlanckConstant**2)/ &
+       (TWO*RElectronMass*RElectronCharge*TWOPI**2))*&
+       RAngstromConversion*RAngstromConversion
+
   IF((IWriteFLAG.GE.2.AND.my_rank.EQ.0).OR.IWriteFLAG.GE.10) THEN
-     PRINT*,"DBG: RMeanInnerCrystalPotential = ",RMeanInnerCrystalPotential
+     PRINT*,"UgCalculation(",my_rank,") RMeanInnerCrystalPotential = ",RMeanInnerCrystalPotential,RMeanInnerPotentialVolts
   END IF
-  IF(IZolzFLAG.EQ.1) THEN
-     DO ind=1,nReflections
-        CUgMat(ind,ind)=CUgMat(ind,ind)-RMeanInnerCrystalPotential
-     ENDDO
-  END IF
+  
+  DO ind=1,nReflections
+     CUgMat(ind,ind)=CUgMat(ind,ind)-RMeanInnerCrystalPotential
+  ENDDO
+
 
 END SUBROUTINE UgCalculation

@@ -144,6 +144,11 @@ SUBROUTINE Crystallography( IErr )
   RXDirM = MATMUL(RTMatO2M,MatMUL(RTMatC2O,RXDirC))
   RYDirM = MATMUL(RTMatO2M,MatMUL(RTMatC2O,RYDirC))
   RZDirM = MATMUL(RTMatO2M,MatMUL(RTMatC2O,RZDirC))
+  ! now transform from crystal reference frame to orthogonal and then to microscope frame
+
+  RNormDirM = MATMUL(RTMatO2M,MatMUL(RTMatC2O,RNormDirC))
+  RNormDirM = MATMUL(RTMatO2M,MatMUL(RTMatC2O,RNormDirC))
+  RNormDirM = MATMUL(RTMatO2M,MatMUL(RTMatC2O,RNormDirC))
 
   ! since R?Vec is already in orthogonal frame, only transform into microscope frame needed
   RaVecM= MATMUL(RTMatO2M,RaVecO)

@@ -376,8 +376,10 @@ PROGRAM FelixSim
   ! protocal feature startup
   !--------------------------------------------------------------------
   
-  PRINT*,"FelixSim: ", RStr,DStr,AStr, ", process ", my_rank, " of ", p
-  PRINT*,"--------------------------------------------------------------"
+  IF((IWriteFLAG.GE.0.AND.my_rank.EQ.0).OR.IWriteFLAG.GE.10) THEN
+     PRINT*,"FelixSim: ", RStr,DStr,AStr, ", process ", my_rank, " of ", p
+     PRINT*,"--------------------------------------------------------------"
+  END IF
 
   !--------------------------------------------------------------------
   ! timing startup
@@ -611,11 +613,8 @@ PROGRAM FelixSim
   ! high-energy approximation (not HOLZ compatible)
   !--------------------------------------------------------------------
   
-  IF (IZolzFLAG.EQ.0) THEN
-     RBigK = RElectronWaveVectorMagnitude
-  ELSE
-     RBigK= SQRT(RElectronWaveVectorMagnitude**2 + RMeanInnerCrystalPotential)
-  END IF
+  RBigK= SQRT(RElectronWaveVectorMagnitude**2 + RMeanInnerCrystalPotential)
+
   IF((IWriteFLAG.GE.1.AND.my_rank.EQ.0).OR.IWriteFLAG.GE.10) THEN
      PRINT*,"DBG: main(", my_rank, ") BigK=", RBigK
   END IF
@@ -725,8 +724,8 @@ PROGRAM FelixSim
      GOTO 9999
   ENDIF
   
-  IF(IWriteFLAG.GE.0) THEN
-     PRINT*,"DBG: BlochLoop()"
+  IF((IWriteFLAG.GE.0.AND.my_rank.EQ.0).OR.IWriteFLAG.GE.6) THEN
+     PRINT*,"main(",my_rank,") Entering BlochLoop()"
   END IF
 
   DO knd = ILocalPixelCountMin,ILocalPixelCountMax,1

@@ -40,12 +40,12 @@ SUBROUTINE DiffractionPatternDefinitions( IErr )
 
   IMPLICIT NONE
 
-  REAL(RKIND) norm, dummyVec(THREEDIM),dummy
-
+  REAL(RKIND) :: &
+       norm, dummyVec(THREEDIM),dummy
   INTEGER IErr, ind,jnd,icheck,ihklrun
   
   IF((IWriteFLAG.GE.0.AND.my_rank.EQ.0).OR.IWriteFLAG.GE.10) THEN
-     PRINT*,"DBG: DiffractionPatternDefinitions()"
+     PRINT*,"DiffractionPatternDefinitions()"
   END IF
 
   icheck = 0
@@ -116,9 +116,9 @@ SUBROUTINE DiffractionPatternDefinitions( IErr )
      ! G vector magnitudes in 1/Angstrom units
      
      DO ind=1,SIZE(RHKL,DIM=1)
-        RgVecMag(ind)= SQRT(DOT(RgVecMatT(ind,:),RgVecMatT(ind,:)))
+        RgVecMag(ind)= SQRT(DOT_PRODUCT(RgVecMatT(ind,:),RgVecMatT(ind,:)))
      ENDDO
-     
+  
      RBSMaxGVecAmp = RgVecMag(IMinReflectionPool)
      
      nReflections = 0
@@ -131,24 +131,29 @@ SUBROUTINE DiffractionPatternDefinitions( IErr )
         ENDIF
      ENDDO
      
-     !IF(nReflections.GE.IMin
   END DO
-  
-!!$  ALLOCATE(&
-!!$       RgVecMat(SIZE(RHKL,DIM=1),THREEDIM), &
-!!$       STAT=IErr)
-!!$  IF( IErr.NE.0 ) THEN
-!!$     PRINT*,"DiffractionPatternDefinitions(", my_rank, ") error ", IErr, &
-!!$          " in ALLOCATE() of DYNAMIC variables RgVecMat(HKL)"
-!!$     RETURN
-!!$  ENDIF
+
+  ALLOCATE(&
+       RGn(SIZE(RHKL,DIM=1)), &
+       STAT=IErr)
+  IF( IErr.NE.0 ) THEN
+     PRINT*,"DiffractionPatternDefinitions(", my_rank, ") error ", IErr, &
+          " in ALLOCATE() of DYNAMIC variables RGn(HKL)"
+     RETURN
+  ENDIF
+
+  RNormDirM = RNormDirM/sqrt(DOT_PRODUCT(RNormDirM,RNormDirM))
+
+  DO ind =1,SIZE(RHKL,DIM=1)
+     RGn(ind) = DOT_PRODUCT(RgVecMatT(ind,:),RNormDirM)
+  END DO
   
   ALLOCATE(&
        RSg(SIZE(RHKL,DIM=1)), &
        STAT=IErr)
   IF( IErr.NE.0 ) THEN
      PRINT*,"DiffractionPatternDefinitions(", my_rank, ") error ", IErr, &
-          " in ALLOCATE() of DYNAMIC variables RgVecMag(HKL)"
+          " in ALLOCATE() of DYNAMIC variables RSg(HKL)"
      RETURN
   ENDIF
 
@@ -165,7 +170,7 @@ SUBROUTINE DiffractionPatternDefinitions( IErr )
   RBraggCentral= RElectronWaveLength/(2.0D0*RLengthX)*dummy
 
   IF((IWriteFLAG.GE.1.AND.my_rank.EQ.0).OR.IWriteFLAG.GE.10) THEN
-     PRINT*,"DBG: BraggCentral=", RBraggCentral
+     PRINT*,"DiffractionPatternDefinitions (",my_rank,") BraggCentral=", RBraggCentral
   END IF
 
 
@@ -182,7 +187,7 @@ SUBROUTINE DiffractionPatternDefinitions( IErr )
   ENDIF
 
   IF((IWriteFLAG.GE.1.AND.my_rank.EQ.0).OR.IWriteFLAG.GE.10) THEN
-     PRINT*,"DBG: MinimumGMag = ",RMinimumGMag
+     PRINT*,"DiffractionPatternDefinitions (",my_rank,") MinimumGMag = ",RMinimumGMag
   END IF
 
   ! Calculate the Angles to the centre of all the disks from the central disk
@@ -205,14 +210,14 @@ SUBROUTINE DiffractionPatternDefinitions( IErr )
 
   IF((IWriteFLAG.GE.1.AND.my_rank.EQ.0).OR.IWriteFLAG.GE.10) THEN
      
-     PRINT*,"DBG: No. of Reflections = ",nReflections
+     PRINT*,"DiffractionPatternDefinitions (",my_rank,") No. of Reflections = ",nReflections
 
   END IF
   ! resolution in k space
   RDeltaK = RMinimumGMag*RConvergenceAngle/IPixelCount
 
   IF((IWriteFLAG.GE.1.AND.my_rank.EQ.0).OR.IWriteFLAG.GE.10) THEN
-     PRINT*,"DBG: DeltaK = ", RDeltaK
+     PRINT*,"DiffractionPatternDefinitions (",my_rank,") DeltaK = ", RDeltaK
   END IF
 
   RETURN
@@ -228,6 +233,7 @@ SUBROUTINE NewHKLmake(Ihklmax,Rhkl0Vec,RAcceptanceAngle,IErr)
   USE IChannels
   
   USE MyMPI
+  USE MPI
   
   IMPLICIT NONE
   
@@ -241,16 +247,16 @@ SUBROUTINE NewHKLmake(Ihklmax,Rhkl0Vec,RAcceptanceAngle,IErr)
   INhkl = 0
 
   Rhkl0UnitVec= Rhkl0Vec/SQRT(DOT_PRODUCT(REAL(Rhkl0Vec,RKIND),REAL(Rhkl0Vec,RKIND)))
-
+  
   DO ind=-Ihklmax,Ihklmax,1
      DO jnd=-Ihklmax,Ihklmax,1
         DO knd=-Ihklmax,Ihklmax,1
            
            RhklDummyVec= REAL((/ ind,jnd,knd /),RKIND)
-
+           
            RhklDummyUnitVec= RhklDummyVec / &
                 SQRT(DOT_PRODUCT(REAL(RhklDummyVec,RKIND),REAL(RhklDummyVec,RKIND)))
-!-NINT(MOD(RhklDummyVec(1)+RhklDummyVec(2),2.D0))
+           !-NINT(MOD(RhklDummyVec(1)+RhklDummyVec(2),2.D0))
            SELECT CASE(SSpaceGroupName)
            CASE("F") !Face Centred
               IF(((ABS(MOD(RhklDummyVec(1)+RhklDummyVec(2),2.D0)).LE.TINY).AND.&
