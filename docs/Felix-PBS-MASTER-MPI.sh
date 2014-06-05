@@ -10,7 +10,7 @@ ciffile=Felix.cif
 scafile=Felix.sca
 
 # point this to where FelixSim and FelixDraw are
-binarydir=/storage/disqs/D-LACBED/EXE
+binarydir=$HOME/D-LACBED/EXE
 
 # point to where Felix.sca is located
 scadir=${binarydir}
@@ -76,7 +76,7 @@ echo ${job_dir}/${job_file}
 cat > ${job_dir}/${job_file} << EOD
 #!/bin/bash --login
 #PBS -l pvmem=500mb
-##PBS -M keith.evans@warwick.ac.uk
+##PBS -M yourname@whereyouare.something
 #PBS -m a
 #PBS -r y
 #PBS -V
