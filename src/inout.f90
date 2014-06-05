@@ -575,11 +575,11 @@ SUBROUTINE InputScatteringFactors( IErr )
   END IF
   ILine= 0
   
-  OPEN(UNIT= IChInp, ERR= 120, FILE= "FelixDoyle.sca",&
-       STATUS= 'OLD')
-!!$  OPEN(UNIT= IChInp, ERR= 120, FILE= "Felix.sca",&
+!!$  OPEN(UNIT= IChInp, ERR= 120, FILE= "FelixDoyle.sca",&
 !!$       STATUS= 'OLD')
-  
+  OPEN(UNIT= IChInp, ERR= 120, FILE= "Felix.sca",&
+       STATUS= 'OLD')
+!!$  
   DO
      READ(UNIT= IChInp, END=100, ERR=20, FMT='(a)') dummy
      ILine=ILine+1
