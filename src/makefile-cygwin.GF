@@ -37,7 +37,7 @@ F77FLAGS = -fbounds-check -fno-range-check # debug
 
 INCLUDEDIR = /lib/ # cygwin default
 
-LIBFLAGS= -llapack -lblas
+LIBFLAGS= -llapack -lblas -lfftw3
 
 # NOTE if linking against $(NAG_SHARED) you must set the environment variable
 # LD_LIBRARY_PATH=/warwick/mathlib/nag/ifort-x86_64/lib:$LD_LIBRARY_PATH
