@@ -47,9 +47,85 @@ SUBROUTINE Crystallography( IErr )
   LOGICAL Lunique
   REAL(RKIND) :: RTTEst
 
-  PRINT*,"DBG: Crystallography()"
+  IF((IWriteFLAG.GE.0.AND.my_rank.EQ.0).OR.IWriteFLAG.GE.10) THEN
+     PRINT*,"Crystallography(",my_rank,")"
+  END IF
+  
+  IF(my_rank.EQ.0) THEN
+     PRINT*,RZDirC,RXDirC
+  END IF
+  
+  IF(IPseudoCubicFLAG.EQ.1) THEN
+     RZDirC(1) = (IIncidentBeamDirectionX/3.0D0)+&
+          (IIncidentBeamDirectionY/3.0D0)-&
+          (2.0D0*(IIncidentBeamDirectionZ/3.0D0))
+     RZDirC(2) = (-IIncidentBeamDirectionX/3.0D0)+&
+          (2.0D0*(IIncidentBeamDirectionY/3.0D0))-&
+          (IIncidentBeamDirectionZ/3.0D0)
+     RZDirC(3) = (IIncidentBeamDirectionX/3.0D0)+&
+          (IIncidentBeamDirectionY/3.0D0)+&
+          (IIncidentBeamDirectionZ/3.0D0)
+     RXDirC(1) = (IXDirectionX/3.0D0)+&
+          (IXDirectionY/3.0D0)-&
+          (2.0D0*(IXDirectionZ/3.0D0))
+     RXDirC(2) = (-IXDirectionX/3.0D0)+&
+          (2.0D0*(IXDirectionY/3.0D0))-&
+          (IXDirectionZ/3.0D0)
+     RXDirC(3) = (IXDirectionX/3.0D0)+&
+          (IXDirectionY/3.0D0)+&
+          (IXDirectionZ/3.0D0)
+     RNormDirC(1) = (INormalDirectionX/3.0D0)+&
+          (INormalDirectionY/3.0D0)-&
+          (2.0D0*(INormalDirectionZ/3.0D0))
+     RNormDirC(2) = (-INormalDirectionX/3.0D0)+&
+          (2.0D0*(INormalDirectionY/3.0D0))-&
+          (INormalDirectionZ/3.0D0)
+     RNormDirC(3) = (INormalDirectionX/3.0D0)+&
+          (INormalDirectionY/3.0D0)+&
+          (INormAlDirectionZ/3.0D0)
 
-  RYDirC = CROSS(RZDirC,RYDirC)
+     
+     IF(my_rank.EQ.0) THEN
+        PRINT*,RZDirC,RXDirC
+     END IF
+     
+     DO ind =1,3
+        IF(ABS(RZDirC(ind)).LE.TINY) THEN
+           RZDirC(ind) = 100000000.0D0 ! A large number
+        END IF
+        IF(ABS(RXDirC(ind)).LE.TINY) THEN
+           RXDirC(ind) = 100000000.0D0 ! A large number
+        END IF
+        IF(ABS(RNormDirC(ind)).LE.TINY) THEN
+           RNormDirC(ind) = 100000000.0D0 ! A large number
+        END IF
+     END DO
+        RZDirC = RZDirC/MINVAL(ABS(RZDirC))
+        RXDirC = RXDirC/MINVAL(ABS(RXDirC))
+
+     DO ind =1,3
+        IF(RZDirC(ind).GT.10000000.0D0) THEN
+           RZDirC(ind) = ZERO ! A large number
+        END IF
+        IF(RXDirC(ind).GT.10000000.0D0) THEN
+           RXDirC(ind) = ZERO ! A large number
+        END IF
+        IF(RNormDirC(ind).GT.10000000.0D0) THEN
+           RNormDirC(ind) = ZERO ! A large number
+        END IF
+     END DO
+        
+  END IF
+
+  RZDirC = REAL(NINT(RZDirC))
+  RXDirC = REAL(NINT(RXDirC))
+  RNormDirC = REAL(NINT(RNormDirC))
+
+  IF(my_rank.EQ.0) THEN
+     PRINT*,RZDirC,RXDirC
+  END IF
+
+  !RYDirC = CROSS(RZDirC,RYDirC)
 
   ! Setup Crystal Lattice Vectors: orthogonal reference frame in Angstrom units
 
@@ -87,9 +163,15 @@ SUBROUTINE Crystallography( IErr )
 !!$     PRINT*,"Crystal is Hexagonal"
 !!$  END IF
 
-  IF(ABS(RTTest).LE.TINY.AND.SCAN(SSpaceGroupName,'rR').NE.0) THEN
+  IF(ABS(RTTest).GT.TINY.AND.SCAN(SSpaceGroupName,'rR').NE.0) THEN
      SSpaceGroupName = TRIM(ADJUSTL("V"))
-     PRINT*,"Crystal is Obverse"
+     IF((IWriteFLAG.GE.1.AND.my_rank.EQ.0).OR.IWriteFLAG.GE.10) THEN
+        PRINT*,"Crystal is Obverse"
+     END IF
+  ELSE
+     IF((IWriteFLAG.GE.1.AND.my_rank.EQ.0).OR.IWriteFLAG.GE.10) THEN
+        PRINT*,"Crystal is Reverse"
+     END IF
   END IF
 
   ! Set up Reciprocal Lattice Vectors: orthogonal reference frame in 1/Angstrom units
@@ -118,7 +200,7 @@ SUBROUTINE Crystallography( IErr )
   RTMatC2O(:,3)= RcVecO(:)
 
   IF((IWriteFLAG.GE.3.AND.my_rank.EQ.0).OR.IWriteFLAG.GE.10) THEN
-     PRINT*,"DBG: RTMatC2O=", RTMatC2O
+     PRINT*,"Crystallography(",my_rank,") : RTMatC2O=", RTMatC2O
   END IF
 
   ! R?DirO vectors are reference vectors in orthogonal frame
@@ -136,13 +218,13 @@ SUBROUTINE Crystallography( IErr )
   RTMatO2M(3,:)= RZDirO(:)
   
   IF((IWriteFLAG.GE.3.AND.my_rank.EQ.0).OR.IWriteFLAG.GE.10) THEN
-     PRINT*,"DBG: RTMatO2M=", RTMatO2M
+     PRINT*,"Crystallography(",my_rank,"): RTMatO2M=", RTMatO2M
   END IF
 
   ! now transform from crystal reference frame to orthogonal and then to microscope frame
 
   RXDirM = MATMUL(RTMatO2M,MatMUL(RTMatC2O,RXDirC))
-  RYDirM = MATMUL(RTMatO2M,MatMUL(RTMatC2O,RYDirC))
+  RYDirM = MATMUL(RTMatO2M,RYDirO)
   RZDirM = MATMUL(RTMatO2M,MatMUL(RTMatC2O,RZDirC))
   ! now transform from crystal reference frame to orthogonal and then to microscope frame
 
@@ -344,9 +426,6 @@ SUBROUTINE Crystallography( IErr )
      ENDIF
      
   ENDDO
-
-  PRINT*,"Iuniind = ",Iuniind
-  
   
   DO ind=1,Iuniind     
      IF((IWriteFLAG.GE.3.AND.my_rank.EQ.0).OR.IWriteFLAG.GE.10) THEN

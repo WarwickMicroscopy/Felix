@@ -7,10 +7,10 @@ pytIMAGE=txt2png.py
 
 inpfile=Felix.inp
 ciffile=Felix.cif
-scafile=Felix.sca
+scafile=FelixDoyle.sca
 
 # point this to where FelixSim and FelixDraw are
-binarydir=$HOME/D-LACBED/EXE
+binarydir=/storage/disqs/D-LACBED/EXE
 
 # point to where Felix.sca is located
 scadir=${binarydir}
@@ -75,8 +75,8 @@ echo ${job_dir}/${job_file}
 
 cat > ${job_dir}/${job_file} << EOD
 #!/bin/bash --login
-#PBS -l pvmem=2gb
-##PBS -M youremail@where.you.are
+#PBS -l pvmem=500mb
+##PBS -M keith.evans@warwick.ac.uk
 #PBS -m a
 #PBS -r y
 #PBS -V
@@ -216,8 +216,8 @@ EOD
 chmod 755 ${job_dir}/${job_file}
 #(cd ${job_dir} ; qsub -q serial ./${job_file})
 #(cd ${job_dir} ; qsub -q parallel ./${job_file})
-(cd ${job_dir} ; qsub -q devel ./${job_file})
-#(cd ${job_dir} ; qsub -q taskfarm ./${job_file})
+#(cd ${job_dir} ; qsub -q devel ./${job_file})
+(cd ${job_dir} ; qsub -q taskfarm ./${job_file})
 
 done
 done
