@@ -139,7 +139,7 @@ SUBROUTINE UgCalculation (IErr)
 
            IF (IAnisoDebyeWallerFactorFlag.EQ.0) THEN
               
-              IF(RDWF(iAtom).GT.1.OR.RDWF(iAtom).LT.0) THEN
+              IF(RDWF(iAtom).GT.10.OR.RDWF(iAtom).LT.0) THEN
                  RDWF(iAtom) = RDebyeWallerConstant
               END IF
               
@@ -185,13 +185,7 @@ SUBROUTINE UgCalculation (IErr)
 
         CUgMat(ind,jnd)=((((TWOPI**2)* RRelativisticCorrection) / &
              (PI * RVolume)) * CVgij)
-                
-        IF (IAbsorbFlag.EQ.1) THEN
-           CUgMat(ind,jnd) = &
-                CUgMat(ind,jnd) + &
-                ABS(CUgMat(ind,jnd))*(RAbsorptionPercentage/100.D0)*CIMAGONE       
-        END IF
-        
+              
      ENDDO
   ENDDO
 
@@ -210,3 +204,28 @@ SUBROUTINE UgCalculation (IErr)
 
 
 END SUBROUTINE UgCalculation
+
+SUBROUTINE UgAddAbsorption(IErr)         
+
+
+  USE MyNumbers
+  
+  USE CConst; USE IConst
+  USE IPara; USE RPara; USE CPara
+  USE IChannels
+  USE MPI
+  USE MyMPI
+  
+  IMPLICIT NONE 
+  
+  INTEGER(IKIND) IErr
+
+  CUgMatPrime = ABS(CUgMat)*(RAbsorptionPercentage/100.D0)*CIMAGONE
+
+!!$  IF (IAbsorbFlag.EQ.1) THEN
+!!$     CUgMat(ind,jnd) = &
+!!$          CUgMat(ind,jnd) + &
+!!$          ABS(CUgMat(ind,jnd))*(RAbsorptionPercentage/100.D0)*CIMAGONE       
+!!$  END IF
+  
+END SUBROUTINE UgAddAbsorption

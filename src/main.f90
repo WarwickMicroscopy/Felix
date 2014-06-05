@@ -313,7 +313,8 @@ PROGRAM FelixSim
   INTEGER(IKIND) ILocalPixelCountMin, ILocalPixelCountMax
   COMPLEX(RKIND) CVgij
   
-  INTEGER ind,jnd,hnd,knd,pnd
+  INTEGER(IKIND) ind,jnd,hnd,knd,pnd, &
+       IHours,IMinutes,ISeconds
   INTEGER, DIMENSION(:), ALLOCATABLE :: &
        IWeakBeamVec,IRankArraySize,IRankArraySizeRoot
   REAL(RKIND),DIMENSION(:,:,:,:),ALLOCATABLE :: &
@@ -592,6 +593,15 @@ PROGRAM FelixSim
      PRINT*,"main(", my_rank, ") error ", IErr, &
           " in ALLOCATE() of DYNAMIC variables Reflection Matrix"
      GOTO 9999
+  ENDIF  
+
+  ALLOCATE( & 
+       CUgMatPrime(nReflections,nReflections), &
+       STAT=IErr)
+  IF( IErr.NE.0 ) THEN
+     PRINT*,"main(", my_rank, ") error ", IErr, &
+          " in ALLOCATE() of DYNAMIC variables Reflection Matrix"
+     GOTO 9999
   ENDIF       
 
   CALL UgCalculation (IErr)
@@ -600,6 +610,16 @@ PROGRAM FelixSim
           " in UgCalculation"
      GOTO 9999
   ENDIF
+  CALL UgAddAbsorption(IErr)
+  IF( IErr.NE.0 ) THEN
+     PRINT*,"main(", my_rank, ") error ", IErr, &
+          " in UgCalculation"
+     GOTO 9999
+  ENDIF
+
+  IF(IAbsorbFLAG.EQ.1) THEN
+     CUgMat =  CUgMat+CUgMatPrime
+  end IF
 
   Deallocate( &
        RgMatMat,RgMatMag,STAT=IErr)
@@ -913,9 +933,9 @@ PROGRAM FelixSim
         
         
         IF(IImageFLAG.GE.0) THEN
-           WRITE(surname,"(A2,A1,I5.5)") &
-                "M-","T",IThickness
-           CALL OpenData(MontageOut,"WI",surname,IErr) 
+           WRITE(surname,"(A2,A1,I5.5,A2,I5.5)") &
+                "M-","T",IThickness,"-P",MAXVAL(IImageSizeXY)
+           CALL OpenReflectionImage(MontageOut,surname,IErr,0,MAXVAL(IImageSizeXY)) 
            IF( IErr.NE.0 ) THEN
               PRINT*,"main(", my_rank, ") error in OpenData()"
               GOTO 9999
@@ -925,10 +945,13 @@ PROGRAM FelixSim
               PRINT*,"main(", my_rank, ") working on RThickness=", RThickness
               
            END IF
-           DO ind = 1,MAXVAL(IImageSizeXY)
-              WRITE(MontageOut,*) &
-                   RFinalMontageImageRoot(ind,:,knd) 
-           END DO
+
+           CALL WriteReflectionImage(MontageOut,RFinalMontageImageRoot(:,:,knd), &
+                IErr,MAXVAL(IImageSizeXY),MAXVAL(IImageSizeXY))
+!!$           DO ind = 1,MAXVAL(IImageSizeXY)
+!!$              WRITE(MontageOut,*) &
+!!$                   RFinalMontageImageRoot(ind,:,knd) 
+!!$           END DO
            CLOSE(MontageOut,ERR=9999)
            
         END IF
@@ -949,7 +972,7 @@ PROGRAM FelixSim
            call system('mkdir ' // path)
            
            DO ind = 1,IReflectOut
-              CALL OpenReflectionImage(IChOutWIImage,path,IErr,ind)
+              CALL OpenReflectionImage(IChOutWIImage,path,IErr,ind,2*IPixelCount)
               IF( IErr.NE.0 ) THEN
                  PRINT*,"main(", my_rank, ") error in OpenReflectionImage()"
                  GOTO 9999
@@ -957,13 +980,13 @@ PROGRAM FelixSim
 
               IF(IImageFLAG.GE.2) THEN
                  
-                 CALL OpenReflectionImage(IChOutWFImageReal,path,IErr,ind)
+                 CALL OpenReflectionImage(IChOutWFImageReal,path,IErr,ind,2*IPixelCount)
                  IF( IErr.NE.0 ) THEN
                     PRINT*,"main(", my_rank, ") error in OpenAmplitudeImage()"
                     GOTO 9999
                  ENDIF
                  
-                 CALL OpenReflectionImage(IChOutWFImagePhase,path,IErr,ind)
+                 CALL OpenReflectionImage(IChOutWFImagePhase,path,IErr,ind,2*IPixelCount)
                  IF( IErr.NE.0 ) THEN
                     PRINT*,"main(", my_rank, ") error in OpenPhaseImage()"
                     GOTO 9999
@@ -977,14 +1000,14 @@ PROGRAM FelixSim
               IF(IImageFLAG.GE.2) THEN
 
                  CALL WriteReflectionImage(IChOutWFImageReal,&
-                      REAL(CAmplitudeandPhaseRoot(:,:,ind,knd)),IErr)       
+                      REAL(CAmplitudeandPhaseRoot(:,:,ind,knd)),IErr,2*IPixelCount,2*IPixelCount)       
                  IF( IErr.NE.0 ) THEN
                     PRINT*,"main(", my_rank, ") error in WriteReflectionImage()"
                     GOTO 9999
                  ENDIF
                  
                  CALL WriteReflectionImage(IChOutWFImagePhase,&
-                      AIMAG(CAmplitudeandPhaseRoot(:,:,ind,knd)),IErr)       
+                      AIMAG(CAmplitudeandPhaseRoot(:,:,ind,knd)),IErr,2*IPixelCount,2*IPixelCount)       
                  IF( IErr.NE.0 ) THEN
                     PRINT*,"main(", my_rank, ") error in WriteReflectionImage()"
                     GOTO 9999
@@ -993,7 +1016,7 @@ PROGRAM FelixSim
               END IF
               
               CALL WriteReflectionImage(IChOutWIImage,&
-                   RIndividualReflectionsRoot(:,:,ind,knd),IErr)       
+                   RIndividualReflectionsRoot(:,:,ind,knd),IErr,2*IPixelCount,2*IPixelCount)       
               IF( IErr.NE.0 ) THEN
                  PRINT*,"main(", my_rank, ") error in WriteReflectionImage()"
                  GOTO 9999
@@ -1062,9 +1085,12 @@ PROGRAM FelixSim
   !--------------------------------------------------------------------
     
   CALL cpu_time(CurrentTime)
-  Duration=(CurrentTime-StartTime)/3600.0D0
+  Duration=(CurrentTime-StartTime)
+  IHours = FLOOR(Duration/3600.0D0)
+  IMinutes = FLOOR(MOD(Duration,3600.0D0)/60.0D0)
+  ISeconds = MOD(Duration,3600.0D0)-IMinutes*60.0D0
 
-  PRINT*, "FelixSim(", my_rank, ") ", RStr, ", used time=", duration, "hrs"
+  PRINT*, "FelixSim(", my_rank, ") ", RStr, ", used time=", IHours, "hrs ",IMinutes,"mins ",ISeconds,"Seconds "
 
   !--------------------------------------------------------------------
   ! Shut down MPI

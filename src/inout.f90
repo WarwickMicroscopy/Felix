@@ -217,7 +217,7 @@ SUBROUTINE Input( IErr )
   INTEGER IErr, ILine
   REAL(KIND=RKIND) ROfIter
   
-  IF(IWriteFLAG.GE.0) THEN
+  IF((IWriteFLAG.GE.0.AND.my_rank.EQ.0).OR.IWriteFLAG.GE.10) THEN
      PRINT*,"DBG: Input()"
   END IF
 
@@ -305,6 +305,12 @@ SUBROUTINE Input( IErr )
      PRINT*,"IBeamConvergenceFLAG = ", IBeamConvergenceFLAG
   END IF
 
+  ILine= ILine+1
+  READ(IChInp,10,ERR=20,END=30) IPseudoCubicFLAG
+  IF((IWriteFLAG.GE.1.AND.my_rank.EQ.0).OR.IWriteFLAG.GE.10) THEN
+     PRINT*,"IPseudoCubicFLAG = ", IPseudoCubicFLAG
+  END IF
+
   ! ----------------------------------------------------------------------
   ! beam details
   
@@ -324,23 +330,6 @@ SUBROUTINE Input( IErr )
   ILine= ILine+1; READ(IChInp,ERR=20,END=30,FMT='(A)')
   ILine= ILine+1; READ(IChInp,ERR=20,END=30,FMT='(A)')
 
-!!$  ILine= ILine+1
-!!$  READ(IChInp,15,ERR=20,END=30) RBSMaxGVecAmp
-!!$  IF(IWriteFLAG.GE.1) THEN
-!!$     PRINT*,"RBSMaxGVecAmp = ", RBSMaxGVecAmp
-!!$  END IF
-!!$  
-!!$  ILine= ILine+1
-!!$  READ(IChInp,15,ERR=20,END=30) RBSMaxDeviationPara
-!!$  IF(IWriteFLAG.GE.1) THEN
-!!$     PRINT*,"RBSMaxDeviationPara = ", RBSMaxDeviationPara
-!!$  END IF
-!!$
-!!$  ILine= ILine+1
-!!$  READ(IChInp,15,ERR=20,END=30) RBSBethePara
-!!$  IF(IWriteFLAG.GE.1) THEN
-!!$     PRINT*,"RBSBethePara = ", RBSBethePara
-!!$  END IF
   ILine= ILine+1
   READ(IChInp,10,ERR=20,END=30) IMinReflectionPool
   IF((IWriteFLAG.GE.1.AND.my_rank.EQ.0).OR.IWriteFLAG.GE.10) THEN
@@ -562,84 +551,6 @@ END SUBROUTINE Input
 !	IErr	error code
 ! ----------------------------------------------------------------------
 
-!!$SUBROUTINE InputHKL( IErr )
-!!$
-!!$  USE MyNumbers
-!!$  
-!!$  USE CConst; USE IConst
-!!$  USE IPara; USE RPara
-!!$  USE IChannels
-!!$  USE MPI
-!!$  USE MyMPI
-!!$  
-!!$  IMPLICIT NONE
-!!$
-!!$  CHARACTER*80 dummy
-!!$
-!!$  INTEGER IErr, ILine, ILength
-!!$  IF((IWriteFLAG.GE.2.AND.my_rank.EQ.0).OR.IWriteFLAG.GE.10) THEN
-!!$
-!!$     PRINT*,"DBG: InputHKL()"
-!!$  
-!!$  END IF
-!!$  ILine= 0
-!!$  
-!!$  OPEN(UNIT= IChInp, ERR= 120, FILE= "111reflections.txt",&
-!!$       STATUS= 'OLD')
-!!$
-!!$  DO
-!!$     READ(UNIT= IChInp, END=100, ERR=20, FMT='(a)') dummy
-!!$     ILine=ILine+1
-!!$  ENDDO
-!!$100 ILength=ILine-1
-!!$  PRINT*,"DBG: InputKHL(): ILength=", ILength
-!!$
-!!$  ALLOCATE(RHKL(ILength,3), STAT=IErr)
-!!$  IF( IErr.NE.0 ) THEN
-!!$     PRINT*,"main: error in memory ALLOCATION()"
-!!$     STOP
-!!$  ENDIF
-!!$
-!!$  REWIND(UNIT=IChInp)
-!!$
-!!$  DO ILine=1,ILength,1
-!!$     READ(UNIT= IChInp, END=30, ERR=20, FMT='(1X,3F4.0)') &
-!!$          RHKL(ILine,1), RHKL(ILine,2), RHKL(ILine,3) 
-!!$  ENDDO
-!!$
-!!$  RETURN
-!!$
-!!$  !	error in OPEN detected
-!!$120 PRINT*,"InputHKL(): ERR in OPEN"
-!!$  GOTO 1000
-!!$  
-!!$  !	error in CLOSE detected
-!!$130 PRINT*,"InputHKL(): ERR in CLOSE"
-!!$  GOTO 1000
-!!$  
-!!$  !	error in READ detected
-!!$20 PRINT*,"InputHKL(): ERR in READ at line", ILine
-!!$  GOTO 1000
-!!$  
-!!$  !	EOF in READ occured prematurely
-!!$30 PRINT*,"InputHKL(): EOF in READ at line", ILine
-!!$  
-!!$1000 &
-!!$  PRINT*,"InputHKL expects a file such as"
-!!$  PRINT*,"--------------------------------------------------------------------"
-!!$  PRINT*," 38 -28  4"
-!!$  PRINT*," 39 -31 -14"
-!!$  
-!!$  IErr= 1
-!!$  RETURN
-!!$END SUBROUTINE InputHKL
-
-! -----------------------------------------------------------------------
-!
-!
-!	IErr	error code
-! ----------------------------------------------------------------------
-
 SUBROUTINE InputScatteringFactors( IErr )
 
   USE MyNumbers
@@ -664,11 +575,11 @@ SUBROUTINE InputScatteringFactors( IErr )
   END IF
   ILine= 0
   
-  OPEN(UNIT= IChInp, ERR= 120, FILE= "FelixDoyle.sca",&
-       STATUS= 'OLD')
-!!$  OPEN(UNIT= IChInp, ERR= 120, FILE= "Felix.sca",&
+!!$  OPEN(UNIT= IChInp, ERR= 120, FILE= "FelixDoyle.sca",&
 !!$       STATUS= 'OLD')
-  
+  OPEN(UNIT= IChInp, ERR= 120, FILE= "Felix.sca",&
+       STATUS= 'OLD')
+!!$  
   DO
      READ(UNIT= IChInp, END=100, ERR=20, FMT='(a)') dummy
      ILine=ILine+1
@@ -947,7 +858,7 @@ SUBROUTINE OpenData(IChOutWrite, prefix, surname, IErr)
   
   WRITE(surnamelength,*) LEN_TRIM(surname)
 
-  WRITE(filename,"(A2,A2,A1,A"//TRIM(surnamelength)//",A4)") "F-",prefix,"-",surname,".raw"
+  WRITE(filename,"(A2,A2,A1,A"//TRIM(surnamelength)//",A4)") "F-",prefix,"-",surname,".txt"
 
   IF(IWriteFLAG.GE.10) THEN
      
@@ -958,19 +869,19 @@ SUBROUTINE OpenData(IChOutWrite, prefix, surname, IErr)
      SELECT CASE(IChOutWrite)
      CASE(IChOutWF)
         PRINT*, "OpenData: opening channel", IChOutWF, &
-             "for WAVE FUNCTIONS (WF*.raw)"
+             "for WAVE FUNCTIONS (WF*.txt)"
      CASE(IChOutWI)
         PRINT*, "OpenData: opening channel", IChOutWI, &
-             "for WAVE INTENSITIES (WI*.raw)"
+             "for WAVE INTENSITIES (WI*.txt)"
      CASE(IChOutEV)
         PRINT*, "OpenData: opening channel", IChOutEV, &
-             "for EIGENVALUES of UgMat (EV*.raw)"
+             "for EIGENVALUES of UgMat (EV*.txt)"
      CASE(IChOutEX)
         PRINT*, "OpenData: opening channel", IChOutEX, &
-             "for EIGENVECTORS of UgMat (EX*.raw)"
+             "for EIGENVECTORS of UgMat (EX*.txt)"
      CASE(IChOutUM)
         PRINT*, "OpenData: opening channel", IChOutUM, &
-             "for UgMat (UM*.raw)"
+             "for UgMat (UM*.txt)"
      CASE DEFAULT
         PRINT*, "OpenData: opening UNKNOWN", IChOutWrite, &
              "channel "
@@ -988,6 +899,85 @@ SUBROUTINE OpenData(IChOutWrite, prefix, surname, IErr)
   RETURN
   
 END SUBROUTINE OpenData
+  
+! --------------------------------------------------------------------
+! OpenData
+! --------------------------------------------------------------------
+
+
+SUBROUTINE OpenImageForReadIn(IErr,filename)
+
+  USE MyNumbers
+
+  USE IConst; USE RConst
+  USE IPara; USE RPara
+  USE IChannels
+  USE MPI
+  USE MyMPI
+
+  IMPLICIT NONE
+
+  INTEGER(KIND=IKIND) IChOutWrite, IErr
+
+  CHARACTER*34 filename
+
+  IF((IWriteFLAG.GE.0.AND.my_rank.EQ.0).OR.IWriteFLAG.GE.10) THEN
+
+     PRINT*,"OpenImageForReadIn()"
+
+  END IF
+
+  !filename = "Felix.img"
+
+  IF((IWriteFLAG.GE.0.AND.my_rank.EQ.0).OR.IWriteFLAG.GE.10) THEN
+     
+     PRINT*,filename
+
+  END IF
+
+  OPEN(UNIT= IChInImage, ERR= 10, STATUS= 'UNKNOWN', FILE=TRIM(ADJUSTL(filename)),FORM='UNFORMATTED',&
+       ACCESS='DIRECT',IOSTAT=Ierr,RECL=IImageSizeXY(1)*8)
+
+  RETURN
+
+  ! error in OPEN detected
+10 PRINT*,"WriteDataC(): ERR in OPEN()"
+  IErr= 1
+  RETURN
+  
+END SUBROUTINE OpenImageForReadIn
+
+SUBROUTINE ReadImageForRefinement(IErr)
+
+  USE MyNumbers
+
+  USE IConst; USE RConst
+  USE IPara; USE RPara
+  USE IChannels
+  USE MPI
+  USE MyMPI
+
+  IMPLICIT NONE
+
+  INTEGER(IKIND) :: &
+       IErr,ind
+
+  IF((IWriteFLAG.GE.0.AND.my_rank.EQ.0).OR.IWriteFLAG.GE.10) THEN
+
+     PRINT*,"ReadImageForRefinement()"
+
+  END IF
+
+  DO ind=1,IImageSizeXY(2)
+     READ(IChInImage,rec=ind) RImageIn(ind,:)
+  END DO
+  IF( IErr.NE.0 ) THEN
+     PRINT*,"ReadImageForRefinement (", my_rank, ") error in READ()",IErr
+     RETURN
+  ENDIF
+  
+END SUBROUTINE ReadImageForRefinement
+
 
 ! --------------------------------------------------------------------
 ! OpenData
@@ -1020,25 +1010,25 @@ SUBROUTINE OpenDataForAppend(IChOutWrite, prefix, surname, IErr)
   
   WRITE(surnamelength,*) LEN_TRIM(surname)
   
-  WRITE(filename,"(A2,A2,A1,A"//TRIM(surnamelength)//",A4)") "F-",prefix,"-",surname,".raw"
+  WRITE(filename,"(A2,A2,A1,A"//TRIM(surnamelength)//",A4)") "F-",prefix,"-",surname,".txt"
 
   IF (IWriteFLAG.GE.10) THEN
      SELECT CASE(IChOutWrite)
      CASE(IChOutWF)
         PRINT*, "OpenData: opening channel", IChOutWF, &
-             "for WAVE FUNCTIONS (WF*.raw)"
+             "for WAVE FUNCTIONS (WF*.txt)"
      CASE(IChOutWI)
         PRINT*, "OpenData: opening channel", IChOutWI, &
-             "for WAVE INTENSITIES (WI*.raw)"
+             "for WAVE INTENSITIES (WI*.txt)"
      CASE(IChOutEV)
         PRINT*, "OpenData: opening channel", IChOutEV, &
-             "for EIGENVALUES of UgMat (EV*.raw)"
+             "for EIGENVALUES of UgMat (EV*.txt)"
      CASE(IChOutEX)
         PRINT*, "OpenData: opening channel", IChOutEX, &
-             "for EIGENVECTORS of UgMat (EX*.raw)"
+             "for EIGENVECTORS of UgMat (EX*.txt)"
      CASE(IChOutUM)
         PRINT*, "OpenData: opening channel", IChOutUM, &
-             "for UgMat (UM*.raw)"
+             "for UgMat (UM*.txt)"
      CASE DEFAULT
         PRINT*, "OpenData: opening UNKNOWN", IChOutWrite, &
              "channel "
@@ -1062,7 +1052,7 @@ END SUBROUTINE OpenDataForAppend
 ! Open Reflection Image
 ! --------------------------------------------------------------------
 
-SUBROUTINE OpenReflectionImage(IChOutWrite, surname, IErr,IReflectWriting)
+SUBROUTINE OpenReflectionImage(IChOutWrite, surname, IErr,IReflectWriting,IImageSizeX)
 
   USE MyNumbers
 
@@ -1079,7 +1069,7 @@ SUBROUTINE OpenReflectionImage(IChOutWrite, surname, IErr,IReflectWriting)
 
   CHARACTER*27 surname
   CHARACTER*20 prefix,postfix,h,k,l
-  INTEGER(KIND=IKIND) IChOutWrite, IErr,IReflectWriting
+  INTEGER(KIND=IKIND) IChOutWrite, IErr,IReflectWriting,IImageSizeX
 
   CHARACTER*50 filename
   INTEGER index
@@ -1088,9 +1078,14 @@ SUBROUTINE OpenReflectionImage(IChOutWrite, surname, IErr,IReflectWriting)
      PRINT*,"OpenReflectionImage()"
   END IF
   
-  WRITE(h,*)  NINT(RHKL(IReflectWriting,1))
-  WRITE(k,*)  NINT(RHKL(IReflectWriting,2))
-  WRITE(l,*)  NINT(RHKL(IReflectWriting,3))
+
+  SELECT CASE(IChOutWrite)
+  CASE(MontageOut)
+  CASE DEFAULT
+     WRITE(h,*)  NINT(RHKL(IReflectWriting,1))
+     WRITE(k,*)  NINT(RHKL(IReflectWriting,2))
+     WRITE(l,*)  NINT(RHKL(IReflectWriting,3))
+  END SELECT
 
   IF (IWriteFLAG.GE.10) THEN
      PRINT*,filename
@@ -1104,7 +1099,7 @@ SUBROUTINE OpenReflectionImage(IChOutWrite, surname, IErr,IReflectWriting)
           TRIM(ADJUSTL(l)),&
           ".txt"
      IF (IWriteFLAG.GE.10) THEN
-        PRINT*, "OpenImage: opening image for WAVE FUNCTION REAL PART (WR*.raw)"
+        PRINT*, "OpenImage: opening image for WAVE FUNCTION REAL PART (WR*.txt)"
      END IF
   CASE(IChOutWFImagePhase)        
      WRITE(filename,*) TRIM(ADJUSTL(surname)),"/F-WF-P_",&
@@ -1113,14 +1108,20 @@ SUBROUTINE OpenReflectionImage(IChOutWrite, surname, IErr,IReflectWriting)
           TRIM(ADJUSTL(l)),&
           ".txt"
      IF (IWriteFLAG.GE.10) THEN
-        PRINT*, "OpenImage: opening image for WAVE FUNCTION PHASE PART (WP*.raw)"
+        PRINT*, "OpenImage: opening image for WAVE FUNCTION PHASE PART (WP*.txt)"
      END IF
   CASE(IChOutWIImage)        
      WRITE(filename,*) TRIM(ADJUSTL(surname)),"/F-WI_",&
           TRIM(ADJUSTL(h)),&
           TRIM(ADJUSTL(k)),&
           TRIM(ADJUSTL(l)),&
-          ".txt"
+          ".bin"
+     IF (IWriteFLAG.GE.10) THEN
+        PRINT*, "OpenImage: opening image for WAVE INTENSITIES"
+     END IF
+  CASE(MontageOut)        
+     WRITE(filename,*) "F-WI-",TRIM(ADJUSTL(surname)),&
+          ".bin"
      IF (IWriteFLAG.GE.10) THEN
         PRINT*, "OpenImage: opening image for WAVE INTENSITIES"
      END IF
@@ -1130,12 +1131,13 @@ SUBROUTINE OpenReflectionImage(IChOutWrite, surname, IErr,IReflectWriting)
      END IF
   END SELECT
   
-  OPEN(UNIT=IChOutWrite, ERR=10, STATUS= 'UNKNOWN', FILE=TRIM(ADJUSTL(filename)))
+  OPEN(UNIT=IChOutWrite, ERR=10, STATUS= 'UNKNOWN', FILE=TRIM(ADJUSTL(filename)),FORM='UNFORMATTED',&
+       ACCESS='DIRECT',IOSTAT=Ierr,RECL=IImageSizeX*8)
 
   RETURN
 
   ! error in OPEN detected
-10 PRINT*,"OpenReflectionImage(): ERR in OPEN()"
+10 PRINT*,"OpenReflectionImage(): ERR in OPEN()",IErr
   IErr= 1
   RETURN
   
@@ -1145,7 +1147,7 @@ END SUBROUTINE OpenReflectionImage
 ! Write Reflection Images
 !-----------------------------------------------------------------
 
-SUBROUTINE WriteReflectionImage( IChOutWrite, data, IErr)
+SUBROUTINE WriteReflectionImage( IChOutWrite, data, IErr,IImageSizeX,IImageSizeY)
 
   USE MyNumbers
 
@@ -1158,8 +1160,8 @@ SUBROUTINE WriteReflectionImage( IChOutWrite, data, IErr)
   USE MPI
   USE MyMPI
 
-  INTEGER(KIND=IKIND) IErr
-  REAL(KIND=RKIND),DIMENSION(2*IPixelCount,2*IPixelCount) :: data
+  INTEGER(KIND=IKIND) IErr,IImageSizeY,IImageSizeX
+  REAL(KIND=RKIND),DIMENSION(IImageSizeX,IImageSizeY) :: data
   CHARACTER*100 CSizeofData
   INTEGER ind, IChOutWrite
   CHARACTER*100 SFormatString
@@ -1168,16 +1170,21 @@ SUBROUTINE WriteReflectionImage( IChOutWrite, data, IErr)
      PRINT*,"WriteReflectionImage"
   END IF
 
+!!$
+!!$  DO ind = 1,(2*IPixelCount)
+!!$     WRITE(CSizeofData,*) 2*IPixelCount
+!!$     WRITE(SFormatString,*) "("//TRIM(ADJUSTL(CSizeofData))//"(1F6.3,1X),A1)"
+!!$     WRITE(IChOutWrite,FMT=SFormatString,ERR=20) data(ind,:)
+!!$  END DO
 
-  DO ind = 1,(2*IPixelCount)
-     WRITE(CSizeofData,*) 2*IPixelCount
-     WRITE(SFormatString,*) "("//TRIM(ADJUSTL(CSizeofData))//"(1F6.3,1X),A1)"
-     WRITE(IChOutWrite,FMT=SFormatString,ERR=20) data(ind,:)
+  DO ind = 1,(IImageSizeY)
+     WRITE(IChOutWrite,rec=ind) data(ind,:)
   END DO
+  !,*,ERR=20,IOSTAT=Ierr
   
   RETURN
   ! error in WRITE detected
-20 PRINT*,"WriteReflectionImage(): ERR in WRITE()"
+20 PRINT*,"WriteReflectionImage(): ERR in WRITE()",Ierr
   IErr= 1
   RETURN
 
@@ -1427,7 +1434,7 @@ SUBROUTINE OpenDataForAppend_MPI(IChOutWrite, prefix, surname, IErr)
 
   END IF
 
-  WRITE(filename,'(A2,A2,A1,A12,A4)') "F-",prefix,"-",surname,".raw"
+  WRITE(filename,'(A2,A2,A1,A12,A4)') "F-",prefix,"-",surname,".txt"
   
   CALL MPI_FILE_OPEN( MPI_COMM_WORLD, TRIM(filename), &
        MPI_MODE_CREATE+MPI_MODE_APPEND, MPI_INFO_NULL, IChOutWrite, IErr)
@@ -1481,7 +1488,7 @@ SUBROUTINE OpenData_MPI(IChOutWrite, prefix, surname, IErr)
      PRINT*,"OpenData_MPI()"
   END IF
 
-  WRITE(filename,'(A2,A2,A1,A12,A4)') "F-",prefix,"-",surname,".raw"
+  WRITE(filename,'(A2,A2,A1,A12,A4)') "F-",prefix,"-",surname,".txt"
   
   CALL MPI_FILE_OPEN( MPI_COMM_WORLD, TRIM(filename), &
        MPI_MODE_CREATE+MPI_MODE_WRONLY, MPI_INFO_NULL, IChOutWrite, IErr)

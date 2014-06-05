@@ -1,6 +1,6 @@
 !%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 !
-! BlochSim
+! FelixSim
 !
 ! Richard Beanland, Keith Evans and Rudolf A Roemer
 !
@@ -8,20 +8,20 @@
 !
 !%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 !
-!  This file is part of BlochSim.
+!  This file is part of FelixSim.
 !
-!  BlochSim is free software: you can redistribute it and/or modify
+!  FelixSim is free software: you can redistribute it and/or modify
 !  it under the terms of the GNU General Public License as published by
 !  the Free Software Foundation, either version 3 of the License, or
 !  (at your option) any later version.
 !  
-!  BlochSim is distributed in the hope that it will be useful,
+!  FelixSim is distributed in the hope that it will be useful,
 !  but WITHOUT ANY WARRANTY; without even the implied warranty of
 !  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 !  GNU General Public License for more details.
 !  
 !  You should have received a copy of the GNU General Public License
-!  along with BlochSim.  If not, see <http://www.gnu.org/licenses/>.
+!  along with FelixSim.  If not, see <http://www.gnu.org/licenses/>.
 !
 !%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
@@ -53,6 +53,8 @@ for later use by FelixDraw.
 
 IScatteringFactorMethod: Determines which method by which to calculate potentials
 0 Kirkands Method
+0 Peng 
+0 Doyle and Turner
 
 IZolzFLAG: Choose to limit the simulation to the zeroth order laue zone.  
 
@@ -81,28 +83,35 @@ available
 0 no
 1 yes
 
+IBeamConvergence: Not Yet Implemented
+
+IPseudoCubicFLAG: Indicate whether given directions are expressed in PseudoCubic
+or Orthorhombic notation
+
+0 Orthorhomnic
+1 PseudoCubic
+
 IPixelCount: Pixel Radius of images, simulation scales as the square of this
   number but primary parallelisation is over pixels (more pixels, more cores
   can be used effectively) 64 is a good for images, 128+ better for
   quantitative analysis
 
-RBSMaxGVecAmp: Maximum gvector magnitude (measured in reciprocal angstroms)
-  allowed in the simulation, this defines the number "nreflections" and
-  controls the size of the reflection pool accessible during diagonalisation
-  (must have a decimal point)
+IMinReflectionPool : Controls the size of the reflection pool accessible 
+   during diagonalisation
 
-RBSMaxDeviationPara: Maximum magnitude of the deviation parameter (distance
-  between the reciprocal lattive point and ewald sphere) this value is
-  unsigned and allows points within and outide the ewald sphere to be
-  accepted. This paramter controls the number of beams overwhich the
+IMinStrongBeams : This paramater sets the minimum number of beams overwhich the
   diagonisation is preformed, increasing it will result in greater accuracy
   but will slow simultion
 
-RBSBethePara: Minimum Bethe potential allowed, this controls which
-  nreflections (which been rejected as strong) are considered weak and used to
-  perturb the potentials priorto diagonisations, a smaller number increases
-  the number of weak beams
+IMinWeakBeams: Minimum number of weak beams with which to perturb the Strong beams
 
+RBSBmax : Maximum weak beam purturbation strength before the beam is 
+  considered strong 
+
+RBSPmax : Maximum weak beam purturbation of a prior weak beam
+
+RConvergenceTolerance (%) : Not yet implemented 
+	       
 RDebyeWallerFactorConstant: If no Debye waller factor is found in the .cif
   file this value will be used for all atomic species missing the factor, note
   this is the B factor not U
@@ -132,6 +141,15 @@ IXDirectionY: Y component of the chosen X-axis expressed in the crystal
 
 IXDirectionZ: Z component of the chosen X-axis expressed in the crystal
   reference frame in reciprocal space
+
+INormalDirectionX: X component of the plane normal to the surface of crystal
+  in real space
+
+INormalDirectionY: Y component of the plane normal to the surface of crystal
+  in real space
+
+INormalDirectionZ: Z component of the plane normal to the surface of crystal
+  in real space
 
 RAccelerationVoltage: Acceleration voltage of the microscope expressed in KV
 
