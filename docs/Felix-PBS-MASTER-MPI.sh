@@ -7,7 +7,7 @@ pytIMAGE=txt2png.py
 
 inpfile=Felix.inp
 ciffile=Felix.cif
-scafile=FelixDoyle.sca
+scafile=Felix.sca
 
 # point this to where FelixSim and FelixDraw are
 binarydir=/storage/disqs/D-LACBED/EXE
@@ -147,6 +147,8 @@ echo "IMaskFLAG                 = 0"            >> $inpfile
 echo "IZOLZFLAG                 = 1"            >> $inpfile
 echo "IAbsorbFLAG               = 1"            >> $inpfile
 echo "IAnisoDebyeWallerFlag     = 0"            >> $inpfile
+echo "IBeamConvergence          = 1"            >> $inpfile
+echo "IPseudoCubicFLAG          = 0"            >> $inpfile      
 echo ""                                         >> $inpfile
 echo "# radius of the beam in pixels"           >> $inpfile
 echo "IPixelCount               = 4"            >> $inpfile
@@ -155,6 +157,9 @@ echo "# beam selection criteria"                >> $inpfile
 echo "IMinReflectionPool        = 100"          >> $inpfile
 echo "IMinStrongBeams           = 7"            >> $inpfile
 echo "IMinWeakBeams             = 10"           >> $inpfile
+echo "RBSBMax                   = 0.1"          >> $inpfile
+echo "RBSPMax                   = 0.1"          >> $inpfile
+echo "RConvergenceTolerance (%) = 1"            >> $inpfile
 echo ""                                         >> $inpfile
 echo "# crystal settings"                       >> $inpfile
 echo "RDebyeWallerFactor        = 0.4668"       >> $inpfile
@@ -168,16 +173,19 @@ echo "IIncidentBeamDirectionZ   = ${ZZ}"        >> $inpfile
 echo "IXDirectionX              = 1"            >> $inpfile
 echo "IXDirectionY              = 0"            >> $inpfile
 echo "IXDirectionZ              = -1"           >> $inpfile
+echo "INormalDirectionX         = 1"            >> $inpfile 
+echo "INormalDirectionY         = 1"            >> $inpfile
+echo "INormalDirectionZ         = 1"            >> $inpfile
 echo "RAcceleratingVoltage (kV) = 200.0"        >> $inpfile
 echo ""                                         >> $inpfile
 echo "# ------------------------------------"   >> $inpfile
 echo "# LACBED input"                           >> $inpfile
 echo ""                                         >> $inpfile
 echo "# sample thickness loop (Angstrom)"       >> $inpfile
-echo "RInitialThickness        = 100.0"        >> $inpfile
+echo "RInitialThickness        = 100.0"         >> $inpfile
 echo "RFinalThickness          = 1000.0"        >> $inpfile
-echo "RDeltaThickness          = 100.0"           >> $inpfile
-echo "IReflectOut              = 100"            >> $inpfile
+echo "RDeltaThickness          = 100.0"         >> $inpfile
+echo "IReflectOut              = 100"           >> $inpfile
 
 cat $inpfile
 ls -al \${tmpdir}
