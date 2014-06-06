@@ -6,7 +6,7 @@
 
 # control flags
 IWriteFLAG                = 0
-IImageFLAG                = 1
+IImageFLAG                = 0
 IOutputFLAG               = 0  
 IScatterFactorMethodFLAG  = 0
 ICentralBeamFLAG          = 1
@@ -33,7 +33,7 @@ RDebyeWallerConstant      = 0.4668
 RAbsorptionPer            = 2.9
 
 # microscope settings
-RConvergenceAngle         = 6.0
+RConvergenceAngle         = 3.0
 IIncidentBeamDirectionX   = 1
 IIncidentBeamDirectionY   = 1 
 IIncidentBeamDirectionZ   = 1
@@ -49,7 +49,7 @@ RAcceleratingVoltage (kV) = 200.0
 # LACBED input
 
 # sample thickness loop (Angstrom)
-RInitialThickness        = 100.0
-RFinalThickness          = 2000.0
+RInitialThickness        = 1000.0
+RFinalThickness          = 1000.0
 RDeltaThickness          = 100.0
-IReflectOut              = 1
+IReflectOut              = 37

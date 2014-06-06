@@ -69,7 +69,7 @@ SUBROUTINE UgCalculation (IErr)
   
   IMPLICIT NONE
   
-  INTEGER(IKIND) ind,jnd,ierr, currentatom, iAtom
+  INTEGER(IKIND) ind,jnd,ierr, currentatom, iAtom,imaxj
   COMPLEX(CKIND) CVgij
   REAL(RKIND) RAtomicFormFactor
   REAL(RKIND) :: &
@@ -80,7 +80,8 @@ SUBROUTINE UgCalculation (IErr)
   END IF
   
   DO ind=1,nReflections
-     DO jnd=1,nReflections
+     imaxj = ind
+     DO jnd=1,imaxj
         
         CVgij= 0.0D0
         

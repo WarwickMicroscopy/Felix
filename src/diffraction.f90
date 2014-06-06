@@ -59,7 +59,7 @@ SUBROUTINE DiffractionPatternDefinitions( IErr )
         PRINT*,"DiffractionPatternDefinitions(",my_rank,") hklrun = ",ihklrun
      END IF
      
-     CALL NewHKLMake(IHKLMAXValue,RZDirC,2*PI/180.0D0,IErr)
+     CALL NewHKLMake(IHKLMAXValue,RZDirC,TWOPI/180.0D0,IErr)
      IF( IErr.NE.0 ) THEN
         PRINT*,"DiffractionPatternDefinitions(", my_rank, ") error in NewHKLMake()"
         RETURN
@@ -84,7 +84,20 @@ SUBROUTINE DiffractionPatternDefinitions( IErr )
      IF( IErr.NE.0 ) THEN
         PRINT*,"DiffractionPatternDefintions(): error in ReSortHKL()"
         RETURN
-     ENDIF
+     ENDIF     
+     
+     IF(IXDirectionFLAG.EQ.0) THEN
+        IDiffractionFLAG = 1
+        RXDirC(1) = RHKL(2,1)
+        RXDirC(2) = RHKL(2,2)
+        RXDirC(3) = RHKL(2,3)
+        CALL Crystallography( IErr )
+        IF( IErr.NE.0 ) THEN
+           PRINT*,"DiffractionPatternDefinitions(", my_rank, ") error in Crystallography()"
+           RETURN
+        ENDIF
+        
+     END IF
      
      ALLOCATE(&
           RgVecMatT(SIZE(RHKL,DIM=1),THREEDIM), &
@@ -132,6 +145,12 @@ SUBROUTINE DiffractionPatternDefinitions( IErr )
      ENDDO
      
   END DO
+
+  IF((IWriteFLAG.GE.4.AND.my_rank.EQ.0).OR.IWriteFLAG.GE.10) THEN
+     DO ind=1,SIZE(RHKL,DIM=1)
+        PRINT*,RHKL(ind,:)
+     END DO
+  END IF
 
   ALLOCATE(&
        RGn(SIZE(RHKL,DIM=1)), &
@@ -394,7 +413,7 @@ SUBROUTINE NewHKLmake(Ihklmax,Rhkl0Vec,RAcceptanceAngle,IErr)
   DO ind=-Ihklmax,Ihklmax,1
      DO jnd=-Ihklmax,Ihklmax,1
         DO knd=-Ihklmax,Ihklmax,1
-           
+
            RhklDummyVec= REAL((/ ind,jnd,knd /),RKIND)
 
            RhklDummyUnitVec= RhklDummyVec / &
@@ -402,15 +421,15 @@ SUBROUTINE NewHKLmake(Ihklmax,Rhkl0Vec,RAcceptanceAngle,IErr)
            
            SELECT CASE(SSpaceGroupName)
            CASE("F") !Face Centred
-              IF(((ABS(MOD(RhklDummyVec(1)+RhklDummyVec(2),2.D0)).LE.TINY).AND.&
-                   (ABS(MOD(RhklDummyVec(2)+RhklDummyVec(3),2.D0)).LE.TINY).AND.&
-                   (ABS(MOD(RhklDummyVec(1)+RhklDummyVec(3),2.D0)).LE.TINY)).OR.&
-                   (((ABS(MOD(RhklDummyVec(1),2.D0))).LE.TINY).AND.&
-                   ((ABS(MOD(RhklDummyVec(2),2.D0))).LE.TINY).AND.&
-                   ((ABS(MOD(RhklDummyVec(3),2.D0))).LE.TINY)).OR.&
-                   (((ABS(MOD(RhklDummyVec(1),2.D0))).GT.TINY).AND.&
-                   ((ABS(MOD(RhklDummyVec(2),2.D0))).GT.TINY).AND.&
-                   ((ABS(MOD(RhklDummyVec(3),2.D0))).GT.TINY))) THEN
+              IF(((ABS(MOD(RhklDummyVec(1)+RhklDummyVec(2),2.0D0)).LE.TINY).AND.&
+                   (ABS(MOD(RhklDummyVec(2)+RhklDummyVec(3),2.0D0)).LE.TINY).AND.&
+                   (ABS(MOD(RhklDummyVec(1)+RhklDummyVec(3),2.0D0)).LE.TINY)).OR.&
+                   (((ABS(MOD(RhklDummyVec(1),2.0D0))).LE.TINY).AND.&
+                   ((ABS(MOD(RhklDummyVec(2),2.0D0))).LE.TINY).AND.&
+                   ((ABS(MOD(RhklDummyVec(3),2.0D0))).LE.TINY)).OR.&
+                   (((ABS(MOD(RhklDummyVec(1),2.0D0))).GT.TINY).AND.&
+                   ((ABS(MOD(RhklDummyVec(2),2.0D0))).GT.TINY).AND.&
+                   ((ABS(MOD(RhklDummyVec(3),2.0D0))).GT.TINY))) THEN
                  IF(IZolzFLAG.EQ.1) THEN
                     IF( ABS(DOT_PRODUCT(RhklDummyUnitVec,Rhkl0UnitVec)) .LE. TINY ) THEN
                        INhkl=INhkl+1
@@ -422,7 +441,7 @@ SUBROUTINE NewHKLmake(Ihklmax,Rhkl0Vec,RAcceptanceAngle,IErr)
                  END IF
               END IF
            CASE("I")! Body Centred
-              IF(ABS(MOD(RhklDummyVec(1)+RhklDummyVec(2)+RhklDummyVec(3),2.D0)).LE.TINY) THEN
+              IF(ABS(MOD(RhklDummyVec(1)+RhklDummyVec(2)+RhklDummyVec(3),2.0D0)).LE.TINY) THEN
                  !INhkl = INhkl + 1
                  !RHKL(INhkl,:) = RhklDummyVec
                  IF(IZolzFLAG.EQ.1) THEN
@@ -436,7 +455,7 @@ SUBROUTINE NewHKLmake(Ihklmax,Rhkl0Vec,RAcceptanceAngle,IErr)
                  END IF
               END IF
            CASE("A")! A-Face Centred
-              IF(ABS(MOD(RhklDummyVec(2)+RhklDummyVec(3),2.D0)).LE.TINY) THEN
+              IF(ABS(MOD(RhklDummyVec(2)+RhklDummyVec(3),2.0D0)).LE.TINY) THEN
                  !INhkl = INhkl + 1
                  !RHKL(INhkl,:) = RhklDummyVec
                  IF(IZolzFLAG.EQ.1) THEN
@@ -450,7 +469,7 @@ SUBROUTINE NewHKLmake(Ihklmax,Rhkl0Vec,RAcceptanceAngle,IErr)
                  END IF
               END IF
            CASE("B")! B-Face Centred
-              IF(ABS(MOD(RhklDummyVec(1)+RhklDummyVec(3),2.D0)).LE.TINY) THEN
+              IF(ABS(MOD(RhklDummyVec(1)+RhklDummyVec(3),2.0D0)).LE.TINY) THEN
                  !INhkl = INhkl + 1
                  !RHKL(INhkl,:) = RhklDummyVec
                  IF(IZolzFLAG.EQ.1) THEN
@@ -464,7 +483,7 @@ SUBROUTINE NewHKLmake(Ihklmax,Rhkl0Vec,RAcceptanceAngle,IErr)
                  END IF
               END IF
            CASE("C")! C-Face Centred
-              IF(ABS(MOD(RhklDummyVec(1)+RhklDummyVec(3),2.D0)).LE.TINY) THEN
+              IF(ABS(MOD(RhklDummyVec(1)+RhklDummyVec(3),2.0D0)).LE.TINY) THEN
                  !INhkl = INhkl + 1
                  !RHKL(INhkl,:) = RhklDummyVec
                  IF(IZolzFLAG.EQ.1) THEN
@@ -478,7 +497,7 @@ SUBROUTINE NewHKLmake(Ihklmax,Rhkl0Vec,RAcceptanceAngle,IErr)
                  END IF
               END IF
            CASE("R")! Rhombohedral Reverse
-              IF(ABS(MOD(-RhklDummyVec(1)+RhklDummyVec(2)+RhklDummyVec(3),3.D0)).LE.TINY) THEN
+              IF(ABS(MOD(-RhklDummyVec(1)+RhklDummyVec(2)+RhklDummyVec(3),3.0D0)).LE.TINY) THEN
                  !INhkl = INhkl + 1
                  !RHKL(INhkl,:) = RhklDummyVec
                  IF(IZolzFLAG.EQ.1) THEN
@@ -492,7 +511,7 @@ SUBROUTINE NewHKLmake(Ihklmax,Rhkl0Vec,RAcceptanceAngle,IErr)
                  END IF
               END IF
            CASE("V")! Rhombohedral Obverse
-              IF(ABS(MOD(RhklDummyVec(1)-RhklDummyVec(2)+RhklDummyVec(3),3.D0)).LE.TINY) THEN
+              IF(ABS(MOD(RhklDummyVec(1)-RhklDummyVec(2)+RhklDummyVec(3),3.0D0)).LE.TINY) THEN
                  !INhkl = INhkl + 1
                  !RHKL(INhkl,:) = RhklDummyVec
                  IF(IZolzFLAG.EQ.1) THEN
@@ -529,11 +548,5 @@ SUBROUTINE NewHKLmake(Ihklmax,Rhkl0Vec,RAcceptanceAngle,IErr)
 
   
   RHKL(INhkl+1,:)= (/ 0.0D0,0.0D0,0.0D0 /)
-
-  IF(IWriteFLAG.GE.4) THEN
-     DO ind=1,INhkl
-        PRINT*,RHKL(ind,:)
-     END DO
-  END IF
 
 END SUBROUTINE NewHKLmake

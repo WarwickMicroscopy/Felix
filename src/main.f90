@@ -474,8 +474,7 @@ PROGRAM FelixSim
 
   !--------------------------------------------------------------------
   ! crystallography settings
-  !--------------------------------------------------------------------
-
+  !-------------------------------------------------------------------
   CALL Crystallography( IErr )
   IF( IErr.NE.0 ) THEN
      PRINT*,"main(", my_rank, ") error in Crystallography()"

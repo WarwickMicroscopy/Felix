@@ -311,6 +311,12 @@ SUBROUTINE Input( IErr )
      PRINT*,"IPseudoCubicFLAG = ", IPseudoCubicFLAG
   END IF
 
+  ILine= ILine+1
+  READ(IChInp,10,ERR=20,END=30) IXDirectionFLAG
+  IF((IWriteFLAG.GE.1.AND.my_rank.EQ.0).OR.IWriteFLAG.GE.10) THEN
+     PRINT*,"IXDirectionFLAG = ", IXDirectionFLAG
+  END IF
+
   ! ----------------------------------------------------------------------
   ! beam details
   

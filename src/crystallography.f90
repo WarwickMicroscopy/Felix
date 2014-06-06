@@ -55,7 +55,19 @@ SUBROUTINE Crystallography( IErr )
      PRINT*,RZDirC,RXDirC
   END IF
   
-  IF(IPseudoCubicFLAG.EQ.1) THEN
+  IF(IDiffractionFLAG.EQ.1) THEN
+     DEALLOCATE(&
+          RFullAtomicFracCoordVec,SFullAtomicNameVec,&
+          RFullPartialOccupancy,RFullIsotropicDebyeWallerFactor, &
+          IFullAtomNumber, IFullAnisotropicDWFTensor, &
+          MNP,SMNP,RDWF,ROcc,IAtoms,IAnisoDWFT,STAT=IErr)
+     IF( IErr.NE.0 ) THEN
+        PRINT*,"Crystallography(", my_rank, ") error ", IErr, " in ALLOCATE()"
+        RETURN
+     ENDIF
+  END IF
+  
+  IF(IPseudoCubicFLAG.EQ.1.AND.IDiffractionFLAG.EQ.0) THEN
      RZDirC(1) = (IIncidentBeamDirectionX/3.0D0)+&
           (IIncidentBeamDirectionY/3.0D0)-&
           (2.0D0*(IIncidentBeamDirectionZ/3.0D0))
@@ -114,12 +126,12 @@ SUBROUTINE Crystallography( IErr )
            RNormDirC(ind) = ZERO ! A large number
         END IF
      END DO
-        
+     
+     RZDirC = REAL(NINT(RZDirC))
+     RXDirC = REAL(NINT(RXDirC))
+     RNormDirC = REAL(NINT(RNormDirC))
+     
   END IF
-
-  RZDirC = REAL(NINT(RZDirC))
-  RXDirC = REAL(NINT(RXDirC))
-  RNormDirC = REAL(NINT(RNormDirC))
 
   IF(my_rank.EQ.0) THEN
      PRINT*,RZDirC,RXDirC
@@ -152,25 +164,21 @@ SUBROUTINE Crystallography( IErr )
           2.0D0*COS(RAlpha)*COS(RBeta)*COS(RGamma))
   ENDIF
 
-  RTTest = DOT_PRODUCT(RaVecO/DOT_PRODUCT(RaVecO,RaVecO),RbVecO/DOT_PRODUCT(RbVecO,RbVecO))*&
-       DOT_PRODUCT(RbVecO/DOT_PRODUCT(RbVecO,RbVecO),RcVecO/DOT_PRODUCT(RcVecO,RcVecO))*&
-       DOT_PRODUCT(RcVecO/DOT_PRODUCT(RcVecO,RcVecO),RaVecO/DOT_PRODUCT(RaVecO,RaVecO))
-
-  !uncomment this when the hexagonal selection rules have been installed
-
-!!$  IF((RAlpha.GT.PI.OR.RBeta.GT.PI.OR.RGamma.GT.PI).AND.SCAN(SSpaceGroupName,'rR').NE.0) THEN
-!!$     SSpaceGroupName = TRIM(ADJUSTL("H"))
-!!$     PRINT*,"Crystal is Hexagonal"
-!!$  END IF
-
-  IF(ABS(RTTest).GT.TINY.AND.SCAN(SSpaceGroupName,'rR').NE.0) THEN
-     SSpaceGroupName = TRIM(ADJUSTL("V"))
-     IF((IWriteFLAG.GE.1.AND.my_rank.EQ.0).OR.IWriteFLAG.GE.10) THEN
-        PRINT*,"Crystal is Obverse"
-     END IF
-  ELSE
-     IF((IWriteFLAG.GE.1.AND.my_rank.EQ.0).OR.IWriteFLAG.GE.10) THEN
-        PRINT*,"Crystal is Reverse"
+  IF(IDiffractionFLAG.EQ.0) THEN
+     
+     RTTest = DOT_PRODUCT(RaVecO/DOT_PRODUCT(RaVecO,RaVecO),RbVecO/DOT_PRODUCT(RbVecO,RbVecO))*&
+          DOT_PRODUCT(RbVecO/DOT_PRODUCT(RbVecO,RbVecO),RcVecO/DOT_PRODUCT(RcVecO,RcVecO))*&
+          DOT_PRODUCT(RcVecO/DOT_PRODUCT(RcVecO,RcVecO),RaVecO/DOT_PRODUCT(RaVecO,RaVecO))
+     
+     IF(ABS(RTTest).LT.TINY.AND.SCAN(SSpaceGroupName,'rR').NE.0) THEN
+        SSpaceGroupName = TRIM(ADJUSTL("V"))
+        IF((IWriteFLAG.GE.1.AND.my_rank.EQ.0).OR.IWriteFLAG.GE.10) THEN
+           PRINT*,"Crystal is Obverse"
+        END IF
+     ELSE
+        IF((IWriteFLAG.GE.1.AND.my_rank.EQ.0).OR.IWriteFLAG.GE.10) THEN
+           PRINT*,"Crystal is Reverse"
+        END IF
      END IF
   END IF
 

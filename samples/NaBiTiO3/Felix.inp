@@ -6,7 +6,7 @@
 
 # control flags
 IWriteFLAG                = 0
-IImageFLAG                = 1
+IImageFLAG                = 0
 IOutputFLAG               = 0  
 IScatterFactorMethodFLAG  = 0
 ICentralBeamFLAG          = 1
@@ -36,20 +36,20 @@ RAbsorptionPer            = 2.9
 RConvergenceAngle         = 6.0
 IIncidentBeamDirectionX   = 3
 IIncidentBeamDirectionY   = -2 
-IIncidentBeamDirectionZ   = -1
+IIncidentBeamDirectionZ   = 1
 IXDirectionX              = 1
 IXDirectionY              = 1
-IXDirectionZ              = 1
+IXDirectionZ              = -1
 INormalDirectionX         = 3
 INormalDirectionY         = -2
-INormalDirectionZ         = -1 
+INormalDirectionZ         = 1 
 RAcceleratingVoltage (kV) = 200.0
 
 # ------------------------------------
 # LACBED input
 
 # sample thickness loop (Angstrom)
-RInitialThickness        = 100.0
-RFinalThickness          = 2000.0
+RInitialThickness        = 1000.0
+RFinalThickness          = 1000.0
 RDeltaThickness          = 100.0
-IReflectOut              = 1
+IReflectOut              = 15
