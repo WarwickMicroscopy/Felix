@@ -36,7 +36,7 @@ F90FLAGS = -fbounds-check -fno-range-check -fimplicit-none -fcray-pointer # debu
 F77FLAGS = -fbounds-check -fno-range-check # debug
 
 INCLUDEDIR = /warwick/mathlib/gnu/x86_64/ # CSC machines
-INCLUDEDIR = /usr/lib/ # RAR Linux
+#INCLUDEDIR = /usr/lib/ # RAR Linux
 
 LIBFLAGS= -llapack -lblas -lfftw3
 
@@ -44,8 +44,8 @@ LIBFLAGS= -llapack -lblas -lfftw3
 # LD_LIBRARY_PATH=/warwick/mathlib/nag/ifort-x86_64/lib:$LD_LIBRARY_PATH
 # in order to run the code
 
-BLOCHOBJECTFILES = gmodules.o smodules.o main.o util.o inout.o inpcif.o ciftbx.o hash_funcs.o eigen.o invert.o microscopy.o diffraction.o crystallography.o bloch.o Ug.o image.o
-LACBEDOBJECTFILES = gmodules.o smodules.o lacbed.o util.o inout.o \
+SIMOBJECTFILES = gmodules.o smodules.o main.o util.o inout.o inpcif.o ciftbx.o hash_funcs.o eigen.o invert.o microscopy.o diffraction.o crystallography.o bloch.o Ug.o image.o
+DRAWOBJECTFILES = gmodules.o smodules.o lacbed.o util.o inout.o \
 eigen.o invert.o microscopy.o diffraction.o crystallography.o bloch.o Ug.o image.o inpcif.o ciftbx.o hash_funcs.o 
 
 REFINEOBJECTFILES = gmodules.o smodules.o refinemain.o util.o inout.o inpcif.o ciftbx.o hash_funcs.o eigen.o invert.o microscopy.o diffraction.o crystallography.o bloch.o Ug.o image.o
@@ -65,13 +65,13 @@ REFINEOBJECTFILES = gmodules.o smodules.o refinemain.o util.o inout.o inpcif.o c
 
 all:	FelixSim FelixDraw FelixRefine
 
-FelixSim: $(BLOCHOBJECTFILES)
-	$(F90) $(F90FLAGS) -o $@ $(BLOCHOBJECTFILES) -I$(INCLUDEDIR) $(LIBFLAGS)
-#	$(F90) -o $@ $(BLOCHOBJECTFILES) $(LIBFLAGS)
+FelixSim: $(SIMOBJECTFILES)
+	$(F90) $(F90FLAGS) -o $@ $(SIMOBJECTFILES) -I$(INCLUDEDIR) $(LIBFLAGS)
+#	$(F90) -o $@ $(SIMOBJECTFILES) $(LIBFLAGS)
 
-FelixDraw: $(LACBEDOBJECTFILES)
-	$(F90) $(F90FLAGS) -o $@ $(LACBEDOBJECTFILES) -I$(INCLUDEDIR) $(LIBFLAGS)
-#	$(F90) -o $@ $(LACBEDOBJECTFILES) $(LIBFLAGS)
+FelixDraw: $(DRAWOBJECTFILES)
+	$(F90) $(F90FLAGS) -o $@ $(DRAWOBJECTFILES) -I$(INCLUDEDIR) $(LIBFLAGS)
+#	$(F90) -o $@ $(DRAWOBJECTFILES) $(LIBFLAGS)
 
 FelixRefine: $(REFINEOBJECTFILES)
 	$(F90) $(F90FLAGS) -o $@ $(REFINEOBJECTFILES) -I$(INCLUDEDIR) $(LIBFLAGS)
