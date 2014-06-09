@@ -139,7 +139,7 @@ SUBROUTINE DiffractionPatternDefinitions( IErr )
      nWeakBeams = 0
      
      DO ind=1,SIZE(RHKL,DIM=1)
-        IF (RgVecMag(ind).LE.RBSMaxGVecAmp) THEN
+        IF (ABS(RgVecMag(ind)).LE.RBSMaxGVecAmp) THEN
            nReflections = nReflections + 1
         ENDIF
      ENDDO
@@ -421,15 +421,15 @@ SUBROUTINE NewHKLmake(Ihklmax,Rhkl0Vec,RAcceptanceAngle,IErr)
            
            SELECT CASE(SSpaceGroupName)
            CASE("F") !Face Centred
-              IF(((ABS(MOD(RhklDummyVec(1)+RhklDummyVec(2),2.0D0)).LE.TINY).AND.&
-                   (ABS(MOD(RhklDummyVec(2)+RhklDummyVec(3),2.0D0)).LE.TINY).AND.&
-                   (ABS(MOD(RhklDummyVec(1)+RhklDummyVec(3),2.0D0)).LE.TINY)).OR.&
-                   (((ABS(MOD(RhklDummyVec(1),2.0D0))).LE.TINY).AND.&
-                   ((ABS(MOD(RhklDummyVec(2),2.0D0))).LE.TINY).AND.&
-                   ((ABS(MOD(RhklDummyVec(3),2.0D0))).LE.TINY)).OR.&
-                   (((ABS(MOD(RhklDummyVec(1),2.0D0))).GT.TINY).AND.&
-                   ((ABS(MOD(RhklDummyVec(2),2.0D0))).GT.TINY).AND.&
-                   ((ABS(MOD(RhklDummyVec(3),2.0D0))).GT.TINY))) THEN
+              IF(((ABS(MOD(RhklDummyVec(1)+RhklDummyVec(2),2.D0)).LE.TINY).AND.&
+                   (ABS(MOD(RhklDummyVec(2)+RhklDummyVec(3),2.D0)).LE.TINY).AND.&
+                   (ABS(MOD(RhklDummyVec(1)+RhklDummyVec(3),2.D0)).LE.TINY)).OR.&
+                   (((ABS(MOD(RhklDummyVec(1),2.D0))).LE.TINY).AND.&
+                   ((ABS(MOD(RhklDummyVec(2),2.D0))).LE.TINY).AND.&
+                   ((ABS(MOD(RhklDummyVec(3),2.D0))).LE.TINY)).OR.&
+                   (((ABS(MOD(RhklDummyVec(1),2.D0))).GT.TINY).AND.&
+                   ((ABS(MOD(RhklDummyVec(2),2.D0))).GT.TINY).AND.&
+                   ((ABS(MOD(RhklDummyVec(3),2.D0))).GT.TINY))) THEN
                  IF(IZolzFLAG.EQ.1) THEN
                     IF( ABS(DOT_PRODUCT(RhklDummyUnitVec,Rhkl0UnitVec)) .LE. TINY ) THEN
                        INhkl=INhkl+1

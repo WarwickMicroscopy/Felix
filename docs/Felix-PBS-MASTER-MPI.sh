@@ -138,9 +138,10 @@ echo "# ------------------------------------"   >> $inpfile
 echo "# BLOCH input"                            >> $inpfile
 echo ""                                         >> $inpfile
 echo "# control flags"                          >> $inpfile
-echo "IWriteFLAG                = 10"           >> $inpfile
-echo "IImageFLAG                = 2"            >> $inpfile
+echo "IWriteFLAG                = 2"            >> $inpfile
+echo "IImageFLAG                = 1"            >> $inpfile
 echo "IOutputFLAG               = 1"            >> $inpfile
+echo "IBinorTextFLAG            = 1"            >> $inpfile
 echo "IScatterFactorMethodFLAG  = 0"            >> $inpfile
 echo "ICentralBeamFLAG          = 1"            >> $inpfile
 echo "IMaskFLAG                 = 0"            >> $inpfile
@@ -148,7 +149,8 @@ echo "IZOLZFLAG                 = 1"            >> $inpfile
 echo "IAbsorbFLAG               = 1"            >> $inpfile
 echo "IAnisoDebyeWallerFlag     = 0"            >> $inpfile
 echo "IBeamConvergence          = 1"            >> $inpfile
-echo "IPseudoCubicFLAG          = 0"            >> $inpfile      
+echo "IPseudoCubicFLAG          = 0"            >> $inpfile
+echo "IXDirection FLAG          = 0"            >> $inpfile      
 echo ""                                         >> $inpfile
 echo "# radius of the beam in pixels"           >> $inpfile
 echo "IPixelCount               = 4"            >> $inpfile

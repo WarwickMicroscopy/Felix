@@ -662,6 +662,11 @@ PROGRAM FelixRefine
      ENDIF
   END IF
   
+
+  IF(my_rank.eq.0) THEN
+     PRINT*,RIndividualReflectionsRoot(32:33,32:33,1,1)
+  END IF
+
   IF(IWriteFLAG.GE.10) THEN
      PRINT*,"REDUCED Reflections",my_rank
   END IF

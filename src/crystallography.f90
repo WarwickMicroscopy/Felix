@@ -50,11 +50,7 @@ SUBROUTINE Crystallography( IErr )
   IF((IWriteFLAG.GE.0.AND.my_rank.EQ.0).OR.IWriteFLAG.GE.10) THEN
      PRINT*,"Crystallography(",my_rank,")"
   END IF
-  
-  IF(my_rank.EQ.0) THEN
-     PRINT*,RZDirC,RXDirC
-  END IF
-  
+    
   IF(IDiffractionFLAG.EQ.1) THEN
      DEALLOCATE(&
           RFullAtomicFracCoordVec,SFullAtomicNameVec,&
@@ -96,11 +92,6 @@ SUBROUTINE Crystallography( IErr )
           (INormalDirectionY/3.0D0)+&
           (INormAlDirectionZ/3.0D0)
 
-     
-     IF(my_rank.EQ.0) THEN
-        PRINT*,RZDirC,RXDirC
-     END IF
-     
      DO ind =1,3
         IF(ABS(RZDirC(ind)).LE.TINY) THEN
            RZDirC(ind) = 100000000.0D0 ! A large number
@@ -133,9 +124,9 @@ SUBROUTINE Crystallography( IErr )
      
   END IF
 
-  IF(my_rank.EQ.0) THEN
-     PRINT*,RZDirC,RXDirC
-  END IF
+!!$  IF(my_rank.EQ.0) THEN
+!!$     PRINT*,RZDirC,RXDirC
+!!$  END IF
 
   !RYDirC = CROSS(RZDirC,RYDirC)
 
@@ -170,23 +161,24 @@ SUBROUTINE Crystallography( IErr )
           DOT_PRODUCT(RbVecO/DOT_PRODUCT(RbVecO,RbVecO),RcVecO/DOT_PRODUCT(RcVecO,RcVecO))*&
           DOT_PRODUCT(RcVecO/DOT_PRODUCT(RcVecO,RcVecO),RaVecO/DOT_PRODUCT(RaVecO,RaVecO))
      
-     IF(ABS(RTTest).LT.TINY.AND.SCAN(SSpaceGroupName,'rR').NE.0) THEN
-        SSpaceGroupName = TRIM(ADJUSTL("V"))
-        IF((IWriteFLAG.GE.1.AND.my_rank.EQ.0).OR.IWriteFLAG.GE.10) THEN
-           PRINT*,"Crystal is Obverse"
-        END IF
-     ELSE
-        IF((IWriteFLAG.GE.1.AND.my_rank.EQ.0).OR.IWriteFLAG.GE.10) THEN
-           PRINT*,"Crystal is Reverse"
+     IF(SCAN(SSpaceGroupName,'rR').NE.0) THEN
+        IF(ABS(RTTest).LT.TINY) THEN
+           SSpaceGroupName = TRIM(ADJUSTL("V"))
+           IF((IWriteFLAG.GE.1.AND.my_rank.EQ.0).OR.IWriteFLAG.GE.10) THEN
+              PRINT*,"Crystal is Obverse"
+           END IF
+        ELSE
+           IF((IWriteFLAG.GE.1.AND.my_rank.EQ.0).OR.IWriteFLAG.GE.10) THEN
+              PRINT*,"Crystal is Reverse"
+           END IF
         END IF
      END IF
   END IF
-
   ! Set up Reciprocal Lattice Vectors: orthogonal reference frame in 1/Angstrom units
 
-  RarVecO= TWOPI*CROSS(RbVecO,RcVecO)/DOT(RbVecO,CROSS(RcVecO,RaVecO))
-  RbrVecO= TWOPI*CROSS(RcVecO,RaVecO)/DOT(RcVecO,CROSS(RaVecO,RbVecO))
-  RcrVecO= TWOPI*CROSS(RaVecO,RbVecO)/DOT(RaVecO,CROSS(RbVecO,RcVecO))
+  RarVecO= TWOPI*CROSS(RbVecO,RcVecO)/DOT_PRODUCT(RbVecO,CROSS(RcVecO,RaVecO))
+  RbrVecO= TWOPI*CROSS(RcVecO,RaVecO)/DOT_PRODUCT(RcVecO,CROSS(RaVecO,RbVecO))
+  RcrVecO= TWOPI*CROSS(RaVecO,RbVecO)/DOT_PRODUCT(RaVecO,CROSS(RbVecO,RcVecO))
 
   DO ind=1,THREEDIM
      IF (abs(RarVecO(ind)).lt.1.D-3) THEN

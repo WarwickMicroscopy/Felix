@@ -264,6 +264,12 @@ SUBROUTINE Input( IErr )
   END IF
 
   ILine= ILine+1
+  READ(IChInp,10,ERR=20,END=30) IBinorTextFLAG
+  IF((IWriteFLAG.GE.1.AND.my_rank.EQ.0).OR.IWriteFLAG.GE.10) THEN
+     PRINT*,"IBinorTextFLAG = ", IBinorTextFLAG
+  END IF
+
+  ILine= ILine+1
   READ(IChInp,10,ERR=20,END=30) IScatterFactorMethodFLAG
   IF((IWriteFLAG.GE.1.AND.my_rank.EQ.0).OR.IWriteFLAG.GE.10) THEN
      PRINT*,"IScatterFactorMethodFLAG = ", IScatterFactorMethodFLAG
@@ -1078,6 +1084,7 @@ SUBROUTINE OpenReflectionImage(IChOutWrite, surname, IErr,IReflectWriting,IImage
   INTEGER(KIND=IKIND) IChOutWrite, IErr,IReflectWriting,IImageSizeX
 
   CHARACTER*50 filename
+  CHARACTER*40 fileext
   INTEGER index
 
   IF ((IWriteFLAG.GE.2.AND.my_rank.EQ.0).OR.IWriteFLAG.GE.10) THEN
@@ -1097,13 +1104,20 @@ SUBROUTINE OpenReflectionImage(IChOutWrite, surname, IErr,IReflectWriting,IImage
      PRINT*,filename
   END IF
   
+  SELECT CASE (IBinorTextFLAG)
+  CASE(0)
+     WRITE(fileext,*) TRIM(ADJUSTL(".bin")) 
+  CASE(1)
+     WRITE(fileext,*) TRIM(ADJUSTL(".txt"))
+  END SELECT
+  
   SELECT CASE(IChOutWrite)
   CASE(IChOutWFImageReal)        
      WRITE(filename,*) TRIM(ADJUSTL(surname)),"/F-WF-A_",&
           TRIM(ADJUSTL(h)),&
           TRIM(ADJUSTL(k)),&
           TRIM(ADJUSTL(l)),&
-          ".txt"
+          TRIM(ADJUSTL(fileext))
      IF (IWriteFLAG.GE.10) THEN
         PRINT*, "OpenImage: opening image for WAVE FUNCTION REAL PART (WR*.txt)"
      END IF
@@ -1112,7 +1126,7 @@ SUBROUTINE OpenReflectionImage(IChOutWrite, surname, IErr,IReflectWriting,IImage
           TRIM(ADJUSTL(h)),&
           TRIM(ADJUSTL(k)),&
           TRIM(ADJUSTL(l)),&
-          ".txt"
+          TRIM(ADJUSTL(fileext))
      IF (IWriteFLAG.GE.10) THEN
         PRINT*, "OpenImage: opening image for WAVE FUNCTION PHASE PART (WP*.txt)"
      END IF
@@ -1121,13 +1135,13 @@ SUBROUTINE OpenReflectionImage(IChOutWrite, surname, IErr,IReflectWriting,IImage
           TRIM(ADJUSTL(h)),&
           TRIM(ADJUSTL(k)),&
           TRIM(ADJUSTL(l)),&
-          ".bin"
+          TRIM(ADJUSTL(fileext))
      IF (IWriteFLAG.GE.10) THEN
         PRINT*, "OpenImage: opening image for WAVE INTENSITIES"
      END IF
   CASE(MontageOut)        
      WRITE(filename,*) "F-WI-",TRIM(ADJUSTL(surname)),&
-          ".bin"
+          TRIM(ADJUSTL(fileext))
      IF (IWriteFLAG.GE.10) THEN
         PRINT*, "OpenImage: opening image for WAVE INTENSITIES"
      END IF
@@ -1137,11 +1151,17 @@ SUBROUTINE OpenReflectionImage(IChOutWrite, surname, IErr,IReflectWriting,IImage
      END IF
   END SELECT
   
-  OPEN(UNIT=IChOutWrite, ERR=10, STATUS= 'UNKNOWN', FILE=TRIM(ADJUSTL(filename)),FORM='UNFORMATTED',&
-       ACCESS='DIRECT',IOSTAT=Ierr,RECL=IImageSizeX*8)
-
-  RETURN
-
+  
+  SELECT CASE (IBinorTextFLAG)
+     CASE(0)
+        OPEN(UNIT=IChOutWrite, ERR=10, STATUS= 'UNKNOWN', FILE=TRIM(ADJUSTL(filename)),FORM='UNFORMATTED',&
+             ACCESS='DIRECT',IOSTAT=Ierr,RECL=IImageSizeX*8)
+        
+     CASE(1)
+        OPEN(UNIT=IChOutWrite, ERR=10, STATUS= 'UNKNOWN', FILE=TRIM(ADJUSTL(filename)))
+     END SELECT
+     RETURN
+     
   ! error in OPEN detected
 10 PRINT*,"OpenReflectionImage(): ERR in OPEN()",IErr
   IErr= 1
@@ -1176,18 +1196,24 @@ SUBROUTINE WriteReflectionImage( IChOutWrite, data, IErr,IImageSizeX,IImageSizeY
      PRINT*,"WriteReflectionImage"
   END IF
 
-!!$
-!!$  DO ind = 1,(2*IPixelCount)
-!!$     WRITE(CSizeofData,*) 2*IPixelCount
-!!$     WRITE(SFormatString,*) "("//TRIM(ADJUSTL(CSizeofData))//"(1F6.3,1X),A1)"
-!!$     WRITE(IChOutWrite,FMT=SFormatString,ERR=20) data(ind,:)
-!!$  END DO
+  SELECT CASE (IBinorTextFLAG)
+     
+  CASE(0)
+     
+     DO ind = 1,(IImageSizeY)
+        WRITE(IChOutWrite,rec=ind) data(ind,:)
+     END DO
 
-  DO ind = 1,(IImageSizeY)
-     WRITE(IChOutWrite,rec=ind) data(ind,:)
-  END DO
-  !,*,ERR=20,IOSTAT=Ierr
-  
+  CASE(1)
+     
+     DO ind = 1,(2*IPixelCount)
+        WRITE(CSizeofData,*) 2*IPixelCount
+        WRITE(SFormatString,*) "("//TRIM(ADJUSTL(CSizeofData))//"(1F6.3,1X),A1)"
+        WRITE(IChOutWrite,FMT=SFormatString,ERR=20) data(ind,:)
+     END DO
+     
+  END SELECT
+
   RETURN
   ! error in WRITE detected
 20 PRINT*,"WriteReflectionImage(): ERR in WRITE()",Ierr

@@ -287,7 +287,7 @@ MODULE IPara
        ICentralBeamFLAG, IMaskFLAG, IVolumeFLAG, &
        IZolzFLAG,IAbsorbFLAG, IAnisoDebyeWallerFactorFlag, &
        IImageFLAG,IOutputFLAG,IBeamConvergenceFLAG,  &
-       IPseudoCubicFLAG,IXDirectionFLAG
+       IPseudoCubicFLAG,IXDirectionFLAG,IBinorTextFLAG
 
   !Minimum Reflections etc
   INTEGER(IKIND) :: &

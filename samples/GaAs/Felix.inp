@@ -5,41 +5,43 @@
 # BLOCH input
 
 # control flags
-IWriteFLAG                = 0
-IImageFLAG                = 0
-IOutputFLAG               = 0  
+IWriteFLAG                = 2
+IImageFLAG                = 1
+IOutputFLAG               = 1
+IBinorTextFLAG            = 1  
 IScatterFactorMethodFLAG  = 0
 ICentralBeamFLAG          = 1
 IMaskFLAG                 = 0
-IZolzFLAG                 = 0
+IZolzFLAG                 = 1
 IAbsorbFLAG               = 1
 IAnisoDebyeWallerFlag     = 0
-IBeamConvergence	  = 1
-IPseudoCubicFLAG          = 0
+IBeamConvergenceFLAG      = 1
+IPseudoCubicFLAG          = 1
+IXDirectionFLAG           = 1
 
 # radius of the beam in pixels
 IPixelCount               = 64
 
 # beam selection criteria
 IMinReflectionPool        = 600
-IMinStrongBeams           = 25
-IMinWeakBeams             = 10
+IMinStrongBeams           = 100
+IMinWeakBeams             = 100
 RBSBMax                   = 0.1
 RBSPMax                   = 0.1
-RConvergenceTolerance (%) = 1
+RConvergenceTolerance (%) = 1.0
 
 # crystal settings
 RDebyeWallerConstant      = 0.4668
 RAbsorptionPer            = 2.9
 
 # microscope settings
-RConvergenceAngle         = 6.0
+RConvergenceAngle         = 3.0
 IIncidentBeamDirectionX   = 1
 IIncidentBeamDirectionY   = 1 
 IIncidentBeamDirectionZ   = 1
 IXDirectionX              = 0
-IXDirectionY              = -1
-IXDirectionZ              = 1
+IXDirectionY              = 1
+IXDirectionZ              = -1
 INormalDirectionX         = 1
 INormalDirectionY         = 1
 INormalDirectionZ         = 1 
@@ -52,4 +54,4 @@ RAcceleratingVoltage (kV) = 200.0
 RInitialThickness        = 1000.0
 RFinalThickness          = 1000.0
 RDeltaThickness          = 100.0
-IReflectOut              = 37
+IReflectOut              = 50

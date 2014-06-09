@@ -203,6 +203,8 @@ SUBROUTINE UgCalculation (IErr)
      CUgMat(ind,ind)=CUgMat(ind,ind)-RMeanInnerCrystalPotential
   ENDDO
 
+  CUgMat = CUgMat + CONJG(TRANSPOSE(CUgMat))
+
 
 END SUBROUTINE UgCalculation
 
@@ -221,7 +223,9 @@ SUBROUTINE UgAddAbsorption(IErr)
   
   INTEGER(IKIND) IErr
 
-  CUgMatPrime = ABS(CUgMat)*(RAbsorptionPercentage/100.D0)*CIMAGONE
+  CUgMatPrime = CZERO
+
+  CUgMatPrime = CUgMatPrime+ABS(CUgMat)*(RAbsorptionPercentage/100.D0)*CIMAGONE
 
 !!$  IF (IAbsorbFlag.EQ.1) THEN
 !!$     CUgMat(ind,jnd) = &

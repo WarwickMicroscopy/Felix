@@ -51,10 +51,15 @@ for later use by FelixDraw.
 2 Eigenspectra and Ug Matrix is saved
 3 Eigenspectra, Ug Matrix and Wavefunctions saved
 
+IBinorTextFLAG: Select binary or text output files, binary are smaller and faster to read/write however text files are easier to import into other programs for later use
+
+0 Binary
+1 Text
+
 IScatteringFactorMethod: Determines which method by which to calculate potentials
-0 Kirkands Method
-0 Peng 
-0 Doyle and Turner
+0 Kirkands Method (103 Elements)
+0 Peng (98 Elements)
+0 Doyle and Turner (only works for 68 elements)
 
 IZolzFLAG: Choose to limit the simulation to the zeroth order laue zone.  
 
@@ -90,6 +95,11 @@ or Orthorhombic notation
 
 0 Orthorhomnic
 1 PseudoCubic
+
+IXDirectionFLAG : If set to 0 the program will ignore any specified X Direction and take the shortest G Vector as the X direction
+
+0 Ignore X Direction
+1 Use X Direction
 
 IPixelCount: Pixel Radius of images, simulation scales as the square of this
   number but primary parallelisation is over pixels (more pixels, more cores
