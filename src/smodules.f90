@@ -287,11 +287,16 @@ MODULE IPara
        ICentralBeamFLAG, IMaskFLAG, IVolumeFLAG, &
        IZolzFLAG,IAbsorbFLAG, IAnisoDebyeWallerFactorFlag, &
        IImageFLAG,IOutputFLAG,IBeamConvergenceFLAG,  &
-       IPseudoCubicFLAG
+       IPseudoCubicFLAG,IXDirectionFLAG,IBinorTextFLAG
 
   !Minimum Reflections etc
   INTEGER(IKIND) :: &
        IMinReflectionPool,IMinStrongBeams,IMinWeakBeams
+
+  !OtherFLAGS
+
+  INTEGER(IKIND) :: &
+       IDiffractionFLAG=0
 
   !Disk Radius
 
