@@ -875,9 +875,6 @@ PROGRAM FelixSim
      ENDIF
   END IF
 
-  IF(my_rank.eq.0) THEN
-     PRINT*,RIndividualReflectionsRoot(32:33,32:33,1,1)
-  END IF
   RFinalMontageImageRoot = ZERO
 
   IF(my_rank.EQ.0.AND.IImageFLAG.GE.2) THEN
