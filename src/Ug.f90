@@ -37,24 +37,187 @@ SUBROUTINE GMatrixInitialisation (IErr)
   
   IMPLICIT NONE
   
-  INTEGER ind,jnd,ierr
+  INTEGER ind,jnd,ierr,IUniqueKey,knd,IFound
+!!$  REAL(RKIND),DIMENSION(:,:),ALLOCATABLE :: &
+!!$       RUniqueKeyComplete
 
   IF((IWriteFLAG.GE.0.AND.my_rank.EQ.0).OR.IWriteFLAG.GE.10) THEN
      PRINT*,"GMatrixInitialisation()"
   END IF
+
+!!$  DO ind = 1,10
+!!$     PRINT*
+!!$  END DO
+
+!!$  IUniqueKey = 0
   
   DO ind=1,nReflections
      DO jnd=1,nReflections
+!!$        IFound = 0
         
         RgMatMat(ind,jnd,:)= RgVecMatT(ind,:)-RgVecMatT(jnd,:)
         RgMatMag(ind,jnd)= SQRT(DOT_PRODUCT(RgMatMat(ind,jnd,:),RgMatMat(ind,jnd,:)))
-        
+!!$        IF(IUniqueKey.EQ.0) THEN
+!!$           IUniqueKey = 1
+!!$           RUniqueKey(IUniqueKey,2:4) = RgMatMat(ind,jnd,:)
+!!$           RUniqueKey(IUniqueKey,1) = IUniqueKey
+!!$        ELSE
+!!$           DO knd = 1,IUniqueKey
+!!$              IF(RgMatMat(ind,jnd,1).EQ.RUniqueKey(knd,2).AND.&
+!!$                   RgMatMat(ind,jnd,2).EQ.RUniqueKey(knd,3).AND.&
+!!$                   RgMatMat(ind,jnd,3).EQ.RUniqueKey(knd,4)) THEN
+!!$                 IFound = knd
+!!$                 EXIT
+!!$              ELSE
+!!$                 CYCLE      
+!!$              END IF
+!!$           END DO
+!!$           IF(IFound.EQ.0) THEN
+!!$              IUniqueKey = IUniqueKey + 1
+!!$              RUniqueKey(IUniqueKey,1) = IUniqueKey
+!!$              RUniqueKey(IUniqueKey,2:4) = RgMatMat(ind,jnd,:)
+!!$              ISymmetryRelations(ind,jnd) = IUniqueKey
+!!$           ELSE
+!!$              ISymmetryRelations(ind,jnd) = knd              
+!!$           END IF
+!!$        END IF
      ENDDO
   ENDDO
+ 
+!!$  ALLOCAte(&
+!!$      RUniqueKeyComplete(IUniqueKey,5),&
+!!$      STAT = IErr)
+!!$  IF( IErr.NE.0 ) THEN
+!!$     PRINT*,"GMatrixInitialisation(", my_rank, ") error ", IErr, &
+!!$          " in ALLOCATE() of DYNAMIC variables Reflection Matrix"
+!!$     RETURN
+!!$  ENDIF
+!!$
+!!$  RUniqueKeyComplete = RUniqueKey(:IUniqueKey,:)
+!!$
+!!$  DEALLOCATE(&
+!!$       RUniqueKey,STAT=IErr)
+!!$  IF( IErr.NE.0 ) THEN
+!!$     PRINT*,"GMatrixInitialisation(", my_rank, ") error ", IErr, &
+!!$          " in DEALLOCATE() of DYNAMIC variables Reflection Matrix"
+!!$     RETURN
+!!$  ENDIF
+!!$ 
+!!$  ALLOCAte(&
+!!$      RUniqueKey(IUniqueKey,5),&
+!!$      STAT = IErr)
+!!$  IF( IErr.NE.0 ) THEN
+!!$     PRINT*,"GMatrixInitialisation(", my_rank, ") error ", IErr, &
+!!$          " in ALLOCATE() of DYNAMIC variables Reflection Matrix"
+!!$     RETURN
+!!$  ENDIF
+!!$
+!!$  RUniqueKey  = RUniqueKeyComplete
+!!$
+!!$  
+!!$
+!!$  DEALLOCATE(&
+!!$       RUniqueKeyComplete,STAT=IErr)
+!!$  IF( IErr.NE.0 ) THEN
+!!$     PRINT*,"GMatrixInitialisation(", my_rank, ") error ", IErr, &
+!!$          " in DEALLOCATE() of DYNAMIC variables Reflection Matrix"
+!!$     RETURN
+!!$  ENDIF
+!!$  PRINT*,"IUniqueKey = ",IUniqueKey
   
   RgMatMag = RgMatMag/TWOPI
   
 END SUBROUTINE GMatrixInitialisation
+
+SUBROUTINE DetermineSymmetryRelatedUgs (IErr)
+  
+  USE MyNumbers
+  
+  USE CConst; USE IConst
+  USE IPara; USE RPara
+  USE IChannels
+  USE MPI
+  USE MyMPI
+  
+  IMPLICIT NONE
+  
+  INTEGER(IKIND) ind,jnd,ierr,knd,IArrayLoc
+  INTEGER(IKIND),DIMENSION(:,:),ALLOCATABLE :: &
+       IUgStrength
+  INTEGER(IKIND),DIMENSION(:,:,:),ALLOCATABLE :: &
+       ISymmetryhklRelations
+  INTEGER(IKIND),DIMENSION(THREEDIM) :: &
+       Ihklval
+  INTEGER(IKIND),DIMENSION(1) :: &
+       Ihklmax,h,k,l
+
+  ALLOCATE(&
+       IUgStrength(NINT(((FOUR*IHKLMAXValue)+ONE)**THREE),2),&
+       STAT=IErr)
+  IF( IErr.NE.0 ) THEN
+     PRINT*,"DetermineSymmetryRelatedUgs(", my_rank, ") error ", IErr, &
+          " in ALLOCATE() of DYNAMIC variables Reflection Matrix"
+     RETURN
+  ENDIF
+
+  ALLOCATE( &  
+       ISymmetryhklRelations(nReflections,nReflections,THREEDIM), &
+       STAT=IErr)
+  IF( IErr.NE.0 ) THEN
+     PRINT*,"main(", my_rank, ") error ", IErr, &
+          " in ALLOCATE() of DYNAMIC variables Reflection Matrix"
+     RETURN
+  ENDIF
+
+  IUgStrength(:,2) = 0
+  DO ind = 1,SIZE(IUgStrength,DIM=1)
+     IUgStrength(ind,1) = ind
+  END DO
+
+  IF((IWriteFLAG.GE.0.AND.my_rank.EQ.0).OR.IWriteFLAG.GE.10) THEN
+     PRINT*,"GMatrixInitialisation()"
+  END IF
+
+  DO ind=1,nReflections
+     DO jnd=1,nReflections
+        
+        
+        Ihklval = RHKL(ind,:)-RHKL(jnd,:)
+!!$        Ihklval = ihklval + (2*IHKLMAXValue)
+        IArrayLoc = (&
+             (ihklval(1)+(2*IHKLMAXValue))*(2*IHKLMAXValue)**2+&
+             (ihklval(2)+(2*IHKLMAXValue))*(2*IHKLMAXValue)+&
+             (ihklval(3)+(2*IHKLMAXValue))+&
+             1)
+        IUgStrength(IArrayLoc,2)= IUgStrength(IArrayLoc,2)+1
+        ISymmetryRelations(ind,jnd) = IArrayLoc
+        ISymmetryhklRelations(ind,jnd,:) = Ihklval     
+     ENDDO
+  ENDDO
+  Ihklmax = MAXLOC(IUgStrength(:,2))-1
+!!$  Ihklmax-1
+  PRINT*,IHKLMAXValue
+  h = Ihklmax/((2*IHKLMAXValue)**2)-2*IHKLMAXValue
+  PRINT*,"h = ",h
+  k = MOD(ihklmax-((h+(2*IHKLMAXValue))*(2*IHKLMAXValue)),(2*IHKLMAXValue))
+  PRINT*,"k = ",k
+  l = ihklmax-&
+       ((((Ihklmax-1)/(2*IHKLMAXValue)**2)-2*IHKLMAXValue)+&
+       MOD(ihklmax,((Ihklmax-1)/(2*IHKLMAXValue)**2)-2*IHKLMAXValue))
+  PRINT*,Ihklmax,MAXVAL(IUgStrength(:,2))
+  !RgMatMag = RgMatMag/TWOPI
+
+  DO ind=1,6
+     PRINT*,ISymmetryRelations(ind,:6)
+  END DO
+  
+  DO ind=1,6
+     DO jnd=1,6
+        PRINT*,ISymmetryhklRelations(ind,jnd,:)
+     END DO
+  END DO
+  
+END SUBROUTINE DetermineSymmetryRelatedUgs
 
 !---------------------------------------------------------------------
 SUBROUTINE UgCalculation (IErr)
@@ -69,11 +232,24 @@ SUBROUTINE UgCalculation (IErr)
   
   IMPLICIT NONE
   
-  INTEGER(IKIND) ind,jnd,ierr, currentatom, iAtom,imaxj
+  INTEGER(IKIND) ind,jnd,ierr, currentatom, iAtom,imaxj,IFound,ICount
+  INTEGER(IKIND),DIMENSION(2) :: &
+       IPos
   COMPLEX(CKIND) CVgij
+  COMPLEX(CKIND), DIMENSION(:,:),ALLOCATABLE :: &
+       CUgMatUnique
   REAL(RKIND) RAtomicFormFactor
   REAL(RKIND) :: &
        RMeanInnerPotentialVolts
+
+  ALLOCATE(&
+       CUgMatUnique(nReflections,nReflections),&
+       STAT=IErr)
+  IF( IErr.NE.0 ) THEN
+     PRINT*,"UgCalculation(", my_rank, ") error ", IErr, " in ALLOCATE()"
+     RETURN
+  ENDIF
+  
 
   IF((IWriteFLAG.GE.0.AND.my_rank.EQ.0).OR.IWriteFLAG.GE.10) THEN
      PRINT*,"UgCalculation()"
@@ -205,6 +381,41 @@ SUBROUTINE UgCalculation (IErr)
 
   CUgMat = CUgMat + CONJG(TRANSPOSE(CUgMat))
 
+  WHERE(REAL(REAL(CUgMat)).LT.TINY)
+     CUgmat = ZERO + REAL(AIMAG(CUgMat))*CIMAGONE
+  END WHERE
+
+  WHERE(REAL(AIMAG(CUgMat)).LT.TINY)
+     CUgmat = REAL(REAL(CUgMat)) + CZERO
+  END WHERE
+
+!!$  WHERE(CUgMat.EQ.CUgMat(1,2))
+!!$     CUgMatUnique = CONE
+!!$  ELSEWHERE
+!!$     CUgMatUnique = CZERO
+!!$  END WHERE
+!!$
+!!$  IF(my_rank.EQ.0) THEN
+!!$     IFound = 1
+!!$     ICount = 0
+!!$     DO WHILE (IFound.EQ.1)
+!!$        IF(MAXVAL(REAL(CUgMatUnique)).EQ.ONE) THEN
+!!$           IPos = MAXLOC(REAL(CUgMatUnique,RKIND))
+!!$           IFound = 1
+!!$           ICount = ICount + 1
+!!$           !PRINT*,IPos,CUgMat(IPos(1),IPos(2))
+!!$           CUgMatUnique(IPos(1),IPos(2))=CZERO
+!!$        ELSE
+!!$           IFound = 0
+!!$        END IF
+!!$     END DO
+!!$     PRINT*,"Total Symmetry Related Ugs",ICount,nReflections**2-ICount
+!!$  END IF
+  
+  DO ind=1,10
+     PRINT*,RHKL(ind,:),RgVecMatT(ind,:),CUgmat(ind,:1)
+  END DO
+  
 
 END SUBROUTINE UgCalculation
 

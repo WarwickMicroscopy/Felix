@@ -343,7 +343,7 @@ MODULE IPara
   !LACBED
 
   INTEGER(IKIND),DIMENSION(:,:), ALLOCATABLE :: &
-       ILACBEDStrongBeamList, IPixelLocation
+       ILACBEDStrongBeamList, IPixelLocation, ISymmetryRelations
   INTEGER(IKIND),DIMENSION(:), ALLOCATABLE :: &
        InBeams,IStrongBeamList
 
@@ -402,7 +402,8 @@ MODULE RPara
        RIsotropicDebyeWallerFactors, RAtomicSitePartialOccupancy, RDWF, ROcc
   
   REAL(RKIND), DIMENSION(:,:), ALLOCATABLE :: &
-       RSymVec,RAtomSiteFracCoordVec, MNP
+       RSymVec,RAtomSiteFracCoordVec, MNP,&
+       RUniqueKey
   
   REAL(RKIND), DIMENSION(:,:,:), ALLOCATABLE :: &
        RSymMat

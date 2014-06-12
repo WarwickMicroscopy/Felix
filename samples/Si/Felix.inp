@@ -16,7 +16,7 @@ IZolzFLAG                 = 1
 IAbsorbFLAG               = 1
 IAnisoDebyeWallerFlag     = 0
 IBeamConvergenceFLAG      = 1
-IPseudoCubicFLAG          = 1
+IPseudoCubicFLAG          = 0
 IXDirectionFLAG           = 1
 
 # radius of the beam in pixels

@@ -322,13 +322,15 @@ PROGRAM FelixSim
   REAL(RKIND),DIMENSION(:,:,:),ALLOCATABLE :: &
        RFinalMontageImageRoot
   REAL(RKIND),DIMENSION(:,:),ALLOCATABLE :: &
-       RImage
+       RImage,RSymDiff
   COMPLEX(CKIND),DIMENSION(:,:,:,:), ALLOCATABLE :: &
        CAmplitudeandPhaseRoot
   INTEGER IRootArraySize, IPixelPerRank
   CHARACTER*40 surname, path
   CHARACTER*25 CThickness 
   CHARACTER*25 CThicknessLength
+
+  
  
   INTEGER(IKIND),DIMENSION(2,2) :: ITest
   
@@ -409,6 +411,36 @@ PROGRAM FelixSim
      PRINT*,"main(", my_rank, ") error in InpCIF()"
      GOTO 9999
   ENDIF
+
+  ALLOCATE(&
+       RSymDiff(SIZE(RSymMat,DIM=1),SIZE(RSymMat,DIM=1)),&
+       STAT=IERR)
+    
+  ! Locate Unique Symmetry Operations
+
+  DO ind = 1,SIZE(RSymMat,DIM=1)
+     DO jnd = 1,SIZE(RSymMat,DIM=1)
+
+        RSymDiff(ind,jnd) = SUM(ABS(RSymMat(ind,:,:)-RSymMat(jnd,:,:)))
+
+     END DO
+  END DO
+
+  PRINT*,"Total unique Symmetry relations",SUM(ABS(RSymDiff))
+  
+  DO ind =1,SIZE(RSymDiff,DIM=1)
+     IF(RSymDiff(ind,1).EQ.ZERO) THEN
+        PRINT*,ind
+     END IF
+  END DO
+
+  DO ind = 1,8
+     DO jnd = 1,3
+        PRINT*,RSymMat(ind,jnd,:)
+     END DO
+  END DO
+
+
 
   IF (ITotalAtoms.EQ.0) THEN
      CALL CountTotalAtoms(IErr)
@@ -491,6 +523,22 @@ PROGRAM FelixSim
      GOTO 9999
   ENDIF
 
+!!$  
+!!$  PRINT*,SIZE(RSymMAT,DIM=1),SIZE(RSymMAT,DIM=3),SIZE(RSymMAT,DIM=3)
+!!$  
+!!$  !PRINT*,SUM(RSymMAT(1,ind,:)
+!!$
+!!$  PRINT*,"SYMMETRY RELATED HKLs"
+!!$  DO ind= 1,6
+!!$     PRINT*,RHKL(ind+1,:)
+!!$  END DO
+!!$  
+!!$  PRINT*,"Result of Symmetry Operations"
+!!$  DO ind = 1,SIZE(RSymMAT,DIM=1)
+!!$     PRINT*,(SUM(RSymMat(ind,:,:),DIM=2))*RHKL(2,:)
+!!$     !PRINT*,MATMUL(RSymMat(ind,:,:),RHKL(2,:))
+!!$  END DO
+
   !--------------------------------------------------------------------
   ! allocate memory for DYNAMIC variables according to nReflections
   !--------------------------------------------------------------------
@@ -562,6 +610,23 @@ PROGRAM FelixSim
           " in ALLOCATE() of DYNAMIC variables Reflection Matrix"
      GOTO 9999
   ENDIF
+  ALLOCATE( &  
+       ISymmetryRelations(nReflections,nReflections), &
+       STAT=IErr)
+  IF( IErr.NE.0 ) THEN
+     PRINT*,"main(", my_rank, ") error ", IErr, &
+          " in ALLOCATE() of DYNAMIC variables Reflection Matrix"
+     GOTO 9999
+  ENDIF
+!!$  ALLOCATE(&
+!!$       RUniqueKey(nReflections**2,5), &
+!!$       STAT=IErr)
+!!$  IF( IErr.NE.0 ) THEN
+!!$     PRINT*,"main(", my_rank, ") error ", IErr, &
+!!$          " in ALLOCATE() of DYNAMIC variables Reflection Matrix"
+!!$     GOTO 9999
+!!$  ENDIF
+       
        
   ALLOCATE( &  
        RgMatMag(nReflections,nReflections), &
@@ -576,6 +641,13 @@ PROGRAM FelixSim
   IF( IErr.NE.0 ) THEN
      PRINT*,"main(", my_rank, ") error ", IErr, &
           " in GMatrixInitialisation"
+     GOTO 9999
+  ENDIF
+
+  CALL DetermineSymmetryRelatedUgs (IErr)
+  IF( IErr.NE.0 ) THEN
+     PRINT*,"main(", my_rank, ") error ", IErr, &
+          " in DetermineSymmetryRelatedUgs"
      GOTO 9999
   ENDIF
 
