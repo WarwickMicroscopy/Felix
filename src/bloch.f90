@@ -55,7 +55,7 @@ SUBROUTINE BlochCoefficientCalculation(ind,jnd,IErr)
        CGeneralSolutionMatrix, CGeneralEigenVectors
   COMPLEX(CKIND),DIMENSION(:),ALLOCATABLE :: &
        CGeneralEigenValues
-  REAL(RKIND),DIMENSION(IReflectOut) ::  RTolerance, &
+  REAL(RKIND),DIMENSION(IReflectOut) :: &
        RPreviousWaveIntensity
 !!$  REAL(RKIND) :: &
 !!$       RGComponent

@@ -60,14 +60,12 @@ echo "Submitting jobs for ${cores} cores, ${ranks} MPI ranks, ${ompthreads} Open
 [ -d ${submitdir} ] || mkdir ${submitdir}
 job_dir=${submitdir}
 
-for ZX in 1
+for nUg in 1:10
 do
-for ZY in 1
-do
-for ZZ in 1
+for pUg in 1.0,2.0,3.0,4.0,5.0,6.0,7.0,8.0,9.0,10.0
 do
 
-job_file=`printf "FS_%1i%1i%1i.sh" "${ZX}" "${ZY}" "${ZZ}"` 
+job_file=`printf "FS_%1i%1i%1i.sh" "${nUg}" "${pUg}"` 
 
 echo ${job_dir}/${job_file}
 
@@ -150,7 +148,8 @@ echo "IAbsorbFLAG               = 1"            >> $inpfile
 echo "IAnisoDebyeWallerFlag     = 0"            >> $inpfile
 echo "IBeamConvergence          = 1"            >> $inpfile
 echo "IPseudoCubicFLAG          = 0"            >> $inpfile
-echo "IXDirection FLAG          = 0"            >> $inpfile      
+echo "IXDirection FLAG          = 0"            >> $inpfile 
+echo "IDevFLAG                  = 1"            >> $inpfile     
 echo ""                                         >> $inpfile
 echo "# radius of the beam in pixels"           >> $inpfile
 echo "IPixelCount               = 4"            >> $inpfile
@@ -169,16 +168,20 @@ echo "RAbsoprtionPercentage     = 2.9"          >> $inpfile
 echo ""                                         >> $inpfile
 echo "# microscope settings"                    >> $inpfile
 echo "RConvergenceAngle         = 3.0"          >> $inpfile
-echo "IIncidentBeamDirectionX   = ${ZX}"        >> $inpfile
-echo "IIncidentBeamDirectionY   = ${ZY}"        >> $inpfile
-echo "IIncidentBeamDirectionZ   = ${ZZ}"        >> $inpfile
-echo "IXDirectionX              = 1"            >> $inpfile
-echo "IXDirectionY              = 0"            >> $inpfile
+echo "IIncidentBeamDirectionX   = 1"            >> $inpfile
+echo "IIncidentBeamDirectionY   = 1"            >> $inpfile
+echo "IIncidentBeamDirectionZ   = 1"            >> $inpfile
+echo "IXDirectionX              = 0"            >> $inpfile
+echo "IXDirectionY              = 1"            >> $inpfile
 echo "IXDirectionZ              = -1"           >> $inpfile
 echo "INormalDirectionX         = 1"            >> $inpfile 
 echo "INormalDirectionY         = 1"            >> $inpfile
 echo "INormalDirectionZ         = 1"            >> $inpfile
 echo "RAcceleratingVoltage (kV) = 200.0"        >> $inpfile
+echo ""                                         >> $inpfile
+echo "# Ug Iteration                            >> $inpfile
+echo "INoofUgs                  = ${nUg}"       >> $inpfile
+echo "RPercentageUgChange       = ${pUg}"       >> $inpfile
 echo ""                                         >> $inpfile
 echo "# ------------------------------------"   >> $inpfile
 echo "# LACBED input"                           >> $inpfile
@@ -229,6 +232,5 @@ chmod 755 ${job_dir}/${job_file}
 #(cd ${job_dir} ; qsub -q devel ./${job_file})
 (cd ${job_dir} ; qsub -q taskfarm ./${job_file})
 
-done
 done
 done

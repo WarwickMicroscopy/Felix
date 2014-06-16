@@ -412,36 +412,6 @@ PROGRAM FelixSim
      GOTO 9999
   ENDIF
 
-  ALLOCATE(&
-       RSymDiff(SIZE(RSymMat,DIM=1),SIZE(RSymMat,DIM=1)),&
-       STAT=IERR)
-    
-  ! Locate Unique Symmetry Operations
-
-  DO ind = 1,SIZE(RSymMat,DIM=1)
-     DO jnd = 1,SIZE(RSymMat,DIM=1)
-
-        RSymDiff(ind,jnd) = SUM(ABS(RSymMat(ind,:,:)-RSymMat(jnd,:,:)))
-
-     END DO
-  END DO
-
-  PRINT*,"Total unique Symmetry relations",SUM(ABS(RSymDiff))
-  
-  DO ind =1,SIZE(RSymDiff,DIM=1)
-     IF(RSymDiff(ind,1).EQ.ZERO) THEN
-        PRINT*,ind
-     END IF
-  END DO
-
-  DO ind = 1,8
-     DO jnd = 1,3
-        PRINT*,RSymMat(ind,jnd,:)
-     END DO
-  END DO
-
-
-
   IF (ITotalAtoms.EQ.0) THEN
      CALL CountTotalAtoms(IErr)
      IF( IErr.NE.0 ) THEN
@@ -610,14 +580,6 @@ PROGRAM FelixSim
           " in ALLOCATE() of DYNAMIC variables Reflection Matrix"
      GOTO 9999
   ENDIF
-  ALLOCATE( &  
-       ISymmetryRelations(nReflections,nReflections), &
-       STAT=IErr)
-  IF( IErr.NE.0 ) THEN
-     PRINT*,"main(", my_rank, ") error ", IErr, &
-          " in ALLOCATE() of DYNAMIC variables Reflection Matrix"
-     GOTO 9999
-  ENDIF
 !!$  ALLOCATE(&
 !!$       RUniqueKey(nReflections**2,5), &
 !!$       STAT=IErr)
@@ -641,13 +603,6 @@ PROGRAM FelixSim
   IF( IErr.NE.0 ) THEN
      PRINT*,"main(", my_rank, ") error ", IErr, &
           " in GMatrixInitialisation"
-     GOTO 9999
-  ENDIF
-
-  CALL DetermineSymmetryRelatedUgs (IErr)
-  IF( IErr.NE.0 ) THEN
-     PRINT*,"main(", my_rank, ") error ", IErr, &
-          " in DetermineSymmetryRelatedUgs"
      GOTO 9999
   ENDIF
 

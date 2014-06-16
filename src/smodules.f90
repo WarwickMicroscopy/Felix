@@ -255,6 +255,8 @@ MODULE IConst
        THREEDIM= 3, &
        ADD_OUT_INFO=6, &
        IParallelFLAG=0
+  REAL(RKIND), PARAMETER :: &
+       RTolerance = 1E-5
 END MODULE IConst
 
 !--------------------------------------------------------------------
@@ -287,7 +289,7 @@ MODULE IPara
        ICentralBeamFLAG, IMaskFLAG, IVolumeFLAG, &
        IZolzFLAG,IAbsorbFLAG, IAnisoDebyeWallerFactorFlag, &
        IImageFLAG,IOutputFLAG,IBeamConvergenceFLAG,  &
-       IPseudoCubicFLAG,IXDirectionFLAG,IBinorTextFLAG
+       IPseudoCubicFLAG,IXDirectionFLAG,IBinorTextFLAG, IDevFLAG
 
   !Minimum Reflections etc
   INTEGER(IKIND) :: &
@@ -319,6 +321,11 @@ MODULE IPara
        IIncidentBeamDirectionZ, &
        IXDirectionX, IXDirectionY, IXDirectionZ, &
        INormalDirectionX,INormalDirectionY,INormalDirectionZ
+
+  !Iterativee Ug
+
+  INTEGER(IKIND) :: &
+       INoofUgs
 
   !LACBED Input
 
@@ -418,7 +425,12 @@ MODULE RPara
   REAL(RKIND) :: &
        RInitialThickness, &
        RFinalThickness, &
-       RDeltaThickness       
+       RDeltaThickness      
+
+  !Iterative Ugs
+
+  REAL(RKIND) :: &
+       RPercentageUgChange
 
   !Debye Waller Factor not sure if we use this 
   REAL(RKIND) :: & 
