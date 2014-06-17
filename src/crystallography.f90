@@ -309,7 +309,7 @@ SUBROUTINE Crystallography( IErr )
              + RSymVec(ind,:)
         SFullAtomicNameVec(Ifullind) = SAtomName(jnd)
         RFullPartialOccupancy(Ifullind) = RAtomicSitePartialOccupancy(jnd)
-        RFullIsotropicDebyeWallerFactor = RIsotropicDebyeWallerFactors(jnd)
+        RFullIsotropicDebyeWallerFactor(Ifullind) = RIsotropicDebyeWallerFactors(jnd)
         IFullAtomNumber(Ifullind) = IAtomNumber(jnd)
         IFullAnisotropicDWFTensor(Ifullind) = IAnisotropicDWFTensor(jnd)
 
@@ -324,6 +324,7 @@ SUBROUTINE Crystallography( IErr )
      ENDDO
 
   ENDDO
+
 
   DO ind = 1,SIZE(RFullAtomicFracCoordVec,DIM=1)
      DO jnd = 1,SIZE(RFullAtomicFracCoordVec,DIM=2)

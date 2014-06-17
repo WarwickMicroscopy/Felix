@@ -479,9 +479,11 @@ SUBROUTINE InpCIF(IErr)
      
   ENDDO 
 
-  CALL CifReset
+  
+     CALL CifReset
 
   DO ind=1,IAtomCount
+     
      B = 0.D0
      Uso = 0.D0
      f2 = numb_('_atom_site_B_iso_or_equiv',B,sB)
