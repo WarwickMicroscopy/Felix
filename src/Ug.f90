@@ -37,24 +37,64 @@ SUBROUTINE GMatrixInitialisation (IErr)
   
   IMPLICIT NONE
   
-  INTEGER ind,jnd,ierr
+  INTEGER ind,jnd,ierr,IUniqueKey,knd,IFound
 
   IF((IWriteFLAG.GE.0.AND.my_rank.EQ.0).OR.IWriteFLAG.GE.10) THEN
      PRINT*,"GMatrixInitialisation()"
   END IF
-  
+
   DO ind=1,nReflections
      DO jnd=1,nReflections
-        
         RgMatMat(ind,jnd,:)= RgVecMatT(ind,:)-RgVecMatT(jnd,:)
         RgMatMag(ind,jnd)= SQRT(DOT_PRODUCT(RgMatMat(ind,jnd,:),RgMatMat(ind,jnd,:)))
-        
      ENDDO
   ENDDO
-  
+   
   RgMatMag = RgMatMag/TWOPI
   
 END SUBROUTINE GMatrixInitialisation
+
+SUBROUTINE DetermineSymmetryRelatedUgs (IErr)
+  
+  USE MyNumbers
+  
+  USE CConst; USE IConst
+  USE IPara; USE RPara
+  USE IChannels
+  USE MPI
+  USE MyMPI
+  USE CPara
+  
+  IMPLICIT NONE
+  
+  INTEGER(IKIND) ind,jnd,ierr,knd,Iuid
+
+  !Immediately set all the zeros to Relation 1
+  
+  ISymmetryRelations = 0
+  
+  Iuid = 0
+  
+  Iuid = Iuid + 1
+
+  WHERE (ABS(CUgMat).LE.RTolerance)
+     ISymmetryRelations = Iuid
+  END WHERE
+  
+  DO ind = 1,nReflections
+     DO jnd = 1,ind
+        IF(ISymmetryRelations(ind,jnd).NE.0) THEN
+           CYCLE
+        ELSE
+           Iuid = Iuid + 1
+           WHERE (ABS(ABS(CUgMat)-ABS(CUgMat(ind,jnd))).LE.RTolerance)
+              ISymmetryRelations = Iuid
+           END WHERE
+        END IF
+     END DO
+  END DO
+  
+END SUBROUTINE DetermineSymmetryRelatedUgs
 
 !---------------------------------------------------------------------
 SUBROUTINE UgCalculation (IErr)
@@ -69,11 +109,24 @@ SUBROUTINE UgCalculation (IErr)
   
   IMPLICIT NONE
   
-  INTEGER(IKIND) ind,jnd,ierr, currentatom, iAtom,imaxj
+  INTEGER(IKIND) ind,jnd,ierr, currentatom, iAtom,imaxj,IFound,ICount
+  INTEGER(IKIND),DIMENSION(2) :: &
+       IPos
   COMPLEX(CKIND) CVgij
+  COMPLEX(CKIND), DIMENSION(:,:),ALLOCATABLE :: &
+       CUgMatUnique
   REAL(RKIND) RAtomicFormFactor
   REAL(RKIND) :: &
        RMeanInnerPotentialVolts
+
+  ALLOCATE(&
+       CUgMatUnique(nReflections,nReflections),&
+       STAT=IErr)
+  IF( IErr.NE.0 ) THEN
+     PRINT*,"UgCalculation(", my_rank, ") error ", IErr, " in ALLOCATE()"
+     RETURN
+  ENDIF
+  
 
   IF((IWriteFLAG.GE.0.AND.my_rank.EQ.0).OR.IWriteFLAG.GE.10) THEN
      PRINT*,"UgCalculation()"
@@ -205,6 +258,13 @@ SUBROUTINE UgCalculation (IErr)
 
   CUgMat = CUgMat + CONJG(TRANSPOSE(CUgMat))
 
+  WHERE(REAL(REAL(CUgMat)).LT.TINY)
+     CUgmat = ZERO + REAL(AIMAG(CUgMat))*CIMAGONE
+  END WHERE
+
+  WHERE(REAL(AIMAG(CUgMat)).LT.TINY)
+     CUgmat = REAL(REAL(CUgMat)) + CZERO
+  END WHERE  
 
 END SUBROUTINE UgCalculation
 
@@ -226,11 +286,5 @@ SUBROUTINE UgAddAbsorption(IErr)
   CUgMatPrime = CZERO
 
   CUgMatPrime = CUgMatPrime+ABS(CUgMat)*(RAbsorptionPercentage/100.D0)*CIMAGONE
-
-!!$  IF (IAbsorbFlag.EQ.1) THEN
-!!$     CUgMat(ind,jnd) = &
-!!$          CUgMat(ind,jnd) + &
-!!$          ABS(CUgMat(ind,jnd))*(RAbsorptionPercentage/100.D0)*CIMAGONE       
-!!$  END IF
   
 END SUBROUTINE UgAddAbsorption
