@@ -445,11 +445,16 @@ PROGRAM FelixRefine
           " in DetermineSymmetryRelatedUgs"
      GOTO 9999
   ENDIF
-
+  
+  PRINT*,(ONE+RPercentageUgChange/100.0_RKIND)
+  
+  ISymmetryRelations = ISymmetryRelations - 1
   IF(IDevFLAG.EQ.1) THEN
-     WHERE (ISymmetryRelations.EQ.INoofUgs) 
-        CUgMat = CUgMat*(ONE+RPercentageUgChange/100.0_RKIND)
-     END WHERE
+     !DO ind = 1,INoofUgs
+        WHERE (ISymmetryRelations.EQ.INoofUgs) 
+           CUgMat = CUgMat*(ONE+RPercentageUgChange/100.0_RKIND)
+        END WHERE
+     !END DO
   END IF
 
   CALL UgAddAbsorption(IErr)
@@ -685,11 +690,6 @@ PROGRAM FelixRefine
      ENDIF
   END IF
   
-
-  IF(my_rank.eq.0) THEN
-     PRINT*,RIndividualReflectionsRoot(32:33,32:33,1,1)
-  END IF
-
   IF(IWriteFLAG.GE.10) THEN
      PRINT*,"REDUCED Reflections",my_rank
   END IF
@@ -711,6 +711,36 @@ PROGRAM FelixRefine
      END DO
      
      PRINT*,"Thickness = ",RThickness," Angstoms"
+  END IF
+  
+  IF(my_rank.EQ.0.AND.IImageOutputFLAG.EQ.1) THEN
+     
+     WRITE(path,"(A2,A1,I1.1,A2,I1.1,A2,I1.1,A2,I4.4,A2,I5.5)") &
+          "F-",&
+          "S", IScatterFactorMethodFLAG, &
+          "_B", ICentralBeamFLAG, &
+          "_M", IMaskFLAG, &
+          "_P", IPixelCount, &
+          "_T", NINT(RThickness)
+     
+     call system('mkdir ' // path)
+     
+     DO ind = 1,IReflectOut
+        CALL OpenReflectionImage(IChOutWIImage,path,IErr,ind,2*IPixelCount)
+        IF( IErr.NE.0 ) THEN
+           PRINT*,"main(", my_rank, ") error in OpenReflectionImage()"
+           GOTO 9999
+        ENDIF
+        
+        CALL WriteReflectionImage(IChOutWIImage,&
+             RIndividualReflectionsRoot(:,:,ind,:),IErr,2*IPixelCount,2*IPixelCount)       
+        IF( IErr.NE.0 ) THEN
+           PRINT*,"main(", my_rank, ") error in WriteReflectionImage()"
+           GOTO 9999
+        ENDIF
+        
+        CLOSE(IChOutWIImage,ERR=9999)
+     END DO
   END IF
   
   IF(IImageFLAG.LE.1) THEN
@@ -740,23 +770,24 @@ PROGRAM FelixRefine
      GOTO 9999
   ENDIF
   
-  DEALLOCATE( &
-       RIndividualReflectionsRoot,STAT=IErr)       
-  IF( IErr.NE.0 ) THEN
-     PRINT*,"main(", my_rank, ") error in Deallocation of RIndividualReflectionsRoot"
-     GOTO 9999
-  ENDIF
-  
-  IF(IImageFLAG.GE.2) THEN
-     DEALLOCATE(&
-          CAmplitudeandPhaseRoot,STAT=IErr) 
-     
+  IF(my_rank.EQ.0) THEN
+     DEALLOCATE( &
+          RIndividualReflectionsRoot,STAT=IErr)       
      IF( IErr.NE.0 ) THEN
-        PRINT*,"main(", my_rank, ") error in Deallocation of CAmplitudeandPhase"
+        PRINT*,"main(", my_rank, ") error in Deallocation of RIndividualReflectionsRoot"
         GOTO 9999
      ENDIF
+     
+     IF(IImageFLAG.GE.2) THEN
+        DEALLOCATE(&
+             CAmplitudeandPhaseRoot,STAT=IErr) 
+        
+        IF( IErr.NE.0 ) THEN
+           PRINT*,"main(", my_rank, ") error in Deallocation of CAmplitudeandPhase"
+           GOTO 9999
+        ENDIF
+     END IF
   END IF
-  
   !--------------------------------------------------------------------
   ! finish off
   !--------------------------------------------------------------------

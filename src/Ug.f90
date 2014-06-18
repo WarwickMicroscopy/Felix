@@ -69,6 +69,11 @@ SUBROUTINE DetermineSymmetryRelatedUgs (IErr)
   
   INTEGER(IKIND) ind,jnd,ierr,knd,Iuid
 
+
+  IF((IWriteFLAG.GE.1.AND.my_rank.EQ.0).OR.IWriteFLAG.GE.10) THEN
+     PRINT*,"DetermineSymmetryRelatedUgs(",my_rank,")"
+  END IF
+
   !Immediately set all the zeros to Relation 1
   
   ISymmetryRelations = 0
@@ -93,6 +98,11 @@ SUBROUTINE DetermineSymmetryRelatedUgs (IErr)
         END IF
      END DO
   END DO
+
+  IF((IWriteFLAG.GE.1.AND.my_rank.EQ.0).OR.IWriteFLAG.GE.10) THEN
+     PRINT*,"Unique Ugs = ",Iuid
+  END IF
+  
   
 END SUBROUTINE DetermineSymmetryRelatedUgs
 

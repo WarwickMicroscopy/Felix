@@ -346,6 +346,10 @@ MODULE IPara
 
   INTEGER, DIMENSION(2) :: & 
        IImageSizeXY
+
+  !Refinement FLAGS
+  INTEGER(IKIND) :: &
+       IImageOutputFLAG
   
   !LACBED
 

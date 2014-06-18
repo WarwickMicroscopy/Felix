@@ -5,27 +5,28 @@
 # BLOCH input
 
 # control flags
-IWriteFLAG                = 2
+IWriteFLAG                = 1
 IImageFLAG                = 1
-IOutputFLAG               = 1
-IBinorTextFLAG            = 1  
+IOutputFLAG               = 0
+IBinorTextFLAG            = 0  
 IScatterFactorMethodFLAG  = 0
 ICentralBeamFLAG          = 1
 IMaskFLAG                 = 0
 IZolzFLAG                 = 1
-IAbsorbFLAG               = 1
+IAbsorbFLAG               = 0
 IAnisoDebyeWallerFlag     = 0
 IBeamConvergenceFLAG      = 1
 IPseudoCubicFLAG          = 1
-IXDirectionFLAG           = 1
+IXDirectionFLAG           = 0
+IDevFLAG                  = 1
 
 # radius of the beam in pixels
 IPixelCount               = 64
 
 # beam selection criteria
 IMinReflectionPool        = 600
-IMinStrongBeams           = 100
-IMinWeakBeams             = 100
+IMinStrongBeams           = 120
+IMinWeakBeams             = 20
 RBSBMax                   = 0.1
 RBSPMax                   = 0.1
 RConvergenceTolerance (%) = 1.0
@@ -36,22 +37,29 @@ RAbsorptionPer            = 2.9
 
 # microscope settings
 RConvergenceAngle         = 3.0
-IIncidentBeamDirectionX   = 1
-IIncidentBeamDirectionY   = 1 
+IIncidentBeamDirectionX   = 3
+IIncidentBeamDirectionY   = -2 
 IIncidentBeamDirectionZ   = 1
 IXDirectionX              = 0
-IXDirectionY              = 1
-IXDirectionZ              = -1
-INormalDirectionX         = 1
-INormalDirectionY         = 1
+IXDirectionY              = -1
+IXDirectionZ              = 1
+INormalDirectionX         = 3
+INormalDirectionY         = -2
 INormalDirectionZ         = 1 
 RAcceleratingVoltage (kV) = 200.0
 
+# Ug Iteration
+INoofUgs                  = 1
+RPercentageUgChange       = 0.0
+
+#Refinement Specific Flags
+IImageOutputFLAG          = 1
+
 # ------------------------------------
-# LACBED input
+# Draw input
 
 # sample thickness loop (Angstrom)
 RInitialThickness        = 1000.0
 RFinalThickness          = 1000.0
-RDeltaThickness          = 100.0
-IReflectOut              = 50
+RDeltaThickness          = 10.0
+IReflectOut              = 1
