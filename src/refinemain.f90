@@ -429,6 +429,28 @@ PROGRAM FelixRefine
           " in UgCalculation"
      GOTO 9999
   ENDIF
+  
+  ALLOCATE( &  
+       ISymmetryRelations(nReflections,nReflections), &
+       STAT=IErr)
+  IF( IErr.NE.0 ) THEN
+     PRINT*,"main(", my_rank, ") error ", IErr, &
+          " in ALLOCATE() of DYNAMIC variables Reflection Matrix"
+     GOTO 9999
+  ENDIF
+
+  CALL DetermineSymmetryRelatedUgs (IErr)
+  IF( IErr.NE.0 ) THEN
+     PRINT*,"main(", my_rank, ") error ", IErr, &
+          " in DetermineSymmetryRelatedUgs"
+     GOTO 9999
+  ENDIF
+
+  IF(IDevFLAG.EQ.1) THEN
+     WHERE (ISymmetryRelations.EQ.INoofUgs) 
+        CUgMat = CUgMat*(ONE+RPercentageUgChange/100.0_RKIND)
+     END WHERE
+  END IF
 
   CALL UgAddAbsorption(IErr)
   IF( IErr.NE.0 ) THEN
@@ -436,6 +458,7 @@ PROGRAM FelixRefine
           " in UgCalculation"
      GOTO 9999
   ENDIF
+
 
   IF(IAbsorbFLAG.EQ.1) THEN
      CUgMat =  CUgMat+CUgMatPrime

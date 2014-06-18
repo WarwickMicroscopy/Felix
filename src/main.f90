@@ -322,13 +322,15 @@ PROGRAM FelixSim
   REAL(RKIND),DIMENSION(:,:,:),ALLOCATABLE :: &
        RFinalMontageImageRoot
   REAL(RKIND),DIMENSION(:,:),ALLOCATABLE :: &
-       RImage
+       RImage,RSymDiff
   COMPLEX(CKIND),DIMENSION(:,:,:,:), ALLOCATABLE :: &
        CAmplitudeandPhaseRoot
   INTEGER IRootArraySize, IPixelPerRank
   CHARACTER*40 surname, path
   CHARACTER*25 CThickness 
   CHARACTER*25 CThicknessLength
+
+  
  
   INTEGER(IKIND),DIMENSION(2,2) :: ITest
   
@@ -491,6 +493,22 @@ PROGRAM FelixSim
      GOTO 9999
   ENDIF
 
+!!$  
+!!$  PRINT*,SIZE(RSymMAT,DIM=1),SIZE(RSymMAT,DIM=3),SIZE(RSymMAT,DIM=3)
+!!$  
+!!$  !PRINT*,SUM(RSymMAT(1,ind,:)
+!!$
+!!$  PRINT*,"SYMMETRY RELATED HKLs"
+!!$  DO ind= 1,6
+!!$     PRINT*,RHKL(ind+1,:)
+!!$  END DO
+!!$  
+!!$  PRINT*,"Result of Symmetry Operations"
+!!$  DO ind = 1,SIZE(RSymMAT,DIM=1)
+!!$     PRINT*,(SUM(RSymMat(ind,:,:),DIM=2))*RHKL(2,:)
+!!$     !PRINT*,MATMUL(RSymMat(ind,:,:),RHKL(2,:))
+!!$  END DO
+
   !--------------------------------------------------------------------
   ! allocate memory for DYNAMIC variables according to nReflections
   !--------------------------------------------------------------------
@@ -562,6 +580,15 @@ PROGRAM FelixSim
           " in ALLOCATE() of DYNAMIC variables Reflection Matrix"
      GOTO 9999
   ENDIF
+!!$  ALLOCATE(&
+!!$       RUniqueKey(nReflections**2,5), &
+!!$       STAT=IErr)
+!!$  IF( IErr.NE.0 ) THEN
+!!$     PRINT*,"main(", my_rank, ") error ", IErr, &
+!!$          " in ALLOCATE() of DYNAMIC variables Reflection Matrix"
+!!$     GOTO 9999
+!!$  ENDIF
+       
        
   ALLOCATE( &  
        RgMatMag(nReflections,nReflections), &
