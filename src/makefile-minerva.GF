@@ -43,13 +43,20 @@ F77FLAGS = -fbounds-check -fno-range-check # debug
 
 #LIBFLAGS= -L/hpcwarwick/mathlib/gnu/lib/ -lgoto2_nehalem-r1.13 #-llapack -lblas
 #LIBFLAGS= -lmkl
-LIBFLAGS= -L/csc/minerva/software/gompi/1.7.10/ScaLAPACK/2.0.2-openblas-0.2.8-lapack-3.4.2/lib -L/csc/minerva/software/gompi/1.7.10/OpenBLAS/0.2.8-lapack-3.4.2/lib  -lopenblas
+LIBFLAGS= \
+-L/csc/minerva/software/gompi/1.7.10/ScaLAPACK/2.0.2-openblas-0.2.8-lapack-3.4.2/lib \
+-L/csc/minerva/software/gompi/1.7.10/OpenBLAS/0.2.8-lapack-3.4.2/lib \
+-lopenblas \
+-lfftw3
 
 #LD_LIBRARY_PATH=/hpcwarwick/mathlib/gnu/lib/:$LD_LIBRARY_PATH
 
-BLOCHOBJECTFILES = gmodules.o smodules.o random.o main.o util.o inout.o inpcif.o ciftbx.o hash_funcs.o eigen.o invert.o
-LACBEDOBJECTFILES = gmodules.o smodules.o random.o lacbed.o util.o inout.o \
-eigen.o invert.o inpcif.o ciftbx.o hash_funcs.o 
+SIMOBJECTFILES = gmodules.o smodules.o main.o util.o inout.o inpcif.o ciftbx.o hash_funcs.o eigen.o invert.o microscopy.o diffraction.o crystallography.o bloch.o Ug.o image.o
+DRAWOBJECTFILES = gmodules.o smodules.o lacbed.o util.o inout.o \
+eigen.o invert.o microscopy.o diffraction.o crystallography.o bloch.o Ug.o image.o inpcif.o ciftbx.o hash_funcs.o 
+
+REFINEOBJECTFILES = gmodules.o smodules.o refinemain.o util.o inout.o inpcif.o ciftbx.o hash_funcs.o eigen.o invert.o microscopy.o diffraction.o crystallography.o bloch.o Ug.o image.o
+
 
 %.o: %.f90
 	$(F90) $(F90FLAGS) -DF90 -c $< -I$(INCLUDEDIR) $(LIBFLAGS)
@@ -64,15 +71,19 @@ eigen.o invert.o inpcif.o ciftbx.o hash_funcs.o
 %.o: %.F
 	$(FC) $(F77FLAGS) -DF77 -c $< -I$(INCLUDEDIR) $(LIBFLAGS)
 
-all:	FelixSim FelixDraw
+all:	FelixSim FelixDraw FelixRefine
 
-FelixSim: $(BLOCHOBJECTFILES)
-	$(F90) $(F90FLAGS) -o $@ $(BLOCHOBJECTFILES) -I$(INCLUDEDIR) $(LIBFLAGS)
-#	$(F90) -o $@ $(BLOCHOBJECTFILES) $(LIBFLAGS)
+FelixSim: $(SIMOBJECTFILES)
+	$(F90) $(F90FLAGS) -o $@ $(SIMOBJECTFILES) -I$(INCLUDEDIR) $(LIBFLAGS)
+#	$(F90) -o $@ $(SIMOBJECTFILES) $(LIBFLAGS)
 
-FelixDraw: $(LACBEDOBJECTFILES)
-	$(F90) $(F90FLAGS) -o $@ $(LACBEDOBJECTFILES) -I$(INCLUDEDIR) $(LIBFLAGS)
-#	$(F90) -o $@ $(LACBEDOBJECTFILES) $(LIBFLAGS)
+FelixDraw: $(DRAWOBJECTFILES)
+	$(F90) $(F90FLAGS) -o $@ $(DRAWOBJECTFILES) -I$(INCLUDEDIR) $(LIBFLAGS)
+#	$(F90) -o $@ $(DRAWOBJECTFILES) $(LIBFLAGS)
+
+FelixRefine: $(REFINEOBJECTFILES)
+	$(F90) $(F90FLAGS) -o $@ $(REFINEOBJECTFILES) -I$(INCLUDEDIR) $(LIBFLAGS)
+#	$(F90) -o $@ $(REFINEOBJECTFILES) $(LIBFLAGS)
 
 clean:	
 	rm -f core *.mod *.o
