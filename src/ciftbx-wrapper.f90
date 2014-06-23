@@ -1,12 +1,10 @@
 C%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 C
-C BER
+C FelixSim
 C
-C based on
+C Richard Beanland, Keith Evans and Rudolf A Roemer
 C
-C 
-C
-C R Beanland, K Evans and Rudolf A Roemer
+C (C) 2013/14, all right reserved
 C
 C Version: :VERSION:
 C Date:    :DATE:
