@@ -37,7 +37,7 @@ SUBROUTINE GMatrixInitialisation (IErr)
   
   IMPLICIT NONE
   
-  INTEGER ind,jnd,ierr,IUniqueKey,knd,IFound
+  INTEGER(IKIND) ind,jnd,ierr,IUniqueKey,knd,IFound
 
   IF((IWriteFLAG.GE.0.AND.my_rank.EQ.0).OR.IWriteFLAG.GE.10) THEN
      PRINT*,"GMatrixInitialisation()"
@@ -69,6 +69,11 @@ SUBROUTINE DetermineSymmetryRelatedUgs (IErr)
   
   INTEGER(IKIND) ind,jnd,ierr,knd,Iuid
 
+
+  IF((IWriteFLAG.GE.1.AND.my_rank.EQ.0).OR.IWriteFLAG.GE.10) THEN
+     PRINT*,"DetermineSymmetryRelatedUgs(",my_rank,")"
+  END IF
+
   !Immediately set all the zeros to Relation 1
   
   ISymmetryRelations = 0
@@ -93,6 +98,26 @@ SUBROUTINE DetermineSymmetryRelatedUgs (IErr)
         END IF
      END DO
   END DO
+
+  IF((IWriteFLAG.GE.1.AND.my_rank.EQ.0).OR.IWriteFLAG.GE.10) THEN
+     PRINT*,"Unique Ugs = ",Iuid
+  END IF
+
+  ALLOCATE(&
+       ISymmetryStrengthKey(Iuid,2),&
+       STAT=IErr)
+  IF( IErr.NE.0 ) THEN
+     PRINT*,"UgCalculation(", my_rank, ") error ", IErr, " in ALLOCATE()"
+     RETURN
+  ENDIF
+
+  ALLOCATE(&
+       CSymmetryStrengthKey(Iuid),&
+       STAT=IErr)
+  IF( IErr.NE.0 ) THEN
+     PRINT*,"UgCalculation(", my_rank, ") error ", IErr, " in ALLOCATE()"
+     RETURN
+  ENDIF
   
 END SUBROUTINE DetermineSymmetryRelatedUgs
 
@@ -113,20 +138,9 @@ SUBROUTINE UgCalculation (IErr)
   INTEGER(IKIND),DIMENSION(2) :: &
        IPos
   COMPLEX(CKIND) CVgij
-  COMPLEX(CKIND), DIMENSION(:,:),ALLOCATABLE :: &
-       CUgMatUnique
   REAL(RKIND) RAtomicFormFactor
   REAL(RKIND) :: &
-       RMeanInnerPotentialVolts
-
-  ALLOCATE(&
-       CUgMatUnique(nReflections,nReflections),&
-       STAT=IErr)
-  IF( IErr.NE.0 ) THEN
-     PRINT*,"UgCalculation(", my_rank, ") error ", IErr, " in ALLOCATE()"
-     RETURN
-  ENDIF
-  
+       RMeanInnerPotentialVolts  
 
   IF((IWriteFLAG.GE.0.AND.my_rank.EQ.0).OR.IWriteFLAG.GE.10) THEN
      PRINT*,"UgCalculation()"

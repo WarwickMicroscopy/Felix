@@ -78,12 +78,15 @@ PROGRAM FelixRefine
        RImage
   COMPLEX(CKIND),DIMENSION(:,:,:,:), ALLOCATABLE :: &
        CAmplitudeandPhaseRoot
-  INTEGER IRootArraySize, IPixelPerRank
+  COMPLEX(CKIND),DIMENSION(:,:), ALLOCATABLE :: &
+       CZeroMat
+  INTEGER(IKIND) IRootArraySize, IPixelPerRank
   CHARACTER*40 surname, path
   CHARACTER*25 CThickness 
   CHARACTER*25 CThicknessLength
  
   INTEGER(IKIND),DIMENSION(2,2) :: ITest
+  INTEGER(IKIND),DIMENSION(2) :: ILoc
   
   INTEGER(IKIND):: IThickness, IThicknessIndex, ILowerLimit, &
        IUpperLimit
@@ -213,26 +216,26 @@ PROGRAM FelixRefine
 
   CALL Input( IErr )
   IF( IErr.NE.0 ) THEN
-     PRINT*,"main(", my_rank, ") error in Input()"
+     PRINT*,"refinemain(", my_rank, ") error in Input()"
      GOTO 9999
   ENDIF
 
   CALL InputScatteringFactors( IErr )
   IF( IErr.NE.0 ) THEN
-     PRINT*,"main(", my_rank, ") error in InputScatteringFactors()"
+     PRINT*,"refinemain(", my_rank, ") error in InputScatteringFactors()"
      GOTO 9999
   ENDIF
 
   CALL InpCIF(IErr)
   IF( IErr.NE.0 ) THEN
-     PRINT*,"main(", my_rank, ") error in InpCIF()"
+     PRINT*,"refinemain(", my_rank, ") error in InpCIF()"
      GOTO 9999
   ENDIF
 
   IF (ITotalAtoms.EQ.0) THEN
      CALL CountTotalAtoms(IErr)
      IF( IErr.NE.0 ) THEN
-        PRINT*,"main(", my_rank, ") error in CountTotalAtoms()"
+        PRINT*,"refinemain(", my_rank, ") error in CountTotalAtoms()"
         GOTO 9999
      ENDIF
   END IF
@@ -256,7 +259,7 @@ PROGRAM FelixRefine
      CALL OpenData_MPI(IChOutES_MPI, "ES", surname, IErr)
   ENDIF
   IF( IErr.NE.0 ) THEN
-     PRINT*,"main(", my_rank, ") error in OpenData_MPI(EigenSystem)"
+     PRINT*,"refinemain(", my_rank, ") error in OpenData_MPI(EigenSystem)"
      GOTO 9999
   ENDIF
   
@@ -265,7 +268,7 @@ PROGRAM FelixRefine
      CALL OpenData_MPI(IChOutUM_MPI, "UM", surname, IErr)
   ENDIF
   IF( IErr.NE.0 ) THEN
-     PRINT*,"main(", my_rank, ") error in OpenDataMPI()"
+     PRINT*,"refinemain(", my_rank, ") error in OpenDataMPI()"
      GOTO 9999
   ENDIF
 
@@ -277,7 +280,7 @@ PROGRAM FelixRefine
        RrVecMat(ITotalAtoms,THREEDIM), &
        STAT=IErr)
   IF( IErr.NE.0 ) THEN
-     PRINT*,"main(", my_rank, ") error ", IErr, " in ALLOCATE()"
+     PRINT*,"refinemain(", my_rank, ") error ", IErr, " in ALLOCATE()"
      GOTO 9999
   ENDIF
 
@@ -287,7 +290,7 @@ PROGRAM FelixRefine
 
   CALL MicroscopySettings( IErr )
   IF( IErr.NE.0 ) THEN
-     PRINT*,"main(", my_rank, ") error in MicroscopySettings()"
+     PRINT*,"refinemain(", my_rank, ") error in MicroscopySettings()"
      GOTO 9999
   ENDIF
 
@@ -297,7 +300,7 @@ PROGRAM FelixRefine
 
   CALL Crystallography( IErr )
   IF( IErr.NE.0 ) THEN
-     PRINT*,"main(", my_rank, ") error in Crystallography()"
+     PRINT*,"refinemain(", my_rank, ") error in Crystallography()"
      GOTO 9999
   ENDIF
 
@@ -307,7 +310,7 @@ PROGRAM FelixRefine
 
   CALL DiffractionPatternDefinitions( IErr )
   IF( IErr.NE.0 ) THEN
-     PRINT*,"main(", my_rank, ") error in DiffractionPatternDefinitions()"
+     PRINT*,"refinemain(", my_rank, ") error in DiffractionPatternDefinitions()"
      GOTO 9999
   ENDIF
 
@@ -325,7 +328,7 @@ PROGRAM FelixRefine
        Rhklpositions(nReflections,2), &
        STAT=IErr)
   IF( IErr.NE.0 ) THEN
-     PRINT*,"main(", my_rank, ") error ", IErr, &
+     PRINT*,"refinemain(", my_rank, ") error ", IErr, &
           " in ALLOCATE() of DYNAMIC variable Rhklpositions"
      GOTO 9999
   ENDIF
@@ -336,7 +339,7 @@ PROGRAM FelixRefine
 
   CALL ImageInitialization( IErr )
   IF( IErr.NE.0 ) THEN
-     PRINT*,"main(", my_rank, ") error in ImageInitializtion()"
+     PRINT*,"refinemain(", my_rank, ") error in ImageInitializtion()"
      GOTO 9999
   ENDIF
 
@@ -350,14 +353,14 @@ PROGRAM FelixRefine
        RMask(2*IPixelCount,2*IPixelCount),&
        STAT=IErr)
   IF( IErr.NE.0 ) THEN
-     PRINT*,"main(", my_rank, ") error ", IErr, &
+     PRINT*,"refinemain(", my_rank, ") error ", IErr, &
           " in ALLOCATE() of DYNAMIC variable RMask"
      GOTO 9999
   ENDIF
 
   CALL ImageMask(IErr)
   IF( IErr.NE.0 ) THEN
-     PRINT*,"main(", my_rank, ") error ", IErr, &
+     PRINT*,"refinemain(", my_rank, ") error ", IErr, &
           " in ImageMask"
      GOTO 9999
   END IF
@@ -378,7 +381,7 @@ PROGRAM FelixRefine
        RgMatMat(nReflections,nReflections,THREEDIM), &
        STAT=IErr)
   IF( IErr.NE.0 ) THEN
-     PRINT*,"main(", my_rank, ") error ", IErr, &
+     PRINT*,"refinemain(", my_rank, ") error ", IErr, &
           " in ALLOCATE() of DYNAMIC variables Reflection Matrix"
      GOTO 9999
   ENDIF
@@ -387,14 +390,14 @@ PROGRAM FelixRefine
        RgMatMag(nReflections,nReflections), &
        STAT=IErr)
   IF( IErr.NE.0 ) THEN
-     PRINT*,"main(", my_rank, ") error ", IErr, &
+     PRINT*,"refinemain(", my_rank, ") error ", IErr, &
           " in ALLOCATE() of DYNAMIC variables Reflection Matrix"
      GOTO 9999
   ENDIF
 
   CALL GMatrixInitialisation (IErr)
   IF( IErr.NE.0 ) THEN
-     PRINT*,"main(", my_rank, ") error ", IErr, &
+     PRINT*,"refinemain(", my_rank, ") error ", IErr, &
           " in GMatrixInitialisation"
      GOTO 9999
   ENDIF
@@ -409,7 +412,16 @@ PROGRAM FelixRefine
        CUgMat(nReflections,nReflections), &
        STAT=IErr)
   IF( IErr.NE.0 ) THEN
-     PRINT*,"main(", my_rank, ") error ", IErr, &
+     PRINT*,"refinemain(", my_rank, ") error ", IErr, &
+          " in ALLOCATE() of DYNAMIC variables Reflection Matrix"
+     GOTO 9999
+  ENDIF 
+
+  ALLOCATE( & 
+       CZeroMat(nReflections,nReflections), &
+       STAT=IErr)
+  IF( IErr.NE.0 ) THEN
+     PRINT*,"refinemain(", my_rank, ") error ", IErr, &
           " in ALLOCATE() of DYNAMIC variables Reflection Matrix"
      GOTO 9999
   ENDIF       
@@ -418,47 +430,68 @@ PROGRAM FelixRefine
        CUgMatPrime(nReflections,nReflections), &
        STAT=IErr)
   IF( IErr.NE.0 ) THEN
-     PRINT*,"main(", my_rank, ") error ", IErr, &
+     PRINT*,"refinemain(", my_rank, ") error ", IErr, &
           " in ALLOCATE() of DYNAMIC variables Reflection Matrix"
      GOTO 9999
   ENDIF       
 
   CALL UgCalculation (IErr)
   IF( IErr.NE.0 ) THEN
-     PRINT*,"main(", my_rank, ") error ", IErr, &
+     PRINT*,"refinemain(", my_rank, ") error ", IErr, &
           " in UgCalculation"
      GOTO 9999
   ENDIF
+
+  CZeroMAT = CZERO
   
+  DO ind = 1,nReflections
+     DO jnd = 1,ind
+        CZeroMAT(ind,jnd) = CONE
+     END DO
+  END DO
+
   ALLOCATE( &  
        ISymmetryRelations(nReflections,nReflections), &
        STAT=IErr)
   IF( IErr.NE.0 ) THEN
-     PRINT*,"main(", my_rank, ") error ", IErr, &
+     PRINT*,"refinemain(", my_rank, ") error ", IErr, &
           " in ALLOCATE() of DYNAMIC variables Reflection Matrix"
      GOTO 9999
   ENDIF
 
+  ISymmetryRelations = ISymmetryRelations*CZeroMat  
+
   CALL DetermineSymmetryRelatedUgs (IErr)
   IF( IErr.NE.0 ) THEN
-     PRINT*,"main(", my_rank, ") error ", IErr, &
+     PRINT*,"refinemain(", my_rank, ") error ", IErr, &
           " in DetermineSymmetryRelatedUgs"
      GOTO 9999
   ENDIF
-
+  
+  DO ind = 1,(SIZE(ISymmetryStrengthKey,DIM=1))
+     ILoc = MINLOC(ABS(ISymmetryRelations-ind))
+     ISymmetryStrengthKey(ind,1) = ind
+     ISymmetryStrengthKey(ind,2) = ind
+     CSymmetryStrengthKey(ind) = CUgMat(ILoc(1),ILoc(2))
+  END DO
+  
+  CALL ReSortUgs(ISymmetryStrengthKey,CSymmetryStrengthKey,SIZE(CSymmetryStrengthKey,DIM=1))
+  
   IF(IDevFLAG.EQ.1) THEN
-     WHERE (ISymmetryRelations.EQ.INoofUgs) 
+     CUgMat = CUgMat*CZeroMat
+     WHERE (ISymmetryRelations.EQ.ISymmetryStrengthKey(INoofUgs,2)) 
         CUgMat = CUgMat*(ONE+RPercentageUgChange/100.0_RKIND)
      END WHERE
+     CUgMat = CUgmat + CONJG(TRANSPOSE(CUgMat))
   END IF
 
+  
   CALL UgAddAbsorption(IErr)
   IF( IErr.NE.0 ) THEN
-     PRINT*,"main(", my_rank, ") error ", IErr, &
+     PRINT*,"refinemain(", my_rank, ") error ", IErr, &
           " in UgCalculation"
      GOTO 9999
   ENDIF
-
 
   IF(IAbsorbFLAG.EQ.1) THEN
      CUgMat =  CUgMat+CUgMatPrime
@@ -467,7 +500,7 @@ PROGRAM FelixRefine
   Deallocate( &
        RgMatMat,RgMatMag,STAT=IErr)
   IF( IErr.NE.0 ) THEN
-     PRINT*,"main(", my_rank, ") error ", IErr, &
+     PRINT*,"refinemain(", my_rank, ") error ", IErr, &
           " in Deallocation of RgMat"
      GOTO 9999
   ENDIF
@@ -493,7 +526,7 @@ PROGRAM FelixRefine
        RDevPara(nReflections), &
        STAT=IErr)
   IF( IErr.NE.0 ) THEN
-     PRINT*,"main(", my_rank, ") error ", IErr, &
+     PRINT*,"refinemain(", my_rank, ") error ", IErr, &
           " in ALLOCATE() of DYNAMIC variables RDevPara"
      GOTO 9999
   ENDIF
@@ -502,7 +535,7 @@ PROGRAM FelixRefine
        IStrongBeamList(nReflections), &
        STAT=IErr)
   IF( IErr.NE.0 ) THEN
-     PRINT*,"main(", my_rank, ") error ", IErr, &
+     PRINT*,"refinemain(", my_rank, ") error ", IErr, &
           " in ALLOCATE() of DYNAMIC variables IStrongBeamList"
      GOTO 9999
   ENDIF
@@ -511,7 +544,7 @@ PROGRAM FelixRefine
        IWeakBeamList(nReflections), & 
        STAT=IErr)
   IF( IErr.NE.0 ) THEN
-     PRINT*,"main(", my_rank, ") error ", IErr, &
+     PRINT*,"refinemain(", my_rank, ") error ", IErr, &
           " in ALLOCATE() of DYNAMIC variables IWeakBeamList"
      GOTO 9999
   ENDIF
@@ -524,8 +557,8 @@ PROGRAM FelixRefine
   ILocalPixelCountMax= (IPixelTotal*(my_rank+1)/p) 
   
   IF((IWriteFLAG.GE.6.AND.my_rank.EQ.0).OR.IWriteFLAG.GE.10) THEN
-     PRINT*,"main(", my_rank, "): starting the eigenvalue problem"
-     PRINT*,"main(", my_rank, "): for lines ", ILocalPixelCountMin, &
+     PRINT*,"refinemain(", my_rank, "): starting the eigenvalue problem"
+     PRINT*,"refinemain(", my_rank, "): for lines ", ILocalPixelCountMin, &
           " to ", ILocalPixelCountMax
   ENDIF
   
@@ -537,7 +570,7 @@ PROGRAM FelixRefine
           2*IPixelCount,IReflectOut,IThicknessCount),&
           STAT=IErr)
      IF( IErr.NE.0 ) THEN
-        PRINT*,"main(", my_rank, ") error ", IErr, &
+        PRINT*,"refinemain(", my_rank, ") error ", IErr, &
              " in ALLOCATE() of DYNAMIC variables Individual Images"
         GOTO 9999
      ENDIF
@@ -549,7 +582,7 @@ PROGRAM FelixRefine
           2*IPixelCount,IReflectOut,IThicknessCount),&
           STAT=IErr)
      IF( IErr.NE.0 ) THEN
-        PRINT*,"main(", my_rank, ") error ", IErr, &
+        PRINT*,"refinemain(", my_rank, ") error ", IErr, &
              " in ALLOCATE() of DYNAMIC variables Amplitude and Phase"
         GOTO 9999
      ENDIF
@@ -560,7 +593,7 @@ PROGRAM FelixRefine
        CFullWaveFunctions(nReflections), & 
        STAT=IErr)
   IF( IErr.NE.0 ) THEN
-     PRINT*,"main(", my_rank, ") error ", IErr, &
+     PRINT*,"refinemain(", my_rank, ") error ", IErr, &
           " in ALLOCATE() of DYNAMIC variables CFullWaveFunctions"
      GOTO 9999
   ENDIF
@@ -569,7 +602,7 @@ PROGRAM FelixRefine
        RFullWaveIntensity(nReflections), & 
        STAT=IErr)
   IF( IErr.NE.0 ) THEN
-     PRINT*,"main(", my_rank, ") error ", IErr, &
+     PRINT*,"refinemain(", my_rank, ") error ", IErr, &
           " in ALLOCATE() of DYNAMIC variables RFullWaveIntensity"
      GOTO 9999
   ENDIF
@@ -582,13 +615,13 @@ PROGRAM FelixRefine
        RrVecMat, Rsg, &
        STAT=IErr)
   IF( IErr.NE.0 ) THEN
-     PRINT*,"main(", my_rank, ") error ", IErr, &
+     PRINT*,"refinemain(", my_rank, ") error ", IErr, &
           " in DEALLOCATE() "
      GOTO 9999
   ENDIF
   
   IF((IWriteFLAG.GE.0.AND.my_rank.EQ.0).OR.IWriteFLAG.GE.6) THEN
-     PRINT*,"main(",my_rank,") Entering BlochLoop()"
+     PRINT*,"refinemain(",my_rank,") Entering BlochLoop()"
   END IF
   
   DO knd = ILocalPixelCountMin,ILocalPixelCountMax,1
@@ -596,14 +629,14 @@ PROGRAM FelixRefine
      jnd = IPixelLocations(knd,2)
      CALL BlochCoefficientCalculation(ind,jnd,IErr)
      IF( IErr.NE.0 ) THEN
-        PRINT*,"main(", my_rank, ") error ", IErr, &
+        PRINT*,"refinemain(", my_rank, ") error ", IErr, &
              " in BlochCofficientCalculation"
         GOTO 9999
      ENDIF
   END DO
   
   IF((IWriteFLAG.GE.6.AND.my_rank.EQ.0).OR.IWriteFLAG.GE.10) THEN
-     PRINT*,"MAIN : ",my_rank," is exiting calculation loop"
+     PRINT*,"REFINEMAIN : ",my_rank," is exiting calculation loop"
   END IF
   
   !--------------------------------------------------------------------
@@ -614,7 +647,7 @@ PROGRAM FelixRefine
   IF(IOutputFLAG.GE.1) THEN
      CALL MPI_FILE_CLOSE(IChOutES_MPI, IErr)
      IF( IErr.NE.0 ) THEN
-        PRINT*,"main(", my_rank, ") error ", IErr, &
+        PRINT*,"refinemain(", my_rank, ") error ", IErr, &
              " Closing IChOutES"
         GOTO 9999
      ENDIF
@@ -624,7 +657,7 @@ PROGRAM FelixRefine
   IF(IOutputFLAG.GE.2) THEN
      CALL MPI_FILE_CLOSE(IChOutUM_MPI, IErr)
      IF( IErr.NE.0 ) THEN
-        PRINT*,"main(", my_rank, ") error ", IErr, &
+        PRINT*,"refinemain(", my_rank, ") error ", IErr, &
              " Closing IChOutUM"
         GOTO 9999
      ENDIF
@@ -635,7 +668,7 @@ PROGRAM FelixRefine
        2*IPixelCount,IReflectOut,IThicknessCount),&
        STAT=IErr)
   IF( IErr.NE.0 ) THEN
-     PRINT*,"main(", my_rank, ") error ", IErr, &
+     PRINT*,"refinemain(", my_rank, ") error ", IErr, &
           " in ALLOCATE() of DYNAMIC variables Root Reflections"
      GOTO 9999
   ENDIF
@@ -646,7 +679,7 @@ PROGRAM FelixRefine
           2*IPixelCount,IReflectOut,IThicknessCount),&
           STAT=IErr)
      IF( IErr.NE.0 ) THEN
-        PRINT*,"main(", my_rank, ") error ", IErr, &
+        PRINT*,"refinemain(", my_rank, ") error ", IErr, &
              " in ALLOCATE() of DYNAMIC variables Root Amplitude and Phase"
         GOTO 9999
      ENDIF
@@ -668,7 +701,7 @@ PROGRAM FelixRefine
           IRootArraySize,MPI_DOUBLE_PRECISION,MPI_SUM,0, &
           MPI_COMM_WORLD,IErr)
      IF( IErr.NE.0 ) THEN
-        PRINT*,"main(", my_rank, ") error ", IErr, &
+        PRINT*,"refinemain(", my_rank, ") error ", IErr, &
              " In MPI_REDUCE"
         GOTO 9999
      ENDIF
@@ -679,28 +712,23 @@ PROGRAM FelixRefine
           IRootArraySize,MPI_DOUBLE_COMPLEX,MPI_SUM,0, &
           MPI_COMM_WORLD,IErr)
      IF( IErr.NE.0 ) THEN
-        PRINT*,"main(", my_rank, ") error ", IErr, &
+        PRINT*,"refinemain(", my_rank, ") error ", IErr, &
              " In MPI_REDUCE"
         GOTO 9999
      ENDIF
   END IF
   
-
-  IF(my_rank.eq.0) THEN
-     PRINT*,RIndividualReflectionsRoot(32:33,32:33,1,1)
-  END IF
-
   IF(IWriteFLAG.GE.10) THEN
      PRINT*,"REDUCED Reflections",my_rank
   END IF
 
   IF (my_rank.EQ.0) THEN
-     IImageSizeXY(1) = 2*IPixelCount
-     IImageSizeXY(2) = 2*IPixelCount
+!!$     IImageSizeXY(1) = 2*IPixelCount
+!!$     IImageSizeXY(2) = 2*IPixelCount
      RCrossCorrelationOld = ZERO
 
      DO ind = 1,IThicknessCount
-        CALL PhaseCorrelate(RIndividualReflectionsRoot(:,:,1,ind),RImageExpi,IErr)
+        CALL PhaseCorrelate(RIndividualReflectionsRoot(:,:,1,ind),RImageExpi,IErr,2*IPixelCount,2*IPixelCount)
 
         IF(RCrossCorrelation.GT.RCrossCorrelationOld) THEN
            RCrossCorrelationOld = RCrossCorrelation
@@ -713,11 +741,89 @@ PROGRAM FelixRefine
      PRINT*,"Thickness = ",RThickness," Angstoms"
   END IF
   
+  IF(my_rank.EQ.0.AND.IImageOutputFLAG.EQ.1) THEN
+
+     ALLOCATE(&
+          RFinalMontageImageRoot(MAXVAL(IImageSizeXY),&
+          MAXVAL(IImageSizeXY),1),&
+          STAT=IErr)
+     IF( IErr.NE.0 ) THEN
+        PRINT*,"refinemain(", my_rank, ") error ", IErr, &
+             " in ALLOCATE() of DYNAMIC variables Root Montage"
+        GOTO 9999
+     ENDIF
+     
+     IF(IImageFLAG.GE.0) THEN     
+        
+        IThicknessCount = 1
+
+        DO ind = 1,2*IPixelCount
+           DO jnd = 1,2*IPixelCount
+              CALL MakeMontagePixel(ind,jnd,1,&
+                   RFinalMontageImageRoot,&
+                   RIndividualReflectionsRoot(ind,jnd,:,1),IErr)
+              IF( IErr.NE.0 ) THEN
+                 PRINT*,"refinemain(", my_rank, ") error ", IErr, &
+                      " in MakeMontagePixel"
+                 GOTO 9999
+              ENDIF
+           END DO
+        END DO
+        WRITE(surname,"(A2,A1,I5.5,A2,I5.5)") &
+             "M-","T",NINT(RThickness),"-P",MAXVAL(IImageSizeXY)    
+        CALL OpenReflectionImage(MontageOut,surname,IErr,0,MAXVAL(IImageSizeXY)) 
+        IF( IErr.NE.0 ) THEN
+           PRINT*,"refinemain(", my_rank, ") error in OpenData()"
+           GOTO 9999
+        ENDIF
+        IF((IWriteFLAG.GE.2.AND.my_rank.EQ.0).OR.IWriteFLAG.GE.10) THEN
+           
+           PRINT*,"refinemain(", my_rank, ") working on RThickness=", RThickness
+           
+        END IF
+        
+        CALL WriteReflectionImage(MontageOut,RFinalMontageImageRoot(:,:,1), &
+             IErr,MAXVAL(IImageSizeXY),MAXVAL(IImageSizeXY))
+        CLOSE(MontageOut,ERR=9999)
+        
+     END IF
+     
+     IF(IImageFLAG.GE.1) THEN
+        
+        WRITE(path,"(A2,A1,I1.1,A2,I1.1,A2,I1.1,A2,I4.4,A2,I5.5)") &
+             "F-",&
+             "S", IScatterFactorMethodFLAG, &
+             "_B", ICentralBeamFLAG, &
+             "_M", IMaskFLAG, &
+             "_P", IPixelCount, &
+             "_T", NINT(RThickness)
+        
+        call system('mkdir ' // path)
+        
+        DO ind = 1,IReflectOut
+           CALL OpenReflectionImage(IChOutWIImage,path,IErr,ind,2*IPixelCount)
+           IF( IErr.NE.0 ) THEN
+              PRINT*,"refinemain(", my_rank, ") error in OpenReflectionImage()"
+              GOTO 9999
+           ENDIF
+           
+           CALL WriteReflectionImage(IChOutWIImage,&
+                RIndividualReflectionsRoot(:,:,ind,:),IErr,2*IPixelCount,2*IPixelCount)       
+           IF( IErr.NE.0 ) THEN
+              PRINT*,"refinemain(", my_rank, ") error in WriteReflectionImage()"
+              GOTO 9999
+           ENDIF
+           
+           CLOSE(IChOutWIImage,ERR=9999)
+        END DO
+     END IF
+  ENDIF
+     
   IF(IImageFLAG.LE.1) THEN
      DEALLOCATE( &
           RIndividualReflections,STAT=IErr)
      IF( IErr.NE.0 ) THEN
-        PRINT*,"main(", my_rank, ") error ", IErr, &
+        PRINT*,"refinemain(", my_rank, ") error ", IErr, &
              " Deallocating RIndividualReflections"
         GOTO 9999
      ENDIF
@@ -729,34 +835,35 @@ PROGRAM FelixRefine
        RgVecMatT, &
        Rhklpositions, RMask,STAT=IErr)       
   IF( IErr.NE.0 ) THEN
-     PRINT*,"main(", my_rank, ") error in Deallocation of RgVecMatT etc"
+     PRINT*,"refinemain(", my_rank, ") error in Deallocation of RgVecMatT etc"
      GOTO 9999
   ENDIF
   DEALLOCATE( &
        CUgMat,IPixelLocations, &
        RDevPara,STAT=IErr)       
   IF( IErr.NE.0 ) THEN
-     PRINT*,"main(", my_rank, ") error in Deallocation of CUgmat etc"
+     PRINT*,"refinemain(", my_rank, ") error in Deallocation of CUgmat etc"
      GOTO 9999
   ENDIF
   
-  DEALLOCATE( &
-       RIndividualReflectionsRoot,STAT=IErr)       
-  IF( IErr.NE.0 ) THEN
-     PRINT*,"main(", my_rank, ") error in Deallocation of RIndividualReflectionsRoot"
-     GOTO 9999
-  ENDIF
-  
-  IF(IImageFLAG.GE.2) THEN
-     DEALLOCATE(&
-          CAmplitudeandPhaseRoot,STAT=IErr) 
-     
+  IF(my_rank.EQ.0) THEN
+     DEALLOCATE( &
+          RIndividualReflectionsRoot,STAT=IErr)       
      IF( IErr.NE.0 ) THEN
-        PRINT*,"main(", my_rank, ") error in Deallocation of CAmplitudeandPhase"
+        PRINT*,"refinemain(", my_rank, ") error in Deallocation of RIndividualReflectionsRoot"
         GOTO 9999
      ENDIF
+     
+     IF(IImageFLAG.GE.2) THEN
+        DEALLOCATE(&
+             CAmplitudeandPhaseRoot,STAT=IErr) 
+        
+        IF( IErr.NE.0 ) THEN
+           PRINT*,"refinemain(", my_rank, ") error in Deallocation of CAmplitudeandPhase"
+           GOTO 9999
+        ENDIF
+     END IF
   END IF
-  
   !--------------------------------------------------------------------
   ! finish off
   !--------------------------------------------------------------------
@@ -767,7 +874,7 @@ PROGRAM FelixRefine
   IMinutes = FLOOR(MOD(Duration,3600.0D0)/60.0D0)
   ISeconds = MOD(Duration,3600.0D0)-IMinutes*60.0D0
 
-  PRINT*, "FelixSim(", my_rank, ") ", RStr, ", used time=", IHours, "hrs ",IMinutes,"mins ",ISeconds,"Seconds "
+  PRINT*, "FelixRefine(", my_rank, ") ", RStr, ", used time=", IHours, "hrs ",IMinutes,"mins ",ISeconds,"Seconds "
 
   !--------------------------------------------------------------------
   ! Shut down MPI
@@ -775,7 +882,7 @@ PROGRAM FelixRefine
 9999 &
   CALL MPI_Finalize(IErr)
   IF( IErr.NE.0 ) THEN
-     PRINT*,"main(", my_rank, ") error ", IErr, " in MPI_Finalize()"
+     PRINT*,"refinemain(", my_rank, ") error ", IErr, " in MPI_Finalize()"
      STOP
   ENDIF
 
