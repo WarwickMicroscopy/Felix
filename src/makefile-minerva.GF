@@ -29,6 +29,7 @@
 # $Id: makefile-minerva.GF,v 1.5 2014/03/27 15:27:24 phsht Exp $
 #%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
+#module swap oldmodules minerva-2.0
 #module load goolf-1.7.10
 
 F90 = mpif90
