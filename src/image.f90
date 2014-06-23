@@ -96,8 +96,7 @@ SUBROUTINE MakeMontagePixel(ind,jnd,ithicknessindex,RMontageImage,RIntensity,Ier
   
   IMPLICIT NONE
   
-  integer hnd,ind,jnd,knd,Ierr
-  INTEGER(IKIND) IThicknessindex, IXpos, IYpos
+  INTEGER(IKIND) IThicknessindex, IXpos, IYpos,hnd,ind,jnd,knd,Ierr
   REAL(RKIND), DIMENSION(MAXVAL(IImageSizeXY),MAXVAL(IImageSizeXY),IThicknessCount),INTENT(OUT) :: &
        RMontageImage
   REAL(RKIND), DIMENSION(IReflectOut) :: RIntensity

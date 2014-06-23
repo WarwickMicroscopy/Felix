@@ -317,14 +317,14 @@ SUBROUTINE ReSortHKL( RHKLarray, N )
 
   IMPLICIT NONE
 
-  INTEGER N
+  INTEGER (IKIND) N
   REAL(RKIND) RHKLarray(N,THREEDIM)
   REAL(RKIND) RhklarraySearch(THREEDIM), RhklarrayCompare(THREEDIM)
   
   REAL(KIND=RKIND) ALN2I, LocalTINY
   PARAMETER (ALN2I=1.4426950D0, LocalTINY=1.D-5)
   
-  INTEGER NN,M,L,K,J,I,LOGNB2, index
+  INTEGER (IKIND) NN,M,L,K,J,I,LOGNB2, index
   REAL(KIND=RKIND) dummy
 
   IF((IWriteFLAG.EQ.6.AND.my_rank.EQ.0).OR.IWriteFLAG.GE.10) THEN
@@ -349,10 +349,6 @@ SUBROUTINE ReSortHKL( RHKLarray, N )
         IF( &
              DOT_PRODUCT(RHKLarraySearch(:),RHKLarraySearch(:)) .LT. &
              DOT_PRODUCT(RHKLarrayCompare(:),RHKLarrayCompare(:))) THEN
-!!$           
-!!$             DOT_PRODUCT(RHKLarray(L,:),RHKLarray(L,:)) .LT. &
-!!$             DOT_PRODUCT(RHKLarray(I,:),RHKLarray(I,:))) THEN
-!!$           
            DO 100 index=1,THREEDIM
               dummy        = RHKLarray(I,index)
               RHKLarray(I,index)= RHKLarray(L,index)
@@ -702,7 +698,7 @@ SUBROUTINE CorrectCentreOffset (RUncorrImage,RCorrImage,IErr)
   
 END SUBROUTINE CorrectCentreOffset
 
-SUBROUTINE PhaseCorrelate(RImageSim,RImageExpi,IErr)
+SUBROUTINE PhaseCorrelate(RImageSim,RImageExpi,IErr,IXsizeIn,IYSizeIn)
   
   USE MyNumbers
   
@@ -717,9 +713,9 @@ SUBROUTINE PhaseCorrelate(RImageSim,RImageExpi,IErr)
   IMPLICIT NONE
 
   INTEGER(IKIND) :: &
-       IErr
+       IErr,IXsizeIn,IYSizeIn
 
-  REAL(RKIND),DIMENSION(IImageSizeXY(1),IImageSizeXY(2)) :: &
+  REAL(RKIND),DIMENSION(IXSizeIn,IYSizeIn) :: &
        RImageExpi,RImageSim
   
   type(C_PTR) :: &
@@ -733,19 +729,19 @@ SUBROUTINE PhaseCorrelate(RImageSim,RImageExpi,IErr)
        CDummy1(:,:),CDummy2(:,:),CCorrelatedImage(:,:)
   integer(C_INT) :: IX,IY
   
-  IX = IImageSizeXY(1)
-  IY = IImageSizeXY(2)
+  IX = IXSizeIn
+  IY = IYSizein
 
   !PRINT*,"IX, IY =",IX,IY
 
-  p1 = fftw_alloc_real(INT(IImageSizeXY(1)*IImageSizeXY(2), C_SIZE_T))
-  p2 = fftw_alloc_complex(INT(IImageSizeXY(1)*IImageSizeXY(2), C_SIZE_T))
-  p3 = fftw_alloc_complex(INT(IImageSizeXY(1)*IImageSizeXY(2), C_SIZE_T))
-  p4 = fftw_alloc_complex(INT(IImageSizeXY(1)*IImageSizeXY(2), C_SIZE_T))
-  call c_f_pointer(p1, RImageSimDummy, [IImageSizeXY(1),IImageSizeXY(2)])
-  call c_f_pointer(p2, CDummy1, [IImageSizeXY(1),IImageSizeXY(2)])
-  call c_f_pointer(p3, CDummy2, [IImageSizeXY(1),IImageSizeXY(2)])
-  call c_f_pointer(p4, CCorrelatedImage, [IImageSizeXY(1),IImageSizeXY(2)])
+  p1 = fftw_alloc_real(INT(IXSizeIn*IYSizeIn, C_SIZE_T))
+  p2 = fftw_alloc_complex(INT(IXSizeIn*IYSizeIn, C_SIZE_T))
+  p3 = fftw_alloc_complex(INT(IXSizeIn*IYSizeIn, C_SIZE_T))
+  p4 = fftw_alloc_complex(INT(IXSizeIn*IYSizeIn, C_SIZE_T))
+  call c_f_pointer(p1, RImageSimDummy, [IXSizeIn,IYSizeIn])
+  call c_f_pointer(p2, CDummy1, [IXSizeIn,IYSizeIn])
+  call c_f_pointer(p3, CDummy2, [IXSizeIn,IYSizeIn])
+  call c_f_pointer(p4, CCorrelatedImage, [IXSizeIn,IYSizeIn])
   !...use arr and arr(i,j) as usual...
   
   ! Set the dummy array to the input simulated data
@@ -881,3 +877,68 @@ END SUBROUTINE PhaseCorrelate
 !!$  
 !!$ 
 !!$END SUBROUTINE BiCubicResampling
+
+SUBROUTINE ReSortUgs( ISymmetryIntegers,CUgs, N )
+  
+  USE MyNumbers
+  
+  USE CConst; USE IConst
+  USE IPara; USE RPara
+  USE IChannels
+  USE MPI
+  USE MyMPI
+
+  IMPLICIT NONE
+
+  INTEGER (IKIND) N,IDummy,ISymmetryIntegers(N,2)
+  REAL(RKIND) RhklarraySearch(THREEDIM), RhklarrayCompare(THREEDIM)
+  COMPLEX(CKIND) CUgSearch,CUgCompare,CUgs(N)
+  REAL(KIND=RKIND) ALN2I, LocalTINY
+  PARAMETER (ALN2I=1.4426950D0, LocalTINY=1.D-5)
+  
+  INTEGER (IKIND) NN,M,L,K,J,I,LOGNB2, index
+  COMPLEX(CKIND) Cdummy
+
+  IF((IWriteFLAG.GE.0.AND.my_rank.EQ.0).OR.IWriteFLAG.GE.10) THEN
+     PRINT*,"ReSort()"
+  END IF
+  
+  LOGNB2=INT(LOG(REAL(N))*ALN2I+LocalTINY)
+  M=N
+  DO 12 NN=1,LOGNB2
+     M=M/2
+     K=N-M
+     DO 11 J=1,K
+        I=J
+3       CONTINUE
+        L=I+M
+        
+        CUgSearch = CUgs(L)
+        CUgCompare = CUgs(I)
+        IF( &
+             (REAL(CUgSearch**2)) .GT. &
+             (REAL(CUgCompare**2))) THEN
+ !          DO 100
+              !IF(my_rank.eq.0) THEN
+              !   PRINT*,I
+              !END IF
+              Cdummy = CUgs(I)
+              CUgs(I)= CUgs(L)
+              Cugs(L)= Cdummy
+              Idummy = ISymmetryIntegers(I,2)
+              ISymmetryIntegers(I,2)= ISymmetryIntegers(L,2)
+              ISymmetryIntegers(L,2)= Idummy
+!100        ENDDO
+           
+           I=I-M
+           IF(I.GE.1) GOTO 3
+        ENDIF
+11   ENDDO
+12 ENDDO
+  
+  !PRINT*,"Finishing ResortHKL"
+
+  !	PRINT*,"array0(1),array0(N)",array0(1),array0(N)
+  RETURN
+
+END SUBROUTINE ReSortUgs
