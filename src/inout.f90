@@ -508,6 +508,19 @@ SUBROUTINE Input( IErr )
   END IF
 
 
+  !-----------------------------------------------------------------------
+  ! Refinement Specific Flags
+
+  
+  ILine= ILine+1; READ(IChInp,ERR=20,END=30,FMT='(A)')
+  ILine= ILine+1; READ(IChInp,ERR=20,END=30,FMT='(A)')
+
+  ILine= ILine+1
+  READ(IChInp,10,ERR=20,END=30) IImageOutputFLAG
+  IF((IWriteFLAG.GE.1.AND.my_rank.EQ.0).OR.IWriteFLAG.GE.10) THEN
+     PRINT*,"IImageOutputFLAG = ", IImageOutputFLAG
+  END IF
+
   ! ----------------------------------------------------------------------
   ! LACBED method input
   

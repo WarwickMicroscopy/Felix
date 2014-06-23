@@ -346,11 +346,15 @@ MODULE IPara
 
   INTEGER, DIMENSION(2) :: & 
        IImageSizeXY
+
+  !Refinement FLAGS
+  INTEGER(IKIND) :: &
+       IImageOutputFLAG
   
   !LACBED
 
   INTEGER(IKIND),DIMENSION(:,:), ALLOCATABLE :: &
-       ILACBEDStrongBeamList, IPixelLocation, ISymmetryRelations
+       ILACBEDStrongBeamList, IPixelLocation, ISymmetryRelations,ISymmetryStrengthKey
   INTEGER(IKIND),DIMENSION(:), ALLOCATABLE :: &
        InBeams,IStrongBeamList
 
@@ -542,7 +546,7 @@ MODULE CPara
   COMPLEX(CKIND), DIMENSION(:,:,:), ALLOCATABLE :: &
        CEigenVectorsChunk
   COMPLEX(CKIND),DIMENSION(:),ALLOCATABLE :: &
-       CAlphaWeightingCoefficients, CPsi0
+       CAlphaWeightingCoefficients, CPsi0,CSymmetryStrengthKey
   COMPLEX(CKIND),DIMENSION(:,:), ALLOCATABLE :: &
        CEigenValueDependentTerms,CInvertedEigenVectors, &
        CBeamProjectionMatrix,CDummyBeamMatrix
