@@ -6,6 +6,13 @@
 #
 # (C) 2013/14, all rights reserved
 #
+# Version: :VERSION:
+# Date:    :DATE:
+# Time:    :TIME:
+# Status:  :RLSTATUS:
+# Build:   :BUILD:
+# Author:  :AUTHOR:
+# 
 #%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 #
 #  This file is part of FelixSim+Draw.
@@ -38,21 +45,11 @@ F90FLAGS = -fbounds-check -fno-range-check -fimplicit-none # debug
 #F90FLAGS = -m64 -fno-range-check -pg -ffree-line-length-none # profiling
 F77FLAGS = -fbounds-check -fno-range-check # debug
 
-#INCLUDEDIR = /hpcwarwick/mathlib/gnu/lib/ # CSC machines
-#INCLUDEDIR = /usr/lib/ # RAR Linux
-
-#LIBFLAGS= -L/hpcwarwick/mathlib/gnu/lib/ -lgoto2_nehalem-r1.13 #-llapack -lblas
-#LIBFLAGS= -lmkl
 LIBFLAGS= \
 -L/csc/minerva/software/gompi/1.7.10/ScaLAPACK/2.0.2-openblas-0.2.8-lapack-3.4.2/lib \
 -L/csc/minerva/software/gompi/1.7.10/OpenBLAS/0.2.8-lapack-3.4.2/lib \
 -lopenblas \
 -lfftw3
-
-#LIBFLAGS= -lopenblas -llapack -lfftw3
-#LIBFLAGS= -lgoto2_nehalem-r1.13 -lfftw3 -lapack-3.4.2/lib
-
-#LD_LIBRARY_PATH=/hpcwarwick/mathlib/gnu/lib/:$LD_LIBRARY_PATH
 
 SIMOBJECTFILES = gmodules.o smodules.o main.o util.o inout.o inpcif.o ciftbx.o hash_funcs.o eigen.o invert.o microscopy.o diffraction.o crystallography.o bloch.o Ug.o image.o
 DRAWOBJECTFILES = gmodules.o smodules.o lacbed.o util.o inout.o \

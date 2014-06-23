@@ -1,8 +1,8 @@
-# Input file for BER $Revision: 1.4 $
-# ------------------------------------
+# Input file for FelixSim/Draw/Refine Version :VERSION: Build :BUILD: 
+# ---------------------------------------------------------------
 
 # ------------------------------------
-# BLOCH input
+# FelixSim input
 
 # control flags
 IWriteFLAG                = 1
@@ -56,7 +56,7 @@ RPercentageUgChange       = 0.0
 IImageOutputFLAG          = 1
 
 # ------------------------------------
-# Draw input
+# FelixDraw input
 
 # sample thickness loop (Angstrom)
 RInitialThickness        = 1000.0
