@@ -6,12 +6,12 @@
 !
 ! (C) 2013/14, all right reserved
 !
-! Version: VERSION
-! Date:    DATE
-! Time:    TIME
-! Status:  STATUS
-! Build:   BUILD
-! Author:  AUTHOR
+! Version: :VERSION:
+! Date:    :DATE:
+! Time:    :TIME:
+! Status:  :RLSTATUS:
+! Build:   :BUILD:
+! Author:  :AUTHOR:
 ! 
 !%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 !
@@ -38,9 +38,9 @@
 
 !--------------------------------------------------------------------
 MODULE CConst
-  CHARACTER*18, PARAMETER :: RStr= "Version VERSION, Build BUILD"
-  CHARACTER*30, PARAMETER :: DStr= "Date DATE, TIME "
-  CHARACTER*16, PARAMETER :: AStr= "Status STATUS, Author AUTHOR"
+  CHARACTER*30, PARAMETER :: RStr= "Version :VERSION:, Build :BUILD:"
+  CHARACTER*30, PARAMETER :: DStr= "Date :DATE:, :TIME:"
+  CHARACTER*30, PARAMETER :: AStr= "Status :RLSTATUS:, Author :AUTHOR:"
 
   CHARACTER*8 CSpaceGrp(230)
 

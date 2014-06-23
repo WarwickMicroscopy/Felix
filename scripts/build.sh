@@ -10,7 +10,7 @@
 # Version: VERSION
 # Date:    DATE
 # Time:    TIME
-# Status:  STATUS
+# Rls:     RLSTATUS
 # Build:   BUILD
 # Author:  AUTHOR
 # 
@@ -36,13 +36,13 @@
 echo "build script for FelixSim/Draw/Refine"
 
 version=${1:-0.0}
-status=${2:-0}
+rls=${2:-0}
 build=${3:-0.0}
 author=${4:-0}
 date=${5:-`date -R | cut -b 1-16`}
 time=${6:-`date -R | cut -b 18-31`}
 
-echo "attempting to build version" ${version} "with status" ${status} "build" ${build} "for author" ${author} "on" ${date} "at time" ${time} 
+echo "attempting to build version" ${version} "with rls" ${rls} "build" ${build} "for author" ${author} "on" ${date} "at time" ${time} 
 
 sourcedir=`pwd`
 
@@ -53,32 +53,23 @@ cd ${sourcedir}
 
 tarball=felix-${version}.tar.bz2
 
-# tag the files with the right version/status/build/author information
+# tag the files with the right version/rls/build/author information
 
 cd ${sourcedir}
 cp -vr * ${targetdir}
 cd ${targetdir}
 
-#srcdirs="src samples docs"
+echo "--- working on files in directory" $dir
 
-#for dir in src samples docs; do
-    echo "--- working on files in directory" $dir
+for file in `find . \( -name "*.f90" -o -name "*.inp" -o -name "makefile*.GF" -o -name "README.txt" \) -print`; do
 
-#    cd $dir
-
-    for file in `find . \( -name "*.f90" -o -name "*.inp" -o -name "makefile*.GF" -o -name "README.txt" \) -print`; do
-
-	echo $file " updating!"
-	sed "s/VERSION/${version}/g" $file | sed "s/DATE/${date}/g" | sed "s/TIME/${time}/g" | sed "s/STATUS/${status}/g" | sed "s/BUILD/${build}/g" | sed "s/AUTHOR/${author}/g" > $file.tmp 
+    echo $file " updating!"
+    sed "s/:VERSION:/${version}/g" $file | sed "s/:DATE:/${date}/g" | sed "s/:TIME:/${time}/g" | sed "s/:RLSTATUS:/${rls}/g" | sed "s/:BUILD:/${build}/g" | sed "s/:AUTHOR:/${author}/g" > $file.tmp 
 
 	mv $file.tmp $file
 	#ls $file.tmp $file
 
-    done
-
-#    cd ..
-
-#done
+done
 
 # create the tarball for OBS deployment
 

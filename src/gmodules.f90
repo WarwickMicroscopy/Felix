@@ -6,12 +6,12 @@
 !
 ! (C) 2013/14, all right reserved
 !
-! Version: VERSION
-! Date:    DATE
-! Time:    TIME
-! Status:  STATUS
-! Build:   BUILD
-! Author:  AUTHOR
+! Version: :VERSION:
+! Date:    :DATE:
+! Time:    :TIME:
+! Status:  :RLSTATUS:
+! Build:   :BUILD:
+! Author:  :AUTHOR:
 ! 
 !%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 !

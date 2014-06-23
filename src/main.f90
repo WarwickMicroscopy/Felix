@@ -6,12 +6,12 @@
 !
 ! (C) 2013/14, all right reserved
 !
-! Version: VERSION
-! Date:    DATE
-! Time:    TIME
-! Status:  STATUS
-! Build:   BUILD
-! Author:  AUTHOR
+! Version: :VERSION:
+! Date:    :DATE:
+! Time:    :TIME:
+! Status:  :RLSTATUS:
+! Build:   :BUILD:
+! Author:  :AUTHOR:
 ! 
 !%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 !
@@ -132,7 +132,11 @@ PROGRAM FelixSim
   !--------------------------------------------------------------------
   
   IF((IWriteFLAG.GE.0.AND.my_rank.EQ.0).OR.IWriteFLAG.GE.10) THEN
-     PRINT*,"FelixSim: ", RStr,DStr,AStr, ", process ", my_rank, " of ", p
+     PRINT*,"--------------------------------------------------------------"
+     PRINT*,"FelixSim: ", RStr
+     PRINT*,"          ", DStr
+     PRINT*,"          ", AStr
+     PRINT*,"          on rank= ", my_rank, " of ", p, " in total."
      PRINT*,"--------------------------------------------------------------"
   END IF
 

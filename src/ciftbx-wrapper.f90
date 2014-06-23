@@ -8,12 +8,12 @@ C
 C
 C R Beanland, K Evans and Rudolf A Roemer
 C
-C Version: VERSION
-C Date:    DATE
-C Time:    TIME
-C Status:  STATUS
-C Build:   BUILD
-C Author:  AUTHOR
+C Version: :VERSION:
+C Date:    :DATE:
+C Time:    :TIME:
+C Status:  :RLSTATUS:
+C Build:   :BUILD:
+C Author:  :AUTHOR:
 C 
 C%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
