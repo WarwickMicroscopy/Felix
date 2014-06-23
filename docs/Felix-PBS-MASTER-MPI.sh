@@ -183,8 +183,11 @@ echo "# Ug Iteration                            >> $inpfile
 echo "INoofUgs                  = ${nUg}"       >> $inpfile
 echo "RPercentageUgChange       = ${pUg}"       >> $inpfile
 echo ""                                         >> $inpfile
+echo "#Refinement Specific Flags"               >> $inpfile
+echo "IImageOutputFLAG          = 1"            >> $inpfile
+echo ""                                         >> $inpfile
 echo "# ------------------------------------"   >> $inpfile
-echo "# LACBED input"                           >> $inpfile
+echo "# Draw input"                             >> $inpfile
 echo ""                                         >> $inpfile
 echo "# sample thickness loop (Angstrom)"       >> $inpfile
 echo "RInitialThickness        = 100.0"         >> $inpfile
