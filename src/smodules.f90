@@ -6,6 +6,13 @@
 !
 ! (C) 2013/14, all right reserved
 !
+! Version: VERSION
+! Date:    DATE
+! Time:    TIME
+! Status:  STATUS
+! Build:   BUILD
+! Author:  AUTHOR
+! 
 !%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 !
 !  This file is part of FelixSim.
@@ -29,188 +36,11 @@
 ! $Id: smodules.f90,v 1.63 2014/04/28 12:26:19 phslaz Exp $
 !%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-!%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-!$Log: smodules.f90,v $
-!Revision 1.63  2014/04/28 12:26:19  phslaz
-!Fixed minor bugs with the new reflection pool request
-!
-!Revision 1.61  2014/04/23 17:18:00  phslaz
-!Improved Error checking, all subroutines now include ierr and return to main (in felixsim) or lacbed (in felixdraw) upon ierr.ne.0 and call MPI_FINALISE
-!
-!Revision 1.60  2014/04/14 16:51:12  phslaz
-!Seemingly fixed the rhombahedral problem, turns out theres was a mistake in inpcif where the 3rd angle was being read in incorrectly, have also written a new hklmake which is more understandable and applies selection rules directly rather than mathematically
-!
-!Revision 1.59  2014/04/09 13:45:39  phslaz
-!cleaned up the write flags also added in some of the amplitude/phase imaging
-!
-!Revision 1.58  2014/03/27 21:39:14  phslaz
-!Added two new flags IImageFlag and IOutputFlag
-!IImageFLAG = 0 (Montage) 1 (Montage and Reflections)
-!IOutputFLAG = 0 (nothing) 1 (EigenSpectra) 2 (UgMat) 3 (Wavefunctions)
-!Have also put many Print statments into IWriteflag control
-!code compiles and runs
-!
-!Revision 1.57  2014/03/27 18:13:43  phslaz
-!MPI_Reduce attempt, compiles but fails to fun
-!
-!Revision 1.56  2014/03/26 17:04:52  phslaz
-!Felix now creates images
-!
-!Revision 1.52  2014/03/25 15:45:31  phslaz
-!conflict resolution
-!
-!Revision 1.51  2014/03/25 15:35:34  phsht
-!included consistent start of each source file and GPL statements
-!
-!Revision 1.50  2014/03/21 15:55:36  phslaz
-!New Lacbed code Working
-!
-!Revision 1.48  2014/03/07 10:49:45  phslaz
-!Corrected issues with inpcif, should now work with badly structured cifs
-!
-!Revision 1.46  2014/02/21 15:26:42  phslaz
-!collapsed a few parts of main.f90 into subroutines in util.f90
-!
-!Revision 1.45  2014/02/20 13:17:31  phsht
-!removed WF/WI/EX/EV/etc outputs from BER-BLOCH
-!combined EX+EV output into ES output and made MPI compatible
-!restructured ES file
-!
-!Revision 1.44  2014/02/20 10:15:23  phslaz
-!Working towards improved cif read in, also lacbed now creates montages
-!
-!Revision 1.43  2014/02/17 14:08:56  phslaz
-!Lacbed now works
-!
-!Revision 1.42  2014/02/07 14:33:05  phslaz
-!LACBED code now reads eigen spectra output
-!
-!Revision 1.41  2014/02/04 15:19:52  phsht
-!added more output channels
-!
-!Revision 1.40  2014/01/20 18:33:59  phslaz
-!Isotropic Debye Waller Factor and Atomic Site Partial Occupancy done
-!
-!Revision 1.39  2014/01/20 15:58:50  phslaz
-!Isotropic Debye Waller Factor and Partial Occupancy input from cif
-!
-!Revision 1.38  2014/01/17 16:57:27  phslaz
-!InpCif now reads in isotropic debye waller factors but there are not currently used
-!
-!Revision 1.37  2014/01/16 16:12:42  phsht
-!work on scattering factors
-!
-!Revision 1.36  2014/01/13 13:46:20  phslaz
-!*** empty log message ***
-!
-!Revision 1.33  2014/01/07 11:49:17  phsht
-!transformation to microscope reference included, needs testing
-!
-!Revision 1.32  2013/12/19 16:30:28  phsht
-!new version of HKLMake(), using .cif information
-!
-!Revision 1.31  2013/12/19 14:58:57  phsht
-!symmetry operations now correctly interpreted from .cif;
-!structure correctly read in
-!
-!Revision 1.30  2013/12/17 17:40:53  phsht
-!make inpcif.f90 which now seems to work
-!
-!Revision 1.29  2013/11/29 16:46:20  phsht
-!removed thickness loop again, was unwieldly
-!
-!Revision 1.28  2013/11/27 12:30:21  phsht
-!more consistency in MPI output routines and their error handling
-!
-!Revision 1.27  2013/11/26 22:25:56  phsht
-!MPIIO for the rest of the files, but something not right yet
-!
-!Revision 1.26  2013/11/26 18:27:18  phsht
-!MPI file IO now working for WI (intensities)
-!
-!Revision 1.25  2013/11/25 18:26:33  phsht
-!progress on the MPI version
-!
-!Revision 1.24  2013/11/13 17:48:02  phsht
-!1st attempt at LACBED code
-!
-!Revision 1.23  2013/10/30 13:00:44  phslaz
-!Rearranged Variable declarations, allocations and deallocations
-!
-!Revision 1.22  2013/10/21 15:56:31  phslaz
-!Changed Variable names
-!
-!Revision 1.21  2013/10/03 13:41:41  phsht
-!typo in inout.f90 let to wrong thickness values being used;
-!now works again
-!
-!Revision 1.20  2013/10/03 11:15:16  phsht
-!new input file structure
-!
-!Revision 1.19  2013/10/02 20:43:28  phsht
-!replaced old input names with new names;
-!structure of input file still needs changing
-!
-!Revision 1.18  2013/09/23 16:52:29  phsht
-!OPEN, write and CLOSE of data files now implemented
-!
-!Revision 1.17  2013/09/10 16:51:54  phsht
-!before implementation of UgMatEffective
-!
-!Revision 1.16  2013/09/09 14:09:46  phsht
-!works up to the potential
-!
-!Revision 1.15  2013/09/09 10:58:33  phsht
-!subroutines now works
-!
-!Revision 1.14  2013/09/06 09:21:01  phslaz
-!Added the creation of the circular mask (needed later) made allocatable in smodules, allocated in main
-!
-!Revision 1.13  2013/09/05 11:01:38  phslaz
-!Added Beam Selection Criteria
-!
-!Revision 1.12  2013/09/04 15:31:15  phslaz
-!Bug Fix : I think im making a right hash of this trying to Allocate gVecMag
-!
-!Revision 1.11  2013/09/04 15:15:45  phslaz
-!Defined gVecMag here as opposed to in util
-!
-!Revision 1.10  2013/09/04 07:22:44  phsht
-!added declarations for RBSMaxDeviationPara, BSsgMax, RBSBethePara
-!
-!Revision 1.9  2013/09/02 15:42:42  phsht
-!code checked with matlab version up to and including BraggCentral
-!
-!Revision 1.8  2013/09/02 15:13:14  phsht
-!added two more flags to the input file and inout.f90
-!
-!Revision 1.7  2013/09/02 13:48:36  phslaz
-!"beta" -> "RBeta"
-!
-!Revision 1.6  2013/06/11 14:53:08  phsht
-!more work in the Diffraction defs part
-!
-!Revision 1.5  2013/06/10 15:08:02  phsht
-!work this morning
-!
-!Revision 1.4  2013/06/10 08:20:28  phsht
-!more work before realizing that MATLAB file is not quite the latest version
-!
-!Revision 1.3  2013/06/07 07:57:32  phsht
-!some constants and parameters defined
-!
-!Revision 1.2  2013/06/07 07:11:28  phsht
-!more ground work
-!
-!Revision 1.1  2013/04/03 19:35:45  phsht
-!first installation of basic Fortran routines/structure
-!%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-
 !--------------------------------------------------------------------
 MODULE CConst
-  CHARACTER*18, PARAMETER :: RStr= "$Revision: 1.63 $ "
-  CHARACTER*30, PARAMETER :: DStr= "$Date: 2014/04/28 12:26:19 $ "
-  CHARACTER*16, PARAMETER :: AStr= "$Author: phslaz $"
+  CHARACTER*18, PARAMETER :: RStr= "Version VERSION, Build BUILD$ "
+  CHARACTER*30, PARAMETER :: DStr= "Date DATE, TIME "
+  CHARACTER*16, PARAMETER :: AStr= "Status STATUS, Author AUTHOR"
 
   CHARACTER*8 CSpaceGrp(230)
 

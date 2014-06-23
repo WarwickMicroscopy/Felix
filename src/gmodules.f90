@@ -6,6 +6,13 @@
 !
 ! (C) 2013/14, all right reserved
 !
+! Version: VERSION
+! Date:    DATE
+! Time:    TIME
+! Status:  STATUS
+! Build:   BUILD
+! Author:  AUTHOR
+! 
 !%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 !
 !  This file is part of FelixSim.
@@ -27,39 +34,6 @@
 
 !%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 ! $Id: gmodules.f90,v 1.11 2014/03/25 15:37:30 phsht Exp $
-!%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-
-!%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-!$Log: gmodules.f90,v $
-!Revision 1.11  2014/03/25 15:37:30  phsht
-!more on GPL
-!
-!Revision 1.10  2014/03/25 15:35:34  phsht
-!included consistent start of each source file and GPL statements
-!
-!Revision 1.9  2014/03/21 15:55:36  phslaz
-!New Lacbed code Working
-!
-!Revision 1.7  2013/12/19 16:30:27  phsht
-!new version of HKLMake(), using .cif information
-!
-!Revision 1.6  2013/11/26 18:27:18  phsht
-!MPI file IO now working for WI (intensities)
-!
-!Revision 1.5  2013/11/25 18:26:33  phsht
-!progress on the MPI version
-!
-!Revision 1.4  2013/06/11 14:53:08  phsht
-!more work in the Diffraction defs part
-!
-!Revision 1.3  2013/06/10 08:20:28  phsht
-!more work before realizing that MATLAB file is not quite the latest version
-!
-!Revision 1.2  2013/06/07 07:11:27  phsht
-!more ground work
-!
-!Revision 1.1  2013/04/03 19:35:45  phsht
-!first installation of basic Fortran routines/structure
 !%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 MODULE MyNumbers     

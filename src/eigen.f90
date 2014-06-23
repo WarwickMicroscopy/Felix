@@ -6,6 +6,13 @@
 !
 ! (C) 2013/14, all right reserved
 !
+! Version: VERSION
+! Date:    DATE
+! Time:    TIME
+! Status:  STATUS
+! Build:   BUILD
+! Author:  AUTHOR
+! 
 !%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 !
 !  This file is part of BlochSim.
@@ -27,56 +34,6 @@
 
 !%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 ! $Id: eigen.f90,v 1.10 2014/03/25 15:35:34 phsht Exp $
-!%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-
-!%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-! $Log: eigen.f90,v $
-! Revision 1.10  2014/03/25 15:35:34  phsht
-! included consistent start of each source file and GPL statements
-!
-! Revision 1.9  2013/11/27 12:30:21  phsht
-! more consistency in MPI output routines and their error handling
-!
-! Revision 1.8  2013/10/02 20:43:27  phsht
-! replaced old input names with new names;
-! structure of input file still needs changing
-!
-! Revision 1.7  2013/10/02 08:26:08  phsht
-! removed two DBG lines
-!
-! Revision 1.6  2013/10/01 20:38:01  phsht
-! trying to write as a single loop over all pixels
-!
-! Revision 1.5  2013/09/23 16:52:29  phsht
-! OPEN, write and CLOSE of data files now implemented
-!
-! Revision 1.4  2013/09/19 11:19:33  phsht
-! eigenvector calculation now working
-!
-! Revision 1.3  2013/09/18 16:08:42  phsht
-! work with Keiths to include changes done with Richard yesterday and
-! also to continue until intensities; reached these, but don't quite agree
-! yet. Nevertheless, up to the diagonalization, things do work! And eigenvalues
-! are also correct, just eigenvectors not yet.
-!
-! Revision 1.2  2013/09/17 17:00:21  phsht
-! diagonalization by LAPACK routines now included
-!
-! Revision 1.1  2013/09/11 14:26:48  phsht
-! interface to an eigensolver routine
-!
-! Revision 1.1  2011/05/06 08:13:09  phsht
-! 1st installement
-!
-! Revision 1.3  2010/10/26 14:28:07  phrkaj
-! Replaced !! with !, fixed the OpenOutputRGamma of negative energy in inout.f90
-!
-! Revision 1.2  2010/10/26 09:43:39  phrkaj
-! Deleted naive debugging statements, got rid of ILevelflag and IConvflag, deleted old logs
-!
-! Revision 1.1.1.1  2010/10/22 12:23:38  phsht
-! ParaTMM
-!
 !%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 SUBROUTINE EigenSpectrum(isize, matU, evals, evecs, IErr)

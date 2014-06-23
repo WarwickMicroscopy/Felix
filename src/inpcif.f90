@@ -6,6 +6,13 @@
 !
 ! (C) 2013/14, all right reserved
 !
+! Version: VERSION
+! Date:    DATE
+! Time:    TIME
+! Status:  STATUS
+! Build:   BUILD
+! Author:  AUTHOR
+! 
 !%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 !
 !  This file is part of FelixSim.
@@ -27,81 +34,6 @@
 
 !%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 ! $Id: inpcif.f90,v 1.23 2014/04/28 12:26:19 phslaz Exp $
-!%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-
-!%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-! $Log: inpcif.f90,v $
-! Revision 1.23  2014/04/28 12:26:19  phslaz
-! Fixed minor bugs with the new reflection pool request
-!
-! Revision 1.22  2014/04/23 17:18:00  phslaz
-! Improved Error checking, all subroutines now include ierr and return to main (in felixsim) or lacbed (in felixdraw) upon ierr.ne.0 and call MPI_FINALISE
-!
-! Revision 1.21  2014/04/14 16:51:11  phslaz
-! Seemingly fixed the rhombahedral problem, turns out theres was a mistake in inpcif where the 3rd angle was being read in incorrectly, have also written a new hklmake which is more understandable and applies selection rules directly rather than mathematically
-!
-! Revision 1.20  2014/04/09 13:45:39  phslaz
-! cleaned up the write flags also added in some of the amplitude/phase imaging
-!
-! Revision 1.19  2014/03/27 21:39:14  phslaz
-! Added two new flags IImageFlag and IOutputFlag
-! IImageFLAG = 0 (Montage) 1 (Montage and Reflections)
-! IOutputFLAG = 0 (nothing) 1 (EigenSpectra) 2 (UgMat) 3 (Wavefunctions)
-! Have also put many Print statments into IWriteflag control
-! code compiles and runs
-!
-! Revision 1.18  2014/03/27 16:01:02  phsht
-! BER->Felix
-!
-! Revision 1.17  2014/03/25 15:35:34  phsht
-! included consistent start of each source file and GPL statements
-!
-! Revision 1.16  2014/03/13 18:10:32  phslaz
-! Seg Fault due to 32bit suspected constraint
-!
-! Revision 1.15  2014/03/07 10:49:45  phslaz
-! Corrected issues with inpcif, should now work with badly structured cifs
-!
-! Revision 1.13  2014/02/20 10:15:22  phslaz
-! Working towards improved cif read in, also lacbed now creates montages
-!
-! Revision 1.12  2014/02/07 14:33:05  phslaz
-! LACBED code now reads eigen spectra output
-!
-! Revision 1.11  2014/01/20 20:20:44  phslaz
-! Added a check for the existence of the debye waller factor in the cif file and use the constant stated int he input file if its not there
-!
-! Revision 1.10  2014/01/20 18:33:59  phslaz
-! Isotropic Debye Waller Factor and Atomic Site Partial Occupancy done
-!
-! Revision 1.9  2014/01/20 15:58:50  phslaz
-! Isotropic Debye Waller Factor and Partial Occupancy input from cif
-!
-! Revision 1.8  2014/01/17 16:57:27  phslaz
-! InpCif now reads in isotropic debye waller factors but there are not currently used
-!
-! Revision 1.7  2014/01/16 16:12:42  phsht
-! work on scattering factors
-!
-! Revision 1.6  2014/01/16 15:39:33  phsht
-! corrected readin of cif file, using REAL and nout DOUBLE variables
-!
-! Revision 1.5  2014/01/09 18:04:43  phslaz
-! ZOLZ and Absorption installed
-!
-! Revision 1.4  2013/12/19 16:30:27  phsht
-! new version of HKLMake(), using .cif information
-!
-! Revision 1.3  2013/12/19 14:58:57  phsht
-! symmetry operations now correctly interpreted from .cif;
-! structure correctly read in
-!
-! Revision 1.2  2013/12/18 11:44:38  phsht
-! small typo in indexing, led to wrong RSymVec's
-!
-! Revision 1.1  2013/12/17 17:40:53  phsht
-! make inpcif.f90 which now seems to work
-!
 !%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 SUBROUTINE InpCIF(IErr)

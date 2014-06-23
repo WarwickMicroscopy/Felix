@@ -6,6 +6,13 @@
 !
 ! (C) 2013/14, all right reserved
 !
+! Version: VERSION
+! Date:    DATE
+! Time:    TIME
+! Status:  STATUS
+! Build:   BUILD
+! Author:  AUTHOR
+! 
 !%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 !
 !  This file is part of BlochSim.
@@ -27,18 +34,6 @@
 
 !%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 ! $Id: invert.f90,v 1.3 2014/03/25 15:35:34 phsht Exp $
-!%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-
-!%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-! $Log: invert.f90,v $
-! Revision 1.3  2014/03/25 15:35:34  phsht
-! included consistent start of each source file and GPL statements
-!
-! Revision 1.2  2013/09/18 16:08:42  phsht
-! work with Keiths to include changes done with Richard yesterday and
-! also to continue until intensities; reached these, but don't quite agree
-! yet. Nevertheless, up to the diagonalization, things do work! And eigenvalues
-! are also correct, just eigenvectors not yet.
 !%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 SUBROUTINE INVERT(MatrixSize,Matrix,InvertedMatrix,IErr)  
