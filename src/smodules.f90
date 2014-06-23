@@ -38,7 +38,7 @@
 
 !--------------------------------------------------------------------
 MODULE CConst
-  CHARACTER*18, PARAMETER :: RStr= "Version VERSION, Build BUILD$ "
+  CHARACTER*18, PARAMETER :: RStr= "Version VERSION, Build BUILD"
   CHARACTER*30, PARAMETER :: DStr= "Date DATE, TIME "
   CHARACTER*16, PARAMETER :: AStr= "Status STATUS, Author AUTHOR"
 
