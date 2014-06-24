@@ -1779,71 +1779,71 @@ SUBROUTINE WriteOutInputFile
   OPEN(UNIT= IChInp,FILE= "Felix.inp.sample",&
        STATUS= 'UNKNOWN')
 
-  WRITE(UNIT= IChInp,FMT=*) "# Input file for FelixSim/Draw/Refine version :VERSION: Build :BUILD:"
-  WRITE(UNIT= IChInp,FMT=*) "# ------------------------------------"
-  WRITE(UNIT= IChInp,FMT=*) ""
-  WRITE(UNIT= IChInp,FMT=*) "# ------------------------------------"
-  WRITE(UNIT= IChInp,FMT=*) "# BLOCH input"
-  WRITE(UNIT= IChInp,FMT=*) ""
-  WRITE(UNIT= IChInp,FMT=*) "# control flags"
-  WRITE(UNIT= IChInp,FMT=*) "IWriteFLAG                = 1"
-  WRITE(UNIT= IChInp,FMT=*) "IImageFLAG                = 1"
-  WRITE(UNIT= IChInp,FMT=*) "IOutputFLAG               = 0"
-  WRITE(UNIT= IChInp,FMT=*) "IBinorTextFLAG            = 0"  
-  WRITE(UNIT= IChInp,FMT=*) "IScatterFactorMethodFLAG  = 0"
-  WRITE(UNIT= IChInp,FMT=*) "ICentralBeamFLAG          = 1"
-  WRITE(UNIT= IChInp,FMT=*) "IMaskFLAG                 = 0"
-  WRITE(UNIT= IChInp,FMT=*) "IZolzFLAG                 = 1"
-  WRITE(UNIT= IChInp,FMT=*) "IAbsorbFLAG               = 1"
-  WRITE(UNIT= IChInp,FMT=*) "IAnisoDebyeWallerFlag     = 0"
-  WRITE(UNIT= IChInp,FMT=*) "IBeamConvergenceFLAG      = 1"
-  WRITE(UNIT= IChInp,FMT=*) "IPseudoCubicFLAG          = 0"
-  WRITE(UNIT= IChInp,FMT=*) "IXDirectionFLAG           = 1"
-  WRITE(UNIT= IChInp,FMT=*) "IDevFLAG                  = 0"
-  WRITE(UNIT= IChInp,FMT=*) ""
-  WRITE(UNIT= IChInp,FMT=*) "# radius of the beam in pixels"
-  WRITE(UNIT= IChInp,FMT=*) "IPixelCount               = 64"
-  WRITE(UNIT= IChInp,FMT=*) ""
-  WRITE(UNIT= IChInp,FMT=*) "# beam selection criteria"
-  WRITE(UNIT= IChInp,FMT=*) "IMinReflectionPool        = 600"
-  WRITE(UNIT= IChInp,FMT=*) "IMinStrongBeams           = 125"
-  WRITE(UNIT= IChInp,FMT=*) "IMinWeakBeams             = 20"
-  WRITE(UNIT= IChInp,FMT=*) "RBSBMax                   = 0.1"
-  WRITE(UNIT= IChInp,FMT=*) "RBSPMax                   = 0.1"
-  WRITE(UNIT= IChInp,FMT=*) "RConvergenceTolerance (%) = 1.0"
-  WRITE(UNIT= IChInp,FMT=*) ""
-  WRITE(UNIT= IChInp,FMT=*) "# crystal settings"
-  WRITE(UNIT= IChInp,FMT=*) "RDebyeWallerConstant      = 0.4668"
-  WRITE(UNIT= IChInp,FMT=*) "RAbsorptionPer            = 2.9"
-  WRITE(UNIT= IChInp,FMT=*) ""
-  WRITE(UNIT= IChInp,FMT=*) "# microscope settings"
-  WRITE(UNIT= IChInp,FMT=*) "RConvergenceAngle         = 6.0"
-  WRITE(UNIT= IChInp,FMT=*) "IIncidentBeamDirectionX   = 0"
-  WRITE(UNIT= IChInp,FMT=*) "IIncidentBeamDirectionY   = 1"
-  WRITE(UNIT= IChInp,FMT=*) "IIncidentBeamDirectionZ   = 1"
-  WRITE(UNIT= IChInp,FMT=*) "IXDirectionX              = 1"
-  WRITE(UNIT= IChInp,FMT=*) "IXDirectionY              = 0"
-  WRITE(UNIT= IChInp,FMT=*) "IXDirectionZ              = 0"
-  WRITE(UNIT= IChInp,FMT=*) "INormalDirectionX         = 0"
-  WRITE(UNIT= IChInp,FMT=*) "INormalDirectionY         = 1"
-  WRITE(UNIT= IChInp,FMT=*) "INormalDirectionZ         = 1"
-  WRITE(UNIT= IChInp,FMT=*) "RAcceleratingVoltage (kV) = 200.0"
-  WRITE(UNIT= IChInp,FMT=*) ""
-  WRITE(UNIT= IChInp,FMT=*) "# Ug Iteration"
-  WRITE(UNIT= IChInp,FMT=*) "INoofUgs                  = 1"
-  WRITE(UNIT= IChInp,FMT=*) "RPercentageUgChange       = 50.0"
-  WRITE(UNIT= IChInp,FMT=*) ""
-  WRITE(UNIT= IChInp,FMT=*) "#Refinement Specific Flags"
-  WRITE(UNIT= IChInp,FMT=*) "IImageOutputFLAG          = 1"
-  WRITE(UNIT= IChInp,FMT=*) ""
-  WRITE(UNIT= IChInp,FMT=*) "# ------------------------------------"
-  WRITE(UNIT= IChInp,FMT=*) "# Draw input"
-  WRITE(UNIT= IChInp,FMT=*) ""
-  WRITE(UNIT= IChInp,FMT=*) "# sample thickness loop (Angstrom)"
-  WRITE(UNIT= IChInp,FMT=*) "RInitialThickness        = 300.0"
-  WRITE(UNIT= IChInp,FMT=*) "RFinalThickness          = 1300.0"
-  WRITE(UNIT= IChInp,FMT=*) "RDeltaThickness          = 10.0"
-  WRITE(UNIT= IChInp,FMT=*) "IReflectOut              = 49"
+  WRITE(UNIT= IChInp,FMT='(A)') ADJUSTL("# Input file for FelixSim/Draw/Refine version :VERSION: Build :BUILD:")
+  WRITE(UNIT= IChInp,FMT='(A)') ADJUSTL("# ------------------------------------")
+  WRITE(UNIT= IChInp,FMT='(A)') ADJUSTL("")
+  WRITE(UNIT= IChInp,FMT='(A)') ADJUSTL("# ------------------------------------")
+  WRITE(UNIT= IChInp,FMT='(A)') ADJUSTL("# BLOCH input")
+  WRITE(UNIT= IChInp,FMT='(A)') ADJUSTL("")
+  WRITE(UNIT= IChInp,FMT='(A)') ADJUSTL("# control flags")
+  WRITE(UNIT= IChInp,FMT='(A)') ADJUSTL("IWriteFLAG                = 1")
+  WRITE(UNIT= IChInp,FMT='(A)') ADJUSTL("IImageFLAG                = 1")
+  WRITE(UNIT= IChInp,FMT='(A)') ADJUSTL("IOutputFLAG               = 0")
+  WRITE(UNIT= IChInp,FMT='(A)') ADJUSTL("IBinorTextFLAG            = 0")  
+  WRITE(UNIT= IChInp,FMT='(A)') ADJUSTL("IScatterFactorMethodFLAG  = 0")
+  WRITE(UNIT= IChInp,FMT='(A)') ADJUSTL("ICentralBeamFLAG          = 1")
+  WRITE(UNIT= IChInp,FMT='(A)') ADJUSTL("IMaskFLAG                 = 0")
+  WRITE(UNIT= IChInp,FMT='(A)') ADJUSTL("IZolzFLAG                 = 1")
+  WRITE(UNIT= IChInp,FMT='(A)') ADJUSTL("IAbsorbFLAG               = 1")
+  WRITE(UNIT= IChInp,FMT='(A)') ADJUSTL("IAnisoDebyeWallerFlag     = 0")
+  WRITE(UNIT= IChInp,FMT='(A)') ADJUSTL("IBeamConvergenceFLAG      = 1")
+  WRITE(UNIT= IChInp,FMT='(A)') ADJUSTL("IPseudoCubicFLAG          = 0")
+  WRITE(UNIT= IChInp,FMT='(A)') ADJUSTL("IXDirectionFLAG           = 1")
+  WRITE(UNIT= IChInp,FMT='(A)') ADJUSTL("IDevFLAG                  = 0")
+  WRITE(UNIT= IChInp,FMT='(A)') ADJUSTL("")
+  WRITE(UNIT= IChInp,FMT='(A)') ADJUSTL("# radius of the beam in pixels")
+  WRITE(UNIT= IChInp,FMT='(A)') ADJUSTL("IPixelCount               = 64")
+  WRITE(UNIT= IChInp,FMT='(A)') ADJUSTL("")
+  WRITE(UNIT= IChInp,FMT='(A)') ADJUSTL("# beam selection criteria")
+  WRITE(UNIT= IChInp,FMT='(A)') ADJUSTL("IMinReflectionPool        = 600")
+  WRITE(UNIT= IChInp,FMT='(A)') ADJUSTL("IMinStrongBeams           = 125")
+  WRITE(UNIT= IChInp,FMT='(A)') ADJUSTL("IMinWeakBeams             = 20")
+  WRITE(UNIT= IChInp,FMT='(A)') ADJUSTL("RBSBMax                   = 0.1")
+  WRITE(UNIT= IChInp,FMT='(A)') ADJUSTL("RBSPMax                   = 0.1")
+  WRITE(UNIT= IChInp,FMT='(A)') ADJUSTL("RConvergenceTolerance (%) = 1.0")
+  WRITE(UNIT= IChInp,FMT='(A)') ADJUSTL("")
+  WRITE(UNIT= IChInp,FMT='(A)') ADJUSTL("# crystal settings")
+  WRITE(UNIT= IChInp,FMT='(A)') ADJUSTL("RDebyeWallerConstant      = 0.4668")
+  WRITE(UNIT= IChInp,FMT='(A)') ADJUSTL("RAbsorptionPer            = 2.9")
+  WRITE(UNIT= IChInp,FMT='(A)') ADJUSTL("")
+  WRITE(UNIT= IChInp,FMT='(A)') ADJUSTL("# microscope settings")
+  WRITE(UNIT= IChInp,FMT='(A)') ADJUSTL("RConvergenceAngle         = 6.0")
+  WRITE(UNIT= IChInp,FMT='(A)') ADJUSTL("IIncidentBeamDirectionX   = 0")
+  WRITE(UNIT= IChInp,FMT='(A)') ADJUSTL("IIncidentBeamDirectionY   = 1")
+  WRITE(UNIT= IChInp,FMT='(A)') ADJUSTL("IIncidentBeamDirectionZ   = 1")
+  WRITE(UNIT= IChInp,FMT='(A)') ADJUSTL("IXDirectionX              = 1")
+  WRITE(UNIT= IChInp,FMT='(A)') ADJUSTL("IXDirectionY              = 0")
+  WRITE(UNIT= IChInp,FMT='(A)') ADJUSTL("IXDirectionZ              = 0")
+  WRITE(UNIT= IChInp,FMT='(A)') ADJUSTL("INormalDirectionX         = 0")
+  WRITE(UNIT= IChInp,FMT='(A)') ADJUSTL("INormalDirectionY         = 1")
+  WRITE(UNIT= IChInp,FMT='(A)') ADJUSTL("INormalDirectionZ         = 1")
+  WRITE(UNIT= IChInp,FMT='(A)') ADJUSTL("RAcceleratingVoltage (kV) = 200.0")
+  WRITE(UNIT= IChInp,FMT='(A)') ADJUSTL("")
+  WRITE(UNIT= IChInp,FMT='(A)') ADJUSTL("# Ug Iteration")
+  WRITE(UNIT= IChInp,FMT='(A)') ADJUSTL("INoofUgs                  = 1")
+  WRITE(UNIT= IChInp,FMT='(A)') ADJUSTL("RPercentageUgChange       = 50.0")
+  WRITE(UNIT= IChInp,FMT='(A)') ADJUSTL("")
+  WRITE(UNIT= IChInp,FMT='(A)') ADJUSTL("#Refinement Specific Flags")
+  WRITE(UNIT= IChInp,FMT='(A)') ADJUSTL("IImageOutputFLAG          = 1")
+  WRITE(UNIT= IChInp,FMT='(A)') ADJUSTL("")
+  WRITE(UNIT= IChInp,FMT='(A)') ADJUSTL("# ------------------------------------")
+  WRITE(UNIT= IChInp,FMT='(A)') ADJUSTL("# Draw input")
+  WRITE(UNIT= IChInp,FMT='(A)') ADJUSTL("")
+  WRITE(UNIT= IChInp,FMT='(A)') ADJUSTL("# sample thickness loop (Angstrom)")
+  WRITE(UNIT= IChInp,FMT='(A)') ADJUSTL("RInitialThickness        = 300.0")
+  WRITE(UNIT= IChInp,FMT='(A)') ADJUSTL("RFinalThickness          = 1300.0")
+  WRITE(UNIT= IChInp,FMT='(A)') ADJUSTL("RDeltaThickness          = 10.0")
+  WRITE(UNIT= IChInp,FMT='(A)') ADJUSTL("IReflectOut              = 49")
   
   CLOSE(UNIT=IChInp)
 
