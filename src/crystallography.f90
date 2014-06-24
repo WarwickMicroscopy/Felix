@@ -6,6 +6,13 @@
 !
 ! (C) 2013/14, all rights reserved
 !
+! Version: $VERSION$
+! Date:    $DATE$
+! Time:    $TIME$
+! Status:  $RLSTATUS$
+! Build:   $BUILD$
+! Author:  $AUTHOR$
+! 
 !%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 !
 !  This file is part of FelixSim.

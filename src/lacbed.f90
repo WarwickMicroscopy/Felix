@@ -6,6 +6,13 @@
 !
 ! (C) 2013/14, all right reserved
 !
+! Version: :VERSION:
+! Date:    :DATE:
+! Time:    :TIME:
+! Status:  :RLSTATUS:
+! Build:   :BUILD:
+! Author:  :AUTHOR:
+! 
 !%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 !
 !  This file is part of FelixSim.
@@ -27,68 +34,6 @@
 
 !%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 ! $Id: lacbed.f90,v 1.30 2014/04/23 17:18:00 phslaz Exp $
-!%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-
-!%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-! $Log: lacbed.f90,v $
-! Revision 1.30  2014/04/23 17:18:00  phslaz
-! Improved Error checking, all subroutines now include ierr and return to main (in felixsim) or lacbed (in felixdraw) upon ierr.ne.0 and call MPI_FINALISE
-!
-! Revision 1.29  2014/04/14 16:51:12  phslaz
-! Seemingly fixed the rhombahedral problem, turns out theres was a mistake in inpcif where the 3rd angle was being read in incorrectly, have also written a new hklmake which is more understandable and applies selection rules directly rather than mathematically
-!
-! Revision 1.28  2014/04/09 13:45:39  phslaz
-! cleaned up the write flags also added in some of the amplitude/phase imaging
-!
-! Revision 1.27  2014/03/27 21:08:30  phslaz
-! Read/Write after MPI run now works
-!
-! Revision 1.26  2014/03/27 15:57:51  phsht
-! small changes to IWriteFlag handling in montage parts
-!
-! Revision 1.25  2014/03/27 10:13:55  phsht
-! included a thickness message
-!
-! Revision 1.24  2014/03/27 10:08:09  phsht
-! replaced "lacbed(" with "lacbed(" in all print statements
-!
-! Revision 1.23  2014/03/26 17:04:52  phslaz
-! Bloch now creates images
-!
-! Revision 1.18  2014/03/25 15:45:31  phslaz
-! conflict resolution
-!
-! Revision 1.17  2014/03/25 15:35:34  phsht
-! included consistent start of each source file and GPL statements
-!
-! Revision 1.16  2014/03/25 15:09:17  phsht
-! "DBG :" -> "DBG:"
-!
-! Revision 1.15  2014/03/24 12:50:31  phslaz
-! fixed write flag 2 and rewrote lacbed to read file once instead of every thickness
-!
-! Revision 1.14  2014/03/21 15:55:36  phslaz
-! New Lacbed code Working
-!
-! Revision 1.11  2014/03/03 18:18:07  phslaz
-! Fixed some of the issues with inpcif however still not complete, mot having multiplicity in the cif file seems to be and issue
-!
-! Revision 1.7  2014/02/20 13:17:31  phsht
-! removed WF/WI/EX/EV/etc outputs from BER-BLOCH
-! combined EX+EV output into ES output and made MPI compatible
-! restructured ES file
-!
-! Revision 1.6  2014/02/20 10:15:23  phslaz
-! Working towards improved cif read in, also lacbed now creates montages
-!
-! Revision 1.4  2014/02/07 14:33:05  phslaz
-! LACBED code now reads eigen spectra output
-!
-! Revision 1.2  2014/02/04 15:18:03  phsht
-! redone using new lacbed.f90
-!
-! Revision 1.1  2014/01/31 16:53:03  phsht
-! 1st version copied from lacbed.f90
 !%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 PROGRAM LACBED
