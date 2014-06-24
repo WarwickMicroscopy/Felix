@@ -489,7 +489,7 @@ SUBROUTINE BlochCoefficientCalculation(ind,jnd,IErr)
   
   IMAXCBuffer = 2*13*SIZE(CEigenVectors)+2*13*SIZE(CEigenValues)+3*SIZE(IStrongBeamList)+3*6*ADD_OUT_INFO
   
-  IF(IOutputFLAG.GE.1) THEN
+  IF(IOutputFLAG.GE.2) THEN
      CALL WriteEigenSystem_MPI(IChOutES_MPI, ind,jnd,nReflections,nBeams, &
           CEigenValues,CEigenVectors, IStrongBeamList,nBeams,nBeams, 1, IErr)
      IF( IErr.NE.0 ) THEN
@@ -500,16 +500,16 @@ SUBROUTINE BlochCoefficientCalculation(ind,jnd,IErr)
   
   IMAXCBuffer = 2*14*SIZE(CUgMatEffective)+7*6*ADD_OUT_INFO
   
-  ! UgMatEffective
-  IF(IOutputFLAG.GE.2) THEN
-     CALL WriteDataC_MPI(IChOutUM_MPI, ind,jnd, &
-          CUgMatEffective(:,:), nBeams*nBeams, 1, IErr)
-     IF( IErr.NE.0 ) THEN
-        PRINT*,"BlochCoefficientCalculation(", my_rank, ") error in WriteDataC_ MPI() of IChOutUM"
-        RETURN
-     ENDIF
-  ENDIF
-  
+!!$  ! UgMatEffective
+!!$  IF(IOutputFLAG.GE.2) THEN
+!!$     CALL WriteDataC_MPI(IChOutUM_MPI, ind,jnd, &
+!!$          CUgMatEffective(:,:), nBeams*nBeams, 1, IErr)
+!!$     IF( IErr.NE.0 ) THEN
+!!$        PRINT*,"BlochCoefficientCalculation(", my_rank, ") error in WriteDataC_ MPI() of IChOutUM"
+!!$        RETURN
+!!$     ENDIF
+!!$  ENDIF
+!!$  
   
   !--------------------------------------------------------------------
   ! DEALLOCATE eigen problem memory

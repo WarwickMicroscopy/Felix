@@ -647,6 +647,16 @@ PROGRAM FelixSim
      CUgMat =  CUgMat+CUgMatPrime
   end IF
 
+  !!$ ! UgMatEffective
+  IF(IOutputFLAG.GE.2) THEN
+     CALL WriteDataC_MPI(IChOutUM_MPI, ind,jnd, &
+          CUgMatEffective(:,:), nBeams*nBeams, 1, IErr)
+     IF( IErr.NE.0 ) THEN
+        PRINT*,"BlochCoefficientCalculation(", my_rank, ") error in WriteDataC_ MPI() of IChOutUM"
+        RETURN
+     ENDIF
+  ENDIF
+
   Deallocate( &
        RgMatMat,RgMatMag,STAT=IErr)
   IF( IErr.NE.0 ) THEN
