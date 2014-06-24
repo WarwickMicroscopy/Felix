@@ -58,7 +58,7 @@ SUBROUTINE Input( IErr )
   REAL(KIND=RKIND) ROfIter
   
   IF((IWriteFLAG.GE.0.AND.my_rank.EQ.0).OR.IWriteFLAG.GE.10) THEN
-     PRINT*,"DBG: Input()"
+     PRINT*,"Input()"
   END IF
 
   OPEN(UNIT= IChInp, ERR= 120, FILE= "Felix.inp",&
@@ -413,8 +413,8 @@ SUBROUTINE Input( IErr )
 120 IF(my_rank.EQ.0.OR.IWriteFLAG.GE.10) THEN
      PRINT*,"Input(): ERR in OPEN"
      PRINT*,""
+     CALL WriteOutInputFile
   END IF
-  CALL WriteOutInputFile
   GOTO 1000
   
   !	error in CLOSE detected
@@ -437,7 +437,7 @@ SUBROUTINE Input( IErr )
   ! dump the input help
   
 1000 IF(my_rank.EQ.0.OR.IWriteFLAG.GE.10) THEN
-     PRINT*,"# Input file for BER $Revision: 1.4 $"
+     PRINT*,"# Input file for FelixSim/Draw/Refine version :VERSION: Build :BUILD:"
      PRINT*,"# ------------------------------------"
      PRINT*,""
      PRINT*,"# ------------------------------------"
@@ -535,7 +535,7 @@ SUBROUTINE InputScatteringFactors( IErr )
   INTEGER IErr, ILine, ILength, ind
   IF((IWriteFLAG.GE.2.AND.my_rank.EQ.0).OR.IWriteFLAG.GE.10) THEN
 
-     PRINT*,"DBG: InputScatteringFactors()"
+     PRINT*,"InputScatteringFactors()"
      
   END IF
   ILine= 0
@@ -553,14 +553,14 @@ SUBROUTINE InputScatteringFactors( IErr )
   
   IF(IWriteFLAG.GE.10) THEN
      
-     PRINT*,"DBG: InputScatteringFactors(): ILength=", ILength
+     PRINT*,"InputScatteringFactors(): ILength=", ILength
      
   END IF
   
   REWIND(UNIT=IChInp)
   IF(IWriteFLAG.GE.10) THEN
      
-     PRINT*,"DBG: actual reading of data"
+     PRINT*,"actual reading of data"
   END IF
 
   SELECT CASE (IScatterFactorMethodFLAG)
@@ -713,7 +713,7 @@ SUBROUTINE ReadEigenSystemChunk( IAllocationChunk,IErr )
 
   IF(IWriteFLAG.GE.10) THEN
      
-     PRINT*,"DBG: actual reading of data"
+     PRINT*,"actual reading of data"
   
   END IF
   IReadLine = 1
@@ -1779,7 +1779,7 @@ SUBROUTINE WriteOutInputFile
   OPEN(UNIT= IChInp,FILE= "Felix.inp.sample",&
        STATUS= 'UNKNOWN')
 
-  WRITE(UNIT= IChInp,FMT=*) "# Input file for BER $Revision: 1.4 $"
+  WRITE(UNIT= IChInp,FMT=*) "# Input file for FelixSim/Draw/Refine version :VERSION: Build :BUILD:"
   WRITE(UNIT= IChInp,FMT=*) "# ------------------------------------"
   WRITE(UNIT= IChInp,FMT=*) ""
   WRITE(UNIT= IChInp,FMT=*) "# ------------------------------------"
