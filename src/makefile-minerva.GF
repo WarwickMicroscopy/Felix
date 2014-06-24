@@ -51,6 +51,8 @@ LIBFLAGS= \
 -lopenblas \
 -lfftw3
 
+#LD_LIBRARY_PATH=/hpcwarwick/mathlib/gnu/lib/:$LD_LIBRARY_PATH
+
 SIMOBJECTFILES = gmodules.o smodules.o main.o util.o inout.o inpcif.o ciftbx.o hash_funcs.o eigen.o invert.o microscopy.o diffraction.o crystallography.o bloch.o Ug.o image.o
 DRAWOBJECTFILES = gmodules.o smodules.o lacbed.o util.o inout.o \
 eigen.o invert.o microscopy.o diffraction.o crystallography.o bloch.o Ug.o image.o inpcif.o ciftbx.o hash_funcs.o 
@@ -70,7 +72,7 @@ REFINEOBJECTFILES = gmodules.o smodules.o refinemain.o util.o inout.o inpcif.o c
 %.o: %.F
 	$(FC) $(F77FLAGS) -DF77 -c $< -I$(INCLUDEDIR) $(LIBFLAGS)
 
-all:	FelixSim FelixDraw
+all:	FelixSim FelixDraw FelixRefine
 
 FelixSim: $(SIMOBJECTFILES)
 	$(F90) $(F90FLAGS) -o $@ $(SIMOBJECTFILES) -I$(INCLUDEDIR) $(LIBFLAGS)
@@ -79,6 +81,10 @@ FelixSim: $(SIMOBJECTFILES)
 FelixDraw: $(DRAWOBJECTFILES)
 	$(F90) $(F90FLAGS) -o $@ $(DRAWOBJECTFILES) -I$(INCLUDEDIR) $(LIBFLAGS)
 #	$(F90) -o $@ $(DRAWOBJECTFILES) $(LIBFLAGS)
+
+FelixRefine: $(REFINEOBJECTFILES)
+	$(F90) $(F90FLAGS) -o $@ $(REFINEOBJECTFILES) -I$(INCLUDEDIR) $(LIBFLAGS)
+#	$(F90) -o $@ $(REFINEOBJECTFILES) $(LIBFLAGS)
 
 clean:	
 	rm -f core *.mod *.o

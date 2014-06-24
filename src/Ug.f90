@@ -306,6 +306,6 @@ SUBROUTINE UgAddAbsorption(IErr)
 
   CUgMatPrime = CZERO
 
-  CUgMatPrime = CUgMatPrime+ABS(CUgMat)*(RAbsorptionPercentage/100.D0)*CIMAGONE
+  CUgMatPrime = CUgMatPrime+REAL(CUgMat)*(RAbsorptionPercentage/100.D0)*CIMAGONE
   
 END SUBROUTINE UgAddAbsorption

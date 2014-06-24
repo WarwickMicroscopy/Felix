@@ -410,32 +410,105 @@ SUBROUTINE Input( IErr )
   RETURN
   
   !	error in OPEN detected
-120 PRINT*,"Input(): ERR in OPEN"
+120 IF(my_rank.EQ.0.OR.IWriteFLAG.GE.10) THEN
+     PRINT*,"Input(): ERR in OPEN"
+     PRINT*,""
+  END IF
+  CALL WriteOutInputFile
   GOTO 1000
   
   !	error in CLOSE detected
-130 PRINT*,"Input(): ERR in CLOSE"
+130 IF(my_rank.EQ.0.OR.IWriteFLAG.GE.10) THEN
+     PRINT*,"Input(): ERR in CLOSE"
+  END IF
   GOTO 1000
   
   !	error in READ detected
-20 PRINT*,"Input(): ERR in READ at line", ILine
+20 IF(my_rank.EQ.0.OR.IWriteFLAG.GE.10) THEN
+     PRINT*,"Input(): ERR in READ at line", ILine
+  END IF
   GOTO 1000
   
   !	EOF in READ occured prematurely
-30 PRINT*,"Input(): EOF in READ at line", ILine
+30 IF(my_rank.EQ.0.OR.IWriteFLAG.GE.10) THEN
+     PRINT*,"Input(): EOF in READ at line", ILine
+  END IF
   
   ! dump the input help
   
-1000 &
-  PRINT*,"Input parameters:          ; explanation:"
-  PRINT*,"--------------------------------------------------------------------"
-  PRINT*,"IWriteFLAG          = 1          ; (12) 0/1/2/3/4 = no/log/category/wave fcn/RGamma/RHO output"
-  
+1000 IF(my_rank.EQ.0.OR.IWriteFLAG.GE.10) THEN
+     PRINT*,"# Input file for BER $Revision: 1.4 $"
+     PRINT*,"# ------------------------------------"
+     PRINT*,""
+     PRINT*,"# ------------------------------------"
+     PRINT*,"# BLOCH input"
+     PRINT*,""
+     PRINT*,"# control flags"
+     PRINT*,"IWriteFLAG                = 1"
+     PRINT*,"IImageFLAG                = 1"
+     PRINT*,"IOutputFLAG               = 0"
+     PRINT*,"IBinorTextFLAG            = 0"  
+     PRINT*,"IScatterFactorMethodFLAG  = 0"
+     PRINT*,"ICentralBeamFLAG          = 1"
+     PRINT*,"IMaskFLAG                 = 0"
+     PRINT*,"IZolzFLAG                 = 1"
+     PRINT*,"IAbsorbFLAG               = 1"
+     PRINT*,"IAnisoDebyeWallerFlag     = 0"
+     PRINT*,"IBeamConvergenceFLAG      = 1"
+     PRINT*,"IPseudoCubicFLAG          = 0"
+     PRINT*,"IXDirectionFLAG           = 1"
+     PRINT*,"IDevFLAG                  = 0"
+     PRINT*,""
+     PRINT*,"# radius of the beam in pixels"
+     PRINT*,"IPixelCount               = 64"
+     PRINT*,""
+     PRINT*,"# beam selection criteria"
+     PRINT*,"IMinReflectionPool        = 600"
+     PRINT*,"IMinStrongBeams           = 125"
+     PRINT*,"IMinWeakBeams             = 20"
+     PRINT*,"RBSBMax                   = 0.1"
+     PRINT*,"RBSPMax                   = 0.1"
+     PRINT*,"RConvergenceTolerance (%) = 1.0"
+     PRINT*,""
+     PRINT*,"# crystal settings"
+     PRINT*,"RDebyeWallerConstant      = 0.4668"
+     PRINT*,"RAbsorptionPer            = 2.9"
+     PRINT*,""
+     PRINT*,"# microscope settings"
+     PRINT*,"RConvergenceAngle         = 6.0"
+     PRINT*,"IIncidentBeamDirectionX   = 0"
+     PRINT*,"IIncidentBeamDirectionY   = 1"
+     PRINT*,"IIncidentBeamDirectionZ   = 1"
+     PRINT*,"IXDirectionX              = 1"
+     PRINT*,"IXDirectionY              = 0"
+     PRINT*,"IXDirectionZ              = 0"
+     PRINT*,"INormalDirectionX         = 0"
+     PRINT*,"INormalDirectionY         = 1"
+     PRINT*,"INormalDirectionZ         = 1"
+     PRINT*,"RAcceleratingVoltage (kV) = 200.0"
+     PRINT*,""
+     PRINT*,"# Ug Iteration"
+     PRINT*,"INoofUgs                  = 1"
+     PRINT*,"RPercentageUgChange       = 50.0"
+     PRINT*,""
+     PRINT*,"#Refinement Specific Flags"
+     PRINT*,"IImageOutputFLAG          = 1"
+     PRINT*,""
+     PRINT*,"# ------------------------------------"
+     PRINT*,"# Draw input"
+     PRINT*,""
+     PRINT*,"# sample thickness loop (Angstrom)"
+     PRINT*,"RInitialThickness        = 300.0"
+     PRINT*,"RFinalThickness          = 1300.0"
+     PRINT*,"RDeltaThickness          = 10.0"
+     PRINT*,"IReflectOut              = 49"
+     
+  END IF
   IErr= 1
   RETURN
   
 END SUBROUTINE Input
-
+   
 
 ! -----------------------------------------------------------------------
 !
@@ -1686,3 +1759,92 @@ SUBROUTINE WriteDataC_MPI( IChOutWrite, ipos,jpos, Cdata, Isize, step, IErr)
 
 END SUBROUTINE WriteDataC_MPI
 
+SUBROUTINE WriteOutInputFile
+  
+  USE MyNumbers
+  
+  USE IConst
+  USE RConst
+  
+  USE IPara
+  USE RPara
+  USE CPara
+  USE SPara
+  USE IChannels
+  USE MPI
+  USE MyMPI
+  
+  IMPLICIT NONE
+  
+  OPEN(UNIT= IChInp,FILE= "Felix.inp.sample",&
+       STATUS= 'UNKNOWN')
+
+  WRITE(UNIT= IChInp,FMT=*) "# Input file for BER $Revision: 1.4 $"
+  WRITE(UNIT= IChInp,FMT=*) "# ------------------------------------"
+  WRITE(UNIT= IChInp,FMT=*) ""
+  WRITE(UNIT= IChInp,FMT=*) "# ------------------------------------"
+  WRITE(UNIT= IChInp,FMT=*) "# BLOCH input"
+  WRITE(UNIT= IChInp,FMT=*) ""
+  WRITE(UNIT= IChInp,FMT=*) "# control flags"
+  WRITE(UNIT= IChInp,FMT=*) "IWriteFLAG                = 1"
+  WRITE(UNIT= IChInp,FMT=*) "IImageFLAG                = 1"
+  WRITE(UNIT= IChInp,FMT=*) "IOutputFLAG               = 0"
+  WRITE(UNIT= IChInp,FMT=*) "IBinorTextFLAG            = 0"  
+  WRITE(UNIT= IChInp,FMT=*) "IScatterFactorMethodFLAG  = 0"
+  WRITE(UNIT= IChInp,FMT=*) "ICentralBeamFLAG          = 1"
+  WRITE(UNIT= IChInp,FMT=*) "IMaskFLAG                 = 0"
+  WRITE(UNIT= IChInp,FMT=*) "IZolzFLAG                 = 1"
+  WRITE(UNIT= IChInp,FMT=*) "IAbsorbFLAG               = 1"
+  WRITE(UNIT= IChInp,FMT=*) "IAnisoDebyeWallerFlag     = 0"
+  WRITE(UNIT= IChInp,FMT=*) "IBeamConvergenceFLAG      = 1"
+  WRITE(UNIT= IChInp,FMT=*) "IPseudoCubicFLAG          = 0"
+  WRITE(UNIT= IChInp,FMT=*) "IXDirectionFLAG           = 1"
+  WRITE(UNIT= IChInp,FMT=*) "IDevFLAG                  = 0"
+  WRITE(UNIT= IChInp,FMT=*) ""
+  WRITE(UNIT= IChInp,FMT=*) "# radius of the beam in pixels"
+  WRITE(UNIT= IChInp,FMT=*) "IPixelCount               = 64"
+  WRITE(UNIT= IChInp,FMT=*) ""
+  WRITE(UNIT= IChInp,FMT=*) "# beam selection criteria"
+  WRITE(UNIT= IChInp,FMT=*) "IMinReflectionPool        = 600"
+  WRITE(UNIT= IChInp,FMT=*) "IMinStrongBeams           = 125"
+  WRITE(UNIT= IChInp,FMT=*) "IMinWeakBeams             = 20"
+  WRITE(UNIT= IChInp,FMT=*) "RBSBMax                   = 0.1"
+  WRITE(UNIT= IChInp,FMT=*) "RBSPMax                   = 0.1"
+  WRITE(UNIT= IChInp,FMT=*) "RConvergenceTolerance (%) = 1.0"
+  WRITE(UNIT= IChInp,FMT=*) ""
+  WRITE(UNIT= IChInp,FMT=*) "# crystal settings"
+  WRITE(UNIT= IChInp,FMT=*) "RDebyeWallerConstant      = 0.4668"
+  WRITE(UNIT= IChInp,FMT=*) "RAbsorptionPer            = 2.9"
+  WRITE(UNIT= IChInp,FMT=*) ""
+  WRITE(UNIT= IChInp,FMT=*) "# microscope settings"
+  WRITE(UNIT= IChInp,FMT=*) "RConvergenceAngle         = 6.0"
+  WRITE(UNIT= IChInp,FMT=*) "IIncidentBeamDirectionX   = 0"
+  WRITE(UNIT= IChInp,FMT=*) "IIncidentBeamDirectionY   = 1"
+  WRITE(UNIT= IChInp,FMT=*) "IIncidentBeamDirectionZ   = 1"
+  WRITE(UNIT= IChInp,FMT=*) "IXDirectionX              = 1"
+  WRITE(UNIT= IChInp,FMT=*) "IXDirectionY              = 0"
+  WRITE(UNIT= IChInp,FMT=*) "IXDirectionZ              = 0"
+  WRITE(UNIT= IChInp,FMT=*) "INormalDirectionX         = 0"
+  WRITE(UNIT= IChInp,FMT=*) "INormalDirectionY         = 1"
+  WRITE(UNIT= IChInp,FMT=*) "INormalDirectionZ         = 1"
+  WRITE(UNIT= IChInp,FMT=*) "RAcceleratingVoltage (kV) = 200.0"
+  WRITE(UNIT= IChInp,FMT=*) ""
+  WRITE(UNIT= IChInp,FMT=*) "# Ug Iteration"
+  WRITE(UNIT= IChInp,FMT=*) "INoofUgs                  = 1"
+  WRITE(UNIT= IChInp,FMT=*) "RPercentageUgChange       = 50.0"
+  WRITE(UNIT= IChInp,FMT=*) ""
+  WRITE(UNIT= IChInp,FMT=*) "#Refinement Specific Flags"
+  WRITE(UNIT= IChInp,FMT=*) "IImageOutputFLAG          = 1"
+  WRITE(UNIT= IChInp,FMT=*) ""
+  WRITE(UNIT= IChInp,FMT=*) "# ------------------------------------"
+  WRITE(UNIT= IChInp,FMT=*) "# Draw input"
+  WRITE(UNIT= IChInp,FMT=*) ""
+  WRITE(UNIT= IChInp,FMT=*) "# sample thickness loop (Angstrom)"
+  WRITE(UNIT= IChInp,FMT=*) "RInitialThickness        = 300.0"
+  WRITE(UNIT= IChInp,FMT=*) "RFinalThickness          = 1300.0"
+  WRITE(UNIT= IChInp,FMT=*) "RDeltaThickness          = 10.0"
+  WRITE(UNIT= IChInp,FMT=*) "IReflectOut              = 49"
+  
+  CLOSE(UNIT=IChInp)
+
+END SUBROUTINE WriteOutInputFile
