@@ -279,18 +279,18 @@ SUBROUTINE UgCalculation (IErr)
 
   CUgMat = CUgMat + CONJG(TRANSPOSE(CUgMat))
 
-  WHERE(ABS(REAL(REAL(CUgMat))).LT.TINY)
-     CUgmat = ZERO + REAL(AIMAG(CUgMat))*CIMAGONE
-  END WHERE
-
-  WHERE(ABS(REAL(AIMAG(CUgMat))).LT.TINY)
-     CUgmat = REAL(REAL(CUgMat)) + CZERO
-  END WHERE  
-  IF(my_rank.EQ.0) THEN
-     DO ind = 1,4
-        PRINT*,CUgMat(ind,:4)
-     END DO
-  END IF
+!!$  WHERE(ABS(REAL(REAL(CUgMat))).LT.TINY)
+!!$     CUgmat = ZERO + REAL(AIMAG(CUgMat))*CIMAGONE
+!!$  END WHERE
+!!$
+!!$  WHERE(ABS(REAL(AIMAG(CUgMat))).LT.TINY)
+!!$     CUgmat = REAL(REAL(CUgMat)) + CZERO
+!!$  END WHERE  
+!!$  IF(my_rank.EQ.0) THEN
+!!$     DO ind = 1,4
+!!$        PRINT*,CUgMat(ind,:4)
+!!$     END DO
+!!$  END IF
 END SUBROUTINE UgCalculation
 
 SUBROUTINE UgAddAbsorption(IErr)         
