@@ -5,7 +5,7 @@
 # FelixSim input
 
 # control flags
-IWriteFLAG                = 1
+IWriteFLAG                = 3
 IImageFLAG                = 1
 IOutputFLAG               = 0
 IBinorTextFLAG            = 0  
@@ -25,7 +25,7 @@ IPixelCount               = 64
 
 # beam selection criteria
 IMinReflectionPool        = 600
-IMinStrongBeams           = 125
+IMinStrongBeams           = 25
 IMinWeakBeams             = 20
 RBSBMax                   = 0.1
 RBSPMax                   = 0.1
@@ -36,7 +36,7 @@ RDebyeWallerConstant      = 0.4668
 RAbsorptionPer            = 2.9
 
 # microscope settings
-RConvergenceAngle         = 6.0
+RConvergenceAngle         = 3.0
 IIncidentBeamDirectionX   = 1
 IIncidentBeamDirectionY   = 1 
 IIncidentBeamDirectionZ   = 1
