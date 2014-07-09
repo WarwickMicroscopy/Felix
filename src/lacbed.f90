@@ -162,6 +162,9 @@ PROGRAM LACBED
   ! INPUT section
   !--------------------------------------------------------------------
 
+  
+  ISoftwareMode = 1 ! FelixDrawMode
+
   CALL Input( IErr )
   !PRINT*, "DBG: IErr=", IErr
   IF( IErr.NE.0 ) THEN

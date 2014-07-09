@@ -149,6 +149,8 @@ PROGRAM FelixSim
   !--------------------------------------------------------------------
   ! INPUT section
   !--------------------------------------------------------------------
+  
+  ISoftwareMode = 0 ! FelixSimMode
 
   CALL Input( IErr )
   IF( IErr.NE.0 ) THEN
