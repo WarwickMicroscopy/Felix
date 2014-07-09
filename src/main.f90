@@ -65,17 +65,17 @@ PROGRAM FelixSim
   INTEGER(IKIND) ILocalPixelCountMin, ILocalPixelCountMax
   COMPLEX(RKIND) CVgij
   
-  INTEGER(IKIND) ind,jnd,hnd,knd,pnd, &
+  INTEGER(IKIND) ind,jnd,hnd,knd,pnd,gnd, &
        IHours,IMinutes,ISeconds
   INTEGER, DIMENSION(:), ALLOCATABLE :: &
-       IWeakBeamVec,IRankArraySize,IRankArraySizeRoot
-  REAL(RKIND),DIMENSION(:,:,:,:),ALLOCATABLE :: &
+       IWeakBeamVec,IDisplacements,ICount
+  REAL(RKIND),DIMENSION(:,:,:),ALLOCATABLE :: &
        RIndividualReflectionsRoot
   REAL(RKIND),DIMENSION(:,:,:),ALLOCATABLE :: &
        RFinalMontageImageRoot
   REAL(RKIND),DIMENSION(:,:),ALLOCATABLE :: &
        RImage,RSymDiff
-  COMPLEX(CKIND),DIMENSION(:,:,:,:), ALLOCATABLE :: &
+  COMPLEX(CKIND),DIMENSION(:,:,:), ALLOCATABLE :: &
        CAmplitudeandPhaseRoot
   INTEGER IRootArraySize, IPixelPerRank
   CHARACTER*40 surname, path
@@ -249,22 +249,6 @@ PROGRAM FelixSim
      GOTO 9999
   ENDIF
 
-!!$  
-!!$  PRINT*,SIZE(RSymMAT,DIM=1),SIZE(RSymMAT,DIM=3),SIZE(RSymMAT,DIM=3)
-!!$  
-!!$  !PRINT*,SUM(RSymMAT(1,ind,:)
-!!$
-!!$  PRINT*,"SYMMETRY RELATED HKLs"
-!!$  DO ind= 1,6
-!!$     PRINT*,RHKL(ind+1,:)
-!!$  END DO
-!!$  
-!!$  PRINT*,"Result of Symmetry Operations"
-!!$  DO ind = 1,SIZE(RSymMAT,DIM=1)
-!!$     PRINT*,(SUM(RSymMat(ind,:,:),DIM=2))*RHKL(2,:)
-!!$     !PRINT*,MATMUL(RSymMat(ind,:,:),RHKL(2,:))
-!!$  END DO
-
   !--------------------------------------------------------------------
   ! allocate memory for DYNAMIC variables according to nReflections
   !--------------------------------------------------------------------
@@ -336,15 +320,6 @@ PROGRAM FelixSim
           " in ALLOCATE() of DYNAMIC variables Reflection Matrix"
      GOTO 9999
   ENDIF
-!!$  ALLOCATE(&
-!!$       RUniqueKey(nReflections**2,5), &
-!!$       STAT=IErr)
-!!$  IF( IErr.NE.0 ) THEN
-!!$     PRINT*,"main(", my_rank, ") error ", IErr, &
-!!$          " in ALLOCATE() of DYNAMIC variables Reflection Matrix"
-!!$     GOTO 9999
-!!$  ENDIF
-       
        
   ALLOCATE( &  
        RgMatMag(nReflections,nReflections), &
@@ -471,7 +446,7 @@ PROGRAM FelixSim
 
   ILocalPixelCountMin= (IPixelTotal*(my_rank)/p)+1
   ILocalPixelCountMax= (IPixelTotal*(my_rank+1)/p) 
-
+!!$
   IF((IWriteFLAG.GE.6.AND.my_rank.EQ.0).OR.IWriteFLAG.GE.10) THEN
      PRINT*,"main(", my_rank, "): starting the eigenvalue problem"
      PRINT*,"main(", my_rank, "): for lines ", ILocalPixelCountMin, &
@@ -479,11 +454,11 @@ PROGRAM FelixSim
   ENDIF
   
   IThicknessCount= (RFinalThickness- RInitialThickness)/RDeltaThickness + 1
-  
+
   IF(IImageFLAG.LE.1) THEN
      ALLOCATE( &
-          RIndividualReflections(2*IPixelCount,&
-          2*IPixelCount,IReflectOut,IThicknessCount),&
+          RIndividualReflections(IReflectOut,IThicknessCount,&
+          (ILocalPixelCountMax-ILocalPixelCountMin)+1),&
           STAT=IErr)
      IF( IErr.NE.0 ) THEN
         PRINT*,"main(", my_rank, ") error ", IErr, &
@@ -494,8 +469,8 @@ PROGRAM FelixSim
      RIndividualReflections = ZERO
   ELSE
      ALLOCATE( &
-          CAmplitudeandPhase(2*IPixelCount,&
-          2*IPixelCount,IReflectOut,IThicknessCount),&
+          CAmplitudeandPhase(IReflectOut,IThicknessCount,&
+          (ILocalPixelCountMax-ILocalPixelCountMin)+1),&
           STAT=IErr)
      IF( IErr.NE.0 ) THEN
         PRINT*,"main(", my_rank, ") error ", IErr, &
@@ -504,7 +479,7 @@ PROGRAM FelixSim
      ENDIF
      CAmplitudeandPhase = CZERO
   END IF
-  
+
   ALLOCATE( &
        CFullWaveFunctions(nReflections), & 
        STAT=IErr)
@@ -543,7 +518,7 @@ PROGRAM FelixSim
   DO knd = ILocalPixelCountMin,ILocalPixelCountMax,1
      ind = IPixelLocations(knd,1)
      jnd = IPixelLocations(knd,2)
-     CALL BlochCoefficientCalculation(ind,jnd,IErr)
+     CALL BlochCoefficientCalculation(ind,jnd,knd,ILocalPixelCountMin,IErr)
      IF( IErr.NE.0 ) THEN
         PRINT*,"main(", my_rank, ") error ", IErr, &
              " in BlochCofficientCalculation"
@@ -580,8 +555,7 @@ PROGRAM FelixSim
   ENDIF
 
   ALLOCATE( &
-       RIndividualReflectionsRoot(2*IPixelCount,&
-       2*IPixelCount,IReflectOut,IThicknessCount),&
+       RIndividualReflectionsRoot(IReflectOut,IThicknessCount,IPixelTotal),&
        STAT=IErr)
   IF( IErr.NE.0 ) THEN
      PRINT*,"main(", my_rank, ") error ", IErr, &
@@ -591,8 +565,7 @@ PROGRAM FelixSim
   
   IF(IImageFLAG.GE.2) THEN
      ALLOCATE(&
-          CAmplitudeandPhaseRoot(2*IPixelCount,&
-          2*IPixelCount,IReflectOut,IThicknessCount),&
+          CAmplitudeandPhaseRoot(IReflectOut,IThicknessCount,IPixelTotal),&
           STAT=IErr)
      IF( IErr.NE.0 ) THEN
         PRINT*,"main(", my_rank, ") error ", IErr, &
@@ -604,30 +577,49 @@ PROGRAM FelixSim
 
   RIndividualReflectionsRoot = ZERO
   
-  IRootArraySize = SIZE(RIndividualReflectionsRoot)
-  
   IF(IWriteFLAG.GE.10) THEN
      
      PRINT*,"REDUCING Reflections",my_rank
      
   END IF
 
+  ALLOCATE(&
+       IDisplacements(p),ICount(p),&
+       STAT=IErr)
+  IF( IErr.NE.0 ) THEN
+     PRINT*,"main(", my_rank, ") error ", IErr, &
+          " In ALLOCATE"
+     GOTO 9999
+  ENDIF
+
+  DO pnd = 1,p
+     IDisplacements(pnd) = (IPixelTotal*(pnd-1)/p)
+     ICount(pnd) = (((IPixelTotal*(pnd)/p) - (IPixelTotal*(pnd-1)/p)))*IReflectOut*IThicknessCount
+          
+  END DO
+  
+  DO ind = 1,p
+        IDisplacements(ind) = (IDisplacements(ind))*IReflectOut*IThicknessCount
+  END DO
+  
   IF(IImageFLAG.LE.1) THEN
-     CALL MPI_REDUCE(RIndividualReflections,RIndividualReflectionsRoot,&
-          IRootArraySize,MPI_DOUBLE_PRECISION,MPI_SUM,0, &
+     CALL MPI_GATHERV(RIndividualReflections,ICount,&
+          MPI_DOUBLE_PRECISION,RIndividualReflectionsRoot,&
+          ICount,IDisplacements,MPI_DOUBLE_PRECISION,0,&
           MPI_COMM_WORLD,IErr)
      IF( IErr.NE.0 ) THEN
         PRINT*,"main(", my_rank, ") error ", IErr, &
-             " In MPI_REDUCE"
+             " In MPI_GATHERV"
         GOTO 9999
-     ENDIF   
+     ENDIF     
   ELSE     
-     CALL MPI_REDUCE(CAmplitudeandPhase,CAmplitudeandPhaseRoot,&
-          IRootArraySize,MPI_DOUBLE_COMPLEX,MPI_SUM,0, &
+     CALL MPI_GATHERV(CAmplitudeandPhase,ICount,&
+          MPI_DOUBLE_COMPLEX,CAmplitudeandPhaseRoot,&
+          ICount,IDisplacements,MPI_DOUBLE_COMPLEX,0, &
           MPI_COMM_WORLD,IErr)
      IF( IErr.NE.0 ) THEN
         PRINT*,"main(", my_rank, ") error ", IErr, &
-             " In MPI_REDUCE"
+             " In MPI_GATHERV"
         GOTO 9999
      ENDIF   
   END IF
@@ -677,17 +669,17 @@ PROGRAM FelixSim
 
   IF(my_rank.EQ.0) THEN
      DO IThicknessIndex =1,IThicknessCount
-        DO ind = 1,2*IPixelCount
-           DO jnd = 1,2*IPixelCount
-              CALL MakeMontagePixel(ind,jnd,IThicknessIndex,&
-                   RFinalMontageImageRoot,&
-                   RIndividualReflectionsRoot(ind,jnd,:,IThicknessIndex),IErr)
-              IF( IErr.NE.0 ) THEN
-                 PRINT*,"main(", my_rank, ") error ", IErr, &
-                      " in MakeMontagePixel"
-                 GOTO 9999
-              ENDIF
-           END DO
+        DO knd = 1,IPixelTotal
+           ind = IPixelLocations(knd,1)
+           jnd = IPixelLocations(knd,2)
+           CALL MakeMontagePixel(ind,jnd,IThicknessIndex,&
+                RFinalMontageImageRoot,&
+                RIndividualReflectionsRoot(:,IThicknessIndex,knd),IErr)
+           IF( IErr.NE.0 ) THEN
+              PRINT*,"main(", my_rank, ") error ", IErr, &
+                   " in MakeMontagePixel"
+              GOTO 9999
+           ENDIF
         END DO
      END DO
   END IF
@@ -791,15 +783,29 @@ PROGRAM FelixSim
               !-----------------------------------------------------------------------------
               IF(IImageFLAG.GE.2) THEN
 
+                 RImage = ZERO
+                 DO jnd = 1,IPixelTotal
+                    gnd = IPixelLocations(jnd,1)
+                    hnd = IPixelLocations(jnd,2)
+                    RImage(gnd,hnd) = REAL(CAmplitudeandPhaseRoot(ind,knd,jnd))
+                 END DO
+
                  CALL WriteReflectionImage(IChOutWFImageReal,&
-                      REAL(CAmplitudeandPhaseRoot(:,:,ind,knd)),IErr,2*IPixelCount,2*IPixelCount)       
+                      RImage,IErr,2*IPixelCount,2*IPixelCount)       
                  IF( IErr.NE.0 ) THEN
                     PRINT*,"main(", my_rank, ") error in WriteReflectionImage()"
                     GOTO 9999
                  ENDIF
+
+                 RImage = ZERO
+                 DO jnd = 1,IPixelTotal
+                    gnd = IPixelLocations(jnd,1)
+                    hnd = IPixelLocations(jnd,2)
+                    RImage(gnd,hnd) = AIMAG(CAmplitudeandPhaseRoot(ind,knd,jnd))
+                 END DO
                  
                  CALL WriteReflectionImage(IChOutWFImagePhase,&
-                      AIMAG(CAmplitudeandPhaseRoot(:,:,ind,knd)),IErr,2*IPixelCount,2*IPixelCount)       
+                      RImage,IErr,2*IPixelCount,2*IPixelCount)       
                  IF( IErr.NE.0 ) THEN
                     PRINT*,"main(", my_rank, ") error in WriteReflectionImage()"
                     GOTO 9999
@@ -807,8 +813,20 @@ PROGRAM FelixSim
 
               END IF
               
+!!$              CALL WriteReflectionImage(IChOutWIImage,&
+!!$                   RIndividualReflectionsRoot(:,:,ind,knd),IErr,2*IPixelCount,2*IPixelCount)    
+
+              RImage = ZERO
+              DO jnd = 1,IPixelTotal
+                 gnd = IPixelLocations(jnd,1)
+                 hnd = IPixelLocations(jnd,2)
+                 RImage(gnd,hnd) = RIndividualReflectionsRoot(ind,knd,jnd)
+              END DO
+                 
+!!$              CALL WriteReflectionImage(IChOutWIImage,&
+!!$                   RIndividualReflectionsRoot(:,:,ind,knd),IErr,2*IPixelCount,2*IPixelCount)       
               CALL WriteReflectionImage(IChOutWIImage,&
-                   RIndividualReflectionsRoot(:,:,ind,knd),IErr,2*IPixelCount,2*IPixelCount)       
+                   RImage,IErr,2*IPixelCount,2*IPixelCount)       
               IF( IErr.NE.0 ) THEN
                  PRINT*,"main(", my_rank, ") error in WriteReflectionImage()"
                  GOTO 9999

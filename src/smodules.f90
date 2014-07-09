@@ -354,7 +354,7 @@ MODULE RPara
   REAL(RKIND),DIMENSION(:),ALLOCATABLE :: &
        RWaveIntensity,RFullWaveIntensity
     
-  REAL(RKIND), DIMENSION(:,:,:,:), ALLOCATABLE :: &
+  REAL(RKIND), DIMENSION(:,:,:), ALLOCATABLE :: &
        RIndividualReflections
 
   !Refinement Variables
@@ -384,7 +384,7 @@ MODULE CPara
        CEigenValues,CGammaValues, CWaveFunctions,CFullWaveFunctions
   COMPLEX(CKIND),DIMENSION(:,:),ALLOCATABLE :: &
        CEigenVectors
-  COMPLEX(CKIND), DIMENSION(:,:,:,:), ALLOCATABLE :: &
+  COMPLEX(CKIND), DIMENSION(:,:,:), ALLOCATABLE :: &
        CAmplitudeandPhase
 
 END MODULE CPara
