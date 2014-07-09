@@ -54,7 +54,7 @@ PROGRAM FelixRefine
   REAL(RKIND) :: & 
        time, norm,StartTime, CurrentTime, Duration, TotalDurationEstimate
   INTEGER(IKIND) :: &
-       IErr,ind,jnd,hnd,knd,gnd, &
+       IErr,ind,jnd,hnd,knd,gnd,pnd, &
        IHours,IMinutes,ISeconds,IX,IY
   CHARACTER*34 :: &
        filename
@@ -75,15 +75,17 @@ PROGRAM FelixRefine
   COMPLEX(RKIND) CVgij
   
   !INTEGER ind,jnd,hnd,knd,pnd
-  INTEGER, DIMENSION(:), ALLOCATABLE :: &
-       IWeakBeamVec,IRankArraySize,IRankArraySizeRoot
-  REAL(RKIND),DIMENSION(:,:,:,:),ALLOCATABLE :: &
+  INTEGER(IKIND), DIMENSION(:), ALLOCATABLE :: &
+       IWeakBeamVec,IDisplacements,ICount
+  REAL(RKIND),DIMENSION(:,:,:),ALLOCATABLE :: &
        RIndividualReflectionsRoot
+  REAL(RKIND),DIMENSION(:,:,:,:),ALLOCATABLE :: &
+       RReflectionImagesForPhaseCorrelation
   REAL(RKIND),DIMENSION(:,:,:),ALLOCATABLE :: &
        RFinalMontageImageRoot
   REAL(RKIND),DIMENSION(:,:),ALLOCATABLE :: &
        RImage
-  COMPLEX(CKIND),DIMENSION(:,:,:,:), ALLOCATABLE :: &
+  COMPLEX(CKIND),DIMENSION(:,:,:), ALLOCATABLE :: &
        CAmplitudeandPhaseRoot
   COMPLEX(CKIND),DIMENSION(:,:), ALLOCATABLE :: &
        CZeroMat
@@ -573,23 +575,23 @@ PROGRAM FelixRefine
   
   IF(IImageFLAG.LE.1) THEN
      ALLOCATE( &
-          RIndividualReflections(2*IPixelCount,&
-          2*IPixelCount,IReflectOut,IThicknessCount),&
+          RIndividualReflections(IReflectOut,IThicknessCount,&
+          (ILocalPixelCountMax-ILocalPixelCountMin)+1),&
           STAT=IErr)
      IF( IErr.NE.0 ) THEN
-        PRINT*,"refinemain(", my_rank, ") error ", IErr, &
-             " in ALLOCATE() of DYNAMIC variables Individual Images"
+        PRINT*,"main(", my_rank, ") error ", IErr, &
+          " in ALLOCATE() of DYNAMIC variables Individual Images"
         GOTO 9999
      ENDIF
      
      RIndividualReflections = ZERO
   ELSE
      ALLOCATE( &
-          CAmplitudeandPhase(2*IPixelCount,&
-          2*IPixelCount,IReflectOut,IThicknessCount),&
+          CAmplitudeandPhase(IReflectOut,IThicknessCount,&
+          (ILocalPixelCountMax-ILocalPixelCountMin)+1),&
           STAT=IErr)
      IF( IErr.NE.0 ) THEN
-        PRINT*,"refinemain(", my_rank, ") error ", IErr, &
+        PRINT*,"main(", my_rank, ") error ", IErr, &
              " in ALLOCATE() of DYNAMIC variables Amplitude and Phase"
         GOTO 9999
      ENDIF
@@ -671,8 +673,7 @@ PROGRAM FelixRefine
   ENDIF
   
   ALLOCATE( &
-       RIndividualReflectionsRoot(2*IPixelCount,&
-       2*IPixelCount,IReflectOut,IThicknessCount),&
+       RIndividualReflectionsRoot(IReflectOut,IThicknessCount,IPixelTotal),&
        STAT=IErr)
   IF( IErr.NE.0 ) THEN
      PRINT*,"refinemain(", my_rank, ") error ", IErr, &
@@ -682,8 +683,7 @@ PROGRAM FelixRefine
   
   IF(IImageFLAG.GE.2) THEN
      ALLOCATE(&
-          CAmplitudeandPhaseRoot(2*IPixelCount,&
-          2*IPixelCount,IReflectOut,IThicknessCount),&
+          CAmplitudeandPhaseRoot(IReflectOut,IThicknessCount,IPixelTotal),&
           STAT=IErr)
      IF( IErr.NE.0 ) THEN
         PRINT*,"refinemain(", my_rank, ") error ", IErr, &
@@ -703,39 +703,102 @@ PROGRAM FelixRefine
      
   END IF
   
-  IF(IImageFLAG.LE.1) THEN
-     CALL MPI_REDUCE(RIndividualReflections,RIndividualReflectionsRoot,&
-          IRootArraySize,MPI_DOUBLE_PRECISION,MPI_SUM,0, &
-          MPI_COMM_WORLD,IErr)
-     IF( IErr.NE.0 ) THEN
-        PRINT*,"refinemain(", my_rank, ") error ", IErr, &
-             " In MPI_REDUCE"
-        GOTO 9999
-     ENDIF
-     
-     
-  ELSE     
-     CALL MPI_REDUCE(CAmplitudeandPhase,CAmplitudeandPhaseRoot,&
-          IRootArraySize,MPI_DOUBLE_COMPLEX,MPI_SUM,0, &
-          MPI_COMM_WORLD,IErr)
-     IF( IErr.NE.0 ) THEN
-        PRINT*,"refinemain(", my_rank, ") error ", IErr, &
-             " In MPI_REDUCE"
-        GOTO 9999
-     ENDIF
-  END IF
-  
   IF(IWriteFLAG.GE.10) THEN
      PRINT*,"REDUCED Reflections",my_rank
   END IF
 
+  ALLOCATE(&
+       IDisplacements(p),ICount(p),&
+       STAT=IErr)
+  IF( IErr.NE.0 ) THEN
+     PRINT*,"main(", my_rank, ") error ", IErr, &
+          " In ALLOCATE"
+     GOTO 9999
+  ENDIF
+
+  DO pnd = 1,p
+     IDisplacements(pnd) = (IPixelTotal*(pnd-1)/p)
+     ICount(pnd) = (((IPixelTotal*(pnd)/p) - (IPixelTotal*(pnd-1)/p)))*IReflectOut*IThicknessCount
+          
+  END DO
+  
+  DO ind = 1,p
+        IDisplacements(ind) = (IDisplacements(ind))*IReflectOut*IThicknessCount
+  END DO
+  
+  IF(IImageFLAG.LE.1) THEN
+     CALL MPI_GATHERV(RIndividualReflections,ICount,&
+          MPI_DOUBLE_PRECISION,RIndividualReflectionsRoot,&
+          ICount,IDisplacements,MPI_DOUBLE_PRECISION,0,&
+          MPI_COMM_WORLD,IErr)
+     IF( IErr.NE.0 ) THEN
+        PRINT*,"main(", my_rank, ") error ", IErr, &
+             " In MPI_GATHERV"
+        GOTO 9999
+     ENDIF     
+  ELSE     
+     CALL MPI_GATHERV(CAmplitudeandPhase,ICount,&
+          MPI_DOUBLE_COMPLEX,CAmplitudeandPhaseRoot,&
+          ICount,IDisplacements,MPI_DOUBLE_COMPLEX,0, &
+          MPI_COMM_WORLD,IErr)
+     IF( IErr.NE.0 ) THEN
+        PRINT*,"main(", my_rank, ") error ", IErr, &
+             " In MPI_GATHERV"
+        GOTO 9999
+     ENDIF   
+  END IF
+
+  
+
   IF (my_rank.EQ.0) THEN
-!!$     IImageSizeXY(1) = 2*IPixelCount
-!!$     IImageSizeXY(2) = 2*IPixelCount
      RCrossCorrelationOld = ZERO
+     
+     
+     ALLOCATE( &
+          RReflectionImagesForPhaseCorrelation(2*IPixelCount,2*IPixelCount,&
+          IReflectOut,IThicknessCount),&
+          STAT=IErr)
+     IF( IErr.NE.0 ) THEN
+        PRINT*,"refinemain(", my_rank, ") error ", IErr, &
+             " in ALLOCATE() of DYNAMIC variables Root Reflections"
+        GOTO 9999
+     ENDIF
+!!$
+!!$     ALLOCATE( &
+!!$          RImage(2*IPixelCount,2*IPixelCount,&
+!!$          IReflectOut,IThicknessCount),&
+!!$          STAT=IErr)
+!!$     IF( IErr.NE.0 ) THEN
+!!$        PRINT*,"refinemain(", my_rank, ") error ", IErr, &
+!!$             " in ALLOCATE() of DYNAMIC variables Root Reflections"
+!!$        GOTO 9999
+!!$     ENDIF
+
+     
+     
+     RReflectionImagesForPhaseCorrelation = ZERO
+     DO ind = 1,IReflectOut
+        DO knd = 1,IThicknessCount
+           DO jnd = 1,IPixelTotal
+              gnd = IPixelLocations(jnd,1)
+              hnd = IPixelLocations(jnd,2)
+              
+              RReflectionImagesForPhaseCorrelation(gnd,hnd,ind,knd) = RIndividualReflectionsRoot(ind,knd,jnd)
+           END DO
+        END DO
+     END DO
+
+     DEALLOCATE(RIndividualReflectionsRoot,&
+          STAT=IErr)
+     IF( IErr.NE.0 ) THEN
+        PRINT*,"refinemain(", my_rank, ") error ", IErr, &
+             " in DEALLOCATE() of DYNAMIC variables Root Reflections"
+        GOTO 9999
+     ENDIF
+     
 
      DO ind = 1,IThicknessCount
-        CALL PhaseCorrelate(RIndividualReflectionsRoot(:,:,1,ind),RImageExpi,IErr,2*IPixelCount,2*IPixelCount)
+        CALL PhaseCorrelate(RReflectionImagesForPhaseCorrelation(:,:,1,ind),RImageExpi,IErr,2*IPixelCount,2*IPixelCount)
 
         IF(RCrossCorrelation.GT.RCrossCorrelationOld) THEN
            RCrossCorrelationOld = RCrossCorrelation
@@ -768,7 +831,7 @@ PROGRAM FelixRefine
            DO jnd = 1,2*IPixelCount
               CALL MakeMontagePixel(ind,jnd,1,&
                    RFinalMontageImageRoot,&
-                   RIndividualReflectionsRoot(ind,jnd,:,1),IErr)
+                   RReflectionImagesForPhaseCorrelation(ind,jnd,:,1),IErr)
               IF( IErr.NE.0 ) THEN
                  PRINT*,"refinemain(", my_rank, ") error ", IErr, &
                       " in MakeMontagePixel"
@@ -815,7 +878,7 @@ PROGRAM FelixRefine
            ENDIF
            
            CALL WriteReflectionImage(IChOutWIImage,&
-                RIndividualReflectionsRoot(:,:,ind,:),IErr,2*IPixelCount,2*IPixelCount)       
+                RReflectionImagesForPhaseCorrelation(:,:,ind,:),IErr,2*IPixelCount,2*IPixelCount)       
            IF( IErr.NE.0 ) THEN
               PRINT*,"refinemain(", my_rank, ") error in WriteReflectionImage()"
               GOTO 9999
@@ -855,9 +918,9 @@ PROGRAM FelixRefine
   
   IF(my_rank.EQ.0) THEN
      DEALLOCATE( &
-          RIndividualReflectionsRoot,STAT=IErr)       
+          RReflectionImagesForPhaseCorrelation,STAT=IErr)       
      IF( IErr.NE.0 ) THEN
-        PRINT*,"refinemain(", my_rank, ") error in Deallocation of RIndividualReflectionsRoot"
+        PRINT*,"refinemain(", my_rank, ") error in Deallocation of RReflectionImagesForPhaseCorrelation"
         GOTO 9999
      ENDIF
      

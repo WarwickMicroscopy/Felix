@@ -74,6 +74,8 @@ PROGRAM LACBED
   CHARACTER*25 CThickness 
   CHARACTER*25 CThicknessLength
   CHARACTER*34 filename
+  REAL(RKIND),DIMENSION(:,:,:,:),ALLOCATABLE :: &
+       RIndividualReflectionsDraw
   
   INTEGER(IKIND) :: IRank, &
        Iindex, Ijndex, IWriteLine,IInputBeams, &
@@ -414,7 +416,7 @@ PROGRAM LACBED
 !!$  ENDIF
 
   ALLOCATE( &
-       RIndividualReflections(2*IPixelCount,&
+       RIndividualReflectionsDraw(2*IPixelCount,&
        2*IPixelCount,IReflectOut,IThicknessCount),&
        STAT=IErr)
   IF( IErr.NE.0 ) THEN
@@ -712,7 +714,7 @@ PROGRAM LACBED
 
            !Collection Wave Intensities from all thickness for later writing
 
-           RIndividualReflections(ind,jnd,1:IReflectOut,IThicknessIndex) = &
+           RIndividualReflectionsDraw(ind,jnd,1:IReflectOut,IThicknessIndex) = &
                 RFullWaveIntensity(1:IReflectOut)
            
            !PRINT*,"RFullWaveIntensity = ",RFullWaveIntensity
@@ -814,7 +816,7 @@ PROGRAM LACBED
               
               CALL MakeMontagePixel(ind,jnd,IThicknessIndex,&
                    RFinalMontageImage,&
-                   RIndividualReflections(ind,jnd,:,IThicknessIndex),IERR)
+                   RIndividualReflectionsDraw(ind,jnd,:,IThicknessIndex),IERR)
               
            END DO
         END DO
@@ -823,9 +825,9 @@ PROGRAM LACBED
 
   IF (IImageFlag.LT.1) THEN
      DEALLOCATE(&
-          RIndividualReflections,STAT=IErr)       
+          RIndividualReflectionsDraw,STAT=IErr)       
      IF( IErr.NE.0 ) THEN
-        PRINT*,"main(", my_rank, ") error in Deallocation of RIndividualReflections"
+        PRINT*,"main(", my_rank, ") error in Deallocation of RIndividualReflectionsDraw"
         GOTO 9999
      ENDIF
   END IF
@@ -891,8 +893,8 @@ PROGRAM LACBED
               GOTO 9999
            ENDIF
            !IMAXRBuffer = (4*IPixelCount**2)*7+ADD_OUT_INFO
-           !CALL WriteImageR_MPI(IChOutWI_MPI,RIndividualReflections(:,:,ind,knd),IErr)
-           CALL WriteReflectionImage(IChOutWIImage,RIndividualReflections(:,:,ind,knd),IErr)   
+           !CALL WriteImageR_MPI(IChOutWI_MPI,RIndividualReflectionsDraw(:,:,ind,knd),IErr)
+           CALL WriteReflectionImage(IChOutWIImage,RIndividualReflectionsDraw(:,:,ind,knd),IErr)   
            IF( IErr.NE.0 ) THEN
               PRINT*,"lacbed(", my_rank, ") error in WriteReflectionImage()"
               GOTO 9999
@@ -906,9 +908,9 @@ PROGRAM LACBED
 
   IF(IImageFLAG.GE.1) THEN
      DEALLOCATE(&
-          RIndividualReflections,STAT=IErr)       
+          RIndividualReflectionsDraw,STAT=IErr)       
      IF( IErr.NE.0 ) THEN
-        PRINT*,"main(", my_rank, ") error in Deallocation of RIndividualReflections"
+        PRINT*,"main(", my_rank, ") error in Deallocation of RIndividualReflectionsDraw"
         GOTO 9999
      ENDIF
   END IF

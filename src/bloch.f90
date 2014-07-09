@@ -32,7 +32,7 @@
 !
 !%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-SUBROUTINE BlochCoefficientCalculation(ind,jnd,IErr)
+SUBROUTINE BlochCoefficientCalculation(ind,jnd,gnd,ILocalPixelCountMin,IErr)
 
   USE MyNumbers
   USE CConst; USE IConst
@@ -46,10 +46,10 @@ SUBROUTINE BlochCoefficientCalculation(ind,jnd,IErr)
   
   IMPLICIT NONE
   
-  INTEGER(IKIND) ind,jnd,hnd,knd,&
+  INTEGER(IKIND) ind,jnd,hnd,knd,gnd,&
        ierr,IThickness, &
        IThicknessIndex, ILowerLimit, &
-       IUpperLimit
+       IUpperLimit,ILocalPixelCountMin
        
   REAL(RKIND) :: &
        Rx0,Ry0, RThickness,RKn
@@ -64,9 +64,6 @@ SUBROUTINE BlochCoefficientCalculation(ind,jnd,IErr)
        CGeneralEigenValues
   REAL(RKIND),DIMENSION(IReflectOut) :: &
        RPreviousWaveIntensity
-!!$  REAL(RKIND) :: &
-!!$       RGComponent
-
   Rx0=(ind-IPixelCount-0.5D0)*RDeltaK ! x-position in the disk
   
   Ry0=(jnd-IPixelCount-0.5D0)*RDeltaK ! y-position in the disk
@@ -113,12 +110,6 @@ SUBROUTINE BlochCoefficientCalculation(ind,jnd,IErr)
   ! select only those beams where the Ewald sphere is close to the
   ! reciprocal lattice, i.e. within RBSMaxDeviationPara
 
-!!$  RPreviousWaveIntensity
-!!$
-!!$100 RPast
-!!$
-!!$  DO WHILE (RTolerance
-
   CALL DetermineStrongAndWeakBeams(IErr)
   IF( IErr.NE.0 ) THEN
      PRINT*,"BlochCoefficientCalculation(", my_rank, ") error ", IErr, &
@@ -160,38 +151,6 @@ SUBROUTINE BlochCoefficientCalculation(ind,jnd,IErr)
           " in ALLOCATE() of DYNAMIC variables CUgMatEffective"
      RETURN
   ENDIF
-  
-  !Allocate General Solution Specific Arrays
-  
-!!$  IF(IZolzFLAG.EQ.0) THEN
-!!$     
-!!$     ALLOCATE( &
-!!$          CGeneralSolutionMatrix(2*nBeams,2*nBeams), & 
-!!$          STAT=IErr)
-!!$     IF( IErr.NE.0 ) THEN
-!!$        PRINT*,"BlochCoefficientCalculation(", my_rank, ") error ", IErr, &
-!!$             " in ALLOCATE() of DYNAMIC variables General Solution Matrix"
-!!$        PRINT*,"Failure Occured at Thickness,ChunkPixel,nBeams = ",IPixelCountTotal,nBeams
-!!$        RETURN
-!!$     ENDIF
-!!$     ALLOCATE( &
-!!$          CGeneralEigenVectors(2*nBeams,2*nBeams), &
-!!$          STAT=IErr)
-!!$     IF( IErr.NE.0 ) THEN
-!!$        PRINT*,"BlochCoefficientCalculation(", my_rank, ") error ", IErr, &
-!!$             " in ALLOCATE() of DYNAMIC variables CEigenVectors"
-!!$        RETURN
-!!$     ENDIF
-!!$     ALLOCATE(&
-!!$          CGeneralEigenValues(2*nBeams), &
-!!$          STAT=IErr)
-!!$     IF( IErr.NE.0 ) THEN
-!!$        PRINT*,"BlochCoefficientCalculation(", my_rank, ") error ", IErr, &
-!!$             " in ALLOCATE() of DYNAMIC variables CEigenVectors"
-!!$        RETURN
-!!$     ENDIF
-!!$  END IF
-  
   
   ALLOCATE( & 
        CEigenVectors(nBeams,nBeams), &
@@ -299,41 +258,7 @@ SUBROUTINE BlochCoefficientCalculation(ind,jnd,IErr)
        )
     
   IF (IZolzFLAG.EQ.0) THEN
-  
-     
-     ! General Solution from page 457 of 
-     ! "Diffraction of Electrons by Perfect Crystals"
-     ! by A.J.F.Metherell
-     
-     !FILL 0 sub-Maxtrix 
-     
-!!$     CGeneralSolutionMatrix = CZERO
-!!$
-!!$     CGeneralSolutionMatrix(1:nBeams,(nBeams+1):(nBeams*2)) = CUgMatEffective
-!!$
-!!$     DO hnd = 1,nBeams
-!!$
-!!$        ! FILL I sub-Matrix
-!!$        
-!!$        CGeneralSolutionMatrix(hnd+nBeams,hnd) = CONE
-!!$
-!!$        ! Fill B sub-Matrix
-!!$        CGeneralSolutionMatrix(hnd+nBeams,hnd+nBeams) = &
-!!$            -2*RgVecMatT(IStrongBeamList(hnd),3) !2*gz Terms
-!!$        
-!!$        ! Calculate Beta Values for D sub-Matrix
-!!$        
-!!$        CGeneralSolutionMatrix(hnd,hnd+nBeams) = &
-!!$             (RBigK**2 - & !K^2
-!!$             ( &
-!!$             (RTiltedK(1))**2 + & !kx^2
-!!$             (RTiltedK(2))**2 + & !ky^2
-!!$             2*(RTiltedK(1))*RgVecMatT(IStrongBeamList(hnd),1) + & !2*kx*gx
-!!$             2*(RTiltedK(2))*RgVecMatT(IStrongBeamList(hnd),2) + & !2*ky*gy
-!!$             RgVecMatT(IStrongBeamList(hnd),1)**2 + &  !gx^2
-!!$             RgVecMatT(IStrongBeamList(hnd),2)**2 + &  !gx^2
-!!$             RgVecMatT(IStrongBeamList(hnd),3)**2 & !gx^2
-!!$             ))
+
      DO hnd=1,nBeams
         CUgMatEffective(hnd,hnd) = TWO*RBigK*RDevPara(IStrongBeamList(hnd))
      ENDDO
@@ -383,30 +308,12 @@ SUBROUTINE BlochCoefficientCalculation(ind,jnd,IErr)
      ENDDO
      
   END IF
-
-  !PRINT*,"SIZE of CUgMatEffective = ",SIZE(CUgMatEffective,DIM=1),SIZE(CUgMatEffective,DIM=2)
    
   !--------------------------------------------------------------------
   ! diagonalize the UgMatEffective
   !--------------------------------------------------------------------
    
   IF (IZolzFLAG.EQ.0) THEN
-!!$     CALL EigenSpectrum(2*nBeams, &
-!!$          CGeneralSolutionMatrix, &
-!!$          CGeneralEigenValues(:), CGeneralEigenVectors(:,:), &
-!!$          IErr)
-!!$     IF( IErr.NE.0 ) THEN
-!!$        PRINT*,"BlochCoefficientCalculation(", my_rank, ") error in EigenSpectrum()"
-!!$        RETURN
-!!$     ENDIF
-!!$
-!!$     CEigenValues = CGeneralEigenValues((nBeams+1):(2*nBeams))
-!!$     CEigenVectors = CGeneralEigenVectors((nBeams+1):(nBeams*2),1:nBeams)
-!!$
-!!$     DEALLOCATE(&
-!!$          CGeneralEigenVectors, &
-!!$          CGeneralEigenValues, &
-!!$          CGeneralSolutionMatrix)
      CALL EigenSpectrum(nBeams, &
           CUgMatEffective, &
           CEigenValues(:), CEigenVectors(:,:), &
@@ -479,10 +386,10 @@ SUBROUTINE BlochCoefficientCalculation(ind,jnd,IErr)
      !Collection Wave Intensities from all thickness for later writing
 
      IF(IImageFLAG.LE.1) THEN
-        RIndividualReflections(ind,jnd,1:IReflectOut,IThicknessIndex) = &
+        RIndividualReflections(1:IReflectOut,IThicknessIndex,(gnd-ILocalPixelCountMin)+1) = &
              RFullWaveIntensity(1:IReflectOut)
      ELSE
-        CAmplitudeandPhase(ind,jnd,1:IReflectOut,IThicknessIndex) = &
+        CAmplitudeandPhase(1:IReflectOut,IThicknessIndex,(gnd-ILocalPixelCountMin)+1) = &
              CFullWavefunctions(1:IReflectOut)
      END IF
 
@@ -506,17 +413,6 @@ SUBROUTINE BlochCoefficientCalculation(ind,jnd,IErr)
   ENDIF
   
   IMAXCBuffer = 2*14*SIZE(CUgMatEffective)+7*6*ADD_OUT_INFO
-  
-!!$  ! UgMatEffective
-!!$  IF(IOutputFLAG.GE.2) THEN
-!!$     CALL WriteDataC_MPI(IChOutUM_MPI, ind,jnd, &
-!!$          CUgMatEffective(:,:), nBeams*nBeams, 1, IErr)
-!!$     IF( IErr.NE.0 ) THEN
-!!$        PRINT*,"BlochCoefficientCalculation(", my_rank, ") error in WriteDataC_ MPI() of IChOutUM"
-!!$        RETURN
-!!$     ENDIF
-!!$  ENDIF
-!!$  
   
   !--------------------------------------------------------------------
   ! DEALLOCATE eigen problem memory
