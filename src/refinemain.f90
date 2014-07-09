@@ -223,6 +223,9 @@ PROGRAM FelixRefine
 
   END DO
 
+  
+  ISoftwareMode = 2 ! FelixRefineMode
+
   CALL Input( IErr )
   IF( IErr.NE.0 ) THEN
      PRINT*,"refinemain(", my_rank, ") error in Input()"

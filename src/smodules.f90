@@ -119,7 +119,8 @@ MODULE IPara
        ICentralBeamFLAG, IMaskFLAG, IVolumeFLAG, &
        IZolzFLAG,IAbsorbFLAG, IAnisoDebyeWallerFactorFlag, &
        IImageFLAG,IOutputFLAG,IBeamConvergenceFLAG,  &
-       IPseudoCubicFLAG,IXDirectionFLAG,IBinorTextFLAG, IDevFLAG
+       IPseudoCubicFLAG,IXDirectionFLAG,IBinorTextFLAG, IDevFLAG, &
+       IRefineModeFLAG,ISoftwareMode
 
   !Minimum Reflections etc
   INTEGER(IKIND) :: &
@@ -259,7 +260,10 @@ MODULE RPara
   REAL(RKIND) :: &
        RInitialThickness, &
        RFinalThickness, &
-       RDeltaThickness      
+       RDeltaThickness, &
+       RInitialDebyeWallerFactor, &
+       RFinalDebyeWallerFactor,&
+       RDeltaDebyeWallerFactor
 
   !Iterative Ugs
 
