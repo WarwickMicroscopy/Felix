@@ -1,32 +1,31 @@
-# Input file for FelixSim/Draw/Refine Version :VERSION: Build :BUILD: 
-# ---------------------------------------------------------------
+# Input file for FelixSim/Draw/Refine version :VERSION: Build :BUILD:
+# ------------------------------------
 
 # ------------------------------------
 # FelixSim input
 
 # control flags
 IWriteFLAG                = 1
-IImageFLAG                = 0
+IImageFLAG                = 1
 IOutputFLAG               = 0
-IBinorTextFLAG            = 0  
+IBinorTextFLAG            = 0
 IScatterFactorMethodFLAG  = 0
 ICentralBeamFLAG          = 1
 IMaskFLAG                 = 0
 IZolzFLAG                 = 1
-IAbsorbFLAG               = 0
+IAbsorbFLAG               = 1
 IAnisoDebyeWallerFlag     = 0
 IBeamConvergenceFLAG      = 1
 IPseudoCubicFLAG          = 0
-IXDirectionFLAG           = 0
-IDevFLAG                  = 0
+IXDirectionFLAG           = 1
 
 # radius of the beam in pixels
 IPixelCount               = 64
 
 # beam selection criteria
 IMinReflectionPool        = 600
-IMinStrongBeams           = 25
-IMinWeakBeams             = 20
+IMinStrongBeams           = 7
+IMinWeakBeams             = 5
 RBSBMax                   = 0.1
 RBSPMax                   = 0.1
 RConvergenceTolerance (%) = 1.0
@@ -38,28 +37,20 @@ RAbsorptionPer            = 2.9
 # microscope settings
 RConvergenceAngle         = 3.0
 IIncidentBeamDirectionX   = 1
-IIncidentBeamDirectionY   = 1 
-IIncidentBeamDirectionZ   = 0
+IIncidentBeamDirectionY   = 1
+IIncidentBeamDirectionZ   = 1
 IXDirectionX              = 0
 IXDirectionY              = -1
 IXDirectionZ              = 1
 INormalDirectionX         = 1
 INormalDirectionY         = 1
-INormalDirectionZ         = 0 
+INormalDirectionZ         = 1
 RAcceleratingVoltage (kV) = 200.0
 
-# Ug Iteration
-INoofUgs                  = 0
-RPercentageUgChange       = 0.0
+# Image Output Options
 
-#Refinement Specific Flags
-IImageOutputFLAG          = 1
-
-# ------------------------------------
-# FelixDraw input
-
-# sample thickness loop (Angstrom)
-RInitialThickness        = 870.0
-RFinalThickness          = 870.0
+RInitialThickness        = 1000.0
+RFinalThickness          = 1000.0
 RDeltaThickness          = 10.0
-IReflectOut              = 37
+IReflectOut              = 7
+

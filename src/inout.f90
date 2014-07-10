@@ -2049,7 +2049,7 @@ SUBROUTINE ReadInHKLs(IErr)
 
   IMPLICIT NONE
 
-  INTEGER(IKIND) :: ILine,ILength,IErr,h,k,l,ind
+  INTEGER(IKIND) :: ILine,ILength,IErr,h,k,l,ind,IPos1,IPos2
   CHARACTER*200 :: dummy1,dummy2
 
   
@@ -2058,7 +2058,7 @@ SUBROUTINE ReadInHKLs(IErr)
   END IF
 
   OPEN(Unit = IChInp,FILE="Felix.hkl",&
-       STATUS='UNKNOWN',ERR=10)
+       STATUS='OLD',ERR=10)
 
   IF((my_rank.EQ.0.AND.IWriteFLAG.GE.2).OR.IWriteFLAG.GE.10) THEN
      PRINT*,"ReadInHKLs(",my_rank,") Felix Has Detected .hkl and is entering Selected hkl mode"
@@ -2103,8 +2103,33 @@ SUBROUTINE ReadInHKLs(IErr)
   ILine = 0
 
   DO ind = 1,ILength
+
+     ! READ HKL in as String
+
+     READ(UNIT= IChInp,FMT='(A)' ) dummy1
+
      
-     READ(UNIT= IChInp, FMT='(A1,3I2.2,A1)') dummy1,h,k,l,dummy2
+     !Scan String for h
+
+     IPos1 = SCAN(dummy1,'[')
+     IPos2 = SCAN(dummy1,',')
+     dummy2 = dummy1((IPos1+1):(IPos2-1))
+     READ(dummy2,'(I20)') h
+
+     !Scan String for k
+     
+     IPos1 = SCAN(dummy1((IPos2+1):),',') + IPos2
+     dummy2 = dummy1((IPos2+1):(IPos1-1))
+     READ(dummy2,'(I20)') k
+
+     !Scan String for l     
+
+     IPos2 = SCAN(dummy1((IPos1+1):),']') + IPos1
+     dummy2 = dummy1((IPos1+1):(IPos2-1))
+     READ(dummy2,'(I20)') l
+
+     ! Convert to REALs
+
      ILine=ILine+1
      RInputHKLs(ILine,1) = REAL(h,RKIND)
      RInputHKLs(ILine,2) = REAL(k,RKIND)
@@ -2121,6 +2146,10 @@ SUBROUTINE ReadInHKLs(IErr)
   RETURN
 
   10 IHKLSelectFLAG=0
+  
+  IF((my_rank.EQ.0.AND.IWriteFLAG.GE.0).OR.IWriteFLAG.GE.10) THEN
+     PRINT*,"ReadInHKLs(",my_rank,") Did not find .hkl file continuing in normal mode"
+  END IF
   RETURN
 END SUBROUTINE ReadInHKLs
   

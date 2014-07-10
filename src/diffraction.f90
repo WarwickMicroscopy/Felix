@@ -49,7 +49,7 @@ SUBROUTINE DiffractionPatternDefinitions( IErr )
 
   REAL(RKIND) :: &
        norm, dummyVec(THREEDIM),dummy
-  INTEGER(IKIND) IErr, ind,jnd,icheck,ihklrun,IFind
+  INTEGER(IKIND) IErr, ind,jnd,icheck,ihklrun,IFind,IFound,knd
   
   IF((IWriteFLAG.GE.0.AND.my_rank.EQ.0).OR.IWriteFLAG.GE.10) THEN
      PRINT*,"DiffractionPatternDefinitions()"
@@ -161,12 +161,31 @@ SUBROUTINE DiffractionPatternDefinitions( IErr )
            IF(ABS(RHKL(jnd,1)-RInputHKLs(ind,1)).LE.RTolerance.AND.&
                 ABS(RHKL(jnd,2)-RInputHKLs(ind,2)).LE.RTolerance.AND.&
                 ABS(RHKL(jnd,3)-RInputHKLs(ind,3)).LE.RTolerance) THEN
-              IFind = IFind +1
-              IOutputReflections(IFind) = jnd
-              
-              IF((IWriteFLAG.GE.3.AND.my_rank.EQ.0).OR.IWriteFLAG.GE.10) THEN
-                 PRINT*,"DiffractionPatternDefinitions(",my_rank,&
-                      ") Found HKL ",RInputHKLs(ind,:)," at ",jnd
+              IFound = 0
+              DO knd = 1,IFind
+                 IF(ABS(RHKL(IOutputReflections(knd),1)-RInputHKLs(ind,1)).LE.RTolerance.AND.&
+                      ABS(RHKL(IOutputReflections(knd),2)-RInputHKLs(ind,2)).LE.RTolerance.AND.&
+                      ABS(RHKL(IOutputReflections(knd),3)-RInputHKLs(ind,3)).LE.RTolerance) THEN
+                    IFound = 1
+                    EXIT
+                 END IF
+              END DO
+
+              IF(IFound.EQ.0) THEN
+                 IFind = IFind +1
+                 IOutputReflections(IFind) = jnd
+                 
+                 IF((IWriteFLAG.GE.3.AND.my_rank.EQ.0).OR.IWriteFLAG.GE.10) THEN
+                    PRINT*,"DiffractionPatternDefinitions(",my_rank,&
+                         ") Found HKL ",RInputHKLs(ind,:)," at ",jnd
+                 END IF
+              ELSE 
+                 IF((IWriteFLAG.GE.3.AND.my_rank.EQ.0).OR.IWriteFLAG.GE.10) THEN
+                    PRINT*,"DiffractionPatternDefinitions(",my_rank,&
+                         ") Found HKL ",RInputHKLs(ind,:)," at ",jnd,&
+                         "However it is not unique"
+                 END IF
+                 
               END IF
               EXIT
            ELSE
@@ -180,6 +199,15 @@ SUBROUTINE DiffractionPatternDefinitions( IErr )
            END IF
         END DO
      END DO
+     
+     IF(IFind.LE.0) THEN
+        IErr = 1
+        IF( IErr.NE.0 ) THEN
+           PRINT*,"DiffractionPatternDefinitions(", my_rank, ") error ", IErr, &
+                " No requested HKLs are allowed using the purposed geometry"
+           RETURN
+        ENDIF
+     END IF
      IF(IReflectOut.NE.IFind) THEN
         IReflectOut = IFind
      END IF

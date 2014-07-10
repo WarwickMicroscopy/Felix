@@ -46,7 +46,7 @@ SUBROUTINE ImageInitialization( IErr )
 
   REAL(RKIND) dummyCA
 
-  INTEGER IErr, ind
+  INTEGER IErr, ind,jnd
   
   IF((IWriteFLAG.GE.0.AND.my_rank.EQ.0).OR.IWriteFLAG.GE.10) THEN
      PRINT*,"ImageInitialization()"
@@ -74,13 +74,22 @@ SUBROUTINE ImageInitialization( IErr )
   ELSE
      dummyCA=0.95D0
   ENDIF
-  
-DO ind=1,SIZE(Rhklpositions,DIM=2)
-     IImageSizeXY(ind)= CEILING(&
-          4.0D0*REAL(IPixelCount,RKIND)/dummyCA * &
-          (MAXVAL(ABS(Rhklpositions(1:IReflectOut,ind)))+1.0D0) )
-  ENDDO
-  
+  IF(IHKLSelectFLAG.EQ.0) THEN
+     DO ind=1,SIZE(Rhklpositions,DIM=2)
+        IImageSizeXY(ind)= CEILING(&
+             4.0D0*REAL(IPixelCount,RKIND)/dummyCA * &
+             (MAXVAL(ABS(Rhklpositions(1:IReflectOut,ind)))+1.0D0) )
+     ENDDO
+  ELSE
+     DO ind=1,SIZE(Rhklpositions,DIM=2)
+        DO jnd = 1,IReflectOut
+           IImageSizeXY(ind)= CEILING(&
+                4.0D0*REAL(IPixelCount,RKIND)/dummyCA * &
+                (MAXVAL(ABS(Rhklpositions(IOutputReflections(1:IReflectOut),ind)))+1.0D0) )
+        END DO
+     ENDDO
+  END IF
+     
   IF((IWriteFLAG.GE.1.AND.my_rank.EQ.0).OR.IWriteFLAG.GE.10) THEN
      PRINT*,"ImageInitialization(",my_rank,") IImageSizeXY=", IImageSizeXY
   END IF
