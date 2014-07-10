@@ -49,7 +49,7 @@ SUBROUTINE DiffractionPatternDefinitions( IErr )
 
   REAL(RKIND) :: &
        norm, dummyVec(THREEDIM),dummy
-  INTEGER IErr, ind,jnd,icheck,ihklrun
+  INTEGER(IKIND) IErr, ind,jnd,icheck,ihklrun,IFind
   
   IF((IWriteFLAG.GE.0.AND.my_rank.EQ.0).OR.IWriteFLAG.GE.10) THEN
      PRINT*,"DiffractionPatternDefinitions()"
@@ -152,7 +152,39 @@ SUBROUTINE DiffractionPatternDefinitions( IErr )
      ENDDO
      
   END DO
-
+  
+  IFind = 0
+  
+  IF(IHKLSelectFLAG.EQ.1) THEN
+     DO ind = 1,IReflectOut
+        DO jnd = 1,SIZE(RHKL,DIM=1)
+           IF(ABS(RHKL(jnd,1)-RInputHKLs(ind,1)).LE.RTolerance.AND.&
+                ABS(RHKL(jnd,2)-RInputHKLs(ind,2)).LE.RTolerance.AND.&
+                ABS(RHKL(jnd,3)-RInputHKLs(ind,3)).LE.RTolerance) THEN
+              IFind = IFind +1
+              IOutputReflections(IFind) = jnd
+              
+              IF((IWriteFLAG.GE.3.AND.my_rank.EQ.0).OR.IWriteFLAG.GE.10) THEN
+                 PRINT*,"DiffractionPatternDefinitions(",my_rank,&
+                      ") Found HKL ",RInputHKLs(ind,:)," at ",jnd
+              END IF
+              EXIT
+           ELSE
+              IF((jnd.EQ.SIZE(RHKL,DIM=1).AND.IWriteFLAG.GE.3.AND.my_rank.EQ.0).or.&
+                   (jnd.EQ.SIZE(RHKL,DIM=1).AND.IWriteFLAG.GE.10)) THEN
+                 PRINT*,"DiffractionPatternDefinitions(",my_rank,&
+                      ") Could Not Find Requested HKL ",&
+                      RInputHKLs(ind,:)," Will Ignore and Continue"
+              END IF
+              CYCLE
+           END IF
+        END DO
+     END DO
+     IF(IReflectOut.NE.IFind) THEN
+        IReflectOut = IFind
+     END IF
+  END IF
+  
   IF((IWriteFLAG.GE.4.AND.my_rank.EQ.0).OR.IWriteFLAG.GE.10) THEN
      DO ind=1,SIZE(RHKL,DIM=1)
         PRINT*,RHKL(ind,:)

@@ -120,7 +120,7 @@ MODULE IPara
        IZolzFLAG,IAbsorbFLAG, IAnisoDebyeWallerFactorFlag, &
        IImageFLAG,IOutputFLAG,IBeamConvergenceFLAG,  &
        IPseudoCubicFLAG,IXDirectionFLAG,IBinorTextFLAG, IDevFLAG, &
-       IRefineModeFLAG,ISoftwareMode
+       IRefineModeFLAG,ISoftwareMode,IHKLSelectFLAG
 
   !Minimum Reflections etc
   INTEGER(IKIND) :: &
@@ -187,7 +187,7 @@ MODULE IPara
   INTEGER(IKIND),DIMENSION(:,:), ALLOCATABLE :: &
        ILACBEDStrongBeamList, IPixelLocation, ISymmetryRelations,ISymmetryStrengthKey
   INTEGER(IKIND),DIMENSION(:), ALLOCATABLE :: &
-       InBeams,IStrongBeamList
+       InBeams,IStrongBeamList,IOutputReflections
 
   !inpcif
 
@@ -278,7 +278,9 @@ MODULE RPara
 
   !HKL indices 
   REAL(RKIND), DIMENSION(:,:), ALLOCATABLE :: &
-       RHKL
+       RHKL 
+  REAL(RKIND), DIMENSION(:,:), ALLOCATABLE :: &
+       RInputHKLs
 
   ! scattering factors
   REAL(RKIND), DIMENSION(:,:), ALLOCATABLE :: &
