@@ -46,7 +46,7 @@ SUBROUTINE BlochCoefficientCalculation(ind,jnd,gnd,ILocalPixelCountMin,IErr)
   
   IMPLICIT NONE
   
-  INTEGER(IKIND) ind,jnd,hnd,knd,gnd,&
+  INTEGER(IKIND) ind,jnd,hnd,knd,gnd,pnd,&
        ierr,IThickness, &
        IThicknessIndex, ILowerLimit, &
        IUpperLimit,ILocalPixelCountMin
@@ -384,17 +384,32 @@ SUBROUTINE BlochCoefficientCalculation(ind,jnd,gnd,ILocalPixelCountMin,IErr)
      END IF
      
      !Collection Wave Intensities from all thickness for later writing
-
-     IF(IImageFLAG.LE.1) THEN
-        RIndividualReflections(1:IReflectOut,IThicknessIndex,(gnd-ILocalPixelCountMin)+1) = &
-             RFullWaveIntensity(1:IReflectOut)
+     
+     IF(IHKLSelectFLAG.EQ.0) THEN
+        
+        IF(IImageFLAG.LE.1) THEN
+           RIndividualReflections(1:IReflectOut,IThicknessIndex,(gnd-ILocalPixelCountMin)+1) = &
+                RFullWaveIntensity(1:IReflectOut)
+        ELSE
+           CAmplitudeandPhase(1:IReflectOut,IThicknessIndex,(gnd-ILocalPixelCountMin)+1) = &
+                CFullWavefunctions(1:IReflectOut)
+        END IF
      ELSE
-        CAmplitudeandPhase(1:IReflectOut,IThicknessIndex,(gnd-ILocalPixelCountMin)+1) = &
-             CFullWavefunctions(1:IReflectOut)
+        
+        IF(IImageFLAG.LE.1) THEN
+           DO pnd = 1,IReflectOut
+              RIndividualReflections(pnd,IThicknessIndex,(gnd-ILocalPixelCountMin)+1) = &
+                   RFullWaveIntensity(IOutputReflections(pnd))
+           END DO
+        ELSE
+           DO pnd = 1,IReflectOut
+              CAmplitudeandPhase(pnd,IThicknessIndex,(gnd-ILocalPixelCountMin)+1) = &
+                   CFullWavefunctions(IOutputReflections(pnd))
+           END DO
+        END IF
      END IF
-
   END DO
-
+  
   
   
   !--------------------------------------------------------------------

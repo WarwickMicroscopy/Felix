@@ -1151,9 +1151,16 @@ SUBROUTINE OpenReflectionImage(IChOutWrite, surname, IErr,IReflectWriting,IImage
   SELECT CASE(IChOutWrite)
   CASE(MontageOut)
   CASE DEFAULT
-     WRITE(h,*)  NINT(RHKL(IReflectWriting,1))
-     WRITE(k,*)  NINT(RHKL(IReflectWriting,2))
-     WRITE(l,*)  NINT(RHKL(IReflectWriting,3))
+     IF(IHKLSelectFLAG.EQ.0) THEn
+        WRITE(h,*)  NINT(RHKL(IReflectWriting,1))
+        WRITE(k,*)  NINT(RHKL(IReflectWriting,2))
+        WRITE(l,*)  NINT(RHKL(IReflectWriting,3))
+     ELSE
+        
+        WRITE(h,*)  NINT(RHKL(IOutPutReflections(IReflectWriting),1))
+        WRITE(k,*)  NINT(RHKL(IOutPutReflections(IReflectWriting),2))
+        WRITE(l,*)  NINT(RHKL(IOutPutReflections(IReflectWriting),3))
+     END IF
   END SELECT
 
   IF (IWriteFLAG.GE.10) THEN
@@ -2023,3 +2030,98 @@ SUBROUTINE WriteOutInputFile
 END IF
 
 END SUBROUTINE WriteOutInputFile
+
+SUBROUTINE ReadInHKLs(IErr)
+
+  USE MyNumbers
+  USE IChannels
+
+  USE IConst
+  USE RConst
+  
+  USE IPara
+  USE RPara
+  USE CPara
+  USE SPara
+
+  USE MPI
+  USE MyMPI
+
+  IMPLICIT NONE
+
+  INTEGER(IKIND) :: ILine,ILength,IErr,h,k,l,ind
+  CHARACTER*200 :: dummy1,dummy2
+
+  
+  IF((my_rank.EQ.0.AND.IWriteFLAG.GE.0).OR.IWriteFLAG.GE.10) THEN
+     PRINT*,"ReadInHKLs(",my_rank,")"
+  END IF
+
+  OPEN(Unit = IChInp,FILE="Felix.hkl",&
+       STATUS='UNKNOWN',ERR=10)
+
+  IF((my_rank.EQ.0.AND.IWriteFLAG.GE.2).OR.IWriteFLAG.GE.10) THEN
+     PRINT*,"ReadInHKLs(",my_rank,") Felix Has Detected .hkl and is entering Selected hkl mode"
+  END IF
+   
+  ILine = 0
+
+  IHKLSelectFLAG=1
+
+  
+  
+  IF((my_rank.EQ.0.AND.IWriteFLAG.GE.0).OR.IWriteFLAG.GE.10) THEN
+     PRINT*,"ReadInHKLs(",my_rank,") Selected HKL mode Engaged"
+  END IF
+
+  
+  DO
+     READ(UNIT= IChInp, END=100, FMT='(a)') dummy1
+     ILine=ILine+1
+  ENDDO
+
+  100 ILength=ILine
+
+  ALLOCATE(&
+       RInputHKLs(ILength,THREEDIM),&
+       STAT=IErr)
+  IF( IErr.NE.0 ) THEN
+     PRINT*,"ReadInHKLs(): error in memory ALLOCATE()"
+     RETURN
+  ENDIF
+
+  ALLOCATE(&
+       IOutputReflections(ILength),&
+       STAT=IErr)
+  IF( IErr.NE.0 ) THEN
+     PRINT*,"ReadInHKLs(): error in memory ALLOCATE()"
+     RETURN
+  ENDIF
+
+  REWIND(UNIT=IChInp)
+
+  ILine = 0
+
+  DO ind = 1,ILength
+     
+     READ(UNIT= IChInp, FMT='(A1,3I2.2,A1)') dummy1,h,k,l,dummy2
+     ILine=ILine+1
+     RInputHKLs(ILine,1) = REAL(h,RKIND)
+     RInputHKLs(ILine,2) = REAL(k,RKIND)
+     RInputHKLs(ILine,3) = REAL(l,RKIND)
+     
+     IF((my_rank.EQ.0.AND.IWriteFLAG.GE.3).OR.IWriteFLAG.GE.10) THEN
+        
+        PRINT*,RInputHKLs(ILine,:)
+     END IF
+  END DO
+
+  IReflectOut = ILength
+
+  RETURN
+
+  10 IHKLSelectFLAG=0
+  RETURN
+END SUBROUTINE ReadInHKLs
+  
+  
