@@ -463,7 +463,7 @@ PROGRAM FelixSim
   
   IThicknessCount= (RFinalThickness- RInitialThickness)/RDeltaThickness + 1
 
-  IF(IImageFLAG.LE.1) THEN
+  IF(IImageFLAG.LE.2) THEN
      ALLOCATE( &
           RIndividualReflections(IReflectOut,IThicknessCount,&
           (ILocalPixelCountMax-ILocalPixelCountMin)+1),&
@@ -571,7 +571,7 @@ PROGRAM FelixSim
      GOTO 9999
   ENDIF
   
-  IF(IImageFLAG.GE.2) THEN
+  IF(IImageFLAG.GE.3) THEN
      ALLOCATE(&
           CAmplitudeandPhaseRoot(IReflectOut,IThicknessCount,IPixelTotal),&
           STAT=IErr)
@@ -610,7 +610,7 @@ PROGRAM FelixSim
         IDisplacements(ind) = (IDisplacements(ind))*IReflectOut*IThicknessCount
   END DO
   
-  IF(IImageFLAG.LE.1) THEN
+  IF(IImageFLAG.LE.2) THEN
      CALL MPI_GATHERV(RIndividualReflections,ICount,&
           MPI_DOUBLE_PRECISION,RIndividualReflectionsRoot,&
           ICount,IDisplacements,MPI_DOUBLE_PRECISION,0,&
@@ -636,7 +636,7 @@ PROGRAM FelixSim
      PRINT*,"REDUCED Reflections",my_rank
   END IF
   
-  IF(IImageFLAG.GE.2) THEN
+  IF(IImageFLAG.GE.3) THEN
      DEALLOCATE(&
           CAmplitudeandPhase,STAT=IErr)
      IF( IErr.NE.0 ) THEN
@@ -646,7 +646,7 @@ PROGRAM FelixSim
      ENDIF   
   END IF
    
-  IF(IImageFLAG.LE.1) THEN
+  IF(IImageFLAG.LE.2) THEN
      DEALLOCATE( &
           RIndividualReflections,STAT=IErr)
      IF( IErr.NE.0 ) THEN
@@ -670,7 +670,7 @@ PROGRAM FelixSim
 
   RFinalMontageImageRoot = ZERO
 
-  IF(my_rank.EQ.0.AND.IImageFLAG.GE.2) THEN
+  IF(my_rank.EQ.0.AND.IImageFLAG.GE.3) THEN
      RIndividualReflectionsRoot = &
           CAmplitudeandPhaseRoot * CONJG(CAmplitudeandPhaseRoot)
   END IF
@@ -724,7 +724,7 @@ PROGRAM FelixSim
         WRITE(CThicknessLength,*) SCAN(CThickness,'0123456789',.TRUE.)-SCAN(CThickness,'0123456789')+1
         
         
-        IF(IImageFLAG.GE.0) THEN
+        IF(IImageFLAG.EQ.0.OR.IImageFLAG.EQ.2.OR.IImageFLAG.EQ.4.OR.IImageFLAG.EQ.6) THEN
            WRITE(surname,"(A2,A1,I5.5,A2,I5.5)") &
                 "M-","T",IThickness,"-P",MAXVAL(IImageSizeXY)
            CALL OpenReflectionImage(MontageOut,surname,IErr,0,MAXVAL(IImageSizeXY)) 
@@ -740,10 +740,6 @@ PROGRAM FelixSim
 
            CALL WriteReflectionImage(MontageOut,RFinalMontageImageRoot(:,:,knd), &
                 IErr,MAXVAL(IImageSizeXY),MAXVAL(IImageSizeXY))
-!!$           DO ind = 1,MAXVAL(IImageSizeXY)
-!!$              WRITE(MontageOut,*) &
-!!$                   RFinalMontageImageRoot(ind,:,knd) 
-!!$           END DO
            CLOSE(MontageOut,ERR=9999)
            
         END IF
@@ -751,7 +747,8 @@ PROGRAM FelixSim
         ! Write Reflections
         !--------------------------------------------------------
         
-        IF(IImageFLAG.GE.1) THEN
+       
+        IF(IImageFLAG.EQ.1.OR.IImageFLAG.EQ.2.OR.IImageFLAG.EQ.5.OR.IImageFLAG.EQ.6) THEN
           
            WRITE(path,"(A2,A1,I1.1,A2,I1.1,A2,I1.1,A2,I4.4,A2,I5.5)") &
                 "F-",&
@@ -769,87 +766,87 @@ PROGRAM FelixSim
                  PRINT*,"main(", my_rank, ") error in OpenReflectionImage()"
                  GOTO 9999
               ENDIF
-
-              IF(IImageFLAG.GE.2) THEN
-                 
-                 CALL OpenReflectionImage(IChOutWFImageReal,path,IErr,ind,2*IPixelCount)
-                 IF( IErr.NE.0 ) THEN
-                    PRINT*,"main(", my_rank, ") error in OpenAmplitudeImage()"
-                    GOTO 9999
-                 ENDIF
-                 
-                 CALL OpenReflectionImage(IChOutWFImagePhase,path,IErr,ind,2*IPixelCount)
-                 IF( IErr.NE.0 ) THEN
-                    PRINT*,"main(", my_rank, ") error in OpenPhaseImage()"
-                    GOTO 9999
-                 ENDIF
-
-              END IF
-
-              !-----------------------------------------------------------------------------
-              ! Create An Image
-              !-----------------------------------------------------------------------------
-              IF(IImageFLAG.GE.2) THEN
-
-                 RImage = ZERO
-                 DO jnd = 1,IPixelTotal
-                    gnd = IPixelLocations(jnd,1)
-                    hnd = IPixelLocations(jnd,2)
-                    RImage(gnd,hnd) = REAL(CAmplitudeandPhaseRoot(ind,knd,jnd))
-                 END DO
-
-                 CALL WriteReflectionImage(IChOutWFImageReal,&
-                      RImage,IErr,2*IPixelCount,2*IPixelCount)       
-                 IF( IErr.NE.0 ) THEN
-                    PRINT*,"main(", my_rank, ") error in WriteReflectionImage()"
-                    GOTO 9999
-                 ENDIF
-
-                 RImage = ZERO
-                 DO jnd = 1,IPixelTotal
-                    gnd = IPixelLocations(jnd,1)
-                    hnd = IPixelLocations(jnd,2)
-                    RImage(gnd,hnd) = AIMAG(CAmplitudeandPhaseRoot(ind,knd,jnd))
-                 END DO
-                 
-                 CALL WriteReflectionImage(IChOutWFImagePhase,&
-                      RImage,IErr,2*IPixelCount,2*IPixelCount)       
-                 IF( IErr.NE.0 ) THEN
-                    PRINT*,"main(", my_rank, ") error in WriteReflectionImage()"
-                    GOTO 9999
-                 ENDIF
-
-              END IF
               
-!!$              CALL WriteReflectionImage(IChOutWIImage,&
-!!$                   RIndividualReflectionsRoot(:,:,ind,knd),IErr,2*IPixelCount,2*IPixelCount)    
-
               RImage = ZERO
               DO jnd = 1,IPixelTotal
                  gnd = IPixelLocations(jnd,1)
                  hnd = IPixelLocations(jnd,2)
                  RImage(gnd,hnd) = RIndividualReflectionsRoot(ind,knd,jnd)
               END DO
-                 
-!!$              CALL WriteReflectionImage(IChOutWIImage,&
-!!$                   RIndividualReflectionsRoot(:,:,ind,knd),IErr,2*IPixelCount,2*IPixelCount)       
+
               CALL WriteReflectionImage(IChOutWIImage,&
                    RImage,IErr,2*IPixelCount,2*IPixelCount)       
               IF( IErr.NE.0 ) THEN
                  PRINT*,"main(", my_rank, ") error in WriteReflectionImage()"
                  GOTO 9999
               ENDIF
-              
-              IF(IImageFLAG.GE.2) THEN
-                 CLOSE(IChOutWFImageReal,ERR=9999)
-                 CLOSE(IChOutWFImagePhase,ERR=9999)
-              END IF
-
               CLOSE(IChOutWIImage,ERR=9999)
            END DO
         END IF
+        
+        IF(IImageFLAG.GE.3) THEN
+          
+           WRITE(path,"(A2,A1,I1.1,A2,I1.1,A2,I1.1,A2,I4.4,A2,I5.5)") &
+                "F-",&
+                "S", IScatterFactorMethodFLAG, &
+                "_B", ICentralBeamFLAG, &
+                "_M", IMaskFLAG, &
+                "_P", IPixelCount, &
+                "_T", IThickness
+           
+           call system('mkdir ' // path)
+           
+           DO ind = 1,IReflectOut
+              CALL OpenReflectionImage(IChOutWFImageReal,path,IErr,ind,2*IPixelCount)
+              IF( IErr.NE.0 ) THEN
+                 PRINT*,"main(", my_rank, ") error in OpenAmplitudeImage()"
+                 GOTO 9999
+              ENDIF
+              
+              CALL OpenReflectionImage(IChOutWFImagePhase,path,IErr,ind,2*IPixelCount)
+              IF( IErr.NE.0 ) THEN
+                 PRINT*,"main(", my_rank, ") error in OpenPhaseImage()"
+                 GOTO 9999
+              ENDIF
+              
+              !-----------------------------------------------------------------------------
+              ! Create An Image
+              !-----------------------------------------------------------------------------
+              
+              RImage = ZERO
+              DO jnd = 1,IPixelTotal
+                 gnd = IPixelLocations(jnd,1)
+                 hnd = IPixelLocations(jnd,2)
+                 RImage(gnd,hnd) = REAL(CAmplitudeandPhaseRoot(ind,knd,jnd))
+              END DO
+              
+              CALL WriteReflectionImage(IChOutWFImageReal,&
+                   RImage,IErr,2*IPixelCount,2*IPixelCount)       
+              IF( IErr.NE.0 ) THEN
+                 PRINT*,"main(", my_rank, ") error in WriteReflectionImage()"
+                 GOTO 9999
+              ENDIF
+              
+              RImage = ZERO
+              DO jnd = 1,IPixelTotal
+                 gnd = IPixelLocations(jnd,1)
+                 hnd = IPixelLocations(jnd,2)
+                 RImage(gnd,hnd) = AIMAG(CAmplitudeandPhaseRoot(ind,knd,jnd))
+              END DO
+              
+              CALL WriteReflectionImage(IChOutWFImagePhase,&
+                   RImage,IErr,2*IPixelCount,2*IPixelCount)       
+              IF( IErr.NE.0 ) THEN
+                 PRINT*,"main(", my_rank, ") error in WriteReflectionImage()"
+                 GOTO 9999
+              ENDIF
+          
+              CLOSE(IChOutWFImageReal,ERR=9999)
+              CLOSE(IChOutWFImagePhase,ERR=9999)
+           END DO
+        END IF
      END DO
-
+     
      DEALLOCATE( &
           RImage,STAT=IErr)       
      IF( IErr.NE.0 ) THEN
@@ -857,7 +854,6 @@ PROGRAM FelixSim
         GOTO 9999
      ENDIF
      
-
   END IF
   
   !--------------------------------------------------------------------
@@ -888,7 +884,7 @@ PROGRAM FelixSim
      GOTO 9999
   ENDIF
   
-  IF(IImageFLAG.GE.2) THEN
+  IF(IImageFLAG.GE.3) THEN
      DEALLOCATE(&
           CAmplitudeandPhaseRoot,STAT=IErr) 
      

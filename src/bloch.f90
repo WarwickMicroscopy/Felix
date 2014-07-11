@@ -387,7 +387,7 @@ SUBROUTINE BlochCoefficientCalculation(ind,jnd,gnd,ILocalPixelCountMin,IErr)
      
      IF(IHKLSelectFLAG.EQ.0) THEN
         
-        IF(IImageFLAG.LE.1) THEN
+        IF(IImageFLAG.LE.2) THEN
            RIndividualReflections(1:IReflectOut,IThicknessIndex,(gnd-ILocalPixelCountMin)+1) = &
                 RFullWaveIntensity(1:IReflectOut)
         ELSE
@@ -396,7 +396,7 @@ SUBROUTINE BlochCoefficientCalculation(ind,jnd,gnd,ILocalPixelCountMin,IErr)
         END IF
      ELSE
         
-        IF(IImageFLAG.LE.1) THEN
+        IF(IImageFLAG.LE.2) THEN
            DO pnd = 1,IReflectOut
               RIndividualReflections(pnd,IThicknessIndex,(gnd-ILocalPixelCountMin)+1) = &
                    RFullWaveIntensity(IOutputReflections(pnd))

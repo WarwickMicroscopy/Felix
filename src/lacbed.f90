@@ -172,6 +172,12 @@ PROGRAM LACBED
      GOTO 9999
   ENDIF
 
+  CALL ReadInHKLs(IErr)
+  IF( IErr.NE.0 ) THEN
+     PRINT*,"main(", my_rank, ") error in ReadInHKLs()"
+     GOTO 9999
+  ENDIF
+
   CALL InpCIF(IErr)
   !PRINT*, "DBG: IErr=", IErr
   IF( IErr.NE.0 ) THEN
