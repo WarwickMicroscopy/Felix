@@ -50,7 +50,7 @@ SUBROUTINE Crystallography( IErr )
   REAL(RKIND), DIMENSION(THREEDIM,THREEDIM) :: &
        RTMatC2O,RTMatO2M
 
-  INTEGER IErr, ind,jnd,knd, Ifullind, Iuniind
+  INTEGER(IKIND)IErr, ind,jnd,knd, Ifullind, Iuniind
   LOGICAL Lunique
   REAL(RKIND) :: RTTEst
 
