@@ -507,7 +507,7 @@ SUBROUTINE Input( IErr )
   ! dump the input help
   
 1000 IF((my_rank.EQ.0.AND.ISoftwareMode.LT.2).OR.(IWriteFLAG.GE.10.AND.ISoftwareMode.LT.2)) THEN
-     PRINT*,"# Input file for FelixSim/Draw/Refine version :VERSION: Build :BUILD:"
+     PRINT*,"# Input file for FelixSim/Draw version :VERSION: Build :BUILD:"
      PRINT*,"# ------------------------------------"
      PRINT*,""
      PRINT*,"# ------------------------------------"
@@ -567,7 +567,7 @@ SUBROUTINE Input( IErr )
      PRINT*,"A Sample Input File Has been Written For you as Felix.inp.SimDraw_sample"
      PRINT*,"It must be renamed to Felix.inp before use"
   ELSE
-     PRINT*,"# Input file for FelixSim/Draw/Refine version :VERSION: Build :BUILD:"
+     PRINT*,"# Input file for FelixRefine version :VERSION: Build :BUILD:"
      PRINT*,"# ------------------------------------"
      PRINT*,""
      PRINT*,"# ------------------------------------"
