@@ -54,8 +54,9 @@ SUBROUTINE Input( IErr )
   
   IMPLICIT NONE
 
-  INTEGER IErr, ILine
+  INTEGER IErr, ILine,ind,IPos
   REAL(KIND=RKIND) ROfIter
+  CHARACTER*200 SImageMode
   
   IF((IWriteFLAG.GE.0.AND.my_rank.EQ.0).OR.IWriteFLAG.GE.10) THEN
      PRINT*,"Input()"
@@ -92,7 +93,44 @@ SUBROUTINE Input( IErr )
   END IF
   
   ILine= ILine+1
-  READ(IChInp,10,ERR=20,END=30) IImageFLAG
+  READ(IChInp,FMT='(A)',ERR=20,END=30) SImageMode
+  IPos = 0
+  IF(SCAN(SImageMode,'0').NE.0) THEN
+     IPos = IPos +1
+  END IF
+  IF(SCAN(SImageMode,'1').NE.0) THEN
+     IPos = IPos +1
+  END IF
+  IF(SCAN(SImageMode,'2').NE.0) THEN
+     IPos = IPos +1
+  END IF
+  
+  SELECT CASE (IPos)
+  CASE (1)
+     IF(SCAN(SImageMode,'2').NE.0) THEN
+        IImageFLAG = 3
+     ELSE
+        IF(SCAN(SImageMode,'1').NE.0) THEN
+           IImageFLAG = 1
+        ELSE
+           IImageFlag = 0
+        END IF
+     END IF     
+  CASE (2)     
+     IF(SCAN(SImageMode,'2').NE.0) THEN
+        IF(SCAN(SImageMode,'1').NE.0) THEN
+           IImageFLAG = 5
+        ELSE
+           IImageFLAG = 4
+        END IF
+     ELSE
+        IImageFLAG = 2
+     END IF
+     
+  CASE (3)
+     IImageFlag = 6
+  END SELECT
+
   IF((IWriteFLAG.GE.1.AND.my_rank.EQ.0).OR.IWriteFLAG.GE.10) THEN
      PRINT*,"IImageFLAG = ", IImageFLAG
   END IF

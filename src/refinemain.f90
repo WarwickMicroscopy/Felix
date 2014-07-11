@@ -232,6 +232,12 @@ PROGRAM FelixRefine
      GOTO 9999
   ENDIF
 
+  CALL ReadInHKLs(IErr)
+  IF( IErr.NE.0 ) THEN
+     PRINT*,"main(", my_rank, ") error in ReadInHKLs()"
+     GOTO 9999
+  ENDIF
+
   CALL InputScatteringFactors( IErr )
   IF( IErr.NE.0 ) THEN
      PRINT*,"refinemain(", my_rank, ") error in InputScatteringFactors()"
