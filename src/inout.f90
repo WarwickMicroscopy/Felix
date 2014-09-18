@@ -694,10 +694,13 @@ SUBROUTINE Input( IErr )
      PRINT*,"RInitialDebyeWallerFactor = 0.1"
      PRINT*,"RFinalDebyeWallerFactor = 1.0"
      PRINT*,"RDeltaDebyeWallerFactor = 0.1"
+     PRINT*,"IElementsforDWFchange   = 0"
      PRINT*,""
      PRINT*,"# Ug Iteration"
      PRINT*,"INoofUgs                  = 1"
-     PRINT*,"RPercentageUgChange       = 50.0"
+     PRINT*,"RLowerBoundUgChange       = 50.0"
+     PRINT*,"RUpperBoundUgChange       = 50.0"
+     PRINT*,"RDeltaUgChange            = 50.0"
      PRINT*,""
      
 
@@ -2118,10 +2121,13 @@ SUBROUTINE WriteOutInputFile
      WRITE(UNIT= IChInp,FMT='(A)') ADJUSTL("RInitialDebyeWallerFactor = 0.1")
      WRITE(UNIT= IChInp,FMT='(A)') ADJUSTL("RFinalDebyeWallerFactor = 1.0")
      WRITE(UNIT= IChInp,FMT='(A)') ADJUSTL("RDeltaDebyeWallerFactor = 0.1")
+     WRITE(UNIT= IChInp,FMT='(A)') ADJUSTL("IElementsforDWFchange = {0}")
      WRITE(UNIT= IChInp,FMT='(A)') ADJUSTL("")
      WRITE(UNIT= IChInp,FMT='(A)') ADJUSTL("# Ug Iteration")
      WRITE(UNIT= IChInp,FMT='(A)') ADJUSTL("INoofUgs                  = 1")
-     WRITE(UNIT= IChInp,FMT='(A)') ADJUSTL("RPercentageUgChange       = 50.0")
+     WRITE(UNIT= IChInp,FMT='(A)') ADJUSTL("RLowerBoundUgChange       = 50.0")
+     WRITE(UNIT= IChInp,FMT='(A)') ADJUSTL("RUpperBoundUgChange       = 50.0")
+     WRITE(UNIT= IChInp,FMT='(A)') ADJUSTL("RDeltaUgChange            = 50.0")
      WRITE(UNIT= IChInp,FMT='(A)') ADJUSTL("")
   CLOSE(UNIT=IChInp)
 END IF

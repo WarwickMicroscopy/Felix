@@ -394,3 +394,29 @@ SUBROUTINE CountTotalAtoms(IErr)
   
 END SUBROUTINE CountTotalAtoms
 
+SUBROUTINE GreatestCommonDivisor(ITotalProcesses,INooDWFs,ISubgroups)
+
+USE MyNumbers
+
+INTEGER(IKIND) :: &
+     a,b,c
+INTEGER(IKIND), INTENT(IN) :: &
+     ITotalProcesses,INooDWFs
+INTEGER(IKIND), INTENT(OUT) :: &
+     ISubgroups
+
+a = ITotalProcesses
+b = INooDWFs
+c = 0
+
+
+  DO                    ! now we have a <= b
+     c = MOD(a, b)      !    compute c, the reminder
+     IF (c == 0) EXIT   !    if c is zero, we are done.  GCD = b
+     a = b              !    otherwise, b becomes a
+     b = c              !    and c becomes b
+  END DO                !    go back
+
+ISubgroups = b
+
+END SUBROUTINE GreatestCommonDivisor

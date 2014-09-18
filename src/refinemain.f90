@@ -57,34 +57,45 @@ PROGRAM FelixRefine
        IHours,IMinutes,ISeconds,IX,IY
   CHARACTER*34 :: &
        filename
-  REAL(RKIND),DIMENSION(:,:),ALLOCATABLE :: &
+  REAL(RKIND),DIMENSION(:,:,:),ALLOCATABLE :: &
        RImageSim,RImageExpi
   REAL(RKIND),DIMENSION(:,:),ALLOCATABLE :: &
        RImageExpiCentred
-  REAL(RKIND) :: RCrossCorrelationOld
   !REAL(RKIND) StartTime, CurrentTime, Duration, TotalDurationEstimate
   
   !--------------------------------------------------------------------
   ! image related variables	
-  REAL(RKIND) Rthickness
+  REAL(RKIND) :: &
+       Rthickness,RDeltaDebyeWallerFactorPerElement,RCrossCorrelationOld, &
+       RIterationTolerance
   
-  INTEGER(IKIND) ILocalPixelCountMin, ILocalPixelCountMax,IAtomNo
+  INTEGER(IKIND) ILocalPixelCountMin, ILocalPixelCountMax,IAtomNo,&
+       ILocalFluxCountMin,ILocalFluxCountMax,ISubgroupNo,IFluxStepsPerSubgroup,&
+       ISubgroups,ISubgroupRootProcessContainingAnswer,ISubgroupContainingAnswer, &
+       ISubgroupSize
+
+  INTEGER my_status(MPI_STATUS_SIZE)
+  INTEGER(IKIND) ICorrelationMaximum,IRefinementIteration
 
   INTEGER(IKIND), DIMENSION(:), ALLOCATABLE :: &
-       IWeakBeamVec,IDisplacements,ICount,IFluxIterationIndices
+       IWeakBeamVec,IDisplacements,ICount,IFluxIterationIndices, &
+       IRanks
+  REAL(IKIND), DIMENSION(:), ALLOCATABLE :: &
+       RFinalDWFConfig,RFinalDebyeWallerFactorPerElement
   REAL(RKIND),DIMENSION(:,:,:),ALLOCATABLE :: &
-       RIndividualReflectionsRoot
+       RIndividualReflectionsRoot,RBestCorrelationImage
   REAL(RKIND),DIMENSION(:,:,:,:),ALLOCATABLE :: &
        RReflectionImagesForPhaseCorrelation
   REAL(RKIND),DIMENSION(:,:,:),ALLOCATABLE :: &
        RFinalMontageImageRoot
   REAL(RKIND),DIMENSION(:,:),ALLOCATABLE :: &
-       RImage
+       RImage,RFluxIterationCorrelations,RFluxIterationCorrelationsRoot
   COMPLEX(CKIND),DIMENSION(:,:,:), ALLOCATABLE :: &
        CAmplitudeandPhaseRoot
   COMPLEX(CKIND),DIMENSION(:,:), ALLOCATABLE :: &
        CZeroMat
-  INTEGER(IKIND) IThicknessCountFinal,INoofDWFs,IRemainder,IMaxiter
+  INTEGER(IKIND) IThicknessCountFinal,INoofDWFs,IRemainder,IMaxiter, &
+       InDWFs,a,b,c
   CHARACTER*40 surname, path
   CHARACTER*25 CThickness 
   CHARACTER*25 CThicknessLength
@@ -92,7 +103,7 @@ PROGRAM FelixRefine
   INTEGER(IKIND),DIMENSION(2) :: ILoc
   
   INTEGER(IKIND):: IThickness, IThicknessIndex, ILowerLimit, &
-       IUpperLimit
+       IUpperLimit,IWorldGrp,INewGroup,Inewcomm,my_newrank,q
   !REAL(RKIND) StartTime, CurrentTime, Duration, TotalDurationEstimate
 
   !-------------------------------------------------------------------
@@ -131,6 +142,8 @@ PROGRAM FelixRefine
      GOTO 9999
   ENDIF
 
+  PRINT*,"MPI comm world is ",p," Processors in size"
+
   !--------------------------------------------------------------------
   ! protocal feature startup
   !--------------------------------------------------------------------
@@ -149,13 +162,118 @@ PROGRAM FelixRefine
   !--------------------------------------------------------------------
   ! INPUT section
   !--------------------------------------------------------------------
+  
+  ISoftwareMode = 2 ! FelixRefineMode
 
-  IImageSizeXY(1) = 128
-  IImageSizeXY(2) = 128
+  CALL Input( IErr )
+  IF( IErr.NE.0 ) THEN
+     PRINT*,"RefineMain(", my_rank, ") error in Input()"
+     GOTO 9999
+  ENDIF
+
+  CALL ReadInHKLs(IErr)
+  IF( IErr.NE.0 ) THEN
+     PRINT*,"RefineMain(", my_rank, ") error in ReadInHKLs()"
+     GOTO 9999
+  ENDIF  
+  
+  SELECT CASE (IRefineModeFLAG)
+  CASE(0)
+     
+     !DebyeWallerLoop
+     PRINT*,IElementList
+     PRINT*,
+     
+     INoofDWFs = NINT((RFinalDebyeWallerFactor-&
+          RInitialDebyeWallerFactor)/&
+          RDeltaDebyeWallerFactor +1)**SIZE(IElementList,DIM=1)
+  CASE(1)
+  CASE(2)
+     INoofDWFs = 1
+     RIterationTolerance = RDeltaThickness
+  END SELECT
+  
+  !---------------------------------------------------------------------
+  !CLEAN THIS CODE UP
+
+  a = p
+  b = INoofDWFs
+  PRINT*,"No of DWFs = ",b
+  
+!!$  DO                    ! now we have a <= b
+!!$     c = MOD(a, b)      !    compute c, the reminder
+!!$     IF (c == 0) EXIT   !    if c is zero, we are done.  GCD = b
+!!$     a = b              !    otherwise, b becomes a
+!!$     b = c              !    and c becomes b
+!!$  END DO                !    go back
+
+  CALL GreatestCommonDivisor(p,INoofDWFs,ISubgroups)
+  
+  PRINT*,"No of DWFs = ",ISubgroups
+
+  IF(my_rank.EQ.0) Then
+     
+     PRINT*,"Running ",INoofDWFs, "Debye Waller Factor Configurations On ",p," Cores,Using ",p/ISubgroups," Cores per Configuration"
+  END IF
+  ALLOCATE(&
+       IRanks(p/ISubgroups),&
+       STAT=IErr)
+  
+  CALL MPI_COMM_GROUP(MPI_COMM_WORLD,IWorldGrp,IErr)
+  
+  jnd = floor(REAL(my_rank/(p/ISubgroups)))
+  DO ind = 1,SIZE(IRanks)
+     IRanks(ind) = (ind-1)+(jnd)*SIZE(IRanks)
+  end DO
+  
+  CALL MPI_GROUP_INCL(IWorldGrp,p/ISubgroups,IRanks,INewGroup,IErr)
+  
+  CALL MPI_COMM_CREATE(MPI_COMM_WORLD,INewGroup,Inewcomm,IErr)
+  
+  CALL MPI_Comm_rank(Inewcomm,my_newrank,IErr)
+  
+  CALL MPI_Comm_size(Inewcomm,ISubgroupSize,IErr)
+  IF( IErr.NE.0 ) THEN
+     PRINT*,"RefineMain(", my_rank, ") error in MPI_Comm_size()"
+     GOTO 9999
+  ENDIF
+     
+  PRINT*,"Hello i am ",my_rank," of ",p," in comm_world and ",my_newrank,"of ",ISubgroupSize," in new comm"
+  !---------------------------------------------------------------------
+
+
+  CALL InputScatteringFactors( IErr )
+  IF( IErr.NE.0 ) THEN
+     PRINT*,"RefineMain(", my_rank, ") error in InputScatteringFactors()"
+     GOTO 9999
+  ENDIF
+
+  CALL InpCIF(IErr)
+  IF( IErr.NE.0 ) THEN
+     PRINT*,"RefineMain(", my_rank, ") error in InpCIF()"
+     GOTO 9999
+  ENDIF
+
+  IF (ITotalAtoms.EQ.0) THEN
+     CALL CountTotalAtoms(IErr)
+     IF( IErr.NE.0 ) THEN
+        PRINT*,"RefineMain(", my_rank, ") error in CountTotalAtoms()"
+        GOTO 9999
+     ENDIF
+  END IF
+     
+  IF((IWriteFLAG.GE.1.AND.my_rank.EQ.0).OR.IWriteFLAG.GE.10) THEN
+     PRINT*,"ITotalAtoms = ",ITotalAtoms
+  END IF
+  
+  
+  IImageSizeXY(1) = 2*IPixelCount
+  IImageSizeXY(2) = 2*IPixelCount
   
   
   ALLOCATE( &
-       RImageSim(IImageSizeXY(1),IImageSizeXY(2)), &
+       RImageSim(IImageSizeXY(1),IImageSizeXY(2), &
+       IReflectOut),&
        STAT=IErr)  
   IF( IErr.NE.0 ) THEN
      PRINT*,"RefineMain (", my_rank, ") error in Allocation()"
@@ -163,14 +281,15 @@ PROGRAM FelixRefine
   ENDIF
   
   ALLOCATE( &
-       RImageExpi(IImageSizeXY(1),IImageSizeXY(2)), &
+       RImageExpi(IImageSizeXY(1),IImageSizeXY(2), &
+       IReflectOut),&
        STAT=IErr)  
   IF( IErr.NE.0 ) THEN
      PRINT*,"RefineMain (", my_rank, ") error in Allocation()"
      GOTO 9999
   ENDIF
   
-  DO ind = 1,1
+  DO ind = 1,IReflectOut
      
      WRITE(filename,"(A6,I3.3,A4)") "Felix.",ind,".img"
 
@@ -198,7 +317,7 @@ PROGRAM FelixRefine
         END IF
      ENDIF
 
-     RImageExpi = RImageIn
+     RImageExpi(:,:,ind) = RImageIn
 
      DEALLOCATE( &
           RImageIn, &
@@ -216,45 +335,7 @@ PROGRAM FelixRefine
 
   END DO
 
-  
-  ISoftwareMode = 2 ! FelixRefineMode
 
-  CALL Input( IErr )
-  IF( IErr.NE.0 ) THEN
-     PRINT*,"RefineMain(", my_rank, ") error in Input()"
-     GOTO 9999
-  ENDIF
-
-  CALL ReadInHKLs(IErr)
-  IF( IErr.NE.0 ) THEN
-     PRINT*,"RefineMain(", my_rank, ") error in ReadInHKLs()"
-     GOTO 9999
-  ENDIF
-
-  CALL InputScatteringFactors( IErr )
-  IF( IErr.NE.0 ) THEN
-     PRINT*,"RefineMain(", my_rank, ") error in InputScatteringFactors()"
-     GOTO 9999
-  ENDIF
-
-  CALL InpCIF(IErr)
-  IF( IErr.NE.0 ) THEN
-     PRINT*,"RefineMain(", my_rank, ") error in InpCIF()"
-     GOTO 9999
-  ENDIF
-
-  IF (ITotalAtoms.EQ.0) THEN
-     CALL CountTotalAtoms(IErr)
-     IF( IErr.NE.0 ) THEN
-        PRINT*,"RefineMain(", my_rank, ") error in CountTotalAtoms()"
-        GOTO 9999
-     ENDIF
-  END IF
-     
-  IF((IWriteFLAG.GE.1.AND.my_rank.EQ.0).OR.IWriteFLAG.GE.10) THEN
-     PRINT*,"ITotalAtoms = ",ITotalAtoms
-  END IF
-  
   !--------------------------------------------------------------------
   ! open outfiles
   !--------------------------------------------------------------------
@@ -422,7 +503,7 @@ PROGRAM FelixRefine
        STAT=IErr)
   IF( IErr.NE.0 ) THEN
      PRINT*,"RefineMain(", my_rank, ") error ", IErr, &
-          " in ALLOCATE() of DYNAMIC variables Reflection Matrix"
+          " in ALLOCATE() of DYNAMIC variables CUgMat"
      GOTO 9999
   ENDIF
   
@@ -431,7 +512,7 @@ PROGRAM FelixRefine
        STAT=IErr)
   IF( IErr.NE.0 ) THEN
      PRINT*,"RefineMain(", my_rank, ") error ", IErr, &
-          " in ALLOCATE() of DYNAMIC variables Reflection Matrix"
+          " in ALLOCATE() of DYNAMIC variables CZeroMat"
      GOTO 9999
   ENDIF
   
@@ -440,10 +521,28 @@ PROGRAM FelixRefine
        STAT=IErr)
   IF( IErr.NE.0 ) THEN
      PRINT*,"RefineMain(", my_rank, ") error ", IErr, &
-          " in ALLOCATE() of DYNAMIC variables Reflection Matrix"
+          " in ALLOCATE() of DYNAMIC variables CUgMatPrime"
      GOTO 9999
   ENDIF
   
+  
+  ALLOCATE( &
+       RFinalDWFConfig(IElements),STAT=IErr)       
+  IF( IErr.NE.0 ) THEN
+     PRINT*,"RefineMain(", my_rank, ") error in allocation of RFinalDWFConfig "
+     GOTO 9999
+  END IF
+  
+  ALLOCATE( &
+       RFinalDebyeWallerFactorPerElement(IElements),STAT=IErr)       
+  IF( IErr.NE.0 ) THEN
+     PRINT*,"RefineMain(", my_rank, ") error in allocation of RFinalDWFConfig "
+     GOTO 9999
+  END IF
+
+
+  
+
   !--------------------------------------------------------------------
   ! Map iteration steps for flux loop
   !--------------------------------------------------------------------
@@ -455,54 +554,602 @@ PROGRAM FelixRefine
      GOTO 9999
   ENDIF
   
+  IRefinementIteration = 0
   
-  SELECT CASE (IRefineModeFLAG)
-  CASE(0)
+  DO 
+     IRefinementIteration = IRefinementIteration + 1
+     IF(my_rank.EQ.0) THEN
+        PRINT*,"Entering Iteration",IRefinementIteration
+     END IF
      
-     !DebyeWallerLoop
+     SELECT CASE (IRefineModeFLAG)
+     CASE(0)
+        
+        !DebyeWallerLoop
+        
+        IF(IRefinementIteration.GT.1) THEN
+           RFinalDebyeWallerFactorPerElement = RFinalDWFConfig+RDeltaDebyeWallerFactorPerElement
+           RFinalDebyeWallerFactorPerElement = RFinalDWFConfig-RDeltaDebyeWallerFactorPerElement
+           RDeltaDebyeWallerFactor = RDeltaDebyeWallerFactor/10
+        ELSE
+           
+        END IF
+        
+        INoofDWFs = ((RFinalDebyeWallerFactor-&
+             RInitialDebyeWallerFactor)/&
+             RDeltaDebyeWallerFactor +1)
+     CASE(1)
+        
+     CASE(2)
+        !Thickness Determination Doesnt Require the Flux Loop
+     CASE DEFAULT     
+        IErr = 1
+        IF( IErr.NE.0 ) THEN
+           PRINT*,"RefineMain(", my_rank, ") error ", IErr, &
+                " Refinement Mode Not Defined"
+           GOTO 9999
+        ENDIF
+     END SELECT
      
-     INoofDWFs = ((RFinalDebyeWallerFactor-&
-          RInitialDebyeWallerFactor)/&
-          RDeltaDebyeWallerFactor +1)
-
+     
+     
      ALLOCATE(&
           IFluxIterationIndices(IElements),&
           STAT=IErr)
      IF( IErr.NE.0 ) THEN
         PRINT*,"RefineMain(", my_rank, ") error ", IErr, &
-             " in ALLOCATE"
+             " in ALLOCATE IFluxIterationIndices"
         GOTO 9999
      ENDIF
-  CASE(1)
      
-  CASE(2)
-     !Thickness Determination Doesnt Require the Flux Loop
-  CASE DEFAULT     
-     IErr = 1
+     IFluxIterationIndices = 0        
+     
+     ALLOCATE(&
+          RFluxIterationCorrelations(IFluxIterationSteps,2),&
+          STAT=IErr)
      IF( IErr.NE.0 ) THEN
         PRINT*,"RefineMain(", my_rank, ") error ", IErr, &
-             " Refinement Mode Not Defined"
+             " in ALLOCATE RFluxIterationCorrelations"
         GOTO 9999
      ENDIF
-  END SELECT
-     !--------------------------------------------------------------------
-  ! ENTER REFINEMENT LOOP
-  !--------------------------------------------------------------------  
-
-  IMaxiter = IElements
-  DO fnd = 1,IFluxIterationSteps
-    
-     SELECT CASE (IRefineModeFLAG)
-        
-     CASE(0)
      
+     RFluxIterationCorrelations = Zero
+     
+     ALLOCATE(&
+          RFluxIterationCorrelationsRoot(IFluxIterationSteps,2),&
+          STAT=IErr)
+     IF( IErr.NE.0 ) THEN
+        PRINT*,"RefineMain(", my_rank, ") error ", IErr, &
+             " in ALLOCATE RFluxIterationCorrelationsRoot"
+        GOTO 9999
+     ENDIF
+     
+     RFluxIterationCorrelationsRoot = Zero
+     
+     ALLOCATE(&
+          RBestCorrelationImage(2*IPixelCount,2*IPixelCount,IReflectOut),&
+          STAT=IErr)
+     IF( IErr.NE.0 ) THEN
+        PRINT*,"RefineMain(", my_rank, ") error ", IErr, &
+             " in ALLOCATE RBestCorrelationImage"
+        GOTO 9999
+     ENDIF
+     
+     RBestCorrelationImage = Zero
+     
+     !--------------------------------------------------------------------
+     ! ENTER REFINEMENT LOOP
+     !--------------------------------------------------------------------  
+     
+     ISubgroups = ISubgroups
+     ISubgroupNo = FLOOR(REAL(my_rank,RKIND)/(REAL(p,RKIND)/REAL(ISubgroups,RKIND)))
+     IFluxStepsPerSubgroup = IFluxIterationSteps/ISubgroups
+!!$  PRINT*,"I am rank",my_rank," In, Subgroup",ISubgroupNo,"Of",ISubgroups
+     
+     IMaxiter = IElements
+!!$  PRINT*,"Total Flux Steps",IFluxIterationSteps
+     ILocalFluxCountMin= (ISubgroupNo*IFluxStepsPerSubgroup)+1
+     ILocalFluxCountMax= (ISubgroupNo+1)*IFluxStepsPerSubgroup
+     
+     IF((IWriteFLAG.GE.6.AND.my_rank.EQ.0).OR.IWriteFLAG.GE.10) THEN
+        PRINT*,"RefineMain(", my_rank, "): starting the eigenvalue problem"
+        PRINT*,"RefineMain(", my_rank, "): for lines ", ILocalFluxCountMin, &
+             " to ", ILocalFluxCountMax
+     ENDIF
+     DO fnd = ILocalFluxCountMin,ILocalFluxCountMax
 
+        CUgMat = CZERO ! Initialise Ugs at the beginning of each iteration
+        
+        SELECT CASE (IRefineModeFLAG)
+           
+        CASE(0)
+           
+           DO ind = 1,IMaxiter
+              
+              IF(ind.EQ.1) THEN
+                 
+                 IFluxIterationIndices(ind) = FLOOR(REAL((fnd-1))/REAL(INoofDWFs**(SIZE(IElementlist)-ind)))+1
+                 IRemainder = MOD(fnd-1,INoofDWFs**(SIZE(IElementlist)-ind))
+              ELSE
+                 IF(ind.EQ.IMaxiter) THEN
+                    IFluxIterationIndices(ind) = IRemainder+1             
+                 ELSE
+                    IFluxIterationIndices(ind) = FLOOR(REAL(IRemainder)/REAL(INoofDWFs**(SIZE(IElementlist)-ind)))+1
+                    IRemainder = MOD(IRemainder,INoofDWFs**(SIZE(IElementlist)-ind))
+                 END IF
+              END IF
+           END DO
+           
+           DO ind = 1,IMaxIter
+              WHERE(IAtoms.EQ.IElementList(ind))
+                 RDWF = ((IFluxIterationIndices(ind)-1)*RDeltaDebyeWallerFactor)+RInitialDebyeWallerFactor
+              END WHERE
+           END DO
+           
+           !--------------------------------------------------------------------
+           ! calculating Ug matrix with variable DebyeWallerFactor
+           !--------------------------------------------------------------------
+           
+
+           CALL UgCalculation (IErr)
+           IF( IErr.NE.0 ) THEN
+              PRINT*,"RefineMain(", my_rank, ") error ", IErr, &
+                   " in UgCalculation"
+              GOTO 9999
+           ENDIF
+           
+        CASE(1)
+           
+           !--------------------------------------------------------------------
+           ! calculating Ug matrix for Ug Alteration
+           !--------------------------------------------------------------------
+           
+           CALL UgCalculation (IErr)
+           IF( IErr.NE.0 ) THEN
+              PRINT*,"RefineMain(", my_rank, ") error ", IErr, &
+                   " in UgCalculation"
+              GOTO 9999
+           ENDIF
+           
+           CZeroMAT = CZERO
+           
+           DO ind = 1,nReflections
+              DO jnd = 1,ind
+                 CZeroMAT(ind,jnd) = CONE
+              END DO
+           END DO
+           
+           ALLOCATE( &  
+                ISymmetryRelations(nReflections,nReflections), &
+                STAT=IErr)
+           IF( IErr.NE.0 ) THEN
+              PRINT*,"RefineMain(", my_rank, ") error ", IErr, &
+                   " in ALLOCATE() of DYNAMIC variables Reflection Matrix"
+              GOTO 9999
+           ENDIF
+           
+           ISymmetryRelations = ISymmetryRelations*CZeroMat  
+           
+           CALL DetermineSymmetryRelatedUgs (IErr)
+           IF( IErr.NE.0 ) THEN
+              PRINT*,"RefineMain(", my_rank, ") error ", IErr, &
+                   " in DetermineSymmetryRelatedUgs"
+              GOTO 9999
+           ENDIF
+           
+           DO ind = 1,(SIZE(ISymmetryStrengthKey,DIM=1))
+              ILoc = MINLOC(ABS(ISymmetryRelations-ind))
+              ISymmetryStrengthKey(ind,1) = ind
+              ISymmetryStrengthKey(ind,2) = ind
+              CSymmetryStrengthKey(ind) = CUgMat(ILoc(1),ILoc(2))
+           END DO
+           
+           CALL ReSortUgs(ISymmetryStrengthKey,CSymmetryStrengthKey,SIZE(CSymmetryStrengthKey,DIM=1))
+           
+           IF(IDevFLAG.EQ.1) THEN
+              CUgMat = CUgMat*CZeroMat
+              WHERE (ISymmetryRelations.EQ.ISymmetryStrengthKey(INoofUgs,2)) 
+                 CUgMat = CUgMat*(ONE+RPercentageUgChange/100.0_RKIND)
+              END WHERE
+              CUgMat = CUgmat + CONJG(TRANSPOSE(CUgMat))
+           END IF
+           
+        CASE(2)
+           
+           !--------------------------------------------------------------------
+           ! calculating Ug matrix for Thickness Determination
+           !--------------------------------------------------------------------
+           
+           CALL UgCalculation (IErr)
+           IF( IErr.NE.0 ) THEN
+              PRINT*,"RefineMain(", my_rank, ") error ", IErr, &
+                   " in UgCalculation"
+              GOTO 9999
+           ENDIF
+        CASE DEFAULT
+           
+           IErr = 1
+           IF( IErr.NE.0 ) THEN
+              PRINT*,"RefineMain(", my_rank, ") error ", IErr, &
+                   " Refinement Mode Not Defined"
+              GOTO 9999
+           ENDIF
+           
+        END SELECT
+        
+        CALL UgAddAbsorption(IErr)
+        IF( IErr.NE.0 ) THEN
+           PRINT*,"RefineMain(", my_rank, ") error ", IErr, &
+                " in UgCalculation"
+           GOTO 9999
+        ENDIF
+        
+        IF(IAbsorbFLAG.EQ.1) THEN
+           CUgMat =  CUgMat+CUgMatPrime
+        end IF
+
+        !--------------------------------------------------------------------
+        ! high-energy approximation (not HOLZ compatible)
+        !--------------------------------------------------------------------
+        
+        RBigK= SQRT(RElectronWaveVectorMagnitude**2 + RMeanInnerCrystalPotential)
+        
+        IF((IWriteFLAG.GE.1.AND.my_rank.EQ.0).OR.IWriteFLAG.GE.10) THEN
+           PRINT*,"RefineMain(", my_rank, ") BigK=", RBigK
+        END IF
+        
+        
+        !--------------------------------------------------------------------
+        ! reserve memory for effective eigenvalue problem
+        !--------------------------------------------------------------------
+        
+        !Kprime Vectors and Deviation Parameter
+        
+        ALLOCATE( &
+             RDevPara(nReflections), &
+             STAT=IErr)
+        IF( IErr.NE.0 ) THEN
+           PRINT*,"RefineMain(", my_rank, ") error ", IErr, &
+                " in ALLOCATE() of DYNAMIC variables RDevPara"
+           GOTO 9999
+        ENDIF
+        
+        ALLOCATE( &
+             IStrongBeamList(nReflections), &
+             STAT=IErr)
+        IF( IErr.NE.0 ) THEN
+           PRINT*,"RefineMain(", my_rank, ") error ", IErr, &
+                " in ALLOCATE() of DYNAMIC variables IStrongBeamList"
+           GOTO 9999
+        ENDIF
+        
+        ALLOCATE( &
+             IWeakBeamList(nReflections), & 
+             STAT=IErr)
+        IF( IErr.NE.0 ) THEN
+           PRINT*,"RefineMain(", my_rank, ") error ", IErr, &
+                " in ALLOCATE() of DYNAMIC variables IWeakBeamList"
+           GOTO 9999
+        ENDIF
+        
+        !--------------------------------------------------------------------
+        ! MAIN LOOP: solve for each (ind,jnd) pixel
+        !--------------------------------------------------------------------
+        
+        ILocalPixelCountMin= (IPixelTotal*(my_newrank)/ISubgroupSize)+1
+        ILocalPixelCountMax= (IPixelTotal*(my_newrank+1)/ISubgroupSize) 
+        
+        IF((IWriteFLAG.GE.6.AND.my_rank.EQ.0).OR.IWriteFLAG.GE.10) THEN
+           PRINT*,"RefineMain(", my_rank, "): starting the eigenvalue problem"
+           PRINT*,"RefineMain(", my_rank, "): for lines ", ILocalPixelCountMin, &
+                " to ", ILocalPixelCountMax
+        ENDIF
+        
+        IThicknessCount= (RFinalThickness- RInitialThickness)/RDeltaThickness +1 
+        
+        IF(IImageFLAG.LE.2) THEN
+           ALLOCATE( &
+                RIndividualReflections(IReflectOut,IThicknessCount,&
+                (ILocalPixelCountMax-ILocalPixelCountMin)+1),&
+                STAT=IErr)
+           IF( IErr.NE.0 ) THEN
+              PRINT*,"RefineMain(", my_rank, ") error ", IErr, &
+                   " in ALLOCATE() of DYNAMIC variables Individual Images"
+              GOTO 9999
+           ENDIF
+           
+           RIndividualReflections = ZERO
+        ELSE
+           ALLOCATE( &
+                CAmplitudeandPhase(IReflectOut,IThicknessCount,&
+                (ILocalPixelCountMax-ILocalPixelCountMin)+1),&
+                STAT=IErr)
+           IF( IErr.NE.0 ) THEN
+              PRINT*,"RefineMain(", my_rank, ") error ", IErr, &
+                   " in ALLOCATE() of DYNAMIC variables Amplitude and Phase"
+              GOTO 9999
+           ENDIF
+           CAmplitudeandPhase = CZERO
+        END IF
+        
+        ALLOCATE( &
+             CFullWaveFunctions(nReflections), & 
+             STAT=IErr)
+        IF( IErr.NE.0 ) THEN
+           PRINT*,"RefineMain(", my_rank, ") error ", IErr, &
+                " in ALLOCATE() of DYNAMIC variables CFullWaveFunctions"
+           GOTO 9999
+        ENDIF
+        
+        ALLOCATE( &
+             RFullWaveIntensity(nReflections), & 
+             STAT=IErr)
+        IF( IErr.NE.0 ) THEN
+           PRINT*,"RefineMain(", my_rank, ") error ", IErr, &
+                " in ALLOCATE() of DYNAMIC variables RFullWaveIntensity"
+           GOTO 9999
+        ENDIF
+        
+        IMAXCBuffer = 200000
+        IPixelComputed= 0
+        
+        IF((IWriteFLAG.GE.0.AND.my_rank.EQ.0).OR.IWriteFLAG.GE.6) THEN
+           PRINT*,"RefineMain(",my_rank,") Entering BlochLoop()"
+        END IF
+        
+        DO knd = ILocalPixelCountMin,ILocalPixelCountMax,1
+           ind = IPixelLocations(knd,1)
+           jnd = IPixelLocations(knd,2)
+           CALL BlochCoefficientCalculation(ind,jnd,knd,ILocalPixelCountMin,IErr)
+           IF( IErr.NE.0 ) THEN
+              PRINT*,"RefineMain(", my_rank, ") error ", IErr, &
+                   " in BlochCofficientCalculation"
+              GOTO 9999
+           ENDIF
+        END DO
+        
+        PRINT*,"Exiting Bloch Loop"
+        
+        IF((IWriteFLAG.GE.6.AND.my_rank.EQ.0).OR.IWriteFLAG.GE.10) THEN
+           PRINT*,"REFINEMAIN : ",my_rank," is exiting calculation loop"
+        END IF
+        
+        !--------------------------------------------------------------------
+        ! close outfiles
+        !--------------------------------------------------------------------
+        
+        ! eigensystem
+        IF(IOutputFLAG.GE.1) THEN
+           CALL MPI_FILE_CLOSE(IChOutES_MPI, IErr)
+           IF( IErr.NE.0 ) THEN
+              PRINT*,"RefineMain(", my_rank, ") error ", IErr, &
+                   " Closing IChOutES"
+              GOTO 9999
+           ENDIF
+        ENDIF
+        
+        ! UgMatEffective
+        IF(IOutputFLAG.GE.2) THEN
+           CALL MPI_FILE_CLOSE(IChOutUM_MPI, IErr)
+           IF( IErr.NE.0 ) THEN
+              PRINT*,"RefineMain(", my_rank, ") error ", IErr, &
+                   " Closing IChOutUM"
+              GOTO 9999
+           ENDIF
+        ENDIF
+        
+        ALLOCATE( &
+             RIndividualReflectionsRoot(IReflectOut,IThicknessCount,IPixelTotal),&
+             STAT=IErr)
+        IF( IErr.NE.0 ) THEN
+           PRINT*,"RefineMain(", my_rank, ") error ", IErr, &
+                " in ALLOCATE() of DYNAMIC variables Root Reflections"
+           GOTO 9999
+        ENDIF
+        
+        IF(IImageFLAG.GE.3) THEN
+           ALLOCATE(&
+                CAmplitudeandPhaseRoot(IReflectOut,IThicknessCount,IPixelTotal),&
+                STAT=IErr)
+           IF( IErr.NE.0 ) THEN
+              PRINT*,"RefineMain(", my_rank, ") error ", IErr, &
+                   " in ALLOCATE() of DYNAMIC variables Root Amplitude and Phase"
+              GOTO 9999
+           ENDIF
+           CAmplitudeandPhaseRoot = CZERO
+        END IF
+        
+        RIndividualReflectionsRoot = ZERO
+        
+        IF(IWriteFLAG.GE.10) THEN
+           
+           PRINT*,"REDUCING Reflections",my_rank
+           
+        END IF
+        
+        IF(IWriteFLAG.GE.10) THEN
+           PRINT*,"REDUCED Reflections",my_rank
+        END IF
+        
+        ALLOCATE(&
+             IDisplacements(ISubgroupSize),ICount(ISubgroupSize),&
+             STAT=IErr)
+        IF( IErr.NE.0 ) THEN
+           PRINT*,"RefineMain(", my_rank, ") error ", IErr, &
+                " In ALLOCATE of IDisplacements"
+           GOTO 9999
+        ENDIF
+        
+        DO pnd = 1,ISubgroupSize
+           IDisplacements(pnd) = (IPixelTotal*(pnd-1)/ISubgroupSize)
+           ICount(pnd) = (((IPixelTotal*(pnd)/ISubgroupSize) - (IPixelTotal*(pnd-1)/ISubgroupSize)))*IReflectOut*IThicknessCount
+           
+        END DO
+        
+        DO ind = 1,ISubgroupSize
+           IDisplacements(ind) = (IDisplacements(ind))*IReflectOut*IThicknessCount
+        END DO
+        
+        IF(IImageFLAG.LE.2) THEN
+           CALL MPI_GATHERV(RIndividualReflections,ICount,&
+                MPI_DOUBLE_PRECISION,RIndividualReflectionsRoot,&
+                ICount,IDisplacements,MPI_DOUBLE_PRECISION,0,&
+                Inewcomm,IErr)
+           IF( IErr.NE.0 ) THEN
+              PRINT*,"RefineMain(", my_rank, ") error ", IErr, &
+                   " In MPI_GATHERV"
+              GOTO 9999
+           ENDIF
+        ELSE     
+           CALL MPI_GATHERV(CAmplitudeandPhase,ICount,&
+                MPI_DOUBLE_COMPLEX,CAmplitudeandPhaseRoot,&
+                ICount,IDisplacements,MPI_DOUBLE_COMPLEX,0, &
+                Inewcomm,IErr)
+           IF( IErr.NE.0 ) THEN
+              PRINT*,"RefineMain(", my_rank, ") error ", IErr, &
+                   " In MPI_GATHERV"
+              GOTO 9999
+           ENDIF
+        END IF
+        
+        
+        IF(IImageFLAG.LE.2) THEN
+           DEALLOCATE( &
+                RIndividualReflections,STAT=IErr)
+           IF( IErr.NE.0 ) THEN
+              PRINT*,"RefineMain(", my_rank, ") error ", IErr, &
+                   " Deallocating RIndividualReflections"
+              GOTO 9999
+           ENDIF
+        END IF
+        IF (my_newrank.EQ.0) THEN !This HAS to be WRONG
+           RCrossCorrelationOld = ZERO
+           
+           ALLOCATE( &
+                RReflectionImagesForPhaseCorrelation(2*IPixelCount,2*IPixelCount,&
+                IReflectOut,IThicknessCount),&
+                STAT=IErr)
+           IF( IErr.NE.0 ) THEN
+              PRINT*,"RefineMain(", my_rank, ") error ", IErr, &
+                   " in ALLOCATE() of DYNAMIC variables Root Reflections for phase correlation"
+              GOTO 9999
+           ENDIF
+           
+           RReflectionImagesForPhaseCorrelation = ZERO
+           DO ind = 1,IReflectOut
+              DO knd = 1,IThicknessCount
+                 DO jnd = 1,IPixelTotal
+                    gnd = IPixelLocations(jnd,1)
+                    hnd = IPixelLocations(jnd,2)
+                    
+                    RReflectionImagesForPhaseCorrelation(gnd,hnd,ind,knd) = RIndividualReflectionsRoot(ind,knd,jnd)
+                 END DO
+              END DO
+           END DO
+           
+           DO ind = 1,IThicknessCount
+              CALL PhaseCorrelate(RReflectionImagesForPhaseCorrelation(:,:,IOutputReflections(1),ind),&
+                   RImageExpi(:,:,1),IErr,2*IPixelCount,2*IPixelCount)
+              
+              IF(RCrossCorrelation.GT.RCrossCorrelationOld) THEN
+                 RCrossCorrelationOld = RCrossCorrelation
+                 RThickness = RInitialThickness + (ind-1)*RDeltaThickness 
+                 IThicknessCountFinal = ind
+                 RBestCorrelationImage = RReflectionImagesForPhaseCorrelation(:,:,IOutputReflections(:),ind)
+              END IF
+              
+              
+           END DO
+           DEALLOCATE(&
+                RReflectionImagesForPhaseCorrelation,STAT=IErr)       
+           IF( IErr.NE.0 ) THEN
+              PRINT*,"RefineMain(", my_rank, ") error in Deallocation of RReflectionImagesForPhaseCorrelation"
+              GOTO 9999
+           END IF
+           
+           RFluxIterationCorrelations(fnd,1) = RThickness
+           RFluxIterationCorrelations(fnd,2) = RCrossCorrelationOld/(2*IPixelCount)**2
+           
+!!$     PRINT*,"Thickness = ",RThickness," Angstoms with a correlation of ",RCrossCorrelationOld/(2*IPixelCount)**2
+        END IF
+        
+        
+        DEALLOCATE(RIndividualReflectionsRoot,&
+             STAT=IErr)
+        IF( IErr.NE.0 ) THEN
+           PRINT*,"RefineMain(", my_rank, ") error ", IErr, &
+                " in DEALLOCATE() of DYNAMIC variables Root Reflections"
+           GOTO 9999
+        ENDIF
+        DEALLOCATE(&
+             RDevPara,STAT=IErr)       
+        IF( IErr.NE.0 ) THEN
+           PRINT*,"RefineMain(", my_rank, ") error in Deallocation of RDevPara etc"
+           GOTO 9999
+        ENDIF
+        DEALLOCATE(&
+             IWeakBeamList,STAT=IErr)       
+        IF( IErr.NE.0 ) THEN
+           PRINT*,"RefineMain(", my_rank, ") error in Deallocation of IWeakBeamList etc"
+           GOTO 9999
+        ENDIF
+        DEALLOCATE(&
+             IStrongBeamList,STAT=IErr)       
+        IF( IErr.NE.0 ) THEN
+           PRINT*,"RefineMain(", my_rank, ") error in Deallocation of IStrongBeamList etc"
+           GOTO 9999
+        ENDIF
+        DEALLOCATE(&
+             CFullWaveFunctions,STAT=IErr)       
+        IF( IErr.NE.0 ) THEN
+           PRINT*,"RefineMain(", my_rank, ") error in Deallocation of CFullWaveFunctions etc"
+           GOTO 9999
+        ENDIF
+        DEALLOCATE(&
+             RFullWaveIntensity,STAT=IErr)       
+        IF( IErr.NE.0 ) THEN
+           PRINT*,"RefineMain(", my_rank, ") error in Deallocation of RFullWaveIntensity etc"
+           GOTO 9999
+        ENDIF
+        DEALLOCATE(&
+             IDisplacements,STAT=IErr)       
+        IF( IErr.NE.0 ) THEN
+           PRINT*,"RefineMain(", my_rank, ") error in Deallocation of IDisplacements etc"
+           GOTO 9999
+        ENDIF
+        DEALLOCATE(&
+             ICount,STAT=IErr)       
+        IF( IErr.NE.0 ) THEN
+           PRINT*,"RefineMain(", my_rank, ") error in Deallocation of ICount etc"
+           GOTO 9999
+        END IF
+
+        PRINT*,"Exiting 1"
+        
+     END DO
+     
+     CALL MPI_ALLREDUCE(RFluxIterationCorrelations,RFluxIterationCorrelationsRoot,&
+          2*IFluxIterationSteps,MPI_DOUBLE_PRECISION,MPI_SUM,&
+          MPI_COMM_WORLD,IErr)
+     IF( IErr.NE.0 ) THEN
+        PRINT*,"RefineMain(", my_rank, ") error ", IErr, &
+             " In MPI_REDUCE"
+        GOTO 9999
+     ENDIF
+     
+     ICorrelationMaximum = MAXLOC(RFluxIterationCorrelationsRoot(:,2),1)
+     
+     RThickness = RFluxIterationCorrelationsRoot(ICorrelationMaximum,1)
+     
+     SELECT CASE (IRefineModeFLAG)
+     CASE(0)
+        
         DO ind = 1,IMaxiter
            
            IF(ind.EQ.1) THEN
               
-              IFluxIterationIndices(ind) = FLOOR(REAL((fnd-1))/REAL(INoofDWFs**(SIZE(IElementlist)-ind)))+1
-              IRemainder = MOD(fnd-1,INoofDWFs**(SIZE(IElementlist)-ind))
+              IFluxIterationIndices(ind) = FLOOR(REAL((ICorrelationMaximum-1))/REAL(INoofDWFs**(SIZE(IElementlist)-ind)))+1
+              IRemainder = MOD(ICorrelationMaximum-1,INoofDWFs**(SIZE(IElementlist)-ind))
            ELSE
               IF(ind.EQ.IMaxiter) THEN
                  IFluxIterationIndices(ind) = IRemainder+1             
@@ -512,598 +1159,198 @@ PROGRAM FelixRefine
               END IF
            END IF
         END DO
-
-        
         
         DO ind = 1,IMaxIter
-           WHERE(IAtoms.EQ.IElementList(ind))
-              RDWF = ((IFluxIterationIndices(ind)-1)*RDeltaDebyeWallerFactor)+RInitialDebyeWallerFactor
-           END WHERE
+           RFinalDWFConfig(ind) = &
+                ((IFluxIterationIndices(ind)-1)*&
+                RDeltaDebyeWallerFactor)+&
+                RInitialDebyeWallerFactor
         END DO
-           
-        !--------------------------------------------------------------------
-        ! calculating Ug matrix with variable DebyeWallerFactor
-        !--------------------------------------------------------------------
         
-        CALL UgCalculation (IErr)
-        IF( IErr.NE.0 ) THEN
-           PRINT*,"RefineMain(", my_rank, ") error ", IErr, &
-                " in UgCalculation"
-           GOTO 9999
-        ENDIF
-        
-     CASE(1)
-                
-        !--------------------------------------------------------------------
-        ! calculating Ug matrix for Ug Alteration
-        !--------------------------------------------------------------------
-        
-        CALL UgCalculation (IErr)
-        IF( IErr.NE.0 ) THEN
-           PRINT*,"RefineMain(", my_rank, ") error ", IErr, &
-                " in UgCalculation"
-           GOTO 9999
-        ENDIF
-     
-        CZeroMAT = CZERO
-        
-        DO ind = 1,nReflections
-           DO jnd = 1,ind
-              CZeroMAT(ind,jnd) = CONE
+        IF(my_rank.EQ.0) THEN
+           PRINT*,"Maximum Correlation was ",&
+                RFluxIterationCorrelationsRoot(ICorrelationMaximum,2),&
+                "from a thickness of ",&
+                RFluxIterationCorrelationsRoot(ICorrelationMaximum,1),&
+                "and a debyewaller Factor configuration of"
+           DO ind = 1,IMaxIter
+              PRINT*,RFinalDWFConfig(ind)
            END DO
-        END DO
-        
-        ALLOCATE( &  
-             ISymmetryRelations(nReflections,nReflections), &
-             STAT=IErr)
-        IF( IErr.NE.0 ) THEN
-           PRINT*,"RefineMain(", my_rank, ") error ", IErr, &
-                " in ALLOCATE() of DYNAMIC variables Reflection Matrix"
-           GOTO 9999
-        ENDIF
-        
-        ISymmetryRelations = ISymmetryRelations*CZeroMat  
-        
-        CALL DetermineSymmetryRelatedUgs (IErr)
-        IF( IErr.NE.0 ) THEN
-           PRINT*,"RefineMain(", my_rank, ") error ", IErr, &
-                " in DetermineSymmetryRelatedUgs"
-           GOTO 9999
-        ENDIF
-        
-        DO ind = 1,(SIZE(ISymmetryStrengthKey,DIM=1))
-           ILoc = MINLOC(ABS(ISymmetryRelations-ind))
-           ISymmetryStrengthKey(ind,1) = ind
-           ISymmetryStrengthKey(ind,2) = ind
-           CSymmetryStrengthKey(ind) = CUgMat(ILoc(1),ILoc(2))
-        END DO
-        
-        CALL ReSortUgs(ISymmetryStrengthKey,CSymmetryStrengthKey,SIZE(CSymmetryStrengthKey,DIM=1))
-        
-        IF(IDevFLAG.EQ.1) THEN
-           CUgMat = CUgMat*CZeroMat
-           WHERE (ISymmetryRelations.EQ.ISymmetryStrengthKey(INoofUgs,2)) 
-              CUgMat = CUgMat*(ONE+RPercentageUgChange/100.0_RKIND)
-           END WHERE
-           CUgMat = CUgmat + CONJG(TRANSPOSE(CUgMat))
         END IF
         
+     CASE(1)
      CASE(2)
-        
-        !--------------------------------------------------------------------
-        ! calculating Ug matrix for Thickness Determination
-        !--------------------------------------------------------------------
-                
-        CALL UgCalculation (IErr)
-        IF( IErr.NE.0 ) THEN
-           PRINT*,"RefineMain(", my_rank, ") error ", IErr, &
-                " in UgCalculation"
-           GOTO 9999
-        ENDIF
-     CASE DEFAULT
-        
-        IErr = 1
-        IF( IErr.NE.0 ) THEN
-           PRINT*,"RefineMain(", my_rank, ") error ", IErr, &
-                " Refinement Mode Not Defined"
-           GOTO 9999
-        ENDIF
+        IF(my_rank.EQ.0) THEN
+           PRINT*,"Maximum Correlation was ",&
+                RFluxIterationCorrelationsRoot(ICorrelationMaximum,2),&
+                "from a thickness of ",&
+                RFluxIterationCorrelationsRoot(ICorrelationMaximum,1)
+        END IF
         
      END SELECT
      
-     CALL UgAddAbsorption(IErr)
+     DEALLOCATE(&
+          IFluxIterationIndices,STAT=IErr)       
      IF( IErr.NE.0 ) THEN
-        PRINT*,"RefineMain(", my_rank, ") error ", IErr, &
-             " in UgCalculation"
+        PRINT*,"RefineMain(", my_rank, ") error in Deallocation of IFluxIterationIndices etc"
         GOTO 9999
-     ENDIF
-     
-     IF(IAbsorbFLAG.EQ.1) THEN
-        CUgMat =  CUgMat+CUgMatPrime
-     end IF
-     
-!!$     Deallocate( &
-!!$          RgMatMat,RgMatMag,STAT=IErr)
-!!$     IF( IErr.NE.0 ) THEN
-!!$        PRINT*,"RefineMain(", my_rank, ") error ", IErr, &
-!!$             " in Deallocation of RgMat"
-!!$        GOTO 9999
-!!$     ENDIF
-!!$     
-     !--------------------------------------------------------------------
-     ! high-energy approximation (not HOLZ compatible)
-     !--------------------------------------------------------------------
-     
-     RBigK= SQRT(RElectronWaveVectorMagnitude**2 + RMeanInnerCrystalPotential)
-     
-     IF((IWriteFLAG.GE.1.AND.my_rank.EQ.0).OR.IWriteFLAG.GE.10) THEN
-        PRINT*,"RefineMain(", my_rank, ") BigK=", RBigK
-     END IF
-     
-     
-     !--------------------------------------------------------------------
-     ! reserve memory for effective eigenvalue problem
-     !--------------------------------------------------------------------
-     
-     !Kprime Vectors and Deviation Parameter
-     
-     ALLOCATE( &
-          RDevPara(nReflections), &
-          STAT=IErr)
-     IF( IErr.NE.0 ) THEN
-        PRINT*,"RefineMain(", my_rank, ") error ", IErr, &
-             " in ALLOCATE() of DYNAMIC variables RDevPara"
-        GOTO 9999
-     ENDIF
-     
-     ALLOCATE( &
-          IStrongBeamList(nReflections), &
-          STAT=IErr)
-     IF( IErr.NE.0 ) THEN
-        PRINT*,"RefineMain(", my_rank, ") error ", IErr, &
-             " in ALLOCATE() of DYNAMIC variables IStrongBeamList"
-        GOTO 9999
-     ENDIF
-     
-     ALLOCATE( &
-          IWeakBeamList(nReflections), & 
-          STAT=IErr)
-     IF( IErr.NE.0 ) THEN
-        PRINT*,"RefineMain(", my_rank, ") error ", IErr, &
-             " in ALLOCATE() of DYNAMIC variables IWeakBeamList"
-        GOTO 9999
-     ENDIF
-     
-     !--------------------------------------------------------------------
-     ! MAIN LOOP: solve for each (ind,jnd) pixel
-     !--------------------------------------------------------------------
-   
-     ILocalPixelCountMin= (IPixelTotal*(my_rank)/p)+1
-     ILocalPixelCountMax= (IPixelTotal*(my_rank+1)/p) 
-     
-     IF((IWriteFLAG.GE.6.AND.my_rank.EQ.0).OR.IWriteFLAG.GE.10) THEN
-        PRINT*,"RefineMain(", my_rank, "): starting the eigenvalue problem"
-        PRINT*,"RefineMain(", my_rank, "): for lines ", ILocalPixelCountMin, &
-             " to ", ILocalPixelCountMax
-     ENDIF
-     
-     IThicknessCount= (RFinalThickness- RInitialThickness)/RDeltaThickness +1 
-     
-     IF(IImageFLAG.LE.2) THEN
-        ALLOCATE( &
-             RIndividualReflections(IReflectOut,IThicknessCount,&
-             (ILocalPixelCountMax-ILocalPixelCountMin)+1),&
-             STAT=IErr)
-        IF( IErr.NE.0 ) THEN
-           PRINT*,"RefineMain(", my_rank, ") error ", IErr, &
-                " in ALLOCATE() of DYNAMIC variables Individual Images"
-           GOTO 9999
-        ENDIF
-        
-        RIndividualReflections = ZERO
-     ELSE
-        ALLOCATE( &
-             CAmplitudeandPhase(IReflectOut,IThicknessCount,&
-             (ILocalPixelCountMax-ILocalPixelCountMin)+1),&
-             STAT=IErr)
-        IF( IErr.NE.0 ) THEN
-           PRINT*,"RefineMain(", my_rank, ") error ", IErr, &
-                " in ALLOCATE() of DYNAMIC variables Amplitude and Phase"
-           GOTO 9999
-        ENDIF
-        CAmplitudeandPhase = CZERO
-     END IF
-     
-     ALLOCATE( &
-          CFullWaveFunctions(nReflections), & 
-          STAT=IErr)
-     IF( IErr.NE.0 ) THEN
-        PRINT*,"RefineMain(", my_rank, ") error ", IErr, &
-             " in ALLOCATE() of DYNAMIC variables CFullWaveFunctions"
-        GOTO 9999
-     ENDIF
-     
-     ALLOCATE( &
-          RFullWaveIntensity(nReflections), & 
-          STAT=IErr)
-     IF( IErr.NE.0 ) THEN
-        PRINT*,"RefineMain(", my_rank, ") error ", IErr, &
-             " in ALLOCATE() of DYNAMIC variables RFullWaveIntensity"
-        GOTO 9999
-     ENDIF
-     
-     IMAXCBuffer = 200000
-     IPixelComputed= 0
-     
-!!$     DEALLOCATE( &
-!!$          RScattFactors, &
-!!$          RrVecMat, Rsg, &
-!!$          STAT=IErr)
-!!$     IF( IErr.NE.0 ) THEN
-!!$        PRINT*,"RefineMain(", my_rank, ") error ", IErr, &
-!!$             " in DEALLOCATE() "
-!!$        GOTO 9999
-!!$     ENDIF
-     
-     IF((IWriteFLAG.GE.0.AND.my_rank.EQ.0).OR.IWriteFLAG.GE.6) THEN
-        PRINT*,"RefineMain(",my_rank,") Entering BlochLoop()"
-     END IF
-     
-     DO knd = ILocalPixelCountMin,ILocalPixelCountMax,1
-        ind = IPixelLocations(knd,1)
-        jnd = IPixelLocations(knd,2)
-        CALL BlochCoefficientCalculation(ind,jnd,knd,ILocalPixelCountMin,IErr)
-        IF( IErr.NE.0 ) THEN
-           PRINT*,"RefineMain(", my_rank, ") error ", IErr, &
-                " in BlochCofficientCalculation"
-           GOTO 9999
-        ENDIF
-     END DO
-     
-     IF((IWriteFLAG.GE.6.AND.my_rank.EQ.0).OR.IWriteFLAG.GE.10) THEN
-        PRINT*,"REFINEMAIN : ",my_rank," is exiting calculation loop"
-     END IF
-     
-     !--------------------------------------------------------------------
-     ! close outfiles
-     !--------------------------------------------------------------------
-     
-     ! eigensystem
-     IF(IOutputFLAG.GE.1) THEN
-        CALL MPI_FILE_CLOSE(IChOutES_MPI, IErr)
-        IF( IErr.NE.0 ) THEN
-           PRINT*,"RefineMain(", my_rank, ") error ", IErr, &
-                " Closing IChOutES"
-           GOTO 9999
-        ENDIF
-     ENDIF
-     
-     ! UgMatEffective
-     IF(IOutputFLAG.GE.2) THEN
-        CALL MPI_FILE_CLOSE(IChOutUM_MPI, IErr)
-        IF( IErr.NE.0 ) THEN
-           PRINT*,"RefineMain(", my_rank, ") error ", IErr, &
-                " Closing IChOutUM"
-           GOTO 9999
-        ENDIF
-     ENDIF
-     
-     ALLOCATE( &
-          RIndividualReflectionsRoot(IReflectOut,IThicknessCount,IPixelTotal),&
-          STAT=IErr)
-     IF( IErr.NE.0 ) THEN
-        PRINT*,"RefineMain(", my_rank, ") error ", IErr, &
-             " in ALLOCATE() of DYNAMIC variables Root Reflections"
-        GOTO 9999
-     ENDIF
-     
-     IF(IImageFLAG.GE.3) THEN
-        ALLOCATE(&
-             CAmplitudeandPhaseRoot(IReflectOut,IThicknessCount,IPixelTotal),&
-             STAT=IErr)
-        IF( IErr.NE.0 ) THEN
-           PRINT*,"RefineMain(", my_rank, ") error ", IErr, &
-                " in ALLOCATE() of DYNAMIC variables Root Amplitude and Phase"
-           GOTO 9999
-        ENDIF
-        CAmplitudeandPhaseRoot = CZERO
-     END IF
-     
-     RIndividualReflectionsRoot = ZERO
-     
-     IF(IWriteFLAG.GE.10) THEN
-        
-        PRINT*,"REDUCING Reflections",my_rank
-        
-     END IF
-     
-     IF(IWriteFLAG.GE.10) THEN
-        PRINT*,"REDUCED Reflections",my_rank
-     END IF
-     
-     ALLOCATE(&
-          IDisplacements(p),ICount(p),&
-          STAT=IErr)
-     IF( IErr.NE.0 ) THEN
-        PRINT*,"RefineMain(", my_rank, ") error ", IErr, &
-             " In ALLOCATE of IDisplacements"
-        GOTO 9999
-     ENDIF
-     
-     DO pnd = 1,p
-        IDisplacements(pnd) = (IPixelTotal*(pnd-1)/p)
-        ICount(pnd) = (((IPixelTotal*(pnd)/p) - (IPixelTotal*(pnd-1)/p)))*IReflectOut*IThicknessCount
-        
-     END DO
-     
-     DO ind = 1,p
-        IDisplacements(ind) = (IDisplacements(ind))*IReflectOut*IThicknessCount
-     END DO
-     
-     IF(IImageFLAG.LE.2) THEN
-        CALL MPI_GATHERV(RIndividualReflections,ICount,&
-             MPI_DOUBLE_PRECISION,RIndividualReflectionsRoot,&
-             ICount,IDisplacements,MPI_DOUBLE_PRECISION,0,&
-             MPI_COMM_WORLD,IErr)
-        IF( IErr.NE.0 ) THEN
-           PRINT*,"RefineMain(", my_rank, ") error ", IErr, &
-                " In MPI_GATHERV"
-           GOTO 9999
-        ENDIF
-     ELSE     
-        CALL MPI_GATHERV(CAmplitudeandPhase,ICount,&
-             MPI_DOUBLE_COMPLEX,CAmplitudeandPhaseRoot,&
-             ICount,IDisplacements,MPI_DOUBLE_COMPLEX,0, &
-             MPI_COMM_WORLD,IErr)
-        IF( IErr.NE.0 ) THEN
-           PRINT*,"RefineMain(", my_rank, ") error ", IErr, &
-                " In MPI_GATHERV"
-           GOTO 9999
-        ENDIF
-     END IF
-     
-     
-     IF(IImageFLAG.LE.2) THEN
-        DEALLOCATE( &
-             RIndividualReflections,STAT=IErr)
-        IF( IErr.NE.0 ) THEN
-           PRINT*,"RefineMain(", my_rank, ") error ", IErr, &
-                " Deallocating RIndividualReflections"
-           GOTO 9999
-        ENDIF
-     END IF
-     
-     
-     IF (my_rank.EQ.0) THEN
-        RCrossCorrelationOld = ZERO
-        
-        
-        ALLOCATE( &
-             RReflectionImagesForPhaseCorrelation(2*IPixelCount,2*IPixelCount,&
-             IReflectOut,IThicknessCount),&
-             STAT=IErr)
-        IF( IErr.NE.0 ) THEN
-           PRINT*,"RefineMain(", my_rank, ") error ", IErr, &
-                " in ALLOCATE() of DYNAMIC variables Root Reflections"
-           GOTO 9999
-        ENDIF
-        
-        RReflectionImagesForPhaseCorrelation = ZERO
-        DO ind = 1,IReflectOut
-           DO knd = 1,IThicknessCount
-              DO jnd = 1,IPixelTotal
-                 gnd = IPixelLocations(jnd,1)
-                 hnd = IPixelLocations(jnd,2)
-                 
-                 RReflectionImagesForPhaseCorrelation(gnd,hnd,ind,knd) = RIndividualReflectionsRoot(ind,knd,jnd)
-              END DO
-           END DO
-        END DO
-        
-        DEALLOCATE(RIndividualReflectionsRoot,&
-             STAT=IErr)
-        IF( IErr.NE.0 ) THEN
-           PRINT*,"RefineMain(", my_rank, ") error ", IErr, &
-                " in DEALLOCATE() of DYNAMIC variables Root Reflections"
-           GOTO 9999
-        ENDIF
-        
-        
-        DO ind = 1,IThicknessCount
-           CALL PhaseCorrelate(RReflectionImagesForPhaseCorrelation(:,:,1,ind),RImageExpi,IErr,2*IPixelCount,2*IPixelCount)
-           
-           IF(RCrossCorrelation.GT.RCrossCorrelationOld) THEN
-              RCrossCorrelationOld = RCrossCorrelation
-              RThickness = RInitialThickness + (ind-1)*RDeltaThickness 
-              IThicknessCountFinal = ind
-           END IF
-           
-           
-        END DO
-        
-        PRINT*,"Thickness = ",RThickness," Angstoms with a correlation of ",RCrossCorrelationOld/(2*IPixelCount)**2
-     END IF
-     
-     IF(my_rank.EQ.0.AND.IImageOutputFLAG.EQ.1) THEN
-        
-        ALLOCATE(&
-             RFinalMontageImageRoot(MAXVAL(IImageSizeXY),&
-             MAXVAL(IImageSizeXY),1),&
-             STAT=IErr)
-        IF( IErr.NE.0 ) THEN
-           PRINT*,"RefineMain(", my_rank, ") error ", IErr, &
-                " in ALLOCATE() of DYNAMIC variables Root Montage"
-           GOTO 9999
-        ENDIF
-        
-        
-        IF(IImageFLAG.EQ.0.OR.IImageFLAG.EQ.2.OR.IImageFLAG.EQ.4.OR.IImageFLAG.EQ.6) THEN
-           
-           IThicknessCount = IThicknessCountFinal
-           
-           DO ind = 1,2*IPixelCount
-              DO jnd = 1,2*IPixelCount
-                 CALL MakeMontagePixel(ind,jnd,1,&
-                      RFinalMontageImageRoot,&
-                      RReflectionImagesForPhaseCorrelation(ind,jnd,:,IThicknessCount),IErr)
-                 IF( IErr.NE.0 ) THEN
-                    PRINT*,"RefineMain(", my_rank, ") error ", IErr, &
-                         " in MakeMontagePixel"
-                    GOTO 9999
-                 ENDIF
-              END DO
-           END DO
-           WRITE(surname,"(A2,A1,I5.5,A2,I5.5)") &
-                "M-","T",NINT(RThickness),"-P",MAXVAL(IImageSizeXY)    
-           CALL OpenReflectionImage(MontageOut,surname,IErr,0,MAXVAL(IImageSizeXY)) 
-           IF( IErr.NE.0 ) THEN
-              PRINT*,"RefineMain(", my_rank, ") error in OpenData()"
-              GOTO 9999
-           ENDIF
-           IF((IWriteFLAG.GE.2.AND.my_rank.EQ.0).OR.IWriteFLAG.GE.10) THEN
-              
-              PRINT*,"RefineMain(", my_rank, ") working on RThickness=", RThickness
-              
-           END IF
-           
-           CALL WriteReflectionImage(MontageOut,RFinalMontageImageRoot(:,:,1), &
-                IErr,MAXVAL(IImageSizeXY),MAXVAL(IImageSizeXY))
-           CLOSE(MontageOut,ERR=9999)
-           
-        END IF
-        
-        
-        IF(IImageFLAG.EQ.1.OR.IImageFLAG.EQ.2.OR.IImageFLAG.EQ.5.OR.IImageFLAG.EQ.6) THEN
-           
-           WRITE(path,"(A2,A1,I1.1,A2,I1.1,A2,I1.1,A2,I4.4,A2,I5.5)") &
-                "F-",&
-                "S", IScatterFactorMethodFLAG, &
-                "_B", ICentralBeamFLAG, &
-                "_M", IMaskFLAG, &
-                "_P", IPixelCount, &
-                "_T", NINT(RThickness)
-           
-           call system('mkdir ' // path)
-           
-           DO ind = 1,IReflectOut
-              CALL OpenReflectionImage(IChOutWIImage,path,IErr,ind,2*IPixelCount)
-              IF( IErr.NE.0 ) THEN
-                 PRINT*,"RefineMain(", my_rank, ") error in OpenReflectionImage()"
-                 GOTO 9999
-              ENDIF
-              
-              CALL WriteReflectionImage(IChOutWIImage,&
-                   RReflectionImagesForPhaseCorrelation(:,:,ind,IThicknessCount),IErr,2*IPixelCount,2*IPixelCount)       
-              IF( IErr.NE.0 ) THEN
-                 PRINT*,"RefineMain(", my_rank, ") error in WriteReflectionImage()"
-                 GOTO 9999
-              ENDIF
-              
-              CLOSE(IChOutWIImage,ERR=9999)
-           END DO
-        END IF
-        
-        IF(IImageFLAG.GE.3) THEN
-           
-           WRITE(path,"(A2,A1,I1.1,A2,I1.1,A2,I1.1,A2,I4.4,A2,I5.5)") &
-                "F-",&
-                "S", IScatterFactorMethodFLAG, &
-                "_B", ICentralBeamFLAG, &
-                "_M", IMaskFLAG, &
-                "_P", IPixelCount, &
-                "_T", IThickness
-           
-           call system('mkdir ' // path)
-           
-           DO ind = 1,IReflectOut
-              CALL OpenReflectionImage(IChOutWFImageReal,path,IErr,ind,2*IPixelCount)
-              IF( IErr.NE.0 ) THEN
-                 PRINT*,"RefineMain(", my_rank, ") error in OpenAmplitudeImage()"
-                 GOTO 9999
-              ENDIF
-              
-              CALL OpenReflectionImage(IChOutWFImagePhase,path,IErr,ind,2*IPixelCount)
-              IF( IErr.NE.0 ) THEN
-                 PRINT*,"RefineMain(", my_rank, ") error in OpenPhaseImage()"
-                 GOTO 9999
-              ENDIF
-              
-              !-----------------------------------------------------------------------------
-              ! Create An Image
-              !-----------------------------------------------------------------------------
-              
-              RImage = ZERO
-              DO jnd = 1,IPixelTotal
-                 gnd = IPixelLocations(jnd,1)
-                 hnd = IPixelLocations(jnd,2)
-                 RImage(gnd,hnd) = REAL(CAmplitudeandPhaseRoot(ind,IThicknessCount,jnd))
-              END DO
-              
-              CALL WriteReflectionImage(IChOutWFImageReal,&
-                   RImage,IErr,2*IPixelCount,2*IPixelCount)       
-              IF( IErr.NE.0 ) THEN
-                 PRINT*,"RefineMain(", my_rank, ") error in WriteReflectionImage()"
-                 GOTO 9999
-              ENDIF
-              
-              RImage = ZERO
-              DO jnd = 1,IPixelTotal
-                 gnd = IPixelLocations(jnd,1)
-                 hnd = IPixelLocations(jnd,2)
-                 RImage(gnd,hnd) = AIMAG(CAmplitudeandPhaseRoot(ind,IThicknessCount,jnd))
-              END DO
-              
-              CALL WriteReflectionImage(IChOutWFImagePhase,&
-                   RImage,IErr,2*IPixelCount,2*IPixelCount)       
-              IF( IErr.NE.0 ) THEN
-                 PRINT*,"RefineMain(",my_rank, ") error in WriteReflectionImage()"
-                 GOTO 9999
-              ENDIF
-              
-              CLOSE(IChOutWFImageReal,ERR=9999)
-              CLOSE(IChOutWFImagePhase,ERR=9999)
-           END DO
-        END IF
-     ENDIF
-     
-     !Dellocate Global Variables
-     
-!!$     DEALLOCATE( &
-!!$          RgVecMatT, &
-!!$          Rhklpositions, RMask,STAT=IErr)       
-!!$     IF( IErr.NE.0 ) THEN
-!!$        PRINT*,"RefineMain(", my_rank, ") error in Deallocation of RgVecMatT etc"
-!!$        GOTO 9999
-!!$     ENDIF
-!!$     DEALLOCATE( &
-!!$          CUgMat,IPixelLocations, &
-!!$          RDevPara,STAT=IErr)       
-!!$     IF( IErr.NE.0 ) THEN
-!!$        PRINT*,"RefineMain(", my_rank, ") error in Deallocation of CUgmat etc"
-!!$        GOTO 9999
-!!$     ENDIF
-     
-     IF(my_rank.EQ.0) THEN
-        DEALLOCATE( &
-             RReflectionImagesForPhaseCorrelation,STAT=IErr)       
-        IF( IErr.NE.0 ) THEN
-           PRINT*,"RefineMain(", my_rank, ") error in Deallocation of RReflectionImagesForPhaseCorrelation"
-           GOTO 9999
-        ENDIF
-        
-        IF(IImageFLAG.GE.3) THEN
-           DEALLOCATE(&
-                CAmplitudeandPhaseRoot,STAT=IErr) 
-           
-           IF( IErr.NE.0 ) THEN
-              PRINT*,"RefineMain(", my_rank, ") error in Deallocation of CAmplitudeandPhase"
-              GOTO 9999
-           ENDIF
-        END IF
      END IF
      DEALLOCATE(&
-          RDevPara,IWeakBeamList,IStrongBeamList,CFullWaveFunctions,RFullWaveIntensity,IDisplacements,ICount,RFinalMontageImageRoot)
+          RFluxIterationCorrelations,STAT=IErr)       
+     IF( IErr.NE.0 ) THEN
+        PRINT*,"RefineMain(", my_rank, ") error in Deallocation of RFluxIterationCorrelations etc"
+        GOTO 9999
+     END IF
+     DEALLOCATE(&
+          RFluxIterationCorrelationsRoot,STAT=IErr)       
+     IF( IErr.NE.0 ) THEN
+        PRINT*,"RefineMain(", my_rank, ") error in Deallocation of RFluxIterationCorrelationsRoot etc"
+        GOTO 9999
+     END IF
+     
+     SELECT CASE (IRefineModeFLAG)
+     CASE(0)
+        IF(RDeltaDebyeWallerFactor.LE.RIterationTolerance) THEN
+           EXIT
+        END IF
+     CASE(1)
+     CASE(2)
+        IF(RDeltaThickness.LE.RIterationTolerance) THEN
+           EXIT
+        END IF
+        
+     CASE DEFAULT 
+     END SELECT
+
+     PRINT*,"Exiting 2"
+     
   END DO
+
+  ISubgroupContainingAnswer = &
+       FLOOR(REAL(ICorrelationMaximum,RKIND)/REAL(IFluxStepsPerSubgroup,RKIND))
+  ISubgroupRootProcessContainingAnswer = (ISubgroupContainingAnswer-1_IKIND)*ISubgroupSize
+
+  PRINT*,ISubgroupRootProcessContainingAnswer,ISubgroupContainingAnswer
+  
+  IF(my_rank.EQ.ISubgroupRootProcessContainingAnswer) THEN
+    PRINT*,"Hi, Im rank",my_rank,"im about to write out the result"
+     ALLOCATE(&
+          RFinalMontageImage(MAXVAL(IImageSizeXY),&
+          MAXVAL(IImageSizeXY),1),&
+          STAT=IErr)
+     IF( IErr.NE.0 ) THEN
+        PRINT*,"RefineMain(", my_rank, ") error ", IErr, &
+             " in ALLOCATE() of DYNAMIC variables Montage"
+        GOTO 9999
+     ENDIF
+
+     PRINT*,"Memory Allocated"
+     RFinalMontageImage = ZERO
+     DO ind = 1,2*IPixelCount
+        DO jnd = 1,2*IPixelCount
+           CALL MakeMontagePixel(ind,jnd,1,&
+                RFinalMontageImage,&
+                RBestCorrelationImage(ind,jnd,:),IErr)
+           IF( IErr.NE.0 ) THEN
+              PRINT*,"RefineMain(", my_rank, ") error ", IErr, &
+                   " in MakeMontagePixel"
+              GOTO 9999
+           ENDIF
+        END DO
+        !PRINT*,RFinalMontageImage(ind,:,1)
+     END DO
+     PRINT*,"Have Created Montage IMage"
+
+     
+     DEALLOCATE(&
+          RBestCorrelationImage,STAT=IErr)       
+     IF( IErr.NE.0 ) THEN
+        PRINT*,"RefineMain(", my_rank, ") error in Deallocation of RBestCorrelationImage etc"
+        GOTO 9999
+     END IF
+     
+     WRITE(surname,"(A2,A1,I5.5,A2,I5.5)") &
+          "M-","T",NINT(RThickness),"-P",MAXVAL(IImageSizeXY)  
+!!$     PRINT*,surname
+     
+     PRINT*,"Openning File"
+
+     CALL MPI_FILE_OPEN( MPI_COMM_SELF, TRIM(surname), &
+          MPI_MODE_CREATE+MPI_MODE_WRONLY, MPI_INFO_NULL, IChOutWI_MPI, IErr)
+     IF( IErr.NE.0 ) THEN
+        PRINT*,"RefineMain(", my_rank, ") error ", IErr, &
+             " in MPI_FILE_OPEN"
+        GOTO 9999
+     ENDIF
+     PRINT*,"File Open"
+     
+     DO ind = 1,MAXVAL(IImageSizeXY)
+        CALL MPI_FILE_WRITE(IChOutWI_MPI,RFinalMontageImage(ind,:,1),MAXVAL(IImageSizeXY),&
+             MPI_DOUBLE_PRECISION,my_status,IErr)
+        IF( IErr.NE.0 ) THEN
+           PRINT*,"RefineMain(", my_rank, ") error ", IErr, &
+                " in MPI_FILE_WRITE"
+           GOTO 9999
+        ENDIF
+     END DO
+     PRINT*,"FILE WRITTEN"
+     CALL MPI_FILE_CLOSE(IChOutWI_MPI,IErr)
+     IF( IErr.NE.0 ) THEN
+        PRINT*,"RefineMain(", my_rank, ") error ", IErr, &
+             " in MPI_FILE_CLOSE"
+        GOTO 9999
+     ENDIF
+     PRINT*,"FILE CLOSED"
+  END IF
+  
+  IF(my_rank.EQ.0) THEN
+     
+     IF(IImageFLAG.GE.3) THEN
+        DEALLOCATE(&
+             CAmplitudeandPhaseRoot,STAT=IErr) 
+        
+        IF( IErr.NE.0 ) THEN
+           PRINT*,"RefineMain(", my_rank, ") error in Deallocation of CAmplitudeandPhase"
+           GOTO 9999
+        ENDIF
+     END IF
+  END IF
+  
+  DEALLOCATE( &
+       RgVecMatT,STAT=IErr)       
+  IF( IErr.NE.0 ) THEN
+     PRINT*,"RefineMain(", my_rank, ") error in Deallocation of RgVecMatT etc"
+     GOTO 9999
+  ENDIF
+
+  DEALLOCATE( &
+       Rhklpositions,STAT=IErr)       
+  IF( IErr.NE.0 ) THEN
+     PRINT*,"RefineMain(", my_rank, ") error in Deallocation of Rhklpositions etc"
+     GOTO 9999
+  ENDIF
+
+  DEALLOCATE( &
+       RMask,STAT=IErr)       
+  IF( IErr.NE.0 ) THEN
+     PRINT*,"RefineMain(", my_rank, ") error in Deallocation of RMask etc"
+     GOTO 9999
+  ENDIF
+
+  DEALLOCATE( &
+       CUgMat,STAT=IErr)       
+  IF( IErr.NE.0 ) THEN
+     PRINT*,"RefineMain(", my_rank, ") error in Deallocation of CUgmat etc"
+     GOTO 9999
+  ENDIF
+
+  DEALLOCATE( &
+       IPixelLocations,STAT=IErr)       
+  IF( IErr.NE.0 ) THEN
+     PRINT*,"RefineMain(", my_rank, ") error in Deallocation of IPixelLocations etc"
+     GOTO 9999
+  ENDIF
+  
   !--------------------------------------------------------------------
   ! finish off
   !--------------------------------------------------------------------
