@@ -200,13 +200,6 @@ PROGRAM FelixRefine
   b = INoofDWFs
   PRINT*,"No of DWFs = ",b
   
-!!$  DO                    ! now we have a <= b
-!!$     c = MOD(a, b)      !    compute c, the reminder
-!!$     IF (c == 0) EXIT   !    if c is zero, we are done.  GCD = b
-!!$     a = b              !    otherwise, b becomes a
-!!$     b = c              !    and c becomes b
-!!$  END DO                !    go back
-
   CALL GreatestCommonDivisor(p,INoofDWFs,ISubgroups)
   
   PRINT*,"No of DWFs = ",ISubgroups
@@ -697,6 +690,9 @@ PROGRAM FelixRefine
                    " in UgCalculation"
               GOTO 9999
            ENDIF
+
+           
+           RBigK= SQRT(RElectronWaveVectorMagnitude**2 + RMeanInnerCrystalPotential)
            
         CASE(1)
            
@@ -710,6 +706,9 @@ PROGRAM FelixRefine
                    " in UgCalculation"
               GOTO 9999
            ENDIF
+
+           
+           RBigK= SQRT(RElectronWaveVectorMagnitude**2 + RMeanInnerCrystalPotential)
            
            CZeroMAT = CZERO
            
@@ -766,6 +765,9 @@ PROGRAM FelixRefine
                    " in UgCalculation"
               GOTO 9999
            ENDIF
+
+           
+           RBigK= SQRT(RElectronWaveVectorMagnitude**2 + RMeanInnerCrystalPotential)
         CASE DEFAULT
            
            IErr = 1
@@ -792,7 +794,6 @@ PROGRAM FelixRefine
         ! high-energy approximation (not HOLZ compatible)
         !--------------------------------------------------------------------
         
-        RBigK= SQRT(RElectronWaveVectorMagnitude**2 + RMeanInnerCrystalPotential)
         
         IF((IWriteFLAG.GE.1.AND.my_rank.EQ.0).OR.IWriteFLAG.GE.10) THEN
            PRINT*,"RefineMain(", my_rank, ") BigK=", RBigK

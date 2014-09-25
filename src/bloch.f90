@@ -250,6 +250,8 @@ SUBROUTINE BlochCoefficientCalculation(ind,jnd,gnd,ILocalPixelCountMin,IErr)
   DO knd=1,nBeams
      CBeamProjectionMatrix(knd,IStrongBeamList(knd))=CONE
   ENDDO
+
+  CUgMatEffective = CZERO
   
   CUgMatEffective= &
        MATMUL( &
@@ -260,7 +262,7 @@ SUBROUTINE BlochCoefficientCalculation(ind,jnd,gnd,ILocalPixelCountMin,IErr)
   IF (IZolzFLAG.EQ.0) THEN
 
      DO hnd=1,nBeams
-        CUgMatEffective(hnd,hnd) = TWO*RBigK*RDevPara(IStrongBeamList(hnd))
+        CUgMatEffective(hnd,hnd) = CUgMatEffective(hnd,hnd) + TWO*RBigK*RDevPara(IStrongBeamList(hnd))
      ENDDO
      DO knd =1,nBeams ! Columns
         
@@ -280,7 +282,7 @@ SUBROUTINE BlochCoefficientCalculation(ind,jnd,gnd,ILocalPixelCountMin,IErr)
       ! set the diagonal parts of the matrix to be equal to 
      ! strong beam deviation parameters (*2 BigK) 
      DO hnd=1,nBeams
-        CUgMatEffective(hnd,hnd) = RDevPara(IStrongBeamList(hnd))
+        CUgMatEffective(hnd,hnd) = CUgMatEffective(hnd,hnd)+RDevPara(IStrongBeamList(hnd))
      ENDDO
      
      
