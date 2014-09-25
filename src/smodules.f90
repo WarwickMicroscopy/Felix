@@ -214,8 +214,14 @@ MODULE IPara
 
   !Refine Parameters
 
+  INTEGER(IKIND) :: &
+       IFluxIterationSteps,IElements
+
   INTEGER(IKIND), DIMENSION(2) :: &
        IOffset
+
+  INTEGER(IKIND), DIMENSION(:),ALLOCATABLE :: &
+       IElementList
    
 END MODULE IPara
 
@@ -369,7 +375,7 @@ MODULE RPara
        RImageIn
 
   REAL(RKIND) :: &
-       RCrossCorrelation
+       RCrossCorrelation,RDeltaUgChange,RlowerBoundUgChange,RUpperBoundUgChange
 
 END MODULE RPara
 

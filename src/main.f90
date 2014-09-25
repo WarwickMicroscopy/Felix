@@ -373,6 +373,17 @@ PROGRAM FelixSim
           " in UgCalculation"
      GOTO 9999
   ENDIF
+  
+  !--------------------------------------------------------------------
+  ! high-energy approximation (not HOLZ compatible)
+  !--------------------------------------------------------------------
+  
+  RBigK= SQRT(RElectronWaveVectorMagnitude**2 + RMeanInnerCrystalPotential)
+
+  IF((IWriteFLAG.GE.1.AND.my_rank.EQ.0).OR.IWriteFLAG.GE.10) THEN
+     PRINT*,"Main(", my_rank, ") BigK=", RBigK
+  END IF
+  
   CALL UgAddAbsorption(IErr)
   IF( IErr.NE.0 ) THEN
      PRINT*,"Main(", my_rank, ") error ", IErr, &
@@ -401,17 +412,6 @@ PROGRAM FelixSim
           " in Deallocation of RgMat"
      GOTO 9999
   ENDIF
-  
-  !--------------------------------------------------------------------
-  ! high-energy approximation (not HOLZ compatible)
-  !--------------------------------------------------------------------
-  
-  RBigK= SQRT(RElectronWaveVectorMagnitude**2 + RMeanInnerCrystalPotential)
-
-  IF((IWriteFLAG.GE.1.AND.my_rank.EQ.0).OR.IWriteFLAG.GE.10) THEN
-     PRINT*,"Main(", my_rank, ") BigK=", RBigK
-  END IF
-  
          
   !--------------------------------------------------------------------
   ! reserve memory for effective eigenvalue problem

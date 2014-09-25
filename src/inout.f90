@@ -54,9 +54,9 @@ SUBROUTINE Input( IErr )
   
   IMPLICIT NONE
 
-  INTEGER IErr, ILine,ind,IPos
+  INTEGER(IKIND) IErr, ILine,ind,IPos,IPos1,IPos2
   REAL(KIND=RKIND) ROfIter
-  CHARACTER*200 SImageMode
+  CHARACTER*200 SImageMode,SElements
   
   IF((IWriteFLAG.GE.0.AND.my_rank.EQ.0).OR.IWriteFLAG.GE.10) THEN
      PRINT*,"Input()"
@@ -421,9 +421,9 @@ SUBROUTINE Input( IErr )
      END IF
      
      ILine= ILine+1
-     READ(IChInp,10,ERR=20,END=30) IDevFLAG
+     READ(IChInp,10,ERR=20,END=30) IRefineModeFLAG
      IF((IWriteFLAG.GE.1.AND.my_rank.EQ.0).OR.IWriteFLAG.GE.10) THEN
-        PRINT*,"IRefineModeFLAG = ", IDevFLAG
+        PRINT*,"IRefineModeFLAG = ", IRefineModeFLAG
      END IF
      
      ILine= ILine+1; READ(IChInp,ERR=20,END=30,FMT='(A)')
@@ -447,6 +447,53 @@ SUBROUTINE Input( IErr )
      IF((IWriteFLAG.GE.1.AND.my_rank.EQ.0).OR.IWriteFLAG.GE.10) THEN
         PRINT*,"RDeltaDebyeWallerFactor = ", RDeltaDebyeWallerFactor
      END IF
+
+     ILine= ILine+1
+     READ(IChInp,FMT='(A)',ERR=20,END=30) SElements
+     IPos1 = SCAN(SElements,'{')
+     IPos2 = SCAN(SElements,'}')
+     IPos = SCAN(SElements,'0')
+     IElements = 1
+     IF(IPos2.EQ.(IPos1+1).OR.IPos.EQ.(IPos1+1).OR.IPos2.EQ.0.OR.IPos1.EQ.0) THEN
+        IF((IWriteFLAG.GE.1.AND.my_rank.EQ.0).OR.IWriteFLAG.GE.10) THEN
+           PRINT*,"No Elements have been specified, Felix will assume all elements are to be refined = "
+        END IF
+     ELSE
+        DO 
+           IPos = SCAN(SElements((IPos1):IPos2),',')
+           IPos1 = IPos1+IPos
+           IF(IPos.EQ.0) THEN
+              EXIT
+           ELSE
+              IElements = IElements + 1
+           END IF
+              
+        END DO
+        
+        ALLOCATE(&
+             IElementList(IElements),&
+             STAT=IErr)
+        IF(IErr.NE.0) THEN
+           PRINT*,"Input(",my_rank,") ERROR IN ALLOCATE OF IElementList"
+           RETURN
+        ENDIF
+        
+        
+        IPos1 = SCAN(SElements,'{')
+        IPos2 = SCAN(SElements,'}')
+
+        DO ind = 1,IElements
+
+           IPos = SCAN(SElements((IPos1+1):IPos2),',')
+           IF(IPos.NE.0) THEN
+              READ(SElements((IPos1+1):(IPos1+IPos-1)),FMT='(I3.1)') IElementList(ind) 
+              IPos1 = IPos1+IPos
+           ELSE
+              READ(SElements((IPos1+1):(IPos2-1)),FMT='(I3.1)') IElementList(ind) 
+           END IF
+        END DO
+     END IF
+
      
      !-----------------------------------------------------------------------
      ! Iterative Ug input
@@ -462,9 +509,21 @@ SUBROUTINE Input( IErr )
      END IF
      
      ILine= ILine+1
-     READ(IChInp,15,ERR=20,END=30) RPercentageUgChange
+     READ(IChInp,15,ERR=20,END=30) RLowerBoundUgChange
      IF((IWriteFLAG.GE.1.AND.my_rank.EQ.0).OR.IWriteFLAG.GE.10) THEN
-        PRINT*,"RPercentageUgChange = ", RPercentageUgChange
+        PRINT*,"RLowerBoundUgChange = ", RLowerBoundUgChange
+     END IF
+     
+     ILine= ILine+1
+     READ(IChInp,15,ERR=20,END=30) RUpperBoundUgChange
+     IF((IWriteFLAG.GE.1.AND.my_rank.EQ.0).OR.IWriteFLAG.GE.10) THEN
+        PRINT*,"RUpperBoundUgChange = ", RUpperBoundUgChange
+     END IF
+     
+     ILine= ILine+1
+     READ(IChInp,15,ERR=20,END=30) RDeltaUgChange
+     IF((IWriteFLAG.GE.1.AND.my_rank.EQ.0).OR.IWriteFLAG.GE.10) THEN
+        PRINT*,"RDeltaUgChange = ", RDeltaUgChange
      END IF
   END IF
   
@@ -635,10 +694,13 @@ SUBROUTINE Input( IErr )
      PRINT*,"RInitialDebyeWallerFactor = 0.1"
      PRINT*,"RFinalDebyeWallerFactor = 1.0"
      PRINT*,"RDeltaDebyeWallerFactor = 0.1"
+     PRINT*,"IElementsforDWFchange   = 0"
      PRINT*,""
      PRINT*,"# Ug Iteration"
      PRINT*,"INoofUgs                  = 1"
-     PRINT*,"RPercentageUgChange       = 50.0"
+     PRINT*,"RLowerBoundUgChange       = 50.0"
+     PRINT*,"RUpperBoundUgChange       = 50.0"
+     PRINT*,"RDeltaUgChange            = 50.0"
      PRINT*,""
      
 
@@ -2059,10 +2121,13 @@ SUBROUTINE WriteOutInputFile
      WRITE(UNIT= IChInp,FMT='(A)') ADJUSTL("RInitialDebyeWallerFactor = 0.1")
      WRITE(UNIT= IChInp,FMT='(A)') ADJUSTL("RFinalDebyeWallerFactor = 1.0")
      WRITE(UNIT= IChInp,FMT='(A)') ADJUSTL("RDeltaDebyeWallerFactor = 0.1")
+     WRITE(UNIT= IChInp,FMT='(A)') ADJUSTL("IElementsforDWFchange = {0}")
      WRITE(UNIT= IChInp,FMT='(A)') ADJUSTL("")
      WRITE(UNIT= IChInp,FMT='(A)') ADJUSTL("# Ug Iteration")
      WRITE(UNIT= IChInp,FMT='(A)') ADJUSTL("INoofUgs                  = 1")
-     WRITE(UNIT= IChInp,FMT='(A)') ADJUSTL("RPercentageUgChange       = 50.0")
+     WRITE(UNIT= IChInp,FMT='(A)') ADJUSTL("RLowerBoundUgChange       = 50.0")
+     WRITE(UNIT= IChInp,FMT='(A)') ADJUSTL("RUpperBoundUgChange       = 50.0")
+     WRITE(UNIT= IChInp,FMT='(A)') ADJUSTL("RDeltaUgChange            = 50.0")
      WRITE(UNIT= IChInp,FMT='(A)') ADJUSTL("")
   CLOSE(UNIT=IChInp)
 END IF

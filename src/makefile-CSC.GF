@@ -55,7 +55,7 @@ SIMOBJECTFILES = gmodules.o smodules.o main.o util.o inout.o inpcif.o ciftbx.o h
 DRAWOBJECTFILES = gmodules.o smodules.o lacbed.o util.o inout.o \
 eigen.o invert.o microscopy.o diffraction.o crystallography.o bloch.o Ug.o image.o inpcif.o ciftbx.o hash_funcs.o 
 
-REFINEOBJECTFILES = gmodules.o smodules.o refinemain.o util.o inout.o inpcif.o ciftbx.o hash_funcs.o eigen.o invert.o microscopy.o diffraction.o crystallography.o bloch.o Ug.o image.o
+REFINEOBJECTFILES = gmodules.o smodules.o refinemain.o util.o inout.o inpcif.o ciftbx.o hash_funcs.o eigen.o invert.o microscopy.o diffraction.o crystallography.o bloch.o Ug.o image.o refineutils.o
 
 %.o: %.f90
 	$(F90) $(F90FLAGS) -DF90 -c $< -I$(INCLUDEDIR) $(LIBFLAGS)

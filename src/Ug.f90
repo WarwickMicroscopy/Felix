@@ -300,16 +300,21 @@ SUBROUTINE UgAddAbsorption(IErr)
   
   USE CConst; USE IConst
   USE IPara; USE RPara; USE CPara
+  USE BlochPara
   USE IChannels
   USE MPI
   USE MyMPI
   
   IMPLICIT NONE 
   
-  INTEGER(IKIND) IErr
+  INTEGER(IKIND) IErr,ind
 
   CUgMatPrime = CZERO
 
-  CUgMatPrime = CUgMatPrime+REAL(CUgMat)*(RAbsorptionPercentage/100.D0)*CIMAGONE
-  
+  CUgMatPrime = CUgMatPrime+(REAL(CUgMat)*(RAbsorptionPercentage/100_RKIND)*CIMAGONE)
+
+  DO ind = 1,SIZE(CUgMat,DIM=1)
+     CUgMatPrime(ind,ind) = REAL(RBigK)*(RAbsorptionPercentage/100_RKIND)*CIMAGONE
+  END DO
+
 END SUBROUTINE UgAddAbsorption
