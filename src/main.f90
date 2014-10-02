@@ -391,9 +391,16 @@ PROGRAM FelixSim
      GOTO 9999
   ENDIF
 
-  IF(IAbsorbFLAG.EQ.1) THEN
+  IF(IAbsorbFLAG.GE.1) THEN
      CUgMat =  CUgMat+CUgMatPrime
   end IF
+
+  PRINT*,"ABSORPTION CALCULATED"
+  PRINT*,"U0 =",RMeanInnerCrystalPotential,"U0' =",CUgMatPrime(2,1)
+  DO ind = 1,3
+     PRINT*,CUgMat(ind,:3)
+  END DO
+  
 
   !!$ ! UgMatEffective
   IF(IOutputFLAG.GE.2) THEN

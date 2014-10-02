@@ -94,7 +94,7 @@ PROGRAM LACBED
   REAL(RKIND) RAtomicFormFactor, RBigK,Rmemory
   COMPLEX(RKIND) CVgij
   
-  INTEGER ind,jnd,hnd,knd,pnd, iAtom, currentatom,gnd
+  INTEGER ind,jnd,hnd,knd,pnd, currentatom,gnd
   INTEGER, DIMENSION(:), ALLOCATABLE :: &
        IWeakBeamVec
 

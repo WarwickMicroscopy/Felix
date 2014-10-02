@@ -153,7 +153,7 @@ MODULE IPara
        IXDirectionX, IXDirectionY, IXDirectionZ, &
        INormalDirectionX,INormalDirectionY,INormalDirectionZ
 
-  !Iterativee Ug
+  !Iterative Ug
 
   INTEGER(IKIND) :: &
        INoofUgs
@@ -222,7 +222,11 @@ MODULE IPara
 
   INTEGER(IKIND), DIMENSION(:),ALLOCATABLE :: &
        IElementList
-   
+
+  !Ug Calculation
+
+   INTEGER(IKIND) :: &
+        ICurrentAtom,IAtom
 END MODULE IPara
 
 !--------------------------------------------------------------------
@@ -278,7 +282,6 @@ MODULE RPara
 
   !Debye Waller Factor not sure if we use this 
   REAL(RKIND) :: & 
-  !     RGVectorUsePercentage, &
        RMeanSquaredDisplacement
 
 
@@ -313,7 +316,8 @@ MODULE RPara
   REAL(RKIND), DIMENSION(:,:), ALLOCATABLE :: &
        RrVecMat
 
-  REAL(RKIND) :: RBaseVec(THREEDIM,THREEDIM), &
+  REAL(RKIND) :: &
+       RBaseVec(THREEDIM,THREEDIM), &
        RInvBaseVec(THREEDIM,THREEDIM)
   
   REAL(RKIND), DIMENSION(:,:,:), ALLOCATABLE :: &
@@ -331,8 +335,11 @@ MODULE RPara
        RTMat
 
   REAL(RKIND) :: &
-       RDeltaK, RMinimumGMag
+       RDeltaK, RMinimumGMag,RGVectorMagnitude
   
+  REAL(RKIND),DIMENSION(THREEDIM) :: &
+       RGVector
+
   REAL(RKIND),DIMENSION(:),ALLOCATABLE :: &
        RGn
 
@@ -353,6 +360,9 @@ MODULE RPara
   
   REAL(RKIND),DIMENSION(:,:,:),ALLOCATABLE :: & 
        RgMatMat
+
+  REAL(RKIND) :: &
+       RIntegralLowerBound,RIntegralUpperBound
   
   !LACBED Program
   
