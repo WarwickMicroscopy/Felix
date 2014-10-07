@@ -5,13 +5,13 @@
 
 #pytIMAGE=txt2png.py
 
-inpfile=Felix.inp
-scafile=Felix.sca
+inpfile=felix.inp
+scafile=felix.sca
 
 # point this to where felixsim and felixdraw are
 binarydir=$HOME/D-LACBED/EXE
 
-# point to where Felix.sca is located
+# point to where felix.sca is located
 scadir=${binarydir}
 
 submitdir=`pwd`
@@ -62,7 +62,7 @@ job_dir=${submitdir}
 for ncif in 1:2
 do
 
-ciffile=Felix.cif.${ncif}
+ciffile=felix.cif.${ncif}
 
 job_file=`printf "FS_%1i%1i%1i.sh" "${nUg}" "${pUg}"` 
 

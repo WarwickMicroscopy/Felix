@@ -113,7 +113,7 @@ SUBROUTINE InpCIF(IErr)
   END IF
   ! Open the CIF to be accessed
 
-100 name='Felix.cif'
+100 name='felix.cif'
   IF((IWriteFLAG.GE.1.AND.my_rank.EQ.0).OR.IWriteFLAG.GE.10) THEN
      PRINT*,"InpCIF(", my_rank, ") Read data from CIF ",name
   END IF
