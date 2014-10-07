@@ -1,6 +1,6 @@
 C%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 C
-C FelixSim
+C felixsim
 C
 C Richard Beanland, Keith Evans and Rudolf A Roemer
 C

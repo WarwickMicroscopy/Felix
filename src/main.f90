@@ -1,6 +1,6 @@
 !%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 !
-! FelixSim
+! felixsim
 !
 ! Richard Beanland, Keith Evans and Rudolf A Roemer
 !
@@ -15,20 +15,20 @@
 ! 
 !%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 !
-!  This file is part of FelixSim.
+!  This file is part of felixsim.
 !
-!  FelixSim is free software: you can redistribute it and/or modify
+!  felixsim is free software: you can redistribute it and/or modify
 !  it under the terms of the GNU General Public License as published by
 !  the Free Software Foundation, either version 3 of the License, or
 !  (at your option) any later version.
 !  
-!  FelixSim is distributed in the hope that it will be useful,
+!  felixsim is distributed in the hope that it will be useful,
 !  but WITHOUT ANY WARRANTY; without even the implied warranty of
 !  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 !  GNU General Public License for more details.
 !  
 !  You should have received a copy of the GNU General Public License
-!  along with FelixSim.  If not, see <http://www.gnu.org/licenses/>.
+!  along with felixsim.  If not, see <http://www.gnu.org/licenses/>.
 !
 !%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
@@ -36,7 +36,7 @@
 ! $Id: Main.f90,v 1.89 2014/04/28 12:26:19 phslaz Exp $
 !%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-PROGRAM FelixSim
+PROGRAM felixsim
  
   USE MyNumbers
   
@@ -131,7 +131,7 @@ PROGRAM FelixSim
   
   IF((IWriteFLAG.GE.0.AND.my_rank.EQ.0).OR.IWriteFLAG.GE.10) THEN
      PRINT*,"--------------------------------------------------------------"
-     PRINT*,"FelixSim: ", RStr
+     PRINT*,"felixsim: ", RStr
      PRINT*,"          ", DStr
      PRINT*,"          ", AStr
      PRINT*,"          on rank= ", my_rank, " of ", p, " in total."
@@ -148,7 +148,7 @@ PROGRAM FelixSim
   ! INPUT section
   !--------------------------------------------------------------------
   
-  ISoftwareMode = 0 ! FelixSimMode
+  ISoftwareMode = 0 ! felixsimMode
 
   CALL Input( IErr )
   IF( IErr.NE.0 ) THEN
@@ -902,7 +902,7 @@ PROGRAM FelixSim
   IMinutes = FLOOR(MOD(Duration,3600.0D0)/60.0D0)
   ISeconds = MOD(Duration,3600.0D0)-IMinutes*60.0D0
 
-  PRINT*, "FelixSim(", my_rank, ") ", RStr, ", used time=", IHours, "hrs ",IMinutes,"mins ",ISeconds,"Seconds "
+  PRINT*, "felixsim(", my_rank, ") ", RStr, ", used time=", IHours, "hrs ",IMinutes,"mins ",ISeconds,"Seconds "
 
   !--------------------------------------------------------------------
   ! Shut down MPI
@@ -921,4 +921,4 @@ PROGRAM FelixSim
 !!$  IErr= 1
 !!$  RETURN
 
-END PROGRAM FelixSim
+END PROGRAM felixsim

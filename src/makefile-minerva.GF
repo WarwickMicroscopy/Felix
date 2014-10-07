@@ -15,7 +15,7 @@
 # 
 #%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 #
-#  This file is part of FelixSim+Draw.
+#  This file is part of felixsim+Draw.
 #
 #  BlochSim is free software: you can redistribute it and/or modify
 #  it under the terms of the GNU General Public License as published by
@@ -72,17 +72,17 @@ REFINEOBJECTFILES = gmodules.o smodules.o refinemain.o util.o inout.o inpcif.o c
 %.o: %.F
 	$(FC) $(F77FLAGS) -DF77 -c $< -I$(INCLUDEDIR) $(LIBFLAGS)
 
-all:	FelixSim FelixDraw FelixRefine
+all:	felixsim felixdraw felixrefine
 
-FelixSim: $(SIMOBJECTFILES)
+felixsim: $(SIMOBJECTFILES)
 	$(F90) $(F90FLAGS) -o $@ $(SIMOBJECTFILES) -I$(INCLUDEDIR) $(LIBFLAGS)
 #	$(F90) -o $@ $(SIMOBJECTFILES) $(LIBFLAGS)
 
-FelixDraw: $(DRAWOBJECTFILES)
+felixdraw: $(DRAWOBJECTFILES)
 	$(F90) $(F90FLAGS) -o $@ $(DRAWOBJECTFILES) -I$(INCLUDEDIR) $(LIBFLAGS)
 #	$(F90) -o $@ $(DRAWOBJECTFILES) $(LIBFLAGS)
 
-FelixRefine: $(REFINEOBJECTFILES)
+felixrefine: $(REFINEOBJECTFILES)
 	$(F90) $(F90FLAGS) -o $@ $(REFINEOBJECTFILES) -I$(INCLUDEDIR) $(LIBFLAGS)
 #	$(F90) -o $@ $(REFINEOBJECTFILES) $(LIBFLAGS)
 

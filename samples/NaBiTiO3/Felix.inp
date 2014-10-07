@@ -1,8 +1,8 @@
-# Input file for FelixSim/Draw/Refine version :VERSION: Build :BUILD:
+# Input file for felixsim/draw/refine version :VERSION: Build :BUILD:
 # ------------------------------------
 
 # ------------------------------------
-# FelixSim input
+# felixsim input
 
 # control flags
 IWriteFLAG                = 1
