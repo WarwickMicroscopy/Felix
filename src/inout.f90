@@ -1,6 +1,6 @@
 !%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 !
-! FelixSim
+! felixsim
 !
 ! Richard Beanland, Keith Evans and Rudolf A Roemer
 !
@@ -15,20 +15,20 @@
 ! 
 !%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 !
-!  This file is part of FelixSim.
+!  This file is part of felixsim.
 !
-!  FelixSim is free software: you can redistribute it and/or modify
+!  felixsim is free software: you can redistribute it and/or modify
 !  it under the terms of the GNU General Public License as published by
 !  the Free Software Foundation, either version 3 of the License, or
 !  (at your option) any later version.
 !  
-!  FelixSim is distributed in the hope that it will be useful,
+!  felixsim is distributed in the hope that it will be useful,
 !  but WITHOUT ANY WARRANTY; without even the implied warranty of
 !  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 !  GNU General Public License for more details.
 !  
 !  You should have received a copy of the GNU General Public License
-!  along with FelixSim.  If not, see <http://www.gnu.org/licenses/>.
+!  along with felixsim.  If not, see <http://www.gnu.org/licenses/>.
 !
 !%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
@@ -62,7 +62,7 @@ SUBROUTINE Input( IErr )
      PRINT*,"Input()"
   END IF
 
-  OPEN(UNIT= IChInp, ERR= 120, FILE= "Felix.inp",&
+  OPEN(UNIT= IChInp, ERR= 120, FILE= "felix.inp",&
        STATUS= 'OLD')
   ILine= 1
 
@@ -397,7 +397,7 @@ SUBROUTINE Input( IErr )
   IF(ISoftwareMode.EQ.2) THEN
 
      !-----------------------------------------------------------------------
-     ! FelixRefine Input
+     ! felixrefine Input
      
      ILine= ILine+1; READ(IChInp,ERR=20,END=30,FMT='(A)')
      ILine= ILine+1; READ(IChInp,ERR=20,END=30,FMT='(A)')
@@ -566,11 +566,11 @@ SUBROUTINE Input( IErr )
   ! dump the input help
   
 1000 IF((my_rank.EQ.0.AND.ISoftwareMode.LT.2).OR.(IWriteFLAG.GE.10.AND.ISoftwareMode.LT.2)) THEN
-     PRINT*,"# Input file for FelixSim/Draw version :VERSION: Build :BUILD:"
+     PRINT*,"# Input file for felixsim/draw version :VERSION: Build :BUILD:"
      PRINT*,"# ------------------------------------"
      PRINT*,""
      PRINT*,"# ------------------------------------"
-     PRINT*,"# FelixSim input"
+     PRINT*,"# felixsim input"
      PRINT*,""
      PRINT*,"# control flags"
      PRINT*,"IWriteFLAG                = 1"
@@ -623,14 +623,14 @@ SUBROUTINE Input( IErr )
      PRINT*,"IReflectOut              = 49"
      PRINT*,""
      
-     PRINT*,"A Sample Input File Has been Written For you as Felix.inp.SimDraw_sample"
-     PRINT*,"It must be renamed to Felix.inp before use"
+     PRINT*,"A Sample Input File Has been Written For you as felix.inp.simdraw_sample"
+     PRINT*,"It must be renamed to felix.inp before use"
   ELSE
-     PRINT*,"# Input file for FelixRefine version :VERSION: Build :BUILD:"
+     PRINT*,"# Input file for felixrefine version :VERSION: Build :BUILD:"
      PRINT*,"# ------------------------------------"
      PRINT*,""
      PRINT*,"# ------------------------------------"
-     PRINT*,"# FelixSim input"
+     PRINT*,"# felixsim input"
      PRINT*,""
      PRINT*,"# control flags"
      PRINT*,"IWriteFLAG                = 1"
@@ -682,7 +682,7 @@ SUBROUTINE Input( IErr )
      PRINT*,"RDeltaThickness          = 10.0"
      PRINT*,"IReflectOut              = 49"
      PRINT*,""
-     PRINT*,"# FelixRefine Input"
+     PRINT*,"# felixrefine Input"
      PRINT*,""
      PRINT*,"#Refinement Specific Flags"
      PRINT*,"IImageOutputFLAG          = 1"
@@ -704,8 +704,8 @@ SUBROUTINE Input( IErr )
      PRINT*,""
      
 
-     PRINT*,"A Sample Input File Has been Written For you as Felix.inp.Refine_sample"
-     PRINT*,"It must be renamed to Felix.inp before use"
+     PRINT*,"A Sample Input File Has been Written For you as felix.inp.refine_sample"
+     PRINT*,"It must be renamed to felix.inp before use"
   END IF
   IErr= 1
   RETURN
@@ -745,7 +745,7 @@ SUBROUTINE InputScatteringFactors( IErr )
   
 !!$  OPEN(UNIT= IChInp, ERR= 120, FILE= "FelixDoyle.sca",&
 !!$       STATUS= 'OLD')
-  OPEN(UNIT= IChInp, ERR= 120, FILE= "Felix.sca",&
+  OPEN(UNIT= IChInp, ERR= 120, FILE= "felix.sca",&
        STATUS= 'OLD')
 !!$  
   DO
@@ -1988,14 +1988,14 @@ SUBROUTINE WriteOutInputFile
 
   IF(ISoftwareMode.LT.2) THEN
      
-     OPEN(UNIT= IChInp,FILE= "Felix.inp.SimDraw_sample",&
+     OPEN(UNIT= IChInp,FILE= "felix.inp.simdraw_sample",&
        STATUS= 'UNKNOWN')
   
-     WRITE(UNIT= IChInp,FMT='(A)') ADJUSTL("# Input file for FelixSim/Draw/Refine version :VERSION: Build :BUILD:")
+     WRITE(UNIT= IChInp,FMT='(A)') ADJUSTL("# Input file for felixsim/draw/refine version :VERSION: Build :BUILD:")
      WRITE(UNIT= IChInp,FMT='(A)') ADJUSTL("# ------------------------------------")
      WRITE(UNIT= IChInp,FMT='(A)') ADJUSTL("")
      WRITE(UNIT= IChInp,FMT='(A)') ADJUSTL("# ------------------------------------")
-     WRITE(UNIT= IChInp,FMT='(A)') ADJUSTL("# FelixSim input")
+     WRITE(UNIT= IChInp,FMT='(A)') ADJUSTL("# felixsim input")
      WRITE(UNIT= IChInp,FMT='(A)') ADJUSTL("")
      WRITE(UNIT= IChInp,FMT='(A)') ADJUSTL("# control flags")
      WRITE(UNIT= IChInp,FMT='(A)') ADJUSTL("IWriteFLAG                = 1")
@@ -2049,15 +2049,15 @@ SUBROUTINE WriteOutInputFile
      WRITE(UNIT= IChInp,FMT='(A)') ADJUSTL("")
   ELSE
      
-     OPEN(UNIT= IChInp,FILE= "Felix.inp.Refine_sample",&
+     OPEN(UNIT= IChInp,FILE= "felix.inp.refine_sample",&
        STATUS= 'UNKNOWN')
   
   
-     WRITE(UNIT= IChInp,FMT='(A)') ADJUSTL("# Input file for FelixSim/Draw/Refine version :VERSION: Build :BUILD:")
+     WRITE(UNIT= IChInp,FMT='(A)') ADJUSTL("# Input file for felixsim/draw/refine version :VERSION: Build :BUILD:")
      WRITE(UNIT= IChInp,FMT='(A)') ADJUSTL("# ------------------------------------")
      WRITE(UNIT= IChInp,FMT='(A)') ADJUSTL("")
      WRITE(UNIT= IChInp,FMT='(A)') ADJUSTL("# ------------------------------------")
-     WRITE(UNIT= IChInp,FMT='(A)') ADJUSTL("# FelixSim input")
+     WRITE(UNIT= IChInp,FMT='(A)') ADJUSTL("# felixsim input")
      WRITE(UNIT= IChInp,FMT='(A)') ADJUSTL("")
      WRITE(UNIT= IChInp,FMT='(A)') ADJUSTL("# control flags")
      WRITE(UNIT= IChInp,FMT='(A)') ADJUSTL("IWriteFLAG                = 1")
@@ -2109,7 +2109,7 @@ SUBROUTINE WriteOutInputFile
      WRITE(UNIT= IChInp,FMT='(A)') ADJUSTL("RDeltaThickness          = 10.0")
      WRITE(UNIT= IChInp,FMT='(A)') ADJUSTL("IReflectOut              = 49")
      WRITE(UNIT= IChInp,FMT='(A)') ADJUSTL("")
-     WRITE(UNIT= IChInp,FMT='(A)') ADJUSTL("# FelixRefine Input")
+     WRITE(UNIT= IChInp,FMT='(A)') ADJUSTL("# felixrefine Input")
      WRITE(UNIT= IChInp,FMT='(A)') ADJUSTL("")
      WRITE(UNIT= IChInp,FMT='(A)') ADJUSTL("#Refinement Specific Flags")
      WRITE(UNIT= IChInp,FMT='(A)') ADJUSTL("IImageOutputFLAG          = 1")
