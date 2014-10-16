@@ -2,7 +2,7 @@
 !
 ! felixsim
 !
-! Richard Beanland, Keith Evans and Rudolf A Roemer
+! Richard Beanland, Keith Evans, Rudolf A Roemer and Alexander Hubert
 !
 ! (C) 2013/14, all right reserved
 !
@@ -73,7 +73,8 @@ SUBROUTINE InpCIF(IErr)
   CHARACTER*32  name
   CHARACTER*80  line
   CHARACTER*4   label(6)
-  CHARACTER*26  alpha
+  CHARACTER*1   CAlphabetarray(52)
+  CHARACTER*52  alphabet
   CHARACTER*2   rs
   CHARACTER*1   slash
   CHARACTER string*(30)
@@ -82,7 +83,11 @@ SUBROUTINE InpCIF(IErr)
   REAL          numb,sdev,dum
   REAL          xf(6),yf(6),zf(6),uij(6,6)
   INTEGER       i,j,nsite, iset, imark
-  DATA alpha    /'abcdefghijklmnopqrstuvwxyz'/
+  DATA CAlphabetarray /"A","B","C","D","E","F","G","H","I","J","K","L","M","N", &
+       "O","P","Q","R","S","T","U","V","W","X","Y","Z","a","b","c","d","e", &
+       "f","g","h","i","j","k","l","m","n","o","p","q","r","s","t","u","v", &
+       "w","x","y","z"/
+  DATA alphabet /"ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz"/
   DATA          cela,celb,celc,siga,sigb,sigc/6*0./
   DATA          x,y,z,u,sx,sy,sz,su/8*0./
   DATA          xf,yf,zf,uij/54*0./
@@ -249,12 +254,16 @@ SUBROUTINE InpCIF(IErr)
 
   ! Extract space group notation (expected char string)
   f1 = char_('_symmetry_space_group_name_H-M', name)
+ 
   IF((IWriteFLAG.GE.1.AND.my_rank.EQ.0).OR.IWriteFLAG.GE.10) THEN
      PRINT*,"Space Group = ",name
   END IF
-  IF (SCAN(name,'abcdefghijklmnopqrstuvwxyz').EQ.0) THEN
+  !Checks for different versions for space group in cif file - checking for 
+  !different types of space groups as well as different phrasing of Hall space groups
+
+  IF (SCAN(name,'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz').EQ.0) THEN
      f1 = char_('_symmetry_space_group_name_Hall',name)
-     IF (SCAN(name,'abcdefghijklmnopqrstuvwxyz').EQ.0) THEN
+     IF (SCAN(name,'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz').EQ.0) THEN
         f1 = numb_('_symmetry_Int_tables_number',numb,sx)
         IF (numb.LT.TINY) THEN
            f1 = numb_('_space_group_IT_number',numb,sx)
@@ -266,7 +275,7 @@ SUBROUTINE InpCIF(IErr)
            ELSE
               name = CSpaceGrp(NINT(numb))
            END IF
-        ELSE
+        ELSE 
            name = CSpaceGrp(NINT(numb))
         END IF
      END IF
@@ -277,7 +286,14 @@ SUBROUTINE InpCIF(IErr)
   END IF
 
   SSpaceGroupName=TRIM(name(1:1))
+
   
+  !sometimes space group is input in lowercase letters - below changes the first letter to
+  !uppercase
+  IF (SCAN(alphabet,SSpaceGroupName).GT.26) THEN
+     SSpaceGroupName=CAlphabetarray(SCAN(alphabet,SSpaceGroupName)-26)
+  END IF
+ 
   ! ----------------------------------------------------------
   ! Extract atom site data in a loop
   !-----------------------------------------------------------
@@ -350,7 +366,7 @@ SUBROUTINE InpCIF(IErr)
      RETURN
   ENDIF
 
-  RAnisotropicDebyeWallerFactorTensor = 0
+  RAnisotropicDebyeWallerFactorTensor = ZERO
 
   ! actual data loop
 

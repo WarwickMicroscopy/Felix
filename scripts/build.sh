@@ -3,7 +3,7 @@
 #
 # felixsim
 #
-# Richard Beanland, Keith Evans and Rudolf A Roemer
+# Richard Beanland, Keith Evans, Rudolf A Roemer and Alex Hubert
 #
 # (C) 2013/14, all right reserved
 #

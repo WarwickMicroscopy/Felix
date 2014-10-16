@@ -2,7 +2,7 @@
 !
 ! felixsim
 !
-! Richard Beanland, Keith Evans and Rudolf A Roemer
+! Richard Beanland, Keith Evans, Rudolf A Roemer and Alexander Hubert
 !
 ! (C) 2013/14, all rights reserved
 !

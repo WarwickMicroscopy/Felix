@@ -2,7 +2,7 @@ C%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 C
 C felixsim
 C
-C Richard Beanland, Keith Evans and Rudolf A Roemer
+C Richard Beanland, Keith Evans, Rudolf A Roemer and Alexander Hubert
 C
 C (C) 2013/14, all right reserved
 C
