@@ -362,7 +362,10 @@ MODULE RPara
        RgMatMat
 
   REAL(RKIND) :: &
-       RIntegralLowerBound,RIntegralUpperBound
+       ROuterIntegralLowerBound,ROuterIntegralUpperBound,&
+       RInnerIntegralLowerBound,RInnerIntegralUpperBound,&
+       RInnerIntegrationParameterGMagPrime,&
+       ROuterIntegrationParameterGMagPrime
   
   !LACBED Program
   
@@ -386,6 +389,10 @@ MODULE RPara
 
   REAL(RKIND) :: &
        RCrossCorrelation,RDeltaUgChange,RlowerBoundUgChange,RUpperBoundUgChange
+
+  !Ug' Unique Values
+  REAL(RKIND),DIMENSION(:),ALLOCATABLE :: &
+       RUniqueUgPrimeValues
 
 END MODULE RPara
 

@@ -252,9 +252,9 @@ SUBROUTINE InpCIF(IErr)
   IF((IWriteFLAG.GE.1.AND.my_rank.EQ.0).OR.IWriteFLAG.GE.10) THEN
      PRINT*,"Space Group = ",name
   END IF
-  IF (SCAN(name,'abcdefghijklmnopqrstuvwxyz').EQ.0) THEN
+  IF (SCAN(name,'abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ').EQ.0) THEN
      f1 = char_('_symmetry_space_group_name_Hall',name)
-     IF (SCAN(name,'abcdefghijklmnopqrstuvwxyz').EQ.0) THEN
+     IF (SCAN(name,'abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ').EQ.0) THEN
         f1 = numb_('_symmetry_Int_tables_number',numb,sx)
         IF (numb.LT.TINY) THEN
            f1 = numb_('_space_group_IT_number',numb,sx)
