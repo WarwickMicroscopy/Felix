@@ -2,7 +2,7 @@
 !
 ! felixsim
 !
-! Richard Beanland, Keith Evans and Rudolf A Roemer
+! Richard Beanland, Keith Evans, Rudolf A Roemer and Alexander Hubert
 !
 ! (C) 2013/14, all right reserved
 !
@@ -74,6 +74,13 @@ MODULE CConst
        "I-43d","Pm-3m","Pn-3n","Pm-3n","Pn-3m","Fm-3m","Fm-3c","Fd-3m", &
        "Fd-3c","Im-3m","Ia-3d"/
        
+
+  !DATA CAlphabet/"A","B","C","D","E","F","G","H","I","J","K","L","M","N", &
+  !     "O","P","Q","R","S","T","U","V","W","X","Y","Z","a","b","c","d","e", &
+  !     "f","g","h","i","j","k","l","m","n","o","p","q","r","s","t","u","v", &
+  !     "w","x","y","z"/
+
+
 
 END MODULE CConst
 
