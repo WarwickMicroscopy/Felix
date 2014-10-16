@@ -1,17 +1,17 @@
 #!/bin/bash
 
-#binSIM=FelixSim
-#binDRAW=FelixDraw
+#binSIM=felixsim
+#binDRAW=felixdraw
 
 #pytIMAGE=txt2png.py
 
-inpfile=Felix.inp
-scafile=Felix.sca
+inpfile=felix.inp
+scafile=felix.sca
 
-# point this to where FelixSim and FelixDraw are
+# point this to where felixsim and felixdraw are
 binarydir=$HOME/D-LACBED/EXE
 
-# point to where Felix.sca is located
+# point to where felix.sca is located
 scadir=${binarydir}
 
 submitdir=`pwd`
@@ -62,7 +62,7 @@ job_dir=${submitdir}
 for ncif in 1:2
 do
 
-ciffile=Felix.cif.${ncif}
+ciffile=felix.cif.${ncif}
 
 job_file=`printf "FS_%1i%1i%1i.sh" "${nUg}" "${pUg}"` 
 
@@ -134,7 +134,7 @@ echo "# Input file for FelixSIM version :VERSION: Build :BUILD:"            >> $
 echo "# ------------------------------------"                                  >> $inpfile
 echo ""                                                                        >> $inpfile
 echo "# ------------------------------------"                                  >> $inpfile
-echo "# FelixSim input"                                                        >> $inpfile
+echo "# felixsim input"                                                        >> $inpfile
 echo ""                                                                        >> $inpfile
 echo "# control flags"                                                         >> $inpfile
 echo "IWriteFLAG                = 1"                                           >> $inpfile
@@ -186,7 +186,7 @@ echo "RFinalThickness          = 1300.0"                                       >
 echo "RDeltaThickness          = 10.0"                                         >> $inpfile
 echo "IReflectOut              = 49"                                           >> $inpfile
 echo ""                                                                        >> $inpfile
-#echo "# FelixRefine Input"                                                     >> $inpfile
+#echo "# felixrefine Input"                                                     >> $inpfile
 #echo ""                                                                        >> $inpfile
 #echo "#Refinement Specific Flags"                                              >> $inpfile
 #echo "IImageOutputFLAG          = 1"                                           >> $inpfile

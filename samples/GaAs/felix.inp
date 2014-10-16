@@ -1,8 +1,8 @@
-# Input file for FelixSim/Draw/Refine version :VERSION: Build :BUILD:
+# Input file for felixsim/draw/refine version :VERSION: Build :BUILD:
 # ------------------------------------
 
 # ------------------------------------
-# FelixSim input
+# felixsim input
 
 # control flags
 IWriteFLAG                = 1
@@ -16,15 +16,15 @@ IZolzFLAG                 = 1
 IAbsorbFLAG               = 1
 IAnisoDebyeWallerFlag     = 0
 IBeamConvergenceFLAG      = 1
-IPseudoCubicFLAG          = 1
-IXDirectionFLAG           = 0
+IPseudoCubicFLAG          = 0
+IXDirectionFLAG           = 1
 
 # radius of the beam in pixels
 IPixelCount               = 64
 
 # beam selection criteria
 IMinReflectionPool        = 600
-IMinStrongBeams           = 15
+IMinStrongBeams           = 7
 IMinWeakBeams             = 5
 RBSBMax                   = 0.1
 RBSPMax                   = 0.1
@@ -35,15 +35,15 @@ RDebyeWallerConstant      = 0.4668
 RAbsorptionPer            = 2.9
 
 # microscope settings
-RConvergenceAngle         = 6.0
-IIncidentBeamDirectionX   = 3
-IIncidentBeamDirectionY   = -2
+RConvergenceAngle         = 3.0
+IIncidentBeamDirectionX   = 1
+IIncidentBeamDirectionY   = 1
 IIncidentBeamDirectionZ   = 1
-IXDirectionX              = 1
-IXDirectionY              = 0
-IXDirectionZ              = 0
-INormalDirectionX         = 3
-INormalDirectionY         = -2
+IXDirectionX              = 0
+IXDirectionY              = -1
+IXDirectionZ              = 1
+INormalDirectionX         = 1
+INormalDirectionY         = 1
 INormalDirectionZ         = 1
 RAcceleratingVoltage (kV) = 200.0
 
