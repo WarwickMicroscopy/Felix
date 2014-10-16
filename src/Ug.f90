@@ -141,13 +141,12 @@ SUBROUTINE UgCalculation (IErr)
   
   IMPLICIT NONE
   
-  INTEGER(IKIND) ind,jnd,ierr, currentatom, iAtom,imaxj,IFound,ICount
+  INTEGER(IKIND) ind,jnd,ierr,imaxj,IFound,ICount,currentatom
   INTEGER(IKIND),DIMENSION(2) :: &
        IPos
   COMPLEX(CKIND) CVgij
-  REAL(RKIND) RAtomicFormFactor
   REAL(RKIND) :: &
-       RMeanInnerPotentialVolts  
+       RMeanInnerPotentialVolts,RAtomicFormFactor  
 
   IF((IWriteFLAG.GE.0.AND.my_rank.EQ.0).OR.IWriteFLAG.GE.10) THEN
      PRINT*,"UgCalculation()"
@@ -160,7 +159,7 @@ SUBROUTINE UgCalculation (IErr)
         CVgij= 0.0D0
         
         DO iAtom=1, INAtomsUnitCell
-           currentatom = IAtoms(iAtom)
+           ICurrentAtom = IAtoms(IAtom)
            ! calculate f_e(q) as in Eq. (C.15) of Kirkland, "Advanced Computing in EM"
            
            SELECT CASE (IScatterFactorMethodFLAG)
@@ -169,42 +168,42 @@ SUBROUTINE UgCalculation (IErr)
               
               RAtomicFormFactor = &
                    ! 3 Lorentzians
-                   RScattFactors(currentatom,1) / &
-                   (RgMatMag(ind,jnd)**2 + RScattFactors(currentatom,2)) + &
-                   RScattFactors(currentatom,3) / &
-                   (RgMatMag(ind,jnd)**2 + RScattFactors(currentatom,4)) + &
-                   RScattFactors(currentatom,5) / &
-                   (RgMatMag(ind,jnd)**2 + RScattFactors(currentatom,6)) + &
+                   RScattFactors(ICurrentAtom,1) / &
+                   (RgMatMag(ind,jnd)**2 + RScattFactors(ICurrentAtom,2)) + &
+                   RScattFactors(ICurrentAtom,3) / &
+                   (RgMatMag(ind,jnd)**2 + RScattFactors(ICurrentAtom,4)) + &
+                   RScattFactors(ICurrentAtom,5) / &
+                   (RgMatMag(ind,jnd)**2 + RScattFactors(ICurrentAtom,6)) + &
                    ! 3 Gaussians
-                   RScattFactors(currentatom,7) * &
-                   EXP(-RgMatMag(ind,jnd)**2 * RScattFactors(currentatom,8)) + &
-                   RScattFactors(currentatom,9) * &
-                   EXP(-RgMatMag(ind,jnd)**2 * RScattFactors(currentatom,10)) + &
-                   RScattFactors(currentatom,11) * &
-                   EXP(-RgMatMag(ind,jnd)**2 * RScattFactors(currentatom,12))
+                   RScattFactors(ICurrentAtom,7) * &
+                   EXP(-RgMatMag(ind,jnd)**2 * RScattFactors(ICurrentAtom,8)) + &
+                   RScattFactors(ICurrentAtom,9) * &
+                   EXP(-RgMatMag(ind,jnd)**2 * RScattFactors(ICurrentAtom,10)) + &
+                   RScattFactors(ICurrentAtom,11) * &
+                   EXP(-RgMatMag(ind,jnd)**2 * RScattFactors(ICurrentAtom,12))
               
            CASE(1) ! 8 Parameter Method with Scattering Parameters from Peng et al 1996 
               RAtomicFormFactor = &
-                   RScattFactors(currentatom,1) * &
-                   EXP(-(RgMatMag(ind,jnd)**2)/4 * RScattFactors(currentatom,5)) + &
-                   RScattFactors(currentatom,2) * &
-                   EXP(-(RgMatMag(ind,jnd)**2)/4 * RScattFactors(currentatom,6)) + &
-                   RScattFactors(currentatom,3) * &
-                   EXP(-(RgMatMag(ind,jnd)**2)/4 * RScattFactors(currentatom,7)) + &
-                   RScattFactors(currentatom,4) * &
-                   EXP(-(RgMatMag(ind,jnd)**2)/4 * RScattFactors(currentatom,8))
+                   RScattFactors(ICurrentAtom,1) * &
+                   EXP(-(RgMatMag(ind,jnd)**2)/4 * RScattFactors(ICurrentAtom,5)) + &
+                   RScattFactors(ICurrentAtom,2) * &
+                   EXP(-(RgMatMag(ind,jnd)**2)/4 * RScattFactors(ICurrentAtom,6)) + &
+                   RScattFactors(ICurrentAtom,3) * &
+                   EXP(-(RgMatMag(ind,jnd)**2)/4 * RScattFactors(ICurrentAtom,7)) + &
+                   RScattFactors(ICurrentAtom,4) * &
+                   EXP(-(RgMatMag(ind,jnd)**2)/4 * RScattFactors(ICurrentAtom,8))
 
            CASE(2) ! 8 Parameter Method with Scattering Parameters from Doyle and Turner Method (1968)
 
               RAtomicFormFactor = &
-                   RScattFactors(currentatom,1) * &
-                   EXP(-(RgMatMag(ind,jnd)**2)/4 * RScattFactors(currentatom,2)) + &
-                   RScattFactors(currentatom,3) * &
-                   EXP(-(RgMatMag(ind,jnd)**2)/4 * RScattFactors(currentatom,4)) + &
-                   RScattFactors(currentatom,5) * &
-                   EXP(-(RgMatMag(ind,jnd)**2)/4 * RScattFactors(currentatom,6)) + &
-                   RScattFactors(currentatom,7) * &
-                   EXP(-(RgMatMag(ind,jnd)**2)/4 * RScattFactors(currentatom,8))
+                   RScattFactors(ICurrentAtom,1) * &
+                   EXP(-(RgMatMag(ind,jnd)**2)/4 * RScattFactors(ICurrentAtom,2)) + &
+                   RScattFactors(ICurrentAtom,3) * &
+                   EXP(-(RgMatMag(ind,jnd)**2)/4 * RScattFactors(ICurrentAtom,4)) + &
+                   RScattFactors(ICurrentAtom,5) * &
+                   EXP(-(RgMatMag(ind,jnd)**2)/4 * RScattFactors(ICurrentAtom,6)) + &
+                   RScattFactors(ICurrentAtom,7) * &
+                   EXP(-(RgMatMag(ind,jnd)**2)/4 * RScattFactors(ICurrentAtom,8))
 
            END SELECT
               
@@ -265,9 +264,9 @@ SUBROUTINE UgCalculation (IErr)
   ENDDO
 
   RMeanInnerCrystalPotential= REAL(CUgMat(1,1))
-  RMeanInnerPotentialVolts = ((RMeanInnerCrystalPotential*RPlanckConstant**2)/ &
+  RMeanInnerPotentialVolts = RMeanInnerCrystalPotential*(((RPlanckConstant**2)/ &
        (TWO*RElectronMass*RElectronCharge*TWOPI**2))*&
-       RAngstromConversion*RAngstromConversion
+       RAngstromConversion*RAngstromConversion)
 
   IF((IWriteFLAG.GE.2.AND.my_rank.EQ.0).OR.IWriteFLAG.GE.10) THEN
      PRINT*,"UgCalculation(",my_rank,") RMeanInnerCrystalPotential = ",RMeanInnerCrystalPotential,RMeanInnerPotentialVolts
@@ -279,18 +278,6 @@ SUBROUTINE UgCalculation (IErr)
 
   CUgMat = CUgMat + CONJG(TRANSPOSE(CUgMat))
 
-!!$  WHERE(ABS(REAL(REAL(CUgMat))).LT.TINY)
-!!$     CUgmat = ZERO + REAL(AIMAG(CUgMat))*CIMAGONE
-!!$  END WHERE
-!!$
-!!$  WHERE(ABS(REAL(AIMAG(CUgMat))).LT.TINY)
-!!$     CUgmat = REAL(REAL(CUgMat)) + CZERO
-!!$  END WHERE  
-!!$  IF(my_rank.EQ.0) THEN
-!!$     DO ind = 1,4
-!!$        PRINT*,CUgMat(ind,:4)
-!!$     END DO
-!!$  END IF
 END SUBROUTINE UgCalculation
 
 SUBROUTINE UgAddAbsorption(IErr)         
@@ -307,14 +294,501 @@ SUBROUTINE UgAddAbsorption(IErr)
   
   IMPLICIT NONE 
   
-  INTEGER(IKIND) IErr,ind
+  INTEGER(IKIND) IErr,ind,jnd,knd
+  REAL(RKIND) :: &
+       RIntegrationParameterGMagPrime,RAtomicFormFactorGMagPrime,&
+       RAtomicFormFactorGMagMinusGMagPrime,RAbsorpativeAtomicFormFactor,&
+       RAbsorpativeAtomicFormFactorInterval
+!!$       RAbsorpativeAtomicFormFactorUpperInterval,&
+!!$       RAbsorpativeAtomicFormFactorMiddleInterval
+  INTEGER(IKIND),DIMENSION(2) :: &
+       IPos
+  COMPLEX(CKIND) CVgij
+
+  IF((my_rank.EQ.0.AND.IWriteFLAG.GE.0).OR.IWriteFLAG.GE.10) THEN
+     PRINT*,"UgAddAbsorption(",my_rank,")"
+  END IF
 
   CUgMatPrime = CZERO
+    
+  SELECT CASE (IAbsorbFLAG)
 
-  CUgMatPrime = CUgMatPrime+(REAL(CUgMat)*(RAbsorptionPercentage/100_RKIND)*CIMAGONE)
+  CASE(1)
 
-  DO ind = 1,SIZE(CUgMat,DIM=1)
-     CUgMatPrime(ind,ind) = REAL(RBigK)*(RAbsorptionPercentage/100_RKIND)*CIMAGONE
-  END DO
+!!$     THE PROPORTIONAL MODEL OF ABSORPTION
+     
+     CUgMatPrime = CUgMatPrime+(REAL(CUgMat)*(RAbsorptionPercentage/100_RKIND)*CIMAGONE)
+     
+     DO ind = 1,SIZE(CUgMat,DIM=1)
+        CUgMatPrime(ind,ind) = REAL(RMeanInnerCrystalPotential)*(RAbsorptionPercentage/100_RKIND)*CIMAGONE
+     END DO
+    
+  CASE Default 
+     RUniqueUgPrimeValues = ZERO
 
+!!$     The Einstein TDS model 
+!!$     Equations come from Bird and King 1990 Acta Cryst A46, 202-208 
+
+!!$     DO ind=1,nReflections
+!!$        DO jnd=1,nReflections
+!!$     DO knd = 1,(SIZE(ISymmetryStrengthKey,DIM=1))
+     DO knd = 1,8
+        ind = ISymmetryStrengthKey(knd,1)
+        jnd = ISymmetryStrengthKey(knd,2)
+           !PRINT*,"knd =",knd
+           CVgij= CZERO
+           
+           RGVector = RgMatMat(ind,jnd,:)
+           RGVectorMagnitude = RgMatMag(ind,jnd)/(FOUR*PI)
+
+           DO IAtom=1, INAtomsUnitCell
+              ICurrentAtom = IAtoms(IAtom)
+              
+              RAbsorpativeAtomicFormFactor = ZERO
+              RAbsorpativeAtomicFormFactorInterval = ZERO
+
+!!$              The integral has to be split up into two between 0 and |G|/2 and 
+!!$              |G|/2 and (a large reciprocal distance). This means the integral has to be 
+!!$              split into four seperate ones as its a double integral 
+              
+              ROuterIntegralLowerBound = 0.0D0
+              ROuterIntegralUpperBound = RGVectorMagnitude/2.0D0
+              RInnerIntegralLowerBound = 0.0D0
+              RInnerIntegralUpperBound = RGVectorMagnitude/2.0D0
+              
+              CALL RIntegrateForAbsorption(RAbsorpativeAtomicFormFactorInterval,IErr)
+              
+              RAbsorpativeAtomicFormFactor = RAbsorpativeAtomicFormFactor +&
+                   RAbsorpativeAtomicFormFactorInterval
+              RAbsorpativeAtomicFormFactorInterval = ZERO
+              
+              ROuterIntegralLowerBound = RGVectorMagnitude/2.0D0
+              ROuterIntegralUpperBound = 30.0D0
+              RInnerIntegralLowerBound = RGVectorMagnitude/2.0D0
+              RInnerIntegralUpperBound = 30.0D0
+              CALL RIntegrateForAbsorption(RAbsorpativeAtomicFormFactorInterval,IErr)
+
+              RAbsorpativeAtomicFormFactor = RAbsorpativeAtomicFormFactor +&
+                   RAbsorpativeAtomicFormFactorInterval
+              RAbsorpativeAtomicFormFactorInterval = ZERO
+
+              ROuterIntegralLowerBound = 0.0D0
+              ROuterIntegralUpperBound = RGVectorMagnitude/2.0D0
+              RInnerIntegralLowerBound = RGVectorMagnitude/2.0D0
+              RInnerIntegralUpperBound = 30.0D0
+
+              CALL RIntegrateForAbsorption(RAbsorpativeAtomicFormFactorInterval,IErr)
+
+              RAbsorpativeAtomicFormFactor = RAbsorpativeAtomicFormFactor +&
+                   RAbsorpativeAtomicFormFactorInterval
+              RAbsorpativeAtomicFormFactorInterval = ZERO
+
+              ROuterIntegralLowerBound = RGVectorMagnitude/2.0D0
+              ROuterIntegralUpperBound = 30.0D0 
+              RInnerIntegralLowerBound = 0.0D0
+              RInnerIntegralUpperBound = RGVectorMagnitude/2.0D0
+              CALL RIntegrateForAbsorption(RAbsorpativeAtomicFormFactorInterval,IErr)
+
+              RAbsorpativeAtomicFormFactor = RAbsorpativeAtomicFormFactor +&
+                   RAbsorpativeAtomicFormFactorInterval
+              RAbsorpativeAtomicFormFactorInterval = ZERO
+              
+              RAbsorpativeAtomicFormFactor=&
+                   RAbsorpativeAtomicFormFactor*ROcc(IAtom)
+
+              CVgij = CVgij + &
+                   RAbsorpativeAtomicFormFactor * &
+                   EXP(-CIMAGONE* &
+                   DOT_PRODUCT(RgMatMat(ind,jnd,:), RrVecMat(iAtom,:)) &
+                   )*EXP(-RDWF(IAtom)*RGVectorMagnitude/2.0D0)
+           ENDDO
+
+           
+
+           PRINT*,CVgij
+           
+!!$           Calculate Vg'
+
+           RUniqueUgPrimeValues(knd) = REAL((((RPlanckConstant**3)/&
+                (PI*RElectronMass**2*((RElectronVelocity)/RSpeedOfLight)*&
+                RSpeedofLight * RVolume))*RAngstromConversion**3)*CVgij,RKIND)
+           PRINT*,RUniqueUgPrimeValues(knd)
+
+!!$           Convert Vg' into Ug'
+
+           RUniqueUgPrimeValues(knd) = REAL(RUniqueUgPrimeValues(knd)*&
+                (TWO*TWOPI**2*RElectronMass*RElectronCharge)/&
+                (RPlanckConstant**2))
+
+!!$           Correct for relativistic effects
+
+           RUniqueUgPrimeValues(knd) = REAL(RUniqueUgPrimeValues(knd)*&
+                RRelativisticCorrection,RKIND)
+
+        ENDDO
+!!$     ENDDO
+     
+  END SELECT
+
+  IErr = 0
+  
 END SUBROUTINE UgAddAbsorption
+
+REAL FUNCTION RAbsorpativeIntegrand(RIntegrationParameterGMagPrime)
+
+  USE MyNumbers
+  
+  USE CConst; USE IConst
+  USE IPara; USE RPara; USE CPara
+  USE BlochPara
+  USE IChannels
+  USE MPI
+  USE MyMPI
+  
+  IMPLICIT NONE 
+
+  REAL(RKIND) :: &
+       RAtomicFormFactorGMagPrime,&
+       RAtomicFormFactorGMagMinusGMagPrime,&
+       RAbsorpativeIntegrand,&
+       RIntegrationParameterGMagPrime,&
+       OneDIntegral
+  INTEGER(IKIND) ierr,currentatom
+  INTEGER(IKIND),DIMENSION(2) :: &
+       IPos
+  COMPLEX(CKIND) CVgij
+
+!!$  RAbsorpativeIntegrand = SIN(ROuterIntegrationParameterGMagPrime)*SIN(RIntegrationParameterGMagPrime)
+
+  RAbsorpativeIntegrand = OneDIntegral(ROuterIntegrationParameterGMagPrime)*OneDIntegral(RIntegrationParameterGMagPrime)
+
+END FUNCTION RAbsorpativeIntegrand
+
+REAL FUNCTION RGXIntegration(RIntegrationParameterGMagPrime)
+
+  USE MyNumbers
+  
+  USE CConst; USE IConst
+  USE IPara; USE RPara; USE CPara
+  USE BlochPara
+  USE IChannels
+  USE MPI
+  USE MyMPI
+  
+  IMPLICIT NONE 
+
+  REAL(RKIND) :: &
+       RIntegrationParameterGMagPrime
+  REAL(RKIND) :: &
+       RGXIntegration,&
+       RAbsorpativeIntegrand,RAbsoluteError
+  INTEGER(IKIND) :: &
+       IErr,IIntegrationSteps
+   
+  EXTERNAL RAbsorpativeIntegrand
+
+  ROuterIntegrationParameterGMagPrime = RIntegrationParameterGMagPrime
+
+  CALL DQNG(RAbsorpativeIntegrand,RInnerIntegralLowerBound,RInnerIntegralUpperBound,&
+       0.0D0,1.0D-3,RGXIntegration,RAbsoluteError,IIntegrationSteps,IErr)
+
+END FUNCTION RGXIntegration
+
+SUBROUTINE RIntegrateForAbsorption(RAbsorpativeAtomicFormFactor,IErr)
+
+  USE MyNumbers
+  
+  USE CConst; USE IConst
+  USE IPara; USE RPara; USE CPara
+  USE BlochPara
+  USE IChannels
+  USE MPI
+  USE MyMPI
+  
+  IMPLICIT NONE 
+
+  INTEGER(IKIND) :: &
+       IErr,IIntegrationSteps
+  REAL(RKIND) RAbsorpativeAtomicFormFactor,&
+       RGXIntegration,RAbsoluteError
+      
+  EXTERNAL RGXIntegration
+
+  CALL DQNG(RGXIntegration,ROuterIntegralLowerBound,ROuterIntegralUpperBound,&
+       0.0D0,1.0D-3,RAbsorpativeAtomicFormFactor,RAbsoluteError,IIntegrationSteps,IErr)
+
+END SUBROUTINE RIntegrateForAbsorption
+
+REAL FUNCTION  OneDIntegral(X)
+  
+  USE MyNumbers
+  
+  USE CConst; USE IConst
+  USE IPara; USE RPara; USE CPara
+  USE BlochPara
+  USE IChannels
+  USE MPI
+  USE MyMPI
+  
+  IMPLICIT NONE 
+  
+  REAL(RKIND) :: &
+       X
+
+  REAL(RKIND) :: &
+       RAtomicFormFactorGMagPrime,&
+       RAtomicFormFactorGMagMinusGMagPrime,&
+       RAbsorpativeIntegrand,&
+       RIntegrationParameterGMagPrime,&
+       OneDIntegral
+       
+  
+  SELECT CASE (IScatterFactorMethodFLAG)
+     
+  CASE(0) ! Kirkland Method using 3 Gaussians and 3 Lorentzians 
+     
+     RAtomicFormFactorGMagPrime = &
+          ! 3 Lorentzians
+          RScattFactors(ICurrentAtom,1) / &
+          (((RGVectorMagnitude/2.0D0)+X)**2 + RScattFactors(ICurrentAtom,2)) + &
+          RScattFactors(ICurrentAtom,3) / &
+          (((RGVectorMagnitude/2.0D0)+X)**2 + RScattFactors(ICurrentAtom,4)) + &
+          RScattFactors(ICurrentAtom,5) / &
+          (((RGVectorMagnitude/2.0D0)+X)**2 + RScattFactors(ICurrentAtom,6)) + &
+          ! 3 Gaussians
+          RScattFactors(ICurrentAtom,7) * &
+          EXP(-(((RGVectorMagnitude/2.0D0)+X)**2)* RScattFactors(ICurrentAtom,8)) + &
+          RScattFactors(ICurrentAtom,9) * &
+          EXP(-(((RGVectorMagnitude/2.0D0)+X)**2)* RScattFactors(ICurrentAtom,10)) + &
+          RScattFactors(ICurrentAtom,11) * &
+          EXP(-(((RGVectorMagnitude/2.0D0)+X)**2)* RScattFactors(ICurrentAtom,12))
+     
+     RAtomicFormFactorGMagMinusGMagPrime = &
+          ! 3 Lorentzians
+          RScattFactors(ICurrentAtom,1) / &
+          (((RGVectorMagnitude/2.0D0)-X)**2 + RScattFactors(ICurrentAtom,2)) + &
+          RScattFactors(ICurrentAtom,3) / &
+          (((RGVectorMagnitude/2.0D0)-X)**2 + RScattFactors(ICurrentAtom,4)) + &
+          RScattFactors(ICurrentAtom,5) / &
+          (((RGVectorMagnitude/2.0D0)-X)**2 + RScattFactors(ICurrentAtom,6)) + &
+          ! 3 Gaussians
+          RScattFactors(ICurrentAtom,7) * &
+          EXP(-((RGVectorMagnitude/2.0D0)-X)**2 * RScattFactors(ICurrentAtom,8)) + &
+          RScattFactors(ICurrentAtom,9) * &
+          EXP(-((RGVectorMagnitude/2.0D0)-X)**2 * RScattFactors(ICurrentAtom,10)) + &
+          RScattFactors(ICurrentAtom,11) * &
+          EXP(-((RGVectorMagnitude/2.0D0)-X)**2 * RScattFactors(ICurrentAtom,12))
+     
+  CASE(1) ! 8 Parameter Method with Scattering Parameters from Peng et al 1996 
+     RAtomicFormFactorGMagPrime = &
+          RScattFactors(ICurrentAtom,1) * &
+          EXP(-(X**2)/4 * RScattFactors(ICurrentAtom,5)) + &
+          RScattFactors(ICurrentAtom,2) * &
+          EXP(-(X**2)/4 * RScattFactors(ICurrentAtom,6)) + &
+          RScattFactors(ICurrentAtom,3) * &
+          EXP(-(X**2)/4 * RScattFactors(ICurrentAtom,7)) + &
+          RScattFactors(ICurrentAtom,4) * &
+          EXP(-(X**2)/4 * RScattFactors(ICurrentAtom,8))
+     
+     RAtomicFormFactorGMagMinusGMagPrime = &
+          RScattFactors(ICurrentAtom,1) * &
+          EXP(-((RGVectorMagnitude-X)**2)/4 * RScattFactors(ICurrentAtom,5)) + &
+          RScattFactors(ICurrentAtom,2) * &
+          EXP(-((RGVectorMagnitude-X)**2)/4 * RScattFactors(ICurrentAtom,6)) + &
+          RScattFactors(ICurrentAtom,3) * &
+          EXP(-((RGVectorMagnitude-X)**2)/4 * RScattFactors(ICurrentAtom,7)) + &
+          RScattFactors(ICurrentAtom,4) * &
+          EXP(-((RGVectorMagnitude-X)**2)/4 * RScattFactors(ICurrentAtom,8))
+     
+  CASE(2) ! 8 Parameter Method with Scattering Parameters from Doyle and Turner Method (1968)
+     
+     RAtomicFormFactorGMagPrime = &
+          RScattFactors(ICurrentAtom,1) * &
+          EXP(-(X**2)/4 * RScattFactors(ICurrentAtom,2)) + &
+          RScattFactors(ICurrentAtom,3) * &
+          EXP(-(X**2)/4 * RScattFactors(ICurrentAtom,4)) + &
+          RScattFactors(ICurrentAtom,5) * &
+          EXP(-(X**2)/4 * RScattFactors(ICurrentAtom,6)) + &
+          RScattFactors(ICurrentAtom,7) * &
+          EXP(-(X**2)/4 * RScattFactors(ICurrentAtom,8))
+     
+     RAtomicFormFactorGMagMinusGMagPrime = &
+          RScattFactors(ICurrentAtom,1) * &
+          EXP(-((RGVectorMagnitude-X)**2)/4 * RScattFactors(ICurrentAtom,2)) + &
+          RScattFactors(ICurrentAtom,3) * &
+          EXP(-((RGVectorMagnitude-X)**2)/4 * RScattFactors(ICurrentAtom,4)) + &
+          RScattFactors(ICurrentAtom,5) * &
+          EXP(-((RGVectorMagnitude-X)**2)/4 * RScattFactors(ICurrentAtom,6)) + &
+          RScattFactors(ICurrentAtom,7) * &
+          EXP(-((RGVectorMagnitude-X)**2)/4 * RScattFactors(ICurrentAtom,8))
+     
+  END SELECT
+  
+  RAbsorpativeIntegrand = RAtomicFormFactorGMagPrime*RAtomicFormFactorGMagMinusGMagPrime
+  
+!!$  RAbsorpativeIntegrand = &
+!!$       RAbsorpativeIntegrand*ROcc(IAtom)
+  
+  ! initialize potential as in Eq. (6.10) of Kirkland
+  
+  
+  IF (IAnisoDebyeWallerFactorFlag.EQ.0) THEN
+     
+     IF(RDWF(IAtom).GT.10.OR.RDWF(IAtom).LT.0) THEN
+        RDWF(IAtom) = RDebyeWallerConstant
+     END IF
+     
+     RAbsorpativeIntegrand = RAbsorpativeIntegrand * &
+          (1.0D0-EXP(-RDWF(IAtom)*(X**2-(RGVectorMagnitude/4.0D0))))
+  ELSE
+     
+     RAbsorpativeIntegrand = RAbsorpativeIntegrand * &
+          EXP(-TWOPI*DOT_PRODUCT(RGVector, &
+          MATMUL( RAnisotropicDebyeWallerFactorTensor( &
+          IAnisoDWFT(IAtom),:,:), &
+          RGVector)))
+     
+     
+  END IF
+  
+  OneDIntegral = RAbsorpativeIntegrand
+
+END FUNCTION OneDIntegral
+!!$REAL FUNCTION  OneDIntegral(X)
+!!$  
+!!$  USE MyNumbers
+!!$  
+!!$  USE CConst; USE IConst
+!!$  USE IPara; USE RPara; USE CPara
+!!$  USE BlochPara
+!!$  USE IChannels
+!!$  USE MPI
+!!$  USE MyMPI
+!!$  
+!!$  IMPLICIT NONE 
+!!$  
+!!$  REAL(RKIND) :: &
+!!$       X
+!!$
+!!$  REAL(RKIND) :: &
+!!$       RAtomicFormFactorGMagPrime,&
+!!$       RAtomicFormFactorGMagMinusGMagPrime,&
+!!$       RAbsorpativeIntegrand,&
+!!$       RIntegrationParameterGMagPrime,&
+!!$       OneDIntegral
+!!$       
+!!$  
+!!$  SELECT CASE (IScatterFactorMethodFLAG)
+!!$     
+!!$  CASE(0) ! Kirkland Method using 3 Gaussians and 3 Lorentzians 
+!!$     
+!!$     RAtomicFormFactorGMagPrime = &
+!!$          ! 3 Lorentzians
+!!$          RScattFactors(ICurrentAtom,1) / &
+!!$          (X**2 + RScattFactors(ICurrentAtom,2)) + &
+!!$          RScattFactors(ICurrentAtom,3) / &
+!!$          (X**2 + RScattFactors(ICurrentAtom,4)) + &
+!!$          RScattFactors(ICurrentAtom,5) / &
+!!$          (X**2 + RScattFactors(ICurrentAtom,6)) + &
+!!$          ! 3 Gaussians
+!!$          RScattFactors(ICurrentAtom,7) * &
+!!$          EXP(-(X**2)* RScattFactors(ICurrentAtom,8)) + &
+!!$          RScattFactors(ICurrentAtom,9) * &
+!!$          EXP(-(X**2)* RScattFactors(ICurrentAtom,10)) + &
+!!$          RScattFactors(ICurrentAtom,11) * &
+!!$          EXP(-(X**2)* RScattFactors(ICurrentAtom,12))
+!!$     
+!!$     RAtomicFormFactorGMagMinusGMagPrime = &
+!!$          ! 3 Lorentzians
+!!$          RScattFactors(ICurrentAtom,1) / &
+!!$          ((RGVectorMagnitude-X)**2 + RScattFactors(ICurrentAtom,2)) + &
+!!$          RScattFactors(ICurrentAtom,3) / &
+!!$          ((RGVectorMagnitude-X)**2 + RScattFactors(ICurrentAtom,4)) + &
+!!$          RScattFactors(ICurrentAtom,5) / &
+!!$          ((RGVectorMagnitude-X)**2 + RScattFactors(ICurrentAtom,6)) + &
+!!$          ! 3 Gaussians
+!!$          RScattFactors(ICurrentAtom,7) * &
+!!$          EXP(-(RGVectorMagnitude-X)**2 * RScattFactors(ICurrentAtom,8)) + &
+!!$          RScattFactors(ICurrentAtom,9) * &
+!!$          EXP(-(RGVectorMagnitude-X)**2 * RScattFactors(ICurrentAtom,10)) + &
+!!$          RScattFactors(ICurrentAtom,11) * &
+!!$          EXP(-(RGVectorMagnitude-X)**2 * RScattFactors(ICurrentAtom,12))
+!!$     
+!!$  CASE(1) ! 8 Parameter Method with Scattering Parameters from Peng et al 1996 
+!!$     RAtomicFormFactorGMagPrime = &
+!!$          RScattFactors(ICurrentAtom,1) * &
+!!$          EXP(-(X**2)/4 * RScattFactors(ICurrentAtom,5)) + &
+!!$          RScattFactors(ICurrentAtom,2) * &
+!!$          EXP(-(X**2)/4 * RScattFactors(ICurrentAtom,6)) + &
+!!$          RScattFactors(ICurrentAtom,3) * &
+!!$          EXP(-(X**2)/4 * RScattFactors(ICurrentAtom,7)) + &
+!!$          RScattFactors(ICurrentAtom,4) * &
+!!$          EXP(-(X**2)/4 * RScattFactors(ICurrentAtom,8))
+!!$     
+!!$     RAtomicFormFactorGMagMinusGMagPrime = &
+!!$          RScattFactors(ICurrentAtom,1) * &
+!!$          EXP(-((RGVectorMagnitude-X)**2)/4 * RScattFactors(ICurrentAtom,5)) + &
+!!$          RScattFactors(ICurrentAtom,2) * &
+!!$          EXP(-((RGVectorMagnitude-X)**2)/4 * RScattFactors(ICurrentAtom,6)) + &
+!!$          RScattFactors(ICurrentAtom,3) * &
+!!$          EXP(-((RGVectorMagnitude-X)**2)/4 * RScattFactors(ICurrentAtom,7)) + &
+!!$          RScattFactors(ICurrentAtom,4) * &
+!!$          EXP(-((RGVectorMagnitude-X)**2)/4 * RScattFactors(ICurrentAtom,8))
+!!$     
+!!$  CASE(2) ! 8 Parameter Method with Scattering Parameters from Doyle and Turner Method (1968)
+!!$     
+!!$     RAtomicFormFactorGMagPrime = &
+!!$          RScattFactors(ICurrentAtom,1) * &
+!!$          EXP(-(X**2)/4 * RScattFactors(ICurrentAtom,2)) + &
+!!$          RScattFactors(ICurrentAtom,3) * &
+!!$          EXP(-(X**2)/4 * RScattFactors(ICurrentAtom,4)) + &
+!!$          RScattFactors(ICurrentAtom,5) * &
+!!$          EXP(-(X**2)/4 * RScattFactors(ICurrentAtom,6)) + &
+!!$          RScattFactors(ICurrentAtom,7) * &
+!!$          EXP(-(X**2)/4 * RScattFactors(ICurrentAtom,8))
+!!$     
+!!$     RAtomicFormFactorGMagMinusGMagPrime = &
+!!$          RScattFactors(ICurrentAtom,1) * &
+!!$          EXP(-((RGVectorMagnitude-X)**2)/4 * RScattFactors(ICurrentAtom,2)) + &
+!!$          RScattFactors(ICurrentAtom,3) * &
+!!$          EXP(-((RGVectorMagnitude-X)**2)/4 * RScattFactors(ICurrentAtom,4)) + &
+!!$          RScattFactors(ICurrentAtom,5) * &
+!!$          EXP(-((RGVectorMagnitude-X)**2)/4 * RScattFactors(ICurrentAtom,6)) + &
+!!$          RScattFactors(ICurrentAtom,7) * &
+!!$          EXP(-((RGVectorMagnitude-X)**2)/4 * RScattFactors(ICurrentAtom,8))
+!!$     
+!!$  END SELECT
+!!$  
+!!$  RAbsorpativeIntegrand = RAtomicFormFactorGMagPrime*RAtomicFormFactorGMagMinusGMagPrime
+!!$  
+!!$  RAbsorpativeIntegrand = &
+!!$       RAbsorpativeIntegrand*ROcc(IAtom)
+!!$  
+!!$  ! initialize potential as in Eq. (6.10) of Kirkland
+!!$  
+!!$  
+!!$  IF (IAnisoDebyeWallerFactorFlag.EQ.0) THEN
+!!$     
+!!$     IF(RDWF(IAtom).GT.10.OR.RDWF(IAtom).LT.0) THEN
+!!$        RDWF(IAtom) = RDebyeWallerConstant
+!!$     END IF
+!!$     
+!!$     RAbsorpativeIntegrand = RAbsorpativeIntegrand * &
+!!$          ( &
+!!$          EXP(-((RGVectorMagnitude/2.D0)**2)*RDWF(IAtom))-&
+!!$          EXP(-((X/2.D0)**2)*RDWF(IAtom))*&
+!!$          EXP(-(((RGVectorMagnitude-X)/2.D0)**2)*RDWF(IAtom)))
+!!$  ELSE
+!!$     
+!!$     RAbsorpativeIntegrand = RAbsorpativeIntegrand * &
+!!$          EXP(-TWOPI*DOT_PRODUCT(RGVector, &
+!!$          MATMUL( RAnisotropicDebyeWallerFactorTensor( &
+!!$          IAnisoDWFT(IAtom),:,:), &
+!!$          RGVector)))
+!!$     
+!!$     
+!!$  END IF
+!!$  
+!!$  OneDIntegral = RAbsorpativeIntegrand
+!!$
+!!$END FUNCTION OneDIntegral

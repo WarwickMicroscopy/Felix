@@ -83,10 +83,13 @@ PROGRAM FelixSim
   CHARACTER*25 CThicknessLength  
  
   INTEGER(IKIND),DIMENSION(2,2) :: ITest
+  INTEGER(IKIND),DIMENSION(2) :: ILoc
   
   INTEGER(IKIND):: IErr, IThickness, IThicknessIndex, ILowerLimit, &
        IUpperLimit
   REAL(RKIND) StartTime, CurrentTime, Duration, TotalDurationEstimate
+  COMPLEX(CKIND),DIMENSION(:,:), ALLOCATABLE :: &
+       CZeroMat
 
   !-------------------------------------------------------------------
   ! constants
@@ -366,6 +369,15 @@ PROGRAM FelixSim
           " in ALLOCATE() of DYNAMIC variables Reflection Matrix"
      GOTO 9999
   ENDIF       
+ 
+  ALLOCATE( & 
+       CZeroMat(nReflections,nReflections), &
+       STAT=IErr)
+  IF( IErr.NE.0 ) THEN
+     PRINT*,"RefineMain(", my_rank, ") error ", IErr, &
+          " in ALLOCATE() of DYNAMIC variables CZeroMat"
+     GOTO 9999
+  ENDIF
 
   CALL UgCalculation (IErr)
   IF( IErr.NE.0 ) THEN
@@ -383,17 +395,89 @@ PROGRAM FelixSim
   IF((IWriteFLAG.GE.1.AND.my_rank.EQ.0).OR.IWriteFLAG.GE.10) THEN
      PRINT*,"Main(", my_rank, ") BigK=", RBigK
   END IF
+    
+  IF(IAbsorbFLAG.GT.1) THEN
+     CZeroMAT = CZERO
+     
+     DO ind = 1,nReflections
+        DO jnd = 1,ind
+           CZeroMAT(ind,jnd) = CONE
+        END DO
+     END DO
+     
+     ALLOCATE( &  
+          ISymmetryRelations(nReflections,nReflections), &
+          STAT=IErr)
+     IF( IErr.NE.0 ) THEN
+        PRINT*,"RefineMain(", my_rank, ") error ", IErr, &
+             " in ALLOCATE() of DYNAMIC variables Reflection Matrix"
+        GOTO 9999
+     ENDIF
+     
+     ISymmetryRelations = ISymmetryRelations*CZeroMat  
+     
+     CALL DetermineSymmetryRelatedUgs (IErr)
+     IF( IErr.NE.0 ) THEN
+        PRINT*,"RefineMain(", my_rank, ") error ", IErr, &
+             " in DetermineSymmetryRelatedUgs"
+        GOTO 9999
+     ENDIF
+     
+     ALLOCATE( &  
+          RUniqueUgPrimeValues((SIZE(ISymmetryStrengthKey,DIM=1))), &
+          STAT=IErr)
+     IF( IErr.NE.0 ) THEN
+        PRINT*,"RefineMain(", my_rank, ") error ", IErr, &
+             " in ALLOCATE() of DYNAMIC variables Reflection Matrix"
+        GOTO 9999
+     ENDIF
+     
+     DO ind = 1,(SIZE(ISymmetryStrengthKey,DIM=1))
+        ILoc = MINLOC(ABS(ISymmetryRelations-ind))
+        ISymmetryStrengthKey(ind,:) = ILoc
+     END DO
+  END IF
   
-  CALL UgAddAbsorption(IErr)
-  IF( IErr.NE.0 ) THEN
-     PRINT*,"Main(", my_rank, ") error ", IErr, &
-          " in UgCalculation"
-     GOTO 9999
-  ENDIF
-
-  IF(IAbsorbFLAG.EQ.1) THEN
+  IF(IAbsorbFLAG.GE.1) THEN
+     
+     CALL UgAddAbsorption(IErr)
+     IF( IErr.NE.0 ) THEN
+        PRINT*,"Main(", my_rank, ") error ", IErr, &
+             " in UgAddAbsorption"
+        GOTO 9999
+     ENDIF
+     IF(IAbsorbFLAG.GE.2) THEN
+        DO ind = 2,(SIZE(ISymmetryStrengthKey,DIM=1))
+           WHERE (ISymmetryRelations.EQ.ind)
+              CUgMatPrime = RUniqueUgPrimeValues(ind)*CIMAGONE
+           END WHERE
+        END DO
+        DO ind = 1,nReflections
+           CUgMatPrime(ind,ind) = RUniqueUgPrimeValues(1)*CIMAGONE
+        END DO
+     END IF
      CUgMat =  CUgMat+CUgMatPrime
-  end IF
+  END IF
+
+!!$  DO ind = 1,(SIZE(ISymmetryStrengthKey,DIM=1))
+!!$     PRINT*,ISymmetryStrengthKey(ind,:),RUniqueUgPrimeValues(ind)
+!!$  END DO
+
+  
+
+!!$  DO ind = 1,MAXVAL(ISymmetryRelations)
+!!$     PRINT*,ISymmetryStrengthKey(ind,:),&
+!!$          ISymmetryRelations(ISymmetryStrengthKey(ind,1),&
+!!$          ISymmetryStrengthKey(ind,2))
+!!$  END DO
+
+  !PRINT*,"No. of Unique Ugs = ",MAXVAL(ISymmetryRelations)
+     
+!!$  DO ind = 1,50
+!!$     PRINT*,CUgMatPrime(ind,1),CUgMat(1,ind)
+!!$  END DO
+
+  !GOTO 9999
 
   !!$ ! UgMatEffective
   IF(IOutputFLAG.GE.2) THEN

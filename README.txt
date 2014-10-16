@@ -43,20 +43,24 @@ allows for easier debugging but will slow the execution.
 
 IImageFLAG: Determines what images will be produced by the software :
 
-0 Montages or Diffraction patterns only, one per thickness in .txt file format
-1 Montages and Individual reflections saved in .txt file format, Reflections
+0 Montages of Diffraction patterns  one per thickness in .bin file format
+1 Individual reflections saved in .bin file format, Reflections
 will be bundled into seperate folders for each thickness.
-2 Montages, reflections and amplitude/phase images will be saved, phase and
+2 Amplitude and phase images will be saved, phase and
 amplitude images will be saved individually for each reflection and labelled
--P or -A respectively
+-A or -P respectively
+
+Any combination (in any order) of up to three of these options can be specified to suit the users requirements
 
 IOutputFLAG: Determines the amount of calculated Variables which are saved
-for later use by FelixDraw.
+for later use by FelixDraw and FelixRefine.
 
 0 Nothing is saved (Fastest)
-1 Eigenspectra will be saved in binary format
-2 Eigenspectra and Ug Matrix is saved
-3 Eigenspectra, Ug Matrix and Wavefunctions saved
+1 Ug Matrix will be saved in binary format
+2 Eigenspectra is saved in binary format
+3 Wavefunctions are saved in binary format
+
+Any combination (in any order) of up to three of these options can be specified to suit the users requirements
 
 IBinorTextFLAG: Select binary or text output files, binary are smaller and faster to read/write however text files are easier to import into other programs for later use
 
@@ -81,13 +85,15 @@ relative intensity
 
 IMaskFLAG: Chooses between a circular or square input beam
 
-0 Square
-1 Circular
+0 Circular
+1 Square
 
 IAbsorbFLAG: Choose to include absorption in simulation
 
 0 no
-1 yes
+1 Proportional Model
+2 Einstein Model (Perturbative approach)
+3 Einstein Model (Exact Approach)
 
 IAnisotropicDebyeWallerFLAG: Choose to use anisotropic debye waller factors if
 available
@@ -129,12 +135,12 @@ RBSPmax : Maximum weak beam purturbation of a prior weak beam
 
 RConvergenceTolerance (%) : Not yet implemented 
 	       
-RDebyeWallerFactorConstant: If no Debye waller factor is found in the .cif
+RDebyeWallerConstant: If no Debye waller factor is found in the .cif
   file this value will be used for all atomic species missing the factor, note
   this is the B factor not U
 
 RAbsorptionPer: Defines the percentage of absorption applied to the
-  potentials, this values is used for all atomic species
+  potentials when using the propotional model, this values is used for all atomic species
 
 RConvergenceAngle: Defines the convergence angle of the beam in units of half
   the minimum gvector magnitude, at a value of 1 all beams will touch at
@@ -178,3 +184,20 @@ RDeltaThickness: Step between thickness (Angstroms)
 
 IReflectOut: The number of the reflections to be included in the final
   image(s)
+
+The Remainder of the options apply to FelixRefine only
+
+IImageOutputFLAG: Choose whether FelixRefine will output images at the conclusion of the refinement
+
+0 No
+1 Yes
+
+IDevFLAG: Unused awaiting Removal
+
+IRefineModeFLAG: Choose the refinement variable(s)
+
+0 Refine Debye-waller Factor
+1 Refine Structure Factors (UGs)
+2 Refine Thickness
+
+This options 
