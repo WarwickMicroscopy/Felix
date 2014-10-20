@@ -16,15 +16,15 @@ IZolzFLAG                 = 1
 IAbsorbFLAG               = 1
 IAnisoDebyeWallerFlag     = 0
 IBeamConvergenceFLAG      = 1
-IPseudoCubicFLAG          = 1
+IPseudoCubicFLAG          = 0
 IXDirectionFLAG           = 0
 
 # radius of the beam in pixels
 IPixelCount               = 64
 
 # beam selection criteria
-IMinReflectionPool        = 600
-IMinStrongBeams           = 15
+IMinReflectionPool        = 1500
+IMinStrongBeams           = 500
 IMinWeakBeams             = 5
 RBSBMax                   = 0.1
 RBSPMax                   = 0.1
@@ -52,5 +52,5 @@ RAcceleratingVoltage (kV) = 200.0
 RInitialThickness        = 1000.0
 RFinalThickness          = 1000.0
 RDeltaThickness          = 10.0
-IReflectOut              = 7
+IReflectOut              = 30
 
