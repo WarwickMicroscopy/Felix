@@ -434,7 +434,7 @@ SUBROUTINE UgAddAbsorption(IErr)
   
 END SUBROUTINE UgAddAbsorption
 
-REAL FUNCTION RAbsorpativeIntegrand(RIntegrationParameterGMagPrime)
+REAL(RKIND) FUNCTION RAbsorpativeIntegrand(RIntegrationParameterGMagPrime)
 
   USE MyNumbers
   
@@ -450,7 +450,7 @@ REAL FUNCTION RAbsorpativeIntegrand(RIntegrationParameterGMagPrime)
   REAL(RKIND) :: &
        RAtomicFormFactorGMagPrime,&
        RAtomicFormFactorGMagMinusGMagPrime,&
-       RAbsorpativeIntegrand,&
+!!       RAbsorpativeIntegrand,&
        RIntegrationParameterGMagPrime,&
        OneDIntegral
   INTEGER(IKIND) ierr,currentatom
@@ -464,7 +464,7 @@ REAL FUNCTION RAbsorpativeIntegrand(RIntegrationParameterGMagPrime)
 
 END FUNCTION RAbsorpativeIntegrand
 
-REAL FUNCTION RGXIntegration(RIntegrationParameterGMagPrime)
+REAL(RKIND) FUNCTION RGXIntegration(RIntegrationParameterGMagPrime)
 
   USE MyNumbers
   
@@ -480,7 +480,7 @@ REAL FUNCTION RGXIntegration(RIntegrationParameterGMagPrime)
   REAL(RKIND) :: &
        RIntegrationParameterGMagPrime
   REAL(RKIND) :: &
-       RGXIntegration,&
+!!       RGXIntegration,&
        RAbsorpativeIntegrand,RAbsoluteError
   INTEGER(IKIND) :: &
        IErr,IIntegrationSteps
@@ -519,7 +519,7 @@ SUBROUTINE RIntegrateForAbsorption(RAbsorpativeAtomicFormFactor,IErr)
 
 END SUBROUTINE RIntegrateForAbsorption
 
-REAL FUNCTION  OneDIntegral(X)
+REAL(RKIND) FUNCTION  OneDIntegral(X)
   
   USE MyNumbers
   
@@ -539,8 +539,8 @@ REAL FUNCTION  OneDIntegral(X)
        RAtomicFormFactorGMagPrime,&
        RAtomicFormFactorGMagMinusGMagPrime,&
        RAbsorpativeIntegrand,&
-       RIntegrationParameterGMagPrime,&
-       OneDIntegral
+       RIntegrationParameterGMagPrime!!,&
+!!       OneDIntegral
        
   
   SELECT CASE (IScatterFactorMethodFLAG)
