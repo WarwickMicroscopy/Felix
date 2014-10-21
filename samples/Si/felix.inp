@@ -23,8 +23,8 @@ IXDirectionFLAG           = 1
 IPixelCount               = 64
 
 # beam selection criteria
-IMinReflectionPool        = 600
-IMinStrongBeams           = 7
+IMinReflectionPool        = 1000
+IMinStrongBeams           = 125
 IMinWeakBeams             = 5
 RBSBMax                   = 0.1
 RBSPMax                   = 0.1
@@ -35,7 +35,7 @@ RDebyeWallerConstant      = 0.4668
 RAbsorptionPer            = 2.9
 
 # microscope settings
-RConvergenceAngle         = 1.0
+RConvergenceAngle         = 3.0
 IIncidentBeamDirectionX   = 1
 IIncidentBeamDirectionY   = 1
 IIncidentBeamDirectionZ   = 1
