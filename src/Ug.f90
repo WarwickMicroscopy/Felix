@@ -47,7 +47,7 @@ SUBROUTINE GMatrixInitialisation (IErr)
   INTEGER(IKIND) ind,jnd,ierr,IUniqueKey,knd,IFound
 
   IF((IWriteFLAG.GE.0.AND.my_rank.EQ.0).OR.IWriteFLAG.GE.10) THEN
-     PRINT*,"GMatrixInitialisation()"
+     PRINT*,"GMatrixInitialisation(",my_rank,")"
   END IF
 
   DO ind=1,nReflections
@@ -129,7 +129,7 @@ SUBROUTINE DetermineSymmetryRelatedUgs (IErr)
 END SUBROUTINE DetermineSymmetryRelatedUgs
 
 !---------------------------------------------------------------------
-SUBROUTINE UgCalculation (IErr)
+SUBROUTINE StructureFactorCalculation (IErr)
   
   USE MyNumbers
   
@@ -149,7 +149,7 @@ SUBROUTINE UgCalculation (IErr)
        RMeanInnerPotentialVolts,RAtomicFormFactor  
 
   IF((IWriteFLAG.GE.0.AND.my_rank.EQ.0).OR.IWriteFLAG.GE.10) THEN
-     PRINT*,"UgCalculation()"
+     PRINT*,"StructureFactorCalculation(",my_rank,")"
   END IF
   
   DO ind=1,nReflections
@@ -269,7 +269,8 @@ SUBROUTINE UgCalculation (IErr)
        RAngstromConversion*RAngstromConversion)
 
   IF((IWriteFLAG.GE.2.AND.my_rank.EQ.0).OR.IWriteFLAG.GE.10) THEN
-     PRINT*,"UgCalculation(",my_rank,") RMeanInnerCrystalPotential = ",RMeanInnerCrystalPotential,RMeanInnerPotentialVolts
+     PRINT*,"StructureFactorCalculation(",my_rank,") RMeanInnerCrystalPotential = ", &
+          RMeanInnerCrystalPotential,RMeanInnerPotentialVolts
   END IF
   
   DO ind=1,nReflections
@@ -278,7 +279,7 @@ SUBROUTINE UgCalculation (IErr)
 
   CUgMat = CUgMat + CONJG(TRANSPOSE(CUgMat))
 
-END SUBROUTINE UgCalculation
+END SUBROUTINE StructureFactorCalculation
 
 SUBROUTINE UgAddAbsorption(IErr)         
 

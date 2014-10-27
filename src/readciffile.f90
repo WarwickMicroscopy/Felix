@@ -33,13 +33,13 @@
 !%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 !%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-! $Id: inpcif.f90,v 1.23 2014/04/28 12:26:19 phslaz Exp $
+! $Id: ReadCifFile.f90,v 1.23 2014/04/28 12:26:19 phslaz Exp $
 !%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-SUBROUTINE InpCIF(IErr)
+SUBROUTINE ReadCifFile(IErr)
 
   ! -----------------------------------------------------------------------
-  ! InpCIF: Read the input file
+  ! ReadCifFile: Read the input file
   !
   !	IErr	error code
   ! ----------------------------------------------------------------------
@@ -110,7 +110,7 @@ SUBROUTINE InpCIF(IErr)
   ! Request dictionary validation check
   IF(.NOT.dict_('cif_core.dic','valid dtype')) THEN
      IF((IWriteFLAG.GE.1.AND.my_rank.EQ.0).OR.IWriteFLAG.GE.10) THEN
-        PRINT*,"InpCIF(", my_rank, ") Requested Core dictionary not present"
+        PRINT*,"ReadCifFile(", my_rank, ") Requested Core dictionary not present"
         ! Restore the old clipping action for text fields
      END IF
      clipt_ = .TRUE.
@@ -120,11 +120,11 @@ SUBROUTINE InpCIF(IErr)
 
 100 name='felix.cif'
   IF((IWriteFLAG.GE.1.AND.my_rank.EQ.0).OR.IWriteFLAG.GE.10) THEN
-     PRINT*,"InpCIF(", my_rank, ") Read data from CIF ",name
+     PRINT*,"ReadCifFile(", my_rank, ") Read data from CIF ",name
   END IF
   IF(.NOT.ocif_(name)) THEN
      IF((IWriteFLAG.GE.1.AND.my_rank.EQ.0).OR.IWriteFLAG.GE.10) THEN
-        PRINT*,"InpCIF(", my_rank, ") CIF cannot be opened"
+        PRINT*,"ReadCifFile(", my_rank, ") CIF cannot be opened"
      END IF
      IErr=1
      RETURN
@@ -133,16 +133,16 @@ SUBROUTINE InpCIF(IErr)
   ! Assign the data block to be accessed
 120 IF(.NOT.data_(' ')) THEN
      IF((IWriteFLAG.GE.1.AND.my_rank.EQ.0).OR.IWriteFLAG.GE.10) THEN
-        PRINT*,"InpCIF(", my_rank, ") No data_ statement found"
+        PRINT*,"ReadCifFile(", my_rank, ") No data_ statement found"
      END IF
      IErr=1
   END IF
   
 130 IF((IWriteFLAG.GE.1.AND.my_rank.EQ.0).OR.IWriteFLAG.GE.10) THEN
-     PRINT*,"InpCIF(", my_rank, ") Access items in data block  ",bloc_
+     PRINT*,"ReadCifFile(", my_rank, ") Access items in data block  ",bloc_
   END IF
   IF((IWriteFLAG.GE.1.AND.my_rank.EQ.0).OR.IWriteFLAG.GE.10) THEN
-     PRINT*,"InpCIF(", my_rank, ") Cell ",RLengthX,RLengthY,RLengthZ
+     PRINT*,"ReadCifFile(", my_rank, ") Cell ",RLengthX,RLengthY,RLengthZ
   END IF
   
   ! Extract some cell dimensions; test all is OK
@@ -156,7 +156,7 @@ SUBROUTINE InpCIF(IErr)
   f3 = numb_('_cell_length_c', celc, sigc)
   IF(.NOT.(f1.AND.f2.AND.f3)) THEN
      IF((IWriteFLAG.GE.1.AND.my_rank.EQ.0).OR.IWriteFLAG.GE.10) THEN
-        PRINT*,"InpCIF(", my_rank, ") Cell dimension(s) missing!"
+        PRINT*,"ReadCifFile(", my_rank, ") Cell dimension(s) missing!"
      END IF
      IErr=1
   END IF
@@ -164,10 +164,10 @@ SUBROUTINE InpCIF(IErr)
   RLengthX=cela; RLengthY=celb; RLengthZ=celc
   
   IF((IWriteFLAG.GE.1.AND.my_rank.EQ.0).OR.IWriteFLAG.GE.10) THEN
-     PRINT*,"InpCIF(", my_rank, ") Cell ",RLengthX,RLengthY,RLengthZ 
+     PRINT*,"ReadCifFile(", my_rank, ") Cell ",RLengthX,RLengthY,RLengthZ 
   END IF
   IF((IWriteFLAG.GE.1.AND.my_rank.EQ.0).OR.IWriteFLAG.GE.10) THEN
-     PRINT*,"InpCIF(", my_rank, ")      ",siga,sigb,sigc
+     PRINT*,"ReadCifFile(", my_rank, ")      ",siga,sigb,sigc
   END IF
 
   siga = 0.
@@ -179,14 +179,14 @@ SUBROUTINE InpCIF(IErr)
   
   IF(.NOT.(f1.AND.f2.AND.f3)) THEN
      IF((IWriteFLAG.GE.1.AND.my_rank.EQ.0).OR.IWriteFLAG.GE.10) THEN
-        PRINT*,"InpCIF(", my_rank, ") Cell angle(s) missing!"
+        PRINT*,"ReadCifFile(", my_rank, ") Cell angle(s) missing!"
      END IF
      IErr=1
   ENDIF
   ! convert angles from degrees to radians
   
   IF((IWriteFLAG.GE.1.AND.my_rank.EQ.0).OR.IWriteFLAG.GE.10) THEN
-     PRINT*,"InpCIF(", my_rank, ") Angle ",cela,celb,celc
+     PRINT*,"ReadCifFile(", my_rank, ") Angle ",cela,celb,celc
   END IF
 
   IF (cela.GT.TWOPI) THEN
@@ -209,18 +209,18 @@ SUBROUTINE InpCIF(IErr)
   END IF
   
   IF((IWriteFLAG.GE.1.AND.my_rank.EQ.0).OR.IWriteFLAG.GE.10) THEN
-     PRINT*,"InpCIF(", my_rank, ") Angle ",RAlpha,RBeta,RGamma
+     PRINT*,"ReadCifFile(", my_rank, ") Angle ",RAlpha,RBeta,RGamma
   END IF
 
   IF((IWriteFLAG.GE.1.AND.my_rank.EQ.0).OR.IWriteFLAG.GE.10) THEN
-     PRINT*,"InpCIF(", my_rank, ")       ",siga,sigb,sigc
+     PRINT*,"ReadCifFile(", my_rank, ")       ",siga,sigb,sigc
   END IF
   
   f1 = numb_('_cell_volume', cela, siga)
   
   IF((f1) .EQV. .FALSE.) THEN
      IF((IWriteFLAG.GE.1.AND.my_rank.EQ.0).OR.IWriteFLAG.GE.10) THEN
-        PRINT*,"InpCIF(", my_rank, ") Volume missing!"
+        PRINT*,"ReadCifFile(", my_rank, ") Volume missing!"
      END IF
      IVolumeFLAG= 0
      RVolume= RLengthX*RLengthY*RLengthZ* &
@@ -233,21 +233,21 @@ SUBROUTINE InpCIF(IErr)
   ENDIF
   
   IF((IWriteFLAG.GE.1.AND.my_rank.EQ.0).OR.IWriteFLAG.GE.10) THEN
-     PRINT*,"InpCIF(", my_rank, ") Volume ",RVolume
+     PRINT*,"ReadCifFile(", my_rank, ") Volume ",RVolume
   END IF
   IF((IWriteFLAG.GE.1.AND.my_rank.EQ.0).OR.IWriteFLAG.GE.10) THEN
-     PRINT*,"InpCIF(", my_rank, ")        ",siga
+     PRINT*,"ReadCifFile(", my_rank, ")        ",siga
   END IF
     
   ! Extract atom type symbol data in a loop
   IF((IWriteFLAG.GE.1.AND.my_rank.EQ.0).OR.IWriteFLAG.GE.10) THEN
-     PRINT*,"InpCIF(", my_rank, ") Atom type"
+     PRINT*,"ReadCifFile(", my_rank, ") Atom type"
   END IF
 
   DO      
      f1 = char_('_atom_type_symbol', name)
      IF((IWriteFLAG.GE.1.AND.my_rank.EQ.0).OR.IWriteFLAG.GE.10) THEN
-        PRINT*,"InpCIF(", my_rank, ") ", name
+        PRINT*,"ReadCifFile(", my_rank, ") ", name
      END IF
      IF(loop_ .NEQV. .TRUE.) EXIT
   ENDDO
@@ -282,7 +282,7 @@ SUBROUTINE InpCIF(IErr)
   END IF
 
   IF((IWriteFLAG.GE.1.AND.my_rank.EQ.0).OR.IWriteFLAG.GE.10) THEN
-     PRINT*,"InpCIF(", my_rank, ") Space group ",name(1:long_)
+     PRINT*,"ReadCifFile(", my_rank, ") Space group ",name(1:long_)
   END IF
 
   SSpaceGroupName=TRIM(name(1:1))
@@ -299,7 +299,7 @@ SUBROUTINE InpCIF(IErr)
   !-----------------------------------------------------------
 
   IF((IWriteFLAG.GE.1.AND.my_rank.EQ.0).OR.IWriteFLAG.GE.10) THEN
-     PRINT*,"InpCIF(", my_rank, ") Atom sites"
+     PRINT*,"ReadCifFile(", my_rank, ") Atom sites"
   END IF
   
   ! counting loop
@@ -320,49 +320,49 @@ SUBROUTINE InpCIF(IErr)
        RAtomSiteFracCoordVec(IAtomCount,THREEDIM), &
        STAT=IErr)
   IF( IErr.NE.0 ) THEN
-     PRINT*,"InpCIF(", my_rank, ") error ", IErr, " in ALLOCATE()"
+     PRINT*,"ReadCifFile(", my_rank, ") error ", IErr, " in ALLOCATE()"
      RETURN
   ENDIF
   ALLOCATE( &
        SAtomName(IAtomCount), &
        STAT=IErr)
   IF( IErr.NE.0 ) THEN
-     PRINT*,"InpCIF(", my_rank, ") error ", IErr, " in ALLOCATE()"
+     PRINT*,"ReadCifFile(", my_rank, ") error ", IErr, " in ALLOCATE()"
      RETURN
   ENDIF
   ALLOCATE( &
        IAtomNumber(IAtomCount), &
        STAT=IErr)
   IF( IErr.NE.0 ) THEN
-     PRINT*,"InpCIF(", my_rank, ") error ", IErr, " in ALLOCATE()"
+     PRINT*,"ReadCifFile(", my_rank, ") error ", IErr, " in ALLOCATE()"
      RETURN
   ENDIF
   ALLOCATE( &
        RIsotropicDebyeWallerFactors(IAtomCount), &
        STAT=IErr)
   IF( IErr.NE.0 ) THEN
-     PRINT*,"InpCIF(", my_rank, ") error ", IErr, " in ALLOCATE()"
+     PRINT*,"ReadCifFile(", my_rank, ") error ", IErr, " in ALLOCATE()"
      RETURN
   ENDIF
   ALLOCATE( &
        RAtomicSitePartialOccupancy(IAtomCount), &
        STAT=IErr)
   IF( IErr.NE.0 ) THEN
-     PRINT*,"InpCIF(", my_rank, ") error ", IErr, " in ALLOCATE()"
+     PRINT*,"ReadCifFile(", my_rank, ") error ", IErr, " in ALLOCATE()"
      RETURN
   ENDIF
   ALLOCATE( &
        RAnisotropicDebyeWallerFactorTensor(IAtomCount,THREEDIM,THREEDIM), &
        STAT=IErr)
   IF( IErr.NE.0 ) THEN
-     PRINT*,"InpCIF(", my_rank, ") error ", IErr, " in ALLOCATE()"
+     PRINT*,"ReadCifFile(", my_rank, ") error ", IErr, " in ALLOCATE()"
      RETURN
   ENDIF
   ALLOCATE( &
        IAnisotropicDWFTensor(IAtomCount), &
        STAT=IErr)
   IF( IErr.NE.0 ) THEN
-     PRINT*,"InpCIF(", my_rank, ") error ", IErr, " in ALLOCATE()"
+     PRINT*,"ReadCifFile(", my_rank, ") error ", IErr, " in ALLOCATE()"
      RETURN
   ENDIF
 
@@ -503,7 +503,7 @@ SUBROUTINE InpCIF(IErr)
   !----------------------------------------------------------
   
   IF((IWriteFLAG.GE.1.AND.my_rank.EQ.0).OR.IWriteFLAG.GE.10) THEN
-     PRINT*,"InpCIF(", my_rank, ") Symmetries"
+     PRINT*,"ReadCifFile(", my_rank, ") Symmetries"
   END IF
 
   ! counting loop
@@ -522,21 +522,21 @@ SUBROUTINE InpCIF(IErr)
   ENDDO
 
   IF((IWriteFLAG.GE.1.AND.my_rank.EQ.0).OR.IWriteFLAG.GE.10) THEN
-     PRINT*,"InpCIF(", my_rank, ") found", ISymCount, "symmetries"
+     PRINT*,"ReadCifFile(", my_rank, ") found", ISymCount, "symmetries"
   END IF
   
   ALLOCATE( &
        RSymVec(ISymCount,THREEDIM), &
        STAT=IErr)
   IF( IErr.NE.0 ) THEN
-     PRINT*,"InpCIF(", my_rank, ") error ", IErr, " in ALLOCATE()"
+     PRINT*,"ReadCifFile(", my_rank, ") error ", IErr, " in ALLOCATE()"
      RETURN
   ENDIF
   ALLOCATE( &
        RSymMat(ISymCount,THREEDIM,THREEDIM), &
        STAT=IErr)
   IF( IErr.NE.0 ) THEN
-     PRINT*,"InpCIF(", my_rank, ") error ", IErr, " in ALLOCATE()"
+     PRINT*,"ReadCifFile(", my_rank, ") error ", IErr, " in ALLOCATE()"
      RETURN
   ENDIF
   
@@ -610,10 +610,21 @@ SUBROUTINE InpCIF(IErr)
      IF(loop_ .NEQV. .TRUE.) EXIT
   ENDDO
 
+  !closes the cif file
   CALL close_
+  
+  !moved return until after the Call counttotalatoms
+  IF (ITotalAtoms.EQ.0) THEN
+     CALL CountTotalAtoms(IErr)
+     IF( IErr.NE.0 ) THEN
+        PRINT*,"ReadCifFile(", my_rank, ") error in CountTotalAtoms()"
+       ! GOTO 9999
+     ENDIF
+  END IF
+  
   RETURN
 
-END SUBROUTINE InpCIF
+END SUBROUTINE ReadCifFile
 
 SUBROUTINE CifReset
 
