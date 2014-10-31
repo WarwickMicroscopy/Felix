@@ -684,10 +684,10 @@ PROGRAM felixrefine
            !--------------------------------------------------------------------
            
 
-           CALL StructureFactorCalculation (IErr)
+           CALL StructureFactorInitialisation (IErr)
            IF( IErr.NE.0 ) THEN
               PRINT*,"felixrefine(", my_rank, ") error ", IErr, &
-                   " in StructureFactorCalculation"
+                   " in StructureFactorInitialisation"
               GOTO 9999
            ENDIF
 
@@ -700,10 +700,10 @@ PROGRAM felixrefine
            ! calculating Ug matrix for Ug Alteration
            !--------------------------------------------------------------------
            
-           CALL StructureFactorCalculation (IErr)
+           CALL StructureFactorInitialisation (IErr)
            IF( IErr.NE.0 ) THEN
               PRINT*,"felixrefine(", my_rank, ") error ", IErr, &
-                   " in StructureFactorCalculation"
+                   " in StructureFactorInitialisation"
               GOTO 9999
            ENDIF
 
@@ -729,10 +729,10 @@ PROGRAM felixrefine
            
            ISymmetryRelations = ISymmetryRelations*CZeroMat  
            
-           CALL DetermineSymmetryRelatedUgs (IErr)
+           CALL SymmetryRelatedStructureFactorDetermination (IErr)
            IF( IErr.NE.0 ) THEN
               PRINT*,"felixrefine(", my_rank, ") error ", IErr, &
-                   " in DetermineSymmetryRelatedUgs"
+                   " in SymmetryRelatedStructureFactorDetermination"
               GOTO 9999
            ENDIF
            
@@ -759,10 +759,10 @@ PROGRAM felixrefine
            ! calculating Ug matrix for Thickness Determination
            !--------------------------------------------------------------------
            
-           CALL StructureFactorCalculation (IErr)
+           CALL StructureFactorInitialisation (IErr)
            IF( IErr.NE.0 ) THEN
               PRINT*,"felixrefine(", my_rank, ") error ", IErr, &
-                   " in StructureFactorCalculation"
+                   " in StructureFactorInitialisation"
               GOTO 9999
            ENDIF
 
@@ -779,10 +779,10 @@ PROGRAM felixrefine
            
         END SELECT
         
-        CALL UgAddAbsorption(IErr)
+        CALL StructureFactorsWithAbsorptionDetermination(IErr)
         IF( IErr.NE.0 ) THEN
            PRINT*,"felixrefine(", my_rank, ") error ", IErr, &
-                " in UgCalculation"
+                " in StructureFactorsWithAbsorptionDetermination"
            GOTO 9999
         ENDIF
         

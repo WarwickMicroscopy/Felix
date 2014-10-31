@@ -36,9 +36,10 @@
 !Subroutine allocates memory for, and calls the Image setup subroutines.
 !-------------------------------------------------------------------------------
 
-SUBROUTINE ImageSetup
+SUBROUTINE ImageSetup (IErr)
 
-  USE Mynumbers
+  USE MyNumbers
+
 
   USE IPara; USE RPara
 

@@ -585,11 +585,11 @@ USE MyNumbers
      ! DevPara used to be called Sg in the book
      
      RDevPara(knd)= &
-          -( RBigK + DOT(RgVecMatT(knd,:),RTiltedK(:)) /RBigK) + &
+          -( RBigK + DOT_PRODUCT(RgVecMatT(knd,:),RTiltedK(:)) /RBigK) + &
           SQRT( &
-          ( RBigK**2 + DOT(RgVecMatT(knd,:),RTiltedK(:)) )**2 /RBigK**2 - &
+          ( RBigK**2 + DOT_PRODUCT(RgVecMatT(knd,:),RTiltedK(:)) )**2 /RBigK**2 - &
           (RgVecMag(knd)**2 + &
-          2.0D0* DOT(RgVecMatT(knd,:),RTiltedK(:))) &
+          2.0D0* DOT_PRODUCT(RgVecMatT(knd,:),RTiltedK(:))) &
           )
   END DO
 

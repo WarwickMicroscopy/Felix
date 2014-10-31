@@ -41,8 +41,10 @@
 SUBROUTINE ReadInput(IErr)
 
 !Module call
-USE MyMPI
-USE MyNumbers
+  USE MyNumbers
+
+  USE MPI
+  USE MyMPI
 
 IMPLICIT NONE
 

@@ -227,7 +227,7 @@ PROGRAM felixsim
   !--------------------------------------------------------------------
   ! MAIN section
   !--------------------------------------------------------------------
-
+ 
   CALL StructureFactorSetup(IErr)
   IF( IErr.NE.0 ) THEN
      PRINT*,"felixsim(", my_rank, ") error in StructureFactorSetup()"
@@ -260,8 +260,8 @@ PROGRAM felixsim
      CALL WriteDataC_MPI(IChOutUM_MPI, ind,jnd, &
           CUgMatEffective(:,:), nBeams*nBeams, 1, IErr)
      IF( IErr.NE.0 ) THEN
-        PRINT*,"BlochCoefficientCalculation(", my_rank, ") error in WriteDataC_ MPI() of IChOutUM"
-        RETURN
+        PRINT*,"felixsim(", my_rank, ") error in WriteDataC_ MPI() of IChOutUM"
+        GOTO 9999
      ENDIF
   ENDIF
 
@@ -524,9 +524,9 @@ PROGRAM felixsim
              " in ALLOCATE() of DYNAMIC variables Root Montage"
         GOTO 9999
      ENDIF
-  END IF
 
-  RFinalMontageImageRoot = ZERO
+    RFinalMontageImageRoot = ZERO		
+  END IF
 
   IF(my_rank.EQ.0.AND.IImageFLAG.GE.3) THEN
      RIndividualReflectionsRoot = &

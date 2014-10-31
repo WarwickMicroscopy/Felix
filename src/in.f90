@@ -49,6 +49,7 @@ SUBROUTINE ReadInpFile( IErr )
   USE CConst; USE IConst
   USE IPara; USE RPara
   USE IChannels
+
   USE MPI
   USE MyMPI
   
@@ -542,7 +543,7 @@ SUBROUTINE ReadInpFile( IErr )
 120 IF(my_rank.EQ.0.OR.IWriteFLAG.GE.10) THEN
      PRINT*,"Input(): ERR in OPEN"
      PRINT*,""
-     CALL WriteOutInputFile
+     CALL WriteOutInputFile (IErr)
   END IF
   GOTO 1000
   
@@ -726,6 +727,7 @@ SUBROUTINE ReadScaFile( IErr )
   USE CConst; USE IConst
   USE IPara; USE RPara
   USE IChannels
+
   USE MPI
   USE MyMPI
   
@@ -997,7 +999,7 @@ SUBROUTINE ReadEigenSystemChunk( IAllocationChunk,IErr )
 END SUBROUTINE ReadEigenSystemChunk
   
 !Write out the sample input file, when none provided
-SUBROUTINE WriteOutInputFile
+SUBROUTINE WriteOutInputFile (IErr)
   
   USE MyNumbers
   
@@ -1009,10 +1011,13 @@ SUBROUTINE WriteOutInputFile
   USE CPara
   USE SPara
   USE IChannels
+
   USE MPI
   USE MyMPI
   
   IMPLICIT NONE
+
+  INTEGER(IKIND):: IErr
 
   IF(ISoftwareMode.LT.2) THEN
      

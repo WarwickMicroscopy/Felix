@@ -38,6 +38,7 @@ SUBROUTINE GMatrixInitialisation (IErr)
   
   USE CConst; USE IConst
   USE IPara; USE RPara
+
   USE IChannels
   USE MPI
   USE MyMPI
@@ -61,16 +62,18 @@ SUBROUTINE GMatrixInitialisation (IErr)
   
 END SUBROUTINE GMatrixInitialisation
 
-SUBROUTINE DetermineSymmetryRelatedUgs (IErr)
+SUBROUTINE SymmetryRelatedStructureFactorDetermination (IErr)
   
   USE MyNumbers
   
   USE CConst; USE IConst
-  USE IPara; USE RPara
+  USE IPara; USE RPara; USE CPara
+
   USE IChannels
+
   USE MPI
   USE MyMPI
-  USE CPara
+  
   
   IMPLICIT NONE
   
@@ -78,12 +81,12 @@ SUBROUTINE DetermineSymmetryRelatedUgs (IErr)
 
 
   IF((IWriteFLAG.GE.1.AND.my_rank.EQ.0).OR.IWriteFLAG.GE.10) THEN
-     PRINT*,"DetermineSymmetryRelatedUgs(",my_rank,")"
+     PRINT*,"SymmetryRelatedStructureFactorDetermination(",my_rank,")"
   END IF
 
   !Immediately set all the zeros to Relation 1
   
-  ISymmetryRelations = 0
+  ISymmetryRelations = 0_IKIND
   
   Iuid = 0
   
@@ -126,16 +129,19 @@ SUBROUTINE DetermineSymmetryRelatedUgs (IErr)
      RETURN
   ENDIF
   
-END SUBROUTINE DetermineSymmetryRelatedUgs
+END SUBROUTINE SymmetryRelatedStructureFactorDetermination
 
 !---------------------------------------------------------------------
-SUBROUTINE StructureFactorCalculation (IErr)
+SUBROUTINE StructureFactorInitialisation (IErr,CZeroMat)
   
   USE MyNumbers
   
   USE CConst; USE IConst
   USE IPara; USE RPara; USE CPara
+  USE BlochPara
+
   USE IChannels
+
   USE MPI
   USE MyMPI
   
@@ -143,13 +149,15 @@ SUBROUTINE StructureFactorCalculation (IErr)
   
   INTEGER(IKIND) ind,jnd,ierr,imaxj,IFound,ICount,currentatom
   INTEGER(IKIND),DIMENSION(2) :: &
-       IPos
+       IPos, ILoc
   COMPLEX(CKIND) CVgij
   REAL(RKIND) :: &
-       RMeanInnerPotentialVolts,RAtomicFormFactor  
+       RMeanInnerPotentialVolts,RAtomicFormFactor
+  COMPLEX(CKIND),DIMENSION(:,:), ALLOCATABLE :: &
+       CZeroMat
 
   IF((IWriteFLAG.GE.0.AND.my_rank.EQ.0).OR.IWriteFLAG.GE.10) THEN
-     PRINT*,"StructureFactorCalculation(",my_rank,")"
+     PRINT*,"StructureFactorInitialisation(",my_rank,")"
   END IF
   
   DO ind=1,nReflections
@@ -269,7 +277,7 @@ SUBROUTINE StructureFactorCalculation (IErr)
        RAngstromConversion*RAngstromConversion)
 
   IF((IWriteFLAG.GE.2.AND.my_rank.EQ.0).OR.IWriteFLAG.GE.10) THEN
-     PRINT*,"StructureFactorCalculation(",my_rank,") RMeanInnerCrystalPotential = ", &
+     PRINT*,"StructureFactorInitialisation(",my_rank,") RMeanInnerCrystalPotential = ", &
           RMeanInnerCrystalPotential,RMeanInnerPotentialVolts
   END IF
   
@@ -279,9 +287,102 @@ SUBROUTINE StructureFactorCalculation (IErr)
 
   CUgMat = CUgMat + CONJG(TRANSPOSE(CUgMat))
 
-END SUBROUTINE StructureFactorCalculation
+  !Now initialisation calls the Ug calculation subroutines
+  !Used to be in Setup
 
-SUBROUTINE UgAddAbsorption(IErr)         
+  !--------------------------------------------------------------------
+  ! high-energy approximation (not HOLZ compatible)
+  !--------------------------------------------------------------------
+  
+  RBigK= SQRT(RElectronWaveVectorMagnitude**2 + RMeanInnerCrystalPotential)
+
+  IF((IWriteFLAG.GE.1.AND.my_rank.EQ.0).OR.IWriteFLAG.GE.10) THEN
+     PRINT*,"StructureFactorSetup(", my_rank, ") BigK=", RBigK
+  END IF
+    
+  IF(IAbsorbFLAG.GT.1) THEN
+     CZeroMAT = CZERO
+     
+     DO ind = 1,nReflections
+        DO jnd = 1,ind
+           CZeroMAT(ind,jnd) = CONE
+        END DO
+     END DO
+     
+     ALLOCATE( &  
+          ISymmetryRelations(nReflections,nReflections), &
+          STAT=IErr)
+     IF( IErr.NE.0 ) THEN
+        !refinemain was here
+        PRINT*,"StructureFactorSetup(", my_rank, ") error ", IErr, &
+             " in ALLOCATE() of DYNAMIC variables Reflection Matrix"
+        !call error function
+        RETURN
+     ENDIF
+     
+     ISymmetryRelations = ISymmetryRelations*CZeroMat 
+
+     !Symmetry related structure factor calculation
+     !---------------------------------------------
+     CALL SymmetryRelatedStructureFactorDetermination (IErr)
+     IF( IErr.NE.0 ) THEN
+        !refinemain was here
+        PRINT*,"StructureFactorSetup(", my_rank, ") error ", IErr, &
+             " in DetermineSymmetryRelatedUgs"
+        !call error function
+        RETURN
+     ENDIF
+
+
+     ALLOCATE( &  
+          RUniqueUgPrimeValues((SIZE(ISymmetryStrengthKey,DIM=1))), &
+          STAT=IErr)
+     IF( IErr.NE.0 ) THEN
+        !refinemain was here
+        PRINT*,"StructureFactorSetup(", my_rank, ") error ", IErr, &
+             " in ALLOCATE() of DYNAMIC variables Reflection Matrix"
+        !call error function
+        RETURN
+     ENDIF
+     
+     DO ind = 1,(SIZE(ISymmetryStrengthKey,DIM=1))
+        ILoc = MINLOC(ABS(ISymmetryRelations-ind))
+        ISymmetryStrengthKey(ind,:) = ILoc
+     END DO
+  END IF
+  
+  IF(IAbsorbFLAG.GE.1) THEN
+
+     !Structure Factors when taking into account absorption
+     !Flag controlled
+     !-----------------------------------------------------
+     CALL StructureFactorsWithAbsorptionDetermination(IErr)
+     IF( IErr.NE.0 ) THEN
+        PRINT*,"StructureFactorSetup(", my_rank, ") error ", IErr, &
+             " in StructureFactorsWithAbsorptionDetermination"
+        !call error function
+        RETURN
+     ENDIF
+
+
+     IF(IAbsorbFLAG.GE.2) THEN
+        DO ind = 2,(SIZE(ISymmetryStrengthKey,DIM=1))
+           WHERE (ISymmetryRelations.EQ.ind)
+              CUgMatPrime = RUniqueUgPrimeValues(ind)*CIMAGONE
+           END WHERE
+        END DO
+        DO ind = 1,nReflections
+           CUgMatPrime(ind,ind) = RUniqueUgPrimeValues(1)*CIMAGONE
+        END DO
+     END IF
+     CUgMat =  CUgMat+CUgMatPrime
+  
+  ENDIF
+  
+
+END SUBROUTINE StructureFactorInitialisation
+
+SUBROUTINE StructureFactorsWithAbsorptionDetermination(IErr)         
 
 
   USE MyNumbers
@@ -289,7 +390,9 @@ SUBROUTINE UgAddAbsorption(IErr)
   USE CConst; USE IConst
   USE IPara; USE RPara; USE CPara
   USE BlochPara
+
   USE IChannels
+
   USE MPI
   USE MyMPI
   
@@ -307,7 +410,7 @@ SUBROUTINE UgAddAbsorption(IErr)
   COMPLEX(CKIND) CVgij
 
   IF((my_rank.EQ.0.AND.IWriteFLAG.GE.0).OR.IWriteFLAG.GE.10) THEN
-     PRINT*,"UgAddAbsorption(",my_rank,")"
+     PRINT*,"StructureFactorsWithAbsorptionDetermination(",my_rank,")"
   END IF
 
   CUgMatPrime = CZERO
@@ -433,7 +536,7 @@ SUBROUTINE UgAddAbsorption(IErr)
 
   IErr = 0
   
-END SUBROUTINE UgAddAbsorption
+END SUBROUTINE StructureFactorsWithAbsorptionDetermination
 
 REAL FUNCTION RAbsorpativeIntegrand(RIntegrationParameterGMagPrime)
 
@@ -443,6 +546,7 @@ REAL FUNCTION RAbsorpativeIntegrand(RIntegrationParameterGMagPrime)
   USE IPara; USE RPara; USE CPara
   USE BlochPara
   USE IChannels
+ 
   USE MPI
   USE MyMPI
   
@@ -472,7 +576,9 @@ REAL FUNCTION RGXIntegration(RIntegrationParameterGMagPrime)
   USE CConst; USE IConst
   USE IPara; USE RPara; USE CPara
   USE BlochPara
+
   USE IChannels
+
   USE MPI
   USE MyMPI
   
@@ -502,7 +608,9 @@ SUBROUTINE RIntegrateForAbsorption(RAbsorpativeAtomicFormFactor,IErr)
   USE CConst; USE IConst
   USE IPara; USE RPara; USE CPara
   USE BlochPara
+
   USE IChannels
+
   USE MPI
   USE MyMPI
   
@@ -527,7 +635,9 @@ REAL FUNCTION  OneDIntegral(X)
   USE CConst; USE IConst
   USE IPara; USE RPara; USE CPara
   USE BlochPara
+
   USE IChannels
+ 
   USE MPI
   USE MyMPI
   

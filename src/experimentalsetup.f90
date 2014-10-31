@@ -37,13 +37,14 @@
 !%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 !Calls the subroutines which set up the experimental part of felix
-SUBROUTINE ExperimentalSetup
+SUBROUTINE ExperimentalSetup (IErr)
 
   USE MyNumbers
-
+  
+  USE IPara; USE RPara; USE SPara; USE CPara
+ 
   USE MyMPI
   
-
   IMPLICIT NONE
 
   INTEGER(IKIND) :: IErr

@@ -40,7 +40,7 @@ SUBROUTINE Crystallography( IErr )
   USE IPara; USE RPara; USE SPara
   USE IChannels
   
-   USE MyMPI
+  USE MyMPI
 
   IMPLICIT NONE
 
@@ -246,9 +246,9 @@ SUBROUTINE Crystallography( IErr )
   
   ! create new set of reciprocal lattice vectors
 
-  RarVecM= TWOPI*CROSS(RbVecM,RcVecM)/DOT(RbVecM,CROSS(RcVecM,RaVecM))
-  RbrVecM= TWOPI*CROSS(RcVecM,RaVecM)/DOT(RcVecM,CROSS(RaVecM,RbVecM))
-  RcrVecM= TWOPI*CROSS(RaVecM,RbVecM)/DOT(RaVecM,CROSS(RbVecM,RcVecM))
+  RarVecM= TWOPI*CROSS(RbVecM,RcVecM)/DOT_PRODUCT(RbVecM,CROSS(RcVecM,RaVecM))
+  RbrVecM= TWOPI*CROSS(RcVecM,RaVecM)/DOT_PRODUCT(RcVecM,CROSS(RaVecM,RbVecM))
+  RcrVecM= TWOPI*CROSS(RaVecM,RbVecM)/DOT_PRODUCT(RaVecM,CROSS(RbVecM,RcVecM))
 
   ! Calculate the FULL set of possible fractional atomic positions
 

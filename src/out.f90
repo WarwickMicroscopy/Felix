@@ -55,6 +55,7 @@ SUBROUTINE OpenData(IChOutWrite, prefix, surname, IErr)
   USE IConst; USE RConst
   USE IPara; USE RPara
   USE IChannels
+
   USE MPI
   USE MyMPI
 
@@ -128,6 +129,7 @@ SUBROUTINE OpenImageForReadIn(IErr,filename)
   USE IConst; USE RConst
   USE IPara; USE RPara
   USE IChannels
+
   USE MPI
   USE MyMPI
 
@@ -170,6 +172,7 @@ SUBROUTINE ReadImageForRefinement(IErr)
   USE IConst; USE RConst
   USE IPara; USE RPara
   USE IChannels
+
   USE MPI
   USE MyMPI
 
@@ -206,6 +209,7 @@ SUBROUTINE OpenDataForAppend(IChOutWrite, prefix, surname, IErr)
   USE IConst; USE RConst
   USE IPara; USE RPara
   USE IChannels
+
   USE MPI
   USE MyMPI
 
@@ -451,6 +455,8 @@ SUBROUTINE WriteDataC( IChOutWrite, ipos,jpos, data, size, step, IErr)
   USE IPara
   USE RPara
 
+  USE IChannels
+  USE MPI
   USE MyMPI
 
   INTEGER(KIND=IKIND) ipos,jpos, size, step, IErr
@@ -493,6 +499,7 @@ SUBROUTINE WriteEigenSystem_MPI( IChOutWrite, &
   USE IPara
   USE RPara
 
+  USE IChannels
   USE MPI
   USE MyMPI
 
@@ -563,6 +570,7 @@ SUBROUTINE WriteEigenSystemBinary_MPI( IChOutWrite, &
   USE IPara
   USE RPara
 
+  USE IChannels
   USE MPI
   USE MyMPI
 
@@ -625,6 +633,7 @@ SUBROUTINE WriteDataR( IChOutWrite, ipos,jpos, data, size, step, IErr)
   USE IPara
   USE RPara
 
+  USE MPI
   USE MyMPI
 
   INTEGER(KIND=IKIND) ipos,jpos, size, step, IErr
@@ -832,6 +841,8 @@ SUBROUTINE WriteDataR_MPI( IChOutWrite, ipos,jpos, data, size, step, IErr)
   USE IPara
   USE RPara
 
+  USE IChannels
+
   USE MPI
   USE MyMPI
 
@@ -905,6 +916,8 @@ SUBROUTINE WriteImageR_MPI( IChOutWrite, data, IErr,ILocalPixelCountMin,ILocalPi
   USE IPara
   USE RPara
 
+  USE IChannels
+
   USE MPI
   USE MyMPI
 
@@ -968,6 +981,8 @@ SUBROUTINE WriteDataC_MPI( IChOutWrite, ipos,jpos, Cdata, Isize, step, IErr)
   USE RPara
   USE CPara
   USE SPara
+
+  USE IChannels
 
   USE MPI
   USE MyMPI
