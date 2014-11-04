@@ -52,7 +52,7 @@ LIBFLAGS= -llapack -lblas -lfftw3
 # in order to run the code
 
 SIMOBJECTFILES = gmodules.o smodules.o felixsim.o util.o in.o out.o readinput.o readciffile.o experimentalsetup.o imagesetup.o structurefactorsetup.o ciftbx.o hash_funcs.o \
-eigen.o invert.o microscopy.o diffraction.o crystallography.o bloch.o dqng.o xerror.o d1mach.o Ug.o image.o 
+eigen.o invert.o microscopy.o diffraction.o crystallography.o bloch.o dqng.o xerror.o writeoutput.o d1mach.o Ug.o image.o 
 
 DRAWOBJECTFILES = gmodules.o smodules.o felixdraw.o util.o in.o out.o \
 eigen.o invert.o microscopy.o diffraction.o crystallography.o bloch.o Ug.o image.o readciffile.o ciftbx.o hash_funcs.o dqng.o xerror.o d1mach.o

@@ -49,7 +49,19 @@ SUBROUTINE ExperimentalSetup (IErr)
 
   INTEGER(IKIND) :: IErr
 
+  !--------------------------------------------------------------------
+  ! Allocate Crystallography Variables
+  !--------------------------------------------------------------------
+  !What should I do with this?     
+  ALLOCATE( &
+       RrVecMat(ITotalAtoms,THREEDIM), &
+       STAT=IErr)
+  IF( IErr.NE.0 ) THEN
+     PRINT*,"FelixSim(", my_rank, ") error ", IErr, " in ALLOCATE()"
+     RETURN
+  ENDIF
   
+
   !--------------------------------------------------------------------
   ! microscopy settings
   !--------------------------------------------------------------------
