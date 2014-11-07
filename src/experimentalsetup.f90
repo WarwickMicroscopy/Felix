@@ -77,10 +77,10 @@ SUBROUTINE ExperimentalSetup (IErr)
   !--------------------------------------------------------------------
   ! crystallography settings
   !-------------------------------------------------------------------
-  CALL Crystallography( IErr )
+  CALL CrystallographyInitialisation( IErr )
   IF( IErr.NE.0 ) THEN
      PRINT*,"ExperimentalSetup(", my_rank, ") error", IErr, &
-          "in Crystallography()"
+          "in CrystallographyInitialisation()"
      !Call error function here - function error
      RETURN
   ENDIF
@@ -89,10 +89,10 @@ SUBROUTINE ExperimentalSetup (IErr)
   ! diffraction initialization
   !--------------------------------------------------------------------
 
-  CALL DiffractionPatternDefinitions( IErr )
+  CALL DiffractionPatternInitialisation( IErr )
   IF( IErr.NE.0 ) THEN
      PRINT*,"ExperimentalSetup(", my_rank, ") error",IErr, &
-          "in DiffractionPatternDefinitions()"
+          "in DiffractionPatternInitialisation()"
      !Call error function here - function error
      RETURN
   ENDIF

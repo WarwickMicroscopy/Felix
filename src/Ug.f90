@@ -147,12 +147,14 @@ SUBROUTINE StructureFactorInitialisation (IErr,CZeroMat)
   
   IMPLICIT NONE
   
-  INTEGER(IKIND) ind,jnd,ierr,imaxj,IFound,ICount,currentatom
+  INTEGER(IKIND) ind, jnd, knd, oddindlorentz, evenindlorentz, oddindgauss, &
+       evenindgauss,imaxj, IFound, ICount, currentatom,IErr
   INTEGER(IKIND),DIMENSION(2) :: &
        IPos, ILoc
   COMPLEX(CKIND) CVgij
   REAL(RKIND) :: &
-       RMeanInnerPotentialVolts,RAtomicFormFactor
+       RMeanInnerPotentialVolts,RAtomicFormFactor, Lorentzian,Gaussian
+ ! REAL(RKIND),DIMENSION(3) :: RAtomicFormFactorSum
   COMPLEX(CKIND),DIMENSION(:,:), ALLOCATABLE :: &
        CZeroMat
 
@@ -160,9 +162,10 @@ SUBROUTINE StructureFactorInitialisation (IErr,CZeroMat)
      PRINT*,"StructureFactorInitialisation(",my_rank,")"
   END IF
   
+
   DO ind=1,nReflections
      imaxj = ind
-     DO jnd=1,imaxj
+     DO jnd=1,imaxj 
         
         CVgij= 0.0D0
         
@@ -172,37 +175,100 @@ SUBROUTINE StructureFactorInitialisation (IErr,CZeroMat)
            
            SELECT CASE (IScatterFactorMethodFLAG)
               
-           CASE(0) ! Kirkland Method using 3 Gaussians and 3 Lorentzians 
+           CASE(0) ! Kirkland Method using 3 Gaussians and 3 Lorentzians
+ 
+              RAtomicFormFactor = ZERO
+              DO knd = 1, 3
               
-              RAtomicFormFactor = &
-                   ! 3 Lorentzians
-                   RScattFactors(ICurrentAtom,1) / &
-                   (RgMatMag(ind,jnd)**2 + RScattFactors(ICurrentAtom,2)) + &
-                   RScattFactors(ICurrentAtom,3) / &
-                   (RgMatMag(ind,jnd)**2 + RScattFactors(ICurrentAtom,4)) + &
-                   RScattFactors(ICurrentAtom,5) / &
-                   (RgMatMag(ind,jnd)**2 + RScattFactors(ICurrentAtom,6)) + &
-                   ! 3 Gaussians
-                   RScattFactors(ICurrentAtom,7) * &
-                   EXP(-RgMatMag(ind,jnd)**2 * RScattFactors(ICurrentAtom,8)) + &
-                   RScattFactors(ICurrentAtom,9) * &
-                   EXP(-RgMatMag(ind,jnd)**2 * RScattFactors(ICurrentAtom,10)) + &
-                   RScattFactors(ICurrentAtom,11) * &
-                   EXP(-RgMatMag(ind,jnd)**2 * RScattFactors(ICurrentAtom,12))
+                 !odd and even indicies for Lorentzian function
+                 evenindlorentz = knd*2
+                 oddindlorentz = knd*2 -1
+                 
+                 !odd and even indicies for Gaussian function
+                 evenindgauss = evenindlorentz + 6
+                 oddindgauss = oddindlorentz + 6
+                 
+                 !Kirkland Method uses summation of 3 Gaussians and 3 Lorentzians (summed in loop)
+                 RAtomicFormFactor = RAtomicFormFactor + &
+                      !3 Lorentzians
+                      LORENTZIAN(RScattFactors(ICurrentAtom,oddindlorentz), RGMatMag(ind,jnd),ZERO,&
+                      RScattFactors(ICurrentAtom,evenindlorentz))+ &
+                      !3 Gaussians
+                      GAUSSIAN(RScattFactors(ICurrentAtom,oddindgauss),ZERO, & 
+                      1/(SQRT(2*RScattFactors(ICurrentAtom,evenindgauss))),RgMatMag(ind,jnd),ZERO)
+
+              END DO
+              
+!----------------------------------------------------------------------------------------------
+              !Old Form 
+              ! RAtomicFormFactor = &
+                      ! 3 Lorentzians
+                 !     LORENTZIAN(RScattFactors(ICurrentAtom,1), RGMatMag(ind,jnd),ZERO,&
+                  !    RScattFactors(ICurrentAtom,evenind)) + &
+                   !   LORENTZIAN(RScattFactors(ICurrentAtom,3), RGMatMag(ind,jnd),ZERO,&
+                   !   RScattFactors(ICurrentAtom,4)) + &
+                  !     LORENTZIAN(RScattFactors(ICurrentAtom,5), RGMatMag(ind,jnd),ZERO,&
+!                       RScattFactors(ICurrentAtom,6)) + &
+!                       ! 3 Gaussians
+!                       Gaussian(RScattFactors(ICurrentAtom,7),ZERO, & 
+!                       1/(SQRT(2*RScattFactors(ICurrentAtom,8))),RgMatMag(ind,jnd),ZERO) + &
+!                       Gaussian(RScattFactors(ICurrentAtom,9),ZERO, & 
+!                       1/(SQRT(2*RScattFactors(ICurrentAtom,10))),RgMatMag(ind,jnd),ZERO) + &
+!                       Gaussian(RScattFactors(ICurrentAtom,11),ZERO, & 
+!                       1/(SQRT(2*RScattFactors(ICurrentAtom,12))),RgMatMag(ind,jnd),ZERO)
+                 
+
+             
+                 !  RScattFactors(ICurrentAtom,7) * &
+                 !  EXP(-RgMatMag(ind,jnd)**2 * RScattFactors(ICurrentAtom,8)) + &
+                 !  RScattFactors(ICurrentAtom,9) * &
+                 !  EXP(-RgMatMag(ind,jnd)**2 * RScattFactors(ICurrentAtom,10)) + &
+                 !  RScattFactors(ICurrentAtom,11) * &
+                 !  EXP(-RgMatMag(ind,jnd)**2 * RScattFactors(ICurrentAtom,12))
+!----------------------------------------------------------------------------------------------
               
            CASE(1) ! 8 Parameter Method with Scattering Parameters from Peng et al 1996 
-              RAtomicFormFactor = &
-                   RScattFactors(ICurrentAtom,1) * &
-                   EXP(-(RgMatMag(ind,jnd)**2)/4 * RScattFactors(ICurrentAtom,5)) + &
-                   RScattFactors(ICurrentAtom,2) * &
-                   EXP(-(RgMatMag(ind,jnd)**2)/4 * RScattFactors(ICurrentAtom,6)) + &
-                   RScattFactors(ICurrentAtom,3) * &
-                   EXP(-(RgMatMag(ind,jnd)**2)/4 * RScattFactors(ICurrentAtom,7)) + &
-                   RScattFactors(ICurrentAtom,4) * &
-                   EXP(-(RgMatMag(ind,jnd)**2)/4 * RScattFactors(ICurrentAtom,8))
+              
+               RAtomicFormFactor = ZERO
+               DO knd = 1, 4
+                 
+
+                  !Peng Method uses summation of 4 Gaussians
+                  RAtomicFormFactor = RAtomicFormFactor + &
+                       !4 Gaussians
+                       GAUSSIAN(RScattFactors(ICurrentAtom,knd),ZERO, & 
+                       SQRT(2/RScattFactors(ICurrentAtom,knd+4)),RgMatMag(ind,jnd),ZERO)
+
+               END DO
+!----------------------------------------------------------------------------------------------------
+              !Old Form
+           !    RAtomicFormFactor = &
+!                    RScattFactors(ICurrentAtom,1) * &
+!                    EXP(-(RgMatMag(ind,jnd)**2)/4 * RScattFactors(ICurrentAtom,5)) + &
+!                    RScattFactors(ICurrentAtom,2) * &
+!                    EXP(-(RgMatMag(ind,jnd)**2)/4 * RScattFactors(ICurrentAtom,6)) + &
+!                    RScattFactors(ICurrentAtom,3) * &
+!                    EXP(-(RgMatMag(ind,jnd)**2)/4 * RScattFactors(ICurrentAtom,7)) + &
+!                    RScattFactors(ICurrentAtom,4) * &
+!                    EXP(-(RgMatMag(ind,jnd)**2)/4 * RScattFactors(ICurrentAtom,8))
+!----------------------------------------------------------------------------------------------------
 
            CASE(2) ! 8 Parameter Method with Scattering Parameters from Doyle and Turner Method (1968)
 
+!                RAtomicFormFactor = ZERO
+!                DO knd = 1, 4
+                 
+!                   evenindgauss = knd*2
+!                   oddindgauss = knd*2 -1
+!                   !Doyle &Turner uses summation of 4 Gaussians
+!                   RAtomicFormFactor = RAtomicFormFactor + &
+!                        !4 Gaussians
+!                        GAUSSIAN(RScattFactors(ICurrentAtom,oddindgauss),ZERO, & 
+!                        SQRT(2/RScattFactors(ICurrentAtom,evenindgauss)),RgMatMag(ind,jnd),ZERO)
+
+!                END DO
+
+!This doesn't produce a correct result?
               RAtomicFormFactor = &
                    RScattFactors(ICurrentAtom,1) * &
                    EXP(-(RgMatMag(ind,jnd)**2)/4 * RScattFactors(ICurrentAtom,2)) + &
@@ -215,7 +281,7 @@ SUBROUTINE StructureFactorInitialisation (IErr,CZeroMat)
 
            END SELECT
               
-          ! initialize potential as in Eq. (6.10) of Kirkland
+           ! initialize potential as in Eq. (6.10) of Kirkland
 
            RAtomicFormFactor = RAtomicFormFactor*ROcc(iAtom)
 
@@ -765,6 +831,9 @@ REAL FUNCTION  OneDIntegral(X)
   OneDIntegral = RAbsorpativeIntegrand
 
 END FUNCTION OneDIntegral
+
+
+
 !!$REAL FUNCTION  OneDIntegral(X)
 !!$  
 !!$  USE MyNumbers

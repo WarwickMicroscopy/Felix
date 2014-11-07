@@ -375,7 +375,8 @@ PROGRAM felixrefine
 
   CALL MicroscopySettings( IErr )
   IF( IErr.NE.0 ) THEN
-     PRINT*,"felixrefine(", my_rank, ") error in MicroscopySettings()"
+     PRINT*,"felixrefine(", my_rank, ") error ", IErr, &
+          "in MicroscopySettings()"
      GOTO 9999
   ENDIF
 
@@ -383,9 +384,10 @@ PROGRAM felixrefine
   ! crystallography settings
   !--------------------------------------------------------------------
 
-  CALL Crystallography( IErr )
+  CALL CrystallographyInitialisation( IErr )
   IF( IErr.NE.0 ) THEN
-     PRINT*,"felixrefine(", my_rank, ") error in Crystallography()"
+     PRINT*,"felixrefine(", my_rank, ") error", IErr, &
+          "in CrystallographyInitialisation()"
      GOTO 9999
   ENDIF
 
@@ -393,9 +395,10 @@ PROGRAM felixrefine
   ! diffraction initialization
   !--------------------------------------------------------------------
 
-  CALL DiffractionPatternDefinitions( IErr )
+  CALL DiffractionPatternInitialisation( IErr )
   IF( IErr.NE.0 ) THEN
-     PRINT*,"felixrefine(", my_rank, ") error in DiffractionPatternDefinitions()"
+     PRINT*,"felixrefine(", my_rank, ") error ", IErr, &
+          "in DiffractionPatternInitialisation()"
      GOTO 9999
   ENDIF
 
@@ -422,9 +425,9 @@ PROGRAM felixrefine
   ! image initialization
   !--------------------------------------------------------------------
 
-  CALL ImageInitialization( IErr )
+  CALL ImageInitialisation( IErr )
   IF( IErr.NE.0 ) THEN
-     PRINT*,"felixrefine(", my_rank, ") error in ImageInitializtion()"
+     PRINT*,"felixrefine(", my_rank, ") error in ImageInitialisation()"
      GOTO 9999
   ENDIF
 
@@ -443,10 +446,10 @@ PROGRAM felixrefine
      GOTO 9999
   ENDIF
 
-  CALL ImageMaskInitialization(IErr)
+  CALL ImageMaskInitialisation(IErr)
   IF( IErr.NE.0 ) THEN
      PRINT*,"felixrefine(", my_rank, ") error ", IErr, &
-          " in ImageMaskInitialization"
+          " in ImageMaskInitialisation"
      GOTO 9999
   END IF
 
@@ -1249,7 +1252,7 @@ PROGRAM felixrefine
      RFinalMontageImage = ZERO
      DO ind = 1,2*IPixelCount
         DO jnd = 1,2*IPixelCount
-           CALL MakeMontagePixel(ind,jnd,1,&
+           CALL MontageInitialisation(ind,jnd,1,&
                 RFinalMontageImage,&
                 RBestCorrelationImage(ind,jnd,:),IErr)
            IF( IErr.NE.0 ) THEN

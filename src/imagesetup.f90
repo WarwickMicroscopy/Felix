@@ -72,10 +72,10 @@ SUBROUTINE ImageSetup (IErr)
   ! image initialization
   !--------------------------------------------------------------------
 
-  CALL ImageInitialization( IErr )
+  CALL ImageInitialisation( IErr )
   IF( IErr.NE.0 ) THEN
      PRINT*,"ImageSetup(", my_rank, ") error", IErr, &
-	  "in ImageInitializtion()"
+	  "in ImageInitialistion()"
      RETURN
   ENDIF
 
@@ -97,10 +97,10 @@ SUBROUTINE ImageSetup (IErr)
 
   !Calls subroutine that sets up masking image
 
-  CALL ImageMaskInitialization(IErr)
+  CALL ImageMaskInitialisation(IErr)
   IF( IErr.NE.0 ) THEN
      PRINT*,"ImageSetup(", my_rank, ") error ", IErr, &
-          " in ImageMaskInitialization"
+          " in ImageMaskInitialisation"
      RETURN
   END IF
 

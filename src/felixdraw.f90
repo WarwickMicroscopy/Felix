@@ -201,10 +201,10 @@ PROGRAM felixdraw
      GOTO 9999
   ENDIF
   
-  CALL ImageMaskInitialization (IErr)
+  CALL ImageMaskInitialisation (IErr)
   IF( IErr.NE.0 ) THEN
      PRINT*,"felixdraw(", my_rank, ") error ", IErr, &
-          " in ImageMaskInitialization"
+          " in ImageMaskInitialisation"
      GOTO 9999
   END IF
   
@@ -258,9 +258,9 @@ PROGRAM felixdraw
   ! crystallography initialization
   !--------------------------------------------------------------------
 
-  CALL Crystallography( IErr )
+  CALL CrystallographyInitialisation( IErr )
   IF( IErr.NE.0 ) THEN
-     PRINT*,"felixdraw(", my_rank, ") error in Crystallography()"
+     PRINT*,"felixdraw(", my_rank, ") error in CrystallographyInitialisation()"
      GOTO 9999
   ENDIF
 
@@ -268,9 +268,10 @@ PROGRAM felixdraw
   ! diffraction initialization
   !--------------------------------------------------------------------
 
-  CALL DiffractionPatternDefinitions( IErr )
+  CALL DiffractionPatternInitialisation( IErr )
   IF( IErr.NE.0 ) THEN
-     PRINT*,"felixdraw(", my_rank, ") error in DiffractionPatternDefinitions()"
+     PRINT*,"felixdraw(", my_rank, ") error", IErr, &
+          "in ()DiffractionPatternInitialisation"
      GOTO 9999
   ENDIF
 
@@ -406,9 +407,9 @@ PROGRAM felixdraw
   ! image initialization
   !--------------------------------------------------------------------
 
-  CALL ImageInitialization( IErr )
+  CALL ImageInitialisation( IErr )
   IF( IErr.NE.0 ) THEN
-     PRINT*,"felixdraw(", my_rank, ") error in ImageInitializtion()"
+     PRINT*,"felixdraw(", my_rank, ") error in ImageInitialisation()"
      GOTO 9999
   ENDIF
  
@@ -823,7 +824,7 @@ PROGRAM felixdraw
         DO ind = 1,2*IPixelCount
            DO jnd = 1,2*IPixelCount
               
-              CALL MakeMontagePixel(ind,jnd,IThicknessIndex,&
+              CALL MontageInitialisation(ind,jnd,IThicknessIndex,&
                    RFinalMontageImage,&
                    RIndividualReflectionsDraw(ind,jnd,:,IThicknessIndex),IERR)
               

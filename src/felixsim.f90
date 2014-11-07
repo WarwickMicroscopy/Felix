@@ -514,23 +514,15 @@ PROGRAM FelixSim
           CAmplitudeandPhaseRoot * CONJG(CAmplitudeandPhaseRoot)
   END IF
 
-  IF(my_rank.EQ.0) THEN
-     DO IThicknessIndex =1,IThicknessCount
-        DO knd = 1,IPixelTotal
-           ind = IPixelLocations(knd,1)
-           jnd = IPixelLocations(knd,2)
-           CALL MakeMontagePixel(ind,jnd,IThicknessIndex,&
-                RFinalMontageImageRoot,&
-                RIndividualReflectionsRoot(:,IThicknessIndex,knd),IErr)
-           IF( IErr.NE.0 ) THEN
-              PRINT*,"FelixSim(", my_rank, ") error ", IErr, &
-                   " in MakeMontagePixel"
-              GOTO 9999
-           ENDIF
-        END DO
-     END DO
+  IF(my_rank.EQ.ZERO) THEN
+     CALL MontageSetup(IThicknessIndex,knd,ind,jnd,RFinalMontageImageRoot, &
+          RIndividualReflectionsRoot,IErr)
+     IF( IErr.NE.0 ) THEN
+        PRINT*,"FelixSim(", my_rank, ") error ", IErr, &
+             " in MontageSetup"
+        GOTO 9999
+     ENDIF
   END IF
-
   !--------------------------------------------------------------------
   ! Write out Images
   !--------------------------------------------------------------------

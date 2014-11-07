@@ -32,7 +32,7 @@
 !
 !%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-SUBROUTINE ImageInitialization( IErr )
+SUBROUTINE ImageInitialisation( IErr )
 
   USE MyNumbers
   
@@ -51,13 +51,13 @@ SUBROUTINE ImageInitialization( IErr )
   INTEGER(IKIND) IErr, ind,jnd
   
   IF((IWriteFLAG.GE.0.AND.my_rank.EQ.0).OR.IWriteFLAG.GE.10) THEN
-     PRINT*,"ImageInitialization()"
+     PRINT*,"ImageInitialisation()"
   END IF
   
 !Determine Positions of reflections in final image (may not need to be here)
 
   IF((IWriteFLAG.GE.1.AND.my_rank.EQ.0).OR.IWriteFLAG.GE.10) THEN
-     PRINT*,"ImageInitialization(",my_rank,") nReflections,MinGMag =", nReflections, RMinimumGMag
+     PRINT*,"ImageInitialisation(",my_rank,") nReflections,MinGMag =", nReflections, RMinimumGMag
   END IF
 
   ! positions of the centres of the disks
@@ -93,14 +93,14 @@ SUBROUTINE ImageInitialization( IErr )
   END IF
      
   IF((IWriteFLAG.GE.1.AND.my_rank.EQ.0).OR.IWriteFLAG.GE.10) THEN
-     PRINT*,"ImageInitialization(",my_rank,") IImageSizeXY=", IImageSizeXY
+     PRINT*,"ImageInitialisation(",my_rank,") IImageSizeXY=", IImageSizeXY
   END IF
     
   RETURN
 
-END SUBROUTINE ImageInitialization
+END SUBROUTINE ImageInitialisation
 
-SUBROUTINE MakeMontagePixel(ind,jnd,ithicknessindex,RMontageImage,RIntensity,Ierr)
+SUBROUTINE MontageInitialisation(ind,jnd,ithicknessindex,RMontageImage,RIntensity,Ierr)
   
   USE MyNumbers
   
@@ -155,11 +155,11 @@ SUBROUTINE MakeMontagePixel(ind,jnd,ithicknessindex,RMontageImage,RIntensity,Ier
      END IF
   END DO
 
-END SUBROUTINE MakeMontagePixel
+END SUBROUTINE MontageInitialisation
 
 !---------------------------------------------------------------------
 !
-SUBROUTINE ImageMaskInitialization (IErr)
+SUBROUTINE ImageMaskInitialisation (IErr)
   
   USE MyNumbers
   
@@ -176,7 +176,7 @@ SUBROUTINE ImageMaskInitialization (IErr)
   REAL(RKIND) :: Rradius, RImageRadius
   
   IF((IWriteFLAG.EQ.6.AND.my_rank.EQ.0).OR.IWriteFLAG.GE.10) THEN
-     PRINT*,"DBG: ImageMaskInitialization()"
+     PRINT*,"DBG: ImageMaskInitialisation()"
   END IF
 
   IPixelTotal =0
@@ -241,4 +241,4 @@ SUBROUTINE ImageMaskInitialization (IErr)
      END DO
   END SELECT
   
-END SUBROUTINE ImageMaskInitialization
+END SUBROUTINE ImageMaskInitialisation

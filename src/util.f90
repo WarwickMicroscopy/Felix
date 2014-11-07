@@ -338,3 +338,31 @@ c = 0
 ISubgroups = b
 
 END SUBROUTINE GreatestCommonDivisor
+
+!Defines a Lorentzian Distribution for any parameter input
+FUNCTION Lorentzian(FWHM,x,x_0,offset)
+
+  USE MyNumbers
+  
+  USE RPara; 
+
+  IMPLICIT NONE
+
+  REAL(RKIND):: FWHM,x,x_0,offset,LORENTZIAN
+
+  LORENTZIAN = FWHM/(((x+x_0)**2)+offset)
+  
+END FUNCTION Lorentzian
+
+!Defines a Gaussian distribution for any parameter input 
+FUNCTION Gaussian(height,peakcentre,standarddeviation,x,intercept)
+
+  USE MyNumbers
+
+  IMPLICIT NONE
+
+  REAL(RKIND):: height,peakcentre,standarddeviation,intercept,x,gaussian
+
+  Gaussian = height*exp(-(((x-peakcentre)**2)/(2*(standarddeviation**2))))+ intercept
+  
+END FUNCTION Gaussian
