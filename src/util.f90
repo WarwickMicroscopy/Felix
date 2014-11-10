@@ -355,13 +355,13 @@ FUNCTION Lorentzian(FWHM,x,x_0,offset)
 END FUNCTION Lorentzian
 
 !Defines a Gaussian distribution for any parameter input 
-FUNCTION Gaussian(height,peakcentre,standarddeviation,x,intercept)
+FUNCTION Gaussian(height,x,peakcentre,standarddeviation,intercept)
 
   USE MyNumbers
 
   IMPLICIT NONE
 
-  REAL(RKIND):: height,peakcentre,standarddeviation,intercept,x,gaussian
+  REAL(RKIND):: height,x,peakcentre,standarddeviation,intercept,gaussian
 
   Gaussian = height*exp(-(((x-peakcentre)**2)/(2*(standarddeviation**2))))+ intercept
   
