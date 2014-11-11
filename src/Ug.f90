@@ -694,7 +694,7 @@ SUBROUTINE RIntegrateForAbsorption(RAbsorpativeAtomicFormFactor,IErr)
 
 END SUBROUTINE RIntegrateForAbsorption
 
-REAL FUNCTION  OneDIntegral(X)
+REAL(RKIND) FUNCTION OneDIntegral(X)
   
   USE MyNumbers
   
@@ -717,8 +717,8 @@ REAL FUNCTION  OneDIntegral(X)
        RAtomicFormFactorGMagMinusGMagPrime,&
        RAbsorpativeIntegrand,&
        RIntegrationParameterGMagPrime,&
-       OneDIntegral,Gaussian, &
-       Lorentzian
+       Gaussian, Lorentzian !!&
+       !OneDIntegral,
 
   INTEGER knd,evenindlorentz,oddindlorentz,evenindgauss,oddindgauss
        
