@@ -32,110 +32,24 @@
 !
 !%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-SUBROUTINE Crystallography( IErr )
+SUBROUTINE CrystalLatticeVectorDetermination(IErr)
 
   USE MyNumbers
-  
-  USE CConst; USE IConst
-  USE IPara; USE RPara; USE SPara
-  USE IChannels
-  
-   USE MyMPI
 
+  USE RPara; USE IPara; USE SPara
+
+  USE MPI
+  USE MyMPI
+  
   IMPLICIT NONE
 
-  REAL(RKIND) norm
+  INTEGER(IKIND) IErr,ind
+
+  REAL(RKIND) :: RTTest
   REAL(RKIND), DIMENSION(THREEDIM) :: &
        RXDirO, RYDirO, RZDirO, RYDirC
   REAL(RKIND), DIMENSION(THREEDIM,THREEDIM) :: &
        RTMatC2O,RTMatO2M
-
-  INTEGER(IKIND)IErr, ind,jnd,knd, Ifullind, Iuniind
-  LOGICAL Lunique
-  REAL(RKIND) :: RTTEst
-
-  IF((IWriteFLAG.GE.0.AND.my_rank.EQ.0).OR.IWriteFLAG.GE.10) THEN
-     PRINT*,"Crystallography(",my_rank,")"
-  END IF
-    
-  IF(IDiffractionFLAG.EQ.1) THEN
-     DEALLOCATE(&
-          RFullAtomicFracCoordVec,SFullAtomicNameVec,&
-          RFullPartialOccupancy,RFullIsotropicDebyeWallerFactor, &
-          IFullAtomNumber, IFullAnisotropicDWFTensor, &
-          MNP,SMNP,RDWF,ROcc,IAtoms,IAnisoDWFT,STAT=IErr)
-     IF( IErr.NE.0 ) THEN
-        PRINT*,"Crystallography(", my_rank, ") error ", IErr, " in ALLOCATE()"
-        RETURN
-     ENDIF
-  END IF
-  
-  IF(IPseudoCubicFLAG.EQ.1.AND.IDiffractionFLAG.EQ.0) THEN
-     RZDirC(1) = (IIncidentBeamDirectionX/3.0D0)+&
-          (IIncidentBeamDirectionY/3.0D0)-&
-          (2.0D0*(IIncidentBeamDirectionZ/3.0D0))
-     RZDirC(2) = (-IIncidentBeamDirectionX/3.0D0)+&
-          (2.0D0*(IIncidentBeamDirectionY/3.0D0))-&
-          (IIncidentBeamDirectionZ/3.0D0)
-     RZDirC(3) = (IIncidentBeamDirectionX/3.0D0)+&
-          (IIncidentBeamDirectionY/3.0D0)+&
-          (IIncidentBeamDirectionZ/3.0D0)
-     RXDirC(1) = (IXDirectionX/3.0D0)+&
-          (IXDirectionY/3.0D0)-&
-          (2.0D0*(IXDirectionZ/3.0D0))
-     RXDirC(2) = (-IXDirectionX/3.0D0)+&
-          (2.0D0*(IXDirectionY/3.0D0))-&
-          (IXDirectionZ/3.0D0)
-     RXDirC(3) = (IXDirectionX/3.0D0)+&
-          (IXDirectionY/3.0D0)+&
-          (IXDirectionZ/3.0D0)
-     RNormDirC(1) = (INormalDirectionX/3.0D0)+&
-          (INormalDirectionY/3.0D0)-&
-          (2.0D0*(INormalDirectionZ/3.0D0))
-     RNormDirC(2) = (-INormalDirectionX/3.0D0)+&
-          (2.0D0*(INormalDirectionY/3.0D0))-&
-          (INormalDirectionZ/3.0D0)
-     RNormDirC(3) = (INormalDirectionX/3.0D0)+&
-          (INormalDirectionY/3.0D0)+&
-          (INormAlDirectionZ/3.0D0)
-
-     DO ind =1,3
-        IF(ABS(RZDirC(ind)).LE.TINY) THEN
-           RZDirC(ind) = 100000000.0D0 ! A large number
-        END IF
-        IF(ABS(RXDirC(ind)).LE.TINY) THEN
-           RXDirC(ind) = 100000000.0D0 ! A large number
-        END IF
-        IF(ABS(RNormDirC(ind)).LE.TINY) THEN
-           RNormDirC(ind) = 100000000.0D0 ! A large number
-        END IF
-     END DO
-        RZDirC = RZDirC/MINVAL(ABS(RZDirC))
-        RXDirC = RXDirC/MINVAL(ABS(RXDirC))
-
-     DO ind =1,3
-        IF(RZDirC(ind).GT.10000000.0D0) THEN
-           RZDirC(ind) = ZERO ! A large number
-        END IF
-        IF(RXDirC(ind).GT.10000000.0D0) THEN
-           RXDirC(ind) = ZERO ! A large number
-        END IF
-        IF(RNormDirC(ind).GT.10000000.0D0) THEN
-           RNormDirC(ind) = ZERO ! A large number
-        END IF
-     END DO
-     
-     RZDirC = REAL(NINT(RZDirC))
-     RXDirC = REAL(NINT(RXDirC))
-     RNormDirC = REAL(NINT(RNormDirC))
-     
-  END IF
-
-!!$  IF(my_rank.EQ.0) THEN
-!!$     PRINT*,RZDirC,RXDirC
-!!$  END IF
-
-  !RYDirC = CROSS(RZDirC,RYDirC)
 
   ! Setup Crystal Lattice Vectors: orthogonal reference frame in Angstrom units
 
@@ -207,7 +121,7 @@ SUBROUTINE Crystallography( IErr )
   RTMatC2O(:,3)= RcVecO(:)
 
   IF((IWriteFLAG.GE.3.AND.my_rank.EQ.0).OR.IWriteFLAG.GE.10) THEN
-     PRINT*,"Crystallography(",my_rank,") : RTMatC2O=", RTMatC2O
+     PRINT*,"CrystallographyInitialisation(",my_rank,") : RTMatC2O=", RTMatC2O
   END IF
 
   ! R?DirO vectors are reference vectors in orthogonal frame
@@ -225,7 +139,7 @@ SUBROUTINE Crystallography( IErr )
   RTMatO2M(3,:)= RZDirO(:)
   
   IF((IWriteFLAG.GE.3.AND.my_rank.EQ.0).OR.IWriteFLAG.GE.10) THEN
-     PRINT*,"Crystallography(",my_rank,"): RTMatO2M=", RTMatO2M
+     PRINT*,"CrystallographyInitialisation(",my_rank,"): RTMatO2M=", RTMatO2M
   END IF
 
   ! now transform from crystal reference frame to orthogonal and then to microscope frame
@@ -239,26 +153,43 @@ SUBROUTINE Crystallography( IErr )
   RNormDirM = MATMUL(RTMatO2M,MatMUL(RTMatC2O,RNormDirC))
   RNormDirM = MATMUL(RTMatO2M,MatMUL(RTMatC2O,RNormDirC))
 
-  ! since R?Vec is already in orthogonal frame, only transform into microscope frame needed
+  ! since RVec is already in orthogonal frame, only transform into microscope frame needed
   RaVecM= MATMUL(RTMatO2M,RaVecO)
   RbVecM= MATMUL(RTMatO2M,RbVecO)
   RcVecM= MATMUL(RTMatO2M,RcVecO)
   
   ! create new set of reciprocal lattice vectors
 
-  RarVecM= TWOPI*CROSS(RbVecM,RcVecM)/DOT(RbVecM,CROSS(RcVecM,RaVecM))
-  RbrVecM= TWOPI*CROSS(RcVecM,RaVecM)/DOT(RcVecM,CROSS(RaVecM,RbVecM))
-  RcrVecM= TWOPI*CROSS(RaVecM,RbVecM)/DOT(RaVecM,CROSS(RbVecM,RcVecM))
+  RarVecM= TWOPI*CROSS(RbVecM,RcVecM)/DOT_PRODUCT(RbVecM,CROSS(RcVecM,RaVecM))
+  RbrVecM= TWOPI*CROSS(RcVecM,RaVecM)/DOT_PRODUCT(RcVecM,CROSS(RaVecM,RbVecM))
+  RcrVecM= TWOPI*CROSS(RaVecM,RbVecM)/DOT_PRODUCT(RaVecM,CROSS(RbVecM,RcVecM))
 
-  ! Calculate the FULL set of possible fractional atomic positions
+  END SUBROUTINE CrystalLatticeVectorDetermination
 
-  ALLOCATE( &
+  !---------------------------------------------------------------
+  !Calculates the FULL set of possible fractional atomic positions
+  !---------------------------------------------------------------
+  SUBROUTINE CrystalFullFractionalAtomicPostitionsCalculation(IErr)
+    
+    USE MyNumbers
+  
+    USE CConst; USE IConst
+    USE IPara; USE RPara; USE SPara
+    USE IChannels
+  
+    USE MyMPI
+
+    IMPLICIT NONE
+
+    INTEGER(IKIND)IErr, ind,jnd,knd, Ifullind
+      
+    ALLOCATE( &
        RFullAtomicFracCoordVec( &
        SIZE(RSymVec,1)*SIZE(RAtomSiteFracCoordVec,1),&
        THREEDIM), &
        STAT=IErr)  
   IF( IErr.NE.0 ) THEN
-     PRINT*,"Crystallography(", my_rank, ") error ", IErr, " in ALLOCATE()"
+     PRINT*,"CrystalFullFractionalAtomicPostitionsCalculation(", my_rank, ") error ", IErr, " in ALLOCATE()"
      RETURN
   ENDIF
 
@@ -267,7 +198,7 @@ SUBROUTINE Crystallography( IErr )
        SIZE(RSymVec,1)*SIZE(RAtomSiteFracCoordVec,1)), &
        STAT=IErr)  
   IF( IErr.NE.0 ) THEN
-     PRINT*,"Crystallography(", my_rank, ") error ", IErr, " in ALLOCATE()"
+     PRINT*,"CrystalFullFractionalAtomicPostitionsCalculation(", my_rank, ") error ", IErr, " in ALLOCATE()"
      RETURN
   ENDIF
 
@@ -276,7 +207,7 @@ SUBROUTINE Crystallography( IErr )
        SIZE(RSymVec,1)*SIZE(RAtomSiteFracCoordVec,1)), &
        STAT=IErr)  
   IF( IErr.NE.0 ) THEN
-     PRINT*,"Crystallography(", my_rank, ") error ", IErr, " in ALLOCATE()"
+     PRINT*,"CrystalFullFractionalAtomicPostitionsCalculation(", my_rank, ") error ", IErr, " in ALLOCATE()"
      RETURN
   ENDIF
 
@@ -285,7 +216,7 @@ SUBROUTINE Crystallography( IErr )
        SIZE(RSymVec,1)*SIZE(RAtomSiteFracCoordVec,1)), &
        STAT=IErr)  
   IF( IErr.NE.0 ) THEN
-     PRINT*,"Crystallography(", my_rank, ") error ", IErr, " in ALLOCATE()"
+     PRINT*,"CrystalFullFractionalAtomicPostitionsCalculation(", my_rank, ") error ", IErr, " in ALLOCATE()"
      RETURN
   ENDIF
   ALLOCATE( &
@@ -293,7 +224,7 @@ SUBROUTINE Crystallography( IErr )
        SIZE(RSymVec,1)*SIZE(RAtomSiteFracCoordVec,1)), &
        STAT=IErr)  
   IF( IErr.NE.0 ) THEN
-     PRINT*,"Crystallography(", my_rank, ") error ", IErr, " in ALLOCATE()"
+     PRINT*,"CrystalFullFractionalAtomicPostitionsCalculation(", my_rank, ") error ", IErr, " in ALLOCATE()"
      RETURN
   ENDIF
 
@@ -302,7 +233,7 @@ SUBROUTINE Crystallography( IErr )
        SIZE(RSymVec,1)*SIZE(RAtomSiteFracCoordVec,1)), &
        STAT=IErr)  
   IF( IErr.NE.0 ) THEN
-     PRINT*,"Crystallography(", my_rank, ") error ", IErr, " in ALLOCATE()"
+     PRINT*,"CrystalFullFractionalAtomicPostitionsCalculation(", my_rank, ") error ", IErr, " in ALLOCATE()"
      RETURN
   ENDIF
 
@@ -346,13 +277,34 @@ SUBROUTINE Crystallography( IErr )
      END DO
   END DO
 
+END SUBROUTINE CrystalFullFractionalAtomicPostitionsCalculation
+
+
+SUBROUTINE CrystalUniqueFractionalAtomicPostitionsCalculation (IErr)
+
+
+  USE MyNumbers
+  
+  USE CConst; USE IConst
+  USE IPara; USE RPara; USE SPara
+  USE IChannels
+  
+  USE MyMPI
+  
+  IMPLICIT NONE
+  
+  REAL(RKIND) norm
+
+  INTEGER(IKIND)IErr, ind,jnd, Iuniind
+  LOGICAL Lunique
+
   ! Calculate the set of unique fractional atomic positions
   
   ALLOCATE( &
        MNP(ITotalAtoms,THREEDIM), &
        STAT=IErr)
   IF( IErr.NE.0 ) THEN
-     PRINT*,"Crystallography(", my_rank, ") error ", IErr, " in ALLOCATE()"
+     PRINT*,"CrystalUniqueFractionalAtomicPostitionsCalculation(", my_rank, ") error ", IErr, " in ALLOCATE()"
      RETURN
   ENDIF
 
@@ -360,7 +312,7 @@ SUBROUTINE Crystallography( IErr )
        SMNP(ITotalAtoms), &
        STAT=IErr)
   IF( IErr.NE.0 ) THEN
-     PRINT*,"Crystallography(", my_rank, ") error ", IErr, " in ALLOCATE()"
+     PRINT*,"CrystalUniqueFractionalAtomicPostitionsCalculation(", my_rank, ") error ", IErr, " in ALLOCATE()"
      RETURN
   ENDIF
 
@@ -368,7 +320,7 @@ SUBROUTINE Crystallography( IErr )
        RDWF(ITotalAtoms), &
        STAT=IErr)
   IF( IErr.NE.0 ) THEN
-     PRINT*,"Crystallography(", my_rank, ") error ", IErr, " in ALLOCATE()"
+     PRINT*,"CrystalUniqueFractionalAtomicPostitionsCalculation(", my_rank, ") error ", IErr, " in ALLOCATE()"
      RETURN
   ENDIF
 
@@ -376,7 +328,7 @@ SUBROUTINE Crystallography( IErr )
        ROcc(ITotalAtoms), &
        STAT=IErr)
   IF( IErr.NE.0 ) THEN
-     PRINT*,"Crystallography(", my_rank, ") error ", IErr, " in ALLOCATE()"
+     PRINT*,"CrystalUniqueFractionalAtomicPostitionsCalculation(", my_rank, ") error ", IErr, " in ALLOCATE()"
      RETURN
   ENDIF
 
@@ -384,7 +336,7 @@ SUBROUTINE Crystallography( IErr )
        IAtoms(ITotalAtoms), &
        STAT=IErr)
   IF( IErr.NE.0 ) THEN
-     PRINT*,"Crystallography(", my_rank, ") error ", IErr, " in ALLOCATE()"
+     PRINT*,"CrystalUniqueFractionalAtomicPostitionsCalculation(", my_rank, ") error ", IErr, " in ALLOCATE()"
      RETURN
   ENDIF
 
@@ -392,7 +344,7 @@ SUBROUTINE Crystallography( IErr )
        IAnisoDWFT(ITotalAtoms), &
        STAT=IErr)
   IF( IErr.NE.0 ) THEN
-     PRINT*,"Crystallography(", my_rank, ") error ", IErr, " in ALLOCATE()"
+     PRINT*,"CrystalUniqueFractionalAtomicPostitionsCalculation(", my_rank, ") error ", IErr, " in ALLOCATE()"
      RETURN
   ENDIF
 
@@ -454,7 +406,7 @@ SUBROUTINE Crystallography( IErr )
      END IF
      
   END DO
-  
+
   ! Calculate atomic position vectors r from Fractional Coordinates and Lattice Vectors
   ! in microscopy reference frame in Angstrom units
   
@@ -482,4 +434,5 @@ SUBROUTINE Crystallography( IErr )
 
   RETURN
 
-END SUBROUTINE Crystallography
+END SUBROUTINE  CrystalUniqueFractionalAtomicPostitionsCalculation
+

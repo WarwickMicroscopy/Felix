@@ -1,6 +1,6 @@
 #%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 #
-# Felix
+# felix
 #
 # Richard Beanland, Keith Evans, Rudolf A Roemer and Alexander Hubert
 #
@@ -53,11 +53,21 @@ LIBFLAGS= \
 
 #LD_LIBRARY_PATH=/hpcwarwick/mathlib/gnu/lib/:$LD_LIBRARY_PATH
 
-SIMOBJECTFILES = gmodules.o smodules.o main.o util.o inout.o inpcif.o ciftbx.o hash_funcs.o eigen.o invert.o microscopy.o diffraction.o crystallography.o bloch.o Ug.o image.o
-DRAWOBJECTFILES = gmodules.o smodules.o lacbed.o util.o inout.o \
-eigen.o invert.o microscopy.o diffraction.o crystallography.o bloch.o Ug.o image.o inpcif.o ciftbx.o hash_funcs.o 
+SIMOBJECTFILES = gmodules.o smodules.o felixsim.o util.o in.o out.o readinput.o \
+readciffile.o experimentalsetup.o imagesetup.o montagesetup.o \
+structurefactorsetup.o ciftbx.o hash_funcs.o eigen.o invert.o microscopy.o \
+diffraction.o diffractionpatterninitialisation.o crystallographyinitialisation.o \
+crystallography.o bloch.o Ug.o image.o writeoutput.o dqng.o xerror.o d1mach.o
 
-REFINEOBJECTFILES = gmodules.o smodules.o refinemain.o util.o inout.o inpcif.o ciftbx.o hash_funcs.o eigen.o invert.o microscopy.o diffraction.o crystallography.o bloch.o Ug.o image.o
+DRAWOBJECTFILES = gmodules.o smodules.o felixdraw.o util.o in.o out.o readciffile.o\
+eigen.o invert.o microscopy.o diffraction.o diffractionpatterninitialisation.o \
+crystallographyinitialisation.o crystallography.o bloch.o Ug.o image.o \
+ciftbx.o hash_funcs.o dqng.o xerror.o d1mach.o
+
+REFINEOBJECTFILES = gmodules.o smodules.o felixrefine.o util.o in.o out.o readciffile.o \
+eigen.o invert.o microscopy.o diffraction.o diffractionpatterninitialisation.o \
+crystallographyinitialisation.o crystallography.o bloch.o Ug.o image.o ciftbx.o \
+hash_funcs.o refineutils.o dqng.o xerror.o d1mach.o
 
 %.o: %.f90
 	$(F90) $(F90FLAGS) -DF90 -c $< -I$(INCLUDEDIR) $(LIBFLAGS)
@@ -86,5 +96,17 @@ felixrefine: $(REFINEOBJECTFILES)
 	$(F90) $(F90FLAGS) -o $@ $(REFINEOBJECTFILES) -I$(INCLUDEDIR) $(LIBFLAGS)
 #	$(F90) -o $@ $(REFINEOBJECTFILES) $(LIBFLAGS)
 
+print:	
+	a2ps -E -o print.ps gmodules.f90 smodules.f90 felixsim.f90 util.f90 \
+in.f90 out.f90 readinput.f90 readciffile.f90 experimentalsetup.f90 imagesetup.f90 \
+montagesetup.f90 structurefactorsetup.f90 eigen.f90 invert.f90 microscopy.f90 \
+diffraction.f90 diffractionpatterninitialisation.f90 crystallographyinitialisation.f90 \
+crystallography.f90 bloch.f90 Ug.f90 image.f90 ciftbx.f hash_funcs.f \
+writeoutput.f90 dqng.f xerror.f d1mach.f felixdraw.f90 felixrefine.f90 refineutils.f90 \
+makefile-minerva.GF; convert -density 150 print.ps print.pdf
+
 clean:	
 	rm -f core *.mod *.o
+
+#clean all:	
+#	rm -f core *.mod *.o *.exe

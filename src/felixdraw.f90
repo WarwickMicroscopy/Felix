@@ -36,7 +36,7 @@
 ! $Id: lacbed.f90,v 1.30 2014/04/23 17:18:00 phslaz Exp $
 !%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-PROGRAM LACBED
+PROGRAM felixdraw
  
   USE MyNumbers
   
@@ -165,23 +165,23 @@ PROGRAM LACBED
   
   ISoftwareMode = 1 ! felixdrawMode
 
-  CALL Input( IErr )
+  CALL ReadInpFile( IErr )
   !PRINT*, "DBG: IErr=", IErr
   IF( IErr.NE.0 ) THEN
-     PRINT*,"lacbed(", my_rank, ") error in Input()"
+     PRINT*,"felixdraw(", my_rank, ") error in Input()"
      GOTO 9999
   ENDIF
 
-  CALL ReadInHKLs(IErr)
+  CALL ReadHklFile(IErr)
   IF( IErr.NE.0 ) THEN
-     PRINT*,"main(", my_rank, ") error in ReadInHKLs()"
+     PRINT*,"main(", my_rank, ") error in ReadHklFile()"
      GOTO 9999
   ENDIF
 
-  CALL InpCIF(IErr)
+  CALL ReadCifFile(IErr)
   !PRINT*, "DBG: IErr=", IErr
   IF( IErr.NE.0 ) THEN
-     PRINT*,"lacbed(", my_rank, ") error in InputScatteringFactors()"
+     PRINT*,"felixdraw(", my_rank, ") error in ReadScaFile()"
      GOTO 9999
   ENDIF
 
@@ -196,19 +196,19 @@ PROGRAM LACBED
        RMask(2*IPixelCount,2*IPixelCount),&
        STAT=IErr)
   IF( IErr.NE.0 ) THEN
-     PRINT*,"lacbed(", my_rank, ") error ", IErr, &
+     PRINT*,"felixdraw(", my_rank, ") error ", IErr, &
           " in ALLOCATE() of DYNAMIC variables RMask"
      GOTO 9999
   ENDIF
   
-  CALL ImageMask (IErr)
+  CALL ImageMaskInitialisation (IErr)
   IF( IErr.NE.0 ) THEN
-     PRINT*,"lacbed(", my_rank, ") error ", IErr, &
-          " in ImageMask"
+     PRINT*,"felixdraw(", my_rank, ") error ", IErr, &
+          " in ImageMaskInitialisation"
      GOTO 9999
   END IF
   
-  PRINT*,"DBG: lacbed(", my_rank, ") IPixelTotal=", IPixelTotal
+  PRINT*,"DBG: felixdraw(", my_rank, ") IPixelTotal=", IPixelTotal
   
   !--------------------------------------------------------------------
   ! allocate memory for DYNAMIC variables according to SIZE(HKL)
@@ -226,7 +226,7 @@ PROGRAM LACBED
        RrVecMat(ITotalAtoms,THREEDIM), &
        STAT=IErr)
   IF( IErr.NE.0 ) THEN
-     PRINT*,"lacbed(", my_rank, ") error ", IErr, " in ALLOCATE()"
+     PRINT*,"felixdraw(", my_rank, ") error ", IErr, " in ALLOCATE()"
      GOTO 9999
   ENDIF
 
@@ -250,7 +250,7 @@ PROGRAM LACBED
 
   CALL MicroscopySettings( IErr )
   IF( IErr.NE.0 ) THEN
-     PRINT*,"lacbed(", my_rank, ") error in MicroscopySettings()"
+     PRINT*,"felixdraw(", my_rank, ") error in MicroscopySettings()"
      GOTO 9999
   ENDIF
 
@@ -258,9 +258,9 @@ PROGRAM LACBED
   ! crystallography initialization
   !--------------------------------------------------------------------
 
-  CALL Crystallography( IErr )
+  CALL CrystallographyInitialisation( IErr )
   IF( IErr.NE.0 ) THEN
-     PRINT*,"lacbed(", my_rank, ") error in Crystallography()"
+     PRINT*,"felixdraw(", my_rank, ") error in CrystallographyInitialisation()"
      GOTO 9999
   ENDIF
 
@@ -268,9 +268,10 @@ PROGRAM LACBED
   ! diffraction initialization
   !--------------------------------------------------------------------
 
-  CALL DiffractionPatternDefinitions( IErr )
+  CALL DiffractionPatternInitialisation( IErr )
   IF( IErr.NE.0 ) THEN
-     PRINT*,"lacbed(", my_rank, ") error in DiffractionPatternDefinitions()"
+     PRINT*,"felixdraw(", my_rank, ") error", IErr, &
+          "in ()DiffractionPatternInitialisation"
      GOTO 9999
   ENDIF
 
@@ -385,7 +386,7 @@ PROGRAM LACBED
        Rhklpositions(nReflections,2), &
        STAT=IErr)
   IF( IErr.NE.0 ) THEN
-     PRINT*,"lacbed(", my_rank, ") error ", IErr, &
+     PRINT*,"felixdraw(", my_rank, ") error ", IErr, &
           " in ALLOCATE() of DYNAMIC variables (nReflections)"
      GOTO 9999
   ENDIF
@@ -406,9 +407,9 @@ PROGRAM LACBED
   ! image initialization
   !--------------------------------------------------------------------
 
-  CALL ImageInitialization( IErr )
+  CALL ImageInitialisation( IErr )
   IF( IErr.NE.0 ) THEN
-     PRINT*,"lacbed(", my_rank, ") error in ImageInitializtion()"
+     PRINT*,"felixdraw(", my_rank, ") error in ImageInitialisation()"
      GOTO 9999
   ENDIF
  
@@ -429,7 +430,7 @@ PROGRAM LACBED
        2*IPixelCount,IReflectOut,IThicknessCount),&
        STAT=IErr)
   IF( IErr.NE.0 ) THEN
-     PRINT*,"lacbed(", my_rank, ") error ", IErr, &
+     PRINT*,"felixdraw(", my_rank, ") error ", IErr, &
           " in ALLOCATE() of DYNAMIC variables Individual Images"
      GOTO 9999
   ENDIF
@@ -441,7 +442,7 @@ PROGRAM LACBED
        CFullWaveFunctions(nReflections), &
        STAT=IErr)
   IF( IErr.NE.0 ) THEN
-     PRINT*,"lacbed(", my_rank, ") error ", IErr, &
+     PRINT*,"felixdraw(", my_rank, ") error ", IErr, &
           " in ALLOCATE() of DYNAMIC variables Kprime"
      GOTO 9999
   ENDIF 
@@ -449,7 +450,7 @@ PROGRAM LACBED
        RFullWaveIntensity(nReflections), & 
        STAT=IErr)
   IF( IErr.NE.0 ) THEN
-     PRINT*,"lacbed(", my_rank, ") error ", IErr, &
+     PRINT*,"felixdraw(", my_rank, ") error ", IErr, &
           " in ALLOCATE() of DYNAMIC variables Kprime"
      GOTO 9999
   ENDIF
@@ -464,7 +465,7 @@ PROGRAM LACBED
        RrVecMat(ITotalAtoms,THREEDIM), &
        STAT=IErr)
   IF( IErr.NE.0 ) THEN
-     PRINT*,"lacbed(", my_rank, ") error ", IErr, " in ALLOCATE()"
+     PRINT*,"felixdraw(", my_rank, ") error ", IErr, " in ALLOCATE()"
      GOTO 9999
   ENDIF
 
@@ -477,7 +478,7 @@ PROGRAM LACBED
        RSg(SIZE(RHKL,DIM=1)), &
        STAT=IErr)
   IF( IErr.NE.0 ) THEN
-     PRINT*,"lacbed(", my_rank, ") error ", IErr, &
+     PRINT*,"felixdraw(", my_rank, ") error ", IErr, &
           " in ALLOCATE() of DYNAMIC variables (HKL)"
      GOTO 9999
   ENDIF
@@ -499,7 +500,7 @@ PROGRAM LACBED
      CALL ReadEigenSystemChunk(IAllocationChunk, IErr )
      !PRINT*, "DBG: IErr=", IErr
      IF( IErr.NE.0 ) THEN
-        PRINT*,"lacbed(", my_rank, ") : error in Input()"
+        PRINT*,"felixdraw(", my_rank, ") : error in Input()"
         GOTO 9999
      ENDIF
      
@@ -513,7 +514,7 @@ PROGRAM LACBED
         IThickness = RInitialThickness + (IThicknessIndex-1)*RDeltaThickness 
         
         IF(IWriteFLAG.GE.2) THEN
-           PRINT*,"lacbed(", my_rank, "): working on thickness index ", IThicknessIndex, " (", RThickness, ") of ", &
+           PRINT*,"felixdraw(", my_rank, "): working on thickness index ", IThicknessIndex, " (", RThickness, ") of ", &
                 IThicknessCount, " in total."
         ENDIF
 
@@ -547,7 +548,7 @@ PROGRAM LACBED
                  CALL OpenData(IChOutWF, "WF", surname, IErr)
               ENDIF
               IF( IErr.NE.0 ) THEN
-                 PRINT*,"lacbed(", my_rank, ") error in OpenData()"
+                 PRINT*,"felixdraw(", my_rank, ") error in OpenData()"
                  GOTO 9999
               ENDIF
            CASE DEFAULT
@@ -556,7 +557,7 @@ PROGRAM LACBED
                  CALL OpenData_MPI(IChOutWF_MPI, "WF", surname, IErr)
               ENDIF
               IF( IErr.NE.0 ) THEN
-                 PRINT*,"lacbed(", my_rank, ") error in OpenDataMPI()"
+                 PRINT*,"felixdraw(", my_rank, ") error in OpenDataMPI()"
                  GOTO 9999
               ENDIF
            END SELECT
@@ -568,7 +569,7 @@ PROGRAM LACBED
                  CALL OpenDataForAppend(IChOutWF, "WF", surname, IErr)
               ENDIF
               IF( IErr.NE.0 ) THEN
-                 PRINT*,"lacbed(", my_rank, ") error in OpenDataForAppend()"
+                 PRINT*,"felixdraw(", my_rank, ") error in OpenDataForAppend()"
                  GOTO 9999
               ENDIF
            CASE DEFAULT
@@ -577,7 +578,7 @@ PROGRAM LACBED
                  CALL OpenDataForAppend_MPI(IChOutWF_MPI, "WF", surname, IErr)
               ENDIF
               IF( IErr.NE.0 ) THEN
-                 PRINT*,"lacbed(", my_rank, ") error in OpenDataForAppend_ MPI()"
+                 PRINT*,"felixdraw(", my_rank, ") error in OpenDataForAppend_ MPI()"
                  GOTO 9999
               ENDIF
            END SELECT
@@ -593,8 +594,8 @@ PROGRAM LACBED
         ILocalPixelCountMax= (2*IPixelCount*(my_rank+1)/p)
         
         IF(IWriteFLAG.GE.6) THEN
-           PRINT*,"lacbed(", my_rank, "): starting the eigenvalue problem"
-           PRINT*,"lacbed(", my_rank, "): for lines ", ILocalPixelCountMin, &
+           PRINT*,"felixdraw(", my_rank, "): starting the eigenvalue problem"
+           PRINT*,"felixdraw(", my_rank, "): for lines ", ILocalPixelCountMin, &
                 " to ", ILocalPixelCountMax
         ENDIF
         
@@ -611,7 +612,7 @@ PROGRAM LACBED
            !--------------------------------------------------------------------
            
            IF(IWriteFLAG.GE.3) THEN
-              PRINT*,"lacbed(", my_rank, "): working on pixel (", ind, ",", jnd,") of (", &
+              PRINT*,"felixdraw(", my_rank, "): working on pixel (", ind, ",", jnd,") of (", &
                    2*IPixelCount, ",", 2*IPixelCount, ") in total."
            ENDIF
             
@@ -621,7 +622,7 @@ PROGRAM LACBED
                 CEigenValues(nBeams), &
                 STAT=IErr)
            IF( IErr.NE.0 ) THEN
-              PRINT*,"lacbed(", my_rank, ") error ", IErr, &
+              PRINT*,"felixdraw(", my_rank, ") error ", IErr, &
                    " in ALLOCATE() of DYNAMIC variables Eigenproblem"
               PRINT*,"Failure Occured at Thickness,Chunk,Pixel,nBeams,gnd = ",RThickness,ichnk,IPixelCountTotal,nBeams,gnd
               
@@ -633,7 +634,7 @@ PROGRAM LACBED
                 CGammaValues(nBeams), &
                 STAT=IErr)
            IF( IErr.NE.0 ) THEN
-              PRINT*,"lacbed(", my_rank, ") error ", IErr, &
+              PRINT*,"felixdraw(", my_rank, ") error ", IErr, &
                    " in ALLOCATE() of DYNAMIC variables GammaValues"
               PRINT*,"Failure Occured at Thickness,Chunk,Pixel,nBeams = ",RThickness,ichnk,IPixelCountTotal,nBeams,gnd
               
@@ -645,7 +646,7 @@ PROGRAM LACBED
                 CInvertedEigenVectors(nBeams,nBeams), &
                 STAT=IErr)
            IF( IErr.NE.0 ) THEN
-              PRINT*,"lacbed(", my_rank, ") error ", IErr, &
+              PRINT*,"felixdraw(", my_rank, ") error ", IErr, &
                    " in ALLOCATE() of DYNAMIC variables CInvertedEigenVectors"
               PRINT*,"Failure Occured at Thickness,Chunk,Pixel,nBeams = ",RThickness,ichnk,IPixelCountTotal,nBeams,gnd
               
@@ -655,7 +656,7 @@ PROGRAM LACBED
                 CAlphaWeightingCoefficients(nBeams), &
                 STAT=IErr)
            IF( IErr.NE.0 ) THEN
-              PRINT*,"lacbed(", my_rank, ") error ", IErr, &
+              PRINT*,"felixdraw(", my_rank, ") error ", IErr, &
                    " in ALLOCATE() of DYNAMIC variables CAlphaWeightingCoefficients"
               PRINT*,"Failure Occured at Thickness,Chunk,Pixel,nBeams = ",RThickness,ichnk,IPixelCountTotal,nBeams,gnd
               
@@ -665,7 +666,7 @@ PROGRAM LACBED
                 CEigenValueDependentTerms(nBeams,nBeams), &
                 STAT=IErr)
            IF( IErr.NE.0 ) THEN
-              PRINT*,"lacbed(", my_rank, ") error ", IErr, &
+              PRINT*,"felixdraw(", my_rank, ") error ", IErr, &
                    " in ALLOCATE() of DYNAMIC variables CEigenValueDependentTerms"
               PRINT*,"Failure Occured at Thickness,Chunk,Pixel,nBeams = ",RThickness,ichnk,IPixelCountTotal,nBeams,gnd
               
@@ -675,7 +676,7 @@ PROGRAM LACBED
                 CWaveFunctions(nBeams), &
                 STAT=IErr)
            IF( IErr.NE.0 ) THEN
-              PRINT*,"lacbed(", my_rank, ") error ", IErr, &
+              PRINT*,"felixdraw(", my_rank, ") error ", IErr, &
                    " in ALLOCATE() of DYNAMIC variables CWaveFunctions"
               PRINT*,"Failure Occured at Thickness,Chunk,Pixel,nBeams = ",RThickness,ichnk,IPixelCountTotal,nBeams,gnd
               
@@ -685,7 +686,7 @@ PROGRAM LACBED
                 RWaveIntensity(nBeams), &
                 STAT=IErr)
            IF( IErr.NE.0 ) THEN
-              PRINT*,"lacbed(", my_rank, ") error ", IErr, &
+              PRINT*,"felixdraw(", my_rank, ") error ", IErr, &
                    " in ALLOCATE() of DYNAMIC variables RWaveIntensity"
               PRINT*,"Failure Occured at Thickness,Chunk,Pixel,nBeams = ",RThickness,ichnk,IPixelCountTotal,nBeams,gnd
               
@@ -695,7 +696,7 @@ PROGRAM LACBED
                 IStrongBeamList(nBeams), &
                 STAT=IErr)
            IF( IErr.NE.0 ) THEN
-              PRINT*,"lacbed(", my_rank, ") error ", IErr, &
+              PRINT*,"felixdraw(", my_rank, ") error ", IErr, &
                    " in ALLOCATE() of DYNAMIC variables IStrongBeamList"
               PRINT*,"Failure Occured at Thickness,Chunk,Pixel,nBeams = ",RThickness,ichnk,IPixelCountTotal,nBeams,gnd
               
@@ -705,7 +706,7 @@ PROGRAM LACBED
                 CPsi0(nBeams), & 
                 STAT=IErr)
            IF( IErr.NE.0 ) THEN
-              PRINT*,"lacbed(", my_rank, ") error ", IErr, &
+              PRINT*,"felixdraw(", my_rank, ") error ", IErr, &
                    " in ALLOCATE() of DYNAMIC variables CPsi0"
               PRINT*,"Failure Occured at Thickness,Chunk,Pixel,nBeams = ",RThickness,ichnk,IPixelCountTotal,nBeams,gnd
               GOTO 9999
@@ -734,7 +735,7 @@ PROGRAM LACBED
            
            IF(IWriteFLAG.GE.10) THEN
               !PRINT*,"WaveFunctions=",WaveFunctions
-              PRINT*,"lacbed(", my_rank, "): WaveIntensity=",RFullWaveIntensity
+              PRINT*,"felixdraw(", my_rank, "): WaveIntensity=",RFullWaveIntensity
            ENDIF
            
            SELECT CASE(IParallelFLAG)
@@ -775,7 +776,7 @@ PROGRAM LACBED
               Duration=(CurrentTime-StartTime)
               TotalDurationEstimate= &
                    (Duration*IPixelTotal/p)/IPixelComputed - Duration
-              PRINT*,"lacbed(", my_rank, "): finished pixel (", ind, ",", jnd, &
+              PRINT*,"felixdraw(", my_rank, "): finished pixel (", ind, ",", jnd, &
                    ") after ", NINT(Duration), &
                    " seconds(s), total time left estimated at", &
                    NINT(TotalDurationEstimate), " second(s)"
@@ -810,7 +811,7 @@ PROGRAM LACBED
        MAXVAL(IImageSizeXY),IThicknessCount),&
        STAT=IErr)
   IF( IErr.NE.0 ) THEN
-     PRINT*,"lacbed(", my_rank, ") error ", IErr, &
+     PRINT*,"felixdraw(", my_rank, ") error ", IErr, &
           " in ALLOCATE() of DYNAMIC variables Root Reflections"
      GOTO 9999
   ENDIF
@@ -823,7 +824,7 @@ PROGRAM LACBED
         DO ind = 1,2*IPixelCount
            DO jnd = 1,2*IPixelCount
               
-              CALL MakeMontagePixel(ind,jnd,IThicknessIndex,&
+              CALL MontageInitialisation(ind,jnd,IThicknessIndex,&
                    RFinalMontageImage,&
                    RIndividualReflectionsDraw(ind,jnd,:,IThicknessIndex),IERR)
               
@@ -868,11 +869,11 @@ PROGRAM LACBED
         
         CALL OpenData(MontageOut,"WI",surname,IErr) 
         IF( IErr.NE.0 ) THEN
-           PRINT*,"lacbed(", my_rank, ") error in OpenData()"
+           PRINT*,"felixdraw(", my_rank, ") error in OpenData()"
            GOTO 9999
         ENDIF
         
-        PRINT*,"lacbed(", my_rank, ") working on RThickness=", RThickness
+        PRINT*,"felixdraw(", my_rank, ") working on RThickness=", RThickness
         WRITE(MontageOut,*) &
              RESHAPE(RFinalMontageImage(:,:,knd),(/MAXVAL(IImageSizeXY),MAXVAL(IImageSizeXY)/)) 
         CLOSE(MontageOut,ERR=9999)
@@ -898,14 +899,14 @@ PROGRAM LACBED
         DO ind = 1,IReflectOut
            CALL OpenReflectionImage(IChOutWIImage,path, IErr,ind)
            IF( IErr.NE.0 ) THEN
-              PRINT*,"Lacbed(", my_rank, ") error in OpenReflectionImage()"
+              PRINT*,"felixdraw(", my_rank, ") error in OpenReflectionImage()"
               GOTO 9999
            ENDIF
            !IMAXRBuffer = (4*IPixelCount**2)*7+ADD_OUT_INFO
            !CALL WriteImageR_MPI(IChOutWI_MPI,RIndividualReflectionsDraw(:,:,ind,knd),IErr)
            CALL WriteReflectionImage(IChOutWIImage,RIndividualReflectionsDraw(:,:,ind,knd),IErr)   
            IF( IErr.NE.0 ) THEN
-              PRINT*,"lacbed(", my_rank, ") error in WriteReflectionImage()"
+              PRINT*,"felixdraw(", my_rank, ") error in WriteReflectionImage()"
               GOTO 9999
            ENDIF
            
@@ -946,4 +947,4 @@ PROGRAM LACBED
 !!$  IErr= 1
 !!$  RETURN
   
-END PROGRAM LACBED
+END PROGRAM felixdraw

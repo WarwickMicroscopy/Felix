@@ -87,7 +87,7 @@ SUBROUTINE BlochCoefficientCalculation(ind,jnd,gnd,ILocalPixelCountMin,IErr)
   ! TiltedK used to be called Kprime2
   ! the vector of the incoming tilted beam
 
-  CALL CalculateKVectors(Rx0,Ry0,IErr)
+  CALL KVectorsCalculation(Rx0,Ry0,IErr)
   IF( IErr.NE.0 ) THEN
      PRINT*,"BlochCoefficientCalculation(", my_rank, ") error ", IErr, &
           " In Calculation of KVectors"
@@ -110,7 +110,7 @@ SUBROUTINE BlochCoefficientCalculation(ind,jnd,gnd,ILocalPixelCountMin,IErr)
   ! select only those beams where the Ewald sphere is close to the
   ! reciprocal lattice, i.e. within RBSMaxDeviationPara
 
-  CALL DetermineStrongAndWeakBeams(IErr)
+  CALL StrongAndWeakBeamsDetermination(IErr)
   IF( IErr.NE.0 ) THEN
      PRINT*,"BlochCoefficientCalculation(", my_rank, ") error ", IErr, &
           " in Determination of Strong and Weak beams"
@@ -544,7 +544,7 @@ SUBROUTINE CreateWavefunctions(rthickness,IErr)
   
 END SUBROUTINE CreateWavefunctions
 
-SUBROUTINE CalculateKVectors(Rx0,Ry0,IErr)
+SUBROUTINE KVectorsCalculation(Rx0,Ry0,IErr)
   
   USE MyNumbers
   
@@ -565,7 +565,7 @@ SUBROUTINE CalculateKVectors(Rx0,Ry0,IErr)
   RTiltedK(2)= Ry0
   RTiltedK(3)= SQRT(RBigK**2 - Rx0**2 - Ry0**2)
   
-END SUBROUTINE CalculateKVectors
+END SUBROUTINE KVectorsCalculation
 
 SUBROUTINE DeviationParameterCalculation(IErr)
 
@@ -585,17 +585,17 @@ USE MyNumbers
      ! DevPara used to be called Sg in the book
      
      RDevPara(knd)= &
-          -( RBigK + DOT(RgVecMatT(knd,:),RTiltedK(:)) /RBigK) + &
+          -( RBigK + DOT_PRODUCT(RgVecMatT(knd,:),RTiltedK(:)) /RBigK) + &
           SQRT( &
-          ( RBigK**2 + DOT(RgVecMatT(knd,:),RTiltedK(:)) )**2 /RBigK**2 - &
+          ( RBigK**2 + DOT_PRODUCT(RgVecMatT(knd,:),RTiltedK(:)) )**2 /RBigK**2 - &
           (RgVecMag(knd)**2 + &
-          2.0D0* DOT(RgVecMatT(knd,:),RTiltedK(:))) &
+          2.0D0* DOT_PRODUCT(RgVecMatT(knd,:),RTiltedK(:))) &
           )
   END DO
 
 END SUBROUTINE DeviationParameterCalculation
 
-SUBROUTINE DetermineStrongAndWeakBeams(IErr)
+SUBROUTINE StrongAndWeakBeamsDetermination(IErr)
 
   USE CConst; USE IConst
   USE IPara; USE RPara; USE CPara; USE SPara
@@ -663,7 +663,7 @@ SUBROUTINE DetermineStrongAndWeakBeams(IErr)
      IErr = 1
   END IF
   IF( IErr.NE.0 ) THEN
-     PRINT*,"DetermineStrongAndWeakBeams(", my_rank, ") error ", IErr, &
+     PRINT*,"StrongAndWeakBeamDetermination(", my_rank, ") error ", IErr, &
           " Insufficient reflections to accommodate all Strong and Weak Beams"
      RETURN
   ENDIF
@@ -715,7 +715,7 @@ SUBROUTINE DetermineStrongAndWeakBeams(IErr)
        IAdditionalBmaxStrongBeamList(IWeakBeamIndex),&
        STAT=IErr)
   IF( IErr.NE.0 ) THEN
-     PRINT*,"DetermineStrongAndWeakBeams(", my_rank, ") error ", IErr, &
+     PRINT*,"StrongAndWeakBeamsDetermination(", my_rank, ") error ", IErr, &
           " in ALLOCATE() of DYNAMIC variables IAdditionalBmaxStrongBeamList"
      RETURN
   ENDIF
@@ -759,7 +759,7 @@ SUBROUTINE DetermineStrongAndWeakBeams(IErr)
   !     IAdditionalBmaxStrongBeamList, &
   !     STAT=IErr)
   !IF( IErr.NE.0 ) THEN
-  !   PRINT*,"DetermineStrongAndWeakBeams(", my_rank, ") error ", IErr, &
+  !   PRINT*,"StrongAndWeakBeamDetermination(", my_rank, ") error ", IErr, &
   !        " in DEALLOCATE() of DYNAMIC variables IAdditionalBmaxStrongBeamList"
   !   RETURN
   !ENDIF  
@@ -795,7 +795,7 @@ SUBROUTINE DetermineStrongAndWeakBeams(IErr)
        IAdditionalPmaxStrongBeamList(IWeakBeamIndex),&
        STAT=IErr)
   IF( IErr.NE.0 ) THEN
-     PRINT*,"DetermineStrongAndWeakBeams(", my_rank, ") error ", IErr, &
+     PRINT*,"StrongAndWeakBeamsDetermination(", my_rank, ") error ", IErr, &
           " in ALLOCATE() of DYNAMIC variables IAdditionalPmaxStrongBeamList"
      RETURN
   ENDIF
@@ -857,4 +857,4 @@ SUBROUTINE DetermineStrongAndWeakBeams(IErr)
      ENDIF
   ENDDO
 
-END SUBROUTINE DetermineStrongAndWeakBeams
+END SUBROUTINE StrongAndWeakBeamsDetermination

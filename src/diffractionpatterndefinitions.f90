@@ -171,7 +171,7 @@ SUBROUTINE ReflectionDetermination( IErr )
 
     IMPLICIT NONE
 
-    INTEGER(IKIND) IFind, IFound, ind, jnd, knd, IErr
+    INTEGER(IKIND) IFind, IErr
     
   IFind = 0
   
@@ -250,14 +250,14 @@ SUBROUTINE ReflectionDetermination( IErr )
     
     IMPLICIT NONE
 
-    INTEGER(IKIND) ind, IErr
+    INTEGER(IKIND) IErr
     REAL(RKIND):: dummy
 
     ALLOCATE(&
          RGn(SIZE(RHKL,DIM=1)), &
          STAT=IErr)
     IF( IErr.NE.0 ) THEN
-       PRINT*,"DiffractionPatternCalculation(", my_rank, ") error ", IErr, &
+       PRINT*,"DiffractionPatternDefinitions(", my_rank, ") error ", IErr, &
             " in ALLOCATE() of DYNAMIC variables RGn(HKL)"
        RETURN
     ENDIF
@@ -272,7 +272,7 @@ SUBROUTINE ReflectionDetermination( IErr )
        RSg(SIZE(RHKL,DIM=1)), &
        STAT=IErr)
   IF( IErr.NE.0 ) THEN
-     PRINT*,"DiffractionPatternCalculation(", my_rank, ") error ", IErr, &
+     PRINT*,"DiffractionPatternDefinitions(", my_rank, ") error ", IErr, &
           " in ALLOCATE() of DYNAMIC variables RSg(HKL)"
      RETURN
   ENDIF
@@ -290,12 +290,12 @@ SUBROUTINE ReflectionDetermination( IErr )
   RBraggCentral= RElectronWaveLength/(2.0D0*RLengthX)*dummy
 
   IF((IWriteFLAG.GE.1.AND.my_rank.EQ.0).OR.IWriteFLAG.GE.10) THEN
-     PRINT*,"DiffractionPatternCalculation (",my_rank,") BraggCentral=", RBraggCentral
+     PRINT*,"DiffractionPatternDefinitions (",my_rank,") BraggCentral=", RBraggCentral
   END IF
 
 
   IF((IWriteFLAG.GE.1.AND.my_rank.EQ.0).OR.IWriteFLAG.GE.10) THEN
-     PRINT*,"DiffractionPatternCalculation (",my_rank,") GMax = ",RBSMaxGVecAmp
+     PRINT*,"DiffractionPatternDefinitions (",my_rank,") GMax = ",RBSMaxGVecAmp
   END IF
 
   ! smallest g is gmag(2) IF 000 beam is included !!!add error catch here
@@ -307,7 +307,7 @@ SUBROUTINE ReflectionDetermination( IErr )
   ENDIF
 
   IF((IWriteFLAG.GE.1.AND.my_rank.EQ.0).OR.IWriteFLAG.GE.10) THEN
-     PRINT*,"DiffractionPatternCalculation (",my_rank,") MinimumGMag = ",RMinimumGMag
+     PRINT*,"DiffractionPatternDefinitions (",my_rank,") MinimumGMag = ",RMinimumGMag
   END IF
 
   ! Calculate the Angles to the centre of all the disks from the central disk
@@ -330,14 +330,14 @@ SUBROUTINE ReflectionDetermination( IErr )
 
   IF((IWriteFLAG.GE.1.AND.my_rank.EQ.0).OR.IWriteFLAG.GE.10) THEN
      
-     PRINT*,"DiffractionPatternCalculation (",my_rank,") No. of Reflections = ",nReflections
+     PRINT*,"DiffractionPatternDefinitions (",my_rank,") No. of Reflections = ",nReflections
 
   END IF
   ! resolution in k space
   RDeltaK = RMinimumGMag*RConvergenceAngle/IPixelCount
 
   IF((IWriteFLAG.GE.1.AND.my_rank.EQ.0).OR.IWriteFLAG.GE.10) THEN
-     PRINT*,"DiffractionPatternCalculation (",my_rank,") DeltaK = ", RDeltaK
+     PRINT*,"DiffractionPatternDefinitions (",my_rank,") DeltaK = ", RDeltaK
   END IF
 
   RETURN

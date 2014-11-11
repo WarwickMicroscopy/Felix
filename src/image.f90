@@ -32,13 +32,14 @@
 !
 !%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-SUBROUTINE ImageInitialization( IErr )
+SUBROUTINE ImageInitialisation( IErr )
 
   USE MyNumbers
   
   USE CConst; USE IConst
   USE IPara; USE RPara
   USE IChannels
+
   USE MPI
   USE MyMPI
   
@@ -46,16 +47,17 @@ SUBROUTINE ImageInitialization( IErr )
 
   REAL(RKIND) dummyCA
 
-  INTEGER IErr, ind,jnd
+  !changed - was missing (IKIND)
+  INTEGER(IKIND) IErr, ind,jnd
   
   IF((IWriteFLAG.GE.0.AND.my_rank.EQ.0).OR.IWriteFLAG.GE.10) THEN
-     PRINT*,"ImageInitialization()"
+     PRINT*,"ImageInitialisation()"
   END IF
   
 !Determine Positions of reflections in final image (may not need to be here)
 
   IF((IWriteFLAG.GE.1.AND.my_rank.EQ.0).OR.IWriteFLAG.GE.10) THEN
-     PRINT*,"ImageInitialization(",my_rank,") nReflections,MinGMag =", nReflections, RMinimumGMag
+     PRINT*,"ImageInitialisation(",my_rank,") nReflections,MinGMag =", nReflections, RMinimumGMag
   END IF
 
   ! positions of the centres of the disks
@@ -91,14 +93,14 @@ SUBROUTINE ImageInitialization( IErr )
   END IF
      
   IF((IWriteFLAG.GE.1.AND.my_rank.EQ.0).OR.IWriteFLAG.GE.10) THEN
-     PRINT*,"ImageInitialization(",my_rank,") IImageSizeXY=", IImageSizeXY
+     PRINT*,"ImageInitialisation(",my_rank,") IImageSizeXY=", IImageSizeXY
   END IF
     
   RETURN
 
-END SUBROUTINE ImageInitialization
+END SUBROUTINE ImageInitialisation
 
-SUBROUTINE MakeMontagePixel(ind,jnd,ithicknessindex,RMontageImage,RIntensity,Ierr)
+SUBROUTINE MontageInitialisation(ind,jnd,ithicknessindex,RMontageImage,RIntensity,Ierr)
   
   USE MyNumbers
   
@@ -153,4 +155,90 @@ SUBROUTINE MakeMontagePixel(ind,jnd,ithicknessindex,RMontageImage,RIntensity,Ier
      END IF
   END DO
 
-END SUBROUTINE MakeMontagePixel
+END SUBROUTINE MontageInitialisation
+
+!---------------------------------------------------------------------
+!
+SUBROUTINE ImageMaskInitialisation (IErr)
+  
+  USE MyNumbers
+  
+  USE CConst; USE IConst
+  USE IPara; USE RPara
+  USE IChannels
+
+  USE MPI
+  USE MyMPI
+  
+  IMPLICIT NONE
+  
+  INTEGER ind,jnd, ierr
+  REAL(RKIND) :: Rradius, RImageRadius
+  
+  IF((IWriteFLAG.EQ.6.AND.my_rank.EQ.0).OR.IWriteFLAG.GE.10) THEN
+     PRINT*,"DBG: ImageMaskInitialisation()"
+  END IF
+
+  IPixelTotal =0
+  SELECT CASE (IMaskFLAG)
+  CASE(0) ! circle
+     DO ind=1,2*IPixelCount
+        DO jnd=1,2*IPixelCount
+           Rradius= (ind-(REAL(IPixelCount,RKIND)+0.5))**2 + &
+                (jnd-(REAL(IPixelCount,RKIND)+0.5))**2
+           Rradius=SQRT(DBLE(Rradius))
+           RImageRadius = IPixelCount+0.5
+           IF(Rradius.LE.RImageRadius) THEN
+              RMask(jnd,ind) = 1
+              IPixelTotal= IPixelTotal + 1
+              
+           ELSE
+              RMask(jnd,ind) = 0
+           ENDIF
+        ENDDO
+     ENDDO
+  CASE(1) ! square
+     RMask = 1
+     IPixelTotal = (2*IPixelCount)**2
+  END SELECT
+  
+  ALLOCATE( &
+       IPixelLocations(IPixelTotal,2), &
+       STAT=IErr)
+  IF( IErr.NE.0 ) THEN
+     PRINT*,"ImagemaskInitialization(", my_rank, ") error ", IErr, " in ALLOCATE()"
+     RETURN
+  ENDIF
+
+  IPixelTotal = 0
+ 
+  SELECT CASE (IMaskFLAG)
+  CASE(0) ! circle
+     DO ind=1,2*IPixelCount
+        DO jnd=1,2*IPixelCount
+           Rradius= (ind-(REAL(IPixelCount,RKIND)+0.5))**2 + &
+                (jnd-(REAL(IPixelCount,RKIND)+0.5))**2
+           Rradius=SQRT(DBLE(Rradius))
+           RImageRadius = IPixelCount+0.5
+           IF(Rradius.LE.RImageRadius) THEN
+              !RMask(jnd,ind) = 1
+              IPixelTotal= IPixelTotal + 1
+              IPixelLocations(IPixelTotal,1) = ind
+              IPixelLocations(IPixelTotal,2) = jnd
+           ELSE
+              !RMask(jnd,ind) = 0
+           ENDIF
+        ENDDO
+     ENDDO
+  CASE(1) ! square
+     IPixelTotal = 0
+     DO ind = 1,2*IPixelCount
+        DO jnd = 1,2*IPixelCount
+           IPixelTotal = IPixelTotal+1
+           IPixelLocations(IPixelTotal,1) = ind
+           IPixelLocations(IPixelTotal,2) = jnd
+        END DO
+     END DO
+  END SELECT
+  
+END SUBROUTINE ImageMaskInitialisation
