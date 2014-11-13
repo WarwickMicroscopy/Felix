@@ -176,7 +176,7 @@ SUBROUTINE ImageMaskInitialisation (IErr)
   REAL(RKIND) :: Rradius, RImageRadius
   
   IF((IWriteFLAG.EQ.6.AND.my_rank.EQ.0).OR.IWriteFLAG.GE.10) THEN
-     PRINT*,"DBG: ImageMaskInitialisation()"
+     PRINT*,"ImageMaskInitialisation()"
   END IF
 
   IPixelTotal =0

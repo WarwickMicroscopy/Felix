@@ -227,6 +227,16 @@ MODULE IPara
 
    INTEGER(IKIND) :: &
         ICurrentAtom,IAtom
+
+   !Refine Mode Binary Selection
+   
+   INTEGER(IKIND),DIMENSION(7) :: &
+        IRefineModeSelectionArray
+
+   !List of Atomic Sites for Refinement
+
+   INTEGER(IKIND),DIMENSION(:),ALLOCATABLE :: &
+        IAtomicSitesToRefine
 END MODULE IPara
 
 !--------------------------------------------------------------------
@@ -393,6 +403,12 @@ MODULE RPara
   !Ug' Unique Values
   REAL(RKIND),DIMENSION(:),ALLOCATABLE :: &
        RUniqueUgPrimeValues
+
+  
+  ! Experimental Images for felixrefine
+
+  REAL(RKIND),DIMENSION(:,:,:),ALLOCATABLE :: &
+       RImageExpi  
 
 END MODULE RPara
 

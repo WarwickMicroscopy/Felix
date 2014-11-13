@@ -514,7 +514,7 @@ PROGRAM FelixSim
           CAmplitudeandPhaseRoot * CONJG(CAmplitudeandPhaseRoot)
   END IF
 
-  IF(my_rank.EQ.ZERO) THEN
+  IF(my_rank.EQ.0) THEN
      CALL MontageSetup(IThicknessIndex,knd,ind,jnd,RFinalMontageImageRoot, &
           RIndividualReflectionsRoot,IErr)
      IF( IErr.NE.0 ) THEN

@@ -55,10 +55,14 @@ SUBROUTINE ReadInpFile( IErr )
   
   IMPLICIT NONE
 
-  INTEGER(IKIND) IErr, ILine,ind,IPos,IPos1,IPos2
-  REAL(KIND=RKIND) ROfIter
-  CHARACTER*200 SImageMode,SElements
-  
+  INTEGER(IKIND) :: &
+       IErr, ILine,ind,IPos,IPos1,IPos2
+  REAL(RKIND) :: &
+       ROfIter
+  CHARACTER*200 ::&
+       SImageMode,SElements,SRefineMode,SStringFromNumber,SRefineYESNO,&
+       SAtomicSites,SFormatString,SLengthofNumberString
+
   IF((IWriteFLAG.GE.0.AND.my_rank.EQ.0).OR.IWriteFLAG.GE.10) THEN
      PRINT*,"Input()"
   END IF
@@ -409,23 +413,71 @@ SUBROUTINE ReadInpFile( IErr )
      
      ILine= ILine+1; READ(IChInp,ERR=20,END=30,FMT='(A)')
      
-     ILine= ILine+1
-     READ(IChInp,10,ERR=20,END=30) IImageOutputFLAG
-     IF((IWriteFLAG.GE.1.AND.my_rank.EQ.0).OR.IWriteFLAG.GE.10) THEN
-        PRINT*,"IImageOutputFLAG = ", IImageOutputFLAG
-     END IF
+!!$     ILine= ILine+1
+!!$     READ(IChInp,10,ERR=20,END=30) IImageOutputFLAG
+!!$     IF((IWriteFLAG.GE.1.AND.my_rank.EQ.0).OR.IWriteFLAG.GE.10) THEN
+!!$        PRINT*,"IImageOutputFLAG = ", IImageOutputFLAG
+!!$     END IF
+!!$     
+!!$     ILine= ILine+1
+!!$     READ(IChInp,10,ERR=20,END=30) IDevFLAG
+!!$     IF((IWriteFLAG.GE.1.AND.my_rank.EQ.0).OR.IWriteFLAG.GE.10) THEN
+!!$        PRINT*,"IDevFLAG = ", IDevFLAG
+!!$     END IF
      
      ILine= ILine+1
-     READ(IChInp,10,ERR=20,END=30) IDevFLAG
-     IF((IWriteFLAG.GE.1.AND.my_rank.EQ.0).OR.IWriteFLAG.GE.10) THEN
-        PRINT*,"IDevFLAG = ", IDevFLAG
-     END IF
+     READ(IChInp,FMT='(A)',ERR=20,END=30) SRefineMode
+!!$     IF((IWriteFLAG.GE.0.AND.my_rank.EQ.0).OR.IWriteFLAG.GE.10) THEN
+!!$        PRINT*,"SRefineMode = ", SRefineMode
+!!$     END IF
+
+     IRefineModeSelectionArray = 0
+
+     DO ind = 1,7
+        WRITE(SStringFromNumber,'(I1)') ind-1
+        IF(SCAN(SRefineMode,TRIM(ADJUSTL(SStringFromNumber))).NE.0) THEN
+           IRefineModeSelectionArray(ind) = 1
+        END IF
+     END DO
      
-     ILine= ILine+1
-     READ(IChInp,10,ERR=20,END=30) IRefineModeFLAG
-     IF((IWriteFLAG.GE.1.AND.my_rank.EQ.0).OR.IWriteFLAG.GE.10) THEN
-        PRINT*,"IRefineModeFLAG = ", IRefineModeFLAG
-     END IF
+!!$     READ(IChInp,10,ERR=20,END=30) IRefineModeFLAG
+!!$     IF((IWriteFLAG.GE.1.AND.my_rank.EQ.0).OR.IWriteFLAG.GE.10) THEN
+!!$        PRINT*,"IRefineModeFLAG = ", IRefineModeFLAG
+!!$     END IF
+
+     
+     IF((IWriteFLAG.GE.0.AND.my_rank.EQ.0).OR.IWriteFLAG.GE.10) THEN
+        IF(IWriteFLAG.GE.4) THEN
+           DO ind = 1,7
+              SRefineYESNO = 'NO'
+              SELECT CASE (ind)
+              CASE(1)
+                 IF(IRefineModeSelectionArray(ind).EQ.1) SRefineYESNO = 'YES'
+                 PRINT*,"Refine Structure Factors ",SRefineYESNO
+              CASE(2)
+                 IF(IRefineModeSelectionArray(ind).EQ.1) SRefineYESNO = 'YES'
+                 PRINT*,"Refine Atomic Coordinates ",SRefineYESNO
+              CASE(3)
+                 IF(IRefineModeSelectionArray(ind).EQ.1) SRefineYESNO = 'YES'
+                 PRINT*,"Refine Atomic Site Occupancies ",SRefineYESNO
+              CASE(4)
+                 IF(IRefineModeSelectionArray(ind).EQ.1) SRefineYESNO = 'YES'
+                 PRINT*,"Refine Isotropic Debye Waller Factors ",SRefineYESNO
+              CASE(5)
+                 IF(IRefineModeSelectionArray(ind).EQ.1) SRefineYESNO = 'YES'
+                 PRINT*,"Refine Anisotropic Debye Waller Factors ",SRefineYESNO
+              CASE(6)
+                 IF(IRefineModeSelectionArray(ind).EQ.1) SRefineYESNO = 'YES'
+                 PRINT*,"Refine Lattice Lengths ",SRefineYESNO
+              CASE(7)
+                 IF(IRefineModeSelectionArray(ind).EQ.1) SRefineYESNO = 'YES'
+                 PRINT*,"Refine Lattice Angles ",SRefineYESNO
+              END SELECT
+           END DO
+        ELSE
+           PRINT*,"IRefineModeSelectionArray = ",IRefineModeSelectionArray
+        END IF
+     END IF    
      
      ILine= ILine+1; READ(IChInp,ERR=20,END=30,FMT='(A)')
      ILine= ILine+1; READ(IChInp,ERR=20,END=30,FMT='(A)')
@@ -502,6 +554,7 @@ SUBROUTINE ReadInpFile( IErr )
      
      ILine= ILine+1; READ(IChInp,ERR=20,END=30,FMT='(A)')
      ILine= ILine+1; READ(IChInp,ERR=20,END=30,FMT='(A)')
+     ILine= ILine+1; READ(IChInp,ERR=20,END=30,FMT='(A)')
      
      ILine= ILine+1
      READ(IChInp,10,ERR=20,END=30) INoofUgs
@@ -526,7 +579,58 @@ SUBROUTINE ReadInpFile( IErr )
      IF((IWriteFLAG.GE.1.AND.my_rank.EQ.0).OR.IWriteFLAG.GE.10) THEN
         PRINT*,"RDeltaUgChange = ", RDeltaUgChange
      END IF
+
+     !-----------------------------------------------------------------------
+     ! Iterative Structural input
+
+     ILine= ILine+1; READ(IChInp,ERR=20,END=30,FMT='(A)')
+     ILine= ILine+1; READ(IChInp,ERR=20,END=30,FMT='(A)')
+     ILine= ILine+1; READ(IChInp,ERR=20,END=30,FMT='(A)')
+     
+     READ(IChInp,FMT='(A)',ERR=20,END=30) SAtomicSites
+     IPos1 = SCAN(SAtomicSites,'(')
+     IPos2 = SCAN(SAtomicSites,')')
+     IF(((IPos2-IPos1).EQ.1).OR.(IPos1.EQ.0).OR.(IPos2.EQ.0)) THEN
+        IF(IRefineModeSelectionArray(2).EQ.1) THEN
+           PRINT*,"You Have Not Specfied Atomic Sites to Refine" 
+        END IF
+     ELSE
+        IPos = 1
+        DO 
+           IF(SCAN(SAtomicSites(IPos1:IPos2),',').NE.0) THEN
+              IPos1 = IPos1 + LEN(SAtomicSites(IPos1:(IPos1+SCAN(SAtomicSites(IPos1:IPos2),','))))
+              IPos = IPos+1
+           END IF           
+           IF (IPos2-IPos1.EQ.1) EXIT
+        END DO
+        
+        ALLOCATE(&
+             IAtomicSitesToRefine(IPos),&
+             STAT=IErr)
+        IF( IErr.NE.0 ) THEN
+           PRINT*,"ReadInpFile(): error in memory ALLOCATE()"
+           RETURN
+        ENDIF
+        
+        IPos1 = SCAN(SAtomicSites,'(')
+        DO ind = 1,SIZE(IAtomicSitesToRefine,DIM=1)
+           IF(SCAN(SAtomicSites((IPos1+1):IPos2),',').NE.0) THEN
+              IPos = SCAN(SAtomicSites((IPos1+1):IPos2),',')-1
+              WRITE(SLengthofNumberString,*) LEN(SAtomicSites((IPos1+1):(IPos1+IPos))) 
+              WRITE(SFormatString,*) "(I"//TRIM(ADJUSTL(SLengthofNumberString))//")"
+              READ(SAtomicSites((IPos1+1):(IPos1+IPos)),FMT=SFormatString) IAtomicSitesToRefine(ind)
+              IPos1 = IPos1 + IPos + 1 
+           ELSE
+              WRITE(SLengthofNumberString,*) LEN(SAtomicSites((IPos1+1):(IPos2-1))) 
+              WRITE(SFormatString,*) "(I"//TRIM(ADJUSTL(SLengthofNumberString))//")"
+              READ(SAtomicSites((IPos1+1):(IPos2-1)),FMT=SFormatString) IAtomicSitesToRefine(ind)
+           END IF
+        END DO
+             
+     END IF
+     
   END IF
+
   
 10 FORMAT(27X,I15.1)
   ! 10	FORMAT("IMAXIteration= ",I15.1)

@@ -36,8 +36,8 @@
 ! $Id: Felixrefine.f90,v 1.89 2014/04/28 12:26:19 phslaz Exp $
 !%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-!!$REAL(RKIND) FUNCTION FelixFunction(VariableId,VariableValue)
-SUBROUTINE FelixFunction(IErr)
+REAL(RKIND) FUNCTION FelixFunction(Ierr)
+!!$SUBROUTINE FelixFunction(IErr)
 
   USE MyNumbers
   
@@ -52,26 +52,26 @@ SUBROUTINE FelixFunction(IErr)
 
   IMPLICIT NONE
 
+  !--------------------------------------------------------------------
+  ! local variable definitions
+  !--------------------------------------------------------------------
+  
   INTEGER(IKIND) :: &
        IErr,ind,jnd,knd,pnd,&
        IThicknessIndex,ILocalPixelCountMin, ILocalPixelCountMax
   INTEGER, DIMENSION(:), ALLOCATABLE :: &
        IDisplacements,ICount
   REAL(RKIND),DIMENSION(:,:,:),ALLOCATABLE :: &
-       RIndividualReflectionsRoot
-  REAL(RKIND),DIMENSION(:,:,:),ALLOCATABLE :: &
+       RIndividualReflectionsRoot,&
        RFinalMontageImageRoot
   COMPLEX(CKIND),DIMENSION(:,:,:), ALLOCATABLE :: &
-       CAmplitudeandPhaseRoot
+       CAmplitudeandPhaseRoot  
 
-  !--------------------------------------------------------------------
-  ! local variable definitions
-  !--------------------------------------------------------------------
-  
 
   !-------------------------------------------------------------------- 
   !Setup Experimental Variables
   !--------------------------------------------------------------------
+
   CALL ExperimentalSetup (IErr)
   IF( IErr.NE.0 ) THEN
      PRINT*,"Felixfunction(", my_rank, ") error in ExperimentalSetup()"
@@ -99,8 +99,8 @@ SUBROUTINE FelixFunction(IErr)
      PRINT*,"Felixfunction(", my_rank, ") error in StructureFactorSetup()"
      RETURN
   ENDIF
-
- Deallocate( &
+  
+  Deallocate( &
        RgMatMat,RgMatMag,STAT=IErr)
   IF( IErr.NE.0 ) THEN
      PRINT*,"Felixfunction(", my_rank, ") error ", IErr, &
@@ -330,49 +330,21 @@ SUBROUTINE FelixFunction(IErr)
      ENDIF   
   END IF
 
-  IF(my_rank.EQ.0) THEN
-     ALLOCATE( &
-          RFinalMontageImageRoot(MAXVAL(IImageSizeXY),&
-          MAXVAL(IImageSizeXY),IThicknessCount),&
-          STAT=IErr)
-     IF( IErr.NE.0 ) THEN
-        PRINT*,"Felixfunction(", my_rank, ") error ", IErr, &
-             " in ALLOCATE() of DYNAMIC variables Root Montage"
-        RETURN
-     ENDIF
-
-    RFinalMontageImageRoot = ZERO		
-  END IF
-
+ 
   IF(my_rank.EQ.0.AND.IImageFLAG.GE.3) THEN
      RIndividualReflectionsRoot = &
           CAmplitudeandPhaseRoot * CONJG(CAmplitudeandPhaseRoot)
   END IF
 
-  IF(my_rank.EQ.ZERO) THEN
-     CALL MontageSetup(IThicknessIndex,knd,ind,jnd,RFinalMontageImageRoot, &
-          RIndividualReflectionsRoot,IErr)
-     IF( IErr.NE.0 ) THEN
-        PRINT*,"Felixfunction(", my_rank, ") error ", IErr, &
-             " in MontageSetup"
-        RETURN
-     ENDIF
-  END IF
-  !--------------------------------------------------------------------
-  ! Write out Images
-  !--------------------------------------------------------------------
-  
-  IF (my_rank.EQ.0) THEN
 
-     CALL WriteOutput(CAmplitudeandPhaseRoot,RIndividualReflectionsRoot,RFinalMontageImageRoot,IErr)
+  IF(my_rank.EQ.0) THEN
+     CALL CalculateFigureofMeritandDetermineThickness(RIndividualReflectionsRoot,IErr)
      IF( IErr.NE.0 ) THEN
         PRINT*,"Felixfunction(", my_rank, ") error ", IErr, &
-             " in WriteOutput"
+             "Calling function CalculateFigureofMeritandDetermineThickness"
         RETURN
-     ENDIF
-          
+     ENDIF   
   END IF
-  
   !--------------------------------------------------------------------
   ! free memory
   !--------------------------------------------------------------------
@@ -410,4 +382,154 @@ SUBROUTINE FelixFunction(IErr)
         RETURN  
      ENDIF
   END IF
-END SUBROUTINE FelixFunction
+
+  FelixFunction = RCrossCorrelation
+
+!!$END SUBROUTINE FelixFunction
+END FUNCTION FelixFunction
+
+SUBROUTINE ReadExperimentalImages(IErr)
+
+ USE MyNumbers
+  
+  USE CConst; USE IConst; USE RConst
+  USE IPara; USE RPara; USE SPara; USE CPara
+  USE BlochPara
+
+  USE IChannels
+
+  USE MPI
+  USE MyMPI
+
+  IMPLICIT NONE
+  
+  INTEGER(IKIND) :: &
+       ind,IErr
+  CHARACTER*34 :: &
+       filename
+
+  DO ind = 1,IReflectOut
+     
+     WRITE(filename,"(A6,I3.3,A4)") "felix.",ind,".img"
+     
+     CALL OpenImageForReadIn(IErr,filename)  
+     IF( IErr.NE.0 ) THEN
+        PRINT*,"ReadExperimentalImages (", my_rank, ") error in OpenImageForReadIn()"
+        RETURN
+     END IF
+     
+     ALLOCATE( &
+          RImageIn(2*IPixelCount,2*IPixelCount), &
+          STAT=IErr)  
+     IF( IErr.NE.0 ) THEN
+        PRINT*,"ReadExperimentalImages (", my_rank, ") error in Allocation()"
+        RETURN
+     ENDIF
+     
+     CALL ReadImageForRefinement(IErr)  
+     IF( IErr.NE.0 ) THEN
+        PRINT*,"ReadExperimentalImages (", my_rank, ") error in ReadImageForRefinement()"
+        RETURN
+     ELSE
+        IF((IWriteFLAG.GE.6.AND.my_rank.EQ.0).OR.IWriteFLAG.GE.10) THEN
+           PRINT*,"Image Read In Successful"
+        END IF
+     ENDIF
+     
+     RImageExpi(:,:,ind) = RImageIn
+     
+     DEALLOCATE( &
+          RImageIn, &
+          STAT=IErr)  
+     IF( IErr.NE.0 ) THEN
+        PRINT*,"ReadExperimentalImages (", my_rank, ") error in deAllocation()"
+        RETURN
+     ENDIF
+
+     
+     CLOSE(IChInImage,IOSTAT=IErr) 
+     IF( IErr.NE.0 ) THEN
+        PRINT*,"ReadExperimentalImages (", my_rank, ") error in CLOSE()"
+        RETURN
+     END IF
+
+  END DO
+
+
+END SUBROUTINE ReadExperimentalImages
+
+SUBROUTINE CalculateFigureofMeritandDetermineThickness(RSimulatedImages,IErr)
+  
+  USE MyNumbers
+  
+  USE CConst; USE IConst; USE RConst
+  USE IPara; USE RPara; USE SPara; USE CPara
+  USE BlochPara
+
+  USE IChannels
+
+  USE MPI
+  USE MyMPI
+
+  IMPLICIT NONE
+
+  INTEGER(IKIND) :: &
+       ind,jnd,knd,IErr,ICountedPixels,IThickness,&
+       IThicknessCountFinal
+  REAL(RKIND),DIMENSION(:,:),ALLOCATABLE :: &
+       RSimulatedImageForPhaseCorrelation
+  REAL(RKIND) :: &
+       RCrossCorrelationOld,RThickness
+  REAL(RKIND),DIMENSION(IReflectOut,IThicknessCount,IPixelTotal) :: &
+       RSimulatedImages
+
+  
+  ALLOCATE(&
+       RSimulatedImageForPhaseCorrelation(2*IPixelCount,2*IPixelCount),&
+       STAT=IErr)
+  IF( IErr.NE.0 ) THEN
+     PRINT*,"CalculateFigureofMeritandDetermineThickness(", my_rank, ") error ", IErr, &
+          " In ALLOCATE"
+     RETURN
+  ENDIF
+  
+  RCrossCorrelationOld = ZERO
+  RThickness = ZERO
+  RSimulatedImageForPhaseCorrelation = ZERO
+  RCrossCorrelation = ZERO
+
+  DO ind = 1,IThicknessCount
+     ICountedPixels = 0
+     DO jnd = 1,2*IPixelCount
+        DO knd = 1,2*IPixelCount
+           IF(ABS(RMask(jnd,knd)).GT.TINY) THEN
+              ICountedPixels = ICountedPixels+1
+              RSimulatedImageForPhaseCorrelation(jnd,knd) = &
+                   RSimulatedImages(1,ind,ICountedPixels)
+           END IF
+        END DO
+     END DO
+     
+     CALL PhaseCorrelate(RSimulatedImageForPhaseCorrelation,RImageExpi(:,:,1),&
+          IErr,2*IPixelCount,2*IPixelCount)
+     
+     IF(RCrossCorrelation.GT.RCrossCorrelationOld) THEN
+        RCrossCorrelationOld = RCrossCorrelation
+        RThickness = RInitialThickness + (ind-1)*RDeltaThickness 
+        IThicknessCountFinal = ind
+     END IF
+  END DO
+  
+  RCrossCorrelation = RCrossCorrelationOld
+
+  DEALLOCATE(&
+       RSimulatedImageForPhaseCorrelation,&
+       STAT=IErr)
+  IF( IErr.NE.0 ) THEN
+     PRINT*,"CalculateFigureofMeritandDetermineThickness(", my_rank, ") error ", IErr, &
+          " In DEALLOCATE"
+     RETURN
+  ENDIF
+  
+  
+END SUBROUTINE CalculateFigureofMeritandDetermineThickness

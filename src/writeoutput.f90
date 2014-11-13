@@ -146,7 +146,6 @@ SUBROUTINE WriteOutput( CAmplitudeandPhaseRoot,RIndividualReflectionsRoot,RFinal
               gnd = IPixelLocations(jnd,1)
               hnd = IPixelLocations(jnd,2)
               RImage(gnd,hnd) = RIndividualReflectionsRoot(ind,knd,jnd)
-              PRINT*, RImage
            END DO
            
            CALL WriteReflectionImage(IChOutWIImage,&

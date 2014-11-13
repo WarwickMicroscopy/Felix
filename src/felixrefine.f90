@@ -55,12 +55,11 @@ PROGRAM Felixrefine
   
   IMPLICIT NONE
 
-
   INTEGER(IKIND) :: &
-       IHours,IMinutes,ISeconds,IErr
+       IHours,IMinutes,ISeconds,IErr,IMilliSeconds
   REAL(RKIND) :: &
-       StartTime, CurrentTime, Duration, TotalDurationEstimate
-  
+       StartTime, CurrentTime, Duration, TotalDurationEstimate,&
+       RFigureOfMerit,FelixFunction
 
   !-------------------------------------------------------------------
   ! constants
@@ -122,7 +121,7 @@ PROGRAM Felixrefine
   ! INPUT section 
   !--------------------------------------------------------------------
   
-  ISoftwareMode = 0 ! felixrefinemode
+  ISoftwareMode = 2 ! felixrefinemode
   
   !Read from input files
   CALL ReadInput (IErr)
@@ -131,7 +130,32 @@ PROGRAM Felixrefine
      GOTO 9999
   ENDIF
 
-  CALL FelixFunction(IErr)
+  ALLOCATE( &
+       RImageExpi(2*IPixelCount,2*IPixelCount, &
+       IReflectOut),&
+       STAT=IErr)  
+  IF( IErr.NE.0 ) THEN
+     PRINT*,"felixrefine (", my_rank, ") error in Allocation()"
+     GOTO 9999
+  ENDIF
+
+  CALL ReadExperimentalImages(IErr,RImageExpi(:,:,1))
+  IF( IErr.NE.0 ) THEN
+     PRINT*,"Felixrefine(", my_rank, ") error in ReadExperimentalImages()"
+     GOTO 9999
+  ENDIF
+
+  RFigureOfMerit = FelixFunction(IErr)
+
+  IF(my_rank.EQ.0) PRINT*,"Best Correlation Was =",RFigureOfMerit
+
+  DEALLOCATE( &
+       RImageExpi,&
+       STAT=IErr)  
+  IF( IErr.NE.0 ) THEN
+     PRINT*,"felixrefine (", my_rank, ") error in Deallocation()"
+     GOTO 9999
+  ENDIF
   
   !--------------------------------------------------------------------
   ! finish off
@@ -142,8 +166,10 @@ PROGRAM Felixrefine
   IHours = FLOOR(Duration/3600.0D0)
   IMinutes = FLOOR(MOD(Duration,3600.0D0)/60.0D0)
   ISeconds = MOD(Duration,3600.0D0)-IMinutes*60.0D0
+  IMilliSeconds = INT((Duration-(IHours*3600+IMinutes*60+ISeconds))*100,IKIND)
 
-  PRINT*, "Felixrefine(", my_rank, ") ", RStr, ", used time=", IHours, "hrs ",IMinutes,"mins ",ISeconds,"Seconds "
+  PRINT*, "Felixrefine(", my_rank, ") ", RStr, ", used time=", IHours, "hrs ",IMinutes,"mins ",ISeconds,"Seconds ",&
+    IMilliSeconds,"Milliseconds"  
 
   !--------------------------------------------------------------------
   ! Shut down MPI
@@ -158,8 +184,4 @@ PROGRAM Felixrefine
   ! clean shutdown
   STOP
   
-!!$800 PRINT*,"Felixrefine(", my_rank, "): ERR in CLOSE()"
-!!$  IErr= 1
-!!$  RETURN
-
 END PROGRAM Felixrefine
