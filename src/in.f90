@@ -59,9 +59,12 @@ SUBROUTINE ReadInpFile( IErr )
   REAL(KIND=RKIND) ROfIter
   CHARACTER*200 SImageMode,SElements
   
-  IF((IWriteFLAG.GE.0.AND.my_rank.EQ.0).OR.IWriteFLAG.GE.10) THEN
-     PRINT*,"Input()"
-  END IF
+  
+ CALL Message("Input()",'NAN',1,0,IErr)
+
+ !  IF((IWriteFLAG.GE.0.AND.my_rank.EQ.0).OR.IWriteFLAG.GE.10) THEN
+!      PRINT*,"Input()"
+ ! END IF
 
   OPEN(UNIT= IChInp, ERR= 120, FILE= "felix.inp",&
        STATUS= 'OLD')
