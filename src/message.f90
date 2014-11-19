@@ -35,7 +35,7 @@
 
 !Subroutine reads in a message the user wants to display to the screen, The IWriteFLAG
 !is then compared to the priorityFLAG which determines whether it will get printed out or not. 
-SUBROUTINE Message(MessageString,MessageVariable,IMessageFLAG,IPriorityFLAG,IErr)
+SUBROUTINE Message(MessageString,MessageVariable,RVariable,IMessageFLAG,IPriorityFLAG,IErr)
 
   USE MyNumbers
   USE IPara
@@ -47,38 +47,47 @@ SUBROUTINE Message(MessageString,MessageVariable,IMessageFLAG,IPriorityFLAG,IErr
 
   
  
-  CHARACTER*52  MessageString
+  CHARACTER(*), INTENT (IN) :: MessageString, MessageVariable
 
   !not sure how long the longest variable name is
   !could well need to be changed
-  CHARACTER*32 :: MessageVariable,LeftMessage,RightMessage
+  !CHARACTER*32 :: LeftMessage,RightMessage,MessageVariableShort
 
-  INTEGER(IKIND) :: IMessageFLAG,IErr,ILeftParenthesisPosition,IPriorityFLAG
-
-!  INTEGER(IKIND) MessageLen
+  INTEGER(IKIND) :: IMessageFLAG,IErr,IPriorityFLAG,ILeftParenthesisPosition
+  REAL(RKIND) :: RVariable
+  ! INTEGER(IKIND) MessageLen
   !PRINT*,MessageString,LEN(MessageString)
 
-  !find position of left Parenthesis - then Split strings
-  ILeftParenthesisPosition = SCAN(MessageString,"(") 
-  LeftMessage = MessageString(1:ILeftParenthesisPosition)
-  RightMessage = MessageString(ILeftParenthesisPosition + 1 : ILeftParenthesisPosition + 1)
+ !find position of left Parenthesis of MessageString - then Split strings to input my_rank
+ ! ILeftParenthesisPosition = SCAN(MessageString,"(") 
+ ! LeftMessage = MessageString(1:ILeftParenthesisPosition)
+ ! RightMessage = MessageString(ILeftParenthesisPosition + 1 : ILeftParenthesisPosition + 1)
+  
+  !PRINT*,MessageVariable
 
+ ! IF (IMessageFLAG.GE.1) THEN
+   !  !find '=' sign of Message Variable - cut at this point to remove random memory rubbish
+   !  ILeftParenthesisPosition = SCAN(MessageVariable,"=")
+   !  MessageVariableShort = MessageVariable(1:ILeftParenthesisPosition)
+ ! END IF
+
+ ! PRINT*,"HERE?",MessageVariableShort
 
   SELECT CASE (IMessageFlag)
      
-  !Prints Variable name as well as Message
+  !Prints Just Variable name 
   CASE(0)
-     
-     IF((IPriorityFLAG.LE.IWriteFLAG.AND.my_rank.EQ.0.AND.ISoftwareMode.LT.2).OR.IWriteFLAG.GE.10.AND.ISoftwareMode .LT. 2) THEN
-        PRINT*,TRIM(LeftMessage),my_rank,TRIM(RightMessage),MessageVariable
-     END IF
 
-  !Prints Message without variable
-  CASE(1)
      IF((IPriorityFLAG.LE.IWriteFLAG.AND.my_rank.EQ.0.AND.ISoftwareMode.LT.2).OR.IWriteFLAG.GE.10.AND.ISoftwareMode .LT. 2) THEN
-        PRINT*,TRIM(LeftMessage),my_rank,TRIM(RightMessage)
+        PRINT*,MessageString,"(",my_rank,")"
      END IF
      
+  !Prints Message with variable
+  CASE(1)
+    
+     IF((IPriorityFLAG.LE.IWriteFLAG.AND.my_rank.EQ.0.AND.ISoftwareMode.LT.2).OR.IWriteFLAG.GE.10.AND.ISoftwareMode .LT. 2) THEN
+        PRINT*,MessageString,"(",my_rank,") ",MessageVariable," =",RVariable
+     END IF
         
   CASE DEFAULT
      !Error message call here from subroutine errorchecks.f90,

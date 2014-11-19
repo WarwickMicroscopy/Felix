@@ -60,7 +60,8 @@ SUBROUTINE ReadInpFile( IErr )
   CHARACTER*200 SImageMode,SElements
   
   
- CALL Message("Input()",'NAN',1,0,IErr)
+ CALL Message("Input","NAN",ZERO,0,0,IErr)
+
 
  !  IF((IWriteFLAG.GE.0.AND.my_rank.EQ.0).OR.IWriteFLAG.GE.10) THEN
 !      PRINT*,"Input()"
@@ -91,10 +92,12 @@ SUBROUTINE ReadInpFile( IErr )
   
   ILine= ILine+1
   READ(IChInp,10,ERR=20,END=30) IWriteFLAG
+
+  CALL Message ("Input()","IWriteFLAG",IWriteFLAG,1,1,IErr)
   
-  IF((IWriteFLAG.GE.1.AND.my_rank.EQ.0).OR.IWriteFLAG.GE.10) THEN
-     PRINT*,"IWriteFLAG = ", IWriteFLAG
-  END IF
+  !IF((IWriteFLAG.GE.1.AND.my_rank.EQ.0).OR.IWriteFLAG.GE.10) THEN
+  !   PRINT*,"IWriteFLAG = ", IWriteFLAG
+  !END IF
   
   ILine= ILine+1
   READ(IChInp,FMT='(A)',ERR=20,END=30) SImageMode
