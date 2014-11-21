@@ -171,7 +171,7 @@ SUBROUTINE ReflectionDetermination( IErr )
 
     IMPLICIT NONE
 
-    INTEGER(IKIND) IFind, IErr
+    INTEGER(IKIND) IFind,IFound,ind,jnd,knd, IErr
     
   IFind = 0
   
@@ -250,7 +250,7 @@ SUBROUTINE ReflectionDetermination( IErr )
     
     IMPLICIT NONE
 
-    INTEGER(IKIND) IErr
+    INTEGER(IKIND) ind,IErr
     REAL(RKIND):: dummy
 
     ALLOCATE(&

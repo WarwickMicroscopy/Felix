@@ -52,6 +52,7 @@ SUBROUTINE ReadInpFile( IErr )
 
   USE MPI
   USE MyMPI
+  USE ScreenWrite
   
   IMPLICIT NONE
 
@@ -59,9 +60,9 @@ SUBROUTINE ReadInpFile( IErr )
   REAL(KIND=RKIND) ROfIter
   CHARACTER*200 SImageMode,SElements
   
+     CALL Message("Input",0,IErr)
   
- CALL Message("Input","NAN",ZERO,0,0,IErr)
-
+ PRINT*,"%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%here%%%%%%%%%%%%%%"
 
  !  IF((IWriteFLAG.GE.0.AND.my_rank.EQ.0).OR.IWriteFLAG.GE.10) THEN
 !      PRINT*,"Input()"
@@ -70,6 +71,7 @@ SUBROUTINE ReadInpFile( IErr )
   OPEN(UNIT= IChInp, ERR= 120, FILE= "felix.inp",&
        STATUS= 'OLD')
   ILine= 1
+
 
   ! ----------------------------------------------------------------------
   ! introductory comment lines
@@ -93,7 +95,7 @@ SUBROUTINE ReadInpFile( IErr )
   ILine= ILine+1
   READ(IChInp,10,ERR=20,END=30) IWriteFLAG
 
-  CALL Message ("Input()","IWriteFLAG",IWriteFLAG,1,1,IErr)
+ ! CALL Message ("Input",1,IErr,"IWriteFLAG",IVariable=IWriteFLAG)
   
   !IF((IWriteFLAG.GE.1.AND.my_rank.EQ.0).OR.IWriteFLAG.GE.10) THEN
   !   PRINT*,"IWriteFLAG = ", IWriteFLAG

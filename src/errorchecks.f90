@@ -45,7 +45,7 @@
 
     IMPLICIT NONE
 
-    CHARACTER*40 ProgramInCurrently, ProgramWithIssue
+    CHARACTER(*) ProgramInCurrently, ProgramWithIssue
 
     INTEGER(IKIND) IErr
 
