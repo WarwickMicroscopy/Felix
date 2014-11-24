@@ -52,21 +52,21 @@ SUBROUTINE ReadInpFile( IErr )
 
   USE MPI
   USE MyMPI
-  USE ScreenWrite
+  USE WriteToScreen
   
   IMPLICIT NONE
 
   INTEGER(IKIND) IErr, ILine,ind,IPos,IPos1,IPos2
   REAL(KIND=RKIND) ROfIter
   CHARACTER*200 SImageMode,SElements
-  
-     CALL Message("Input",0,IErr)
-  
- PRINT*,"%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%here%%%%%%%%%%%%%%"
 
- !  IF((IWriteFLAG.GE.0.AND.my_rank.EQ.0).OR.IWriteFLAG.GE.10) THEN
-!      PRINT*,"Input()"
- ! END IF
+
+  CALL Message("Input",IMust,IErr)
+  
+  
+  !  IF((IWriteFLAG.GE.0.AND.my_rank.EQ.0).OR.IWriteFLAG.GE.10) THEN
+  !      PRINT*,"Input()"
+  ! END IF
 
   OPEN(UNIT= IChInp, ERR= 120, FILE= "felix.inp",&
        STATUS= 'OLD')
@@ -94,8 +94,7 @@ SUBROUTINE ReadInpFile( IErr )
   
   ILine= ILine+1
   READ(IChInp,10,ERR=20,END=30) IWriteFLAG
-
- ! CALL Message ("Input",1,IErr,"IWriteFLAG",IVariable=IWriteFLAG)
+  CALL Message ("Input",IInfo,IErr,"IWriteFLAG",IVariable=IWriteFLAG)
   
   !IF((IWriteFLAG.GE.1.AND.my_rank.EQ.0).OR.IWriteFLAG.GE.10) THEN
   !   PRINT*,"IWriteFLAG = ", IWriteFLAG
@@ -402,6 +401,16 @@ SUBROUTINE ReadInpFile( IErr )
   IF((IWriteFLAG.GE.1.AND.my_rank.EQ.0).OR.IWriteFLAG.GE.10) THEN
      PRINT*,"IReflectOut = ", IReflectOut
   END IF
+
+  ILine= ILine+1; READ(IChInp,ERR=20,END=30,FMT='(A)') 
+  ILine= ILine+1; READ(IChInp,ERR=20,END=30,FMT='(A)')
+
+!-------------------------------------------------------------------------
+! Set Debug Mode - on or off
+  ILine = ILine+1
+  READ(IChInp,10,ERR=20,END=30) IDebugMODE
+  CALL Message ("Input",1,IErr,"IDebugMODE",IVariable = IDebugMODE)
+
 
   IF(ISoftwareMode.EQ.2) THEN
 

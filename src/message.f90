@@ -35,9 +35,9 @@
 
 !Subroutine reads in a message the user wants to display to the screen, The IWriteFLAG
 !is then compared to the priorityFLAG which determines whether it will get printed out or not.
-MODULE ScreenWrite
+MODULE WriteToScreen
 CONTAINS
-SUBROUTINE Message(ProgramName,IPriorityFLAG,IErr,MessageVariableIn,RVariableIn,IVariableIn,CVariableIn,MessageStringIn)
+SUBROUTINE Message(ProgramName,IPriorityFLAG,IErr,MessageVariable,RVariable,IVariable,CVariable,MessageString)
 
   USE MyNumbers
   USE IPara
@@ -47,65 +47,55 @@ SUBROUTINE Message(ProgramName,IPriorityFLAG,IErr,MessageVariableIn,RVariableIn,
   
   IMPLICIT NONE
    
-  CHARACTER(*), INTENT (IN), OPTIONAL ::  MessageVariableIn, MessageStringIn 
+  CHARACTER(*), INTENT (IN), OPTIONAL ::  MessageVariable, MessageString
 
-  REAL(RKIND),INTENT(IN), OPTIONAL :: RVariableIn 
-  INTEGER(IKIND),INTENT (IN), OPTIONAL ::IVariableIn
-  COMPLEX(CKIND),INTENT (IN), OPTIONAL :: CVariableIn
+  REAL(RKIND),INTENT(IN), OPTIONAL :: RVariable 
+  INTEGER(IKIND),INTENT (IN), OPTIONAL ::IVariable
+  COMPLEX(CKIND),INTENT (IN), OPTIONAL :: CVariable
 
   
-  REAL(RKIND):: RVariable 
-  INTEGER(IKIND) :: IVariable
-  COMPLEX(CKIND) :: CVariable
+  !REAL(RKIND):: RVariable 
+  !INTEGER(IKIND) :: IVariable
+  !COMPLEX(CKIND) :: CVariable
 
   CHARACTER(*),INTENT (IN) :: ProgramName
-  CHARACTER(LEN=LEN(MessageVariableIn)) :: MessageVariable
-  CHARACTER(LEN=LEN(MessageStringIn)) :: MessageString
+  !CHARACTER(LEN=LEN(MessageVariableIn)) :: MessageVariable
+  !CHARACTER(LEN=LEN(MessageStringIn)) :: MessageString
   INTEGER(IKIND) :: IErr,IPriorityFLAG
 
 
-  LOGICAL :: R,U
-
-  PRINT*," IPriorityFLAG   ",IPriorityFLAG
-  PRINT*,"IErr &&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&7", IErr
-
-   PRINT*,"ProgramName = ", ProgramName
-  ! PRINT*,MessageVariable
-  
-   ! R = PRESENT(MessageVariableIn)
-  ! PRINT*,"R present?", R
-
-   U = PRESENT(RVariableIn)
-   PRINT*,"U present?", U
-
- ! PRINT*,"MessageVariable = ", MessageVariable
 
   ! Checks if MessageVariable has been read into the function
-  IF (PRESENT(MessageVariableIn)) THEN
-     MessageVariable = MessageVariableIn
+  IF (PRESENT(MessageVariable)) THEN
+    
     
      !If it has, we then check to see which type of variable needs to be printed
      !out to the screen
-     IF (PRESENT(RVariableIn)) THEN
-        RVariable = RVariableIn
+     IF (PRESENT(RVariable)) THEN
+      
         !Check for mismatch
-       ! IF (SCAN(MessageVariable,'R').EQ.0.AND.IDebugMODE.EQ.1) THEN
+        IF (SCAN(MessageVariable,'R').EQ.0.AND.IDebugMODE.EQ.1) THEN
            !654 is error code associated with the misinterpreted variable
-        !   CALL ErrorChecks("Message","Message",654)
-        
+           CALL ErrorChecks("Message","Message",654)
+        ENDIF
+
         IF((IPriorityFLAG.LE.IWriteFLAG.AND.my_rank.EQ.0.AND.ISoftwareMode.LT.2).OR.IWriteFLAG.GE.10.AND.ISoftwareMode .LT. 2) THEN
            PRINT*,ProgramName,"(",my_rank,") ",MessageVariable," =",RVariable
         END IF
            
-     ELSE IF (PRESENT(IVariableIn)) THEN
+     ELSE IF (PRESENT(IVariable)) THEN
 
-        IVariable = IVariableIn
+        !Check for mismatch
+        IF (SCAN(MessageVariable,'I').EQ.0.AND.IDebugMODE.EQ.1) THEN
+           !654 is error code associated with the misinterpreted variable
+           CALL ErrorChecks("Message","Message",654)
+        ENDIF
 
         IF((IPriorityFLAG.LE.IWriteFLAG.AND.my_rank.EQ.0.AND.ISoftwareMode.LT.2).OR.IWriteFLAG.GE.10.AND.ISoftwareMode .LT. 2) THEN
            PRINT*,ProgramName,"(",my_rank,") ",MessageVariable," =",IVariable
         END IF
-           PRINT*," here"
-     ELSE IF (PRESENT(CVariableIn)) THEN
+
+     ELSE IF (PRESENT(CVariable)) THEN
         IF((IPriorityFLAG.LE.IWriteFLAG.AND.my_rank.EQ.0.AND.ISoftwareMode.LT.2).OR.IWriteFLAG.GE.10.AND.ISoftwareMode .LT. 2) THEN
            PRINT*,ProgramName,"(",my_rank,") ",MessageVariable," =",CVariable
         END IF
@@ -113,8 +103,8 @@ SUBROUTINE Message(ProgramName,IPriorityFLAG,IErr,MessageVariableIn,RVariableIn,
      
      
      !If There is a message with the FunctionName then the Message is Printed with its message
-  ELSE IF (PRESENT(MessageStringIn)) THEN
-     MessageString = MessageStringIn
+  ELSE IF (PRESENT(MessageString)) THEN
+ 
      IF((IPriorityFLAG.LE.IWriteFLAG.AND.my_rank.EQ.0.AND.ISoftwareMode.LT.2).OR.IWriteFLAG.GE.10.AND.ISoftwareMode .LT. 2) THEN
         PRINT*,ProgramName,"(",my_rank,")",MessageString
      END IF
@@ -122,7 +112,6 @@ SUBROUTINE Message(ProgramName,IPriorityFLAG,IErr,MessageVariableIn,RVariableIn,
      !if there is no message or variable - the function is just printed out
      !to identify it is entering that program
   ELSE
-     PRINT*," here.........................................................."
      IF((IPriorityFLAG.LE.IWriteFLAG.AND.my_rank.EQ.0.AND.ISoftwareMode.LT.2).OR.IWriteFLAG.GE.10.AND.ISoftwareMode .LT. 2) THEN
         PRINT*,ProgramName,"(",my_rank,")"
      END IF
@@ -130,7 +119,7 @@ SUBROUTINE Message(ProgramName,IPriorityFLAG,IErr,MessageVariableIn,RVariableIn,
 
 END SUBROUTINE Message
    
-END MODULE
+END MODULE WriteToScreen
      
 
 

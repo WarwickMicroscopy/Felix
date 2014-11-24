@@ -49,6 +49,7 @@ SUBROUTINE ReSortHKL( RHKLarray, N )
     
   USE CConst; USE IConst
   USE IPara; USE RPara
+  USE WriteToScreen
 
   USE IChannels
 
@@ -158,11 +159,13 @@ END SUBROUTINE CONVERTAtomName2Number
 SUBROUTINE CountTotalAtoms(IErr)
 
   USE MyNumbers
-  
+  USE WriteToScreen
+
   USE CConst; USE IConst
   USE IPara; USE RPara; USE CPara; USE SPara
   USE IChannels
   USE BlochPara
+  
   
   USE MPI
   USE MyMPI
@@ -296,9 +299,11 @@ SUBROUTINE CountTotalAtoms(IErr)
      
   END IF
   
-  IF((IWriteFLAG.GE.1.AND.my_rank.EQ.0).OR.IWriteFLAG.GE.10) THEN
-     PRINT*,"CountTotalAtoms(",my_rank,") ITotalAtoms = ",ITotalAtoms
-  END IF
+  
+  CALL Message("CountTotalAtoms",IInfo,IErr,"ITotalAtoms",IVariable=ITotalAtoms)
+ ! IF((IWriteFLAG.GE.1.AND.my_rank.EQ.0).OR.IWriteFLAG.GE.10) THEN
+ !    PRINT*,"CountTotalAtoms(",my_rank,") ITotalAtoms = ",ITotalAtoms
+ ! END IF
 
   DEALLOCATE( &
        MNP,SMNP, &

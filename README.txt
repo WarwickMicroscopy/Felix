@@ -185,6 +185,10 @@ RDeltaThickness: Step between thickness (Angstroms)
 IReflectOut: The number of the reflections to be included in the final
   image(s)
 
+IDebugMODE: Choose which mode you wish to run Felix
+0 Normal mode - regular warning and error messages
+1 Debug mode - extra error and help statements for developers
+
 The Remainder of the options apply to FelixRefine only
 
 IImageOutputFLAG: Choose whether FelixRefine will output images at the conclusion of the refinement

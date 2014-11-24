@@ -507,7 +507,7 @@ PROGRAM FelixSim
      ENDIF
 
     RFinalMontageImageRoot = ZERO		
-  END IF
+ END IF
 
   IF(my_rank.EQ.0.AND.IImageFLAG.GE.3) THEN
      RIndividualReflectionsRoot = &

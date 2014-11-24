@@ -55,17 +55,17 @@ SIMOBJECTFILES = gmodules.o smodules.o felixsim.o util.o message.o in.o out.o re
 readciffile.o experimentalsetup.o imagesetup.o montagesetup.o \
 structurefactorsetup.o ciftbx.o hash_funcs.o eigen.o invert.o microscopy.o \
 diffractionpatterndefinitions.o diffractionpatterninitialisation.o crystallographyinitialisation.o \
-crystallography.o bloch.o Ug.o image.o writeoutput.o dqng.o xerror.o d1mach.o
+crystallography.o bloch.o Ug.o image.o errorchecks.o writeoutput.o dqng.o xerror.o d1mach.o
 
 DRAWOBJECTFILES = gmodules.o smodules.o felixdraw.o util.o message.o in.o out.o readciffile.o\
 eigen.o invert.o microscopy.o diffractionpatterndefinitions.o diffractionpatterninitialisation.o \
 crystallographyinitialisation.o crystallography.o bloch.o Ug.o image.o \
-ciftbx.o hash_funcs.o dqng.o xerror.o d1mach.o
+ciftbx.o hash_funcs.o dqng.o xerror.o errorchecks.o d1mach.o
 
 REFINEOBJECTFILES = gmodules.o smodules.o felixrefine.o util.o message.o in.o out.o readciffile.o \
 eigen.o invert.o microscopy.o diffraction.o diffractionpatterninitialisation.o \
 crystallographyinitialisation.o crystallography.o bloch.o Ug.o image.o ciftbx.o \
-hash_funcs.o refineutils.o dqng.o xerror.o d1mach.o
+hash_funcs.o refineutils.o dqng.o xerror.o d1mach.o errorchecks.o
 
 %.o: %.f90
 	$(F90) $(F90FLAGS) -DF90 -c $< -I$(INCLUDEDIR) $(LIBFLAGS)

@@ -36,39 +36,55 @@
 ! $Id: FelixSim.f90,v 1.89 2014/04/28 12:26:19 phslaz Exp $
 !%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-  SUBROUTINE ErrorChecks(ProgramInCurrently, ProgramWithIssue, IErr)
+SUBROUTINE ErrorChecks(ProgramInCurrently, ProgramWithIssue, IErr)
+  
+  USE MyNumbers
+  
+  USE MPI
+  USE MyMPI
 
-    USE MyNumbers
+  IMPLICIT NONE
+  
+  CHARACTER(*) ProgramInCurrently, ProgramWithIssue
+  
+  INTEGER(IKIND) IErr
 
-    USE MPI
-    USE MyMPI
+  !Only checks if IErr is anything other than zero,
+  !Will be expanded to include individual error codes
+  !Eventually case structure built up so for example
+  !will say - "in ALLOCATION etc ..." for a certain IErr number
 
-    IMPLICIT NONE
 
-    CHARACTER(*) ProgramInCurrently, ProgramWithIssue
 
-    INTEGER(IKIND) IErr
-
-    !Only checks if IErr is anything other than zero,
-    !Will be expanded to include individual error codes
-    !Eventually case structure built up so for example
-    !will say - "in ALLOCATION etc ..." for a certain IErr number
-
-    IF (IErr.NE.ZERO) THEN
-       PRINT*,ProgramInCurrently,"(", my_rank, ") error", IErr,&
-            "in ", ProgramWithIssue
-
-       !Closes MPI Interface 
-       CALL MPI_Finalize(IErr)
-
-       IF( IErr.NE.ZERO ) THEN
-          PRINT*,"ErrorChecks(", my_rank, ") error ", IErr, " in MPI_Finalize()"
-          STOP
-       ENDIF
+  IF (IErr.NE.ZERO) THEN
+     
+     SELECT CASE (IErr)
+        
+     CASE(654)
+        IF (my_rank.EQ.0) THEN
+           PRINT*,ProgramInCurrently,"(", my_rank, ") warning", IErr,&
+                "in ", ProgramWithIssue, "Debug mode: error in optional variable passing"
+           PRINT*, "Check type of variable name matches the variable type in Call statement "
+           PRINT*, "for example: IMinWeakBeams has to have Integer type variable - the compiler should pick this up "
+           PRINT*, "if you are here it is likely the I is missing off of the IMinWeakBeams MessageVariable "
+        END IF
+     CASE DEFAULT
+        PRINT*,ProgramInCurrently,"(", my_rank, ") error", IErr,&
+             "in ", ProgramWithIssue
+          
+        !Closes MPI Interface 
+        CALL MPI_Finalize(IErr)
+        
+        IF( IErr.NE.ZERO ) THEN
+           PRINT*,"ErrorChecks(", my_rank, ") error ", IErr, " in MPI_Finalize()"
+           STOP
+        ENDIF
        
-       !Clean Shutdown
-       STOP
-    ENDIF
+        !Clean Shutdown
+        STOP
+        
+     END SELECT
+  ENDIF
 
 END SUBROUTINE ErrorChecks
 
