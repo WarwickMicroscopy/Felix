@@ -117,7 +117,7 @@ MODULE IPara
   !IInfo is now IWriteFLAG = 1, IAllInfo is IWriteFLAG = 10
   INTEGER(IKIND), PARAMETER :: &
        ISilent = 0 ,&
-       IMust = 0 ,&
+       IMust = 1 ,&
        IInfo = 1 ,&
        IAllInfo = 10
 

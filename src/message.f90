@@ -112,6 +112,7 @@ SUBROUTINE Message(ProgramName,IPriorityFLAG,IErr,MessageVariable,RVariable,IVar
      !if there is no message or variable - the function is just printed out
      !to identify it is entering that program
   ELSE
+     
      IF((IPriorityFLAG.LE.IWriteFLAG.AND.my_rank.EQ.0.AND.ISoftwareMode.LT.2).OR.IWriteFLAG.GE.10.AND.ISoftwareMode .LT. 2) THEN
         PRINT*,ProgramName,"(",my_rank,")"
      END IF
