@@ -237,6 +237,21 @@ MODULE IPara
 
    INTEGER(IKIND),DIMENSION(:),ALLOCATABLE :: &
         IAtomicSitesToRefine
+
+   !Simplex Variables
+
+   INTEGER(IKIND) :: &
+        IIndependentVariables
+
+   !Iterative Ids
+
+   INTEGER(IKIND),DIMENSION(:,:),ALLOCATABLE :: &
+        IIterativeVariableUniqueIDs
+
+   ! Simplex Global IterationCount
+
+   INTEGER(IKIND) :: &
+        IIterationCount,IVariableID
 END MODULE IPara
 
 !--------------------------------------------------------------------
@@ -409,6 +424,14 @@ MODULE RPara
 
   REAL(RKIND),DIMENSION(:,:,:),ALLOCATABLE :: &
        RImageExpi  
+
+  ! Independent Variable Values
+!!$  REAL(RKIND),DIMENSION(:),ALLOCATABLE :: &
+!!$       RIndependentVariableValues
+
+  !Iterative Variable Value
+  REAL(RKIND) :: &
+       RValue
 
 END MODULE RPara
 

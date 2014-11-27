@@ -79,8 +79,7 @@ SUBROUTINE SymmetryRelatedStructureFactorDetermination (IErr)
   
   INTEGER(IKIND) ind,jnd,ierr,knd,Iuid
 
-
-  IF((IWriteFLAG.GE.1.AND.my_rank.EQ.0).OR.IWriteFLAG.GE.10) THEN
+  IF((IWriteFLAG.GE.0.AND.my_rank.EQ.0).OR.IWriteFLAG.GE.10) THEN
      PRINT*,"SymmetryRelatedStructureFactorDetermination(",my_rank,")"
   END IF
 
@@ -109,7 +108,7 @@ SUBROUTINE SymmetryRelatedStructureFactorDetermination (IErr)
      END DO
   END DO
 
-  IF((IWriteFLAG.GE.1.AND.my_rank.EQ.0).OR.IWriteFLAG.GE.10) THEN
+  IF((IWriteFLAG.GE.0.AND.my_rank.EQ.0).OR.IWriteFLAG.GE.10) THEN
      PRINT*,"Unique Ugs = ",Iuid
   END IF
 
@@ -117,7 +116,7 @@ SUBROUTINE SymmetryRelatedStructureFactorDetermination (IErr)
        ISymmetryStrengthKey(Iuid,2),&
        STAT=IErr)
   IF( IErr.NE.0 ) THEN
-     PRINT*,"UgCalculation(", my_rank, ") error ", IErr, " in ALLOCATE()"
+     PRINT*,"UgCalculation(", my_rank, ") error ", IErr, " in ALLOCATE() ISymmetryStrengthKey"
      RETURN
   ENDIF
 
@@ -125,7 +124,7 @@ SUBROUTINE SymmetryRelatedStructureFactorDetermination (IErr)
        CSymmetryStrengthKey(Iuid),&
        STAT=IErr)
   IF( IErr.NE.0 ) THEN
-     PRINT*,"UgCalculation(", my_rank, ") error ", IErr, " in ALLOCATE()"
+     PRINT*,"UgCalculation(", my_rank, ") error ", IErr, " in ALLOCATE() CSymmetryStrengthKey"
      RETURN
   ENDIF
   
@@ -147,11 +146,13 @@ SUBROUTINE StructureFactorInitialisation (IErr,CZeroMat)
   
   IMPLICIT NONE
   
-  INTEGER(IKIND) ind, jnd, knd, oddindlorentz, evenindlorentz, oddindgauss, &
+  INTEGER(IKIND) :: &
+       ind, jnd, knd, oddindlorentz, evenindlorentz, oddindgauss, &
        evenindgauss,imaxj, IFound, ICount, currentatom,IErr
   INTEGER(IKIND),DIMENSION(2) :: &
        IPos, ILoc
-  COMPLEX(CKIND) CVgij
+  COMPLEX(CKIND) :: &
+       CVgij
   REAL(RKIND) :: &
        RMeanInnerPotentialVolts,RAtomicFormFactor, Lorentzian,Gaussian
  ! REAL(RKIND),DIMENSION(3) :: RAtomicFormFactorSum
@@ -161,7 +162,8 @@ SUBROUTINE StructureFactorInitialisation (IErr,CZeroMat)
   IF((IWriteFLAG.GE.0.AND.my_rank.EQ.0).OR.IWriteFLAG.GE.10) THEN
      PRINT*,"StructureFactorInitialisation(",my_rank,")"
   END IF
-  
+
+  CUgMat = CZERO
 
   DO ind=1,nReflections
      imaxj = ind
@@ -191,7 +193,7 @@ SUBROUTINE StructureFactorInitialisation (IErr,CZeroMat)
                  !Kirkland Method uses summation of 3 Gaussians and 3 Lorentzians (summed in loop)
                  RAtomicFormFactor = RAtomicFormFactor + &
                       !3 Lorentzians
-                      LORENTZIAN(RScattFactors(ICurrentAtom,oddindlorentz), RGMatMag(ind,jnd),ZERO,&
+                      LORENTZIAN(RScattFactors(ICurrentAtom,oddindlorentz), RgMatMag(ind,jnd),ZERO,&
                       RScattFactors(ICurrentAtom,evenindlorentz))+ &
                       !3 Gaussians
                       GAUSSIAN(RScattFactors(ICurrentAtom,oddindgauss),RgMatMag(ind,jnd),ZERO, & 
@@ -199,33 +201,6 @@ SUBROUTINE StructureFactorInitialisation (IErr,CZeroMat)
 
               END DO
               
-!----------------------------------------------------------------------------------------------
-              !Old Form 
-              ! RAtomicFormFactor = &
-                      ! 3 Lorentzians
-                 !     LORENTZIAN(RScattFactors(ICurrentAtom,1), RGMatMag(ind,jnd),ZERO,&
-                  !    RScattFactors(ICurrentAtom,evenind)) + &
-                   !   LORENTZIAN(RScattFactors(ICurrentAtom,3), RGMatMag(ind,jnd),ZERO,&
-                   !   RScattFactors(ICurrentAtom,4)) + &
-                  !     LORENTZIAN(RScattFactors(ICurrentAtom,5), RGMatMag(ind,jnd),ZERO,&
-!                       RScattFactors(ICurrentAtom,6)) + &
-!                       ! 3 Gaussians
-!                       Gaussian(RScattFactors(ICurrentAtom,7),ZERO, & 
-!                       1/(SQRT(2*RScattFactors(ICurrentAtom,8))),RgMatMag(ind,jnd),ZERO) + &
-!                       Gaussian(RScattFactors(ICurrentAtom,9),ZERO, & 
-!                       1/(SQRT(2*RScattFactors(ICurrentAtom,10))),RgMatMag(ind,jnd),ZERO) + &
-!                       Gaussian(RScattFactors(ICurrentAtom,11),ZERO, & 
-!                       1/(SQRT(2*RScattFactors(ICurrentAtom,12))),RgMatMag(ind,jnd),ZERO)
-                 
-
-             
-                 !  RScattFactors(ICurrentAtom,7) * &
-                 !  EXP(-RgMatMag(ind,jnd)**2 * RScattFactors(ICurrentAtom,8)) + &
-                 !  RScattFactors(ICurrentAtom,9) * &
-                 !  EXP(-RgMatMag(ind,jnd)**2 * RScattFactors(ICurrentAtom,10)) + &
-                 !  RScattFactors(ICurrentAtom,11) * &
-                 !  EXP(-RgMatMag(ind,jnd)**2 * RScattFactors(ICurrentAtom,12))
-!----------------------------------------------------------------------------------------------
               
            CASE(1) ! 8 Parameter Method with Scattering Parameters from Peng et al 1996 
               
@@ -240,19 +215,6 @@ SUBROUTINE StructureFactorInitialisation (IErr,CZeroMat)
                        SQRT(2/RScattFactors(ICurrentAtom,knd+4)),ZERO)
 
                END DO
-!----------------------------------------------------------------------------------------------------
-              !Old Form
-           !    RAtomicFormFactor = &
-!                    RScattFactors(ICurrentAtom,1) * &
-!                    EXP(-(RgMatMag(ind,jnd)**2)/4 * RScattFactors(ICurrentAtom,5)) + &
-!                    RScattFactors(ICurrentAtom,2) * &
-!                    EXP(-(RgMatMag(ind,jnd)**2)/4 * RScattFactors(ICurrentAtom,6)) + &
-!                    RScattFactors(ICurrentAtom,3) * &
-!                    EXP(-(RgMatMag(ind,jnd)**2)/4 * RScattFactors(ICurrentAtom,7)) + &
-!                    RScattFactors(ICurrentAtom,4) * &
-!                    EXP(-(RgMatMag(ind,jnd)**2)/4 * RScattFactors(ICurrentAtom,8))
-!----------------------------------------------------------------------------------------------------
-
            CASE(2) ! 8 Parameter Method with Scattering Parameters from Doyle and Turner Method (1968)
 
                RAtomicFormFactor = ZERO
@@ -268,16 +230,6 @@ SUBROUTINE StructureFactorInitialisation (IErr,CZeroMat)
 
                END DO
 
-!This doesn't produce a correct result?
-             ! RAtomicFormFactor = &
-             !      RScattFactors(ICurrentAtom,1) * &
-             !      EXP(-(RgMatMag(ind,jnd)**2)/4 * RScattFactors(ICurrentAtom,2)) + &
-             !      RScattFactors(ICurrentAtom,3) * &
-             !      EXP(-(RgMatMag(ind,jnd)**2)/4 * RScattFactors(ICurrentAtom,4)) + &
-             !      RScattFactors(ICurrentAtom,5) * &
-             !      EXP(-(RgMatMag(ind,jnd)**2)/4 * RScattFactors(ICurrentAtom,6)) + &
-             !      RScattFactors(ICurrentAtom,7) * &
-             !      EXP(-(RgMatMag(ind,jnd)**2)/4 * RScattFactors(ICurrentAtom,8))
 
            END SELECT
               
@@ -336,8 +288,16 @@ SUBROUTINE StructureFactorInitialisation (IErr,CZeroMat)
               
      ENDDO
   ENDDO
+  
 
   RMeanInnerCrystalPotential= REAL(CUgMat(1,1))
+
+  CUgMat = CUgMat + CONJG(TRANSPOSE(CUgMat))
+
+  DO ind=1,nReflections
+     CUgMat(ind,ind)=CUgMat(ind,ind)-RMeanInnerCrystalPotential
+  ENDDO
+
   RMeanInnerPotentialVolts = RMeanInnerCrystalPotential*(((RPlanckConstant**2)/ &
        (TWO*RElectronMass*RElectronCharge*TWOPI**2))*&
        RAngstromConversion*RAngstromConversion)
@@ -351,7 +311,6 @@ SUBROUTINE StructureFactorInitialisation (IErr,CZeroMat)
      CUgMat(ind,ind)=CUgMat(ind,ind)-RMeanInnerCrystalPotential
   ENDDO
 
-  CUgMat = CUgMat + CONJG(TRANSPOSE(CUgMat))
 
   !Now initialisation calls the Ug calculation subroutines
   !Used to be in Setup
@@ -368,7 +327,7 @@ SUBROUTINE StructureFactorInitialisation (IErr,CZeroMat)
     
   IF(IAbsorbFLAG.GT.1) THEN
      CZeroMAT = CZERO
-     
+     CUgMatPrime = CZERO
      DO ind = 1,nReflections
         DO jnd = 1,ind
            CZeroMAT(ind,jnd) = CONE
@@ -381,7 +340,7 @@ SUBROUTINE StructureFactorInitialisation (IErr,CZeroMat)
      IF( IErr.NE.0 ) THEN
         !refinemain was here
         PRINT*,"StructureFactorSetup(", my_rank, ") error ", IErr, &
-             " in ALLOCATE() of DYNAMIC variables Reflection Matrix"
+             " in ALLOCATE() of DYNAMIC variables ISymmetryRelations"
         !call error function
         RETURN
      ENDIF
@@ -406,7 +365,7 @@ SUBROUTINE StructureFactorInitialisation (IErr,CZeroMat)
      IF( IErr.NE.0 ) THEN
         !refinemain was here
         PRINT*,"StructureFactorSetup(", my_rank, ") error ", IErr, &
-             " in ALLOCATE() of DYNAMIC variables Reflection Matrix"
+             " in ALLOCATE() of DYNAMIC variables RUniqueUgPrimeValues"
         !call error function
         RETURN
      ENDIF
@@ -429,7 +388,6 @@ SUBROUTINE StructureFactorInitialisation (IErr,CZeroMat)
         !call error function
         RETURN
      ENDIF
-
 
      IF(IAbsorbFLAG.GE.2) THEN
         DO ind = 2,(SIZE(ISymmetryStrengthKey,DIM=1))
@@ -464,7 +422,8 @@ SUBROUTINE StructureFactorsWithAbsorptionDetermination(IErr)
   
   IMPLICIT NONE 
   
-  INTEGER(IKIND) IErr,ind,jnd,knd
+  INTEGER(IKIND) :: &
+       IErr,ind,jnd,knd
   REAL(RKIND) :: &
        RIntegrationParameterGMagPrime,RAtomicFormFactorGMagPrime,&
        RAtomicFormFactorGMagMinusGMagPrime,RAbsorpativeAtomicFormFactor,&
@@ -499,3 +458,4 @@ SUBROUTINE StructureFactorsWithAbsorptionDetermination(IErr)
   IErr = 0
   
 END SUBROUTINE StructureFactorsWithAbsorptionDetermination
+  

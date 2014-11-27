@@ -413,23 +413,8 @@ SUBROUTINE ReadInpFile( IErr )
      
      ILine= ILine+1; READ(IChInp,ERR=20,END=30,FMT='(A)')
      
-!!$     ILine= ILine+1
-!!$     READ(IChInp,10,ERR=20,END=30) IImageOutputFLAG
-!!$     IF((IWriteFLAG.GE.1.AND.my_rank.EQ.0).OR.IWriteFLAG.GE.10) THEN
-!!$        PRINT*,"IImageOutputFLAG = ", IImageOutputFLAG
-!!$     END IF
-!!$     
-!!$     ILine= ILine+1
-!!$     READ(IChInp,10,ERR=20,END=30) IDevFLAG
-!!$     IF((IWriteFLAG.GE.1.AND.my_rank.EQ.0).OR.IWriteFLAG.GE.10) THEN
-!!$        PRINT*,"IDevFLAG = ", IDevFLAG
-!!$     END IF
-     
      ILine= ILine+1
      READ(IChInp,FMT='(A)',ERR=20,END=30) SRefineMode
-!!$     IF((IWriteFLAG.GE.0.AND.my_rank.EQ.0).OR.IWriteFLAG.GE.10) THEN
-!!$        PRINT*,"SRefineMode = ", SRefineMode
-!!$     END IF
 
      IRefineModeSelectionArray = 0
 
@@ -439,12 +424,6 @@ SUBROUTINE ReadInpFile( IErr )
            IRefineModeSelectionArray(ind) = 1
         END IF
      END DO
-     
-!!$     READ(IChInp,10,ERR=20,END=30) IRefineModeFLAG
-!!$     IF((IWriteFLAG.GE.1.AND.my_rank.EQ.0).OR.IWriteFLAG.GE.10) THEN
-!!$        PRINT*,"IRefineModeFLAG = ", IRefineModeFLAG
-!!$     END IF
-
      
      IF((IWriteFLAG.GE.0.AND.my_rank.EQ.0).OR.IWriteFLAG.GE.10) THEN
         IF(IWriteFLAG.GE.4) THEN
@@ -588,47 +567,21 @@ SUBROUTINE ReadInpFile( IErr )
      ILine= ILine+1; READ(IChInp,ERR=20,END=30,FMT='(A)')
      
      READ(IChInp,FMT='(A)',ERR=20,END=30) SAtomicSites
-     IPos1 = SCAN(SAtomicSites,'(')
-     IPos2 = SCAN(SAtomicSites,')')
-     IF(((IPos2-IPos1).EQ.1).OR.(IPos1.EQ.0).OR.(IPos2.EQ.0)) THEN
-        IF(IRefineModeSelectionArray(2).EQ.1) THEN
-           PRINT*,"You Have Not Specfied Atomic Sites to Refine" 
-        END IF
-     ELSE
-        IPos = 1
-        DO 
-           IF(SCAN(SAtomicSites(IPos1:IPos2),',').NE.0) THEN
-              IPos1 = IPos1 + LEN(SAtomicSites(IPos1:(IPos1+SCAN(SAtomicSites(IPos1:IPos2),','))))
-              IPos = IPos+1
-           END IF           
-           IF (IPos2-IPos1.EQ.1) EXIT
-        END DO
-        
-        ALLOCATE(&
-             IAtomicSitesToRefine(IPos),&
-             STAT=IErr)
-        IF( IErr.NE.0 ) THEN
-           PRINT*,"ReadInpFile(): error in memory ALLOCATE()"
-           RETURN
-        ENDIF
-        
-        IPos1 = SCAN(SAtomicSites,'(')
-        DO ind = 1,SIZE(IAtomicSitesToRefine,DIM=1)
-           IF(SCAN(SAtomicSites((IPos1+1):IPos2),',').NE.0) THEN
-              IPos = SCAN(SAtomicSites((IPos1+1):IPos2),',')-1
-              WRITE(SLengthofNumberString,*) LEN(SAtomicSites((IPos1+1):(IPos1+IPos))) 
-              WRITE(SFormatString,*) "(I"//TRIM(ADJUSTL(SLengthofNumberString))//")"
-              READ(SAtomicSites((IPos1+1):(IPos1+IPos)),FMT=SFormatString) IAtomicSitesToRefine(ind)
-              IPos1 = IPos1 + IPos + 1 
-           ELSE
-              WRITE(SLengthofNumberString,*) LEN(SAtomicSites((IPos1+1):(IPos2-1))) 
-              WRITE(SFormatString,*) "(I"//TRIM(ADJUSTL(SLengthofNumberString))//")"
-              READ(SAtomicSites((IPos1+1):(IPos2-1)),FMT=SFormatString) IAtomicSitesToRefine(ind)
-           END IF
-        END DO
-             
-     END IF
-     
+
+     CALL DetermineRefineableAtomicSites(SAtomicSites,IErr)
+     IF( IErr.NE.0 ) THEN
+        PRINT*,"ReadInpFile(): error in DetermineRefineableAtomicSites()"
+        RETURN
+     ENDIF
+
+     IIndependentVariables = &
+          IRefineModeSelectionArray(1)*INoofUgs+&
+          IRefineModeSelectionArray(2)*SIZE(IAtomicSitesToRefine)*3+&
+          IRefineModeSelectionArray(3)*SIZE(IAtomicSitesToRefine)+&
+          IRefineModeSelectionArray(4)*SIZE(IAtomicSitesToRefine)+&
+          IRefineModeSelectionArray(5)*SIZE(IAtomicSitesToRefine)*6+&
+          IRefineModeSelectionArray(6)*3+&
+          IRefineModeSelectionArray(7)*3
   END IF
 
   
@@ -1394,3 +1347,78 @@ SUBROUTINE ReadHklFile(IErr)
 END SUBROUTINE ReadHklFile
   
   
+SUBROUTINE DetermineRefineableAtomicSites(SAtomicSites,IErr)
+
+  USE MyNumbers
+  
+  USE CConst; USE IConst
+  USE IPara; USE RPara
+  USE IChannels
+  
+  USE MPI
+  USE MyMPI
+  
+  IMPLICIT NONE  
+  
+  INTEGER(IKIND) :: &
+       IPos,IPos1,IPos2,IErr,ind
+  CHARACTER*200 :: &
+       SAtomicSites,SFormatString,SLengthofNumberString
+
+  IPos1 = SCAN(SAtomicSites,'(')
+  IPos2 = SCAN(SAtomicSites,')')
+  IF(((IPos2-IPos1).EQ.1).OR.(IPos1.EQ.0).OR.(IPos2.EQ.0)) THEN
+     IF(IRefineModeSelectionArray(2).EQ.1) THEN
+        PRINT*,"You Have Not Specfied Atomic Sites to Refine" 
+        IErr = 1
+        RETURN
+     END IF
+  END IF
+
+  IF ((IPos2-IPos1).GT.1.AND.SCAN(SAtomicSites,',').EQ.0) THEN
+     ALLOCATE(&
+          IAtomicSitesToRefine(1),&
+          STAT=IErr)
+     IF( IErr.NE.0 ) THEN
+        PRINT*,"ReadInpFile(): error in memory ALLOCATE()"
+        RETURN
+     ENDIF
+     WRITE(SLengthofNumberString,*) LEN(SAtomicSites((IPos1+1):(IPos2-1))) 
+     WRITE(SFormatString,*) "(I"//TRIM(ADJUSTL(SLengthofNumberString))//")"
+     READ(SAtomicSites((IPos1+1):(IPos2-1)),FMT=SFormatString) IAtomicSitesToRefine(1)
+  ELSE
+     IPos = 1
+     DO 
+        IF(SCAN(SAtomicSites(IPos1:IPos2),',').NE.0) THEN
+           IPos1 = IPos1 + LEN(SAtomicSites(IPos1:(IPos1+SCAN(SAtomicSites(IPos1:IPos2),','))))
+           IPos = IPos+1
+        END IF
+        IF (IPos2-IPos1.EQ.1) EXIT
+     END DO
+     
+     ALLOCATE(&
+          IAtomicSitesToRefine(IPos),&
+          STAT=IErr)
+     IF( IErr.NE.0 ) THEN
+        PRINT*,"ReadInpFile(): error in memory ALLOCATE()"
+        RETURN
+     ENDIF
+     
+     IPos1 = SCAN(SAtomicSites,'(')
+     DO ind = 1,SIZE(IAtomicSitesToRefine,DIM=1)
+        IF(SCAN(SAtomicSites((IPos1+1):IPos2),',').NE.0) THEN
+           IPos = SCAN(SAtomicSites((IPos1+1):IPos2),',')-1
+           WRITE(SLengthofNumberString,*) LEN(SAtomicSites((IPos1+1):(IPos1+IPos))) 
+           WRITE(SFormatString,*) "(I"//TRIM(ADJUSTL(SLengthofNumberString))//")"
+           READ(SAtomicSites((IPos1+1):(IPos1+IPos)),FMT=SFormatString) IAtomicSitesToRefine(ind)
+           IPos1 = IPos1 + IPos + 1 
+        ELSE
+           WRITE(SLengthofNumberString,*) LEN(SAtomicSites((IPos1+1):(IPos2-1))) 
+           WRITE(SFormatString,*) "(I"//TRIM(ADJUSTL(SLengthofNumberString))//")"
+           READ(SAtomicSites((IPos1+1):(IPos2-1)),FMT=SFormatString) IAtomicSitesToRefine(ind)
+        END IF
+     END DO
+     
+  END IF
+  
+END SUBROUTINE DetermineRefineableAtomicSites
