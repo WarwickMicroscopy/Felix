@@ -227,6 +227,31 @@ MODULE IPara
 
    INTEGER(IKIND) :: &
         ICurrentAtom,IAtom
+
+   !Refine Mode Binary Selection
+   
+   INTEGER(IKIND),DIMENSION(7) :: &
+        IRefineModeSelectionArray
+
+   !List of Atomic Sites for Refinement
+
+   INTEGER(IKIND),DIMENSION(:),ALLOCATABLE :: &
+        IAtomicSitesToRefine
+
+   !Simplex Variables
+
+   INTEGER(IKIND) :: &
+        IIndependentVariables
+
+   !Iterative Ids
+
+   INTEGER(IKIND),DIMENSION(:,:),ALLOCATABLE :: &
+        IIterativeVariableUniqueIDs
+
+   ! Simplex Global IterationCount
+
+   INTEGER(IKIND) :: &
+        IVariableID
 END MODULE IPara
 
 !--------------------------------------------------------------------
@@ -393,6 +418,20 @@ MODULE RPara
   !Ug' Unique Values
   REAL(RKIND),DIMENSION(:),ALLOCATABLE :: &
        RUniqueUgPrimeValues
+
+  
+  ! Experimental Images for felixrefine
+
+  REAL(RKIND),DIMENSION(:,:,:),ALLOCATABLE :: &
+       RImageExpi  
+
+  ! Independent Variable Values
+!!$  REAL(RKIND),DIMENSION(:),ALLOCATABLE :: &
+!!$       RIndependentVariableValues
+
+  !Iterative Variable Value
+  REAL(RKIND) :: &
+       RValue
 
 END MODULE RPara
 

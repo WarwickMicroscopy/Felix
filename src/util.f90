@@ -57,20 +57,38 @@ SUBROUTINE ReSortHKL( RHKLarray, N )
 
   IMPLICIT NONE
 
-  INTEGER (IKIND) N
-  REAL(RKIND) RHKLarray(N,THREEDIM)
-  REAL(RKIND) RhklarraySearch(THREEDIM), RhklarrayCompare(THREEDIM)
+  INTEGER (IKIND),INTENT(IN) :: &
+       N
+  REAL(RKIND),INTENT(INOUT) :: &
+       RHKLarray(N,THREEDIM)
+  REAL(RKIND) :: &
+       RhklarraySearch(THREEDIM), RhklarrayCompare(THREEDIM)
   
-  REAL(KIND=RKIND) ALN2I, LocalTINY
+  REAL(RKIND) :: &
+       ALN2I, LocalTINY
   PARAMETER (ALN2I=1.4426950D0, LocalTINY=1.D-5)
   
-  INTEGER (IKIND) NN,M,L,K,J,I,LOGNB2, index
-  REAL(KIND=RKIND) dummy
+  INTEGER (IKIND) :: &
+       NN,M,L,K,J,I,LOGNB2, index
+  REAL(RKIND) :: &
+       dummy
 
   IF((IWriteFLAG.EQ.6.AND.my_rank.EQ.0).OR.IWriteFLAG.GE.10) THEN
      PRINT*,"ReSort()"
   END IF
   
+  NN = 0
+  M = 0
+  L = 0
+  K = 0
+  J = 0
+  I = 0
+  LOGNB2 = 0
+  index = 0
+  RhklarraySearch = 0.0D0
+  RhklarrayCompare = 0.0D0
+  dummy = 0.0D0
+
   LOGNB2=INT(LOG(REAL(N))*ALN2I+LocalTINY)
   M=N
   DO 12 NN=1,LOGNB2
@@ -169,13 +187,16 @@ SUBROUTINE CountTotalAtoms(IErr)
 
   IMPLICIT NONE
   
-  INTEGER ind,jnd,knd,hnd,ierr, ifullind, iuniind
+  INTEGER (IKIND) :: &
+       ind,jnd,knd,hnd,ierr, ifullind, iuniind
   LOGICAL Lunique
 
   
   IF((IWriteFLAG.EQ.6.AND.my_rank.EQ.0).OR.IWriteFLAG.GE.10) THEN
      PRINT*,"CountTotalAtoms()"
   END IF
+
+  ITotalAtoms = 0
 
   ALLOCATE( &
        RFullAtomicFracCoordVec( &
@@ -301,8 +322,30 @@ SUBROUTINE CountTotalAtoms(IErr)
   END IF
 
   DEALLOCATE( &
-       MNP,SMNP, &
+       MNP,&
+       STAT=IErr)
+  IF( IErr.NE.0 ) THEN
+     PRINT*,"CountTotalAtoms(", my_rank, ") error ", IErr, &
+          " in Deallocation"
+     RETURN
+  ENDIF
+  DEALLOCATE(&
+       SMNP, &
+       STAT=IErr)
+  IF( IErr.NE.0 ) THEN
+     PRINT*,"CountTotalAtoms(", my_rank, ") error ", IErr, &
+          " in Deallocation"
+     RETURN
+  END IF
+  DEALLOCATE(&
        RFullAtomicFracCoordVec, &
+       STAT=IErr)
+  IF( IErr.NE.0 ) THEN
+     PRINT*,"CountTotalAtoms(", my_rank, ") error ", IErr, &
+          " in Deallocation"
+     RETURN
+  END IF
+  DEALLOCATE(&
        SFullAtomicNameVec,STAT=IErr)
   IF( IErr.NE.0 ) THEN
      PRINT*,"CountTotalAtoms(", my_rank, ") error ", IErr, &

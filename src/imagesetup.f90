@@ -56,7 +56,7 @@ SUBROUTINE ImageSetup (IErr)
   ! Image initialisation 
   
   IF((IWriteFLAG.GE.1.AND.my_rank.EQ.0).OR.IWriteFLAG.GE.10) THEN
-     PRINT*,"DBG: nReflections=", nReflections
+     PRINT*,"ImageSetup(",my_rank,")"
   END IF
   
   ALLOCATE( &

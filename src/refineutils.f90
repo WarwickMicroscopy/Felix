@@ -83,49 +83,49 @@ SUBROUTINE DetermineFluxSteps(IErr)
   END SELECT
 END SUBROUTINE DetermineFluxSteps
 
-SUBROUTINE AngularOffset (RImageSim,RImageExpi,IErr)
-  
-  USE MyNumbers
-  
-  USE CConst; USE IConst
-  USE IPara; USE RPara
-  USE IChannels
-  
-  USE MPI
-  USE MyMPI
+!!$SUBROUTINE AngularOffset (RImageSim,RImageExpi,IErr)
+!!$  
+!!$  USE MyNumbers
+!!$  
+!!$  USE CConst; USE IConst
+!!$  USE IPara; USE RPara
+!!$  USE IChannels
+!!$  
+!!$  USE MPI
+!!$  USE MyMPI
+!!$
+!!$  IMPLICIT NONE
+!!$  
+!!$  INTEGER ind,jnd, ierr
+!!$  REAL(RKIND),DIMENSION(IImageSizeXY(1),IImageSizeXY(2)) :: &
+!!$       RImageSim,RImageExpi  
+!!$
+!!$END SUBROUTINE AngularOffset
+!!$
+!!$SUBROUTINE CorrectCentreOffset (RUncorrImage,RCorrImage,IErr)
+!!$  
+!!$  USE MyNumbers
+!!$  
+!!$  USE CConst; USE IConst
+!!$  USE IPara; USE RPara
+!!$  USE IChannels
+!!$  
+!!$  USE MPI
+!!$  USE MyMPI
+!!$
+!!$  IMPLICIT NONE
+!!$  
+!!$  INTEGER ind,jnd, ierr
+!!$  REAL(RKIND),DIMENSION(IImageSizeXY(1),IImageSizeXY(2)) :: &
+!!$       RUnCorrImage
+!!$  REAL(RKIND),DIMENSION(IImageSizeXY(1)-IOffset(1),IImageSizeXY(1)-IOffset(1)),INTENT(OUT) :: &
+!!$       RCorrImage
+!!$
+!!$  RCorrImage = RUncorrImage((IOffset(1)+1):,(IOffset(2)+1):) 
+!!$  
+!!$END SUBROUTINE CorrectCentreOffset
 
-  IMPLICIT NONE
-  
-  INTEGER ind,jnd, ierr
-  REAL(RKIND),DIMENSION(IImageSizeXY(1),IImageSizeXY(2)) :: &
-       RImageSim,RImageExpi  
-
-END SUBROUTINE AngularOffset
-
-SUBROUTINE CorrectCentreOffset (RUncorrImage,RCorrImage,IErr)
-  
-  USE MyNumbers
-  
-  USE CConst; USE IConst
-  USE IPara; USE RPara
-  USE IChannels
-  
-  USE MPI
-  USE MyMPI
-
-  IMPLICIT NONE
-  
-  INTEGER ind,jnd, ierr
-  REAL(RKIND),DIMENSION(IImageSizeXY(1),IImageSizeXY(2)) :: &
-       RUnCorrImage
-  REAL(RKIND),DIMENSION(IImageSizeXY(1)-IOffset(1),IImageSizeXY(1)-IOffset(1)),INTENT(OUT) :: &
-       RCorrImage
-
-  RCorrImage = RUncorrImage((IOffset(1)+1):,(IOffset(2)+1):) 
-  
-END SUBROUTINE CorrectCentreOffset
-
-SUBROUTINE PhaseCorrelate(RImageSim,RImageExpi,IErr,IXsizeIn,IYSizeIn)
+SUBROUTINE PhaseCorrelate(RImageSim,RImageExpiDummy,IErr,IXsizeIn,IYSizeIn)
   
   USE MyNumbers
   
@@ -143,7 +143,7 @@ SUBROUTINE PhaseCorrelate(RImageSim,RImageExpi,IErr,IXsizeIn,IYSizeIn)
        IErr,IXsizeIn,IYSizeIn
 
   REAL(RKIND),DIMENSION(IXSizeIn,IYSizeIn) :: &
-       RImageExpi,RImageSim
+       RImageExpiDummy,RImageSim
   
   type(C_PTR) :: &
        Iplan
@@ -186,7 +186,7 @@ SUBROUTINE PhaseCorrelate(RImageSim,RImageExpi,IErr,IXsizeIn,IYSizeIn)
 
   ! Set the dummy array to the input experimental data
 
-  RImageSimDummy = RImageExpi
+  RImageSimDummy = RImageExpiDummy 
 
 
   !PRINT*,RImageSimDummy(:2,:2)
@@ -215,7 +215,7 @@ SUBROUTINE PhaseCorrelate(RImageSim,RImageExpi,IErr,IXsizeIn,IYSizeIn)
   CALL FFTW_DESTROY_PLAN(Iplan)
 
   
-  RCrossCorrelation = MAXVAL(RImageSimDummy)
+  RCrossCorrelation = MAXVAL(RImageSimDummy)/(IX*IY)
   IOffset = MAXLOC(RImageSimDummy)
   
   !PRINT*,RImageSimDummy(:2,:2)
@@ -224,6 +224,8 @@ SUBROUTINE PhaseCorrelate(RImageSim,RImageExpi,IErr,IXsizeIn,IYSizeIn)
   call fftw_free(p2)
   call fftw_free(p3)
   call fftw_free(p4)
+
+  PRINT*,"RCrossCorrelation =",RCrossCorrelation,MAXVAL(RImageSim),MAXVAL(RImageExpiDummy),RIsotropicDebyeWallerFactors
   
 END SUBROUTINE PhaseCorrelate
 

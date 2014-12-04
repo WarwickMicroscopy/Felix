@@ -59,7 +59,7 @@ SUBROUTINE CrystallographyInitialisation( IErr )
           MNP,SMNP,RDWF,ROcc,IAtoms,IAnisoDWFT,STAT=IErr)
      IF( IErr.NE.0 ) THEN
         PRINT*,"CrystallographyInitialisation(", my_rank, ") error ", IErr, &
-             " in ALLOCATE()"
+             " in DEALLOCATE()"
         RETURN
      ENDIF
   END IF
