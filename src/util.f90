@@ -187,13 +187,16 @@ SUBROUTINE CountTotalAtoms(IErr)
 
   IMPLICIT NONE
   
-  INTEGER ind,jnd,knd,hnd,ierr, ifullind, iuniind
+  INTEGER (IKIND) :: &
+       ind,jnd,knd,hnd,ierr, ifullind, iuniind
   LOGICAL Lunique
 
   
   IF((IWriteFLAG.EQ.6.AND.my_rank.EQ.0).OR.IWriteFLAG.GE.10) THEN
      PRINT*,"CountTotalAtoms()"
   END IF
+
+  ITotalAtoms = 0
 
   ALLOCATE( &
        RFullAtomicFracCoordVec( &
@@ -319,8 +322,30 @@ SUBROUTINE CountTotalAtoms(IErr)
   END IF
 
   DEALLOCATE( &
-       MNP,SMNP, &
+       MNP,&
+       STAT=IErr)
+  IF( IErr.NE.0 ) THEN
+     PRINT*,"CountTotalAtoms(", my_rank, ") error ", IErr, &
+          " in Deallocation"
+     RETURN
+  ENDIF
+  DEALLOCATE(&
+       SMNP, &
+       STAT=IErr)
+  IF( IErr.NE.0 ) THEN
+     PRINT*,"CountTotalAtoms(", my_rank, ") error ", IErr, &
+          " in Deallocation"
+     RETURN
+  END IF
+  DEALLOCATE(&
        RFullAtomicFracCoordVec, &
+       STAT=IErr)
+  IF( IErr.NE.0 ) THEN
+     PRINT*,"CountTotalAtoms(", my_rank, ") error ", IErr, &
+          " in Deallocation"
+     RETURN
+  END IF
+  DEALLOCATE(&
        SFullAtomicNameVec,STAT=IErr)
   IF( IErr.NE.0 ) THEN
      PRINT*,"CountTotalAtoms(", my_rank, ") error ", IErr, &

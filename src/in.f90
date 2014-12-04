@@ -584,7 +584,6 @@ SUBROUTINE ReadInpFile( IErr )
           IRefineModeSelectionArray(7)*3
   END IF
 
-  
 10 FORMAT(27X,I15.1)
   ! 10	FORMAT("IMAXIteration= ",I15.1)
 15 FORMAT(27X,F18.9)
@@ -1383,6 +1382,9 @@ SUBROUTINE DetermineRefineableAtomicSites(SAtomicSites,IErr)
         PRINT*,"ReadInpFile(): error in memory ALLOCATE()"
         RETURN
      ENDIF
+
+     
+     PRINT*,SIZE(IAtomicSitesToRefine)
      WRITE(SLengthofNumberString,*) LEN(SAtomicSites((IPos1+1):(IPos2-1))) 
      WRITE(SFormatString,*) "(I"//TRIM(ADJUSTL(SLengthofNumberString))//")"
      READ(SAtomicSites((IPos1+1):(IPos2-1)),FMT=SFormatString) IAtomicSitesToRefine(1)
@@ -1393,7 +1395,7 @@ SUBROUTINE DetermineRefineableAtomicSites(SAtomicSites,IErr)
            IPos1 = IPos1 + LEN(SAtomicSites(IPos1:(IPos1+SCAN(SAtomicSites(IPos1:IPos2),','))))
            IPos = IPos+1
         END IF
-        IF (IPos2-IPos1.EQ.1) EXIT
+        IF (IPos2-IPos1.LE.1) EXIT
      END DO
      
      ALLOCATE(&

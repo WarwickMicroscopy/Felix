@@ -65,7 +65,7 @@ ciftbx.o hash_funcs.o dqng.o xerror.o d1mach.o
 REFINEOBJECTFILES = gmodules.o smodules.o felixrefine.o util.o in.o out.o readciffile.o \
 experimentalsetup.o imagesetup.o montagesetup.o structurefactorsetup.o readinput.o\
 eigen.o invert.o microscopy.o diffractionpatterndefinitions.o diffractionpatterninitialisation.o \
-crystallographyinitialisation.o crystallography.o bloch.o Ug.o image.o ciftbx.o \
+crystallographyinitialisation.o crystallography.o bloch.o Ug.o image.o ciftbx.o simplex.o\
 hash_funcs.o felixfunction.o refineutils.o writeoutput.o dqng.o xerror.o d1mach.o
 
 %.o: %.f90
@@ -100,7 +100,7 @@ print:
 	a2ps -E -o print.ps gmodules.f90 smodules.f90 felixsim.f90 util.f90 \
 in.f90 out.f90 readinput.f90 readciffile.f90 experimentalsetup.f90 imagesetup.f90 \
 montagesetup.f90 structurefactorsetup.f90 eigen.f90 invert.f90 microscopy.f90 \
-diffraction.f90 diffractionpatterninitialisation.f90 crystallographyinitialisation.f90 \
+diffraction.f90 simplex.f diffractionpatterninitialisation.f90 crystallographyinitialisation.f90 \
 crystallography.f90 bloch.f90 Ug.f90 image.f90 ciftbx.f hash_funcs.f felixfunction.f90 \
 writeoutput.f90 dqng.f xerror.f d1mach.f felixdraw.f90 felixrefine.f90 refineutils.f90 \
 makefile-CSC.GF; convert -density 150 print.ps print.pdf

@@ -306,7 +306,7 @@ SUBROUTINE CrystalUniqueFractionalAtomicPostitionsCalculation (IErr)
   LOGICAL Lunique
 
   ! Calculate the set of unique fractional atomic positions
-  
+
   ALLOCATE( &
        MNP(ITotalAtoms,THREEDIM), &
        STAT=IErr)
@@ -361,7 +361,7 @@ SUBROUTINE CrystalUniqueFractionalAtomicPostitionsCalculation (IErr)
   ROcc(1) = RFullPartialOccupancy(1)
   IAtoms(1) = IFullAtomNumber(1)
   IAnisoDWFT(1) = IFullAnisotropicDWFTensor(1)
-  Iuniind=0
+  Iuniind=1
 
   DO ind=2,SIZE(RFullAtomicFracCoordVec,1)
      DO jnd=1,Iuniind
@@ -380,9 +380,6 @@ SUBROUTINE CrystalUniqueFractionalAtomicPostitionsCalculation (IErr)
         Iuniind=Iuniind+1
         MNP(Iuniind,:)= RFullAtomicFracCoordVec(ind,:)
         SMNP(Iuniind)= SFullAtomicNameVec(ind)
-!!$        IF(IWriteFLAG.GE.1) THEN
-!!$           PRINT*,"MNP(Iuniind,:) = ",MNP(Iuniind,:),SMNP(Iuniind)
-!!$        END IF
         RDWF(Iuniind) = RFullIsotropicDebyeWallerFactor(ind)
         ROcc(Iuniind) = RFullPartialOccupancy(ind)
         IAtoms(Iuniind) = IFullAtomNumber(ind)
@@ -391,7 +388,7 @@ SUBROUTINE CrystalUniqueFractionalAtomicPostitionsCalculation (IErr)
      ENDIF
      
   ENDDO
-  
+
   DO ind=1,Iuniind     
      IF((IWriteFLAG.GE.3.AND.my_rank.EQ.0).OR.IWriteFLAG.GE.10) THEN
         IF (ind.EQ.1) THEN
@@ -424,7 +421,7 @@ SUBROUTINE CrystalUniqueFractionalAtomicPostitionsCalculation (IErr)
   INAtomsUnitCell= SIZE(MNP,DIM=1)
   
   IF((IWriteFLAG.GE.1.AND.my_rank.EQ.0).OR.IWriteFLAG.GE.10) THEN
-     PRINT*,"DBG: main(", my_rank, ") NAtomsUnitCell=", INAtomsUnitCell
+     PRINT*,"CrystalUniqueFractionalAtomicPostitionsCalculation(", my_rank, ") NAtomsUnitCell=", INAtomsUnitCell
   END IF
   
   DO ind = 1,INAtomsUnitCell

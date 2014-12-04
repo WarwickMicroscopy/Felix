@@ -37,7 +37,7 @@
 !%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 !!$REAL(RKIND) FUNCTION FelixFunction(IIterationFLAG,IErr)
-SUBROUTINE FelixFunction(RIndependentVariableValues,IErr)
+SUBROUTINE FelixFunction(RIndependentVariableValues,IIterationCount,IErr)
 
   USE MyNumbers
   
@@ -59,7 +59,7 @@ SUBROUTINE FelixFunction(RIndependentVariableValues,IErr)
   INTEGER(IKIND) :: &
        IErr,ind,jnd,knd,pnd,&
        IThicknessIndex,ILocalPixelCountMin, ILocalPixelCountMax,&
-       IIterationFLAG
+       IIterationFLAG,IIterationCount
   INTEGER, DIMENSION(:), ALLOCATABLE :: &
        IDisplacements,ICount
   REAL(RKIND),DIMENSION(:,:,:),ALLOCATABLE :: &
@@ -74,6 +74,7 @@ SUBROUTINE FelixFunction(RIndependentVariableValues,IErr)
      PRINT*,"Felix function"
   END IF
 
+  CALL CountTotalAtoms(IErr)
   
   IDiffractionFLAG = 0
 
@@ -117,24 +118,24 @@ SUBROUTINE FelixFunction(RIndependentVariableValues,IErr)
      RETURN
   ENDIF
 
-  CALL RankSymmetryRelatedStructureFactor(IErr)
-  IF( IErr.NE.0 ) THEN
-     PRINT*,"Felixfunction(", my_rank, ") error in StructureFactorRefinementSetup()"
-     RETURN
-  ENDIF
+!!$  CALL RankSymmetryRelatedStructureFactor(IErr)
+!!$  IF( IErr.NE.0 ) THEN
+!!$     PRINT*,"Felixfunction(", my_rank, ") error in StructureFactorRefinementSetup()"
+!!$     RETURN
+!!$  ENDIF
          
-  CALL StructureFactorRefinementSetup(IErr)
-  IF( IErr.NE.0 ) THEN
-     PRINT*,"Felixfunction(", my_rank, ") error in StructureFactorRefinementSetup()"
-     RETURN
-  ENDIF
+!!$  CALL StructureFactorRefinementSetup(RIndependentVariableValues,IIterationCount,IErr)
+!!$  IF( IErr.NE.0 ) THEN
+!!$     PRINT*,"Felixfunction(", my_rank, ") error in StructureFactorRefinementSetup()"
+!!$     RETURN
+!!$  ENDIF
   
-  CALL UpdateStructureFactors(IErr)
-  IF( IErr.NE.0 ) THEN
-     PRINT*,"FelixFunction(", my_rank, ") error ", IErr, &
-          " in UpdateStructureFactors"
-     RETURN
-  ENDIF
+!!$  CALL UpdateStructureFactors(IErr)
+!!$  IF( IErr.NE.0 ) THEN
+!!$     PRINT*,"FelixFunction(", my_rank, ") error ", IErr, &
+!!$          " in UpdateStructureFactors"
+!!$     RETURN
+!!$  ENDIF
 
   !--------------------------------------------------------------------
   ! reserve memory for effective eigenvalue problem
@@ -440,7 +441,7 @@ SUBROUTINE FelixFunction(RIndependentVariableValues,IErr)
        IStrongBeamList,STAT=IErr)
   IF( IErr.NE.0 ) THEN
      PRINT*,"Felixfunction(", my_rank, ") error ", IErr, &
-          " Deallocating IPixelLocations"
+          " Deallocating IStrongBeamList"
      RETURN
   ENDIF
 
@@ -448,7 +449,7 @@ SUBROUTINE FelixFunction(RIndependentVariableValues,IErr)
        IWeakBeamList,STAT=IErr)
   IF( IErr.NE.0 ) THEN
      PRINT*,"Felixfunction(", my_rank, ") error ", IErr, &
-          " Deallocating IPixelLocations"
+          " Deallocating IWeakBeamList"
      RETURN
   ENDIF
 
@@ -456,7 +457,7 @@ SUBROUTINE FelixFunction(RIndependentVariableValues,IErr)
        IDisplacements,STAT=IErr)
   IF( IErr.NE.0 ) THEN
      PRINT*,"Felixfunction(", my_rank, ") error ", IErr, &
-          " Deallocating IPixelLocations"
+          " Deallocating IDisplacements"
      RETURN
   ENDIF
 
@@ -464,7 +465,7 @@ SUBROUTINE FelixFunction(RIndependentVariableValues,IErr)
        ICount,STAT=IErr)
   IF( IErr.NE.0 ) THEN
      PRINT*,"Felixfunction(", my_rank, ") error ", IErr, &
-          " Deallocating IPixelLocations"
+          " Deallocating ICount"
      RETURN
   ENDIF
   
@@ -508,7 +509,7 @@ SUBROUTINE FelixFunction(RIndependentVariableValues,IErr)
        STAT=IErr)
   IF( IErr.NE.0 ) THEN
      PRINT*,"Felixfunction(", my_rank, ") error ", IErr, &
-          " in Deallocation"
+          " in Deallocation MNP"
      RETURN
   ENDIF
 
@@ -517,7 +518,7 @@ SUBROUTINE FelixFunction(RIndependentVariableValues,IErr)
        STAT=IErr)
   IF( IErr.NE.0 ) THEN
      PRINT*,"Felixfunction(", my_rank, ") error ", IErr, &
-          " in Deallocation"
+          " in Deallocation SMNP"
      RETURN
   ENDIF
 
@@ -526,7 +527,7 @@ SUBROUTINE FelixFunction(RIndependentVariableValues,IErr)
        STAT=IErr)
   IF( IErr.NE.0 ) THEN
      PRINT*,"Felixfunction(", my_rank, ") error ", IErr, &
-          " in Deallocation"
+          " in Deallocation RFullAtomicFracCoordVec"
      RETURN
   ENDIF
 
@@ -535,7 +536,7 @@ SUBROUTINE FelixFunction(RIndependentVariableValues,IErr)
        STAT=IErr)
   IF( IErr.NE.0 ) THEN
      PRINT*,"Felixfunction(", my_rank, ") error ", IErr, &
-          " in Deallocation"
+          " in Deallocation SFullAtomicNameVec"
      RETURN
   ENDIF
 
@@ -544,7 +545,7 @@ SUBROUTINE FelixFunction(RIndependentVariableValues,IErr)
        STAT=IErr)
   IF( IErr.NE.0 ) THEN
      PRINT*,"Felixfunction(", my_rank, ") error ", IErr, &
-          " in Deallocation"
+          " in Deallocation IFullAnisotropicDWFTensor"
      RETURN
   ENDIF
 
@@ -553,7 +554,7 @@ SUBROUTINE FelixFunction(RIndependentVariableValues,IErr)
        STAT=IErr)
   IF( IErr.NE.0 ) THEN
      PRINT*,"Felixfunction(", my_rank, ") error ", IErr, &
-          " in Deallocation"
+          " in Deallocation IFullAtomNumber"
      RETURN
   ENDIF
   
@@ -562,7 +563,7 @@ SUBROUTINE FelixFunction(RIndependentVariableValues,IErr)
        STAT=IErr)
   IF( IErr.NE.0 ) THEN
      PRINT*,"Felixfunction(", my_rank, ") error ", IErr, &
-          " in Deallocation"
+          " in Deallocation RFullIsotropicDebyeWallerFactor"
      RETURN
   ENDIF
 
@@ -571,7 +572,7 @@ SUBROUTINE FelixFunction(RIndependentVariableValues,IErr)
        STAT=IErr)
   IF( IErr.NE.0 ) THEN
      PRINT*,"Felixfunction(", my_rank, ") error ", IErr, &
-          " in Deallocation"
+          " in Deallocation RFullPartialOccupancy"
      RETURN
   ENDIF
 
@@ -580,7 +581,7 @@ SUBROUTINE FelixFunction(RIndependentVariableValues,IErr)
        STAT=IErr)
   IF( IErr.NE.0 ) THEN
      PRINT*,"Felixfunction(", my_rank, ") error ", IErr, &
-          " in Deallocation"
+          " in Deallocation RDWF"
      RETURN
   ENDIF
 
@@ -589,7 +590,7 @@ SUBROUTINE FelixFunction(RIndependentVariableValues,IErr)
        STAT=IErr)
   IF( IErr.NE.0 ) THEN
      PRINT*,"Felixfunction(", my_rank, ") error ", IErr, &
-          " in Deallocation"
+          " in Deallocation ROcc"
      RETURN
   ENDIF
   
@@ -598,7 +599,7 @@ SUBROUTINE FelixFunction(RIndependentVariableValues,IErr)
        STAT=IErr)
   IF( IErr.NE.0 ) THEN
      PRINT*,"Felixfunction(", my_rank, ") error ", IErr, &
-          " in Deallocation"
+          " in Deallocation IAtoms"
      RETURN
   ENDIF
   
@@ -607,7 +608,7 @@ SUBROUTINE FelixFunction(RIndependentVariableValues,IErr)
        STAT=IErr)
   IF( IErr.NE.0 ) THEN
      PRINT*,"Felixfunction(", my_rank, ") error ", IErr, &
-          " in Deallocation"
+          " in Deallocation IAnisoDWFT"
      RETURN
   ENDIF
   
@@ -616,7 +617,7 @@ SUBROUTINE FelixFunction(RIndependentVariableValues,IErr)
        STAT=IErr)
   IF( IErr.NE.0 ) THEN
      PRINT*,"Felixfunction(", my_rank, ") error ", IErr, &
-          " in Deallocation"
+          " in Deallocation Rhkl"
      RETURN
   ENDIF
 
@@ -625,7 +626,7 @@ SUBROUTINE FelixFunction(RIndependentVariableValues,IErr)
        STAT=IErr)
   IF( IErr.NE.0 ) THEN
      PRINT*,"Felixfunction(", my_rank, ") error ", IErr, &
-          " in Deallocation"
+          " in Deallocation RgVecMag"
      RETURN
   ENDIF
 
@@ -634,36 +635,36 @@ SUBROUTINE FelixFunction(RIndependentVariableValues,IErr)
        STAT=IErr)
   IF( IErr.NE.0 ) THEN
      PRINT*,"Felixfunction(", my_rank, ") error ", IErr, &
-          " in Deallocation"
+          " in Deallocation RGn"
      RETURN
   ENDIF
 
-  DEALLOCATE( &
-       ISymmetryRelations,&
-       STAT=IErr)
-  IF( IErr.NE.0 ) THEN
-     PRINT*,"Felixfunction(", my_rank, ") error ", IErr, &
-          " in Deallocation"
-     RETURN
-  ENDIF
-
-  DEALLOCATE( &
-       ISymmetryStrengthKey,&
-       STAT=IErr)
-  IF( IErr.NE.0 ) THEN
-     PRINT*,"Felixfunction(", my_rank, ") error ", IErr, &
-          " in Deallocation"
-     RETURN
-  ENDIF
-
-  DEALLOCATE( &
-       CSymmetryStrengthKey,&
-       STAT=IErr)
-  IF( IErr.NE.0 ) THEN
-     PRINT*,"Felixfunction(", my_rank, ") error ", IErr, &
-          " in Deallocation"
-     RETURN
-  ENDIF
+!!$  DEALLOCATE( &
+!!$       ISymmetryRelations,&
+!!$       STAT=IErr)
+!!$  IF( IErr.NE.0 ) THEN
+!!$     PRINT*,"Felixfunction(", my_rank, ") error ", IErr, &
+!!$          " in Deallocation ISymmetryRelations"
+!!$     RETURN
+!!$  ENDIF
+!!$
+!!$  DEALLOCATE( &
+!!$       ISymmetryStrengthKey,&
+!!$       STAT=IErr)
+!!$  IF( IErr.NE.0 ) THEN
+!!$     PRINT*,"Felixfunction(", my_rank, ") error ", IErr, &
+!!$          " in Deallocation ISymmetryStrengthKey"
+!!$     RETURN
+!!$  ENDIF
+!!$
+!!$  DEALLOCATE( &
+!!$       CSymmetryStrengthKey,&
+!!$       STAT=IErr)
+!!$  IF( IErr.NE.0 ) THEN
+!!$     PRINT*,"Felixfunction(", my_rank, ") error ", IErr, &
+!!$          " in Deallocation CSymmetryStrengthKey"
+!!$     RETURN
+!!$  ENDIF
 
 END SUBROUTINE FelixFunction
 
@@ -799,18 +800,9 @@ SUBROUTINE CalculateFigureofMeritandDetermineThickness(RSimulatedImages,IErr)
         END DO
      END DO
      
-     WHERE(RSimulatedImageForPhaseCorrelation.LT.TINY) RImageExpi(:,:,1) = ZERO
-     WHERE(RImageExpi(:,:,1).LT.TINY) RSimulatedImageForPhaseCorrelation = ZERO
+!!$     WHERE(RSimulatedImageForPhaseCorrelation.LT.TINY) RImageExpi(:,:,1) = ZERO
+!!$     WHERE(RImageExpi(:,:,1).LT.TINY) RSimulatedImageForPhaseCorrelation = ZERO
      
-
-!!$        PRINT*,"---------------------------------------------------------"
-!!$     PRINT*,RSimulatedImageForPhaseCorrelation(64:65,64)
-!!$     PRINT*,RSimulatedImageForPhaseCorrelation(64:65,65)
-!!$     PRINT*,RImageExpi(64:65,64,1)
-!!$     PRINT*,RImageExpi(64:65,65,1)
-!!$
-!!$        PRINT*,"---------------------------------------------------------"
-
 
      CALL PhaseCorrelate(RSimulatedImageForPhaseCorrelation,RImageExpi(:,:,1),&
           IErr,2*IPixelCount,2*IPixelCount)
@@ -846,7 +838,7 @@ END SUBROUTINE CalculateFigureofMeritandDetermineThickness
 
 !%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-REAL(RKIND) FUNCTION SimplexFunction(RIndependentVariableValues,IErr)
+REAL(RKIND) FUNCTION SimplexFunction(RIndependentVariableValues,IIterationCount,IErr)
 
   USE MyNumbers
   
@@ -867,10 +859,8 @@ REAL(RKIND) FUNCTION SimplexFunction(RIndependentVariableValues,IErr)
        RNewValue
   REAL(RKIND),DIMENSION(IIndependentVariables),INTENT(IN) :: &
        RIndependentVariableValues
-
-
-!!$  RValue = RNewValue
-!!$  IVariableID = INewVariableID
+  INTEGER(IKIND),INTENT(IN) :: &
+       IIterationCount
   
   IF((IWriteFLAG.GE.0.AND.my_rank.EQ.0).OR.IWriteFLAG.GE.10) THEN
      PRINT*,"SimplexFunction(",my_rank,")"
@@ -880,14 +870,15 @@ REAL(RKIND) FUNCTION SimplexFunction(RIndependentVariableValues,IErr)
   IPixels = CountPixels(IErr) ! Count The Number of Pixels
   IThicknessCount= (RFinalThickness- RInitialThickness)/RDeltaThickness + 1
 
-  CALL UpdateVariables(RIndependentVariableValues,IErr) 
+  CALL UpdateVariables(RIndependentVariableValues,IErr)
   IF( IErr.NE.0 ) THEN
+     
      PRINT*,"SimplexFunction(", my_rank, ") error ", IErr, &
           " in UpdateVariables"
      RETURN
   ENDIF   
 
-  CALL FelixFunction(RIndependentVariableValues,IErr) ! Simulate !!  
+  CALL FelixFunction(RIndependentVariableValues,IIterationCount,IErr) ! Simulate !!  
   IF( IErr.NE.0 ) THEN
      PRINT*,"SimplexFunction(", my_rank, ") error ", IErr, &
           " in FelixFunction"
@@ -944,7 +935,7 @@ REAL(RKIND) FUNCTION SimplexFunction(RIndependentVariableValues,IErr)
         RETURN
      ENDIF
      
-     SimplexFunction = RCrossCorrelation
+     SimplexFunction = 1.0_RKIND-RCrossCorrelation
   END IF
   
 
@@ -972,10 +963,9 @@ SUBROUTINE UpdateVariables(RIndependentVariableValues,IErr)
   REAL(RKIND),DIMENSION(IIndependentVariables),INTENT(IN) :: &
        RIndependentVariableValues
 
-!!$  RIndependentVariableValues(IVariableID) = RValue
-
   !!$  Fill the Independent Value array with values
   
+
   DO ind = 1,IIndependentVariables
      IVariableType = IIterativeVariableUniqueIDs(ind,2)
      SELECT CASE (IVariableType)
@@ -1022,7 +1012,7 @@ END SUBROUTINE UpdateVariables
 
 !%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-SUBROUTINE UpdateStructureFactors(RIndependentVariableValues,IErr)
+SUBROUTINE UpdateStructureFactors(RIndependentVariableValues,IIterationCount,IErr)
   
   USE MyNumbers
   
@@ -1042,7 +1032,9 @@ SUBROUTINE UpdateStructureFactors(RIndependentVariableValues,IErr)
   REAL(RKIND),DIMENSION(IIndependentVariables),INTENT(IN) :: &
        RIndependentVariableValues
 
-  IIterationCount = 2
+  INTEGER(IKIND),INTENT(IN) :: &
+       IIterationCount
+
   
   IF(IRefineModeSelectionArray(1).EQ.1.AND.IIterationCount.NE.1) THEN
      DO ind = 1,INoofUgs

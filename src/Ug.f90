@@ -288,7 +288,6 @@ SUBROUTINE StructureFactorInitialisation (IErr,CZeroMat)
               
      ENDDO
   ENDDO
-  
 
   RMeanInnerCrystalPotential= REAL(CUgMat(1,1))
 
