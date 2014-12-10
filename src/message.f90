@@ -34,9 +34,10 @@
 
 
 !Subroutine reads in a message the user wants to display to the screen, The IWriteFLAG
-!is then compared to the priorityFLAG which determines whether it will get printed out or not.
+!is then compared to the PriorityFLAG which determines whether it will get printed out or not.
 MODULE WriteToScreen
 CONTAINS
+
 SUBROUTINE Message(ProgramName,IPriorityFLAG,IErr,MessageVariable,RVariable,IVariable,CVariable,MessageString)
 
   USE MyNumbers
@@ -63,7 +64,15 @@ SUBROUTINE Message(ProgramName,IPriorityFLAG,IErr,MessageVariable,RVariable,IVar
   !CHARACTER(LEN=LEN(MessageStringIn)) :: MessageString
   INTEGER(IKIND) :: IErr,IPriorityFLAG
 
-
+!!$  set IDebugFLAG if IWriteFLAG is over 100 (Debug messaging)
+!!$  otherwise just set to 0
+  IF (IWriteFLAG .GT. 10) THEN
+     IDebugFLAG = IWriteFLAG
+     IWriteFLAG = IDebugFLAG - 100
+  ELSE
+     IDebugFLAG = 0
+  END IF
+     
 
   ! Checks if MessageVariable has been read into the function
   IF (PRESENT(MessageVariable)) THEN
@@ -74,7 +83,7 @@ SUBROUTINE Message(ProgramName,IPriorityFLAG,IErr,MessageVariable,RVariable,IVar
      IF (PRESENT(RVariable)) THEN
       
         !Check for mismatch
-        IF (SCAN(MessageVariable,'R').EQ.0.AND.IDebugMODE.EQ.1) THEN
+        IF (SCAN(MessageVariable,'R').EQ.0.AND.IDebugFLAG.GE.100) THEN
            !654 is error code associated with the misinterpreted variable
            CALL ErrorChecks("Message","Message",654)
         ENDIF
@@ -86,7 +95,7 @@ SUBROUTINE Message(ProgramName,IPriorityFLAG,IErr,MessageVariable,RVariable,IVar
      ELSE IF (PRESENT(IVariable)) THEN
 
         !Check for mismatch
-        IF (SCAN(MessageVariable,'I').EQ.0.AND.IDebugMODE.EQ.1) THEN
+        IF (SCAN(MessageVariable,'I').EQ.0.AND.IDebugFLAG.GE.100) THEN
            !654 is error code associated with the misinterpreted variable
            CALL ErrorChecks("Message","Message",654)
         ENDIF

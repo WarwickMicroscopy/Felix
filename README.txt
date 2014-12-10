@@ -69,8 +69,8 @@ IBinorTextFLAG: Select binary or text output files, binary are smaller and faste
 
 IScatteringFactorMethod: Determines which method by which to calculate potentials
 0 Kirkands Method (103 Elements)
-0 Peng (98 Elements)
-0 Doyle and Turner (only works for 68 elements)
+1 Peng (98 Elements)
+2 Doyle and Turner (only works for 68 elements)
 
 IZolzFLAG: Choose to limit the simulation to the zeroth order laue zone.  
 
@@ -184,10 +184,6 @@ RDeltaThickness: Step between thickness (Angstroms)
 
 IReflectOut: The number of the reflections to be included in the final
   image(s)
-
-IDebugMODE: Choose which mode you wish to run Felix
-0 Normal mode - regular warning and error messages
-1 Debug mode - extra error and help statements for developers
 
 The Remainder of the options apply to FelixRefine only
 

@@ -106,12 +106,9 @@ END MODULE RConst
 !--------------------------------------------------------------------
 MODULE IPara
   USE MyNumbers
+ 
   
-  !DebugMODE - for developers only
 
-  INTEGER(IKIND) :: &
-       IDebugMODE
-  
   !PriorityFLAG values - to match to the WriteFLAG - will change eventually,
   !hence why the silent & Must are both 0, no Silent option yet.
   !IInfo is now IWriteFLAG = 1, IAllInfo is IWriteFLAG = 10
@@ -129,7 +126,7 @@ MODULE IPara
   !Input Flags
 
   INTEGER(IKIND) :: &
-       IWriteFLAG, IScatterFactorMethodFLAG, &
+       IWriteFLAG,IDebugFLAG,IScatterFactorMethodFLAG, &
        ICentralBeamFLAG, IMaskFLAG, IVolumeFLAG, &
        IZolzFLAG,IAbsorbFLAG, IAnisoDebyeWallerFactorFlag, &
        IImageFLAG,IOutputFLAG,IBeamConvergenceFLAG,  &

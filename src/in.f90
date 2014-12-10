@@ -333,16 +333,6 @@ SUBROUTINE ReadInpFile( IErr )
   READ(IChInp,10,ERR=20,END=30) IReflectOut
   CALL Message ("ReadInpFile",IInfo,IErr,"IReflectOut",IVariable=IReflectOut)
 
-  ILine= ILine+1; READ(IChInp,ERR=20,END=30,FMT='(A)') 
-  ILine= ILine+1; READ(IChInp,ERR=20,END=30,FMT='(A)')
-
-!-------------------------------------------------------------------------
-! Set Debug Mode - on or off
-
-  ILine = ILine+1
-  READ(IChInp,10,ERR=20,END=30) IDebugMODE
-  CALL Message ("ReadInpFile",1,IErr,"IDebugMODE",IVariable = IDebugMODE)
-
 
   IF(ISoftwareMode.EQ.2) THEN
 

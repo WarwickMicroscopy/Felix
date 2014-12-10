@@ -54,6 +54,4 @@ RFinalThickness          = 1000.0
 RDeltaThickness          = 10.0
 IReflectOut              = 7
 
-#DebugMODE
-IDebugMODE               = 1
 
