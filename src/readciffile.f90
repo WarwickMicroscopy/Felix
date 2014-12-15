@@ -57,6 +57,7 @@ SUBROUTINE ReadCifFile(IErr)
   ! at the start of EACH routine using the CIFtbx functions.
 
   USE MyNumbers
+  USE WriteToScreen
   
   USE CConst; USE IConst
   USE IPara; USE RPara; USE SPara
@@ -73,7 +74,7 @@ SUBROUTINE ReadCifFile(IErr)
   CHARACTER*32  name
   CHARACTER*80  line
   CHARACTER*4   label(6)
-  CHARACTER*1   CAlphabetarray(52)
+  CHARACTER*1   SAlphabetarray(52)
   CHARACTER*52  alphabet
   CHARACTER*2   rs
   CHARACTER*1   slash
@@ -83,7 +84,7 @@ SUBROUTINE ReadCifFile(IErr)
   REAL          numb,sdev,dum
   REAL          xf(6),yf(6),zf(6),uij(6,6)
   INTEGER       i,j,nsite, iset, imark
-  DATA CAlphabetarray /"A","B","C","D","E","F","G","H","I","J","K","L","M","N", &
+  DATA SAlphabetarray /"A","B","C","D","E","F","G","H","I","J","K","L","M","N", &
        "O","P","Q","R","S","T","U","V","W","X","Y","Z","a","b","c","d","e", &
        "f","g","h","i","j","k","l","m","n","o","p","q","r","s","t","u","v", &
        "w","x","y","z"/
@@ -106,26 +107,28 @@ SUBROUTINE ReadCifFile(IErr)
 
   ! Assign the CIFtbx files 
   f1 = init_( 1, 2, 3, 6 )
+  
+  !Tells user, entering ReadCIFFile
+  CALL Message("ReadCIFFile",IMust,IErr)
 
   ! Request dictionary validation check
   IF(.NOT.dict_('cif_core.dic','valid dtype')) THEN
-     IF((IWriteFLAG.GE.1.AND.my_rank.EQ.0).OR.IWriteFLAG.GE.10) THEN
-        PRINT*,"ReadCifFile(", my_rank, ") Requested Core dictionary not present"
-        ! Restore the old clipping action for text fields
-     END IF
+     CALL Message("ReadCIFFile",IInfo,IErr, &
+          MessageString = "Requested core dictionary not present")
+
+     ! Restore the old clipping action for text fields
      clipt_ = .TRUE.
      pclipt_ = .TRUE.
   END IF
   ! Open the CIF to be accessed
 
 100 name='felix.cif'
-  IF((IWriteFLAG.GE.1.AND.my_rank.EQ.0).OR.IWriteFLAG.GE.10) THEN
-     PRINT*,"ReadCifFile(", my_rank, ") Read data from CIF ",name
-  END IF
+  CALL Message("ReadCIFFile",IInfo,IErr, &
+       MessageVariable = "Read data from CIF ", MessageString = name)
   IF(.NOT.ocif_(name)) THEN
-     IF((IWriteFLAG.GE.1.AND.my_rank.EQ.0).OR.IWriteFLAG.GE.10) THEN
-        PRINT*,"ReadCifFile(", my_rank, ") CIF cannot be opened"
-     END IF
+     !maybe error message here?
+     CALL Message("ReadCIFFile",IInfo,IErr, &
+             MessageString = "CIF cannot be opened")
      IErr=1
      RETURN
   END IF
@@ -139,11 +142,14 @@ SUBROUTINE ReadCifFile(IErr)
   END IF
   
 130 IF((IWriteFLAG.GE.1.AND.my_rank.EQ.0).OR.IWriteFLAG.GE.10) THEN
-     PRINT*,"ReadCifFile(", my_rank, ") Access items in data block  ",bloc_
+     CALL Message("ReadCIFFile",IInfo,IErr, &
+          MessageVariable = "Access items in data block ", MessageString = bloc_)
   END IF
-  IF((IWriteFLAG.GE.1.AND.my_rank.EQ.0).OR.IWriteFLAG.GE.10) THEN
-     PRINT*,"ReadCifFile(", my_rank, ") Cell ",RLengthX,RLengthY,RLengthZ
-  END IF
+  CALL Message("ReadCIFFile",IMoreInfo,IErr,MessageString = "Cell length origin") 
+  CALL Message("ReadCIFFile",IMoreInfo,IErr,MessageVariable = "RLengthX",RVariable = RLengthX)
+  CALL Message("ReadCIFFile",IMoreInfo,IErr,MessageVariable = "RLengthY",RVariable = RLengthY)
+  CALL Message("ReadCIFFile",IMoreInfo,IErr,MessageVariable = "RLengthZ",RVariable = RLengthZ)
+  
   
   ! Extract some cell dimensions; test all is OK
   ! NEED TO PUT IN A CHECK FOR LENGTH UNITS
@@ -154,6 +160,7 @@ SUBROUTINE ReadCifFile(IErr)
   f1 = numb_('_cell_length_a', cela, siga)
   f2 = numb_('_cell_length_b', celb, sigb)
   f3 = numb_('_cell_length_c', celc, sigc)
+  !error call
   IF(.NOT.(f1.AND.f2.AND.f3)) THEN
      IF((IWriteFLAG.GE.1.AND.my_rank.EQ.0).OR.IWriteFLAG.GE.10) THEN
         PRINT*,"ReadCifFile(", my_rank, ") Cell dimension(s) missing!"
@@ -162,13 +169,16 @@ SUBROUTINE ReadCifFile(IErr)
   END IF
 
   RLengthX=cela; RLengthY=celb; RLengthZ=celc
-  
-  IF((IWriteFLAG.GE.1.AND.my_rank.EQ.0).OR.IWriteFLAG.GE.10) THEN
-     PRINT*,"ReadCifFile(", my_rank, ") Cell ",RLengthX,RLengthY,RLengthZ 
-  END IF
-  IF((IWriteFLAG.GE.1.AND.my_rank.EQ.0).OR.IWriteFLAG.GE.10) THEN
-     PRINT*,"ReadCifFile(", my_rank, ")      ",siga,sigb,sigc
-  END IF
+  CALL Message("ReadCIFFile",IInfo,IErr,MessageString = "Cell length") 
+  CALL Message("ReadCIFFile",IInfo,IErr,MessageVariable = "RLengthX",RVariable = RLengthX)
+  CALL Message("ReadCIFFile",IInfo,IErr,MessageVariable = "RLengthY",RVariable = RLengthY)
+  CALL Message("ReadCIFFile",IInfo,IErr,MessageVariable = "RLengthZ",RVariable = RLengthZ)
+
+  CALL Message("ReadCIFFile",IMoreInfo,IErr,MessageString = "Standard deviation of length") 
+  CALL Message("ReadCIFFile",IMoreInfo,IErr,MessageVariable = "siga",RVariable = REAL(siga,RKIND))
+  CALL Message("ReadCIFFile",IMoreInfo,IErr,MessageVariable = "sigb",RVariable = REAL(sigb,RKIND))
+  CALL Message("ReadCIFFile",IMoreInfo,IErr,MessageVariable = "sigc",RVariable = REAL(sigc,RKIND))
+
 
   siga = 0.
   sigb = 0.
@@ -183,41 +193,58 @@ SUBROUTINE ReadCifFile(IErr)
      END IF
      IErr=1
   ENDIF
+
   ! convert angles from degrees to radians
-  
-  IF((IWriteFLAG.GE.1.AND.my_rank.EQ.0).OR.IWriteFLAG.GE.10) THEN
-     PRINT*,"ReadCifFile(", my_rank, ") Angle ",cela,celb,celc
-  END IF
+  CALL Message("ReadCIFFile",IMoreInfo,IErr,MessageString = "Angle (input)")
+  CALL Message("ReadCIFFile",IMoreInfo,IErr,MessageVariable = "cela",RVariable = REAL(cela,RKIND))
+  CALL Message("ReadCIFFile",IMoreInfo,IErr,MessageVariable = "celb",RVariable = REAL(celb,RKIND))
+  CALL Message("ReadCIFFile",IMoreInfo,IErr,MessageVariable = "celc",RVariable = REAL(celc,RKIND))
 
   IF (cela.GT.TWOPI) THEN
-     IF((IWriteFLAG.GE.1.AND.my_rank.EQ.0).OR.IWriteFLAG.GE.10) THEN
-        PRINT*,"Angle Alpha is ",cela," Which is greater than Two Pi, Program will assume this angle is expressed in degrees"
-     END IF
+
+        CALL Message("ReadCIFFile",IMoreInfo,IErr,MessageVariable = "Angle alpha", &
+             RVariable = REAL(cela,RKIND))
+        CALL Message("ReadCIFFile",IMoreInfo,IErr, &
+             MessageString = "Which is greater than Two Pi, Program will assume this angle is expressed in degrees")
+
      RAlpha=cela*TWOPI/360.D0;
   END IF
+ 
   IF (celb.GT.TWOPI) THEN
-     IF((IWriteFLAG.GE.1.AND.my_rank.EQ.0).OR.IWriteFLAG.GE.10) THEN
-        PRINT*,"Angle beta is ",cela," Which is greater than Two Pi, Program will assume this angle is expressed in degrees"
-     END IF
+     CALL Message("ReadCIFFile",IMoreInfo,IErr,MessageVariable = "Angle beta", &
+          RVariable = REAL(celb,RKIND))
+     CALL Message("ReadCIFFile",IMoreInfo,IErr,& 
+          MessageString = "Which is greater than Two Pi, Program will assume this angle is expressed in degrees")
+ 
      RBeta=celb*TWOPI/360.D0;
   END IF
   IF (celc.GT.TWOPI) THEN
-     IF((IWriteFLAG.GE.1.AND.my_rank.EQ.0).OR.IWriteFLAG.GE.10) THEN
-        PRINT*,"Angle Gamma is ",cela," Which is greater than Two Pi, Program will assume this angle is expressed in degrees"
-     END IF
+     CALL Message("ReadCIFFile",IMoreInfo,IErr,MessageVariable = "Angle gamma", &
+          RVariable = REAL(celc,RKIND))  
+     CALL Message("ReadCIFFile",IMoreInfo,IErr, &
+          MessageString = "Which is greater than Two Pi, Program will assume this angle is expressed in degrees")
+  
      RGamma=celc*TWOPI/360.D0;
   END IF
-  
-  IF((IWriteFLAG.GE.1.AND.my_rank.EQ.0).OR.IWriteFLAG.GE.10) THEN
-     PRINT*,"ReadCifFile(", my_rank, ") Angle ",RAlpha,RBeta,RGamma
-  END IF
 
-  IF((IWriteFLAG.GE.1.AND.my_rank.EQ.0).OR.IWriteFLAG.GE.10) THEN
-     PRINT*,"ReadCifFile(", my_rank, ")       ",siga,sigb,sigc
-  END IF
+  CALL Message("ReadCIFFile",IInfo,IErr,MessageString = "Angle (radians)")
+  CALL Message("ReadCIFFile",IInfo,IErr,MessageVariable = "RAlpha",RVariable = RAlpha)
+  CALL Message("ReadCIFFile",IInfo,IErr,MessageVariable = "RBeta",RVariable = RBeta)
+  CALL Message("ReadCIFFile",IInfo,IErr,MessageVariable = "RGamma",RVariable = RGamma)
+
+  CALL Message("ReadCIFFile",IMoreInfo,IErr,MessageString = "Standard deviation of angle") 
+  CALL Message("ReadCIFFile",IMoreInfo,IErr,MessageVariable = "siga",RVariable = REAL(siga,RKIND))
+  CALL Message("ReadCIFFile",IMoreInfo,IErr,MessageVariable = "sigb",RVariable = REAL(sigb,RKIND))
+  CALL Message("ReadCIFFile",IMoreInfo,IErr,MessageVariable = "sigc",RVariable = REAL(sigc,RKIND))
+
+
+ ! IF((IWriteFLAG.GE.1.AND.my_rank.EQ.0).OR.IWriteFLAG.GE.10) THEN
+ !    PRINT*,"ReadCifFile(", my_rank, ")       ",siga,sigb,sigc
+ ! END IF
   
   f1 = numb_('_cell_volume', cela, siga)
   
+  !Error message
   IF((f1) .EQV. .FALSE.) THEN
      IF((IWriteFLAG.GE.1.AND.my_rank.EQ.0).OR.IWriteFLAG.GE.10) THEN
         PRINT*,"ReadCifFile(", my_rank, ") Volume missing!"
@@ -231,33 +258,33 @@ SUBROUTINE ReadCifFile(IErr)
      RVolume= cela
      IVolumeFLAG= 1
   ENDIF
+
+  CALL Message("ReadCIFFile",IInfo,IErr,MessageString = "Cell volume")
+  CALL Message("ReadCIFFile",IInfo,IErr,MessageVariable = "RVolume", &
+          RVariable = RVolume)  
+
+  CALL Message("ReadCIFFile",IMoreInfo,IErr,MessageString = "Standard deviation of cell volume")
+  CALL Message("ReadCIFFile",IMoreInfo,IErr,MessageVariable = "siga", &
+       RVariable = REAL(siga,RKIND))
   
-  IF((IWriteFLAG.GE.1.AND.my_rank.EQ.0).OR.IWriteFLAG.GE.10) THEN
-     PRINT*,"ReadCifFile(", my_rank, ") Volume ",RVolume
-  END IF
-  IF((IWriteFLAG.GE.1.AND.my_rank.EQ.0).OR.IWriteFLAG.GE.10) THEN
-     PRINT*,"ReadCifFile(", my_rank, ")        ",siga
-  END IF
     
   ! Extract atom type symbol data in a loop
-  IF((IWriteFLAG.GE.1.AND.my_rank.EQ.0).OR.IWriteFLAG.GE.10) THEN
-     PRINT*,"ReadCifFile(", my_rank, ") Atom type"
-  END IF
+  CALL Message("ReadCIFFile",IInfo,IErr,MessageString = "Atom type", &
+       RVariable = REAL(siga,RKIND))
+
 
   DO      
      f1 = char_('_atom_type_symbol', name)
-     IF((IWriteFLAG.GE.1.AND.my_rank.EQ.0).OR.IWriteFLAG.GE.10) THEN
-        PRINT*,"ReadCifFile(", my_rank, ") ", name
-     END IF
+     CALL Message("ReadCIFFile",IInfo,IErr,MessageString = name)
+  
      IF(loop_ .NEQV. .TRUE.) EXIT
   ENDDO
 
   ! Extract space group notation (expected char string)
+  
   f1 = char_('_symmetry_space_group_name_H-M', name)
- 
-  IF((IWriteFLAG.GE.1.AND.my_rank.EQ.0).OR.IWriteFLAG.GE.10) THEN
-     PRINT*,"Space Group = ",name
-  END IF
+  CALL Message("ReadCIFFile",IInfo,IErr,MessageVariable = "Space Group",MessageString = name)
+
 
   !different types of space groups as well as different phrasing of Hall space groups
 
@@ -268,6 +295,7 @@ SUBROUTINE ReadCifFile(IErr)
         IF (numb.LT.TINY) THEN
            f1 = numb_('_space_group_IT_number',numb,sx)
            IF (numb.LT.TINY) THEN
+              !Error message
               IF((IWriteFLAG.GE.1.AND.my_rank.EQ.0).OR.IWriteFLAG.GE.10) THEN
                  PRINT*,"No Space Group"
               END IF
@@ -281,9 +309,8 @@ SUBROUTINE ReadCifFile(IErr)
      END IF
   END IF
 
-  IF((IWriteFLAG.GE.1.AND.my_rank.EQ.0).OR.IWriteFLAG.GE.10) THEN
-     PRINT*,"ReadCifFile(", my_rank, ") Space group ",name(1:long_)
-  END IF
+  CALL Message("ReadCIFFile",IInfo,IErr,MessageVariable = "Space Group", &
+       MessageString =name(1:long_))
 
   SSpaceGroupName=TRIM(name(1:1))
 
@@ -291,16 +318,13 @@ SUBROUTINE ReadCifFile(IErr)
   !sometimes space group is input in lowercase letters - below changes the first letter to
   !uppercase
   IF (SCAN(alphabet,SSpaceGroupName).GT.26) THEN
-     SSpaceGroupName=CAlphabetarray(SCAN(alphabet,SSpaceGroupName)-26)
+     SSpaceGroupName=SAlphabetarray(SCAN(alphabet,SSpaceGroupName)-26)
   END IF
  
   ! ----------------------------------------------------------
   ! Extract atom site data in a loop
   !-----------------------------------------------------------
-
-  IF((IWriteFLAG.GE.1.AND.my_rank.EQ.0).OR.IWriteFLAG.GE.10) THEN
-     PRINT*,"ReadCifFile(", my_rank, ") Atom sites"
-  END IF
+  CALL Message("ReadCIFFile",IInfo,IErr,MessageString = "Atom sites")
   
   ! counting loop
   IAtomCount=0
@@ -311,10 +335,8 @@ SUBROUTINE ReadCifFile(IErr)
 
      IF(loop_ .NEQV. .TRUE.) EXIT
   ENDDO
-
-  IF((IWriteFLAG.GE.1.AND.my_rank.EQ.0).OR.IWriteFLAG.GE.10) THEN
-     PRINT*,"IAtomCount = ",IAtomCount
-  END IF
+  
+  CALL Message("ReadCIFFile",IInfo,IErr,MessageVariable = "IAtomCount", IVariable = IAtomCount) 
   
   ALLOCATE( &
        RAtomSiteFracCoordVec(IAtomCount,THREEDIM), &
@@ -383,9 +405,11 @@ SUBROUTINE ReadCifFile(IErr)
      ENDIF
      
      CALL CONVERTAtomName2Number(SAtomName(ind),IAtomNumber(ind), IErr)
-     IF((IWriteFLAG.GE.1.AND.my_rank.EQ.0).OR.IWriteFLAG.GE.10) THEN
-        PRINT*,"IAtomNumber(ind) = ",IAtomNumber(ind)
-     END IF
+     CALL Message("ReadCIFFile",IInfo,IErr,MessageVariable = "IAtomNumber(ind)", IVariable = IAtomNumber(ind))
+
+    ! IF((IWriteFLAG.GE.1.AND.my_rank.EQ.0).OR.IWriteFLAG.GE.10) THEN
+    !    PRINT*,"IAtomNumber(ind) = ",IAtomNumber(ind)
+    ! END IF
      IF(loop_ .NEQV. .TRUE.) EXIT
      
   ENDDO
@@ -444,9 +468,10 @@ SUBROUTINE ReadCifFile(IErr)
      
      IF(ABS(B).LT.TINY.AND.ABS(Uso).LT.TINY) THEN
         B = RDebyeWallerConstant
-        IF((IWriteFLAG.GE.1.AND.my_rank.EQ.0).OR.IWriteFLAG.GE.10) THEN
-           PRINT*,"Thar be no Debye Waller Factor in Yar Cif File matey"
-        END IF
+        CALL Message("ReadCIFFile",IInfo,IErr,MessageVariable = "For Atom", IVariable = ind, &
+             MessageString = "English: One has an absence of Debye Waller Factors in one's CIF File ")
+        CALL Message("ReadCIFFile",IInfo,IErr, MessageVariable = "For Atom", IVariable = ind, &
+              MessageString = "Pirate: Thar be no Debye Waller Factor in Yar Cif File matey")      
      END IF
      
      IF(loop_ .NEQV. .TRUE.) EXIT
@@ -501,10 +526,10 @@ SUBROUTINE ReadCifFile(IErr)
   ! ----------------------------------------------------------
   ! Extract atom site data in a loop
   !----------------------------------------------------------
-  
-  IF((IWriteFLAG.GE.1.AND.my_rank.EQ.0).OR.IWriteFLAG.GE.10) THEN
-     PRINT*,"ReadCifFile(", my_rank, ") Symmetries"
-  END IF
+  CALL Message("ReadCIFFile",IInfo,IErr, MessageString = "Symmetries")      
+  !IF((IWriteFLAG.GE.1.AND.my_rank.EQ.0).OR.IWriteFLAG.GE.10) THEN
+  !   PRINT*,"ReadCifFile(", my_rank, ") Symmetries"
+  !END IF
 
   ! counting loop
   ISymCount=0
@@ -521,9 +546,11 @@ SUBROUTINE ReadCifFile(IErr)
      IF(loop_ .NEQV. .TRUE.) EXIT
   ENDDO
 
-  IF((IWriteFLAG.GE.1.AND.my_rank.EQ.0).OR.IWriteFLAG.GE.10) THEN
-     PRINT*,"ReadCifFile(", my_rank, ") found", ISymCount, "symmetries"
-  END IF
+  CALL Message("ReadCIFFile",IInfo,IErr,MessageVariable = "found", &
+       IVariable = ISymCount, MessageString = "symmetries")
+  !IF((IWriteFLAG.GE.1.AND.my_rank.EQ.0).OR.IWriteFLAG.GE.10) THEN
+  !   PRINT*,"ReadCifFile(", my_rank, ") found", ISymCount, "symmetries"
+  !END IF
   
   ALLOCATE( &
        RSymVec(ISymCount,THREEDIM), &

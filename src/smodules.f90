@@ -108,7 +108,6 @@ MODULE IPara
   USE MyNumbers
  
   
-
   !PriorityFLAG values - to match to the WriteFLAG - will change eventually,
   !hence why the silent & Must are both 0, no Silent option yet.
   !IInfo is now IWriteFLAG = 1, IAllInfo is IWriteFLAG = 10
@@ -116,7 +115,9 @@ MODULE IPara
        ISilent = 0 ,&
        IMust = 1 ,&
        IInfo = 1 ,&
-       IAllInfo = 10
+       IMoreInfo = 2, &
+       IAllInfo = 10, &
+       IDebug = 100
 
   !Write Out
   

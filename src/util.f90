@@ -43,9 +43,10 @@
 !	is based on ShellSort from "Numerical Recipes", routine SHELL().
 !---------------------------------------------------------------------
 
-SUBROUTINE ReSortHKL( RHKLarray, N )
+SUBROUTINE ReSortHKL( RHKLarray, N,IErr )
 
   USE MyNumbers
+  USE WriteToScreen
     
   USE CConst; USE IConst
   USE IPara; USE RPara
@@ -58,7 +59,7 @@ SUBROUTINE ReSortHKL( RHKLarray, N )
 
   IMPLICIT NONE
 
-  INTEGER (IKIND) N
+  INTEGER (IKIND) N, IErr
   REAL(RKIND) RHKLarray(N,THREEDIM)
   REAL(RKIND) RhklarraySearch(THREEDIM), RhklarrayCompare(THREEDIM)
   
@@ -68,9 +69,10 @@ SUBROUTINE ReSortHKL( RHKLarray, N )
   INTEGER (IKIND) NN,M,L,K,J,I,LOGNB2, index
   REAL(KIND=RKIND) dummy
 
-  IF((IWriteFLAG.EQ.6.AND.my_rank.EQ.0).OR.IWriteFLAG.GE.10) THEN
-     PRINT*,"ReSort()"
-  END IF
+  CALL Message("Resort",IMoreInfo,IErr)
+!!$  IF((IWriteFLAG.EQ.6.AND.my_rank.EQ.0).OR.IWriteFLAG.GE.10) THEN
+!!$     PRINT*,"ReSort()"
+!!$  END IF
   
   LOGNB2=INT(LOG(REAL(N))*ALN2I+LocalTINY)
   M=N
@@ -175,10 +177,10 @@ SUBROUTINE CountTotalAtoms(IErr)
   INTEGER ind,jnd,knd,hnd,ierr, ifullind, iuniind
   LOGICAL Lunique
 
-  
-  IF((IWriteFLAG.EQ.6.AND.my_rank.EQ.0).OR.IWriteFLAG.GE.10) THEN
-     PRINT*,"CountTotalAtoms()"
-  END IF
+  CALL Message("CountTotalAtoms",IMoreInfo,IErr)
+ ! IF((IWriteFLAG.EQ.6.AND.my_rank.EQ.0).OR.IWriteFLAG.GE.10) THEN
+ !    PRINT*,"CountTotalAtoms()"
+ ! END IF
 
   ALLOCATE( &
        RFullAtomicFracCoordVec( &
@@ -199,10 +201,13 @@ SUBROUTINE CountTotalAtoms(IErr)
   ENDIF
   
   RFullAtomicFracCoordVec = ZERO
-  
-  IF((IWriteFLAG.GE.10.AND.my_rank.EQ.0).OR.IWriteFLAG.GE.10) THEN
-     PRINT*,"SIZE OF RFULLATOMICFRACCOORDVEC = ",SIZE(RFullAtomicFracCoordVec,1)
-  END IF
+
+  CALL Message("CountTotalAtoms",IAllInfo,IErr, &
+       MessageVariable = "Size of RFullAtomicFracCoordVec", &
+       IVariable = SIZE(RFullAtomicFracCoordVec,1))
+  !IF((IWriteFLAG.GE.10.AND.my_rank.EQ.0).OR.IWriteFLAG.GE.10) THEN
+  !   PRINT*,"SIZE OF RFULLATOMICFRACCOORDVEC = ",SIZE(RFullAtomicFracCoordVec,1)
+  !END IF
 
   DO ind=1, SIZE(RSymVec,DIM=1)
      
@@ -242,10 +247,8 @@ SUBROUTINE CountTotalAtoms(IErr)
 
   
   ! Calculate the set of unique fractional atomic positions
-  
-  IF((IWriteFLAG.GE.1.AND.my_rank.EQ.0).OR.IWriteFLAG.GE.10) THEN
-     PRINT*,"CountTotalAtoms(",my_rank,") ITotalAtoms = ",ITotalAtoms
-  END IF
+  CALL Message("CountTotalAtoms",IMoreInfo,IErr, MessageVariable = "ITotalAtoms", &
+       IVariable = ITotalAtoms)
 
   ALLOCATE( &
        MNP(1000,THREEDIM), &
@@ -300,10 +303,7 @@ SUBROUTINE CountTotalAtoms(IErr)
   END IF
   
   
-  CALL Message("CountTotalAtoms",IInfo,IErr,"ITotalAtoms",IVariable=ITotalAtoms)
- ! IF((IWriteFLAG.GE.1.AND.my_rank.EQ.0).OR.IWriteFLAG.GE.10) THEN
- !    PRINT*,"CountTotalAtoms(",my_rank,") ITotalAtoms = ",ITotalAtoms
- ! END IF
+  CALL Message("CountTotalAtoms",IMoreInfo,IErr,MessageVariable = "ITotalAtoms",IVariable=ITotalAtoms)
 
   DEALLOCATE( &
        MNP,SMNP, &

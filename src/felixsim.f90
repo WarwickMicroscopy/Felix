@@ -39,6 +39,7 @@
 PROGRAM FelixSim
  
   USE MyNumbers
+  USE WriteToScreen
   
   USE CConst; USE IConst; USE RConst
   USE IPara; USE RPara; USE SPara; USE CPara
@@ -81,7 +82,7 @@ PROGRAM FelixSim
   INTEGER IRootArraySize, IPixelPerRank
   CHARACTER*40 surname 
   CHARACTER*25 CThickness 
-  CHARACTER*25 CThicknessLength  
+  CHARACTER*25 CThicknessLength
  
   INTEGER(IKIND),DIMENSION(2,2) :: ITest
   
@@ -160,11 +161,11 @@ PROGRAM FelixSim
      PRINT*,"FelixSim(", my_rank, ") error in ReadInput()"
      GOTO 9999
   ENDIF
-     
-  IF((IWriteFLAG.GE.1.AND.my_rank.EQ.0).OR.IWriteFLAG.GE.10) THEN
-     PRINT*,"ITotalAtoms = ",ITotalAtoms
-  END IF
   
+  CALL Message("felixsim",IDebug+IMust,IErr)   
+  CALL Message("felixsim",IInfo,IErr, MessageVariable = "ITotalAtoms", &
+       IVariable = ITotalAtoms)
+ 
   !--------------------------------------------------------------------
   ! open outfiles 
   !--------------------------------------------------------------------
@@ -358,9 +359,11 @@ PROGRAM FelixSim
      GOTO 9999
   ENDIF
   
-  IF((IWriteFLAG.GE.0.AND.my_rank.EQ.0).OR.IWriteFLAG.GE.6) THEN
-     PRINT*,"FelixSim(",my_rank,") Entering BlochLoop()"
-  END IF
+  CALL Message("felixsim",ISilent,IErr,MessageString = " Entering BlochLoop")   
+
+!!$  IF((IWriteFLAG.GE.0.AND.my_rank.EQ.0).OR.IWriteFLAG.GE.6) THEN
+!!$     PRINT*,"FelixSim(",my_rank,") Entering BlochLoop()"
+!!$  END IF
 
   DO knd = ILocalPixelCountMin,ILocalPixelCountMax,1
      ind = IPixelLocations(knd,1)
@@ -586,7 +589,9 @@ PROGRAM FelixSim
   IMinutes = FLOOR(MOD(Duration,3600.0D0)/60.0D0)
   ISeconds = MOD(Duration,3600.0D0)-IMinutes*60.0D0
 
-  PRINT*, "FelixSim(", my_rank, ") ", RStr, ", used time=", IHours, "hrs ",IMinutes,"mins ",ISeconds,"Seconds "
+  
+  PRINT*,""
+  PRINT*, "felixsim(", my_rank, ") ", RStr, ", used time=", IHours, "hrs ",IMinutes,"mins ",ISeconds,"Seconds "
 
   !--------------------------------------------------------------------
   ! Shut down MPI

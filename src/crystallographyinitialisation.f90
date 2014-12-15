@@ -35,6 +35,7 @@
 SUBROUTINE CrystallographyInitialisation( IErr )
 
   USE MyNumbers
+  USE WriteToScreen
   
   USE CConst; USE IConst
   USE IPara; USE RPara; USE SPara
@@ -46,10 +47,7 @@ SUBROUTINE CrystallographyInitialisation( IErr )
 
   INTEGER(IKIND)IErr, ind
  
-
-  IF((IWriteFLAG.GE.0.AND.my_rank.EQ.0).OR.IWriteFLAG.GE.10) THEN
-     PRINT*,"CrystallographyInitialisation(",my_rank,")"
-  END IF
+  CALL Message("CrystallographyInitialisation",IMust,IErr)
     
   IF(IDiffractionFLAG.EQ.1) THEN
      DEALLOCATE(&

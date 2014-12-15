@@ -75,7 +75,8 @@ SUBROUTINE BlochCoefficientCalculation(ind,jnd,gnd,ILocalPixelCountMin,IErr)
   ! protocol progress
   !--------------------------------------------------------------------
   
-  IF(IWriteFLAG.GE.10) THEN
+  !!$   Displays Pixel currently working on
+  IF((IWriteFLAG.GE.10.AND.IWriteFLAG.LT.100).OR.IWriteFLAG.GE.110) THEN
      PRINT*,"BlochCoefficientCalculation(", my_rank, "): working on pixel (", ind, ",", jnd,") of (", &
           2*IPixelCount, ",", 2*IPixelCount, ") in total."
   ENDIF
@@ -233,7 +234,7 @@ SUBROUTINE BlochCoefficientCalculation(ind,jnd,gnd,ILocalPixelCountMin,IErr)
   ! construct the effective UgMat (for strong beams only at the moment)
   !--------------------------------------------------------------------
   
-  IF(IWriteFLAG.GE.10) THEN 
+  IF((IWriteFLAG.GE.10.AND.IWriteFLAG.LT.100).OR.IWriteFLAG.GE.110) THEN 
      PRINT*,"BlochCoefficientCalculation(", my_rank, &
           ") using n(Strong)Beams= ", nBeams, " beams", &
           " with nWeakBeams=", IWeakBeamIndex
@@ -544,6 +545,8 @@ SUBROUTINE CreateWavefunctions(rthickness,IErr)
   
 END SUBROUTINE CreateWavefunctions
 
+
+!!$Calculates the x,y,z components of the incident tilted k_vector
 SUBROUTINE KVectorsCalculation(Rx0,Ry0,IErr)
   
   USE MyNumbers
@@ -560,9 +563,12 @@ SUBROUTINE KVectorsCalculation(Rx0,Ry0,IErr)
   
   REAL(RKIND) Rx0,Ry0
   INTEGER(IKIND) :: IErr
-  
+
+  !!$  k_x - based on crystal orientation
   RTiltedK(1)= Rx0
+  !!$  k_y - based on crystal orientation
   RTiltedK(2)= Ry0
+  !!$  k_z - taken from: k_z = (k_y)^2 + (k_x)^2 + (k_z)^2 = K^2  
   RTiltedK(3)= SQRT(RBigK**2 - Rx0**2 - Ry0**2)
   
 END SUBROUTINE KVectorsCalculation
@@ -650,7 +656,7 @@ SUBROUTINE StrongAndWeakBeamsDetermination(IErr)
   !IBeamIterationCounter = 0
 
   !DO WHILE(IAdditionalStrongBeams.NE.0)
-   !  IBeamIterationCounter = IBeamIterationCounter +1
+  !  IBeamIterationCounter = IBeamIterationCounter +1
 
   !----------------------------------------------------------------------------
   ! Apply Bmax Criteria 

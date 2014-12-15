@@ -9,9 +9,9 @@ ciffile=felix.cif
 scafile=felix.sca
 
 #cif directories
-cifdir1=$HOME/project/Felix/samples/Si
-cifdir2=$HOME/project/Felix/samples/GaAs
-cifdir3=$HOME/project/Felix/samples/NaBiTiO3
+cifdir1=$HOME/Felix/samples/Si
+cifdir2=$HOME/Felix/samples/GaAs
+cifdir3=$HOME/Felix/samples/NaBiTiO3
 
 # point this to where felixsim and felixdraw are
 binarydir=$HOME/project/Felix/src
@@ -24,8 +24,7 @@ tmpdir=/tmp/
 
 # settings for parallel submission
 cores=${1:-1}
-ompthreads=${2:-1}
-wtime=${3:-00:10:00}
+wtime=${2:-00:10:00}
 
 let ranks=${cores}
 let nodes=${cores}
@@ -141,7 +140,7 @@ cat > ${job_dir}/${job_file} << EOD
 #PBS -j oe
 
 #       The jobname
-#PBS -N Felix_${cores}_${ompthreads}_${ZX}${ZY}${ZZ}_${writeind}_${imageind1}_${imageind2}_${imageind3}_${binorind}_${scatterind}_${centralind}_${maskind}_${zolzind}_${absorbind}_${anisodebyeind}_${xdirind}
+#PBS -N Felix_${cores}_${writeind}_${imageind1}_${imageind2}_${imageind3}_${binorind}_${scatterind}_${centralind}_${maskind}_${zolzind}_${absorbind}_${anisodebyeind}_${xdirind}
 
 #       The total number of parallel tasks for your job.
 #       This is the sum of the number of parallel tasks required by each
