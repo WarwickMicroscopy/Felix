@@ -582,6 +582,18 @@ SUBROUTINE ReadInpFile( IErr )
           IRefineModeSelectionArray(5)*SIZE(IAtomicSitesToRefine)*6+&
           IRefineModeSelectionArray(6)*3+&
           IRefineModeSelectionArray(7)*3
+
+
+     ILine= ILine+1; READ(IChInp,ERR=20,END=30,FMT='(A)')
+     ILine= ILine+1; READ(IChInp,ERR=20,END=30,FMT='(A)')
+     ILine= ILine+1; READ(IChInp,ERR=20,END=30,FMT='(A)')
+     
+     ILine= ILine+1
+     READ(IChInp,10,ERR=20,END=30) IPrint
+     IF((IWriteFLAG.GE.1.AND.my_rank.EQ.0).OR.IWriteFLAG.GE.10) THEN
+        PRINT*,"IPrint = ", IPrint
+     END IF
+
   END IF
 
 10 FORMAT(27X,I15.1)

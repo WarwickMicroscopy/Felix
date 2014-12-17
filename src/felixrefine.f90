@@ -209,15 +209,9 @@ PROGRAM Felixrefine
      GOTO 9999
   ENDIF
 
-
   !--------------------------------------------------------------------
   ! Apply Simplex Method
   !--------------------------------------------------------------------
-
-!!$  IIterationCount = 0
-!!$  IF(my_rank.EQ.0) THEN
-!!$     PRINT*,"IIterationCount =",IIterationCount
-!!$  END IF
 
   CALL NDimensionalDownhillSimplex(RSimplexVolume,RSimplexFoM,&
        IIndependentVariables+1,&
@@ -228,25 +222,6 @@ PROGRAM Felixrefine
      GOTO 9999
   ENDIF
 
-  
-  
-  IF(my_rank.EQ.0) THEN
-     DO ind=1,(IIndependentVariables+1)
-        PRINT*,RSimplexVolume(ind,:)
-     END DO
-     PRINT*,"IIterationCount =",IIterationCount
-  END IF
-
-  
-!!$  DEALLOCATE(&
-!!$       RSimplexFoM,&
-!!$       STAT=IErr)  
-!!$     IF( IErr.NE.0 ) THEN
-!!$        PRINT*,"felixrefine (", my_rank, ") error in Deallocation()"
-!!$        GOTO 9999
-!!$     ENDIF
-!!$     PRINT*,"--------------------DEALLOCATED----------------------------------"
-
   CALL MPI_BARRIER(MPI_COMM_WORLD,IErr)
   IF( IErr.NE.0 ) THEN
      PRINT*,"Felixrefine(", my_rank, ") error ", IErr, " in MPI_BARRIER()"
@@ -256,36 +231,10 @@ PROGRAM Felixrefine
   PRINT*,"Im rank",my_rank
 
   STOP
-!!$  DEALLOCATE(&
-!!$       RSimplexVolume,&
-!!$       STAT=IErr)  
-!!$  IF( IErr.NE.0 ) THEN
-!!$     PRINT*,"felixrefine (", my_rank, ") error in Deallocation()"
-!!$     GOTO 9999
-!!$  ENDIF
-
-  !--------------------------------------------------------------------
-  ! Apply Simplex Method
-  !--------------------------------------------------------------------
-  
-!!$  CALL NDimensionalDownhillSimplex
-!!$  IF( IErr.NE.0 ) THEN
-!!$     PRINT*,"felixrefine (", my_rank, ") error in SetupSimplexVolume()"
-!!$     GOTO 9999
-!!$  ENDIF
-
-!!$  RFigureOfMerit = SimplexFunction(IErr)
 
   !--------------------------------------------------------------------
   ! Deallocate Memory
   !--------------------------------------------------------------------
-
-  
-  IF(my_rank.EQ.0) THEN
-     PRINT*,"--------------------DEALLOCATING----------------------------------"
-  END IF
-
-  PRINT*,my_rank,ALLOCATED(RImageExpi)
 
   DEALLOCATE( &
        RImageExpi,&
@@ -295,11 +244,6 @@ PROGRAM Felixrefine
      GOTO 9999
   ENDIF
 
-   IF(my_rank.EQ.0) THEN
-     PRINT*,"--------------------DEALLOCATED----------------------------------"
-  END IF
-  
-  PRINT*,my_rank,ALLOCATED(RImageExpi)
   !--------------------------------------------------------------------
   ! finish off
   !--------------------------------------------------------------------
@@ -311,23 +255,11 @@ PROGRAM Felixrefine
   ISeconds = MOD(Duration,3600.0D0)-IMinutes*60.0D0
   IMilliSeconds = INT((Duration-(IHours*3600+IMinutes*60+ISeconds))*100,IKIND)
 
-
-   IF(my_rank.EQ.0) THEN
-     PRINT*,"--------------------TIME CALCULATED----------------------------------"
-  END IF
-  
   PRINT*, "Felixrefine(", my_rank, ") ", RStr, ", used time=", IHours, "hrs ",IMinutes,"mins ",ISeconds,"Seconds ",&
        IMilliSeconds,"Milliseconds"
   !--------------------------------------------------------------------
   ! Shut down MPI
   !--------------------------------------------------------------------
-  
-   IF(my_rank.EQ.0) THEN
-     PRINT*,"--------------------TIME PRINTED----------------------------------"
-  END IF
-
-!!$  IF(my_rank.EQ.0) THEN
-!!$     CALL MPI_ISEND(RBCASTREAL,1,MPI_DOUBLE_PRECISION,
 
   CALL MPI_BARRIER(MPI_COMM_WORLD,IErr)
   IF( IErr.NE.0 ) THEN
@@ -335,12 +267,6 @@ PROGRAM Felixrefine
      STOP
   ENDIF
 
-  
-  IF(my_rank.EQ.0) THEN
-     PRINT*,"--------------------BARRIERED----------------------------------"
-  END IF
-
-  
 9999 &
   CALL MPI_Finalize(IErr)
   IF( IErr.NE.0 ) THEN
@@ -803,7 +729,7 @@ SUBROUTINE SimplexInitialisation(RSimplexVolume,RSimplexFoM,RIndependentVariable
         PRINT*,"---------------------------------------------------------"
      END IF
 
-     RSimplexDummy = SimplexFunction(RSimplexVolume(ind,:),1,IErr)
+     RSimplexDummy = SimplexFunction(RSimplexVolume(ind,:),1,0,IErr)
      
      RSimplexFoM(ind) =  RSimplexDummy
      
@@ -1009,7 +935,7 @@ SUBROUTINE PerformDummySimulationToSetupSimplexValues(IErr)
        Rhkl,&
        STAT=IErr)
   IF( IErr.NE.0 ) THEN
-     PRINT*,"PerformDummySimulationToSetupSimplexValues(", my_rank, ") error ", IErr, &
+    PRINT*,"PerformDummySimulationToSetupSimplexValues(", my_rank, ") error ", IErr, &
           " in Deallocation"
      RETURN
   ENDIF
