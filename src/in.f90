@@ -56,7 +56,7 @@ SUBROUTINE ReadInpFile( IErr )
   
   IMPLICIT NONE
 
-<<<<<<< HEAD
+
   INTEGER(IKIND) :: &
        IErr, ILine,ind,IPos,IPos1,IPos2
   REAL(RKIND) :: &
@@ -353,7 +353,7 @@ SUBROUTINE ReadInpFile( IErr )
      ILine= ILine+1; READ(IChInp,ERR=20,END=30,FMT='(A)')
      
      ILine= ILine+1
-<<<<<<< HEAD
+
      READ(IChInp,FMT='(A)',ERR=20,END=30) SRefineMode
 
      IRefineModeSelectionArray = 0
@@ -397,18 +397,18 @@ SUBROUTINE ReadInpFile( IErr )
            PRINT*,"IRefineModeSelectionArray = ",IRefineModeSelectionArray
         END IF
      END IF    
-=======
-     READ(IChInp,10,ERR=20,END=30) IImageOutputFLAG
-     CALL Message ("ReadInpFile",IInfo,IErr,MessageVariable ="IImageOutputFLAG",IVariable = IImageOutputFLAG)
-     
-     ILine= ILine+1
-     READ(IChInp,10,ERR=20,END=30) IDevFLAG
-     CALL Message ("ReadInpFile",IInfo,IErr,MessageVariable ="IDevFLAG",IVariable = IDevFLAG)
-     
-     ILine= ILine+1
-     READ(IChInp,10,ERR=20,END=30) IRefineModeFLAG
-     CALL Message ("ReadInpFile",IInfo,IErr,MessageVariable ="IRefineModeFLAG",IVariable = IRefineModeFLAG)
->>>>>>> message-subroutine
+
+!!$     READ(IChInp,10,ERR=20,END=30) IImageOutputFLAG
+!!$     CALL Message ("ReadInpFile",IInfo,IErr,MessageVariable ="IImageOutputFLAG",IVariable = IImageOutputFLAG)
+!!$     
+!!$     ILine= ILine+1
+!!$     READ(IChInp,10,ERR=20,END=30) IDevFLAG
+!!$     CALL Message ("ReadInpFile",IInfo,IErr,MessageVariable ="IDevFLAG",IVariable = IDevFLAG)
+!!$     
+!!$     ILine= ILine+1
+!!$     READ(IChInp,10,ERR=20,END=30) IRefineModeFLAG
+!!$     CALL Message ("ReadInpFile",IInfo,IErr,MessageVariable ="IRefineModeFLAG",IVariable = IRefineModeFLAG)
+
      
      ILine= ILine+1; READ(IChInp,ERR=20,END=30,FMT='(A)')
      ILine= ILine+1; READ(IChInp,ERR=20,END=30,FMT='(A)')
@@ -497,11 +497,9 @@ SUBROUTINE ReadInpFile( IErr )
 
      ILine= ILine+1
      READ(IChInp,15,ERR=20,END=30) RDeltaUgChange
-<<<<<<< HEAD
-     IF((IWriteFLAG.GE.1.AND.my_rank.EQ.0).OR.IWriteFLAG.GE.10) THEN
-        PRINT*,"RDeltaUgChange = ", RDeltaUgChange
-     END IF
+     CALL Message ("ReadInpFile",IInfo,IErr,MessageVariable ="RDeltaUgChange",RVariable = RDeltaUgChange)
 
+     
      !-----------------------------------------------------------------------
      ! Iterative Structural input
 
@@ -525,11 +523,7 @@ SUBROUTINE ReadInpFile( IErr )
           IRefineModeSelectionArray(5)*SIZE(IAtomicSitesToRefine)*6+&
           IRefineModeSelectionArray(6)*3+&
           IRefineModeSelectionArray(7)*3
-=======
-     CALL Message ("ReadInpFile",IInfo,IErr,MessageVariable ="RDeltaUgChange",RVariable = RDeltaUgChange)
-
     
->>>>>>> message-subroutine
   END IF
 
 10 FORMAT(27X,I15.1)
