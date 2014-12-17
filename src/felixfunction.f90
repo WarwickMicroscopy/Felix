@@ -312,7 +312,7 @@ SUBROUTINE FelixFunction(RIndependentVariableValues,IIterationCount,IErr)
   END DO
   
   IF(IImageFLAG.LE.2) THEN
-     CALL MPI_GATHERV(RIndividualReflections,ICount,&
+     CALL MPI_GATHERV(RIndividualReflections,SIZE(RIndividualReflections),&
           MPI_DOUBLE_PRECISION,RIndividualReflectionsRoot,&
           ICount,IDisplacements,MPI_DOUBLE_PRECISION,0,&
           MPI_COMM_WORLD,IErr)
@@ -322,7 +322,7 @@ SUBROUTINE FelixFunction(RIndependentVariableValues,IIterationCount,IErr)
         RETURN
      ENDIF     
   ELSE     
-     CALL MPI_GATHERV(CAmplitudeandPhase,ICount,&
+     CALL MPI_GATHERV(CAmplitudeandPhase,SIZE(CAmplitudeandPhase),&
           MPI_DOUBLE_COMPLEX,CAmplitudeandPhaseRoot,&
           ICount,IDisplacements,MPI_DOUBLE_COMPLEX,0, &
           MPI_COMM_WORLD,IErr)
@@ -611,15 +611,15 @@ SUBROUTINE FelixFunction(RIndependentVariableValues,IIterationCount,IErr)
           " in Deallocation IAnisoDWFT"
      RETURN
   ENDIF
-  
-  DEALLOCATE( &
-       Rhkl,&
-       STAT=IErr)
-  IF( IErr.NE.0 ) THEN
-     PRINT*,"Felixfunction(", my_rank, ") error ", IErr, &
-          " in Deallocation Rhkl"
-     RETURN
-  ENDIF
+!!$  
+!!$  DEALLOCATE( &
+!!$       Rhkl,&
+!!$       STAT=IErr)
+!!$  IF( IErr.NE.0 ) THEN
+!!$     PRINT*,"Felixfunction(", my_rank, ") error ", IErr, &
+!!$          " in Deallocation Rhkl"
+!!$     RETURN
+!!$  ENDIF
 
   DEALLOCATE( &
        RgVecMag,&
@@ -838,7 +838,7 @@ END SUBROUTINE CalculateFigureofMeritandDetermineThickness
 
 !%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-REAL(RKIND) FUNCTION SimplexFunction(RIndependentVariableValues,IIterationCount,IErr)
+REAL(RKIND) FUNCTION SimplexFunction(RIndependentVariableValues,IIterationCount,IExitFLAG,IErr)
 
   USE MyNumbers
   
@@ -854,18 +854,22 @@ REAL(RKIND) FUNCTION SimplexFunction(RIndependentVariableValues,IIterationCount,
   IMPLICIT NONE
   
   INTEGER(IKIND) :: &
-       IErr,IPixels,CountPixels,ind,INewVariableID
+       IErr,IPixels,CountPixels,ind,INewVariableID,IExitFLAG,gnd,knd,IThickness,hnd,jnd
   REAL(RKIND) :: &
        RNewValue
   REAL(RKIND),DIMENSION(IIndependentVariables),INTENT(IN) :: &
        RIndependentVariableValues
+  REAL(RKIND),DIMENSION(:,:),ALLOCATABLE :: &
+       RImage
   INTEGER(IKIND),INTENT(IN) :: &
        IIterationCount
+  CHARACTER*40 path
   
   IF((IWriteFLAG.GE.0.AND.my_rank.EQ.0).OR.IWriteFLAG.GE.10) THEN
      PRINT*,"SimplexFunction(",my_rank,")"
   END IF
-
+  
+  IFelixCount = IFelixCount + 1
   IPixels = 0
   IPixels = CountPixels(IErr) ! Count The Number of Pixels
   IThicknessCount= (RFinalThickness- RInitialThickness)/RDeltaThickness + 1
@@ -919,13 +923,67 @@ REAL(RKIND) FUNCTION SimplexFunction(RIndependentVariableValues,IIterationCount,
         RETURN
      ENDIF
      
-     DEALLOCATE( &
-          IPixelLocations,STAT=IErr)
-     IF( IErr.NE.0 ) THEN
-        PRINT*,"Felixfunction(", my_rank, ") error ", IErr, &
-             " Deallocating IPixelLocations"
-        RETURN
-     ENDIF
+!!$     OUTPUT AN IMAGE -------------------------------------
+
+     IF(IExitFLAG.EQ.1.OR.MOD(IIterationCount,IPrint).EQ.0) THEN
+        DO knd = 1,IThicknessCount
+           IThickness = RInitialThickness + (knd-1)*RDeltaThickness 
+           ALLOCATE( &
+                RImage(2*IPixelCount,2*IPixelCount), &
+                STAT=IErr)
+           IF( IErr.NE.0 ) THEN
+              PRINT*,"WriteOutput(", my_rank, ") error ", IErr, &
+                   " in ALLOCATE() of DYNAMIC variables RImage"
+              RETURN
+           ENDIF
+           
+           
+           WRITE(path,"(A2,A1,I1.1,A2,I1.1,A2,I1.1,A2,I4.4,A2,I5.5,A10,I5.5)") &
+                "F-",&
+                "S", IScatterFactorMethodFLAG, &
+                "_B", ICentralBeamFLAG, &
+                "_M", IMaskFLAG, &
+                "_P", IPixelCount, &
+                "_T", IThickness, &
+                "_Iteration",IFelixCount
+           
+           call system('mkdir ' // path)
+           
+           DO ind = 1,IReflectOut
+              CALL OpenReflectionImage(IChOutWIImage,path,IErr,ind,2*IPixelCount)
+              IF( IErr.NE.0 ) THEN
+                 PRINT*,"WriteOutput(", my_rank, ") error in OpenReflectionImage()"
+                 RETURN
+              ENDIF
+              
+              RImage = ZERO
+              DO jnd = 1,IPixelTotal
+                 gnd = IPixelLocations(jnd,1)
+                 hnd = IPixelLocations(jnd,2)
+                 RImage(gnd,hnd) = RIndividualReflections(ind,knd,jnd)
+              END DO
+              
+              CALL WriteReflectionImage(IChOutWIImage,&
+                   RImage,IErr,2*IPixelCount,2*IPixelCount)       
+              IF( IErr.NE.0 ) THEN
+                 PRINT*,"WriteOutput(", my_rank, ") error in WriteReflectionImage()"
+                 RETURN
+              ENDIF
+              CLOSE(IChOutWIImage)
+           END DO
+           
+           DEALLOCATE( &
+                RImage, &
+                STAT=IErr)
+           IF( IErr.NE.0 ) THEN
+              PRINT*,"WriteOutput(", my_rank, ") error ", IErr, &
+                   " in DEALLOCATE() of DYNAMIC variables RImage"
+              RETURN
+           ENDIF
+        END DO
+     END IF
+
+!!$     FINISH OUT PUTTING IMAGE --------------------------------
 
      DEALLOCATE( &
           RIndividualReflections,STAT=IErr)
@@ -934,9 +992,28 @@ REAL(RKIND) FUNCTION SimplexFunction(RIndependentVariableValues,IIterationCount,
              " Deallocating IPixelLocations"
         RETURN
      ENDIF
+     DEALLOCATE( &
+          IPixelLocations,STAT=IErr)
+     IF( IErr.NE.0 ) THEN
+        PRINT*,"Felixfunction(", my_rank, ") error ", IErr, &
+             " Deallocating IPixelLocations"
+        RETURN
+     ENDIF
+
      
      SimplexFunction = 1.0_RKIND-RCrossCorrelation
   END IF
+
+  
+  DEALLOCATE( &
+       Rhkl,&
+       STAT=IErr)
+  IF( IErr.NE.0 ) THEN
+     PRINT*,"Felixfunction(", my_rank, ") error ", IErr, &
+          " in Deallocation Rhkl"
+     RETURN
+  ENDIF
+
   
 
 END FUNCTION SimplexFunction
