@@ -439,7 +439,7 @@ PROGRAM felixsim
         GOTO 9999
      ENDIF     
   ELSE     
-     CALL MPI_GATHERV(CAmplitudeandPhase,ICount,&
+     CALL MPI_GATHERV(CAmplitudeandPhase,SIZE(CAmplitudeandPhase),&
           MPI_DOUBLE_COMPLEX,CAmplitudeandPhaseRoot,&
           ICount,IDisplacements,MPI_DOUBLE_COMPLEX,0, &
           MPI_COMM_WORLD,IErr)

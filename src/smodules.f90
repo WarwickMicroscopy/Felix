@@ -135,7 +135,7 @@ MODULE IPara
        IZolzFLAG,IAbsorbFLAG, IAnisoDebyeWallerFactorFlag, &
        IImageFLAG,IOutputFLAG,IBeamConvergenceFLAG,  &
        IPseudoCubicFLAG,IXDirectionFLAG,IBinorTextFLAG, IDevFLAG, &
-       IRefineModeFLAG,ISoftwareMode,IHKLSelectFLAG
+       IRefineModeFLAG,ISoftwareMode,IHKLSelectFLAG,IPrint
 
   !Minimum Reflections etc
   INTEGER(IKIND) :: &
@@ -266,7 +266,7 @@ MODULE IPara
    ! Simplex Global IterationCount
 
    INTEGER(IKIND) :: &
-        IVariableID
+        IVariableID,IFelixCount
 END MODULE IPara
 
 !--------------------------------------------------------------------
@@ -528,3 +528,13 @@ MODULE BlochPara
   COMPLEX(CKIND),DIMENSION(:,:), ALLOCATABLE :: &
        CEigenSaveTemp
 END MODULE BlochPara
+
+MODULE Refinement
+
+USE MyNumbers
+
+REAL(RKIND),PARAMETER :: &
+  RExitCondition = -10000.0,&
+  RStayCondition = 10000.0
+
+END MODULE 

@@ -287,11 +287,12 @@ SUBROUTINE OpenReflectionImage(IChOutWrite, surname, IErr,IReflectWriting,IImage
 
   USE IChannels
 
-  CHARACTER*27 surname
+  CHARACTER(*) :: &
+       surname
   CHARACTER*20 prefix,postfix,h,k,l
   INTEGER(KIND=IKIND) IChOutWrite, IErr,IReflectWriting,IImageSizeX
 
-  CHARACTER*50 filename
+  CHARACTER*250 filename
   CHARACTER*40 fileext
   INTEGER index
 
@@ -345,7 +346,8 @@ SUBROUTINE OpenReflectionImage(IChOutWrite, surname, IErr,IReflectWriting,IImage
      IF (IWriteFLAG.GE.10) THEN
         PRINT*, "OpenImage: opening image for WAVE FUNCTION PHASE PART (WP*.txt)"
      END IF
-  CASE(IChOutWIImage)        
+  CASE(IChOutWIImage) 
+     PRINT*,h,k,l,fileext
      WRITE(filename,*) TRIM(ADJUSTL(surname)),"/F-WI_",&
           TRIM(ADJUSTL(h)),&
           TRIM(ADJUSTL(k)),&
@@ -366,7 +368,8 @@ SUBROUTINE OpenReflectionImage(IChOutWrite, surname, IErr,IReflectWriting,IImage
      END IF
   END SELECT
   
-  
+  PRINT*,filename
+
   SELECT CASE (IBinorTextFLAG)
      CASE(0)
         OPEN(UNIT=IChOutWrite, ERR=10, STATUS= 'UNKNOWN', FILE=TRIM(ADJUSTL(filename)),FORM='UNFORMATTED',&
