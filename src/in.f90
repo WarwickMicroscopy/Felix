@@ -173,7 +173,7 @@ SUBROUTINE ReadInpFile( IErr )
   ILine= ILine+1
   READ(IChInp,10,ERR=20,END=30) IBeamConvergenceFLAG
   CALL Message ("ReadInpFile",IInfo,IErr,MessageVariable ="IBeamConvergenceFLAG",IVariable=IBeamConvergenceFLAG)
-  CALL Message ("ReadInpFile",IDebug+IInfo,IErr,MessageVariable ="IBeamConvergenceFLAG",MessageString="test for debug mode")
+
   ILine= ILine+1
   READ(IChInp,10,ERR=20,END=30) IPseudoCubicFLAG
   CALL Message ("ReadInpFile",IInfo,IErr,MessageVariable ="IPseudoCubicFLAG",IVariable=IPseudoCubicFLAG)
@@ -350,15 +350,15 @@ SUBROUTINE ReadInpFile( IErr )
      
      ILine= ILine+1
      READ(IChInp,10,ERR=20,END=30) IImageOutputFLAG
-     CALL Message ("ReadInpFile",1,IErr,MessageVariable ="IImageOutputFLAG",IVariable = IImageOutputFLAG)
+     CALL Message ("ReadInpFile",IInfo,IErr,MessageVariable ="IImageOutputFLAG",IVariable = IImageOutputFLAG)
      
      ILine= ILine+1
      READ(IChInp,10,ERR=20,END=30) IDevFLAG
-     CALL Message ("ReadInpFile",1,IErr,MessageVariable ="IDevFLAG",IVariable = IDevFLAG)
+     CALL Message ("ReadInpFile",IInfo,IErr,MessageVariable ="IDevFLAG",IVariable = IDevFLAG)
      
      ILine= ILine+1
      READ(IChInp,10,ERR=20,END=30) IRefineModeFLAG
-     CALL Message ("ReadInpFile",1,IErr,MessageVariable ="IRefineModeFLAG",IVariable = IRefineModeFLAG)
+     CALL Message ("ReadInpFile",IInfo,IErr,MessageVariable ="IRefineModeFLAG",IVariable = IRefineModeFLAG)
      
      ILine= ILine+1; READ(IChInp,ERR=20,END=30,FMT='(A)')
      ILine= ILine+1; READ(IChInp,ERR=20,END=30,FMT='(A)')
@@ -366,15 +366,15 @@ SUBROUTINE ReadInpFile( IErr )
      
      ILine= ILine+1
      READ(IChInp,15,ERR=20,END=30) RInitialDebyeWallerFactor
-     CALL Message ("ReadInpFile",1,IErr,MessageVariable ="RInitialDebyeWallerFactor",RVariable =  RInitialDebyeWallerFactor)
+     CALL Message ("ReadInpFile",IInfo,IErr,MessageVariable ="RInitialDebyeWallerFactor",RVariable =  RInitialDebyeWallerFactor)
 
      ILine= ILine+1
      READ(IChInp,15,ERR=20,END=30) RFinalDebyeWallerFactor
-     CALL Message ("ReadInpFile",1,IErr,MessageVariable ="RFinalDebyeWallerFactor",RVariable =  RFinalDebyeWallerFactor)
+     CALL Message ("ReadInpFile",IInfo,IErr,MessageVariable ="RFinalDebyeWallerFactor",RVariable =  RFinalDebyeWallerFactor)
      
      ILine= ILine+1
      READ(IChInp,15,ERR=20,END=30) RDeltaDebyeWallerFactor
-     CALL Message ("ReadInpFile",1,IErr,MessageVariable ="RDeltaDebyeWallerFactor",RVariable =  RDeltaDebyeWallerFactor)
+     CALL Message ("ReadInpFile",IInfo,IErr,MessageVariable ="RDeltaDebyeWallerFactor",RVariable =  RDeltaDebyeWallerFactor)
 
      ILine= ILine+1
      READ(IChInp,FMT='(A)',ERR=20,END=30) SElements
@@ -434,19 +434,19 @@ SUBROUTINE ReadInpFile( IErr )
      
      ILine= ILine+1
      READ(IChInp,10,ERR=20,END=30) INoofUgs
-     CALL Message ("ReadInpFile",1,IErr,MessageVariable ="INoofUgs",IVariable = INoofUgs)
+     CALL Message ("ReadInpFile",IInfo,IErr,MessageVariable ="INoofUgs",IVariable = INoofUgs)
      
      ILine= ILine+1
      READ(IChInp,15,ERR=20,END=30) RLowerBoundUgChange
-     CALL Message ("ReadInpFile",1,IErr,MessageVariable ="RLowerBoundUgChange",RVariable = RLowerBoundUgChange)
+     CALL Message ("ReadInpFile",IInfo,IErr,MessageVariable ="RLowerBoundUgChange",RVariable = RLowerBoundUgChange)
      
      ILine= ILine+1
      READ(IChInp,15,ERR=20,END=30) RUpperBoundUgChange
-     CALL Message ("ReadInpFile",1,IErr,MessageVariable ="RUpperBoundUgChange",RVariable = RUpperBoundUgChange)
+     CALL Message ("ReadInpFile",IInfo,IErr,MessageVariable ="RUpperBoundUgChange",RVariable = RUpperBoundUgChange)
 
      ILine= ILine+1
      READ(IChInp,15,ERR=20,END=30) RDeltaUgChange
-     CALL Message ("ReadInpFile",1,IErr,MessageVariable ="RDeltaUgChange",RVariable = RDeltaUgChange)
+     CALL Message ("ReadInpFile",IInfo,IErr,MessageVariable ="RDeltaUgChange",RVariable = RDeltaUgChange)
 
     
   END IF
@@ -646,6 +646,7 @@ END SUBROUTINE ReadInpFile
 SUBROUTINE ReadScaFile( IErr )
 
   USE MyNumbers
+  USE WriteToScreen
   
   USE CConst; USE IConst
   USE IPara; USE RPara
@@ -661,11 +662,9 @@ SUBROUTINE ReadScaFile( IErr )
        rdummy
 
   INTEGER IErr, ILine, ILength, ind
-  IF((IWriteFLAG.GE.2.AND.my_rank.EQ.0).OR.IWriteFLAG.GE.10) THEN
 
-     PRINT*,"ReadScaFile()"
-     
-  END IF
+     CALL Message ("ReadScaFile",IMust,IErr)
+
   ILine= 0
   
 !!$  OPEN(UNIT= IChInp, ERR= 120, FILE= "FelixDoyle.sca",&

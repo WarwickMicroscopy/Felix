@@ -57,7 +57,7 @@ SUBROUTINE ReflectionDetermination( IErr )
   !norm,dummyVec(THREEDIM) -not used?
   INTEGER(IKIND) IErr, ind,jnd,icheck,ihklrun,IFind,IFound,knd
   
-  CALL Message("Reflectiondetermination",IMust,IErr)
+  CALL Message("ReflectionDetermination",IMust,IErr)
 !!$  IF((IWriteFLAG.GE.0.AND.my_rank.EQ.0).OR.IWriteFLAG.GE.10) THEN
 !!$     PRINT*,"DiffractionPatternDefinitions()"
 !!$  END IF

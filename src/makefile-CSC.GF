@@ -63,8 +63,8 @@ crystallographyinitialisation.o crystallography.o bloch.o Ug.o image.o \
 ciftbx.o hash_funcs.o dqng.o xerror.o errorchecks.o d1mach.o
 
 REFINEOBJECTFILES = gmodules.o smodules.o message.o felixrefine.o util.o in.o out.o readciffile.o \
-eigen.o invert.o microscopy.o diffraction.o diffractionpatterninitialisation.o \
-crystallographyinitialisation.o crystallography.o bloch.o Ug.o image.o ciftbx.o \
+eigen.o invert.o microscopy.o diffractionpatterninitialisation.o \
+diffractionpatterndefinitions.o crystallographyinitialisation.o crystallography.o bloch.o Ug.o image.o ciftbx.o \
 hash_funcs.o refineutils.o dqng.o xerror.o d1mach.o errorchecks.o
 
 %.o: %.f90

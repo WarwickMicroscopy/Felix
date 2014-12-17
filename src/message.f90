@@ -59,6 +59,7 @@ SUBROUTINE Message(ProgramName,IPriorityFLAG,IErr,MessageVariable,RVariable,IVar
   
   CHARACTER*30 VariableString, my_rank_string
 
+!!$  Converts my_rank to string and then either the RVariable, IVariable, CVariable to a string
   IF (my_rank == 0) THEN
      WRITE(my_rank_string,'(I1)') my_rank 
      IF (PRESENT(RVariable)) THEN
@@ -72,17 +73,19 @@ SUBROUTINE Message(ProgramName,IPriorityFLAG,IErr,MessageVariable,RVariable,IVar
      END IF
   END IF
 
+!!$  If IWriteFLAG is set to over 100 - IDebugFLAG is activated, IWriteFLAG set back to normal setting
   IF (IWriteFLAG.GE.100) THEN
      IDebugFLAG = IWriteFLAG
      IWriteFLAG = IDebugFLAG - 100
   END IF
+
 !!$  If IPriorityFLAG is over 100 (Debug messaging) below won't execute
- 
+!!$  Prints out specified variation of message (dependent on presence of variables), to the screen
   IF (IPriorityFLAG .LT. 100) THEN 
  
-     ! Checks if MessageVariable has been read into the function
+     ! Checks if MessageVariable & MessageString has been read into the function
      IF (PRESENT(MessageVariable).AND.PRESENT(MessageString)) THEN
-        
+        !Prints out message
         IF((IPriorityFLAG.LE.IWriteFLAG.AND.my_rank.EQ.0.AND.ISoftwareMode.LT.2) &
              .OR.IWriteFLAG.GE.10.AND.ISoftwareMode .LT. 2) THEN
            PRINT*,ProgramName,"( ",TRIM(my_rank_string)," ) ", &
@@ -97,12 +100,12 @@ SUBROUTINE Message(ProgramName,IPriorityFLAG,IErr,MessageVariable,RVariable,IVar
         END IF
 
      ELSE IF (PRESENT(MessageString)) THEN
+
         IF((IPriorityFLAG.LE.IWriteFLAG.AND.my_rank.EQ.0.AND.ISoftwareMode.LT.2) &
              .OR.IWriteFLAG.GE.10.AND.ISoftwareMode .LT. 2) THEN
            PRINT*,ProgramName,"( ",TRIM(my_rank_string)," ) ", TRIM(MessageString)
         END IF
-        
-        
+                
      ELSE
         IF((IPriorityFLAG.LE.IWriteFLAG.AND.my_rank.EQ.0.AND.ISoftwareMode.LT.2) &
              .OR.IWriteFLAG.GE.10.AND.ISoftwareMode .LT. 2) THEN
@@ -110,83 +113,14 @@ SUBROUTINE Message(ProgramName,IPriorityFLAG,IErr,MessageVariable,RVariable,IVar
         END IF
      END IF
 
-!END IF
-        
-!!$        !If it has, we then check to see which type of variable needs to be printed
-!!$        !out to the screen
-!!$        IF (PRESENT(RVariable).AND.PRESENT(MessageString)) THEN
-!!$           
-!!$           !Check for mismatch
-!!$           IF (SCAN(MessageVariable,'R').EQ.0.AND.IWriteFLAG.GE.100) THEN
-!!$              !654 is error code associated with the misinterpreted variable
-!!$              CALL ErrorChecks("Message","Message",654)
-!!$           ENDIF
-!!$
-!!$           IF((IPriorityFLAG.LE.IWriteFLAG.AND.my_rank.EQ.0.AND.ISoftwareMode.LT.2) &
-!!$                .OR.IWriteFLAG.GE.10.AND.ISoftwareMode .LT. 2) THEN
-!!$              PRINT*,ProgramName,"(",my_rank,") ",MessageVariable," =",RVariable
-!!$           END IF
-!!$           
-!!$        ELSE IF (PRESENT(IVariable).AND.PRESENT(MessageString)) THEN
-!!$           
-!!$           !Check for mismatch
-!!$           IF (SCAN(MessageVariable,'I').EQ.0.AND.IWriteFLAG.GE.100) THEN
-!!$              !654 is error code associated with the misinterpreted variable
-!!$              CALL ErrorChecks("Message","Message",654)
-!!$           ENDIF
-!!$           
-!!$           IF((IPriorityFLAG.LE.IWriteFLAG.AND.my_rank.EQ.0.AND.ISoftwareMode.LT.2) &
-!!$                .OR.IWriteFLAG.GE.10.AND.ISoftwareMode .LT. 2) THEN
-!!$              PRINT*,ProgramName,"(",my_rank,") ",MessageVariable," =",IVariable
-!!$           END IF
-!!$           
-!!$        ELSE IF (PRESENT(CVariable)) THEN
-!!$           IF((IPriorityFLAG.LE.IWriteFLAG.AND.my_rank.EQ.0.AND.ISoftwareMode.LT.2) &
-!!$                .OR.IWriteFLAG.GE.10.AND.ISoftwareMode .LT. 2) THEN
-!!$              PRINT*,ProgramName,"(",my_rank,") ",MessageVariable," =",CVariable
-!!$           END IF
-!!$           
-!!$           !For character variable
-!!$        ELSE IF (PRESENT(SVariable).AND.PRESENT(MessageVariable)) THEN
-!!$
-!!$           IF((IPriorityFLAG.LE.IWriteFLAG.AND.my_rank.EQ.0.AND.ISoftwareMode.LT.2) &
-!!$                .OR.IWriteFLAG.GE.10.AND.ISoftwareMode .LT. 2) THEN
-!!$              PRINT*,ProgramName,"(",my_rank,") ",MessageVariable, SVariable,MessageString
-!!$           END IF
-!!$           
-!!$        ELSE 
-!!$           IF((IPriorityFLAG.LE.IWriteFLAG.AND.my_rank.EQ.0.AND.ISoftwareMode.LT.2) &
-!!$                .OR.IWriteFLAG.GE.10.AND.ISoftwareMode .LT. 2) THEN
-!!$              PRINT*,ProgramName,"(",my_rank,") ",MessageVariable,SVariable,RVariable,IVariable
-!!$           END IF
-!!$        
-!!$        END IF
-           
-!!$           !If there is only a message to print out, below is executed
-!!$     ELSE IF (PRESENT(MessageString)) THEN
-!!$        
-!!$        IF((IPriorityFLAG.LE.IWriteFLAG.AND.my_rank.EQ.0.AND.ISoftwareMode.LT.2) &
-!!$             .OR.IWriteFLAG.GE.10.AND.ISoftwareMode .LT. 2) THEN
-!!$           PRINT*,ProgramName,"(",my_rank,") ",MessageString
-!!$        END IF
-!!$     
-!!$        !if there is no message or variable - the function is just printed out
-!!$        !to identify it is entering that program
-!!$     ELSE
-!!$        
-!!$        IF((IPriorityFLAG.LE.IWriteFLAG.AND.my_rank.EQ.0.AND.ISoftwareMode.LT.2) &
-!!$             .OR.IWriteFLAG.GE.10.AND.ISoftwareMode .LT. 2) THEN
-!!$           PRINT*,ProgramName,"(",my_rank,") "
-!!$        END IF
-!!$     END IF
-
-!!$     !below only executes if message is debug message and set as debug mode
-  
+!!$-----------------------------------------------------------------------------
+!!$  below only executes if message is a debug message and set in debug mode
+!!$  Debug messages are printed out here
   ELSE IF(IDebugFLAG .GE. 100) THEN
 
- ! Checks if MessageVariable has been read into the function
+     ! Checks if MessageVariable & MessageString has been read into the function
      IF (PRESENT(MessageVariable).AND.PRESENT(MessageString)) THEN
-        
+        !Prints out message
         IF((IPriorityFLAG.LE.IDebugFLAG.AND.my_rank.EQ.0.AND.ISoftwareMode.LT.2) &
              .OR.IDebugFLAG.GE.110.AND.ISoftwareMode .LT. 2) THEN
            PRINT*,"DBG_MESSAGE: ",ProgramName,"( ",TRIM(my_rank_string)," ) ", &
@@ -201,6 +135,7 @@ SUBROUTINE Message(ProgramName,IPriorityFLAG,IErr,MessageVariable,RVariable,IVar
         END IF
 
      ELSE IF (PRESENT(MessageString)) THEN
+
         IF((IPriorityFLAG.LE.IDebugFLAG.AND.my_rank.EQ.0.AND.ISoftwareMode.LT.2) &
              .OR.IDebugFLAG.GE.110.AND.ISoftwareMode .LT. 2) THEN
            PRINT*,"DBG_MESSAGE: ",ProgramName,"( ",TRIM(my_rank_string)," ) ", TRIM(MessageString)
@@ -208,6 +143,7 @@ SUBROUTINE Message(ProgramName,IPriorityFLAG,IErr,MessageVariable,RVariable,IVar
         
         
      ELSE
+
         IF((IPriorityFLAG.LE.IDebugFLAG.AND.my_rank.EQ.0.AND.ISoftwareMode.LT.2) &
              .OR.IDebugFLAG.GE.110.AND.ISoftwareMode .LT. 2) THEN
            PRINT*,"DBG_MESSAGE: ",ProgramName,"( ",TRIM(my_rank_string)," ) "
@@ -215,68 +151,6 @@ SUBROUTINE Message(ProgramName,IPriorityFLAG,IErr,MessageVariable,RVariable,IVar
      END IF
   END IF
 
-
-
-
-
-     
-!!$     ! Checks if MessageVariable has been read into the function
-!!$     IF (PRESENT(MessageVariable)) THEN
-!!$        
-!!$        !If it has, we then check to see which type of variable needs to be printed
-!!$        !out to the screen
-!!$        IF (PRESENT(RVariable)) THEN
-!!$           
-!!$           !Check for mismatch
-!!$           IF (SCAN(MessageVariable,'R').EQ.0) THEN
-!!$              !654 is error code associated with the misinterpreted variable
-!!$              CALL ErrorChecks("Message","Message",654)
-!!$           ENDIF
-!!$
-!!$           IF((IPriorityFLAG.LE.IWriteFLAG.AND.my_rank.EQ.0.AND.ISoftwareMode.LT.2) & 
-!!$                .OR.IWriteFLAG.GE.110.AND.ISoftwareMode .LT. 2) THEN
-!!$              PRINT*,ProgramName,"(",my_rank,") ",MessageVariable," =",RVariable
-!!$           END IF
-!!$           
-!!$        ELSE IF (PRESENT(IVariable)) THEN
-!!$
-!!$           !Check for mismatch
-!!$           IF (SCAN(MessageVariable,'I').EQ.0) THEN
-!!$              !654 is error code associated with the misinterpreted variable
-!!$              CALL ErrorChecks("Message","Message",654)
-!!$           ENDIF
-!!$
-!!$           IF((IPriorityFLAG.LE.IWriteFLAG.AND.my_rank.EQ.0.AND.ISoftwareMode.LT.2) & 
-!!$                .OR.IWriteFLAG.GE.110.AND.ISoftwareMode .LT. 2) THEN
-!!$              PRINT*,ProgramName,"(",my_rank,") ",MessageVariable," =",IVariable
-!!$           END IF
-!!$           
-!!$        ELSE IF (PRESENT(CVariable)) THEN
-!!$           IF((IPriorityFLAG.LE.IWriteFLAG.AND.my_rank.EQ.0.AND.ISoftwareMode.LT.2) &
-!!$                .OR.IWriteFLAG.GE.110.AND.ISoftwareMode .LT. 2) THEN
-!!$              PRINT*,ProgramName,"(",my_rank,") ",MessageVariable," =",CVariable
-!!$           END IF
-!!$        END IF
-!!$     
-!!$     
-!!$        !If There is a message with the FunctionName then the Message is Printed with its message
-!!$     ELSE IF (PRESENT(MessageString)) THEN
-!!$        
-!!$        IF((IPriorityFLAG.LE.IWriteFLAG.AND.my_rank.EQ.0.AND.ISoftwareMode.LT.2) &
-!!$             .OR.IWriteFLAG.GE.10.AND.ISoftwareMode .LT. 2) THEN
-!!$           PRINT*,ProgramName,"(",my_rank,")",MessageString
-!!$        END IF
-!!$    
-!!$        !if there is no message or variable - the function is just printed out
-!!$        !to identify it is entering that program
-!!$     ELSE
-!!$        
-!!$        IF((IPriorityFLAG.LE.IWriteFLAG.AND.my_rank.EQ.0.AND.ISoftwareMode.LT.2) & 
-!!$             .OR.IWriteFLAG.GE.10.AND.ISoftwareMode .LT. 2) THEN
-!!$           PRINT*,ProgramName,"(",my_rank,")"
-!!$        END IF
-!!$     END IF
-!!$  END IF
 
 END SUBROUTINE Message
    
