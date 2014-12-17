@@ -53,20 +53,20 @@ LIBFLAGS= \
 
 #LD_LIBRARY_PATH=/hpcwarwick/mathlib/gnu/lib/:$LD_LIBRARY_PATH
 
-SIMOBJECTFILES = gmodules.o smodules.o felixsim.o util.o in.o out.o readinput.o \
+SIMOBJECTFILES = gmodules.o smodules.o felixsim.o util.o message.o in.o out.o readinput.o \
 readciffile.o experimentalsetup.o imagesetup.o montagesetup.o \
 structurefactorsetup.o ciftbx.o hash_funcs.o eigen.o invert.o microscopy.o \
-diffraction.o diffractionpatterninitialisation.o crystallographyinitialisation.o \
-crystallography.o bloch.o Ug.o image.o writeoutput.o dqng.o xerror.o d1mach.o
+diffractionpatterndefinitions.o diffractionpatterninitialisation.o crystallographyinitialisation.o \
+crystallography.o bloch.o Ug.o image.o errorchecks.o writeoutput.o dqng.o xerror.o d1mach.o
 
-DRAWOBJECTFILES = gmodules.o smodules.o felixdraw.o util.o in.o out.o readciffile.o\
-eigen.o invert.o microscopy.o diffraction.o diffractionpatterninitialisation.o \
-crystallographyinitialisation.o crystallography.o bloch.o Ug.o image.o \
+DRAWOBJECTFILES = gmodules.o smodules.o felixdraw.o util.o message.o in.o out.o readciffile.o\
+eigen.o invert.o microscopy.o diffractionpatterndefinitions.o diffractionpatterninitialisation.o \
+crystallographyinitialisation.o crystallography.o bloch.o Ug.o image.o errorchecks.o \
 ciftbx.o hash_funcs.o dqng.o xerror.o d1mach.o
 
-REFINEOBJECTFILES = gmodules.o smodules.o felixrefine.o util.o in.o out.o readciffile.o \
-eigen.o invert.o microscopy.o diffraction.o diffractionpatterninitialisation.o \
-crystallographyinitialisation.o crystallography.o bloch.o Ug.o image.o ciftbx.o \
+REFINEOBJECTFILES = gmodules.o smodules.o felixrefine.o util.o message.o in.o out.o readciffile.o \
+eigen.o invert.o microscopy.o diffractionpatterndefinitions.o diffractionpatterninitialisation.o \
+crystallographyinitialisation.o crystallography.o bloch.o Ug.o image.o errorchecks.o ciftbx.o \
 hash_funcs.o refineutils.o dqng.o xerror.o d1mach.o
 
 %.o: %.f90

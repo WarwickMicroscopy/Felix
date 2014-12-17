@@ -36,9 +36,10 @@
 ! $Id: FelixSim.f90,v 1.89 2014/04/28 12:26:19 phslaz Exp $
 !%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-PROGRAM FelixSim
+PROGRAM felixsim
  
   USE MyNumbers
+  USE WriteToScreen
   
   USE CConst; USE IConst; USE RConst
   USE IPara; USE RPara; USE SPara; USE CPara
@@ -74,6 +75,7 @@ PROGRAM FelixSim
 
   CHARACTER*40 surname 
 
+
   !-------------------------------------------------------------------
   ! constants
   !-------------------------------------------------------------------
@@ -93,21 +95,21 @@ PROGRAM FelixSim
   ! Initialise MPI  
   CALL MPI_Init(IErr)  
   IF( IErr.NE.0 ) THEN
-     PRINT*,"FelixSim(", my_rank, ") error in MPI_Init()"
+     PRINT*,"felixsim(", my_rank, ") error in MPI_Init()"
      GOTO 9999
   ENDIF
 
   ! Get the rank of the current process
   CALL MPI_Comm_rank(MPI_COMM_WORLD,my_rank,IErr)
   IF( IErr.NE.0 ) THEN
-     PRINT*,"FelixSim(", my_rank, ") error in MPI_Comm_rank()"
+     PRINT*,"felixsim(", my_rank, ") error in MPI_Comm_rank()"
      GOTO 9999
   ENDIF
 
   ! Get the size of the current communicator
   CALL MPI_Comm_size(MPI_COMM_WORLD,p,IErr)
   IF( IErr.NE.0 ) THEN
-     PRINT*,"FelixSim(", my_rank, ") error in MPI_Comm_size()"
+     PRINT*,"felixsim(", my_rank, ") error in MPI_Comm_size()"
      GOTO 9999
   ENDIF
 
@@ -117,7 +119,7 @@ PROGRAM FelixSim
   
   IF((IWriteFLAG.GE.0.AND.my_rank.EQ.0).OR.IWriteFLAG.GE.10) THEN
      PRINT*,"--------------------------------------------------------------"
-     PRINT*,"FelixSim: ", RStr
+     PRINT*,"felixsim: ", RStr
      PRINT*,"          ", DStr
      PRINT*,"          ", AStr
      PRINT*,"          on rank= ", my_rank, " of ", p, " in total."
@@ -139,14 +141,14 @@ PROGRAM FelixSim
   !Read from input files
   CALL ReadInput (IErr)
   IF( IErr.NE.0 ) THEN
-     PRINT*,"FelixSim(", my_rank, ") error in ReadInput()"
+     PRINT*,"felixsim(", my_rank, ") error in ReadInput()"
      GOTO 9999
   ENDIF
-     
-  IF((IWriteFLAG.GE.1.AND.my_rank.EQ.0).OR.IWriteFLAG.GE.10) THEN
-     PRINT*,"ITotalAtoms = ",ITotalAtoms
-  END IF
   
+  CALL Message("felixsim",IMust,IErr)   
+  CALL Message("felixsim",IInfo,IErr, MessageVariable = "ITotalAtoms", &
+       IVariable = ITotalAtoms)
+ 
   !--------------------------------------------------------------------
   ! open outfiles 
   !--------------------------------------------------------------------
@@ -174,7 +176,7 @@ PROGRAM FelixSim
   !--------------------------------------------------------------------
   CALL ExperimentalSetup (IErr)
   IF( IErr.NE.0 ) THEN
-     PRINT*,"FelixSim(", my_rank, ") error in ExperimentalSetup()"
+     PRINT*,"felixsim(", my_rank, ") error in ExperimentalSetup()"
      GOTO 9999
   ENDIF
 
@@ -185,7 +187,7 @@ PROGRAM FelixSim
 
   CALL ImageSetup( IErr )
   IF( IErr.NE.0 ) THEN
-     PRINT*,"FelixSim(", my_rank, ") error in ImageSetup()"
+     PRINT*,"felixsim(", my_rank, ") error in ImageSetup()"
      GOTO 9999
   ENDIF
 
@@ -196,7 +198,7 @@ PROGRAM FelixSim
  
   CALL StructureFactorSetup(IErr)
   IF( IErr.NE.0 ) THEN
-     PRINT*,"FelixSim(", my_rank, ") error in StructureFactorSetup()"
+     PRINT*,"felixsim(", my_rank, ") error in StructureFactorSetup()"
      GOTO 9999
   ENDIF
 
@@ -220,6 +222,7 @@ PROGRAM FelixSim
   IF( IErr.NE.0 ) THEN
      PRINT*,"FelixSim(", my_rank, ") error ", IErr, &
           " in Deallocation of RgMatMag"
+
      GOTO 9999
   ENDIF
          
@@ -233,7 +236,7 @@ PROGRAM FelixSim
        RDevPara(nReflections), &
        STAT=IErr)
   IF( IErr.NE.0 ) THEN
-     PRINT*,"FelixSim(", my_rank, ") error ", IErr, &
+     PRINT*,"felixsim(", my_rank, ") error ", IErr, &
           " in ALLOCATE() of DYNAMIC variables RDevPara"
      GOTO 9999
   ENDIF
@@ -242,7 +245,7 @@ PROGRAM FelixSim
        IStrongBeamList(nReflections), &
        STAT=IErr)
   IF( IErr.NE.0 ) THEN
-     PRINT*,"FelixSim(", my_rank, ") error ", IErr, &
+     PRINT*,"felixsim(", my_rank, ") error ", IErr, &
           " in ALLOCATE() of DYNAMIC variables IStrongBeamList"
      GOTO 9999
   ENDIF
@@ -251,7 +254,7 @@ PROGRAM FelixSim
        IWeakBeamList(nReflections), & 
        STAT=IErr)
   IF( IErr.NE.0 ) THEN
-     PRINT*,"FelixSim(", my_rank, ") error ", IErr, &
+     PRINT*,"felixsim(", my_rank, ") error ", IErr, &
           " in ALLOCATE() of DYNAMIC variables IWeakBeamList"
      GOTO 9999
   ENDIF
@@ -265,8 +268,8 @@ PROGRAM FelixSim
   
 
   IF((IWriteFLAG.GE.6.AND.my_rank.EQ.0).OR.IWriteFLAG.GE.10) THEN
-     PRINT*,"FelixSim(", my_rank, "): starting the eigenvalue problem"
-     PRINT*,"FelixSim(", my_rank, "): for lines ", ILocalPixelCountMin, &
+     PRINT*,"felixsim(", my_rank, "): starting the eigenvalue problem"
+     PRINT*,"felixsim(", my_rank, "): for lines ", ILocalPixelCountMin, &
           " to ", ILocalPixelCountMax
   ENDIF
 
@@ -278,7 +281,7 @@ PROGRAM FelixSim
           (ILocalPixelCountMax-ILocalPixelCountMin)+1),&
           STAT=IErr)
      IF( IErr.NE.0 ) THEN
-        PRINT*,"FelixSim(", my_rank, ") error ", IErr, &
+        PRINT*,"felixsim(", my_rank, ") error ", IErr, &
           " in ALLOCATE() of DYNAMIC variables Individual Images"
         GOTO 9999
      ENDIF
@@ -290,7 +293,7 @@ PROGRAM FelixSim
           (ILocalPixelCountMax-ILocalPixelCountMin)+1),&
           STAT=IErr)
      IF( IErr.NE.0 ) THEN
-        PRINT*,"FelixSim(", my_rank, ") error ", IErr, &
+        PRINT*,"felixsim(", my_rank, ") error ", IErr, &
              " in ALLOCATE() of DYNAMIC variables Amplitude and Phase"
         GOTO 9999
      ENDIF
@@ -301,7 +304,7 @@ PROGRAM FelixSim
        CFullWaveFunctions(nReflections), & 
        STAT=IErr)
   IF( IErr.NE.0 ) THEN
-     PRINT*,"FelixSim(", my_rank, ") error ", IErr, &
+     PRINT*,"felixsim(", my_rank, ") error ", IErr, &
           " in ALLOCATE() of DYNAMIC variables CFullWaveFunctions"
      GOTO 9999
   ENDIF
@@ -310,7 +313,7 @@ PROGRAM FelixSim
        RFullWaveIntensity(nReflections), & 
        STAT=IErr)
   IF( IErr.NE.0 ) THEN
-     PRINT*,"FelixSim(", my_rank, ") error ", IErr, &
+     PRINT*,"felixsim(", my_rank, ") error ", IErr, &
           " in ALLOCATE() of DYNAMIC variables RFullWaveIntensity"
      GOTO 9999
   ENDIF  
@@ -338,28 +341,30 @@ PROGRAM FelixSim
        Rsg, &
        STAT=IErr)
   IF( IErr.NE.0 ) THEN
-     PRINT*,"FelixSim(", my_rank, ") error ", IErr, &
+     PRINT*,"felixsim(", my_rank, ") error ", IErr, &
           " in DEALLOCATE() "
      GOTO 9999
   ENDIF
   
-  IF((IWriteFLAG.GE.0.AND.my_rank.EQ.0).OR.IWriteFLAG.GE.6) THEN
-     PRINT*,"FelixSim(",my_rank,") Entering BlochLoop()"
-  END IF
+  CALL Message("felixsim",ISilent,IErr,MessageString = " Entering BlochLoop")   
+
+!!$  IF((IWriteFLAG.GE.0.AND.my_rank.EQ.0).OR.IWriteFLAG.GE.6) THEN
+!!$     PRINT*,"felixsim(",my_rank,") Entering BlochLoop()"
+!!$  END IF
 
   DO knd = ILocalPixelCountMin,ILocalPixelCountMax,1
      ind = IPixelLocations(knd,1)
      jnd = IPixelLocations(knd,2)
      CALL BlochCoefficientCalculation(ind,jnd,knd,ILocalPixelCountMin,IErr)
      IF( IErr.NE.0 ) THEN
-        PRINT*,"FelixSim(", my_rank, ") error ", IErr, &
+        PRINT*,"felixsim(", my_rank, ") error ", IErr, &
              " in BlochCofficientCalculation"
         GOTO 9999
      ENDIF
   END DO
   
   IF((IWriteFLAG.GE.6.AND.my_rank.EQ.0).OR.IWriteFLAG.GE.10) THEN
-     PRINT*,"FelixSim : ",my_rank," is exiting calculation loop"
+     PRINT*,"felixsim : ",my_rank," is exiting calculation loop"
   END IF
 
   !--------------------------------------------------------------------
@@ -370,7 +375,7 @@ PROGRAM FelixSim
   IF(IOutputFLAG.GE.1) THEN
      CALL MPI_FILE_CLOSE(IChOutES_MPI, IErr)
      IF( IErr.NE.0 ) THEN
-        PRINT*,"FelixSim(", my_rank, ") error ", IErr, &
+        PRINT*,"felixsim(", my_rank, ") error ", IErr, &
              " Closing IChOutES"
         GOTO 9999
      ENDIF     
@@ -380,7 +385,7 @@ PROGRAM FelixSim
   IF(IOutputFLAG.GE.2) THEN
      CALL MPI_FILE_CLOSE(IChOutUM_MPI, IErr)
      IF( IErr.NE.0 ) THEN
-        PRINT*,"FelixSim(", my_rank, ") error ", IErr, &
+        PRINT*,"felixsim(", my_rank, ") error ", IErr, &
              " Closing IChOutUM"
         GOTO 9999
      ENDIF     
@@ -390,7 +395,7 @@ PROGRAM FelixSim
        RIndividualReflectionsRoot(IReflectOut,IThicknessCount,IPixelTotal),&
        STAT=IErr)
   IF( IErr.NE.0 ) THEN
-     PRINT*,"FelixSim(", my_rank, ") error ", IErr, &
+     PRINT*,"felixsim(", my_rank, ") error ", IErr, &
           " in ALLOCATE() of DYNAMIC variables Root Reflections"
      GOTO 9999
   ENDIF
@@ -400,7 +405,7 @@ PROGRAM FelixSim
           CAmplitudeandPhaseRoot(IReflectOut,IThicknessCount,IPixelTotal),&
           STAT=IErr)
      IF( IErr.NE.0 ) THEN
-        PRINT*,"FelixSim(", my_rank, ") error ", IErr, &
+        PRINT*,"felixsim(", my_rank, ") error ", IErr, &
              " in ALLOCATE() of DYNAMIC variables Root Amplitude and Phase"
         GOTO 9999
      ENDIF
@@ -413,7 +418,7 @@ PROGRAM FelixSim
        IDisplacements(p),ICount(p),&
        STAT=IErr)
   IF( IErr.NE.0 ) THEN
-     PRINT*,"FelixSim(", my_rank, ") error ", IErr, &
+     PRINT*,"felixsim(", my_rank, ") error ", IErr, &
           " In ALLOCATE"
      GOTO 9999
   ENDIF
@@ -429,7 +434,7 @@ PROGRAM FelixSim
           ICount,IDisplacements,MPI_DOUBLE_PRECISION,0,&
           MPI_COMM_WORLD,IErr)
      IF( IErr.NE.0 ) THEN
-        PRINT*,"FelixSim(", my_rank, ") error ", IErr, &
+        PRINT*,"felixsim(", my_rank, ") error ", IErr, &
              " In MPI_GATHERV"
         GOTO 9999
      ENDIF     
@@ -439,7 +444,7 @@ PROGRAM FelixSim
           ICount,IDisplacements,MPI_DOUBLE_COMPLEX,0, &
           MPI_COMM_WORLD,IErr)
      IF( IErr.NE.0 ) THEN
-        PRINT*,"FelixSim(", my_rank, ") error ", IErr, &
+        PRINT*,"felixsim(", my_rank, ") error ", IErr, &
              " In MPI_GATHERV"
         GOTO 9999
      ENDIF   
@@ -449,7 +454,7 @@ PROGRAM FelixSim
      DEALLOCATE(&
           CAmplitudeandPhase,STAT=IErr)
      IF( IErr.NE.0 ) THEN
-        PRINT*,"FelixSim(", my_rank, ") error ", IErr, &
+        PRINT*,"felixsim(", my_rank, ") error ", IErr, &
              " Deallocating CAmplitudePhase"
         GOTO 9999
      ENDIF   
@@ -459,7 +464,7 @@ PROGRAM FelixSim
      DEALLOCATE( &
           RIndividualReflections,STAT=IErr)
      IF( IErr.NE.0 ) THEN
-        PRINT*,"FelixSim(", my_rank, ") error ", IErr, &
+        PRINT*,"felixsim(", my_rank, ") error ", IErr, &
              " Deallocating RIndividualReflections"
         GOTO 9999
      ENDIF   
@@ -471,13 +476,13 @@ PROGRAM FelixSim
           MAXVAL(IImageSizeXY),IThicknessCount),&
           STAT=IErr)
      IF( IErr.NE.0 ) THEN
-        PRINT*,"FelixSim(", my_rank, ") error ", IErr, &
+        PRINT*,"felixsim(", my_rank, ") error ", IErr, &
              " in ALLOCATE() of DYNAMIC variables Root Montage"
         GOTO 9999
      ENDIF
 
     RFinalMontageImageRoot = ZERO		
-  END IF
+ END IF
 
   IF(my_rank.EQ.0.AND.IImageFLAG.GE.3) THEN
      RIndividualReflectionsRoot = &
@@ -488,7 +493,7 @@ PROGRAM FelixSim
      CALL MontageSetup(IThicknessIndex,knd,ind,jnd,RFinalMontageImageRoot, &
           RIndividualReflectionsRoot,IErr)
      IF( IErr.NE.0 ) THEN
-        PRINT*,"FelixSim(", my_rank, ") error ", IErr, &
+        PRINT*,"felixsim(", my_rank, ") error ", IErr, &
              " in MontageSetup"
         GOTO 9999
      ENDIF
@@ -501,7 +506,7 @@ PROGRAM FelixSim
 
      CALL WriteOutput(CAmplitudeandPhaseRoot,RIndividualReflectionsRoot,RFinalMontageImageRoot,IErr)
      IF( IErr.NE.0 ) THEN
-        PRINT*,"FelixSim(", my_rank, ") error ", IErr, &
+        PRINT*,"felixsim(", my_rank, ") error ", IErr, &
              " in WriteOutput"
         GOTO 9999
      ENDIF
@@ -517,17 +522,20 @@ PROGRAM FelixSim
   DEALLOCATE( &
        RgVecMatT,STAT=IErr)
   IF( IErr.NE.0 ) THEN
+
      PRINT*,"Felixfunction(", my_rank, ") error ", IErr, &
           " Deallocating RgVecMatT"
-     RETURN
+     GOTO 9999
+
   ENDIF
   
   DEALLOCATE( &
        Rhklpositions,STAT=IErr)
   IF( IErr.NE.0 ) THEN
+
      PRINT*,"Felixfunction(", my_rank, ") error ", IErr, &
           " Deallocating Rhklpositions"
-     RETURN
+     GOTO 9999
   ENDIF 
 
   DEALLOCATE( &
@@ -535,7 +543,7 @@ PROGRAM FelixSim
   IF( IErr.NE.0 ) THEN
      PRINT*,"Felixfunction(", my_rank, ") error  ", IErr, &
           " in Deallocation of RMask etc"
-     RETURN
+     GOTO 9999
   ENDIF
 
   DEALLOCATE( &
@@ -543,7 +551,7 @@ PROGRAM FelixSim
   IF( IErr.NE.0 ) THEN
      PRINT*,"Felixfunction(", my_rank, ") error ", IErr, &
           " Deallocating CUgMat"
-     RETURN
+     GOTO 9999
   ENDIF
 
   DEALLOCATE( &
@@ -551,7 +559,7 @@ PROGRAM FelixSim
   IF( IErr.NE.0 ) THEN
      PRINT*,"Felixfunction(", my_rank, ") error ", IErr, &
           " Deallocating CUgMat"
-     RETURN
+     GOTO 9999
   ENDIF
 
   DEALLOCATE( &
@@ -559,7 +567,7 @@ PROGRAM FelixSim
   IF( IErr.NE.0 ) THEN
      PRINT*,"Felixfunction(", my_rank, ") error ", IErr, &
           " Deallocating RDevPara"
-     RETURN
+     GOTO 9999
   ENDIF
 
   DEALLOCATE( &
@@ -567,7 +575,7 @@ PROGRAM FelixSim
   IF( IErr.NE.0 ) THEN
      PRINT*,"Felixfunction(", my_rank, ") error ", IErr, &
           " Deallocating IPixelLocations"
-     RETURN
+     GOTO 9999
   ENDIF
 
   DEALLOCATE( &
@@ -575,7 +583,7 @@ PROGRAM FelixSim
   IF( IErr.NE.0 ) THEN
      PRINT*,"Felixfunction(", my_rank, ") error ", IErr, &
           " Deallocating IStrongBeamList"
-     RETURN
+     GOTO 9999
   ENDIF
 
   DEALLOCATE( &
@@ -583,7 +591,7 @@ PROGRAM FelixSim
   IF( IErr.NE.0 ) THEN
      PRINT*,"Felixfunction(", my_rank, ") error ", IErr, &
           " Deallocating IWeakBeamList"
-     RETURN
+     GOTO 9999
   ENDIF
 
   DEALLOCATE( &
@@ -591,7 +599,7 @@ PROGRAM FelixSim
   IF( IErr.NE.0 ) THEN
      PRINT*,"Felixfunction(", my_rank, ") error ", IErr, &
           " Deallocating IDisplacements"
-     RETURN
+     GOTO 9999
   ENDIF
 
   DEALLOCATE( &
@@ -599,16 +607,22 @@ PROGRAM FelixSim
   IF( IErr.NE.0 ) THEN
      PRINT*,"Felixfunction(", my_rank, ") error ", IErr, &
           " Deallocating ICount"
-     RETURN
+     GOTO 9999
+
   ENDIF
   
   DEALLOCATE( &
        CFullWaveFunctions, & 
        STAT=IErr)
   IF( IErr.NE.0 ) THEN
+!<<<<<<< HEAD
      PRINT*,"Felixfunction(", my_rank, ") error ", IErr, &
           " in ALLOCATE() of DYNAMIC variables CFullWaveFunctions"
-     RETURN
+     GOTO 9999
+!!$=======
+!!$     PRINT*,"felixsim(", my_rank, ") error in Deallocation of RIndividualReflectionsRoot"
+!!$     GOTO 9999
+!!$>>>>>>> message-subroutine
   ENDIF
   
   DEALLOCATE( &
@@ -617,7 +631,7 @@ PROGRAM FelixSim
   IF( IErr.NE.0 ) THEN
      PRINT*,"Felixfunction(", my_rank, ") error ", IErr, &
           " in ALLOCATE() of DYNAMIC variables RFullWaveIntensity"
-     RETURN
+     GOTO 9999
   ENDIF  
 
   IF(IImageFLAG.GE.3) THEN
@@ -626,7 +640,7 @@ PROGRAM FelixSim
      
      IF( IErr.NE.0 ) THEN
         PRINT*,"Felixfunction(", my_rank, ") error in Deallocation of CAmplitudeandPhase"
-        RETURN  
+        GOTO 9999  
      ENDIF
   END IF
 
@@ -634,7 +648,7 @@ PROGRAM FelixSim
        RIndividualReflectionsRoot,STAT=IErr) 
   IF( IErr.NE.0 ) THEN
      PRINT*,"Felixfunction(", my_rank, ") error in Deallocation of RIndividualReflectionsRoot "
-     RETURN  
+     GOTO 9999  
   ENDIF
   
   DEALLOCATE( &
@@ -643,7 +657,7 @@ PROGRAM FelixSim
   IF( IErr.NE.0 ) THEN
      PRINT*,"Felixfunction(", my_rank, ") error ", IErr, &
           " in Deallocation MNP"
-     RETURN
+     GOTO 9999
   ENDIF
 
   DEALLOCATE( &
@@ -652,7 +666,7 @@ PROGRAM FelixSim
   IF( IErr.NE.0 ) THEN
      PRINT*,"Felixfunction(", my_rank, ") error ", IErr, &
           " in Deallocation SMNP"
-     RETURN
+     GOTO 9999
   ENDIF
 
   DEALLOCATE( &
@@ -661,7 +675,7 @@ PROGRAM FelixSim
   IF( IErr.NE.0 ) THEN
      PRINT*,"Felixfunction(", my_rank, ") error ", IErr, &
           " in Deallocation RFullAtomicFracCoordVec"
-     RETURN
+     GOTO 9999
   ENDIF
 
   DEALLOCATE( &
@@ -670,7 +684,7 @@ PROGRAM FelixSim
   IF( IErr.NE.0 ) THEN
      PRINT*,"Felixfunction(", my_rank, ") error ", IErr, &
           " in Deallocation SFullAtomicNameVec"
-     RETURN
+     GOTO 9999
   ENDIF
 
   DEALLOCATE( &
@@ -679,7 +693,7 @@ PROGRAM FelixSim
   IF( IErr.NE.0 ) THEN
      PRINT*,"Felixfunction(", my_rank, ") error ", IErr, &
           " in Deallocation IFullAnisotropicDWFTensor"
-     RETURN
+     GOTO 9999
   ENDIF
 
   DEALLOCATE( &
@@ -688,7 +702,7 @@ PROGRAM FelixSim
   IF( IErr.NE.0 ) THEN
      PRINT*,"Felixfunction(", my_rank, ") error ", IErr, &
           " in Deallocation IFullAtomNumber"
-     RETURN
+     GOTO 9999
   ENDIF
   
   DEALLOCATE( &
@@ -697,7 +711,7 @@ PROGRAM FelixSim
   IF( IErr.NE.0 ) THEN
      PRINT*,"Felixfunction(", my_rank, ") error ", IErr, &
           " in Deallocation RFullIsotropicDebyeWallerFactor"
-     RETURN
+     GOTO 9999
   ENDIF
 
   DEALLOCATE( &
@@ -706,7 +720,7 @@ PROGRAM FelixSim
   IF( IErr.NE.0 ) THEN
      PRINT*,"Felixfunction(", my_rank, ") error ", IErr, &
           " in Deallocation RFullPartialOccupancy"
-     RETURN
+     GOTO 9999
   ENDIF
 
   DEALLOCATE( &
@@ -715,7 +729,7 @@ PROGRAM FelixSim
   IF( IErr.NE.0 ) THEN
      PRINT*,"Felixfunction(", my_rank, ") error ", IErr, &
           " in Deallocation RDWF"
-     RETURN
+     GOTO 9999
   ENDIF
 
   DEALLOCATE( &
@@ -724,7 +738,7 @@ PROGRAM FelixSim
   IF( IErr.NE.0 ) THEN
      PRINT*,"Felixfunction(", my_rank, ") error ", IErr, &
           " in Deallocation ROcc"
-     RETURN
+     GOTO 9999
   ENDIF
   
   DEALLOCATE( &
@@ -733,7 +747,7 @@ PROGRAM FelixSim
   IF( IErr.NE.0 ) THEN
      PRINT*,"Felixfunction(", my_rank, ") error ", IErr, &
           " in Deallocation IAtoms"
-     RETURN
+     GOTO 9999
   ENDIF
   
   DEALLOCATE( &
@@ -742,7 +756,7 @@ PROGRAM FelixSim
   IF( IErr.NE.0 ) THEN
      PRINT*,"Felixfunction(", my_rank, ") error ", IErr, &
           " in Deallocation IAnisoDWFT"
-     RETURN
+     GOTO 9999
   ENDIF
   
   DEALLOCATE( &
@@ -751,7 +765,7 @@ PROGRAM FelixSim
   IF( IErr.NE.0 ) THEN
      PRINT*,"Felixfunction(", my_rank, ") error ", IErr, &
           " in Deallocation Rhkl"
-     RETURN
+     GOTO 9999
   ENDIF
 
   DEALLOCATE( &
@@ -760,7 +774,7 @@ PROGRAM FelixSim
   IF( IErr.NE.0 ) THEN
      PRINT*,"Felixfunction(", my_rank, ") error ", IErr, &
           " in Deallocation RgVecMag"
-     RETURN
+     GOTO 9999
   ENDIF
 
   DEALLOCATE( &
@@ -769,7 +783,7 @@ PROGRAM FelixSim
   IF( IErr.NE.0 ) THEN
      PRINT*,"Felixfunction(", my_rank, ") error ", IErr, &
           " in Deallocation RGn"
-     RETURN
+     GOTO 9999
   ENDIF
     
   IF(IImageFLAG.GE.3) THEN
@@ -777,7 +791,7 @@ PROGRAM FelixSim
           CAmplitudeandPhaseRoot,STAT=IErr) 
      
      IF( IErr.NE.0 ) THEN
-        PRINT*,"FelixSim(", my_rank, ") error in Deallocation of CAmplitudeandPhase"
+        PRINT*,"felixsim(", my_rank, ") error in Deallocation of CAmplitudeandPhase"
         GOTO 9999
      ENDIF
   END IF
@@ -791,21 +805,23 @@ PROGRAM FelixSim
   IHours = FLOOR(Duration/3600.0D0)
   IMinutes = FLOOR(MOD(Duration,3600.0D0)/60.0D0)
   ISeconds = MOD(Duration,3600.0D0)-IMinutes*60.0D0
+
   IMilliSeconds = INT((Duration-(IHours*3600+IMinutes*60+ISeconds))*100,IKIND)
 
   PRINT*, "Felixsim(", my_rank, ") ", RStr, ", used time=", IHours, "hrs ",IMinutes,"mins ",ISeconds,"Seconds ",&
        IMilliSeconds,"Milliseconds"
+
   !--------------------------------------------------------------------
   ! Shut down MPI
   !--------------------------------------------------------------------W
 9999 &
   CALL MPI_Finalize(IErr)
   IF( IErr.NE.0 ) THEN
-     PRINT*,"FelixSim(", my_rank, ") error ", IErr, " in MPI_Finalize()"
+     PRINT*,"felixsim(", my_rank, ") error ", IErr, " in MPI_Finalize()"
      STOP
   ENDIF
 
   ! clean shutdown
   STOP
 
-END PROGRAM FelixSim
+END PROGRAM felixsim

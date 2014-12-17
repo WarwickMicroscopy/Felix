@@ -35,6 +35,7 @@
 SUBROUTINE MicroscopySettings( IErr )
 
   USE MyNumbers
+  USE WriteToScreen
   
   USE CConst; USE IConst
   USE IPara; USE RPara
@@ -48,10 +49,11 @@ SUBROUTINE MicroscopySettings( IErr )
   REAL(RKIND) norm,dummy
 
   INTEGER IErr
+  CALL Message("MicroscopySettings",IMust,IErr)
 
-  IF(((IWriteFLAG.GE.0).AND.(my_rank.EQ.0)).OR.IWriteFLAG.GE.10) THEN
-     PRINT*,"MicroscopySettings(",my_rank,")"
-  END IF
+ ! IF(((IWriteFLAG.GE.0).AND.(my_rank.EQ.0)).OR.IWriteFLAG.GE.10) THEN
+ !    PRINT*,"MicroscopySettings(",my_rank,")"
+ ! END IF
 
   RElectronVelocity= &
        RSpeedOfLight * &
@@ -74,14 +76,15 @@ SUBROUTINE MicroscopySettings( IErr )
 
   RRelativisticMass= RRelativisticCorrection*RElectronMass
 
-  IF(((IWriteFLAG.GE.1).AND.(my_rank.EQ.0)).OR.IWriteFLAG.GE.10) THEN
-     
-     PRINT*,"MicroscopySettings(",my_rank,") ElectronVelocity =", RElectronVelocity
-     PRINT*,"MicroscopySettings(",my_rank,") ElectronWaveLength =", RElectronWaveLength
-     PRINT*,"MicroscopySettings(",my_rank,") ElectronWaveVectorMagnitude =", RElectronWaveVectorMagnitude
-     PRINT*,"MicroscopySettings(",my_rank,") RelativisticCorrection =", RRelativisticCorrection
-
-  END IF
+   
+  CALL Message("MicroscopySettings",IInfo,IErr, &
+       MessageVariable = "ElectronVelocity",RVariable = RElectronVelocity)
+  CALL Message("MicroscopySettings",IInfo,IErr, &
+       MessageVariable = "ElectronWavelength",RVariable = RElectronWaveLength)
+  CALL Message("MicroscopySettings",IInfo,IErr, &
+       MessageVariable = "ElectronWaveVectorMagnitude",RVariable = RElectronWaveVectorMagnitude)
+  CALL Message("MicroscopySettings",IInfo,IErr, &
+       MessageVariable = "RelativisticCorrection",RVariable = RRelativisticCorrection)
      
   RETURN
 

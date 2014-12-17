@@ -52,9 +52,11 @@ SUBROUTINE ReadInpFile( IErr )
 
   USE MPI
   USE MyMPI
+  USE WriteToScreen
   
   IMPLICIT NONE
 
+<<<<<<< HEAD
   INTEGER(IKIND) :: &
        IErr, ILine,ind,IPos,IPos1,IPos2
   REAL(RKIND) :: &
@@ -63,13 +65,10 @@ SUBROUTINE ReadInpFile( IErr )
        SImageMode,SElements,SRefineMode,SStringFromNumber,SRefineYESNO,&
        SAtomicSites,SFormatString,SLengthofNumberString
 
-  IF((IWriteFLAG.GE.0.AND.my_rank.EQ.0).OR.IWriteFLAG.GE.10) THEN
-     PRINT*,"Input()"
-  END IF
-
   OPEN(UNIT= IChInp, ERR= 120, FILE= "felix.inp",&
        STATUS= 'OLD')
   ILine= 1
+
 
   ! ----------------------------------------------------------------------
   ! introductory comment lines
@@ -92,10 +91,12 @@ SUBROUTINE ReadInpFile( IErr )
   
   ILine= ILine+1
   READ(IChInp,10,ERR=20,END=30) IWriteFLAG
+  CALL Message ("ReadInpFile",IMust,IErr)
+  CALL Message ("ReadInpFile",IInfo,IErr,MessageVariable="IWriteFLAG",IVariable=IWriteFLAG)
   
-  IF((IWriteFLAG.GE.1.AND.my_rank.EQ.0).OR.IWriteFLAG.GE.10) THEN
-     PRINT*,"IWriteFLAG = ", IWriteFLAG
-  END IF
+  !IF((IWriteFLAG.GE.1.AND.my_rank.EQ.0).OR.IWriteFLAG.GE.10) THEN
+  !   PRINT*,"IWriteFLAG = ", IWriteFLAG
+  !END IF
   
   ILine= ILine+1
   READ(IChInp,FMT='(A)',ERR=20,END=30) SImageMode
@@ -136,75 +137,55 @@ SUBROUTINE ReadInpFile( IErr )
      IImageFlag = 6
   END SELECT
 
-  IF((IWriteFLAG.GE.1.AND.my_rank.EQ.0).OR.IWriteFLAG.GE.10) THEN
-     PRINT*,"IImageFLAG = ", IImageFLAG
-  END IF
+  CALL Message ("ReadInpFile",IInfo,IErr,MessageVariable ="IImageFLAG",IVariable=IImageFLAG)
 
   ILine= ILine+1
   READ(IChInp,10,ERR=20,END=30) IOutputFLAG
-  IF((IWriteFLAG.GE.1.AND.my_rank.EQ.0).OR.IWriteFLAG.GE.10) THEN
-     PRINT*,"IOutputFLAG = ", IOutputFLAG
-  END IF
-
+  CALL Message ("ReadInpFile",IInfo,IErr,MessageVariable ="IOutputFLAG",IVariable=IOutputFLAG)
+ 
   ILine= ILine+1
   READ(IChInp,10,ERR=20,END=30) IBinorTextFLAG
-  IF((IWriteFLAG.GE.1.AND.my_rank.EQ.0).OR.IWriteFLAG.GE.10) THEN
-     PRINT*,"IBinorTextFLAG = ", IBinorTextFLAG
-  END IF
+  CALL Message ("ReadInpFile",IInfo,IErr,MessageVariable ="IBinorTextFLAG",IVariable=IBinorTextFLAG)
+
+
 
   ILine= ILine+1
   READ(IChInp,10,ERR=20,END=30) IScatterFactorMethodFLAG
-  IF((IWriteFLAG.GE.1.AND.my_rank.EQ.0).OR.IWriteFLAG.GE.10) THEN
-     PRINT*,"IScatterFactorMethodFLAG = ", IScatterFactorMethodFLAG
-  END IF
+  CALL Message ("ReadInpFile",IInfo,IErr,MessageVariable ="IScatterFactorMethodFLAG",IVariable=IScatterFactorMethodFLAG)
 
   ILine= ILine+1
   READ(IChInp,10,ERR=20,END=30) ICentralBeamFLAG
-  IF((IWriteFLAG.GE.1.AND.my_rank.EQ.0).OR.IWriteFLAG.GE.10) THEN
-     PRINT*,"ICentralBeamFLAG = ", ICentralBeamFLAG
-  END IF
+  CALL Message ("ReadInpFile",IInfo,IErr,MessageVariable ="ICentralBeamFLAG",IVariable=ICentralBeamFLAG)
+
 
   ILine= ILine+1
   READ(IChInp,10,ERR=20,END=30) IMaskFLAG
-  IF((IWriteFLAG.GE.1.AND.my_rank.EQ.0).OR.IWriteFLAG.GE.10) THEN
-     PRINT*,"IMaskFLAG = ", IMaskFLAG
-  END IF
+  CALL Message ("ReadInpFile",IInfo,IErr,MessageVariable ="IMaskFLAG",IVariable=IMaskFLAG)
 
   ILine= ILine+1
   READ(IChInp,10,ERR=20,END=30) IZolzFLAG
-  IF((IWriteFLAG.GE.1.AND.my_rank.EQ.0).OR.IWriteFLAG.GE.10) THEN
-     PRINT*,"IZolzFLAG = ", IZolzFLAG
-  END IF
+  CALL Message ("ReadInpFile",IInfo,IErr,MessageVariable ="IZolzFLAG",IVariable=IZolzFLAG)
 
   ILine= ILine+1
   READ(IChInp,10,ERR=20,END=30) IAbsorbFLAG
-  IF((IWriteFLAG.GE.1.AND.my_rank.EQ.0).OR.IWriteFLAG.GE.10) THEN
-     PRINT*,"IAbsorbFLAG = ", IAbsorbFLAG
-  ENDIF
+  CALL Message ("ReadInpFile",IInfo,IErr,MessageVariable ="IAbsorbFLAG",IVariable=IAbsorbFLAG)
 
   ILine= ILine+1
   READ(IChInp,10,ERR=20,END=30) IAnisoDebyeWallerFactorFlag
-  IF((IWriteFLAG.GE.1.AND.my_rank.EQ.0).OR.IWriteFLAG.GE.10) THEN
-     PRINT*,"IAnisoDebyeWallerFactorFlag = ", IAnisoDebyeWallerFactorFlag
-  END IF
+  CALL Message ("ReadInpFile",IInfo,IErr,MessageVariable ="IAnisoDebyeWallerFactorFlag",IVariable=IAnisoDebyeWallerFactorFlag)
 
   ILine= ILine+1
   READ(IChInp,10,ERR=20,END=30) IBeamConvergenceFLAG
-  IF((IWriteFLAG.GE.1.AND.my_rank.EQ.0).OR.IWriteFLAG.GE.10) THEN
-     PRINT*,"IBeamConvergenceFLAG = ", IBeamConvergenceFLAG
-  END IF
+  CALL Message ("ReadInpFile",IInfo,IErr,MessageVariable ="IBeamConvergenceFLAG",IVariable=IBeamConvergenceFLAG)
 
   ILine= ILine+1
   READ(IChInp,10,ERR=20,END=30) IPseudoCubicFLAG
-  IF((IWriteFLAG.GE.1.AND.my_rank.EQ.0).OR.IWriteFLAG.GE.10) THEN
-     PRINT*,"IPseudoCubicFLAG = ", IPseudoCubicFLAG
-  END IF
+  CALL Message ("ReadInpFile",IInfo,IErr,MessageVariable ="IPseudoCubicFLAG",IVariable=IPseudoCubicFLAG)
 
   ILine= ILine+1
   READ(IChInp,10,ERR=20,END=30) IXDirectionFLAG
-  IF((IWriteFLAG.GE.1.AND.my_rank.EQ.0).OR.IWriteFLAG.GE.10) THEN
-     PRINT*,"IXDirectionFLAG = ", IXDirectionFLAG
-  END IF
+  CALL Message ("ReadInpFile",IInfo,IErr,MessageVariable ="IXDirectionFLAG",IVariable=IXDirectionFLAG)
+
 
   ! ----------------------------------------------------------------------
   ! beam details
@@ -214,10 +195,8 @@ SUBROUTINE ReadInpFile( IErr )
 
   ILine= ILine+1
   READ(IChInp,10,ERR=20,END=30) IPixelCount
-  
-  IF((IWriteFLAG.GE.1.AND.my_rank.EQ.0).OR.IWriteFLAG.GE.10) THEN
-     PRINT*,"IPixelCount = ",IPixelCount
-  END IF
+  CALL Message ("ReadInpFile",IInfo,IErr,MessageVariable ="IPixelCount",IVariable=IPixelCount)
+
 
   ! ----------------------------------------------------------------------
   ! beam selection criteria
@@ -227,40 +206,28 @@ SUBROUTINE ReadInpFile( IErr )
 
   ILine= ILine+1
   READ(IChInp,10,ERR=20,END=30) IMinReflectionPool
-  IF((IWriteFLAG.GE.1.AND.my_rank.EQ.0).OR.IWriteFLAG.GE.10) THEN
-     PRINT*,"IMinReflectionPool = ", IMinReflectionPool
-  END IF
+  CALL Message ("ReadInpFile",IInfo,IErr,MessageVariable ="IMinReflectionPool",IVariable=IMinReflectionPool)
   
   ILine= ILine+1
   READ(IChInp,10,ERR=20,END=30) IMinStrongBeams
-  IF((IWriteFLAG.GE.1.AND.my_rank.EQ.0).OR.IWriteFLAG.GE.10) THEN
-     PRINT*,"IMinStrongBeams = ", IMinStrongBeams
-  END IF
+  CALL Message ("ReadInpFile",IInfo,IErr,MessageVariable ="IMinStrongBeams",IVariable=IMinStrongBeams)
 
   ILine= ILine+1
   READ(IChInp,10,ERR=20,END=30) IMinWeakBeams
-  IF((IWriteFLAG.GE.1.AND.my_rank.EQ.0).OR.IWriteFLAG.GE.10) THEN
-     PRINT*,"IMinWeakBeams = ", IMinWeakBeams
-  END IF
+  CALL Message ("ReadInpFile",IInfo,IErr,MessageVariable ="IMinWeakBeams",IVariable=IMinWeakBeams)
 
   ILine= ILine+1
   READ(IChInp,15,ERR=20,END=30) RBSBMax
-  IF((IWriteFLAG.GE.1.AND.my_rank.EQ.0).OR.IWriteFLAG.GE.10) THEN
-     PRINT*,"RBSBMax = ", RBSBMax
-  END IF
+  CALL Message ("ReadInpFile",IInfo,IErr,MessageVariable ="RBSBMax",RVariable=RBSBMax)
 
   ILine= ILine+1
   READ(IChInp,15,ERR=20,END=30) RBSPMax
-  IF((IWriteFLAG.GE.1.AND.my_rank.EQ.0).OR.IWriteFLAG.GE.10) THEN
-     PRINT*,"RBSPMax = ", RBSPMax
-  END IF
+  CALL Message ("ReadInpFile",IInfo,IErr,MessageVariable ="RBSPMax",RVariable=RBSPMax)
+
 
   ILine= ILine+1
   READ(IChInp,15,ERR=20,END=30) RConvergenceTolerance
-  IF((IWriteFLAG.GE.1.AND.my_rank.EQ.0).OR.IWriteFLAG.GE.10) THEN
-     PRINT*,"RConvergenceTolerance = ", RConvergenceTolerance
-  END IF
-
+  CALL Message ("ReadInpFile",IInfo,IErr,MessageVariable ="RConvergenceTolerance",RVariable=RConvergenceTolerance)
   ! ----------------------------------------------------------------------
   ! crystal settings
   
@@ -268,17 +235,14 @@ SUBROUTINE ReadInpFile( IErr )
   ILine= ILine+1; READ(IChInp,ERR=20,END=30,FMT='(A)')
   ILine= ILine+1
   READ(IChInp,15,ERR=20,END=30) RDebyeWallerConstant
-  IF((IWriteFLAG.GE.1.AND.my_rank.EQ.0).OR.IWriteFLAG.GE.10) THEN
-     PRINT*,"RDebyeWallerConstant = ", RDebyeWallerConstant
-  END IF
+  CALL Message ("ReadInpFile",IInfo,IErr,MessageVariable ="RDebyeWallerConstant",RVariable=RDebyeWallerConstant)
 
   RMeanSquaredDisplacement= RDebyeWallerConstant/(8*PI**2)
   
   ILine= ILine+1
   READ(IChInp,15,ERR=20,END=30) RAbsorptionPercentage
-  IF((IWriteFLAG.GE.1.AND.my_rank.EQ.0).OR.IWriteFLAG.GE.10) THEN
-     PRINT*,"RAbsorptionPercentage = ", RAbsorptionPercentage
-  END IF
+  CALL Message ("ReadInpFile",IInfo,IErr,MessageVariable ="RAbsorptionPercentage",RVariable=RAbsorptionPercentage)
+
 
   ! ----------------------------------------------------------------------
   ! microscopy settings
@@ -288,27 +252,23 @@ SUBROUTINE ReadInpFile( IErr )
 
   ILine= ILine+1
   READ(IChInp,15,ERR=20,END=30) RConvergenceAngle
-  IF((IWriteFLAG.GE.1.AND.my_rank.EQ.0).OR.IWriteFLAG.GE.10) THEN
-     PRINT*,"RConvergenceAngle = ", RConvergenceAngle
-  END IF
+  CALL Message ("ReadInpFile",IInfo,IErr,MessageVariable ="RConvergenceAngle",RVariable=RConvergenceAngle)
+
 
   ILine= ILine+1
   READ(IChInp,10,ERR=20,END=30) IIncidentBeamDirectionX
-  IF((IWriteFLAG.GE.1.AND.my_rank.EQ.0).OR.IWriteFLAG.GE.10) THEN
-     PRINT*,"IIncidentBeamDirectionX = ", IIncidentBeamDirectionX
-  END IF
+  CALL Message ("ReadInpFile",IInfo,IErr,MessageVariable ="IIncidentBeamDirectionX",IVariable=IIncidentBeamDirectionX)
+
 
   ILine= ILine+1
   READ(IChInp,10,ERR=20,END=30) IIncidentBeamDirectionY
-  IF((IWriteFLAG.GE.1.AND.my_rank.EQ.0).OR.IWriteFLAG.GE.10) THEN
-     PRINT*,"IIncidentBeamDirectionY = ", IIncidentBeamDirectionY
-  END IF
+  CALL Message ("ReadInpFile",IInfo,IErr,MessageVariable ="IIncidentBeamDirectionY",IVariable=IIncidentBeamDirectionY)
+
 
   ILine= ILine+1
   READ(IChInp,10,ERR=20,END=30) IIncidentBeamDirectionZ
-  IF((IWriteFLAG.GE.1.AND.my_rank.EQ.0).OR.IWriteFLAG.GE.10) THEN
-     PRINT*,"IIncidentBeamDirectionZ = ", IIncidentBeamDirectionZ
-  END IF
+  CALL Message ("ReadInpFile",IInfo,IErr,MessageVariable ="IIncidentBeamDirectionZ",IVariable=IIncidentBeamDirectionZ)
+
 
   RZDirC(1)= REAL(IIncidentBeamDirectionX,RKIND)
   RZDirC(2)= REAL(IIncidentBeamDirectionY,RKIND)
@@ -316,21 +276,16 @@ SUBROUTINE ReadInpFile( IErr )
   
   ILine= ILine+1
   READ(IChInp,10,ERR=20,END=30) IXDirectionX
-  IF((IWriteFLAG.GE.1.AND.my_rank.EQ.0).OR.IWriteFLAG.GE.10) THEN
-     PRINT*,"IXDirectionX = ", IXDirectionX
-  END IF
+  CALL Message ("ReadInpFile",IInfo,IErr,MessageVariable ="IXDirectionX",IVariable=IXDirectionX)
+
 
   ILine= ILine+1
   READ(IChInp,10,ERR=20,END=30) IXDirectionY
-  IF((IWriteFLAG.GE.1.AND.my_rank.EQ.0).OR.IWriteFLAG.GE.10) THEN
-     PRINT*,"IXDirectionY = ", IXDirectionY
-  END IF
+  CALL Message ("ReadInpFile",IInfo,IErr,MessageVariable ="IXDirectionY",IVariable=IXDirectionY)
   
   ILine= ILine+1
   READ(IChInp,10,ERR=20,END=30) IXDirectionZ
-  IF((IWriteFLAG.GE.1.AND.my_rank.EQ.0).OR.IWriteFLAG.GE.10) THEN
-     PRINT*,"IXDirectionZ = ", IXDirectionZ
-  END IF
+  CALL Message ("ReadInpFile",IInfo,IErr,MessageVariable ="IXDirectionZ",IVariable=IXDirectionZ)
 
   RXDirC(1)= IXDirectionX
   RXDirC(2)= IXDirectionY
@@ -338,21 +293,15 @@ SUBROUTINE ReadInpFile( IErr )
 
   ILine= ILine+1
   READ(IChInp,10,ERR=20,END=30) INormalDirectionX
-  IF((IWriteFLAG.GE.1.AND.my_rank.EQ.0).OR.IWriteFLAG.GE.10) THEN
-     PRINT*,"INormalDirectionX = ", INormalDirectionX
-  END IF
+  CALL Message ("ReadInpFile",IInfo,IErr,MessageVariable ="INormalDirectionX",IVariable=INormalDirectionX)
 
   ILine= ILine+1
   READ(IChInp,10,ERR=20,END=30) INormalDirectionY
-  IF((IWriteFLAG.GE.1.AND.my_rank.EQ.0).OR.IWriteFLAG.GE.10) THEN
-     PRINT*,"INormalDirectionY = ", INormalDirectionY
-  END IF
+  CALL Message ("ReadInpFile",IInfo,IErr,MessageVariable ="INormalDirectionY",IVariable=INormalDirectionY)
   
   ILine= ILine+1
   READ(IChInp,10,ERR=20,END=30) INormalDirectionZ
-  IF((IWriteFLAG.GE.1.AND.my_rank.EQ.0).OR.IWriteFLAG.GE.10) THEN
-     PRINT*,"INormalDirectionZ = ", INormalDirectionZ
-  END IF
+  CALL Message ("ReadInpFile",IInfo,IErr,MessageVariable ="INormalDirectionZ",IVariable=INormalDirectionZ)
 
   RNormDirC(1)= INormalDirectionX
   RNormDirC(2)= INormalDirectionY
@@ -360,10 +309,7 @@ SUBROUTINE ReadInpFile( IErr )
   
   ILine= ILine+1
   READ(IChInp,15,ERR=20,END=30) RAcceleratingVoltage
-
-  IF((IWriteFLAG.GE.1.AND.my_rank.EQ.0).OR.IWriteFLAG.GE.10) THEN
-     PRINT*,"RAcceleratingVoltage = ", RAcceleratingVoltage
-  END IF
+  CALL Message ("ReadInpFile",IInfo,IErr,MessageVariable ="RAcceleratingVolatage",RVariable=RAcceleratingVoltage)
 
   ! ----------------------------------------------------------------------
   ! Title Space
@@ -377,27 +323,20 @@ SUBROUTINE ReadInpFile( IErr )
 
   ILine= ILine+1
   READ(IChInp,15,ERR=20,END=30) RInitialThickness
-  IF((IWriteFLAG.GE.1.AND.my_rank.EQ.0).OR.IWriteFLAG.GE.10) THEN
-     PRINT*,"RInitialThickness = ", RInitialThickness
-  END IF
+  CALL Message ("ReadInpFile",IInfo,IErr,MessageVariable ="RInitialThickness",RVariable=RInitialThickness)
 
   ILine= ILine+1
   READ(IChInp,15,ERR=20,END=30) RFinalThickness
-  IF((IWriteFLAG.GE.1.AND.my_rank.EQ.0).OR.IWriteFLAG.GE.10) THEN
-     PRINT*,"RFinalThickness = ", RFinalThickness
-  END IF
+  CALL Message ("ReadInpFile",IInfo,IErr,MessageVariable ="RFinalThickness",RVariable=RFinalThickness)
 
   ILine= ILine+1
   READ(IChInp,15,ERR=20,END=30) RDeltaThickness
-  IF((IWriteFLAG.GE.1.AND.my_rank.EQ.0).OR.IWriteFLAG.GE.10) THEN
-     PRINT*,"RDeltaThickness = ", RDeltaThickness
-  END IF
+  CALL Message ("ReadInpFile",IInfo,IErr,MessageVariable ="RDeltaThickness",RVariable=RDeltaThickness)
   
   ILine= ILine+1
   READ(IChInp,10,ERR=20,END=30) IReflectOut
-  IF((IWriteFLAG.GE.1.AND.my_rank.EQ.0).OR.IWriteFLAG.GE.10) THEN
-     PRINT*,"IReflectOut = ", IReflectOut
-  END IF
+  CALL Message ("ReadInpFile",IInfo,IErr,MessageVariable ="IReflectOut",IVariable=IReflectOut)
+
 
   IF(ISoftwareMode.EQ.2) THEN
 
@@ -414,6 +353,7 @@ SUBROUTINE ReadInpFile( IErr )
      ILine= ILine+1; READ(IChInp,ERR=20,END=30,FMT='(A)')
      
      ILine= ILine+1
+<<<<<<< HEAD
      READ(IChInp,FMT='(A)',ERR=20,END=30) SRefineMode
 
      IRefineModeSelectionArray = 0
@@ -457,6 +397,18 @@ SUBROUTINE ReadInpFile( IErr )
            PRINT*,"IRefineModeSelectionArray = ",IRefineModeSelectionArray
         END IF
      END IF    
+=======
+     READ(IChInp,10,ERR=20,END=30) IImageOutputFLAG
+     CALL Message ("ReadInpFile",IInfo,IErr,MessageVariable ="IImageOutputFLAG",IVariable = IImageOutputFLAG)
+     
+     ILine= ILine+1
+     READ(IChInp,10,ERR=20,END=30) IDevFLAG
+     CALL Message ("ReadInpFile",IInfo,IErr,MessageVariable ="IDevFLAG",IVariable = IDevFLAG)
+     
+     ILine= ILine+1
+     READ(IChInp,10,ERR=20,END=30) IRefineModeFLAG
+     CALL Message ("ReadInpFile",IInfo,IErr,MessageVariable ="IRefineModeFLAG",IVariable = IRefineModeFLAG)
+>>>>>>> message-subroutine
      
      ILine= ILine+1; READ(IChInp,ERR=20,END=30,FMT='(A)')
      ILine= ILine+1; READ(IChInp,ERR=20,END=30,FMT='(A)')
@@ -464,21 +416,15 @@ SUBROUTINE ReadInpFile( IErr )
      
      ILine= ILine+1
      READ(IChInp,15,ERR=20,END=30) RInitialDebyeWallerFactor
-     IF((IWriteFLAG.GE.1.AND.my_rank.EQ.0).OR.IWriteFLAG.GE.10) THEN
-        PRINT*,"RInitialDebyeWallerFactor = ", RInitialDebyeWallerFactor
-     END IF
-     
+     CALL Message ("ReadInpFile",IInfo,IErr,MessageVariable ="RInitialDebyeWallerFactor",RVariable =  RInitialDebyeWallerFactor)
+
      ILine= ILine+1
      READ(IChInp,15,ERR=20,END=30) RFinalDebyeWallerFactor
-     IF((IWriteFLAG.GE.1.AND.my_rank.EQ.0).OR.IWriteFLAG.GE.10) THEN
-        PRINT*,"RFinalDebyeWallerFactor = ", RFinalDebyeWallerFactor
-     END IF
+     CALL Message ("ReadInpFile",IInfo,IErr,MessageVariable ="RFinalDebyeWallerFactor",RVariable =  RFinalDebyeWallerFactor)
      
      ILine= ILine+1
      READ(IChInp,15,ERR=20,END=30) RDeltaDebyeWallerFactor
-     IF((IWriteFLAG.GE.1.AND.my_rank.EQ.0).OR.IWriteFLAG.GE.10) THEN
-        PRINT*,"RDeltaDebyeWallerFactor = ", RDeltaDebyeWallerFactor
-     END IF
+     CALL Message ("ReadInpFile",IInfo,IErr,MessageVariable ="RDeltaDebyeWallerFactor",RVariable =  RDeltaDebyeWallerFactor)
 
      ILine= ILine+1
      READ(IChInp,FMT='(A)',ERR=20,END=30) SElements
@@ -486,6 +432,8 @@ SUBROUTINE ReadInpFile( IErr )
      IPos2 = SCAN(SElements,'}')
      IPos = SCAN(SElements,'0')
      IElements = 1
+
+     !not sure what type of message this is?
      IF(IPos2.EQ.(IPos1+1).OR.IPos.EQ.(IPos1+1).OR.IPos2.EQ.0.OR.IPos1.EQ.0) THEN
         IF((IWriteFLAG.GE.1.AND.my_rank.EQ.0).OR.IWriteFLAG.GE.10) THEN
            PRINT*,"No Elements have been specified, Felix will assume all elements are to be refined = "
@@ -506,7 +454,7 @@ SUBROUTINE ReadInpFile( IErr )
              IElementList(IElements),&
              STAT=IErr)
         IF(IErr.NE.0) THEN
-           PRINT*,"Input(",my_rank,") ERROR IN ALLOCATE OF IElementList"
+           PRINT*,"ReadInpFile(",my_rank,") ERROR IN ALLOCATE OF IElementList"
            RETURN
         ENDIF
         
@@ -537,24 +485,19 @@ SUBROUTINE ReadInpFile( IErr )
      
      ILine= ILine+1
      READ(IChInp,10,ERR=20,END=30) INoofUgs
-     IF((IWriteFLAG.GE.1.AND.my_rank.EQ.0).OR.IWriteFLAG.GE.10) THEN
-        PRINT*,"INoofUgs = ", INoofUgs
-     END IF
+     CALL Message ("ReadInpFile",IInfo,IErr,MessageVariable ="INoofUgs",IVariable = INoofUgs)
      
      ILine= ILine+1
      READ(IChInp,15,ERR=20,END=30) RLowerBoundUgChange
-     IF((IWriteFLAG.GE.1.AND.my_rank.EQ.0).OR.IWriteFLAG.GE.10) THEN
-        PRINT*,"RLowerBoundUgChange = ", RLowerBoundUgChange
-     END IF
+     CALL Message ("ReadInpFile",IInfo,IErr,MessageVariable ="RLowerBoundUgChange",RVariable = RLowerBoundUgChange)
      
      ILine= ILine+1
      READ(IChInp,15,ERR=20,END=30) RUpperBoundUgChange
-     IF((IWriteFLAG.GE.1.AND.my_rank.EQ.0).OR.IWriteFLAG.GE.10) THEN
-        PRINT*,"RUpperBoundUgChange = ", RUpperBoundUgChange
-     END IF
-     
+     CALL Message ("ReadInpFile",IInfo,IErr,MessageVariable ="RUpperBoundUgChange",RVariable = RUpperBoundUgChange)
+
      ILine= ILine+1
      READ(IChInp,15,ERR=20,END=30) RDeltaUgChange
+<<<<<<< HEAD
      IF((IWriteFLAG.GE.1.AND.my_rank.EQ.0).OR.IWriteFLAG.GE.10) THEN
         PRINT*,"RDeltaUgChange = ", RDeltaUgChange
      END IF
@@ -582,6 +525,11 @@ SUBROUTINE ReadInpFile( IErr )
           IRefineModeSelectionArray(5)*SIZE(IAtomicSitesToRefine)*6+&
           IRefineModeSelectionArray(6)*3+&
           IRefineModeSelectionArray(7)*3
+=======
+     CALL Message ("ReadInpFile",IInfo,IErr,MessageVariable ="RDeltaUgChange",RVariable = RDeltaUgChange)
+
+    
+>>>>>>> message-subroutine
   END IF
 
 10 FORMAT(27X,I15.1)
@@ -597,7 +545,7 @@ SUBROUTINE ReadInpFile( IErr )
   
   !	error in OPEN detected
 120 IF(my_rank.EQ.0.OR.IWriteFLAG.GE.10) THEN
-     PRINT*,"Input(): ERR in OPEN"
+     PRINT*,"ReadInpFile(): ERR in OPEN"
      PRINT*,""
      CALL WriteOutInputFile (IErr)
   END IF
@@ -779,6 +727,7 @@ END SUBROUTINE ReadInpFile
 SUBROUTINE ReadScaFile( IErr )
 
   USE MyNumbers
+  USE WriteToScreen
   
   USE CConst; USE IConst
   USE IPara; USE RPara
@@ -794,11 +743,9 @@ SUBROUTINE ReadScaFile( IErr )
        rdummy
 
   INTEGER IErr, ILine, ILength, ind
-  IF((IWriteFLAG.GE.2.AND.my_rank.EQ.0).OR.IWriteFLAG.GE.10) THEN
 
-     PRINT*,"ReadScaFile()"
-     
-  END IF
+     CALL Message ("ReadScaFile",IMust,IErr)
+
   ILine= 0
   
 !!$  OPEN(UNIT= IChInp, ERR= 120, FILE= "FelixDoyle.sca",&
@@ -1225,6 +1172,7 @@ END SUBROUTINE WriteOutInputFile
 
 SUBROUTINE ReadHklFile(IErr)
 
+  USE WriteToScreen
   USE MyNumbers
   USE IChannels
 
@@ -1244,27 +1192,28 @@ SUBROUTINE ReadHklFile(IErr)
   INTEGER(IKIND) :: ILine,ILength,IErr,h,k,l,ind,IPos1,IPos2
   CHARACTER*200 :: dummy1,dummy2
 
-  
-  IF((my_rank.EQ.0.AND.IWriteFLAG.GE.0).OR.IWriteFLAG.GE.10) THEN
-     PRINT*,"ReadHklFile(",my_rank,")"
-  END IF
+  CALL Message ("ReadHklFile",IMust,IErr)  
+ ! IF((my_rank.EQ.0.AND.IWriteFLAG.GE.0).OR.IWriteFLAG.GE.10) THEN
+ !    PRINT*,"ReadHklFile(",my_rank,")"
+ ! END IF
 
   OPEN(Unit = IChInp,FILE="felix.hkl",&
        STATUS='OLD',ERR=10)
 
-  IF((my_rank.EQ.0.AND.IWriteFLAG.GE.2).OR.IWriteFLAG.GE.10) THEN
-     PRINT*,"ReadHklFile(",my_rank,") felix Has Detected .hkl and is entering Selected hkl mode"
-  END IF
+  CALL Message ("ReadHklFile",IInfo,IErr, &
+       MessageString =" Felix has detected .hkl and is entering selected hkl mode") 
+  !IF((my_rank.EQ.0.AND.IWriteFLAG.GE.2).OR.IWriteFLAG.GE.10) THEN
+  !   PRINT*,"ReadHklFile(",my_rank,") felix Has Detected .hkl and is entering Selected hkl mode"
+  !END IF
    
   ILine = 0
 
   IHKLSelectFLAG=1
-
   
-  
-  IF((my_rank.EQ.0.AND.IWriteFLAG.GE.0).OR.IWriteFLAG.GE.10) THEN
-     PRINT*,"ReadHklFile(",my_rank,") Selected hkl mode Engaged"
-  END IF
+  CALL Message ("ReadHklFile",IInfo,IErr,MessageString = " Selected hkl mode engaged") 
+ ! IF((my_rank.EQ.0.AND.IWriteFLAG.GE.0).OR.IWriteFLAG.GE.10) THEN
+ !    PRINT*,"ReadHklFile(",my_rank,") Selected hkl Mode Engaged"
+ ! END IF
 
   
   DO
@@ -1293,6 +1242,8 @@ SUBROUTINE ReadHklFile(IErr)
   REWIND(UNIT=IChInp)
 
   ILine = 0
+
+CALL Message ("ReadHklFile",IMoreInfo,IErr,MessageString = " Printing selected hkl's") 
 
   DO ind = 1,ILength
 
@@ -1327,6 +1278,7 @@ SUBROUTINE ReadHklFile(IErr)
      RInputHKLs(ILine,2) = REAL(k,RKIND)
      RInputHKLs(ILine,3) = REAL(l,RKIND)
      
+     !Why Zero?
      IF((my_rank.EQ.0.AND.IWriteFLAG.GE.3).OR.IWriteFLAG.GE.10) THEN
         
         PRINT*,RInputHKLs(ILine,:)
@@ -1339,9 +1291,8 @@ SUBROUTINE ReadHklFile(IErr)
 
   10 IHKLSelectFLAG=0
   
-  IF((my_rank.EQ.0.AND.IWriteFLAG.GE.0).OR.IWriteFLAG.GE.10) THEN
-     PRINT*,"ReadHklFile(",my_rank,") Did not find .hkl file continuing in normal mode"
-  END IF
+  CALL Message ("ReadHklFile",IInfo,IErr,MessageString = "Did not find .hkl file continuing in normal mode") 
+
   RETURN
 END SUBROUTINE ReadHklFile
   

@@ -35,7 +35,8 @@
 SUBROUTINE ImageInitialisation( IErr )
 
   USE MyNumbers
-  
+  USE WriteToScreen
+
   USE CConst; USE IConst
   USE IPara; USE RPara
   USE IChannels
@@ -47,16 +48,15 @@ SUBROUTINE ImageInitialisation( IErr )
 
   REAL(RKIND) dummyCA
   INTEGER(IKIND) IErr, ind,jnd
-  
-  IF((IWriteFLAG.GE.0.AND.my_rank.EQ.0).OR.IWriteFLAG.GE.10) THEN
-     PRINT*,"ImageInitialisation()"
-  END IF
+
+  CALL Message("ImageInitialisation",IMust,IErr)
   
 !Determine Positions of reflections in final image (may not need to be here)
 
-  IF((IWriteFLAG.GE.1.AND.my_rank.EQ.0).OR.IWriteFLAG.GE.10) THEN
-     PRINT*,"ImageInitialisation(",my_rank,") nReflections,MinGMag =", nReflections, RMinimumGMag
-  END IF
+  CALL Message("ImageInitialisation",IInfo,IErr, &
+       MessageVariable = "nReflections", IVariable = nReflections)
+  CALL Message("ImageInitialisation",IInfo,IErr, &
+       MessageVariable = "RMinimumGMag", RVariable = RMinimumGMag)
 
   ! positions of the centres of the disks
 
@@ -89,10 +89,12 @@ SUBROUTINE ImageInitialisation( IErr )
         END DO
      ENDDO
   END IF
+
+  DO ind=1,SIZE(Rhklpositions,DIM=2)
+     CALL Message("ImageInitialisation",IInfo,IErr, &
+          MessageVariable = "IImageSizeXY(ind)", IVariable = IImageSizeXY(ind))
+  END DO
      
-  IF((IWriteFLAG.GE.1.AND.my_rank.EQ.0).OR.IWriteFLAG.GE.10) THEN
-     PRINT*,"ImageInitialisation(",my_rank,") IImageSizeXY=", IImageSizeXY
-  END IF
     
   RETURN
 

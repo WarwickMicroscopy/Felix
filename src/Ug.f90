@@ -35,6 +35,7 @@
 SUBROUTINE GMatrixInitialisation (IErr)
   
   USE MyNumbers
+  USE WriteToScreen
   
   USE CConst; USE IConst
   USE IPara; USE RPara
@@ -47,9 +48,7 @@ SUBROUTINE GMatrixInitialisation (IErr)
   
   INTEGER(IKIND) ind,jnd,ierr,IUniqueKey,knd,IFound
 
-  IF((IWriteFLAG.GE.0.AND.my_rank.EQ.0).OR.IWriteFLAG.GE.10) THEN
-     PRINT*,"GMatrixInitialisation(",my_rank,")"
-  END IF
+  CALL Message("GMatrixInitialisation",IMust,IErr)
 
   DO ind=1,nReflections
      DO jnd=1,nReflections
@@ -65,6 +64,7 @@ END SUBROUTINE GMatrixInitialisation
 SUBROUTINE SymmetryRelatedStructureFactorDetermination (IErr)
   
   USE MyNumbers
+  USE WriteToScreen
   
   USE CConst; USE IConst
   USE IPara; USE RPara; USE CPara
@@ -79,9 +79,9 @@ SUBROUTINE SymmetryRelatedStructureFactorDetermination (IErr)
   
   INTEGER(IKIND) ind,jnd,ierr,knd,Iuid
 
-  IF((IWriteFLAG.GE.0.AND.my_rank.EQ.0).OR.IWriteFLAG.GE.10) THEN
-     PRINT*,"SymmetryRelatedStructureFactorDetermination(",my_rank,")"
-  END IF
+
+  CALL Message("SymmetryRelatedStructureFactorDetermination",IMust,IErr)
+
 
   !Immediately set all the zeros to Relation 1
   
@@ -134,7 +134,8 @@ END SUBROUTINE SymmetryRelatedStructureFactorDetermination
 SUBROUTINE StructureFactorInitialisation (IErr,CZeroMat)
   
   USE MyNumbers
-  
+  USE WriteToScreen
+
   USE CConst; USE IConst
   USE IPara; USE RPara; USE CPara
   USE BlochPara
@@ -159,9 +160,7 @@ SUBROUTINE StructureFactorInitialisation (IErr,CZeroMat)
   COMPLEX(CKIND),DIMENSION(:,:), ALLOCATABLE :: &
        CZeroMat
 
-  IF((IWriteFLAG.GE.0.AND.my_rank.EQ.0).OR.IWriteFLAG.GE.10) THEN
-     PRINT*,"StructureFactorInitialisation(",my_rank,")"
-  END IF
+  CALL Message("StructureFactorInitialisation",IMust,IErr)
 
   CUgMat = CZERO
 
@@ -301,10 +300,19 @@ SUBROUTINE StructureFactorInitialisation (IErr,CZeroMat)
        (TWO*RElectronMass*RElectronCharge*TWOPI**2))*&
        RAngstromConversion*RAngstromConversion)
 
-  IF((IWriteFLAG.GE.2.AND.my_rank.EQ.0).OR.IWriteFLAG.GE.10) THEN
-     PRINT*,"StructureFactorInitialisation(",my_rank,") RMeanInnerCrystalPotential = ", &
-          RMeanInnerCrystalPotential,RMeanInnerPotentialVolts
-  END IF
+  CALL Message("StructureFactorInitialisation",IMoreInfo,IErr, &
+       MessageVariable = "RMeanInnerCrystalPotential", &
+       RVariable = RMeanInnerCrystalPotential)
+  
+  CALL Message("StructureFactorInitialisation",IMoreInfo,IErr, &
+       MessageVariable = "RMeanInnerPotentialVolts", &
+       RVariable = RMeanInnerPotentialVolts)
+
+!!$  
+!!$  IF((IWriteFLAG.GE.2.AND.my_rank.EQ.0).OR.IWriteFLAG.GE.10) THEN
+!!$     PRINT*,"StructureFactorInitialisation(",my_rank,") RMeanInnerCrystalPotential = ", &
+!!$          RMeanInnerCrystalPotential,RMeanInnerPotentialVolts
+!!$  END IF
   
   DO ind=1,nReflections
      CUgMat(ind,ind)=CUgMat(ind,ind)-RMeanInnerCrystalPotential
@@ -319,10 +327,14 @@ SUBROUTINE StructureFactorInitialisation (IErr,CZeroMat)
   !--------------------------------------------------------------------
   
   RBigK= SQRT(RElectronWaveVectorMagnitude**2 + RMeanInnerCrystalPotential)
+  
+  CALL Message("StructureFactorInitialisation",IInfo,IErr, &
+       MessageVariable = "RBigK", &
+       RVariable = RBigK)
 
-  IF((IWriteFLAG.GE.1.AND.my_rank.EQ.0).OR.IWriteFLAG.GE.10) THEN
-     PRINT*,"StructureFactorSetup(", my_rank, ") BigK=", RBigK
-  END IF
+!!$  IF((IWriteFLAG.GE.1.AND.my_rank.EQ.0).OR.IWriteFLAG.GE.10) THEN
+!!$     PRINT*,"StructureFactorInitialisation(", my_rank, ") BigK=", RBigK
+!!$  END IF
     
   IF(IAbsorbFLAG.GT.1) THEN
      CZeroMAT = CZERO
@@ -409,6 +421,7 @@ SUBROUTINE StructureFactorsWithAbsorptionDetermination(IErr)
 
 
   USE MyNumbers
+  USE WriteToScreen
   
   USE CConst; USE IConst
   USE IPara; USE RPara; USE CPara
@@ -433,9 +446,11 @@ SUBROUTINE StructureFactorsWithAbsorptionDetermination(IErr)
        IPos
   COMPLEX(CKIND) CVgij
 
-  IF((my_rank.EQ.0.AND.IWriteFLAG.GE.0).OR.IWriteFLAG.GE.10) THEN
-     PRINT*,"StructureFactorsWithAbsorptionDetermination(",my_rank,")"
-  END IF
+   CALL Message("StructureFactorsWithAbsorptionDetermination",IMust,IErr)
+      
+!!$  IF((my_rank.EQ.0.AND.IWriteFLAG.GE.0).OR.IWriteFLAG.GE.10) THEN
+!!$     PRINT*,"StructureFactorsWithAbsorptionDetermination(",my_rank,")"
+!!$  END IF
 
   CUgMatPrime = CZERO
     
