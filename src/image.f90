@@ -162,7 +162,8 @@ END SUBROUTINE MontageInitialisation
 SUBROUTINE ImageMaskInitialisation (IErr)
   
   USE MyNumbers
-  
+  USE WriteToScreen
+
   USE CConst; USE IConst
   USE IPara; USE RPara
   USE IChannels
@@ -177,9 +178,7 @@ SUBROUTINE ImageMaskInitialisation (IErr)
   REAL(RKIND) :: &
        Rradius, RImageRadius
   
-  IF((IWriteFLAG.EQ.0.AND.my_rank.EQ.0).OR.IWriteFLAG.GE.10) THEN
-     PRINT*,"ImageMaskInitialisation()"
-  END IF
+  CALL Message("ImageMaskInitialisation",IMust,IErr)
 
   IPixelTotal =0
   SELECT CASE (IMaskFLAG)

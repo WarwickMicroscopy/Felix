@@ -51,6 +51,7 @@
 SUBROUTINE OpenData(IChOutWrite, prefix, surname, IErr)
 
   USE MyNumbers
+  USE WriteToScreen
 
   USE IConst; USE RConst
   USE IPara; USE RPara
@@ -67,6 +68,8 @@ SUBROUTINE OpenData(IChOutWrite, prefix, surname, IErr)
 
   CHARACTER*34 filename
   INTEGER index
+
+ ! CALL Message("OpenData",IMust,IErr)
   IF((IWriteFLAG.GE.2.AND.my_rank.EQ.0).OR.IWriteFLAG.GE.10) THEN
 
      PRINT*,"OpenData()"
@@ -77,11 +80,15 @@ SUBROUTINE OpenData(IChOutWrite, prefix, surname, IErr)
 
   WRITE(filename,"(A2,A2,A1,A"//TRIM(surnamelength)//",A4)") "F-",prefix,"-",surname,".txt"
 
+!  CALL Message("OpenData",IAllInfo,IErr,MessageVariable = "filename", & 
+!       MessageString = filename)
+
   IF(IWriteFLAG.GE.10) THEN
      
      PRINT*,filename
 
   END IF
+
   IF (IWriteFLAG.GE.10) THEN
      SELECT CASE(IChOutWrite)
      CASE(IChOutWF)
@@ -275,6 +282,7 @@ END SUBROUTINE OpenDataForAppend
 SUBROUTINE OpenReflectionImage(IChOutWrite, surname, IErr,IReflectWriting,IImageSizeX)
 
   USE MyNumbers
+  USE WriteToScreen
 
   USE IConst
   USE RConst
@@ -295,10 +303,10 @@ SUBROUTINE OpenReflectionImage(IChOutWrite, surname, IErr,IReflectWriting,IImage
   CHARACTER*250 filename
   CHARACTER*40 fileext
   INTEGER index
-
-  IF ((IWriteFLAG.GE.2.AND.my_rank.EQ.0).OR.IWriteFLAG.GE.10) THEN
-     PRINT*,"OpenReflectionImage()"
-  END IF
+  CALL Message("OpenReflectionImage",IMust,IErr)
+!!$  IF ((IWriteFLAG.GE.2.AND.my_rank.EQ.0).OR.IWriteFLAG.GE.10) THEN
+!!$     PRINT*,"OpenReflectionImage()"
+!!$  END IF
   
 
   SELECT CASE(IChOutWrite)
@@ -316,9 +324,12 @@ SUBROUTINE OpenReflectionImage(IChOutWrite, surname, IErr,IReflectWriting,IImage
      END IF
   END SELECT
 
-  IF (IWriteFLAG.GE.10) THEN
-     PRINT*,filename
-  END IF
+ ! CALL Message("OpenReflectionImage",IMoreInfo,IErr, MessageVariable = "filename", &
+  !     MessageString = filename)
+
+!!$  IF (IWriteFLAG.GE.10) THEN
+!!$     PRINT*,filename
+!!$  END IF
   
   SELECT CASE (IBinorTextFLAG)
   CASE(0)
@@ -368,7 +379,9 @@ SUBROUTINE OpenReflectionImage(IChOutWrite, surname, IErr,IReflectWriting,IImage
      END IF
   END SELECT
   
-  PRINT*,filename
+  CALL Message("OpenReflectionImage",IInfo,IErr, MessageVariable = "filename", &
+       MessageString = filename)
+ ! PRINT*,filename
 
   SELECT CASE (IBinorTextFLAG)
      CASE(0)
@@ -379,7 +392,7 @@ SUBROUTINE OpenReflectionImage(IChOutWrite, surname, IErr,IReflectWriting,IImage
         OPEN(UNIT=IChOutWrite, ERR=10, STATUS= 'UNKNOWN', FILE=TRIM(ADJUSTL(filename)))
      END SELECT
      RETURN
-     
+   
   ! error in OPEN detected
 10 PRINT*,"OpenReflectionImage(): ERR in OPEN()",IErr
   IErr= 1
@@ -394,6 +407,7 @@ END SUBROUTINE OpenReflectionImage
 SUBROUTINE WriteReflectionImage( IChOutWrite, data, IErr,IImageSizeX,IImageSizeY)
 
   USE MyNumbers
+  USE WriteToScreen
 
   USE IConst
   USE RConst
@@ -410,9 +424,10 @@ SUBROUTINE WriteReflectionImage( IChOutWrite, data, IErr,IImageSizeX,IImageSizeY
   INTEGER ind, IChOutWrite
   CHARACTER*100 SFormatString
 
-  IF((IWriteFLAG.GE.2.AND.my_rank.EQ.0).OR.IWriteFLAG.GE.10) THEN
-     PRINT*,"WriteReflectionImage"
-  END IF
+  CALL Message("WriteReflectionImage",IMust,IErr)
+!!$  IF((IWriteFLAG.GE.2.AND.my_rank.EQ.0).OR.IWriteFLAG.GE.10) THEN
+!!$     PRINT*,"WriteReflectionImage"
+!!$  END IF
 
   SELECT CASE (IBinorTextFLAG)
      

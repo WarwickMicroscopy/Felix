@@ -39,10 +39,12 @@
 SUBROUTINE WriteOutput( CAmplitudeandPhaseRoot,RIndividualReflectionsRoot,RFinalMontageImageRoot,IErr)
 
   USE MyNumbers
+  USE WriteToScreen
+
   USE CPara; USE IPara; USE SPara
   USE RPara
   USE BlochPara
-  
+    
   USE IChannels
   
   USE MPI
@@ -68,6 +70,8 @@ SUBROUTINE WriteOutput( CAmplitudeandPhaseRoot,RIndividualReflectionsRoot,RFinal
   CHARACTER*25 CThickness, CThicknessLength
   
   !IF (my_rank.EQ.0) THEN
+    
+  CALL Message("WriteOutput",IMust,IErr)
 
   ALLOCATE( &
        RImage(2*IPixelCount,2*IPixelCount), &
@@ -77,11 +81,12 @@ SUBROUTINE WriteOutput( CAmplitudeandPhaseRoot,RIndividualReflectionsRoot,RFinal
           " in ALLOCATE() of DYNAMIC variables RImage"
      RETURN
   ENDIF
-  
-  
-  IF(IWriteFLAG.GE.10) THEN
-     PRINT*,"Writing Images" 
-  END IF
+
+
+  CALL Message("WriteOutput",IAllInfo,IErr,MessageString = "Writing Images")
+!!$  IF(IWriteFLAG.GE.10) THEN
+!!$     PRINT*,"Writing Images" 
+!!$  END IF
   
   
   DO knd = 1,IThicknessCount
@@ -107,20 +112,25 @@ SUBROUTINE WriteOutput( CAmplitudeandPhaseRoot,RIndividualReflectionsRoot,RFinal
            RETURN
         ENDIF
         
-        IF((IWriteFLAG.GE.2.AND.my_rank.EQ.0).OR.IWriteFLAG.GE.10) THEN         
-           PRINT*,"WriteOutput(", my_rank, ") working on RThickness=", RThickness
-        END IF
-        
+        CALL Message("WriteOutput",IMoreInfo,IErr,MessageVariable = "working on RThickness",RVariable = RThickness )
+
+!!$        IF((IWriteFLAG.GE.2.AND.my_rank.EQ.0).OR.IWriteFLAG.GE.10) THEN         
+!!$           PRINT*,"WriteOutput(", my_rank, ") working on RThickness=", RThickness
+!!$        END IF
+
+
         CALL WriteReflectionImage(MontageOut,RFinalMontageImageRoot(:,:,knd), &
              IErr,MAXVAL(IImageSizeXY),MAXVAL(IImageSizeXY))
-        CLOSE(MontageOut,ERR=9999)
+
+        CLOSE(MontageOut,IOSTAT =IErr)
+        CALL ErrorChecks("WriteOutput","WriteOutput",ICritError,IErr)
+        
         
      END IF
      
      !--------------------------------------------------------
      ! Write Reflections
      !--------------------------------------------------------
-     
      
      IF(IImageFLAG.EQ.1.OR.IImageFLAG.EQ.2.OR.IImageFLAG.EQ.5.OR.IImageFLAG.EQ.6) THEN
         
@@ -133,7 +143,7 @@ SUBROUTINE WriteOutput( CAmplitudeandPhaseRoot,RIndividualReflectionsRoot,RFinal
              "_T", IThickness
         
         call system('mkdir ' // path)
-        
+   
         DO ind = 1,IReflectOut
            CALL OpenReflectionImage(IChOutWIImage,path,IErr,ind,2*IPixelCount)
            IF( IErr.NE.0 ) THEN
@@ -154,7 +164,8 @@ SUBROUTINE WriteOutput( CAmplitudeandPhaseRoot,RIndividualReflectionsRoot,RFinal
               PRINT*,"WriteOutput(", my_rank, ") error in WriteReflectionImage()"
               RETURN
            ENDIF
-           CLOSE(IChOutWIImage,ERR=9999)
+           CLOSE(IChOutWIImage,IOSTAT = IErr)
+           CALL ErrorChecks("WriteOutput","WriteOutput",ICritError,IErr)
         END DO
      END IF
      
@@ -216,34 +227,30 @@ SUBROUTINE WriteOutput( CAmplitudeandPhaseRoot,RIndividualReflectionsRoot,RFinal
            ENDIF
            
            
-           CLOSE(IChOutWFImageReal,ERR=9999)
-           CLOSE(IChOutWFImagePhase,ERR = 9999)
+           CLOSE(IChOutWFImageReal,IOSTAT = IErr)
+           CALL ErrorChecks("WriteOutput","WriteOutput",ICritError,IErr)
+
+           CLOSE(IChOutWFImagePhase,IOSTAT = IErr)
+           CALL ErrorChecks("WriteOutput","WriteOutput",ICritError,IErr)
+         
         END DO
      END IF
   END DO
   
+ IF (my_rank ==0) THEN
+ END IF
+
   DEALLOCATE( &
        RImage,STAT=IErr)       
   IF( IErr.NE.0 ) THEN
      PRINT*,"WriteOutput(", my_rank, ") error in Deallocation of RImage"
      RETURN
   ENDIF
-  
+   
   ! END IF
-  
-     
+ 
   !--------------------------------------------------------------------
   ! Shut down MPI
   !--------------------------------------------------------------------
-9999 &
-     CALL MPI_Finalize(IErr)
-     IF( IErr.NE.0 ) THEN
-        PRINT*,"WriteOutput(", my_rank, ") error ", IErr, " in MPI_Finalize()"
-        STOP
-     ENDIF
-     
-     ! clean shutdown
-     STOP
-  
 
 END SUBROUTINE WriteOutput
