@@ -583,6 +583,7 @@ SUBROUTINE ReadInpFile( IErr )
           IRefineModeSelectionArray(6)*3+&
           IRefineModeSelectionArray(7)*3
 
+     PRINT*,"IIndependentVariables =",IIndependentVariables
 
      ILine= ILine+1; READ(IChInp,ERR=20,END=30,FMT='(A)')
      ILine= ILine+1; READ(IChInp,ERR=20,END=30,FMT='(A)')

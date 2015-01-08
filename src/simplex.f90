@@ -14,15 +14,13 @@ SUBROUTINE NDimensionalDownhillSimplex(RSimplexVolume,y,mp,np,ndim,ftol,iter,IEr
        iter,mp,ndim,np,NMAX,ITMAX,IErr
   REAL(RKIND) :: &
        ftol,RSimplexVolume(mp,np),y(mp),SimplexFunction,SimplexExtrapolate,RSendPacket(ndim+2),RExitFlag
-  PARAMETER (NMAX=100,ITMAX=5000)
-!!$  EXTERNAL SimplexFunction
+  PARAMETER (NMAX=1000,ITMAX=50000)
 
   INTEGER(IKIND) :: &
        i,ihi,ilo,inhi,j,m,n,IExitFlag
   REAL(RKIND) :: &
        rtol,sum,swap,ysave,ytry,psum(ndim),amotry
-  
-     PRINT*,my_rank,"ndim =",ndim
+
   IF(my_rank.EQ.0) THEN
      PRINT*,"Beginning Simplex",IErr
      iter = 0
@@ -79,9 +77,13 @@ SUBROUTINE NDimensionalDownhillSimplex(RSimplexVolume,y,mp,np,ndim,ftol,iter,IEr
         RETURN
         PRINT*,"ITMAX exceeded in NDimensionalDownhillSimplex"
      END IF
-     
+    
+     PRINT*,"-----------------------------------------------------"
+     PRINT*,"Iteration",iter,"Figure of Merit",ytry
+     PRINT*,"-----------------------------------------------------"
+
      iter=iter+2
-     
+    
      ytry = SimplexExtrapolate(RSimplexVolume,y,psum,mp,np,ndim,ihi,-1.0D0,iter,IErr)
      
      IF (ytry.LE.y(ilo).OR.my_rank.NE.0) THEN
@@ -152,9 +154,8 @@ REAL(RKIND) FUNCTION SimplexExtrapolate(RSimplexVolume,y,psum,mp,np,ndim,ihi,fac
   INTEGER(IKIND) :: &
        ihi,mp,ndim,np,NMAX,IErr,iter
   REAL(RKIND) :: &
-       SimplexExtrapolate,fac,RSimplexVolume(mp,np),psum(np),y(mp),SimplexFunction,RSendPacket(ndim+2)
-  PARAMETER(NMAX=100)
-!!$  EXTERNAL SimplexFunction
+       fac,RSimplexVolume(mp,np),psum(np),y(mp),SimplexFunction,RSendPacket(ndim+2)
+  PARAMETER(NMAX=1000)
 
   INTEGER(IKIND) :: &
        j
@@ -180,12 +181,6 @@ REAL(RKIND) FUNCTION SimplexExtrapolate(RSimplexVolume,y,psum,mp,np,ndim,ihi,fac
   ENDIF
 
   SimplexExtrapolate=ytry
-  
-  PRINT*,"-----------------------------------------------------"
-  PRINT*,"Iteration",iter
-  PRINT*,"Configuration",ptry
-  PRINT*,"Figure of Merit",ytry
-  PRINT*,"-----------------------------------------------------"
 
   RETURN
 END FUNCTION SimplexExtrapolate

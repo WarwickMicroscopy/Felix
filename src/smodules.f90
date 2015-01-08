@@ -251,7 +251,7 @@ MODULE IPara
    ! Simplex Global IterationCount
 
    INTEGER(IKIND) :: &
-        IVariableID,IFelixCount
+        IVariableID,IFelixCount,IPreviousPrintedIteration
 END MODULE IPara
 
 !--------------------------------------------------------------------

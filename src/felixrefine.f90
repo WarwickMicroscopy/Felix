@@ -194,20 +194,24 @@ PROGRAM Felixrefine
      GOTO 9999
   ENDIF
 !!$  IF(my_rank.EQ.0) THEN
-     ALLOCATE( &
-          RSimplexFoM(IIndependentVariables),&
-          STAT=IErr)  
-     IF( IErr.NE.0 ) THEN
-        PRINT*,"felixrefine (", my_rank, ") error in Allocation()"
-        GOTO 9999
-     ENDIF
+  ALLOCATE( &
+       RSimplexFoM(IIndependentVariables),&
+       STAT=IErr)  
+  IF( IErr.NE.0 ) THEN
+     PRINT*,"felixrefine (", my_rank, ") error in Allocation()"
+     GOTO 9999
+  ENDIF
 !!$  END IF
-    
+  
+  IFelixCount = 0
+
   CALL SimplexInitialisation(RSimplexVolume,RSimplexFoM,RIndependentVariableValues,1,IErr)
   IF( IErr.NE.0 ) THEN
      PRINT*,"felixrefine (", my_rank, ") error in SimplexInitialisation()"
      GOTO 9999
   ENDIF
+
+  IFelixCount = 0
 
   !--------------------------------------------------------------------
   ! Apply Simplex Method
@@ -320,7 +324,7 @@ USE MyNumbers
        IIterativeVariableUniqueIDs(IIndependentVariables,5),&
        STAT=IErr)  
   IF( IErr.NE.0 ) THEN
-     PRINT*,"felixrefine (", my_rank, ") error in Deallocation()"
+     PRINT*,"felixrefine (", my_rank, ") error in Allocation() of IIterativeVariableUniqueIDs"
      RETURN
   ENDIF
 
@@ -935,7 +939,7 @@ SUBROUTINE PerformDummySimulationToSetupSimplexValues(IErr)
        Rhkl,&
        STAT=IErr)
   IF( IErr.NE.0 ) THEN
-    PRINT*,"PerformDummySimulationToSetupSimplexValues(", my_rank, ") error ", IErr, &
+     PRINT*,"PerformDummySimulationToSetupSimplexValues(", my_rank, ") error ", IErr, &
           " in Deallocation"
      RETURN
   ENDIF
