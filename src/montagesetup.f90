@@ -38,7 +38,9 @@
 
 SUBROUTINE MontageSetup(IThicknessIndex,knd,ind,jnd,RFinalMontageImageRoot,RIndividualReflectionsRoot,IErr)
   
+  USE WriteToScreen
   USE MyNumbers
+  USE IConst
   
   USE MPI
   USE MyMPI
@@ -54,6 +56,8 @@ SUBROUTINE MontageSetup(IThicknessIndex,knd,ind,jnd,RFinalMontageImageRoot,RIndi
   REAL(RKIND),DIMENSION(IReflectOut,IThicknessCount,IPixelTotal):: &
        RIndividualReflectionsRoot
   
+  CALL Message("MontageSetup",IMust,IErr)
+
      DO IThicknessIndex =1,IThicknessCount
         DO knd = 1,IPixelTotal
            ind = IPixelLocations(knd,1)
@@ -68,6 +72,8 @@ SUBROUTINE MontageSetup(IThicknessIndex,knd,ind,jnd,RFinalMontageImageRoot,RIndi
            ENDIF
         END DO
      END DO
+!!$     reset message counter
+     IMessageCounter = 0
   
 
 END SUBROUTINE MontageSetup

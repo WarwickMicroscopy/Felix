@@ -38,13 +38,17 @@
 
 SUBROUTINE DiffractionPatternInitialisation
 
+  USE WriteToScreen
   USE MyNumbers
+  USE IConst
 
   USE MyMPI
 
   IMPLICIT NONE
 
   INTEGER(IKIND) IErr
+
+  CALL Message("DiffractionPatternInitialisation",IMust,IErr)
 
   CALL ReflectionDetermination (IErr)
   IF( IErr.NE.0 ) THEN

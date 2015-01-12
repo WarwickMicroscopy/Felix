@@ -279,7 +279,7 @@ END SUBROUTINE OpenDataForAppend
 ! Open Reflection Image
 ! --------------------------------------------------------------------
 
-SUBROUTINE OpenReflectionImage(IChOutWrite, surname, IErr,IReflectWriting,IImageSizeX)
+SUBROUTINE OpenReflectionImage(IChOutWrite, surname, IErr,IReflectWriting,IImageSizeX,ind)
 
   USE MyNumbers
   USE WriteToScreen
@@ -302,13 +302,15 @@ SUBROUTINE OpenReflectionImage(IChOutWrite, surname, IErr,IReflectWriting,IImage
 
   CHARACTER*250 filename
   CHARACTER*40 fileext
-  INTEGER index
-  CALL Message("OpenReflectionImage",IMust,IErr)
-!!$  IF ((IWriteFLAG.GE.2.AND.my_rank.EQ.0).OR.IWriteFLAG.GE.10) THEN
-!!$     PRINT*,"OpenReflectionImage()"
-!!$  END IF
-  
+  INTEGER index,ind
 
+  !!$  Only Prints out this message once when iterating (i.e. when in 1st iteration)
+  IMessageCounter = ind
+
+  IF (IMessageCounter.LT.2) THEN
+     CALL Message("OpenReflectionImage",IMust,IErr)
+  END IF
+  
   SELECT CASE(IChOutWrite)
   CASE(MontageOut)
   CASE DEFAULT
@@ -404,7 +406,7 @@ END SUBROUTINE OpenReflectionImage
 ! Write Reflection Images
 !-----------------------------------------------------------------
 
-SUBROUTINE WriteReflectionImage( IChOutWrite, data, IErr,IImageSizeX,IImageSizeY)
+SUBROUTINE WriteReflectionImage( IChOutWrite, data, IErr,IImageSizeX,IImageSizeY,knd)
 
   USE MyNumbers
   USE WriteToScreen
@@ -421,14 +423,14 @@ SUBROUTINE WriteReflectionImage( IChOutWrite, data, IErr,IImageSizeX,IImageSizeY
   INTEGER(KIND=IKIND) IErr,IImageSizeY,IImageSizeX
   REAL(KIND=RKIND),DIMENSION(IImageSizeX,IImageSizeY) :: data
   CHARACTER*100 CSizeofData
-  INTEGER ind, IChOutWrite
+  INTEGER ind,knd, IChOutWrite
   CHARACTER*100 SFormatString
 
-  CALL Message("WriteReflectionImage",IMust,IErr)
-!!$  IF((IWriteFLAG.GE.2.AND.my_rank.EQ.0).OR.IWriteFLAG.GE.10) THEN
-!!$     PRINT*,"WriteReflectionImage"
-!!$  END IF
-
+  IMessageCounter = knd
+  IF (IMessageCounter.LT.2) THEN
+     CALL Message("WriteReflectionImage",IMust,IErr)
+  END IF
+  
   SELECT CASE (IBinorTextFLAG)
      
   CASE(0)

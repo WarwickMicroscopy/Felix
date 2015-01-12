@@ -102,6 +102,7 @@ END SUBROUTINE ImageInitialisation
 
 SUBROUTINE MontageInitialisation(ind,jnd,ithicknessindex,RMontageImage,RIntensity,Ierr)
   
+  USE WriteToScreen
   USE MyNumbers
   
   USE CConst; USE IConst
@@ -118,6 +119,14 @@ SUBROUTINE MontageInitialisation(ind,jnd,ithicknessindex,RMontageImage,RIntensit
   REAL(RKIND), DIMENSION(MAXVAL(IImageSizeXY),MAXVAL(IImageSizeXY),IThicknessCount),INTENT(OUT) :: &
        RMontageImage
   REAL(RKIND), DIMENSION(IReflectOut) :: RIntensity
+
+!!$  Only print out once when first entered - use message counter
+  IF (my_rank.EQ.0) THEN
+     DO WHILE (IMessageCounter .LT.1)
+        CALL Message("MontageInitialisation",IMust,IErr)
+        IMessageCounter = IMessageCounter +1
+     END DO
+  END IF
  
   DO hnd = 1,IReflectOut
      

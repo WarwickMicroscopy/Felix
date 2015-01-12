@@ -1,6 +1,6 @@
 !%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 !
-! BlochSim
+! felixsim
 !
 ! Richard Beanland, Keith Evans, Rudolf A Roemer and Alexander Hubert
 !
@@ -15,20 +15,20 @@
 ! 
 !%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 !
-!  This file is part of BlochSim.
+!  This file is part of felixsim.
 !
-!  BlochSim is free software: you can redistribute it and/or modify
+!  felixsim is free software: you can redistribute it and/or modify
 !  it under the terms of the GNU General Public License as published by
 !  the Free Software Foundation, either version 3 of the License, or
 !  (at your option) any later version.
 !  
-!  BlochSim is distributed in the hope that it will be useful,
+!  felixsim is distributed in the hope that it will be useful,
 !  but WITHOUT ANY WARRANTY; without even the implied warranty of
 !  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 !  GNU General Public License for more details.
 !  
 !  You should have received a copy of the GNU General Public License
-!  along with BlochSim.  If not, see <http://www.gnu.org/licenses/>.
+!  along with felixsim.  If not, see <http://www.gnu.org/licenses/>.
 !
 !%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
@@ -41,8 +41,13 @@ SUBROUTINE INVERT(MatrixSize,Matrix,InvertedMatrix,IErr)
 !   Invert an M*M Complex Matrix
 !   Matrix: the Matrix (Destroyed)
 !   InvertedMatrix: the Inverse
-  USE MyNUMBERS
-  
+  USE WriteToScreen
+  USE MyNumbers
+
+  USE IConst
+  USE IPara
+
+  USE MyMPI
   
   IMPLICIT NONE
   
@@ -60,6 +65,13 @@ SUBROUTINE INVERT(MatrixSize,Matrix,InvertedMatrix,IErr)
 !!$     B(I,I) = CONE
 !!$  END DO
   !INFO=0
+
+  IF (my_rank.EQ.0) THEN
+     DO WHILE (IMessageCounter .LT.7)
+        CALL Message("Invert",IMust,IErr)
+        IMessageCounter = IMessageCounter +1
+     END DO
+  END IF
   
   ALLOCATE(IPIV(MatrixSize),STAT=IErr)
   IF( IErr.NE.0 ) THEN

@@ -347,12 +347,11 @@ PROGRAM felixsim
           " in DEALLOCATE() "
      GOTO 9999
   ENDIF
-  
-  CALL Message("felixsim",ISilent,IErr,MessageString = " Entering BlochLoop")   
 
-!!$  IF((IWriteFLAG.GE.0.AND.my_rank.EQ.0).OR.IWriteFLAG.GE.6) THEN
-!!$     PRINT*,"felixsim(",my_rank,") Entering BlochLoop()"
-!!$  END IF
+   
+  CALL Message("*********************************",ISilent,IErr)
+  CALL Message("felixsim",ISilent,IErr,MessageString = " Entering BlochLoop")   
+  CALL Message("*********************************",ISilent,IErr)
 
   DO knd = ILocalPixelCountMin,ILocalPixelCountMax,1
      ind = IPixelLocations(knd,1)
@@ -364,6 +363,9 @@ PROGRAM felixsim
         GOTO 9999
      ENDIF
   END DO
+
+!!$     reset message counter
+  IMessageCounter = 0
   
   IF((IWriteFLAG.GE.6.AND.my_rank.EQ.0).OR.IWriteFLAG.GE.10) THEN
      PRINT*,"felixsim : ",my_rank," is exiting calculation loop"

@@ -267,6 +267,13 @@ MODULE IPara
 
    INTEGER(IKIND) :: &
         IVariableID,IFelixCount
+
+   !Message Counter (Avoid subroutines printing out 
+   !entering message more than once)
+
+   INTEGER(IKIND):: &
+        IMessageCounter=0
+
 END MODULE IPara
 
 !--------------------------------------------------------------------
