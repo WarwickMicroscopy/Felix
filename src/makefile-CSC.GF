@@ -51,22 +51,22 @@ LIBFLAGS= -llapack -lblas -lfftw3
 # LD_LIBRARY_PATH=/warwick/mathlib/nag/ifort-x86_64/lib:$LD_LIBRARY_PATH
 # in order to run the code
 
-SIMOBJECTFILES = gmodules.o smodules.o felixsim.o util.o in.o out.o readinput.o \
+SIMOBJECTFILES = gmodules.o smodules.o message.o felixsim.o util.o in.o out.o readinput.o \
 readciffile.o experimentalsetup.o imagesetup.o montagesetup.o \
 structurefactorsetup.o ciftbx.o hash_funcs.o eigen.o invert.o microscopy.o \
 diffractionpatterndefinitions.o diffractionpatterninitialisation.o crystallographyinitialisation.o \
-crystallography.o bloch.o Ug.o image.o writeoutput.o dqng.o xerror.o d1mach.o
+crystallography.o bloch.o Ug.o image.o errorchecks.o writeoutput.o dqng.o xerror.o d1mach.o
 
-DRAWOBJECTFILES = gmodules.o smodules.o felixdraw.o util.o in.o out.o readciffile.o\
+DRAWOBJECTFILES = gmodules.o smodules.o message.o felixdraw.o util.o in.o out.o readciffile.o\
 eigen.o invert.o microscopy.o diffractionpatterndefinitions.o diffractionpatterninitialisation.o \
 crystallographyinitialisation.o crystallography.o bloch.o Ug.o image.o \
-ciftbx.o hash_funcs.o dqng.o xerror.o d1mach.o
+ciftbx.o hash_funcs.o dqng.o xerror.o errorchecks.o d1mach.o
 
-REFINEOBJECTFILES = gmodules.o smodules.o felixrefine.o util.o in.o out.o readciffile.o \
+REFINEOBJECTFILES = gmodules.o smodules.o message.o felixrefine.o util.o in.o out.o readciffile.o \
 experimentalsetup.o imagesetup.o montagesetup.o structurefactorsetup.o readinput.o\
 eigen.o invert.o microscopy.o diffractionpatterndefinitions.o diffractionpatterninitialisation.o \
 crystallographyinitialisation.o crystallography.o bloch.o Ug.o image.o ciftbx.o simplex.o\
-hash_funcs.o felixfunction.o refineutils.o writeoutput.o dqng.o xerror.o d1mach.o
+hash_funcs.o felixfunction.o refineutils.o writeoutput.o dqng.o xerror.o d1mach.o errorchecks.o
 
 %.o: %.f90
 	$(F90) $(F90FLAGS) -DF90 -c $< -I$(INCLUDEDIR) $(LIBFLAGS)

@@ -23,8 +23,8 @@ IXDirectionFLAG           = 0
 IPixelCount               = 64
 
 # beam selection criteria
-IMinReflectionPool        = 1500
-IMinStrongBeams           = 500
+IMinReflectionPool        = 100
+IMinStrongBeams           = 20
 IMinWeakBeams             = 5
 RBSBMax                   = 0.1
 RBSPMax                   = 0.1
@@ -53,4 +53,3 @@ RInitialThickness        = 1000.0
 RFinalThickness          = 1000.0
 RDeltaThickness          = 10.0
 IReflectOut              = 30
-

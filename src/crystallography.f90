@@ -35,6 +35,7 @@
 SUBROUTINE CrystalLatticeVectorDetermination(IErr)
   
   USE MyNumbers
+  USE WriteToScreen
   
   USE RPara; USE IPara; USE SPara
   
@@ -50,6 +51,11 @@ SUBROUTINE CrystalLatticeVectorDetermination(IErr)
        RXDirO, RYDirO, RZDirO, RYDirC
   REAL(RKIND), DIMENSION(THREEDIM,THREEDIM) :: &
        RTMatC2O,RTMatO2M
+
+  CHARACTER*50 indString
+  CHARACTER*400  RTMatString
+
+  CALL Message("CrystalLatticeVectorDetermination",IMust,IErr)
 
   ! Setup Crystal Lattice Vectors: orthogonal reference frame in Angstrom units
 
@@ -120,9 +126,20 @@ SUBROUTINE CrystalLatticeVectorDetermination(IErr)
   RTMatC2O(:,2)= RbVecO(:)
   RTMatC2O(:,3)= RcVecO(:)
 
-  IF((IWriteFLAG.GE.3.AND.my_rank.EQ.0).OR.IWriteFLAG.GE.10) THEN
-     PRINT*,"CrystallographyInitialisation(",my_rank,") : RTMatC2O=", RTMatC2O
-  END IF
+  CALL Message("CrystalLatticeVectorDetermination",IMoreInfo,IErr,MessageString = "RTMatC2O")
+  
+  DO ind=1,THREEDIM
+     WRITE(indString,*)ind
+     WRITE(RTMatString,*) RTMatC2O(:,ind)
+     CALL Message("CrystalLatticeVectorDetermination",IMoreInfo,IErr, &
+          MessageVariable = "RTMatC2O(:,"//TRIM(ADJUSTL(indString))//")", &
+          MessageString = TRIM(ADJUSTL(RTMatString)))
+  END DO
+  
+
+!!$     IF((IWriteFLAG.GE.3.AND.my_rank.EQ.0).OR.IWriteFLAG.GE.10) THEN
+!!$     PRINT*,"CrystalLatticeVectorDetermination(",my_rank,") : RTMatC2O=", RTMatC2O
+!!$  END IF
 
   ! R?DirO vectors are reference vectors in orthogonal frame
   RXDirO= RXDirC(1)*RarVecO + RXDirC(2)*RbrVecO + RXDirC(3)*RcrVecO
@@ -137,10 +154,20 @@ SUBROUTINE CrystalLatticeVectorDetermination(IErr)
   RTMatO2M(1,:)= RXDirO(:)
   RTMatO2M(2,:)= RYDirO(:)
   RTMatO2M(3,:)= RZDirO(:)
+
+  CALL Message("CrystalLatticeVectorDetermination",IMoreInfo,IErr,MessageString = "RTMatO2M")
+
+  DO ind=1,THREEDIM
+     WRITE(indString,*)ind
+     WRITE(RTMatString,*) RTMatO2M(:,ind)
+     CALL Message("CrystalLatticeVectorDetermination",IMoreInfo,IErr, &
+          MessageVariable = "RTMatO2M(:,"//TRIM(ADJUSTL(indString))//")", &
+          MessageString = TRIM(ADJUSTL(RTMatString)))
+  END DO
   
-  IF((IWriteFLAG.GE.3.AND.my_rank.EQ.0).OR.IWriteFLAG.GE.10) THEN
-     PRINT*,"CrystallographyInitialisation(",my_rank,"): RTMatO2M=", RTMatO2M
-  END IF
+!!$  IF((IWriteFLAG.GE.3.AND.my_rank.EQ.0).OR.IWriteFLAG.GE.10) THEN
+!!$     PRINT*,"CrystalLatticeVectorDetermination(",my_rank,"): RTMatO2M=", RTMatO2M
+!!$  END IF
 
   ! now transform from crystal reference frame to orthogonal and then to microscope frame
 
@@ -291,6 +318,7 @@ SUBROUTINE CrystalUniqueFractionalAtomicPostitionsCalculation (IErr)
 
 
   USE MyNumbers
+  USE WriteToScreen
   
   USE CConst; USE IConst
   USE IPara; USE RPara; USE SPara
@@ -304,6 +332,11 @@ SUBROUTINE CrystalUniqueFractionalAtomicPostitionsCalculation (IErr)
 
   INTEGER(IKIND)IErr, ind,jnd, Iuniind
   LOGICAL Lunique
+
+  CHARACTER*100 MNPString
+  CHARACTER*100 indString
+  
+  CALL Message("CrystalUniqueFractionalAtomicPostitionsCalculation",IInfo,IErr)
 
   ! Calculate the set of unique fractional atomic positions
 
@@ -389,23 +422,42 @@ SUBROUTINE CrystalUniqueFractionalAtomicPostitionsCalculation (IErr)
      
   ENDDO
 
+!!$  Display the above variables to the user - index stored as string for formatting using message subroutine
   DO ind=1,Iuniind     
-     IF((IWriteFLAG.GE.3.AND.my_rank.EQ.0).OR.IWriteFLAG.GE.10) THEN
-        IF (ind.EQ.1) THEN
-           PRINT*,"Crystallography : ","MNP ","SMNP ","RDWF ","ROcc "
-        END IF
+!!$     IF((IWriteFLAG.GE.3.AND.my_rank.EQ.0).OR.IWriteFLAG.GE.10) THEN
+!!$        IF (ind.EQ.1) THEN
+!!$
+!!$      
+!!$          ! PRINT*,"Crystallography : ","MNP ","SMNP ","RDWF ","ROcc "
+!!$        END IF
+        WRITE(MNPString,*)MNP(ind,:)
+        WRITE(indString,*)ind
+        CALL Message("CrystalUniqueFractionalAtomicPostitionsCalculation",IMoreInfo,IErr, &
+              MessageVariable = "MNP("//TRIM(ADJUSTL(indString))//",:)",MessageString = MNPString)
+        CALL Message("CrystalUniqueFractionalAtomicPostitionsCalculation",IMoreInfo,IErr, &
+              MessageVariable = "SMNP("//TRIM(ADJUSTL(indString))//")",MessageString = SMNP(ind))
+        CALL Message("CrystalUniqueFractionalAtomicPostitionsCalculation",IMoreInfo,IErr, &
+              MessageVariable = "RDWF("//TRIM(ADJUSTL(indString))//")",RVariable = RDWF(ind))
+        CALL Message("CrystalUniqueFractionalAtomicPostitionsCalculation",IMoreInfo,IErr, &
+              MessageVariable = "ROcc("//TRIM(ADJUSTL(indString))//")",RVariable = ROcc(ind))
+        CALL Message("CrystalUniqueFractionalAtomicPostitionsCalculation",IMoreInfo,IErr, &
+              MessageVariable = "IAtoms("//TRIM(ADJUSTL(indString))//")",IVariable = IAtoms(ind))
+    
         
-        PRINT *,"Crystallography : ",MNP(ind,:),SMNP(ind),RDWF(ind),ROcc(ind),IAtoms(ind),ind
-     END IF
+        !PRINT *,"Crystallography : ",MNP(ind,:),SMNP(ind),RDWF(ind),ROcc(ind),IAtoms(ind),ind
+   !  END IF
   ENDDO
 
   !IAnisoDWFT now contains a list of indices referring to the correct Anisotropic Debye Wall Factor Tensor for each atom in the unit cell
 
   DO ind=1,ITotalAtoms
-     
-     IF((IWriteFLAG.GE.3.AND.my_rank.EQ.0).OR.IWriteFLAG.GE.10) THEN
-        PRINT*,"DBG: IAnisoDWFT",IAnisoDWFT(ind)
-     END IF
+
+     WRITE(indString,*)ind
+     CALL Message("CrystalUniqueFractionalAtomicPostitionsCalculation",IDebug+IMoreInfo,IErr, &
+              MessageVariable = "IAnisoDWFT("//TRIM(ADJUSTL(indString))//")",IVariable =IAnisoDWFT(ind))
+!!$     IF((IWriteFLAG.GE.3.AND.my_rank.EQ.0).OR.IWriteFLAG.GE.10) THEN
+!!$        PRINT*,"DBG: IAnisoDWFT",IAnisoDWFT(ind)
+!!$     END IF
      
   END DO
 
@@ -420,9 +472,11 @@ SUBROUTINE CrystalUniqueFractionalAtomicPostitionsCalculation (IErr)
   
   INAtomsUnitCell= SIZE(MNP,DIM=1)
   
-  IF((IWriteFLAG.GE.1.AND.my_rank.EQ.0).OR.IWriteFLAG.GE.10) THEN
-     PRINT*,"CrystalUniqueFractionalAtomicPostitionsCalculation(", my_rank, ") NAtomsUnitCell=", INAtomsUnitCell
-  END IF
+  CALL Message("CrystalUniqueFractionalAtomicPostitionsCalculation",IInfo,IErr, &
+       MessageVariable = "NAtomsUnitCell",IVariable = INAtomsUnitCell)
+!!$  IF((IWriteFLAG.GE.1.AND.my_rank.EQ.0).OR.IWriteFLAG.GE.10) THEN
+!!$     PRINT*,"CrystalUniqueFractionalAtomicPostitionsCalculation(", my_rank, ") NAtomsUnitCell=", INAtomsUnitCell
+!!$  END IF
   
   DO ind = 1,INAtomsUnitCell
      DO jnd = 1,THREEDIM

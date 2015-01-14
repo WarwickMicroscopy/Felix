@@ -39,7 +39,7 @@
 SUBROUTINE ImageSetup (IErr)
 
   USE MyNumbers
-
+  USE WriteToScreen
 
   USE IPara; USE RPara
 
@@ -54,10 +54,14 @@ SUBROUTINE ImageSetup (IErr)
   !--------------------------------------------------------------------
 
   ! Image initialisation 
-  
-  IF((IWriteFLAG.GE.1.AND.my_rank.EQ.0).OR.IWriteFLAG.GE.10) THEN
-     PRINT*,"ImageSetup(",my_rank,")"
-  END IF
+
+  CALL Message("ImageSetup",IMust,IErr)
+
+!!$  
+!!$  IF((IWriteFLAG.GE.1.AND.my_rank.EQ.0).OR.IWriteFLAG.GE.10) THEN
+!!$     PRINT*,"DBG: nReflections=", nReflections
+!!$  END IF
+
   
   ALLOCATE( &
        Rhklpositions(nReflections,2), &
@@ -69,7 +73,7 @@ SUBROUTINE ImageSetup (IErr)
   ENDIF
 
   !--------------------------------------------------------------------
-  ! image initialization
+  ! image initialisation
   !--------------------------------------------------------------------
 
   CALL ImageInitialisation( IErr )
@@ -104,8 +108,7 @@ SUBROUTINE ImageSetup (IErr)
      RETURN
   END IF
 
-  IF((IWriteFLAG.GE.1.AND.my_rank.EQ.0).OR.IWriteFLAG.GE.10) THEN
-     PRINT*,"ImageSetup(", my_rank, ") IPixelTotal=", IPixelTotal
-  END IF
+  CALL Message("ImageSetup",IInfo,IErr, &
+       MessageVariable = "IPixelTotal", IVariable = IPixelTotal)
 
 END SUBROUTINE ImageSetup

@@ -69,8 +69,8 @@ IBinorTextFLAG: Select binary or text output files, binary are smaller and faste
 
 IScatteringFactorMethod: Determines which method by which to calculate potentials
 0 Kirkands Method (103 Elements)
-0 Peng (98 Elements)
-0 Doyle and Turner (only works for 68 elements)
+1 Peng (98 Elements)
+2 Doyle and Turner (only works for 68 elements)
 
 IZolzFLAG: Choose to limit the simulation to the zeroth order laue zone.  
 

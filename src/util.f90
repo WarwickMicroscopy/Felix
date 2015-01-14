@@ -43,12 +43,14 @@
 !	is based on ShellSort from "Numerical Recipes", routine SHELL().
 !---------------------------------------------------------------------
 
-SUBROUTINE ReSortHKL( RHKLarray, N )
+SUBROUTINE ReSortHKL( RHKLarray, N,IErr )
 
   USE MyNumbers
+  USE WriteToScreen
     
   USE CConst; USE IConst
   USE IPara; USE RPara
+  USE WriteToScreen
 
   USE IChannels
 
@@ -63,6 +65,7 @@ SUBROUTINE ReSortHKL( RHKLarray, N )
        RHKLarray(N,THREEDIM)
   REAL(RKIND) :: &
        RhklarraySearch(THREEDIM), RhklarrayCompare(THREEDIM)
+  INTEGER (IKIND) IErr
   
   REAL(RKIND) :: &
        ALN2I, LocalTINY
@@ -73,9 +76,10 @@ SUBROUTINE ReSortHKL( RHKLarray, N )
   REAL(RKIND) :: &
        dummy
 
-  IF((IWriteFLAG.EQ.6.AND.my_rank.EQ.0).OR.IWriteFLAG.GE.10) THEN
-     PRINT*,"ReSort()"
-  END IF
+  CALL Message("Resort",IMoreInfo,IErr)
+!!$  IF((IWriteFLAG.EQ.6.AND.my_rank.EQ.0).OR.IWriteFLAG.GE.10) THEN
+!!$     PRINT*,"ReSort()"
+!!$  END IF
   
   NN = 0
   M = 0
@@ -176,11 +180,13 @@ END SUBROUTINE CONVERTAtomName2Number
 SUBROUTINE CountTotalAtoms(IErr)
 
   USE MyNumbers
-  
+  USE WriteToScreen
+
   USE CConst; USE IConst
   USE IPara; USE RPara; USE CPara; USE SPara
   USE IChannels
   USE BlochPara
+  
   
   USE MPI
   USE MyMPI
@@ -191,10 +197,10 @@ SUBROUTINE CountTotalAtoms(IErr)
        ind,jnd,knd,hnd,ierr, ifullind, iuniind
   LOGICAL Lunique
 
-  
-  IF((IWriteFLAG.EQ.6.AND.my_rank.EQ.0).OR.IWriteFLAG.GE.10) THEN
-     PRINT*,"CountTotalAtoms()"
-  END IF
+  CALL Message("CountTotalAtoms",IMoreInfo,IErr)
+ ! IF((IWriteFLAG.EQ.6.AND.my_rank.EQ.0).OR.IWriteFLAG.GE.10) THEN
+ !    PRINT*,"CountTotalAtoms()"
+ ! END IF
 
   ITotalAtoms = 0
 
@@ -217,10 +223,13 @@ SUBROUTINE CountTotalAtoms(IErr)
   ENDIF
   
   RFullAtomicFracCoordVec = ZERO
-  
-  IF((IWriteFLAG.GE.10.AND.my_rank.EQ.0).OR.IWriteFLAG.GE.10) THEN
-     PRINT*,"SIZE OF RFULLATOMICFRACCOORDVEC = ",SIZE(RFullAtomicFracCoordVec,1)
-  END IF
+
+  CALL Message("CountTotalAtoms",IAllInfo,IErr, &
+       MessageVariable = "Size of RFullAtomicFracCoordVec", &
+       IVariable = SIZE(RFullAtomicFracCoordVec,1))
+  !IF((IWriteFLAG.GE.10.AND.my_rank.EQ.0).OR.IWriteFLAG.GE.10) THEN
+  !   PRINT*,"SIZE OF RFULLATOMICFRACCOORDVEC = ",SIZE(RFullAtomicFracCoordVec,1)
+  !END IF
 
   DO ind=1, SIZE(RSymVec,DIM=1)
      
@@ -260,10 +269,8 @@ SUBROUTINE CountTotalAtoms(IErr)
 
   
   ! Calculate the set of unique fractional atomic positions
-  
-  IF((IWriteFLAG.GE.1.AND.my_rank.EQ.0).OR.IWriteFLAG.GE.10) THEN
-     PRINT*,"CountTotalAtoms(",my_rank,") ITotalAtoms = ",ITotalAtoms
-  END IF
+  CALL Message("CountTotalAtoms",IMoreInfo,IErr, MessageVariable = "ITotalAtoms", &
+       IVariable = ITotalAtoms)
 
   ALLOCATE( &
        MNP(1000,THREEDIM), &
@@ -317,9 +324,8 @@ SUBROUTINE CountTotalAtoms(IErr)
      
   END IF
   
-  IF((IWriteFLAG.GE.1.AND.my_rank.EQ.0).OR.IWriteFLAG.GE.10) THEN
-     PRINT*,"CountTotalAtoms(",my_rank,") ITotalAtoms = ",ITotalAtoms
-  END IF
+  
+  CALL Message("CountTotalAtoms",IMoreInfo,IErr,MessageVariable = "ITotalAtoms",IVariable=ITotalAtoms)
 
   DEALLOCATE( &
        MNP,&

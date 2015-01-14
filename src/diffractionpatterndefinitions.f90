@@ -39,6 +39,7 @@
 SUBROUTINE ReflectionDetermination( IErr )
 
   USE MyNumbers
+  USE WriteToScreen
   
   USE CConst; USE IConst
   USE IPara; USE RPara
@@ -56,9 +57,10 @@ SUBROUTINE ReflectionDetermination( IErr )
   !norm,dummyVec(THREEDIM) -not used?
   INTEGER(IKIND) IErr, ind,jnd,icheck,ihklrun,IFind,IFound,knd
   
-  IF((IWriteFLAG.GE.0.AND.my_rank.EQ.0).OR.IWriteFLAG.GE.10) THEN
-     PRINT*,"DiffractionPatternDefinitions()"
-  END IF
+  CALL Message("ReflectionDetermination",IMust,IErr)
+!!$  IF((IWriteFLAG.GE.0.AND.my_rank.EQ.0).OR.IWriteFLAG.GE.10) THEN
+!!$     PRINT*,"DiffractionPatternDefinitions()"
+!!$  END IF
 
   icheck = 0
   
@@ -68,13 +70,15 @@ SUBROUTINE ReflectionDetermination( IErr )
   DO WHILE (icheck.EQ.0)
      ihklrun = ihklrun+1
      
-     IF((IWriteFLAG.GE.0.AND.my_rank.EQ.0).OR.IWriteFLAG.GE.10) THEN
-        PRINT*,"DiffractionPatternDefinitions(",my_rank,") hklrun = ",ihklrun
-     END IF
+
+     CALL Message("ReflectionDetermination",IInfo,IErr,MessageVariable = "IHklrun", &
+          IVariable = IHklrun)
+
+
      
      CALL NewHKLMake(IHKLMAXValue,RZDirC,TWOPI/180.0D0,IErr)
      IF( IErr.NE.0 ) THEN
-        PRINT*,"DiffractionPatternDefinitions(", my_rank, ") error in NewHKLMake()"
+        PRINT*,"Reflectiondetermination(", my_rank, ") error in NewHKLMake()"
         RETURN
      ENDIF
      
@@ -82,7 +86,7 @@ SUBROUTINE ReflectionDetermination( IErr )
         IHKLMAXValue = IHKLMAXValue*2
         Deallocate(RHKL,STAT=ierr)
         IF( IErr.NE.0 ) THEN
-           PRINT*,"DiffractionPatternDefinitions(", my_rank, ") error ", IErr, &
+           PRINT*,"ReflectionDetermination(", my_rank, ") error ", IErr, &
                 " in DEALLOCATE() of DYNAMIC variables RHKL"
            RETURN
         ENDIF
@@ -93,9 +97,9 @@ SUBROUTINE ReflectionDetermination( IErr )
         icheck = 1
      END IF
      
-     CALL ReSortHKL( RHKL, SIZE(RHKL,1))
+     CALL ReSortHKL( RHKL, SIZE(RHKL,1),IErr)
      IF( IErr.NE.0 ) THEN
-        PRINT*,"DiffractionPatternDefintions(): error in ReSortHKL()"
+        PRINT*,"ReflectionDetermination(): error in ReSortHKL()"
         RETURN
      ENDIF    
      
@@ -172,14 +176,15 @@ SUBROUTINE ReflectionDetermination( IErr )
   SUBROUTINE SpecificReflectionDetermination (IErr)
     
     USE MyNumbers
-    
+    USE WriteToScreen
+
     USE IPara; USE RPara
 
     USE MyMPI
 
     IMPLICIT NONE
 
-    INTEGER(IKIND) IFind, IErr,IFound,ind,jnd,knd
+    INTEGER(IKIND) IFind,IFound,ind,jnd,knd,IErr
     
   IFind = 0
   
@@ -203,16 +208,29 @@ SUBROUTINE ReflectionDetermination( IErr )
                  IFind = IFind +1
                  IOutputReflections(IFind) = jnd
                  
-                 IF((IWriteFLAG.GE.3.AND.my_rank.EQ.0).OR.IWriteFLAG.GE.10) THEN
-                    PRINT*,"DiffractionPatternDefinitions(",my_rank,&
-                         ") Found HKL ",RInputHKLs(ind,:)," at ",jnd
-                 END IF
+                 CALL Message("SpecificReflectionDetermination",IMoreInfo,IErr, &
+                      MessageVariable = "Found HKL",RVariable = RInputHKLs(ind,jnd))
+                 CALL Message("SpecificReflectionDetermination",IMoreInfo,IErr, &
+                      MessageVariable = "At",IVariable = jnd)
+                 
+!!$                 IF((IWriteFLAG.GE.3.AND.my_rank.EQ.0).OR.IWriteFLAG.GE.10) THEN
+!!$                    PRINT*,"DiffractionPatternDefinitions(",my_rank,&
+!!$                         ") Found HKL ",RInputHKLs(ind,:)," at ",jnd
+!!$                 END IF
               ELSE 
-                 IF((IWriteFLAG.GE.3.AND.my_rank.EQ.0).OR.IWriteFLAG.GE.10) THEN
-                    PRINT*,"DiffractionPatternDefinitions(",my_rank,&
-                         ") Found HKL ",RInputHKLs(ind,:)," at ",jnd,&
-                         "However it is not unique"
-                 END IF
+
+                 CALL Message("SpecificReflectionDetermination",IMoreInfo,IErr, &
+                      MessageVariable = "Found HKL",RVariable = RInputHKLs(ind,jnd))
+                 CALL Message("SpecificReflectionDetermination",IMoreInfo,IErr, &
+                      MessageVariable = "At",IVariable = jnd)
+                 CALL Message("SpecificReflectionDetermination",IMoreInfo,IErr, &
+                      MessageString = "However it is not unique")
+
+!!$                 IF((IWriteFLAG.GE.3.AND.my_rank.EQ.0).OR.IWriteFLAG.GE.10) THEN
+!!$                    PRINT*,"DiffractionPatternDefinitions(",my_rank,&
+!!$                         ") Found HKL ",RInputHKLs(ind,:)," at ",jnd,&
+!!$                         "However it is not unique"
+!!$                 END IF
                  
               END IF
               EXIT
@@ -252,20 +270,25 @@ SUBROUTINE ReflectionDetermination( IErr )
   SUBROUTINE DiffractionPatternCalculation (IErr)
 
     USE MyNumbers
+    USE WriteToScreen
+
     USE IPara; USE RPara;
 
     USE MyMPI
     
     IMPLICIT NONE
 
-    INTEGER(IKIND) IErr,ind
+    INTEGER(IKIND) ind,IErr
+
     REAL(RKIND):: dummy
+
+    CALL Message("DiffractionPatternDefinitions",IMust,IErr)
 
     ALLOCATE(&
          RGn(SIZE(RHKL,DIM=1)), &
          STAT=IErr)
     IF( IErr.NE.0 ) THEN
-       PRINT*,"DiffractionPatternDefinitions(", my_rank, ") error ", IErr, &
+       PRINT*,"DiffractionPatternCalculation(", my_rank, ") error ", IErr, &
             " in ALLOCATE() of DYNAMIC variables RGn(HKL)"
        RETURN
     ENDIF
@@ -280,7 +303,7 @@ SUBROUTINE ReflectionDetermination( IErr )
        RSg(SIZE(RHKL,DIM=1)), &
        STAT=IErr)
   IF( IErr.NE.0 ) THEN
-     PRINT*,"DiffractionPatternDefinitions(", my_rank, ") error ", IErr, &
+     PRINT*,"DiffractionPatternCalculation(", my_rank, ") error ", IErr, &
           " in ALLOCATE() of DYNAMIC variables RSg(HKL)"
      RETURN
   ENDIF
@@ -297,14 +320,12 @@ SUBROUTINE ReflectionDetermination( IErr )
 
   RBraggCentral= RElectronWaveLength/(2.0D0*RLengthX)*dummy
 
-  IF((IWriteFLAG.GE.1.AND.my_rank.EQ.0).OR.IWriteFLAG.GE.10) THEN
-     PRINT*,"DiffractionPatternDefinitions (",my_rank,") BraggCentral=", RBraggCentral
-  END IF
+  CALL Message("DiffractionPatternCalculation",IInfo,IErr, &
+       MessageVariable = "BraggCentral", RVariable = RBraggCentral)
 
-
-  IF((IWriteFLAG.GE.1.AND.my_rank.EQ.0).OR.IWriteFLAG.GE.10) THEN
-     PRINT*,"DiffractionPatternDefinitions (",my_rank,") GMax = ",RBSMaxGVecAmp
-  END IF
+  
+  CALL Message("DiffractionPatternCalculation",IInfo,IErr, &
+       MessageVariable = "GMax", RVariable = RBSMaxGVecAmp)     
 
   ! smallest g is gmag(2) IF 000 beam is included !!!add error catch here
   
@@ -314,9 +335,8 @@ SUBROUTINE ReflectionDetermination( IErr )
      RMinimumGMag = RgVecMag(1)
   ENDIF
 
-  IF((IWriteFLAG.GE.1.AND.my_rank.EQ.0).OR.IWriteFLAG.GE.10) THEN
-     PRINT*,"DiffractionPatternDefinitions (",my_rank,") MinimumGMag = ",RMinimumGMag
-  END IF
+  CALL Message("DiffractionPatternCalculation",IInfo,IErr, &
+       MessageVariable = "MinimumGMag", RVariable = RMinimumGMag)
 
   ! Calculate the Angles to the centre of all the disks from the central disk
   
@@ -336,17 +356,14 @@ SUBROUTINE ReflectionDetermination( IErr )
 
   END IF
 
-  IF((IWriteFLAG.GE.1.AND.my_rank.EQ.0).OR.IWriteFLAG.GE.10) THEN
-     
-     PRINT*,"DiffractionPatternDefinitions (",my_rank,") No. of Reflections = ",nReflections
+  CALL Message("DiffractionPatternCalculation",IInfo,IErr, &
+       MessageVariable = "No. of Reflections", IVariable = nReflections)
 
-  END IF
   ! resolution in k space
   RDeltaK = RMinimumGMag*RConvergenceAngle/IPixelCount
 
-  IF((IWriteFLAG.GE.1.AND.my_rank.EQ.0).OR.IWriteFLAG.GE.10) THEN
-     PRINT*,"DiffractionPatternDefinitions (",my_rank,") DeltaK = ", RDeltaK
-  END IF
+  CALL Message("DiffractionPatternCalculation",IInfo,IErr, &
+       MessageVariable = "RDeltaK", RVariable = RDeltaK)
 
   RETURN
 
@@ -356,6 +373,7 @@ END SUBROUTINE DiffractionPatternCalculation
 SUBROUTINE NewHKLmake(Ihklmax,Rhkl0Vec,RAcceptanceAngle,IErr)
   
   USE MyNumbers
+  USE WriteToScreen
   
   USE CConst; USE IConst
   USE IPara; USE RPara; USE SPara
@@ -370,9 +388,8 @@ SUBROUTINE NewHKLmake(Ihklmax,Rhkl0Vec,RAcceptanceAngle,IErr)
   REAL(RKIND) RAcceptanceAngle
   REAL(RKIND), DIMENSION(THREEDIM) :: Rhkl0Vec,RhklDummyUnitVec,RhklDummyVec,Rhkl0UnitVec
 
-  IF((IWriteFLAG.GE.0.AND.my_rank.EQ.0).OR.IWriteFLAG.GE.10) THEN
-     PRINT*,"NewHKLmake(",my_rank,")"
-  END IF
+  CALL Message("NewHKLMake",IMust,IErr)
+
   INhkl = 0
 
   Rhkl0UnitVec= Rhkl0Vec/SQRT(DOT_PRODUCT(REAL(Rhkl0Vec,RKIND),REAL(Rhkl0Vec,RKIND)))
