@@ -288,7 +288,7 @@ MODULE RPara
   !Microscope Parameters
 
   REAL(RKIND) :: &
-       RConvergenceAngle, RAcceleratingVoltage
+       RConvergenceAngle, RAcceleratingVoltage,RInnerConvergenceAngle
 
   !LACBED Input
 

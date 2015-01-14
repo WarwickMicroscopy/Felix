@@ -289,7 +289,12 @@ SUBROUTINE ReadInpFile( IErr )
   ILine= ILine+1
   READ(IChInp,15,ERR=20,END=30) RConvergenceAngle
   IF((IWriteFLAG.GE.1.AND.my_rank.EQ.0).OR.IWriteFLAG.GE.10) THEN
-     PRINT*,"RConvergenceAngle = ", RConvergenceAngle
+     PRINT*,"ROuterConvergenceAngle = ", RConvergenceAngle
+  END IF
+  ILine= ILine+1
+  READ(IChInp,15,ERR=20,END=30) RInnerConvergenceAngle
+  IF((IWriteFLAG.GE.1.AND.my_rank.EQ.0).OR.IWriteFLAG.GE.10) THEN
+     PRINT*,"RInnerConvergenceAngle = ", RInnerConvergenceAngle
   END IF
 
   ILine= ILine+1

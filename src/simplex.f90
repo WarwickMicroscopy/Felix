@@ -92,7 +92,15 @@ SUBROUTINE NDimensionalDownhillSimplex(RSimplexVolume,y,mp,np,ndim,ftol,iter,IEr
         ysave=y(ihi)
         ytry=SimplexExtrapolate(RSimplexVolume,y,psum,mp,np,ndim,ihi,0.5D0,iter,IErr)
         IF(ytry.GE.ysave) THEN
+           
+           PRINT*,"-----------------------------------------------------"
+           PRINT*,"Entering Expansion Phase Expect",ndim,"Simulations"
+           PRINT*,"-----------------------------------------------------"
+
            DO i=1,ndim+1
+
+              PRINT*,"Expansion Simulation",i
+
               IF(i.NE.ilo) THEN
                  DO j=1,ndim
                     psum(j)=0.5*(RSimplexVolume(i,j)+RSimplexVolume(ilo,j))
