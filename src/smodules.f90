@@ -120,7 +120,7 @@ MODULE IPara
        IZolzFLAG,IAbsorbFLAG, IAnisoDebyeWallerFactorFlag, &
        IImageFLAG,IOutputFLAG,IBeamConvergenceFLAG,  &
        IPseudoCubicFLAG,IXDirectionFLAG,IBinorTextFLAG, IDevFLAG, &
-       IRefineModeFLAG,ISoftwareMode,IHKLSelectFLAG
+       IRefineModeFLAG,ISoftwareMode,IHKLSelectFLAG,IPrint
 
   !Minimum Reflections etc
   INTEGER(IKIND) :: &
@@ -227,6 +227,31 @@ MODULE IPara
 
    INTEGER(IKIND) :: &
         ICurrentAtom,IAtom
+
+   !Refine Mode Binary Selection
+   
+   INTEGER(IKIND),DIMENSION(7) :: &
+        IRefineModeSelectionArray
+
+   !List of Atomic Sites for Refinement
+
+   INTEGER(IKIND),DIMENSION(:),ALLOCATABLE :: &
+        IAtomicSitesToRefine
+
+   !Simplex Variables
+
+   INTEGER(IKIND) :: &
+        IIndependentVariables
+
+   !Iterative Ids
+
+   INTEGER(IKIND),DIMENSION(:,:),ALLOCATABLE :: &
+        IIterativeVariableUniqueIDs
+
+   ! Simplex Global IterationCount
+
+   INTEGER(IKIND) :: &
+        IVariableID,IFelixCount,IPreviousPrintedIteration
 END MODULE IPara
 
 !--------------------------------------------------------------------
@@ -263,7 +288,7 @@ MODULE RPara
   !Microscope Parameters
 
   REAL(RKIND) :: &
-       RConvergenceAngle, RAcceleratingVoltage
+       RConvergenceAngle, RAcceleratingVoltage,RInnerConvergenceAngle
 
   !LACBED Input
 
@@ -394,6 +419,20 @@ MODULE RPara
   REAL(RKIND),DIMENSION(:),ALLOCATABLE :: &
        RUniqueUgPrimeValues
 
+  
+  ! Experimental Images for felixrefine
+
+  REAL(RKIND),DIMENSION(:,:,:),ALLOCATABLE :: &
+       RImageExpi  
+
+  ! Independent Variable Values
+!!$  REAL(RKIND),DIMENSION(:),ALLOCATABLE :: &
+!!$       RIndependentVariableValues
+
+  !Iterative Variable Value
+  REAL(RKIND) :: &
+       RValue
+
 END MODULE RPara
 
 MODULE CPara
@@ -474,3 +513,13 @@ MODULE BlochPara
   COMPLEX(CKIND),DIMENSION(:,:), ALLOCATABLE :: &
        CEigenSaveTemp
 END MODULE BlochPara
+
+MODULE Refinement
+
+USE MyNumbers
+
+REAL(RKIND),PARAMETER :: &
+  RExitCondition = -10000.0,&
+  RStayCondition = 10000.0
+
+END MODULE 

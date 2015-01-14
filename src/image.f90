@@ -46,8 +46,6 @@ SUBROUTINE ImageInitialisation( IErr )
   IMPLICIT NONE
 
   REAL(RKIND) dummyCA
-
-  !changed - was missing (IKIND)
   INTEGER(IKIND) IErr, ind,jnd
   
   IF((IWriteFLAG.GE.0.AND.my_rank.EQ.0).OR.IWriteFLAG.GE.10) THEN
@@ -172,11 +170,13 @@ SUBROUTINE ImageMaskInitialisation (IErr)
   
   IMPLICIT NONE
   
-  INTEGER ind,jnd, ierr
-  REAL(RKIND) :: Rradius, RImageRadius
+  INTEGER(IKIND) :: &
+       ind,jnd, ierr,InnerRadiusFLAG
+  REAL(RKIND) :: &
+       Rradius, RImageRadius
   
-  IF((IWriteFLAG.EQ.6.AND.my_rank.EQ.0).OR.IWriteFLAG.GE.10) THEN
-     PRINT*,"DBG: ImageMaskInitialisation()"
+  IF((IWriteFLAG.EQ.0.AND.my_rank.EQ.0).OR.IWriteFLAG.GE.10) THEN
+     PRINT*,"ImageMaskInitialisation()"
   END IF
 
   IPixelTotal =0
@@ -201,12 +201,27 @@ SUBROUTINE ImageMaskInitialisation (IErr)
      RMask = 1
      IPixelTotal = (2*IPixelCount)**2
   END SELECT
-  
+
+  IF (RInnerConvergenceAngle.GT.ZERO) THEN
+     DO ind=1,2*IPixelCount
+        DO jnd=1,2*IPixelCount
+           Rradius= (ind-(REAL(IPixelCount,RKIND)+0.5))**2 + &
+                (jnd-(REAL(IPixelCount,RKIND)+0.5))**2
+           Rradius=SQRT(DBLE(Rradius))
+           RImageRadius = (IPixelCount+0.5)*(RInnerConvergenceAngle/RConvergenceAngle)
+           IF(Rradius.LE.RImageRadius) THEN
+              RMask(jnd,ind) = 0
+              IPixelTotal= IPixelTotal - 1
+           ENDIF
+        ENDDO
+     ENDDO
+  END IF
+
   ALLOCATE( &
        IPixelLocations(IPixelTotal,2), &
        STAT=IErr)
   IF( IErr.NE.0 ) THEN
-     PRINT*,"ImagemaskInitialization(", my_rank, ") error ", IErr, " in ALLOCATE()"
+     PRINT*,"ImagemaskInitialization(", my_rank, ") error ", IErr, " in ALLOCATE of IPixelLocations"
      RETURN
   ENDIF
 
@@ -216,17 +231,10 @@ SUBROUTINE ImageMaskInitialisation (IErr)
   CASE(0) ! circle
      DO ind=1,2*IPixelCount
         DO jnd=1,2*IPixelCount
-           Rradius= (ind-(REAL(IPixelCount,RKIND)+0.5))**2 + &
-                (jnd-(REAL(IPixelCount,RKIND)+0.5))**2
-           Rradius=SQRT(DBLE(Rradius))
-           RImageRadius = IPixelCount+0.5
-           IF(Rradius.LE.RImageRadius) THEN
-              !RMask(jnd,ind) = 1
+           IF(RMask(ind,jnd).GT.ZERO) THEN
               IPixelTotal= IPixelTotal + 1
               IPixelLocations(IPixelTotal,1) = ind
               IPixelLocations(IPixelTotal,2) = jnd
-           ELSE
-              !RMask(jnd,ind) = 0
            ENDIF
         ENDDO
      ENDDO
@@ -234,11 +242,60 @@ SUBROUTINE ImageMaskInitialisation (IErr)
      IPixelTotal = 0
      DO ind = 1,2*IPixelCount
         DO jnd = 1,2*IPixelCount
-           IPixelTotal = IPixelTotal+1
-           IPixelLocations(IPixelTotal,1) = ind
-           IPixelLocations(IPixelTotal,2) = jnd
+           IF(RMask(ind,jnd).GT.ZERO) THEN
+              IPixelTotal = IPixelTotal+1
+              IPixelLocations(IPixelTotal,1) = ind
+              IPixelLocations(IPixelTotal,2) = jnd
+           END IF
         END DO
      END DO
   END SELECT
   
 END SUBROUTINE ImageMaskInitialisation
+
+INTEGER(IKIND) FUNCTION CountPixels(IErr)
+  
+  USE MyNumbers
+  
+  USE CConst; USE IConst
+  USE IPara; USE RPara
+  USE IChannels
+
+  USE MPI
+  USE MyMPI
+  
+  IMPLICIT NONE
+  
+  INTEGER(IKIND) :: &
+       ind,jnd, ierr
+  REAL(RKIND) :: &
+       Rradius, RImageRadius
+  
+  IF((IWriteFLAG.EQ.6.AND.my_rank.EQ.0).OR.IWriteFLAG.GE.10) THEN
+     PRINT*,"CountPixels (",my_rank,")"
+  END IF
+  
+  CountPixels =0
+
+  SELECT CASE (IMaskFLAG)
+
+  CASE(0) ! circle
+
+     DO ind=1,2*IPixelCount
+        DO jnd=1,2*IPixelCount
+           Rradius= (ind-(REAL(IPixelCount,RKIND)+0.5))**2 + &
+                (jnd-(REAL(IPixelCount,RKIND)+0.5))**2
+           Rradius=SQRT(DBLE(Rradius))
+           RImageRadius = IPixelCount+0.5
+           IF(Rradius.LE.RImageRadius) THEN
+              CountPixels =  CountPixels + 1
+           ENDIF
+        ENDDO
+     ENDDO
+
+  CASE(1) ! square
+
+     CountPixels = (2*IPixelCount)**2
+
+  END SELECT
+END FUNCTION CountPixels

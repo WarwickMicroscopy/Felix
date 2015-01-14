@@ -62,7 +62,7 @@ SUBROUTINE StructureFactorSetup(IErr)
        STAT=IErr)
   IF( IErr.NE.0 ) THEN
      PRINT*,"StructureFactorSetup(", my_rank, ") error ", IErr, &
-          " in ALLOCATE() of DYNAMIC variables Reflection Matrix"
+          " in ALLOCATE() of DYNAMIC variables RgMatMat"
      !call error function
      RETURN
   ENDIF
@@ -72,7 +72,7 @@ SUBROUTINE StructureFactorSetup(IErr)
        STAT=IErr)
   IF( IErr.NE.0 ) THEN
      PRINT*,"StructureFactorSetup(", my_rank, ") error ", IErr, &
-          " in ALLOCATE() of DYNAMIC variables Reflection Matrix"
+          " in ALLOCATE() of DYNAMIC variables RgMatMag"
      !call error function
      RETURN
   ENDIF
@@ -90,13 +90,12 @@ SUBROUTINE StructureFactorSetup(IErr)
   !--------------------------------------------------------------------
 
   !Allocate memory for Ug Matrix
-
   ALLOCATE( & 
        CUgMat(nReflections,nReflections), &
        STAT=IErr)
   IF( IErr.NE.0 ) THEN
      PRINT*,"StructureFactorSetup(", my_rank, ") error ", IErr, &
-          " in ALLOCATE() of DYNAMIC variables Reflection Matrix"
+          " in ALLOCATE() of DYNAMIC variables CUgMat"
      !call error function
      RETURN
   ENDIF  
@@ -106,7 +105,7 @@ SUBROUTINE StructureFactorSetup(IErr)
        STAT=IErr)
   IF( IErr.NE.0 ) THEN
      PRINT*,"StructureFactorSetup(", my_rank, ") error ", IErr, &
-          " in ALLOCATE() of DYNAMIC variables Reflection Matrix"
+          " in ALLOCATE() of DYNAMIC variables CUgMatPrime"
      !call error function
      RETURN
   ENDIF       

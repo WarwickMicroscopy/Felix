@@ -154,12 +154,12 @@ SUBROUTINE OpenImageForReadIn(IErr,filename)
   END IF
 
   OPEN(UNIT= IChInImage, ERR= 10, STATUS= 'UNKNOWN', FILE=TRIM(ADJUSTL(filename)),FORM='UNFORMATTED',&
-       ACCESS='DIRECT',IOSTAT=Ierr,RECL=IImageSizeXY(1)*8)
+       ACCESS='DIRECT',IOSTAT=Ierr,RECL=2*IPixelCount*8)
 
   RETURN
 
   ! error in OPEN detected
-10 PRINT*,"WriteDataC(): ERR in OPEN()"
+10 PRINT*,"OpenImageForReadIn(): ERR in OPEN()"
   IErr= 1
   RETURN
   
@@ -187,7 +187,7 @@ SUBROUTINE ReadImageForRefinement(IErr)
 
   END IF
 
-  DO ind=1,IImageSizeXY(2)
+  DO ind=1,2*IPixelCount
      READ(IChInImage,rec=ind) RImageIn(ind,:)
   END DO
   IF( IErr.NE.0 ) THEN
@@ -287,11 +287,12 @@ SUBROUTINE OpenReflectionImage(IChOutWrite, surname, IErr,IReflectWriting,IImage
 
   USE IChannels
 
-  CHARACTER*27 surname
+  CHARACTER(*) :: &
+       surname
   CHARACTER*20 prefix,postfix,h,k,l
   INTEGER(KIND=IKIND) IChOutWrite, IErr,IReflectWriting,IImageSizeX
 
-  CHARACTER*50 filename
+  CHARACTER*250 filename
   CHARACTER*40 fileext
   INTEGER index
 
@@ -345,7 +346,7 @@ SUBROUTINE OpenReflectionImage(IChOutWrite, surname, IErr,IReflectWriting,IImage
      IF (IWriteFLAG.GE.10) THEN
         PRINT*, "OpenImage: opening image for WAVE FUNCTION PHASE PART (WP*.txt)"
      END IF
-  CASE(IChOutWIImage)        
+  CASE(IChOutWIImage) 
      WRITE(filename,*) TRIM(ADJUSTL(surname)),"/F-WI_",&
           TRIM(ADJUSTL(h)),&
           TRIM(ADJUSTL(k)),&
@@ -365,8 +366,7 @@ SUBROUTINE OpenReflectionImage(IChOutWrite, surname, IErr,IReflectWriting,IImage
         PRINT*, "OpenImage: opening UNKNOWN channel ", IChOutWrite
      END IF
   END SELECT
-  
-  
+
   SELECT CASE (IBinorTextFLAG)
      CASE(0)
         OPEN(UNIT=IChOutWrite, ERR=10, STATUS= 'UNKNOWN', FILE=TRIM(ADJUSTL(filename)),FORM='UNFORMATTED',&

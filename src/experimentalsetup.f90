@@ -57,7 +57,7 @@ SUBROUTINE ExperimentalSetup (IErr)
        RrVecMat(ITotalAtoms,THREEDIM), &
        STAT=IErr)
   IF( IErr.NE.0 ) THEN
-     PRINT*,"FelixSim(", my_rank, ") error ", IErr, " in ALLOCATE()"
+     PRINT*,"ExperimentalSetup(", my_rank, ") error ", IErr, " in ALLOCATE of RrVecMat"
      RETURN
   ENDIF
   

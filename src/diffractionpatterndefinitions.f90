@@ -64,10 +64,11 @@ SUBROUTINE ReflectionDetermination( IErr )
   
   IHKLMAXValue = 15
   ihklrun = 0
+
   DO WHILE (icheck.EQ.0)
      ihklrun = ihklrun+1
      
-     IF((IWriteFLAG.GE.1.AND.my_rank.EQ.0).OR.IWriteFLAG.GE.10) THEN
+     IF((IWriteFLAG.GE.0.AND.my_rank.EQ.0).OR.IWriteFLAG.GE.10) THEN
         PRINT*,"DiffractionPatternDefinitions(",my_rank,") hklrun = ",ihklrun
      END IF
      
@@ -96,7 +97,7 @@ SUBROUTINE ReflectionDetermination( IErr )
      IF( IErr.NE.0 ) THEN
         PRINT*,"DiffractionPatternDefintions(): error in ReSortHKL()"
         RETURN
-     ENDIF     
+     ENDIF    
      
      IF(IXDirectionFLAG.EQ.0) THEN
         IDiffractionFLAG = 1
@@ -130,6 +131,7 @@ SUBROUTINE ReflectionDetermination( IErr )
         RETURN
      ENDIF
      
+
      DO ind=1,SIZE(RHKL,DIM=1)
         DO jnd=1,THREEDIM
            RgVecMatT(ind,jnd)= &
@@ -139,10 +141,12 @@ SUBROUTINE ReflectionDetermination( IErr )
         ENDDO
      ENDDO
      
+!!$        PRINT*,RHKL(:,1)
      ! G vector magnitudes in 1/Angstrom units
      
      DO ind=1,SIZE(RHKL,DIM=1)
         RgVecMag(ind)= SQRT(DOT_PRODUCT(RgVecMatT(ind,:),RgVecMatT(ind,:)))
+!!$        PRINT*,RgVecMatT(ind,:)
      ENDDO
   
      RBSMaxGVecAmp = RgVecMag(IMinReflectionPool)
@@ -150,12 +154,16 @@ SUBROUTINE ReflectionDetermination( IErr )
      nReflections = 0
      nStrongBeams = 0
      nWeakBeams = 0
-     
+
+!!$     PRINT*,SIZE(RHKL,DIM=1),SIZE(RgVecMag,DIM=1),SIZE(RgVecMatT,DIM=1)   
+!!$     PRINT*,RBSMaxGVecAmp
      DO ind=1,SIZE(RHKL,DIM=1)
         IF (ABS(RgVecMag(ind)).LE.RBSMaxGVecAmp) THEN
            nReflections = nReflections + 1
         ENDIF
      ENDDO
+
+!!$     PRINT*,"nReflections =",nReflections
      
   END DO
 
@@ -164,14 +172,14 @@ SUBROUTINE ReflectionDetermination( IErr )
   SUBROUTINE SpecificReflectionDetermination (IErr)
     
     USE MyNumbers
-
+    
     USE IPara; USE RPara
 
     USE MyMPI
 
     IMPLICIT NONE
 
-    INTEGER(IKIND) IFind, IErr
+    INTEGER(IKIND) IFind, IErr,IFound,ind,jnd,knd
     
   IFind = 0
   
@@ -250,7 +258,7 @@ SUBROUTINE ReflectionDetermination( IErr )
     
     IMPLICIT NONE
 
-    INTEGER(IKIND) IErr
+    INTEGER(IKIND) IErr,ind
     REAL(RKIND):: dummy
 
     ALLOCATE(&
@@ -650,5 +658,4 @@ SUBROUTINE NewHKLmake(Ihklmax,Rhkl0Vec,RAcceptanceAngle,IErr)
 
   
   RHKL(INhkl+1,:)= (/ 0.0D0,0.0D0,0.0D0 /)
-
 END SUBROUTINE NewHKLmake
