@@ -885,7 +885,7 @@ REAL(RKIND) FUNCTION SimplexFunction(RIndependentVariableValues,IIterationCount,
           " in UpdateVariables"
      RETURN
   ENDIF
-  
+
   CALL FelixFunction(RIndependentVariableValues,IIterationCount,IErr) ! Simulate !!  
   IF( IErr.NE.0 ) THEN
      PRINT*,"SimplexFunction(", my_rank, ") error ", IErr, &
@@ -1054,16 +1054,25 @@ SUBROUTINE UpdateVariables(RIndependentVariableValues,IErr)
 
   !!$  Fill the Independent Value array with values
   
+  RAtomSiteFracCoordVec = RInitialAtomSiteFracCoordVec
 
   DO ind = 1,IIndependentVariables
      IVariableType = IIterativeVariableUniqueIDs(ind,2)
      SELECT CASE (IVariableType)
      CASE(1)
      CASE(2)
-        RAtomSiteFracCoordVec(&
-             IIterativeVariableUniqueIDs(ind,3),&
-             IIterativeVariableUniqueIDs(ind,4)) = &
-             RIndependentVariableValues(ind)
+
+        CALL ConvertVectorMovementsIntoAtomicCoordinates(ind,RIndependentVariableValues,IErr)
+!!$        RAtomSiteFracCoordVec(&
+!!$             IIterativeVariableUniqueIDs(ind,3),&
+!!$             IIterativeVariableUniqueIDs(ind,4)) = &
+!!$             RIndependentVariableValues(ind)
+!!$        RAtomSiteFracCoordVec(&
+!!$             IIterativeVariableUniqueIDs(ind,3),&
+!!$             IIterativeVariableUniqueIDs(ind,4)) = &
+!!$             RIndependentVariableValues(ind)
+
+
      CASE(3)
         RAtomicSitePartialOccupancy(IIterativeVariableUniqueIDs(ind,3)) = &
              RIndependentVariableValues(ind)
@@ -1133,3 +1142,38 @@ SUBROUTINE UpdateStructureFactors(RIndependentVariableValues,IIterationCount,IEr
   END IF
   
 END SUBROUTINE UpdateStructureFactors
+
+SUBROUTINE ConvertVectorMovementsIntoAtomicCoordinates(IVariableID,RIndependentVariableValues,IErr)
+
+  USE MyNumbers
+  
+  USE CConst; USE IConst; USE RConst
+  USE IPara; USE RPara; USE SPara; USE CPara
+  USE BlochPara
+  
+  USE IChannels
+  
+  USE MPI
+  USE MyMPI
+  
+  IMPLICIT NONE
+
+  INTEGER(IKIND) :: &
+       IErr,ind,jnd,IVariableID,IVectorID,IAtomID
+  REAL(RKIND),DIMENSION(IIndependentVariables),INTENT(IN) :: &
+       RIndependentVariableValues
+
+!!$  Use IVariableID to determine which vector is being applied (IVectorID)
+
+  IVectorID = IIterativeVariableUniqueIDs(IVariableID,3)
+
+!!$  Use IVectorID to determine which atomic coordinate the vector is to be applied to (IAtomID)
+
+  IAtomID = IAllowedVectorIDs(IVectorID)
+
+!!$  Use IAtomID to applied the IVectodID Vector to the IAtomID atomic coordinate
+  
+  RAtomSiteFracCoordVec(IAtomID,:) = RAtomSiteFracCoordVec(IAtomID,:) + &
+       RIndependentVariableValues(IVariableID)*RAllowedVectors(IVectorID)
+  
+END SUBROUTINE ConvertVectorMovementsIntoAtomicCoordinates

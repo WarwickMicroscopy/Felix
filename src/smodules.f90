@@ -266,7 +266,16 @@ MODULE IPara
    ! Simplex Global IterationCount
 
    INTEGER(IKIND) :: &
-        IVariableID,IFelixCount,IPreviousPrintedIteration
+        IFelixCount,IPreviousPrintedIteration
+
+   ! Refinement Vectors
+
+   INTEGER(IKIND) :: &
+        IAllowedVectors
+
+   INTEGER(IKIND),DIMENSION(:),ALLOCATABLE :: &
+        IAllowedVectorIDs
+
 END MODULE IPara
 
 !--------------------------------------------------------------------
@@ -448,6 +457,18 @@ MODULE RPara
   REAL(RKIND) :: &
        RValue
 
+  !Refinement Vectors
+
+  REAL(RKIND),DIMENSION(:,:),ALLOCATABLE :: &
+       RAllowedVectors
+  REAL(RKIND),DIMENSION(:),ALLOCATABLE :: &
+       RAllowedVectorMagnitudes
+
+  !Refinement Initial Coordinates
+
+  REAL(RKIND),DIMENSION(:,:),ALLOCATABLE :: &
+       RInitialAtomSiteFracCoordVec
+
 END MODULE RPara
 
 MODULE CPara
@@ -476,12 +497,18 @@ END MODULE CPara
 MODULE SPara
   USE MyNumbers
   
-  CHARACTER*1 SSpaceGroupName
+  CHARACTER*1 :: &
+       SSpaceGroupName
+  CHARACTER*10 :: &
+       SSpaceGrp
   CHARACTER*2, DIMENSION(:), ALLOCATABLE :: &
        SFullAtomicNameVec
   
   CHARACTER*2, DIMENSION(:), ALLOCATABLE :: &
        SAtomName, SMNP
+
+  CHARACTER*1,DIMENSION(:),ALLOCATABLE :: &
+       SWyckoffSymbols
   
 END MODULE SPara
 

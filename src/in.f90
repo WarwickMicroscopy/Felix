@@ -518,17 +518,6 @@ SUBROUTINE ReadInpFile( IErr )
         RETURN
      ENDIF
 
-     IIndependentVariables = &
-          IRefineModeSelectionArray(1)*INoofUgs+&
-          IRefineModeSelectionArray(2)*SIZE(IAtomicSitesToRefine)*3+&
-          IRefineModeSelectionArray(3)*SIZE(IAtomicSitesToRefine)+&
-          IRefineModeSelectionArray(4)*SIZE(IAtomicSitesToRefine)+&
-          IRefineModeSelectionArray(5)*SIZE(IAtomicSitesToRefine)*6+&
-          IRefineModeSelectionArray(6)*3+&
-          IRefineModeSelectionArray(7)*3
-
-     PRINT*,"IIndependentVariables =",IIndependentVariables
-
      ILine= ILine+1; READ(IChInp,ERR=20,END=30,FMT='(A)')
      ILine= ILine+1; READ(IChInp,ERR=20,END=30,FMT='(A)')
      ILine= ILine+1; READ(IChInp,ERR=20,END=30,FMT='(A)')
