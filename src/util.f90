@@ -76,7 +76,7 @@ SUBROUTINE ReSortHKL( RHKLarray, N,IErr )
   REAL(RKIND) :: &
        dummy
 
-  CALL Message("Resort",IMoreInfo,IErr)
+  CALL Message("ResortHkl",IMust,IErr)
 !!$  IF((IWriteFLAG.EQ.6.AND.my_rank.EQ.0).OR.IWriteFLAG.GE.10) THEN
 !!$     PRINT*,"ReSort()"
 !!$  END IF
@@ -132,10 +132,12 @@ END SUBROUTINE ReSortHKL
 
 !---------------------------------------------------------------------
 SUBROUTINE CONVERTAtomName2Number(name, number, IErr)
-
+  
+  USE WriteToScreen
   USE IPara
   USE MPI
   USE MyMPI
+  USE IConst
 
   IMPLICIT NONE
   
@@ -157,6 +159,14 @@ SUBROUTINE CONVERTAtomName2Number(name, number, IErr)
         "Tl", "Pb", "Bi", "Po", "At", "Rn", "Fr", "Ra", "Ac", "Th", &
         "Pa", "U", "Np", "Pu", "Am", "Cm", "Bk", "Cf", "Es", "Fm",& 
         "Md","No","Lr"/
+
+!!$  Subroutine within loop, therefore only want to print this message once
+  DO WHILE (IMessageCounter.LT.1)
+     CALL Message("CONVERTAtomName2Number",IMust,IErr)
+     CALL Message("CONVERTAtomName2Number",IMust+IDEBUG,IErr,MessageString = "Is looping")
+     IMessageCounter = IMessageCounter +1
+  END DO
+ 
 
   DO ind=1,NElements
      IF(TRIM(name)==TRIM(A(ind))) THEN
@@ -197,10 +207,7 @@ SUBROUTINE CountTotalAtoms(IErr)
        ind,jnd,knd,hnd,ierr, ifullind, iuniind
   LOGICAL Lunique
 
-  CALL Message("CountTotalAtoms",IMoreInfo,IErr)
- ! IF((IWriteFLAG.EQ.6.AND.my_rank.EQ.0).OR.IWriteFLAG.GE.10) THEN
- !    PRINT*,"CountTotalAtoms()"
- ! END IF
+  CALL Message("CountTotalAtoms",IMust,IErr)
 
   ITotalAtoms = 0
 

@@ -38,7 +38,13 @@
 
 SUBROUTINE EigenSpectrum(isize, matU, evals, evecs, IErr)
 
+  USE WriteToScreen
   USE MyNumbers
+
+  USE IConst
+  USE IPara
+
+  USE MyMPI
 
   IMPLICIT NONE
 
@@ -56,6 +62,13 @@ SUBROUTINE EigenSpectrum(isize, matU, evals, evecs, IErr)
   REAL(RKIND) norm
 
   !PRINT*,"DBG: EigenSpectrum()"
+
+  IF (my_rank.EQ.0) THEN
+     DO WHILE (IMessageCounter .LT.5)
+        CALL Message("EigenSpectrum",IMust,IErr)
+        IMessageCounter = IMessageCounter +1
+     END DO
+  END IF
 
   ! ------------------------------------------------
   ! find optimum size of arrays

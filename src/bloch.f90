@@ -33,7 +33,8 @@
 !%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 SUBROUTINE BlochCoefficientCalculation(ind,jnd,gnd,ILocalPixelCountMin,IErr)
-
+  
+  USE WriteToScreen
   USE MyNumbers
   USE CConst; USE IConst
   USE IPara; USE RPara; USE CPara
@@ -64,6 +65,16 @@ SUBROUTINE BlochCoefficientCalculation(ind,jnd,gnd,ILocalPixelCountMin,IErr)
        CGeneralEigenValues
   REAL(RKIND),DIMENSION(IReflectOut) :: &
        RPreviousWaveIntensity
+
+   IF (my_rank.EQ.0) THEN
+      DO WHILE (IMessageCounter .LT.1)
+         CALL Message("BlochCoefficientCalculation",IMust,IErr)
+         CALL Message("BlochCoefficientCalculation",IMust+IDebug,IErr, & 
+              MessageString = "is looping, and calling subroutines itself, They are:")
+         IMessageCounter = IMessageCounter +1
+      END DO
+   END IF
+
   Rx0=(ind-IPixelCount-0.5D0)*RDeltaK ! x-position in the disk
   
   Ry0=(jnd-IPixelCount-0.5D0)*RDeltaK ! y-position in the disk
@@ -449,9 +460,10 @@ SUBROUTINE BlochCoefficientCalculation(ind,jnd,gnd,ILocalPixelCountMin,IErr)
   
 END SUBROUTINE BlochCoefficientCalculation
 
-SUBROUTINE CreateWavefunctions(rthickness,IErr)
+SUBROUTINE CreateWaveFunctions(rthickness,IErr)
 
- USE MyNumbers
+  USE WriteToScreen
+  USE MyNumbers
   
   USE CConst; USE IConst
   USE IPara; USE RPara; USE CPara; USE SPara
@@ -467,6 +479,14 @@ SUBROUTINE CreateWavefunctions(rthickness,IErr)
   REAL(RKIND) rthickness 
   COMPLEX(CKIND),DIMENSION(:,:),ALLOCATABLE :: &
        CDummyEigenVectors
+
+  IF (my_rank.EQ.0) THEN
+     DO WHILE (IMessageCounter .LT.6)
+        CALL Message("CreateWaveFunctions",IMust,IErr)
+        IMessageCounter = IMessageCounter +1
+     END DO
+  END IF
+
   
   !--------------------------------------------------------------------
   ! calculate wavefunctions
@@ -549,6 +569,7 @@ END SUBROUTINE CreateWavefunctions
 !!$Calculates the x,y,z components of the incident tilted k_vector
 SUBROUTINE KVectorsCalculation(Rx0,Ry0,IErr)
   
+  USE WriteToScreen
   USE MyNumbers
   
   USE CConst; USE IConst
@@ -564,6 +585,13 @@ SUBROUTINE KVectorsCalculation(Rx0,Ry0,IErr)
   REAL(RKIND) Rx0,Ry0
   INTEGER(IKIND) :: IErr
 
+  IF (my_rank.EQ.0) THEN
+     DO WHILE (IMessageCounter .LT.2)
+        CALL Message("KVectorsCalculation",IMust,IErr)
+        IMessageCounter = IMessageCounter +1
+     END DO
+  END IF
+
   !!$  k_x - based on crystal orientation
   RTiltedK(1)= Rx0
   !!$  k_y - based on crystal orientation
@@ -575,7 +603,8 @@ END SUBROUTINE KVectorsCalculation
 
 SUBROUTINE DeviationParameterCalculation(IErr)
 
-USE MyNumbers
+  USE WriteToScreen
+  USE MyNumbers
   
   USE CConst; USE IConst
   USE IPara; USE RPara; USE CPara; USE SPara
@@ -587,6 +616,13 @@ USE MyNumbers
 
   INTEGER(IKIND) knd,IErr
   
+  IF (my_rank.EQ.0) THEN
+     DO WHILE (IMessageCounter .LT.3)
+        CALL Message("DeviationParameterCalculation",IMust,IErr)
+        IMessageCounter = IMessageCounter +1
+     END DO
+  END IF
+
   DO knd=1,nReflections
      ! DevPara used to be called Sg in the book
      
@@ -602,7 +638,9 @@ USE MyNumbers
 END SUBROUTINE DeviationParameterCalculation
 
 SUBROUTINE StrongAndWeakBeamsDetermination(IErr)
-
+  
+  USE WriteToScreen
+  
   USE CConst; USE IConst
   USE IPara; USE RPara; USE CPara; USE SPara
   USE IChannels
@@ -618,6 +656,13 @@ SUBROUTINE StrongAndWeakBeamsDetermination(IErr)
   REAL(RKIND) sumC
   INTEGER(IKIND), DIMENSION(:),ALLOCATABLE  :: &
        IAdditionalBmaxStrongBeamList,IAdditionalPmaxStrongBeamList
+
+    IF (my_rank.EQ.0) THEN
+     DO WHILE (IMessageCounter .LT.4)
+        CALL Message("StrongAndWeakBeamsDetermination",IMust,IErr)
+        IMessageCounter = IMessageCounter +1
+     END DO
+  END IF
 
   !----------------------------------------------------------------------------
   ! Determine RBSMaxDeviationPara

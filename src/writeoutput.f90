@@ -84,10 +84,6 @@ SUBROUTINE WriteOutput( CAmplitudeandPhaseRoot,RIndividualReflectionsRoot,RFinal
 
 
   CALL Message("WriteOutput",IAllInfo,IErr,MessageString = "Writing Images")
-!!$  IF(IWriteFLAG.GE.10) THEN
-!!$     PRINT*,"Writing Images" 
-!!$  END IF
-  
   
   DO knd = 1,IThicknessCount
      
@@ -106,21 +102,17 @@ SUBROUTINE WriteOutput( CAmplitudeandPhaseRoot,RIndividualReflectionsRoot,RFinal
         WRITE(surname,"(A2,A1,I5.5,A2,I5.5)") &
              "M-","T",IThickness,"-P",MAXVAL(IImageSizeXY)
         
-        CALL OpenReflectionImage(MontageOut,surname,IErr,0,MAXVAL(IImageSizeXY)) 
+        CALL OpenReflectionImage(MontageOut,surname,IErr,0,MAXVAL(IImageSizeXY),knd)
         IF( IErr.NE.0 ) THEN
            PRINT*,"WriteOutput(", my_rank, ") error in OpenData()"
            RETURN
         ENDIF
-        
+           
+
         CALL Message("WriteOutput",IMoreInfo,IErr,MessageVariable = "working on RThickness",RVariable = RThickness )
 
-!!$        IF((IWriteFLAG.GE.2.AND.my_rank.EQ.0).OR.IWriteFLAG.GE.10) THEN         
-!!$           PRINT*,"WriteOutput(", my_rank, ") working on RThickness=", RThickness
-!!$        END IF
-
-
         CALL WriteReflectionImage(MontageOut,RFinalMontageImageRoot(:,:,knd), &
-             IErr,MAXVAL(IImageSizeXY),MAXVAL(IImageSizeXY))
+             IErr,MAXVAL(IImageSizeXY),MAXVAL(IImageSizeXY),knd)
 
         CLOSE(MontageOut,IOSTAT =IErr)
         CALL ErrorChecks("WriteOutput","WriteOutput",ICritError,IErr)
@@ -145,12 +137,12 @@ SUBROUTINE WriteOutput( CAmplitudeandPhaseRoot,RIndividualReflectionsRoot,RFinal
         call system('mkdir ' // path)
    
         DO ind = 1,IReflectOut
-           CALL OpenReflectionImage(IChOutWIImage,path,IErr,ind,2*IPixelCount)
+           CALL OpenReflectionImage(IChOutWIImage,path,IErr,ind,2*IPixelCount,knd)
            IF( IErr.NE.0 ) THEN
               PRINT*,"WriteOutput(", my_rank, ") error in OpenReflectionImage()"
               RETURN
            ENDIF
-           
+          
            RImage = ZERO
            DO jnd = 1,IPixelTotal
               gnd = IPixelLocations(jnd,1)
@@ -159,11 +151,11 @@ SUBROUTINE WriteOutput( CAmplitudeandPhaseRoot,RIndividualReflectionsRoot,RFinal
            END DO
            
            CALL WriteReflectionImage(IChOutWIImage,&
-                RImage,IErr,2*IPixelCount,2*IPixelCount)       
+                RImage,IErr,2*IPixelCount,2*IPixelCount,knd)       
            IF( IErr.NE.0 ) THEN
               PRINT*,"WriteOutput(", my_rank, ") error in WriteReflectionImage()"
               RETURN
-           ENDIF
+           ENDIF    
            CLOSE(IChOutWIImage,IOSTAT = IErr)
            CALL ErrorChecks("WriteOutput","WriteOutput",ICritError,IErr)
         END DO
@@ -182,13 +174,13 @@ SUBROUTINE WriteOutput( CAmplitudeandPhaseRoot,RIndividualReflectionsRoot,RFinal
         call system('mkdir ' // path)
         
         DO ind = 1,IReflectOut
-           CALL OpenReflectionImage(IChOutWFImageReal,path,IErr,ind,2*IPixelCount)
+           CALL OpenReflectionImage(IChOutWFImageReal,path,IErr,ind,2*IPixelCount,knd)
            IF( IErr.NE.0 ) THEN
               PRINT*,"WriteOutput(", my_rank, ") error in OpenAmplitudeImage()"
               RETURN
            ENDIF
            
-           CALL OpenReflectionImage(IChOutWFImagePhase,path,IErr,ind,2*IPixelCount)
+           CALL OpenReflectionImage(IChOutWFImagePhase,path,IErr,ind,2*IPixelCount,knd)
            IF( IErr.NE.0 ) THEN
               PRINT*,"WriteOutput(", my_rank, ") error in OpenPhaseImage()"
               RETURN
@@ -206,7 +198,7 @@ SUBROUTINE WriteOutput( CAmplitudeandPhaseRoot,RIndividualReflectionsRoot,RFinal
            END DO
               
            CALL WriteReflectionImage(IChOutWFImageReal,&
-                RImage,IErr,2*IPixelCount,2*IPixelCount)       
+                RImage,IErr,2*IPixelCount,2*IPixelCount,knd)       
            IF( IErr.NE.0 ) THEN
               PRINT*,"WriteOutput(", my_rank, ") error in WriteReflectionImage()"
               RETURN
@@ -220,7 +212,7 @@ SUBROUTINE WriteOutput( CAmplitudeandPhaseRoot,RIndividualReflectionsRoot,RFinal
            END DO
            
            CALL WriteReflectionImage(IChOutWFImagePhase,&
-                RImage,IErr,2*IPixelCount,2*IPixelCount)       
+                RImage,IErr,2*IPixelCount,2*IPixelCount,knd)       
            IF( IErr.NE.0 ) THEN
               PRINT*,"WriteOutput(", my_rank, ") error in WriteReflectionImage()"
               RETURN
@@ -236,9 +228,12 @@ SUBROUTINE WriteOutput( CAmplitudeandPhaseRoot,RIndividualReflectionsRoot,RFinal
         END DO
      END IF
   END DO
+
+!!$  Resets the Message Counter (For future entering subroutine messages)
+  IMessageCounter = 0  
   
- IF (my_rank ==0) THEN
- END IF
+ !IF (my_rank ==0) THEN
+ !END IF
 
   DEALLOCATE( &
        RImage,STAT=IErr)       

@@ -41,19 +41,21 @@
 SUBROUTINE ReadInput(IErr)
 
 !Module call
+  USE WriteToScreen
   USE MyNumbers
+  USE IConst
 
   USE MPI
   USE MyMPI
+  
+  IMPLICIT NONE
 
-IMPLICIT NONE
+  INTEGER(IKIND):: IErr
 
-INTEGER(IKIND):: IErr
-
-!Calling all functions which read felix.inp, felix.sca and felix.cif
-!(felix.hkl too depending on user preference)
-!ensure all input files are in working directory
-
+  !Calling all functions which read felix.inp, felix.sca and felix.cif
+  !(felix.hkl too depending on user preference)
+  !ensure all input files are in working directory
+  
   !felix.inp
   CALL ReadInpFile(IErr)
   IF( IErr.NE.0 ) THEN
@@ -61,6 +63,8 @@ INTEGER(IKIND):: IErr
           " in ReadInpFile()"
      RETURN
   ENDIF
+
+  CALL Message("ReadInput",IMust,IErr)
 
   !felix.hkl
   CALL ReadHklFile(IErr)
