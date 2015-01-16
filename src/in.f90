@@ -252,8 +252,11 @@ SUBROUTINE ReadInpFile( IErr )
 
   ILine= ILine+1
   READ(IChInp,15,ERR=20,END=30) RConvergenceAngle
-  CALL Message ("ReadInpFile",IInfo,IErr,MessageVariable ="RConvergenceAngle",RVariable=RConvergenceAngle)
+  CALL Message ("ReadInpFile",IInfo,IErr,MessageVariable ="ROuterConvergenceAngle",RVariable=RConvergenceAngle)
 
+  ILine= ILine+1
+  READ(IChInp,15,ERR=20,END=30) RInnerConvergenceAngle
+  CALL Message ("ReadInpFile",IInfo,IErr,MessageVariable ="RInnerConvergenceAngle",RVariable=RInnerConvergenceAngle)
 
   ILine= ILine+1
   READ(IChInp,10,ERR=20,END=30) IIncidentBeamDirectionX
@@ -524,6 +527,7 @@ SUBROUTINE ReadInpFile( IErr )
           IRefineModeSelectionArray(6)*3+&
           IRefineModeSelectionArray(7)*3
 
+     PRINT*,"IIndependentVariables =",IIndependentVariables
 
      ILine= ILine+1; READ(IChInp,ERR=20,END=30,FMT='(A)')
      ILine= ILine+1; READ(IChInp,ERR=20,END=30,FMT='(A)')
@@ -614,7 +618,8 @@ SUBROUTINE ReadInpFile( IErr )
      PRINT*,"RAbsorptionPer            = 2.9"
      PRINT*,""
      PRINT*,"# microscope settings"
-     PRINT*,"RConvergenceAngle         = 6.0"
+     PRINT*,"ROuterConvergenceAngle    = 6.0"
+     PRINT*,"RInnerConvergenceAngle    = 3.0"
      PRINT*,"IIncidentBeamDirectionX   = 0"
      PRINT*,"IIncidentBeamDirectionY   = 1"
      PRINT*,"IIncidentBeamDirectionZ   = 1"
@@ -674,7 +679,8 @@ SUBROUTINE ReadInpFile( IErr )
      PRINT*,"RAbsorptionPer            = 2.9"
      PRINT*,""
      PRINT*,"# microscope settings"
-     PRINT*,"RConvergenceAngle         = 6.0"
+     PRINT*,"ROuterConvergenceAngle    = 6.0"
+     PRINT*,"RInnerConvergenceAngle    = 3.0"
      PRINT*,"IIncidentBeamDirectionX   = 0"
      PRINT*,"IIncidentBeamDirectionY   = 1"
      PRINT*,"IIncidentBeamDirectionZ   = 1"

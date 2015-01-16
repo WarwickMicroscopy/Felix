@@ -265,13 +265,12 @@ MODULE IPara
 
    ! Simplex Global IterationCount
 
-   INTEGER(IKIND) :: &
-        IVariableID,IFelixCount
-
+   INTEGER(IKIND) :: & 
+        IVariableID,IFelixCount,IPreviousPrintedIteration,
+   
    !Message Counter (Avoid subroutines printing out 
    !entering message more than once)
-
-   INTEGER(IKIND):: &
+   INTEGER(IKIND) :: &
         IMessageCounter=0
 
 END MODULE IPara
@@ -310,7 +309,7 @@ MODULE RPara
   !Microscope Parameters
 
   REAL(RKIND) :: &
-       RConvergenceAngle, RAcceleratingVoltage
+       RConvergenceAngle, RAcceleratingVoltage,RInnerConvergenceAngle
 
   !LACBED Input
 

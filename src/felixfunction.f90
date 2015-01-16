@@ -742,7 +742,7 @@ END SUBROUTINE ReadExperimentalImages
 
 !%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-SUBROUTINE CalculateFigureofMeritandDetermineThickness(RSimulatedImages,IErr)
+SUBROUTINE CalculateFigureofMeritandDetermineThickness(RSimulatedImages,IThicknessCountFinal,IErr)
   
   USE MyNumbers
   
@@ -758,15 +758,17 @@ SUBROUTINE CalculateFigureofMeritandDetermineThickness(RSimulatedImages,IErr)
   IMPLICIT NONE
 
   INTEGER(IKIND) :: &
-       ind,jnd,knd,IErr,ICountedPixels,IThickness,&
+       ind,jnd,knd,IErr,ICountedPixels,IThickness,hnd
+  INTEGER(IKIND),INTENT(OUT) :: &
        IThicknessCountFinal
   REAL(RKIND),DIMENSION(:,:),ALLOCATABLE :: &
        RSimulatedImageForPhaseCorrelation
   REAL(RKIND) :: &
-       RCrossCorrelationOld,RThickness
+       RCrossCorrelationOld,RIndependentCrossCorrelation,RThickness
   REAL(RKIND),DIMENSION(IReflectOut,IThicknessCount,IPixelTotal) :: &
        RSimulatedImages
-  
+  REAL(RKIND),DIMENSION(IReflectOut) :: &
+       RReflectionCrossCorrelations
   
   IF((IWriteFLAG.GE.0.AND.my_rank.EQ.0).OR.IWriteFLAG.GE.10) THEN
      PRINT*,"CalculateFigureofMeritandDetermineThickness(",my_rank,")"
@@ -780,59 +782,59 @@ SUBROUTINE CalculateFigureofMeritandDetermineThickness(RSimulatedImages,IErr)
           " In ALLOCATE"
      RETURN
   ENDIF
-  
-  RCrossCorrelationOld = ZERO
-  RThickness = ZERO
 
-  DO ind = 1,IThicknessCount
-     ICountedPixels = 0
-     RSimulatedImageForPhaseCorrelation = ZERO
-        RCrossCorrelation = ZERO
-     DO jnd = 1,2*IPixelCount
-        DO knd = 1,2*IPixelCount
-           IF(ABS(RMask(jnd,knd)).GT.TINY) THEN
-              ICountedPixels = ICountedPixels+1
-              
-              
-              RSimulatedImageForPhaseCorrelation(jnd,knd) = &
-                   RSimulatedImages(1,ind,ICountedPixels)
-           END IF
+  RReflectionCrossCorrelations = ZERO
+
+  DO hnd = 1,IReflectOut
+     RCrossCorrelationOld = ZERO
+     RThickness = ZERO
+     DO ind = 1,IThicknessCount
+        
+        ICountedPixels = 0
+
+        RSimulatedImageForPhaseCorrelation = ZERO
+
+        RIndependentCrossCorrelation = ZERO
+
+        DO jnd = 1,2*IPixelCount
+           DO knd = 1,2*IPixelCount
+              IF(ABS(RMask(jnd,knd)).GT.TINY) THEN
+                 ICountedPixels = ICountedPixels+1
+                                  
+                 RSimulatedImageForPhaseCorrelation(jnd,knd) = &
+                      RSimulatedImages(hnd,ind,ICountedPixels)
+              END IF
+           END DO
         END DO
+
+        CALL PhaseCorrelate(RSimulatedImageForPhaseCorrelation,RImageExpi(:,:,hnd),&
+             IErr,2*IPixelCount,2*IPixelCount)
+        RIndependentCrossCorrelation = RCrossCorrelation
+        IF(RIndependentCrossCorrelation.GT.RCrossCorrelationOld) THEN
+
+           RCrossCorrelationOld = RIndependentCrossCorrelation
+
+           RThickness = RInitialThickness + (ind-1)*RDeltaThickness 
+
+           IThicknessCountFinal = ind
+
+        END IF
      END DO
      
-!!$     WHERE(RSimulatedImageForPhaseCorrelation.LT.TINY) RImageExpi(:,:,1) = ZERO
-!!$     WHERE(RImageExpi(:,:,1).LT.TINY) RSimulatedImageForPhaseCorrelation = ZERO
-     
+     RReflectionCrossCorrelations(hnd) = RCrossCorrelationOld
 
-     CALL PhaseCorrelate(RSimulatedImageForPhaseCorrelation,RImageExpi(:,:,1),&
-          IErr,2*IPixelCount,2*IPixelCount)
-
-     PRINT*,RInitialThickness + (ind-1)*RDeltaThickness,&
-          SUM(RSimulatedImageForPhaseCorrelation),&
-          SUM(RImageExpi(:,:,1)),&
-          MAXVAL(RSimulatedImageForPhaseCorrelation),&
-          RCrossCorrelation
-     
-!!$     PRINT*,"RCrossCorrelation = ",RCrossCorrelation
-
-     IF(RCrossCorrelation.GT.RCrossCorrelationOld) THEN
-        RCrossCorrelationOld = RCrossCorrelation
-        RThickness = RInitialThickness + (ind-1)*RDeltaThickness 
-        IThicknessCountFinal = ind
-     END IF
   END DO
-  
-  RCrossCorrelation = RCrossCorrelationOld
+
+  RCrossCorrelation = SUM(RReflectionCrossCorrelations)/REAL(IReflectOut,RKIND)
 
   DEALLOCATE(&
        RSimulatedImageForPhaseCorrelation,&
        STAT=IErr)
   IF( IErr.NE.0 ) THEN
      PRINT*,"CalculateFigureofMeritandDetermineThickness(", my_rank, ") error ", IErr, &
-          " In DEALLOCATE"
+          " In DEALLOCATE of RSimulatedImageForPhaseCorrelation"
      RETURN
-  ENDIF
-  
+  ENDIF  
   
 END SUBROUTINE CalculateFigureofMeritandDetermineThickness
 
@@ -854,7 +856,8 @@ REAL(RKIND) FUNCTION SimplexFunction(RIndependentVariableValues,IIterationCount,
   IMPLICIT NONE
   
   INTEGER(IKIND) :: &
-       IErr,IPixels,CountPixels,ind,INewVariableID,IExitFLAG,gnd,knd,IThickness,hnd,jnd
+       IErr,IPixels,CountPixels,ind,INewVariableID,IExitFLAG,gnd,knd,IThickness,hnd,jnd,&
+       IThicknessIndex
   REAL(RKIND) :: &
        RNewValue
   REAL(RKIND),DIMENSION(IIndependentVariables),INTENT(IN) :: &
@@ -863,7 +866,8 @@ REAL(RKIND) FUNCTION SimplexFunction(RIndependentVariableValues,IIterationCount,
        RImage
   INTEGER(IKIND),INTENT(IN) :: &
        IIterationCount
-  CHARACTER*40 path
+  CHARACTER*40 :: &
+       path
   
   IF((IWriteFLAG.GE.0.AND.my_rank.EQ.0).OR.IWriteFLAG.GE.10) THEN
      PRINT*,"SimplexFunction(",my_rank,")"
@@ -873,15 +877,15 @@ REAL(RKIND) FUNCTION SimplexFunction(RIndependentVariableValues,IIterationCount,
   IPixels = 0
   IPixels = CountPixels(IErr) ! Count The Number of Pixels
   IThicknessCount= (RFinalThickness- RInitialThickness)/RDeltaThickness + 1
-
+  
   CALL UpdateVariables(RIndependentVariableValues,IErr)
   IF( IErr.NE.0 ) THEN
      
      PRINT*,"SimplexFunction(", my_rank, ") error ", IErr, &
           " in UpdateVariables"
      RETURN
-  ENDIF   
-
+  ENDIF
+  
   CALL FelixFunction(RIndependentVariableValues,IIterationCount,IErr) ! Simulate !!  
   IF( IErr.NE.0 ) THEN
      PRINT*,"SimplexFunction(", my_rank, ") error ", IErr, &
@@ -899,21 +903,23 @@ REAL(RKIND) FUNCTION SimplexFunction(RIndependentVariableValues,IIterationCount,
              " in ALLOCATE() of DYNAMIC variable RMask"
         RETURN
      ENDIF
-
+     
      CALL ImageMaskInitialisation(IErr)
      IF( IErr.NE.0 ) THEN
         PRINT*,"SimplexFunction(", my_rank, ") error ", IErr, &
              " in ImageMaskInitialisation"
         RETURN
      ENDIF
-
-     CALL CalculateFigureofMeritandDetermineThickness(RIndividualReflections,IErr)
+     
+     CALL CalculateFigureofMeritandDetermineThickness(RIndividualReflections,IThicknessIndex,IErr)
      IF( IErr.NE.0 ) THEN
         PRINT*,"SimplexFunction(", my_rank, ") error ", IErr, &
              "Calling function CalculateFigureofMeritandDetermineThickness"
         RETURN
-     ENDIF   
+     ENDIF
      
+     IF(my_rank.EQ.0) PRINT*,"IThicknessIndex",IThicknessIndex
+
      DEALLOCATE( &
           RMask,&
           STAT=IErr)
@@ -924,97 +930,103 @@ REAL(RKIND) FUNCTION SimplexFunction(RIndependentVariableValues,IIterationCount,
      ENDIF
      
 !!$     OUTPUT AN IMAGE -------------------------------------
+     
+     IF(IExitFLAG.EQ.1.OR.(IIterationCount.GE.(IPreviousPrintedIteration+IPrint))) THEN
 
-     IF(IExitFLAG.EQ.1.OR.MOD(IIterationCount,IPrint).EQ.0) THEN
-        DO knd = 1,IThicknessCount
-           IThickness = RInitialThickness + (knd-1)*RDeltaThickness 
-           ALLOCATE( &
-                RImage(2*IPixelCount,2*IPixelCount), &
-                STAT=IErr)
+        IPreviousPrintedIteration = IIterationCount
+        IThickness = RInitialThickness + (IThicknessIndex-1)*RDeltaThickness 
+
+        ALLOCATE( &
+             RImage(2*IPixelCount,2*IPixelCount), &
+             STAT=IErr)
+        IF( IErr.NE.0 ) THEN
+           PRINT*,"WriteOutput(", my_rank, ") error ", IErr, &
+                " in ALLOCATE() of DYNAMIC variables RImage"
+           RETURN
+        ENDIF
+                
+        WRITE(path,"(A2,A1,I1.1,A2,I1.1,A2,I1.1,A2,I4.4,A2,I5.5,A10,I5.5)") &
+             "F-",&
+             "S", IScatterFactorMethodFLAG, &
+             "_B", ICentralBeamFLAG, &
+             "_M", IMaskFLAG, &
+             "_P", IPixelCount, &
+             "_T", IThickness, &
+             "_Iteration",IIterationCount
+        
+        call system('mkdir ' // path)
+        
+        DO ind = 1,IReflectOut
+           CALL OpenReflectionImage(IChOutWIImage,path,IErr,ind,2*IPixelCount)
            IF( IErr.NE.0 ) THEN
-              PRINT*,"WriteOutput(", my_rank, ") error ", IErr, &
-                   " in ALLOCATE() of DYNAMIC variables RImage"
+              PRINT*,"WriteOutput(", my_rank, ") error in OpenReflectionImage()"
               RETURN
            ENDIF
            
-           
-           WRITE(path,"(A2,A1,I1.1,A2,I1.1,A2,I1.1,A2,I4.4,A2,I5.5,A10,I5.5)") &
-                "F-",&
-                "S", IScatterFactorMethodFLAG, &
-                "_B", ICentralBeamFLAG, &
-                "_M", IMaskFLAG, &
-                "_P", IPixelCount, &
-                "_T", IThickness, &
-                "_Iteration",IFelixCount
-           
-           call system('mkdir ' // path)
-           
-           DO ind = 1,IReflectOut
-              CALL OpenReflectionImage(IChOutWIImage,path,IErr,ind,2*IPixelCount)
-              IF( IErr.NE.0 ) THEN
-                 PRINT*,"WriteOutput(", my_rank, ") error in OpenReflectionImage()"
-                 RETURN
-              ENDIF
-              
-              RImage = ZERO
-              DO jnd = 1,IPixelTotal
-                 gnd = IPixelLocations(jnd,1)
-                 hnd = IPixelLocations(jnd,2)
-                 RImage(gnd,hnd) = RIndividualReflections(ind,knd,jnd)
-              END DO
-              
-              CALL WriteReflectionImage(IChOutWIImage,&
-                   RImage,IErr,2*IPixelCount,2*IPixelCount)       
-              IF( IErr.NE.0 ) THEN
-                 PRINT*,"WriteOutput(", my_rank, ") error in WriteReflectionImage()"
-                 RETURN
-              ENDIF
-              CLOSE(IChOutWIImage)
+           RImage = ZERO
+           DO jnd = 1,IPixelTotal
+              gnd = IPixelLocations(jnd,1)
+              hnd = IPixelLocations(jnd,2)
+              RImage(gnd,hnd) = RIndividualReflections(ind,IThicknessIndex,jnd)
            END DO
            
-           DEALLOCATE( &
-                RImage, &
-                STAT=IErr)
+           CALL WriteReflectionImage(IChOutWIImage,&
+                RImage,IErr,2*IPixelCount,2*IPixelCount)       
            IF( IErr.NE.0 ) THEN
-              PRINT*,"WriteOutput(", my_rank, ") error ", IErr, &
-                   " in DEALLOCATE() of DYNAMIC variables RImage"
+              PRINT*,"WriteOutput(", my_rank, ") error in WriteReflectionImage()"
               RETURN
            ENDIF
+
+           CLOSE(IChOutWIImage,IOSTAT=IErr)       
+           IF( IErr.NE.0 ) THEN
+              PRINT*,"WriteOutput(", my_rank, ") error Closing Reflection Image()"
+              RETURN
+           ENDIF
+
         END DO
+        
+        DEALLOCATE( &
+             RImage, &
+             STAT=IErr)
+        IF( IErr.NE.0 ) THEN
+           PRINT*,"WriteOutput(", my_rank, ") error ", IErr, &
+                " in DEALLOCATE() of DYNAMIC variables RImage"
+           RETURN
+        ENDIF
      END IF
-
+     
 !!$     FINISH OUT PUTTING IMAGE --------------------------------
-
+     
      DEALLOCATE( &
-          RIndividualReflections,STAT=IErr)
+          RIndividualReflections,&
+          STAT=IErr)
+     IF( IErr.NE.0 ) THEN
+        PRINT*,"Felixfunction(", my_rank, ") error ", IErr, &
+             " Deallocating RIndividualReflections"
+        RETURN
+     ENDIF
+     
+     DEALLOCATE( &
+          IPixelLocations,&
+          STAT=IErr)
      IF( IErr.NE.0 ) THEN
         PRINT*,"Felixfunction(", my_rank, ") error ", IErr, &
              " Deallocating IPixelLocations"
         RETURN
      ENDIF
-     DEALLOCATE( &
-          IPixelLocations,STAT=IErr)
-     IF( IErr.NE.0 ) THEN
-        PRINT*,"Felixfunction(", my_rank, ") error ", IErr, &
-             " Deallocating IPixelLocations"
-        RETURN
-     ENDIF
-
      
      SimplexFunction = 1.0_RKIND-RCrossCorrelation
+     
   END IF
-
-  
+    
   DEALLOCATE( &
-       Rhkl,&
-       STAT=IErr)
+     Rhkl,&
+     STAT=IErr)
   IF( IErr.NE.0 ) THEN
      PRINT*,"Felixfunction(", my_rank, ") error ", IErr, &
           " in Deallocation Rhkl"
      RETURN
   ENDIF
-
-  
 
 END FUNCTION SimplexFunction
 

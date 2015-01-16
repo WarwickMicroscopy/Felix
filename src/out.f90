@@ -360,7 +360,6 @@ SUBROUTINE OpenReflectionImage(IChOutWrite, surname, IErr,IReflectWriting,IImage
         PRINT*, "OpenImage: opening image for WAVE FUNCTION PHASE PART (WP*.txt)"
      END IF
   CASE(IChOutWIImage) 
-     PRINT*,h,k,l,fileext
      WRITE(filename,*) TRIM(ADJUSTL(surname)),"/F-WI_",&
           TRIM(ADJUSTL(h)),&
           TRIM(ADJUSTL(k)),&
@@ -383,7 +382,6 @@ SUBROUTINE OpenReflectionImage(IChOutWrite, surname, IErr,IReflectWriting,IImage
   
   CALL Message("OpenReflectionImage",IInfo,IErr, MessageVariable = "filename", &
        MessageString = filename)
- ! PRINT*,filename
 
   SELECT CASE (IBinorTextFLAG)
      CASE(0)

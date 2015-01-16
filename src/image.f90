@@ -184,7 +184,7 @@ SUBROUTINE ImageMaskInitialisation (IErr)
   IMPLICIT NONE
   
   INTEGER(IKIND) :: &
-       ind,jnd, ierr
+       ind,jnd, ierr,InnerRadiusFLAG
   REAL(RKIND) :: &
        Rradius, RImageRadius
   
@@ -212,7 +212,22 @@ SUBROUTINE ImageMaskInitialisation (IErr)
      RMask = 1
      IPixelTotal = (2*IPixelCount)**2
   END SELECT
-  
+
+  IF (RInnerConvergenceAngle.GT.ZERO) THEN
+     DO ind=1,2*IPixelCount
+        DO jnd=1,2*IPixelCount
+           Rradius= (ind-(REAL(IPixelCount,RKIND)+0.5))**2 + &
+                (jnd-(REAL(IPixelCount,RKIND)+0.5))**2
+           Rradius=SQRT(DBLE(Rradius))
+           RImageRadius = (IPixelCount+0.5)*(RInnerConvergenceAngle/RConvergenceAngle)
+           IF(Rradius.LE.RImageRadius) THEN
+              RMask(jnd,ind) = 0
+              IPixelTotal= IPixelTotal - 1
+           ENDIF
+        ENDDO
+     ENDDO
+  END IF
+
   ALLOCATE( &
        IPixelLocations(IPixelTotal,2), &
        STAT=IErr)
@@ -227,17 +242,10 @@ SUBROUTINE ImageMaskInitialisation (IErr)
   CASE(0) ! circle
      DO ind=1,2*IPixelCount
         DO jnd=1,2*IPixelCount
-           Rradius= (ind-(REAL(IPixelCount,RKIND)+0.5))**2 + &
-                (jnd-(REAL(IPixelCount,RKIND)+0.5))**2
-           Rradius=SQRT(DBLE(Rradius))
-           RImageRadius = IPixelCount+0.5
-           IF(Rradius.LE.RImageRadius) THEN
-              !RMask(jnd,ind) = 1
+           IF(RMask(ind,jnd).GT.ZERO) THEN
               IPixelTotal= IPixelTotal + 1
               IPixelLocations(IPixelTotal,1) = ind
               IPixelLocations(IPixelTotal,2) = jnd
-           ELSE
-              !RMask(jnd,ind) = 0
            ENDIF
         ENDDO
      ENDDO
@@ -245,9 +253,11 @@ SUBROUTINE ImageMaskInitialisation (IErr)
      IPixelTotal = 0
      DO ind = 1,2*IPixelCount
         DO jnd = 1,2*IPixelCount
-           IPixelTotal = IPixelTotal+1
-           IPixelLocations(IPixelTotal,1) = ind
-           IPixelLocations(IPixelTotal,2) = jnd
+           IF(RMask(ind,jnd).GT.ZERO) THEN
+              IPixelTotal = IPixelTotal+1
+              IPixelLocations(IPixelTotal,1) = ind
+              IPixelLocations(IPixelTotal,2) = jnd
+           END IF
         END DO
      END DO
   END SELECT

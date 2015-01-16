@@ -224,8 +224,6 @@ SUBROUTINE PhaseCorrelate(RImageSim,RImageExpiDummy,IErr,IXsizeIn,IYSizeIn)
   call fftw_free(p2)
   call fftw_free(p3)
   call fftw_free(p4)
-
-  PRINT*,"RCrossCorrelation =",RCrossCorrelation,MAXVAL(RImageSim),MAXVAL(RImageExpiDummy),RIsotropicDebyeWallerFactors
   
 END SUBROUTINE PhaseCorrelate
 
