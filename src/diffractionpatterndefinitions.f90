@@ -184,7 +184,8 @@ SUBROUTINE ReflectionDetermination( IErr )
 
     IMPLICIT NONE
 
-    INTEGER(IKIND) IFind,IFound,ind,jnd,knd,IErr
+    INTEGER(IKIND) :: &
+         IFind,IFound,ind,jnd,knd,IErr
     
   IFind = 0
   

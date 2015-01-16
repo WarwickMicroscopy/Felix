@@ -95,7 +95,7 @@ SUBROUTINE ReadCifFile(IErr)
   DATA          rs/'\\'/
 
   INTEGER IAtomCount, ICommaPosLeft, ICommaPosRight, &
-       Ipos,Idpos, IXYZminus,IFRACminus, Inum,Idenom
+       Ipos,Idpos, IXYZminus,IFRACminus, Inum,Idenom,IAtomID
   
   CHARACTER*32 Csym(THREEDIM)
 
@@ -313,7 +313,7 @@ SUBROUTINE ReadCifFile(IErr)
        MessageString =name(1:long_))
 
   SSpaceGroupName=TRIM(name(1:1))
-
+  SSpaceGrp = TRIM(ADJUSTL(name))
   
   !sometimes space group is input in lowercase letters - below changes the first letter to
   !uppercase
@@ -497,6 +497,26 @@ SUBROUTINE ReadCifFile(IErr)
 
   !----------------------------------------------------
   ! RESET
+  !----------------------------------------------------
+
+  CALL CifReset
+  
+  ALLOCATE( &
+       SWyckoffSymbols(SIZE(IAtomicSitesToRefine)),&
+       STAT=IErr)
+  IF( IErr.NE.0 ) THEN
+     PRINT*,"ReadCifFile(", my_rank, ") error ", IErr, " in ALLOCATE()"
+     RETURN
+  ENDIF
+
+  DO ind=1,SIZE(IAtomicSitesToRefine)
+!!$     IAtomID = IAtomsToRefine(ind)
+     f2 = char_('_atom_site_Wyckoff_symbol',name)
+     SWyckoffSymbols(ind) = name
+  ENDDO
+
+  !----------------------------------------------------
+  ! RESET
   !---------------------------------------------------
 
   CALL CifReset
@@ -520,12 +540,13 @@ SUBROUTINE ReadCifFile(IErr)
   ENDDO
 
   IF(((IWriteFLAG.GE.1.AND.my_rank.EQ.0).OR.IWriteFLAG.GE.10).AND.IAnisoDebyeWallerFactorFlag.EQ.1) THEN
-     PRINT*,"DBG: RAnisotropicDebyeWallerFactorTensor",RAnisotropicDebyeWallerFactorTensor
+     PRINT*,"RAnisotropicDebyeWallerFactorTensor",RAnisotropicDebyeWallerFactorTensor
   END IF
 
   ! ----------------------------------------------------------
   ! Extract atom site data in a loop
-  !----------------------------------------------------------
+  !-----------------------------------------------------------
+
   CALL Message("ReadCIFFile",IInfo,IErr, MessageString = "Symmetries")      
   !IF((IWriteFLAG.GE.1.AND.my_rank.EQ.0).OR.IWriteFLAG.GE.10) THEN
   !   PRINT*,"ReadCifFile(", my_rank, ") Symmetries"
