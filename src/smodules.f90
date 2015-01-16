@@ -266,10 +266,11 @@ MODULE IPara
    ! Simplex Global IterationCount
 
    INTEGER(IKIND) :: & 
-        IVariableID,IFelixCount,IPreviousPrintedIteration,
+        IVariableID,IFelixCount,IPreviousPrintedIteration
    
    !Message Counter (Avoid subroutines printing out 
    !entering message more than once)
+
    INTEGER(IKIND) :: &
         IMessageCounter=0
 
