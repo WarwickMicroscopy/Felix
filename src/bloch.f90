@@ -540,8 +540,6 @@ SUBROUTINE CreateWaveFunctions(rthickness,IErr)
   ENDDO
   
   
-  !PRINT*,"This Far"
-  
   !--------------------------------------------------------------------
   ! rePADDing of wave function and intensities with zero's 
   !--------------------------------------------------------------------
