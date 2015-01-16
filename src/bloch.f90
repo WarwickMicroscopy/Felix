@@ -69,6 +69,8 @@ SUBROUTINE BlochCoefficientCalculation(ind,jnd,gnd,ILocalPixelCountMin,IErr)
    IF (my_rank.EQ.0) THEN
       DO WHILE (IMessageCounter .LT.1)
          CALL Message("BlochCoefficientCalculation",IMust,IErr)
+         CALL Message("BlochCoefficientCalculation",IMust+IDebug,IErr, & 
+              MessageString = "is looping, and calling subroutines itself, They are:")
          IMessageCounter = IMessageCounter +1
       END DO
    END IF

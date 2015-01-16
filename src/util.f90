@@ -160,7 +160,13 @@ SUBROUTINE CONVERTAtomName2Number(name, number, IErr)
         "Pa", "U", "Np", "Pu", "Am", "Cm", "Bk", "Cf", "Es", "Fm",& 
         "Md","No","Lr"/
 
-  CALL Message("CONVERTAtomName2Number",IMust,IErr)
+!!$  Subroutine within loop, therefore only want to print this message once
+  DO WHILE (IMessageCounter.LT.1)
+     CALL Message("CONVERTAtomName2Number",IMust,IErr)
+     CALL Message("CONVERTAtomName2Number",IMust+IDEBUG,IErr,MessageString = "Is looping")
+     IMessageCounter = IMessageCounter +1
+  END DO
+ 
 
   DO ind=1,NElements
      IF(TRIM(name)==TRIM(A(ind))) THEN

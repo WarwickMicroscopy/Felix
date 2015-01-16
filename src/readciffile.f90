@@ -407,9 +407,6 @@ SUBROUTINE ReadCifFile(IErr)
      CALL CONVERTAtomName2Number(SAtomName(ind),IAtomNumber(ind), IErr)
      CALL Message("ReadCIFFile",IInfo,IErr,MessageVariable = "IAtomNumber(ind)", IVariable = IAtomNumber(ind))
 
-    ! IF((IWriteFLAG.GE.1.AND.my_rank.EQ.0).OR.IWriteFLAG.GE.10) THEN
-    !    PRINT*,"IAtomNumber(ind) = ",IAtomNumber(ind)
-    ! END IF
      IF(loop_ .NEQV. .TRUE.) EXIT
      
   ENDDO
@@ -673,9 +670,10 @@ SUBROUTINE CifReset(IErr)
   CHARACTER*30 string
   
 !!$  Only print message once
-  DO WHILE (IMessageCounter.LT.1)
-     IMessageCounter = IMessageCounter +1
+  DO WHILE (IMessageCounter.LT.2)
      CALL Message("CifReset",IMust,IErr)
+     CALL Message("CifReset",IMust+IDebug,IErr,MessageString= "CifReset is called several times")
+     IMessageCounter = IMessageCounter +1
   END DO
 
   IF (find_('_cell_angle_alpha','name',string)) THEN

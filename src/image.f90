@@ -124,6 +124,7 @@ SUBROUTINE MontageInitialisation(ind,jnd,ithicknessindex,RMontageImage,RIntensit
   IF (my_rank.EQ.0) THEN
      DO WHILE (IMessageCounter .LT.1)
         CALL Message("MontageInitialisation",IMust,IErr)
+        CALL Message("MontageInitialisation",IMust+IDebug,IErr,MessageString="Is looping (called from MontageSetup)")
         IMessageCounter = IMessageCounter +1
      END DO
   END IF

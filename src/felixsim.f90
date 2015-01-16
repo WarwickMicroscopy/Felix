@@ -348,10 +348,12 @@ PROGRAM felixsim
      GOTO 9999
   ENDIF
 
-   
-  CALL Message("*********************************",ISilent,IErr)
-  CALL Message("felixsim",ISilent,IErr,MessageString = " Entering BlochLoop")   
-  CALL Message("*********************************",ISilent,IErr)
+  IF((IWriteFLAG.GE.0.AND.my_rank.EQ.0.AND.ISoftwareMode.LT.2) &
+             .OR.IWriteFLAG.GE.10.AND.ISoftwareMode .LT. 2) THEN
+     PRINT*,"*********************************"
+     CALL Message("felixsim",ISilent,IErr,MessageString = " Entering BlochLoop")   
+     PRINT*,"*********************************"
+  END IF
 
   DO knd = ILocalPixelCountMin,ILocalPixelCountMax,1
      ind = IPixelLocations(knd,1)
