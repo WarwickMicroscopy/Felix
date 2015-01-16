@@ -198,6 +198,7 @@ END SUBROUTINE CrystalLatticeVectorDetermination
 !---------------------------------------------------------------
 SUBROUTINE CrystalFullFractionalAtomicPostitionsCalculation(IErr)
   
+  USE WriteToScreen
   USE MyNumbers
   
   USE CConst; USE IConst
@@ -209,6 +210,8 @@ SUBROUTINE CrystalFullFractionalAtomicPostitionsCalculation(IErr)
   IMPLICIT NONE
   
   INTEGER(IKIND)IErr, ind,jnd,knd, Ifullind
+
+  CALL Message("CrystalFullFractionalAtomicPostitionsCalculation",IMust,IErr)
   
   ALLOCATE( &
        RFullAtomicFracCoordVec( &
@@ -336,7 +339,7 @@ SUBROUTINE CrystalUniqueFractionalAtomicPostitionsCalculation (IErr)
   CHARACTER*100 MNPString
   CHARACTER*100 indString
   
-  CALL Message("CrystalUniqueFractionalAtomicPostitionsCalculation",IInfo,IErr)
+  CALL Message("CrystalUniqueFractionalAtomicPostitionsCalculation",IMust,IErr)
 
   ! Calculate the set of unique fractional atomic positions
 

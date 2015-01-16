@@ -177,6 +177,7 @@ SUBROUTINE ReflectionDetermination( IErr )
     
     USE MyNumbers
     USE WriteToScreen
+    USE IConst
 
     USE IPara; USE RPara
 
@@ -186,6 +187,8 @@ SUBROUTINE ReflectionDetermination( IErr )
 
     INTEGER(IKIND) :: &
          IFind,IFound,ind,jnd,knd,IErr
+
+    CALL Message("SpecificReflectionDetermination",IMust,IErr)
     
   IFind = 0
   
@@ -272,6 +275,7 @@ SUBROUTINE ReflectionDetermination( IErr )
 
     USE MyNumbers
     USE WriteToScreen
+    USE IConst
 
     USE IPara; USE RPara;
 
@@ -283,7 +287,7 @@ SUBROUTINE ReflectionDetermination( IErr )
 
     REAL(RKIND):: dummy
 
-    CALL Message("DiffractionPatternDefinitions",IMust,IErr)
+    CALL Message("DiffractionPatternCalculation",IMust,IErr)
 
     ALLOCATE(&
          RGn(SIZE(RHKL,DIM=1)), &

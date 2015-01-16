@@ -39,7 +39,9 @@
 !Calls the subroutines which set up the experimental part of felix
 SUBROUTINE ExperimentalSetup (IErr)
 
+  USE WriteToScreen
   USE MyNumbers
+  USE IConst
   
   USE IPara; USE RPara; USE SPara; USE CPara
  
@@ -49,6 +51,8 @@ SUBROUTINE ExperimentalSetup (IErr)
 
   INTEGER(IKIND) :: IErr
 
+  CALL Message("ExperimentalSetup",IMust,IErr)
+  
   !--------------------------------------------------------------------
   ! Allocate Crystallography Variables
   !--------------------------------------------------------------------

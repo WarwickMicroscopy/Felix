@@ -1005,6 +1005,7 @@ END SUBROUTINE ReadEigenSystemChunk
 !Write out the sample input file, when none provided
 SUBROUTINE WriteOutInputFile (IErr)
   
+  USE WriteToScreen
   USE MyNumbers
   
   USE IConst
@@ -1024,6 +1025,8 @@ SUBROUTINE WriteOutInputFile (IErr)
   INTEGER(IKIND):: IErr
 
   IF(ISoftwareMode.LT.2) THEN
+
+     CALL Message("WriteOutInputFile",IMust,IErr)
      
      OPEN(UNIT= IChInp,FILE= "felix.inp.simdraw_sample",&
        STATUS= 'UNKNOWN')

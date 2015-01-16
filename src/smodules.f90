@@ -276,6 +276,15 @@ MODULE IPara
    INTEGER(IKIND),DIMENSION(:),ALLOCATABLE :: &
         IAllowedVectorIDs
 
+   INTEGER(IKIND) :: & 
+        IVariableID,IFelixCount,IPreviousPrintedIteration
+   
+   !Message Counter (Avoid subroutines printing out 
+   !entering message more than once)
+
+   INTEGER(IKIND) :: &
+        IMessageCounter=0
+
 END MODULE IPara
 
 !--------------------------------------------------------------------

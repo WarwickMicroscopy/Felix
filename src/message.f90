@@ -55,7 +55,7 @@ SUBROUTINE Message(ProgramName,IPriorityFLAG,IErr,MessageVariable,RVariable,IVar
   COMPLEX(CKIND),INTENT (IN), OPTIONAL :: CVariable
 
   CHARACTER(*),INTENT (IN) :: ProgramName
-  INTEGER(IKIND) :: IErr,IPriorityFLAG
+  INTEGER(IKIND) :: IErr,IPriorityFLAG,IRefineSwitch
   
   CHARACTER*30 VariableString, my_rank_string
 
@@ -78,6 +78,13 @@ SUBROUTINE Message(ProgramName,IPriorityFLAG,IErr,MessageVariable,RVariable,IVar
      IDebugFLAG = IWriteFLAG
      IWriteFLAG = IDebugFLAG - 100
   END IF
+  
+  IF ((IWriteFLAG.GE.100).AND.(ISoftwareMode.EQ.2)) THEN
+     IRefineSwitch = 3
+  ELSE
+     IRefineSwitch = 2
+  END IF
+
 
 !!$  If IPriorityFLAG is over 100 (Debug messaging) below won't execute
 !!$  Prints out specified variation of message (dependent on presence of variables), to the screen
@@ -86,29 +93,29 @@ SUBROUTINE Message(ProgramName,IPriorityFLAG,IErr,MessageVariable,RVariable,IVar
      ! Checks if MessageVariable & MessageString has been read into the function
      IF (PRESENT(MessageVariable).AND.PRESENT(MessageString)) THEN
         !Prints out message
-        IF((IPriorityFLAG.LE.IWriteFLAG.AND.my_rank.EQ.0.AND.ISoftwareMode.LT.2) &
-             .OR.IWriteFLAG.GE.10.AND.ISoftwareMode .LT. 2) THEN
+        IF((IPriorityFLAG.LE.IWriteFLAG.AND.my_rank.EQ.0.AND.ISoftwareMode.LT.IRefineSwitch) &
+             .OR.IWriteFLAG.GE.10.AND.ISoftwareMode .LT. IRefineSwitch) THEN
            PRINT*,ProgramName,"( ",TRIM(my_rank_string)," ) ", &
                 TRIM(MessageVariable)," = ",TRIM(VariableString),"  ",TRIM(MessageString)
         END IF
         
      ELSE IF (PRESENT(MessageVariable)) THEN
        
-        IF((IPriorityFLAG.LE.IWriteFLAG.AND.my_rank.EQ.0.AND.ISoftwareMode.LT.2) &
-             .OR.IWriteFLAG.GE.10.AND.ISoftwareMode .LT. 2) THEN
+        IF((IPriorityFLAG.LE.IWriteFLAG.AND.my_rank.EQ.0.AND.ISoftwareMode.LT.IRefineSwitch) &
+             .OR.IWriteFLAG.GE.10.AND.ISoftwareMode .LT. IRefineSwitch) THEN
            PRINT*,ProgramName,"( ",TRIM(my_rank_string)," ) ",TRIM(MessageVariable)," = ",TRIM(VariableString)
         END IF
 
      ELSE IF (PRESENT(MessageString)) THEN
 
-        IF((IPriorityFLAG.LE.IWriteFLAG.AND.my_rank.EQ.0.AND.ISoftwareMode.LT.2) &
-             .OR.IWriteFLAG.GE.10.AND.ISoftwareMode .LT. 2) THEN
+        IF((IPriorityFLAG.LE.IWriteFLAG.AND.my_rank.EQ.0.AND.ISoftwareMode.LT.IRefineSwitch) &
+             .OR.IWriteFLAG.GE.10.AND.ISoftwareMode .LT. IRefineSwitch) THEN
            PRINT*,ProgramName,"( ",TRIM(my_rank_string)," ) ", TRIM(MessageString)
         END IF
                 
      ELSE
-        IF((IPriorityFLAG.LE.IWriteFLAG.AND.my_rank.EQ.0.AND.ISoftwareMode.LT.2) &
-             .OR.IWriteFLAG.GE.10.AND.ISoftwareMode .LT. 2) THEN
+        IF((IPriorityFLAG.LE.IWriteFLAG.AND.my_rank.EQ.0.AND.ISoftwareMode.LT.IRefineSwitch) &
+             .OR.IWriteFLAG.GE.10.AND.ISoftwareMode .LT. IRefineSwitch) THEN
            PRINT*,ProgramName,"( ",TRIM(my_rank_string)," ) "
         END IF
      END IF
@@ -121,31 +128,31 @@ SUBROUTINE Message(ProgramName,IPriorityFLAG,IErr,MessageVariable,RVariable,IVar
      ! Checks if MessageVariable & MessageString has been read into the function
      IF (PRESENT(MessageVariable).AND.PRESENT(MessageString)) THEN
         !Prints out message
-        IF((IPriorityFLAG.LE.IDebugFLAG.AND.my_rank.EQ.0.AND.ISoftwareMode.LT.2) &
-             .OR.IDebugFLAG.GE.110.AND.ISoftwareMode .LT. 2) THEN
+        IF((IPriorityFLAG.LE.IDebugFLAG.AND.my_rank.EQ.0.AND.ISoftwareMode.LT.IRefineSwitch) &
+             .OR.IDebugFLAG.GE.110.AND.ISoftwareMode .LT. IRefineSwitch) THEN
            PRINT*,"DBG_MESSAGE: ",ProgramName,"( ",TRIM(my_rank_string)," ) ", &
                 TRIM(MessageVariable)," = ",TRIM(VariableString),"  ",TRIM(MessageString)
         END IF
         
      ELSE IF (PRESENT(MessageVariable)) THEN
        
-        IF((IPriorityFLAG.LE.IDebugFLAG.AND.my_rank.EQ.0.AND.ISoftwareMode.LT.2) &
-             .OR.IDebugFLAG.GE.110.AND.ISoftwareMode .LT. 2) THEN
+        IF((IPriorityFLAG.LE.IDebugFLAG.AND.my_rank.EQ.0.AND.ISoftwareMode.LT.IRefineSwitch) &
+             .OR.IDebugFLAG.GE.110.AND.ISoftwareMode .LT. IRefineSwitch) THEN
            PRINT*,"DBG_MESSAGE: ",ProgramName,"( ",TRIM(my_rank_string)," ) ",TRIM(MessageVariable)," = ",TRIM(VariableString)
         END IF
 
      ELSE IF (PRESENT(MessageString)) THEN
 
-        IF((IPriorityFLAG.LE.IDebugFLAG.AND.my_rank.EQ.0.AND.ISoftwareMode.LT.2) &
-             .OR.IDebugFLAG.GE.110.AND.ISoftwareMode .LT. 2) THEN
+        IF((IPriorityFLAG.LE.IDebugFLAG.AND.my_rank.EQ.0.AND.ISoftwareMode.LT.IRefineSwitch) &
+             .OR.IDebugFLAG.GE.110.AND.ISoftwareMode .LT. IRefineSwitch) THEN
            PRINT*,"DBG_MESSAGE: ",ProgramName,"( ",TRIM(my_rank_string)," ) ", TRIM(MessageString)
         END IF
         
         
      ELSE
 
-        IF((IPriorityFLAG.LE.IDebugFLAG.AND.my_rank.EQ.0.AND.ISoftwareMode.LT.2) &
-             .OR.IDebugFLAG.GE.110.AND.ISoftwareMode .LT. 2) THEN
+        IF((IPriorityFLAG.LE.IDebugFLAG.AND.my_rank.EQ.0.AND.ISoftwareMode.LT.IRefineSwitch) &
+             .OR.IDebugFLAG.GE.110.AND.ISoftwareMode .LT. IRefineSwitch) THEN
            PRINT*,"DBG_MESSAGE: ",ProgramName,"( ",TRIM(my_rank_string)," ) "
         END IF
      END IF

@@ -38,8 +38,10 @@
 
 SUBROUTINE StructureFactorSetup(IErr)
 
+  USE WriteToScreen
   USE MyNumbers
-  
+  USE IConst
+
   USE IPara; USE RPara ; USE CPara
   USE BlochPara
 
@@ -54,6 +56,7 @@ SUBROUTINE StructureFactorSetup(IErr)
   COMPLEX(CKIND),DIMENSION(:,:), ALLOCATABLE :: &
        CZeroMat
 
+  CALL Message("StructureFactorSetup",IMust,IErr)
   !--------------------------------------------------------------------
   ! Calculate Reflection Matrix
   !--------------------------------------------------------------------

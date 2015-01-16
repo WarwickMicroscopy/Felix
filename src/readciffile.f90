@@ -407,9 +407,6 @@ SUBROUTINE ReadCifFile(IErr)
      CALL CONVERTAtomName2Number(SAtomName(ind),IAtomNumber(ind), IErr)
      CALL Message("ReadCIFFile",IInfo,IErr,MessageVariable = "IAtomNumber(ind)", IVariable = IAtomNumber(ind))
 
-    ! IF((IWriteFLAG.GE.1.AND.my_rank.EQ.0).OR.IWriteFLAG.GE.10) THEN
-    !    PRINT*,"IAtomNumber(ind) = ",IAtomNumber(ind)
-    ! END IF
      IF(loop_ .NEQV. .TRUE.) EXIT
      
   ENDDO
@@ -418,7 +415,7 @@ SUBROUTINE ReadCifFile(IErr)
   ! RESET
   !---------------------------------------------------
   
-  CALL CifReset
+  CALL CifReset(IErr)
   
   DO ind=1,IAtomCount
      f2 = numb_('_atom_site_fract_x', x, sx)
@@ -429,7 +426,7 @@ SUBROUTINE ReadCifFile(IErr)
   ! RESET
   !---------------------------------------------------
   
-  CALL CifReset
+  CALL CifReset(IErr)
 
   DO ind=1,IAtomCount
      
@@ -442,7 +439,7 @@ SUBROUTINE ReadCifFile(IErr)
   ! RESET
   !---------------------------------------------------
 
-  CALL CifReset
+  CALL CifReset(IErr)
 
   DO ind=1,IAtomCount
   
@@ -452,7 +449,7 @@ SUBROUTINE ReadCifFile(IErr)
   ENDDO 
 
   
-     CALL CifReset
+     CALL CifReset(IErr)
 
   DO ind=1,IAtomCount
      
@@ -469,9 +466,11 @@ SUBROUTINE ReadCifFile(IErr)
      IF(ABS(B).LT.TINY.AND.ABS(Uso).LT.TINY) THEN
         B = RDebyeWallerConstant
         CALL Message("ReadCIFFile",IInfo,IErr,MessageVariable = "For Atom", IVariable = ind, &
-             MessageString = "English: One has an absence of Debye Waller Factors in one's CIF File ")
-        CALL Message("ReadCIFFile",IInfo,IErr, MessageVariable = "For Atom", IVariable = ind, &
-              MessageString = "Pirate: Thar be no Debye Waller Factor in Yar Cif File matey")      
+             MessageString =  "Debye Waller Factors missing in the CIF File ")
+        IF (IMinReflectionPool.EQ.666) THEN
+        CALL Message("ReadCIFFile",IMust,IErr, MessageVariable = "For ye magic vessel ", IVariable = ind, &
+              MessageString = "Thar be no Debye Waller Factor in Yar Cif File matey")
+        END IF
      END IF
      
      IF(loop_ .NEQV. .TRUE.) EXIT
@@ -482,13 +481,13 @@ SUBROUTINE ReadCifFile(IErr)
   ! RESET
   !---------------------------------------------------
 
-  CALL CifReset
+  CALL CifReset(IErr)
 
   !----------------------------------------------------
   ! RESET
   !---------------------------------------------------
 
-  CALL CifReset
+  CALL CifReset(IErr)
   
   DO ind=1,IAtomCount
      f2 = numb_('_atom_site_occupancy',Occ, sOcc)
@@ -519,7 +518,7 @@ SUBROUTINE ReadCifFile(IErr)
   ! RESET
   !---------------------------------------------------
 
-  CALL CifReset
+  CALL CifReset(IErr)
   
   DO ind=1,IAtomCount
 
@@ -669,19 +668,35 @@ SUBROUTINE ReadCifFile(IErr)
        ! GOTO 9999
      ENDIF
   END IF
+
+!!$Reset Message Counter
+IMessageCounter =0  
   
   RETURN
 
 END SUBROUTINE ReadCifFile
 
-SUBROUTINE CifReset
+SUBROUTINE CifReset(IErr)
+  
+  USE WriteToScreen
+  USE IConst
+
+  USE IPara
 
   IMPLICIT NONE
+  INTEGER(IKIND):: IErr
   
   INCLUDE       'ciftbx-f90.cmn'
   
   CHARACTER*30 string
   
+!!$  Only print message once
+  DO WHILE (IMessageCounter.LT.2)
+     CALL Message("CifReset",IMust,IErr)
+     CALL Message("CifReset",IMust+IDebug,IErr,MessageString= "CifReset is called several times")
+     IMessageCounter = IMessageCounter +1
+  END DO
+
   IF (find_('_cell_angle_alpha','name',string)) THEN
   END IF
 END SUBROUTINE CifReset
