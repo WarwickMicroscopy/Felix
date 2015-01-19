@@ -1174,6 +1174,6 @@ SUBROUTINE ConvertVectorMovementsIntoAtomicCoordinates(IVariableID,RIndependentV
 !!$  Use IAtomID to applied the IVectodID Vector to the IAtomID atomic coordinate
   
   RAtomSiteFracCoordVec(IAtomID,:) = RAtomSiteFracCoordVec(IAtomID,:) + &
-       RIndependentVariableValues(IVariableID)*RAllowedVectors(IVectorID)
+       RIndependentVariableValues(IVariableID)*RAllowedVectors(IVectorID,:)
   
 END SUBROUTINE ConvertVectorMovementsIntoAtomicCoordinates

@@ -55,7 +55,7 @@ SUBROUTINE Message(ProgramName,IPriorityFLAG,IErr,MessageVariable,RVariable,IVar
   COMPLEX(CKIND),INTENT (IN), OPTIONAL :: CVariable
 
   CHARACTER(*),INTENT (IN) :: ProgramName
-  INTEGER(IKIND) :: IErr,IPriorityFLAG,IRefineSwitch
+  INTEGER(IKIND) :: IErr,IPriorityFLAG
   
   CHARACTER*30 VariableString, my_rank_string
 
@@ -74,18 +74,14 @@ SUBROUTINE Message(ProgramName,IPriorityFLAG,IErr,MessageVariable,RVariable,IVar
   END IF
 
 !!$  If IWriteFLAG is set to over 100 - IDebugFLAG is activated, IWriteFLAG set back to normal setting
+
   IF (IWriteFLAG.GE.100) THEN
      IDebugFLAG = IWriteFLAG
      IWriteFLAG = IDebugFLAG - 100
   END IF
+
+
   
-  IF ((IWriteFLAG.GE.100).AND.(ISoftwareMode.EQ.2)) THEN
-     IRefineSwitch = 3
-  ELSE
-     IRefineSwitch = 2
-  END IF
-
-
 !!$  If IPriorityFLAG is over 100 (Debug messaging) below won't execute
 !!$  Prints out specified variation of message (dependent on presence of variables), to the screen
   IF (IPriorityFLAG .LT. 100) THEN 
