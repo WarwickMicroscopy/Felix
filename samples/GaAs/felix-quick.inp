@@ -35,7 +35,8 @@ RDebyeWallerConstant      = 0.4668
 RAbsorptionPer            = 2.9
 
 # microscope settings
-RConvergenceAngle         = 3.0
+ROuterConvergenceAngle    = 3.0
+RInnerConvergenceAngle    = 0.0
 IIncidentBeamDirectionX   = 1
 IIncidentBeamDirectionY   = 1
 IIncidentBeamDirectionZ   = 1
@@ -53,4 +54,5 @@ RInitialThickness        = 1000.0
 RFinalThickness          = 1000.0
 RDeltaThickness          = 10.0
 IReflectOut              = 7
+
 
