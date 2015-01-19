@@ -649,7 +649,7 @@ PROGRAM felixsim
           CAmplitudeandPhaseRoot,STAT=IErr) 
      
      IF( IErr.NE.0 ) THEN
-        PRINT*,"felixsim(", my_rank, ") error in Deallocation of CAmplitudeandPhase"
+        PRINT*,"felixsim(", my_rank, ") error in Deallocation of CAmplitudeandPhaseRoot"
         GOTO 9999  
      ENDIF
   END IF
@@ -796,15 +796,15 @@ PROGRAM felixsim
      GOTO 9999
   ENDIF
     
-  IF(IImageFLAG.GE.3) THEN
-     DEALLOCATE(&
-          CAmplitudeandPhaseRoot,STAT=IErr) 
-     
-     IF( IErr.NE.0 ) THEN
-        PRINT*,"felixsim(", my_rank, ") error in Deallocation of CAmplitudeandPhase"
-        GOTO 9999
-     ENDIF
-  END IF
+!!$  IF(IImageFLAG.GE.3) THEN
+!!$     DEALLOCATE(&
+!!$          CAmplitudeandPhaseRoot,STAT=IErr) 
+!!$     
+!!$     IF( IErr.NE.0 ) THEN
+!!$        PRINT*,"felixsim(", my_rank, ") error in Deallocation of CAmplitudeandPhase"
+!!$        GOTO 9999
+!!$     ENDIF
+!!$  END IF
  
   !--------------------------------------------------------------------
   ! finish off
