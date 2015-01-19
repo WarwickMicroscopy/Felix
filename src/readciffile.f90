@@ -71,7 +71,7 @@ SUBROUTINE ReadCifFile(IErr)
   INCLUDE       'ciftbx-f90.cmn'
 
   LOGICAL       f1,f2,f3
-  CHARACTER*32  name
+  CHARACTER*32  name,Sind
   CHARACTER*80  line
   CHARACTER*4   label(6)
   CHARACTER*1   SAlphabetarray(52)
@@ -246,9 +246,11 @@ SUBROUTINE ReadCifFile(IErr)
   
   !Error message
   IF((f1) .EQV. .FALSE.) THEN
-     IF((IWriteFLAG.GE.1.AND.my_rank.EQ.0).OR.IWriteFLAG.GE.10) THEN
-        PRINT*,"ReadCifFile(", my_rank, ") Volume missing!"
-     END IF
+     CALL Message("ReadCIFFile",IInfo,IErr, &
+          MessageString = "Volume missing from felix.cif (_cell_volume), calculating from cell parameters (_cell_length etc.)")
+!!$     IF((IWriteFLAG.GE.1.AND.my_rank.EQ.0).OR.IWriteFLAG.GE.10) THEN
+!!$        PRINT*,"ReadCifFile(", my_rank, ") Volume missing!"
+!!$     END IF
      IVolumeFLAG= 0
      RVolume= RLengthX*RLengthY*RLengthZ* &
           SQRT(1.0D0 - &
@@ -403,9 +405,10 @@ SUBROUTINE ReadCifFile(IErr)
      IF(Ipos>0) THEN
         WRITE(SAtomName(ind),'(A1,A1)') name(1:1)," "
      ENDIF
-     
+
+     WRITE(Sind,*) ind
      CALL CONVERTAtomName2Number(SAtomName(ind),IAtomNumber(ind), IErr)
-     CALL Message("ReadCIFFile",IInfo,IErr,MessageVariable = "IAtomNumber(ind)", IVariable = IAtomNumber(ind))
+     CALL Message("ReadCIFFile",IInfo,IErr,MessageVariable = "IAtomNumber("//TRIM(ADJUSTL(Sind))//")", IVariable = IAtomNumber(ind))
 
      IF(loop_ .NEQV. .TRUE.) EXIT
      
