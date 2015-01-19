@@ -263,11 +263,11 @@ SUBROUTINE ReflectionDetermination( IErr )
      END IF
   END IF
   
-  IF((IWriteFLAG.GE.4.AND.my_rank.EQ.0).OR.IWriteFLAG.GE.10) THEN
-     DO ind=1,SIZE(RHKL,DIM=1)
-        PRINT*,RHKL(ind,:)
-     END DO
-  END IF
+!!$  IF((IWriteFLAG.GE.4.AND.my_rank.EQ.0).OR.IWriteFLAG.GE.10) THEN
+!!$     DO ind=1,SIZE(RHKL,DIM=1)
+!!$        PRINT*,RHKL(ind,:)
+!!$     END DO
+!!$  END IF
 
   END SUBROUTINE SpecificReflectionDetermination
  

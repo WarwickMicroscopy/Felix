@@ -135,7 +135,7 @@ MODULE IPara
        IZolzFLAG,IAbsorbFLAG, IAnisoDebyeWallerFactorFlag, &
        IImageFLAG,IOutputFLAG,IBeamConvergenceFLAG,  &
        IPseudoCubicFLAG,IXDirectionFLAG,IBinorTextFLAG, IDevFLAG, &
-       IRefineModeFLAG,ISoftwareMode,IHKLSelectFLAG,IPrint
+       IRefineModeFLAG,ISoftwareMode,IHKLSelectFLAG,IPrint,IRefineSwitch
 
   !Minimum Reflections etc
   INTEGER(IKIND) :: &
@@ -263,11 +263,6 @@ MODULE IPara
    INTEGER(IKIND),DIMENSION(:,:),ALLOCATABLE :: &
         IIterativeVariableUniqueIDs
 
-   ! Simplex Global IterationCount
-
-   INTEGER(IKIND) :: &
-        IFelixCount,IPreviousPrintedIteration
-
    ! Refinement Vectors
 
    INTEGER(IKIND) :: &
@@ -277,7 +272,7 @@ MODULE IPara
         IAllowedVectorIDs
 
    INTEGER(IKIND) :: & 
-        IVariableID,IFelixCount,IPreviousPrintedIteration
+        IFelixCount,IPreviousPrintedIteration
    
    !Message Counter (Avoid subroutines printing out 
    !entering message more than once)

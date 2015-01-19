@@ -91,6 +91,17 @@ SUBROUTINE ReadInpFile( IErr )
   
   ILine= ILine+1
   READ(IChInp,10,ERR=20,END=30) IWriteFLAG
+
+  PRINT*,"IWriteFLAG",IWriteFLAG
+
+  
+  IF ((IWriteFLAG.GE.100).AND.(ISoftwareMode.EQ.2)) THEN
+     IRefineSwitch = 3
+  ELSE
+     IRefineSwitch = 2
+  END IF
+
+
   CALL Message ("ReadInpFile",IMust,IErr)
   CALL Message ("ReadInpFile",IInfo,IErr,MessageVariable="IWriteFLAG",IVariable=IWriteFLAG)
   
