@@ -708,7 +708,7 @@ SUBROUTINE SimplexInitialisation(RSimplexVolume,RSimplexFoM,RIndependentVariable
   IMPLICIT NONE
 
   INTEGER(IKIND) :: &
-       IErr,ind
+       IErr,ind,jnd
   REAL(RKIND),DIMENSION(IIndependentVariables+1,IIndependentVariables),INTENT(OUT) :: &
        RSimplexVolume
   REAL(RKIND),DIMENSION(IIndependentVariables+1),INTENT(OUT) :: &
@@ -792,8 +792,11 @@ SUBROUTINE SimplexInitialisation(RSimplexVolume,RSimplexFoM,RIndependentVariable
      RSimplexVolume(ind,:) = &
           RIndependentVariableValues
      IF(ind.GT.1) THEN
-        RSimplexVolume(ind,ind-1) = &
-             RIndependentVariableValues(ind-1)*1.1
+        IF(IIterativeVariableUniqueIDs(ind-1,2).EQ.2) THEN
+           CALL InitialiseAtomicVectorMagnitudes(ind,RSimplexVolume(ind,ind-1),IErr)
+        ELSE
+           RSimplexVolume(ind,ind-1) = RIndependentVariableValues(ind-1)*1.1_RKIND
+        END IF
      END IF
   END DO
 
@@ -802,8 +805,13 @@ SUBROUTINE SimplexInitialisation(RSimplexVolume,RSimplexFoM,RIndependentVariable
      IF((IWriteFLAG.GE.0.AND.my_rank.EQ.0).OR.IWriteFLAG.GE.10) THEN
         PRINT*,"---------------------------------------------------------"
         PRINT*,"-------- Simplex",ind,"of",IIndependentVariables+1
+        DO jnd = 1,SIZE(RSimplexVolume,DIM=2)
+           PRINT*,RSimplexVolume(ind,jnd)
+        END DO
         PRINT*,"---------------------------------------------------------"
      END IF
+
+     
 
      RSimplexDummy = SimplexFunction(RSimplexVolume(ind,:),1,0,IErr)
      
@@ -1080,3 +1088,140 @@ SUBROUTINE PerformDummySimulationToSetupSimplexValues(IErr)
   IDiffractionFLAG = 0
 
 END SUBROUTINE PerformDummySimulationToSetupSimplexValues
+
+SUBROUTINE InitialiseAtomicVectorMagnitudes(IVariableID,RCorrectedMovement,IErr)
+  
+  USE MyNumbers
+  
+  USE CConst; USE IConst; USE RConst
+  USE IPara; USE RPara; USE SPara; USE CPara
+  USE BlochPara
+  
+  USE IChannels
+  
+  USE MPI
+  USE MyMPI
+  
+  IMPLICIT NONE
+
+  INTEGER(IKIND) :: &
+       IErr,ind,IVariableID
+!!$  REAL(RKIND),DIMENSION(IIndependentVariables),INTENT(IN) :: &
+!!$       RIndependentVariableValues
+!!$  REAL(RKIND),DIMENSION(IIndependentVariables+1,IIndependentVariables),INTENT(OUT) :: &
+!!$       RSimplexVolume
+  REAL(RKIND) :: &
+       RNegativeMovement,RPositiveMovement,RCorrectedMovement,RANDOMNUMBER
+  RNegativeMovement = -0.1
+  RPositiveMovement = 0.1
+  
+
+!!$  DO ind = 1,IIndependentVariables+1
+!!$     RSimplexVolume(ind,:) = RIndependentVariableValues
+!!$  IF (ind.NE.1) THEN
+!!$  IF(IRefineModeSelectionArray(2).EQ.1) THEN !IF Atomic coords are a variable
+!!$     IF(ind.LE.IAllowedVectors+1) THEN
+  IF(RANDOMNUMBER(IErr).LT.0.5_RKIND) THEN
+     CALL OutofUnitCellCheck(ind,RNegativeMovement,RCorrectedMovement,IErr)
+  ELSE
+     CALL OutofUnitCellCheck(ind,RPositiveMovement,RCorrectedMovement,IErr)
+  END IF
+!!$  RSimplexVolume(ind,ind-1) = RCorrectedMovement
+!!$     END IF
+!!$  END IF
+!!$  END IF
+!!$  END DO
+        
+  
+END SUBROUTINE InitialiseAtomicVectorMagnitudes
+
+REAL(RKIND) FUNCTION RANDOMNUMBER(IErr)
+
+  USE MyNumbers
+  
+  USE CConst; USE IConst; USE RConst
+  USE IPara; USE RPara; USE SPara; USE CPara
+  USE BlochPara
+
+  USE IChannels
+
+  USE MPI
+  USE MyMPI
+
+  IMPLICIT NONE
+
+  INTEGER(IKIND) :: &
+       IErr,values(1:8), k
+  INTEGER(IKIND), DIMENSION(:), ALLOCATABLE :: &
+       seed
+  REAL(RKIND) :: &
+       RANDOMNUMBER
+  
+  CALL DATE_AND_TIME(values=values)
+  
+  IF (IRandomFLAG.EQ.0) THEN
+     CALL RANDOM_SEED(size=k)
+     allocate(seed(1:k))
+     seed(:) = values(8)
+     CALL RANDOM_SEED(put=seed)
+  ELSE
+     CALL RANDOM_SEED(size=k)
+     ALLOCATE(seed(1:k))
+     seed(:) = IRandomFLAG
+     CALL RANDOM_SEED(put=seed)
+  END IF
+   
+  CALL RANDOM_NUMBER(RANDOMNUMBER)
+  
+END FUNCTION RANDOMNUMBER
+
+SUBROUTINE OutofUnitCellCheck(IVariableID,RProposedMovement,RCorrectedMovement,IErr)
+
+  USE MyNumbers
+  
+  USE CConst; USE IConst; USE RConst
+  USE IPara; USE RPara; USE SPara; USE CPara
+  USE BlochPara
+
+  USE IChannels
+
+  USE MPI
+  USE MyMPI
+
+  IMPLICIT NONE
+  
+  INTEGER(IKIND) :: &
+       ind,IErr,IVariableID,IAtomID,IVectorID
+  REAL(RKIND),DIMENSION(THREEDIM) :: &
+       RProposedAtomicCoordinate,RDummyMovement
+  REAL(RKIND),INTENT(IN) :: &
+       RProposedMovement
+  REAL(RKIND),INTENT(OUT) :: &
+       RCorrectedMovement
+  
+  IVectorID = IIterativeVariableUniqueIDs(IVariableID,3)
+  
+  IAtomID = IAllowedVectorIDs(IVectorID)
+ 
+  RProposedAtomicCoordinate(:) = RAtomSiteFracCoordVec(IAtomID,:) + &
+       RProposedMovement*RAllowedVectors(IVectorID,:)
+  
+  IF(ANY(RProposedAtomicCoordinate.GT.ONE).OR.ANY(RProposedAtomicCoordinate.LT.ZERO)) THEN
+     DO ind = 1,THREEDIM
+        IF (RProposedAtomicCoordinate(ind).GT.ONE) THEN
+           RDummyMovement(ind) = (ONE-RAtomSiteFracCoordVec(IAtomID,ind))/RAllowedVectors(IVectorID,ind)
+        ELSEIF(RProposedAtomicCoordinate(ind).LT.ZERO) THEN
+           RDummyMovement(ind) = (-RAtomSiteFracCoordVec(IAtomID,ind))/RAllowedVectors(IVectorID,ind)
+        ELSE
+           RDummyMovement(ind) = RProposedMovement
+        END IF
+     END DO
+  END IF
+
+  IF(RProposedMovement.LT.ZERO) THEN
+     RCorrectedMovement = MAXVAL(RDummyMovement)
+  ELSE
+     RCorrectedMovement = MINVAL(RDummyMovement)
+  END IF
+
+END SUBROUTINE OutofUnitCellCheck
