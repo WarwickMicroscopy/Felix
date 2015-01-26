@@ -568,12 +568,14 @@ SUBROUTINE ReadInpFile( IErr )
   !	error in READ detected
 20 IF(my_rank.EQ.0.OR.IWriteFLAG.GE.10) THEN
      PRINT*,"Input(): ERR in READ at line", ILine
+     CALL WriteOutInputFile (IErr)
   END IF
   GOTO 1000
   
   !	EOF in READ occured prematurely
 30 IF(my_rank.EQ.0.OR.IWriteFLAG.GE.10) THEN
      PRINT*,"Input(): EOF in READ at line", ILine
+     CALL WriteOutInputFile (IErr)
   END IF
   
   ! dump the input help
