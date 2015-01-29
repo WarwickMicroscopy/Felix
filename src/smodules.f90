@@ -84,9 +84,8 @@ MODULE IConst
        MAXWriteFLAG= 10, &
        THREEDIM= 3, &
        ADD_OUT_INFO=6, &
-       IParallelFLAG=0
-  REAL(RKIND), PARAMETER :: &
-       RTolerance = 1E-5
+       IParallelFLAG=0,&
+       IRandomFLAG = 0 !
   !PriorityFLAG values - to match to the WriteFLAG - will change eventually,
   !hence why the silent & Must are both 0, no Silent option yet.
   !IInfo is now IWriteFLAG = 1, IAllInfo is IWriteFLAG = 10
@@ -113,7 +112,9 @@ MODULE RConst
        RElectronMassMeV=0.510998928, &
        RPlanckConstant=6.62606957D-34, &
        RElectronCharge=1.602176565D-19, &
-       RAngstromConversion=1.D10
+       RAngstromConversion=1.D01
+  REAL(RKIND), PARAMETER :: &
+       RTolerance = 1E-5
     
 END MODULE RConst
 
@@ -135,7 +136,8 @@ MODULE IPara
        IZolzFLAG,IAbsorbFLAG, IAnisoDebyeWallerFactorFlag, &
        IImageFLAG,IOutputFLAG,IBeamConvergenceFLAG,  &
        IPseudoCubicFLAG,IXDirectionFLAG,IBinorTextFLAG, IDevFLAG, &
-       IRefineModeFLAG,ISoftwareMode,IHKLSelectFLAG,IPrint,IRefineSwitch
+       IRefineModeFLAG,ISoftwareMode,IHKLSelectFLAG,IPrint,IRefineSwitch,&
+       IWeightingFLAG
 
   !Minimum Reflections etc
   INTEGER(IKIND) :: &
@@ -472,6 +474,10 @@ MODULE RPara
 
   REAL(RKIND),DIMENSION(:,:),ALLOCATABLE :: &
        RInitialAtomSiteFracCoordVec
+
+  !Weighting Coefficients for figure of merit combination
+  REAL(RKIND),DIMENSION(:),ALLOCATABLE :: &
+       RWeightingCoefficients
 
 END MODULE RPara
 

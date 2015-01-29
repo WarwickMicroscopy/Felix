@@ -420,7 +420,10 @@ SUBROUTINE ReadInpFile( IErr )
 !!$     ILine= ILine+1
 !!$     READ(IChInp,10,ERR=20,END=30) IRefineModeFLAG
 !!$     CALL Message ("ReadInpFile",IInfo,IErr,MessageVariable ="IRefineModeFLAG",IVariable = IRefineModeFLAG)
-
+     
+     ILine= ILine+1
+     READ(IChInp,10,ERR=20,END=30) IWeightingFLAG
+     CALL Message ("ReadInpFile",IInfo,IErr,MessageVariable ="IWeightingFLAG",IVariable=IWeightingFLAG)
      
      ILine= ILine+1; READ(IChInp,ERR=20,END=30,FMT='(A)')
      ILine= ILine+1; READ(IChInp,ERR=20,END=30,FMT='(A)')
