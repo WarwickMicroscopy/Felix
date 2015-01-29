@@ -53,8 +53,8 @@ SUBROUTINE StructureFactorSetup(IErr)
 
   INTEGER(IKIND) :: IErr,ind,jnd
 
-  COMPLEX(CKIND),DIMENSION(:,:), ALLOCATABLE :: &
-       CZeroMat
+!!$  COMPLEX(CKIND),DIMENSION(:,:), ALLOCATABLE :: &
+!!$       CZeroMat
 
   CALL Message("StructureFactorSetup",IMust,IErr)
   !--------------------------------------------------------------------
@@ -103,28 +103,32 @@ SUBROUTINE StructureFactorSetup(IErr)
      RETURN
   ENDIF  
 
-  ALLOCATE( & 
-       CUgMatPrime(nReflections,nReflections), &
-       STAT=IErr)
-  IF( IErr.NE.0 ) THEN
-     PRINT*,"StructureFactorSetup(", my_rank, ") error ", IErr, &
-          " in ALLOCATE() of DYNAMIC variables CUgMatPrime"
-     !call error function
-     RETURN
-  ENDIF       
+  IF(IAbsorbFLAG.NE.0) THEN
+     
+     ALLOCATE( & 
+          CUgMatPrime(nReflections,nReflections), &
+          STAT=IErr)
+     IF( IErr.NE.0 ) THEN
+        PRINT*,"StructureFactorSetup(", my_rank, ") error ", IErr, &
+             " in ALLOCATE() of DYNAMIC variables CUgMatPrime"
+        !call error function
+        RETURN
+     ENDIF
+     
+  END IF
  
-  ALLOCATE( & 
-       CZeroMat(nReflections,nReflections), &
-       STAT=IErr)
-  IF( IErr.NE.0 ) THEN
-     !refinemain was here
-     PRINT*,"StructureFactorSetup(", my_rank, ") error ", IErr, &
-          " in ALLOCATE() of DYNAMIC variables CZeroMat"
-     !call error function
-     RETURN
-  ENDIF
+!!$  ALLOCATE( & 
+!!$       CZeroMat(nReflections,nReflections), &
+!!$       STAT=IErr)
+!!$  IF( IErr.NE.0 ) THEN
+!!$     !refinemain was here
+!!$     PRINT*,"StructureFactorSetup(", my_rank, ") error ", IErr, &
+!!$          " in ALLOCATE() of DYNAMIC variables CZeroMat"
+!!$     !call error function
+!!$     RETURN
+!!$  ENDIF
 
-  CALL StructureFactorInitialisation (IErr, CZeroMat)
+  CALL StructureFactorInitialisation (IErr)
   IF( IErr.NE.0 ) THEN
      PRINT*,"StructureFactorSetup(", my_rank, ") error ", IErr, &
           " in StructureFactorInitialisation"

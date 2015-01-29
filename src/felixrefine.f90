@@ -57,7 +57,7 @@ PROGRAM Felixrefine
 
   INTEGER(IKIND) :: &
        IHours,IMinutes,ISeconds,IErr,IMilliSeconds,IIterationFLAG,&
-       ind,IIterationCount,ISpaceGrp
+       ind,IIterationCount,ISpaceGrp,ICount,jnd
   REAL(RKIND) :: &
        StartTime, CurrentTime, Duration, TotalDurationEstimate,&
        RFigureOfMerit,SimplexFunction  
@@ -141,48 +141,72 @@ PROGRAM Felixrefine
      GOTO 9999
   ENDIF
 
-  CALL ConvertSpaceGroupToNumber(ISpaceGrp,IErr)
-
-  ALLOCATE(&
-       IVectors(SIZE(SWyckoffSymbols)),&
-       STAT=IErr)
-  IF( IErr.NE.0 ) THEN
-     PRINT*,"felixrefine (", my_rank, ") error in Allocation() of IVectors"
-     GOTO 9999
-  ENDIF
-
-  DO ind = 1,SIZE(SWyckoffSymbols)
+  IF(IRefineModeSelectionArray(2).EQ.1) THEN 
+     
+     CALL ConvertSpaceGroupToNumber(ISpaceGrp,IErr)
+     
+     ALLOCATE(&
+          IVectors(SIZE(SWyckoffSymbols)),&
+          STAT=IErr)
+     IF( IErr.NE.0 ) THEN
+        PRINT*,"felixrefine (", my_rank, ") error in Allocation() of IVectors"
+        GOTO 9999
+     ENDIF
+     
+     DO ind = 1,SIZE(SWyckoffSymbols)
 !!$     SWyckoffSymbol = SWyckoffSymbols(ind)
-     CALL CountAllowedMovements(ISpaceGrp,SWyckoffSymbols(ind),IVectors(ind),IErr)
-  END DO
-  
-  ALLOCATE(&
-       RAllowedVectors(SUM(IVectors),THREEDIM),&
-       STAT=IErr)
-  IF( IErr.NE.0 ) THEN
-     PRINT*,"felixrefine (", my_rank, ") error in Allocation() of IVectors"
-     GOTO 9999
-  ENDIF
-  ALLOCATE(&
-       RAllowedVectorMagnitudes(SUM(IVectors)),&
-       STAT=IErr)
-  IF( IErr.NE.0 ) THEN
-     PRINT*,"felixrefine (", my_rank, ") error in Allocation() of IVectors"
-     GOTO 9999
-  ENDIF
-  RAllowedVectorMagnitudes = ZERO
-
-
-  DO ind = 1,SIZE(SWyckoffSymbols)
+        CALL CountAllowedMovements(ISpaceGrp,SWyckoffSymbols(ind),IVectors(ind),IErr)
+     END DO
+     
+     IAllowedVectors = SUM(IVectors)
+     
+     ALLOCATE(&
+          IAllowedVectorIDs(IAllowedVectors),&
+          STAT=IErr)
+     IF( IErr.NE.0 ) THEN
+        PRINT*,"felixrefine (", my_rank, ") error in Allocation() of IVectors"
+        GOTO 9999
+     ENDIF
+     
+     ICount = 0
+     
+     DO ind = 1,SIZE(SWyckoffSymbols)
+        DO jnd = 1,IVectors(ind)
+           ICount = ICount + 1
+           IAllowedVectorIDs(ICount) = IAtomicSitesToRefine(ind)
+        END DO
+     END DO
+     
+     ALLOCATE(&
+          RAllowedVectors(IAllowedVectors,THREEDIM),&
+          STAT=IErr)
+     IF( IErr.NE.0 ) THEN
+        PRINT*,"felixrefine (", my_rank, ") error in Allocation() of IVectors"
+        GOTO 9999
+     ENDIF
+     
+     ALLOCATE(&
+          RAllowedVectorMagnitudes(IAllowedVectors),&
+          STAT=IErr)
+     IF( IErr.NE.0 ) THEN
+        PRINT*,"felixrefine (", my_rank, ") error in Allocation() of IVectors"
+        GOTO 9999
+     ENDIF
+     
+     RAllowedVectorMagnitudes = ZERO
+     
+     DO ind = 1,SIZE(SWyckoffSymbols)
 !!$     SWyckoffSymbol = SWyckoffSymbols(ind)
-     CALL DetermineAllowedMovements(ISpaceGrp,SWyckoffSymbols(ind),&
-          RAllowedVectors(SUM(IVectors(:(ind-1)))+1:SUM(IVectors(:(ind))),:),&
-          IVectors(ind),IErr)
-  END DO
+        CALL DetermineAllowedMovements(ISpaceGrp,SWyckoffSymbols(ind),&
+             RAllowedVectors(SUM(IVectors(:(ind-1)))+1:SUM(IVectors(:(ind))),:),&
+             IVectors(ind),IErr)
+     END DO
+
+  END IF
      
   IIndependentVariables = &
-       IRefineModeSelectionArray(1)*INoofUgs+&
-       IRefineModeSelectionArray(2)*SUM(IVectors)+&
+       IRefineModeSelectionArray(1)*INoofUgs*2+&
+       IRefineModeSelectionArray(2)*IAllowedVectors+&
        IRefineModeSelectionArray(3)*SIZE(IAtomicSitesToRefine)+&
        IRefineModeSelectionArray(4)*SIZE(IAtomicSitesToRefine)+&
        IRefineModeSelectionArray(5)*SIZE(IAtomicSitesToRefine)*6+&
@@ -260,7 +284,7 @@ PROGRAM Felixrefine
      PRINT*,"felixrefine (", my_rank, ") error in Allocation()"
      GOTO 9999
   ENDIF
-!!$  IF(my_rank.EQ.0) THEN
+
   ALLOCATE( &
        RSimplexFoM(IIndependentVariables),&
        STAT=IErr)  
@@ -268,7 +292,6 @@ PROGRAM Felixrefine
      PRINT*,"felixrefine (", my_rank, ") error in Allocation()"
      GOTO 9999
   ENDIF
-!!$  END IF
   
   IFelixCount = 0
 
@@ -373,9 +396,7 @@ USE MyNumbers
        INoofelementsforeachrefinementtype
 
   INoofelementsforeachrefinementtype(1) = &
-       IRefineModeSelectionArray(1)*INoofUgs
-!!$  INoofelementsforeachrefinementtype(2) = &
-!!$       IRefineModeSelectionArray(2)*SIZE(IAtomicSitesToRefine)*3
+       IRefineModeSelectionArray(1)*INoofUgs*2
   INoofelementsforeachrefinementtype(2) = IAllowedVectors
   INoofelementsforeachrefinementtype(3) = &
        IRefineModeSelectionArray(3)*SIZE(IAtomicSitesToRefine)
@@ -400,6 +421,7 @@ USE MyNumbers
   ICalls = 0
 
   DO ind = 1,7 !Loop over all possible iterative variables
+!!$     PRINT*,"INoofelementsforeachrefinementtype =",INoofelementsforeachrefinementtype(ind)
      IF(IRefineModeSelectionArray(ind).EQ.1) THEN
         DO jnd = 1,INoofelementsforeachrefinementtype(ind)
            ICalls = ICalls + 1
@@ -408,6 +430,10 @@ USE MyNumbers
         END DO
      END IF
   END DO
+
+!!$  PRINT*,"IIndependentVariables =",IIndependentVariables
+!!$
+!!$  PRINT*,IIterativeVariableUniqueIDs
   
 END SUBROUTINE AssignIterativeIDs
 
@@ -618,7 +644,7 @@ SUBROUTINE StructureFactorRefinementSetup(RIndependentVariableValues,IIterationC
   IMPLICIT NONE
   
   INTEGER(IKIND) :: &
-       IErr
+       IErr,ind
   REAL(RKIND),DIMENSION(IIndependentVariables),INTENT(OUT) :: &
        RIndependentVariableValues
   INTEGER(IKIND),INTENT(IN) :: &
@@ -629,9 +655,12 @@ SUBROUTINE StructureFactorRefinementSetup(RIndependentVariableValues,IIterationC
   END IF
 
   IF(IRefineModeSelectionArray(1).EQ.1.AND.IIterationCount.EQ.1) THEN
-     
-     RIndependentVariableValues(:INoofUgs) = &
-          REAL(CSymmetryStrengthKey(:INoofUgs),RKIND)
+     DO ind = 1,INoofUgs
+        RIndependentVariableValues((ind-1)*2+1) = &
+             REAL(CSymmetryStrengthKey(ind),RKIND)
+        RIndependentVariableValues((ind-1)*2+2) = &
+             AIMAG(CSymmetryStrengthKey(ind))
+     END DO
   END IF
 
 END SUBROUTINE StructureFactorRefinementSetup
@@ -730,6 +759,12 @@ SUBROUTINE SimplexInitialisation(RSimplexVolume,RSimplexFoM,RIndependentVariable
      RETURN
   ENDIF
   
+  CALL InitialiseWeightingCoefficients(IErr)
+  IF( IErr.NE.0 ) THEN
+     PRINT*,"SimplexInitialisation(", my_rank, ") error in InitialiseWeightingCoefficients()"
+     RETURN
+  ENDIF
+  
   CALL RefinementVariableSetup(RIndependentVariableValues,IErr)
   IF( IErr.NE.0 ) THEN
      PRINT*,"SimplexInitialisation(", my_rank, ") error in RefinementVariableSetup()"
@@ -747,67 +782,73 @@ SUBROUTINE SimplexInitialisation(RSimplexVolume,RSimplexFoM,RIndependentVariable
      PRINT*,"SimplexInitialisation(", my_rank, ") error in StructureFactorRefinementSetup()"
      RETURN
   ENDIF
+!!$
+!!$  IF(my_rank.EQ.0) THEN
+!!$     DO ind = 1,INoofUgs
+!!$        PRINT*,ISymmetryStrengthKey(ind,:),CSymmetryStrengthKey(ind)
+!!$     END DO
+!!$  END IF
 
   DEALLOCATE(&
        CUgmat,&
        STAT=IErr)  
   IF( IErr.NE.0 ) THEN
-     PRINT*,"SimplexInitialisation (", my_rank, ") error in deAllocation()"
+     PRINT*,"SimplexInitialisation (", my_rank, ") error in Deallocation()"
      RETURN
   ENDIF
 
-  DEALLOCATE( &
-       CUgMatPrime,&
-       STAT=IErr)  
-  IF( IErr.NE.0 ) THEN
-     PRINT*,"SimplexInitialisation (", my_rank, ") error in deAllocation()"
-     RETURN
-  ENDIF
+!!$  DEALLOCATE( &
+!!$       CUgMatPrime,&
+!!$       STAT=IErr)  
+!!$  IF( IErr.NE.0 ) THEN
+!!$     PRINT*,"SimplexInitialisation (", my_rank, ") error in deAllocation()"
+!!$     RETURN
+!!$  ENDIF
+!!$
+!!$  DEALLOCATE( &
+!!$       ISymmetryRelations,&
+!!$       STAT=IErr)  
+!!$  IF( IErr.NE.0 ) THEN
+!!$     PRINT*,"SimplexInitialisation (", my_rank, ") error in deAllocation()"
+!!$     RETURN
+!!$  ENDIF
 
-  DEALLOCATE( &
-       ISymmetryRelations,&
-       STAT=IErr)  
-  IF( IErr.NE.0 ) THEN
-     PRINT*,"SimplexInitialisation (", my_rank, ") error in deAllocation()"
-     RETURN
-  ENDIF
-
-  DEALLOCATE( &
-       ISymmetryStrengthKey,&
-       STAT=IErr)  
-  IF( IErr.NE.0 ) THEN
-     PRINT*,"SimplexInitialisation (", my_rank, ") error in deAllocation()"
-     RETURN
-  ENDIF
-
-  DEALLOCATE( &
-       CSymmetryStrengthKey)
-  IF( IErr.NE.0 ) THEN
-     PRINT*,"SimplexInitialisation(", my_rank, ") error ", IErr, &
-          " in Deallocation"
-     RETURN
-  ENDIF
+!!$  DEALLOCATE( &
+!!$       ISymmetryStrengthKey,&
+!!$       STAT=IErr)  
+!!$  IF( IErr.NE.0 ) THEN
+!!$     PRINT*,"SimplexInitialisation (", my_rank, ") error in deAllocation()"
+!!$     RETURN
+!!$  ENDIF
+!!$
+!!$  DEALLOCATE( &
+!!$       CSymmetryStrengthKey)
+!!$  IF( IErr.NE.0 ) THEN
+!!$     PRINT*,"SimplexInitialisation(", my_rank, ") error ", IErr, &
+!!$          " in Deallocation"
+!!$     RETURN
+!!$  ENDIF
   
   DO ind = 1,(IIndependentVariables+1)
      RSimplexVolume(ind,:) = &
           RIndependentVariableValues
      IF(ind.GT.1) THEN
         IF(IIterativeVariableUniqueIDs(ind-1,2).EQ.2) THEN
-           CALL InitialiseAtomicVectorMagnitudes(ind,RSimplexVolume(ind,ind-1),IErr)
+           CALL InitialiseAtomicVectorMagnitudes(ind-1,RSimplexVolume(ind,ind-1),IErr)
+!!$           PRINT*,"RSimplexVolume(ind,ind-1)",RSimplexVolume(ind,ind-1)
         ELSE
            RSimplexVolume(ind,ind-1) = RIndependentVariableValues(ind-1)*1.1_RKIND
         END IF
      END IF
   END DO
 
+  IPreviousPrintedIteration = -IPrint ! Ensures print out on first iteration
+
   DO ind = 1,(IIndependentVariables+1)
           
      IF((IWriteFLAG.GE.0.AND.my_rank.EQ.0).OR.IWriteFLAG.GE.10) THEN
         PRINT*,"---------------------------------------------------------"
         PRINT*,"-------- Simplex",ind,"of",IIndependentVariables+1
-        DO jnd = 1,SIZE(RSimplexVolume,DIM=2)
-           PRINT*,RSimplexVolume(ind,jnd)
-        END DO
         PRINT*,"---------------------------------------------------------"
      END IF
 
@@ -819,7 +860,7 @@ SUBROUTINE SimplexInitialisation(RSimplexVolume,RSimplexFoM,RIndependentVariable
      
      IF((IWriteFLAG.GE.0.AND.my_rank.EQ.0).OR.IWriteFLAG.GE.10) THEN
         PRINT*,"---------------------------------------------------------"
-        PRINT*,"-------- Simplex",RSimplexVolume(ind,:),RSimplexFoM(ind)
+        PRINT*,"-------- Figure of Merit" ,RSimplexFoM(ind)        
         PRINT*,"---------------------------------------------------------"
      END IF
   END DO
@@ -874,12 +915,20 @@ SUBROUTINE PerformDummySimulationToSetupSimplexValues(IErr)
   !--------------------------------------------------------------------
   ! MAIN section
   !--------------------------------------------------------------------
- 
-  CALL StructureFactorSetup(IErr)
-  IF( IErr.NE.0 ) THEN
-     PRINT*,"PerformDummySimulationToSetupSimplexValues(", my_rank, ") error in StructureFactorSetup()"
-     RETURN
-  ENDIF
+   
+  IF(IAbsorbFLAG.NE.0) THEN ! Calculate Non-absorbative UGs
+     
+     IAbsorbFLAG = 0
+     
+     CALL StructureFactorSetup(IErr)
+     IF( IErr.NE.0 ) THEN
+        PRINT*,"PerformDummySimulationToSetupSimplexValues(", my_rank, ") error in StructureFactorSetup()"
+        RETURN
+     ENDIF
+     
+     IAbsorbFLAG = 1
+     
+  END IF
   
   DEALLOCATE( &
        RgMatMat,STAT=IErr)
@@ -1106,36 +1155,30 @@ SUBROUTINE InitialiseAtomicVectorMagnitudes(IVariableID,RCorrectedMovement,IErr)
 
   INTEGER(IKIND) :: &
        IErr,ind,IVariableID
-!!$  REAL(RKIND),DIMENSION(IIndependentVariables),INTENT(IN) :: &
-!!$       RIndependentVariableValues
-!!$  REAL(RKIND),DIMENSION(IIndependentVariables+1,IIndependentVariables),INTENT(OUT) :: &
-!!$       RSimplexVolume
   REAL(RKIND) :: &
        RNegativeMovement,RPositiveMovement,RCorrectedMovement,RANDOMNUMBER
-  RNegativeMovement = -0.1
-  RPositiveMovement = 0.1
-  
+  RNegativeMovement = -0.1_RKIND
+  RPositiveMovement = 0.1_RKIND
 
-!!$  DO ind = 1,IIndependentVariables+1
-!!$     RSimplexVolume(ind,:) = RIndependentVariableValues
-!!$  IF (ind.NE.1) THEN
-!!$  IF(IRefineModeSelectionArray(2).EQ.1) THEN !IF Atomic coords are a variable
-!!$     IF(ind.LE.IAllowedVectors+1) THEN
-  IF(RANDOMNUMBER(IErr).LT.0.5_RKIND) THEN
-     CALL OutofUnitCellCheck(ind,RNegativeMovement,RCorrectedMovement,IErr)
-  ELSE
-     CALL OutofUnitCellCheck(ind,RPositiveMovement,RCorrectedMovement,IErr)
-  END IF
-!!$  RSimplexVolume(ind,ind-1) = RCorrectedMovement
+  IF(RANDOMNUMBER(IVariableID,IErr).LT.0.5_RKIND) THEN
+     
+!!$     IF(my_rank.EQ.0) THEN
+!!$        PRINT*,"RANDOMNUMBER",RANDOMNUMBER(IVariableID,IErr),"Negative Movement",IVariableID
 !!$     END IF
-!!$  END IF
-!!$  END IF
-!!$  END DO
-        
-  
+
+     CALL OutofUnitCellCheck(IVariableID,RNegativeMovement,RCorrectedMovement,IErr)
+  ELSE
+     
+!!$     IF(my_rank.EQ.0) THEN
+!!$        PRINT*,"RANDOMNUMBER",RANDOMNUMBER(IVariableID,IErr),"Positive Movement",IVariableID
+!!$     END IF
+
+     CALL OutofUnitCellCheck(IVariableID,RPositiveMovement,RCorrectedMovement,IErr)
+  END IF
+
 END SUBROUTINE InitialiseAtomicVectorMagnitudes
 
-REAL(RKIND) FUNCTION RANDOMNUMBER(IErr)
+REAL(RKIND) FUNCTION RANDOMNUMBER(IRequestedNumber,IErr)
 
   USE MyNumbers
   
@@ -1151,11 +1194,13 @@ REAL(RKIND) FUNCTION RANDOMNUMBER(IErr)
   IMPLICIT NONE
 
   INTEGER(IKIND) :: &
-       IErr,values(1:8), k
+       IErr,values(1:8), k,IRequestedNumber
   INTEGER(IKIND), DIMENSION(:), ALLOCATABLE :: &
        seed
   REAL(RKIND) :: &
        RANDOMNUMBER
+  REAL(RKIND),DIMENSION(IRequestedNumber) :: &
+       RRandomNumberSequence
   
   CALL DATE_AND_TIME(values=values)
   
@@ -1171,7 +1216,9 @@ REAL(RKIND) FUNCTION RANDOMNUMBER(IErr)
      CALL RANDOM_SEED(put=seed)
   END IF
    
-  CALL RANDOM_NUMBER(RANDOMNUMBER)
+  CALL RANDOM_NUMBER(RRandomNumberSequence)
+  
+  RANDOMNUMBER = RRandomNumberSequence(IRequestedNumber)
   
 END FUNCTION RANDOMNUMBER
 
@@ -1205,7 +1252,9 @@ SUBROUTINE OutofUnitCellCheck(IVariableID,RProposedMovement,RCorrectedMovement,I
  
   RProposedAtomicCoordinate(:) = RAtomSiteFracCoordVec(IAtomID,:) + &
        RProposedMovement*RAllowedVectors(IVectorID,:)
-  
+
+  RDummyMovement = RProposedMovement
+
   IF(ANY(RProposedAtomicCoordinate.GT.ONE).OR.ANY(RProposedAtomicCoordinate.LT.ZERO)) THEN
      DO ind = 1,THREEDIM
         IF (RProposedAtomicCoordinate(ind).GT.ONE) THEN
@@ -1225,3 +1274,88 @@ SUBROUTINE OutofUnitCellCheck(IVariableID,RProposedMovement,RCorrectedMovement,I
   END IF
 
 END SUBROUTINE OutofUnitCellCheck
+
+SUBROUTINE ApplyNewStructureFactors(IErr)
+
+!!$  %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+!!$  % Subroutine to place iteratively determined Structure factors
+!!$  % to Ug Matrix
+!!$  %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+  
+  USE MyNumbers
+  
+  USE CConst; USE IConst; USE RConst
+  USE IPara; USE RPara; USE SPara; USE CPara
+  USE BlochPara
+
+  USE IChannels
+
+  USE MPI
+  USE MyMPI
+
+  IMPLICIT NONE
+
+  INTEGER(IKIND) :: &
+       IErr,ind
+  COMPLEX(CKIND),DIMENSION(nReflections,nReflections) :: &
+       CUgMatDummy
+
+!!$  Dummy Matrix to contain new iterative values
+  
+   CUgMatDummy = CZERO
+
+!!$  Populate Ug Matrix with new iterative elements
+
+  DO ind = 1,INoofUgs
+     WHERE(ISymmetryRelations.EQ.ISymmetryStrengthKey(ind,2)) 
+        CUgMatDummy = CSymmetryStrengthKey(ind)
+     END WHERE
+  END DO
+
+!!$  Apply hermiticity because ISymmtryRelations is triangular
+
+!!$  CUgMatDummy = CUgMatDummy + CONJG(TRANSPOSE(CUgMatDummy))
+
+!!$  CUgMatDummy is now a sparse matrix containing only the new values of Ug
+
+  WHERE(ABS(CUgMatDummy).GT.TINY)
+     CUgMat = CUgMatDummy
+  END WHERE
+
+!!$  CUgMat now contains the new values from the iterative process 
+  
+
+END SUBROUTINE ApplyNewStructureFactors
+
+SUBROUTINE CreateIdentityMatrix(IIdentityMatrix,ISize,IErr)
+
+!!$  %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+!!$  % This Subroutine creates an identity matrix of size
+!!$  % ISize * ISize
+!!$  %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+  USE MyNumbers
+  
+  USE CConst; USE IConst; USE RConst
+  USE IPara; USE RPara; USE SPara; USE CPara
+  USE BlochPara
+
+  USE IChannels
+
+  USE MPI
+  USE MyMPI
+
+  IMPLICIT NONE
+  
+  INTEGER(IKIND) :: &
+       IErr,ISize,ind
+  INTEGER(IKIND),DIMENSION(ISize,ISize) :: &
+       IIdentityMatrix
+
+  IIdentityMatrix = 0
+
+  DO ind = 1,ISize
+     IIdentityMatrix(ind,ind) = 1
+  END DO
+
+END SUBROUTINE CreateIdentityMatrix

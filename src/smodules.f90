@@ -136,7 +136,8 @@ MODULE IPara
        IZolzFLAG,IAbsorbFLAG, IAnisoDebyeWallerFactorFlag, &
        IImageFLAG,IOutputFLAG,IBeamConvergenceFLAG,  &
        IPseudoCubicFLAG,IXDirectionFLAG,IBinorTextFLAG, IDevFLAG, &
-       IRefineModeFLAG,ISoftwareMode,IHKLSelectFLAG,IPrint,IRefineSwitch
+       IRefineModeFLAG,ISoftwareMode,IHKLSelectFLAG,IPrint,IRefineSwitch,&
+       IWeightingFLAG
 
   !Minimum Reflections etc
   INTEGER(IKIND) :: &
@@ -473,6 +474,10 @@ MODULE RPara
 
   REAL(RKIND),DIMENSION(:,:),ALLOCATABLE :: &
        RInitialAtomSiteFracCoordVec
+
+  !Weighting Coefficients for figure of merit combination
+  REAL(RKIND),DIMENSION(:),ALLOCATABLE :: &
+       RWeightingCoefficients
 
 END MODULE RPara
 
