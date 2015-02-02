@@ -744,7 +744,7 @@ SUBROUTINE SimplexInitialisation(RSimplexVolume,RSimplexFoM,RIndependentVariable
        RSimplexFoM
   REAL(RKIND) :: &
        SimplexFunction,RSimplexDummy
-  REAL(RKIND),DIMENSION(IIndependentVariables),INTENT(IN) :: &
+  REAL(RKIND),DIMENSION(IIndependentVariables),INTENT(INOUT) :: &
        RIndependentVariableValues
   INTEGER(IKIND),INTENT(IN) :: &
        IIterationCount
@@ -1197,8 +1197,8 @@ REAL(RKIND) FUNCTION RANDOMNUMBER(IRequestedNumber,IErr)
        IErr,values(1:8), k,IRequestedNumber
   INTEGER(IKIND), DIMENSION(:), ALLOCATABLE :: &
        seed
-  REAL(RKIND) :: &
-       RANDOMNUMBER
+!!$  REAL(RKIND) :: &
+!!$       RANDOMNUMBER
   REAL(RKIND),DIMENSION(IRequestedNumber) :: &
        RRandomNumberSequence
   

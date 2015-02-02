@@ -868,7 +868,7 @@ REAL(RKIND) FUNCTION SimplexFunction(RIndependentVariableValues,IIterationCount,
        IThicknessIndex,IVectorID,IAtomID
   REAL(RKIND) :: &
        RNewValue
-  REAL(RKIND),DIMENSION(IIndependentVariables),INTENT(IN) :: &
+  REAL(RKIND),DIMENSION(IIndependentVariables),INTENT(INOUT) :: &
        RIndependentVariableValues
   REAL(RKIND),DIMENSION(:,:),ALLOCATABLE :: &
        RImage
