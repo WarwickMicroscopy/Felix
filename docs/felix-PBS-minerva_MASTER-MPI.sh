@@ -23,7 +23,8 @@ tmpdir=`pwd`
 # settings for parallel submission
 cores=${1:-1}
 JobId=${2:-1}
-wtime=${3:-00:10:00}
+InputImages=${3:-1}
+wtime=${4:-00:10:00}
 
 let ranks=${cores}
 let nodes=${cores}
@@ -115,6 +116,15 @@ tmpdir=$HOME/RUNS/`basename ${job_file} .sh`
 cp ${binarydir}/${binREFINE} \${tmpdir}/
 cp \${basedir}/${ciffile} \${tmpdir}/
 cp ${scadir}/${scafile} \${tmpdir}/
+cp ${scadir}/${hklfile} \${tmpdir}/
+
+echo $InputImages
+for imgno in {1..$InputImages}
+do
+echo \${imgno}
+imgfile=felix.00\${imgno}.img
+cp ${scadir}/\${imgfile} \${tmpdir}/
+done
 
 # construct the input files
 
@@ -163,7 +173,8 @@ echo "RDebyeWallerConstant      = 0.54"                                      >> 
 echo "RAbsorptionPer            = 5.9"                                         >> $inpfile
 echo ""                                                                        >> $inpfile
 echo "# microscope settings"                                                   >> $inpfile
-echo "RConvergenceAngle         = 5.15"                                         >> $inpfile
+echo "ROuterConvergenceAngle    = 5.15"                                         >> $inpfile
+echo "RInnerConvergenceAngle    = 0.0"                                         >> $inpfile
 echo "IIncidentBeamDirectionX   = 0"                                           >> $inpfile
 echo "IIncidentBeamDirectionY   = 1"                                           >> $inpfile
 echo "IIncidentBeamDirectionZ   = 1"                                           >> $inpfile
@@ -182,33 +193,34 @@ echo "RFinalThickness          = 650.0"                                       >>
 echo "RDeltaThickness          = 10.0"                                         >> $inpfile
 echo "IReflectOut              = 1"                                           >> $inpfile
 echo ""                                                                        >> $inpfile
-#echo "# felixrefine Input"                                                     >> $inpfile
-#echo ""                                                                        >> $inpfile
-#echo "#Refinement Specific Flags"                                              >> $inpfile
-#echo "IDevFLAG                  = 0"                                           >> $inpfile
-#echo "IRefineModeFLAG           = 0"                                           >> $inpfile
-#echo ""                                                                        >> $inpfile
-#echo "# Debye Waller Factor Iteration"                                         >> $inpfile
-#echo ""                                                                        >> $inpfile
-#echo "RInitialDebyeWallerFactor = 0.1"                                         >> $inpfile
-#echo "RFinalDebyeWallerFactor = 1.0"                                           >> $inpfile
-#echo "RDeltaDebyeWallerFactor = 0.1"                                           >> $inpfile
-#echo "IElementsforDWFchange = {0}"                                             >> $inpfile
-#echo ""                                                                        >> $inpfile
-#echo "# Ug Iteration"                                                          >> $inpfile
-#echo  ""                                                                       >> $inpfile 
-#echo "INoofUgs                  = 10"                                           >> $inpfile
-#echo "RLowerBoundUgChange       = 50.0"                                        >> $inpfile
-#echo "RUpperBoundUgChange       = 50.0"                                        >> $inpfile
-#echo "RDeltaUgChange            = 50.0"                                        >> $inpfile
-#echo  ""                                                                       >> $inpfile  
-#echo "# Structural Refinement"                                                 >> $inpfile
-#echo  ""                                                                       >> $inpfile  
-#echo "IAtomicsSites             = (1,2,3,4,5,6,7)"                             >> $inpfile
-#echo ""                                                                        >> $inpfile
-#echo "# Refinement Output"                                                     >> $inpfile
-#echo  ""                                                                       >> $inpfile 
-#echo  "IPrint                   = 10"                                          >> $inpfile  
+echo "# felixrefine Input"                                                     >> $inpfile
+echo ""                                                                        >> $inpfile
+echo "#Refinement Specific Flags"                                              >> $inpfile
+echo "IRefineModeFLAG          = 0"                                           >> $inpfile
+echo "IWeightingFLAG           = 0"                                           >> $inpfile
+echo ""                                                                        >> $inpfile
+echo "# Debye Waller Factor Iteration"                                         >> $inpfile
+echo ""                                                                        >> $inpfile
+echo "RInitialDebyeWallerFactor = 0.1"                                         >> $inpfile
+echo "RFinalDebyeWallerFactor = 1.0"                                           >> $inpfile
+echo "RDeltaDebyeWallerFactor = 0.1"                                           >> $inpfile
+echo "IElementsforDWFchange = {0}"                                             >> $inpfile
+echo ""                                                                        >> $inpfile
+echo "# Ug Iteration"                                                          >> $inpfile
+echo  ""                                                                       >> $inpfile 
+echo "INoofUgs                  = 10"                                           >> $inpfile
+echo "RLowerBoundUgChange       = 50.0"                                        >> $inpfile
+echo "RUpperBoundUgChange       = 50.0"                                        >> $inpfile
+echo "RDeltaUgChange            = 50.0"                                        >> $inpfile
+echo  ""                                                                       >> $inpfile  
+echo "# Structural Refinement"                                                 >> $inpfile
+echo  ""                                                                       >> $inpfile  
+echo "IAtomicsSites             = (1,2,3,4,5,6,7)"                             >> $inpfile
+echo ""                                                                        >> $inpfile
+echo "# Refinement Output"                                                     >> $inpfile
+echo  ""                                                                       >> $inpfile 
+echo  "IPrint                   = 10"                                          >> $inpfile
+echo  ""                                                                       >> $inpfile   
 
 cat $inpfile
 ls -al \${tmpdir}
@@ -249,6 +261,6 @@ EOD
 chmod 755 ${job_dir}/${job_file}
 #(cd ${job_dir} ; qsub -q serial ./${job_file})
 #(cd ${job_dir} ; qsub -q parallel ./${job_file})
-#(cd ${job_dir} ; qsub -q devel ./${job_file})
+(cd ${job_dir} ; qsub -q devel ./${job_file})
 #(cd ${job_dir} ; qsub -q taskfarm ./${job_file})
-(cd ${job_dir} ; qsub ./${job_file})
+#(cd ${job_dir} ; qsub ./${job_file})

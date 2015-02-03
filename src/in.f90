@@ -156,8 +156,6 @@ SUBROUTINE ReadInpFile( IErr )
   READ(IChInp,10,ERR=20,END=30) IBinorTextFLAG
   CALL Message ("ReadInpFile",IInfo,IErr,MessageVariable ="IBinorTextFLAG",IVariable=IBinorTextFLAG)
 
-
-
   ILine= ILine+1
   READ(IChInp,10,ERR=20,END=30) IScatterFactorMethodFLAG
   CALL Message ("ReadInpFile",IInfo,IErr,MessageVariable ="IScatterFactorMethodFLAG",IVariable=IScatterFactorMethodFLAG)
@@ -705,9 +703,8 @@ SUBROUTINE ReadInpFile( IErr )
      PRINT*,"# felixrefine Input"
      PRINT*,""
      PRINT*,"#Refinement Specific Flags"
-     PRINT*,"IImageOutputFLAG          = 1"
-     PRINT*,"IDevFLAG                  = 0"
      PRINT*,"IRefineModeFLAG           = 0"
+     PRINT*,"IWeightingFLAG            = 0"
      PRINT*,""
      PRINT*,"# Debye Waller Factor Iteration"
      PRINT*,""
@@ -721,6 +718,14 @@ SUBROUTINE ReadInpFile( IErr )
      PRINT*,"RLowerBoundUgChange       = 50.0"
      PRINT*,"RUpperBoundUgChange       = 50.0"
      PRINT*,"RDeltaUgChange            = 50.0"
+     PRINT*,""
+     PRINT*,"# Structural Refinement"
+     PRINT*,""
+     PRINT*,"IAtomicSites              = (1,2,3,4,5,6,7)"
+     PRINT*,""
+     PRINT*,"# Refinement Output"
+     PRINT*,""
+     PRINT*,"IPrint                    = 20"
      PRINT*,""
      
 
