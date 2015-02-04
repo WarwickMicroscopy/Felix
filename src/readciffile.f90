@@ -501,7 +501,7 @@ SUBROUTINE ReadCifFile(IErr)
   ! RESET
   !----------------------------------------------------
 
-  CALL CifReset
+  CALL CifReset(IErr)
   
   ALLOCATE( &
        SWyckoffSymbols(SIZE(IAtomicSitesToRefine)),&
