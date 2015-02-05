@@ -274,7 +274,7 @@ MODULE IPara
         IAllowedVectorIDs
 
    INTEGER(IKIND) :: & 
-        IFelixCount,IPreviousPrintedIteration
+        IFelixCount,IPreviousPrintedIteration,IStandardDeviationCalls
    
    !Message Counter (Avoid subroutines printing out 
    !entering message more than once)
@@ -469,6 +469,8 @@ MODULE RPara
        RAllowedVectors
   REAL(RKIND),DIMENSION(:),ALLOCATABLE :: &
        RAllowedVectorMagnitudes
+  REAL(RKIND) :: &
+       RSimplexLengthScale,RSimplexStandardDeviation,RSimplexMean
 
   !Refinement Initial Coordinates
 
@@ -478,6 +480,8 @@ MODULE RPara
   !Weighting Coefficients for figure of merit combination
   REAL(RKIND),DIMENSION(:),ALLOCATABLE :: &
        RWeightingCoefficients
+
+  
 
 END MODULE RPara
 

@@ -118,14 +118,6 @@ SUBROUTINE FelixFunction(RIndependentVariableValues,IIterationCount,IErr)
 
   END IF
 
-!!$  IF(my_rank.EQ.0) THEN
-!!$     PRINT*,"%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%"
-!!$     DO ind = 1,INoofUgs
-!!$        PRINT*,CSymmetryStrengthKey(ind)
-!!$     END DO
-!!$     PRINT*,"%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%"
-!!$  END IF
-
   CALL ApplyNewStructureFactors(IErr)
   IF( IErr.NE.0 ) THEN
      PRINT*,"Felixfunction(", my_rank, ") error ", IErr, &
@@ -163,14 +155,6 @@ SUBROUTINE FelixFunction(RIndependentVariableValues,IIterationCount,IErr)
      ENDIF
      
   END IF     
-
-  IF(my_rank.eq.0) THEN 
-     DO ind = 1,25
-!!$        DO jnd = 1,5
-           PRINT*,CUgMat(ind,1)
-!!$        end DO
-     end DO
-  END IF
 
   Deallocate( &
        RgMatMat,RgMatMag,STAT=IErr)
@@ -328,12 +312,6 @@ SUBROUTINE FelixFunction(RIndependentVariableValues,IIterationCount,IErr)
   END IF
 
   RIndividualReflectionsRoot = ZERO
-  
-  IF(IWriteFLAG.GE.10) THEN
-     
-     PRINT*,"REDUCING Reflections",my_rank
-     
-  END IF
 
   ALLOCATE(&
        IDisplacements(p),ICount(p),&
@@ -374,10 +352,6 @@ SUBROUTINE FelixFunction(RIndependentVariableValues,IIterationCount,IErr)
              " In MPI_GATHERV"
         RETURN
      ENDIF   
-  END IF
-
-  IF(IWriteFLAG.GE.10) THEN
-     PRINT*,"REDUCED Reflections",my_rank
   END IF
   
   IF(IImageFLAG.GE.3) THEN
@@ -455,14 +429,6 @@ SUBROUTINE FelixFunction(RIndependentVariableValues,IIterationCount,IErr)
           " Deallocating CUgMat"
      RETURN
   ENDIF
-
-!!$  DEALLOCATE( &
-!!$       CUgMatPrime,STAT=IErr)
-!!$  IF( IErr.NE.0 ) THEN
-!!$     PRINT*,"Felixfunction(", my_rank, ") error ", IErr, &
-!!$          " Deallocating CUgMat"
-!!$     RETURN
-!!$  ENDIF
 
   DEALLOCATE( &
        RDevPara,STAT=IErr)
@@ -901,16 +867,6 @@ REAL(RKIND) FUNCTION SimplexFunction(RIndependentVariableValues,IIterationCount,
      RETURN
   ENDIF
 
-!!$  IF(my_rank.EQ.0) THEN
-!!$     DO jnd = 1,SIZE(RIndependentVariableValues)
-!!$        
-!!$        PRINT*,jnd,RIndependentVariableValues(jnd)
-!!$     END DO
-!!$     DO jnd = 1,SIZE(IAtomicSitesToRefine)
-!!$       PRINT*,RAtomSiteFracCoordVec(IAtomicSitesToRefine(jnd),:)
-!!$    END DO
-!!$  END IF
-
   CALL FelixFunction(RIndependentVariableValues,IIterationCount,IErr) ! Simulate !!  
   IF( IErr.NE.0 ) THEN
      PRINT*,"SimplexFunction(", my_rank, ") error ", IErr, &
@@ -942,8 +898,6 @@ REAL(RKIND) FUNCTION SimplexFunction(RIndependentVariableValues,IIterationCount,
              "Calling function CalculateFigureofMeritandDetermineThickness"
         RETURN
      ENDIF
-!!$     
-!!$     IF(my_rank.EQ.0) PRINT*,"IThicknessIndex",IThicknessIndex
 
      DEALLOCATE( &
           RMask,&
@@ -1089,15 +1043,6 @@ SUBROUTINE UpdateVariables(RIndependentVariableValues,IErr)
      CASE(2)
 
         CALL ConvertVectorMovementsIntoAtomicCoordinates(ind,RIndependentVariableValues,IErr)
-!!$        RAtomSiteFracCoordVec(&
-!!$             IIterativeVariableUniqueIDs(ind,3),&
-!!$             IIterativeVariableUniqueIDs(ind,4)) = &
-!!$             RIndependentVariableValues(ind)
-!!$        RAtomSiteFracCoordVec(&
-!!$             IIterativeVariableUniqueIDs(ind,3),&
-!!$             IIterativeVariableUniqueIDs(ind,4)) = &
-!!$             RIndependentVariableValues(ind)
-
 
      CASE(3)
         RAtomicSitePartialOccupancy(IIterativeVariableUniqueIDs(ind,3)) = &
@@ -1156,14 +1101,6 @@ SUBROUTINE UpdateStructureFactors(RIndependentVariableValues,IErr)
   REAL(RKIND),DIMENSION(IIndependentVariables),INTENT(IN) :: &
        RIndependentVariableValues
 
-!!$  INTEGER(IKIND),INTENT(IN) :: &
-!!$       IIterationCount
-
-!!$  if(my_rank.eq.0) Then
-!!$     PRINT*,"IIterationCount",IIterationCount
-!!$  end if
-
-  
   IF(IRefineModeSelectionArray(1).EQ.1) THEN
      DO ind = 1,INoofUgs
         CSymmetryStrengthKey(ind) = &
@@ -1265,3 +1202,48 @@ SUBROUTINE InitialiseWeightingCoefficients(IErr)
   END SELECT
 
 END SUBROUTINE InitialiseWeightingCoefficients
+
+REAL(RKIND) FUNCTION RStandardError(RStandardDeviation,RMean,RFigureofMerit,IErr)
+
+  USE MyNumbers
+  
+  USE CConst; USE IConst; USE RConst
+  USE IPara; USE RPara; USE SPara; USE CPara
+  USE BlochPara
+  
+  USE IChannels
+  
+  USE MPI
+  USE MyMPI
+  
+  IMPLICIT NONE
+
+  INTEGER(IKIND) :: &
+       IErr
+  REAL(RKIND),INTENT(INOUT) :: &
+       RStandardDeviation,RMean
+  REAL(RKIND),INTENT(IN) :: &
+       RFigureofMerit
+  
+  IF (IStandardDeviationCalls.GT.1) THEN
+     RMean = (RMean*REAL(IStandardDeviationCalls,RKIND) + &
+          RFigureofMerit)/REAL(IStandardDeviationCalls+1,RKIND)
+     
+     RStandardDeviation = SQRT(&
+          ((REAL(IStandardDeviationCalls,RKIND)*RStandardDeviation**2)+&
+          (RFigureofMerit-RMean)**2)/ &
+          REAL(IStandardDeviationCalls+1,RKIND))
+     
+  ELSE
+
+     RMean = RFigureofMerit
+     RStandardDeviation = ZERO
+
+  END IF
+     
+  RStandardError = RStandardDeviation/SQRT(REAL(IStandardDeviationCalls+1,RKIND))
+
+  IStandardDeviationCalls = IStandardDeviationCalls + 1
+
+     
+END FUNCTION  RStandardError

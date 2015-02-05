@@ -411,17 +411,6 @@ SUBROUTINE ReadInpFile( IErr )
            PRINT*,"IRefineModeSelectionArray = ",IRefineModeSelectionArray
         END IF
      END IF    
-
-!!$     READ(IChInp,10,ERR=20,END=30) IImageOutputFLAG
-!!$     CALL Message ("ReadInpFile",IInfo,IErr,MessageVariable ="IImageOutputFLAG",IVariable = IImageOutputFLAG)
-!!$     
-!!$     ILine= ILine+1
-!!$     READ(IChInp,10,ERR=20,END=30) IDevFLAG
-!!$     CALL Message ("ReadInpFile",IInfo,IErr,MessageVariable ="IDevFLAG",IVariable = IDevFLAG)
-!!$     
-!!$     ILine= ILine+1
-!!$     READ(IChInp,10,ERR=20,END=30) IRefineModeFLAG
-!!$     CALL Message ("ReadInpFile",IInfo,IErr,MessageVariable ="IRefineModeFLAG",IVariable = IRefineModeFLAG)
      
      ILine= ILine+1
      READ(IChInp,10,ERR=20,END=30) IWeightingFLAG
@@ -538,10 +527,15 @@ SUBROUTINE ReadInpFile( IErr )
      
      ILine= ILine+1
      READ(IChInp,10,ERR=20,END=30) IPrint
-     IF((IWriteFLAG.GE.1.AND.my_rank.EQ.0).OR.IWriteFLAG.GE.10) THEN
-        PRINT*,"IPrint = ", IPrint
-     END IF
-
+     CALL Message ("ReadInpFile",IInfo,IErr,MessageVariable ="IPrint",IVariable = IPrint)
+     ILine= ILine+1; READ(IChInp,ERR=20,END=30,FMT='(A)')
+     ILine= ILine+1; READ(IChInp,ERR=20,END=30,FMT='(A)')
+     ILine= ILine+1; READ(IChInp,ERR=20,END=30,FMT='(A)')
+     
+     ILine= ILine+1
+     READ(IChInp,15,ERR=20,END=30) RSimplexLengthScale
+     CALL Message ("ReadInpFile",IInfo,IErr,MessageVariable ="RSimplexLengthScale",RVariable = RSimplexLengthScale)
+     RSimplexLengthScale = RSimplexLengthScale/100.0
 
   END IF
 
@@ -705,9 +699,8 @@ SUBROUTINE ReadInpFile( IErr )
      PRINT*,"# felixrefine Input"
      PRINT*,""
      PRINT*,"#Refinement Specific Flags"
-     PRINT*,"IImageOutputFLAG          = 1"
-     PRINT*,"IDevFLAG                  = 0"
      PRINT*,"IRefineModeFLAG           = 0"
+     PRINT*,"IWeightingFLAG           = 0"
      PRINT*,""
      PRINT*,"# Debye Waller Factor Iteration"
      PRINT*,""
@@ -721,6 +714,18 @@ SUBROUTINE ReadInpFile( IErr )
      PRINT*,"RLowerBoundUgChange       = 50.0"
      PRINT*,"RUpperBoundUgChange       = 50.0"
      PRINT*,"RDeltaUgChange            = 50.0"
+     PRINT*,""
+     PRINT*,"# Structural Refinement"
+     PRINT*,""
+     PRINT*,"IAtomicSites              = (1,2,6)"
+     PRINT*,""
+     PRINT*,"# Refinement Output"
+     PRINT*,""
+     PRINT*,"IPrint                    = 10"
+     PRINT*,""
+     PRINT*,"# Simplex Initialisation"
+     PRINT*,""
+     PRINT*,"RSimplexLengthScale       = 5.0"
      PRINT*,""
      
 
@@ -1082,7 +1087,8 @@ SUBROUTINE WriteOutInputFile (IErr)
      WRITE(UNIT= IChInp,FMT='(A)') ADJUSTL("RAbsorptionPer            = 2.9")
      WRITE(UNIT= IChInp,FMT='(A)') ADJUSTL("")
      WRITE(UNIT= IChInp,FMT='(A)') ADJUSTL("# microscope settings")
-     WRITE(UNIT= IChInp,FMT='(A)') ADJUSTL("RConvergenceAngle         = 6.0")
+     WRITE(UNIT= IChInp,FMT='(A)') ADJUSTL("ROuterConvergenceAngle    = 6.0")
+     WRITE(UNIT= IChInp,FMT='(A)') ADJUSTL("RInnerConvergenceAngle    = 6.0")
      WRITE(UNIT= IChInp,FMT='(A)') ADJUSTL("IIncidentBeamDirectionX   = 0")
      WRITE(UNIT= IChInp,FMT='(A)') ADJUSTL("IIncidentBeamDirectionY   = 1")
      WRITE(UNIT= IChInp,FMT='(A)') ADJUSTL("IIncidentBeamDirectionZ   = 1")
@@ -1144,7 +1150,8 @@ SUBROUTINE WriteOutInputFile (IErr)
      WRITE(UNIT= IChInp,FMT='(A)') ADJUSTL("RAbsorptionPer            = 2.9")
      WRITE(UNIT= IChInp,FMT='(A)') ADJUSTL("")
      WRITE(UNIT= IChInp,FMT='(A)') ADJUSTL("# microscope settings")
-     WRITE(UNIT= IChInp,FMT='(A)') ADJUSTL("RConvergenceAngle         = 6.0")
+     WRITE(UNIT= IChInp,FMT='(A)') ADJUSTL("ROuterConvergenceAngle    = 6.0")
+     WRITE(UNIT= IChInp,FMT='(A)') ADJUSTL("RInnerConvergenceAngle    = 6.0")
      WRITE(UNIT= IChInp,FMT='(A)') ADJUSTL("IIncidentBeamDirectionX   = 0")
      WRITE(UNIT= IChInp,FMT='(A)') ADJUSTL("IIncidentBeamDirectionY   = 1")
      WRITE(UNIT= IChInp,FMT='(A)') ADJUSTL("IIncidentBeamDirectionZ   = 1")
@@ -1182,6 +1189,18 @@ SUBROUTINE WriteOutInputFile (IErr)
      WRITE(UNIT= IChInp,FMT='(A)') ADJUSTL("RLowerBoundUgChange       = 50.0")
      WRITE(UNIT= IChInp,FMT='(A)') ADJUSTL("RUpperBoundUgChange       = 50.0")
      WRITE(UNIT= IChInp,FMT='(A)') ADJUSTL("RDeltaUgChange            = 50.0")
+     WRITE(UNIT= IChInp,FMT='(A)') ADJUSTL("")
+     WRITE(UNIT= IChInp,FMT='(A)') ADJUSTL("# Structural Refinement")
+     WRITE(UNIT= IChInp,FMT='(A)') ADJUSTL("")
+     WRITE(UNIT= IChInp,FMT='(A)') ADJUSTL("IAtomicSites              = (1,2,6)")
+     WRITE(UNIT= IChInp,FMT='(A)') ADJUSTL("")
+     WRITE(UNIT= IChInp,FMT='(A)') ADJUSTL("# Refinement Output")
+     WRITE(UNIT= IChInp,FMT='(A)') ADJUSTL("")
+     WRITE(UNIT= IChInp,FMT='(A)') ADJUSTL("IPrint                    = 10")
+     WRITE(UNIT= IChInp,FMT='(A)') ADJUSTL("")
+     WRITE(UNIT= IChInp,FMT='(A)') ADJUSTL("# Simplex Initialisation")
+     WRITE(UNIT= IChInp,FMT='(A)') ADJUSTL("")
+     WRITE(UNIT= IChInp,FMT='(A)') ADJUSTL("RSimplexLengthScale       = 5.0")
      WRITE(UNIT= IChInp,FMT='(A)') ADJUSTL("")
   CLOSE(UNIT=IChInp)
 END IF

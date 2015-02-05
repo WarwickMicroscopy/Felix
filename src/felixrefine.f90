@@ -71,6 +71,8 @@ PROGRAM Felixrefine
 !!$       SWyckoffSymbol
   INTEGER(IKIND),DIMENSION(:),ALLOCATABLE :: &
        IVectors
+  REAL(RKIND) :: &
+       RStandardDeviation,RMean
 
   !-------------------------------------------------------------------
   ! constants
@@ -295,7 +297,7 @@ PROGRAM Felixrefine
   
   IFelixCount = 0
 
-  CALL SimplexInitialisation(RSimplexVolume,RSimplexFoM,RIndependentVariableValues,1,IErr)
+  CALL SimplexInitialisation(RSimplexVolume,RSimplexFoM,RIndependentVariableValues,1,RStandardDeviation,RMean,IErr)
   IF( IErr.NE.0 ) THEN
      PRINT*,"felixrefine (", my_rank, ") error in SimplexInitialisation()"
      GOTO 9999
@@ -310,7 +312,7 @@ PROGRAM Felixrefine
   CALL NDimensionalDownhillSimplex(RSimplexVolume,RSimplexFoM,&
        IIndependentVariables+1,&
        IIndependentVariables,IIndependentVariables,&
-       0.001d0,IIterationCount,IErr)
+       0.001d0,IIterationCount,RStandardDeviation,RMean,IErr)
   IF( IErr.NE.0 ) THEN
      PRINT*,"felixrefine (", my_rank, ") error in NDimensionalDownhillSimplex()"
      GOTO 9999
@@ -721,7 +723,8 @@ END SUBROUTINE RankSymmetryRelatedStructureFactor
 
 !%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-SUBROUTINE SimplexInitialisation(RSimplexVolume,RSimplexFoM,RIndependentVariableValues,IIterationCount,IErr)
+SUBROUTINE SimplexInitialisation(RSimplexVolume,RSimplexFoM,RIndependentVariableValues,&
+     IIterationCount,RStandardDeviation,RMean,IErr)
   
   USE MyNumbers
   
@@ -748,6 +751,10 @@ SUBROUTINE SimplexInitialisation(RSimplexVolume,RSimplexFoM,RIndependentVariable
        RIndependentVariableValues
   INTEGER(IKIND),INTENT(IN) :: &
        IIterationCount
+  REAL(RKIND),INTENT(OUT) :: &
+       RStandardDeviation,RMean
+  REAL(RKIND) :: &
+       RStandardError,RStandardTolerance
 
   IF((IWriteFLAG.GE.0.AND.my_rank.EQ.0).OR.IWriteFLAG.GE.10) THEN
      PRINT*,"SimplexInitialisation(",my_rank,")"
@@ -782,12 +789,6 @@ SUBROUTINE SimplexInitialisation(RSimplexVolume,RSimplexFoM,RIndependentVariable
      PRINT*,"SimplexInitialisation(", my_rank, ") error in StructureFactorRefinementSetup()"
      RETURN
   ENDIF
-!!$
-!!$  IF(my_rank.EQ.0) THEN
-!!$     DO ind = 1,INoofUgs
-!!$        PRINT*,ISymmetryStrengthKey(ind,:),CSymmetryStrengthKey(ind)
-!!$     END DO
-!!$  END IF
 
   DEALLOCATE(&
        CUgmat,&
@@ -796,48 +797,15 @@ SUBROUTINE SimplexInitialisation(RSimplexVolume,RSimplexFoM,RIndependentVariable
      PRINT*,"SimplexInitialisation (", my_rank, ") error in Deallocation()"
      RETURN
   ENDIF
-
-!!$  DEALLOCATE( &
-!!$       CUgMatPrime,&
-!!$       STAT=IErr)  
-!!$  IF( IErr.NE.0 ) THEN
-!!$     PRINT*,"SimplexInitialisation (", my_rank, ") error in deAllocation()"
-!!$     RETURN
-!!$  ENDIF
-!!$
-!!$  DEALLOCATE( &
-!!$       ISymmetryRelations,&
-!!$       STAT=IErr)  
-!!$  IF( IErr.NE.0 ) THEN
-!!$     PRINT*,"SimplexInitialisation (", my_rank, ") error in deAllocation()"
-!!$     RETURN
-!!$  ENDIF
-
-!!$  DEALLOCATE( &
-!!$       ISymmetryStrengthKey,&
-!!$       STAT=IErr)  
-!!$  IF( IErr.NE.0 ) THEN
-!!$     PRINT*,"SimplexInitialisation (", my_rank, ") error in deAllocation()"
-!!$     RETURN
-!!$  ENDIF
-!!$
-!!$  DEALLOCATE( &
-!!$       CSymmetryStrengthKey)
-!!$  IF( IErr.NE.0 ) THEN
-!!$     PRINT*,"SimplexInitialisation(", my_rank, ") error ", IErr, &
-!!$          " in Deallocation"
-!!$     RETURN
-!!$  ENDIF
-  
   DO ind = 1,(IIndependentVariables+1)
      RSimplexVolume(ind,:) = &
           RIndependentVariableValues
      IF(ind.GT.1) THEN
         IF(IIterativeVariableUniqueIDs(ind-1,2).EQ.2) THEN
            CALL InitialiseAtomicVectorMagnitudes(ind-1,RSimplexVolume(ind,ind-1),IErr)
-!!$           PRINT*,"RSimplexVolume(ind,ind-1)",RSimplexVolume(ind,ind-1)
         ELSE
-           RSimplexVolume(ind,ind-1) = RIndependentVariableValues(ind-1)*1.1_RKIND
+           RSimplexVolume(ind,ind-1) = RIndependentVariableValues(ind-1)*&
+                (ONE+RSimplexLengthScale)
         END IF
      END IF
   END DO
@@ -850,11 +818,11 @@ SUBROUTINE SimplexInitialisation(RSimplexVolume,RSimplexFoM,RIndependentVariable
         PRINT*,"---------------------------------------------------------"
         PRINT*,"-------- Simplex",ind,"of",IIndependentVariables+1
         PRINT*,"---------------------------------------------------------"
-     END IF
-
-     
+     END IF     
 
      RSimplexDummy = SimplexFunction(RSimplexVolume(ind,:),1,0,IErr)
+
+     RStandardTolerance = RStandardError(RStandardDeviation,RMean,RSimplexDummy,IErr)
      
      RSimplexFoM(ind) =  RSimplexDummy
      
@@ -865,7 +833,7 @@ SUBROUTINE SimplexInitialisation(RSimplexVolume,RSimplexFoM,RIndependentVariable
      END IF
   END DO
      
-  END SUBROUTINE SimplexInitialisation
+END SUBROUTINE SimplexInitialisation
 
 !%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
@@ -1161,18 +1129,8 @@ SUBROUTINE InitialiseAtomicVectorMagnitudes(IVariableID,RCorrectedMovement,IErr)
   RPositiveMovement = 0.1_RKIND
 
   IF(RANDOMNUMBER(IVariableID,IErr).LT.0.5_RKIND) THEN
-     
-!!$     IF(my_rank.EQ.0) THEN
-!!$        PRINT*,"RANDOMNUMBER",RANDOMNUMBER(IVariableID,IErr),"Negative Movement",IVariableID
-!!$     END IF
-
      CALL OutofUnitCellCheck(IVariableID,RNegativeMovement,RCorrectedMovement,IErr)
   ELSE
-     
-!!$     IF(my_rank.EQ.0) THEN
-!!$        PRINT*,"RANDOMNUMBER",RANDOMNUMBER(IVariableID,IErr),"Positive Movement",IVariableID
-!!$     END IF
-
      CALL OutofUnitCellCheck(IVariableID,RPositiveMovement,RCorrectedMovement,IErr)
   END IF
 
