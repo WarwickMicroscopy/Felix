@@ -1,4 +1,4 @@
-SUBROUTINE NDimensionalDownhillSimplex(RSimplexVolume,y,mp,np,ndim,ftol,iter,IErr)
+SUBROUTINE NDimensionalDownhillSimplex(RSimplexVolume,y,mp,np,ndim,ftol,iter,RStandardDeviation,RMean,IErr)
 
   USE MyNumbers
     
@@ -19,7 +19,8 @@ SUBROUTINE NDimensionalDownhillSimplex(RSimplexVolume,y,mp,np,ndim,ftol,iter,IEr
   INTEGER(IKIND) :: &
        i,ihi,ilo,inhi,j,m,n,IExitFlag
   REAL(RKIND) :: &
-       rtol,sum,swap,ysave,ytry,psum(ndim),amotry
+       rtol,sum,swap,ysave,ytry,psum(ndim),amotry,&
+       RStandardDeviation,RMean,RStandardError,RStandardTolerance
 
   IF(my_rank.EQ.0) THEN
      PRINT*,"Beginning Simplex",IErr
@@ -34,6 +35,7 @@ SUBROUTINE NDimensionalDownhillSimplex(RSimplexVolume,y,mp,np,ndim,ftol,iter,IEr
      ENDDO
      
 2    ilo = 1
+     ysave = ytry
      IF (y(1).GT.y(2)) THEN
         ihi=1
         inhi=2
@@ -52,9 +54,13 @@ SUBROUTINE NDimensionalDownhillSimplex(RSimplexVolume,y,mp,np,ndim,ftol,iter,IEr
      ENDDO
      
      rtol=2.*ABS(y(ihi)-y(ilo))/(ABS(y(ihi))+ABS(y(ilo)))
-     
-     PRINT*,"Current Tolerance",rtol,ftol
-     IF(rtol.LT.ftol) THEN
+
+     RStandardTolerance = RStandardError(RStandardDeviation,RMean,ytry,IErr)
+
+     PRINT*,"Current Tolerance",rtol,ftol,RStandardTolerance
+!!$     IF(rtol.LT.ftol) THEN
+
+     IF(RStandardTolerance.LT.ftol) THEN
         swap=y(1)
         y(1)=y(ilo)
         y(ilo)=swap
@@ -74,8 +80,8 @@ SUBROUTINE NDimensionalDownhillSimplex(RSimplexVolume,y,mp,np,ndim,ftol,iter,IEr
         IErr = 1
         RSendPacket = [-10000.0_RKIND, psum, REAL(iter,RKIND)]
         CALL MPI_BCAST(RSendPacket,ndim+2,MPI_DOUBLE_PRECISION,0,MPI_COMM_WORLD,IErr)
-        RETURN
         PRINT*,"ITMAX exceeded in NDimensionalDownhillSimplex"
+        RETURN
      END IF
     
      PRINT*,"-----------------------------------------------------"
@@ -94,7 +100,7 @@ SUBROUTINE NDimensionalDownhillSimplex(RSimplexVolume,y,mp,np,ndim,ftol,iter,IEr
         IF(ytry.GE.ysave) THEN
            
            PRINT*,"-----------------------------------------------------"
-           PRINT*,"Entering Expansion Phase Expect",ndim,"Simulations"
+           PRINT*,"Entering Expansion Phase Expect",ndim+1,"Simulations"
            PRINT*,"-----------------------------------------------------"
 
            DO i=1,ndim+1
@@ -115,6 +121,7 @@ SUBROUTINE NDimensionalDownhillSimplex(RSimplexVolume,y,mp,np,ndim,ftol,iter,IEr
            GOTO 1
         ENDIF
      ELSE
+
         iter=iter-1
      ENDIF
      GOTO 2

@@ -116,7 +116,7 @@ SUBROUTINE SymmetryRelatedStructureFactorDetermination (IErr)
        ISymmetryStrengthKey(Iuid,2),&
        STAT=IErr)
   IF( IErr.NE.0 ) THEN
-     PRINT*,"UgCalculation(", my_rank, ") error ", IErr, " in ALLOCATE() ISymmetryStrengthKey"
+     PRINT*,"SymmetryRelatedStructureFactorDetermination(", my_rank, ") error ", IErr, " in ALLOCATE() ISymmetryStrengthKey"
      RETURN
   ENDIF
 
@@ -124,14 +124,14 @@ SUBROUTINE SymmetryRelatedStructureFactorDetermination (IErr)
        CSymmetryStrengthKey(Iuid),&
        STAT=IErr)
   IF( IErr.NE.0 ) THEN
-     PRINT*,"UgCalculation(", my_rank, ") error ", IErr, " in ALLOCATE() CSymmetryStrengthKey"
+     PRINT*,"SymmetryRelatedStructureFactorDetermination(", my_rank, ") error ", IErr, " in ALLOCATE() CSymmetryStrengthKey"
      RETURN
   ENDIF
   
 END SUBROUTINE SymmetryRelatedStructureFactorDetermination
 
 !---------------------------------------------------------------------
-SUBROUTINE StructureFactorInitialisation (IErr,CZeroMat)
+SUBROUTINE StructureFactorInitialisation (IErr)
   
   USE MyNumbers
   USE WriteToScreen
@@ -157,8 +157,8 @@ SUBROUTINE StructureFactorInitialisation (IErr,CZeroMat)
   REAL(RKIND) :: &
        RMeanInnerPotentialVolts,RAtomicFormFactor, Lorentzian,Gaussian
  ! REAL(RKIND),DIMENSION(3) :: RAtomicFormFactorSum
-  COMPLEX(CKIND),DIMENSION(:,:), ALLOCATABLE :: &
-       CZeroMat
+!!$  COMPLEX(CKIND),DIMENSION(:,:), ALLOCATABLE :: &
+!!$       CZeroMat
 
   CALL Message("StructureFactorInitialisation",IMust,IErr)
 
@@ -336,57 +336,57 @@ SUBROUTINE StructureFactorInitialisation (IErr,CZeroMat)
 !!$     PRINT*,"StructureFactorInitialisation(", my_rank, ") BigK=", RBigK
 !!$  END IF
     
-  IF(IAbsorbFLAG.GT.1) THEN
-     CZeroMAT = CZERO
-     CUgMatPrime = CZERO
-     DO ind = 1,nReflections
-        DO jnd = 1,ind
-           CZeroMAT(ind,jnd) = CONE
-        END DO
-     END DO
-     
-     ALLOCATE( &  
-          ISymmetryRelations(nReflections,nReflections), &
-          STAT=IErr)
-     IF( IErr.NE.0 ) THEN
-        !refinemain was here
-        PRINT*,"StructureFactorSetup(", my_rank, ") error ", IErr, &
-             " in ALLOCATE() of DYNAMIC variables ISymmetryRelations"
-        !call error function
-        RETURN
-     ENDIF
-     
-     ISymmetryRelations = ISymmetryRelations*CZeroMat 
-
-     !Symmetry related structure factor calculation
-     !---------------------------------------------
-     CALL SymmetryRelatedStructureFactorDetermination (IErr)
-     IF( IErr.NE.0 ) THEN
-        !refinemain was here
-        PRINT*,"StructureFactorSetup(", my_rank, ") error ", IErr, &
-             " in DetermineSymmetryRelatedUgs"
-        !call error function
-        RETURN
-     ENDIF
-
-
-     ALLOCATE( &  
-          RUniqueUgPrimeValues((SIZE(ISymmetryStrengthKey,DIM=1))), &
-          STAT=IErr)
-     IF( IErr.NE.0 ) THEN
-        !refinemain was here
-        PRINT*,"StructureFactorSetup(", my_rank, ") error ", IErr, &
-             " in ALLOCATE() of DYNAMIC variables RUniqueUgPrimeValues"
-        !call error function
-        RETURN
-     ENDIF
-     
-     DO ind = 1,(SIZE(ISymmetryStrengthKey,DIM=1))
-        ILoc = MINLOC(ABS(ISymmetryRelations-ind))
-        ISymmetryStrengthKey(ind,:) = ILoc
-     END DO
-  END IF
-  
+!!$  IF(IAbsorbFLAG.GT.1) THEN
+!!$     CZeroMAT = CZERO
+!!$     CUgMatPrime = CZERO
+!!$     DO ind = 1,nReflections
+!!$        DO jnd = 1,ind
+!!$           CZeroMAT(ind,jnd) = CONE
+!!$        END DO
+!!$     END DO
+!!$     
+!!$     ALLOCATE( &  
+!!$          ISymmetryRelations(nReflections,nReflections), &
+!!$          STAT=IErr)
+!!$     IF( IErr.NE.0 ) THEN
+!!$        !refinemain was here
+!!$        PRINT*,"StructureFactorSetup(", my_rank, ") error ", IErr, &
+!!$             " in ALLOCATE() of DYNAMIC variables ISymmetryRelations"
+!!$        !call error function
+!!$        RETURN
+!!$     ENDIF
+!!$     
+!!$     ISymmetryRelations = ISymmetryRelations*CZeroMat 
+!!$
+!!$     !Symmetry related structure factor calculation
+!!$     !---------------------------------------------
+!!$     CALL SymmetryRelatedStructureFactorDetermination (IErr)
+!!$     IF( IErr.NE.0 ) THEN
+!!$        !refinemain was here
+!!$        PRINT*,"StructureFactorSetup(", my_rank, ") error ", IErr, &
+!!$             " in DetermineSymmetryRelatedUgs"
+!!$        !call error function
+!!$        RETURN
+!!$     ENDIF
+!!$
+!!$
+!!$     ALLOCATE( &  
+!!$          RUniqueUgPrimeValues((SIZE(ISymmetryStrengthKey,DIM=1))), &
+!!$          STAT=IErr)
+!!$     IF( IErr.NE.0 ) THEN
+!!$        !refinemain was here
+!!$        PRINT*,"StructureFactorSetup(", my_rank, ") error ", IErr, &
+!!$             " in ALLOCATE() of DYNAMIC variables RUniqueUgPrimeValues"
+!!$        !call error function
+!!$        RETURN
+!!$     ENDIF
+!!$     
+!!$     DO ind = 1,(SIZE(ISymmetryStrengthKey,DIM=1))
+!!$        ILoc = MINLOC(ABS(ISymmetryRelations-ind))
+!!$        ISymmetryStrengthKey(ind,:) = ILoc
+!!$     END DO
+!!$  END IF
+!!$  
   IF(IAbsorbFLAG.GE.1) THEN
 
      !Structure Factors when taking into account absorption
@@ -399,21 +399,30 @@ SUBROUTINE StructureFactorInitialisation (IErr,CZeroMat)
         !call error function
         RETURN
      ENDIF
-
-     IF(IAbsorbFLAG.GE.2) THEN
-        DO ind = 2,(SIZE(ISymmetryStrengthKey,DIM=1))
-           WHERE (ISymmetryRelations.EQ.ind)
-              CUgMatPrime = RUniqueUgPrimeValues(ind)*CIMAGONE
-           END WHERE
-        END DO
-        DO ind = 1,nReflections
-           CUgMatPrime(ind,ind) = RUniqueUgPrimeValues(1)*CIMAGONE
-        END DO
-     END IF
      CUgMat =  CUgMat+CUgMatPrime
-  
   ENDIF
+!!$
+!!$     IF(IAbsorbFLAG.GE.2) THEN
+!!$        DO ind = 2,(SIZE(ISymmetryStrengthKey,DIM=1))
+!!$           WHERE (ISymmetryRelations.EQ.ind)
+!!$              CUgMatPrime = RUniqueUgPrimeValues(ind)*CIMAGONE
+!!$           END WHERE
+!!$        END DO
+!!$        DO ind = 1,nReflections
+!!$           CUgMatPrime(ind,ind) = RUniqueUgPrimeValues(1)*CIMAGONE
+!!$        END DO
+!!$     END IF
+!!$     CUgMat =  CUgMat+CUgMatPrime
+!!$  
   
+!!$  IF(my_rank.eq.0) THEN 
+!!$     DO ind = 1,25
+!!$        DO jnd = 1,5
+!!$           PRINT*,CUgMat(ind,1)
+!!$        end DO
+!!$     end DO
+!!$  END IF
+
 
 END SUBROUTINE StructureFactorInitialisation
 
@@ -436,15 +445,15 @@ SUBROUTINE StructureFactorsWithAbsorptionDetermination(IErr)
   
   INTEGER(IKIND) :: &
        IErr,ind,jnd,knd
-  REAL(RKIND) :: &
-       RIntegrationParameterGMagPrime,RAtomicFormFactorGMagPrime,&
-       RAtomicFormFactorGMagMinusGMagPrime,RAbsorpativeAtomicFormFactor,&
-       RAbsorpativeAtomicFormFactorInterval
+!!$  REAL(RKIND) :: &
+!!$       RIntegrationParameterGMagPrime,RAtomicFormFactorGMagPrime,&
+!!$       RAtomicFormFactorGMagMinusGMagPrime,RAbsorpativeAtomicFormFactor,&
+!!$       RAbsorpativeAtomicFormFactorInterval
 !!$       RAbsorpativeAtomicFormFactorUpperInterval,&
 !!$       RAbsorpativeAtomicFormFactorMiddleInterval
-  INTEGER(IKIND),DIMENSION(2) :: &
-       IPos
-  COMPLEX(CKIND) CVgij
+!!$  INTEGER(IKIND),DIMENSION(2) :: &
+!!$       IPos
+!!$  COMPLEX(CKIND) CVgij
 
    CALL Message("StructureFactorsWithAbsorptionDetermination",IMust,IErr)
       
