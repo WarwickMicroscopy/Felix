@@ -92,15 +92,13 @@ SUBROUTINE ReadInpFile( IErr )
   ILine= ILine+1
   READ(IChInp,10,ERR=20,END=30) IWriteFLAG
 
-  PRINT*,"IWriteFLAG",IWriteFLAG
-
-  
+!!$If the user wants to print out the normal sim messages 
+!!$for debugging, they need to select a WriteFlag of above 100
   IF ((IWriteFLAG.GE.100).AND.(ISoftwareMode.EQ.2)) THEN
      IRefineSwitch = 3
   ELSE
      IRefineSwitch = 2
   END IF
-
 
   CALL Message ("ReadInpFile",IMust,IErr)
   CALL Message ("ReadInpFile",IInfo,IErr,MessageVariable="IWriteFLAG",IVariable=IWriteFLAG)
@@ -157,8 +155,6 @@ SUBROUTINE ReadInpFile( IErr )
   ILine= ILine+1
   READ(IChInp,10,ERR=20,END=30) IBinorTextFLAG
   CALL Message ("ReadInpFile",IInfo,IErr,MessageVariable ="IBinorTextFLAG",IVariable=IBinorTextFLAG)
-
-
 
   ILine= ILine+1
   READ(IChInp,10,ERR=20,END=30) IScatterFactorMethodFLAG
@@ -567,12 +563,14 @@ SUBROUTINE ReadInpFile( IErr )
   !	error in READ detected
 20 IF(my_rank.EQ.0.OR.IWriteFLAG.GE.10) THEN
      PRINT*,"Input(): ERR in READ at line", ILine
+     CALL WriteOutInputFile (IErr)
   END IF
   GOTO 1000
   
   !	EOF in READ occured prematurely
 30 IF(my_rank.EQ.0.OR.IWriteFLAG.GE.10) THEN
      PRINT*,"Input(): EOF in READ at line", ILine
+     CALL WriteOutInputFile (IErr)
   END IF
   
   ! dump the input help
@@ -723,11 +721,16 @@ SUBROUTINE ReadInpFile( IErr )
      PRINT*,""
      PRINT*,"IPrint                    = 10"
      PRINT*,""
+     PRINT*,"IAtomicSites              = (1,2,3,4,5,6,7)"
+     PRINT*,""
+     PRINT*,"# Refinement Output"
+     PRINT*,""
+     PRINT*,"IPrint                    = 20"
+     PRINT*,""
      PRINT*,"# Simplex Initialisation"
      PRINT*,""
      PRINT*,"RSimplexLengthScale       = 5.0"
-     PRINT*,""
-     
+     PRINT*,""     
 
      PRINT*,"A Sample Input File Has been Written For you as felix.inp.refine_sample"
      PRINT*,"It must be renamed to felix.inp before use"
@@ -1087,8 +1090,8 @@ SUBROUTINE WriteOutInputFile (IErr)
      WRITE(UNIT= IChInp,FMT='(A)') ADJUSTL("RAbsorptionPer            = 2.9")
      WRITE(UNIT= IChInp,FMT='(A)') ADJUSTL("")
      WRITE(UNIT= IChInp,FMT='(A)') ADJUSTL("# microscope settings")
-     WRITE(UNIT= IChInp,FMT='(A)') ADJUSTL("ROuterConvergenceAngle    = 6.0")
-     WRITE(UNIT= IChInp,FMT='(A)') ADJUSTL("RInnerConvergenceAngle    = 6.0")
+     WRITE(UNIT= IChInp,FMT='(A)') ADJUSTL("ROuterConvergenceAngle    = 6.0") 
+     WRITE(UNIT= IChInp,FMT='(A)') ADJUSTL("RInnerConvergenceAngle    = 0.0")
      WRITE(UNIT= IChInp,FMT='(A)') ADJUSTL("IIncidentBeamDirectionX   = 0")
      WRITE(UNIT= IChInp,FMT='(A)') ADJUSTL("IIncidentBeamDirectionY   = 1")
      WRITE(UNIT= IChInp,FMT='(A)') ADJUSTL("IIncidentBeamDirectionZ   = 1")
@@ -1151,7 +1154,7 @@ SUBROUTINE WriteOutInputFile (IErr)
      WRITE(UNIT= IChInp,FMT='(A)') ADJUSTL("")
      WRITE(UNIT= IChInp,FMT='(A)') ADJUSTL("# microscope settings")
      WRITE(UNIT= IChInp,FMT='(A)') ADJUSTL("ROuterConvergenceAngle    = 6.0")
-     WRITE(UNIT= IChInp,FMT='(A)') ADJUSTL("RInnerConvergenceAngle    = 6.0")
+     WRITE(UNIT= IChInp,FMT='(A)') ADJUSTL("RInnerConvergenceAngle    = 0.0")
      WRITE(UNIT= IChInp,FMT='(A)') ADJUSTL("IIncidentBeamDirectionX   = 0")
      WRITE(UNIT= IChInp,FMT='(A)') ADJUSTL("IIncidentBeamDirectionY   = 1")
      WRITE(UNIT= IChInp,FMT='(A)') ADJUSTL("IIncidentBeamDirectionZ   = 1")

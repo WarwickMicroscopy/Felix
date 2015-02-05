@@ -305,10 +305,12 @@ SUBROUTINE OpenReflectionImage(IChOutWrite, surname, IErr,IReflectWriting,IImage
   INTEGER index,ind
 
   !!$  Only Prints out this message once when iterating (i.e. when in 1st iteration)
-  IMessageCounter = ind
 
-  IF (IMessageCounter.LT.2) THEN
+  IF (IMessageCounter.LT.1) THEN
      CALL Message("OpenReflectionImage",IMust,IErr)
+      CALL Message("OpenReflectionImage",IMust+IDebug,IErr,&
+          MessageString = "is looping. Dependent on ImageFLAG also (called more than once while looping)")
+     IMessageCounter = IMessageCounter +1
   END IF
   
   SELECT CASE(IChOutWrite)
@@ -424,9 +426,12 @@ SUBROUTINE WriteReflectionImage( IChOutWrite, data, IErr,IImageSizeX,IImageSizeY
   INTEGER ind,knd, IChOutWrite
   CHARACTER*100 SFormatString
 
-  IMessageCounter = knd
+
   IF (IMessageCounter.LT.2) THEN
      CALL Message("WriteReflectionImage",IMust,IErr)
+     CALL Message("WriteReflectionImage",IMust+IDebug,IErr, &
+          MessageString = "is looping. Dependent on ImageFLAG also (called more than once while looping)")
+     IMessageCounter = IMessageCounter +1
   END IF
   
   SELECT CASE (IBinorTextFLAG)
