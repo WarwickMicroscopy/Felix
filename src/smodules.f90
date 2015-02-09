@@ -112,7 +112,7 @@ MODULE RConst
        RElectronMassMeV=0.510998928, &
        RPlanckConstant=6.62606957D-34, &
        RElectronCharge=1.602176565D-19, &
-       RAngstromConversion=1.D01
+       RAngstromConversion=1.0E10
   REAL(RKIND), PARAMETER :: &
        RTolerance = 1E-5
     
