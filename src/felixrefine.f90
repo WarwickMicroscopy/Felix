@@ -67,8 +67,6 @@ PROGRAM Felixrefine
        RSimplexFoM,RIndependentVariableValues
   REAL(RKIND) :: &
        RBCASTREAL
-!!$  CHARACTER*1 :: &
-!!$       SWyckoffSymbol
   INTEGER(IKIND),DIMENSION(:),ALLOCATABLE :: &
        IVectors
   REAL(RKIND) :: &
@@ -213,7 +211,8 @@ PROGRAM Felixrefine
        IRefineModeSelectionArray(4)*SIZE(IAtomicSitesToRefine)+&
        IRefineModeSelectionArray(5)*SIZE(IAtomicSitesToRefine)*6+&
        IRefineModeSelectionArray(6)*3+&
-       IRefineModeSelectionArray(7)*3
+       IRefineModeSelectionArray(7)*3+&
+       IRefineModeSelectionArray(8)
   
   ALLOCATE( &
        RImageExpi(2*IPixelCount,2*IPixelCount, &
@@ -296,13 +295,13 @@ PROGRAM Felixrefine
   ENDIF
   
   IFelixCount = 0
-
+  
   CALL SimplexInitialisation(RSimplexVolume,RSimplexFoM,RIndependentVariableValues,1,RStandardDeviation,RMean,IErr)
   IF( IErr.NE.0 ) THEN
      PRINT*,"felixrefine (", my_rank, ") error in SimplexInitialisation()"
      GOTO 9999
   ENDIF
-
+     
   IFelixCount = 0
 
   !--------------------------------------------------------------------
@@ -394,7 +393,7 @@ USE MyNumbers
 
   INTEGER(IKIND) :: &
        ind,jnd,IErr,ICalls
-  INTEGER(IKIND),DIMENSION(7) :: &
+  INTEGER(IKIND),DIMENSION(IRefinementVariableTypes) :: &
        INoofelementsforeachrefinementtype
 
   INoofelementsforeachrefinementtype(1) = &
@@ -410,6 +409,8 @@ USE MyNumbers
        IRefineModeSelectionArray(6)*3
   INoofelementsforeachrefinementtype(7) = &
        IRefineModeSelectionArray(7)*3
+  INoofelementsforeachrefinementtype(8) = &
+       IRefineModeSelectionArray(8)
 
   ALLOCATE(&
        IIterativeVariableUniqueIDs(IIndependentVariables,5),&
@@ -422,8 +423,7 @@ USE MyNumbers
   IIterativeVariableUniqueIDs = 0
   ICalls = 0
 
-  DO ind = 1,7 !Loop over all possible iterative variables
-!!$     PRINT*,"INoofelementsforeachrefinementtype =",INoofelementsforeachrefinementtype(ind)
+  DO ind = 1,IRefinementVariableTypes !Loop over all possible iterative variables
      IF(IRefineModeSelectionArray(ind).EQ.1) THEN
         DO jnd = 1,INoofelementsforeachrefinementtype(ind)
            ICalls = ICalls + 1
@@ -432,10 +432,6 @@ USE MyNumbers
         END DO
      END IF
   END DO
-
-!!$  PRINT*,"IIndependentVariables =",IIndependentVariables
-!!$
-!!$  PRINT*,IIterativeVariableUniqueIDs
   
 END SUBROUTINE AssignIterativeIDs
 
@@ -461,7 +457,7 @@ SUBROUTINE AssignArrayLocationsToIterationVariables(IIterativeVariableType,IVari
        IAnisotropicDebyeWallerFactorElementNo
   INTEGER(IKIND),DIMENSION(IIndependentVariables,5),INTENT(OUT) :: &
        IArrayToFill  
-  INTEGER(IKIND),DIMENSION(7) :: &
+  INTEGER(IKIND),DIMENSION(IRefinementVariableTypes) :: &
        INoofelementsforeachrefinementtype
 
 !!$  Calculate How Many of Each Variable Type There are
@@ -469,7 +465,7 @@ SUBROUTINE AssignArrayLocationsToIterationVariables(IIterativeVariableType,IVari
   INoofelementsforeachrefinementtype(1) = &
        IRefineModeSelectionArray(1)*INoofUgs
   INoofelementsforeachrefinementtype(2) = &
-       IRefineModeSelectionArray(2)*SIZE(IAtomicSitesToRefine)*3
+       IRefineModeSelectionArray(2)*IAllowedVectors
   INoofelementsforeachrefinementtype(3) = &
        IRefineModeSelectionArray(3)*SIZE(IAtomicSitesToRefine)
   INoofelementsforeachrefinementtype(4) = &
@@ -480,6 +476,8 @@ SUBROUTINE AssignArrayLocationsToIterationVariables(IIterativeVariableType,IVari
        IRefineModeSelectionArray(6)*3
   INoofelementsforeachrefinementtype(7) = &
        IRefineModeSelectionArray(7)*3
+  INoofelementsforeachrefinementtype(8) = &
+       IRefineModeSelectionArray(8)
   
 !!$  Where am I in the Array Right Now?
 
@@ -550,6 +548,10 @@ SUBROUTINE AssignArrayLocationsToIterationVariables(IIterativeVariableType,IVari
      IArrayToFill(IArrayIndex,3) = &
           NINT(3.D0*(REAL(IVariableNo/3.0D0,RKIND)-CEILING(REAL(IVariableNo/3.0D0,RKIND)))+3.0D0)
 
+  CASE(8)
+     
+     IArrayToFill(IArrayIndex,2) = IIterativeVariableType
+     
   END SELECT
   
 END SUBROUTINE AssignArrayLocationsToIterationVariables
@@ -623,6 +625,9 @@ SUBROUTINE RefinementVariableSetup(RIndependentVariableValues,IErr)
         CASE(3)
            RIndependentVariableValues(ind) = RGamma
         END SELECT
+     CASE(8)
+        RIndependentVariableValues(ind) = &
+             RConvergenceAngle
      END SELECT
   END DO
 
@@ -772,11 +777,15 @@ SUBROUTINE SimplexInitialisation(RSimplexVolume,RSimplexFoM,RIndependentVariable
      RETURN
   ENDIF
   
+!!$PRINT*,"IReflectOut = ",IReflectOut
+
   CALL RefinementVariableSetup(RIndependentVariableValues,IErr)
   IF( IErr.NE.0 ) THEN
      PRINT*,"SimplexInitialisation(", my_rank, ") error in RefinementVariableSetup()"
      RETURN
   ENDIF
+
+!!$PRINT*,"IReflectOut = ",IReflectOut
 
   CALL RankSymmetryRelatedStructureFactor(IErr)
   IF( IErr.NE.0 ) THEN
@@ -784,11 +793,15 @@ SUBROUTINE SimplexInitialisation(RSimplexVolume,RSimplexFoM,RIndependentVariable
      RETURN
   ENDIF
 
+!!$PRINT*,"IReflectOut = ",IReflectOut
+
   CALL StructureFactorRefinementSetup(RIndependentVariableValues,IIterationCount,IErr)
   IF( IErr.NE.0 ) THEN
      PRINT*,"SimplexInitialisation(", my_rank, ") error in StructureFactorRefinementSetup()"
      RETURN
   ENDIF
+
+!!$PRINT*,"IReflectOut = ",IReflectOut
 
   DEALLOCATE(&
        CUgmat,&
@@ -797,41 +810,56 @@ SUBROUTINE SimplexInitialisation(RSimplexVolume,RSimplexFoM,RIndependentVariable
      PRINT*,"SimplexInitialisation (", my_rank, ") error in Deallocation()"
      RETURN
   ENDIF
-  DO ind = 1,(IIndependentVariables+1)
-     RSimplexVolume(ind,:) = &
-          RIndependentVariableValues
-     IF(ind.GT.1) THEN
-        IF(IIterativeVariableUniqueIDs(ind-1,2).EQ.2) THEN
-           CALL InitialiseAtomicVectorMagnitudes(ind-1,RSimplexVolume(ind,ind-1),IErr)
-        ELSE
-           RSimplexVolume(ind,ind-1) = RIndependentVariableValues(ind-1)*&
-                (ONE+RSimplexLengthScale)
+
+
+  IF(IContinueFLAG.EQ.0) THEN
+     
+     DO ind = 1,(IIndependentVariables+1)
+        RSimplexVolume(ind,:) = &
+             RIndependentVariableValues
+        IF(ind.GT.1) THEN
+           IF(IIterativeVariableUniqueIDs(ind-1,2).EQ.2) THEN
+              CALL InitialiseAtomicVectorMagnitudes(ind-1,RSimplexVolume(ind,ind-1),IErr)
+           ELSE
+              RSimplexVolume(ind,ind-1) = RIndependentVariableValues(ind-1)*&
+                   (ONE+RSimplexLengthScale)
+           END IF
         END IF
-     END IF
-  END DO
-
-  IPreviousPrintedIteration = -IPrint ! Ensures print out on first iteration
-
-  DO ind = 1,(IIndependentVariables+1)
-          
-     IF((IWriteFLAG.GE.0.AND.my_rank.EQ.0).OR.IWriteFLAG.GE.10) THEN
-        PRINT*,"---------------------------------------------------------"
-        PRINT*,"-------- Simplex",ind,"of",IIndependentVariables+1
-        PRINT*,"---------------------------------------------------------"
-     END IF     
-
-     RSimplexDummy = SimplexFunction(RSimplexVolume(ind,:),1,0,IErr)
-
-     RStandardTolerance = RStandardError(RStandardDeviation,RMean,RSimplexDummy,IErr)
+     END DO
      
-     RSimplexFoM(ind) =  RSimplexDummy
+     IPreviousPrintedIteration = -IPrint ! Ensures print out on first iteration
+
+     DO ind = 1,(IIndependentVariables+1)
+        
+        IF((IWriteFLAG.GE.0.AND.my_rank.EQ.0).OR.IWriteFLAG.GE.10) THEN
+           PRINT*,"---------------------------------------------------------"
+           PRINT*,"-------- Simplex",ind,"of",IIndependentVariables+1
+           PRINT*,"---------------------------------------------------------"
+        END IF
+        
+        RSimplexDummy = SimplexFunction(RSimplexVolume(ind,:),1,0,IErr)
+        
+        RStandardTolerance = RStandardError(RStandardDeviation,RMean,RSimplexDummy,IErr)
+        
+        RSimplexFoM(ind) =  RSimplexDummy
+        
+        IF((IWriteFLAG.GE.0.AND.my_rank.EQ.0).OR.IWriteFLAG.GE.10) THEN
+           PRINT*,"---------------------------------------------------------"
+           PRINT*,"-------- Figure of Merit" ,RSimplexFoM(ind)        
+           PRINT*,"---------------------------------------------------------"
+        END IF
+     END DO
      
-     IF((IWriteFLAG.GE.0.AND.my_rank.EQ.0).OR.IWriteFLAG.GE.10) THEN
-        PRINT*,"---------------------------------------------------------"
-        PRINT*,"-------- Figure of Merit" ,RSimplexFoM(ind)        
-        PRINT*,"---------------------------------------------------------"
-     END IF
-  END DO
+  ELSE
+     
+     CALL RecoverSavedSimplex(RSimplexVolume,RSimplexFoM,RStandardDeviation,RMean,IErr)
+     IF( IErr.NE.0 ) THEN
+        PRINT*,"SimplexInitialisation (", my_rank, ") error in RecoverSavedSimplex()"
+        RETURN
+     ENDIF
+     
+  END IF
+  
      
 END SUBROUTINE SimplexInitialisation
 
@@ -1317,3 +1345,47 @@ SUBROUTINE CreateIdentityMatrix(IIdentityMatrix,ISize,IErr)
   END DO
 
 END SUBROUTINE CreateIdentityMatrix
+
+SUBROUTINE RecoverSavedSimplex(RSimplexVolume,RSimplexFoM,RStandardDeviation,RMean,IErr)
+
+  USE MyNumbers
+  
+  USE CConst; USE IConst; USE RConst
+  USE IPara; USE RPara; USE SPara; USE CPara
+  USE BlochPara
+
+  USE IChannels
+
+  USE MPI
+  USE MyMPI
+
+  IMPLICIT NONE
+
+  INTEGER(IKIND) :: &
+       IErr,ind
+  REAL(RKIND),DIMENSION(IIndependentVariables+1,IIndependentVariables) :: &
+       RSimplexVolume
+  REAL(RKIND),DIMENSION(IIndependentVariables+1) :: &
+       RSimplexFoM
+  REAL(RKIND) :: &
+       RStandardDeviation,RMean
+  CHARACTER*200 :: &
+       CSizeofData,SFormatString,filename
+
+  WRITE(filename,*) "fr-Simplex.txt"
+
+  OPEN(UNIT=IChOutSimplex,STATUS='UNKNOWN',&
+        FILE=TRIM(ADJUSTL(filename)))
+  
+  WRITE(CSizeofData,*) IIndependentVariables+1
+  WRITE(SFormatString,*) "("//TRIM(ADJUSTL(CSizeofData))//"(1F6.3,1X),A1)"
+
+  DO ind = 1,(IIndependentVariables+1)
+     READ(IChOutSimplex,FMT=SFormatString) RSimplexVolume(ind,:),RSimplexFoM(ind)
+  END DO
+    
+  READ(IChOutSimplex,FMT="(2(1F6.3,1X),I5.1,A1)") RStandardDeviation,RMean,IStandardDeviationCalls
+
+  CLOSE(IChOutSimplex)
+
+END SUBROUTINE RecoverSavedSimplex

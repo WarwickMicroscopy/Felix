@@ -126,14 +126,16 @@ SUBROUTINE WriteOutput( CAmplitudeandPhaseRoot,RIndividualReflectionsRoot,RFinal
      
      IF(IImageFLAG.EQ.1.OR.IImageFLAG.EQ.2.OR.IImageFLAG.EQ.5.OR.IImageFLAG.EQ.6) THEN
         
-        WRITE(path,"(A2,A1,I1.1,A2,I1.1,A2,I1.1,A2,I4.4,A2,I5.5)") &
-             "F-",&
-             "S", IScatterFactorMethodFLAG, &
-             "_B", ICentralBeamFLAG, &
-             "_M", IMaskFLAG, &
-             "_P", IPixelCount, &
-             "_T", IThickness
-        
+        WRITE(path,"(A2,I1.1,I1.1,I1.1,I1.1,A2,I5.5,A2,I5.5,A2,I5.5)") &
+             "f-",&
+             IScatterFactorMethodFLAG, &
+             IZolzFLAG, &
+             IAbsorbFLAG, &
+             IAnisoDebyeWallerFactorFlag,&
+             "-T",IThickness,&
+             "-P",2*IPixelcount,&
+             "-P",2*IPixelcount
+
         call system('mkdir ' // path)
    
         DO ind = 1,IReflectOut

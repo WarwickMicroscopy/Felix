@@ -83,6 +83,8 @@ SUBROUTINE NDimensionalDownhillSimplex(RSimplexVolume,y,mp,np,ndim,ftol,iter,RSt
         PRINT*,"ITMAX exceeded in NDimensionalDownhillSimplex"
         RETURN
      END IF
+     
+     CALL SaveSimplex(RSimplexVolume,y,np,RStandardDeviation,RMean,IErr)
     
      PRINT*,"-----------------------------------------------------"
      PRINT*,"Iteration",iter,"Figure of Merit",ytry
@@ -199,6 +201,108 @@ REAL(RKIND) FUNCTION SimplexExtrapolate(RSimplexVolume,y,psum,mp,np,ndim,ihi,fac
 
   RETURN
 END FUNCTION SimplexExtrapolate
+
+
+!!$----------------------------------------------------------------------------
+
+SUBROUTINE OpenSimplexOutput(IErr)
+
+  USE MyNumbers
+
+  USE IConst; USE RConst
+  USE IPara; USE RPara
+  USE IChannels
+
+  USE MPI
+  USE MyMPI
+
+  IMPLICIT NONE
+
+  INTEGER(IKIND) :: &
+       IErr
+
+  CHARACTER*200 :: &
+       filename
+
+  WRITE(filename,*) "fr-Simplex.txt"
+
+  OPEN(UNIT=IChOutSimplex,STATUS='UNKNOWN',&
+        FILE=TRIM(ADJUSTL(filename)))
+
+END SUBROUTINE OpenSimplexOutput
+
+
+!!$----------------------------------------------------------------------------
+
+SUBROUTINE WriteOutSimplex(RSimplexVolume,RSimplexFoM,IDimensions,RStandardDeviation,RMean,IErr)
+
+  USE MyNumbers
+
+  USE IConst; USE RConst
+  USE IPara; USE RPara
+  USE IChannels
+
+  USE MPI
+  USE MyMPI
+
+  IMPLICIT NONE
+
+  INTEGER(IKIND) :: &
+       IErr,IDimensions,ind
+  REAL(RKIND),DIMENSION(IDimensions+1,IDimensions),INTENT(IN) :: &
+       RSimplexVolume
+  REAL(RKIND),DIMENSION(IDimensions+1),INTENT(IN) :: &
+       RSimplexFoM
+  REAL(RKIND),DIMENSION(IDimensions+1) :: &
+       RData
+  REAL(RKIND) :: &
+       RStandardDeviation,RMean
+  CHARACTER*200 :: &
+       CSizeofData,SFormatString
+  
+  WRITE(CSizeofData,*) IDimensions+1
+  WRITE(SFormatString,*) "("//TRIM(ADJUSTL(CSizeofData))//"(1F6.3,1X),A1)"
+
+  DO ind = 1,(IDimensions+1)
+     RData = (/RSimplexVolume(ind,:), RSimplexFoM(ind)/)
+     WRITE(IChOutSimplex,FMT=SFormatString) RData
+  END DO
+
+  WRITE(IChOutSimplex,FMT="(2(1F6.3,1X),I5.1,A1)") RStandardDeviation,RMean,IStandardDeviationCalls
+
+  CLOSE(IChOutSimplex)
+
+END SUBROUTINE WriteOutSimplex
+
+!!$----------------------------------------------------------------------------
+
+SUBROUTINE SaveSimplex(RSimplexVolume,RSimplexFoM,IDimensions,RStandardDeviation,RMean, IErr)
+
+  USE MyNumbers
+
+  USE IConst; USE RConst
+  USE IPara; USE RPara
+  USE IChannels
+
+  USE MPI
+  USE MyMPI
+
+  IMPLICIT NONE
+
+  INTEGER(IKIND) :: &
+       IErr,IDimensions
+  REAL(RKIND),DIMENSION(IDimensions+1,IDimensions),INTENT(IN) :: &
+       RSimplexVolume
+  REAL(RKIND),DIMENSION(IDimensions+1),INTENT(IN) :: &
+       RSimplexFoM
+  REAL(RKIND) :: &
+       RStandardDeviation,RMean
+
+  CALL OpenSimplexOutput(IErr)
+ 
+  CALL WriteOutSimplex(RSimplexVolume,RSimplexFoM,IDimensions,RStandardDeviation,RMean,IErr)
+
+END SUBROUTINE SaveSimplex
 
 
 !!$----------------------------------------------------------------------------

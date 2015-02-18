@@ -54,13 +54,9 @@ SUBROUTINE ReflectionDetermination( IErr )
 
   REAL(RKIND) :: &
        dummy
-  !norm,dummyVec(THREEDIM) -not used?
   INTEGER(IKIND) IErr, ind,jnd,icheck,ihklrun,IFind,IFound,knd
   
   CALL Message("ReflectionDetermination",IMust,IErr)
-!!$  IF((IWriteFLAG.GE.0.AND.my_rank.EQ.0).OR.IWriteFLAG.GE.10) THEN
-!!$     PRINT*,"DiffractionPatternDefinitions()"
-!!$  END IF
 
   icheck = 0
   
@@ -70,7 +66,7 @@ SUBROUTINE ReflectionDetermination( IErr )
   DO WHILE (icheck.EQ.0)
      ihklrun = ihklrun+1     
 
-     CALL Message("ReflectionDetermination",IInfo,IErr,MessageVariable = "IHklrun", &
+     CALL Message("ReflectionDetermination",IInfo,IErr,MessageVariable = "IHklrn", &
           IVariable = IHklrun)
      
      CALL NewHKLMake(IHKLMAXValue,RZDirC,TWOPI/180.0D0,IErr)
@@ -143,12 +139,10 @@ SUBROUTINE ReflectionDetermination( IErr )
      ENDDO
   ENDDO
   
-!!$        PRINT*,RHKL(:,1)
   ! G vector magnitudes in 1/Angstrom units
   
   DO ind=1,SIZE(RHKL,DIM=1)
      RgVecMag(ind)= SQRT(DOT_PRODUCT(RgVecMatT(ind,:),RgVecMatT(ind,:)))
-!!$        PRINT*,RgVecMatT(ind,:)
   ENDDO
   
   RBSMaxGVecAmp = RgVecMag(IMinReflectionPool)
@@ -156,19 +150,12 @@ SUBROUTINE ReflectionDetermination( IErr )
   nReflections = 0
   nStrongBeams = 0
   nWeakBeams = 0
-  
-!!$     PRINT*,SIZE(RHKL,DIM=1),SIZE(RgVecMag,DIM=1),SIZE(RgVecMatT,DIM=1)   
-!!$     PRINT*,RBSMaxGVecAmp
+
   DO ind=1,SIZE(RHKL,DIM=1)
      IF (ABS(RgVecMag(ind)).LE.RBSMaxGVecAmp) THEN
         nReflections = nReflections + 1
      ENDIF
   ENDDO
-  
-!!$     PRINT*,"nReflections =",nReflections
-  
-!!$  END DO
-
   END SUBROUTINE ReflectionDetermination
   
   SUBROUTINE SpecificReflectionDetermination (IErr)
@@ -191,7 +178,7 @@ SUBROUTINE ReflectionDetermination( IErr )
   IFind = 0
   
   IF(IHKLSelectFLAG.EQ.1) THEN
-     DO ind = 1,IReflectOut
+     DO ind = 1,SIZE(RInputHKLs,DIM=1)
         DO jnd = 1,SIZE(RHKL,DIM=1)
            IF(ABS(RHKL(jnd,1)-RInputHKLs(ind,1)).LE.RTolerance.AND.&
                 ABS(RHKL(jnd,2)-RInputHKLs(ind,2)).LE.RTolerance.AND.&
@@ -210,29 +197,18 @@ SUBROUTINE ReflectionDetermination( IErr )
                  IFind = IFind +1
                  IOutputReflections(IFind) = jnd
                  
-                 CALL Message("SpecificReflectionDetermination",IMoreInfo,IErr, &
-                      MessageVariable = "Found HKL",RVariable = RInputHKLs(ind,jnd))
+!!$                 CALL Message("SpecificReflectionDetermination",IMoreInfo,IErr, &
+!!$                      MessageVariable = "Found HKL",RVariable = RInputHKLs(ind,jnd))
                  CALL Message("SpecificReflectionDetermination",IMoreInfo,IErr, &
                       MessageVariable = "At",IVariable = jnd)
-                 
-!!$                 IF((IWriteFLAG.GE.3.AND.my_rank.EQ.0).OR.IWriteFLAG.GE.10) THEN
-!!$                    PRINT*,"DiffractionPatternDefinitions(",my_rank,&
-!!$                         ") Found HKL ",RInputHKLs(ind,:)," at ",jnd
-!!$                 END IF
               ELSE 
 
-                 CALL Message("SpecificReflectionDetermination",IMoreInfo,IErr, &
-                      MessageVariable = "Found HKL",RVariable = RInputHKLs(ind,jnd))
+!!$                 CALL Message("SpecificReflectionDetermination",IMoreInfo,IErr, &
+!!$                      MessageVariable = "Found HKL",RVariable = RInputHKLs(ind,:))
                  CALL Message("SpecificReflectionDetermination",IMoreInfo,IErr, &
                       MessageVariable = "At",IVariable = jnd)
                  CALL Message("SpecificReflectionDetermination",IMoreInfo,IErr, &
                       MessageString = "However it is not unique")
-
-!!$                 IF((IWriteFLAG.GE.3.AND.my_rank.EQ.0).OR.IWriteFLAG.GE.10) THEN
-!!$                    PRINT*,"DiffractionPatternDefinitions(",my_rank,&
-!!$                         ") Found HKL ",RInputHKLs(ind,:)," at ",jnd,&
-!!$                         "However it is not unique"
-!!$                 END IF
                  
               END IF
               EXIT
@@ -260,12 +236,6 @@ SUBROUTINE ReflectionDetermination( IErr )
         IReflectOut = IFind
      END IF
   END IF
-  
-!!$  IF((IWriteFLAG.GE.4.AND.my_rank.EQ.0).OR.IWriteFLAG.GE.10) THEN
-!!$     DO ind=1,SIZE(RHKL,DIM=1)
-!!$        PRINT*,RHKL(ind,:)
-!!$     END DO
-!!$  END IF
 
   END SUBROUTINE SpecificReflectionDetermination
  
@@ -409,9 +379,7 @@ SUBROUTINE NewHKLmake(Ihklmax,Rhkl0Vec,RAcceptanceAngle,IErr)
            ELSE
               RhklDummyUnitVec = RhklDummyVec
            END IF
-           
 
-           !-NINT(MOD(RhklDummyVec(1)+RhklDummyVec(2),2.D0))
            SELECT CASE(SSpaceGroupName)
            CASE("F") !Face Centred
               IF(((ABS(MOD(RhklDummyVec(1)+RhklDummyVec(2),2.D0)).LE.TINY).AND.&
@@ -478,8 +446,8 @@ SUBROUTINE NewHKLmake(Ihklmax,Rhkl0Vec,RAcceptanceAngle,IErr)
               END IF
            CASE("C")! C-Face Centred
               IF(ABS(MOD(RhklDummyVec(1)+RhklDummyVec(3),2.D0)).LE.TINY) THEN
-                 !INhkl = INhkl + 1
-                 
+                !INhkl = INhkl + 1
+                
                  IF(IZolzFLAG.EQ.1) THEN
                     IF( ABS(DOT_PRODUCT(RhklDummyUnitVec,Rhkl0UnitVec)) .LE. TINY ) THEN
                        INhkl=INhkl+1
@@ -551,7 +519,6 @@ SUBROUTINE NewHKLmake(Ihklmax,Rhkl0Vec,RAcceptanceAngle,IErr)
         DO knd=-Ihklmax,Ihklmax,1
 
            RhklDummyVec= REAL((/ ind,jnd,knd /),RKIND)
-
 
            IF(ind.NE.0.AND.jnd.NE.0.AND.knd.NE.0) THEN
               RhklDummyUnitVec= RhklDummyVec / &
@@ -687,6 +654,4 @@ SUBROUTINE NewHKLmake(Ihklmax,Rhkl0Vec,RAcceptanceAngle,IErr)
      END DO
   END DO
 
-!!$  
-!!$  RHKL(INhkl+1,:)= (/ 0.0D0,0.0D0,0.0D0 /)
 END SUBROUTINE NewHKLmake
