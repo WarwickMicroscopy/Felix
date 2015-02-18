@@ -263,7 +263,7 @@ SUBROUTINE OpenDataForAppend(IChOutWrite, prefix, surname, IErr)
   END IF
   
   OPEN(UNIT= IChOutWrite, ERR= 10, STATUS= 'UNKNOWN',&
-       FILE=TRIM(filename),ACCESS='APPEND')
+       FILE=TRIM(filename),POSITION='APPEND')
 
   RETURN
 
@@ -540,12 +540,12 @@ SUBROUTINE WriteEigenSystem_MPI( IChOutWrite, &
   
   IF ( 2*13*SIZE(CdataEVec)+2*13*SIZE(CdataEVal)+3*SIZE(ISbeamlist)+3*6*ADD_OUT_INFO .GT. IMAXCBuffer ) THEN
      IErr=1
-     PRINT*, "WriteEigenSystem_MPI(", my_rank, ") error ", IErr, &
-          ", output buffer size IMAXCBuffer=", IMAXCBuffer, &
-          " smaller than SIZEOF(EVec+EVal+Sbeam)=", &
-          SIZEOF(CdataEVec)+SIZEOF(CdataEVal)+SIZEOF(ISbeamlist), &
-          SIZE(CdataEVec) + SIZE(CdataEVal) + SIZE(ISbeamlist), &
-          2*13*SIZE(CdataEVec)+2*13*SIZE(CdataEVal)+3*SIZE(ISbeamlist)+3*6*ADD_OUT_INFO
+!!$     PRINT*, "WriteEigenSystem_MPI(", my_rank, ") error ", IErr, &
+!!$          ", output buffer size IMAXCBuffer=", IMAXCBuffer, &
+!!$          " smaller than SIZEOF(EVec+EVal+Sbeam)=", &
+!!$          SIZEOF(CdataEVec)+SIZEOF(CdataEVal)+SIZEOF(ISbeamlist), &
+!!$          SIZE(CdataEVec) + SIZE(CdataEVal) + SIZE(ISbeamlist), &
+!!$          2*13*SIZE(CdataEVec)+2*13*SIZE(CdataEVal)+3*SIZE(ISbeamlist)+3*6*ADD_OUT_INFO
      GOTO 20
   ENDIF
   
@@ -554,7 +554,7 @@ SUBROUTINE WriteEigenSystem_MPI( IChOutWrite, &
      WRITE(FORMATstring,*) nbeamout
      WRITE(DATAstring,&
           "(7(I3.1,1X),"//TRIM(ADJUSTL(TRIM(FORMATstring)))//"(1F13.10,1X), &
-          "//TRIM(ADJUSTL(TRIM(FORMATstring)))//"(1F13.10,1X),(1F13.10,1X),(1F13.10,1X),A1)") &
+          &"//TRIM(ADJUSTL(TRIM(FORMATstring)))//"(1F13.10,1X),(1F13.10,1X),(1F13.10,1X),A1)") &
           my_rank, ipos,jpos,nReflect,nbeamout,ind, ISbeamlist(ind), &
           REAL(CdataEVal(ind)), AIMAG(CdataEVal(ind)),&
           REAL(CdataEVec(ind,:)), AIMAG(CdataEVec(ind,:)), &
@@ -611,12 +611,12 @@ SUBROUTINE WriteEigenSystemBinary_MPI( IChOutWrite, &
   
   IF ( 2*13*SIZE(CdataEVec)+2*13*SIZE(CdataEVal)+3*SIZE(ISbeamlist)+3*6*ADD_OUT_INFO .GT. IMAXCBuffer ) THEN
      IErr=1
-     PRINT*, "WriteEigenSystem_MPI(", my_rank, ") error ", IErr, &
-          ", output buffer size IMAXCBuffer=", IMAXCBuffer, &
-          " smaller than SIZEOF(EVec+EVal+Sbeam)=", &
-          SIZEOF(CdataEVec)+SIZEOF(CdataEVal)+SIZEOF(ISbeamlist), &
-          SIZE(CdataEVec) + SIZE(CdataEVal) + SIZE(ISbeamlist), &
-          2*13*SIZE(CdataEVec)+2*13*SIZE(CdataEVal)+3*SIZE(ISbeamlist)+3*6*ADD_OUT_INFO
+!!$     PRINT*, "WriteEigenSystem_MPI(", my_rank, ") error ", IErr, &
+!!$          ", output buffer size IMAXCBuffer=", IMAXCBuffer, &
+!!$          " smaller than SIZEOF(EVec+EVal+Sbeam)=", &
+!!$          SIZEOF(CdataEVec)+SIZEOF(CdataEVal)+SIZEOF(ISbeamlist), &
+!!$          SIZE(CdataEVec) + SIZE(CdataEVal) + SIZE(ISbeamlist), &
+!!$          2*13*SIZE(CdataEVec)+2*13*SIZE(CdataEVal)+3*SIZE(ISbeamlist)+3*6*ADD_OUT_INFO
      GOTO 20
   ENDIF
 
@@ -903,16 +903,16 @@ SUBROUTINE WriteDataR_MPI( IChOutWrite, ipos,jpos, data, size, step, IErr)
   GOTO 9
 
   ! element by element
-  DO ind=1,size
-
-     CALL MPI_FILE_WRITE_SHARED(IChOutWrite, TRIM(outstring), LEN_TRIM(outstring), &
-          MPI_CHARACTER, my_status, IErr)
-     IF( IErr.NE.0 ) THEN
-        PRINT*,"WriteDataR_MPI(", my_rank, ") error ", IErr, &
-             " in MPI_FILE_WRITE_SHARED() for file handle ",IChOutWrite
-        RETURN
-     ENDIF
-  END DO
+!!$  DO ind=1,size
+!!$
+!!$     CALL MPI_FILE_WRITE_SHARED(IChOutWrite, TRIM(outstring), LEN_TRIM(outstring), &
+!!$          MPI_CHARACTER, my_status, IErr)
+!!$     IF( IErr.NE.0 ) THEN
+!!$        PRINT*,"WriteDataR_MPI(", my_rank, ") error ", IErr, &
+!!$             " in MPI_FILE_WRITE_SHARED() for file handle ",IChOutWrite
+!!$        RETURN
+!!$     ENDIF
+!!$  END DO
 
 9 RETURN
 
@@ -1036,7 +1036,7 @@ SUBROUTINE WriteDataC_MPI( IChOutWrite, ipos,jpos, Cdata, Isize, step, IErr)
 
   WRITE(SFormatString,*) &
        "(4(I7.1,1X),"//TRIM(ADJUSTL(TRIM(Sisize)))//"(1F13.10,1X), &
-       "//TRIM(ADJUSTL(TRIM(sisize)))//"(1F13.10,1X),A1)"
+       &"//TRIM(ADJUSTL(TRIM(sisize)))//"(1F13.10,1X),A1)"
   WRITE(outstring,FMT=SFormatString, ERR=20) my_rank,ipos,jpos,Isize,&
        REAL(Cdata,RKIND),AIMAG(Cdata), CHAR(10)
   CALL MPI_FILE_WRITE_SHARED(IChOutWrite, TRIM(outstring), LEN_TRIM(outstring), &

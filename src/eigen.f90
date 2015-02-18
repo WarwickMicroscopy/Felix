@@ -48,13 +48,17 @@ SUBROUTINE EigenSpectrum(isize, matU, evals, evecs, IErr)
 
   IMPLICIT NONE
 
-  INTEGER(KIND=IKIND) isize, IErr
+  INTEGER(IKIND) :: &
+       isize, IErr
 
-  COMPLEX(KIND=RKIND) matU(isize,isize), evals(isize), evecs(isize,isize)
-
-  INTEGER(KIND=IKIND) LWORK, LRWORK, LIWORK
-  COMPLEX(KIND=RKIND), DIMENSION(:), ALLOCATABLE :: WORK
-  REAL(KIND=RKIND),    DIMENSION(:), ALLOCATABLE :: RWORK
+  COMPLEX(RKIND) :: &
+       matU(isize,isize), evals(isize), evecs(isize,isize)
+  INTEGER(IKIND) :: &
+       LWORK, LRWORK, LIWORK
+  COMPLEX(CKIND),DIMENSION(:), ALLOCATABLE :: &
+       WORK
+  REAL(RKIND), DIMENSION(:), ALLOCATABLE :: &
+       RWORK
   !REAL(KIND=IKIND),    DIMENSION(:), ALLOCATABLE :: IWORK
   EXTERNAL ZGEEV
 
@@ -82,6 +86,7 @@ SUBROUTINE EigenSpectrum(isize, matU, evals, evecs, IErr)
   ENDIF
 
   LWORK=-1
+
   CALL ZGEEV('N','V', isize, matU, isize, evals, 0,1, evecs,isize, &
        WORK, LWORK, RWORK, IErr )
   IF( IErr.NE.0 ) THEN
@@ -105,6 +110,7 @@ SUBROUTINE EigenSpectrum(isize, matU, evals, evecs, IErr)
   ! ------------------------------------------------
   ! do the actual call to get the spectrum
   ! ------------------------------------------------
+
   CALL ZGEEV('N','V', isize, matU, isize, evals, 0,1, evecs,isize, &
        WORK, LWORK, RWORK, IErr )
   IF( IErr.NE.0 ) THEN
