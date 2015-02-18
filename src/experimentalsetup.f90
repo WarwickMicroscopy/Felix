@@ -65,7 +65,6 @@ SUBROUTINE ExperimentalSetup (IErr)
      RETURN
   ENDIF
   
-
   !--------------------------------------------------------------------
   ! microscopy settings
   !--------------------------------------------------------------------
@@ -81,6 +80,7 @@ SUBROUTINE ExperimentalSetup (IErr)
   !--------------------------------------------------------------------
   ! crystallography settings
   !-------------------------------------------------------------------
+
   CALL CrystallographyInitialisation( IErr )
   IF( IErr.NE.0 ) THEN
      PRINT*,"ExperimentalSetup(", my_rank, ") error", IErr, &

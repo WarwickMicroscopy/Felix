@@ -85,7 +85,8 @@ MODULE IConst
        THREEDIM= 3, &
        ADD_OUT_INFO=6, &
        IParallelFLAG=0,&
-       IRandomFLAG = 0 !
+       IRandomFLAG = 0, &
+       IRefinementVariableTypes = 8
   !PriorityFLAG values - to match to the WriteFLAG - will change eventually,
   !hence why the silent & Must are both 0, no Silent option yet.
   !IInfo is now IWriteFLAG = 1, IAllInfo is IWriteFLAG = 10
@@ -112,7 +113,7 @@ MODULE RConst
        RElectronMassMeV=0.510998928, &
        RPlanckConstant=6.62606957D-34, &
        RElectronCharge=1.602176565D-19, &
-       RAngstromConversion=1.D01
+       RAngstromConversion=1.D10
   REAL(RKIND), PARAMETER :: &
        RTolerance = 1E-5
     
@@ -121,6 +122,7 @@ END MODULE RConst
 !--------------------------------------------------------------------
 MODULE IPara
   USE MyNumbers
+  USE IConst
  
   
   !Write Out
@@ -137,7 +139,7 @@ MODULE IPara
        IImageFLAG,IOutputFLAG,IBeamConvergenceFLAG,  &
        IPseudoCubicFLAG,IXDirectionFLAG,IBinorTextFLAG, IDevFLAG, &
        IRefineModeFLAG,ISoftwareMode,IHKLSelectFLAG,IPrint,IRefineSwitch,&
-       IWeightingFLAG
+       IWeightingFLAG,IContinueFLAG
 
   !Minimum Reflections etc
   INTEGER(IKIND) :: &
@@ -247,7 +249,7 @@ MODULE IPara
 
    !Refine Mode Binary Selection
    
-   INTEGER(IKIND),DIMENSION(7) :: &
+   INTEGER(IKIND),DIMENSION(IRefinementVariableTypes) :: &
         IRefineModeSelectionArray
 
    !List of Atomic Sites for Refinement
@@ -541,7 +543,7 @@ MODULE IChannels
        IChOut_MPI 
   INTEGER, PARAMETER :: &
        IChOutWFImageReal= 47, IChOutWFImagePhase= 48, &
-       IChOutWIImage= 49, MontageOut = 50
+       IChOutWIImage= 49, MontageOut = 50,IChOutSimplex = 52
 END MODULE IChannels
 
 MODULE BlochPara
