@@ -990,8 +990,8 @@ SUBROUTINE ReadEigenSystemChunk( IAllocationChunk,IErr )
      WRITE(EIGENFORMAT,*) IInputBeams
 
      READ(ICHInp,END=100,ERR=20,FMT="((1F13.10,1X),(1F13.10,1X),&
-          "//TRIM(ADJUSTL(TRIM(EIGENFORMAT)))//"(1F13.10,1X), &
-          "//TRIM(ADJUSTL(TRIM(EIGENFORMAT)))//"(1F13.10,1X))", &
+          &"//TRIM(ADJUSTL(TRIM(EIGENFORMAT)))//"(1F13.10,1X), &
+          &"//TRIM(ADJUSTL(TRIM(EIGENFORMAT)))//"(1F13.10,1X))", &
           ADVANCE='YES') REigenValueRealTemp, REigenValueImagTemp,&     
           REigenVectorRealTemp,REigenVectorImagTemp
      CEigenVectorsChunk(IReadLine,IWriteLine,1:IInputBeams) = &

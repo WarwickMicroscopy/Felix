@@ -54,13 +54,9 @@ SUBROUTINE ReflectionDetermination( IErr )
 
   REAL(RKIND) :: &
        dummy
-  !norm,dummyVec(THREEDIM) -not used?
   INTEGER(IKIND) IErr, ind,jnd,icheck,ihklrun,IFind,IFound,knd
   
   CALL Message("ReflectionDetermination",IMust,IErr)
-!!$  IF((IWriteFLAG.GE.0.AND.my_rank.EQ.0).OR.IWriteFLAG.GE.10) THEN
-!!$     PRINT*,"DiffractionPatternDefinitions()"
-!!$  END IF
 
   icheck = 0
   
@@ -68,13 +64,10 @@ SUBROUTINE ReflectionDetermination( IErr )
   ihklrun = 0
 
   DO WHILE (icheck.EQ.0)
-     ihklrun = ihklrun+1
-     
+     ihklrun = ihklrun+1     
 
      CALL Message("ReflectionDetermination",IInfo,IErr,MessageVariable = "IHklrn", &
           IVariable = IHklrun)
-
-
      
      CALL NewHKLMake(IHKLMAXValue,RZDirC,TWOPI/180.0D0,IErr)
      IF( IErr.NE.0 ) THEN
@@ -96,91 +89,73 @@ SUBROUTINE ReflectionDetermination( IErr )
      ELSE
         icheck = 1
      END IF
-     
-     CALL ReSortHKL( RHKL, SIZE(RHKL,1),IErr)
-     IF( IErr.NE.0 ) THEN
-        PRINT*,"ReflectionDetermination(): error in ReSortHKL()"
-        RETURN
-     ENDIF    
-     
-     IF(IXDirectionFLAG.EQ.0) THEN
-        IDiffractionFLAG = 1
-        RXDirC(1) = RHKL(2,1)
-        RXDirC(2) = RHKL(2,2)
-        RXDirC(3) = RHKL(2,3)
-
-        if(my_rank.eq.0) THEN
-           PRINT*,"RXDirC = ",RXDirC
-           PRINT*,"RHKL(1) = ",RHKL(1,:)
-           PRINT*,"RHKL(2) = ",RHKL(2,:)
-           PRINT*,"RHKL(3) = ",RHKL(3,:)
-           PRINT*,"RHKL(4) = ",RHKL(4,:)
-           PRINT*,"RHKL(5) = ",RHKL(5,:)
-        end if
-
-        CALL CrystallographyInitialisation( IErr )
-        IF( IErr.NE.0 ) THEN
-           PRINT*,"DiffractionPatternDefinitions(", my_rank, ") error",IErr, &
-                "in CrystallographyInitialisation()"
-           RETURN
-        ENDIF
-        
-     END IF
-     
-     ALLOCATE(&
-          RgVecMatT(SIZE(RHKL,DIM=1),THREEDIM), &
-          STAT=IErr)
-     IF( IErr.NE.0 ) THEN
-        PRINT*,"DiffractionPatternDefinitions(", my_rank, ") error ", IErr, &
-             " in ALLOCATE() of DYNAMIC variables RgVecMatT(HKL)"
-        RETURN
-     ENDIF
-     
-     ALLOCATE(&
-          RgVecMag(SIZE(RHKL,DIM=1)), &
-          STAT=IErr)
-     IF( IErr.NE.0 ) THEN
-        PRINT*,"DiffractionPatternDefinitions(", my_rank, ") error ", IErr, &
-             " in ALLOCATE() of DYNAMIC variables RgVecMag(HKL)"
-        RETURN
-     ENDIF
-     
-
-     DO ind=1,SIZE(RHKL,DIM=1)
-        DO jnd=1,THREEDIM
-           RgVecMatT(ind,jnd)= &
-                RHKL(ind,1)*RarVecM(jnd) + &
-                RHKL(ind,2)*RbrVecM(jnd) + &
-                RHKL(ind,3)*RcrVecM(jnd)
-        ENDDO
-     ENDDO
-     
-!!$        PRINT*,RHKL(:,1)
-     ! G vector magnitudes in 1/Angstrom units
-     
-     DO ind=1,SIZE(RHKL,DIM=1)
-        RgVecMag(ind)= SQRT(DOT_PRODUCT(RgVecMatT(ind,:),RgVecMatT(ind,:)))
-!!$        PRINT*,RgVecMatT(ind,:)
-     ENDDO
-  
-     RBSMaxGVecAmp = RgVecMag(IMinReflectionPool)
-     
-     nReflections = 0
-     nStrongBeams = 0
-     nWeakBeams = 0
-
-!!$     PRINT*,SIZE(RHKL,DIM=1),SIZE(RgVecMag,DIM=1),SIZE(RgVecMatT,DIM=1)   
-!!$     PRINT*,RBSMaxGVecAmp
-     DO ind=1,SIZE(RHKL,DIM=1)
-        IF (ABS(RgVecMag(ind)).LE.RBSMaxGVecAmp) THEN
-           nReflections = nReflections + 1
-        ENDIF
-     ENDDO
-
-!!$     PRINT*,"nReflections =",nReflections
-     
   END DO
+  
+  CALL ReSortHKL( RHKL, SIZE(RHKL,1),IErr)
+  IF( IErr.NE.0 ) THEN
+     PRINT*,"ReflectionDetermination(): error in ReSortHKL()"
+     RETURN
+  ENDIF
+     
+  IF(IXDirectionFLAG.EQ.0) THEN
+     IDiffractionFLAG = 1
+     RXDirC(1) = RHKL(2,1)
+     RXDirC(2) = RHKL(2,2)
+     RXDirC(3) = RHKL(2,3)
+     CALL CrystallographyInitialisation( IErr )
+     IF( IErr.NE.0 ) THEN
+        PRINT*,"DiffractionPatternDefinitions(", my_rank, ") error",IErr, &
+             "in CrystallographyInitialisation()"
+        RETURN
+     ENDIF
+     
+  END IF
+  
+  ALLOCATE(&
+       RgVecMatT(SIZE(RHKL,DIM=1),THREEDIM), &
+       STAT=IErr)
+  IF( IErr.NE.0 ) THEN
+     PRINT*,"DiffractionPatternDefinitions(", my_rank, ") error ", IErr, &
+          " in ALLOCATE() of DYNAMIC variables RgVecMatT(HKL)"
+     RETURN
+  ENDIF
+  
+  ALLOCATE(&
+       RgVecMag(SIZE(RHKL,DIM=1)), &
+       STAT=IErr)
+  IF( IErr.NE.0 ) THEN
+     PRINT*,"DiffractionPatternDefinitions(", my_rank, ") error ", IErr, &
+          " in ALLOCATE() of DYNAMIC variables RgVecMag(HKL)"
+     RETURN
+  ENDIF
+  
+  
+  DO ind=1,SIZE(RHKL,DIM=1)
+     DO jnd=1,THREEDIM
+        RgVecMatT(ind,jnd)= &
+             RHKL(ind,1)*RarVecM(jnd) + &
+             RHKL(ind,2)*RbrVecM(jnd) + &
+             RHKL(ind,3)*RcrVecM(jnd)
+     ENDDO
+  ENDDO
+  
+  ! G vector magnitudes in 1/Angstrom units
+  
+  DO ind=1,SIZE(RHKL,DIM=1)
+     RgVecMag(ind)= SQRT(DOT_PRODUCT(RgVecMatT(ind,:),RgVecMatT(ind,:)))
+  ENDDO
+  
+  RBSMaxGVecAmp = RgVecMag(IMinReflectionPool)
+  
+  nReflections = 0
+  nStrongBeams = 0
+  nWeakBeams = 0
 
+  DO ind=1,SIZE(RHKL,DIM=1)
+     IF (ABS(RgVecMag(ind)).LE.RBSMaxGVecAmp) THEN
+        nReflections = nReflections + 1
+     ENDIF
+  ENDDO
   END SUBROUTINE ReflectionDetermination
   
   SUBROUTINE SpecificReflectionDetermination (IErr)
@@ -397,14 +372,14 @@ SUBROUTINE NewHKLmake(Ihklmax,Rhkl0Vec,RAcceptanceAngle,IErr)
         DO knd=-Ihklmax,Ihklmax,1
            
            RhklDummyVec= REAL((/ ind,jnd,knd /),RKIND)
+
            IF(ind.NE.0.AND.jnd.NE.0.AND.knd.NE.0) THEN
               RhklDummyUnitVec= RhklDummyVec / &
                    SQRT(DOT_PRODUCT(REAL(RhklDummyVec,RKIND),REAL(RhklDummyVec,RKIND)))
            ELSE
               RhklDummyUnitVec = RhklDummyVec
            END IF
-           
-           !-NINT(MOD(RhklDummyVec(1)+RhklDummyVec(2),2.D0))
+
            SELECT CASE(SSpaceGroupName)
            CASE("F") !Face Centred
               IF(((ABS(MOD(RhklDummyVec(1)+RhklDummyVec(2),2.D0)).LE.TINY).AND.&
@@ -679,6 +654,4 @@ SUBROUTINE NewHKLmake(Ihklmax,Rhkl0Vec,RAcceptanceAngle,IErr)
      END DO
   END DO
 
-  
-!!$  RHKL(INhkl+1,:)= (/ 0.0D0,0.0D0,0.0D0 /)
 END SUBROUTINE NewHKLmake
