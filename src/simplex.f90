@@ -24,7 +24,6 @@ SUBROUTINE NDimensionalDownhillSimplex(RSimplexVolume,y,mp,np,ndim,ftol,iter,RSt
 
   IF(my_rank.EQ.0) THEN
      PRINT*,"Beginning Simplex",IErr
-     iter = 0
      
 1    DO n = 1,ndim
         sum = 0
@@ -84,7 +83,7 @@ SUBROUTINE NDimensionalDownhillSimplex(RSimplexVolume,y,mp,np,ndim,ftol,iter,RSt
         RETURN
      END IF
      
-     CALL SaveSimplex(RSimplexVolume,y,np,RStandardDeviation,RMean,IErr)
+     CALL SaveSimplex(RSimplexVolume,y,np,RStandardDeviation,RMean,iter,IErr)
     
      PRINT*,"-----------------------------------------------------"
      PRINT*,"Iteration",iter,"Figure of Merit",ytry
@@ -248,7 +247,7 @@ SUBROUTINE WriteOutSimplex(RSimplexVolume,RSimplexFoM,IDimensions,RStandardDevia
   IMPLICIT NONE
 
   INTEGER(IKIND) :: &
-       IErr,IDimensions,ind
+       IErr,IDimensions,ind,IIterations
   REAL(RKIND),DIMENSION(IDimensions+1,IDimensions),INTENT(IN) :: &
        RSimplexVolume
   REAL(RKIND),DIMENSION(IDimensions+1),INTENT(IN) :: &
@@ -268,7 +267,7 @@ SUBROUTINE WriteOutSimplex(RSimplexVolume,RSimplexFoM,IDimensions,RStandardDevia
      WRITE(IChOutSimplex,FMT=SFormatString) RData
   END DO
 
-  WRITE(IChOutSimplex,FMT="(2(1F6.3,1X),I5.1,A1)") RStandardDeviation,RMean,IStandardDeviationCalls
+  WRITE(IChOutSimplex,FMT="(2(1F6.3,1X),I5.1,I5.1,A1)") RStandardDeviation,RMean,IStandardDeviationCalls,IIterations
 
   CLOSE(IChOutSimplex)
 
@@ -276,7 +275,7 @@ END SUBROUTINE WriteOutSimplex
 
 !!$----------------------------------------------------------------------------
 
-SUBROUTINE SaveSimplex(RSimplexVolume,RSimplexFoM,IDimensions,RStandardDeviation,RMean, IErr)
+SUBROUTINE SaveSimplex(RSimplexVolume,RSimplexFoM,IDimensions,RStandardDeviation,RMean,IIterations,IErr)
 
   USE MyNumbers
 
@@ -290,7 +289,7 @@ SUBROUTINE SaveSimplex(RSimplexVolume,RSimplexFoM,IDimensions,RStandardDeviation
   IMPLICIT NONE
 
   INTEGER(IKIND) :: &
-       IErr,IDimensions
+       IErr,IDimensions,IIterations
   REAL(RKIND),DIMENSION(IDimensions+1,IDimensions),INTENT(IN) :: &
        RSimplexVolume
   REAL(RKIND),DIMENSION(IDimensions+1),INTENT(IN) :: &
@@ -300,7 +299,7 @@ SUBROUTINE SaveSimplex(RSimplexVolume,RSimplexFoM,IDimensions,RStandardDeviation
 
   CALL OpenSimplexOutput(IErr)
  
-  CALL WriteOutSimplex(RSimplexVolume,RSimplexFoM,IDimensions,RStandardDeviation,RMean,IErr)
+  CALL WriteOutSimplex(RSimplexVolume,RSimplexFoM,IDimensions,RStandardDeviation,RMean,IIterations,IErr)
 
 END SUBROUTINE SaveSimplex
 
