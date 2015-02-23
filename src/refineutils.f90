@@ -200,11 +200,13 @@ SUBROUTINE PhaseCorrelate(RImageSim,RImageExpiDummy,IErr,IXsizeIn,IYSizeIn)
 
   !Calculate the Phase Correlation
 
-  CCorrelatedImage = (CDummy1*CONJG(CDummy2))/&
-       (&
-       ABS(CDummy1*CONJG(CDummy2)+&
-       CMPLX(TINY,TINY,C_DOUBLE_COMPLEX)))
-
+  WHERE(ABS(CDummy1*CONJG(CDummy2)).NE.ZERO)
+     CCorrelatedImage = (CDummy1*CONJG(CDummy2))/&
+          (&
+          ABS(CDummy1*CONJG(CDummy2)))
+  ELSEWHERE 
+     CCorrelatedImage = CZERO
+  END WHERE
   
   ! Plan and Execute the inverse fft of the phase correlation
 

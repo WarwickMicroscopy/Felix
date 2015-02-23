@@ -294,16 +294,14 @@ PROGRAM Felixrefine
      GOTO 9999
   ENDIF
   
-  IFelixCount = 0
-  
-  CALL SimplexInitialisation(RSimplexVolume,RSimplexFoM,RIndependentVariableValues,1,RStandardDeviation,RMean,IErr)
+  IIterationCount = 0
+
+  CALL SimplexInitialisation(RSimplexVolume,RSimplexFoM,RIndependentVariableValues,IIterationCount,RStandardDeviation,RMean,IErr)
   IF( IErr.NE.0 ) THEN
      PRINT*,"felixrefine (", my_rank, ") error in SimplexInitialisation()"
      GOTO 9999
   ENDIF
      
-  IFelixCount = 0
-
   !--------------------------------------------------------------------
   ! Apply Simplex Method
   !--------------------------------------------------------------------
@@ -698,7 +696,6 @@ SUBROUTINE RankSymmetryRelatedStructureFactor(IErr)
      PRINT*,"RankSymmetryRelatedStructureFactor(",my_rank,")"
   END IF
   
-
   ALLOCATE( &  
        ISymmetryRelations(nReflections,nReflections), &
        STAT=IErr)
@@ -754,7 +751,7 @@ SUBROUTINE SimplexInitialisation(RSimplexVolume,RSimplexFoM,RIndependentVariable
        SimplexFunction,RSimplexDummy
   REAL(RKIND),DIMENSION(IIndependentVariables),INTENT(INOUT) :: &
        RIndependentVariableValues
-  INTEGER(IKIND),INTENT(IN) :: &
+  INTEGER(IKIND),INTENT(INOUT) :: &
        IIterationCount
   REAL(RKIND),INTENT(OUT) :: &
        RStandardDeviation,RMean
@@ -776,8 +773,6 @@ SUBROUTINE SimplexInitialisation(RSimplexVolume,RSimplexFoM,RIndependentVariable
      PRINT*,"SimplexInitialisation(", my_rank, ") error in InitialiseWeightingCoefficients()"
      RETURN
   ENDIF
-  
-!!$PRINT*,"IReflectOut = ",IReflectOut
 
   CALL RefinementVariableSetup(RIndependentVariableValues,IErr)
   IF( IErr.NE.0 ) THEN
@@ -785,23 +780,17 @@ SUBROUTINE SimplexInitialisation(RSimplexVolume,RSimplexFoM,RIndependentVariable
      RETURN
   ENDIF
 
-!!$PRINT*,"IReflectOut = ",IReflectOut
-
   CALL RankSymmetryRelatedStructureFactor(IErr)
   IF( IErr.NE.0 ) THEN
      PRINT*,"SimplexInitialisation(", my_rank, ") error in RankSymmetryRelatedStructureFactor()"
      RETURN
   ENDIF
 
-!!$PRINT*,"IReflectOut = ",IReflectOut
-
   CALL StructureFactorRefinementSetup(RIndependentVariableValues,IIterationCount,IErr)
   IF( IErr.NE.0 ) THEN
      PRINT*,"SimplexInitialisation(", my_rank, ") error in StructureFactorRefinementSetup()"
      RETURN
   ENDIF
-
-!!$PRINT*,"IReflectOut = ",IReflectOut
 
   DEALLOCATE(&
        CUgmat,&
@@ -810,7 +799,6 @@ SUBROUTINE SimplexInitialisation(RSimplexVolume,RSimplexFoM,RIndependentVariable
      PRINT*,"SimplexInitialisation (", my_rank, ") error in Deallocation()"
      RETURN
   ENDIF
-
 
   IF(IContinueFLAG.EQ.0) THEN
      
@@ -852,21 +840,25 @@ SUBROUTINE SimplexInitialisation(RSimplexVolume,RSimplexFoM,RIndependentVariable
      
   ELSE
      
-     CALL RecoverSavedSimplex(RSimplexVolume,RSimplexFoM,RStandardDeviation,RMean,IErr)
+     CALL RecoverSavedSimplex(RSimplexVolume,RSimplexFoM,RStandardDeviation,RMean,IIterationCount,IErr)
      IF( IErr.NE.0 ) THEN
         PRINT*,"SimplexInitialisation (", my_rank, ") error in RecoverSavedSimplex()"
         RETURN
      ENDIF
      
   END IF
-  
-     
+       
 END SUBROUTINE SimplexInitialisation
 
 !%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 SUBROUTINE PerformDummySimulationToSetupSimplexValues(IErr)
-  
+
+!!$  %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+!!$  % Calls setup subroutines to initialise Structure factors for 
+!!$  % use in initialisation of simplex
+!!$  %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
   USE MyNumbers
   
   USE CConst; USE IConst; USE RConst
@@ -1134,8 +1126,16 @@ SUBROUTINE PerformDummySimulationToSetupSimplexValues(IErr)
 
 END SUBROUTINE PerformDummySimulationToSetupSimplexValues
 
+!!$  %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
 SUBROUTINE InitialiseAtomicVectorMagnitudes(IVariableID,RCorrectedMovement,IErr)
   
+!!$  %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+!!$  % Creates pseudo random movements of atoms using allowed vectors
+!!$  % to initialise the simplex, proposed movements which exit the unit
+!!$  $ cell are corrected to bring the atom back in on the opposite side
+!!$  %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
   USE MyNumbers
   
   USE CConst; USE IConst; USE RConst
@@ -1153,8 +1153,8 @@ SUBROUTINE InitialiseAtomicVectorMagnitudes(IVariableID,RCorrectedMovement,IErr)
        IErr,ind,IVariableID
   REAL(RKIND) :: &
        RNegativeMovement,RPositiveMovement,RCorrectedMovement,RANDOMNUMBER
-  RNegativeMovement = -0.1_RKIND
-  RPositiveMovement = 0.1_RKIND
+  RNegativeMovement = RSimplexLengthScale*(-1.0_RKIND)
+  RPositiveMovement = RSimplexLengthScale
 
   IF(RANDOMNUMBER(IVariableID,IErr).LT.0.5_RKIND) THEN
      CALL OutofUnitCellCheck(IVariableID,RNegativeMovement,RCorrectedMovement,IErr)
@@ -1164,7 +1164,13 @@ SUBROUTINE InitialiseAtomicVectorMagnitudes(IVariableID,RCorrectedMovement,IErr)
 
 END SUBROUTINE InitialiseAtomicVectorMagnitudes
 
+!!$  %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
 REAL(RKIND) FUNCTION RANDOMNUMBER(IRequestedNumber,IErr)
+
+!!$  %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+!!$  % Sets up a pseudo random sequence and selects a number
+!!$  %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
   USE MyNumbers
   
@@ -1183,8 +1189,6 @@ REAL(RKIND) FUNCTION RANDOMNUMBER(IRequestedNumber,IErr)
        IErr,values(1:8), k,IRequestedNumber
   INTEGER(IKIND), DIMENSION(:), ALLOCATABLE :: &
        seed
-!!$  REAL(RKIND) :: &
-!!$       RANDOMNUMBER
   REAL(RKIND),DIMENSION(IRequestedNumber) :: &
        RRandomNumberSequence
   
@@ -1208,7 +1212,16 @@ REAL(RKIND) FUNCTION RANDOMNUMBER(IRequestedNumber,IErr)
   
 END FUNCTION RANDOMNUMBER
 
+!!$  %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
 SUBROUTINE OutofUnitCellCheck(IVariableID,RProposedMovement,RCorrectedMovement,IErr)
+
+!!$  %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+!!$  % Checks that vector movement applied by the simplex initialisation
+!!$  % does not move an atom out fo the unit cell, and if it does
+!!$  % the atom is moved back into the unit cell on the opposite side
+!!$  % as if the atom had moved from one unit cell into the neighbouring one
+!!$  %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
   USE MyNumbers
   
@@ -1261,6 +1274,8 @@ SUBROUTINE OutofUnitCellCheck(IVariableID,RProposedMovement,RCorrectedMovement,I
 
 END SUBROUTINE OutofUnitCellCheck
 
+!!$  %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
 SUBROUTINE ApplyNewStructureFactors(IErr)
 
 !!$  %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -1298,20 +1313,15 @@ SUBROUTINE ApplyNewStructureFactors(IErr)
      END WHERE
   END DO
 
-!!$  Apply hermiticity because ISymmtryRelations is triangular
-
-!!$  CUgMatDummy = CUgMatDummy + CONJG(TRANSPOSE(CUgMatDummy))
-
-!!$  CUgMatDummy is now a sparse matrix containing only the new values of Ug
-
   WHERE(ABS(CUgMatDummy).GT.TINY)
      CUgMat = CUgMatDummy
   END WHERE
 
 !!$  CUgMat now contains the new values from the iterative process 
   
-
 END SUBROUTINE ApplyNewStructureFactors
+
+!!$  %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 SUBROUTINE CreateIdentityMatrix(IIdentityMatrix,ISize,IErr)
 
@@ -1346,7 +1356,15 @@ SUBROUTINE CreateIdentityMatrix(IIdentityMatrix,ISize,IErr)
 
 END SUBROUTINE CreateIdentityMatrix
 
-SUBROUTINE RecoverSavedSimplex(RSimplexVolume,RSimplexFoM,RStandardDeviation,RMean,IErr)
+!!$  %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+SUBROUTINE RecoverSavedSimplex(RSimplexVolume,RSimplexFoM,RStandardDeviation,RMean,IIterationCount,IErr)
+
+!!$  %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+!!$  % This Subroutine reads the fr-simplex.txt file from a previous
+!!$  % refinement run, and recreates the simplex volume and tolerances
+!!$  % allowing for the continuation of a previous refinement
+!!$  %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
   USE MyNumbers
   
@@ -1362,7 +1380,7 @@ SUBROUTINE RecoverSavedSimplex(RSimplexVolume,RSimplexFoM,RStandardDeviation,RMe
   IMPLICIT NONE
 
   INTEGER(IKIND) :: &
-       IErr,ind
+       IErr,ind,IIterationCount
   REAL(RKIND),DIMENSION(IIndependentVariables+1,IIndependentVariables) :: &
        RSimplexVolume
   REAL(RKIND),DIMENSION(IIndependentVariables+1) :: &
@@ -1384,7 +1402,7 @@ SUBROUTINE RecoverSavedSimplex(RSimplexVolume,RSimplexFoM,RStandardDeviation,RMe
      READ(IChOutSimplex,FMT=SFormatString) RSimplexVolume(ind,:),RSimplexFoM(ind)
   END DO
     
-  READ(IChOutSimplex,FMT="(2(1F6.3,1X),I5.1,A1)") RStandardDeviation,RMean,IStandardDeviationCalls
+  READ(IChOutSimplex,FMT="(2(1F6.3,1X),I5.1,I5.1,A1)") RStandardDeviation,RMean,IStandardDeviationCalls,IIterationCount
 
   CLOSE(IChOutSimplex)
 
