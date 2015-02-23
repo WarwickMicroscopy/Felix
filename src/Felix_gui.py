@@ -75,9 +75,6 @@ class WriteInputDialog(wx.Dialog):
 
         self.Close()
             
-        
-
-    
 
 class Felix(wx.Frame):
            
@@ -306,7 +303,6 @@ class Felix(wx.Frame):
         InputFile.Bind(wx.EVT_BUTTON, self.InpCreate)
 
     
-
         self.SetSize((700, 730))
         self.SetTitle('Felix')
         self.Centre()
@@ -323,6 +319,8 @@ class Felix(wx.Frame):
             wx.MessageBox('.cif file not found, please select a .cif file','Error', wx.OK | wx.ICON_ERROR)
 
         #creates working directory
+        cfilename=cfilename.replace(" ","")
+        print cfilename
         dir = cfilename.rstrip('.cif')+"_"+str(self.IMinReflectionPool.GetValue())+"_"+str(self.IMinStrongBeams.GetValue())+"_input_directory"
         if os.path.exists(dir):
             shutil.rmtree(dir)
@@ -346,7 +344,6 @@ class Felix(wx.Frame):
         #Get Value of mpicores
         NumberofCores=self.MPICores.GetValue()
         
-        print "directory name:",dir
         
         #Run in parallel or single core
         if NumberofCores == 1:
