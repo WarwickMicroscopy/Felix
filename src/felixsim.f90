@@ -63,7 +63,7 @@ PROGRAM felixsim
   INTEGER(IKIND) :: &
        ind,jnd,hnd,knd,pnd,gnd,IErr, &
        IHours,IMinutes,ISeconds,IMilliSeconds,&
-       IThicknessIndex,  &
+       IThicknessIndex,ICountedPixels,  &
        ILocalPixelCountMin, ILocalPixelCountMax
   INTEGER(IKIND), DIMENSION(:), ALLOCATABLE :: &
        IDisplacements,ICount
@@ -74,6 +74,10 @@ PROGRAM felixsim
        CAmplitudeandPhaseRoot
 
   CHARACTER*40 surname, my_rank_string 
+
+
+  REAL(RKIND),DIMENSION(:,:),ALLOCATABLE :: &
+       RSimulatedImageForPhaseCorrelation
 
 
   !-------------------------------------------------------------------
@@ -171,6 +175,25 @@ PROGRAM felixsim
  !    CALL OpenData_MPI(IChOutUM_MPI, "UM", surname, IErr)
   ENDIF
  
+
+!!$  %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+  
+  ALLOCATE( &
+       RImageExpi(2*IPixelCount,2*IPixelCount, &
+       IReflectOut),&
+       STAT=IErr)  
+  IF( IErr.NE.0 ) THEN
+     PRINT*,"felixrefine (", my_rank, ") error in Allocation()"
+     GOTO 9999
+  ENDIF
+
+  CALL ReadExperimentalImages(IErr)
+  IF( IErr.NE.0 ) THEN
+     PRINT*,"Felixrefine(", my_rank, ") error in ReadExperimentalImages()"
+     GOTO 9999
+  ENDIF
+
+!!$  %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
   !-------------------------------------------------------------------- 
   !Setup Experimental Variables
@@ -356,8 +379,8 @@ PROGRAM felixsim
   END IF
 
   DO knd = ILocalPixelCountMin,ILocalPixelCountMax,1
-     ind = IPixelLocations(knd,1)
-     jnd = IPixelLocations(knd,2)
+     ind = IPixelLocations(knd,2)
+     jnd = IPixelLocations(knd,1)
      CALL BlochCoefficientCalculation(ind,jnd,knd,ILocalPixelCountMin,IErr)
      IF( IErr.NE.0 ) THEN
         PRINT*,"felixsim(", my_rank, ") error ", IErr, &
@@ -498,8 +521,59 @@ PROGRAM felixsim
           CAmplitudeandPhaseRoot * CONJG(CAmplitudeandPhaseRoot)
   END IF
 
+
+!!$  %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+  
+  if(my_rank.eq.0) Then
+     
+     ALLOCATE(&
+          RSimulatedImageForPhaseCorrelation(2*IPixelCount,2*IPixelCount),&
+          STAT=IErr)
+     IF( IErr.NE.0 ) THEN
+        PRINT*,"CalculateFigureofMeritandDetermineThickness(", my_rank, ") error ", IErr, &
+             " In ALLOCATE"
+        
+     ENDIF
+     
+     ICountedPixels = 0
+     
+     RSimulatedImageForPhaseCorrelation = ZERO
+     DO jnd = 1,2*IPixelCount
+        DO knd = 1,2*IPixelCount
+           IF(ABS(RMask(jnd,knd)).GT.TINY) THEN
+              ICountedPixels = ICountedPixels+1
+              
+              RSimulatedImageForPhaseCorrelation(jnd,knd) = &
+                   RIndividualReflectionsRoot(1,1,ICountedPixels)
+!!$                   RImage(hnd,ind)
+           END IF
+        END DO
+     END DO
+     
+     CALL PhaseCorrelate(RSimulatedImageForPhaseCorrelation,RImageExpi(:,:,1),&
+          IErr,2*IPixelCount,2*IPixelCount)
+     
+     PRINT*,"%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%"
+     PRINT*,"The Cross Correlation was",RCrossCorrelation
+     PRINT*,"%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%"
+     
+     
+     DEALLOCATE(&
+          RSimulatedImageForPhaseCorrelation,&
+          STAT=IErr)
+     IF( IErr.NE.0 ) THEN
+        PRINT*,"CalculateFigureofMeritandDetermineThickness(", my_rank, ") error ", IErr, &
+             " In DEALLOCATE of RSimulatedImageForPhaseCorrelation"
+        
+     ENDIF
+     
+  end if
+  
+!!$  %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+
   IF(my_rank.EQ.0) THEN
-     CALL MontageSetup(IThicknessIndex,knd,ind,jnd,RFinalMontageImageRoot, &
+     CALL MontageSetup(RFinalMontageImageRoot, &
           RIndividualReflectionsRoot,IErr)
      IF( IErr.NE.0 ) THEN
         PRINT*,"felixsim(", my_rank, ") error ", IErr, &

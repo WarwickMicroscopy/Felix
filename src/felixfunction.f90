@@ -274,8 +274,8 @@ SUBROUTINE FelixFunction(RIndependentVariableValues,IIterationCount,IErr)
   END IF
 
   DO knd = ILocalPixelCountMin,ILocalPixelCountMax,1
-     ind = IPixelLocations(knd,1)
-     jnd = IPixelLocations(knd,2)
+     jnd = IPixelLocations(knd,1)
+     ind = IPixelLocations(knd,2)
      CALL BlochCoefficientCalculation(ind,jnd,knd,ILocalPixelCountMin,IErr)
      IF( IErr.NE.0 ) THEN
         PRINT*,"Felixfunction(", my_rank, ") error ", IErr, &
@@ -642,78 +642,6 @@ SUBROUTINE FelixFunction(RIndependentVariableValues,IIterationCount,IErr)
   ENDIF
 
 END SUBROUTINE FelixFunction
-
-!%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-
-SUBROUTINE ReadExperimentalImages(IErr)
-
- USE MyNumbers
-  
-  USE CConst; USE IConst; USE RConst
-  USE IPara; USE RPara; USE SPara; USE CPara
-  USE BlochPara
-
-  USE IChannels
-
-  USE MPI
-  USE MyMPI
-
-  IMPLICIT NONE
-  
-  INTEGER(IKIND) :: &
-       ind,IErr
-  CHARACTER*34 :: &
-       filename
-
-  DO ind = 1,IReflectOut
-     
-     WRITE(filename,"(A6,I3.3,A4)") "felix.",ind,".img"
-     
-     CALL OpenImageForReadIn(IErr,filename)  
-     IF( IErr.NE.0 ) THEN
-        PRINT*,"ReadExperimentalImages (", my_rank, ") error in OpenImageForReadIn()"
-        RETURN
-     END IF
-     
-     ALLOCATE( &
-          RImageIn(2*IPixelCount,2*IPixelCount), &
-          STAT=IErr)  
-     IF( IErr.NE.0 ) THEN
-        PRINT*,"ReadExperimentalImages (", my_rank, ") error in Allocation()"
-        RETURN
-     ENDIF
-     
-     CALL ReadImageForRefinement(IErr)  
-     IF( IErr.NE.0 ) THEN
-        PRINT*,"ReadExperimentalImages (", my_rank, ") error in ReadImageForRefinement()"
-        RETURN
-     ELSE
-        IF((IWriteFLAG.GE.6.AND.my_rank.EQ.0).OR.IWriteFLAG.GE.10) THEN
-           PRINT*,"Image Read In Successful"
-        END IF
-     ENDIF
-     
-     RImageExpi(:,:,ind) = RImageIn
-     
-     DEALLOCATE( &
-          RImageIn, &
-          STAT=IErr)  
-     IF( IErr.NE.0 ) THEN
-        PRINT*,"ReadExperimentalImages (", my_rank, ") error in deAllocation()"
-        RETURN
-     ENDIF
-
-     
-     CLOSE(IChInImage,IOSTAT=IErr) 
-     IF( IErr.NE.0 ) THEN
-        PRINT*,"ReadExperimentalImages (", my_rank, ") error in CLOSE()"
-        RETURN
-     END IF
-
-  END DO
-
-
-END SUBROUTINE ReadExperimentalImages
 
 !%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 

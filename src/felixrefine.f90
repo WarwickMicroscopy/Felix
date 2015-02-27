@@ -132,7 +132,7 @@ PROGRAM Felixrefine
   ! INPUT section 
   !--------------------------------------------------------------------
   
-  ISoftwareMode = 2 ! felixrefinemode
+  ISoftwareMode =2 ! felixrefinemode
   
   !Read from input files
   CALL ReadInput (IErr)
@@ -228,6 +228,10 @@ PROGRAM Felixrefine
      PRINT*,"Felixrefine(", my_rank, ") error in ReadExperimentalImages()"
      GOTO 9999
   ENDIF
+
+  
+  ISoftwareMode =2 ! felixrefinemode
+  
 
   !--------------------------------------------------------------------
   ! Save Atomic Coordinates  

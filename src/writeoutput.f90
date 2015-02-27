@@ -149,9 +149,12 @@ SUBROUTINE WriteOutput( CAmplitudeandPhaseRoot,RIndividualReflectionsRoot,RFinal
            DO jnd = 1,IPixelTotal
               gnd = IPixelLocations(jnd,1)
               hnd = IPixelLocations(jnd,2)
-              RImage(gnd,hnd) = RIndividualReflectionsRoot(ind,knd,jnd)
+              RImage(gnd,hnd) = RIndividualReflectionsRoot(ind,knd,jnd) 
+              
            END DO
            
+!!$           RImage = TRANSPOSE(RImage);
+
            CALL WriteReflectionImage(IChOutWIImage,&
                 RImage,IErr,2*IPixelCount,2*IPixelCount,knd)       
            IF( IErr.NE.0 ) THEN
