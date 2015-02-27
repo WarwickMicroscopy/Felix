@@ -115,12 +115,15 @@ SUBROUTINE MontageInitialisation(ind,jnd,ithicknessindex,RMontageImage,RIntensit
   
   IMPLICIT NONE
   
-  INTEGER(IKIND) IThicknessindex, IXpos, IYpos,hnd,ind,jnd,knd,Ierr
+  INTEGER(IKIND) ::&
+       IThicknessindex, IXpos, IYpos,hnd,ind,jnd,knd,Ierr
   REAL(RKIND), DIMENSION(MAXVAL(IImageSizeXY),MAXVAL(IImageSizeXY),IThicknessCount),INTENT(OUT) :: &
        RMontageImage
-  REAL(RKIND), DIMENSION(IReflectOut) :: RIntensity
+  REAL(RKIND), DIMENSION(IReflectOut) :: &
+       RIntensity
 
 !!$  Only print out once when first entered - use message counter
+
   IF (my_rank.EQ.0) THEN
      DO WHILE (IMessageCounter .LT.1)
         CALL Message("MontageInitialisation",IMust,IErr)
@@ -138,11 +141,12 @@ SUBROUTINE MontageInitialisation(ind,jnd,ithicknessindex,RMontageImage,RIntensit
            IYpos = NINT(MAXVAL(IImageSizeXY)/TWO+TWO*(IPixelCount/RConvergenceAngle)*RhklPositions(hnd,1))
         ELSE
            
-           !If the Convergence angle is > 1 causing disk overlap in experimental pattern, then plot as if convergence angle was 0.95 (non-physical but makes a pretty picture)
+!!$           If the Convergence angle is > 1 causing disk overlap in experimental pattern, 
+!!$           then plot as if convergence angle was 0.95 (non-physical but makes a pretty picture)
            IXpos = NINT(MAXVAL(IImageSizeXY)/TWO+TWO*(IPixelCount/0.95D0)*RhklPositions(hnd,2))
            IYpos = NINT(MAXVAL(IImageSizeXY)/TWO+TWO*(IPixelCount/0.95D0)*RhklPositions(hnd,1))
         ENDIF
-        !PRINT*,"IXpos,IYpos,IPixelCount,jnd,ind = ",IXpos,IYpos,IPixelCount,jnd,ind
+
         RMontageImage(IXpos-IPixelCount+jnd,IYpos-IPixelCount+ind,IThicknessIndex) = &
              RMontageImage(IXpos-IPixelCount+jnd,IYpos-IPixelCount+ind,IThicknessIndex) + &
              RIntensity(hnd)
@@ -154,11 +158,12 @@ SUBROUTINE MontageInitialisation(ind,jnd,ithicknessindex,RMontageImage,RIntensit
            IYpos = NINT(MAXVAL(IImageSizeXY)/TWO+TWO*(IPixelCount/RConvergenceAngle)*RhklPositions(IOutputReflections(hnd),1))
         ELSE
            
-           !If the Convergence angle is > 1 causing disk overlap in experimental pattern, then plot as if convergence angle was 0.95 (non-physical but makes a pretty picture)
+!!$           If the Convergence angle is > 1 causing disk overlap in experimental pattern, 
+!!$           then plot as if convergence angle was 0.95 (non-physical but makes a pretty picture)
            IXpos = NINT(MAXVAL(IImageSizeXY)/TWO+TWO*(IPixelCount/0.95D0)*RhklPositions(IOutputReflections(hnd),2))
            IYpos = NINT(MAXVAL(IImageSizeXY)/TWO+TWO*(IPixelCount/0.95D0)*RhklPositions(IOutputReflections(hnd),1))
         ENDIF
-        !PRINT*,"IXpos,IYpos,IPixelCount,jnd,ind = ",IXpos,IYpos,IPixelCount,jnd,ind
+
         RMontageImage(IXpos-IPixelCount+jnd,IYpos-IPixelCount+ind,IThicknessIndex) = &
              RMontageImage(IXpos-IPixelCount+jnd,IYpos-IPixelCount+ind,IThicknessIndex) + &
              RIntensity(hnd)

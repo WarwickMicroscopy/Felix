@@ -63,7 +63,7 @@ PROGRAM felixsim
   INTEGER(IKIND) :: &
        ind,jnd,hnd,knd,pnd,gnd,IErr, &
        IHours,IMinutes,ISeconds,IMilliSeconds,&
-       IThicknessIndex,  &
+       IThicknessIndex, &
        ILocalPixelCountMin, ILocalPixelCountMax
   INTEGER(IKIND), DIMENSION(:), ALLOCATABLE :: &
        IDisplacements,ICount
@@ -74,7 +74,6 @@ PROGRAM felixsim
        CAmplitudeandPhaseRoot
 
   CHARACTER*40 surname, my_rank_string 
-
 
   !-------------------------------------------------------------------
   ! constants
@@ -171,7 +170,6 @@ PROGRAM felixsim
  !    CALL OpenData_MPI(IChOutUM_MPI, "UM", surname, IErr)
   ENDIF
  
-
   !-------------------------------------------------------------------- 
   !Setup Experimental Variables
   !--------------------------------------------------------------------
@@ -356,8 +354,8 @@ PROGRAM felixsim
   END IF
 
   DO knd = ILocalPixelCountMin,ILocalPixelCountMax,1
-     ind = IPixelLocations(knd,1)
-     jnd = IPixelLocations(knd,2)
+     ind = IPixelLocations(knd,2)
+     jnd = IPixelLocations(knd,1)
      CALL BlochCoefficientCalculation(ind,jnd,knd,ILocalPixelCountMin,IErr)
      IF( IErr.NE.0 ) THEN
         PRINT*,"felixsim(", my_rank, ") error ", IErr, &
@@ -499,7 +497,7 @@ PROGRAM felixsim
   END IF
 
   IF(my_rank.EQ.0) THEN
-     CALL MontageSetup(IThicknessIndex,knd,ind,jnd,RFinalMontageImageRoot, &
+     CALL MontageSetup(RFinalMontageImageRoot, &
           RIndividualReflectionsRoot,IErr)
      IF( IErr.NE.0 ) THEN
         PRINT*,"felixsim(", my_rank, ") error ", IErr, &
