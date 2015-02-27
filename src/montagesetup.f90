@@ -36,7 +36,7 @@
 ! $Id: FelixSim.f90,v 1.89 2014/04/28 12:26:19 phslaz Exp $
 !%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-SUBROUTINE MontageSetup(IThicknessIndex,knd,ind,jnd,RFinalMontageImageRoot,RIndividualReflectionsRoot,IErr)
+SUBROUTINE MontageSetup(RMontageImages,RIndividualReflectionImages,IErr)
   
   USE WriteToScreen
   USE MyNumbers
@@ -49,24 +49,24 @@ SUBROUTINE MontageSetup(IThicknessIndex,knd,ind,jnd,RFinalMontageImageRoot,RIndi
   
   IMPLICIT NONE
 
-  INTEGER(IKIND):: IErr, &
-       IThicknessIndex,knd,ind,jnd
+  INTEGER(IKIND):: &
+       IErr,IThicknessIndex,knd,ind,jnd
   REAL(RKIND),DIMENSION(MAXVAL(IImageSizeXY),&
-       MAXVAL(IImageSizeXY),IThicknessCount):: RFinalMontageImageRoot
+       MAXVAL(IImageSizeXY),IThicknessCount):: RMontageImages
   REAL(RKIND),DIMENSION(IReflectOut,IThicknessCount,IPixelTotal):: &
-       RIndividualReflectionsRoot
+       RIndividualReflectionImages
   
   CALL Message("MontageSetup",IMust,IErr)
 
      DO IThicknessIndex =1,IThicknessCount
         DO knd = 1,IPixelTotal
-           ind = IPixelLocations(knd,1)
-           jnd = IPixelLocations(knd,2)
+           jnd = IPixelLocations(knd,1)
+           ind = IPixelLocations(knd,2)
            CALL MontageInitialisation(ind,jnd,IThicknessIndex,&
-                RFinalMontageImageRoot,&
-                RIndividualReflectionsRoot(:,IThicknessIndex,knd),IErr)
+                RMontageImages,&
+                RIndividualReflectionImages(:,IThicknessIndex,knd),IErr)
            IF( IErr.NE.0 ) THEN
-              PRINT*,"FelixSim(", my_rank, ") error ", IErr, &
+              PRINT*,"MontageSetup(", my_rank, ") error ", IErr, &
                    " in MakeMontagePixel"
               RETURN
            ENDIF

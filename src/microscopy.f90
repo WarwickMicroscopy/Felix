@@ -46,33 +46,37 @@ SUBROUTINE MicroscopySettings( IErr )
 
   IMPLICIT NONE
 
-  REAL(RKIND) norm,dummy
+  REAL(RKIND)::&
+       norm,dummy,ROneThousand
 
-  INTEGER IErr
+  INTEGER :: &
+       IErr
   CALL Message("MicroscopySettings",IMust,IErr)
 
  ! IF(((IWriteFLAG.GE.0).AND.(my_rank.EQ.0)).OR.IWriteFLAG.GE.10) THEN
  !    PRINT*,"MicroscopySettings(",my_rank,")"
  ! END IF
 
+  ROneThousand = 1000.0_RKIND
+
   RElectronVelocity= &
        RSpeedOfLight * &
-       SQRT( 1.0D0 - ( &
+       SQRT( ONE - ( &
        (RElectronMass*RSpeedOfLight**2) / &
-       (RElectronCharge*RAcceleratingVoltage*1.0D3 + &
+       (RElectronCharge*RAcceleratingVoltage*ROneThousand + &
         RElectronMass*RSpeedOfLight**2) &
        )**2 )
 
   RElectronWaveLength= RPlanckConstant / &
-       ( SQRT(2.0D0*RElectronMass*RElectronCharge*RAcceleratingVoltage*1.D3) * &
-         SQRT(1.0D0 + (RElectronCharge*RAcceleratingVoltage*1.D3) / &
-          (2.D0*RElectronMass*RSpeedOfLight**2) &
+       ( SQRT(TWO*RElectronMass*RElectronCharge*RAcceleratingVoltage*ROneThousand) * &
+         SQRT(ONE + (RElectronCharge*RAcceleratingVoltage*ROneThousand) / &
+          (TWO*RElectronMass*RSpeedOfLight**2) &
        )) * RAngstromConversion
 
   RElectronWaveVectorMagnitude=TWOPI/RElectronWaveLength
 
   RRelativisticCorrection= &
-       1.D0 / SQRT( 1.D0 - (RElectronVelocity/RSpeedOfLight)**2 )
+       ONE / SQRT( ONE - (RElectronVelocity/RSpeedOfLight)**2 )
 
   RRelativisticMass= RRelativisticCorrection*RElectronMass
 
