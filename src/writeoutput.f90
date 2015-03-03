@@ -82,7 +82,6 @@ SUBROUTINE WriteOutput( CAmplitudeandPhaseRoot,RIndividualReflectionsRoot,RFinal
      RETURN
   ENDIF
 
-
   CALL Message("WriteOutput",IAllInfo,IErr,MessageString = "Writing Images")
   
   DO knd = 1,IThicknessCount
@@ -99,8 +98,18 @@ SUBROUTINE WriteOutput( CAmplitudeandPhaseRoot,RIndividualReflectionsRoot,RFinal
      
      
      IF(IImageFLAG.EQ.0.OR.IImageFLAG.EQ.2.OR.IImageFLAG.EQ.4.OR.IImageFLAG.EQ.6) THEN
-        WRITE(surname,"(A2,A1,I5.5,A2,I5.5)") &
-             "M-","T",IThickness,"-P",MAXVAL(IImageSizeXY)
+
+        WRITE(surname,"(A2,I1.1,I1.1,I1.1,I1.1,A2,I5.5,A2,I5.5,A2,I5.5)") &
+             "f-",&
+             IScatterFactorMethodFLAG, &
+             IZolzFLAG, &
+             IAbsorbFLAG, &
+             IAnisoDebyeWallerFactorFlag,&
+             "-T",IThickness,&
+             "-P",2*IPixelcount,&
+             "-P",2*IPixelcount
+!!$        WRITE(surname,"(A2,A1,I5.5,A2,I5.5)") &
+!!$             "M-","T",IThickness,"-P",MAXVAL(IImageSizeXY)
         
         CALL OpenReflectionImage(MontageOut,surname,IErr,0,MAXVAL(IImageSizeXY),knd)
         IF( IErr.NE.0 ) THEN
@@ -168,14 +177,24 @@ SUBROUTINE WriteOutput( CAmplitudeandPhaseRoot,RIndividualReflectionsRoot,RFinal
      
      IF(IImageFLAG.GE.3) THEN
         
-        WRITE(path,"(A2,A1,I1.1,A2,I1.1,A2,I1.1,A2,I4.4,A2,I5.5)") &
-             "F-",&
-             "S", IScatterFactorMethodFLAG, &
-             "_B", ICentralBeamFLAG, &
-             "_M", IMaskFLAG, &
-             "_P", IPixelCount, &
-             "_T", IThickness
+!!$        WRITE(path,"(A2,A1,I1.1,A2,I1.1,A2,I1.1,A2,I4.4,A2,I5.5)") &
+!!$             "F-",&
+!!$             "S", IScatterFactorMethodFLAG, &
+!!$             "_B", ICentralBeamFLAG, &
+!!$             "_M", IMaskFLAG, &
+!!$             "_P", IPixelCount, &
+!!$             "_T", IThickness
         
+        WRITE(path,"(A2,I1.1,I1.1,I1.1,I1.1,A2,I5.5,A2,I5.5,A2,I5.5)") &
+             "f-",&
+             IScatterFactorMethodFLAG, &
+             IZolzFLAG, &
+             IAbsorbFLAG, &
+             IAnisoDebyeWallerFactorFlag,&
+             "-T",IThickness,&
+             "-P",2*IPixelcount,&
+             "-P",2*IPixelcount
+
         call system('mkdir ' // path)
         
         DO ind = 1,IReflectOut

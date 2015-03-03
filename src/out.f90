@@ -302,6 +302,7 @@ SUBROUTINE OpenReflectionImage(IChOutWrite, surname, IErr,IReflectWriting,IImage
 
   CHARACTER*250 filename
   CHARACTER*40 fileext
+  CHARACTER*60 Simagesize
   INTEGER index,ind
 
   !!$  Only Prints out this message once when iterating (i.e. when in 1st iteration)
@@ -328,13 +329,10 @@ SUBROUTINE OpenReflectionImage(IChOutWrite, surname, IErr,IReflectWriting,IImage
      END IF
   END SELECT
 
- ! CALL Message("OpenReflectionImage",IMoreInfo,IErr, MessageVariable = "filename", &
-  !     MessageString = filename)
+  WRITE(Simagesize,"(A2,I5.5,A2,I5.5)") &
+       "-P",IImageSizeX,&
+       "-P",IImageSizeX
 
-!!$  IF (IWriteFLAG.GE.10) THEN
-!!$     PRINT*,filename
-!!$  END IF
-  
   SELECT CASE (IBinorTextFLAG)
   CASE(0)
      WRITE(fileext,*) TRIM(ADJUSTL(".bin")) 
@@ -344,34 +342,37 @@ SUBROUTINE OpenReflectionImage(IChOutWrite, surname, IErr,IReflectWriting,IImage
   
   SELECT CASE(IChOutWrite)
   CASE(IChOutWFImageReal)        
-     WRITE(filename,*) TRIM(ADJUSTL(surname)),"/F-WF-A_",&
+     WRITE(filename,*) TRIM(ADJUSTL(surname)),"/f-WF-A-hkl-",&
           TRIM(ADJUSTL(h)),&
           TRIM(ADJUSTL(k)),&
           TRIM(ADJUSTL(l)),&
+          TRIM(ADJUSTL(Simagesize)),&
           TRIM(ADJUSTL(fileext))
      IF (IWriteFLAG.GE.10) THEN
         PRINT*, "OpenImage: opening image for WAVE FUNCTION REAL PART (WR*.txt)"
      END IF
   CASE(IChOutWFImagePhase)        
-     WRITE(filename,*) TRIM(ADJUSTL(surname)),"/F-WF-P_",&
+     WRITE(filename,*) TRIM(ADJUSTL(surname)),"/f-WF-P-hkl-",&
           TRIM(ADJUSTL(h)),&
           TRIM(ADJUSTL(k)),&
           TRIM(ADJUSTL(l)),&
+          TRIM(ADJUSTL(Simagesize)),&
           TRIM(ADJUSTL(fileext))
      IF (IWriteFLAG.GE.10) THEN
         PRINT*, "OpenImage: opening image for WAVE FUNCTION PHASE PART (WP*.txt)"
      END IF
   CASE(IChOutWIImage) 
-     WRITE(filename,*) TRIM(ADJUSTL(surname)),"/F-WI_",&
+     WRITE(filename,*) TRIM(ADJUSTL(surname)),"/f-WI-hkl-",&
           TRIM(ADJUSTL(h)),&
           TRIM(ADJUSTL(k)),&
           TRIM(ADJUSTL(l)),&
-          TRIM(ADJUSTL(fileext))
+          TRIM(ADJUSTL(Simagesize)),&
+          TRIM(ADJUSTL(fileext))     
      IF (IWriteFLAG.GE.10) THEN
         PRINT*, "OpenImage: opening image for WAVE INTENSITIES"
      END IF
   CASE(MontageOut)        
-     WRITE(filename,*) "F-WI-",TRIM(ADJUSTL(surname)),&
+     WRITE(filename,*) TRIM(ADJUSTL(surname)),"-WI-M",&
           TRIM(ADJUSTL(fileext))
      IF (IWriteFLAG.GE.10) THEN
         PRINT*, "OpenImage: opening image for WAVE INTENSITIES"
