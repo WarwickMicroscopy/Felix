@@ -233,7 +233,7 @@ END SUBROUTINE OpenSimplexOutput
 
 !!$----------------------------------------------------------------------------
 
-SUBROUTINE WriteOutSimplex(RSimplexVolume,RSimplexFoM,IDimensions,RStandardDeviation,RMean,IErr)
+SUBROUTINE WriteOutSimplex(RSimplexVolume,RSimplexFoM,IDimensions,RStandardDeviation,RMean,IIterations,IErr)
 
   USE MyNumbers
 
