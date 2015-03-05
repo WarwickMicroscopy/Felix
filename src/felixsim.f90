@@ -74,6 +74,8 @@ PROGRAM felixsim
        CAmplitudeandPhaseRoot
 
   CHARACTER*40 surname, my_rank_string 
+  CHARACTER*1000  SLocalPixelCountMin, SLocalPixelCountMax
+
 
   !-------------------------------------------------------------------
   ! constants
@@ -265,12 +267,20 @@ PROGRAM felixsim
   ILocalPixelCountMin= (IPixelTotal*(my_rank)/p)+1
   ILocalPixelCountMax= (IPixelTotal*(my_rank+1)/p)
   
+  WRITE(SLocalPixelCountMin,"(I6.1)")ILocalPixelCountMin
+  WRITE(SLocalPixelCountMax,"(I6.1)")ILocalPixelCountMax
 
-  IF((IWriteFLAG.GE.6.AND.my_rank.EQ.0).OR.IWriteFLAG.GE.10) THEN
-     PRINT*,"felixsim(", my_rank, "): starting the eigenvalue problem"
-     PRINT*,"felixsim(", my_rank, "): for lines ", ILocalPixelCountMin, &
-          " to ", ILocalPixelCountMax
-  ENDIF
+
+  CALL Message("felixsim",IAllInfo,IErr,MessageString=": starting the eigenvalue problem")
+  CALL Message("felixsim",IAllInfo,IErr,MessageString="for lines " // &
+       SLocalPixelCountMin // " to "// SLocalPixelCountMax)
+       
+
+!!$  IF((IWriteFLAG.GE.6.AND.my_rank.EQ.0).OR.IWriteFLAG.GE.10) THEN
+!!$     PRINT*,"felixsim(", my_rank, "): starting the eigenvalue problem"
+!!$     PRINT*,"felixsim(", my_rank, "): for lines ", ILocalPixelCountMin, &
+!!$          " to ", ILocalPixelCountMax
+!!$  ENDIF
   
 
   IThicknessCount= (RFinalThickness- RInitialThickness)/RDeltaThickness + 1
@@ -366,10 +376,13 @@ PROGRAM felixsim
 
 !!$     reset message counter
   IMessageCounter = 0
-  
-  IF((IWriteFLAG.GE.6.AND.my_rank.EQ.0).OR.IWriteFLAG.GE.10) THEN
-     PRINT*,"felixsim : ",my_rank," is exiting calculation loop"
-  END IF
+
+  CALL Message("felixsim",IAllInfo,IErr,&
+       MessageString="is exiting calculation loop")
+
+  !IF((IWriteFLAG.GE.6.AND.my_rank.EQ.0).OR.IWriteFLAG.GE.10) THEN
+  !   PRINT*,"felixsim : ",my_rank," is exiting calculation loop"
+  !END IF
 
   !--------------------------------------------------------------------
   ! close outfiles

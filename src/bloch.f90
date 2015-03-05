@@ -56,6 +56,7 @@ SUBROUTINE BlochCoefficientCalculation(ind,jnd,gnd,ILocalPixelCountMin,IErr)
        Rx0,Ry0, RThickness,RKn
 
   CHARACTER*40 surname
+  CHARACTER*200 SindString, SjndString, SPixelCount, SnBeams,SWeakBeamIndex 
 
   COMPLEX(CKIND) sumC,sumD
   
@@ -65,6 +66,8 @@ SUBROUTINE BlochCoefficientCalculation(ind,jnd,gnd,ILocalPixelCountMin,IErr)
        CGeneralEigenValues
   REAL(RKIND),DIMENSION(IReflectOut) :: &
        RPreviousWaveIntensity
+  
+  
 
    IF (my_rank.EQ.0) THEN
       DO WHILE (IMessageCounter .LT.1)
@@ -85,13 +88,24 @@ SUBROUTINE BlochCoefficientCalculation(ind,jnd,gnd,ILocalPixelCountMin,IErr)
   !--------------------------------------------------------------------
   ! protocol progress
   !--------------------------------------------------------------------
-  
   !!$   Displays Pixel currently working on
-  IF((IWriteFLAG.GE.10.AND.IWriteFLAG.LT.100).OR.IWriteFLAG.GE.110) THEN
-     PRINT*,"BlochCoefficientCalculation(", my_rank, "): working on pixel (", ind, ",", jnd,") of (", &
-          2*IPixelCount, ",", 2*IPixelCount, ") in total."
-  ENDIF
-       
+  
+  WRITE(SindString,'(I6.1)') ind
+  WRITE(SjndString,'(I6.1)') jnd
+  WRITE(SPixelCount,'(I6.1)') 2*IPixelCount
+
+  CALL Message("BlochCoefficientCalculation",IAllInfo,IErr, &
+       MessageString="working on pixel("//TRIM(ADJUSTL(SindString))//",&
+       &"//TRIM(ADJUSTL(SjndString))//") of ("//TRIM(ADJUSTL(SPixelCount))//",&
+       &"//TRIM(ADJUSTL(SPixelCount))//") in total")
+ 
+ ! IF((IWriteFLAG.GE.10.AND.IWriteFLAG.LT.100).OR.IWriteFLAG.GE.110) THEN
+ !    PRINT*,"BlochCoefficientCalculation(", my_rank, "): working on pixel (", ind, ",", jnd,") of (", &
+ !         2*IPixelCount, ",", 2*IPixelCount, ") in total."
+ ! ENDIF
+  
+  
+  
   !--------------------------------------------------------------------
   ! calculate deviation parameter Sg for the tilted Ewald spheres
   !--------------------------------------------------------------------
@@ -244,12 +258,20 @@ SUBROUTINE BlochCoefficientCalculation(ind,jnd,gnd,ILocalPixelCountMin,IErr)
   !--------------------------------------------------------------------
   ! construct the effective UgMat (for strong beams only at the moment)
   !--------------------------------------------------------------------
+
+  WRITE(SnBeams,"(I6.1)") nBeams
+  WRITE(SWeakBeamIndex,"(I6.1)") IWeakBeamIndex
+
+  CALL Message("BlochCoefficientCalculation",IAllInfo,IErr, &
+       MessageString="using n(Strong) Beams = "//ADJUSTL(TRIM(SnBeams))// &
+       "with nWeakBeams = "// ADJUSTL(TRIM(SWeakBeamIndex)))
+ 
   
-  IF((IWriteFLAG.GE.10.AND.IWriteFLAG.LT.100).OR.IWriteFLAG.GE.110) THEN 
-     PRINT*,"BlochCoefficientCalculation(", my_rank, &
-          ") using n(Strong)Beams= ", nBeams, " beams", &
-          " with nWeakBeams=", IWeakBeamIndex
-  ENDIF
+  !IF((IWriteFLAG.GE.10.AND.IWriteFLAG.LT.100).OR.IWriteFLAG.GE.110) THEN 
+  !   PRINT*,"BlochCoefficientCalculation("", my_rank, &
+  !        ") using n(Strong)Beams= ", nBeams, " beams", &
+  !        " with nWeakBeams=", IWeakBeamIndex
+  !ENDIF
   
   !--------------------------------------------------------------------
   ! back to eigen problem solution
