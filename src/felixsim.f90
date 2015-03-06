@@ -273,7 +273,7 @@ PROGRAM felixsim
 
   CALL Message("felixsim",IAllInfo,IErr,MessageString=": starting the eigenvalue problem")
   CALL Message("felixsim",IAllInfo,IErr,MessageString="for lines " // &
-       SLocalPixelCountMin // " to "// SLocalPixelCountMax)
+       TRIM(ADJUSTL(SLocalPixelCountMin)) // " to "// TRIM(ADJUSTL(SLocalPixelCountMax)))
        
 
 !!$  IF((IWriteFLAG.GE.6.AND.my_rank.EQ.0).OR.IWriteFLAG.GE.10) THEN
