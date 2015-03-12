@@ -106,8 +106,8 @@ SUBROUTINE WriteOutput( CAmplitudeandPhaseRoot,RIndividualReflectionsRoot,RFinal
              IAbsorbFLAG, &
              IAnisoDebyeWallerFactorFlag,&
              "-T",IThickness,&
-             "-P",2*IPixelcount,&
-             "-P",2*IPixelcount
+             "-P",MAXVAL(IImageSizeXY),&
+             "-P",MAXVAL(IImageSizeXY)
 !!$        WRITE(surname,"(A2,A1,I5.5,A2,I5.5)") &
 !!$             "M-","T",IThickness,"-P",MAXVAL(IImageSizeXY)
         
