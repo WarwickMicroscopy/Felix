@@ -823,6 +823,8 @@ PROGRAM felixsim
   !--------------------------------------------------------------------
   ! finish off
   !--------------------------------------------------------------------
+
+  WRITE(my_rank_string,*) my_rank
     
   CALL cpu_time(CurrentTime)
   Duration=(CurrentTime-StartTime)
@@ -845,7 +847,6 @@ PROGRAM felixsim
 
   CALL MPI_Barrier(MPI_COMM_WORLD,IErr)
 
-  WRITE(my_rank_string,*) my_rank
   PRINT*, "felixsim( ", TRIM(ADJUSTL(my_rank_string)), " ) ", &
        RStr, ", used system_clock=", IHours, "hrs ", &
        IMinutes,"mins ",ISeconds,"Seconds ", IMilliSeconds,"Milliseconds"
