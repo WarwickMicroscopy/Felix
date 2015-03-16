@@ -65,6 +65,7 @@ PROGRAM felixsim
        IHours,IMinutes,ISeconds,IMilliSeconds,&
        IThicknessIndex, &
        ILocalPixelCountMin, ILocalPixelCountMax
+  INTEGER :: IStartTime, ICurrentTime ,IRate
   INTEGER(IKIND), DIMENSION(:), ALLOCATABLE :: &
        IDisplacements,ICount
   REAL(RKIND),DIMENSION(:,:,:),ALLOCATABLE :: &
@@ -133,6 +134,8 @@ PROGRAM felixsim
   !--------------------------------------------------------------------
 
   CALL cpu_time(StartTime)
+  CALL SYSTEM_CLOCK(count_rate=IRate)
+  CALL SYSTEM_CLOCK(IStarttime)
 
   !--------------------------------------------------------------------
   ! INPUT section 
@@ -825,16 +828,27 @@ PROGRAM felixsim
   Duration=(CurrentTime-StartTime)
   IHours = FLOOR(Duration/3600.0D0)
   IMinutes = FLOOR(MOD(Duration,3600.0D0)/60.0D0)
-  ISeconds = MOD(Duration,3600.0D0)-IMinutes*60.0D0
+  ISeconds = MOD(Duration,3600.0D0)-IMinutes
+  IMilliSeconds = INT((Duration-(IHours*3600+IMinutes*60+ISeconds))*1000,IKIND)
+  PRINT*, "felixsim( ", TRIM(ADJUSTL(my_rank_string)), " ) ", &
+       RStr, ", used cpu_time=", IHours, "hrs ", &
+       IMinutes,"mins ",ISeconds,"Seconds ", IMilliSeconds,"Milliseconds"
+  PRINT*, "felixsim( ", TRIM(ADJUSTL(my_rank_string)), " ) ", &
+       RStr, ", used cpu_time=", Duration, CurrentTime, StartTime
 
-  IMilliSeconds = INT((Duration-(IHours*3600+IMinutes*60+ISeconds))*100,IKIND)
-  
+  CALL SYSTEM_CLOCK(ICurrentTime)
+  Duration=REAL(ICurrentTime-IStartTime)/REAL(IRate)
+  IHours = FLOOR(Duration/3600.0D0)
+  IMinutes = FLOOR(MOD(Duration,3600.0D0)/60.0D0)
+  ISeconds = MOD(Duration,3600.0D0)-IMinutes
+  IMilliSeconds = INT((Duration-(IHours*3600+IMinutes*60+ISeconds))*1000,IKIND)
+
   CALL MPI_Barrier(MPI_COMM_WORLD,IErr)
-
-     WRITE(my_rank_string,*) my_rank
-     PRINT*, "felixsim( ", TRIM(ADJUSTL(my_rank_string)), " ) ", RStr, ", used time=", IHours, "hrs ", &
-          IMinutes,"mins ",ISeconds,"Seconds ", IMilliSeconds,"Milliseconds"
- 
+  PRINT*, "felixsim( ", TRIM(ADJUSTL(my_rank_string)), " ) ", &
+       RStr, ", used system_clock=", IHours, "hrs ", &
+       IMinutes,"mins ",ISeconds,"Seconds ", IMilliSeconds,"Milliseconds"
+   PRINT*, "felixsim( ", TRIM(ADJUSTL(my_rank_string)), " ) ", &
+        RStr, ", used system_clock=", Duration, ICurrentTime, IStartTime
 
   !--------------------------------------------------------------------
   ! Shut down MPI
