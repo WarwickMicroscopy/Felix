@@ -844,6 +844,8 @@ PROGRAM felixsim
   IMilliSeconds = INT((Duration-(IHours*3600+IMinutes*60+ISeconds))*1000,IKIND)
 
   CALL MPI_Barrier(MPI_COMM_WORLD,IErr)
+
+  WRITE(my_rank_string,*) my_rank
   PRINT*, "felixsim( ", TRIM(ADJUSTL(my_rank_string)), " ) ", &
        RStr, ", used system_clock=", IHours, "hrs ", &
        IMinutes,"mins ",ISeconds,"Seconds ", IMilliSeconds,"Milliseconds"
