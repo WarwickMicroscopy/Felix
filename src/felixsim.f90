@@ -58,7 +58,7 @@ PROGRAM felixsim
 
   REAL(RKIND) :: &
        RThickness,&
-       StartTime, CurrentTime, Duration, &
+       Duration, &
        time, norm
   INTEGER(IKIND) :: &
        ind,jnd,hnd,knd,pnd,gnd,IErr, &
@@ -133,7 +133,6 @@ PROGRAM felixsim
   ! timing startup
   !--------------------------------------------------------------------
 
-  CALL cpu_time(StartTime)
   CALL SYSTEM_CLOCK(count_rate=IRate)
   CALL SYSTEM_CLOCK(IStarttime)
 
@@ -826,18 +825,6 @@ PROGRAM felixsim
 
   WRITE(my_rank_string,*) my_rank
     
-  CALL cpu_time(CurrentTime)
-  Duration=(CurrentTime-StartTime)
-  IHours = FLOOR(Duration/3600.0D0)
-  IMinutes = FLOOR(MOD(INT(Duration),3600)/60.0D0)
-  ISeconds = MOD(INT(Duration),3600)-IMinutes*60
-  IMilliSeconds = INT((Duration-(IHours*3600+IMinutes*60+ISeconds))*1000,IKIND)
-  PRINT*, "felixsim( ", TRIM(ADJUSTL(my_rank_string)), " ) ", &
-       RStr, ", used cpu_time=", IHours, "hrs ", &
-       IMinutes,"mins ",ISeconds,"Seconds ", IMilliSeconds,"Milliseconds"
-  PRINT*, "felixsim( ", TRIM(ADJUSTL(my_rank_string)), " ) ", &
-       RStr, ", used cpu_time=", Duration, CurrentTime, StartTime
-
   CALL SYSTEM_CLOCK(ICurrentTime)
   Duration=REAL(ICurrentTime-IStartTime)/REAL(IRate)
   IHours = FLOOR(Duration/3600.0D0)
@@ -845,13 +832,11 @@ PROGRAM felixsim
   ISeconds = MOD(Duration,3600.0D0)-IMinutes*60
   IMilliSeconds = INT((Duration-(IHours*3600+IMinutes*60+ISeconds))*1000,IKIND)
 
-  CALL MPI_Barrier(MPI_COMM_WORLD,IErr)
-
   PRINT*, "felixsim( ", TRIM(ADJUSTL(my_rank_string)), " ) ", &
-       RStr, ", used system_clock=", IHours, "hrs ", &
-       IMinutes,"mins ",ISeconds,"Seconds ", IMilliSeconds,"Milliseconds"
-   PRINT*, "felixsim( ", TRIM(ADJUSTL(my_rank_string)), " ) ", &
-        RStr, ", used system_clock=", Duration, ICurrentTime, IStartTime
+       RStr, ", used time=", IHours, "hrs ", &
+       IMinutes,"mins ",ISeconds,"secs ", IMilliSeconds,"millisecs"
+
+  CALL MPI_Barrier(MPI_COMM_WORLD,IErr)
 
   !--------------------------------------------------------------------
   ! Shut down MPI
