@@ -58,13 +58,14 @@ PROGRAM felixsim
 
   REAL(RKIND) :: &
        RThickness,&
-       StartTime, CurrentTime, Duration, &
+       Duration, &
        time, norm
   INTEGER(IKIND) :: &
        ind,jnd,hnd,knd,pnd,gnd,IErr, &
        IHours,IMinutes,ISeconds,IMilliSeconds,&
        IThicknessIndex, &
        ILocalPixelCountMin, ILocalPixelCountMax
+  INTEGER :: IStartTime, ICurrentTime ,IRate
   INTEGER(IKIND), DIMENSION(:), ALLOCATABLE :: &
        IDisplacements,ICount
   REAL(RKIND),DIMENSION(:,:,:),ALLOCATABLE :: &
@@ -132,7 +133,8 @@ PROGRAM felixsim
   ! timing startup
   !--------------------------------------------------------------------
 
-  CALL cpu_time(StartTime)
+  CALL SYSTEM_CLOCK(count_rate=IRate)
+  CALL SYSTEM_CLOCK(IStarttime)
 
   !--------------------------------------------------------------------
   ! INPUT section 
@@ -820,21 +822,21 @@ PROGRAM felixsim
   !--------------------------------------------------------------------
   ! finish off
   !--------------------------------------------------------------------
+
+  WRITE(my_rank_string,*) my_rank
     
-  CALL cpu_time(CurrentTime)
-  Duration=(CurrentTime-StartTime)
+  CALL SYSTEM_CLOCK(ICurrentTime)
+  Duration=REAL(ICurrentTime-IStartTime)/REAL(IRate)
   IHours = FLOOR(Duration/3600.0D0)
   IMinutes = FLOOR(MOD(Duration,3600.0D0)/60.0D0)
-  ISeconds = MOD(Duration,3600.0D0)-IMinutes*60.0D0
+  ISeconds = MOD(Duration,3600.0D0)-IMinutes*60
+  IMilliSeconds = INT((Duration-(IHours*3600+IMinutes*60+ISeconds))*1000,IKIND)
 
-  IMilliSeconds = INT((Duration-(IHours*3600+IMinutes*60+ISeconds))*100,IKIND)
-  
+  PRINT*, "felixsim( ", TRIM(ADJUSTL(my_rank_string)), " ) ", &
+       RStr, ", used time=", IHours, "hrs ", &
+       IMinutes,"mins ",ISeconds,"secs ", IMilliSeconds,"millisecs"
+
   CALL MPI_Barrier(MPI_COMM_WORLD,IErr)
-
-     WRITE(my_rank_string,*) my_rank
-     PRINT*, "felixsim( ", TRIM(ADJUSTL(my_rank_string)), " ) ", RStr, ", used time=", IHours, "hrs ", &
-          IMinutes,"mins ",ISeconds,"Seconds ", IMilliSeconds,"Milliseconds"
- 
 
   !--------------------------------------------------------------------
   ! Shut down MPI
