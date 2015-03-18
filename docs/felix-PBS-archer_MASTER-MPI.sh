@@ -196,6 +196,34 @@ echo "RFinalThickness          = 3000.0"                                       >
 echo "RDeltaThickness          = 20.0"                                         >> $inpfile
 echo "IReflectOut              = 70"                                           >> $inpfile
 echo  ""                                                                       >> $inpfile   
+echo "# felixrefine Input"                                                     >> $inpfile
+echo ""                                                                        >> $inpfile
+echo "#Refinement Specific Flags"                                              >> $inpfile
+echo "IRefineModeFLAG = 0"                                                     >> $inpfile
+echo "IWeightingFLAG = 0"                                                      >> $inpfile
+echo ""                                                                        >> $inpfile
+echo "# Debye Waller Factor Iteration"                                         >> $inpfile
+echo ""                                                                        >> $inpfile
+echo "RInitialDebyeWallerFactor = 0.1"                                         >> $inpfile
+echo "RFinalDebyeWallerFactor = 1.0"                                           >> $inpfile
+echo "RDeltaDebyeWallerFactor = 0.1"                                           >> $inpfile
+echo "IElementsforDWFchange = {0}"                                             >> $inpfile
+echo ""                                                                        >> $inpfile
+echo "# Ug Iteration"                                                          >> $inpfile
+echo ""                                                                        >> $inpfile
+echo "INoofUgs = 10"                                                           >> $inpfile
+echo "RLowerBoundUgChange = 50.0"                                              >> $inpfile
+echo "RUpperBoundUgChange = 50.0"                                              >> $inpfile
+echo "RDeltaUgChange = 50.0"                                                   >> $inpfile
+echo ""                                                                        >> $inpfile
+echo "# Structural Refinement"                                                 >> $inpfile
+echo ""                                                                        >> $inpfile
+echo "IAtomicsSites = (1,2,3,4,5,6,7)"                                         >> $inpfile
+echo ""                                                                        >> $inpfile
+echo "# Refinement Output"                                                     >> $inpfile
+echo ""                                                                        >> $inpfile
+echo "IPrint = 10"                                                             >> $inpfile
+echo ""                                                                        >> $inpfile 
 
 cat $inpfile
 ls -al \${tmpdir}
@@ -216,6 +244,9 @@ export IPATH_NO_CPUAFFINITY=1
 
 echo "--- starting the SIM run"
 aprun -n ${ranks} -N 24 ${binarydir}/felixsim
+
+#echo "---starting the REFINE run"
+#aprun -n ${ranks} -N 24 ${binarydir}/felixrefine
 
 echo "--- starting the IMAGE post-processing run"
 echo "Output files to be copied"
