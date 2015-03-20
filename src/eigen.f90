@@ -36,7 +36,7 @@
 ! $Id: eigen.f90,v 1.10 2014/03/25 15:35:34 phsht Exp $
 !%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-SUBROUTINE EigenSpectrum(isize, matU, evals, evecs, IErr)
+SUBROUTINE EigenSpectrum(IMatrixDimension, MatrixToBeDiagonalised, EigenValues, EigenVectors, IErr)
 
   USE WriteToScreen
   USE MyNumbers
@@ -49,23 +49,17 @@ SUBROUTINE EigenSpectrum(isize, matU, evals, evecs, IErr)
   IMPLICIT NONE
 
   INTEGER(IKIND) :: &
-       isize, IErr
-
+       IMatrixDimension, IErr
   COMPLEX(RKIND) :: &
-       matU(isize,isize), evals(isize), evecs(isize,isize)
+       MatrixToBeDiagonalised(IMatrixDimension,IMatrixDimension), &
+       EigenValues(IMatrixDimension), EigenVectors(IMatrixDimension,IMatrixDimension)
   INTEGER(IKIND) :: &
-       LWORK, LRWORK, LIWORK
+       WorkSpaceDimension
   COMPLEX(CKIND),DIMENSION(:), ALLOCATABLE :: &
-       WORK
+       CWorkSpace
   REAL(RKIND), DIMENSION(:), ALLOCATABLE :: &
-       RWORK
-  !REAL(KIND=IKIND),    DIMENSION(:), ALLOCATABLE :: IWORK
+       WorkSpace
   EXTERNAL ZGEEV
-
-  INTEGER(IKIND) ind,jnd
-  REAL(RKIND) norm
-
-  !PRINT*,"DBG: EigenSpectrum()"
 
   IF (my_rank.EQ.0) THEN
      DO WHILE (IMessageCounter .LT.5)
@@ -77,31 +71,52 @@ SUBROUTINE EigenSpectrum(isize, matU, evals, evecs, IErr)
   ! ------------------------------------------------
   ! find optimum size of arrays
   ! ------------------------------------------------
-  LWORK=1
-  ALLOCATE(WORK(LWORK), STAT = IErr)
-  ALLOCATE(RWORK(2*isize), STAT = IErr)
+
+  WorkSpaceDimension=1
+
+  ALLOCATE(&
+       CWorkSpace(WorkSpaceDimension), &
+       STAT = IErr)
   IF( IErr.NE.0 ) THEN
      PRINT*,"EigenSpectrum: error in ALLOCATE() for work arrays (query stage)"
      RETURN
   ENDIF
 
-  LWORK=-1
+  ALLOCATE(&
+       WorkSpace(2*IMatrixDimension), &
+       STAT = IErr)
+  IF( IErr.NE.0 ) THEN
+     PRINT*,"EigenSpectrum: error in ALLOCATE() for work arrays (query stage)"
+     RETURN
+  ENDIF
 
-  CALL ZGEEV('N','V', isize, matU, isize, evals, 0,1, evecs,isize, &
-       WORK, LWORK, RWORK, IErr )
+  WorkSpaceDimension=-1
+
+  CALL ZGEEV('N','V', IMatrixDimension, MatrixToBeDiagonalised, IMatrixDimension,&
+       EigenValues, 0,1, EigenVectors,IMatrixDimension, &
+       CWorkSpace, WorkSpaceDimension, WorkSpace, IErr )
   IF( IErr.NE.0 ) THEN
      PRINT*,"EigenSpectrum: error in ZGEEV determining work arrays"
      RETURN
   ENDIF
 
-  LWORK = INT(WORK(1))
-  !PRINT*,"DBG: LWORK=", LWORK
+  WorkSpaceDimension = INT(CWorkSpace(1))
 
   ! ------------------------------------------------
   ! ALLOCATE necessary memory
   ! ------------------------------------------------
-  DEALLOCATE(WORK)
-  ALLOCATE(WORK(LWORK), STAT = IErr)
+
+  DEALLOCATE(&
+       CWorkSpace,&
+       STAT=IErr)
+  IF( IErr.NE.0 ) THEN
+     PRINT*,"EigenSpectrum: error in ALLOCATE() for work arrays (final stage)"
+     RETURN
+  ENDIF
+
+  ALLOCATE(&
+       CWorkSpace(WorkSpaceDimension),&
+       STAT = IErr)
   IF( IErr.NE.0 ) THEN
      PRINT*,"EigenSpectrum: error in ALLOCATE() for work arrays (final stage)"
      RETURN
@@ -111,41 +126,30 @@ SUBROUTINE EigenSpectrum(isize, matU, evals, evecs, IErr)
   ! do the actual call to get the spectrum
   ! ------------------------------------------------
 
-  CALL ZGEEV('N','V', isize, matU, isize, evals, 0,1, evecs,isize, &
-       WORK, LWORK, RWORK, IErr )
+  CALL ZGEEV('N','V', IMatrixDimension, MatrixToBeDiagonalised, IMatrixDimension,&
+       EigenValues, 0,1, EigenVectors,IMatrixDimension, &
+       CWorkSpace, WorkSpaceDimension, WorkSpace, IErr )
   IF( IErr.NE.0 ) THEN
      PRINT*,"EigenSpectrum: error ", IErr, " in ZGEEV"
      RETURN
   ENDIF
-  DEALLOCATE(WORK,RWORK)
 
-  !PRINT*,"DBG: evals=", evals
+  DEALLOCATE(&
+       CWorkSpace,&
+       STAT = IErr)
+  IF( IErr.NE.0 ) THEN
+     PRINT*,"EigenSpectrum: error in ALLOCATE() for work arrays (final stage)"
+     RETURN
+  ENDIF
 
-  RETURN
+  DEALLOCATE(&
+       WorkSpace,&
+       STAT = IErr)
+  IF( IErr.NE.0 ) THEN
+     PRINT*,"EigenSpectrum: error in ALLOCATE() for work arrays (final stage)"
+     RETURN
+  ENDIF
 
-  ! this part is not needed
-  ! normalize the eigenvectors
-  DO ind=1,isize
-     norm= SQRT(DOT_PRODUCT(evecs(ind,:),evecs(ind,:)))
-     !PRINT*, "DBG: before norm:", ind,norm
-
-     evecs(ind,:)= evecs(ind,:)/norm
-
-     norm= SQRT(DOT_PRODUCT(evecs(ind,:),evecs(ind,:)))
-     !PRINT*, "DBG: after norm:", ind,norm
-  ENDDO
-  
-  ! orthogonality test, comment out of not needed
-  DO ind=1,isize
-     DO jnd=1,isize
-        
-        norm= SQRT(DOT_PRODUCT( &
-             evecs(ind,:),evecs(jnd,:)))
-        
-        !PRINT*,"DBG: (ind,jnd)", ind,jnd,norm
-     ENDDO
-  ENDDO ! orthogonality
-  
   RETURN
 
 END SUBROUTINE EigenSpectrum

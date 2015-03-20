@@ -63,7 +63,8 @@ SUBROUTINE Message(ProgramName,IPriorityFLAG,IErr,MessageVariable,RVariable,IVar
   IF (my_rank == 0) THEN
      WRITE(my_rank_string,'(I1)') my_rank 
      IF (PRESENT(RVariable)) THEN
-        WRITE(VariableString,'(F30.16)') RVariable
+!!$        WRITE(VariableString,'(F30.16)') RVariable
+        WRITE(VariableString,'(F15.3)') RVariable
      ELSE IF (PRESENT(IVariable)) THEN
         WRITE(VariableString,'(I10.1)') IVariable
      ELSE IF (PRESENT(CVariable)) THEN
@@ -91,28 +92,29 @@ SUBROUTINE Message(ProgramName,IPriorityFLAG,IErr,MessageVariable,RVariable,IVar
         !Prints out message
         IF((IPriorityFLAG.LE.IWriteFLAG.AND.my_rank.EQ.0.AND.ISoftwareMode.LT.IRefineSwitch) &
              .OR.IWriteFLAG.GE.10.AND.ISoftwareMode .LT. IRefineSwitch) THEN
-           PRINT*,ProgramName,"( ",TRIM(my_rank_string)," ) ", &
-                TRIM(MessageVariable)," = ",TRIM(VariableString),"  ",TRIM(MessageString)
+           PRINT*,ProgramName,"( ",TRIM(ADJUSTL(my_rank_string))," ) ", &
+                TRIM(MessageVariable)," = ",TRIM(ADJUSTL(VariableString)),"  ",TRIM(ADJUSTL(MessageString))
         END IF
         
      ELSE IF (PRESENT(MessageVariable)) THEN
        
         IF((IPriorityFLAG.LE.IWriteFLAG.AND.my_rank.EQ.0.AND.ISoftwareMode.LT.IRefineSwitch) &
              .OR.IWriteFLAG.GE.10.AND.ISoftwareMode .LT. IRefineSwitch) THEN
-           PRINT*,ProgramName,"( ",TRIM(my_rank_string)," ) ",TRIM(MessageVariable)," = ",TRIM(VariableString)
+           PRINT*,ProgramName,"( ",TRIM(ADJUSTL(my_rank_string))," ) ",&
+                TRIM(ADJUSTL(MessageVariable))," = ",TRIM(ADJUSTL(VariableString))
         END IF
 
      ELSE IF (PRESENT(MessageString)) THEN
 
         IF((IPriorityFLAG.LE.IWriteFLAG.AND.my_rank.EQ.0.AND.ISoftwareMode.LT.IRefineSwitch) &
              .OR.IWriteFLAG.GE.10.AND.ISoftwareMode .LT. IRefineSwitch) THEN
-           PRINT*,ProgramName,"( ",TRIM(my_rank_string)," ) ", TRIM(MessageString)
+           PRINT*,ProgramName,"( ",TRIM(ADJUSTL(my_rank_string))," ) ", TRIM(ADJUSTL(MessageString))
         END IF
                 
      ELSE
         IF((IPriorityFLAG.LE.IWriteFLAG.AND.my_rank.EQ.0.AND.ISoftwareMode.LT.IRefineSwitch) &
              .OR.IWriteFLAG.GE.10.AND.ISoftwareMode .LT. IRefineSwitch) THEN
-           PRINT*,ProgramName,"( ",TRIM(my_rank_string)," ) "
+           PRINT*,ProgramName,"( ",TRIM(ADJUSTL(my_rank_string))," ) "
         END IF
      END IF
 
@@ -126,22 +128,23 @@ SUBROUTINE Message(ProgramName,IPriorityFLAG,IErr,MessageVariable,RVariable,IVar
         !Prints out message
         IF((IPriorityFLAG.LE.IDebugFLAG.AND.my_rank.EQ.0.AND.ISoftwareMode.LT.IRefineSwitch) &
              .OR.IDebugFLAG.GE.110.AND.ISoftwareMode .LT. IRefineSwitch) THEN
-           PRINT*,"DBG_MESSAGE: ",ProgramName,"( ",TRIM(my_rank_string)," ) ", &
-                TRIM(MessageVariable)," = ",TRIM(VariableString),"  ",TRIM(MessageString)
+           PRINT*,"DBG_MESSAGE: ",ProgramName,"( ",TRIM(ADJUSTL(my_rank_string))," ) ", &
+                TRIM(ADJUSTL(MessageVariable))," = ",TRIM(ADJUSTL(VariableString)),"  ",TRIM(ADJUSTL(MessageString))
         END IF
         
      ELSE IF (PRESENT(MessageVariable)) THEN
        
         IF((IPriorityFLAG.LE.IDebugFLAG.AND.my_rank.EQ.0.AND.ISoftwareMode.LT.IRefineSwitch) &
              .OR.IDebugFLAG.GE.110.AND.ISoftwareMode .LT. IRefineSwitch) THEN
-           PRINT*,"DBG_MESSAGE: ",ProgramName,"( ",TRIM(my_rank_string)," ) ",TRIM(MessageVariable)," = ",TRIM(VariableString)
+           PRINT*,"DBG_MESSAGE: ",ProgramName,"( ",TRIM(ADJUSTL(my_rank_string))," ) ",TRIM(ADJUSTL(MessageVariable)),&
+                " = ",TRIM(ADJUSTL(VariableString))
         END IF
 
      ELSE IF (PRESENT(MessageString)) THEN
 
         IF((IPriorityFLAG.LE.IDebugFLAG.AND.my_rank.EQ.0.AND.ISoftwareMode.LT.IRefineSwitch) &
              .OR.IDebugFLAG.GE.110.AND.ISoftwareMode .LT. IRefineSwitch) THEN
-           PRINT*,"DBG_MESSAGE: ",ProgramName,"( ",TRIM(my_rank_string)," ) ", TRIM(MessageString)
+           PRINT*,"DBG_MESSAGE: ",ProgramName,"( ",TRIM(ADJUSTL(my_rank_string))," ) ", TRIM(ADJUSTL(MessageString))
         END IF
         
         
@@ -149,7 +152,7 @@ SUBROUTINE Message(ProgramName,IPriorityFLAG,IErr,MessageVariable,RVariable,IVar
 
         IF((IPriorityFLAG.LE.IDebugFLAG.AND.my_rank.EQ.0.AND.ISoftwareMode.LT.IRefineSwitch) &
              .OR.IDebugFLAG.GE.110.AND.ISoftwareMode .LT. IRefineSwitch) THEN
-           PRINT*,"DBG_MESSAGE: ",ProgramName,"( ",TRIM(my_rank_string)," ) "
+           PRINT*,"DBG_MESSAGE: ",ProgramName,"( ",TRIM(ADJUSTL(my_rank_string))," ) "
         END IF
      END IF
   END IF

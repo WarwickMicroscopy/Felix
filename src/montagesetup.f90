@@ -37,6 +37,12 @@
 !%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 SUBROUTINE MontageSetup(RMontageImages,RIndividualReflectionImages,IErr)
+
+!!$  %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+!!$  %
+!!$  %    Creates Montage Images
+!!$  %
+!!$  %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
   
   USE WriteToScreen
   USE MyNumbers
@@ -62,9 +68,13 @@ SUBROUTINE MontageSetup(RMontageImages,RIndividualReflectionImages,IErr)
         DO knd = 1,IPixelTotal
            jnd = IPixelLocations(knd,1)
            ind = IPixelLocations(knd,2)
-           CALL MontageInitialisation(ind,jnd,IThicknessIndex,&
+           CALL MontageInitialisation(&
+                ind,&
+                jnd,&
+                IThicknessIndex,&
                 RMontageImages,&
-                RIndividualReflectionImages(:,IThicknessIndex,knd),IErr)
+                RIndividualReflectionImages(:,IThicknessIndex,knd),&
+                IErr)
            IF( IErr.NE.0 ) THEN
               PRINT*,"MontageSetup(", my_rank, ") error ", IErr, &
                    " in MakeMontagePixel"
@@ -73,7 +83,6 @@ SUBROUTINE MontageSetup(RMontageImages,RIndividualReflectionImages,IErr)
         END DO
      END DO
 !!$     reset message counter
-     IMessageCounter = 0
-  
+     IMessageCounter = 0  
 
 END SUBROUTINE MontageSetup

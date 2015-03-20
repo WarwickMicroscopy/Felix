@@ -132,6 +132,12 @@ END SUBROUTINE ReSortHKL
 
 !---------------------------------------------------------------------
 SUBROUTINE CONVERTAtomName2Number(name, number, IErr)
+
+!!$  %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+!!$  %
+!!$  %    Converts atomic symbols to atomic numbers, used to read cif file
+!!$  %
+!!$  %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
   
   USE WriteToScreen
   USE IPara
@@ -141,14 +147,14 @@ SUBROUTINE CONVERTAtomName2Number(name, number, IErr)
 
   IMPLICIT NONE
   
-  INTEGER IErr, ind, number
-  CHARACTER*2 name
+  INTEGER :: &
+       IErr, ind, number
+  CHARACTER*2 :: &
+       name
+  CHARACTER*2 :: &
+       SElementSymbolMatrix(NElements)
 
-  INTEGER, PARAMETER :: NElements=103
-
-  CHARACTER*2 A(NElements)
-
-  DATA A/" H", "He", "Li", "Be", " B", " C", " N", "O", "F", "Ne", &
+  DATA SElementSymbolMatrix/" H", "He", "Li", "Be", " B", " C", " N", "O", "F", "Ne", &
         "Na", "Mg", "Al", "Si", "P", "S", "Cl", "Ar", "K", "Ca", &
         "Sc", "Ti", "V", "Cr", "Mn", "Fe", "Co", "Ni", "Cu", "Zn", &
         "Ga", "Ge", "As", "Se", "Br", "Kr", "Rb", "Sr", "Y", "Zr", &
@@ -169,7 +175,7 @@ SUBROUTINE CONVERTAtomName2Number(name, number, IErr)
  
 
   DO ind=1,NElements
-     IF(TRIM(name)==TRIM(A(ind))) THEN
+     IF(TRIM(name)==TRIM(SElementSymbolMatrix(ind))) THEN
         number= ind
         IF((IWriteFLAG.EQ.6.AND.my_rank.EQ.0).OR.IWriteFLAG.GE.10) THEN
            PRINT*,"DBG: name, number ", name, number
@@ -182,7 +188,6 @@ SUBROUTINE CONVERTAtomName2Number(name, number, IErr)
   IErr=1
   RETURN
 
-  PRINT*,"DBG: name, number ", name, number
 END SUBROUTINE CONVERTAtomName2Number
 
 
@@ -205,7 +210,8 @@ SUBROUTINE CountTotalAtoms(IErr)
   
   INTEGER (IKIND) :: &
        ind,jnd,knd,hnd,ierr, ifullind, iuniind
-  LOGICAL Lunique
+  LOGICAL :: &
+       Lunique
 
   CALL Message("CountTotalAtoms",IMust,IErr)
 
@@ -234,9 +240,6 @@ SUBROUTINE CountTotalAtoms(IErr)
   CALL Message("CountTotalAtoms",IAllInfo,IErr, &
        MessageVariable = "Size of RFullAtomicFracCoordVec", &
        IVariable = SIZE(RFullAtomicFracCoordVec,1))
-  !IF((IWriteFLAG.GE.10.AND.my_rank.EQ.0).OR.IWriteFLAG.GE.10) THEN
-  !   PRINT*,"SIZE OF RFULLATOMICFRACCOORDVEC = ",SIZE(RFullAtomicFracCoordVec,1)
-  !END IF
 
   DO ind=1, SIZE(RSymVec,DIM=1)
      

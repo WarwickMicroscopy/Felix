@@ -36,7 +36,7 @@
 ! $Id: specimentsetup.f90,v 1.59 2014/04/28 12:26:19 phslaz Exp $
 !%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-SUBROUTINE WriteOutput( CAmplitudeandPhaseRoot,RIndividualReflectionsRoot,RFinalMontageImageRoot,IErr)
+SUBROUTINE WriteOutput( CAmplitudeandPhaseImages,RReflectionImages,RMontageImages,IErr)
 
   USE MyNumbers
   USE WriteToScreen
@@ -52,25 +52,24 @@ SUBROUTINE WriteOutput( CAmplitudeandPhaseRoot,RIndividualReflectionsRoot,RFinal
   
   IMPLICIT NONE
   
-  INTEGER(IKIND) ind,jnd,knd,gnd,hnd
-  INTEGER(IKIND) IThickness, IErr
-
-  REAL(RKIND) RThickness
+  INTEGER(IKIND) :: &
+       ind,jnd,knd,gnd,hnd,IThickness, IErr
+  REAL(RKIND) :: &
+       RThickness
   REAL(RKIND),DIMENSION(IReflectOut,IThicknessCount,IPixelTotal):: &
-       RIndividualReflectionsRoot
+       RReflectionImages
   REAL(RKIND),DIMENSION(MAXVAL(IImageSizeXY),&
-          MAXVAL(IImageSizeXY),IThicknessCount):: RFinalMontageImageRoot
+       MAXVAL(IImageSizeXY),IThicknessCount):: &
+       RMontageImages
   REAL(RKIND),DIMENSION(:,:),ALLOCATABLE :: &
        RImage
-
   COMPLEX(CKIND),DIMENSION(IReflectOut,IThicknessCount,IPixelTotal):: &
-       CAmplitudeandPhaseRoot
-
-  CHARACTER*40 surname, path
-  CHARACTER*25 CThickness, CThicknessLength
-  
-  !IF (my_rank.EQ.0) THEN
-    
+       CAmplitudeandPhaseImages
+  CHARACTER*40 :: &
+       surname, path
+  CHARACTER*25 :: &
+       SThickness, SThicknessLength
+      
   CALL Message("WriteOutput",IMust,IErr)
 
   ALLOCATE( &
@@ -93,8 +92,8 @@ SUBROUTINE WriteOutput( CAmplitudeandPhaseRoot,RIndividualReflectionsRoot,RFinal
      RThickness = RInitialThickness + (knd-1)*RDeltaThickness 
      IThickness = RInitialThickness + (knd-1)*RDeltaThickness 
      
-     WRITE(CThickness,*) IThickness
-     WRITE(CThicknessLength,*) SCAN(CThickness,'0123456789',.TRUE.)-SCAN(CThickness,'0123456789')+1
+     WRITE(SThickness,*) IThickness
+     WRITE(SThicknessLength,*) SCAN(SThickness,'0123456789',.TRUE.)-SCAN(SThickness,'0123456789')+1
      
      
      IF(IImageFLAG.EQ.0.OR.IImageFLAG.EQ.2.OR.IImageFLAG.EQ.4.OR.IImageFLAG.EQ.6) THEN
@@ -106,10 +105,8 @@ SUBROUTINE WriteOutput( CAmplitudeandPhaseRoot,RIndividualReflectionsRoot,RFinal
              IAbsorbFLAG, &
              IAnisoDebyeWallerFactorFlag,&
              "-T",IThickness,&
-             "-P",2*IPixelcount,&
-             "-P",2*IPixelcount
-!!$        WRITE(surname,"(A2,A1,I5.5,A2,I5.5)") &
-!!$             "M-","T",IThickness,"-P",MAXVAL(IImageSizeXY)
+             "-P",MAXVAL(IImageSizeXY),&
+             "-P",MAXVAL(IImageSizeXY)
         
         CALL OpenReflectionImage(MontageOut,surname,IErr,0,MAXVAL(IImageSizeXY),knd)
         IF( IErr.NE.0 ) THEN
@@ -120,7 +117,7 @@ SUBROUTINE WriteOutput( CAmplitudeandPhaseRoot,RIndividualReflectionsRoot,RFinal
 
         CALL Message("WriteOutput",IMoreInfo,IErr,MessageVariable = "working on RThickness",RVariable = RThickness )
 
-        CALL WriteReflectionImage(MontageOut,RFinalMontageImageRoot(:,:,knd), &
+        CALL WriteReflectionImage(MontageOut,RMontageImages(:,:,knd), &
              IErr,MAXVAL(IImageSizeXY),MAXVAL(IImageSizeXY),knd)
 
         CLOSE(MontageOut,IOSTAT =IErr)
@@ -158,12 +155,10 @@ SUBROUTINE WriteOutput( CAmplitudeandPhaseRoot,RIndividualReflectionsRoot,RFinal
            DO jnd = 1,IPixelTotal
               gnd = IPixelLocations(jnd,1)
               hnd = IPixelLocations(jnd,2)
-              RImage(gnd,hnd) = RIndividualReflectionsRoot(ind,knd,jnd) 
+              RImage(gnd,hnd) = RReflectionImages(ind,knd,jnd) 
               
            END DO
            
-!!$           RImage = TRANSPOSE(RImage);
-
            CALL WriteReflectionImage(IChOutWIImage,&
                 RImage,IErr,2*IPixelCount,2*IPixelCount,knd)       
            IF( IErr.NE.0 ) THEN
@@ -176,14 +171,6 @@ SUBROUTINE WriteOutput( CAmplitudeandPhaseRoot,RIndividualReflectionsRoot,RFinal
      END IF
      
      IF(IImageFLAG.GE.3) THEN
-        
-!!$        WRITE(path,"(A2,A1,I1.1,A2,I1.1,A2,I1.1,A2,I4.4,A2,I5.5)") &
-!!$             "F-",&
-!!$             "S", IScatterFactorMethodFLAG, &
-!!$             "_B", ICentralBeamFLAG, &
-!!$             "_M", IMaskFLAG, &
-!!$             "_P", IPixelCount, &
-!!$             "_T", IThickness
         
         WRITE(path,"(A2,I1.1,I1.1,I1.1,I1.1,A2,I5.5,A2,I5.5,A2,I5.5)") &
              "f-",&
@@ -218,7 +205,7 @@ SUBROUTINE WriteOutput( CAmplitudeandPhaseRoot,RIndividualReflectionsRoot,RFinal
            DO jnd = 1,IPixelTotal
               gnd = IPixelLocations(jnd,1)
               hnd = IPixelLocations(jnd,2)
-              RImage(gnd,hnd) = REAL(CAmplitudeandPhaseRoot(ind,knd,jnd))
+              RImage(gnd,hnd) = REAL(CAmplitudeandPhaseImages(ind,knd,jnd))
            END DO
               
            CALL WriteReflectionImage(IChOutWFImageReal,&
@@ -232,7 +219,7 @@ SUBROUTINE WriteOutput( CAmplitudeandPhaseRoot,RIndividualReflectionsRoot,RFinal
            DO jnd = 1,IPixelTotal
               gnd = IPixelLocations(jnd,1)
               hnd = IPixelLocations(jnd,2)
-              RImage(gnd,hnd) = AIMAG(CAmplitudeandPhaseRoot(ind,knd,jnd))
+              RImage(gnd,hnd) = AIMAG(CAmplitudeandPhaseImages(ind,knd,jnd))
            END DO
            
            CALL WriteReflectionImage(IChOutWFImagePhase,&

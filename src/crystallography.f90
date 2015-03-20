@@ -44,7 +44,8 @@ SUBROUTINE CrystalLatticeVectorDetermination(IErr)
   
   IMPLICIT NONE
 
-  INTEGER(IKIND) IErr,ind
+  INTEGER(IKIND) :: &
+       IErr,ind
 
   REAL(RKIND) :: RTTest
   REAL(RKIND), DIMENSION(THREEDIM) :: &
@@ -60,26 +61,26 @@ SUBROUTINE CrystalLatticeVectorDetermination(IErr)
   ! Setup Crystal Lattice Vectors: orthogonal reference frame in Angstrom units
 
   RaVecO(1)= RLengthX
-  RaVecO(2)= 0.D0
-  RaVecO(3)= 0.D0
+  RaVecO(2)= ZERO
+  RaVecO(3)= ZERO
 
   RbVecO(1)= RLengthY*COS(RGamma)
   RbVecO(2)= RLengthY*SIN(RGamma)
-  RbVecO(3)= 0.D0
+  RbVecO(3)= ZERO
 
   RcVecO(1)= RLengthZ*COS(RBeta)
   RcVecO(2)= RLengthZ*(COS(RAlpha)-COS(RBeta)*COS(RGamma))/SIN(RGamma)
   RcVecO(3)= RLengthZ*( &
        SQRT(1.D0- &
         COS(RAlpha)*COS(RAlpha)-COS(RBeta)*COS(RBeta)-COS(RGamma)*COS(RGamma) + &
-        2.D0*COS(RAlpha)*COS(RBeta)*COS(RGamma)) / &
+        TWO*COS(RAlpha)*COS(RBeta)*COS(RGamma)) / &
         SIN(RGamma))
 
   IF(IVolumeFLAG .EQ. 0) THEN
      RVolume= RLengthX*RLengthY*RLengthZ* &
           SQRT(1.0D0 - &
           COS(RAlpha)*COS(RAlpha)-COS(RBeta)*COS(RBeta)-COS(RGamma)*COS(RGamma) + &
-          2.0D0*COS(RAlpha)*COS(RBeta)*COS(RGamma))
+          TWO*COS(RAlpha)*COS(RBeta)*COS(RGamma))
   ENDIF
 
   IF(IDiffractionFLAG.EQ.0) THEN
@@ -108,14 +109,14 @@ SUBROUTINE CrystalLatticeVectorDetermination(IErr)
   RcrVecO= TWOPI*CROSS(RaVecO,RbVecO)/DOT_PRODUCT(RaVecO,CROSS(RbVecO,RcVecO))
 
   DO ind=1,THREEDIM
-     IF (abs(RarVecO(ind)).lt.1.D-3) THEN
-        RarVecO(ind) = 0.0D0
+     IF (abs(RarVecO(ind)).lt.TINY) THEN
+        RarVecO(ind) = ZERO
      ENDIF
-     IF (abs(RbrVecO(ind)).lt.1.D-3) THEN
-        RbrVecO(ind) = 0.0D0
+     IF (abs(RbrVecO(ind)).lt.TINY) THEN
+        RbrVecO(ind) = ZERO
      ENDIF
-     IF (abs(RcrVecO(ind)).lt.1.D-3) THEN
-        RcrVecO(ind) = 0.0D0
+     IF (abs(RcrVecO(ind)).lt.TINY) THEN
+        RcrVecO(ind) = ZERO
      ENDIF
   ENDDO
 
@@ -130,17 +131,12 @@ SUBROUTINE CrystalLatticeVectorDetermination(IErr)
   
   DO ind=1,THREEDIM
      WRITE(indString,*)ind
-     WRITE(RTMatString,*) RTMatC2O(:,ind)
+     WRITE(RTMatString,'(3(F8.3,1X))') RTMatC2O(:,ind)
      CALL Message("CrystalLatticeVectorDetermination",IMoreInfo,IErr, &
           MessageVariable = "RTMatC2O(:,"//TRIM(ADJUSTL(indString))//")", &
           MessageString = TRIM(ADJUSTL(RTMatString)))
   END DO
   
-
-!!$     IF((IWriteFLAG.GE.3.AND.my_rank.EQ.0).OR.IWriteFLAG.GE.10) THEN
-!!$     PRINT*,"CrystalLatticeVectorDetermination(",my_rank,") : RTMatC2O=", RTMatC2O
-!!$  END IF
-
   ! R?DirO vectors are reference vectors in orthogonal frame
   RXDirO= RXDirC(1)*RarVecO + RXDirC(2)*RbrVecO + RXDirC(3)*RcrVecO
   RXDirO= RXDirO/SQRT(DOT_PRODUCT(RXDirO,RXDirO))
@@ -159,17 +155,12 @@ SUBROUTINE CrystalLatticeVectorDetermination(IErr)
 
   DO ind=1,THREEDIM
      WRITE(indString,*)ind
-     WRITE(RTMatString,*) RTMatO2M(:,ind)
+     WRITE(RTMatString,'(3(F8.3,1X))') RTMatO2M(:,ind)
      CALL Message("CrystalLatticeVectorDetermination",IMoreInfo,IErr, &
           MessageVariable = "RTMatO2M(:,"//TRIM(ADJUSTL(indString))//")", &
           MessageString = TRIM(ADJUSTL(RTMatString)))
   END DO
-  
-!!$  IF((IWriteFLAG.GE.3.AND.my_rank.EQ.0).OR.IWriteFLAG.GE.10) THEN
-!!$     PRINT*,"CrystalLatticeVectorDetermination(",my_rank,"): RTMatO2M=", RTMatO2M
-!!$  END IF
-
-  ! now transform from crystal reference frame to orthogonal and then to microscope frame
+    ! now transform from crystal reference frame to orthogonal and then to microscope frame
 
   RXDirM = MATMUL(RTMatO2M,MatMUL(RTMatC2O,RXDirC))
   RYDirM = MATMUL(RTMatO2M,RYDirO)
@@ -209,7 +200,8 @@ SUBROUTINE CrystalFullFractionalAtomicPostitionsCalculation(IErr)
   
   IMPLICIT NONE
   
-  INTEGER(IKIND)IErr, ind,jnd,knd, Ifullind
+  INTEGER(IKIND) :: &
+       IErr, ind,jnd,knd, Ifullind
 
   CALL Message("CrystalFullFractionalAtomicPostitionsCalculation",IMust,IErr)
   
@@ -331,10 +323,13 @@ SUBROUTINE CrystalUniqueFractionalAtomicPostitionsCalculation (IErr)
   
   IMPLICIT NONE
   
-  REAL(RKIND) norm
+  REAL(RKIND):: &
+       norm
 
-  INTEGER(IKIND)IErr, ind,jnd, Iuniind
-  LOGICAL Lunique
+  INTEGER(IKIND) :: &
+       IErr, ind,jnd, Iuniind
+  LOGICAL :: &
+       Lunique
 
   CHARACTER*100 MNPString
   CHARACTER*100 indString
@@ -427,13 +422,8 @@ SUBROUTINE CrystalUniqueFractionalAtomicPostitionsCalculation (IErr)
 
 !!$  Display the above variables to the user - index stored as string for formatting using message subroutine
   DO ind=1,Iuniind     
-!!$     IF((IWriteFLAG.GE.3.AND.my_rank.EQ.0).OR.IWriteFLAG.GE.10) THEN
-!!$        IF (ind.EQ.1) THEN
-!!$
-!!$      
-!!$          ! PRINT*,"Crystallography : ","MNP ","SMNP ","RDWF ","ROcc "
-!!$        END IF
-        WRITE(MNPString,*)MNP(ind,:)
+
+        WRITE(MNPString,'(3(F5.3,1X))') MNP(ind,:)
         WRITE(indString,*)ind
         CALL Message("CrystalUniqueFractionalAtomicPostitionsCalculation",IMoreInfo,IErr, &
               MessageVariable = "MNP("//TRIM(ADJUSTL(indString))//",:)",MessageString = MNPString)
@@ -458,10 +448,6 @@ SUBROUTINE CrystalUniqueFractionalAtomicPostitionsCalculation (IErr)
      WRITE(indString,*)ind
      CALL Message("CrystalUniqueFractionalAtomicPostitionsCalculation",IDebug+IMoreInfo,IErr, &
               MessageVariable = "IAnisoDWFT("//TRIM(ADJUSTL(indString))//")",IVariable =IAnisoDWFT(ind))
-!!$     IF((IWriteFLAG.GE.3.AND.my_rank.EQ.0).OR.IWriteFLAG.GE.10) THEN
-!!$        PRINT*,"DBG: IAnisoDWFT",IAnisoDWFT(ind)
-!!$     END IF
-     
   END DO
 
   ! Calculate atomic position vectors r from Fractional Coordinates and Lattice Vectors
@@ -477,9 +463,6 @@ SUBROUTINE CrystalUniqueFractionalAtomicPostitionsCalculation (IErr)
   
   CALL Message("CrystalUniqueFractionalAtomicPostitionsCalculation",IInfo,IErr, &
        MessageVariable = "NAtomsUnitCell",IVariable = INAtomsUnitCell)
-!!$  IF((IWriteFLAG.GE.1.AND.my_rank.EQ.0).OR.IWriteFLAG.GE.10) THEN
-!!$     PRINT*,"CrystalUniqueFractionalAtomicPostitionsCalculation(", my_rank, ") NAtomsUnitCell=", INAtomsUnitCell
-!!$  END IF
   
   DO ind = 1,INAtomsUnitCell
      DO jnd = 1,THREEDIM

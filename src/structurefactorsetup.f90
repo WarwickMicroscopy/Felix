@@ -30,13 +30,17 @@
 !  You should have received a copy of the GNU General Public License
 !  along with felixsim.  If not, see <http://www.gnu.org/licenses/>.
 !
-!%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-
-!-------------------------------------------------------------------------------
-!setup structure factors for each material - to be used in Bloch Calculation
-!-------------------------------------------------------------------------------
+!
 
 SUBROUTINE StructureFactorSetup(IErr)
+
+!!$%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+!!$%
+!!$%     Calculate g-vector matrix (All inter g vectors) and from them
+!!$%     the Structure factors which will be available
+!!$%
+!!$%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
 
   USE WriteToScreen
   USE MyNumbers
@@ -51,15 +55,15 @@ SUBROUTINE StructureFactorSetup(IErr)
 
   IMPLICIT NONE
 
-  INTEGER(IKIND) :: IErr,ind,jnd
-
-!!$  COMPLEX(CKIND),DIMENSION(:,:), ALLOCATABLE :: &
-!!$       CZeroMat
+  INTEGER(IKIND) :: &
+       IErr
 
   CALL Message("StructureFactorSetup",IMust,IErr)
+
   !--------------------------------------------------------------------
   ! Calculate Reflection Matrix
   !--------------------------------------------------------------------
+
   ALLOCATE( &  
        RgMatMat(nReflections,nReflections,THREEDIM), &
        STAT=IErr)
@@ -93,6 +97,7 @@ SUBROUTINE StructureFactorSetup(IErr)
   !--------------------------------------------------------------------
 
   !Allocate memory for Ug Matrix
+
   ALLOCATE( & 
        CUgMat(nReflections,nReflections), &
        STAT=IErr)
@@ -116,17 +121,6 @@ SUBROUTINE StructureFactorSetup(IErr)
      ENDIF
      
   END IF
- 
-!!$  ALLOCATE( & 
-!!$       CZeroMat(nReflections,nReflections), &
-!!$       STAT=IErr)
-!!$  IF( IErr.NE.0 ) THEN
-!!$     !refinemain was here
-!!$     PRINT*,"StructureFactorSetup(", my_rank, ") error ", IErr, &
-!!$          " in ALLOCATE() of DYNAMIC variables CZeroMat"
-!!$     !call error function
-!!$     RETURN
-!!$  ENDIF
 
   CALL StructureFactorInitialisation (IErr)
   IF( IErr.NE.0 ) THEN
@@ -136,5 +130,39 @@ SUBROUTINE StructureFactorSetup(IErr)
      RETURN
   ENDIF
 
+  Deallocate( &
+       RgMatMat,STAT=IErr)
+  IF( IErr.NE.0 ) THEN
+     PRINT*,"felixsim(", my_rank, ") error ", IErr, &
+          " in Deallocation of RgMatMat"
+     RETURN
+  ENDIF
+  
+  Deallocate(&
+       RgMatMag,STAT=IErr)
+  IF( IErr.NE.0 ) THEN
+     PRINT*,"felixsim(", my_rank, ") error ", IErr, &
+          " in Deallocation of RgMatMag"
+
+     RETURN
+  ENDIF
+  
+  DEALLOCATE( &
+       RScattFactors,&
+       STAT=IErr)
+  IF( IErr.NE.0 ) THEN
+     PRINT*,"felixsim(", my_rank, ") error ", IErr, &
+          " in DEALLOCATE() "
+     RETURN
+  ENDIF
+
+  DEALLOCATE(&
+       RrVecMat,&
+       STAT=IErr)
+  IF( IErr.NE.0 ) THEN
+     PRINT*,"felixsim(", my_rank, ") error ", IErr, &
+          " in DEALLOCATE() "
+     RETURN
+  ENDIF
 
 END SUBROUTINE StructureFactorSetup

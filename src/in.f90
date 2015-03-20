@@ -780,8 +780,6 @@ SUBROUTINE ReadScaFile( IErr )
 
   ILine= 0
   
-!!$  OPEN(UNIT= IChInp, ERR= 120, FILE= "FelixDoyle.sca",&
-!!$       STATUS= 'OLD')
   OPEN(UNIT= IChInp, ERR= 120, FILE= "felix.sca",&
        STATUS= 'OLD')
 !!$  
@@ -913,125 +911,6 @@ SUBROUTINE ReadScaFile( IErr )
   IErr= 1
   RETURN
 END SUBROUTINE ReadScaFile
-  
-! -----------------------------------------------------------------------
-!
-!
-!	IErr	error code
-! ----------------------------------------------------------------------
-
-SUBROUTINE ReadEigenSystemChunk( IAllocationChunk,IErr )
-  
-  USE MyNumbers
-  
-  USE CConst; USE IConst
-  USE IPara; USE RPara; USE CPara; USE SPara 
-  USE IChannels
-
-  USE MPI
-  USE MyMPI
-    
-  IMPLICIT NONE
-
-  CHARACTER*25 EIGENFORMAT
-  INTEGER(IKIND) :: IRank, &
-       Iindex, Ijndex, IWriteLine, IStrongBeamIndex,IInputBeams, &
-       IAllocationChunk,InChunks,IindPrevious, IjndPrevious, &
-       IErr, ILength, ind,IReadLine,INewLineFLAG,index
-  REAL(RKIND), DIMENSION(:), ALLOCATABLE :: &
-       REigenVectorRealTemp, REigenVectorImagTemp
-  REAL(RKIND) :: &
-       REigenValueRealTemp, REigenValueImagTemp
-
-  PRINT*,"InputEigenSystem()"
-
-  !-----------------------------------------------------------
-  ! eigenvalues
-  !-----------------------------------------------------------
-
-  InBeams = 0
-  ind = 0
-
-  IF(IWriteFLAG.GE.10) THEN
-     
-     PRINT*,"actual reading of data"
-  
-  END IF
-  IReadLine = 1
-  INewLineFLAG = 1
-  DO 
-     READ(UNIT= IChInp, END=100, ERR=20, FMT='(7(I3.1,1X))',ADVANCE='NO') &
-          IRank,Iindex, Ijndex, nReflections,&
-          IInputBeams, IWriteLine, IStrongBeamIndex
-
-     IF (IInputBeams.EQ.0) THEN
-        IReadLine = IReadLine-1
-        EXIT
-     END IF
-        
-     InBeams(IReadLine) = IInputBeams
-     ILACBEDStrongBeamList(IReadLine,IWriteLine) = IStrongBeamIndex
-     IPixelLocation(IReadLine,1) = Iindex
-     IPixelLocation(IReadLine,2) = Ijndex
-      
-     IF(INewLineFlag.EQ.1) THEN
-        IPixelCountTotal = IPixelCountTotal + 1
-        ALLOCATE( &
-             REigenVectorRealTemp(IInputBeams),&
-             REigenVectorImagTemp(IInputBeams),&
-             STAT=IErr)
-        IF(IErr.NE.0) THEN
-           PRINT*,"ERROR IN ALLOCATE OF LACBED Temps"
-           STOP
-        ENDIF
-        INewLineFlag=0
-     ENDIF
-     
-     WRITE(EIGENFORMAT,*) IInputBeams
-
-     READ(ICHInp,END=100,ERR=20,FMT="((1F13.10,1X),(1F13.10,1X),&
-          &"//TRIM(ADJUSTL(TRIM(EIGENFORMAT)))//"(1F13.10,1X), &
-          &"//TRIM(ADJUSTL(TRIM(EIGENFORMAT)))//"(1F13.10,1X))", &
-          ADVANCE='YES') REigenValueRealTemp, REigenValueImagTemp,&     
-          REigenVectorRealTemp,REigenVectorImagTemp
-     CEigenVectorsChunk(IReadLine,IWriteLine,1:IInputBeams) = &
-          REigenVectorRealTemp+REigenVectorImagTemp*CIMAGONE
-     CEigenValuesChunk(IReadLine,IWriteLine) = &
-          REigenValueRealTemp+ REigenValueImagTemp*CIMAGONE
-     
-     IF(IReadLine.EQ.IAllocationChunk.AND.IWriteLine.EQ.IInputBeams) EXIT
-     IF(IWriteLine.EQ.IInputBeams) THEN
-        IReadLine =  IReadLine + 1
-        INewLineFLAG = 1
-        DEALLOCATE(&
-             REigenVectorRealTemp,&
-             REigenVectorImagTemp)
-     ENDIF
-     
-  ENDDO
-
-  100 PRINT*,"Done with the reading already"
-
-  RETURN
-  
-  !	error in OPEN detected
-120 PRINT*,"InputEigenSystem(): ERR in OPEN"
-  !GOTO 1000
-  
-  !	error in CLOSE detected
-130 PRINT*,"InputEigenSystem(): ERR in CLOSE"
-  !GOTO 1000
-  
-  !	error in READ detected
-20 PRINT*,"InputEigenSystem(): ERR in READ at line", IReadLine
-  !GOTO 1000
-  
-  !	EOF in READ occured prematurely
-30 PRINT*,"InputEigenSystem(): EOF in READ at line", IReadLine
-  
-  IErr= 1
-  RETURN
-END SUBROUTINE ReadEigenSystemChunk
   
 !Write out the sample input file, when none provided
 SUBROUTINE WriteOutInputFile (IErr)
@@ -1238,32 +1117,24 @@ SUBROUTINE ReadHklFile(IErr)
 
   IMPLICIT NONE
 
-  INTEGER(IKIND) :: ILine,ILength,IErr,h,k,l,ind,IPos1,IPos2
-  CHARACTER*200 :: dummy1,dummy2
+  INTEGER(IKIND) :: &
+       ILine,ILength,IErr,h,k,l,ind,IPos1,IPos2
+  CHARACTER*200 :: &
+       dummy1,dummy2,SHKLString
 
   CALL Message ("ReadHklFile",IMust,IErr)  
- ! IF((my_rank.EQ.0.AND.IWriteFLAG.GE.0).OR.IWriteFLAG.GE.10) THEN
- !    PRINT*,"ReadHklFile(",my_rank,")"
- ! END IF
 
   OPEN(Unit = IChInp,FILE="felix.hkl",&
        STATUS='OLD',ERR=10)
 
   CALL Message ("ReadHklFile",IInfo,IErr, &
        MessageString =" Felix has detected .hkl and is entering selected hkl mode") 
-  !IF((my_rank.EQ.0.AND.IWriteFLAG.GE.2).OR.IWriteFLAG.GE.10) THEN
-  !   PRINT*,"ReadHklFile(",my_rank,") felix Has Detected .hkl and is entering Selected hkl mode"
-  !END IF
    
   ILine = 0
 
   IHKLSelectFLAG=1
   
   CALL Message ("ReadHklFile",IInfo,IErr,MessageString = " Selected hkl mode engaged") 
- ! IF((my_rank.EQ.0.AND.IWriteFLAG.GE.0).OR.IWriteFLAG.GE.10) THEN
- !    PRINT*,"ReadHklFile(",my_rank,") Selected hkl Mode Engaged"
- ! END IF
-
   
   DO
      READ(UNIT= IChInp, END=100, FMT='(a)') dummy1
@@ -1287,19 +1158,19 @@ SUBROUTINE ReadHklFile(IErr)
      PRINT*,"ReadHklFile(): error in memory ALLOCATE()"
      RETURN
   ENDIF
-
+  
   REWIND(UNIT=IChInp)
-
+  
   ILine = 0
-
-CALL Message ("ReadHklFile",IMoreInfo,IErr,MessageString = " Printing selected hkl's") 
-
+  
+  CALL Message ("ReadHklFile",IMoreInfo,IErr,MessageString = " Printing selected hkl's") 
+  
   DO ind = 1,ILength
-
+     
      ! READ HKL in as String
-
+     
      READ(UNIT= IChInp,FMT='(A)' ) dummy1
-
+     
      
      !Scan String for h
 
@@ -1328,10 +1199,11 @@ CALL Message ("ReadHklFile",IMoreInfo,IErr,MessageString = " Printing selected h
      RInputHKLs(ILine,3) = REAL(l,RKIND)
      
      !Why Zero?
-     IF((my_rank.EQ.0.AND.IWriteFLAG.GE.3).OR.IWriteFLAG.GE.10) THEN
-        
-        PRINT*,RInputHKLs(ILine,:)
-     END IF
+!!$     IF((my_rank.EQ.0.AND.IWriteFLAG.GE.3).OR.IWriteFLAG.GE.10) THEN
+     WRITE(SHKLString,'(3(I4.1,1X))') NINT(RInputHKLs(ILine,:))
+     CALL Message ("ReadHklFile",IInfo,IErr,MessageVariable = "Input HKL is",MessageString = SHKLString) 
+
+!!$     END IF
   END DO
 
   IReflectOut = ILength
@@ -1344,7 +1216,6 @@ CALL Message ("ReadHklFile",IMoreInfo,IErr,MessageString = " Printing selected h
 
   RETURN
 END SUBROUTINE ReadHklFile
-  
   
 SUBROUTINE DetermineRefineableAtomicSites(SAtomicSites,IErr)
 

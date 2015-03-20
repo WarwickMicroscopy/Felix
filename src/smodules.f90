@@ -86,7 +86,9 @@ MODULE IConst
        ADD_OUT_INFO=6, &
        IParallelFLAG=0,&
        IRandomFLAG = 0, &
-       IRefinementVariableTypes = 8
+       IRefinementVariableTypes = 8,&
+       NElements=103
+
   !PriorityFLAG values - to match to the WriteFLAG - will change eventually,
   !hence why the silent & Must are both 0, no Silent option yet.
   !IInfo is now IWriteFLAG = 1, IAllInfo is IWriteFLAG = 10
@@ -108,22 +110,21 @@ MODULE RConst
   USE MyNumbers
   
   REAL(RKIND), PARAMETER :: &
-       RSpeedOfLight=2.99762458D+8, &
-       RElectronMass=9.10938291D-31, &
-       RElectronMassMeV=0.510998928, &
-       RPlanckConstant=6.62606957D-34, &
-       RElectronCharge=1.602176565D-19, &
-       RAngstromConversion=1.D10
+       RSpeedOfLight=REAL(2.99762458D+8,RKIND), &
+       RElectronMass=REAL(9.10938291D-31,RKIND), &
+       RElectronMassMeV=REAL(0.510998928,RKIND), &
+       RPlanckConstant=REAL(6.62606957D-34,RKIND), &
+       RElectronCharge=REAL(1.602176565D-19,RKIND), &
+       RAngstromConversion=REAL(1.D10,RKIND)
   REAL(RKIND), PARAMETER :: &
-       RTolerance = 1E-5
+       RTolerance =REAL( 1E-5,RKIND)
     
 END MODULE RConst
 
 !--------------------------------------------------------------------
 MODULE IPara
   USE MyNumbers
-  USE IConst
- 
+  USE IConst 
   
   !Write Out
   

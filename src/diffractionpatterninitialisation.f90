@@ -46,7 +46,8 @@ SUBROUTINE DiffractionPatternInitialisation
 
   IMPLICIT NONE
 
-  INTEGER(IKIND) IErr
+  INTEGER(IKIND) :: &
+       IErr
 
   CALL Message("DiffractionPatternInitialisation",IMust,IErr)
 
