@@ -10,7 +10,7 @@ ciffile=felix.cif
 
 #Name of Job
 #-----------
-Job_Name=FelixSim_Test #job name here (FS... or FR...)
+Job_Name= #job name here (FS... or FR...)
 
 
 #Directory Input
