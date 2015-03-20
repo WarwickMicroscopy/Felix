@@ -34,13 +34,12 @@ submitdir=/work/e370/e370/ajmh1001/KTP_proper_test_2
 bashtmpdir=/work/e370/e370/ajmh1001/RUNS/Temp_KTP_proper_test_2
 
 
-#Input Arguments - only input argument required is the number of nodes 
+#Input Arguments - only input argument required is the number of nodes and walltime 
 #---------------
 # settings for parallel submission
-nodes=${1:-$1}
-JobId=${2:-1}
-wtime=${3:-03:00:00} #change as needed
-
+nodes=${1:-1}
+wtime=${2:-00:20:00} 
+JobId=${3:-1}
 
 let cores=${nodes}
 let mppwidth=${cores}
@@ -77,7 +76,7 @@ fi
 #loop starts here for looped input file parameters or CIFs#
 #---------------------------------------------------------#
 
-echo "Submitting jobs for ${cores} cores, ${ranks} MPI ranks,0 OpenMP threads with maximum wall time ${wtime}"
+echo "Submitting jobs for ${cores} cores, ${ranks} MPI ranks, 0 OpenMP threads with maximum wall time ${wtime}"
 
 [ -d ${submitdir} ] || mkdir -p ${submitdir}
 cd ${submitdir}
