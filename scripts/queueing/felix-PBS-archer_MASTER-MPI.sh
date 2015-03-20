@@ -4,8 +4,6 @@ binSIM=felixsim
 binREFINE=felixrefine
 #binDRAW=felixdraw
 
-#pytIMAGE=txt2png.py
-
 inpfile=felix.inp
 scafile=felix.sca
 ciffile=felix.cif
@@ -19,7 +17,7 @@ Job_Name= #job name here (FS... or FR...)
 #---------------
 #input file directory - point to where all input file(s) are located (at the very least the .sca file)
 # NEEDS TO EXIST
-inputfiledir=$HOME/project/KTP_felix/Felix/KTP_convergence_angle #example
+inputfiledir=$HOME/project/KTP_felix/Felix/GaA_test #example
 
 # point this to where the felixsim/refine executable is
 # NEEDS TO EXIST
@@ -27,18 +25,18 @@ binarydir=$HOME/project/KTP_felix/Felix/src
 
 # submission directory - point to what you want the PBS working directory to be 
 # Doesn't need to exist
-submitdir=/work/e370/e370/ajmh1001/KTP_proper_test_2
+submitdir=/work/e370/e370/ajmh1001/Archer_test_script
 
 # tmp directory to run felix in
 # Doesn't need to exist
-bashtmpdir=/work/e370/e370/ajmh1001/RUNS/Temp_KTP_proper_test_2
+bashtmpdir=/work/e370/e370/ajmh1001/RUNS/Archer_test_script_temp
 
 
-#Input Arguments - only input argument required is the number of nodes and walltime 
+#Input Arguments - only input arguments required are the number of nodes and walltime 
 #---------------
 # settings for parallel submission
 nodes=${1:-1}
-wtime=${2:-00:20:00} 
+wtime=${2:-00:01:00} 
 JobId=${3:-1}
 
 let cores=${nodes}
@@ -273,7 +271,7 @@ EOD
 chmod 755 ${job_dir}/${job_file}
 #(cd ${job_dir} ; qsub ./${job_file})
 #(cd ${job_dir} ; qsub -q long ./${job_file})
-#(cd ${job_dir} ; qsub ./${job_file})
+#(cd ${job_dir} ; qsub -q short ./${job_file})
 #(cd ${job_dir} ; qsub -q low ./${job_file})
 #(cd ${job_dir} ; qsub -q serial ./${job_file})
 
