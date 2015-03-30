@@ -49,14 +49,15 @@ SUBROUTINE ExperimentalSetup (IErr)
   
   IMPLICIT NONE
 
-  INTEGER(IKIND) :: IErr
+  INTEGER(IKIND) :: &
+       IErr
 
   CALL Message("ExperimentalSetup",IMust,IErr)
   
   !--------------------------------------------------------------------
   ! Allocate Crystallography Variables
   !--------------------------------------------------------------------
-  !What should I do with this?     
+
   ALLOCATE( &
        RrVecMat(ITotalAtoms,THREEDIM), &
        STAT=IErr)

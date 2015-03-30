@@ -43,35 +43,41 @@ MODULE MyNumbers
   INTEGER, PARAMETER :: RKIND = KIND(1.0D0)
   INTEGER, PARAMETER :: CKIND = RKIND 
 
-  REAL(KIND=RKIND) :: PI, TWOPI, ONEPLS, ONEMNS, &
+  REAL(KIND=RKIND) :: &
+       PI, TWOPI, ONEPLS, ONEMNS, &
        SQRTHALF, SQRTTWO
 
-  REAL(KIND=RKIND), PARAMETER :: ZERO = 0.0, ONE = 1.0 ,TWO = 2.0, &
-       THREE = 3.0, FOUR = 4.0
-  COMPLEX(KIND=RKIND), PARAMETER :: CZERO = (0.0d0,0.0d0), CONE = (1.0d0,0.0d0), &
-       CIMAGONE= (0.0d0,1.0d0)            
+  REAL(RKIND), PARAMETER :: &
+       ZERO = 0.0_RKIND, ONE = 1.0_RKIND ,TWO = 2.0_RKIND, &
+       THREE = 3.0_RKIND, FOUR = 4.0_RKIND
+  COMPLEX(RKIND), PARAMETER :: &
+       CZERO = (0.0_RKIND,0.0_RKIND), CONE = (1.0_RKIND,0.0_RKIND), &
+       CIMAGONE= (0.0_RKIND,1.0_RKIND)            
 
-  REAL(KIND=RKIND), PARAMETER :: HALF = 0.5D0, QUARTER = 0.25D0, EIGHTH = 0.125D0, &
-       THIRD=0.3333333333333333D0, TWOTHIRD=0.6666666666666D0, &
-       NEGTHIRD=-0.3333333333333333D0, NEGTWOTHIRD=-0.6666666666666D0
+  REAL(RKIND), PARAMETER :: &
+       HALF = 0.5_RKIND, QUARTER = 0.25_RKIND, EIGHTH = 0.125_RKIND, &
+       THIRD=0.3333333333333333_RKIND, TWOTHIRD=0.6666666666666_RKIND, &
+       NEGTHIRD=-0.3333333333333333_RKIND, NEGTWOTHIRD=-0.6666666666666_RKIND
 
-  REAL(KIND=RKIND) :: TINY= 1.0D-9
+  REAL(RKIND) :: &
+       TINY= 1.0D-9
 
-  REAL(RKIND) :: RKiloByte,RMegaByte,RGigaByte,RTeraByte 
+  REAL(RKIND) :: &
+       RKiloByte,RMegaByte,RGigaByte,RTeraByte 
   
 CONTAINS
   SUBROUTINE INIT_NUMBERS
-    PI       = 4.0D0* ATAN(1.0D0)
-    TWOPI    = 8.0D0* ATAN(1.0D0)
+    PI       = 4.0_RKIND* ATAN(1.0_RKIND)
+    TWOPI    = 8.0_RKIND* ATAN(1.0_RKIND)
     ONEMNS   = SQRT(EPSILON(ONEMNS))
     ONEPLS   = ONE + ONEMNS
     ONEMNS   = ONE - ONEMNS
-    SQRTHALF = DSQRT(0.5D0)
-    SQRTTWO  = DSQRT(2.0D0)
-    RKiloByte = 2.0D0**10.0D0
-    RMegaByte = 2.0D0**20.0D0
-    RGigaByte = 2.0D0**30.0D0
-    RTeraByte = 2.0D0**40.0D0
+    SQRTHALF = DSQRT(0.5_RKIND)
+    SQRTTWO  = DSQRT(2.0_RKIND)
+    RKiloByte = 2.0_RKIND**10.0_RKIND
+    RMegaByte = 2.0_RKIND**20.0_RKIND
+    RGigaByte = 2.0_RKIND**30.0_RKIND
+    RTeraByte = 2.0_RKIND**40.0_RKIND
     
   END SUBROUTINE INIT_NUMBERS
 
@@ -82,16 +88,16 @@ CONTAINS
     IF( X > 0. ) THEN 
        ARG= ATAN(Y/X)
     ELSE IF ( (X == 0.) .and. (Y > 0. )) THEN 
-       ARG = PI/2.0D0
+       ARG = PI/2.0_RKIND
     ELSE IF ( (X == 0.) .and. (Y < 0. )) THEN 
-       ARG = -PI/2.0D0
+       ARG = -PI/2.0_RKIND
     ELSE IF ( (X < 0. ) .and. (Y >= 0.)) THEN 
        ARG = PI + ATAN(Y/X)
     ELSE IF ( (X < 0. ) .and. (Y < 0. )) THEN 
        ARG = -PI + ATAN(Y/X)
     ELSE IF ( (X == 0.0) .and. (Y == 0.)) THEN
        PRINT*, "ARG(): both X and Y ==0, undefined --- using ARG=0"
-       ARG=0.0D0
+       ARG=0.0_RKIND
     ENDIF
     
     RETURN

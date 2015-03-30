@@ -32,11 +32,13 @@
 !
 !%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-!-------------------------------------------------------------------------------
-!Subroutine allocates memory for, and calls the Image setup subroutines.
-!-------------------------------------------------------------------------------
-
 SUBROUTINE ImageSetup (IErr)
+
+!!$%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+!!$%
+!!$%      Determines size of final images and creates image shape from IMaskFLAG
+!!$%
+!!$%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%  
 
   USE MyNumbers
   USE WriteToScreen
@@ -47,7 +49,8 @@ SUBROUTINE ImageSetup (IErr)
 
   IMPLICIT NONE
 
-  INTEGER(IKIND) :: IErr
+  INTEGER(IKIND) :: &
+       IErr
 
   !--------------------------------------------------------------------
   ! allocate memory for DYNAMIC variables according to nReflections
@@ -56,12 +59,6 @@ SUBROUTINE ImageSetup (IErr)
   ! Image initialisation 
 
   CALL Message("ImageSetup",IMust,IErr)
-
-!!$  
-!!$  IF((IWriteFLAG.GE.1.AND.my_rank.EQ.0).OR.IWriteFLAG.GE.10) THEN
-!!$     PRINT*,"DBG: nReflections=", nReflections
-!!$  END IF
-
   
   ALLOCATE( &
        Rhklpositions(nReflections,2), &
@@ -82,7 +79,6 @@ SUBROUTINE ImageSetup (IErr)
 	  "in ImageInitialistion()"
      RETURN
   ENDIF
-
 
   !--------------------------------------------------------------------
   ! define image masks
