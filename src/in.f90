@@ -321,6 +321,10 @@ SUBROUTINE ReadInpFile( IErr )
   READ(IChInp,15,ERR=20,END=30) RAcceleratingVoltage
   CALL Message ("ReadInpFile",IInfo,IErr,MessageVariable ="RAcceleratingVolatage",RVariable=RAcceleratingVoltage)
 
+  ILine=ILine+1
+  READ(IChInp,15,ERR=20,END=30) RAcceptanceAngle
+  CALL Message ("ReadInpFile",IInfo,IErr,MessageVariable ="RAcceptanceAngle",RVariable=RAcceptanceAngle)
+
   ! ----------------------------------------------------------------------
   ! Title Space
   

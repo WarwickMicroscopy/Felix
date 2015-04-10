@@ -357,7 +357,7 @@ MODULE RPara
   REAL(RKIND) :: &
        RElectronVelocity, RElectronWaveLength, &
        RElectronWaveVectorMagnitude, RRelativisticCorrection, &
-       RRelativisticMass, RBraggCentral
+       RRelativisticMass, RBraggCentral, RAcceptanceAngle
 
   ! Crystallography 
   ! Real Space and Reciprocal Lattice Vectors in Orthogonal and Microscope
