@@ -58,13 +58,14 @@ PROGRAM felixsim
 
   REAL(RKIND) :: &
        RThickness,&
-       StartTime, CurrentTime, Duration, &
+       Duration, &
        time, norm
   INTEGER(IKIND) :: &
        ind,jnd,hnd,knd,pnd,gnd,IErr, &
        IHours,IMinutes,ISeconds,IMilliSeconds,&
        IThicknessIndex, &
        ILocalPixelCountMin, ILocalPixelCountMax
+  INTEGER :: IStartTime, ICurrentTime ,IRate
   INTEGER(IKIND), DIMENSION(:), ALLOCATABLE :: &
        IDisplacements,ICount
   REAL(RKIND),DIMENSION(:,:,:),ALLOCATABLE :: &
@@ -74,6 +75,8 @@ PROGRAM felixsim
        CAmplitudeandPhaseRoot
 
   CHARACTER*40 surname, my_rank_string 
+  CHARACTER*1000  SLocalPixelCountMin, SLocalPixelCountMax
+
 
   !-------------------------------------------------------------------
   ! constants
@@ -123,14 +126,14 @@ PROGRAM felixsim
      PRINT*,"          ", AStr
      PRINT*,"          on rank= ", my_rank, " of ", p, " in total."
      PRINT*,"--------------------------------------------------------------"
-  END IF
-  
+  END IF  
     
   !--------------------------------------------------------------------
   ! timing startup
   !--------------------------------------------------------------------
 
-  CALL cpu_time(StartTime)
+  CALL SYSTEM_CLOCK(count_rate=IRate)
+  CALL SYSTEM_CLOCK(IStarttime)
 
   !--------------------------------------------------------------------
   ! INPUT section 
@@ -148,31 +151,11 @@ PROGRAM felixsim
   CALL Message("felixsim",IMust,IErr)   
   CALL Message("felixsim",IInfo,IErr, MessageVariable = "ITotalAtoms", &
        IVariable = ITotalAtoms)
- 
-  !--------------------------------------------------------------------
-  ! open outfiles 
-  !--------------------------------------------------------------------
 
-  WRITE(surname,'(A1,I1.1,A1,I1.1,A1,I1.1,A2,I4.4)') &
-       "S", IScatterFactorMethodFLAG, &
-       "B", ICentralBeamFLAG, &
-       "M", IMaskFLAG, &
-       "_P", IPixelCount
-  
-  ! eigensystem - MPI Writing used to be here
-  IF(IOutputFLAG.GE.1.AND.my_rank.EQ.ZERO) THEN
- !    CALL OpenData_MPI(IChOutES_MPI, "ES", surname, IErr)
-  ENDIF
- 
-  
-  ! UgMatEffective
-  IF(IOutputFLAG.GE.2) THEN
- !    CALL OpenData_MPI(IChOutUM_MPI, "UM", surname, IErr)
-  ENDIF
- 
   !-------------------------------------------------------------------- 
   !Setup Experimental Variables
   !--------------------------------------------------------------------
+
   CALL ExperimentalSetup (IErr)
   IF( IErr.NE.0 ) THEN
      PRINT*,"felixsim(", my_rank, ") error in ExperimentalSetup()"
@@ -201,30 +184,6 @@ PROGRAM felixsim
      GOTO 9999
   ENDIF
 
-  !!$ ! UgMatEffective - MPI Writing used to be here
-  IF(IOutputFLAG.GE.2) THEN
-    ! CALL WriteDataC_MPI(IChOutUM_MPI, ind,jnd, &
-     !     CUgMatEffective(:,:), nBeams*nBeams, 1, IErr)
- 
-  ENDIF
-
-  Deallocate( &
-       RgMatMat,STAT=IErr)
-  IF( IErr.NE.0 ) THEN
-     PRINT*,"felixsim(", my_rank, ") error ", IErr, &
-          " in Deallocation of RgMatMat"
-     GOTO 9999
-  ENDIF
-  
-  Deallocate(&
-       RgMatMag,STAT=IErr)
-  IF( IErr.NE.0 ) THEN
-     PRINT*,"felixsim(", my_rank, ") error ", IErr, &
-          " in Deallocation of RgMatMag"
-
-     GOTO 9999
-  ENDIF
-         
   !--------------------------------------------------------------------
   ! reserve memory for effective eigenvalue problem
   !--------------------------------------------------------------------
@@ -265,12 +224,20 @@ PROGRAM felixsim
   ILocalPixelCountMin= (IPixelTotal*(my_rank)/p)+1
   ILocalPixelCountMax= (IPixelTotal*(my_rank+1)/p)
   
+  WRITE(SLocalPixelCountMin,"(I6.1)")ILocalPixelCountMin
+  WRITE(SLocalPixelCountMax,"(I6.1)")ILocalPixelCountMax
 
-  IF((IWriteFLAG.GE.6.AND.my_rank.EQ.0).OR.IWriteFLAG.GE.10) THEN
-     PRINT*,"felixsim(", my_rank, "): starting the eigenvalue problem"
-     PRINT*,"felixsim(", my_rank, "): for lines ", ILocalPixelCountMin, &
-          " to ", ILocalPixelCountMax
-  ENDIF
+
+  CALL Message("felixsim",IAllInfo,IErr,MessageString=": starting the eigenvalue problem")
+  CALL Message("felixsim",IAllInfo,IErr,MessageString="for lines " // &
+       TRIM(ADJUSTL(SLocalPixelCountMin)) // " to "// TRIM(ADJUSTL(SLocalPixelCountMax)))
+       
+
+!!$  IF((IWriteFLAG.GE.6.AND.my_rank.EQ.0).OR.IWriteFLAG.GE.10) THEN
+!!$     PRINT*,"felixsim(", my_rank, "): starting the eigenvalue problem"
+!!$     PRINT*,"felixsim(", my_rank, "): for lines ", ILocalPixelCountMin, &
+!!$          " to ", ILocalPixelCountMax
+!!$  ENDIF
   
 
   IThicknessCount= (RFinalThickness- RInitialThickness)/RDeltaThickness + 1
@@ -321,38 +288,15 @@ PROGRAM felixsim
   IMAXCBuffer = 200000
   IPixelComputed= 0
   
-  DEALLOCATE( &
-       RScattFactors,&
-       STAT=IErr)
-  IF( IErr.NE.0 ) THEN
-     PRINT*,"felixsim(", my_rank, ") error ", IErr, &
-          " in DEALLOCATE() "
-     GOTO 9999
-  ENDIF
-  DEALLOCATE(&
-       RrVecMat,&
-       STAT=IErr)
-  IF( IErr.NE.0 ) THEN
-     PRINT*,"felixsim(", my_rank, ") error ", IErr, &
-          " in DEALLOCATE() "
-     GOTO 9999
-  ENDIF
-  DEALLOCATE(&
-       Rsg, &
-       STAT=IErr)
-  IF( IErr.NE.0 ) THEN
-     PRINT*,"felixsim(", my_rank, ") error ", IErr, &
-          " in DEALLOCATE() "
-     GOTO 9999
-  ENDIF
-
   IF((IWriteFLAG.GE.0.AND.my_rank.EQ.0.AND.ISoftwareMode.LT.2) &
-             .OR.IWriteFLAG.GE.10.AND.ISoftwareMode .LT. 2) THEN
+       .OR.IWriteFLAG.GE.10.AND.ISoftwareMode .LT. 2) THEN
+
      PRINT*,"*********************************"
      CALL Message("felixsim",ISilent,IErr,MessageString = " Entering BlochLoop")   
      PRINT*,"*********************************"
+     
   END IF
-
+  
   DO knd = ILocalPixelCountMin,ILocalPixelCountMax,1
      ind = IPixelLocations(knd,2)
      jnd = IPixelLocations(knd,1)
@@ -363,37 +307,16 @@ PROGRAM felixsim
         GOTO 9999
      ENDIF
   END DO
-
+  
 !!$     reset message counter
   IMessageCounter = 0
-  
-  IF((IWriteFLAG.GE.6.AND.my_rank.EQ.0).OR.IWriteFLAG.GE.10) THEN
-     PRINT*,"felixsim : ",my_rank," is exiting calculation loop"
-  END IF
 
-  !--------------------------------------------------------------------
-  ! close outfiles
-  !--------------------------------------------------------------------
+  CALL Message("felixsim",IAllInfo,IErr,&
+       MessageString="is exiting calculation loop")
 
-  ! eigensystem
-  IF(IOutputFLAG.GE.1) THEN
-     CALL MPI_FILE_CLOSE(IChOutES_MPI, IErr)
-     IF( IErr.NE.0 ) THEN
-        PRINT*,"felixsim(", my_rank, ") error ", IErr, &
-             " Closing IChOutES"
-        GOTO 9999
-     ENDIF     
-  ENDIF
-    
-  ! UgMatEffective
-  IF(IOutputFLAG.GE.2) THEN
-     CALL MPI_FILE_CLOSE(IChOutUM_MPI, IErr)
-     IF( IErr.NE.0 ) THEN
-        PRINT*,"felixsim(", my_rank, ") error ", IErr, &
-             " Closing IChOutUM"
-        GOTO 9999
-     ENDIF     
-  ENDIF
+  !IF((IWriteFLAG.GE.6.AND.my_rank.EQ.0).OR.IWriteFLAG.GE.10) THEN
+  !   PRINT*,"felixsim : ",my_rank," is exiting calculation loop"
+  !END IF
 
   ALLOCATE( &
        RIndividualReflectionsRoot(IReflectOut,IThicknessCount,IPixelTotal),&
@@ -430,9 +353,7 @@ PROGRAM felixsim
   DO pnd = 1,p
      IDisplacements(pnd) = (IPixelTotal*(pnd-1)/p)*IReflectOut*IThicknessCount
      ICount(pnd) = (((IPixelTotal*(pnd)/p) - (IPixelTotal*(pnd-1)/p)))*IReflectOut*IThicknessCount
-  END DO
-
- 
+  END DO 
 
   IF(IImageFLAG.LE.2) THEN
      CALL MPI_GATHERV(RIndividualReflections,SIZE(RIndividualReflections),&
@@ -475,7 +396,6 @@ PROGRAM felixsim
         GOTO 9999
      ENDIF   
   END IF
-
 
   IF(my_rank.EQ.0) THEN
      ALLOCATE( &
@@ -525,7 +445,6 @@ PROGRAM felixsim
   !--------------------------------------------------------------------
   
   !Dellocate Global Variables  
-
 
   DEALLOCATE( &
        RgVecMatT,STAT=IErr)
@@ -623,14 +542,9 @@ PROGRAM felixsim
        CFullWaveFunctions, & 
        STAT=IErr)
   IF( IErr.NE.0 ) THEN
-!<<<<<<< HEAD
      PRINT*,"felixsim(", my_rank, ") error ", IErr, &
           " in ALLOCATE() of DYNAMIC variables CFullWaveFunctions"
      GOTO 9999
-!!$=======
-!!$     PRINT*,"felixsim(", my_rank, ") error in Deallocation of RIndividualReflectionsRoot"
-!!$     GOTO 9999
-!!$>>>>>>> message-subroutine
   ENDIF
   
   DEALLOCATE( &
@@ -793,35 +707,25 @@ PROGRAM felixsim
           " in Deallocation RGn"
      GOTO 9999
   ENDIF
-    
-!!$  IF(IImageFLAG.GE.3) THEN
-!!$     DEALLOCATE(&
-!!$          CAmplitudeandPhaseRoot,STAT=IErr) 
-!!$     
-!!$     IF( IErr.NE.0 ) THEN
-!!$        PRINT*,"felixsim(", my_rank, ") error in Deallocation of CAmplitudeandPhase"
-!!$        GOTO 9999
-!!$     ENDIF
-!!$  END IF
- 
+     
   !--------------------------------------------------------------------
   ! finish off
   !--------------------------------------------------------------------
+
+  WRITE(my_rank_string,*) my_rank
     
-  CALL cpu_time(CurrentTime)
-  Duration=(CurrentTime-StartTime)
+  CALL SYSTEM_CLOCK(ICurrentTime)
+  Duration=REAL(ICurrentTime-IStartTime)/REAL(IRate)
   IHours = FLOOR(Duration/3600.0D0)
   IMinutes = FLOOR(MOD(Duration,3600.0D0)/60.0D0)
-  ISeconds = MOD(Duration,3600.0D0)-IMinutes*60.0D0
+  ISeconds = MOD(Duration,3600.0D0)-IMinutes*60
+  IMilliSeconds = INT((Duration-(IHours*3600+IMinutes*60+ISeconds))*1000,IKIND)
 
-  IMilliSeconds = INT((Duration-(IHours*3600+IMinutes*60+ISeconds))*100,IKIND)
-  
+  PRINT*, "felixsim( ", TRIM(ADJUSTL(my_rank_string)), " ) ", &
+       RStr, ", used time=", IHours, "hrs ", &
+       IMinutes,"mins ",ISeconds,"secs ", IMilliSeconds,"millisecs"
+
   CALL MPI_Barrier(MPI_COMM_WORLD,IErr)
-
-     WRITE(my_rank_string,*) my_rank
-     PRINT*, "felixsim( ", TRIM(ADJUSTL(my_rank_string)), " ) ", RStr, ", used time=", IHours, "hrs ", &
-          IMinutes,"mins ",ISeconds,"Seconds ", IMilliSeconds,"Milliseconds"
- 
 
   !--------------------------------------------------------------------
   ! Shut down MPI

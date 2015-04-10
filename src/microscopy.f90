@@ -51,11 +51,8 @@ SUBROUTINE MicroscopySettings( IErr )
 
   INTEGER :: &
        IErr
-  CALL Message("MicroscopySettings",IMust,IErr)
 
- ! IF(((IWriteFLAG.GE.0).AND.(my_rank.EQ.0)).OR.IWriteFLAG.GE.10) THEN
- !    PRINT*,"MicroscopySettings(",my_rank,")"
- ! END IF
+  CALL Message("MicroscopySettings",IMust,IErr)
 
   ROneThousand = 1000.0_RKIND
 

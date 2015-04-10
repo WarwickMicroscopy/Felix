@@ -45,7 +45,8 @@ SUBROUTINE CrystallographyInitialisation( IErr )
 
   IMPLICIT NONE
 
-  INTEGER(IKIND)IErr, ind
+  INTEGER(IKIND) :: &
+       IErr, ind
  
   CALL Message("CrystallographyInitialisation",IMust,IErr)
     
@@ -63,56 +64,56 @@ SUBROUTINE CrystallographyInitialisation( IErr )
   END IF
   
   IF(IPseudoCubicFLAG.EQ.1.AND.IDiffractionFLAG.EQ.0) THEN
-     RZDirC(1) = (IIncidentBeamDirectionX/3.0D0)+&
-          (IIncidentBeamDirectionY/3.0D0)-&
-          (2.0D0*(IIncidentBeamDirectionZ/3.0D0))
-     RZDirC(2) = (-IIncidentBeamDirectionX/3.0D0)+&
-          (2.0D0*(IIncidentBeamDirectionY/3.0D0))-&
-          (IIncidentBeamDirectionZ/3.0D0)
-     RZDirC(3) = (IIncidentBeamDirectionX/3.0D0)+&
-          (IIncidentBeamDirectionY/3.0D0)+&
-          (IIncidentBeamDirectionZ/3.0D0)
-     RXDirC(1) = (IXDirectionX/3.0D0)+&
-          (IXDirectionY/3.0D0)-&
-          (2.0D0*(IXDirectionZ/3.0D0))
-     RXDirC(2) = (-IXDirectionX/3.0D0)+&
-          (2.0D0*(IXDirectionY/3.0D0))-&
-          (IXDirectionZ/3.0D0)
-     RXDirC(3) = (IXDirectionX/3.0D0)+&
-          (IXDirectionY/3.0D0)+&
-          (IXDirectionZ/3.0D0)
-     RNormDirC(1) = (INormalDirectionX/3.0D0)+&
-          (INormalDirectionY/3.0D0)-&
-          (2.0D0*(INormalDirectionZ/3.0D0))
-     RNormDirC(2) = (-INormalDirectionX/3.0D0)+&
-          (2.0D0*(INormalDirectionY/3.0D0))-&
-          (INormalDirectionZ/3.0D0)
-     RNormDirC(3) = (INormalDirectionX/3.0D0)+&
-          (INormalDirectionY/3.0D0)+&
-          (INormAlDirectionZ/3.0D0)
+     RZDirC(1) = (IIncidentBeamDirectionX/THREE)+&
+          (IIncidentBeamDirectionY/THREE)-&
+          (TWO*(IIncidentBeamDirectionZ/THREE))
+     RZDirC(2) = (-IIncidentBeamDirectionX/THREE)+&
+          (TWO*(IIncidentBeamDirectionY/THREE))-&
+          (IIncidentBeamDirectionZ/THREE)
+     RZDirC(3) = (IIncidentBeamDirectionX/THREE)+&
+          (IIncidentBeamDirectionY/THREE)+&
+          (IIncidentBeamDirectionZ/THREE)
+     RXDirC(1) = (IXDirectionX/THREE)+&
+          (IXDirectionY/THREE)-&
+          (TWO*(IXDirectionZ/THREE))
+     RXDirC(2) = (-IXDirectionX/THREE)+&
+          (TWO*(IXDirectionY/THREE))-&
+          (IXDirectionZ/THREE)
+     RXDirC(3) = (IXDirectionX/THREE)+&
+          (IXDirectionY/THREE)+&
+          (IXDirectionZ/THREE)
+     RNormDirC(1) = (INormalDirectionX/THREE)+&
+          (INormalDirectionY/THREE)-&
+          (TWO*(INormalDirectionZ/THREE))
+     RNormDirC(2) = (-INormalDirectionX/THREE)+&
+          (TWO*(INormalDirectionY/THREE))-&
+          (INormalDirectionZ/THREE)
+     RNormDirC(3) = (INormalDirectionX/THREE)+&
+          (INormalDirectionY/THREE)+&
+          (INormAlDirectionZ/THREE)
 
      DO ind =1,3
         IF(ABS(RZDirC(ind)).LE.TINY) THEN
-           RZDirC(ind) = 100000000.0D0 ! A large number
+           RZDirC(ind) = REAL(100000000.0,RKIND) ! A large number
         END IF
         IF(ABS(RXDirC(ind)).LE.TINY) THEN
-           RXDirC(ind) = 100000000.0D0 ! A large number
+           RXDirC(ind) = REAL(100000000.0,RKIND) ! A large number
         END IF
         IF(ABS(RNormDirC(ind)).LE.TINY) THEN
-           RNormDirC(ind) = 100000000.0D0 ! A large number
+           RNormDirC(ind) = REAL(100000000.0,RKIND) ! A large number
         END IF
      END DO
         RZDirC = RZDirC/MINVAL(ABS(RZDirC))
         RXDirC = RXDirC/MINVAL(ABS(RXDirC))
 
      DO ind =1,3
-        IF(RZDirC(ind).GT.10000000.0D0) THEN
+        IF(RZDirC(ind).GT.REAL(10000000.0,RKIND)) THEN
            RZDirC(ind) = ZERO ! A large number
         END IF
-        IF(RXDirC(ind).GT.10000000.0D0) THEN
+        IF(RXDirC(ind).GT.REAL(10000000.0,RKIND)) THEN
            RXDirC(ind) = ZERO ! A large number
         END IF
-        IF(RNormDirC(ind).GT.10000000.0D0) THEN
+        IF(RNormDirC(ind).GT.REAL(10000000.0,RKIND)) THEN
            RNormDirC(ind) = ZERO ! A large number
         END IF
      END DO
@@ -122,12 +123,6 @@ SUBROUTINE CrystallographyInitialisation( IErr )
      RNormDirC = REAL(NINT(RNormDirC))
      
   END IF
-
-!!$  IF(my_rank.EQ.0) THEN
-!!$     PRINT*,RZDirC,RXDirC
-!!$  END IF
-
-  !RYDirC = CROSS(RZDirC,RYDirC)
 
   CALL CrystalLatticeVectorDetermination(IErr)
   IF( IErr.NE.0 ) THEN

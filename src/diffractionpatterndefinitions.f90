@@ -54,7 +54,8 @@ SUBROUTINE ReflectionDetermination( IErr )
 
   REAL(RKIND) :: &
        dummy
-  INTEGER(IKIND) IErr, ind,jnd,icheck,ihklrun,IFind,IFound,knd
+  INTEGER(IKIND) :: &
+       IErr, ind,jnd,icheck,ihklrun,IFind,IFound,knd
   
   CALL Message("ReflectionDetermination",IMust,IErr)
 
@@ -196,15 +197,9 @@ SUBROUTINE ReflectionDetermination( IErr )
               IF(IFound.EQ.0) THEN
                  IFind = IFind +1
                  IOutputReflections(IFind) = jnd
-                 
-!!$                 CALL Message("SpecificReflectionDetermination",IMoreInfo,IErr, &
-!!$                      MessageVariable = "Found HKL",RVariable = RInputHKLs(ind,jnd))
                  CALL Message("SpecificReflectionDetermination",IMoreInfo,IErr, &
                       MessageVariable = "At",IVariable = jnd)
               ELSE 
-
-!!$                 CALL Message("SpecificReflectionDetermination",IMoreInfo,IErr, &
-!!$                      MessageVariable = "Found HKL",RVariable = RInputHKLs(ind,:))
                  CALL Message("SpecificReflectionDetermination",IMoreInfo,IErr, &
                       MessageVariable = "At",IVariable = jnd)
                  CALL Message("SpecificReflectionDetermination",IMoreInfo,IErr, &
@@ -236,104 +231,60 @@ SUBROUTINE ReflectionDetermination( IErr )
         IReflectOut = IFind
      END IF
   END IF
+  
+END SUBROUTINE SpecificReflectionDetermination
 
-  END SUBROUTINE SpecificReflectionDetermination
- 
-  SUBROUTINE DiffractionPatternCalculation (IErr)
-
-    USE MyNumbers
-    USE WriteToScreen
-    USE IConst
-
-    USE IPara; USE RPara;
-
-    USE MyMPI
-    
-    IMPLICIT NONE
-
-    INTEGER(IKIND) ind,IErr
-
-    REAL(RKIND):: dummy
-
-    CALL Message("DiffractionPatternCalculation",IMust,IErr)
-
-    ALLOCATE(&
-         RGn(SIZE(RHKL,DIM=1)), &
-         STAT=IErr)
-    IF( IErr.NE.0 ) THEN
-       PRINT*,"DiffractionPatternCalculation(", my_rank, ") error ", IErr, &
-            " in ALLOCATE() of DYNAMIC variables RGn(HKL)"
-       RETURN
-    ENDIF
-
-    RNormDirM = RNormDirM/sqrt(DOT_PRODUCT(RNormDirM,RNormDirM))
-    
-    DO ind =1,SIZE(RHKL,DIM=1)
-     RGn(ind) = DOT_PRODUCT(RgVecMatT(ind,:),RNormDirM)
-  END DO
+SUBROUTINE DiffractionPatternCalculation (IErr)
+  
+  USE MyNumbers
+  USE WriteToScreen
+  USE IConst
+  
+  USE IPara; USE RPara;
+  
+  USE MyMPI
+  
+  IMPLICIT NONE
+  
+  INTEGER(IKIND) :: &
+       ind,IErr
+  
+  CALL Message("DiffractionPatternCalculation",IMust,IErr)
   
   ALLOCATE(&
-       RSg(SIZE(RHKL,DIM=1)), &
+       RGn(SIZE(RHKL,DIM=1)), &
        STAT=IErr)
   IF( IErr.NE.0 ) THEN
      PRINT*,"DiffractionPatternCalculation(", my_rank, ") error ", IErr, &
-          " in ALLOCATE() of DYNAMIC variables RSg(HKL)"
+          " in ALLOCATE() of DYNAMIC variables RGn(HKL)"
      RETURN
   ENDIF
-
-  IF(ICentralBeamFLAG.EQ.0) THEN
-     !no central beam, 1st beam is used
-     dummy= RHKL(1,1)*RHKL(1,1)+RHKL(1,2)*RHKL(1,2)+RHKL(1,3)*RHKL(1,3)
-     dummy= SQRT(dummy)
-  ELSE
-     !there is a central beam, 2nd beam is used
-     dummy= RHKL(2,1)*RHKL(2,1)+RHKL(2,2)*RHKL(2,2)+RHKL(2,3)*RHKL(2,3)
-     dummy= SQRT(dummy)
-  ENDIF
-
-  RBraggCentral= RElectronWaveLength/(2.0D0*RLengthX)*dummy
-
-  CALL Message("DiffractionPatternCalculation",IInfo,IErr, &
-       MessageVariable = "BraggCentral", RVariable = RBraggCentral)
-
+  
+  RNormDirM = RNormDirM/sqrt(DOT_PRODUCT(RNormDirM,RNormDirM))
+  
+  DO ind =1,SIZE(RHKL,DIM=1)
+     RGn(ind) = DOT_PRODUCT(RgVecMatT(ind,:),RNormDirM)
+  END DO
   
   CALL Message("DiffractionPatternCalculation",IInfo,IErr, &
        MessageVariable = "GMax", RVariable = RBSMaxGVecAmp)     
-
+  
   ! smallest g is gmag(2) IF 000 beam is included !!!add error catch here
   
-  IF (ICentralBeamFLAG.EQ.1) THEN
-     RMinimumGMag = RgVecMag(2)
-  ELSE
-     RMinimumGMag = RgVecMag(1)
-  ENDIF
-
+  RMinimumGMag = RgVecMag(2)
+  
   CALL Message("DiffractionPatternCalculation",IInfo,IErr, &
        MessageVariable = "MinimumGMag", RVariable = RMinimumGMag)
-
-  ! Calculate the Angles to the centre of all the disks from the central disk
-  
-  DO ind=1,SIZE(RHKL,DIM=1)
-     RSg(ind) = 2*RElectronWaveVectorMagnitude* &
-          ((-2*RElectronWaveVectorMagnitude +&
-          SQRT((2*RElectronWaveVectorMagnitude)**2 + &
-          4*RgVecMag(ind)**2))/2)
-  ENDDO
-  
-  ! Determine the number of Gs within GMax (input variable) 
-  ! Furthermore, determine which Gs have Sg < SgMax (Strong Beams)
   
   IF (nReflections.LT.IReflectOut) THEN
-
      IReflectOut = nReflections
-
   END IF
-
+  
   CALL Message("DiffractionPatternCalculation",IInfo,IErr, &
        MessageVariable = "No. of Reflections", IVariable = nReflections)
-
+  
   ! resolution in k space
-  RDeltaK = RMinimumGMag*RConvergenceAngle/IPixelCount
+  RDeltaK = RMinimumGMag*RConvergenceAngle/REAL(IPixelCount,RKIND)
 
   CALL Message("DiffractionPatternCalculation",IInfo,IErr, &
        MessageVariable = "RDeltaK", RVariable = RDeltaK)
@@ -357,9 +308,12 @@ SUBROUTINE NewHKLmake(Ihklmax,Rhkl0Vec,RAcceptanceAngle,IErr)
   
   IMPLICIT NONE
   
-  INTEGER(IKIND) IErr, Ihklmax,ind,jnd,knd,INhkl
-  REAL(RKIND) RAcceptanceAngle
-  REAL(RKIND), DIMENSION(THREEDIM) :: Rhkl0Vec,RhklDummyUnitVec,RhklDummyVec,Rhkl0UnitVec
+  INTEGER(IKIND) :: &
+       IErr, Ihklmax,ind,jnd,knd,INhkl
+  REAL(RKIND) :: &
+       RAcceptanceAngle
+  REAL(RKIND), DIMENSION(THREEDIM) :: &
+       Rhkl0Vec,RhklDummyUnitVec,RhklDummyVec,Rhkl0UnitVec
 
   CALL Message("NewHKLMake",IMust,IErr)
 
@@ -382,15 +336,15 @@ SUBROUTINE NewHKLmake(Ihklmax,Rhkl0Vec,RAcceptanceAngle,IErr)
 
            SELECT CASE(SSpaceGroupName)
            CASE("F") !Face Centred
-              IF(((ABS(MOD(RhklDummyVec(1)+RhklDummyVec(2),2.D0)).LE.TINY).AND.&
-                   (ABS(MOD(RhklDummyVec(2)+RhklDummyVec(3),2.D0)).LE.TINY).AND.&
-                   (ABS(MOD(RhklDummyVec(1)+RhklDummyVec(3),2.D0)).LE.TINY)).OR.&
-                   (((ABS(MOD(RhklDummyVec(1),2.D0))).LE.TINY).AND.&
-                   ((ABS(MOD(RhklDummyVec(2),2.D0))).LE.TINY).AND.&
-                   ((ABS(MOD(RhklDummyVec(3),2.D0))).LE.TINY)).OR.&
-                   (((ABS(MOD(RhklDummyVec(1),2.D0))).GT.TINY).AND.&
-                   ((ABS(MOD(RhklDummyVec(2),2.D0))).GT.TINY).AND.&
-                   ((ABS(MOD(RhklDummyVec(3),2.D0))).GT.TINY))) THEN
+              IF(((ABS(MOD(RhklDummyVec(1)+RhklDummyVec(2),TWO)).LE.TINY).AND.&
+                   (ABS(MOD(RhklDummyVec(2)+RhklDummyVec(3),TWO)).LE.TINY).AND.&
+                   (ABS(MOD(RhklDummyVec(1)+RhklDummyVec(3),TWO)).LE.TINY)).OR.&
+                   (((ABS(MOD(RhklDummyVec(1),TWO))).LE.TINY).AND.&
+                   ((ABS(MOD(RhklDummyVec(2),TWO))).LE.TINY).AND.&
+                   ((ABS(MOD(RhklDummyVec(3),TWO))).LE.TINY)).OR.&
+                   (((ABS(MOD(RhklDummyVec(1),TWO))).GT.TINY).AND.&
+                   ((ABS(MOD(RhklDummyVec(2),TWO))).GT.TINY).AND.&
+                   ((ABS(MOD(RhklDummyVec(3),TWO))).GT.TINY))) THEN
                  
                  IF(IZolzFLAG.EQ.1) THEN
                     IF( ABS(DOT_PRODUCT(RhklDummyUnitVec,Rhkl0UnitVec)) .LE. TINY ) THEN
@@ -404,7 +358,7 @@ SUBROUTINE NewHKLmake(Ihklmax,Rhkl0Vec,RAcceptanceAngle,IErr)
                  ! INhkl = INhkl + 1
               END IF              
            CASE("I")! Body Centred
-              IF(ABS(MOD(RhklDummyVec(1)+RhklDummyVec(2)+RhklDummyVec(3),2.D0)).LE.TINY) THEN
+              IF(ABS(MOD(RhklDummyVec(1)+RhklDummyVec(2)+RhklDummyVec(3),TWO)).LE.TINY) THEN
                  !INhkl = INhkl + 1
                  
                  IF(IZolzFLAG.EQ.1) THEN
@@ -417,7 +371,7 @@ SUBROUTINE NewHKLmake(Ihklmax,Rhkl0Vec,RAcceptanceAngle,IErr)
                  ENDIF
               END IF
            CASE("A")! A-Face Centred
-              IF(ABS(MOD(RhklDummyVec(2)+RhklDummyVec(3),2.D0)).LE.TINY) THEN
+              IF(ABS(MOD(RhklDummyVec(2)+RhklDummyVec(3),TWO)).LE.TINY) THEN
                  !INhkl = INhkl + 1
                  
                  IF(IZolzFLAG.EQ.1) THEN
@@ -431,7 +385,7 @@ SUBROUTINE NewHKLmake(Ihklmax,Rhkl0Vec,RAcceptanceAngle,IErr)
                  ENDIF
               END IF
            CASE("B")! B-Face Centred
-              IF(ABS(MOD(RhklDummyVec(1)+RhklDummyVec(3),2.D0)).LE.TINY) THEN
+              IF(ABS(MOD(RhklDummyVec(1)+RhklDummyVec(3),TWO)).LE.TINY) THEN
                  !INhkl = INhkl + 1
                  
                  IF(IZolzFLAG.EQ.1) THEN
@@ -445,7 +399,7 @@ SUBROUTINE NewHKLmake(Ihklmax,Rhkl0Vec,RAcceptanceAngle,IErr)
                  ENDIF
               END IF
            CASE("C")! C-Face Centred
-              IF(ABS(MOD(RhklDummyVec(1)+RhklDummyVec(3),2.D0)).LE.TINY) THEN
+              IF(ABS(MOD(RhklDummyVec(1)+RhklDummyVec(3),TWO)).LE.TINY) THEN
                 !INhkl = INhkl + 1
                 
                  IF(IZolzFLAG.EQ.1) THEN
@@ -458,7 +412,7 @@ SUBROUTINE NewHKLmake(Ihklmax,Rhkl0Vec,RAcceptanceAngle,IErr)
                  ENDIF
               END IF
            CASE("R")! Rhombohedral Reverse
-              IF(ABS(MOD(-RhklDummyVec(1)+RhklDummyVec(2)+RhklDummyVec(3),3.D0)).LE.TINY) THEN
+              IF(ABS(MOD(-RhklDummyVec(1)+RhklDummyVec(2)+RhklDummyVec(3),THREE)).LE.TINY) THEN
                  !INhkl = INhkl + 1
                  
                  IF(IZolzFLAG.EQ.1) THEN
@@ -471,7 +425,7 @@ SUBROUTINE NewHKLmake(Ihklmax,Rhkl0Vec,RAcceptanceAngle,IErr)
                  ENDIF
               END IF
            CASE("V")! Rhombohedral Obverse
-              IF(ABS(MOD(RhklDummyVec(1)-RhklDummyVec(2)+RhklDummyVec(3),3.D0)).LE.TINY) THEN
+              IF(ABS(MOD(RhklDummyVec(1)-RhklDummyVec(2)+RhklDummyVec(3),THREE)).LE.TINY) THEN
                  !INhkl = INhkl + 1
                  
                  IF(IZolzFLAG.EQ.1) THEN
@@ -529,15 +483,15 @@ SUBROUTINE NewHKLmake(Ihklmax,Rhkl0Vec,RAcceptanceAngle,IErr)
            
            SELECT CASE(SSpaceGroupName)
            CASE("F") !Face Centred
-              IF(((ABS(MOD(RhklDummyVec(1)+RhklDummyVec(2),2.D0)).LE.TINY).AND.&
-                   (ABS(MOD(RhklDummyVec(2)+RhklDummyVec(3),2.D0)).LE.TINY).AND.&
-                   (ABS(MOD(RhklDummyVec(1)+RhklDummyVec(3),2.D0)).LE.TINY)).OR.&
-                   (((ABS(MOD(RhklDummyVec(1),2.D0))).LE.TINY).AND.&
-                   ((ABS(MOD(RhklDummyVec(2),2.D0))).LE.TINY).AND.&
-                   ((ABS(MOD(RhklDummyVec(3),2.D0))).LE.TINY)).OR.&
-                   (((ABS(MOD(RhklDummyVec(1),2.D0))).GT.TINY).AND.&
-                   ((ABS(MOD(RhklDummyVec(2),2.D0))).GT.TINY).AND.&
-                   ((ABS(MOD(RhklDummyVec(3),2.D0))).GT.TINY))) THEN
+              IF(((ABS(MOD(RhklDummyVec(1)+RhklDummyVec(2),TWO)).LE.TINY).AND.&
+                   (ABS(MOD(RhklDummyVec(2)+RhklDummyVec(3),TWO)).LE.TINY).AND.&
+                   (ABS(MOD(RhklDummyVec(1)+RhklDummyVec(3),TWO)).LE.TINY)).OR.&
+                   (((ABS(MOD(RhklDummyVec(1),TWO))).LE.TINY).AND.&
+                   ((ABS(MOD(RhklDummyVec(2),TWO))).LE.TINY).AND.&
+                   ((ABS(MOD(RhklDummyVec(3),TWO))).LE.TINY)).OR.&
+                   (((ABS(MOD(RhklDummyVec(1),TWO))).GT.TINY).AND.&
+                   ((ABS(MOD(RhklDummyVec(2),TWO))).GT.TINY).AND.&
+                   ((ABS(MOD(RhklDummyVec(3),TWO))).GT.TINY))) THEN
                  IF(IZolzFLAG.EQ.1) THEN
                     IF( ABS(DOT_PRODUCT(RhklDummyUnitVec,Rhkl0UnitVec)) .LE. TINY ) THEN
                        INhkl=INhkl+1
@@ -549,7 +503,7 @@ SUBROUTINE NewHKLmake(Ihklmax,Rhkl0Vec,RAcceptanceAngle,IErr)
                  END IF
               END IF
            CASE("I")! Body Centred
-              IF(ABS(MOD(RhklDummyVec(1)+RhklDummyVec(2)+RhklDummyVec(3),2.0D0)).LE.TINY) THEN
+              IF(ABS(MOD(RhklDummyVec(1)+RhklDummyVec(2)+RhklDummyVec(3),TWO)).LE.TINY) THEN
                  !INhkl = INhkl + 1
                  !RHKL(INhkl,:) = RhklDummyVec
                  IF(IZolzFLAG.EQ.1) THEN
@@ -563,7 +517,7 @@ SUBROUTINE NewHKLmake(Ihklmax,Rhkl0Vec,RAcceptanceAngle,IErr)
                  END IF
               END IF
            CASE("A")! A-Face Centred
-              IF(ABS(MOD(RhklDummyVec(2)+RhklDummyVec(3),2.0D0)).LE.TINY) THEN
+              IF(ABS(MOD(RhklDummyVec(2)+RhklDummyVec(3),TWO)).LE.TINY) THEN
                  !INhkl = INhkl + 1
                  !RHKL(INhkl,:) = RhklDummyVec
                  IF(IZolzFLAG.EQ.1) THEN
@@ -577,7 +531,7 @@ SUBROUTINE NewHKLmake(Ihklmax,Rhkl0Vec,RAcceptanceAngle,IErr)
                  END IF
               END IF
            CASE("B")! B-Face Centred
-              IF(ABS(MOD(RhklDummyVec(1)+RhklDummyVec(3),2.0D0)).LE.TINY) THEN
+              IF(ABS(MOD(RhklDummyVec(1)+RhklDummyVec(3),TWO)).LE.TINY) THEN
                  !INhkl = INhkl + 1
                  !RHKL(INhkl,:) = RhklDummyVec
                  IF(IZolzFLAG.EQ.1) THEN
@@ -591,7 +545,7 @@ SUBROUTINE NewHKLmake(Ihklmax,Rhkl0Vec,RAcceptanceAngle,IErr)
                  END IF
               END IF
            CASE("C")! C-Face Centred
-              IF(ABS(MOD(RhklDummyVec(1)+RhklDummyVec(3),2.0D0)).LE.TINY) THEN
+              IF(ABS(MOD(RhklDummyVec(1)+RhklDummyVec(3),TWO)).LE.TINY) THEN
                  !INhkl = INhkl + 1
                  !RHKL(INhkl,:) = RhklDummyVec
                  IF(IZolzFLAG.EQ.1) THEN
@@ -605,7 +559,7 @@ SUBROUTINE NewHKLmake(Ihklmax,Rhkl0Vec,RAcceptanceAngle,IErr)
                  END IF
               END IF
            CASE("R")! Rhombohedral Reverse
-              IF(ABS(MOD(-RhklDummyVec(1)+RhklDummyVec(2)+RhklDummyVec(3),3.0D0)).LE.TINY) THEN
+              IF(ABS(MOD(-RhklDummyVec(1)+RhklDummyVec(2)+RhklDummyVec(3),THREE)).LE.TINY) THEN
                  !INhkl = INhkl + 1
                  !RHKL(INhkl,:) = RhklDummyVec
                  IF(IZolzFLAG.EQ.1) THEN
@@ -619,7 +573,7 @@ SUBROUTINE NewHKLmake(Ihklmax,Rhkl0Vec,RAcceptanceAngle,IErr)
                  END IF
               END IF
            CASE("V")! Rhombohedral Obverse
-              IF(ABS(MOD(RhklDummyVec(1)-RhklDummyVec(2)+RhklDummyVec(3),3.0D0)).LE.TINY) THEN
+              IF(ABS(MOD(RhklDummyVec(1)-RhklDummyVec(2)+RhklDummyVec(3),THREE)).LE.TINY) THEN
                  !INhkl = INhkl + 1
                  !RHKL(INhkl,:) = RhklDummyVec
                  IF(IZolzFLAG.EQ.1) THEN

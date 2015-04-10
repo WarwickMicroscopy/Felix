@@ -34,6 +34,12 @@
 
 SUBROUTINE ImageInitialisation( IErr )
 
+!!$%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+!!$%
+!!$%     Determines Montage size as twice the distance to the furtherest pixel + 1
+!!$%
+!!$%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
   USE MyNumbers
   USE WriteToScreen
 
@@ -46,8 +52,10 @@ SUBROUTINE ImageInitialisation( IErr )
   
   IMPLICIT NONE
 
-  REAL(RKIND) dummyCA
-  INTEGER(IKIND) IErr, ind,jnd
+  REAL(RKIND) :: &
+       DummyConvergenceAngle
+  INTEGER(IKIND) :: &
+       IErr, ind,jnd
 
   CALL Message("ImageInitialisation",IMust,IErr)
   
@@ -70,22 +78,22 @@ SUBROUTINE ImageInitialisation( IErr )
   ! size of final image
   
   IF(RConvergenceAngle .LT. ONE) THEN
-     dummyCA=RConvergenceAngle
+     DummyConvergenceAngle=RConvergenceAngle
   ELSE
-     dummyCA=0.95D0
+     DummyConvergenceAngle=0.95_RKIND
   ENDIF
   IF(IHKLSelectFLAG.EQ.0) THEN
      DO ind=1,SIZE(Rhklpositions,DIM=2)
         IImageSizeXY(ind)= CEILING(&
-             4.0D0*REAL(IPixelCount,RKIND)/dummyCA * &
-             (MAXVAL(ABS(Rhklpositions(1:IReflectOut,ind)))+1.0D0) )
+             FOUR*REAL(IPixelCount,RKIND)/DummyConvergenceAngle * &
+             (MAXVAL(ABS(Rhklpositions(1:IReflectOut,ind)))+ONE) )
      ENDDO
   ELSE
      DO ind=1,SIZE(Rhklpositions,DIM=2)
         DO jnd = 1,IReflectOut
            IImageSizeXY(ind)= CEILING(&
-                4.0D0*REAL(IPixelCount,RKIND)/dummyCA * &
-                (MAXVAL(ABS(Rhklpositions(IOutputReflections(1:IReflectOut),ind)))+1.0D0) )
+                FOUR*REAL(IPixelCount,RKIND)/DummyConvergenceAngle * &
+                (MAXVAL(ABS(Rhklpositions(IOutputReflections(1:IReflectOut),ind)))+ONE) )
         END DO
      ENDDO
   END IF
@@ -94,14 +102,22 @@ SUBROUTINE ImageInitialisation( IErr )
      CALL Message("ImageInitialisation",IInfo,IErr, &
           MessageVariable = "IImageSizeXY(ind)", IVariable = IImageSizeXY(ind))
   END DO
-     
-    
+   
   RETURN
 
 END SUBROUTINE ImageInitialisation
 
-SUBROUTINE MontageInitialisation(ind,jnd,ithicknessindex,RMontageImage,RIntensity,Ierr)
-  
+!!$%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+SUBROUTINE MontageInitialisation(IPixelHorizontalPosition,IPixelVerticalPosition,&
+     IThicknessindex,RMontageImage,RIntensityValues,IErr)
+
+!!$%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+!!$%
+!!$%      Places Calculated pixels into montage 1 pixel, per reflection per call
+!!$%
+!!$%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
   USE WriteToScreen
   USE MyNumbers
   
@@ -116,11 +132,12 @@ SUBROUTINE MontageInitialisation(ind,jnd,ithicknessindex,RMontageImage,RIntensit
   IMPLICIT NONE
   
   INTEGER(IKIND) ::&
-       IThicknessindex, IXpos, IYpos,hnd,ind,jnd,knd,Ierr
+       IThicknessindex, IMontagePixelVerticalPosition, IMontagePixelHorizontalPosition,&
+       hnd,IPixelHorizontalPosition,IPixelVerticalPosition,Ierr
   REAL(RKIND), DIMENSION(MAXVAL(IImageSizeXY),MAXVAL(IImageSizeXY),IThicknessCount),INTENT(OUT) :: &
        RMontageImage
   REAL(RKIND), DIMENSION(IReflectOut) :: &
-       RIntensity
+       RIntensityValues
 
 !!$  Only print out once when first entered - use message counter
 
@@ -137,36 +154,56 @@ SUBROUTINE MontageInitialisation(ind,jnd,ithicknessindex,RMontageImage,RIntensit
      IF(IHKLSelectFLAG.EQ.0) THEN
         
         IF (RConvergenceAngle.LT.ONE) THEN
-           IXpos = NINT(MAXVAL(IImageSizeXY)/TWO+TWO*(IPixelCount/RConvergenceAngle)*RhklPositions(hnd,2))
-           IYpos = NINT(MAXVAL(IImageSizeXY)/TWO+TWO*(IPixelCount/RConvergenceAngle)*RhklPositions(hnd,1))
+           IMontagePixelVerticalPosition = &
+                NINT(MAXVAL(IImageSizeXY)/TWO+TWO*(IPixelCount/RConvergenceAngle)*RhklPositions(hnd,2))
+           IMontagePixelHorizontalPosition = &
+                NINT(MAXVAL(IImageSizeXY)/TWO+TWO*(IPixelCount/RConvergenceAngle)*RhklPositions(hnd,1))
         ELSE
            
 !!$           If the Convergence angle is > 1 causing disk overlap in experimental pattern, 
 !!$           then plot as if convergence angle was 0.95 (non-physical but makes a pretty picture)
-           IXpos = NINT(MAXVAL(IImageSizeXY)/TWO+TWO*(IPixelCount/0.95D0)*RhklPositions(hnd,2))
-           IYpos = NINT(MAXVAL(IImageSizeXY)/TWO+TWO*(IPixelCount/0.95D0)*RhklPositions(hnd,1))
+           IMontagePixelVerticalPosition = &
+                NINT(MAXVAL(IImageSizeXY)/TWO+TWO*(IPixelCount/0.95D0)*RhklPositions(hnd,2))
+           IMontagePixelHorizontalPosition = &
+                NINT(MAXVAL(IImageSizeXY)/TWO+TWO*(IPixelCount/0.95D0)*RhklPositions(hnd,1))
         ENDIF
 
-        RMontageImage(IXpos-IPixelCount+jnd,IYpos-IPixelCount+ind,IThicknessIndex) = &
-             RMontageImage(IXpos-IPixelCount+jnd,IYpos-IPixelCount+ind,IThicknessIndex) + &
-             RIntensity(hnd)
+        RMontageImage(&
+             IMontagePixelVerticalPosition-IPixelCount+IPixelVerticalPosition,&
+             IMontagePixelHorizontalPosition-IPixelCount+IPixelHorizontalPosition,&
+             IThicknessIndex) = &
+             RMontageImage(&
+             IMontagePixelVerticalPosition-IPixelCount+IPixelVerticalPosition,&
+             IMontagePixelHorizontalPosition-IPixelCount+IPixelHorizontalPosition,&
+             IThicknessIndex) + &
+             RIntensityValues(hnd)
         
      ELSE
         
         IF (RConvergenceAngle.LT.ONE) THEN
-           IXpos = NINT(MAXVAL(IImageSizeXY)/TWO+TWO*(IPixelCount/RConvergenceAngle)*RhklPositions(IOutputReflections(hnd),2))
-           IYpos = NINT(MAXVAL(IImageSizeXY)/TWO+TWO*(IPixelCount/RConvergenceAngle)*RhklPositions(IOutputReflections(hnd),1))
+           IMontagePixelVerticalPosition = &
+                NINT(MAXVAL(IImageSizeXY)/TWO+TWO*(IPixelCount/RConvergenceAngle)*RhklPositions(IOutputReflections(hnd),2))
+           IMontagePixelHorizontalPosition = &
+                NINT(MAXVAL(IImageSizeXY)/TWO+TWO*(IPixelCount/RConvergenceAngle)*RhklPositions(IOutputReflections(hnd),1))
         ELSE
            
 !!$           If the Convergence angle is > 1 causing disk overlap in experimental pattern, 
 !!$           then plot as if convergence angle was 0.95 (non-physical but makes a pretty picture)
-           IXpos = NINT(MAXVAL(IImageSizeXY)/TWO+TWO*(IPixelCount/0.95D0)*RhklPositions(IOutputReflections(hnd),2))
-           IYpos = NINT(MAXVAL(IImageSizeXY)/TWO+TWO*(IPixelCount/0.95D0)*RhklPositions(IOutputReflections(hnd),1))
+           IMontagePixelVerticalPosition = &
+                NINT(MAXVAL(IImageSizeXY)/TWO+TWO*(IPixelCount/0.95D0)*RhklPositions(IOutputReflections(hnd),2))
+           IMontagePixelHorizontalPosition = &
+                NINT(MAXVAL(IImageSizeXY)/TWO+TWO*(IPixelCount/0.95D0)*RhklPositions(IOutputReflections(hnd),1))
         ENDIF
 
-        RMontageImage(IXpos-IPixelCount+jnd,IYpos-IPixelCount+ind,IThicknessIndex) = &
-             RMontageImage(IXpos-IPixelCount+jnd,IYpos-IPixelCount+ind,IThicknessIndex) + &
-             RIntensity(hnd)
+        RMontageImage(&
+             IMontagePixelVerticalPosition-IPixelCount+IPixelVerticalPosition,&
+             IMontagePixelHorizontalPosition-IPixelCount+IPixelHorizontalPosition,&
+             IThicknessIndex) = &
+             RMontageImage(&
+             IMontagePixelVerticalPosition-IPixelCount+IPixelVerticalPosition,&
+             IMontagePixelHorizontalPosition-IPixelCount+IPixelHorizontalPosition,&
+             IThicknessIndex) + &
+             RIntensityValues(hnd)
      END IF
   END DO
 
@@ -175,6 +212,13 @@ END SUBROUTINE MontageInitialisation
 !---------------------------------------------------------------------
 !
 SUBROUTINE ImageMaskInitialisation (IErr)
+
+!!$%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+!!$%
+!!$%    Creates a circular or square image mask depending on the value of IMaskFLAG
+!!$%       and assigns pixel locations for each one for MPI load balancing
+!!$%
+!!$%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
   
   USE MyNumbers
   USE WriteToScreen
@@ -269,8 +313,16 @@ SUBROUTINE ImageMaskInitialisation (IErr)
   
 END SUBROUTINE ImageMaskInitialisation
 
+!!$%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
 INTEGER(IKIND) FUNCTION CountPixels(IErr)
   
+!!$%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+!!$%
+!!$%     Counts pixels in requested image for memory allocation
+!!$%
+!!$%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
   USE MyNumbers
   
   USE CConst; USE IConst
@@ -283,7 +335,7 @@ INTEGER(IKIND) FUNCTION CountPixels(IErr)
   IMPLICIT NONE
   
   INTEGER(IKIND) :: &
-       ind,jnd, ierr
+       ind,jnd, IErr
   REAL(RKIND) :: &
        Rradius, RImageRadius
   
