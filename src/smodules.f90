@@ -135,10 +135,10 @@ MODULE IPara
 
   INTEGER(IKIND) :: &
        IWriteFLAG,IDebugFLAG,IScatterFactorMethodFLAG, &
-       ICentralBeamFLAG, IMaskFLAG, IVolumeFLAG, &
+       IMaskFLAG, IVolumeFLAG, &
        IZolzFLAG,IAbsorbFLAG, IAnisoDebyeWallerFactorFlag, &
-       IImageFLAG,IOutputFLAG,IBeamConvergenceFLAG,  &
-       IPseudoCubicFLAG,IXDirectionFLAG,IBinorTextFLAG, IDevFLAG, &
+       IImageFLAG,IBeamConvergenceFLAG,  &
+       IPseudoCubicFLAG,IXDirectionFLAG,IDevFLAG, &
        IRefineModeFLAG,ISoftwareMode,IHKLSelectFLAG,IPrint,IRefineSwitch,&
        IWeightingFLAG,IContinueFLAG
 
@@ -299,7 +299,7 @@ MODULE RPara
   
   REAL(RKIND) :: &
        RBSMaxDeviationPara, RBSMaxGVecAmp, RBSBethePara, &
-       RConvergenceTolerance,RBSBmax, RBSPMax
+       RBSBmax, RBSPMax
   
   !Crystal Settings
   

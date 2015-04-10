@@ -149,21 +149,8 @@ SUBROUTINE ReadInpFile( IErr )
   CALL Message ("ReadInpFile",IInfo,IErr,MessageVariable ="IImageFLAG",IVariable=IImageFLAG)
 
   ILine= ILine+1
-  READ(IChInp,10,ERR=20,END=30) IOutputFLAG
-  CALL Message ("ReadInpFile",IInfo,IErr,MessageVariable ="IOutputFLAG",IVariable=IOutputFLAG)
- 
-  ILine= ILine+1
-  READ(IChInp,10,ERR=20,END=30) IBinorTextFLAG
-  CALL Message ("ReadInpFile",IInfo,IErr,MessageVariable ="IBinorTextFLAG",IVariable=IBinorTextFLAG)
-
-  ILine= ILine+1
   READ(IChInp,10,ERR=20,END=30) IScatterFactorMethodFLAG
   CALL Message ("ReadInpFile",IInfo,IErr,MessageVariable ="IScatterFactorMethodFLAG",IVariable=IScatterFactorMethodFLAG)
-
-  ILine= ILine+1
-  READ(IChInp,10,ERR=20,END=30) ICentralBeamFLAG
-  CALL Message ("ReadInpFile",IInfo,IErr,MessageVariable ="ICentralBeamFLAG",IVariable=ICentralBeamFLAG)
-
 
   ILine= ILine+1
   READ(IChInp,10,ERR=20,END=30) IMaskFLAG
@@ -231,10 +218,6 @@ SUBROUTINE ReadInpFile( IErr )
   READ(IChInp,15,ERR=20,END=30) RBSPMax
   CALL Message ("ReadInpFile",IInfo,IErr,MessageVariable ="RBSPMax",RVariable=RBSPMax)
 
-
-  ILine= ILine+1
-  READ(IChInp,15,ERR=20,END=30) RConvergenceTolerance
-  CALL Message ("ReadInpFile",IInfo,IErr,MessageVariable ="RConvergenceTolerance",RVariable=RConvergenceTolerance)
   ! ----------------------------------------------------------------------
   ! crystal settings
   
@@ -644,8 +627,7 @@ SUBROUTINE ReadInpFile( IErr )
      PRINT*,"RFinalThickness          = 1300.0"
      PRINT*,"RDeltaThickness          = 10.0"
      PRINT*,"IReflectOut              = 49"
-     PRINT*,""
-     
+     PRINT*,""   
      PRINT*,"A Sample Input File Has been Written For you as felix.inp.simdraw_sample"
      PRINT*,"It must be renamed to felix.inp before use"
   ELSE
@@ -658,15 +640,11 @@ SUBROUTINE ReadInpFile( IErr )
      PRINT*,"# control flags"
      PRINT*,"IWriteFLAG                = 1"
      PRINT*,"IImageFLAG                = 1"
-     PRINT*,"IOutputFLAG               = 0"
-     PRINT*,"IBinorTextFLAG            = 0"  
      PRINT*,"IScatterFactorMethodFLAG  = 0"
-     PRINT*,"ICentralBeamFLAG          = 1"
      PRINT*,"IMaskFLAG                 = 0"
      PRINT*,"IZolzFLAG                 = 1"
      PRINT*,"IAbsorbFLAG               = 1"
-     PRINT*,"IAnisoDebyeWallerFlag     = 0"
-     PRINT*,"IBeamConvergenceFLAG      = 1"
+     PRINT*,"IAnisoDebyeWallerFlag     = 0" 
      PRINT*,"IPseudoCubicFLAG          = 0"
      PRINT*,"IXDirectionFLAG           = 1"
      PRINT*,""
@@ -678,8 +656,7 @@ SUBROUTINE ReadInpFile( IErr )
      PRINT*,"IMinStrongBeams           = 125"
      PRINT*,"IMinWeakBeams             = 20"
      PRINT*,"RBSBMax                   = 0.1"
-     PRINT*,"RBSPMax                   = 0.1"
-     PRINT*,"RConvergenceTolerance (%) = 1.0"
+     PRINT*,"RBSPMax                   = 0.1" 
      PRINT*,""
      PRINT*,"# crystal settings"
      PRINT*,"RDebyeWallerConstant      = 0.4668"
@@ -698,6 +675,7 @@ SUBROUTINE ReadInpFile( IErr )
      PRINT*,"INormalDirectionY         = 1"
      PRINT*,"INormalDirectionZ         = 1"
      PRINT*,"RAcceleratingVoltage (kV) = 200.0"
+     PRINT*,"RAcceptanceAngle (mrad)   = 0.0"
      PRINT*,""
      PRINT*,"# Image Output Options"
      PRINT*,""
@@ -953,11 +931,8 @@ SUBROUTINE WriteOutInputFile (IErr)
      WRITE(UNIT= IChInp,FMT='(A)') ADJUSTL("")
      WRITE(UNIT= IChInp,FMT='(A)') ADJUSTL("# control flags")
      WRITE(UNIT= IChInp,FMT='(A)') ADJUSTL("IWriteFLAG                = 1")
-     WRITE(UNIT= IChInp,FMT='(A)') ADJUSTL("IImageFLAG                = 1")
-     WRITE(UNIT= IChInp,FMT='(A)') ADJUSTL("IOutputFLAG               = 0")
-     WRITE(UNIT= IChInp,FMT='(A)') ADJUSTL("IBinorTextFLAG            = 0") 
+     WRITE(UNIT= IChInp,FMT='(A)') ADJUSTL("IImageFLAG                = 1") 
      WRITE(UNIT= IChInp,FMT='(A)') ADJUSTL("IScatterFactorMethodFLAG  = 0")
-     WRITE(UNIT= IChInp,FMT='(A)') ADJUSTL("ICentralBeamFLAG          = 1")
      WRITE(UNIT= IChInp,FMT='(A)') ADJUSTL("IMaskFLAG                 = 0")
      WRITE(UNIT= IChInp,FMT='(A)') ADJUSTL("IZolzFLAG                 = 1")
      WRITE(UNIT= IChInp,FMT='(A)') ADJUSTL("IAbsorbFLAG               = 1")
@@ -975,7 +950,6 @@ SUBROUTINE WriteOutInputFile (IErr)
      WRITE(UNIT= IChInp,FMT='(A)') ADJUSTL("IMinWeakBeams             = 20")
      WRITE(UNIT= IChInp,FMT='(A)') ADJUSTL("RBSBMax                   = 0.1")
      WRITE(UNIT= IChInp,FMT='(A)') ADJUSTL("RBSPMax                   = 0.1")
-     WRITE(UNIT= IChInp,FMT='(A)') ADJUSTL("RConvergenceTolerance (%) = 1.0")
      WRITE(UNIT= IChInp,FMT='(A)') ADJUSTL("")
      WRITE(UNIT= IChInp,FMT='(A)') ADJUSTL("# crystal settings")
      WRITE(UNIT= IChInp,FMT='(A)') ADJUSTL("RDebyeWallerConstant      = 0.4668")
@@ -994,6 +968,7 @@ SUBROUTINE WriteOutInputFile (IErr)
      WRITE(UNIT= IChInp,FMT='(A)') ADJUSTL("INormalDirectionY         = 1")
      WRITE(UNIT= IChInp,FMT='(A)') ADJUSTL("INormalDirectionZ         = 1")
      WRITE(UNIT= IChInp,FMT='(A)') ADJUSTL("RAcceleratingVoltage (kV) = 200.0")
+     WRITE(UNIT= IChInp,FMT='(A)') ADJUSTL("RAcceptanceAngle (mrad)   = 0.0")
      WRITE(UNIT= IChInp,FMT='(A)') ADJUSTL("")
      WRITE(UNIT= IChInp,FMT='(A)') ADJUSTL("# Image Output Options")
      WRITE(UNIT= IChInp,FMT='(A)') ADJUSTL("")
@@ -1016,11 +991,8 @@ SUBROUTINE WriteOutInputFile (IErr)
      WRITE(UNIT= IChInp,FMT='(A)') ADJUSTL("")
      WRITE(UNIT= IChInp,FMT='(A)') ADJUSTL("# control flags")
      WRITE(UNIT= IChInp,FMT='(A)') ADJUSTL("IWriteFLAG                = 1")
-     WRITE(UNIT= IChInp,FMT='(A)') ADJUSTL("IImageFLAG                = 1")
-     WRITE(UNIT= IChInp,FMT='(A)') ADJUSTL("IOutputFLAG               = 0")
-     WRITE(UNIT= IChInp,FMT='(A)') ADJUSTL("IBinorTextFLAG            = 0") 
+     WRITE(UNIT= IChInp,FMT='(A)') ADJUSTL("IImageFLAG                = 1") 
      WRITE(UNIT= IChInp,FMT='(A)') ADJUSTL("IScatterFactorMethodFLAG  = 0")
-     WRITE(UNIT= IChInp,FMT='(A)') ADJUSTL("ICentralBeamFLAG          = 1")
      WRITE(UNIT= IChInp,FMT='(A)') ADJUSTL("IMaskFLAG                 = 1")
      WRITE(UNIT= IChInp,FMT='(A)') ADJUSTL("IZolzFLAG                 = 1")
      WRITE(UNIT= IChInp,FMT='(A)') ADJUSTL("IAbsorbFLAG               = 1")
@@ -1038,7 +1010,6 @@ SUBROUTINE WriteOutInputFile (IErr)
      WRITE(UNIT= IChInp,FMT='(A)') ADJUSTL("IMinWeakBeams             = 0")
      WRITE(UNIT= IChInp,FMT='(A)') ADJUSTL("RBSBMax                   = 0.1")
      WRITE(UNIT= IChInp,FMT='(A)') ADJUSTL("RBSPMax                   = 0.1")
-     WRITE(UNIT= IChInp,FMT='(A)') ADJUSTL("RConvergenceTolerance (%) = 1.0")
      WRITE(UNIT= IChInp,FMT='(A)') ADJUSTL("")
      WRITE(UNIT= IChInp,FMT='(A)') ADJUSTL("# crystal settings")
      WRITE(UNIT= IChInp,FMT='(A)') ADJUSTL("RDebyeWallerConstant      = 0.4668")
@@ -1057,6 +1028,7 @@ SUBROUTINE WriteOutInputFile (IErr)
      WRITE(UNIT= IChInp,FMT='(A)') ADJUSTL("INormalDirectionY         = 1")
      WRITE(UNIT= IChInp,FMT='(A)') ADJUSTL("INormalDirectionZ         = 1")
      WRITE(UNIT= IChInp,FMT='(A)') ADJUSTL("RAcceleratingVoltage (kV) = 200.0")
+      WRITE(UNIT= IChInp,FMT='(A)') ADJUSTL("RAcceptanceAngle (mrad)  = 0.0")
      WRITE(UNIT= IChInp,FMT='(A)') ADJUSTL("")
      WRITE(UNIT= IChInp,FMT='(A)') ADJUSTL("# Image Output Options")
      WRITE(UNIT= IChInp,FMT='(A)') ADJUSTL("")
