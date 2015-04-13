@@ -1082,7 +1082,7 @@ SUBROUTINE PerformDummySimulationToSetupSimplexValues(IErr)
   ENDIF
        
   DEALLOCATE( &
-       RGn,&
+       RgVecVec,&
        STAT=IErr)
   IF( IErr.NE.0 ) THEN
      PRINT*,"PerformDummySimulationToSetupSimplexValues(", my_rank, ") error ", IErr, &

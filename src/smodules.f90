@@ -399,7 +399,7 @@ MODULE RPara
        RGVector
 
   REAL(RKIND),DIMENSION(:),ALLOCATABLE :: &
-       RGn
+       RgVecVec
 
   !Image Initialisation
   

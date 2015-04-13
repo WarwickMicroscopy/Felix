@@ -633,11 +633,11 @@ SUBROUTINE FelixFunction(RIndependentVariableValues,IIterationCount,IErr)
   ENDIF
 
   DEALLOCATE( &
-       RGn,&
+       RgVecVec,&
        STAT=IErr)
   IF( IErr.NE.0 ) THEN
      PRINT*,"Felixfunction(", my_rank, ") error ", IErr, &
-          " in Deallocation RGn"
+          " in Deallocation RgVecVec"
      RETURN
   ENDIF
 
@@ -862,7 +862,6 @@ REAL(RKIND) FUNCTION SimplexFunction(RIndependentVariableValues,IIterationCount,
         WRITE(path,"(A2,A1,I1.1,A2,I1.1,A2,I1.1,A2,I4.4,A2,I5.5,A10,I5.5)") &
              "F-",&
              "S", IScatterFactorMethodFLAG, &
-             "_B", ICentralBeamFLAG, &
              "_M", IMaskFLAG, &
              "_P", IPixelCount, &
              "_T", IThickness, &

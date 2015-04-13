@@ -139,7 +139,10 @@ SUBROUTINE ReflectionDetermination( IErr )
              RHKL(ind,3)*RcrVecM(jnd)
      ENDDO
   ENDDO
-  
+  !Find central beam in RgVecMat 
+  !produce vector from Acceptance angle - mrad to 1/Angstrom max, any values outside this can be cut...
+  !have to think about boundaries, if equal to or less than, then allow.
+  !restrict MinReflectionPool on this basis, ie. change MinReflectionPool 
   ! G vector magnitudes in 1/Angstrom units
   
   DO ind=1,SIZE(RHKL,DIM=1)
@@ -252,18 +255,18 @@ SUBROUTINE DiffractionPatternCalculation (IErr)
   CALL Message("DiffractionPatternCalculation",IMust,IErr)
   
   ALLOCATE(&
-       RGn(SIZE(RHKL,DIM=1)), &
+       RgVecVec(SIZE(RHKL,DIM=1)), &
        STAT=IErr)
   IF( IErr.NE.0 ) THEN
      PRINT*,"DiffractionPatternCalculation(", my_rank, ") error ", IErr, &
-          " in ALLOCATE() of DYNAMIC variables RGn(HKL)"
+          " in ALLOCATE() of DYNAMIC variables RgVecVec(HKL)"
      RETURN
   ENDIF
   
   RNormDirM = RNormDirM/sqrt(DOT_PRODUCT(RNormDirM,RNormDirM))
   
   DO ind =1,SIZE(RHKL,DIM=1)
-     RGn(ind) = DOT_PRODUCT(RgVecMatT(ind,:),RNormDirM)
+     RgVecVec(ind) = DOT_PRODUCT(RgVecMatT(ind,:),RNormDirM)
   END DO
   
   CALL Message("DiffractionPatternCalculation",IInfo,IErr, &
@@ -294,7 +297,7 @@ SUBROUTINE DiffractionPatternCalculation (IErr)
 END SUBROUTINE DiffractionPatternCalculation
 
 
-SUBROUTINE NewHKLMake(Ihklmax,Rhkl0Vec,RAcceptanceAngle,IErr)
+SUBROUTINE NewHKLMake(Ihklmax,Rhkl0Vec,RHOLZAcceptanceAngle,IErr)
   
   USE MyNumbers
   USE WriteToScreen
@@ -311,7 +314,7 @@ SUBROUTINE NewHKLMake(Ihklmax,Rhkl0Vec,RAcceptanceAngle,IErr)
   INTEGER(IKIND) :: &
        IErr, Ihklmax,ind,jnd,knd,INhkl
   REAL(RKIND) :: &
-       RAcceptanceAngle
+       RHOLZAcceptanceAngle
   REAL(RKIND), DIMENSION(THREEDIM) :: &
        Rhkl0Vec,RhklDummyUnitVec,RhklDummyVec,Rhkl0UnitVec
 
@@ -351,7 +354,7 @@ SUBROUTINE NewHKLMake(Ihklmax,Rhkl0Vec,RAcceptanceAngle,IErr)
                        INhkl=INhkl+1
                     END IF
                  ELSEIF (ABS(DOT_PRODUCT(RhklDummyUnitVec,Rhkl0UnitVec)) &
-                      .LE.SIN(RAcceptanceAngle)) THEN
+                      .LE.SIN(RHOLZAcceptanceAngle)) THEN
                     INhkl = INhkl +1       
                     
                  ENDIF
@@ -366,7 +369,7 @@ SUBROUTINE NewHKLMake(Ihklmax,Rhkl0Vec,RAcceptanceAngle,IErr)
                        INhkl=INhkl+1
                     END IF
                  ELSEIF (ABS(DOT_PRODUCT(RhklDummyUnitVec,Rhkl0UnitVec)) &
-                      .LE.SIN(RAcceptanceAngle)) THEN
+                      .LE.SIN(RHOLZAcceptanceAngle)) THEN
                     INhkl = INhkl +1       
                  ENDIF
               END IF
@@ -379,7 +382,7 @@ SUBROUTINE NewHKLMake(Ihklmax,Rhkl0Vec,RAcceptanceAngle,IErr)
                        INhkl=INhkl+1
                     END IF
                  ELSEIF (ABS(DOT_PRODUCT(RhklDummyUnitVec,Rhkl0UnitVec)) &
-                      .LE.SIN(RAcceptanceAngle)) THEN
+                      .LE.SIN(RHOLZAcceptanceAngle)) THEN
                     INhkl = INhkl +1       
                     
                  ENDIF
@@ -393,7 +396,7 @@ SUBROUTINE NewHKLMake(Ihklmax,Rhkl0Vec,RAcceptanceAngle,IErr)
                        INhkl=INhkl+1
                     END IF
                  ELSEIF (ABS(DOT_PRODUCT(RhklDummyUnitVec,Rhkl0UnitVec)) &
-                      .LE.SIN(RAcceptanceAngle)) THEN
+                      .LE.SIN(RHOLZAcceptanceAngle)) THEN
                     INhkl = INhkl +1       
                     
                  ENDIF
@@ -407,7 +410,7 @@ SUBROUTINE NewHKLMake(Ihklmax,Rhkl0Vec,RAcceptanceAngle,IErr)
                        INhkl=INhkl+1
                     END IF
                  ELSEIF (ABS(DOT_PRODUCT(RhklDummyUnitVec,Rhkl0UnitVec)) &
-                      .LE.SIN(RAcceptanceAngle)) THEN
+                      .LE.SIN(RHOLZAcceptanceAngle)) THEN
                     INhkl = INhkl +1       
                  ENDIF
               END IF
@@ -420,7 +423,7 @@ SUBROUTINE NewHKLMake(Ihklmax,Rhkl0Vec,RAcceptanceAngle,IErr)
                        INhkl=INhkl+1
                     END IF
                  ELSEIF (ABS(DOT_PRODUCT(RhklDummyUnitVec,Rhkl0UnitVec)) &
-                      .LE.SIN(RAcceptanceAngle)) THEN
+                      .LE.SIN(RHOLZAcceptanceAngle)) THEN
                     INhkl = INhkl +1       
                  ENDIF
               END IF
@@ -433,7 +436,7 @@ SUBROUTINE NewHKLMake(Ihklmax,Rhkl0Vec,RAcceptanceAngle,IErr)
                        INhkl=INhkl+1
                     END IF
                  ELSEIF (ABS(DOT_PRODUCT(RhklDummyUnitVec,Rhkl0UnitVec)) &
-                      .LE.SIN(RAcceptanceAngle)) THEN
+                      .LE.SIN(RHOLZAcceptanceAngle)) THEN
                     INhkl = INhkl +1       
                  ENDIF
               END IF
@@ -445,7 +448,7 @@ SUBROUTINE NewHKLMake(Ihklmax,Rhkl0Vec,RAcceptanceAngle,IErr)
                     INhkl=INhkl+1
                  END IF
               ELSEIF (ABS(DOT_PRODUCT(RhklDummyUnitVec,Rhkl0UnitVec)) &
-                   .LE.SIN(RAcceptanceAngle)) THEN
+                   .LE.SIN(RHOLZAcceptanceAngle)) THEN
                  INhkl = INhkl +1       
               ENDIF
            CASE DEFAULT
@@ -497,7 +500,7 @@ SUBROUTINE NewHKLMake(Ihklmax,Rhkl0Vec,RAcceptanceAngle,IErr)
                        INhkl=INhkl+1
                        RHKL(INhkl,:)= RhklDummyVec
                     END IF
-                 ELSEIF (ABS(DOT_PRODUCT(RhklDummyUnitVec,Rhkl0UnitVec)).LE.sin(RAcceptanceAngle)) THEN
+                 ELSEIF (ABS(DOT_PRODUCT(RhklDummyUnitVec,Rhkl0UnitVec)).LE.sin(RHOLZAcceptanceAngle)) THEN
                     INhkl =  INhkl + 1
                     RHKL(INhkl,:) = RhklDummyVec                 
                  END IF
@@ -511,7 +514,7 @@ SUBROUTINE NewHKLMake(Ihklmax,Rhkl0Vec,RAcceptanceAngle,IErr)
                        INhkl=INhkl+1
                        RHKL(INhkl,:)= RhklDummyVec
                     END IF
-                 ELSEIF (ABS(DOT_PRODUCT(RhklDummyUnitVec,Rhkl0UnitVec)).LE.sin(RAcceptanceAngle)) THEN
+                 ELSEIF (ABS(DOT_PRODUCT(RhklDummyUnitVec,Rhkl0UnitVec)).LE.sin(RHOLZAcceptanceAngle)) THEN
                     INhkl =  INhkl + 1
                     RHKL(INhkl,:) = RhklDummyVec                 
                  END IF
@@ -525,7 +528,7 @@ SUBROUTINE NewHKLMake(Ihklmax,Rhkl0Vec,RAcceptanceAngle,IErr)
                        INhkl=INhkl+1
                        RHKL(INhkl,:)= RhklDummyVec
                     END IF
-                 ELSEIF (ABS(DOT_PRODUCT(RhklDummyUnitVec,Rhkl0UnitVec)).LE.sin(RAcceptanceAngle)) THEN
+                 ELSEIF (ABS(DOT_PRODUCT(RhklDummyUnitVec,Rhkl0UnitVec)).LE.sin(RHOLZAcceptanceAngle)) THEN
                     INhkl =  INhkl + 1
                     RHKL(INhkl,:) = RhklDummyVec                 
                  END IF
@@ -539,7 +542,7 @@ SUBROUTINE NewHKLMake(Ihklmax,Rhkl0Vec,RAcceptanceAngle,IErr)
                        INhkl=INhkl+1
                        RHKL(INhkl,:)= RhklDummyVec
                     END IF
-                 ELSEIF (ABS(DOT_PRODUCT(RhklDummyUnitVec,Rhkl0UnitVec)).LE.sin(RAcceptanceAngle)) THEN
+                 ELSEIF (ABS(DOT_PRODUCT(RhklDummyUnitVec,Rhkl0UnitVec)).LE.sin(RHOLZAcceptanceAngle)) THEN
                     INhkl =  INhkl + 1
                     RHKL(INhkl,:) = RhklDummyVec                 
                  END IF
@@ -553,7 +556,7 @@ SUBROUTINE NewHKLMake(Ihklmax,Rhkl0Vec,RAcceptanceAngle,IErr)
                        INhkl=INhkl+1
                        RHKL(INhkl,:)= RhklDummyVec
                     END IF
-                 ELSEIF (ABS(DOT_PRODUCT(RhklDummyUnitVec,Rhkl0UnitVec)).LE.sin(RAcceptanceAngle)) THEN
+                 ELSEIF (ABS(DOT_PRODUCT(RhklDummyUnitVec,Rhkl0UnitVec)).LE.sin(RHOLZAcceptanceAngle)) THEN
                     INhkl =  INhkl + 1
                     RHKL(INhkl,:) = RhklDummyVec                 
                  END IF
@@ -567,7 +570,7 @@ SUBROUTINE NewHKLMake(Ihklmax,Rhkl0Vec,RAcceptanceAngle,IErr)
                        INhkl=INhkl+1
                        RHKL(INhkl,:)= RhklDummyVec
                     END IF
-                 ELSEIF (ABS(DOT_PRODUCT(RhklDummyUnitVec,Rhkl0UnitVec)).LE.sin(RAcceptanceAngle)) THEN
+                 ELSEIF (ABS(DOT_PRODUCT(RhklDummyUnitVec,Rhkl0UnitVec)).LE.sin(RHOLZAcceptanceAngle)) THEN
                     INhkl =  INhkl + 1
                     RHKL(INhkl,:) = RhklDummyVec                 
                  END IF
@@ -581,7 +584,7 @@ SUBROUTINE NewHKLMake(Ihklmax,Rhkl0Vec,RAcceptanceAngle,IErr)
                        INhkl=INhkl+1
                        RHKL(INhkl,:)= RhklDummyVec
                     END IF
-                 ELSEIF (ABS(DOT_PRODUCT(RhklDummyUnitVec,Rhkl0UnitVec)).LE.sin(RAcceptanceAngle)) THEN
+                 ELSEIF (ABS(DOT_PRODUCT(RhklDummyUnitVec,Rhkl0UnitVec)).LE.sin(RHOLZAcceptanceAngle)) THEN
                     INhkl =  INhkl + 1
                     RHKL(INhkl,:) = RhklDummyVec                 
                  END IF
@@ -594,7 +597,7 @@ SUBROUTINE NewHKLMake(Ihklmax,Rhkl0Vec,RAcceptanceAngle,IErr)
                     INhkl=INhkl+1
                     RHKL(INhkl,:)= RhklDummyVec
                  END IF
-              ELSEIF (ABS(DOT_PRODUCT(RhklDummyUnitVec,Rhkl0UnitVec)).LE.sin(RAcceptanceAngle)) THEN
+              ELSEIF (ABS(DOT_PRODUCT(RhklDummyUnitVec,Rhkl0UnitVec)).LE.sin(RHOLZAcceptanceAngle)) THEN
                  INhkl =  INhkl + 1
                  RHKL(INhkl,:) = RhklDummyVec                 
               END IF
