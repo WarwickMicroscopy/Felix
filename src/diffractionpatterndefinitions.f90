@@ -294,7 +294,7 @@ SUBROUTINE DiffractionPatternCalculation (IErr)
 END SUBROUTINE DiffractionPatternCalculation
 
 
-SUBROUTINE NewHKLmake(Ihklmax,Rhkl0Vec,RAcceptanceAngle,IErr)
+SUBROUTINE NewHKLMake(Ihklmax,Rhkl0Vec,RAcceptanceAngle,IErr)
   
   USE MyNumbers
   USE WriteToScreen
