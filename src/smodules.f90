@@ -387,7 +387,7 @@ MODULE RPara
        RgVecMag, RSg
   
   REAL(RKIND), DIMENSION(:,:), ALLOCATABLE :: &
-       RgVecMat, RgVecMatT
+       RgVecMat, RgVecMatT, RgVecMagLaueZone
   
   REAL(RKIND), DIMENSION(THREEDIM,THREEDIM) :: &
        RTMat

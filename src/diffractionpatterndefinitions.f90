@@ -53,9 +53,11 @@ SUBROUTINE ReflectionDetermination( IErr )
   IMPLICIT NONE
 
   REAL(RKIND) :: &
-       dummy
+       dummy,RMaxAcceptanceGVecMag
   INTEGER(IKIND) :: &
-       IErr, ind,jnd,icheck,ihklrun,IFind,IFound,knd
+       IErr, ind,jnd,icheck,ihklrun,IFind,IFound,knd,IMaxLaueZoneLevel
+  CHARACTER*20 :: &
+       Sind
   
   CALL Message("ReflectionDetermination",IMust,IErr)
 
@@ -130,6 +132,14 @@ SUBROUTINE ReflectionDetermination( IErr )
      RETURN
   ENDIF
   
+  ALLOCATE(&
+       RgVecMagLaueZone(SIZE(RHKL,DIM=1),2), & !TWO dimension here from smodules to add
+       STAT=IErr)
+  IF( IErr.NE.0 ) THEN
+     PRINT*,"DiffractionPatternDefinitions(", my_rank, ") error ", IErr, &
+          " in ALLOCATE() of DYNAMIC variables RgVecMag(HKL)"
+     RETURN
+  ENDIF
   
   DO ind=1,SIZE(RHKL,DIM=1)
      DO jnd=1,THREEDIM
@@ -138,13 +148,29 @@ SUBROUTINE ReflectionDetermination( IErr )
              RHKL(ind,2)*RbrVecM(jnd) + &
              RHKL(ind,3)*RcrVecM(jnd)
      ENDDO
+     WRITE(Sind,'(I10.1)')ind
+     CALL Message("ReflectionDetermination", IMoreInfo,IErr, &
+          MessageVariable="Reciprocal Vector" &
+          //",RgVecMatT"//"("//ADJUSTL(TRIM(Sind))//":)", &
+          RVariable=RgVecMatT(ind,3))
   ENDDO
-  !Find central beam in RgVecMat 
-  !produce vector from Acceptance angle - mrad to 1/Angstrom max, any values outside this can be cut...
+  !produce vector from Acceptance angle - mrad to 1/Angstrom max,
+!!$  any values outside this can be cut...
   !have to think about boundaries, if equal to or less than, then allow.
   !restrict MinReflectionPool on this basis, ie. change MinReflectionPool 
   ! G vector magnitudes in 1/Angstrom units
 
+  IMaxLaueZoneLevel=INT(MAXLOC(RgVecMatT(:,3),DIM=1))
+
+!!$     DO ind=1,SIZE(RHKL,DIM=1)
+!!$        DO jnd=0,IMaxLaueZoneLevel
+!!$           WHERE(RgVecMatT(ind,3).EQ.RMaxLaueZoneLevel)
+!!$              RgVecMagLaueZone(ind,2)= &
+!!$                   SQRT(DOT_PRODUCT(RgVecMatT(ind,:),RgVecMatT(ind,:)))
+!!$           END WHERE
+!!$        END DO
+!!$     END DO
+         
   
   DO ind=1,SIZE(RHKL,DIM=1)
      RgVecMag(ind)= SQRT(DOT_PRODUCT(RgVecMatT(ind,:),RgVecMatT(ind,:)))
@@ -155,49 +181,66 @@ SUBROUTINE ReflectionDetermination( IErr )
 !!$check to ensure everything is only in magnitudes (there are negative g-vectors) 
 
   IF(RAcceptanceAngle.NE.ZERO.AND.IZOLZFLAG.EQ.1) THEN
-     CALL Message("ReflectionDetermination",IInfo, &
+     CALL Message("ReflectionDetermination",IInfo,IErr, &
           MessageString="Determining restriction effect of Acceptance Angle" &
           // " (in k-space for ZOLZ only). If unintended, please cancel the simulation and" &
           // " set the RAcceptance angle to 0.0, and/or switch IZOLZFLAG to 0")
-     MaxAcceptanceGVecMag=RElectronWaveVectorMagnitude*TAN(RAcceptanceAngle)
-     IF(RgVecMag(IMinReflectionPool).GT.MaxAcceptanceGVecMag) THEN
+     RMaxAcceptanceGVecMag=(RElectronWaveVectorMagnitude*TAN(RAcceptanceAngle*1E-3))
 
-!!$     New max Gvector amplitude is the G-vector specified by the acceptance angle
-        CALL Message("ReflectionDetermination",IInfo, &
+     CALL Message("ReflectionDetermination",IInfo,IErr, &
+          MessageVariable="RMaxGVecMAG",RVariable=RMaxAcceptanceGVecMag)
+
+     CALL Message("ReflectionDetermination",IInfo,IErr, &
+          MessageVariable="RElectronWaveVector",RVariable=RElectronWaveVectorMagnitude)
+
+     IF(RgVecMag(IMinReflectionPool).GT.RMaxAcceptanceGVecMag) THEN
+        CALL Message("ReflectionDetermination",IInfo,IErr, &
              MessageString="Number of Reflections (IMinReflectionPool) Exceeds cut-off from" &
-             //"Acceptance angle, calculating new cut-off value (reciprocal angstroms)")
-        RBSMaxGVecAmp = MaxAcceptanceGVecMag 
+             //" Acceptance angle, calculating new cut-off value (reciprocal angstroms)")
+!!$     New max Gvector amplitude is the G-vector specified by the acceptance angle
+        RBSMaxGVecAmp = RMaxAcceptanceGVecMag 
      ELSE
-        CALL Message("ReflectionDetermination",IInfo, &
-             MessageString="Warning: Number of Reflections in Reflection pool does not", &
-             \\"exceed the Acceptance angle (reciprocal angstroms)" &
-             \\"continuing in normal mode, for full range increase IMinReflectionPool")
-
+        CALL Message("ReflectionDetermination",IInfo,IErr, &
+             MessageString="Warning: Number of Reflections in Reflection pool does not" &
+             //" exceed the Acceptance angle (reciprocal angstroms)" &
+             //" continuing in normal mode, for full range increase IMinReflectionPool")
+!!$     Normal Reflection Pool value
         RBSMaxGVecAmp = RgVecMag(IMinReflectionPool)
      END IF
-
-  ELSEIF(RAcceptanceAngle.NE.ZERO.AND.IZOLZFLAG.EQ.0) THEN
-
-     CALL Message("ReflectionDetermination",IInfo, &
-          MessageString="Determining restriction effect of Acceptance Angle" &
-          // " (in k-space). If unintended, please cancel the simulation and" &
-          // " set the RAcceptance angle to 0.0")
      
+  ELSEIF(RAcceptanceAngle.NE.ZERO.AND.IZOLZFLAG.EQ.0) THEN
+     CALL Message("ReflectionDetermination",IInfo,IErr, &
+          MessageString="Determining restriction effect of Acceptance Angle" &
+          // " (in k-space with HOLZ). If unintended, please cancel the simulation and" &
+          // " set the RAcceptance angle to 0.0 and/or switch IZOLZFLAG to 1")
+  ELSE
+     RBSMaxGVecAmp = RgVecMag(IMinReflectionPool)
+  END IF
 
-  RBSMaxGVecAmp = RgVecMag(IMinReflectionPool)
   
   nReflections = 0
   nStrongBeams = 0
   nWeakBeams = 0
 
+  
+
   DO ind=1,SIZE(RHKL,DIM=1)
      IF (ABS(RgVecMag(ind)).LE.RBSMaxGVecAmp) THEN
-        CALL Message("ReflectionDetermination", IMoreInfo, &
-             MessageVariable="Allowed Reciprocal g-vector magnitude:", &
+        WRITE(Sind,'(I10.1)')ind
+        CALL Message("ReflectionDetermination", IMoreInfo,IErr, &
+             MessageVariable="Allowed Reciprocal g-vector magnitude" &
+             //",RgVecMag" // "("//ADJUSTL(TRIM(Sind))//")", &
              RVariable=RgVecMag(ind))
         nReflections = nReflections + 1
      ENDIF
   ENDDO
+  
+  CALL Message("ReflectionDetermination", IInfo,IErr, &
+       MessageVariable="Reflection Pool reduced from, IMinReflectionpool", &
+       IVariable=IMinReflectionPool)
+  CALL Message("ReflectionDetermination", IInfo,IErr, &
+       MessageVariable="to nReflections",IVariable=nReflections)
+  
   END SUBROUTINE ReflectionDetermination
   
   SUBROUTINE SpecificReflectionDetermination (IErr)
