@@ -144,11 +144,46 @@ SUBROUTINE ReflectionDetermination( IErr )
   !have to think about boundaries, if equal to or less than, then allow.
   !restrict MinReflectionPool on this basis, ie. change MinReflectionPool 
   ! G vector magnitudes in 1/Angstrom units
+
   
   DO ind=1,SIZE(RHKL,DIM=1)
      RgVecMag(ind)= SQRT(DOT_PRODUCT(RgVecMatT(ind,:),RgVecMatT(ind,:)))
   ENDDO
-  
+
+!!$If the user specifies an acceptance angle, felix uses it to restrict the number
+!!$of reflections in IMinReflectionPool & nReflections
+!!$check to ensure everything is only in magnitudes (there are negative g-vectors) 
+
+  IF(RAcceptanceAngle.NE.ZERO.AND.IZOLZFLAG.EQ.1) THEN
+     CALL Message("ReflectionDetermination",IInfo, &
+          MessageString="Determining restriction effect of Acceptance Angle" &
+          // " (in k-space for ZOLZ only). If unintended, please cancel the simulation and" &
+          // " set the RAcceptance angle to 0.0, and/or switch IZOLZFLAG to 0")
+     MaxAcceptanceGVecMag=RElectronWaveVectorMagnitude*TAN(RAcceptanceAngle)
+     IF(RgVecMag(IMinReflectionPool).GT.MaxAcceptanceGVecMag) THEN
+
+!!$     New max Gvector amplitude is the G-vector specified by the acceptance angle
+        CALL Message("ReflectionDetermination",IInfo, &
+             MessageString="Number of Reflections (IMinReflectionPool) Exceeds cut-off from" &
+             //"Acceptance angle, calculating new cut-off value (reciprocal angstroms)")
+        RBSMaxGVecAmp = MaxAcceptanceGVecMag 
+     ELSE
+        CALL Message("ReflectionDetermination",IInfo, &
+             MessageString="Warning: Number of Reflections in Reflection pool does not", &
+             \\"exceed the Acceptance angle (reciprocal angstroms)" &
+             \\"continuing in normal mode, for full range increase IMinReflectionPool")
+
+        RBSMaxGVecAmp = RgVecMag(IMinReflectionPool)
+     END IF
+
+  ELSEIF(RAcceptanceAngle.NE.ZERO.AND.IZOLZFLAG.EQ.0) THEN
+
+     CALL Message("ReflectionDetermination",IInfo, &
+          MessageString="Determining restriction effect of Acceptance Angle" &
+          // " (in k-space). If unintended, please cancel the simulation and" &
+          // " set the RAcceptance angle to 0.0")
+     
+
   RBSMaxGVecAmp = RgVecMag(IMinReflectionPool)
   
   nReflections = 0
@@ -157,6 +192,9 @@ SUBROUTINE ReflectionDetermination( IErr )
 
   DO ind=1,SIZE(RHKL,DIM=1)
      IF (ABS(RgVecMag(ind)).LE.RBSMaxGVecAmp) THEN
+        CALL Message("ReflectionDetermination", IMoreInfo, &
+             MessageVariable="Allowed Reciprocal g-vector magnitude:", &
+             RVariable=RgVecMag(ind))
         nReflections = nReflections + 1
      ENDIF
   ENDDO
