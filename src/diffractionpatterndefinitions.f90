@@ -147,12 +147,13 @@ SUBROUTINE ReflectionDetermination( IErr )
              RHKL(ind,1)*RarVecM(jnd) + &
              RHKL(ind,2)*RbrVecM(jnd) + &
              RHKL(ind,3)*RcrVecM(jnd)
+        
      ENDDO
      WRITE(Sind,'(I10.1)')ind
      CALL Message("ReflectionDetermination", IMoreInfo,IErr, &
           MessageVariable="Reciprocal Vector" &
-          //",RgVecMatT"//"("//ADJUSTL(TRIM(Sind))//":)", &
-          RVariable=RgVecMatT(ind,3))
+          //",RbrVecM"//"("//ADJUSTL(TRIM(Sind))//":)", &
+          RVariable=RbrVecM(3))
   ENDDO
   !produce vector from Acceptance angle - mrad to 1/Angstrom max,
 !!$  any values outside this can be cut...
@@ -219,12 +220,12 @@ SUBROUTINE ReflectionDetermination( IErr )
   ELSE
      RBSMaxGVecAmp = RgVecMag(IMinReflectionPool)
   END IF
-
+  
   
   nReflections = 0
   nStrongBeams = 0
   nWeakBeams = 0
-
+  
   
 
   DO ind=1,SIZE(RHKL,DIM=1)
@@ -335,6 +336,8 @@ SUBROUTINE DiffractionPatternCalculation (IErr)
   
   INTEGER(IKIND) :: &
        ind,IErr
+  CHARACTER*20 :: &
+       Sind
   
   CALL Message("DiffractionPatternCalculation",IMust,IErr)
   
@@ -351,6 +354,11 @@ SUBROUTINE DiffractionPatternCalculation (IErr)
   
   DO ind =1,SIZE(RHKL,DIM=1)
      RgVecVec(ind) = DOT_PRODUCT(RgVecMatT(ind,:),RNormDirM)
+     WRITE(Sind,'(I10.1)')ind
+     CALL Message("DiffractionPatternDetermination", IMoreInfo,IErr, &
+          MessageVariable="Reciprocal Vector Vec Vec" &
+          //",RHKL"//"("//ADJUSTL(TRIM(Sind))//":)", &
+          RVariable=RgVecVec(ind))
   END DO
   
   CALL Message("DiffractionPatternCalculation",IInfo,IErr, &
