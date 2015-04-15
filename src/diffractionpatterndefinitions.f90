@@ -159,8 +159,11 @@ SUBROUTINE ReflectionDetermination( IErr )
   !have to think about boundaries, if equal to or less than, then allow.
   !restrict MinReflectionPool on this basis, ie. change MinReflectionPool 
   ! G vector magnitudes in 1/Angstrom units
-
-  IMaxLaueZoneLevel=INT(MAXLOC(RgVecMatT(:,3),DIM=1))
+!!$  IF(IZOLZFLAG.EQ.0) THEN
+!!$     DO ind=1,SIZE(RHKL,DIM=1)
+!!$        WHERE(RgVecMatT(ind,3).NE.ZERO)
+!!$           MINLOC
+ ! IMaxLaueZoneLevel=INT(MAXLOC(RgVecMatT(:,3),DIM=1))
 
 !!$     DO ind=1,SIZE(RHKL,DIM=1)
 !!$        DO jnd=0,IMaxLaueZoneLevel
@@ -170,7 +173,6 @@ SUBROUTINE ReflectionDetermination( IErr )
 !!$           END WHERE
 !!$        END DO
 !!$     END DO
-         
   
   DO ind=1,SIZE(RHKL,DIM=1)
      RgVecMag(ind)= SQRT(DOT_PRODUCT(RgVecMatT(ind,:),RgVecMatT(ind,:)))
@@ -213,6 +215,7 @@ SUBROUTINE ReflectionDetermination( IErr )
           MessageString="Determining restriction effect of Acceptance Angle" &
           // " (in k-space with HOLZ). If unintended, please cancel the simulation and" &
           // " set the RAcceptance angle to 0.0 and/or switch IZOLZFLAG to 1")
+     RBSMaxGVecAmp = RgVecMag(IMinReflectionPool)
   ELSE
      RBSMaxGVecAmp = RgVecMag(IMinReflectionPool)
   END IF
