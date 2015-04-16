@@ -51,13 +51,17 @@ SUBROUTINE ReflectionDetermination( IErr )
   USE MyMPI
 
   IMPLICIT NONE
-
+  
+  REAL(RKIND), DIMENSION(:,:), ALLOCATABLE :: &
+       RgDummyVecMat,RgVecMagLaue
   REAL(RKIND) :: &
-       dummy,RMaxAcceptanceGVecMag
+       dummy,RMaxAcceptanceGVecMag,RMinLaueZoneValue,RMaxLaueZoneValue,RGzUnitVec, &
+       RLaueZoneGz
   INTEGER(IKIND) :: &
-       IErr, ind,jnd,icheck,ihklrun,IFind,IFound,knd,IMaxLaueZoneLevel
+       IErr, ind,jnd,icheck,ihklrun,IFind,IFound,knd,IMaxLaueZoneLevel, &
+       ICutOff,ITotalLaueZoneLevel
   CHARACTER*20 :: &
-       Sind
+       Sind,Sjnd
   
   CALL Message("ReflectionDetermination",IMust,IErr)
 
@@ -122,6 +126,15 @@ SUBROUTINE ReflectionDetermination( IErr )
           " in ALLOCATE() of DYNAMIC variables RgVecMatT(HKL)"
      RETURN
   ENDIF
+
+  ALLOCATE(&
+       RgDummyVecMat(SIZE(RHKL,DIM=1),THREEDIM), &
+       STAT=IErr)
+  IF( IErr.NE.0 ) THEN
+     PRINT*,"DiffractionPatternDefinitions(", my_rank, ") error ", IErr, &
+          " in ALLOCATE() of DYNAMIC variables RgDummyVecMat(HKL)"
+     RETURN
+  ENDIF
   
   ALLOCATE(&
        RgVecMag(SIZE(RHKL,DIM=1)), &
@@ -132,29 +145,100 @@ SUBROUTINE ReflectionDetermination( IErr )
      RETURN
   ENDIF
   
-  ALLOCATE(&
-       RgVecMagLaueZone(SIZE(RHKL,DIM=1),2), & !TWO dimension here from smodules to add
-       STAT=IErr)
-  IF( IErr.NE.0 ) THEN
-     PRINT*,"DiffractionPatternDefinitions(", my_rank, ") error ", IErr, &
-          " in ALLOCATE() of DYNAMIC variables RgVecMag(HKL)"
-     RETURN
-  ENDIF
-  
+  ICutOff = 1
   DO ind=1,SIZE(RHKL,DIM=1)
+     WRITE(Sind,'(I10.1)')ind
      DO jnd=1,THREEDIM
         RgVecMatT(ind,jnd)= &
              RHKL(ind,1)*RarVecM(jnd) + &
              RHKL(ind,2)*RbrVecM(jnd) + &
              RHKL(ind,3)*RcrVecM(jnd)
-        
+        RgDummyVecMat(ind,jnd)=RgVecMatT(ind,jnd)
      ENDDO
+
+     IF((RgVecMatT(ind,3).GT.TINY.OR.RgVecMatT(ind,3).LT.-TINY).AND.ICutOff.NE.0) THEN
+        RGzUnitVec=ABS(RgVecMatT(ind,3))
+        CALL Message("ReflectionDetermination", IMoreInfo,IErr, &
+          MessageVariable="RGzUnitVec", &
+          RVariable=RGzUnitVec)
+        ICutOff=0
+     END IF
+  ENDDO
+
+
+  WHERE(RgDummyVecMat(:,3).NE.ZERO)
+     RgDummyVecMat(:,3)=RgDummyVecMat(:,3)/RGzUnitVec
+  END WHERE
+
+  DO ind=1,SIZE(RHKL,DIM=1)
+     PRINT*,RgDummyVecMat(ind,3)
      WRITE(Sind,'(I10.1)')ind
      CALL Message("ReflectionDetermination", IMoreInfo,IErr, &
           MessageVariable="Reciprocal Vector" &
-          //",RbrVecM"//"("//ADJUSTL(TRIM(Sind))//":)", &
-          RVariable=RbrVecM(3))
-  ENDDO
+          //",RgDummyVecMat"//"("//ADJUSTL(TRIM(Sind))//",3)", &
+          RVariable=RgDummyVecMat(ind,3))
+  END DO
+
+  RMaxLaueZoneValue=MAXVAL(RgDummyVecMat(:,3),DIM=1)
+  RMinLaueZoneValue=MINVAL(RgDummyVecMat(:,3),DIM=1)
+  CALL Message("ReflectionDetermination", IMoreInfo,IErr, &
+       MessageVariable="Maximum Laue Zone,RMaxLaueZoneValue", &
+       RVariable=RMaxLaueZoneValue)
+  CALL Message("ReflectionDetermination", IMoreInfo,IErr, &
+       MessageVariable="Minimum Laue Zone,RMinLaueZoneValue", &
+       RVariable=RMinLaueZoneValue)
+
+  ITotalLaueZoneLevel=INT(RMaxLaueZoneValue*2,IKIND)
+
+  ALLOCATE(&
+       RgVecMagLaue(SIZE(RHKL,DIM=1),ITotalLaueZoneLevel), &
+       STAT=IErr)
+  IF( IErr.NE.0 ) THEN
+     PRINT*,"DiffractionPatternDefinitions(", my_rank, ") error ", IErr, &
+          " in ALLOCATE() of DYNAMIC variables RgVecMagLaueZone(HKL)"
+     RETURN
+  ENDIF
+  
+  DO ind=1,INT(RMaxLaueZoneValue,IKIND)
+     RLaueZoneGz=RGzUnitVec*REAL(ind,RKIND)
+     WRITE(Sind,'(I10.1)')ind
+     DO jnd=1,SIZE(RHKL,DIM=1)
+        WRITE(Sjnd,'(I10.1)')jnd
+        IF(RgVecMatT(jnd,3).EQ.RLaueZoneGz) THEN
+           RgVecMagLaue(jnd,ind)=SQRT((RgVecMatT(jnd,1)**2)+(RgVecMatT(jnd,2)**2))
+        CALL Message("ReflectionDetermination", IMoreInfo,IErr, &
+             MessageVariable="Reciprocal Vector" &
+             //",RgVecMagLaue"//"("//TRIM(ADJUSTL(Sjnd))//","//TRIM(ADJUSTL(Sind))//")", &
+             RVariable=RgVecMagLaue(jnd,ind))
+!!$        CALL Message("ReflectionDetermination", IMoreInfo,IErr, &
+!!$             MessageVariable="Reciprocal Vector" &
+!!$             //",RgVecMatT"//"("//TRIM(ADJUSTL(Sjnd))//",1)", &
+!!$             RVariable=RgVecMatT(jnd,1))
+!!$        CALL Message("ReflectionDetermination", IMoreInfo,IErr, &
+!!$             MessageVariable="Reciprocal Vector" &
+!!$             //",RgVecMatT"//"("//TRIM(ADJUSTL(Sjnd))//",2)", &
+!!$             RVariable=RgVecMatT(jnd,2))
+!!$        CALL Message("ReflectionDetermination", IMoreInfo,IErr, &
+!!$             MessageVariable="Reciprocal Vector" &
+!!$             //",RgVecMatT"//"("//TRIM(ADJUSTL(Sjnd))//",3)", &
+!!$             RVariable=RgVecMatT(jnd,3))
+        END IF
+         CALL Message("ReflectionDetermination", IMoreInfo,IErr, &
+             MessageVariable="Reciprocal Vector" &
+             //",RgVecMatT"//"("//TRIM(ADJUSTL(Sjnd))//",1)", &
+             RVariable=RgVecMatT(jnd,1))
+        CALL Message("ReflectionDetermination", IMoreInfo,IErr, &
+             MessageVariable="Reciprocal Vector" &
+             //",RgVecMatT"//"("//TRIM(ADJUSTL(Sjnd))//",2)", &
+             RVariable=RgVecMatT(jnd,2))
+        CALL Message("ReflectionDetermination", IMoreInfo,IErr, &
+             MessageVariable="Reciprocal Vector" &
+             //",RgVecMatT"//"("//TRIM(ADJUSTL(Sjnd))//",3)", &
+             RVariable=RgVecMatT(jnd,3))
+     END DO
+  END DO
+
+        
   !produce vector from Acceptance angle - mrad to 1/Angstrom max,
 !!$  any values outside this can be cut...
   !have to think about boundaries, if equal to or less than, then allow.
@@ -168,7 +252,7 @@ SUBROUTINE ReflectionDetermination( IErr )
 
 !!$     DO ind=1,SIZE(RHKL,DIM=1)
 !!$        DO jnd=0,IMaxLaueZoneLevel
-!!$           WHERE(RgVecMatT(ind,3).EQ.RMaxLaueZoneLevel)
+!!$           WHERE(RgVecMatT(ind,3).EQ.jnd)
 !!$              RgVecMagLaueZone(ind,2)= &
 !!$                   SQRT(DOT_PRODUCT(RgVecMatT(ind,:),RgVecMatT(ind,:)))
 !!$           END WHERE
@@ -357,7 +441,7 @@ SUBROUTINE DiffractionPatternCalculation (IErr)
      WRITE(Sind,'(I10.1)')ind
      CALL Message("DiffractionPatternDetermination", IMoreInfo,IErr, &
           MessageVariable="Reciprocal Vector Vec Vec" &
-          //",RHKL"//"("//ADJUSTL(TRIM(Sind))//":)", &
+          //",RHKL"//"("//ADJUSTL(TRIM(Sind))//",:)", &
           RVariable=RgVecVec(ind))
   END DO
   
