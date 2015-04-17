@@ -57,13 +57,14 @@ SUBROUTINE Message(ProgramName,IPriorityFLAG,IErr,MessageVariable,RVariable,IVar
   CHARACTER(*),INTENT (IN) :: ProgramName
   INTEGER(IKIND) :: IErr,IPriorityFLAG
   
-  CHARACTER*30 VariableString, my_rank_string
+  CHARACTER*30 VariableString, my_rank_string,DebugString
 
 !!$  Converts my_rank to string and then either the RVariable, IVariable, CVariable to a string
      WRITE(my_rank_string,'(I6.1)') my_rank 
      IF (PRESENT(RVariable)) THEN
-!!$        WRITE(VariableString,'(F30.16)') RVariable
-        WRITE(VariableString,'(F15.3)') RVariable
+        IF(IPriorityFLAG.LT.100) THEN
+           WRITE(VariableString,'(F15.3)') RVariable
+        END IF
      ELSE IF (PRESENT(IVariable)) THEN
         WRITE(VariableString,'(I10.1)') IVariable
      ELSE IF (PRESENT(CVariable)) THEN
@@ -79,6 +80,7 @@ SUBROUTINE Message(ProgramName,IPriorityFLAG,IErr,MessageVariable,RVariable,IVar
      IWriteFLAG = IDebugFLAG - 100
   END IF
 
+  
 
   
 !!$  If IPriorityFLAG is over 100 (Debug messaging) below won't execute
@@ -120,6 +122,9 @@ SUBROUTINE Message(ProgramName,IPriorityFLAG,IErr,MessageVariable,RVariable,IVar
 !!$  below only executes if message is a debug message and set in debug mode
 !!$  Debug messages are printed out here
   ELSE IF(IDebugFLAG .GE. 100) THEN
+
+!!$     Prints out reals with greater precision
+     WRITE(VariableString,'(F30.16)') RVariable
 
      ! Checks if MessageVariable & MessageString has been read into the function
      IF (PRESENT(MessageVariable).AND.PRESENT(MessageString)) THEN

@@ -60,6 +60,8 @@ SUBROUTINE ReflectionDetermination( IErr )
   INTEGER(IKIND) :: &
        IErr, ind,jnd,icheck,ihklrun,IFind,IFound,knd,IMaxLaueZoneLevel, &
        ICutOff,ITotalLaueZoneLevel
+  INTEGER,PARAMETER :: &
+       QuantiseLaueKIND=selected_real_kind(3) 
   CHARACTER*20 :: &
        Sind,Sjnd
   
@@ -171,7 +173,7 @@ SUBROUTINE ReflectionDetermination( IErr )
   END WHERE
 
   DO ind=1,SIZE(RHKL,DIM=1)
-     PRINT*,RgDummyVecMat(ind,3)
+     !PRINT*,RgDummyVecMat(ind,3)
      WRITE(Sind,'(I10.1)')ind
      CALL Message("ReflectionDetermination", IMoreInfo,IErr, &
           MessageVariable="Reciprocal Vector" &
@@ -200,38 +202,26 @@ SUBROUTINE ReflectionDetermination( IErr )
   ENDIF
   
   DO ind=1,INT(RMaxLaueZoneValue,IKIND)
-     RLaueZoneGz=RGzUnitVec*REAL(ind,RKIND)
+     RLaueZoneGz=RGzUnitVec*ind
      WRITE(Sind,'(I10.1)')ind
      DO jnd=1,SIZE(RHKL,DIM=1)
         WRITE(Sjnd,'(I10.1)')jnd
-        IF(RgVecMatT(jnd,3).EQ.RLaueZoneGz) THEN
+        IF(REAL(RgVecMatT(jnd,3),QuantiseLaueKIND).EQ.REAL(RLaueZoneGz,QuantiseLaueKIND)) THEN
            RgVecMagLaue(jnd,ind)=SQRT((RgVecMatT(jnd,1)**2)+(RgVecMatT(jnd,2)**2))
         CALL Message("ReflectionDetermination", IMoreInfo,IErr, &
              MessageVariable="Reciprocal Vector" &
              //",RgVecMagLaue"//"("//TRIM(ADJUSTL(Sjnd))//","//TRIM(ADJUSTL(Sind))//")", &
              RVariable=RgVecMagLaue(jnd,ind))
-!!$        CALL Message("ReflectionDetermination", IMoreInfo,IErr, &
-!!$             MessageVariable="Reciprocal Vector" &
-!!$             //",RgVecMatT"//"("//TRIM(ADJUSTL(Sjnd))//",1)", &
-!!$             RVariable=RgVecMatT(jnd,1))
-!!$        CALL Message("ReflectionDetermination", IMoreInfo,IErr, &
-!!$             MessageVariable="Reciprocal Vector" &
-!!$             //",RgVecMatT"//"("//TRIM(ADJUSTL(Sjnd))//",2)", &
-!!$             RVariable=RgVecMatT(jnd,2))
-!!$        CALL Message("ReflectionDetermination", IMoreInfo,IErr, &
-!!$             MessageVariable="Reciprocal Vector" &
-!!$             //",RgVecMatT"//"("//TRIM(ADJUSTL(Sjnd))//",3)", &
-!!$             RVariable=RgVecMatT(jnd,3))
         END IF
-         CALL Message("ReflectionDetermination", IMoreInfo,IErr, &
+         CALL Message("ReflectionDetermination", IMoreInfo+IDebug,IErr, &
              MessageVariable="Reciprocal Vector" &
              //",RgVecMatT"//"("//TRIM(ADJUSTL(Sjnd))//",1)", &
              RVariable=RgVecMatT(jnd,1))
-        CALL Message("ReflectionDetermination", IMoreInfo,IErr, &
+        CALL Message("ReflectionDetermination", IMoreInfo+IDebug,IErr, &
              MessageVariable="Reciprocal Vector" &
              //",RgVecMatT"//"("//TRIM(ADJUSTL(Sjnd))//",2)", &
              RVariable=RgVecMatT(jnd,2))
-        CALL Message("ReflectionDetermination", IMoreInfo,IErr, &
+        CALL Message("ReflectionDetermination", IMoreInfo+IDebug,IErr, &
              MessageVariable="Reciprocal Vector" &
              //",RgVecMatT"//"("//TRIM(ADJUSTL(Sjnd))//",3)", &
              RVariable=RgVecMatT(jnd,3))
