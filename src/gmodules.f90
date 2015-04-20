@@ -60,8 +60,9 @@ MODULE MyNumbers
        NEGTHIRD=-0.3333333333333333_RKIND, NEGTWOTHIRD=-0.6666666666666_RKIND
 
   REAL(RKIND) :: &
-       TINY= 1.0D-9
-
+       TINY= 1.0D-9, &
+       NEGHUGE=-1.0D9
+  
   REAL(RKIND) :: &
        RKiloByte,RMegaByte,RGigaByte,RTeraByte 
   

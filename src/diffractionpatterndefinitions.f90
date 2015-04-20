@@ -56,12 +56,13 @@ SUBROUTINE ReflectionDetermination( IErr )
        RgDummyVecMat,RgVecMagLaue
   REAL(RKIND) :: &
        dummy,RMaxAcceptanceGVecMag,RMinLaueZoneValue,RMaxLaueZoneValue,RGzUnitVec, &
-       RLaueZoneGz
+       RLaueZoneGz,RLaueZoneElectronWaveVectorMag
+  INTEGER(IKIND), DIMENSION(:),ALLOCATABLE :: &
+       IOriginGVecIdentifier
   INTEGER(IKIND) :: &
-       IErr, ind,jnd,icheck,ihklrun,IFind,IFound,knd,IMaxLaueZoneLevel, &
-       ICutOff,ITotalLaueZoneLevel
-  INTEGER,PARAMETER :: &
-       QuantiseLaueKIND=selected_real_kind(5) 
+       IErr,ind,jnd,icheck,ihklrun,IFind,IFound,knd,IMaxLaueZoneLevel, &
+       ICutOff,ITotalLaueZoneLevel,ICounter,IHOLZGVecMagSize,INumInitReflections, &
+       INumFinalReflections, IBSMaxLocGVecAmp, IZerothLaueZoneLevel
   CHARACTER*20 :: &
        Sind,Sjnd
   
@@ -147,68 +148,71 @@ SUBROUTINE ReflectionDetermination( IErr )
      RETURN
   ENDIF
 
+!!$  For HOLZ, we want to identify the number of HOLZ in the Bloch Problem
 
+  IF(IZOLZFLAG.EQ.0) THEN
+     
 !!$  Loop through the z-component of the g-vector matrix in the microscope frame
 !!$  (Along the K-vector in the Bragg condition) 
 !!$  Find the minimum g-z vector - RGzUnitVector (this is the quantisation condition)
 !!$  ICutoff stops the conditional statement determining the minimum g-vector
 !!$  Also populate a Dummy g-vector matrix  
-  ICutOff = 1
-  DO ind=1,SIZE(RHKL,DIM=1)
-     WRITE(Sind,'(I10.1)')ind
-     DO jnd=1,THREEDIM
-        RgVecMatT(ind,jnd)= &
-             RHKL(ind,1)*RarVecM(jnd) + &
-             RHKL(ind,2)*RbrVecM(jnd) + &
-             RHKL(ind,3)*RcrVecM(jnd)
-        RgDummyVecMat(ind,jnd)=RgVecMatT(ind,jnd)
+     ICutOff = 1
+     DO ind=1,SIZE(RHKL,DIM=1)
+        WRITE(Sind,'(I10.1)')ind
+        DO jnd=1,THREEDIM
+           RgVecMatT(ind,jnd)= &
+                RHKL(ind,1)*RarVecM(jnd) + &
+                RHKL(ind,2)*RbrVecM(jnd) + &
+                RHKL(ind,3)*RcrVecM(jnd)
+           RgDummyVecMat(ind,jnd)=RgVecMatT(ind,jnd)
+        ENDDO
+        
+        IF((RgVecMatT(ind,3).GT.TINY.OR.RgVecMatT(ind,3).LT.-TINY).AND.ICutOff.NE.0) THEN
+           RGzUnitVec=ABS(RgVecMatT(ind,3))
+           CALL Message("ReflectionDetermination", IMoreInfo,IErr, &
+                MessageVariable="RGzUnitVec", &
+                RVariable=RGzUnitVec)
+           ICutOff=0
+        END IF
      ENDDO
      
-     IF((RgVecMatT(ind,3).GT.TINY.OR.RgVecMatT(ind,3).LT.-TINY).AND.ICutOff.NE.0) THEN
-        RGzUnitVec=ABS(RgVecMatT(ind,3))
-        CALL Message("ReflectionDetermination", IMoreInfo,IErr, &
-             MessageVariable="RGzUnitVec", &
-             RVariable=RGzUnitVec)
-        ICutOff=0
-     END IF
-  ENDDO
-  
   
 !!$  Divide the non-zero Gz positions in the matrix by the mimimum Gz distance
 !!$  This quantises the dummy matrix identifying the various Laue Zones
-  WHERE(RgDummyVecMat(:,3).NE.ZERO)
-     RgDummyVecMat(:,3)=RgDummyVecMat(:,3)/RGzUnitVec
-  END WHERE
+     WHERE(RgDummyVecMat(:,3).NE.ZERO)
+        RgDummyVecMat(:,3)=RgDummyVecMat(:,3)/RGzUnitVec
+     END WHERE
   
 !!$     Write out the z component Dummy g-vector Matrix in DebugMODE
-  DO ind=1,SIZE(RHKL,DIM=1)
-     !PRINT*,RgDummyVecMat(ind,3)
-     WRITE(Sind,'(I10.1)')ind
-     CALL Message("ReflectionDetermination", IMoreInfo+IDEBUG,IErr, &
-          MessageVariable="Reciprocal Vector" &
-          //",RgDummyVecMat"//"("//ADJUSTL(TRIM(Sind))//",3)", &
-          RVariable=RgDummyVecMat(ind,3))
-  END DO
-  
+     DO ind=1,SIZE(RHKL,DIM=1)
+        !PRINT*,RgDummyVecMat(ind,3)
+        WRITE(Sind,'(I10.1)')ind
+        CALL Message("ReflectionDetermination", IMoreInfo+IDEBUG,IErr, &
+             MessageVariable="Reciprocal Vector" &
+             //",RgDummyVecMat"//"("//ADJUSTL(TRIM(Sind))//",3)", &
+             RVariable=RgDummyVecMat(ind,3))
+     END DO
+     
 !!$     Find the maximum and minimum Laue Zone for the system in question
 !!$     and print to screen
-  RMaxLaueZoneValue=MAXVAL(RgDummyVecMat(:,3),DIM=1)
-  RMinLaueZoneValue=MINVAL(RgDummyVecMat(:,3),DIM=1)
-  CALL Message("ReflectionDetermination", IMoreInfo,IErr, &
-       MessageVariable="Maximum Laue Zone,RMaxLaueZoneValue", &
-       RVariable=RMaxLaueZoneValue)
-  CALL Message("ReflectionDetermination", IMoreInfo,IErr, &
-       MessageVariable="Minimum Laue Zone,RMinLaueZoneValue", &
-       RVariable=RMinLaueZoneValue)
-  
+     RMaxLaueZoneValue=MAXVAL(RgDummyVecMat(:,3),DIM=1)
+     RMinLaueZoneValue=MINVAL(RgDummyVecMat(:,3),DIM=1)
+     CALL Message("ReflectionDetermination", IMoreInfo,IErr, &
+          MessageVariable="Maximum Laue Zone,RMaxLaueZoneValue", &
+          RVariable=RMaxLaueZoneValue)
+     CALL Message("ReflectionDetermination", IMoreInfo,IErr, &
+          MessageVariable="Minimum Laue Zone,RMinLaueZoneValue", &
+          RVariable=RMinLaueZoneValue)
+     
 !!$     Identify the total Laue Zones in the system and print to screen
-  ITotalLaueZoneLevel=INT(RMaxLaueZoneValue+ABS(RMinLaueZoneValue),IKIND)
-  CALL Message("ReflectionDetermination", IMoreInfo,IErr, &
-       MessageVariable="Total Laue Zones in system,ITotalLaueZoneLevel", &
-       RVariable=RMinLaueZoneValue)
-  
-!!$  HOLZ Acceptance Angle
-  !IF(IZOLZFLAG.EQ.0) THEN
+     ITotalLaueZoneLevel=INT(RMaxLaueZoneValue,IKIND)+INT(ABS(RMinLaueZoneValue),IKIND)+1
+     CALL Message("ReflectionDetermination", IMoreInfo,IErr, &
+          MessageVariable="Total Laue Zones in system, ITotalLaueZoneLevel", &
+          IVariable=ITotalLaueZoneLevel)
+     IZerothLaueZoneLevel=INT(ABS(RMinLaueZoneValue),IKIND)+1
+     
+!!$     HOLZ Acceptance Angle
 !!$     Allocate enough space to determine Acceptance angle (in reciprocal Angstroms) 
 !!$     For each Laue Zone
      ALLOCATE(&
@@ -220,94 +224,148 @@ SUBROUTINE ReflectionDetermination( IErr )
         RETURN
      ENDIF
      
-!!$     Loop through the Laue Zones (at the moment it is the Maximum, 
-!!$     but I need to take into account that the negative max Laue Zone
-!!$     is greater than the positive Laue Zone and vice versa, therefore
-!!$     need to Loop until the total Laue Zones)
+!!$     Loop through the Laue Zones (first negative: -1,-2,...,minLaueZone,
+!!$     Then positive values,0,1,..,MaxLauezone) 
+!!$     Identify which values in RgVecMat are quantised in Gz, ie all -1 Laue zones
+!!$     have the same gz vector component in the microscope frame
+!!$     ZerothlaueZoneLevel indicates the index which corresponds to the zeroth order
+!!$     LaueZone
      
+!!$     Find the magnitude from the central K-Vector in the Bragg case, this is just the 
+!!$     square root of x and y components squared of RgVecMat (the x and y component)
+     
+     IF(RAcceptanceAngle.NE.ZERO) THEN
+        DO ind=1,ITotalLaueZoneLevel
+           IF(ind.LT.IZerothLaueZoneLevel) THEN
+              RLaueZoneGz=-(RGzUnitVec*ind)
+           ELSE IF(ind.EQ.IZerothLaueZoneLevel) THEN
+              RLaueZoneGz=ZERO
+           ELSE
+              RLaueZoneGz=(RGzUnitVec*ind)-IZerothLaueZoneLevel
+           END IF
+           
+           WRITE(Sind,'(I10.1)')ind
+           DO jnd=1,SIZE(RHKL,DIM=1)
+              WRITE(Sjnd,'(I10.1)')jnd
+
+                 IF(RgVecMatT(jnd,3).GE.(RLaueZoneGz-TINY).AND. &
+                      RgVecMatT(jnd,3).LE.(RLaueZoneGz+TINY)) THEN
+                    RgVecMagLaue(jnd,ind)=SQRT((RgVecMatT(jnd,1)**2)+(RgVecMatT(jnd,2)**2))
+                    
+                    IF(ind.LT.IZerothLaueZoneLevel) THEN
+                       CALL Message("ReflectionDetermination", IInfo,IErr, &
+                            MessageVariable="Negative Laue Zone Reciprocal Vector" &
+                            //",RgVecMagLaue"//"("//TRIM(ADJUSTL(Sjnd))//","//TRIM(ADJUSTL(Sind))//")", &
+                            RVariable=RgVecMagLaue(jnd,ind))
+                    ELSE
+                       CALL Message("ReflectionDetermination", IInfo,IErr, &
+                            MessageVariable="Positive Laue Zone Reciprocal Vector" &
+                            //",RgVecMagLaue"//"("//TRIM(ADJUSTL(Sjnd))//","//TRIM(ADJUSTL(Sind))//")", &
+                            RVariable=RgVecMagLaue(jnd,ind))
+                    END IF
+                 ELSE
+                    RgVecMagLaue(jnd,ind)=NEGHUGE
+                 END IF
+ 
+              CALL Message("ReflectionDetermination", IInfo,IErr, &
+                   MessageVariable="Reciprocal Vector" &
+                   //",RgVecMatT"//"("//TRIM(ADJUSTL(Sjnd))//",3)", &
+                   RVariable=RgVecMatT(jnd,3))
+           END DO
+           
 !!$     At each Laue Zone, determine the magnitude from Kz-Gz, ie. from the K Vector 
 !!$     incident on the central spot on each Laue Zone Plane (under the bragg condition)
 !!$     I am currently using the Total Laue Level, dependent on the negative Laue zones
-     
-     DO ind=1,ITotalLaueZoneLevel
-        RLaueZoneGz=RGzUnitVec*ind
-        WRITE(Sind,'(I10.1)')ind
-        !IF(ind.LE.ABS(RMinLaueZoneLevel))THEN
-        DO jnd=1,SIZE(RHKL,DIM=1)
-           WRITE(Sjnd,'(I10.1)')jnd
-           IF(ABS(RgVecMatT(jnd,3)).GE.(RLaueZoneGz-TINY).AND. &
-                ABS(RgVecMatT(jnd,3)).LE.(RLaueZoneGz+TINY)) THEN
+           
+           INumInitReflections=COUNT(RgVecMagLaue(:,ind).NE.NEGHUGE)
+           RLaueZoneElectronWaveVectorMag=RElectronWaveVectorMagnitude-ABS(RLaueZoneGz)
+           
+           CALL Message("ReflectionDetermination", IInfo,IErr, &
+                MessageVariable="For Laue Zone", IVariable=ind)
+           CALL Message("ReflectionDetermination", IInfo,IErr, &
+                MessageVariable="Reduced Laue Zone K-Vector,RLaueZoneElectronWaveVectorMag", &
+                RVariable=RLaueZoneElectronWaveVectorMag)
+           CALL Message("ReflectionDetermination", IInfo,IErr, &
+                MessageVariable="Acceptance Angle has reduced Initial Reflection Pool from", &
+                IVariable=INumInitReflections)
 
-              RgVecMagLaue(jnd,ind)=SQRT((RgVecMatT(jnd,1)**2)+(RgVecMatT(jnd,2)**2))
-              CALL Message("ReflectionDetermination", IMoreInfo,IErr, &
-                   MessageVariable="Reciprocal Vector" &
-             //",RgVecMagLaue"//"("//TRIM(ADJUSTL(Sjnd))//","//TRIM(ADJUSTL(Sind))//")", &
-             RVariable=RgVecMagLaue(jnd,ind))
-           END IF
-
-           CALL Message("ReflectionDetermination", IMoreInfo+IDebug,IErr, &
-                MessageVariable="Reciprocal Vector" &
-                //",RgVecMatT"//"("//TRIM(ADJUSTL(Sjnd))//",3)", &
-                RVariable=RgVecMatT(jnd,3))
+           !Make any reflection gvec magnitude greater than the Acceptance angle gVec equal 1D9 for each level,
+           !the rest are restricted by the Acceptance angle - need to change to degrees 1E-3 is 
+           !for milliradians conversion- for now, we take the absolute g-vector g-vectors
+           !this will probably change according to different selection rules
+           RMaxAcceptanceGVecMag=(RLaueZoneElectronWaveVectorMag*TAN(RAcceptanceAngle*1E-3))
+           WHERE(ABS(RgVecMagLaue(:,ind)).GT.RMaxAcceptanceGVecMag)
+              RgVecMagLaue(:,ind)=NEGHUGE
+           END WHERE
+           
+           INumFinalReflections=COUNT(RgVecMagLaue(:,ind).NE.NEGHUGE)
+           CALL Message("ReflectionDetermination", IInfo,IErr, &
+                MessageVariable="To", &
+                IVariable=INumFinalReflections)
         END DO
-     END DO
-
-     IF(RAcceptanceAngle.NE.ZERO) THEN
-        DO ind=1,ITotalLaueZoneLevel
-           RLaueZoneGz=RGzUnitVec*ind
-           RLZElectronWaveVectorMag=RElectronWaveVectorMagnitude-RLaueZoneGz
-           CALL Message("ReflectionDetermination", IMoreInfo+IDebug,IErr, &
-                MessageVariable="Reduced Laue Zone K-Vector,RLZElectronWaveVectorMag", &
-                RVariable=RLZElectronWaveVectorMag)
+        
+!!$        Each value in each Laue Zone is unique in Size(RHKL)
+!!$        The rest are filled with HUGE (1D9), we can then find all the indexes where the 
+!!$        magnitudes are still inside the acceptance angle
+!!$        Firstly find how many instances there are
+        ICounter=0
+        DO ind=1,SIZE(RHKL,DIM=1)
+           IF(SUM(RgVecMagLaue(ind,:))/REAL(ITotalLaueZoneLevel,RKIND).GT.NEGHUGE) THEN
+              ICounter=ICounter+1
+           END IF
+        END DO
+        
+        IHOLZGVecMagSize=ICounter
+        PRINT*, IHOLZGVecMagSize
+        
+        ALLOCATE(&
+             IOriginGVecIdentifier(IHOLZGVecMagSize), &
+             STAT=IErr)
+        IF( IErr.NE.0 ) THEN
+           PRINT*,"DiffractionPatternDefinitions(", my_rank, ") error ", IErr, &
+                " in ALLOCATE() of DYNAMIC variables RgVecMag(HKL)"
+           RETURN
+        ENDIF
    
-           RMaxAcceptanceGVecMag=(RLZElectronWaveVectorMag*TAN(RAcceptanceAngle*1E-3))
-           WHERE(RgVecMagLaue(:,ind).NE.ZERO)
-              RgVecMagLaue(:,ind)=
-              
-              
-     
-     
-     !produce vector from Acceptance angle - mrad to 1/Angstrom max,
-!!$  any values outside this can be cut...
-     !have to think about boundaries, if equal to or less than, then allow.
-     !restrict MinReflectionPool on this basis, ie. change MinReflectionPool 
-  ! G vector magnitudes in 1/Angstrom units
-!!$  IF(IZOLZFLAG.EQ.0) THEN
-!!$     DO ind=1,SIZE(RHKL,DIM=1)
-!!$        WHERE(RgVecMatT(ind,3).NE.ZERO)
-!!$           MINLOC
- ! IMaxLaueZoneLevel=INT(MAXLOC(RgVecMatT(:,3),DIM=1))
 
-!!$     DO ind=1,SIZE(RHKL,DIM=1)
-!!$        DO jnd=0,IMaxLaueZoneLevel
-!!$           WHERE(RgVecMatT(ind,3).EQ.jnd)
-!!$              RgVecMagLaueZone(ind,2)= &
-!!$                   SQRT(DOT_PRODUCT(RgVecMatT(ind,:),RgVecMatT(ind,:)))
-!!$           END WHERE
-!!$        END DO
-!!$     END DO
+        IOriginGVecIdentifier=0
+!!$        Store all the indexes for the magnitudes of each Laue Level in OriginGVecIdentifier
+     
+        ICounter=1
+        DO ind=1,SIZE(RHKL,DIM=1)
+           IF((SUM(RgVecMagLaue(ind,:))/REAL(ITotalLaueZoneLevel,RKIND)).GT.NEGHUGE) THEN
+              IOriginGVecIdentifier(ICounter)=ind
+              ICounter=ICounter+1
+!!$              PRINT*,IOriginGVecIdentifier(Icounter)
+           END IF
+        END DO
+     END IF
+  END IF
+  
+!!$  Calculate all gvectors magnitudes (x,y,z componenents) from the origin
   
   DO ind=1,SIZE(RHKL,DIM=1)
      RgVecMag(ind)= SQRT(DOT_PRODUCT(RgVecMatT(ind,:),RgVecMatT(ind,:)))
   ENDDO
 
-!!$If the user specifies an acceptance angle, felix uses it to restrict the number
-!!$of reflections in IMinReflectionPool & nReflections
-!!$check to ensure everything is only in magnitudes (there are negative g-vectors) 
-
+  
+!!$  If the user specifies an acceptance angle, felix uses it to restrict the number
+!!$  of reflections in IMinReflectionPool & nReflections
+!!$  check to ensure everything is only in magnitudes (there are negative g-vectors) 
+  
   IF(RAcceptanceAngle.NE.ZERO.AND.IZOLZFLAG.EQ.1) THEN
      CALL Message("ReflectionDetermination",IInfo,IErr, &
           MessageString="Determining restriction effect of Acceptance Angle" &
           // " (in k-space for ZOLZ only). If unintended, please cancel the simulation and" &
           // " set the RAcceptance angle to 0.0, and/or switch IZOLZFLAG to 0")
      RMaxAcceptanceGVecMag=(RElectronWaveVectorMagnitude*TAN(RAcceptanceAngle*1E-3))
-
+     
      CALL Message("ReflectionDetermination",IInfo,IErr, &
           MessageVariable="RMaxGVecMAG",RVariable=RMaxAcceptanceGVecMag)
-
+     
      CALL Message("ReflectionDetermination",IInfo,IErr, &
           MessageVariable="RElectronWaveVector",RVariable=RElectronWaveVectorMagnitude)
-
+     
      IF(RgVecMag(IMinReflectionPool).GT.RMaxAcceptanceGVecMag) THEN
         CALL Message("ReflectionDetermination",IInfo,IErr, &
              MessageString="Number of Reflections (IMinReflectionPool) Exceeds cut-off from" &
@@ -328,18 +386,35 @@ SUBROUTINE ReflectionDetermination( IErr )
           MessageString="Determining restriction effect of Acceptance Angle" &
           // " (in k-space with HOLZ). If unintended, please cancel the simulation and" &
           // " set the RAcceptance angle to 0.0 and/or switch IZOLZFLAG to 1")
-     RBSMaxGVecAmp = RgVecMag(IMinReflectionPool)
+     IBSMaxLocGVecAmp=MAXVAL(IOriginGVecIdentifier)
+!!$     DO ind=1,ICounter
+!!$        RgVecHOLZMag(ind)=RgVecMag(IOriginGVecIdentifier(ind))
+!!$     END DO
+     RBSMaxGVecAmp=RgVecMag(IBSMaxLocGVecAmp)
+     IF(RgVecMag(IBSMaxLocGVecAmp).LT.RgVecMag(IMinreflectionPool)) THEN
+        CALL Message("ReflectionDetermination",IInfo,IErr, &
+             MessageString="Number of Reflections (IMinReflectionPool) Exceeds cut-off from" &
+             //" Acceptance angle,")
+        CALL Message("ReflectionDetermination",IInfo,IErr, &
+             MessageString="using Acceptance angle cut-off value (reciprocal Angstroms)")
+     ELSE
+        CALL Message("ReflectionDetermination",IInfo,IErr, &
+             MessageString="Warning: Number of Reflections in Reflection pool does not")
+        CALL Message("ReflectionDetermination",IInfo,IErr, &
+             MessageString=" exceed the Acceptance angle (reciprocal angstroms)")
+        CALL Message("ReflectionDetermination",IInfo,IErr, &
+             MessageString=" continuing in normal mode, for full range, increase IMinReflectionPool")
+        !Normal Reflection Pool value
+        RBSMaxGVecAmp = RgVecMag(IMinReflectionPool)
+     END IF
   ELSE
      RBSMaxGVecAmp = RgVecMag(IMinReflectionPool)
   END IF
-  
   
   nReflections = 0
   nStrongBeams = 0
   nWeakBeams = 0
   
-  
-
   DO ind=1,SIZE(RHKL,DIM=1)
      IF (ABS(RgVecMag(ind)).LE.RBSMaxGVecAmp) THEN
         WRITE(Sind,'(I10.1)')ind
@@ -658,6 +733,7 @@ SUBROUTINE NewHKLMake(Ihklmax,Rhkl0Vec,RHOLZAcceptanceAngle,IErr)
            CASE DEFAULT
               PRINT*,"HKLMake(): unknown space group", SSpaceGroupName, "--- aborting"
               IErr=1
+              RETURN
            END SELECT
 
         END DO
