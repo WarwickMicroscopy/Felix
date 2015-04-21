@@ -38,7 +38,7 @@
 MODULE WriteToScreen
 CONTAINS
 
-SUBROUTINE Message(ProgramName,IPriorityFLAG,IErr,MessageVariable,RVariable,IVariable,CVariable,MessageString)
+SUBROUTINE Message(ProgramName,IPriorityFLAG,IErr,MessageVariable,RVariable,IVariable,RVector,CVariable,MessageString)
 
   USE MyNumbers
   USE IPara
@@ -48,19 +48,27 @@ SUBROUTINE Message(ProgramName,IPriorityFLAG,IErr,MessageVariable,RVariable,IVar
   
   IMPLICIT NONE
    
-  CHARACTER(*), INTENT (IN), OPTIONAL ::  MessageVariable, MessageString
+  CHARACTER(*), INTENT (IN), OPTIONAL ::  &
+       MessageVariable, MessageString
 
-  REAL(RKIND),INTENT(IN), OPTIONAL :: RVariable 
-  INTEGER(IKIND),INTENT (IN), OPTIONAL ::IVariable
-  COMPLEX(CKIND),INTENT (IN), OPTIONAL :: CVariable
+  REAL(RKIND),INTENT(IN), OPTIONAL :: &
+       RVariable, RVector(:) 
+  INTEGER(IKIND),INTENT (IN), OPTIONAL :: &
+       IVariable
+  COMPLEX(CKIND),INTENT (IN), OPTIONAL :: &
+       CVariable
 
-  CHARACTER(*),INTENT (IN) :: ProgramName
-  INTEGER(IKIND) :: IErr,IPriorityFLAG
+  CHARACTER(*),INTENT (IN) :: &
+       ProgramName
+  INTEGER(IKIND) :: &
+       IErr,IPriorityFLAG,ind
   
-  CHARACTER*30 VariableString, my_rank_string,DebugString
+  CHARACTER*100 VariableString, my_rank_string,DebugString
+  CHARACTER*30 SVariableStringVector(THREEDIM)
 
 !!$  Converts my_rank to string and then either the RVariable, IVariable, CVariable to a string
      WRITE(my_rank_string,'(I6.1)') my_rank 
+     VariableString=""
      IF (PRESENT(RVariable)) THEN
         IF(IPriorityFLAG.LT.100) THEN
            WRITE(VariableString,'(F15.3)') RVariable
@@ -68,7 +76,14 @@ SUBROUTINE Message(ProgramName,IPriorityFLAG,IErr,MessageVariable,RVariable,IVar
      ELSE IF (PRESENT(IVariable)) THEN
         WRITE(VariableString,'(I10.1)') IVariable
      ELSE IF (PRESENT(CVariable)) THEN
-        WRITE(VariableString,'(F30.16)') CVariable  
+        WRITE(VariableString,'(F30.16)') CVariable
+     ELSE IF (PRESENT(RVector)) THEN     
+        DO ind=1,3
+           WRITE(SVariableStringVector(ind),'(F15.3)') RVector(ind)
+           !VariableString=VariableString //"  "//SVariableStringVector(ind)
+        END DO
+        VariableString="  "//TRIM(ADJUSTL(SVariableStringVector(1)))//"  "// &
+             TRIM(ADJUSTL(SVariableStringVector(2)))//"  "//TRIM(ADJUSTL(SVariableStringVector(3)))
      ELSE
         VariableString = ""
      END IF
