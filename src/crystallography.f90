@@ -96,7 +96,10 @@ SUBROUTINE CrystalLatticeVectorDetermination(IErr)
               PRINT*,"Crystal is Obverse"
            END IF
         ELSE
+           SSpaceGroupName=TRIM(ADJUSTL('P'))
            IF((IWriteFLAG.GE.1.AND.my_rank.EQ.0).OR.IWriteFLAG.GE.10) THEN
+              !I think this should set the selection rules as primitive will test before adding case
+!!$              PRINT*,"Crystal is in Rhombehedral setting"
               PRINT*,"Crystal is Reverse"
            END IF
         END IF
