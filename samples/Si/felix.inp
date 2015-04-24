@@ -5,7 +5,7 @@
 # felixsim input
 
 # control flags
-IWriteFLAG                = 1
+IWriteFLAG                = 3
 IImageFLAG                = 0
 IScatterFactorMethodFLAG  = 0
 IMaskFLAG                 = 0
@@ -20,9 +20,9 @@ IXDirectionFLAG           = 1
 IPixelCount               = 64
 
 # beam selection criteria
-IMinReflectionPool        = 15
-IMinStrongBeams           = 7
-IMinWeakBeams             = 5
+IMinReflectionPool        = 30
+IMinStrongBeams           = 15
+IMinWeakBeams             = 0
 RBSBMax                   = 0.1
 RBSPMax                   = 0.1
 
@@ -43,7 +43,7 @@ INormalDirectionX         = 1
 INormalDirectionY         = 1
 INormalDirectionZ         = 1
 RAcceleratingVoltage (kV) = 200.0
-RAcceptanceAngle (mrad)   = 0.0
+RAcceptanceAngle (deg)    = 0.0
 
 # Image Output Options
 

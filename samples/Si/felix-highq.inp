@@ -7,10 +7,7 @@
 # control flags
 IWriteFLAG                = 1
 IImageFLAG                = 0
-IOutputFLAG               = 0
-IBinorTextFLAG            = 0
 IScatterFactorMethodFLAG  = 0
-ICentralBeamFLAG          = 1
 IMaskFLAG                 = 0
 IZolzFLAG                 = 1
 IAbsorbFLAG               = 1
@@ -28,7 +25,6 @@ IMinStrongBeams           = 125
 IMinWeakBeams             = 5
 RBSBMax                   = 0.1
 RBSPMax                   = 0.1
-RConvergenceTolerance (%) = 1.0
 
 # crystal settings
 RDebyeWallerConstant      = 0.4668
@@ -47,6 +43,7 @@ INormalDirectionX         = 1
 INormalDirectionY         = 1
 INormalDirectionZ         = 1
 RAcceleratingVoltage (kV) = 200.0
+RAcceptanceAngle (deg)    = 0.0
 
 # Image Output Options
 
@@ -54,4 +51,3 @@ RInitialThickness        = 1000.0
 RFinalThickness          = 1000.0
 RDeltaThickness          = 10.0
 IReflectOut              = 7
-
