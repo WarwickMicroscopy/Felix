@@ -86,7 +86,7 @@ MODULE IConst
        ADD_OUT_INFO=6, &
        IParallelFLAG=0,&
        IRandomFLAG = 0, &
-       IRefinementVariableTypes = 8,&
+       IRefinementVariableTypes = 9,&
        NElements=103
 
   !PriorityFLAG values - to match to the WriteFLAG - will change eventually,

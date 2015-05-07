@@ -404,6 +404,9 @@ SUBROUTINE ReadInpFile( IErr )
               CASE(8)
                  IF(IRefineModeSelectionArray(ind).EQ.1) SRefineYESNO = 'YES'
                  PRINT*,"Refine Convergence Angle ",SRefineYESNO
+              CASE(9)
+                 IF(IRefineModeSelectionArray(ind).EQ.1) SRefineYESNO = 'YES'
+                 PRINT*,"Refine Total Absorption ",SRefineYESNO
               END SELECT
            END DO
         ELSE

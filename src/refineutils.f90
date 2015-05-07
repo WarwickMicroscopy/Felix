@@ -200,3 +200,26 @@ SUBROUTINE ReSortUgs( ISymmetryIntegers,CUgs, N )
   RETURN
 
 END SUBROUTINE ReSortUgs
+
+FUNCTION ResidualSumofSquares(RImage1,RImage2,IErr)
+  
+  USE MyNumbers
+  
+  USE CConst; USE IConst
+  USE IPara; USE RPara
+  USE IChannels
+  USE MPI
+  USE MyMPI
+
+  IMPLICIT NONE
+  
+  INTEGER(IKIND) :: &
+       IErr
+  REAL(RKIND),DIMENSION(2*IPixelCount,2*IPixelCount) :: &
+       RImage1,RImage2
+  REAL(RKIND) :: &
+       ResidualSumofSquares
+
+  ResidualSumofSquares = SUM((RImage1-RImage2)**2)
+
+END FUNCTION ResidualSumofSquares

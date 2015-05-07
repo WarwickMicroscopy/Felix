@@ -119,14 +119,17 @@ SUBROUTINE FelixFunction(RIndependentVariableValues,IIterationCount,IErr)
      IAbsorbFLAG = 1
 
   END IF
-
-  CALL ApplyNewStructureFactors(IErr)
-  IF( IErr.NE.0 ) THEN
-     PRINT*,"Felixfunction(", my_rank, ") error ", IErr, &
-          " in ApplyNewStructureFactors()"
-     RETURN
-  ENDIF
-
+  
+  IF(IRefineModeSelectionArray(1).EQ.1) THEN
+     
+     CALL ApplyNewStructureFactors(IErr)
+     IF( IErr.NE.0 ) THEN
+        PRINT*,"Felixfunction(", my_rank, ") error ", IErr, &
+             " in ApplyNewStructureFactors()"
+        RETURN
+     ENDIF
+     
+  END IF
 
   IF(IAbsorbFLAG.NE.0) THEN
      
@@ -157,14 +160,14 @@ SUBROUTINE FelixFunction(RIndependentVariableValues,IIterationCount,IErr)
      ENDIF
      
   END IF     
-
-  Deallocate( &
-       RgMatMat,RgMatMag,STAT=IErr)
-  IF( IErr.NE.0 ) THEN
-     PRINT*,"Felixfunction(", my_rank, ") error ", IErr, &
-          " in Deallocation of RgMat"
-     RETURN
-  ENDIF
+!!$
+!!$  Deallocate( &
+!!$       RgMatMat,RgMatMag,STAT=IErr)
+!!$  IF( IErr.NE.0 ) THEN
+!!$     PRINT*,"Felixfunction(", my_rank, ") error ", IErr, &
+!!$          " in Deallocation of RgMat"
+!!$     RETURN
+!!$  ENDIF
 
   !--------------------------------------------------------------------
   ! reserve memory for effective eigenvalue problem
@@ -259,15 +262,6 @@ SUBROUTINE FelixFunction(RIndependentVariableValues,IIterationCount,IErr)
 
   IMAXCBuffer = 200000
   IPixelComputed= 0
-  
-  DEALLOCATE( &
-       RrVecMat, Rsg, &
-       STAT=IErr)
-  IF( IErr.NE.0 ) THEN
-     PRINT*,"Felixfunction(", my_rank, ") error ", IErr, &
-          " in DEALLOCATE() "
-     RETURN
-  ENDIF
   
   IF((IWriteFLAG.GE.0.AND.my_rank.EQ.0).OR.IWriteFLAG.GE.6) THEN
      PRINT*,"Felixfunction(",my_rank,") Entering BlochLoop()"
@@ -1010,6 +1004,8 @@ SUBROUTINE UpdateVariables(RIndependentVariableValues,IErr)
         END SELECT
      CASE(8)
         RConvergenceAngle = RIndependentVariableValues(ind)
+     CASE(9)
+        RAbsorptionPercentage = RIndependentVariableValues(ind)
      END SELECT
   END DO
 
@@ -1033,6 +1029,12 @@ SUBROUTINE PrintVariables(IErr)
 
   INTEGER(IKIND) :: &
        IErr,ind,IVariableType,jnd,knd
+  REAL(RKIND),DIMENSION(3) :: &
+       RCrystalVector
+  CHARACTER*200 :: &
+       SPrintString
+
+  RCrystalVector = [RLengthX,RLengthY,RLengthZ]
 
   DO ind = 1,IRefinementVariableTypes
      IF (IRefineModeSelectionArray(ind).EQ.1) THEN
@@ -1044,35 +1046,46 @@ SUBROUTINE PrintVariables(IErr)
            END DO           
         CASE(2)
            PRINT*,"Current Atomic Coordinates"
-           DO jnd = 1,SIZE(RAtomSiteFracCoordVec,DIM=1)              
-              PRINT*,RAtomSiteFracCoordVec(jnd,:)
-           END DO        
+           DO jnd = 1,SIZE(RAtomSiteFracCoordVec,DIM=1)
+              WRITE(SPrintString,FMT='(3(F9.3,1X))') RAtomSiteFracCoordVec(jnd,:)*RCrystalVector
+              PRINT*,TRIM(ADJUSTL(SPrintString))              
+           END DO
         CASE(3)
            PRINT*,"Current Atomic Occupancy"
            DO jnd = 1,SIZE(RAtomicSitePartialOccupancy,DIM=1)
-              PRINT*,RAtomicSitePartialOccupancy(jnd)
+              WRITE(SPrintString,FMT='((F9.6,1X))') RAtomicSitePartialOccupancy(jnd)
+              PRINT*,TRIM(ADJUSTL(SPrintString))
            END DO
         CASE(4)
            PRINT*,"Current Isotropic Debye Waller Factors"
            DO jnd = 1,SIZE(RIsotropicDebyeWallerFactors,DIM=1)
-              PRINT*,RIsotropicDebyeWallerFactors(jnd)
+              WRITE(SPrintString,FMT='((F9.6,1X))') RIsotropicDebyeWallerFactors(jnd)
+              PRINT*,TRIM(ADJUSTL(SPrintString))
            END DO
         CASE(5)
            PRINT*,"Current Anisotropic Debye Waller Factors"
            DO jnd = 1,SIZE(RAnisotropicDebyeWallerFactorTensor,DIM=1)
               DO knd = 1,3
-                 PRINT*,RAnisotropicDebyeWallerFactorTensor(jnd,knd,:)
+                 WRITE(SPrintString,FMT='((F9.6,1X))') RAnisotropicDebyeWallerFactorTensor(jnd,knd,:)
+              PRINT*,TRIM(ADJUSTL(SPrintString))
               END DO
            END DO
         CASE(6)
            PRINT*,"Current Unit Cell Parameters"
-           PRINT*,RLengthX,RLengthY,RLengthZ
+           WRITE(SPrintString,FMT='(3(F9.6,1X))') RLengthX,RLengthY,RLengthZ
+              PRINT*,TRIM(ADJUSTL(SPrintString))
         CASE(7)
            PRINT*,"Current Unit Cell Angles"
-           PRINT*,RAlpha,RBeta,RGamma
+           WRITE(SPrintString,FMT='(3(F9.6,1X))') RAlpha,RBeta,RGamma
+              PRINT*,TRIM(ADJUSTL(SPrintString))
         CASE(8)
            PRINT*,"Current Convergence Angle"
-           PRINT*,RConvergenceAngle
+           WRITE(SPrintString,FMT='((F9.6,1X))') RConvergenceAngle
+              PRINT*,TRIM(ADJUSTL(SPrintString))
+        CASE(9)
+           PRINT*,"Current Absorption Percentage"
+           WRITE(SPrintString,FMT='((F9.6,1X))') RAbsorptionPercentage
+              PRINT*,TRIM(ADJUSTL(SPrintString))
         END SELECT
      END IF
   END DO
