@@ -739,6 +739,14 @@ SUBROUTINE SimplexInitialisation(RSimplexVolume,RSimplexFoM,RIndependentVariable
        RStandardError,RStandardTolerance
   REAL(RKIND),DIMENSION(:),ALLOCATABLE :: &
        RRandomSigns,RRandomNumbers
+  CHARACTER*200 :: &
+       SLength,SFormat
+  CHARACTER*1000 :: &
+     SPrintString
+  
+  WRITE(SLength,*) IIndependentVariables
+  WRITE(SFormat,*) "("//TRIM(ADJUSTL(SLength))//"(F9.3,1X))"
+
 
   IF((IWriteFLAG.GE.0.AND.my_rank.EQ.0).OR.IWriteFLAG.GE.10) THEN
      PRINT*,"SimplexInitialisation(",my_rank,")"
@@ -794,16 +802,16 @@ SUBROUTINE SimplexInitialisation(RSimplexVolume,RSimplexFoM,RIndependentVariable
      IF(IRefineModeSelectionArray(2).EQ.1) THEN
         DO ind = 1,(IIndependentVariables+1)
 !!$        IF(IRefineModeSelectionArray(2).EQ.1) THEN
-           
            ALLOCATE(&
                 RRandomSigns(IAllowedVectors),&
                 RRandomNumbers(IAllowedVectors),&
                 STAT=IErr)
            
+           
 !!$           Randomise Atomic Displacements
            
-           CALL RandomSequence(RRandomNumbers,IAllowedVectors,IErr)
-           CALL RandomSequence(RRandomSigns,IAllowedVectors,IErr)
+           CALL RandomSequence(RRandomNumbers,IAllowedVectors,ind,IErr)
+           CALL RandomSequence(RRandomSigns,IAllowedVectors,2*ind,IErr)
            WHERE (RRandomSigns.LT.HALF)
               RRandomSigns = ONE
            ELSEWHERE
@@ -811,7 +819,6 @@ SUBROUTINE SimplexInitialisation(RSimplexVolume,RSimplexFoM,RIndependentVariable
            END WHERE
            
            RSimplexVolume(ind,:IAllowedVectors) = &
-                RIndependentVariableValues(:IAllowedVectors)*&
                 RRandomNumbers*RRandomSigns*RSimplexLengthScale
            
            DEALLOCATE(&
@@ -825,8 +832,8 @@ SUBROUTINE SimplexInitialisation(RSimplexVolume,RSimplexFoM,RIndependentVariable
            
 !!$           Randomise Everything else
            
-           CALL RandomSequence(RRandomNumbers,IIndependentVariables-IAllowedVectors,IErr)
-           CALL RandomSequence(RRandomSigns,IIndependentVariables-IAllowedVectors,IErr)
+           CALL RandomSequence(RRandomNumbers,IIndependentVariables-IAllowedVectors,ind,IErr)
+           CALL RandomSequence(RRandomSigns,IIndependentVariables-IAllowedVectors,2*ind,IErr)
            WHERE (RRandomSigns.LT.HALF)
               RRandomSigns = ONE
            ELSEWHERE
@@ -844,15 +851,15 @@ SUBROUTINE SimplexInitialisation(RSimplexVolume,RSimplexFoM,RIndependentVariable
         END DO
         
      ELSE
+        ALLOCATE(&
+             RRandomSigns(IIndependentVariables),&
+             RRandomNumbers(IIndependentVariables),&
+             STAT=IErr)
         
         DO ind = 1,(IIndependentVariables+1)
-           ALLOCATE(&
-                RRandomSigns(IIndependentVariables),&
-                RRandomNumbers(IIndependentVariables),&
-                STAT=IErr)
            
-           CALL RandomSequence(RRandomNumbers,IIndependentVariables,IErr)
-           CALL RandomSequence(RRandomSigns,IIndependentVariables,IErr)
+           CALL RandomSequence(RRandomNumbers,IIndependentVariables,ind,IErr)
+           CALL RandomSequence(RRandomSigns,IIndependentVariables,2*ind,IErr)
            WHERE (RRandomSigns.LT.HALF)
               RRandomSigns = ONE
            ELSEWHERE
@@ -863,11 +870,11 @@ SUBROUTINE SimplexInitialisation(RSimplexVolume,RSimplexFoM,RIndependentVariable
            RSimplexVolume(ind,:) = &
                 RIndependentVariableValues(:)*&
                 (1+(RRandomNumbers*RRandomSigns*RSimplexLengthScale))
-           
-           DEALLOCATE(&
-                RRandomSigns,&
-                RRandomNumbers)
         END DO
+        
+        DEALLOCATE(&
+             RRandomSigns,&
+             RRandomNumbers)
         
      END IF
 !!$        RSimplexVolume(ind,:) = &
@@ -881,6 +888,12 @@ SUBROUTINE SimplexInitialisation(RSimplexVolume,RSimplexFoM,RIndependentVariable
 !!$           END IF
 !!$        END IF
 !!$     END DO
+
+     DO ind = 1,(IIndependentVariables+1)
+        
+           WRITE(SPrintString,FMT=SFormat) RSimplexVolume(ind,:)
+           PRINT*,SPrintString
+     END DO
      
      IPreviousPrintedIteration = -IPrint ! Ensures print out on first iteration
 
@@ -889,7 +902,6 @@ SUBROUTINE SimplexInitialisation(RSimplexVolume,RSimplexFoM,RIndependentVariable
         IF((IWriteFLAG.GE.0.AND.my_rank.EQ.0).OR.IWriteFLAG.GE.10) THEN
            PRINT*,"---------------------------------------------------------"
            PRINT*,"-------- Simplex",ind,"of",IIndependentVariables+1
-           PRINT*,RSimplexVolume(ind,:)
            PRINT*,"---------------------------------------------------------"
         END IF
                 
@@ -1202,7 +1214,7 @@ END SUBROUTINE InitialiseAtomicVectorMagnitudes
 
 !!$  %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-SUBROUTINE RandomSequence(RRandomSequence,IRandomSequenceLength,IErr)
+SUBROUTINE RandomSequence(RRandomSequence,IRandomSequenceLength,ISeedModifier,IErr)
 
 !!$  %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 !!$  % Sets up a pseudo random sequence and selects a number
@@ -1222,13 +1234,15 @@ SUBROUTINE RandomSequence(RRandomSequence,IRandomSequenceLength,IErr)
   IMPLICIT NONE
 
   INTEGER(IKIND) :: &
-       IErr,Ivalues(1:8), k,IRandomSequenceLength
+       IErr,Ivalues(1:8), k,IRandomSequenceLength,ISeedModifier
   INTEGER(IKIND), DIMENSION(:), ALLOCATABLE :: &
        seed
   REAL(RKIND),DIMENSION(IRandomSequenceLength) :: &
        RRandomSequence
   
   CALL DATE_AND_TIME(VALUES=Ivalues)
+
+  IValues = IValues*ISeedModifier
 !!$  CALL SYSTEM_CLOCK(
   IF (IRandomFLAG.EQ.0) THEN
      CALL RANDOM_SEED(size=k)
@@ -1238,10 +1252,12 @@ SUBROUTINE RandomSequence(RRandomSequence,IRandomSequenceLength,IErr)
   ELSE
      CALL RANDOM_SEED(size=k)
      ALLOCATE(seed(1:k))
-     seed(:) = IRandomFLAG
+     seed(:) = IFixedSeed*ISeedModifier
      CALL RANDOM_SEED(put=seed)
   END IF
    
+  DEALLOCATE(seed)
+
   CALL RANDOM_NUMBER(RRandomSequence)
   
 !!$  RANDOMSEQUENCE = RRandomNumberSequence(IRequestedNumber)
@@ -1286,7 +1302,7 @@ REAL(RKIND) FUNCTION RANDOMNUMBER(IRequestedNumber,IErr)
   ELSE
      CALL RANDOM_SEED(size=k)
      ALLOCATE(seed(1:k))
-     seed(:) = IRandomFLAG
+     seed(:) = IFixedSeed*IRequestedNumber
      CALL RANDOM_SEED(put=seed)
   END IF
    

@@ -86,6 +86,7 @@ MODULE IConst
        ADD_OUT_INFO=6, &
        IParallelFLAG=0,&
        IRandomFLAG = 0, &
+       IFixedSeed = 123456789,&
        IRefinementVariableTypes = 9,&
        NElements=103
 
