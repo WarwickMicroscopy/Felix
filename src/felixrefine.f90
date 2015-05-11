@@ -889,12 +889,12 @@ SUBROUTINE SimplexInitialisation(RSimplexVolume,RSimplexFoM,RIndependentVariable
 !!$        END IF
 !!$     END DO
 
-     DO ind = 1,(IIndependentVariables+1)
-        
-           WRITE(SPrintString,FMT=SFormat) RSimplexVolume(ind,:)
-           PRINT*,SPrintString
-     END DO
-     
+!!$     DO ind = 1,(IIndependentVariables+1)
+!!$        
+!!$           WRITE(SPrintString,FMT=SFormat) RSimplexVolume(ind,:)
+!!$           PRINT*,SPrintString
+!!$     END DO
+!!$     
      IPreviousPrintedIteration = -IPrint ! Ensures print out on first iteration
 
      DO ind = 1,(IIndependentVariables+1)

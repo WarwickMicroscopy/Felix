@@ -784,16 +784,24 @@ REAL(RKIND) FUNCTION SimplexFunction(RIndependentVariableValues,IIterationCount,
      RETURN
   ENDIF
   
+  WHERE(RAtomSiteFracCoordVec.LT.0) RAtomSiteFracCoordVec=RAtomSiteFracCoordVec+ONE
+  WHERE(RAtomSiteFracCoordVec.GT.1) RAtomSiteFracCoordVec=RAtomSiteFracCoordVec-ONE
+  
   IF (my_rank.EQ.0) THEN
      CALL PrintVariables(IErr)
   END IF
 
-  CALL UpdateStructureFactors(RIndependentVariableValues,IErr)
-  IF( IErr.NE.0 ) THEN
-     PRINT*,"SimplexFunction(", my_rank, ") error ", IErr, &
-          " in UpdateStructureFactors"
-     RETURN
-  ENDIF
+  
+  IF(IRefineModeSelectionArray(1).EQ.1) THEN
+     
+     CALL UpdateStructureFactors(RIndependentVariableValues,IErr)
+     IF( IErr.NE.0 ) THEN
+        PRINT*,"SimplexFunction(", my_rank, ") error ", IErr, &
+             " in UpdateStructureFactors"
+        RETURN
+     ENDIF
+     
+  END IF
 
   CALL FelixFunction(RIndependentVariableValues,IIterationCount,IErr) ! Simulate !!  
   IF( IErr.NE.0 ) THEN
