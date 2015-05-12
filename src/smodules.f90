@@ -141,7 +141,7 @@ MODULE IPara
        IImageFLAG,IOutputFLAG,IBeamConvergenceFLAG,  &
        IPseudoCubicFLAG,IXDirectionFLAG,IBinorTextFLAG, IDevFLAG, &
        IRefineModeFLAG,ISoftwareMode,IHKLSelectFLAG,IPrint,IRefineSwitch,&
-       IWeightingFLAG,IContinueFLAG
+       IWeightingFLAG,IContinueFLAG,ICorrelationFLAG
 
   !Minimum Reflections etc
   INTEGER(IKIND) :: &

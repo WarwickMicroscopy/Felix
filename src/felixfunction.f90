@@ -666,6 +666,8 @@ SUBROUTINE CalculateFigureofMeritandDetermineThickness(RSimulatedImages,IThickne
        RSimulatedImages
   REAL(RKIND),DIMENSION(IReflectOut) :: &
        RReflectionCrossCorrelations
+  REAL(RKIND) :: &
+       ResidualSumofSquares
   
   IF((IWriteFLAG.GE.0.AND.my_rank.EQ.0).OR.IWriteFLAG.GE.10) THEN
      PRINT*,"CalculateFigureofMeritandDetermineThickness(",my_rank,")"
@@ -704,9 +706,16 @@ SUBROUTINE CalculateFigureofMeritandDetermineThickness(RSimulatedImages,IThickne
            END DO
         END DO
 
-        CALL PhaseCorrelate(RSimulatedImageForPhaseCorrelation,RImageExpi(:,:,hnd),&
-             IErr,2*IPixelCount,2*IPixelCount)
-        RIndependentCrossCorrelation = RCrossCorrelation       
+        IF(ICorrelationFLAG.EQ.0) THEN
+           
+           CALL PhaseCorrelate(RSimulatedImageForPhaseCorrelation,RImageExpi(:,:,hnd),&
+                IErr,2*IPixelCount,2*IPixelCount)
+           RCrossCorrelation = 1.0_RKIND-RCrossCorrelation
+        ELSE
+           RCrossCorrelation = ResidualSumofSquares(RSimulatedImageForPhaseCorrelation,RImageExpi(:,:,hnd),IErr)
+        END IF
+
+           RIndependentCrossCorrelation = RCrossCorrelation       
         
         IF(RIndependentCrossCorrelation.GT.RCrossCorrelationOld) THEN
 
@@ -851,7 +860,7 @@ REAL(RKIND) FUNCTION SimplexFunction(RIndependentVariableValues,IIterationCount,
              IIterationCount-IPreviousPrintedIteration,"Iterations from my last print"
         IPreviousPrintedIteration = IIterationCount
         IThickness = RInitialThickness + (IThicknessIndex-1)*RDeltaThickness 
-
+        
         ALLOCATE( &
              RImage(2*IPixelCount,2*IPixelCount), &
              STAT=IErr)
@@ -931,7 +940,7 @@ REAL(RKIND) FUNCTION SimplexFunction(RIndependentVariableValues,IIterationCount,
         RETURN
      ENDIF
      
-     SimplexFunction = 1.0_RKIND-RCrossCorrelation
+     SimplexFunction = RCrossCorrelation
      
   END IF
     

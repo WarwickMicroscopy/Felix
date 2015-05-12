@@ -422,6 +422,10 @@ SUBROUTINE ReadInpFile( IErr )
      READ(IChInp,10,ERR=20,END=30) IContinueFLAG
      CALL Message ("ReadInpFile",IInfo,IErr,MessageVariable ="IContinueFLAG",IVariable=IContinueFLAG)
      
+     ILine= ILine+1
+     READ(IChInp,10,ERR=20,END=30) ICorrelationFLAG
+     CALL Message ("ReadInpFile",IInfo,IErr,MessageVariable ="ICorrelationFLAG",IVariable=ICorrelationFLAG)
+     
      ILine= ILine+1; READ(IChInp,ERR=20,END=30,FMT='(A)')
      ILine= ILine+1; READ(IChInp,ERR=20,END=30,FMT='(A)')
      ILine= ILine+1; READ(IChInp,ERR=20,END=30,FMT='(A)')

@@ -201,7 +201,7 @@ SUBROUTINE ReSortUgs( ISymmetryIntegers,CUgs, N )
 
 END SUBROUTINE ReSortUgs
 
-FUNCTION ResidualSumofSquares(RImage1,RImage2,IErr)
+REAL(RKIND) FUNCTION ResidualSumofSquares(RImage1,RImage2,IErr)
   
   USE MyNumbers
   
@@ -217,8 +217,8 @@ FUNCTION ResidualSumofSquares(RImage1,RImage2,IErr)
        IErr
   REAL(RKIND),DIMENSION(2*IPixelCount,2*IPixelCount) :: &
        RImage1,RImage2
-  REAL(RKIND) :: &
-       ResidualSumofSquares
+!!$  REAL(RKIND) :: &
+!!$       ResidualSumofSquares
 
   ResidualSumofSquares = SUM((RImage1-RImage2)**2)
 
