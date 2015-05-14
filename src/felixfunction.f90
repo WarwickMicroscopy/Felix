@@ -160,15 +160,6 @@ SUBROUTINE FelixFunction(RIndependentVariableValues,IIterationCount,IErr)
      ENDIF
      
   END IF     
-!!$
-!!$  Deallocate( &
-!!$       RgMatMat,RgMatMag,STAT=IErr)
-!!$  IF( IErr.NE.0 ) THEN
-!!$     PRINT*,"Felixfunction(", my_rank, ") error ", IErr, &
-!!$          " in Deallocation of RgMat"
-!!$     RETURN
-!!$  ENDIF
-
   !--------------------------------------------------------------------
   ! reserve memory for effective eigenvalue problem
   !--------------------------------------------------------------------
@@ -979,7 +970,7 @@ SUBROUTINE UpdateVariables(RIndependentVariableValues,IErr)
 
   !!$  Fill the Independent Value array with values
   
-  RAtomSiteFracCoordVec = RInitialAtomSiteFracCoordVec
+!!$  RAtomSiteFracCoordVec = RInitialAtomSiteFracCoordVec
 
   DO ind = 1,IIndependentVariables
      IVariableType = IIterativeVariableUniqueIDs(ind,2)
@@ -1170,7 +1161,7 @@ SUBROUTINE ConvertVectorMovementsIntoAtomicCoordinates(IVariableID,RIndependentV
 
 !!$  Use IAtomID to applied the IVectodID Vector to the IAtomID atomic coordinate
   
-  RAtomSiteFracCoordVec(IAtomID,:) = RAtomSiteFracCoordVec(IAtomID,:) + &
+  RAtomSiteFracCoordVec(IAtomID,:) = RInitialAtomSiteFracCoordVec(IAtomID,:) + &
        RIndependentVariableValues(IVariableID)*RAllowedVectors(IVectorID,:)
   
 END SUBROUTINE ConvertVectorMovementsIntoAtomicCoordinates

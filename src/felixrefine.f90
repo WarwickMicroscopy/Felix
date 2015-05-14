@@ -739,14 +739,6 @@ SUBROUTINE SimplexInitialisation(RSimplexVolume,RSimplexFoM,RIndependentVariable
        RStandardError,RStandardTolerance
   REAL(RKIND),DIMENSION(:),ALLOCATABLE :: &
        RRandomSigns,RRandomNumbers
-  CHARACTER*200 :: &
-       SLength,SFormat
-  CHARACTER*1000 :: &
-     SPrintString
-  
-  WRITE(SLength,*) IIndependentVariables
-  WRITE(SFormat,*) "("//TRIM(ADJUSTL(SLength))//"(F9.3,1X))"
-
 
   IF((IWriteFLAG.GE.0.AND.my_rank.EQ.0).OR.IWriteFLAG.GE.10) THEN
      PRINT*,"SimplexInitialisation(",my_rank,")"
@@ -798,103 +790,91 @@ SUBROUTINE SimplexInitialisation(RSimplexVolume,RSimplexFoM,RIndependentVariable
 !!$ RandomSequence
 
   IF(IContinueFLAG.EQ.0) THEN
-     
-     IF(IRefineModeSelectionArray(2).EQ.1) THEN
-        DO ind = 1,(IIndependentVariables+1)
+     IF(my_rank.EQ.0) THEN
+        IF(IRefineModeSelectionArray(2).EQ.1) THEN
+           DO ind = 1,(IIndependentVariables+1)
 !!$        IF(IRefineModeSelectionArray(2).EQ.1) THEN
-           ALLOCATE(&
-                RRandomSigns(IAllowedVectors),&
-                RRandomNumbers(IAllowedVectors),&
-                STAT=IErr)
-           
-           
+              ALLOCATE(&
+                   RRandomSigns(IAllowedVectors),&
+                   RRandomNumbers(IAllowedVectors),&
+                   STAT=IErr)
+              
+              
 !!$           Randomise Atomic Displacements
+              
+              CALL RandomSequence(RRandomNumbers,IAllowedVectors,ind,IErr)
+              CALL RandomSequence(RRandomSigns,IAllowedVectors,2*ind,IErr)
+              WHERE (RRandomSigns.LT.HALF)
+                 RRandomSigns = ONE
+              ELSEWHERE
+                 RRandomSigns = -ONE
+              END WHERE
+              
+              RSimplexVolume(ind,:IAllowedVectors) = &
+                   RRandomNumbers*RRandomSigns*RSimplexLengthScale
+              
+              DEALLOCATE(&
+                   RRandomSigns,&
+                   RRandomNumbers)
+              
+              ALLOCATE(&
+                   RRandomSigns(IIndependentVariables-IAllowedVectors),&
+                   RRandomNumbers(IIndependentVariables-IAllowedVectors),&
+                   STAT=IErr)
+              
+!!$           Randomise Everything else
+              
+              CALL RandomSequence(RRandomNumbers,IIndependentVariables-IAllowedVectors,ind,IErr)
+              CALL RandomSequence(RRandomSigns,IIndependentVariables-IAllowedVectors,2*ind,IErr)
+              WHERE (RRandomSigns.LT.HALF)
+                 RRandomSigns = ONE
+              ELSEWHERE
+                 RRandomSigns = -ONE
+              END WHERE
+              
+              RSimplexVolume(ind,(IAllowedVectors+1):) = &
+                   RIndependentVariableValues((IAllowedVectors+1):)*&
+                   (1+(RRandomNumbers*RRandomSigns*RSimplexLengthScale))
+              
+              DEALLOCATE(&
+                   RRandomSigns,&
+                   RRandomNumbers)
+              
+           END DO
            
-           CALL RandomSequence(RRandomNumbers,IAllowedVectors,ind,IErr)
-           CALL RandomSequence(RRandomSigns,IAllowedVectors,2*ind,IErr)
-           WHERE (RRandomSigns.LT.HALF)
-              RRandomSigns = ONE
-           ELSEWHERE
-              RRandomSigns = -ONE
-           END WHERE
-           
-           RSimplexVolume(ind,:IAllowedVectors) = &
-                RRandomNumbers*RRandomSigns*RSimplexLengthScale
-           
-           DEALLOCATE(&
-                RRandomSigns,&
-                RRandomNumbers)
-           
+        ELSE
            ALLOCATE(&
-                RRandomSigns(IIndependentVariables-IAllowedVectors),&
-                RRandomNumbers(IIndependentVariables-IAllowedVectors),&
+                RRandomSigns(IIndependentVariables),&
+                RRandomNumbers(IIndependentVariables),&
                 STAT=IErr)
            
-!!$           Randomise Everything else
-           
-           CALL RandomSequence(RRandomNumbers,IIndependentVariables-IAllowedVectors,ind,IErr)
-           CALL RandomSequence(RRandomSigns,IIndependentVariables-IAllowedVectors,2*ind,IErr)
-           WHERE (RRandomSigns.LT.HALF)
-              RRandomSigns = ONE
-           ELSEWHERE
-              RRandomSigns = -ONE
-           END WHERE
-           
-           RSimplexVolume(ind,(IAllowedVectors+1):) = &
-                RIndependentVariableValues((IAllowedVectors+1):)*&
-                (1+(RRandomNumbers*RRandomSigns*RSimplexLengthScale))
+           DO ind = 1,(IIndependentVariables+1)
+              
+              CALL RandomSequence(RRandomNumbers,IIndependentVariables,ind,IErr)
+              CALL RandomSequence(RRandomSigns,IIndependentVariables,2*ind,IErr)
+              WHERE (RRandomSigns.LT.HALF)
+                 RRandomSigns = ONE
+              ELSEWHERE
+                 RRandomSigns = -ONE
+              END WHERE
+              
+              
+              RSimplexVolume(ind,:) = &
+                   RIndependentVariableValues(:)*&
+                   (1+(RRandomNumbers*RRandomSigns*RSimplexLengthScale))
+           END DO
            
            DEALLOCATE(&
                 RRandomSigns,&
                 RRandomNumbers)
            
-        END DO
-        
+        END IF
+        CALL MPI_BCAST(RSimplexVolume,(IIndependentVariables+1)*(IIndependentVariables),MPI_DOUBLE_PRECISION,0,MPI_COMM_WORLD,IErr)
      ELSE
-        ALLOCATE(&
-             RRandomSigns(IIndependentVariables),&
-             RRandomNumbers(IIndependentVariables),&
-             STAT=IErr)
-        
-        DO ind = 1,(IIndependentVariables+1)
-           
-           CALL RandomSequence(RRandomNumbers,IIndependentVariables,ind,IErr)
-           CALL RandomSequence(RRandomSigns,IIndependentVariables,2*ind,IErr)
-           WHERE (RRandomSigns.LT.HALF)
-              RRandomSigns = ONE
-           ELSEWHERE
-              RRandomSigns = -ONE
-           END WHERE
-           
-           
-           RSimplexVolume(ind,:) = &
-                RIndependentVariableValues(:)*&
-                (1+(RRandomNumbers*RRandomSigns*RSimplexLengthScale))
-        END DO
-        
-        DEALLOCATE(&
-             RRandomSigns,&
-             RRandomNumbers)
-        
-     END IF
-!!$        RSimplexVolume(ind,:) = &
-!!$             RIndependentVariableValues
-!!$        IF(ind.GT.1) THEN
-!!$           IF(IIterativeVariableUniqueIDs(ind-1,2).EQ.2) THEN
-!!$              CALL InitialiseAtomicVectorMagnitudes(ind-1,RSimplexVolume(ind,ind-1),IErr)
-!!$           ELSE
-!!$              RSimplexVolume(ind,ind-1) = RIndependentVariableValues(ind-1)*&
-!!$                   (ONE+RSimplexLengthScale)
-!!$           END IF
-!!$        END IF
-!!$     END DO
+        CALL MPI_BCAST(RSimplexVolume,(IIndependentVariables+1)*(IIndependentVariables),MPI_DOUBLE_PRECISION,0,MPI_COMM_WORLD,IErr)
 
-!!$     DO ind = 1,(IIndependentVariables+1)
-!!$        
-!!$           WRITE(SPrintString,FMT=SFormat) RSimplexVolume(ind,:)
-!!$           PRINT*,SPrintString
-!!$     END DO
-!!$     
+     END IF
+
      IPreviousPrintedIteration = -IPrint ! Ensures print out on first iteration
 
      DO ind = 1,(IIndependentVariables+1)
