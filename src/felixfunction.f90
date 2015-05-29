@@ -647,12 +647,14 @@ SUBROUTINE CalculateFigureofMeritandDetermineThickness(RSimulatedImages,IThickne
 
   INTEGER(IKIND) :: &
        ind,jnd,knd,IErr,ICountedPixels,IThickness,hnd
+  INTEGER(IKIND),DIMENSION(IReflectOut) :: &
+       IThicknessByReflection
   INTEGER(IKIND),INTENT(OUT) :: &
        IThicknessCountFinal
   REAL(RKIND),DIMENSION(:,:),ALLOCATABLE :: &
        RSimulatedImageForPhaseCorrelation
   REAL(RKIND) :: &
-       RCrossCorrelationOld,RIndependentCrossCorrelation,RThickness
+       RCrossCorrelationOld,RIndependentCrossCorrelation,RThickness,PhaseCorrelate
   REAL(RKIND),DIMENSION(IReflectOut,IThicknessCount,IPixelTotal) :: &
        RSimulatedImages
   REAL(RKIND),DIMENSION(IReflectOut) :: &
@@ -676,7 +678,7 @@ SUBROUTINE CalculateFigureofMeritandDetermineThickness(RSimulatedImages,IThickne
   RReflectionCrossCorrelations = ZERO
 
   DO hnd = 1,IReflectOut
-     RCrossCorrelationOld = ZERO
+     RCrossCorrelationOld = 0.0 !A large Number
      RThickness = ZERO
      DO ind = 1,IThicknessCount
         
@@ -696,35 +698,46 @@ SUBROUTINE CalculateFigureofMeritandDetermineThickness(RSimulatedImages,IThickne
               END IF
            END DO
         END DO
-
+        
         IF(ICorrelationFLAG.EQ.0) THEN
            
-           CALL PhaseCorrelate(RSimulatedImageForPhaseCorrelation,RImageExpi(:,:,hnd),&
+            RIndependentCrossCorrelation = PhaseCorrelate(RSimulatedImageForPhaseCorrelation,RImageExpi(:,:,hnd),&
                 IErr,2*IPixelCount,2*IPixelCount)
-           RCrossCorrelation = 1.0_RKIND-RCrossCorrelation
         ELSE
-           RCrossCorrelation = ResidualSumofSquares(RSimulatedImageForPhaseCorrelation,RImageExpi(:,:,hnd),IErr)
+           RIndependentCrossCorrelation = ResidualSumofSquares(RSimulatedImageForPhaseCorrelation,RImageExpi(:,:,hnd),IErr)
         END IF
-
-           RIndependentCrossCorrelation = RCrossCorrelation       
+        
+!!$        RIndependentCrossCorrelation = RCrossCorrelation       
         
         IF(RIndependentCrossCorrelation.GT.RCrossCorrelationOld) THEN
 
            RCrossCorrelationOld = RIndependentCrossCorrelation
 
-           RThickness = RInitialThickness + (ind-1)*RDeltaThickness 
-
-           IThicknessCountFinal = ind
+           IThicknessByReflection(hnd) = ind
 
         END IF
      END DO
      
      RReflectionCrossCorrelations(hnd) = RCrossCorrelationOld
-
+     
   END DO
 
-  RCrossCorrelation = SUM(RReflectionCrossCorrelations*RWeightingCoefficients)/REAL(IReflectOut,RKIND)
+  IF(ICorrelationFLAG.EQ.0) THEN
+     RCrossCorrelation = 1.0_RKIND-RCrossCorrelation
+  END IF
 
+  RCrossCorrelation = SUM(RReflectionCrossCorrelations*RWeightingCoefficients)/REAL(IReflectOut,RKIND)
+  
+  IThicknessCountFinal = SUM(IThicknessByReflection)/IReflectOut
+
+  RThickness = RInitialThickness + (IThicknessCountFinal-1)*RDeltaThickness 
+
+  IF(my_rank.eq.0) THEN
+     PRINT*,"Thicknesses",IThicknessByReflection
+     PRINT*,"Correlation",RCrossCorrelation
+     PRINT*,"Thickness Final",IThicknessCountFinal
+     PRINT*,"Thickness",RThickness
+  END IF
   DEALLOCATE(&
        RSimulatedImageForPhaseCorrelation,&
        STAT=IErr)
@@ -1014,6 +1027,10 @@ SUBROUTINE UpdateVariables(RIndependentVariableValues,IErr)
         RConvergenceAngle = RIndependentVariableValues(ind)
      CASE(9)
         RAbsorptionPercentage = RIndependentVariableValues(ind)
+     CASE(10)
+        RAcceleratingVoltage = RIndependentVariableValues(ind)
+     CASE(11)
+        RRSoSScalingFactor = RIndependentVariableValues(ind)
      END SELECT
   END DO
 
@@ -1093,6 +1110,14 @@ SUBROUTINE PrintVariables(IErr)
         CASE(9)
            PRINT*,"Current Absorption Percentage"
            WRITE(SPrintString,FMT='((F9.6,1X))') RAbsorptionPercentage
+              PRINT*,TRIM(ADJUSTL(SPrintString))
+        CASE(10)
+           PRINT*,"Current Accelerating Voltage"
+           WRITE(SPrintString,FMT='((F9.6,1X))') RAcceleratingVoltage
+              PRINT*,TRIM(ADJUSTL(SPrintString))
+        CASE(11)
+           PRINT*,"Current Residual Sum of Squares Scaling Factor"
+           WRITE(SPrintString,FMT='((F9.6,1X))') RRSoSScalingFactor
               PRINT*,TRIM(ADJUSTL(SPrintString))
         END SELECT
      END IF

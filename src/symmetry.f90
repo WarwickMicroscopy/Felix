@@ -39,6 +39,7 @@
 SUBROUTINE DetermineAllowedMovements(ISpaceGrp,SWyckoffSymbol,RVector,IVector,IErr)
 
   USE MyNumbers
+  USE WriteToScreen
   
   USE CConst; USE IConst; USE RConst
   USE IPara; USE RPara; USE SPara; USE CPara
@@ -58,8 +59,34 @@ SUBROUTINE DetermineAllowedMovements(ISpaceGrp,SWyckoffSymbol,RVector,IVector,IE
   REAL(RKIND),DIMENSION(IVector,THREEDIM),INTENT(OUT) :: &
        RVector
 
+
+  !Tells user, entering DetermineAllowedMovements
+  CALL Message("DetermineAllowedMovements",IMust,IErr)
+
   SELECT CASE(ISpaceGrp)
   CASE(1)
+     SELECT CASE (SWyckoffSymbol)
+     CASE('x')
+        DO ind = 1,IVector
+           SELECT CASE (ind)
+           CASE(1)       
+              RVector(ind,:) = (/ONE, ZERO, ZERO/)
+           CASE(2)
+              RVector(ind,:) = (/ZERO, ONE, ZERO/)
+           END SELECT
+        END DO
+     CASE('b')
+        DO ind = 1,IVector
+           SELECT CASE (ind)
+           CASE(1)
+              RVector(ind,:) = (/ONE, ZERO, ZERO/)
+           CASE(2)
+              RVector(ind,:) = (/ZERO, ONE, ZERO/)
+           CASE(3)
+              RVector(ind,:) = (/ZERO, ZERO, ONE/)
+           END SELECT
+        END DO
+     END SELECT
   CASE(2)
   CASE(3)
   CASE(4)
@@ -100,7 +127,7 @@ SUBROUTINE DetermineAllowedMovements(ISpaceGrp,SWyckoffSymbol,RVector,IVector,IE
         DO ind = 1,IVector
            SELECT CASE (ind)
            CASE(1)       
-              RVector(ind,:) = (/ZERO, ZERO, ONE/)
+              RVector(ind,:) = (/ONE, ZERO, ZERO/)
            CASE(2)
               RVector(ind,:) = (/ZERO, ONE, ZERO/)
            END SELECT
@@ -319,6 +346,7 @@ END SUBROUTINE DetermineAllowedMovements
 SUBROUTINE CountAllowedMovements(ISpaceGrp,SWyckoffSymbol,IVectors,IErr)
 
   USE MyNumbers
+  USE WriteToScreen
   
   USE CConst; USE IConst; USE RConst
   USE IPara; USE RPara; USE SPara; USE CPara
@@ -337,9 +365,19 @@ SUBROUTINE CountAllowedMovements(ISpaceGrp,SWyckoffSymbol,IVectors,IErr)
        IVectors,IErr
   CHARACTER*1 :: &
        SWyckoffSymbol
+
+
+  !Tells user, entering CountAllowedMovements
+  CALL Message("CountAllowedMovements",IMust,IErr)
   
   SELECT CASE(ISpaceGrp)
   CASE(1)
+     SELECT CASE (SWyckoffSymbol)
+     CASE('x')
+        IVectors = 2_IKIND
+     CASE('b')
+        IVectors = 3_IKIND
+     END SELECT
   CASE(2)
   CASE(3)
   CASE(4)
@@ -583,6 +621,7 @@ END SUBROUTINE CountAllowedMovements
 SUBROUTINE ConvertSpaceGroupToNumber(ISpaceGrp,IErr)
 
   USE MyNumbers
+  USE WriteToScreen
   
   USE CConst; USE IConst; USE RConst
   USE IPara; USE RPara; USE SPara; USE CPara
@@ -606,6 +645,10 @@ SUBROUTINE ConvertSpaceGroupToNumber(ISpaceGrp,IErr)
   CHARACTER*20 :: &
        SSpaceGrpToCompare
        
+  
+  !Tells user, entering ConvertSpaceGroupToNumber
+  CALL Message("ConvertSpaceGroupToNumber",IMust,IErr)
+
 !!$  Push Spaces In SSpaceGrp to the end of the String
   
   ICount = 0

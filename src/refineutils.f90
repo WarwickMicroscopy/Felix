@@ -32,7 +32,7 @@
 !
 !%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-SUBROUTINE PhaseCorrelate(RImageSim,RImageExpiDummy,IErr,IXsizeIn,IYSizeIn)
+REAL(RKIND) FUNCTION PhaseCorrelate(RImageSim,RImageExpiDummy,IErr,IXsizeIn,IYSizeIn)
   
   USE MyNumbers
   
@@ -124,7 +124,8 @@ SUBROUTINE PhaseCorrelate(RImageSim,RImageExpiDummy,IErr,IXsizeIn,IYSizeIn)
   CALL FFTW_DESTROY_PLAN(Iplan)
 
   
-  RCrossCorrelation = MAXVAL(RImageSimDummy)/(IX*IY)
+!!$  RCrossCorrelation = MAXVAL(RImageSimDummy)/(IX*IY)
+  PhaseCorrelate = MAXVAL(RImageSimDummy)/(IX*IY)
   IOffset = MAXLOC(RImageSimDummy)
   
   !PRINT*,RImageSimDummy(:2,:2)
@@ -134,7 +135,7 @@ SUBROUTINE PhaseCorrelate(RImageSim,RImageExpiDummy,IErr,IXsizeIn,IYSizeIn)
   call fftw_free(p3)
   call fftw_free(p4)
   
-END SUBROUTINE PhaseCorrelate
+END FUNCTION  PhaseCorrelate
 
 SUBROUTINE ReSortUgs( ISymmetryIntegers,CUgs, N )
   
