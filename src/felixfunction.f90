@@ -678,7 +678,7 @@ SUBROUTINE CalculateFigureofMeritandDetermineThickness(RSimulatedImages,IThickne
   RReflectionCrossCorrelations = ZERO
 
   DO hnd = 1,IReflectOut
-     RCrossCorrelationOld = 0.0 !A large Number
+     RCrossCorrelationOld = 1.0E15 !A large Number
      RThickness = ZERO
      DO ind = 1,IThicknessCount
         
@@ -701,7 +701,7 @@ SUBROUTINE CalculateFigureofMeritandDetermineThickness(RSimulatedImages,IThickne
         
         IF(ICorrelationFLAG.EQ.0) THEN
            
-            RIndependentCrossCorrelation = PhaseCorrelate(RSimulatedImageForPhaseCorrelation,RImageExpi(:,:,hnd),&
+            RIndependentCrossCorrelation = 1.0_RKIND-PhaseCorrelate(RSimulatedImageForPhaseCorrelation,RImageExpi(:,:,hnd),&
                 IErr,2*IPixelCount,2*IPixelCount)
         ELSE
            RIndependentCrossCorrelation = ResidualSumofSquares(RSimulatedImageForPhaseCorrelation,RImageExpi(:,:,hnd),IErr)
@@ -709,7 +709,7 @@ SUBROUTINE CalculateFigureofMeritandDetermineThickness(RSimulatedImages,IThickne
         
 !!$        RIndependentCrossCorrelation = RCrossCorrelation       
         
-        IF(RIndependentCrossCorrelation.GT.RCrossCorrelationOld) THEN
+        IF(ABS(RIndependentCrossCorrelation).LT.RCrossCorrelationOld) THEN
 
            RCrossCorrelationOld = RIndependentCrossCorrelation
 
@@ -722,9 +722,9 @@ SUBROUTINE CalculateFigureofMeritandDetermineThickness(RSimulatedImages,IThickne
      
   END DO
 
-  IF(ICorrelationFLAG.EQ.0) THEN
-     RCrossCorrelation = 1.0_RKIND-RCrossCorrelation
-  END IF
+!!$  IF(ICorrelationFLAG.EQ.0) THEN
+!!$     RCrossCorrelation = 1.0_RKIND-RCrossCorrelation
+!!$  END IF
 
   RCrossCorrelation = SUM(RReflectionCrossCorrelations*RWeightingCoefficients)/REAL(IReflectOut,RKIND)
   
