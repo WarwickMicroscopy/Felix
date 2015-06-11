@@ -860,68 +860,12 @@ REAL(RKIND) FUNCTION SimplexFunction(RIndependentVariableValues,IIterationCount,
 !!$     OUTPUT AN IMAGE -------------------------------------
      
      IF(IExitFLAG.EQ.1.OR.(IIterationCount.GE.(IPreviousPrintedIteration+IPrint))) THEN
+        
         PRINT*,"I am Printing Because IExitFLAG = ",IExitFLAG,"and im",&
              IIterationCount-IPreviousPrintedIteration,"Iterations from my last print"
-        IPreviousPrintedIteration = IIterationCount
-        IThickness = RInitialThickness + (IThicknessIndex-1)*RDeltaThickness 
         
-        ALLOCATE( &
-             RImage(2*IPixelCount,2*IPixelCount), &
-             STAT=IErr)
-        IF( IErr.NE.0 ) THEN
-           PRINT*,"WriteOutput(", my_rank, ") error ", IErr, &
-                " in ALLOCATE() of DYNAMIC variables RImage"
-           RETURN
-        ENDIF
-                
-        WRITE(path,"(A2,A1,I1.1,A2,I1.1,A2,I1.1,A2,I4.4,A2,I5.5,A10,I5.5)") &
-             "F-",&
-             "S", IScatterFactorMethodFLAG, &
-             "_B", ICentralBeamFLAG, &
-             "_M", IMaskFLAG, &
-             "_P", IPixelCount, &
-             "_T", IThickness, &
-             "_Iteration",IIterationCount
-        
-        call system('mkdir ' // path)
-        
-        DO ind = 1,IReflectOut
-           CALL OpenReflectionImage(IChOutWIImage,path,IErr,ind,2*IPixelCount,2_IKIND)
-           IF( IErr.NE.0 ) THEN
-              PRINT*,"WriteOutput(", my_rank, ") error in OpenReflectionImage()"
-              RETURN
-           ENDIF
-           
-           RImage = ZERO
-           DO jnd = 1,IPixelTotal
-              gnd = IPixelLocations(jnd,1)
-              hnd = IPixelLocations(jnd,2)
-              RImage(gnd,hnd) = RIndividualReflections(ind,IThicknessIndex,jnd)
-           END DO
-           
-           CALL WriteReflectionImage(IChOutWIImage,&
-                RImage,IErr,2*IPixelCount,2*IPixelCount,2_IKIND)       
-           IF( IErr.NE.0 ) THEN
-              PRINT*,"WriteOutput(", my_rank, ") error in WriteReflectionImage()"
-              RETURN
-           ENDIF
+        CALL WriteIterationOutput(IIterationCount,IThicknessIndex,IErr)
 
-           CLOSE(IChOutWIImage,IOSTAT=IErr)       
-           IF( IErr.NE.0 ) THEN
-              PRINT*,"WriteOutput(", my_rank, ") error Closing Reflection Image()"
-              RETURN
-           ENDIF
-
-        END DO
-        
-        DEALLOCATE( &
-             RImage, &
-             STAT=IErr)
-        IF( IErr.NE.0 ) THEN
-           PRINT*,"WriteOutput(", my_rank, ") error ", IErr, &
-                " in DEALLOCATE() of DYNAMIC variables RImage"
-           RETURN
-        ENDIF
      END IF
      
 !!$     FINISH OUT PUTTING IMAGE --------------------------------
@@ -958,6 +902,121 @@ REAL(RKIND) FUNCTION SimplexFunction(RIndependentVariableValues,IIterationCount,
   ENDIF
 
 END FUNCTION SimplexFunction
+
+SUBROUTINE WriteIterationOutput(IIterationCount,IThicknessIndex,IErr)
+
+  USE MyNumbers
+  
+  USE CConst; USE IConst; USE RConst
+  USE IPara; USE RPara; USE SPara; USE CPara
+  USE BlochPara
+
+  USE IChannels
+
+  USE MPI
+  USE MyMPI
+
+  IMPLICIT NONE
+
+  INTEGER(IKIND) :: &
+       IErr,IIterationCount,IThickness
+  INTEGER(IKIND),INTENT(IN) :: &
+       IThicknessIndex
+  CHARACTER*200 :: &
+       path
+
+  IPreviousPrintedIteration = IIterationCount
+  IThickness = RInitialThickness + (IThicknessIndex-1)*RDeltaThickness 
+
+  WRITE(path,"(A2,A1,I1.1,A2,I1.1,A2,I1.1,A2,I4.4,A2,I5.5,A10,I5.5)") &
+       "F-",&
+       "S", IScatterFactorMethodFLAG, &
+       "_B", ICentralBeamFLAG, &
+       "_M", IMaskFLAG, &
+       "_P", IPixelCount, &
+       "_T", IThickness, &
+       "_Iteration",IIterationCount
+  
+  call system('mkdir ' // path)
+
+  CALL WriteIterationImages(path,IThicknessIndex,IErr)
+
+  CALL WriteIterationStructure(IErr)
+  
+END SUBROUTINE WriteIterationOutput
+
+SUBROUTINE WriteIterationStructure(IErr)
+
+  USE MyNumbers
+  
+  USE CConst; USE IConst; USE RConst
+  USE IPara; USE RPara; USE SPara; USE CPara
+  USE BlochPara
+
+  USE IChannels
+
+  USE MPI
+  USE MyMPI
+
+  IMPLICIT NONE
+
+  INTEGER(IKIND) :: &
+       IErr
+
+END SUBROUTINE WriteIterationStructure
+
+SUBROUTINE WriteIterationImages(path,IThicknessIndex,IErr)
+
+  USE MyNumbers
+  
+  USE CConst; USE IConst; USE RConst
+  USE IPara; USE RPara; USE SPara; USE CPara
+  USE BlochPara
+
+  USE IChannels
+
+  USE MPI
+  USE MyMPI
+
+  IMPLICIT NONE
+
+  INTEGER(IKIND) :: &
+       IErr,ind,jnd,hnd,gnd,IThicknessIndex
+  REAL(RKIND),DIMENSION(2*IPixelCount,2*IPixelCount) :: &
+       RImage
+  CHARACTER*200,INTENT(IN) :: &
+       path
+
+  DO ind = 1,IReflectOut
+     CALL OpenReflectionImage(IChOutWIImage,path,IErr,ind,2*IPixelCount,2_IKIND)
+     IF( IErr.NE.0 ) THEN
+        PRINT*,"WriteOutput(", my_rank, ") error in OpenReflectionImage()"
+        RETURN
+     ENDIF
+     
+     RImage = ZERO
+     DO jnd = 1,IPixelTotal
+        gnd = IPixelLocations(jnd,1)
+        hnd = IPixelLocations(jnd,2)
+        RImage(gnd,hnd) = RIndividualReflections(ind,IThicknessIndex,jnd)
+     END DO
+     
+     CALL WriteReflectionImage(IChOutWIImage,&
+          RImage,IErr,2*IPixelCount,2*IPixelCount,2_IKIND)       
+     IF( IErr.NE.0 ) THEN
+        PRINT*,"WriteOutput(", my_rank, ") error in WriteReflectionImage()"
+        RETURN
+     ENDIF
+     
+     CLOSE(IChOutWIImage,IOSTAT=IErr)       
+     IF( IErr.NE.0 ) THEN
+        PRINT*,"WriteOutput(", my_rank, ") error Closing Reflection Image()"
+        RETURN
+     ENDIF
+     
+  END DO
+
+END SUBROUTINE WriteIterationImages
 
 !%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
