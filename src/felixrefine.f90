@@ -1130,7 +1130,7 @@ SUBROUTINE PerformDummySimulationToSetupSimplexValues(IErr)
      PRINT*,"PerformDummySimulationToSetupSimplexValues(", my_rank, ") error ", IErr, &
           " in Deallocation Rhklpositions"
      RETURN
-  ENDIF
+  ENDIF  
        
   DEALLOCATE( &
        RMask,&

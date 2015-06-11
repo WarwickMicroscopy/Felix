@@ -73,7 +73,22 @@ MODULE CConst
        "P4332","P4132","I4132","P-43m","F-43m","I-43m","P-43n","F-43c", &
        "I-43d","Pm-3m","Pn-3n","Pm-3n","Pn-3m","Fm-3m","Fm-3c","Fd-3m", &
        "Fd-3c","Im-3m","Ia-3d"/
-       
+  
+  
+  CHARACTER*2 :: &
+       SElementSymbolMatrix(103)
+  
+  DATA SElementSymbolMatrix/" H", "He", "Li", "Be", " B", " C", " N", "O", "F", "Ne", &
+       "Na", "Mg", "Al", "Si", "P", "S", "Cl", "Ar", "K", "Ca", &
+       "Sc", "Ti", "V", "Cr", "Mn", "Fe", "Co", "Ni", "Cu", "Zn", &
+        "Ga", "Ge", "As", "Se", "Br", "Kr", "Rb", "Sr", "Y", "Zr", &
+        "Nb", "Mo", "Tc", "Ru", "Rh", "Pd", "Ag", "Cd", "In", "Sn", &
+        "Sb", "Te", "I", "Xe", "Cs", "Ba", "La", "Ce", "Pr", "Nd", &
+        "Pm", "Sm", "Eu", "Gd", "Tb", "Dy", "Ho", "Er", "Tm", "Yb", &
+        "Lu", "Hf", "Ta", "W", "Re", "Os", "Ir", "Pt", "Au", "Hg", &
+        "Tl", "Pb", "Bi", "Po", "At", "Rn", "Fr", "Ra", "Ac", "Th", &
+        "Pa", "U", "Np", "Pu", "Am", "Cm", "Bk", "Cf", "Es", "Fm",& 
+        "Md","No","Lr"/
 
 END MODULE CConst
 

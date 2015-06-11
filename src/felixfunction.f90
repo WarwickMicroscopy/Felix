@@ -803,7 +803,6 @@ REAL(RKIND) FUNCTION SimplexFunction(RIndependentVariableValues,IIterationCount,
   IF (my_rank.EQ.0) THEN
      CALL PrintVariables(IErr)
   END IF
-
   
   IF(IRefineModeSelectionArray(1).EQ.1) THEN
      
@@ -859,14 +858,20 @@ REAL(RKIND) FUNCTION SimplexFunction(RIndependentVariableValues,IIterationCount,
      
 !!$     OUTPUT AN IMAGE -------------------------------------
      
-     IF(IExitFLAG.EQ.1.OR.(IIterationCount.GE.(IPreviousPrintedIteration+IPrint))) THEN
+!!$     IF(IExitFLAG.EQ.1.OR.(IIterationCount.GE.(IPreviousPrintedIteration+IPrint))) THEN
+!!$        
+!!$        PRINT*,"I am Printing Because IExitFLAG = ",IExitFLAG,"and im",&
+!!$             IIterationCount-IPreviousPrintedIteration,"Iterations from my last print"
         
-        PRINT*,"I am Printing Because IExitFLAG = ",IExitFLAG,"and im",&
-             IIterationCount-IPreviousPrintedIteration,"Iterations from my last print"
-        
-        CALL WriteIterationOutput(IIterationCount,IThicknessIndex,IErr)
+        CALL WriteIterationOutput(IIterationCount,IThicknessIndex,IExitFLAG,IErr)
 
-     END IF
+!!$        CALL WriteIterationStructure(IErr)
+!!$        
+!!$     ELSE
+!!$        
+!!$        CALL WriteIterationStructure(IErr)       
+!!$
+!!$     END IF
      
 !!$     FINISH OUT PUTTING IMAGE --------------------------------
      
@@ -891,19 +896,19 @@ REAL(RKIND) FUNCTION SimplexFunction(RIndependentVariableValues,IIterationCount,
      SimplexFunction = RCrossCorrelation
      
   END IF
-    
+  
   DEALLOCATE( &
-     Rhkl,&
-     STAT=IErr)
+       Rhkl,&
+       STAT=IErr)
   IF( IErr.NE.0 ) THEN
-     PRINT*,"Felixfunction(", my_rank, ") error ", IErr, &
+     PRINT*,"SimplexFunction(", my_rank, ") error ", IErr, &
           " in Deallocation Rhkl"
      RETURN
   ENDIF
-
+     
 END FUNCTION SimplexFunction
 
-SUBROUTINE WriteIterationOutput(IIterationCount,IThicknessIndex,IErr)
+SUBROUTINE WriteIterationOutput(IIterationCount,IThicknessIndex,IExitFlag,IErr)
 
   USE MyNumbers
   
@@ -921,31 +926,50 @@ SUBROUTINE WriteIterationOutput(IIterationCount,IThicknessIndex,IErr)
   INTEGER(IKIND) :: &
        IErr,IIterationCount,IThickness
   INTEGER(IKIND),INTENT(IN) :: &
-       IThicknessIndex
+       IThicknessIndex,IExitFLAG
   CHARACTER*200 :: &
        path
-
-  IPreviousPrintedIteration = IIterationCount
-  IThickness = RInitialThickness + (IThicknessIndex-1)*RDeltaThickness 
-
-  WRITE(path,"(A2,A1,I1.1,A2,I1.1,A2,I1.1,A2,I4.4,A2,I5.5,A10,I5.5)") &
-       "F-",&
-       "S", IScatterFactorMethodFLAG, &
-       "_B", ICentralBeamFLAG, &
-       "_M", IMaskFLAG, &
-       "_P", IPixelCount, &
-       "_T", IThickness, &
-       "_Iteration",IIterationCount
   
-  call system('mkdir ' // path)
+  IF(IExitFLAG.EQ.1.OR.(IIterationCount.GE.(IPreviousPrintedIteration+IPrint))) THEN
+     
 
-  CALL WriteIterationImages(path,IThicknessIndex,IErr)
+     IThickness = RInitialThickness + (IThicknessIndex-1)*RDeltaThickness 
+          
+     WRITE(path,"(A2,A1,I1.1,A2,I1.1,A2,I1.1,A2,I4.4,A2,I5.5,A10,I5.5)") &
+          "F-",&
+          "S", IScatterFactorMethodFLAG, &
+          "_B", ICentralBeamFLAG, &
+          "_M", IMaskFLAG, &
+          "_P", IPixelCount, &
+          "_T", IThickness, &
+          "_Iteration",IIterationCount
+     
+     call system('mkdir ' // path)
+     
+     PRINT*,"I am Printing Because IExitFLAG = ",IExitFLAG,"and im",&
+          IIterationCount-IPreviousPrintedIteration,"Iterations from my last print"
+     
+     IPreviousPrintedIteration = IIterationCount
+     
+     CALL WriteIterationImages(path,IThicknessIndex,IErr)
+     
+     DEALLOCATE( &
+          Rhkl,&
+          STAT=IErr)
+     IF( IErr.NE.0 ) THEN
+        PRINT*,"WriteIterationOutput(", my_rank, ") error ", IErr, &
+             " in Deallocation Rhkl"
+        RETURN
+     ENDIF
 
-  CALL WriteIterationStructure(IErr)
-  
+     CALL WriteIterationStructure(path,IErr)  
+  ELSE
+
+  END IF
+     
 END SUBROUTINE WriteIterationOutput
 
-SUBROUTINE WriteIterationStructure(IErr)
+SUBROUTINE WriteIterationStructure(path,IErr)
 
   USE MyNumbers
   
@@ -961,7 +985,180 @@ SUBROUTINE WriteIterationStructure(IErr)
   IMPLICIT NONE
 
   INTEGER(IKIND) :: &
-       IErr
+       IErr,jnd
+  CHARACTER*200,INTENT(IN) :: &
+       path
+  CHARACTER*200 :: &
+       SPrintString,filename,fullpath
+
+  WRITE(filename,*) "StructureCif.txt"
+  WRITE(fullpath,*) TRIM(ADJUSTL(path)),'/',TRIM(ADJUSTL(filename))
+
+  OPEN(UNIT=IChOutSimplex,STATUS='UNKNOWN',&
+        FILE=TRIM(ADJUSTL(fullpath)))
+  
+  DO jnd = 1,SIZE(RAtomSiteFracCoordVec,DIM=1)
+     WRITE(IChOutSimplex,FMT='(A2,1X,3(F9.3,1X))') SAtomName(jnd),RAtomSiteFracCoordVec(jnd,:)
+  END DO
+  
+  CLOSE(IChOutSimplex)
+
+  CALL ExperimentalSetup(IErr)
+
+  WRITE(filename,*) "StructureFull.txt"
+  WRITE(fullpath,*) TRIM(ADJUSTL(path)),'/',TRIM(ADJUSTL(filename))
+
+  OPEN(UNIT=IChOutSimplex,STATUS='UNKNOWN',&
+        FILE=TRIM(ADJUSTL(fullpath)))
+  
+  DO jnd = 1,SIZE(MNP,DIM=1)
+     WRITE(IChOutSimplex,FMT='(A2,1X,3(F9.3,1X))') SMNP(jnd),MNP(jnd,1:3)
+  END DO
+  
+  CLOSE(IChOutSimplex)
+
+   DEALLOCATE( &
+       MNP,&
+       STAT=IErr)
+  IF( IErr.NE.0 ) THEN
+     PRINT*,"WriteIterationStructure(", my_rank, ") error ", IErr, &
+          " in Deallocation MNP"
+     RETURN
+  ENDIF
+      
+  DEALLOCATE( &
+        SMNP, &
+       STAT=IErr)
+  IF( IErr.NE.0 ) THEN
+     PRINT*,"WriteIterationStructure(", my_rank, ") error ", IErr, &
+          " in Deallocation SMNP"
+     RETURN
+  ENDIF
+       
+  DEALLOCATE( &
+       RFullAtomicFracCoordVec, &
+       STAT=IErr)
+  IF( IErr.NE.0 ) THEN
+     PRINT*,"WriteIterationStructure(", my_rank, ") error ", IErr, &
+          " in Deallocation RFullAtomicFracCoordVec"
+     RETURN
+  ENDIF
+       
+  DEALLOCATE( &
+       SFullAtomicNameVec,&
+       STAT=IErr)
+  IF( IErr.NE.0 ) THEN
+     PRINT*,"WriteIterationStructure(", my_rank, ") error ", IErr, &
+          " in Deallocation SFullAtomicNameVec"
+     RETURN
+  ENDIF
+       
+  DEALLOCATE( &
+       IFullAnisotropicDWFTensor,&
+       STAT=IErr)
+  IF( IErr.NE.0 ) THEN
+     PRINT*,"WriteIterationStructure(", my_rank, ") error ", IErr, &
+          " in Deallocation IFullAnisotropicDWFTensor"
+     RETURN
+  ENDIF
+       
+  DEALLOCATE( &
+       IFullAtomNumber,&
+       STAT=IErr)
+  IF( IErr.NE.0 ) THEN
+     PRINT*,"WriteIterationStructure(", my_rank, ") error ", IErr, &
+          " in Deallocation IFullAtomNumber"
+     RETURN
+  ENDIF
+       
+  DEALLOCATE( &
+       RFullIsotropicDebyeWallerFactor,&
+       STAT=IErr)
+  IF( IErr.NE.0 ) THEN
+     PRINT*,"WriteIterationStructure(", my_rank, ") error ", IErr, &
+          " in Deallocation RFullIsotropicDebyeWallerFactor"
+     RETURN
+  ENDIF
+       
+  DEALLOCATE( &
+       RFullPartialOccupancy,&
+       STAT=IErr)
+  IF( IErr.NE.0 ) THEN
+     PRINT*,"WriteIterationStructure(", my_rank, ") error ", IErr, &
+          " in Deallocation RFullPartialOccupancy"
+     RETURN
+  ENDIF
+       
+  DEALLOCATE( &
+       RDWF,&
+       STAT=IErr)
+  IF( IErr.NE.0 ) THEN
+     PRINT*,"WriteIterationStructure(", my_rank, ") error ", IErr, &
+          " in Deallocation RDWF"
+     RETURN
+  ENDIF
+       
+  DEALLOCATE( &
+       ROcc,&
+       STAT=IErr)
+  IF( IErr.NE.0 ) THEN
+     PRINT*,"WriteIterationStructure(", my_rank, ") error ", IErr, &
+          " in Deallocation ROcc"
+     RETURN
+  ENDIF
+       
+  DEALLOCATE( &
+       IAtoms,&
+       STAT=IErr)
+  IF( IErr.NE.0 ) THEN
+     PRINT*,"WriteIterationStructure(", my_rank, ") error ", IErr, &
+          " in Deallocation IAtoms"
+     RETURN
+  ENDIF
+       
+  DEALLOCATE( &
+       IAnisoDWFT,&
+       STAT=IErr)
+  IF( IErr.NE.0 ) THEN
+     PRINT*,"WriteIterationStructure(", my_rank, ") error ", IErr, &
+          " in Deallocation IAnisoDWFT"
+     RETURN
+  ENDIF
+       
+  DEALLOCATE( &
+       RgVecMatT,&
+       STAT=IErr)
+  IF( IErr.NE.0 ) THEN
+     PRINT*,"WriteIterationStructure(", my_rank, ") error ", IErr, &
+          " in Deallocation RgVecMatT"
+     RETURN
+  ENDIF
+       
+  DEALLOCATE( &
+       RgVecMag,&
+       STAT=IErr)
+  IF( IErr.NE.0 ) THEN
+     PRINT*,"WriteIterationStructure(", my_rank, ") error ", IErr, &
+          " in Deallocation RgVecMag"
+     RETURN
+  ENDIF
+       
+  DEALLOCATE( &
+       RGn,&
+       STAT=IErr)
+  IF( IErr.NE.0 ) THEN
+     PRINT*,"WriteIterationStructure(", my_rank, ") error ", IErr, &
+          " in Deallocation RGn" 
+     RETURN
+  ENDIF
+
+  DEALLOCATE( &
+       RrVecMat, &
+       STAT=IErr)
+  IF( IErr.NE.0 ) THEN
+     PRINT*,"WriteIterationStructure(", my_rank, ") error ", IErr, " in DEALLOCATE of RrVecMat 2 "
+     RETURN
+  ENDIF
 
 END SUBROUTINE WriteIterationStructure
 
