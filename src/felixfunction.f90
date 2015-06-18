@@ -856,24 +856,11 @@ REAL(RKIND) FUNCTION SimplexFunction(RIndependentVariableValues,IIterationCount,
         RETURN
      ENDIF
      
-!!$     OUTPUT AN IMAGE -------------------------------------
+!!$     OUTPUT -------------------------------------
      
-!!$     IF(IExitFLAG.EQ.1.OR.(IIterationCount.GE.(IPreviousPrintedIteration+IPrint))) THEN
-!!$        
-!!$        PRINT*,"I am Printing Because IExitFLAG = ",IExitFLAG,"and im",&
-!!$             IIterationCount-IPreviousPrintedIteration,"Iterations from my last print"
-        
-        CALL WriteIterationOutput(IIterationCount,IThicknessIndex,IExitFLAG,IErr)
+     CALL WriteIterationOutput(IIterationCount,IThicknessIndex,IExitFLAG,IErr)
 
-!!$        CALL WriteIterationStructure(IErr)
-!!$        
-!!$     ELSE
-!!$        
-!!$        CALL WriteIterationStructure(IErr)       
-!!$
-!!$     END IF
-     
-!!$     FINISH OUT PUTTING IMAGE --------------------------------
+!!$     FINISH OUTPUT  --------------------------------
      
      DEALLOCATE( &
           RIndividualReflections,&
@@ -991,6 +978,8 @@ SUBROUTINE WriteIterationStructure(path,IErr)
   CHARACTER*200 :: &
        SPrintString,filename,fullpath
 
+!!$  Write out non symmetrically related atomic positions
+
   WRITE(filename,*) "StructureCif.txt"
   WRITE(fullpath,*) TRIM(ADJUSTL(path)),'/',TRIM(ADJUSTL(filename))
 
@@ -1002,6 +991,8 @@ SUBROUTINE WriteIterationStructure(path,IErr)
   END DO
   
   CLOSE(IChOutSimplex)
+
+!!$  Write out full atomic positions
 
   CALL ExperimentalSetup(IErr)
 
@@ -1016,8 +1007,8 @@ SUBROUTINE WriteIterationStructure(path,IErr)
   END DO
   
   CLOSE(IChOutSimplex)
-
-   DEALLOCATE( &
+  
+  DEALLOCATE( &
        MNP,&
        STAT=IErr)
   IF( IErr.NE.0 ) THEN
@@ -1156,7 +1147,7 @@ SUBROUTINE WriteIterationStructure(path,IErr)
        RrVecMat, &
        STAT=IErr)
   IF( IErr.NE.0 ) THEN
-     PRINT*,"WriteIterationStructure(", my_rank, ") error ", IErr, " in DEALLOCATE of RrVecMat 2 "
+     PRINT*,"WriteIterationStructure(", my_rank, ") error ", IErr, " in DEALLOCATE of RrVecMat"
      RETURN
   ENDIF
 
@@ -1239,7 +1230,7 @@ SUBROUTINE UpdateVariables(RIndependentVariableValues,IErr)
 
   !!$  Fill the Independent Value array with values
   
-!!$  RAtomSiteFracCoordVec = RInitialAtomSiteFracCoordVec
+  RAtomSiteFracCoordVec = RInitialAtomSiteFracCoordVec
 
   DO ind = 1,IIndependentVariables
      IVariableType = IIterativeVariableUniqueIDs(ind,2)
@@ -1441,8 +1432,8 @@ SUBROUTINE ConvertVectorMovementsIntoAtomicCoordinates(IVariableID,RIndependentV
   IAtomID = IAllowedVectorIDs(IVectorID)
 
 !!$  Use IAtomID to applied the IVectodID Vector to the IAtomID atomic coordinate
-  
-  RAtomSiteFracCoordVec(IAtomID,:) = RInitialAtomSiteFracCoordVec(IAtomID,:) + &
+    
+  RAtomSiteFracCoordVec(IAtomID,:) = RAtomSiteFracCoordVec(IAtomID,:) + &
        RIndependentVariableValues(IVariableID)*RAllowedVectors(IVectorID,:)
   
 END SUBROUTINE ConvertVectorMovementsIntoAtomicCoordinates

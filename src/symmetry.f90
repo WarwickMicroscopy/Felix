@@ -70,9 +70,9 @@ SUBROUTINE DetermineAllowedMovements(ISpaceGrp,SWyckoffSymbol,RVector,IVector,IE
         DO ind = 1,IVector
            SELECT CASE (ind)
            CASE(1)       
-              RVector(ind,:) = (/ONE, ZERO, ZERO/)
-           CASE(2)
               RVector(ind,:) = (/ZERO, ONE, ZERO/)
+           CASE(2)
+              RVector(ind,:) = (/ZERO, ZERO, ONE/)
            END SELECT
         END DO
      CASE('b')
@@ -132,9 +132,9 @@ SUBROUTINE DetermineAllowedMovements(ISpaceGrp,SWyckoffSymbol,RVector,IVector,IE
         DO ind = 1,IVector
            SELECT CASE (ind)
            CASE(1)       
-              RVector(ind,:) = (/ONE, ZERO, ZERO/)
-           CASE(2)
               RVector(ind,:) = (/ZERO, ONE, ZERO/)
+           CASE(2)
+              RVector(ind,:) = (/ZERO, ZERO, ONE/)
            END SELECT
         END DO
      CASE('b')
