@@ -57,9 +57,9 @@ SUBROUTINE NDimensionalDownhillSimplex(RSimplexVolume,y,mp,np,ndim,ftol,iter,RSt
      RStandardTolerance = RStandardError(RStandardDeviation,RMean,ytry,IErr)
 
      PRINT*,"Current Tolerance",rtol,ftol,RStandardTolerance
-!!$     IF(rtol.LT.ftol) THEN
-
-     IF(RStandardTolerance.LT.ftol) THEN
+     IF(rtol.LT.ftol) THEN
+!!$
+!!$     IF(RStandardTolerance.LT.ftol) THEN
         swap=y(1)
         y(1)=y(ilo)
         y(ilo)=swap

@@ -61,7 +61,7 @@ SUBROUTINE BlochCoefficientCalculation(IYPixelIndex,IXPixelIndex,IPixelNumber,IF
   COMPLEX(CKIND) sumC,sumD
 
   COMPLEX(CKIND), DIMENSION(:,:), ALLOCATABLE :: &
-       CGeneralSolutionMatrix, CGeneralEigenVectors
+       CGeneralSolutionMatrix, CGeneralEigenVectors,CBeamTranspose,CUgMatPartial
   COMPLEX(CKIND),DIMENSION(:),ALLOCATABLE :: &
        CGeneralEigenValues
 
@@ -185,6 +185,25 @@ SUBROUTINE BlochCoefficientCalculation(IYPixelIndex,IXPixelIndex,IPixelNumber,IF
           " in ALLOCATE() of DYNAMIC variables CEigenValues"
      RETURN
   ENDIF
+
+  ALLOCATE( &
+       CBeamTranspose(nReflections,nBeams), &
+       STAT=IErr)
+  IF( IErr.NE.0 ) THEN
+     PRINT*,"BlochCoefficientCalculation(", my_rank, ") error ", IErr, &
+          " in ALLOCATE() of DYNAMIC variables CBeamTranspose"
+     RETURN
+  ENDIF
+
+  ALLOCATE( &
+       CUgMatPartial(nReflections,nBeams), &
+       STAT=IErr)
+  IF( IErr.NE.0 ) THEN
+     PRINT*,"BlochCoefficientCalculation(", my_rank, ") error ", IErr, &
+          " in ALLOCATE() of DYNAMIC variables CUgMatPartial"
+     RETURN
+  ENDIF
+
   ALLOCATE( &
        CInvertedEigenVectors(nBeams,nBeams), &
        STAT=IErr)
@@ -281,11 +300,19 @@ SUBROUTINE BlochCoefficientCalculation(IYPixelIndex,IXPixelIndex,IPixelNumber,IF
 
   CUgMatEffective = CZERO
   
-  CUgMatEffective= &
-       MATMUL( &
-       CBeamProjectionMatrix, &
-       MATMUL(CUgMat,TRANSPOSE(CBeamProjectionMatrix)) &
-       )
+  CBeamTranspose=TRANSPOSE(CBeamProjectionMatrix)
+  
+  CALL ZGEMM('N','N',nReflections,nBeams,nReflections,CONE,CUgMat, &
+       nReflections,CBeamTranspose,nReflections,CZERO,CUgMatPartial,nReflections)
+  
+  CALL ZGEMM('N','N',nBeams,nBeams,nReflections,CONE,CBeamProjectionMatrix, &
+       nBeams,CUgMatPartial,nReflections,CZERO,CUgMatEffective,nBeams)
+  
+!!$  CUgMatEffective= &
+!!$       MATMUL( &
+!!$       CBeamProjectionMatrix, &
+!!$       MATMUL(CUgMat,TRANSPOSE(CBeamProjectionMatrix)) &
+!!$       )
     
   IF (IZolzFLAG.EQ.0) THEN
 
