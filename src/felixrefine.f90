@@ -57,7 +57,7 @@ PROGRAM Felixrefine
 
   INTEGER(IKIND) :: &
        IHours,IMinutes,ISeconds,IErr,IMilliSeconds,IIterationFLAG,&
-       ind,IIterationCount,ISpaceGrp,ICount,jnd
+       ind,IIterationCount
   REAL(RKIND) :: &
        StartTime, CurrentTime, Duration, TotalDurationEstimate,&
        RFigureOfMerit,SimplexFunction  
@@ -67,8 +67,6 @@ PROGRAM Felixrefine
        RSimplexFoM,RIndependentVariableValues
   REAL(RKIND) :: &
        RBCASTREAL
-  INTEGER(IKIND),DIMENSION(:),ALLOCATABLE :: &
-       IVectors
   REAL(RKIND) :: &
        RStandardDeviation,RMean
 
@@ -139,82 +137,7 @@ PROGRAM Felixrefine
   IF( IErr.NE.0 ) THEN
      PRINT*,"Felixrefine(", my_rank, ") error in ReadInput()"
      GOTO 9999
-  ENDIF
-
-  IF(IRefineModeSelectionArray(2).EQ.1) THEN 
-     
-     CALL ConvertSpaceGroupToNumber(ISpaceGrp,IErr)
-     
-     ALLOCATE(&
-          IVectors(SIZE(SWyckoffSymbols)),&
-          STAT=IErr)
-     IF( IErr.NE.0 ) THEN
-        PRINT*,"felixrefine (", my_rank, ") error in Allocation() of IVectors"
-        GOTO 9999
-     ENDIF
-     
-     DO ind = 1,SIZE(SWyckoffSymbols)
-!!$     SWyckoffSymbol = SWyckoffSymbols(ind)
-        CALL CountAllowedMovements(ISpaceGrp,SWyckoffSymbols(ind),IVectors(ind),IErr)
-     END DO
-     
-     IAllowedVectors = SUM(IVectors)
-     
-     ALLOCATE(&
-          IAllowedVectorIDs(IAllowedVectors),&
-          STAT=IErr)
-     IF( IErr.NE.0 ) THEN
-        PRINT*,"felixrefine (", my_rank, ") error in Allocation() of IVectors"
-        GOTO 9999
-     ENDIF
-     
-     ICount = 0
-     
-     DO ind = 1,SIZE(SWyckoffSymbols)
-        DO jnd = 1,IVectors(ind)
-           ICount = ICount + 1
-           IAllowedVectorIDs(ICount) = IAtomicSitesToRefine(ind)
-        END DO
-     END DO
-     
-     ALLOCATE(&
-          RAllowedVectors(IAllowedVectors,THREEDIM),&
-          STAT=IErr)
-     IF( IErr.NE.0 ) THEN
-        PRINT*,"felixrefine (", my_rank, ") error in Allocation() of IVectors"
-        GOTO 9999
-     ENDIF
-     
-     ALLOCATE(&
-          RAllowedVectorMagnitudes(IAllowedVectors),&
-          STAT=IErr)
-     IF( IErr.NE.0 ) THEN
-        PRINT*,"felixrefine (", my_rank, ") error in Allocation() of IVectors"
-        GOTO 9999
-     ENDIF
-     
-     RAllowedVectorMagnitudes = ZERO
-     
-     DO ind = 1,SIZE(SWyckoffSymbols)
-!!$     SWyckoffSymbol = SWyckoffSymbols(ind)
-        CALL DetermineAllowedMovements(ISpaceGrp,SWyckoffSymbols(ind),&
-             RAllowedVectors(SUM(IVectors(:(ind-1)))+1:SUM(IVectors(:(ind))),:),&
-             IVectors(ind),IErr)
-     END DO
-
-  END IF
-     
-!!$Calculate Number of Independent Refinement Variables
-  
-  IIndependentVariables = &
-       IRefineModeSelectionArray(1)*INoofUgs*2+&
-       IRefineModeSelectionArray(2)*IAllowedVectors+&
-       IRefineModeSelectionArray(3)*SIZE(IAtomicSitesToRefine)+&
-       IRefineModeSelectionArray(4)*SIZE(IAtomicSitesToRefine)+&
-       IRefineModeSelectionArray(5)*SIZE(IAtomicSitesToRefine)*6+&
-       IRefineModeSelectionArray(6)*3+&
-       IRefineModeSelectionArray(7)*3+&
-       IRefineModeSelectionArray(8)
+  ENDIF  
   
   ALLOCATE( &
        RImageExpi(2*IPixelCount,2*IPixelCount, &
@@ -230,26 +153,28 @@ PROGRAM Felixrefine
      PRINT*,"Felixrefine(", my_rank, ") error in ReadExperimentalImages()"
      GOTO 9999
   ENDIF
-
-  !--------------------------------------------------------------------
-  ! Save Atomic Coordinates  
-  !--------------------------------------------------------------------
-
-  ALLOCATE(&
-       RInitialAtomSiteFracCoordVec(&
-       SIZE(RAtomSiteFracCoordVec,DIM=1),&
-       SIZE(RAtomSiteFracCoordVec,DIM=2)),&
-       STAT=IErr)
-  IF( IErr.NE.0 ) THEN
-     PRINT*,"felixrefine (", my_rank, ") error in ALLOCATE()RInitialAtomSiteFracCoordVec "
-     GOTO 9999
-  ENDIF  
-
-  RInitialAtomSiteFracCoordVec = RAtomSiteFracCoordVec
-
+  
   !--------------------------------------------------------------------
   ! Setup Simplex Variables
   !--------------------------------------------------------------------
+  
+  IF(IRefineModeSelectionArray(2).EQ.1) THEN 
+     
+     CALL SetupAtomicVectorMovements(IErr)
+     IF( IErr.NE.0 ) THEN
+        PRINT*,"felixrefine (", my_rank, ") error in SetupAtomicVectorMovements"
+        GOTO 9999
+     ENDIF
+     
+  END IF
+  
+!!$Calculate Number of Independent Refinement Variables
+  
+  CALL CountRefinementVariables(IErr)
+  IF( IErr.NE.0 ) THEN
+     PRINT*,"felixrefine (", my_rank, ") error in CountRefinementVariables"
+     GOTO 9999
+  ENDIF
 
   CALL AssignIterativeIDs(IErr)  
   IF( IErr.NE.0 ) THEN
@@ -265,17 +190,6 @@ PROGRAM Felixrefine
      GOTO 9999
   ENDIF
 
-  IF(my_rank.EQ.0) THEN
-     PRINT*,"IErr = ",IErr
-  END IF
-
-  CALL RefinementVariableSetup(RIndependentVariableValues,IErr)
-  IF( IErr.NE.0 ) THEN
-     PRINT*,"felixrefine (", my_rank, ") error in RefinementVariableSetup()"
-     GOTO 9999
-  ENDIF
-
-  
   !--------------------------------------------------------------------
   ! Initialise Simplex
   !--------------------------------------------------------------------
@@ -317,16 +231,6 @@ PROGRAM Felixrefine
      GOTO 9999
   ENDIF
 
-  CALL MPI_BARRIER(MPI_COMM_WORLD,IErr)
-  IF( IErr.NE.0 ) THEN
-     PRINT*,"Felixrefine(", my_rank, ") error ", IErr, " in MPI_BARRIER()"
-     STOP
-  ENDIF
-
-  PRINT*,"Im rank",my_rank
-
-  STOP
-
   !--------------------------------------------------------------------
   ! Deallocate Memory
   !--------------------------------------------------------------------
@@ -355,12 +259,6 @@ PROGRAM Felixrefine
   !--------------------------------------------------------------------
   ! Shut down MPI
   !--------------------------------------------------------------------
-
-  CALL MPI_BARRIER(MPI_COMM_WORLD,IErr)
-  IF( IErr.NE.0 ) THEN
-     PRINT*,"Felixrefine(", my_rank, ") error ", IErr, " in MPI_BARRIER()"
-     STOP
-  ENDIF
 
 9999 &
   CALL MPI_Finalize(IErr)
@@ -466,11 +364,6 @@ SUBROUTINE AssignArrayLocationsToIterationVariables(IIterativeVariableType,IVari
   CASE(2) ! Coordinates (x,y,z)
 
      IArrayToFill(IArrayIndex,2) = IIterativeVariableType
-!!$     IArrayToFill(IArrayIndex,3) = IAtomicSitesToRefine(INT(CEILING(REAL(IVariableNo/3.0D0,RKIND))))
-!!$     IArrayToFill(IArrayIndex,4) = &
-!!$          NINT(3.D0*(REAL(IVariableNo/3.0D0,RKIND)-CEILING(REAL(IVariableNo/3.0D0,RKIND)))+3.0D0)
-!!$     IArrayToFill(IArrayIndex,5) = 0
-
      IArrayToFill(IArrayIndex,3) = IVariableNo
 
   CASE(3) ! Atomic Site Occupancies
@@ -526,6 +419,14 @@ SUBROUTINE AssignArrayLocationsToIterationVariables(IIterativeVariableType,IVari
   CASE(9)
      
      IArrayToFill(IArrayIndex,2) = IIterativeVariableType
+
+  CASE(10)
+     
+     IArrayToFill(IArrayIndex,2) = IIterativeVariableType
+
+  CASE(11)
+     
+     IArrayToFill(IArrayIndex,2) = IIterativeVariableType
      
   END SELECT
   
@@ -566,10 +467,6 @@ SUBROUTINE RefinementVariableSetup(RIndependentVariableValues,IErr)
      CASE(2)
         RIndependentVariableValues(ind) = &
              RAllowedVectorMagnitudes(IIterativeVariableUniqueIDs(ind,3))
-!!$        RIndependentVariableValues(ind) = &
-!!$             RAtomSiteFracCoordVec(&
-!!$             IIterativeVariableUniqueIDs(ind,3),&
-!!$             IIterativeVariableUniqueIDs(ind,4))
      CASE(3)
         RIndependentVariableValues(ind) = &
              RAtomicSitePartialOccupancy(IIterativeVariableUniqueIDs(ind,3))
@@ -606,6 +503,12 @@ SUBROUTINE RefinementVariableSetup(RIndependentVariableValues,IErr)
      CASE(9)
         RIndependentVariableValues(ind) = &
              RAbsorptionPercentage
+     CASE(10)
+        RIndependentVariableValues(ind) = &
+             RAcceleratingVoltage
+     CASE(11)
+        RIndependentVariableValues(ind) = &
+             RRSoSScalingFactor
      END SELECT
   END DO
 
@@ -1556,5 +1459,144 @@ SUBROUTINE DetermineNumberofRefinementVariablesPerType(INoofelementsforeachrefin
        IRefineModeSelectionArray(8)
   INoofelementsforeachrefinementtype(9) = &
        IRefineModeSelectionArray(9)
+  INoofelementsforeachrefinementtype(10) = &
+       IRefineModeSelectionArray(10)
+  INoofelementsforeachrefinementtype(11) = &
+       IRefineModeSelectionArray(11)
 
 END SUBROUTINE DetermineNumberofRefinementVariablesPerType
+
+SUBROUTINE CountRefinementVariables(IErr)
+ 
+  USE MyNumbers
+  
+  USE CConst; USE IConst; USE RConst
+  USE IPara; USE RPara; USE SPara; USE CPara
+  USE BlochPara
+
+  USE IChannels
+
+  USE MPI
+  USE MyMPI
+  
+  IMPLICIT NONE
+
+  INTEGER(IKIND) :: &
+       IErr
+  INTEGER(IKIND),DIMENSION(IRefinementVariableTypes) :: &
+       INoofelementsforeachrefinementtype
+
+  CALL DetermineNumberofRefinementVariablesPerType(INoofelementsforeachrefinementtype,IErr)
+
+  IIndependentVariables = SUM(INoofelementsforeachrefinementtype)
+
+END SUBROUTINE CountRefinementVariables
+
+SUBROUTINE SetupAtomicVectorMovements(IErr)
+
+  USE MyNumbers
+  
+  USE CConst; USE IConst; USE RConst
+  USE IPara; USE RPara; USE SPara; USE CPara
+  USE BlochPara
+
+  USE IChannels
+
+  USE MPI
+  USE MyMPI
+  
+  IMPLICIT NONE
+
+  INTEGER(IKIND) :: &
+       IErr,ICount,jnd,ind,ISpaceGrp
+  INTEGER(IKIND),DIMENSION(:),ALLOCATABLE :: &
+       IVectors
+  
+  CALL ConvertSpaceGroupToNumber(ISpaceGrp,IErr)
+  IF( IErr.NE.0 ) THEN
+     PRINT*,"felixrefine (", my_rank, ") error in ConvertSpaceGroupToNumber"
+     RETURN
+  ENDIF
+  
+  ALLOCATE(&
+       IVectors(SIZE(SWyckoffSymbols)),&
+       STAT=IErr)
+  IF( IErr.NE.0 ) THEN
+     PRINT*,"felixrefine (", my_rank, ") error in Allocation() of IVectors"
+     RETURN
+  ENDIF
+  
+  DO ind = 1,SIZE(SWyckoffSymbols)
+     CALL CountAllowedMovements(ISpaceGrp,SWyckoffSymbols(ind),IVectors(ind),IErr)
+     IF( IErr.NE.0 ) THEN
+        PRINT*,"felixrefine (", my_rank, ") error in CountAllowedMovements "
+        RETURN
+     ENDIF
+     
+  END DO
+  
+  IAllowedVectors = SUM(IVectors)
+  
+  ALLOCATE(&
+       IAllowedVectorIDs(IAllowedVectors),&
+       STAT=IErr)
+  IF( IErr.NE.0 ) THEN
+     PRINT*,"felixrefine (", my_rank, ") error in Allocation() of IAllowedVectorIDs"
+     RETURN
+  ENDIF
+  
+  ICount = 0
+  
+  DO ind = 1,SIZE(SWyckoffSymbols)
+     DO jnd = 1,IVectors(ind)
+        ICount = ICount + 1
+        IAllowedVectorIDs(ICount) = IAtomicSitesToRefine(ind)
+     END DO
+  END DO
+  
+  ALLOCATE(&
+       RAllowedVectors(IAllowedVectors,THREEDIM),&
+       STAT=IErr)
+  IF( IErr.NE.0 ) THEN
+     PRINT*,"felixrefine (", my_rank, ") error in Allocation() of RAllowedVectors"
+     RETURN
+  ENDIF
+  
+  ALLOCATE(&
+       RAllowedVectorMagnitudes(IAllowedVectors),&
+       STAT=IErr)
+  IF( IErr.NE.0 ) THEN
+     PRINT*,"felixrefine (", my_rank, ") error in Allocation() of RAllowedVectorMagnitudes"
+     RETURN
+  ENDIF
+  
+  RAllowedVectorMagnitudes = ZERO
+  
+  DO ind = 1,SIZE(SWyckoffSymbols)
+     CALL DetermineAllowedMovements(ISpaceGrp,SWyckoffSymbols(ind),&
+          RAllowedVectors(SUM(IVectors(:(ind-1)))+1:SUM(IVectors(:(ind))),:),&
+          IVectors(ind),IErr)
+     IF( IErr.NE.0 ) THEN
+        PRINT*,"felixrefine (", my_rank, ") error in DetermineAllowedMovements"
+        RETURN
+     ENDIF
+     
+  END DO
+  
+  !--------------------------------------------------------------------
+  ! Save Atomic Coordinates  
+  !--------------------------------------------------------------------
+  
+  ALLOCATE(&
+       RInitialAtomSiteFracCoordVec(&
+       SIZE(RAtomSiteFracCoordVec,DIM=1),&
+       SIZE(RAtomSiteFracCoordVec,DIM=2)),&
+       STAT=IErr)
+  IF( IErr.NE.0 ) THEN
+     PRINT*,"felixrefine (", my_rank, ") error in ALLOCATE() of RInitialAtomSiteFracCoordVec "
+     RETURN
+  ENDIF
+  
+  RInitialAtomSiteFracCoordVec = RAtomSiteFracCoordVec
+  
+END SUBROUTINE SetupAtomicVectorMovements

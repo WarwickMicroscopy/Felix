@@ -74,7 +74,6 @@ MODULE CConst
        "I-43d","Pm-3m","Pn-3n","Pm-3n","Pn-3m","Fm-3m","Fm-3c","Fd-3m", &
        "Fd-3c","Im-3m","Ia-3d"/
   
-  
   CHARACTER*2 :: &
        SElementSymbolMatrix(103)
   
@@ -90,6 +89,12 @@ MODULE CConst
         "Pa", "U", "Np", "Pu", "Am", "Cm", "Bk", "Cf", "Es", "Fm",& 
         "Md","No","Lr"/
 
+  CHARACTER*8 :: &
+       CAlphabet(26)
+
+  DATA CAlphabet/"Aa","Bb","Cc","Dd","Ee","Ff","Gg","Hh","Ii","Jj","Kk","Ll",&
+       "Mm","Nn","Oo","Pp","Qq","Rr","Ss","Tt","Uu","Vv","Ww","Xx","Yy","Zz"/
+
 END MODULE CConst
 
 !--------------------------------------------------------------------
@@ -102,7 +107,7 @@ MODULE IConst
        IParallelFLAG=0,&
        IRandomFLAG = 0, &
        IFixedSeed = 123456789,&
-       IRefinementVariableTypes = 9,&
+       IRefinementVariableTypes = 11,&
        NElements=103
 
   !PriorityFLAG values - to match to the WriteFLAG - will change eventually,

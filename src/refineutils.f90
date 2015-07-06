@@ -221,6 +221,14 @@ REAL(RKIND) FUNCTION ResidualSumofSquares(RImage1,RImage2,IErr)
 !!$  REAL(RKIND) :: &
 !!$       ResidualSumofSquares
 
-  ResidualSumofSquares = SUM((RImage1-RImage2)**2)
+
+!!$  RImage1 = RImage1*(2.0**16.0)
+  RImage2 =  RImage2/(2.0**16.0)
+
+  PRINT*,"Residual Sum of Squares Before",ResidualSumofSquares,MAXVAL(RImage1),MAXVAL(RImage2)
+
+  ResidualSumofSquares = SUM((RImage2-RImage1)**2)
+
+  PRINT*,"Residual Sum of Squares After",ResidualSumofSquares
 
 END FUNCTION ResidualSumofSquares

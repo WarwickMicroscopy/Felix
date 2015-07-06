@@ -365,12 +365,19 @@ SUBROUTINE ReadInpFile( IErr )
      ILine= ILine+1
 
      READ(IChInp,FMT='(A)',ERR=20,END=30) SRefineMode
-
+     SRefineMode = SRefineMode((SCAN(SRefineMode,"=")+1):)
      IRefineModeSelectionArray = 0
 
-     DO ind = 1,8
-        WRITE(SStringFromNumber,'(I1)') ind-1
-        IF(SCAN(SRefineMode,TRIM(ADJUSTL(SStringFromNumber))).NE.0) THEN
+!!$     DO ind = 1,IRefinementVariableTypes
+!!$        WRITE(SStringFromNumber,'(I1)') ind-1
+!!$        IF(SCAN(SRefineMode,TRIM(ADJUSTL(SStringFromNumber))).NE.0) THEN
+!!$           IRefineModeSelectionArray(ind) = 1
+!!$        END IF
+!!$     END DO
+
+     DO ind = 1,IRefinementVariableTypes
+!!$        PRINT*,CAlphabet(ind),SRefineMode,SCAN(TRIM(ADJUSTL(SRefineMode)),TRIM(ADJUSTL(CAlphabet(ind))))
+        IF(SCAN(TRIM(ADJUSTL(SRefineMode)),TRIM(ADJUSTL(CAlphabet(ind)))).NE.0) THEN
            IRefineModeSelectionArray(ind) = 1
         END IF
      END DO
@@ -407,6 +414,12 @@ SUBROUTINE ReadInpFile( IErr )
               CASE(9)
                  IF(IRefineModeSelectionArray(ind).EQ.1) SRefineYESNO = 'YES'
                  PRINT*,"Refine Total Absorption ",SRefineYESNO
+              CASE(10)
+                 IF(IRefineModeSelectionArray(ind).EQ.1) SRefineYESNO = 'YES'
+                 PRINT*,"Refine Accelerating Voltage ",SRefineYESNO
+              CASE(11)
+                 IF(IRefineModeSelectionArray(ind).EQ.1) SRefineYESNO = 'YES'
+                 PRINT*,"Refine Residual Sum of Squares Scaling Factor ",SRefineYESNO
               END SELECT
            END DO
         ELSE

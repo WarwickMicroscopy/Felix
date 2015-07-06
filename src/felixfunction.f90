@@ -859,7 +859,7 @@ REAL(RKIND) FUNCTION SimplexFunction(RIndependentVariableValues,IIterationCount,
 !!$     OUTPUT -------------------------------------
      
      CALL WriteIterationOutput(IIterationCount,IThicknessIndex,IExitFLAG,IErr)
-
+     
 !!$     FINISH OUTPUT  --------------------------------
      
      DEALLOCATE( &

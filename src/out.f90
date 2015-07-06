@@ -227,6 +227,7 @@ SUBROUTINE OpenReflectionImage(IChOutWrite, surname, IErr,IReflectWriting,IImage
   USE MyMPI
 
   USE IChannels
+  IMPLICIT NONE
 
   CHARACTER(*) :: &
        surname
@@ -355,6 +356,8 @@ SUBROUTINE WriteReflectionImage( IChOutWrite, data, IErr,IImageSizeX,IImageSizeY
   USE MPI
   USE MyMPI
 
+  IMPLICIT NONE
+
   INTEGER(KIND=IKIND) IErr,IImageSizeY,IImageSizeX
   REAL(KIND=RKIND),DIMENSION(IImageSizeX,IImageSizeY) :: data
   CHARACTER*100 CSizeofData
@@ -399,3 +402,46 @@ SUBROUTINE WriteReflectionImage( IChOutWrite, data, IErr,IImageSizeX,IImageSizeY
   RETURN
 
 END SUBROUTINE WriteReflectionImage
+
+SUBROUTINE WriteCifFile(IErr)
+
+  USE MyNumbers
+  USE WriteToScreen
+
+  USE IConst
+  USE RConst
+  
+  USE IPara
+  USE RPara
+
+  USE MPI
+  USE MyMPI
+  
+  IMPLICIT NONE
+
+  INCLUDE       'ciftbx-f90.cmn'
+
+  INTEGER(IKIND) :: &
+       IErr
+  REAL(RKIND),DIMENSION(SIZE(RAtomSiteFracCoordVec,DIM=1),SIZE(RAtomSiteFracCoordVec,DIM=2)) :: &
+       ROutputData
+  REAL(RKIND),DIMENSION(2,3) :: &
+       RUnitCellParameters
+  LOGICAL :: &
+       f1
+
+  IF(.NOT.dict_('cif_core.dic','valid')) THEN
+     PRINT*,"Requested Core Dictionary not Present"
+  END IF
+
+  IF(.NOT.pfile_('felixoutput.cif')) THEN
+     PRINT*,"Cif file already exists"
+  END IF
+
+  f1 = pdata_('DataBlock') !Open a Data Block
+
+  call close_
+
+END SUBROUTINE WriteCifFile
+  
+  
