@@ -618,11 +618,11 @@ SUBROUTINE FelixFunction(RIndependentVariableValues,IIterationCount,IErr)
   ENDIF
 
   DEALLOCATE( &
-       RGn,&
+       RgVecVec,&
        STAT=IErr)
   IF( IErr.NE.0 ) THEN
      PRINT*,"Felixfunction(", my_rank, ") error ", IErr, &
-          " in Deallocation RGn"
+          " in Deallocation RgVecVec"
      RETURN
   ENDIF
 
@@ -934,14 +934,17 @@ SUBROUTINE WriteIterationOutput(IIterationCount,IThicknessIndex,IExitFlag,IErr)
      
 
      IThickness = RInitialThickness + (IThicknessIndex-1)*RDeltaThickness 
-          
-     WRITE(path,"(A2,A1,I1.1,A2,I1.1,A2,I1.1,A2,I4.4,A2,I5.5,A10,I5.5)") &
-          "F-",&
-          "S", IScatterFactorMethodFLAG, &
-          "_B", ICentralBeamFLAG, &
-          "_M", IMaskFLAG, &
-          "_P", IPixelCount, &
-          "_T", IThickness, &
+     
+     
+     WRITE(path,"(A2,I1.1,I1.1,I1.1,I1.1,A2,I5.5,A2,I5.5,A2,I5.5,A10,I5.5)") &
+          "f-",&
+          IScatterFactorMethodFLAG, &
+          IZolzFLAG, &
+          IAbsorbFLAG, &
+          IAnisoDebyeWallerFactorFlag,&
+          "-T",IThickness,&
+          "-P",2*IPixelcount,&
+          "-P",2*IPixelcount,&
           "_Iteration",IIterationCount
      
      call system('mkdir ' // path)
@@ -1144,15 +1147,6 @@ SUBROUTINE WriteIterationStructure(path,IErr)
   IF( IErr.NE.0 ) THEN
      PRINT*,"WriteIterationStructure(", my_rank, ") error ", IErr, &
           " in Deallocation RgVecMag"
-     RETURN
-  ENDIF
-       
-  DEALLOCATE( &
-       RGn,&
-       STAT=IErr)
-  IF( IErr.NE.0 ) THEN
-     PRINT*,"WriteIterationStructure(", my_rank, ") error ", IErr, &
-          " in Deallocation RGn" 
      RETURN
   ENDIF
 

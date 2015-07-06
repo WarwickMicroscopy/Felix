@@ -39,6 +39,7 @@
 SUBROUTINE ErrorChecks(ProgramInCurrently, ProgramWithIssue,IDamage,IErr)
   
   USE MyNumbers
+  USE ErrorCodes
   
   USE MPI
   USE MyMPI
@@ -49,28 +50,25 @@ SUBROUTINE ErrorChecks(ProgramInCurrently, ProgramWithIssue,IDamage,IErr)
   IMPLICIT NONE
   
   CHARACTER(*) ProgramInCurrently, ProgramWithIssue
+  CHARACTER*100 :: myrankstring, IErrString
   
   INTEGER(IKIND) IErr, IDamage
+
+!!$  write my rank and Ierr into strings
+  WRITE(myrankstring,*) my_rank
+  WRITE(IErrstring,*) IErr
   
-  !Only checks if IErr is anything other than zero,
-  !Will be expanded to include individual error codes
-  !Eventually case structure built up so for example
-  !will say - "in ALLOCATION etc ..." for a certain IErr number
+!!$  Only checks if IErr is anything other than zero,
+!!$  Will be expanded to include individual error codes
+!!$  Eventually case structure built up so for example
+!!$  will say - "in ALLOCATION etc ..." for a certain IErr number
   IF (IErr.NE.ZERO) THEN
      
      SELECT CASE (IDamage)
      CASE(IWarning)
 
         SELECT CASE (IErr)
-!!$           CASE(654)
 
-!!$              IF (my_rank.EQ.0) THEN
-!!$                 PRINT*,"DEBUG MESSAGE: ",ProgramInCurrently,"(", my_rank, ") Warning:", IErr,&
-!!$                      "in ", ProgramWithIssue, " error in optional variable passing"
-!!$                 PRINT*, "Check type of variable name matches the variable type in Call statement "
-!!$                 PRINT*, "for example: IMinWeakBeams has to have Integer type variable - the compiler should pick this up "
-!!$                 PRINT*, "if you are here it is likely the I is missing off of the IMinWeakBeams MessageVariable "
-!!$              END IF
         CASE DEFAULT
 
            PRINT*,ProgramInCurrently,"(", my_rank, ") error", IErr,&
@@ -89,9 +87,22 @@ SUBROUTINE ErrorChecks(ProgramInCurrently, ProgramWithIssue,IDamage,IErr)
         
      CASE(IPotError)
         
-        SELECT CASE (IErr)          
+        SELECT CASE (IErr)
+        CASE(IReflectionMismatch)
+           IF (my_rank.EQ.0) THEN
+              PRINT*,TRIM(ADJUSTL(ProgramInCurrently)) //"(" // TRIM(ADJUSTL(myrankString)) // &
+                   ") Potential Error " // TRIM(ADJUSTL(IErrString)) // " in "// TRIM(ADJUSTL(ProgramWithIssue))
+              PRINT*, "Number of Reflections quantised in each Laue Zone does not match the total Reflections in the system"
+              PRINT*, "Please Contact: Keith.Evans@Warwick.ac.uk or a.j.m.hubert@warwick.ac.uk for help,"
+              PRINT*, "Problem is very likely to be a source code bug, we want to know about those!"
+              PRINT*, "To continue wih the simulation, please switch the RAcceptanceAngle in the input file to zero,"
+              PRINT*, "and run the simulation again"
+           
+              IErr=IReflectionMismatch
+           END IF
+           
         CASE DEFAULT
-
+           
            PRINT*,ProgramInCurrently,"(", my_rank, ") error", IErr,&
                 "in ", ProgramWithIssue        
            !Closes MPI Interface 
@@ -126,5 +137,6 @@ SUBROUTINE ErrorChecks(ProgramInCurrently, ProgramWithIssue,IDamage,IErr)
         END SELECT
      END SELECT
   END IF
+  
   
 END SUBROUTINE ErrorChecks

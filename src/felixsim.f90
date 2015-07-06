@@ -700,11 +700,11 @@ PROGRAM felixsim
   ENDIF
 
   DEALLOCATE( &
-       RGn,&
+       RgVecVec,&
        STAT=IErr)
   IF( IErr.NE.0 ) THEN
      PRINT*,"felixsim(", my_rank, ") error ", IErr, &
-          " in Deallocation RGn"
+          " in Deallocation RgVecVec"
      GOTO 9999
   ENDIF
      

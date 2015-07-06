@@ -268,12 +268,7 @@ SUBROUTINE OpenReflectionImage(IChOutWrite, surname, IErr,IReflectWriting,IImage
        "-P",IImageSizeX,&
        "-P",IImageSizeX
 
-  SELECT CASE (IBinorTextFLAG)
-  CASE(0)
-     WRITE(fileext,*) TRIM(ADJUSTL(".bin")) 
-  CASE(1)
-     WRITE(fileext,*) TRIM(ADJUSTL(".txt"))
-  END SELECT
+  WRITE(fileext,*) TRIM(ADJUSTL(".bin")) 
   
   SELECT CASE(IChOutWrite)
   CASE(IChOutWFImageReal)        
@@ -321,15 +316,10 @@ SUBROUTINE OpenReflectionImage(IChOutWrite, surname, IErr,IReflectWriting,IImage
   CALL Message("OpenReflectionImage",IInfo,IErr, MessageVariable = "filename", &
        MessageString = filename)
 
-  SELECT CASE (IBinorTextFLAG)
-     CASE(0)
-        OPEN(UNIT=IChOutWrite, ERR=10, STATUS= 'UNKNOWN', FILE=TRIM(ADJUSTL(filename)),FORM='UNFORMATTED',&
-             ACCESS='DIRECT',IOSTAT=Ierr,RECL=IImageSizeX*8)
-        
-     CASE(1)
-        OPEN(UNIT=IChOutWrite, ERR=10, STATUS= 'UNKNOWN', FILE=TRIM(ADJUSTL(filename)))
-     END SELECT
-     RETURN
+
+  OPEN(UNIT=IChOutWrite, ERR=10, STATUS= 'UNKNOWN', FILE=TRIM(ADJUSTL(filename)),FORM='UNFORMATTED',&
+       ACCESS='DIRECT',IOSTAT=Ierr,RECL=IImageSizeX*8)
+  RETURN
    
   ! error in OPEN detected
 10 PRINT*,"OpenReflectionImage(): ERR in OPEN()",IErr
@@ -371,24 +361,11 @@ SUBROUTINE WriteReflectionImage( IChOutWrite, data, IErr,IImageSizeX,IImageSizeY
           MessageString = "is looping. Dependent on ImageFLAG also (called more than once while looping)")
      IMessageCounter = IMessageCounter +1
   END IF
-  
-  SELECT CASE (IBinorTextFLAG)
      
-  CASE(0)
-     
-     DO ind = 1,(IImageSizeY)
-        WRITE(IChOutWrite,rec=ind) data(ind,:)
-     END DO
+  DO ind = 1,(IImageSizeY)
+     WRITE(IChOutWrite,rec=ind) data(ind,:)
+  END DO
 
-  CASE(1)
-     
-     DO ind = 1,(2*IPixelCount)
-        WRITE(CSizeofData,*) 2*IPixelCount
-        WRITE(SFormatString,*) "("//TRIM(ADJUSTL(CSizeofData))//"(1F6.3,1X),A1)"
-        WRITE(IChOutWrite,FMT=SFormatString,ERR=20) data(ind,:)
-     END DO
-     
-  END SELECT
 
   RETURN
   ! error in WRITE detected

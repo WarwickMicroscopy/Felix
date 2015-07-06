@@ -38,7 +38,7 @@
 MODULE WriteToScreen
 CONTAINS
 
-SUBROUTINE Message(ProgramName,IPriorityFLAG,IErr,MessageVariable,RVariable,IVariable,CVariable,MessageString)
+SUBROUTINE Message(ProgramName,IPriorityFLAG,IErr,MessageVariable,RVariable,IVariable,RVector,CVariable,MessageString)
 
   USE MyNumbers
   USE IPara
@@ -48,26 +48,39 @@ SUBROUTINE Message(ProgramName,IPriorityFLAG,IErr,MessageVariable,RVariable,IVar
   
   IMPLICIT NONE
    
-  CHARACTER(*), INTENT (IN), OPTIONAL ::  MessageVariable, MessageString
+  CHARACTER(*), INTENT (IN), OPTIONAL ::  &
+       MessageVariable, MessageString
 
-  REAL(RKIND),INTENT(IN), OPTIONAL :: RVariable 
-  INTEGER(IKIND),INTENT (IN), OPTIONAL ::IVariable
-  COMPLEX(CKIND),INTENT (IN), OPTIONAL :: CVariable
+  REAL(RKIND),INTENT(IN), OPTIONAL :: &
+       RVariable, RVector(:) 
+  INTEGER(IKIND),INTENT (IN), OPTIONAL :: &
+       IVariable
+  COMPLEX(CKIND),INTENT (IN), OPTIONAL :: &
+       CVariable
 
-  CHARACTER(*),INTENT (IN) :: ProgramName
-  INTEGER(IKIND) :: IErr,IPriorityFLAG
+  CHARACTER(*),INTENT (IN) :: &
+       ProgramName
+  INTEGER(IKIND) :: &
+       IErr,IPriorityFLAG,ind
   
-  CHARACTER*30 VariableString, my_rank_string
+  CHARACTER*100 VariableString, my_rank_string,DebugString
+  CHARACTER*30 SVariableStringVector(THREEDIM)
 
 !!$  Converts my_rank to string and then either the RVariable, IVariable, CVariable to a string
      WRITE(my_rank_string,'(I6.1)') my_rank 
-     IF (PRESENT(RVariable)) THEN
-!!$        WRITE(VariableString,'(F30.16)') RVariable
-        WRITE(VariableString,'(F15.3)') RVariable
+     IF (PRESENT(RVariable).AND.IPriorityFLAG.LT.100) THEN
+           WRITE(VariableString,'(F15.3)') RVariable
      ELSE IF (PRESENT(IVariable)) THEN
         WRITE(VariableString,'(I10.1)') IVariable
      ELSE IF (PRESENT(CVariable)) THEN
-        WRITE(VariableString,'(F30.16)') CVariable  
+        WRITE(VariableString,'(F30.16)') CVariable
+     ELSE IF (PRESENT(RVector)) THEN     
+        DO ind=1,3
+           WRITE(SVariableStringVector(ind),'(F15.3)') RVector(ind)
+           !VariableString=VariableString //"  "//SVariableStringVector(ind)
+        END DO
+        VariableString="  "//TRIM(ADJUSTL(SVariableStringVector(1)))//"  "// &
+             TRIM(ADJUSTL(SVariableStringVector(2)))//"  "//TRIM(ADJUSTL(SVariableStringVector(3)))
      ELSE
         VariableString = ""
      END IF
@@ -78,7 +91,6 @@ SUBROUTINE Message(ProgramName,IPriorityFLAG,IErr,MessageVariable,RVariable,IVar
      IDebugFLAG = IWriteFLAG
      IWriteFLAG = IDebugFLAG - 100
   END IF
-
 
   
 !!$  If IPriorityFLAG is over 100 (Debug messaging) below won't execute
@@ -119,7 +131,12 @@ SUBROUTINE Message(ProgramName,IPriorityFLAG,IErr,MessageVariable,RVariable,IVar
 !!$-----------------------------------------------------------------------------
 !!$  below only executes if message is a debug message and set in debug mode
 !!$  Debug messages are printed out here
-  ELSE IF(IDebugFLAG .GE. 100) THEN
+  ELSE IF(IPriorityFLAG .GE. 100) THEN
+
+!!$     Prints out reals with greater precision
+     IF(PRESENT(RVariable)) THEN
+        WRITE(VariableString,'(F30.16)') RVariable
+     END IF
 
      ! Checks if MessageVariable & MessageString has been read into the function
      IF (PRESENT(MessageVariable).AND.PRESENT(MessageString)) THEN

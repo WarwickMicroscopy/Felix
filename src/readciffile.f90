@@ -207,7 +207,7 @@ SUBROUTINE ReadCifFile(IErr)
         CALL Message("ReadCIFFile",IMoreInfo,IErr, &
              MessageString = "Which is greater than Two Pi, Program will assume this angle is expressed in degrees")
 
-     RAlpha=cela*TWOPI/360.D0;
+     RAlpha=cela*DEG2RADIAN;
   END IF
  
   IF (celb.GT.TWOPI) THEN
@@ -216,7 +216,7 @@ SUBROUTINE ReadCifFile(IErr)
      CALL Message("ReadCIFFile",IMoreInfo,IErr,& 
           MessageString = "Which is greater than Two Pi, Program will assume this angle is expressed in degrees")
  
-     RBeta=celb*TWOPI/360.D0;
+     RBeta=celb*DEG2RADIAN;
   END IF
   IF (celc.GT.TWOPI) THEN
      CALL Message("ReadCIFFile",IMoreInfo,IErr,MessageVariable = "Angle gamma", &
@@ -224,7 +224,7 @@ SUBROUTINE ReadCifFile(IErr)
      CALL Message("ReadCIFFile",IMoreInfo,IErr, &
           MessageString = "Which is greater than Two Pi, Program will assume this angle is expressed in degrees")
   
-     RGamma=celc*TWOPI/360.D0;
+     RGamma=celc*DEG2RADIAN;
   END IF
 
   CALL Message("ReadCIFFile",IInfo,IErr,MessageString = "Angle (radians)")

@@ -324,7 +324,7 @@ SUBROUTINE BlochCoefficientCalculation(IYPixelIndex,IXPixelIndex,IPixelNumber,IF
         DO hnd = 1,nBeams ! Rows
 
            CUgMatEffective(knd,hnd) = CUgMatEffective(knd,hnd) / &
-                (SQRT(1+RGn(IStrongBeamList(knd))/RKn)*SQRT(1+RGn(IStrongBeamList(hnd))/RKn))
+                (SQRT(1+RgVecVec(IStrongBeamList(knd))/RKn)*SQRT(1+RgVecVec(IStrongBeamList(hnd))/RKn))
            
         END DO
      END DO
@@ -382,7 +382,7 @@ SUBROUTINE BlochCoefficientCalculation(IYPixelIndex,IXPixelIndex,IPixelNumber,IF
      CEigenValues = CEigenValues * RKn/RBigK
      DO knd = 1,nBeams
         CEigenVectors(knd,:) = CEigenVectors(knd,:) / &
-             SQRT(1+RGn(IStrongBeamList(knd))/RKn)
+             SQRT(1+RgVecVec(IStrongBeamList(knd))/RKn)
      END DO
   ELSE
      CALL EigenSpectrum(nBeams, &

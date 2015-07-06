@@ -156,10 +156,10 @@ MODULE IPara
 
   INTEGER(IKIND) :: &
        IWriteFLAG,IDebugFLAG,IScatterFactorMethodFLAG, &
-       ICentralBeamFLAG, IMaskFLAG, IVolumeFLAG, &
+       IMaskFLAG, IVolumeFLAG, &
        IZolzFLAG,IAbsorbFLAG, IAnisoDebyeWallerFactorFlag, &
-       IImageFLAG,IOutputFLAG,IBeamConvergenceFLAG,  &
-       IPseudoCubicFLAG,IXDirectionFLAG,IBinorTextFLAG, IDevFLAG, &
+       IImageFLAG,IBeamConvergenceFLAG,  &
+       IPseudoCubicFLAG,IXDirectionFLAG,IDevFLAG, &
        IRefineModeFLAG,ISoftwareMode,IHKLSelectFLAG,IPrint,IRefineSwitch,&
        IWeightingFLAG,IContinueFLAG,ICorrelationFLAG,IImageProcessingFLAG
 
@@ -320,7 +320,7 @@ MODULE RPara
   
   REAL(RKIND) :: &
        RBSMaxDeviationPara, RBSMaxGVecAmp, RBSBethePara, &
-       RConvergenceTolerance,RBSBmax, RBSPMax
+       RBSBmax, RBSPMax
   
   !Crystal Settings
   
@@ -378,7 +378,7 @@ MODULE RPara
   REAL(RKIND) :: &
        RElectronVelocity, RElectronWaveLength, &
        RElectronWaveVectorMagnitude, RRelativisticCorrection, &
-       RRelativisticMass, RBraggCentral
+       RRelativisticMass, RBraggCentral, RAcceptanceAngle
 
   ! Crystallography 
   ! Real Space and Reciprocal Lattice Vectors in Orthogonal and Microscope
@@ -408,7 +408,7 @@ MODULE RPara
        RgVecMag, RSg
   
   REAL(RKIND), DIMENSION(:,:), ALLOCATABLE :: &
-       RgVecMat, RgVecMatT
+       RgVecMat, RgVecMatT, RgVecMagLaueZone
   
   REAL(RKIND), DIMENSION(THREEDIM,THREEDIM) :: &
        RTMat
@@ -420,7 +420,7 @@ MODULE RPara
        RGVector
 
   REAL(RKIND),DIMENSION(:),ALLOCATABLE :: &
-       RGn
+       RgVecVec
 
   !Image Initialisation
   

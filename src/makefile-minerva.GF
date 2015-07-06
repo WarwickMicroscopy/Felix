@@ -17,18 +17,18 @@
 #
 #  This file is part of felixsim+draw.
 #
-#  BlochSim is free software: you can redistribute it and/or modify
+#  felixsim is free software: you can redistribute it and/or modify
 #  it under the terms of the GNU General Public License as published by
 #  the Free Software Foundation, either version 3 of the License, or
 #  (at your option) any later version.
 #  
-#  BlochSim is distributed in the hope that it will be useful,
+#  felixsim is distributed in the hope that it will be useful,
 #  but WITHOUT ANY WARRANTY; without even the implied warranty of
 #  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 #  GNU General Public License for more details.
 #  
 #  You should have received a copy of the GNU General Public License
-#  along with BlochSim.  If not, see <http://www.gnu.org/licenses/>.
+#  along with felixsim.  If not, see <http://www.gnu.org/licenses/>.
 #
 #%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
@@ -53,19 +53,13 @@ LIBFLAGS= \
 
 #LD_LIBRARY_PATH=/hpcwarwick/mathlib/gnu/lib/:$LD_LIBRARY_PATH
 
-SIMOBJECTFILES = gmodules.o smodules.o message.o felixsim.o util.o in.o out.o readinput.o \
+SIMOBJECTFILES = gmodules.o smodules.o message.o errorcodes.o felixsim.o util.o in.o out.o readinput.o \
 readciffile.o experimentalsetup.o imagesetup.o montagesetup.o \
 structurefactorsetup.o ciftbx.o hash_funcs.o eigen.o invert.o microscopy.o \
 diffractionpatterndefinitions.o diffractionpatterninitialisation.o crystallographyinitialisation.o \
 crystallography.o bloch.o Ug.o image.o errorchecks.o writeoutput.o dqng.o xerror.o d1mach.o
 
-DRAWOBJECTFILES = gmodules.o smodules.o felixdraw.o util.o message.o in.o out.o readciffile.o\
-eigen.o invert.o microscopy.o diffractionpatterndefinitions.o diffractionpatterninitialisation.o \
-crystallographyinitialisation.o crystallography.o bloch.o Ug.o image.o errorchecks.o \
-ciftbx.o hash_funcs.o dqng.o xerror.o d1mach.o
-
-
-REFINEOBJECTFILES = gmodules.o smodules.o message.o felixrefine.o util.o in.o out.o readciffile.o \
+REFINEOBJECTFILES = gmodules.o smodules.o message.o errorcodes.o felixrefine.o util.o in.o out.o readciffile.o \
 experimentalsetup.o imagesetup.o montagesetup.o structurefactorsetup.o readinput.o\
 eigen.o invert.o microscopy.o diffractionpatterndefinitions.o diffractionpatterninitialisation.o \
 crystallographyinitialisation.o crystallography.o bloch.o Ug.o image.o ciftbx.o simplex.o\
@@ -100,7 +94,7 @@ felixrefine: $(REFINEOBJECTFILES)
 #	$(F90) -o $@ $(REFINEOBJECTFILES) $(LIBFLAGS)
 
 print:	
-	a2ps -E -o print.ps gmodules.f90 smodules.f90 felixsim.f90 util.f90 \
+	a2ps -E -o print.ps gmodules.f90 smodules.f90 message.f90 errorcodes.f90 felixsim.f90 util.f90 \
 in.f90 out.f90 readinput.f90 readciffile.f90 experimentalsetup.f90 imagesetup.f90 \
 montagesetup.f90 structurefactorsetup.f90 eigen.f90 invert.f90 microscopy.f90 \
 diffraction.f90 diffractionpatterninitialisation.f90 crystallographyinitialisation.f90 \
