@@ -651,8 +651,8 @@ SUBROUTINE CalculateFigureofMeritandDetermineThickness(RSimulatedImages,IThickne
        IThicknessByReflection
   INTEGER(IKIND),INTENT(OUT) :: &
        IThicknessCountFinal
-  REAL(RKIND),DIMENSION(:,:),ALLOCATABLE :: &
-       RSimulatedImageForPhaseCorrelation
+  REAL(RKIND),DIMENSION(2*IPixelCount,2*IPixelCount) :: &
+       RSimulatedImageForPhaseCorrelation,RExperimentalImage
   REAL(RKIND) :: &
        RCrossCorrelationOld,RIndependentCrossCorrelation,RThickness,PhaseCorrelate
   REAL(RKIND),DIMENSION(IReflectOut,IThicknessCount,IPixelTotal) :: &
@@ -665,15 +665,6 @@ SUBROUTINE CalculateFigureofMeritandDetermineThickness(RSimulatedImages,IThickne
   IF((IWriteFLAG.GE.0.AND.my_rank.EQ.0).OR.IWriteFLAG.GE.10) THEN
      PRINT*,"CalculateFigureofMeritandDetermineThickness(",my_rank,")"
   END IF
-
-  ALLOCATE(&
-       RSimulatedImageForPhaseCorrelation(2*IPixelCount,2*IPixelCount),&
-       STAT=IErr)
-  IF( IErr.NE.0 ) THEN
-     PRINT*,"CalculateFigureofMeritandDetermineThickness(", my_rank, ") error ", IErr, &
-          " In ALLOCATE"
-     RETURN
-  ENDIF
 
   RReflectionCrossCorrelations = ZERO
 
@@ -699,16 +690,48 @@ SUBROUTINE CalculateFigureofMeritandDetermineThickness(RSimulatedImages,IThickne
            END DO
         END DO
         
+        SELECT CASE (IImageProcessingFLAG)
+        CASE(0)
+           RExperimentalImage = RImageExpi(:,:,hnd)
+        CASE(1)
+           RSimulatedImageForPhaseCorrelation = &
+                SQRT(RSimulatedImageForPhaseCorrelation)
+           RExperimentalImage = &
+                SQRT(RImageExpi(:,:,hnd))
+        CASE(2)
+           WHERE (RSimulatedImageForPhaseCorrelation.GT.TINY**2)
+              RSimulatedImageForPhaseCorrelation = &
+                   LOG(RSimulatedImageForPhaseCorrelation)
+           ELSEWHERE
+              RSimulatedImageForPhaseCorrelation = &
+                   TINY**2
+           END WHERE
+              
+           WHERE (RExperimentalImage.GT.TINY**2)
+              RExperimentalImage = &
+                   LOG(RImageExpi(:,:,hnd))
+           ELSEWHERE
+              RExperimentalImage = &
+                   TINY**2
+           END WHERE
+              
+        END SELECT
+        
+        
         IF(ICorrelationFLAG.EQ.0) THEN
            
-            RIndependentCrossCorrelation = 1.0_RKIND-PhaseCorrelate(RSimulatedImageForPhaseCorrelation,RImageExpi(:,:,hnd),&
-                IErr,2*IPixelCount,2*IPixelCount)
+            RIndependentCrossCorrelation = &
+                 1.0_RKIND-&
+                 PhaseCorrelate(&
+                 RSimulatedImageForPhaseCorrelation,RExperimentalImage,&
+                 IErr,2*IPixelCount,2*IPixelCount)
+
         ELSE
-           RIndependentCrossCorrelation = ResidualSumofSquares(RSimulatedImageForPhaseCorrelation,RImageExpi(:,:,hnd),IErr)
+           RIndependentCrossCorrelation = &
+                ResidualSumofSquares(&
+                RSimulatedImageForPhaseCorrelation,RImageExpi(:,:,hnd),IErr)
         END IF
-        
-!!$        RIndependentCrossCorrelation = RCrossCorrelation       
-        
+                
         IF(ABS(RIndependentCrossCorrelation).LT.RCrossCorrelationOld) THEN
 
            RCrossCorrelationOld = RIndependentCrossCorrelation
@@ -722,11 +745,9 @@ SUBROUTINE CalculateFigureofMeritandDetermineThickness(RSimulatedImages,IThickne
      
   END DO
 
-!!$  IF(ICorrelationFLAG.EQ.0) THEN
-!!$     RCrossCorrelation = 1.0_RKIND-RCrossCorrelation
-!!$  END IF
-
-  RCrossCorrelation = SUM(RReflectionCrossCorrelations*RWeightingCoefficients)/REAL(IReflectOut,RKIND)
+  RCrossCorrelation = &
+       SUM(RReflectionCrossCorrelations*RWeightingCoefficients)/&
+       REAL(IReflectOut,RKIND)
   
   IThicknessCountFinal = SUM(IThicknessByReflection)/IReflectOut
 
@@ -738,14 +759,6 @@ SUBROUTINE CalculateFigureofMeritandDetermineThickness(RSimulatedImages,IThickne
      PRINT*,"Thickness Final",IThicknessCountFinal
      PRINT*,"Thickness",RThickness
   END IF
-  DEALLOCATE(&
-       RSimulatedImageForPhaseCorrelation,&
-       STAT=IErr)
-  IF( IErr.NE.0 ) THEN
-     PRINT*,"CalculateFigureofMeritandDetermineThickness(", my_rank, ") error ", IErr, &
-          " In DEALLOCATE of RSimulatedImageForPhaseCorrelation"
-     RETURN
-  ENDIF  
   
 END SUBROUTINE CalculateFigureofMeritandDetermineThickness
 
@@ -987,7 +1000,7 @@ SUBROUTINE WriteIterationStructure(path,IErr)
         FILE=TRIM(ADJUSTL(fullpath)))
   
   DO jnd = 1,SIZE(RAtomSiteFracCoordVec,DIM=1)
-     WRITE(IChOutSimplex,FMT='(A2,1X,3(F9.3,1X))') SAtomName(jnd),RAtomSiteFracCoordVec(jnd,:)
+     WRITE(IChOutSimplex,FMT='(A2,1X,3(F9.6,1X))') SAtomName(jnd),RAtomSiteFracCoordVec(jnd,:)
   END DO
   
   CLOSE(IChOutSimplex)
@@ -1003,7 +1016,7 @@ SUBROUTINE WriteIterationStructure(path,IErr)
         FILE=TRIM(ADJUSTL(fullpath)))
   
   DO jnd = 1,SIZE(MNP,DIM=1)
-     WRITE(IChOutSimplex,FMT='(A2,1X,3(F9.3,1X))') SMNP(jnd),MNP(jnd,1:3)
+     WRITE(IChOutSimplex,FMT='(A2,1X,3(F9.6,1X))') SMNP(jnd),MNP(jnd,1:3)
   END DO
   
   CLOSE(IChOutSimplex)
