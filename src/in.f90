@@ -102,11 +102,7 @@ SUBROUTINE ReadInpFile( IErr )
 
   CALL Message ("ReadInpFile",IMust,IErr)
   CALL Message ("ReadInpFile",IInfo,IErr,MessageVariable="IWriteFLAG",IVariable=IWriteFLAG)
-  
-  !IF((IWriteFLAG.GE.1.AND.my_rank.EQ.0).OR.IWriteFLAG.GE.10) THEN
-  !   PRINT*,"IWriteFLAG = ", IWriteFLAG
-  !END IF
-  
+    
   ILine= ILine+1
   READ(IChInp,FMT='(A)',ERR=20,END=30) SImageMode
   IPos = 0
@@ -368,13 +364,6 @@ SUBROUTINE ReadInpFile( IErr )
      SRefineMode = SRefineMode((SCAN(SRefineMode,"=")+1):)
      IRefineModeSelectionArray = 0
 
-!!$     DO ind = 1,IRefinementVariableTypes
-!!$        WRITE(SStringFromNumber,'(I1)') ind-1
-!!$        IF(SCAN(SRefineMode,TRIM(ADJUSTL(SStringFromNumber))).NE.0) THEN
-!!$           IRefineModeSelectionArray(ind) = 1
-!!$        END IF
-!!$     END DO
-
      DO ind = 1,IRefinementVariableTypes
 !!$        PRINT*,CAlphabet(ind),SRefineMode,SCAN(TRIM(ADJUSTL(SRefineMode)),TRIM(ADJUSTL(CAlphabet(ind))))
         IF(SCAN(TRIM(ADJUSTL(SRefineMode)),TRIM(ADJUSTL(CAlphabet(ind)))).NE.0) THEN
@@ -425,8 +414,20 @@ SUBROUTINE ReadInpFile( IErr )
         ELSE
            PRINT*,"IRefineModeSelectionArray = ",IRefineModeSelectionArray
         END IF
-     END IF    
-     
+     END IF
+    
+     !Check if user has requested Ug refinement and anything else which isnt possible
+        
+     IF(IRefineModeSelectionArray(1).EQ.1.AND.SUM(IRefineModeSelectionArray).GT.1) THEN         
+!!$        CALL Message ("ReadInpFile",IMust,IErr,MessageVariable ="Structure factors must be refined seperately")
+        IF(my_rank.EQ.0) THEN
+           PRINT*,"Structure factors must be refined seperately"
+        END IF
+       IErr = 1
+        RETURN
+     END IF
+
+
      ILine= ILine+1
      READ(IChInp,10,ERR=20,END=30) IWeightingFLAG
      CALL Message ("ReadInpFile",IInfo,IErr,MessageVariable ="IWeightingFLAG",IVariable=IWeightingFLAG)
@@ -732,6 +733,8 @@ SUBROUTINE ReadInpFile( IErr )
      PRINT*,"IRefineModeFLAG           = 0"
      PRINT*,"IWeightingFLAG            = 0"
      PRINT*,"IContinueFLAG             = 0"
+     PRINT*,"ICorrelationFLAG          = 0"
+     PRINT*,"IImageProcessingFLAG      = 0"
      PRINT*,""
      PRINT*,"# Debye Waller Factor Iteration"
      PRINT*,""
@@ -936,192 +939,6 @@ SUBROUTINE ReadScaFile( IErr )
   RETURN
 END SUBROUTINE ReadScaFile
   
-!Write out the sample input file, when none provided
-SUBROUTINE WriteOutInputFile (IErr)
-  
-  USE WriteToScreen
-  USE MyNumbers
-  
-  USE IConst
-  USE RConst
-  
-  USE IPara
-  USE RPara
-  USE CPara
-  USE SPara
-  USE IChannels
-
-  USE MPI
-  USE MyMPI
-  
-  IMPLICIT NONE
-
-  INTEGER(IKIND):: IErr
-
-  IF(ISoftwareMode.LT.2) THEN
-
-     CALL Message("WriteOutInputFile",IMust,IErr)
-     
-     OPEN(UNIT= IChInp,FILE= "felix.inp.simdraw_sample",&
-       STATUS= 'UNKNOWN')
-  
-     WRITE(UNIT= IChInp,FMT='(A)') ADJUSTL("# Input file for felixsim/draw/refine version :VERSION: Build :BUILD:")
-     WRITE(UNIT= IChInp,FMT='(A)') ADJUSTL("# ------------------------------------")
-     WRITE(UNIT= IChInp,FMT='(A)') ADJUSTL("")
-     WRITE(UNIT= IChInp,FMT='(A)') ADJUSTL("# ------------------------------------")
-     WRITE(UNIT= IChInp,FMT='(A)') ADJUSTL("# felixsim input")
-     WRITE(UNIT= IChInp,FMT='(A)') ADJUSTL("")
-     WRITE(UNIT= IChInp,FMT='(A)') ADJUSTL("# control flags")
-     WRITE(UNIT= IChInp,FMT='(A)') ADJUSTL("IWriteFLAG                = 1")
-     WRITE(UNIT= IChInp,FMT='(A)') ADJUSTL("IImageFLAG                = 1")
-     WRITE(UNIT= IChInp,FMT='(A)') ADJUSTL("IOutputFLAG               = 0")
-     WRITE(UNIT= IChInp,FMT='(A)') ADJUSTL("IBinorTextFLAG            = 0") 
-     WRITE(UNIT= IChInp,FMT='(A)') ADJUSTL("IScatterFactorMethodFLAG  = 0")
-     WRITE(UNIT= IChInp,FMT='(A)') ADJUSTL("ICentralBeamFLAG          = 1")
-     WRITE(UNIT= IChInp,FMT='(A)') ADJUSTL("IMaskFLAG                 = 0")
-     WRITE(UNIT= IChInp,FMT='(A)') ADJUSTL("IZolzFLAG                 = 1")
-     WRITE(UNIT= IChInp,FMT='(A)') ADJUSTL("IAbsorbFLAG               = 1")
-     WRITE(UNIT= IChInp,FMT='(A)') ADJUSTL("IAnisoDebyeWallerFlag     = 0")
-     WRITE(UNIT= IChInp,FMT='(A)') ADJUSTL("IBeamConvergenceFLAG      = 1")
-     WRITE(UNIT= IChInp,FMT='(A)') ADJUSTL("IPseudoCubicFLAG          = 0")
-     WRITE(UNIT= IChInp,FMT='(A)') ADJUSTL("IXDirectionFLAG           = 1")
-     WRITE(UNIT= IChInp,FMT='(A)') ADJUSTL("")
-     WRITE(UNIT= IChInp,FMT='(A)') ADJUSTL("# radius of the beam in pixels")
-     WRITE(UNIT= IChInp,FMT='(A)') ADJUSTL("IPixelCount               = 64")
-     WRITE(UNIT= IChInp,FMT='(A)') ADJUSTL("")
-     WRITE(UNIT= IChInp,FMT='(A)') ADJUSTL("# beam selection criteria")
-     WRITE(UNIT= IChInp,FMT='(A)') ADJUSTL("IMinReflectionPool        = 600")
-     WRITE(UNIT= IChInp,FMT='(A)') ADJUSTL("IMinStrongBeams           = 125")
-     WRITE(UNIT= IChInp,FMT='(A)') ADJUSTL("IMinWeakBeams             = 20")
-     WRITE(UNIT= IChInp,FMT='(A)') ADJUSTL("RBSBMax                   = 0.1")
-     WRITE(UNIT= IChInp,FMT='(A)') ADJUSTL("RBSPMax                   = 0.1")
-     WRITE(UNIT= IChInp,FMT='(A)') ADJUSTL("RConvergenceTolerance (%) = 1.0")
-     WRITE(UNIT= IChInp,FMT='(A)') ADJUSTL("")
-     WRITE(UNIT= IChInp,FMT='(A)') ADJUSTL("# crystal settings")
-     WRITE(UNIT= IChInp,FMT='(A)') ADJUSTL("RDebyeWallerConstant      = 0.4668")
-     WRITE(UNIT= IChInp,FMT='(A)') ADJUSTL("RAbsorptionPer            = 2.9")
-     WRITE(UNIT= IChInp,FMT='(A)') ADJUSTL("")
-     WRITE(UNIT= IChInp,FMT='(A)') ADJUSTL("# microscope settings")
-     WRITE(UNIT= IChInp,FMT='(A)') ADJUSTL("ROuterConvergenceAngle    = 6.0") 
-     WRITE(UNIT= IChInp,FMT='(A)') ADJUSTL("RInnerConvergenceAngle    = 0.0")
-     WRITE(UNIT= IChInp,FMT='(A)') ADJUSTL("IIncidentBeamDirectionX   = 0")
-     WRITE(UNIT= IChInp,FMT='(A)') ADJUSTL("IIncidentBeamDirectionY   = 1")
-     WRITE(UNIT= IChInp,FMT='(A)') ADJUSTL("IIncidentBeamDirectionZ   = 1")
-     WRITE(UNIT= IChInp,FMT='(A)') ADJUSTL("IXDirectionX              = 1")
-     WRITE(UNIT= IChInp,FMT='(A)') ADJUSTL("IXDirectionY              = 0")
-     WRITE(UNIT= IChInp,FMT='(A)') ADJUSTL("IXDirectionZ              = 0")
-     WRITE(UNIT= IChInp,FMT='(A)') ADJUSTL("INormalDirectionX         = 0")
-     WRITE(UNIT= IChInp,FMT='(A)') ADJUSTL("INormalDirectionY         = 1")
-     WRITE(UNIT= IChInp,FMT='(A)') ADJUSTL("INormalDirectionZ         = 1")
-     WRITE(UNIT= IChInp,FMT='(A)') ADJUSTL("RAcceleratingVoltage (kV) = 200.0")
-     WRITE(UNIT= IChInp,FMT='(A)') ADJUSTL("")
-     WRITE(UNIT= IChInp,FMT='(A)') ADJUSTL("# Image Output Options")
-     WRITE(UNIT= IChInp,FMT='(A)') ADJUSTL("")
-     WRITE(UNIT= IChInp,FMT='(A)') ADJUSTL("RInitialThickness        = 300.0")
-     WRITE(UNIT= IChInp,FMT='(A)') ADJUSTL("RFinalThickness          = 1300.0")
-     WRITE(UNIT= IChInp,FMT='(A)') ADJUSTL("RDeltaThickness          = 10.0")
-     WRITE(UNIT= IChInp,FMT='(A)') ADJUSTL("IReflectOut              = 49")
-     WRITE(UNIT= IChInp,FMT='(A)') ADJUSTL("")
-  ELSE
-     
-     OPEN(UNIT= IChInp,FILE= "felix.inp.refine_sample",&
-       STATUS= 'UNKNOWN')
-  
-  
-     WRITE(UNIT= IChInp,FMT='(A)') ADJUSTL("# Input file for felixsim/draw/refine version :VERSION: Build :BUILD:")
-     WRITE(UNIT= IChInp,FMT='(A)') ADJUSTL("# ------------------------------------")
-     WRITE(UNIT= IChInp,FMT='(A)') ADJUSTL("")
-     WRITE(UNIT= IChInp,FMT='(A)') ADJUSTL("# ------------------------------------")
-     WRITE(UNIT= IChInp,FMT='(A)') ADJUSTL("# felixsim input")
-     WRITE(UNIT= IChInp,FMT='(A)') ADJUSTL("")
-     WRITE(UNIT= IChInp,FMT='(A)') ADJUSTL("# control flags")
-     WRITE(UNIT= IChInp,FMT='(A)') ADJUSTL("IWriteFLAG                = 1")
-     WRITE(UNIT= IChInp,FMT='(A)') ADJUSTL("IImageFLAG                = 1")
-     WRITE(UNIT= IChInp,FMT='(A)') ADJUSTL("IOutputFLAG               = 0")
-     WRITE(UNIT= IChInp,FMT='(A)') ADJUSTL("IBinorTextFLAG            = 0") 
-     WRITE(UNIT= IChInp,FMT='(A)') ADJUSTL("IScatterFactorMethodFLAG  = 0")
-     WRITE(UNIT= IChInp,FMT='(A)') ADJUSTL("ICentralBeamFLAG          = 1")
-     WRITE(UNIT= IChInp,FMT='(A)') ADJUSTL("IMaskFLAG                 = 1")
-     WRITE(UNIT= IChInp,FMT='(A)') ADJUSTL("IZolzFLAG                 = 1")
-     WRITE(UNIT= IChInp,FMT='(A)') ADJUSTL("IAbsorbFLAG               = 1")
-     WRITE(UNIT= IChInp,FMT='(A)') ADJUSTL("IAnisoDebyeWallerFlag     = 0")
-     WRITE(UNIT= IChInp,FMT='(A)') ADJUSTL("IBeamConvergenceFLAG      = 1")
-     WRITE(UNIT= IChInp,FMT='(A)') ADJUSTL("IPseudoCubicFLAG          = 0")
-     WRITE(UNIT= IChInp,FMT='(A)') ADJUSTL("IXDirectionFLAG           = 0")
-     WRITE(UNIT= IChInp,FMT='(A)') ADJUSTL("")
-     WRITE(UNIT= IChInp,FMT='(A)') ADJUSTL("# radius of the beam in pixels")
-     WRITE(UNIT= IChInp,FMT='(A)') ADJUSTL("IPixelCount               = 16")
-     WRITE(UNIT= IChInp,FMT='(A)') ADJUSTL("")
-     WRITE(UNIT= IChInp,FMT='(A)') ADJUSTL("# beam selection criteria")
-     WRITE(UNIT= IChInp,FMT='(A)') ADJUSTL("IMinReflectionPool        = 600")
-     WRITE(UNIT= IChInp,FMT='(A)') ADJUSTL("IMinStrongBeams           = 200")
-     WRITE(UNIT= IChInp,FMT='(A)') ADJUSTL("IMinWeakBeams             = 0")
-     WRITE(UNIT= IChInp,FMT='(A)') ADJUSTL("RBSBMax                   = 0.1")
-     WRITE(UNIT= IChInp,FMT='(A)') ADJUSTL("RBSPMax                   = 0.1")
-     WRITE(UNIT= IChInp,FMT='(A)') ADJUSTL("RConvergenceTolerance (%) = 1.0")
-     WRITE(UNIT= IChInp,FMT='(A)') ADJUSTL("")
-     WRITE(UNIT= IChInp,FMT='(A)') ADJUSTL("# crystal settings")
-     WRITE(UNIT= IChInp,FMT='(A)') ADJUSTL("RDebyeWallerConstant      = 0.4668")
-     WRITE(UNIT= IChInp,FMT='(A)') ADJUSTL("RAbsorptionPer            = 2.9")
-     WRITE(UNIT= IChInp,FMT='(A)') ADJUSTL("")
-     WRITE(UNIT= IChInp,FMT='(A)') ADJUSTL("# microscope settings")
-     WRITE(UNIT= IChInp,FMT='(A)') ADJUSTL("ROuterConvergenceAngle    = 6.0")
-     WRITE(UNIT= IChInp,FMT='(A)') ADJUSTL("RInnerConvergenceAngle    = 0.0")
-     WRITE(UNIT= IChInp,FMT='(A)') ADJUSTL("IIncidentBeamDirectionX   = 0")
-     WRITE(UNIT= IChInp,FMT='(A)') ADJUSTL("IIncidentBeamDirectionY   = 1")
-     WRITE(UNIT= IChInp,FMT='(A)') ADJUSTL("IIncidentBeamDirectionZ   = 1")
-     WRITE(UNIT= IChInp,FMT='(A)') ADJUSTL("IXDirectionX              = 1")
-     WRITE(UNIT= IChInp,FMT='(A)') ADJUSTL("IXDirectionY              = 0")
-     WRITE(UNIT= IChInp,FMT='(A)') ADJUSTL("IXDirectionZ              = 0")
-     WRITE(UNIT= IChInp,FMT='(A)') ADJUSTL("INormalDirectionX         = 0")
-     WRITE(UNIT= IChInp,FMT='(A)') ADJUSTL("INormalDirectionY         = 1")
-     WRITE(UNIT= IChInp,FMT='(A)') ADJUSTL("INormalDirectionZ         = 1")
-     WRITE(UNIT= IChInp,FMT='(A)') ADJUSTL("RAcceleratingVoltage (kV) = 200.0")
-     WRITE(UNIT= IChInp,FMT='(A)') ADJUSTL("")
-     WRITE(UNIT= IChInp,FMT='(A)') ADJUSTL("# Image Output Options")
-     WRITE(UNIT= IChInp,FMT='(A)') ADJUSTL("")
-     WRITE(UNIT= IChInp,FMT='(A)') ADJUSTL("RInitialThickness        = 400.0")
-     WRITE(UNIT= IChInp,FMT='(A)') ADJUSTL("RFinalThickness          = 700.0")
-     WRITE(UNIT= IChInp,FMT='(A)') ADJUSTL("RDeltaThickness          = 10.0")
-     WRITE(UNIT= IChInp,FMT='(A)') ADJUSTL("IReflectOut              = 1")
-     WRITE(UNIT= IChInp,FMT='(A)') ADJUSTL("")
-     WRITE(UNIT= IChInp,FMT='(A)') ADJUSTL("# felixrefine Input")
-     WRITE(UNIT= IChInp,FMT='(A)') ADJUSTL("")
-     WRITE(UNIT= IChInp,FMT='(A)') ADJUSTL("#Refinement Specific Flags")
-     WRITE(UNIT= IChInp,FMT='(A)') ADJUSTL("IRefineModeFLAG          = 0")
-     WRITE(UNIT= IChInp,FMT='(A)') ADJUSTL("IWeightingFLAG           = 0")
-     WRITE(UNIT= IChInp,FMT='(A)') ADJUSTL("IContinueFLAG            = 0")
-     WRITE(UNIT= IChInp,FMT='(A)') ADJUSTL("")
-     WRITE(UNIT= IChInp,FMT='(A)') ADJUSTL("# Debye Waller Factor Iteration")
-     WRITE(UNIT= IChInp,FMT='(A)') ADJUSTL("")
-     WRITE(UNIT= IChInp,FMT='(A)') ADJUSTL("RInitialDebyeWallerFactor = 0.1")
-     WRITE(UNIT= IChInp,FMT='(A)') ADJUSTL("RFinalDebyeWallerFactor = 1.0")
-     WRITE(UNIT= IChInp,FMT='(A)') ADJUSTL("RDeltaDebyeWallerFactor = 0.1")
-     WRITE(UNIT= IChInp,FMT='(A)') ADJUSTL("IElementsforDWFchange = {0}")
-     WRITE(UNIT= IChInp,FMT='(A)') ADJUSTL("")
-     WRITE(UNIT= IChInp,FMT='(A)') ADJUSTL("# Ug Iteration")
-     WRITE(UNIT= IChInp,FMT='(A)') ADJUSTL("INoofUgs                  = 10")
-     WRITE(UNIT= IChInp,FMT='(A)') ADJUSTL("RLowerBoundUgChange       = 50.0")
-     WRITE(UNIT= IChInp,FMT='(A)') ADJUSTL("RUpperBoundUgChange       = 50.0")
-     WRITE(UNIT= IChInp,FMT='(A)') ADJUSTL("RDeltaUgChange            = 50.0")
-     WRITE(UNIT= IChInp,FMT='(A)') ADJUSTL("")
-     WRITE(UNIT= IChInp,FMT='(A)') ADJUSTL("# Structural Refinement")
-     WRITE(UNIT= IChInp,FMT='(A)') ADJUSTL("")
-     WRITE(UNIT= IChInp,FMT='(A)') ADJUSTL("IAtomicSites              = (1,2,6)")
-     WRITE(UNIT= IChInp,FMT='(A)') ADJUSTL("")
-     WRITE(UNIT= IChInp,FMT='(A)') ADJUSTL("# Refinement Output")
-     WRITE(UNIT= IChInp,FMT='(A)') ADJUSTL("")
-     WRITE(UNIT= IChInp,FMT='(A)') ADJUSTL("IPrint                    = 10")
-     WRITE(UNIT= IChInp,FMT='(A)') ADJUSTL("")
-     WRITE(UNIT= IChInp,FMT='(A)') ADJUSTL("# Simplex Initialisation")
-     WRITE(UNIT= IChInp,FMT='(A)') ADJUSTL("")
-     WRITE(UNIT= IChInp,FMT='(A)') ADJUSTL("RSimplexLengthScale       = 5.0")
-     WRITE(UNIT= IChInp,FMT='(A)') ADJUSTL("")
-  CLOSE(UNIT=IChInp)
-END IF
-
-END SUBROUTINE WriteOutInputFile
-
 SUBROUTINE ReadHklFile(IErr)
 
   USE WriteToScreen
