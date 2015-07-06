@@ -119,14 +119,17 @@ SUBROUTINE FelixFunction(RIndependentVariableValues,IIterationCount,IErr)
      IAbsorbFLAG = 1
 
   END IF
-
-  CALL ApplyNewStructureFactors(IErr)
-  IF( IErr.NE.0 ) THEN
-     PRINT*,"Felixfunction(", my_rank, ") error ", IErr, &
-          " in ApplyNewStructureFactors()"
-     RETURN
-  ENDIF
-
+  
+  IF(IRefineModeSelectionArray(1).EQ.1) THEN
+     
+     CALL ApplyNewStructureFactors(IErr)
+     IF( IErr.NE.0 ) THEN
+        PRINT*,"Felixfunction(", my_rank, ") error ", IErr, &
+             " in ApplyNewStructureFactors()"
+        RETURN
+     ENDIF
+     
+  END IF
 
   IF(IAbsorbFLAG.NE.0) THEN
      
@@ -157,15 +160,6 @@ SUBROUTINE FelixFunction(RIndependentVariableValues,IIterationCount,IErr)
      ENDIF
      
   END IF     
-
-  Deallocate( &
-       RgMatMat,RgMatMag,STAT=IErr)
-  IF( IErr.NE.0 ) THEN
-     PRINT*,"Felixfunction(", my_rank, ") error ", IErr, &
-          " in Deallocation of RgMat"
-     RETURN
-  ENDIF
-
   !--------------------------------------------------------------------
   ! reserve memory for effective eigenvalue problem
   !--------------------------------------------------------------------
@@ -259,15 +253,6 @@ SUBROUTINE FelixFunction(RIndependentVariableValues,IIterationCount,IErr)
 
   IMAXCBuffer = 200000
   IPixelComputed= 0
-  
-  DEALLOCATE( &
-       RrVecMat, Rsg, &
-       STAT=IErr)
-  IF( IErr.NE.0 ) THEN
-     PRINT*,"Felixfunction(", my_rank, ") error ", IErr, &
-          " in DEALLOCATE() "
-     RETURN
-  ENDIF
   
   IF((IWriteFLAG.GE.0.AND.my_rank.EQ.0).OR.IWriteFLAG.GE.6) THEN
      PRINT*,"Felixfunction(",my_rank,") Entering BlochLoop()"
@@ -662,34 +647,29 @@ SUBROUTINE CalculateFigureofMeritandDetermineThickness(RSimulatedImages,IThickne
 
   INTEGER(IKIND) :: &
        ind,jnd,knd,IErr,ICountedPixels,IThickness,hnd
+  INTEGER(IKIND),DIMENSION(IReflectOut) :: &
+       IThicknessByReflection
   INTEGER(IKIND),INTENT(OUT) :: &
        IThicknessCountFinal
-  REAL(RKIND),DIMENSION(:,:),ALLOCATABLE :: &
-       RSimulatedImageForPhaseCorrelation
+  REAL(RKIND),DIMENSION(2*IPixelCount,2*IPixelCount) :: &
+       RSimulatedImageForPhaseCorrelation,RExperimentalImage
   REAL(RKIND) :: &
-       RCrossCorrelationOld,RIndependentCrossCorrelation,RThickness
+       RCrossCorrelationOld,RIndependentCrossCorrelation,RThickness,PhaseCorrelate
   REAL(RKIND),DIMENSION(IReflectOut,IThicknessCount,IPixelTotal) :: &
        RSimulatedImages
   REAL(RKIND),DIMENSION(IReflectOut) :: &
        RReflectionCrossCorrelations
+  REAL(RKIND) :: &
+       ResidualSumofSquares
   
   IF((IWriteFLAG.GE.0.AND.my_rank.EQ.0).OR.IWriteFLAG.GE.10) THEN
      PRINT*,"CalculateFigureofMeritandDetermineThickness(",my_rank,")"
   END IF
 
-  ALLOCATE(&
-       RSimulatedImageForPhaseCorrelation(2*IPixelCount,2*IPixelCount),&
-       STAT=IErr)
-  IF( IErr.NE.0 ) THEN
-     PRINT*,"CalculateFigureofMeritandDetermineThickness(", my_rank, ") error ", IErr, &
-          " In ALLOCATE"
-     RETURN
-  ENDIF
-
   RReflectionCrossCorrelations = ZERO
 
   DO hnd = 1,IReflectOut
-     RCrossCorrelationOld = ZERO
+     RCrossCorrelationOld = 1.0E15 !A large Number
      RThickness = ZERO
      DO ind = 1,IThicknessCount
         
@@ -709,36 +689,76 @@ SUBROUTINE CalculateFigureofMeritandDetermineThickness(RSimulatedImages,IThickne
               END IF
            END DO
         END DO
-
-        CALL PhaseCorrelate(RSimulatedImageForPhaseCorrelation,RImageExpi(:,:,hnd),&
-             IErr,2*IPixelCount,2*IPixelCount)
-        RIndependentCrossCorrelation = RCrossCorrelation       
         
-        IF(RIndependentCrossCorrelation.GT.RCrossCorrelationOld) THEN
+        SELECT CASE (IImageProcessingFLAG)
+        CASE(0)
+           RExperimentalImage = RImageExpi(:,:,hnd)
+        CASE(1)
+           RSimulatedImageForPhaseCorrelation = &
+                SQRT(RSimulatedImageForPhaseCorrelation)
+           RExperimentalImage = &
+                SQRT(RImageExpi(:,:,hnd))
+        CASE(2)
+           WHERE (RSimulatedImageForPhaseCorrelation.GT.TINY**2)
+              RSimulatedImageForPhaseCorrelation = &
+                   LOG(RSimulatedImageForPhaseCorrelation)
+           ELSEWHERE
+              RSimulatedImageForPhaseCorrelation = &
+                   TINY**2
+           END WHERE
+              
+           WHERE (RExperimentalImage.GT.TINY**2)
+              RExperimentalImage = &
+                   LOG(RImageExpi(:,:,hnd))
+           ELSEWHERE
+              RExperimentalImage = &
+                   TINY**2
+           END WHERE
+              
+        END SELECT
+        
+        
+        IF(ICorrelationFLAG.EQ.0) THEN
+           
+            RIndependentCrossCorrelation = &
+                 1.0_RKIND-&
+                 PhaseCorrelate(&
+                 RSimulatedImageForPhaseCorrelation,RExperimentalImage,&
+                 IErr,2*IPixelCount,2*IPixelCount)
+
+        ELSE
+           RIndependentCrossCorrelation = &
+                ResidualSumofSquares(&
+                RSimulatedImageForPhaseCorrelation,RImageExpi(:,:,hnd),IErr)
+        END IF
+                
+        IF(ABS(RIndependentCrossCorrelation).LT.RCrossCorrelationOld) THEN
 
            RCrossCorrelationOld = RIndependentCrossCorrelation
 
-           RThickness = RInitialThickness + (ind-1)*RDeltaThickness 
-
-           IThicknessCountFinal = ind
+           IThicknessByReflection(hnd) = ind
 
         END IF
      END DO
      
      RReflectionCrossCorrelations(hnd) = RCrossCorrelationOld
-
+     
   END DO
 
-  RCrossCorrelation = SUM(RReflectionCrossCorrelations*RWeightingCoefficients)/REAL(IReflectOut,RKIND)
+  RCrossCorrelation = &
+       SUM(RReflectionCrossCorrelations*RWeightingCoefficients)/&
+       REAL(IReflectOut,RKIND)
+  
+  IThicknessCountFinal = SUM(IThicknessByReflection)/IReflectOut
 
-  DEALLOCATE(&
-       RSimulatedImageForPhaseCorrelation,&
-       STAT=IErr)
-  IF( IErr.NE.0 ) THEN
-     PRINT*,"CalculateFigureofMeritandDetermineThickness(", my_rank, ") error ", IErr, &
-          " In DEALLOCATE of RSimulatedImageForPhaseCorrelation"
-     RETURN
-  ENDIF  
+  RThickness = RInitialThickness + (IThicknessCountFinal-1)*RDeltaThickness 
+
+  IF(my_rank.eq.0) THEN
+     PRINT*,"Thicknesses",IThicknessByReflection
+     PRINT*,"Correlation",RCrossCorrelation
+     PRINT*,"Thickness Final",IThicknessCountFinal
+     PRINT*,"Thickness",RThickness
+  END IF
   
 END SUBROUTINE CalculateFigureofMeritandDetermineThickness
 
@@ -790,16 +810,23 @@ REAL(RKIND) FUNCTION SimplexFunction(RIndependentVariableValues,IIterationCount,
      RETURN
   ENDIF
   
+  WHERE(RAtomSiteFracCoordVec.LT.0) RAtomSiteFracCoordVec=RAtomSiteFracCoordVec+ONE
+  WHERE(RAtomSiteFracCoordVec.GT.1) RAtomSiteFracCoordVec=RAtomSiteFracCoordVec-ONE
+  
   IF (my_rank.EQ.0) THEN
      CALL PrintVariables(IErr)
   END IF
-
-  CALL UpdateStructureFactors(RIndependentVariableValues,IErr)
-  IF( IErr.NE.0 ) THEN
-     PRINT*,"SimplexFunction(", my_rank, ") error ", IErr, &
-          " in UpdateStructureFactors"
-     RETURN
-  ENDIF
+  
+  IF(IRefineModeSelectionArray(1).EQ.1) THEN
+     
+     CALL UpdateStructureFactors(RIndependentVariableValues,IErr)
+     IF( IErr.NE.0 ) THEN
+        PRINT*,"SimplexFunction(", my_rank, ") error ", IErr, &
+             " in UpdateStructureFactors"
+        RETURN
+     ENDIF
+     
+  END IF
 
   CALL FelixFunction(RIndependentVariableValues,IIterationCount,IErr) ! Simulate !!  
   IF( IErr.NE.0 ) THEN
@@ -842,73 +869,11 @@ REAL(RKIND) FUNCTION SimplexFunction(RIndependentVariableValues,IIterationCount,
         RETURN
      ENDIF
      
-!!$     OUTPUT AN IMAGE -------------------------------------
+!!$     OUTPUT -------------------------------------
      
-     IF(IExitFLAG.EQ.1.OR.(IIterationCount.GE.(IPreviousPrintedIteration+IPrint))) THEN
-        PRINT*,"I am Printing Because IExitFLAG = ",IExitFLAG,"and im",&
-             IIterationCount-IPreviousPrintedIteration,"Iterations from my last print"
-        IPreviousPrintedIteration = IIterationCount
-        IThickness = RInitialThickness + (IThicknessIndex-1)*RDeltaThickness 
-
-        ALLOCATE( &
-             RImage(2*IPixelCount,2*IPixelCount), &
-             STAT=IErr)
-        IF( IErr.NE.0 ) THEN
-           PRINT*,"WriteOutput(", my_rank, ") error ", IErr, &
-                " in ALLOCATE() of DYNAMIC variables RImage"
-           RETURN
-        ENDIF
-                
-        WRITE(path,"(A2,A1,I1.1,A2,I1.1,A2,I1.1,A2,I4.4,A2,I5.5,A10,I5.5)") &
-             "F-",&
-             "S", IScatterFactorMethodFLAG, &
-             "_M", IMaskFLAG, &
-             "_P", IPixelCount, &
-             "_T", IThickness, &
-             "_Iteration",IIterationCount
-        
-        call system('mkdir ' // path)
-        
-        DO ind = 1,IReflectOut
-           CALL OpenReflectionImage(IChOutWIImage,path,IErr,ind,2*IPixelCount,2_IKIND)
-           IF( IErr.NE.0 ) THEN
-              PRINT*,"WriteOutput(", my_rank, ") error in OpenReflectionImage()"
-              RETURN
-           ENDIF
-           
-           RImage = ZERO
-           DO jnd = 1,IPixelTotal
-              gnd = IPixelLocations(jnd,1)
-              hnd = IPixelLocations(jnd,2)
-              RImage(gnd,hnd) = RIndividualReflections(ind,IThicknessIndex,jnd)
-           END DO
-           
-           CALL WriteReflectionImage(IChOutWIImage,&
-                RImage,IErr,2*IPixelCount,2*IPixelCount,2_IKIND)       
-           IF( IErr.NE.0 ) THEN
-              PRINT*,"WriteOutput(", my_rank, ") error in WriteReflectionImage()"
-              RETURN
-           ENDIF
-
-           CLOSE(IChOutWIImage,IOSTAT=IErr)       
-           IF( IErr.NE.0 ) THEN
-              PRINT*,"WriteOutput(", my_rank, ") error Closing Reflection Image()"
-              RETURN
-           ENDIF
-
-        END DO
-        
-        DEALLOCATE( &
-             RImage, &
-             STAT=IErr)
-        IF( IErr.NE.0 ) THEN
-           PRINT*,"WriteOutput(", my_rank, ") error ", IErr, &
-                " in DEALLOCATE() of DYNAMIC variables RImage"
-           RETURN
-        ENDIF
-     END IF
+     CALL WriteIterationOutput(IIterationCount,IThicknessIndex,IExitFLAG,IErr)
      
-!!$     FINISH OUT PUTTING IMAGE --------------------------------
+!!$     FINISH OUTPUT  --------------------------------
      
      DEALLOCATE( &
           RIndividualReflections,&
@@ -928,20 +893,325 @@ REAL(RKIND) FUNCTION SimplexFunction(RIndependentVariableValues,IIterationCount,
         RETURN
      ENDIF
      
-     SimplexFunction = 1.0_RKIND-RCrossCorrelation
+     SimplexFunction = RCrossCorrelation
      
   END IF
-    
+  
   DEALLOCATE( &
-     Rhkl,&
-     STAT=IErr)
+       Rhkl,&
+       STAT=IErr)
   IF( IErr.NE.0 ) THEN
-     PRINT*,"Felixfunction(", my_rank, ") error ", IErr, &
+     PRINT*,"SimplexFunction(", my_rank, ") error ", IErr, &
           " in Deallocation Rhkl"
      RETURN
   ENDIF
-
+     
 END FUNCTION SimplexFunction
+
+SUBROUTINE WriteIterationOutput(IIterationCount,IThicknessIndex,IExitFlag,IErr)
+
+  USE MyNumbers
+  
+  USE CConst; USE IConst; USE RConst
+  USE IPara; USE RPara; USE SPara; USE CPara
+  USE BlochPara
+
+  USE IChannels
+
+  USE MPI
+  USE MyMPI
+
+  IMPLICIT NONE
+
+  INTEGER(IKIND) :: &
+       IErr,IIterationCount,IThickness
+  INTEGER(IKIND),INTENT(IN) :: &
+       IThicknessIndex,IExitFLAG
+  CHARACTER*200 :: &
+       path
+  
+  IF(IExitFLAG.EQ.1.OR.(IIterationCount.GE.(IPreviousPrintedIteration+IPrint))) THEN
+     
+
+     IThickness = RInitialThickness + (IThicknessIndex-1)*RDeltaThickness 
+     
+     
+     WRITE(path,"(A2,I1.1,I1.1,I1.1,I1.1,A2,I5.5,A2,I5.5,A2,I5.5,A10,I5.5)") &
+          "f-",&
+          IScatterFactorMethodFLAG, &
+          IZolzFLAG, &
+          IAbsorbFLAG, &
+          IAnisoDebyeWallerFactorFlag,&
+          "-T",IThickness,&
+          "-P",2*IPixelcount,&
+          "-P",2*IPixelcount,&
+          "_Iteration",IIterationCount
+     
+     call system('mkdir ' // path)
+     
+     PRINT*,"I am Printing Because IExitFLAG = ",IExitFLAG,"and im",&
+          IIterationCount-IPreviousPrintedIteration,"Iterations from my last print"
+     
+     IPreviousPrintedIteration = IIterationCount
+     
+     CALL WriteIterationImages(path,IThicknessIndex,IErr)
+     
+     DEALLOCATE( &
+          Rhkl,&
+          STAT=IErr)
+     IF( IErr.NE.0 ) THEN
+        PRINT*,"WriteIterationOutput(", my_rank, ") error ", IErr, &
+             " in Deallocation Rhkl"
+        RETURN
+     ENDIF
+
+     CALL WriteIterationStructure(path,IErr)  
+  ELSE
+
+  END IF
+     
+END SUBROUTINE WriteIterationOutput
+
+SUBROUTINE WriteIterationStructure(path,IErr)
+
+  USE MyNumbers
+  
+  USE CConst; USE IConst; USE RConst
+  USE IPara; USE RPara; USE SPara; USE CPara
+  USE BlochPara
+
+  USE IChannels
+
+  USE MPI
+  USE MyMPI
+
+  IMPLICIT NONE
+
+  INTEGER(IKIND) :: &
+       IErr,jnd
+  CHARACTER*200,INTENT(IN) :: &
+       path
+  CHARACTER*200 :: &
+       SPrintString,filename,fullpath
+
+!!$  Write out non symmetrically related atomic positions
+
+  WRITE(filename,*) "StructureCif.txt"
+  WRITE(fullpath,*) TRIM(ADJUSTL(path)),'/',TRIM(ADJUSTL(filename))
+
+  OPEN(UNIT=IChOutSimplex,STATUS='UNKNOWN',&
+        FILE=TRIM(ADJUSTL(fullpath)))
+  
+  DO jnd = 1,SIZE(RAtomSiteFracCoordVec,DIM=1)
+     WRITE(IChOutSimplex,FMT='(A2,1X,3(F9.6,1X))') SAtomName(jnd),RAtomSiteFracCoordVec(jnd,:)
+  END DO
+  
+  CLOSE(IChOutSimplex)
+
+!!$  Write out full atomic positions
+
+  CALL ExperimentalSetup(IErr)
+
+  WRITE(filename,*) "StructureFull.txt"
+  WRITE(fullpath,*) TRIM(ADJUSTL(path)),'/',TRIM(ADJUSTL(filename))
+
+  OPEN(UNIT=IChOutSimplex,STATUS='UNKNOWN',&
+        FILE=TRIM(ADJUSTL(fullpath)))
+  
+  DO jnd = 1,SIZE(MNP,DIM=1)
+     WRITE(IChOutSimplex,FMT='(A2,1X,3(F9.6,1X))') SMNP(jnd),MNP(jnd,1:3)
+  END DO
+  
+  CLOSE(IChOutSimplex)
+  
+  DEALLOCATE( &
+       MNP,&
+       STAT=IErr)
+  IF( IErr.NE.0 ) THEN
+     PRINT*,"WriteIterationStructure(", my_rank, ") error ", IErr, &
+          " in Deallocation MNP"
+     RETURN
+  ENDIF
+      
+  DEALLOCATE( &
+        SMNP, &
+       STAT=IErr)
+  IF( IErr.NE.0 ) THEN
+     PRINT*,"WriteIterationStructure(", my_rank, ") error ", IErr, &
+          " in Deallocation SMNP"
+     RETURN
+  ENDIF
+       
+  DEALLOCATE( &
+       RFullAtomicFracCoordVec, &
+       STAT=IErr)
+  IF( IErr.NE.0 ) THEN
+     PRINT*,"WriteIterationStructure(", my_rank, ") error ", IErr, &
+          " in Deallocation RFullAtomicFracCoordVec"
+     RETURN
+  ENDIF
+       
+  DEALLOCATE( &
+       SFullAtomicNameVec,&
+       STAT=IErr)
+  IF( IErr.NE.0 ) THEN
+     PRINT*,"WriteIterationStructure(", my_rank, ") error ", IErr, &
+          " in Deallocation SFullAtomicNameVec"
+     RETURN
+  ENDIF
+       
+  DEALLOCATE( &
+       IFullAnisotropicDWFTensor,&
+       STAT=IErr)
+  IF( IErr.NE.0 ) THEN
+     PRINT*,"WriteIterationStructure(", my_rank, ") error ", IErr, &
+          " in Deallocation IFullAnisotropicDWFTensor"
+     RETURN
+  ENDIF
+       
+  DEALLOCATE( &
+       IFullAtomNumber,&
+       STAT=IErr)
+  IF( IErr.NE.0 ) THEN
+     PRINT*,"WriteIterationStructure(", my_rank, ") error ", IErr, &
+          " in Deallocation IFullAtomNumber"
+     RETURN
+  ENDIF
+       
+  DEALLOCATE( &
+       RFullIsotropicDebyeWallerFactor,&
+       STAT=IErr)
+  IF( IErr.NE.0 ) THEN
+     PRINT*,"WriteIterationStructure(", my_rank, ") error ", IErr, &
+          " in Deallocation RFullIsotropicDebyeWallerFactor"
+     RETURN
+  ENDIF
+       
+  DEALLOCATE( &
+       RFullPartialOccupancy,&
+       STAT=IErr)
+  IF( IErr.NE.0 ) THEN
+     PRINT*,"WriteIterationStructure(", my_rank, ") error ", IErr, &
+          " in Deallocation RFullPartialOccupancy"
+     RETURN
+  ENDIF
+       
+  DEALLOCATE( &
+       RDWF,&
+       STAT=IErr)
+  IF( IErr.NE.0 ) THEN
+     PRINT*,"WriteIterationStructure(", my_rank, ") error ", IErr, &
+          " in Deallocation RDWF"
+     RETURN
+  ENDIF
+       
+  DEALLOCATE( &
+       ROcc,&
+       STAT=IErr)
+  IF( IErr.NE.0 ) THEN
+     PRINT*,"WriteIterationStructure(", my_rank, ") error ", IErr, &
+          " in Deallocation ROcc"
+     RETURN
+  ENDIF
+       
+  DEALLOCATE( &
+       IAtoms,&
+       STAT=IErr)
+  IF( IErr.NE.0 ) THEN
+     PRINT*,"WriteIterationStructure(", my_rank, ") error ", IErr, &
+          " in Deallocation IAtoms"
+     RETURN
+  ENDIF
+       
+  DEALLOCATE( &
+       IAnisoDWFT,&
+       STAT=IErr)
+  IF( IErr.NE.0 ) THEN
+     PRINT*,"WriteIterationStructure(", my_rank, ") error ", IErr, &
+          " in Deallocation IAnisoDWFT"
+     RETURN
+  ENDIF
+       
+  DEALLOCATE( &
+       RgVecMatT,&
+       STAT=IErr)
+  IF( IErr.NE.0 ) THEN
+     PRINT*,"WriteIterationStructure(", my_rank, ") error ", IErr, &
+          " in Deallocation RgVecMatT"
+     RETURN
+  ENDIF
+       
+  DEALLOCATE( &
+       RgVecMag,&
+       STAT=IErr)
+  IF( IErr.NE.0 ) THEN
+     PRINT*,"WriteIterationStructure(", my_rank, ") error ", IErr, &
+          " in Deallocation RgVecMag"
+     RETURN
+  ENDIF
+
+  DEALLOCATE( &
+       RrVecMat, &
+       STAT=IErr)
+  IF( IErr.NE.0 ) THEN
+     PRINT*,"WriteIterationStructure(", my_rank, ") error ", IErr, " in DEALLOCATE of RrVecMat"
+     RETURN
+  ENDIF
+
+END SUBROUTINE WriteIterationStructure
+
+SUBROUTINE WriteIterationImages(path,IThicknessIndex,IErr)
+
+  USE MyNumbers
+  
+  USE CConst; USE IConst; USE RConst
+  USE IPara; USE RPara; USE SPara; USE CPara
+  USE BlochPara
+
+  USE IChannels
+
+  USE MPI
+  USE MyMPI
+
+  IMPLICIT NONE
+
+  INTEGER(IKIND) :: &
+       IErr,ind,jnd,hnd,gnd,IThicknessIndex
+  REAL(RKIND),DIMENSION(2*IPixelCount,2*IPixelCount) :: &
+       RImage
+  CHARACTER*200,INTENT(IN) :: &
+       path
+
+  DO ind = 1,IReflectOut
+     CALL OpenReflectionImage(IChOutWIImage,path,IErr,ind,2*IPixelCount,2_IKIND)
+     IF( IErr.NE.0 ) THEN
+        PRINT*,"WriteOutput(", my_rank, ") error in OpenReflectionImage()"
+        RETURN
+     ENDIF
+     
+     RImage = ZERO
+     DO jnd = 1,IPixelTotal
+        gnd = IPixelLocations(jnd,1)
+        hnd = IPixelLocations(jnd,2)
+        RImage(gnd,hnd) = RIndividualReflections(ind,IThicknessIndex,jnd)
+     END DO
+     
+     CALL WriteReflectionImage(IChOutWIImage,&
+          RImage,IErr,2*IPixelCount,2*IPixelCount,2_IKIND)       
+     IF( IErr.NE.0 ) THEN
+        PRINT*,"WriteOutput(", my_rank, ") error in WriteReflectionImage()"
+        RETURN
+     ENDIF
+     
+     CLOSE(IChOutWIImage,IOSTAT=IErr)       
+     IF( IErr.NE.0 ) THEN
+        PRINT*,"WriteOutput(", my_rank, ") error Closing Reflection Image()"
+        RETURN
+     ENDIF
+     
+  END DO
+
+END SUBROUTINE WriteIterationImages
 
 !%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
@@ -1009,6 +1279,12 @@ SUBROUTINE UpdateVariables(RIndependentVariableValues,IErr)
         END SELECT
      CASE(8)
         RConvergenceAngle = RIndependentVariableValues(ind)
+     CASE(9)
+        RAbsorptionPercentage = RIndependentVariableValues(ind)
+     CASE(10)
+        RAcceleratingVoltage = RIndependentVariableValues(ind)
+     CASE(11)
+        RRSoSScalingFactor = RIndependentVariableValues(ind)
      END SELECT
   END DO
 
@@ -1032,6 +1308,12 @@ SUBROUTINE PrintVariables(IErr)
 
   INTEGER(IKIND) :: &
        IErr,ind,IVariableType,jnd,knd
+  REAL(RKIND),DIMENSION(3) :: &
+       RCrystalVector
+  CHARACTER*200 :: &
+       SPrintString
+
+  RCrystalVector = [RLengthX,RLengthY,RLengthZ]
 
   DO ind = 1,IRefinementVariableTypes
      IF (IRefineModeSelectionArray(ind).EQ.1) THEN
@@ -1043,35 +1325,54 @@ SUBROUTINE PrintVariables(IErr)
            END DO           
         CASE(2)
            PRINT*,"Current Atomic Coordinates"
-           DO jnd = 1,SIZE(RAtomSiteFracCoordVec,DIM=1)              
-              PRINT*,RAtomSiteFracCoordVec(jnd,:)
-           END DO        
+           DO jnd = 1,SIZE(RAtomSiteFracCoordVec,DIM=1)
+              WRITE(SPrintString,FMT='(3(F9.3,1X))') RAtomSiteFracCoordVec(jnd,:)*RCrystalVector
+              PRINT*,TRIM(ADJUSTL(SPrintString))              
+           END DO
         CASE(3)
            PRINT*,"Current Atomic Occupancy"
            DO jnd = 1,SIZE(RAtomicSitePartialOccupancy,DIM=1)
-              PRINT*,RAtomicSitePartialOccupancy(jnd)
+              WRITE(SPrintString,FMT='((F9.6,1X))') RAtomicSitePartialOccupancy(jnd)
+              PRINT*,TRIM(ADJUSTL(SPrintString))
            END DO
         CASE(4)
            PRINT*,"Current Isotropic Debye Waller Factors"
            DO jnd = 1,SIZE(RIsotropicDebyeWallerFactors,DIM=1)
-              PRINT*,RIsotropicDebyeWallerFactors(jnd)
+              WRITE(SPrintString,FMT='((F9.6,1X))') RIsotropicDebyeWallerFactors(jnd)
+              PRINT*,TRIM(ADJUSTL(SPrintString))
            END DO
         CASE(5)
            PRINT*,"Current Anisotropic Debye Waller Factors"
            DO jnd = 1,SIZE(RAnisotropicDebyeWallerFactorTensor,DIM=1)
               DO knd = 1,3
-                 PRINT*,RAnisotropicDebyeWallerFactorTensor(jnd,knd,:)
+                 WRITE(SPrintString,FMT='((F9.6,1X))') RAnisotropicDebyeWallerFactorTensor(jnd,knd,:)
+              PRINT*,TRIM(ADJUSTL(SPrintString))
               END DO
            END DO
         CASE(6)
            PRINT*,"Current Unit Cell Parameters"
-           PRINT*,RLengthX,RLengthY,RLengthZ
+           WRITE(SPrintString,FMT='(3(F9.6,1X))') RLengthX,RLengthY,RLengthZ
+              PRINT*,TRIM(ADJUSTL(SPrintString))
         CASE(7)
            PRINT*,"Current Unit Cell Angles"
-           PRINT*,RAlpha,RBeta,RGamma
+           WRITE(SPrintString,FMT='(3(F9.6,1X))') RAlpha,RBeta,RGamma
+              PRINT*,TRIM(ADJUSTL(SPrintString))
         CASE(8)
            PRINT*,"Current Convergence Angle"
-           PRINT*,RConvergenceAngle
+           WRITE(SPrintString,FMT='((F9.6,1X))') RConvergenceAngle
+              PRINT*,TRIM(ADJUSTL(SPrintString))
+        CASE(9)
+           PRINT*,"Current Absorption Percentage"
+           WRITE(SPrintString,FMT='((F9.6,1X))') RAbsorptionPercentage
+              PRINT*,TRIM(ADJUSTL(SPrintString))
+        CASE(10)
+           PRINT*,"Current Accelerating Voltage"
+           WRITE(SPrintString,FMT='((F9.6,1X))') RAcceleratingVoltage
+              PRINT*,TRIM(ADJUSTL(SPrintString))
+        CASE(11)
+           PRINT*,"Current Residual Sum of Squares Scaling Factor"
+           WRITE(SPrintString,FMT='((F9.6,1X))') RRSoSScalingFactor
+              PRINT*,TRIM(ADJUSTL(SPrintString))
         END SELECT
      END IF
   END DO
@@ -1138,7 +1439,7 @@ SUBROUTINE ConvertVectorMovementsIntoAtomicCoordinates(IVariableID,RIndependentV
   IAtomID = IAllowedVectorIDs(IVectorID)
 
 !!$  Use IAtomID to applied the IVectodID Vector to the IAtomID atomic coordinate
-  
+    
   RAtomSiteFracCoordVec(IAtomID,:) = RAtomSiteFracCoordVec(IAtomID,:) + &
        RIndependentVariableValues(IVariableID)*RAllowedVectors(IVectorID,:)
   

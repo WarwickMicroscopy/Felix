@@ -32,7 +32,7 @@
 !
 !%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-SUBROUTINE PhaseCorrelate(RImageSim,RImageExpiDummy,IErr,IXsizeIn,IYSizeIn)
+REAL(RKIND) FUNCTION PhaseCorrelate(RImageSim,RImageExpiDummy,IErr,IXsizeIn,IYSizeIn)
   
   USE MyNumbers
   
@@ -124,7 +124,8 @@ SUBROUTINE PhaseCorrelate(RImageSim,RImageExpiDummy,IErr,IXsizeIn,IYSizeIn)
   CALL FFTW_DESTROY_PLAN(Iplan)
 
   
-  RCrossCorrelation = MAXVAL(RImageSimDummy)/(IX*IY)
+!!$  RCrossCorrelation = MAXVAL(RImageSimDummy)/(IX*IY)
+  PhaseCorrelate = MAXVAL(RImageSimDummy)/(IX*IY)
   IOffset = MAXLOC(RImageSimDummy)
   
   !PRINT*,RImageSimDummy(:2,:2)
@@ -134,7 +135,7 @@ SUBROUTINE PhaseCorrelate(RImageSim,RImageExpiDummy,IErr,IXsizeIn,IYSizeIn)
   call fftw_free(p3)
   call fftw_free(p4)
   
-END SUBROUTINE PhaseCorrelate
+END FUNCTION  PhaseCorrelate
 
 SUBROUTINE ReSortUgs( ISymmetryIntegers,CUgs, N )
   
@@ -200,3 +201,34 @@ SUBROUTINE ReSortUgs( ISymmetryIntegers,CUgs, N )
   RETURN
 
 END SUBROUTINE ReSortUgs
+
+REAL(RKIND) FUNCTION ResidualSumofSquares(RImage1,RImage2,IErr)
+  
+  USE MyNumbers
+  
+  USE CConst; USE IConst
+  USE IPara; USE RPara
+  USE IChannels
+  USE MPI
+  USE MyMPI
+
+  IMPLICIT NONE
+  
+  INTEGER(IKIND) :: &
+       IErr
+  REAL(RKIND),DIMENSION(2*IPixelCount,2*IPixelCount) :: &
+       RImage1,RImage2
+!!$  REAL(RKIND) :: &
+!!$       ResidualSumofSquares
+
+
+!!$  RImage1 = RImage1*(2.0**16.0)
+  RImage2 =  RImage2/(2.0**16.0)
+
+  PRINT*,"Residual Sum of Squares Before",ResidualSumofSquares,MAXVAL(RImage1),MAXVAL(RImage2)
+
+  ResidualSumofSquares = SUM((RImage2-RImage1)**2)
+
+  PRINT*,"Residual Sum of Squares After",ResidualSumofSquares
+
+END FUNCTION ResidualSumofSquares

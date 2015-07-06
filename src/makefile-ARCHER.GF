@@ -81,15 +81,11 @@ symmetry.o
 %.o: %.F
 	$(FC) $(F77FLAGS) -DF77 -c $<
 
-all:	felixsim felixdraw felixrefine
+all:	felixsim felixrefine
 
 felixsim: $(SIMOBJECTFILES)
 	$(F90) $(F90FLAGS) -o $@ $(SIMOBJECTFILES)
 #	$(F90) -o $@ $(SIMOBJECTFILES)
-
-felixdraw: $(DRAWOBJECTFILES)
-	$(F90) $(F90FLAGS) -o $@ $(DRAWOBJECTFILES)
-#	$(F90) -o $@ $(DRAWOBJECTFILES)
 
 felixrefine: $(REFINEOBJECTFILES)
 	$(F90) $(F90FLAGS) -o $@ $(REFINEOBJECTFILES)

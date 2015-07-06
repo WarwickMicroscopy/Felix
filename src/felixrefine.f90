@@ -57,7 +57,7 @@ PROGRAM Felixrefine
 
   INTEGER(IKIND) :: &
        IHours,IMinutes,ISeconds,IErr,IMilliSeconds,IIterationFLAG,&
-       ind,IIterationCount,ISpaceGrp,ICount,jnd
+       ind,IIterationCount
   REAL(RKIND) :: &
        StartTime, CurrentTime, Duration, TotalDurationEstimate,&
        RFigureOfMerit,SimplexFunction  
@@ -68,8 +68,6 @@ PROGRAM Felixrefine
        RSimplexFoM,RIndependentVariableValues
   REAL(RKIND) :: &
        RBCASTREAL
-  INTEGER(IKIND),DIMENSION(:),ALLOCATABLE :: &
-       IVectors
   REAL(RKIND) :: &
        RStandardDeviation,RMean
 
@@ -137,86 +135,13 @@ PROGRAM Felixrefine
   !--------------------------------------------------------------------
   
   ISoftwareMode =2 ! felixrefinemode
-  
+
   !Read from input files
   CALL ReadInput (IErr)
   IF( IErr.NE.0 ) THEN
      PRINT*,"Felixrefine(", my_rank, ") error in ReadInput()"
      GOTO 9999
-  ENDIF
-
-  IF(IRefineModeSelectionArray(2).EQ.1) THEN 
-     
-     CALL ConvertSpaceGroupToNumber(ISpaceGrp,IErr)
-     
-     ALLOCATE(&
-          IVectors(SIZE(SWyckoffSymbols)),&
-          STAT=IErr)
-     IF( IErr.NE.0 ) THEN
-        PRINT*,"felixrefine (", my_rank, ") error in Allocation() of IVectors"
-        GOTO 9999
-     ENDIF
-     
-     DO ind = 1,SIZE(SWyckoffSymbols)
-!!$     SWyckoffSymbol = SWyckoffSymbols(ind)
-        CALL CountAllowedMovements(ISpaceGrp,SWyckoffSymbols(ind),IVectors(ind),IErr)
-     END DO
-     
-     IAllowedVectors = SUM(IVectors)
-     
-     ALLOCATE(&
-          IAllowedVectorIDs(IAllowedVectors),&
-          STAT=IErr)
-     IF( IErr.NE.0 ) THEN
-        PRINT*,"felixrefine (", my_rank, ") error in Allocation() of IVectors"
-        GOTO 9999
-     ENDIF
-     
-     ICount = 0
-     
-     DO ind = 1,SIZE(SWyckoffSymbols)
-        DO jnd = 1,IVectors(ind)
-           ICount = ICount + 1
-           IAllowedVectorIDs(ICount) = IAtomicSitesToRefine(ind)
-        END DO
-     END DO
-     
-     ALLOCATE(&
-          RAllowedVectors(IAllowedVectors,THREEDIM),&
-          STAT=IErr)
-     IF( IErr.NE.0 ) THEN
-        PRINT*,"felixrefine (", my_rank, ") error in Allocation() of IVectors"
-        GOTO 9999
-     ENDIF
-     
-     ALLOCATE(&
-          RAllowedVectorMagnitudes(IAllowedVectors),&
-          STAT=IErr)
-     IF( IErr.NE.0 ) THEN
-        PRINT*,"felixrefine (", my_rank, ") error in Allocation() of IVectors"
-        GOTO 9999
-     ENDIF
-     
-     RAllowedVectorMagnitudes = ZERO
-     
-     DO ind = 1,SIZE(SWyckoffSymbols)
-!!$     SWyckoffSymbol = SWyckoffSymbols(ind)
-        CALL DetermineAllowedMovements(ISpaceGrp,SWyckoffSymbols(ind),&
-             RAllowedVectors(SUM(IVectors(:(ind-1)))+1:SUM(IVectors(:(ind))),:),&
-             IVectors(ind),IErr)
-     END DO
-
-  END IF
-     
-  IIndependentVariables = &
-       IRefineModeSelectionArray(1)*INoofUgs*2+&
-       IRefineModeSelectionArray(2)*IAllowedVectors+&
-       IRefineModeSelectionArray(3)*SIZE(IAtomicSitesToRefine)+&
-       IRefineModeSelectionArray(4)*SIZE(IAtomicSitesToRefine)+&
-       IRefineModeSelectionArray(5)*SIZE(IAtomicSitesToRefine)*6+&
-       IRefineModeSelectionArray(6)*3+&
-       IRefineModeSelectionArray(7)*3+&
-       IRefineModeSelectionArray(8)
+  ENDIF  
   
   ALLOCATE( &
        RImageExpi(2*IPixelCount,2*IPixelCount, &
@@ -232,30 +157,28 @@ PROGRAM Felixrefine
      PRINT*,"Felixrefine(", my_rank, ") error in ReadExperimentalImages()"
      GOTO 9999
   ENDIF
-
   
-  ISoftwareMode =2 ! felixrefinemode
-  
-
-  !--------------------------------------------------------------------
-  ! Save Atomic Coordinates  
-  !--------------------------------------------------------------------
-
-  ALLOCATE(&
-       RInitialAtomSiteFracCoordVec(&
-       SIZE(RAtomSiteFracCoordVec,DIM=1),&
-       SIZE(RAtomSiteFracCoordVec,DIM=2)),&
-       STAT=IErr)
-  IF( IErr.NE.0 ) THEN
-     PRINT*,"felixrefine (", my_rank, ") error in ALLOCATE()RInitialAtomSiteFracCoordVec "
-     GOTO 9999
-  ENDIF  
-
-  RInitialAtomSiteFracCoordVec = RAtomSiteFracCoordVec
-
   !--------------------------------------------------------------------
   ! Setup Simplex Variables
   !--------------------------------------------------------------------
+  
+  IF(IRefineModeSelectionArray(2).EQ.1) THEN 
+     
+     CALL SetupAtomicVectorMovements(IErr)
+     IF( IErr.NE.0 ) THEN
+        PRINT*,"felixrefine (", my_rank, ") error in SetupAtomicVectorMovements"
+        GOTO 9999
+     ENDIF
+     
+  END IF
+  
+!!$Calculate Number of Independent Refinement Variables
+  
+  CALL CountRefinementVariables(IErr)
+  IF( IErr.NE.0 ) THEN
+     PRINT*,"felixrefine (", my_rank, ") error in CountRefinementVariables"
+     GOTO 9999
+  ENDIF
 
   CALL AssignIterativeIDs(IErr)  
   IF( IErr.NE.0 ) THEN
@@ -271,17 +194,6 @@ PROGRAM Felixrefine
      GOTO 9999
   ENDIF
 
-  IF(my_rank.EQ.0) THEN
-     PRINT*,"IErr = ",IErr
-  END IF
-
-  CALL RefinementVariableSetup(RIndependentVariableValues,IErr)
-  IF( IErr.NE.0 ) THEN
-     PRINT*,"felixrefine (", my_rank, ") error in RefinementVariableSetup()"
-     GOTO 9999
-  ENDIF
-
-  
   !--------------------------------------------------------------------
   ! Initialise Simplex
   !--------------------------------------------------------------------
@@ -317,21 +229,11 @@ PROGRAM Felixrefine
   CALL NDimensionalDownhillSimplex(RSimplexVolume,RSimplexFoM,&
        IIndependentVariables+1,&
        IIndependentVariables,IIndependentVariables,&
-       0.001d0,IIterationCount,RStandardDeviation,RMean,IErr)
+       0.0001d0,IIterationCount,RStandardDeviation,RMean,IErr)
   IF( IErr.NE.0 ) THEN
      PRINT*,"felixrefine (", my_rank, ") error in NDimensionalDownhillSimplex()"
      GOTO 9999
   ENDIF
-
-  CALL MPI_BARRIER(MPI_COMM_WORLD,IErr)
-  IF( IErr.NE.0 ) THEN
-     PRINT*,"Felixrefine(", my_rank, ") error ", IErr, " in MPI_BARRIER()"
-     STOP
-  ENDIF
-
-  PRINT*,"Im rank",my_rank
-
-  STOP
 
   !--------------------------------------------------------------------
   ! Deallocate Memory
@@ -365,12 +267,6 @@ PROGRAM Felixrefine
   !--------------------------------------------------------------------
   ! Shut down MPI
   !--------------------------------------------------------------------
-
-  CALL MPI_BARRIER(MPI_COMM_WORLD,IErr)
-  IF( IErr.NE.0 ) THEN
-     PRINT*,"Felixrefine(", my_rank, ") error ", IErr, " in MPI_BARRIER()"
-     STOP
-  ENDIF
 
 9999 &
   CALL MPI_Finalize(IErr)
@@ -406,21 +302,7 @@ USE MyNumbers
   INTEGER(IKIND),DIMENSION(IRefinementVariableTypes) :: &
        INoofelementsforeachrefinementtype
 
-  INoofelementsforeachrefinementtype(1) = &
-       IRefineModeSelectionArray(1)*INoofUgs*2
-  INoofelementsforeachrefinementtype(2) = IAllowedVectors
-  INoofelementsforeachrefinementtype(3) = &
-       IRefineModeSelectionArray(3)*SIZE(IAtomicSitesToRefine)
-  INoofelementsforeachrefinementtype(4) = &
-       IRefineModeSelectionArray(4)*SIZE(IAtomicSitesToRefine)
-  INoofelementsforeachrefinementtype(5) = &
-       IRefineModeSelectionArray(5)*SIZE(IAtomicSitesToRefine)*6
-  INoofelementsforeachrefinementtype(6) = &
-       IRefineModeSelectionArray(6)*3
-  INoofelementsforeachrefinementtype(7) = &
-       IRefineModeSelectionArray(7)*3
-  INoofelementsforeachrefinementtype(8) = &
-       IRefineModeSelectionArray(8)
+  CALL DetermineNumberofRefinementVariablesPerType(INoofelementsforeachrefinementtype,IErr)
 
   ALLOCATE(&
        IIterativeVariableUniqueIDs(IIndependentVariables,5),&
@@ -472,22 +354,7 @@ SUBROUTINE AssignArrayLocationsToIterationVariables(IIterativeVariableType,IVari
 
 !!$  Calculate How Many of Each Variable Type There are
 
-  INoofelementsforeachrefinementtype(1) = &
-       IRefineModeSelectionArray(1)*INoofUgs
-  INoofelementsforeachrefinementtype(2) = &
-       IRefineModeSelectionArray(2)*IAllowedVectors
-  INoofelementsforeachrefinementtype(3) = &
-       IRefineModeSelectionArray(3)*SIZE(IAtomicSitesToRefine)
-  INoofelementsforeachrefinementtype(4) = &
-       IRefineModeSelectionArray(4)*SIZE(IAtomicSitesToRefine)
-  INoofelementsforeachrefinementtype(5) = &
-       IRefineModeSelectionArray(5)*SIZE(IAtomicSitesToRefine)*6
-  INoofelementsforeachrefinementtype(6) = &
-       IRefineModeSelectionArray(6)*3
-  INoofelementsforeachrefinementtype(7) = &
-       IRefineModeSelectionArray(7)*3
-  INoofelementsforeachrefinementtype(8) = &
-       IRefineModeSelectionArray(8)
+  CALL DetermineNumberofRefinementVariablesPerType(INoofelementsforeachrefinementtype,IErr)
   
 !!$  Where am I in the Array Right Now?
 
@@ -505,11 +372,6 @@ SUBROUTINE AssignArrayLocationsToIterationVariables(IIterativeVariableType,IVari
   CASE(2) ! Coordinates (x,y,z)
 
      IArrayToFill(IArrayIndex,2) = IIterativeVariableType
-!!$     IArrayToFill(IArrayIndex,3) = IAtomicSitesToRefine(INT(CEILING(REAL(IVariableNo/3.0D0,RKIND))))
-!!$     IArrayToFill(IArrayIndex,4) = &
-!!$          NINT(3.D0*(REAL(IVariableNo/3.0D0,RKIND)-CEILING(REAL(IVariableNo/3.0D0,RKIND)))+3.0D0)
-!!$     IArrayToFill(IArrayIndex,5) = 0
-
      IArrayToFill(IArrayIndex,3) = IVariableNo
 
   CASE(3) ! Atomic Site Occupancies
@@ -561,6 +423,18 @@ SUBROUTINE AssignArrayLocationsToIterationVariables(IIterativeVariableType,IVari
   CASE(8)
      
      IArrayToFill(IArrayIndex,2) = IIterativeVariableType
+
+  CASE(9)
+     
+     IArrayToFill(IArrayIndex,2) = IIterativeVariableType
+
+  CASE(10)
+     
+     IArrayToFill(IArrayIndex,2) = IIterativeVariableType
+
+  CASE(11)
+     
+     IArrayToFill(IArrayIndex,2) = IIterativeVariableType
      
   END SELECT
   
@@ -601,10 +475,6 @@ SUBROUTINE RefinementVariableSetup(RIndependentVariableValues,IErr)
      CASE(2)
         RIndependentVariableValues(ind) = &
              RAllowedVectorMagnitudes(IIterativeVariableUniqueIDs(ind,3))
-!!$        RIndependentVariableValues(ind) = &
-!!$             RAtomSiteFracCoordVec(&
-!!$             IIterativeVariableUniqueIDs(ind,3),&
-!!$             IIterativeVariableUniqueIDs(ind,4))
      CASE(3)
         RIndependentVariableValues(ind) = &
              RAtomicSitePartialOccupancy(IIterativeVariableUniqueIDs(ind,3))
@@ -638,6 +508,15 @@ SUBROUTINE RefinementVariableSetup(RIndependentVariableValues,IErr)
      CASE(8)
         RIndependentVariableValues(ind) = &
              RConvergenceAngle
+     CASE(9)
+        RIndependentVariableValues(ind) = &
+             RAbsorptionPercentage
+     CASE(10)
+        RIndependentVariableValues(ind) = &
+             RAcceleratingVoltage
+     CASE(11)
+        RIndependentVariableValues(ind) = &
+             RRSoSScalingFactor
      END SELECT
   END DO
 
@@ -792,18 +671,23 @@ SUBROUTINE SimplexInitialisation(RSimplexVolume,RSimplexFoM,RIndependentVariable
      RETURN
   ENDIF
 
-  CALL RankSymmetryRelatedStructureFactor(IErr)
-  IF( IErr.NE.0 ) THEN
-     PRINT*,"SimplexInitialisation(", my_rank, ") error in RankSymmetryRelatedStructureFactor()"
-     RETURN
-  ENDIF
-
-  CALL StructureFactorRefinementSetup(RIndependentVariableValues,IIterationCount,IErr)
-  IF( IErr.NE.0 ) THEN
-     PRINT*,"SimplexInitialisation(", my_rank, ") error in StructureFactorRefinementSetup()"
-     RETURN
-  ENDIF
-
+  
+  IF(IRefineModeSelectionArray(1).EQ.1) THEN
+     
+     CALL RankSymmetryRelatedStructureFactor(IErr)
+     IF( IErr.NE.0 ) THEN
+        PRINT*,"SimplexInitialisation(", my_rank, ") error in RankSymmetryRelatedStructureFactor()"
+        RETURN
+     ENDIF
+     
+     CALL StructureFactorRefinementSetup(RIndependentVariableValues,IIterationCount,IErr)
+     IF( IErr.NE.0 ) THEN
+        PRINT*,"SimplexInitialisation(", my_rank, ") error in StructureFactorRefinementSetup()"
+        RETURN
+     ENDIF
+     
+  END IF
+  
   DEALLOCATE(&
        CUgmat,&
        STAT=IErr)  
@@ -812,21 +696,19 @@ SUBROUTINE SimplexInitialisation(RSimplexVolume,RSimplexFoM,RIndependentVariable
      RETURN
   ENDIF
 
+!!$ RandomSequence
+
   IF(IContinueFLAG.EQ.0) THEN
-     
-     DO ind = 1,(IIndependentVariables+1)
-        RSimplexVolume(ind,:) = &
-             RIndependentVariableValues
-        IF(ind.GT.1) THEN
-           IF(IIterativeVariableUniqueIDs(ind-1,2).EQ.2) THEN
-              CALL InitialiseAtomicVectorMagnitudes(ind-1,RSimplexVolume(ind,ind-1),IErr)
-           ELSE
-              RSimplexVolume(ind,ind-1) = RIndependentVariableValues(ind-1)*&
-                   (ONE+RSimplexLengthScale)
-           END IF
-        END IF
-     END DO
-     
+     IF(my_rank.EQ.0) THEN
+        CALL CreateRandomisedSimplex(RSimplexVolume,&
+             RIndependentVariableValues,IErr)
+
+        CALL MPI_BCAST(RSimplexVolume,(IIndependentVariables+1)*(IIndependentVariables),MPI_DOUBLE_PRECISION,0,MPI_COMM_WORLD,IErr)
+     ELSE
+        CALL MPI_BCAST(RSimplexVolume,(IIndependentVariables+1)*(IIndependentVariables),MPI_DOUBLE_PRECISION,0,MPI_COMM_WORLD,IErr)
+
+     END IF
+
      IPreviousPrintedIteration = -IPrint ! Ensures print out on first iteration
 
      DO ind = 1,(IIndependentVariables+1)
@@ -836,7 +718,8 @@ SUBROUTINE SimplexInitialisation(RSimplexVolume,RSimplexFoM,RIndependentVariable
            PRINT*,"-------- Simplex",ind,"of",IIndependentVariables+1
            PRINT*,"---------------------------------------------------------"
         END IF
-        
+                
+
         RSimplexDummy = SimplexFunction(RSimplexVolume(ind,:),1,0,IErr)
         
         RStandardTolerance = RStandardError(RStandardDeviation,RMean,RSimplexDummy,IErr)
@@ -861,6 +744,113 @@ SUBROUTINE SimplexInitialisation(RSimplexVolume,RSimplexFoM,RIndependentVariable
   END IF
        
 END SUBROUTINE SimplexInitialisation
+
+SUBROUTINE CreateRandomisedSimplex(RSimplexVolume,RIndependentVariableValues,IErr)
+
+USE MyNumbers
+  
+  USE CConst; USE IConst; USE RConst
+  USE IPara; USE RPara; USE SPara; USE CPara
+  USE BlochPara
+  
+  USE IChannels
+  
+  USE MPI
+  USE MyMPI
+  
+  IMPLICIT NONE
+  
+  INTEGER(IKIND) :: &
+       IErr,ind
+  REAL(RKIND),DIMENSION(:),ALLOCATABLE :: &
+       RRandomSigns,RRandomNumbers
+  REAL(RKIND),DIMENSION(IIndependentVariables+1,IIndependentVariables),INTENT(OUT) :: &
+       RSimplexVolume
+  REAL(RKIND),DIMENSION(IIndependentVariables),INTENT(INOUT) :: &
+       RIndependentVariableValues
+  
+  IF(IRefineModeSelectionArray(2).EQ.1) THEN
+     DO ind = 1,(IIndependentVariables+1)
+        ALLOCATE(&
+             RRandomSigns(IAllowedVectors),&
+             RRandomNumbers(IAllowedVectors),&
+             STAT=IErr)
+        
+        
+!!$           Randomise Atomic Displacements
+        
+        CALL RandomSequence(RRandomNumbers,IAllowedVectors,ind,IErr)
+        CALL RandomSequence(RRandomSigns,IAllowedVectors,2*ind,IErr)
+        WHERE (RRandomSigns.LT.HALF)
+           RRandomSigns = ONE
+        ELSEWHERE
+           RRandomSigns = -ONE
+        END WHERE
+        
+        RSimplexVolume(ind,:IAllowedVectors) = &
+             RRandomNumbers*RRandomSigns*RSimplexLengthScale
+        
+        DEALLOCATE(&
+             RRandomSigns,&
+             RRandomNumbers)
+        
+        ALLOCATE(&
+             RRandomSigns(IIndependentVariables-IAllowedVectors),&
+             RRandomNumbers(IIndependentVariables-IAllowedVectors),&
+             STAT=IErr)
+        
+!!$           Randomise Everything else
+        
+        CALL RandomSequence(RRandomNumbers,&
+             IIndependentVariables-IAllowedVectors,ind,IErr)
+        CALL RandomSequence(RRandomSigns,&
+             IIndependentVariables-IAllowedVectors,2*ind,IErr)
+        WHERE (RRandomSigns.LT.HALF)
+           RRandomSigns = ONE
+        ELSEWHERE
+           RRandomSigns = -ONE
+        END WHERE
+        
+        RSimplexVolume(ind,(IAllowedVectors+1):) = &
+             RIndependentVariableValues((IAllowedVectors+1):)*&
+             (1+(RRandomNumbers*RRandomSigns*RSimplexLengthScale))
+        
+        DEALLOCATE(&
+             RRandomSigns,&
+             RRandomNumbers)
+        
+     END DO
+     
+  ELSE
+     ALLOCATE(&
+          RRandomSigns(IIndependentVariables),&
+          RRandomNumbers(IIndependentVariables),&
+          STAT=IErr)
+     
+     DO ind = 1,(IIndependentVariables+1)
+        
+        CALL RandomSequence(RRandomNumbers,IIndependentVariables,ind,IErr)
+        CALL RandomSequence(RRandomSigns,IIndependentVariables,2*ind,IErr)
+        WHERE (RRandomSigns.LT.HALF)
+           RRandomSigns = ONE
+        ELSEWHERE
+           RRandomSigns = -ONE
+        END WHERE
+        
+        
+        RSimplexVolume(ind,:) = &
+             RIndependentVariableValues(:)*&
+             (1+(RRandomNumbers*RRandomSigns*RSimplexLengthScale))
+     END DO
+     
+     DEALLOCATE(&
+          RRandomSigns,&
+          RRandomNumbers)
+     
+  END IF
+  
+
+END SUBROUTINE CreateRandomisedSimplex
 
 !%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
@@ -931,35 +921,11 @@ SUBROUTINE PerformDummySimulationToSetupSimplexValues(IErr)
   END IF
   
   DEALLOCATE( &
-       RgMatMat,STAT=IErr)
-  IF( IErr.NE.0 ) THEN
-     PRINT*,"PerformDummySimulationToSetupSimplexValues(", my_rank, ") error ", IErr, &
-          " in Deallocation of RgMatMat"
-     RETURN
-  ENDIF
-  
-  DEALLOCATE(&
-       RgMatMag,STAT=IErr)
-  IF( IErr.NE.0 ) THEN
-     PRINT*,"PerformDummySimulationToSetupSimplexValues(", my_rank, ") error ", IErr, &
-          " in Deallocation of RgMatMag"
-     RETURN
-  ENDIF
-  
-  DEALLOCATE(&
-       RrVecMat,STAT=IErr)
-  IF( IErr.NE.0 ) THEN
-     PRINT*,"PerformDummySimulationToSetupSimplexValues(", my_rank, ") error ", IErr, &
-          " in Deallocation of RgMatMag"
-     RETURN
-  ENDIF
-  
-  DEALLOCATE( &
        MNP,&
        STAT=IErr)
   IF( IErr.NE.0 ) THEN
      PRINT*,"PerformDummySimulationToSetupSimplexValues(", my_rank, ") error ", IErr, &
-          " in Deallocation"
+          " in Deallocation MNP"
      RETURN
   ENDIF
       
@@ -968,7 +934,7 @@ SUBROUTINE PerformDummySimulationToSetupSimplexValues(IErr)
        STAT=IErr)
   IF( IErr.NE.0 ) THEN
      PRINT*,"PerformDummySimulationToSetupSimplexValues(", my_rank, ") error ", IErr, &
-          " in Deallocation"
+          " in Deallocation SMNP"
      RETURN
   ENDIF
        
@@ -977,7 +943,7 @@ SUBROUTINE PerformDummySimulationToSetupSimplexValues(IErr)
        STAT=IErr)
   IF( IErr.NE.0 ) THEN
      PRINT*,"PerformDummySimulationToSetupSimplexValues(", my_rank, ") error ", IErr, &
-          " in Deallocation"
+          " in Deallocation RFullAtomicFracCoordVec"
      RETURN
   ENDIF
        
@@ -986,7 +952,7 @@ SUBROUTINE PerformDummySimulationToSetupSimplexValues(IErr)
        STAT=IErr)
   IF( IErr.NE.0 ) THEN
      PRINT*,"PerformDummySimulationToSetupSimplexValues(", my_rank, ") error ", IErr, &
-          " in Deallocation"
+          " in Deallocation SFullAtomicNameVec"
      RETURN
   ENDIF
        
@@ -995,7 +961,7 @@ SUBROUTINE PerformDummySimulationToSetupSimplexValues(IErr)
        STAT=IErr)
   IF( IErr.NE.0 ) THEN
      PRINT*,"PerformDummySimulationToSetupSimplexValues(", my_rank, ") error ", IErr, &
-          " in Deallocation"
+          " in Deallocation IFullAnisotropicDWFTensor"
      RETURN
   ENDIF
        
@@ -1004,7 +970,7 @@ SUBROUTINE PerformDummySimulationToSetupSimplexValues(IErr)
        STAT=IErr)
   IF( IErr.NE.0 ) THEN
      PRINT*,"PerformDummySimulationToSetupSimplexValues(", my_rank, ") error ", IErr, &
-          " in Deallocation"
+          " in Deallocation IFullAtomNumber"
      RETURN
   ENDIF
        
@@ -1013,7 +979,7 @@ SUBROUTINE PerformDummySimulationToSetupSimplexValues(IErr)
        STAT=IErr)
   IF( IErr.NE.0 ) THEN
      PRINT*,"PerformDummySimulationToSetupSimplexValues(", my_rank, ") error ", IErr, &
-          " in Deallocation"
+          " in Deallocation RFullIsotropicDebyeWallerFactor"
      RETURN
   ENDIF
        
@@ -1022,7 +988,7 @@ SUBROUTINE PerformDummySimulationToSetupSimplexValues(IErr)
        STAT=IErr)
   IF( IErr.NE.0 ) THEN
      PRINT*,"PerformDummySimulationToSetupSimplexValues(", my_rank, ") error ", IErr, &
-          " in Deallocation"
+          " in Deallocation RFullPartialOccupancy"
      RETURN
   ENDIF
        
@@ -1031,7 +997,7 @@ SUBROUTINE PerformDummySimulationToSetupSimplexValues(IErr)
        STAT=IErr)
   IF( IErr.NE.0 ) THEN
      PRINT*,"PerformDummySimulationToSetupSimplexValues(", my_rank, ") error ", IErr, &
-          " in Deallocation"
+          " in Deallocation RDWF"
      RETURN
   ENDIF
        
@@ -1040,7 +1006,7 @@ SUBROUTINE PerformDummySimulationToSetupSimplexValues(IErr)
        STAT=IErr)
   IF( IErr.NE.0 ) THEN
      PRINT*,"PerformDummySimulationToSetupSimplexValues(", my_rank, ") error ", IErr, &
-          " in Deallocation"
+          " in Deallocation ROcc"
      RETURN
   ENDIF
        
@@ -1049,7 +1015,7 @@ SUBROUTINE PerformDummySimulationToSetupSimplexValues(IErr)
        STAT=IErr)
   IF( IErr.NE.0 ) THEN
      PRINT*,"PerformDummySimulationToSetupSimplexValues(", my_rank, ") error ", IErr, &
-          " in Deallocation"
+          " in Deallocation IAtoms"
      RETURN
   ENDIF
        
@@ -1058,7 +1024,7 @@ SUBROUTINE PerformDummySimulationToSetupSimplexValues(IErr)
        STAT=IErr)
   IF( IErr.NE.0 ) THEN
      PRINT*,"PerformDummySimulationToSetupSimplexValues(", my_rank, ") error ", IErr, &
-          " in Deallocation"
+          " in Deallocation IAnisoDWFT"
      RETURN
   ENDIF
        
@@ -1067,7 +1033,7 @@ SUBROUTINE PerformDummySimulationToSetupSimplexValues(IErr)
        STAT=IErr)
   IF( IErr.NE.0 ) THEN
      PRINT*,"PerformDummySimulationToSetupSimplexValues(", my_rank, ") error ", IErr, &
-          " in Deallocation"
+          " in Deallocation Rhkl"
      RETURN
   ENDIF
        
@@ -1076,7 +1042,7 @@ SUBROUTINE PerformDummySimulationToSetupSimplexValues(IErr)
        STAT=IErr)
   IF( IErr.NE.0 ) THEN
      PRINT*,"PerformDummySimulationToSetupSimplexValues(", my_rank, ") error ", IErr, &
-          " in Deallocation"
+          " in Deallocation RgVecMatT"
      RETURN
   ENDIF
        
@@ -1085,7 +1051,7 @@ SUBROUTINE PerformDummySimulationToSetupSimplexValues(IErr)
        STAT=IErr)
   IF( IErr.NE.0 ) THEN
      PRINT*,"PerformDummySimulationToSetupSimplexValues(", my_rank, ") error ", IErr, &
-          " in Deallocation"
+          " in Deallocation RgVecMag"
      RETURN
   ENDIF
        
@@ -1094,16 +1060,7 @@ SUBROUTINE PerformDummySimulationToSetupSimplexValues(IErr)
        STAT=IErr)
   IF( IErr.NE.0 ) THEN
      PRINT*,"PerformDummySimulationToSetupSimplexValues(", my_rank, ") error ", IErr, &
-          " in Deallocation"
-     RETURN
-  ENDIF
-       
-  DEALLOCATE( &
-       RSg,&
-       STAT=IErr)
-  IF( IErr.NE.0 ) THEN
-     PRINT*,"PerformDummySimulationToSetupSimplexValues(", my_rank, ") error ", IErr, &
-          " in Deallocation"
+          " in Deallocation RGn" 
      RETURN
   ENDIF
        
@@ -1112,16 +1069,16 @@ SUBROUTINE PerformDummySimulationToSetupSimplexValues(IErr)
        STAT=IErr)
   IF( IErr.NE.0 ) THEN
      PRINT*,"PerformDummySimulationToSetupSimplexValues(", my_rank, ") error ", IErr, &
-          " in Deallocation"
+          " in Deallocation Rhklpositions"
      RETURN
-  ENDIF
+  ENDIF  
        
   DEALLOCATE( &
        RMask,&
        STAT=IErr)
   IF( IErr.NE.0 ) THEN
      PRINT*,"PerformDummySimulationToSetupSimplexValues(", my_rank, ") error ", IErr, &
-          " in Deallocation"
+          " in Deallocation RMask"
      RETURN
   ENDIF
        
@@ -1130,7 +1087,7 @@ SUBROUTINE PerformDummySimulationToSetupSimplexValues(IErr)
        STAT=IErr)
   IF( IErr.NE.0 ) THEN
      PRINT*,"PerformDummySimulationToSetupSimplexValues(", my_rank, ") error ", IErr, &
-          " in Deallocation"
+          " in Deallocation IPixelLocations"
      RETURN
   ENDIF
 
@@ -1178,6 +1135,58 @@ END SUBROUTINE InitialiseAtomicVectorMagnitudes
 
 !!$  %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
+SUBROUTINE RandomSequence(RRandomSequence,IRandomSequenceLength,ISeedModifier,IErr)
+
+!!$  %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+!!$  % Sets up a pseudo random sequence and selects a number
+!!$  %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+  USE MyNumbers
+  
+  USE CConst; USE IConst; USE RConst
+  USE IPara; USE RPara; USE SPara; USE CPara
+  USE BlochPara
+
+  USE IChannels
+
+  USE MPI
+  USE MyMPI
+
+  IMPLICIT NONE
+
+  INTEGER(IKIND) :: &
+       IErr,Ivalues(1:8), k,IRandomSequenceLength,ISeedModifier
+  INTEGER(IKIND), DIMENSION(:), ALLOCATABLE :: &
+       seed
+  REAL(RKIND),DIMENSION(IRandomSequenceLength) :: &
+       RRandomSequence
+  
+  CALL DATE_AND_TIME(VALUES=Ivalues)
+
+  IValues = IValues*ISeedModifier
+!!$  CALL SYSTEM_CLOCK(
+  IF (IRandomFLAG.EQ.0) THEN
+     CALL RANDOM_SEED(size=k)
+     allocate(seed(1:k))
+     seed(:) = Ivalues(8)
+     CALL RANDOM_SEED(put=seed)
+  ELSE
+     CALL RANDOM_SEED(size=k)
+     ALLOCATE(seed(1:k))
+     seed(:) = IFixedSeed*ISeedModifier
+     CALL RANDOM_SEED(put=seed)
+  END IF
+   
+  DEALLOCATE(seed)
+
+  CALL RANDOM_NUMBER(RRandomSequence)
+  
+!!$  RANDOMSEQUENCE = RRandomNumberSequence(IRequestedNumber)
+  
+END SUBROUTINE  RANDOMSEQUENCE
+
+!!$  %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
 REAL(RKIND) FUNCTION RANDOMNUMBER(IRequestedNumber,IErr)
 
 !!$  %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -1214,7 +1223,7 @@ REAL(RKIND) FUNCTION RANDOMNUMBER(IRequestedNumber,IErr)
   ELSE
      CALL RANDOM_SEED(size=k)
      ALLOCATE(seed(1:k))
-     seed(:) = IRandomFLAG
+     seed(:) = IFixedSeed*IRequestedNumber
      CALL RANDOM_SEED(put=seed)
   END IF
    
@@ -1419,3 +1428,183 @@ SUBROUTINE RecoverSavedSimplex(RSimplexVolume,RSimplexFoM,RStandardDeviation,RMe
   CLOSE(IChOutSimplex)
 
 END SUBROUTINE RecoverSavedSimplex
+
+SUBROUTINE DetermineNumberofRefinementVariablesPerType(INoofelementsforeachrefinementtype,IErr)
+
+  USE MyNumbers
+  
+  USE CConst; USE IConst; USE RConst
+  USE IPara; USE RPara; USE SPara; USE CPara
+  USE BlochPara
+
+  USE IChannels
+
+  USE MPI
+  USE MyMPI
+  
+  IMPLICIT NONE
+
+  INTEGER(IKIND) :: &
+       IErr
+  INTEGER(IKIND),DIMENSION(IRefinementVariableTypes) :: &
+       INoofelementsforeachrefinementtype
+
+  INoofelementsforeachrefinementtype(1) = &
+       IRefineModeSelectionArray(1)*INoofUgs*2
+  INoofelementsforeachrefinementtype(2) = &
+       IRefineModeSelectionArray(2)*IAllowedVectors
+  INoofelementsforeachrefinementtype(3) = &
+       IRefineModeSelectionArray(3)*SIZE(IAtomicSitesToRefine)
+  INoofelementsforeachrefinementtype(4) = &
+       IRefineModeSelectionArray(4)*SIZE(IAtomicSitesToRefine)
+  INoofelementsforeachrefinementtype(5) = &
+       IRefineModeSelectionArray(5)*SIZE(IAtomicSitesToRefine)*6
+  INoofelementsforeachrefinementtype(6) = &
+       IRefineModeSelectionArray(6)*3
+  INoofelementsforeachrefinementtype(7) = &
+       IRefineModeSelectionArray(7)*3
+  INoofelementsforeachrefinementtype(8) = &
+       IRefineModeSelectionArray(8)
+  INoofelementsforeachrefinementtype(9) = &
+       IRefineModeSelectionArray(9)
+  INoofelementsforeachrefinementtype(10) = &
+       IRefineModeSelectionArray(10)
+  INoofelementsforeachrefinementtype(11) = &
+       IRefineModeSelectionArray(11)
+
+END SUBROUTINE DetermineNumberofRefinementVariablesPerType
+
+SUBROUTINE CountRefinementVariables(IErr)
+ 
+  USE MyNumbers
+  
+  USE CConst; USE IConst; USE RConst
+  USE IPara; USE RPara; USE SPara; USE CPara
+  USE BlochPara
+
+  USE IChannels
+
+  USE MPI
+  USE MyMPI
+  
+  IMPLICIT NONE
+
+  INTEGER(IKIND) :: &
+       IErr
+  INTEGER(IKIND),DIMENSION(IRefinementVariableTypes) :: &
+       INoofelementsforeachrefinementtype
+
+  CALL DetermineNumberofRefinementVariablesPerType(INoofelementsforeachrefinementtype,IErr)
+
+  IIndependentVariables = SUM(INoofelementsforeachrefinementtype)
+
+END SUBROUTINE CountRefinementVariables
+
+SUBROUTINE SetupAtomicVectorMovements(IErr)
+
+  USE MyNumbers
+  
+  USE CConst; USE IConst; USE RConst
+  USE IPara; USE RPara; USE SPara; USE CPara
+  USE BlochPara
+
+  USE IChannels
+
+  USE MPI
+  USE MyMPI
+  
+  IMPLICIT NONE
+
+  INTEGER(IKIND) :: &
+       IErr,ICount,jnd,ind,ISpaceGrp
+  INTEGER(IKIND),DIMENSION(:),ALLOCATABLE :: &
+       IVectors
+  
+  CALL ConvertSpaceGroupToNumber(ISpaceGrp,IErr)
+  IF( IErr.NE.0 ) THEN
+     PRINT*,"felixrefine (", my_rank, ") error in ConvertSpaceGroupToNumber"
+     RETURN
+  ENDIF
+  
+  ALLOCATE(&
+       IVectors(SIZE(SWyckoffSymbols)),&
+       STAT=IErr)
+  IF( IErr.NE.0 ) THEN
+     PRINT*,"felixrefine (", my_rank, ") error in Allocation() of IVectors"
+     RETURN
+  ENDIF
+  
+  DO ind = 1,SIZE(SWyckoffSymbols)
+     CALL CountAllowedMovements(ISpaceGrp,SWyckoffSymbols(ind),IVectors(ind),IErr)
+     IF( IErr.NE.0 ) THEN
+        PRINT*,"felixrefine (", my_rank, ") error in CountAllowedMovements "
+        RETURN
+     ENDIF
+     
+  END DO
+  
+  IAllowedVectors = SUM(IVectors)
+  
+  ALLOCATE(&
+       IAllowedVectorIDs(IAllowedVectors),&
+       STAT=IErr)
+  IF( IErr.NE.0 ) THEN
+     PRINT*,"felixrefine (", my_rank, ") error in Allocation() of IAllowedVectorIDs"
+     RETURN
+  ENDIF
+  
+  ICount = 0
+  
+  DO ind = 1,SIZE(SWyckoffSymbols)
+     DO jnd = 1,IVectors(ind)
+        ICount = ICount + 1
+        IAllowedVectorIDs(ICount) = IAtomicSitesToRefine(ind)
+     END DO
+  END DO
+  
+  ALLOCATE(&
+       RAllowedVectors(IAllowedVectors,THREEDIM),&
+       STAT=IErr)
+  IF( IErr.NE.0 ) THEN
+     PRINT*,"felixrefine (", my_rank, ") error in Allocation() of RAllowedVectors"
+     RETURN
+  ENDIF
+  
+  ALLOCATE(&
+       RAllowedVectorMagnitudes(IAllowedVectors),&
+       STAT=IErr)
+  IF( IErr.NE.0 ) THEN
+     PRINT*,"felixrefine (", my_rank, ") error in Allocation() of RAllowedVectorMagnitudes"
+     RETURN
+  ENDIF
+  
+  RAllowedVectorMagnitudes = ZERO
+  
+  DO ind = 1,SIZE(SWyckoffSymbols)
+     CALL DetermineAllowedMovements(ISpaceGrp,SWyckoffSymbols(ind),&
+          RAllowedVectors(SUM(IVectors(:(ind-1)))+1:SUM(IVectors(:(ind))),:),&
+          IVectors(ind),IErr)
+     IF( IErr.NE.0 ) THEN
+        PRINT*,"felixrefine (", my_rank, ") error in DetermineAllowedMovements"
+        RETURN
+     ENDIF
+     
+  END DO
+  
+  !--------------------------------------------------------------------
+  ! Save Atomic Coordinates  
+  !--------------------------------------------------------------------
+  
+  ALLOCATE(&
+       RInitialAtomSiteFracCoordVec(&
+       SIZE(RAtomSiteFracCoordVec,DIM=1),&
+       SIZE(RAtomSiteFracCoordVec,DIM=2)),&
+       STAT=IErr)
+  IF( IErr.NE.0 ) THEN
+     PRINT*,"felixrefine (", my_rank, ") error in ALLOCATE() of RInitialAtomSiteFracCoordVec "
+     RETURN
+  ENDIF
+  
+  RInitialAtomSiteFracCoordVec = RAtomSiteFracCoordVec
+  
+END SUBROUTINE SetupAtomicVectorMovements

@@ -73,7 +73,27 @@ MODULE CConst
        "P4332","P4132","I4132","P-43m","F-43m","I-43m","P-43n","F-43c", &
        "I-43d","Pm-3m","Pn-3n","Pm-3n","Pn-3m","Fm-3m","Fm-3c","Fd-3m", &
        "Fd-3c","Im-3m","Ia-3d"/
-       
+  
+  CHARACTER*2 :: &
+       SElementSymbolMatrix(103)
+  
+  DATA SElementSymbolMatrix/" H", "He", "Li", "Be", " B", " C", " N", "O", "F", "Ne", &
+       "Na", "Mg", "Al", "Si", "P", "S", "Cl", "Ar", "K", "Ca", &
+       "Sc", "Ti", "V", "Cr", "Mn", "Fe", "Co", "Ni", "Cu", "Zn", &
+        "Ga", "Ge", "As", "Se", "Br", "Kr", "Rb", "Sr", "Y", "Zr", &
+        "Nb", "Mo", "Tc", "Ru", "Rh", "Pd", "Ag", "Cd", "In", "Sn", &
+        "Sb", "Te", "I", "Xe", "Cs", "Ba", "La", "Ce", "Pr", "Nd", &
+        "Pm", "Sm", "Eu", "Gd", "Tb", "Dy", "Ho", "Er", "Tm", "Yb", &
+        "Lu", "Hf", "Ta", "W", "Re", "Os", "Ir", "Pt", "Au", "Hg", &
+        "Tl", "Pb", "Bi", "Po", "At", "Rn", "Fr", "Ra", "Ac", "Th", &
+        "Pa", "U", "Np", "Pu", "Am", "Cm", "Bk", "Cf", "Es", "Fm",& 
+        "Md","No","Lr"/
+
+  CHARACTER*8 :: &
+       CAlphabet(26)
+
+  DATA CAlphabet/"Aa","Bb","Cc","Dd","Ee","Ff","Gg","Hh","Ii","Jj","Kk","Ll",&
+       "Mm","Nn","Oo","Pp","Qq","Rr","Ss","Tt","Uu","Vv","Ww","Xx","Yy","Zz"/
 
 END MODULE CConst
 
@@ -86,7 +106,8 @@ MODULE IConst
        ADD_OUT_INFO=6, &
        IParallelFLAG=0,&
        IRandomFLAG = 0, &
-       IRefinementVariableTypes = 8,&
+       IFixedSeed = 123456789,&
+       IRefinementVariableTypes = 11,&
        NElements=103
 
   !PriorityFLAG values - to match to the WriteFLAG - will change eventually,
@@ -140,7 +161,7 @@ MODULE IPara
        IImageFLAG,IBeamConvergenceFLAG,  &
        IPseudoCubicFLAG,IXDirectionFLAG,IDevFLAG, &
        IRefineModeFLAG,ISoftwareMode,IHKLSelectFLAG,IPrint,IRefineSwitch,&
-       IWeightingFLAG,IContinueFLAG
+       IWeightingFLAG,IContinueFLAG,ICorrelationFLAG,IImageProcessingFLAG
 
   !Minimum Reflections etc
   INTEGER(IKIND) :: &
@@ -473,7 +494,7 @@ MODULE RPara
   REAL(RKIND),DIMENSION(:),ALLOCATABLE :: &
        RAllowedVectorMagnitudes
   REAL(RKIND) :: &
-       RSimplexLengthScale,RSimplexStandardDeviation,RSimplexMean
+       RSimplexLengthScale,RSimplexStandardDeviation,RSimplexMean,RRSoSScalingFactor
 
   !Refinement Initial Coordinates
 
