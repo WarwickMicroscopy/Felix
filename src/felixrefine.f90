@@ -61,6 +61,7 @@ PROGRAM Felixrefine
   REAL(RKIND) :: &
        StartTime, CurrentTime, Duration, TotalDurationEstimate,&
        RFigureOfMerit,SimplexFunction  
+  INTEGER :: IStartTime, ICurrentTime ,IRate
   REAL(RKIND),DIMENSION(:,:),ALLOCATABLE :: &
        RSimplexVolume
   REAL(RKIND),DIMENSION(:),ALLOCATABLE :: &
@@ -69,6 +70,8 @@ PROGRAM Felixrefine
        RBCASTREAL
   REAL(RKIND) :: &
        RStandardDeviation,RMean
+
+  CHARACTER*40 surname, my_rank_string 
 
   !-------------------------------------------------------------------
   ! constants
@@ -124,7 +127,8 @@ PROGRAM Felixrefine
   ! timing startup
   !--------------------------------------------------------------------
 
-  CALL cpu_time(StartTime)
+  CALL SYSTEM_CLOCK(count_rate=IRate)
+  CALL SYSTEM_CLOCK(IStarttime)
 
   !--------------------------------------------------------------------
   ! INPUT section 
@@ -247,15 +251,19 @@ PROGRAM Felixrefine
   ! finish off
   !--------------------------------------------------------------------
   
-  CALL cpu_time(CurrentTime)
-  Duration=(CurrentTime-StartTime)
+  WRITE(my_rank_string,*) my_rank
+    
+  CALL SYSTEM_CLOCK(ICurrentTime)
+  Duration=REAL(ICurrentTime-IStartTime)/REAL(IRate)
   IHours = FLOOR(Duration/3600.0D0)
   IMinutes = FLOOR(MOD(Duration,3600.0D0)/60.0D0)
-  ISeconds = MOD(Duration,3600.0D0)-IMinutes*60.0D0
-  IMilliSeconds = INT((Duration-(IHours*3600+IMinutes*60+ISeconds))*100,IKIND)
+  ISeconds = MOD(Duration,3600.0D0)-IMinutes*60
+  IMilliSeconds = INT((Duration-(IHours*3600+IMinutes*60+ISeconds))*1000,IKIND)
 
-  PRINT*, "Felixrefine(", my_rank, ") ", RStr, ", used time=", IHours, "hrs ",IMinutes,"mins ",ISeconds,"Seconds ",&
-       IMilliSeconds,"Milliseconds"
+  PRINT*, "felixrefine( ", TRIM(ADJUSTL(my_rank_string)), " ) ", &
+       RStr, ", used time=", IHours, "hrs ", &
+       IMinutes,"mins ",ISeconds,"secs ", IMilliSeconds,"millisecs"
+
   !--------------------------------------------------------------------
   ! Shut down MPI
   !--------------------------------------------------------------------
