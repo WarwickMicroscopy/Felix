@@ -165,10 +165,6 @@ SUBROUTINE ReadInpFile( IErr )
   CALL Message ("ReadInpFile",IInfo,IErr,MessageVariable ="IAnisoDebyeWallerFactorFlag",IVariable=IAnisoDebyeWallerFactorFlag)
 
   ILine= ILine+1
-  READ(IChInp,10,ERR=20,END=30) IBeamConvergenceFLAG
-  CALL Message ("ReadInpFile",IInfo,IErr,MessageVariable ="IBeamConvergenceFLAG",IVariable=IBeamConvergenceFLAG)
-
-  ILine= ILine+1
   READ(IChInp,10,ERR=20,END=30) IPseudoCubicFLAG
   CALL Message ("ReadInpFile",IInfo,IErr,MessageVariable ="IPseudoCubicFLAG",IVariable=IPseudoCubicFLAG)
 
@@ -567,7 +563,7 @@ SUBROUTINE ReadInpFile( IErr )
   RETURN
   
   !	error in OPEN detected
-120 IF(my_rank.EQ.0.OR.IWriteFLAG.GE.10) THEN
+120 IF(my_rank.EQ.0) THEN
      PRINT*,"ReadInpFile(): ERR in OPEN"
      PRINT*,""
      CALL WriteOutInputFile (IErr)
@@ -575,27 +571,27 @@ SUBROUTINE ReadInpFile( IErr )
   GOTO 1000
   
   !	error in CLOSE detected
-130 IF(my_rank.EQ.0.OR.IWriteFLAG.GE.10) THEN
+130 IF(my_rank.EQ.0) THEN
      PRINT*,"Input(): ERR in CLOSE"
   END IF
   GOTO 1000
   
   !	error in READ detected
-20 IF(my_rank.EQ.0.OR.IWriteFLAG.GE.10) THEN
+20 IF(my_rank.EQ.0) THEN
      PRINT*,"Input(): ERR in READ at line", ILine
      CALL WriteOutInputFile (IErr)
   END IF
   GOTO 1000
   
   !	EOF in READ occured prematurely
-30 IF(my_rank.EQ.0.OR.IWriteFLAG.GE.10) THEN
+30 IF(my_rank.EQ.0) THEN
      PRINT*,"Input(): EOF in READ at line", ILine
      CALL WriteOutInputFile (IErr)
   END IF
   
   ! dump the input help
   
-1000 IF((my_rank.EQ.0.AND.ISoftwareMode.LT.2).OR.(IWriteFLAG.GE.10.AND.ISoftwareMode.LT.2)) THEN
+1000 IF(my_rank.EQ.0.AND.ISoftwareMode.LT.2) THEN
      PRINT*,"# Input file for felixsim/draw version :VERSION: Build :BUILD:"
      PRINT*,"# ------------------------------------"
      PRINT*,""
@@ -605,15 +601,11 @@ SUBROUTINE ReadInpFile( IErr )
      PRINT*,"# control flags"
      PRINT*,"IWriteFLAG                = 1"
      PRINT*,"IImageFLAG                = 1"
-     PRINT*,"IOutputFLAG               = 0"
-     PRINT*,"IBinorTextFLAG            = 0"  
      PRINT*,"IScatterFactorMethodFLAG  = 0"
-     PRINT*,"ICentralBeamFLAG          = 1"
      PRINT*,"IMaskFLAG                 = 0"
      PRINT*,"IZolzFLAG                 = 1"
      PRINT*,"IAbsorbFLAG               = 1"
      PRINT*,"IAnisoDebyeWallerFlag     = 0"
-     PRINT*,"IBeamConvergenceFLAG      = 1"
      PRINT*,"IPseudoCubicFLAG          = 0"
      PRINT*,"IXDirectionFLAG           = 1"
      PRINT*,""
@@ -655,7 +647,7 @@ SUBROUTINE ReadInpFile( IErr )
      PRINT*,""   
      PRINT*,"A Sample Input File Has been Written For you as felix.inp.simdraw_sample"
      PRINT*,"It must be renamed to felix.inp before use"
-  ELSE
+  ELSEIF (my_rank.EQ.0.AND.ISoftwareMode.EQ.2) THEN
      PRINT*,"# Input file for felixrefine version :VERSION: Build :BUILD:"
      PRINT*,"# ------------------------------------"
      PRINT*,""
