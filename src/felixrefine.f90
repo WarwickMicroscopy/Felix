@@ -550,7 +550,7 @@ SUBROUTINE StructureFactorRefinementSetup(RIndependentVariableValues,IIterationC
      PRINT*,"StructureFactorRefinementSetup(",my_rank,")"
   END IF
 
-  IF(IRefineModeSelectionArray(1).EQ.1.AND.IIterationCount.EQ.1) THEN
+  IF(IRefineModeSelectionArray(1).EQ.1) THEN
      DO ind = 1,INoofUgs
         RIndependentVariableValues((ind-1)*2+1) = &
              REAL(CSymmetryStrengthKey(ind),RKIND)
@@ -718,7 +718,6 @@ SUBROUTINE SimplexInitialisation(RSimplexVolume,RSimplexFoM,RIndependentVariable
            PRINT*,"-------- Simplex",ind,"of",IIndependentVariables+1
            PRINT*,"---------------------------------------------------------"
         END IF
-                
 
         RSimplexDummy = SimplexFunction(RSimplexVolume(ind,:),1,0,IErr)
         

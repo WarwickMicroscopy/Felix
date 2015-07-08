@@ -117,6 +117,13 @@ SUBROUTINE FelixFunction(RIndependentVariableValues,IIterationCount,IErr)
      ENDIF
      
      IAbsorbFLAG = 1
+  ELSE
+     
+     CALL StructureFactorSetup(IErr)
+     IF( IErr.NE.0 ) THEN
+        PRINT*,"Felixfunction(", my_rank, ") error ",IErr,"in StructureFactorSetup()"
+        RETURN
+     ENDIF
 
   END IF
   
@@ -254,7 +261,7 @@ SUBROUTINE FelixFunction(RIndependentVariableValues,IIterationCount,IErr)
   IMAXCBuffer = 200000
   IPixelComputed= 0
   
-  IF((IWriteFLAG.GE.0.AND.my_rank.EQ.0).OR.IWriteFLAG.GE.6) THEN
+  IF(IWriteFLAG.GE.0.AND.my_rank.EQ.0) THEN
      PRINT*,"Felixfunction(",my_rank,") Entering BlochLoop()"
   END IF
 
@@ -804,7 +811,6 @@ REAL(RKIND) FUNCTION SimplexFunction(RIndependentVariableValues,IIterationCount,
   
   CALL UpdateVariables(RIndependentVariableValues,IErr)
   IF( IErr.NE.0 ) THEN
-     
      PRINT*,"SimplexFunction(", my_rank, ") error ", IErr, &
           " in UpdateVariables"
      RETURN
@@ -812,20 +818,18 @@ REAL(RKIND) FUNCTION SimplexFunction(RIndependentVariableValues,IIterationCount,
   
   WHERE(RAtomSiteFracCoordVec.LT.0) RAtomSiteFracCoordVec=RAtomSiteFracCoordVec+ONE
   WHERE(RAtomSiteFracCoordVec.GT.1) RAtomSiteFracCoordVec=RAtomSiteFracCoordVec-ONE
-  
-  IF (my_rank.EQ.0) THEN
-     CALL PrintVariables(IErr)
-  END IF
-  
-  IF(IRefineModeSelectionArray(1).EQ.1) THEN
-     
+
+  IF(IRefineModeSelectionArray(1).EQ.1) THEN     
      CALL UpdateStructureFactors(RIndependentVariableValues,IErr)
      IF( IErr.NE.0 ) THEN
         PRINT*,"SimplexFunction(", my_rank, ") error ", IErr, &
              " in UpdateStructureFactors"
         RETURN
-     ENDIF
-     
+     ENDIF     
+  END IF
+ 
+  IF (my_rank.EQ.0) THEN
+     CALL PrintVariables(IErr)
   END IF
 
   CALL FelixFunction(RIndependentVariableValues,IIterationCount,IErr) ! Simulate !!  
@@ -1149,6 +1153,15 @@ SUBROUTINE WriteIterationStructure(path,IErr)
           " in Deallocation RgVecMag"
      RETURN
   ENDIF
+       
+  DEALLOCATE( &
+       RgVecVec,&
+       STAT=IErr)
+  IF( IErr.NE.0 ) THEN
+     PRINT*,"WriteIterationStructure(", my_rank, ") error ", IErr, &
+          " in Deallocation RgVecMag"
+     RETURN
+  ENDIF
 
   DEALLOCATE( &
        RrVecMat, &
@@ -1237,7 +1250,10 @@ SUBROUTINE UpdateVariables(RIndependentVariableValues,IErr)
 
   !!$  Fill the Independent Value array with values
   
-  RAtomSiteFracCoordVec = RInitialAtomSiteFracCoordVec
+  
+  IF(IRefineModeSelectionArray(2).EQ.1) THEN     
+     RAtomSiteFracCoordVec = RInitialAtomSiteFracCoordVec
+  END IF
 
   DO ind = 1,IIndependentVariables
      IVariableType = IIterativeVariableUniqueIDs(ind,2)
