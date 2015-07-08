@@ -37,7 +37,7 @@
 !%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 !!$REAL(RKIND) FUNCTION FelixFunction(IIterationFLAG,IErr)
-SUBROUTINE FelixFunction(RIndependentVariableValues,IIterationCount,IErr)
+SUBROUTINE FelixFunction(IInitialSimulationFLAG,IErr)
 
   USE MyNumbers
   
@@ -59,16 +59,19 @@ SUBROUTINE FelixFunction(RIndependentVariableValues,IIterationCount,IErr)
   INTEGER(IKIND) :: &
        IErr,ind,jnd,knd,pnd,&
        IThicknessIndex,ILocalPixelCountMin, ILocalPixelCountMax,&
-       IIterationFLAG,IIterationCount
-  INTEGER, DIMENSION(:), ALLOCATABLE :: &
+       IIterationFLAG
+!!$  IIterationCount
+  INTEGER(IKIND), DIMENSION(:), ALLOCATABLE :: &
        IDisplacements,ICount
+  INTEGER(IKIND),OPTIONAL,INTENT(IN) :: &
+       IInitialSimulationFLAG !If function is being called during initialisation
   REAL(RKIND),DIMENSION(:,:,:),ALLOCATABLE :: &
        RIndividualReflectionsRoot,&
        RFinalMontageImageRoot
   COMPLEX(CKIND),DIMENSION(:,:,:), ALLOCATABLE :: &
        CAmplitudeandPhaseRoot 
-  REAL(RKIND),DIMENSION(IIndependentVariables),INTENT(INOUT) :: &
-       RIndependentVariableValues 
+!!$  REAL(RKIND),DIMENSION(IIndependentVariables),INTENT(INOUT) :: &
+!!$       RIndependentVariableValues 
 
   IF((IWriteFLAG.GE.0.AND.my_rank.EQ.0).OR.IWriteFLAG.GE.10) THEN
      PRINT*,"Felix function"
@@ -127,7 +130,7 @@ SUBROUTINE FelixFunction(RIndependentVariableValues,IIterationCount,IErr)
 
   END IF
   
-  IF(IRefineModeSelectionArray(1).EQ.1) THEN
+  IF(IRefineModeSelectionArray(1).EQ.1.AND.PRESENT(IInitialSimulationFLAG).NE.TRUE) THEN
      
      CALL ApplyNewStructureFactors(IErr)
      IF( IErr.NE.0 ) THEN
@@ -417,14 +420,6 @@ SUBROUTINE FelixFunction(RIndependentVariableValues,IIterationCount,IErr)
   ENDIF
 
   DEALLOCATE( &
-       CUgMat,STAT=IErr)
-  IF( IErr.NE.0 ) THEN
-     PRINT*,"Felixfunction(", my_rank, ") error ", IErr, &
-          " Deallocating CUgMat"
-     RETURN
-  ENDIF
-
-  DEALLOCATE( &
        RDevPara,STAT=IErr)
   IF( IErr.NE.0 ) THEN
      PRINT*,"Felixfunction(", my_rank, ") error ", IErr, &
@@ -615,14 +610,26 @@ SUBROUTINE FelixFunction(RIndependentVariableValues,IIterationCount,IErr)
      RETURN
   ENDIF
 
-  DEALLOCATE( &
-       RgVecMag,&
-       STAT=IErr)
-  IF( IErr.NE.0 ) THEN
-     PRINT*,"Felixfunction(", my_rank, ") error ", IErr, &
-          " in Deallocation RgVecMag"
-     RETURN
-  ENDIF
+  IF(PRESENT(IInitialSimulationFLAG).NE.TRUE) THEN
+     
+     DEALLOCATE( &
+          RgVecMag,&
+          STAT=IErr)
+     IF( IErr.NE.0 ) THEN
+        PRINT*,"Felixfunction(", my_rank, ") error ", IErr, &
+             " in Deallocation RgVecMag"
+        RETURN
+     ENDIF
+     
+     DEALLOCATE( &
+          CUgMat,STAT=IErr)
+     IF( IErr.NE.0 ) THEN
+        PRINT*,"Felixfunction(", my_rank, ") error ", IErr, &
+             " Deallocating CUgMat"
+        RETURN
+     ENDIF
+     
+  END IF
 
   DEALLOCATE( &
        RgVecVec,&
@@ -832,7 +839,7 @@ REAL(RKIND) FUNCTION SimplexFunction(RIndependentVariableValues,IIterationCount,
      CALL PrintVariables(IErr)
   END IF
 
-  CALL FelixFunction(RIndependentVariableValues,IIterationCount,IErr) ! Simulate !!  
+  CALL FelixFunction(IErr) ! Simulate !!  
   IF( IErr.NE.0 ) THEN
      PRINT*,"SimplexFunction(", my_rank, ") error ", IErr, &
           " in FelixFunction"
@@ -1516,6 +1523,16 @@ SUBROUTINE InitialiseWeightingCoefficients(IErr)
         RWeightingCoefficients(1) = RWeightingCoefficients(2)/TWO 
      END IF
   END SELECT
+
+  DEALLOCATE(&
+       RgVecMag,&
+       STAT=IErr)
+  IF( IErr.NE.0 ) THEN
+     PRINT*,"InitialiseWeightingCoefficients(", my_rank, ") error ", IErr, &
+          " in Deallocation RgVecMag"
+     RETURN
+  ENDIF
+
 
 END SUBROUTINE InitialiseWeightingCoefficients
 

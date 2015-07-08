@@ -634,6 +634,8 @@ SUBROUTINE SimplexInitialisation(RSimplexVolume,RSimplexFoM,RIndependentVariable
 
   INTEGER(IKIND) :: &
        IErr,ind,jnd
+  INTEGER(IKIND) :: &
+       IInitialSimulationFLAG = 1 ! Its value is meaningless :)
   REAL(RKIND),DIMENSION(IIndependentVariables+1,IIndependentVariables),INTENT(OUT) :: &
        RSimplexVolume
   REAL(RKIND),DIMENSION(IIndependentVariables+1),INTENT(OUT) :: &
@@ -653,9 +655,9 @@ SUBROUTINE SimplexInitialisation(RSimplexVolume,RSimplexFoM,RIndependentVariable
      PRINT*,"SimplexInitialisation(",my_rank,")"
   END IF
       
-  CALL PerformDummySimulationToSetupSimplexValues(IErr)
+  CALL FelixFunction(IInitialSimulationFLAG=IInitialSimulationFLAG,IErr)
   IF( IErr.NE.0 ) THEN
-     PRINT*,"SimplexInitialisation(", my_rank, ") error in PerformDummySimulationToSetupSimplexValues()"
+     PRINT*,"SimplexInitialisation(", my_rank, ") error in PerformInitialSimulation()"
      RETURN
   ENDIF
   
@@ -670,7 +672,6 @@ SUBROUTINE SimplexInitialisation(RSimplexVolume,RSimplexFoM,RIndependentVariable
      PRINT*,"SimplexInitialisation(", my_rank, ") error in RefinementVariableSetup()"
      RETURN
   ENDIF
-
   
   IF(IRefineModeSelectionArray(1).EQ.1) THEN
      
@@ -853,7 +854,7 @@ END SUBROUTINE CreateRandomisedSimplex
 
 !%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-SUBROUTINE PerformDummySimulationToSetupSimplexValues(IErr)
+SUBROUTINE PerformInitialSimulation(IErr)
 
 !!$  %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 !!$  % Calls setup subroutines to initialise Structure factors for 
@@ -877,7 +878,7 @@ SUBROUTINE PerformDummySimulationToSetupSimplexValues(IErr)
        IErr
   
   IF((IWriteFLAG.GE.0.AND.my_rank.EQ.0).OR.IWriteFLAG.GE.10) THEN
-     PRINT*,"PerformDummySimulationToSetupSimplexValues(",my_rank,")"
+     PRINT*,"PerformInitialSimulation(",my_rank,")"
   END IF
   
   !-------------------------------------------------------------------- 
@@ -886,7 +887,7 @@ SUBROUTINE PerformDummySimulationToSetupSimplexValues(IErr)
 
   CALL ExperimentalSetup (IErr)
   IF( IErr.NE.0 ) THEN
-     PRINT*,"PerformDummySimulationToSetupSimplexValues(", my_rank, ") error in ExperimentalSetup()"
+     PRINT*,"PerformInitialSimulation(", my_rank, ") error in ExperimentalSetup()"
      RETURN
   ENDIF
     
@@ -896,7 +897,7 @@ SUBROUTINE PerformDummySimulationToSetupSimplexValues(IErr)
 
   CALL ImageSetup( IErr )
   IF( IErr.NE.0 ) THEN
-     PRINT*,"PerformDummySimulationToSetupSimplexValues(", my_rank, ") error in ImageSetup()"
+     PRINT*,"PerformInitialSimulation(", my_rank, ") error in ImageSetup()"
      RETURN
   ENDIF
 
@@ -911,7 +912,7 @@ SUBROUTINE PerformDummySimulationToSetupSimplexValues(IErr)
      
      CALL StructureFactorSetup(IErr)
      IF( IErr.NE.0 ) THEN
-        PRINT*,"PerformDummySimulationToSetupSimplexValues(", my_rank, ") error in StructureFactorSetup()"
+        PRINT*,"PerformInitialSimulation(", my_rank, ") error in StructureFactorSetup()"
         RETURN
      ENDIF
      
@@ -923,7 +924,7 @@ SUBROUTINE PerformDummySimulationToSetupSimplexValues(IErr)
        MNP,&
        STAT=IErr)
   IF( IErr.NE.0 ) THEN
-     PRINT*,"PerformDummySimulationToSetupSimplexValues(", my_rank, ") error ", IErr, &
+     PRINT*,"PerformInitialSimulation(", my_rank, ") error ", IErr, &
           " in Deallocation MNP"
      RETURN
   ENDIF
@@ -932,7 +933,7 @@ SUBROUTINE PerformDummySimulationToSetupSimplexValues(IErr)
         SMNP, &
        STAT=IErr)
   IF( IErr.NE.0 ) THEN
-     PRINT*,"PerformDummySimulationToSetupSimplexValues(", my_rank, ") error ", IErr, &
+     PRINT*,"PerformInitialSimulation(", my_rank, ") error ", IErr, &
           " in Deallocation SMNP"
      RETURN
   ENDIF
@@ -941,7 +942,7 @@ SUBROUTINE PerformDummySimulationToSetupSimplexValues(IErr)
        RFullAtomicFracCoordVec, &
        STAT=IErr)
   IF( IErr.NE.0 ) THEN
-     PRINT*,"PerformDummySimulationToSetupSimplexValues(", my_rank, ") error ", IErr, &
+     PRINT*,"PerformInitialSimulation(", my_rank, ") error ", IErr, &
           " in Deallocation RFullAtomicFracCoordVec"
      RETURN
   ENDIF
@@ -950,7 +951,7 @@ SUBROUTINE PerformDummySimulationToSetupSimplexValues(IErr)
        SFullAtomicNameVec,&
        STAT=IErr)
   IF( IErr.NE.0 ) THEN
-     PRINT*,"PerformDummySimulationToSetupSimplexValues(", my_rank, ") error ", IErr, &
+     PRINT*,"PerformInitialSimulation(", my_rank, ") error ", IErr, &
           " in Deallocation SFullAtomicNameVec"
      RETURN
   ENDIF
@@ -959,7 +960,7 @@ SUBROUTINE PerformDummySimulationToSetupSimplexValues(IErr)
        IFullAnisotropicDWFTensor,&
        STAT=IErr)
   IF( IErr.NE.0 ) THEN
-     PRINT*,"PerformDummySimulationToSetupSimplexValues(", my_rank, ") error ", IErr, &
+     PRINT*,"PerformInitialSimulation(", my_rank, ") error ", IErr, &
           " in Deallocation IFullAnisotropicDWFTensor"
      RETURN
   ENDIF
@@ -968,7 +969,7 @@ SUBROUTINE PerformDummySimulationToSetupSimplexValues(IErr)
        IFullAtomNumber,&
        STAT=IErr)
   IF( IErr.NE.0 ) THEN
-     PRINT*,"PerformDummySimulationToSetupSimplexValues(", my_rank, ") error ", IErr, &
+     PRINT*,"PerformInitialSimulation(", my_rank, ") error ", IErr, &
           " in Deallocation IFullAtomNumber"
      RETURN
   ENDIF
@@ -977,7 +978,7 @@ SUBROUTINE PerformDummySimulationToSetupSimplexValues(IErr)
        RFullIsotropicDebyeWallerFactor,&
        STAT=IErr)
   IF( IErr.NE.0 ) THEN
-     PRINT*,"PerformDummySimulationToSetupSimplexValues(", my_rank, ") error ", IErr, &
+     PRINT*,"PerformInitialSimulation(", my_rank, ") error ", IErr, &
           " in Deallocation RFullIsotropicDebyeWallerFactor"
      RETURN
   ENDIF
@@ -986,7 +987,7 @@ SUBROUTINE PerformDummySimulationToSetupSimplexValues(IErr)
        RFullPartialOccupancy,&
        STAT=IErr)
   IF( IErr.NE.0 ) THEN
-     PRINT*,"PerformDummySimulationToSetupSimplexValues(", my_rank, ") error ", IErr, &
+     PRINT*,"PerformInitialSimulation(", my_rank, ") error ", IErr, &
           " in Deallocation RFullPartialOccupancy"
      RETURN
   ENDIF
@@ -995,7 +996,7 @@ SUBROUTINE PerformDummySimulationToSetupSimplexValues(IErr)
        RDWF,&
        STAT=IErr)
   IF( IErr.NE.0 ) THEN
-     PRINT*,"PerformDummySimulationToSetupSimplexValues(", my_rank, ") error ", IErr, &
+     PRINT*,"PerformInitialSimulation(", my_rank, ") error ", IErr, &
           " in Deallocation RDWF"
      RETURN
   ENDIF
@@ -1004,7 +1005,7 @@ SUBROUTINE PerformDummySimulationToSetupSimplexValues(IErr)
        ROcc,&
        STAT=IErr)
   IF( IErr.NE.0 ) THEN
-     PRINT*,"PerformDummySimulationToSetupSimplexValues(", my_rank, ") error ", IErr, &
+     PRINT*,"PerformInitialSimulation(", my_rank, ") error ", IErr, &
           " in Deallocation ROcc"
      RETURN
   ENDIF
@@ -1013,7 +1014,7 @@ SUBROUTINE PerformDummySimulationToSetupSimplexValues(IErr)
        IAtoms,&
        STAT=IErr)
   IF( IErr.NE.0 ) THEN
-     PRINT*,"PerformDummySimulationToSetupSimplexValues(", my_rank, ") error ", IErr, &
+     PRINT*,"PerformInitialSimulation(", my_rank, ") error ", IErr, &
           " in Deallocation IAtoms"
      RETURN
   ENDIF
@@ -1022,7 +1023,7 @@ SUBROUTINE PerformDummySimulationToSetupSimplexValues(IErr)
        IAnisoDWFT,&
        STAT=IErr)
   IF( IErr.NE.0 ) THEN
-     PRINT*,"PerformDummySimulationToSetupSimplexValues(", my_rank, ") error ", IErr, &
+     PRINT*,"PerformInitialSimulation(", my_rank, ") error ", IErr, &
           " in Deallocation IAnisoDWFT"
      RETURN
   ENDIF
@@ -1031,7 +1032,7 @@ SUBROUTINE PerformDummySimulationToSetupSimplexValues(IErr)
        Rhkl,&
        STAT=IErr)
   IF( IErr.NE.0 ) THEN
-     PRINT*,"PerformDummySimulationToSetupSimplexValues(", my_rank, ") error ", IErr, &
+     PRINT*,"PerformInitialSimulation(", my_rank, ") error ", IErr, &
           " in Deallocation Rhkl"
      RETURN
   ENDIF
@@ -1040,7 +1041,7 @@ SUBROUTINE PerformDummySimulationToSetupSimplexValues(IErr)
        RgVecMatT,&
        STAT=IErr)
   IF( IErr.NE.0 ) THEN
-     PRINT*,"PerformDummySimulationToSetupSimplexValues(", my_rank, ") error ", IErr, &
+     PRINT*,"PerformInitialSimulation(", my_rank, ") error ", IErr, &
           " in Deallocation RgVecMatT"
      RETURN
   ENDIF
@@ -1049,7 +1050,7 @@ SUBROUTINE PerformDummySimulationToSetupSimplexValues(IErr)
        RgVecMag,&
        STAT=IErr)
   IF( IErr.NE.0 ) THEN
-     PRINT*,"PerformDummySimulationToSetupSimplexValues(", my_rank, ") error ", IErr, &
+     PRINT*,"PerformInitialSimulation(", my_rank, ") error ", IErr, &
           " in Deallocation RgVecMag"
      RETURN
   ENDIF
@@ -1058,7 +1059,7 @@ SUBROUTINE PerformDummySimulationToSetupSimplexValues(IErr)
        RgVecVec,&
        STAT=IErr)
   IF( IErr.NE.0 ) THEN
-     PRINT*,"PerformDummySimulationToSetupSimplexValues(", my_rank, ") error ", IErr, &
+     PRINT*,"PerformInitialSimulation(", my_rank, ") error ", IErr, &
           " in Deallocation RGn" 
      RETURN
   ENDIF
@@ -1067,7 +1068,7 @@ SUBROUTINE PerformDummySimulationToSetupSimplexValues(IErr)
        Rhklpositions,&
        STAT=IErr)
   IF( IErr.NE.0 ) THEN
-     PRINT*,"PerformDummySimulationToSetupSimplexValues(", my_rank, ") error ", IErr, &
+     PRINT*,"PerformInitialSimulation(", my_rank, ") error ", IErr, &
           " in Deallocation Rhklpositions"
      RETURN
   ENDIF  
@@ -1076,7 +1077,7 @@ SUBROUTINE PerformDummySimulationToSetupSimplexValues(IErr)
        RMask,&
        STAT=IErr)
   IF( IErr.NE.0 ) THEN
-     PRINT*,"PerformDummySimulationToSetupSimplexValues(", my_rank, ") error ", IErr, &
+     PRINT*,"PerformInitialSimulation(", my_rank, ") error ", IErr, &
           " in Deallocation RMask"
      RETURN
   ENDIF
@@ -1085,14 +1086,14 @@ SUBROUTINE PerformDummySimulationToSetupSimplexValues(IErr)
        IPixelLocations,&
        STAT=IErr)
   IF( IErr.NE.0 ) THEN
-     PRINT*,"PerformDummySimulationToSetupSimplexValues(", my_rank, ") error ", IErr, &
+     PRINT*,"PerformInitialSimulation(", my_rank, ") error ", IErr, &
           " in Deallocation IPixelLocations"
      RETURN
   ENDIF
 
   IDiffractionFLAG = 0
 
-END SUBROUTINE PerformDummySimulationToSetupSimplexValues
+END SUBROUTINE PerformInitialSimulation
 
 !!$  %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
