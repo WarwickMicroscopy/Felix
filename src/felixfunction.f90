@@ -818,11 +818,7 @@ REAL(RKIND) FUNCTION SimplexFunction(RIndependentVariableValues,IIterationCount,
   
   WHERE(RAtomSiteFracCoordVec.LT.0) RAtomSiteFracCoordVec=RAtomSiteFracCoordVec+ONE
   WHERE(RAtomSiteFracCoordVec.GT.1) RAtomSiteFracCoordVec=RAtomSiteFracCoordVec-ONE
-  
-  IF (my_rank.EQ.0) THEN
-     CALL PrintVariables(IErr)
-  END IF
-  
+
   IF(IRefineModeSelectionArray(1).EQ.1) THEN     
      CALL UpdateStructureFactors(RIndependentVariableValues,IErr)
      IF( IErr.NE.0 ) THEN
@@ -830,6 +826,10 @@ REAL(RKIND) FUNCTION SimplexFunction(RIndependentVariableValues,IIterationCount,
              " in UpdateStructureFactors"
         RETURN
      ENDIF     
+  END IF
+ 
+  IF (my_rank.EQ.0) THEN
+     CALL PrintVariables(IErr)
   END IF
 
   CALL FelixFunction(RIndependentVariableValues,IIterationCount,IErr) ! Simulate !!  
@@ -1153,6 +1153,15 @@ SUBROUTINE WriteIterationStructure(path,IErr)
           " in Deallocation RgVecMag"
      RETURN
   ENDIF
+       
+  DEALLOCATE( &
+       RgVecVec,&
+       STAT=IErr)
+  IF( IErr.NE.0 ) THEN
+     PRINT*,"WriteIterationStructure(", my_rank, ") error ", IErr, &
+          " in Deallocation RgVecMag"
+     RETURN
+  ENDIF
 
   DEALLOCATE( &
        RrVecMat, &
@@ -1241,7 +1250,10 @@ SUBROUTINE UpdateVariables(RIndependentVariableValues,IErr)
 
   !!$  Fill the Independent Value array with values
   
-  RAtomSiteFracCoordVec = RInitialAtomSiteFracCoordVec
+  
+  IF(IRefineModeSelectionArray(2).EQ.1) THEN     
+     RAtomSiteFracCoordVec = RInitialAtomSiteFracCoordVec
+  END IF
 
   DO ind = 1,IIndependentVariables
      IVariableType = IIterativeVariableUniqueIDs(ind,2)
