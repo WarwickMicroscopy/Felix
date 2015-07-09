@@ -201,7 +201,7 @@ SUBROUTINE CountTotalAtoms(IErr)
        Lunique
 
   CALL Message("CountTotalAtoms",IMust,IErr)
-
+     
   ITotalAtoms = 0
 
   ALLOCATE( &
@@ -221,7 +221,7 @@ SUBROUTINE CountTotalAtoms(IErr)
      PRINT*,"CountTotalAtoms(", my_rank, ") error ", IErr, " in ALLOCATE()"
      RETURN
   ENDIF
-  
+
   RFullAtomicFracCoordVec = ZERO
 
   CALL Message("CountTotalAtoms",IAllInfo,IErr, &
@@ -264,7 +264,6 @@ SUBROUTINE CountTotalAtoms(IErr)
      END DO
   END DO
 
-  
   ! Calculate the set of unique fractional atomic positions
   CALL Message("CountTotalAtoms",IMoreInfo,IErr, MessageVariable = "ITotalAtoms", &
        IVariable = ITotalAtoms)
@@ -320,7 +319,6 @@ SUBROUTINE CountTotalAtoms(IErr)
      ITotalAtoms = Iuniind
      
   END IF
-  
   
   CALL Message("CountTotalAtoms",IMoreInfo,IErr,MessageVariable = "ITotalAtoms",IVariable=ITotalAtoms)
 
