@@ -60,7 +60,6 @@ SUBROUTINE FelixFunction(LInitialSimulationFLAG,IErr)
        IErr,ind,jnd,knd,pnd,&
        IThicknessIndex,ILocalPixelCountMin, ILocalPixelCountMax,&
        IIterationFLAG
-!!$  IIterationCount
   INTEGER(IKIND), DIMENSION(:), ALLOCATABLE :: &
        IDisplacements,ICount
   LOGICAL,INTENT(IN) :: &
@@ -70,8 +69,6 @@ SUBROUTINE FelixFunction(LInitialSimulationFLAG,IErr)
        RFinalMontageImageRoot
   COMPLEX(CKIND),DIMENSION(:,:,:), ALLOCATABLE :: &
        CAmplitudeandPhaseRoot 
-!!$  REAL(RKIND),DIMENSION(IIndependentVariables),INTENT(INOUT) :: &
-!!$       RIndependentVariableValues 
 
   IF((IWriteFLAG.GE.0.AND.my_rank.EQ.0).OR.IWriteFLAG.GE.10) THEN
      PRINT*,"Felix function"
@@ -127,10 +124,10 @@ SUBROUTINE FelixFunction(LInitialSimulationFLAG,IErr)
         PRINT*,"Felixfunction(", my_rank, ") error ",IErr,"in StructureFactorSetup()"
         RETURN
      ENDIF
-
+     
   END IF
   
-  IF(IRefineModeSelectionArray(1).EQ.1.AND.LInitialSimulationFLAG.NEQV..TRUE.) THEN
+  IF((IRefineModeSelectionArray(1).EQ.1).AND.(LInitialSimulationFLAG.NEQV..TRUE.)) THEN
      
      CALL ApplyNewStructureFactors(IErr)
      IF( IErr.NE.0 ) THEN
