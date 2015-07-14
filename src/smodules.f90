@@ -494,7 +494,7 @@ MODULE RPara
   REAL(RKIND),DIMENSION(:),ALLOCATABLE :: &
        RAllowedVectorMagnitudes
   REAL(RKIND) :: &
-       RSimplexLengthScale,RSimplexStandardDeviation,RSimplexMean,RRSoSScalingFactor
+       RSimplexLengthScale,RExitCriteria,RSimplexStandardDeviation,RSimplexMean,RRSoSScalingFactor
 
   !Refinement Initial Coordinates
 

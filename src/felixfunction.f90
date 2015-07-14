@@ -60,6 +60,8 @@ SUBROUTINE FelixFunction(LInitialSimulationFLAG,IErr)
        IErr,ind,jnd,knd,pnd,&
        IThicknessIndex,ILocalPixelCountMin, ILocalPixelCountMax,&
        IIterationFLAG
+  INTEGER(IKIND) :: &
+       IAbsorbTag = 0
   INTEGER(IKIND), DIMENSION(:), ALLOCATABLE :: &
        IDisplacements,ICount
   LOGICAL,INTENT(IN) :: &
@@ -105,28 +107,21 @@ SUBROUTINE FelixFunction(LInitialSimulationFLAG,IErr)
   ! MAIN section
   !--------------------------------------------------------------------
  
+!!$  Structure Factors must be calculated without absorption for refinement to work
 
-  IF(IAbsorbFLAG.NE.0) THEN
-     
-     IAbsorbFLAG = 0
-     
-     CALL StructureFactorSetup(IErr)
-     IF( IErr.NE.0 ) THEN
-        PRINT*,"Felixfunction(", my_rank, ") error ",IErr,"in StructureFactorSetup()"
-        RETURN
-     ENDIF
-     
-     IAbsorbFLAG = 1
-  ELSE
-     
-     CALL StructureFactorSetup(IErr)
-     IF( IErr.NE.0 ) THEN
-        PRINT*,"Felixfunction(", my_rank, ") error ",IErr,"in StructureFactorSetup()"
-        RETURN
-     ENDIF
-     
+  IF(IAbsorbFLAG.NE.0) THEN 
+     IAbsorbFLAG = 0 ! Non-absorpative structure factor calculation
+     IAbsorbTAG = 1 ! Remember that IAbsorbFLAG was 1
   END IF
   
+  CALL StructureFactorSetup(IErr)
+  IF( IErr.NE.0 ) THEN
+     PRINT*,"Felixfunction(", my_rank, ") error ",IErr,"in StructureFactorSetup()"
+     RETURN
+  ENDIF
+
+  IF(IAbsorbTAG.NE.0) IAbsorbFLAG = 1 !Reset IAbsorbFLAG to 1
+
   IF((IRefineModeSelectionArray(1).EQ.1).AND.(LInitialSimulationFLAG.NEQV..TRUE.)) THEN
      
      CALL ApplyNewStructureFactors(IErr)
@@ -609,15 +604,7 @@ SUBROUTINE FelixFunction(LInitialSimulationFLAG,IErr)
              " in Deallocation RgVecMag"
         RETURN
      ENDIF
-     
-     DEALLOCATE( &
-          CUgMat,STAT=IErr)
-     IF( IErr.NE.0 ) THEN
-        PRINT*,"Felixfunction(", my_rank, ") error ", IErr, &
-             " Deallocating CUgMat"
-        RETURN
-     ENDIF
-     
+
   END IF
 
   IF((my_rank.NE.0).AND.(LInitialSimulationFLAG.NEQV..TRUE.)) THEN     
@@ -625,21 +612,21 @@ SUBROUTINE FelixFunction(LInitialSimulationFLAG,IErr)
           Rhkl,&
           STAT=IErr)
      IF( IErr.NE.0 ) THEN
-        PRINT*,"SimplexFunction(", my_rank, ") error ", IErr, &
+        PRINT*,"Felixfunction(", my_rank, ") error ", IErr, &
              " in Deallocation Rhkl"
         RETURN
-     ENDIF     
+     ENDIF
   END IF
-
+  
 !!$  IF (my_rank.NE.0) THEN
-
-      DEALLOCATE( &
-           Rhklpositions,STAT=IErr)
-      IF( IErr.NE.0 ) THEN
-         PRINT*,"Felixfunction(", my_rank, ") error ", IErr, &
-              " Deallocating Rhklpositions"
-         RETURN
-      ENDIF
+  
+  DEALLOCATE( &
+       Rhklpositions,STAT=IErr)
+  IF( IErr.NE.0 ) THEN
+     PRINT*,"Felixfunction(", my_rank, ") error ", IErr, &
+          " Deallocating Rhklpositions"
+     RETURN
+  ENDIF
 !!$   END IF
 
   DEALLOCATE( &
@@ -859,9 +846,26 @@ REAL(RKIND) FUNCTION SimplexFunction(RIndependentVariableValues,IIterationCount,
              " in CreateImagesAndWriteOutput"
         RETURN
      ENDIF
+     
      SimplexFunction = RCrossCorrelation     
   END IF
-    
+     
+  DEALLOCATE( &
+       CUgMat,STAT=IErr)
+  IF( IErr.NE.0 ) THEN
+     PRINT*,"SimplexFunction(", my_rank, ") error ", IErr, &
+          " Deallocating CUgMat"
+     RETURN
+  ENDIF
+!!$  DEALLOCATE( &
+!!$       Rhkl,&
+!!$       STAT=IErr)
+!!$  IF( IErr.NE.0 ) THEN
+!!$     PRINT*,"SimplexFunction(", my_rank, ") error ", IErr, &
+!!$          " in Deallocation Rhkl"
+!!$     RETURN
+!!$  ENDIF
+  
 END FUNCTION SimplexFunction
 
 SUBROUTINE CreateImagesAndWriteOutput(IIterationCount,IExitFLAG,IErr)
@@ -922,7 +926,7 @@ SUBROUTINE CreateImagesAndWriteOutput(IIterationCount,IExitFLAG,IErr)
           " in WriteIterationOutput"
      RETURN
   ENDIF
-  
+
 !!$     FINISH OUTPUT  --------------------------------
   
   DEALLOCATE( &
@@ -942,7 +946,7 @@ SUBROUTINE CreateImagesAndWriteOutput(IIterationCount,IExitFLAG,IErr)
           " Deallocating IPixelLocations"
      RETURN
   ENDIF
-  
+       
   DEALLOCATE( &
        Rhkl,&
        STAT=IErr)
@@ -1021,12 +1025,51 @@ SUBROUTINE WriteIterationOutput(IIterationCount,IThicknessIndex,IExitFlag,IErr)
              " in WriteIterationStructure"
         RETURN
      ENDIF
-      
-  ELSE
-
+           
+     CALL WriteStructureFactors(path,IErr)
+     IF( IErr.NE.0 ) THEN
+        PRINT*,"Felixfunction(", my_rank, ") error ",IErr,"in WriteStructureFactors()"
+        RETURN
+     ENDIF
   END IF
-     
+  
 END SUBROUTINE WriteIterationOutput
+
+
+SUBROUTINE WriteStructureFactors(path,IErr)
+
+  USE MyNumbers
+  
+  USE CConst; USE IConst; USE RConst
+  USE IPara; USE RPara; USE SPara; USE CPara
+  USE BlochPara
+
+  USE IChannels
+
+  USE MPI
+  USE MyMPI
+
+  IMPLICIT NONE
+
+  INTEGER(IKIND) :: &
+       IErr,ind
+  CHARACTER*200,INTENT(IN) :: &
+       path
+  CHARACTER*200 :: &
+       filename,fullpath
+
+  WRITE(filename,*) "StructureFactors.txt"
+  WRITE(fullpath,*) TRIM(ADJUSTL(path)),'/',TRIM(ADJUSTL(filename))
+
+  OPEN(UNIT=IChOutSimplex,STATUS='UNKNOWN',&
+       FILE=TRIM(ADJUSTL(fullpath)))
+  DO ind = 1,SIZE(CUgMat,DIM=1)
+     WRITE(IChOutSimplex,FMT='(2F13.9)') CUgMat(ind,1)
+  END DO
+
+  CLOSE(IChOutSimplex)
+
+END SUBROUTINE WriteStructureFactors
 
 SUBROUTINE WriteIterationStructure(path,IErr)
 
