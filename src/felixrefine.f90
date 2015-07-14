@@ -229,7 +229,7 @@ PROGRAM Felixrefine
   CALL NDimensionalDownhillSimplex(RSimplexVolume,RSimplexFoM,&
        IIndependentVariables+1,&
        IIndependentVariables,IIndependentVariables,&
-       0.0001d0,IIterationCount,RStandardDeviation,RMean,IErr)
+       0.001d0,IIterationCount,RStandardDeviation,RMean,IErr)
   IF( IErr.NE.0 ) THEN
      PRINT*,"felixrefine (", my_rank, ") error in NDimensionalDownhillSimplex()"
      GOTO 9999
@@ -633,7 +633,9 @@ SUBROUTINE SimplexInitialisation(RSimplexVolume,RSimplexFoM,RIndependentVariable
   IMPLICIT NONE
 
   INTEGER(IKIND) :: &
-       IErr,ind,jnd
+       IErr,ind,jnd,IExitFLAG
+  LOGICAL :: &
+       LInitialSimulationFLAG = .TRUE. ! Its value is meaningless :)
   REAL(RKIND),DIMENSION(IIndependentVariables+1,IIndependentVariables),INTENT(OUT) :: &
        RSimplexVolume
   REAL(RKIND),DIMENSION(IIndependentVariables+1),INTENT(OUT) :: &
@@ -653,9 +655,9 @@ SUBROUTINE SimplexInitialisation(RSimplexVolume,RSimplexFoM,RIndependentVariable
      PRINT*,"SimplexInitialisation(",my_rank,")"
   END IF
       
-  CALL PerformDummySimulationToSetupSimplexValues(IErr)
+  CALL FelixFunction(LInitialSimulationFLAG,IErr)
   IF( IErr.NE.0 ) THEN
-     PRINT*,"SimplexInitialisation(", my_rank, ") error in PerformDummySimulationToSetupSimplexValues()"
+     PRINT*,"SimplexInitialisation(", my_rank, ") error in PerformInitialSimulation()"
      RETURN
   ENDIF
   
@@ -665,12 +667,24 @@ SUBROUTINE SimplexInitialisation(RSimplexVolume,RSimplexFoM,RIndependentVariable
      RETURN
   ENDIF
 
+  IF(my_rank.EQ.0) THEN   
+     IThicknessCount= (RFinalThickness- RInitialThickness)/RDeltaThickness + 1
+     IIterationCount = 0; !Initial Simulation is iteration zero
+     IExitFLAG = 0; ! Do not exit
+     IPreviousPrintedIteration = -IPrint
+     CALL CreateImagesAndWriteOutput(IIterationCount,IExitFLAG,IErr) 
+     IF( IErr.NE.0 ) THEN
+        PRINT*,"SimplexFunction(", my_rank, ") error ", IErr, &
+             " in CreateImagesAndWriteOutput"
+        RETURN
+     ENDIF    
+  END IF    
+
   CALL RefinementVariableSetup(RIndependentVariableValues,IErr)
   IF( IErr.NE.0 ) THEN
      PRINT*,"SimplexInitialisation(", my_rank, ") error in RefinementVariableSetup()"
      RETURN
   ENDIF
-
   
   IF(IRefineModeSelectionArray(1).EQ.1) THEN
      
@@ -696,6 +710,17 @@ SUBROUTINE SimplexInitialisation(RSimplexVolume,RSimplexFoM,RIndependentVariable
      RETURN
   ENDIF
 
+
+  IF (my_rank.NE.0) THEN
+     DEALLOCATE(&
+          RHKL,&
+          STAT=IErr)  
+     IF( IErr.NE.0 ) THEN
+        PRINT*,"SimplexInitialisation (", my_rank, ") error in Deallocation()"
+        RETURN
+     ENDIF
+  END IF
+
 !!$ RandomSequence
 
   IF(IContinueFLAG.EQ.0) THEN
@@ -720,6 +745,10 @@ SUBROUTINE SimplexInitialisation(RSimplexVolume,RSimplexFoM,RIndependentVariable
         END IF
 
         RSimplexDummy = SimplexFunction(RSimplexVolume(ind,:),1,0,IErr)
+        IF( IErr.NE.0 ) THEN
+           PRINT*,"SimplexInitialisation(", my_rank, ") error in SimplexFunction()"
+           RETURN
+        ENDIF
         
         RStandardTolerance = RStandardError(RStandardDeviation,RMean,RSimplexDummy,IErr)
         
@@ -850,249 +879,6 @@ USE MyNumbers
   
 
 END SUBROUTINE CreateRandomisedSimplex
-
-!%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-
-SUBROUTINE PerformDummySimulationToSetupSimplexValues(IErr)
-
-!!$  %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-!!$  % Calls setup subroutines to initialise Structure factors for 
-!!$  % use in initialisation of simplex
-!!$  %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-
-  USE MyNumbers
-  
-  USE CConst; USE IConst; USE RConst
-  USE IPara; USE RPara; USE SPara; USE CPara
-  USE BlochPara
-  
-  USE IChannels
-  
-  USE MPI
-  USE MyMPI
-  
-  IMPLICIT NONE
-
-  INTEGER(IKIND) :: &
-       IErr
-  
-  IF((IWriteFLAG.GE.0.AND.my_rank.EQ.0).OR.IWriteFLAG.GE.10) THEN
-     PRINT*,"PerformDummySimulationToSetupSimplexValues(",my_rank,")"
-  END IF
-  
-  !-------------------------------------------------------------------- 
-  !Setup Experimental Variables
-  !--------------------------------------------------------------------
-
-  CALL ExperimentalSetup (IErr)
-  IF( IErr.NE.0 ) THEN
-     PRINT*,"PerformDummySimulationToSetupSimplexValues(", my_rank, ") error in ExperimentalSetup()"
-     RETURN
-  ENDIF
-    
-  !--------------------------------------------------------------------
-  ! Setup Image
-  !--------------------------------------------------------------------
-
-  CALL ImageSetup( IErr )
-  IF( IErr.NE.0 ) THEN
-     PRINT*,"PerformDummySimulationToSetupSimplexValues(", my_rank, ") error in ImageSetup()"
-     RETURN
-  ENDIF
-
- 
-  !--------------------------------------------------------------------
-  ! MAIN section
-  !--------------------------------------------------------------------
-   
-  IF(IAbsorbFLAG.NE.0) THEN ! Calculate Non-absorbative UGs
-     
-     IAbsorbFLAG = 0
-     
-     CALL StructureFactorSetup(IErr)
-     IF( IErr.NE.0 ) THEN
-        PRINT*,"PerformDummySimulationToSetupSimplexValues(", my_rank, ") error in StructureFactorSetup()"
-        RETURN
-     ENDIF
-     
-     IAbsorbFLAG = 1
-     
-  END IF
-  
-  DEALLOCATE( &
-       MNP,&
-       STAT=IErr)
-  IF( IErr.NE.0 ) THEN
-     PRINT*,"PerformDummySimulationToSetupSimplexValues(", my_rank, ") error ", IErr, &
-          " in Deallocation MNP"
-     RETURN
-  ENDIF
-      
-  DEALLOCATE( &
-        SMNP, &
-       STAT=IErr)
-  IF( IErr.NE.0 ) THEN
-     PRINT*,"PerformDummySimulationToSetupSimplexValues(", my_rank, ") error ", IErr, &
-          " in Deallocation SMNP"
-     RETURN
-  ENDIF
-       
-  DEALLOCATE( &
-       RFullAtomicFracCoordVec, &
-       STAT=IErr)
-  IF( IErr.NE.0 ) THEN
-     PRINT*,"PerformDummySimulationToSetupSimplexValues(", my_rank, ") error ", IErr, &
-          " in Deallocation RFullAtomicFracCoordVec"
-     RETURN
-  ENDIF
-       
-  DEALLOCATE( &
-       SFullAtomicNameVec,&
-       STAT=IErr)
-  IF( IErr.NE.0 ) THEN
-     PRINT*,"PerformDummySimulationToSetupSimplexValues(", my_rank, ") error ", IErr, &
-          " in Deallocation SFullAtomicNameVec"
-     RETURN
-  ENDIF
-       
-  DEALLOCATE( &
-       IFullAnisotropicDWFTensor,&
-       STAT=IErr)
-  IF( IErr.NE.0 ) THEN
-     PRINT*,"PerformDummySimulationToSetupSimplexValues(", my_rank, ") error ", IErr, &
-          " in Deallocation IFullAnisotropicDWFTensor"
-     RETURN
-  ENDIF
-       
-  DEALLOCATE( &
-       IFullAtomNumber,&
-       STAT=IErr)
-  IF( IErr.NE.0 ) THEN
-     PRINT*,"PerformDummySimulationToSetupSimplexValues(", my_rank, ") error ", IErr, &
-          " in Deallocation IFullAtomNumber"
-     RETURN
-  ENDIF
-       
-  DEALLOCATE( &
-       RFullIsotropicDebyeWallerFactor,&
-       STAT=IErr)
-  IF( IErr.NE.0 ) THEN
-     PRINT*,"PerformDummySimulationToSetupSimplexValues(", my_rank, ") error ", IErr, &
-          " in Deallocation RFullIsotropicDebyeWallerFactor"
-     RETURN
-  ENDIF
-       
-  DEALLOCATE( &
-       RFullPartialOccupancy,&
-       STAT=IErr)
-  IF( IErr.NE.0 ) THEN
-     PRINT*,"PerformDummySimulationToSetupSimplexValues(", my_rank, ") error ", IErr, &
-          " in Deallocation RFullPartialOccupancy"
-     RETURN
-  ENDIF
-       
-  DEALLOCATE( &
-       RDWF,&
-       STAT=IErr)
-  IF( IErr.NE.0 ) THEN
-     PRINT*,"PerformDummySimulationToSetupSimplexValues(", my_rank, ") error ", IErr, &
-          " in Deallocation RDWF"
-     RETURN
-  ENDIF
-       
-  DEALLOCATE( &
-       ROcc,&
-       STAT=IErr)
-  IF( IErr.NE.0 ) THEN
-     PRINT*,"PerformDummySimulationToSetupSimplexValues(", my_rank, ") error ", IErr, &
-          " in Deallocation ROcc"
-     RETURN
-  ENDIF
-       
-  DEALLOCATE( &
-       IAtoms,&
-       STAT=IErr)
-  IF( IErr.NE.0 ) THEN
-     PRINT*,"PerformDummySimulationToSetupSimplexValues(", my_rank, ") error ", IErr, &
-          " in Deallocation IAtoms"
-     RETURN
-  ENDIF
-       
-  DEALLOCATE( &
-       IAnisoDWFT,&
-       STAT=IErr)
-  IF( IErr.NE.0 ) THEN
-     PRINT*,"PerformDummySimulationToSetupSimplexValues(", my_rank, ") error ", IErr, &
-          " in Deallocation IAnisoDWFT"
-     RETURN
-  ENDIF
-       
-  DEALLOCATE( &
-       Rhkl,&
-       STAT=IErr)
-  IF( IErr.NE.0 ) THEN
-     PRINT*,"PerformDummySimulationToSetupSimplexValues(", my_rank, ") error ", IErr, &
-          " in Deallocation Rhkl"
-     RETURN
-  ENDIF
-       
-  DEALLOCATE( &
-       RgVecMatT,&
-       STAT=IErr)
-  IF( IErr.NE.0 ) THEN
-     PRINT*,"PerformDummySimulationToSetupSimplexValues(", my_rank, ") error ", IErr, &
-          " in Deallocation RgVecMatT"
-     RETURN
-  ENDIF
-       
-  DEALLOCATE( &
-       RgVecMag,&
-       STAT=IErr)
-  IF( IErr.NE.0 ) THEN
-     PRINT*,"PerformDummySimulationToSetupSimplexValues(", my_rank, ") error ", IErr, &
-          " in Deallocation RgVecMag"
-     RETURN
-  ENDIF
-       
-  DEALLOCATE( &
-       RgVecVec,&
-       STAT=IErr)
-  IF( IErr.NE.0 ) THEN
-     PRINT*,"PerformDummySimulationToSetupSimplexValues(", my_rank, ") error ", IErr, &
-          " in Deallocation RGn" 
-     RETURN
-  ENDIF
-       
-  DEALLOCATE( &
-       Rhklpositions,&
-       STAT=IErr)
-  IF( IErr.NE.0 ) THEN
-     PRINT*,"PerformDummySimulationToSetupSimplexValues(", my_rank, ") error ", IErr, &
-          " in Deallocation Rhklpositions"
-     RETURN
-  ENDIF  
-       
-  DEALLOCATE( &
-       RMask,&
-       STAT=IErr)
-  IF( IErr.NE.0 ) THEN
-     PRINT*,"PerformDummySimulationToSetupSimplexValues(", my_rank, ") error ", IErr, &
-          " in Deallocation RMask"
-     RETURN
-  ENDIF
-       
-  DEALLOCATE( &
-       IPixelLocations,&
-       STAT=IErr)
-  IF( IErr.NE.0 ) THEN
-     PRINT*,"PerformDummySimulationToSetupSimplexValues(", my_rank, ") error ", IErr, &
-          " in Deallocation IPixelLocations"
-     RETURN
-  ENDIF
-
-  IDiffractionFLAG = 0
-
-END SUBROUTINE PerformDummySimulationToSetupSimplexValues
 
 !!$  %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
