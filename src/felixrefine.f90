@@ -61,7 +61,8 @@ PROGRAM Felixrefine
   REAL(RKIND) :: &
        StartTime, CurrentTime, Duration, TotalDurationEstimate,&
        RFigureOfMerit,SimplexFunction  
-  INTEGER :: IStartTime, ICurrentTime ,IRate
+  INTEGER(IKIND) :: &
+       IStartTime, ICurrentTime ,IRate
   REAL(RKIND),DIMENSION(:,:),ALLOCATABLE :: &
        RSimplexVolume
   REAL(RKIND),DIMENSION(:),ALLOCATABLE :: &
@@ -229,7 +230,7 @@ PROGRAM Felixrefine
   CALL NDimensionalDownhillSimplex(RSimplexVolume,RSimplexFoM,&
        IIndependentVariables+1,&
        IIndependentVariables,IIndependentVariables,&
-       0.001d0,IIterationCount,RStandardDeviation,RMean,IErr)
+       RExitCriteria,IIterationCount,RStandardDeviation,RMean,IErr)
   IF( IErr.NE.0 ) THEN
      PRINT*,"felixrefine (", my_rank, ") error in NDimensionalDownhillSimplex()"
      GOTO 9999
@@ -677,9 +678,17 @@ SUBROUTINE SimplexInitialisation(RSimplexVolume,RSimplexFoM,RIndependentVariable
         PRINT*,"SimplexFunction(", my_rank, ") error ", IErr, &
              " in CreateImagesAndWriteOutput"
         RETURN
-     ENDIF    
-  END IF    
-
+     ENDIF
+  ELSE
+     DEALLOCATE(&
+          RHKL,&
+          STAT=IErr)  
+     IF( IErr.NE.0 ) THEN
+        PRINT*,"SimplexInitialisation (", my_rank, ") error in Deallocation()"
+        RETURN
+     ENDIF
+  END IF
+  
   CALL RefinementVariableSetup(RIndependentVariableValues,IErr)
   IF( IErr.NE.0 ) THEN
      PRINT*,"SimplexInitialisation(", my_rank, ") error in RefinementVariableSetup()"
@@ -710,16 +719,15 @@ SUBROUTINE SimplexInitialisation(RSimplexVolume,RSimplexFoM,RIndependentVariable
      RETURN
   ENDIF
 
-
-  IF (my_rank.NE.0) THEN
-     DEALLOCATE(&
-          RHKL,&
-          STAT=IErr)  
-     IF( IErr.NE.0 ) THEN
-        PRINT*,"SimplexInitialisation (", my_rank, ") error in Deallocation()"
-        RETURN
-     ENDIF
-  END IF
+!!$  IF (my_rank.NE.0) THEN
+!!$     DEALLOCATE(&
+!!$          RHKL,&
+!!$          STAT=IErr)  
+!!$     IF( IErr.NE.0 ) THEN
+!!$        PRINT*,"SimplexInitialisation (", my_rank, ") error in Deallocation()"
+!!$        RETURN
+!!$     ENDIF
+!!$  END IF
 
 !!$ RandomSequence
 
