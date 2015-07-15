@@ -1123,12 +1123,18 @@ SUBROUTINE ReadExperimentalImages(IErr)
   
   INTEGER(IKIND) :: &
        ind,IErr
+  INTEGER(IKIND) :: &
+       INegError = 0
   CHARACTER*34 :: &
        filename
 
   DO ind = 1,IReflectOut
      
      WRITE(filename,"(A6,I3.3,A4)") "felix.",ind,".img"
+
+     if(my_rank.eq.0) then
+        PRINT*,filename
+     End if
      
      CALL OpenImageForReadIn(IErr,filename)  
      IF( IErr.NE.0 ) THEN
@@ -1154,6 +1160,11 @@ SUBROUTINE ReadExperimentalImages(IErr)
         END IF
      ENDIF
      
+     IF(MINVAL(RImageIn).LT.ZERO.AND.(my_rank.EQ.0)) THEN
+        PRINT*,"Warning! There are negative values in your experimental images"
+        INegError = INegError + 1
+     END IF
+
      RImageExpi(:,:,ind) = RImageIn
      
      DEALLOCATE( &
@@ -1172,6 +1183,11 @@ SUBROUTINE ReadExperimentalImages(IErr)
      END IF
 
   END DO
+
+  IF (INegError.NE.0) THEN
+     IErr = 1
+     PRINT*,"No. of Images with Negative Values",INegError
+  END IF
 
 
 END SUBROUTINE ReadExperimentalImages

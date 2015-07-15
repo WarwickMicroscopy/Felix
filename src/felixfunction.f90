@@ -701,7 +701,7 @@ SUBROUTINE CalculateFigureofMeritandDetermineThickness(IThicknessCountFinal,IErr
               END IF
            END DO
         END DO
-        
+                
         SELECT CASE (IImageProcessingFLAG)
         CASE(0)
            RExperimentalImage = RImageExpi(:,:,hnd)
@@ -728,8 +728,7 @@ SUBROUTINE CalculateFigureofMeritandDetermineThickness(IThicknessCountFinal,IErr
            END WHERE
               
         END SELECT
-        
-        
+
         IF(ICorrelationFLAG.EQ.0) THEN
            
             RIndependentCrossCorrelation = &
@@ -752,7 +751,7 @@ SUBROUTINE CalculateFigureofMeritandDetermineThickness(IThicknessCountFinal,IErr
 
         END IF
      END DO
-     
+
      RReflectionCrossCorrelations(hnd) = RCrossCorrelationOld
      
   END DO
@@ -771,7 +770,11 @@ SUBROUTINE CalculateFigureofMeritandDetermineThickness(IThicknessCountFinal,IErr
      PRINT*,"Thickness Final",IThicknessCountFinal
      PRINT*,"Thickness",RThickness
   END IF
-  
+
+  IF (RCrossCorrelation.NE.RCrossCorrelation) THEN
+     IErr = 1
+  END IF
+
 END SUBROUTINE CalculateFigureofMeritandDetermineThickness
 
 !%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -985,7 +988,8 @@ SUBROUTINE WriteIterationOutput(IIterationCount,IThicknessIndex,IExitFlag,IErr)
      IThickness = RInitialThickness + (IThicknessIndex-1)*RDeltaThickness 
      
      
-     WRITE(path,"(A2,I1.1,I1.1,I1.1,I1.1,A2,I5.5,A2,I5.5,A2,I5.5,A10,I5.5)") &
+     WRITE(path,"(A10,I5.5,A2,I1.1,I1.1,I1.1,I1.1,A2,I5.5,A2,I5.5,A2,I5.5)") &
+          "Iteration",IIterationCount,&
           "f-",&
           IScatterFactorMethodFLAG, &
           IZolzFLAG, &
@@ -993,8 +997,7 @@ SUBROUTINE WriteIterationOutput(IIterationCount,IThicknessIndex,IExitFlag,IErr)
           IAnisoDebyeWallerFactorFlag,&
           "-T",IThickness,&
           "-P",2*IPixelcount,&
-          "-P",2*IPixelcount,&
-          "_Iteration",IIterationCount
+          "-P",2*IPixelcount
      
      call system('mkdir ' // path)
      
