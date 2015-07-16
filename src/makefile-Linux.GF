@@ -39,6 +39,9 @@
 linux := $(shell lsb_release -si)
 
 ifeq ($(linux),SUSE LINUX) #CSC machines
+
+#shell "module load ompi/1.6.4/gnu/4.3.4"
+
  ifeq ($(compiler),ifort) #change ifort flags
   F90 = mpif90
   FC = ifort -ffixed-form -std=legacy
