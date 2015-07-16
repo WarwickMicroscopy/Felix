@@ -1015,7 +1015,7 @@ SUBROUTINE WriteOutVariables(IIterationCount,IErr)
        STAT=IErr)
 
   DO jnd = 1,IRefinementVariableTypes
-     
+
      IF(IRefineModeSelectionArray(jnd).EQ.0) THEN
         CYCLE !The refinement variable type is not being refined, skip
      END IF
@@ -1023,19 +1023,20 @@ SUBROUTINE WriteOutVariables(IIterationCount,IErr)
      IF(jnd.EQ.1) THEN
         IStart = 1
      ELSE
-        IStart = SUM(IOutputVariables(1:(jnd-1)))
+        IStart = SUM(IOutputVariables(1:(jnd-1)))+1
      END IF
 
      IEND = SUM(IOutputVariables(1:jnd))
 
-     SELECT CASE(IRefinementVariableTypes)
+     SELECT CASE(jnd)
      CASE(1)
         DO ind = 1,SIZE(CUgMat,DIM=1)
            IStart = (ind*2)-1
            IEnd = ind*2
            RDataOut(IStart:IEnd) = [REAL(REAL(CUgMat(ind,1)),RKIND), REAL(AIMAG(CUgMat(ind,1)),RKIND)]
         END DO
-        RDataOut(IStart:IEnd) = RESHAPE(RAtomSiteFracCoordVec,SHAPE(RDataOut(IStart:IEnd)))
+     CASE(2)
+        RDataOut(IStart:IEnd) = RESHAPE(TRANSPOSE(RAtomSiteFracCoordVec),SHAPE(RDataOut(IStart:IEnd)))
      CASE(3)
         RDataOut(IStart:IEnd) = RAtomicSitePartialOccupancy
      CASE(4)
@@ -1058,7 +1059,7 @@ SUBROUTINE WriteOutVariables(IIterationCount,IErr)
   END DO
 
   WRITE(STotalOutputVariables,*) ITotalOutputVariables
-  WRITE(SFormat,*) "'(I5.1,1X,F13.9,1X,"//TRIM(ADJUSTL(STotalOutputVariables))//"(F13.9,1X))'"
+  WRITE(SFormat,*) "(I5.1,1X,F13.9,1X,"//TRIM(ADJUSTL(STotalOutputVariables))//"(F13.9,1X))"
 
   OPEN(UNIT=IChOutSimplex,file='IterationLog.txt',form='formatted',status='unknown',position='append')
 
