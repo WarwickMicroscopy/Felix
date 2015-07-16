@@ -1131,10 +1131,6 @@ SUBROUTINE ReadExperimentalImages(IErr)
   DO ind = 1,IReflectOut
      
      WRITE(filename,"(A6,I3.3,A4)") "felix.",ind,".img"
-
-     if(my_rank.eq.0) then
-        PRINT*,filename
-     End if
      
      CALL OpenImageForReadIn(IErr,filename)  
      IF( IErr.NE.0 ) THEN

@@ -860,14 +860,6 @@ REAL(RKIND) FUNCTION SimplexFunction(RIndependentVariableValues,IIterationCount,
           " Deallocating CUgMat"
      RETURN
   ENDIF
-!!$  DEALLOCATE( &
-!!$       Rhkl,&
-!!$       STAT=IErr)
-!!$  IF( IErr.NE.0 ) THEN
-!!$     PRINT*,"SimplexFunction(", my_rank, ") error ", IErr, &
-!!$          " in Deallocation Rhkl"
-!!$     RETURN
-!!$  ENDIF
   
 END FUNCTION SimplexFunction
 
@@ -960,6 +952,122 @@ SUBROUTINE CreateImagesAndWriteOutput(IIterationCount,IExitFLAG,IErr)
   ENDIF
 END SUBROUTINE CreateImagesAndWriteOutput
 
+SUBROUTINE WriteOutVariables(IIterationCount,IErr)
+
+  USE MyNumbers
+  
+  USE CConst; USE IConst; USE RConst
+  USE IPara; USE RPara; USE SPara; USE CPara
+  USE BlochPara
+
+  USE IChannels
+
+  USE MPI
+  USE MyMPI
+
+  IMPLICIT NONE
+
+  INTEGER(IKIND) :: &
+       IErr,ind,IStart,IEnd,jnd, &
+       ITotalOutputVariables
+  INTEGER(IKIND),INTENT(IN) :: &
+       IIterationCount
+  CHARACTER*200 :: &
+       SFormat,STotalOutputVariables
+  INTEGER(IKIND),DIMENSION(IRefinementVariableTypes) :: &
+       IOutputVariables
+  REAL(RKIND),DIMENSION(:),ALLOCATABLE :: &
+       RDataOut
+
+  ! Need to Determine total no. of variables to be written out, this is different from the no. of refinement variables
+  
+  IOutputVariables(1) =  IRefineModeSelectionArray(1) * &
+       2*SIZE(CUgMat,DIM=1) ! Structure Factors are Complex so require two output variables each     
+  IOutputVariables(2) = IRefineModeSelectionArray(2) * & !Structural Coordinates
+       (SIZE(RAtomSiteFracCoordVec,DIM=1) * SIZE(RAtomSiteFracCoordVec,DIM=2))
+  IOutputVariables(3) = &
+       IRefineModeSelectionArray(3) * & !Atomic Site Occupancies
+       SIZE(RAtomicSitePartialOccupancy,DIM=1)
+  IOutputVariables(4) = &
+       IRefineModeSelectionArray(4) * & !Isotropic Debye Waller Factors
+       SIZE(RIsotropicDebyeWallerFactors,DIM=1)
+  IOutputVariables(5) = &
+       IRefineModeSelectionArray(5) * & !Anisotropic Debye Waller Factors
+       SIZE(RAnisotropicDebyeWallerFactorTensor)
+  IOutputVariables(6) = &    
+       IRefineModeSelectionArray(6) * 3 !Lattice Parameters (a,b,c) 
+  IOutputVariables(7) = &
+       IRefineModeSelectionArray(7) * 3 !Lattice Angles (alpha,beta,gamma)
+  IOutputVariables(8) = & 
+       IRefineModeSelectionArray(8) !Convergence angle
+  IOutputVariables(9) = &
+       IRefineModeSelectionArray(9) !Absorption
+  IOutputVariables(10) = &
+       IRefineModeSelectionArray(10) !Accelerating Voltage
+  IOutputVariables(11) = &
+       IRefineModeSelectionArray(11) !Residual Sum of Squares Scaling Factor
+  
+  ITotalOutputVariables = SUM(IOutputVariables) ! Total Output
+  
+  ALLOCATE(&
+       RDataOut(&
+       ITotalOutputVariables), &
+       STAT=IErr)
+
+  DO jnd = 1,IRefinementVariableTypes
+     
+     IF(IRefineModeSelectionArray(jnd).EQ.0) THEN
+        CYCLE !The refinement variable type is not being refined, skip
+     END IF
+     
+     IF(jnd.EQ.1) THEN
+        IStart = 1
+     ELSE
+        IStart = SUM(IOutputVariables(1:(jnd-1)))
+     END IF
+
+     IEND = SUM(IOutputVariables(1:jnd))
+
+     SELECT CASE(IRefinementVariableTypes)
+     CASE(1)
+        DO ind = 1,SIZE(CUgMat,DIM=1)
+           IStart = (ind*2)-1
+           IEnd = ind*2
+           RDataOut(IStart:IEnd) = [REAL(REAL(CUgMat(ind,1)),RKIND), REAL(AIMAG(CUgMat(ind,1)),RKIND)]
+        END DO
+        RDataOut(IStart:IEnd) = RESHAPE(RAtomSiteFracCoordVec,SHAPE(RDataOut(IStart:IEnd)))
+     CASE(3)
+        RDataOut(IStart:IEnd) = RAtomicSitePartialOccupancy
+     CASE(4)
+        RDataOut(IStart:IEnd) = RIsotropicDebyeWallerFactors
+     CASE(5)
+        RDataOut(IStart:IEnd) = RESHAPE(RAnisotropicDebyeWallerFactorTensor,SHAPE(RDataOut(IStart:IEnd)))
+     CASE(6)
+        RDataOut(IStart:IEnd) = [RLengthX, RLengthY, RLengthZ]
+     CASE(7)
+        RDataOut(IStart:IEnd) = [RAlpha, RBeta, RGamma]
+     CASE(8)
+        RDataOut(IStart:IEnd) = RConvergenceAngle
+     CASE(9)
+        RDataOut(IStart:IEnd) = RAbsorptionPercentage
+     CASE(10)
+        RDataOut(IStart:IEnd) = RAcceleratingVoltage
+     CASE(11)
+        RDataOut(IStart:IEnd) = RRSoSScalingFactor
+     END SELECT
+  END DO
+
+  WRITE(STotalOutputVariables,*) ITotalOutputVariables
+  WRITE(SFormat,*) "'(I5.1,1X,F13.9,1X,"//TRIM(ADJUSTL(STotalOutputVariables))//"(F13.9,1X))'"
+
+  OPEN(UNIT=IChOutSimplex,file='IterationLog.txt',form='formatted',status='unknown',position='append')
+
+  WRITE(UNIT=IChOutSimplex,FMT=SFormat) IIterationCount, RCrossCorrelation,RDataOut
+
+  CLOSE(IChOutSimplex)
+
+END SUBROUTINE WriteOutVariables
+
 SUBROUTINE WriteIterationOutput(IIterationCount,IThicknessIndex,IExitFlag,IErr)
 
   USE MyNumbers
@@ -988,9 +1096,9 @@ SUBROUTINE WriteIterationOutput(IIterationCount,IThicknessIndex,IExitFlag,IErr)
      IThickness = RInitialThickness + (IThicknessIndex-1)*RDeltaThickness 
      
      
-     WRITE(path,"(A10,I5.5,A2,I1.1,I1.1,I1.1,I1.1,A2,I5.5,A2,I5.5,A2,I5.5)") &
+     WRITE(path,"(A10,I5.5,A3,I1.1,I1.1,I1.1,I1.1,A2,I5.5,A2,I5.5,A2,I5.5)") &
           "Iteration",IIterationCount,&
-          "f-",&
+          "-f-",&
           IScatterFactorMethodFLAG, &
           IZolzFLAG, &
           IAbsorbFLAG, &
@@ -1032,6 +1140,12 @@ SUBROUTINE WriteIterationOutput(IIterationCount,IThicknessIndex,IExitFlag,IErr)
      CALL WriteStructureFactors(path,IErr)
      IF( IErr.NE.0 ) THEN
         PRINT*,"Felixfunction(", my_rank, ") error ",IErr,"in WriteStructureFactors()"
+        RETURN
+     ENDIF
+
+     CALL WriteOutVariables(IIterationCount,IErr)
+     IF( IErr.NE.0 ) THEN
+        PRINT*,"Felixfunction(", my_rank, ") error ",IErr,"in WriteOutVariables()"
         RETURN
      ENDIF
   END IF
