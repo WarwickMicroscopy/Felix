@@ -36,67 +36,84 @@
 # $Id: makefile-Linux.GF,v 1.2 2014/03/27 18:13:30 phsht Exp $
 #%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-linux := $(shell lsb_release -si)
+unixOS := $(shell uname)
 
-ifeq ($(linux),SUSE LINUX) #CSC machines
+ifeq ($(unixOS),Linux)
 
-#shell "module load ompi/1.6.4/gnu/4.3.4"
+ linux := $(shell lsb_release -si)
 
- ifeq ($(compiler),ifort) #change ifort flags
-  F90 = mpif90
-  FC = ifort -ffixed-form -std=legacy
-  F90FLAGS = -fbounds-check -fno-range-check -fimplicit-none -fcray-pointer -fexternal-blas
-  F77FLAGS = -fbounds-check -fno-range-check
+ ifeq ($(linux),SUSE LINUX) #CSC machines
 
- else
-  F90 = mpif90
-  FC = gfortran -ffixed-form -std=legacy
-  F90FLAGS = -fbounds-check -fno-range-check -fimplicit-none -fcray-pointer -fexternal-blas # debug
-  #F90FLAGS = -pg -fbounds-check -fno-range-check -fimplicit-none # profiling
-  F77FLAGS = -fbounds-check -fno-range-check # debug
+  MODULE := $(shell bash -c "module load" ompi/1.6.4/gnu/4.3.4)
+
+  INCLUDEDIR = /warwick/mathlib/gnu/x86_64/ # CSC machines
+
+  LIBFLAGS= -llapack -lblas -lfftw3
+
+  ifeq ($(compiler),ifort) #change ifort flags
+   F90 = mpif90
+   FC = ifort -ffixed-form -std=legacy
+   F90FLAGS = -fbounds-check -fno-range-check -fimplicit-none -fcray-pointer -fexternal-blas
+   F77FLAGS = -fbounds-check -fno-range-check
+
+  else
+   F90 = mpif90
+   FC = gfortran -ffixed-form -std=legacy
+   F90FLAGS = -fbounds-check -fno-range-check -fimplicit-none -fcray-pointer -fexternal-blas # debug
+   #F90FLAGS = -pg -fbounds-check -fno-range-check -fimplicit-none # profiling
+   F77FLAGS = -fbounds-check -fno-range-check # debug
+  endif
  endif
 
- INCLUDEDIR = /warwick/mathlib/gnu/x86_64/ # CSC machines
+ ifeq ($(linux),Ubuntu) #Ubuntu machine
+
+  INCLUDEDIR = /usr/share/doc
+
+  LIBFLAGS = -llapack -lblas -lfftw3
+ 
+  F90 = mpif90
+  F90FLAGS = -fbounds-check -fno-range-check -fimplicit-none -fcray-pointer -fexternal-blas
+  FC = gfortran -ffixed-form -std=legacy
+  F77FLAGS = -fbounds-check -fno-range-check
+ endif
+
+ ifeq ($(linux),openSUSE project) #openSUSE machine
+
+  LIBFLAGS = -llapack -lblas -lfftw3
+
+  INCLUDEDIR = /usr/lib64
+
+  F90 = mpif90
+  F90FLAGS = -fbounds-check -fno-range-check -fimplicit-none -fcray-pointer -fexternal-blas
+  FC = gfortran -ffixed-form -std=legacy
+  F77FLAGS = -fbounds-check -fno-range-check
+ endif
+
+ ifeq ($(linux),CentOS) #CentOS machine
+ 
+  LIBFLAGS = -llapack -lblas -lfftw3
+
+  INCLUDEDIR = /usr/lib64/
+
+  F90 = mpif90
+  F90FLAGS = -fbounds-check -fno-range-check -fimplicit-none -fcray-pointer -fexternal-blas
+  FC = gfortran -ffixed-form -std=legacy
+  F77FLAGS = -fbounds-check -fno-range-check
+ endif
+endif 
+
+ifeq ($(unixOS),Darwin) #Test on MAC
+
+ F90 = mpifort
+ FC = gfortran -ffixed-form -std=legacy
+ F90FLAGS = -fbounds-check -fno-range-check -fimplicit-none
+ #F90FLAGS = -pg -fbounds-check -fno-range-check -fimplicit-none
+ F77FLAGS = -fbounds-check -fno-range-check # debug
+
+ INCLUDEDIR = /usr/local/lib/ # RAR Linux
 
  LIBFLAGS= -llapack -lblas -lfftw3
 endif
-
-ifeq ($(linux),Ubuntu) #Ubuntu machine
-
- INCLUDEDIR = /usr/share/doc
-
- LIBFLAGS = -llapack -lblas -lfftw3
- 
- F90 = mpif90
- F90FLAGS = -fbounds-check -fno-range-check -fimplicit-none -fcray-pointer -fexternal-blas
- FC = gfortran -ffixed-form -std=legacy
- F77FLAGS = -fbounds-check -fno-range-check
-endif
-
-ifeq ($(linux),openSUSE project) #openSUSE machine
-
- LIBFLAGS = -llapack -lblas -lfftw3
-
- INCLUDEDIR = /usr/lib64
-
- F90 = mpif90
- F90FLAGS = -fbounds-check -fno-range-check -fimplicit-none -fcray-pointer -fexternal-blas
- FC = gfortran -ffixed-form -std=legacy
- F77FLAGS = -fbounds-check -fno-range-check
-endif
-
-ifeq ($(linux),CentOS) #CentOS machine
- 
- LIBFLAGS = -llapack -lblas -lfftw3
-
- INCLUDEDIR = /usr/lib64/
-
- F90 = mpif90
- F90FLAGS = -fbounds-check -fno-range-check -fimplicit-none -fcray-pointer -fexternal-blas
- FC = gfortran -ffixed-form -std=legacy
- F77FLAGS = -fbounds-check -fno-range-check
-endif
- 
 
 # NOTE if linking against $(NAG_SHARED) you must set the environment variable
 # LD_LIBRARY_PATH=/warwick/mathlib/nag/ifort-x86_64/lib:$LD_LIBRARY_PATH
