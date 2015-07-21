@@ -102,7 +102,7 @@ ifeq ($(unixOS),Linux)
  endif
 endif 
 
-ifeq ($(unixOS),Darwin) #Test on MAC
+ifeq ($(unixOS),Darwin)
 
  F90 = mpifort
  FC = gfortran -ffixed-form -std=legacy
@@ -113,6 +113,54 @@ ifeq ($(unixOS),Darwin) #Test on MAC
  INCLUDEDIR = /usr/local/lib/ # RAR Linux
 
  LIBFLAGS= -llapack -lblas -lfftw3
+endif
+
+ifeq ($(unixOS),Cygwin) #needs to be tested
+ F90 = mpif90
+ FC = gfortran -ffixed-form -std=legacy
+ F90FLAGS = -fbounds-check -fno-range-check -fimplicit-none # debug
+ #F90FLAGS = -pg -fbounds-check -fno-range-check -fimplicit-none # profiling
+ F77FLAGS = -fbounds-check -fno-range-check # debug
+
+ INCLUDEDIR = /lib/ # cygwin default
+
+ LIBFLAGS= -llapack -lblas -lfftw3
+endif
+
+ifeq ($(unixOS),minerva) #needs to be tested
+
+ #module swap oldmodules minerva-2.0
+ #module load goolf-1.7.10
+
+ F90 = mpif90
+ FC = gfortran -ffixed-form -std=legacy
+ F90FLAGS = -fbounds-check -fno-range-check -fimplicit-none # debug
+ #F90FLAGS = -m64 -fno-range-check -pg -ffree-line-length-none # profiling
+ F77FLAGS = -fbounds-check -fno-range-check # debug
+
+ LIBFLAGS= \
+-L/csc/minerva/software/gompi/1.7.10/ScaLAPACK/2.0.2-openblas-0.2.8-lapack-3.4.2/lib \
+-L/csc/minerva/software/gompi/1.7.10/OpenBLAS/0.2.8-lapack-3.4.2/lib \
+-lopenblas \
+-lfftw3
+endif
+
+ifeq ($(unixOS),ARCHER) #needs to be tested
+
+ F90 = ftn
+ FC = ftn
+ F90FLAGS = # release
+ #F90FLAGS = -fbounds-check -fno-range-check -fimplicit-none -fcray-pointer # debug
+ #F90FLAGS = pg -fbounds-check -fno-range-check -fimplicit-none # profiling
+ F77FLAGS = # debug
+ #F77FLAGS = -fbounds-check -fno-range-check # debug
+
+ #INCLUDEDIR = # ARCHER
+ #INCLUDEDIR = /warwick/mathlib/gnu/x86_64/ # CSC machines
+ #INCLUDEDIR = /usr/lib/ # RAR Linux
+
+ #LIBFLAGS= -llapack -lblas -lfftw3 # CSC
+ #LIBFLAGS= -lcray-libsci
 endif
 
 # NOTE if linking against $(NAG_SHARED) you must set the environment variable
