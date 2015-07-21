@@ -33,7 +33,7 @@
 #%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 #%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-# $Id: makefile-Linux.GF,v 1.2 2014/03/27 18:13:30 phsht Exp $
+# $Id: makefile.GF,v 1.2 2014/03/27 18:13:30 phsht Exp $
 #%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 unixOS := $(shell uname)
@@ -44,13 +44,13 @@ ifeq ($(unixOS),Linux)
 
  ifeq ($(linux),SUSE LINUX) #CSC machines
 
-  MODULE := $(shell bash -c "module load" ompi/1.6.4/gnu/4.3.4)
+  modul := $(bash -c "module load ompi/1.6.4/gnu/4.3.4")
 
   INCLUDEDIR = /warwick/mathlib/gnu/x86_64/ # CSC machines
 
-  LIBFLAGS= -llapack -lblas -lfftw3
+  LIBFLAGS= -llapack -lblas -lfftw3 
 
-  ifeq ($(compiler),ifort) #change ifort flags
+  ifeq ($(compiler),ifort) #change ifort flags and test
    F90 = mpif90
    FC = ifort -ffixed-form -std=legacy
    F90FLAGS = -fbounds-check -fno-range-check -fimplicit-none -fcray-pointer -fexternal-blas
@@ -58,7 +58,7 @@ ifeq ($(unixOS),Linux)
 
   else
    F90 = mpif90
-   FC = gfortran -ffixed-form -std=legacy
+   FC = gfortran -ffixed-form -std=legacy 
    F90FLAGS = -fbounds-check -fno-range-check -fimplicit-none -fcray-pointer -fexternal-blas # debug
    #F90FLAGS = -pg -fbounds-check -fno-range-check -fimplicit-none # profiling
    F77FLAGS = -fbounds-check -fno-range-check # debug
@@ -102,7 +102,7 @@ ifeq ($(unixOS),Linux)
  endif
 endif 
 
-ifeq ($(unixOS),Darwin)
+ifeq ($(unixOS),Darwin) #MAC
 
  F90 = mpifort
  FC = gfortran -ffixed-form -std=legacy
