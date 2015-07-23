@@ -38,7 +38,7 @@
 
 F90 = mpifort
 FC = gfortran -ffixed-form -std=legacy
-F90FLAGS = -fbounds-check -fno-range-check -fimplicit-none # debug
+F90FLAGS = -fbounds-check -fno-range-check -fimplicit-none -fcray-pointer -fexternal-blas # debug
 #F90FLAGS = -pg -fbounds-check -fno-range-check -fimplicit-none # profiling
 F77FLAGS = -fbounds-check -fno-range-check # debug
 

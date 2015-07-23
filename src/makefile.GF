@@ -34,17 +34,17 @@
 
 #%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 # $Id: makefile.GF,v 1.2 2014/03/27 18:13:30 phsht Exp $
+# cygwin needs: gcc, gfortran, make, git, openmpi, lapack, fftw3
+# CSC modules needed: ompi/1.6.4/gnu/4.3.4 
 #%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-unixOS := $(shell uname)
+unixOS := $(shell uname -s)
 
 ifeq ($(unixOS),Linux)
 
  linux := $(shell lsb_release -si)
 
  ifeq ($(linux),SUSE LINUX) #CSC machines
-
-  modul := $(bash -c "module load ompi/1.6.4/gnu/4.3.4")
 
   INCLUDEDIR = /warwick/mathlib/gnu/x86_64/ # CSC machines
 
@@ -106,7 +106,7 @@ ifeq ($(unixOS),Darwin) #MAC
 
  F90 = mpifort
  FC = gfortran -ffixed-form -std=legacy
- F90FLAGS = -fbounds-check -fno-range-check -fimplicit-none
+ F90FLAGS = -fbounds-check -fno-range-check -fimplicit-none -fcray-pointer -fexternal-blas
  #F90FLAGS = -pg -fbounds-check -fno-range-check -fimplicit-none
  F77FLAGS = -fbounds-check -fno-range-check # debug
 
@@ -115,16 +115,17 @@ ifeq ($(unixOS),Darwin) #MAC
  LIBFLAGS= -llapack -lblas -lfftw3
 endif
 
-ifeq ($(unixOS),Cygwin) #needs to be tested
+ifeq ($(shell expr substr $(unixOS) 1 6),CYGWIN)
+
  F90 = mpif90
  FC = gfortran -ffixed-form -std=legacy
- F90FLAGS = -fbounds-check -fno-range-check -fimplicit-none # debug
- #F90FLAGS = -pg -fbounds-check -fno-range-check -fimplicit-none # profiling
- F77FLAGS = -fbounds-check -fno-range-check # debug
+ F90FLAGS = -fbounds-check -fno-range-check -fimplicit-none -fcray-pointer -fexternal-blas
+ F77FLAGS = -fbounds-check -fno-range-check 
 
  INCLUDEDIR = /lib/ # cygwin default
 
  LIBFLAGS= -llapack -lblas -lfftw3
+
 endif
 
 ifeq ($(unixOS),minerva) #needs to be tested
