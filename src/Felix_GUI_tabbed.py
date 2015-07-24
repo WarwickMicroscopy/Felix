@@ -69,27 +69,36 @@ class FlagPanel(wx.Panel):
         
         wx.Panel.__init__(self, parent)
         
-        title = wx.StaticText(self, wx.ID_ANY, 'Flags') 
+        title = wx.StaticText(self, wx.ID_ANY, 'Flags')
  
-#=======================================================================================       
-        # Lists for easily changing flags and choice options for wx.Choice
-        flags = ['0','1','2','3']
-        writeflags = ['0','1','2','3','4','10','100','101','102','103','104','110']
-        flagnames = ['IWriteflag', 'IScatterFactorMethodflag', 'IAbsorbflag',
-                        'IImageflag', 'IZolzflag', 'IAnisoDebyeWallerflag',
-                        'IOutputflag', 'ICentralflagflag', 'IPseudoCubicflag',
-                        'IBinorTextflag', 'Ben control']
-        #How far into writeflags the choices need to be e.g. 2 = 0, 1; 4 = 0, 1, 2, 3
-        flagChoices = [12, 2, 2, 3, 2, 2, 2, 2, 2, 2, 2]
+#=======================================================================================      
+        
+        flag1 = {'name' : 'IWriteFLAG', 'choices' : ['Silent', 'Crucial information', 'Basic information', 'All information'], 'object type' : 'CHOICE'}
+        flag2 = {'name' : 'IScatterFactorMethodFLAG', 'choices' : ['Kirkland', 'Doyle-Turner', 'Peng', 'Lobato'], 'object type' : 'CHOICE'}
+        flag3 = {'name' : 'IMaskFLAG', 'choices' : [], 'object type' : 'CHECKBOX'}
+        flag4 = {'name' : 'IZolzFLAG', 'choices' : [], 'object type' : 'CHECKBOX'}
+        flag5 = {'name' : 'IAbsorbFLAG', 'choices' : ['Proportional'], 'object type' : 'CHOICE'}
+        flag6 = {'name' : 'IAnisoDebyeWallerFLAG', 'choices' : ['0'], 'object type' : 'CHOICE'}
+        flag7 = {'name' : 'IXDirectionFLAG', 'choices' : ['Automatic', 'Manual'], 'object type' : 'CHOICE'}
+        
+        flags = []
+        
+        flags.append(flag1)
+        flags.append(flag2)
+        flags.append(flag3)
+        flags.append(flag4)
+        flags.append(flag5)
+        flags.append(flag6)
+        flags.append(flag7)
+        
 #=======================================================================================        
-        
-        self.flagnames = flagnames
-        
-        print flagnames
+
+
+        #print flagnames
         
         # Making the code a bit more future proof by generating flag layout
         # from a list of flag names
-        flagnumber = flagnames.__len__()
+        flagnumber = flags.__len__()
         print 'The number of flags: {}.\n'.format(flagnumber)
         numberOfRows = int(math.ceil(flagnumber / 3.0))
         print 'The number of rows: {}.\n'.format(numberOfRows)
@@ -110,23 +119,28 @@ class FlagPanel(wx.Panel):
             SizerObjects.append(wx.BoxSizer(wx.HORIZONTAL))
         
         #Adds labels and choice objects to each respective lists
-        for flag in flagnames:
-            choices = flagChoices[flagnames.index(flag)]
+        for flag in flags:
+            choices = flag['choices']
             print(choices)
-            flagObjectsLabels.append(wx.StaticText(self, wx.ID_ANY, flag))
-            flagObjectsChoices.append(wx.Choice(self, wx.ID_ANY, size=(60, -1), 
-                    choices=writeflags[0:choices], name=flag)) 
+            flagObjectsLabels.append(wx.StaticText(self, wx.ID_ANY, flag['name']))
+            
+            if flag['object type'] == 'CHOICE':
+                flagObjectsChoices.append(wx.Choice(self, wx.ID_ANY, size=(110, -1), 
+                    choices=choices, name=flag['name'])) 
+            elif flag['object type'] == 'CHECKBOX':
+                flagObjectsChoices.append(wx.CheckBox(self, wx.ID_ANY, size=(110, -1), 
+                    name=flag['name']))
         
         #Adds the objects from the lists to the respective rows in the sizer list
         for flagNo in range(0, flagnumber):
             row = int(math.floor(flagNo / 3))
-            SizerObjects[row].Add(flagObjectsLabels[flagNo], 3, wx.ALL, 5)
+            SizerObjects[row].Add(flagObjectsLabels[flagNo], 2, wx.ALL, 5)
             SizerObjects[row].Add(flagObjectsChoices[flagNo], 1, wx.ALL, 5)
         
         #Adds spacers if necessary    
         if spacerNo != 0:
             for x in range(0, spacerNo):
-                SizerObjects[numberOfRows - 1].AddStretchSpacer(4)
+                SizerObjects[numberOfRows - 1].AddStretchSpacer(3)
         
         #Set up overall and title sizers    
         topflagSizer            = wx.BoxSizer(wx.VERTICAL)
@@ -161,7 +175,7 @@ class RadiusPanel(wx.Panel):
         self.IPixelCount.SetFormat("%f")
         self.IPixelCount.SetDigits(0)
         RadiusSizer.Add(RadiusLabel, 3, wx.ALL, 5)
-        RadiusSizer.Add(IPixelCount, 1, wx.ALL, 5)
+        RadiusSizer.Add(self.IPixelCount, 1, wx.ALL, 5)
         RadiusSizer.AddStretchSpacer(4)
         
         
@@ -674,6 +688,7 @@ class optionPanel(wx.Panel):
         self.SetSizer(topOptionSizer)
         topOptionSizer.Fit(self)
         
+        
         #the various functions of the buttons - run felix, write input file, cancel, and browse file
         Run.Bind(wx.EVT_BUTTON, self.CIFCreate)
         Cancel.Bind(wx.EVT_BUTTON, self.OnClose)
@@ -766,14 +781,14 @@ class optionPanel(wx.Panel):
         inpfile.write("\n")
         inpfile.write("# control flags\n")
         
-        for flag in self.main.notebook.page1.flagnames:
-            index = self.main.notebook.page1.flagnames.index(flag)
+        #for flag in self.main.notebook.page1.flagnames:
+            #index = self.main.notebook.page1.flagnames.index(flag)
             
-            value = self.main.notebook.page1.flagObjectsChoices[index].GetCurrentSelection()
-            inpfile.write(flag)
-            inpfile.write("                = ")
-            inpfile.write(str(value))
-            inpfile.write("\n")
+            #value = self.main.notebook.page1.flagObjectsChoices[index].GetCurrentSelection()
+            #inpfile.write(flag)
+            #inpfile.write("                = ")
+            #inpfile.write(str(value))
+            #inpfile.write("\n")
             
     def OnClose(self, e):
         
