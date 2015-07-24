@@ -46,6 +46,7 @@ ifeq ($(unixOS),Linux)
 
  ifeq ($(linux),SUSE LINUX) #CSC machines
 
+  $(info Please ensure to run "module load ompi/1.6.4/gnu/4.3.4" )
   INCLUDEDIR = /warwick/mathlib/gnu/x86_64/ # CSC machines
 
   LIBFLAGS= -llapack -lblas -lfftw3 
