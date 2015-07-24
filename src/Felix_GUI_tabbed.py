@@ -14,7 +14,7 @@ class WriteInputDialog(wx.Dialog):
     
         self.UserInterface2()
         #self.SetSize(400,200)
-        #self.SetTitle("Save Input File As")
+        #self.SetTitle("Save Input File As")[
 
     def UserInterface2(self):
 
@@ -37,7 +37,7 @@ class WriteInputDialog(wx.Dialog):
 
         if InputFileDialog.ShowModal() == wx.ID_CANCEL:
             #IErr=-1
-            return()#IErr)
+            return()
 
         UserInputPath=InputFileDialog.GetPath()
 
@@ -84,6 +84,7 @@ class FlagPanel(wx.Panel):
 #=======================================================================================        
         
         self.flagnames = flagnames
+        
         print flagnames
         
         # Making the code a bit more future proof by generating flag layout
@@ -114,7 +115,7 @@ class FlagPanel(wx.Panel):
             print(choices)
             flagObjectsLabels.append(wx.StaticText(self, wx.ID_ANY, flag))
             flagObjectsChoices.append(wx.Choice(self, wx.ID_ANY, size=(60, -1), 
-                    choices=writeflags[0:choices], name=flag))
+                    choices=writeflags[0:choices], name=flag)) 
         
         #Adds the objects from the lists to the respective rows in the sizer list
         for flagNo in range(0, flagnumber):
@@ -155,10 +156,10 @@ class RadiusPanel(wx.Panel):
         RadiusTitleSizer       = wx.BoxSizer(wx.HORIZONTAL)
         topRadiusSizer         = wx.BoxSizer(wx.VERTICAL)
         
-        IPixelCount = FS.FloatSpin(self, size=(60, -1), value=64, min_val=0, max_val=512,
+        self.IPixelCount = FS.FloatSpin(self, size=(60, -1), value=64, min_val=0, max_val=512,
                                    increment=64, agwStyle=FS.FS_RIGHT)
-        IPixelCount.SetFormat("%f")
-        IPixelCount.SetDigits(0)
+        self.IPixelCount.SetFormat("%f")
+        self.IPixelCount.SetDigits(0)
         RadiusSizer.Add(RadiusLabel, 3, wx.ALL, 5)
         RadiusSizer.Add(IPixelCount, 1, wx.ALL, 5)
         RadiusSizer.AddStretchSpacer(4)
@@ -181,6 +182,7 @@ class BeamPanel(wx.Panel):
         wx.Panel.__init__(self, parent)
         
         BeamControlList = []
+        self.BeamControlList = BeamControlList
         
 #===============================================================================
         
@@ -188,20 +190,20 @@ class BeamPanel(wx.Panel):
         # ['name', default value, increment, min, mac, 'type']
         # with type referring to a 1 for spinctrl or 2 for a float spin!
         # NB: spin does not need increment, so just put 0!
-        BeamControl1 = ['IMinReflectionPool', '15', 0, 0, 100000, 1]
-        BeamControl2 = ['IMinStrongBeams', '7', 0, 0, 100000, 1]
-        BeamControl3 = ['IMinWeakBeams', '5', 0, 0, 100000, 1]
-        BeamControl4 = ['RBSBMax', '0.1', 0.1, 0, 100000, 2]
-        BeamControl5 = ['RBSPMax', '0.1', 0.1, 0, 100000, 2]
-        BeamControl6 = ['RConvergenceTolerance', '0.1', 0.1, 0, 100000, 2]
+        self.BeamControl1 = ['IMinReflectionPool', '15', 0, 0, 100000, 1]
+        self.BeamControl2 = ['IMinStrongBeams', '7', 0, 0, 100000, 1]
+        self.BeamControl3 = ['IMinWeakBeams', '5', 0, 0, 100000, 1]
+        self.BeamControl4 = ['RBSBMax', '0.1', 0.1, 0, 100000, 2]
+        self.BeamControl5 = ['RBSPMax', '0.1', 0.1, 0, 100000, 2]
+        self.BeamControl6 = ['RConvergenceTolerance', '0.1', 0.1, 0, 100000, 2]
         
         #Add them to list (of lists) - Need to find a better method for this
-        BeamControlList.append(BeamControl1)
-        BeamControlList.append(BeamControl2)
-        BeamControlList.append(BeamControl3)
-        BeamControlList.append(BeamControl4)
-        BeamControlList.append(BeamControl5)
-        BeamControlList.append(BeamControl6)
+        BeamControlList.append(self.BeamControl1)
+        BeamControlList.append(self.BeamControl2)
+        BeamControlList.append(self.BeamControl3)
+        BeamControlList.append(self.BeamControl4)
+        BeamControlList.append(self.BeamControl5)
+        BeamControlList.append(self.BeamControl6)
         
 #===============================================================================
         
@@ -219,6 +221,10 @@ class BeamPanel(wx.Panel):
         SizerObjects        = []
         beamObjectsLabels    = []
         beamObjectsControls  = []
+        
+        self.SizerObjects = SizerObjects
+        self.beamObjectsLabels = beamObjectsLabels
+        self.beamObjectsControls = beamObjectsControls
         
         # Finds the number of empty slots on the bottom row to add spacer later
         spacerNo = (3 - (beamnumber % 3)) % 3
@@ -627,7 +633,7 @@ class optionPanel(wx.Panel):
         optionTitleSizer.Add(title, 0, wx.ALL, 5)
     
         #Text box
-        CIFtextbox = wx.TextCtrl(self, -1, os.getcwd(), size=(250,-1), style=wx.TE_LEFT)
+        CIFtextbox = wx.TextCtrl(self, -1, os.getcwd(), size=(400,-1), style=wx.TE_RIGHT)
         textSizer  = wx.BoxSizer(wx.HORIZONTAL)
         textSizer.Add(CIFtextbox, 4, wx.ALL, 5)
         #textSizer.AddStretchSpacer(4)
