@@ -46,6 +46,7 @@ ifeq ($(unixOS),Linux)
 
  ifeq ($(linux),SUSE LINUX) #CSC machines
   HPC := $(shell expr substr $(shell uname -n) 1 3)
+  ARCHER := $(shell expr substr $(shell uname -n) 1 2)
 
   ifeq ($(HPC),hpc) #minerva hpc
 
@@ -64,9 +65,23 @@ ifeq ($(unixOS),Linux)
    -lopenblas \
    -lfftw3
 
+  else ifeq ($(ARCHER),es) #ARCHER #need to include directory
+   F90 = ftn
+   FC = ftn
+   F90FLAGS = # release
+   #F90FLAGS = -fbounds-check -fno-range-check -fimplicit-none -fcray-pointer # debug
+   #F90FLAGS = pg -fbounds-check -fno-range-check -fimplicit-none # profiling
+   F77FLAGS = # debug
+   #F77FLAGS = -fbounds-check -fno-range-check # debug
+
+   INCLUDEDIR = /opt # ARCHER
+
+   #LIBFLAGS= -llapack -lblas -lfftw3 # CSC
+   #LIBFLAGS= -lcray-libsci
+
   else #CSC
    $(info Please ensure to run "module load ompi/1.6.4/gnu/4.3.4" )
-   INCLUDEDIR = /warwick/mathlib/gnu/x86_64/ # CSC machines
+   INCLUDEDIR = /warwick/mathlib/gnu/x86_64/
 
    LIBFLAGS= -llapack -lblas -lfftw3 
 
@@ -147,24 +162,6 @@ ifeq ($(shell expr substr $(unixOS) 1 6),CYGWIN)
 
  LIBFLAGS= -llapack -lblas -lfftw3
 
-endif
-
-ifeq ($(unixOS),ARCHER) #needs to be tested
-
- F90 = ftn
- FC = ftn
- F90FLAGS = # release
- #F90FLAGS = -fbounds-check -fno-range-check -fimplicit-none -fcray-pointer # debug
- #F90FLAGS = pg -fbounds-check -fno-range-check -fimplicit-none # profiling
- F77FLAGS = # debug
- #F77FLAGS = -fbounds-check -fno-range-check # debug
-
- #INCLUDEDIR = # ARCHER
- #INCLUDEDIR = /warwick/mathlib/gnu/x86_64/ # CSC machines
- #INCLUDEDIR = /usr/lib/ # RAR Linux
-
- #LIBFLAGS= -llapack -lblas -lfftw3 # CSC
- #LIBFLAGS= -lcray-libsci
 endif
 
 # NOTE if linking against $(NAG_SHARED) you must set the environment variable
