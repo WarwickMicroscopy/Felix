@@ -34,8 +34,12 @@
 
 #%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 # $Id: makefile.GF,v 1.2 2014/03/27 18:13:30 phsht Exp $
+#
 # cygwin needs: gcc, gfortran, make, git, openmpi, lapack, fftw3
-# CSC modules needed: ompi/1.6.4/gnu/4.3.4 
+# CSC modules needed: ompi/1.6.4/gnu/4.3.4
+# minerva modules needed: minerva-2.0, goolf-1.7.10
+# ARCHER modules needed: cray-libsci/13.0.1, fftw, cray-mpich/7.1.1
+# 
 #%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 unixOS := $(shell uname -s)
@@ -49,9 +53,10 @@ ifeq ($(unixOS),Linux)
   ARCHER := $(shell expr substr $(shell uname -n) 1 2)
 
   ifeq ($(HPC),hpc) #minerva hpc
-
-   #module swap oldmodules minerva-2.0
-   #module load goolf-1.7.10
+   $(info Compiling on minerva $(HPC))
+   $(info Please ensure to run: )
+   $(info "module swap oldmodules minerva-2.0")
+   $(info "module load goolf-1.7.10")
 
    F90 = mpif90
    FC = gfortran -ffixed-form -std=legacy
@@ -65,7 +70,10 @@ ifeq ($(unixOS),Linux)
    -lopenblas \
    -lfftw3
 
-  else ifeq ($(ARCHER),es) #ARCHER #need to include directory
+  else ifeq ($(ARCHER),es) #ARCHER
+   $(info Compiling on ARCHER)
+   $(info Please ensure to run "module load fftw")
+
    F90 = ftn
    FC = ftn
    F90FLAGS = # release
@@ -80,16 +88,18 @@ ifeq ($(unixOS),Linux)
    #LIBFLAGS= -lcray-libsci
 
   else #CSC
+   $(info Compiling on CSC, $(linux))
    $(info Please ensure to run "module load ompi/1.6.4/gnu/4.3.4" )
+
    INCLUDEDIR = /warwick/mathlib/gnu/x86_64/
 
    LIBFLAGS= -llapack -lblas -lfftw3 
 
-   ifeq ($(compiler),ifort) #change ifort flags and test
+   ifeq ($(FOO),ifort) #ifort compiler
     F90 = mpif90
-    FC = ifort -ffixed-form -std=legacy
-    F90FLAGS = -fbounds-check -fno-range-check -fimplicit-none -fcray-pointer -fexternal-blas
-    F77FLAGS = -fbounds-check -fno-range-check
+    FC = ifort 
+    F90FLAGS =
+    F77FLAGS =
 
    else
     F90 = mpif90
@@ -100,13 +110,12 @@ ifeq ($(unixOS),Linux)
    endif
   endif
  endif
-
+ 
  ifeq ($(linux),Ubuntu) #Ubuntu machine
+  $(info Compiling on $(linux), $(unixOS))
 
   INCLUDEDIR = /usr/share/doc
-
   LIBFLAGS = -llapack -lblas -lfftw3
- 
   F90 = mpif90
   F90FLAGS = -fbounds-check -fno-range-check -fimplicit-none -fcray-pointer -fexternal-blas
   FC = gfortran -ffixed-form -std=legacy
@@ -114,11 +123,10 @@ ifeq ($(unixOS),Linux)
  endif
 
  ifeq ($(linux),openSUSE project) #openSUSE machine
+  $(info Compiling on $(linux), $(unixOS))
 
   LIBFLAGS = -llapack -lblas -lfftw3
-
   INCLUDEDIR = /usr/lib64
-
   F90 = mpif90
   F90FLAGS = -fbounds-check -fno-range-check -fimplicit-none -fcray-pointer -fexternal-blas
   FC = gfortran -ffixed-form -std=legacy
@@ -126,11 +134,10 @@ ifeq ($(unixOS),Linux)
  endif
 
  ifeq ($(linux),CentOS) #CentOS machine
+  $(info Compiling on $(linux), $(unixOS))
  
   LIBFLAGS = -llapack -lblas -lfftw3
-
   INCLUDEDIR = /usr/lib64/
-
   F90 = mpif90
   F90FLAGS = -fbounds-check -fno-range-check -fimplicit-none -fcray-pointer -fexternal-blas
   FC = gfortran -ffixed-form -std=legacy
@@ -139,6 +146,7 @@ ifeq ($(unixOS),Linux)
 endif 
 
 ifeq ($(unixOS),Darwin) #MAC
+ $(info Compiling on $(unixOS), OS X)
 
  F90 = mpifort
  FC = gfortran -ffixed-form -std=legacy
@@ -151,7 +159,9 @@ ifeq ($(unixOS),Darwin) #MAC
  LIBFLAGS= -llapack -lblas -lfftw3
 endif
 
-ifeq ($(shell expr substr $(unixOS) 1 6),CYGWIN)
+cyg := $(shell expr substr $(unixOS) 1 6)
+ifeq ($(cyg),CYGWIN)
+ $(info Compiling on $(cyg)) 
 
  F90 = mpif90
  FC = gfortran -ffixed-form -std=legacy
