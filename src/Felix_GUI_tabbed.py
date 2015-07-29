@@ -73,15 +73,17 @@ class FlagPanel(wx.Panel):
  
 #=======================================================================================      
         
-        flag1 = {'name' : 'IWriteFLAG', 'choices' : ['Silent', 'Crucial information', 'Basic information', 'All information'], 'object type' : 'CHOICE'}
-        flag2 = {'name' : 'IScatterFactorMethodFLAG', 'choices' : ['Kirkland', 'Doyle-Turner', 'Peng', 'Lobato'], 'object type' : 'CHOICE'}
-        flag3 = {'name' : 'IMaskFLAG', 'choices' : [], 'object type' : 'CHECKBOX'}
-        flag4 = {'name' : 'IZolzFLAG', 'choices' : [], 'object type' : 'CHECKBOX'}
-        flag5 = {'name' : 'IAbsorbFLAG', 'choices' : ['Proportional'], 'object type' : 'CHOICE'}
-        flag6 = {'name' : 'IAnisoDebyeWallerFLAG', 'choices' : ['0'], 'object type' : 'CHOICE'}
-        flag7 = {'name' : 'IXDirectionFLAG', 'choices' : ['Automatic', 'Manual'], 'object type' : 'CHOICE'}
+        flag1 = {'name' : 'IWriteFLAG', 'choices' : ['Silent', 'Crucial information', 'Basic information', 'All information'], 'object type' : 'CHOICE', 'default' : 'All information'}
+        flag2 = {'name' : 'IScatterFactorMethodFLAG', 'choices' : ['Kirkland', 'Doyle-Turner', 'Peng', 'Lobato'], 'object type' : 'CHOICE', 'default' : 'Kirkland'}
+        flag3 = {'name' : 'IMaskFLAG', 'choices' : [], 'object type' : 'CHECKBOX', 'default' : 0}
+        flag4 = {'name' : 'IZolzFLAG', 'choices' : [], 'object type' : 'CHECKBOX', 'default' : 0}
+        flag5 = {'name' : 'IAbsorbFLAG', 'choices' : ['Proportional'], 'object type' : 'CHOICE', 'default' : 'Proportional'}
+        flag6 = {'name' : 'IAnisoDebyeWallerFLAG', 'choices' : ['0'], 'object type' : 'CHOICE', 'default' : '0'}
+        flag7 = {'name' : 'IPseudoCubicFLAG', 'choices' : ['0'], 'object type' : 'CHOICE', 'default' : '0'}
+        flag8 = {'name' : 'IXDirectionFLAG', 'choices' : ['Automatic', 'Manual'], 'object type' : 'CHOICE', 'default' : 'Automatic'}
         
         flags = []
+        self.flags = flags
         
         flags.append(flag1)
         flags.append(flag2)
@@ -90,6 +92,7 @@ class FlagPanel(wx.Panel):
         flags.append(flag5)
         flags.append(flag6)
         flags.append(flag7)
+        flags.append(flag8)
         
 #=======================================================================================        
 
@@ -123,13 +126,18 @@ class FlagPanel(wx.Panel):
             choices = flag['choices']
             print(choices)
             flagObjectsLabels.append(wx.StaticText(self, wx.ID_ANY, flag['name']))
-            
+            flagIndex = flags.index(flag)
             if flag['object type'] == 'CHOICE':
                 flagObjectsChoices.append(wx.Choice(self, wx.ID_ANY, size=(110, -1), 
-                    choices=choices, name=flag['name'])) 
+                    choices=choices, name=flag['name']))
+                flagObjectsChoices[flagIndex].SetStringSelection(flag['default'])
+                 
             elif flag['object type'] == 'CHECKBOX':
                 flagObjectsChoices.append(wx.CheckBox(self, wx.ID_ANY, size=(110, -1), 
                     name=flag['name']))
+                if flag['default'] == 1:
+                    flagObjectsChoices[flagIndex].SetValue(True)
+                    
         
         #Adds the objects from the lists to the respective rows in the sizer list
         for flagNo in range(0, flagnumber):
@@ -172,7 +180,6 @@ class RadiusPanel(wx.Panel):
         
         self.IPixelCount = FS.FloatSpin(self, size=(60, -1), value=64, min_val=0, max_val=512,
                                    increment=64, agwStyle=FS.FS_RIGHT)
-        self.IPixelCount.SetFormat("%f")
         self.IPixelCount.SetDigits(0)
         RadiusSizer.Add(RadiusLabel, 3, wx.ALL, 5)
         RadiusSizer.Add(self.IPixelCount, 1, wx.ALL, 5)
@@ -209,7 +216,6 @@ class BeamPanel(wx.Panel):
         self.BeamControl3 = ['IMinWeakBeams', '5', 0, 0, 100000, 1]
         self.BeamControl4 = ['RBSBMax', '0.1', 0.1, 0, 100000, 2]
         self.BeamControl5 = ['RBSPMax', '0.1', 0.1, 0, 100000, 2]
-        self.BeamControl6 = ['RConvergenceTolerance', '0.1', 0.1, 0, 100000, 2]
         
         #Add them to list (of lists) - Need to find a better method for this
         BeamControlList.append(self.BeamControl1)
@@ -217,7 +223,6 @@ class BeamPanel(wx.Panel):
         BeamControlList.append(self.BeamControl3)
         BeamControlList.append(self.BeamControl4)
         BeamControlList.append(self.BeamControl5)
-        BeamControlList.append(self.BeamControl6)
         
 #===============================================================================
         
@@ -312,10 +317,10 @@ class crystalPanel(wx.Panel):
 #===============================================================================
         
         # SET UP ALL THE CONTROLS! THIS IS THE FORMAT:
-        # ['name', default value, increment, min, mac, 'type', NUMBER OF DIGITS]
+        # ['name', default value, increment, min, mac, 'type', *NUMBER OF DIGITS*]
         # with type referring to a 1 for spinctrl or 2 for a float spin!
         # NB: spin does not need increment, so just put 0!
-        crystalControl1 = ['RDebyeWallerConstant', '0.467', 0.001, 0, 100000, 2, 3]
+        crystalControl1 = ['RDebyeWallerConstant', '0.467', 0.001, 0, 100000, 2, 4]
         crystalControl2 = ['RAbsorptionPer', '2.9', 0.1, 0, 100000, 2, 1]
         
         
@@ -336,8 +341,8 @@ class crystalPanel(wx.Panel):
         
         # Make some lists
         SizerObjects        = []
-        crystalObjectsLabels    = []
-        crystalObjectsControls  = []
+        self.crystalObjectsLabels    = []
+        self.crystalObjectsControls  = []
         
         # Finds the number of empty slots on the bottom row to add spacer later
         spacerNo = (3 - (crystalnumber % 3)) % 3
@@ -359,26 +364,26 @@ class crystalPanel(wx.Panel):
             
             currentIndex = crystalControlList.index(crystal)
             
-            crystalObjectsLabels.append(wx.StaticText(self, wx.ID_ANY, crystalname))
+            self.crystalObjectsLabels.append(wx.StaticText(self, wx.ID_ANY, crystalname))
             
             if crystaltype == 1:
-                crystalObjectsControls.append(wx.SpinCtrl(self, id=wx.ID_ANY, 
+                self.crystalObjectsControls.append(wx.SpinCtrl(self, id=wx.ID_ANY, 
                     size=(60, -1), value=crystalvalue, min=crystalmin, max=crystalmax))
                 print('Added a spin!')
             elif crystaltype == 2:
-                crystalObjectsControls.append(FS.FloatSpin(self, size=(60, -1), 
+                self.crystalObjectsControls.append(FS.FloatSpin(self, size=(60, -1), 
                     value=crystalvalue, increment=crystalincrement, 
                     min_val=crystalmin, max_val=crystalmax, agwStyle=FS.FS_RIGHT))
                 
-                crystalObjectsControls[currentIndex].SetFormat("%f")
-                crystalObjectsControls[currentIndex].SetDigits(crystaldigits)
+                self.crystalObjectsControls[currentIndex].SetFormat("%f")
+                self.crystalObjectsControls[currentIndex].SetDigits(crystaldigits)
                 print('Added a float spin!')
             
         #Adds the objects from the lists to the respective rows in the sizer list
         for crystalNo in range(0, crystalnumber):
             row = int(math.floor(crystalNo / 3))
-            SizerObjects[row].Add(crystalObjectsLabels[crystalNo], 3, wx.ALL, 5)
-            SizerObjects[row].Add(crystalObjectsControls[crystalNo], 1, wx.ALL, 5)
+            SizerObjects[row].Add(self.crystalObjectsLabels[crystalNo], 3, wx.ALL, 5)
+            SizerObjects[row].Add(self.crystalObjectsControls[crystalNo], 1, wx.ALL, 5)
         
         #Adds spacers if necessary    
         if spacerNo != 0:
@@ -417,16 +422,17 @@ class microscopePanel(wx.Panel):
         # NB: spin does not need increment, so just put 0!
         microscopeControl1 = ['ROuterConvergenceAngle', '3.0', 0.1, 0, 50, 2]
         microscopeControl2 = ['RInnerConvergenceAngle', '0.0', 0.1, 0, 50, 2]
-        microscopeControl3 = ['RAcceleratingVoltage', '200.0', 0.1, 0, 100000, 2]
-        microscopeControl4 = ['IIncidentBeamDirectionX', '1', 0, -100000, 100000, 1]
-        microscopeControl5 = ['IIncidentBeamDirectionY', '1', 0, -100000, 100000, 1]
-        microscopeControl6 = ['IIncidentBeamDirectionZ', '1', 0, -100000, 100000, 1]
-        microscopeControl7 = ['IXDirectionX', '1', 0, -100000, 100000, 1]
-        microscopeControl8 = ['IXDirectionY', '1', 0, -100000, 100000, 1]
-        microscopeControl9 = ['IXDirectionZ', '1', 0, -100000, 100000, 1]
-        microscopeControl10 = ['INormalDirectionX', '1', 0, -100000, 100000, 1]
-        microscopeControl11 = ['INormalDirectionY', '1', 0, -100000, 100000, 1]
-        microscopeControl12 = ['INormalDirectionZ', '1', 0, -100000, 100000, 1]
+        microscopeControl3 = ['IIncidentBeamDirectionX', '1', 0, -100000, 100000, 1]
+        microscopeControl4 = ['IIncidentBeamDirectionY', '1', 0, -100000, 100000, 1]
+        microscopeControl5 = ['IIncidentBeamDirectionZ', '1', 0, -100000, 100000, 1]
+        microscopeControl6 = ['IXDirectionX', '1', 0, -100000, 100000, 1]
+        microscopeControl7 = ['IXDirectionY', '1', 0, -100000, 100000, 1]
+        microscopeControl8 = ['IXDirectionZ', '1', 0, -100000, 100000, 1]
+        microscopeControl9 = ['INormalDirectionX', '1', 0, -100000, 100000, 1]
+        microscopeControl10 = ['INormalDirectionY', '1', 0, -100000, 100000, 1]
+        microscopeControl11 = ['INormalDirectionZ', '1', 0, -100000, 100000, 1]
+        microscopeControl12 = ['RAcceleratingVoltage', '200.0', 0.1, 0, 100000, 2]
+        microscopeControl13 = ['RAcceptanceAngle', '0.0', 0.1, 0, 180, 2]
         
         
         
@@ -443,6 +449,7 @@ class microscopePanel(wx.Panel):
         microscopeControlList.append(microscopeControl10)
         microscopeControlList.append(microscopeControl11)
         microscopeControlList.append(microscopeControl12)
+        microscopeControlList.append(microscopeControl13)
         
 #===============================================================================
         
@@ -457,8 +464,8 @@ class microscopePanel(wx.Panel):
         
         # Make some lists
         SizerObjects        = []
-        microscopeObjectsLabels    = []
-        microscopeObjectsControls  = []
+        self.microscopeObjectsLabels    = []
+        self.microscopeObjectsControls  = []
         
         # Finds the number of empty slots on the bottom row to add spacer later
         spacerNo = (3 - (microscopenumber % 3)) % 3
@@ -479,27 +486,27 @@ class microscopePanel(wx.Panel):
             
             currentIndex = microscopeControlList.index(microscope)
             
-            microscopeObjectsLabels.append(wx.StaticText(self, wx.ID_ANY, microscopename))
+            self.microscopeObjectsLabels.append(wx.StaticText(self, wx.ID_ANY, microscopename))
             
             if microscopetype == 1:
-                microscopeObjectsControls.append(wx.SpinCtrl(self, id=wx.ID_ANY, 
+                self.microscopeObjectsControls.append(wx.SpinCtrl(self, id=wx.ID_ANY, 
                         size=(60, -1), value=microscopevalue, 
                         min=microscopemin, max=microscopemax))
                 print('Added a spin!')
             elif microscopetype == 2:
-                microscopeObjectsControls.append(FS.FloatSpin(self, size=(60, -1), 
+                self.microscopeObjectsControls.append(FS.FloatSpin(self, size=(60, -1), 
                     value=microscopevalue, increment=microscopeincrement, 
                     min_val=microscopemin, max_val=microscopemax, agwStyle=FS.FS_RIGHT))
                 
-                microscopeObjectsControls[currentIndex].SetFormat("%f")
-                microscopeObjectsControls[currentIndex].SetDigits(1)
+                self.microscopeObjectsControls[currentIndex].SetFormat("%f")
+                self.microscopeObjectsControls[currentIndex].SetDigits(1)
                 print('Added a float spin!')
             
         #Adds the objects from the lists to the respective rows in the sizer list
         for microscopeNo in range(0, microscopenumber):
             row = int(math.floor(microscopeNo / 3))
-            SizerObjects[row].Add(microscopeObjectsLabels[microscopeNo], 3, wx.ALL, 5)
-            SizerObjects[row].Add(microscopeObjectsControls[microscopeNo], 1, wx.ALL, 5)
+            SizerObjects[row].Add(self.microscopeObjectsLabels[microscopeNo], 3, wx.ALL, 5)
+            SizerObjects[row].Add(self.microscopeObjectsControls[microscopeNo], 1, wx.ALL, 5)
         
         #Adds spacers if necessary    
         if spacerNo != 0:
@@ -534,12 +541,15 @@ class imagePanel(wx.Panel):
         
         # SET UP ALL THE CONTROLS! THIS IS THE FORMAT:
         # ['name', default value, increment, min, mac, 'type', NUMBER OF DIGITS]
-        # with type referring to a 1 for spinctrl or 2 for a float spin!
+        # with type referring to a 1 for spinctrl or 2 for a float spin, 3 for checkbox!
         # NB: spin does not need increment, so just put 0!
         imageControl1 = ['RInitialThickness', '1000.0', 1, 0, 100000, 2, 1]
         imageControl2 = ['RFinalThickness', '1000.0', 1, 0, 100000, 2, 1]
         imageControl3 = ['RDeltaThickness', '10.0', 1, 0, 100000, 2, 1]
         imageControl4 = ['IReflectOut', '7', 0, 0, 100000, 1, 1]
+        IImageFLAG1   = ['Montage', True, 0, 0, 0, 3, 0]
+        IImageFLAG2   = ['Stack Reflections', False, 0, 0, 0, 3, 0]
+        IImageFLAG3   = ['Amplitude and Phase', False, 0, 0, 0, 3, 0]
         
         
         
@@ -548,6 +558,9 @@ class imagePanel(wx.Panel):
         imageControlList.append(imageControl2)
         imageControlList.append(imageControl3)
         imageControlList.append(imageControl4)
+        imageControlList.append(IImageFLAG1)
+        imageControlList.append(IImageFLAG2)
+        imageControlList.append(IImageFLAG3)
 #===============================================================================
         
         
@@ -562,8 +575,8 @@ class imagePanel(wx.Panel):
         
         # Make some lists
         SizerObjects        = []
-        imageObjectsLabels    = []
-        imageObjectsControls  = []
+        self.imageObjectsLabels    = []
+        self.imageObjectsControls  = []
         
         # Finds the number of empty slots on the bottom row to add spacer later
         spacerNo = (3 - (imagenumber % 3)) % 3
@@ -585,26 +598,30 @@ class imagePanel(wx.Panel):
             
             currentIndex = imageControlList.index(image)
             
-            imageObjectsLabels.append(wx.StaticText(self, wx.ID_ANY, imagename))
+            self.imageObjectsLabels.append(wx.StaticText(self, wx.ID_ANY, imagename))
             
             if imagetype == 1:
-                imageObjectsControls.append(wx.SpinCtrl(self, id=wx.ID_ANY, 
+                self.imageObjectsControls.append(wx.SpinCtrl(self, id=wx.ID_ANY, 
                         size=(60, -1), value=imagevalue, min=imagemin, max=imagemax))
                 print('Added a spin!')
             elif imagetype == 2:
-                imageObjectsControls.append(FS.FloatSpin(self, size=(60, -1), 
+                self.imageObjectsControls.append(FS.FloatSpin(self, size=(60, -1), 
                         value=imagevalue, increment=imageincrement, min_val=imagemin, 
                         max_val=imagemax, agwStyle=FS.FS_RIGHT))
                 
-                imageObjectsControls[currentIndex].SetFormat("%f")
-                imageObjectsControls[currentIndex].SetDigits(imagedigits)
+                self.imageObjectsControls[currentIndex].SetFormat("%f")
+                self.imageObjectsControls[currentIndex].SetDigits(imagedigits)
                 print('Added a float spin!')
+            elif imagetype == 3:
+                self.imageObjectsControls.append(wx.CheckBox(self, wx.ID_ANY, size=(60, -1), 
+                    name=imagename))
+                self.imageObjectsControls[currentIndex].SetValue(imagevalue)
             
         #Adds the objects from the lists to the respective rows in the sizer list
         for imageNo in range(0, imagenumber):
             row = int(math.floor(imageNo / 3))
-            SizerObjects[row].Add(imageObjectsLabels[imageNo], 3, wx.ALL, 5)
-            SizerObjects[row].Add(imageObjectsControls[imageNo], 1, wx.ALL, 5)
+            SizerObjects[row].Add(self.imageObjectsLabels[imageNo], 3, wx.ALL, 5)
+            SizerObjects[row].Add(self.imageObjectsControls[imageNo], 1, wx.ALL, 5)
         
         #Adds spacers if necessary    
         if spacerNo != 0:
@@ -647,35 +664,37 @@ class optionPanel(wx.Panel):
         optionTitleSizer.Add(title, 0, wx.ALL, 5)
     
         #Text box
-        CIFtextbox = wx.TextCtrl(self, -1, os.getcwd(), size=(400,-1), style=wx.TE_RIGHT)
+        self.CIFtextbox = wx.TextCtrl(self, -1, os.getcwd(), size=(400,-1), style=wx.TE_RIGHT)
         textSizer  = wx.BoxSizer(wx.HORIZONTAL)
-        textSizer.Add(CIFtextbox, 4, wx.ALL, 5)
+        textSizer.Add(self.CIFtextbox, 4, wx.ALL, 5)
         #textSizer.AddStretchSpacer(4)
 
         #Buttons
         Run = wx.Button(self, label='Run')
         Cancel = wx.Button(self, label='Cancel')
         CIFFile=wx.Button(self, label='Browse')
-        InputFile = wx.Button(self, label='Write Input file')
+        InputFile = wx.Button(self, label='Write Input File')
+        InputLoad = wx.Button(self, label='Load Input File')
         
         buttonSizer = wx.BoxSizer(wx.HORIZONTAL)
         buttonSizer.Add(Run, 0, wx.ALL, 5)
         buttonSizer.Add(Cancel, 0, wx.ALL, 5)
         buttonSizer.Add(CIFFile, 0, wx.ALL, 5)
         buttonSizer.Add(InputFile, 0, wx.ALL, 5)
+        buttonSizer.Add(InputLoad, 0, wx.ALL, 5)
                               
         #CSC Checkbox
         CSC=wx.CheckBox(self,label='CSC')
         CSC.SetValue(True)
         checkSizer = wx.BoxSizer(wx.HORIZONTAL)
         checkSizer.Add(CSC, 0, wx.ALL, 5)
-    
+        
         #Number of cores
         coreLabel = wx.StaticText(self, label='MpiCores')
-        MPICores = wx.SpinCtrl(self, size=(60,-1), value='1', min=0, max=100)
+        self.MPICores = wx.SpinCtrl(self, size=(60,-1), value='1', min=0, max=100)
         coreSizer = wx.BoxSizer(wx.HORIZONTAL)
         coreSizer.Add(coreLabel, 3, wx.ALL, 5)
-        coreSizer.Add(MPICores, 1, wx.ALL, 5)
+        coreSizer.Add(self.MPICores, 1, wx.ALL, 5)
         #coreSizer.AddStretchSpacer(4)
         
         topOptionSizer.Add(optionTitleSizer, 0, wx.CENTER)
@@ -694,6 +713,7 @@ class optionPanel(wx.Panel):
         Cancel.Bind(wx.EVT_BUTTON, self.OnClose)
         CIFFile.Bind(wx.EVT_BUTTON, self.OnCif)
         InputFile.Bind(wx.EVT_BUTTON, self.InpCreate)
+        InputLoad.Bind(wx.EVT_BUTTON, self.LoadInputFile)
 
         
     #subroutine which re-names the selected cif file and opens a directory 
@@ -711,8 +731,8 @@ class optionPanel(wx.Panel):
         #creates working directory
         cfilename=cfilename.replace(" ","")
         print cfilename
-        dir = cfilename.rstrip('.cif')+"_"+str(beamPanel.IMinReflectionPool.GetValue())\
-                    +"_"+str(beamPanel.IMinStrongBeams.GetValue())+"_input_directory"
+        dir = cfilename.rstrip('.cif')+"_"+str(self.main.notebook.page3.beamObjectsControls[0].GetValue())\
+                    +"_"+str(self.main.notebook.page3.beamObjectsControls[1].GetValue())+"_input_directory"
         if os.path.exists(dir):
             shutil.rmtree(dir)
         os.makedirs(dir)
@@ -781,20 +801,474 @@ class optionPanel(wx.Panel):
         inpfile.write("\n")
         inpfile.write("# control flags\n")
         
-        #for flag in self.main.notebook.page1.flagnames:
-            #index = self.main.notebook.page1.flagnames.index(flag)
+        #for flag in self.main.notebook.page1.flags:
+        #    index = self.main.notebook.page1.flags.index(flag)
+        #    
+        #    value = self.main.notebook.page1.flagObjectsChoices[index].GetCurrentSelection()
+        #    inpfile.write(flag)
+        #    inpfile.write("                = ")
+        #    inpfile.write(str(value))
+        #    inpfile.write("\n")
+        
+        
+        #FLAGS=================================================================
             
-            #value = self.main.notebook.page1.flagObjectsChoices[index].GetCurrentSelection()
-            #inpfile.write(flag)
-            #inpfile.write("                = ")
-            #inpfile.write(str(value))
-            #inpfile.write("\n")
+        #IWriteFLAG
+        IWriteFLAGVal = self.main.notebook.page1.flagObjectsChoices[0].GetCurrentSelection()
+        inpfile.write("IWriteFLAG                = ")
+        inpfile.write(str(IWriteFLAGVal))
+        inpfile.write("\n")
+        
+        #IImageFLAG
+        inpfile.write("IImageFLAG                = ")
+        
+        IImageFLAGVal0 = self.main.notebook.page6.imageObjectsControls[4].GetValue()
+        if IImageFLAGVal0 == True:
+            inpfile.write("0")
+        
+        IImageFLAGVal1 = self.main.notebook.page6.imageObjectsControls[5].GetValue()
+        if IImageFLAGVal1 == True:
+            inpfile.write("1")
+        
+        IImageFLAGVal2 = self.main.notebook.page6.imageObjectsControls[6].GetValue()
+        if IImageFLAGVal2 == True:
+            inpfile.write("2")
+        
+        inpfile.write("\n")
+        
+        #IScatterFactorMethodFLAG
+        IScatterFactorMethodFLAGVal = self.main.notebook.page1.flagObjectsChoices[1].GetCurrentSelection()
+        inpfile.write("IScatterFactorMethodFLAG  = ")
+        inpfile.write(str(IScatterFactorMethodFLAGVal))
+        inpfile.write("\n")
+        
+        #IMaskFLAG
+        IMaskFLAGVal = self.main.notebook.page1.flagObjectsChoices[2].GetValue()
+        inpfile.write("IMaskFLAG                 = ")
+        if IMaskFLAGVal == True:
+            IMaskFLAGBool = 1
+        elif IMaskFLAGVal == False:
+            IMaskFLAGBool = 0
+        inpfile.write(str(IMaskFLAGBool))
+        inpfile.write("\n")
+        
+        #IZolzFLAG
+        IZolzFLAGVal = self.main.notebook.page1.flagObjectsChoices[3].GetValue()
+        inpfile.write("IZolzFLAG                 = ")
+        if IZolzFLAGVal == True:
+            IZolzFLAGBool = 1
+        elif IZolzFLAGVal == False:
+            IZolzFLAGBool = 0
+        inpfile.write(str(IZolzFLAGBool))
+        inpfile.write("\n")
+        
+        #IAbsorbFLAG
+        IAbsorbFLAGVal = self.main.notebook.page1.flagObjectsChoices[4].GetCurrentSelection()
+        inpfile.write("IAbsorbFLAG               = ")
+        inpfile.write(str(IAbsorbFLAGVal))
+        inpfile.write("\n")
+        
+        #IAnisoDebyeWallerFLAG
+        IAnisoDebyeWallerFLAGVal = self.main.notebook.page1.flagObjectsChoices[5].GetCurrentSelection()
+        inpfile.write("IAnisoDebyeWallerFLAG     = ")
+        inpfile.write(str(IAnisoDebyeWallerFLAGVal))
+        inpfile.write("\n")
+        
+        #IPseudoCubicFLAG
+        IPseudoCubicFLAGVal = self.main.notebook.page1.flagObjectsChoices[6].GetCurrentSelection()
+        inpfile.write("IPseudoCubicFLAG          = ")
+        inpfile.write(str(IPseudoCubicFLAGVal))
+        inpfile.write("\n")
+        
+        #IXDirectionFLAG
+        IXDirectionFLAGVal = self.main.notebook.page1.flagObjectsChoices[7].GetCurrentSelection()
+        inpfile.write("IXDirectionFLAG           = ")
+        inpfile.write(str(IXDirectionFLAGVal))
+        inpfile.write("\n")
+        
+        #RADIUS OF BEAM=========================================================
+        inpfile.write("\n# radius of the beam in pixels\n")
+        
+        #IPixelCount
+        IPixelCountVal = int(self.main.notebook.page2.IPixelCount.GetValue())
+        inpfile.write("IPixelCount               = ")
+        inpfile.write(str(IPixelCountVal))
+        inpfile.write("\n")
+        
+        #BEAM SELECTION=========================================================
+        inpfile.write("\n# beam selection criteria\n")
+        
+        #IMinReflectionPool
+        IMinReflectionPoolVal = self.main.notebook.page3.beamObjectsControls[0].GetValue()
+        inpfile.write("IMinReflectionPool        = ")
+        inpfile.write(str(IMinReflectionPoolVal))
+        inpfile.write("\n")
+        
+        #IMinStrongBeams
+        IMinStrongBeamsVal = self.main.notebook.page3.beamObjectsControls[1].GetValue()
+        inpfile.write("IMinStrongBeams           = ")
+        inpfile.write(str(IMinStrongBeamsVal))
+        inpfile.write("\n")
+        
+        #IMinWeakBeams
+        IMinWeakBeamsVal = self.main.notebook.page3.beamObjectsControls[2].GetValue()
+        inpfile.write("IMinWeakBeams             = ")
+        inpfile.write(str(IMinWeakBeamsVal))
+        inpfile.write("\n")
+        
+        #RBSBMax
+        RBSBMaxVal = self.main.notebook.page3.beamObjectsControls[3].GetValue()
+        inpfile.write("RBSBMax                   = ")
+        inpfile.write(str(RBSBMaxVal))
+        inpfile.write("\n")
+        
+        #RBSPMax
+        RBSPMaxVal = self.main.notebook.page3.beamObjectsControls[4].GetValue()
+        inpfile.write("RBSPMax                   = ")
+        inpfile.write(str(RBSPMaxVal))
+        inpfile.write("\n")
+        
+        #CRYSTAL SETTINGS======================================================
+        inpfile.write("\n# crystal settings\n")
+        
+        #RDebyeWallerConstant
+        RDebyeWallerConstantVal = self.main.notebook.page4.crystalObjectsControls[0].GetValue()
+        inpfile.write("RDebyeWallerConstant      = ")
+        inpfile.write(str(RDebyeWallerConstantVal))
+        inpfile.write("\n")
+        
+        #RAbsorptionPer
+        RAbsorptionPerVal = self.main.notebook.page4.crystalObjectsControls[1].GetValue()
+        inpfile.write("RAbsorptionPer            = ")
+        inpfile.write(str(RAbsorptionPerVal))
+        inpfile.write("\n")
+        
+        #MICROSCOPE SETTINGS====================================================
+        inpfile.write("\n# microscope settings\n")
+        
+        #ROuterConvergenceAngle
+        ROuterConvergenceAngleVal = self.main.notebook.page5.microscopeObjectsControls[0].GetValue()
+        inpfile.write("ROuterConvergenceAngle    = ")
+        inpfile.write(str(ROuterConvergenceAngleVal))
+        inpfile.write("\n")
+        
+        #ROuterConvergenceAngle
+        RInnerConvergenceAngleVal = self.main.notebook.page5.microscopeObjectsControls[1].GetValue()
+        inpfile.write("RInnerConvergenceAngle    = ")
+        inpfile.write(str(RInnerConvergenceAngleVal))
+        inpfile.write("\n")
+        
+        #IIncidentBeamDirectionX
+        IIncidentBeamDirectionXVal = self.main.notebook.page5.microscopeObjectsControls[2].GetValue()
+        inpfile.write("IIncidentBeamDirectionX   = ")
+        inpfile.write(str(IIncidentBeamDirectionXVal))
+        inpfile.write("\n")
+        
+        #IIncidentBeamDirectionY
+        IIncidentBeamDirectionYVal = self.main.notebook.page5.microscopeObjectsControls[3].GetValue()
+        inpfile.write("IIncidentBeamDirectionY   = ")
+        inpfile.write(str(IIncidentBeamDirectionYVal))
+        inpfile.write("\n")
+        
+        #IIncidentBeamDirectionZ
+        IIncidentBeamDirectionZVal = self.main.notebook.page5.microscopeObjectsControls[4].GetValue()
+        inpfile.write("IIncidentBeamDirectionZ   = ")
+        inpfile.write(str(IIncidentBeamDirectionZVal))
+        inpfile.write("\n")
+        
+        #IXDirectionX
+        IXDirectionXVal = self.main.notebook.page5.microscopeObjectsControls[5].GetValue()
+        inpfile.write("IXDirectionX              = ")
+        inpfile.write(str(IXDirectionXVal))
+        inpfile.write("\n")
+        
+        #IXDirectionY
+        IXDirectionYVal = self.main.notebook.page5.microscopeObjectsControls[6].GetValue()
+        inpfile.write("IXDirectionY              = ")
+        inpfile.write(str(IXDirectionYVal))
+        inpfile.write("\n")
+        
+        #IXDirectionZ
+        IXDirectionZVal = self.main.notebook.page5.microscopeObjectsControls[7].GetValue()
+        inpfile.write("IXDirectionZ              = ")
+        inpfile.write(str(IXDirectionZVal))
+        inpfile.write("\n")
+        
+        #INormalDirectionX
+        INormalDirectionXVal = self.main.notebook.page5.microscopeObjectsControls[8].GetValue()
+        inpfile.write("INormalDirectionX         = ")
+        inpfile.write(str(INormalDirectionXVal))
+        inpfile.write("\n")
+        
+        #INormalDirectionY
+        INormalDirectionYVal = self.main.notebook.page5.microscopeObjectsControls[9].GetValue()
+        inpfile.write("INormalDirectionY         = ")
+        inpfile.write(str(INormalDirectionYVal))
+        inpfile.write("\n")
+        
+        #INormalDirectionZ
+        INormalDirectionZVal = self.main.notebook.page5.microscopeObjectsControls[10].GetValue()
+        inpfile.write("INormalDirectionZ         = ")
+        inpfile.write(str(INormalDirectionZVal))
+        inpfile.write("\n")
+        
+        #RAcceleratingVoltage (kV)
+        RAcceleratingVoltageVal = self.main.notebook.page5.microscopeObjectsControls[11].GetValue()
+        inpfile.write("RAcceleratingVoltage (kV) = ")
+        inpfile.write(str(RAcceleratingVoltageVal))
+        inpfile.write("\n")
+        
+        #RAcceptanceAngle (deg)
+        RAcceptanceAngleVal = self.main.notebook.page5.microscopeObjectsControls[12].GetValue()
+        inpfile.write("RAcceptanceAngle (deg)    = ")
+        inpfile.write(str(RAcceptanceAngleVal))
+        inpfile.write("\n")
+        
+        #IMAGE OUTPUT OPTIONS====================================================
+        inpfile.write("\n# Image Output Options\n \n")
+        
+        #RInitialThickness
+        RInitialThicknessVal = self.main.notebook.page6.imageObjectsControls[0].GetValue()
+        inpfile.write("RInitialThickness         = ")
+        inpfile.write(str(RInitialThicknessVal))
+        inpfile.write("\n")
+        
+        #RFinalThickness
+        RFinalThicknessVal = self.main.notebook.page6.imageObjectsControls[1].GetValue()
+        inpfile.write("RFinalThickness           = ")
+        inpfile.write(str(RFinalThicknessVal))
+        inpfile.write("\n")
+        
+        #RDeltaThickness
+        RDeltaThicknessVal = self.main.notebook.page6.imageObjectsControls[2].GetValue()
+        inpfile.write("RDeltaThickness           = ")
+        inpfile.write(str(RDeltaThicknessVal))
+        inpfile.write("\n")
+        
+        #IReflectOut
+        IReflectOutVal = self.main.notebook.page6.imageObjectsControls[3].GetValue()
+        inpfile.write("IReflectOut               = ")
+        inpfile.write(str(IReflectOutVal))
+        inpfile.write("\n")
+    
+    def LoadInputFile(self, e):
+        InputFileDialog = wx.FileDialog(self, "Load input file", "", "",
+                    "INP files (*.inp)|*.inp", wx.FD_OPEN | wx.FD_FILE_MUST_EXIST)
+
+        #If the User selects cancel
+        if InputFileDialog.ShowModal() == wx.ID_CANCEL:
+            return     
+
+        # get the filename and path from user
+        self.User_INPfilename=InputFileDialog.GetFilename()
+        self.User_INPpath=InputFileDialog.GetPath()
+        
+        self.SetGUIFromFile(self.User_INPpath)
+        
+        #shutil.copy2(self.User_INPpath,dir+"/felix.cif")
+
+        #self.main.option.CIFtextbox.SetValue(self.User_CIFpath)
+    
+    def SetGUIFromFile(self, dir):
+        
+        FelixInpLoad= dir
+        inpLoadFile = open(FelixInpLoad,"rb")
+        
+        FileLineList = []
+        
+        for line in inpLoadFile:
+            FileLineList.append(line[28:])
+            print(line[28:])
+            
+        #IWriteFLAG
+        IWriteFLAGSet = int(FileLineList[7])
+        self.main.notebook.page1.flagObjectsChoices[0].SetSelection(IWriteFLAGSet)
+        
+        #IImageFLAG
+        IImageFlagSet = FileLineList[8]
+        print('\n')
+        print(IImageFlagSet)
+        IImageFlagSize = len(IImageFlagSet) - 1
+        print('\n')
+        print(IImageFlagSize)
+        
+        IImageFlagValues = [False, False, False]
+        
+        for x in range(0, IImageFlagSize):
+            index = int(IImageFlagSet[x])
+            IImageFlagValues[index] = True
+        
+        print(IImageFlagValues)
+        
+        for y in range(0, 3):
+            self.main.notebook.page6.imageObjectsControls[(y + 4)].SetValue(IImageFlagValues[y])
+        
+        #IScatterFactorMethodFLAG
+        IScatterFactorMethodFLAGSet = int(FileLineList[9])
+        self.main.notebook.page1.flagObjectsChoices[1].SetSelection(IScatterFactorMethodFLAGSet)
+        
+        #IMaskFLAG
+        IMaskFlagSet = FileLineList[10]
+        if IMaskFlagSet[0] == '0':
+            self.main.notebook.page1.flagObjectsChoices[2].SetValue(False)
+        elif IMaskFlagSet[0] == '1':
+            self.main.notebook.page1.flagObjectsChoices[2].SetValue(True)
+        
+        #IZolzFLAG
+        IZolzFLAGSet = FileLineList[11]
+        if IZolzFLAGSet[0] == '0':
+            self.main.notebook.page1.flagObjectsChoices[3].SetValue(False)
+        elif IZolzFLAGSet[0] == '1':
+            self.main.notebook.page1.flagObjectsChoices[3].SetValue(True)
+        
+        #IAbsorbFLAG
+        IAbsorbFLAGSet = int(FileLineList[12])
+        self.main.notebook.page1.flagObjectsChoices[4].SetSelection(IAbsorbFLAGSet)
+        
+        #IAnisoDebyeWallerFLAG
+        IAnisoDebyeWallerFLAGSet = int(FileLineList[13])
+        self.main.notebook.page1.flagObjectsChoices[5].SetSelection(IAnisoDebyeWallerFLAGSet)
+        
+        #IPseudoCubicFLAG
+        IPseudoCubicFLAGSet = int(FileLineList[14])
+        self.main.notebook.page1.flagObjectsChoices[6].SetSelection(IPseudoCubicFLAGSet)
+        
+        #IXDirectionFLAG
+        IXDirectionFLAGSet = int(FileLineList[15])
+        self.main.notebook.page1.flagObjectsChoices[7].SetSelection(IXDirectionFLAGSet)
+        
+        #RADIUS OF BEAM=========================================================       
+        #IPixelCount
+        IPixelCountSet = float(FileLineList[18])
+        self.main.notebook.page2.IPixelCount.SetValue(IPixelCountSet)
+        
+        #BEAM SELECTION=========================================================        
+        #IMinReflectionPool
+        IMinReflectionPoolSet = int(FileLineList[21])
+        self.main.notebook.page3.beamObjectsControls[0].SetValue(IMinReflectionPoolSet)
+        
+        #IMinStrongBeams
+        IMinStrongBeamsSet = int(FileLineList[22])
+        self.main.notebook.page3.beamObjectsControls[1].SetValue(IMinStrongBeamsSet)
+        
+        #IMinWeakBeams
+        IMinWeakBeamsSet = int(FileLineList[23])
+        self.main.notebook.page3.beamObjectsControls[2].SetValue(IMinWeakBeamsSet)
+        
+        #RBSBMax
+        RBSBMaxSet = float(FileLineList[24])
+        self.main.notebook.page3.beamObjectsControls[3].SetValue(RBSBMaxSet)
+        
+        #RBSPMax
+        RBSPMaxSet = float(FileLineList[25])
+        self.main.notebook.page3.beamObjectsControls[4].SetValue(RBSPMaxSet)
+        
+        #CRYSTAL SETTINGS======================================================
+        
+        #RDebyeWallerConstant
+        RDebyeWallerConstantSet = float(FileLineList[28])
+        self.main.notebook.page4.crystalObjectsControls[0].SetValue(RDebyeWallerConstantSet)
+        
+        #RAbsorptionPer
+        RAbsorptionPerSet = float(FileLineList[29])
+        self.main.notebook.page4.crystalObjectsControls[1].SetValue(RAbsorptionPerSet)
+        
+        #MICROSCOPE SETTINGS====================================================
+        
+        #ROuterConvergenceAngle
+        ROuterConvergenceAngleSet = float(FileLineList[32])
+        self.main.notebook.page5.microscopeObjectsControls[0].SetValue(ROuterConvergenceAngleSet)
+
+        
+        #ROuterConvergenceAngle
+        RInnerConvergenceAngleSet = float(FileLineList[33])
+        self.main.notebook.page5.microscopeObjectsControls[1].SetValue(RInnerConvergenceAngleSet)
+
+        
+        #IIncidentBeamDirectionX
+        IIncidentBeamDirectionXSet = int(FileLineList[34])
+        self.main.notebook.page5.microscopeObjectsControls[2].SetValue(IIncidentBeamDirectionXSet)
+
+        
+        #IIncidentBeamDirectionY
+        IIncidentBeamDirectionYSet = int(FileLineList[35])
+        self.main.notebook.page5.microscopeObjectsControls[3].SetValue(IIncidentBeamDirectionYSet)
+
+        
+        #IIncidentBeamDirectionZ
+        IIncidentBeamDirectionZSet = int(FileLineList[36])
+        self.main.notebook.page5.microscopeObjectsControls[4].SetValue(IIncidentBeamDirectionZSet)
+
+        
+        #IXDirectionX
+        IXDirectionXSet = int(FileLineList[37])
+        self.main.notebook.page5.microscopeObjectsControls[5].SetValue(IXDirectionXSet)
+
+        
+        #IXDirectionY
+        IXDirectionYSet = int(FileLineList[38])
+        self.main.notebook.page5.microscopeObjectsControls[6].SetValue(IXDirectionYSet)
+
+        
+        #IXDirectionZ
+        IXDirectionZSet = int(FileLineList[39])
+        self.main.notebook.page5.microscopeObjectsControls[7].SetValue(IXDirectionZSet)
+
+        
+        #INormalDirectionX
+        INormalDirectionXSet = int(FileLineList[40])
+        self.main.notebook.page5.microscopeObjectsControls[8].SetValue(INormalDirectionXSet)
+
+        
+        #INormalDirectionY
+        INormalDirectionYSet = int(FileLineList[41])
+        self.main.notebook.page5.microscopeObjectsControls[9].SetValue(INormalDirectionYSet)
+
+        
+        #INormalDirectionZ
+        INormalDirectionZSet = int(FileLineList[42])
+        self.main.notebook.page5.microscopeObjectsControls[10].SetValue(INormalDirectionZSet)
+
+        
+        #RAcceleratingVoltage (kV)
+        RAcceleratingVoltageSet = float(FileLineList[43])
+        self.main.notebook.page5.microscopeObjectsControls[11].SetValue(RAcceleratingVoltageSet)
+
+        
+        #RAcceptanceAngle (deg)
+        RAcceptanceAngleSet = float(FileLineList[44])
+        self.main.notebook.page5.microscopeObjectsControls[12].SetValue(RAcceptanceAngleSet)
+
+        
+        #IMAGE OUTPUT OPTIONS====================================================
+        
+        #RInitialThickness
+        RInitialThicknessSet = float(FileLineList[48])
+        self.main.notebook.page6.imageObjectsControls[0].SetValue(RInitialThicknessSet)
+
+        
+        #RFinalThickness
+        RFinalThicknessSet = float(FileLineList[49])
+        self.main.notebook.page6.imageObjectsControls[1].SetValue(RFinalThicknessSet)
+
+        
+        #RDeltaThickness
+        RDeltaThicknessSet = float(FileLineList[50])
+        self.main.notebook.page6.imageObjectsControls[2].SetValue(RDeltaThicknessSet)
+
+        
+        #IReflectOut
+        IReflectOutSet = int(FileLineList[51])
+        self.main.notebook.page6.imageObjectsControls[3].SetValue(IReflectOutSet)
+        
+        inpLoadFile.close()
+    
             
     def OnClose(self, e):
         
         self.Close(True)
 
-    def OnCif(self,e):
+    def OnCif(self, e):
 
         CIFFileDialog = wx.FileDialog(self, "Load CIF file", "", "",
                     "CIF files (*.cif)|*.cif", wx.FD_OPEN | wx.FD_FILE_MUST_EXIST)
@@ -807,7 +1281,7 @@ class optionPanel(wx.Panel):
         self.User_CIFfilename=CIFFileDialog.GetFilename()
         self.User_CIFpath=CIFFileDialog.GetPath()
 
-        optionsPanel.CIFtextbox.SetValue(self.User_CIFpath)
+        self.main.option.CIFtextbox.SetValue(self.User_CIFpath)
 
         
         
@@ -853,13 +1327,13 @@ class MainFrame(wx.Frame):
 		#Create a panel with a notebook on it
         panel = wx.Panel(self)
         self.notebook = Notebook(panel)
-        option = optionPanel(panel, self)
+        self.option = optionPanel(panel, self)
                 
         sizer = wx.BoxSizer(wx.VERTICAL)
  
         # add the widgets to the sizers
         sizer.Add(self.notebook, 0, wx.ALL, 5)
-        sizer.Add(option, 0, wx.ALL|wx.CENTER, 5)
+        sizer.Add(self.option, 0, wx.ALL|wx.CENTER, 5)
  
         panel.SetSizer(sizer)
         sizer.Fit(self)
