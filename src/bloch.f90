@@ -187,6 +187,17 @@ SUBROUTINE BlochCoefficientCalculation(IYPixelIndex,IXPixelIndex,IPixelNumber,IF
   ENDIF
 
   ALLOCATE( &
+       CInvertedEigenVectors(nBeams,nBeams), &
+       STAT=IErr)
+  IF( IErr.NE.0 ) THEN
+     PRINT*,"BlochCoefficientCalculation(", my_rank, ") error ", IErr, &
+          " in ALLOCATE() of DYNAMIC variables CInvertedEigenVectors"
+     PRINT*,"Failure Occured at Thickness,Chunk,Pixel,nBeams = ",IPixelCountTotal,nBeams
+     
+     RETURN
+  ENDIF
+
+  ALLOCATE( &
        CBeamTranspose(nReflections,nBeams), &
        STAT=IErr)
   IF( IErr.NE.0 ) THEN
@@ -204,16 +215,6 @@ SUBROUTINE BlochCoefficientCalculation(IYPixelIndex,IXPixelIndex,IPixelNumber,IF
      RETURN
   ENDIF
 
-  ALLOCATE( &
-       CInvertedEigenVectors(nBeams,nBeams), &
-       STAT=IErr)
-  IF( IErr.NE.0 ) THEN
-     PRINT*,"BlochCoefficientCalculation(", my_rank, ") error ", IErr, &
-          " in ALLOCATE() of DYNAMIC variables CInvertedEigenVectors"
-     PRINT*,"Failure Occured at Thickness,Chunk,Pixel,nBeams = ",IPixelCountTotal,nBeams
-     
-     RETURN
-  ENDIF
   ALLOCATE( &
        CAlphaWeightingCoefficients(nBeams), &
        STAT=IErr)
@@ -299,21 +300,21 @@ SUBROUTINE BlochCoefficientCalculation(IYPixelIndex,IXPixelIndex,IPixelNumber,IF
   ENDDO
 
   CUgMatEffective = CZERO
-  
+
   CBeamTranspose=TRANSPOSE(CBeamProjectionMatrix)
-  
+
   CALL ZGEMM('N','N',nReflections,nBeams,nReflections,CONE,CUgMat, &
        nReflections,CBeamTranspose,nReflections,CZERO,CUgMatPartial,nReflections)
-  
+
   CALL ZGEMM('N','N',nBeams,nBeams,nReflections,CONE,CBeamProjectionMatrix, &
        nBeams,CUgMatPartial,nReflections,CZERO,CUgMatEffective,nBeams)
-  
+
 !!$  CUgMatEffective= &
 !!$       MATMUL( &
 !!$       CBeamProjectionMatrix, &
 !!$       MATMUL(CUgMat,TRANSPOSE(CBeamProjectionMatrix)) &
 !!$       )
-    
+
   IF (IZolzFLAG.EQ.0) THEN
 
      DO hnd=1,nBeams
