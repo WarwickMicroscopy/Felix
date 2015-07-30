@@ -101,7 +101,7 @@ class FlagPanel(wx.Panel):
         
         # Making the code a bit more future proof by generating flag layout
         # from a list of flag names
-        flagnumber = self.flags.__len__()
+        flagnumber = len(flags)
         print 'The number of flags: {}.\n'.format(flagnumber)
         numberOfRows = int(math.ceil(flagnumber / 3.0))
         print 'The number of rows: {}.\n'.format(numberOfRows)
@@ -231,7 +231,7 @@ class BeamPanel(wx.Panel):
         
         # Making the code a bit more future proof by generating beam layout
         # from a list of beam names
-        beamnumber = BeamControlList.__len__()
+        beamnumber = len(BeamControlList)
         print 'The number of beam controls: {}.\n'.format(beamnumber)
         numberOfRows = int(math.ceil(beamnumber / 3.0))
         print 'The number of rows: {}.\n'.format(numberOfRows)
@@ -334,7 +334,7 @@ class crystalPanel(wx.Panel):
         
         # Making the code a bit more future proof by generating crystal layout
         # from a list of crystal names
-        crystalnumber = crystalControlList.__len__()
+        crystalnumber = len(crystalControlList)
         print 'The number of crystal controls: {}.\n'.format(crystalnumber)
         numberOfRows = int(math.ceil(crystalnumber / 3.0))
         print 'The number of rows: {}.\n'.format(numberOfRows)
@@ -457,7 +457,7 @@ class microscopePanel(wx.Panel):
         
         # Making the code a bit more future proof by generating microscope layout
         # from a list of microscope names
-        microscopenumber = microscopeControlList.__len__()
+        microscopenumber = len(microscopeControlList)
         print 'The number of microscope controls: {}.\n'.format(microscopenumber)
         numberOfRows = int(math.ceil(microscopenumber / 3.0))
         print 'The number of rows: {}.\n'.format(numberOfRows)
@@ -568,7 +568,7 @@ class imagePanel(wx.Panel):
         
         # Making the code a bit more future proof by generating image layout
         # from a list of image names
-        imagenumber = imageControlList.__len__()
+        imagenumber = len(imageControlList)
         print 'The number of image controls: {}.\n'.format(imagenumber)
         numberOfRows = int(math.ceil(imagenumber / 3.0))
         print 'The number of rows: {}.\n'.format(numberOfRows)
