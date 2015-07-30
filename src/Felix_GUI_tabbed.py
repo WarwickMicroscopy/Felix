@@ -102,9 +102,9 @@ class FlagPanel(wx.Panel):
         # Making the code a bit more future proof by generating flag layout
         # from a list of flag names
         flagnumber = len(flags)
-        print 'The number of flags: {}.\n'.format(flagnumber)
+        print 'The number of flags: {0}.\n'.format(flagnumber)
         numberOfRows = int(math.ceil(flagnumber / 3.0))
-        print 'The number of rows: {}.\n'.format(numberOfRows)
+        print 'The number of rows: {0}.\n'.format(numberOfRows)
         
         # Make some lists
         flagObjectsLabels   = []
@@ -115,7 +115,7 @@ class FlagPanel(wx.Panel):
         
         # Finds the number of empty slots on the bottom row to add spacer later
         spacerNo = (3 - (flagnumber % 3)) % 3
-        print 'The number of spacers: {}.\n'.format(spacerNo)
+        print 'The number of spacers: {0}.\n'.format(spacerNo)
         
         #Adds a sizer for each row to a sizer list
         for x in range(0, numberOfRows):
@@ -232,9 +232,9 @@ class BeamPanel(wx.Panel):
         # Making the code a bit more future proof by generating beam layout
         # from a list of beam names
         beamnumber = len(BeamControlList)
-        print 'The number of beam controls: {}.\n'.format(beamnumber)
+        print 'The number of beam controls: {0}.\n'.format(beamnumber)
         numberOfRows = int(math.ceil(beamnumber / 3.0))
-        print 'The number of rows: {}.\n'.format(numberOfRows)
+        print 'The number of rows: {0}.\n'.format(numberOfRows)
         
         # Make some lists
         SizerObjects        = []
@@ -247,7 +247,7 @@ class BeamPanel(wx.Panel):
         
         # Finds the number of empty slots on the bottom row to add spacer later
         spacerNo = (3 - (beamnumber % 3)) % 3
-        print 'The number of spacers: {}.\n'.format(spacerNo)
+        print 'The number of spacers: {0}.\n'.format(spacerNo)
         
         #Adds a sizer for each row to a sizer list
         for x in range(0, numberOfRows):
@@ -335,9 +335,9 @@ class crystalPanel(wx.Panel):
         # Making the code a bit more future proof by generating crystal layout
         # from a list of crystal names
         crystalnumber = len(crystalControlList)
-        print 'The number of crystal controls: {}.\n'.format(crystalnumber)
+        print 'The number of crystal controls: {0}.\n'.format(crystalnumber)
         numberOfRows = int(math.ceil(crystalnumber / 3.0))
-        print 'The number of rows: {}.\n'.format(numberOfRows)
+        print 'The number of rows: {0}.\n'.format(numberOfRows)
         
         # Make some lists
         SizerObjects        = []
@@ -346,7 +346,7 @@ class crystalPanel(wx.Panel):
         
         # Finds the number of empty slots on the bottom row to add spacer later
         spacerNo = (3 - (crystalnumber % 3)) % 3
-        print 'The number of spacers: {}.\n'.format(spacerNo)
+        print 'The number of spacers: {0}.\n'.format(spacerNo)
         
         #Adds a sizer for each row to a sizer list
         for x in range(0, numberOfRows):
@@ -458,9 +458,9 @@ class microscopePanel(wx.Panel):
         # Making the code a bit more future proof by generating microscope layout
         # from a list of microscope names
         microscopenumber = len(microscopeControlList)
-        print 'The number of microscope controls: {}.\n'.format(microscopenumber)
+        print 'The number of microscope controls: {0}.\n'.format(microscopenumber)
         numberOfRows = int(math.ceil(microscopenumber / 3.0))
-        print 'The number of rows: {}.\n'.format(numberOfRows)
+        print 'The number of rows: {0}.\n'.format(numberOfRows)
         
         # Make some lists
         SizerObjects        = []
@@ -469,7 +469,7 @@ class microscopePanel(wx.Panel):
         
         # Finds the number of empty slots on the bottom row to add spacer later
         spacerNo = (3 - (microscopenumber % 3)) % 3
-        print 'The number of spacers: {}.\n'.format(spacerNo)
+        print 'The number of spacers: {0}.\n'.format(spacerNo)
         
         #Adds a sizer for each row to a sizer list
         for x in range(0, numberOfRows):
@@ -569,9 +569,9 @@ class imagePanel(wx.Panel):
         # Making the code a bit more future proof by generating image layout
         # from a list of image names
         imagenumber = len(imageControlList)
-        print 'The number of image controls: {}.\n'.format(imagenumber)
+        print 'The number of image controls: {0}.\n'.format(imagenumber)
         numberOfRows = int(math.ceil(imagenumber / 3.0))
-        print 'The number of rows: {}.\n'.format(numberOfRows)
+        print 'The number of rows: {0}.\n'.format(numberOfRows)
         
         # Make some lists
         SizerObjects        = []
@@ -580,7 +580,7 @@ class imagePanel(wx.Panel):
         
         # Finds the number of empty slots on the bottom row to add spacer later
         spacerNo = (3 - (imagenumber % 3)) % 3
-        print 'The number of spacers: {}.\n'.format(spacerNo)
+        print 'The number of spacers: {0}.\n'.format(spacerNo)
         
         #Adds a sizer for each row to a sizer list
         for x in range(0, numberOfRows):
