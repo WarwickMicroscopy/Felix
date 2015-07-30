@@ -241,56 +241,16 @@ SUBROUTINE ReadInpFile( IErr )
   CALL Message ("ReadInpFile",IInfo,IErr,MessageVariable ="RInnerConvergenceAngle",RVariable=RInnerConvergenceAngle)
 
   ILine= ILine+1
-  READ(IChInp,10,ERR=20,END=30) IIncidentBeamDirectionX
-  CALL Message ("ReadInpFile",IInfo,IErr,MessageVariable ="IIncidentBeamDirectionX",IVariable=IIncidentBeamDirectionX)
-
-
-  ILine= ILine+1
-  READ(IChInp,10,ERR=20,END=30) IIncidentBeamDirectionY
-  CALL Message ("ReadInpFile",IInfo,IErr,MessageVariable ="IIncidentBeamDirectionY",IVariable=IIncidentBeamDirectionY)
-
-
-  ILine= ILine+1
-  READ(IChInp,10,ERR=20,END=30) IIncidentBeamDirectionZ
-  CALL Message ("ReadInpFile",IInfo,IErr,MessageVariable ="IIncidentBeamDirectionZ",IVariable=IIncidentBeamDirectionZ)
-
-
-  RZDirC(1)= REAL(IIncidentBeamDirectionX,RKIND)
-  RZDirC(2)= REAL(IIncidentBeamDirectionY,RKIND)
-  RZDirC(3)= REAL(IIncidentBeamDirectionZ,RKIND)
+  READ(IChInp,10,ERR=20,END=30) SIncidentBeamDirection
+  RDirC=REAL(ThreeDimVectorReadIn(SIncidentBeamDirection),RKIND)
   
   ILine= ILine+1
-  READ(IChInp,10,ERR=20,END=30) IXDirectionX
-  CALL Message ("ReadInpFile",IInfo,IErr,MessageVariable ="IXDirectionX",IVariable=IXDirectionX)
-
-
-  ILine= ILine+1
-  READ(IChInp,10,ERR=20,END=30) IXDirectionY
-  CALL Message ("ReadInpFile",IInfo,IErr,MessageVariable ="IXDirectionY",IVariable=IXDirectionY)
+  READ(IChInp,10,ERR=20,END=30) SDirectionX
+  RXDirC=REAL(ThreeDimVectorReadIn(SDirectionX),RKIND)
   
   ILine= ILine+1
-  READ(IChInp,10,ERR=20,END=30) IXDirectionZ
-  CALL Message ("ReadInpFile",IInfo,IErr,MessageVariable ="IXDirectionZ",IVariable=IXDirectionZ)
-
-  RXDirC(1)= IXDirectionX
-  RXDirC(2)= IXDirectionY
-  RXDirC(3)= IXDirectionZ  
-
-  ILine= ILine+1
-  READ(IChInp,10,ERR=20,END=30) INormalDirectionX
-  CALL Message ("ReadInpFile",IInfo,IErr,MessageVariable ="INormalDirectionX",IVariable=INormalDirectionX)
-
-  ILine= ILine+1
-  READ(IChInp,10,ERR=20,END=30) INormalDirectionY
-  CALL Message ("ReadInpFile",IInfo,IErr,MessageVariable ="INormalDirectionY",IVariable=INormalDirectionY)
-  
-  ILine= ILine+1
-  READ(IChInp,10,ERR=20,END=30) INormalDirectionZ
-  CALL Message ("ReadInpFile",IInfo,IErr,MessageVariable ="INormalDirectionZ",IVariable=INormalDirectionZ)
-
-  RNormDirC(1)= INormalDirectionX
-  RNormDirC(2)= INormalDirectionY
-  RNormDirC(3)= INormalDirectionZ
+  READ(IChInp,10,ERR=20,END=30) SNormalDirectionX
+  RNormDirC= REAL(ThreeDimVectorReadIn(SNormalDirectionX),RKIND)
   
   ILine= ILine+1
   READ(IChInp,15,ERR=20,END=30) RAcceleratingVoltage
