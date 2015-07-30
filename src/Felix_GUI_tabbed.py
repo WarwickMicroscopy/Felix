@@ -77,7 +77,7 @@ class FlagPanel(wx.Panel):
         flag2 = {'name' : 'IScatterFactorMethodFLAG', 'choices' : ['Kirkland', 'Doyle-Turner', 'Peng', 'Lobato'], 'object type' : 'CHOICE', 'default' : 'Kirkland'}
         flag3 = {'name' : 'IMaskFLAG', 'choices' : [], 'object type' : 'CHECKBOX', 'default' : 0}
         flag4 = {'name' : 'IZolzFLAG', 'choices' : [], 'object type' : 'CHECKBOX', 'default' : 0}
-        flag5 = {'name' : 'IAbsorbFLAG', 'choices' : ['Proportional'], 'object type' : 'CHOICE', 'default' : 'Proportional'}
+        flag5 = {'name' : 'IAbsorbFLAG', 'choices' : ['None','Proportional'], 'object type' : 'CHOICE', 'default' : 'Proportional'}
         flag6 = {'name' : 'IAnisoDebyeWallerFLAG', 'choices' : ['0'], 'object type' : 'CHOICE', 'default' : '0'}
         flag7 = {'name' : 'IPseudoCubicFLAG', 'choices' : ['0'], 'object type' : 'CHOICE', 'default' : '0'}
         flag8 = {'name' : 'IXDirectionFLAG', 'choices' : ['Automatic', 'Manual'], 'object type' : 'CHOICE', 'default' : 'Automatic'}
@@ -101,7 +101,7 @@ class FlagPanel(wx.Panel):
         
         # Making the code a bit more future proof by generating flag layout
         # from a list of flag names
-        flagnumber = flags.__len__()
+        flagnumber = self.flags.__len__()
         print 'The number of flags: {}.\n'.format(flagnumber)
         numberOfRows = int(math.ceil(flagnumber / 3.0))
         print 'The number of rows: {}.\n'.format(numberOfRows)
@@ -673,7 +673,7 @@ class optionPanel(wx.Panel):
         Run = wx.Button(self, label='Run')
         Cancel = wx.Button(self, label='Cancel')
         CIFFile=wx.Button(self, label='Browse')
-        InputFile = wx.Button(self, label='Write Input File')
+        InputFile = wx.Button(self, label='Save Input File')
         InputLoad = wx.Button(self, label='Load Input File')
         
         buttonSizer = wx.BoxSizer(wx.HORIZONTAL)
