@@ -250,16 +250,20 @@ REAL(RKIND) FUNCTION Normalised2DCrossCorrelation(RImage1,RImage2,IErr)
   REAL(RKIND),DIMENSION(2*IPixelCount,2*IPixelCount) :: &
        RImage1,RImage2
   REAL(RKIND) :: &
-       RImage1Mean,RImage2Mean,RImage1StandardDeviation,RImage2StandardDeviation
-  
-  RImage1Mean = SUM(RImage1)/SIZE(RImage1)
-  RImage2Mean = SUM(RImage2)/SIZE(RImage2)
+       RImage1Mean,RImage2Mean,RImage1StandardDeviation,RImage2StandardDeviation, RPixelTotal
 
-  RImage1StandardDeviation = SQRT(SUM(((RImage1-RImage1Mean)**2)/SIZE(RImage1)))
-  RImage2StandardDeviation = SQRT(SUM(((RImage2-RImage2Mean)**2)/SIZE(RImage2)))
+  RPixelTotal = REAL(IPixelTotal,RKIND)  
+
+  RImage1Mean = SUM(RImage1)/RPixelTotal
+  RImage2Mean = SUM(RImage2)/RPixelTotal
+
+  RImage1StandardDeviation = SQRT(SUM(((RImage1-RImage1Mean)**2) / &
+       RPixelTotal))
+  RImage2StandardDeviation = SQRT(SUM(((RImage2-RImage2Mean)**2) / &
+       RPixelTotal))
   
   Normalised2DCrossCorrelation = &
-       (1/SIZE(RImage1)) * &
+       (ONE/RPixelTotal) * &
        SUM( &
        ((RImage1-RImage1Mean)*(RImage2-RImage2Mean))/&
        (RImage1StandardDeviation*RImage2StandardDeviation))
