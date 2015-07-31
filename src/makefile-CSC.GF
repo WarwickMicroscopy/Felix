@@ -57,7 +57,7 @@ structurefactorsetup.o ciftbx.o hash_funcs.o eigen.o invert.o microscopy.o \
 diffractionpatterndefinitions.o diffractionpatterninitialisation.o crystallographyinitialisation.o \
 crystallography.o bloch.o Ug.o image.o errorchecks.o writeoutput.o dqng.o xerror.o d1mach.o
 
-REFINEOBJECTFILES = gmodules.o smodules.o inputmodules.o message.o errorcodes.o felixrefine.o util.o in.o out.o readciffile.o \
+REFINEOBJECTFILES = gmodules.o smodules.o inputmodules.f90 message.o errorcodes.o felixrefine.o util.o in.o out.o readciffile.o \
 experimentalsetup.o imagesetup.o montagesetup.o structurefactorsetup.o readinput.o\
 eigen.o invert.o microscopy.o diffractionpatterndefinitions.o diffractionpatterninitialisation.o \
 crystallographyinitialisation.o crystallography.o bloch.o Ug.o image.o ciftbx.o simplex.o\
