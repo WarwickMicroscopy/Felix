@@ -666,7 +666,7 @@ SUBROUTINE CalculateFigureofMeritandDetermineThickness(IThicknessCountFinal,IErr
   REAL(RKIND),DIMENSION(2*IPixelCount,2*IPixelCount) :: &
        RSimulatedImageForPhaseCorrelation,RExperimentalImage
   REAL(RKIND) :: &
-       RCrossCorrelationOld,RIndependentCrossCorrelation,RThickness,PhaseCorrelate
+       RCrossCorrelationOld,RIndependentCrossCorrelation,RThickness,PhaseCorrelate,Normalised2DCrossCorrelation
 !!$  REAL(RKIND),DIMENSION(IReflectOut,IThicknessCount,IPixelTotal) :: &
 !!$       RSimulatedImages
   REAL(RKIND),DIMENSION(IReflectOut) :: &
@@ -729,19 +729,30 @@ SUBROUTINE CalculateFigureofMeritandDetermineThickness(IThicknessCountFinal,IErr
               
         END SELECT
 
-        IF(ICorrelationFLAG.EQ.0) THEN
+        SELECT CASE (ICorrelationFLAG)
+
+        CASE(0) ! Phase Correlation
            
             RIndependentCrossCorrelation = &
-                 1.0_RKIND-&
+                 ONE-& ! So Perfect Correlation = 0 not 1
                  PhaseCorrelate(&
                  RSimulatedImageForPhaseCorrelation,RExperimentalImage,&
                  IErr,2*IPixelCount,2*IPixelCount)
 
-        ELSE
+        CASE(1) ! Residual Sum of Squares (Non functional)
            RIndependentCrossCorrelation = &
                 ResidualSumofSquares(&
                 RSimulatedImageForPhaseCorrelation,RImageExpi(:,:,hnd),IErr)
-        END IF
+
+        CASE(2) ! Normalised Cross Correlation
+
+           RIndependentCrossCorrelation = &
+                ONE-& ! So Perfect Correlation = 0 not 1
+                Normalised2DCrossCorrelation(&
+                RSimulatedImageForPhaseCorrelation,RExperimentalImage,&
+                IErr)
+                
+        END SELECT
                 
         IF(ABS(RIndependentCrossCorrelation).LT.RCrossCorrelationOld) THEN
 

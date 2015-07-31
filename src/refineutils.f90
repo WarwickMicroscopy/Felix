@@ -232,3 +232,36 @@ REAL(RKIND) FUNCTION ResidualSumofSquares(RImage1,RImage2,IErr)
   PRINT*,"Residual Sum of Squares After",ResidualSumofSquares
 
 END FUNCTION ResidualSumofSquares
+
+REAL(RKIND) FUNCTION Normalised2DCrossCorrelation(RImage1,RImage2,IErr)
+
+  USE MyNumbers
+  
+  USE CConst; USE IConst
+  USE IPara; USE RPara
+  USE IChannels
+  USE MPI
+  USE MyMPI
+
+  IMPLICIT NONE
+
+  INTEGER(IKIND) :: &
+       IErr
+  REAL(RKIND),DIMENSION(2*IPixelCount,2*IPixelCount) :: &
+       RImage1,RImage2
+  REAL(RKIND) :: &
+       RImage1Mean,RImage2Mean,RImage1StandardDeviation,RImage2StandardDeviation
+  
+  RImage1Mean = SUM(RImage1)/SIZE(RImage1)
+  RImage2Mean = SUM(RImage2)/SIZE(RImage2)
+
+  RImage1StandardDeviation = SQRT(SUM(((RImage1-RImage1Mean)**2)/SIZE(RImage1)))
+  RImage2StandardDeviation = SQRT(SUM(((RImage2-RImage2Mean)**2)/SIZE(RImage2)))
+  
+  Normalised2DCrossCorrelation = &
+       (1/SIZE(RImage1)) * &
+       SUM( &
+       ((RImage1-RImage1Mean)*(RImage2-RImage2Mean))/&
+       (RImage1StandardDeviation*RImage2StandardDeviation))
+
+END FUNCTION Normalised2DCrossCorrelation
