@@ -33,10 +33,10 @@
 !%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 !%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-! $Id: inout.f90,v 1.59 2014/04/28 12:26:19 phslaz Exp $
+! $Id: out.f90,v 1.59 2014/04/28 12:26:19 phslaz Exp $
 !%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-! -----------------------------------------------------------------------
+!-----------------------------------------------------------------------
 !ReadInputParameters: Read the input file
 !
 !	IErr	error code
@@ -430,92 +430,10 @@ SUBROUTINE ReadInpFile( IErr )
      ILine= ILine+1; READ(IChInp,ERR=20,END=30,FMT='(A)')
      ILine= ILine+1; READ(IChInp,ERR=20,END=30,FMT='(A)')
      ILine= ILine+1; READ(IChInp,ERR=20,END=30,FMT='(A)')
-     
-!!$     ILine= ILine+1
-!!$     READ(IChInp,15,ERR=20,END=30) RInitialDebyeWallerFactor
-!!$     CALL Message ("ReadInpFile",IInfo,IErr,MessageVariable ="RInitialDebyeWallerFactor",RVariable =  RInitialDebyeWallerFactor)
-!!$
-!!$     ILine= ILine+1
-!!$     READ(IChInp,15,ERR=20,END=30) RFinalDebyeWallerFactor
-!!$     CALL Message ("ReadInpFile",IInfo,IErr,MessageVariable ="RFinalDebyeWallerFactor",RVariable =  RFinalDebyeWallerFactor)
-!!$     
-!!$     ILine= ILine+1
-!!$     READ(IChInp,15,ERR=20,END=30) RDeltaDebyeWallerFactor
-!!$     CALL Message ("ReadInpFile",IInfo,IErr,MessageVariable ="RDeltaDebyeWallerFactor",RVariable =  RDeltaDebyeWallerFactor)
-!!$
-!!$     ILine= ILine+1
-!!$     READ(IChInp,FMT='(A)',ERR=20,END=30) SElements
-!!$     IPos1 = SCAN(SElements,'{')
-!!$     IPos2 = SCAN(SElements,'}')
-!!$     IPos = SCAN(SElements,'0')
-!!$     IElements = 1
-!!$
-!!$     !not sure what type of message this is?
-!!$     IF(IPos2.EQ.(IPos1+1).OR.IPos.EQ.(IPos1+1).OR.IPos2.EQ.0.OR.IPos1.EQ.0) THEN
-!!$        IF((IWriteFLAG.GE.1.AND.my_rank.EQ.0).OR.IWriteFLAG.GE.10) THEN
-!!$           PRINT*,"No Elements have been specified, Felix will assume all elements are to be refined = "
-!!$        END IF
-!!$     ELSE
-!!$        DO 
-!!$           IPos = SCAN(SElements((IPos1):IPos2),',')
-!!$           IPos1 = IPos1+IPos
-!!$           IF(IPos.EQ.0) THEN
-!!$              EXIT
-!!$           ELSE
-!!$              IElements = IElements + 1
-!!$           END IF
-!!$              
-!!$        END DO
-!!$        
-!!$        ALLOCATE(&
-!!$             IElementList(IElements),&
-!!$             STAT=IErr)
-!!$        IF(IErr.NE.0) THEN
-!!$           PRINT*,"ReadInpFile(",my_rank,") ERROR IN ALLOCATE OF IElementList"
-!!$           RETURN
-!!$        ENDIF
-!!$        
-!!$        
-!!$        IPos1 = SCAN(SElements,'{')
-!!$        IPos2 = SCAN(SElements,'}')
-!!$
-!!$        DO ind = 1,IElements
-!!$
-!!$           IPos = SCAN(SElements((IPos1+1):IPos2),',')
-!!$           IF(IPos.NE.0) THEN
-!!$              READ(SElements((IPos1+1):(IPos1+IPos-1)),FMT='(I3.1)') IElementList(ind) 
-!!$              IPos1 = IPos1+IPos
-!!$           ELSE
-!!$              READ(SElements((IPos1+1):(IPos2-1)),FMT='(I3.1)') IElementList(ind) 
-!!$           END IF
-!!$        END DO
-!!$     END IF
-!!$
-!!$     
-!!$     !-----------------------------------------------------------------------
-!!$     ! Iterative Ug input
-!!$     
-!!$     
-!!$     ILine= ILine+1; READ(IChInp,ERR=20,END=30,FMT='(A)')
-!!$     ILine= ILine+1; READ(IChInp,ERR=20,END=30,FMT='(A)')
-!!$     ILine= ILine+1; READ(IChInp,ERR=20,END=30,FMT='(A)')
-     
+
      ILine= ILine+1
      READ(IChInp,10,ERR=20,END=30) INoofUgs
      CALL Message ("ReadInpFile",IInfo,IErr,MessageVariable ="INoofUgs",IVariable = INoofUgs)
-!!$     
-!!$     ILine= ILine+1
-!!$     READ(IChInp,15,ERR=20,END=30) RLowerBoundUgChange
-!!$     CALL Message ("ReadInpFile",IInfo,IErr,MessageVariable ="RLowerBoundUgChange",RVariable = RLowerBoundUgChange)
-!!$     
-!!$     ILine= ILine+1
-!!$     READ(IChInp,15,ERR=20,END=30) RUpperBoundUgChange
-!!$     CALL Message ("ReadInpFile",IInfo,IErr,MessageVariable ="RUpperBoundUgChange",RVariable = RUpperBoundUgChange)
-!!$
-!!$     ILine= ILine+1
-!!$     READ(IChInp,15,ERR=20,END=30) RDeltaUgChange
-!!$     CALL Message ("ReadInpFile",IInfo,IErr,MessageVariable ="RDeltaUgChange",RVariable = RDeltaUgChange)
-
      
      !-----------------------------------------------------------------------
      ! Iterative Structural input
@@ -571,20 +489,17 @@ SUBROUTINE ReadInpFile( IErr )
      PRINT*,""
      CALL WriteOutInputFile (IErr)
   END IF
-  GOTO 1000
   
   !	error in CLOSE detected
 130 IF(my_rank.EQ.0) THEN
      PRINT*,"Input(): ERR in CLOSE"
   END IF
-  GOTO 1000
   
   !	error in READ detected
 20 IF(my_rank.EQ.0) THEN
      PRINT*,"Input(): ERR in READ at line", ILine
      CALL WriteOutInputFile (IErr)
   END IF
-  GOTO 1000
   
   !	EOF in READ occured prematurely
 30 IF(my_rank.EQ.0) THEN
@@ -593,153 +508,7 @@ SUBROUTINE ReadInpFile( IErr )
   END IF
   
   ! dump the input help
-  
-1000 IF(my_rank.EQ.0.AND.ISoftwareMode.LT.2) THEN
-     PRINT*,"# Input file for felixsim/draw version :VERSION: Build :BUILD:"
-     PRINT*,"# ------------------------------------"
-     PRINT*,""
-     PRINT*,"# ------------------------------------"
-     PRINT*,"# felixsim input"
-     PRINT*,""
-     PRINT*,"# control flags"
-     PRINT*,"IWriteFLAG                = 1"
-     PRINT*,"IImageFLAG                = 1"
-     PRINT*,"IScatterFactorMethodFLAG  = 0"
-     PRINT*,"IMaskFLAG                 = 0"
-     PRINT*,"IZolzFLAG                 = 1"
-     PRINT*,"IAbsorbFLAG               = 1"
-     PRINT*,"IAnisoDebyeWallerFlag     = 0"
-     PRINT*,"IPseudoCubicFLAG          = 0"
-     PRINT*,"IXDirectionFLAG           = 1"
-     PRINT*,""
-     PRINT*,"# radius of the beam in pixels"
-     PRINT*,"IPixelCount               = 64"
-     PRINT*,""
-     PRINT*,"# beam selection criteria"
-     PRINT*,"IMinReflectionPool        = 600"
-     PRINT*,"IMinStrongBeams           = 125"
-     PRINT*,"IMinWeakBeams             = 20"
-     PRINT*,"RBSBMax                   = 0.1"
-     PRINT*,"RBSPMax                   = 0.1"
-     PRINT*,"RConvergenceTolerance (%) = 1.0"
-     PRINT*,""
-     PRINT*,"# crystal settings"
-     PRINT*,"RDebyeWallerConstant      = 0.4668"
-     PRINT*,"RAbsorptionPer            = 2.9"
-     PRINT*,""
-     PRINT*,"# microscope settings"
-     PRINT*,"ROuterConvergenceAngle    = 6.0"
-     PRINT*,"RInnerConvergenceAngle    = 3.0"
-     PRINT*,"IIncidentBeamDirectionX   = 0"
-     PRINT*,"IIncidentBeamDirectionY   = 1"
-     PRINT*,"IIncidentBeamDirectionZ   = 1"
-     PRINT*,"IXDirectionX              = 1"
-     PRINT*,"IXDirectionY              = 0"
-     PRINT*,"IXDirectionZ              = 0"
-     PRINT*,"INormalDirectionX         = 0"
-     PRINT*,"INormalDirectionY         = 1"
-     PRINT*,"INormalDirectionZ         = 1"
-     PRINT*,"RAcceleratingVoltage (kV) = 200.0"
-     PRINT*,""
-     PRINT*,"# Image Output Options"
-     PRINT*,""
-     PRINT*,"RInitialThickness        = 300.0"
-     PRINT*,"RFinalThickness          = 1300.0"
-     PRINT*,"RDeltaThickness          = 10.0"
-     PRINT*,"IReflectOut              = 49"
-     PRINT*,""   
-     PRINT*,"A Sample Input File Has been Written For you as felix.inp.simdraw_sample"
-     PRINT*,"It must be renamed to felix.inp before use"
-  ELSEIF (my_rank.EQ.0.AND.ISoftwareMode.EQ.2) THEN
-     PRINT*,"# Input file for felixrefine version :VERSION: Build :BUILD:"
-     PRINT*,"# ------------------------------------"
-     PRINT*,""
-     PRINT*,"# ------------------------------------"
-     PRINT*,"# felixsim input"
-     PRINT*,""
-     PRINT*,"# control flags"
-     PRINT*,"IWriteFLAG                = 1"
-     PRINT*,"IImageFLAG                = 1"
-     PRINT*,"IScatterFactorMethodFLAG  = 0"
-     PRINT*,"IMaskFLAG                 = 0"
-     PRINT*,"IZolzFLAG                 = 1"
-     PRINT*,"IAbsorbFLAG               = 1"
-     PRINT*,"IAnisoDebyeWallerFlag     = 0" 
-     PRINT*,"IPseudoCubicFLAG          = 0"
-     PRINT*,"IXDirectionFLAG           = 1"
-     PRINT*,""
-     PRINT*,"# radius of the beam in pixels"
-     PRINT*,"IPixelCount               = 64"
-     PRINT*,""
-     PRINT*,"# beam selection criteria"
-     PRINT*,"IMinReflectionPool        = 600"
-     PRINT*,"IMinStrongBeams           = 125"
-     PRINT*,"IMinWeakBeams             = 20"
-     PRINT*,"RBSBMax                   = 0.1"
-     PRINT*,"RBSPMax                   = 0.1" 
-     PRINT*,""
-     PRINT*,"# crystal settings"
-     PRINT*,"RDebyeWallerConstant      = 0.4668"
-     PRINT*,"RAbsorptionPer            = 2.9"
-     PRINT*,""
-     PRINT*,"# microscope settings"
-     PRINT*,"ROuterConvergenceAngle    = 6.0"
-     PRINT*,"RInnerConvergenceAngle    = 3.0"
-     PRINT*,"IIncidentBeamDirectionX   = 0"
-     PRINT*,"IIncidentBeamDirectionY   = 1"
-     PRINT*,"IIncidentBeamDirectionZ   = 1"
-     PRINT*,"IXDirectionX              = 1"
-     PRINT*,"IXDirectionY              = 0"
-     PRINT*,"IXDirectionZ              = 0"
-     PRINT*,"INormalDirectionX         = 0"
-     PRINT*,"INormalDirectionY         = 1"
-     PRINT*,"INormalDirectionZ         = 1"
-     PRINT*,"RAcceleratingVoltage (kV) = 200.0"
-     PRINT*,"RAcceptanceAngle (mrad)   = 0.0"
-     PRINT*,""
-     PRINT*,"# Image Output Options"
-     PRINT*,""
-     PRINT*,"RInitialThickness        = 300.0"
-     PRINT*,"RFinalThickness          = 1300.0"
-     PRINT*,"RDeltaThickness          = 10.0"
-     PRINT*,"IReflectOut              = 49"
-     PRINT*,""
-     PRINT*,"# felixrefine Input"
-     PRINT*,""
-     PRINT*,"#Refinement Specific Flags"
-     PRINT*,"IRefineModeFLAG           = 0"
-     PRINT*,"IWeightingFLAG            = 0"
-     PRINT*,"IContinueFLAG             = 0"
-     PRINT*,"ICorrelationFLAG          = 0"
-     PRINT*,"IImageProcessingFLAG      = 0"
-     PRINT*,""
-     PRINT*,"# Ug Iteration"
-     PRINT*,""
-     PRINT*,"INoofUgs                  = 1"
-     PRINT*,""
-     PRINT*,"# Structural Refinement"
-     PRINT*,""
-     PRINT*,"IAtomicSites              = (1,2,6)"
-     PRINT*,""
-     PRINT*,"# Refinement Output"
-     PRINT*,""
-     PRINT*,"IPrint                    = 10"
-     PRINT*,""
-     PRINT*,"IAtomicSites              = (1,2,3,4,5,6,7)"
-     PRINT*,""
-     PRINT*,"# Refinement Output"
-     PRINT*,""
-     PRINT*,"IPrint                    = 20"
-     PRINT*,""
-     PRINT*,"# Simplex Initialisation"
-     PRINT*,""
-     PRINT*,"RSimplexLengthScale       = 5.0"
-     PRINT*,"RExitCriteria             = 0.001"
-     PRINT*,""     
 
-     PRINT*,"A Sample Input File Has been Written For you as felix.inp.refine_sample"
-     PRINT*,"It must be renamed to felix.inp before use"
-  END IF
   IErr= 1
   RETURN
 !changed name from input to readinputparameters  
