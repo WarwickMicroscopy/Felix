@@ -39,7 +39,7 @@
 
 F90 = mpif90
 FC = gfortran -ffixed-form -std=legacy
-F90FLAGS = -fbounds-check -fno-range-check -fimplicit-none # debug
+F90FLAGS = -fbounds-check -fno-range-check -fimplicit-none -fcray-pointer -fexternal-blas # debug
 #F90FLAGS = -pg -fbounds-check -fno-range-check -fimplicit-none # profiling
 F77FLAGS = -fbounds-check -fno-range-check # debug
 
@@ -51,16 +51,18 @@ LIBFLAGS= -llapack -lblas -lfftw3
 # LD_LIBRARY_PATH=/warwick/mathlib/nag/ifort-x86_64/lib:$LD_LIBRARY_PATH
 # in order to run the code
 
-SIMOBJECTFILES = gmodules.o smodules.o errorcodes.o felixsim.o util.o message.o in.o out.o readinput.o \
-readciffile.o experimentalsetup.o imagesetup.o montagesetup.o \
+SIMOBJECTFILES = gmodules.o smodules.o errorcodes.o message.o felixsim.o util.o in.o out.o readinput.o \
+readciffile.o experimentalsetup.o imagesetup.o montagesetup.o refineutils.o\
 structurefactorsetup.o ciftbx.o hash_funcs.o eigen.o invert.o microscopy.o \
 diffractionpatterndefinitions.o diffractionpatterninitialisation.o crystallographyinitialisation.o \
 crystallography.o bloch.o Ug.o image.o errorchecks.o writeoutput.o dqng.o xerror.o d1mach.o
 
-REFINEOBJECTFILES = gmodules.o smodules.o errorcodes.o felixrefine.o util.o message.o in.o out.o readciffile.o \
+REFINEOBJECTFILES = gmodules.o smodules.o message.o errorcodes.o felixrefine.o util.o in.o out.o readciffile.o \
+experimentalsetup.o imagesetup.o montagesetup.o structurefactorsetup.o readinput.o\
 eigen.o invert.o microscopy.o diffractionpatterndefinitions.o diffractionpatterninitialisation.o \
-crystallographyinitialisation.o crystallography.o bloch.o Ug.o image.o errorchecks.o ciftbx.o \
-hash_funcs.o refineutils.o dqng.o xerror.o d1mach.o
+crystallographyinitialisation.o crystallography.o bloch.o Ug.o image.o ciftbx.o simplex.o\
+hash_funcs.o felixfunction.o refineutils.o writeoutput.o dqng.o xerror.o d1mach.o errorchecks.o\
+symmetry.o
 
 %.o: %.f90
 	$(F90) $(F90FLAGS) -DF90 -c $< -I$(INCLUDEDIR) $(LIBFLAGS)
@@ -75,15 +77,11 @@ hash_funcs.o refineutils.o dqng.o xerror.o d1mach.o
 %.o: %.F
 	$(FC) $(F77FLAGS) -DF77 -c $< -I$(INCLUDEDIR) $(LIBFLAGS)
 
-all:	felixsim felixdraw felixrefine
+all:	felixsim felixrefine
 
 felixsim: $(SIMOBJECTFILES)
 	$(F90) $(F90FLAGS) -o $@ $(SIMOBJECTFILES) -I$(INCLUDEDIR) $(LIBFLAGS)
 #	$(F90) -o $@ $(SIMOBJECTFILES) $(LIBFLAGS)
-
-felixdraw: $(DRAWOBJECTFILES)
-	$(F90) $(F90FLAGS) -o $@ $(DRAWOBJECTFILES) -I$(INCLUDEDIR) $(LIBFLAGS)
-#	$(F90) -o $@ $(DRAWOBJECTFILES) $(LIBFLAGS)
 
 felixrefine: $(REFINEOBJECTFILES)
 	$(F90) $(F90FLAGS) -o $@ $(REFINEOBJECTFILES) -I$(INCLUDEDIR) $(LIBFLAGS)
