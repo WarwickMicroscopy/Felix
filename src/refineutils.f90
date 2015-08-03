@@ -233,7 +233,7 @@ REAL(RKIND) FUNCTION ResidualSumofSquares(RImage1,RImage2,IErr)
 
 END FUNCTION ResidualSumofSquares
 
-REAL(RKIND) FUNCTION Normalised2DCrossCorrelation(RImage1,RImage2,IErr)
+REAL(RKIND) FUNCTION Normalised2DCrossCorrelation(RImage1,RImage2,IImageSize,ITotalPixelsInImage,IErr)
 
   USE MyNumbers
   
@@ -246,13 +246,21 @@ REAL(RKIND) FUNCTION Normalised2DCrossCorrelation(RImage1,RImage2,IErr)
   IMPLICIT NONE
 
   INTEGER(IKIND) :: &
-       IErr
-  REAL(RKIND),DIMENSION(2*IPixelCount,2*IPixelCount) :: &
+       IErr,ITotalPixelsInImage,IImageSize
+  REAL(RKIND),DIMENSION(:,:),ALLOCATABLE :: &
        RImage1,RImage2
   REAL(RKIND) :: &
        RImage1Mean,RImage2Mean,RImage1StandardDeviation,RImage2StandardDeviation, RPixelTotal
+  
+  ALLOCATE(&
+       RImage1(IImageSize,IImageSize),&
+       STAT = IErr)
+  
+  ALLOCATE(&
+       RImage2(IImageSize,IImageSize),&
+       STAT = IErr)  
 
-  RPixelTotal = REAL(IPixelTotal,RKIND)  
+  RPixelTotal = REAL(ITotalPixelsInImage,RKIND)  
 
   RImage1Mean = SUM(RImage1)/RPixelTotal
   RImage2Mean = SUM(RImage2)/RPixelTotal
@@ -267,5 +275,10 @@ REAL(RKIND) FUNCTION Normalised2DCrossCorrelation(RImage1,RImage2,IErr)
        SUM( &
        ((RImage1-RImage1Mean)*(RImage2-RImage2Mean))/&
        (RImage1StandardDeviation*RImage2StandardDeviation))
+
+  DEALLOCATE(&
+       RImage1,STAT=IErr)
+  DEALLOCATE(&
+       RImage2,STAT=IErr)
 
 END FUNCTION Normalised2DCrossCorrelation
