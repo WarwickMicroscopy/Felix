@@ -107,26 +107,29 @@ class FlagPanel(wx.Panel):
     flags.append(flag7)
     flags.append(flag8)
 
-    #check
+    # check
     print "Checking flags\n"
     for flag in flags:
-        print 'Checking flag: {0}.\n'.format(flag['name'])
-        if type(flag['name']) != str:
-            sys.exit("Incorrect value for name in flag (please use a string)\n")
-        if type(flag['choices']) != list:
-            sys.exit("Incorrect value for the choices in flag (please use a list of strings, or an empty list for a checkbox)\n")
-        for choice in flag['choices']:
-            if flag['choices'] == False or type(choice) != str:
-                sys.exit("Incorrect value for choice in flag (please use a string)\n")
-        if flag['object type'] != 'CHOICE' and flag['object type'] != 'CHECKBOX':
-            sys.exit("Incorrect value for object type in flag (use CHECKBOX or CHOICE\n")
-        if flag['object type'] == 'CHOICE':
-            if type(flag['default']) != str:
-                sys.exit("Incorrect value for default in flag (use a string for CHOICE types\n")
-        if flag['object type'] == 'CHECKBOX':
-            if flag['default'] != 0 and flag['default'] != 1:
-                sys.exit("Incorrect value for default in flag (use a 0 or 1 for checkbox off or on, respectively\n")
-
+      print 'Checking flag: {0}.\n'.format(flag['name'])
+      if type(flag['name']) != str:
+        sys.exit("Incorrect value for name in flag (please use a string)\n")
+      if type(flag['choices']) != list:
+        sys.exit(
+            "Incorrect value for the choices in flag (please use a list of strings, or an empty list for a checkbox)\n")
+      for choice in flag['choices']:
+        if flag['choices'] == False or type(choice) != str:
+          sys.exit("Incorrect value for choice in flag (please use a string)\n")
+      if flag['object type'] != 'CHOICE' and flag['object type'] != 'CHECKBOX':
+        sys.exit(
+            "Incorrect value for object type in flag (use CHECKBOX or CHOICE\n")
+      if flag['object type'] == 'CHOICE':
+        if type(flag['default']) != str:
+          sys.exit(
+              "Incorrect value for default in flag (use a string for CHOICE types\n")
+      if flag['object type'] == 'CHECKBOX':
+        if flag['default'] != 0 and flag['default'] != 1:
+          sys.exit(
+              "Incorrect value for default in flag (use a 0 or 1 for checkbox off or on, respectively\n")
 
 
 #=========================================================================
@@ -240,7 +243,7 @@ class BeamPanel(wx.Panel):
 #=========================================================================
 
     # SET UP ALL THE CONTROLS! THIS IS THE FORMAT:
-    # ['name', default value, increment, min, mac, 'type']
+    # ['name', default value, increment, min, max, 'type']
     # with type referring to a 1 for spinctrl or 2 for a float spin!
     # NB: spin does not need increment, so just put 0!
     self.BeamControl1 = ['IMinReflectionPool', '15', 0, 0, 100000, 1]
@@ -255,6 +258,33 @@ class BeamPanel(wx.Panel):
     BeamControlList.append(self.BeamControl3)
     BeamControlList.append(self.BeamControl4)
     BeamControlList.append(self.BeamControl5)
+
+    # check
+    print "Checking beam controls\n"
+    for BeamCtrl in BeamControlList:
+      print 'Checking BeamCtrl: {0}.\n'.format(BeamCtrl[0])
+      if type(BeamCtrl[0]) != str:
+        sys.exit("Incorrect value for name in BeamCtrl (please use a string)\n")
+      if type(BeamCtrl[5]) != int:
+        sys.exit("Incorrect value for type in BeamCtrl (please use a 1 or a 2)\n")
+      if BeamCtrl[5] == 1:
+        if type(BeamCtrl[1]) != str:
+          sys.exit("Incorrect value for default value in BeamCtrl (please use a string)\n")
+        if type(BeamCtrl[2]) != int:
+          sys.exit("Incorrect value for increment in BeamCtrl (please use an int)\n")
+        if type(BeamCtrl[3]) != int:
+          sys.exit("Incorrect value for min in BeamCtrl (please use a int)\n")
+        if type(BeamCtrl[4]) != int:
+          sys.exit("Incorrect value for max in BeamCtrl (please use a int)\n")
+      if BeamCtrl[5] == 2:
+        if type(BeamCtrl[1]) != str:
+          sys.exit("Incorrect value for default value in BeamCtrl (please use a string)\n")
+        if type(BeamCtrl[2]) != float and type(BeamCtrl[2]) != int:
+          sys.exit("Incorrect value for increment in BeamCtrl (please use an float or int)\n")
+        if type(BeamCtrl[3]) != float and type(BeamCtrl[3]) != int:
+          sys.exit("Incorrect value for min in BeamCtrl (please use a float or int)\n")
+        if type(BeamCtrl[4]) != float and type(BeamCtrl[4]) != int:
+          sys.exit("Incorrect value for max in BeamCtrl (please use a float or int)\n")
 
 #=========================================================================
 
@@ -357,6 +387,35 @@ class crystalPanel(wx.Panel):
     # Add them to list (of lists) - Need to find a better method for this
     crystalControlList.append(crystalControl1)
     crystalControlList.append(crystalControl2)
+
+    # check
+    print "Checking crystal controls\n"
+    for CrystalCtrl in crystalControlList:
+      print 'Checking CrystalCtrl: {0}.\n'.format(CrystalCtrl[0])
+      if type(CrystalCtrl[0]) != str:
+        sys.exit("Incorrect value for name in CrystalCtrl (please use a string)\n")
+      if type(CrystalCtrl[5]) != int:
+        sys.exit("Incorrect value for type in CrystalCtrl (please use a 1 or a 2)\n")
+      if CrystalCtrl[5] == 1:
+        if type(CrystalCtrl[1]) != str:
+          sys.exit("Incorrect value for default value in CrystalCtrl (please use a string)\n")
+        if type(CrystalCtrl[2]) != int:
+          sys.exit("Incorrect value for increment in CrystalCtrl (please use an int)\n")
+        if type(CrystalCtrl[3]) != int:
+          sys.exit("Incorrect value for min in CrystalCtrl (please use a int)\n")
+        if type(CrystalCtrl[4]) != int:
+          sys.exit("Incorrect value for max in CrystalCtrl (please use a int)\n")
+      if CrystalCtrl[5] == 2:
+        if type(CrystalCtrl[1]) != str:
+          sys.exit("Incorrect value for default value in CrystalCtrl (please use a string)\n")
+        if type(CrystalCtrl[2]) != float and type(CrystalCtrl[2]) != int:
+          sys.exit("Incorrect value for increment in CrystalCtrl (please use an float or int)\n")
+        if type(CrystalCtrl[3]) != float and type(CrystalCtrl[3]) != int:
+          sys.exit("Incorrect value for min in CrystalCtrl (please use a float or int)\n")
+        if type(CrystalCtrl[4]) != float and type(CrystalCtrl[4]) != int:
+          sys.exit("Incorrect value for max in CrystalCtrl (please use a float or int)\n")
+        if type(CrystalCtrl[6]) != int:
+          sys.exit("Incorrect value for no. of digits in CrystalCtrl (please use an int)\n")
 #=========================================================================
 
     title = wx.StaticText(self, wx.ID_ANY, 'Crystal Settings')
@@ -483,6 +542,33 @@ class microscopePanel(wx.Panel):
     microscopeControlList.append(microscopeControl12)
     microscopeControlList.append(microscopeControl13)
 
+    # check
+    print "Checking microscope controls\n"
+    for MicroscopeCtrl in microscopeControlList:
+      print 'Checking MicroscopeCtrl: {0}.\n'.format(MicroscopeCtrl[0])
+      if type(MicroscopeCtrl[0]) != str:
+        sys.exit("Incorrect value for name in MicroscopeCtrl (please use a string)\n")
+      if type(MicroscopeCtrl[5]) != int:
+        sys.exit("Incorrect value for type in MicroscopeCtrl (please use a 1 or a 2)\n")
+      if MicroscopeCtrl[5] == 1:
+        if type(MicroscopeCtrl[1]) != str:
+          sys.exit("Incorrect value for default value in MicroscopeCtrl (please use a string)\n")
+        if type(MicroscopeCtrl[2]) != int:
+          sys.exit("Incorrect value for increment in MicroscopeCtrl (please use an int)\n")
+        if type(MicroscopeCtrl[3]) != int:
+          sys.exit("Incorrect value for min in MicroscopeCtrl (please use a int)\n")
+        if type(MicroscopeCtrl[4]) != int:
+          sys.exit("Incorrect value for max in MicroscopeCtrl (please use a int)\n")
+      if MicroscopeCtrl[5] == 2:
+        if type(MicroscopeCtrl[1]) != str:
+          sys.exit("Incorrect value for default value in MicroscopeCtrl (please use a string)\n")
+        if type(MicroscopeCtrl[2]) != float and type(MicroscopeCtrl[2]) != int:
+          sys.exit("Incorrect value for increment in MicroscopeCtrl (please use an float or int)\n")
+        if type(MicroscopeCtrl[3]) != float and type(MicroscopeCtrl[3]) != int:
+          sys.exit("Incorrect value for min in MicroscopeCtrl (please use a float or int)\n")
+        if type(MicroscopeCtrl[4]) != float and type(MicroscopeCtrl[4]) != int:
+          sys.exit("Incorrect value for max in MicroscopeCtrl (please use a float or int)\n")
+
 #=========================================================================
 
     title = wx.StaticText(self, wx.ID_ANY, 'Microscope Selection')
@@ -594,6 +680,36 @@ class imagePanel(wx.Panel):
     imageControlList.append(IImageFLAG1)
     imageControlList.append(IImageFLAG2)
     imageControlList.append(IImageFLAG3)
+
+    # check
+    print "Checking image controls\n"
+    for ImageCtrl in imageControlList:
+      print 'Checking ImageCtrl: {0}.\n'.format(ImageCtrl[0])
+      if type(ImageCtrl[0]) != str:
+        sys.exit("Incorrect value for name in ImageCtrl (please use a string)\n")
+      if type(ImageCtrl[5]) != int:
+        sys.exit("Incorrect value for type in ImageCtrl (please use a 1 or a 2)\n")
+      if ImageCtrl[5] == 1:
+        if type(ImageCtrl[1]) != str:
+          sys.exit("Incorrect value for default value in ImageCtrl (please use a string)\n")
+        if type(ImageCtrl[2]) != int:
+          sys.exit("Incorrect value for increment in ImageCtrl (please use an int)\n")
+        if type(ImageCtrl[3]) != int:
+          sys.exit("Incorrect value for min in ImageCtrl (please use a int)\n")
+        if type(ImageCtrl[4]) != int:
+          sys.exit("Incorrect value for max in ImageCtrl (please use a int)\n")
+      if ImageCtrl[5] == 2:
+        if type(ImageCtrl[1]) != str:
+          sys.exit("Incorrect value for default value in ImageCtrl (please use a string)\n")
+        if type(ImageCtrl[2]) != float and type(ImageCtrl[2]) != int:
+          sys.exit("Incorrect value for increment in ImageCtrl (please use an float or int)\n")
+        if type(ImageCtrl[3]) != float and type(ImageCtrl[3]) != int:
+          sys.exit("Incorrect value for min in ImageCtrl (please use a float or int)\n")
+        if type(ImageCtrl[4]) != float and type(ImageCtrl[4]) != int:
+          sys.exit("Incorrect value for max in ImageCtrl (please use a float or int)\n")
+        if type(ImageCtrl[6]) != int:
+          sys.exit("Incorrect value for no. of digits in ImageCtrl (please use an int)\n")
+
 #=========================================================================
 
     title = wx.StaticText(self, wx.ID_ANY, 'image Settings')
