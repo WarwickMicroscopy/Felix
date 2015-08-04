@@ -165,12 +165,12 @@ class FlagPanel(wx.Panel):
       flagObjectsLabels.append(wx.StaticText(self, wx.ID_ANY, flag['name']))
       flagIndex = flags.index(flag)
       if flag['object type'] == 'CHOICE':
-        flagObjectsChoices.append(wx.Choice(self, wx.ID_ANY, size=(110, -1),
+        flagObjectsChoices.append(wx.Choice(self, wx.ID_ANY, size=(100, -1),
                                             choices=choices, name=flag['name']))
         flagObjectsChoices[flagIndex].SetStringSelection(flag['default'])
 
       elif flag['object type'] == 'CHECKBOX':
-        flagObjectsChoices.append(wx.CheckBox(self, wx.ID_ANY, size=(110, -1),
+        flagObjectsChoices.append(wx.CheckBox(self, wx.ID_ANY, size=(100, -1),
                                               name=flag['name']))
         if flag['default'] == 1:
           flagObjectsChoices[flagIndex].SetValue(True)
