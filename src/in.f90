@@ -53,6 +53,7 @@ SUBROUTINE ReadInpFile( IErr )
   USE MPI
   USE MyMPI
   USE WriteToScreen
+  USE InputModules
   
   IMPLICIT NONE
 
@@ -64,6 +65,9 @@ SUBROUTINE ReadInpFile( IErr )
   CHARACTER*200 ::&
        SImageMode,SElements,SRefineMode,SStringFromNumber,SRefineYESNO,&
        SAtomicSites,SFormatString,SLengthofNumberString
+  CHARACTER*200 :: &
+       SDirectionX,SIncidentBeamDirection,SNormalDirectionX
+  
 
   OPEN(UNIT= IChInp, ERR= 120, FILE= "felix.inp",&
        STATUS= 'OLD')
@@ -241,60 +245,26 @@ SUBROUTINE ReadInpFile( IErr )
   CALL Message ("ReadInpFile",IInfo,IErr,MessageVariable ="RInnerConvergenceAngle",RVariable=RInnerConvergenceAngle)
 
   ILine= ILine+1
-  READ(IChInp,10,ERR=20,END=30) IIncidentBeamDirectionX
-  CALL Message ("ReadInpFile",IInfo,IErr,MessageVariable ="IIncidentBeamDirectionX",IVariable=IIncidentBeamDirectionX)
-
-
-  ILine= ILine+1
-  READ(IChInp,10,ERR=20,END=30) IIncidentBeamDirectionY
-  CALL Message ("ReadInpFile",IInfo,IErr,MessageVariable ="IIncidentBeamDirectionY",IVariable=IIncidentBeamDirectionY)
-
+  READ(IChInp,FMT='(27X,A)',END=30) SIncidentBeamDirection
+  CALL Message ("ReadInpFile",IInfo+IDebug,IErr,MessageVariable ="SIncidentBeamDirection",MessageString=SIncidentBeamDirection)
+  CALL ThreeDimVectorReadIn(SIncidentBeamDirection,'[',']',RZDirC)
+  CALL Message ("ReadInpFile",IInfo+IDebug,IErr,MessageVariable ="RZDirC",RVector=RZDirC)
 
   ILine= ILine+1
-  READ(IChInp,10,ERR=20,END=30) IIncidentBeamDirectionZ
-  CALL Message ("ReadInpFile",IInfo,IErr,MessageVariable ="IIncidentBeamDirectionZ",IVariable=IIncidentBeamDirectionZ)
-
-
-  RZDirC(1)= REAL(IIncidentBeamDirectionX,RKIND)
-  RZDirC(2)= REAL(IIncidentBeamDirectionY,RKIND)
-  RZDirC(3)= REAL(IIncidentBeamDirectionZ,RKIND)
-  
-  ILine= ILine+1
-  READ(IChInp,10,ERR=20,END=30) IXDirectionX
-  CALL Message ("ReadInpFile",IInfo,IErr,MessageVariable ="IXDirectionX",IVariable=IXDirectionX)
-
+  READ(IChInp,FMT='(27X,A)',END=30) SDirectionX
+  CALL Message ("ReadInpFile",IInfo+IDebug,IErr,MessageVariable ="SDirectionX",MessageString=SDirectionX)
+  CALL ThreeDimVectorReadIn(SDirectionX,'[',']',RXDirC)
+  CALL Message ("ReadInpFile",IInfo+IDebug,IErr,MessageVariable ="RXDirC",RVector=RXDirC)
 
   ILine= ILine+1
-  READ(IChInp,10,ERR=20,END=30) IXDirectionY
-  CALL Message ("ReadInpFile",IInfo,IErr,MessageVariable ="IXDirectionY",IVariable=IXDirectionY)
-  
-  ILine= ILine+1
-  READ(IChInp,10,ERR=20,END=30) IXDirectionZ
-  CALL Message ("ReadInpFile",IInfo,IErr,MessageVariable ="IXDirectionZ",IVariable=IXDirectionZ)
+  READ(IChInp,FMT='(27X,A)',ERR=20,END=30) SNormalDirectionX
+  CALL Message ("ReadInpFile",IInfo+IDebug,IErr,MessageVariable ="SNormalDirectionX",MessageString=SNormalDirectionX)
+  CALL ThreeDimVectorReadIn(SNormalDirectionX,'[',']',RNormDirC)
+  CALL Message ("ReadInpFile",IInfo+IDebug,IErr,MessageVariable ="RNormDirC",RVector=RNormDirC)
 
-  RXDirC(1)= IXDirectionX
-  RXDirC(2)= IXDirectionY
-  RXDirC(3)= IXDirectionZ  
-
-  ILine= ILine+1
-  READ(IChInp,10,ERR=20,END=30) INormalDirectionX
-  CALL Message ("ReadInpFile",IInfo,IErr,MessageVariable ="INormalDirectionX",IVariable=INormalDirectionX)
-
-  ILine= ILine+1
-  READ(IChInp,10,ERR=20,END=30) INormalDirectionY
-  CALL Message ("ReadInpFile",IInfo,IErr,MessageVariable ="INormalDirectionY",IVariable=INormalDirectionY)
-  
-  ILine= ILine+1
-  READ(IChInp,10,ERR=20,END=30) INormalDirectionZ
-  CALL Message ("ReadInpFile",IInfo,IErr,MessageVariable ="INormalDirectionZ",IVariable=INormalDirectionZ)
-
-  RNormDirC(1)= INormalDirectionX
-  RNormDirC(2)= INormalDirectionY
-  RNormDirC(3)= INormalDirectionZ
-  
   ILine= ILine+1
   READ(IChInp,15,ERR=20,END=30) RAcceleratingVoltage
-  CALL Message ("ReadInpFile",IInfo,IErr,MessageVariable ="RAcceleratingVolatage",RVariable=RAcceleratingVoltage)
+  CALL Message ("ReadInpFile",IInfo+IDebug,IErr,MessageVariable ="RAcceleratingVolatage",RVariable=RAcceleratingVoltage)
 
   ILine=ILine+1
   READ(IChInp,15,ERR=20,END=30) RAcceptanceAngle
