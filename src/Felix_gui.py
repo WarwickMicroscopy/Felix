@@ -16,7 +16,6 @@ class WriteInputDialog(wx.Dialog):
 
   def __init__(self, parent, id, title):
     wx.Dialog.__init__(self, parent, id, title, size=(400, 200))
-
     self.UserInterface2()
     # self.SetSize(400,200)
     # self.SetTitle("Save Input File As")[
@@ -52,11 +51,9 @@ class WriteInputDialog(wx.Dialog):
 
   def ReturnSuccess(self, event):
 
-    global SInpPath
-    global SInpFilename
-    SInpPath, SInpFilename = os.path.split(self.InputFileTextBox.GetValue())
+    self.SInpPath, self.SInpFilename = os.path.split(self.InputFileTextBox.GetValue())
 
-    if SInpFilename.find(".inp") == -1:
+    if self.SInpFilename.find(".inp") == -1:
       wx.MessageBox('.inp file not found, please save a .inp file',
                     'Error', wx.OK | wx.ICON_ERROR)
       return()
@@ -269,22 +266,28 @@ class BeamPanel(wx.Panel):
         sys.exit("Incorrect value for type in BeamCtrl (please use a 1 or a 2)\n")
       if BeamCtrl[5] == 1:
         if type(BeamCtrl[1]) != str:
-          sys.exit("Incorrect value for default value in BeamCtrl (please use a string)\n")
+          sys.exit(
+              "Incorrect value for default value in BeamCtrl (please use a string)\n")
         if type(BeamCtrl[2]) != int:
-          sys.exit("Incorrect value for increment in BeamCtrl (please use an int)\n")
+          sys.exit(
+              "Incorrect value for increment in BeamCtrl (please use an int)\n")
         if type(BeamCtrl[3]) != int:
           sys.exit("Incorrect value for min in BeamCtrl (please use a int)\n")
         if type(BeamCtrl[4]) != int:
           sys.exit("Incorrect value for max in BeamCtrl (please use a int)\n")
       if BeamCtrl[5] == 2:
         if type(BeamCtrl[1]) != str:
-          sys.exit("Incorrect value for default value in BeamCtrl (please use a string)\n")
+          sys.exit(
+              "Incorrect value for default value in BeamCtrl (please use a string)\n")
         if type(BeamCtrl[2]) != float and type(BeamCtrl[2]) != int:
-          sys.exit("Incorrect value for increment in BeamCtrl (please use an float or int)\n")
+          sys.exit(
+              "Incorrect value for increment in BeamCtrl (please use an float or int)\n")
         if type(BeamCtrl[3]) != float and type(BeamCtrl[3]) != int:
-          sys.exit("Incorrect value for min in BeamCtrl (please use a float or int)\n")
+          sys.exit(
+              "Incorrect value for min in BeamCtrl (please use a float or int)\n")
         if type(BeamCtrl[4]) != float and type(BeamCtrl[4]) != int:
-          sys.exit("Incorrect value for max in BeamCtrl (please use a float or int)\n")
+          sys.exit(
+              "Incorrect value for max in BeamCtrl (please use a float or int)\n")
 
 #=========================================================================
 
@@ -398,24 +401,31 @@ class crystalPanel(wx.Panel):
         sys.exit("Incorrect value for type in CrystalCtrl (please use a 1 or a 2)\n")
       if CrystalCtrl[5] == 1:
         if type(CrystalCtrl[1]) != str:
-          sys.exit("Incorrect value for default value in CrystalCtrl (please use a string)\n")
+          sys.exit(
+              "Incorrect value for default value in CrystalCtrl (please use a string)\n")
         if type(CrystalCtrl[2]) != int:
-          sys.exit("Incorrect value for increment in CrystalCtrl (please use an int)\n")
+          sys.exit(
+              "Incorrect value for increment in CrystalCtrl (please use an int)\n")
         if type(CrystalCtrl[3]) != int:
           sys.exit("Incorrect value for min in CrystalCtrl (please use a int)\n")
         if type(CrystalCtrl[4]) != int:
           sys.exit("Incorrect value for max in CrystalCtrl (please use a int)\n")
       if CrystalCtrl[5] == 2:
         if type(CrystalCtrl[1]) != str:
-          sys.exit("Incorrect value for default value in CrystalCtrl (please use a string)\n")
+          sys.exit(
+              "Incorrect value for default value in CrystalCtrl (please use a string)\n")
         if type(CrystalCtrl[2]) != float and type(CrystalCtrl[2]) != int:
-          sys.exit("Incorrect value for increment in CrystalCtrl (please use an float or int)\n")
+          sys.exit(
+              "Incorrect value for increment in CrystalCtrl (please use an float or int)\n")
         if type(CrystalCtrl[3]) != float and type(CrystalCtrl[3]) != int:
-          sys.exit("Incorrect value for min in CrystalCtrl (please use a float or int)\n")
+          sys.exit(
+              "Incorrect value for min in CrystalCtrl (please use a float or int)\n")
         if type(CrystalCtrl[4]) != float and type(CrystalCtrl[4]) != int:
-          sys.exit("Incorrect value for max in CrystalCtrl (please use a float or int)\n")
+          sys.exit(
+              "Incorrect value for max in CrystalCtrl (please use a float or int)\n")
         if type(CrystalCtrl[6]) != int:
-          sys.exit("Incorrect value for no. of digits in CrystalCtrl (please use an int)\n")
+          sys.exit(
+              "Incorrect value for no. of digits in CrystalCtrl (please use an int)\n")
 #=========================================================================
 
     title = wx.StaticText(self, wx.ID_ANY, 'Crystal Settings')
@@ -547,27 +557,35 @@ class microscopePanel(wx.Panel):
     for MicroscopeCtrl in microscopeControlList:
       print 'Checking MicroscopeCtrl: {0}.\n'.format(MicroscopeCtrl[0])
       if type(MicroscopeCtrl[0]) != str:
-        sys.exit("Incorrect value for name in MicroscopeCtrl (please use a string)\n")
+        sys.exit(
+            "Incorrect value for name in MicroscopeCtrl (please use a string)\n")
       if type(MicroscopeCtrl[5]) != int:
-        sys.exit("Incorrect value for type in MicroscopeCtrl (please use a 1 or a 2)\n")
+        sys.exit(
+            "Incorrect value for type in MicroscopeCtrl (please use a 1 or a 2)\n")
       if MicroscopeCtrl[5] == 1:
         if type(MicroscopeCtrl[1]) != str:
-          sys.exit("Incorrect value for default value in MicroscopeCtrl (please use a string)\n")
+          sys.exit(
+              "Incorrect value for default value in MicroscopeCtrl (please use a string)\n")
         if type(MicroscopeCtrl[2]) != int:
-          sys.exit("Incorrect value for increment in MicroscopeCtrl (please use an int)\n")
+          sys.exit(
+              "Incorrect value for increment in MicroscopeCtrl (please use an int)\n")
         if type(MicroscopeCtrl[3]) != int:
           sys.exit("Incorrect value for min in MicroscopeCtrl (please use a int)\n")
         if type(MicroscopeCtrl[4]) != int:
           sys.exit("Incorrect value for max in MicroscopeCtrl (please use a int)\n")
       if MicroscopeCtrl[5] == 2:
         if type(MicroscopeCtrl[1]) != str:
-          sys.exit("Incorrect value for default value in MicroscopeCtrl (please use a string)\n")
+          sys.exit(
+              "Incorrect value for default value in MicroscopeCtrl (please use a string)\n")
         if type(MicroscopeCtrl[2]) != float and type(MicroscopeCtrl[2]) != int:
-          sys.exit("Incorrect value for increment in MicroscopeCtrl (please use an float or int)\n")
+          sys.exit(
+              "Incorrect value for increment in MicroscopeCtrl (please use an float or int)\n")
         if type(MicroscopeCtrl[3]) != float and type(MicroscopeCtrl[3]) != int:
-          sys.exit("Incorrect value for min in MicroscopeCtrl (please use a float or int)\n")
+          sys.exit(
+              "Incorrect value for min in MicroscopeCtrl (please use a float or int)\n")
         if type(MicroscopeCtrl[4]) != float and type(MicroscopeCtrl[4]) != int:
-          sys.exit("Incorrect value for max in MicroscopeCtrl (please use a float or int)\n")
+          sys.exit(
+              "Incorrect value for max in MicroscopeCtrl (please use a float or int)\n")
 
 #=========================================================================
 
@@ -691,24 +709,31 @@ class imagePanel(wx.Panel):
         sys.exit("Incorrect value for type in ImageCtrl (please use a 1 or a 2)\n")
       if ImageCtrl[5] == 1:
         if type(ImageCtrl[1]) != str:
-          sys.exit("Incorrect value for default value in ImageCtrl (please use a string)\n")
+          sys.exit(
+              "Incorrect value for default value in ImageCtrl (please use a string)\n")
         if type(ImageCtrl[2]) != int:
-          sys.exit("Incorrect value for increment in ImageCtrl (please use an int)\n")
+          sys.exit(
+              "Incorrect value for increment in ImageCtrl (please use an int)\n")
         if type(ImageCtrl[3]) != int:
           sys.exit("Incorrect value for min in ImageCtrl (please use a int)\n")
         if type(ImageCtrl[4]) != int:
           sys.exit("Incorrect value for max in ImageCtrl (please use a int)\n")
       if ImageCtrl[5] == 2:
         if type(ImageCtrl[1]) != str:
-          sys.exit("Incorrect value for default value in ImageCtrl (please use a string)\n")
+          sys.exit(
+              "Incorrect value for default value in ImageCtrl (please use a string)\n")
         if type(ImageCtrl[2]) != float and type(ImageCtrl[2]) != int:
-          sys.exit("Incorrect value for increment in ImageCtrl (please use an float or int)\n")
+          sys.exit(
+              "Incorrect value for increment in ImageCtrl (please use an float or int)\n")
         if type(ImageCtrl[3]) != float and type(ImageCtrl[3]) != int:
-          sys.exit("Incorrect value for min in ImageCtrl (please use a float or int)\n")
+          sys.exit(
+              "Incorrect value for min in ImageCtrl (please use a float or int)\n")
         if type(ImageCtrl[4]) != float and type(ImageCtrl[4]) != int:
-          sys.exit("Incorrect value for max in ImageCtrl (please use a float or int)\n")
+          sys.exit(
+              "Incorrect value for max in ImageCtrl (please use a float or int)\n")
         if type(ImageCtrl[6]) != int:
-          sys.exit("Incorrect value for no. of digits in ImageCtrl (please use an int)\n")
+          sys.exit(
+              "Incorrect value for no. of digits in ImageCtrl (please use an int)\n")
 
 #=========================================================================
 
@@ -913,16 +938,17 @@ class optionPanel(wx.Panel):
 
   def InpCreate(self, event):
 
-    dir = "Felix_input_file"
 
-    if os.path.exists(dir):
-      shutil.rmtree(dir)
-    os.makedirs(dir)
+    #if os.path.exists(dir):
+    #  shutil.rmtree(dir)
+    #os.makedirs(dir)
 
     InputFileCreate = WriteInputDialog(self, -1, 'Save File As')
     InputFileBlock = InputFileCreate.ShowModal()
 
-    InputFileCreate.Destroy()
+    dir = InputFileCreate.SInpPath
+
+    #InputFileCreate.Destroy()
 
     InputFileSwitch = 2
 
@@ -935,6 +961,8 @@ class optionPanel(wx.Panel):
 
     FelixInpFilename = dir + "/felix.inp"
 
+    print FelixInpFilename
+
     inpfile = open(FelixInpFilename, "wb")
 
     # opening text in input file
@@ -946,15 +974,6 @@ class optionPanel(wx.Panel):
     inpfile.write("# felixsim input\n")
     inpfile.write("\n")
     inpfile.write("# control flags\n")
-
-    # for flag in self.main.notebook.page1.flags:
-    #    index = self.main.notebook.page1.flags.index(flag)
-    #
-    #    value = self.main.notebook.page1.flagObjectsChoices[index].GetCurrentSelection()
-    #    inpfile.write(flag)
-    #    inpfile.write("                = ")
-    #    inpfile.write(str(value))
-    #    inpfile.write("\n")
 
     # FLAGS=================================================================
 
@@ -1122,65 +1141,59 @@ class optionPanel(wx.Panel):
     # IIncidentBeamDirectionX
     IIncidentBeamDirectionXVal = self.main.notebook.page5.microscopeObjectsControls[
         2].GetValue()
-    inpfile.write("IIncidentBeamDirectionX   = ")
+    inpfile.write("IIncidentBeamDirection    = [")
     inpfile.write(str(IIncidentBeamDirectionXVal))
-    inpfile.write("\n")
 
     # IIncidentBeamDirectionY
     IIncidentBeamDirectionYVal = self.main.notebook.page5.microscopeObjectsControls[
         3].GetValue()
-    inpfile.write("IIncidentBeamDirectionY   = ")
+    inpfile.write(",")
     inpfile.write(str(IIncidentBeamDirectionYVal))
-    inpfile.write("\n")
 
     # IIncidentBeamDirectionZ
     IIncidentBeamDirectionZVal = self.main.notebook.page5.microscopeObjectsControls[
         4].GetValue()
-    inpfile.write("IIncidentBeamDirectionZ   = ")
+    inpfile.write(",")
     inpfile.write(str(IIncidentBeamDirectionZVal))
-    inpfile.write("\n")
+    inpfile.write("]\n")
 
     # IXDirectionX
     IXDirectionXVal = self.main.notebook.page5.microscopeObjectsControls[
         5].GetValue()
-    inpfile.write("IXDirectionX              = ")
+    inpfile.write("IXDirection               = [")
     inpfile.write(str(IXDirectionXVal))
-    inpfile.write("\n")
 
     # IXDirectionY
     IXDirectionYVal = self.main.notebook.page5.microscopeObjectsControls[
         6].GetValue()
-    inpfile.write("IXDirectionY              = ")
+    inpfile.write(",")
     inpfile.write(str(IXDirectionYVal))
-    inpfile.write("\n")
 
     # IXDirectionZ
     IXDirectionZVal = self.main.notebook.page5.microscopeObjectsControls[
         7].GetValue()
-    inpfile.write("IXDirectionZ              = ")
+    inpfile.write(",")
     inpfile.write(str(IXDirectionZVal))
-    inpfile.write("\n")
+    inpfile.write("]\n")
 
     # INormalDirectionX
     INormalDirectionXVal = self.main.notebook.page5.microscopeObjectsControls[
         8].GetValue()
-    inpfile.write("INormalDirectionX         = ")
+    inpfile.write("INormalDirectionX         = [")
     inpfile.write(str(INormalDirectionXVal))
-    inpfile.write("\n")
 
     # INormalDirectionY
     INormalDirectionYVal = self.main.notebook.page5.microscopeObjectsControls[
         9].GetValue()
-    inpfile.write("INormalDirectionY         = ")
+    inpfile.write(",")
     inpfile.write(str(INormalDirectionYVal))
-    inpfile.write("\n")
 
     # INormalDirectionZ
     INormalDirectionZVal = self.main.notebook.page5.microscopeObjectsControls[
         10].GetValue()
-    inpfile.write("INormalDirectionZ         = ")
+    inpfile.write(",")
     inpfile.write(str(INormalDirectionZVal))
-    inpfile.write("\n")
+    inpfile.write("]\n")
 
     #RAcceleratingVoltage (kV)
     RAcceleratingVoltageVal = self.main.notebook.page5.microscopeObjectsControls[
@@ -1227,6 +1240,8 @@ class optionPanel(wx.Panel):
     inpfile.write(str(IReflectOutVal))
     inpfile.write("\n")
 
+    inpfile.close()
+
   def LoadInputFile(self, e):
     InputFileDialog = wx.FileDialog(self, "Load input file", "", "",
                                     "INP files (*.inp)|*.inp", wx.FD_OPEN | wx.FD_FILE_MUST_EXIST)
@@ -1255,6 +1270,10 @@ class optionPanel(wx.Panel):
     for line in inpLoadFile:
       FileLineList.append(line[28:])
       print(line[28:])
+
+    for lineString in FileLineList:
+      lineString = lineString.rstrip('\n')
+      lineString = lineString.rstrip('')
 
     # IWriteFLAG
     IWriteFLAGSet = int(FileLineList[7])
@@ -1370,80 +1389,102 @@ class optionPanel(wx.Panel):
     self.main.notebook.page5.microscopeObjectsControls[
         1].SetValue(RInnerConvergenceAngleSet)
 
+    # Parsing the beam direction input
+    IIncidentBeamDirection = FileLineList[34]
+    IIncidentBeamDirection = IIncidentBeamDirection.lstrip('[')
+    IIncidentBeamDirection = IIncidentBeamDirection.rstrip('\n')
+    IIncidentBeamDirection = IIncidentBeamDirection.rstrip('')
+    IIncidentBeamDirection = IIncidentBeamDirection.rstrip(']')
+    IIncidentBeamDirection = IIncidentBeamDirection.split(',')
+
+    IXDirection = FileLineList[35]
+    IXDirection = IXDirection.lstrip('[')
+    IXDirection = IXDirection.rstrip('\n')
+    IXDirection = IXDirection.rstrip('')
+    IXDirection = IXDirection.rstrip(']')
+    IXDirection = IXDirection.split(',')
+
+    INormalDirection = FileLineList[36]
+    INormalDirection = INormalDirection.lstrip('[')
+    INormalDirection = INormalDirection.rstrip('\n')
+    INormalDirection = INormalDirection.rstrip('')
+    INormalDirection = INormalDirection.rstrip(']')
+    INormalDirection = INormalDirection.split(',')
+
     # IIncidentBeamDirectionX
-    IIncidentBeamDirectionXSet = int(FileLineList[34])
+    IIncidentBeamDirectionXSet = int(IIncidentBeamDirection[0])
     self.main.notebook.page5.microscopeObjectsControls[
         2].SetValue(IIncidentBeamDirectionXSet)
 
     # IIncidentBeamDirectionY
-    IIncidentBeamDirectionYSet = int(FileLineList[35])
+    IIncidentBeamDirectionYSet = int(IIncidentBeamDirection[1])
     self.main.notebook.page5.microscopeObjectsControls[
         3].SetValue(IIncidentBeamDirectionYSet)
 
     # IIncidentBeamDirectionZ
-    IIncidentBeamDirectionZSet = int(FileLineList[36])
+    IIncidentBeamDirectionZSet = int(IIncidentBeamDirection[2])
     self.main.notebook.page5.microscopeObjectsControls[
         4].SetValue(IIncidentBeamDirectionZSet)
 
     # IXDirectionX
-    IXDirectionXSet = int(FileLineList[37])
+    IXDirectionXSet = int(IXDirection[0])
     self.main.notebook.page5.microscopeObjectsControls[
         5].SetValue(IXDirectionXSet)
 
     # IXDirectionY
-    IXDirectionYSet = int(FileLineList[38])
+    IXDirectionYSet = int(IXDirection[1])
     self.main.notebook.page5.microscopeObjectsControls[
         6].SetValue(IXDirectionYSet)
 
     # IXDirectionZ
-    IXDirectionZSet = int(FileLineList[39])
+    IXDirectionZSet = int(IXDirection[2])
     self.main.notebook.page5.microscopeObjectsControls[
         7].SetValue(IXDirectionZSet)
 
     # INormalDirectionX
-    INormalDirectionXSet = int(FileLineList[40])
+    INormalDirectionXSet = int(INormalDirection[0])
     self.main.notebook.page5.microscopeObjectsControls[
         8].SetValue(INormalDirectionXSet)
 
     # INormalDirectionY
-    INormalDirectionYSet = int(FileLineList[41])
+    INormalDirectionYSet = int(INormalDirection[1])
     self.main.notebook.page5.microscopeObjectsControls[
         9].SetValue(INormalDirectionYSet)
 
     # INormalDirectionZ
-    INormalDirectionZSet = int(FileLineList[42])
+    INormalDirectionZSet = int(INormalDirection[2])
     self.main.notebook.page5.microscopeObjectsControls[
         10].SetValue(INormalDirectionZSet)
 
     #RAcceleratingVoltage (kV)
-    RAcceleratingVoltageSet = float(FileLineList[43])
+    RAcceleratingVoltageSet = float(FileLineList[37])
     self.main.notebook.page5.microscopeObjectsControls[
         11].SetValue(RAcceleratingVoltageSet)
 
     #RAcceptanceAngle (deg)
-    RAcceptanceAngleSet = float(FileLineList[44])
+    RAcceptanceAngleSet = float(FileLineList[38])
     self.main.notebook.page5.microscopeObjectsControls[
         12].SetValue(RAcceptanceAngleSet)
 
     # IMAGE OUTPUT OPTIONS====================================================
 
     # RInitialThickness
-    RInitialThicknessSet = float(FileLineList[48])
+    RInitialThicknessSet = float(FileLineList[42])
     self.main.notebook.page6.imageObjectsControls[
         0].SetValue(RInitialThicknessSet)
 
     # RFinalThickness
-    RFinalThicknessSet = float(FileLineList[49])
+    RFinalThicknessSet = float(FileLineList[43])
     self.main.notebook.page6.imageObjectsControls[
         1].SetValue(RFinalThicknessSet)
 
     # RDeltaThickness
-    RDeltaThicknessSet = float(FileLineList[50])
+    RDeltaThicknessSet = float(FileLineList[44])
     self.main.notebook.page6.imageObjectsControls[
         2].SetValue(RDeltaThicknessSet)
 
     # IReflectOut
-    IReflectOutSet = int(FileLineList[51])
+    IReflectOutSet = int(FileLineList[45])
     self.main.notebook.page6.imageObjectsControls[3].SetValue(IReflectOutSet)
 
     inpLoadFile.close()
