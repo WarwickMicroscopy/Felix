@@ -17,8 +17,6 @@ class WriteInputDialog(wx.Dialog):
   def __init__(self, parent, id, title):
     wx.Dialog.__init__(self, parent, id, title, size=(400, 200))
     self.UserInterface2()
-    # self.SetSize(400,200)
-    # self.SetTitle("Save Input File As")[
 
   def UserInterface2(self):
 
@@ -51,7 +49,8 @@ class WriteInputDialog(wx.Dialog):
 
   def ReturnSuccess(self, event):
 
-    self.SInpPath, self.SInpFilename = os.path.split(self.InputFileTextBox.GetValue())
+    self.SInpPath, self.SInpFilename = os.path.split(
+        self.InputFileTextBox.GetValue())
 
     if self.SInpFilename.find(".inp") == -1:
       wx.MessageBox('.inp file not found, please save a .inp file',
@@ -938,17 +937,16 @@ class optionPanel(wx.Panel):
 
   def InpCreate(self, event):
 
-
-    #if os.path.exists(dir):
+    # if os.path.exists(dir):
     #  shutil.rmtree(dir)
-    #os.makedirs(dir)
+    # os.makedirs(dir)
 
     InputFileCreate = WriteInputDialog(self, -1, 'Save File As')
     InputFileBlock = InputFileCreate.ShowModal()
 
     dir = InputFileCreate.SInpPath
 
-    #InputFileCreate.Destroy()
+    # InputFileCreate.Destroy()
 
     InputFileSwitch = 2
 
@@ -1270,10 +1268,6 @@ class optionPanel(wx.Panel):
     for line in inpLoadFile:
       FileLineList.append(line[28:])
       print(line[28:])
-
-    for lineString in FileLineList:
-      lineString = lineString.rstrip('\n')
-      lineString = lineString.rstrip('')
 
     # IWriteFLAG
     IWriteFLAGSet = int(FileLineList[7])

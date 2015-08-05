@@ -5,8 +5,8 @@
 # felixsim input
 
 # control flags
-IWriteFLAG                = 102
-IImageFLAG                = 0
+IWriteFLAG                = 0
+IImageFLAG                = 102
 IScatterFactorMethodFLAG  = 0
 IMaskFLAG                 = 0
 IZolzFLAG                 = 0
@@ -40,7 +40,7 @@ RAcceptanceAngle (deg)    = 0.0
 
 # Image Output Options
 
-RInitialThickness        = 1000.0
-RFinalThickness          = 1000.0
-RDeltaThickness          = 10.0
-IReflectOut              = 7
+RInitialThickness         = 1000.0
+RFinalThickness           = 1000.0
+RDeltaThickness           = 10.0
+IReflectOut               = 7
