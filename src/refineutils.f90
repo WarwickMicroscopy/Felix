@@ -218,11 +218,7 @@ REAL(RKIND) FUNCTION ResidualSumofSquares(RImage1,RImage2,IErr)
        IErr
   REAL(RKIND),DIMENSION(2*IPixelCount,2*IPixelCount) :: &
        RImage1,RImage2
-!!$  REAL(RKIND) :: &
-!!$       ResidualSumofSquares
 
-
-!!$  RImage1 = RImage1*(2.0**16.0)
   RImage2 =  RImage2/(2.0**16.0)
 
   PRINT*,"Residual Sum of Squares Before",ResidualSumofSquares,MAXVAL(RImage1),MAXVAL(RImage2)
@@ -233,7 +229,7 @@ REAL(RKIND) FUNCTION ResidualSumofSquares(RImage1,RImage2,IErr)
 
 END FUNCTION ResidualSumofSquares
 
-REAL(RKIND) FUNCTION Normalised2DCrossCorrelation(RImage1,RImage2,IErr)
+REAL(RKIND) FUNCTION Normalised2DCrossCorrelation(RImage1,RImage2,IImageSize,ITotalPixelsInImage,IErr)
 
   USE MyNumbers
   
@@ -246,13 +242,15 @@ REAL(RKIND) FUNCTION Normalised2DCrossCorrelation(RImage1,RImage2,IErr)
   IMPLICIT NONE
 
   INTEGER(IKIND) :: &
-       IErr
-  REAL(RKIND),DIMENSION(2*IPixelCount,2*IPixelCount) :: &
+       IErr,ITotalPixelsInImage
+  INTEGER(IKIND),DIMENSION(2) :: & 
+       IImageSize
+  REAL(RKIND),DIMENSION(IImageSize(1),IImageSize(2)),INTENT(IN) :: &
        RImage1,RImage2
   REAL(RKIND) :: &
-       RImage1Mean,RImage2Mean,RImage1StandardDeviation,RImage2StandardDeviation, RPixelTotal
-
-  RPixelTotal = REAL(IPixelTotal,RKIND)  
+       RImage1Mean,RImage2Mean,RImage1StandardDeviation,RImage2StandardDeviation,RPixelTotal
+    
+  RPixelTotal = REAL(ITotalPixelsInImage,RKIND)  
 
   RImage1Mean = SUM(RImage1)/RPixelTotal
   RImage2Mean = SUM(RImage2)/RPixelTotal
