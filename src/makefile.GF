@@ -43,6 +43,7 @@
 #%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 unixOS := $(shell uname -s)
+cyg := $(shell expr substr $(unixOS) 1 6)
 
 ifeq ($(unixOS),Linux)
 
@@ -109,9 +110,8 @@ ifeq ($(unixOS),Linux)
     F77FLAGS = -fbounds-check -fno-range-check # debug
    endif
   endif
- endif
  
- ifeq ($(linux),Ubuntu) #Ubuntu machine
+ else ifeq ($(linux),Ubuntu) #Ubuntu machine
   $(info Compiling on $(linux), $(unixOS))
 
   INCLUDEDIR = /usr/share/doc
@@ -120,9 +120,8 @@ ifeq ($(unixOS),Linux)
   F90FLAGS = -fbounds-check -fno-range-check -fimplicit-none -fcray-pointer -fexternal-blas
   FC = gfortran -ffixed-form -std=legacy
   F77FLAGS = -fbounds-check -fno-range-check
- endif
 
- ifeq ($(linux),openSUSE project) #openSUSE machine
+ else ifeq ($(linux),openSUSE project) #openSUSE machine
   $(info Compiling on $(linux), $(unixOS))
 
   LIBFLAGS = -llapack -lblas -lfftw3
@@ -131,9 +130,8 @@ ifeq ($(unixOS),Linux)
   F90FLAGS = -fbounds-check -fno-range-check -fimplicit-none -fcray-pointer -fexternal-blas
   FC = gfortran -ffixed-form -std=legacy
   F77FLAGS = -fbounds-check -fno-range-check
- endif
 
- ifeq ($(linux),CentOS) #CentOS machine
+ else ifeq ($(linux),CentOS) #CentOS machine
   $(info Compiling on $(linux), $(unixOS))
  
   LIBFLAGS = -llapack -lblas -lfftw3
@@ -142,10 +140,9 @@ ifeq ($(unixOS),Linux)
   F90FLAGS = -fbounds-check -fno-range-check -fimplicit-none -fcray-pointer -fexternal-blas
   FC = gfortran -ffixed-form -std=legacy
   F77FLAGS = -fbounds-check -fno-range-check
- endif
  
- ifeq ($(linux),LinuxMint)
-   $(info Compiling on $(linux))
+ else ifeq ($(linux),LinuxMint)
+  $(info Compiling on $(linux))
    
   LIBFLAGS = -llapack -lblas -lfftw3
   INCLUDEDIR = /usr/lib/
@@ -153,10 +150,21 @@ ifeq ($(unixOS),Linux)
   F90FLAGS = -fbounds-check -fno-range-check -fimplicit-none -fcray-pointer -fexternal-blas
   FC = gfortran -ffixed-form -std=legacy
   F77FLAGS = -fbounds-check -fno-range-check
- endif
-endif 
+ 
+ else #default
+  $(info Compiling on default)
+  
+  INCLUDEDIR = /warwick/mathlib/gnu/x86_64/
 
-ifeq ($(unixOS),Darwin) #MAC
+  LIBFLAGS = -llapack -lblas -lfftw3
+
+  F90 = mpif90
+  FC = gfortran -ffixed-form -std=legacy
+  F90FLAGS = -fbounds-check -fno-range-check -fimplicit-none -fcray-pointer -fexternal-blas
+  F77FLAGS = -fbounds-check -fno-range-check
+ endif
+
+else ifeq ($(unixOS),Darwin) #MAC
  $(info Compiling on $(unixOS), OS X)
 
  F90 = mpifort
@@ -168,10 +176,8 @@ ifeq ($(unixOS),Darwin) #MAC
  INCLUDEDIR = /usr/local/lib/ # RAR Linux
 
  LIBFLAGS= -llapack -lblas -lfftw3
-endif
 
-cyg := $(shell expr substr $(unixOS) 1 6)
-ifeq ($(cyg),CYGWIN)
+else ifeq ($(cyg),CYGWIN)
  $(info Compiling on $(cyg)) 
 
  F90 = mpif90
@@ -183,6 +189,17 @@ ifeq ($(cyg),CYGWIN)
 
  LIBFLAGS= -llapack -lblas -lfftw3
 
+else #default
+ $(info Compiling on default settings)
+ 
+ INCLUDEDIR = /warwick/mathlib/gnu/x86_64
+
+ LIBFLAGS = -llapack -lblas -lfftw3
+
+ F90 = mpif90
+ FC = gfortran -ffixed-form -std-legacy
+ F90FLAGS = -fbounds-check -fno-range-check -fimplicit-none -fcray-pointer -fexternal-blas
+ F77FLAGS = -fbounds-check -fno-range-check
 endif
 
 # NOTE if linking against $(NAG_SHARED) you must set the environment variable
