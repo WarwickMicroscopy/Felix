@@ -168,7 +168,7 @@ SUBROUTINE ReflectionDetermination( IErr )
                 RHKL(ind,3)*RcrVecM(jnd)
            RgDummyVecMat(ind,jnd)=RgVecMatT(ind,jnd)
         ENDDO
-        CALL Message("ReflectionDetermination",IAllInfo,IErr, &
+        CALL Message("ReflectionDetermination",IMoreInfo,IErr, &
                 MessageVariable = "RHKL(h,k,l)", &
                 RVector = RHKL(ind,:))
 
@@ -630,6 +630,7 @@ SUBROUTINE NewHKLMake(Ihklmax,Rhkl0Vec,RHOLZAcceptanceAngle,IErr)
            END IF
            
            SELECT CASE(SSpaceGroupName)
+              
            CASE("F") !Face Centred
               IF(((ABS(MOD(RhklDummyVec(1)+RhklDummyVec(2),TWO)).LE.TINY).AND.&
                    (ABS(MOD(RhklDummyVec(2)+RhklDummyVec(3),TWO)).LE.TINY).AND.&
@@ -694,7 +695,7 @@ SUBROUTINE NewHKLMake(Ihklmax,Rhkl0Vec,RHOLZAcceptanceAngle,IErr)
                  ENDIF
               END IF
            CASE("C")! C-Face Centred
-              IF(ABS(MOD(RhklDummyVec(1)+RhklDummyVec(3),TWO)).LE.TINY) THEN
+              IF(ABS(MOD(RhklDummyVec(1)+RhklDummyVec(2),TWO)).LE.TINY) THEN
                 !INhkl = INhkl + 1
                 
                  IF(IZolzFLAG.EQ.1) THEN
@@ -841,7 +842,7 @@ SUBROUTINE NewHKLMake(Ihklmax,Rhkl0Vec,RHOLZAcceptanceAngle,IErr)
                  END IF
               END IF
            CASE("C")! C-Face Centred
-              IF(ABS(MOD(RhklDummyVec(1)+RhklDummyVec(3),TWO)).LE.TINY) THEN
+              IF(ABS(MOD(RhklDummyVec(1)+RhklDummyVec(2),TWO)).LE.TINY) THEN
                  !INhkl = INhkl + 1
                  !RHKL(INhkl,:) = RhklDummyVec
                  IF(IZolzFLAG.EQ.1) THEN
