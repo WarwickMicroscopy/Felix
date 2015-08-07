@@ -46,7 +46,7 @@ unixOS := $(shell uname -s)
 
 ifeq ($(unixOS),Linux)
 
- linux := $(shell lsb_release -si)
+ linux := $(shell (lsb_release -si))
 
  ifeq ($(linux),SUSE LINUX) #CSC machines
   HPC := $(shell expr substr $(shell uname -n) 1 3)
@@ -138,6 +138,17 @@ ifeq ($(unixOS),Linux)
  
   LIBFLAGS = -llapack -lblas -lfftw3
   INCLUDEDIR = /usr/lib64/
+  F90 = mpif90
+  F90FLAGS = -fbounds-check -fno-range-check -fimplicit-none -fcray-pointer -fexternal-blas
+  FC = gfortran -ffixed-form -std=legacy
+  F77FLAGS = -fbounds-check -fno-range-check
+ endif
+ 
+ ifeq ($(linux),LinuxMint)
+   $(info Compiling on $(linux))
+   
+  LIBFLAGS = -llapack -lblas -lfftw3
+  INCLUDEDIR = /usr/lib/
   F90 = mpif90
   F90FLAGS = -fbounds-check -fno-range-check -fimplicit-none -fcray-pointer -fexternal-blas
   FC = gfortran -ffixed-form -std=legacy
