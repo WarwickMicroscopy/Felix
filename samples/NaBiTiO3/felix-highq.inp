@@ -12,7 +12,6 @@ IMaskFLAG                 = 0
 IZolzFLAG                 = 1
 IAbsorbFLAG               = 1
 IAnisoDebyeWallerFlag     = 0
-IBeamConvergenceFLAG      = 1
 IPseudoCubicFLAG          = 0
 IXDirectionFLAG           = 0
 
@@ -33,17 +32,11 @@ RAbsorptionPer            = 2.9
 # microscope settings
 ROuterConvergenceAngle    = 6.0
 RInnerConvergenceAngle    = 0.0
-IIncidentBeamDirectionX   = 3
-IIncidentBeamDirectionY   = -2
-IIncidentBeamDirectionZ   = 1
-IXDirectionX              = 1
-IXDirectionY              = 0
-IXDirectionZ              = 0
-INormalDirectionX         = 3
-INormalDirectionY         = -2
-INormalDirectionZ         = 1
+IIncidentBeamDirection    = [3,-2,1]
+IXDirection               = [1,0,0]
+INormalDirection          = [3,-2,1]
 RAcceleratingVoltage (kV) = 200.0
-RAcceptanceAngle (deg)    = 0.0
+RAcceptanceAngle          = 0.0
 
 # Image Output Options
 

@@ -246,19 +246,22 @@ SUBROUTINE ReadInpFile( IErr )
 
   ILine= ILine+1
   READ(IChInp,FMT='(27X,A)',END=30) SIncidentBeamDirection
-  CALL Message ("ReadInpFile",IInfo+IDebug,IErr,MessageVariable ="SIncidentBeamDirection",MessageString=SIncidentBeamDirection)
+  CALL Message ("ReadInpFile",IInfo,IErr,MessageVariable ="IIncidentBeamDirection", &
+       MessageString=ADJUSTL(TRIM(SIncidentBeamDirection)))
   CALL ThreeDimVectorReadIn(SIncidentBeamDirection,'[',']',RZDirC)
   CALL Message ("ReadInpFile",IInfo+IDebug,IErr,MessageVariable ="RZDirC",RVector=RZDirC)
 
   ILine= ILine+1
   READ(IChInp,FMT='(27X,A)',END=30) SDirectionX
-  CALL Message ("ReadInpFile",IInfo+IDebug,IErr,MessageVariable ="SDirectionX",MessageString=SDirectionX)
+  CALL Message ("ReadInpFile",IInfo,IErr,MessageVariable ="IDirection", &
+       MessageString=ADJUSTL(TRIM(SDirectionX)))
   CALL ThreeDimVectorReadIn(SDirectionX,'[',']',RXDirC)
   CALL Message ("ReadInpFile",IInfo+IDebug,IErr,MessageVariable ="RXDirC",RVector=RXDirC)
 
   ILine= ILine+1
   READ(IChInp,FMT='(27X,A)',ERR=20,END=30) SNormalDirectionX
-  CALL Message ("ReadInpFile",IInfo+IDebug,IErr,MessageVariable ="SNormalDirectionX",MessageString=SNormalDirectionX)
+  CALL Message ("ReadInpFile",IInfo,IErr,MessageVariable ="INormalDirection", &
+       MessageString=ADJUSTL(TRIM(SNormalDirectionX)))
   CALL ThreeDimVectorReadIn(SNormalDirectionX,'[',']',RNormDirC)
   CALL Message ("ReadInpFile",IInfo+IDebug,IErr,MessageVariable ="RNormDirC",RVector=RNormDirC)
 
