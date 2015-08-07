@@ -151,6 +151,16 @@ ifeq ($(unixOS),Linux)
   FC = gfortran -ffixed-form -std=legacy
   F77FLAGS = -fbounds-check -fno-range-check
  
+ else ifeq ($(linux),ScientificSL)
+  $(info Compiling on $(linux))
+
+  LIBFLAGS = -llapack -lblas -lfftw3
+  INCLUDEDIR = /usr/lib/
+  F90 = mpif90
+  F90FLAGS = -fbounds-check -fno-range-check -fimplicit-none -fcray-pointer -fexternal-blas
+  FC = gfortran -ffixed-form -std=legacy
+  F77FLAGS = -fbounds-check -fno-range-check
+
  else #default
   $(info Compiling on default)
   
