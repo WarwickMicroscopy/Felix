@@ -32,9 +32,9 @@ RAbsorptionPer            = 2.9
 # microscope settings
 ROuterConvergenceAngle    = 3.0
 RInnerConvergenceAngle    = 0.0
-IIncidentBeamDirectionX   = [1,1,1]
-IXDirectionX              = [0,-1,1]
-INormalDirectionX         = [1,1,1]
+IIncidentBeamDirection    = [1,1,1]
+IXDirection               = [0,-1,1]
+INormalDirection          = [1,1,1]
 RAcceleratingVoltage (kV) = 200.0
 RAcceptanceAngle          = 0.0
 

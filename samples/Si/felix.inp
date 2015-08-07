@@ -31,6 +31,7 @@ RAbsorptionPer            = 2.9
 
 # microscope settings
 ROuterConvergenceAngle    = 3.0
+RInnerConvergenceAngle    = 0.0
 IIncidentBeamDirection    = [1,1,1]
 IXDirection               = [0,-1,1]
 INormalDirection          = [1,1,1]
