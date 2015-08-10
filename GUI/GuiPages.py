@@ -825,13 +825,29 @@ class optionPanel(wx.Panel):
     self.SetSizer(topOptionSizer)
     topOptionSizer.Fit(self)
 
+    #InputFileInst = FileCtrl.InputFileCreateObj(self)
     # the various functions of the buttons - run felix, write input file,
     # cancel, and browse file
-    Run.Bind(wx.EVT_BUTTON, FileCtrl.CIFCreate)
-    Cancel.Bind(wx.EVT_BUTTON, FileCtrl.OnClose)
-    CIFFile.Bind(wx.EVT_BUTTON, FileCtrl.OnCif)
-    InputFile.Bind(wx.EVT_BUTTON, FileCtrl.InputFileCreateObj.InpCreate)
-    InputLoad.Bind(wx.EVT_BUTTON, FileCtrl.LoadInputFile)
+    Run.Bind(wx.EVT_BUTTON, self.CIFCreateWrapper)
+    Cancel.Bind(wx.EVT_BUTTON, self.OnCloseWrapper)
+    CIFFile.Bind(wx.EVT_BUTTON, self.OnCifWrapper)
+    InputFile.Bind(wx.EVT_BUTTON, self.InpCreateWrapper)
+    InputLoad.Bind(wx.EVT_BUTTON, self.LoadInputFileWrapper)
+
+  def CIFCreateWrapper(self, event):
+    FileCtrl.CIFCreate(self, event)
+
+  def OnCloseWrapper(self, event):
+    FileCtrl.OnClose(self, event)
+
+  def OnCifWrapper(self, event):
+    FileCtrl.OnCif(self, event)
+
+  def InpCreateWrapper(self, event):
+    FileCtrl.InpCreate(self, event)
+
+  def LoadInputFileWrapper(self, event):
+    FileCtrl.LoadInputFile(self, event)
 
 class ViewerPanel(wx.Panel):
 
