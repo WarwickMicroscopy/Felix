@@ -849,6 +849,7 @@ class optionPanel(wx.Panel):
   def LoadInputFileWrapper(self, event):
     FileCtrl.LoadInputFile(self, event)
 
+
 class ViewerPanel(wx.Panel):
 
   def __init__(self, parent):
@@ -895,7 +896,6 @@ class ViewerPanel(wx.Panel):
     dialog.Destroy()
     self.onView()
 
-
   def onView(self):
     filepath = self.photoTxt.GetValue()
     img = wx.Image(filepath, wx.BITMAP_TYPE_ANY)
@@ -903,12 +903,12 @@ class ViewerPanel(wx.Panel):
     W = img.GetWidth()
     H = img.GetHeight()
     if W > H:
-        NewW = self.PhotoMaxSize
-        NewH = self.PhotoMaxSize * H / W
+      NewW = self.PhotoMaxSize
+      NewH = self.PhotoMaxSize * H / W
     else:
-        NewH = self.PhotoMaxSize
-        NewW = self.PhotoMaxSize * W / H
-    img = img.Scale(NewW,NewH)
+      NewH = self.PhotoMaxSize
+      NewW = self.PhotoMaxSize * W / H
+    img = img.Scale(NewW, NewH)
 
     self.imageCtrl.SetBitmap(wx.BitmapFromImage(img))
     self.Refresh()

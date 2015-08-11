@@ -21,6 +21,7 @@ class WriteInputDialog(wx.Dialog):
   def __init__(self, parent, id, title):
     wx.Dialog.__init__(self, parent, id, title, size=(400, 200))
     self.UserInterface2()
+    self.cancelCheck = 0
 
   def UserInterface2(self):
 
@@ -66,8 +67,7 @@ class WriteInputDialog(wx.Dialog):
   def ReturnCancel(self, event):
 
     self.Close()
-
-
+    self.cancelCheck == 1
 
 
 # subroutine which re-names the selected cif file and opens a directory
@@ -102,7 +102,7 @@ def CIFCreate(parent, event):
   InputFileSwitch = 1
 
   # Write input file
-  parent.WriteInputFile(dir, InputFileSwitch)
+  WriteInputFile(dir, InputFileSwitch, parent)
   wx.MessageBox('Files created successfully, click okay to run Felix', 'Info',
                 wx.OK | wx.CANCEL | wx.ICON_INFORMATION)
 
@@ -118,7 +118,8 @@ def CIFCreate(parent, event):
   else:
     os.system("mpirun -n " + str(NumberofCores) + " ../felixsim")  # parallel
 
-  parents.Close(True)
+  parent.Close(True)
+
 
 def InpCreate(parent, event):
 
@@ -127,22 +128,23 @@ def InpCreate(parent, event):
   # os.makedirs(dir)
 
   InputFileCreate = WriteInputDialog(parent, -1, 'Save File As')
+  InputFileCreate.cancelCheck == 0
   InputFileBlock = InputFileCreate.ShowModal()
 
-  dir = InputFileCreate.SInpPath
+  if InputFileCreate.cancelCheck == 1:
+    dir = InputFileCreate.SInpPath
 
-  # InputFileCreate.Destroy()
+    # InputFileCreate.Destroy()
 
-  InputFileSwitch = 2
+    InputFileSwitch = 2
 
-  mainObj = parent.main
+    WriteInputFile(dir, InputFileSwitch, parent)
 
-  WriteInputFile(dir, InputFileSwitch, mainObj, parent)
+    wx.MessageBox('Input File successfully written',
+                'Info', wx.OK | wx.ICON_INFORMATION)
 
-  wx.MessageBox('Input File successfully written',
-              'Info', wx.OK | wx.ICON_INFORMATION)
 
-def WriteInputFile(dir, InputFileSwitch, main, parent):
+def WriteInputFile(dir, InputFileSwitch, parent):
 
   FelixInpFilename = dir + "/felix.inp"
 
@@ -163,7 +165,7 @@ def WriteInputFile(dir, InputFileSwitch, main, parent):
   # FLAGS=================================================================
 
   # IWriteFLAG
-  IWriteFLAGVal = main.notebook.page1.flagObjectsChoices[
+  IWriteFLAGVal = parent.main.notebook.page1.flagObjectsChoices[
       0].GetCurrentSelection()
   inpfile.write("IWriteFLAG                = ")
   inpfile.write(str(IWriteFLAGVal))
@@ -183,7 +185,7 @@ def WriteInputFile(dir, InputFileSwitch, main, parent):
     inpfile.write("1")
 
   IImageFLAGVal2 = parent.main.notebook.page6.imageObjectsControls[
-        6].GetValue()
+      6].GetValue()
   if IImageFLAGVal2 == True:
     inpfile.write("2")
 
@@ -427,9 +429,10 @@ def WriteInputFile(dir, InputFileSwitch, main, parent):
 
   inpfile.close()
 
+
 def LoadInputFile(parent, event):
   InputFileDialog = wx.FileDialog(parent, "Load input file", "", "",
-                                    "INP files (*.inp)|*.inp", wx.FD_OPEN | wx.FD_FILE_MUST_EXIST)
+                                  "INP files (*.inp)|*.inp", wx.FD_OPEN | wx.FD_FILE_MUST_EXIST)
 
   # If the User selects cancel
   if InputFileDialog.ShowModal() == wx.ID_CANCEL:
@@ -444,6 +447,7 @@ def LoadInputFile(parent, event):
   # shutil.copy2(self.User_INPpath,dir+"/felix.cif")
 
   # self.main.option.CIFtextbox.SetValue(self.User_CIFpath)
+
 
 def SetGUIFromFile(dir, parent):
 
@@ -670,14 +674,16 @@ def SetGUIFromFile(dir, parent):
 
   inpLoadFile.close()
 
+
 def OnClose(parent, event):
 
   parent.Close(True)
 
+
 def OnCif(parent, event):
 
   CIFFileDialog = wx.FileDialog(parent, "Load CIF file", "", "",
-                                  "CIF files (*.cif)|*.cif", wx.FD_OPEN | wx.FD_FILE_MUST_EXIST)
+                                "CIF files (*.cif)|*.cif", wx.FD_OPEN | wx.FD_FILE_MUST_EXIST)
 
   # If the User selects cancel
   if CIFFileDialog.ShowModal() == wx.ID_CANCEL:

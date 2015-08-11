@@ -17,36 +17,28 @@ inputTypes = [None, 'tif', 'png']
 inputBits = [None, '8', '32']
 
 
-def convert(argv):
-    nArgs = len(argv)
-    if nArgs < 1:
-        print 'bin2tiff.py <input file/folder> -t \
-               <output type (tiff/png)> -r <recursion depth>'
-        return
+def convert(path, bits, type, recursNo):
+    #nArgs = len(argv)
+    # if nArgs < 1:
+    #     print 'bin2tiff.py <input file/folder> -t \
+    #            <output type (tiff/png)> -r <recursion depth>'
+    #     return
+    #
+    # if argv[0] in ('-h', '--help'):
+    #     print "Program to convert the \'.bin\' output from FelixSim 1.7 to image format"
+    #     print "First or last argument MUST be path or file"
+    #     print "Options:"
+    #     print "\t --type (-t) specifies output format"
+    #     print "\t\t Supports \'tif\' or \'png\' (default \'tif\')"
+    #     print "\t --bits (-b) specifies bit depth for tiff files"
+    #     print "\t\t Supports \'8\' or \'32\' (default \'32\')"
+    #     print "\t --recursion (-r) specifies how deep in the file structure to search"
+    #     print "\t\t (default \'0\')"
+    #     return
 
-    if argv[0] in ('-h', '--help'):
-        print "Program to convert the \'.bin\' output from FelixSim 1.7 to image format"
-        print "First or last argument MUST be path or file"
-        print "Options:"
-        print "\t --type (-t) specifies output format"
-        print "\t\t Supports \'tif\' or \'png\' (default \'tif\')"
-        print "\t --bits (-b) specifies bit depth for tiff files"
-        print "\t\t Supports \'8\' or \'32\' (default \'32\')"
-        print "\t --recursion (-r) specifies how deep in the file structure to search"
-        print "\t\t (default \'0\')"
-        return
-
-    if os.path.exists(argv[0]):
-        print("Found input " + argv[0]),
-        fname = argv[0].rstrip(os.path.sep)
-        argv = argv[1:]
-    elif os.path.exists(argv[nArgs - 1]):
-        print("Found input " + argv[nArgs - 1]),
-        fname = argv[nArgs - 1].rstrip(os.path.sep)
-        argv = argv[:(nArgs - 1)]
-    else:
-        print "First or last argument must be a path"
-        return
+    if os.path.exists(path):
+        print("Found input " + path),
+        fname = path.rstrip(os.path.sep)
 
     ftype = None
     if os.path.isdir(fname):
@@ -60,26 +52,12 @@ def convert(argv):
         print "Cannot interperet file/folder input"
         return
 
-    try:
-        opts, args = getopt.getopt(argv, "t:r:b:",
-                                   ["type=", "recursion=", "bits="])
-    except getopt.GetoptError:
-        print 'Input error, run \'bin2tiff -h\' for help'
-
-    strRecurs = None
+    strRecurs = recursNo
     recurs = None
-    outType = None
-    strbitDepth = None
+    outType = type
+    strbitDepth = bits
 
     valid = True
-
-    for opt, arg in opts:
-        if opt in ('-r', '--recursion'):
-            strRecurs = arg
-        elif opt in ('-t', '--type'):
-            outType = arg
-        elif opt in ('-b', '--bits'):
-            strbitDepth = arg
 
     if outType not in inputTypes:
         valid = False
@@ -170,6 +148,3 @@ def float2int(data, bits):  # might be really dodgy?
     data -= np.amin(data, axis=None)
     data = data / (np.amax(data) / (2 ** bits - 1))
     return data
-
-if __name__ == "__main__":
-    convert(sys.argv[1:])

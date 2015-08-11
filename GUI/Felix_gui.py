@@ -11,6 +11,7 @@ import GuiPages
 import Bin2Tiff
 import FileCtrl
 
+
 class Notebook(wx.Notebook):
 
   def __init__(self, parent):
@@ -52,7 +53,6 @@ class MainFrame(wx.Frame):
     sizerv.Add(self.option, 0, wx.ALL | wx.CENTER, 5)
     sizerh.Add(sizerv, 0)
     sizerh.Add(self.viewer, 0, wx.ALL | wx.EXPAND, 5)
-
 
     panel.SetSizer(sizerh)
     sizerh.Fit(self)
