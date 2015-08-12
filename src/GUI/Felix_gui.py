@@ -44,20 +44,22 @@ class MainFrame(wx.Frame):
     self.notebook = Notebook(panel)
     self.option = GuiPages.optionPanel(panel, self)
     self.viewer = GuiPages.ViewerPanel(panel)
+    self.wiki = GuiPages.WikiPanel(panel)
 
     sizerh = wx.BoxSizer(wx.HORIZONTAL)
     sizerv = wx.BoxSizer(wx.VERTICAL)
 
     # add the widgets to the sizers
-    sizerv.Add(self.notebook, 0, wx.ALL, 5)
-    sizerv.Add(self.option, 0, wx.ALL | wx.CENTER, 5)
+    sizerv.Add(self.notebook, 0, wx.ALL | wx.EXPAND, 5)
+    sizerv.Add(self.option, 0, wx.ALL | wx.CENTER | wx.EXPAND, 5)
     sizerh.Add(sizerv, 0)
     sizerh.Add(self.viewer, 0, wx.ALL | wx.EXPAND, 5)
+    sizerh.Add(self.wiki, 0, wx.ALL | wx.EXPAND, 5)
 
     panel.SetSizer(sizerh)
     sizerh.Fit(self)
 
-    self.Show()
+    self.Layout()
 
 
 if __name__ == '__main__':

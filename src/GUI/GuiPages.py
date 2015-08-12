@@ -10,6 +10,7 @@ import sys
 import GuiPages
 import Bin2Tiff
 import FileCtrl
+import wx.lib.wxpTag
 
 
 class FlagPanel(wx.Panel):
@@ -854,12 +855,12 @@ class ViewerPanel(wx.Panel):
 
   def __init__(self, parent):
     wx.Panel.__init__(self, parent)
-    self.PhotoMaxSize = 240
+    self.PhotoMaxSize = 300
     self.createWidgets()
 
   def createWidgets(self):
     instructions = 'Browse for an image'
-    img = wx.EmptyImage()
+    img = wx.EmptyImage(300, 300, False)
     self.imageCtrl = wx.StaticBitmap(self, wx.ID_ANY,
                                      wx.BitmapFromImage(img))
 
@@ -877,27 +878,27 @@ class ViewerPanel(wx.Panel):
     self.sizer.Add(self.photoTxt, 0, wx.ALL, 5)
     self.sizer.Add(browseBtn, 0, wx.ALL, 5)
     self.mainSizer.Add(self.sizer, 0, wx.ALL, 5)
-    self.mainSizer.Add(self.imageCtrl, 0, wx.ALL, 5)
+    self.mainSizer.Add(self.imageCtrl, 0, wx.ALL | wx.EXPAND, 5)
 
     self.SetSizer(self.mainSizer)
 
     self.Layout()
 
   def onBrowse(self, event):
-    """
-    Browse for file
-    """
-    wildcard = "TIFF files (*.tif)|*.tif"
-    dialog = wx.FileDialog(None, "Choose a file",
-                           wildcard=wildcard,
-                           style=wx.OPEN)
-    if dialog.ShowModal() == wx.ID_OK:
-      self.photoTxt.SetValue(dialog.GetPath())
-    dialog.Destroy()
-    self.onView()
+    # """
+    # Browse for file
+    # """
+    # wildcard = "TIFF files (*.tif)|*.tif"
+    # dialog = wx.FileDialog(None, "Choose a file",
+    #                        wildcard=wildcard,
+    #                        style=wx.OPEN)
+    # if dialog.ShowModal() == wx.ID_OK:
+    self.photoTxt.SetValue(dialog.GetPath())
+    # dialog.Destroy()
+    # self.onView()
 
-  def onView(self):
-    filepath = self.photoTxt.GetValue()
+  def onView(self, dir):
+    filepath = dir + "/f-0010-T01000-P00539-P00539-WI-M.tif"
     img = wx.Image(filepath, wx.BITMAP_TYPE_ANY)
     # scale the image, preserving the aspect ratio
     W = img.GetWidth()
@@ -912,3 +913,15 @@ class ViewerPanel(wx.Panel):
 
     self.imageCtrl.SetBitmap(wx.BitmapFromImage(img))
     self.Refresh()
+
+
+class WikiPanel(wx.Panel):
+
+  def __init__(self, parent):
+    wx.Panel.__init__(self, parent)
+    self.WikiText = wx.html.HtmlWindow(self)
+    self.WikiSizer = wx.BoxSizer(wx.VERTICAL)
+    self.WikiSizer.Add(self.WikiText, 0, wx.ALL | wx.EXPAND, 5)
+
+    self.SetSizer(self.WikiSizer)
+    self.Layout()

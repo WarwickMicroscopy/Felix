@@ -97,7 +97,7 @@ def CIFCreate(parent, event):
   shutil.copy2(parent.CIFtextbox.GetValue(), dir + "/felix.cif")
 
   # copy sca file from samples folder - TO BE CHANGED, only for Richard's Use
-  shutil.copy2("../samples/Si/felix.sca", dir + "/felix.sca")
+  shutil.copy2("../../samples/Si/felix.sca", dir + "/felix.sca")
 
   InputFileSwitch = 1
 
@@ -114,10 +114,15 @@ def CIFCreate(parent, event):
 
   # Run in parallel or single core
   if NumberofCores == 1:
-    os.system("../felixsim")  # single core
+    os.system("../../felixsim")  # single core
   else:
-    os.system("mpirun -n " + str(NumberofCores) + " ../felixsim")  # parallel
+    os.system("mpirun -n " + str(NumberofCores) +
+              " ../../felixsim")  # parallel
 
+  os.chdir("../")
+  Bin2Tiff.convert(dir, '8', 'tif', '1')
+
+  parent.main.viewer.onView(dir)
   parent.Close(True)
 
 
@@ -141,7 +146,7 @@ def InpCreate(parent, event):
     WriteInputFile(dir, InputFileSwitch, parent)
 
     wx.MessageBox('Input File successfully written',
-                'Info', wx.OK | wx.ICON_INFORMATION)
+                  'Info', wx.OK | wx.ICON_INFORMATION)
 
 
 def WriteInputFile(dir, InputFileSwitch, parent):
