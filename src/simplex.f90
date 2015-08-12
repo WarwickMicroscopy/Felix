@@ -69,6 +69,8 @@ SUBROUTINE NDimensionalDownhillSimplex(RSimplexVolume,y,mp,np,ndim,ftol,iter,RSt
            RSimplexVolume(ilo,n)=swap
         END DO
         
+        psum = RESHAPE(RSimplexVolume(MAXLOC(y),:),SHAPE(psum)) ! psum = simplex point with highest correlation
+
         RSendPacket = [-10000.0_RKIND, psum, REAL(iter,RKIND)]
         CALL MPI_BCAST(RSendPacket,ndim+2,MPI_DOUBLE_PRECISION,0,MPI_COMM_WORLD,IErr)
         ytry = SimplexFunction(psum,iter,1,IErr)
@@ -76,6 +78,9 @@ SUBROUTINE NDimensionalDownhillSimplex(RSimplexVolume,y,mp,np,ndim,ftol,iter,RSt
      END IF
      
      IF (iter.GE.ITMAX) THEN
+        
+        psum = RESHAPE(RSimplexVolume(MAXLOC(y),:),SHAPE(psum)) ! psum = simplex point with highest correlation
+
         IErr = 1
         RSendPacket = [-10000.0_RKIND, psum, REAL(iter,RKIND)]
         CALL MPI_BCAST(RSendPacket,ndim+2,MPI_DOUBLE_PRECISION,0,MPI_COMM_WORLD,IErr)

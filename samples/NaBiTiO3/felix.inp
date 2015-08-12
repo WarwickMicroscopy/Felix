@@ -21,7 +21,7 @@ IPixelCount               = 64
 # beam selection criteria
 IMinReflectionPool        = 100
 IMinStrongBeams           = 20
-IMinWeakBeams             = 5
+IMinWeakBeams             = 0
 RBSBMax                   = 0.1
 RBSPMax                   = 0.1
 
@@ -34,9 +34,9 @@ ROuterConvergenceAngle    = 6.0
 RInnerConvergenceAngle    = 0.0
 IIncidentBeamDirection    = [3,-2,1]
 IXDirection               = [1,0,0]
-INormalDirectionX         = [3,-2,1]
+INormalDirection          = [3,-2,1]
 RAcceleratingVoltage (kV) = 200.0
-RAcceptanceAngle (deg)    = 0.0
+RAcceptanceAngle          = 0.0
 
 # Image Output Options
 

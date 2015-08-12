@@ -54,16 +54,16 @@ LIBFLAGS= \
 #LD_LIBRARY_PATH=/hpcwarwick/mathlib/gnu/lib/:$LD_LIBRARY_PATH
 
 SIMOBJECTFILES = gmodules.o smodules.o message.o errorcodes.o felixsim.o util.o in.o out.o readinput.o \
-readciffile.o experimentalsetup.o imagesetup.o montagesetup.o \
+readciffile.o experimentalsetup.o imagesetup.o montagesetup.o refineutils.o \
 structurefactorsetup.o ciftbx.o hash_funcs.o eigen.o invert.o microscopy.o \
 diffractionpatterndefinitions.o diffractionpatterninitialisation.o crystallographyinitialisation.o \
 crystallography.o bloch.o Ug.o image.o errorchecks.o writeoutput.o dqng.o xerror.o d1mach.o
 
-REFINEOBJECTFILES = gmodules.o smodules.o message.o errorcodes.o felixrefine.o util.o in.o out.o readciffile.o \
+REFINEOBJECTFILES = gmodules.o smodules.o inputmodules.o message.o errorcodes.o felixrefine.o util.o in.o out.o readciffile.o \
 experimentalsetup.o imagesetup.o montagesetup.o structurefactorsetup.o readinput.o\
 eigen.o invert.o microscopy.o diffractionpatterndefinitions.o diffractionpatterninitialisation.o \
 crystallographyinitialisation.o crystallography.o bloch.o Ug.o image.o ciftbx.o simplex.o\
-hash_funcs.o felixfunction.o refineutils.o writeoutput.o dqng.o xerror.o d1mach.o errorchecks.o\
+hash_funcs.o RefineWriteOut.o felixfunction.o refineutils.o writeoutput.o dqng.o xerror.o d1mach.o errorchecks.o\
 symmetry.o
 
 %.o: %.f90
@@ -79,22 +79,18 @@ symmetry.o
 %.o: %.F
 	$(FC) $(F77FLAGS) -DF77 -c $< -I$(INCLUDEDIR) $(LIBFLAGS)
 
-all:	felixsim felixdraw felixrefine
+all:	felixsim felixrefine
 
 felixsim: $(SIMOBJECTFILES)
 	$(F90) $(F90FLAGS) -o $@ $(SIMOBJECTFILES) -I$(INCLUDEDIR) $(LIBFLAGS)
 #	$(F90) -o $@ $(SIMOBJECTFILES) $(LIBFLAGS)
-
-felixdraw: $(DRAWOBJECTFILES)
-	$(F90) $(F90FLAGS) -o $@ $(DRAWOBJECTFILES) -I$(INCLUDEDIR) $(LIBFLAGS)
-#	$(F90) -o $@ $(DRAWOBJECTFILES) $(LIBFLAGS)
 
 felixrefine: $(REFINEOBJECTFILES)
 	$(F90) $(F90FLAGS) -o $@ $(REFINEOBJECTFILES) -I$(INCLUDEDIR) $(LIBFLAGS)
 #	$(F90) -o $@ $(REFINEOBJECTFILES) $(LIBFLAGS)
 
 print:	
-	a2ps -E -o print.ps gmodules.f90 smodules.f90 message.f90 errorcodes.f90 felixsim.f90 util.f90 \
+	a2ps -E -o print.ps gmodules.f90 smodules.f90 inputmodule.f90 message.f90 errorcodes.f90 felixsim.f90 util.f90 \
 in.f90 out.f90 readinput.f90 readciffile.f90 experimentalsetup.f90 imagesetup.f90 \
 montagesetup.f90 structurefactorsetup.f90 eigen.f90 invert.f90 microscopy.f90 \
 diffraction.f90 diffractionpatterninitialisation.f90 crystallographyinitialisation.f90 \
