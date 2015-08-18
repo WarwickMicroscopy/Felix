@@ -11,11 +11,26 @@ import GuiPages
 import Bin2Tiff
 import FileCtrl
 import wx.lib.wxpTag
+import wikistrings
 
+class SizerCombo(wx.Panel):
+
+  def __init__(self, parent):
+    wx.Panel.__init__(self, parent)
+
+    self.ComboSizer = wx.BoxSizer(wx.HORIZONTAL)
+    self.Layout()
+
+  def Add(self, label, control):
+
+    self.ComboSizer.Add(label, 2, wx.ALL | wx.CENTER, 3)
+    self.ComboSizer.Add(control, 1, wx.ALL | wx.CENTER, 0)
+    self.SetSizer(self.ComboSizer)
+    self.ComboSizer.Fit(self)
 
 class FlagPanel(wx.Panel):
 
-  def __init__(self, parent):
+  def __init__(self, parent, frame):
 
     wx.Panel.__init__(self, parent)
 
@@ -24,21 +39,21 @@ class FlagPanel(wx.Panel):
 #=========================================================================
 
     flag1 = {'name': 'IWriteFLAG', 'choices': [
-        'Silent', 'Crucial information', 'Basic information', 'All information'], 'object type': 'CHOICE', 'default': 'All information'}
+        'Silent', 'Crucial information', 'Basic information', 'All information'], 'object type': 'CHOICE', 'default': 'All information', 'wiki': wikistrings.IWriteFLAGWiki}
     flag2 = {'name': 'IScatterFactorMethodFLAG', 'choices': [
-        'Kirkland', 'Doyle-Turner', 'Peng', 'Lobato'], 'object type': 'CHOICE', 'default': 'Kirkland'}
+        'Kirkland', 'Doyle-Turner', 'Peng', 'Lobato'], 'object type': 'CHOICE', 'default': 'Kirkland', 'wiki': wikistrings.IScatterFactorMethodFLAGWiki}
     flag3 = {'name': 'IMaskFLAG', 'choices': [],
-             'object type': 'CHECKBOX', 'default': 0}
+             'object type': 'CHECKBOX', 'default': 0, 'wiki': wikistrings.IMaskFLAGWiki}
     flag4 = {'name': 'IZolzFLAG', 'choices': [],
-             'object type': 'CHECKBOX', 'default': 0}
+             'object type': 'CHECKBOX', 'default': 0, 'wiki': wikistrings.IZolzFLAGWiki}
     flag5 = {'name': 'IAbsorbFLAG', 'choices': [
-        'None', 'Proportional'], 'object type': 'CHOICE', 'default': 'Proportional'}
+        'None', 'Proportional'], 'object type': 'CHOICE', 'default': 'Proportional', 'wiki': wikistrings.IAbsorbFLAGWiki}
     flag6 = {'name': 'IAnisoDebyeWallerFLAG', 'choices': [
-        '0'], 'object type': 'CHOICE', 'default': '0'}
+        '0'], 'object type': 'CHOICE', 'default': '0', 'wiki': wikistrings.IAnisoDebyeWallerFLAGWiki}
     flag7 = {'name': 'IPseudoCubicFLAG', 'choices': [
-        '0'], 'object type': 'CHOICE', 'default': '0'}
+        '0'], 'object type': 'CHOICE', 'default': '0', 'wiki': wikistrings.IPseudoCubicFLAGWiki}
     flag8 = {'name': 'IXDirectionFLAG', 'choices': [
-        'Automatic', 'Manual'], 'object type': 'CHOICE', 'default': 'Automatic'}
+        'Automatic', 'Manual'], 'object type': 'CHOICE', 'default': 'Automatic', 'wiki': wikistrings.IXDirectionFLAGWiki}
 
     flags = []
     self.flags = flags
@@ -85,18 +100,19 @@ class FlagPanel(wx.Panel):
     # from a list of flag names
     flagnumber = len(flags)
     print 'The number of flags: {0}.\n'.format(flagnumber)
-    numberOfRows = int(math.ceil(flagnumber / 3.0))
+    numberOfRows = int(math.ceil(flagnumber / 2.0))
     print 'The number of rows: {0}.\n'.format(numberOfRows)
 
     # Make some lists
     flagObjectsLabels = []
     flagObjectsChoices = []
     SizerObjects = []
+    ComboObjects = []
 
     self.flagObjectsChoices = flagObjectsChoices
 
     # Finds the number of empty slots on the bottom row to add spacer later
-    spacerNo = (3 - (flagnumber % 3)) % 3
+    spacerNo = (2 - (flagnumber % 2)) % 2
     print 'The number of spacers: {0}.\n'.format(spacerNo)
 
     # Adds a sizer for each row to a sizer list
@@ -105,31 +121,43 @@ class FlagPanel(wx.Panel):
 
     # Adds labels and choice objects to each respective lists
     for flag in flags:
+
+      temp = SizerCombo(self)
+      ComboObjects.append(temp)
+
       choices = flag['choices']
       print(choices)
-      flagObjectsLabels.append(wx.StaticText(self, wx.ID_ANY, flag['name']))
+      flagObjectsLabels.append(wx.StaticText(temp, wx.ID_ANY, flag['name']))
       flagIndex = flags.index(flag)
       if flag['object type'] == 'CHOICE':
-        flagObjectsChoices.append(wx.Choice(self, wx.ID_ANY, size=(100, -1),
+        flagObjectsChoices.append(wx.Choice(temp, wx.ID_ANY, size=(100, -1),
                                             choices=choices, name=flag['name']))
         flagObjectsChoices[flagIndex].SetStringSelection(flag['default'])
 
       elif flag['object type'] == 'CHECKBOX':
-        flagObjectsChoices.append(wx.CheckBox(self, wx.ID_ANY, size=(100, -1),
+        flagObjectsChoices.append(wx.CheckBox(temp, wx.ID_ANY, size=(100, -1),
                                               name=flag['name']))
         if flag['default'] == 1:
           flagObjectsChoices[flagIndex].SetValue(True)
 
     # Adds the objects from the lists to the respective rows in the sizer list
     for flagNo in range(0, flagnumber):
-      row = int(math.floor(flagNo / 3))
-      SizerObjects[row].Add(flagObjectsLabels[flagNo], 2, wx.ALL, 5)
-      SizerObjects[row].Add(flagObjectsChoices[flagNo], 1, wx.ALL, 5)
+      row = int(math.floor(flagNo / 2))
+      #SizerObjects[row].Add(flagObjectsLabels[flagNo], 2, wx.ALL, 5)
+      #SizerObjects[row].Add(flagObjectsChoices[flagNo], 1, wx.ALL, 5)
+      current_flag = flags[flagNo]
+      wiki = current_flag['wiki']
+
+      ComboObjects[flagNo].Add(flagObjectsLabels[flagNo], flagObjectsChoices[flagNo])
+      ComboObjects[flagNo].Bind(wx.EVT_ENTER_WINDOW, lambda event, temp = wiki: frame.wikitext.OnEnter(event, temp))
+      ComboObjects[flagNo].Bind(wx.EVT_LEAVE_WINDOW, lambda event: frame.wikitext.OnExit(event))
+
+      SizerObjects[row].Add(ComboObjects[flagNo], 1, wx.ALL, 5)
 
     # Adds spacers if necessary
     if spacerNo != 0:
       for x in range(0, spacerNo):
-        SizerObjects[numberOfRows - 1].AddStretchSpacer(3)
+        SizerObjects[numberOfRows - 1].AddStretchSpacer(1)
 
     # Set up overall and title sizers
     topflagSizer = wx.BoxSizer(wx.VERTICAL)
@@ -149,7 +177,7 @@ class FlagPanel(wx.Panel):
 
 class RadiusPanel(wx.Panel):
 
-  def __init__(self, parent):
+  def __init__(self, parent, frame):
 
     wx.Panel.__init__(self, parent)
 
@@ -162,7 +190,18 @@ class RadiusPanel(wx.Panel):
 
     self.IPixelCount = FS.FloatSpin(self, size=(60, -1), value=64, min_val=0, max_val=512,
                                     increment=64, agwStyle=FS.FS_RIGHT)
+
+    wiki = wikistrings.IPixelCountWiki
+
+    RadiusLabel.Bind(wx.EVT_ENTER_WINDOW, lambda event, temp = wiki: frame.wikitext.OnEnter(event, temp))
+    RadiusLabel.Bind(wx.EVT_LEAVE_WINDOW, lambda event: frame.wikitext.OnExit(event))
+    self.IPixelCount.Bind(wx.EVT_ENTER_WINDOW, lambda event, temp = wiki: frame.wikitext.OnEnter(event, temp))
+    self.IPixelCount.Bind(wx.EVT_LEAVE_WINDOW, lambda event: frame.wikitext.OnExit(event))
+
+
+
     self.IPixelCount.SetDigits(0)
+
     RadiusSizer.Add(RadiusLabel, 3, wx.ALL, 5)
     RadiusSizer.Add(self.IPixelCount, 1, wx.ALL, 5)
     RadiusSizer.AddStretchSpacer(4)
@@ -170,7 +209,7 @@ class RadiusPanel(wx.Panel):
     RadiusTitleSizer.Add(title, 0, wx.ALL, 5)
 
     topRadiusSizer.Add(RadiusTitleSizer, 0, wx.CENTER)
-    topRadiusSizer.Add(RadiusSizer, 0)
+    topRadiusSizer.Add(RadiusSizer, 0, wx.CENTER)
 
     self.SetSizer(topRadiusSizer)
     topRadiusSizer.Fit(self)
@@ -178,7 +217,7 @@ class RadiusPanel(wx.Panel):
 
 class BeamPanel(wx.Panel):
 
-  def __init__(self, parent):
+  def __init__(self, parent, frame):
 
     wx.Panel.__init__(self, parent)
 
@@ -188,14 +227,14 @@ class BeamPanel(wx.Panel):
 #=========================================================================
 
     # SET UP ALL THE CONTROLS! THIS IS THE FORMAT:
-    # ['name', default value, increment, min, max, 'type']
+    # ['name', default value, increment, min, max, 'type', wiki]
     # with type referring to a 1 for spinctrl or 2 for a float spin!
     # NB: spin does not need increment, so just put 0!
-    self.BeamControl1 = ['IMinReflectionPool', '15', 0, 0, 100000, 1]
-    self.BeamControl2 = ['IMinStrongBeams', '7', 0, 0, 100000, 1]
-    self.BeamControl3 = ['IMinWeakBeams', '5', 0, 0, 100000, 1]
-    self.BeamControl4 = ['RBSBMax', '0.1', 0.1, 0, 100000, 2]
-    self.BeamControl5 = ['RBSPMax', '0.1', 0.1, 0, 100000, 2]
+    self.BeamControl1 = ['IMinReflectionPool', '15', 0, 0, 100000, 1, wikistrings.IMinReflectionPoolWiki]
+    self.BeamControl2 = ['IMinStrongBeams', '7', 0, 0, 100000, 1, wikistrings.IMinWeakBeamsWiki]
+    self.BeamControl3 = ['IMinWeakBeams', '5', 0, 0, 100000, 1, wikistrings.IMinWeakBeamsWiki]
+    self.BeamControl4 = ['RBSBMax', '0.1', 0.1, 0, 100000, 2, wikistrings.RBSBmaxWiki]
+    self.BeamControl5 = ['RBSPMax', '0.1', 0.1, 0, 100000, 2, wikistrings.RBSPmaxWiki]
 
     # Add them to list (of lists) - Need to find a better method for this
     BeamControlList.append(self.BeamControl1)
@@ -245,7 +284,7 @@ class BeamPanel(wx.Panel):
     # from a list of beam names
     beamnumber = len(BeamControlList)
     print 'The number of beam controls: {0}.\n'.format(beamnumber)
-    numberOfRows = int(math.ceil(beamnumber / 3.0))
+    numberOfRows = int(math.ceil(beamnumber / 2.0))
     print 'The number of rows: {0}.\n'.format(numberOfRows)
 
     # Make some lists
@@ -258,7 +297,7 @@ class BeamPanel(wx.Panel):
     self.beamObjectsControls = beamObjectsControls
 
     # Finds the number of empty slots on the bottom row to add spacer later
-    spacerNo = (3 - (beamnumber % 3)) % 3
+    spacerNo = (2 - (beamnumber % 2)) % 2
     print 'The number of spacers: {0}.\n'.format(spacerNo)
 
     # Adds a sizer for each row to a sizer list
@@ -273,6 +312,7 @@ class BeamPanel(wx.Panel):
       beammin = beam[3]
       beammax = beam[4]
       beamtype = beam[5]
+      beamwiki = beam[6]
 
       currentIndex = BeamControlList.index(beam)
 
@@ -291,9 +331,15 @@ class BeamPanel(wx.Panel):
         beamObjectsControls[currentIndex].SetDigits(1)
         print('Added a float spin!')
 
+
+      beamObjectsLabels[currentIndex].Bind(wx.EVT_ENTER_WINDOW, lambda event, temp = beamwiki: frame.wikitext.OnEnter(event, temp))
+      beamObjectsLabels[currentIndex].Bind(wx.EVT_LEAVE_WINDOW, lambda event: frame.wikitext.OnExit(event))
+      beamObjectsControls[currentIndex].Bind(wx.EVT_ENTER_WINDOW, lambda event, temp = beamwiki: frame.wikitext.OnEnter(event, temp))
+      beamObjectsControls[currentIndex].Bind(wx.EVT_LEAVE_WINDOW, lambda event: frame.wikitext.OnExit(event))
+
     # Adds the objects from the lists to the respective rows in the sizer list
     for beamNo in range(0, beamnumber):
-      row = int(math.floor(beamNo / 3))
+      row = int(math.floor(beamNo / 2))
       SizerObjects[row].Add(beamObjectsLabels[beamNo], 3, wx.ALL, 5)
       SizerObjects[row].Add(beamObjectsControls[beamNo], 1, wx.ALL, 5)
 
@@ -312,7 +358,7 @@ class BeamPanel(wx.Panel):
 
     # Add sizers from list to topbeamSizer
     for sizerNo in range(0, numberOfRows):
-      topbeamSizer.Add(SizerObjects[sizerNo], 0)
+      topbeamSizer.Add(SizerObjects[sizerNo], 0, wx.CENTER)
 
     self.SetSizer(topbeamSizer)
     topbeamSizer.Fit(self)
@@ -320,7 +366,7 @@ class BeamPanel(wx.Panel):
 
 class crystalPanel(wx.Panel):
 
-  def __init__(self, parent):
+  def __init__(self, parent, frame):
 
     wx.Panel.__init__(self, parent)
 
@@ -329,11 +375,11 @@ class crystalPanel(wx.Panel):
 #=========================================================================
 
     # SET UP ALL THE CONTROLS! THIS IS THE FORMAT:
-    # ['name', default value, increment, min, mac, 'type', *NUMBER OF DIGITS*]
+    # ['name', default value, increment, min, mac, 'type', *NUMBER OF DIGITS*, wiki]
     # with type referring to a 1 for spinctrl or 2 for a float spin!
     # NB: spin does not need increment, so just put 0!
-    crystalControl1 = ['RDebyeWallerConstant', '0.467', 0.001, 0, 100000, 2, 4]
-    crystalControl2 = ['RAbsorptionPer', '2.9', 0.1, 0, 100000, 2, 1]
+    crystalControl1 = ['RDebyeWallerConstant', '0.467', 0.001, 0, 100000, 2, 4, wikistrings.RDebyeWallerConstantWiki]
+    crystalControl2 = ['RAbsorptionPer', '2.9', 0.1, 0, 100000, 2, 1, wikistrings.RAbsorptionPerWiki]
 
     # Add them to list (of lists) - Need to find a better method for this
     crystalControlList.append(crystalControl1)
@@ -382,7 +428,7 @@ class crystalPanel(wx.Panel):
     # from a list of crystal names
     crystalnumber = len(crystalControlList)
     print 'The number of crystal controls: {0}.\n'.format(crystalnumber)
-    numberOfRows = int(math.ceil(crystalnumber / 3.0))
+    numberOfRows = int(math.ceil(crystalnumber / 2.0))
     print 'The number of rows: {0}.\n'.format(numberOfRows)
 
     # Make some lists
@@ -391,7 +437,7 @@ class crystalPanel(wx.Panel):
     self.crystalObjectsControls = []
 
     # Finds the number of empty slots on the bottom row to add spacer later
-    spacerNo = (3 - (crystalnumber % 3)) % 3
+    spacerNo = (2 - (crystalnumber % 2)) % 2
     print 'The number of spacers: {0}.\n'.format(spacerNo)
 
     # Adds a sizer for each row to a sizer list
@@ -407,6 +453,7 @@ class crystalPanel(wx.Panel):
       crystalmax = crystal[4]
       crystaltype = crystal[5]
       crystaldigits = crystal[6]
+      crystalwiki = crystal[7]
 
       currentIndex = crystalControlList.index(crystal)
 
@@ -426,9 +473,14 @@ class crystalPanel(wx.Panel):
         self.crystalObjectsControls[currentIndex].SetDigits(crystaldigits)
         print('Added a float spin!')
 
+      self.crystalObjectsLabels[currentIndex].Bind(wx.EVT_ENTER_WINDOW, lambda event, temp = crystalwiki: frame.wikitext.OnEnter(event, temp))
+      self.crystalObjectsLabels[currentIndex].Bind(wx.EVT_LEAVE_WINDOW, lambda event: frame.wikitext.OnExit(event))
+      self.crystalObjectsControls[currentIndex].Bind(wx.EVT_ENTER_WINDOW, lambda event, temp = crystalwiki: frame.wikitext.OnEnter(event, temp))
+      self.crystalObjectsControls[currentIndex].Bind(wx.EVT_LEAVE_WINDOW, lambda event: frame.wikitext.OnExit(event))
+
     # Adds the objects from the lists to the respective rows in the sizer list
     for crystalNo in range(0, crystalnumber):
-      row = int(math.floor(crystalNo / 3))
+      row = int(math.floor(crystalNo / 2))
       SizerObjects[row].Add(self.crystalObjectsLabels[crystalNo], 3, wx.ALL, 5)
       SizerObjects[row].Add(self.crystalObjectsControls[
                             crystalNo], 1, wx.ALL, 5)
@@ -448,7 +500,7 @@ class crystalPanel(wx.Panel):
 
     # Add sizers from list to topcrystalSizer
     for sizerNo in range(0, numberOfRows):
-      topcrystalSizer.Add(SizerObjects[sizerNo], 0)
+      topcrystalSizer.Add(SizerObjects[sizerNo], 0, wx.CENTER)
 
     self.SetSizer(topcrystalSizer)
     topcrystalSizer.Fit(self)
@@ -456,7 +508,7 @@ class crystalPanel(wx.Panel):
 
 class microscopePanel(wx.Panel):
 
-  def __init__(self, parent):
+  def __init__(self, parent, frame):
 
     wx.Panel.__init__(self, parent)
 
@@ -468,22 +520,22 @@ class microscopePanel(wx.Panel):
     # ['name', default value, increment, min, mac, 'type']
     # with type referring to a 1 for spinctrl or 2 for a float spin!
     # NB: spin does not need increment, so just put 0!
-    microscopeControl1 = ['ROuterConvergenceAngle', '3.0', 0.1, 0, 50, 2]
-    microscopeControl2 = ['RInnerConvergenceAngle', '0.0', 0.1, 0, 50, 2]
+    microscopeControl1 = ['ROuterConvergenceAngle', '3.0', 0.1, 0, 50, 2, wikistrings.ROuterConvergenceAngleWiki]
+    microscopeControl2 = ['RInnerConvergenceAngle', '0.0', 0.1, 0, 50, 2, wikistrings.RInnerConvergenceAngleWiki]
     microscopeControl3 = [
-        'IIncidentBeamDirectionX', '1', 0, -100000, 100000, 1]
+        'IIncidentBeamDirectionX', '1', 0, -100000, 100000, 1, wikistrings.IIncidentBeamDirectionXWiki]
     microscopeControl4 = [
-        'IIncidentBeamDirectionY', '1', 0, -100000, 100000, 1]
+        'IIncidentBeamDirectionY', '1', 0, -100000, 100000, 1, wikistrings.IIncidentBeamDirectionYWiki]
     microscopeControl5 = [
-        'IIncidentBeamDirectionZ', '1', 0, -100000, 100000, 1]
-    microscopeControl6 = ['IXDirectionX', '1', 0, -100000, 100000, 1]
-    microscopeControl7 = ['IXDirectionY', '1', 0, -100000, 100000, 1]
-    microscopeControl8 = ['IXDirectionZ', '1', 0, -100000, 100000, 1]
-    microscopeControl9 = ['INormalDirectionX', '1', 0, -100000, 100000, 1]
-    microscopeControl10 = ['INormalDirectionY', '1', 0, -100000, 100000, 1]
-    microscopeControl11 = ['INormalDirectionZ', '1', 0, -100000, 100000, 1]
-    microscopeControl12 = ['RAcceleratingVoltage', '200.0', 0.1, 0, 100000, 2]
-    microscopeControl13 = ['RAcceptanceAngle', '0.0', 0.1, 0, 180, 2]
+        'IIncidentBeamDirectionZ', '1', 0, -100000, 100000, 1, wikistrings.IIncidentBeamDirectionZWiki]
+    microscopeControl6 = ['IXDirectionX', '1', 0, -100000, 100000, 1, wikistrings.IXDirectionXWiki]
+    microscopeControl7 = ['IXDirectionY', '1', 0, -100000, 100000, 1, wikistrings.IXDirectionYWiki]
+    microscopeControl8 = ['IXDirectionZ', '1', 0, -100000, 100000, 1, wikistrings.IXDirectionZWiki]
+    microscopeControl9 = ['INormalDirectionX', '1', 0, -100000, 100000, 1, wikistrings.INormalDirectionXWiki]
+    microscopeControl10 = ['INormalDirectionY', '1', 0, -100000, 100000, 1, wikistrings.INormalDirectionYWiki]
+    microscopeControl11 = ['INormalDirectionZ', '1', 0, -100000, 100000, 1, wikistrings.INormalDirectionZWiki]
+    microscopeControl12 = ['RAcceleratingVoltage', '200.0', 0.1, 0, 100000, 2, wikistrings.RAcceleratingVoltageWiki]
+    microscopeControl13 = ['RAcceptanceAngle', '0.0', 0.1, 0, 180, 2, wikistrings.RAcceptanceAngleWiki]
 
     # Add them to list (of lists) - Need to find a better method for this
     microscopeControlList.append(microscopeControl1)
@@ -543,7 +595,7 @@ class microscopePanel(wx.Panel):
     # from a list of microscope names
     microscopenumber = len(microscopeControlList)
     print 'The number of microscope controls: {0}.\n'.format(microscopenumber)
-    numberOfRows = int(math.ceil(microscopenumber / 3.0))
+    numberOfRows = int(math.ceil(microscopenumber / 2.0))
     print 'The number of rows: {0}.\n'.format(numberOfRows)
 
     # Make some lists
@@ -552,7 +604,7 @@ class microscopePanel(wx.Panel):
     self.microscopeObjectsControls = []
 
     # Finds the number of empty slots on the bottom row to add spacer later
-    spacerNo = (3 - (microscopenumber % 3)) % 3
+    spacerNo = (2 - (microscopenumber % 2)) % 2
     print 'The number of spacers: {0}.\n'.format(spacerNo)
 
     # Adds a sizer for each row to a sizer list
@@ -567,6 +619,7 @@ class microscopePanel(wx.Panel):
       microscopemin = microscope[3]
       microscopemax = microscope[4]
       microscopetype = microscope[5]
+      microscopewiki = microscope[6]
 
       currentIndex = microscopeControlList.index(microscope)
 
@@ -587,9 +640,14 @@ class microscopePanel(wx.Panel):
         self.microscopeObjectsControls[currentIndex].SetDigits(1)
         print('Added a float spin!')
 
+      self.microscopeObjectsLabels[currentIndex].Bind(wx.EVT_ENTER_WINDOW, lambda event, temp = microscopewiki: frame.wikitext.OnEnter(event, temp))
+      self.microscopeObjectsLabels[currentIndex].Bind(wx.EVT_LEAVE_WINDOW, lambda event: frame.wikitext.OnExit(event))
+      self.microscopeObjectsControls[currentIndex].Bind(wx.EVT_ENTER_WINDOW, lambda event, temp = microscopewiki: frame.wikitext.OnEnter(event, temp))
+      self.microscopeObjectsControls[currentIndex].Bind(wx.EVT_LEAVE_WINDOW, lambda event: frame.wikitext.OnExit(event))
+
     # Adds the objects from the lists to the respective rows in the sizer list
     for microscopeNo in range(0, microscopenumber):
-      row = int(math.floor(microscopeNo / 3))
+      row = int(math.floor(microscopeNo / 2))
       SizerObjects[row].Add(self.microscopeObjectsLabels[
                             microscopeNo], 3, wx.ALL, 5)
       SizerObjects[row].Add(self.microscopeObjectsControls[
@@ -610,7 +668,7 @@ class microscopePanel(wx.Panel):
 
     # Add sizers from list to topmicroscopeSizer
     for sizerNo in range(0, numberOfRows):
-      topmicroscopeSizer.Add(SizerObjects[sizerNo], 0)
+      topmicroscopeSizer.Add(SizerObjects[sizerNo], 0, wx.CENTER)
 
     self.SetSizer(topmicroscopeSizer)
     topmicroscopeSizer.Fit(self)
@@ -618,7 +676,7 @@ class microscopePanel(wx.Panel):
 
 class imagePanel(wx.Panel):
 
-  def __init__(self, parent):
+  def __init__(self, parent, frame):
 
     wx.Panel.__init__(self, parent)
 
@@ -630,13 +688,13 @@ class imagePanel(wx.Panel):
     # ['name', default value, increment, min, mac, 'type', NUMBER OF DIGITS]
     # with type referring to a 1 for spinctrl or 2 for a float spin, 3 for checkbox!
     # NB: spin does not need increment, so just put 0!
-    imageControl1 = ['RInitialThickness', '1000.0', 1, 0, 100000, 2, 1]
-    imageControl2 = ['RFinalThickness', '1000.0', 1, 0, 100000, 2, 1]
-    imageControl3 = ['RDeltaThickness', '10.0', 1, 0, 100000, 2, 1]
-    imageControl4 = ['IReflectOut', '7', 0, 0, 100000, 1, 1]
-    IImageFLAG1 = ['Montage', True, 0, 0, 0, 3, 0]
-    IImageFLAG2 = ['Stack Reflections', False, 0, 0, 0, 3, 0]
-    IImageFLAG3 = ['Amplitude and Phase', False, 0, 0, 0, 3, 0]
+    imageControl1 = ['RInitialThickness', '1000.0', 1, 0, 100000, 2, 1, wikistrings.RInitialThicknessWiki]
+    imageControl2 = ['RFinalThickness', '1000.0', 1, 0, 100000, 2, 1, wikistrings.RFinalThicknessWiki]
+    imageControl3 = ['RDeltaThickness', '10.0', 1, 0, 100000, 2, 1, wikistrings.RDeltaThicknessWiki]
+    imageControl4 = ['IReflectOut', '7', 0, 0, 100000, 1, 1, wikistrings.IReflectOutWiki]
+    IImageFLAG1 = ['Montage', True, 0, 0, 0, 3, 0, wikistrings.IImageFLAGWiki]
+    IImageFLAG2 = ['Stack Reflections', False, 0, 0, 0, 3, 0, wikistrings.IImageFLAGWiki]
+    IImageFLAG3 = ['Amplitude and Phase', False, 0, 0, 0, 3, 0, wikistrings.IImageFLAGWiki]
 
     # Add them to list (of lists) - Need to find a better method for this
     imageControlList.append(imageControl1)
@@ -691,7 +749,7 @@ class imagePanel(wx.Panel):
     # from a list of image names
     imagenumber = len(imageControlList)
     print 'The number of image controls: {0}.\n'.format(imagenumber)
-    numberOfRows = int(math.ceil(imagenumber / 3.0))
+    numberOfRows = int(math.ceil(imagenumber / 2.0))
     print 'The number of rows: {0}.\n'.format(numberOfRows)
 
     # Make some lists
@@ -700,7 +758,7 @@ class imagePanel(wx.Panel):
     self.imageObjectsControls = []
 
     # Finds the number of empty slots on the bottom row to add spacer later
-    spacerNo = (3 - (imagenumber % 3)) % 3
+    spacerNo = (2 - (imagenumber % 2)) % 2
     print 'The number of spacers: {0}.\n'.format(spacerNo)
 
     # Adds a sizer for each row to a sizer list
@@ -716,6 +774,7 @@ class imagePanel(wx.Panel):
       imagemax = image[4]
       imagetype = image[5]
       imagedigits = image[6]
+      imagewiki = image[7]
 
       currentIndex = imageControlList.index(image)
 
@@ -738,9 +797,14 @@ class imagePanel(wx.Panel):
                                                      name=imagename))
         self.imageObjectsControls[currentIndex].SetValue(imagevalue)
 
+      self.imageObjectsLabels[currentIndex].Bind(wx.EVT_ENTER_WINDOW, lambda event, temp = imagewiki: frame.wikitext.OnEnter(event, temp))
+      self.imageObjectsLabels[currentIndex].Bind(wx.EVT_LEAVE_WINDOW, lambda event: frame.wikitext.OnExit(event))
+      self.imageObjectsControls[currentIndex].Bind(wx.EVT_ENTER_WINDOW, lambda event, temp = imagewiki: frame.wikitext.OnEnter(event, temp))
+      self.imageObjectsControls[currentIndex].Bind(wx.EVT_LEAVE_WINDOW, lambda event: frame.wikitext.OnExit(event))
+
     # Adds the objects from the lists to the respective rows in the sizer list
     for imageNo in range(0, imagenumber):
-      row = int(math.floor(imageNo / 3))
+      row = int(math.floor(imageNo / 2))
       SizerObjects[row].Add(self.imageObjectsLabels[imageNo], 3, wx.ALL, 5)
       SizerObjects[row].Add(self.imageObjectsControls[imageNo], 1, wx.ALL, 5)
 
@@ -759,7 +823,7 @@ class imagePanel(wx.Panel):
 
     # Add sizers from list to topimageSizer
     for sizerNo in range(0, numberOfRows):
-      topimageSizer.Add(SizerObjects[sizerNo], 0)
+      topimageSizer.Add(SizerObjects[sizerNo], 0, wx.CENTER)
 
     self.SetSizer(topimageSizer)
     topimageSizer.Fit(self)
@@ -863,39 +927,12 @@ class ViewerPanel(wx.Panel):
     img = wx.EmptyImage(300, 300, False)
     self.imageCtrl = wx.StaticBitmap(self, wx.ID_ANY,
                                      wx.BitmapFromImage(img))
-
-    instructLbl = wx.StaticText(self, label=instructions)
-    self.photoTxt = wx.TextCtrl(self, size=(200, -1))
-    browseBtn = wx.Button(self, label='Browse')
-    browseBtn.Bind(wx.EVT_BUTTON, self.onBrowse)
-
     self.mainSizer = wx.BoxSizer(wx.VERTICAL)
-    self.sizer = wx.BoxSizer(wx.HORIZONTAL)
-
-    self.mainSizer.Add(wx.StaticLine(self, wx.ID_ANY),
-                       0, wx.ALL | wx.EXPAND, 5)
-    self.mainSizer.Add(instructLbl, 0, wx.ALL, 5)
-    self.sizer.Add(self.photoTxt, 0, wx.ALL, 5)
-    self.sizer.Add(browseBtn, 0, wx.ALL, 5)
-    self.mainSizer.Add(self.sizer, 0, wx.ALL, 5)
     self.mainSizer.Add(self.imageCtrl, 0, wx.ALL | wx.EXPAND, 5)
 
     self.SetSizer(self.mainSizer)
 
     self.Layout()
-
-  def onBrowse(self, event):
-    # """
-    # Browse for file
-    # """
-    # wildcard = "TIFF files (*.tif)|*.tif"
-    # dialog = wx.FileDialog(None, "Choose a file",
-    #                        wildcard=wildcard,
-    #                        style=wx.OPEN)
-    # if dialog.ShowModal() == wx.ID_OK:
-    self.photoTxt.SetValue(dialog.GetPath())
-    # dialog.Destroy()
-    # self.onView()
 
   def onView(self, dir):
     filepath = dir + "/f-0010-T01000-P00539-P00539-WI-M.tif"
@@ -914,14 +951,22 @@ class ViewerPanel(wx.Panel):
     self.imageCtrl.SetBitmap(wx.BitmapFromImage(img))
     self.Refresh()
 
+    for f in dir:
+       if os.path.splitext(f)[-1].lower() == '.tif':
+           count += 1
 
-class WikiPanel(wx.Panel):
 
+
+class WikiPanel(wx.html.HtmlWindow):
   def __init__(self, parent):
-    wx.Panel.__init__(self, parent)
-    self.WikiText = wx.html.HtmlWindow(self)
-    self.WikiSizer = wx.BoxSizer(wx.VERTICAL)
-    self.WikiSizer.Add(self.WikiText, 0, wx.ALL | wx.EXPAND, 5)
+    wx.html.HtmlWindow.__init__(self, parent)
 
-    self.SetSizer(self.WikiSizer)
-    self.Layout()
+    self.LoadFile("wikimarkup.html")
+
+  def OnEnter(self, event, wikisection):
+    self.SetPage(wikisection)
+    self.Refresh()
+
+  def OnExit(self, event):
+    self.LoadFile("wikimarkup.html")
+    self.Refresh()

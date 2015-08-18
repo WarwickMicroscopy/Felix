@@ -69,7 +69,6 @@ class WriteInputDialog(wx.Dialog):
     self.Close()
     self.cancelCheck == 1
 
-
 # subroutine which re-names the selected cif file and opens a directory
 # for the input files - then runs Felix
 def CIFCreate(parent, event):
@@ -681,7 +680,6 @@ def SetGUIFromFile(dir, parent):
 
 
 def OnClose(parent, event):
-
   parent.Close(True)
 
 
