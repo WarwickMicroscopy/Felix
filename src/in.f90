@@ -603,7 +603,7 @@ SUBROUTINE ReadScaFile( IErr )
      
      DO ILine=1,ILength,1
         READ(UNIT= IChInp, FMT='(29(E15.11,1X))') &
-             rdummy(:), RScattFactors(ILine,:)     
+             rdummy(:), RScattFactors(ILine,:)
         PRINT*,RScattFactors(ILine,:)
      ENDDO
 
