@@ -1,11 +1,23 @@
 #!/bin/bash
-rm felix_temp_Doyle.sca
+rm Lobato_initial.txt
+rm felix_lobato.sca
+
+awk 'NR % 3 !=0' Lobato_scatt_firstdraft.txt > Lobato_initial.txt
+awk 'NR % 2 ==0' Lobato_initial.txt > Lobato_second_row.txt
+awk 'NR % 2' Lobato_initial.txt > Lobato_first_row.txt
+awk '{print $0", &"}' Lobato_first_row.txt > Lobato_first_row2.txt
 
 i=1
-while [ $i -lt 103 ];
-do
+let j=$i*2
 
-echo -n "DATA DoyleAndTurner($i,8)/" >> felix_temp_Doyle.sca
-sed "$i!d" felix.sca | cut -c 336- | sed -r 's/\s+//g' | fold -w15 | paste -sd, - >> felix_temp_Doyle.sca
+while [ $i -lt 104 ]
+do
+echo -n "DATA Lobato($i,10)/" >> felix_lobato.sca
+sed "$i!d" Lobato_first_row2.txt >> felix_lobato.sca
+echo -n "" >> felix_lobato.sca
+sed "$i!d" Lobato_second_row.txt >> felix_lobato.sca
+
 let i=i+1
 done
+
+tr -s '\t' <felix_lobato.sca | tr '\t' ',' >felix_lobato2.sca 
