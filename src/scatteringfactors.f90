@@ -21,6 +21,7 @@ SUBROUTINE ScatteringFactors(IScatteringMethodSwitch,IErr)
   CALL Message("ScatteringFactors",IMust,IErr)
 
 !!$Assign Atomic numbers to local variable (not required in felix but may have future purpose)
+!!$These are associated with each row of the scattering factors
   DATA RAtomicNumbers(1:103,1)/ &
        1.000000000E+00,2.000000000E+00,3.000000000E+00,4.000000000E+00,5.000000000E+00,6.000000000E+00,7.000000000E+00, &
        8.000000000E+00,9.000000000E+00,1.000000000E+01,1.100000000E+01,1.200000000E+01,1.300000000E+01,1.400000000E+01, &
