@@ -13,7 +13,7 @@ SUBROUTINE ScatteringFactors(IScatteringMethodSwitch,IErr)
   IMPLICIT NONE
 
   INTEGER(IKIND):: &
-       IScatteringMethodSwitch,IScattDimension,IErr
+       IScatteringMethodSwitch,IScattDimension,IErr,ind
 
   REAL(RKIND) :: &
        RKirkland(103,12), RPeng(103,8), RDoyleAndTurner(103,8), RLobato(103,10), RAtomicNumbers(103,1)
@@ -267,6 +267,15 @@ SUBROUTINE ScatteringFactors(IScatteringMethodSwitch,IErr)
 
 !!$Assign Global Scattering factor array with chosen scattering factors (Kirkland)
      RScattFactors=RKirkland
+
+     DO ind=1,103
+
+        IF (my_rank.EQ.0) THEN
+           PRINT*, "RScattFactors = ", RScattFactors(ind,:)
+        END IF
+      !  CALL Message("ScatteringFactors",IMust+IDebug,IErr, &
+      !       MessageVariable="RScattFactors",RVector=RScattFactors(ind,:),IVectorLength=10)
+     END DO
 
   CASE(1) !Peng Scattering Factors (must include reference here - in wiki)
 
@@ -934,6 +943,15 @@ SUBROUTINE ScatteringFactors(IScatteringMethodSwitch,IErr)
 
 !!$Assign Global Scattering factor array with chosen scattering factors (Lobato)
      RScattFactors=RLobato
+
+     DO ind=1,103
+
+        IF (my_rank.EQ.0) THEN
+           PRINT*, "RScattFactors = ", RScattFactors(ind,:)
+        END IF
+      !  CALL Message("ScatteringFactors",IMust+IDebug,IErr, &
+      !       MessageVariable="RScattFactors",RVector=RScattFactors(ind,:),IVectorLength=10)
+     END DO
 
   CASE DEFAULT
 
