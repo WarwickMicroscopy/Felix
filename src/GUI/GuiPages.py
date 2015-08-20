@@ -816,7 +816,7 @@ class imagePanel(wx.Panel):
     for imageNo in range(0, imagenumber):
       row = int(math.floor(imageNo / 2))
 
-      wiki = imageControlList[imageNo][6]
+      wiki = imageControlList[imageNo][7]
 
       ComboObjects[imageNo].Add(self.imageObjectsLabels[imageNo], 3, self.imageObjectsControls[imageNo], 1)
       ComboObjects[imageNo].Bind(wx.EVT_ENTER_WINDOW, lambda event, temp = wiki: frame.wikitext.OnEnter(event, temp))
