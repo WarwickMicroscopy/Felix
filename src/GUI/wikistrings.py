@@ -35,6 +35,8 @@ Linux: http://anorien.csc.warwick.ac.uk/mirrors/OBS/warwick.ac.uk:/Physics:/Feli
 IWriteFLAGWiki = r"""
 <p><strong>IWriteFLAG</strong></p>
 
+<p>This is a test</p>
+
 <p>Controls the amount of information printed to the screen (or log file) during the simulation.</p>
 
 <p>0 - No information is printed to the screen, apart from start and stop messages

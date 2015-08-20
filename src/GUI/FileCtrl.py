@@ -8,151 +8,124 @@ import os
 import shutil
 import sys
 import GuiPages
-import Bin2Tiff
+#import Bin2Tiff
 import Felix_gui
+import datetime
 
 
 # Class defining gui which selects where the user wants to save the input file
 # When Felix is run, this file will be copied as felix.inp
 
-
-class WriteInputDialog(wx.Dialog):
-
-  def __init__(self, parent, id, title):
-    wx.Dialog.__init__(self, parent, id, title, size=(400, 200))
-    self.UserInterface2()
-    self.cancelCheck = 0
-
-  def UserInterface2(self):
-
-    wx.StaticText(self, label="Choose location for Input file",
-                  pos=(5, 20), style=wx.ALIGN_CENTRE_HORIZONTAL)
-    self.InputFileTextBox = wx.TextCtrl(
-        self, -1, os.getcwd(), pos=(5, 100), size=(250, -1), style=wx.TE_RIGHT)
-    InputFileBrowse = wx.Button(
-        self, label='Save', pos=(270, 100), size=(60, -1))
-    InputFileBrowse.Bind(wx.EVT_BUTTON, self.OnINPBrowse)
-
-    ReturnButton = wx.Button(self, label='OK', pos=(200, 130), size=(60, -1))
-    CancelButton = wx.Button(
-        self, label='Cancel', pos=(300, 130), size=(60, -1))
-
-    ReturnButton.Bind(wx.EVT_BUTTON, self.ReturnSuccess)
-    CancelButton.Bind(wx.EVT_BUTTON, self.ReturnCancel)
-
-  def OnINPBrowse(self, event):
-    InputFileDialog = wx.FileDialog(self, "Save Input file", "", "",
-                                    "Inp Files (*.inp)|*.inp", wx.FD_SAVE | wx.FD_OVERWRITE_PROMPT)
-
-    if InputFileDialog.ShowModal() == wx.ID_CANCEL:
-      # IErr=-1
-      return()
-
-    UserInputPath = InputFileDialog.GetPath()
-
-    self.InputFileTextBox.SetValue(UserInputPath)
-
-  def ReturnSuccess(self, event):
-
-    self.SInpPath, self.SInpFilename = os.path.split(
-        self.InputFileTextBox.GetValue())
-
-    if self.SInpFilename.find(".inp") == -1:
-      wx.MessageBox('.inp file not found, please save a .inp file',
-                    'Error', wx.OK | wx.ICON_ERROR)
-      return()
-
-    self.Close()
-
-  def ReturnCancel(self, event):
-
-    self.Close()
-    self.cancelCheck == 1
-
-# subroutine which re-names the selected cif file and opens a directory
-# for the input files - then runs Felix
-def CIFCreate(parent, event):
+def RunFelix(parent, CIFPath, OutputPath):
 
   # opens new (re-existing) directory and puts all input files into it
   #***ensure file and path check needs to be put here****
-  cpath, cfilename = os.path.split(parent.CIFtextbox.GetValue())
+  filePath = os.path.realpath(__file__)
+  fileDirectory, fileName = os.path.split(filePath)
 
-  if cfilename.find(".cif") == -1:
-    wx.MessageBox('.cif file not found, please select a .cif file', 'Error',
+  parent.main.wiki.felixStatus = 1
+
+  if CIFPath == None:
+    wx.MessageBox('Please load a .cif file', 'Error',
                   wx.OK | wx.ICON_ERROR)
+    return
 
-    # creates working directory
-  cfilename = cfilename.replace(" ", "")
-  print cfilename
-  dir = cfilename.rstrip('.cif') + "_" + str(parent.main.notebook.page3.beamObjectsControls[0].GetValue())\
-      + "_" + \
-      str(parent.main.notebook.page3.beamObjectsControls[
-          1].GetValue()) + "_input_directory"
-  if os.path.exists(dir):
-    shutil.rmtree(dir)
-  os.makedirs(dir)
+  if os.path.exists(CIFPath) == False:
+    wx.MessageBox('.cif file not found, please load a .cif file', 'Error',
+                  wx.OK | wx.ICON_ERROR)
+    return
 
-  # copy cif file from user specified location to new directory
-  shutil.copy2(parent.CIFtextbox.GetValue(), dir + "/felix.cif")
+  # creates working directory
+  cpath, cfilename = os.path.split(CIFPath)
+  cname = cfilename[:-4]
+  workingDir = fileDirectory + "/Working_Directory/"
+  OutputDirectory = OutputPath + "/" + cname + "_output"
 
-  # copy sca file from samples folder - TO BE CHANGED, only for Richard's Use
-  shutil.copy2("../../samples/Si/felix.sca", dir + "/felix.sca")
+  if os.path.exists(workingDir):
+    shutil.rmtree(workingDir)
+  os.makedirs(workingDir)
 
-  InputFileSwitch = 1
-
-  # Write input file
-  WriteInputFile(dir, InputFileSwitch, parent)
-  wx.MessageBox('Files created successfully, click okay to run Felix', 'Info',
-                wx.OK | wx.CANCEL | wx.ICON_INFORMATION)
+  if os.path.exists(OutputDirectory):
+    shutil.rmtree(OutputDirectory)
 
   # Change to working directory
-  os.chdir(dir)
+  os.chdir(workingDir)
+
+  # copy cif file from user specified location to new directory
+  shutil.copy2(CIFPath, workingDir + "/felix.cif")
+
+  # Write input file
+  InpName = "felix.inp"
+  WriteInputFile(workingDir, parent, InpName)
+  wx.MessageBox('Files created successfully, click okay to run Felix', 'Info',
+                wx.OK | wx.CANCEL | wx.ICON_INFORMATION)
 
   # Get Value of mpicores
   NumberofCores = parent.MPICores.GetValue()
 
   # Run in parallel or single core
+  now = datetime.datetime.now().strftime("%I_%M%p_%B_%d_%Y")
+  logname = "log_" + now
+  if os.path.exists("../../../logs") == False:
+    os.makedirs("../../../logs")
+
+  print "Before run: " + str(os.listdir(workingDir))
+
   if NumberofCores == 1:
-    os.system("../../felixsim")  # single core
+    os.system("../../felixsim > ../../../logs/" + logname)  # single core
   else:
     os.system("mpirun -n " + str(NumberofCores) +
-              " ../../felixsim")  # parallel
+              " ../../felixsim  > ../../../logs/" + logname)  # parallel
 
-  os.chdir("../")
-  Bin2Tiff.convert(dir, '8', 'tif', '1')
+  print "After run: " + str(os.listdir(workingDir))
 
-  parent.main.viewer.onView(dir)
-  parent.Close(True)
+  shutil.copytree(workingDir, OutputDirectory)
+  os.rename(OutputDirectory + "/felix.cif", OutputDirectory + "/" + cfilename)
+
+  if os.path.exists(workingDir):
+    shutil.rmtree(workingDir)
+
+  os.chdir(fileDirectory)
+
+  wx.MessageBox('FelixSIM successfully run!',
+                'Info', wx.OK | wx.ICON_INFORMATION)
+
+  parent.main.wiki.felixStatus = 0
+
+  return
+
+  # os.chdir("../")
+  #Bin2Tiff.convert(dir, '8', 'tif', '1')
+
+  # parent.main.viewer.onView(dir)
+  # parent.Close(True)
 
 
-def InpCreate(parent, event):
+def InpCreate(parent):
 
-  # if os.path.exists(dir):
-  # shutil.rmtree(dir)
-  # os.makedirs(dir)
+  InputSaveDialog = wx.FileDialog(parent, "Save Input file", "", "felix.inp",
+                                  "Inp Files (*.inp)|*.inp", wx.FD_SAVE | wx.FD_OVERWRITE_PROMPT)
 
-  InputFileCreate = WriteInputDialog(parent, -1, 'Save File As')
-  InputFileCreate.cancelCheck == 0
-  InputFileBlock = InputFileCreate.ShowModal()
+  InputSaveDialog.ShowModal()
 
-  if InputFileCreate.cancelCheck == 1:
-    dir = InputFileCreate.SInpPath
+  if InputSaveDialog == wx.ID_CANCEL:
+    return
 
-    # InputFileCreate.Destroy()
+  User_InpSavePath, User_InpSaveName = os.path.split(InputSaveDialog.GetPath())
 
-    InputFileSwitch = 2
+  SaveStatus = WriteInputFile(User_InpSavePath, parent, User_InpSaveName)
 
-    WriteInputFile(dir, InputFileSwitch, parent)
-
+  if SaveStatus == True:
     wx.MessageBox('Input File successfully written',
                   'Info', wx.OK | wx.ICON_INFORMATION)
 
 
-def WriteInputFile(dir, InputFileSwitch, parent):
+def WriteInputFile(dir, parent, name):
 
-  FelixInpFilename = dir + "/felix.inp"
+  FelixInpFilename = dir + "/" + name
 
-  print FelixInpFilename
+  if os.path.exists(FelixInpFilename):
+    os.remove(FelixInpFilename)
 
   inpfile = open(FelixInpFilename, "wb")
 
@@ -433,8 +406,10 @@ def WriteInputFile(dir, InputFileSwitch, parent):
 
   inpfile.close()
 
+  return True
 
-def LoadInputFile(parent, event):
+
+def LoadInputFile(parent):
   InputFileDialog = wx.FileDialog(parent, "Load input file", "", "",
                                   "INP files (*.inp)|*.inp", wx.FD_OPEN | wx.FD_FILE_MUST_EXIST)
 
@@ -679,21 +654,41 @@ def SetGUIFromFile(dir, parent):
   inpLoadFile.close()
 
 
-def OnClose(parent, event):
-  parent.Close(True)
+def OnCif(parent):
 
-
-def OnCif(parent, event):
+  filePath = os.path.realpath(__file__)
+  fileDirectory, fileName = os.path.split(filePath)
 
   CIFFileDialog = wx.FileDialog(parent, "Load CIF file", "", "",
                                 "CIF files (*.cif)|*.cif", wx.FD_OPEN | wx.FD_FILE_MUST_EXIST)
 
+  CIFFileDialog.ShowModal()
+
   # If the User selects cancel
-  if CIFFileDialog.ShowModal() == wx.ID_CANCEL:
+  if CIFFileDialog == wx.ID_CANCEL:
     return
 
   # get the filename and path from user
   User_CIFfilename = CIFFileDialog.GetFilename()
   User_CIFpath = CIFFileDialog.GetPath()
 
-  parent.main.option.CIFtextbox.SetValue(User_CIFpath)
+  # parent.main.option.CIFtextbox.SetValue(User_CIFpath)
+  return User_CIFpath
+
+
+def OutputDirSelect(parent):
+
+  filePath = os.path.realpath(__file__)
+  fileDirectory, fileName = os.path.split(filePath)
+  OutputDirDialog = wx.DirDialog(
+      parent, "Select output directory")
+  OutputDirDialog.ShowModal()
+
+  # If the User selects cancel
+  if OutputDirDialog == wx.ID_CANCEL:
+    return
+
+  # get the filename and path from user
+  User_OutputPath = OutputDirDialog.GetPath()
+
+  return User_OutputPath

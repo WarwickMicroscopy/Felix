@@ -8,7 +8,7 @@ import os
 import shutil
 import sys
 import GuiPages
-import Bin2Tiff
+#import Bin2Tiff
 import FileCtrl
 
 
@@ -40,10 +40,10 @@ class WikiPreviewNotebook(wx.Notebook):
     wx.Notebook.__init__(self, parent, wx.ID_ANY)
 
     self.wikitext = GuiPages.WikiPanel(self)
-    self.viewer = GuiPages.ViewerPanel(self)
+    #self.viewer = GuiPages.ViewerPanel(self)
 
     self.AddPage(self.wikitext, "Wiki")
-    self.AddPage(self.viewer, "Image Preview")
+    #self.AddPage(self.viewer, "Image Preview")
 
 class MainFrame(wx.Frame):
 

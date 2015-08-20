@@ -8,7 +8,7 @@ import os
 import shutil
 import sys
 import GuiPages
-import Bin2Tiff
+#import Bin2Tiff
 import FileCtrl
 import wx.lib.wxpTag
 import wikistrings
@@ -837,6 +837,9 @@ class optionPanel(wx.Panel):
     # Probably should change this at some point
     self.main = main
 
+    self.CIFPath = None
+    self.OutputPath = None
+
     title = wx.StaticText(self, wx.ID_ANY, 'Options')
 
     # optionSizer            = wx.BoxSizer(wx.HORIZONTAL)
@@ -845,32 +848,23 @@ class optionPanel(wx.Panel):
 
     optionTitleSizer.Add(title, 0, wx.ALL, 5)
 
-    # Text box
-    self.CIFtextbox = wx.TextCtrl(
-        self, -1, os.getcwd(), size=(400, -1), style=wx.TE_RIGHT)
-    textSizer = wx.BoxSizer(wx.HORIZONTAL)
-    textSizer.Add(self.CIFtextbox, 4, wx.ALL, 5)
-    # textSizer.AddStretchSpacer(4)
-
     # Buttons
     Run = wx.Button(self, label='Run')
-    Cancel = wx.Button(self, label='Cancel')
-    CIFFile = wx.Button(self, label='Browse')
+    CIFFile = wx.Button(self, label='Load CIF File')
     InputFile = wx.Button(self, label='Save Input File')
     InputLoad = wx.Button(self, label='Load Input File')
+    OutputDirectory = wx.Button(self, label='Select Output Directory')
 
-    buttonSizer = wx.BoxSizer(wx.HORIZONTAL)
-    buttonSizer.Add(Run, 0, wx.ALL, 5)
-    buttonSizer.Add(Cancel, 0, wx.ALL, 5)
-    buttonSizer.Add(CIFFile, 0, wx.ALL, 5)
-    buttonSizer.Add(InputFile, 0, wx.ALL, 5)
-    buttonSizer.Add(InputLoad, 0, wx.ALL, 5)
+    buttonSizerTop = wx.BoxSizer(wx.HORIZONTAL)
+    buttonSizerBottom = wx.BoxSizer(wx.HORIZONTAL)
 
-    # CSC Checkbox
-    CSC = wx.CheckBox(self, label='CSC')
-    CSC.SetValue(True)
-    checkSizer = wx.BoxSizer(wx.HORIZONTAL)
-    checkSizer.Add(CSC, 0, wx.ALL, 5)
+
+    buttonSizerTop.Add(InputFile, 0, wx.ALL, 5)
+    buttonSizerTop.Add(InputLoad, 0, wx.ALL, 5)
+    buttonSizerTop.Add(CIFFile, 0, wx.ALL, 5)
+    buttonSizerBottom.Add(OutputDirectory, 0, wx.ALL, 5)
+    buttonSizerBottom.Add(Run, 0, wx.ALL, 5)
+
 
     # Number of cores
     coreLabel = wx.StaticText(self, label='MpiCores')
@@ -881,9 +875,8 @@ class optionPanel(wx.Panel):
     # coreSizer.AddStretchSpacer(4)
 
     topOptionSizer.Add(optionTitleSizer, 0, wx.CENTER)
-    topOptionSizer.Add(textSizer, 0, wx.CENTER)
-    topOptionSizer.Add(buttonSizer, 0, wx.CENTER)
-    topOptionSizer.Add(checkSizer, 0, wx.CENTER)
+    topOptionSizer.Add(buttonSizerTop, 0, wx.CENTER)
+    topOptionSizer.Add(buttonSizerBottom, 0, wx.CENTER)
     topOptionSizer.Add(coreSizer, 0, wx.CENTER)
 
     # topOptionSizer.Add(optionSizer, 0)
@@ -893,80 +886,85 @@ class optionPanel(wx.Panel):
     #InputFileInst = FileCtrl.InputFileCreateObj(self)
     # the various functions of the buttons - run felix, write input file,
     # cancel, and browse file
-    Run.Bind(wx.EVT_BUTTON, self.CIFCreateWrapper)
-    Cancel.Bind(wx.EVT_BUTTON, self.OnCloseWrapper)
+    Run.Bind(wx.EVT_BUTTON, self.RunFelixWrapper)
     CIFFile.Bind(wx.EVT_BUTTON, self.OnCifWrapper)
     InputFile.Bind(wx.EVT_BUTTON, self.InpCreateWrapper)
     InputLoad.Bind(wx.EVT_BUTTON, self.LoadInputFileWrapper)
+    OutputDirectory.Bind(wx.EVT_BUTTON, self.OutputDirWrapper)
 
-  def CIFCreateWrapper(self, event):
-    FileCtrl.CIFCreate(self, event)
-
-  def OnCloseWrapper(self, event):
-    FileCtrl.OnClose(self, event)
+  def RunFelixWrapper(self, event):
+    if self.OutputPath == None:
+      self.OutputPath = FileCtrl.OutputDirSelect(self)
+    FileCtrl.RunFelix(self, self.CIFPath, self.OutputPath)
 
   def OnCifWrapper(self, event):
-    FileCtrl.OnCif(self, event)
+    self.CIFPath = FileCtrl.OnCif(self)
+    print self.CIFPath
 
   def InpCreateWrapper(self, event):
-    FileCtrl.InpCreate(self, event)
+    FileCtrl.InpCreate(self)
 
   def LoadInputFileWrapper(self, event):
-    FileCtrl.LoadInputFile(self, event)
+    FileCtrl.LoadInputFile(self)
+
+  def OutputDirWrapper(self, event):
+    self.OutputPath = FileCtrl.OutputDirSelect(self)
 
 
-class ViewerPanel(wx.Panel):
-
-  def __init__(self, parent):
-    wx.Panel.__init__(self, parent)
-    self.PhotoMaxSize = 300
-    self.createWidgets()
-
-  def createWidgets(self):
-    instructions = 'Browse for an image'
-    img = wx.EmptyImage(300, 300, False)
-    self.imageCtrl = wx.StaticBitmap(self, wx.ID_ANY,
-                                     wx.BitmapFromImage(img))
-    self.mainSizer = wx.BoxSizer(wx.VERTICAL)
-    self.mainSizer.Add(self.imageCtrl, 0, wx.ALL | wx.EXPAND, 5)
-
-    self.SetSizer(self.mainSizer)
-
-    self.Layout()
-
-  def onView(self, dir):
-    filepath = dir + "/f-0010-T01000-P00539-P00539-WI-M.tif"
-    img = wx.Image(filepath, wx.BITMAP_TYPE_ANY)
-    # scale the image, preserving the aspect ratio
-    W = img.GetWidth()
-    H = img.GetHeight()
-    if W > H:
-      NewW = self.PhotoMaxSize
-      NewH = self.PhotoMaxSize * H / W
-    else:
-      NewH = self.PhotoMaxSize
-      NewW = self.PhotoMaxSize * W / H
-    img = img.Scale(NewW, NewH)
-
-    self.imageCtrl.SetBitmap(wx.BitmapFromImage(img))
-    self.Refresh()
-
-    for f in dir:
-       if os.path.splitext(f)[-1].lower() == '.tif':
-           count += 1
-
-
+# class ViewerPanel(wx.Panel):
+#
+#   def __init__(self, parent):
+#     wx.Panel.__init__(self, parent)
+#     self.PhotoMaxSize = 300
+#     self.createWidgets()
+#
+#   def createWidgets(self):
+#     img = wx.EmptyImage(300, 300, False)
+#     self.imageCtrl = wx.StaticBitmap(self, wx.ID_ANY,
+#                                      wx.BitmapFromImage(img))
+#     self.mainSizer = wx.BoxSizer(wx.VERTICAL)
+#     self.mainSizer.Add(self.imageCtrl, 0, wx.ALL | wx.EXPAND, 5)
+#
+#     self.SetSizer(self.mainSizer)
+#
+#     self.Layout()
+#
+#   def onView(self, dir):
+#     filepath = dir + "/f-0010-T01000-P00539-P00539-WI-M.tif"
+#     img = wx.Image(filepath, wx.BITMAP_TYPE_ANY)
+#     # scale the image, preserving the aspect ratio
+#     W = img.GetWidth()
+#     H = img.GetHeight()
+#     if W > H:
+#       NewW = self.PhotoMaxSize
+#       NewH = self.PhotoMaxSize * H / W
+#     else:
+#       NewH = self.PhotoMaxSize
+#       NewW = self.PhotoMaxSize * W / H
+#     img = img.Scale(NewW, NewH)
+#
+#     self.imageCtrl.SetBitmap(wx.BitmapFromImage(img))
+#     self.Refresh()
+#
+#     for f in dir:
+#        if os.path.splitext(f)[-1].lower() == '.tif':
+#            count += 1
 
 class WikiPanel(wx.html.HtmlWindow):
   def __init__(self, parent):
     wx.html.HtmlWindow.__init__(self, parent)
 
-    self.LoadFile("wikimarkup.html")
+    self.felixStatus = 0
+
+    if self.felixStatus == 0:
+      self.SetPage(wikistrings.DefaultWiki)
 
   def OnEnter(self, event, wikisection):
-    self.SetPage(wikisection)
-    self.Refresh()
+    if self.felixStatus == 0:
+      self.SetPage(wikisection)
+      self.Refresh()
 
   def OnExit(self, event):
-    self.LoadFile("wikimarkup.html")
-    self.Refresh()
+    if self.felixStatus == 0:
+      self.SetPage(wikistrings.DefaultWiki)
+      self.Refresh()
