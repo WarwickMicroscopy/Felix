@@ -96,7 +96,7 @@ ifeq ($(unixOS),Linux)
 
    LIBFLAGS= -llapack -lblas -lfftw3 
 
-   ifeq ($(FOO),ifort) #ifort compiler
+   ifeq ($(FOO),BAR) #ifort compiler
     F90 = mpif90
     FC = ifort 
     F90FLAGS =
@@ -112,6 +112,16 @@ ifeq ($(unixOS),Linux)
   endif
  
  else ifeq ($(linux),Ubuntu) #Ubuntu machine
+  $(info Compiling on $(linux), $(unixOS))
+
+  INCLUDEDIR = /usr/share/doc
+  LIBFLAGS = -llapack -lblas -lfftw3
+  F90 = mpif90
+  F90FLAGS = -fbounds-check -fno-range-check -fimplicit-none -fcray-pointer -fexternal-blas
+  FC = gfortran -ffixed-form -std=legacy
+  F77FLAGS = -fbounds-check -fno-range-check
+
+ else ifeq ($(linux),Debian) #Debian
   $(info Compiling on $(linux), $(unixOS))
 
   INCLUDEDIR = /usr/share/doc
@@ -151,7 +161,7 @@ ifeq ($(unixOS),Linux)
   FC = gfortran -ffixed-form -std=legacy
   F77FLAGS = -fbounds-check -fno-range-check
  
- else ifeq ($(linux),SL) #Scientific Linux
+ else ifeq ($(linux),Scientific) #Scientific Linux
   $(info Compiling on Scientific Linux)
 
   LIBFLAGS = -llapack -lblas -lfftw3
