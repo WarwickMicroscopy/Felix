@@ -4,7 +4,7 @@ rm felix_lobato.sca
 
 awk 'NR % 3 !=0' Lobato_scatt_firstdraft.txt > Lobato_initial.txt
 awk 'NR % 2 ==0' Lobato_initial.txt > Lobato_second_row.txt
-awk 'NR % 2' Lobato_initial.txt > Lobato_first_row.txt
+awk 'NR % 2' Lobato_initial.txt | cut -c -89 > Lobato_first_row.txt
 awk '{print $0", &"}' Lobato_first_row.txt > Lobato_first_row2.txt
 
 i=1
