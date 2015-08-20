@@ -436,8 +436,12 @@ def SetGUIFromFile(dir, parent):
   FileLineList = []
 
   for line in inpLoadFile:
-    FileLineList.append(line[28:])
-    print(line[28:])
+    if line.find('=') != -1:
+      FileLineList.append(line[line.find('=')+2:])
+      print line + " --> " + line[line.find('=')+2:]
+    else:
+      FileLineList.append(line)
+      print line
 
   # IWriteFLAG
   IWriteFLAGSet = int(FileLineList[7])

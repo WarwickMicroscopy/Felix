@@ -230,7 +230,7 @@ class BeamPanel(wx.Panel):
     # with type referring to a 1 for spinctrl or 2 for a float spin!
     # NB: spin does not need increment, so just put 0!
     self.BeamControl1 = ['IMinReflectionPool', '15', 0, 0, 100000, 1, wikistrings.IMinReflectionPoolWiki]
-    self.BeamControl2 = ['IMinStrongBeams', '7', 0, 0, 100000, 1, wikistrings.IMinWeakBeamsWiki]
+    self.BeamControl2 = ['IMinStrongBeams', '7', 0, 0, 100000, 1, wikistrings.IMinStrongBeamsWiki]
     self.BeamControl3 = ['IMinWeakBeams', '5', 0, 0, 100000, 1, wikistrings.IMinWeakBeamsWiki]
     self.BeamControl4 = ['RBSBMax', '0.1', 0.1, 0, 100000, 2, wikistrings.RBSBmaxWiki]
     self.BeamControl5 = ['RBSPMax', '0.1', 0.1, 0, 100000, 2, wikistrings.RBSPmaxWiki]
