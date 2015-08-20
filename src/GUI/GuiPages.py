@@ -21,10 +21,10 @@ class SizerCombo(wx.Panel):
     self.ComboSizer = wx.BoxSizer(wx.HORIZONTAL)
     self.Layout()
 
-  def Add(self, label, control):
+  def Add(self, label, labelprop, control, controlprop):
 
-    self.ComboSizer.Add(label, 2, wx.ALL | wx.CENTER, 3)
-    self.ComboSizer.Add(control, 1, wx.ALL | wx.CENTER, 0)
+    self.ComboSizer.Add(label, labelprop, wx.ALL | wx.CENTER, 3)
+    self.ComboSizer.Add(control, controlprop, wx.ALL | wx.CENTER, 0)
     self.SetSizer(self.ComboSizer)
     self.ComboSizer.Fit(self)
 
@@ -148,7 +148,7 @@ class FlagPanel(wx.Panel):
       current_flag = flags[flagNo]
       wiki = current_flag['wiki']
 
-      ComboObjects[flagNo].Add(flagObjectsLabels[flagNo], flagObjectsChoices[flagNo])
+      ComboObjects[flagNo].Add(flagObjectsLabels[flagNo], 2, flagObjectsChoices[flagNo], 1)
       ComboObjects[flagNo].Bind(wx.EVT_ENTER_WINDOW, lambda event, temp = wiki: frame.wikitext.OnEnter(event, temp))
       ComboObjects[flagNo].Bind(wx.EVT_LEAVE_WINDOW, lambda event: frame.wikitext.OnExit(event))
 
@@ -181,30 +181,29 @@ class RadiusPanel(wx.Panel):
 
     wx.Panel.__init__(self, parent)
 
+    RadiusObject = SizerCombo(self)
+
     title = wx.StaticText(self, wx.ID_ANY, 'Radius of Beam')
-    RadiusLabel = wx.StaticText(self, wx.ID_ANY, 'Radius of Beam in Pixels')
+    RadiusLabel = wx.StaticText(RadiusObject, wx.ID_ANY, 'Radius of Beam in Pixels')
 
     RadiusSizer = wx.BoxSizer(wx.HORIZONTAL)
     RadiusTitleSizer = wx.BoxSizer(wx.HORIZONTAL)
     topRadiusSizer = wx.BoxSizer(wx.VERTICAL)
 
-    self.IPixelCount = FS.FloatSpin(self, size=(60, -1), value=64, min_val=0, max_val=512,
+    self.IPixelCount = FS.FloatSpin(RadiusObject, size=(60, -1), value=64, min_val=0, max_val=512,
                                     increment=64, agwStyle=FS.FS_RIGHT)
-
-    wiki = wikistrings.IPixelCountWiki
-
-    RadiusLabel.Bind(wx.EVT_ENTER_WINDOW, lambda event, temp = wiki: frame.wikitext.OnEnter(event, temp))
-    RadiusLabel.Bind(wx.EVT_LEAVE_WINDOW, lambda event: frame.wikitext.OnExit(event))
-    self.IPixelCount.Bind(wx.EVT_ENTER_WINDOW, lambda event, temp = wiki: frame.wikitext.OnEnter(event, temp))
-    self.IPixelCount.Bind(wx.EVT_LEAVE_WINDOW, lambda event: frame.wikitext.OnExit(event))
-
-
 
     self.IPixelCount.SetDigits(0)
 
-    RadiusSizer.Add(RadiusLabel, 3, wx.ALL, 5)
-    RadiusSizer.Add(self.IPixelCount, 1, wx.ALL, 5)
-    RadiusSizer.AddStretchSpacer(4)
+    wiki = wikistrings.IPixelCountWiki
+
+    RadiusObject.Add(RadiusLabel, 3, self.IPixelCount, 1)
+
+    RadiusObject.Bind(wx.EVT_ENTER_WINDOW, lambda event, temp = wiki: frame.wikitext.OnEnter(event, temp))
+    RadiusObject.Bind(wx.EVT_LEAVE_WINDOW, lambda event: frame.wikitext.OnExit(event))
+
+    RadiusSizer.Add(RadiusObject, 1, wx.ALL, 5)
+    RadiusSizer.AddStretchSpacer(1)
 
     RadiusTitleSizer.Add(title, 0, wx.ALL, 5)
 
@@ -291,6 +290,7 @@ class BeamPanel(wx.Panel):
     SizerObjects = []
     beamObjectsLabels = []
     beamObjectsControls = []
+    ComboObjects = []
 
     self.SizerObjects = SizerObjects
     self.beamObjectsLabels = beamObjectsLabels
@@ -316,14 +316,17 @@ class BeamPanel(wx.Panel):
 
       currentIndex = BeamControlList.index(beam)
 
-      beamObjectsLabels.append(wx.StaticText(self, wx.ID_ANY, beamname))
+      temp = SizerCombo(self)
+      ComboObjects.append(temp)
+
+      beamObjectsLabels.append(wx.StaticText(temp, wx.ID_ANY, beamname))
 
       if beamtype == 1:
-        beamObjectsControls.append(wx.SpinCtrl(self, id=wx.ID_ANY, size=(60, -1),
+        beamObjectsControls.append(wx.SpinCtrl(temp, id=wx.ID_ANY, size=(60, -1),
                                                value=beamvalue, min=beammin, max=beammax))
         print('Added a spin!')
       elif beamtype == 2:
-        beamObjectsControls.append(FS.FloatSpin(self, size=(60, -1),
+        beamObjectsControls.append(FS.FloatSpin(temp, size=(60, -1),
                                                 value=beamvalue, increment=beamincrement, min_val=beammin,
                                                 max_val=beammax, agwStyle=FS.FS_RIGHT))
 
@@ -331,22 +334,22 @@ class BeamPanel(wx.Panel):
         beamObjectsControls[currentIndex].SetDigits(1)
         print('Added a float spin!')
 
-
-      beamObjectsLabels[currentIndex].Bind(wx.EVT_ENTER_WINDOW, lambda event, temp = beamwiki: frame.wikitext.OnEnter(event, temp))
-      beamObjectsLabels[currentIndex].Bind(wx.EVT_LEAVE_WINDOW, lambda event: frame.wikitext.OnExit(event))
-      beamObjectsControls[currentIndex].Bind(wx.EVT_ENTER_WINDOW, lambda event, temp = beamwiki: frame.wikitext.OnEnter(event, temp))
-      beamObjectsControls[currentIndex].Bind(wx.EVT_LEAVE_WINDOW, lambda event: frame.wikitext.OnExit(event))
-
     # Adds the objects from the lists to the respective rows in the sizer list
     for beamNo in range(0, beamnumber):
       row = int(math.floor(beamNo / 2))
-      SizerObjects[row].Add(beamObjectsLabels[beamNo], 3, wx.ALL, 5)
-      SizerObjects[row].Add(beamObjectsControls[beamNo], 1, wx.ALL, 5)
+
+      wiki = BeamControlList[beamNo][6]
+
+      ComboObjects[beamNo].Add(beamObjectsLabels[beamNo], 3, beamObjectsControls[beamNo], 1)
+      ComboObjects[beamNo].Bind(wx.EVT_ENTER_WINDOW, lambda event, temp = wiki: frame.wikitext.OnEnter(event, temp))
+      ComboObjects[beamNo].Bind(wx.EVT_LEAVE_WINDOW, lambda event: frame.wikitext.OnExit(event))
+
+      SizerObjects[row].Add(ComboObjects[beamNo], 1, wx.ALL, 5)
 
     # Adds spacers if necessary
     if spacerNo != 0:
       for x in range(0, spacerNo):
-        SizerObjects[numberOfRows - 1].AddStretchSpacer(4)
+        SizerObjects[numberOfRows - 1].AddStretchSpacer(1)
 
     # Set up overall and title sizers
     topbeamSizer = wx.BoxSizer(wx.VERTICAL)
@@ -435,6 +438,7 @@ class crystalPanel(wx.Panel):
     SizerObjects = []
     self.crystalObjectsLabels = []
     self.crystalObjectsControls = []
+    ComboObjects = []
 
     # Finds the number of empty slots on the bottom row to add spacer later
     spacerNo = (2 - (crystalnumber % 2)) % 2
@@ -457,15 +461,18 @@ class crystalPanel(wx.Panel):
 
       currentIndex = crystalControlList.index(crystal)
 
+      temp = SizerCombo(self)
+      ComboObjects.append(temp)
+
       self.crystalObjectsLabels.append(
-          wx.StaticText(self, wx.ID_ANY, crystalname))
+          wx.StaticText(temp, wx.ID_ANY, crystalname))
 
       if crystaltype == 1:
-        self.crystalObjectsControls.append(wx.SpinCtrl(self, id=wx.ID_ANY,
+        self.crystalObjectsControls.append(wx.SpinCtrl(temp, id=wx.ID_ANY,
                                                        size=(60, -1), value=crystalvalue, min=crystalmin, max=crystalmax))
         print('Added a spin!')
       elif crystaltype == 2:
-        self.crystalObjectsControls.append(FS.FloatSpin(self, size=(60, -1),
+        self.crystalObjectsControls.append(FS.FloatSpin(temp, size=(60, -1),
                                                         value=crystalvalue, increment=crystalincrement,
                                                         min_val=crystalmin, max_val=crystalmax, agwStyle=FS.FS_RIGHT))
 
@@ -473,22 +480,23 @@ class crystalPanel(wx.Panel):
         self.crystalObjectsControls[currentIndex].SetDigits(crystaldigits)
         print('Added a float spin!')
 
-      self.crystalObjectsLabels[currentIndex].Bind(wx.EVT_ENTER_WINDOW, lambda event, temp = crystalwiki: frame.wikitext.OnEnter(event, temp))
-      self.crystalObjectsLabels[currentIndex].Bind(wx.EVT_LEAVE_WINDOW, lambda event: frame.wikitext.OnExit(event))
-      self.crystalObjectsControls[currentIndex].Bind(wx.EVT_ENTER_WINDOW, lambda event, temp = crystalwiki: frame.wikitext.OnEnter(event, temp))
-      self.crystalObjectsControls[currentIndex].Bind(wx.EVT_LEAVE_WINDOW, lambda event: frame.wikitext.OnExit(event))
 
     # Adds the objects from the lists to the respective rows in the sizer list
     for crystalNo in range(0, crystalnumber):
       row = int(math.floor(crystalNo / 2))
-      SizerObjects[row].Add(self.crystalObjectsLabels[crystalNo], 3, wx.ALL, 5)
-      SizerObjects[row].Add(self.crystalObjectsControls[
-                            crystalNo], 1, wx.ALL, 5)
+
+      wiki = crystalControlList[crystalNo][7]
+
+      ComboObjects[crystalNo].Add(self.crystalObjectsLabels[crystalNo], 3, self.crystalObjectsControls[crystalNo], 1)
+      ComboObjects[crystalNo].Bind(wx.EVT_ENTER_WINDOW, lambda event, temp = wiki: frame.wikitext.OnEnter(event, temp))
+      ComboObjects[crystalNo].Bind(wx.EVT_LEAVE_WINDOW, lambda event: frame.wikitext.OnExit(event))
+
+      SizerObjects[row].Add(ComboObjects[crystalNo], 1, wx.ALL, 5)
 
     # Adds spacers if necessary
     if spacerNo != 0:
       for x in range(0, spacerNo):
-        SizerObjects[numberOfRows - 1].AddStretchSpacer(4)
+        SizerObjects[numberOfRows - 1].AddStretchSpacer(1)
 
     # Set up overall and title sizers
     topcrystalSizer = wx.BoxSizer(wx.VERTICAL)
@@ -602,6 +610,7 @@ class microscopePanel(wx.Panel):
     SizerObjects = []
     self.microscopeObjectsLabels = []
     self.microscopeObjectsControls = []
+    ComboObjects = []
 
     # Finds the number of empty slots on the bottom row to add spacer later
     spacerNo = (2 - (microscopenumber % 2)) % 2
@@ -623,16 +632,19 @@ class microscopePanel(wx.Panel):
 
       currentIndex = microscopeControlList.index(microscope)
 
+      temp = SizerCombo(self)
+      ComboObjects.append(temp)
+
       self.microscopeObjectsLabels.append(
-          wx.StaticText(self, wx.ID_ANY, microscopename))
+          wx.StaticText(temp, wx.ID_ANY, microscopename))
 
       if microscopetype == 1:
-        self.microscopeObjectsControls.append(wx.SpinCtrl(self, id=wx.ID_ANY,
+        self.microscopeObjectsControls.append(wx.SpinCtrl(temp, id=wx.ID_ANY,
                                                           size=(60, -1), value=microscopevalue,
                                                           min=microscopemin, max=microscopemax))
         print('Added a spin!')
       elif microscopetype == 2:
-        self.microscopeObjectsControls.append(FS.FloatSpin(self, size=(60, -1),
+        self.microscopeObjectsControls.append(FS.FloatSpin(temp, size=(60, -1),
                                                            value=microscopevalue, increment=microscopeincrement,
                                                            min_val=microscopemin, max_val=microscopemax, agwStyle=FS.FS_RIGHT))
 
@@ -640,23 +652,22 @@ class microscopePanel(wx.Panel):
         self.microscopeObjectsControls[currentIndex].SetDigits(1)
         print('Added a float spin!')
 
-      self.microscopeObjectsLabels[currentIndex].Bind(wx.EVT_ENTER_WINDOW, lambda event, temp = microscopewiki: frame.wikitext.OnEnter(event, temp))
-      self.microscopeObjectsLabels[currentIndex].Bind(wx.EVT_LEAVE_WINDOW, lambda event: frame.wikitext.OnExit(event))
-      self.microscopeObjectsControls[currentIndex].Bind(wx.EVT_ENTER_WINDOW, lambda event, temp = microscopewiki: frame.wikitext.OnEnter(event, temp))
-      self.microscopeObjectsControls[currentIndex].Bind(wx.EVT_LEAVE_WINDOW, lambda event: frame.wikitext.OnExit(event))
-
     # Adds the objects from the lists to the respective rows in the sizer list
     for microscopeNo in range(0, microscopenumber):
       row = int(math.floor(microscopeNo / 2))
-      SizerObjects[row].Add(self.microscopeObjectsLabels[
-                            microscopeNo], 3, wx.ALL, 5)
-      SizerObjects[row].Add(self.microscopeObjectsControls[
-                            microscopeNo], 1, wx.ALL, 5)
+
+      wiki = microscopeControlList[microscopeNo][6]
+
+      ComboObjects[microscopeNo].Add(self.microscopeObjectsLabels[microscopeNo], 3, self.microscopeObjectsControls[microscopeNo], 1)
+      ComboObjects[microscopeNo].Bind(wx.EVT_ENTER_WINDOW, lambda event, temp = wiki: frame.wikitext.OnEnter(event, temp))
+      ComboObjects[microscopeNo].Bind(wx.EVT_LEAVE_WINDOW, lambda event: frame.wikitext.OnExit(event))
+
+      SizerObjects[row].Add(ComboObjects[microscopeNo], 1, wx.ALL, 5)
 
     # Adds spacers if necessary
     if spacerNo != 0:
       for x in range(0, spacerNo):
-        SizerObjects[numberOfRows - 1].AddStretchSpacer(4)
+        SizerObjects[numberOfRows - 1].AddStretchSpacer(1)
 
     # Set up overall and title sizers
     topmicroscopeSizer = wx.BoxSizer(wx.VERTICAL)
@@ -756,6 +767,7 @@ class imagePanel(wx.Panel):
     SizerObjects = []
     self.imageObjectsLabels = []
     self.imageObjectsControls = []
+    ComboObjects = []
 
     # Finds the number of empty slots on the bottom row to add spacer later
     spacerNo = (2 - (imagenumber % 2)) % 2
@@ -778,14 +790,17 @@ class imagePanel(wx.Panel):
 
       currentIndex = imageControlList.index(image)
 
-      self.imageObjectsLabels.append(wx.StaticText(self, wx.ID_ANY, imagename))
+      temp = SizerCombo(self)
+      ComboObjects.append(temp)
+
+      self.imageObjectsLabels.append(wx.StaticText(temp, wx.ID_ANY, imagename))
 
       if imagetype == 1:
-        self.imageObjectsControls.append(wx.SpinCtrl(self, id=wx.ID_ANY,
+        self.imageObjectsControls.append(wx.SpinCtrl(temp, id=wx.ID_ANY,
                                                      size=(60, -1), value=imagevalue, min=imagemin, max=imagemax))
         print('Added a spin!')
       elif imagetype == 2:
-        self.imageObjectsControls.append(FS.FloatSpin(self, size=(60, -1),
+        self.imageObjectsControls.append(FS.FloatSpin(temp, size=(60, -1),
                                                       value=imagevalue, increment=imageincrement, min_val=imagemin,
                                                       max_val=imagemax, agwStyle=FS.FS_RIGHT))
 
@@ -793,25 +808,26 @@ class imagePanel(wx.Panel):
         self.imageObjectsControls[currentIndex].SetDigits(imagedigits)
         print('Added a float spin!')
       elif imagetype == 3:
-        self.imageObjectsControls.append(wx.CheckBox(self, wx.ID_ANY, size=(60, -1),
+        self.imageObjectsControls.append(wx.CheckBox(temp, wx.ID_ANY, size=(60, -1),
                                                      name=imagename))
         self.imageObjectsControls[currentIndex].SetValue(imagevalue)
-
-      self.imageObjectsLabels[currentIndex].Bind(wx.EVT_ENTER_WINDOW, lambda event, temp = imagewiki: frame.wikitext.OnEnter(event, temp))
-      self.imageObjectsLabels[currentIndex].Bind(wx.EVT_LEAVE_WINDOW, lambda event: frame.wikitext.OnExit(event))
-      self.imageObjectsControls[currentIndex].Bind(wx.EVT_ENTER_WINDOW, lambda event, temp = imagewiki: frame.wikitext.OnEnter(event, temp))
-      self.imageObjectsControls[currentIndex].Bind(wx.EVT_LEAVE_WINDOW, lambda event: frame.wikitext.OnExit(event))
 
     # Adds the objects from the lists to the respective rows in the sizer list
     for imageNo in range(0, imagenumber):
       row = int(math.floor(imageNo / 2))
-      SizerObjects[row].Add(self.imageObjectsLabels[imageNo], 3, wx.ALL, 5)
-      SizerObjects[row].Add(self.imageObjectsControls[imageNo], 1, wx.ALL, 5)
+
+      wiki = imageControlList[imageNo][6]
+
+      ComboObjects[imageNo].Add(self.imageObjectsLabels[imageNo], 3, self.imageObjectsControls[imageNo], 1)
+      ComboObjects[imageNo].Bind(wx.EVT_ENTER_WINDOW, lambda event, temp = wiki: frame.wikitext.OnEnter(event, temp))
+      ComboObjects[imageNo].Bind(wx.EVT_LEAVE_WINDOW, lambda event: frame.wikitext.OnExit(event))
+
+      SizerObjects[row].Add(ComboObjects[imageNo], 1, wx.ALL, 5)
 
     # Adds spacers if necessary
     if spacerNo != 0:
       for x in range(0, spacerNo):
-        SizerObjects[numberOfRows - 1].AddStretchSpacer(4)
+        SizerObjects[numberOfRows - 1].AddStretchSpacer(1)
 
     # Set up overall and title sizers
     topimageSizer = wx.BoxSizer(wx.VERTICAL)
