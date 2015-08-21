@@ -241,6 +241,20 @@ SUBROUTINE StructureFactorInitialisation (IErr)
 
                END DO
 
+            CASE(3) ! 10 Parameter method with Scattering Parameters from Lobato et al. 2014
+
+               RAtomicFormFactor = ZERO
+               DO knd = 1,5
+
+                  evenindlorentz=knd+5
+
+                  RAtomicFormFactor = RAtomicFormFactor + &
+                       LORENTZIAN(RScattFactors(ICurrentAtom,knd)* &
+                       (TWO+RScattFactors(ICurrentAtom,evenindlorentz)*(RgMatMag(ind,jnd)**TWO)), &
+                       ONE, &
+                       RScattFactors(ICurrentAtom,evenindlorentz)*(RgMatMag(ind,jnd)**TWO),ZERO)
+               END DO
+
 
            END SELECT
               
