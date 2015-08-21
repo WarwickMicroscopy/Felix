@@ -149,7 +149,7 @@ END SUBROUTINE SymmetryRelatedStructureFactorDetermination
 !!$%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 SUBROUTINE StructureFactorInitialisation (IErr)
-  
+
   USE MyNumbers
   USE WriteToScreen
 
@@ -161,9 +161,9 @@ SUBROUTINE StructureFactorInitialisation (IErr)
 
   USE MPI
   USE MyMPI
-  
+
   IMPLICIT NONE
-  
+
   INTEGER(IKIND) :: &
        ind, jnd, knd, oddindlorentz, evenindlorentz, oddindgauss, &
        evenindgauss,imaxj, IFound, ICount, currentatom,IErr
@@ -181,123 +181,128 @@ SUBROUTINE StructureFactorInitialisation (IErr)
   DO ind=1,nReflections
      imaxj = ind
      DO jnd=1,imaxj 
-        
+
         CVgij= 0.0D0
-        
+
         DO iAtom=1, INAtomsUnitCell
            ICurrentAtom = IAtoms(iAtom)
            ! calculate f_e(q) as in Eq. (C.15) of Kirkland, "Advanced Computing in EM"
-           
+
            SELECT CASE (IScatterFactorMethodFLAG)
-              
+
            CASE(0) ! Kirkland Method using 3 Gaussians and 3 Lorentzians
- 
+
               RAtomicFormFactor = ZERO
               DO knd = 1, 3
-              
+
                  !odd and even indicies for Lorentzian function
                  evenindlorentz = knd*2
                  oddindlorentz = knd*2 -1
-                 
+
                  !odd and even indicies for Gaussian function
                  evenindgauss = evenindlorentz + 6
                  oddindgauss = oddindlorentz + 6
-                 
+
                  !Kirkland Method uses summation of 3 Gaussians and 3 Lorentzians (summed in loop)
                  RAtomicFormFactor = RAtomicFormFactor + &
-                      !3 Lorentzians
+                                !3 Lorentzians
                       LORENTZIAN(RScattFactors(ICurrentAtom,oddindlorentz), RgMatMag(ind,jnd),ZERO,&
                       RScattFactors(ICurrentAtom,evenindlorentz))+ &
-                      !3 Gaussians
+                                !3 Gaussians
                       GAUSSIAN(RScattFactors(ICurrentAtom,oddindgauss),RgMatMag(ind,jnd),ZERO, & 
                       1/(SQRT(2*RScattFactors(ICurrentAtom,evenindgauss))),ZERO)
 
               END DO
-                            
-           CASE(1) ! 8 Parameter Method with Scattering Parameters from Peng et al 1996 
-              
-               RAtomicFormFactor = ZERO
-               DO knd = 1, 4
-                 
-                  !Peng Method uses summation of 4 Gaussians
-                  RAtomicFormFactor = RAtomicFormFactor + &
-                       !4 Gaussians
-                       GAUSSIAN(RScattFactors(ICurrentAtom,knd),RgMatMag(ind,jnd),ZERO, & 
-                       SQRT(2/RScattFactors(ICurrentAtom,knd+4)),ZERO)
 
-               END DO
+           CASE(1) ! 8 Parameter Method with Scattering Parameters from Peng et al 1996 
+
+              RAtomicFormFactor = ZERO
+              DO knd = 1, 4
+
+                 !Peng Method uses summation of 4 Gaussians
+                 RAtomicFormFactor = RAtomicFormFactor + &
+                                !4 Gaussians
+                      GAUSSIAN(RScattFactors(ICurrentAtom,knd),RgMatMag(ind,jnd),ZERO, & 
+                      SQRT(2/RScattFactors(ICurrentAtom,knd+4)),ZERO)
+
+              END DO
            CASE(2) ! 8 Parameter Method with Scattering Parameters from Doyle and Turner Method (1968)
 
-               RAtomicFormFactor = ZERO
-               DO knd = 1, 4
-                 
-                  evenindgauss = knd*2
-                  oddindgauss = knd*2 -1
-                  !Doyle &Turner uses summation of 4 Gaussians
-                  RAtomicFormFactor = RAtomicFormFactor + &
-                       !4 Gaussians
-                       GAUSSIAN(RScattFactors(ICurrentAtom,oddindgauss),RgMatMag(ind,jnd),ZERO, & 
-                       SQRT(2/RScattFactors(ICurrentAtom,evenindgauss)),ZERO)
+              RAtomicFormFactor = ZERO
+              DO knd = 1, 4
 
-               END DO
+                 evenindgauss = knd*2
+                 oddindgauss = knd*2 -1
+                 !Doyle &Turner uses summation of 4 Gaussians
+                 RAtomicFormFactor = RAtomicFormFactor + &
+                                !4 Gaussians
+                      GAUSSIAN(RScattFactors(ICurrentAtom,oddindgauss),RgMatMag(ind,jnd),ZERO, & 
+                      SQRT(2/RScattFactors(ICurrentAtom,evenindgauss)),ZERO)
 
-            CASE(3) ! 10 Parameter method with Scattering Parameters from Lobato et al. 2014
+              END DO
 
-               RAtomicFormFactor = ZERO
-               DO knd = 1,5
+           CASE(3) ! 10 Parameter method with Scattering Parameters from Lobato et al. 2014
 
-                  evenindlorentz=knd+5
+              RAtomicFormFactor = ZERO
+              DO knd = 1,5
 
-                  RAtomicFormFactor = RAtomicFormFactor + &
-                       LORENTZIAN(RScattFactors(ICurrentAtom,knd)* &
-                       (TWO+RScattFactors(ICurrentAtom,evenindlorentz)*(RgMatMag(ind,jnd)**TWO)), &
-                       ONE, &
-                       RScattFactors(ICurrentAtom,evenindlorentz)*(RgMatMag(ind,jnd)**TWO),ZERO)
-               END DO
+                 evenindlorentz=knd+5
+
+                 RAtomicFormFactor = RAtomicFormFactor + &
+                      LORENTZIAN(RScattFactors(ICurrentAtom,knd)* &
+                      (TWO+RScattFactors(ICurrentAtom,evenindlorentz)*(RgMatMag(ind,jnd)**TWO)), &
+                      ONE, &
+                      RScattFactors(ICurrentAtom,evenindlorentz)*(RgMatMag(ind,jnd)**TWO),ZERO)
+              END DO
 
 
            END SELECT
-              
+
            ! initialize potential as in Eq. (6.10) of Kirkland
-
+           
            RAtomicFormFactor = RAtomicFormFactor*ROcc(iAtom)
-
+           
            IF (IAnisoDebyeWallerFactorFlag.EQ.0) THEN
               
               IF(RDWF(iAtom).GT.10.OR.RDWF(iAtom).LT.0) THEN
                  RDWF(iAtom) = RDebyeWallerConstant
               END IF
-              
+
               SELECT CASE (IScatterFactorMethodFLAG)
-
+                 
               CASE (0)
+                 
+                 RAtomicFormFactor = RAtomicFormFactor * &
+                      EXP(-((RgMatMag(ind,jnd)/2.D0)**2)*RDWF(iAtom))
 
-              RAtomicFormFactor = RAtomicFormFactor * &
-                   EXP(-((RgMatMag(ind,jnd)/2.D0)**2)*RDWF(iAtom))
-                               
               CASE(1)
+                 
+                 RAtomicFormFactor = RAtomicFormFactor * &
+                      EXP(-((RgMatMag(ind,jnd)/2.D0)**2)*RDWF(iAtom))
 
-              RAtomicFormFactor = RAtomicFormFactor * &
-                   EXP(-((RgMatMag(ind,jnd)/2.D0)**2)*RDWF(iAtom))
-                          
-                               
+                 
               CASE(2)
 
-              RAtomicFormFactor = RAtomicFormFactor * &
-                   EXP(-((RgMatMag(ind,jnd)/2.D0)**2)*RDWF(iAtom))
-                               
+                 RAtomicFormFactor = RAtomicFormFactor * &
+                      EXP(-((RgMatMag(ind,jnd)/2.D0)**2)*RDWF(iAtom))
+
+              CASE(3)
+                 
+                 RAtomicFormFactor=RAtomicFormFactor* &
+                      EXP(-((RgMatMag(ind,jnd)/2.D0)**2)*RDWF(iAtom))
+
               END SELECT
-              
+
            ELSE
-              
+
               RAtomicFormFactor = RAtomicFormFactor * &
                    EXP(-TWOPI*DOT_PRODUCT(RgMatMat(ind,jnd,:), &
                    MATMUL( RAnisotropicDebyeWallerFactorTensor( &
                    IAnisoDWFT(iAtom),:,:), &
                    RgMatMat(ind,jnd,:))))
-              
+
            END IF
-           
+
            CVgij = CVgij + &
                 RAtomicFormFactor * &
                 EXP(-CIMAGONE* &
@@ -307,7 +312,7 @@ SUBROUTINE StructureFactorInitialisation (IErr)
 
         CUgMat(ind,jnd)=((((TWOPI**2)* RRelativisticCorrection) / &
              (PI * RVolume)) * CVgij)
-              
+
      ENDDO
   ENDDO
 
@@ -326,7 +331,7 @@ SUBROUTINE StructureFactorInitialisation (IErr)
   CALL Message("StructureFactorInitialisation",IMoreInfo,IErr, &
        MessageVariable = "RMeanInnerCrystalPotential", &
        RVariable = RMeanInnerCrystalPotential)
-  
+
   CALL Message("StructureFactorInitialisation",IMoreInfo,IErr, &
        MessageVariable = "RMeanInnerPotentialVolts", &
        RVariable = RMeanInnerPotentialVolts)
@@ -341,9 +346,9 @@ SUBROUTINE StructureFactorInitialisation (IErr)
   !--------------------------------------------------------------------
   ! high-energy approximation (not HOLZ compatible)
   !--------------------------------------------------------------------
-  
+
   RBigK= SQRT(RElectronWaveVectorMagnitude**2 + RMeanInnerCrystalPotential)
-  
+
   CALL Message("StructureFactorInitialisation",IInfo,IErr, &
        MessageVariable = "RBigK", &
        RVariable = RBigK)
