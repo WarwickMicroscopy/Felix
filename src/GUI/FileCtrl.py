@@ -74,7 +74,7 @@ def RunFelix(parent, CIFPath, OutputPath):
   if CIFPath == None:
     wx.MessageBox('Please load a .cif file', 'Error',
                   wx.OK | wx.ICON_ERROR)
-    OnCif(parent)
+    CIFPath = OnCif(parent)
 
   if CIFPath !=None and os.path.exists(CIFPath) == False:
     wx.MessageBox('.cif file not found, please load a .cif file', 'Error',
