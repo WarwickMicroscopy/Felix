@@ -8,7 +8,7 @@ import os
 import shutil
 import sys
 import GuiPages
-#import Bin2Tiff
+# import Bin2Tiff
 import Felix_gui
 import datetime
 
@@ -23,17 +23,29 @@ def RunFelix(parent, CIFPath, OutputPath):
   filePath = os.path.realpath(__file__)
   fileDirectory, fileName = os.path.split(filePath)
 
+  if parent.main.notebook.page6.imageObjectsControls[4].GetValue() == False and parent.main.notebook.page6.imageObjectsControls[5].GetValue() == False and parent.main.notebook.page6.imageObjectsControls[6].GetValue() == False:
+    wx.MessageBox('Please select montage, stack reflections, or amplitude and phase from the image panel (at least one must be selected).', 'Error',
+                  wx.OK | wx.ICON_ERROR)
+    return
+
   parent.main.wiki.felixStatus = 1
+
+  if OutputPath == None:
+
+    wx.MessageBox('Please select an output directory', 'Error',
+                  wx.OK | wx.ICON_ERROR)
+
+    OutputPath = OutputDirSelect(parent)
 
   if CIFPath == None:
     wx.MessageBox('Please load a .cif file', 'Error',
                   wx.OK | wx.ICON_ERROR)
-    return
+    OnCif(parent)
 
   if os.path.exists(CIFPath) == False:
     wx.MessageBox('.cif file not found, please load a .cif file', 'Error',
                   wx.OK | wx.ICON_ERROR)
-    return
+    OnCif(parent)
 
   # creates working directory
   cpath, cfilename = os.path.split(CIFPath)
@@ -45,8 +57,11 @@ def RunFelix(parent, CIFPath, OutputPath):
     shutil.rmtree(workingDir)
   os.makedirs(workingDir)
 
-  if os.path.exists(OutputDirectory):
-    shutil.rmtree(OutputDirectory)
+  count = 0
+  OriginalDir = OutputDirectory
+  while os.path.exists(OutputDirectory):
+    count = count + 1
+    OutputDirectory = OriginalDir + "(" + str(count) + ")"
 
   # Change to working directory
   os.chdir(workingDir)
@@ -87,7 +102,7 @@ def RunFelix(parent, CIFPath, OutputPath):
 
   os.chdir(fileDirectory)
 
-  wx.MessageBox('FelixSIM successfully run!',
+  wx.MessageBox('Felixsim successfully run!',
                 'Info', wx.OK | wx.ICON_INFORMATION)
 
   parent.main.wiki.felixStatus = 0
@@ -95,13 +110,18 @@ def RunFelix(parent, CIFPath, OutputPath):
   return
 
   # os.chdir("../")
-  #Bin2Tiff.convert(dir, '8', 'tif', '1')
+  # Bin2Tiff.convert(dir, '8', 'tif', '1')
 
   # parent.main.viewer.onView(dir)
   # parent.Close(True)
 
 
 def InpCreate(parent):
+
+  if parent.main.notebook.page6.imageObjectsControls[4].GetValue() == False and parent.main.notebook.page6.imageObjectsControls[5].GetValue() == False and parent.main.notebook.page6.imageObjectsControls[6].GetValue() == False:
+    wx.MessageBox('Please select montage, stack reflections, or amplitude and phase from the image panel (at least one must be selected).', 'Error',
+                  wx.OK | wx.ICON_ERROR)
+    return
 
   InputSaveDialog = wx.FileDialog(parent, "Save Input file", "", "felix.inp",
                                   "Inp Files (*.inp)|*.inp", wx.FD_SAVE | wx.FD_OVERWRITE_PROMPT)
@@ -437,8 +457,8 @@ def SetGUIFromFile(dir, parent):
 
   for line in inpLoadFile:
     if line.find('=') != -1:
-      FileLineList.append(line[line.find('=')+2:])
-      print line + " --> " + line[line.find('=')+2:]
+      FileLineList.append(line[line.find('=') + 2:])
+      print line + " --> " + line[line.find('=') + 2:]
     else:
       FileLineList.append(line)
       print line

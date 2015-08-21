@@ -51,7 +51,7 @@ class FlagPanel(wx.Panel):
     flag6 = {'name': 'IAnisoDebyeWallerFLAG', 'choices': [
         '0'], 'object type': 'CHOICE', 'default': '0', 'wiki': wikistrings.IAnisoDebyeWallerFLAGWiki}
     flag7 = {'name': 'IPseudoCubicFLAG', 'choices': [
-        '0'], 'object type': 'CHOICE', 'default': '0', 'wiki': wikistrings.IPseudoCubicFLAGWiki}
+        'Orthorhombic'], 'object type': 'CHOICE', 'default': 'Orthorhombic', 'wiki': wikistrings.IPseudoCubicFLAGWiki}
     flag8 = {'name': 'IXDirectionFLAG', 'choices': [
         'Automatic', 'Manual'], 'object type': 'CHOICE', 'default': 'Automatic', 'wiki': wikistrings.IXDirectionFLAGWiki}
 
@@ -909,8 +909,7 @@ class optionPanel(wx.Panel):
     OutputDirectory.Bind(wx.EVT_BUTTON, self.OutputDirWrapper)
 
   def RunFelixWrapper(self, event):
-    if self.OutputPath == None:
-      self.OutputPath = FileCtrl.OutputDirSelect(self)
+
     FileCtrl.RunFelix(self, self.CIFPath, self.OutputPath)
 
   def OnCifWrapper(self, event):

@@ -4,48 +4,17 @@
 DefaultWiki = r"""
 <p><em>Felix</em> is a Bloch wave simulation code, specifically for D-LACBED diffraction patterns. Written and compiled using Fortran 95.</p>
 
-<h2>Installation and Compilation</h2>
-
-<p>Code freely available to download from:</p>
-
-<p>Github: https://github.com/RudoRoemer/Felix
-Linux: http://anorien.csc.warwick.ac.uk/mirrors/OBS/warwick.ac.uk:/Physics:/Felix/</p>
-
-<p><em>Felix</em> requires the use of LAPACK &amp; FFTW3 libraries</p>
-
 <p>For more information see the <a href="https://github.com/RudoRoemer/Felix/wiki/Download"><strong>Download</strong></a> page</p>
 
-<h2>Input files</h2>
-
-<p><em>Felix</em> requires three separate input files and one optional input file:</p>
-
-<h3>felix.inp</h3>
-
-<p><em><strong>Only file required to be manually changed</strong></em></p>
-
-<p>This is the main input file. All possible user controlled parameters are initiated here through a 'FLAG' and value system.</p>
-
-<p>The format must be the same as the sample input files [(e.g. /Felix/samples/Si)] (https://github.com/RudoRoemer/Felix/tree/master/samples/Si). The simplest way to construct an input file is to simply run <em>Felix</em> without felix.inp in the working directory. <em>Felix</em> will print a sample one out for you to the screen (in the format required).</p>
-
-<p>Otherwise, it is recommended the user copies one of the sample input files, and modifies the values for their intended purpose. In the majority of simulations, only a few parameters should need changing. A description of each of them is given below.</p>
-
-<p>(*) <em>Indicates variables which generally change for different simulations.</em></p>
 """
 
 IWriteFLAGWiki = r"""
-<p><strong>IWriteFLAG</strong></p>
+Controls the amount of information printed to the log file during the simulation (this can be found in the log directory, named with the date and time of simulation).</p>
 
-<p>This is a test</p>
-
-<p>Controls the amount of information printed to the screen (or log file) during the simulation.</p>
-
-<p>0 - No information is printed to the screen, apart from start and stop messages
-1 - Only information in subroutines successfully entered are printed
-2 - 1st level of info is printed: key information is printed
-3 - 2nd level of info: additional information is printed
-10 - Final level of info: All information is printed to the screen</p>
-
-<p><em>Developers note: Some messages have been printed to aid with debugging. To access the debug messaging mode, simply add 100 to the <strong>IWriteFLAG</strong> (i.e. 1st level of info in debug mode would be 102). More output allows for easier debugging, but will slow the execution.</em></p>
+<p>Silent - No information is printed to the screen, apart from start and stop messages <br />
+Crucial information - Only information in subroutines successfully entered are printed <br />
+Basic information - 1st level of info is printed: key information is printed <br />
+All information - Final level of info: All information is printed to the screen  </p
 """
 
 IImageFLAGWiki = r"""
@@ -54,11 +23,11 @@ IImageFLAGWiki = r"""
 <p>
 Determines the type(s) of output images to be produced by <em>Felix</em>.</p>
 
-<p>0 - Montages of diffraction patterns. Produces one pattern per thickness (per <strong>RDeltaThickness</strong>) in .bin file format
-1 - Individual reflections saved in .bin file format. Reflections will be bundled into separate folders for each thickness
-2 - Amplitude and phase images will be saved. Phase and amplitude images will be saved individually for each reflection and labelled -A or -P respectively</p>
+<p>Montage - Montages of diffraction patterns. Produces one pattern per thickness (per <strong>RDeltaThickness</strong>) in .bin file format<br />
+Stack reflections - Individual reflections saved in .bin file format. Reflections will be bundled into separate folders for each thickness<br />
+Amplitude and phase - Amplitude and phase images will be saved. Phase and amplitude images will be saved individually for each reflection and labelled -A or -P respectively</p>
 
-<p>Any combination (in any order) of up to three of these options can be specified to suit the user’s requirements. For example: <code>IImageFLAG                = 012</code> will output all three types of images.</p>
+<p>Any combination (in any order) of up to three of these options can be specified to suit the user’s requirements. <strong>At least one option must be selected</strong></p>
 """
 
 IOutputFLAGWiki = r"""
@@ -68,9 +37,9 @@ IOutputFLAGWiki = r"""
 
 <p><em>Not implemented yet, please select 0</em></p>
 
-<p>0 - Nothing is saved (Fastest)
-1 - Ug Matrix will be saved in binary format
-2 - Eigenspectra is saved in binary format
+<p>0 - Nothing is saved (Fastest)<br />
+1 - Ug Matrix will be saved in binary format<br />
+2 - Eigenspectra is saved in binary format<br />
 3 - Wavefunctions are saved in binary format</p>
 
 <p>Any combination (in any order) of up to three of these options can be specified to suit the user’s requirements. See IImageFLAG example for format</p>
@@ -82,7 +51,7 @@ IBinorTextFLAGWiki = r"""
 <p>Select binary or text output files. Binary files are smaller and faster to read/write. Text files on the other hand are easier to import into other programs (for later use).</p>
 
 <p><em>Text Flag not implemented yet</em>
-0 - Binary
+0 - Binary<br />
 1 – Text</p>
 """
 
@@ -91,9 +60,10 @@ IScatterFactorMethodFLAGWiki = r"""
 
 <p>Determines method by which to calculate potentials. Kirkland, option zero, is recommended.</p>
 
-<p>0 - Kirkland Method (103 elements)
-1 - Peng (98 elements)
-2 - Doyle and Turner (68 elements)</p>
+<p>Kirkland method (103 elements)<br />
+Peng method (98 elements)<br />
+Doyle and Turner method (68 elements)<br />
+Lobato method (103 elements)</p>
 """
 
 ICentralBeamFLAGWiki = r"""
@@ -103,7 +73,7 @@ ICentralBeamFLAGWiki = r"""
 
 <p>Exclude the [000] beam from the final image(s). This improves the relative intensity</p>
 
-<p>0 - No central beam
+<p>0 - No central beam<br />
 1 - Central beam included</p>
 """
 
@@ -114,8 +84,8 @@ IMaskFLAGWiki = r"""
 
 <p>Neither setting affects the physics of the simulation. The square beam simplifies the computation, although there is no discernible slow down with the circular beam. It is recommended the user selects the circular beam.</p>
 
-<p>0 - Circular
-1 - Square</p>
+<p>Unchecked - Circular<br />
+Checked - Square</p>
 """
 
 IZolzFLAGWiki = r"""
@@ -123,8 +93,8 @@ IZolzFLAGWiki = r"""
 
 <p>Choose to limit the simulation to the zeroth order laue zone.</p>
 
-<p>0 - No (Includes HOLZ, slower)
-1 - Yes (ZOLZ only, faster)</p>
+<p>Unchecked - No (Includes HOLZ, slower)<br />
+Checked - Yes (ZOLZ only, faster)</p>
 """
 
 IAbsorbFLAGWiki = r"""
@@ -133,11 +103,6 @@ IAbsorbFLAGWiki = r"""
 <p>Choose to include absorption in the simulation.</p>
 
 <p><em>Currently, only the proportional model is available (or none).</em></p>
-
-<p>0 - None
-1 - Proportional Model
-2 - Einstein Model (Perturbative approach)
-3 - Einstein Model (Exact Approach)</p>
 """
 
 IAnisoDebyeWallerFLAGWiki = r"""
@@ -145,14 +110,8 @@ IAnisoDebyeWallerFLAGWiki = r"""
 
 <p>Choose to use anisotropic Debye-Waller factors (if available).</p>
 
-<p>0 - No
-1 - Yes</p>
-"""
-
-IBeamConvergenceFLAGWiki = r"""
-<p><strong>IBeamConvergenceFLAG</strong></p>
-
-<p><em>Not Yet Implemented, please set as 1</em></p>
+<p>Unchecked - No<br />
+Checked - Yes</p>
 """
 
 IPseudoCubicFLAGWiki = r"""
@@ -160,19 +119,16 @@ IPseudoCubicFLAGWiki = r"""
 
 <p>Indicates whether the given directions are expressed in Pseudocubic or Orthorhombic notation.</p>
 
-<p><em>Pseudocubic coordinates not yet implemented, please select 0.</em></p>
-
-<p>0 - Orthorhomnic
-1 – PseudoCubic</p>
+<p><em>Pseudocubic coordinates not yet implemented, please select Orthorhombic.</em></p>
 """
 
 IXDirectionFLAGWiki = r"""
 <p><strong>IXDirectionFLAG</strong></p>
 
-<p>If set to zero, <em>Felix</em> will ignore any specified X Direction (<strong>IXDirectionX/Y/Z</strong>). It will then take the shortest g-vector as the X direction.</p>
+<p>If set to automatic, <em>Felix</em> will ignore any specified X Direction (<strong>IXDirectionX/Y/Z</strong>). It will then take the shortest g-vector as the X direction.</p>
 
-<p>0 - Ignore X Direction
-1 - Use X Direction</p>
+<p>Automatic - Ignore X Direction<br />
+Manual - Use X Direction</p>
 """
 
 IPixelCountWiki = r"""
@@ -194,11 +150,10 @@ IMinStrongBeamsWiki = r"""
 
 <p><em>N.B. As the material complexity increases (size of the unit cell/number of reflections), so does the simulation time. The approximate (simple material, <strong>IReflectOut</strong> = 7) simulation times for a single core machine are given below:</em></p>
 
-<p>|IMinReflectionPool |IMinStrongBeams    |Time (s)|  Quality of pattern|
-|---|---|---|---|
-10 - 50|    7 - 20| Under 1 minute (Usually Seconds)|   Poor – usually to check correct position of diffraction spots
-50 - 150|   20 - 50 |Under 10 minutes|  Okay – Produces nice pictures. Still not great for quantitative analysis
-150 – 500†| 50 – 125| Under 30 minutes|   Produces high quality data, can be used to discern various symmetries of the material</p>
+<p>IMinReflectionPool, IMinStrongBeams, Time (s), Quality of pattern<br />
+10 - 50, 7 - 20, Under 1 minute (Usually Seconds), Poor – usually to check correct position of diffraction spots<br />
+50 - 150, 20 - 50, Under 10 minutes, Okay – Produces nice pictures. Still not great for quantitative analysis<br />
+150 – 500†, 50 – 125, Under 30 minutes, Produces high quality data, can be used to discern various symmetries of the material</p>
 
 <p>†<em>For a material of serious complexity, a very high quality dataset requires up to 1000 IMinReflectionPool &amp; up to 300 IMinStrongBeams – this may take hours.</em></p>
 """
@@ -221,12 +176,6 @@ RBSPmaxWiki = r"""
 <p>Maximum weak beam perturbation of a prior weak beam.</p>
 """
 
-RConvergenceToleranceWiki = r"""
-<p><strong>RConvergenceTolerance (%)</strong></p>
-
-<p><em>Not yet implemented.</em></p>
-"""
-
 RDebyeWallerConstantWiki = r"""
 <p><strong>RDebyeWallerConstant</strong></p>
 
@@ -246,7 +195,7 @@ ROuterConvergenceAngleWiki = r"""
 <p>Defines the outer convergence angle of the beam (in units of half the minimum g-vector magnitude).  At a value of 1, all beams will touch at their edges. Values greater than 1 will (experimentally) cause beams to overlap. In the simulation, this will not occur.</p>
 """
 
-RInnerConvergenceAngle = r"""
+RInnerConvergenceAngleWiki = r"""
 <p><strong>RInnerConvergenceAngle</strong></p>
 
 <p>Defines the inner convergence angle of the beam (same units as outer convergence angle). For most/all simulations it should be set to zero. This parameter cuts out the central convergence angle of the beam (creating a ‘doughnut’ shaped convergent incident beam). This has the effect of cutting out the central portion of the each D-LACBED reflection.</p>
@@ -290,19 +239,19 @@ IXDirectionZWiki = r"""
 <p>† <em>N.B. If  <strong>IXDirectionFLAG</strong> is set to zero, the above will be disregarded. The x-axis will be defined by the shortest g-vector.</em></p>
 """
 
-INormalDirectionX = r"""
+INormalDirectionXWiki = r"""
 <p><strong>INormalDirectionX</strong>*</p>
 
 <p>X component of the plane normal to the surface of crystal in real space</p>
 """
 
-INormalDirectionY = r"""
+INormalDirectionYWiki = r"""
 <p><strong>INormalDirectionY</strong>*</p>
 
 <p>Y component of the plane normal to the surface of crystal in real space</p>
 """
 
-INormalDirectionZ = r"""
+INormalDirectionZWiki = r"""
 <p><strong>INormalDirectionZ</strong>*</p>
 
 <p>Z component of the plane normal to the surface of crystal in real space</p>
@@ -310,10 +259,10 @@ INormalDirectionZ = r"""
 <p><em>N.B. Most of the time, the normal direction will be the same as the incident beam direction</em></p>
 """
 
-RAccelerationVoltageWiki = r"""
+RAcceleratingVoltageWiki = r"""
 <p><strong>RAccelerationVoltage</strong></p>
 
-<p>Acceleration voltage of the microscope expressed in KV</p>
+<p>Acceleration voltage of the microscope expressed in kV</p>
 """
 
 RInitialThicknessWiki = r"""
@@ -347,8 +296,8 @@ IImageOutputFLAGWiki  = r"""
 
 <p>Choose whether <em>FelixRefine</em> will output images at the conclusion of the refinement</p>
 
-<p>0 - No
-1 - Yes</p>
+<p>Unchecked - No<br />
+Checked - Yes</p>
 """
 
 IDevFLAGWiki = r"""
@@ -362,33 +311,15 @@ IRefineModeFLAGWiki = r"""
 
 <p>Choose the refinement variable(s)</p>
 
-<p>0 - Refine Debye-Waller Factor
-1 - Refine Structure Factors (UGs)
+<p>0 - Refine Debye-Waller Factor<br />
+1 - Refine Structure Factors (UGs)<br />
 2 - Refine Thickness</p>
 """
 
-RInnerConvergenceAngleWiki = r"""
-Nothing here yet
-"""
-
-INormalDirectionXWiki = r"""
-Nothing here yet
-"""
-
-INormalDirectionYWiki = r"""
-Nothing here yet
-"""
-
-INormalDirectionZWiki = r"""
-Nothing here yet
-"""
-
-RAcceleratingVoltageWiki = r"""
-Nothing here yet
-"""
-
 RAcceptanceAngleWiki = r"""
-Nothing here yet
+<p><strong>RAcceptanceAngle</strong></p>
+
+<p>Determines the maximum scattering angle allowed. 0.0 sets no restriction (recommended).</p>
 """
 
 CIFWiki = r"""
@@ -413,7 +344,7 @@ CIFWiki = r"""
 <p>This contains the scattering factors, of which <em>Felix</em> uses to calculate the Structure Factors. The User has a choice of three methods:</p>
 
 <ol>
-<li>Kirkland (<em>1</em>)</li>
+<li>Kirkland (<em>1</em>)</li><br />
 <li>Doyle &amp; Turner (<em>2</em>)</li>
 <li>Peng (<em>3</em>)</li>
 </ol>
