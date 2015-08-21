@@ -259,39 +259,17 @@ SUBROUTINE StructureFactorInitialisation (IErr)
            END SELECT
 
            ! initialize potential as in Eq. (6.10) of Kirkland
-           
+
            RAtomicFormFactor = RAtomicFormFactor*ROcc(iAtom)
-           
+
            IF (IAnisoDebyeWallerFactorFlag.EQ.0) THEN
-              
+
               IF(RDWF(iAtom).GT.10.OR.RDWF(iAtom).LT.0) THEN
                  RDWF(iAtom) = RDebyeWallerConstant
               END IF
 
-              SELECT CASE (IScatterFactorMethodFLAG)
-                 
-              CASE (0)
-                 
-                 RAtomicFormFactor = RAtomicFormFactor * &
-                      EXP(-((RgMatMag(ind,jnd)/2.D0)**2)*RDWF(iAtom))
-
-              CASE(1)
-                 
-                 RAtomicFormFactor = RAtomicFormFactor * &
-                      EXP(-((RgMatMag(ind,jnd)/2.D0)**2)*RDWF(iAtom))
-
-                 
-              CASE(2)
-
-                 RAtomicFormFactor = RAtomicFormFactor * &
-                      EXP(-((RgMatMag(ind,jnd)/2.D0)**2)*RDWF(iAtom))
-
-              CASE(3)
-                 
-                 RAtomicFormFactor=RAtomicFormFactor* &
-                      EXP(-((RgMatMag(ind,jnd)/2.D0)**2)*RDWF(iAtom))
-
-              END SELECT
+              RAtomicFormFactor = RAtomicFormFactor * &
+                   EXP(-((RgMatMag(ind,jnd)/2.D0)**2)*RDWF(iAtom))
 
            ELSE
 

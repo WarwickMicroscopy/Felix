@@ -39,10 +39,6 @@ SUBROUTINE ScatteringFactors(IScatteringMethodSwitch,IErr)
        9.200000000E+01,9.300000000E+01,9.400000000E+01,9.500000000E+01,9.600000000E+01,9.700000000E+01,9.800000000E+01, &
        9.900000000E+01,1.000000000E+02,1.010000000E+02,1.020000000E+02,1.030000000E+02/
 
-  CALL Message("ScatteringFactors",IMust+IDebug,IErr,MessageVariable="Total of Atomic numbers", &
-       IVariable=SIZE(RAtomicnumbers,1,IKIND))
-
-
   SELECT CASE(IScatteringMethodSwitch)
 
   CASE(0)
@@ -265,17 +261,6 @@ SUBROUTINE ScatteringFactors(IScatteringMethodSwitch,IErr)
         RETURN
      ENDIF
 
-!!$Assign Global Scattering factor array with chosen scattering factors (Kirkland)
-     RScattFactors=RKirkland
-
-     DO ind=1,103
-
-        IF (my_rank.EQ.0) THEN
-           PRINT*, "RScattFactors = ", RScattFactors(ind,:)
-        END IF
-      !  CALL Message("ScatteringFactors",IMust+IDebug,IErr, &
-      !       MessageVariable="RScattFactors",RVector=RScattFactors(ind,:),IVectorLength=10)
-     END DO
 
   CASE(1) !Peng Scattering Factors (must include reference here - in wiki)
 
@@ -709,7 +694,7 @@ SUBROUTINE ScatteringFactors(IScatteringMethodSwitch,IErr)
      DATA RDoyleAndTurner(103,1:8)/0.000000000E+00,0.000000000E+00,0.000000000E+00,0.000000000E+00,0.000000000E+00, &
           0.000000000E+00,0.000000000E+00,0.000000000E+00/
 
-!!$DoyleAndTurner has 8 numbers for each element
+!!$DoyleAndTurner has 8 coefficients for each element
      IScattDimension=8
 
 !!$Allocate Global Scattering factor array 
@@ -944,20 +929,12 @@ SUBROUTINE ScatteringFactors(IScatteringMethodSwitch,IErr)
 !!$Assign Global Scattering factor array with chosen scattering factors (Lobato)
      RScattFactors=RLobato
 
-     DO ind=1,103
-
-        IF (my_rank.EQ.0) THEN
-           PRINT*, "RScattFactors = ", RScattFactors(ind,:)
-        END IF
-      !  CALL Message("ScatteringFactors",IMust+IDebug,IErr, &
-      !       MessageVariable="RScattFactors",RVector=RScattFactors(ind,:),IVectorLength=10)
-     END DO
-
   CASE DEFAULT
 
      CALL Message("ScatteringFactors",IMust,IErr, &
           MessageVariable="Scattering tables do not exist for IScatteringMethodFlag", &
           IVariable=IScatterFactorMethodFLAG, MessageString="Aborting")
+     IErr=1
 
   END SELECT
 
