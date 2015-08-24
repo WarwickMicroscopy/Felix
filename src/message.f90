@@ -66,7 +66,7 @@ SUBROUTINE Message(ProgramName,IPriorityFLAG,IErr,MessageVariable,RVariable,IVar
   INTEGER(IKIND) :: &
        IErr,IPriorityFLAG,ind
   
-  CHARACTER*100 SVariable, my_rank_string,DebugString
+  CHARACTER*100 SVariable, SVariableTemp, my_rank_string,DebugString
   CHARACTER*30 SVariableString3DVector(THREEDIM)
   CHARACTER*30,DIMENSION(:), ALLOCATABLE :: &
        SVariableVector
@@ -95,9 +95,12 @@ SUBROUTINE Message(ProgramName,IPriorityFLAG,IErr,MessageVariable,RVariable,IVar
         DO ind=1,ILenVector
            WRITE(SVariableStringVector(ind),'F15.3)') RVector(ind)
         END DO
-        
+
+        SVariable=""
+        SVariableTemp=""
         DO ind=1,ILenVector
-           SVariable=//"  "//TRIM(ADJUSTL(SVariableStringVector(ind)//"  "
+           SVariableTemp=//"  "//TRIM(ADJUSTL(SVariableStringVector(ind)))//"  "
+           SVariable=
         !DO ind=1,3
         !   WRITE(SVariableStringVector(ind),'(F15.3)') RVector(ind)
         !   !SVariable=SVariable //"  "//SVariableStringVector(ind)
