@@ -87,7 +87,6 @@ def RunFelix(parent, CIFPath, OutputPath):
   OutputDirectory = OutputPath + "/" + cname + "_output"
 
   workingDir = os.path.abspath(filePath + "/../../../../Working_Directory")
-  workingDir = fileDirectory + "/Working_Directory/"
 
   if os.path.exists(workingDir):
     shutil.rmtree(workingDir)
