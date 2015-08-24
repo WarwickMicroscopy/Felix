@@ -58,31 +58,54 @@ SUBROUTINE Message(ProgramName,IPriorityFLAG,IErr,MessageVariable,RVariable,IVar
   COMPLEX(CKIND),INTENT (IN), OPTIONAL :: &
        CVariable
 
+  INTEGER(IKIND) :: &
+       ISizeVector
+
   CHARACTER(*),INTENT (IN) :: &
        ProgramName
   INTEGER(IKIND) :: &
        IErr,IPriorityFLAG,ind
   
-  CHARACTER*100 VariableString, my_rank_string,DebugString
-  CHARACTER*30 SVariableStringVector(THREEDIM)
+  CHARACTER*100 SVariable, my_rank_string,DebugString
+  CHARACTER*30 SVariableString3DVector(THREEDIM)
+  CHARACTER*30,DIMENSION(:), ALLOCATABLE :: &
+       SVariableVector
 
 !!$  Converts my_rank to string and then either the RVariable, IVariable, CVariable to a string
      WRITE(my_rank_string,'(I6.1)') my_rank 
      IF (PRESENT(RVariable).AND.IPriorityFLAG.LT.100) THEN
-           WRITE(VariableString,'(F15.3)') RVariable
+           WRITE(SVariable,'(F15.3)') RVariable
      ELSE IF (PRESENT(IVariable)) THEN
-        WRITE(VariableString,'(I10.1)') IVariable
+        WRITE(SVariable,'(I10.1)') IVariable
      ELSE IF (PRESENT(CVariable)) THEN
-        WRITE(VariableString,'(F30.16)') CVariable
-     ELSE IF (PRESENT(RVector)) THEN     
-        DO ind=1,3
-           WRITE(SVariableStringVector(ind),'(F15.3)') RVector(ind)
-           !VariableString=VariableString //"  "//SVariableStringVector(ind)
+        WRITE(SVariable,'(F30.16)') CVariable
+
+!!$  Converts A vector input into a string - finds the size of the input vector,
+!!$  and allocates appropriately
+     ELSE IF (PRESENT(RVector)) THEN
+        ILenVector=SIZE(RVector)
+        ALLOCATE(&
+             SVariableVector(ILenVector),&
+             STAT=IErr)
+        IF( IErr.NE.0 ) THEN
+           PRINT*,"felixrefine (", my_rank, ") error in Allocation() of IIterativeVariableUniqueIDs"
+           RETURN
+        ENDIF
+        
+        DO ind=1,ILenVector
+           WRITE(SVariableStringVector(ind),'F15.3)') RVector(ind)
         END DO
-        VariableString="  "//TRIM(ADJUSTL(SVariableStringVector(1)))//"  "// &
-             TRIM(ADJUSTL(SVariableStringVector(2)))//"  "//TRIM(ADJUSTL(SVariableStringVector(3)))
+        
+        DO ind=1,ILenVector
+           SVariable=//"  "//TRIM(ADJUSTL(SVariableStringVector(ind)//"  "
+        !DO ind=1,3
+        !   WRITE(SVariableStringVector(ind),'(F15.3)') RVector(ind)
+        !   !SVariable=SVariable //"  "//SVariableStringVector(ind)
+        !END DO
+        !SVariable="  "//TRIM(ADJUSTL(SVariableStringVector(1)))//"  "// &
+        !     TRIM(ADJUSTL(SVariableStringVector(2)))//"  "//TRIM(ADJUSTL(SVariableStringVector(3)))
      ELSE
-        VariableString = ""
+        SVariable = ""
      END IF
 
 !!$  If IWriteFLAG is set to over 100 - IDebugFLAG is activated, IWriteFLAG set back to normal setting
@@ -103,7 +126,7 @@ SUBROUTINE Message(ProgramName,IPriorityFLAG,IErr,MessageVariable,RVariable,IVar
         IF((IPriorityFLAG.LE.IWriteFLAG.AND.my_rank.EQ.0.AND.ISoftwareMode.LT.IRefineSwitch) &
              .OR.IWriteFLAG.GE.10.AND.ISoftwareMode .LT. IRefineSwitch) THEN
            PRINT*,ProgramName,"( ",TRIM(ADJUSTL(my_rank_string))," ) ", &
-                TRIM(MessageVariable)," = ",TRIM(ADJUSTL(VariableString)),"  ",TRIM(ADJUSTL(MessageString))
+                TRIM(MessageVariable)," = ",TRIM(ADJUSTL(SVariable)),"  ",TRIM(ADJUSTL(MessageString))
         END IF
         
      ELSE IF (PRESENT(MessageVariable)) THEN
@@ -111,7 +134,7 @@ SUBROUTINE Message(ProgramName,IPriorityFLAG,IErr,MessageVariable,RVariable,IVar
         IF((IPriorityFLAG.LE.IWriteFLAG.AND.my_rank.EQ.0.AND.ISoftwareMode.LT.IRefineSwitch) &
              .OR.IWriteFLAG.GE.10.AND.ISoftwareMode .LT. IRefineSwitch) THEN
            PRINT*,ProgramName,"( ",TRIM(ADJUSTL(my_rank_string))," ) ",&
-                TRIM(ADJUSTL(MessageVariable))," = ",TRIM(ADJUSTL(VariableString))
+                TRIM(ADJUSTL(MessageVariable))," = ",TRIM(ADJUSTL(SVariable))
         END IF
         
      ELSE IF (PRESENT(MessageString)) THEN
@@ -135,7 +158,7 @@ SUBROUTINE Message(ProgramName,IPriorityFLAG,IErr,MessageVariable,RVariable,IVar
 
 !!$     Prints out reals with greater precision
      IF(PRESENT(RVariable)) THEN
-        WRITE(VariableString,'(F30.16)') RVariable
+        WRITE(SVariable,'(F30.16)') RVariable
      END IF
 
      ! Checks if MessageVariable & MessageString has been read into the function
@@ -144,7 +167,7 @@ SUBROUTINE Message(ProgramName,IPriorityFLAG,IErr,MessageVariable,RVariable,IVar
         IF((IPriorityFLAG.LE.IDebugFLAG.AND.my_rank.EQ.0.AND.ISoftwareMode.LT.IRefineSwitch) &
              .OR.IDebugFLAG.GE.110.AND.ISoftwareMode .LT. IRefineSwitch) THEN
            PRINT*,"DBG_MESSAGE: ",ProgramName,"( ",TRIM(ADJUSTL(my_rank_string))," ) ", &
-                TRIM(ADJUSTL(MessageVariable))," = ",TRIM(ADJUSTL(VariableString)),"  ",TRIM(ADJUSTL(MessageString))
+                TRIM(ADJUSTL(MessageVariable))," = ",TRIM(ADJUSTL(SVariable)),"  ",TRIM(ADJUSTL(MessageString))
         END IF
         
      ELSE IF (PRESENT(MessageVariable)) THEN
@@ -152,7 +175,7 @@ SUBROUTINE Message(ProgramName,IPriorityFLAG,IErr,MessageVariable,RVariable,IVar
         IF((IPriorityFLAG.LE.IDebugFLAG.AND.my_rank.EQ.0.AND.ISoftwareMode.LT.IRefineSwitch) &
              .OR.IDebugFLAG.GE.110.AND.ISoftwareMode .LT. IRefineSwitch) THEN
            PRINT*,"DBG_MESSAGE: ",ProgramName,"( ",TRIM(ADJUSTL(my_rank_string))," ) ",TRIM(ADJUSTL(MessageVariable)),&
-                " = ",TRIM(ADJUSTL(VariableString))
+                " = ",TRIM(ADJUSTL(SVariable))
         END IF
 
      ELSE IF (PRESENT(MessageString)) THEN
