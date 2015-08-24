@@ -55,7 +55,7 @@ def RunFelix(parent, CIFPath, OutputPath):
   # opens new (re-existing) directory and puts all input files into it
   #***ensure file and path check needs to be put here****
   filePath = os.path.realpath(__file__)
-  fileDirectory, fileName = os.path.split(filePath)
+  currentDirectory = os.getcwd()
 
   if parent.main.notebook.page6.imageObjectsControls[4].GetValue() == False and parent.main.notebook.page6.imageObjectsControls[5].GetValue() == False and parent.main.notebook.page6.imageObjectsControls[6].GetValue() == False:
     wx.MessageBox('Please select montage, stack reflections, or amplitude and phase from the image panel (at least one must be selected).', 'Error',
@@ -135,7 +135,7 @@ def RunFelix(parent, CIFPath, OutputPath):
   if os.path.exists(workingDir):
     shutil.rmtree(workingDir)
 
-  os.chdir(fileDirectory)
+  os.chdir(currentDirectory)
 
   wx.MessageBox('Felixsim successfully run!',
                 'Info', wx.OK | wx.ICON_INFORMATION)
