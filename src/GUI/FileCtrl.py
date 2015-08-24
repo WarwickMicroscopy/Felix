@@ -85,7 +85,7 @@ def RunFelix(parent, CIFPath, OutputPath):
   cpath, cfilename = os.path.split(CIFPath)
   cname = cfilename[:-4]
   OutputDirectory = OutputPath + "/" + cname + "_output"
-  workingDir = OutputDirectory + "/Working_Directory/"
+  workingDir = OutputDirectory + "/temp/Working_Directory/"
 
   count = 0
   OriginalDir = OutputDirectory
@@ -115,8 +115,8 @@ def RunFelix(parent, CIFPath, OutputPath):
   # Run in parallel or single core
   now = datetime.datetime.now().strftime("%I_%M%p_%B_%d_%Y")
   logname = "log_" + now
-  if os.path.exists("../../../logs") == False:
-    os.makedirs("../../../logs")
+  if os.path.exists("../../../../../../logs") == False:
+    os.makedirs("../../../../../../logs")
 
   print "Files before run: " + str(os.listdir(workingDir))
 
