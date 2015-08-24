@@ -50,7 +50,6 @@ SUBROUTINE Message(ProgramName,IPriorityFLAG,IErr,MessageVariable,RVariable,IVar
    
   CHARACTER(*), INTENT (IN), OPTIONAL ::  &
        MessageVariable, MessageString
-
   REAL(RKIND),INTENT(IN), OPTIONAL :: &
        RVariable, RVector(:) 
   INTEGER(IKIND),INTENT (IN), OPTIONAL :: &
@@ -66,7 +65,7 @@ SUBROUTINE Message(ProgramName,IPriorityFLAG,IErr,MessageVariable,RVariable,IVar
   INTEGER(IKIND) :: &
        IErr,IPriorityFLAG,ind
   
-  CHARACTER*100 SVariable, SVariableTemp, my_rank_string,DebugString
+  CHARACTER*100 SVariable, SVariableTemp,SVariableOld, my_rank_string,DebugString
   CHARACTER*30 SVariableString3DVector(THREEDIM)
   CHARACTER*30,DIMENSION(:), ALLOCATABLE :: &
        SVariableVector
@@ -80,33 +79,31 @@ SUBROUTINE Message(ProgramName,IPriorityFLAG,IErr,MessageVariable,RVariable,IVar
      ELSE IF (PRESENT(CVariable)) THEN
         WRITE(SVariable,'(F30.16)') CVariable
 
-!!$  Converts A vector input into a string - finds the size of the input vector,
-!!$  and allocates appropriately
+!!$  Converts a vector input into a string - finds the size of the input vector,
+!!$  and allocates appropriately. Stores in a long string SVariable
      ELSE IF (PRESENT(RVector)) THEN
-        ILenVector=SIZE(RVector)
+        ISizeVector=SIZE(RVector)
         ALLOCATE(&
-             SVariableVector(ILenVector),&
+             SVariableVector(ISizeVector),&
              STAT=IErr)
         IF( IErr.NE.0 ) THEN
            PRINT*,"felixrefine (", my_rank, ") error in Allocation() of IIterativeVariableUniqueIDs"
            RETURN
         ENDIF
         
-        DO ind=1,ILenVector
-           WRITE(SVariableStringVector(ind),'F15.3)') RVector(ind)
+        DO ind=1,ISizeVector
+           WRITE(SVariableVector(ind),'(F15.3)') RVector(ind)
         END DO
 
-        SVariable=""
+        SVariableOld=""
         SVariableTemp=""
-        DO ind=1,ILenVector
-           SVariableTemp=//"  "//TRIM(ADJUSTL(SVariableStringVector(ind)))//"  "
-           SVariable=
-        !DO ind=1,3
-        !   WRITE(SVariableStringVector(ind),'(F15.3)') RVector(ind)
-        !   !SVariable=SVariable //"  "//SVariableStringVector(ind)
-        !END DO
-        !SVariable="  "//TRIM(ADJUSTL(SVariableStringVector(1)))//"  "// &
-        !     TRIM(ADJUSTL(SVariableStringVector(2)))//"  "//TRIM(ADJUSTL(SVariableStringVector(3)))
+        DO ind=1,ISizeVector
+           SVariableTemp="  "//TRIM(ADJUSTL(SVariableVector(ind)))//"  "
+           SVariable=TRIM(ADJUSTL(SVariableOld))//" "// TRIM(ADJUSTL(SVariableTemp))//"  "
+           SVariableOld=SVariable
+           SVariableTemp=""
+        END DO
+
      ELSE
         SVariable = ""
      END IF
