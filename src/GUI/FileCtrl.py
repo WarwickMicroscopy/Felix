@@ -85,17 +85,19 @@ def RunFelix(parent, CIFPath, OutputPath):
   cpath, cfilename = os.path.split(CIFPath)
   cname = cfilename[:-4]
   OutputDirectory = OutputPath + "/" + cname + "_output"
-  workingDir = OutputDirectory + "/temp/Working_Directory/"
+
+  workingDir = os.path.abspath(filePath + "/../../../../Working_Directory")
+  workingDir = fileDirectory + "/Working_Directory/"
+
+  if os.path.exists(workingDir):
+    shutil.rmtree(workingDir)
+  os.makedirs(workingDir)
 
   count = 0
   OriginalDir = OutputDirectory
   while os.path.exists(OutputDirectory):
     count = count + 1
     OutputDirectory = OriginalDir + "(" + str(count) + ")"
-
-  if os.path.exists(workingDir):
-    shutil.rmtree(workingDir)
-  os.makedirs(workingDir)
 
   # Change to working directory
   os.chdir(workingDir)
@@ -121,10 +123,10 @@ def RunFelix(parent, CIFPath, OutputPath):
   print "Files before run: " + str(os.listdir(workingDir))
 
   if NumberofCores == 1:
-    os.system("../../../../../felixsim > " + OutputDirectory + "/logs/" + logname)  # single core
+    os.system("../../felixsim > ../../../logs/" + logname)  # single core
   else:
     os.system("mpirun -n " + str(NumberofCores) +
-              " ../../../../../felixsim  > " + OutputDirectory + "/logs" + logname)  # parallel
+              " ../../felixsim  > ../../../logs" + logname)  # parallel
 
   print "Files after run: " + str(os.listdir(workingDir))
 
