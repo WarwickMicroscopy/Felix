@@ -118,7 +118,7 @@ def RunFelix(parent, CIFPath, OutputPath):
   if os.path.exists("../../../logs") == False:
     os.makedirs("../../../logs")
 
-  print "Before run: " + str(os.listdir(workingDir))
+  print "Files before run: " + str(os.listdir(workingDir))
 
   if NumberofCores == 1:
     os.system("../../felixsim > ../../../logs/" + logname)  # single core
@@ -126,7 +126,7 @@ def RunFelix(parent, CIFPath, OutputPath):
     os.system("mpirun -n " + str(NumberofCores) +
               " ../../felixsim  > ../../../logs/" + logname)  # parallel
 
-  print "After run: " + str(os.listdir(workingDir))
+  print "Files after run: " + str(os.listdir(workingDir))
 
   shutil.copytree(workingDir, OutputDirectory)
   os.rename(OutputDirectory + "/felix.cif", OutputDirectory + "/" + cfilename)
@@ -492,10 +492,8 @@ def SetGUIFromFile(dir, parent):
   for line in inpLoadFile:
     if line.find('=') != -1:
       FileLineList.append(line[line.find('=') + 2:])
-      print line + " --> " + line[line.find('=') + 2:]
     else:
       FileLineList.append(line)
-      print line
 
   # IWriteFLAG
   IWriteFLAGSet = int(FileLineList[7])
@@ -503,19 +501,13 @@ def SetGUIFromFile(dir, parent):
 
   # IImageFLAG
   IImageFlagSet = FileLineList[8]
-  print('\n')
-  print(IImageFlagSet)
   IImageFlagSize = len(IImageFlagSet) - 1
-  print('\n')
-  print(IImageFlagSize)
 
   IImageFlagValues = [False, False, False]
 
   for x in range(0, IImageFlagSize):
     index = int(IImageFlagSet[x])
     IImageFlagValues[index] = True
-
-  print(IImageFlagValues)
 
   for y in range(0, 3):
     parent.main.notebook.page6.imageObjectsControls[

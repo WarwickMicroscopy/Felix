@@ -102,26 +102,29 @@ class FlagPanel(wx.Panel):
     flags.append(flag8)
 
     # check
-    print "Checking flags\n"
     for flag in flags:
-      print 'Checking flag: {0}.\n'.format(flag['name'])
       if type(flag['name']) != str:
+        print 'Flag: {0}.\n'.format(flag['name'])
         sys.exit("Incorrect value for name in flag (please use a string)\n")
       if type(flag['choices']) != list:
+        print 'Flag: {0}.\n'.format(flag['name'])
         sys.exit(
             "Incorrect value for the choices in flag (please use a list of strings, or an empty list for a checkbox)\n")
       for choice in flag['choices']:
         if flag['choices'] == False or type(choice) != str:
           sys.exit("Incorrect value for choice in flag (please use a string)\n")
       if flag['object type'] != 'CHOICE' and flag['object type'] != 'CHECKBOX':
+        print 'Flag: {0}.\n'.format(flag['name'])
         sys.exit(
             "Incorrect value for object type in flag (use CHECKBOX or CHOICE\n")
       if flag['object type'] == 'CHOICE':
         if type(flag['default']) != str:
+          print 'Flag: {0}.\n'.format(flag['name'])
           sys.exit(
               "Incorrect value for default in flag (use a string for CHOICE types\n")
       if flag['object type'] == 'CHECKBOX':
         if flag['default'] != 0 and flag['default'] != 1:
+          print 'Flag: {0}.\n'.format(flag['name'])
           sys.exit(
               "Incorrect value for default in flag (use a 0 or 1 for checkbox off or on, respectively\n")
 
@@ -133,9 +136,7 @@ class FlagPanel(wx.Panel):
     # Making the code a bit more future proof by generating flag layout
     # from a list of flag names
     flagnumber = len(flags)
-    print 'The number of flags: {0}.\n'.format(flagnumber)
     numberOfRows = int(math.ceil(flagnumber / 2.0))
-    print 'The number of rows: {0}.\n'.format(numberOfRows)
 
     # Make some lists
     flagObjectsLabels = []
@@ -147,7 +148,6 @@ class FlagPanel(wx.Panel):
 
     # Finds the number of empty slots on the bottom row to add spacer later
     spacerNo = (2 - (flagnumber % 2)) % 2
-    print 'The number of spacers: {0}.\n'.format(spacerNo)
 
     # Adds a sizer for each row to a sizer list
     for x in range(0, numberOfRows):
@@ -160,7 +160,6 @@ class FlagPanel(wx.Panel):
       ComboObjects.append(temp)
 
       choices = flag['choices']
-      print(choices)
       flagObjectsLabels.append(wx.StaticText(temp, wx.ID_ANY, flag['name']))
       flagIndex = flags.index(flag)
       if flag['object type'] == 'CHOICE':
@@ -277,35 +276,43 @@ class BeamPanel(wx.Panel):
     BeamControlList.append(self.BeamControl5)
 
     # check
-    print "Checking beam controls\n"
     for BeamCtrl in BeamControlList:
-      print 'Checking BeamCtrl: {0}.\n'.format(BeamCtrl[0])
       if type(BeamCtrl[0]) != str:
+        print 'Checking BeamCtrl: {0}.\n'.format(BeamCtrl[0])
         sys.exit("Incorrect value for name in BeamCtrl (please use a string)\n")
       if type(BeamCtrl[5]) != int:
+        print 'Checking BeamCtrl: {0}.\n'.format(BeamCtrl[0])
         sys.exit("Incorrect value for type in BeamCtrl (please use a 1 or a 2)\n")
       if BeamCtrl[5] == 1:
         if type(BeamCtrl[1]) != str:
+          print 'Checking BeamCtrl: {0}.\n'.format(BeamCtrl[0])
           sys.exit(
               "Incorrect value for default value in BeamCtrl (please use a string)\n")
         if type(BeamCtrl[2]) != int:
+          print 'Checking BeamCtrl: {0}.\n'.format(BeamCtrl[0])
           sys.exit(
               "Incorrect value for increment in BeamCtrl (please use an int)\n")
         if type(BeamCtrl[3]) != int:
+          print 'Checking BeamCtrl: {0}.\n'.format(BeamCtrl[0])
           sys.exit("Incorrect value for min in BeamCtrl (please use a int)\n")
         if type(BeamCtrl[4]) != int:
+          print 'Checking BeamCtrl: {0}.\n'.format(BeamCtrl[0])
           sys.exit("Incorrect value for max in BeamCtrl (please use a int)\n")
       if BeamCtrl[5] == 2:
         if type(BeamCtrl[1]) != str:
+          print 'Checking BeamCtrl: {0}.\n'.format(BeamCtrl[0])
           sys.exit(
               "Incorrect value for default value in BeamCtrl (please use a string)\n")
         if type(BeamCtrl[2]) != float and type(BeamCtrl[2]) != int:
+          print 'Checking BeamCtrl: {0}.\n'.format(BeamCtrl[0])
           sys.exit(
               "Incorrect value for increment in BeamCtrl (please use an float or int)\n")
         if type(BeamCtrl[3]) != float and type(BeamCtrl[3]) != int:
+          print 'Checking BeamCtrl: {0}.\n'.format(BeamCtrl[0])
           sys.exit(
               "Incorrect value for min in BeamCtrl (please use a float or int)\n")
         if type(BeamCtrl[4]) != float and type(BeamCtrl[4]) != int:
+          print 'Checking BeamCtrl: {0}.\n'.format(BeamCtrl[0])
           sys.exit(
               "Incorrect value for max in BeamCtrl (please use a float or int)\n")
 
@@ -316,9 +323,7 @@ class BeamPanel(wx.Panel):
     # Making the code a bit more future proof by generating beam layout
     # from a list of beam names
     beamnumber = len(BeamControlList)
-    print 'The number of beam controls: {0}.\n'.format(beamnumber)
     numberOfRows = int(math.ceil(beamnumber / 2.0))
-    print 'The number of rows: {0}.\n'.format(numberOfRows)
 
     # Make some lists
     SizerObjects = []
@@ -332,7 +337,6 @@ class BeamPanel(wx.Panel):
 
     # Finds the number of empty slots on the bottom row to add spacer later
     spacerNo = (2 - (beamnumber % 2)) % 2
-    print 'The number of spacers: {0}.\n'.format(spacerNo)
 
     # Adds a sizer for each row to a sizer list
     for x in range(0, numberOfRows):
@@ -358,7 +362,6 @@ class BeamPanel(wx.Panel):
       if beamtype == 1:
         beamObjectsControls.append(wx.SpinCtrl(temp, id=wx.ID_ANY, size=(60, -1),
                                                value=beamvalue, min=beammin, max=beammax))
-        print('Added a spin!')
       elif beamtype == 2:
         beamObjectsControls.append(FS.FloatSpin(temp, size=(60, -1),
                                                 value=beamvalue, increment=beamincrement, min_val=beammin,
@@ -366,7 +369,6 @@ class BeamPanel(wx.Panel):
 
         beamObjectsControls[currentIndex].SetFormat("%f")
         beamObjectsControls[currentIndex].SetDigits(1)
-        print('Added a float spin!')
 
     # Adds the objects from the lists to the respective rows in the sizer list
     for beamNo in range(0, beamnumber):
@@ -423,38 +425,47 @@ class crystalPanel(wx.Panel):
     crystalControlList.append(crystalControl2)
 
     # check
-    print "Checking crystal controls\n"
     for CrystalCtrl in crystalControlList:
-      print 'Checking CrystalCtrl: {0}.\n'.format(CrystalCtrl[0])
       if type(CrystalCtrl[0]) != str:
+        print 'Checking CrystalCtrl: {0}.\n'.format(CrystalCtrl[0])
         sys.exit("Incorrect value for name in CrystalCtrl (please use a string)\n")
       if type(CrystalCtrl[5]) != int:
+        print 'Checking CrystalCtrl: {0}.\n'.format(CrystalCtrl[0])
         sys.exit("Incorrect value for type in CrystalCtrl (please use a 1 or a 2)\n")
       if CrystalCtrl[5] == 1:
         if type(CrystalCtrl[1]) != str:
+          print 'Checking CrystalCtrl: {0}.\n'.format(CrystalCtrl[0])
           sys.exit(
               "Incorrect value for default value in CrystalCtrl (please use a string)\n")
         if type(CrystalCtrl[2]) != int:
+          print 'Checking CrystalCtrl: {0}.\n'.format(CrystalCtrl[0])
           sys.exit(
               "Incorrect value for increment in CrystalCtrl (please use an int)\n")
         if type(CrystalCtrl[3]) != int:
+          print 'Checking CrystalCtrl: {0}.\n'.format(CrystalCtrl[0])
           sys.exit("Incorrect value for min in CrystalCtrl (please use a int)\n")
         if type(CrystalCtrl[4]) != int:
+          print 'Checking CrystalCtrl: {0}.\n'.format(CrystalCtrl[0])
           sys.exit("Incorrect value for max in CrystalCtrl (please use a int)\n")
       if CrystalCtrl[5] == 2:
         if type(CrystalCtrl[1]) != str:
+          print 'Checking CrystalCtrl: {0}.\n'.format(CrystalCtrl[0])
           sys.exit(
               "Incorrect value for default value in CrystalCtrl (please use a string)\n")
         if type(CrystalCtrl[2]) != float and type(CrystalCtrl[2]) != int:
+          print 'Checking CrystalCtrl: {0}.\n'.format(CrystalCtrl[0])
           sys.exit(
               "Incorrect value for increment in CrystalCtrl (please use an float or int)\n")
         if type(CrystalCtrl[3]) != float and type(CrystalCtrl[3]) != int:
+          print 'Checking CrystalCtrl: {0}.\n'.format(CrystalCtrl[0])
           sys.exit(
               "Incorrect value for min in CrystalCtrl (please use a float or int)\n")
         if type(CrystalCtrl[4]) != float and type(CrystalCtrl[4]) != int:
+          print 'Checking CrystalCtrl: {0}.\n'.format(CrystalCtrl[0])
           sys.exit(
               "Incorrect value for max in CrystalCtrl (please use a float or int)\n")
         if type(CrystalCtrl[6]) != int:
+          print 'Checking CrystalCtrl: {0}.\n'.format(CrystalCtrl[0])
           sys.exit(
               "Incorrect value for no. of digits in CrystalCtrl (please use an int)\n")
 #=========================================================================
@@ -464,9 +475,7 @@ class crystalPanel(wx.Panel):
     # Making the code a bit more future proof by generating crystal layout
     # from a list of crystal names
     crystalnumber = len(crystalControlList)
-    print 'The number of crystal controls: {0}.\n'.format(crystalnumber)
     numberOfRows = int(math.ceil(crystalnumber / 2.0))
-    print 'The number of rows: {0}.\n'.format(numberOfRows)
 
     # Make some lists
     SizerObjects = []
@@ -476,7 +485,6 @@ class crystalPanel(wx.Panel):
 
     # Finds the number of empty slots on the bottom row to add spacer later
     spacerNo = (2 - (crystalnumber % 2)) % 2
-    print 'The number of spacers: {0}.\n'.format(spacerNo)
 
     # Adds a sizer for each row to a sizer list
     for x in range(0, numberOfRows):
@@ -504,7 +512,6 @@ class crystalPanel(wx.Panel):
       if crystaltype == 1:
         self.crystalObjectsControls.append(wx.SpinCtrl(temp, id=wx.ID_ANY,
                                                        size=(60, -1), value=crystalvalue, min=crystalmin, max=crystalmax))
-        print('Added a spin!')
       elif crystaltype == 2:
         self.crystalObjectsControls.append(FS.FloatSpin(temp, size=(60, -1),
                                                         value=crystalvalue, increment=crystalincrement,
@@ -512,7 +519,6 @@ class crystalPanel(wx.Panel):
 
         self.crystalObjectsControls[currentIndex].SetFormat("%f")
         self.crystalObjectsControls[currentIndex].SetDigits(crystaldigits)
-        print('Added a float spin!')
 
 
     # Adds the objects from the lists to the respective rows in the sizer list
@@ -595,37 +601,45 @@ class microscopePanel(wx.Panel):
     microscopeControlList.append(microscopeControl13)
 
     # check
-    print "Checking microscope controls\n"
     for MicroscopeCtrl in microscopeControlList:
-      print 'Checking MicroscopeCtrl: {0}.\n'.format(MicroscopeCtrl[0])
       if type(MicroscopeCtrl[0]) != str:
+        print 'Checking MicroscopeCtrl: {0}.\n'.format(MicroscopeCtrl[0])
         sys.exit(
             "Incorrect value for name in MicroscopeCtrl (please use a string)\n")
       if type(MicroscopeCtrl[5]) != int:
+        print 'Checking MicroscopeCtrl: {0}.\n'.format(MicroscopeCtrl[0])
         sys.exit(
             "Incorrect value for type in MicroscopeCtrl (please use a 1 or a 2)\n")
       if MicroscopeCtrl[5] == 1:
         if type(MicroscopeCtrl[1]) != str:
+          print 'Checking MicroscopeCtrl: {0}.\n'.format(MicroscopeCtrl[0])
           sys.exit(
               "Incorrect value for default value in MicroscopeCtrl (please use a string)\n")
         if type(MicroscopeCtrl[2]) != int:
+          print 'Checking MicroscopeCtrl: {0}.\n'.format(MicroscopeCtrl[0])
           sys.exit(
               "Incorrect value for increment in MicroscopeCtrl (please use an int)\n")
         if type(MicroscopeCtrl[3]) != int:
+          print 'Checking MicroscopeCtrl: {0}.\n'.format(MicroscopeCtrl[0])
           sys.exit("Incorrect value for min in MicroscopeCtrl (please use a int)\n")
         if type(MicroscopeCtrl[4]) != int:
+          print 'Checking MicroscopeCtrl: {0}.\n'.format(MicroscopeCtrl[0])
           sys.exit("Incorrect value for max in MicroscopeCtrl (please use a int)\n")
       if MicroscopeCtrl[5] == 2:
         if type(MicroscopeCtrl[1]) != str:
+          print 'Checking MicroscopeCtrl: {0}.\n'.format(MicroscopeCtrl[0])
           sys.exit(
               "Incorrect value for default value in MicroscopeCtrl (please use a string)\n")
         if type(MicroscopeCtrl[2]) != float and type(MicroscopeCtrl[2]) != int:
+          print 'Checking MicroscopeCtrl: {0}.\n'.format(MicroscopeCtrl[0])
           sys.exit(
               "Incorrect value for increment in MicroscopeCtrl (please use an float or int)\n")
         if type(MicroscopeCtrl[3]) != float and type(MicroscopeCtrl[3]) != int:
+          print 'Checking MicroscopeCtrl: {0}.\n'.format(MicroscopeCtrl[0])
           sys.exit(
               "Incorrect value for min in MicroscopeCtrl (please use a float or int)\n")
         if type(MicroscopeCtrl[4]) != float and type(MicroscopeCtrl[4]) != int:
+          print 'Checking MicroscopeCtrl: {0}.\n'.format(MicroscopeCtrl[0])
           sys.exit(
               "Incorrect value for max in MicroscopeCtrl (please use a float or int)\n")
 
@@ -636,9 +650,7 @@ class microscopePanel(wx.Panel):
     # Making the code a bit more future proof by generating microscope layout
     # from a list of microscope names
     microscopenumber = len(microscopeControlList)
-    print 'The number of microscope controls: {0}.\n'.format(microscopenumber)
     numberOfRows = int(math.ceil(microscopenumber / 2.0))
-    print 'The number of rows: {0}.\n'.format(numberOfRows)
 
     # Make some lists
     SizerObjects = []
@@ -648,7 +660,6 @@ class microscopePanel(wx.Panel):
 
     # Finds the number of empty slots on the bottom row to add spacer later
     spacerNo = (2 - (microscopenumber % 2)) % 2
-    print 'The number of spacers: {0}.\n'.format(spacerNo)
 
     # Adds a sizer for each row to a sizer list
     for x in range(0, numberOfRows):
@@ -676,7 +687,6 @@ class microscopePanel(wx.Panel):
         self.microscopeObjectsControls.append(wx.SpinCtrl(temp, id=wx.ID_ANY,
                                                           size=(60, -1), value=microscopevalue,
                                                           min=microscopemin, max=microscopemax))
-        print('Added a spin!')
       elif microscopetype == 2:
         self.microscopeObjectsControls.append(FS.FloatSpin(temp, size=(60, -1),
                                                            value=microscopevalue, increment=microscopeincrement,
@@ -684,7 +694,6 @@ class microscopePanel(wx.Panel):
 
         self.microscopeObjectsControls[currentIndex].SetFormat("%f")
         self.microscopeObjectsControls[currentIndex].SetDigits(1)
-        print('Added a float spin!')
 
     # Adds the objects from the lists to the respective rows in the sizer list
     for microscopeNo in range(0, microscopenumber):
@@ -751,38 +760,47 @@ class imagePanel(wx.Panel):
     imageControlList.append(IImageFLAG3)
 
     # check
-    print "Checking image controls\n"
     for ImageCtrl in imageControlList:
-      print 'Checking ImageCtrl: {0}.\n'.format(ImageCtrl[0])
       if type(ImageCtrl[0]) != str:
+        print 'Checking ImageCtrl: {0}.\n'.format(ImageCtrl[0])
         sys.exit("Incorrect value for name in ImageCtrl (please use a string)\n")
       if type(ImageCtrl[5]) != int:
+        print 'Checking ImageCtrl: {0}.\n'.format(ImageCtrl[0])
         sys.exit("Incorrect value for type in ImageCtrl (please use a 1 or a 2)\n")
       if ImageCtrl[5] == 1:
         if type(ImageCtrl[1]) != str:
+          print 'Checking ImageCtrl: {0}.\n'.format(ImageCtrl[0])
           sys.exit(
               "Incorrect value for default value in ImageCtrl (please use a string)\n")
         if type(ImageCtrl[2]) != int:
+          print 'Checking ImageCtrl: {0}.\n'.format(ImageCtrl[0])
           sys.exit(
               "Incorrect value for increment in ImageCtrl (please use an int)\n")
         if type(ImageCtrl[3]) != int:
+          print 'Checking ImageCtrl: {0}.\n'.format(ImageCtrl[0])
           sys.exit("Incorrect value for min in ImageCtrl (please use a int)\n")
         if type(ImageCtrl[4]) != int:
+          print 'Checking ImageCtrl: {0}.\n'.format(ImageCtrl[0])
           sys.exit("Incorrect value for max in ImageCtrl (please use a int)\n")
       if ImageCtrl[5] == 2:
         if type(ImageCtrl[1]) != str:
+          print 'Checking ImageCtrl: {0}.\n'.format(ImageCtrl[0])
           sys.exit(
               "Incorrect value for default value in ImageCtrl (please use a string)\n")
         if type(ImageCtrl[2]) != float and type(ImageCtrl[2]) != int:
+          print 'Checking ImageCtrl: {0}.\n'.format(ImageCtrl[0])
           sys.exit(
               "Incorrect value for increment in ImageCtrl (please use an float or int)\n")
         if type(ImageCtrl[3]) != float and type(ImageCtrl[3]) != int:
+          print 'Checking ImageCtrl: {0}.\n'.format(ImageCtrl[0])
           sys.exit(
               "Incorrect value for min in ImageCtrl (please use a float or int)\n")
         if type(ImageCtrl[4]) != float and type(ImageCtrl[4]) != int:
+          print 'Checking ImageCtrl: {0}.\n'.format(ImageCtrl[0])
           sys.exit(
               "Incorrect value for max in ImageCtrl (please use a float or int)\n")
         if type(ImageCtrl[6]) != int:
+          print 'Checking ImageCtrl: {0}.\n'.format(ImageCtrl[0])
           sys.exit(
               "Incorrect value for no. of digits in ImageCtrl (please use an int)\n")
 
@@ -793,9 +811,7 @@ class imagePanel(wx.Panel):
     # Making the code a bit more future proof by generating image layout
     # from a list of image names
     imagenumber = len(imageControlList)
-    print 'The number of image controls: {0}.\n'.format(imagenumber)
     numberOfRows = int(math.ceil(imagenumber / 2.0))
-    print 'The number of rows: {0}.\n'.format(numberOfRows)
 
     # Make some lists
     SizerObjects = []
@@ -805,7 +821,6 @@ class imagePanel(wx.Panel):
 
     # Finds the number of empty slots on the bottom row to add spacer later
     spacerNo = (2 - (imagenumber % 2)) % 2
-    print 'The number of spacers: {0}.\n'.format(spacerNo)
 
     # Adds a sizer for each row to a sizer list
     for x in range(0, numberOfRows):
@@ -832,7 +847,6 @@ class imagePanel(wx.Panel):
       if imagetype == 1:
         self.imageObjectsControls.append(wx.SpinCtrl(temp, id=wx.ID_ANY,
                                                      size=(60, -1), value=imagevalue, min=imagemin, max=imagemax))
-        print('Added a spin!')
       elif imagetype == 2:
         self.imageObjectsControls.append(FS.FloatSpin(temp, size=(60, -1),
                                                       value=imagevalue, increment=imageincrement, min_val=imagemin,
@@ -840,7 +854,6 @@ class imagePanel(wx.Panel):
 
         self.imageObjectsControls[currentIndex].SetFormat("%f")
         self.imageObjectsControls[currentIndex].SetDigits(imagedigits)
-        print('Added a float spin!')
       elif imagetype == 3:
         self.imageObjectsControls.append(wx.CheckBox(temp, wx.ID_ANY, size=(60, -1),
                                                      name=imagename))
@@ -948,7 +961,6 @@ class optionPanel(wx.Panel):
 
   def OnCifWrapper(self, event):
     self.CIFPath = FileCtrl.OnCif(self)
-    print self.CIFPath
 
   def InpCreateWrapper(self, event):
     FileCtrl.InpCreate(self)
