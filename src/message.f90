@@ -38,7 +38,8 @@
 MODULE WriteToScreen
 CONTAINS
 
-  SUBROUTINE Message(ProgramName,IPriorityFLAG,IErr,MessageVariable,RVariable,IVariable,RVector,CVariable,MessageString)
+  SUBROUTINE Message(ProgramName,IPriorityFLAG,IErr,MessageVariable,RVariable,IVariable, &
+       RVector,RMatrix,CVariable,MessageString)
 
     USE MyNumbers
     USE IPara
@@ -51,24 +52,32 @@ CONTAINS
     CHARACTER(*), INTENT (IN), OPTIONAL ::  &
          MessageVariable, MessageString
     REAL(RKIND),INTENT(IN), OPTIONAL :: &
-         RVariable, RVector(:) 
+         RVariable, RVector(:), RMatrix(:,:) 
     INTEGER(IKIND),INTENT (IN), OPTIONAL :: &
          IVariable
     COMPLEX(CKIND),INTENT (IN), OPTIONAL :: &
          CVariable
 
     INTEGER(IKIND) :: &
-         ISizeVector
+         ISizeVector,ISizeMatrixX,ISizeMatrixY
 
     CHARACTER(*),INTENT (IN) :: &
          ProgramName
     INTEGER(IKIND) :: &
-         IErr,IPriorityFLAG,ind
+         IErr,IPriorityFLAG,ind,jnd
 
-    CHARACTER*100 SVariable, SVariableTemp,SVariableOld, my_rank_string,DebugString
-    CHARACTER*30 SVariableString3DVector(THREEDIM)
+    CHARACTER*100 &
+         SVariable, SVariableTemp,SVariableOld, my_rank_string,DebugString,Sind
     CHARACTER*30,DIMENSION(:), ALLOCATABLE :: &
          SVariableVector
+    CHARACTER*30,DIMENSION(:,:), ALLOCATABLE :: &
+         SVariableMatrix
+
+    INTEGER(IKIND) :: &
+         IMatrixPresentSwitch
+
+    !Variable that switches message subroutine to matrix printing mode 
+    IMatrixPresentSwitch=0
 
 !!$  Converts my_rank to string and then either the RVariable, IVariable, CVariable to a string
     WRITE(my_rank_string,'(I6.1)') my_rank 
@@ -104,9 +113,28 @@ CONTAINS
           SVariableTemp=""
        END DO
 
+    ELSE IF (PRESENT(RMatrix)) THEN
+       IMatrixPresentSwitch=1
+       ISizeMatrixX=SIZE(RMatrix,1,IKIND)
+       ISizeMatrixY=SIZE(RMatrix,2,IKIND)
+       ALLOCATE(&
+            SVariableMatrix(ISizeMatrixX,ISizematrixY), &
+            STAT=IErr)
+       IF( IErr.NE.0 ) THEN
+          PRINT*,"felixrefine (", my_rank, ") error in Allocation() of IIterativeVariableUniqueIDs"
+          RETURN
+       ENDIF
+
+       DO ind=1,ISizeMatrixX
+          DO jnd=1,ISizeMatrixY
+             WRITE(SVariableMatrix(ind,jnd),'(F15.3)') RMatrix(ind,jnd)
+          END DO
+       END DO
+
     ELSE
        SVariable = ""
     END IF
+
 
 !!$  If IWriteFLAG is set to over 100 - IDebugFLAG is activated, IWriteFLAG set back to normal setting
 
@@ -117,7 +145,7 @@ CONTAINS
 
 !!$  If IPriorityFLAG is over 100 (Debug messaging) below won't execute
 !!$  Prints out specified variation of message (dependent on presence of variables), to the screen
-    IF (IPriorityFLAG .LT. 100) THEN 
+    IF (IPriorityFLAG .LT. 100.AND.IMatrixPresentSwitch.EQ.0) THEN 
 
        ! Checks if MessageVariable & MessageString has been read into the function
        IF (PRESENT(MessageVariable).AND.PRESENT(MessageString)) THEN
@@ -153,9 +181,9 @@ CONTAINS
 !!$-----------------------------------------------------------------------------
 !!$  below only executes if message is a debug message and set in debug mode
 !!$  Debug messages are printed out here
-    ELSE IF(IPriorityFLAG .GE. 100) THEN
+    ELSE IF(IPriorityFLAG .GE. 100.AND.IMatrixPresentSwitch.EQ.0) THEN
 
-!!$     Prints out reals with greater precision
+!!$     Prints out Reals with greater precision
        IF(PRESENT(RVariable)) THEN
           WRITE(SVariable,'(F30.16)') RVariable
        END IF
@@ -166,14 +194,15 @@ CONTAINS
           IF((IPriorityFLAG.LE.IDebugFLAG.AND.my_rank.EQ.0.AND.ISoftwareMode.LT.IRefineSwitch) &
                .OR.IDebugFLAG.GE.110.AND.ISoftwareMode .LT. IRefineSwitch) THEN
              PRINT*,"DBG_MESSAGE: ",ProgramName,"( ",TRIM(ADJUSTL(my_rank_string))," ) ", &
-                  TRIM(ADJUSTL(MessageVariable))," = ",TRIM(ADJUSTL(SVariable)),"  ",TRIM(ADJUSTL(MessageString))
+                  TRIM(ADJUSTL(MessageVariable))," = ",TRIM(ADJUSTL(SVariable)),"  ", &
+                  TRIM(ADJUSTL(MessageString))
           END IF
 
        ELSE IF (PRESENT(MessageVariable)) THEN
 
           IF((IPriorityFLAG.LE.IDebugFLAG.AND.my_rank.EQ.0.AND.ISoftwareMode.LT.IRefineSwitch) &
                .OR.IDebugFLAG.GE.110.AND.ISoftwareMode .LT. IRefineSwitch) THEN
-            PRINT*,"DBG_MESSAGE: ",ProgramName,"( ",TRIM(ADJUSTL(my_rank_string))," ) ", &
+             PRINT*,"DBG_MESSAGE: ",ProgramName,"( ",TRIM(ADJUSTL(my_rank_string))," ) ", &
                   TRIM(ADJUSTL(MessageVariable))," = ",TRIM(ADJUSTL(SVariable))
           END IF
 
@@ -181,10 +210,9 @@ CONTAINS
 
           IF((IPriorityFLAG.LE.IDebugFLAG.AND.my_rank.EQ.0.AND.ISoftwareMode.LT.IRefineSwitch) &
                .OR.IDebugFLAG.GE.110.AND.ISoftwareMode .LT. IRefineSwitch) THEN
-            PRINT*,"DBG_MESSAGE: ",ProgramName,"( ",TRIM(ADJUSTL(my_rank_string))," ) ", & 
+             PRINT*,"DBG_MESSAGE: ",ProgramName,"( ",TRIM(ADJUSTL(my_rank_string))," ) ", & 
                   TRIM(ADJUSTL(MessageString))
           END IF
-
 
        ELSE
 
@@ -192,6 +220,49 @@ CONTAINS
                .OR.IDebugFLAG.GE.110.AND.ISoftwareMode .LT. IRefineSwitch) THEN
              PRINT*,"DBG_MESSAGE: ",ProgramName,"( ",TRIM(ADJUSTL(my_rank_string))," ) "
           END IF
+       END IF
+
+!!$-----------------------------------------------------------------------------
+!!$  Below executes in the special case of printing out a matrix - *only for DebugMode*
+!!$  We need to loop through each row of the matrix and Print to the screen in felix 
+!!$  message format.
+    ELSE IF(IPriorityFLAG.GE.100.AND.IMatrixPresentSwitch.EQ.1) THEN
+
+       IF((IPriorityFLAG.LE.IDebugFLAG.AND.my_rank.EQ.0.AND.ISoftwareMode.LT.IRefineSwitch) &
+            .OR.IDebugFLAG.GE.110.AND.ISoftwareMode .LT. IRefineSwitch) THEN
+
+          DO ind=1,ISizeMatrixX
+             SVariableOld=""
+             SVariableTemp=""
+             DO jnd =1,ISizeMatrixY
+                SVariableTemp="  "//TRIM(ADJUSTL(SVariableMatrix(ind,jnd)))//"  "
+                SVariable=TRIM(ADJUSTL(SVariableOld))//" "// TRIM(ADJUSTL(SVariableTemp))//"  "
+                SVariableOld=SVariable
+                SVariableTemp=""
+             END DO
+
+             WRITE(Sind,'(I8.1)') ind
+
+             ! Checks if MessageVariable & MessageString has been read into the function
+             IF (PRESENT(MessageVariable).AND.PRESENT(MessageString)) THEN
+                !Prints out message
+                IF((IPriorityFLAG.LE.IDebugFLAG.AND.my_rank.EQ.0.AND.ISoftwareMode.LT.IRefineSwitch) &
+                     .OR.IDebugFLAG.GE.110.AND.ISoftwareMode .LT. IRefineSwitch) THEN
+                   PRINT*,"DBG_MESSAGE: ",ProgramName,"( ",TRIM(ADJUSTL(my_rank_string))," ) ", &
+                        TRIM(ADJUSTL(MessageVariable)),"(",TRIM(ADJUSTL(Sind)),":) = ", &
+                        TRIM(ADJUSTL(SVariable)),"  ",TRIM(ADJUSTL(MessageString))
+                END IF
+
+             ELSE IF (PRESENT(MessageVariable)) THEN
+
+                IF((IPriorityFLAG.LE.IDebugFLAG.AND.my_rank.EQ.0.AND.ISoftwareMode.LT.IRefineSwitch) &
+                     .OR.IDebugFLAG.GE.110.AND.ISoftwareMode .LT. IRefineSwitch) THEN
+                   PRINT*,"DBG_MESSAGE: ",ProgramName,"( ",TRIM(ADJUSTL(my_rank_string))," ) ", &
+                        TRIM(ADJUSTL(MessageVariable)),"(",TRIM(ADJUSTL(Sind)),":) = ", &
+                        TRIM(ADJUSTL(SVariable))
+                END IF
+             END IF
+          END DO
        END IF
     END IF
 
