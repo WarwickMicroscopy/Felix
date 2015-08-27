@@ -303,6 +303,8 @@ SUBROUTINE ScatteringFactors(IScatteringMethodSwitch,IErr)
         RETURN
      ENDIF
 
+     RScattFactors=RKirkland
+
 
   CASE(1) !Peng Scattering Factors (must include reference here - in wiki)
 
@@ -971,11 +973,6 @@ SUBROUTINE ScatteringFactors(IScatteringMethodSwitch,IErr)
 !!$Assign Global Scattering factor array with chosen scattering factors (Lobato)
      RScattFactors=RLobato
 
-     DO ind=1,103
-        CALL Message("ScatteringFactors",IMust+IDebug,IErr, &
-             MessageVariable="Lobato Matrix", &
-             RVector=RLobato(ind,:))
-     END DO
   CASE DEFAULT
 
      CALL Message("ScatteringFactors",IMust,IErr, &
