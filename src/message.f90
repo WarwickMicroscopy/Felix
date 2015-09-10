@@ -239,7 +239,10 @@ CONTAINS
              SVariableTemp=""
              ILineBreaks=1
              DO jnd =1,ISizeMatrixY
+!!$             Could be an input defined variable
+!!$             ************************
                 ILengthofLine=10
+!!$             ************************
                 IMaxLengthIndicator=MOD(jnd,ILengthofline)
                 IF(IMaxLengthIndicator.EQ.0) THEN
                    ILineBreaks=ILineBreaks+1
@@ -258,7 +261,10 @@ CONTAINS
 
              WRITE(Sind,'(I8.1)') ind
 
-             ! Checks if MessageVariable & MessageString has been read into the function
+!!$             Checks if MessageVariable & MessageString has been read into the function
+!!$             Three Conditions - row is one line long or less, row is 2 lines long or row is
+!!$             greater than three lines long. The Print Statement is added for each case, this
+!!$             provides a consistent matrix format no matter the length of the row
              IF (PRESENT(MessageVariable).AND.PRESENT(MessageString)) THEN
                 IF((IPriorityFLAG.LE.IDebugFLAG.AND.my_rank.EQ.0.AND.ISoftwareMode.LT.IRefineSwitch) &
                      .OR.IDebugFLAG.GE.110.AND.ISoftwareMode .LT. IRefineSwitch) THEN
