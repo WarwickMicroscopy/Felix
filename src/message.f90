@@ -64,17 +64,18 @@ CONTAINS
     CHARACTER(*),INTENT (IN) :: &
          ProgramName
     INTEGER(IKIND) :: &
-         IErr,IPriorityFLAG,ind,jnd
+         IErr,IPriorityFLAG,ind,jnd,knd
 
     CHARACTER*100 &
          SVariable, SVariableTemp,SVariableOld, my_rank_string,DebugString,Sind
     CHARACTER*30,DIMENSION(:), ALLOCATABLE :: &
          SVariableVector
     CHARACTER*30,DIMENSION(:,:), ALLOCATABLE :: &
-         SVariableMatrix
+         SVariableMatrix, SVariableMatrixDummy
 
     INTEGER(IKIND) :: &
-         IMatrixPresentSwitch,ILengthofLine,IMaxLengthIndicator,ILineBreaks
+         IMatrixPresentSwitch,ILengthofLine,IMaxLengthIndicator,ILineBreaks, &
+         INumElementsinFinalLine,INumCharactersinOneLine,INumFulllineCharacters
 
     !Variable that switches message subroutine to matrix printing mode 
     IMatrixPresentSwitch=0
@@ -121,15 +122,23 @@ CONTAINS
             SVariableMatrix(ISizeMatrixX,ISizematrixY), &
             STAT=IErr)
        IF( IErr.NE.0 ) THEN
-          PRINT*,"felixrefine (", my_rank, ") error in Allocation() of IIterativeVariableUniqueIDs"
+          PRINT*,"felixsim (", my_rank, ") error in Allocation() of SVariableMatrix"
           RETURN
        ENDIF
 
-       DO ind=1,ISizeMatrixX
-          DO jnd=1,ISizeMatrixY
-             WRITE(SVariableMatrix(ind,jnd),'(F15.3)') RMatrix(ind,jnd)
-          END DO
-       END DO
+        ALLOCATE(&
+            SVariableMatrixDummy(ISizeMatrixX,ISizematrixY), &
+            STAT=IErr)
+       IF( IErr.NE.0 ) THEN
+          PRINT*,"felixsim (", my_rank, ") error in Allocation() of SVariableMatrixDummy"
+          RETURN
+       ENDIF
+
+!!$       DO ind=1,ISizeMatrixX
+!!$          DO jnd=1,ISizeMatrixY
+!!$             WRITE(SVariableMatrix(ind,jnd),'(F15.3)') RMatrix(ind,jnd)
+!!$          END DO
+!!$       END DO
 
     ELSE
        SVariable = ""
@@ -142,6 +151,7 @@ CONTAINS
        IDebugFLAG = IWriteFLAG
        IWriteFLAG = IDebugFLAG - 100
     END IF
+
 
 !!$  If IPriorityFLAG is over 100 (Debug messaging) below won't execute
 !!$  Prints out specified variation of message (dependent on presence of variables), to the screen
@@ -181,7 +191,7 @@ CONTAINS
 !!$-----------------------------------------------------------------------------
 !!$  below only executes if message is a debug message and set in debug mode
 !!$  Debug messages are printed out here
-    ELSE IF(IPriorityFLAG .GE. 100.AND.IMatrixPresentSwitch.EQ.0) THEN
+    ELSE IF(IPriorityFLAG.GE.100.AND.IMatrixPresentSwitch.EQ.0) THEN
 
 !!$     Prints out Reals with greater precision
        IF(PRESENT(RVariable)) THEN
@@ -230,10 +240,10 @@ CONTAINS
 
        IF((IPriorityFLAG.LE.IDebugFLAG.AND.my_rank.EQ.0.AND.ISoftwareMode.LT.IRefineSwitch) &
             .OR.IDebugFLAG.GE.110.AND.ISoftwareMode .LT. IRefineSwitch) THEN
-
 !!$       Loop over rows (ISizeMatrixX) and columns (ISizeMatrixY) - concatenate each row into 
 !!$       a dummy variable: SVariable, if matrix is too long (row wise) counter counts how many 
 !!$       Line Breaks are required
+
           DO ind=1,ISizeMatrixX
              SVariableOld=""
              SVariableTemp=""
@@ -247,17 +257,21 @@ CONTAINS
                 IF(IMaxLengthIndicator.EQ.0) THEN
                    ILineBreaks=ILineBreaks+1
                 END IF
-                SVariableTemp="  "//TRIM(ADJUSTL(SVariableMatrix(ind,jnd)))//"  "
-                SVariable=TRIM(ADJUSTL(SVariableOld))//" "// TRIM(ADJUSTL(SVariableTemp))//"  "
-                SVariableOld=SVariable
-                SVariableTemp=""
+
+                WRITE(SVariableMatrixDummy(ind,jnd),'(F15.3)') RMatrix(ind,jnd)
+                SVariableMatrix(ind,jnd)=TRIM(ADJUSTL(SVariableMatrixDummy(ind,jnd)))
+       
+!!$                SVariableTemp="  "//TRIM(ADJUSTL(SVariableMatrix(ind,jnd)))//"  "
+!!$                SVariable=TRIM(ADJUSTL(SVariableOld))//" "// TRIM(ADJUSTL(SVariableTemp))//"  "
+!!$                SVariableOld=SVariable
+!!$                SVariableTemp=""
              END DO
 
 !!$          We need to decipher the number of Characters in one line, this will determine the
 !!$          Upper limit of the substrings
-             INumCharactersinFinalLine=MOD(LEN(SVariable),ILineBreaks-1)
-             INumFullLineCharacters=LEN(SVariable)-INumCharactersinFinalLine
-             INumCharactersinOneLine=INumFullLineCharacters-(ILineBreaks-1)
+             INumElementsinFinalLine=MOD(ISizeMatrixY,ILineBreaks-1)
+!!$             INumFullLineCharacters=LEN(SVariable)-INumCharactersinFinalLine
+!!$             INumCharactersinOneLine=INumFullLineCharacters-(ILineBreaks-1)
 
              WRITE(Sind,'(I8.1)') ind
 
@@ -266,52 +280,51 @@ CONTAINS
 !!$             greater than three lines long. The Print Statement is added for each case, this
 !!$             provides a consistent matrix format no matter the length of the row
              IF (PRESENT(MessageVariable).AND.PRESENT(MessageString)) THEN
-                IF((IPriorityFLAG.LE.IDebugFLAG.AND.my_rank.EQ.0.AND.ISoftwareMode.LT.IRefineSwitch) &
-                     .OR.IDebugFLAG.GE.110.AND.ISoftwareMode .LT. IRefineSwitch) THEN
-                   IF(ISizeMatrixY.LE.ILengthofLine) THEN
-                      PRINT*,"DBG_MESSAGE: ",ProgramName,"( ",TRIM(ADJUSTL(my_rank_string))," ) ", &
-                           TRIM(ADJUSTL(MessageVariable)),"(",TRIM(ADJUSTL(Sind)),":) = ", &
-                           TRIM(ADJUSTL(SVariable)),"  ",TRIM(ADJUSTL(MessageString))
-                   ELSE
-                      PRINT*,"DBG_MESSAGE: ",ProgramName,"( ",TRIM(ADJUSTL(my_rank_string))," ) ", &
-                           TRIM(ADJUSTL(MessageVariable)),"(",TRIM(ADJUSTL(Sind)),":) = ", &
-                           TRIM(ADJUSTL(SVariable(1:INumCharactersinOneLine))),"  ",TRIM(ADJUSTL(MessageString))
-                      IF(ILineBreaks.GT.2) THEN
-                         DO knd =1,ILineBreaks-1
-                            PRINT*,"DBG_MESSAGE:                            ", &
-                                 TRIM(ADJUSTL(SVariable((knd*INumCharactersinOneLine)+1:(knd+1)*INumCharactersinOneLine))), &
-                                 "  ",TRIM(ADJUSTL(MessageString))
-                         END DO
-                      END IF
-                      PRINT*,"DBG_MESSAGE:                            ", &
-                           TRIM(ADJUSTL(SVariable((ILineBreaks*INumCharactersinOneLine)+1:LEN(SVariable)))), &
-                           "  ",TRIM(ADJUSTL(MessageString))
+                IF(ISizeMatrixY.LE.ILengthofLine) THEN
+                   PRINT*,"DBG_MESSAGE: ",ProgramName,"( ",TRIM(ADJUSTL(my_rank_string))," ) ", &
+                        TRIM(ADJUSTL(MessageVariable)),"(",TRIM(ADJUSTL(Sind)),":) = ", &
+                        SVariableMatrix(ind,:),"  ",TRIM(ADJUSTL(MessageString))
+                ELSE
+                   PRINT*,"DBG_MESSAGE: ",ProgramName,"( ",TRIM(ADJUSTL(my_rank_string))," ) ", &
+                        TRIM(ADJUSTL(MessageVariable)),"(",TRIM(ADJUSTL(Sind)),":) = ", &
+                        SVariableMatrix(ind,1:10),"  ",TRIM(ADJUSTL(MessageString))
+                   IF(ILineBreaks.GT.2) THEN
+                      DO knd =2,ILineBreaks-1
+                         PRINT*,"DBG_MESSAGE:                            ", &
+                              SVariableMatrix(ind,(knd*10)-(ILengthofLine-1):knd*ILengthofLine),"  ",TRIM(ADJUSTL(MessageString))   !INumCharactersinOneLine)+1:(knd+1)*INumCharactersinOneLine))), &
+!!$                              "  ",TRIM(ADJUSTL(MessageString))
+                      END DO
                    END IF
+                   PRINT*,"DBG_MESSAGE:                            ", &
+                        SVariableMatrix(ind,(ILineBreaks*10)-INumElementsinFinalLine:ISizeMatrixY),"  ", &
+                        TRIM(ADJUSTL(MessageString))
+
+!!$                        TRIM(ADJUSTL(SVariable((ILineBreaks*INumCharactersinOneLine)+1:LEN(SVariable)))), &
+!!$                        "  ",TRIM(ADJUSTL(MessageString))
                 END IF
+
 
              ELSE IF (PRESENT(MessageVariable)) THEN
 
-                IF((IPriorityFLAG.LE.IDebugFLAG.AND.my_rank.EQ.0.AND.ISoftwareMode.LT.IRefineSwitch) &
-                     .OR.IDebugFLAG.GE.110.AND.ISoftwareMode .LT. IRefineSwitch) THEN
-                   IF(ISizeMatrixY.LE.ILengthofLine) THEN
-                      PRINT*,"DBG_MESSAGE: ",ProgramName,"( ",TRIM(ADJUSTL(my_rank_string))," ) ", &
-                           TRIM(ADJUSTL(MessageVariable)),"(",TRIM(ADJUSTL(Sind)),":) = ", &
-                           TRIM(ADJUSTL(SVariable)),"  ",TRIM(ADJUSTL(MessageString))
-                   ELSE
-                      PRINT*,"DBG_MESSAGE: ",ProgramName,"( ",TRIM(ADJUSTL(my_rank_string))," ) ", &
-                           TRIM(ADJUSTL(MessageVariable)),"(",TRIM(ADJUSTL(Sind)),":) = ", &
-                           TRIM(ADJUSTL(SVariable(1:INumCharactersinOneLine))),"  ",TRIM(ADJUSTL(MessageString))
-                      IF(ILineBreaks.GT.2) THEN
-                         DO knd =1,ILineBreaks-1
-                            PRINT*,"DBG_MESSAGE:                            ", &
-                                 TRIM(ADJUSTL(SVariable((knd*INumCharactersinOneLine)+1:(knd+1)*INumCharactersinOneLine))), &
-                                 "  ",TRIM(ADJUSTL(MessageString))
-                         END DO
-                      END IF
-                      PRINT*,"DBG_MESSAGE:                            ", &
-                           TRIM(ADJUSTL(SVariable((ILineBreaks*INumCharactersinOneLine)+1:LEN(SVariable)))), &
-                           "  ",TRIM(ADJUSTL(MessageString))
+                PRINT*,"ILineBreaks=", ILineBreaks
+                PRINT*,"ILengthofLine=", ILengthofLine
+
+                IF(ISizeMatrixY.LE.ILengthofLine) THEN
+                   PRINT*,"DBG_MESSAGE: ",ProgramName,"( ",TRIM(ADJUSTL(my_rank_string))," ) ", &
+                        TRIM(ADJUSTL(MessageVariable)),"(",TRIM(ADJUSTL(Sind)),":) = ", &
+                        SVariableMatrix(ind,:),"  ",TRIM(ADJUSTL(MessageString))
+                ELSE
+                   PRINT*,"DBG_MESSAGE: ",ProgramName,"( ",TRIM(ADJUSTL(my_rank_string))," ) ", &
+                        TRIM(ADJUSTL(MessageVariable)),"(",TRIM(ADJUSTL(Sind)),":) = ", &
+                        SVariableMatrix(ind,1:ILengthofLine)
+                   IF(ILineBreaks.GT.2) THEN
+                      DO knd =2,ILineBreaks-1
+                         PRINT*,"DBG_MESSAGE:                            ", &
+                              SVariableMatrix(ind,((knd*10)-9):knd*ILengthofLine)     
+                      END DO
                    END IF
+                   PRINT*,"DBG_MESSAGE:                            ", &
+                        SVariableMatrix(ind,((ILineBreaks*10)-9):ISizeMatrixY)
                 END IF
              END IF
           END DO
