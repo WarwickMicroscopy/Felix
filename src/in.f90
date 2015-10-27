@@ -508,146 +508,16 @@ SUBROUTINE ReadScaFile( IErr )
   
   IMPLICIT NONE
 
-  CHARACTER*200 dummy
-  REAL(RKIND),DIMENSION(:),ALLOCATABLE :: &
-       rdummy
 
-  INTEGER IErr, ILine, ILength, ind
+  INTEGER IErr, ILine
 
-     CALL Message ("ReadScaFile",IMust,IErr)
+     CALL Message("ReadScaFile",IMust,IErr)
 
-  ILine= 0
+     CALL Message("ReadScaFile",IInfo,IErr,MessageString="Reading in Scattering Factors")
   
-  OPEN(UNIT= IChInp, ERR= 120, FILE= "felix.sca",&
-       STATUS= 'OLD')
-!!$  
-  DO
-     READ(UNIT= IChInp, END=100, ERR=20, FMT='(a)') dummy
-     ILine=ILine+1
-  ENDDO
-100 ILength=ILine
+     CALL ScatteringFactors(IScatterFactorMethodFLAG,IErr)
+
   
-  IF(IWriteFLAG.GE.10) THEN
-     
-     PRINT*,"ReadScaFile(): ILength=", ILength
-     
-  END IF
-  
-  REWIND(UNIT=IChInp)
-  IF(IWriteFLAG.GE.10) THEN
-     
-     PRINT*,"actual reading of data"
-  END IF
-
-  SELECT CASE (IScatterFactorMethodFLAG)
-
-  CASE(0)
-
-     ALLOCATE( &
-          rdummy(1),&
-          STAT=IErr)
-     IF( IErr.NE.0 ) THEN
-        PRINT*,"ReadScaFile(): error in memory ALLOCATE()"
-        RETURN
-     ENDIF
-
-     ALLOCATE(RScattFactors(ILength,12), STAT=IErr)
-     IF( IErr.NE.0 ) THEN
-        PRINT*,"ReadScaFile(): error in memory ALLOCATE()"
-        RETURN
-     ENDIF
-
-     DO ILine=1,ILength,1
-        READ(UNIT= IChInp, FMT='(13(E15.11,1X))') &
-             rdummy, RScattFactors(ILine,:)     
-        !PRINT*,rdummy, RScattFactors(ILine,:)
-     ENDDO
-
-  CASE(1)
-
-     ALLOCATE( &
-          rdummy(13),&
-          STAT=IErr)
-     IF( IErr.NE.0 ) THEN
-        PRINT*,"ReadScaFile(): error in memory ALLOCATE()"
-        RETURN
-     ENDIF
-
-     ALLOCATE(RScattFactors(ILength,8), STAT=IErr)
-     IF( IErr.NE.0 ) THEN
-        PRINT*,"ReadScaFile(): error in memory ALLOCATE()"
-        RETURN
-     ENDIF
-     
-     DO ILine=1,ILength,1
-        READ(UNIT= IChInp, FMT='(21(E15.11,1X))') &
-             rdummy(:), RScattFactors(ILine,:)     
-        !PRINT*,rdummy, RScattFactors(ILine,:)
-     ENDDO
-
-  CASE(2)
-
-     ALLOCATE( &
-          rdummy(21),&
-          STAT=IErr)
-     IF( IErr.NE.0 ) THEN
-        PRINT*,"ReadScaFile(): error in memory ALLOCATE()"
-        RETURN
-     ENDIF
-
-     ALLOCATE(RScattFactors(ILength,8), STAT=IErr)
-     IF( IErr.NE.0 ) THEN
-        PRINT*,"ReadScaFile(): error in memory ALLOCATE()"
-        RETURN
-     ENDIF
-     
-     DO ILine=1,ILength,1
-        READ(UNIT= IChInp, FMT='(29(E15.11,1X))') &
-             rdummy(:), RScattFactors(ILine,:)     
-        PRINT*,RScattFactors(ILine,:)
-     ENDDO
-
-  END SELECT
-
-  DEALLOCATE( &
-       rdummy,&
-       STAT=IErr)
-  IF( IErr.NE.0 ) THEN
-     PRINT*,"ReadScaFile(): error in memory DEALLOCATE()"
-     RETURN
-  ENDIF  
-  
-  CLOSE(IChInp)
-  
-  RETURN
-  
-  !	error in OPEN detected
-120 PRINT*,"ReadScaFile(): ERR in OPEN"
-  GOTO 1000
-  
-  !	error in CLOSE detected
-130 PRINT*,"ReadScaFile(): ERR in CLOSE"
-  GOTO 1000
-  
-  !	error in READ detected
-20 PRINT*,"ReadScaFile(): ERR in READ at line", ILine
-  GOTO 1000
-  
-  !	EOF in READ occured prematurely
-30 PRINT*,"ReadScaFile(): EOF in READ at line", ILine
-  
-!bug need to change layout
-1000 &
-  PRINT*,"ReadScaFile expects a file such as"
-  PRINT*,"--------------------------------------------------------------------"
-  PRINT*,"22      0.737291729     9.96300042      0.355417565     9.96300042 ", &
-       "0.496982599     0.072659586     0.016335034     0.360199179     1.42171303 ", &
-       "     0.073173566     0.957232308      15.8512114"
-  PRINT*,"23      0       0       0       0       0       0       0       0  ", &
-       "     0       0       0       0"
-
-  IErr= 1
-  RETURN
 END SUBROUTINE ReadScaFile
   
 SUBROUTINE ReadHklFile(IErr)

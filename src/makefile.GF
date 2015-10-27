@@ -34,24 +34,30 @@
 
 #%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 # $Id: makefile.GF,v 1.2 2014/03/27 18:13:30 phsht Exp $
+#
 # cygwin needs: gcc, gfortran, make, git, openmpi, lapack, fftw3
-# CSC modules needed: ompi/1.6.4/gnu/4.3.4 
+# CSC modules needed: ompi/1.6.4/gnu/4.3.4
+# minerva modules needed: minerva-2.0, goolf-1.7.10
+# ARCHER modules needed: cray-libsci/13.0.1, fftw, cray-mpich/7.1.1
+# 
 #%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 unixOS := $(shell uname -s)
+cyg := $(shell expr substr $(unixOS) 1 6)
 
 ifeq ($(unixOS),Linux)
 
- linux := $(shell lsb_release -si)
+ linux := $(shell (lsb_release -si))
 
  ifeq ($(linux),SUSE LINUX) #CSC machines
   HPC := $(shell expr substr $(shell uname -n) 1 3)
   ARCHER := $(shell expr substr $(shell uname -n) 1 2)
 
   ifeq ($(HPC),hpc) #minerva hpc
-
-   #module swap oldmodules minerva-2.0
-   #module load goolf-1.7.10
+   $(info Compiling on minerva $(HPC))
+   $(info Please ensure to run: )
+   $(info "module swap oldmodules minerva-2.0")
+   $(info "module load goolf-1.7.10")
 
    F90 = mpif90
    FC = gfortran -ffixed-form -std=legacy
@@ -65,7 +71,10 @@ ifeq ($(unixOS),Linux)
    -lopenblas \
    -lfftw3
 
-  else ifeq ($(ARCHER),es) #ARCHER #need to include directory
+  else ifeq ($(ARCHER),es) #ARCHER
+   $(info Compiling on ARCHER)
+   $(info Please ensure to run "module load fftw")
+
    F90 = ftn
    FC = ftn
    F90FLAGS = # release
@@ -80,16 +89,18 @@ ifeq ($(unixOS),Linux)
    #LIBFLAGS= -lcray-libsci
 
   else #CSC
+   $(info Compiling on CSC, $(linux))
    $(info Please ensure to run "module load ompi/1.6.4/gnu/4.3.4" )
+
    INCLUDEDIR = /warwick/mathlib/gnu/x86_64/
 
    LIBFLAGS= -llapack -lblas -lfftw3 
 
-   ifeq ($(compiler),ifort) #change ifort flags and test
+   ifeq ($(FOO),BAR) #ifort compiler
     F90 = mpif90
-    FC = ifort -ffixed-form -std=legacy
-    F90FLAGS = -fbounds-check -fno-range-check -fimplicit-none -fcray-pointer -fexternal-blas
-    F77FLAGS = -fbounds-check -fno-range-check
+    FC = ifort 
+    F90FLAGS =
+    F77FLAGS =
 
    else
     F90 = mpif90
@@ -99,46 +110,82 @@ ifeq ($(unixOS),Linux)
     F77FLAGS = -fbounds-check -fno-range-check # debug
    endif
   endif
- endif
-
- ifeq ($(linux),Ubuntu) #Ubuntu machine
+ 
+ else ifeq ($(linux),Ubuntu) #Ubuntu machine
+  $(info Compiling on $(linux), $(unixOS))
 
   INCLUDEDIR = /usr/share/doc
-
   LIBFLAGS = -llapack -lblas -lfftw3
- 
   F90 = mpif90
   F90FLAGS = -fbounds-check -fno-range-check -fimplicit-none -fcray-pointer -fexternal-blas
   FC = gfortran -ffixed-form -std=legacy
   F77FLAGS = -fbounds-check -fno-range-check
- endif
 
- ifeq ($(linux),openSUSE project) #openSUSE machine
+ else ifeq ($(linux),Debian) #Debian
+  $(info Compiling on $(linux), $(unixOS))
+
+  INCLUDEDIR = /usr/share/doc
+  LIBFLAGS = -llapack -lblas -lfftw3
+  F90 = mpif90
+  F90FLAGS = -fbounds-check -fno-range-check -fimplicit-none -fcray-pointer -fexternal-blas
+  FC = gfortran -ffixed-form -std=legacy
+  F77FLAGS = -fbounds-check -fno-range-check
+
+ else ifeq ($(linux),openSUSE project) #openSUSE machine
+  $(info Compiling on $(linux), $(unixOS))
 
   LIBFLAGS = -llapack -lblas -lfftw3
-
   INCLUDEDIR = /usr/lib64
-
   F90 = mpif90
   F90FLAGS = -fbounds-check -fno-range-check -fimplicit-none -fcray-pointer -fexternal-blas
   FC = gfortran -ffixed-form -std=legacy
   F77FLAGS = -fbounds-check -fno-range-check
- endif
 
- ifeq ($(linux),CentOS) #CentOS machine
+ else ifeq ($(linux),CentOS) #CentOS machine
+  $(info Compiling on $(linux), $(unixOS))
  
   LIBFLAGS = -llapack -lblas -lfftw3
-
   INCLUDEDIR = /usr/lib64/
-
+  F90 = /usr/lib64/openmpi/bin/mpif90
+  F90FLAGS = -fbounds-check -fno-range-check -fimplicit-none -fcray-pointer -fexternal-blas
+  FC = gfortran -ffixed-form -std=legacy
+  F77FLAGS = -fbounds-check -fno-range-check
+ 
+ else ifeq ($(linux),LinuxMint)
+  $(info Compiling on $(linux))
+   
+  LIBFLAGS = -llapack -lblas -lfftw3
+  INCLUDEDIR = /usr/lib/
   F90 = mpif90
   F90FLAGS = -fbounds-check -fno-range-check -fimplicit-none -fcray-pointer -fexternal-blas
   FC = gfortran -ffixed-form -std=legacy
   F77FLAGS = -fbounds-check -fno-range-check
- endif
-endif 
+ 
+ else ifeq ($(linux),Scientific) #Scientific Linux
+  $(info Compiling on Scientific Linux)
 
-ifeq ($(unixOS),Darwin) #MAC
+  LIBFLAGS = -llapack -lblas -lfftw3
+  INCLUDEDIR = /usr/lib64/
+  F90 = /usr/lib64/openmpi/bin/mpif90
+  F90FLAGS = -fbounds-check -fno-range-check -fimplicit-none -fcray-pointer -fexternal-blas
+  FC = gfortran -ffixed-form -std=legacy
+  F77FLAGS = -fbounds-check -fno-range-check
+
+ else #default
+  $(info Compiling on default)
+  
+  INCLUDEDIR = /warwick/mathlib/gnu/x86_64/
+
+  LIBFLAGS = -llapack -lblas -lfftw3
+
+  F90 = mpif90
+  FC = gfortran -ffixed-form -std=legacy
+  F90FLAGS = -fbounds-check -fno-range-check -fimplicit-none -fcray-pointer -fexternal-blas
+  F77FLAGS = -fbounds-check -fno-range-check
+ endif
+
+else ifeq ($(unixOS),Darwin) #MAC
+ $(info Compiling on $(unixOS), OS X)
 
  F90 = mpifort
  FC = gfortran -ffixed-form -std=legacy
@@ -149,9 +196,9 @@ ifeq ($(unixOS),Darwin) #MAC
  INCLUDEDIR = /usr/local/lib/ # RAR Linux
 
  LIBFLAGS= -llapack -lblas -lfftw3
-endif
 
-ifeq ($(shell expr substr $(unixOS) 1 6),CYGWIN)
+else ifeq ($(cyg),CYGWIN)
+ $(info Compiling on $(cyg)) 
 
  F90 = mpif90
  FC = gfortran -ffixed-form -std=legacy
@@ -162,23 +209,34 @@ ifeq ($(shell expr substr $(unixOS) 1 6),CYGWIN)
 
  LIBFLAGS= -llapack -lblas -lfftw3
 
+else #default
+ $(info Compiling on default settings)
+ 
+ INCLUDEDIR = /warwick/mathlib/gnu/x86_64
+
+ LIBFLAGS = -llapack -lblas -lfftw3
+
+ F90 = mpif90
+ FC = gfortran -ffixed-form -std-legacy
+ F90FLAGS = -fbounds-check -fno-range-check -fimplicit-none -fcray-pointer -fexternal-blas
+ F77FLAGS = -fbounds-check -fno-range-check
 endif
 
 # NOTE if linking against $(NAG_SHARED) you must set the environment variable
 # LD_LIBRARY_PATH=/warwick/mathlib/nag/ifort-x86_64/lib:$LD_LIBRARY_PATH
 # in order to run the code
 
-SIMOBJECTFILES = gmodules.o smodules.o message.o errorcodes.o felixsim.o util.o in.o out.o readinput.o \
+SIMOBJECTFILES = gmodules.o smodules.o message.o inputmodules.o errorcodes.o felixsim.o util.o scatteringfactors.o in.o out.o readinput.o \
 readciffile.o experimentalsetup.o imagesetup.o montagesetup.o refineutils.o\
 structurefactorsetup.o ciftbx.o hash_funcs.o eigen.o invert.o microscopy.o \
 diffractionpatterndefinitions.o diffractionpatterninitialisation.o crystallographyinitialisation.o \
 crystallography.o bloch.o Ug.o image.o errorchecks.o writeoutput.o dqng.o xerror.o d1mach.o
 
-REFINEOBJECTFILES = gmodules.o smodules.o message.o errorcodes.o felixrefine.o util.o in.o out.o readciffile.o \
+REFINEOBJECTFILES = gmodules.o smodules.o message.o inputmodules.o errorcodes.o felixrefine.o util.o scatteringfactors.o in.o out.o readciffile.o \
 experimentalsetup.o imagesetup.o montagesetup.o structurefactorsetup.o readinput.o\
 eigen.o invert.o microscopy.o diffractionpatterndefinitions.o diffractionpatterninitialisation.o \
 crystallographyinitialisation.o crystallography.o bloch.o Ug.o image.o ciftbx.o simplex.o\
-hash_funcs.o felixfunction.o refineutils.o writeoutput.o dqng.o xerror.o d1mach.o errorchecks.o\
+hash_funcs.o RefineWriteOut.o felixfunction.o refineutils.o writeoutput.o dqng.o xerror.o d1mach.o errorchecks.o\
 symmetry.o
 
 %.o: %.f90
@@ -206,11 +264,11 @@ felixrefine: $(REFINEOBJECTFILES)
 
 
 print:	
-	a2ps -E -o print.ps gmodules.f90 smodules.f90 message.f90 felixsim.f90 util.f90 \
+	a2ps -E -o print.ps gmodules.f90 smodules.f90 message.f90 felixsim.f90 util.f90scatterfactors.f90 \
 in.f90 out.f90 readinput.f90 readciffile.f90 experimentalsetup.f90 imagesetup.f90 \
 montagesetup.f90 structurefactorsetup.f90 eigen.f90 invert.f90 microscopy.f90 \
 diffraction.f90 simplex.f diffractionpatterninitialisation.f90 crystallographyinitialisation.f90 \
-crystallography.f90 bloch.f90 Ug.f90 image.f90 ciftbx.f hash_funcs.f felixfunction.f90 \
+crystallography.f90 bloch.f90 Ug.f90 image.f90 ciftbx.f hash_funcs.f RefineWriteOut.f90 felixfunction.f90 \
 writeoutput.f90 dqng.f xerror.f d1mach.f felixdraw.f90 felixrefine.f90 refineutils.f90 symmetry.f90\
 makefile-CSC.GF; convert -density 150 print.ps print.pdf
 	     	   	  
