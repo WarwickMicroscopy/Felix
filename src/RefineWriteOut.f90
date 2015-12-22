@@ -267,7 +267,7 @@ SUBROUTINE WriteStructureFactors(path,IErr)
   OPEN(UNIT=IChOutSimplex,STATUS='UNKNOWN',&
        FILE=TRIM(ADJUSTL(fullpath)))
   DO ind = 1,SIZE(CUgMat,DIM=1)
-     WRITE(IChOutSimplex,FMT='(5F13.9)') RHKL(ind,:),CUgMat(ind,1)
+     WRITE(IChOutSimplex,FMT='(3I5.1,2F13.9)') NINT(RHKL(ind,:)),CUgMat(ind,1)
   END DO
 
   CLOSE(IChOutSimplex)
