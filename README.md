@@ -3,7 +3,7 @@ felixsim
 
 Richard Beanland, Keith Evans, Rudolf A Roemer and Alex Hubert
 
-(C) 2013/14/15, all rights reserved
+(C) 2013/14/15/16, all rights reserved
 
 felixsim is free software: you can redistribute it and/or modify
 it under the terms of the GNU General Public License as published by
