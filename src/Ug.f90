@@ -296,9 +296,9 @@ SUBROUTINE StructureFactorInitialisation (IErr)
 
   RMeanInnerCrystalPotential= REAL(CUgMat(1,1))
 
-  CUgMat = CUgMat + CONJG(TRANSPOSE(CUgMat))
+  !CUgMat = CUgMat + CONJG(TRANSPOSE(CUgMat))!RB removed
 
-  DO ind=1,nReflections
+  DO ind=1,nReflections!RB don't think this is right
      CUgMat(ind,ind)=CUgMat(ind,ind)-RMeanInnerCrystalPotential
   ENDDO
 
@@ -314,9 +314,7 @@ SUBROUTINE StructureFactorInitialisation (IErr)
        MessageVariable = "RMeanInnerPotentialVolts", &
        RVariable = RMeanInnerPotentialVolts)
 
-  DO ind=1,nReflections
-     CUgMat(ind,ind)=CUgMat(ind,ind)-RMeanInnerCrystalPotential
-  ENDDO
+!RB deleted
 
   !Now initialisation calls the Ug calculation subroutines
   !Used to be in Setup
@@ -345,8 +343,7 @@ SUBROUTINE StructureFactorInitialisation (IErr)
         !call error function
         RETURN
      ENDIF
-
-     CUgMat =  CUgMat+CUgMatPrime
+!RB moved A
 
   ENDIF
 
@@ -382,11 +379,9 @@ SUBROUTINE StructureFactorsWithAbsorptionDetermination(IErr)
 
 !!$     THE PROPORTIONAL MODEL OF ABSORPTION
      
-     CUgMatPrime = CUgMatPrime+(REAL(CUgMat)*(RAbsorptionPercentage/100_RKIND)*CIMAGONE)
+     CUgMatPrime = CUgMat*EXP(CIMAGONE*PI/2)*(RAbsorptionPercentage/100_RKIND)!RB changed
+     CUgMat =  CUgMat+CUgMatPrime!RB moved A
      
-     DO ind = 1,SIZE(CUgMat,DIM=1)
-        CUgMatPrime(ind,ind) = REAL(RMeanInnerCrystalPotential)*(RAbsorptionPercentage/100.0_RKIND)*CIMAGONE
-     END DO
     
   CASE Default 
   END SELECT

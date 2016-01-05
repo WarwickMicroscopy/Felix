@@ -151,7 +151,7 @@ SUBROUTINE FelixFunction(LInitialSimulationFLAG,IErr)
         RETURN
      ENDIF
 
-     CUgMat = CUgMat + CUgMatPrime
+     !RB moved A
 
      DEALLOCATE( &
           CUgMatPrime,STAT=IErr)
