@@ -1,0 +1,174 @@
+GFORTRAN module created from smodules.f90 on Tue Jan  5 12:32:22 2016
+MD5:b5a7d6958148b3fe7756d127c0c99c10 -- If you edit this, you'll get what you deserve.
+
+(() () () () () () () () () () () () () () () () () () () () () () ()
+() () () ())
+
+()
+
+()
+
+()
+
+()
+
+(2 'arg' 'mynumbers' 'arg' 1 ((PROCEDURE UNKNOWN-INTENT MODULE-PROC DECL
+UNKNOWN FUNCTION) (REAL 8 0 0 REAL ()) 3 0 (4 5) () 2 () () 0 0)
+6 'cimagone' 'mynumbers' 'cimagone' 1 ((PARAMETER UNKNOWN-INTENT
+UNKNOWN-PROC UNKNOWN IMPLICIT-SAVE) (COMPLEX 8 0 0 COMPLEX ()) 0 0 () (
+CONSTANT (COMPLEX 8 0 0 COMPLEX ()) 0 '0.00000000000000@0'
+'0.10000000000000@1') () 0 () () 0 0)
+7 'ckind' 'mynumbers' 'ckind' 1 ((PARAMETER UNKNOWN-INTENT UNKNOWN-PROC
+UNKNOWN IMPLICIT-SAVE) (INTEGER 4 0 0 INTEGER ()) 0 0 () (CONSTANT (
+INTEGER 4 0 0 INTEGER ()) 0 '8') () 0 () () 0 0)
+8 'cone' 'mynumbers' 'cone' 1 ((PARAMETER UNKNOWN-INTENT UNKNOWN-PROC
+UNKNOWN IMPLICIT-SAVE) (COMPLEX 8 0 0 COMPLEX ()) 0 0 () (CONSTANT (
+COMPLEX 8 0 0 COMPLEX ()) 0 '0.10000000000000@1' '0.00000000000000@0') ()
+0 () () 0 0)
+9 'cross' 'mynumbers' 'cross' 1 ((PROCEDURE UNKNOWN-INTENT MODULE-PROC
+DECL UNKNOWN DIMENSION FUNCTION ALWAYS_EXPLICIT) (REAL 8 0 0 REAL ()) 10
+0 (11 12) (1 EXPLICIT (CONSTANT (INTEGER 4 0 0 INTEGER ()) 0 '1') (
+CONSTANT (INTEGER 4 0 0 INTEGER ()) 0 '3')) 9 () () 0 0)
+13 'czero' 'mynumbers' 'czero' 1 ((PARAMETER UNKNOWN-INTENT UNKNOWN-PROC
+UNKNOWN IMPLICIT-SAVE) (COMPLEX 8 0 0 COMPLEX ()) 0 0 () (CONSTANT (
+COMPLEX 8 0 0 COMPLEX ()) 0 '0.00000000000000@0' '0.00000000000000@0') ()
+0 () () 0 0)
+14 'deg2radian' 'mynumbers' 'deg2radian' 1 ((VARIABLE UNKNOWN-INTENT
+UNKNOWN-PROC UNKNOWN UNKNOWN) (REAL 8 0 0 REAL ()) 0 0 () () 0 () () 0 0)
+15 'dot' 'mynumbers' 'dot' 1 ((PROCEDURE UNKNOWN-INTENT MODULE-PROC DECL
+UNKNOWN FUNCTION) (REAL 8 0 0 REAL ()) 16 0 (17 18) () 15 () () 0 0)
+19 'eighth' 'mynumbers' 'eighth' 1 ((PARAMETER UNKNOWN-INTENT
+UNKNOWN-PROC UNKNOWN IMPLICIT-SAVE) (REAL 8 0 0 REAL ()) 0 0 () (
+CONSTANT (REAL 8 0 0 REAL ()) 0 '0.20000000000000@0') () 0 () () 0 0)
+20 'four' 'mynumbers' 'four' 1 ((PARAMETER UNKNOWN-INTENT UNKNOWN-PROC
+UNKNOWN IMPLICIT-SAVE) (REAL 8 0 0 REAL ()) 0 0 () (CONSTANT (REAL 8 0 0
+REAL ()) 0 '0.40000000000000@1') () 0 () () 0 0)
+21 'half' 'mynumbers' 'half' 1 ((PARAMETER UNKNOWN-INTENT UNKNOWN-PROC
+UNKNOWN IMPLICIT-SAVE) (REAL 8 0 0 REAL ()) 0 0 () (CONSTANT (REAL 8 0 0
+REAL ()) 0 '0.80000000000000@0') () 0 () () 0 0)
+22 'ikind' 'mynumbers' 'ikind' 1 ((PARAMETER UNKNOWN-INTENT UNKNOWN-PROC
+UNKNOWN IMPLICIT-SAVE) (INTEGER 4 0 0 INTEGER ()) 0 0 () (CONSTANT (
+INTEGER 4 0 0 INTEGER ()) 0 '4') () 0 () () 0 0)
+23 'init_numbers' 'mynumbers' 'init_numbers' 1 ((PROCEDURE
+UNKNOWN-INTENT MODULE-PROC DECL UNKNOWN SUBROUTINE) (UNKNOWN 0 0 0
+UNKNOWN ()) 0 0 () () 0 () () 0 0)
+24 'kind' '(intrinsic)' 'kind' 1 ((PROCEDURE UNKNOWN-INTENT UNKNOWN-PROC
+UNKNOWN UNKNOWN FUNCTION) (UNKNOWN 0 0 0 UNKNOWN ()) 0 0 () () 24 () ()
+0 0)
+25 'mynumbers' 'mynumbers' 'mynumbers' 1 ((MODULE UNKNOWN-INTENT
+UNKNOWN-PROC UNKNOWN UNKNOWN) (UNKNOWN 0 0 0 UNKNOWN ()) 0 0 () () 0 ()
+() 0 0)
+26 'neghuge' 'mynumbers' 'neghuge' 1 ((VARIABLE UNKNOWN-INTENT
+UNKNOWN-PROC UNKNOWN IMPLICIT-SAVE) (REAL 8 0 0 REAL ()) 0 0 () () 0 ()
+() 0 0)
+27 'negthird' 'mynumbers' 'negthird' 1 ((PARAMETER UNKNOWN-INTENT
+UNKNOWN-PROC UNKNOWN IMPLICIT-SAVE) (REAL 8 0 0 REAL ()) 0 0 () (
+CONSTANT (REAL 8 0 0 REAL ()) 0 '-0.55555555555554@0') () 0 () () 0 0)
+28 'negtwothird' 'mynumbers' 'negtwothird' 1 ((PARAMETER UNKNOWN-INTENT
+UNKNOWN-PROC UNKNOWN IMPLICIT-SAVE) (REAL 8 0 0 REAL ()) 0 0 () (
+CONSTANT (REAL 8 0 0 REAL ()) 0 '-0.aaaaaaaaaa97e8@0') () 0 () () 0 0)
+29 'one' 'mynumbers' 'one' 1 ((PARAMETER UNKNOWN-INTENT UNKNOWN-PROC
+UNKNOWN IMPLICIT-SAVE) (REAL 8 0 0 REAL ()) 0 0 () (CONSTANT (REAL 8 0 0
+REAL ()) 0 '0.10000000000000@1') () 0 () () 0 0)
+30 'onemns' 'mynumbers' 'onemns' 1 ((VARIABLE UNKNOWN-INTENT
+UNKNOWN-PROC UNKNOWN UNKNOWN) (REAL 8 0 0 REAL ()) 0 0 () () 0 () () 0 0)
+31 'onepls' 'mynumbers' 'onepls' 1 ((VARIABLE UNKNOWN-INTENT
+UNKNOWN-PROC UNKNOWN UNKNOWN) (REAL 8 0 0 REAL ()) 0 0 () () 0 () () 0 0)
+32 'pi' 'mynumbers' 'pi' 1 ((VARIABLE UNKNOWN-INTENT UNKNOWN-PROC
+UNKNOWN UNKNOWN) (REAL 8 0 0 REAL ()) 0 0 () () 0 () () 0 0)
+33 'quarter' 'mynumbers' 'quarter' 1 ((PARAMETER UNKNOWN-INTENT
+UNKNOWN-PROC UNKNOWN IMPLICIT-SAVE) (REAL 8 0 0 REAL ()) 0 0 () (
+CONSTANT (REAL 8 0 0 REAL ()) 0 '0.40000000000000@0') () 0 () () 0 0)
+34 'rgigabyte' 'mynumbers' 'rgigabyte' 1 ((VARIABLE UNKNOWN-INTENT
+UNKNOWN-PROC UNKNOWN UNKNOWN) (REAL 8 0 0 REAL ()) 0 0 () () 0 () () 0 0)
+35 'rkilobyte' 'mynumbers' 'rkilobyte' 1 ((VARIABLE UNKNOWN-INTENT
+UNKNOWN-PROC UNKNOWN UNKNOWN) (REAL 8 0 0 REAL ()) 0 0 () () 0 () () 0 0)
+36 'rkind' 'mynumbers' 'rkind' 1 ((PARAMETER UNKNOWN-INTENT UNKNOWN-PROC
+UNKNOWN IMPLICIT-SAVE) (INTEGER 4 0 0 INTEGER ()) 0 0 () (CONSTANT (
+INTEGER 4 0 0 INTEGER ()) 0 '8') () 0 () () 0 0)
+37 'rmegabyte' 'mynumbers' 'rmegabyte' 1 ((VARIABLE UNKNOWN-INTENT
+UNKNOWN-PROC UNKNOWN UNKNOWN) (REAL 8 0 0 REAL ()) 0 0 () () 0 () () 0 0)
+38 'rterabyte' 'mynumbers' 'rterabyte' 1 ((VARIABLE UNKNOWN-INTENT
+UNKNOWN-PROC UNKNOWN UNKNOWN) (REAL 8 0 0 REAL ()) 0 0 () () 0 () () 0 0)
+39 'satomname' 'spara' 'satomname' 1 ((VARIABLE UNKNOWN-INTENT
+UNKNOWN-PROC UNKNOWN UNKNOWN ALLOCATABLE DIMENSION) (CHARACTER 1 0 0
+CHARACTER ((CONSTANT (INTEGER 4 0 0 INTEGER ()) 0 '2'))) 0 0 () (1
+DEFERRED () ()) 0 () () 0 0)
+40 'sfullatomicnamevec' 'spara' 'sfullatomicnamevec' 1 ((VARIABLE
+UNKNOWN-INTENT UNKNOWN-PROC UNKNOWN UNKNOWN ALLOCATABLE DIMENSION) (
+CHARACTER 1 0 0 CHARACTER ((CONSTANT (INTEGER 4 0 0 INTEGER ()) 0 '2')))
+0 0 () (1 DEFERRED () ()) 0 () () 0 0)
+41 'smnp' 'spara' 'smnp' 1 ((VARIABLE UNKNOWN-INTENT UNKNOWN-PROC
+UNKNOWN UNKNOWN ALLOCATABLE DIMENSION) (CHARACTER 1 0 0 CHARACTER ((
+CONSTANT (INTEGER 4 0 0 INTEGER ()) 0 '2'))) 0 0 () (1 DEFERRED () ()) 0
+() () 0 0)
+42 'spara' 'spara' 'spara' 1 ((MODULE UNKNOWN-INTENT UNKNOWN-PROC
+UNKNOWN UNKNOWN) (UNKNOWN 0 0 0 UNKNOWN ()) 0 0 () () 0 () () 0 0)
+43 'sqrthalf' 'mynumbers' 'sqrthalf' 1 ((VARIABLE UNKNOWN-INTENT
+UNKNOWN-PROC UNKNOWN UNKNOWN) (REAL 8 0 0 REAL ()) 0 0 () () 0 () () 0 0)
+44 'sqrttwo' 'mynumbers' 'sqrttwo' 1 ((VARIABLE UNKNOWN-INTENT
+UNKNOWN-PROC UNKNOWN UNKNOWN) (REAL 8 0 0 REAL ()) 0 0 () () 0 () () 0 0)
+45 'sspacegroupname' 'spara' 'sspacegroupname' 1 ((VARIABLE
+UNKNOWN-INTENT UNKNOWN-PROC UNKNOWN UNKNOWN) (CHARACTER 1 0 0 CHARACTER
+((CONSTANT (INTEGER 4 0 0 INTEGER ()) 0 '1'))) 0 0 () () 0 () () 0 0)
+46 'sspacegrp' 'spara' 'sspacegrp' 1 ((VARIABLE UNKNOWN-INTENT
+UNKNOWN-PROC UNKNOWN UNKNOWN) (CHARACTER 1 0 0 CHARACTER ((CONSTANT (
+INTEGER 4 0 0 INTEGER ()) 0 '10'))) 0 0 () () 0 () () 0 0)
+47 'swyckoffsymbols' 'spara' 'swyckoffsymbols' 1 ((VARIABLE
+UNKNOWN-INTENT UNKNOWN-PROC UNKNOWN UNKNOWN ALLOCATABLE DIMENSION) (
+CHARACTER 1 0 0 CHARACTER ((CONSTANT (INTEGER 4 0 0 INTEGER ()) 0 '1')))
+0 0 () (1 DEFERRED () ()) 0 () () 0 0)
+48 'third' 'mynumbers' 'third' 1 ((PARAMETER UNKNOWN-INTENT UNKNOWN-PROC
+UNKNOWN IMPLICIT-SAVE) (REAL 8 0 0 REAL ()) 0 0 () (CONSTANT (REAL 8 0 0
+REAL ()) 0 '0.55555555555554@0') () 0 () () 0 0)
+49 'three' 'mynumbers' 'three' 1 ((PARAMETER UNKNOWN-INTENT UNKNOWN-PROC
+UNKNOWN IMPLICIT-SAVE) (REAL 8 0 0 REAL ()) 0 0 () (CONSTANT (REAL 8 0 0
+REAL ()) 0 '0.30000000000000@1') () 0 () () 0 0)
+50 'tiny' 'mynumbers' 'tiny' 1 ((VARIABLE UNKNOWN-INTENT UNKNOWN-PROC
+UNKNOWN IMPLICIT-SAVE) (REAL 8 0 0 REAL ()) 0 0 () () 0 () () 0 0)
+51 'two' 'mynumbers' 'two' 1 ((PARAMETER UNKNOWN-INTENT UNKNOWN-PROC
+UNKNOWN IMPLICIT-SAVE) (REAL 8 0 0 REAL ()) 0 0 () (CONSTANT (REAL 8 0 0
+REAL ()) 0 '0.20000000000000@1') () 0 () () 0 0)
+52 'twodeg2radian' 'mynumbers' 'twodeg2radian' 1 ((VARIABLE
+UNKNOWN-INTENT UNKNOWN-PROC UNKNOWN UNKNOWN) (REAL 8 0 0 REAL ()) 0 0 ()
+() 0 () () 0 0)
+53 'twopi' 'mynumbers' 'twopi' 1 ((VARIABLE UNKNOWN-INTENT UNKNOWN-PROC
+UNKNOWN UNKNOWN) (REAL 8 0 0 REAL ()) 0 0 () () 0 () () 0 0)
+54 'twothird' 'mynumbers' 'twothird' 1 ((PARAMETER UNKNOWN-INTENT
+UNKNOWN-PROC UNKNOWN IMPLICIT-SAVE) (REAL 8 0 0 REAL ()) 0 0 () (
+CONSTANT (REAL 8 0 0 REAL ()) 0 '0.aaaaaaaaaa97e8@0') () 0 () () 0 0)
+55 'zero' 'mynumbers' 'zero' 1 ((PARAMETER UNKNOWN-INTENT UNKNOWN-PROC
+UNKNOWN IMPLICIT-SAVE) (REAL 8 0 0 REAL ()) 0 0 () (CONSTANT (REAL 8 0 0
+REAL ()) 0 '0.00000000000000@0') () 0 () () 0 0)
+4 'x' '' 'x' 3 ((VARIABLE UNKNOWN-INTENT UNKNOWN-PROC UNKNOWN UNKNOWN
+DUMMY) (REAL 8 0 0 REAL ()) 0 0 () () 0 () () 0 0)
+17 'a' '' 'a' 16 ((VARIABLE IN UNKNOWN-PROC UNKNOWN UNKNOWN DIMENSION
+DUMMY) (REAL 8 0 0 REAL ()) 0 0 () (1 EXPLICIT (CONSTANT (INTEGER 4 0 0
+INTEGER ()) 0 '1') (CONSTANT (INTEGER 4 0 0 INTEGER ()) 0 '3')) 0 () ()
+0 0)
+12 'b' '' 'b' 10 ((VARIABLE IN UNKNOWN-PROC UNKNOWN UNKNOWN DIMENSION
+DUMMY) (REAL 8 0 0 REAL ()) 0 0 () (1 EXPLICIT (CONSTANT (INTEGER 4 0 0
+INTEGER ()) 0 '1') (CONSTANT (INTEGER 4 0 0 INTEGER ()) 0 '3')) 0 () ()
+0 0)
+5 'y' '' 'y' 3 ((VARIABLE UNKNOWN-INTENT UNKNOWN-PROC UNKNOWN UNKNOWN
+DUMMY) (REAL 8 0 0 REAL ()) 0 0 () () 0 () () 0 0)
+11 'a' '' 'a' 10 ((VARIABLE IN UNKNOWN-PROC UNKNOWN UNKNOWN DIMENSION
+DUMMY) (REAL 8 0 0 REAL ()) 0 0 () (1 EXPLICIT (CONSTANT (INTEGER 4 0 0
+INTEGER ()) 0 '1') (CONSTANT (INTEGER 4 0 0 INTEGER ()) 0 '3')) 0 () ()
+0 0)
+18 'b' '' 'b' 16 ((VARIABLE IN UNKNOWN-PROC UNKNOWN UNKNOWN DIMENSION
+DUMMY) (REAL 8 0 0 REAL ()) 0 0 () (1 EXPLICIT (CONSTANT (INTEGER 4 0 0
+INTEGER ()) 0 '1') (CONSTANT (INTEGER 4 0 0 INTEGER ()) 0 '3')) 0 () ()
+0 0)
+)
+
+('arg' 0 2 'cimagone' 0 6 'ckind' 0 7 'cone' 0 8 'cross' 0 9 'czero' 0
+13 'deg2radian' 0 14 'dot' 0 15 'eighth' 0 19 'four' 0 20 'half' 0 21
+'ikind' 0 22 'init_numbers' 0 23 'kind' 0 24 'mynumbers' 0 25 'neghuge'
+0 26 'negthird' 0 27 'negtwothird' 0 28 'one' 0 29 'onemns' 0 30 'onepls'
+0 31 'pi' 0 32 'quarter' 0 33 'rgigabyte' 0 34 'rkilobyte' 0 35 'rkind'
+0 36 'rmegabyte' 0 37 'rterabyte' 0 38 'satomname' 0 39
+'sfullatomicnamevec' 0 40 'smnp' 0 41 'spara' 0 42 'sqrthalf' 0 43
+'sqrttwo' 0 44 'sspacegroupname' 0 45 'sspacegrp' 0 46 'swyckoffsymbols'
+0 47 'third' 0 48 'three' 0 49 'tiny' 0 50 'two' 0 51 'twodeg2radian' 0
+52 'twopi' 0 53 'twothird' 0 54 'zero' 0 55)

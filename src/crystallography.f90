@@ -106,7 +106,7 @@ SUBROUTINE CrystalLatticeVectorDetermination(IErr)
      END IF
   END IF
   ! Set up Reciprocal Lattice Vectors: orthogonal reference frame in 1/Angstrom units
-
+  ! Note that reciprocal lattice vectors have two pi included!!	
   RarVecO= TWOPI*CROSS(RbVecO,RcVecO)/DOT_PRODUCT(RbVecO,CROSS(RcVecO,RaVecO))
   RbrVecO= TWOPI*CROSS(RcVecO,RaVecO)/DOT_PRODUCT(RcVecO,CROSS(RaVecO,RbVecO))
   RcrVecO= TWOPI*CROSS(RaVecO,RbVecO)/DOT_PRODUCT(RaVecO,CROSS(RbVecO,RcVecO))

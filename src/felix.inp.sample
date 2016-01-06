@@ -1,0 +1,73 @@
+# Input file for felixsim/draw/refine version :VERSION: Build :BUILD:
+# ------------------------------------
+
+# ------------------------------------
+# felixsim input
+
+# control flags
+IWriteFLAG                = 3
+IImageFLAG                = 01
+IScatterFactorMethodFLAG  = 0
+IMaskFLAG                 = 1
+IZolzFLAG                 = 1
+IAbsorbFLAG               = 1
+IAnisoDebyeWallerFlag     = 0
+IPseudoCubicFLAG          = 0
+IXDirectionFLAG           = 0
+
+# radius of the beam in pixels
+IPixelCount               = 64
+
+# beam selection criteria
+IMinReflectionPool        = 100
+IMinStrongBeams           = 20
+IMinWeakBeams             = 0
+RBSBMax                   = 0.1
+RBSPMax                   = 0.1
+
+# crystal settings
+RDebyeWallerConstant      = 0.4668
+RAbsorptionPer            = 2.9
+
+# microscope settings
+ROuterConvergenceAngle    = 6.0
+RInnerConvergenceAngle    = 0.0
+IIncidentBeamDirection    = [0,1,1]
+IXDirection               = [1,0,0]
+INormalDirection          = [0,1,1]
+RAcceleratingVoltage (kV) = 200.0
+RAcceptanceAngle          = 0.0
+
+# Image Output Options
+
+RInitialThickness        = 400.0
+RFinalThickness          = 700.0
+RDeltaThickness          = 10.0
+IReflectOut              = 7
+
+# felixrefine Input
+
+#Refinement Specific Flags
+IRefineModeFLAG          = B
+IWeightingFLAG           = 0
+IContinueFLAG            = 0
+ICorrelationFLAG         = 0
+IImageProcessingFLAG     = 0
+
+# Ug Iteration
+
+INoofUgs                  = 10
+
+# Structural Refinement
+
+IAtomicSites              = (1,2,6)
+
+# Refinement Output
+
+IPrint                    = 10
+
+# Simplex Initialisation
+
+RSimplexLengthScale       = 5.0
+RExitCriteria             = 0.0001
+

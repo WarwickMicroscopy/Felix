@@ -109,7 +109,7 @@ SUBROUTINE StructureFactorSetup(IErr)
   ENDIF  
 
   IF(IAbsorbFLAG.NE.0) THEN
-     
+  !RB this could be done in the calculation of the imaginary potential (duplicated in felixfunction)   
      ALLOCATE( & 
           CUgMatPrime(nReflections,nReflections), &
           STAT=IErr)
