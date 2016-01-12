@@ -132,7 +132,16 @@ SUBROUTINE ReflectionDetermination( IErr )
           " in ALLOCATE() of DYNAMIC variables RgVecMatT(HKL)"
      RETURN
   ENDIF
-
+!RB added
+!  ALLOCATE(&
+!       RgList(SIZE(RHKL,DIM=1),THREEDIM), &
+!       STAT=IErr)
+!  IF( IErr.NE.0 ) THEN
+!     PRINT*,"DiffractionPatternDefinitions(", my_rank, ") error ", IErr, &
+!          " in ALLOCATE() of DYNAMIC variables RgList(HKL)"
+!     RETURN
+!  ENDIF
+!RB end added
   ALLOCATE(&
        RgDummyVecMat(SIZE(RHKL,DIM=1),THREEDIM), &
        STAT=IErr)
@@ -452,7 +461,7 @@ SUBROUTINE ReflectionDetermination( IErr )
        IVariable=IMinReflectionPool)
   CALL Message("ReflectionDetermination", IInfo,IErr, &
        MessageVariable="to nReflections",IVariable=nReflections)
-
+!RB  RgList=RgMatVecT
 END SUBROUTINE ReflectionDetermination
   
   SUBROUTINE SpecificReflectionDetermination (IErr)

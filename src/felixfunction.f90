@@ -109,10 +109,10 @@ SUBROUTINE FelixFunction(LInitialSimulationFLAG,IErr)
  
 !!$  Structure Factors must be calculated without absorption for refinement to work
 
-  IF(IAbsorbFLAG.NE.0) THEN 
-     IAbsorbFLAG = 0 ! Non-absorpative structure factor calculation
-     IAbsorbTAG = 1 ! Remember that IAbsorbFLAG was 1
-  END IF
+  !RB IF(IAbsorbFLAG.NE.0) THEN 
+  !RB   IAbsorbFLAG = 0 ! Non-absorpative structure factor calculation
+  !RB   IAbsorbTAG = 1 ! Remember that IAbsorbFLAG was 1
+  !RB END IF
   
   CALL StructureFactorSetup(IErr)
   IF( IErr.NE.0 ) THEN
@@ -120,7 +120,7 @@ SUBROUTINE FelixFunction(LInitialSimulationFLAG,IErr)
      RETURN
   ENDIF
 
-  IF(IAbsorbTAG.NE.0) IAbsorbFLAG = 1 !Reset IAbsorbFLAG to 1
+  !RB IF(IAbsorbTAG.NE.0) IAbsorbFLAG = 1 !Reset IAbsorbFLAG to 1
 
   IF((IRefineModeSelectionArray(1).EQ.1).AND.(LInitialSimulationFLAG.NEQV..TRUE.)) THEN
      
@@ -131,18 +131,10 @@ SUBROUTINE FelixFunction(LInitialSimulationFLAG,IErr)
         RETURN
      ENDIF
      
-  END IF
+  ENDIF
 
   IF(IAbsorbFLAG.NE.0) THEN
      
-     ALLOCATE(&
-          CUgMatPrime(nReflections,nReflections),&
-          STAT=IErr)
-     IF( IErr.NE.0 ) THEN
-        PRINT*,"Felixfunction(", my_rank, ") error ", IErr, &
-             " in ALLOCATE() of DYNAMIC variables CUgMatPrime"
-        RETURN
-     ENDIF
      
      CALL StructureFactorsWithAbsorptionDetermination(IErr)
      IF( IErr.NE.0 ) THEN
@@ -151,17 +143,7 @@ SUBROUTINE FelixFunction(LInitialSimulationFLAG,IErr)
         RETURN
      ENDIF
 
-     !RB moved A
-
-     DEALLOCATE( &
-          CUgMatPrime,STAT=IErr)
-     IF( IErr.NE.0 ) THEN
-        PRINT*,"Felixfunction(", my_rank, ") error ", IErr, &
-             " Deallocating CUgMatPrime"
-        RETURN
-     ENDIF
-     
-  END IF     
+  ENDIF     
   !--------------------------------------------------------------------
   ! reserve memory for effective eigenvalue problem
   !--------------------------------------------------------------------
@@ -782,7 +764,7 @@ SUBROUTINE CalculateFigureofMeritandDetermineThickness(IThicknessCountFinal,IErr
      PRINT*,"Thickness",RThickness
   END IF
 
-  IF (RCrossCorrelation.NE.RCrossCorrelation) THEN
+  IF (RCrossCorrelation.NE.RCrossCorrelation) THEN!RB what?
      IErr = 1
   END IF
 

@@ -195,8 +195,8 @@ SUBROUTINE WriteIterationOutput(IIterationCount,IThicknessIndex,IExitFlag,IErr)
      
      call system('mkdir ' // path)
      
-     PRINT*,"I am Printing Because IExitFLAG = ",IExitFLAG,"and im",&
-          IIterationCount-IPreviousPrintedIteration,"Iterations from my last print"
+     PRINT*,"IExitFLAG = ",IExitFLAG,"; there have been",&
+          IIterationCount-IPreviousPrintedIteration,"iterations from my last print"
      
      IPreviousPrintedIteration = IIterationCount
      
@@ -312,7 +312,7 @@ SUBROUTINE WriteIterationStructure(path,IErr)
 
 !!$  Write out full atomic positions
 
-  CALL ExperimentalSetup(IErr)
+  CALL ExperimentalSetup(IErr)!RB Really? wtf?!?
   IF( IErr.NE.0 ) THEN
      PRINT*,"WriteIterationStructure(", my_rank, ") error ", IErr, &
           " in ExperimentalSetup"

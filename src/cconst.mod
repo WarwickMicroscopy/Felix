@@ -1,4 +1,4 @@
-GFORTRAN module created from smodules.f90 on Tue Jan  5 12:32:22 2016
+GFORTRAN module created from smodules.f90 on Mon Jan 11 13:04:03 2016
 MD5:b0d2c1cafcfc1cfa24ec052305f6f361 -- If you edit this, you'll get what you deserve.
 
 (() () () () () () () () () () () () () () () () () () () () () () () ()

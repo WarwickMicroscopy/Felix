@@ -468,7 +468,7 @@ SUBROUTINE RefinementVariableSetup(RIndependentVariableValues,IErr)
   END IF
   
 !!$  Fill the Independent Value array with values
-  
+
   DO ind = 1,IIndependentVariables
      IVariableType = IIterativeVariableUniqueIDs(ind,2)
      SELECT CASE (IVariableType)
@@ -608,7 +608,7 @@ SUBROUTINE RankSymmetryRelatedStructureFactor(IErr)
      ILoc = MINLOC(ABS(ISymmetryRelations-ind))
      ISymmetryStrengthKey(ind,1) = ind
      ISymmetryStrengthKey(ind,2) = ind
-     CSymmetryStrengthKey(ind) = CUgMat(ILoc(1),ILoc(2))
+     CSymmetryStrengthKey(ind) = CUgMatNoAbs(ILoc(1),ILoc(2))
   END DO
   
   CALL ReSortUgs(ISymmetryStrengthKey,CSymmetryStrengthKey,SIZE(CSymmetryStrengthKey,DIM=1))
@@ -709,10 +709,26 @@ SUBROUTINE SimplexInitialisation(RSimplexVolume,RSimplexFoM,RIndependentVariable
         RETURN
      ENDIF
      
-  END IF
-  
+  ENDIF
+     PRINT*,"Deallocating CUgMatNoAbs" 
   DEALLOCATE(&
-       CUgmat,&
+       CUgMatNoAbs,&!RB
+       STAT=IErr)  
+  IF( IErr.NE.0 ) THEN
+     PRINT*,"SimplexInitialisation (", my_rank, ") error in Deallocation()"
+     RETURN
+  ENDIF
+     PRINT*,"Deallocating CUgMatPrime"  
+  DEALLOCATE(&
+       CUgMatPrime,&!RB
+       STAT=IErr)  
+  IF( IErr.NE.0 ) THEN
+     PRINT*,"SimplexInitialisation (", my_rank, ") error in Deallocation()"
+     RETURN
+  ENDIF
+     PRINT*,"Deallocating CUgMat" 
+  DEALLOCATE(&
+       CUgMat,&!RB
        STAT=IErr)  
   IF( IErr.NE.0 ) THEN
      PRINT*,"SimplexInitialisation (", my_rank, ") error in Deallocation()"
@@ -1128,10 +1144,11 @@ SUBROUTINE ApplyNewStructureFactors(IErr)
   END DO
 
   WHERE(ABS(CUgMatDummy).GT.TINY)
-     CUgMat = CUgMatDummy
+     CUgMatNoAbs = CUgMatDummy!RB
   END WHERE
 
-!!$  CUgMat now contains the new values from the iterative process 
+!!$  CUgMatNoAbs now contains the new values from the iterative process
+!RB N.B. CUgMatNoAbs is without absorption 
   
 END SUBROUTINE ApplyNewStructureFactors
 

@@ -761,11 +761,11 @@ SUBROUTINE StrongAndWeakBeamsDetermination(IErr)
         IFound = 0
         sumC = ZERO
         sumC = sumC + &
-             REAL(CUgMat(IStrongBeamList(knd),IWeakBeamList(hnd)))* &
-             REAL(CUgMat(IWeakBeamList(hnd),1)) / &
+             REAL(CUgMatNoAbs(IStrongBeamList(knd),IWeakBeamList(hnd)))* &
+             REAL(CUgMatNoAbs(IWeakBeamList(hnd),1)) / &
              (2*RBigK*RDevPara(IWeakBeamList(hnd)))
         
-        sumC = sumC/REAL(CUgMat(IStrongBeamList(knd),1))
+        sumC = sumC/REAL(CUgMatNoAbs(IStrongBeamList(knd),1))
 
         IF(ABS(sumC).GE.RBSBmax) THEN
            DO ind =1,IWeakBeamIndex
@@ -828,11 +828,11 @@ SUBROUTINE StrongAndWeakBeamsDetermination(IErr)
         IFound = 0
         sumC = ZERO
         sumC = sumC + &
-             REAL(CUgMat(IAdditionalBmaxStrongBeamList(knd),IWeakBeamList(hnd)))* &
-             REAL(CUgMat(IWeakBeamList(hnd),1)) / &
+             REAL(CUgMatNoAbs(IAdditionalBmaxStrongBeamList(knd),IWeakBeamList(hnd)))* &
+             REAL(CUgMatNoAbs(IWeakBeamList(hnd),1)) / &
              (2*RBigK*RDevPara(IWeakBeamList(hnd)))
         
-        sumC = sumC/REAL(CUgMat(IAdditionalBmaxStrongBeamList(knd),1))
+        sumC = sumC/REAL(CUgMatNoAbs(IAdditionalBmaxStrongBeamList(knd),1))
         
         IF(ABS(REAL(sumC)).GE.RBSPmax) THEN
            DO ind =1,IWeakBeamIndex

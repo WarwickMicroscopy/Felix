@@ -1,5 +1,5 @@
-GFORTRAN module created from smodules.f90 on Tue Jan  5 12:32:22 2016
-MD5:b99bb5f4169e39ef53f20fbfdda997b8 -- If you edit this, you'll get what you deserve.
+GFORTRAN module created from smodules.f90 on Mon Jan 11 13:04:03 2016
+MD5:e1d607ebd246b1a32edf51e894ea3692 -- If you edit this, you'll get what you deserve.
 
 (() () () ()
 () () () () () () () () () () () () () () () () () () () () () () ())
@@ -430,13 +430,13 @@ CONSTANT (REAL 8 0 0 REAL ()) 0 '0.aaaaaaaaaa97e8@0') () 0 () () 0 0)
 152 'zero' 'mynumbers' 'zero' 1 ((PARAMETER UNKNOWN-INTENT UNKNOWN-PROC
 UNKNOWN IMPLICIT-SAVE) (REAL 8 0 0 REAL ()) 0 0 () (CONSTANT (REAL 8 0 0
 REAL ()) 0 '0.00000000000000@0') () 0 () () 0 0)
-5 'x' '' 'x' 4 ((VARIABLE UNKNOWN-INTENT UNKNOWN-PROC UNKNOWN UNKNOWN
-DUMMY) (REAL 8 0 0 REAL ()) 0 0 () () 0 () () 0 0)
-13 'b' '' 'b' 11 ((VARIABLE IN UNKNOWN-PROC UNKNOWN UNKNOWN DIMENSION
+12 'a' '' 'a' 11 ((VARIABLE IN UNKNOWN-PROC UNKNOWN UNKNOWN DIMENSION
 DUMMY) (REAL 8 0 0 REAL ()) 0 0 () (1 EXPLICIT (CONSTANT (INTEGER 4 0 0
 INTEGER ()) 0 '1') (CONSTANT (INTEGER 4 0 0 INTEGER ()) 0 '3')) 0 () ()
 0 0)
-12 'a' '' 'a' 11 ((VARIABLE IN UNKNOWN-PROC UNKNOWN UNKNOWN DIMENSION
+5 'x' '' 'x' 4 ((VARIABLE UNKNOWN-INTENT UNKNOWN-PROC UNKNOWN UNKNOWN
+DUMMY) (REAL 8 0 0 REAL ()) 0 0 () () 0 () () 0 0)
+13 'b' '' 'b' 11 ((VARIABLE IN UNKNOWN-PROC UNKNOWN UNKNOWN DIMENSION
 DUMMY) (REAL 8 0 0 REAL ()) 0 0 () (1 EXPLICIT (CONSTANT (INTEGER 4 0 0
 INTEGER ()) 0 '1') (CONSTANT (INTEGER 4 0 0 INTEGER ()) 0 '3')) 0 () ()
 0 0)
@@ -444,12 +444,12 @@ INTEGER ()) 0 '1') (CONSTANT (INTEGER 4 0 0 INTEGER ()) 0 '3')) 0 () ()
 DUMMY) (REAL 8 0 0 REAL ()) 0 0 () (1 EXPLICIT (CONSTANT (INTEGER 4 0 0
 INTEGER ()) 0 '1') (CONSTANT (INTEGER 4 0 0 INTEGER ()) 0 '3')) 0 () ()
 0 0)
+6 'y' '' 'y' 4 ((VARIABLE UNKNOWN-INTENT UNKNOWN-PROC UNKNOWN UNKNOWN
+DUMMY) (REAL 8 0 0 REAL ()) 0 0 () () 0 () () 0 0)
 19 'b' '' 'b' 17 ((VARIABLE IN UNKNOWN-PROC UNKNOWN UNKNOWN DIMENSION
 DUMMY) (REAL 8 0 0 REAL ()) 0 0 () (1 EXPLICIT (CONSTANT (INTEGER 4 0 0
 INTEGER ()) 0 '1') (CONSTANT (INTEGER 4 0 0 INTEGER ()) 0 '3')) 0 () ()
 0 0)
-6 'y' '' 'y' 4 ((VARIABLE UNKNOWN-INTENT UNKNOWN-PROC UNKNOWN UNKNOWN
-DUMMY) (REAL 8 0 0 REAL ()) 0 0 () () 0 () () 0 0)
 )
 
 ('add_out_info' 0 2 'arg' 0 3 'cimagone' 0 7 'ckind' 0 8 'cone' 0 9

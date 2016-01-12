@@ -97,30 +97,39 @@ SUBROUTINE StructureFactorSetup(IErr)
   !--------------------------------------------------------------------
 
   !Allocate memory for Ug Matrix
-
+  !RB Matrix that is sum of real+abs
+       PRINT*,"Allocating CUgMat" 
   ALLOCATE( & 
        CUgMat(nReflections,nReflections), &
        STAT=IErr)
   IF( IErr.NE.0 ) THEN
      PRINT*,"StructureFactorSetup(", my_rank, ") error ", IErr, &
-          " in ALLOCATE() of DYNAMIC variables CUgMat"
+          " in ALLOCATE() of DYNAMIC variables CUgMat diddly"
      !call error function
      RETURN
   ENDIF  
-
-  IF(IAbsorbFLAG.NE.0) THEN
-  !RB this could be done in the calculation of the imaginary potential (duplicated in felixfunction)   
-     ALLOCATE( & 
-          CUgMatPrime(nReflections,nReflections), &
-          STAT=IErr)
-     IF( IErr.NE.0 ) THEN
-        PRINT*,"StructureFactorSetup(", my_rank, ") error ", IErr, &
-             " in ALLOCATE() of DYNAMIC variables CUgMatPrime"
-        !call error function
-        RETURN
-     ENDIF
-     
-  END IF
+  !RB Matrix without absorption
+       PRINT*,"Allocating CUgMatNoAbs" 
+  ALLOCATE( & !RB
+       CUgMatNoAbs(nReflections,nReflections), &!RB
+       STAT=IErr)!RB
+  IF( IErr.NE.0 ) THEN!RB
+     PRINT*,"StructureFactorSetup(", my_rank, ") error ", IErr, &!RB
+          " in ALLOCATE() of DYNAMIC variables CUgMatNoAbs diddlo"!RB
+     !call error function
+     RETURN!RB
+  ENDIF  !RB
+  !RB Matrix for absorption
+       PRINT*,"Allocating CUgMatPrime" 
+  ALLOCATE( & 
+       CUgMatPrime(nReflections,nReflections), &
+       STAT=IErr)
+  IF( IErr.NE.0 ) THEN
+     PRINT*,"StructureFactorSetup(", my_rank, ") error ", IErr, &
+          " in ALLOCATE() of DYNAMIC variables CUgMatPrime diddler"
+     !call error function
+     RETURN
+  ENDIF  
 
   CALL StructureFactorInitialisation (IErr)
   IF( IErr.NE.0 ) THEN
@@ -130,7 +139,7 @@ SUBROUTINE StructureFactorSetup(IErr)
      RETURN
   ENDIF
 
-  Deallocate( &
+  DEALLOCATE( &
        RgMatMat,STAT=IErr)
   IF( IErr.NE.0 ) THEN
      PRINT*,"felixsim(", my_rank, ") error ", IErr, &
@@ -138,7 +147,7 @@ SUBROUTINE StructureFactorSetup(IErr)
      RETURN
   ENDIF
   
-  Deallocate(&
+  DEALLOCATE(&
        RgMatMag,STAT=IErr)
   IF( IErr.NE.0 ) THEN
      PRINT*,"felixsim(", my_rank, ") error ", IErr, &

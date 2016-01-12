@@ -482,6 +482,14 @@ PROGRAM felixsim
   ENDIF
 
   DEALLOCATE( &
+       CUgMatNoAbs,STAT=IErr)
+  IF( IErr.NE.0 ) THEN
+     PRINT*,"felixsim(", my_rank, ") error ", IErr, &
+          " Deallocating CUgMatNoAbs"
+     GOTO 9999
+  ENDIF
+
+  DEALLOCATE( &
        CUgMatPrime,STAT=IErr)
   IF( IErr.NE.0 ) THEN
      PRINT*,"felixsim(", my_rank, ") error ", IErr, &
