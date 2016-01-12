@@ -135,7 +135,6 @@ SUBROUTINE FelixFunction(LInitialSimulationFLAG,IErr)
 
   IF(IAbsorbFLAG.NE.0) THEN
      
-     
      CALL StructureFactorsWithAbsorptionDetermination(IErr)
      IF( IErr.NE.0 ) THEN
         PRINT*,"Felixfunction(", my_rank, ") error ",IErr,&
@@ -648,13 +647,13 @@ SUBROUTINE CalculateFigureofMeritandDetermineThickness(IThicknessCountFinal,IErr
   REAL(RKIND),DIMENSION(2*IPixelCount,2*IPixelCount) :: &
        RSimulatedImageForPhaseCorrelation,RExperimentalImage
   REAL(RKIND) :: &
-       RCrossCorrelationOld,RIndependentCrossCorrelation,RThickness,PhaseCorrelate,Normalised2DCrossCorrelation
+       RCrossCorrelationOld,RIndependentCrossCorrelation,RThickness,&
+	   PhaseCorrelate,Normalised2DCrossCorrelation,ResidualSumofSquares
 !!$  REAL(RKIND),DIMENSION(IReflectOut,IThicknessCount,IPixelTotal) :: &
 !!$       RSimulatedImages
   REAL(RKIND),DIMENSION(IReflectOut) :: &
-       RReflectionCrossCorrelations
-  REAL(RKIND) :: &
-       ResidualSumofSquares
+       RReflectionCrossCorrelations,RReflectionThickness
+       
   
   IF((IWriteFLAG.GE.0.AND.my_rank.EQ.0).OR.IWriteFLAG.GE.10) THEN
      PRINT*,"CalculateFigureofMeritandDetermineThickness(",my_rank,")"
@@ -741,7 +740,8 @@ SUBROUTINE CalculateFigureofMeritandDetermineThickness(IThicknessCountFinal,IErr
            RCrossCorrelationOld = RIndependentCrossCorrelation
 
            IThicknessByReflection(hnd) = ind
-
+           RReflectionThickness(hnd) = RInitialThickness +&
+		   IThicknessByReflection(hnd)*RDeltaThickness
         END IF
      END DO
 
@@ -752,15 +752,16 @@ SUBROUTINE CalculateFigureofMeritandDetermineThickness(IThicknessCountFinal,IErr
   RCrossCorrelation = &
        SUM(RReflectionCrossCorrelations*RWeightingCoefficients)/&
        REAL(IReflectOut,RKIND)
-  
+!RB assume that the thickness is given by the mean of individual thicknesses  
   IThicknessCountFinal = SUM(IThicknessByReflection)/IReflectOut
 
   RThickness = RInitialThickness + (IThicknessCountFinal-1)*RDeltaThickness 
+  
 
   IF(my_rank.eq.0) THEN
-     PRINT*,"Thicknesses",IThicknessByReflection
-     PRINT*,"Correlation",RCrossCorrelation
-     PRINT*,"Thickness Final",IThicknessCountFinal
+     PRINT*,"Thicknesses",RReflectionThickness
+!RB     PRINT*,"Correlation",RCrossCorrelation
+!RB     PRINT*,"Thickness Final",IThicknessCountFinal
      PRINT*,"Thickness",RThickness
   END IF
 
@@ -845,12 +846,29 @@ REAL(RKIND) FUNCTION SimplexFunction(RIndependentVariableValues,IIterationCount,
      
      SimplexFunction = RCrossCorrelation     
   END IF
-     
-  DEALLOCATE( &
-       CUgMat,STAT=IErr)
+!RB
+   PRINT*,"Deallocating CUgMatNoAbs in SimplexFunction" 
+  DEALLOCATE(&
+       CUgMatNoAbs,&!RB
+       STAT=IErr)  
   IF( IErr.NE.0 ) THEN
-     PRINT*,"SimplexFunction(", my_rank, ") error ", IErr, &
-          " Deallocating CUgMat"
+     PRINT*,"SimplexInitialisation (", my_rank, ") error in Deallocation()"
+     RETURN
+  ENDIF
+     PRINT*,"Deallocating CUgMatPrime in SimplexFunction"  
+  DEALLOCATE(&
+       CUgMatPrime,&!RB
+       STAT=IErr)  
+  IF( IErr.NE.0 ) THEN
+     PRINT*,"SimplexInitialisation (", my_rank, ") error in Deallocation()"
+     RETURN
+  ENDIF
+     PRINT*,"Deallocating CUgMat in SimplexFunction" 
+  DEALLOCATE(&
+       CUgMat,&!RB
+       STAT=IErr)  
+  IF( IErr.NE.0 ) THEN
+     PRINT*,"SimplexInitialisation (", my_rank, ") error in Deallocation()"
      RETURN
   ENDIF
   

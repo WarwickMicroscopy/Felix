@@ -103,19 +103,19 @@ SUBROUTINE StructureFactorSetup(IErr)
        CUgMat(nReflections,nReflections), &
        STAT=IErr)
   IF( IErr.NE.0 ) THEN
-     PRINT*,"StructureFactorSetup(", my_rank, ") error ", IErr, &
-          " in ALLOCATE() of DYNAMIC variables CUgMat diddly"
+     PRINT*,"StructureFactorSetup(",my_rank,") error", IErr, &
+          "in ALLOCATE() of DYNAMIC variables CUgMat diddly"
      !call error function
      RETURN
   ENDIF  
   !RB Matrix without absorption
-       PRINT*,"Allocating CUgMatNoAbs" 
+  PRINT*,"Allocating CUgMatNoAbs"
   ALLOCATE( & !RB
        CUgMatNoAbs(nReflections,nReflections), &!RB
        STAT=IErr)!RB
   IF( IErr.NE.0 ) THEN!RB
-     PRINT*,"StructureFactorSetup(", my_rank, ") error ", IErr, &!RB
-          " in ALLOCATE() of DYNAMIC variables CUgMatNoAbs diddlo"!RB
+     PRINT*,"StructureFactorSetup(",my_rank,") error",IErr, &!RB
+          "in ALLOCATE() of DYNAMIC variables CUgMatNoAbs diddlo"!RB
      !call error function
      RETURN!RB
   ENDIF  !RB
@@ -125,16 +125,16 @@ SUBROUTINE StructureFactorSetup(IErr)
        CUgMatPrime(nReflections,nReflections), &
        STAT=IErr)
   IF( IErr.NE.0 ) THEN
-     PRINT*,"StructureFactorSetup(", my_rank, ") error ", IErr, &
-          " in ALLOCATE() of DYNAMIC variables CUgMatPrime diddler"
+     PRINT*,"StructureFactorSetup(",my_rank,") error ",IErr, &
+          "in ALLOCATE() of DYNAMIC variables CUgMatPrime diddler"
      !call error function
      RETURN
   ENDIF  
 
   CALL StructureFactorInitialisation (IErr)
   IF( IErr.NE.0 ) THEN
-     PRINT*,"StructureFactorSetup(", my_rank, ") error ", IErr, &
-          " in StructureFactorInitialisation"
+     PRINT*,"StructureFactorSetup(",my_rank,") error", IErr, &
+          "in StructureFactorInitialisation"
      !call error function
      RETURN
   ENDIF

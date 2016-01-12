@@ -118,7 +118,8 @@ SUBROUTINE SymmetryRelatedStructureFactorDetermination (IErr)
            CYCLE
         ELSE
            Iuid = Iuid + 1_IKIND
-           WHERE (ABS(ABS(CUgMatNoAbs)-ABS(CUgMatNoAbs(ind,jnd))).LE.RTolerance)
+           WHERE (ABS(ABS(REAL(CUgMatNoAbs))-&
+		   ABS(REAL(CUgMatNoAbs(ind,jnd)))).LE.RTolerance)!RB real part only to distinguish different phases
               ISymmetryRelations = Iuid
            END WHERE
         END IF
