@@ -759,7 +759,7 @@ SUBROUTINE CalculateFigureofMeritandDetermineThickness(IThicknessCountFinal,IErr
   
 
   IF(my_rank.eq.0) THEN
-     PRINT*,"Thicknesses",RReflectionThickness
+!RB     PRINT*,"Thicknesses",RReflectionThickness
 !RB     PRINT*,"Correlation",RCrossCorrelation
 !RB     PRINT*,"Thickness Final",IThicknessCountFinal
      PRINT*,"Thickness",RThickness
@@ -847,7 +847,7 @@ REAL(RKIND) FUNCTION SimplexFunction(RIndependentVariableValues,IIterationCount,
      SimplexFunction = RCrossCorrelation     
   END IF
 !RB
-   PRINT*,"Deallocating CUgMatNoAbs in SimplexFunction" 
+   PRINT*,"Deallocating CUgMatNoAbs,CUgMatPrime,CUgMat in SimplexFunction" 
   DEALLOCATE(&
        CUgMatNoAbs,&!RB
        STAT=IErr)  
@@ -855,15 +855,15 @@ REAL(RKIND) FUNCTION SimplexFunction(RIndependentVariableValues,IIterationCount,
      PRINT*,"SimplexInitialisation (", my_rank, ") error in Deallocation()"
      RETURN
   ENDIF
-     PRINT*,"Deallocating CUgMatPrime in SimplexFunction"  
-  DEALLOCATE(&
+ 
+ DEALLOCATE(&
        CUgMatPrime,&!RB
        STAT=IErr)  
   IF( IErr.NE.0 ) THEN
      PRINT*,"SimplexInitialisation (", my_rank, ") error in Deallocation()"
      RETURN
   ENDIF
-     PRINT*,"Deallocating CUgMat in SimplexFunction" 
+ 
   DEALLOCATE(&
        CUgMat,&!RB
        STAT=IErr)  

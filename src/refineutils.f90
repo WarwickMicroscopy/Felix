@@ -175,7 +175,7 @@ SUBROUTINE ReSortUgs( ISymmetryIntegers,CUgs, N )
         CUgSearch = CUgs(L)
         CUgCompare = CUgs(I)
         IF( &
-             (REAL(CUgSearch**2)) .GT. &
+             (REAL(CUgSearch**2)) .GT. &!RB sort on modulus ABS?
              (REAL(CUgCompare**2))) THEN
  !          DO 100
               !IF(my_rank.eq.0) THEN

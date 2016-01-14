@@ -386,14 +386,14 @@ SUBROUTINE StructureFactorsWithAbsorptionDetermination(IErr)
      CUgMatPrime = CUgMatNoAbs*EXP(CIMAGONE*PI/2)*(RAbsorptionPercentage/100_RKIND)!RB changed
      CUgMat =  CUgMatNoAbs+CUgMatPrime!RB
    PRINT*,"CUgMat(1,1)= ",CUgMatNoAbs(1,1),CUgMatPrime(1,1)!,CUgMat(1,1)   
-   PRINT*,"CUgMat(2,2)= ",CUgMatNoAbs(2,2),CUgMatPrime(2,2)!,CUgMat(2,2)   
-   PRINT*,"CUgMat(3,3)= ",CUgMatNoAbs(3,3),CUgMatPrime(3,3)!,CUgMat(3,3) 
    PRINT*,"CUgMat(2,1)= ",CUgMatNoAbs(2,1),CUgMatPrime(2,1)!,CUgMat(2,1)   
    PRINT*,"CUgMat(1,2)= ",CUgMatNoAbs(1,2),CUgMatPrime(1,2)!,CUgMat(1,2)   
    PRINT*,"CUgMat(3,1)= ",CUgMatNoAbs(3,1),CUgMatPrime(3,1)!,CUgMat(3,1)   
    PRINT*,"CUgMat(1,3)= ",CUgMatNoAbs(1,3),CUgMatPrime(1,3)!,CUgMat(1,3)   
    PRINT*,"CUgMat(3,2)= ",CUgMatNoAbs(3,2),CUgMatPrime(3,2)!,CUgMat(3,2)   
    PRINT*,"CUgMat(2,3)= ",CUgMatNoAbs(2,3),CUgMatPrime(2,3)!,CUgMat(2,3)   
+   PRINT*,"CUgMat(4,1)= ",CUgMatNoAbs(4,1),CUgMatPrime(4,1)!,CUgMat(2,2)   
+   PRINT*,"CUgMat(1,4)= ",CUgMatNoAbs(1,4),CUgMatPrime(1,4)!,CUgMat(3,3) 
   
   CASE Default
  

@@ -98,7 +98,7 @@ SUBROUTINE StructureFactorSetup(IErr)
 
   !Allocate memory for Ug Matrix
   !RB Matrix that is sum of real+abs
-       PRINT*,"Allocating CUgMat" 
+  PRINT*,"Allocating CUgMat,CUgMatNoAbs,CUgMatPrime in structurefactorsetup"
   ALLOCATE( & 
        CUgMat(nReflections,nReflections), &
        STAT=IErr)
@@ -107,9 +107,9 @@ SUBROUTINE StructureFactorSetup(IErr)
           "in ALLOCATE() of DYNAMIC variables CUgMat diddly"
      !call error function
      RETURN
-  ENDIF  
+  ENDIF
+  
   !RB Matrix without absorption
-  PRINT*,"Allocating CUgMatNoAbs"
   ALLOCATE( & !RB
        CUgMatNoAbs(nReflections,nReflections), &!RB
        STAT=IErr)!RB
@@ -119,8 +119,8 @@ SUBROUTINE StructureFactorSetup(IErr)
      !call error function
      RETURN!RB
   ENDIF  !RB
-  !RB Matrix for absorption
-       PRINT*,"Allocating CUgMatPrime" 
+
+  !RB Matrix for absorption  
   ALLOCATE( & 
        CUgMatPrime(nReflections,nReflections), &
        STAT=IErr)
