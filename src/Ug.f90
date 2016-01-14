@@ -106,12 +106,12 @@ SUBROUTINE SymmetryRelatedStructureFactorDetermination (IErr)
   
   Iuid = 0_IKIND
   
-  Iuid = Iuid + 1_IKIND
+!!$  Iuid = Iuid + 1_IKIND
+!!$
+!!$  WHERE (ABS(CUgMatNoAbs).LE.RTolerance)
+!!$     ISymmetryRelations = Iuid
+!!$  END WHERE
 
-  WHERE (ABS(CUgMatNoAbs).LE.RTolerance)
-     ISymmetryRelations = Iuid
-  END WHERE
-  
   DO ind = 1,nReflections
      DO jnd = 1,ind
         IF(ISymmetryRelations(ind,jnd).NE.0) THEN
@@ -120,7 +120,7 @@ SUBROUTINE SymmetryRelatedStructureFactorDetermination (IErr)
            Iuid = Iuid + 1_IKIND
            WHERE (ABS(ABS(REAL(CUgMatNoAbs))-&
 		   ABS(REAL(CUgMatNoAbs(ind,jnd)))).LE.RTolerance)!RB real part only to distinguish different phases
-              ISymmetryRelations = Iuid
+              ISymmetryRelations = Iuid*SIGN(1_IKIND,NINT(AIMAG(CUgMatNoAbs)))
            END WHERE
         END IF
      END DO
@@ -128,6 +128,10 @@ SUBROUTINE SymmetryRelatedStructureFactorDetermination (IErr)
 
   IF((IWriteFLAG.GE.0.AND.my_rank.EQ.0).OR.IWriteFLAG.GE.10) THEN
      PRINT*,"Unique Ugs = ",Iuid
+
+     DO ind=1,nReflections
+        PRINT*,"DBG: ", ind, "/", ISymmetryRelations(ind,1:15)
+     ENDDO
   END IF
 
   ALLOCATE(&

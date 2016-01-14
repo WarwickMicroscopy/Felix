@@ -137,6 +137,7 @@ REAL(RKIND) FUNCTION PhaseCorrelate(RImageSim,RImageExpiDummy,IErr,IXsizeIn,IYSi
   
 END FUNCTION  PhaseCorrelate
 
+!%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 SUBROUTINE ReSortUgs( ISymmetryIntegers,CUgs, N )
   
   USE MyNumbers
@@ -175,8 +176,8 @@ SUBROUTINE ReSortUgs( ISymmetryIntegers,CUgs, N )
         CUgSearch = CUgs(L)
         CUgCompare = CUgs(I)
         IF( &
-             (REAL(CUgSearch**2)) .GT. &!RB sort on modulus ABS?
-             (REAL(CUgCompare**2))) THEN
+             (ABS(CUgSearch)) .GT. &!RB sort on modulus ABS?
+             (ABS(CUgCompare))) THEN
  !          DO 100
               !IF(my_rank.eq.0) THEN
               !   PRINT*,I

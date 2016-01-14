@@ -609,7 +609,7 @@ SUBROUTINE RankSymmetryRelatedStructureFactor(IErr)
      ISymmetryStrengthKey(ind,1) = ind
      ISymmetryStrengthKey(ind,2) = ind
      CSymmetryStrengthKey(ind) = CUgMatNoAbs(ILoc(1),ILoc(2))
-	 PRINT*,"CSymmetryStrengthKey",ind,CSymmetryStrengthKey(ind)
+     PRINT*,"CSymmetryStrengthKey",ind,ISymmetryStrengthKey(ind,:),CSymmetryStrengthKey(ind)
   END DO
   
   CALL ReSortUgs(ISymmetryStrengthKey,CSymmetryStrengthKey,SIZE(CSymmetryStrengthKey,DIM=1))
