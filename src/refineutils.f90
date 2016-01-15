@@ -150,7 +150,7 @@ SUBROUTINE ReSortUgs( ISymmetryIntegers,CUgs, N )
 
   IMPLICIT NONE
 
-  INTEGER (IKIND) N,IDummy,ISymmetryIntegers(N,2)
+  INTEGER (IKIND) N,IDummy,ISymmetryIntegers(N)
   REAL(RKIND) RhklarraySearch(THREEDIM), RhklarrayCompare(THREEDIM)
   COMPLEX(CKIND) CUgSearch,CUgCompare,CUgs(N)
   REAL(KIND=RKIND) ALN2I, LocalTINY
@@ -185,9 +185,9 @@ SUBROUTINE ReSortUgs( ISymmetryIntegers,CUgs, N )
               Cdummy = CUgs(I)
               CUgs(I)= CUgs(L)
               Cugs(L)= Cdummy
-              Idummy = ISymmetryIntegers(I,2)
-              ISymmetryIntegers(I,2)= ISymmetryIntegers(L,2)
-              ISymmetryIntegers(L,2)= Idummy
+              Idummy = ISymmetryIntegers(I)
+              ISymmetryIntegers(I)= ISymmetryIntegers(L)
+              ISymmetryIntegers(L)= Idummy
 !100        ENDDO
            
            I=I-M

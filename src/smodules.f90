@@ -226,9 +226,9 @@ MODULE IPara
   !LACBED
 
   INTEGER(IKIND),DIMENSION(:,:), ALLOCATABLE :: &
-       ILACBEDStrongBeamList, IPixelLocation, ISymmetryRelations,ISymmetryStrengthKey
+       ILACBEDStrongBeamList, IPixelLocation, ISymmetryRelations
   INTEGER(IKIND),DIMENSION(:), ALLOCATABLE :: &
-       InBeams,IStrongBeamList,IOutputReflections
+       InBeams,IStrongBeamList,IOutputReflections,ISymmetryStrengthKey
 
   !inpcif
 

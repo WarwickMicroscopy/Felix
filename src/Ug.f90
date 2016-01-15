@@ -134,11 +134,10 @@ SUBROUTINE SymmetryRelatedStructureFactorDetermination (IErr)
      ENDDO
   END IF
 
-  ALLOCATE(&
-       ISymmetryStrengthKey(Iuid,2),&
-       STAT=IErr)
+  ALLOCATE(ISymmetryStrengthKey(Iuid),STAT=IErr)
   IF( IErr.NE.0 ) THEN
-     PRINT*,"SymmetryRelatedStructureFactorDetermination(", my_rank, ") error ", IErr, " in ALLOCATE() ISymmetryStrengthKey"
+     PRINT*,"SymmetryRelatedStructureFactorDetermination(", my_rank, ") error ", IErr, &
+          " in ALLOCATE() ISymmetryStrengthKey"
      RETURN
   ENDIF
 

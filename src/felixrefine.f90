@@ -604,12 +604,11 @@ SUBROUTINE RankSymmetryRelatedStructureFactor(IErr)
      RETURN
   ENDIF
   
-  DO ind = 1,(SIZE(ISymmetryStrengthKey,DIM=1))
+  DO ind = 1,(SIZE(ISymmetryStrengthKey))
      ILoc = MINLOC(ABS(ISymmetryRelations-ind))
-     ISymmetryStrengthKey(ind,1) = ind
-     ISymmetryStrengthKey(ind,2) = ind
+     ISymmetryStrengthKey(ind) = ind
      CSymmetryStrengthKey(ind) = CUgMatNoAbs(ILoc(1),ILoc(2))
-     PRINT*,"CSymmetryStrengthKey",ind,ISymmetryStrengthKey(ind,:),CSymmetryStrengthKey(ind)
+     PRINT*,"CSymmetryStrengthKey",ind,ISymmetryStrengthKey(ind),CSymmetryStrengthKey(ind)
   END DO
   
   CALL ReSortUgs(ISymmetryStrengthKey,CSymmetryStrengthKey,SIZE(CSymmetryStrengthKey,DIM=1))
@@ -1139,8 +1138,14 @@ SUBROUTINE ApplyNewStructureFactors(IErr)
 !!$  Populate Ug Matrix with new iterative elements
 
   DO ind = 1,INoofUgs
-     WHERE(ISymmetryRelations.EQ.ISymmetryStrengthKey(ind,2)) 
+!!$     WHERE(ISymmetryRelations.EQ.ISymmetryStrengthKey(ind)) 
+!!$        CUgMatDummy = CSymmetryStrengthKey(ind)
+!!$     END WHERE
+     WHERE(ISymmetryRelations.EQ.ISymmetryStrengthKey(ind))
         CUgMatDummy = CSymmetryStrengthKey(ind)
+     END WHERE
+     WHERE(ISymmetryRelations.EQ.-ISymmetryStrengthKey(ind))!RB 
+        CUgMatDummy = CONJG(CSymmetryStrengthKey(ind))
      END WHERE
   END DO
 
