@@ -710,7 +710,7 @@ SUBROUTINE SimplexInitialisation(RSimplexVolume,RSimplexFoM,RIndependentVariable
      ENDIF
      
   ENDIF
-     PRINT*,"Deallocating CUgMat,CUgMatNoAbs,CUgMatPrime in felixrefine" 
+!RB     PRINT*,"Deallocating CUgMat,CUgMatNoAbs,CUgMatPrime in felixrefine" 
   DEALLOCATE(&
        CUgMatNoAbs,&!RB
        STAT=IErr)  

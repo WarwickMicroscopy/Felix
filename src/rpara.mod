@@ -1,5 +1,5 @@
-GFORTRAN module created from smodules.f90 on Mon Jan 11 13:04:03 2016
-MD5:fac46631d6b58eddbfe3e024d4d16d67 -- If you edit this, you'll get what you deserve.
+GFORTRAN module created from smodules.f90 on Fri Jan 15 15:24:28 2016
+MD5:84405a9047c8ce81514101a70b22969b -- If you edit this, you'll get what you deserve.
 
 (() () () () ()
 () () () () () () () () () () () () () () () () () () () () () ())
@@ -557,10 +557,6 @@ UNKNOWN IMPLICIT-SAVE) (REAL 8 0 0 REAL ()) 0 0 () (CONSTANT (REAL 8 0 0
 REAL ()) 0 '0.00000000000000@0') () 0 () () 0 0)
 6 'y' '' 'y' 4 ((VARIABLE UNKNOWN-INTENT UNKNOWN-PROC UNKNOWN UNKNOWN
 DUMMY) (REAL 8 0 0 REAL ()) 0 0 () () 0 () () 0 0)
-19 'b' '' 'b' 17 ((VARIABLE IN UNKNOWN-PROC UNKNOWN UNKNOWN DIMENSION
-DUMMY) (REAL 8 0 0 REAL ()) 0 0 () (1 EXPLICIT (CONSTANT (INTEGER 4 0 0
-INTEGER ()) 0 '1') (CONSTANT (INTEGER 4 0 0 INTEGER ()) 0 '3')) 0 () ()
-0 0)
 5 'x' '' 'x' 4 ((VARIABLE UNKNOWN-INTENT UNKNOWN-PROC UNKNOWN UNKNOWN
 DUMMY) (REAL 8 0 0 REAL ()) 0 0 () () 0 () () 0 0)
 13 'b' '' 'b' 11 ((VARIABLE IN UNKNOWN-PROC UNKNOWN UNKNOWN DIMENSION
@@ -568,6 +564,10 @@ DUMMY) (REAL 8 0 0 REAL ()) 0 0 () (1 EXPLICIT (CONSTANT (INTEGER 4 0 0
 INTEGER ()) 0 '1') (CONSTANT (INTEGER 4 0 0 INTEGER ()) 0 '3')) 0 () ()
 0 0)
 12 'a' '' 'a' 11 ((VARIABLE IN UNKNOWN-PROC UNKNOWN UNKNOWN DIMENSION
+DUMMY) (REAL 8 0 0 REAL ()) 0 0 () (1 EXPLICIT (CONSTANT (INTEGER 4 0 0
+INTEGER ()) 0 '1') (CONSTANT (INTEGER 4 0 0 INTEGER ()) 0 '3')) 0 () ()
+0 0)
+19 'b' '' 'b' 17 ((VARIABLE IN UNKNOWN-PROC UNKNOWN UNKNOWN DIMENSION
 DUMMY) (REAL 8 0 0 REAL ()) 0 0 () (1 EXPLICIT (CONSTANT (INTEGER 4 0 0
 INTEGER ()) 0 '1') (CONSTANT (INTEGER 4 0 0 INTEGER ()) 0 '3')) 0 () ()
 0 0)

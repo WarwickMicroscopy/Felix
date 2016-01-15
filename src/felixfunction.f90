@@ -846,8 +846,8 @@ REAL(RKIND) FUNCTION SimplexFunction(RIndependentVariableValues,IIterationCount,
      
      SimplexFunction = RCrossCorrelation     
   END IF
-!RB
-   PRINT*,"Deallocating CUgMatNoAbs,CUgMatPrime,CUgMat in SimplexFunction" 
+
+!RB   PRINT*,"Deallocating CUgMatNoAbs,CUgMatPrime,CUgMat in SimplexFunction" 
   DEALLOCATE(&
        CUgMatNoAbs,&!RB
        STAT=IErr)  

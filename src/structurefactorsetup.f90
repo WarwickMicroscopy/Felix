@@ -98,7 +98,7 @@ SUBROUTINE StructureFactorSetup(IErr)
 
   !Allocate memory for Ug Matrix
   !RB Matrix that is sum of real+abs
-  PRINT*,"Allocating CUgMat,CUgMatNoAbs,CUgMatPrime in structurefactorsetup"
+  !PRINT*,"Allocating CUgMat,CUgMatNoAbs,CUgMatPrime in structurefactorsetup"
   ALLOCATE( & 
        CUgMat(nReflections,nReflections), &
        STAT=IErr)

@@ -1,5 +1,5 @@
-GFORTRAN module created from smodules.f90 on Mon Jan 11 13:40:11 2016
-MD5:94fecbd28328e314bd18dc9c897c913d -- If you edit this, you'll get what you deserve.
+GFORTRAN module created from smodules.f90 on Fri Jan 15 15:24:28 2016
+MD5:1f623b3be4ab3b9b1ba67e7f8ff124f7 -- If you edit this, you'll get what you deserve.
 
 (() () () () () () ()
 () () () () () () () () () () () () () () () () () () () ())
@@ -179,7 +179,7 @@ CONSTANT (REAL 8 0 0 REAL ()) 0 '0.aaaaaaaaaa97e8@0') () 0 () () 0 0)
 68 'zero' 'mynumbers' 'zero' 1 ((PARAMETER UNKNOWN-INTENT UNKNOWN-PROC
 UNKNOWN IMPLICIT-SAVE) (REAL 8 0 0 REAL ()) 0 0 () (CONSTANT (REAL 8 0 0
 REAL ()) 0 '0.00000000000000@0') () 0 () () 0 0)
-38 'b' '' 'b' 36 ((VARIABLE IN UNKNOWN-PROC UNKNOWN UNKNOWN DIMENSION
+25 'a' '' 'a' 24 ((VARIABLE IN UNKNOWN-PROC UNKNOWN UNKNOWN DIMENSION
 DUMMY) (REAL 8 0 0 REAL ()) 0 0 () (1 EXPLICIT (CONSTANT (INTEGER 4 0 0
 INTEGER ()) 0 '1') (CONSTANT (INTEGER 4 0 0 INTEGER ()) 0 '3')) 0 () ()
 0 0)
@@ -189,13 +189,13 @@ INTEGER ()) 0 '1') (CONSTANT (INTEGER 4 0 0 INTEGER ()) 0 '3')) 0 () ()
 0 0)
 5 'y' '' 'y' 3 ((VARIABLE UNKNOWN-INTENT UNKNOWN-PROC UNKNOWN UNKNOWN
 DUMMY) (REAL 8 0 0 REAL ()) 0 0 () () 0 () () 0 0)
-25 'a' '' 'a' 24 ((VARIABLE IN UNKNOWN-PROC UNKNOWN UNKNOWN DIMENSION
+26 'b' '' 'b' 24 ((VARIABLE IN UNKNOWN-PROC UNKNOWN UNKNOWN DIMENSION
 DUMMY) (REAL 8 0 0 REAL ()) 0 0 () (1 EXPLICIT (CONSTANT (INTEGER 4 0 0
 INTEGER ()) 0 '1') (CONSTANT (INTEGER 4 0 0 INTEGER ()) 0 '3')) 0 () ()
 0 0)
 4 'x' '' 'x' 3 ((VARIABLE UNKNOWN-INTENT UNKNOWN-PROC UNKNOWN UNKNOWN
 DUMMY) (REAL 8 0 0 REAL ()) 0 0 () () 0 () () 0 0)
-26 'b' '' 'b' 24 ((VARIABLE IN UNKNOWN-PROC UNKNOWN UNKNOWN DIMENSION
+38 'b' '' 'b' 36 ((VARIABLE IN UNKNOWN-PROC UNKNOWN UNKNOWN DIMENSION
 DUMMY) (REAL 8 0 0 REAL ()) 0 0 () (1 EXPLICIT (CONSTANT (INTEGER 4 0 0
 INTEGER ()) 0 '1') (CONSTANT (INTEGER 4 0 0 INTEGER ()) 0 '3')) 0 () ()
 0 0)

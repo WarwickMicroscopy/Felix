@@ -179,19 +179,19 @@ SUBROUTINE WriteIterationOutput(IIterationCount,IThicknessIndex,IExitFlag,IErr)
   IF(IExitFLAG.EQ.1.OR.(IIterationCount.GE.(IPreviousPrintedIteration+IPrint))) THEN
      
 
-     IThickness = RInitialThickness + (IThicknessIndex-1)*RDeltaThickness 
+     IThickness = (RInitialThickness + (IThicknessIndex-1)*RDeltaThickness)/10!RB in nm 
      
-     
-     WRITE(path,"(A10,I5.5,A3,I1.1,I1.1,I1.1,I1.1,A2,I5.5,A2,I5.5,A2,I5.5)") &
+!RB     WRITE(path,"(A10,I5.5,A3,I1.1,I1.1,I1.1,I1.1,A2,I5.5,A2,I5.5,A2,I5.5)") &    
+     WRITE(path,"(A10,I4.4,A1,I3.3,A3,I3.3,A1,I3.3)") &
           "Iteration",IIterationCount,&
-          "-f-",&
-          IScatterFactorMethodFLAG, &
-          IZolzFLAG, &
-          IAbsorbFLAG, &
-          IAnisoDebyeWallerFactorFlag,&
-          "-T",IThickness,&
-          "-P",2*IPixelcount,&
-          "-P",2*IPixelcount
+!RB          "-f-",&
+!RB          IScatterFactorMethodFLAG, &
+!RB          IZolzFLAG, &
+!RB          IAbsorbFLAG, &
+!RB          IAnisoDebyeWallerFactorFlag,&
+          "_",IThickness,&
+          "nm_",2*IPixelcount,&
+          "x",2*IPixelcount
      
      call system('mkdir ' // path)
      

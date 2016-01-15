@@ -1,8 +1,9 @@
-GFORTRAN module created from smodules.f90 on Mon Jan 11 13:40:11 2016
-MD5:b5bc68011a45c4cf55c49a7513a37af8 -- If you edit this, you'll get what you deserve.
+GFORTRAN module created from smodules.f90 on Fri Jan 15 15:16:06 2016
+MD5:f75c79113c47bac7d8d471dc7857ecf7 -- If you edit this, you'll get what you deserve.
 
-(() () () () () () () () ()
-() () () () () () () () () () () () () () () () () ())
+(() ()
+() () () () () () () () () () () () () () () () () () () () () () () ()
+())
 
 ()
 
@@ -2061,7 +2062,7 @@ UNKNOWN UNKNOWN) (INTEGER 4 0 0 INTEGER ()) 0 0 () () 0 () () 0 0)
 1962 'status_info' 'mympi' 'status_info' 1 ((VARIABLE UNKNOWN-INTENT
 UNKNOWN-PROC UNKNOWN UNKNOWN DIMENSION) (INTEGER 4 0 0 INTEGER ()) 0 0 ()
 (1 EXPLICIT (CONSTANT (INTEGER 4 0 0 INTEGER ()) 0 '1') (CONSTANT (
-INTEGER 4 0 0 INTEGER ()) 0 '5')) 0 () () 0 0)
+INTEGER 4 0 0 INTEGER ()) 0 '6')) 0 () () 0 0)
 1963 'third' 'mynumbers' 'third' 1 ((PARAMETER UNKNOWN-INTENT
 UNKNOWN-PROC UNKNOWN IMPLICIT-SAVE) (REAL 8 0 0 REAL ()) 0 0 () (
 CONSTANT (REAL 8 0 0 REAL ()) 0 '0.55555555555554@0') () 0 () () 0 0)

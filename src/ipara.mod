@@ -1,5 +1,5 @@
-GFORTRAN module created from smodules.f90 on Mon Jan 11 13:04:03 2016
-MD5:e1d607ebd246b1a32edf51e894ea3692 -- If you edit this, you'll get what you deserve.
+GFORTRAN module created from smodules.f90 on Fri Jan 15 15:24:28 2016
+MD5:f1b05441c3de35e354dfc073f8a62fef -- If you edit this, you'll get what you deserve.
 
 (() () () ()
 () () () () () () () () () () () () () () () () () () () () () () ())
@@ -312,7 +312,7 @@ UNKNOWN-INTENT UNKNOWN-PROC UNKNOWN UNKNOWN ALLOCATABLE DIMENSION) (
 INTEGER 4 0 0 INTEGER ()) 0 0 () (2 DEFERRED () () () ()) 0 () () 0 0)
 109 'isymmetrystrengthkey' 'ipara' 'isymmetrystrengthkey' 1 ((VARIABLE
 UNKNOWN-INTENT UNKNOWN-PROC UNKNOWN UNKNOWN ALLOCATABLE DIMENSION) (
-INTEGER 4 0 0 INTEGER ()) 0 0 () (2 DEFERRED () () () ()) 0 () () 0 0)
+INTEGER 4 0 0 INTEGER ()) 0 0 () (1 DEFERRED () ()) 0 () () 0 0)
 110 'ithicknesscount' 'ipara' 'ithicknesscount' 1 ((VARIABLE
 UNKNOWN-INTENT UNKNOWN-PROC UNKNOWN UNKNOWN) (INTEGER 4 0 0 INTEGER ())
 0 0 () () 0 () () 0 0)
