@@ -1,5 +1,5 @@
-GFORTRAN module created from smodules.f90 on Fri Jan 15 15:24:28 2016
-MD5:84405a9047c8ce81514101a70b22969b -- If you edit this, you'll get what you deserve.
+GFORTRAN module created from smodules.f90 on Sat Jan 16 09:16:18 2016
+MD5:584fd8f6169d99ecae255a8733619916 -- If you edit this, you'll get what you deserve.
 
 (() () () () ()
 () () () () () () () () () () () () () () () () () () () () () ())
@@ -314,245 +314,248 @@ UNKNOWN-PROC UNKNOWN UNKNOWN ALLOCATABLE DIMENSION) (REAL 8 0 0 REAL ())
 109 'rgmatmat' 'rpara' 'rgmatmat' 1 ((VARIABLE UNKNOWN-INTENT
 UNKNOWN-PROC UNKNOWN UNKNOWN ALLOCATABLE DIMENSION) (REAL 8 0 0 REAL ())
 0 0 () (3 DEFERRED () () () () () ()) 0 () () 0 0)
-110 'rgvecmag' 'rpara' 'rgvecmag' 1 ((VARIABLE UNKNOWN-INTENT
+110 'rgsummat' 'rpara' 'rgsummat' 1 ((VARIABLE UNKNOWN-INTENT
+UNKNOWN-PROC UNKNOWN UNKNOWN ALLOCATABLE DIMENSION) (REAL 8 0 0 REAL ())
+0 0 () (2 DEFERRED () () () ()) 0 () () 0 0)
+111 'rgvecmag' 'rpara' 'rgvecmag' 1 ((VARIABLE UNKNOWN-INTENT
 UNKNOWN-PROC UNKNOWN UNKNOWN ALLOCATABLE DIMENSION) (REAL 8 0 0 REAL ())
 0 0 () (1 DEFERRED () ()) 0 () () 0 0)
-111 'rgvecmaglauezone' 'rpara' 'rgvecmaglauezone' 1 ((VARIABLE
+112 'rgvecmaglauezone' 'rpara' 'rgvecmaglauezone' 1 ((VARIABLE
 UNKNOWN-INTENT UNKNOWN-PROC UNKNOWN UNKNOWN ALLOCATABLE DIMENSION) (
 REAL 8 0 0 REAL ()) 0 0 () (2 DEFERRED () () () ()) 0 () () 0 0)
-112 'rgvecmat' 'rpara' 'rgvecmat' 1 ((VARIABLE UNKNOWN-INTENT
+113 'rgvecmat' 'rpara' 'rgvecmat' 1 ((VARIABLE UNKNOWN-INTENT
 UNKNOWN-PROC UNKNOWN UNKNOWN ALLOCATABLE DIMENSION) (REAL 8 0 0 REAL ())
 0 0 () (2 DEFERRED () () () ()) 0 () () 0 0)
-113 'rgvecmatt' 'rpara' 'rgvecmatt' 1 ((VARIABLE UNKNOWN-INTENT
+114 'rgvecmatt' 'rpara' 'rgvecmatt' 1 ((VARIABLE UNKNOWN-INTENT
 UNKNOWN-PROC UNKNOWN UNKNOWN ALLOCATABLE DIMENSION) (REAL 8 0 0 REAL ())
 0 0 () (2 DEFERRED () () () ()) 0 () () 0 0)
-114 'rgvector' 'rpara' 'rgvector' 1 ((VARIABLE UNKNOWN-INTENT
+115 'rgvector' 'rpara' 'rgvector' 1 ((VARIABLE UNKNOWN-INTENT
 UNKNOWN-PROC UNKNOWN UNKNOWN DIMENSION) (REAL 8 0 0 REAL ()) 0 0 () (1
 EXPLICIT (CONSTANT (INTEGER 4 0 0 INTEGER ()) 0 '1') (CONSTANT (INTEGER
 4 0 0 INTEGER ()) 0 '3')) 0 () () 0 0)
-115 'rgvectormagnitude' 'rpara' 'rgvectormagnitude' 1 ((VARIABLE
+116 'rgvectormagnitude' 'rpara' 'rgvectormagnitude' 1 ((VARIABLE
 UNKNOWN-INTENT UNKNOWN-PROC UNKNOWN UNKNOWN) (REAL 8 0 0 REAL ()) 0 0 ()
 () 0 () () 0 0)
-116 'rgvecvec' 'rpara' 'rgvecvec' 1 ((VARIABLE UNKNOWN-INTENT
+117 'rgvecvec' 'rpara' 'rgvecvec' 1 ((VARIABLE UNKNOWN-INTENT
 UNKNOWN-PROC UNKNOWN UNKNOWN ALLOCATABLE DIMENSION) (REAL 8 0 0 REAL ())
 0 0 () (1 DEFERRED () ()) 0 () () 0 0)
-117 'rhkl' 'rpara' 'rhkl' 1 ((VARIABLE UNKNOWN-INTENT UNKNOWN-PROC
+118 'rhkl' 'rpara' 'rhkl' 1 ((VARIABLE UNKNOWN-INTENT UNKNOWN-PROC
 UNKNOWN UNKNOWN ALLOCATABLE DIMENSION) (REAL 8 0 0 REAL ()) 0 0 () (2
 DEFERRED () () () ()) 0 () () 0 0)
-118 'rhklpositions' 'rpara' 'rhklpositions' 1 ((VARIABLE UNKNOWN-INTENT
+119 'rhklpositions' 'rpara' 'rhklpositions' 1 ((VARIABLE UNKNOWN-INTENT
 UNKNOWN-PROC UNKNOWN UNKNOWN ALLOCATABLE DIMENSION) (REAL 8 0 0 REAL ())
 0 0 () (2 DEFERRED () () () ()) 0 () () 0 0)
-119 'rimageexpi' 'rpara' 'rimageexpi' 1 ((VARIABLE UNKNOWN-INTENT
+120 'rimageexpi' 'rpara' 'rimageexpi' 1 ((VARIABLE UNKNOWN-INTENT
 UNKNOWN-PROC UNKNOWN UNKNOWN ALLOCATABLE DIMENSION) (REAL 8 0 0 REAL ())
 0 0 () (3 DEFERRED () () () () () ()) 0 () () 0 0)
-120 'rimagein' 'rpara' 'rimagein' 1 ((VARIABLE UNKNOWN-INTENT
+121 'rimagein' 'rpara' 'rimagein' 1 ((VARIABLE UNKNOWN-INTENT
 UNKNOWN-PROC UNKNOWN UNKNOWN ALLOCATABLE DIMENSION) (REAL 8 0 0 REAL ())
 0 0 () (2 DEFERRED () () () ()) 0 () () 0 0)
-121 'rindividualreflections' 'rpara' 'rindividualreflections' 1 ((
+122 'rindividualreflections' 'rpara' 'rindividualreflections' 1 ((
 VARIABLE UNKNOWN-INTENT UNKNOWN-PROC UNKNOWN UNKNOWN ALLOCATABLE
 DIMENSION) (REAL 8 0 0 REAL ()) 0 0 () (3 DEFERRED () () () () () ()) 0
 () () 0 0)
-122 'rinitialatomsitefraccoordvec' 'rpara' 'rinitialatomsitefraccoordvec'
+123 'rinitialatomsitefraccoordvec' 'rpara' 'rinitialatomsitefraccoordvec'
 1 ((VARIABLE UNKNOWN-INTENT UNKNOWN-PROC UNKNOWN UNKNOWN ALLOCATABLE
 DIMENSION) (REAL 8 0 0 REAL ()) 0 0 () (2 DEFERRED () () () ()) 0 () ()
 0 0)
-123 'rinitialdebyewallerfactor' 'rpara' 'rinitialdebyewallerfactor' 1 (
+124 'rinitialdebyewallerfactor' 'rpara' 'rinitialdebyewallerfactor' 1 (
 (VARIABLE UNKNOWN-INTENT UNKNOWN-PROC UNKNOWN UNKNOWN) (REAL 8 0 0 REAL
 ()) 0 0 () () 0 () () 0 0)
-124 'rinitialthickness' 'rpara' 'rinitialthickness' 1 ((VARIABLE
+125 'rinitialthickness' 'rpara' 'rinitialthickness' 1 ((VARIABLE
 UNKNOWN-INTENT UNKNOWN-PROC UNKNOWN UNKNOWN) (REAL 8 0 0 REAL ()) 0 0 ()
 () 0 () () 0 0)
-125 'rinnerconvergenceangle' 'rpara' 'rinnerconvergenceangle' 1 ((
+126 'rinnerconvergenceangle' 'rpara' 'rinnerconvergenceangle' 1 ((
 VARIABLE UNKNOWN-INTENT UNKNOWN-PROC UNKNOWN UNKNOWN) (REAL 8 0 0 REAL ())
 0 0 () () 0 () () 0 0)
-126 'rinnerintegrallowerbound' 'rpara' 'rinnerintegrallowerbound' 1 ((
+127 'rinnerintegrallowerbound' 'rpara' 'rinnerintegrallowerbound' 1 ((
 VARIABLE UNKNOWN-INTENT UNKNOWN-PROC UNKNOWN UNKNOWN) (REAL 8 0 0 REAL ())
 0 0 () () 0 () () 0 0)
-127 'rinnerintegralupperbound' 'rpara' 'rinnerintegralupperbound' 1 ((
+128 'rinnerintegralupperbound' 'rpara' 'rinnerintegralupperbound' 1 ((
 VARIABLE UNKNOWN-INTENT UNKNOWN-PROC UNKNOWN UNKNOWN) (REAL 8 0 0 REAL ())
 0 0 () () 0 () () 0 0)
-128 'rinnerintegrationparametergmagprime' 'rpara'
+129 'rinnerintegrationparametergmagprime' 'rpara'
 'rinnerintegrationparametergmagprime' 1 ((VARIABLE UNKNOWN-INTENT
 UNKNOWN-PROC UNKNOWN UNKNOWN) (REAL 8 0 0 REAL ()) 0 0 () () 0 () () 0 0)
-129 'rinputhkls' 'rpara' 'rinputhkls' 1 ((VARIABLE UNKNOWN-INTENT
+130 'rinputhkls' 'rpara' 'rinputhkls' 1 ((VARIABLE UNKNOWN-INTENT
 UNKNOWN-PROC UNKNOWN UNKNOWN ALLOCATABLE DIMENSION) (REAL 8 0 0 REAL ())
 0 0 () (2 DEFERRED () () () ()) 0 () () 0 0)
-130 'rinvbasevec' 'rpara' 'rinvbasevec' 1 ((VARIABLE UNKNOWN-INTENT
+131 'rinvbasevec' 'rpara' 'rinvbasevec' 1 ((VARIABLE UNKNOWN-INTENT
 UNKNOWN-PROC UNKNOWN UNKNOWN DIMENSION) (REAL 8 0 0 REAL ()) 0 0 () (2
 EXPLICIT (CONSTANT (INTEGER 4 0 0 INTEGER ()) 0 '1') (CONSTANT (INTEGER
 4 0 0 INTEGER ()) 0 '3') (CONSTANT (INTEGER 4 0 0 INTEGER ()) 0 '1') (
 CONSTANT (INTEGER 4 0 0 INTEGER ()) 0 '3')) 0 () () 0 0)
-131 'risotropicdebyewallerfactors' 'rpara' 'risotropicdebyewallerfactors'
+132 'risotropicdebyewallerfactors' 'rpara' 'risotropicdebyewallerfactors'
 1 ((VARIABLE UNKNOWN-INTENT UNKNOWN-PROC UNKNOWN UNKNOWN ALLOCATABLE
 DIMENSION) (REAL 8 0 0 REAL ()) 0 0 () (1 DEFERRED () ()) 0 () () 0 0)
-132 'rkilobyte' 'mynumbers' 'rkilobyte' 1 ((VARIABLE UNKNOWN-INTENT
+133 'rkilobyte' 'mynumbers' 'rkilobyte' 1 ((VARIABLE UNKNOWN-INTENT
 UNKNOWN-PROC UNKNOWN UNKNOWN) (REAL 8 0 0 REAL ()) 0 0 () () 0 () () 0 0)
-133 'rkind' 'mynumbers' 'rkind' 1 ((PARAMETER UNKNOWN-INTENT
+134 'rkind' 'mynumbers' 'rkind' 1 ((PARAMETER UNKNOWN-INTENT
 UNKNOWN-PROC UNKNOWN IMPLICIT-SAVE) (INTEGER 4 0 0 INTEGER ()) 0 0 () (
 CONSTANT (INTEGER 4 0 0 INTEGER ()) 0 '8') () 0 () () 0 0)
-134 'rlengthx' 'rpara' 'rlengthx' 1 ((VARIABLE UNKNOWN-INTENT
+135 'rlengthx' 'rpara' 'rlengthx' 1 ((VARIABLE UNKNOWN-INTENT
 UNKNOWN-PROC UNKNOWN UNKNOWN) (REAL 8 0 0 REAL ()) 0 0 () () 0 () () 0 0)
-135 'rlengthy' 'rpara' 'rlengthy' 1 ((VARIABLE UNKNOWN-INTENT
+136 'rlengthy' 'rpara' 'rlengthy' 1 ((VARIABLE UNKNOWN-INTENT
 UNKNOWN-PROC UNKNOWN UNKNOWN) (REAL 8 0 0 REAL ()) 0 0 () () 0 () () 0 0)
-136 'rlengthz' 'rpara' 'rlengthz' 1 ((VARIABLE UNKNOWN-INTENT
+137 'rlengthz' 'rpara' 'rlengthz' 1 ((VARIABLE UNKNOWN-INTENT
 UNKNOWN-PROC UNKNOWN UNKNOWN) (REAL 8 0 0 REAL ()) 0 0 () () 0 () () 0 0)
-137 'rlowerboundugchange' 'rpara' 'rlowerboundugchange' 1 ((VARIABLE
+138 'rlowerboundugchange' 'rpara' 'rlowerboundugchange' 1 ((VARIABLE
 UNKNOWN-INTENT UNKNOWN-PROC UNKNOWN UNKNOWN) (REAL 8 0 0 REAL ()) 0 0 ()
 () 0 () () 0 0)
-138 'rmask' 'rpara' 'rmask' 1 ((VARIABLE UNKNOWN-INTENT UNKNOWN-PROC
+139 'rmask' 'rpara' 'rmask' 1 ((VARIABLE UNKNOWN-INTENT UNKNOWN-PROC
 UNKNOWN UNKNOWN ALLOCATABLE DIMENSION) (REAL 8 0 0 REAL ()) 0 0 () (2
 DEFERRED () () () ()) 0 () () 0 0)
-139 'rmeaninnercrystalpotential' 'rpara' 'rmeaninnercrystalpotential' 1
+140 'rmeaninnercrystalpotential' 'rpara' 'rmeaninnercrystalpotential' 1
 ((VARIABLE UNKNOWN-INTENT UNKNOWN-PROC UNKNOWN UNKNOWN) (REAL 8 0 0 REAL
 ()) 0 0 () () 0 () () 0 0)
-140 'rmeansquareddisplacement' 'rpara' 'rmeansquareddisplacement' 1 ((
+141 'rmeansquareddisplacement' 'rpara' 'rmeansquareddisplacement' 1 ((
 VARIABLE UNKNOWN-INTENT UNKNOWN-PROC UNKNOWN UNKNOWN) (REAL 8 0 0 REAL ())
 0 0 () () 0 () () 0 0)
-141 'rmegabyte' 'mynumbers' 'rmegabyte' 1 ((VARIABLE UNKNOWN-INTENT
+142 'rmegabyte' 'mynumbers' 'rmegabyte' 1 ((VARIABLE UNKNOWN-INTENT
 UNKNOWN-PROC UNKNOWN UNKNOWN) (REAL 8 0 0 REAL ()) 0 0 () () 0 () () 0 0)
-142 'rminimumgmag' 'rpara' 'rminimumgmag' 1 ((VARIABLE UNKNOWN-INTENT
+143 'rminimumgmag' 'rpara' 'rminimumgmag' 1 ((VARIABLE UNKNOWN-INTENT
 UNKNOWN-PROC UNKNOWN UNKNOWN) (REAL 8 0 0 REAL ()) 0 0 () () 0 () () 0 0)
-143 'rnormdirc' 'rpara' 'rnormdirc' 1 ((VARIABLE UNKNOWN-INTENT
+144 'rnormdirc' 'rpara' 'rnormdirc' 1 ((VARIABLE UNKNOWN-INTENT
 UNKNOWN-PROC UNKNOWN UNKNOWN DIMENSION) (REAL 8 0 0 REAL ()) 0 0 () (1
 EXPLICIT (CONSTANT (INTEGER 4 0 0 INTEGER ()) 0 '1') (CONSTANT (INTEGER
 4 0 0 INTEGER ()) 0 '3')) 0 () () 0 0)
-144 'rnormdirm' 'rpara' 'rnormdirm' 1 ((VARIABLE UNKNOWN-INTENT
+145 'rnormdirm' 'rpara' 'rnormdirm' 1 ((VARIABLE UNKNOWN-INTENT
 UNKNOWN-PROC UNKNOWN UNKNOWN DIMENSION) (REAL 8 0 0 REAL ()) 0 0 () (1
 EXPLICIT (CONSTANT (INTEGER 4 0 0 INTEGER ()) 0 '1') (CONSTANT (INTEGER
 4 0 0 INTEGER ()) 0 '3')) 0 () () 0 0)
-145 'rocc' 'rpara' 'rocc' 1 ((VARIABLE UNKNOWN-INTENT UNKNOWN-PROC
+146 'rocc' 'rpara' 'rocc' 1 ((VARIABLE UNKNOWN-INTENT UNKNOWN-PROC
 UNKNOWN UNKNOWN ALLOCATABLE DIMENSION) (REAL 8 0 0 REAL ()) 0 0 () (1
 DEFERRED () ()) 0 () () 0 0)
-146 'routerintegrallowerbound' 'rpara' 'routerintegrallowerbound' 1 ((
+147 'routerintegrallowerbound' 'rpara' 'routerintegrallowerbound' 1 ((
 VARIABLE UNKNOWN-INTENT UNKNOWN-PROC UNKNOWN UNKNOWN) (REAL 8 0 0 REAL ())
 0 0 () () 0 () () 0 0)
-147 'routerintegralupperbound' 'rpara' 'routerintegralupperbound' 1 ((
+148 'routerintegralupperbound' 'rpara' 'routerintegralupperbound' 1 ((
 VARIABLE UNKNOWN-INTENT UNKNOWN-PROC UNKNOWN UNKNOWN) (REAL 8 0 0 REAL ())
 0 0 () () 0 () () 0 0)
-148 'routerintegrationparametergmagprime' 'rpara'
+149 'routerintegrationparametergmagprime' 'rpara'
 'routerintegrationparametergmagprime' 1 ((VARIABLE UNKNOWN-INTENT
 UNKNOWN-PROC UNKNOWN UNKNOWN) (REAL 8 0 0 REAL ()) 0 0 () () 0 () () 0 0)
-149 'rpara' 'rpara' 'rpara' 1 ((MODULE UNKNOWN-INTENT UNKNOWN-PROC
+150 'rpara' 'rpara' 'rpara' 1 ((MODULE UNKNOWN-INTENT UNKNOWN-PROC
 UNKNOWN UNKNOWN) (UNKNOWN 0 0 0 UNKNOWN ()) 0 0 () () 0 () () 0 0)
-150 'rpercentageugchange' 'rpara' 'rpercentageugchange' 1 ((VARIABLE
+151 'rpercentageugchange' 'rpara' 'rpercentageugchange' 1 ((VARIABLE
 UNKNOWN-INTENT UNKNOWN-PROC UNKNOWN UNKNOWN) (REAL 8 0 0 REAL ()) 0 0 ()
 () 0 () () 0 0)
-151 'rplanckconstant' 'rconst' 'rplanckconstant' 1 ((PARAMETER
+152 'rplanckconstant' 'rconst' 'rplanckconstant' 1 ((PARAMETER
 UNKNOWN-INTENT UNKNOWN-PROC UNKNOWN IMPLICIT-SAVE) (REAL 8 0 0 REAL ())
 0 0 () (CONSTANT (REAL 8 0 0 REAL ()) 0 '0.370c176b2d4ab2@-27') () 0 ()
 () 0 0)
-152 'rrelativisticcorrection' 'rpara' 'rrelativisticcorrection' 1 ((
+153 'rrelativisticcorrection' 'rpara' 'rrelativisticcorrection' 1 ((
 VARIABLE UNKNOWN-INTENT UNKNOWN-PROC UNKNOWN UNKNOWN) (REAL 8 0 0 REAL ())
 0 0 () () 0 () () 0 0)
-153 'rrelativisticmass' 'rpara' 'rrelativisticmass' 1 ((VARIABLE
+154 'rrelativisticmass' 'rpara' 'rrelativisticmass' 1 ((VARIABLE
 UNKNOWN-INTENT UNKNOWN-PROC UNKNOWN UNKNOWN) (REAL 8 0 0 REAL ()) 0 0 ()
 () 0 () () 0 0)
-154 'rrsosscalingfactor' 'rpara' 'rrsosscalingfactor' 1 ((VARIABLE
+155 'rrsosscalingfactor' 'rpara' 'rrsosscalingfactor' 1 ((VARIABLE
 UNKNOWN-INTENT UNKNOWN-PROC UNKNOWN UNKNOWN) (REAL 8 0 0 REAL ()) 0 0 ()
 () 0 () () 0 0)
-155 'rrvecmat' 'rpara' 'rrvecmat' 1 ((VARIABLE UNKNOWN-INTENT
+156 'rrvecmat' 'rpara' 'rrvecmat' 1 ((VARIABLE UNKNOWN-INTENT
 UNKNOWN-PROC UNKNOWN UNKNOWN ALLOCATABLE DIMENSION) (REAL 8 0 0 REAL ())
 0 0 () (2 DEFERRED () () () ()) 0 () () 0 0)
-156 'rscattfactors' 'rpara' 'rscattfactors' 1 ((VARIABLE UNKNOWN-INTENT
+157 'rscattfactors' 'rpara' 'rscattfactors' 1 ((VARIABLE UNKNOWN-INTENT
 UNKNOWN-PROC UNKNOWN UNKNOWN ALLOCATABLE DIMENSION) (REAL 8 0 0 REAL ())
 0 0 () (2 DEFERRED () () () ()) 0 () () 0 0)
-157 'rsg' 'rpara' 'rsg' 1 ((VARIABLE UNKNOWN-INTENT UNKNOWN-PROC UNKNOWN
+158 'rsg' 'rpara' 'rsg' 1 ((VARIABLE UNKNOWN-INTENT UNKNOWN-PROC UNKNOWN
 UNKNOWN ALLOCATABLE DIMENSION) (REAL 8 0 0 REAL ()) 0 0 () (1 DEFERRED ()
 ()) 0 () () 0 0)
-158 'rsimplexlengthscale' 'rpara' 'rsimplexlengthscale' 1 ((VARIABLE
+159 'rsimplexlengthscale' 'rpara' 'rsimplexlengthscale' 1 ((VARIABLE
 UNKNOWN-INTENT UNKNOWN-PROC UNKNOWN UNKNOWN) (REAL 8 0 0 REAL ()) 0 0 ()
 () 0 () () 0 0)
-159 'rsimplexmean' 'rpara' 'rsimplexmean' 1 ((VARIABLE UNKNOWN-INTENT
+160 'rsimplexmean' 'rpara' 'rsimplexmean' 1 ((VARIABLE UNKNOWN-INTENT
 UNKNOWN-PROC UNKNOWN UNKNOWN) (REAL 8 0 0 REAL ()) 0 0 () () 0 () () 0 0)
-160 'rsimplexstandarddeviation' 'rpara' 'rsimplexstandarddeviation' 1 (
+161 'rsimplexstandarddeviation' 'rpara' 'rsimplexstandarddeviation' 1 (
 (VARIABLE UNKNOWN-INTENT UNKNOWN-PROC UNKNOWN UNKNOWN) (REAL 8 0 0 REAL
 ()) 0 0 () () 0 () () 0 0)
-161 'rspeedoflight' 'rconst' 'rspeedoflight' 1 ((PARAMETER
+162 'rspeedoflight' 'rconst' 'rspeedoflight' 1 ((PARAMETER
 UNKNOWN-INTENT UNKNOWN-PROC UNKNOWN IMPLICIT-SAVE) (REAL 8 0 0 REAL ())
 0 0 () (CONSTANT (REAL 8 0 0 REAL ()) 0 '0.11de031a000000@8') () 0 () ()
 0 0)
-162 'rsymmat' 'rpara' 'rsymmat' 1 ((VARIABLE UNKNOWN-INTENT UNKNOWN-PROC
+163 'rsymmat' 'rpara' 'rsymmat' 1 ((VARIABLE UNKNOWN-INTENT UNKNOWN-PROC
 UNKNOWN UNKNOWN ALLOCATABLE DIMENSION) (REAL 8 0 0 REAL ()) 0 0 () (3
 DEFERRED () () () () () ()) 0 () () 0 0)
-163 'rsymvec' 'rpara' 'rsymvec' 1 ((VARIABLE UNKNOWN-INTENT UNKNOWN-PROC
+164 'rsymvec' 'rpara' 'rsymvec' 1 ((VARIABLE UNKNOWN-INTENT UNKNOWN-PROC
 UNKNOWN UNKNOWN ALLOCATABLE DIMENSION) (REAL 8 0 0 REAL ()) 0 0 () (2
 DEFERRED () () () ()) 0 () () 0 0)
-164 'rterabyte' 'mynumbers' 'rterabyte' 1 ((VARIABLE UNKNOWN-INTENT
+165 'rterabyte' 'mynumbers' 'rterabyte' 1 ((VARIABLE UNKNOWN-INTENT
 UNKNOWN-PROC UNKNOWN UNKNOWN) (REAL 8 0 0 REAL ()) 0 0 () () 0 () () 0 0)
-165 'rtmat' 'rpara' 'rtmat' 1 ((VARIABLE UNKNOWN-INTENT UNKNOWN-PROC
+166 'rtmat' 'rpara' 'rtmat' 1 ((VARIABLE UNKNOWN-INTENT UNKNOWN-PROC
 UNKNOWN UNKNOWN DIMENSION) (REAL 8 0 0 REAL ()) 0 0 () (2 EXPLICIT (
 CONSTANT (INTEGER 4 0 0 INTEGER ()) 0 '1') (CONSTANT (INTEGER 4 0 0
 INTEGER ()) 0 '3') (CONSTANT (INTEGER 4 0 0 INTEGER ()) 0 '1') (
 CONSTANT (INTEGER 4 0 0 INTEGER ()) 0 '3')) 0 () () 0 0)
-166 'rtolerance' 'rconst' 'rtolerance' 1 ((PARAMETER UNKNOWN-INTENT
+167 'rtolerance' 'rconst' 'rtolerance' 1 ((PARAMETER UNKNOWN-INTENT
 UNKNOWN-PROC UNKNOWN IMPLICIT-SAVE) (REAL 8 0 0 REAL ()) 0 0 () (
-CONSTANT (REAL 8 0 0 REAL ()) 0 '0.a7c5ac00000000@-4') () 0 () () 0 0)
-167 'runiquekey' 'rpara' 'runiquekey' 1 ((VARIABLE UNKNOWN-INTENT
+CONSTANT (REAL 8 0 0 REAL ()) 0 '0.1ad7f2a0000000@-5') () 0 () () 0 0)
+168 'runiquekey' 'rpara' 'runiquekey' 1 ((VARIABLE UNKNOWN-INTENT
 UNKNOWN-PROC UNKNOWN UNKNOWN ALLOCATABLE DIMENSION) (REAL 8 0 0 REAL ())
 0 0 () (2 DEFERRED () () () ()) 0 () () 0 0)
-168 'runiqueugprimevalues' 'rpara' 'runiqueugprimevalues' 1 ((VARIABLE
+169 'runiqueugprimevalues' 'rpara' 'runiqueugprimevalues' 1 ((VARIABLE
 UNKNOWN-INTENT UNKNOWN-PROC UNKNOWN UNKNOWN ALLOCATABLE DIMENSION) (
 REAL 8 0 0 REAL ()) 0 0 () (1 DEFERRED () ()) 0 () () 0 0)
-169 'rupperboundugchange' 'rpara' 'rupperboundugchange' 1 ((VARIABLE
+170 'rupperboundugchange' 'rpara' 'rupperboundugchange' 1 ((VARIABLE
 UNKNOWN-INTENT UNKNOWN-PROC UNKNOWN UNKNOWN) (REAL 8 0 0 REAL ()) 0 0 ()
 () 0 () () 0 0)
-170 'rvalue' 'rpara' 'rvalue' 1 ((VARIABLE UNKNOWN-INTENT UNKNOWN-PROC
+171 'rvalue' 'rpara' 'rvalue' 1 ((VARIABLE UNKNOWN-INTENT UNKNOWN-PROC
 UNKNOWN UNKNOWN) (REAL 8 0 0 REAL ()) 0 0 () () 0 () () 0 0)
-171 'rvolume' 'rpara' 'rvolume' 1 ((VARIABLE UNKNOWN-INTENT UNKNOWN-PROC
+172 'rvolume' 'rpara' 'rvolume' 1 ((VARIABLE UNKNOWN-INTENT UNKNOWN-PROC
 UNKNOWN UNKNOWN) (REAL 8 0 0 REAL ()) 0 0 () () 0 () () 0 0)
-172 'rwaveintensity' 'rpara' 'rwaveintensity' 1 ((VARIABLE
+173 'rwaveintensity' 'rpara' 'rwaveintensity' 1 ((VARIABLE
 UNKNOWN-INTENT UNKNOWN-PROC UNKNOWN UNKNOWN ALLOCATABLE DIMENSION) (
 REAL 8 0 0 REAL ()) 0 0 () (1 DEFERRED () ()) 0 () () 0 0)
-173 'rweightingcoefficients' 'rpara' 'rweightingcoefficients' 1 ((
+174 'rweightingcoefficients' 'rpara' 'rweightingcoefficients' 1 ((
 VARIABLE UNKNOWN-INTENT UNKNOWN-PROC UNKNOWN UNKNOWN ALLOCATABLE
 DIMENSION) (REAL 8 0 0 REAL ()) 0 0 () (1 DEFERRED () ()) 0 () () 0 0)
-174 'rxdirc' 'rpara' 'rxdirc' 1 ((VARIABLE UNKNOWN-INTENT UNKNOWN-PROC
+175 'rxdirc' 'rpara' 'rxdirc' 1 ((VARIABLE UNKNOWN-INTENT UNKNOWN-PROC
 UNKNOWN UNKNOWN DIMENSION) (REAL 8 0 0 REAL ()) 0 0 () (1 EXPLICIT (
 CONSTANT (INTEGER 4 0 0 INTEGER ()) 0 '1') (CONSTANT (INTEGER 4 0 0
 INTEGER ()) 0 '3')) 0 () () 0 0)
-175 'rxdirm' 'rpara' 'rxdirm' 1 ((VARIABLE UNKNOWN-INTENT UNKNOWN-PROC
+176 'rxdirm' 'rpara' 'rxdirm' 1 ((VARIABLE UNKNOWN-INTENT UNKNOWN-PROC
 UNKNOWN UNKNOWN DIMENSION) (REAL 8 0 0 REAL ()) 0 0 () (1 EXPLICIT (
 CONSTANT (INTEGER 4 0 0 INTEGER ()) 0 '1') (CONSTANT (INTEGER 4 0 0
 INTEGER ()) 0 '3')) 0 () () 0 0)
-176 'rydirm' 'rpara' 'rydirm' 1 ((VARIABLE UNKNOWN-INTENT UNKNOWN-PROC
+177 'rydirm' 'rpara' 'rydirm' 1 ((VARIABLE UNKNOWN-INTENT UNKNOWN-PROC
 UNKNOWN UNKNOWN DIMENSION) (REAL 8 0 0 REAL ()) 0 0 () (1 EXPLICIT (
 CONSTANT (INTEGER 4 0 0 INTEGER ()) 0 '1') (CONSTANT (INTEGER 4 0 0
 INTEGER ()) 0 '3')) 0 () () 0 0)
-177 'rzdirc' 'rpara' 'rzdirc' 1 ((VARIABLE UNKNOWN-INTENT UNKNOWN-PROC
+178 'rzdirc' 'rpara' 'rzdirc' 1 ((VARIABLE UNKNOWN-INTENT UNKNOWN-PROC
 UNKNOWN UNKNOWN DIMENSION) (REAL 8 0 0 REAL ()) 0 0 () (1 EXPLICIT (
 CONSTANT (INTEGER 4 0 0 INTEGER ()) 0 '1') (CONSTANT (INTEGER 4 0 0
 INTEGER ()) 0 '3')) 0 () () 0 0)
-178 'rzdirm' 'rpara' 'rzdirm' 1 ((VARIABLE UNKNOWN-INTENT UNKNOWN-PROC
+179 'rzdirm' 'rpara' 'rzdirm' 1 ((VARIABLE UNKNOWN-INTENT UNKNOWN-PROC
 UNKNOWN UNKNOWN DIMENSION) (REAL 8 0 0 REAL ()) 0 0 () (1 EXPLICIT (
 CONSTANT (INTEGER 4 0 0 INTEGER ()) 0 '1') (CONSTANT (INTEGER 4 0 0
 INTEGER ()) 0 '3')) 0 () () 0 0)
-179 'sqrthalf' 'mynumbers' 'sqrthalf' 1 ((VARIABLE UNKNOWN-INTENT
+180 'sqrthalf' 'mynumbers' 'sqrthalf' 1 ((VARIABLE UNKNOWN-INTENT
 UNKNOWN-PROC UNKNOWN UNKNOWN) (REAL 8 0 0 REAL ()) 0 0 () () 0 () () 0 0)
-180 'sqrttwo' 'mynumbers' 'sqrttwo' 1 ((VARIABLE UNKNOWN-INTENT
+181 'sqrttwo' 'mynumbers' 'sqrttwo' 1 ((VARIABLE UNKNOWN-INTENT
 UNKNOWN-PROC UNKNOWN UNKNOWN) (REAL 8 0 0 REAL ()) 0 0 () () 0 () () 0 0)
-181 'third' 'mynumbers' 'third' 1 ((PARAMETER UNKNOWN-INTENT
+182 'third' 'mynumbers' 'third' 1 ((PARAMETER UNKNOWN-INTENT
 UNKNOWN-PROC UNKNOWN IMPLICIT-SAVE) (REAL 8 0 0 REAL ()) 0 0 () (
 CONSTANT (REAL 8 0 0 REAL ()) 0 '0.55555555555554@0') () 0 () () 0 0)
-182 'three' 'mynumbers' 'three' 1 ((PARAMETER UNKNOWN-INTENT
+183 'three' 'mynumbers' 'three' 1 ((PARAMETER UNKNOWN-INTENT
 UNKNOWN-PROC UNKNOWN IMPLICIT-SAVE) (REAL 8 0 0 REAL ()) 0 0 () (
 CONSTANT (REAL 8 0 0 REAL ()) 0 '0.30000000000000@1') () 0 () () 0 0)
-183 'threedim' 'iconst' 'threedim' 1 ((PARAMETER UNKNOWN-INTENT
+184 'threedim' 'iconst' 'threedim' 1 ((PARAMETER UNKNOWN-INTENT
 UNKNOWN-PROC UNKNOWN IMPLICIT-SAVE) (INTEGER 4 0 0 INTEGER ()) 0 0 () (
 CONSTANT (INTEGER 4 0 0 INTEGER ()) 0 '3') () 0 () () 0 0)
-184 'tiny' 'mynumbers' 'tiny' 1 ((VARIABLE UNKNOWN-INTENT UNKNOWN-PROC
+185 'tiny' 'mynumbers' 'tiny' 1 ((VARIABLE UNKNOWN-INTENT UNKNOWN-PROC
 UNKNOWN IMPLICIT-SAVE) (REAL 8 0 0 REAL ()) 0 0 () () 0 () () 0 0)
-185 'two' 'mynumbers' 'two' 1 ((PARAMETER UNKNOWN-INTENT UNKNOWN-PROC
+186 'two' 'mynumbers' 'two' 1 ((PARAMETER UNKNOWN-INTENT UNKNOWN-PROC
 UNKNOWN IMPLICIT-SAVE) (REAL 8 0 0 REAL ()) 0 0 () (CONSTANT (REAL 8 0 0
 REAL ()) 0 '0.20000000000000@1') () 0 () () 0 0)
-186 'twodeg2radian' 'mynumbers' 'twodeg2radian' 1 ((VARIABLE
+187 'twodeg2radian' 'mynumbers' 'twodeg2radian' 1 ((VARIABLE
 UNKNOWN-INTENT UNKNOWN-PROC UNKNOWN UNKNOWN) (REAL 8 0 0 REAL ()) 0 0 ()
 () 0 () () 0 0)
-187 'twopi' 'mynumbers' 'twopi' 1 ((VARIABLE UNKNOWN-INTENT UNKNOWN-PROC
+188 'twopi' 'mynumbers' 'twopi' 1 ((VARIABLE UNKNOWN-INTENT UNKNOWN-PROC
 UNKNOWN UNKNOWN) (REAL 8 0 0 REAL ()) 0 0 () () 0 () () 0 0)
-188 'twothird' 'mynumbers' 'twothird' 1 ((PARAMETER UNKNOWN-INTENT
+189 'twothird' 'mynumbers' 'twothird' 1 ((PARAMETER UNKNOWN-INTENT
 UNKNOWN-PROC UNKNOWN IMPLICIT-SAVE) (REAL 8 0 0 REAL ()) 0 0 () (
 CONSTANT (REAL 8 0 0 REAL ()) 0 '0.aaaaaaaaaa97e8@0') () 0 () () 0 0)
-189 'zero' 'mynumbers' 'zero' 1 ((PARAMETER UNKNOWN-INTENT UNKNOWN-PROC
+190 'zero' 'mynumbers' 'zero' 1 ((PARAMETER UNKNOWN-INTENT UNKNOWN-PROC
 UNKNOWN IMPLICIT-SAVE) (REAL 8 0 0 REAL ()) 0 0 () (CONSTANT (REAL 8 0 0
 REAL ()) 0 '0.00000000000000@0') () 0 () () 0 0)
 6 'y' '' 'y' 4 ((VARIABLE UNKNOWN-INTENT UNKNOWN-PROC UNKNOWN UNKNOWN
@@ -605,30 +608,30 @@ INTEGER ()) 0 '1') (CONSTANT (INTEGER 4 0 0 INTEGER ()) 0 '3')) 0 () ()
 'rfinalthickness' 0 101 'rfullatomicfraccoordvec' 0 102
 'rfullisotropicdebyewallerfactor' 0 103 'rfullpartialoccupancy' 0 104
 'rfullwaveintensity' 0 105 'rgamma' 0 106 'rgigabyte' 0 107 'rgmatmag' 0
-108 'rgmatmat' 0 109 'rgvecmag' 0 110 'rgvecmaglauezone' 0 111 'rgvecmat'
-0 112 'rgvecmatt' 0 113 'rgvector' 0 114 'rgvectormagnitude' 0 115
-'rgvecvec' 0 116 'rhkl' 0 117 'rhklpositions' 0 118 'rimageexpi' 0 119
-'rimagein' 0 120 'rindividualreflections' 0 121
-'rinitialatomsitefraccoordvec' 0 122 'rinitialdebyewallerfactor' 0 123
-'rinitialthickness' 0 124 'rinnerconvergenceangle' 0 125
-'rinnerintegrallowerbound' 0 126 'rinnerintegralupperbound' 0 127
-'rinnerintegrationparametergmagprime' 0 128 'rinputhkls' 0 129
-'rinvbasevec' 0 130 'risotropicdebyewallerfactors' 0 131 'rkilobyte' 0
-132 'rkind' 0 133 'rlengthx' 0 134 'rlengthy' 0 135 'rlengthz' 0 136
-'rlowerboundugchange' 0 137 'rmask' 0 138 'rmeaninnercrystalpotential' 0
-139 'rmeansquareddisplacement' 0 140 'rmegabyte' 0 141 'rminimumgmag' 0
-142 'rnormdirc' 0 143 'rnormdirm' 0 144 'rocc' 0 145
-'routerintegrallowerbound' 0 146 'routerintegralupperbound' 0 147
-'routerintegrationparametergmagprime' 0 148 'rpara' 0 149
-'rpercentageugchange' 0 150 'rplanckconstant' 0 151
-'rrelativisticcorrection' 0 152 'rrelativisticmass' 0 153
-'rrsosscalingfactor' 0 154 'rrvecmat' 0 155 'rscattfactors' 0 156 'rsg'
-0 157 'rsimplexlengthscale' 0 158 'rsimplexmean' 0 159
-'rsimplexstandarddeviation' 0 160 'rspeedoflight' 0 161 'rsymmat' 0 162
-'rsymvec' 0 163 'rterabyte' 0 164 'rtmat' 0 165 'rtolerance' 0 166
-'runiquekey' 0 167 'runiqueugprimevalues' 0 168 'rupperboundugchange' 0
-169 'rvalue' 0 170 'rvolume' 0 171 'rwaveintensity' 0 172
-'rweightingcoefficients' 0 173 'rxdirc' 0 174 'rxdirm' 0 175 'rydirm' 0
-176 'rzdirc' 0 177 'rzdirm' 0 178 'sqrthalf' 0 179 'sqrttwo' 0 180 'third'
-0 181 'three' 0 182 'threedim' 0 183 'tiny' 0 184 'two' 0 185
-'twodeg2radian' 0 186 'twopi' 0 187 'twothird' 0 188 'zero' 0 189)
+108 'rgmatmat' 0 109 'rgsummat' 0 110 'rgvecmag' 0 111 'rgvecmaglauezone'
+0 112 'rgvecmat' 0 113 'rgvecmatt' 0 114 'rgvector' 0 115
+'rgvectormagnitude' 0 116 'rgvecvec' 0 117 'rhkl' 0 118 'rhklpositions'
+0 119 'rimageexpi' 0 120 'rimagein' 0 121 'rindividualreflections' 0 122
+'rinitialatomsitefraccoordvec' 0 123 'rinitialdebyewallerfactor' 0 124
+'rinitialthickness' 0 125 'rinnerconvergenceangle' 0 126
+'rinnerintegrallowerbound' 0 127 'rinnerintegralupperbound' 0 128
+'rinnerintegrationparametergmagprime' 0 129 'rinputhkls' 0 130
+'rinvbasevec' 0 131 'risotropicdebyewallerfactors' 0 132 'rkilobyte' 0
+133 'rkind' 0 134 'rlengthx' 0 135 'rlengthy' 0 136 'rlengthz' 0 137
+'rlowerboundugchange' 0 138 'rmask' 0 139 'rmeaninnercrystalpotential' 0
+140 'rmeansquareddisplacement' 0 141 'rmegabyte' 0 142 'rminimumgmag' 0
+143 'rnormdirc' 0 144 'rnormdirm' 0 145 'rocc' 0 146
+'routerintegrallowerbound' 0 147 'routerintegralupperbound' 0 148
+'routerintegrationparametergmagprime' 0 149 'rpara' 0 150
+'rpercentageugchange' 0 151 'rplanckconstant' 0 152
+'rrelativisticcorrection' 0 153 'rrelativisticmass' 0 154
+'rrsosscalingfactor' 0 155 'rrvecmat' 0 156 'rscattfactors' 0 157 'rsg'
+0 158 'rsimplexlengthscale' 0 159 'rsimplexmean' 0 160
+'rsimplexstandarddeviation' 0 161 'rspeedoflight' 0 162 'rsymmat' 0 163
+'rsymvec' 0 164 'rterabyte' 0 165 'rtmat' 0 166 'rtolerance' 0 167
+'runiquekey' 0 168 'runiqueugprimevalues' 0 169 'rupperboundugchange' 0
+170 'rvalue' 0 171 'rvolume' 0 172 'rwaveintensity' 0 173
+'rweightingcoefficients' 0 174 'rxdirc' 0 175 'rxdirm' 0 176 'rydirm' 0
+177 'rzdirc' 0 178 'rzdirm' 0 179 'sqrthalf' 0 180 'sqrttwo' 0 181 'third'
+0 182 'three' 0 183 'threedim' 0 184 'tiny' 0 185 'two' 0 186
+'twodeg2radian' 0 187 'twopi' 0 188 'twothird' 0 189 'zero' 0 190)

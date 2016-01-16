@@ -608,7 +608,7 @@ SUBROUTINE RankSymmetryRelatedStructureFactor(IErr)
      ILoc = MINLOC(ABS(ISymmetryRelations-ind))
      ISymmetryStrengthKey(ind) = ind
      CSymmetryStrengthKey(ind) = CUgMatNoAbs(ILoc(1),ILoc(2))
-     PRINT*,"CSymmetryStrengthKey",ind,ISymmetryStrengthKey(ind),CSymmetryStrengthKey(ind)
+!RB     PRINT*,"CSymmetryStrengthKey",ind,ISymmetryStrengthKey(ind),CSymmetryStrengthKey(ind)
   END DO
   
   CALL ReSortUgs(ISymmetryStrengthKey,CSymmetryStrengthKey,SIZE(CSymmetryStrengthKey,DIM=1))
@@ -710,7 +710,15 @@ SUBROUTINE SimplexInitialisation(RSimplexVolume,RSimplexFoM,RIndependentVariable
      ENDIF
      
   ENDIF
-!RB     PRINT*,"Deallocating CUgMat,CUgMatNoAbs,CUgMatPrime in felixrefine" 
+!RB     PRINT*,"Deallocating CUgMat,CUgMatNoAbs,CUgMatPrime in felixrefine" NB Also deallocated in felixfunction!!!
+  DEALLOCATE( &
+       RgSumMat,STAT=IErr)
+  IF( IErr.NE.0 ) THEN
+     PRINT*,"felixsim(", my_rank, ") error ", IErr, &
+          " in Deallocation of RgSumMat"
+     RETURN
+  ENDIF
+
   DEALLOCATE(&
        CUgMatNoAbs,&!RB
        STAT=IErr)  

@@ -83,6 +83,17 @@ SUBROUTINE StructureFactorSetup(IErr)
      !call error function
      RETURN
   ENDIF
+!RB  NB Also deallocated in felixfunction!!!
+  !RB Matrix for sum of indices - for symmetry equivalence  
+  ALLOCATE( & 
+       RgSumMat(nReflections,nReflections), &
+       STAT=IErr)
+  IF( IErr.NE.0 ) THEN
+     PRINT*,"StructureFactorSetup(",my_rank,") error ",IErr, &
+          "in ALLOCATE() of DYNAMIC variables RgSumMat"
+     !call error function
+     RETURN
+  ENDIF  
 
   CALL GMatrixInitialisation (IErr)
   IF( IErr.NE.0 ) THEN
@@ -95,7 +106,7 @@ SUBROUTINE StructureFactorSetup(IErr)
   !--------------------------------------------------------------------
   ! calculating Ug matrix
   !--------------------------------------------------------------------
-
+!RB  NB Also deallocated in felixfunction!!!
   !Allocate memory for Ug Matrix
   !RB Matrix that is sum of real+abs
   !PRINT*,"Allocating CUgMat,CUgMatNoAbs,CUgMatPrime in structurefactorsetup"
@@ -104,7 +115,7 @@ SUBROUTINE StructureFactorSetup(IErr)
        STAT=IErr)
   IF( IErr.NE.0 ) THEN
      PRINT*,"StructureFactorSetup(",my_rank,") error", IErr, &
-          "in ALLOCATE() of DYNAMIC variables CUgMat diddly"
+          "in ALLOCATE() of DYNAMIC variables CUgMat"
      !call error function
      RETURN
   ENDIF
@@ -115,7 +126,7 @@ SUBROUTINE StructureFactorSetup(IErr)
        STAT=IErr)!RB
   IF( IErr.NE.0 ) THEN!RB
      PRINT*,"StructureFactorSetup(",my_rank,") error",IErr, &!RB
-          "in ALLOCATE() of DYNAMIC variables CUgMatNoAbs diddlo"!RB
+          "in ALLOCATE() of DYNAMIC variables CUgMatNoAbs"!RB
      !call error function
      RETURN!RB
   ENDIF  !RB
@@ -126,7 +137,7 @@ SUBROUTINE StructureFactorSetup(IErr)
        STAT=IErr)
   IF( IErr.NE.0 ) THEN
      PRINT*,"StructureFactorSetup(",my_rank,") error ",IErr, &
-          "in ALLOCATE() of DYNAMIC variables CUgMatPrime diddler"
+          "in ALLOCATE() of DYNAMIC variables CUgMatPrime"
      !call error function
      RETURN
   ENDIF  
@@ -139,7 +150,7 @@ SUBROUTINE StructureFactorSetup(IErr)
      RETURN
   ENDIF
 
-  DEALLOCATE( &
+  DEALLOCATE( & 
        RgMatMat,STAT=IErr)
   IF( IErr.NE.0 ) THEN
      PRINT*,"felixsim(", my_rank, ") error ", IErr, &

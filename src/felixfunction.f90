@@ -847,6 +847,14 @@ REAL(RKIND) FUNCTION SimplexFunction(RIndependentVariableValues,IIterationCount,
      SimplexFunction = RCrossCorrelation     
   END IF
 
+!RB   NB Also deallocated in felixrefine!!!
+  DEALLOCATE( &
+       RgSumMat,STAT=IErr)
+  IF( IErr.NE.0 ) THEN
+     PRINT*,"felixsim(", my_rank, ") error ", IErr, &
+          " in Deallocation of RgSumMat"
+     RETURN
+  ENDIF
 !RB   PRINT*,"Deallocating CUgMatNoAbs,CUgMatPrime,CUgMat in SimplexFunction" 
   DEALLOCATE(&
        CUgMatNoAbs,&!RB

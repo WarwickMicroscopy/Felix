@@ -1,8 +1,9 @@
-GFORTRAN module created from smodules.f90 on Fri Jan 15 15:16:06 2016
-MD5:d3f2dd7f76f761c2c95d5e4196f7b741 -- If you edit this, you'll get what you deserve.
+GFORTRAN module created from smodules.f90 on Sat Jan 16 09:16:19 2016
+MD5:c65aafec6465891eee642a32c44c3030 -- If you edit this, you'll get what you deserve.
 
-(() () () () () () () () () () () () () () () () () () () () () () ()
-() () () ())
+(()
+() () () () () () () () () () () () () () () () () () () () () () () ()
+() ())
 
 ()
 
@@ -130,23 +131,23 @@ CONSTANT (REAL 8 0 0 REAL ()) 0 '0.aaaaaaaaaa97e8@0') () 0 () () 0 0)
 52 'zero' 'mynumbers' 'zero' 1 ((PARAMETER UNKNOWN-INTENT UNKNOWN-PROC
 UNKNOWN IMPLICIT-SAVE) (REAL 8 0 0 REAL ()) 0 0 () (CONSTANT (REAL 8 0 0
 REAL ()) 0 '0.00000000000000@0') () 0 () () 0 0)
-13 'b' '' 'b' 11 ((VARIABLE IN UNKNOWN-PROC UNKNOWN UNKNOWN DIMENSION
+18 'a' '' 'a' 17 ((VARIABLE IN UNKNOWN-PROC UNKNOWN UNKNOWN DIMENSION
 DUMMY) (REAL 8 0 0 REAL ()) 0 0 () (1 EXPLICIT (CONSTANT (INTEGER 4 0 0
 INTEGER ()) 0 '1') (CONSTANT (INTEGER 4 0 0 INTEGER ()) 0 '3')) 0 () ()
 0 0)
 5 'x' '' 'x' 4 ((VARIABLE UNKNOWN-INTENT UNKNOWN-PROC UNKNOWN UNKNOWN
 DUMMY) (REAL 8 0 0 REAL ()) 0 0 () () 0 () () 0 0)
-12 'a' '' 'a' 11 ((VARIABLE IN UNKNOWN-PROC UNKNOWN UNKNOWN DIMENSION
+6 'y' '' 'y' 4 ((VARIABLE UNKNOWN-INTENT UNKNOWN-PROC UNKNOWN UNKNOWN
+DUMMY) (REAL 8 0 0 REAL ()) 0 0 () () 0 () () 0 0)
+13 'b' '' 'b' 11 ((VARIABLE IN UNKNOWN-PROC UNKNOWN UNKNOWN DIMENSION
 DUMMY) (REAL 8 0 0 REAL ()) 0 0 () (1 EXPLICIT (CONSTANT (INTEGER 4 0 0
 INTEGER ()) 0 '1') (CONSTANT (INTEGER 4 0 0 INTEGER ()) 0 '3')) 0 () ()
 0 0)
-6 'y' '' 'y' 4 ((VARIABLE UNKNOWN-INTENT UNKNOWN-PROC UNKNOWN UNKNOWN
-DUMMY) (REAL 8 0 0 REAL ()) 0 0 () () 0 () () 0 0)
 19 'b' '' 'b' 17 ((VARIABLE IN UNKNOWN-PROC UNKNOWN UNKNOWN DIMENSION
 DUMMY) (REAL 8 0 0 REAL ()) 0 0 () (1 EXPLICIT (CONSTANT (INTEGER 4 0 0
 INTEGER ()) 0 '1') (CONSTANT (INTEGER 4 0 0 INTEGER ()) 0 '3')) 0 () ()
 0 0)
-18 'a' '' 'a' 17 ((VARIABLE IN UNKNOWN-PROC UNKNOWN UNKNOWN DIMENSION
+12 'a' '' 'a' 11 ((VARIABLE IN UNKNOWN-PROC UNKNOWN UNKNOWN DIMENSION
 DUMMY) (REAL 8 0 0 REAL ()) 0 0 () (1 EXPLICIT (CONSTANT (INTEGER 4 0 0
 INTEGER ()) 0 '1') (CONSTANT (INTEGER 4 0 0 INTEGER ()) 0 '3')) 0 () ()
 0 0)

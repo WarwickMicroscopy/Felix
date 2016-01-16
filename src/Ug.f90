@@ -65,6 +65,9 @@ SUBROUTINE GMatrixInitialisation (IErr)
      ENDDO
   ENDDO
 
+!RB matrix of sums of absolute indices for symmetry testing
+  RgSumMat = SUM(ABS(RgMatMat),3)
+
 !RB take the 2 pi back out of the magnitude...   
   RgMatMag = RgMatMag/TWOPI
   
@@ -106,21 +109,16 @@ SUBROUTINE SymmetryRelatedStructureFactorDetermination (IErr)
   
   Iuid = 0_IKIND
   
-!!$  Iuid = Iuid + 1_IKIND
-!!$
-!!$  WHERE (ABS(CUgMatNoAbs).LE.RTolerance)
-!!$     ISymmetryRelations = Iuid
-!!$  END WHERE
-
+!RB Make single matrix to test symmetry; index plus real and imaginary parts of Ug
+  RgSumMat = ABS(REAL(CUgMatNoAbs))+ABS(AIMAG(CUgMatNoAbs))+RgSumMat
   DO ind = 1,nReflections
      DO jnd = 1,ind
         IF(ISymmetryRelations(ind,jnd).NE.0) THEN
            CYCLE
         ELSE
            Iuid = Iuid + 1_IKIND
-           WHERE (ABS(ABS(REAL(CUgMatNoAbs))-&
-		   ABS(REAL(CUgMatNoAbs(ind,jnd)))).LE.RTolerance)!RB real part only to distinguish different phases
-              ISymmetryRelations = Iuid*SIGN(1_IKIND,NINT(AIMAG(CUgMatNoAbs)))
+           WHERE ( ABS(RgSumMat-RgSumMat(ind,jnd)).LE.RTolerance)
+              ISymmetryRelations = Iuid*SIGN(1_IKIND, NINT(AIMAG(CUgMatNoAbs)/TINY**2) )!RB may be an issue with loss of sign when imag part is very small
            END WHERE
         END IF
      END DO
@@ -128,11 +126,11 @@ SUBROUTINE SymmetryRelatedStructureFactorDetermination (IErr)
 
   IF((IWriteFLAG.GE.0.AND.my_rank.EQ.0).OR.IWriteFLAG.GE.10) THEN
      PRINT*,"Unique Ugs = ",Iuid
-
-     DO ind=1,nReflections
-        PRINT*,"DBG: ", ind, "/", ISymmetryRelations(ind,1:15)
-     ENDDO
   END IF
+
+!RB  DO ind = 1,10
+!RB     PRINT*, ISymmetryRelations(ind,1:10)
+!RB  END DO
 
   ALLOCATE(ISymmetryStrengthKey(Iuid),STAT=IErr)
   IF( IErr.NE.0 ) THEN
@@ -334,26 +332,6 @@ SUBROUTINE StructureFactorInitialisation (IErr)
        MessageVariable = "RBigK", &
        RVariable = RBigK)
 
- !RB IF(IAbsorbFLAG.GE.1) THEN
-!RB
-!RB     !Structure Factors when taking into account absorption
-!RB     !Flag controlled
-!RB     !-----------------------------------------------------
-!RB     CALL StructureFactorsWithAbsorptionDetermination(IErr)
-!RB
-!RB     IF( IErr.NE.0 ) THEN
-!RB        PRINT*,"StructureFactorSetup(", my_rank, ") error ", IErr, &
-!RB             " in StructureFactorsWithAbsorptionDetermination"
-!RB        !call error function
-!RB        RETURN
-!RB     ENDIF
-!RB
-!RB  ELSE
-!RB
-!RB    CUgMat=CUgMatNoAbs!RB
-!RB
-!RB  ENDIF
-
 END SUBROUTINE StructureFactorInitialisation
 
 SUBROUTINE StructureFactorsWithAbsorptionDetermination(IErr)         
@@ -391,12 +369,12 @@ SUBROUTINE StructureFactorsWithAbsorptionDetermination(IErr)
 !RB   PRINT*,"CUgMat(1,1)= ",CUgMatNoAbs(1,1),CUgMatPrime(1,1)!,CUgMat(1,1)   
 !RB   PRINT*,"CUgMat(2,1)= ",CUgMatNoAbs(2,1),CUgMatPrime(2,1)!,CUgMat(2,1)   
 !RB   PRINT*,"CUgMat(1,2)= ",CUgMatNoAbs(1,2),CUgMatPrime(1,2)!,CUgMat(1,2)   
-!RB   PRINT*,"CUgMat(3,1)= ",CUgMatNoAbs(3,1),CUgMatPrime(3,1)!,CUgMat(3,1)   
-!RB   PRINT*,"CUgMat(1,3)= ",CUgMatNoAbs(1,3),CUgMatPrime(1,3)!,CUgMat(1,3)   
+!RB   PRINT*,"CUgMat(4,1)= ",CUgMatNoAbs(4,1),CUgMatPrime(4,1)!,CUgMat(3,1)   
+!RB   PRINT*,"CUgMat(1,4)= ",CUgMatNoAbs(1,4),CUgMatPrime(1,4)!,CUgMat(1,3)   
 !RB   PRINT*,"CUgMat(3,2)= ",CUgMatNoAbs(3,2),CUgMatPrime(3,2)!,CUgMat(3,2)   
 !RB   PRINT*,"CUgMat(2,3)= ",CUgMatNoAbs(2,3),CUgMatPrime(2,3)!,CUgMat(2,3)   
-!RB   PRINT*,"CUgMat(4,1)= ",CUgMatNoAbs(4,1),CUgMatPrime(4,1)!,CUgMat(2,2)   
-!RB   PRINT*,"CUgMat(1,4)= ",CUgMatNoAbs(1,4),CUgMatPrime(1,4)!,CUgMat(3,3) 
+!RB   PRINT*,"CUgMat(6,1)= ",CUgMatNoAbs(6,1),CUgMatPrime(6,1)!,CUgMat(2,2)   
+!RB   PRINT*,"CUgMat(1,6)= ",CUgMatNoAbs(1,6),CUgMatPrime(1,6)!,CUgMat(3,3) 
   
   CASE Default
  
