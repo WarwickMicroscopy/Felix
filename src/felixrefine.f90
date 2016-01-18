@@ -473,6 +473,7 @@ SUBROUTINE RefinementVariableSetup(RIndependentVariableValues,IErr)
      IVariableType = IIterativeVariableUniqueIDs(ind,2)
      SELECT CASE (IVariableType)
      CASE(1)
+	    !Structure factor refinement, define in SymmetryRelatedStructureFactorDetermination
      CASE(2)
         RIndependentVariableValues(ind) = &
              RAllowedVectorMagnitudes(IIterativeVariableUniqueIDs(ind,3))
@@ -559,7 +560,7 @@ SUBROUTINE StructureFactorRefinementSetup(RIndependentVariableValues,IIterationC
              AIMAG(CSymmetryStrengthKey(ind))
      END DO
   END IF
-
+        RIndependentVariableValues(2*INoofUgs+1) = RAbsorptionPercentage!RB absorption always included in structure factor refinement as last variable
 END SUBROUTINE StructureFactorRefinementSetup
 
 !%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -1274,7 +1275,7 @@ SUBROUTINE DetermineNumberofRefinementVariablesPerType(INoofelementsforeachrefin
        INoofelementsforeachrefinementtype
 
   INoofelementsforeachrefinementtype(1) = &
-       IRefineModeSelectionArray(1)*INoofUgs*2
+       IRefineModeSelectionArray(1)*INoofUgs*2+1!RB +1 is for absorption
   INoofelementsforeachrefinementtype(2) = &
        IRefineModeSelectionArray(2)*IAllowedVectors
   INoofelementsforeachrefinementtype(3) = &

@@ -280,7 +280,7 @@ SUBROUTINE OpenReflectionImage(IChOutWrite, surname, IErr,IReflectWriting,IImage
      TRIM(ADJUSTL(h)),&
      TRIM(ADJUSTL(k)),&
      TRIM(ADJUSTL(l)),&
-     TRIM(ADJUSTL(Simagesize)),&
+     !RB TRIM(ADJUSTL(Simagesize)),&
      TRIM(ADJUSTL(fileext))
 	 
   CASE(IChOutWFImagePhase)        
@@ -291,7 +291,7 @@ SUBROUTINE OpenReflectionImage(IChOutWrite, surname, IErr,IReflectWriting,IImage
      TRIM(ADJUSTL(h)),&
      TRIM(ADJUSTL(k)),&
      TRIM(ADJUSTL(l)),&
-     TRIM(ADJUSTL(Simagesize)),&
+     !RB TRIM(ADJUSTL(Simagesize)),&
      TRIM(ADJUSTL(fileext))
 	 
   CASE(IChOutWIImage) 
@@ -302,7 +302,7 @@ SUBROUTINE OpenReflectionImage(IChOutWrite, surname, IErr,IReflectWriting,IImage
      TRIM(ADJUSTL(h)),&
      TRIM(ADJUSTL(k)),&
      TRIM(ADJUSTL(l)),&
-     TRIM(ADJUSTL(Simagesize)),&
+     !RB TRIM(ADJUSTL(Simagesize)),&
      TRIM(ADJUSTL(fileext))
 	 
   CASE(MontageOut)        

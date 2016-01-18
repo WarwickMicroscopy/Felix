@@ -881,6 +881,7 @@ REAL(RKIND) FUNCTION SimplexFunction(RIndependentVariableValues,IIterationCount,
   ENDIF
   
 END FUNCTION SimplexFunction
+!%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 SUBROUTINE CreateImagesAndWriteOutput(IIterationCount,IExitFLAG,IErr)
 
@@ -1004,10 +1005,9 @@ SUBROUTINE UpdateVariables(RIndependentVariableValues,IErr)
      IVariableType = IIterativeVariableUniqueIDs(ind,2)
      SELECT CASE (IVariableType)
      CASE(1)
+	    !RB structure factor refinement, do in UpdateStructureFactors
      CASE(2)
-
         CALL ConvertVectorMovementsIntoAtomicCoordinates(ind,RIndependentVariableValues,IErr)
-
      CASE(3)
         RAtomicSitePartialOccupancy(IIterativeVariableUniqueIDs(ind,3)) = &
              RIndependentVariableValues(ind)
@@ -1081,6 +1081,7 @@ SUBROUTINE PrintVariables(IErr)
      IF (IRefineModeSelectionArray(ind).EQ.1) THEN
         SELECT CASE(ind)
         CASE(1)
+           PRINT*,"Current Absorption",RAbsorptionPercentage!RB has this been deallocated?
            PRINT*,"Current Structure Factors"
            DO jnd = 1,INoofUgs
               PRINT*,CSymmetryStrengthKey(jnd)
@@ -1168,6 +1169,7 @@ SUBROUTINE UpdateStructureFactors(RIndependentVariableValues,IErr)
         CSymmetryStrengthKey(ind) = &
              CMPLX(RIndependentVariableValues((ind-1)*2+1),RIndependentVariableValues((ind-1)*2+2),CKIND)
      END DO
+	 RAbsorptionPercentage = RIndependentVariableValues(2*INoofUgs+1)!RB
   END IF
   
 END SUBROUTINE UpdateStructureFactors

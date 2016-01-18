@@ -19,7 +19,7 @@ IXDirectionFLAG           = 1
 IPixelCount               = 35
 
 # beam selection criteria
-IMinReflectionPool        = 70
+IMinReflectionPool        = 1100
 IMinStrongBeams           = 40
 IMinWeakBeams             = 0
 RBSBMax                   = 0.1
@@ -56,7 +56,7 @@ IImageProcessingFLAG     = 0
 
 # Ug Iteration
 
-INoofUgs                  = 12
+INoofUgs                  = 20
 
 # Structural Refinement
 
