@@ -273,7 +273,7 @@ writeoutput.f90 dqng.f xerror.f d1mach.f felixdraw.f90 felixrefine.f90 refineuti
 makefile-CSC.GF; convert -density 150 print.ps print.pdf
 	     	   	  
 clean:	
-	rm -f core *.mod *.o
+	rm -f core *.mod *.o *.bin
 
 #clean all:	
 #	rm -f core *.mod *.o *.exe
