@@ -468,11 +468,12 @@ SUBROUTINE RefinementVariableSetup(RIndependentVariableValues,IErr)
   END IF
   
 !!$  Fill the Independent Value array with values
-  
+
   DO ind = 1,IIndependentVariables
      IVariableType = IIterativeVariableUniqueIDs(ind,2)
      SELECT CASE (IVariableType)
      CASE(1)
+	    !Structure factor refinement, define in SymmetryRelatedStructureFactorDetermination
      CASE(2)
         RIndependentVariableValues(ind) = &
              RAllowedVectorMagnitudes(IIterativeVariableUniqueIDs(ind,3))
@@ -559,7 +560,7 @@ SUBROUTINE StructureFactorRefinementSetup(RIndependentVariableValues,IIterationC
              AIMAG(CSymmetryStrengthKey(ind))
      END DO
   END IF
-
+        RIndependentVariableValues(2*INoofUgs+1) = RAbsorptionPercentage!RB absorption always included in structure factor refinement as last variable
 END SUBROUTINE StructureFactorRefinementSetup
 
 !%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -604,11 +605,11 @@ SUBROUTINE RankSymmetryRelatedStructureFactor(IErr)
      RETURN
   ENDIF
   
-  DO ind = 1,(SIZE(ISymmetryStrengthKey,DIM=1))
+  DO ind = 1,(SIZE(ISymmetryStrengthKey))
      ILoc = MINLOC(ABS(ISymmetryRelations-ind))
-     ISymmetryStrengthKey(ind,1) = ind
-     ISymmetryStrengthKey(ind,2) = ind
-     CSymmetryStrengthKey(ind) = CUgMat(ILoc(1),ILoc(2))
+     ISymmetryStrengthKey(ind) = ind
+     CSymmetryStrengthKey(ind) = CUgMatNoAbs(ILoc(1),ILoc(2))
+!RB     PRINT*,"CSymmetryStrengthKey",ind,ISymmetryStrengthKey(ind),CSymmetryStrengthKey(ind)
   END DO
   
   CALL ReSortUgs(ISymmetryStrengthKey,CSymmetryStrengthKey,SIZE(CSymmetryStrengthKey,DIM=1))
@@ -709,10 +710,34 @@ SUBROUTINE SimplexInitialisation(RSimplexVolume,RSimplexFoM,RIndependentVariable
         RETURN
      ENDIF
      
-  END IF
-  
+  ENDIF
+!RB     PRINT*,"Deallocating CUgMat,CUgMatNoAbs,CUgMatPrime in felixrefine" NB Also deallocated in felixfunction!!!
+  DEALLOCATE( &
+       RgSumMat,STAT=IErr)
+  IF( IErr.NE.0 ) THEN
+     PRINT*,"felixsim(", my_rank, ") error ", IErr, &
+          " in Deallocation of RgSumMat"
+     RETURN
+  ENDIF
+
   DEALLOCATE(&
-       CUgmat,&
+       CUgMatNoAbs,&!RB
+       STAT=IErr)  
+  IF( IErr.NE.0 ) THEN
+     PRINT*,"SimplexInitialisation (", my_rank, ") error in Deallocation()"
+     RETURN
+  ENDIF
+
+  DEALLOCATE(&
+       CUgMatPrime,&!RB
+       STAT=IErr)  
+  IF( IErr.NE.0 ) THEN
+     PRINT*,"SimplexInitialisation (", my_rank, ") error in Deallocation()"
+     RETURN
+  ENDIF
+ 
+  DEALLOCATE(&
+       CUgMat,&!RB
        STAT=IErr)  
   IF( IErr.NE.0 ) THEN
      PRINT*,"SimplexInitialisation (", my_rank, ") error in Deallocation()"
@@ -1122,16 +1147,23 @@ SUBROUTINE ApplyNewStructureFactors(IErr)
 !!$  Populate Ug Matrix with new iterative elements
 
   DO ind = 1,INoofUgs
-     WHERE(ISymmetryRelations.EQ.ISymmetryStrengthKey(ind,2)) 
+!!$     WHERE(ISymmetryRelations.EQ.ISymmetryStrengthKey(ind)) 
+!!$        CUgMatDummy = CSymmetryStrengthKey(ind)
+!!$     END WHERE
+     WHERE(ISymmetryRelations.EQ.ISymmetryStrengthKey(ind))
         CUgMatDummy = CSymmetryStrengthKey(ind)
+     END WHERE
+     WHERE(ISymmetryRelations.EQ.-ISymmetryStrengthKey(ind))!RB 
+        CUgMatDummy = CONJG(CSymmetryStrengthKey(ind))
      END WHERE
   END DO
 
   WHERE(ABS(CUgMatDummy).GT.TINY)
-     CUgMat = CUgMatDummy
+     CUgMatNoAbs = CUgMatDummy!RB
   END WHERE
 
-!!$  CUgMat now contains the new values from the iterative process 
+!!$  CUgMatNoAbs now contains the new values from the iterative process
+!RB N.B. CUgMatNoAbs is without absorption 
   
 END SUBROUTINE ApplyNewStructureFactors
 
@@ -1243,7 +1275,7 @@ SUBROUTINE DetermineNumberofRefinementVariablesPerType(INoofelementsforeachrefin
        INoofelementsforeachrefinementtype
 
   INoofelementsforeachrefinementtype(1) = &
-       IRefineModeSelectionArray(1)*INoofUgs*2
+       IRefineModeSelectionArray(1)*INoofUgs*2+1!RB +1 is for absorption
   INoofelementsforeachrefinementtype(2) = &
        IRefineModeSelectionArray(2)*IAllowedVectors
   INoofelementsforeachrefinementtype(3) = &

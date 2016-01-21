@@ -109,10 +109,10 @@ SUBROUTINE FelixFunction(LInitialSimulationFLAG,IErr)
  
 !!$  Structure Factors must be calculated without absorption for refinement to work
 
-  IF(IAbsorbFLAG.NE.0) THEN 
-     IAbsorbFLAG = 0 ! Non-absorpative structure factor calculation
-     IAbsorbTAG = 1 ! Remember that IAbsorbFLAG was 1
-  END IF
+  !RB IF(IAbsorbFLAG.NE.0) THEN 
+  !RB   IAbsorbFLAG = 0 ! Non-absorpative structure factor calculation
+  !RB   IAbsorbTAG = 1 ! Remember that IAbsorbFLAG was 1
+  !RB END IF
   
   CALL StructureFactorSetup(IErr)
   IF( IErr.NE.0 ) THEN
@@ -120,7 +120,7 @@ SUBROUTINE FelixFunction(LInitialSimulationFLAG,IErr)
      RETURN
   ENDIF
 
-  IF(IAbsorbTAG.NE.0) IAbsorbFLAG = 1 !Reset IAbsorbFLAG to 1
+  !RB IF(IAbsorbTAG.NE.0) IAbsorbFLAG = 1 !Reset IAbsorbFLAG to 1
 
   IF((IRefineModeSelectionArray(1).EQ.1).AND.(LInitialSimulationFLAG.NEQV..TRUE.)) THEN
      
@@ -131,18 +131,9 @@ SUBROUTINE FelixFunction(LInitialSimulationFLAG,IErr)
         RETURN
      ENDIF
      
-  END IF
+  ENDIF
 
   IF(IAbsorbFLAG.NE.0) THEN
-     
-     ALLOCATE(&
-          CUgMatPrime(nReflections,nReflections),&
-          STAT=IErr)
-     IF( IErr.NE.0 ) THEN
-        PRINT*,"Felixfunction(", my_rank, ") error ", IErr, &
-             " in ALLOCATE() of DYNAMIC variables CUgMatPrime"
-        RETURN
-     ENDIF
      
      CALL StructureFactorsWithAbsorptionDetermination(IErr)
      IF( IErr.NE.0 ) THEN
@@ -151,17 +142,7 @@ SUBROUTINE FelixFunction(LInitialSimulationFLAG,IErr)
         RETURN
      ENDIF
 
-     !RB moved A
-
-     DEALLOCATE( &
-          CUgMatPrime,STAT=IErr)
-     IF( IErr.NE.0 ) THEN
-        PRINT*,"Felixfunction(", my_rank, ") error ", IErr, &
-             " Deallocating CUgMatPrime"
-        RETURN
-     ENDIF
-     
-  END IF     
+  ENDIF     
   !--------------------------------------------------------------------
   ! reserve memory for effective eigenvalue problem
   !--------------------------------------------------------------------
@@ -666,13 +647,13 @@ SUBROUTINE CalculateFigureofMeritandDetermineThickness(IThicknessCountFinal,IErr
   REAL(RKIND),DIMENSION(2*IPixelCount,2*IPixelCount) :: &
        RSimulatedImageForPhaseCorrelation,RExperimentalImage
   REAL(RKIND) :: &
-       RCrossCorrelationOld,RIndependentCrossCorrelation,RThickness,PhaseCorrelate,Normalised2DCrossCorrelation
+       RCrossCorrelationOld,RIndependentCrossCorrelation,RThickness,&
+	   PhaseCorrelate,Normalised2DCrossCorrelation,ResidualSumofSquares
 !!$  REAL(RKIND),DIMENSION(IReflectOut,IThicknessCount,IPixelTotal) :: &
 !!$       RSimulatedImages
   REAL(RKIND),DIMENSION(IReflectOut) :: &
-       RReflectionCrossCorrelations
-  REAL(RKIND) :: &
-       ResidualSumofSquares
+       RReflectionCrossCorrelations,RReflectionThickness
+       
   
   IF((IWriteFLAG.GE.0.AND.my_rank.EQ.0).OR.IWriteFLAG.GE.10) THEN
      PRINT*,"CalculateFigureofMeritandDetermineThickness(",my_rank,")"
@@ -759,7 +740,8 @@ SUBROUTINE CalculateFigureofMeritandDetermineThickness(IThicknessCountFinal,IErr
            RCrossCorrelationOld = RIndependentCrossCorrelation
 
            IThicknessByReflection(hnd) = ind
-
+           RReflectionThickness(hnd) = RInitialThickness +&
+		   IThicknessByReflection(hnd)*RDeltaThickness
         END IF
      END DO
 
@@ -770,19 +752,20 @@ SUBROUTINE CalculateFigureofMeritandDetermineThickness(IThicknessCountFinal,IErr
   RCrossCorrelation = &
        SUM(RReflectionCrossCorrelations*RWeightingCoefficients)/&
        REAL(IReflectOut,RKIND)
-  
+!RB assume that the thickness is given by the mean of individual thicknesses  
   IThicknessCountFinal = SUM(IThicknessByReflection)/IReflectOut
 
   RThickness = RInitialThickness + (IThicknessCountFinal-1)*RDeltaThickness 
+  
 
   IF(my_rank.eq.0) THEN
-     PRINT*,"Thicknesses",IThicknessByReflection
-     PRINT*,"Correlation",RCrossCorrelation
-     PRINT*,"Thickness Final",IThicknessCountFinal
+!RB     PRINT*,"Thicknesses",RReflectionThickness
+!RB     PRINT*,"Correlation",RCrossCorrelation
+!RB     PRINT*,"Thickness Final",IThicknessCountFinal
      PRINT*,"Thickness",RThickness
   END IF
 
-  IF (RCrossCorrelation.NE.RCrossCorrelation) THEN
+  IF (RCrossCorrelation.NE.RCrossCorrelation) THEN!RB what?
      IErr = 1
   END IF
 
@@ -863,16 +846,42 @@ REAL(RKIND) FUNCTION SimplexFunction(RIndependentVariableValues,IIterationCount,
      
      SimplexFunction = RCrossCorrelation     
   END IF
-     
+
+!RB   NB Also deallocated in felixrefine!!!
   DEALLOCATE( &
-       CUgMat,STAT=IErr)
+       RgSumMat,STAT=IErr)
   IF( IErr.NE.0 ) THEN
-     PRINT*,"SimplexFunction(", my_rank, ") error ", IErr, &
-          " Deallocating CUgMat"
+     PRINT*,"felixsim(", my_rank, ") error ", IErr, &
+          " in Deallocation of RgSumMat"
+     RETURN
+  ENDIF
+!RB   PRINT*,"Deallocating CUgMatNoAbs,CUgMatPrime,CUgMat in SimplexFunction" 
+  DEALLOCATE(&
+       CUgMatNoAbs,&!RB
+       STAT=IErr)  
+  IF( IErr.NE.0 ) THEN
+     PRINT*,"SimplexInitialisation (", my_rank, ") error in Deallocation()"
+     RETURN
+  ENDIF
+ 
+ DEALLOCATE(&
+       CUgMatPrime,&!RB
+       STAT=IErr)  
+  IF( IErr.NE.0 ) THEN
+     PRINT*,"SimplexInitialisation (", my_rank, ") error in Deallocation()"
+     RETURN
+  ENDIF
+ 
+  DEALLOCATE(&
+       CUgMat,&!RB
+       STAT=IErr)  
+  IF( IErr.NE.0 ) THEN
+     PRINT*,"SimplexInitialisation (", my_rank, ") error in Deallocation()"
      RETURN
   ENDIF
   
 END FUNCTION SimplexFunction
+!%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 SUBROUTINE CreateImagesAndWriteOutput(IIterationCount,IExitFLAG,IErr)
 
@@ -996,10 +1005,9 @@ SUBROUTINE UpdateVariables(RIndependentVariableValues,IErr)
      IVariableType = IIterativeVariableUniqueIDs(ind,2)
      SELECT CASE (IVariableType)
      CASE(1)
+	    !RB structure factor refinement, do in UpdateStructureFactors
      CASE(2)
-
         CALL ConvertVectorMovementsIntoAtomicCoordinates(ind,RIndependentVariableValues,IErr)
-
      CASE(3)
         RAtomicSitePartialOccupancy(IIterativeVariableUniqueIDs(ind,3)) = &
              RIndependentVariableValues(ind)
@@ -1073,6 +1081,7 @@ SUBROUTINE PrintVariables(IErr)
      IF (IRefineModeSelectionArray(ind).EQ.1) THEN
         SELECT CASE(ind)
         CASE(1)
+           PRINT*,"Current Absorption",RAbsorptionPercentage!RB has this been deallocated?
            PRINT*,"Current Structure Factors"
            DO jnd = 1,INoofUgs
               PRINT*,CSymmetryStrengthKey(jnd)
@@ -1160,6 +1169,7 @@ SUBROUTINE UpdateStructureFactors(RIndependentVariableValues,IErr)
         CSymmetryStrengthKey(ind) = &
              CMPLX(RIndependentVariableValues((ind-1)*2+1),RIndependentVariableValues((ind-1)*2+2),CKIND)
      END DO
+	 RAbsorptionPercentage = RIndependentVariableValues(2*INoofUgs+1)!RB
   END IF
   
 END SUBROUTINE UpdateStructureFactors

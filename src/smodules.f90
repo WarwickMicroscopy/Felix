@@ -138,7 +138,7 @@ MODULE RConst
        RElectronCharge=REAL(1.602176565D-19,RKIND), &
        RAngstromConversion=REAL(1.D10,RKIND)
   REAL(RKIND), PARAMETER :: &
-       RTolerance =REAL( 1E-5,RKIND)
+       RTolerance =REAL( 1E-7,RKIND)
     
 END MODULE RConst
 
@@ -226,9 +226,9 @@ MODULE IPara
   !LACBED
 
   INTEGER(IKIND),DIMENSION(:,:), ALLOCATABLE :: &
-       ILACBEDStrongBeamList, IPixelLocation, ISymmetryRelations,ISymmetryStrengthKey
+       ILACBEDStrongBeamList, IPixelLocation, ISymmetryRelations
   INTEGER(IKIND),DIMENSION(:), ALLOCATABLE :: &
-       InBeams,IStrongBeamList,IOutputReflections
+       InBeams,IStrongBeamList,IOutputReflections,ISymmetryStrengthKey
 
   !inpcif
 
@@ -435,7 +435,7 @@ MODULE RPara
        RMeanInnerCrystalPotential
   
   REAL(RKIND),DIMENSION(:,:),ALLOCATABLE :: & 
-       RMask, RgMatMag
+       RMask, RgMatMag, RgSumMat!RB
   
   REAL(RKIND),DIMENSION(:,:,:),ALLOCATABLE :: & 
        RgMatMat
@@ -514,7 +514,7 @@ MODULE CPara
   USE MyNumbers
 
   COMPLEX(CKIND), DIMENSION(:,:), ALLOCATABLE :: &
-       CUgMat,CUgMatPrime, CUgMatEffective,CEigenValuesChunk
+       CUgMatNoAbs,CUgMatPrime,CUgMat, CUgMatEffective,CEigenValuesChunk
   COMPLEX(CKIND), DIMENSION(:,:,:), ALLOCATABLE :: &
        CEigenVectorsChunk
   COMPLEX(CKIND),DIMENSION(:),ALLOCATABLE :: &

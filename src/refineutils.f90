@@ -137,6 +137,7 @@ REAL(RKIND) FUNCTION PhaseCorrelate(RImageSim,RImageExpiDummy,IErr,IXsizeIn,IYSi
   
 END FUNCTION  PhaseCorrelate
 
+!%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 SUBROUTINE ReSortUgs( ISymmetryIntegers,CUgs, N )
   
   USE MyNumbers
@@ -149,7 +150,7 @@ SUBROUTINE ReSortUgs( ISymmetryIntegers,CUgs, N )
 
   IMPLICIT NONE
 
-  INTEGER (IKIND) N,IDummy,ISymmetryIntegers(N,2)
+  INTEGER (IKIND) N,IDummy,ISymmetryIntegers(N)
   REAL(RKIND) RhklarraySearch(THREEDIM), RhklarrayCompare(THREEDIM)
   COMPLEX(CKIND) CUgSearch,CUgCompare,CUgs(N)
   REAL(KIND=RKIND) ALN2I, LocalTINY
@@ -175,8 +176,8 @@ SUBROUTINE ReSortUgs( ISymmetryIntegers,CUgs, N )
         CUgSearch = CUgs(L)
         CUgCompare = CUgs(I)
         IF( &
-             (REAL(CUgSearch**2)) .GT. &
-             (REAL(CUgCompare**2))) THEN
+             (ABS(CUgSearch)) .GT. &!RB sort on modulus ABS?
+             (ABS(CUgCompare))) THEN
  !          DO 100
               !IF(my_rank.eq.0) THEN
               !   PRINT*,I
@@ -184,9 +185,9 @@ SUBROUTINE ReSortUgs( ISymmetryIntegers,CUgs, N )
               Cdummy = CUgs(I)
               CUgs(I)= CUgs(L)
               Cugs(L)= Cdummy
-              Idummy = ISymmetryIntegers(I,2)
-              ISymmetryIntegers(I,2)= ISymmetryIntegers(L,2)
-              ISymmetryIntegers(L,2)= Idummy
+              Idummy = ISymmetryIntegers(I)
+              ISymmetryIntegers(I)= ISymmetryIntegers(L)
+              ISymmetryIntegers(L)= Idummy
 !100        ENDDO
            
            I=I-M

@@ -1,5 +1,5 @@
-GFORTRAN module created from smodules.f90 on Tue Jan  5 12:32:22 2016
-MD5:7d7de8281554c9ec359f9c50fb1cad91 -- If you edit this, you'll get what you deserve.
+GFORTRAN module created from smodules.f90 on Sat Jan 16 09:16:18 2016
+MD5:e8546a89995b7b7cc38ccbfd42da29c9 -- If you edit this, you'll get what you deserve.
 
 (() () () () () () () () () () () () () () () () () () () () () () ()
 () () () ())
@@ -119,7 +119,7 @@ CONSTANT (REAL 8 0 0 REAL ()) 0 '0.11de031a000000@8') () 0 () () 0 0)
 UNKNOWN-PROC UNKNOWN UNKNOWN) (REAL 8 0 0 REAL ()) 0 0 () () 0 () () 0 0)
 47 'rtolerance' 'rconst' 'rtolerance' 1 ((PARAMETER UNKNOWN-INTENT
 UNKNOWN-PROC UNKNOWN IMPLICIT-SAVE) (REAL 8 0 0 REAL ()) 0 0 () (
-CONSTANT (REAL 8 0 0 REAL ()) 0 '0.a7c5ac00000000@-4') () 0 () () 0 0)
+CONSTANT (REAL 8 0 0 REAL ()) 0 '0.1ad7f2a0000000@-5') () 0 () () 0 0)
 48 'sqrthalf' 'mynumbers' 'sqrthalf' 1 ((VARIABLE UNKNOWN-INTENT
 UNKNOWN-PROC UNKNOWN UNKNOWN) (REAL 8 0 0 REAL ()) 0 0 () () 0 () () 0 0)
 49 'sqrttwo' 'mynumbers' 'sqrttwo' 1 ((VARIABLE UNKNOWN-INTENT

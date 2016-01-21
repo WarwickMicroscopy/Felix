@@ -114,12 +114,13 @@ SUBROUTINE WriteOutVariables(IIterationCount,IErr)
      IEND = SUM(IOutputVariables(1:jnd))
 
      SELECT CASE(jnd)
-     CASE(1)
-        DO ind = 1,SIZE(CUgMat,DIM=1)
+     CASE(1)!RB add in absorption
+        DO ind = 1,15!RB SIZE(CUgMat,DIM=1)
            IStart = (ind*2)-1
            IEnd = ind*2
            RDataOut(IStart:IEnd) = [REAL(REAL(CUgMat(ind,1)),RKIND), REAL(AIMAG(CUgMat(ind,1)),RKIND)]
         END DO
+		RDataOut(IEnd+1) = RAbsorptionPercentage!RIndependentVariableValues(2*INoofUgs+1)!RB last variable is absorption
      CASE(2)
         RDataOut(IStart:IEnd) = RESHAPE(TRANSPOSE(RAtomSiteFracCoordVec),SHAPE(RDataOut(IStart:IEnd)))
      CASE(3)
@@ -179,24 +180,24 @@ SUBROUTINE WriteIterationOutput(IIterationCount,IThicknessIndex,IExitFlag,IErr)
   IF(IExitFLAG.EQ.1.OR.(IIterationCount.GE.(IPreviousPrintedIteration+IPrint))) THEN
      
 
-     IThickness = RInitialThickness + (IThicknessIndex-1)*RDeltaThickness 
+     IThickness = (RInitialThickness + (IThicknessIndex-1)*RDeltaThickness)/10!RB in nm 
      
-     
-     WRITE(path,"(A10,I5.5,A3,I1.1,I1.1,I1.1,I1.1,A2,I5.5,A2,I5.5,A2,I5.5)") &
+!RB     WRITE(path,"(A10,I5.5,A3,I1.1,I1.1,I1.1,I1.1,A2,I5.5,A2,I5.5,A2,I5.5)") &    
+     WRITE(path,"(A10,I4.4,A1,I3.3,A3,I3.3,A1,I3.3)") &
           "Iteration",IIterationCount,&
-          "-f-",&
-          IScatterFactorMethodFLAG, &
-          IZolzFLAG, &
-          IAbsorbFLAG, &
-          IAnisoDebyeWallerFactorFlag,&
-          "-T",IThickness,&
-          "-P",2*IPixelcount,&
-          "-P",2*IPixelcount
+!RB          "-f-",&
+!RB          IScatterFactorMethodFLAG, &
+!RB          IZolzFLAG, &
+!RB          IAbsorbFLAG, &
+!RB          IAnisoDebyeWallerFactorFlag,&
+          "_",IThickness,&
+          "nm_",2*IPixelcount,&
+          "x",2*IPixelcount
      
      call system('mkdir ' // path)
      
-     PRINT*,"I am Printing Because IExitFLAG = ",IExitFLAG,"and im",&
-          IIterationCount-IPreviousPrintedIteration,"Iterations from my last print"
+     PRINT*,"IExitFLAG = ",IExitFLAG,"; there have been",&
+          IIterationCount-IPreviousPrintedIteration,"iterations from my last print"
      
      IPreviousPrintedIteration = IIterationCount
      
@@ -312,7 +313,7 @@ SUBROUTINE WriteIterationStructure(path,IErr)
 
 !!$  Write out full atomic positions
 
-  CALL ExperimentalSetup(IErr)
+  CALL ExperimentalSetup(IErr)!RB Really? wtf?!?
   IF( IErr.NE.0 ) THEN
      PRINT*,"WriteIterationStructure(", my_rank, ") error ", IErr, &
           " in ExperimentalSetup"

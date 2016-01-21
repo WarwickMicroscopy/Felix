@@ -65,6 +65,9 @@ SUBROUTINE GMatrixInitialisation (IErr)
      ENDDO
   ENDDO
 
+!RB matrix of sums of absolute indices for symmetry testing
+  RgSumMat = SUM(ABS(RgMatMat),3)
+
 !RB take the 2 pi back out of the magnitude...   
   RgMatMag = RgMatMag/TWOPI
   
@@ -106,20 +109,16 @@ SUBROUTINE SymmetryRelatedStructureFactorDetermination (IErr)
   
   Iuid = 0_IKIND
   
-  Iuid = Iuid + 1_IKIND
-
-  WHERE (ABS(CUgMat).LE.RTolerance)
-     ISymmetryRelations = Iuid
-  END WHERE
-  
+!RB Make single matrix to test symmetry; index plus real and imaginary parts of Ug
+  RgSumMat = ABS(REAL(CUgMatNoAbs))+ABS(AIMAG(CUgMatNoAbs))+RgSumMat
   DO ind = 1,nReflections
      DO jnd = 1,ind
         IF(ISymmetryRelations(ind,jnd).NE.0) THEN
            CYCLE
         ELSE
            Iuid = Iuid + 1_IKIND
-           WHERE (ABS(ABS(CUgMat)-ABS(CUgMat(ind,jnd))).LE.RTolerance)
-              ISymmetryRelations = Iuid
+           WHERE ( ABS(RgSumMat-RgSumMat(ind,jnd)).LE.RTolerance)
+              ISymmetryRelations = Iuid*SIGN(1_IKIND, NINT(AIMAG(CUgMatNoAbs)/TINY**2) )!RB may be an issue with loss of sign when imag part is very small
            END WHERE
         END IF
      END DO
@@ -129,11 +128,14 @@ SUBROUTINE SymmetryRelatedStructureFactorDetermination (IErr)
      PRINT*,"Unique Ugs = ",Iuid
   END IF
 
-  ALLOCATE(&
-       ISymmetryStrengthKey(Iuid,2),&
-       STAT=IErr)
+!RB  DO ind = 1,10
+!RB     PRINT*, ISymmetryRelations(ind,1:10)
+!RB  END DO
+
+  ALLOCATE(ISymmetryStrengthKey(Iuid),STAT=IErr)
   IF( IErr.NE.0 ) THEN
-     PRINT*,"SymmetryRelatedStructureFactorDetermination(", my_rank, ") error ", IErr, " in ALLOCATE() ISymmetryStrengthKey"
+     PRINT*,"SymmetryRelatedStructureFactorDetermination(", my_rank, ") error ", IErr, &
+          " in ALLOCATE() ISymmetryStrengthKey"
      RETURN
   ENDIF
 
@@ -177,7 +179,7 @@ SUBROUTINE StructureFactorInitialisation (IErr)
 
   CALL Message("StructureFactorInitialisation",IMust,IErr)
 
-  CUgMat = CZERO
+  CUgMatNoAbs = CZERO
 
   DO ind=1,nReflections
      imaxj = ind
@@ -289,22 +291,22 @@ SUBROUTINE StructureFactorInitialisation (IErr)
                 )
         ENDDO
 
-        CUgMat(ind,jnd)=((((TWOPI**2)* RRelativisticCorrection) / &
+        CUgMatNoAbs(ind,jnd)=((((TWOPI**2)* RRelativisticCorrection) / &!RB
              (PI * RVolume)) * CVgij)
 
      ENDDO
   ENDDO
 
-  RMeanInnerCrystalPotential= REAL(CUgMat(1,1))
+  RMeanInnerCrystalPotential= REAL(CUgMatNoAbs(1,1))!RB
 
   !RB Only the lower half of the Ug matrix was calculated, this completes the upper half
   !and also doubles the values on the diagonal
-  CUgMat = CUgMat + CONJG(TRANSPOSE(CUgMat))
+  CUgMatNoAbs = CUgMatNoAbs + CONJG(TRANSPOSE(CUgMatNoAbs))!RB
 
-  DO ind=1,nReflections!RB don't think this is right
-     CUgMat(ind,ind)=CUgMat(ind,ind)-RMeanInnerCrystalPotential
+  DO ind=1,nReflections!RB now halve the diagonal again
+     CUgMatNoAbs(ind,ind)=CUgMatNoAbs(ind,ind)-RMeanInnerCrystalPotential!RB
   ENDDO
-
+  
   RMeanInnerPotentialVolts = RMeanInnerCrystalPotential*(((RPlanckConstant**2)/ &
        (TWO*RElectronMass*RElectronCharge*TWOPI**2))*&
        RAngstromConversion*RAngstromConversion)
@@ -316,8 +318,6 @@ SUBROUTINE StructureFactorInitialisation (IErr)
   CALL Message("StructureFactorInitialisation",IMoreInfo,IErr, &
        MessageVariable = "RMeanInnerPotentialVolts", &
        RVariable = RMeanInnerPotentialVolts)
-
-!RB deleted
 
   !Now initialisation calls the Ug calculation subroutines
   !Used to be in Setup
@@ -331,24 +331,6 @@ SUBROUTINE StructureFactorInitialisation (IErr)
   CALL Message("StructureFactorInitialisation",IInfo,IErr, &
        MessageVariable = "RBigK", &
        RVariable = RBigK)
-
-  IF(IAbsorbFLAG.GE.1) THEN
-
-     !Structure Factors when taking into account absorption
-     !Flag controlled
-     !-----------------------------------------------------
-
-     CALL StructureFactorsWithAbsorptionDetermination(IErr)
-
-     IF( IErr.NE.0 ) THEN
-        PRINT*,"StructureFactorSetup(", my_rank, ") error ", IErr, &
-             " in StructureFactorsWithAbsorptionDetermination"
-        !call error function
-        RETURN
-     ENDIF
-!RB moved A
-
-  ENDIF
 
 END SUBROUTINE StructureFactorInitialisation
 
@@ -382,19 +364,20 @@ SUBROUTINE StructureFactorsWithAbsorptionDetermination(IErr)
 
 !!$     THE PROPORTIONAL MODEL OF ABSORPTION
      
-     CUgMatPrime = CUgMat*EXP(CIMAGONE*PI/2)*(RAbsorptionPercentage/100_RKIND)!RB changed
-     CUgMat =  CUgMat+CUgMatPrime!RB moved A
-   !RB PRINT*,"CUgMat(1,1)= ",CUgMat(1,1)   
-   !RB PRINT*,"CUgMat(2,1)= ",CUgMat(2,1)   
-   !RB PRINT*,"CUgMat(3,1)= ",CUgMat(3,1)   
-   !RB PRINT*,"CUgMat(1,2)= ",CUgMat(1,2)   
-   !RB PRINT*,"CUgMat(2,2)= ",CUgMat(2,2)   
-   !RB PRINT*,"CUgMat(3,2)= ",CUgMat(3,2)   
-   !RB PRINT*,"CUgMat(1,3)= ",CUgMat(1,3)   
-   !RB PRINT*,"CUgMat(2,3)= ",CUgMat(2,3)   
-   !RB PRINT*,"CUgMat(3,3)= ",CUgMat(3,3)   
-    
-  CASE Default 
+     CUgMatPrime = CUgMatNoAbs*EXP(CIMAGONE*PI/2)*(RAbsorptionPercentage/100_RKIND)!RB changed
+     CUgMat =  CUgMatNoAbs+CUgMatPrime!RB
+!RB   PRINT*,"CUgMat(1,1)= ",CUgMatNoAbs(1,1),CUgMatPrime(1,1)!,CUgMat(1,1)   
+!RB   PRINT*,"CUgMat(2,1)= ",CUgMatNoAbs(2,1),CUgMatPrime(2,1)!,CUgMat(2,1)   
+!RB   PRINT*,"CUgMat(1,2)= ",CUgMatNoAbs(1,2),CUgMatPrime(1,2)!,CUgMat(1,2)   
+!RB   PRINT*,"CUgMat(4,1)= ",CUgMatNoAbs(4,1),CUgMatPrime(4,1)!,CUgMat(3,1)   
+!RB   PRINT*,"CUgMat(1,4)= ",CUgMatNoAbs(1,4),CUgMatPrime(1,4)!,CUgMat(1,3)   
+!RB   PRINT*,"CUgMat(3,2)= ",CUgMatNoAbs(3,2),CUgMatPrime(3,2)!,CUgMat(3,2)   
+!RB   PRINT*,"CUgMat(2,3)= ",CUgMatNoAbs(2,3),CUgMatPrime(2,3)!,CUgMat(2,3)   
+!RB   PRINT*,"CUgMat(6,1)= ",CUgMatNoAbs(6,1),CUgMatPrime(6,1)!,CUgMat(2,2)   
+!RB   PRINT*,"CUgMat(1,6)= ",CUgMatNoAbs(1,6),CUgMatPrime(1,6)!,CUgMat(3,3) 
+  
+  CASE Default
+ 
   END SELECT
   
 END SUBROUTINE StructureFactorsWithAbsorptionDetermination
