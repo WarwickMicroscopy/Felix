@@ -187,8 +187,8 @@ ifeq ($(unixOS),Linux)
 else ifeq ($(unixOS),Darwin) #MAC
  $(info Compiling on $(unixOS), OS X)
 
- F90 = mpifort
- FC = gfortran -ffixed-form -std=legacy
+ F90 = mpifort-openmpi-mp
+ FC = gfortran-mp-4.5 -ffixed-form -std=legacy
  F90FLAGS = -fbounds-check -fno-range-check -fimplicit-none -fcray-pointer -fexternal-blas
  #F90FLAGS = -pg -fbounds-check -fno-range-check -fimplicit-none
  F77FLAGS = -fbounds-check -fno-range-check # debug

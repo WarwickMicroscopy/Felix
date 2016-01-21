@@ -44,30 +44,3 @@ RInitialThickness        = 400.0
 RFinalThickness          = 700.0
 RDeltaThickness          = 10.0
 IReflectOut              = 7
-
-# felixrefine Input
-
-#Refinement Specific Flags
-IRefineModeFLAG          = B
-IWeightingFLAG           = 0
-IContinueFLAG            = 0
-ICorrelationFLAG         = 0
-IImageProcessingFLAG     = 0
-
-# Ug Iteration
-
-INoofUgs                  = 10
-
-# Structural Refinement
-
-IAtomicSites              = (1,2,6)
-
-# Refinement Output
-
-IPrint                    = 10
-
-# Simplex Initialisation
-
-RSimplexLengthScale       = 5.0
-RExitCriteria             = 0.0001
-
