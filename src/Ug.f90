@@ -53,8 +53,7 @@ SUBROUTINE GMatrixInitialisation (IErr)
   
   IMPLICIT NONE
   
-  INTEGER(IKIND) :: &
-       ind,jnd,IErr
+  INTEGER(IKIND) :: ind,jnd,IErr
 
   CALL Message("GMatrixInitialisation",IMust,IErr)
 !RB RgVecMat is a list of g-vectors in the microscope ref frame, units of 1/A, multiplied by 2 pi
@@ -64,12 +63,10 @@ SUBROUTINE GMatrixInitialisation (IErr)
         RgMatMag(ind,jnd)= SQRT(DOT_PRODUCT(RgMatMat(ind,jnd,:),RgMatMat(ind,jnd,:)))
      ENDDO
   ENDDO
-
-!RB matrix of sums of absolute indices for symmetry testing
-  RgSumMat = SUM(ABS(RgMatMat),3)
-
-!RB take the 2 pi back out of the magnitude...   
+  !RB take the 2 pi back out of the magnitude...   
   RgMatMag = RgMatMag/TWOPI
+  !RB for symmetry determination
+  RgSumMat = SUM(ABS(RgMatMat),3)
   
 END SUBROUTINE GMatrixInitialisation
 
@@ -98,55 +95,54 @@ SUBROUTINE SymmetryRelatedStructureFactorDetermination (IErr)
     
   IMPLICIT NONE
   
-  INTEGER(IKIND) :: &
-       ind,jnd,ierr,knd,Iuid
+  INTEGER(IKIND) :: ind,jnd,ierr,knd,Iuid
 
   CALL Message("SymmetryRelatedStructureFactorDetermination",IMust,IErr)
 
-  !Immediately set all the zeros to Relation 1
-  
-  ISymmetryRelations = 0_IKIND
-  
+  RgSumMat = RgSumMat+ABS(REAL(CUgMatNoAbs))+ABS(AIMAG(CUgMatNoAbs))
+ PRINT*,"RgSumMat"
+ DO ind=1,6
+  PRINT*,"DBG: ", RgSumMat(ind,1:6)
+ ENDDO
+
+  ISymmetryRelations = 0_IKIND 
   Iuid = 0_IKIND
   
-!RB Make single matrix to test symmetry; index plus real and imaginary parts of Ug
-  RgSumMat = ABS(REAL(CUgMatNoAbs))+ABS(AIMAG(CUgMatNoAbs))+RgSumMat
   DO ind = 1,nReflections
      DO jnd = 1,ind
         IF(ISymmetryRelations(ind,jnd).NE.0) THEN
            CYCLE
         ELSE
            Iuid = Iuid + 1_IKIND
-           WHERE ( ABS(RgSumMat-RgSumMat(ind,jnd)).LE.RTolerance)
-              ISymmetryRelations = Iuid*SIGN(1_IKIND, NINT(AIMAG(CUgMatNoAbs)/TINY**2) )!RB may be an issue with loss of sign when imag part is very small
+           !RB Fill the symmetry relation matrix with incrementing numbers that have the sign of the imaginary part
+		   WHERE (ABS(RgSumMat-RgSumMat(ind,jnd)).LE.RTolerance)
+              ISymmetryRelations = Iuid*SIGN(1_IKIND,NINT(AIMAG(CUgMatNoAbs)/TINY**2))
            END WHERE
         END IF
      END DO
   END DO
+ DO ind=1,6
+  PRINT*,"DBG: ", ISymmetryRelations(ind,1:6)
+ ENDDO
 
   IF((IWriteFLAG.GE.0.AND.my_rank.EQ.0).OR.IWriteFLAG.GE.10) THEN
      PRINT*,"Unique Ugs = ",Iuid
   END IF
-
-!RB  DO ind = 1,10
-!RB     PRINT*, ISymmetryRelations(ind,1:10)
-!RB  END DO
-
+ 
   ALLOCATE(ISymmetryStrengthKey(Iuid),STAT=IErr)
   IF( IErr.NE.0 ) THEN
      PRINT*,"SymmetryRelatedStructureFactorDetermination(", my_rank, ") error ", IErr, &
           " in ALLOCATE() ISymmetryStrengthKey"
      RETURN
-  ENDIF
-
-  ALLOCATE(&
-       CSymmetryStrengthKey(Iuid),&
+  END IF
+ 
+  ALLOCATE(CSymmetryStrengthKey(Iuid),&
        STAT=IErr)
   IF( IErr.NE.0 ) THEN
      PRINT*,"SymmetryRelatedStructureFactorDetermination(", my_rank, ") error ", IErr, " in ALLOCATE() CSymmetryStrengthKey"
      RETURN
-  ENDIF
-  
+  END IF
+PRINT*, "bebble"  
 END SUBROUTINE SymmetryRelatedStructureFactorDetermination
 
 !!$%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -334,6 +330,8 @@ SUBROUTINE StructureFactorInitialisation (IErr)
 
 END SUBROUTINE StructureFactorInitialisation
 
+!%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
 SUBROUTINE StructureFactorsWithAbsorptionDetermination(IErr)         
 
 
@@ -351,8 +349,7 @@ SUBROUTINE StructureFactorsWithAbsorptionDetermination(IErr)
   
   IMPLICIT NONE 
   
-  INTEGER(IKIND) :: &
-       IErr,ind
+  INTEGER(IKIND) :: IErr,ind
 
    CALL Message("StructureFactorsWithAbsorptionDetermination",IMust,IErr)
 
@@ -369,12 +366,12 @@ SUBROUTINE StructureFactorsWithAbsorptionDetermination(IErr)
 !RB   PRINT*,"CUgMat(1,1)= ",CUgMatNoAbs(1,1),CUgMatPrime(1,1)!,CUgMat(1,1)   
 !RB   PRINT*,"CUgMat(2,1)= ",CUgMatNoAbs(2,1),CUgMatPrime(2,1)!,CUgMat(2,1)   
 !RB   PRINT*,"CUgMat(1,2)= ",CUgMatNoAbs(1,2),CUgMatPrime(1,2)!,CUgMat(1,2)   
-!RB   PRINT*,"CUgMat(4,1)= ",CUgMatNoAbs(4,1),CUgMatPrime(4,1)!,CUgMat(3,1)   
-!RB   PRINT*,"CUgMat(1,4)= ",CUgMatNoAbs(1,4),CUgMatPrime(1,4)!,CUgMat(1,3)   
+!RB   PRINT*,"CUgMat(3,1)= ",CUgMatNoAbs(3,1),CUgMatPrime(3,1)!,CUgMat(3,1)   
+!RB   PRINT*,"CUgMat(1,3)= ",CUgMatNoAbs(1,3),CUgMatPrime(1,3)!,CUgMat(1,3)   
 !RB   PRINT*,"CUgMat(3,2)= ",CUgMatNoAbs(3,2),CUgMatPrime(3,2)!,CUgMat(3,2)   
 !RB   PRINT*,"CUgMat(2,3)= ",CUgMatNoAbs(2,3),CUgMatPrime(2,3)!,CUgMat(2,3)   
-!RB   PRINT*,"CUgMat(6,1)= ",CUgMatNoAbs(6,1),CUgMatPrime(6,1)!,CUgMat(2,2)   
-!RB   PRINT*,"CUgMat(1,6)= ",CUgMatNoAbs(1,6),CUgMatPrime(1,6)!,CUgMat(3,3) 
+!RB   PRINT*,"CUgMat(4,1)= ",CUgMatNoAbs(4,1),CUgMatPrime(4,1)!,CUgMat(2,2)   
+!RB   PRINT*,"CUgMat(1,4)= ",CUgMatNoAbs(1,4),CUgMatPrime(1,4)!,CUgMat(3,3) 
   
   CASE Default
  

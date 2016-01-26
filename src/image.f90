@@ -232,10 +232,8 @@ SUBROUTINE ImageMaskInitialisation (IErr)
   
   IMPLICIT NONE
   
-  INTEGER(IKIND) :: &
-       ind,jnd, ierr,InnerRadiusFLAG
-  REAL(RKIND) :: &
-       Rradius, RImageRadius
+  INTEGER(IKIND) :: ind,jnd, ierr,InnerRadiusFLAG
+  REAL(RKIND) :: Rradius, RImageRadius
   
   CALL Message("ImageMaskInitialisation",IMust,IErr)
 

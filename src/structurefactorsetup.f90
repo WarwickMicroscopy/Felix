@@ -64,8 +64,7 @@ SUBROUTINE StructureFactorSetup(IErr)
   ! Calculate Reflection Matrix
   !--------------------------------------------------------------------
 
-  ALLOCATE( &  
-       RgMatMat(nReflections,nReflections,THREEDIM), &
+  ALLOCATE(RgMatMat(nReflections,nReflections,THREEDIM), &
        STAT=IErr)
   IF( IErr.NE.0 ) THEN
      PRINT*,"StructureFactorSetup(", my_rank, ") error ", IErr, &
@@ -74,8 +73,7 @@ SUBROUTINE StructureFactorSetup(IErr)
      RETURN
   ENDIF
        
-  ALLOCATE( &  
-       RgMatMag(nReflections,nReflections), &
+  ALLOCATE(RgMatMag(nReflections,nReflections), &
        STAT=IErr)
   IF( IErr.NE.0 ) THEN
      PRINT*,"StructureFactorSetup(", my_rank, ") error ", IErr, &
@@ -85,8 +83,7 @@ SUBROUTINE StructureFactorSetup(IErr)
   ENDIF
 !RB  NB Also deallocated in felixfunction!!!
   !RB Matrix for sum of indices - for symmetry equivalence  
-  ALLOCATE( & 
-       RgSumMat(nReflections,nReflections), &
+  ALLOCATE(RgSumMat(nReflections,nReflections), &
        STAT=IErr)
   IF( IErr.NE.0 ) THEN
      PRINT*,"StructureFactorSetup(",my_rank,") error ",IErr, &
@@ -110,8 +107,7 @@ SUBROUTINE StructureFactorSetup(IErr)
   !Allocate memory for Ug Matrix
   !RB Matrix that is sum of real+abs
   !PRINT*,"Allocating CUgMat,CUgMatNoAbs,CUgMatPrime in structurefactorsetup"
-  ALLOCATE( & 
-       CUgMat(nReflections,nReflections), &
+  ALLOCATE(CUgMat(nReflections,nReflections), &
        STAT=IErr)
   IF( IErr.NE.0 ) THEN
      PRINT*,"StructureFactorSetup(",my_rank,") error", IErr, &
@@ -121,8 +117,7 @@ SUBROUTINE StructureFactorSetup(IErr)
   ENDIF
   
   !RB Matrix without absorption
-  ALLOCATE( & !RB
-       CUgMatNoAbs(nReflections,nReflections), &!RB
+  ALLOCATE(CUgMatNoAbs(nReflections,nReflections), &!RB
        STAT=IErr)!RB
   IF( IErr.NE.0 ) THEN!RB
      PRINT*,"StructureFactorSetup(",my_rank,") error",IErr, &!RB
@@ -132,8 +127,7 @@ SUBROUTINE StructureFactorSetup(IErr)
   ENDIF  !RB
 
   !RB Matrix for absorption  
-  ALLOCATE( & 
-       CUgMatPrime(nReflections,nReflections), &
+  ALLOCATE(CUgMatPrime(nReflections,nReflections), &
        STAT=IErr)
   IF( IErr.NE.0 ) THEN
      PRINT*,"StructureFactorSetup(",my_rank,") error ",IErr, &
@@ -150,25 +144,21 @@ SUBROUTINE StructureFactorSetup(IErr)
      RETURN
   ENDIF
 
-  DEALLOCATE( & 
-       RgMatMat,STAT=IErr)
+  DEALLOCATE(RgMatMat,STAT=IErr)
   IF( IErr.NE.0 ) THEN
      PRINT*,"felixsim(", my_rank, ") error ", IErr, &
           " in Deallocation of RgMatMat"
      RETURN
   ENDIF
   
-  DEALLOCATE(&
-       RgMatMag,STAT=IErr)
+  DEALLOCATE(RgMatMag,STAT=IErr)
   IF( IErr.NE.0 ) THEN
      PRINT*,"felixsim(", my_rank, ") error ", IErr, &
           " in Deallocation of RgMatMag"
-
      RETURN
   ENDIF
 
-  DEALLOCATE(&
-       RrVecMat,&
+  DEALLOCATE(RrVecMat,&
        STAT=IErr)
   IF( IErr.NE.0 ) THEN
      PRINT*,"felixsim(", my_rank, ") error ", IErr, &

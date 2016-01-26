@@ -240,8 +240,7 @@ PROGRAM Felixrefine
   ! Deallocate Memory
   !--------------------------------------------------------------------
 
-  DEALLOCATE( &
-       RImageExpi,&
+  DEALLOCATE(RImageExpi,&
        STAT=IErr)  
   IF( IErr.NE.0 ) THEN
      PRINT*,"felixrefine (", my_rank, ") error in Deallocation()"
@@ -458,10 +457,8 @@ SUBROUTINE RefinementVariableSetup(RIndependentVariableValues,IErr)
   
   IMPLICIT NONE
   
-  INTEGER(IKIND) :: &
-       IErr,ind,IVariableType
-  REAL(RKIND),DIMENSION(IIndependentVariables),INTENT(OUT) :: &
-       RIndependentVariableValues
+  INTEGER(IKIND) :: IErr,ind,IVariableType
+  REAL(RKIND),DIMENSION(IIndependentVariables),INTENT(OUT) :: RIndependentVariableValues
   
   IF((IWriteFLAG.GE.0.AND.my_rank.EQ.0).OR.IWriteFLAG.GE.10) THEN
      PRINT*,"RefinementVariableSetup(",my_rank,")"
@@ -541,12 +538,9 @@ SUBROUTINE StructureFactorRefinementSetup(RIndependentVariableValues,IIterationC
   
   IMPLICIT NONE
   
-  INTEGER(IKIND) :: &
-       IErr,ind
-  REAL(RKIND),DIMENSION(IIndependentVariables),INTENT(OUT) :: &
-       RIndependentVariableValues
-  INTEGER(IKIND),INTENT(IN) :: &
-       IIterationCount
+  INTEGER(IKIND) :: IErr,ind
+  REAL(RKIND),DIMENSION(IIndependentVariables),INTENT(OUT) :: RIndependentVariableValues
+  INTEGER(IKIND),INTENT(IN) :: IIterationCount
 
   IF((IWriteFLAG.GE.0.AND.my_rank.EQ.0).OR.IWriteFLAG.GE.10) THEN
      PRINT*,"StructureFactorRefinementSetup(",my_rank,")"
@@ -580,17 +574,14 @@ SUBROUTINE RankSymmetryRelatedStructureFactor(IErr)
   
   IMPLICIT NONE 
   
-  INTEGER(IKIND) :: &
-       IErr,ind
-  INTEGER(IKIND),DIMENSION(2) :: &
-       ILoc
+  INTEGER(IKIND) :: IErr,ind
+  INTEGER(IKIND),DIMENSION(2) :: ILoc
 
   IF((IWriteFLAG.GE.0.AND.my_rank.EQ.0).OR.IWriteFLAG.GE.10) THEN
      PRINT*,"RankSymmetryRelatedStructureFactor(",my_rank,")"
   END IF
   
-  ALLOCATE( &  
-       ISymmetryRelations(nReflections,nReflections), &
+  ALLOCATE(ISymmetryRelations(nReflections,nReflections), &
        STAT=IErr)
   IF( IErr.NE.0 ) THEN
      PRINT*,"RankSymmetryRelatedStructureFactor(", my_rank, ") error ", IErr, &
@@ -634,24 +625,15 @@ SUBROUTINE SimplexInitialisation(RSimplexVolume,RSimplexFoM,RIndependentVariable
   
   IMPLICIT NONE
 
-  INTEGER(IKIND) :: &
-       IErr,ind,jnd,IExitFLAG
-  LOGICAL :: &
-       LInitialSimulationFLAG = .TRUE. ! Its value is meaningless :)
-  REAL(RKIND),DIMENSION(IIndependentVariables+1,IIndependentVariables),INTENT(OUT) :: &
-       RSimplexVolume
-  REAL(RKIND),DIMENSION(IIndependentVariables+1),INTENT(OUT) :: &
-       RSimplexFoM
-  REAL(RKIND) :: &
-       SimplexFunction,RSimplexDummy
-  REAL(RKIND),DIMENSION(IIndependentVariables),INTENT(INOUT) :: &
-       RIndependentVariableValues
-  INTEGER(IKIND),INTENT(INOUT) :: &
-       IIterationCount
-  REAL(RKIND),INTENT(OUT) :: &
-       RStandardDeviation,RMean
-  REAL(RKIND) :: &
-       RStandardError,RStandardTolerance
+  INTEGER(IKIND) :: IErr,ind,jnd,IExitFLAG
+  LOGICAL :: LInitialSimulationFLAG = .TRUE. ! Its value is meaningless :)
+  REAL(RKIND),DIMENSION(IIndependentVariables+1,IIndependentVariables),INTENT(OUT) :: RSimplexVolume
+  REAL(RKIND),DIMENSION(IIndependentVariables+1),INTENT(OUT) :: RSimplexFoM
+  REAL(RKIND) :: SimplexFunction,RSimplexDummy
+  REAL(RKIND),DIMENSION(IIndependentVariables),INTENT(INOUT) :: RIndependentVariableValues
+  INTEGER(IKIND),INTENT(INOUT) :: IIterationCount
+  REAL(RKIND),INTENT(OUT) :: RStandardDeviation,RMean
+  REAL(RKIND) :: RStandardError,RStandardTolerance
 
   IF((IWriteFLAG.GE.0.AND.my_rank.EQ.0).OR.IWriteFLAG.GE.10) THEN
      PRINT*,"SimplexInitialisation(",my_rank,")"
@@ -681,8 +663,7 @@ SUBROUTINE SimplexInitialisation(RSimplexVolume,RSimplexFoM,RIndependentVariable
         RETURN
      ENDIF
   ELSE
-     DEALLOCATE(&
-          RHKL,&
+     DEALLOCATE(RHKL,&
           STAT=IErr)  
      IF( IErr.NE.0 ) THEN
         PRINT*,"SimplexInitialisation (", my_rank, ") error in Deallocation()"
@@ -712,47 +693,33 @@ SUBROUTINE SimplexInitialisation(RSimplexVolume,RSimplexFoM,RIndependentVariable
      
   ENDIF
 !RB     PRINT*,"Deallocating CUgMat,CUgMatNoAbs,CUgMatPrime in felixrefine" NB Also deallocated in felixfunction!!!
-  DEALLOCATE( &
-       RgSumMat,STAT=IErr)
+  DEALLOCATE(RgSumMat,STAT=IErr)
   IF( IErr.NE.0 ) THEN
      PRINT*,"felixsim(", my_rank, ") error ", IErr, &
           " in Deallocation of RgSumMat"
      RETURN
   ENDIF
 
-  DEALLOCATE(&
-       CUgMatNoAbs,&!RB
+  DEALLOCATE(CUgMatNoAbs,&!RB
        STAT=IErr)  
   IF( IErr.NE.0 ) THEN
      PRINT*,"SimplexInitialisation (", my_rank, ") error in Deallocation()"
      RETURN
   ENDIF
 
-  DEALLOCATE(&
-       CUgMatPrime,&!RB
+  DEALLOCATE(CUgMatPrime,&!RB
        STAT=IErr)  
   IF( IErr.NE.0 ) THEN
      PRINT*,"SimplexInitialisation (", my_rank, ") error in Deallocation()"
      RETURN
   ENDIF
  
-  DEALLOCATE(&
-       CUgMat,&!RB
+  DEALLOCATE(CUgMat,&!RB
        STAT=IErr)  
   IF( IErr.NE.0 ) THEN
      PRINT*,"SimplexInitialisation (", my_rank, ") error in Deallocation()"
      RETURN
   ENDIF
-
-!!$  IF (my_rank.NE.0) THEN
-!!$     DEALLOCATE(&
-!!$          RHKL,&
-!!$          STAT=IErr)  
-!!$     IF( IErr.NE.0 ) THEN
-!!$        PRINT*,"SimplexInitialisation (", my_rank, ") error in Deallocation()"
-!!$        RETURN
-!!$     ENDIF
-!!$  END IF
 
 !!$ RandomSequence
 
@@ -806,6 +773,8 @@ SUBROUTINE SimplexInitialisation(RSimplexVolume,RSimplexFoM,RIndependentVariable
        
 END SUBROUTINE SimplexInitialisation
 
+!%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
 SUBROUTINE CreateRandomisedSimplex(RSimplexVolume,RIndependentVariableValues,IErr)
 
 USE MyNumbers
@@ -821,20 +790,14 @@ USE MyNumbers
   
   IMPLICIT NONE
   
-  INTEGER(IKIND) :: &
-       IErr,ind
-  REAL(RKIND),DIMENSION(:),ALLOCATABLE :: &
-       RRandomSigns,RRandomNumbers
-  REAL(RKIND),DIMENSION(IIndependentVariables+1,IIndependentVariables),INTENT(OUT) :: &
-       RSimplexVolume
-  REAL(RKIND),DIMENSION(IIndependentVariables),INTENT(INOUT) :: &
-       RIndependentVariableValues
+  INTEGER(IKIND) :: IErr,ind
+  REAL(RKIND),DIMENSION(:),ALLOCATABLE :: RRandomSigns,RRandomNumbers
+  REAL(RKIND),DIMENSION(IIndependentVariables+1,IIndependentVariables),INTENT(OUT) :: RSimplexVolume
+  REAL(RKIND),DIMENSION(IIndependentVariables),INTENT(INOUT) :: RIndependentVariableValues
   
   IF(IRefineModeSelectionArray(2).EQ.1) THEN
      DO ind = 1,(IIndependentVariables+1)
-        ALLOCATE(&
-             RRandomSigns(IAllowedVectors),&
-             RRandomNumbers(IAllowedVectors),&
+        ALLOCATE(RRandomSigns(IAllowedVectors),RRandomNumbers(IAllowedVectors),&
              STAT=IErr)
         
         
@@ -851,12 +814,9 @@ USE MyNumbers
         RSimplexVolume(ind,:IAllowedVectors) = &
              RRandomNumbers*RRandomSigns*RSimplexLengthScale
         
-        DEALLOCATE(&
-             RRandomSigns,&
-             RRandomNumbers)
+        DEALLOCATE(RRandomSigns,RRandomNumbers)
         
-        ALLOCATE(&
-             RRandomSigns(IIndependentVariables-IAllowedVectors),&
+        ALLOCATE(RRandomSigns(IIndependentVariables-IAllowedVectors),&
              RRandomNumbers(IIndependentVariables-IAllowedVectors),&
              STAT=IErr)
         
@@ -876,15 +836,12 @@ USE MyNumbers
              RIndependentVariableValues((IAllowedVectors+1):)*&
              (1+(RRandomNumbers*RRandomSigns*RSimplexLengthScale))
         
-        DEALLOCATE(&
-             RRandomSigns,&
-             RRandomNumbers)
+        DEALLOCATE(RRandomSigns,RRandomNumbers)
         
      END DO
      
   ELSE
-     ALLOCATE(&
-          RRandomSigns(IIndependentVariables),&
+     ALLOCATE(RRandomSigns(IIndependentVariables),&
           RRandomNumbers(IIndependentVariables),&
           STAT=IErr)
      
@@ -904,9 +861,7 @@ USE MyNumbers
              (1+(RRandomNumbers*RRandomSigns*RSimplexLengthScale))
      END DO
      
-     DEALLOCATE(&
-          RRandomSigns,&
-          RRandomNumbers)
+        DEALLOCATE(RRandomSigns,RRandomNumbers)
      
   END IF
   
@@ -1254,6 +1209,8 @@ SUBROUTINE RecoverSavedSimplex(RSimplexVolume,RSimplexFoM,RStandardDeviation,RMe
 
 END SUBROUTINE RecoverSavedSimplex
 
+!!$  %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
 SUBROUTINE DetermineNumberofRefinementVariablesPerType(INoofelementsforeachrefinementtype,IErr)
 
   USE MyNumbers
@@ -1299,6 +1256,8 @@ SUBROUTINE DetermineNumberofRefinementVariablesPerType(INoofelementsforeachrefin
 
 END SUBROUTINE DetermineNumberofRefinementVariablesPerType
 
+!!$  %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
 SUBROUTINE CountRefinementVariables(IErr)
  
   USE MyNumbers
@@ -1324,6 +1283,8 @@ SUBROUTINE CountRefinementVariables(IErr)
   IIndependentVariables = SUM(INoofelementsforeachrefinementtype)
 
 END SUBROUTINE CountRefinementVariables
+
+!!$  %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 SUBROUTINE SetupAtomicVectorMovements(IErr)
 

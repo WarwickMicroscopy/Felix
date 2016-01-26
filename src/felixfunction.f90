@@ -638,21 +638,15 @@ SUBROUTINE CalculateFigureofMeritandDetermineThickness(IThicknessCountFinal,IErr
 
   IMPLICIT NONE
 
-  INTEGER(IKIND) :: &
-       ind,jnd,knd,IErr,ICountedPixels,IThickness,hnd
-  INTEGER(IKIND),DIMENSION(IReflectOut) :: &
-       IThicknessByReflection
-  INTEGER(IKIND),INTENT(OUT) :: &
-       IThicknessCountFinal
-  REAL(RKIND),DIMENSION(2*IPixelCount,2*IPixelCount) :: &
-       RSimulatedImageForPhaseCorrelation,RExperimentalImage
-  REAL(RKIND) :: &
-       RCrossCorrelationOld,RIndependentCrossCorrelation,RThickness,&
+  INTEGER(IKIND) :: ind,jnd,knd,IErr,ICountedPixels,IThickness,hnd
+  INTEGER(IKIND),DIMENSION(IReflectOut) :: IThicknessByReflection
+  INTEGER(IKIND),INTENT(OUT) :: IThicknessCountFinal
+  REAL(RKIND),DIMENSION(2*IPixelCount,2*IPixelCount) :: RSimulatedImageForPhaseCorrelation,RExperimentalImage
+  REAL(RKIND) :: RCrossCorrelationOld,RIndependentCrossCorrelation,RThickness,&
 	   PhaseCorrelate,Normalised2DCrossCorrelation,ResidualSumofSquares
 !!$  REAL(RKIND),DIMENSION(IReflectOut,IThicknessCount,IPixelTotal) :: &
 !!$       RSimulatedImages
-  REAL(RKIND),DIMENSION(IReflectOut) :: &
-       RReflectionCrossCorrelations,RReflectionThickness
+  REAL(RKIND),DIMENSION(IReflectOut) :: RReflectionCrossCorrelations,RReflectionThickness
        
   
   IF((IWriteFLAG.GE.0.AND.my_rank.EQ.0).OR.IWriteFLAG.GE.10) THEN
@@ -762,7 +756,7 @@ SUBROUTINE CalculateFigureofMeritandDetermineThickness(IThicknessCountFinal,IErr
 !RB     PRINT*,"Thicknesses",RReflectionThickness
 !RB     PRINT*,"Correlation",RCrossCorrelation
 !RB     PRINT*,"Thickness Final",IThicknessCountFinal
-     PRINT*,"Thickness",RThickness
+     PRINT*,"Specimen thickness",NINT(RThickness),"Angstroms"
   END IF
 
   IF (RCrossCorrelation.NE.RCrossCorrelation) THEN!RB what?
@@ -788,14 +782,10 @@ REAL(RKIND) FUNCTION SimplexFunction(RIndependentVariableValues,IIterationCount,
 
   IMPLICIT NONE
   
-  INTEGER(IKIND) :: &
-       IErr,IExitFLAG,IThickness
-  REAL(RKIND),DIMENSION(IIndependentVariables),INTENT(INOUT) :: &
-       RIndependentVariableValues
-  INTEGER(IKIND),INTENT(IN) :: &
-       IIterationCount
-  LOGICAL :: &
-       LInitialSimulationFLAG = .FALSE.
+  INTEGER(IKIND) :: IErr,IExitFLAG,IThickness
+  REAL(RKIND),DIMENSION(IIndependentVariables),INTENT(INOUT) :: RIndependentVariableValues
+  INTEGER(IKIND),INTENT(IN) :: IIterationCount
+  LOGICAL :: LInitialSimulationFLAG = .FALSE.
   
   IF((IWriteFLAG.GE.0.AND.my_rank.EQ.0).OR.IWriteFLAG.GE.10) THEN
      PRINT*,"SimplexFunction(",my_rank,")"
@@ -816,9 +806,11 @@ REAL(RKIND) FUNCTION SimplexFunction(RIndependentVariableValues,IIterationCount,
              " in UpdateVariables"
         RETURN
      ENDIF
-     WHERE(RAtomSiteFracCoordVec.LT.0) RAtomSiteFracCoordVec=RAtomSiteFracCoordVec+ONE
-     WHERE(RAtomSiteFracCoordVec.GT.1) RAtomSiteFracCoordVec=RAtomSiteFracCoordVec-ONE
+!RB     WHERE(RAtomSiteFracCoordVec.LT.0) RAtomSiteFracCoordVec=RAtomSiteFracCoordVec+ONE
+!RB     WHERE(RAtomSiteFracCoordVec.GT.1) RAtomSiteFracCoordVec=RAtomSiteFracCoordVec-ONE
   END IF
+  WHERE(RAtomSiteFracCoordVec.LT.0) RAtomSiteFracCoordVec=RAtomSiteFracCoordVec+ONE
+  WHERE(RAtomSiteFracCoordVec.GT.1) RAtomSiteFracCoordVec=RAtomSiteFracCoordVec-ONE
 
   IF (my_rank.EQ.0) THEN
      CALL PrintVariables(IErr)
@@ -848,32 +840,28 @@ REAL(RKIND) FUNCTION SimplexFunction(RIndependentVariableValues,IIterationCount,
   END IF
 
 !RB   NB Also deallocated in felixrefine!!!
-  DEALLOCATE( &
-       RgSumMat,STAT=IErr)
+  DEALLOCATE(RgSumMat,STAT=IErr)
   IF( IErr.NE.0 ) THEN
      PRINT*,"felixsim(", my_rank, ") error ", IErr, &
           " in Deallocation of RgSumMat"
      RETURN
   ENDIF
 !RB   PRINT*,"Deallocating CUgMatNoAbs,CUgMatPrime,CUgMat in SimplexFunction" 
-  DEALLOCATE(&
-       CUgMatNoAbs,&!RB
+  DEALLOCATE(CUgMatNoAbs,&!RB
        STAT=IErr)  
   IF( IErr.NE.0 ) THEN
      PRINT*,"SimplexInitialisation (", my_rank, ") error in Deallocation()"
      RETURN
   ENDIF
  
- DEALLOCATE(&
-       CUgMatPrime,&!RB
+ DEALLOCATE(CUgMatPrime,&!RB
        STAT=IErr)  
   IF( IErr.NE.0 ) THEN
      PRINT*,"SimplexInitialisation (", my_rank, ") error in Deallocation()"
      RETURN
   ENDIF
  
-  DEALLOCATE(&
-       CUgMat,&!RB
+  DEALLOCATE(CUgMat,&!RB
        STAT=IErr)  
   IF( IErr.NE.0 ) THEN
      PRINT*,"SimplexInitialisation (", my_rank, ") error in Deallocation()"
@@ -881,6 +869,7 @@ REAL(RKIND) FUNCTION SimplexFunction(RIndependentVariableValues,IIterationCount,
   ENDIF
   
 END FUNCTION SimplexFunction
+
 !%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 SUBROUTINE CreateImagesAndWriteOutput(IIterationCount,IExitFLAG,IErr)
@@ -898,11 +887,9 @@ SUBROUTINE CreateImagesAndWriteOutput(IIterationCount,IExitFLAG,IErr)
   
   IMPLICIT NONE
   
-  INTEGER(IKIND) :: &
-       IErr,IThicknessIndex,IIterationCount,IExitFLAG
+  INTEGER(IKIND) :: IErr,IThicknessIndex,IIterationCount,IExitFLAG
   
-  ALLOCATE( &
-       RMask(2*IPixelCount,2*IPixelCount),&
+  ALLOCATE(RMask(2*IPixelCount,2*IPixelCount),&
        STAT=IErr)
   IF( IErr.NE.0 ) THEN
      PRINT*,"CreateImagesAndWriteOutput(", my_rank, ") error ", IErr, &
@@ -924,9 +911,8 @@ SUBROUTINE CreateImagesAndWriteOutput(IIterationCount,IExitFLAG,IErr)
      RETURN
   ENDIF
   
-  DEALLOCATE( &
-       RMask,&
-       STAT=IErr)
+  DEALLOCATE(RMask,&
+    STAT=IErr)
   IF( IErr.NE.0 ) THEN
      PRINT*,"CreateImagesAndWriteOutput(", my_rank, ") error ", IErr, &
           " in DEALLOCATE() of DYNAMIC variable RMask"
@@ -944,8 +930,7 @@ SUBROUTINE CreateImagesAndWriteOutput(IIterationCount,IExitFLAG,IErr)
 
 !!$     FINISH OUTPUT  --------------------------------
   
-  DEALLOCATE( &
-       RIndividualReflections,&
+  DEALLOCATE(RIndividualReflections,&
        STAT=IErr)
   IF( IErr.NE.0 ) THEN
      PRINT*,"CreateImagesAndWriteOutput(", my_rank, ") error ", IErr, &
@@ -953,8 +938,7 @@ SUBROUTINE CreateImagesAndWriteOutput(IIterationCount,IExitFLAG,IErr)
      RETURN
   ENDIF
   
-  DEALLOCATE( &
-       IPixelLocations,&
+  DEALLOCATE(IPixelLocations,&
        STAT=IErr)
   IF( IErr.NE.0 ) THEN
      PRINT*,"CreateImagesAndWriteOutput(", my_rank, ") error ", IErr, &
@@ -962,8 +946,7 @@ SUBROUTINE CreateImagesAndWriteOutput(IIterationCount,IExitFLAG,IErr)
      RETURN
   ENDIF
        
-  DEALLOCATE( &
-       Rhkl,&
+  DEALLOCATE(Rhkl,&
        STAT=IErr)
   IF( IErr.NE.0 ) THEN
      PRINT*,"CreateImagesAndWriteOutput(", my_rank, ") error ", IErr, &
@@ -989,10 +972,8 @@ SUBROUTINE UpdateVariables(RIndependentVariableValues,IErr)
 
   IMPLICIT NONE
 
-  INTEGER(IKIND) :: &
-       IVariableType,IErr,ind
-  REAL(RKIND),DIMENSION(IIndependentVariables),INTENT(IN) :: &
-       RIndependentVariableValues
+  INTEGER(IKIND) :: IVariableType,IErr,ind
+  REAL(RKIND),DIMENSION(IIndependentVariables),INTENT(IN) :: RIndependentVariableValues
 
   !!$  Fill the Independent Value array with values
   
@@ -1050,6 +1031,7 @@ SUBROUTINE UpdateVariables(RIndependentVariableValues,IErr)
   END DO
 
  END SUBROUTINE UpdateVariables
+ 
 !%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 SUBROUTINE PrintVariables(IErr)
@@ -1068,10 +1050,10 @@ SUBROUTINE PrintVariables(IErr)
 
   IMPLICIT NONE
 
-  INTEGER(IKIND) :: &
-       IErr,ind,IVariableType,jnd,knd
-  REAL(RKIND),DIMENSION(3) :: &
-       RCrystalVector
+  INTEGER(IKIND) :: IErr,ind,IVariableType,jnd,knd
+  REAL(RKIND),DIMENSION(3) :: RCrystalVector
+  !REAL(RKIND) :: &!RB
+  !     RUgAmplitude,RUgPhase!RB
   CHARACTER*200 :: &
        SPrintString
 
@@ -1081,15 +1063,17 @@ SUBROUTINE PrintVariables(IErr)
      IF (IRefineModeSelectionArray(ind).EQ.1) THEN
         SELECT CASE(ind)
         CASE(1)
-           PRINT*,"Current Absorption",RAbsorptionPercentage!RB has this been deallocated?
+           PRINT*,"Current Absorption",RAbsorptionPercentage!RB should also put in hkl here
            PRINT*,"Current Structure Factors"
            DO jnd = 1,INoofUgs
-              PRINT*,CSymmetryStrengthKey(jnd)
+   !           RUgAmplitude=( REAL(CSymmetryStrengthKey(jnd))**2 + AIMAG(CSymmetryStrengthKey(jnd))**2 )**0.5!RB
+   !           RUgPhase=ATAN2(AIMAG(CSymmetryStrengthKey(jnd)),REAL(CSymmetryStrengthKey(jnd)))*180/PI!RB
+              PRINT*,CSymmetryStrengthKey(jnd)!,": Amplitude ",RUgAmplitude,", phase ",RUgPhase
            END DO           
         CASE(2)
            PRINT*,"Current Atomic Coordinates"
            DO jnd = 1,SIZE(RAtomSiteFracCoordVec,DIM=1)
-              WRITE(SPrintString,FMT='(3(F9.3,1X))') RAtomSiteFracCoordVec(jnd,:)*RCrystalVector
+              WRITE(SPrintString,FMT='(3(F9.4,1X))') RAtomSiteFracCoordVec(jnd,:)!RB*RCrystalVector
               PRINT*,TRIM(ADJUSTL(SPrintString))              
            END DO
         CASE(3)
@@ -1159,10 +1143,8 @@ SUBROUTINE UpdateStructureFactors(RIndependentVariableValues,IErr)
   
   IMPLICIT NONE
   
-  INTEGER(IKIND) :: &
-       IErr,ind
-  REAL(RKIND),DIMENSION(IIndependentVariables),INTENT(IN) :: &
-       RIndependentVariableValues
+  INTEGER(IKIND) :: IErr,ind
+  REAL(RKIND),DIMENSION(IIndependentVariables),INTENT(IN) :: RIndependentVariableValues
 
   IF(IRefineModeSelectionArray(1).EQ.1) THEN
      DO ind = 1,INoofUgs

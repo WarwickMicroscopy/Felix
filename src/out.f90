@@ -229,12 +229,9 @@ SUBROUTINE OpenReflectionImage(IChOutWrite, surname, IErr,IReflectWriting,IImage
   USE IChannels
   IMPLICIT NONE
 
-  CHARACTER(*) :: &
-       surname
-  CHARACTER*20 :: &
-       prefix,postfix,h,k,l
-  INTEGER(IKIND) :: &
-       IChOutWrite, IErr,IReflectWriting,IImageSizeX
+  CHARACTER(*) :: surname
+  CHARACTER*20 :: prefix,postfix,h,k,l
+  INTEGER(IKIND) :: IChOutWrite, IErr,IReflectWriting,IImageSizeX
   CHARACTER*250 filename
   CHARACTER*40 fileext
   CHARACTER*60 Simagesize

@@ -485,12 +485,6 @@ SUBROUTINE ReadCifFile(IErr)
   !---------------------------------------------------
 
   CALL CifReset(IErr)
-
-  !----------------------------------------------------
-  ! RESET
-  !---------------------------------------------------
-
-  CALL CifReset(IErr)
   
   DO ind=1,IAtomCount
      f2 = numb_('_atom_site_occupancy',Occ, sOcc)

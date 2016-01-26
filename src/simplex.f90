@@ -10,16 +10,12 @@ SUBROUTINE NDimensionalDownhillSimplex(RSimplexVolume,y,mp,np,ndim,ftol,iter,RSt
 
   IMPLICIT NONE
 
-  INTEGER(IKIND) :: &
-       iter,mp,ndim,np,NMAX,ITMAX,IErr
-  REAL(RKIND) :: &
-       ftol,RSimplexVolume(mp,np),y(mp),SimplexFunction,SimplexExtrapolate,RSendPacket(ndim+2),RExitFlag
+  INTEGER(IKIND) :: iter,mp,ndim,np,NMAX,ITMAX,IErr
+  REAL(RKIND) :: ftol,RSimplexVolume(mp,np),y(mp),SimplexFunction,SimplexExtrapolate,RSendPacket(ndim+2),RExitFlag
   PARAMETER (NMAX=1000,ITMAX=50000)
 
-  INTEGER(IKIND) :: &
-       i,ihi,ilo,inhi,j,m,n,IExitFlag
-  REAL(RKIND) :: &
-       rtol,sum,swap,ysave,ytry,psum(ndim),amotry,&
+  INTEGER(IKIND) :: i,ihi,ilo,inhi,j,m,n,IExitFlag
+  REAL(RKIND) :: rtol,sum,swap,ysave,ytry,psum(ndim),amotry,&
        RStandardDeviation,RMean,RStandardError,RStandardTolerance
 
   IF(my_rank.EQ.0) THEN
@@ -56,10 +52,8 @@ SUBROUTINE NDimensionalDownhillSimplex(RSimplexVolume,y,mp,np,ndim,ftol,iter,RSt
 
      RStandardTolerance = RStandardError(RStandardDeviation,RMean,ytry,IErr)
 
-     PRINT*,"Current Tolerance",rtol,ftol,RStandardTolerance
+     PRINT*,"Current tolerance",rtol,ftol!RB,RStandardTolerance
      IF(rtol.LT.ftol) THEN
-!!$
-!!$     IF(RStandardTolerance.LT.ftol) THEN
         swap=y(1)
         y(1)=y(ilo)
         y(ilo)=swap
