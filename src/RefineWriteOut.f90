@@ -199,8 +199,7 @@ SUBROUTINE WriteIterationOutput(IIterationCount,IThicknessIndex,IExitFlag,IErr)
         RETURN
      ENDIF
      
-     DEALLOCATE(Rhkl,&
-          STAT=IErr)
+!X     DEALLOCATE(Rhkl,STAT=IErr)
      IF( IErr.NE.0 ) THEN
         PRINT*,"WriteIterationOutput(", my_rank, ") error ", IErr, &
              " in Deallocation Rhkl"
@@ -251,12 +250,14 @@ SUBROUTINE WriteStructureFactors(path,IErr)
 
   WRITE(filename,*) "StructureFactors.txt"
   WRITE(fullpath,*) TRIM(ADJUSTL(path)),'/',TRIM(ADJUSTL(filename))
-
   OPEN(UNIT=IChOutSimplex,STATUS='UNKNOWN',&
        FILE=TRIM(ADJUSTL(fullpath)))
-  DO ind = 1,SIZE(CUgMat,DIM=1)
-     WRITE(IChOutSimplex,FMT='(3I5.1,2F13.9)') NINT(RHKL(ind,:)),CUgMat(ind,1)
+PRINT*,",nReflections",nReflections
+PRINT*,",Rhkl",Rhkl(1,1)
+  DO ind = 1,nReflections!X SIZE(CUgMat,DIM=1)
+     WRITE(IChOutSimplex,FMT='(3I5.1,2F13.9)') NINT(Rhkl(ind,:)),CUgMat(ind,1)
   END DO
+PRINT*,"onk"
 
   CLOSE(IChOutSimplex)
 
@@ -297,147 +298,130 @@ SUBROUTINE WriteIterationStructure(path,IErr)
 
 !!$  Write out full atomic positions
 
-  CALL ExperimentalSetup(IErr)!RB Really? wtf?!?
-  IF( IErr.NE.0 ) THEN
-     PRINT*,"WriteIterationStructure(", my_rank, ") error ", IErr, &
-          " in ExperimentalSetup"
-     RETURN
-  ENDIF
+  !CALL ExperimentalSetup(IErr)!RB Really? wtf?!?
+  !IF( IErr.NE.0 ) THEN
+  !   PRINT*,"WriteIterationStructure(", my_rank, ") error ", IErr, &
+  !        " in ExperimentalSetup"
+  !   RETURN
+  !ENDIF
 
   WRITE(filename,*) "StructureFull.txt"
   WRITE(fullpath,*) TRIM(ADJUSTL(path)),'/',TRIM(ADJUSTL(filename))
 
   OPEN(UNIT=IChOutSimplex,STATUS='UNKNOWN',&
         FILE=TRIM(ADJUSTL(fullpath)))
-  
-  DO jnd = 1,SIZE(MNP,DIM=1)
+    DO jnd = 1,SIZE(MNP,DIM=1)
      WRITE(IChOutSimplex,FMT='(A2,1X,3(F9.6,1X))') SMNP(jnd),MNP(jnd,1:3)
-  END DO
-  
+    END DO
+
   CLOSE(IChOutSimplex)
   
-  DEALLOCATE(MNP,&
-       STAT=IErr)
+  DEALLOCATE(MNP,STAT=IErr)
   IF( IErr.NE.0 ) THEN
      PRINT*,"WriteIterationStructure(", my_rank, ") error ", IErr, &
           " in Deallocation MNP"
      RETURN
   ENDIF
       
-  DEALLOCATE(SMNP, &
-       STAT=IErr)
+  DEALLOCATE(SMNP,STAT=IErr)
   IF( IErr.NE.0 ) THEN
      PRINT*,"WriteIterationStructure(", my_rank, ") error ", IErr, &
           " in Deallocation SMNP"
      RETURN
   ENDIF
        
-  DEALLOCATE(RFullAtomicFracCoordVec, &
-       STAT=IErr)
+  DEALLOCATE(RFullAtomicFracCoordVec,STAT=IErr)
   IF( IErr.NE.0 ) THEN
      PRINT*,"WriteIterationStructure(", my_rank, ") error ", IErr, &
           " in Deallocation RFullAtomicFracCoordVec"
      RETURN
   ENDIF
        
-  DEALLOCATE(SFullAtomicNameVec,&
-       STAT=IErr)
+  DEALLOCATE(SFullAtomicNameVec,STAT=IErr)
   IF( IErr.NE.0 ) THEN
      PRINT*,"WriteIterationStructure(", my_rank, ") error ", IErr, &
           " in Deallocation SFullAtomicNameVec"
      RETURN
   ENDIF
        
-  DEALLOCATE(IFullAnisotropicDWFTensor,&
-       STAT=IErr)
+  DEALLOCATE(IFullAnisotropicDWFTensor,STAT=IErr)
   IF( IErr.NE.0 ) THEN
      PRINT*,"WriteIterationStructure(", my_rank, ") error ", IErr, &
           " in Deallocation IFullAnisotropicDWFTensor"
      RETURN
   ENDIF
        
-  DEALLOCATE(IFullAtomNumber,&
-       STAT=IErr)
+  DEALLOCATE(IFullAtomNumber,STAT=IErr)
   IF( IErr.NE.0 ) THEN
      PRINT*,"WriteIterationStructure(", my_rank, ") error ", IErr, &
           " in Deallocation IFullAtomNumber"
      RETURN
   ENDIF
        
-  DEALLOCATE(RFullIsotropicDebyeWallerFactor,&
-       STAT=IErr)
+  DEALLOCATE(RFullIsotropicDebyeWallerFactor,STAT=IErr)
   IF( IErr.NE.0 ) THEN
      PRINT*,"WriteIterationStructure(", my_rank, ") error ", IErr, &
           " in Deallocation RFullIsotropicDebyeWallerFactor"
      RETURN
   ENDIF
        
-  DEALLOCATE(RFullPartialOccupancy,&
-       STAT=IErr)
+  DEALLOCATE(RFullPartialOccupancy,STAT=IErr)
   IF( IErr.NE.0 ) THEN
      PRINT*,"WriteIterationStructure(", my_rank, ") error ", IErr, &
           " in Deallocation RFullPartialOccupancy"
      RETURN
   ENDIF
        
-  DEALLOCATE(RDWF,&
-       STAT=IErr)
+  DEALLOCATE(RDWF,STAT=IErr)
   IF( IErr.NE.0 ) THEN
      PRINT*,"WriteIterationStructure(", my_rank, ") error ", IErr, &
           " in Deallocation RDWF"
      RETURN
   ENDIF
        
-  DEALLOCATE(ROcc,&
-       STAT=IErr)
+  DEALLOCATE(ROcc,STAT=IErr)
   IF( IErr.NE.0 ) THEN
      PRINT*,"WriteIterationStructure(", my_rank, ") error ", IErr, &
           " in Deallocation ROcc"
      RETURN
   ENDIF
        
-  DEALLOCATE(IAtoms,&
-       STAT=IErr)
+  DEALLOCATE(IAtoms,STAT=IErr)
   IF( IErr.NE.0 ) THEN
      PRINT*,"WriteIterationStructure(", my_rank, ") error ", IErr, &
           " in Deallocation IAtoms"
      RETURN
   ENDIF
        
-  DEALLOCATE(IAnisoDWFT,&
-       STAT=IErr)
+  DEALLOCATE(IAnisoDWFT,STAT=IErr)
   IF( IErr.NE.0 ) THEN
      PRINT*,"WriteIterationStructure(", my_rank, ") error ", IErr, &
           " in Deallocation IAnisoDWFT"
      RETURN
   ENDIF
        
-  DEALLOCATE(RgVecMatT,&
-       STAT=IErr)
+  DEALLOCATE(RgVecMatT,STAT=IErr)
   IF( IErr.NE.0 ) THEN
      PRINT*,"WriteIterationStructure(", my_rank, ") error ", IErr, &
           " in Deallocation RgVecMatT"
      RETURN
   ENDIF
        
-  DEALLOCATE(RgVecMag,&
-       STAT=IErr)
+  DEALLOCATE(RgVecMag,STAT=IErr)
   IF( IErr.NE.0 ) THEN
      PRINT*,"WriteIterationStructure(", my_rank, ") error ", IErr, &
           " in Deallocation RgVecMag"
      RETURN
   ENDIF
        
-  DEALLOCATE(RgVecVec,&
-       STAT=IErr)
+  DEALLOCATE(RgVecVec,STAT=IErr)
   IF( IErr.NE.0 ) THEN
      PRINT*,"WriteIterationStructure(", my_rank, ") error ", IErr, &
           " in Deallocation RgVecMag"
      RETURN
   ENDIF
 
-  DEALLOCATE(RrVecMat, &
-       STAT=IErr)
+  DEALLOCATE(RrVecMat,STAT=IErr)
   IF( IErr.NE.0 ) THEN
      PRINT*,"WriteIterationStructure(", my_rank, ") error ", IErr, " in DEALLOCATE of RrVecMat"
      RETURN

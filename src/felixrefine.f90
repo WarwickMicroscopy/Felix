@@ -663,8 +663,7 @@ SUBROUTINE SimplexInitialisation(RSimplexVolume,RSimplexFoM,RIndependentVariable
         RETURN
      ENDIF
   ELSE
-     DEALLOCATE(RHKL,&
-          STAT=IErr)  
+     DEALLOCATE(Rhkl,STAT=IErr)  
      IF( IErr.NE.0 ) THEN
         PRINT*,"SimplexInitialisation (", my_rank, ") error in Deallocation()"
         RETURN
@@ -700,22 +699,19 @@ SUBROUTINE SimplexInitialisation(RSimplexVolume,RSimplexFoM,RIndependentVariable
      RETURN
   ENDIF
 
-  DEALLOCATE(CUgMatNoAbs,&!RB
-       STAT=IErr)  
+  DEALLOCATE(CUgMatNoAbs,STAT=IErr)  
   IF( IErr.NE.0 ) THEN
      PRINT*,"SimplexInitialisation (", my_rank, ") error in Deallocation()"
      RETURN
   ENDIF
 
-  DEALLOCATE(CUgMatPrime,&!RB
-       STAT=IErr)  
+  DEALLOCATE(CUgMatPrime,STAT=IErr)  
   IF( IErr.NE.0 ) THEN
      PRINT*,"SimplexInitialisation (", my_rank, ") error in Deallocation()"
      RETURN
   ENDIF
  
-  DEALLOCATE(CUgMat,&!RB
-       STAT=IErr)  
+  DEALLOCATE(CUgMat,STAT=IErr)  
   IF( IErr.NE.0 ) THEN
      PRINT*,"SimplexInitialisation (", my_rank, ") error in Deallocation()"
      RETURN

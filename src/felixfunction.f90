@@ -368,72 +368,63 @@ SUBROUTINE FelixFunction(LInitialSimulationFLAG,IErr)
   
   !Dellocate Global Variables
   
-  DEALLOCATE( &
-       RgVecMatT,STAT=IErr)
+!X  DEALLOCATE(RgVecMatT,STAT=IErr)
   IF( IErr.NE.0 ) THEN
      PRINT*,"Felixfunction(", my_rank, ") error ", IErr, &
           " Deallocating RgVecMatT"
      RETURN
   ENDIF
 
-  DEALLOCATE( &
-       RMask,STAT=IErr)       
+  DEALLOCATE(RMask,STAT=IErr)       
   IF( IErr.NE.0 ) THEN
      PRINT*,"Felixfunction(", my_rank, ") error  ", IErr, &
           " in Deallocation of RMask etc"
      RETURN
   ENDIF
 
-  DEALLOCATE( &
-       RDevPara,STAT=IErr)
+  DEALLOCATE(RDevPara,STAT=IErr)
   IF( IErr.NE.0 ) THEN
      PRINT*,"Felixfunction(", my_rank, ") error ", IErr, &
           " Deallocating RDevPara"
      RETURN
   ENDIF
 
-  DEALLOCATE( &
-       IPixelLocations,STAT=IErr)
+  DEALLOCATE(IPixelLocations,STAT=IErr)
   IF( IErr.NE.0 ) THEN
      PRINT*,"Felixfunction(", my_rank, ") error ", IErr, &
           " Deallocating IPixelLocations"
      RETURN
   ENDIF
 
-  DEALLOCATE( &
-       IStrongBeamList,STAT=IErr)
+  DEALLOCATE(IStrongBeamList,STAT=IErr)
   IF( IErr.NE.0 ) THEN
      PRINT*,"Felixfunction(", my_rank, ") error ", IErr, &
           " Deallocating IStrongBeamList"
      RETURN
   ENDIF
 
-  DEALLOCATE( &
-       IWeakBeamList,STAT=IErr)
+  DEALLOCATE(IWeakBeamList,STAT=IErr)
   IF( IErr.NE.0 ) THEN
      PRINT*,"Felixfunction(", my_rank, ") error ", IErr, &
           " Deallocating IWeakBeamList"
      RETURN
   ENDIF
 
-  DEALLOCATE( &
-       IDisplacements,STAT=IErr)
+  DEALLOCATE(IDisplacements,STAT=IErr)
   IF( IErr.NE.0 ) THEN
      PRINT*,"Felixfunction(", my_rank, ") error ", IErr, &
           " Deallocating IDisplacements"
      RETURN
   ENDIF
 
-  DEALLOCATE( &
-       ICount,STAT=IErr)
+  DEALLOCATE(ICount,STAT=IErr)
   IF( IErr.NE.0 ) THEN
      PRINT*,"Felixfunction(", my_rank, ") error ", IErr, &
           " Deallocating ICount"
      RETURN
   ENDIF
   
-  DEALLOCATE( &
-       CFullWaveFunctions, & 
+  DEALLOCATE(CFullWaveFunctions, & 
        STAT=IErr)
   IF( IErr.NE.0 ) THEN
      PRINT*,"Felixfunction(", my_rank, ") error ", IErr, &
@@ -441,9 +432,7 @@ SUBROUTINE FelixFunction(LInitialSimulationFLAG,IErr)
      RETURN
   ENDIF
   
-  DEALLOCATE( &
-       RFullWaveIntensity, & 
-       STAT=IErr)
+  DEALLOCATE(RFullWaveIntensity,STAT=IErr)
   IF( IErr.NE.0 ) THEN
      PRINT*,"Felixfunction(", my_rank, ") error ", IErr, &
           " in ALLOCATE() of DYNAMIC variables RFullWaveIntensity"
@@ -451,8 +440,7 @@ SUBROUTINE FelixFunction(LInitialSimulationFLAG,IErr)
   ENDIF  
 
   IF(IImageFLAG.GE.3) THEN
-     DEALLOCATE(&
-          CAmplitudeandPhaseRoot,STAT=IErr) 
+     DEALLOCATE(CAmplitudeandPhaseRoot,STAT=IErr) 
      
      IF( IErr.NE.0 ) THEN
         PRINT*,"Felixfunction(", my_rank, ") error in Deallocation of CAmplitudeandPhase"
@@ -460,115 +448,90 @@ SUBROUTINE FelixFunction(LInitialSimulationFLAG,IErr)
      ENDIF
   END IF
 
-  DEALLOCATE(&
-       RIndividualReflectionsRoot,STAT=IErr) 
+  DEALLOCATE(RIndividualReflectionsRoot,STAT=IErr) 
   IF( IErr.NE.0 ) THEN
      PRINT*,"Felixfunction(", my_rank, ") error in Deallocation of RIndividualReflectionsRoot "
      RETURN  
   ENDIF
   
-  DEALLOCATE( &
-       MNP,&
-       STAT=IErr)
+!X  DEALLOCATE(MNP,STAT=IErr)
   IF( IErr.NE.0 ) THEN
      PRINT*,"Felixfunction(", my_rank, ") error ", IErr, &
           " in Deallocation MNP"
      RETURN
   ENDIF
 
-  DEALLOCATE( &
-       SMNP, &
-       STAT=IErr)
+!X  DEALLOCATE(SMNP,STAT=IErr)
   IF( IErr.NE.0 ) THEN
      PRINT*,"Felixfunction(", my_rank, ") error ", IErr, &
           " in Deallocation SMNP"
      RETURN
   ENDIF
 
-  DEALLOCATE( &
-       RFullAtomicFracCoordVec, &
-       STAT=IErr)
+!X  DEALLOCATE(RFullAtomicFracCoordVec,STAT=IErr)
   IF( IErr.NE.0 ) THEN
      PRINT*,"Felixfunction(", my_rank, ") error ", IErr, &
           " in Deallocation RFullAtomicFracCoordVec"
      RETURN
   ENDIF
 
-  DEALLOCATE( &
-       SFullAtomicNameVec,&
-       STAT=IErr)
+!X  DEALLOCATE(SFullAtomicNameVec,STAT=IErr)
   IF( IErr.NE.0 ) THEN
      PRINT*,"Felixfunction(", my_rank, ") error ", IErr, &
           " in Deallocation SFullAtomicNameVec"
      RETURN
   ENDIF
 
-  DEALLOCATE( &
-       IFullAnisotropicDWFTensor,&
-       STAT=IErr)
+!X  DEALLOCATE(IFullAnisotropicDWFTensor,STAT=IErr)
   IF( IErr.NE.0 ) THEN
      PRINT*,"Felixfunction(", my_rank, ") error ", IErr, &
           " in Deallocation IFullAnisotropicDWFTensor"
      RETURN
   ENDIF
 
-  DEALLOCATE( &
-       IFullAtomNumber,&
-       STAT=IErr)
+!X  DEALLOCATE(IFullAtomNumber,STAT=IErr)
   IF( IErr.NE.0 ) THEN
      PRINT*,"Felixfunction(", my_rank, ") error ", IErr, &
           " in Deallocation IFullAtomNumber"
      RETURN
   ENDIF
   
-  DEALLOCATE( &
-       RFullIsotropicDebyeWallerFactor,&
-       STAT=IErr)
+!X  DEALLOCATE(RFullIsotropicDebyeWallerFactor,STAT=IErr)
   IF( IErr.NE.0 ) THEN
      PRINT*,"Felixfunction(", my_rank, ") error ", IErr, &
           " in Deallocation RFullIsotropicDebyeWallerFactor"
      RETURN
   ENDIF
 
-  DEALLOCATE( &
-       RFullPartialOccupancy,&
-       STAT=IErr)
+!  DEALLOCATE(RFullPartialOccupancy,STAT=IErr)
   IF( IErr.NE.0 ) THEN
      PRINT*,"Felixfunction(", my_rank, ") error ", IErr, &
           " in Deallocation RFullPartialOccupancy"
      RETURN
   ENDIF
 
-  DEALLOCATE( &
-       RDWF,&
-       STAT=IErr)
+!X  DEALLOCATE(RDWF,STAT=IErr)
   IF( IErr.NE.0 ) THEN
      PRINT*,"Felixfunction(", my_rank, ") error ", IErr, &
           " in Deallocation RDWF"
      RETURN
   ENDIF
 
-  DEALLOCATE( &
-       ROcc,&
-       STAT=IErr)
+!X  DEALLOCATE(ROcc,STAT=IErr)
   IF( IErr.NE.0 ) THEN
      PRINT*,"Felixfunction(", my_rank, ") error ", IErr, &
           " in Deallocation ROcc"
      RETURN
   ENDIF
   
-  DEALLOCATE( &
-       IAtoms,&
-       STAT=IErr)
+!X  DEALLOCATE(IAtoms,STAT=IErr)
   IF( IErr.NE.0 ) THEN
      PRINT*,"Felixfunction(", my_rank, ") error ", IErr, &
           " in Deallocation IAtoms"
      RETURN
   ENDIF
   
-  DEALLOCATE( &
-       IAnisoDWFT,&
-       STAT=IErr)
+!X  DEALLOCATE(IAnisoDWFT,STAT=IErr)
   IF( IErr.NE.0 ) THEN
      PRINT*,"Felixfunction(", my_rank, ") error ", IErr, &
           " in Deallocation IAnisoDWFT"
@@ -577,9 +540,7 @@ SUBROUTINE FelixFunction(LInitialSimulationFLAG,IErr)
 
   IF(LInitialSimulationFLAG.NEQV..TRUE.) THEN !Need these for Simplex Initialisation
      
-     DEALLOCATE( &
-          RgVecMag,&
-          STAT=IErr)
+!X     DEALLOCATE(RgVecMag,STAT=IErr)
      IF( IErr.NE.0 ) THEN
         PRINT*,"Felixfunction(", my_rank, ") error ", IErr, &
              " in Deallocation RgVecMag"
@@ -589,9 +550,7 @@ SUBROUTINE FelixFunction(LInitialSimulationFLAG,IErr)
   END IF
 
   IF((my_rank.NE.0).AND.(LInitialSimulationFLAG.NEQV..TRUE.)) THEN     
-     DEALLOCATE( &
-          Rhkl,&
-          STAT=IErr)
+     DEALLOCATE(Rhkl,STAT=IErr)
      IF( IErr.NE.0 ) THEN
         PRINT*,"Felixfunction(", my_rank, ") error ", IErr, &
              " in Deallocation Rhkl"
@@ -601,8 +560,7 @@ SUBROUTINE FelixFunction(LInitialSimulationFLAG,IErr)
   
 !!$  IF (my_rank.NE.0) THEN
   
-  DEALLOCATE( &
-       Rhklpositions,STAT=IErr)
+  DEALLOCATE(Rhklpositions,STAT=IErr)
   IF( IErr.NE.0 ) THEN
      PRINT*,"Felixfunction(", my_rank, ") error ", IErr, &
           " Deallocating Rhklpositions"
@@ -610,9 +568,7 @@ SUBROUTINE FelixFunction(LInitialSimulationFLAG,IErr)
   ENDIF
 !!$   END IF
 
-  DEALLOCATE( &
-       RgVecVec,&
-       STAT=IErr)
+!X  DEALLOCATE(RgVecVec,STAT=IErr)
   IF( IErr.NE.0 ) THEN
      PRINT*,"Felixfunction(", my_rank, ") error ", IErr, &
           " in Deallocation RgVecVec"
@@ -847,22 +803,19 @@ REAL(RKIND) FUNCTION SimplexFunction(RIndependentVariableValues,IIterationCount,
      RETURN
   ENDIF
 !RB   PRINT*,"Deallocating CUgMatNoAbs,CUgMatPrime,CUgMat in SimplexFunction" 
-  DEALLOCATE(CUgMatNoAbs,&!RB
-       STAT=IErr)  
+  DEALLOCATE(CUgMatNoAbs,STAT=IErr)  
   IF( IErr.NE.0 ) THEN
      PRINT*,"SimplexInitialisation (", my_rank, ") error in Deallocation()"
      RETURN
   ENDIF
  
- DEALLOCATE(CUgMatPrime,&!RB
-       STAT=IErr)  
+ DEALLOCATE(CUgMatPrime,STAT=IErr)  
   IF( IErr.NE.0 ) THEN
      PRINT*,"SimplexInitialisation (", my_rank, ") error in Deallocation()"
      RETURN
   ENDIF
  
-  DEALLOCATE(CUgMat,&!RB
-       STAT=IErr)  
+  DEALLOCATE(CUgMat,STAT=IErr)  
   IF( IErr.NE.0 ) THEN
      PRINT*,"SimplexInitialisation (", my_rank, ") error in Deallocation()"
      RETURN
@@ -911,8 +864,7 @@ SUBROUTINE CreateImagesAndWriteOutput(IIterationCount,IExitFLAG,IErr)
      RETURN
   ENDIF
   
-  DEALLOCATE(RMask,&
-    STAT=IErr)
+  DEALLOCATE(RMask,STAT=IErr)
   IF( IErr.NE.0 ) THEN
      PRINT*,"CreateImagesAndWriteOutput(", my_rank, ") error ", IErr, &
           " in DEALLOCATE() of DYNAMIC variable RMask"
@@ -930,24 +882,21 @@ SUBROUTINE CreateImagesAndWriteOutput(IIterationCount,IExitFLAG,IErr)
 
 !!$     FINISH OUTPUT  --------------------------------
   
-  DEALLOCATE(RIndividualReflections,&
-       STAT=IErr)
+  DEALLOCATE(RIndividualReflections,STAT=IErr)
   IF( IErr.NE.0 ) THEN
      PRINT*,"CreateImagesAndWriteOutput(", my_rank, ") error ", IErr, &
           " Deallocating RIndividualReflections"
      RETURN
   ENDIF
   
-  DEALLOCATE(IPixelLocations,&
-       STAT=IErr)
+  DEALLOCATE(IPixelLocations,STAT=IErr)
   IF( IErr.NE.0 ) THEN
      PRINT*,"CreateImagesAndWriteOutput(", my_rank, ") error ", IErr, &
           " Deallocating IPixelLocations"
      RETURN
   ENDIF
        
-  DEALLOCATE(Rhkl,&
-       STAT=IErr)
+  DEALLOCATE(Rhkl,STAT=IErr)
   IF( IErr.NE.0 ) THEN
      PRINT*,"CreateImagesAndWriteOutput(", my_rank, ") error ", IErr, &
           " in Deallocation Rhkl"
@@ -1211,17 +1160,13 @@ SUBROUTINE InitialiseWeightingCoefficients(IErr)
   REAL(RKIND),DIMENSION(:),ALLOCATABLE :: &
        RWeightingCoefficientsDummy
 
-  ALLOCATE( &
-       RWeightingCoefficients(IReflectOut),&
-       STAT=IErr)
+  ALLOCATE(RWeightingCoefficients(IReflectOut),STAT=IErr)
   IF( IErr.NE.0 ) THEN
      PRINT*,"InitialiseWeightingCoefficients(", my_rank, ") error ", IErr, &
           " in allocation RWeightingCoefficients"
      RETURN
   ENDIF
-  ALLOCATE( &
-       RWeightingCoefficientsDummy(IReflectOut),&
-       STAT=IErr)
+  ALLOCATE(RWeightingCoefficientsDummy(IReflectOut),STAT=IErr)
   IF( IErr.NE.0 ) THEN
      PRINT*,"InitialiseWeightingCoefficients(", my_rank, ") error ", IErr, &
           " in allocation RWeightingCoefficients"
@@ -1247,9 +1192,7 @@ SUBROUTINE InitialiseWeightingCoefficients(IErr)
      END IF
   END SELECT
 
-  DEALLOCATE(&
-       RgVecMag,&
-       STAT=IErr)
+!X  DEALLOCATE(RgVecMag,STAT=IErr)
   IF( IErr.NE.0 ) THEN
      PRINT*,"InitialiseWeightingCoefficients(", my_rank, ") error ", IErr, &
           " in Deallocation RgVecMag"

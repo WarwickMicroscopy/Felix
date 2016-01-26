@@ -100,10 +100,6 @@ SUBROUTINE SymmetryRelatedStructureFactorDetermination (IErr)
   CALL Message("SymmetryRelatedStructureFactorDetermination",IMust,IErr)
 
   RgSumMat = RgSumMat+ABS(REAL(CUgMatNoAbs))+ABS(AIMAG(CUgMatNoAbs))
- PRINT*,"RgSumMat"
- DO ind=1,6
-  PRINT*,"DBG: ", RgSumMat(ind,1:6)
- ENDDO
 
   ISymmetryRelations = 0_IKIND 
   Iuid = 0_IKIND
@@ -121,9 +117,6 @@ SUBROUTINE SymmetryRelatedStructureFactorDetermination (IErr)
         END IF
      END DO
   END DO
- DO ind=1,6
-  PRINT*,"DBG: ", ISymmetryRelations(ind,1:6)
- ENDDO
 
   IF((IWriteFLAG.GE.0.AND.my_rank.EQ.0).OR.IWriteFLAG.GE.10) THEN
      PRINT*,"Unique Ugs = ",Iuid
