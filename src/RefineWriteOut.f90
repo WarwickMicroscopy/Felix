@@ -61,7 +61,7 @@ SUBROUTINE WriteOutVariables(IIterationCount,IErr)
   ! Need to Determine total no. of variables to be written out, this is different from the no. of refinement variables
   
   IOutputVariables(1) =  IRefineModeSelectionArray(1) * &
-       2*SIZE(CUgMat,DIM=1) ! Structure Factors are Complex so require two output variables each     
+       2*nReflections ! Structure Factors are Complex so require two output variables each     
   IOutputVariables(2) = IRefineModeSelectionArray(2) * & !Structural Coordinates
        (SIZE(RAtomSiteFracCoordVec,DIM=1) * SIZE(RAtomSiteFracCoordVec,DIM=2))
   IOutputVariables(3) = &
@@ -106,8 +106,8 @@ SUBROUTINE WriteOutVariables(IIterationCount,IErr)
      IEND = SUM(IOutputVariables(1:jnd))
 
      SELECT CASE(jnd)
-     CASE(1)!RB add in absorption
-        DO ind = 1,15!RB SIZE(CUgMat,DIM=1)
+     CASE(1)
+        DO ind = 1,15!RB nReflections
            IStart = (ind*2)-1
            IEnd = ind*2
            RDataOut(IStart:IEnd) = [REAL(REAL(CUgMat(ind,1)),RKIND), REAL(AIMAG(CUgMat(ind,1)),RKIND)]
@@ -199,13 +199,6 @@ SUBROUTINE WriteIterationOutput(IIterationCount,IThicknessIndex,IExitFlag,IErr)
         RETURN
      ENDIF
      
-!X     DEALLOCATE(Rhkl,STAT=IErr)
-     IF( IErr.NE.0 ) THEN
-        PRINT*,"WriteIterationOutput(", my_rank, ") error ", IErr, &
-             " in Deallocation Rhkl"
-        RETURN
-     ENDIF
-
      CALL WriteIterationStructure(path,IErr) 
      IF( IErr.NE.0 ) THEN
         PRINT*,"WriteIterationOutput(", my_rank, ") error ", IErr, &
@@ -252,9 +245,8 @@ SUBROUTINE WriteStructureFactors(path,IErr)
   WRITE(fullpath,*) TRIM(ADJUSTL(path)),'/',TRIM(ADJUSTL(filename))
   OPEN(UNIT=IChOutSimplex,STATUS='UNKNOWN',&
        FILE=TRIM(ADJUSTL(fullpath)))
-PRINT*,",nReflections",nReflections
-PRINT*,",Rhkl",Rhkl(1,1)
-  DO ind = 1,nReflections!X SIZE(CUgMat,DIM=1)
+
+  DO ind = 1,nReflections
      WRITE(IChOutSimplex,FMT='(3I5.1,2F13.9)') NINT(Rhkl(ind,:)),CUgMat(ind,1)
   END DO
 PRINT*,"onk"

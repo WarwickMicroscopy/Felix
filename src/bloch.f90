@@ -438,8 +438,7 @@ SUBROUTINE BlochCoefficientCalculation(IYPixelIndex,IXPixelIndex,IPixelNumber,IF
   ! DEALLOCATE eigen problem memory
   !--------------------------------------------------------------------
   
-  DEALLOCATE( &
-       CUgMatEffective,CPsi0,&
+  DEALLOCATE(CUgMatEffective,CPsi0,&
        CInvertedEigenVectors, CAlphaWeightingCoefficients, &
        CEigenValues,CEigenVectors,CEigenValueDependentTerms, &
        CBeamProjectionMatrix, CDummyBeamMatrix,CWavefunctions, &
