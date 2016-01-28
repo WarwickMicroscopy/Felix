@@ -329,44 +329,54 @@ SUBROUTINE ReadInpFile( IErr )
      
      IF((IWriteFLAG.GE.0.AND.my_rank.EQ.0).OR.IWriteFLAG.GE.10) THEN
         IF(IWriteFLAG.GE.4) THEN
-           DO ind = 1,IRefinementVariableTypes
-              SRefineYESNO = 'NO'
-              SELECT CASE (ind)
-              CASE(1)
-                 IF(IRefineModeSelectionArray(ind).EQ.1) SRefineYESNO = 'YES'
-                 PRINT*,"Refine Structure Factors ",SRefineYESNO
-              CASE(2)
-                 IF(IRefineModeSelectionArray(ind).EQ.1) SRefineYESNO = 'YES'
-                 PRINT*,"Refine Atomic Coordinates ",SRefineYESNO
-              CASE(3)
-                 IF(IRefineModeSelectionArray(ind).EQ.1) SRefineYESNO = 'YES'
-                 PRINT*,"Refine Atomic Site Occupancies ",SRefineYESNO
-              CASE(4)
-                 IF(IRefineModeSelectionArray(ind).EQ.1) SRefineYESNO = 'YES'
-                 PRINT*,"Refine Isotropic Debye Waller Factors ",SRefineYESNO
-              CASE(5)
-                 IF(IRefineModeSelectionArray(ind).EQ.1) SRefineYESNO = 'YES'
-                 PRINT*,"Refine Anisotropic Debye Waller Factors ",SRefineYESNO
-              CASE(6)
-                 IF(IRefineModeSelectionArray(ind).EQ.1) SRefineYESNO = 'YES'
-                 PRINT*,"Refine Lattice Lengths ",SRefineYESNO
-              CASE(7)
-                 IF(IRefineModeSelectionArray(ind).EQ.1) SRefineYESNO = 'YES'
-                 PRINT*,"Refine Lattice Angles ",SRefineYESNO
-              CASE(8)
-                 IF(IRefineModeSelectionArray(ind).EQ.1) SRefineYESNO = 'YES'
-                 PRINT*,"Refine Convergence Angle ",SRefineYESNO
-              CASE(9)
-                 IF(IRefineModeSelectionArray(ind).EQ.1) SRefineYESNO = 'YES'
-                 PRINT*,"Refine Total Absorption ",SRefineYESNO
-              CASE(10)
-                 IF(IRefineModeSelectionArray(ind).EQ.1) SRefineYESNO = 'YES'
-                 PRINT*,"Refine Accelerating Voltage ",SRefineYESNO
-              CASE(11)
-                 IF(IRefineModeSelectionArray(ind).EQ.1) SRefineYESNO = 'YES'
-                 PRINT*,"Refine Residual Sum of Squares Scaling Factor ",SRefineYESNO
-              END SELECT
-           END DO
+		  IF(IRefineModeSelectionArray(1).EQ.1) PRINT*,"Refining Structure Factors "
+		  IF(IRefineModeSelectionArray(2).EQ.1) PRINT*,"Refining Atomic Coordinates"
+		  IF(IRefineModeSelectionArray(3).EQ.1) PRINT*,"Refining Occupancies "
+		  IF(IRefineModeSelectionArray(4).EQ.1) PRINT*,"Refining Isotropic Debye Waller Factors"
+		  IF(IRefineModeSelectionArray(5).EQ.1) PRINT*,"Refining Anisotropic Debye Waller Factors "
+		  IF(IRefineModeSelectionArray(6).EQ.1) PRINT*,"Refining Lattice Lengths "
+		  IF(IRefineModeSelectionArray(7).EQ.1) PRINT*,"Refining Lattice Angles "
+		  IF(IRefineModeSelectionArray(8).EQ.1) PRINT*,"Refining Convergence Angle "
+		  IF(IRefineModeSelectionArray(9).EQ.1) PRINT*,"Refining Absorption"
+		  IF(IRefineModeSelectionArray(10).EQ.1) PRINT*,"Refining Accelerating Voltage "
+		  IF(IRefineModeSelectionArray(11).EQ.1) PRINT*,"Refining Scale Factor "
+!XS           DO ind = 1,IRefinementVariableTypes
+!XS              SRefineYESNO = 'NO'
+!XS              SELECT CASE (ind)
+!XS              CASE(1)
+!XS                 PRINT*,"Refine Structure Factors ",SRefineYESNO
+!XS              CASE(2)
+!XS                 IF(IRefineModeSelectionArray(ind).EQ.1) SRefineYESNO = 'YES'
+!XS                 PRINT*,"Refine Atomic Coordinates ",SRefineYESNO
+!XS              CASE(3)
+!XS                 IF(IRefineModeSelectionArray(ind).EQ.1) SRefineYESNO = 'YES'
+!XS                 PRINT*,"Refine Atomic Site Occupancies ",SRefineYESNO
+!XS              CASE(4)
+!XS                 IF(IRefineModeSelectionArray(ind).EQ.1) SRefineYESNO = 'YES'
+!XS                 PRINT*,"Refine Isotropic Debye Waller Factors ",SRefineYESNO
+!XS              CASE(5)
+!XS                 IF(IRefineModeSelectionArray(ind).EQ.1) SRefineYESNO = 'YES'
+!XS                 PRINT*,"Refine Anisotropic Debye Waller Factors ",SRefineYESNO
+!XS              CASE(6)
+!XS                 IF(IRefineModeSelectionArray(ind).EQ.1) SRefineYESNO = 'YES'
+!XS                 PRINT*,"Refine Lattice Lengths ",SRefineYESNO
+!XS              CASE(7)
+!XS                 IF(IRefineModeSelectionArray(ind).EQ.1) SRefineYESNO = 'YES'
+!XS                 PRINT*,"Refine Lattice Angles ",SRefineYESNO
+!XS              CASE(8)
+!XS                 IF(IRefineModeSelectionArray(ind).EQ.1) SRefineYESNO = 'YES'
+!XS                 PRINT*,"Refine Convergence Angle ",SRefineYESNO
+!XS              CASE(9)
+!XS                 IF(IRefineModeSelectionArray(ind).EQ.1) SRefineYESNO = 'YES'
+!XS                 PRINT*,"Refine Total Absorption ",SRefineYESNO
+!XS              CASE(10)
+!XS                 IF(IRefineModeSelectionArray(ind).EQ.1) SRefineYESNO = 'YES'
+!XS                 PRINT*,"Refine Accelerating Voltage ",SRefineYESNO
+!XS              CASE(11)
+!XS                 IF(IRefineModeSelectionArray(ind).EQ.1) SRefineYESNO = 'YES'
+!XS                 PRINT*,"Refine Residual Sum of Squares Scaling Factor ",SRefineYESNO
+!XS              END SELECT
+!XS           END DO
         ELSE
            PRINT*,"IRefineModeSelectionArray = ",IRefineModeSelectionArray
         END IF
@@ -652,10 +662,8 @@ SUBROUTINE DetermineRefineableAtomicSites(SAtomicSites,IErr)
   
   IMPLICIT NONE  
   
-  INTEGER(IKIND) :: &
-       IPos,IPos1,IPos2,IErr,ind
-  CHARACTER*200 :: &
-       SAtomicSites,SFormatString,SLengthofNumberString
+  INTEGER(IKIND) :: IPos,IPos1,IPos2,IErr,ind
+  CHARACTER*200 :: SAtomicSites,SFormatString,SLengthofNumberString
 
   IPos1 = SCAN(SAtomicSites,'(')
   IPos2 = SCAN(SAtomicSites,')')
@@ -668,9 +676,7 @@ SUBROUTINE DetermineRefineableAtomicSites(SAtomicSites,IErr)
   END IF
 
   IF ((IPos2-IPos1).GT.1.AND.SCAN(SAtomicSites,',').EQ.0) THEN
-     ALLOCATE(&
-          IAtomicSitesToRefine(1),&
-          STAT=IErr)
+     ALLOCATE(IAtomicSitesToRefine(1),STAT=IErr)
      IF( IErr.NE.0 ) THEN
         PRINT*,"ReadInpFile(): error in memory ALLOCATE()"
         RETURN
@@ -691,8 +697,7 @@ SUBROUTINE DetermineRefineableAtomicSites(SAtomicSites,IErr)
         IF (IPos2-IPos1.LE.1) EXIT
      END DO
      
-     ALLOCATE(&
-          IAtomicSitesToRefine(IPos),&
+     ALLOCATE(IAtomicSitesToRefine(IPos),&
           STAT=IErr)
      IF( IErr.NE.0 ) THEN
         PRINT*,"ReadInpFile(): error in memory ALLOCATE()"
@@ -713,8 +718,8 @@ SUBROUTINE DetermineRefineableAtomicSites(SAtomicSites,IErr)
            READ(SAtomicSites((IPos1+1):(IPos2-1)),FMT=SFormatString) IAtomicSitesToRefine(ind)
         END IF
      END DO
-     
   END IF
+!XX PRINT*, "Refining atoms",IAtomicSitesToRefine!XX     
   
 END SUBROUTINE DetermineRefineableAtomicSites
 

@@ -173,14 +173,13 @@ PROGRAM Felixrefine
 !XX  ENDIF
   !CALL DetermineNumberofRefinementVariablesPerType(INoofelementsforeachrefinementtype,IErr)
   !IIndependentVariables = SUM(INoofelementsforeachrefinementtype)
-  PRINT*, "RB1:IIndependentVariables=",IIndependentVariables 
 
   CALL AssignIterativeIDs(IErr)  
   IF( IErr.NE.0 ) THEN
      PRINT*,"felixrefine (", my_rank, ") error in AssignIterativeIDs()"
      GOTO 9999
   ENDIF
-  PRINT*, "RB2:IIndependentVariables=",IIndependentVariables 
+  PRINT*, IIndependentVariables,"independent variables"
   
   ALLOCATE(RIndependentVariableValues(IIndependentVariables),&
        STAT=IErr)  
@@ -313,7 +312,9 @@ USE MyNumbers
         END DO
      END IF
   END DO
-  
+!XX  DO ind=1,IIndependentVariables
+!XX    PRINT*, "ID",ind,":",IIterativeVariableUniqueIDs(IIndependentVariables,:)
+!XX  END DO
 END SUBROUTINE AssignIterativeIDs
 
 !%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -1288,7 +1289,7 @@ SUBROUTINE SetupAtomicVectorMovements(IErr)
      PRINT*,"felixrefine (", my_rank, ") error in ConvertSpaceGroupToNumber"
      RETURN
   ENDIF
-  
+
   ALLOCATE(IVectors(SIZE(SWyckoffSymbols)),&
        STAT=IErr)
   IF( IErr.NE.0 ) THEN
@@ -1296,14 +1297,15 @@ SUBROUTINE SetupAtomicVectorMovements(IErr)
      RETURN
   ENDIF
   
-  DO ind = 1,SIZE(SWyckoffSymbols)
+!XX PRINT*, "Wyckoff Symbols: ",SWyckoffSymbols!XX
+  DO ind = 1,SIZE(SWyckoffSymbols)!NB SIZE(SWyckoffSymbols)=IAtomicSitesToRefine
      CALL CountAllowedMovements(ISpaceGrp,SWyckoffSymbols(ind),IVectors(ind),IErr)
      IF( IErr.NE.0 ) THEN
         PRINT*,"felixrefine (", my_rank, ") error in CountAllowedMovements "
         RETURN
-     ENDIF
-     
+     ENDIF    
   END DO
+ !XX PRINT*, IVectors," IVectors"!XX
   
   IAllowedVectors = SUM(IVectors)
   

@@ -99,7 +99,7 @@ SUBROUTINE ReadCifFile(IErr)
   
   CHARACTER*32 Csym(THREEDIM)
 
-  INTEGER IErr, ind
+  INTEGER IErr,ind,jnd
 
   ! fudge to deal with gfortran vs. g77
 
@@ -311,7 +311,7 @@ SUBROUTINE ReadCifFile(IErr)
      END IF
   END IF
 
-  CALL Message("ReadCIFFile",IInfo,IErr,MessageVariable = "Space Group", &
+  CALL Message("Read CIF",IInfo,IErr,MessageVariable = "Space Group", &
        MessageString =name(1:long_))
 
   SSpaceGroupName=TRIM(name(1:1))
@@ -326,7 +326,7 @@ SUBROUTINE ReadCifFile(IErr)
   ! ----------------------------------------------------------
   ! Extract atom site data in a loop
   !-----------------------------------------------------------
-  CALL Message("ReadCIFFile",IInfo,IErr,MessageString = "Atom sites")
+  CALL Message("Read CIF",IInfo,IErr,MessageString = "Atom sites")
   
   ! counting loop
   IAtomCount=0
@@ -338,52 +338,45 @@ SUBROUTINE ReadCifFile(IErr)
      IF(loop_ .NEQV. .TRUE.) EXIT
   ENDDO
   
-  CALL Message("ReadCIFFile",IInfo,IErr,MessageVariable = "IAtomCount", IVariable = IAtomCount) 
+  CALL Message("Read CIF",IInfo,IErr,MessageVariable = "IAtomCount", IVariable = IAtomCount) 
   
-  ALLOCATE( &
-       RAtomSiteFracCoordVec(IAtomCount,THREEDIM), &
+  ALLOCATE(RAtomSiteFracCoordVec(IAtomCount,THREEDIM), &
        STAT=IErr)
   IF( IErr.NE.0 ) THEN
      PRINT*,"ReadCifFile(", my_rank, ") error ", IErr, " in ALLOCATE()"
      RETURN
   ENDIF
-  ALLOCATE( &
-       SAtomName(IAtomCount), &
+  ALLOCATE(SAtomName(IAtomCount), &
        STAT=IErr)
   IF( IErr.NE.0 ) THEN
      PRINT*,"ReadCifFile(", my_rank, ") error ", IErr, " in ALLOCATE()"
      RETURN
   ENDIF
-  ALLOCATE( &
-       IAtomNumber(IAtomCount), &
+  ALLOCATE(IAtomNumber(IAtomCount), &
        STAT=IErr)
   IF( IErr.NE.0 ) THEN
      PRINT*,"ReadCifFile(", my_rank, ") error ", IErr, " in ALLOCATE()"
      RETURN
   ENDIF
-  ALLOCATE( &
-       RIsotropicDebyeWallerFactors(IAtomCount), &
+  ALLOCATE(RIsotropicDebyeWallerFactors(IAtomCount), &
        STAT=IErr)
   IF( IErr.NE.0 ) THEN
      PRINT*,"ReadCifFile(", my_rank, ") error ", IErr, " in ALLOCATE()"
      RETURN
   ENDIF
-  ALLOCATE( &
-       RAtomicSitePartialOccupancy(IAtomCount), &
+  ALLOCATE(RAtomicSitePartialOccupancy(IAtomCount), &
        STAT=IErr)
   IF( IErr.NE.0 ) THEN
      PRINT*,"ReadCifFile(", my_rank, ") error ", IErr, " in ALLOCATE()"
      RETURN
   ENDIF
-  ALLOCATE( &
-       RAnisotropicDebyeWallerFactorTensor(IAtomCount,THREEDIM,THREEDIM), &
+  ALLOCATE(RAnisotropicDebyeWallerFactorTensor(IAtomCount,THREEDIM,THREEDIM), &
        STAT=IErr)
   IF( IErr.NE.0 ) THEN
      PRINT*,"ReadCifFile(", my_rank, ") error ", IErr, " in ALLOCATE()"
      RETURN
   ENDIF
-  ALLOCATE( &
-       IAnisotropicDWFTensor(IAtomCount), &
+  ALLOCATE(IAnisotropicDWFTensor(IAtomCount), &
        STAT=IErr)
   IF( IErr.NE.0 ) THEN
      PRINT*,"ReadCifFile(", my_rank, ") error ", IErr, " in ALLOCATE()"
@@ -497,18 +490,17 @@ SUBROUTINE ReadCifFile(IErr)
 
   CALL CifReset(IErr)
   
-  ALLOCATE( &
-       SWyckoffSymbols(SIZE(IAtomicSitesToRefine)),&
-       STAT=IErr)
+  ALLOCATE(SWyckoffSymbols(SIZE(IAtomicSitesToRefine)),STAT=IErr)
   IF( IErr.NE.0 ) THEN
      PRINT*,"ReadCifFile(", my_rank, ") error ", IErr, " in ALLOCATE()"
      RETURN
   ENDIF
 
-  DO ind=1,SIZE(IAtomicSitesToRefine)
-!!$     IAtomID = IAtomsToRefine(ind)
+  DO ind=1,IAtomCount!RB
      f2 = char_('_atom_site_Wyckoff_symbol',name)
-     SWyckoffSymbols(ind) = name
+     WHERE (IAtomicSitesToRefine.EQ.ind)!RB
+	   SWyckoffSymbols = name
+	 END WHERE
   ENDDO
 
   !----------------------------------------------------
