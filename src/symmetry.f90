@@ -52,13 +52,9 @@ SUBROUTINE DetermineAllowedMovements(ISpaceGrp,SWyckoffSymbol,RVector,IVector,IE
 
   IMPLICIT NONE
 
-  INTEGER(IKIND) :: &
-       ISpaceGrp,IErr,IVector,ind
-  CHARACTER*1 :: &
-       SWyckoffSymbol
-  REAL(RKIND),DIMENSION(IVector,THREEDIM),INTENT(OUT) :: &
-       RVector
-
+  INTEGER(IKIND) :: ISpaceGrp,IErr,IVector,ind
+  CHARACTER*1 :: SWyckoffSymbol
+  REAL(RKIND),DIMENSION(IVector,THREEDIM),INTENT(OUT) :: RVector
 
   !Tells user, entering DetermineAllowedMovements
   CALL Message("DetermineAllowedMovements",IMust,IErr)
@@ -67,25 +63,12 @@ SUBROUTINE DetermineAllowedMovements(ISpaceGrp,SWyckoffSymbol,RVector,IVector,IE
   CASE(1)
      SELECT CASE (SWyckoffSymbol)
      CASE('x')
-        DO ind = 1,IVector
-           SELECT CASE (ind)
-           CASE(1)       
-              RVector(ind,:) = (/ZERO, ONE, ZERO/)
-           CASE(2)
-              RVector(ind,:) = (/ZERO, ZERO, ONE/)
-           END SELECT
-        END DO
+       RVector(1,:) = (/ZERO, ONE, ZERO/)
+       RVector(2,:) = (/ZERO, ZERO, ONE/)
      CASE('b')
-        DO ind = 1,IVector
-           SELECT CASE (ind)
-           CASE(1)
-              RVector(ind,:) = (/ONE, ZERO, ZERO/)
-           CASE(2)
-              RVector(ind,:) = (/ZERO, ONE, ZERO/)
-           CASE(3)
-              RVector(ind,:) = (/ZERO, ZERO, ONE/)
-           END SELECT
-        END DO
+       RVector(1,:) = (/ONE, ZERO, ZERO/)
+       RVector(2,:) = (/ZERO, ONE, ZERO/)
+       RVector(3,:) = (/ZERO, ZERO, ONE/)
      CASE DEFAULT
         PRINT*,"---------------------------------------"
         PRINT*,"This Wyckoff Symbol for this space group is not yet implemented"
@@ -129,25 +112,12 @@ SUBROUTINE DetermineAllowedMovements(ISpaceGrp,SWyckoffSymbol,RVector,IVector,IE
   CASE(36)
      SELECT CASE (SWyckoffSymbol)
      CASE('a')
-        DO ind = 1,IVector
-           SELECT CASE (ind)
-           CASE(1)       
-              RVector(ind,:) = (/ZERO, ONE, ZERO/)
-           CASE(2)
-              RVector(ind,:) = (/ZERO, ZERO, ONE/)
-           END SELECT
-        END DO
+       RVector(1,:) = (/ZERO, ONE, ZERO/)
+       RVector(2,:) = (/ZERO, ZERO, ONE/)
      CASE('b')
-        DO ind = 1,IVector
-           SELECT CASE (ind)
-           CASE(1)
-              RVector(ind,:) = (/ONE, ZERO, ZERO/)
-           CASE(2)
-              RVector(ind,:) = (/ZERO, ONE, ZERO/)
-           CASE(3)
-              RVector(ind,:) = (/ZERO, ZERO, ONE/)
-           END SELECT
-        END DO
+       RVector(1,:) = (/ONE, ZERO, ZERO/)
+       RVector(2,:) = (/ZERO, ONE, ZERO/)
+       RVector(3,:) = (/ZERO, ZERO, ONE/)
      CASE DEFAULT
         PRINT*,"---------------------------------------"
         PRINT*,"This Wyckoff Symbol for this space group is not yet implemented"
@@ -374,13 +344,9 @@ SUBROUTINE CountAllowedMovements(ISpaceGrp,SWyckoffSymbol,IVectors,IErr)
 
   IMPLICIT NONE
 
-  INTEGER(IKIND),INTENT(IN) :: &
-       ISpaceGrp
-  INTEGER(IKIND) :: &
-       IVectors,IErr
-  CHARACTER*1 :: &
-       SWyckoffSymbol
-
+  INTEGER(IKIND),INTENT(IN) :: ISpaceGrp
+  INTEGER(IKIND) :: IVectors,IErr
+  CHARACTER*1 :: SWyckoffSymbol
 
   !Tells user, entering CountAllowedMovements
   CALL Message("CountAllowedMovements",IMust,IErr)
@@ -664,14 +630,10 @@ SUBROUTINE ConvertSpaceGroupToNumber(ISpaceGrp,IErr)
 
   IMPLICIT NONE
 
-  INTEGER(IKIND) :: &
-       IErr,ICount,IIndex,ind
-  INTEGER(IKIND),INTENT(OUT) :: &
-       ISpaceGrp
-  CHARACTER(LEN(SSpaceGrp)) :: &
-       SSpaceGrpNoSpaces
-  CHARACTER*20 :: &
-       SSpaceGrpToCompare
+  INTEGER(IKIND) :: IErr,ICount,IIndex,ind
+  INTEGER(IKIND),INTENT(OUT) :: ISpaceGrp
+  CHARACTER(LEN(SSpaceGrp)) :: SSpaceGrpNoSpaces
+  CHARACTER*20 :: SSpaceGrpToCompare
        
   
   !Tells user, entering ConvertSpaceGroupToNumber

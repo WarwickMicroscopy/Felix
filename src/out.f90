@@ -150,7 +150,7 @@ SUBROUTINE OpenImageForReadIn(IErr,filename)
 
   CHARACTER*34 filename
 
-  IF((IWriteFLAG.GE.0.AND.my_rank.EQ.0).OR.IWriteFLAG.GE.10) THEN
+  IF((IWriteFLAG.GE.10.AND.my_rank.EQ.0).OR.IWriteFLAG.GE.10) THEN
 
      PRINT*,"OpenImageForReadIn()"
 
@@ -158,7 +158,7 @@ SUBROUTINE OpenImageForReadIn(IErr,filename)
 
   !filename = "Felix.img"
 
-  IF((IWriteFLAG.GE.0.AND.my_rank.EQ.0).OR.IWriteFLAG.GE.10) THEN
+  IF((IWriteFLAG.GE.10.AND.my_rank.EQ.0).OR.IWriteFLAG.GE.10) THEN
      
      PRINT*,filename
 
@@ -189,13 +189,10 @@ SUBROUTINE ReadImageForRefinement(IErr)
 
   IMPLICIT NONE
 
-  INTEGER(IKIND) :: &
-       IErr,ind
+  INTEGER(IKIND) :: IErr,ind
 
-  IF((IWriteFLAG.GE.0.AND.my_rank.EQ.0).OR.IWriteFLAG.GE.10) THEN
-
+  IF((IWriteFLAG.GE.10.AND.my_rank.EQ.0).OR.IWriteFLAG.GE.10) THEN
      PRINT*,"ReadImageForRefinement()"
-
   END IF
 
   DO ind=1,2*IPixelCount

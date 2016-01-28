@@ -733,12 +733,9 @@ SUBROUTINE ReadExperimentalImages(IErr)
 
   IMPLICIT NONE
   
-  INTEGER(IKIND) :: &
-       ind,IErr
-  INTEGER(IKIND) :: &
-       INegError = 0
-  CHARACTER*34 :: &
-       filename
+  INTEGER(IKIND) :: ind,IErr
+  INTEGER(IKIND) :: INegError = 0
+  CHARACTER*34 :: filename
 
   DO ind = 1,IReflectOut
      
@@ -750,9 +747,7 @@ SUBROUTINE ReadExperimentalImages(IErr)
         RETURN
      END IF
      
-     ALLOCATE( &
-          RImageIn(2*IPixelCount,2*IPixelCount), &
-          STAT=IErr)  
+     ALLOCATE(RImageIn(2*IPixelCount,2*IPixelCount), STAT=IErr)  
      IF( IErr.NE.0 ) THEN
         PRINT*,"ReadExperimentalImages (", my_rank, ") error in Allocation()"
         RETURN
@@ -775,9 +770,7 @@ SUBROUTINE ReadExperimentalImages(IErr)
 
      RImageExpi(:,:,ind) = RImageIn
      
-     DEALLOCATE( &
-          RImageIn, &
-          STAT=IErr)  
+     DEALLOCATE(RImageIn, STAT=IErr)  
      IF( IErr.NE.0 ) THEN
         PRINT*,"ReadExperimentalImages (", my_rank, ") error in deAllocation()"
         RETURN
@@ -797,6 +790,10 @@ SUBROUTINE ReadExperimentalImages(IErr)
      PRINT*,"No. of Images with Negative Values",INegError
   END IF
 
+  IF( IErr.EQ.0 ) THEN
+        PRINT*, IReflectOut,"experimental images successfully loaded"
+		PRINT*, " "
+  END IF
 
 END SUBROUTINE ReadExperimentalImages
 

@@ -55,22 +55,15 @@ PROGRAM Felixrefine
   
   IMPLICIT NONE
 
-  INTEGER(IKIND) :: &
-       IHours,IMinutes,ISeconds,IErr,IMilliSeconds,IIterationFLAG,&
+  INTEGER(IKIND) :: IHours,IMinutes,ISeconds,IErr,IMilliSeconds,IIterationFLAG,&
        ind,IIterationCount
-  REAL(RKIND) :: &
-       StartTime, CurrentTime, Duration, TotalDurationEstimate,&
+  REAL(RKIND) :: StartTime, CurrentTime, Duration, TotalDurationEstimate,&
        RFigureOfMerit,SimplexFunction  
-  INTEGER(IKIND) :: &
-       IStartTime, ICurrentTime ,IRate
-  REAL(RKIND),DIMENSION(:,:),ALLOCATABLE :: &
-       RSimplexVolume
-  REAL(RKIND),DIMENSION(:),ALLOCATABLE :: &
-       RSimplexFoM,RIndependentVariableValues
-  REAL(RKIND) :: &
-       RBCASTREAL
-  REAL(RKIND) :: &
-       RStandardDeviation,RMean
+  INTEGER(IKIND) :: IStartTime, ICurrentTime ,IRate
+  INTEGER(IKIND),DIMENSION(IRefinementVariableTypes) :: INoofelementsforeachrefinementtype!XX
+  REAL(RKIND),DIMENSION(:,:),ALLOCATABLE :: RSimplexVolume
+  REAL(RKIND),DIMENSION(:),ALLOCATABLE :: RSimplexFoM,RIndependentVariableValues
+  REAL(RKIND) :: RBCASTREAL,RStandardDeviation,RMean
 
   CHARACTER*40 surname, my_rank_string 
 
@@ -144,9 +137,7 @@ PROGRAM Felixrefine
      GOTO 9999
   ENDIF  
   
-  ALLOCATE( &
-       RImageExpi(2*IPixelCount,2*IPixelCount, &
-       IReflectOut),&
+  ALLOCATE(RImageExpi(2*IPixelCount,2*IPixelCount,IReflectOut),&
        STAT=IErr)  
   IF( IErr.NE.0 ) THEN
      PRINT*,"felixrefine (", my_rank, ") error in Allocation()"
@@ -175,20 +166,23 @@ PROGRAM Felixrefine
   
 !!$Calculate Number of Independent Refinement Variables
   
-  CALL CountRefinementVariables(IErr)
-  IF( IErr.NE.0 ) THEN
-     PRINT*,"felixrefine (", my_rank, ") error in CountRefinementVariables"
-     GOTO 9999
-  ENDIF
+!XX  CALL CountRefinementVariables(IErr)
+!XX  IF( IErr.NE.0 ) THEN
+!XX     PRINT*,"felixrefine (", my_rank, ") error in CountRefinementVariables"
+!XX     GOTO 9999
+!XX  ENDIF
+  !CALL DetermineNumberofRefinementVariablesPerType(INoofelementsforeachrefinementtype,IErr)
+  !IIndependentVariables = SUM(INoofelementsforeachrefinementtype)
+  PRINT*, "RB1:IIndependentVariables=",IIndependentVariables 
 
   CALL AssignIterativeIDs(IErr)  
   IF( IErr.NE.0 ) THEN
      PRINT*,"felixrefine (", my_rank, ") error in AssignIterativeIDs()"
      GOTO 9999
   ENDIF
+  PRINT*, "RB2:IIndependentVariables=",IIndependentVariables 
   
-  ALLOCATE(&
-       RIndependentVariableValues(IIndependentVariables),&
+  ALLOCATE(RIndependentVariableValues(IIndependentVariables),&
        STAT=IErr)  
   IF( IErr.NE.0 ) THEN
      PRINT*,"felixrefine (", my_rank, ") error in allocation()"
@@ -199,16 +193,14 @@ PROGRAM Felixrefine
   ! Initialise Simplex
   !--------------------------------------------------------------------
 
-  ALLOCATE( &
-       RSimplexVolume(IIndependentVariables+1,IIndependentVariables),&
+  ALLOCATE(RSimplexVolume(IIndependentVariables+1,IIndependentVariables),&
        STAT=IErr)  
   IF( IErr.NE.0 ) THEN
      PRINT*,"felixrefine (", my_rank, ") error in Allocation()"
      GOTO 9999
   ENDIF
 
-  ALLOCATE( &
-       RSimplexFoM(IIndependentVariables),&
+  ALLOCATE(RSimplexFoM(IIndependentVariables),&
        STAT=IErr)  
   IF( IErr.NE.0 ) THEN
      PRINT*,"felixrefine (", my_rank, ") error in Allocation()"
@@ -297,16 +289,13 @@ USE MyNumbers
   
   IMPLICIT NONE
 
-  INTEGER(IKIND) :: &
-       ind,jnd,IErr,ICalls
-  INTEGER(IKIND),DIMENSION(IRefinementVariableTypes) :: &
-       INoofelementsforeachrefinementtype
+  INTEGER(IKIND) :: ind,jnd,IErr,ICalls
+  INTEGER(IKIND),DIMENSION(IRefinementVariableTypes) :: INoofelementsforeachrefinementtype  !XX
 
   CALL DetermineNumberofRefinementVariablesPerType(INoofelementsforeachrefinementtype,IErr)
-
-  ALLOCATE(&
-       IIterativeVariableUniqueIDs(IIndependentVariables,5),&
-       STAT=IErr)  
+  IIndependentVariables = SUM(INoofelementsforeachrefinementtype)
+  
+  ALLOCATE(IIterativeVariableUniqueIDs(IIndependentVariables,5),STAT=IErr)
   IF( IErr.NE.0 ) THEN
      PRINT*,"felixrefine (", my_rank, ") error in Allocation() of IIterativeVariableUniqueIDs"
      RETURN
@@ -344,13 +333,10 @@ SUBROUTINE AssignArrayLocationsToIterationVariables(IIterativeVariableType,IVari
   
   IMPLICIT NONE
 
-  INTEGER(IKIND) :: &
-       IIterativeVariableType,IVariableNo,IErr,IArrayIndex,&
+  INTEGER(IKIND) :: IIterativeVariableType,IVariableNo,IErr,IArrayIndex,&
        IAnisotropicDebyeWallerFactorElementNo
-  INTEGER(IKIND),DIMENSION(IIndependentVariables,5),INTENT(OUT) :: &
-       IArrayToFill  
-  INTEGER(IKIND),DIMENSION(IRefinementVariableTypes) :: &
-       INoofelementsforeachrefinementtype
+  INTEGER(IKIND),DIMENSION(IIndependentVariables,5),INTENT(OUT) :: IArrayToFill  
+  INTEGER(IKIND),DIMENSION(IRefinementVariableTypes) :: INoofelementsforeachrefinementtype
 
 !!$  Calculate How Many of Each Variable Type There are
 
@@ -1228,7 +1214,7 @@ SUBROUTINE DetermineNumberofRefinementVariablesPerType(INoofelementsforeachrefin
        INoofelementsforeachrefinementtype
 
   INoofelementsforeachrefinementtype(1) = &
-       IRefineModeSelectionArray(1)*INoofUgs*2+1!RB +1 is for absorption
+       IRefineModeSelectionArray(1)*(INoofUgs*2+1)!RB +1 is for absorption
   INoofelementsforeachrefinementtype(2) = &
        IRefineModeSelectionArray(2)*IAllowedVectors
   INoofelementsforeachrefinementtype(3) = &
@@ -1253,32 +1239,29 @@ SUBROUTINE DetermineNumberofRefinementVariablesPerType(INoofelementsforeachrefin
 END SUBROUTINE DetermineNumberofRefinementVariablesPerType
 
 !!$  %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-
-SUBROUTINE CountRefinementVariables(IErr)
- 
-  USE MyNumbers
-  
-  USE CConst; USE IConst; USE RConst
-  USE IPara; USE RPara; USE SPara; USE CPara
-  USE BlochPara
-
-  USE IChannels
-
-  USE MPI
-  USE MyMPI
-  
-  IMPLICIT NONE
-
-  INTEGER(IKIND) :: &
-       IErr
-  INTEGER(IKIND),DIMENSION(IRefinementVariableTypes) :: &
-       INoofelementsforeachrefinementtype
-
-  CALL DetermineNumberofRefinementVariablesPerType(INoofelementsforeachrefinementtype,IErr)
-
-  IIndependentVariables = SUM(INoofelementsforeachrefinementtype)
-
-END SUBROUTINE CountRefinementVariables
+!XX
+!XXSUBROUTINE CountRefinementVariables(IErr)
+!XX 
+!XX  USE MyNumbers
+!XX  
+!XX  USE CConst; USE IConst; USE RConst
+!XX  USE IPara; USE RPara; USE SPara; USE CPara
+!XX  USE BlochPara
+!XX
+!XX  USE IChannels
+!XX
+!XX  USE MPI
+!XX  USE MyMPI
+!XX  
+!XX  IMPLICIT NONE
+!XX
+!XX  INTEGER(IKIND) :: IErr
+!XX  INTEGER(IKIND),DIMENSION(IRefinementVariableTypes) :: INoofelementsforeachrefinementtype
+!XX
+!XX  CALL DetermineNumberofRefinementVariablesPerType(INoofelementsforeachrefinementtype,IErr)
+!XX  IIndependentVariables = SUM(INoofelementsforeachrefinementtype)
+!XX
+!XXEND SUBROUTINE CountRefinementVariables
 
 !!$  %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
@@ -1297,10 +1280,8 @@ SUBROUTINE SetupAtomicVectorMovements(IErr)
   
   IMPLICIT NONE
 
-  INTEGER(IKIND) :: &
-       IErr,ICount,jnd,ind,ISpaceGrp
-  INTEGER(IKIND),DIMENSION(:),ALLOCATABLE :: &
-       IVectors
+  INTEGER(IKIND) :: IErr,ICount,jnd,ind,ISpaceGrp
+  INTEGER(IKIND),DIMENSION(:),ALLOCATABLE :: IVectors
   
   CALL ConvertSpaceGroupToNumber(ISpaceGrp,IErr)
   IF( IErr.NE.0 ) THEN
@@ -1308,8 +1289,7 @@ SUBROUTINE SetupAtomicVectorMovements(IErr)
      RETURN
   ENDIF
   
-  ALLOCATE(&
-       IVectors(SIZE(SWyckoffSymbols)),&
+  ALLOCATE(IVectors(SIZE(SWyckoffSymbols)),&
        STAT=IErr)
   IF( IErr.NE.0 ) THEN
      PRINT*,"felixrefine (", my_rank, ") error in Allocation() of IVectors"
@@ -1327,9 +1307,7 @@ SUBROUTINE SetupAtomicVectorMovements(IErr)
   
   IAllowedVectors = SUM(IVectors)
   
-  ALLOCATE(&
-       IAllowedVectorIDs(IAllowedVectors),&
-       STAT=IErr)
+  ALLOCATE(IAllowedVectorIDs(IAllowedVectors),STAT=IErr)
   IF( IErr.NE.0 ) THEN
      PRINT*,"felixrefine (", my_rank, ") error in Allocation() of IAllowedVectorIDs"
      RETURN
@@ -1344,16 +1322,13 @@ SUBROUTINE SetupAtomicVectorMovements(IErr)
      END DO
   END DO
   
-  ALLOCATE(&
-       RAllowedVectors(IAllowedVectors,THREEDIM),&
-       STAT=IErr)
+  ALLOCATE(RAllowedVectors(IAllowedVectors,THREEDIM),STAT=IErr)
   IF( IErr.NE.0 ) THEN
      PRINT*,"felixrefine (", my_rank, ") error in Allocation() of RAllowedVectors"
      RETURN
   ENDIF
   
-  ALLOCATE(&
-       RAllowedVectorMagnitudes(IAllowedVectors),&
+  ALLOCATE(RAllowedVectorMagnitudes(IAllowedVectors),&
        STAT=IErr)
   IF( IErr.NE.0 ) THEN
      PRINT*,"felixrefine (", my_rank, ") error in Allocation() of RAllowedVectorMagnitudes"
@@ -1377,8 +1352,7 @@ SUBROUTINE SetupAtomicVectorMovements(IErr)
   ! Save Atomic Coordinates  
   !--------------------------------------------------------------------
   
-  ALLOCATE(&
-       RInitialAtomSiteFracCoordVec(&
+  ALLOCATE(RInitialAtomSiteFracCoordVec(&
        SIZE(RAtomSiteFracCoordVec,DIM=1),&
        SIZE(RAtomSiteFracCoordVec,DIM=2)),&
        STAT=IErr)
