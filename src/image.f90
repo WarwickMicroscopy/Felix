@@ -4,7 +4,7 @@
 !
 ! Richard Beanland, Keith Evans, Rudolf A Roemer and Alexander Hubert
 !
-! (C) 2013/14, all rights reserved
+! (C) 2013/14/15/16, all rights reserved
 !
 ! Version: :VERSION:
 ! Date:    :DATE:
