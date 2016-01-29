@@ -340,43 +340,6 @@ SUBROUTINE ReadInpFile( IErr )
 		  IF(IRefineModeSelectionArray(9).EQ.1) PRINT*,"Refining Absorption"
 		  IF(IRefineModeSelectionArray(10).EQ.1) PRINT*,"Refining Accelerating Voltage "
 		  IF(IRefineModeSelectionArray(11).EQ.1) PRINT*,"Refining Scale Factor "
-!XS           DO ind = 1,IRefinementVariableTypes
-!XS              SRefineYESNO = 'NO'
-!XS              SELECT CASE (ind)
-!XS              CASE(1)
-!XS                 PRINT*,"Refine Structure Factors ",SRefineYESNO
-!XS              CASE(2)
-!XS                 IF(IRefineModeSelectionArray(ind).EQ.1) SRefineYESNO = 'YES'
-!XS                 PRINT*,"Refine Atomic Coordinates ",SRefineYESNO
-!XS              CASE(3)
-!XS                 IF(IRefineModeSelectionArray(ind).EQ.1) SRefineYESNO = 'YES'
-!XS                 PRINT*,"Refine Atomic Site Occupancies ",SRefineYESNO
-!XS              CASE(4)
-!XS                 IF(IRefineModeSelectionArray(ind).EQ.1) SRefineYESNO = 'YES'
-!XS                 PRINT*,"Refine Isotropic Debye Waller Factors ",SRefineYESNO
-!XS              CASE(5)
-!XS                 IF(IRefineModeSelectionArray(ind).EQ.1) SRefineYESNO = 'YES'
-!XS                 PRINT*,"Refine Anisotropic Debye Waller Factors ",SRefineYESNO
-!XS              CASE(6)
-!XS                 IF(IRefineModeSelectionArray(ind).EQ.1) SRefineYESNO = 'YES'
-!XS                 PRINT*,"Refine Lattice Lengths ",SRefineYESNO
-!XS              CASE(7)
-!XS                 IF(IRefineModeSelectionArray(ind).EQ.1) SRefineYESNO = 'YES'
-!XS                 PRINT*,"Refine Lattice Angles ",SRefineYESNO
-!XS              CASE(8)
-!XS                 IF(IRefineModeSelectionArray(ind).EQ.1) SRefineYESNO = 'YES'
-!XS                 PRINT*,"Refine Convergence Angle ",SRefineYESNO
-!XS              CASE(9)
-!XS                 IF(IRefineModeSelectionArray(ind).EQ.1) SRefineYESNO = 'YES'
-!XS                 PRINT*,"Refine Total Absorption ",SRefineYESNO
-!XS              CASE(10)
-!XS                 IF(IRefineModeSelectionArray(ind).EQ.1) SRefineYESNO = 'YES'
-!XS                 PRINT*,"Refine Accelerating Voltage ",SRefineYESNO
-!XS              CASE(11)
-!XS                 IF(IRefineModeSelectionArray(ind).EQ.1) SRefineYESNO = 'YES'
-!XS                 PRINT*,"Refine Residual Sum of Squares Scaling Factor ",SRefineYESNO
-!XS              END SELECT
-!XS           END DO
         ELSE
            PRINT*,"IRefineModeSelectionArray = ",IRefineModeSelectionArray
         END IF
@@ -575,16 +538,14 @@ SUBROUTINE ReadHklFile(IErr)
 
   100 ILength=ILine
 
-  ALLOCATE(&
-       RInputHKLs(ILength,THREEDIM),&
+  ALLOCATE(RInputHKLs(ILength,THREEDIM),&
        STAT=IErr)
   IF( IErr.NE.0 ) THEN
      PRINT*,"ReadHklFile(): error in memory ALLOCATE()"
      RETURN
   ENDIF
 
-  ALLOCATE(&
-       IOutputReflections(ILength),&
+  ALLOCATE(IOutputReflections(ILength),&
        STAT=IErr)
   IF( IErr.NE.0 ) THEN
      PRINT*,"ReadHklFile(): error in memory ALLOCATE()"
@@ -795,9 +756,11 @@ SUBROUTINE ReadExperimentalImages(IErr)
      PRINT*,"No. of Images with Negative Values",INegError
   END IF
 
-  IF( IErr.EQ.0 ) THEN
+  IF(my_rank.EQ.0) THEN
+    IF( IErr.EQ.0 ) THEN
         PRINT*, IReflectOut,"experimental images successfully loaded"
 		PRINT*, " "
+    END IF
   END IF
 
 END SUBROUTINE ReadExperimentalImages

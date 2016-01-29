@@ -203,13 +203,11 @@ SUBROUTINE CrystalFullFractionalAtomicPostitionsCalculation(IErr)
   
   IMPLICIT NONE
   
-  INTEGER(IKIND) :: &
-       IErr, ind,jnd,knd, Ifullind
+  INTEGER(IKIND) :: IErr, ind,jnd,knd, Ifullind
 
   CALL Message("CrystalFullFractionalAtomicPostitionsCalculation",IMust,IErr)
   
-  ALLOCATE( &
-       RFullAtomicFracCoordVec( &
+  ALLOCATE(RFullAtomicFracCoordVec( &
        SIZE(RSymVec,1)*SIZE(RAtomSiteFracCoordVec,1),&
        THREEDIM), &
        STAT=IErr)  
@@ -219,8 +217,7 @@ SUBROUTINE CrystalFullFractionalAtomicPostitionsCalculation(IErr)
      RETURN
   ENDIF
   
-  ALLOCATE( &
-       SFullAtomicNameVec( &
+  ALLOCATE(SFullAtomicNameVec( &
        SIZE(RSymVec,1)*SIZE(RAtomSiteFracCoordVec,1)), &
        STAT=IErr)  
   IF( IErr.NE.0 ) THEN
@@ -229,8 +226,7 @@ SUBROUTINE CrystalFullFractionalAtomicPostitionsCalculation(IErr)
      RETURN
   ENDIF
   
-  ALLOCATE( &
-       RFullPartialOccupancy( &
+  ALLOCATE(RFullPartialOccupancy( &
        SIZE(RSymVec,1)*SIZE(RAtomSiteFracCoordVec,1)), &
        STAT=IErr)  
   IF( IErr.NE.0 ) THEN
@@ -239,8 +235,7 @@ SUBROUTINE CrystalFullFractionalAtomicPostitionsCalculation(IErr)
      RETURN
   ENDIF
   
-  ALLOCATE( &
-       RFullIsotropicDebyeWallerFactor( &
+  ALLOCATE(RFullIsotropicDebyeWallerFactor( &
        SIZE(RSymVec,1)*SIZE(RAtomSiteFracCoordVec,1)), &
        STAT=IErr)  
   IF( IErr.NE.0 ) THEN
@@ -248,8 +243,7 @@ SUBROUTINE CrystalFullFractionalAtomicPostitionsCalculation(IErr)
           my_rank, ") error ", IErr, " in ALLOCATE RFullIsotropicDebyeWallerFactor"
      RETURN
   ENDIF
-  ALLOCATE( &
-       IFullAtomNumber( &
+  ALLOCATE(IFullAtomNumber( &
        SIZE(RSymVec,1)*SIZE(RAtomSiteFracCoordVec,1)), &
        STAT=IErr)  
   IF( IErr.NE.0 ) THEN
@@ -258,8 +252,7 @@ SUBROUTINE CrystalFullFractionalAtomicPostitionsCalculation(IErr)
      RETURN
   ENDIF
   
-  ALLOCATE( &
-       IFullAnisotropicDWFTensor( &
+  ALLOCATE(IFullAnisotropicDWFTensor( &
        SIZE(RSymVec,1)*SIZE(RAtomSiteFracCoordVec,1)), &
        STAT=IErr)  
   IF( IErr.NE.0 ) THEN
@@ -311,6 +304,7 @@ SUBROUTINE CrystalFullFractionalAtomicPostitionsCalculation(IErr)
 
 END SUBROUTINE CrystalFullFractionalAtomicPostitionsCalculation
 
+!!$  %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 SUBROUTINE CrystalUniqueFractionalAtomicPostitionsCalculation (IErr)
 
@@ -326,14 +320,9 @@ SUBROUTINE CrystalUniqueFractionalAtomicPostitionsCalculation (IErr)
   
   IMPLICIT NONE
   
-  REAL(RKIND):: &
-       norm
-
-  INTEGER(IKIND) :: &
-       IErr, ind,jnd, Iuniind
-  LOGICAL :: &
-       Lunique
-
+  REAL(RKIND):: norm
+  INTEGER(IKIND) :: IErr, ind,jnd, Iuniind
+  LOGICAL :: Lunique
   CHARACTER*100 MNPString
   CHARACTER*100 indString
   
@@ -341,48 +330,42 @@ SUBROUTINE CrystalUniqueFractionalAtomicPostitionsCalculation (IErr)
 
   ! Calculate the set of unique fractional atomic positions
 
-  ALLOCATE( &
-       MNP(ITotalAtoms,THREEDIM), &
+  ALLOCATE(MNP(ITotalAtoms,THREEDIM), &
        STAT=IErr)
   IF( IErr.NE.0 ) THEN
      PRINT*,"CrystalUniqueFractionalAtomicPostitionsCalculation(", my_rank, ") error ", IErr, " in ALLOCATE MNP"
      RETURN
   ENDIF
 
-  ALLOCATE( &
-       SMNP(ITotalAtoms), &
+  ALLOCATE(SMNP(ITotalAtoms), &
        STAT=IErr)
   IF( IErr.NE.0 ) THEN
      PRINT*,"CrystalUniqueFractionalAtomicPostitionsCalculation(", my_rank, ") error ", IErr, " in ALLOCATE SMNP"
      RETURN
   ENDIF
 
-  ALLOCATE( &
-       RDWF(ITotalAtoms), &
+  ALLOCATE(RDWF(ITotalAtoms), &
        STAT=IErr)
   IF( IErr.NE.0 ) THEN
      PRINT*,"CrystalUniqueFractionalAtomicPostitionsCalculation(", my_rank, ") error ", IErr, " in ALLOCATE RDWF"
      RETURN
   ENDIF
 
-  ALLOCATE( &
-       ROcc(ITotalAtoms), &
+  ALLOCATE(ROcc(ITotalAtoms), &
        STAT=IErr)
   IF( IErr.NE.0 ) THEN
      PRINT*,"CrystalUniqueFractionalAtomicPostitionsCalculation(", my_rank, ") error ", IErr, " in ALLOCATE ROcc"
      RETURN
   ENDIF
 
-  ALLOCATE( &
-       IAtoms(ITotalAtoms), &
+  ALLOCATE(IAtoms(ITotalAtoms), &
        STAT=IErr)
   IF( IErr.NE.0 ) THEN
      PRINT*,"CrystalUniqueFractionalAtomicPostitionsCalculation(", my_rank, ") error ", IErr, " in ALLOCATE IAtoms"
      RETURN
   ENDIF
 
-  ALLOCATE( &
-       IAnisoDWFT(ITotalAtoms), &
+  ALLOCATE(IAnisoDWFT(ITotalAtoms), &
        STAT=IErr)
   IF( IErr.NE.0 ) THEN
      PRINT*,"CrystalUniqueFractionalAtomicPostitionsCalculation(", my_rank, ") error ", IErr, " in ALLOCATE IAnisoDWFT"

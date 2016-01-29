@@ -58,9 +58,7 @@ SUBROUTINE ExperimentalSetup (IErr)
   ! Allocate Crystallography Variables
   !--------------------------------------------------------------------
 
-  ALLOCATE( &
-       RrVecMat(ITotalAtoms,THREEDIM), &
-       STAT=IErr)
+  ALLOCATE(RrVecMat(ITotalAtoms,THREEDIM),STAT=IErr)
   IF( IErr.NE.0 ) THEN
      PRINT*,"ExperimentalSetup(", my_rank, ") error ", IErr, " in ALLOCATE of RrVecMat"
      RETURN

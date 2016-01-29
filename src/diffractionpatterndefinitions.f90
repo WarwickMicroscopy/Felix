@@ -124,26 +124,15 @@ SUBROUTINE ReflectionDetermination( IErr )
 
   END IF
 
-  ALLOCATE(&
-       RgVecMatT(SIZE(RHKL,DIM=1),THREEDIM), &
+  ALLOCATE(RgVecMatT(SIZE(RHKL,DIM=1),THREEDIM), &
        STAT=IErr)
   IF( IErr.NE.0 ) THEN
      PRINT*,"DiffractionPatternDefinitions(", my_rank, ") error ", IErr, &
           " in ALLOCATE() of DYNAMIC variables RgVecMatT(HKL)"
      RETURN
   ENDIF
-!RB added
-!  ALLOCATE(&
-!       RgList(SIZE(RHKL,DIM=1),THREEDIM), &
-!       STAT=IErr)
-!  IF( IErr.NE.0 ) THEN
-!     PRINT*,"DiffractionPatternDefinitions(", my_rank, ") error ", IErr, &
-!          " in ALLOCATE() of DYNAMIC variables RgList(HKL)"
-!     RETURN
-!  ENDIF
-!RB end added
-  ALLOCATE(&
-       RgDummyVecMat(SIZE(RHKL,DIM=1),THREEDIM), &
+
+  ALLOCATE(RgDummyVecMat(SIZE(RHKL,DIM=1),THREEDIM), &
        STAT=IErr)
   IF( IErr.NE.0 ) THEN
      PRINT*,"DiffractionPatternDefinitions(", my_rank, ") error ", IErr, &
@@ -151,12 +140,19 @@ SUBROUTINE ReflectionDetermination( IErr )
      RETURN
   ENDIF
 
-  ALLOCATE(&
-       RgVecMag(SIZE(RHKL,DIM=1)), &
+  ALLOCATE(RgVecMag(SIZE(RHKL,DIM=1)), &
        STAT=IErr)
   IF( IErr.NE.0 ) THEN
      PRINT*,"DiffractionPatternDefinitions(", my_rank, ") error ", IErr, &
           " in ALLOCATE() of DYNAMIC variables RgVecMag(HKL)"
+     RETURN
+  ENDIF
+  
+  ALLOCATE(RgVecVec(SIZE(RHKL,DIM=1)), &
+       STAT=IErr)
+  IF( IErr.NE.0 ) THEN
+     PRINT*,"DiffractionPatternCalculation(", my_rank, ") error ", IErr, &
+          " in ALLOCATE() of DYNAMIC variables RgVecVec(HKL)"
      RETURN
   ENDIF
 
@@ -237,8 +233,7 @@ SUBROUTINE ReflectionDetermination( IErr )
 !!$     HOLZ Acceptance Angle
 !!$     Allocate enough space to determine Acceptance angle (in reciprocal Angstroms) 
 !!$     For each Laue Zone
-  ALLOCATE(&
-       RgVecMagLaue(SIZE(RHKL,DIM=1),ITotalLaueZoneLevel), &
+  ALLOCATE(RgVecMagLaue(SIZE(RHKL,DIM=1),ITotalLaueZoneLevel), &
        STAT=IErr)
   IF( IErr.NE.0 ) THEN
      PRINT*,"DiffractionPatternDefinitions(", my_rank, ") error ", IErr, &
@@ -348,8 +343,7 @@ SUBROUTINE ReflectionDetermination( IErr )
 
      IHOLZGVecMagSize=ICounter
 
-     ALLOCATE(&
-          IOriginGVecIdentifier(IHOLZGVecMagSize), &
+     ALLOCATE(IOriginGVecIdentifier(IHOLZGVecMagSize), &
           STAT=IErr)
      IF( IErr.NE.0 ) THEN
         PRINT*,"DiffractionPatternDefinitions(", my_rank, ") error ", IErr, &
@@ -461,10 +455,19 @@ SUBROUTINE ReflectionDetermination( IErr )
        IVariable=IMinReflectionPool)
   CALL Message("ReflectionDetermination", IInfo,IErr, &
        MessageVariable="to nReflections",IVariable=nReflections)
-!RB  RgList=RgMatVecT
+
+!RB Deallocate local variables	   
+  DEALLOCATE(RgDummyVecMat,STAT=IErr)
+  IF( IErr.NE.0 ) THEN
+     PRINT*,"ReflectionDetermination(", my_rank, ") error ", IErr, &
+          " in Deallocation RgDummyVecMatT"
+     RETURN
+  ENDIF
 END SUBROUTINE ReflectionDetermination
+
+!!$%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
   
-  SUBROUTINE SpecificReflectionDetermination (IErr)
+SUBROUTINE SpecificReflectionDetermination (IErr)
     
     USE MyNumbers
     USE WriteToScreen
@@ -476,8 +479,7 @@ END SUBROUTINE ReflectionDetermination
 
     IMPLICIT NONE
 
-    INTEGER(IKIND) :: &
-         IFind,IFound,ind,jnd,knd,IErr
+    INTEGER(IKIND) :: IFind,IFound,ind,jnd,knd,IErr
 
     CALL Message("SpecificReflectionDetermination",IMust,IErr)
     
@@ -539,6 +541,8 @@ END SUBROUTINE ReflectionDetermination
   
 END SUBROUTINE SpecificReflectionDetermination
 
+!!$%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
 SUBROUTINE DiffractionPatternCalculation (IErr)
   
   USE MyNumbers
@@ -557,15 +561,6 @@ SUBROUTINE DiffractionPatternCalculation (IErr)
        Sind
   
   CALL Message("DiffractionPatternCalculation",IMust,IErr)
-  
-  ALLOCATE(&
-       RgVecVec(SIZE(RHKL,DIM=1)), &
-       STAT=IErr)
-  IF( IErr.NE.0 ) THEN
-     PRINT*,"DiffractionPatternCalculation(", my_rank, ") error ", IErr, &
-          " in ALLOCATE() of DYNAMIC variables RgVecVec(HKL)"
-     RETURN
-  ENDIF
   
   RNormDirM = RNormDirM/sqrt(DOT_PRODUCT(RNormDirM,RNormDirM))
   
@@ -600,6 +595,7 @@ SUBROUTINE DiffractionPatternCalculation (IErr)
 
 END SUBROUTINE DiffractionPatternCalculation
 
+!%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 SUBROUTINE NewHKLMake(Ihklmax,Rhkl0Vec,RHOLZAcceptanceAngle,IErr)
   
@@ -615,12 +611,9 @@ SUBROUTINE NewHKLMake(Ihklmax,Rhkl0Vec,RHOLZAcceptanceAngle,IErr)
   
   IMPLICIT NONE
   
-  INTEGER(IKIND) :: &
-       IErr, Ihklmax,ind,jnd,knd,INhkl
-  REAL(RKIND) :: &
-       RHOLZAcceptanceAngle
-  REAL(RKIND), DIMENSION(THREEDIM) :: &
-       Rhkl0Vec,RhklDummyUnitVec,RhklDummyVec,Rhkl0UnitVec
+  INTEGER(IKIND) :: IErr, Ihklmax,ind,jnd,knd,INhkl
+  REAL(RKIND) :: RHOLZAcceptanceAngle
+  REAL(RKIND), DIMENSION(THREEDIM) :: Rhkl0Vec,RhklDummyUnitVec,RhklDummyVec,Rhkl0UnitVec
 
   CALL Message("NewHKLMake",IMust,IErr)
 
@@ -766,8 +759,7 @@ SUBROUTINE NewHKLMake(Ihklmax,Rhkl0Vec,RHOLZAcceptanceAngle,IErr)
      END DO
   END DO
   
-  Allocate(&
-       RHKL((INhkl),THREEDIM),&
+  Allocate(RHKL((INhkl),THREEDIM),&
        STAT=IErr)
   IF( IErr.NE.0 ) THEN
      PRINT*,"hklMake(", my_rank, ") error ", IErr, &

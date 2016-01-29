@@ -49,8 +49,7 @@ SUBROUTINE ImageSetup (IErr)
 
   IMPLICIT NONE
 
-  INTEGER(IKIND) :: &
-       IErr
+  INTEGER(IKIND) :: IErr
 
   !--------------------------------------------------------------------
   ! allocate memory for DYNAMIC variables according to nReflections
@@ -60,8 +59,7 @@ SUBROUTINE ImageSetup (IErr)
 
   CALL Message("ImageSetup",IMust,IErr)
   
-  ALLOCATE( &
-       Rhklpositions(nReflections,2), &
+  ALLOCATE(Rhklpositions(nReflections,2), &
        STAT=IErr)
   IF( IErr.NE.0 ) THEN
      PRINT*,"ImageSetup(", my_rank, ") error ", IErr, &
@@ -86,8 +84,7 @@ SUBROUTINE ImageSetup (IErr)
       
   !Allocate Memory for Masking Image
 
-  ALLOCATE( &
-       RMask(2*IPixelCount,2*IPixelCount),&
+  ALLOCATE(RMask(2*IPixelCount,2*IPixelCount),&
        STAT=IErr)
   IF( IErr.NE.0 ) THEN
      PRINT*,"ImageSetup(", my_rank, ") error ", IErr, &

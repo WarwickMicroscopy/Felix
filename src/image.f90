@@ -52,10 +52,8 @@ SUBROUTINE ImageInitialisation( IErr )
   
   IMPLICIT NONE
 
-  REAL(RKIND) :: &
-       DummyConvergenceAngle
-  INTEGER(IKIND) :: &
-       IErr, ind,jnd
+  REAL(RKIND) :: DummyConvergenceAngle
+  INTEGER(IKIND) :: IErr, ind,jnd
 
   CALL Message("ImageInitialisation",IMust,IErr)
   
@@ -275,8 +273,7 @@ SUBROUTINE ImageMaskInitialisation (IErr)
      ENDDO
   END IF
 
-  ALLOCATE( &
-       IPixelLocations(IPixelTotal,2), &
+  ALLOCATE(IPixelLocations(IPixelTotal,2), &
        STAT=IErr)
   IF( IErr.NE.0 ) THEN
      PRINT*,"ImagemaskInitialization(", my_rank, ") error ", IErr, " in ALLOCATE of IPixelLocations"

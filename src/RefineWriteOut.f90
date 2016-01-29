@@ -191,14 +191,14 @@ SUBROUTINE WriteIterationOutput(IIterationCount,IThicknessIndex,IExitFlag,IErr)
           IIterationCount-IPreviousPrintedIteration,"iterations from my last print"
      
      IPreviousPrintedIteration = IIterationCount
-     
+ PRINT*,"WriteIterationImages"     
      CALL WriteIterationImages(path,IThicknessIndex,IErr)
      IF( IErr.NE.0 ) THEN
         PRINT*,"WriteIterationOutput(", my_rank, ") error ", IErr, &
              " in WriteIterationImages"
         RETURN
      ENDIF
-     
+ PRINT*,"WriteIterationStructure"
      CALL WriteIterationStructure(path,IErr) 
      IF( IErr.NE.0 ) THEN
         PRINT*,"WriteIterationOutput(", my_rank, ") error ", IErr, &
@@ -221,6 +221,7 @@ SUBROUTINE WriteIterationOutput(IIterationCount,IThicknessIndex,IExitFlag,IErr)
   
 END SUBROUTINE WriteIterationOutput
 
+!!$  %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 SUBROUTINE WriteStructureFactors(path,IErr)
 
@@ -249,11 +250,12 @@ SUBROUTINE WriteStructureFactors(path,IErr)
   DO ind = 1,nReflections
      WRITE(IChOutSimplex,FMT='(3I5.1,2F13.9)') NINT(Rhkl(ind,:)),CUgMat(ind,1)
   END DO
-PRINT*,"onk"
 
   CLOSE(IChOutSimplex)
 
 END SUBROUTINE WriteStructureFactors
+
+!!$  %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 SUBROUTINE WriteIterationStructure(path,IErr)
 
@@ -297,129 +299,19 @@ SUBROUTINE WriteIterationStructure(path,IErr)
   !   RETURN
   !ENDIF
 
-  WRITE(filename,*) "StructureFull.txt"
-  WRITE(fullpath,*) TRIM(ADJUSTL(path)),'/',TRIM(ADJUSTL(filename))
-
-  OPEN(UNIT=IChOutSimplex,STATUS='UNKNOWN',&
-        FILE=TRIM(ADJUSTL(fullpath)))
-    DO jnd = 1,SIZE(MNP,DIM=1)
-     WRITE(IChOutSimplex,FMT='(A2,1X,3(F9.6,1X))') SMNP(jnd),MNP(jnd,1:3)
-    END DO
-
-  CLOSE(IChOutSimplex)
-  
-  DEALLOCATE(MNP,STAT=IErr)
-  IF( IErr.NE.0 ) THEN
-     PRINT*,"WriteIterationStructure(", my_rank, ") error ", IErr, &
-          " in Deallocation MNP"
-     RETURN
-  ENDIF
-      
-  DEALLOCATE(SMNP,STAT=IErr)
-  IF( IErr.NE.0 ) THEN
-     PRINT*,"WriteIterationStructure(", my_rank, ") error ", IErr, &
-          " in Deallocation SMNP"
-     RETURN
-  ENDIF
-       
-  DEALLOCATE(RFullAtomicFracCoordVec,STAT=IErr)
-  IF( IErr.NE.0 ) THEN
-     PRINT*,"WriteIterationStructure(", my_rank, ") error ", IErr, &
-          " in Deallocation RFullAtomicFracCoordVec"
-     RETURN
-  ENDIF
-       
-  DEALLOCATE(SFullAtomicNameVec,STAT=IErr)
-  IF( IErr.NE.0 ) THEN
-     PRINT*,"WriteIterationStructure(", my_rank, ") error ", IErr, &
-          " in Deallocation SFullAtomicNameVec"
-     RETURN
-  ENDIF
-       
-  DEALLOCATE(IFullAnisotropicDWFTensor,STAT=IErr)
-  IF( IErr.NE.0 ) THEN
-     PRINT*,"WriteIterationStructure(", my_rank, ") error ", IErr, &
-          " in Deallocation IFullAnisotropicDWFTensor"
-     RETURN
-  ENDIF
-       
-  DEALLOCATE(IFullAtomNumber,STAT=IErr)
-  IF( IErr.NE.0 ) THEN
-     PRINT*,"WriteIterationStructure(", my_rank, ") error ", IErr, &
-          " in Deallocation IFullAtomNumber"
-     RETURN
-  ENDIF
-       
-  DEALLOCATE(RFullIsotropicDebyeWallerFactor,STAT=IErr)
-  IF( IErr.NE.0 ) THEN
-     PRINT*,"WriteIterationStructure(", my_rank, ") error ", IErr, &
-          " in Deallocation RFullIsotropicDebyeWallerFactor"
-     RETURN
-  ENDIF
-       
-  DEALLOCATE(RFullPartialOccupancy,STAT=IErr)
-  IF( IErr.NE.0 ) THEN
-     PRINT*,"WriteIterationStructure(", my_rank, ") error ", IErr, &
-          " in Deallocation RFullPartialOccupancy"
-     RETURN
-  ENDIF
-       
-  DEALLOCATE(RDWF,STAT=IErr)
-  IF( IErr.NE.0 ) THEN
-     PRINT*,"WriteIterationStructure(", my_rank, ") error ", IErr, &
-          " in Deallocation RDWF"
-     RETURN
-  ENDIF
-       
-  DEALLOCATE(ROcc,STAT=IErr)
-  IF( IErr.NE.0 ) THEN
-     PRINT*,"WriteIterationStructure(", my_rank, ") error ", IErr, &
-          " in Deallocation ROcc"
-     RETURN
-  ENDIF
-       
-  DEALLOCATE(IAtoms,STAT=IErr)
-  IF( IErr.NE.0 ) THEN
-     PRINT*,"WriteIterationStructure(", my_rank, ") error ", IErr, &
-          " in Deallocation IAtoms"
-     RETURN
-  ENDIF
-       
-  DEALLOCATE(IAnisoDWFT,STAT=IErr)
-  IF( IErr.NE.0 ) THEN
-     PRINT*,"WriteIterationStructure(", my_rank, ") error ", IErr, &
-          " in Deallocation IAnisoDWFT"
-     RETURN
-  ENDIF
-       
-  DEALLOCATE(RgVecMatT,STAT=IErr)
-  IF( IErr.NE.0 ) THEN
-     PRINT*,"WriteIterationStructure(", my_rank, ") error ", IErr, &
-          " in Deallocation RgVecMatT"
-     RETURN
-  ENDIF
-       
-  DEALLOCATE(RgVecMag,STAT=IErr)
-  IF( IErr.NE.0 ) THEN
-     PRINT*,"WriteIterationStructure(", my_rank, ") error ", IErr, &
-          " in Deallocation RgVecMag"
-     RETURN
-  ENDIF
-       
-  DEALLOCATE(RgVecVec,STAT=IErr)
-  IF( IErr.NE.0 ) THEN
-     PRINT*,"WriteIterationStructure(", my_rank, ") error ", IErr, &
-          " in Deallocation RgVecMag"
-     RETURN
-  ENDIF
-
-  DEALLOCATE(RrVecMat,STAT=IErr)
-  IF( IErr.NE.0 ) THEN
-     PRINT*,"WriteIterationStructure(", my_rank, ") error ", IErr, " in DEALLOCATE of RrVecMat"
-     RETURN
-  ENDIF
+!XX  WRITE(filename,*) "StructureFull.txt"
+!XX  WRITE(fullpath,*) TRIM(ADJUSTL(path)),'/',TRIM(ADJUSTL(filename))
+!XXPRINT*,"MNP,SMNP"  
+!XX  OPEN(UNIT=IChOutSimplex,STATUS='UNKNOWN',&
+!XX        FILE=TRIM(ADJUSTL(fullpath)))
+!XX    DO jnd = 1,SIZE(MNP,DIM=1)
+!XX     WRITE(IChOutSimplex,FMT='(A2,1X,3(F9.6,1X))') SMNP(jnd),MNP(jnd,1:3)
+!XX    END DO
+!XX  CLOSE(IChOutSimplex)
 
 END SUBROUTINE WriteIterationStructure
+
+!!$  %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 SUBROUTINE WriteIterationImages(path,IThicknessIndex,IErr)
 
