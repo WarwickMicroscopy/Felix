@@ -96,6 +96,7 @@ SUBROUTINE SymmetryRelatedStructureFactorDetermination (IErr)
   IMPLICIT NONE
   
   INTEGER(IKIND) :: ind,jnd,ierr,knd,Iuid
+  CHARACTER*200 :: SPrintString
 
   CALL Message("SymmetryRelatedStructureFactorDetermination",IMust,IErr)
 
@@ -119,7 +120,9 @@ SUBROUTINE SymmetryRelatedStructureFactorDetermination (IErr)
   END DO
 
   IF((IWriteFLAG.GE.0.AND.my_rank.EQ.0).OR.IWriteFLAG.GE.10) THEN
-     PRINT*,"Unique Ugs = ",Iuid
+     WRITE(SPrintString,FMT='(I4,A24)') Iuid," unique structure factors"
+     PRINT*,TRIM(ADJUSTL(SPrintString))
+!     PRINT*,"Unique Ugs = ",Iuid
   END IF
  
   ALLOCATE(ISymmetryStrengthKey(Iuid),STAT=IErr)
@@ -135,7 +138,7 @@ SUBROUTINE SymmetryRelatedStructureFactorDetermination (IErr)
      PRINT*,"SymmetryRelatedStructureFactorDetermination(", my_rank, ") error ", IErr, " in ALLOCATE() CSymmetryStrengthKey"
      RETURN
   END IF
-PRINT*, "bebble"  
+  
 END SUBROUTINE SymmetryRelatedStructureFactorDetermination
 
 !!$%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%

@@ -65,7 +65,7 @@ SUBROUTINE ImageSetup (IErr)
      PRINT*,"ImageSetup(", my_rank, ") error ", IErr, &
           " in ALLOCATE() of DYNAMIC variable Rhklpositions"
      RETURN
-  ENDIF
+  END IF
 
   !--------------------------------------------------------------------
   ! image initialisation
@@ -76,7 +76,7 @@ SUBROUTINE ImageSetup (IErr)
      PRINT*,"ImageSetup(", my_rank, ") error", IErr, &
 	  "in ImageInitialistion()"
      RETURN
-  ENDIF
+  END IF
 
   !--------------------------------------------------------------------
   ! define image masks
@@ -90,7 +90,7 @@ SUBROUTINE ImageSetup (IErr)
      PRINT*,"ImageSetup(", my_rank, ") error ", IErr, &
           " in ALLOCATE() of DYNAMIC variable RMask"
      RETURN
-  ENDIF
+  END IF
 
   !Calls subroutine that sets up masking image
 

@@ -71,7 +71,7 @@ SUBROUTINE StructureFactorSetup(IErr)
           " in ALLOCATE() of DYNAMIC variables RgMatMat"
      !call error function
      RETURN
-  ENDIF
+  END IF
        
   ALLOCATE(RgMatMag(nReflections,nReflections), &
        STAT=IErr)
@@ -80,7 +80,7 @@ SUBROUTINE StructureFactorSetup(IErr)
           " in ALLOCATE() of DYNAMIC variables RgMatMag"
      !call error function
      RETURN
-  ENDIF
+  END IF
 !RB  NB Also deallocated in felixfunction!!!
   !RB Matrix for sum of indices - for symmetry equivalence  
   ALLOCATE(RgSumMat(nReflections,nReflections), &
@@ -90,7 +90,7 @@ SUBROUTINE StructureFactorSetup(IErr)
           "in ALLOCATE() of DYNAMIC variables RgSumMat"
      !call error function
      RETURN
-  ENDIF  
+  END IF  
 
   CALL GMatrixInitialisation (IErr)
   IF( IErr.NE.0 ) THEN
@@ -98,7 +98,7 @@ SUBROUTINE StructureFactorSetup(IErr)
           " in GMatrixInitialisation"
      !error function call
      RETURN
-  ENDIF
+  END IF
 
   !--------------------------------------------------------------------
   ! calculating Ug matrix
@@ -114,7 +114,7 @@ SUBROUTINE StructureFactorSetup(IErr)
           "in ALLOCATE() of DYNAMIC variables CUgMat"
      !call error function
      RETURN
-  ENDIF
+  END IF
   
   !RB Matrix without absorption
   ALLOCATE(CUgMatNoAbs(nReflections,nReflections), &!RB
@@ -124,7 +124,7 @@ SUBROUTINE StructureFactorSetup(IErr)
           "in ALLOCATE() of DYNAMIC variables CUgMatNoAbs"!RB
      !call error function
      RETURN!RB
-  ENDIF  !RB
+  END IF  !RB
 
   !RB Matrix for absorption  
   ALLOCATE(CUgMatPrime(nReflections,nReflections), &
@@ -134,7 +134,7 @@ SUBROUTINE StructureFactorSetup(IErr)
           "in ALLOCATE() of DYNAMIC variables CUgMatPrime"
      !call error function
      RETURN
-  ENDIF  
+  END IF  
 
   CALL StructureFactorInitialisation (IErr)
   IF( IErr.NE.0 ) THEN
@@ -142,21 +142,21 @@ SUBROUTINE StructureFactorSetup(IErr)
           "in StructureFactorInitialisation"
      !call error function
      RETURN
-  ENDIF
+  END IF
 
   DEALLOCATE(RgMatMat,STAT=IErr)
   IF( IErr.NE.0 ) THEN
      PRINT*,"felixsim(", my_rank, ") error ", IErr, &
           " in Deallocation of RgMatMat"
      RETURN
-  ENDIF
+  END IF
   
   DEALLOCATE(RgMatMag,STAT=IErr)
   IF( IErr.NE.0 ) THEN
      PRINT*,"felixsim(", my_rank, ") error ", IErr, &
           " in Deallocation of RgMatMag"
      RETURN
-  ENDIF
+  END IF
 
   DEALLOCATE(RrVecMat,STAT=IErr)
   IF( IErr.NE.0 ) THEN

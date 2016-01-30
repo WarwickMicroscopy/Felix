@@ -79,7 +79,7 @@ SUBROUTINE ImageInitialisation( IErr )
      DummyConvergenceAngle=RConvergenceAngle
   ELSE
      DummyConvergenceAngle=0.95_RKIND
-  ENDIF
+  END IF
   IF(IHKLSelectFLAG.EQ.0) THEN
      DO ind=1,SIZE(Rhklpositions,DIM=2)
         IImageSizeXY(ind)= CEILING(&
@@ -164,7 +164,7 @@ SUBROUTINE MontageInitialisation(IPixelHorizontalPosition,IPixelVerticalPosition
                 NINT(MAXVAL(IImageSizeXY)/TWO+TWO*(IPixelCount/0.95D0)*RhklPositions(hnd,2))
            IMontagePixelHorizontalPosition = &
                 NINT(MAXVAL(IImageSizeXY)/TWO+TWO*(IPixelCount/0.95D0)*RhklPositions(hnd,1))
-        ENDIF
+        END IF
 
         RMontageImage(&
              IMontagePixelVerticalPosition-IPixelCount+IPixelVerticalPosition,&
@@ -191,7 +191,7 @@ SUBROUTINE MontageInitialisation(IPixelHorizontalPosition,IPixelVerticalPosition
                 NINT(MAXVAL(IImageSizeXY)/TWO+TWO*(IPixelCount/0.95D0)*RhklPositions(IOutputReflections(hnd),2))
            IMontagePixelHorizontalPosition = &
                 NINT(MAXVAL(IImageSizeXY)/TWO+TWO*(IPixelCount/0.95D0)*RhklPositions(IOutputReflections(hnd),1))
-        ENDIF
+        END IF
 
         RMontageImage(&
              IMontagePixelVerticalPosition-IPixelCount+IPixelVerticalPosition,&
@@ -250,7 +250,7 @@ SUBROUTINE ImageMaskInitialisation (IErr)
               
            ELSE
               RMask(jnd,ind) = 0
-           ENDIF
+           END IF
         ENDDO
      ENDDO
   CASE(1) ! square
@@ -268,7 +268,7 @@ SUBROUTINE ImageMaskInitialisation (IErr)
            IF(Rradius.LE.RImageRadius) THEN
               RMask(jnd,ind) = 0
               IPixelTotal= IPixelTotal - 1
-           ENDIF
+           END IF
         ENDDO
      ENDDO
   END IF

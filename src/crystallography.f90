@@ -81,7 +81,7 @@ SUBROUTINE CrystalLatticeVectorDetermination(IErr)
           SQRT(1.0D0 - &
           COS(RAlpha)*COS(RAlpha)-COS(RBeta)*COS(RBeta)-COS(RGamma)*COS(RGamma) + &
           TWO*COS(RAlpha)*COS(RBeta)*COS(RGamma))
-  ENDIF
+  END IF
 
   IF(IDiffractionFLAG.EQ.0) THEN
      
@@ -114,13 +114,13 @@ SUBROUTINE CrystalLatticeVectorDetermination(IErr)
   DO ind=1,THREEDIM
      IF (abs(RarVecO(ind)).lt.TINY) THEN
         RarVecO(ind) = ZERO
-     ENDIF
+     END IF
      IF (abs(RbrVecO(ind)).lt.TINY) THEN
         RbrVecO(ind) = ZERO
-     ENDIF
+     END IF
      IF (abs(RcrVecO(ind)).lt.TINY) THEN
         RcrVecO(ind) = ZERO
-     ENDIF
+     END IF
   ENDDO
 
   ! Transform from orthogonal reference frame to microscope reference frame
@@ -215,7 +215,7 @@ SUBROUTINE CrystalFullFractionalAtomicPostitionsCalculation(IErr)
      PRINT*,"CrystalFullFractionalAtomicPostitionsCalculation(",&
           my_rank, ") error ", IErr, " in ALLOCATE RFullAtomicFracCoordVec"
      RETURN
-  ENDIF
+  END IF
   
   ALLOCATE(SFullAtomicNameVec( &
        SIZE(RSymVec,1)*SIZE(RAtomSiteFracCoordVec,1)), &
@@ -224,7 +224,7 @@ SUBROUTINE CrystalFullFractionalAtomicPostitionsCalculation(IErr)
      PRINT*,"CrystalFullFractionalAtomicPostitionsCalculation(",&
           my_rank, ") error ", IErr, " in ALLOCATE SFullAtomicNameVec"
      RETURN
-  ENDIF
+  END IF
   
   ALLOCATE(RFullPartialOccupancy( &
        SIZE(RSymVec,1)*SIZE(RAtomSiteFracCoordVec,1)), &
@@ -233,7 +233,7 @@ SUBROUTINE CrystalFullFractionalAtomicPostitionsCalculation(IErr)
      PRINT*,"CrystalFullFractionalAtomicPostitionsCalculation(",&
           my_rank, ") error ", IErr, " in ALLOCATE RFullPartialOccupancy"
      RETURN
-  ENDIF
+  END IF
   
   ALLOCATE(RFullIsotropicDebyeWallerFactor( &
        SIZE(RSymVec,1)*SIZE(RAtomSiteFracCoordVec,1)), &
@@ -242,7 +242,7 @@ SUBROUTINE CrystalFullFractionalAtomicPostitionsCalculation(IErr)
      PRINT*,"CrystalFullFractionalAtomicPostitionsCalculation(",&
           my_rank, ") error ", IErr, " in ALLOCATE RFullIsotropicDebyeWallerFactor"
      RETURN
-  ENDIF
+  END IF
   ALLOCATE(IFullAtomNumber( &
        SIZE(RSymVec,1)*SIZE(RAtomSiteFracCoordVec,1)), &
        STAT=IErr)  
@@ -250,7 +250,7 @@ SUBROUTINE CrystalFullFractionalAtomicPostitionsCalculation(IErr)
      PRINT*,"CrystalFullFractionalAtomicPostitionsCalculation(",&
           my_rank, ") error ", IErr, " in ALLOCATE IFullAtomNumber"
      RETURN
-  ENDIF
+  END IF
   
   ALLOCATE(IFullAnisotropicDWFTensor( &
        SIZE(RSymVec,1)*SIZE(RAtomSiteFracCoordVec,1)), &
@@ -259,7 +259,7 @@ SUBROUTINE CrystalFullFractionalAtomicPostitionsCalculation(IErr)
      PRINT*,"CrystalFullFractionalAtomicPostitionsCalculation(",&
           my_rank, ") error ", IErr, " in ALLOCATE IFullAnisotropicDWFTensor"
      RETURN
-  ENDIF
+  END IF
   
   DO ind=1, SIZE(RSymVec,DIM=1)
      
@@ -280,7 +280,7 @@ SUBROUTINE CrystalFullFractionalAtomicPostitionsCalculation(IErr)
            IF( RFullAtomicFracCoordVec(Ifullind,knd) .LT. ZERO) THEN
               RFullAtomicFracCoordVec(Ifullind,knd)= &
                    RFullAtomicFracCoordVec(Ifullind,knd)+1.D0
-           ENDIF
+           END IF
         ENDDO
         
      ENDDO

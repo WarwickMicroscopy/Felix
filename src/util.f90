@@ -33,13 +33,13 @@
 !%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 !--------------------------------------------------------------------
-!	ReSort:
+!	Sort:
 !
 !	sort the Lyapunov eigenvalues s.t. the largest comes first. RESORT()
 !	is based on ShellSort from "Numerical Recipes", routine SHELL().
 !---------------------------------------------------------------------
 
-SUBROUTINE ReSortHKL( RHKLarray, N,IErr )
+SUBROUTINE SortHKL( RHKLarray, N,IErr )
 
   USE MyNumbers
   USE WriteToScreen
@@ -110,7 +110,7 @@ SUBROUTINE ReSortHKL( RHKLarray, N,IErr )
   
   RETURN
 
-END SUBROUTINE ReSortHKL
+END SUBROUTINE SortHKL
 
 !---------------------------------------------------------------------
 SUBROUTINE CONVERTAtomName2Number(name, number, IErr)

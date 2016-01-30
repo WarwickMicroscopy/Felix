@@ -104,7 +104,7 @@ SUBROUTINE BlochCoefficientCalculation(IYPixelIndex,IXPixelIndex,IPixelNumber,IF
      PRINT*,"BlochCoefficientCalculation(", my_rank, ") error ", IErr, &
           " In Calculation of KVectors"
      RETURN
-  ENDIF
+  END IF
 
   RKn = DOT_PRODUCT(RTiltedK,RNormDirM)
 
@@ -116,7 +116,7 @@ SUBROUTINE BlochCoefficientCalculation(IYPixelIndex,IXPixelIndex,IPixelNumber,IF
      PRINT*,"BlochCoefficientCalculation(", my_rank, ") error ", IErr, &
           " in Calculation of Deviation Parameter"
      RETURN
-  ENDIF
+  END IF
 
   ! select only those beams where the Ewald sphere is close to the
   ! reciprocal lattice, i.e. within RBSMaxDeviationPara
@@ -126,7 +126,7 @@ SUBROUTINE BlochCoefficientCalculation(IYPixelIndex,IXPixelIndex,IPixelNumber,IF
      PRINT*,"BlochCoefficientCalculation(", my_rank, ") error ", IErr, &
           " in Determination of Strong and Weak beams"
      RETURN
-  ENDIF
+  END IF
  
   ! select the highest reflection that corresponds to a strong beam
   nBeams= IStrongBeamIndex
@@ -144,7 +144,7 @@ SUBROUTINE BlochCoefficientCalculation(IYPixelIndex,IXPixelIndex,IPixelNumber,IF
      PRINT*,"BlochCoefficientCalculation(", my_rank, ") error ", IErr, &
           " in ALLOCATE() of DYNAMIC variables CBeamProjectionMatrix"
      RETURN
-  ENDIF
+  END IF
 
   ALLOCATE(CDummyBeamMatrix(nBeams,nReflections), &
        STAT=IErr)
@@ -152,7 +152,7 @@ SUBROUTINE BlochCoefficientCalculation(IYPixelIndex,IXPixelIndex,IPixelNumber,IF
      PRINT*,"BlochCoefficientCalculation(", my_rank, ") error ", IErr, &
           " in ALLOCATE() of DYNAMIC variables CDummyBeamMatrix"
      RETURN
-  ENDIF
+  END IF
 
   ALLOCATE(CUgMatEffective(nBeams,nBeams), &
        STAT=IErr)
@@ -160,7 +160,7 @@ SUBROUTINE BlochCoefficientCalculation(IYPixelIndex,IXPixelIndex,IPixelNumber,IF
      PRINT*,"BlochCoefficientCalculation(", my_rank, ") error ", IErr, &
           " in ALLOCATE() of DYNAMIC variables CUgMatEffective"
      RETURN
-  ENDIF
+  END IF
   
   ALLOCATE(CEigenVectors(nBeams,nBeams), &
        STAT=IErr)
@@ -168,7 +168,7 @@ SUBROUTINE BlochCoefficientCalculation(IYPixelIndex,IXPixelIndex,IPixelNumber,IF
      PRINT*,"BlochCoefficientCalculation(", my_rank, ") error ", IErr, &
           " in ALLOCATE() of DYNAMIC variables CEigenVectors"
      RETURN
-  ENDIF
+  END IF
 
   ALLOCATE(CEigenValues(nBeams), &
        STAT=IErr)
@@ -176,7 +176,7 @@ SUBROUTINE BlochCoefficientCalculation(IYPixelIndex,IXPixelIndex,IPixelNumber,IF
      PRINT*,"BlochCoefficientCalculation(", my_rank, ") error ", IErr, &
           " in ALLOCATE() of DYNAMIC variables CEigenValues"
      RETURN
-  ENDIF
+  END IF
 
   ALLOCATE(CInvertedEigenVectors(nBeams,nBeams), &
        STAT=IErr)
@@ -186,7 +186,7 @@ SUBROUTINE BlochCoefficientCalculation(IYPixelIndex,IXPixelIndex,IPixelNumber,IF
      PRINT*,"Failure Occured at Thickness,Chunk,Pixel,nBeams = ",IPixelCountTotal,nBeams
      
      RETURN
-  ENDIF
+  END IF
 
   ALLOCATE(CBeamTranspose(nReflections,nBeams), &
        STAT=IErr)
@@ -194,7 +194,7 @@ SUBROUTINE BlochCoefficientCalculation(IYPixelIndex,IXPixelIndex,IPixelNumber,IF
      PRINT*,"BlochCoefficientCalculation(", my_rank, ") error ", IErr, &
           " in ALLOCATE() of DYNAMIC variables CBeamTranspose"
      RETURN
-  ENDIF
+  END IF
 
   ALLOCATE(CUgMatPartial(nReflections,nBeams), &
        STAT=IErr)
@@ -202,7 +202,7 @@ SUBROUTINE BlochCoefficientCalculation(IYPixelIndex,IXPixelIndex,IPixelNumber,IF
      PRINT*,"BlochCoefficientCalculation(", my_rank, ") error ", IErr, &
           " in ALLOCATE() of DYNAMIC variables CUgMatPartial"
      RETURN
-  ENDIF
+  END IF
 
   ALLOCATE(CAlphaWeightingCoefficients(nBeams), &
        STAT=IErr)
@@ -212,7 +212,7 @@ SUBROUTINE BlochCoefficientCalculation(IYPixelIndex,IXPixelIndex,IPixelNumber,IF
      PRINT*,"Failure Occured at Thickness,Chunk,Pixel,nBeams = ",IPixelCountTotal,nBeams
      
      RETURN
-  ENDIF
+  END IF
 
   ALLOCATE(CEigenValueDependentTerms(nBeams,nBeams), &
        STAT=IErr)
@@ -222,7 +222,7 @@ SUBROUTINE BlochCoefficientCalculation(IYPixelIndex,IXPixelIndex,IPixelNumber,IF
      PRINT*,"Failure Occured at Thickness,Chunk,Pixel,nBeams = ",IPixelCountTotal,nBeams
      
      RETURN
-  ENDIF
+  END IF
 
   ALLOCATE(CWaveFunctions(nBeams), &
        STAT=IErr)
@@ -232,7 +232,7 @@ SUBROUTINE BlochCoefficientCalculation(IYPixelIndex,IXPixelIndex,IPixelNumber,IF
      PRINT*,"Failure Occured at Thickness,Chunk,Pixel,nBeams = ",IPixelCountTotal,nBeams
      
      RETURN
-  ENDIF
+  END IF
 
   ALLOCATE(RWaveIntensity(nBeams), &
        STAT=IErr)
@@ -242,7 +242,7 @@ SUBROUTINE BlochCoefficientCalculation(IYPixelIndex,IXPixelIndex,IPixelNumber,IF
      PRINT*,"Failure Occured at Thickness,Chunk,Pixel,nBeams = ",IPixelCountTotal,nBeams
      
      RETURN
-  ENDIF
+  END IF
 
   ALLOCATE(CPsi0(nBeams), & 
        STAT=IErr)
@@ -251,7 +251,7 @@ SUBROUTINE BlochCoefficientCalculation(IYPixelIndex,IXPixelIndex,IPixelNumber,IF
           " in ALLOCATE() of DYNAMIC variables CPsi0"
      PRINT*,"Failure Occured at Thickness,Chunk,Pixel,nBeams = ",IPixelCountTotal,nBeams
      RETURN
-  ENDIF
+  END IF
 
   !--------------------------------------------------------------------
   ! construct the effective UgMat (for strong beams only at the moment)
@@ -269,7 +269,7 @@ SUBROUTINE BlochCoefficientCalculation(IYPixelIndex,IXPixelIndex,IPixelNumber,IF
   !   PRINT*,"BlochCoefficientCalculation("", my_rank, &
   !        ") using n(Strong)Beams= ", nBeams, " beams", &
   !        " with nWeakBeams=", IWeakBeamIndex
-  !ENDIF
+  !END IF
   
   !--------------------------------------------------------------------
   ! back to eigen problem solution
@@ -363,7 +363,7 @@ SUBROUTINE BlochCoefficientCalculation(IYPixelIndex,IXPixelIndex,IPixelNumber,IF
      IF( IErr.NE.0 ) THEN
         PRINT*,"BlochCoefficientCalculation(", my_rank, ") error in EigenSpectrum()"
         RETURN
-     ENDIF
+     END IF
      CEigenValues = CEigenValues * RKn/RBigK
      DO knd = 1,nBeams
         CEigenVectors(knd,:) = CEigenVectors(knd,:) / &
@@ -377,7 +377,7 @@ SUBROUTINE BlochCoefficientCalculation(IYPixelIndex,IXPixelIndex,IPixelNumber,IF
      IF( IErr.NE.0 ) THEN
         PRINT*,"BlochCoefficientCalculation(", my_rank, ") error in EigenSpectrum()"
         RETURN
-     ENDIF
+     END IF
   END IF
  
   DO IThicknessIndex=1,IThicknessCount,1
@@ -389,7 +389,7 @@ SUBROUTINE BlochCoefficientCalculation(IYPixelIndex,IXPixelIndex,IPixelNumber,IF
      IF( IErr.NE.0 ) THEN
         PRINT*,"BlochCoefficientCalculation(", my_rank, ") error in CreateWavefunction()"
         RETURN
-     ENDIF
+     END IF
      
      !Collection Wave Intensities from all thickness for later writing
      

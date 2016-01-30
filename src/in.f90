@@ -702,6 +702,7 @@ SUBROUTINE ReadExperimentalImages(IErr)
   INTEGER(IKIND) :: ind,IErr
   INTEGER(IKIND) :: INegError = 0
   CHARACTER*34 :: filename
+  CHARACTER*200 :: SPrintString
 
   DO ind = 1,IReflectOut
      
@@ -758,8 +759,9 @@ SUBROUTINE ReadExperimentalImages(IErr)
 
   IF(my_rank.EQ.0) THEN
     IF( IErr.EQ.0 ) THEN
-        PRINT*, IReflectOut,"experimental images successfully loaded"
-		PRINT*, " "
+     WRITE(SPrintString,FMT='(I3,A40)') IReflectOut," experimental images successfully loaded"
+     PRINT*,TRIM(ADJUSTL(SPrintString))
+!        PRINT*, IReflectOut,"experimental images successfully loaded"
     END IF
   END IF
 

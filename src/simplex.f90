@@ -17,6 +17,7 @@ SUBROUTINE NDimensionalDownhillSimplex(RSimplexVolume,y,mp,np,ndim,ftol,iter,RSt
   INTEGER(IKIND) :: i,ihi,ilo,inhi,j,m,n,IExitFlag
   REAL(RKIND) :: rtol,sum,swap,ysave,ytry,psum(ndim),amotry,&
        RStandardDeviation,RMean,RStandardError,RStandardTolerance
+  CHARACTER*200 :: SPrintString
 
   IF(my_rank.EQ.0) THEN
      PRINT*,"Beginning Simplex",IErr
@@ -45,14 +46,16 @@ SUBROUTINE NDimensionalDownhillSimplex(RSimplexVolume,y,mp,np,ndim,ftol,iter,RSt
            ihi=i
         ELSE IF(y(i).GT.y(inhi)) THEN
            IF(i.NE.ihi) inhi=i
-        ENDIF
+        END IF
      ENDDO
      
      rtol=2.*ABS(y(ihi)-y(ilo))/(ABS(y(ihi))+ABS(y(ilo)))
 
      RStandardTolerance = RStandardError(RStandardDeviation,RMean,ytry,IErr)
 
-     PRINT*,"Current tolerance",rtol,ftol!RB,RStandardTolerance
+!     PRINT*,"Current tolerance",rtol,ftol!RB,RStandardTolerance
+     WRITE(SPrintString,FMT='(A19,F7.5,A14,F7.5)') "Change in fit index ",rtol,", will end at ",ftol
+     PRINT*,TRIM(ADJUSTL(SPrintString))
      IF(rtol.LT.ftol) THEN
         swap=y(1)
         y(1)=y(ilo)
@@ -85,7 +88,9 @@ SUBROUTINE NDimensionalDownhillSimplex(RSimplexVolume,y,mp,np,ndim,ftol,iter,RSt
      CALL SaveSimplex(RSimplexVolume,y,np,RStandardDeviation,RMean,iter,IErr)
     
      PRINT*,"-----------------------------------------------------"
-     PRINT*,"Iteration",iter,"Figure of Merit",ytry
+     WRITE(SPrintString,FMT='(A10,I4,A18,F7.5))') "Iteration ",iter,", figure of merit ",ytry
+     PRINT*,TRIM(ADJUSTL(SPrintString))
+!     PRINT*,"Iteration",iter,"Figure of Merit",ytry
      PRINT*,"-----------------------------------------------------"
 
      iter=iter+2

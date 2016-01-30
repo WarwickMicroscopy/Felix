@@ -85,7 +85,7 @@ SUBROUTINE ReflectionDetermination( IErr )
      IF( IErr.NE.0 ) THEN
         PRINT*,"Reflectiondetermination(", my_rank, ") error in NewHKLMake()"
         RETURN
-     ENDIF
+     END IF
 
      IF(SIZE(RHKl,DIM=1).LT.IMinReflectionPool) THEN
         IHKLMAXValue = IHKLMAXValue*2
@@ -94,7 +94,7 @@ SUBROUTINE ReflectionDetermination( IErr )
            PRINT*,"ReflectionDetermination(", my_rank, ") error ", IErr, &
                 " in DEALLOCATE() of DYNAMIC variables RHKL"
            RETURN
-        ENDIF
+        END IF
 
         CYCLE
 
@@ -104,11 +104,11 @@ SUBROUTINE ReflectionDetermination( IErr )
   END DO
 
 
-  CALL ReSortHKL( RHKL, SIZE(RHKL,1),IErr)
+  CALL SortHKL( RHKL, SIZE(RHKL,1),IErr)
   IF( IErr.NE.0 ) THEN
-     PRINT*,"ReflectionDetermination(): error in ReSortHKL()"
+     PRINT*,"ReflectionDetermination(): error in SortHKL()"
      RETURN
-  ENDIF
+  END IF
 
   IF(IXDirectionFLAG.EQ.0) THEN
      IDiffractionFLAG = 1
@@ -120,7 +120,7 @@ SUBROUTINE ReflectionDetermination( IErr )
         PRINT*,"DiffractionPatternDefinitions(", my_rank, ") error",IErr, &
              "in CrystallographyInitialisation()"
         RETURN
-     ENDIF
+     END IF
 
   END IF
 
@@ -130,7 +130,7 @@ SUBROUTINE ReflectionDetermination( IErr )
      PRINT*,"DiffractionPatternDefinitions(", my_rank, ") error ", IErr, &
           " in ALLOCATE() of DYNAMIC variables RgVecMatT(HKL)"
      RETURN
-  ENDIF
+  END IF
 
   ALLOCATE(RgDummyVecMat(SIZE(RHKL,DIM=1),THREEDIM), &
        STAT=IErr)
@@ -138,7 +138,7 @@ SUBROUTINE ReflectionDetermination( IErr )
      PRINT*,"DiffractionPatternDefinitions(", my_rank, ") error ", IErr, &
           " in ALLOCATE() of DYNAMIC variables RgDummyVecMat(HKL)"
      RETURN
-  ENDIF
+  END IF
 
   ALLOCATE(RgVecMag(SIZE(RHKL,DIM=1)), &
        STAT=IErr)
@@ -146,7 +146,7 @@ SUBROUTINE ReflectionDetermination( IErr )
      PRINT*,"DiffractionPatternDefinitions(", my_rank, ") error ", IErr, &
           " in ALLOCATE() of DYNAMIC variables RgVecMag(HKL)"
      RETURN
-  ENDIF
+  END IF
   
   ALLOCATE(RgVecVec(SIZE(RHKL,DIM=1)), &
        STAT=IErr)
@@ -154,7 +154,7 @@ SUBROUTINE ReflectionDetermination( IErr )
      PRINT*,"DiffractionPatternCalculation(", my_rank, ") error ", IErr, &
           " in ALLOCATE() of DYNAMIC variables RgVecVec(HKL)"
      RETURN
-  ENDIF
+  END IF
 
 !!$  For IZOLZFLAG=0, we want to identify the number of HOLZ in the Bloch Problem
 
@@ -239,7 +239,7 @@ SUBROUTINE ReflectionDetermination( IErr )
      PRINT*,"DiffractionPatternDefinitions(", my_rank, ") error ", IErr, &
           " in ALLOCATE() of DYNAMIC variables RgVecMagLaueZone(HKL)"
      RETURN
-  ENDIF
+  END IF
 
 !!$     Loop through the Laue Zones (first negative: -1,-2,...,minLaueZone,
 !!$     Then positive values,0,1,..,MaxLauezone) 
@@ -349,7 +349,7 @@ SUBROUTINE ReflectionDetermination( IErr )
         PRINT*,"DiffractionPatternDefinitions(", my_rank, ") error ", IErr, &
              " in ALLOCATE() of DYNAMIC variables RgVecMag(HKL)"
         RETURN
-     ENDIF
+     END IF
 
      IOriginGVecIdentifier=0
      !Store all the indexes for the magnitudes of each Laue Level in OriginGVecIdentifier    
@@ -447,7 +447,7 @@ SUBROUTINE ReflectionDetermination( IErr )
              //",RgVecMag" // "("//ADJUSTL(TRIM(Sind))//")", &
              RVariable=RgVecMag(ind))
         nReflections = nReflections + 1
-     ENDIF
+     END IF
   ENDDO
 
   CALL Message("ReflectionDetermination", IInfo,IErr, &

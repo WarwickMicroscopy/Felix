@@ -88,7 +88,7 @@ SUBROUTINE FelixFunction(LInitialSimulationFLAG,IErr)
   IF( IErr.NE.0 ) THEN
      PRINT*,"Felixfunction(", my_rank, ") error in ExperimentalSetup()"
      RETURN
-  ENDIF
+  END IF
   
   
   !--------------------------------------------------------------------
@@ -100,7 +100,7 @@ SUBROUTINE FelixFunction(LInitialSimulationFLAG,IErr)
   IF( IErr.NE.0 ) THEN
      PRINT*,"Felixfunction(", my_rank, ") error in ImageSetup()"
      RETURN
-  ENDIF
+  END IF
 
  
   !--------------------------------------------------------------------
@@ -118,7 +118,7 @@ SUBROUTINE FelixFunction(LInitialSimulationFLAG,IErr)
   IF( IErr.NE.0 ) THEN
      PRINT*,"Felixfunction(", my_rank, ") error ",IErr,"in StructureFactorSetup()"
      RETURN
-  ENDIF
+  END IF
 
   !RB IF(IAbsorbTAG.NE.0) IAbsorbFLAG = 1 !Reset IAbsorbFLAG to 1
 
@@ -129,9 +129,9 @@ SUBROUTINE FelixFunction(LInitialSimulationFLAG,IErr)
         PRINT*,"Felixfunction(", my_rank, ") error ", IErr, &
              " in ApplyNewStructureFactors()"
         RETURN
-     ENDIF
+     END IF
      
-  ENDIF
+  END IF
 
   IF(IAbsorbFLAG.NE.0) THEN
      
@@ -140,9 +140,9 @@ SUBROUTINE FelixFunction(LInitialSimulationFLAG,IErr)
         PRINT*,"Felixfunction(", my_rank, ") error ",IErr,&
              "in StructureFactorsWithAbsorptionDetermination()"
         RETURN
-     ENDIF
+     END IF
 
-  ENDIF     
+  END IF     
   !--------------------------------------------------------------------
   ! reserve memory for effective eigenvalue problem
   !--------------------------------------------------------------------
@@ -155,7 +155,7 @@ SUBROUTINE FelixFunction(LInitialSimulationFLAG,IErr)
      PRINT*,"Felixfunction(", my_rank, ") error ", IErr, &
           " in ALLOCATE() of DYNAMIC variables RDevPara"
      RETURN
-  ENDIF
+  END IF
 
   ALLOCATE(IStrongBeamList(nReflections), &
        STAT=IErr)
@@ -163,7 +163,7 @@ SUBROUTINE FelixFunction(LInitialSimulationFLAG,IErr)
      PRINT*,"Felixfunction(", my_rank, ") error ", IErr, &
           " in ALLOCATE() of DYNAMIC variables IStrongBeamList"
      RETURN
-  ENDIF
+  END IF
 
   ALLOCATE(IWeakBeamList(nReflections), & 
        STAT=IErr)
@@ -171,7 +171,7 @@ SUBROUTINE FelixFunction(LInitialSimulationFLAG,IErr)
      PRINT*,"Felixfunction(", my_rank, ") error ", IErr, &
           " in ALLOCATE() of DYNAMIC variables IWeakBeamList"
      RETURN
-  ENDIF
+  END IF
 
   !--------------------------------------------------------------------
   ! MAIN LOOP: solve for each (ind,jnd) pixel
@@ -184,7 +184,7 @@ SUBROUTINE FelixFunction(LInitialSimulationFLAG,IErr)
      PRINT*,"Felixfunction(", my_rank, "): starting the eigenvalue problem"
      PRINT*,"Felixfunction(", my_rank, "): for lines ", ILocalPixelCountMin, &
           " to ", ILocalPixelCountMax
-  ENDIF
+  END IF
   
   IThicknessCount= (RFinalThickness- RInitialThickness)/RDeltaThickness + 1
 
@@ -196,7 +196,7 @@ SUBROUTINE FelixFunction(LInitialSimulationFLAG,IErr)
         PRINT*,"Felixfunction(", my_rank, ") error ", IErr, &
           " in ALLOCATE() of DYNAMIC variables Individual Images"
         RETURN
-     ENDIF
+     END IF
      
      RIndividualReflections = ZERO
   ELSE
@@ -207,7 +207,7 @@ SUBROUTINE FelixFunction(LInitialSimulationFLAG,IErr)
         PRINT*,"Felixfunction(", my_rank, ") error ", IErr, &
              " in ALLOCATE() of DYNAMIC variables Amplitude and Phase"
         RETURN
-     ENDIF
+     END IF
      CAmplitudeandPhase = CZERO
   END IF
 
@@ -217,7 +217,7 @@ SUBROUTINE FelixFunction(LInitialSimulationFLAG,IErr)
      PRINT*,"Felixfunction(", my_rank, ") error ", IErr, &
           " in ALLOCATE() of DYNAMIC variables CFullWaveFunctions"
      RETURN
-  ENDIF
+  END IF
   
   ALLOCATE(RFullWaveIntensity(nReflections), & 
        STAT=IErr)
@@ -225,7 +225,7 @@ SUBROUTINE FelixFunction(LInitialSimulationFLAG,IErr)
      PRINT*,"Felixfunction(", my_rank, ") error ", IErr, &
           " in ALLOCATE() of DYNAMIC variables RFullWaveIntensity"
      RETURN
-  ENDIF  
+  END IF  
 
   IMAXCBuffer = 200000
   IPixelComputed= 0
@@ -242,7 +242,7 @@ SUBROUTINE FelixFunction(LInitialSimulationFLAG,IErr)
         PRINT*,"Felixfunction(", my_rank, ") error ", IErr, &
              " in BlochCofficientCalculation"
         RETURN
-     ENDIF
+     END IF
   END DO
   
   IF((IWriteFLAG.GE.6.AND.my_rank.EQ.0).OR.IWriteFLAG.GE.10) THEN
@@ -259,7 +259,7 @@ SUBROUTINE FelixFunction(LInitialSimulationFLAG,IErr)
      PRINT*,"Felixfunction(", my_rank, ") error ", IErr, &
           " in ALLOCATE() of DYNAMIC variables Root Reflections"
      RETURN
-  ENDIF
+  END IF
   
   IF(IImageFLAG.GE.3) THEN
      ALLOCATE(CAmplitudeandPhaseRoot(IReflectOut,IThicknessCount,IPixelTotal),&
@@ -268,7 +268,7 @@ SUBROUTINE FelixFunction(LInitialSimulationFLAG,IErr)
         PRINT*,"Felixfunction(", my_rank, ") error ", IErr, &
              " in ALLOCATE() of DYNAMIC variables Root Amplitude and Phase"
         RETURN
-     ENDIF
+     END IF
      CAmplitudeandPhaseRoot = CZERO
   END IF
 
@@ -280,7 +280,7 @@ SUBROUTINE FelixFunction(LInitialSimulationFLAG,IErr)
      PRINT*,"Felixfunction(", my_rank, ") error ", IErr, &
           " In ALLOCATE"
      RETURN
-  ENDIF
+  END IF
 
   DO pnd = 1,p
      IDisplacements(pnd) = (IPixelTotal*(pnd-1)/p)
@@ -301,7 +301,7 @@ SUBROUTINE FelixFunction(LInitialSimulationFLAG,IErr)
         PRINT*,"Felixfunction(", my_rank, ") error ", IErr, &
              " In MPI_GATHERV"
         RETURN
-     ENDIF     
+     END IF     
   ELSE     
      CALL MPI_GATHERV(CAmplitudeandPhase,SIZE(CAmplitudeandPhase),&
           MPI_DOUBLE_COMPLEX,CAmplitudeandPhaseRoot,&
@@ -311,7 +311,7 @@ SUBROUTINE FelixFunction(LInitialSimulationFLAG,IErr)
         PRINT*,"Felixfunction(", my_rank, ") error ", IErr, &
              " In MPI_GATHERV"
         RETURN
-     ENDIF   
+     END IF   
   END IF
   
   IF(IImageFLAG.GE.3) THEN
@@ -320,7 +320,7 @@ SUBROUTINE FelixFunction(LInitialSimulationFLAG,IErr)
         PRINT*,"Felixfunction(", my_rank, ") error ", IErr, &
              " Deallocating CAmplitudePhase"
         RETURN
-     ENDIF   
+     END IF   
   END IF
    
   IF(IImageFLAG.LE.2) THEN
@@ -329,7 +329,7 @@ SUBROUTINE FelixFunction(LInitialSimulationFLAG,IErr)
         PRINT*,"Felixfunction(", my_rank, ") error ", IErr, &
              " Deallocating RIndividualReflections"
         RETURN
-     ENDIF   
+     END IF   
   END IF
   
   IF(my_rank.EQ.0.AND.IImageFLAG.GE.3) THEN
@@ -344,7 +344,7 @@ SUBROUTINE FelixFunction(LInitialSimulationFLAG,IErr)
         PRINT*,"Felixfunction(", my_rank, ") error ", IErr, &
              " in ALLOCATE() of DYNAMIC variables Root Reflections"
         RETURN
-     ENDIF
+     END IF
      
      RIndividualReflections = RIndividualReflectionsRoot
   END IF
@@ -360,49 +360,49 @@ SUBROUTINE FelixFunction(LInitialSimulationFLAG,IErr)
      PRINT*,"Felixfunction(", my_rank, ") error  ", IErr, &
           " in Deallocation of RMask etc"
      RETURN
-  ENDIF
+  END IF
 
   DEALLOCATE(RDevPara,STAT=IErr)
   IF( IErr.NE.0 ) THEN
      PRINT*,"Felixfunction(", my_rank, ") error ", IErr, &
           " Deallocating RDevPara"
      RETURN
-  ENDIF
+  END IF
 
   DEALLOCATE(IPixelLocations,STAT=IErr)
   IF( IErr.NE.0 ) THEN
      PRINT*,"Felixfunction(", my_rank, ") error ", IErr, &
           " Deallocating IPixelLocations"
      RETURN
-  ENDIF
+  END IF
 
   DEALLOCATE(IStrongBeamList,STAT=IErr)
   IF( IErr.NE.0 ) THEN
      PRINT*,"Felixfunction(", my_rank, ") error ", IErr, &
           " Deallocating IStrongBeamList"
      RETURN
-  ENDIF
+  END IF
 
   DEALLOCATE(IWeakBeamList,STAT=IErr)
   IF( IErr.NE.0 ) THEN
      PRINT*,"Felixfunction(", my_rank, ") error ", IErr, &
           " Deallocating IWeakBeamList"
      RETURN
-  ENDIF
+  END IF
 
   DEALLOCATE(IDisplacements,STAT=IErr)
   IF( IErr.NE.0 ) THEN
      PRINT*,"Felixfunction(", my_rank, ") error ", IErr, &
           " Deallocating IDisplacements"
      RETURN
-  ENDIF
+  END IF
 
   DEALLOCATE(ICount,STAT=IErr)
   IF( IErr.NE.0 ) THEN
      PRINT*,"Felixfunction(", my_rank, ") error ", IErr, &
           " Deallocating ICount"
      RETURN
-  ENDIF
+  END IF
   
   DEALLOCATE(CFullWaveFunctions, & 
        STAT=IErr)
@@ -410,28 +410,28 @@ SUBROUTINE FelixFunction(LInitialSimulationFLAG,IErr)
      PRINT*,"Felixfunction(", my_rank, ") error ", IErr, &
           " in ALLOCATE() of DYNAMIC variables CFullWaveFunctions"
      RETURN
-  ENDIF
+  END IF
   
   DEALLOCATE(RFullWaveIntensity,STAT=IErr)
   IF( IErr.NE.0 ) THEN
      PRINT*,"Felixfunction(", my_rank, ") error ", IErr, &
           " in ALLOCATE() of DYNAMIC variables RFullWaveIntensity"
      RETURN
-  ENDIF  
+  END IF  
 
   IF(IImageFLAG.GE.3) THEN
      DEALLOCATE(CAmplitudeandPhaseRoot,STAT=IErr)     
      IF( IErr.NE.0 ) THEN
         PRINT*,"Felixfunction(", my_rank, ") error in Deallocation of CAmplitudeandPhase"
         RETURN  
-     ENDIF
+     END IF
   END IF
 
   DEALLOCATE(RIndividualReflectionsRoot,STAT=IErr) 
   IF( IErr.NE.0 ) THEN
      PRINT*,"Felixfunction(", my_rank, ") error in Deallocation of RIndividualReflectionsRoot "
      RETURN  
-  ENDIF
+  END IF
   
   IF((my_rank.NE.0).AND.(LInitialSimulationFLAG.NEQV..TRUE.)) THEN     
      DEALLOCATE(Rhkl,STAT=IErr)
@@ -439,7 +439,7 @@ SUBROUTINE FelixFunction(LInitialSimulationFLAG,IErr)
         PRINT*,"Felixfunction(", my_rank, ") error ", IErr, &
              " in Deallocation Rhkl"
         RETURN
-     ENDIF
+     END IF
   END IF
   
 !!$  IF (my_rank.NE.0) THEN
@@ -449,7 +449,7 @@ SUBROUTINE FelixFunction(LInitialSimulationFLAG,IErr)
      PRINT*,"Felixfunction(", my_rank, ") error ", IErr, &
           " Deallocating Rhklpositions"
      RETURN
-  ENDIF
+  END IF
 !!$   END IF
   
   DEALLOCATE(MNP,STAT=IErr)
@@ -457,111 +457,111 @@ SUBROUTINE FelixFunction(LInitialSimulationFLAG,IErr)
      PRINT*,"Felixfunction(", my_rank, ") error ", IErr, &
           " in Deallocation MNP"
      RETURN
-  ENDIF
+  END IF
       
   DEALLOCATE(SMNP,STAT=IErr)
   IF( IErr.NE.0 ) THEN
      PRINT*,"Felixfunction(", my_rank, ") error ", IErr, &
           " in Deallocation SMNP"
      RETURN
-  ENDIF
+  END IF
        
   DEALLOCATE(RDWF,STAT=IErr)
   IF( IErr.NE.0 ) THEN
      PRINT*,"Felixfunction(", my_rank, ") error ", IErr, &
           " in Deallocation RDWF"
      RETURN
-  ENDIF
+  END IF
        
   DEALLOCATE(ROcc,STAT=IErr)
   IF( IErr.NE.0 ) THEN
      PRINT*,"Felixfunction(", my_rank, ") error ", IErr, &
           " in Deallocation ROcc"
      RETURN
-  ENDIF
+  END IF
        
   DEALLOCATE(IAtoms,STAT=IErr)
   IF( IErr.NE.0 ) THEN
      PRINT*,"Felixfunction(", my_rank, ") error ", IErr, &
           " in Deallocation IAtoms"
      RETURN
-  ENDIF
+  END IF
        
   DEALLOCATE(IAnisoDWFT,STAT=IErr)
   IF( IErr.NE.0 ) THEN
      PRINT*,"Felixfunction(", my_rank, ") error ", IErr, &
           " in Deallocation IAnisoDWFT"
      RETURN
-  ENDIF
+  END IF
        
   DEALLOCATE(RFullAtomicFracCoordVec,STAT=IErr)
   IF( IErr.NE.0 ) THEN
      PRINT*,"Felixfunction(", my_rank, ") error ", IErr, &
           " in Deallocation RFullAtomicFracCoordVec"
      RETURN
-  ENDIF
+  END IF
        
   DEALLOCATE(SFullAtomicNameVec,STAT=IErr)
   IF( IErr.NE.0 ) THEN
      PRINT*,"Felixfunction(", my_rank, ") error ", IErr, &
           " in Deallocation SFullAtomicNameVec"
      RETURN
-  ENDIF
+  END IF
        
   DEALLOCATE(RFullPartialOccupancy,STAT=IErr)
   IF( IErr.NE.0 ) THEN
      PRINT*,"Felixfunction(", my_rank, ") error ", IErr, &
           " in Deallocation RFullPartialOccupancy"
      RETURN
-  ENDIF
+  END IF
        
   DEALLOCATE(RFullIsotropicDebyeWallerFactor,STAT=IErr)
   IF( IErr.NE.0 ) THEN
      PRINT*,"Felixfunction(", my_rank, ") error ", IErr, &
           " in Deallocation RFullIsotropicDebyeWallerFactor"
      RETURN
-  ENDIF
+  END IF
        
   DEALLOCATE(IFullAtomNumber,STAT=IErr)
   IF( IErr.NE.0 ) THEN
      PRINT*,"Felixfunction(", my_rank, ") error ", IErr, &
           " in Deallocation IFullAtomNumber"
      RETURN
-  ENDIF
+  END IF
        
   DEALLOCATE(IFullAnisotropicDWFTensor,STAT=IErr)
   IF( IErr.NE.0 ) THEN
      PRINT*,"Felixfunction(", my_rank, ") error ", IErr, &
           " in Deallocation IFullAnisotropicDWFTensor"
      RETURN
-  ENDIF
+  END IF
        
   DEALLOCATE(RgVecMatT,STAT=IErr)
   IF( IErr.NE.0 ) THEN
      PRINT*,"Felixfunction(", my_rank, ") error ", IErr, &
           " in Deallocation RgVecMatT"
      RETURN
-  ENDIF
+  END IF
        
   DEALLOCATE(RgVecMag,STAT=IErr)
   IF( IErr.NE.0 ) THEN
      PRINT*,"Felixfunction(", my_rank, ") error ", IErr, &
           " in Deallocation RgVecMag"
      RETURN
-  ENDIF
+  END IF
        
   DEALLOCATE(RgVecVec,STAT=IErr)
   IF( IErr.NE.0 ) THEN
      PRINT*,"Felixfunction(", my_rank, ") error ", IErr, &
           " in Deallocation RgVecMag"
      RETURN
-  ENDIF
+  END IF
 !XX
 !  DEALLOCATE(RgSumMat,STAT=IErr)
   IF( IErr.NE.0 ) THEN
      PRINT*,"Felixfunction(", my_rank, ") error ", IErr, " in DEALLOCATE of RrVecMat"
      RETURN
-  ENDIF
+  END IF
 
 END SUBROUTINE FelixFunction
 
@@ -589,9 +589,8 @@ SUBROUTINE CalculateFigureofMeritandDetermineThickness(IThicknessCountFinal,IErr
   REAL(RKIND),DIMENSION(2*IPixelCount,2*IPixelCount) :: RSimulatedImageForPhaseCorrelation,RExperimentalImage
   REAL(RKIND) :: RCrossCorrelationOld,RIndependentCrossCorrelation,RThickness,&
 	   PhaseCorrelate,Normalised2DCrossCorrelation,ResidualSumofSquares
-!!$  REAL(RKIND),DIMENSION(IReflectOut,IThicknessCount,IPixelTotal) :: &
-!!$       RSimulatedImages
   REAL(RKIND),DIMENSION(IReflectOut) :: RReflectionCrossCorrelations,RReflectionThickness
+  CHARACTER*200 :: SPrintString
        
   
   IF(IWriteFLAG.GE.10.AND.my_rank.EQ.0) THEN
@@ -701,7 +700,10 @@ SUBROUTINE CalculateFigureofMeritandDetermineThickness(IThicknessCountFinal,IErr
 !RB     PRINT*,"Thicknesses",RReflectionThickness
 !RB     PRINT*,"Correlation",RCrossCorrelation
 !RB     PRINT*,"Thickness Final",IThicknessCountFinal
-     PRINT*,"Specimen thickness",NINT(RThickness),"Angstroms"
+     WRITE(SPrintString,FMT='(A18,I4,A10)') "Specimen thickness ",NINT(RThickness)," Angstroms"
+     PRINT*,TRIM(ADJUSTL(SPrintString))
+     !XXPRINT*,"---------------------------------------------------------"
+!     PRINT*,"Specimen thickness",NINT(RThickness),"Angstroms"
   END IF
 
   IF (RCrossCorrelation.NE.RCrossCorrelation) THEN!RB what?
@@ -743,14 +745,14 @@ REAL(RKIND) FUNCTION SimplexFunction(RIndependentVariableValues,IIterationCount,
         PRINT*,"SimplexFunction(", my_rank, ") error ", IErr, &
              " in UpdateStructureFactors"
         RETURN
-     ENDIF     
+     END IF     
   ELSE
      CALL UpdateVariables(RIndependentVariableValues,IErr)
      IF( IErr.NE.0 ) THEN
         PRINT*,"SimplexFunction(", my_rank, ") error ", IErr, &
              " in UpdateVariables"
         RETURN
-     ENDIF
+     END IF
 !RB     WHERE(RAtomSiteFracCoordVec.LT.0) RAtomSiteFracCoordVec=RAtomSiteFracCoordVec+ONE
 !RB     WHERE(RAtomSiteFracCoordVec.GT.1) RAtomSiteFracCoordVec=RAtomSiteFracCoordVec-ONE
   END IF
@@ -763,7 +765,7 @@ REAL(RKIND) FUNCTION SimplexFunction(RIndependentVariableValues,IIterationCount,
         PRINT*,"SimplexFunction(", my_rank, ") error ", IErr, &
              " in PrintVariables"
         RETURN
-     ENDIF
+     END IF
   END IF
 
   CALL FelixFunction(LInitialSimulationFLAG,IErr) ! Simulate !!  
@@ -771,7 +773,7 @@ REAL(RKIND) FUNCTION SimplexFunction(RIndependentVariableValues,IIterationCount,
      PRINT*,"SimplexFunction(", my_rank, ") error ", IErr, &
           " in FelixFunction"
      RETURN
-  ENDIF
+  END IF
 
   IF(my_rank.EQ.0) THEN   
      CALL CreateImagesAndWriteOutput(IIterationCount,IExitFLAG,IErr) 
@@ -992,8 +994,7 @@ SUBROUTINE PrintVariables(IErr)
   REAL(RKIND),DIMENSION(3) :: RCrystalVector
   !REAL(RKIND) :: &!RB
   !     RUgAmplitude,RUgPhase!RB
-  CHARACTER*200 :: &
-       SPrintString
+  CHARACTER*200 :: SPrintString
 
   RCrystalVector = [RLengthX,RLengthY,RLengthZ]
 
@@ -1001,42 +1002,46 @@ SUBROUTINE PrintVariables(IErr)
      IF (IRefineModeSelectionArray(ind).EQ.1) THEN
         SELECT CASE(ind)
         CASE(1)
-           PRINT*,"Current Absorption",RAbsorptionPercentage!RB should also put in hkl here
-           PRINT*,"Current Structure Factors"
+           WRITE(SPrintString,FMT='(A18,1X,F9.4)') "Current Absorption",RAbsorptionPercentage
+           PRINT*,TRIM(ADJUSTL(SPrintString))
+!           PRINT*,"Current Absorption",RAbsorptionPercentage
+           PRINT*,"Current Structure Factors"!RB should also put in hkl here
            DO jnd = 1,INoofUgs
    !           RUgAmplitude=( REAL(CSymmetryStrengthKey(jnd))**2 + AIMAG(CSymmetryStrengthKey(jnd))**2 )**0.5!RB
    !           RUgPhase=ATAN2(AIMAG(CSymmetryStrengthKey(jnd)),REAL(CSymmetryStrengthKey(jnd)))*180/PI!RB
-              PRINT*,CSymmetryStrengthKey(jnd)!,": Amplitude ",RUgAmplitude,", phase ",RUgPhase
+              WRITE(SPrintString,FMT='(2(1X,F9.4))') REAL(CSymmetryStrengthKey(jnd)),AIMAG(CSymmetryStrengthKey(jnd))
+              PRINT*,TRIM(ADJUSTL(SPrintString))
+!XX              PRINT*,CSymmetryStrengthKey(jnd)!,": Amplitude ",RUgAmplitude,", phase ",RUgPhase
            END DO           
         CASE(2)
            PRINT*,"Current Atomic Coordinates"
            DO jnd = 1,SIZE(RAtomSiteFracCoordVec,DIM=1)
-              WRITE(SPrintString,FMT='(3(F9.4,1X))') RAtomSiteFracCoordVec(jnd,:)!RB*RCrystalVector
+              WRITE(SPrintString,FMT='(A2,3(1X,F9.4))') SAtomName(jnd),RAtomSiteFracCoordVec(jnd,:)
               PRINT*,TRIM(ADJUSTL(SPrintString))              
            END DO
         CASE(3)
            PRINT*,"Current Atomic Occupancy"
            DO jnd = 1,SIZE(RAtomicSitePartialOccupancy,DIM=1)
-              WRITE(SPrintString,FMT='((F9.6,1X))') RAtomicSitePartialOccupancy(jnd)
+              WRITE(SPrintString,FMT='(A2,1X,F9.6)') SAtomName(jnd),RAtomicSitePartialOccupancy(jnd)
               PRINT*,TRIM(ADJUSTL(SPrintString))
            END DO
         CASE(4)
            PRINT*,"Current Isotropic Debye Waller Factors"
            DO jnd = 1,SIZE(RIsotropicDebyeWallerFactors,DIM=1)
-              WRITE(SPrintString,FMT='((F9.6,1X))') RIsotropicDebyeWallerFactors(jnd)
+              WRITE(SPrintString,FMT='(A2,1X,F9.6)') SAtomName(jnd),RIsotropicDebyeWallerFactors(jnd)
               PRINT*,TRIM(ADJUSTL(SPrintString))
            END DO
         CASE(5)
            PRINT*,"Current Anisotropic Debye Waller Factors"
            DO jnd = 1,SIZE(RAnisotropicDebyeWallerFactorTensor,DIM=1)
               DO knd = 1,3
-                 WRITE(SPrintString,FMT='((F9.6,1X))') RAnisotropicDebyeWallerFactorTensor(jnd,knd,:)
+                 WRITE(SPrintString,FMT='(A2,3(1X,F9.4))') SAtomName(jnd),RAnisotropicDebyeWallerFactorTensor(jnd,knd,:)
               PRINT*,TRIM(ADJUSTL(SPrintString))
               END DO
            END DO
         CASE(6)
            PRINT*,"Current Unit Cell Parameters"
-           WRITE(SPrintString,FMT='(3(F9.6,1X))') RLengthX,RLengthY,RLengthZ
+           WRITE(SPrintString,FMT='(3(1X,F9.6))') RLengthX,RLengthY,RLengthZ
               PRINT*,TRIM(ADJUSTL(SPrintString))
         CASE(7)
            PRINT*,"Current Unit Cell Angles"

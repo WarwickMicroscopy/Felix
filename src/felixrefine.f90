@@ -65,7 +65,7 @@ PROGRAM Felixrefine
   REAL(RKIND),DIMENSION(:),ALLOCATABLE :: RSimplexFoM,RIndependentVariableValues
   REAL(RKIND) :: RBCASTREAL,RStandardDeviation,RMean
 
-  CHARACTER*40 surname, my_rank_string 
+  CHARACTER*40 my_rank_string ,SPrintString
 
   !-------------------------------------------------------------------
   ! constants
@@ -88,21 +88,21 @@ PROGRAM Felixrefine
   IF( IErr.NE.0 ) THEN
      PRINT*,"Felixrefine(", my_rank, ") error in MPI_Init()"
      GOTO 9999
-  ENDIF
+  END IF
 
   ! Get the rank of the current process
   CALL MPI_Comm_rank(MPI_COMM_WORLD,my_rank,IErr)
   IF( IErr.NE.0 ) THEN
      PRINT*,"Felixrefine(", my_rank, ") error in MPI_Comm_rank()"
      GOTO 9999
-  ENDIF
+  END IF
 
   ! Get the size of the current communicator
   CALL MPI_Comm_size(MPI_COMM_WORLD,p,IErr)
   IF( IErr.NE.0 ) THEN
      PRINT*,"Felixrefine(", my_rank, ") error in MPI_Comm_size()"
      GOTO 9999
-  ENDIF
+  END IF
 
   !--------------------------------------------------------------------
   ! protocal feature startup
@@ -135,20 +135,20 @@ PROGRAM Felixrefine
   IF( IErr.NE.0 ) THEN
      PRINT*,"Felixrefine(", my_rank, ") error in ReadInput()"
      GOTO 9999
-  ENDIF  
+  END IF  
   
   ALLOCATE(RImageExpi(2*IPixelCount,2*IPixelCount,IReflectOut),&
        STAT=IErr)  
   IF( IErr.NE.0 ) THEN
      PRINT*,"felixrefine (", my_rank, ") error in Allocation()"
      GOTO 9999
-  ENDIF
+  END IF
 
   CALL ReadExperimentalImages(IErr)
   IF( IErr.NE.0 ) THEN
      PRINT*,"Felixrefine(", my_rank, ") error in ReadExperimentalImages()"
      GOTO 9999
-  ENDIF
+  END IF
   
   !--------------------------------------------------------------------
   ! Setup Simplex Variables
@@ -160,7 +160,7 @@ PROGRAM Felixrefine
      IF( IErr.NE.0 ) THEN
         PRINT*,"felixrefine (", my_rank, ") error in SetupAtomicVectorMovements"
         GOTO 9999
-     ENDIF
+     END IF
      
   END IF
   
@@ -170,7 +170,7 @@ PROGRAM Felixrefine
 !XX  IF( IErr.NE.0 ) THEN
 !XX     PRINT*,"felixrefine (", my_rank, ") error in CountRefinementVariables"
 !XX     GOTO 9999
-!XX  ENDIF
+!XX  END IF
   !CALL DetermineNumberofRefinementVariablesPerType(INoofelementsforeachrefinementtype,IErr)
   !IIndependentVariables = SUM(INoofelementsforeachrefinementtype)
 
@@ -178,15 +178,23 @@ PROGRAM Felixrefine
   IF( IErr.NE.0 ) THEN
      PRINT*,"felixrefine (", my_rank, ") error in AssignIterativeIDs()"
      GOTO 9999
-  ENDIF
-  PRINT*, IIndependentVariables,"independent variables"
+  END IF
+  
+  IF(my_rank.EQ.0) THEN
+    IF ( IIndependentVariables.EQ.1 ) THEN 
+      PRINT*,"Only one independent variable"
+	ELSE
+      WRITE(SPrintString,FMT='(I3,1X,A21))') IIndependentVariables,"independent variables"
+      PRINT*,TRIM(ADJUSTL(SPrintString))
+    END IF
+  END IF
   
   ALLOCATE(RIndependentVariableValues(IIndependentVariables),&
        STAT=IErr)  
   IF( IErr.NE.0 ) THEN
      PRINT*,"felixrefine (", my_rank, ") error in allocation()"
      GOTO 9999
-  ENDIF
+  END IF
 
   !--------------------------------------------------------------------
   ! Initialise Simplex
@@ -197,14 +205,14 @@ PROGRAM Felixrefine
   IF( IErr.NE.0 ) THEN
      PRINT*,"felixrefine (", my_rank, ") error in Allocation()"
      GOTO 9999
-  ENDIF
+  END IF
 
   ALLOCATE(RSimplexFoM(IIndependentVariables),&
        STAT=IErr)  
   IF( IErr.NE.0 ) THEN
      PRINT*,"felixrefine (", my_rank, ") error in Allocation()"
      GOTO 9999
-  ENDIF
+  END IF
   
   IIterationCount = 0
 
@@ -212,7 +220,7 @@ PROGRAM Felixrefine
   IF( IErr.NE.0 ) THEN
      PRINT*,"felixrefine (", my_rank, ") error in SimplexInitialisation()"
      GOTO 9999
-  ENDIF
+  END IF
      
   !--------------------------------------------------------------------
   ! Apply Simplex Method
@@ -231,8 +239,7 @@ PROGRAM Felixrefine
   ! Deallocate Memory
   !--------------------------------------------------------------------
 
-  DEALLOCATE(RImageExpi,&
-       STAT=IErr)  
+  DEALLOCATE(RImageExpi,STAT=IErr)  
   IF( IErr.NE.0 ) THEN
      PRINT*,"felixrefine (", my_rank, ") error in Deallocation()"
      GOTO 9999
@@ -270,7 +277,7 @@ PROGRAM Felixrefine
   STOP
   
 END PROGRAM Felixrefine
-
+!%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 !%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 SUBROUTINE AssignIterativeIDs(IErr)
@@ -312,15 +319,15 @@ USE MyNumbers
         END DO
      END IF
   END DO
-!XX  DO ind=1,IIndependentVariables
+  DO ind=1,IIndependentVariables!RB debug
 !XX    PRINT*, "ID",ind,":",IIterativeVariableUniqueIDs(IIndependentVariables,:)
-!XX  END DO
+  END DO
 END SUBROUTINE AssignIterativeIDs
 
 !%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 SUBROUTINE AssignArrayLocationsToIterationVariables(IIterativeVariableType,IVariableNo,IArrayToFill,IErr)
-
+!NB IArrayToFill here is equivalent to IIterativeVariableUniqueIDs outside this subroutine
   USE MyNumbers
   
   USE CConst; USE IConst; USE RConst
@@ -355,7 +362,7 @@ SUBROUTINE AssignArrayLocationsToIterationVariables(IIterativeVariableType,IVari
      IArrayToFill(IArrayIndex,3) = &
           NINT(REAL(INoofUgs,RKIND)*(REAL(IVariableNo/REAL(INoofUgs,RKIND),RKIND)-&
           CEILING(REAL(IVariableNo/REAL(INoofUgs,RKIND),RKIND)))+REAL(INoofUgs,RKIND))
-
+!XX PRINT*, "IArrayToFill 2 and 3 ",IArrayIndex,":",IArrayToFill(IArrayIndex,2),IArrayToFill(IArrayIndex,3)!RB debug
   CASE(2) ! Coordinates (x,y,z)
 
      IArrayToFill(IArrayIndex,2) = IIterativeVariableType
@@ -447,7 +454,7 @@ SUBROUTINE RefinementVariableSetup(RIndependentVariableValues,IErr)
   INTEGER(IKIND) :: IErr,ind,IVariableType
   REAL(RKIND),DIMENSION(IIndependentVariables),INTENT(OUT) :: RIndependentVariableValues
   
-  IF((IWriteFLAG.GE.0.AND.my_rank.EQ.0).OR.IWriteFLAG.GE.10) THEN
+  IF((IWriteFLAG.GE.10.AND.my_rank.EQ.0).OR.IWriteFLAG.GE.10) THEN
      PRINT*,"RefinementVariableSetup(",my_rank,")"
   END IF
   
@@ -534,11 +541,11 @@ SUBROUTINE StructureFactorRefinementSetup(RIndependentVariableValues,IIterationC
   END IF
 
   IF(IRefineModeSelectionArray(1).EQ.1) THEN
-     DO ind = 1,INoofUgs
+     DO ind = 1,INoofUgs !RB ignore the first one as it is the internal potential
         RIndependentVariableValues((ind-1)*2+1) = &
-             REAL(CSymmetryStrengthKey(ind),RKIND)
+             REAL(CSymmetryStrengthKey(ind+1),RKIND)
         RIndependentVariableValues((ind-1)*2+2) = &
-             AIMAG(CSymmetryStrengthKey(ind))
+             AIMAG(CSymmetryStrengthKey(ind+1))
      END DO
   END IF
         RIndependentVariableValues(2*INoofUgs+1) = RAbsorptionPercentage!RB absorption always included in structure factor refinement as last variable
@@ -564,7 +571,7 @@ SUBROUTINE RankSymmetryRelatedStructureFactor(IErr)
   INTEGER(IKIND) :: IErr,ind
   INTEGER(IKIND),DIMENSION(2) :: ILoc
 
-  IF((IWriteFLAG.GE.0.AND.my_rank.EQ.0).OR.IWriteFLAG.GE.10) THEN
+  IF((IWriteFLAG.GE.10.AND.my_rank.EQ.0).OR.IWriteFLAG.GE.10) THEN
      PRINT*,"RankSymmetryRelatedStructureFactor(",my_rank,")"
   END IF
   
@@ -572,7 +579,7 @@ SUBROUTINE RankSymmetryRelatedStructureFactor(IErr)
        STAT=IErr)
   IF( IErr.NE.0 ) THEN
      PRINT*,"RankSymmetryRelatedStructureFactor(", my_rank, ") error ", IErr, &
-          " in ALLOCATE() of DYNAMIC variables ISymmetryRelations"
+          " in ALLOCATE() of ISymmetryRelations"
      RETURN
   ENDIF
   
@@ -621,12 +628,13 @@ SUBROUTINE SimplexInitialisation(RSimplexVolume,RSimplexFoM,RIndependentVariable
   INTEGER(IKIND),INTENT(INOUT) :: IIterationCount
   REAL(RKIND),INTENT(OUT) :: RStandardDeviation,RMean
   REAL(RKIND) :: RStandardError,RStandardTolerance
+  CHARACTER*200 :: SPrintString
 
   IF(IWriteFLAG.GE.10.AND.my_rank.EQ.0) THEN
      PRINT*,"SimplexInitialisation(",my_rank,")"
   END IF
       
-  CALL FelixFunction(LInitialSimulationFLAG,IErr)
+  CALL FelixFunction(LInitialSimulationFLAG,IErr)!RB first thing!!
   IF( IErr.NE.0 ) THEN
      PRINT*,"SimplexInitialisation(", my_rank, ") error in PerformInitialSimulation()"
      RETURN
@@ -723,7 +731,9 @@ SUBROUTINE SimplexInitialisation(RSimplexVolume,RSimplexFoM,RIndependentVariable
         
         IF((IWriteFLAG.GE.0.AND.my_rank.EQ.0).OR.IWriteFLAG.GE.10) THEN
            PRINT*,"---------------------------------------------------------"
-           PRINT*,"-------- Simplex",ind,"of",IIndependentVariables+1
+           WRITE(SPrintString,FMT='(A8,I2,A4,I3)') "Simplex ",ind," of ",IIndependentVariables+1
+           PRINT*,TRIM(ADJUSTL(SPrintString))
+ !          PRINT*,"-------- Simplex",ind,"of",IIndependentVariables+1
            PRINT*,"---------------------------------------------------------"
         END IF
 
@@ -738,9 +748,11 @@ SUBROUTINE SimplexInitialisation(RSimplexVolume,RSimplexFoM,RIndependentVariable
         RSimplexFoM(ind) =  RSimplexDummy
         
         IF((IWriteFLAG.GE.0.AND.my_rank.EQ.0).OR.IWriteFLAG.GE.10) THEN
-           PRINT*,"---------------------------------------------------------"
-           PRINT*,"-------- Figure of Merit" ,RSimplexFoM(ind)        
-           PRINT*,"---------------------------------------------------------"
+ !         PRINT*,"---------------------------------------------------------"
+          WRITE(SPrintString,FMT='(A16,F7.5))') "Figure of merit ",RSimplexFoM(ind)
+          PRINT*,TRIM(ADJUSTL(SPrintString))
+!          PRINT*,"-------- Figure of Merit" ,RSimplexFoM(ind)        
+ !         PRINT*,"---------------------------------------------------------"
         END IF
      END DO
      
@@ -1238,31 +1250,6 @@ SUBROUTINE DetermineNumberofRefinementVariablesPerType(INoofelementsforeachrefin
        IRefineModeSelectionArray(11)
 
 END SUBROUTINE DetermineNumberofRefinementVariablesPerType
-
-!!$  %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-!XX
-!XXSUBROUTINE CountRefinementVariables(IErr)
-!XX 
-!XX  USE MyNumbers
-!XX  
-!XX  USE CConst; USE IConst; USE RConst
-!XX  USE IPara; USE RPara; USE SPara; USE CPara
-!XX  USE BlochPara
-!XX
-!XX  USE IChannels
-!XX
-!XX  USE MPI
-!XX  USE MyMPI
-!XX  
-!XX  IMPLICIT NONE
-!XX
-!XX  INTEGER(IKIND) :: IErr
-!XX  INTEGER(IKIND),DIMENSION(IRefinementVariableTypes) :: INoofelementsforeachrefinementtype
-!XX
-!XX  CALL DetermineNumberofRefinementVariablesPerType(INoofelementsforeachrefinementtype,IErr)
-!XX  IIndependentVariables = SUM(INoofelementsforeachrefinementtype)
-!XX
-!XXEND SUBROUTINE CountRefinementVariables
 
 !!$  %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
