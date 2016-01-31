@@ -1006,7 +1006,7 @@ SUBROUTINE PrintVariables(IErr)
            PRINT*,TRIM(ADJUSTL(SPrintString))
 !           PRINT*,"Current Absorption",RAbsorptionPercentage
            PRINT*,"Current Structure Factors"!RB should also put in hkl here
-           DO jnd = 1,INoofUgs
+           DO jnd = 2,INoofUgs+1!yy since no.1 is 000
    !           RUgAmplitude=( REAL(CSymmetryStrengthKey(jnd))**2 + AIMAG(CSymmetryStrengthKey(jnd))**2 )**0.5!RB
    !           RUgPhase=ATAN2(AIMAG(CSymmetryStrengthKey(jnd)),REAL(CSymmetryStrengthKey(jnd)))*180/PI!RB
               WRITE(SPrintString,FMT='(2(1X,F9.4))') REAL(CSymmetryStrengthKey(jnd)),AIMAG(CSymmetryStrengthKey(jnd))
@@ -1091,7 +1091,7 @@ SUBROUTINE UpdateStructureFactors(RIndependentVariableValues,IErr)
 
   IF(IRefineModeSelectionArray(1).EQ.1) THEN
      DO ind = 1,INoofUgs
-        CSymmetryStrengthKey(ind) = &
+        CSymmetryStrengthKey(ind+1) = &!yy ind+1 instead of ind
              CMPLX(RIndependentVariableValues((ind-1)*2+1),RIndependentVariableValues((ind-1)*2+2),CKIND)
      END DO
 	 RAbsorptionPercentage = RIndependentVariableValues(2*INoofUgs+1)!RB
@@ -1116,8 +1116,7 @@ SUBROUTINE ConvertVectorMovementsIntoAtomicCoordinates(IVariableID,RIndependentV
   
   IMPLICIT NONE
 
-  INTEGER(IKIND) :: &
-       IErr,ind,jnd,IVariableID,IVectorID,IAtomID
+  INTEGER(IKIND) :: IErr,ind,jnd,IVariableID,IVectorID,IAtomID
   REAL(RKIND),DIMENSION(IIndependentVariables),INTENT(IN) :: &
        RIndependentVariableValues
 
@@ -1141,11 +1140,9 @@ END SUBROUTINE ConvertVectorMovementsIntoAtomicCoordinates
 SUBROUTINE InitialiseWeightingCoefficients(IErr)
   
   USE MyNumbers
-  
   USE CConst; USE IConst; USE RConst
   USE IPara; USE RPara; USE SPara; USE CPara
   USE BlochPara
-  
   USE IChannels
   
   USE MPI
@@ -1153,10 +1150,8 @@ SUBROUTINE InitialiseWeightingCoefficients(IErr)
   
   IMPLICIT NONE
 
-  INTEGER(IKIND) :: &
-       IErr,ind
-  REAL(RKIND),DIMENSION(:),ALLOCATABLE :: &
-       RWeightingCoefficientsDummy
+  INTEGER(IKIND) :: IErr,ind
+  REAL(RKIND),DIMENSION(:),ALLOCATABLE :: RWeightingCoefficientsDummy
 
   ALLOCATE(RWeightingCoefficients(IReflectOut),STAT=IErr)
   IF( IErr.NE.0 ) THEN
@@ -1164,6 +1159,7 @@ SUBROUTINE InitialiseWeightingCoefficients(IErr)
           " in allocation RWeightingCoefficients"
      RETURN
   ENDIF
+
   ALLOCATE(RWeightingCoefficientsDummy(IReflectOut),STAT=IErr)
   IF( IErr.NE.0 ) THEN
      PRINT*,"InitialiseWeightingCoefficients(", my_rank, ") error ", IErr, &

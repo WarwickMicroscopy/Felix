@@ -319,9 +319,9 @@ USE MyNumbers
         END DO
      END IF
   END DO
-  DO ind=1,IIndependentVariables!RB debug
+!XX  DO ind=1,IIndependentVariables!RB debug
 !XX    PRINT*, "ID",ind,":",IIterativeVariableUniqueIDs(IIndependentVariables,:)
-  END DO
+!XX  END DO
 END SUBROUTINE AssignIterativeIDs
 
 !%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -535,6 +535,7 @@ SUBROUTINE StructureFactorRefinementSetup(RIndependentVariableValues,IIterationC
   INTEGER(IKIND) :: IErr,ind
   REAL(RKIND),DIMENSION(IIndependentVariables),INTENT(OUT) :: RIndependentVariableValues
   INTEGER(IKIND),INTENT(IN) :: IIterationCount
+  CHARACTER*200 :: SPrintString
 
   IF((IWriteFLAG.GE.0.AND.my_rank.EQ.0).OR.IWriteFLAG.GE.10) THEN
      PRINT*,"StructureFactorRefinementSetup(",my_rank,")"
@@ -542,13 +543,20 @@ SUBROUTINE StructureFactorRefinementSetup(RIndependentVariableValues,IIterationC
 
   IF(IRefineModeSelectionArray(1).EQ.1) THEN
      DO ind = 1,INoofUgs !RB ignore the first one as it is the internal potential
-        RIndependentVariableValues((ind-1)*2+1) = &
-             REAL(CSymmetryStrengthKey(ind+1),RKIND)
+        RIndependentVariableValues((ind-1)*2+1) = &!yy
+             REAL(CSymmetryStrengthKey(ind+1),RKIND)!yy ind+1 instead of ind
         RIndependentVariableValues((ind-1)*2+2) = &
-             AIMAG(CSymmetryStrengthKey(ind+1))
+             AIMAG(CSymmetryStrengthKey(ind+1))!yy ind+1 instead of ind
      END DO
   END IF
-        RIndependentVariableValues(2*INoofUgs+1) = RAbsorptionPercentage!RB absorption always included in structure factor refinement as last variable
+  RIndependentVariableValues(2*INoofUgs+1) = RAbsorptionPercentage!RB absorption always included in structure factor refinement as last variable
+
+!yyDO ind = 1,2*INoofUgs+1!yy
+!yy  WRITE(SPrintString,FMT='(A3,I2,A1,F7.4)') "RB ",ind,":",RIndependentVariableValues(ind)
+!yy  PRINT*,TRIM(ADJUSTL(SPrintString))
+!yy END DO
+
+
 END SUBROUTINE StructureFactorRefinementSetup
 
 !%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -730,11 +738,11 @@ SUBROUTINE SimplexInitialisation(RSimplexVolume,RSimplexFoM,RIndependentVariable
      DO ind = 1,(IIndependentVariables+1)
         
         IF((IWriteFLAG.GE.0.AND.my_rank.EQ.0).OR.IWriteFLAG.GE.10) THEN
-           PRINT*,"---------------------------------------------------------"
+           PRINT*,"--------------------------------"
            WRITE(SPrintString,FMT='(A8,I2,A4,I3)') "Simplex ",ind," of ",IIndependentVariables+1
            PRINT*,TRIM(ADJUSTL(SPrintString))
  !          PRINT*,"-------- Simplex",ind,"of",IIndependentVariables+1
-           PRINT*,"---------------------------------------------------------"
+           PRINT*,"--------------------------------"
         END IF
 
         RSimplexDummy = SimplexFunction(RSimplexVolume(ind,:),1,0,IErr)
@@ -748,7 +756,7 @@ SUBROUTINE SimplexInitialisation(RSimplexVolume,RSimplexFoM,RIndependentVariable
         RSimplexFoM(ind) =  RSimplexDummy
         
         IF((IWriteFLAG.GE.0.AND.my_rank.EQ.0).OR.IWriteFLAG.GE.10) THEN
- !         PRINT*,"---------------------------------------------------------"
+ !         PRINT*,"--------------------------------"
           WRITE(SPrintString,FMT='(A16,F7.5))') "Figure of merit ",RSimplexFoM(ind)
           PRINT*,TRIM(ADJUSTL(SPrintString))
 !          PRINT*,"-------- Figure of Merit" ,RSimplexFoM(ind)        
@@ -776,10 +784,8 @@ USE MyNumbers
   
   USE CConst; USE IConst; USE RConst
   USE IPara; USE RPara; USE SPara; USE CPara
-  USE BlochPara
-  
+  USE BlochPara 
   USE IChannels
-  
   USE MPI
   USE MyMPI
   
@@ -793,11 +799,9 @@ USE MyNumbers
   IF(IRefineModeSelectionArray(2).EQ.1) THEN
      DO ind = 1,(IIndependentVariables+1)
         ALLOCATE(RRandomSigns(IAllowedVectors),RRandomNumbers(IAllowedVectors),&
-             STAT=IErr)
-        
+             STAT=IErr)       
         
 !!$           Randomise Atomic Displacements
-        
         CALL RandomSequence(RRandomNumbers,IAllowedVectors,ind,IErr)
         CALL RandomSequence(RRandomSigns,IAllowedVectors,2*ind,IErr)
         WHERE (RRandomSigns.LT.HALF)
@@ -1085,21 +1089,15 @@ SUBROUTINE ApplyNewStructureFactors(IErr)
 
   IMPLICIT NONE
 
-  INTEGER(IKIND) :: &
-       IErr,ind
-  COMPLEX(CKIND),DIMENSION(nReflections,nReflections) :: &
-       CUgMatDummy
+  INTEGER(IKIND) :: IErr,ind
+  COMPLEX(CKIND),DIMENSION(nReflections,nReflections) :: CUgMatDummy
 
 !!$  Dummy Matrix to contain new iterative values
   
    CUgMatDummy = CZERO
 
-!!$  Populate Ug Matrix with new iterative elements
-
+!!$  Populate Ug Matrix with new iterative elements, maintain Hermiticity
   DO ind = 1,INoofUgs
-!!$     WHERE(ISymmetryRelations.EQ.ISymmetryStrengthKey(ind)) 
-!!$        CUgMatDummy = CSymmetryStrengthKey(ind)
-!!$     END WHERE
      WHERE(ISymmetryRelations.EQ.ISymmetryStrengthKey(ind))
         CUgMatDummy = CSymmetryStrengthKey(ind)
      END WHERE
@@ -1113,7 +1111,7 @@ SUBROUTINE ApplyNewStructureFactors(IErr)
   END WHERE
 
 !!$  CUgMatNoAbs now contains the new values from the iterative process
-!RB N.B. CUgMatNoAbs is without absorption 
+! N.B. CUgMatNoAbs is without absorption and therefore Hermitian
   
 END SUBROUTINE ApplyNewStructureFactors
 

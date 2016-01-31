@@ -20,7 +20,7 @@ IPixelCount               = 35
 
 # beam selection criteria
 IMinReflectionPool        = 1100
-IMinStrongBeams           = 40
+IMinStrongBeams           = 200
 IMinWeakBeams             = 0
 RBSBMax                   = 0.1
 RBSPMax                   = 0.1
@@ -56,7 +56,7 @@ IImageProcessingFLAG     = 0
 
 # Ug Iteration
 
-INoofUgs                  = 20 
+INoofUgs                  = 20
 
 # Structural Refinement
 
@@ -68,5 +68,5 @@ IPrint                    = 10
 
 # Simplex Initialisation
 
-RSimplexLengthScale       = 2.0 
-RExitCriteria             = 0.00001
+RSimplexLengthScale       = 1.0 
+RExitCriteria             = 0.0001

@@ -59,8 +59,7 @@ SUBROUTINE BlochCoefficientCalculation(IYPixelIndex,IXPixelIndex,IPixelNumber,IF
 
   COMPLEX(CKIND), DIMENSION(:,:), ALLOCATABLE :: &
        CGeneralSolutionMatrix, CGeneralEigenVectors,CBeamTranspose,CUgMatPartial
-  COMPLEX(CKIND),DIMENSION(:),ALLOCATABLE :: &
-       CGeneralEigenValues
+  COMPLEX(CKIND),DIMENSION(:),ALLOCATABLE :: CGeneralEigenValues
 
    IF (my_rank.EQ.0) THEN
       DO WHILE (IMessageCounter .LT.1)

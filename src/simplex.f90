@@ -54,7 +54,7 @@ SUBROUTINE NDimensionalDownhillSimplex(RSimplexVolume,y,mp,np,ndim,ftol,iter,RSt
      RStandardTolerance = RStandardError(RStandardDeviation,RMean,ytry,IErr)
 
 !     PRINT*,"Current tolerance",rtol,ftol!RB,RStandardTolerance
-     WRITE(SPrintString,FMT='(A19,F7.5,A14,F7.5)') "Change in fit index ",rtol,", will end at ",ftol
+     WRITE(SPrintString,FMT='(A21,F7.5,A14,F7.5)') "Change in fit index ",rtol,", will end at ",ftol
      PRINT*,TRIM(ADJUSTL(SPrintString))
      IF(rtol.LT.ftol) THEN
         swap=y(1)
@@ -87,11 +87,11 @@ SUBROUTINE NDimensionalDownhillSimplex(RSimplexVolume,y,mp,np,ndim,ftol,iter,RSt
      
      CALL SaveSimplex(RSimplexVolume,y,np,RStandardDeviation,RMean,iter,IErr)
     
-     PRINT*,"-----------------------------------------------------"
+     PRINT*,"--------------------------------"
      WRITE(SPrintString,FMT='(A10,I4,A18,F7.5))') "Iteration ",iter,", figure of merit ",ytry
      PRINT*,TRIM(ADJUSTL(SPrintString))
 !     PRINT*,"Iteration",iter,"Figure of Merit",ytry
-     PRINT*,"-----------------------------------------------------"
+     PRINT*,"--------------------------------"
 
      iter=iter+2
     

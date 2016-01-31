@@ -56,16 +56,16 @@ SUBROUTINE GMatrixInitialisation (IErr)
   INTEGER(IKIND) :: ind,jnd,IErr
 
   CALL Message("GMatrixInitialisation",IMust,IErr)
-!RB RgVecMat is a list of g-vectors in the microscope ref frame, units of 1/A, multiplied by 2 pi
+!Ug RgVecMat is a list of g-vectors in the microscope ref frame, units of 1/A, multiplied by 2 pi
   DO ind=1,nReflections
      DO jnd=1,nReflections
         RgMatMat(ind,jnd,:)= RgVecMatT(ind,:)-RgVecMatT(jnd,:)
         RgMatMag(ind,jnd)= SQRT(DOT_PRODUCT(RgMatMat(ind,jnd,:),RgMatMat(ind,jnd,:)))
      ENDDO
   ENDDO
-  !RB take the 2 pi back out of the magnitude...   
+  !Ug take the 2 pi back out of the magnitude...   
   RgMatMag = RgMatMag/TWOPI
-  !RB for symmetry determination
+  !Ug for symmetry determination
   RgSumMat = SUM(ABS(RgMatMat),3)
   
 END SUBROUTINE GMatrixInitialisation
@@ -111,7 +111,7 @@ SUBROUTINE SymmetryRelatedStructureFactorDetermination (IErr)
            CYCLE
         ELSE
            Iuid = Iuid + 1_IKIND
-           !RB Fill the symmetry relation matrix with incrementing numbers that have the sign of the imaginary part
+           !Ug Fill the symmetry relation matrix with incrementing numbers that have the sign of the imaginary part
 		   WHERE (ABS(RgSumMat-RgSumMat(ind,jnd)).LE.RTolerance)
               ISymmetryRelations = Iuid*SIGN(1_IKIND,NINT(AIMAG(CUgMatNoAbs)/TINY**2))
            END WHERE
@@ -119,8 +119,13 @@ SUBROUTINE SymmetryRelatedStructureFactorDetermination (IErr)
      END DO
   END DO
 
+!yy DO ind = 1,4!yy
+!yy  WRITE(SPrintString,FMT='(I1,A1,4(1X,I2))') ind,":",ISymmetryRelations(ind,1:4)
+!yy  PRINT*,TRIM(ADJUSTL(SPrintString))
+!yy END DO
+
   IF((IWriteFLAG.GE.0.AND.my_rank.EQ.0).OR.IWriteFLAG.GE.10) THEN
-     WRITE(SPrintString,FMT='(I4,A24)') Iuid," unique structure factors"
+     WRITE(SPrintString,FMT='(I5,A25)') Iuid," unique structure factors"
      PRINT*,TRIM(ADJUSTL(SPrintString))
 !     PRINT*,"Unique Ugs = ",Iuid
   END IF
@@ -159,15 +164,11 @@ SUBROUTINE StructureFactorInitialisation (IErr)
 
   IMPLICIT NONE
 
-  INTEGER(IKIND) :: &
-       ind, jnd, knd, oddindlorentz, evenindlorentz, oddindgauss, &
+  INTEGER(IKIND) :: ind, jnd, knd, oddindlorentz, evenindlorentz, oddindgauss, &
        evenindgauss,imaxj, IFound, ICount, currentatom,IErr
-  INTEGER(IKIND),DIMENSION(2) :: &
-       IPos, ILoc
-  COMPLEX(CKIND) :: &
-       CVgij
-  REAL(RKIND) :: &
-       RMeanInnerPotentialVolts,RAtomicFormFactor, Lorentzian,Gaussian
+  INTEGER(IKIND),DIMENSION(2) :: IPos, ILoc
+  COMPLEX(CKIND) :: CVgij
+  REAL(RKIND) :: RMeanInnerPotentialVolts,RAtomicFormFactor, Lorentzian,Gaussian
 
   CALL Message("StructureFactorInitialisation",IMust,IErr)
 
@@ -283,20 +284,20 @@ SUBROUTINE StructureFactorInitialisation (IErr)
                 )
         ENDDO
 
-        CUgMatNoAbs(ind,jnd)=((((TWOPI**2)* RRelativisticCorrection) / &!RB
+        CUgMatNoAbs(ind,jnd)=((((TWOPI**2)* RRelativisticCorrection) / &!Ug
              (PI * RVolume)) * CVgij)
 
      ENDDO
   ENDDO
 
-  RMeanInnerCrystalPotential= REAL(CUgMatNoAbs(1,1))!RB
+  RMeanInnerCrystalPotential= REAL(CUgMatNoAbs(1,1))!Ug
 
-  !RB Only the lower half of the Ug matrix was calculated, this completes the upper half
+  !NB Only the lower half of the Ug matrix was calculated, this completes the upper half
   !and also doubles the values on the diagonal
-  CUgMatNoAbs = CUgMatNoAbs + CONJG(TRANSPOSE(CUgMatNoAbs))!RB
+  CUgMatNoAbs = CUgMatNoAbs + CONJG(TRANSPOSE(CUgMatNoAbs))!Ug
 
-  DO ind=1,nReflections!RB now halve the diagonal again
-     CUgMatNoAbs(ind,ind)=CUgMatNoAbs(ind,ind)-RMeanInnerCrystalPotential!RB
+  DO ind=1,nReflections!Ug now halve the diagonal again
+     CUgMatNoAbs(ind,ind)=CUgMatNoAbs(ind,ind)-RMeanInnerCrystalPotential!Ug
   ENDDO
   
   RMeanInnerPotentialVolts = RMeanInnerCrystalPotential*(((RPlanckConstant**2)/ &
@@ -346,6 +347,7 @@ SUBROUTINE StructureFactorsWithAbsorptionDetermination(IErr)
   IMPLICIT NONE 
   
   INTEGER(IKIND) :: IErr,ind
+  CHARACTER*200 :: SPrintString
 
    CALL Message("StructureFactorsWithAbsorptionDetermination",IMust,IErr)
 
@@ -357,17 +359,16 @@ SUBROUTINE StructureFactorsWithAbsorptionDetermination(IErr)
 
 !!$     THE PROPORTIONAL MODEL OF ABSORPTION
      
-     CUgMatPrime = CUgMatNoAbs*EXP(CIMAGONE*PI/2)*(RAbsorptionPercentage/100_RKIND)!RB changed
-     CUgMat =  CUgMatNoAbs+CUgMatPrime!RB
-!RB   PRINT*,"CUgMat(1,1)= ",CUgMatNoAbs(1,1),CUgMatPrime(1,1)!,CUgMat(1,1)   
-!RB   PRINT*,"CUgMat(2,1)= ",CUgMatNoAbs(2,1),CUgMatPrime(2,1)!,CUgMat(2,1)   
-!RB   PRINT*,"CUgMat(1,2)= ",CUgMatNoAbs(1,2),CUgMatPrime(1,2)!,CUgMat(1,2)   
-!RB   PRINT*,"CUgMat(3,1)= ",CUgMatNoAbs(3,1),CUgMatPrime(3,1)!,CUgMat(3,1)   
-!RB   PRINT*,"CUgMat(1,3)= ",CUgMatNoAbs(1,3),CUgMatPrime(1,3)!,CUgMat(1,3)   
-!RB   PRINT*,"CUgMat(3,2)= ",CUgMatNoAbs(3,2),CUgMatPrime(3,2)!,CUgMat(3,2)   
-!RB   PRINT*,"CUgMat(2,3)= ",CUgMatNoAbs(2,3),CUgMatPrime(2,3)!,CUgMat(2,3)   
-!RB   PRINT*,"CUgMat(4,1)= ",CUgMatNoAbs(4,1),CUgMatPrime(4,1)!,CUgMat(2,2)   
-!RB   PRINT*,"CUgMat(1,4)= ",CUgMatNoAbs(1,4),CUgMatPrime(1,4)!,CUgMat(3,3) 
+     CUgMatPrime = CUgMatNoAbs*EXP(CIMAGONE*PI/2)*(RAbsorptionPercentage/100_RKIND)!Ug
+     CUgMat =  CUgMatNoAbs+CUgMatPrime!Ug
+!  WRITE(SPrintString,FMT='(A2,8(1X,F5.2))') "1:",CUgMatNoAbs(1,1),CUgMatNoAbs(1,2),CUgMatNoAbs(1,3),CUgMatNoAbs(1,4)
+!  PRINT*,TRIM(ADJUSTL(SPrintString))
+!  WRITE(SPrintString,FMT='(A2,8(1X,F5.2))') "2:",CUgMatNoAbs(2,1),CUgMatNoAbs(2,2),CUgMatNoAbs(2,3),CUgMatNoAbs(2,4)
+!  PRINT*,TRIM(ADJUSTL(SPrintString))
+!  WRITE(SPrintString,FMT='(A2,8(1X,F5.2))') "3:",CUgMatNoAbs(3,1),CUgMatNoAbs(3,2),CUgMatNoAbs(3,3),CUgMatNoAbs(3,4)
+!  PRINT*,TRIM(ADJUSTL(SPrintString))
+!  WRITE(SPrintString,FMT='(A2,8(1X,F5.2))') "4:",CUgMatNoAbs(4,1),CUgMatNoAbs(4,2),CUgMatNoAbs(4,3),CUgMatNoAbs(4,4)
+!  PRINT*,TRIM(ADJUSTL(SPrintString))
   
   CASE Default
  
