@@ -56,24 +56,15 @@ PROGRAM felixsim
   
   IMPLICIT NONE
 
-  REAL(RKIND) :: &
-       RThickness,&
-       Duration, &
-       time, norm
-  INTEGER(IKIND) :: &
-       ind,jnd,hnd,knd,pnd,gnd,IErr, &
-       IHours,IMinutes,ISeconds,IMilliSeconds,&
-       IThicknessIndex, &
+  REAL(RKIND) :: RThickness,Duration,time, norm
+  INTEGER(IKIND) :: ind,jnd,hnd,knd,pnd,gnd,IErr, &
+       IHours,IMinutes,ISeconds,IMilliSeconds,IThicknessIndex, &
        ILocalPixelCountMin, ILocalPixelCountMax
   INTEGER :: IStartTime, ICurrentTime ,IRate
-  INTEGER(IKIND), DIMENSION(:), ALLOCATABLE :: &
-       IDisplacements,ICount
-  REAL(RKIND),DIMENSION(:,:,:),ALLOCATABLE :: &
-       RIndividualReflectionsRoot,&
+  INTEGER(IKIND), DIMENSION(:), ALLOCATABLE :: IDisplacements,ICount
+  REAL(RKIND),DIMENSION(:,:,:),ALLOCATABLE :: RIndividualReflectionsRoot,&
        RFinalMontageImageRoot
-  COMPLEX(CKIND),DIMENSION(:,:,:), ALLOCATABLE :: &
-       CAmplitudeandPhaseRoot
-
+  COMPLEX(CKIND),DIMENSION(:,:,:), ALLOCATABLE :: CAmplitudeandPhaseRoot
   CHARACTER*40 surname, my_rank_string 
   CHARACTER*1000  SLocalPixelCountMin, SLocalPixelCountMax
 

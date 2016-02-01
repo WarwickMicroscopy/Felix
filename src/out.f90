@@ -380,7 +380,7 @@ SUBROUTINE WriteReflectionImage( IChOutWrite, data, IErr,IImageSizeX,IImageSizeY
 
 END SUBROUTINE WriteReflectionImage
 
-SUBROUTINE WriteCifFile(IErr)
+SUBROUTINE WriteCif(IErr)
 
   USE MyNumbers
   USE WriteToScreen
@@ -419,7 +419,7 @@ SUBROUTINE WriteCifFile(IErr)
 
   call close_
 
-END SUBROUTINE WriteCifFile
+END SUBROUTINE WriteCif
   
 !Write out the sample input file, when none provided
 SUBROUTINE WriteOutInputFile (IErr)

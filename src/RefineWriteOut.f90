@@ -278,7 +278,7 @@ SUBROUTINE WriteIterationStructure(path,IErr)
 
 !!$  Write out non symmetrically related atomic positions
 
-  WRITE(filename,*) "StructureCif.txt"
+  WRITE(filename,*) "Structure.cif"
   WRITE(fullpath,*) TRIM(ADJUSTL(path)),'/',TRIM(ADJUSTL(filename))
 
   OPEN(UNIT=IChOutSimplex,STATUS='UNKNOWN',&
@@ -295,12 +295,12 @@ SUBROUTINE WriteIterationStructure(path,IErr)
   WRITE(IChOutSimplex,FMT='(A30,1X,A10))') "_symmetry_space_group_name_H-M",SSpaceGrp
   WRITE(IChOutSimplex,FMT='(A5))') "loop_"
   WRITE(IChOutSimplex,FMT='(A22))') "_atom_site_type_symbol"
-  WRITE(IChOutSimplex,FMT='(A25))') "_atom_site_Wyckoff_symbol"
+!  WRITE(IChOutSimplex,FMT='(A25))') "_atom_site_Wyckoff_symbol"
   WRITE(IChOutSimplex,FMT='(A18))') "_atom_site_fract_x"
   WRITE(IChOutSimplex,FMT='(A18))') "_atom_site_fract_y"
   WRITE(IChOutSimplex,FMT='(A18))') "_atom_site_fract_z"
-  WRITE(IChOutSimplex,FMT='(A25))') "_atom_site_B_iso_or_equiv"
-  WRITE(IChOutSimplex,FMT='(A5))') "_atom_site_occupancy"
+!  WRITE(IChOutSimplex,FMT='(A25))') "_atom_site_B_iso_or_equiv"
+!  WRITE(IChOutSimplex,FMT='(A20))') "_atom_site_occupancy"
   WRITE(IChOutSimplex,FMT='(A5))') "loop_"
   DO jnd = 1,SIZE(RAtomSiteFracCoordVec,DIM=1)!RB only gives refined atoms, needs work
      WRITE(IChOutSimplex,FMT='(A2,1X,3(F9.6,1X))') &
