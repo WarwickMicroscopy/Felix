@@ -157,6 +157,12 @@ PROGRAM felixsim
   !--------------------------------------------------------------------
   ! Setup Image
   !--------------------------------------------------------------------
+  ALLOCATE(RhklPositions(nReflections,2),STAT=IErr)
+  IF( IErr.NE.0 ) THEN
+     PRINT*,"imagesetup(",my_rank,") error",IErr,"in ALLOCATE RhklPositions"
+     RETURN
+  END IF
+     PRINT*,"ALLOCATE RhklPositions"
 
   CALL ImageSetup( IErr )
   IF( IErr.NE.0 ) THEN
@@ -299,7 +305,7 @@ PROGRAM felixsim
      ENDIF
   END DO
   
-!!$     reset message counter
+!!$     reset message counterF
   IMessageCounter = 0
 
   CALL Message("felixsim",IAllInfo,IErr,&
@@ -309,8 +315,7 @@ PROGRAM felixsim
   !   PRINT*,"felixsim : ",my_rank," is exiting calculation loop"
   !END IF
 
-  ALLOCATE( &
-       RIndividualReflectionsRoot(INoOfLacbedPatterns,IThicknessCount,IPixelTotal),&
+  ALLOCATE(RIndividualReflectionsRoot(INoOfLacbedPatterns,IThicknessCount,IPixelTotal),&
        STAT=IErr)
   IF( IErr.NE.0 ) THEN
      PRINT*,"felixsim(", my_rank, ") error ", IErr, &
@@ -319,8 +324,7 @@ PROGRAM felixsim
   ENDIF
   
   IF(IImageFLAG.GE.3) THEN
-     ALLOCATE(&
-          CAmplitudeandPhaseRoot(INoOfLacbedPatterns,IThicknessCount,IPixelTotal),&
+     ALLOCATE(CAmplitudeandPhaseRoot(INoOfLacbedPatterns,IThicknessCount,IPixelTotal),&
           STAT=IErr)
      IF( IErr.NE.0 ) THEN
         PRINT*,"felixsim(", my_rank, ") error ", IErr, &
@@ -332,9 +336,7 @@ PROGRAM felixsim
 
   RIndividualReflectionsRoot = ZERO
 
-  ALLOCATE(&
-       IDisplacements(p),ICount(p),&
-       STAT=IErr)
+  ALLOCATE(IDisplacements(p),ICount(p),STAT=IErr)
   IF( IErr.NE.0 ) THEN
      PRINT*,"felixsim(", my_rank, ") error ", IErr, &
           " In ALLOCATE"
@@ -369,8 +371,7 @@ PROGRAM felixsim
   END IF
 
   IF(IImageFLAG.GE.3) THEN
-     DEALLOCATE(&
-          CAmplitudeandPhase,STAT=IErr)
+     DEALLOCATE(CAmplitudeandPhase,STAT=IErr)
      IF( IErr.NE.0 ) THEN
         PRINT*,"felixsim(", my_rank, ") error ", IErr, &
              " Deallocating CAmplitudePhase"
@@ -379,8 +380,7 @@ PROGRAM felixsim
   END IF
    
   IF(IImageFLAG.LE.2) THEN
-     DEALLOCATE( &
-          RIndividualReflections,STAT=IErr)
+     DEALLOCATE(RIndividualReflections,STAT=IErr)
      IF( IErr.NE.0 ) THEN
         PRINT*,"felixsim(", my_rank, ") error ", IErr, &
              " Deallocating RIndividualReflections"
@@ -389,8 +389,7 @@ PROGRAM felixsim
   END IF
 
   IF(my_rank.EQ.0) THEN
-     ALLOCATE( &
-          RFinalMontageImageRoot(MAXVAL(IImageSizeXY),&
+     ALLOCATE(RFinalMontageImageRoot(MAXVAL(IImageSizeXY),&
           MAXVAL(IImageSizeXY),IThicknessCount),&
           STAT=IErr)
      IF( IErr.NE.0 ) THEN
@@ -408,8 +407,7 @@ PROGRAM felixsim
   END IF
 
   IF(my_rank.EQ.0) THEN
-     CALL MontageSetup(RFinalMontageImageRoot, &
-          RIndividualReflectionsRoot,IErr)
+     CALL MontageSetup(RFinalMontageImageRoot,RIndividualReflectionsRoot,IErr)
      IF( IErr.NE.0 ) THEN
         PRINT*,"felixsim(", my_rank, ") error ", IErr, &
              " in MontageSetup"
@@ -419,6 +417,7 @@ PROGRAM felixsim
   !--------------------------------------------------------------------
   ! Write out Images
   !--------------------------------------------------------------------
+  PRINT*,"!zZzZz"
 
   IF (my_rank.EQ.0) THEN
 
@@ -448,23 +447,19 @@ PROGRAM felixsim
   
   DEALLOCATE(RhklPositions,STAT=IErr)
   IF( IErr.NE.0 ) THEN
-
-     PRINT*,"felixsim(", my_rank, ") error ", IErr, &
-          " Deallocating RhklPositions"
+     PRINT*,"felixsim(",my_rank,") error",IErr,"Deallocating RhklPositions"
      GOTO 9999
   ENDIF 
 
   DEALLOCATE(RMask,STAT=IErr)       
   IF( IErr.NE.0 ) THEN
-     PRINT*,"felixsim(", my_rank, ") error  ", IErr, &
-          " in Deallocation of RMask etc"
+     PRINT*,"felixsim(",my_rank,") error ",IErr,"Deallocating RMask"
      GOTO 9999
   ENDIF
 
   DEALLOCATE(CUgMat,STAT=IErr)
   IF( IErr.NE.0 ) THEN
-     PRINT*,"felixsim(", my_rank, ") error ", IErr, &
-          " Deallocating CUgMat"
+     PRINT*,"felixsim(",my_rank,") error", IErr,"Deallocating CUgMat"
      GOTO 9999
   ENDIF
 

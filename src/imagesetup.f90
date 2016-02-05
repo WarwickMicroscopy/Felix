@@ -55,23 +55,10 @@ SUBROUTINE ImageSetup (IErr)
   ! Image initialisation 
   CALL Message("ImageSetup",IMust,IErr)
 
-  !--------------------------------------------------------------------
-  ALLOCATE(RhklPositions(nReflections,2),STAT=IErr)
-  IF( IErr.NE.0 ) THEN
-     PRINT*,"imagesetup(",my_rank,") error",IErr,"in ALLOCATE RhklPositions"
-     RETURN
-  END IF
-
   CALL ImageInitialisation( IErr )
   IF( IErr.NE.0 ) THEN
      PRINT*,"ImageSetup(", my_rank, ") error", IErr, &
 	  "in ImageInitialistion()"
-     RETURN
-  END IF
-
-  DEALLOCATE(RhklPositions,STAT=IErr)
-  IF( IErr.NE.0 ) THEN
-     PRINT*,"Felixfunction(",my_rank,") error", IErr,"Deallocating RhklPositions"
      RETURN
   END IF
   

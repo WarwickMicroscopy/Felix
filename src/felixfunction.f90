@@ -85,16 +85,21 @@ SUBROUTINE FelixFunction(LInitialSimulationFLAG,IErr)
   !--------------------------------------------------------------------
   CALL ExperimentalSetup (IErr)
   IF( IErr.NE.0 ) THEN
-     PRINT*,"Felixfunction(", my_rank, ") error in ExperimentalSetup()"
+     PRINT*,"felixfunction(", my_rank, ") error in ExperimentalSetup()"
      RETURN
   END IF
   
   
   !--------------------------------------------------------------------
   ! Setup Image
+  ALLOCATE(RhklPositions(nReflections,2),STAT=IErr)
+  IF( IErr.NE.0 ) THEN
+     PRINT*,"felixfunction(",my_rank,") error",IErr,"allocating RhklPositions"
+     RETURN
+  END IF
   CALL ImageSetup( IErr )
   IF( IErr.NE.0 ) THEN
-     PRINT*,"Felixfunction(", my_rank, ") error in ImageSetup()"
+     PRINT*,"felixfunction(", my_rank, ") error in ImageSetup()"
      RETURN
   END IF
 
@@ -112,7 +117,7 @@ SUBROUTINE FelixFunction(LInitialSimulationFLAG,IErr)
   
   CALL StructureFactorSetup(IErr)
   IF( IErr.NE.0 ) THEN
-     PRINT*,"Felixfunction(", my_rank, ") error ",IErr,"in StructureFactorSetup()"
+     PRINT*,"felixfunction(", my_rank, ") error ",IErr,"in StructureFactorSetup()"
      RETURN
   END IF
 
@@ -349,12 +354,16 @@ SUBROUTINE FelixFunction(LInitialSimulationFLAG,IErr)
   ! free memory
   !--------------------------------------------------------------------
   
-  !Dellocate Global Variables
+  !Dellocate Variables
+  DEALLOCATE(RhklPositions,STAT=IErr)
+  IF( IErr.NE.0 ) THEN
+     PRINT*,"Felixfunction(",my_rank,") error", IErr,"deallocating RhklPositions"
+     RETURN
+  END IF
   
   DEALLOCATE(RMask,STAT=IErr)       
   IF( IErr.NE.0 ) THEN
-     PRINT*,"Felixfunction(", my_rank, ") error  ", IErr, &
-          " in Deallocation of RMask etc"
+     PRINT*,"Felixfunction(",my_rank,") error", IErr,"deallocating RMask"
      RETURN
   END IF
 

@@ -56,7 +56,7 @@ PROGRAM Felixrefine
   IMPLICIT NONE
 
   INTEGER(IKIND) :: IHours,IMinutes,ISeconds,IErr,IMilliSeconds,IIterationFLAG,&
-       ind,IIterationCount
+       ind,jnd,ICalls,IIterationCount
   REAL(RKIND) :: StartTime, CurrentTime, Duration, TotalDurationEstimate,&
        RFigureOfMerit,SimplexFunction  
   INTEGER(IKIND) :: IStartTime, ICurrentTime ,IRate
@@ -162,7 +162,6 @@ PROGRAM Felixrefine
 
   !--------------------------------------------------------------------
   !  DetermineNumberofRefinementVariablesPerType
-  !CALL DetermineNumberofRefinementVariablesPerType(INoofElementsForEachRefinementType,IErr)
   INoofElementsForEachRefinementType(1) = &
        IRefineModeSelectionArray(1)*(INoofUgs*2+1)!RB +1 is for absorption
   INoofElementsForEachRefinementType(2) = &
@@ -187,19 +186,6 @@ PROGRAM Felixrefine
        IRefineModeSelectionArray(11)
   
   IIndependentVariables = SUM(INoofElementsForEachRefinementType)
-  
-  ALLOCATE(IIterativeVariableUniqueIDs(IIndependentVariables,5),STAT=IErr)
-  IF( IErr.NE.0 ) THEN
-     PRINT*,"felixrefine (", my_rank, ") error allocating IIterativeVariableUniqueIDs"
-     GOTO 9999
-  ENDIF
-
-  CALL AssignIterativeIDs(IErr)  
-  IF( IErr.NE.0 ) THEN
-     PRINT*,"felixrefine (", my_rank, ") error calling AssignIterativeIDs"
-     GOTO 9999
-  END IF
-  
   IF(my_rank.EQ.0) THEN
     IF ( IIndependentVariables.EQ.1 ) THEN 
       PRINT*,"Only one independent variable"
@@ -208,14 +194,40 @@ PROGRAM Felixrefine
       PRINT*,TRIM(ADJUSTL(SPrintString))
     END IF
   END IF
-  
-  ALLOCATE(RIndependentVariableValues(IIndependentVariables),&
-       STAT=IErr)  
+
+  !allocations--------------------------------------------------------------------
+  ALLOCATE(IIterativeVariableUniqueIDs(IIndependentVariables,5),STAT=IErr)
   IF( IErr.NE.0 ) THEN
-     PRINT*,"felixrefine (", my_rank, ") error in allocation()"
+     PRINT*,"felixrefine (", my_rank, ") error allocating IIterativeVariableUniqueIDs"
+     GOTO 9999
+  ENDIF
+  ALLOCATE(RIndependentVariableValues(IIndependentVariables),STAT=IErr)  
+  IF( IErr.NE.0 ) THEN
+     PRINT*,"felixrefine (", my_rank, ") error allocating RIndependentVariableValues"
      GOTO 9999
   END IF
 
+  !--------------------------------------------------------------------
+  !  Assign IDs  
+  IIterativeVariableUniqueIDs = 0
+  ICalls = 0
+
+  DO ind = 1,IRefinementVariableTypes !Loop over all possible iterative variables
+     IF(IRefineModeSelectionArray(ind).EQ.1) THEN
+        DO jnd = 1,INoofElementsForEachRefinementType(ind)
+           ICalls = ICalls + 1
+           IIterativeVariableUniqueIDs(ICalls,1) = ICalls
+           CALL AssignArrayLocationsToIterationVariables(ind,jnd,IIterativeVariableUniqueIDs,IErr)
+        END DO
+     END IF
+  END DO 
+  DO ind=1,IIndependentVariables!RB debug
+    PRINT*, IIterativeVariableUniqueIDs(ind,:)
+  END DO  
+
+  
+  
+  
   !--------------------------------------------------------------------
   ! Initialise Simplex
   !--------------------------------------------------------------------
@@ -305,43 +317,6 @@ END PROGRAM Felixrefine
 !%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 !%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-SUBROUTINE AssignIterativeIDs(IErr)
-
-USE MyNumbers
-  
-  USE CConst; USE IConst; USE RConst
-  USE IPara; USE RPara; USE SPara; USE CPara
-  USE BlochPara
-
-  USE IChannels
-
-  USE MPI
-  USE MyMPI
-  
-  IMPLICIT NONE
-
-  INTEGER(IKIND) :: ind,jnd,IErr,ICalls
-  !zz INTEGER(IKIND),DIMENSION(IRefinementVariableTypes) :: INoofElementsForEachRefinementType  !XX
-
-  IIterativeVariableUniqueIDs = 0
-  ICalls = 0
-
-  DO ind = 1,IRefinementVariableTypes !Loop over all possible iterative variables
-     IF(IRefineModeSelectionArray(ind).EQ.1) THEN
-        DO jnd = 1,INoofElementsForEachRefinementType(ind)
-           ICalls = ICalls + 1
-           IIterativeVariableUniqueIDs(ICalls,1) = ICalls
-           CALL AssignArrayLocationsToIterationVariables(ind,jnd,IIterativeVariableUniqueIDs,IErr)
-        END DO
-     END IF
-  END DO
-!XX  DO ind=1,IIndependentVariables!RB debug
-!XX    PRINT*, "ID",ind,":",IIterativeVariableUniqueIDs(IIndependentVariables,:)
-!XX  END DO
-END SUBROUTINE AssignIterativeIDs
-
-!%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-
 SUBROUTINE AssignArrayLocationsToIterationVariables(IIterativeVariableType,IVariableNo,IArrayToFill,IErr)
 !NB IArrayToFill here is equivalent to IIterativeVariableUniqueIDs outside this subroutine
   USE MyNumbers
@@ -360,7 +335,6 @@ SUBROUTINE AssignArrayLocationsToIterationVariables(IIterativeVariableType,IVari
   INTEGER(IKIND) :: IIterativeVariableType,IVariableNo,IErr,IArrayIndex,&
        IAnisotropicDebyeWallerFactorElementNo
   INTEGER(IKIND),DIMENSION(IIndependentVariables,5),INTENT(OUT) :: IArrayToFill  
-!zz  INTEGER(IKIND),DIMENSION(IRefinementVariableTypes) :: INoofElementsForEachRefinementType
 
 !!$  Calculate How Many of Each Variable Type There are
 !  CALL DetermineNumberofRefinementVariablesPerType(INoofElementsForEachRefinementType,IErr)
@@ -375,7 +349,6 @@ SUBROUTINE AssignArrayLocationsToIterationVariables(IIterativeVariableType,IVari
      IArrayToFill(IArrayIndex,3) = &
           NINT(REAL(INoofUgs,RKIND)*(REAL(IVariableNo/REAL(INoofUgs,RKIND),RKIND)-&
           CEILING(REAL(IVariableNo/REAL(INoofUgs,RKIND),RKIND)))+REAL(INoofUgs,RKIND))
-PRINT*, "IArrayToFill 2 and 3 ",IArrayIndex,":",IArrayToFill(IArrayIndex,2),IArrayToFill(IArrayIndex,3)!zz
 
   CASE(2) ! Coordinates (x,y,z)
      IArrayToFill(IArrayIndex,2) = IIterativeVariableType
@@ -1201,51 +1174,6 @@ SUBROUTINE RecoverSavedSimplex(RSimplexVolume,RSimplexFoM,RStandardDeviation,RMe
   CLOSE(IChOutSimplex)
 
 END SUBROUTINE RecoverSavedSimplex
-
-!!$  %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-
-!SUBROUTINE DetermineNumberofRefinementVariablesPerType(INoofElementsForEachRefinementType,IErr)!
-!
-!  USE MyNumbers
-!  
-!  USE CConst; USE IConst; USE RConst
-!  USE IPara; USE RPara; USE SPara; USE CPara
-!  USE BlochPara!
-!
-!  USE IChannels
-!
-!  USE MPI
-!  USE MyMPI
-!  
-!  IMPLICIT NONE
-!
-!  INTEGER(IKIND) :: IErr
- ! INTEGER(IKIND),DIMENSION(IRefinementVariableTypes),INTENT(IN) :: INoofElementsForEachRefinementType
-
- ! INoofElementsForEachRefinementType(1) = &
- !      IRefineModeSelectionArray(1)*(INoofUgs*2+1)!RB +1 is for absorption
- ! INoofElementsForEachRefinementType(2) = &
- !      IRefineModeSelectionArray(2)*IAllowedVectors
- ! INoofElementsForEachRefinementType(3) = &
- !      IRefineModeSelectionArray(3)*SIZE(IAtomicSitesToRefine)
- ! INoofElementsForEachRefinementType(4) = &
- !      IRefineModeSelectionArray(4)*SIZE(IAtomicSitesToRefine)
- ! INoofElementsForEachRefinementType(5) = &
- !      IRefineModeSelectionArray(5)*SIZE(IAtomicSitesToRefine)*6
- ! INoofElementsForEachRefinementType(6) = &
- !      IRefineModeSelectionArray(6)*3
- ! INoofElementsForEachRefinementType(7) = &
- !      IRefineModeSelectionArray(7)*3
- ! INoofElementsForEachRefinementType(8) = &
- !      IRefineModeSelectionArray(8)
- ! INoofElementsForEachRefinementType(9) = &
- !      IRefineModeSelectionArray(9)
- ! INoofElementsForEachRefinementType(10) = &
- !      IRefineModeSelectionArray(10)
- ! INoofElementsForEachRefinementType(11) = &
-  !     IRefineModeSelectionArray(11)
-
-!END SUBROUTINE DetermineNumberofRefinementVariablesPerType
 
 !!$  %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 

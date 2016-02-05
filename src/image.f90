@@ -130,8 +130,7 @@ SUBROUTINE MontageInitialisation(IPixelHorizontalPosition,IPixelVerticalPosition
        hnd,IPixelHorizontalPosition,IPixelVerticalPosition,Ierr
   REAL(RKIND), DIMENSION(MAXVAL(IImageSizeXY),MAXVAL(IImageSizeXY),IThicknessCount),INTENT(OUT) :: &
        RMontageImage
-  REAL(RKIND), DIMENSION(INoOfLacbedPatterns) :: &
-       RIntensityValues
+  REAL(RKIND), DIMENSION(INoOfLacbedPatterns) :: RIntensityValues
 
 !!$  Only print out once when first entered - use message counter
 
@@ -143,8 +142,8 @@ SUBROUTINE MontageInitialisation(IPixelHorizontalPosition,IPixelVerticalPosition
      END DO
   END IF
  
-  DO hnd = 1,INoOfLacbedPatterns
-     
+ DO hnd = 1,INoOfLacbedPatterns
+
      IF(IHKLSelectFLAG.EQ.0) THEN
         
         IF (RConvergenceAngle.LT.ONE) THEN
@@ -153,7 +152,7 @@ SUBROUTINE MontageInitialisation(IPixelHorizontalPosition,IPixelVerticalPosition
            IMontagePixelHorizontalPosition = &
                 NINT(MAXVAL(IImageSizeXY)/TWO+TWO*(IPixelCount/RConvergenceAngle)*RhklPositions(hnd,1))
         ELSE
-           
+        
 !!$           If the Convergence angle is > 1 causing disk overlap in experimental pattern, 
 !!$           then plot as if convergence angle was 0.95 (non-physical but makes a pretty picture)
            IMontagePixelVerticalPosition = &
@@ -172,15 +171,14 @@ SUBROUTINE MontageInitialisation(IPixelHorizontalPosition,IPixelVerticalPosition
              IThicknessIndex) + &
              RIntensityValues(hnd)
         
-     ELSE
-        
+     ELSE  
+      
         IF (RConvergenceAngle.LT.ONE) THEN
            IMontagePixelVerticalPosition = &
                 NINT(MAXVAL(IImageSizeXY)/TWO+TWO*(IPixelCount/RConvergenceAngle)*RhklPositions(IOutputReflections(hnd),2))
            IMontagePixelHorizontalPosition = &
                 NINT(MAXVAL(IImageSizeXY)/TWO+TWO*(IPixelCount/RConvergenceAngle)*RhklPositions(IOutputReflections(hnd),1))
         ELSE
-           
 !!$           If the Convergence angle is > 1 causing disk overlap in experimental pattern, 
 !!$           then plot as if convergence angle was 0.95 (non-physical but makes a pretty picture)
            IMontagePixelVerticalPosition = &
