@@ -330,7 +330,7 @@ END SUBROUTINE StructureFactorInitialisation
 !%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 SUBROUTINE StructureFactorsWithAbsorptionDetermination(IErr)         
-
+!RB this is a lot of bumf for 3 lines of code
 
   USE MyNumbers
   USE WriteToScreen

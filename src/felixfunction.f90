@@ -83,7 +83,6 @@ SUBROUTINE FelixFunction(LInitialSimulationFLAG,IErr)
   !-------------------------------------------------------------------- 
   !Setup Experimental Variables
   !--------------------------------------------------------------------
-
   CALL ExperimentalSetup (IErr)
   IF( IErr.NE.0 ) THEN
      PRINT*,"Felixfunction(", my_rank, ") error in ExperimentalSetup()"
@@ -93,9 +92,6 @@ SUBROUTINE FelixFunction(LInitialSimulationFLAG,IErr)
   
   !--------------------------------------------------------------------
   ! Setup Image
-  !--------------------------------------------------------------------
-
-
   CALL ImageSetup( IErr )
   IF( IErr.NE.0 ) THEN
      PRINT*,"Felixfunction(", my_rank, ") error in ImageSetup()"
@@ -189,7 +185,7 @@ SUBROUTINE FelixFunction(LInitialSimulationFLAG,IErr)
   IThicknessCount= (RFinalThickness- RInitialThickness)/RDeltaThickness + 1
 
   IF(IImageFLAG.LE.2) THEN
-     ALLOCATE(RIndividualReflections(IReflectOut,IThicknessCount,&
+     ALLOCATE(RIndividualReflections(INoOfLacbedPatterns,IThicknessCount,&
           (ILocalPixelCountMax-ILocalPixelCountMin)+1),&
           STAT=IErr)
      IF( IErr.NE.0 ) THEN
@@ -200,7 +196,7 @@ SUBROUTINE FelixFunction(LInitialSimulationFLAG,IErr)
      
      RIndividualReflections = ZERO
   ELSE
-     ALLOCATE(CAmplitudeandPhase(IReflectOut,IThicknessCount,&
+     ALLOCATE(CAmplitudeandPhase(INoOfLacbedPatterns,IThicknessCount,&
           (ILocalPixelCountMax-ILocalPixelCountMin)+1),&
           STAT=IErr)
      IF( IErr.NE.0 ) THEN
@@ -253,7 +249,7 @@ SUBROUTINE FelixFunction(LInitialSimulationFLAG,IErr)
   ! close outfiles
   !--------------------------------------------------------------------
   
-  ALLOCATE(RIndividualReflectionsRoot(IReflectOut,IThicknessCount,IPixelTotal),&
+  ALLOCATE(RIndividualReflectionsRoot(INoOfLacbedPatterns,IThicknessCount,IPixelTotal),&
        STAT=IErr)
   IF( IErr.NE.0 ) THEN
      PRINT*,"Felixfunction(", my_rank, ") error ", IErr, &
@@ -262,7 +258,7 @@ SUBROUTINE FelixFunction(LInitialSimulationFLAG,IErr)
   END IF
   
   IF(IImageFLAG.GE.3) THEN
-     ALLOCATE(CAmplitudeandPhaseRoot(IReflectOut,IThicknessCount,IPixelTotal),&
+     ALLOCATE(CAmplitudeandPhaseRoot(INoOfLacbedPatterns,IThicknessCount,IPixelTotal),&
           STAT=IErr)
      IF( IErr.NE.0 ) THEN
         PRINT*,"Felixfunction(", my_rank, ") error ", IErr, &
@@ -284,12 +280,12 @@ SUBROUTINE FelixFunction(LInitialSimulationFLAG,IErr)
 
   DO pnd = 1,p
      IDisplacements(pnd) = (IPixelTotal*(pnd-1)/p)
-     ICount(pnd) = (((IPixelTotal*(pnd)/p) - (IPixelTotal*(pnd-1)/p)))*IReflectOut*IThicknessCount
+     ICount(pnd) = (((IPixelTotal*(pnd)/p) - (IPixelTotal*(pnd-1)/p)))*INoOfLacbedPatterns*IThicknessCount
           
   END DO
   
   DO ind = 1,p
-        IDisplacements(ind) = (IDisplacements(ind))*IReflectOut*IThicknessCount
+        IDisplacements(ind) = (IDisplacements(ind))*INoOfLacbedPatterns*IThicknessCount
   END DO
   
   IF(IImageFLAG.LE.2) THEN
@@ -338,7 +334,7 @@ SUBROUTINE FelixFunction(LInitialSimulationFLAG,IErr)
   END IF
   
   IF(my_rank.EQ.0) THEN
-     ALLOCATE(RIndividualReflections(IReflectOut,IThicknessCount,IPixelTotal),&
+     ALLOCATE(RIndividualReflections(INoOfLacbedPatterns,IThicknessCount,IPixelTotal),&
           STAT=IErr)
      IF( IErr.NE.0 ) THEN
         PRINT*,"Felixfunction(", my_rank, ") error ", IErr, &
@@ -441,16 +437,6 @@ SUBROUTINE FelixFunction(LInitialSimulationFLAG,IErr)
         RETURN
      END IF
   END IF
-  
-!!$  IF (my_rank.NE.0) THEN
-  
-  DEALLOCATE(Rhklpositions,STAT=IErr)
-  IF( IErr.NE.0 ) THEN
-     PRINT*,"Felixfunction(", my_rank, ") error ", IErr, &
-          " Deallocating Rhklpositions"
-     RETURN
-  END IF
-!!$   END IF
   
   DEALLOCATE(MNP,STAT=IErr)
   IF( IErr.NE.0 ) THEN
@@ -584,12 +570,12 @@ SUBROUTINE CalculateFigureofMeritandDetermineThickness(IThicknessCountFinal,IErr
   IMPLICIT NONE
 
   INTEGER(IKIND) :: ind,jnd,knd,IErr,ICountedPixels,IThickness,hnd
-  INTEGER(IKIND),DIMENSION(IReflectOut) :: IThicknessByReflection
+  INTEGER(IKIND),DIMENSION(INoOfLacbedPatterns) :: IThicknessByReflection
   INTEGER(IKIND),INTENT(OUT) :: IThicknessCountFinal
   REAL(RKIND),DIMENSION(2*IPixelCount,2*IPixelCount) :: RSimulatedImageForPhaseCorrelation,RExperimentalImage
   REAL(RKIND) :: RCrossCorrelationOld,RIndependentCrossCorrelation,RThickness,&
 	   PhaseCorrelate,Normalised2DCrossCorrelation,ResidualSumofSquares
-  REAL(RKIND),DIMENSION(IReflectOut) :: RReflectionCrossCorrelations,RReflectionThickness
+  REAL(RKIND),DIMENSION(INoOfLacbedPatterns) :: RReflectionCrossCorrelations,RReflectionThickness
   CHARACTER*200 :: SPrintString
        
   
@@ -599,7 +585,7 @@ SUBROUTINE CalculateFigureofMeritandDetermineThickness(IThicknessCountFinal,IErr
 
   RReflectionCrossCorrelations = ZERO
 
-  DO hnd = 1,IReflectOut
+  DO hnd = 1,INoOfLacbedPatterns
      RCrossCorrelationOld = 1.0E15 !A large Number
      RThickness = ZERO
      DO ind = 1,IThicknessCount
@@ -689,9 +675,9 @@ SUBROUTINE CalculateFigureofMeritandDetermineThickness(IThicknessCountFinal,IErr
 
   RCrossCorrelation = &
        SUM(RReflectionCrossCorrelations*RWeightingCoefficients)/&
-       REAL(IReflectOut,RKIND)
+       REAL(INoOfLacbedPatterns,RKIND)
 !RB assume that the thickness is given by the mean of individual thicknesses  
-  IThicknessCountFinal = SUM(IThicknessByReflection)/IReflectOut
+  IThicknessCountFinal = SUM(IThicknessByReflection)/INoOfLacbedPatterns
 
   RThickness = RInitialThickness + (IThicknessCountFinal-1)*RDeltaThickness 
   
@@ -1153,14 +1139,14 @@ SUBROUTINE InitialiseWeightingCoefficients(IErr)
   INTEGER(IKIND) :: IErr,ind
   REAL(RKIND),DIMENSION(:),ALLOCATABLE :: RWeightingCoefficientsDummy
 
-  ALLOCATE(RWeightingCoefficients(IReflectOut),STAT=IErr)
+  ALLOCATE(RWeightingCoefficients(INoOfLacbedPatterns),STAT=IErr)
   IF( IErr.NE.0 ) THEN
      PRINT*,"InitialiseWeightingCoefficients(", my_rank, ") error ", IErr, &
           " in allocation RWeightingCoefficients"
      RETURN
   ENDIF
 
-  ALLOCATE(RWeightingCoefficientsDummy(IReflectOut),STAT=IErr)
+  ALLOCATE(RWeightingCoefficientsDummy(INoOfLacbedPatterns),STAT=IErr)
   IF( IErr.NE.0 ) THEN
      PRINT*,"InitialiseWeightingCoefficients(", my_rank, ") error ", IErr, &
           " in allocation RWeightingCoefficients"
@@ -1175,8 +1161,8 @@ SUBROUTINE InitialiseWeightingCoefficients(IErr)
      IF(SIZE(RWeightingCoefficients).GT.1) THEN
         RWeightingCoefficientsDummy(1) = RWeightingCoefficients(2)/TWO 
      END IF
-     DO ind = 1,IReflectOut
-        RWeightingCoefficients(ind) = RWeightingCoefficientsDummy(IReflectOut-(ind-1))
+     DO ind = 1,INoOfLacbedPatterns
+        RWeightingCoefficients(ind) = RWeightingCoefficientsDummy(INoOfLacbedPatterns-(ind-1))
      END DO
 !!$     RWeightingCoefficients = 1/RgVecMag(IOutputReflections)
   CASE(2)

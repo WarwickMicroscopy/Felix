@@ -395,21 +395,21 @@ SUBROUTINE BlochCoefficientCalculation(IYPixelIndex,IXPixelIndex,IPixelNumber,IF
      IF(IHKLSelectFLAG.EQ.0) THEN
         
         IF(IImageFLAG.LE.2) THEN
-           RIndividualReflections(1:IReflectOut,IThicknessIndex,(IPixelNumber-IFirstPixelToCalculate)+1) = &
-                RFullWaveIntensity(1:IReflectOut)
+           RIndividualReflections(1:INoOfLacbedPatterns,IThicknessIndex,(IPixelNumber-IFirstPixelToCalculate)+1) = &
+                RFullWaveIntensity(1:INoOfLacbedPatterns)
         ELSE
-           CAmplitudeandPhase(1:IReflectOut,IThicknessIndex,(IPixelNumber-IFirstPixelToCalculate)+1) = &
-                CFullWavefunctions(1:IReflectOut)
+           CAmplitudeandPhase(1:INoOfLacbedPatterns,IThicknessIndex,(IPixelNumber-IFirstPixelToCalculate)+1) = &
+                CFullWavefunctions(1:INoOfLacbedPatterns)
         END IF
      ELSE
         
         IF(IImageFLAG.LE.2) THEN
-           DO pnd = 1,IReflectOut
+           DO pnd = 1,INoOfLacbedPatterns
               RIndividualReflections(pnd,IThicknessIndex,(IPixelNumber-IFirstPixelToCalculate)+1) = &
                    RFullWaveIntensity(IOutputReflections(pnd))
            END DO
         ELSE
-           DO pnd = 1,IReflectOut
+           DO pnd = 1,INoOfLacbedPatterns
               CAmplitudeandPhase(pnd,IThicknessIndex,(IPixelNumber-IFirstPixelToCalculate)+1) = &
                    CFullWavefunctions(IOutputReflections(pnd))
            END DO
@@ -490,7 +490,7 @@ SUBROUTINE CreateWaveFunctions(RThickness,IErr)
   
   CEigenValueDependentTerms= CZERO
  
-  DO hnd=1,nBeams !IReflectOut 
+  DO hnd=1,nBeams !INoOfLacbedPatterns 
      
      ! This needs to be a diagonal matrix
      CEigenValueDependentTerms(hnd,hnd) = &

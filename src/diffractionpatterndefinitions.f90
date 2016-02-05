@@ -534,8 +534,8 @@ SUBROUTINE SpecificReflectionDetermination (IErr)
            RETURN
         ENDIF
      END IF
-     IF(IReflectOut.NE.IFind) THEN
-        IReflectOut = IFind
+     IF(INoOfLacbedPatterns.NE.IFind) THEN
+        INoOfLacbedPatterns = IFind
      END IF
   END IF
   
@@ -578,8 +578,8 @@ SUBROUTINE DiffractionPatternCalculation (IErr)
   CALL Message("DiffractionPatternCalculation",IInfo,IErr, &
        MessageVariable = "MinimumGMag", RVariable = RMinimumGMag)
   
-  IF (nReflections.LT.IReflectOut) THEN
-     IReflectOut = nReflections
+  IF (nReflections.LT.INoOfLacbedPatterns) THEN
+     INoOfLacbedPatterns = nReflections
   END IF
   
   CALL Message("DiffractionPatternCalculation",IInfo,IErr, &

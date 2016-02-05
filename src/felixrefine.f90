@@ -60,11 +60,9 @@ PROGRAM Felixrefine
   REAL(RKIND) :: StartTime, CurrentTime, Duration, TotalDurationEstimate,&
        RFigureOfMerit,SimplexFunction  
   INTEGER(IKIND) :: IStartTime, ICurrentTime ,IRate
-  INTEGER(IKIND),DIMENSION(IRefinementVariableTypes) :: INoofelementsforeachrefinementtype!XX
   REAL(RKIND),DIMENSION(:,:),ALLOCATABLE :: RSimplexVolume
   REAL(RKIND),DIMENSION(:),ALLOCATABLE :: RSimplexFoM,RIndependentVariableValues
   REAL(RKIND) :: RBCASTREAL,RStandardDeviation,RMean
-
   CHARACTER*40 my_rank_string ,SPrintString
 
   !-------------------------------------------------------------------
@@ -137,7 +135,7 @@ PROGRAM Felixrefine
      GOTO 9999
   END IF  
   
-  ALLOCATE(RImageExpi(2*IPixelCount,2*IPixelCount,IReflectOut),&
+  ALLOCATE(RImageExpi(2*IPixelCount,2*IPixelCount,INoOfLacbedPatterns),&
        STAT=IErr)  
   IF( IErr.NE.0 ) THEN
      PRINT*,"felixrefine (", my_rank, ") error in Allocation()"
@@ -155,28 +153,50 @@ PROGRAM Felixrefine
   !--------------------------------------------------------------------
   
   IF(IRefineModeSelectionArray(2).EQ.1) THEN 
-     
      CALL SetupAtomicVectorMovements(IErr)
      IF( IErr.NE.0 ) THEN
         PRINT*,"felixrefine (", my_rank, ") error in SetupAtomicVectorMovements"
         GOTO 9999
      END IF
-     
   END IF
+
+  !--------------------------------------------------------------------
+  !  DetermineNumberofRefinementVariablesPerType
+  !CALL DetermineNumberofRefinementVariablesPerType(INoofElementsForEachRefinementType,IErr)
+  INoofElementsForEachRefinementType(1) = &
+       IRefineModeSelectionArray(1)*(INoofUgs*2+1)!RB +1 is for absorption
+  INoofElementsForEachRefinementType(2) = &
+       IRefineModeSelectionArray(2)*IAllowedVectors
+  INoofElementsForEachRefinementType(3) = &
+       IRefineModeSelectionArray(3)*SIZE(IAtomicSitesToRefine)
+  INoofElementsForEachRefinementType(4) = &
+       IRefineModeSelectionArray(4)*SIZE(IAtomicSitesToRefine)
+  INoofElementsForEachRefinementType(5) = &
+       IRefineModeSelectionArray(5)*SIZE(IAtomicSitesToRefine)*6
+  INoofElementsForEachRefinementType(6) = &
+       IRefineModeSelectionArray(6)*3
+  INoofElementsForEachRefinementType(7) = &
+       IRefineModeSelectionArray(7)*3
+  INoofElementsForEachRefinementType(8) = &
+       IRefineModeSelectionArray(8)
+  INoofElementsForEachRefinementType(9) = &
+       IRefineModeSelectionArray(9)
+  INoofElementsForEachRefinementType(10) = &
+       IRefineModeSelectionArray(10)
+  INoofElementsForEachRefinementType(11) = &
+       IRefineModeSelectionArray(11)
   
-!!$Calculate Number of Independent Refinement Variables
+  IIndependentVariables = SUM(INoofElementsForEachRefinementType)
   
-!XX  CALL CountRefinementVariables(IErr)
-!XX  IF( IErr.NE.0 ) THEN
-!XX     PRINT*,"felixrefine (", my_rank, ") error in CountRefinementVariables"
-!XX     GOTO 9999
-!XX  END IF
-  !CALL DetermineNumberofRefinementVariablesPerType(INoofelementsforeachrefinementtype,IErr)
-  !IIndependentVariables = SUM(INoofelementsforeachrefinementtype)
+  ALLOCATE(IIterativeVariableUniqueIDs(IIndependentVariables,5),STAT=IErr)
+  IF( IErr.NE.0 ) THEN
+     PRINT*,"felixrefine (", my_rank, ") error allocating IIterativeVariableUniqueIDs"
+     GOTO 9999
+  ENDIF
 
   CALL AssignIterativeIDs(IErr)  
   IF( IErr.NE.0 ) THEN
-     PRINT*,"felixrefine (", my_rank, ") error in AssignIterativeIDs()"
+     PRINT*,"felixrefine (", my_rank, ") error calling AssignIterativeIDs"
      GOTO 9999
   END IF
   
@@ -238,10 +258,15 @@ PROGRAM Felixrefine
   !--------------------------------------------------------------------
   ! Deallocate Memory
   !--------------------------------------------------------------------
+  DEALLOCATE(IIterativeVariableUniqueIDs,STAT=IErr)
+  IF( IErr.NE.0 ) THEN
+     PRINT*,"felixrefine (", my_rank, ") error deallocating IIterativeVariableUniqueIDs"
+     GOTO 9999
+  ENDIF
 
   DEALLOCATE(RImageExpi,STAT=IErr)  
   IF( IErr.NE.0 ) THEN
-     PRINT*,"felixrefine (", my_rank, ") error in Deallocation()"
+     PRINT*,"felixrefine (", my_rank, ") error deallocating RImageExpi"
      GOTO 9999
   ENDIF
 
@@ -296,23 +321,14 @@ USE MyNumbers
   IMPLICIT NONE
 
   INTEGER(IKIND) :: ind,jnd,IErr,ICalls
-  INTEGER(IKIND),DIMENSION(IRefinementVariableTypes) :: INoofelementsforeachrefinementtype  !XX
-
-  CALL DetermineNumberofRefinementVariablesPerType(INoofelementsforeachrefinementtype,IErr)
-  IIndependentVariables = SUM(INoofelementsforeachrefinementtype)
-  
-  ALLOCATE(IIterativeVariableUniqueIDs(IIndependentVariables,5),STAT=IErr)
-  IF( IErr.NE.0 ) THEN
-     PRINT*,"felixrefine (", my_rank, ") error in Allocation() of IIterativeVariableUniqueIDs"
-     RETURN
-  ENDIF
+  !zz INTEGER(IKIND),DIMENSION(IRefinementVariableTypes) :: INoofElementsForEachRefinementType  !XX
 
   IIterativeVariableUniqueIDs = 0
   ICalls = 0
 
   DO ind = 1,IRefinementVariableTypes !Loop over all possible iterative variables
      IF(IRefineModeSelectionArray(ind).EQ.1) THEN
-        DO jnd = 1,INoofelementsforeachrefinementtype(ind)
+        DO jnd = 1,INoofElementsForEachRefinementType(ind)
            ICalls = ICalls + 1
            IIterativeVariableUniqueIDs(ICalls,1) = ICalls
            CALL AssignArrayLocationsToIterationVariables(ind,jnd,IIterativeVariableUniqueIDs,IErr)
@@ -344,42 +360,36 @@ SUBROUTINE AssignArrayLocationsToIterationVariables(IIterativeVariableType,IVari
   INTEGER(IKIND) :: IIterativeVariableType,IVariableNo,IErr,IArrayIndex,&
        IAnisotropicDebyeWallerFactorElementNo
   INTEGER(IKIND),DIMENSION(IIndependentVariables,5),INTENT(OUT) :: IArrayToFill  
-  INTEGER(IKIND),DIMENSION(IRefinementVariableTypes) :: INoofelementsforeachrefinementtype
+!zz  INTEGER(IKIND),DIMENSION(IRefinementVariableTypes) :: INoofElementsForEachRefinementType
 
 !!$  Calculate How Many of Each Variable Type There are
-
-  CALL DetermineNumberofRefinementVariablesPerType(INoofelementsforeachrefinementtype,IErr)
+!  CALL DetermineNumberofRefinementVariablesPerType(INoofElementsForEachRefinementType,IErr)
   
 !!$  Where am I in the Array Right Now?
-
-  IArrayIndex = SUM(INoofelementsforeachrefinementtype(:(IIterativeVariableType-1)))+IVariableNo
+  IArrayIndex = SUM(INoofElementsForEachRefinementType(:(IIterativeVariableType-1)))+IVariableNo
 
   SELECT CASE(IIterativeVariableType)
 
   CASE(1) ! Ugs
-
      IArrayToFill(IArrayIndex,2) = IIterativeVariableType
      IArrayToFill(IArrayIndex,3) = &
           NINT(REAL(INoofUgs,RKIND)*(REAL(IVariableNo/REAL(INoofUgs,RKIND),RKIND)-&
           CEILING(REAL(IVariableNo/REAL(INoofUgs,RKIND),RKIND)))+REAL(INoofUgs,RKIND))
-!XX PRINT*, "IArrayToFill 2 and 3 ",IArrayIndex,":",IArrayToFill(IArrayIndex,2),IArrayToFill(IArrayIndex,3)!RB debug
-  CASE(2) ! Coordinates (x,y,z)
+PRINT*, "IArrayToFill 2 and 3 ",IArrayIndex,":",IArrayToFill(IArrayIndex,2),IArrayToFill(IArrayIndex,3)!zz
 
+  CASE(2) ! Coordinates (x,y,z)
      IArrayToFill(IArrayIndex,2) = IIterativeVariableType
      IArrayToFill(IArrayIndex,3) = IVariableNo
 
   CASE(3) ! Atomic Site Occupancies
-
      IArrayToFill(IArrayIndex,2) = IIterativeVariableType
      IArrayToFill(IArrayIndex,3) = IAtomicSitesToRefine(IVariableNo)
 
   CASE(4) ! Isotropic Debye Waller Factors 
-
      IArrayToFill(IArrayIndex,2) = IIterativeVariableType
      IArrayToFill(IArrayIndex,3) = IAtomicSitesToRefine(IVariableNo)
 
   CASE(5) ! Anisotropic Debye Waller Factors (a11-a33)
-
      IArrayToFill(IArrayIndex,2) = IIterativeVariableType
      IArrayToFill(IArrayIndex,3) = IAtomicSitesToRefine(INT(CEILING(REAL(IVariableNo/6.0D0,RKIND))))
      IAnisotropicDebyeWallerFactorElementNo = &
@@ -403,31 +413,25 @@ SUBROUTINE AssignArrayLocationsToIterationVariables(IIterativeVariableType,IVari
         END SELECT
 
   CASE(6) ! Lattice Parameters
-
      IArrayToFill(IArrayIndex,2) = IIterativeVariableType
      IArrayToFill(IArrayIndex,3) = &
           NINT(3.D0*(REAL(IVariableNo/3.0D0,RKIND)-CEILING(REAL(IVariableNo/3.0D0,RKIND)))+3.0D0)
      
   CASE(7) ! Lattice Angles
-
      IArrayToFill(IArrayIndex,2) = IIterativeVariableType
      IArrayToFill(IArrayIndex,3) = &
           NINT(3.D0*(REAL(IVariableNo/3.0D0,RKIND)-CEILING(REAL(IVariableNo/3.0D0,RKIND)))+3.0D0)
 
-  CASE(8)
-     
+  CASE(8) 
      IArrayToFill(IArrayIndex,2) = IIterativeVariableType
 
-  CASE(9)
-     
+  CASE(9)  
      IArrayToFill(IArrayIndex,2) = IIterativeVariableType
 
   CASE(10)
-     
      IArrayToFill(IArrayIndex,2) = IIterativeVariableType
 
   CASE(11)
-     
      IArrayToFill(IArrayIndex,2) = IIterativeVariableType
      
   END SELECT
@@ -1029,14 +1033,10 @@ SUBROUTINE OutofUnitCellCheck(IVariableID,RProposedMovement,RCorrectedMovement,I
 
   IMPLICIT NONE
   
-  INTEGER(IKIND) :: &
-       ind,IErr,IVariableID,IAtomID,IVectorID
-  REAL(RKIND),DIMENSION(THREEDIM) :: &
-       RProposedAtomicCoordinate,RDummyMovement
-  REAL(RKIND),INTENT(IN) :: &
-       RProposedMovement
-  REAL(RKIND),INTENT(OUT) :: &
-       RCorrectedMovement
+  INTEGER(IKIND) :: ind,IErr,IVariableID,IAtomID,IVectorID
+  REAL(RKIND),DIMENSION(THREEDIM) :: RProposedAtomicCoordinate,RDummyMovement
+  REAL(RKIND),INTENT(IN) :: RProposedMovement
+  REAL(RKIND),INTENT(OUT) :: RCorrectedMovement
   
   IVectorID = IIterativeVariableUniqueIDs(IVariableID,3)
   
@@ -1204,50 +1204,48 @@ END SUBROUTINE RecoverSavedSimplex
 
 !!$  %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-SUBROUTINE DetermineNumberofRefinementVariablesPerType(INoofelementsforeachrefinementtype,IErr)
+!SUBROUTINE DetermineNumberofRefinementVariablesPerType(INoofElementsForEachRefinementType,IErr)!
+!
+!  USE MyNumbers
+!  
+!  USE CConst; USE IConst; USE RConst
+!  USE IPara; USE RPara; USE SPara; USE CPara
+!  USE BlochPara!
+!
+!  USE IChannels
+!
+!  USE MPI
+!  USE MyMPI
+!  
+!  IMPLICIT NONE
+!
+!  INTEGER(IKIND) :: IErr
+ ! INTEGER(IKIND),DIMENSION(IRefinementVariableTypes),INTENT(IN) :: INoofElementsForEachRefinementType
 
-  USE MyNumbers
-  
-  USE CConst; USE IConst; USE RConst
-  USE IPara; USE RPara; USE SPara; USE CPara
-  USE BlochPara
+ ! INoofElementsForEachRefinementType(1) = &
+ !      IRefineModeSelectionArray(1)*(INoofUgs*2+1)!RB +1 is for absorption
+ ! INoofElementsForEachRefinementType(2) = &
+ !      IRefineModeSelectionArray(2)*IAllowedVectors
+ ! INoofElementsForEachRefinementType(3) = &
+ !      IRefineModeSelectionArray(3)*SIZE(IAtomicSitesToRefine)
+ ! INoofElementsForEachRefinementType(4) = &
+ !      IRefineModeSelectionArray(4)*SIZE(IAtomicSitesToRefine)
+ ! INoofElementsForEachRefinementType(5) = &
+ !      IRefineModeSelectionArray(5)*SIZE(IAtomicSitesToRefine)*6
+ ! INoofElementsForEachRefinementType(6) = &
+ !      IRefineModeSelectionArray(6)*3
+ ! INoofElementsForEachRefinementType(7) = &
+ !      IRefineModeSelectionArray(7)*3
+ ! INoofElementsForEachRefinementType(8) = &
+ !      IRefineModeSelectionArray(8)
+ ! INoofElementsForEachRefinementType(9) = &
+ !      IRefineModeSelectionArray(9)
+ ! INoofElementsForEachRefinementType(10) = &
+ !      IRefineModeSelectionArray(10)
+ ! INoofElementsForEachRefinementType(11) = &
+  !     IRefineModeSelectionArray(11)
 
-  USE IChannels
-
-  USE MPI
-  USE MyMPI
-  
-  IMPLICIT NONE
-
-  INTEGER(IKIND) :: &
-       IErr
-  INTEGER(IKIND),DIMENSION(IRefinementVariableTypes) :: &
-       INoofelementsforeachrefinementtype
-
-  INoofelementsforeachrefinementtype(1) = &
-       IRefineModeSelectionArray(1)*(INoofUgs*2+1)!RB +1 is for absorption
-  INoofelementsforeachrefinementtype(2) = &
-       IRefineModeSelectionArray(2)*IAllowedVectors
-  INoofelementsforeachrefinementtype(3) = &
-       IRefineModeSelectionArray(3)*SIZE(IAtomicSitesToRefine)
-  INoofelementsforeachrefinementtype(4) = &
-       IRefineModeSelectionArray(4)*SIZE(IAtomicSitesToRefine)
-  INoofelementsforeachrefinementtype(5) = &
-       IRefineModeSelectionArray(5)*SIZE(IAtomicSitesToRefine)*6
-  INoofelementsforeachrefinementtype(6) = &
-       IRefineModeSelectionArray(6)*3
-  INoofelementsforeachrefinementtype(7) = &
-       IRefineModeSelectionArray(7)*3
-  INoofelementsforeachrefinementtype(8) = &
-       IRefineModeSelectionArray(8)
-  INoofelementsforeachrefinementtype(9) = &
-       IRefineModeSelectionArray(9)
-  INoofelementsforeachrefinementtype(10) = &
-       IRefineModeSelectionArray(10)
-  INoofelementsforeachrefinementtype(11) = &
-       IRefineModeSelectionArray(11)
-
-END SUBROUTINE DetermineNumberofRefinementVariablesPerType
+!END SUBROUTINE DetermineNumberofRefinementVariablesPerType
 
 !!$  %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 

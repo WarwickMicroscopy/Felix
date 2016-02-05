@@ -289,10 +289,11 @@ SUBROUTINE WriteIterationStructure(path,IErr)
   WRITE(IChOutSimplex,FMT='(A14,1X,F9.6))') "_cell_length_a",RLengthX
   WRITE(IChOutSimplex,FMT='(A14,1X,F9.6))') "_cell_length_b",RLengthY
   WRITE(IChOutSimplex,FMT='(A14,1X,F9.6))') "_cell_length_c",RLengthZ
-  WRITE(IChOutSimplex,FMT='(A17,1X,F9.6))') "_cell_angle_alpha",RAlpha!might be in radians?
-  WRITE(IChOutSimplex,FMT='(A16,1X,F9.6))') "_cell_angle_beta",RBeta
-  WRITE(IChOutSimplex,FMT='(A17,1X,F9.6))') "_cell_angle_gamma",RGamma
-  WRITE(IChOutSimplex,FMT='(A30,1X,A10))') "_symmetry_space_group_name_H-M",SSpaceGrp
+  WRITE(IChOutSimplex,FMT='(A17,1X,F9.6))') "_cell_angle_alpha",RAlpha*180/PI
+  WRITE(IChOutSimplex,FMT='(A16,1X,F9.6))') "_cell_angle_beta",RBeta*180/PI
+  WRITE(IChOutSimplex,FMT='(A17,1X,F9.6))') "_cell_angle_gamma",RGamma*180/PI
+  WRITE(IChOutSimplex,FMT='(A30,1X,A10))') "_symmetry_space_group_name_H-M '",SSpaceGrp,"'"
+  WRITE(IChOutSimplex,FMT='(A5))') " "
   WRITE(IChOutSimplex,FMT='(A5))') "loop_"
   WRITE(IChOutSimplex,FMT='(A22))') "_atom_site_type_symbol"
 !  WRITE(IChOutSimplex,FMT='(A25))') "_atom_site_Wyckoff_symbol"
@@ -301,7 +302,7 @@ SUBROUTINE WriteIterationStructure(path,IErr)
   WRITE(IChOutSimplex,FMT='(A18))') "_atom_site_fract_z"
 !  WRITE(IChOutSimplex,FMT='(A25))') "_atom_site_B_iso_or_equiv"
 !  WRITE(IChOutSimplex,FMT='(A20))') "_atom_site_occupancy"
-  WRITE(IChOutSimplex,FMT='(A5))') "loop_"
+
   DO jnd = 1,SIZE(RAtomSiteFracCoordVec,DIM=1)!RB only gives refined atoms, needs work
      WRITE(IChOutSimplex,FMT='(A2,1X,3(F9.6,1X))') &
 	 SAtomName(jnd),RAtomSiteFracCoordVec(jnd,:)
@@ -355,7 +356,7 @@ SUBROUTINE WriteIterationImages(path,IThicknessIndex,IErr)
   REAL(RKIND),DIMENSION(2*IPixelCount,2*IPixelCount) :: RImage
   CHARACTER*200,INTENT(IN) :: path
 
-  DO ind = 1,IReflectOut
+  DO ind = 1,INoOfLacbedPatterns
      CALL OpenReflectionImage(IChOutWIImage,path,IErr,ind,2*IPixelCount,2_IKIND)
      IF( IErr.NE.0 ) THEN
         PRINT*,"WriteIterationImages(", my_rank, ") error in OpenReflectionImage()"

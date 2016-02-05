@@ -59,7 +59,7 @@ SUBROUTINE MontageSetup(RMontageImages,RIndividualReflectionImages,IErr)
        IErr,IThicknessIndex,knd,ind,jnd
   REAL(RKIND),DIMENSION(MAXVAL(IImageSizeXY),&
        MAXVAL(IImageSizeXY),IThicknessCount):: RMontageImages
-  REAL(RKIND),DIMENSION(IReflectOut,IThicknessCount,IPixelTotal):: &
+  REAL(RKIND),DIMENSION(INoOfLacbedPatterns,IThicknessCount,IPixelTotal):: &
        RIndividualReflectionImages
   
   CALL Message("MontageSetup",IMust,IErr)

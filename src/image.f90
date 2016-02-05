@@ -57,50 +57,46 @@ SUBROUTINE ImageInitialisation( IErr )
 
   CALL Message("ImageInitialisation",IMust,IErr)
   
-!Determine Positions of reflections in final image (may not need to be here)
-
+  !Determine Positions of reflections in final image (may not need to be here)
   CALL Message("ImageInitialisation",IInfo,IErr, &
        MessageVariable = "nReflections", IVariable = nReflections)
   CALL Message("ImageInitialisation",IInfo,IErr, &
        MessageVariable = "RMinimumGMag", RVariable = RMinimumGMag)
 
   ! positions of the centres of the disks
-
+PRINT*,"!zz nReflections",nReflections
   DO ind=1,nReflections
-     Rhklpositions(ind,1) = &
-          RgVecMatT(ind,1)/RMinimumGMag
-     Rhklpositions(ind,2) = &
-          RgVecMatT(ind,2)/RMinimumGMag
+     RhklPositions(ind,1) = RgVecMatT(ind,1)/RMinimumGMag
+     RhklPositions(ind,2) = RgVecMatT(ind,2)/RMinimumGMag
   ENDDO
   
   ! size of final image
-  
   IF(RConvergenceAngle .LT. ONE) THEN
      DummyConvergenceAngle=RConvergenceAngle
   ELSE
      DummyConvergenceAngle=0.95_RKIND
   END IF
   IF(IHKLSelectFLAG.EQ.0) THEN
-     DO ind=1,SIZE(Rhklpositions,DIM=2)
+     DO ind=1,2
         IImageSizeXY(ind)= CEILING(&
              FOUR*REAL(IPixelCount,RKIND)/DummyConvergenceAngle * &
-             (MAXVAL(ABS(Rhklpositions(1:IReflectOut,ind)))+ONE) )
+             (MAXVAL(ABS(RhklPositions(1:INoOfLacbedPatterns,ind)))+ONE) )
      ENDDO
   ELSE
-     DO ind=1,SIZE(Rhklpositions,DIM=2)
-        DO jnd = 1,IReflectOut
+     DO ind=1,2
+        DO jnd = 1,INoOfLacbedPatterns
            IImageSizeXY(ind)= CEILING(&
                 FOUR*REAL(IPixelCount,RKIND)/DummyConvergenceAngle * &
-                (MAXVAL(ABS(Rhklpositions(IOutputReflections(1:IReflectOut),ind)))+ONE) )
+                (MAXVAL(ABS(RhklPositions(IOutputReflections(1:INoOfLacbedPatterns),ind)))+ONE) )
         END DO
      ENDDO
   END IF
 
-  DO ind=1,SIZE(Rhklpositions,DIM=2)
+  DO ind=1,2
      CALL Message("ImageInitialisation",IInfo,IErr, &
           MessageVariable = "IImageSizeXY(ind)", IVariable = IImageSizeXY(ind))
   END DO
-   
+  
   RETURN
 
 END SUBROUTINE ImageInitialisation
@@ -134,7 +130,7 @@ SUBROUTINE MontageInitialisation(IPixelHorizontalPosition,IPixelVerticalPosition
        hnd,IPixelHorizontalPosition,IPixelVerticalPosition,Ierr
   REAL(RKIND), DIMENSION(MAXVAL(IImageSizeXY),MAXVAL(IImageSizeXY),IThicknessCount),INTENT(OUT) :: &
        RMontageImage
-  REAL(RKIND), DIMENSION(IReflectOut) :: &
+  REAL(RKIND), DIMENSION(INoOfLacbedPatterns) :: &
        RIntensityValues
 
 !!$  Only print out once when first entered - use message counter
@@ -147,7 +143,7 @@ SUBROUTINE MontageInitialisation(IPixelHorizontalPosition,IPixelVerticalPosition
      END DO
   END IF
  
-  DO hnd = 1,IReflectOut
+  DO hnd = 1,INoOfLacbedPatterns
      
      IF(IHKLSelectFLAG.EQ.0) THEN
         

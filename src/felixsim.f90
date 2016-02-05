@@ -235,7 +235,7 @@ PROGRAM felixsim
 
   IF(IImageFLAG.LE.2) THEN
      ALLOCATE( &
-          RIndividualReflections(IReflectOut,IThicknessCount,&
+          RIndividualReflections(INoOfLacbedPatterns,IThicknessCount,&
           (ILocalPixelCountMax-ILocalPixelCountMin)+1),&
           STAT=IErr)
      IF( IErr.NE.0 ) THEN
@@ -247,7 +247,7 @@ PROGRAM felixsim
      RIndividualReflections = ZERO
   ELSE
      ALLOCATE( &
-          CAmplitudeandPhase(IReflectOut,IThicknessCount,&
+          CAmplitudeandPhase(INoOfLacbedPatterns,IThicknessCount,&
           (ILocalPixelCountMax-ILocalPixelCountMin)+1),&
           STAT=IErr)
      IF( IErr.NE.0 ) THEN
@@ -310,7 +310,7 @@ PROGRAM felixsim
   !END IF
 
   ALLOCATE( &
-       RIndividualReflectionsRoot(IReflectOut,IThicknessCount,IPixelTotal),&
+       RIndividualReflectionsRoot(INoOfLacbedPatterns,IThicknessCount,IPixelTotal),&
        STAT=IErr)
   IF( IErr.NE.0 ) THEN
      PRINT*,"felixsim(", my_rank, ") error ", IErr, &
@@ -320,7 +320,7 @@ PROGRAM felixsim
   
   IF(IImageFLAG.GE.3) THEN
      ALLOCATE(&
-          CAmplitudeandPhaseRoot(IReflectOut,IThicknessCount,IPixelTotal),&
+          CAmplitudeandPhaseRoot(INoOfLacbedPatterns,IThicknessCount,IPixelTotal),&
           STAT=IErr)
      IF( IErr.NE.0 ) THEN
         PRINT*,"felixsim(", my_rank, ") error ", IErr, &
@@ -342,8 +342,8 @@ PROGRAM felixsim
   ENDIF
 
   DO pnd = 1,p
-     IDisplacements(pnd) = (IPixelTotal*(pnd-1)/p)*IReflectOut*IThicknessCount
-     ICount(pnd) = (((IPixelTotal*(pnd)/p) - (IPixelTotal*(pnd-1)/p)))*IReflectOut*IThicknessCount
+     IDisplacements(pnd) = (IPixelTotal*(pnd-1)/p)*INoOfLacbedPatterns*IThicknessCount
+     ICount(pnd) = (((IPixelTotal*(pnd)/p) - (IPixelTotal*(pnd-1)/p)))*INoOfLacbedPatterns*IThicknessCount
   END DO 
 
   IF(IImageFLAG.LE.2) THEN
@@ -446,11 +446,11 @@ PROGRAM felixsim
 
   ENDIF
   
-  DEALLOCATE(Rhklpositions,STAT=IErr)
+  DEALLOCATE(RhklPositions,STAT=IErr)
   IF( IErr.NE.0 ) THEN
 
      PRINT*,"felixsim(", my_rank, ") error ", IErr, &
-          " Deallocating Rhklpositions"
+          " Deallocating RhklPositions"
      GOTO 9999
   ENDIF 
 

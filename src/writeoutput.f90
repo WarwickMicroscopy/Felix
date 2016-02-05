@@ -54,10 +54,10 @@ SUBROUTINE WriteOutput( CAmplitudeandPhaseImages,RReflectionImages,RMontageImage
   
   INTEGER(IKIND) :: ind,jnd,knd,gnd,hnd,IThickness,IErr
   REAL(RKIND) :: RThickness
-  REAL(RKIND),DIMENSION(IReflectOut,IThicknessCount,IPixelTotal):: RReflectionImages
+  REAL(RKIND),DIMENSION(INoOfLacbedPatterns,IThicknessCount,IPixelTotal):: RReflectionImages
   REAL(RKIND),DIMENSION(MAXVAL(IImageSizeXY),MAXVAL(IImageSizeXY),IThicknessCount):: RMontageImages
   REAL(RKIND),DIMENSION(:,:),ALLOCATABLE :: RImage
-  COMPLEX(CKIND),DIMENSION(IReflectOut,IThicknessCount,IPixelTotal):: CAmplitudeandPhaseImages
+  COMPLEX(CKIND),DIMENSION(INoOfLacbedPatterns,IThicknessCount,IPixelTotal):: CAmplitudeandPhaseImages
   CHARACTER*40 :: surname, path
   CHARACTER*25 :: SThickness, SThicknessLength
       
@@ -139,7 +139,7 @@ SUBROUTINE WriteOutput( CAmplitudeandPhaseImages,RReflectionImages,RMontageImage
             "felixsim_",IThickness/10,"nm_",2*IPixelcount,"x",2*IPixelcount,"/"
         call system('mkdir -p ' // path)
    
-        DO ind = 1,IReflectOut
+        DO ind = 1,INoOfLacbedPatterns
            CALL OpenReflectionImage(IChOutWIImage,path,IErr,ind,2*IPixelCount,knd)
            IF( IErr.NE.0 ) THEN
               PRINT*,"WriteOutput(", my_rank, ") error in OpenReflectionImage()"
@@ -179,7 +179,7 @@ SUBROUTINE WriteOutput( CAmplitudeandPhaseImages,RReflectionImages,RMontageImage
 
         call system('mkdir ' // path)
         
-        DO ind = 1,IReflectOut
+        DO ind = 1,INoOfLacbedPatterns
            CALL OpenReflectionImage(IChOutWFImageReal,path,IErr,ind,2*IPixelCount,knd)
            IF( IErr.NE.0 ) THEN
               PRINT*,"WriteOutput(", my_rank, ") error in OpenAmplitudeImage()"

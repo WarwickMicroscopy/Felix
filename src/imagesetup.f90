@@ -51,25 +51,16 @@ SUBROUTINE ImageSetup (IErr)
 
   INTEGER(IKIND) :: IErr
 
-  !--------------------------------------------------------------------
-  ! allocate memory for DYNAMIC variables according to nReflections
-  !--------------------------------------------------------------------
-
-  ! Image initialisation 
-
-  CALL Message("ImageSetup",IMust,IErr)
   
-  ALLOCATE(Rhklpositions(nReflections,2), &
-       STAT=IErr)
+  ! Image initialisation 
+  CALL Message("ImageSetup",IMust,IErr)
+
+  !--------------------------------------------------------------------
+  ALLOCATE(RhklPositions(nReflections,2),STAT=IErr)
   IF( IErr.NE.0 ) THEN
-     PRINT*,"ImageSetup(", my_rank, ") error ", IErr, &
-          " in ALLOCATE() of DYNAMIC variable Rhklpositions"
+     PRINT*,"imagesetup(",my_rank,") error",IErr,"in ALLOCATE RhklPositions"
      RETURN
   END IF
-
-  !--------------------------------------------------------------------
-  ! image initialisation
-  !--------------------------------------------------------------------
 
   CALL ImageInitialisation( IErr )
   IF( IErr.NE.0 ) THEN
@@ -78,12 +69,16 @@ SUBROUTINE ImageSetup (IErr)
      RETURN
   END IF
 
+  DEALLOCATE(RhklPositions,STAT=IErr)
+  IF( IErr.NE.0 ) THEN
+     PRINT*,"Felixfunction(",my_rank,") error", IErr,"Deallocating RhklPositions"
+     RETURN
+  END IF
+  
   !--------------------------------------------------------------------
   ! define image masks
   !--------------------------------------------------------------------
       
-  !Allocate Memory for Masking Image
-
   ALLOCATE(RMask(2*IPixelCount,2*IPixelCount),&
        STAT=IErr)
   IF( IErr.NE.0 ) THEN

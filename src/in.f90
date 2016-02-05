@@ -296,8 +296,8 @@ SUBROUTINE ReadInpFile( IErr )
   CALL Message ("ReadInpFile",IInfo,IErr,MessageVariable ="RDeltaThickness",RVariable=RDeltaThickness)
   
   ILine= ILine+1
-  READ(IChInp,10,ERR=20,END=30) IReflectOut
-  CALL Message ("ReadInpFile",IInfo,IErr,MessageVariable ="IReflectOut",IVariable=IReflectOut)
+  READ(IChInp,10,ERR=20,END=30) INoOfLacbedPatterns
+  CALL Message ("ReadInpFile",IInfo,IErr,MessageVariable ="INoOfLacbedPatterns",IVariable=INoOfLacbedPatterns)
 
 
   IF(ISoftwareMode.EQ.2) THEN
@@ -599,7 +599,7 @@ SUBROUTINE ReadHklFile(IErr)
 !!$     END IF
   END DO
 
-  IReflectOut = ILength
+  INoOfLacbedPatterns = ILength
 
   RETURN
 
@@ -704,7 +704,7 @@ SUBROUTINE ReadExperimentalImages(IErr)
   CHARACTER*34 :: filename
   CHARACTER*200 :: SPrintString
 
-  DO ind = 1,IReflectOut
+  DO ind = 1,INoOfLacbedPatterns
      
      WRITE(filename,"(A6,I3.3,A4)") "felix.",ind,".img"
      
@@ -759,9 +759,9 @@ SUBROUTINE ReadExperimentalImages(IErr)
 
   IF(my_rank.EQ.0) THEN
     IF( IErr.EQ.0 ) THEN
-     WRITE(SPrintString,FMT='(I3,A40)') IReflectOut," experimental images successfully loaded"
+     WRITE(SPrintString,FMT='(I3,A40)') INoOfLacbedPatterns," experimental images successfully loaded"
      PRINT*,TRIM(ADJUSTL(SPrintString))
-!        PRINT*, IReflectOut,"experimental images successfully loaded"
+!        PRINT*, INoOfLacbedPatterns,"experimental images successfully loaded"
     END IF
   END IF
 

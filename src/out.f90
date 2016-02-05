@@ -495,7 +495,7 @@ SUBROUTINE WriteOutInputFile (IErr)
      CALL WriteToScreenandFile(ADJUSTL("RInitialThickness        = 400.0"),IErr)
      CALL WriteToScreenandFile(ADJUSTL("RFinalThickness          = 700.0"),IErr)
      CALL WriteToScreenandFile(ADJUSTL("RDeltaThickness          = 10.0"),IErr)
-     CALL WriteToScreenandFile(ADJUSTL("IReflectOut              = 7"),IErr)
+     CALL WriteToScreenandFile(ADJUSTL("INoOfLacbedPatterns              = 7"),IErr)
 
      IF(ISoftwareMode.EQ.2) THEN
         CALL WriteToScreenandFile(ADJUSTL(""),IErr)
