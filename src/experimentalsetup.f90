@@ -49,8 +49,7 @@ SUBROUTINE ExperimentalSetup (IErr)
   
   IMPLICIT NONE
 
-  INTEGER(IKIND) :: &
-       IErr
+  INTEGER(IKIND) :: IErr
 
   CALL Message("ExperimentalSetup",IMust,IErr)
   
@@ -68,13 +67,12 @@ SUBROUTINE ExperimentalSetup (IErr)
   ! microscopy settings
   !--------------------------------------------------------------------
 
-  CALL MicroscopySettings( IErr )
-  IF( IErr.NE.0 ) THEN
-     PRINT*,"ExperimentalSetup(", my_rank, ") error",IErr, &
-          "in MicroscopySettings()"
-     !Call error function here. MPI error
-     RETURN
-  ENDIF
+!zz  CALL MicroscopySettings( IErr )
+!zz  IF( IErr.NE.0 ) THEN
+!zz     PRINT*,"ExperimentalSetup(", my_rank, ") error",IErr, "in MicroscopySettings()"
+!zz     !Call error function here. MPI error
+!zz     RETURN
+!zz  ENDIF
 
   !--------------------------------------------------------------------
   ! crystallography settings
@@ -82,8 +80,7 @@ SUBROUTINE ExperimentalSetup (IErr)
 
   CALL CrystallographyInitialisation( IErr )
   IF( IErr.NE.0 ) THEN
-     PRINT*,"ExperimentalSetup(", my_rank, ") error", IErr, &
-          "in CrystallographyInitialisation()"
+     PRINT*,"ExperimentalSetup(",my_rank,") error",IErr,"in CrystallographyInitialisation()"
      !Call error function here - function error
      RETURN
   ENDIF

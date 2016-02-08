@@ -596,8 +596,7 @@ SUBROUTINE DeviationParameterCalculation(IErr)
   END IF
 
   DO knd=1,nReflections
-     ! DevPara used to be called Sg in the book
-     
+     ! DevPara is devitaion parameter, also known as Sg 
      RDevPara(knd)= &
           -( RBigK + DOT_PRODUCT(RgVecMatT(knd,:),RTiltedK(:)) /RBigK) + &
           SQRT( &
@@ -640,7 +639,6 @@ SUBROUTINE StrongAndWeakBeamsDetermination(IErr)
   !----------------------------------------------------------------------------
   ! Determine RBSMaxDeviationPara
   !----------------------------------------------------------------------------
-
   IStrongBeamList = 0
 
   RDummySg = ABS(RDevPara)

@@ -322,8 +322,7 @@ SUBROUTINE StructureFactorInitialisation (IErr)
   RBigK= SQRT(RElectronWaveVectorMagnitude**2 + RMeanInnerCrystalPotential)
 
   CALL Message("StructureFactorInitialisation",IInfo,IErr, &
-       MessageVariable = "RBigK", &
-       RVariable = RBigK)
+       MessageVariable = "RBigK", RVariable = RBigK)
 
 END SUBROUTINE StructureFactorInitialisation
 

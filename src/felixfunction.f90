@@ -76,12 +76,13 @@ SUBROUTINE FelixFunction(LInitialSimulationFLAG,IErr)
      PRINT*,"Felix function"
   END IF
 
+   !Why do this
   CALL CountTotalAtoms(IErr)
   
   IDiffractionFLAG = 0
 
   !-------------------------------------------------------------------- 
-  !Setup Experimental Variables
+ 
   !--------------------------------------------------------------------
   CALL ExperimentalSetup (IErr)
   IF( IErr.NE.0 ) THEN

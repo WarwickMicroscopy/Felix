@@ -51,8 +51,6 @@ PROGRAM Felixrefine
 
   !--------------------------------------------------------------------
   ! local variable definitions
-  !--------------------------------------------------------------------
-  
   IMPLICIT NONE
 
   INTEGER(IKIND) :: IHours,IMinutes,ISeconds,IErr,IMilliSeconds,IIterationFLAG,&
@@ -67,21 +65,14 @@ PROGRAM Felixrefine
 
   !-------------------------------------------------------------------
   ! constants
-  !-------------------------------------------------------------------
-
   CALL Init_Numbers
   
   !-------------------------------------------------------------------
   ! set the error value to zero, will change upon error
-  !-------------------------------------------------------------------
-
   IErr=0
 
   !--------------------------------------------------------------------
   ! MPI initialization
-  !--------------------------------------------------------------------
-
-  ! Initialise MPI  
   CALL MPI_Init(IErr)  
   IF( IErr.NE.0 ) THEN
      PRINT*,"Felixrefine(", my_rank, ") error in MPI_Init()"
@@ -104,8 +95,6 @@ PROGRAM Felixrefine
 
   !--------------------------------------------------------------------
   ! protocal feature startup
-  !--------------------------------------------------------------------
-  
   IF((IWriteFLAG.GE.0.AND.my_rank.EQ.0).OR.IWriteFLAG.GE.10) THEN
      PRINT*,"--------------------------------------------------------------"
      PRINT*,"Felixrefine: ", RStr
@@ -114,6 +103,7 @@ PROGRAM Felixrefine
      PRINT*,"          on rank= ", my_rank, " of ", p, " in total."
      PRINT*,"--------------------------------------------------------------"
   END IF
+  ISoftwareMode =2 ! felixrefinemode
 
   !--------------------------------------------------------------------
   ! timing startup
@@ -125,33 +115,62 @@ PROGRAM Felixrefine
   !--------------------------------------------------------------------
   ! INPUT section 
   !--------------------------------------------------------------------
-  
-  ISoftwareMode =2 ! felixrefinemode
-
-  !Read from input files
   CALL ReadInput (IErr)
   IF( IErr.NE.0 ) THEN
-     PRINT*,"Felixrefine(", my_rank, ") error in ReadInput()"
+     PRINT*,"felixrefine(",my_rank,") error in ReadInput"
      GOTO 9999
   END IF  
   
   ALLOCATE(RImageExpi(2*IPixelCount,2*IPixelCount,INoOfLacbedPatterns),&
        STAT=IErr)  
   IF( IErr.NE.0 ) THEN
-     PRINT*,"felixrefine (", my_rank, ") error in Allocation()"
+     PRINT*,"felixrefine(",my_rank,") error in allocation of RImageExpi"
      GOTO 9999
   END IF
 
   CALL ReadExperimentalImages(IErr)
   IF( IErr.NE.0 ) THEN
-     PRINT*,"Felixrefine(", my_rank, ") error in ReadExperimentalImages()"
+     PRINT*,"felixrefine(",my_rank,") error in ReadExperimentalImages"
      GOTO 9999
   END IF
+
+  !--------------------------------------------------------------------
+  ! Initial simulation and variable setup
+  !--------------------------------------------------------------------
+  CALL MicroscopySettings( IErr )
+  IF( IErr.NE.0 ) THEN
+    PRINT*,"felixrefine(",my_rank,") error in MicroscopySettings"
+    GOTO 9999
+  ENDIF  
+  
+  CALL CrystalLatticeVectorDetermination(IErr)
+  IF( IErr.NE.0 ) THEN
+     PRINT*,"felixrefine(",my_rank,") error in CrystalLatticeVectorDetermination"
+     GOTO 9999
+  ENDIF
+
+  ALLOCATE(RrVecMat(ITotalAtoms,THREEDIM),STAT=IErr)
+  IF( IErr.NE.0 ) THEN
+     PRINT*,"ExperimentalSetup(", my_rank, ") error ", IErr, " in ALLOCATE of RrVecMat"
+     RETURN
+  ENDIF
+  
+  CALL AllAtomPositions(IErr)
+  IF( IErr.NE.0 ) THEN
+     PRINT*,"felixrefine(",my_rank,") error in AllAtomPositions"
+     GOTO 9999
+  ENDIF
+!PRINT*,RFullAtomicFracCoordVec
+  
+!zz temp deallocation to get it to work
+DEALLOCATE(RFullAtomicFracCoordVec,SFullAtomicNameVec,RFullPartialOccupancy,&
+RFullIsotropicDebyeWallerFactor,IFullAtomNumber,IFullAnisotropicDWFTensor,&
+MNP,SMNP,RDWF,ROcc,IAtoms,IAnisoDWFT,RrVecMat)
+
   
   !--------------------------------------------------------------------
   ! Setup Simplex Variables
   !--------------------------------------------------------------------
-  
   IF(IRefineModeSelectionArray(2).EQ.1) THEN 
      CALL SetupAtomicVectorMovements(IErr)
      IF( IErr.NE.0 ) THEN
@@ -223,11 +242,8 @@ PROGRAM Felixrefine
   END DO 
   DO ind=1,IIndependentVariables!RB debug
     PRINT*, IIterativeVariableUniqueIDs(ind,:)
-  END DO  
-
-  
-  
-  
+  END DO
+    
   !--------------------------------------------------------------------
   ! Initialise Simplex
   !--------------------------------------------------------------------

@@ -64,7 +64,6 @@ SUBROUTINE ImageInitialisation( IErr )
        MessageVariable = "RMinimumGMag", RVariable = RMinimumGMag)
 
   ! positions of the centres of the disks
-PRINT*,"!zz nReflections",nReflections
   DO ind=1,nReflections
      RhklPositions(ind,1) = RgVecMatT(ind,1)/RMinimumGMag
      RhklPositions(ind,2) = RgVecMatT(ind,2)/RMinimumGMag

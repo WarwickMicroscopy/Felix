@@ -45,14 +45,12 @@ SUBROUTINE CrystallographyInitialisation( IErr )
 
   IMPLICIT NONE
 
-  INTEGER(IKIND) :: &
-       IErr, ind
+  INTEGER(IKIND) :: IErr, ind
  
   CALL Message("CrystallographyInitialisation",IMust,IErr)
     
-  IF(IDiffractionFLAG.EQ.1) THEN
-     DEALLOCATE(&
-          RFullAtomicFracCoordVec,SFullAtomicNameVec,&
+  IF(IDiffractionFLAG.EQ.1) THEN!RB what is this about
+     DEALLOCATE(RFullAtomicFracCoordVec,SFullAtomicNameVec,&
           RFullPartialOccupancy,RFullIsotropicDebyeWallerFactor, &
           IFullAtomNumber, IFullAnisotropicDWFTensor, &
           MNP,SMNP,RDWF,ROcc,IAtoms,IAnisoDWFT,STAT=IErr)
@@ -131,18 +129,18 @@ SUBROUTINE CrystallographyInitialisation( IErr )
      RETURN
   ENDIF
 
-  CALL CrystalFullFractionalAtomicPostitionsCalculation(IErr)
+  CALL AllAtomPositions(IErr)
   IF( IErr.NE.0 ) THEN
      PRINT*,"CrystallographyInitialisation(", my_rank, ") error ", IErr, &
-             " in CrystalFullFractionalAtomicPostitionsCalculation "
+             " in AllAtomPositions "
      RETURN
   ENDIF
 
-  CALL CrystalUniqueFractionalAtomicPostitionsCalculation(IErr)
-   IF( IErr.NE.0 ) THEN
-     PRINT*,"CrystallographyInitialisation(", my_rank, ") error ", IErr, &
-             " in CrystalUniqueFractionalAtomicPostitionsCalculation "
-     RETURN
-  ENDIF
+  !zz CALL CrystalUniqueFractionalAtomicPostitionsCalculation(IErr)
+!zz    IF( IErr.NE.0 ) THEN
+!zz      PRINT*,"CrystallographyInitialisation(", my_rank, ") error ", IErr, &
+!zz              " in CrystalUniqueFractionalAtomicPostitionsCalculation "
+!zz      RETURN
+!zz   ENDIF
 
 END SUBROUTINE CrystallographyInitialisation

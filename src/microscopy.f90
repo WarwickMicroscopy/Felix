@@ -46,23 +46,17 @@ SUBROUTINE MicroscopySettings( IErr )
 
   IMPLICIT NONE
 
-  REAL(RKIND)::&
-       norm,dummy,ROneThousand
-
-  INTEGER :: &
-       IErr
+  REAL(RKIND)::norm,dummy,ROneThousand
+  INTEGER :: IErr
 
   CALL Message("MicroscopySettings",IMust,IErr)
 
   ROneThousand = 1000.0_RKIND
 
-  RElectronVelocity= &
-       RSpeedOfLight * &
-       SQRT( ONE - ( &
-       (RElectronMass*RSpeedOfLight**2) / &
+  RElectronVelocity= RSpeedOfLight * &
+       SQRT( ONE - ( (RElectronMass*RSpeedOfLight**2) / &
        (RElectronCharge*RAcceleratingVoltage*ROneThousand + &
-        RElectronMass*RSpeedOfLight**2) &
-       )**2 )
+        RElectronMass*RSpeedOfLight**2) )**2 )
 
   RElectronWaveLength= RPlanckConstant / &
        ( SQRT(TWO*RElectronMass*RElectronCharge*RAcceleratingVoltage*ROneThousand) * &
@@ -71,10 +65,7 @@ SUBROUTINE MicroscopySettings( IErr )
        )) * RAngstromConversion
 
   RElectronWaveVectorMagnitude=TWOPI/RElectronWaveLength
-
-  RRelativisticCorrection= &
-       ONE / SQRT( ONE - (RElectronVelocity/RSpeedOfLight)**2 )
-
+  RRelativisticCorrection= ONE/SQRT( ONE - (RElectronVelocity/RSpeedOfLight)**2 )
   RRelativisticMass= RRelativisticCorrection*RElectronMass
 
    

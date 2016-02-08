@@ -149,10 +149,15 @@ PROGRAM felixsim
 
   CALL ExperimentalSetup (IErr)
   IF( IErr.NE.0 ) THEN
-     PRINT*,"felixsim(", my_rank, ") error in ExperimentalSetup()"
+     PRINT*,"felixsim(",my_rank,") error in ExperimentalSetup"
      GOTO 9999
   ENDIF
 
+  CALL MicroscopySettings( IErr )
+  IF( IErr.NE.0 ) THEN
+     PRINT*,"felixsim(",my_rank,") error in MicroscopySettings"
+     GOTO 9999
+  ENDIF
 
   !--------------------------------------------------------------------
   ! Setup Image
@@ -187,27 +192,21 @@ PROGRAM felixsim
 
   !Kprime Vectors and Deviation Parameter
   
-  ALLOCATE( &
-       RDevPara(nReflections), &
-       STAT=IErr)
+  ALLOCATE(RDevPara(nReflections),STAT=IErr)
   IF( IErr.NE.0 ) THEN
      PRINT*,"felixsim(", my_rank, ") error ", IErr, &
           " in ALLOCATE() of DYNAMIC variables RDevPara"
      GOTO 9999
   ENDIF
 
-  ALLOCATE( &
-       IStrongBeamList(nReflections), &
-       STAT=IErr)
+  ALLOCATE(IStrongBeamList(nReflections),STAT=IErr)
   IF( IErr.NE.0 ) THEN
      PRINT*,"felixsim(", my_rank, ") error ", IErr, &
           " in ALLOCATE() of DYNAMIC variables IStrongBeamList"
      GOTO 9999
   ENDIF
 
-  ALLOCATE( &
-       IWeakBeamList(nReflections), & 
-       STAT=IErr)
+  ALLOCATE(IWeakBeamList(nReflections),STAT=IErr)
   IF( IErr.NE.0 ) THEN
      PRINT*,"felixsim(", my_rank, ") error ", IErr, &
           " in ALLOCATE() of DYNAMIC variables IWeakBeamList"

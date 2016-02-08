@@ -53,20 +53,15 @@ SUBROUTINE ReflectionDetermination( IErr )
 
   IMPLICIT NONE
 
-  REAL(RKIND), DIMENSION(:,:), ALLOCATABLE :: &
-       RgDummyVecMat,RgVecMagLaue
-  REAL(RKIND) :: &
-       dummy,RMaxAcceptanceGVecMag,RMinLaueZoneValue,RMaxLaueZoneValue,RGzUnitVec, &
+  REAL(RKIND), DIMENSION(:,:), ALLOCATABLE :: RgDummyVecMat,RgVecMagLaue
+  REAL(RKIND) :: dummy,RMaxAcceptanceGVecMag,RMinLaueZoneValue,RMaxLaueZoneValue,RGzUnitVec, &
        RLaueZoneGz,RLaueZoneElectronWaveVectorMag
-  INTEGER(IKIND), DIMENSION(:),ALLOCATABLE :: &
-       IOriginGVecIdentifier
-  INTEGER(IKIND) :: &
-       IErr,ind,jnd,icheck,ihklrun,IFind,IFound,knd,IMaxLaueZoneLevel, &
+  INTEGER(IKIND), DIMENSION(:),ALLOCATABLE :: IOriginGVecIdentifier
+  INTEGER(IKIND) :: IErr,ind,jnd,icheck,ihklrun,IFind,IFound,knd,IMaxLaueZoneLevel, &
        ICutOff,ITotalLaueZoneLevel,ICounter,IHOLZGVecMagSize,INumInitReflections, &
        INumFinalReflections, IBSMaxLocGVecAmp, IZerothLaueZoneLevel,INumTotalReflections, &
        ILaueLevel
-  CHARACTER*20 :: &
-       Sind,Sjnd
+  CHARACTER*20 :: Sind,Sjnd
 
   CALL Message("ReflectionDetermination",IMust,IErr)
 
@@ -87,12 +82,12 @@ SUBROUTINE ReflectionDetermination( IErr )
         RETURN
      END IF
 
-     IF(SIZE(RHKl,DIM=1).LT.IMinReflectionPool) THEN
+     IF(SIZE(Rhkl,DIM=1).LT.IMinReflectionPool) THEN
         IHKLMAXValue = IHKLMAXValue*2
-        Deallocate(RHKL,STAT=ierr)
+        Deallocate(Rhkl,STAT=ierr)
         IF( IErr.NE.0 ) THEN
            PRINT*,"ReflectionDetermination(", my_rank, ") error ", IErr, &
-                " in DEALLOCATE() of DYNAMIC variables RHKL"
+                " in DEALLOCATE() of DYNAMIC variables Rhkl"
            RETURN
         END IF
 
@@ -103,8 +98,7 @@ SUBROUTINE ReflectionDetermination( IErr )
      END IF
   END DO
 
-
-  CALL SortHKL( RHKL, SIZE(RHKL,1),IErr)
+  CALL SortHKL( Rhkl, SIZE(Rhkl,1),IErr)
   IF( IErr.NE.0 ) THEN
      PRINT*,"ReflectionDetermination(): error in SortHKL()"
      RETURN
@@ -112,9 +106,9 @@ SUBROUTINE ReflectionDetermination( IErr )
 
   IF(IXDirectionFLAG.EQ.0) THEN
      IDiffractionFLAG = 1
-     RXDirC(1) = RHKL(2,1)
-     RXDirC(2) = RHKL(2,2)
-     RXDirC(3) = RHKL(2,3)
+     RXDirC(1) = Rhkl(2,1)
+     RXDirC(2) = Rhkl(2,2)
+     RXDirC(3) = Rhkl(2,3)
      CALL CrystallographyInitialisation( IErr )
      IF( IErr.NE.0 ) THEN
         PRINT*,"DiffractionPatternDefinitions(", my_rank, ") error",IErr, &
@@ -124,7 +118,7 @@ SUBROUTINE ReflectionDetermination( IErr )
 
   END IF
 
-  ALLOCATE(RgVecMatT(SIZE(RHKL,DIM=1),THREEDIM), &
+  ALLOCATE(RgVecMatT(SIZE(Rhkl,DIM=1),THREEDIM), &
        STAT=IErr)
   IF( IErr.NE.0 ) THEN
      PRINT*,"DiffractionPatternDefinitions(", my_rank, ") error ", IErr, &
@@ -132,7 +126,7 @@ SUBROUTINE ReflectionDetermination( IErr )
      RETURN
   END IF
 
-  ALLOCATE(RgDummyVecMat(SIZE(RHKL,DIM=1),THREEDIM), &
+  ALLOCATE(RgDummyVecMat(SIZE(Rhkl,DIM=1),THREEDIM), &
        STAT=IErr)
   IF( IErr.NE.0 ) THEN
      PRINT*,"DiffractionPatternDefinitions(", my_rank, ") error ", IErr, &
@@ -140,7 +134,7 @@ SUBROUTINE ReflectionDetermination( IErr )
      RETURN
   END IF
 
-  ALLOCATE(RgVecMag(SIZE(RHKL,DIM=1)), &
+  ALLOCATE(RgVecMag(SIZE(Rhkl,DIM=1)), &
        STAT=IErr)
   IF( IErr.NE.0 ) THEN
      PRINT*,"DiffractionPatternDefinitions(", my_rank, ") error ", IErr, &
@@ -148,7 +142,7 @@ SUBROUTINE ReflectionDetermination( IErr )
      RETURN
   END IF
   
-  ALLOCATE(RgVecVec(SIZE(RHKL,DIM=1)), &
+  ALLOCATE(RgVecVec(SIZE(Rhkl,DIM=1)), &
        STAT=IErr)
   IF( IErr.NE.0 ) THEN
      PRINT*,"DiffractionPatternCalculation(", my_rank, ") error ", IErr, &
@@ -164,18 +158,18 @@ SUBROUTINE ReflectionDetermination( IErr )
 !!$  ICutoff stops the conditional statement determining the minimum g-vector
 !!$  Also populate a Dummy g-vector matrix  
   ICutOff = 1
-  DO ind=1,SIZE(RHKL,DIM=1)
+  DO ind=1,SIZE(Rhkl,DIM=1)
      WRITE(Sind,'(I10.1)')ind
      DO jnd=1,THREEDIM
         RgVecMatT(ind,jnd)= &
-             RHKL(ind,1)*RarVecM(jnd) + &
-             RHKL(ind,2)*RbrVecM(jnd) + &
-             RHKL(ind,3)*RcrVecM(jnd)
+             Rhkl(ind,1)*RarVecM(jnd) + &
+             Rhkl(ind,2)*RbrVecM(jnd) + &
+             Rhkl(ind,3)*RcrVecM(jnd)
         RgDummyVecMat(ind,jnd)=RgVecMatT(ind,jnd)
      ENDDO
      CALL Message("ReflectionDetermination",IMoreInfo,IErr, &
-          MessageVariable = "RHKL(h,k,l)", &
-          RVector = RHKL(ind,:))
+          MessageVariable = "Rhkl(h,k,l)", &
+          RVector = Rhkl(ind,:))
 
      IF((RgVecMatT(ind,3).GT.TINY.OR.RgVecMatT(ind,3).LT.-TINY).AND.ICutOff.NE.0) THEN
         RGzUnitVec=ABS(RgVecMatT(ind,3))
@@ -198,7 +192,7 @@ SUBROUTINE ReflectionDetermination( IErr )
   END WHERE
 
 !!$     Write out the z component Dummy g-vector Matrix in DebugMODE
-  DO ind=1,SIZE(RHKL,DIM=1)
+  DO ind=1,SIZE(Rhkl,DIM=1)
      WRITE(Sind,'(I10.1)')ind
      CALL Message("ReflectionDetermination", IAllInfo+IDEBUG,IErr, &
           MessageVariable="Reciprocal Vector" &
@@ -233,7 +227,7 @@ SUBROUTINE ReflectionDetermination( IErr )
 !!$     HOLZ Acceptance Angle
 !!$     Allocate enough space to determine Acceptance angle (in reciprocal Angstroms) 
 !!$     For each Laue Zone
-  ALLOCATE(RgVecMagLaue(SIZE(RHKL,DIM=1),ITotalLaueZoneLevel), &
+  ALLOCATE(RgVecMagLaue(SIZE(Rhkl,DIM=1),ITotalLaueZoneLevel), &
        STAT=IErr)
   IF( IErr.NE.0 ) THEN
      PRINT*,"DiffractionPatternDefinitions(", my_rank, ") error ", IErr, &
@@ -259,7 +253,7 @@ SUBROUTINE ReflectionDetermination( IErr )
         ILaueLevel=ind-IZerothLaueZoneLevel
         RLaueZoneGz=RGzUnitVec*ILaueLevel
 
-        DO jnd=1,SIZE(RHKL,DIM=1)
+        DO jnd=1,SIZE(Rhkl,DIM=1)
            WRITE(Sjnd,'(I10.1)')jnd
            IF(RgVecMatT(jnd,3).GE.(RLaueZoneGz-TINY).AND. &
                 RgVecMatT(jnd,3).LE.(RLaueZoneGz+TINY)) THEN
@@ -320,22 +314,22 @@ SUBROUTINE ReflectionDetermination( IErr )
           MessageVariable="INumTotalReflections", &
           IVariable=INumTotalReflections)
      CALL Message("ReflectionDetermination", IInfo,IErr, &
-          MessageVariable="Size of RHKL", &
-          IVariable=SIZE(RHKL,DIM=1))
+          MessageVariable="Size of Rhkl", &
+          IVariable=SIZE(Rhkl,DIM=1))
 
 !!$        Error check here to ensure that quantised Laue Zones are the same as the total
 !!$        number of Reflections
-     IF(INumTotalReflections.NE.SIZE(RHKL,DIM=1)) THEN
+     IF(INumTotalReflections.NE.SIZE(Rhkl,DIM=1)) THEN
         CALL ErrorChecks("Reflection Determination","Reflection Determination", &
              IPotError,IReflectionMismatch)
      END IF
 
-!!$        Each value in each Laue Zone is unique in Size(RHKL)
+!!$        Each value in each Laue Zone is unique in Size(Rhkl)
 !!$        The rest are filled with NEGHUGE (-1D9), we can then find all the indexes where the 
 !!$        magnitudes are still inside the acceptance angle
 !!$        Firstly find how many instances there are
      ICounter=0
-     DO ind=1,SIZE(RHKL,DIM=1)
+     DO ind=1,SIZE(Rhkl,DIM=1)
         IF(SUM(RgVecMagLaue(ind,:))/REAL(ITotalLaueZoneLevel,RKIND).GT.NEGHUGE) THEN
            ICounter=ICounter+1
         END IF
@@ -355,7 +349,7 @@ SUBROUTINE ReflectionDetermination( IErr )
      !Store all the indexes for the magnitudes of each Laue Level in OriginGVecIdentifier    
      ICounter=1
 
-     DO ind=1,SIZE(RHKL,DIM=1)
+     DO ind=1,SIZE(Rhkl,DIM=1)
         IF((SUM(RgVecMagLaue(ind,:))/REAL(ITotalLaueZoneLevel,RKIND)).GT.NEGHUGE) THEN
            IOriginGVecIdentifier(ICounter)=ind
            ICounter=ICounter+1
@@ -366,7 +360,7 @@ SUBROUTINE ReflectionDetermination( IErr )
 
 !!$  Calculate all gvectors magnitudes (x,y,z componenents) from the origin
 
-  DO ind=1,SIZE(RHKL,DIM=1)
+  DO ind=1,SIZE(Rhkl,DIM=1)
      RgVecMag(ind)= SQRT(DOT_PRODUCT(RgVecMatT(ind,:),RgVecMatT(ind,:)))
   ENDDO
 
@@ -439,7 +433,7 @@ SUBROUTINE ReflectionDetermination( IErr )
   nStrongBeams = 0
   nWeakBeams = 0
 
-  DO ind=1,SIZE(RHKL,DIM=1)
+  DO ind=1,SIZE(Rhkl,DIM=1)
      IF (ABS(RgVecMag(ind)).LE.RBSMaxGVecAmp) THEN
         WRITE(Sind,'(I10.1)')ind
         CALL Message("ReflectionDetermination", IAllInfo+IDEBUG,IErr, &
@@ -487,15 +481,15 @@ SUBROUTINE SpecificReflectionDetermination (IErr)
   
   IF(IHKLSelectFLAG.EQ.1) THEN
      DO ind = 1,SIZE(RInputHKLs,DIM=1)
-        DO jnd = 1,SIZE(RHKL,DIM=1)
-           IF(ABS(RHKL(jnd,1)-RInputHKLs(ind,1)).LE.RTolerance.AND.&
-                ABS(RHKL(jnd,2)-RInputHKLs(ind,2)).LE.RTolerance.AND.&
-                ABS(RHKL(jnd,3)-RInputHKLs(ind,3)).LE.RTolerance) THEN
+        DO jnd = 1,SIZE(Rhkl,DIM=1)
+           IF(ABS(Rhkl(jnd,1)-RInputHKLs(ind,1)).LE.RTolerance.AND.&
+                ABS(Rhkl(jnd,2)-RInputHKLs(ind,2)).LE.RTolerance.AND.&
+                ABS(Rhkl(jnd,3)-RInputHKLs(ind,3)).LE.RTolerance) THEN
               IFound = 0
               DO knd = 1,IFind
-                 IF(ABS(RHKL(IOutputReflections(knd),1)-RInputHKLs(ind,1)).LE.RTolerance.AND.&
-                      ABS(RHKL(IOutputReflections(knd),2)-RInputHKLs(ind,2)).LE.RTolerance.AND.&
-                      ABS(RHKL(IOutputReflections(knd),3)-RInputHKLs(ind,3)).LE.RTolerance) THEN
+                 IF(ABS(Rhkl(IOutputReflections(knd),1)-RInputHKLs(ind,1)).LE.RTolerance.AND.&
+                      ABS(Rhkl(IOutputReflections(knd),2)-RInputHKLs(ind,2)).LE.RTolerance.AND.&
+                      ABS(Rhkl(IOutputReflections(knd),3)-RInputHKLs(ind,3)).LE.RTolerance) THEN
                     IFound = 1
                     EXIT
                  END IF
@@ -515,8 +509,8 @@ SUBROUTINE SpecificReflectionDetermination (IErr)
               END IF
               EXIT
            ELSE
-              IF((jnd.EQ.SIZE(RHKL,DIM=1).AND.IWriteFLAG.GE.3.AND.my_rank.EQ.0).or.&
-                   (jnd.EQ.SIZE(RHKL,DIM=1).AND.IWriteFLAG.GE.10)) THEN
+              IF((jnd.EQ.SIZE(Rhkl,DIM=1).AND.IWriteFLAG.GE.3.AND.my_rank.EQ.0).or.&
+                   (jnd.EQ.SIZE(Rhkl,DIM=1).AND.IWriteFLAG.GE.10)) THEN
                  PRINT*,"DiffractionPatternDefinitions(",my_rank,&
                       ") Could Not Find Requested HKL ",&
                       RInputHKLs(ind,:)," Will Ignore and Continue"
@@ -564,7 +558,7 @@ SUBROUTINE DiffractionPatternCalculation (IErr)
   
   RNormDirM = RNormDirM/sqrt(DOT_PRODUCT(RNormDirM,RNormDirM))
   
-  DO ind =1,SIZE(RHKL,DIM=1)
+  DO ind =1,SIZE(Rhkl,DIM=1)
      RgVecVec(ind) = DOT_PRODUCT(RgVecMatT(ind,:),RNormDirM)
   END DO
   
@@ -759,7 +753,7 @@ SUBROUTINE NewHKLMake(Ihklmax,Rhkl0Vec,RHOLZAcceptanceAngle,IErr)
      END DO
   END DO
   
-  Allocate(RHKL((INhkl),THREEDIM),&
+  Allocate(Rhkl((INhkl),THREEDIM),&
        STAT=IErr)
   IF( IErr.NE.0 ) THEN
      PRINT*,"hklMake(", my_rank, ") error ", IErr, &
@@ -796,108 +790,108 @@ SUBROUTINE NewHKLMake(Ihklmax,Rhkl0Vec,RHOLZAcceptanceAngle,IErr)
                  IF(IZolzFLAG.EQ.1) THEN
                     IF( ABS(DOT_PRODUCT(RhklDummyUnitVec,Rhkl0UnitVec)) .LE. TINY ) THEN
                        INhkl=INhkl+1
-                       RHKL(INhkl,:)= RhklDummyVec
+                       Rhkl(INhkl,:)= RhklDummyVec
                     END IF
                  ELSEIF (ABS(DOT_PRODUCT(RhklDummyUnitVec,Rhkl0UnitVec)).LE.sin(RHOLZAcceptanceAngle)) THEN
                     INhkl =  INhkl + 1
-                    RHKL(INhkl,:) = RhklDummyVec                 
+                    Rhkl(INhkl,:) = RhklDummyVec                 
                  END IF
               END IF
            CASE("I")! Body Centred
               IF(ABS(MOD(RhklDummyVec(1)+RhklDummyVec(2)+RhklDummyVec(3),TWO)).LE.TINY) THEN
                  !INhkl = INhkl + 1
-                 !RHKL(INhkl,:) = RhklDummyVec
+                 !Rhkl(INhkl,:) = RhklDummyVec
                  IF(IZolzFLAG.EQ.1) THEN
                     IF( ABS(DOT_PRODUCT(RhklDummyUnitVec,Rhkl0UnitVec)) .LE. TINY ) THEN
                        INhkl=INhkl+1
-                       RHKL(INhkl,:)= RhklDummyVec
+                       Rhkl(INhkl,:)= RhklDummyVec
                     END IF
                  ELSEIF (ABS(DOT_PRODUCT(RhklDummyUnitVec,Rhkl0UnitVec)).LE.sin(RHOLZAcceptanceAngle)) THEN
                     INhkl =  INhkl + 1
-                    RHKL(INhkl,:) = RhklDummyVec                 
+                    Rhkl(INhkl,:) = RhklDummyVec                 
                  END IF
               END IF
            CASE("A")! A-Face Centred
               IF(ABS(MOD(RhklDummyVec(2)+RhklDummyVec(3),TWO)).LE.TINY) THEN
                  !INhkl = INhkl + 1
-                 !RHKL(INhkl,:) = RhklDummyVec
+                 !Rhkl(INhkl,:) = RhklDummyVec
                  IF(IZolzFLAG.EQ.1) THEN
                     IF( ABS(DOT_PRODUCT(RhklDummyUnitVec,Rhkl0UnitVec)) .LE. TINY ) THEN
                        INhkl=INhkl+1
-                       RHKL(INhkl,:)= RhklDummyVec
+                       Rhkl(INhkl,:)= RhklDummyVec
                     END IF
                  ELSEIF (ABS(DOT_PRODUCT(RhklDummyUnitVec,Rhkl0UnitVec)).LE.sin(RHOLZAcceptanceAngle)) THEN
                     INhkl =  INhkl + 1
-                    RHKL(INhkl,:) = RhklDummyVec                 
+                    Rhkl(INhkl,:) = RhklDummyVec                 
                  END IF
               END IF
            CASE("B")! B-Face Centred
               IF(ABS(MOD(RhklDummyVec(1)+RhklDummyVec(3),TWO)).LE.TINY) THEN
                  !INhkl = INhkl + 1
-                 !RHKL(INhkl,:) = RhklDummyVec
+                 !Rhkl(INhkl,:) = RhklDummyVec
                  IF(IZolzFLAG.EQ.1) THEN
                     IF( ABS(DOT_PRODUCT(RhklDummyUnitVec,Rhkl0UnitVec)) .LE. TINY ) THEN
                        INhkl=INhkl+1
-                       RHKL(INhkl,:)= RhklDummyVec
+                       Rhkl(INhkl,:)= RhklDummyVec
                     END IF
                  ELSEIF (ABS(DOT_PRODUCT(RhklDummyUnitVec,Rhkl0UnitVec)).LE.sin(RHOLZAcceptanceAngle)) THEN
                     INhkl =  INhkl + 1
-                    RHKL(INhkl,:) = RhklDummyVec                 
+                    Rhkl(INhkl,:) = RhklDummyVec                 
                  END IF
               END IF
            CASE("C")! C-Face Centred
               IF(ABS(MOD(RhklDummyVec(1)+RhklDummyVec(2),TWO)).LE.TINY) THEN
                  !INhkl = INhkl + 1
-                 !RHKL(INhkl,:) = RhklDummyVec
+                 !Rhkl(INhkl,:) = RhklDummyVec
                  IF(IZolzFLAG.EQ.1) THEN
                     IF( ABS(DOT_PRODUCT(RhklDummyUnitVec,Rhkl0UnitVec)) .LE. TINY ) THEN
                        INhkl=INhkl+1
-                       RHKL(INhkl,:)= RhklDummyVec
+                       Rhkl(INhkl,:)= RhklDummyVec
                     END IF
                  ELSEIF (ABS(DOT_PRODUCT(RhklDummyUnitVec,Rhkl0UnitVec)).LE.sin(RHOLZAcceptanceAngle)) THEN
                     INhkl =  INhkl + 1
-                    RHKL(INhkl,:) = RhklDummyVec                 
+                    Rhkl(INhkl,:) = RhklDummyVec                 
                  END IF
               END IF
            CASE("R")! Rhombohedral Reverse
               IF(ABS(MOD(RhklDummyVec(1)-RhklDummyVec(2)+RhklDummyVec(3),THREE)).LE.TINY) THEN
                  !INhkl = INhkl + 1
-                 !RHKL(INhkl,:) = RhklDummyVec
+                 !Rhkl(INhkl,:) = RhklDummyVec
                  IF(IZolzFLAG.EQ.1) THEN
                     IF( ABS(DOT_PRODUCT(RhklDummyUnitVec,Rhkl0UnitVec)) .LE. TINY ) THEN
                        INhkl=INhkl+1
-                       RHKL(INhkl,:)= RhklDummyVec
+                       Rhkl(INhkl,:)= RhklDummyVec
                     END IF
                  ELSEIF (ABS(DOT_PRODUCT(RhklDummyUnitVec,Rhkl0UnitVec)).LE.sin(RHOLZAcceptanceAngle)) THEN
                     INhkl =  INhkl + 1
-                    RHKL(INhkl,:) = RhklDummyVec                 
+                    Rhkl(INhkl,:) = RhklDummyVec                 
                  END IF
               END IF
            CASE("V")! Rhombohedral Obverse
               IF(ABS(MOD(-RhklDummyVec(1)+RhklDummyVec(2)+RhklDummyVec(3),THREE)).LE.TINY) THEN
                  !INhkl = INhkl + 1
-                 !RHKL(INhkl,:) = RhklDummyVec
+                 !Rhkl(INhkl,:) = RhklDummyVec
                  IF(IZolzFLAG.EQ.1) THEN
                     IF( ABS(DOT_PRODUCT(RhklDummyUnitVec,Rhkl0UnitVec)) .LE. TINY ) THEN
                        INhkl=INhkl+1
-                       RHKL(INhkl,:)= RhklDummyVec
+                       Rhkl(INhkl,:)= RhklDummyVec
                     END IF
                  ELSEIF (ABS(DOT_PRODUCT(RhklDummyUnitVec,Rhkl0UnitVec)).LE.sin(RHOLZAcceptanceAngle)) THEN
                     INhkl =  INhkl + 1
-                    RHKL(INhkl,:) = RhklDummyVec                 
+                    Rhkl(INhkl,:) = RhklDummyVec                 
                  END IF
               END IF
            CASE("P")! Primitive
               !INhkl = INhkl + 1
-              !RHKL(INhkl,:) = RhklDummyVec
+              !Rhkl(INhkl,:) = RhklDummyVec
               IF(IZolzFLAG.EQ.1) THEN
                  IF( ABS(DOT_PRODUCT(RhklDummyUnitVec,Rhkl0UnitVec)) .LE. TINY ) THEN
                     INhkl=INhkl+1
-                    RHKL(INhkl,:)= RhklDummyVec
+                    Rhkl(INhkl,:)= RhklDummyVec
                  END IF
               ELSEIF (ABS(DOT_PRODUCT(RhklDummyUnitVec,Rhkl0UnitVec)).LE.sin(RHOLZAcceptanceAngle)) THEN
                  INhkl =  INhkl + 1
-                 RHKL(INhkl,:) = RhklDummyVec                 
+                 Rhkl(INhkl,:) = RhklDummyVec                 
               END IF
            CASE DEFAULT
               PRINT*,"HKLMake(): unknown space group", SSpaceGroupName, "--- aborting"
