@@ -56,21 +56,15 @@ SUBROUTINE FelixFunction(LInitialSimulationFLAG,IErr)
   ! local variable definitions
   !--------------------------------------------------------------------
   
-  INTEGER(IKIND) :: &
-       IErr,ind,jnd,knd,pnd,&
+  INTEGER(IKIND) :: IErr,ind,jnd,knd,pnd,&
        IThicknessIndex,ILocalPixelCountMin, ILocalPixelCountMax,&
        IIterationFLAG
-  INTEGER(IKIND) :: &
-       IAbsorbTag = 0
-  INTEGER(IKIND), DIMENSION(:), ALLOCATABLE :: &
-       IDisplacements,ICount
-  LOGICAL,INTENT(IN) :: &
-       LInitialSimulationFLAG !If function is being called during initialisation
-  REAL(RKIND),DIMENSION(:,:,:),ALLOCATABLE :: &
-       RIndividualReflectionsRoot,&
+  INTEGER(IKIND) :: IAbsorbTag = 0
+  INTEGER(IKIND), DIMENSION(:), ALLOCATABLE :: IDisplacements,ICount
+  LOGICAL,INTENT(IN) :: LInitialSimulationFLAG !If function is being called during initialisation
+  REAL(RKIND),DIMENSION(:,:,:),ALLOCATABLE :: RIndividualReflectionsRoot,&
        RFinalMontageImageRoot
-  COMPLEX(CKIND),DIMENSION(:,:,:), ALLOCATABLE :: &
-       CAmplitudeandPhaseRoot 
+  COMPLEX(CKIND),DIMENSION(:,:,:), ALLOCATABLE :: CAmplitudeandPhaseRoot 
 
   IF(IWriteFLAG.GE.10.AND.my_rank.EQ.0) THEN
      PRINT*,"Felix function"

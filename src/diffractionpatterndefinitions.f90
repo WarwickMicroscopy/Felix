@@ -67,7 +67,7 @@ SUBROUTINE ReflectionDetermination( IErr )
 
   icheck = 0
 
-  IHKLMAXValue = 15
+  IHKLMAXValue = 15!RB starting value, increments if necessary
   ihklrun = 0
 
   DO WHILE (icheck.EQ.0)
@@ -86,8 +86,7 @@ SUBROUTINE ReflectionDetermination( IErr )
         IHKLMAXValue = IHKLMAXValue*2
         Deallocate(Rhkl,STAT=ierr)
         IF( IErr.NE.0 ) THEN
-           PRINT*,"ReflectionDetermination(", my_rank, ") error ", IErr, &
-                " in DEALLOCATE() of DYNAMIC variables Rhkl"
+           PRINT*,"ReflectionDetermination(",my_rank,") error",IErr,"deallocating Rhkl"
            RETURN
         END IF
 

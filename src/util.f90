@@ -207,11 +207,9 @@ SUBROUTINE CountTotalAtoms(IErr)
        IVariable = SIZE(RFullAtomicFracCoordVec,1))
 
   DO ind=1, SIZE(RSymVec,DIM=1)
-     
      DO jnd=1, SIZE(RAtomSiteFracCoordVec,DIM=1)
        
         Ifullind= SIZE(RSymVec,1)*(jnd-1) + ind
-        
         RFullAtomicFracCoordVec(Ifullind,:)= &
              MATMUL(RSymMat(ind,:,:),RAtomSiteFracCoordVec(jnd,:)) &
              + RSymVec(ind,:)
@@ -298,26 +296,22 @@ SUBROUTINE CountTotalAtoms(IErr)
 
   DEALLOCATE(MNP,STAT=IErr)
   IF( IErr.NE.0 ) THEN
-     PRINT*,"CountTotalAtoms(", my_rank, ") error ", IErr, &
-          " in Deallocation"
+     PRINT*,"CountTotalAtoms(",my_rank,")error",IErr,"deallocating MNP"
      RETURN
   ENDIF
   DEALLOCATE(SMNP,STAT=IErr)
   IF( IErr.NE.0 ) THEN
-     PRINT*,"CountTotalAtoms(", my_rank, ") error ", IErr, &
-          " in Deallocation"
+     PRINT*,"CountTotalAtoms(",my_rank,")error",IErr,"deallocating SMNP"
      RETURN
   END IF
   DEALLOCATE(RFullAtomicFracCoordVec,STAT=IErr)
   IF( IErr.NE.0 ) THEN
-     PRINT*,"CountTotalAtoms(", my_rank, ") error ", IErr, &
-          " in Deallocation"
+     PRINT*,"CountTotalAtoms(",my_rank,")error",IErr,"deallocating RFullAtomicFracCoordVec"
      RETURN
   END IF
   DEALLOCATE(SFullAtomicNameVec,STAT=IErr)
   IF( IErr.NE.0 ) THEN
-     PRINT*,"CountTotalAtoms(", my_rank, ") error ", IErr, &
-          " in Deallocation"
+     PRINT*,"CountTotalAtoms(",my_rank,")error",IErr,"deallocating SFullAtomicNameVec"
      RETURN
   ENDIF
   

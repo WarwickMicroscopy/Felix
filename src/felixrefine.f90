@@ -152,7 +152,7 @@ PROGRAM Felixrefine
   ALLOCATE(RrVecMat(ITotalAtoms,THREEDIM),STAT=IErr)
   IF( IErr.NE.0 ) THEN
      PRINT*,"ExperimentalSetup(", my_rank, ") error ", IErr, " in ALLOCATE of RrVecMat"
-     RETURN
+     GOTO 9999
   ENDIF
   
   CALL AllAtomPositions(IErr)
@@ -160,13 +160,39 @@ PROGRAM Felixrefine
      PRINT*,"felixrefine(",my_rank,") error in AllAtomPositions"
      GOTO 9999
   ENDIF
-!PRINT*,RFullAtomicFracCoordVec
-  
-!zz temp deallocation to get it to work
-DEALLOCATE(RFullAtomicFracCoordVec,SFullAtomicNameVec,RFullPartialOccupancy,&
-RFullIsotropicDebyeWallerFactor,IFullAtomNumber,IFullAnisotropicDWFTensor,&
-MNP,SMNP,RDWF,ROcc,IAtoms,IAnisoDWFT,RrVecMat)
 
+!zz temp deallocation to get it to work
+DEALLOCATE(RFullPartialOccupancy,SMNP,MNP,RFullAtomicFracCoordVec,SFullAtomicNameVec, &
+RFullIsotropicDebyeWallerFactor,IFullAtomNumber,IFullAnisotropicDWFTensor,&
+RDWF,ROcc,IAtoms,IAnisoDWFT,RrVecMat)
+
+
+!zz from diffractionpatterninitialisation/reflectiondetermination
+  ind = 0
+  jnd = 0
+  IhklMaxValue = 15!RB starting value, increments if necessary
+  DO WHILE (ind.EQ.0)
+     jnd = jnd+1     
+     CALL NewHKLMake(IhklMaxValue,RZDirC,TWODEG2RADIAN,IErr)
+     IF( IErr.NE.0 ) THEN
+        PRINT*,"felixrefine(",my_rank,")error in NewHKLMake()"
+        GOTO 9999
+     END IF
+     IF(SIZE(Rhkl,DIM=1).LT.IMinReflectionPool) THEN
+        IhklMaxValue = IhklMaxValue*2
+        Deallocate(Rhkl,STAT=ierr)
+        IF( IErr.NE.0 ) THEN
+           PRINT*,"felixrefine(",my_rank,")error",IErr,"deallocating Rhkl"
+           GOTO 9999
+        END IF
+        CYCLE
+     ELSE
+        ind = 1
+     END IF
+  END DO
+
+!zz temp deallocation to get it to work
+DEALLOCATE(Rhkl)
   
   !--------------------------------------------------------------------
   ! Setup Simplex Variables

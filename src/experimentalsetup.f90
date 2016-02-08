@@ -88,7 +88,6 @@ SUBROUTINE ExperimentalSetup (IErr)
   !--------------------------------------------------------------------
   ! diffraction initialization
   !--------------------------------------------------------------------
-
   CALL DiffractionPatternInitialisation( IErr )
   IF( IErr.NE.0 ) THEN
      PRINT*,"ExperimentalSetup(", my_rank, ") error",IErr, &

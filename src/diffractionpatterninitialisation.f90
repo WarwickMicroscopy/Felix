@@ -52,7 +52,7 @@ SUBROUTINE DiffractionPatternInitialisation
 
   CALL ReflectionDetermination (IErr)
   IF( IErr.NE.0 ) THEN
-     PRINT*,"DiffractionPatternInitialisation(", my_rank, ") error", IErr, &
+     PRINT*,"DiffractionPatternInitialisation(",my_rank,")error", IErr, &
           "in ReflectionDetermination()"
      RETURN
   ENDIF

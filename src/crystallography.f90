@@ -385,7 +385,6 @@ SUBROUTINE AllAtomPositions(IErr)
   !IAnisoDWFT now contains a list of indices referring to the correct Anisotropic Debye Wall Factor Tensor for each atom in the unit cell
 
   DO ind=1,ITotalAtoms
-
      WRITE(indString,*)ind
      CALL Message("CrystalUniqueFractionalAtomicPostitionsCalculation",IDebug+IMoreInfo,IErr, &
               MessageVariable = "IAnisoDWFT("//TRIM(ADJUSTL(indString))//")",IVariable =IAnisoDWFT(ind))
@@ -412,6 +411,29 @@ SUBROUTINE AllAtomPositions(IErr)
         ENDIF
      ENDDO
   ENDDO
+
+!zz an ambition to deallocate some local variables here
+  !DEALLOCATE(MNP,STAT=IErr)
+  IF( IErr.NE.0 ) THEN
+     PRINT*,"CountTotalAtoms(",my_rank,")error",IErr,"deallocating MNP"
+     RETURN
+  ENDIF
+  !DEALLOCATE(SMNP,STAT=IErr)
+  IF( IErr.NE.0 ) THEN
+     PRINT*,"CountTotalAtoms(",my_rank,")error",IErr,"deallocating SMNP"
+     RETURN
+  END IF
+  !DEALLOCATE(RFullAtomicFracCoordVec,STAT=IErr)
+  IF( IErr.NE.0 ) THEN
+     PRINT*,"CountTotalAtoms(",my_rank,")error",IErr,"deallocating RFullAtomicFracCoordVec"
+     RETURN
+  END IF
+  !DEALLOCATE(SFullAtomicNameVec,STAT=IErr)
+  IF( IErr.NE.0 ) THEN
+     PRINT*,"CountTotalAtoms(",my_rank,")error",IErr,"deallocating SFullAtomicNameVec"
+     RETURN
+  ENDIF
+
   
 END SUBROUTINE AllAtomPositions
 
