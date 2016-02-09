@@ -213,16 +213,6 @@ RFullIsotropicDebyeWallerFactor,IFullAtomicNumber,IFullAnisotropicDWFTensor)
      PRINT*,"felixrefine(",my_rank,")error allocating RgDummyVecMat"
      RETURN
   END IF
-  ALLOCATE(RgVecMag(SIZE(Rhkl,DIM=1)),STAT=IErr)
-  IF(IErr.NE.0) THEN
-     PRINT*,"felixrefine(",my_rank,")error allocating RgVecMag"
-     RETURN
-  END IF
-  ALLOCATE(RgVecVec(SIZE(Rhkl,DIM=1)),STAT=IErr)
-  IF(IErr.NE.0) THEN
-     PRINT*,"felixrefine(",my_rank,")error allocating RgVecVec"
-     RETURN
-  END IF
  
 !RB what is RgVecMatT???
   ICutOff = 1
@@ -305,6 +295,11 @@ RFullIsotropicDebyeWallerFactor,IFullAtomicNumber,IFullAnisotropicDWFTensor)
      END DO
   END IF
 
+  ALLOCATE(RgVecMag(SIZE(Rhkl,DIM=1)),STAT=IErr)
+  IF(IErr.NE.0) THEN
+     PRINT*,"felixrefine(",my_rank,")error allocating RgVecMag"
+     RETURN
+  END IF
   DO ind=1,SIZE(Rhkl,DIM=1)
      RgVecMag(ind)= SQRT(DOT_PRODUCT(RgVecMatT(ind,:),RgVecMatT(ind,:)))
   ENDDO
@@ -340,7 +335,7 @@ RFullIsotropicDebyeWallerFactor,IFullAtomicNumber,IFullAnisotropicDWFTensor)
   ENDDO
   
 !zz temp deallocation to get it to work
-DEALLOCATE(Rhkl,RgDummyVecMat,RgVecMag,RgVecVec,RgVecMagLaue)
+DEALLOCATE(Rhkl,RgDummyVecMat,RgVecMag,RgVecMagLaue)
 IF (RAcceptanceAngle.NE.ZERO.AND.IZOLZFLAG.EQ.0) THEN
   DEALLOCATE(IOriginGVecIdentifier)
 END IF
@@ -350,9 +345,9 @@ END IF
      PRINT*,"felixrefine(",my_rank,")error in StructureFactorSetup"
      GOTO 9999
   END IF
-  PRINT*,"woo"
+
 DEALLOCATE(RgVecMatT,IAnisoDWFT,IAtoms,ROcc,RDWF)
-  PRINT*,"woof"
+
 
   IF(IAbsorbFLAG.NE.0) THEN
      CALL StructureFactorsWithAbsorption(IErr)
