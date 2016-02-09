@@ -56,7 +56,7 @@ PROGRAM Felixrefine
   INTEGER(IKIND) :: IHours,IMinutes,ISeconds,IErr,IMilliSeconds,IIterationFLAG,&
        ind,jnd,ICalls,IIterationCount
   REAL(RKIND) :: StartTime, CurrentTime, Duration, TotalDurationEstimate,&
-       RFigureOfMerit,SimplexFunction  
+       RFigureOfMerit,SimplexFunction,RHOLZAcceptanceAngle
   INTEGER(IKIND) :: IStartTime, ICurrentTime ,IRate
   REAL(RKIND),DIMENSION(:,:),ALLOCATABLE :: RSimplexVolume
   REAL(RKIND),DIMENSION(:),ALLOCATABLE :: RSimplexFoM,RIndependentVariableValues
@@ -151,13 +151,13 @@ PROGRAM Felixrefine
 
   ALLOCATE(RrVecMat(ITotalAtoms,THREEDIM),STAT=IErr)
   IF( IErr.NE.0 ) THEN
-     PRINT*,"ExperimentalSetup(", my_rank, ") error ", IErr, " in ALLOCATE of RrVecMat"
+     PRINT*,"felixrefine(",my_rank,")error allocating RrVecMat"
      GOTO 9999
   ENDIF
   
   CALL AllAtomPositions(IErr)
   IF( IErr.NE.0 ) THEN
-     PRINT*,"felixrefine(",my_rank,") error in AllAtomPositions"
+     PRINT*,"felixrefine(",my_rank,")error in AllAtomPositions"
      GOTO 9999
   ENDIF
 
@@ -166,23 +166,23 @@ DEALLOCATE(RFullPartialOccupancy,SMNP,MNP,RFullAtomicFracCoordVec,SFullAtomicNam
 RFullIsotropicDebyeWallerFactor,IFullAtomNumber,IFullAnisotropicDWFTensor,&
 RDWF,ROcc,IAtoms,IAnisoDWFT,RrVecMat)
 
-
 !zz from diffractionpatterninitialisation/reflectiondetermination
-  ind = 0
+  ind = 0!here acts as a flag
   jnd = 0
-  IhklMaxValue = 15!RB starting value, increments if necessary
+  IhklMaxValue = 15!RB starting value for maximum hkl, increments if necessary
+  RHOLZAcceptanceAngle=TWODEG2RADIAN!RB maximum acceptance angle for HOLZ, suspect way too low
   DO WHILE (ind.EQ.0)
      jnd = jnd+1     
-     CALL NewHKLMake(IhklMaxValue,RZDirC,TWODEG2RADIAN,IErr)
+     CALL NewHKLMake(IhklMaxValue,RZDirC,RHOLZAcceptanceAngle,IErr)
      IF( IErr.NE.0 ) THEN
         PRINT*,"felixrefine(",my_rank,")error in NewHKLMake()"
         GOTO 9999
      END IF
      IF(SIZE(Rhkl,DIM=1).LT.IMinReflectionPool) THEN
         IhklMaxValue = IhklMaxValue*2
-        Deallocate(Rhkl,STAT=ierr)
+        DEALLOCATE(Rhkl,STAT=ierr)!zz not happy about conditional deallocation with no corresponding allocation
         IF( IErr.NE.0 ) THEN
-           PRINT*,"felixrefine(",my_rank,")error",IErr,"deallocating Rhkl"
+           PRINT*,"felixrefine(",my_rank,")error deallocating Rhkl"
            GOTO 9999
         END IF
         CYCLE
@@ -190,6 +190,12 @@ RDWF,ROcc,IAtoms,IAnisoDWFT,RrVecMat)
         ind = 1
      END IF
   END DO
+  
+  CALL SortHKL(Rhkl,SIZE(Rhkl,1),IErr)
+  IF( IErr.NE.0 ) THEN
+     PRINT*,"felixrefine(",my_rank,")error in SortHKL"
+     GOTO 9999
+  END IF
 
 !zz temp deallocation to get it to work
 DEALLOCATE(Rhkl)

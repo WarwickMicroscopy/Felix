@@ -39,7 +39,7 @@
 !	is based on ShellSort from "Numerical Recipes", routine SHELL().
 !---------------------------------------------------------------------
 
-SUBROUTINE SortHKL( RHKLarray, N,IErr )
+SUBROUTINE SortHKL( RHKLarray,N,IErr )
 
   USE MyNumbers
   USE WriteToScreen
@@ -64,7 +64,7 @@ SUBROUTINE SortHKL( RHKLarray, N,IErr )
   
   REAL(RKIND) :: dummy
 
-  CALL Message("ResortHkl",IMust,IErr)
+  CALL Message("SortHkl",IMust,IErr)
   
   NN = 0
   M = 0
