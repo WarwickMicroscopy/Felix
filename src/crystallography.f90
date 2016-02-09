@@ -234,10 +234,10 @@ SUBROUTINE AllAtomPositions(IErr)
      PRINT*,"AllAtomPositions(",my_rank,") error in ALLOCATE RFullIsotropicDebyeWallerFactor"
      RETURN
   END IF
-  ALLOCATE(IFullAtomNumber( &
+  ALLOCATE(IFullAtomicNumber( &
        SIZE(RSymVec,1)*SIZE(RAtomSiteFracCoordVec,1)),STAT=IErr)  
   IF( IErr.NE.0 ) THEN
-     PRINT*,"AllAtomPositions(",my_rank,") error in ALLOCATE IFullAtomNumber"
+     PRINT*,"AllAtomPositions(",my_rank,") error in ALLOCATE IFullAtomicNumber"
      RETURN
   END IF
   
@@ -258,7 +258,7 @@ SUBROUTINE AllAtomPositions(IErr)
         SFullAtomicNameVec(Ifullind) = SAtomName(jnd)
         RFullPartialOccupancy(Ifullind) = RAtomicSitePartialOccupancy(jnd)
         RFullIsotropicDebyeWallerFactor(Ifullind) = RIsotropicDebyeWallerFactors(jnd)
-        IFullAtomNumber(Ifullind) = IAtomNumber(jnd)
+        IFullAtomicNumber(Ifullind) = IAtomicNumber(jnd)
         IFullAnisotropicDWFTensor(Ifullind) = IAnisotropicDWFTensor(jnd)
         ! renormalize such that all values are non-negative
         DO knd=1,THREEDIM
@@ -331,7 +331,7 @@ SUBROUTINE AllAtomPositions(IErr)
   SMNP(1)= SFullAtomicNameVec(1)
   RDWF(1) = RFullIsotropicDebyeWallerFactor(1)
   ROcc(1) = RFullPartialOccupancy(1)
-  IAtoms(1) = IFullAtomNumber(1)
+  IAtoms(1) = IFullAtomicNumber(1)
   IAnisoDWFT(1) = IFullAnisotropicDWFTensor(1)
   Iuniind=1
 
@@ -354,7 +354,7 @@ SUBROUTINE AllAtomPositions(IErr)
         SMNP(Iuniind)= SFullAtomicNameVec(ind)
         RDWF(Iuniind) = RFullIsotropicDebyeWallerFactor(ind)
         ROcc(Iuniind) = RFullPartialOccupancy(ind)
-        IAtoms(Iuniind) = IFullAtomNumber(ind)
+        IAtoms(Iuniind) = IFullAtomicNumber(ind)!
         IAnisoDWFT(Iuniind) = IFullAnisotropicDWFTensor(ind)
         
      ENDIF
@@ -376,10 +376,8 @@ SUBROUTINE AllAtomPositions(IErr)
               MessageVariable = "ROcc("//TRIM(ADJUSTL(indString))//")",RVariable = ROcc(ind))
         CALL Message("CrystalUniqueFractionalAtomicPostitionsCalculation",IMoreInfo,IErr, &
               MessageVariable = "IAtoms("//TRIM(ADJUSTL(indString))//")",IVariable = IAtoms(ind))
-    
         
         !PRINT *,"Crystallography : ",MNP(ind,:),SMNP(ind),RDWF(ind),ROcc(ind),IAtoms(ind),ind
-   !  END IF
   ENDDO
 
   !IAnisoDWFT now contains a list of indices referring to the correct Anisotropic Debye Wall Factor Tensor for each atom in the unit cell
@@ -413,27 +411,6 @@ SUBROUTINE AllAtomPositions(IErr)
   ENDDO
 
 !zz an ambition to deallocate some local variables here
-  !DEALLOCATE(MNP,STAT=IErr)
-  IF( IErr.NE.0 ) THEN
-     PRINT*,"CountTotalAtoms(",my_rank,")error",IErr,"deallocating MNP"
-     RETURN
-  ENDIF
-  !DEALLOCATE(SMNP,STAT=IErr)
-  IF( IErr.NE.0 ) THEN
-     PRINT*,"CountTotalAtoms(",my_rank,")error",IErr,"deallocating SMNP"
-     RETURN
-  END IF
-  !DEALLOCATE(RFullAtomicFracCoordVec,STAT=IErr)
-  IF( IErr.NE.0 ) THEN
-     PRINT*,"CountTotalAtoms(",my_rank,")error",IErr,"deallocating RFullAtomicFracCoordVec"
-     RETURN
-  END IF
-  !DEALLOCATE(SFullAtomicNameVec,STAT=IErr)
-  IF( IErr.NE.0 ) THEN
-     PRINT*,"CountTotalAtoms(",my_rank,")error",IErr,"deallocating SFullAtomicNameVec"
-     RETURN
-  ENDIF
-
   
 END SUBROUTINE AllAtomPositions
 
@@ -502,7 +479,7 @@ SUBROUTINE CrystalUniqueFractionalAtomicPostitionsCalculation (IErr)
   SMNP(1)= SFullAtomicNameVec(1)
   RDWF(1) = RFullIsotropicDebyeWallerFactor(1)
   ROcc(1) = RFullPartialOccupancy(1)
-  IAtoms(1) = IFullAtomNumber(1)
+  IAtoms(1) = IFullAtomicNumber(1)
   IAnisoDWFT(1) = IFullAnisotropicDWFTensor(1)
   Iuniind=1
 
@@ -525,7 +502,7 @@ SUBROUTINE CrystalUniqueFractionalAtomicPostitionsCalculation (IErr)
         SMNP(Iuniind)= SFullAtomicNameVec(ind)
         RDWF(Iuniind) = RFullIsotropicDebyeWallerFactor(ind)
         ROcc(Iuniind) = RFullPartialOccupancy(ind)
-        IAtoms(Iuniind) = IFullAtomNumber(ind)
+        IAtoms(Iuniind) = IFullAtomicNumber(ind)
         IAnisoDWFT(Iuniind) = IFullAnisotropicDWFTensor(ind)
         
      ENDIF
@@ -548,9 +525,6 @@ SUBROUTINE CrystalUniqueFractionalAtomicPostitionsCalculation (IErr)
         CALL Message("CrystalUniqueFractionalAtomicPostitionsCalculation",IMoreInfo,IErr, &
               MessageVariable = "IAtoms("//TRIM(ADJUSTL(indString))//")",IVariable = IAtoms(ind))
     
-        
-        !PRINT *,"Crystallography : ",MNP(ind,:),SMNP(ind),RDWF(ind),ROcc(ind),IAtoms(ind),ind
-   !  END IF
   ENDDO
 
   !IAnisoDWFT now contains a list of indices referring to the correct Anisotropic Debye Wall Factor Tensor for each atom in the unit cell

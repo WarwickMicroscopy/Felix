@@ -55,113 +55,79 @@ SUBROUTINE StructureFactorSetup(IErr)
 
   IMPLICIT NONE
 
-  INTEGER(IKIND) :: &
-       IErr
+  INTEGER(IKIND) :: IErr
 
   CALL Message("StructureFactorSetup",IMust,IErr)
 
   !--------------------------------------------------------------------
   ! Calculate Reflection Matrix
   !--------------------------------------------------------------------
-
-  ALLOCATE(RgMatMat(nReflections,nReflections,THREEDIM), &
-       STAT=IErr)
+  !Allocation--------------------------------------------------------
+  ALLOCATE(RgMatMat(nReflections,nReflections,THREEDIM),STAT=IErr)
   IF( IErr.NE.0 ) THEN
-     PRINT*,"StructureFactorSetup(", my_rank, ") error ", IErr, &
-          " in ALLOCATE() of DYNAMIC variables RgMatMat"
-     !call error function
+     PRINT*,"StructureFactorSetup(",my_rank,")error allocating RgMatMat"
      RETURN
-  END IF
-       
-  ALLOCATE(RgMatMag(nReflections,nReflections), &
-       STAT=IErr)
+  END IF 
+  ALLOCATE(RgMatMag(nReflections,nReflections),STAT=IErr)
   IF( IErr.NE.0 ) THEN
-     PRINT*,"StructureFactorSetup(", my_rank, ") error ", IErr, &
-          " in ALLOCATE() of DYNAMIC variables RgMatMag"
-     !call error function
+     PRINT*,"StructureFactorSetup(",my_rank,")error allocating RgMatMag"
      RETURN
   END IF
 !RB  NB Also deallocated in felixfunction!!!
-  !RB Matrix for sum of indices - for symmetry equivalence  
-  ALLOCATE(RgSumMat(nReflections,nReflections), &
-       STAT=IErr)
+  ALLOCATE(RgSumMat(nReflections,nReflections),STAT=IErr)  !RB Matrix of sums of indices - for symmetry equivalence  
   IF( IErr.NE.0 ) THEN
-     PRINT*,"StructureFactorSetup(",my_rank,") error ",IErr, &
-          "in ALLOCATE() of DYNAMIC variables RgSumMat"
-     !call error function
+     PRINT*,"StructureFactorSetup(",my_rank,")error allocating RgSumMat"
      RETURN
   END IF  
 
+
   CALL GMatrixInitialisation (IErr)
   IF( IErr.NE.0 ) THEN
-     PRINT*,"StructureFactorSetup(", my_rank, ") error ", IErr, &
-          " in GMatrixInitialisation"
-     !error function call
+     PRINT*,"StructureFactorSetup(",my_rank,")error in GMatrixInitialisation"
      RETURN
   END IF
 
-  !--------------------------------------------------------------------
-  ! calculating Ug matrix
-  !--------------------------------------------------------------------
-!RB  NB Also deallocated in felixfunction!!!
-  !Allocate memory for Ug Matrix
-  !RB Matrix that is sum of real+abs
-  !PRINT*,"Allocating CUgMat,CUgMatNoAbs,CUgMatPrime in structurefactorsetup"
-  ALLOCATE(CUgMat(nReflections,nReflections), &
-       STAT=IErr)
-  IF( IErr.NE.0 ) THEN
-     PRINT*,"StructureFactorSetup(",my_rank,") error", IErr, &
-          "in ALLOCATE() of DYNAMIC variables CUgMat"
-     !call error function
-     RETURN
-  END IF
   
-  !RB Matrix without absorption
-  ALLOCATE(CUgMatNoAbs(nReflections,nReflections), &!RB
-       STAT=IErr)!RB
-  IF( IErr.NE.0 ) THEN!RB
-     PRINT*,"StructureFactorSetup(",my_rank,") error",IErr, &!RB
-          "in ALLOCATE() of DYNAMIC variables CUgMatNoAbs"!RB
-     !call error function
-     RETURN!RB
-  END IF  !RB
-
-  !RB Matrix for absorption  
-  ALLOCATE(CUgMatPrime(nReflections,nReflections), &
-       STAT=IErr)
+  !RB  NB Also deallocated in felixfunction!!!
+  !Allocation--------------------------------------------------------
+  ALLOCATE(CUgMat(nReflections,nReflections),STAT=IErr)  !RB Matrix including absorption
   IF( IErr.NE.0 ) THEN
-     PRINT*,"StructureFactorSetup(",my_rank,") error ",IErr, &
-          "in ALLOCATE() of DYNAMIC variables CUgMatPrime"
-     !call error function
+     PRINT*,"StructureFactorSetup(",my_rank,")error allocating CUgMat"
+     RETURN
+  END IF
+  !RB Matrix without absorption
+  ALLOCATE(CUgMatNoAbs(nReflections,nReflections),STAT=IErr)
+  IF( IErr.NE.0 ) THEN
+     PRINT*,"StructureFactorSetup(",my_rank,")error allocating CUgMatNoAbs"
+     RETURN
+  END IF
+  !RB Matrix for absorption  
+  ALLOCATE(CUgMatPrime(nReflections,nReflections),STAT=IErr)
+  IF( IErr.NE.0 ) THEN
+     PRINT*,"StructureFactorSetup(",my_rank,")error allocating CUgMatPrime"
      RETURN
   END IF  
 
   CALL StructureFactorInitialisation (IErr)
   IF( IErr.NE.0 ) THEN
-     PRINT*,"StructureFactorSetup(",my_rank,") error", IErr, &
-          "in StructureFactorInitialisation"
-     !call error function
+     PRINT*,"StructureFactorSetup(",my_rank,")error in StructureFactorInitialisation"
      RETURN
   END IF
 
+  !Dellocation-------------------------------------------------------- 
   DEALLOCATE(RgMatMat,STAT=IErr)
   IF( IErr.NE.0 ) THEN
-     PRINT*,"felixsim(", my_rank, ") error ", IErr, &
-          " in Deallocation of RgMatMat"
+     PRINT*,"StructureFactorSetup(",my_rank,")error deallocating RgMatMat"
      RETURN
   END IF
-  
   DEALLOCATE(RgMatMag,STAT=IErr)
   IF( IErr.NE.0 ) THEN
-     PRINT*,"felixsim(", my_rank, ") error ", IErr, &
-          " in Deallocation of RgMatMag"
+     PRINT*,"StructureFactorSetup(",my_rank,")error deallocating RgMatMag"
      RETURN
   END IF
-
   DEALLOCATE(RrVecMat,STAT=IErr)
   IF( IErr.NE.0 ) THEN
-     PRINT*,"felixsim(", my_rank, ") error ", IErr, &
-          " in DEALLOCATE() "
+     PRINT*,"StructureFactorSetup(",my_rank,")error deallocating RrVecMat"
      RETURN
   ENDIF
 

@@ -56,9 +56,8 @@ SUBROUTINE FelixFunction(LInitialSimulationFLAG,IErr)
   ! local variable definitions
   !--------------------------------------------------------------------
   
-  INTEGER(IKIND) :: IErr,ind,jnd,knd,pnd,&
-       IThicknessIndex,ILocalPixelCountMin, ILocalPixelCountMax,&
-       IIterationFLAG
+  INTEGER(IKIND) :: IErr,ind,jnd,knd,pnd,IThicknessIndex,ILocalPixelCountMin,&
+        ILocalPixelCountMax,IIterationFLAG
   INTEGER(IKIND) :: IAbsorbTag = 0
   INTEGER(IKIND), DIMENSION(:), ALLOCATABLE :: IDisplacements,ICount
   LOGICAL,INTENT(IN) :: LInitialSimulationFLAG !If function is being called during initialisation
@@ -70,86 +69,69 @@ SUBROUTINE FelixFunction(LInitialSimulationFLAG,IErr)
      PRINT*,"Felix function"
   END IF
 
-   !Why do this
+   !RB Why do this?
   CALL CountTotalAtoms(IErr)
   
   IDiffractionFLAG = 0
 
   !-------------------------------------------------------------------- 
- 
+  ! Setup crystal lattice, atom positions, hkl's, output reflections 
   !--------------------------------------------------------------------
   CALL ExperimentalSetup (IErr)
   IF( IErr.NE.0 ) THEN
      PRINT*,"felixfunction(", my_rank, ") error in ExperimentalSetup()"
      RETURN
   END IF
-  
-  
+    
   !--------------------------------------------------------------------
   ! Setup Image
   ALLOCATE(RhklPositions(nReflections,2),STAT=IErr)
   IF( IErr.NE.0 ) THEN
-     PRINT*,"felixfunction(",my_rank,") error",IErr,"allocating RhklPositions"
+     PRINT*,"felixfunction(",my_rank,") error allocating RhklPositions"
      RETURN
   END IF
   CALL ImageSetup( IErr )
   IF( IErr.NE.0 ) THEN
-     PRINT*,"felixfunction(", my_rank, ") error in ImageSetup()"
+     PRINT*,"felixfunction(",my_rank,") error in ImageSetup"
      RETURN
   END IF
-
  
   !--------------------------------------------------------------------
   ! MAIN section
   !--------------------------------------------------------------------
  
 !!$  Structure Factors must be calculated without absorption for refinement to work
-
-  !RB IF(IAbsorbFLAG.NE.0) THEN 
-  !RB   IAbsorbFLAG = 0 ! Non-absorpative structure factor calculation
-  !RB   IAbsorbTAG = 1 ! Remember that IAbsorbFLAG was 1
-  !RB END IF
-  
   CALL StructureFactorSetup(IErr)
   IF( IErr.NE.0 ) THEN
-     PRINT*,"felixfunction(", my_rank, ") error ",IErr,"in StructureFactorSetup()"
+     PRINT*,"felixfunction(",my_rank,")error in StructureFactorSetup"
      RETURN
   END IF
 
-  !RB IF(IAbsorbTAG.NE.0) IAbsorbFLAG = 1 !Reset IAbsorbFLAG to 1
-
   IF((IRefineModeSelectionArray(1).EQ.1).AND.(LInitialSimulationFLAG.NEQV..TRUE.)) THEN
-     
      CALL ApplyNewStructureFactors(IErr)
      IF( IErr.NE.0 ) THEN
-        PRINT*,"Felixfunction(", my_rank, ") error ", IErr, &
-             " in ApplyNewStructureFactors()"
+        PRINT*,"felixfunction(",my_rank,")error in ApplyNewStructureFactors()"
         RETURN
      END IF
-     
   END IF
 
   IF(IAbsorbFLAG.NE.0) THEN
-     
-     CALL StructureFactorsWithAbsorptionDetermination(IErr)
+     CALL StructureFactorsWithAbsorption(IErr)
      IF( IErr.NE.0 ) THEN
-        PRINT*,"Felixfunction(", my_rank, ") error ",IErr,&
-             "in StructureFactorsWithAbsorptionDetermination()"
+        PRINT*,"felixfunction(",my_rank,")error in StructureFactorsWithAbsorption()"
         RETURN
      END IF
-
-  END IF     
+  END IF
+  
   !--------------------------------------------------------------------
   ! reserve memory for effective eigenvalue problem
   !--------------------------------------------------------------------
 
   !Kprime Vectors and Deviation Parameter
   
-  ALLOCATE(RDevPara(nReflections), &
-       STAT=IErr)
+  ALLOCATE(RDevPara(nReflections), STAT=IErr)
   IF( IErr.NE.0 ) THEN
-     PRINT*,"Felixfunction(", my_rank, ") error ", IErr, &
-          " in ALLOCATE() of DYNAMIC variables RDevPara"
+     PRINT*,"felixfunction(",my_rank,")error in ALLOCATE RDevPara"
      RETURN
   END IF
 
@@ -512,10 +494,10 @@ SUBROUTINE FelixFunction(LInitialSimulationFLAG,IErr)
      RETURN
   END IF
        
-  DEALLOCATE(IFullAtomNumber,STAT=IErr)
+  DEALLOCATE(IFullAtomicNumber,STAT=IErr)
   IF( IErr.NE.0 ) THEN
      PRINT*,"Felixfunction(", my_rank, ") error ", IErr, &
-          " in Deallocation IFullAtomNumber"
+          " in Deallocation IFullAtomicNumber"
      RETURN
   END IF
        

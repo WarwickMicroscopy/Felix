@@ -54,15 +54,21 @@ PROGRAM Felixrefine
   IMPLICIT NONE
 
   INTEGER(IKIND) :: IHours,IMinutes,ISeconds,IErr,IMilliSeconds,IIterationFLAG,&
-       ind,jnd,ICalls,IIterationCount
+       ind,jnd,knd,ICalls,IIterationCount,ICutOff,IHOLZGVecMagSize,IBSMaxLocGVecAmp,&
+	   ILaueLevel,INumTotalReflections,ITotalLaueZoneLevel,&
+	   INumInitReflections,IZerothLaueZoneLevel,INumFinalReflections
   REAL(RKIND) :: StartTime, CurrentTime, Duration, TotalDurationEstimate,&
-       RFigureOfMerit,SimplexFunction,RHOLZAcceptanceAngle
+       RFigureOfMerit,SimplexFunction,RHOLZAcceptanceAngle,RLaueZoneGz
   INTEGER(IKIND) :: IStartTime, ICurrentTime ,IRate
+  INTEGER(IKIND), DIMENSION(:),ALLOCATABLE :: IOriginGVecIdentifier
   REAL(RKIND),DIMENSION(:,:),ALLOCATABLE :: RSimplexVolume
   REAL(RKIND),DIMENSION(:),ALLOCATABLE :: RSimplexFoM,RIndependentVariableValues
-  REAL(RKIND) :: RBCASTREAL,RStandardDeviation,RMean
-  CHARACTER*40 my_rank_string ,SPrintString
-
+  REAL(RKIND), DIMENSION(:,:), ALLOCATABLE :: RgDummyVecMat,RgVecMagLaue
+  REAL(RKIND) :: RBCASTREAL,RStandardDeviation,RMean,RGzUnitVec,RMinLaueZoneValue,&
+       RMaxLaueZoneValue,RMaxAcceptanceGVecMag,RLaueZoneElectronWaveVectorMag
+  CHARACTER*40 :: my_rank_string ,SPrintString
+  CHARACTER*20 :: Sind
+  
   !-------------------------------------------------------------------
   ! constants
   CALL Init_Numbers
@@ -163,8 +169,7 @@ PROGRAM Felixrefine
 
 !zz temp deallocation to get it to work
 DEALLOCATE(RFullPartialOccupancy,SMNP,MNP,RFullAtomicFracCoordVec,SFullAtomicNameVec, &
-RFullIsotropicDebyeWallerFactor,IFullAtomNumber,IFullAnisotropicDWFTensor,&
-RDWF,ROcc,IAtoms,IAnisoDWFT,RrVecMat)
+RFullIsotropicDebyeWallerFactor,IFullAtomicNumber,IFullAnisotropicDWFTensor)
 
 !zz from diffractionpatterninitialisation/reflectiondetermination
   ind = 0!here acts as a flag
@@ -191,14 +196,174 @@ RDWF,ROcc,IAtoms,IAnisoDWFT,RrVecMat)
      END IF
   END DO
   
-  CALL SortHKL(Rhkl,SIZE(Rhkl,1),IErr)
+  CALL SortHKL(Rhkl,SIZE(Rhkl,1),IErr)!zz Rhkl is allocated in here 
   IF( IErr.NE.0 ) THEN
      PRINT*,"felixrefine(",my_rank,")error in SortHKL"
      GOTO 9999
   END IF
+  
+!allocations-----------------------------------  
+  ALLOCATE(RgVecMatT(SIZE(Rhkl,DIM=1),THREEDIM),STAT=IErr)
+  IF(IErr.NE.0) THEN
+     PRINT*,"felixrefine(",my_rank,")error allocating RgVecMatT"
+     RETURN
+  END IF
+  ALLOCATE(RgDummyVecMat(SIZE(Rhkl,DIM=1),THREEDIM),STAT=IErr)
+  IF(IErr.NE.0) THEN
+     PRINT*,"felixrefine(",my_rank,")error allocating RgDummyVecMat"
+     RETURN
+  END IF
+  ALLOCATE(RgVecMag(SIZE(Rhkl,DIM=1)),STAT=IErr)
+  IF(IErr.NE.0) THEN
+     PRINT*,"felixrefine(",my_rank,")error allocating RgVecMag"
+     RETURN
+  END IF
+  ALLOCATE(RgVecVec(SIZE(Rhkl,DIM=1)),STAT=IErr)
+  IF(IErr.NE.0) THEN
+     PRINT*,"felixrefine(",my_rank,")error allocating RgVecVec"
+     RETURN
+  END IF
+ 
+!RB what is RgVecMatT???
+  ICutOff = 1
+  DO ind=1,SIZE(Rhkl,DIM=1)
+     WRITE(Sind,'(I10.1)')ind
+     DO jnd=1,THREEDIM
+        RgVecMatT(ind,jnd)= &!RB looks like a dot product?
+             Rhkl(ind,1)*RarVecM(jnd) + &
+             Rhkl(ind,2)*RbrVecM(jnd) + &
+             Rhkl(ind,3)*RcrVecM(jnd)
+        RgDummyVecMat(ind,jnd)=RgVecMatT(ind,jnd)
+     ENDDO
+     IF((RgVecMatT(ind,3).GT.TINY.OR.RgVecMatT(ind,3).LT.-TINY).AND.ICutOff.NE.0) THEN
+        RGzUnitVec=ABS(RgVecMatT(ind,3))
+        ICutOff=0
+     END IF
+  ENDDO
+  !No higher order Laue Zones with ZOLZFlag switched on
+  IF(ICutOff.EQ.1) THEN
+     RGzUnitVec=ZERO
+  END IF
+  !sort into Laue Zones 
+  WHERE(RgDummyVecMat(:,3).GT.TINY.OR.RgDummyVecMat(:,3).LT.-TINY)
+     RgDummyVecMat(:,3)=RgDummyVecMat(:,3)/RGzUnitVec
+  END WHERE
+  !min&max Laue Zones 
+  RMaxLaueZoneValue=MAXVAL(RgDummyVecMat(:,3),DIM=1)
+  RMinLaueZoneValue=MINVAL(RgDummyVecMat(:,3),DIM=1)
+  ITotalLaueZoneLevel=NINT(RMaxLaueZoneValue+ABS(RMinLaueZoneValue)+1,IKIND)
+  
+  ALLOCATE(RgVecMagLaue(SIZE(Rhkl,DIM=1),ITotalLaueZoneLevel),STAT=IErr)
+  IF( IErr.NE.0 ) THEN
+     PRINT*,"felixrefine(",my_rank,")error allocating RgVecMagLaue"
+     RETURN
+  END IF
+  !doing what, here?
+  IF(RAcceptanceAngle.NE.ZERO.AND.IZOLZFLAG.EQ.0) THEN
+     INumtotalReflections=0
+     DO ind=1,ITotalLaueZoneLevel
+        ILaueLevel=ind-IZerothLaueZoneLevel
+        RLaueZoneGz=RGzUnitVec*ILaueLevel
+        DO jnd=1,SIZE(Rhkl,DIM=1)
+           IF(RgVecMatT(jnd,3).GE.(RLaueZoneGz-TINY).AND. &
+                RgVecMatT(jnd,3).LE.(RLaueZoneGz+TINY)) THEN
+              RgVecMagLaue(jnd,ind)=SQRT((RgVecMatT(jnd,1)**2)+(RgVecMatT(jnd,2)**2))              
+           ELSE
+              RgVecMagLaue(jnd,ind)=NEGHUGE
+           END IF
+        END DO
+        INumInitReflections=COUNT(RgVecMagLaue(:,ind).NE.NEGHUGE)
+        RLaueZoneElectronWaveVectorMag=RElectronWaveVectorMagnitude-ABS(RLaueZoneGz)           
+        RMaxAcceptanceGVecMag=(RLaueZoneElectronWaveVectorMag*TAN(RAcceptanceAngle*DEG2RADIAN))
+        WHERE(ABS(RgVecMagLaue(:,ind)).GT.RMaxAcceptanceGVecMag)
+           RgVecMagLaue(:,ind)=NEGHUGE
+        END WHERE
+        INumFinalReflections=COUNT(RgVecMagLaue(:,ind).NE.NEGHUGE)
+        INumTotalReflections=INumTotalReflections+INumInitReflections
+     END DO
+     knd=0
+     DO ind=1,SIZE(Rhkl,DIM=1)
+        IF(SUM(RgVecMagLaue(ind,:))/REAL(ITotalLaueZoneLevel,RKIND).GT.NEGHUGE) THEN
+           knd=knd+1
+        END IF
+     END DO
+     IHOLZGVecMagSize=knd
 
+     ALLOCATE(IOriginGVecIdentifier(IHOLZGVecMagSize),STAT=IErr)
+     IF( IErr.NE.0 ) THEN
+        PRINT*,"felixrefine(",my_rank,")error allocating IOriginGVecIdentifier"
+        RETURN
+     END IF
+
+     IOriginGVecIdentifier=0
+     knd=1
+     DO ind=1,SIZE(Rhkl,DIM=1)
+        IF((SUM(RgVecMagLaue(ind,:))/REAL(ITotalLaueZoneLevel,RKIND)).GT.NEGHUGE) THEN
+           IOriginGVecIdentifier(knd)=ind
+           knd=knd+1
+        END IF
+     END DO
+  END IF
+
+  DO ind=1,SIZE(Rhkl,DIM=1)
+     RgVecMag(ind)= SQRT(DOT_PRODUCT(RgVecMatT(ind,:),RgVecMatT(ind,:)))
+  ENDDO
+
+  IF(RAcceptanceAngle.NE.ZERO.AND.IZOLZFLAG.EQ.1) THEN
+     RMaxAcceptanceGVecMag=(RElectronWaveVectorMagnitude*TAN(RAcceptanceAngle*DEG2RADIAN))
+     IF(RgVecMag(IMinReflectionPool).GT.RMaxAcceptanceGVecMag) THEN
+        RBSMaxGVecAmp = RMaxAcceptanceGVecMag 
+     ELSE
+        RBSMaxGVecAmp = RgVecMag(IMinReflectionPool)
+     END IF
+
+  ELSEIF(RAcceptanceAngle.NE.ZERO.AND.IZOLZFLAG.EQ.0) THEN
+     IBSMaxLocGVecAmp=MAXVAL(IOriginGVecIdentifier)
+     RBSMaxGVecAmp=RgVecMag(IBSMaxLocGVecAmp)
+     IF(RgVecMag(IBSMaxLocGVecAmp).LT.RgVecMag(IMinreflectionPool)) THEN
+
+     ELSE
+        RBSMaxGVecAmp = RgVecMag(IMinReflectionPool)
+     END IF
+  ELSE
+     RBSMaxGVecAmp = RgVecMag(IMinReflectionPool)
+  END IF
+
+  nReflections = 0
+  nStrongBeams = 0
+  nWeakBeams = 0
+
+  DO ind=1,SIZE(Rhkl,DIM=1)
+     IF (ABS(RgVecMag(ind)).LE.RBSMaxGVecAmp) THEN
+        nReflections = nReflections + 1
+     END IF
+  ENDDO
+  
 !zz temp deallocation to get it to work
-DEALLOCATE(Rhkl)
+DEALLOCATE(Rhkl,RgDummyVecMat,RgVecMag,RgVecVec,RgVecMagLaue)
+IF (RAcceptanceAngle.NE.ZERO.AND.IZOLZFLAG.EQ.0) THEN
+  DEALLOCATE(IOriginGVecIdentifier)
+END IF
+
+  CALL StructureFactorSetup(IErr)
+  IF( IErr.NE.0 ) THEN
+     PRINT*,"felixrefine(",my_rank,")error in StructureFactorSetup"
+     GOTO 9999
+  END IF
+  PRINT*,"woo"
+DEALLOCATE(RgVecMatT,IAnisoDWFT,IAtoms,ROcc,RDWF)
+  PRINT*,"woof"
+
+  IF(IAbsorbFLAG.NE.0) THEN
+     CALL StructureFactorsWithAbsorption(IErr)
+     IF( IErr.NE.0 ) THEN
+        PRINT*,"felixrefine(",my_rank,")error in StructureFactorsWithAbsorption"
+        GOTO 9999
+     END IF
+  END IF
+
+
+DEALLOCATE(RgSumMat,CUgMat,CUgMatNoAbs,CUgMatPrime)
   
   !--------------------------------------------------------------------
   ! Setup Simplex Variables

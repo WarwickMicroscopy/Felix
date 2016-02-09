@@ -349,7 +349,7 @@ SUBROUTINE ReadCif(IErr)
      PRINT*,"ReadCif(", my_rank, ") error ", IErr, " in ALLOCATE()"
      RETURN
   END IF
-  ALLOCATE(IAtomNumber(IAtomCount),STAT=IErr)
+  ALLOCATE(IAtomicNumber(IAtomCount),STAT=IErr)
   IF( IErr.NE.0 ) THEN
      PRINT*,"ReadCif(", my_rank, ") error ", IErr, " in ALLOCATE()"
      RETURN
@@ -393,8 +393,9 @@ SUBROUTINE ReadCif(IErr)
      END IF
 
      WRITE(Sind,*) ind
-     CALL CONVERTAtomName2Number(SAtomName(ind),IAtomNumber(ind), IErr)
-     CALL Message("Read CIF",IInfo,IErr,MessageVariable = "IAtomNumber("//TRIM(ADJUSTL(Sind))//")", IVariable = IAtomNumber(ind))
+     CALL CONVERTAtomName2Number(SAtomName(ind),IAtomicNumber(ind), IErr)
+     CALL Message("Read CIF",IInfo,IErr,MessageVariable = &
+	 "IAtomicNumber("//TRIM(ADJUSTL(Sind))//")", IVariable = IAtomicNumber(ind))
 
      IF(loop_ .NEQV. .TRUE.) EXIT
      

@@ -52,7 +52,7 @@ SUBROUTINE CrystallographyInitialisation( IErr )
   IF(IDiffractionFLAG.EQ.1) THEN!RB what is this about
      DEALLOCATE(RFullAtomicFracCoordVec,SFullAtomicNameVec,&
           RFullPartialOccupancy,RFullIsotropicDebyeWallerFactor, &
-          IFullAtomNumber, IFullAnisotropicDWFTensor, &
+          IFullAtomicNumber, IFullAnisotropicDWFTensor, &
           MNP,SMNP,RDWF,ROcc,IAtoms,IAnisoDWFT,STAT=IErr)
      IF( IErr.NE.0 ) THEN
         PRINT*,"CrystallographyInitialisation(", my_rank, ") error ", IErr, &

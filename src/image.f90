@@ -53,7 +53,7 @@ SUBROUTINE ImageInitialisation( IErr )
   IMPLICIT NONE
 
   REAL(RKIND) :: DummyConvergenceAngle
-  INTEGER(IKIND) :: IErr, ind,jnd
+  INTEGER(IKIND) :: IErr,ind,jnd
 
   CALL Message("ImageInitialisation",IMust,IErr)
   

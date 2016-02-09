@@ -120,32 +120,28 @@ SUBROUTINE ReflectionDetermination( IErr )
   ALLOCATE(RgVecMatT(SIZE(Rhkl,DIM=1),THREEDIM), &
        STAT=IErr)
   IF( IErr.NE.0 ) THEN
-     PRINT*,"DiffractionPatternDefinitions(", my_rank, ") error ", IErr, &
-          " in ALLOCATE() of DYNAMIC variables RgVecMatT(HKL)"
+     PRINT*,"DiffractionPatternDefinitions(",my_rank,")error allocating RgVecMatT"
      RETURN
   END IF
 
   ALLOCATE(RgDummyVecMat(SIZE(Rhkl,DIM=1),THREEDIM), &
        STAT=IErr)
   IF( IErr.NE.0 ) THEN
-     PRINT*,"DiffractionPatternDefinitions(", my_rank, ") error ", IErr, &
-          " in ALLOCATE() of DYNAMIC variables RgDummyVecMat(HKL)"
+     PRINT*,"DiffractionPatternDefinitions(",my_rank,")error allocating RgDummyVecMat"
      RETURN
   END IF
 
   ALLOCATE(RgVecMag(SIZE(Rhkl,DIM=1)), &
        STAT=IErr)
   IF( IErr.NE.0 ) THEN
-     PRINT*,"DiffractionPatternDefinitions(", my_rank, ") error ", IErr, &
-          " in ALLOCATE() of DYNAMIC variables RgVecMag(HKL)"
+     PRINT*,"DiffractionPatternDefinitions(",my_rank,")error allocating RgVecMag"
      RETURN
   END IF
   
   ALLOCATE(RgVecVec(SIZE(Rhkl,DIM=1)), &
        STAT=IErr)
   IF( IErr.NE.0 ) THEN
-     PRINT*,"DiffractionPatternCalculation(", my_rank, ") error ", IErr, &
-          " in ALLOCATE() of DYNAMIC variables RgVecVec(HKL)"
+     PRINT*,"DiffractionPatternDefinitions(",my_rank,")error allocating RgVecVec"
      RETURN
   END IF
 
@@ -160,7 +156,7 @@ SUBROUTINE ReflectionDetermination( IErr )
   DO ind=1,SIZE(Rhkl,DIM=1)
      WRITE(Sind,'(I10.1)')ind
      DO jnd=1,THREEDIM
-        RgVecMatT(ind,jnd)= &
+        RgVecMatT(ind,jnd)= &!RB what is RgVecMatT???
              Rhkl(ind,1)*RarVecM(jnd) + &
              Rhkl(ind,2)*RbrVecM(jnd) + &
              Rhkl(ind,3)*RcrVecM(jnd)
@@ -169,7 +165,6 @@ SUBROUTINE ReflectionDetermination( IErr )
      CALL Message("ReflectionDetermination",IMoreInfo,IErr, &
           MessageVariable = "Rhkl(h,k,l)", &
           RVector = Rhkl(ind,:))
-
      IF((RgVecMatT(ind,3).GT.TINY.OR.RgVecMatT(ind,3).LT.-TINY).AND.ICutOff.NE.0) THEN
         RGzUnitVec=ABS(RgVecMatT(ind,3))
         ICutOff=0
@@ -181,8 +176,7 @@ SUBROUTINE ReflectionDetermination( IErr )
      RGzUnitVec=ZERO
   END IF
   CALL Message("ReflectionDetermination", IMoreInfo,IErr, &
-       MessageVariable="RGzUnitVec", &
-       RVariable=RGzUnitVec)
+       MessageVariable="RGzUnitVec", RVariable=RGzUnitVec)
 
 !!$  Divide the non-zero Gz positions in the matrix by the mimimum Gz distance
 !!$  This quantises the dummy matrix identifying the various Laue Zones
@@ -226,11 +220,9 @@ SUBROUTINE ReflectionDetermination( IErr )
 !!$     HOLZ Acceptance Angle
 !!$     Allocate enough space to determine Acceptance angle (in reciprocal Angstroms) 
 !!$     For each Laue Zone
-  ALLOCATE(RgVecMagLaue(SIZE(Rhkl,DIM=1),ITotalLaueZoneLevel), &
-       STAT=IErr)
+  ALLOCATE(RgVecMagLaue(SIZE(Rhkl,DIM=1),ITotalLaueZoneLevel),STAT=IErr)
   IF( IErr.NE.0 ) THEN
-     PRINT*,"DiffractionPatternDefinitions(", my_rank, ") error ", IErr, &
-          " in ALLOCATE() of DYNAMIC variables RgVecMagLaueZone(HKL)"
+     PRINT*,"DiffractionPatternDefinitions(",my_rank,")error allocating RgVecMagLaue"
      RETURN
   END IF
 
@@ -336,11 +328,9 @@ SUBROUTINE ReflectionDetermination( IErr )
 
      IHOLZGVecMagSize=ICounter
 
-     ALLOCATE(IOriginGVecIdentifier(IHOLZGVecMagSize), &
-          STAT=IErr)
+     ALLOCATE(IOriginGVecIdentifier(IHOLZGVecMagSize),STAT=IErr)
      IF( IErr.NE.0 ) THEN
-        PRINT*,"DiffractionPatternDefinitions(", my_rank, ") error ", IErr, &
-             " in ALLOCATE() of DYNAMIC variables RgVecMag(HKL)"
+        PRINT*,"DiffractionPatternDefinitions(",my_rank,")error allocating IOriginGVecIdentifier"
         RETURN
      END IF
 
@@ -452,8 +442,7 @@ SUBROUTINE ReflectionDetermination( IErr )
 !RB Deallocate local variables	   
   DEALLOCATE(RgDummyVecMat,STAT=IErr)
   IF( IErr.NE.0 ) THEN
-     PRINT*,"ReflectionDetermination(", my_rank, ") error ", IErr, &
-          " in Deallocation RgDummyVecMatT"
+     PRINT*,"ReflectionDetermination(",my_rank,") error deallocating RgDummyVecMat"
      RETURN
   ENDIF
 END SUBROUTINE ReflectionDetermination
@@ -548,10 +537,8 @@ SUBROUTINE DiffractionPatternCalculation (IErr)
   
   IMPLICIT NONE
   
-  INTEGER(IKIND) :: &
-       ind,IErr
-  CHARACTER*20 :: &
-       Sind
+  INTEGER(IKIND) :: ind,IErr
+  CHARACTER*20 :: Sind
   
   CALL Message("DiffractionPatternCalculation",IMust,IErr)
   
@@ -613,7 +600,8 @@ SUBROUTINE NewHKLMake(Ihklmax,Rhkl0Vec,RHOLZAcceptanceAngle,IErr)
   INhkl = 0
   
   Rhkl0UnitVec= Rhkl0Vec/SQRT(DOT_PRODUCT(REAL(Rhkl0Vec,RKIND),REAL(Rhkl0Vec,RKIND)))
-  
+
+!RB first count the number of reflections in the acceptance angle
   DO ind=-Ihklmax,Ihklmax,1
      DO jnd=-Ihklmax,Ihklmax,1
         DO knd=-Ihklmax,Ihklmax,1
@@ -739,13 +727,15 @@ SUBROUTINE NewHKLMake(Ihklmax,Rhkl0Vec,RHOLZAcceptanceAngle,IErr)
         END DO
      END DO
   END DO
-  
+
+!RB now allocate the hkl list...  
   ALLOCATE(Rhkl((INhkl),THREEDIM),STAT=IErr)
   IF( IErr.NE.0 ) THEN
      PRINT*,"hklMake(",my_rank,")error allocating Rhkl"
      RETURN
   ENDIF
-  
+
+!RB ...and calculate it all again, filling Rhkl  
   INhkl = 0
 
   DO ind=-Ihklmax,Ihklmax,1

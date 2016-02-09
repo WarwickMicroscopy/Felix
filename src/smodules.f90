@@ -172,7 +172,7 @@ MODULE IPara
   INTEGER(IKIND) :: ITotalAtoms
 
   ! Name2Atom index
-  INTEGER(IKIND), DIMENSION(:), ALLOCATABLE :: IAtomNumber,IAtoms
+  INTEGER(IKIND), DIMENSION(:), ALLOCATABLE :: IAtomicNumber,IAtoms
 
   !Microscope Settings
   INTEGER(IKIND) :: IIncidentBeamDirectionX, IIncidentBeamDirectionY, &
@@ -204,7 +204,7 @@ MODULE IPara
 
   !inpcif
   INTEGER(IKIND) :: ISymCount
-  INTEGER(IKIND), DIMENSION(:), ALLOCATABLE :: IFullAtomNumber, IFullAnisotropicDWFTensor
+  INTEGER(IKIND), DIMENSION(:), ALLOCATABLE :: IFullAtomicNumber, IFullAnisotropicDWFTensor
   INTEGER(IKIND) :: IPixelCountTotal
 
   !LACBED Writing

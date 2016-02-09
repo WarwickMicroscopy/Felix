@@ -57,8 +57,7 @@ SUBROUTINE ImageSetup (IErr)
 
   CALL ImageInitialisation( IErr )
   IF( IErr.NE.0 ) THEN
-     PRINT*,"ImageSetup(", my_rank, ") error", IErr, &
-	  "in ImageInitialistion()"
+     PRINT*,"ImageSetup(",my_rank,")error in ImageInitialistion"
      RETURN
   END IF
   
@@ -66,11 +65,9 @@ SUBROUTINE ImageSetup (IErr)
   ! define image masks
   !--------------------------------------------------------------------
       
-  ALLOCATE(RMask(2*IPixelCount,2*IPixelCount),&
-       STAT=IErr)
+  ALLOCATE(RMask(2*IPixelCount,2*IPixelCount),STAT=IErr)
   IF( IErr.NE.0 ) THEN
-     PRINT*,"ImageSetup(", my_rank, ") error ", IErr, &
-          " in ALLOCATE() of DYNAMIC variable RMask"
+     PRINT*,"ImageSetup(",my_rank,")error in allocating RMask"
      RETURN
   END IF
 
@@ -78,8 +75,7 @@ SUBROUTINE ImageSetup (IErr)
 
   CALL ImageMaskInitialisation(IErr)
   IF( IErr.NE.0 ) THEN
-     PRINT*,"ImageSetup(", my_rank, ") error ", IErr, &
-          " in ImageMaskInitialisation"
+     PRINT*,"ImageSetup(",my_rank,")error in ImageMaskInitialisation"
      RETURN
   END IF
 
