@@ -54,7 +54,7 @@ PROGRAM Felixrefine
   IMPLICIT NONE
 
   INTEGER(IKIND) :: IHours,IMinutes,ISeconds,IErr,IMilliSeconds,IIterationFLAG,&
-       ind,jnd,knd,ICalls,IIterationCount,ICutOff,IHOLZGVecMagSize,IBSMaxLocGVecAmp,&
+       ind,jnd,knd,ICalls,IIterationCount,ICutOff,IHOLZgPoolMag,IBSMaxLocGVecAmp,&
 	   ILaueLevel,INumTotalReflections,ITotalLaueZoneLevel,&
 	   INumInitReflections,IZerothLaueZoneLevel,INumFinalReflections
   REAL(RKIND) :: StartTime, CurrentTime, Duration, TotalDurationEstimate,&
@@ -63,7 +63,7 @@ PROGRAM Felixrefine
   INTEGER(IKIND), DIMENSION(:),ALLOCATABLE :: IOriginGVecIdentifier
   REAL(RKIND),DIMENSION(:,:),ALLOCATABLE :: RSimplexVolume
   REAL(RKIND),DIMENSION(:),ALLOCATABLE :: RSimplexFoM,RIndependentVariableValues
-  REAL(RKIND), DIMENSION(:,:), ALLOCATABLE :: RgDummyVecMat,RgVecMagLaue
+  REAL(RKIND), DIMENSION(:,:), ALLOCATABLE :: RgDummyVecMat,RgPoolMagLaue
   REAL(RKIND) :: RBCASTREAL,RStandardDeviation,RMean,RGzUnitVec,RMinLaueZoneValue,&
        RMaxLaueZoneValue,RMaxAcceptanceGVecMag,RLaueZoneElectronWaveVectorMag
   CHARACTER*40 :: my_rank_string ,SPrintString
@@ -178,15 +178,16 @@ RFullIsotropicDebyeWallerFactor,IFullAtomicNumber,IFullAnisotropicDWFTensor)
   RHOLZAcceptanceAngle=TWODEG2RADIAN!RB maximum acceptance angle for HOLZ, suspect way too low
   DO WHILE (ind.EQ.0)
      jnd = jnd+1     
-     CALL NewHKLMake(IhklMaxValue,RZDirC,RHOLZAcceptanceAngle,IErr)
-     IF( IErr.NE.0 ) THEN
+     CALL NewHKLMake(IhklMaxValue,RZDirC,RHOLZAcceptanceAngle,IErr)!zz Rhkl is allocated in here
+      IF( IErr.NE.0 ) THEN
         PRINT*,"felixrefine(",my_rank,")error in NewHKLMake()"
         GOTO 9999
      END IF
-     IF(SIZE(Rhkl,DIM=1).LT.IMinReflectionPool) THEN
+     IF(SIZE(Rhkl,DIM=1).LT.IMinReflectionPool) THEN!double the reflection pool
         IhklMaxValue = IhklMaxValue*2
-        DEALLOCATE(Rhkl,STAT=ierr)!zz not happy about conditional deallocation with no corresponding allocation
-        IF( IErr.NE.0 ) THEN
+        DEALLOCATE(Rhkl,STAT=ierr)
+        CALL NewHKLMake(IhklMaxValue,RZDirC,RHOLZAcceptanceAngle,IErr)
+		IF( IErr.NE.0 ) THEN
            PRINT*,"felixrefine(",my_rank,")error deallocating Rhkl"
            GOTO 9999
         END IF
@@ -196,37 +197,38 @@ RFullIsotropicDebyeWallerFactor,IFullAtomicNumber,IFullAnisotropicDWFTensor)
      END IF
   END DO
   
-  CALL SortHKL(Rhkl,SIZE(Rhkl,1),IErr)!zz Rhkl is allocated in here 
+  CALL SortHKL(Rhkl,SIZE(Rhkl,1),IErr) 
   IF( IErr.NE.0 ) THEN
      PRINT*,"felixrefine(",my_rank,")error in SortHKL"
      GOTO 9999
   END IF
   
 !allocations-----------------------------------  
-  ALLOCATE(RgVecMatT(SIZE(Rhkl,DIM=1),THREEDIM),STAT=IErr)
+  ALLOCATE(RgPoolT(SIZE(Rhkl,DIM=1),THREEDIM),STAT=IErr)
   IF(IErr.NE.0) THEN
-     PRINT*,"felixrefine(",my_rank,")error allocating RgVecMatT"
-     RETURN
+     PRINT*,"felixrefine(",my_rank,")error allocating RgPoolT"
+     GOTO 9999
   END IF
   ALLOCATE(RgDummyVecMat(SIZE(Rhkl,DIM=1),THREEDIM),STAT=IErr)
   IF(IErr.NE.0) THEN
      PRINT*,"felixrefine(",my_rank,")error allocating RgDummyVecMat"
-     RETURN
+     GOTO 9999
   END IF
  
-!RB what is RgVecMatT???
+!Calculate the g vector RgPoolT in reciprocal angstrom units (in the microscope reference frame?)
   ICutOff = 1
   DO ind=1,SIZE(Rhkl,DIM=1)
      WRITE(Sind,'(I10.1)')ind
      DO jnd=1,THREEDIM
-        RgVecMatT(ind,jnd)= &!RB looks like a dot product?
+        RgPoolT(ind,jnd)= &
              Rhkl(ind,1)*RarVecM(jnd) + &
              Rhkl(ind,2)*RbrVecM(jnd) + &
              Rhkl(ind,3)*RcrVecM(jnd)
-        RgDummyVecMat(ind,jnd)=RgVecMatT(ind,jnd)
+        RgDummyVecMat(ind,jnd)=RgPoolT(ind,jnd)
      ENDDO
-     IF((RgVecMatT(ind,3).GT.TINY.OR.RgVecMatT(ind,3).LT.-TINY).AND.ICutOff.NE.0) THEN
-        RGzUnitVec=ABS(RgVecMatT(ind,3))
+	 !If a g-vector has a non-zero z-component it is not in the ZOLZ
+     IF((RgPoolT(ind,3).GT.TINY.OR.RgPoolT(ind,3).LT.-TINY).AND.ICutOff.NE.0) THEN
+        RGzUnitVec=ABS(RgPoolT(ind,3))
         ICutOff=0
      END IF
   ENDDO
@@ -234,108 +236,110 @@ RFullIsotropicDebyeWallerFactor,IFullAtomicNumber,IFullAnisotropicDWFTensor)
   IF(ICutOff.EQ.1) THEN
      RGzUnitVec=ZERO
   END IF
+  
   !sort into Laue Zones 
   WHERE(RgDummyVecMat(:,3).GT.TINY.OR.RgDummyVecMat(:,3).LT.-TINY)
-     RgDummyVecMat(:,3)=RgDummyVecMat(:,3)/RGzUnitVec
+     RgDummyVecMat(:,3)=RgDummyVecMat(:,3)/RGzUnitVec!possible divide by zero from line 237?
   END WHERE
   !min&max Laue Zones 
   RMaxLaueZoneValue=MAXVAL(RgDummyVecMat(:,3),DIM=1)
   RMinLaueZoneValue=MINVAL(RgDummyVecMat(:,3),DIM=1)
   ITotalLaueZoneLevel=NINT(RMaxLaueZoneValue+ABS(RMinLaueZoneValue)+1,IKIND)
-  
-  ALLOCATE(RgVecMagLaue(SIZE(Rhkl,DIM=1),ITotalLaueZoneLevel),STAT=IErr)
+  !doing what, here? More sorting inlo Laue zones? 
+  !zz temp deallocation to get it to work
+  DEALLOCATE(RgDummyVecMat)
+  ALLOCATE(RgPoolMagLaue(SIZE(Rhkl,DIM=1),ITotalLaueZoneLevel),STAT=IErr)
   IF( IErr.NE.0 ) THEN
-     PRINT*,"felixrefine(",my_rank,")error allocating RgVecMagLaue"
-     RETURN
+     PRINT*,"felixrefine(",my_rank,")error allocating RgPoolMagLaue"
+     GOTO 9999
   END IF
-  !doing what, here?
   IF(RAcceptanceAngle.NE.ZERO.AND.IZOLZFLAG.EQ.0) THEN
      INumtotalReflections=0
      DO ind=1,ITotalLaueZoneLevel
         ILaueLevel=ind-IZerothLaueZoneLevel
         RLaueZoneGz=RGzUnitVec*ILaueLevel
         DO jnd=1,SIZE(Rhkl,DIM=1)
-           IF(RgVecMatT(jnd,3).GE.(RLaueZoneGz-TINY).AND. &
-                RgVecMatT(jnd,3).LE.(RLaueZoneGz+TINY)) THEN
-              RgVecMagLaue(jnd,ind)=SQRT((RgVecMatT(jnd,1)**2)+(RgVecMatT(jnd,2)**2))              
+           IF(RgPoolT(jnd,3).GE.(RLaueZoneGz-TINY).AND. &
+                RgPoolT(jnd,3).LE.(RLaueZoneGz+TINY)) THEN
+              RgPoolMagLaue(jnd,ind)=SQRT((RgPoolT(jnd,1)**2)+(RgPoolT(jnd,2)**2))              
            ELSE
-              RgVecMagLaue(jnd,ind)=NEGHUGE
+              RgPoolMagLaue(jnd,ind)=NEGHUGE
            END IF
         END DO
-        INumInitReflections=COUNT(RgVecMagLaue(:,ind).NE.NEGHUGE)
+        INumInitReflections=COUNT(RgPoolMagLaue(:,ind).NE.NEGHUGE)
         RLaueZoneElectronWaveVectorMag=RElectronWaveVectorMagnitude-ABS(RLaueZoneGz)           
         RMaxAcceptanceGVecMag=(RLaueZoneElectronWaveVectorMag*TAN(RAcceptanceAngle*DEG2RADIAN))
-        WHERE(ABS(RgVecMagLaue(:,ind)).GT.RMaxAcceptanceGVecMag)
-           RgVecMagLaue(:,ind)=NEGHUGE
+        WHERE(ABS(RgPoolMagLaue(:,ind)).GT.RMaxAcceptanceGVecMag)
+           RgPoolMagLaue(:,ind)=NEGHUGE
         END WHERE
-        INumFinalReflections=COUNT(RgVecMagLaue(:,ind).NE.NEGHUGE)
+        INumFinalReflections=COUNT(RgPoolMagLaue(:,ind).NE.NEGHUGE)
         INumTotalReflections=INumTotalReflections+INumInitReflections
      END DO
      knd=0
      DO ind=1,SIZE(Rhkl,DIM=1)
-        IF(SUM(RgVecMagLaue(ind,:))/REAL(ITotalLaueZoneLevel,RKIND).GT.NEGHUGE) THEN
+        IF(SUM(RgPoolMagLaue(ind,:))/REAL(ITotalLaueZoneLevel,RKIND).GT.NEGHUGE) THEN
            knd=knd+1
         END IF
      END DO
-     IHOLZGVecMagSize=knd
+     IHOLZgPoolMag=knd
 
-     ALLOCATE(IOriginGVecIdentifier(IHOLZGVecMagSize),STAT=IErr)
+     ALLOCATE(IOriginGVecIdentifier(IHOLZgPoolMag),STAT=IErr)
      IF( IErr.NE.0 ) THEN
         PRINT*,"felixrefine(",my_rank,")error allocating IOriginGVecIdentifier"
-        RETURN
+        GOTO 9999
      END IF
 
      IOriginGVecIdentifier=0
      knd=1
      DO ind=1,SIZE(Rhkl,DIM=1)
-        IF((SUM(RgVecMagLaue(ind,:))/REAL(ITotalLaueZoneLevel,RKIND)).GT.NEGHUGE) THEN
+        IF((SUM(RgPoolMagLaue(ind,:))/REAL(ITotalLaueZoneLevel,RKIND)).GT.NEGHUGE) THEN
            IOriginGVecIdentifier(knd)=ind
            knd=knd+1
         END IF
      END DO
   END IF
 
-  ALLOCATE(RgVecMag(SIZE(Rhkl,DIM=1)),STAT=IErr)
+  !calculate g vector magnitudes for the reflection pool RgPoolMag in reciprocal Angstrom units
+  ALLOCATE(RgPoolMag(SIZE(Rhkl,DIM=1)),STAT=IErr)
   IF(IErr.NE.0) THEN
-     PRINT*,"felixrefine(",my_rank,")error allocating RgVecMag"
-     RETURN
+     PRINT*,"felixrefine(",my_rank,")error allocating RgPoolMag"
+     GOTO 9999
   END IF
   DO ind=1,SIZE(Rhkl,DIM=1)
-     RgVecMag(ind)= SQRT(DOT_PRODUCT(RgVecMatT(ind,:),RgVecMatT(ind,:)))
+     RgPoolMag(ind)= SQRT(DOT_PRODUCT(RgPoolT(ind,:),RgPoolT(ind,:)))
   ENDDO
 
   IF(RAcceptanceAngle.NE.ZERO.AND.IZOLZFLAG.EQ.1) THEN
      RMaxAcceptanceGVecMag=(RElectronWaveVectorMagnitude*TAN(RAcceptanceAngle*DEG2RADIAN))
-     IF(RgVecMag(IMinReflectionPool).GT.RMaxAcceptanceGVecMag) THEN
+     IF(RgPoolMag(IMinReflectionPool).GT.RMaxAcceptanceGVecMag) THEN
         RBSMaxGVecAmp = RMaxAcceptanceGVecMag 
      ELSE
-        RBSMaxGVecAmp = RgVecMag(IMinReflectionPool)
+        RBSMaxGVecAmp = RgPoolMag(IMinReflectionPool)
      END IF
 
   ELSEIF(RAcceptanceAngle.NE.ZERO.AND.IZOLZFLAG.EQ.0) THEN
      IBSMaxLocGVecAmp=MAXVAL(IOriginGVecIdentifier)
-     RBSMaxGVecAmp=RgVecMag(IBSMaxLocGVecAmp)
-     IF(RgVecMag(IBSMaxLocGVecAmp).LT.RgVecMag(IMinreflectionPool)) THEN
+     RBSMaxGVecAmp=RgPoolMag(IBSMaxLocGVecAmp)
+     IF(RgPoolMag(IBSMaxLocGVecAmp).LT.RgPoolMag(IMinreflectionPool)) THEN
 
      ELSE
-        RBSMaxGVecAmp = RgVecMag(IMinReflectionPool)
+        RBSMaxGVecAmp = RgPoolMag(IMinReflectionPool)
      END IF
   ELSE
-     RBSMaxGVecAmp = RgVecMag(IMinReflectionPool)
+     RBSMaxGVecAmp = RgPoolMag(IMinReflectionPool)
   END IF
-
+  !count reflections up to cutoff magnitude
   nReflections = 0
   nStrongBeams = 0
   nWeakBeams = 0
-
   DO ind=1,SIZE(Rhkl,DIM=1)
-     IF (ABS(RgVecMag(ind)).LE.RBSMaxGVecAmp) THEN
+     IF (ABS(RgPoolMag(ind)).LE.RBSMaxGVecAmp) THEN
         nReflections = nReflections + 1
      END IF
   ENDDO
   
 !zz temp deallocation to get it to work
-DEALLOCATE(Rhkl,RgDummyVecMat,RgVecMag,RgVecMagLaue)
+DEALLOCATE(Rhkl,RgPoolMag,RgPoolMagLaue)
 IF (RAcceptanceAngle.NE.ZERO.AND.IZOLZFLAG.EQ.0) THEN
   DEALLOCATE(IOriginGVecIdentifier)
 END IF
@@ -345,8 +349,9 @@ END IF
      PRINT*,"felixrefine(",my_rank,")error in StructureFactorSetup"
      GOTO 9999
   END IF
-
-DEALLOCATE(RgVecMatT,IAnisoDWFT,IAtoms,ROcc,RDWF)
+  
+!zz temp deallocation to get it to work
+DEALLOCATE(RgPoolT,IAnisoDWFT,IAtoms,ROcc,RDWF)
 
 
   IF(IAbsorbFLAG.NE.0) THEN
@@ -357,7 +362,7 @@ DEALLOCATE(RgVecMatT,IAnisoDWFT,IAtoms,ROcc,RDWF)
      END IF
   END IF
 
-
+!zz temp deallocation to get it to work
 DEALLOCATE(RgSumMat,CUgMat,CUgMatNoAbs,CUgMatPrime)
   
   !--------------------------------------------------------------------
@@ -432,9 +437,9 @@ DEALLOCATE(RgSumMat,CUgMat,CUgMatNoAbs,CUgMatPrime)
         END DO
      END IF
   END DO 
-  DO ind=1,IIndependentVariables!RB debug
-    PRINT*, IIterativeVariableUniqueIDs(ind,:)
-  END DO
+!  DO ind=1,IIndependentVariables!RB debug
+!    PRINT*,"zz" IIterativeVariableUniqueIDs(ind,:)
+!  END DO
     
   !--------------------------------------------------------------------
   ! Initialise Simplex
@@ -729,9 +734,9 @@ SUBROUTINE StructureFactorRefinementSetup(RIndependentVariableValues,IIterationC
   IF(IRefineModeSelectionArray(1).EQ.1) THEN
      DO ind = 1,INoofUgs !RB ignore the first one as it is the internal potential
         RIndependentVariableValues((ind-1)*2+1) = &!yy
-             REAL(CSymmetryStrengthKey(ind+1),RKIND)!yy ind+1 instead of ind
+             REAL(CUgToRefine(ind+1),RKIND)!yy ind+1 instead of ind
         RIndependentVariableValues((ind-1)*2+2) = &
-             AIMAG(CSymmetryStrengthKey(ind+1))!yy ind+1 instead of ind
+             AIMAG(CUgToRefine(ind+1))!yy ind+1 instead of ind
      END DO
   END IF
   RIndependentVariableValues(2*INoofUgs+1) = RAbsorptionPercentage!RB absorption always included in structure factor refinement as last variable
@@ -783,14 +788,14 @@ SUBROUTINE RankSymmetryRelatedStructureFactor(IErr)
      RETURN
   ENDIF
   
-  DO ind = 1,(SIZE(ISymmetryStrengthKey))
+  DO ind = 1,(SIZE(IEquivalentUgKey))
      ILoc = MINLOC(ABS(ISymmetryRelations-ind))
-     ISymmetryStrengthKey(ind) = ind
-     CSymmetryStrengthKey(ind) = CUgMatNoAbs(ILoc(1),ILoc(2))
-!RB     PRINT*,"CSymmetryStrengthKey",ind,ISymmetryStrengthKey(ind),CSymmetryStrengthKey(ind)
+     IEquivalentUgKey(ind) = ind
+     CUgToRefine(ind) = CUgMatNoAbs(ILoc(1),ILoc(2))
+!RB     PRINT*,"CUgToRefine",ind,IEquivalentUgKey(ind),CUgToRefine(ind)
   END DO
   
-  CALL ReSortUgs(ISymmetryStrengthKey,CSymmetryStrengthKey,SIZE(CSymmetryStrengthKey,DIM=1))
+  CALL ReSortUgs(IEquivalentUgKey,CUgToRefine,SIZE(CUgToRefine,DIM=1))
 
 END SUBROUTINE RankSymmetryRelatedStructureFactor
 
@@ -853,7 +858,7 @@ SUBROUTINE SimplexInitialisation(RSimplexVolume,RSimplexFoM,RIndependentVariable
   ELSE
      DEALLOCATE(Rhkl,STAT=IErr)  
      IF( IErr.NE.0 ) THEN
-        PRINT*,"SimplexInitialisation (", my_rank, ") error in Deallocation()"
+        PRINT*,"SimplexInitialisation(",my_rank,") error deallocating Rhkl"
         RETURN
      ENDIF
   END IF
@@ -882,26 +887,24 @@ SUBROUTINE SimplexInitialisation(RSimplexVolume,RSimplexFoM,RIndependentVariable
 !RB     PRINT*,"Deallocating CUgMat,CUgMatNoAbs,CUgMatPrime in felixrefine" NB Also deallocated in felixfunction!!!
   DEALLOCATE(RgSumMat,STAT=IErr)
   IF( IErr.NE.0 ) THEN
-     PRINT*,"felixsim(", my_rank, ") error ", IErr, &
-          " in Deallocation of RgSumMat"
+     PRINT*,"SimplexInitialisation(",my_rank,") error deallocating RgSumMat"
      RETURN
   ENDIF
-
   DEALLOCATE(CUgMatNoAbs,STAT=IErr)  
   IF( IErr.NE.0 ) THEN
-     PRINT*,"SimplexInitialisation (", my_rank, ") error in Deallocation()"
+     PRINT*,"SimplexInitialisation(",my_rank,") error deallocating CUgMatNoAbs"
      RETURN
   ENDIF
 
   DEALLOCATE(CUgMatPrime,STAT=IErr)  
   IF( IErr.NE.0 ) THEN
-     PRINT*,"SimplexInitialisation (", my_rank, ") error in Deallocation()"
+     PRINT*,"SimplexInitialisation(",my_rank,") error deallocating CUgMatPrime"
      RETURN
   ENDIF
  
   DEALLOCATE(CUgMat,STAT=IErr)  
   IF( IErr.NE.0 ) THEN
-     PRINT*,"SimplexInitialisation (", my_rank, ") error in Deallocation()"
+     PRINT*,"SimplexInitialisation(",my_rank,") error deallocating CUgMat"
      RETURN
   ENDIF
 
@@ -1279,11 +1282,11 @@ SUBROUTINE ApplyNewStructureFactors(IErr)
 
 !!$  Populate Ug Matrix with new iterative elements, maintain Hermiticity
   DO ind = 1,INoofUgs
-     WHERE(ISymmetryRelations.EQ.ISymmetryStrengthKey(ind))
-        CUgMatDummy = CSymmetryStrengthKey(ind)
+     WHERE(ISymmetryRelations.EQ.IEquivalentUgKey(ind))
+        CUgMatDummy = CUgToRefine(ind)
      END WHERE
-     WHERE(ISymmetryRelations.EQ.-ISymmetryStrengthKey(ind))!RB 
-        CUgMatDummy = CONJG(CSymmetryStrengthKey(ind))
+     WHERE(ISymmetryRelations.EQ.-IEquivalentUgKey(ind))!RB 
+        CUgMatDummy = CONJG(CUgToRefine(ind))
      END WHERE
   END DO
 

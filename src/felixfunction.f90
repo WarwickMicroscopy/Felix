@@ -508,24 +508,24 @@ SUBROUTINE FelixFunction(LInitialSimulationFLAG,IErr)
      RETURN
   END IF
        
-  DEALLOCATE(RgVecMatT,STAT=IErr)
+  DEALLOCATE(RgPoolT,STAT=IErr)
   IF( IErr.NE.0 ) THEN
      PRINT*,"Felixfunction(", my_rank, ") error ", IErr, &
-          " in Deallocation RgVecMatT"
+          " in Deallocation RgPoolT"
      RETURN
   END IF
        
-  DEALLOCATE(RgVecMag,STAT=IErr)
+  DEALLOCATE(RgPoolMag,STAT=IErr)
   IF( IErr.NE.0 ) THEN
      PRINT*,"Felixfunction(", my_rank, ") error ", IErr, &
-          " in Deallocation RgVecMag"
+          " in Deallocation RgPoolMag"
      RETURN
   END IF
        
   DEALLOCATE(RgVecVec,STAT=IErr)
   IF( IErr.NE.0 ) THEN
      PRINT*,"Felixfunction(", my_rank, ") error ", IErr, &
-          " in Deallocation RgVecMag"
+          " in Deallocation RgPoolMag"
      RETURN
   END IF
 !XX
@@ -979,11 +979,11 @@ SUBROUTINE PrintVariables(IErr)
 !           PRINT*,"Current Absorption",RAbsorptionPercentage
            PRINT*,"Current Structure Factors"!RB should also put in hkl here
            DO jnd = 2,INoofUgs+1!yy since no.1 is 000
-   !           RUgAmplitude=( REAL(CSymmetryStrengthKey(jnd))**2 + AIMAG(CSymmetryStrengthKey(jnd))**2 )**0.5!RB
-   !           RUgPhase=ATAN2(AIMAG(CSymmetryStrengthKey(jnd)),REAL(CSymmetryStrengthKey(jnd)))*180/PI!RB
-              WRITE(SPrintString,FMT='(2(1X,F9.4))') REAL(CSymmetryStrengthKey(jnd)),AIMAG(CSymmetryStrengthKey(jnd))
+   !           RUgAmplitude=( REAL(CUgToRefine(jnd))**2 + AIMAG(CUgToRefine(jnd))**2 )**0.5!RB
+   !           RUgPhase=ATAN2(AIMAG(CUgToRefine(jnd)),REAL(CUgToRefine(jnd)))*180/PI!RB
+              WRITE(SPrintString,FMT='(2(1X,F9.4))') REAL(CUgToRefine(jnd)),AIMAG(CUgToRefine(jnd))
               PRINT*,TRIM(ADJUSTL(SPrintString))
-!XX              PRINT*,CSymmetryStrengthKey(jnd)!,": Amplitude ",RUgAmplitude,", phase ",RUgPhase
+!XX              PRINT*,CUgToRefine(jnd)!,": Amplitude ",RUgAmplitude,", phase ",RUgPhase
            END DO           
         CASE(2)
            PRINT*,"Current Atomic Coordinates"
@@ -1063,7 +1063,7 @@ SUBROUTINE UpdateStructureFactors(RIndependentVariableValues,IErr)
 
   IF(IRefineModeSelectionArray(1).EQ.1) THEN
      DO ind = 1,INoofUgs
-        CSymmetryStrengthKey(ind+1) = &!yy ind+1 instead of ind
+        CUgToRefine(ind+1) = &!yy ind+1 instead of ind
              CMPLX(RIndependentVariableValues((ind-1)*2+1),RIndependentVariableValues((ind-1)*2+2),CKIND)
      END DO
 	 RAbsorptionPercentage = RIndependentVariableValues(2*INoofUgs+1)!RB
@@ -1143,16 +1143,16 @@ SUBROUTINE InitialiseWeightingCoefficients(IErr)
   CASE(0)
      RWeightingCoefficients = ONE
   CASE(1)
-     RWeightingCoefficientsDummy = RgVecMag(IOutputReflections)/MAXVAL(RgVecMag(IOutputReflections))
+     RWeightingCoefficientsDummy = RgPoolMag(IOutputReflections)/MAXVAL(RgPoolMag(IOutputReflections))
      IF(SIZE(RWeightingCoefficients).GT.1) THEN
         RWeightingCoefficientsDummy(1) = RWeightingCoefficients(2)/TWO 
      END IF
      DO ind = 1,INoOfLacbedPatterns
         RWeightingCoefficients(ind) = RWeightingCoefficientsDummy(INoOfLacbedPatterns-(ind-1))
      END DO
-!!$     RWeightingCoefficients = 1/RgVecMag(IOutputReflections)
+!!$     RWeightingCoefficients = 1/RgPoolMag(IOutputReflections)
   CASE(2)
-     RWeightingCoefficients = RgVecMag(IOutputReflections)/MAXVAL(RgVecMag(IOutputReflections))
+     RWeightingCoefficients = RgPoolMag(IOutputReflections)/MAXVAL(RgPoolMag(IOutputReflections))
      IF(SIZE(RWeightingCoefficients).GT.1) THEN
         RWeightingCoefficients(1) = RWeightingCoefficients(2)/TWO 
      END IF

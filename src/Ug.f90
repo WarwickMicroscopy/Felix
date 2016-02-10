@@ -56,10 +56,10 @@ SUBROUTINE GMatrixInitialisation (IErr)
   INTEGER(IKIND) :: ind,jnd,IErr
 
   CALL Message("GMatrixInitialisation",IMust,IErr)
-!Ug RgVecMat is a list of g-vectors in the microscope ref frame, units of 1/A, multiplied by 2 pi
+!Ug RgPool is a list of g-vectors in the microscope ref frame, units of 1/A, multiplied by 2 pi
   DO ind=1,nReflections
      DO jnd=1,nReflections
-        RgMatMat(ind,jnd,:)= RgVecMatT(ind,:)-RgVecMatT(jnd,:)
+        RgMatMat(ind,jnd,:)= RgPoolT(ind,:)-RgPoolT(jnd,:)
         RgMatMag(ind,jnd)= SQRT(DOT_PRODUCT(RgMatMat(ind,jnd,:),RgMatMat(ind,jnd,:)))
      ENDDO
   ENDDO
@@ -130,17 +130,17 @@ SUBROUTINE SymmetryRelatedStructureFactorDetermination (IErr)
 !     PRINT*,"Unique Ugs = ",Iuid
   END IF
  
-  ALLOCATE(ISymmetryStrengthKey(Iuid),STAT=IErr)
+  ALLOCATE(IEquivalentUgKey(Iuid),STAT=IErr)
   IF( IErr.NE.0 ) THEN
      PRINT*,"SymmetryRelatedStructureFactorDetermination(", my_rank, ") error ", IErr, &
-          " in ALLOCATE() ISymmetryStrengthKey"
+          " in ALLOCATE() IEquivalentUgKey"
      RETURN
   END IF
  
-  ALLOCATE(CSymmetryStrengthKey(Iuid),&
+  ALLOCATE(CUgToRefine(Iuid),&
        STAT=IErr)
   IF( IErr.NE.0 ) THEN
-     PRINT*,"SymmetryRelatedStructureFactorDetermination(", my_rank, ") error ", IErr, " in ALLOCATE() CSymmetryStrengthKey"
+     PRINT*,"SymmetryRelatedStructureFactorDetermination(", my_rank, ") error ", IErr, " in ALLOCATE() CUgToRefine"
      RETURN
   END IF
   

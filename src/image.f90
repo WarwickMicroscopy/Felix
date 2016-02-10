@@ -65,8 +65,8 @@ SUBROUTINE ImageInitialisation( IErr )
 
   ! positions of the centres of the disks
   DO ind=1,nReflections
-     RhklPositions(ind,1) = RgVecMatT(ind,1)/RMinimumGMag
-     RhklPositions(ind,2) = RgVecMatT(ind,2)/RMinimumGMag
+     RhklPositions(ind,1) = RgPoolT(ind,1)/RMinimumGMag
+     RhklPositions(ind,2) = RgPoolT(ind,2)/RMinimumGMag
   ENDDO
   
   ! size of final image

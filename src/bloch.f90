@@ -598,11 +598,11 @@ SUBROUTINE DeviationParameterCalculation(IErr)
   DO knd=1,nReflections
      ! DevPara is devitaion parameter, also known as Sg 
      RDevPara(knd)= &
-          -( RBigK + DOT_PRODUCT(RgVecMatT(knd,:),RTiltedK(:)) /RBigK) + &
+          -( RBigK + DOT_PRODUCT(RgPoolT(knd,:),RTiltedK(:)) /RBigK) + &
           SQRT( &
-          ( RBigK**2 + DOT_PRODUCT(RgVecMatT(knd,:),RTiltedK(:)) )**2 /RBigK**2 - &
-          (RgVecMag(knd)**2 + &
-          TWO* DOT_PRODUCT(RgVecMatT(knd,:),RTiltedK(:))) &
+          ( RBigK**2 + DOT_PRODUCT(RgPoolT(knd,:),RTiltedK(:)) )**2 /RBigK**2 - &
+          (RgPoolMag(knd)**2 + &
+          TWO* DOT_PRODUCT(RgPoolT(knd,:),RTiltedK(:))) &
           )
   END DO
 

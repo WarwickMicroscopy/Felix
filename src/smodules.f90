@@ -200,7 +200,7 @@ MODULE IPara
   
   !LACBED
   INTEGER(IKIND),DIMENSION(:,:), ALLOCATABLE :: ILACBEDStrongBeamList, IPixelLocation, ISymmetryRelations
-  INTEGER(IKIND),DIMENSION(:), ALLOCATABLE :: InBeams,IStrongBeamList,IOutputReflections,ISymmetryStrengthKey
+  INTEGER(IKIND),DIMENSION(:), ALLOCATABLE :: InBeams,IStrongBeamList,IOutputReflections,IEquivalentUgKey
 
   !inpcif
   INTEGER(IKIND) :: ISymCount
@@ -304,8 +304,8 @@ MODULE RPara
   REAL(RKIND), DIMENSION(:,:,:), ALLOCATABLE :: RAnisotropicDebyeWallerFactorTensor
   
   !Diffraction Pattern Definitions
-  REAL(RKIND), DIMENSION(:), ALLOCATABLE :: RgVecMag, RSg
-  REAL(RKIND), DIMENSION(:,:), ALLOCATABLE :: RgVecMat, RgVecMatT, RgVecMagLaueZone
+  REAL(RKIND), DIMENSION(:), ALLOCATABLE :: RgPoolMag, RSg
+  REAL(RKIND), DIMENSION(:,:), ALLOCATABLE :: RgPool, RgPoolT, RgPoolMagLaueZone
   REAL(RKIND), DIMENSION(THREEDIM,THREEDIM) :: RTMat
   REAL(RKIND) :: RDeltaK, RMinimumGMag,RGVectorMagnitude
   REAL(RKIND),DIMENSION(THREEDIM) :: RGVector
@@ -369,7 +369,7 @@ MODULE CPara
   COMPLEX(CKIND), DIMENSION(:,:,:), ALLOCATABLE :: &
        CEigenVectorsChunk
   COMPLEX(CKIND),DIMENSION(:),ALLOCATABLE :: &
-       CAlphaWeightingCoefficients, CPsi0,CSymmetryStrengthKey
+       CAlphaWeightingCoefficients, CPsi0,CUgToRefine
   COMPLEX(CKIND),DIMENSION(:,:), ALLOCATABLE :: &
        CEigenValueDependentTerms,CInvertedEigenVectors, &
        CBeamProjectionMatrix,CDummyBeamMatrix
