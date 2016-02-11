@@ -47,11 +47,8 @@ SUBROUTINE BlochCoefficientCalculation(IYPixelIndex,IXPixelIndex,IPixelNumber,IF
   
   IMPLICIT NONE
   
-  INTEGER(IKIND) :: &
-       IYPixelIndex,IXPixelIndex,hnd,knd,IPixelNumber,pnd,&
-       ierr,IThickness, &
-       IThicknessIndex, ILowerLimit, &
-       IUpperLimit,IFirstPixelToCalculate       
+  INTEGER(IKIND) :: IYPixelIndex,IXPixelIndex,hnd,knd,IPixelNumber,pnd,&
+       ierr,IThickness,IThicknessIndex,ILowerLimit,IUpperLimit,IFirstPixelToCalculate       
   REAL(RKIND) :: &
        RPixelGVectorXPosition,RPixelGVectorYPosition, RThickness,RKn
 
@@ -62,8 +59,7 @@ SUBROUTINE BlochCoefficientCalculation(IYPixelIndex,IXPixelIndex,IPixelNumber,IF
 
   COMPLEX(CKIND), DIMENSION(:,:), ALLOCATABLE :: &
        CGeneralSolutionMatrix, CGeneralEigenVectors,CBeamTranspose,CUgMatPartial
-  COMPLEX(CKIND),DIMENSION(:),ALLOCATABLE :: &
-       CGeneralEigenValues
+  COMPLEX(CKIND),DIMENSION(:),ALLOCATABLE :: CGeneralEigenValues
 
    IF (my_rank.EQ.0) THEN
       DO WHILE (IMessageCounter .LT.1)
@@ -107,7 +103,7 @@ SUBROUTINE BlochCoefficientCalculation(IYPixelIndex,IXPixelIndex,IPixelNumber,IF
      PRINT*,"BlochCoefficientCalculation(", my_rank, ") error ", IErr, &
           " In Calculation of KVectors"
      RETURN
-  ENDIF
+  END IF
 
   RKn = DOT_PRODUCT(RTiltedK,RNormDirM)
 
@@ -119,17 +115,17 @@ SUBROUTINE BlochCoefficientCalculation(IYPixelIndex,IXPixelIndex,IPixelNumber,IF
      PRINT*,"BlochCoefficientCalculation(", my_rank, ") error ", IErr, &
           " in Calculation of Deviation Parameter"
      RETURN
-  ENDIF
+  END IF
 
   ! select only those beams where the Ewald sphere is close to the
   ! reciprocal lattice, i.e. within RBSMaxDeviationPara
 
-  CALL StrongAndWeakBeamsDetermination(IErr)
+  CALL StrongAndWeakBeamsDetermination(IErr)!RB IAdditionalBmaxStrongBeamList abd IAdditionalPmaxStrongBeamList allocated in here
   IF( IErr.NE.0 ) THEN
      PRINT*,"BlochCoefficientCalculation(", my_rank, ") error ", IErr, &
           " in Determination of Strong and Weak beams"
      RETURN
-  ENDIF
+  END IF
  
   ! select the highest reflection that corresponds to a strong beam
   nBeams= IStrongBeamIndex
@@ -141,53 +137,47 @@ SUBROUTINE BlochCoefficientCalculation(IYPixelIndex,IXPixelIndex,IPixelNumber,IF
   !--------------------------------------------------------------------
   
   !Eigen Problem Solving
-  ALLOCATE( &
-       CBeamProjectionMatrix(nBeams,nReflections), &
+  ALLOCATE(CBeamProjectionMatrix(nBeams,nReflections), &
        STAT=IErr)
   IF( IErr.NE.0 ) THEN
      PRINT*,"BlochCoefficientCalculation(", my_rank, ") error ", IErr, &
           " in ALLOCATE() of DYNAMIC variables CBeamProjectionMatrix"
      RETURN
-  ENDIF
+  END IF
 
-  ALLOCATE( &
-       CDummyBeamMatrix(nBeams,nReflections), &
+  ALLOCATE(CDummyBeamMatrix(nBeams,nReflections), &
        STAT=IErr)
   IF( IErr.NE.0 ) THEN
      PRINT*,"BlochCoefficientCalculation(", my_rank, ") error ", IErr, &
           " in ALLOCATE() of DYNAMIC variables CDummyBeamMatrix"
      RETURN
-  ENDIF
+  END IF
 
-  ALLOCATE( &
-       CUgMatEffective(nBeams,nBeams), &
+  ALLOCATE(CUgMatEffective(nBeams,nBeams), &
        STAT=IErr)
   IF( IErr.NE.0 ) THEN
      PRINT*,"BlochCoefficientCalculation(", my_rank, ") error ", IErr, &
           " in ALLOCATE() of DYNAMIC variables CUgMatEffective"
      RETURN
-  ENDIF
+  END IF
   
-  ALLOCATE( & 
-       CEigenVectors(nBeams,nBeams), &
+  ALLOCATE(CEigenVectors(nBeams,nBeams), &
        STAT=IErr)
   IF( IErr.NE.0 ) THEN
      PRINT*,"BlochCoefficientCalculation(", my_rank, ") error ", IErr, &
           " in ALLOCATE() of DYNAMIC variables CEigenVectors"
      RETURN
-  ENDIF
+  END IF
 
-  ALLOCATE( &
-       CEigenValues(nBeams), &
+  ALLOCATE(CEigenValues(nBeams), &
        STAT=IErr)
   IF( IErr.NE.0 ) THEN
      PRINT*,"BlochCoefficientCalculation(", my_rank, ") error ", IErr, &
           " in ALLOCATE() of DYNAMIC variables CEigenValues"
      RETURN
-  ENDIF
+  END IF
 
-  ALLOCATE( &
-       CInvertedEigenVectors(nBeams,nBeams), &
+  ALLOCATE(CInvertedEigenVectors(nBeams,nBeams), &
        STAT=IErr)
   IF( IErr.NE.0 ) THEN
      PRINT*,"BlochCoefficientCalculation(", my_rank, ") error ", IErr, &
@@ -195,28 +185,25 @@ SUBROUTINE BlochCoefficientCalculation(IYPixelIndex,IXPixelIndex,IPixelNumber,IF
      PRINT*,"Failure Occured at Thickness,Chunk,Pixel,nBeams = ",IPixelCountTotal,nBeams
      
      RETURN
-  ENDIF
+  END IF
 
-  ALLOCATE( &
-       CBeamTranspose(nReflections,nBeams), &
+  ALLOCATE(CBeamTranspose(nReflections,nBeams), &
        STAT=IErr)
   IF( IErr.NE.0 ) THEN
      PRINT*,"BlochCoefficientCalculation(", my_rank, ") error ", IErr, &
           " in ALLOCATE() of DYNAMIC variables CBeamTranspose"
      RETURN
-  ENDIF
+  END IF
 
-  ALLOCATE( &
-       CUgMatPartial(nReflections,nBeams), &
+  ALLOCATE(CUgMatPartial(nReflections,nBeams), &
        STAT=IErr)
   IF( IErr.NE.0 ) THEN
      PRINT*,"BlochCoefficientCalculation(", my_rank, ") error ", IErr, &
           " in ALLOCATE() of DYNAMIC variables CUgMatPartial"
      RETURN
-  ENDIF
+  END IF
 
-  ALLOCATE( &
-       CAlphaWeightingCoefficients(nBeams), &
+  ALLOCATE(CAlphaWeightingCoefficients(nBeams), &
        STAT=IErr)
   IF( IErr.NE.0 ) THEN
      PRINT*,"BlochCoefficientCalculation(", my_rank, ") error ", IErr, &
@@ -224,10 +211,9 @@ SUBROUTINE BlochCoefficientCalculation(IYPixelIndex,IXPixelIndex,IPixelNumber,IF
      PRINT*,"Failure Occured at Thickness,Chunk,Pixel,nBeams = ",IPixelCountTotal,nBeams
      
      RETURN
-  ENDIF
+  END IF
 
-  ALLOCATE( &
-       CEigenValueDependentTerms(nBeams,nBeams), &
+  ALLOCATE(CEigenValueDependentTerms(nBeams,nBeams), &
        STAT=IErr)
   IF( IErr.NE.0 ) THEN
      PRINT*,"BlochCoefficientCalculation(", my_rank, ") error ", IErr, &
@@ -235,10 +221,9 @@ SUBROUTINE BlochCoefficientCalculation(IYPixelIndex,IXPixelIndex,IPixelNumber,IF
      PRINT*,"Failure Occured at Thickness,Chunk,Pixel,nBeams = ",IPixelCountTotal,nBeams
      
      RETURN
-  ENDIF
+  END IF
 
-  ALLOCATE( &
-       CWaveFunctions(nBeams), &
+  ALLOCATE(CWaveFunctions(nBeams), &
        STAT=IErr)
   IF( IErr.NE.0 ) THEN
      PRINT*,"BlochCoefficientCalculation(", my_rank, ") error ", IErr, &
@@ -246,10 +231,9 @@ SUBROUTINE BlochCoefficientCalculation(IYPixelIndex,IXPixelIndex,IPixelNumber,IF
      PRINT*,"Failure Occured at Thickness,Chunk,Pixel,nBeams = ",IPixelCountTotal,nBeams
      
      RETURN
-  ENDIF
+  END IF
 
-  ALLOCATE( &
-       RWaveIntensity(nBeams), &
+  ALLOCATE(RWaveIntensity(nBeams), &
        STAT=IErr)
   IF( IErr.NE.0 ) THEN
      PRINT*,"BlochCoefficientCalculation(", my_rank, ") error ", IErr, &
@@ -257,17 +241,16 @@ SUBROUTINE BlochCoefficientCalculation(IYPixelIndex,IXPixelIndex,IPixelNumber,IF
      PRINT*,"Failure Occured at Thickness,Chunk,Pixel,nBeams = ",IPixelCountTotal,nBeams
      
      RETURN
-  ENDIF
+  END IF
 
-  ALLOCATE( &
-       CPsi0(nBeams), & 
+  ALLOCATE(CPsi0(nBeams), & 
        STAT=IErr)
   IF( IErr.NE.0 ) THEN
      PRINT*,"BlochCoefficientCalculation(", my_rank, ") error ", IErr, &
           " in ALLOCATE() of DYNAMIC variables CPsi0"
      PRINT*,"Failure Occured at Thickness,Chunk,Pixel,nBeams = ",IPixelCountTotal,nBeams
      RETURN
-  ENDIF
+  END IF
 
   !--------------------------------------------------------------------
   ! construct the effective UgMat (for strong beams only at the moment)
@@ -285,7 +268,7 @@ SUBROUTINE BlochCoefficientCalculation(IYPixelIndex,IXPixelIndex,IPixelNumber,IF
   !   PRINT*,"BlochCoefficientCalculation("", my_rank, &
   !        ") using n(Strong)Beams= ", nBeams, " beams", &
   !        " with nWeakBeams=", IWeakBeamIndex
-  !ENDIF
+  !END IF
   
   !--------------------------------------------------------------------
   ! back to eigen problem solution
@@ -379,7 +362,7 @@ SUBROUTINE BlochCoefficientCalculation(IYPixelIndex,IXPixelIndex,IPixelNumber,IF
      IF( IErr.NE.0 ) THEN
         PRINT*,"BlochCoefficientCalculation(", my_rank, ") error in EigenSpectrum()"
         RETURN
-     ENDIF
+     END IF
      CEigenValues = CEigenValues * RKn/RBigK
      DO knd = 1,nBeams
         CEigenVectors(knd,:) = CEigenVectors(knd,:) / &
@@ -393,7 +376,7 @@ SUBROUTINE BlochCoefficientCalculation(IYPixelIndex,IXPixelIndex,IPixelNumber,IF
      IF( IErr.NE.0 ) THEN
         PRINT*,"BlochCoefficientCalculation(", my_rank, ") error in EigenSpectrum()"
         RETURN
-     ENDIF
+     END IF
   END IF
  
   DO IThicknessIndex=1,IThicknessCount,1
@@ -405,28 +388,28 @@ SUBROUTINE BlochCoefficientCalculation(IYPixelIndex,IXPixelIndex,IPixelNumber,IF
      IF( IErr.NE.0 ) THEN
         PRINT*,"BlochCoefficientCalculation(", my_rank, ") error in CreateWavefunction()"
         RETURN
-     ENDIF
+     END IF
      
      !Collection Wave Intensities from all thickness for later writing
      
      IF(IHKLSelectFLAG.EQ.0) THEN
         
         IF(IImageFLAG.LE.2) THEN
-           RIndividualReflections(1:IReflectOut,IThicknessIndex,(IPixelNumber-IFirstPixelToCalculate)+1) = &
-                RFullWaveIntensity(1:IReflectOut)
+           RIndividualReflections(1:INoOfLacbedPatterns,IThicknessIndex,(IPixelNumber-IFirstPixelToCalculate)+1) = &
+                RFullWaveIntensity(1:INoOfLacbedPatterns)
         ELSE
-           CAmplitudeandPhase(1:IReflectOut,IThicknessIndex,(IPixelNumber-IFirstPixelToCalculate)+1) = &
-                CFullWavefunctions(1:IReflectOut)
+           CAmplitudeandPhase(1:INoOfLacbedPatterns,IThicknessIndex,(IPixelNumber-IFirstPixelToCalculate)+1) = &
+                CFullWavefunctions(1:INoOfLacbedPatterns)
         END IF
      ELSE
         
         IF(IImageFLAG.LE.2) THEN
-           DO pnd = 1,IReflectOut
+           DO pnd = 1,INoOfLacbedPatterns
               RIndividualReflections(pnd,IThicknessIndex,(IPixelNumber-IFirstPixelToCalculate)+1) = &
                    RFullWaveIntensity(IOutputReflections(pnd))
            END DO
         ELSE
-           DO pnd = 1,IReflectOut
+           DO pnd = 1,INoOfLacbedPatterns
               CAmplitudeandPhase(pnd,IThicknessIndex,(IPixelNumber-IFirstPixelToCalculate)+1) = &
                    CFullWavefunctions(IOutputReflections(pnd))
            END DO
@@ -438,8 +421,8 @@ SUBROUTINE BlochCoefficientCalculation(IYPixelIndex,IXPixelIndex,IPixelNumber,IF
   ! DEALLOCATE eigen problem memory
   !--------------------------------------------------------------------
   
-  DEALLOCATE( &
-       CUgMatEffective,CPsi0,&
+  DEALLOCATE(CUgMatEffective,CPsi0, &
+       CBeamTranspose, CUgMatPartial, &
        CInvertedEigenVectors, CAlphaWeightingCoefficients, &
        CEigenValues,CEigenVectors,CEigenValueDependentTerms, &
        CBeamProjectionMatrix, CDummyBeamMatrix,CWavefunctions, &
@@ -450,6 +433,8 @@ SUBROUTINE BlochCoefficientCalculation(IYPixelIndex,IXPixelIndex,IPixelNumber,IF
   ENDIF
   
 END SUBROUTINE BlochCoefficientCalculation
+
+!%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 SUBROUTINE CreateWaveFunctions(RThickness,IErr)
 
@@ -479,17 +464,14 @@ SUBROUTINE CreateWaveFunctions(RThickness,IErr)
         IMessageCounter = IMessageCounter +1
      END DO
   END IF
-
   
   !--------------------------------------------------------------------
   ! calculate wavefunctions
   !--------------------------------------------------------------------
-  
   CPsi0 = CZERO
   IF(nBeams .GE. 0) CPsi0(1) = CONE
   
-  ALLOCATE( &
-       CDummyEigenVectors(nBeams,nBeams), &
+  ALLOCATE(CDummyEigenVectors(nBeams,nBeams), &
        STAT=IErr)
   IF( IErr.NE.0 ) THEN
      PRINT*,"CreateWavefunctions(", my_rank, ") error ", IErr, &
@@ -508,7 +490,7 @@ SUBROUTINE CreateWaveFunctions(RThickness,IErr)
   
   CEigenValueDependentTerms= CZERO
  
-  DO hnd=1,nBeams !IReflectOut 
+  DO hnd=1,nBeams !INoOfLacbedPatterns 
      
      ! This needs to be a diagonal matrix
      CEigenValueDependentTerms(hnd,hnd) = &
@@ -542,8 +524,7 @@ SUBROUTINE CreateWaveFunctions(RThickness,IErr)
      RFullWaveIntensity(IStrongBeamList(knd))=RWaveIntensity(knd)
   ENDDO
   
-  DEALLOCATE(&
-       CDummyEigenVectors, &
+  DEALLOCATE(CDummyEigenVectors, &
        STAT=IErr)
   IF( IErr.NE.0 ) THEN
      PRINT*,"CreateWavefunctions(", my_rank, ") error ", IErr, &
@@ -553,6 +534,7 @@ SUBROUTINE CreateWaveFunctions(RThickness,IErr)
   
 END SUBROUTINE CreateWavefunctions
 
+!%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 !!$Calculates the x,y,z components of the incident tilted k_vector
 SUBROUTINE KVectorsCalculation(RPixelGVectorXPosition,RPixelGVectorYPosition,IErr)
@@ -570,10 +552,8 @@ SUBROUTINE KVectorsCalculation(RPixelGVectorXPosition,RPixelGVectorYPosition,IEr
 
   IMPLICIT NONE
   
-  REAL(RKIND) :: &
-       RPixelGVectorXPosition,RPixelGVectorYPosition
-  INTEGER(IKIND) :: &
-       IErr
+  REAL(RKIND) :: RPixelGVectorXPosition,RPixelGVectorYPosition
+  INTEGER(IKIND) :: IErr
 
   IF (my_rank.EQ.0) THEN
      DO WHILE (IMessageCounter .LT.2)
@@ -591,6 +571,8 @@ SUBROUTINE KVectorsCalculation(RPixelGVectorXPosition,RPixelGVectorYPosition,IEr
   
 END SUBROUTINE KVectorsCalculation
 
+!%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
 SUBROUTINE DeviationParameterCalculation(IErr)
 
   USE WriteToScreen
@@ -604,8 +586,7 @@ SUBROUTINE DeviationParameterCalculation(IErr)
   USE MPI
   USE MyMPI
 
-  INTEGER(IKIND) :: &
-       knd,IErr
+  INTEGER(IKIND) :: knd,IErr
   
   IF (my_rank.EQ.0) THEN
      DO WHILE (IMessageCounter .LT.3)
@@ -615,18 +596,19 @@ SUBROUTINE DeviationParameterCalculation(IErr)
   END IF
 
   DO knd=1,nReflections
-     ! DevPara used to be called Sg in the book
-     
+     ! DevPara is devitaion parameter, also known as Sg 
      RDevPara(knd)= &
-          -( RBigK + DOT_PRODUCT(RgVecMatT(knd,:),RTiltedK(:)) /RBigK) + &
+          -( RBigK + DOT_PRODUCT(RgPoolT(knd,:),RTiltedK(:)) /RBigK) + &
           SQRT( &
-          ( RBigK**2 + DOT_PRODUCT(RgVecMatT(knd,:),RTiltedK(:)) )**2 /RBigK**2 - &
-          (RgVecMag(knd)**2 + &
-          TWO* DOT_PRODUCT(RgVecMatT(knd,:),RTiltedK(:))) &
+          ( RBigK**2 + DOT_PRODUCT(RgPoolT(knd,:),RTiltedK(:)) )**2 /RBigK**2 - &
+          (RgPoolMag(knd)**2 + &
+          TWO* DOT_PRODUCT(RgPoolT(knd,:),RTiltedK(:))) &
           )
   END DO
 
 END SUBROUTINE DeviationParameterCalculation
+
+!%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 SUBROUTINE StrongAndWeakBeamsDetermination(IErr)
   
@@ -640,12 +622,10 @@ SUBROUTINE StrongAndWeakBeamsDetermination(IErr)
   USE MPI
   USE MyMPI
   
-  INTEGER(IKIND) :: &
-       ind,knd,IErr,IMinimum,IMaximum,ICheck,jnd,hnd, &
+  INTEGER(IKIND) :: ind,knd,IErr,IMinimum,IMaximum,ICheck,jnd,hnd, &
        IAdditionalBmaxStrongBeams,IAdditionalPmaxStrongBeams,&
        IBeamIterationCounter,IFound
-  REAL(RKIND) :: &
-       RDummySg(nReflections), sumC
+  REAL(RKIND) :: RDummySg(nReflections), sumC
   INTEGER(IKIND), DIMENSION(:),ALLOCATABLE  :: &
        IAdditionalBmaxStrongBeamList,IAdditionalPmaxStrongBeamList
 
@@ -659,7 +639,6 @@ SUBROUTINE StrongAndWeakBeamsDetermination(IErr)
   !----------------------------------------------------------------------------
   ! Determine RBSMaxDeviationPara
   !----------------------------------------------------------------------------
-
   IStrongBeamList = 0
 
   RDummySg = ABS(RDevPara)
@@ -745,8 +724,7 @@ SUBROUTINE StrongAndWeakBeamsDetermination(IErr)
      ENDIF
   ENDDO
   
-  ALLOCATE(&
-       IAdditionalBmaxStrongBeamList(IWeakBeamIndex),&
+  ALLOCATE(IAdditionalBmaxStrongBeamList(IWeakBeamIndex),&
        STAT=IErr)
   IF( IErr.NE.0 ) THEN
      PRINT*,"StrongAndWeakBeamsDetermination(", my_rank, ") error ", IErr, &
@@ -812,8 +790,7 @@ SUBROUTINE StrongAndWeakBeamsDetermination(IErr)
      ENDIF
   ENDDO
 
-  ALLOCATE(&
-       IAdditionalPmaxStrongBeamList(IWeakBeamIndex),&
+  ALLOCATE(IAdditionalPmaxStrongBeamList(IWeakBeamIndex),&
        STAT=IErr)
   IF( IErr.NE.0 ) THEN
      PRINT*,"StrongAndWeakBeamsDetermination(", my_rank, ") error ", IErr, &
@@ -874,5 +851,19 @@ SUBROUTINE StrongAndWeakBeamsDetermination(IErr)
         IFound = 0
      ENDIF
   ENDDO
+!RB  
+  DEALLOCATE(IAdditionalBmaxStrongBeamList,STAT=IErr)
+  IF( IErr.NE.0 ) THEN
+     PRINT*,"StrongAndWeakBeamsDetermination(", my_rank, ") error ", IErr, &
+          " in DEALLOCATE() of IAdditionalBmaxStrongBeamList"
+     RETURN
+  ENDIF
+  
+  DEALLOCATE(IAdditionalPmaxStrongBeamList,STAT=IErr)
+  IF( IErr.NE.0 ) THEN
+     PRINT*,"StrongAndWeakBeamsDetermination(", my_rank, ") error ", IErr, &
+          " in DEALLOCATE() of IAdditionalPmaxStrongBeamList"
+     RETURN
+  ENDIF
 
 END SUBROUTINE StrongAndWeakBeamsDetermination

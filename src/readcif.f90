@@ -33,13 +33,13 @@
 !%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 !%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-! $Id: ReadCifFile.f90,v 1.23 2014/04/28 12:26:19 phslaz Exp $
+! $Id: ReadCif.f90,v 1.23 2014/04/28 12:26:19 phslaz Exp $
 !%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-SUBROUTINE ReadCifFile(IErr)
+SUBROUTINE ReadCif(IErr)
 
   ! -----------------------------------------------------------------------
-  ! ReadCifFile: Read the input file
+  ! ReadCif: Read the input file
   !
   !	IErr	error code
   ! ----------------------------------------------------------------------
@@ -99,7 +99,7 @@ SUBROUTINE ReadCifFile(IErr)
   
   CHARACTER*32 Csym(THREEDIM)
 
-  INTEGER IErr, ind
+  INTEGER IErr,ind,jnd
 
   ! fudge to deal with gfortran vs. g77
 
@@ -108,12 +108,12 @@ SUBROUTINE ReadCifFile(IErr)
   ! Assign the CIFtbx files 
   f1 = init_( 1, 2, 3, 6 )
   
-  !Tells user, entering ReadCIFFile
-  CALL Message("ReadCIFFile",IMust,IErr)
+  !Tells user, entering ReadCIF
+  CALL Message("ReadCIF",IMust,IErr)
 
   ! Request dictionary validation check
   IF(.NOT.dict_('cif_core.dic','valid dtype')) THEN
-     CALL Message("ReadCIFFile",IInfo,IErr, &
+     CALL Message("ReadCIF",IInfo,IErr, &
           MessageString = "Requested core dictionary not present")
 
      ! Restore the old clipping action for text fields
@@ -123,11 +123,11 @@ SUBROUTINE ReadCifFile(IErr)
   ! Open the CIF to be accessed
 
 100 name='felix.cif'
-  CALL Message("ReadCIFFile",IInfo,IErr, &
+  CALL Message("ReadCIF",IInfo,IErr, &
        MessageVariable = "Read data from CIF ", MessageString = name)
   IF(.NOT.ocif_(name)) THEN
      !maybe error message here?
-     CALL Message("ReadCIFFile",IInfo,IErr, &
+     CALL Message("ReadCIF",IInfo,IErr, &
              MessageString = "CIF cannot be opened")
      IErr=1
      RETURN
@@ -136,19 +136,19 @@ SUBROUTINE ReadCifFile(IErr)
   ! Assign the data block to be accessed
 120 IF(.NOT.data_(' ')) THEN
      IF((IWriteFLAG.GE.1.AND.my_rank.EQ.0).OR.IWriteFLAG.GE.10) THEN
-        PRINT*,"ReadCifFile(", my_rank, ") No data_ statement found"
+        PRINT*,"ReadCif(", my_rank, ") No data_ statement found"
      END IF
      IErr=1
   END IF
   
 130 IF((IWriteFLAG.GE.1.AND.my_rank.EQ.0).OR.IWriteFLAG.GE.10) THEN
-     CALL Message("ReadCIFFile",IInfo,IErr, &
+     CALL Message("ReadCIF",IInfo,IErr, &
           MessageVariable = "Access items in data block ", MessageString = bloc_)
   END IF
-  CALL Message("ReadCIFFile",IMoreInfo,IErr,MessageString = "Cell length origin") 
-  CALL Message("ReadCIFFile",IMoreInfo,IErr,MessageVariable = "RLengthX",RVariable = RLengthX)
-  CALL Message("ReadCIFFile",IMoreInfo,IErr,MessageVariable = "RLengthY",RVariable = RLengthY)
-  CALL Message("ReadCIFFile",IMoreInfo,IErr,MessageVariable = "RLengthZ",RVariable = RLengthZ)
+  CALL Message("ReadCIF",IMoreInfo,IErr,MessageString = "Cell length origin") 
+  CALL Message("ReadCIF",IMoreInfo,IErr,MessageVariable = "RLengthX",RVariable = RLengthX)
+  CALL Message("ReadCIF",IMoreInfo,IErr,MessageVariable = "RLengthY",RVariable = RLengthY)
+  CALL Message("ReadCIF",IMoreInfo,IErr,MessageVariable = "RLengthZ",RVariable = RLengthZ)
   
   
   ! Extract some cell dimensions; test all is OK
@@ -163,21 +163,21 @@ SUBROUTINE ReadCifFile(IErr)
   !error call
   IF(.NOT.(f1.AND.f2.AND.f3)) THEN
      IF((IWriteFLAG.GE.1.AND.my_rank.EQ.0).OR.IWriteFLAG.GE.10) THEN
-        PRINT*,"ReadCifFile(", my_rank, ") Cell dimension(s) missing!"
+        PRINT*,"ReadCif(", my_rank, ") Cell dimension(s) missing!"
      END IF
      IErr=1
   END IF
 
   RLengthX=cela; RLengthY=celb; RLengthZ=celc
-  CALL Message("ReadCIFFile",IInfo,IErr,MessageString = "Cell length") 
-  CALL Message("ReadCIFFile",IInfo,IErr,MessageVariable = "RLengthX",RVariable = RLengthX)
-  CALL Message("ReadCIFFile",IInfo,IErr,MessageVariable = "RLengthY",RVariable = RLengthY)
-  CALL Message("ReadCIFFile",IInfo,IErr,MessageVariable = "RLengthZ",RVariable = RLengthZ)
+  CALL Message("ReadCIF",IInfo,IErr,MessageString = "Cell length") 
+  CALL Message("ReadCIF",IInfo,IErr,MessageVariable = "RLengthX",RVariable = RLengthX)
+  CALL Message("ReadCIF",IInfo,IErr,MessageVariable = "RLengthY",RVariable = RLengthY)
+  CALL Message("ReadCIF",IInfo,IErr,MessageVariable = "RLengthZ",RVariable = RLengthZ)
 
-  CALL Message("ReadCIFFile",IMoreInfo,IErr,MessageString = "Standard deviation of length") 
-  CALL Message("ReadCIFFile",IMoreInfo,IErr,MessageVariable = "siga",RVariable = REAL(siga,RKIND))
-  CALL Message("ReadCIFFile",IMoreInfo,IErr,MessageVariable = "sigb",RVariable = REAL(sigb,RKIND))
-  CALL Message("ReadCIFFile",IMoreInfo,IErr,MessageVariable = "sigc",RVariable = REAL(sigc,RKIND))
+  CALL Message("ReadCIF",IMoreInfo,IErr,MessageString = "Standard deviation of length") 
+  CALL Message("ReadCIF",IMoreInfo,IErr,MessageVariable = "siga",RVariable = REAL(siga,RKIND))
+  CALL Message("ReadCIF",IMoreInfo,IErr,MessageVariable = "sigb",RVariable = REAL(sigb,RKIND))
+  CALL Message("ReadCIF",IMoreInfo,IErr,MessageVariable = "sigc",RVariable = REAL(sigc,RKIND))
 
 
   siga = 0.
@@ -189,67 +189,67 @@ SUBROUTINE ReadCifFile(IErr)
   
   IF(.NOT.(f1.AND.f2.AND.f3)) THEN
      IF((IWriteFLAG.GE.1.AND.my_rank.EQ.0).OR.IWriteFLAG.GE.10) THEN
-        PRINT*,"ReadCifFile(", my_rank, ") Cell angle(s) missing!"
+        PRINT*,"ReadCif(", my_rank, ") Cell angle(s) missing!"
      END IF
      IErr=1
-  ENDIF
+  END IF
 
   ! convert angles from degrees to radians
-  CALL Message("ReadCIFFile",IMoreInfo,IErr,MessageString = "Angle (input)")
-  CALL Message("ReadCIFFile",IMoreInfo,IErr,MessageVariable = "cela",RVariable = REAL(cela,RKIND))
-  CALL Message("ReadCIFFile",IMoreInfo,IErr,MessageVariable = "celb",RVariable = REAL(celb,RKIND))
-  CALL Message("ReadCIFFile",IMoreInfo,IErr,MessageVariable = "celc",RVariable = REAL(celc,RKIND))
+  CALL Message("ReadCIF",IMoreInfo,IErr,MessageString = "Angle (input)")
+  CALL Message("ReadCIF",IMoreInfo,IErr,MessageVariable = "cela",RVariable = REAL(cela,RKIND))
+  CALL Message("ReadCIF",IMoreInfo,IErr,MessageVariable = "celb",RVariable = REAL(celb,RKIND))
+  CALL Message("ReadCIF",IMoreInfo,IErr,MessageVariable = "celc",RVariable = REAL(celc,RKIND))
 
   IF (cela.GT.TWOPI) THEN
 
-        CALL Message("ReadCIFFile",IMoreInfo,IErr,MessageVariable = "Angle alpha", &
+        CALL Message("ReadCIF",IMoreInfo,IErr,MessageVariable = "Angle alpha", &
              RVariable = REAL(cela,RKIND))
-        CALL Message("ReadCIFFile",IMoreInfo,IErr, &
+        CALL Message("ReadCIF",IMoreInfo,IErr, &
              MessageString = "Which is greater than Two Pi, Program will assume this angle is expressed in degrees")
 
      RAlpha=cela*DEG2RADIAN;
   END IF
  
   IF (celb.GT.TWOPI) THEN
-     CALL Message("ReadCIFFile",IMoreInfo,IErr,MessageVariable = "Angle beta", &
+     CALL Message("ReadCIF",IMoreInfo,IErr,MessageVariable = "Angle beta", &
           RVariable = REAL(celb,RKIND))
-     CALL Message("ReadCIFFile",IMoreInfo,IErr,& 
+     CALL Message("ReadCIF",IMoreInfo,IErr,& 
           MessageString = "Which is greater than Two Pi, Program will assume this angle is expressed in degrees")
  
      RBeta=celb*DEG2RADIAN;
   END IF
   IF (celc.GT.TWOPI) THEN
-     CALL Message("ReadCIFFile",IMoreInfo,IErr,MessageVariable = "Angle gamma", &
+     CALL Message("ReadCIF",IMoreInfo,IErr,MessageVariable = "Angle gamma", &
           RVariable = REAL(celc,RKIND))  
-     CALL Message("ReadCIFFile",IMoreInfo,IErr, &
+     CALL Message("ReadCIF",IMoreInfo,IErr, &
           MessageString = "Which is greater than Two Pi, Program will assume this angle is expressed in degrees")
   
      RGamma=celc*DEG2RADIAN;
   END IF
 
-  CALL Message("ReadCIFFile",IInfo,IErr,MessageString = "Angle (radians)")
-  CALL Message("ReadCIFFile",IInfo,IErr,MessageVariable = "RAlpha",RVariable = RAlpha)
-  CALL Message("ReadCIFFile",IInfo,IErr,MessageVariable = "RBeta",RVariable = RBeta)
-  CALL Message("ReadCIFFile",IInfo,IErr,MessageVariable = "RGamma",RVariable = RGamma)
+  CALL Message("ReadCIF",IInfo,IErr,MessageString = "Angle (radians)")
+  CALL Message("ReadCIF",IInfo,IErr,MessageVariable = "RAlpha",RVariable = RAlpha)
+  CALL Message("ReadCIF",IInfo,IErr,MessageVariable = "RBeta",RVariable = RBeta)
+  CALL Message("ReadCIF",IInfo,IErr,MessageVariable = "RGamma",RVariable = RGamma)
 
-  CALL Message("ReadCIFFile",IMoreInfo,IErr,MessageString = "Standard deviation of angle") 
-  CALL Message("ReadCIFFile",IMoreInfo,IErr,MessageVariable = "siga",RVariable = REAL(siga,RKIND))
-  CALL Message("ReadCIFFile",IMoreInfo,IErr,MessageVariable = "sigb",RVariable = REAL(sigb,RKIND))
-  CALL Message("ReadCIFFile",IMoreInfo,IErr,MessageVariable = "sigc",RVariable = REAL(sigc,RKIND))
+  CALL Message("ReadCIF",IMoreInfo,IErr,MessageString = "Standard deviation of angle") 
+  CALL Message("ReadCIF",IMoreInfo,IErr,MessageVariable = "siga",RVariable = REAL(siga,RKIND))
+  CALL Message("ReadCIF",IMoreInfo,IErr,MessageVariable = "sigb",RVariable = REAL(sigb,RKIND))
+  CALL Message("ReadCIF",IMoreInfo,IErr,MessageVariable = "sigc",RVariable = REAL(sigc,RKIND))
 
 
  ! IF((IWriteFLAG.GE.1.AND.my_rank.EQ.0).OR.IWriteFLAG.GE.10) THEN
- !    PRINT*,"ReadCifFile(", my_rank, ")       ",siga,sigb,sigc
+ !    PRINT*,"ReadCif(", my_rank, ")       ",siga,sigb,sigc
  ! END IF
   
   f1 = numb_('_cell_volume', cela, siga)
   
   !Error message
   IF((f1) .EQV. .FALSE.) THEN
-     CALL Message("ReadCIFFile",IInfo,IErr, &
+     CALL Message("ReadCIF",IInfo,IErr, &
           MessageString = "Volume missing from felix.cif (_cell_volume), calculating from cell parameters (_cell_length etc.)")
 !!$     IF((IWriteFLAG.GE.1.AND.my_rank.EQ.0).OR.IWriteFLAG.GE.10) THEN
-!!$        PRINT*,"ReadCifFile(", my_rank, ") Volume missing!"
+!!$        PRINT*,"ReadCif(", my_rank, ") Volume missing!"
 !!$     END IF
      IVolumeFLAG= 0
      RVolume= RLengthX*RLengthY*RLengthZ* &
@@ -259,33 +259,33 @@ SUBROUTINE ReadCifFile(IErr)
   ELSE 
      RVolume= cela
      IVolumeFLAG= 1
-  ENDIF
+  END IF
 
-  CALL Message("ReadCIFFile",IInfo,IErr,MessageString = "Cell volume")
-  CALL Message("ReadCIFFile",IInfo,IErr,MessageVariable = "RVolume", &
+  CALL Message("ReadCIF",IInfo,IErr,MessageString = "Cell volume")
+  CALL Message("ReadCIF",IInfo,IErr,MessageVariable = "RVolume", &
           RVariable = RVolume)  
 
-  CALL Message("ReadCIFFile",IMoreInfo,IErr,MessageString = "Standard deviation of cell volume")
-  CALL Message("ReadCIFFile",IMoreInfo,IErr,MessageVariable = "siga", &
+  CALL Message("ReadCIF",IMoreInfo,IErr,MessageString = "Standard deviation of cell volume")
+  CALL Message("ReadCIF",IMoreInfo,IErr,MessageVariable = "siga", &
        RVariable = REAL(siga,RKIND))
   
     
   ! Extract atom type symbol data in a loop
-  CALL Message("ReadCIFFile",IInfo,IErr,MessageString = "Atom type", &
+  CALL Message("ReadCIF",IInfo,IErr,MessageString = "Atom type", &
        RVariable = REAL(siga,RKIND))
 
 
   DO      
      f1 = char_('_atom_type_symbol', name)
-     CALL Message("ReadCIFFile",IInfo,IErr,MessageString = name)
+     CALL Message("Read CIF",IInfo,IErr,MessageString = name)
   
      IF(loop_ .NEQV. .TRUE.) EXIT
-  ENDDO
+  END DO
 
   ! Extract space group notation (expected char string)
   
   f1 = char_('_symmetry_space_group_name_H-M', name)
-  CALL Message("ReadCIFFile",IInfo,IErr,MessageVariable = "Space Group",MessageString = name)
+  CALL Message("Read CIF",IInfo,IErr,MessageVariable = "Space Group",MessageString = name)
 
 
   !different types of space groups as well as different phrasing of Hall space groups
@@ -311,7 +311,7 @@ SUBROUTINE ReadCifFile(IErr)
      END IF
   END IF
 
-  CALL Message("ReadCIFFile",IInfo,IErr,MessageVariable = "Space Group", &
+  CALL Message("Read CIF",IInfo,IErr,MessageVariable = "Space Group", &
        MessageString =name(1:long_))
 
   SSpaceGroupName=TRIM(name(1:1))
@@ -325,8 +325,7 @@ SUBROUTINE ReadCifFile(IErr)
  
   ! ----------------------------------------------------------
   ! Extract atom site data in a loop
-  !-----------------------------------------------------------
-  CALL Message("ReadCIFFile",IInfo,IErr,MessageString = "Atom sites")
+  CALL Message("Read CIF",IInfo,IErr,MessageString = "Atom sites")
   
   ! counting loop
   IAtomCount=0
@@ -336,59 +335,46 @@ SUBROUTINE ReadCifFile(IErr)
      IAtomCount= IAtomCount+1
 
      IF(loop_ .NEQV. .TRUE.) EXIT
-  ENDDO
+  END DO
   
-  CALL Message("ReadCIFFile",IInfo,IErr,MessageVariable = "IAtomCount", IVariable = IAtomCount) 
-  
-  ALLOCATE( &
-       RAtomSiteFracCoordVec(IAtomCount,THREEDIM), &
+  CALL Message("Read CIF",IInfo,IErr,MessageVariable = "IAtomCount", IVariable = IAtomCount) 
+ 
+  ALLOCATE(RAtomSiteFracCoordVec(IAtomCount,THREEDIM),STAT=IErr)
+  IF( IErr.NE.0 ) THEN
+     PRINT*,"ReadCif(", my_rank, ") error ", IErr, " in ALLOCATE()"
+     RETURN
+  END IF
+  ALLOCATE(SAtomName(IAtomCount),STAT=IErr)
+  IF( IErr.NE.0 ) THEN
+     PRINT*,"ReadCif(", my_rank, ") error ", IErr, " in ALLOCATE()"
+     RETURN
+  END IF
+  ALLOCATE(IAtomicNumber(IAtomCount),STAT=IErr)
+  IF( IErr.NE.0 ) THEN
+     PRINT*,"ReadCif(", my_rank, ") error ", IErr, " in ALLOCATE()"
+     RETURN
+  END IF
+  ALLOCATE(RIsotropicDebyeWallerFactors(IAtomCount),STAT=IErr)
+  IF( IErr.NE.0 ) THEN
+     PRINT*,"ReadCif(", my_rank, ") error ", IErr, " in ALLOCATE()"
+     RETURN
+  END IF
+  ALLOCATE(RAtomicSitePartialOccupancy(IAtomCount),STAT=IErr)
+  IF( IErr.NE.0 ) THEN
+     PRINT*,"ReadCif(", my_rank, ") error ", IErr, " in ALLOCATE()"
+     RETURN
+  END IF
+  ALLOCATE(RAnisotropicDebyeWallerFactorTensor(IAtomCount,THREEDIM,THREEDIM), &
        STAT=IErr)
   IF( IErr.NE.0 ) THEN
-     PRINT*,"ReadCifFile(", my_rank, ") error ", IErr, " in ALLOCATE()"
+     PRINT*,"ReadCif(", my_rank, ") error ", IErr, " in ALLOCATE()"
      RETURN
-  ENDIF
-  ALLOCATE( &
-       SAtomName(IAtomCount), &
-       STAT=IErr)
+  END IF
+  ALLOCATE(IAnisotropicDWFTensor(IAtomCount),STAT=IErr)
   IF( IErr.NE.0 ) THEN
-     PRINT*,"ReadCifFile(", my_rank, ") error ", IErr, " in ALLOCATE()"
+     PRINT*,"ReadCif(", my_rank, ") error ", IErr, " in ALLOCATE()"
      RETURN
-  ENDIF
-  ALLOCATE( &
-       IAtomNumber(IAtomCount), &
-       STAT=IErr)
-  IF( IErr.NE.0 ) THEN
-     PRINT*,"ReadCifFile(", my_rank, ") error ", IErr, " in ALLOCATE()"
-     RETURN
-  ENDIF
-  ALLOCATE( &
-       RIsotropicDebyeWallerFactors(IAtomCount), &
-       STAT=IErr)
-  IF( IErr.NE.0 ) THEN
-     PRINT*,"ReadCifFile(", my_rank, ") error ", IErr, " in ALLOCATE()"
-     RETURN
-  ENDIF
-  ALLOCATE( &
-       RAtomicSitePartialOccupancy(IAtomCount), &
-       STAT=IErr)
-  IF( IErr.NE.0 ) THEN
-     PRINT*,"ReadCifFile(", my_rank, ") error ", IErr, " in ALLOCATE()"
-     RETURN
-  ENDIF
-  ALLOCATE( &
-       RAnisotropicDebyeWallerFactorTensor(IAtomCount,THREEDIM,THREEDIM), &
-       STAT=IErr)
-  IF( IErr.NE.0 ) THEN
-     PRINT*,"ReadCifFile(", my_rank, ") error ", IErr, " in ALLOCATE()"
-     RETURN
-  ENDIF
-  ALLOCATE( &
-       IAnisotropicDWFTensor(IAtomCount), &
-       STAT=IErr)
-  IF( IErr.NE.0 ) THEN
-     PRINT*,"ReadCifFile(", my_rank, ") error ", IErr, " in ALLOCATE()"
-     RETURN
-  ENDIF
+  END IF
 
   RAnisotropicDebyeWallerFactorTensor = ZERO
 
@@ -404,58 +390,48 @@ SUBROUTINE ReadCifFile(IErr)
 
      IF(Ipos>0) THEN
         WRITE(SAtomName(ind),'(A1,A1)') name(1:1)," "
-     ENDIF
+     END IF
 
      WRITE(Sind,*) ind
-     CALL CONVERTAtomName2Number(SAtomName(ind),IAtomNumber(ind), IErr)
-     CALL Message("ReadCIFFile",IInfo,IErr,MessageVariable = "IAtomNumber("//TRIM(ADJUSTL(Sind))//")", IVariable = IAtomNumber(ind))
+     CALL CONVERTAtomName2Number(SAtomName(ind),IAtomicNumber(ind), IErr)
+     CALL Message("Read CIF",IInfo,IErr,MessageVariable = &
+	 "IAtomicNumber("//TRIM(ADJUSTL(Sind))//")", IVariable = IAtomicNumber(ind))
 
      IF(loop_ .NEQV. .TRUE.) EXIT
      
-  ENDDO
+  END DO
   
   !----------------------------------------------------
   ! RESET
-  !---------------------------------------------------
-  
   CALL CifReset(IErr)
-  
   DO ind=1,IAtomCount
      f2 = numb_('_atom_site_fract_x', x, sx)
      RAtomSiteFracCoordVec(ind,1)= x
-  ENDDO
-  
+  END DO
+
   !----------------------------------------------------
   ! RESET
-  !---------------------------------------------------
-  
   CALL CifReset(IErr)
 
   DO ind=1,IAtomCount
-     
      f2 = numb_('_atom_site_fract_y', y, sy)
      RAtomSiteFracCoordVec(ind,2)= y
-
-  ENDDO
+  END DO
 
   !----------------------------------------------------
   ! RESET
-  !---------------------------------------------------
-
   CALL CifReset(IErr)
 
   DO ind=1,IAtomCount
-  
      f2 = numb_('_atom_site_fract_z', z, sz)
      RAtomSiteFracCoordVec(ind,3)= z
-     
-  ENDDO 
+  END DO 
 
-  
-     CALL CifReset(IErr)
+  !----------------------------------------------------
+  ! RESET
+  CALL CifReset(IErr)
 
   DO ind=1,IAtomCount
-     
      B = 0.D0
      Uso = 0.D0
      f2 = numb_('_atom_site_B_iso_or_equiv',B,sB)
@@ -468,63 +444,65 @@ SUBROUTINE ReadCifFile(IErr)
      
      IF(ABS(B).LT.TINY.AND.ABS(Uso).LT.TINY) THEN
         B = RDebyeWallerConstant
-        CALL Message("ReadCIFFile",IInfo,IErr,MessageVariable = "For Atom", IVariable = ind, &
+        CALL Message("Read CIF",IInfo,IErr,MessageVariable = "For Atom", IVariable = ind, &
              MessageString =  "Debye Waller Factors missing in the CIF File ")
         IF (IMinReflectionPool.EQ.666) THEN
-        CALL Message("ReadCIFFile",IMust,IErr, MessageVariable = "For ye magic vessel ", IVariable = ind, &
+        CALL Message("Read CIF",IMust,IErr, MessageVariable = "For ye magic vessel ", IVariable = ind, &
               MessageString = "Thar be no Debye Waller Factor in Yar Cif File matey")
         END IF
      END IF
      
      IF(loop_ .NEQV. .TRUE.) EXIT
      
-  ENDDO
+  END DO
 
   !----------------------------------------------------
   ! RESET
-  !---------------------------------------------------
-
-  CALL CifReset(IErr)
-
-  !----------------------------------------------------
-  ! RESET
-  !---------------------------------------------------
-
   CALL CifReset(IErr)
   
   DO ind=1,IAtomCount
      f2 = numb_('_atom_site_occupancy',Occ, sOcc)
      RAtomicSitePartialOccupancy(ind) = Occ
-  ENDDO
+  END DO
 
   !----------------------------------------------------
   ! RESET
-  !----------------------------------------------------
-
   CALL CifReset(IErr)
+ 
+!RB branch here depending on felixsim or felixrefine
+  IF (ISoftwareMode.NE.0) THEN !felixrefine
   
-  ALLOCATE( &
-       SWyckoffSymbols(SIZE(IAtomicSitesToRefine)),&
-       STAT=IErr)
-  IF( IErr.NE.0 ) THEN
-     PRINT*,"ReadCifFile(", my_rank, ") error ", IErr, " in ALLOCATE()"
+    ALLOCATE(SWyckoffSymbols(SIZE(IAtomicSitesToRefine)),STAT=IErr)
+    IF( IErr.NE.0 ) THEN
+     PRINT*,"Read Cif (refine)(", my_rank, ") error ", IErr, " in ALLOCATE()"
      RETURN
-  ENDIF
-
-  DO ind=1,SIZE(IAtomicSitesToRefine)
-!!$     IAtomID = IAtomsToRefine(ind)
+    END IF
+    DO ind=1,IAtomCount!RB
      f2 = char_('_atom_site_Wyckoff_symbol',name)
-     SWyckoffSymbols(ind) = name
-  ENDDO
+     WHERE (IAtomicSitesToRefine.EQ.ind)!RB
+	   SWyckoffSymbols = name
+	 END WHERE
+    END DO
+	
+  ELSE !felixsim
+  
+    ALLOCATE(SWyckoffSymbols(IAtomCount),STAT=IErr)
+    IF( IErr.NE.0 ) THEN
+     PRINT*,"Read Cif (sim)(", my_rank, ") error ", IErr, " in ALLOCATE()"
+     RETURN
+    END IF
+    DO ind=1,IAtomCount!RB
+     f2 = char_('_atom_site_Wyckoff_symbol',name)
+	 SWyckoffSymbols(ind) = name
+    END DO
+  
+  END IF
 
   !----------------------------------------------------
   ! RESET
-  !---------------------------------------------------
-
   CALL CifReset(IErr)
   
   DO ind=1,IAtomCount
-
      f2 = numb_('_atom_site_aniso_U_11',u,su) 
      RAnisotropicDebyeWallerFactorTensor(ind,1,1) = u
      f2 = numb_('_atom_site_aniso_U_22',u,su) 
@@ -537,9 +515,8 @@ SUBROUTINE ReadCifFile(IErr)
      RAnisotropicDebyeWallerFactorTensor(ind,1,2) = u
      f2 = numb_('_atom_site_aniso_U_13',u,su) 
      RAnisotropicDebyeWallerFactorTensor(ind,1,3) = u
-     
      IAnisotropicDWFTensor(ind) = ind
-  ENDDO
+  END DO
 
   IF(((IWriteFLAG.GE.1.AND.my_rank.EQ.0).OR.IWriteFLAG.GE.10).AND.IAnisoDebyeWallerFactorFlag.EQ.1) THEN
      PRINT*,"RAnisotropicDebyeWallerFactorTensor",RAnisotropicDebyeWallerFactorTensor
@@ -547,11 +524,9 @@ SUBROUTINE ReadCifFile(IErr)
 
   ! ----------------------------------------------------------
   ! Extract atom site data in a loop
-  !-----------------------------------------------------------
-
-  CALL Message("ReadCIFFile",IInfo,IErr, MessageString = "Symmetries")      
+  CALL Message("Read CIF",IInfo,IErr, MessageString = "Symmetries")      
   !IF((IWriteFLAG.GE.1.AND.my_rank.EQ.0).OR.IWriteFLAG.GE.10) THEN
-  !   PRINT*,"ReadCifFile(", my_rank, ") Symmetries"
+  !   PRINT*,"ReadCif(", my_rank, ") Symmetries"
   !END IF
 
   ! counting loop
@@ -564,31 +539,29 @@ SUBROUTINE ReadCifFile(IErr)
         ISymCount=ISymCount+1
 
         IF(text_ .NEQV. .TRUE.) EXIT
-     ENDDO
+     END DO
 
      IF(loop_ .NEQV. .TRUE.) EXIT
-  ENDDO
+  END DO
 
-  CALL Message("ReadCIFFile",IInfo,IErr,MessageVariable = "found", &
+  CALL Message("ReadCIF",IInfo,IErr,MessageVariable = "found", &
        IVariable = ISymCount, MessageString = "symmetries")
   !IF((IWriteFLAG.GE.1.AND.my_rank.EQ.0).OR.IWriteFLAG.GE.10) THEN
-  !   PRINT*,"ReadCifFile(", my_rank, ") found", ISymCount, "symmetries"
+  !   PRINT*,"ReadCif(", my_rank, ") found", ISymCount, "symmetries"
   !END IF
   
-  ALLOCATE( &
-       RSymVec(ISymCount,THREEDIM), &
+  ALLOCATE(RSymVec(ISymCount,THREEDIM), &
        STAT=IErr)
   IF( IErr.NE.0 ) THEN
-     PRINT*,"ReadCifFile(", my_rank, ") error ", IErr, " in ALLOCATE()"
+     PRINT*,"ReadCif(", my_rank, ") error ", IErr, " in ALLOCATE()"
      RETURN
-  ENDIF
-  ALLOCATE( &
-       RSymMat(ISymCount,THREEDIM,THREEDIM), &
+  END IF
+  ALLOCATE(RSymMat(ISymCount,THREEDIM,THREEDIM), &
        STAT=IErr)
   IF( IErr.NE.0 ) THEN
-     PRINT*,"ReadCifFile(", my_rank, ") error ", IErr, " in ALLOCATE()"
+     PRINT*,"ReadCif(", my_rank, ") error ", IErr, " in ALLOCATE()"
      RETURN
-  ENDIF
+  END IF
   
   RSymVec=ZERO
   RSymMat=ZERO
@@ -620,25 +593,25 @@ SUBROUTINE ReadCifFile(IErr)
            IF(Ipos > 0) THEN ! there is an X
               IF(Ipos>1) THEN
                  IF(name(Ipos-1:Ipos-1)=="-") IXYZminus=-1
-              ENDIF
+              END IF
               RSymMat(ISymCount, ind,1)=IXYZminus
-           ENDIF
+           END IF
            
            Ipos= SCAN(name, "yY")
-           IF(Ipos > 0) THEN ! there is an Y
+           IF(Ipos > 0) THEN ! there is a Y
               IF(Ipos>1) THEN
                  IF(name(Ipos-1:Ipos-1)=="-") IXYZminus=-1
               END IF
               RSymMat(ISymCount, ind,2)=IXYZminus
-           ENDIF
+           END IF
            
            Ipos= SCAN(name, "zZ")
-           IF(Ipos > 0) THEN ! there is an Z
+           IF(Ipos > 0) THEN ! there is a Z
               IF(Ipos>1) THEN
                  IF(name(Ipos-1:Ipos-1)=="-") IXYZminus=-1
               END IF
               RSymMat(ISymCount, ind,3)=IXYZminus
-           ENDIF
+           END IF
            
            Ipos= SCAN(name, "/")
            IF(Ipos > 1) THEN
@@ -648,17 +621,17 @@ SUBROUTINE ReadCifFile(IErr)
                  
                  IF(Ipos>2) THEN
                     IF(name(Ipos-2:Ipos-2)=="-") IFRACminus=-1
-                 ENDIF
+                 END IF
                  
-              ENDIF
+              END IF
               RSymVec(ISymCount,ind)=IFRACminus*REAL(Inum)/REAL(Idenom)
-           ENDIF
-        ENDDO
+           END IF
+        END DO
         IF(text_ .NEQV. .TRUE.) EXIT
-     ENDDO
+     END DO
 
      IF(loop_ .NEQV. .TRUE.) EXIT
-  ENDDO
+  END DO
 
   !closes the cif file
   CALL close_
@@ -667,9 +640,9 @@ SUBROUTINE ReadCifFile(IErr)
   IF (ITotalAtoms.EQ.0) THEN
      CALL CountTotalAtoms(IErr)
      IF( IErr.NE.0 ) THEN
-        PRINT*,"ReadCifFile(", my_rank, ") error in CountTotalAtoms()"
+        PRINT*,"ReadCif(", my_rank, ") error in CountTotalAtoms()"
        ! GOTO 9999
-     ENDIF
+     END IF
   END IF
 
 !!$Reset Message Counter
@@ -677,8 +650,8 @@ IMessageCounter =0
   
   RETURN
 
-END SUBROUTINE ReadCifFile
-
+END SUBROUTINE ReadCif
+!%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 SUBROUTINE CifReset(IErr)
   
   USE WriteToScreen

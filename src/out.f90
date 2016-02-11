@@ -150,7 +150,7 @@ SUBROUTINE OpenImageForReadIn(IErr,filename)
 
   CHARACTER*34 filename
 
-  IF((IWriteFLAG.GE.0.AND.my_rank.EQ.0).OR.IWriteFLAG.GE.10) THEN
+  IF((IWriteFLAG.GE.10.AND.my_rank.EQ.0).OR.IWriteFLAG.GE.10) THEN
 
      PRINT*,"OpenImageForReadIn()"
 
@@ -158,7 +158,7 @@ SUBROUTINE OpenImageForReadIn(IErr,filename)
 
   !filename = "Felix.img"
 
-  IF((IWriteFLAG.GE.0.AND.my_rank.EQ.0).OR.IWriteFLAG.GE.10) THEN
+  IF((IWriteFLAG.GE.10.AND.my_rank.EQ.0).OR.IWriteFLAG.GE.10) THEN
      
      PRINT*,filename
 
@@ -189,13 +189,10 @@ SUBROUTINE ReadImageForRefinement(IErr)
 
   IMPLICIT NONE
 
-  INTEGER(IKIND) :: &
-       IErr,ind
+  INTEGER(IKIND) :: IErr,ind
 
-  IF((IWriteFLAG.GE.0.AND.my_rank.EQ.0).OR.IWriteFLAG.GE.10) THEN
-
+  IF((IWriteFLAG.GE.10.AND.my_rank.EQ.0).OR.IWriteFLAG.GE.10) THEN
      PRINT*,"ReadImageForRefinement()"
-
   END IF
 
   DO ind=1,2*IPixelCount
@@ -229,12 +226,9 @@ SUBROUTINE OpenReflectionImage(IChOutWrite, surname, IErr,IReflectWriting,IImage
   USE IChannels
   IMPLICIT NONE
 
-  CHARACTER(*) :: &
-       surname
-  CHARACTER*20 :: &
-       prefix,postfix,h,k,l
-  INTEGER(IKIND) :: &
-       IChOutWrite, IErr,IReflectWriting,IImageSizeX
+  CHARACTER(*) :: surname
+  CHARACTER*20 :: prefix,postfix,h,k,l
+  INTEGER(IKIND) :: IChOutWrite, IErr,IReflectWriting,IImageSizeX
   CHARACTER*250 filename
   CHARACTER*40 fileext
   CHARACTER*60 Simagesize
@@ -386,7 +380,7 @@ SUBROUTINE WriteReflectionImage( IChOutWrite, data, IErr,IImageSizeX,IImageSizeY
 
 END SUBROUTINE WriteReflectionImage
 
-SUBROUTINE WriteCifFile(IErr)
+SUBROUTINE WriteCif(IErr)
 
   USE MyNumbers
   USE WriteToScreen
@@ -425,7 +419,7 @@ SUBROUTINE WriteCifFile(IErr)
 
   call close_
 
-END SUBROUTINE WriteCifFile
+END SUBROUTINE WriteCif
   
 !Write out the sample input file, when none provided
 SUBROUTINE WriteOutInputFile (IErr)
@@ -501,7 +495,7 @@ SUBROUTINE WriteOutInputFile (IErr)
      CALL WriteToScreenandFile(ADJUSTL("RInitialThickness        = 400.0"),IErr)
      CALL WriteToScreenandFile(ADJUSTL("RFinalThickness          = 700.0"),IErr)
      CALL WriteToScreenandFile(ADJUSTL("RDeltaThickness          = 10.0"),IErr)
-     CALL WriteToScreenandFile(ADJUSTL("IReflectOut              = 7"),IErr)
+     CALL WriteToScreenandFile(ADJUSTL("INoOfLacbedPatterns              = 7"),IErr)
 
      IF(ISoftwareMode.EQ.2) THEN
         CALL WriteToScreenandFile(ADJUSTL(""),IErr)

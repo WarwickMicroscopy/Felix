@@ -296,8 +296,8 @@ SUBROUTINE ReadInpFile( IErr )
   CALL Message ("ReadInpFile",IInfo,IErr,MessageVariable ="RDeltaThickness",RVariable=RDeltaThickness)
   
   ILine= ILine+1
-  READ(IChInp,10,ERR=20,END=30) IReflectOut
-  CALL Message ("ReadInpFile",IInfo,IErr,MessageVariable ="IReflectOut",IVariable=IReflectOut)
+  READ(IChInp,10,ERR=20,END=30) INoOfLacbedPatterns
+  CALL Message ("ReadInpFile",IInfo,IErr,MessageVariable ="INoOfLacbedPatterns",IVariable=INoOfLacbedPatterns)
 
 
   IF(ISoftwareMode.EQ.2) THEN
@@ -329,44 +329,17 @@ SUBROUTINE ReadInpFile( IErr )
      
      IF((IWriteFLAG.GE.0.AND.my_rank.EQ.0).OR.IWriteFLAG.GE.10) THEN
         IF(IWriteFLAG.GE.4) THEN
-           DO ind = 1,IRefinementVariableTypes
-              SRefineYESNO = 'NO'
-              SELECT CASE (ind)
-              CASE(1)
-                 IF(IRefineModeSelectionArray(ind).EQ.1) SRefineYESNO = 'YES'
-                 PRINT*,"Refine Structure Factors ",SRefineYESNO
-              CASE(2)
-                 IF(IRefineModeSelectionArray(ind).EQ.1) SRefineYESNO = 'YES'
-                 PRINT*,"Refine Atomic Coordinates ",SRefineYESNO
-              CASE(3)
-                 IF(IRefineModeSelectionArray(ind).EQ.1) SRefineYESNO = 'YES'
-                 PRINT*,"Refine Atomic Site Occupancies ",SRefineYESNO
-              CASE(4)
-                 IF(IRefineModeSelectionArray(ind).EQ.1) SRefineYESNO = 'YES'
-                 PRINT*,"Refine Isotropic Debye Waller Factors ",SRefineYESNO
-              CASE(5)
-                 IF(IRefineModeSelectionArray(ind).EQ.1) SRefineYESNO = 'YES'
-                 PRINT*,"Refine Anisotropic Debye Waller Factors ",SRefineYESNO
-              CASE(6)
-                 IF(IRefineModeSelectionArray(ind).EQ.1) SRefineYESNO = 'YES'
-                 PRINT*,"Refine Lattice Lengths ",SRefineYESNO
-              CASE(7)
-                 IF(IRefineModeSelectionArray(ind).EQ.1) SRefineYESNO = 'YES'
-                 PRINT*,"Refine Lattice Angles ",SRefineYESNO
-              CASE(8)
-                 IF(IRefineModeSelectionArray(ind).EQ.1) SRefineYESNO = 'YES'
-                 PRINT*,"Refine Convergence Angle ",SRefineYESNO
-              CASE(9)
-                 IF(IRefineModeSelectionArray(ind).EQ.1) SRefineYESNO = 'YES'
-                 PRINT*,"Refine Total Absorption ",SRefineYESNO
-              CASE(10)
-                 IF(IRefineModeSelectionArray(ind).EQ.1) SRefineYESNO = 'YES'
-                 PRINT*,"Refine Accelerating Voltage ",SRefineYESNO
-              CASE(11)
-                 IF(IRefineModeSelectionArray(ind).EQ.1) SRefineYESNO = 'YES'
-                 PRINT*,"Refine Residual Sum of Squares Scaling Factor ",SRefineYESNO
-              END SELECT
-           END DO
+		  IF(IRefineModeSelectionArray(1).EQ.1) PRINT*,"Refining Structure Factors "
+		  IF(IRefineModeSelectionArray(2).EQ.1) PRINT*,"Refining Atomic Coordinates"
+		  IF(IRefineModeSelectionArray(3).EQ.1) PRINT*,"Refining Occupancies "
+		  IF(IRefineModeSelectionArray(4).EQ.1) PRINT*,"Refining Isotropic Debye Waller Factors"
+		  IF(IRefineModeSelectionArray(5).EQ.1) PRINT*,"Refining Anisotropic Debye Waller Factors "
+		  IF(IRefineModeSelectionArray(6).EQ.1) PRINT*,"Refining Lattice Lengths "
+		  IF(IRefineModeSelectionArray(7).EQ.1) PRINT*,"Refining Lattice Angles "
+		  IF(IRefineModeSelectionArray(8).EQ.1) PRINT*,"Refining Convergence Angle "
+		  IF(IRefineModeSelectionArray(9).EQ.1) PRINT*,"Refining Absorption"
+		  IF(IRefineModeSelectionArray(10).EQ.1) PRINT*,"Refining Accelerating Voltage "
+		  IF(IRefineModeSelectionArray(11).EQ.1) PRINT*,"Refining Scale Factor "
         ELSE
            PRINT*,"IRefineModeSelectionArray = ",IRefineModeSelectionArray
         END IF
@@ -565,16 +538,14 @@ SUBROUTINE ReadHklFile(IErr)
 
   100 ILength=ILine
 
-  ALLOCATE(&
-       RInputHKLs(ILength,THREEDIM),&
+  ALLOCATE(RInputHKLs(ILength,THREEDIM),&
        STAT=IErr)
   IF( IErr.NE.0 ) THEN
      PRINT*,"ReadHklFile(): error in memory ALLOCATE()"
      RETURN
   ENDIF
 
-  ALLOCATE(&
-       IOutputReflections(ILength),&
+  ALLOCATE(IOutputReflections(ILength),&
        STAT=IErr)
   IF( IErr.NE.0 ) THEN
      PRINT*,"ReadHklFile(): error in memory ALLOCATE()"
@@ -628,7 +599,7 @@ SUBROUTINE ReadHklFile(IErr)
 !!$     END IF
   END DO
 
-  IReflectOut = ILength
+  INoOfLacbedPatterns = ILength
 
   RETURN
 
@@ -652,10 +623,8 @@ SUBROUTINE DetermineRefineableAtomicSites(SAtomicSites,IErr)
   
   IMPLICIT NONE  
   
-  INTEGER(IKIND) :: &
-       IPos,IPos1,IPos2,IErr,ind
-  CHARACTER*200 :: &
-       SAtomicSites,SFormatString,SLengthofNumberString
+  INTEGER(IKIND) :: IPos,IPos1,IPos2,IErr,ind
+  CHARACTER*200 :: SAtomicSites,SFormatString,SLengthofNumberString
 
   IPos1 = SCAN(SAtomicSites,'(')
   IPos2 = SCAN(SAtomicSites,')')
@@ -668,9 +637,7 @@ SUBROUTINE DetermineRefineableAtomicSites(SAtomicSites,IErr)
   END IF
 
   IF ((IPos2-IPos1).GT.1.AND.SCAN(SAtomicSites,',').EQ.0) THEN
-     ALLOCATE(&
-          IAtomicSitesToRefine(1),&
-          STAT=IErr)
+     ALLOCATE(IAtomicSitesToRefine(1),STAT=IErr)
      IF( IErr.NE.0 ) THEN
         PRINT*,"ReadInpFile(): error in memory ALLOCATE()"
         RETURN
@@ -691,8 +658,7 @@ SUBROUTINE DetermineRefineableAtomicSites(SAtomicSites,IErr)
         IF (IPos2-IPos1.LE.1) EXIT
      END DO
      
-     ALLOCATE(&
-          IAtomicSitesToRefine(IPos),&
+     ALLOCATE(IAtomicSitesToRefine(IPos),&
           STAT=IErr)
      IF( IErr.NE.0 ) THEN
         PRINT*,"ReadInpFile(): error in memory ALLOCATE()"
@@ -713,8 +679,8 @@ SUBROUTINE DetermineRefineableAtomicSites(SAtomicSites,IErr)
            READ(SAtomicSites((IPos1+1):(IPos2-1)),FMT=SFormatString) IAtomicSitesToRefine(ind)
         END IF
      END DO
-     
   END IF
+!XX PRINT*, "Refining atoms",IAtomicSitesToRefine!XX     
   
 END SUBROUTINE DetermineRefineableAtomicSites
 
@@ -733,14 +699,12 @@ SUBROUTINE ReadExperimentalImages(IErr)
 
   IMPLICIT NONE
   
-  INTEGER(IKIND) :: &
-       ind,IErr
-  INTEGER(IKIND) :: &
-       INegError = 0
-  CHARACTER*34 :: &
-       filename
+  INTEGER(IKIND) :: ind,IErr
+  INTEGER(IKIND) :: INegError = 0
+  CHARACTER*34 :: filename
+  CHARACTER*200 :: SPrintString
 
-  DO ind = 1,IReflectOut
+  DO ind = 1,INoOfLacbedPatterns
      
      WRITE(filename,"(A6,I3.3,A4)") "felix.",ind,".img"
      
@@ -750,9 +714,7 @@ SUBROUTINE ReadExperimentalImages(IErr)
         RETURN
      END IF
      
-     ALLOCATE( &
-          RImageIn(2*IPixelCount,2*IPixelCount), &
-          STAT=IErr)  
+     ALLOCATE(RImageIn(2*IPixelCount,2*IPixelCount), STAT=IErr)  
      IF( IErr.NE.0 ) THEN
         PRINT*,"ReadExperimentalImages (", my_rank, ") error in Allocation()"
         RETURN
@@ -775,9 +737,7 @@ SUBROUTINE ReadExperimentalImages(IErr)
 
      RImageExpi(:,:,ind) = RImageIn
      
-     DEALLOCATE( &
-          RImageIn, &
-          STAT=IErr)  
+     DEALLOCATE(RImageIn, STAT=IErr)  
      IF( IErr.NE.0 ) THEN
         PRINT*,"ReadExperimentalImages (", my_rank, ") error in deAllocation()"
         RETURN
@@ -797,6 +757,13 @@ SUBROUTINE ReadExperimentalImages(IErr)
      PRINT*,"No. of Images with Negative Values",INegError
   END IF
 
+  IF(my_rank.EQ.0) THEN
+    IF( IErr.EQ.0 ) THEN
+     WRITE(SPrintString,FMT='(I3,A40)') INoOfLacbedPatterns," experimental images successfully loaded"
+     PRINT*,TRIM(ADJUSTL(SPrintString))
+!        PRINT*, INoOfLacbedPatterns,"experimental images successfully loaded"
+    END IF
+  END IF
 
 END SUBROUTINE ReadExperimentalImages
 

@@ -148,14 +148,10 @@ MODULE IPara
   USE IConst 
   
   !Write Out
-  
-  INTEGER(IKIND) :: &
-       IMAXRBuffer,  IMAXCBuffer     
+  INTEGER(IKIND) :: IMAXRBuffer,  IMAXCBuffer     
   
   !Input Flags
-
-  INTEGER(IKIND) :: &
-       IWriteFLAG,IDebugFLAG,IScatterFactorMethodFLAG, &
+  INTEGER(IKIND) :: IWriteFLAG,IDebugFLAG,IScatterFactorMethodFLAG, &
        IMaskFLAG, IVolumeFLAG, &
        IZolzFLAG,IAbsorbFLAG, IAnisoDebyeWallerFactorFlag, &
        IImageFLAG,IBeamConvergenceFLAG,  &
@@ -164,147 +160,86 @@ MODULE IPara
        IWeightingFLAG,IContinueFLAG,ICorrelationFLAG,IImageProcessingFLAG
 
   !Minimum Reflections etc
-  INTEGER(IKIND) :: &
-       IMinReflectionPool,IMinStrongBeams,IMinWeakBeams
+  INTEGER(IKIND) :: IMinReflectionPool,IMinStrongBeams,IMinWeakBeams
 
   !OtherFLAGS
-
-  INTEGER(IKIND) :: &
-       IDiffractionFLAG=0
+  INTEGER(IKIND) :: IDiffractionFLAG=0
 
   !Disk Radius
-
-  INTEGER(IKIND) :: &
-       IPixelCount
+  INTEGER(IKIND) :: IPixelCount
   
   !Crystal Settings
-
-  INTEGER(IKIND) :: &
-       ITotalAtoms
+  INTEGER(IKIND) :: ITotalAtoms
 
   ! Name2Atom index
-  INTEGER(IKIND), DIMENSION(:), ALLOCATABLE :: &
-       IAtomNumber,IAtoms
+  INTEGER(IKIND), DIMENSION(:), ALLOCATABLE :: IAtomicNumber,IAtoms
 
   !Microscope Settings
-
-  INTEGER(IKIND) :: &
-       IIncidentBeamDirectionX, IIncidentBeamDirectionY, &
+  INTEGER(IKIND) :: IIncidentBeamDirectionX, IIncidentBeamDirectionY, &
        IIncidentBeamDirectionZ, &
        IXDirectionX, IXDirectionY, IXDirectionZ, &
        INormalDirectionX,INormalDirectionY,INormalDirectionZ
 
   !Iterative Ug
-
-  INTEGER(IKIND) :: &
-       INoofUgs
+  INTEGER(IKIND) :: INoofUgs
 
   !LACBED Input
 
-  INTEGER(IKIND) :: &
-       IReflectOut
+  INTEGER(IKIND) :: INoOfLacbedPatterns
 
   !Beams from selection criteria
-
-  INTEGER(IKIND) :: &  
-       nReflections,nStrongBeams,nWeakBeams,nBeams,IHKLMAXValue
-  INTEGER(IKIND), DIMENSION(:), ALLOCATABLE :: &
-       IAnisotropicDWFTensor, IAnisoDWFT
+  INTEGER(IKIND) :: nReflections,nStrongBeams,nWeakBeams,nBeams,IHKLMAXValue
+  INTEGER(IKIND), DIMENSION(:), ALLOCATABLE :: IAnisotropicDWFTensor, IAnisoDWFT
 
   !Main
-
-  INTEGER(IKIND) :: &
-       IPixelTotal, INAtomsUnitCell,IPixelComputed
-
-  INTEGER, DIMENSION(2) :: & 
-       IImageSizeXY
+  INTEGER(IKIND) :: IPixelTotal, INAtomsUnitCell,IPixelComputed
+  INTEGER, DIMENSION(2) :: IImageSizeXY
 
   !Refinement FLAGS
-  INTEGER(IKIND) :: &
-       IImageOutputFLAG
+  INTEGER(IKIND) :: IImageOutputFLAG
   
   !LACBED
-
-  INTEGER(IKIND),DIMENSION(:,:), ALLOCATABLE :: &
-       ILACBEDStrongBeamList, IPixelLocation, ISymmetryRelations
-  INTEGER(IKIND),DIMENSION(:), ALLOCATABLE :: &
-       InBeams,IStrongBeamList,IOutputReflections,ISymmetryStrengthKey
+  INTEGER(IKIND),DIMENSION(:,:), ALLOCATABLE :: ILACBEDStrongBeamList, IPixelLocation, ISymmetryRelations
+  INTEGER(IKIND),DIMENSION(:), ALLOCATABLE :: InBeams,IStrongBeamList,IOutputReflections,IEquivalentUgKey
 
   !inpcif
-
-  INTEGER(IKIND) :: &
-      ISymCount
-  
-  INTEGER(IKIND), DIMENSION(:), ALLOCATABLE :: &
-       IFullAtomNumber, IFullAnisotropicDWFTensor
-
-  INTEGER(IKIND) :: &
-       IPixelCountTotal
+  INTEGER(IKIND) :: ISymCount
+  INTEGER(IKIND), DIMENSION(:), ALLOCATABLE :: IFullAtomicNumber, IFullAnisotropicDWFTensor
+  INTEGER(IKIND) :: IPixelCountTotal
 
   !LACBED Writing
-
-  INTEGER(IKIND) :: &
-       ISeperateFolderFlag
+  INTEGER(IKIND) :: ISeperateFolderFlag
+  
   ! Thickness loop Variables
-
-  INTEGER(IKIND) :: &
-       IThicknessCount
-
-  INTEGER(IKIND),DIMENSION(:,:),ALLOCATABLE :: &
-       IPixelLocations
+  INTEGER(IKIND) :: IThicknessCount
+  INTEGER(IKIND),DIMENSION(:,:),ALLOCATABLE :: IPixelLocations
 
   !Refine Parameters
-
-  INTEGER(IKIND) :: &
-       IFluxIterationSteps,IElements
-
-  INTEGER(IKIND), DIMENSION(2) :: &
-       IOffset
-
-  INTEGER(IKIND), DIMENSION(:),ALLOCATABLE :: &
-       IElementList
+  INTEGER(IKIND) :: IFluxIterationSteps,IElements
+  INTEGER(IKIND), DIMENSION(2) :: IOffset
+  INTEGER(IKIND), DIMENSION(:),ALLOCATABLE :: IElementList
 
   !Ug Calculation
+  INTEGER(IKIND) :: ICurrentAtom,IAtom
 
-   INTEGER(IKIND) :: &
-        ICurrentAtom,IAtom
-
-   !Refine Mode Binary Selection
-   
-   INTEGER(IKIND),DIMENSION(IRefinementVariableTypes) :: &
-        IRefineModeSelectionArray
+  !Refinement   
+  INTEGER(IKIND),DIMENSION(IRefinementVariableTypes) :: IRefineModeSelectionArray
+  INTEGER(IKIND),DIMENSION(IRefinementVariableTypes) :: INoofElementsForEachRefinementType  !zz
+  INTEGER(IKIND),DIMENSION(:,:),ALLOCATABLE :: IIterativeVariableUniqueIDs
 
    !List of Atomic Sites for Refinement
-
-   INTEGER(IKIND),DIMENSION(:),ALLOCATABLE :: &
-        IAtomicSitesToRefine
+   INTEGER(IKIND),DIMENSION(:),ALLOCATABLE :: IAtomicSitesToRefine
 
    !Simplex Variables
-
-   INTEGER(IKIND) :: &
-        IIndependentVariables
-
-   !Iterative Ids
-
-   INTEGER(IKIND),DIMENSION(:,:),ALLOCATABLE :: &
-        IIterativeVariableUniqueIDs
+   INTEGER(IKIND) :: IIndependentVariables
 
    ! Refinement Vectors
-
-   INTEGER(IKIND) :: &
-        IAllowedVectors
-
-   INTEGER(IKIND),DIMENSION(:),ALLOCATABLE :: &
-        IAllowedVectorIDs
-
-   INTEGER(IKIND) :: & 
-        IFelixCount,IPreviousPrintedIteration,IStandardDeviationCalls
+   INTEGER(IKIND) :: IAllowedVectors
+   INTEGER(IKIND),DIMENSION(:),ALLOCATABLE :: IAllowedVectorIDs
+   INTEGER(IKIND) :: IFelixCount,IPreviousPrintedIteration,IStandardDeviationCalls
    
-   !Message Counter (Avoid subroutines printing out 
-   !entering message more than once)
-
-   INTEGER(IKIND) :: &
-        IMessageCounter=0
+   !Message Counter (Avoid subroutines printing out message more than once)
+   INTEGER(IKIND) :: IMessageCounter=0
 
 END MODULE IPara
 
@@ -317,197 +252,113 @@ MODULE RPara
   !INPUT Section
   
   !Beam Selection Criteria
-  
-  REAL(RKIND) :: &
-       RBSMaxDeviationPara, RBSMaxGVecAmp, RBSBethePara, &
+  REAL(RKIND) :: RBSMaxDeviationPara, RBSMaxGVecAmp, RBSBethePara, &
        RBSBmax, RBSPMax
   
-  !Crystal Settings
-  
-  REAL(RKIND) :: &
-       RLengthX, RLengthY, RLengthZ, RVolume, &
-       RAlpha, RBeta, RGamma, &
+  !Crystallography
+  REAL(RKIND) :: RLengthX,RLengthY,RLengthZ,RVolume,RAlpha,RBeta,RGamma, &
        RDebyeWallerConstant,RAbsorptionPercentage
-  
   REAL(RKIND), DIMENSION(:), ALLOCATABLE :: &
        RIsotropicDebyeWallerFactors, RAtomicSitePartialOccupancy, RDWF, ROcc
-  
-  REAL(RKIND), DIMENSION(:,:), ALLOCATABLE :: &
-       RSymVec,RAtomSiteFracCoordVec, MNP,&
+  REAL(RKIND), DIMENSION(:,:), ALLOCATABLE :: RSymVec,RAtomSiteFracCoordVec, MNP,&
        RUniqueKey
-  
-  REAL(RKIND), DIMENSION(:,:,:), ALLOCATABLE :: &
-       RSymMat
+  REAL(RKIND), DIMENSION(:,:,:), ALLOCATABLE :: RSymMat
 
   !Microscope Parameters
+  REAL(RKIND) :: RConvergenceAngle, RAcceleratingVoltage,RInnerConvergenceAngle
+  REAL(RKIND) :: RElectronVelocity, RElectronWaveLength, &
+       RElectronWaveVectorMagnitude, RRelativisticCorrection, &
+       RRelativisticMass, RBraggCentral, RAcceptanceAngle
 
-  REAL(RKIND) :: &
-       RConvergenceAngle, RAcceleratingVoltage,RInnerConvergenceAngle
-
-  !LACBED Input
-
-  REAL(RKIND) :: &
-       RInitialThickness, &
-       RFinalThickness, &
-       RDeltaThickness, &
-       RInitialDebyeWallerFactor, &
-       RFinalDebyeWallerFactor,&
+  !LACBED
+  REAL(RKIND) :: RInitialThickness,RFinalThickness,RDeltaThickness, &
+       RInitialDebyeWallerFactor,RFinalDebyeWallerFactor,&
        RDeltaDebyeWallerFactor
 
   !Iterative Ugs
-
-  REAL(RKIND) :: &
-       RPercentageUgChange
+  REAL(RKIND) :: RPercentageUgChange
 
   !Debye Waller Factor not sure if we use this 
-  REAL(RKIND) :: & 
-       RMeanSquaredDisplacement
+  REAL(RKIND) :: RMeanSquaredDisplacement
 
 
   !HKL indices 
-  REAL(RKIND), DIMENSION(:,:), ALLOCATABLE :: &
-       RHKL 
-  REAL(RKIND), DIMENSION(:,:), ALLOCATABLE :: &
-       RInputHKLs
+  REAL(RKIND), DIMENSION(:,:), ALLOCATABLE :: Rhkl 
+  REAL(RKIND), DIMENSION(:,:), ALLOCATABLE :: RInputHKLs
 
   ! scattering factors
-  REAL(RKIND), DIMENSION(:,:), ALLOCATABLE :: &
-      RScattFactors 
-
-  ! Microscopy Settings
-  REAL(RKIND) :: &
-       RElectronVelocity, RElectronWaveLength, &
-       RElectronWaveVectorMagnitude, RRelativisticCorrection, &
-       RRelativisticMass, RBraggCentral, RAcceptanceAngle
+  REAL(RKIND), DIMENSION(:,:), ALLOCATABLE :: RScattFactors 
 
   ! Crystallography 
   ! Real Space and Reciprocal Lattice Vectors in Orthogonal and Microscope
   ! reference framce
-  REAL(RKIND), DIMENSION(THREEDIM) :: &
-       RXDirM, RYDirM, RZDirM,& 
+  REAL(RKIND), DIMENSION(THREEDIM) :: RXDirM,RYDirM,RZDirM,& 
        RaVecO, RbVecO, RcVecO, &
        RaVecM, RbVecM, RcVecM, &
        RarVecO, RbrVecO, RcrVecO, &
        RarVecM, RbrVecM, RcrVecM, &
-       RXDirC, RZDirC, &
-       RNormDirC,RNormDirM
-  
-  REAL(RKIND), DIMENSION(:,:), ALLOCATABLE :: &
-       RrVecMat
-
-  REAL(RKIND) :: &
-       RBaseVec(THREEDIM,THREEDIM), &
+       RXDirC, RZDirC, RNormDirC,RNormDirM
+  REAL(RKIND), DIMENSION(:,:), ALLOCATABLE :: RrVecMat
+  REAL(RKIND) :: RBaseVec(THREEDIM,THREEDIM), &
        RInvBaseVec(THREEDIM,THREEDIM)
-  
-  REAL(RKIND), DIMENSION(:,:,:), ALLOCATABLE :: &
-       RAnisotropicDebyeWallerFactorTensor
+  REAL(RKIND), DIMENSION(:,:,:), ALLOCATABLE :: RAnisotropicDebyeWallerFactorTensor
   
   !Diffraction Pattern Definitions
-  
-  REAL(RKIND), DIMENSION(:), ALLOCATABLE :: &
-       RgVecMag, RSg
-  
-  REAL(RKIND), DIMENSION(:,:), ALLOCATABLE :: &
-       RgVecMat, RgVecMatT, RgVecMagLaueZone
-  
-  REAL(RKIND), DIMENSION(THREEDIM,THREEDIM) :: &
-       RTMat
-
-  REAL(RKIND) :: &
-       RDeltaK, RMinimumGMag,RGVectorMagnitude
-  
-  REAL(RKIND),DIMENSION(THREEDIM) :: &
-       RGVector
-
-  REAL(RKIND),DIMENSION(:),ALLOCATABLE :: &
-       RgVecVec
+  REAL(RKIND), DIMENSION(:), ALLOCATABLE :: RgPoolMag, RSg
+  REAL(RKIND), DIMENSION(:,:), ALLOCATABLE :: RgPool, RgPoolT, RgPoolMagLaueZone
+  REAL(RKIND), DIMENSION(THREEDIM,THREEDIM) :: RTMat
+  REAL(RKIND) :: RDeltaK, RMinimumGMag,RGVectorMagnitude
+  REAL(RKIND),DIMENSION(THREEDIM) :: RGVector
+  REAL(RKIND),DIMENSION(:),ALLOCATABLE :: RgVecVec
 
   !Image Initialisation
-  
-  REAL(RKIND),DIMENSION(:,:),ALLOCATABLE :: & 
-       Rhklpositions
-  REAL(RKIND),DIMENSION(:,:,:),ALLOCATABLE :: &
-       RFinalMontageImage
+  REAL(RKIND),DIMENSION(:,:),ALLOCATABLE :: RhklPositions
+  REAL(RKIND),DIMENSION(:,:,:),ALLOCATABLE :: RFinalMontageImage
 
   !Main Program
-  
-  REAL(RKIND) :: &
-       RMeanInnerCrystalPotential
-  
-  REAL(RKIND),DIMENSION(:,:),ALLOCATABLE :: & 
-       RMask, RgMatMag, RgSumMat!RB
-  
-  REAL(RKIND),DIMENSION(:,:,:),ALLOCATABLE :: & 
-       RgMatMat
-
-  REAL(RKIND) :: &
-       ROuterIntegralLowerBound,ROuterIntegralUpperBound,&
+  REAL(RKIND) :: RMeanInnerCrystalPotential
+  REAL(RKIND),DIMENSION(:,:),ALLOCATABLE :: RMask, RgMatMag, RgSumMat!RB
+  REAL(RKIND),DIMENSION(:,:,:),ALLOCATABLE :: RgMatMat
+  REAL(RKIND) :: ROuterIntegralLowerBound,ROuterIntegralUpperBound,&
        RInnerIntegralLowerBound,RInnerIntegralUpperBound,&
        RInnerIntegrationParameterGMagPrime,&
        ROuterIntegrationParameterGMagPrime
   
   !LACBED Program
-  
-  REAL(RKIND), DIMENSION(:,:), ALLOCATABLE :: &
-       RFullAtomicFracCoordVec
-  REAL(RKIND), DIMENSION(:), ALLOCATABLE :: &
-       RFullPartialOccupancy, RFullIsotropicDebyeWallerFactor
+  REAL(RKIND), DIMENSION(:,:), ALLOCATABLE :: RFullAtomicFracCoordVec
+  REAL(RKIND), DIMENSION(:), ALLOCATABLE :: RFullPartialOccupancy, RFullIsotropicDebyeWallerFactor
 
   !WaveFunction Arrays
-
-  REAL(RKIND),DIMENSION(:),ALLOCATABLE :: &
-       RWaveIntensity,RFullWaveIntensity
-    
-  REAL(RKIND), DIMENSION(:,:,:), ALLOCATABLE :: &
-       RIndividualReflections
+  REAL(RKIND),DIMENSION(:),ALLOCATABLE :: RWaveIntensity,RFullWaveIntensity
+  REAL(RKIND), DIMENSION(:,:,:), ALLOCATABLE :: RIndividualReflections
 
   !Refinement Variables
-
-  REAL(RKIND), DIMENSION(:,:),ALLOCATABLE :: &
-       RImageIn
-
-  REAL(RKIND) :: &
-       RCrossCorrelation,RDeltaUgChange,RlowerBoundUgChange,RUpperBoundUgChange
+  REAL(RKIND), DIMENSION(:,:),ALLOCATABLE :: RImageIn
+  REAL(RKIND) :: RCrossCorrelation,RDeltaUgChange,RlowerBoundUgChange,RUpperBoundUgChange
 
   !Ug' Unique Values
-  REAL(RKIND),DIMENSION(:),ALLOCATABLE :: &
-       RUniqueUgPrimeValues
-
+  REAL(RKIND),DIMENSION(:),ALLOCATABLE :: RUniqueUgPrimeValues
   
   ! Experimental Images for felixrefine
-
-  REAL(RKIND),DIMENSION(:,:,:),ALLOCATABLE :: &
-       RImageExpi  
-
-  ! Independent Variable Values
-!!$  REAL(RKIND),DIMENSION(:),ALLOCATABLE :: &
-!!$       RIndependentVariableValues
+  REAL(RKIND),DIMENSION(:,:,:),ALLOCATABLE :: RImageExpi  
 
   !Iterative Variable Value
-  REAL(RKIND) :: &
-       RValue
+  REAL(RKIND) :: RValue
 
   !Refinement Vectors
-
-  REAL(RKIND),DIMENSION(:,:),ALLOCATABLE :: &
-       RAllowedVectors
-  REAL(RKIND),DIMENSION(:),ALLOCATABLE :: &
-       RAllowedVectorMagnitudes
-  REAL(RKIND) :: &
-       RSimplexLengthScale,RExitCriteria,RSimplexStandardDeviation,RSimplexMean,RRSoSScalingFactor
+  REAL(RKIND),DIMENSION(:,:),ALLOCATABLE :: RAllowedVectors
+  REAL(RKIND),DIMENSION(:),ALLOCATABLE :: RAllowedVectorMagnitudes
+  REAL(RKIND) :: RSimplexLengthScale,RExitCriteria,RSimplexStandardDeviation,RSimplexMean,RRSoSScalingFactor
 
   !Refinement Initial Coordinates
-
-  REAL(RKIND),DIMENSION(:,:),ALLOCATABLE :: &
-       RInitialAtomSiteFracCoordVec
+  REAL(RKIND),DIMENSION(:,:),ALLOCATABLE :: RInitialAtomSiteFracCoordVec
 
   !Weighting Coefficients for figure of merit combination
-  REAL(RKIND),DIMENSION(:),ALLOCATABLE :: &
-       RWeightingCoefficients
-
-  
+  REAL(RKIND),DIMENSION(:),ALLOCATABLE :: RWeightingCoefficients
 
 END MODULE RPara
+
+!!$%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 MODULE CPara
 
@@ -518,7 +369,7 @@ MODULE CPara
   COMPLEX(CKIND), DIMENSION(:,:,:), ALLOCATABLE :: &
        CEigenVectorsChunk
   COMPLEX(CKIND),DIMENSION(:),ALLOCATABLE :: &
-       CAlphaWeightingCoefficients, CPsi0,CSymmetryStrengthKey
+       CAlphaWeightingCoefficients, CPsi0,CUgToRefine
   COMPLEX(CKIND),DIMENSION(:,:), ALLOCATABLE :: &
        CEigenValueDependentTerms,CInvertedEigenVectors, &
        CBeamProjectionMatrix,CDummyBeamMatrix

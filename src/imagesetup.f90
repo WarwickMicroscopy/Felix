@@ -49,58 +49,33 @@ SUBROUTINE ImageSetup (IErr)
 
   IMPLICIT NONE
 
-  INTEGER(IKIND) :: &
-       IErr
+  INTEGER(IKIND) :: IErr
 
-  !--------------------------------------------------------------------
-  ! allocate memory for DYNAMIC variables according to nReflections
-  !--------------------------------------------------------------------
-
-  ! Image initialisation 
-
-  CALL Message("ImageSetup",IMust,IErr)
   
-  ALLOCATE( &
-       Rhklpositions(nReflections,2), &
-       STAT=IErr)
-  IF( IErr.NE.0 ) THEN
-     PRINT*,"ImageSetup(", my_rank, ") error ", IErr, &
-          " in ALLOCATE() of DYNAMIC variable Rhklpositions"
-     RETURN
-  ENDIF
-
-  !--------------------------------------------------------------------
-  ! image initialisation
-  !--------------------------------------------------------------------
+  ! Image initialisation 
+  CALL Message("ImageSetup",IMust,IErr)
 
   CALL ImageInitialisation( IErr )
   IF( IErr.NE.0 ) THEN
-     PRINT*,"ImageSetup(", my_rank, ") error", IErr, &
-	  "in ImageInitialistion()"
+     PRINT*,"ImageSetup(",my_rank,")error in ImageInitialistion"
      RETURN
-  ENDIF
-
+  END IF
+  
   !--------------------------------------------------------------------
   ! define image masks
   !--------------------------------------------------------------------
       
-  !Allocate Memory for Masking Image
-
-  ALLOCATE( &
-       RMask(2*IPixelCount,2*IPixelCount),&
-       STAT=IErr)
+  ALLOCATE(RMask(2*IPixelCount,2*IPixelCount),STAT=IErr)
   IF( IErr.NE.0 ) THEN
-     PRINT*,"ImageSetup(", my_rank, ") error ", IErr, &
-          " in ALLOCATE() of DYNAMIC variable RMask"
+     PRINT*,"ImageSetup(",my_rank,")error in allocating RMask"
      RETURN
-  ENDIF
+  END IF
 
   !Calls subroutine that sets up masking image
 
   CALL ImageMaskInitialisation(IErr)
   IF( IErr.NE.0 ) THEN
-     PRINT*,"ImageSetup(", my_rank, ") error ", IErr, &
-          " in ImageMaskInitialisation"
+     PRINT*,"ImageSetup(",my_rank,")error in ImageMaskInitialisation"
      RETURN
   END IF
 

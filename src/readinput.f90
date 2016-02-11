@@ -83,10 +83,10 @@ SUBROUTINE ReadInput(IErr)
   ENDIF
 
   !felix.cif
-  CALL ReadCifFile(IErr)
+  CALL ReadCif(IErr)
   IF( IErr.NE.0 ) THEN
      PRINT*,"ReadInput(", my_rank, ") error",IErr, &
-          "in ReadCifFile()"
+          "in ReadCif()"
      RETURN
   ENDIF
 

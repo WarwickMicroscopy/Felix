@@ -32,18 +32,14 @@
 !
 !%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-!%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-! $Id: util.f90,v 1.95 2014/04/28 12:26:19 phslaz Exp $
-!%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-
 !--------------------------------------------------------------------
-!	ReSort:
+!	Sort:
 !
 !	sort the Lyapunov eigenvalues s.t. the largest comes first. RESORT()
 !	is based on ShellSort from "Numerical Recipes", routine SHELL().
 !---------------------------------------------------------------------
 
-SUBROUTINE ReSortHKL( RHKLarray, N,IErr )
+SUBROUTINE SortHKL( RHKLarray,N,IErr )
 
   USE MyNumbers
   USE WriteToScreen
@@ -59,27 +55,16 @@ SUBROUTINE ReSortHKL( RHKLarray, N,IErr )
 
   IMPLICIT NONE
 
-  INTEGER (IKIND),INTENT(IN) :: &
-       N
-  REAL(RKIND),INTENT(INOUT) :: &
-       RHKLarray(N,THREEDIM)
-  REAL(RKIND) :: &
-       RhklarraySearch(THREEDIM), RhklarrayCompare(THREEDIM)
-  INTEGER (IKIND) IErr
-  
-  REAL(RKIND) :: &
-       ALN2I, LocalTINY
+  INTEGER (IKIND) :: IErr,NN,M,L,K,J,I,LOGNB2,index
+  INTEGER (IKIND),INTENT(IN) :: N
+  REAL(RKIND),INTENT(INOUT) :: RHKLarray(N,THREEDIM)
+  REAL(RKIND) :: RhklarraySearch(THREEDIM), RhklarrayCompare(THREEDIM)
+  REAL(RKIND) :: ALN2I, LocalTINY
   PARAMETER (ALN2I=1.4426950D0, LocalTINY=1.D-5)
   
-  INTEGER (IKIND) :: &
-       NN,M,L,K,J,I,LOGNB2, index
-  REAL(RKIND) :: &
-       dummy
+  REAL(RKIND) :: dummy
 
-  CALL Message("ResortHkl",IMust,IErr)
-!!$  IF((IWriteFLAG.EQ.6.AND.my_rank.EQ.0).OR.IWriteFLAG.GE.10) THEN
-!!$     PRINT*,"ReSort()"
-!!$  END IF
+  CALL Message("SortHkl",IMust,IErr)
   
   NN = 0
   M = 0
@@ -123,12 +108,9 @@ SUBROUTINE ReSortHKL( RHKLarray, N,IErr )
 11   ENDDO
 12 ENDDO
   
-  !PRINT*,"Finishing ResortHKL"
-
-  !	PRINT*,"array0(1),array0(N)",array0(1),array0(N)
   RETURN
 
-END SUBROUTINE ReSortHKL
+END SUBROUTINE SortHKL
 
 !---------------------------------------------------------------------
 SUBROUTINE CONVERTAtomName2Number(name, number, IErr)
@@ -195,17 +177,14 @@ SUBROUTINE CountTotalAtoms(IErr)
 
   IMPLICIT NONE
   
-  INTEGER (IKIND) :: &
-       ind,jnd,knd,hnd,ierr, ifullind, iuniind
-  LOGICAL :: &
-       Lunique
+  INTEGER (IKIND) :: ind,jnd,knd,hnd,ierr, ifullind, iuniind
+  LOGICAL :: Lunique
 
   CALL Message("CountTotalAtoms",IMust,IErr)
      
   ITotalAtoms = 0
 
-  ALLOCATE( &
-       RFullAtomicFracCoordVec( &
+  ALLOCATE(RFullAtomicFracCoordVec( &
        SIZE(RSymVec,1)*SIZE(RAtomSiteFracCoordVec,1),&
        THREEDIM), &
        STAT=IErr)
@@ -213,8 +192,7 @@ SUBROUTINE CountTotalAtoms(IErr)
      PRINT*,"CountTotalAtoms(", my_rank, ") error ", IErr, " in ALLOCATE()"
      RETURN
   ENDIF
-  ALLOCATE( &
-       SFullAtomicNameVec( &
+  ALLOCATE(SFullAtomicNameVec( &
        SIZE(RSymVec,1)*SIZE(RAtomSiteFracCoordVec,1)), &
        STAT=IErr)
   IF( IErr.NE.0 ) THEN
@@ -229,11 +207,9 @@ SUBROUTINE CountTotalAtoms(IErr)
        IVariable = SIZE(RFullAtomicFracCoordVec,1))
 
   DO ind=1, SIZE(RSymVec,DIM=1)
-     
      DO jnd=1, SIZE(RAtomSiteFracCoordVec,DIM=1)
        
         Ifullind= SIZE(RSymVec,1)*(jnd-1) + ind
-        
         RFullAtomicFracCoordVec(Ifullind,:)= &
              MATMUL(RSymMat(ind,:,:),RAtomSiteFracCoordVec(jnd,:)) &
              + RSymVec(ind,:)
@@ -268,17 +244,13 @@ SUBROUTINE CountTotalAtoms(IErr)
   CALL Message("CountTotalAtoms",IMoreInfo,IErr, MessageVariable = "ITotalAtoms", &
        IVariable = ITotalAtoms)
 
-  ALLOCATE( &
-       MNP(1000,THREEDIM), &
-       STAT=IErr)
+  ALLOCATE(MNP(1000,THREEDIM),STAT=IErr)
   IF( IErr.NE.0 ) THEN
      PRINT*,"CountTotalAtoms(", my_rank, ") error ", IErr, " in ALLOCATE()"
      RETURN
   ENDIF
 
-  ALLOCATE( &
-       SMNP(1000), &
-       STAT=IErr)
+  ALLOCATE(SMNP(1000),STAT=IErr)
   IF( IErr.NE.0 ) THEN
      PRINT*,"CountTotalAtoms(", my_rank, ") error ", IErr, " in ALLOCATE()"
      RETURN
@@ -322,39 +294,30 @@ SUBROUTINE CountTotalAtoms(IErr)
   
   CALL Message("CountTotalAtoms",IMoreInfo,IErr,MessageVariable = "ITotalAtoms",IVariable=ITotalAtoms)
 
-  DEALLOCATE( &
-       MNP,&
-       STAT=IErr)
+  DEALLOCATE(MNP,STAT=IErr)
   IF( IErr.NE.0 ) THEN
-     PRINT*,"CountTotalAtoms(", my_rank, ") error ", IErr, &
-          " in Deallocation"
+     PRINT*,"CountTotalAtoms(",my_rank,")error",IErr,"deallocating MNP"
      RETURN
   ENDIF
-  DEALLOCATE(&
-       SMNP, &
-       STAT=IErr)
+  DEALLOCATE(SMNP,STAT=IErr)
   IF( IErr.NE.0 ) THEN
-     PRINT*,"CountTotalAtoms(", my_rank, ") error ", IErr, &
-          " in Deallocation"
+     PRINT*,"CountTotalAtoms(",my_rank,")error",IErr,"deallocating SMNP"
      RETURN
   END IF
-  DEALLOCATE(&
-       RFullAtomicFracCoordVec, &
-       STAT=IErr)
+  DEALLOCATE(RFullAtomicFracCoordVec,STAT=IErr)
   IF( IErr.NE.0 ) THEN
-     PRINT*,"CountTotalAtoms(", my_rank, ") error ", IErr, &
-          " in Deallocation"
+     PRINT*,"CountTotalAtoms(",my_rank,")error",IErr,"deallocating RFullAtomicFracCoordVec"
      RETURN
   END IF
-  DEALLOCATE(&
-       SFullAtomicNameVec,STAT=IErr)
+  DEALLOCATE(SFullAtomicNameVec,STAT=IErr)
   IF( IErr.NE.0 ) THEN
-     PRINT*,"CountTotalAtoms(", my_rank, ") error ", IErr, &
-          " in Deallocation"
+     PRINT*,"CountTotalAtoms(",my_rank,")error",IErr,"deallocating SFullAtomicNameVec"
      RETURN
   ENDIF
   
 END SUBROUTINE CountTotalAtoms
+
+!!$  %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 SUBROUTINE GreatestCommonDivisor(ITotalProcesses,INooDWFs,ISubgroups)
 

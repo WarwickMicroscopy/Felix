@@ -52,22 +52,16 @@ SUBROUTINE WriteOutVariables(IIterationCount,IErr)
 
   IMPLICIT NONE
 
-  INTEGER(IKIND) :: &
-       IErr,ind,IStart,IEnd,jnd, &
-       ITotalOutputVariables
-  INTEGER(IKIND),INTENT(IN) :: &
-       IIterationCount
-  CHARACTER*200 :: &
-       SFormat,STotalOutputVariables
-  INTEGER(IKIND),DIMENSION(IRefinementVariableTypes) :: &
-       IOutputVariables
-  REAL(RKIND),DIMENSION(:),ALLOCATABLE :: &
-       RDataOut
+  INTEGER(IKIND) :: IErr,ind,IStart,IEnd,jnd,ITotalOutputVariables
+  INTEGER(IKIND),INTENT(IN) :: IIterationCount
+  CHARACTER*200 :: SFormat,STotalOutputVariables
+  INTEGER(IKIND),DIMENSION(IRefinementVariableTypes) :: IOutputVariables
+  REAL(RKIND),DIMENSION(:),ALLOCATABLE :: RDataOut
 
   ! Need to Determine total no. of variables to be written out, this is different from the no. of refinement variables
   
   IOutputVariables(1) =  IRefineModeSelectionArray(1) * &
-       2*SIZE(CUgMat,DIM=1) ! Structure Factors are Complex so require two output variables each     
+       2*nReflections ! Structure Factors are Complex so require two output variables each     
   IOutputVariables(2) = IRefineModeSelectionArray(2) * & !Structural Coordinates
        (SIZE(RAtomSiteFracCoordVec,DIM=1) * SIZE(RAtomSiteFracCoordVec,DIM=2))
   IOutputVariables(3) = &
@@ -94,9 +88,7 @@ SUBROUTINE WriteOutVariables(IIterationCount,IErr)
   
   ITotalOutputVariables = SUM(IOutputVariables) ! Total Output
   
-  ALLOCATE(&
-       RDataOut(&
-       ITotalOutputVariables), &
+  ALLOCATE(RDataOut(ITotalOutputVariables), &
        STAT=IErr)
 
   DO jnd = 1,IRefinementVariableTypes
@@ -114,8 +106,8 @@ SUBROUTINE WriteOutVariables(IIterationCount,IErr)
      IEND = SUM(IOutputVariables(1:jnd))
 
      SELECT CASE(jnd)
-     CASE(1)!RB add in absorption
-        DO ind = 1,15!RB SIZE(CUgMat,DIM=1)
+     CASE(1)
+        DO ind = 1,15!RB nReflections
            IStart = (ind*2)-1
            IEnd = ind*2
            RDataOut(IStart:IEnd) = [REAL(REAL(CUgMat(ind,1)),RKIND), REAL(AIMAG(CUgMat(ind,1)),RKIND)]
@@ -155,6 +147,8 @@ SUBROUTINE WriteOutVariables(IIterationCount,IErr)
 
 END SUBROUTINE WriteOutVariables
 
+!%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
 SUBROUTINE WriteIterationOutput(IIterationCount,IThicknessIndex,IExitFlag,IErr)
 
   USE MyNumbers
@@ -170,12 +164,9 @@ SUBROUTINE WriteIterationOutput(IIterationCount,IThicknessIndex,IExitFlag,IErr)
 
   IMPLICIT NONE
 
-  INTEGER(IKIND) :: &
-       IErr,IIterationCount,IThickness
-  INTEGER(IKIND),INTENT(IN) :: &
-       IThicknessIndex,IExitFLAG
-  CHARACTER*200 :: &
-       path
+  INTEGER(IKIND) :: IErr,IIterationCount,IThickness
+  INTEGER(IKIND),INTENT(IN) :: IThicknessIndex,IExitFLAG
+  CHARACTER*200 :: path
   
   IF(IExitFLAG.EQ.1.OR.(IIterationCount.GE.(IPreviousPrintedIteration+IPrint))) THEN
      
@@ -200,22 +191,13 @@ SUBROUTINE WriteIterationOutput(IIterationCount,IThicknessIndex,IExitFlag,IErr)
           IIterationCount-IPreviousPrintedIteration,"iterations from my last print"
      
      IPreviousPrintedIteration = IIterationCount
-     
+      
      CALL WriteIterationImages(path,IThicknessIndex,IErr)
      IF( IErr.NE.0 ) THEN
         PRINT*,"WriteIterationOutput(", my_rank, ") error ", IErr, &
              " in WriteIterationImages"
         RETURN
-     ENDIF
-     
-     DEALLOCATE( &
-          Rhkl,&
-          STAT=IErr)
-     IF( IErr.NE.0 ) THEN
-        PRINT*,"WriteIterationOutput(", my_rank, ") error ", IErr, &
-             " in Deallocation Rhkl"
-        RETURN
-     ENDIF
+     END IF
 
      CALL WriteIterationStructure(path,IErr) 
      IF( IErr.NE.0 ) THEN
@@ -239,6 +221,7 @@ SUBROUTINE WriteIterationOutput(IIterationCount,IThicknessIndex,IExitFlag,IErr)
   
 END SUBROUTINE WriteIterationOutput
 
+!!$  %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 SUBROUTINE WriteStructureFactors(path,IErr)
 
@@ -255,25 +238,24 @@ SUBROUTINE WriteStructureFactors(path,IErr)
 
   IMPLICIT NONE
 
-  INTEGER(IKIND) :: &
-       IErr,ind
-  CHARACTER*200,INTENT(IN) :: &
-       path
-  CHARACTER*200 :: &
-       filename,fullpath
+  INTEGER(IKIND) :: IErr,ind
+  CHARACTER*200,INTENT(IN) :: path
+  CHARACTER*200 :: filename,fullpath
 
   WRITE(filename,*) "StructureFactors.txt"
   WRITE(fullpath,*) TRIM(ADJUSTL(path)),'/',TRIM(ADJUSTL(filename))
-
   OPEN(UNIT=IChOutSimplex,STATUS='UNKNOWN',&
        FILE=TRIM(ADJUSTL(fullpath)))
-  DO ind = 1,SIZE(CUgMat,DIM=1)
-     WRITE(IChOutSimplex,FMT='(3I5.1,2F13.9)') NINT(RHKL(ind,:)),CUgMat(ind,1)
+
+  DO ind = 1,nReflections
+     WRITE(IChOutSimplex,FMT='(3I5.1,2F13.9)') NINT(Rhkl(ind,:)),CUgMat(ind,1)
   END DO
 
   CLOSE(IChOutSimplex)
 
 END SUBROUTINE WriteStructureFactors
+
+!!$  %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 SUBROUTINE WriteIterationStructure(path,IErr)
 
@@ -290,192 +272,70 @@ SUBROUTINE WriteIterationStructure(path,IErr)
 
   IMPLICIT NONE
 
-  INTEGER(IKIND) :: &
-       IErr,jnd
-  CHARACTER*200,INTENT(IN) :: &
-       path
-  CHARACTER*200 :: &
-       SPrintString,filename,fullpath
+  INTEGER(IKIND) :: IErr,jnd
+  CHARACTER*200,INTENT(IN) :: path
+  CHARACTER*200 :: SPrintString,filename,fullpath
 
 !!$  Write out non symmetrically related atomic positions
 
-  WRITE(filename,*) "StructureCif.txt"
+  WRITE(filename,*) "Structure.cif"
   WRITE(fullpath,*) TRIM(ADJUSTL(path)),'/',TRIM(ADJUSTL(filename))
 
   OPEN(UNIT=IChOutSimplex,STATUS='UNKNOWN',&
         FILE=TRIM(ADJUSTL(fullpath)))
-  
-  DO jnd = 1,SIZE(RAtomSiteFracCoordVec,DIM=1)
-     WRITE(IChOutSimplex,FMT='(A2,1X,3(F9.6,1X))') SAtomName(jnd),RAtomSiteFracCoordVec(jnd,:)
+ !RB
+  WRITE(IChOutSimplex,FMT='(A16))') "data_felixrefine"
+  WRITE(IChOutSimplex,FMT='(A5))') "loop_"
+  WRITE(IChOutSimplex,FMT='(A14,1X,F9.6))') "_cell_length_a",RLengthX
+  WRITE(IChOutSimplex,FMT='(A14,1X,F9.6))') "_cell_length_b",RLengthY
+  WRITE(IChOutSimplex,FMT='(A14,1X,F9.6))') "_cell_length_c",RLengthZ
+  WRITE(IChOutSimplex,FMT='(A17,1X,F9.6))') "_cell_angle_alpha",RAlpha*180/PI
+  WRITE(IChOutSimplex,FMT='(A16,1X,F9.6))') "_cell_angle_beta",RBeta*180/PI
+  WRITE(IChOutSimplex,FMT='(A17,1X,F9.6))') "_cell_angle_gamma",RGamma*180/PI
+  WRITE(IChOutSimplex,FMT='(A30,1X,A10))') "_symmetry_space_group_name_H-M '",SSpaceGrp,"'"
+  WRITE(IChOutSimplex,FMT='(A5))') " "
+  WRITE(IChOutSimplex,FMT='(A5))') "loop_"
+  WRITE(IChOutSimplex,FMT='(A22))') "_atom_site_type_symbol"
+!  WRITE(IChOutSimplex,FMT='(A25))') "_atom_site_Wyckoff_symbol"
+  WRITE(IChOutSimplex,FMT='(A18))') "_atom_site_fract_x"
+  WRITE(IChOutSimplex,FMT='(A18))') "_atom_site_fract_y"
+  WRITE(IChOutSimplex,FMT='(A18))') "_atom_site_fract_z"
+!  WRITE(IChOutSimplex,FMT='(A25))') "_atom_site_B_iso_or_equiv"
+!  WRITE(IChOutSimplex,FMT='(A20))') "_atom_site_occupancy"
+
+  DO jnd = 1,SIZE(RAtomSiteFracCoordVec,DIM=1)!RB only gives refined atoms, needs work
+     WRITE(IChOutSimplex,FMT='(A2,1X,3(F9.6,1X))') &
+	 SAtomName(jnd),RAtomSiteFracCoordVec(jnd,:)
+!     WRITE(IChOutSimplex,FMT='(A2,1X,A1,1X,3(F9.6,1X),F5.3,1X,F5.3)') &
+!	 SAtomName(jnd),SWyckoffSymbols(jnd),RAtomSiteFracCoordVec(jnd,:), &
+!	 RIsotropicDebyeWallerFactors(jnd),RAtomicSitePartialOccupancy(jnd)
   END DO
+  WRITE(IChOutSimplex,FMT='(A22))') "#End of refinement cif"
   
   CLOSE(IChOutSimplex)
 
 !!$  Write out full atomic positions
 
-  CALL ExperimentalSetup(IErr)!RB Really? wtf?!?
-  IF( IErr.NE.0 ) THEN
-     PRINT*,"WriteIterationStructure(", my_rank, ") error ", IErr, &
-          " in ExperimentalSetup"
-     RETURN
-  ENDIF
+  !CALL ExperimentalSetup(IErr)!RB Really? wtf?!?
+  !IF( IErr.NE.0 ) THEN
+  !   PRINT*,"WriteIterationStructure(", my_rank, ") error ", IErr, &
+  !        " in ExperimentalSetup"
+  !   RETURN
+  !ENDIF
 
-  WRITE(filename,*) "StructureFull.txt"
-  WRITE(fullpath,*) TRIM(ADJUSTL(path)),'/',TRIM(ADJUSTL(filename))
-
-  OPEN(UNIT=IChOutSimplex,STATUS='UNKNOWN',&
-        FILE=TRIM(ADJUSTL(fullpath)))
-  
-  DO jnd = 1,SIZE(MNP,DIM=1)
-     WRITE(IChOutSimplex,FMT='(A2,1X,3(F9.6,1X))') SMNP(jnd),MNP(jnd,1:3)
-  END DO
-  
-  CLOSE(IChOutSimplex)
-  
-  DEALLOCATE( &
-       MNP,&
-       STAT=IErr)
-  IF( IErr.NE.0 ) THEN
-     PRINT*,"WriteIterationStructure(", my_rank, ") error ", IErr, &
-          " in Deallocation MNP"
-     RETURN
-  ENDIF
-      
-  DEALLOCATE( &
-        SMNP, &
-       STAT=IErr)
-  IF( IErr.NE.0 ) THEN
-     PRINT*,"WriteIterationStructure(", my_rank, ") error ", IErr, &
-          " in Deallocation SMNP"
-     RETURN
-  ENDIF
-       
-  DEALLOCATE( &
-       RFullAtomicFracCoordVec, &
-       STAT=IErr)
-  IF( IErr.NE.0 ) THEN
-     PRINT*,"WriteIterationStructure(", my_rank, ") error ", IErr, &
-          " in Deallocation RFullAtomicFracCoordVec"
-     RETURN
-  ENDIF
-       
-  DEALLOCATE( &
-       SFullAtomicNameVec,&
-       STAT=IErr)
-  IF( IErr.NE.0 ) THEN
-     PRINT*,"WriteIterationStructure(", my_rank, ") error ", IErr, &
-          " in Deallocation SFullAtomicNameVec"
-     RETURN
-  ENDIF
-       
-  DEALLOCATE( &
-       IFullAnisotropicDWFTensor,&
-       STAT=IErr)
-  IF( IErr.NE.0 ) THEN
-     PRINT*,"WriteIterationStructure(", my_rank, ") error ", IErr, &
-          " in Deallocation IFullAnisotropicDWFTensor"
-     RETURN
-  ENDIF
-       
-  DEALLOCATE( &
-       IFullAtomNumber,&
-       STAT=IErr)
-  IF( IErr.NE.0 ) THEN
-     PRINT*,"WriteIterationStructure(", my_rank, ") error ", IErr, &
-          " in Deallocation IFullAtomNumber"
-     RETURN
-  ENDIF
-       
-  DEALLOCATE( &
-       RFullIsotropicDebyeWallerFactor,&
-       STAT=IErr)
-  IF( IErr.NE.0 ) THEN
-     PRINT*,"WriteIterationStructure(", my_rank, ") error ", IErr, &
-          " in Deallocation RFullIsotropicDebyeWallerFactor"
-     RETURN
-  ENDIF
-       
-  DEALLOCATE( &
-       RFullPartialOccupancy,&
-       STAT=IErr)
-  IF( IErr.NE.0 ) THEN
-     PRINT*,"WriteIterationStructure(", my_rank, ") error ", IErr, &
-          " in Deallocation RFullPartialOccupancy"
-     RETURN
-  ENDIF
-       
-  DEALLOCATE( &
-       RDWF,&
-       STAT=IErr)
-  IF( IErr.NE.0 ) THEN
-     PRINT*,"WriteIterationStructure(", my_rank, ") error ", IErr, &
-          " in Deallocation RDWF"
-     RETURN
-  ENDIF
-       
-  DEALLOCATE( &
-       ROcc,&
-       STAT=IErr)
-  IF( IErr.NE.0 ) THEN
-     PRINT*,"WriteIterationStructure(", my_rank, ") error ", IErr, &
-          " in Deallocation ROcc"
-     RETURN
-  ENDIF
-       
-  DEALLOCATE( &
-       IAtoms,&
-       STAT=IErr)
-  IF( IErr.NE.0 ) THEN
-     PRINT*,"WriteIterationStructure(", my_rank, ") error ", IErr, &
-          " in Deallocation IAtoms"
-     RETURN
-  ENDIF
-       
-  DEALLOCATE( &
-       IAnisoDWFT,&
-       STAT=IErr)
-  IF( IErr.NE.0 ) THEN
-     PRINT*,"WriteIterationStructure(", my_rank, ") error ", IErr, &
-          " in Deallocation IAnisoDWFT"
-     RETURN
-  ENDIF
-       
-  DEALLOCATE( &
-       RgVecMatT,&
-       STAT=IErr)
-  IF( IErr.NE.0 ) THEN
-     PRINT*,"WriteIterationStructure(", my_rank, ") error ", IErr, &
-          " in Deallocation RgVecMatT"
-     RETURN
-  ENDIF
-       
-  DEALLOCATE( &
-       RgVecMag,&
-       STAT=IErr)
-  IF( IErr.NE.0 ) THEN
-     PRINT*,"WriteIterationStructure(", my_rank, ") error ", IErr, &
-          " in Deallocation RgVecMag"
-     RETURN
-  ENDIF
-       
-  DEALLOCATE( &
-       RgVecVec,&
-       STAT=IErr)
-  IF( IErr.NE.0 ) THEN
-     PRINT*,"WriteIterationStructure(", my_rank, ") error ", IErr, &
-          " in Deallocation RgVecMag"
-     RETURN
-  ENDIF
-
-  DEALLOCATE( &
-       RrVecMat, &
-       STAT=IErr)
-  IF( IErr.NE.0 ) THEN
-     PRINT*,"WriteIterationStructure(", my_rank, ") error ", IErr, " in DEALLOCATE of RrVecMat"
-     RETURN
-  ENDIF
+!XX  WRITE(filename,*) "StructureFull.txt"
+!XX  WRITE(fullpath,*) TRIM(ADJUSTL(path)),'/',TRIM(ADJUSTL(filename))
+!XXPRINT*,"MNP,SMNP"  
+!XX  OPEN(UNIT=IChOutSimplex,STATUS='UNKNOWN',&
+!XX        FILE=TRIM(ADJUSTL(fullpath)))
+!XX    DO jnd = 1,SIZE(MNP,DIM=1)
+!XX     WRITE(IChOutSimplex,FMT='(A2,1X,3(F9.6,1X))') SMNP(jnd),MNP(jnd,1:3)
+!XX    END DO
+!XX  CLOSE(IChOutSimplex)
 
 END SUBROUTINE WriteIterationStructure
+
+!!$  %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 SUBROUTINE WriteIterationImages(path,IThicknessIndex,IErr)
 
@@ -492,14 +352,11 @@ SUBROUTINE WriteIterationImages(path,IThicknessIndex,IErr)
 
   IMPLICIT NONE
 
-  INTEGER(IKIND) :: &
-       IErr,ind,jnd,hnd,gnd,IThicknessIndex
-  REAL(RKIND),DIMENSION(2*IPixelCount,2*IPixelCount) :: &
-       RImage
-  CHARACTER*200,INTENT(IN) :: &
-       path
+  INTEGER(IKIND) :: IErr,ind,jnd,hnd,gnd,IThicknessIndex
+  REAL(RKIND),DIMENSION(2*IPixelCount,2*IPixelCount) :: RImage
+  CHARACTER*200,INTENT(IN) :: path
 
-  DO ind = 1,IReflectOut
+  DO ind = 1,INoOfLacbedPatterns
      CALL OpenReflectionImage(IChOutWIImage,path,IErr,ind,2*IPixelCount,2_IKIND)
      IF( IErr.NE.0 ) THEN
         PRINT*,"WriteIterationImages(", my_rank, ") error in OpenReflectionImage()"

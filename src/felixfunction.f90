@@ -56,125 +56,94 @@ SUBROUTINE FelixFunction(LInitialSimulationFLAG,IErr)
   ! local variable definitions
   !--------------------------------------------------------------------
   
-  INTEGER(IKIND) :: &
-       IErr,ind,jnd,knd,pnd,&
-       IThicknessIndex,ILocalPixelCountMin, ILocalPixelCountMax,&
-       IIterationFLAG
-  INTEGER(IKIND) :: &
-       IAbsorbTag = 0
-  INTEGER(IKIND), DIMENSION(:), ALLOCATABLE :: &
-       IDisplacements,ICount
-  LOGICAL,INTENT(IN) :: &
-       LInitialSimulationFLAG !If function is being called during initialisation
-  REAL(RKIND),DIMENSION(:,:,:),ALLOCATABLE :: &
-       RIndividualReflectionsRoot,&
+  INTEGER(IKIND) :: IErr,ind,jnd,knd,pnd,IThicknessIndex,ILocalPixelCountMin,&
+        ILocalPixelCountMax,IIterationFLAG
+  INTEGER(IKIND) :: IAbsorbTag = 0
+  INTEGER(IKIND), DIMENSION(:), ALLOCATABLE :: IDisplacements,ICount
+  LOGICAL,INTENT(IN) :: LInitialSimulationFLAG !If function is being called during initialisation
+  REAL(RKIND),DIMENSION(:,:,:),ALLOCATABLE :: RIndividualReflectionsRoot,&
        RFinalMontageImageRoot
-  COMPLEX(CKIND),DIMENSION(:,:,:), ALLOCATABLE :: &
-       CAmplitudeandPhaseRoot 
+  COMPLEX(CKIND),DIMENSION(:,:,:), ALLOCATABLE :: CAmplitudeandPhaseRoot 
 
-  IF((IWriteFLAG.GE.0.AND.my_rank.EQ.0).OR.IWriteFLAG.GE.10) THEN
+  IF(IWriteFLAG.GE.10.AND.my_rank.EQ.0) THEN
      PRINT*,"Felix function"
   END IF
 
+   !RB Why do this?
   CALL CountTotalAtoms(IErr)
   
   IDiffractionFLAG = 0
 
   !-------------------------------------------------------------------- 
-  !Setup Experimental Variables
+  ! Setup crystal lattice, atom positions, hkl's, output reflections 
   !--------------------------------------------------------------------
-
   CALL ExperimentalSetup (IErr)
   IF( IErr.NE.0 ) THEN
-     PRINT*,"Felixfunction(", my_rank, ") error in ExperimentalSetup()"
+     PRINT*,"felixfunction(", my_rank, ") error in ExperimentalSetup()"
      RETURN
-  ENDIF
-  
-  
+  END IF
+    
   !--------------------------------------------------------------------
   ! Setup Image
-  !--------------------------------------------------------------------
-
-
+  ALLOCATE(RhklPositions(nReflections,2),STAT=IErr)
+  IF( IErr.NE.0 ) THEN
+     PRINT*,"felixfunction(",my_rank,") error allocating RhklPositions"
+     RETURN
+  END IF
   CALL ImageSetup( IErr )
   IF( IErr.NE.0 ) THEN
-     PRINT*,"Felixfunction(", my_rank, ") error in ImageSetup()"
+     PRINT*,"felixfunction(",my_rank,") error in ImageSetup"
      RETURN
-  ENDIF
-
+  END IF
  
   !--------------------------------------------------------------------
   ! MAIN section
   !--------------------------------------------------------------------
  
 !!$  Structure Factors must be calculated without absorption for refinement to work
-
-  !RB IF(IAbsorbFLAG.NE.0) THEN 
-  !RB   IAbsorbFLAG = 0 ! Non-absorpative structure factor calculation
-  !RB   IAbsorbTAG = 1 ! Remember that IAbsorbFLAG was 1
-  !RB END IF
-  
   CALL StructureFactorSetup(IErr)
   IF( IErr.NE.0 ) THEN
-     PRINT*,"Felixfunction(", my_rank, ") error ",IErr,"in StructureFactorSetup()"
+     PRINT*,"felixfunction(",my_rank,")error in StructureFactorSetup"
      RETURN
-  ENDIF
-
-  !RB IF(IAbsorbTAG.NE.0) IAbsorbFLAG = 1 !Reset IAbsorbFLAG to 1
+  END IF
 
   IF((IRefineModeSelectionArray(1).EQ.1).AND.(LInitialSimulationFLAG.NEQV..TRUE.)) THEN
-     
      CALL ApplyNewStructureFactors(IErr)
      IF( IErr.NE.0 ) THEN
-        PRINT*,"Felixfunction(", my_rank, ") error ", IErr, &
-             " in ApplyNewStructureFactors()"
+        PRINT*,"felixfunction(",my_rank,")error in ApplyNewStructureFactors()"
         RETURN
-     ENDIF
-     
-  ENDIF
+     END IF
+  END IF
 
   IF(IAbsorbFLAG.NE.0) THEN
-     
-     CALL StructureFactorsWithAbsorptionDetermination(IErr)
+     CALL StructureFactorsWithAbsorption(IErr)
      IF( IErr.NE.0 ) THEN
-        PRINT*,"Felixfunction(", my_rank, ") error ",IErr,&
-             "in StructureFactorsWithAbsorptionDetermination()"
+        PRINT*,"felixfunction(",my_rank,")error in StructureFactorsWithAbsorption()"
         RETURN
-     ENDIF
-
-  ENDIF     
+     END IF
+  END IF
+  
   !--------------------------------------------------------------------
   ! reserve memory for effective eigenvalue problem
   !--------------------------------------------------------------------
 
   !Kprime Vectors and Deviation Parameter
   
-  ALLOCATE( &
-       RDevPara(nReflections), &
-       STAT=IErr)
+  ALLOCATE(RDevPara(nReflections), STAT=IErr)
   IF( IErr.NE.0 ) THEN
-     PRINT*,"Felixfunction(", my_rank, ") error ", IErr, &
-          " in ALLOCATE() of DYNAMIC variables RDevPara"
+     PRINT*,"felixfunction(",my_rank,")error allocating RDevPara"
      RETURN
-  ENDIF
-
-  ALLOCATE( &
-       IStrongBeamList(nReflections), &
-       STAT=IErr)
+  END IF
+  ALLOCATE(IStrongBeamList(nReflections),STAT=IErr)
   IF( IErr.NE.0 ) THEN
-     PRINT*,"Felixfunction(", my_rank, ") error ", IErr, &
-          " in ALLOCATE() of DYNAMIC variables IStrongBeamList"
+     PRINT*,"felixfunction(",my_rank,")error allocating IStrongBeamList"
      RETURN
-  ENDIF
-
-  ALLOCATE( &
-       IWeakBeamList(nReflections), & 
-       STAT=IErr)
+  END IF
+  ALLOCATE(IWeakBeamList(nReflections),STAT=IErr)
   IF( IErr.NE.0 ) THEN
-     PRINT*,"Felixfunction(", my_rank, ") error ", IErr, &
-          " in ALLOCATE() of DYNAMIC variables IWeakBeamList"
+     PRINT*,"felixfunction(",my_rank,")error allocating IWeakBeamList"
      RETURN
-  ENDIF
+  END IF
 
   !--------------------------------------------------------------------
   ! MAIN LOOP: solve for each (ind,jnd) pixel
@@ -187,57 +156,53 @@ SUBROUTINE FelixFunction(LInitialSimulationFLAG,IErr)
      PRINT*,"Felixfunction(", my_rank, "): starting the eigenvalue problem"
      PRINT*,"Felixfunction(", my_rank, "): for lines ", ILocalPixelCountMin, &
           " to ", ILocalPixelCountMax
-  ENDIF
+  END IF
   
   IThicknessCount= (RFinalThickness- RInitialThickness)/RDeltaThickness + 1
 
   IF(IImageFLAG.LE.2) THEN
-     ALLOCATE( &
-          RIndividualReflections(IReflectOut,IThicknessCount,&
+     ALLOCATE(RIndividualReflections(INoOfLacbedPatterns,IThicknessCount,&
           (ILocalPixelCountMax-ILocalPixelCountMin)+1),&
           STAT=IErr)
      IF( IErr.NE.0 ) THEN
         PRINT*,"Felixfunction(", my_rank, ") error ", IErr, &
           " in ALLOCATE() of DYNAMIC variables Individual Images"
         RETURN
-     ENDIF
+     END IF
      
      RIndividualReflections = ZERO
   ELSE
-     ALLOCATE( &
-          CAmplitudeandPhase(IReflectOut,IThicknessCount,&
+     ALLOCATE(CAmplitudeandPhase(INoOfLacbedPatterns,IThicknessCount,&
           (ILocalPixelCountMax-ILocalPixelCountMin)+1),&
           STAT=IErr)
      IF( IErr.NE.0 ) THEN
         PRINT*,"Felixfunction(", my_rank, ") error ", IErr, &
              " in ALLOCATE() of DYNAMIC variables Amplitude and Phase"
         RETURN
-     ENDIF
+     END IF
      CAmplitudeandPhase = CZERO
   END IF
 
-  ALLOCATE( &
-       CFullWaveFunctions(nReflections), & 
+  ALLOCATE(CFullWaveFunctions(nReflections), & 
        STAT=IErr)
   IF( IErr.NE.0 ) THEN
      PRINT*,"Felixfunction(", my_rank, ") error ", IErr, &
           " in ALLOCATE() of DYNAMIC variables CFullWaveFunctions"
      RETURN
-  ENDIF
+  END IF
   
-  ALLOCATE( &
-       RFullWaveIntensity(nReflections), & 
+  ALLOCATE(RFullWaveIntensity(nReflections), & 
        STAT=IErr)
   IF( IErr.NE.0 ) THEN
      PRINT*,"Felixfunction(", my_rank, ") error ", IErr, &
           " in ALLOCATE() of DYNAMIC variables RFullWaveIntensity"
      RETURN
-  ENDIF  
+  END IF  
 
   IMAXCBuffer = 200000
   IPixelComputed= 0
   
-  IF(IWriteFLAG.GE.0.AND.my_rank.EQ.0) THEN
+  IF(IWriteFLAG.GE.10.AND.my_rank.EQ.0) THEN
      PRINT*,"Felixfunction(",my_rank,") Entering BlochLoop()"
   END IF
 
@@ -249,7 +214,7 @@ SUBROUTINE FelixFunction(LInitialSimulationFLAG,IErr)
         PRINT*,"Felixfunction(", my_rank, ") error ", IErr, &
              " in BlochCofficientCalculation"
         RETURN
-     ENDIF
+     END IF
   END DO
   
   IF((IWriteFLAG.GE.6.AND.my_rank.EQ.0).OR.IWriteFLAG.GE.10) THEN
@@ -260,46 +225,43 @@ SUBROUTINE FelixFunction(LInitialSimulationFLAG,IErr)
   ! close outfiles
   !--------------------------------------------------------------------
   
-  ALLOCATE( &
-       RIndividualReflectionsRoot(IReflectOut,IThicknessCount,IPixelTotal),&
+  ALLOCATE(RIndividualReflectionsRoot(INoOfLacbedPatterns,IThicknessCount,IPixelTotal),&
        STAT=IErr)
   IF( IErr.NE.0 ) THEN
      PRINT*,"Felixfunction(", my_rank, ") error ", IErr, &
           " in ALLOCATE() of DYNAMIC variables Root Reflections"
      RETURN
-  ENDIF
+  END IF
   
   IF(IImageFLAG.GE.3) THEN
-     ALLOCATE(&
-          CAmplitudeandPhaseRoot(IReflectOut,IThicknessCount,IPixelTotal),&
+     ALLOCATE(CAmplitudeandPhaseRoot(INoOfLacbedPatterns,IThicknessCount,IPixelTotal),&
           STAT=IErr)
      IF( IErr.NE.0 ) THEN
         PRINT*,"Felixfunction(", my_rank, ") error ", IErr, &
              " in ALLOCATE() of DYNAMIC variables Root Amplitude and Phase"
         RETURN
-     ENDIF
+     END IF
      CAmplitudeandPhaseRoot = CZERO
   END IF
 
   RIndividualReflectionsRoot = ZERO
 
-  ALLOCATE(&
-       IDisplacements(p),ICount(p),&
+  ALLOCATE(IDisplacements(p),ICount(p),&
        STAT=IErr)
   IF( IErr.NE.0 ) THEN
      PRINT*,"Felixfunction(", my_rank, ") error ", IErr, &
           " In ALLOCATE"
      RETURN
-  ENDIF
+  END IF
 
   DO pnd = 1,p
      IDisplacements(pnd) = (IPixelTotal*(pnd-1)/p)
-     ICount(pnd) = (((IPixelTotal*(pnd)/p) - (IPixelTotal*(pnd-1)/p)))*IReflectOut*IThicknessCount
+     ICount(pnd) = (((IPixelTotal*(pnd)/p) - (IPixelTotal*(pnd-1)/p)))*INoOfLacbedPatterns*IThicknessCount
           
   END DO
   
   DO ind = 1,p
-        IDisplacements(ind) = (IDisplacements(ind))*IReflectOut*IThicknessCount
+        IDisplacements(ind) = (IDisplacements(ind))*INoOfLacbedPatterns*IThicknessCount
   END DO
   
   IF(IImageFLAG.LE.2) THEN
@@ -311,7 +273,7 @@ SUBROUTINE FelixFunction(LInitialSimulationFLAG,IErr)
         PRINT*,"Felixfunction(", my_rank, ") error ", IErr, &
              " In MPI_GATHERV"
         RETURN
-     ENDIF     
+     END IF     
   ELSE     
      CALL MPI_GATHERV(CAmplitudeandPhase,SIZE(CAmplitudeandPhase),&
           MPI_DOUBLE_COMPLEX,CAmplitudeandPhaseRoot,&
@@ -321,27 +283,25 @@ SUBROUTINE FelixFunction(LInitialSimulationFLAG,IErr)
         PRINT*,"Felixfunction(", my_rank, ") error ", IErr, &
              " In MPI_GATHERV"
         RETURN
-     ENDIF   
+     END IF   
   END IF
   
   IF(IImageFLAG.GE.3) THEN
-     DEALLOCATE(&
-          CAmplitudeandPhase,STAT=IErr)
+     DEALLOCATE(CAmplitudeandPhase,STAT=IErr)
      IF( IErr.NE.0 ) THEN
         PRINT*,"Felixfunction(", my_rank, ") error ", IErr, &
              " Deallocating CAmplitudePhase"
         RETURN
-     ENDIF   
+     END IF   
   END IF
    
   IF(IImageFLAG.LE.2) THEN
-     DEALLOCATE( &
-          RIndividualReflections,STAT=IErr)
+     DEALLOCATE(RIndividualReflections,STAT=IErr)
      IF( IErr.NE.0 ) THEN
         PRINT*,"Felixfunction(", my_rank, ") error ", IErr, &
              " Deallocating RIndividualReflections"
         RETURN
-     ENDIF   
+     END IF   
   END IF
   
   IF(my_rank.EQ.0.AND.IImageFLAG.GE.3) THEN
@@ -350,14 +310,13 @@ SUBROUTINE FelixFunction(LInitialSimulationFLAG,IErr)
   END IF
   
   IF(my_rank.EQ.0) THEN
-     ALLOCATE( &
-          RIndividualReflections(IReflectOut,IThicknessCount,IPixelTotal),&
+     ALLOCATE(RIndividualReflections(INoOfLacbedPatterns,IThicknessCount,IPixelTotal),&
           STAT=IErr)
      IF( IErr.NE.0 ) THEN
         PRINT*,"Felixfunction(", my_rank, ") error ", IErr, &
              " in ALLOCATE() of DYNAMIC variables Root Reflections"
         RETURN
-     ENDIF
+     END IF
      
      RIndividualReflections = RIndividualReflectionsRoot
   END IF
@@ -366,261 +325,213 @@ SUBROUTINE FelixFunction(LInitialSimulationFLAG,IErr)
   ! free memory
   !--------------------------------------------------------------------
   
-  !Dellocate Global Variables
+  !Dellocate Variables
+  DEALLOCATE(RhklPositions,STAT=IErr)
+  IF( IErr.NE.0 ) THEN
+     PRINT*,"Felixfunction(",my_rank,") error", IErr,"deallocating RhklPositions"
+     RETURN
+  END IF
   
-  DEALLOCATE( &
-       RgVecMatT,STAT=IErr)
+  DEALLOCATE(RMask,STAT=IErr)       
   IF( IErr.NE.0 ) THEN
-     PRINT*,"Felixfunction(", my_rank, ") error ", IErr, &
-          " Deallocating RgVecMatT"
+     PRINT*,"Felixfunction(",my_rank,") error", IErr,"deallocating RMask"
      RETURN
-  ENDIF
+  END IF
 
-  DEALLOCATE( &
-       RMask,STAT=IErr)       
-  IF( IErr.NE.0 ) THEN
-     PRINT*,"Felixfunction(", my_rank, ") error  ", IErr, &
-          " in Deallocation of RMask etc"
-     RETURN
-  ENDIF
-
-  DEALLOCATE( &
-       RDevPara,STAT=IErr)
+  DEALLOCATE(RDevPara,STAT=IErr)
   IF( IErr.NE.0 ) THEN
      PRINT*,"Felixfunction(", my_rank, ") error ", IErr, &
           " Deallocating RDevPara"
      RETURN
-  ENDIF
+  END IF
 
-  DEALLOCATE( &
-       IPixelLocations,STAT=IErr)
+  DEALLOCATE(IPixelLocations,STAT=IErr)
   IF( IErr.NE.0 ) THEN
      PRINT*,"Felixfunction(", my_rank, ") error ", IErr, &
           " Deallocating IPixelLocations"
      RETURN
-  ENDIF
+  END IF
 
-  DEALLOCATE( &
-       IStrongBeamList,STAT=IErr)
+  DEALLOCATE(IStrongBeamList,STAT=IErr)
   IF( IErr.NE.0 ) THEN
      PRINT*,"Felixfunction(", my_rank, ") error ", IErr, &
           " Deallocating IStrongBeamList"
      RETURN
-  ENDIF
+  END IF
 
-  DEALLOCATE( &
-       IWeakBeamList,STAT=IErr)
+  DEALLOCATE(IWeakBeamList,STAT=IErr)
   IF( IErr.NE.0 ) THEN
      PRINT*,"Felixfunction(", my_rank, ") error ", IErr, &
           " Deallocating IWeakBeamList"
      RETURN
-  ENDIF
+  END IF
 
-  DEALLOCATE( &
-       IDisplacements,STAT=IErr)
+  DEALLOCATE(IDisplacements,STAT=IErr)
   IF( IErr.NE.0 ) THEN
      PRINT*,"Felixfunction(", my_rank, ") error ", IErr, &
           " Deallocating IDisplacements"
      RETURN
-  ENDIF
+  END IF
 
-  DEALLOCATE( &
-       ICount,STAT=IErr)
+  DEALLOCATE(ICount,STAT=IErr)
   IF( IErr.NE.0 ) THEN
      PRINT*,"Felixfunction(", my_rank, ") error ", IErr, &
           " Deallocating ICount"
      RETURN
-  ENDIF
+  END IF
   
-  DEALLOCATE( &
-       CFullWaveFunctions, & 
+  DEALLOCATE(CFullWaveFunctions, & 
        STAT=IErr)
   IF( IErr.NE.0 ) THEN
      PRINT*,"Felixfunction(", my_rank, ") error ", IErr, &
           " in ALLOCATE() of DYNAMIC variables CFullWaveFunctions"
      RETURN
-  ENDIF
+  END IF
   
-  DEALLOCATE( &
-       RFullWaveIntensity, & 
-       STAT=IErr)
+  DEALLOCATE(RFullWaveIntensity,STAT=IErr)
   IF( IErr.NE.0 ) THEN
      PRINT*,"Felixfunction(", my_rank, ") error ", IErr, &
           " in ALLOCATE() of DYNAMIC variables RFullWaveIntensity"
      RETURN
-  ENDIF  
+  END IF  
 
   IF(IImageFLAG.GE.3) THEN
-     DEALLOCATE(&
-          CAmplitudeandPhaseRoot,STAT=IErr) 
-     
+     DEALLOCATE(CAmplitudeandPhaseRoot,STAT=IErr)     
      IF( IErr.NE.0 ) THEN
         PRINT*,"Felixfunction(", my_rank, ") error in Deallocation of CAmplitudeandPhase"
         RETURN  
-     ENDIF
+     END IF
   END IF
 
-  DEALLOCATE(&
-       RIndividualReflectionsRoot,STAT=IErr) 
+  DEALLOCATE(RIndividualReflectionsRoot,STAT=IErr) 
   IF( IErr.NE.0 ) THEN
      PRINT*,"Felixfunction(", my_rank, ") error in Deallocation of RIndividualReflectionsRoot "
      RETURN  
-  ENDIF
-  
-  DEALLOCATE( &
-       MNP,&
-       STAT=IErr)
-  IF( IErr.NE.0 ) THEN
-     PRINT*,"Felixfunction(", my_rank, ") error ", IErr, &
-          " in Deallocation MNP"
-     RETURN
-  ENDIF
-
-  DEALLOCATE( &
-       SMNP, &
-       STAT=IErr)
-  IF( IErr.NE.0 ) THEN
-     PRINT*,"Felixfunction(", my_rank, ") error ", IErr, &
-          " in Deallocation SMNP"
-     RETURN
-  ENDIF
-
-  DEALLOCATE( &
-       RFullAtomicFracCoordVec, &
-       STAT=IErr)
-  IF( IErr.NE.0 ) THEN
-     PRINT*,"Felixfunction(", my_rank, ") error ", IErr, &
-          " in Deallocation RFullAtomicFracCoordVec"
-     RETURN
-  ENDIF
-
-  DEALLOCATE( &
-       SFullAtomicNameVec,&
-       STAT=IErr)
-  IF( IErr.NE.0 ) THEN
-     PRINT*,"Felixfunction(", my_rank, ") error ", IErr, &
-          " in Deallocation SFullAtomicNameVec"
-     RETURN
-  ENDIF
-
-  DEALLOCATE( &
-       IFullAnisotropicDWFTensor,&
-       STAT=IErr)
-  IF( IErr.NE.0 ) THEN
-     PRINT*,"Felixfunction(", my_rank, ") error ", IErr, &
-          " in Deallocation IFullAnisotropicDWFTensor"
-     RETURN
-  ENDIF
-
-  DEALLOCATE( &
-       IFullAtomNumber,&
-       STAT=IErr)
-  IF( IErr.NE.0 ) THEN
-     PRINT*,"Felixfunction(", my_rank, ") error ", IErr, &
-          " in Deallocation IFullAtomNumber"
-     RETURN
-  ENDIF
-  
-  DEALLOCATE( &
-       RFullIsotropicDebyeWallerFactor,&
-       STAT=IErr)
-  IF( IErr.NE.0 ) THEN
-     PRINT*,"Felixfunction(", my_rank, ") error ", IErr, &
-          " in Deallocation RFullIsotropicDebyeWallerFactor"
-     RETURN
-  ENDIF
-
-  DEALLOCATE( &
-       RFullPartialOccupancy,&
-       STAT=IErr)
-  IF( IErr.NE.0 ) THEN
-     PRINT*,"Felixfunction(", my_rank, ") error ", IErr, &
-          " in Deallocation RFullPartialOccupancy"
-     RETURN
-  ENDIF
-
-  DEALLOCATE( &
-       RDWF,&
-       STAT=IErr)
-  IF( IErr.NE.0 ) THEN
-     PRINT*,"Felixfunction(", my_rank, ") error ", IErr, &
-          " in Deallocation RDWF"
-     RETURN
-  ENDIF
-
-  DEALLOCATE( &
-       ROcc,&
-       STAT=IErr)
-  IF( IErr.NE.0 ) THEN
-     PRINT*,"Felixfunction(", my_rank, ") error ", IErr, &
-          " in Deallocation ROcc"
-     RETURN
-  ENDIF
-  
-  DEALLOCATE( &
-       IAtoms,&
-       STAT=IErr)
-  IF( IErr.NE.0 ) THEN
-     PRINT*,"Felixfunction(", my_rank, ") error ", IErr, &
-          " in Deallocation IAtoms"
-     RETURN
-  ENDIF
-  
-  DEALLOCATE( &
-       IAnisoDWFT,&
-       STAT=IErr)
-  IF( IErr.NE.0 ) THEN
-     PRINT*,"Felixfunction(", my_rank, ") error ", IErr, &
-          " in Deallocation IAnisoDWFT"
-     RETURN
-  ENDIF
-
-  IF(LInitialSimulationFLAG.NEQV..TRUE.) THEN !Need these for Simplex Initialisation
-     
-     DEALLOCATE( &
-          RgVecMag,&
-          STAT=IErr)
-     IF( IErr.NE.0 ) THEN
-        PRINT*,"Felixfunction(", my_rank, ") error ", IErr, &
-             " in Deallocation RgVecMag"
-        RETURN
-     ENDIF
-
   END IF
-
+  
   IF((my_rank.NE.0).AND.(LInitialSimulationFLAG.NEQV..TRUE.)) THEN     
-     DEALLOCATE( &
-          Rhkl,&
-          STAT=IErr)
+     DEALLOCATE(Rhkl,STAT=IErr)
      IF( IErr.NE.0 ) THEN
         PRINT*,"Felixfunction(", my_rank, ") error ", IErr, &
              " in Deallocation Rhkl"
         RETURN
-     ENDIF
+     END IF
   END IF
   
-!!$  IF (my_rank.NE.0) THEN
-  
-  DEALLOCATE( &
-       Rhklpositions,STAT=IErr)
+  DEALLOCATE(MNP,STAT=IErr)
   IF( IErr.NE.0 ) THEN
      PRINT*,"Felixfunction(", my_rank, ") error ", IErr, &
-          " Deallocating Rhklpositions"
+          " in Deallocation MNP"
      RETURN
-  ENDIF
-!!$   END IF
-
-  DEALLOCATE( &
-       RgVecVec,&
-       STAT=IErr)
+  END IF
+      
+  DEALLOCATE(SMNP,STAT=IErr)
   IF( IErr.NE.0 ) THEN
      PRINT*,"Felixfunction(", my_rank, ") error ", IErr, &
-          " in Deallocation RgVecVec"
+          " in Deallocation SMNP"
      RETURN
-  ENDIF
+  END IF
+       
+  DEALLOCATE(RDWF,STAT=IErr)
+  IF( IErr.NE.0 ) THEN
+     PRINT*,"Felixfunction(", my_rank, ") error ", IErr, &
+          " in Deallocation RDWF"
+     RETURN
+  END IF
+       
+  DEALLOCATE(ROcc,STAT=IErr)
+  IF( IErr.NE.0 ) THEN
+     PRINT*,"Felixfunction(", my_rank, ") error ", IErr, &
+          " in Deallocation ROcc"
+     RETURN
+  END IF
+       
+  DEALLOCATE(IAtoms,STAT=IErr)
+  IF( IErr.NE.0 ) THEN
+     PRINT*,"Felixfunction(", my_rank, ") error ", IErr, &
+          " in Deallocation IAtoms"
+     RETURN
+  END IF
+       
+  DEALLOCATE(IAnisoDWFT,STAT=IErr)
+  IF( IErr.NE.0 ) THEN
+     PRINT*,"Felixfunction(", my_rank, ") error ", IErr, &
+          " in Deallocation IAnisoDWFT"
+     RETURN
+  END IF
+       
+  DEALLOCATE(RFullAtomicFracCoordVec,STAT=IErr)
+  IF( IErr.NE.0 ) THEN
+     PRINT*,"Felixfunction(", my_rank, ") error ", IErr, &
+          " in Deallocation RFullAtomicFracCoordVec"
+     RETURN
+  END IF
+       
+  DEALLOCATE(SFullAtomicNameVec,STAT=IErr)
+  IF( IErr.NE.0 ) THEN
+     PRINT*,"Felixfunction(", my_rank, ") error ", IErr, &
+          " in Deallocation SFullAtomicNameVec"
+     RETURN
+  END IF
+       
+  DEALLOCATE(RFullPartialOccupancy,STAT=IErr)
+  IF( IErr.NE.0 ) THEN
+     PRINT*,"Felixfunction(", my_rank, ") error ", IErr, &
+          " in Deallocation RFullPartialOccupancy"
+     RETURN
+  END IF
+       
+  DEALLOCATE(RFullIsotropicDebyeWallerFactor,STAT=IErr)
+  IF( IErr.NE.0 ) THEN
+     PRINT*,"Felixfunction(", my_rank, ") error ", IErr, &
+          " in Deallocation RFullIsotropicDebyeWallerFactor"
+     RETURN
+  END IF
+       
+  DEALLOCATE(IFullAtomicNumber,STAT=IErr)
+  IF( IErr.NE.0 ) THEN
+     PRINT*,"Felixfunction(", my_rank, ") error ", IErr, &
+          " in Deallocation IFullAtomicNumber"
+     RETURN
+  END IF
+       
+  DEALLOCATE(IFullAnisotropicDWFTensor,STAT=IErr)
+  IF( IErr.NE.0 ) THEN
+     PRINT*,"Felixfunction(", my_rank, ") error ", IErr, &
+          " in Deallocation IFullAnisotropicDWFTensor"
+     RETURN
+  END IF
+       
+  DEALLOCATE(RgPoolT,STAT=IErr)
+  IF( IErr.NE.0 ) THEN
+     PRINT*,"Felixfunction(", my_rank, ") error ", IErr, &
+          " in Deallocation RgPoolT"
+     RETURN
+  END IF
+       
+  DEALLOCATE(RgPoolMag,STAT=IErr)
+  IF( IErr.NE.0 ) THEN
+     PRINT*,"Felixfunction(", my_rank, ") error ", IErr, &
+          " in Deallocation RgPoolMag"
+     RETURN
+  END IF
+       
+  DEALLOCATE(RgVecVec,STAT=IErr)
+  IF( IErr.NE.0 ) THEN
+     PRINT*,"Felixfunction(", my_rank, ") error ", IErr, &
+          " in Deallocation RgPoolMag"
+     RETURN
+  END IF
+!XX
+!  DEALLOCATE(RgSumMat,STAT=IErr)
+  IF( IErr.NE.0 ) THEN
+     PRINT*,"Felixfunction(", my_rank, ") error ", IErr, " in DEALLOCATE of RrVecMat"
+     RETURN
+  END IF
 
 END SUBROUTINE FelixFunction
 
+!%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 !%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 SUBROUTINE CalculateFigureofMeritandDetermineThickness(IThicknessCountFinal,IErr)
@@ -638,30 +549,23 @@ SUBROUTINE CalculateFigureofMeritandDetermineThickness(IThicknessCountFinal,IErr
 
   IMPLICIT NONE
 
-  INTEGER(IKIND) :: &
-       ind,jnd,knd,IErr,ICountedPixels,IThickness,hnd
-  INTEGER(IKIND),DIMENSION(IReflectOut) :: &
-       IThicknessByReflection
-  INTEGER(IKIND),INTENT(OUT) :: &
-       IThicknessCountFinal
-  REAL(RKIND),DIMENSION(2*IPixelCount,2*IPixelCount) :: &
-       RSimulatedImageForPhaseCorrelation,RExperimentalImage
-  REAL(RKIND) :: &
-       RCrossCorrelationOld,RIndependentCrossCorrelation,RThickness,&
+  INTEGER(IKIND) :: ind,jnd,knd,IErr,ICountedPixels,IThickness,hnd
+  INTEGER(IKIND),DIMENSION(INoOfLacbedPatterns) :: IThicknessByReflection
+  INTEGER(IKIND),INTENT(OUT) :: IThicknessCountFinal
+  REAL(RKIND),DIMENSION(2*IPixelCount,2*IPixelCount) :: RSimulatedImageForPhaseCorrelation,RExperimentalImage
+  REAL(RKIND) :: RCrossCorrelationOld,RIndependentCrossCorrelation,RThickness,&
 	   PhaseCorrelate,Normalised2DCrossCorrelation,ResidualSumofSquares
-!!$  REAL(RKIND),DIMENSION(IReflectOut,IThicknessCount,IPixelTotal) :: &
-!!$       RSimulatedImages
-  REAL(RKIND),DIMENSION(IReflectOut) :: &
-       RReflectionCrossCorrelations,RReflectionThickness
+  REAL(RKIND),DIMENSION(INoOfLacbedPatterns) :: RReflectionCrossCorrelations,RReflectionThickness
+  CHARACTER*200 :: SPrintString
        
   
-  IF((IWriteFLAG.GE.0.AND.my_rank.EQ.0).OR.IWriteFLAG.GE.10) THEN
+  IF(IWriteFLAG.GE.10.AND.my_rank.EQ.0) THEN
      PRINT*,"CalculateFigureofMeritandDetermineThickness(",my_rank,")"
   END IF
 
   RReflectionCrossCorrelations = ZERO
 
-  DO hnd = 1,IReflectOut
+  DO hnd = 1,INoOfLacbedPatterns
      RCrossCorrelationOld = 1.0E15 !A large Number
      RThickness = ZERO
      DO ind = 1,IThicknessCount
@@ -751,9 +655,9 @@ SUBROUTINE CalculateFigureofMeritandDetermineThickness(IThicknessCountFinal,IErr
 
   RCrossCorrelation = &
        SUM(RReflectionCrossCorrelations*RWeightingCoefficients)/&
-       REAL(IReflectOut,RKIND)
+       REAL(INoOfLacbedPatterns,RKIND)
 !RB assume that the thickness is given by the mean of individual thicknesses  
-  IThicknessCountFinal = SUM(IThicknessByReflection)/IReflectOut
+  IThicknessCountFinal = SUM(IThicknessByReflection)/INoOfLacbedPatterns
 
   RThickness = RInitialThickness + (IThicknessCountFinal-1)*RDeltaThickness 
   
@@ -762,7 +666,10 @@ SUBROUTINE CalculateFigureofMeritandDetermineThickness(IThicknessCountFinal,IErr
 !RB     PRINT*,"Thicknesses",RReflectionThickness
 !RB     PRINT*,"Correlation",RCrossCorrelation
 !RB     PRINT*,"Thickness Final",IThicknessCountFinal
-     PRINT*,"Thickness",RThickness
+     WRITE(SPrintString,FMT='(A18,I4,A10)') "Specimen thickness ",NINT(RThickness)," Angstroms"
+     PRINT*,TRIM(ADJUSTL(SPrintString))
+     !XXPRINT*,"---------------------------------------------------------"
+!     PRINT*,"Specimen thickness",NINT(RThickness),"Angstroms"
   END IF
 
   IF (RCrossCorrelation.NE.RCrossCorrelation) THEN!RB what?
@@ -788,16 +695,12 @@ REAL(RKIND) FUNCTION SimplexFunction(RIndependentVariableValues,IIterationCount,
 
   IMPLICIT NONE
   
-  INTEGER(IKIND) :: &
-       IErr,IExitFLAG,IThickness
-  REAL(RKIND),DIMENSION(IIndependentVariables),INTENT(INOUT) :: &
-       RIndependentVariableValues
-  INTEGER(IKIND),INTENT(IN) :: &
-       IIterationCount
-  LOGICAL :: &
-       LInitialSimulationFLAG = .FALSE.
+  INTEGER(IKIND) :: IErr,IExitFLAG,IThickness
+  REAL(RKIND),DIMENSION(IIndependentVariables),INTENT(INOUT) :: RIndependentVariableValues
+  INTEGER(IKIND),INTENT(IN) :: IIterationCount
+  LOGICAL :: LInitialSimulationFLAG = .FALSE.
   
-  IF((IWriteFLAG.GE.0.AND.my_rank.EQ.0).OR.IWriteFLAG.GE.10) THEN
+  IF(IWriteFLAG.GE.10.AND.my_rank.EQ.0) THEN
      PRINT*,"SimplexFunction(",my_rank,")"
   END IF
   
@@ -808,17 +711,19 @@ REAL(RKIND) FUNCTION SimplexFunction(RIndependentVariableValues,IIterationCount,
         PRINT*,"SimplexFunction(", my_rank, ") error ", IErr, &
              " in UpdateStructureFactors"
         RETURN
-     ENDIF     
+     END IF     
   ELSE
      CALL UpdateVariables(RIndependentVariableValues,IErr)
      IF( IErr.NE.0 ) THEN
         PRINT*,"SimplexFunction(", my_rank, ") error ", IErr, &
              " in UpdateVariables"
         RETURN
-     ENDIF
-     WHERE(RAtomSiteFracCoordVec.LT.0) RAtomSiteFracCoordVec=RAtomSiteFracCoordVec+ONE
-     WHERE(RAtomSiteFracCoordVec.GT.1) RAtomSiteFracCoordVec=RAtomSiteFracCoordVec-ONE
+     END IF
+!RB     WHERE(RAtomSiteFracCoordVec.LT.0) RAtomSiteFracCoordVec=RAtomSiteFracCoordVec+ONE
+!RB     WHERE(RAtomSiteFracCoordVec.GT.1) RAtomSiteFracCoordVec=RAtomSiteFracCoordVec-ONE
   END IF
+  WHERE(RAtomSiteFracCoordVec.LT.0) RAtomSiteFracCoordVec=RAtomSiteFracCoordVec+ONE
+  WHERE(RAtomSiteFracCoordVec.GT.1) RAtomSiteFracCoordVec=RAtomSiteFracCoordVec-ONE
 
   IF (my_rank.EQ.0) THEN
      CALL PrintVariables(IErr)
@@ -826,7 +731,7 @@ REAL(RKIND) FUNCTION SimplexFunction(RIndependentVariableValues,IIterationCount,
         PRINT*,"SimplexFunction(", my_rank, ") error ", IErr, &
              " in PrintVariables"
         RETURN
-     ENDIF
+     END IF
   END IF
 
   CALL FelixFunction(LInitialSimulationFLAG,IErr) ! Simulate !!  
@@ -834,7 +739,7 @@ REAL(RKIND) FUNCTION SimplexFunction(RIndependentVariableValues,IIterationCount,
      PRINT*,"SimplexFunction(", my_rank, ") error ", IErr, &
           " in FelixFunction"
      RETURN
-  ENDIF
+  END IF
 
   IF(my_rank.EQ.0) THEN   
      CALL CreateImagesAndWriteOutput(IIterationCount,IExitFLAG,IErr) 
@@ -848,39 +753,33 @@ REAL(RKIND) FUNCTION SimplexFunction(RIndependentVariableValues,IIterationCount,
   END IF
 
 !RB   NB Also deallocated in felixrefine!!!
-  DEALLOCATE( &
-       RgSumMat,STAT=IErr)
+  DEALLOCATE(RgSumMat,STAT=IErr)
   IF( IErr.NE.0 ) THEN
      PRINT*,"felixsim(", my_rank, ") error ", IErr, &
           " in Deallocation of RgSumMat"
      RETURN
   ENDIF
 !RB   PRINT*,"Deallocating CUgMatNoAbs,CUgMatPrime,CUgMat in SimplexFunction" 
-  DEALLOCATE(&
-       CUgMatNoAbs,&!RB
-       STAT=IErr)  
+  DEALLOCATE(CUgMatNoAbs,STAT=IErr)  
   IF( IErr.NE.0 ) THEN
      PRINT*,"SimplexInitialisation (", my_rank, ") error in Deallocation()"
      RETURN
   ENDIF
  
- DEALLOCATE(&
-       CUgMatPrime,&!RB
-       STAT=IErr)  
+ DEALLOCATE(CUgMatPrime,STAT=IErr)  
   IF( IErr.NE.0 ) THEN
      PRINT*,"SimplexInitialisation (", my_rank, ") error in Deallocation()"
      RETURN
   ENDIF
  
-  DEALLOCATE(&
-       CUgMat,&!RB
-       STAT=IErr)  
+  DEALLOCATE(CUgMat,STAT=IErr)  
   IF( IErr.NE.0 ) THEN
      PRINT*,"SimplexInitialisation (", my_rank, ") error in Deallocation()"
      RETURN
   ENDIF
   
 END FUNCTION SimplexFunction
+
 !%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 SUBROUTINE CreateImagesAndWriteOutput(IIterationCount,IExitFLAG,IErr)
@@ -898,11 +797,9 @@ SUBROUTINE CreateImagesAndWriteOutput(IIterationCount,IExitFLAG,IErr)
   
   IMPLICIT NONE
   
-  INTEGER(IKIND) :: &
-       IErr,IThicknessIndex,IIterationCount,IExitFLAG
+  INTEGER(IKIND) :: IErr,IThicknessIndex,IIterationCount,IExitFLAG
   
-  ALLOCATE( &
-       RMask(2*IPixelCount,2*IPixelCount),&
+  ALLOCATE(RMask(2*IPixelCount,2*IPixelCount),&
        STAT=IErr)
   IF( IErr.NE.0 ) THEN
      PRINT*,"CreateImagesAndWriteOutput(", my_rank, ") error ", IErr, &
@@ -924,9 +821,7 @@ SUBROUTINE CreateImagesAndWriteOutput(IIterationCount,IExitFLAG,IErr)
      RETURN
   ENDIF
   
-  DEALLOCATE( &
-       RMask,&
-       STAT=IErr)
+  DEALLOCATE(RMask,STAT=IErr)
   IF( IErr.NE.0 ) THEN
      PRINT*,"CreateImagesAndWriteOutput(", my_rank, ") error ", IErr, &
           " in DEALLOCATE() of DYNAMIC variable RMask"
@@ -944,27 +839,21 @@ SUBROUTINE CreateImagesAndWriteOutput(IIterationCount,IExitFLAG,IErr)
 
 !!$     FINISH OUTPUT  --------------------------------
   
-  DEALLOCATE( &
-       RIndividualReflections,&
-       STAT=IErr)
+  DEALLOCATE(RIndividualReflections,STAT=IErr)
   IF( IErr.NE.0 ) THEN
      PRINT*,"CreateImagesAndWriteOutput(", my_rank, ") error ", IErr, &
           " Deallocating RIndividualReflections"
      RETURN
   ENDIF
   
-  DEALLOCATE( &
-       IPixelLocations,&
-       STAT=IErr)
+  DEALLOCATE(IPixelLocations,STAT=IErr)
   IF( IErr.NE.0 ) THEN
      PRINT*,"CreateImagesAndWriteOutput(", my_rank, ") error ", IErr, &
           " Deallocating IPixelLocations"
      RETURN
   ENDIF
        
-  DEALLOCATE( &
-       Rhkl,&
-       STAT=IErr)
+  DEALLOCATE(Rhkl,STAT=IErr)
   IF( IErr.NE.0 ) THEN
      PRINT*,"CreateImagesAndWriteOutput(", my_rank, ") error ", IErr, &
           " in Deallocation Rhkl"
@@ -989,10 +878,8 @@ SUBROUTINE UpdateVariables(RIndependentVariableValues,IErr)
 
   IMPLICIT NONE
 
-  INTEGER(IKIND) :: &
-       IVariableType,IErr,ind
-  REAL(RKIND),DIMENSION(IIndependentVariables),INTENT(IN) :: &
-       RIndependentVariableValues
+  INTEGER(IKIND) :: IVariableType,IErr,ind
+  REAL(RKIND),DIMENSION(IIndependentVariables),INTENT(IN) :: RIndependentVariableValues
 
   !!$  Fill the Independent Value array with values
   
@@ -1050,6 +937,7 @@ SUBROUTINE UpdateVariables(RIndependentVariableValues,IErr)
   END DO
 
  END SUBROUTINE UpdateVariables
+ 
 !%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 SUBROUTINE PrintVariables(IErr)
@@ -1068,12 +956,11 @@ SUBROUTINE PrintVariables(IErr)
 
   IMPLICIT NONE
 
-  INTEGER(IKIND) :: &
-       IErr,ind,IVariableType,jnd,knd
-  REAL(RKIND),DIMENSION(3) :: &
-       RCrystalVector
-  CHARACTER*200 :: &
-       SPrintString
+  INTEGER(IKIND) :: IErr,ind,IVariableType,jnd,knd
+  REAL(RKIND),DIMENSION(3) :: RCrystalVector
+  !REAL(RKIND) :: &!RB
+  !     RUgAmplitude,RUgPhase!RB
+  CHARACTER*200 :: SPrintString
 
   RCrystalVector = [RLengthX,RLengthY,RLengthZ]
 
@@ -1081,40 +968,46 @@ SUBROUTINE PrintVariables(IErr)
      IF (IRefineModeSelectionArray(ind).EQ.1) THEN
         SELECT CASE(ind)
         CASE(1)
-           PRINT*,"Current Absorption",RAbsorptionPercentage!RB has this been deallocated?
-           PRINT*,"Current Structure Factors"
-           DO jnd = 1,INoofUgs
-              PRINT*,CSymmetryStrengthKey(jnd)
+           WRITE(SPrintString,FMT='(A18,1X,F9.4)') "Current Absorption",RAbsorptionPercentage
+           PRINT*,TRIM(ADJUSTL(SPrintString))
+!           PRINT*,"Current Absorption",RAbsorptionPercentage
+           PRINT*,"Current Structure Factors"!RB should also put in hkl here
+           DO jnd = 2,INoofUgs+1!yy since no.1 is 000
+   !           RUgAmplitude=( REAL(CUgToRefine(jnd))**2 + AIMAG(CUgToRefine(jnd))**2 )**0.5!RB
+   !           RUgPhase=ATAN2(AIMAG(CUgToRefine(jnd)),REAL(CUgToRefine(jnd)))*180/PI!RB
+              WRITE(SPrintString,FMT='(2(1X,F9.4))') REAL(CUgToRefine(jnd)),AIMAG(CUgToRefine(jnd))
+              PRINT*,TRIM(ADJUSTL(SPrintString))
+!XX              PRINT*,CUgToRefine(jnd)!,": Amplitude ",RUgAmplitude,", phase ",RUgPhase
            END DO           
         CASE(2)
            PRINT*,"Current Atomic Coordinates"
            DO jnd = 1,SIZE(RAtomSiteFracCoordVec,DIM=1)
-              WRITE(SPrintString,FMT='(3(F9.3,1X))') RAtomSiteFracCoordVec(jnd,:)*RCrystalVector
+              WRITE(SPrintString,FMT='(A2,3(1X,F9.4))') SAtomName(jnd),RAtomSiteFracCoordVec(jnd,:)
               PRINT*,TRIM(ADJUSTL(SPrintString))              
            END DO
         CASE(3)
            PRINT*,"Current Atomic Occupancy"
            DO jnd = 1,SIZE(RAtomicSitePartialOccupancy,DIM=1)
-              WRITE(SPrintString,FMT='((F9.6,1X))') RAtomicSitePartialOccupancy(jnd)
+              WRITE(SPrintString,FMT='(A2,1X,F9.6)') SAtomName(jnd),RAtomicSitePartialOccupancy(jnd)
               PRINT*,TRIM(ADJUSTL(SPrintString))
            END DO
         CASE(4)
            PRINT*,"Current Isotropic Debye Waller Factors"
            DO jnd = 1,SIZE(RIsotropicDebyeWallerFactors,DIM=1)
-              WRITE(SPrintString,FMT='((F9.6,1X))') RIsotropicDebyeWallerFactors(jnd)
+              WRITE(SPrintString,FMT='(A2,1X,F9.6)') SAtomName(jnd),RIsotropicDebyeWallerFactors(jnd)
               PRINT*,TRIM(ADJUSTL(SPrintString))
            END DO
         CASE(5)
            PRINT*,"Current Anisotropic Debye Waller Factors"
            DO jnd = 1,SIZE(RAnisotropicDebyeWallerFactorTensor,DIM=1)
               DO knd = 1,3
-                 WRITE(SPrintString,FMT='((F9.6,1X))') RAnisotropicDebyeWallerFactorTensor(jnd,knd,:)
+                 WRITE(SPrintString,FMT='(A2,3(1X,F9.4))') SAtomName(jnd),RAnisotropicDebyeWallerFactorTensor(jnd,knd,:)
               PRINT*,TRIM(ADJUSTL(SPrintString))
               END DO
            END DO
         CASE(6)
            PRINT*,"Current Unit Cell Parameters"
-           WRITE(SPrintString,FMT='(3(F9.6,1X))') RLengthX,RLengthY,RLengthZ
+           WRITE(SPrintString,FMT='(3(1X,F9.6))') RLengthX,RLengthY,RLengthZ
               PRINT*,TRIM(ADJUSTL(SPrintString))
         CASE(7)
            PRINT*,"Current Unit Cell Angles"
@@ -1159,20 +1052,20 @@ SUBROUTINE UpdateStructureFactors(RIndependentVariableValues,IErr)
   
   IMPLICIT NONE
   
-  INTEGER(IKIND) :: &
-       IErr,ind
-  REAL(RKIND),DIMENSION(IIndependentVariables),INTENT(IN) :: &
-       RIndependentVariableValues
+  INTEGER(IKIND) :: IErr,ind
+  REAL(RKIND),DIMENSION(IIndependentVariables),INTENT(IN) :: RIndependentVariableValues
 
   IF(IRefineModeSelectionArray(1).EQ.1) THEN
      DO ind = 1,INoofUgs
-        CSymmetryStrengthKey(ind) = &
+        CUgToRefine(ind+1) = &!yy ind+1 instead of ind
              CMPLX(RIndependentVariableValues((ind-1)*2+1),RIndependentVariableValues((ind-1)*2+2),CKIND)
      END DO
 	 RAbsorptionPercentage = RIndependentVariableValues(2*INoofUgs+1)!RB
   END IF
   
 END SUBROUTINE UpdateStructureFactors
+
+!%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 SUBROUTINE ConvertVectorMovementsIntoAtomicCoordinates(IVariableID,RIndependentVariableValues,IErr)
 
@@ -1189,8 +1082,7 @@ SUBROUTINE ConvertVectorMovementsIntoAtomicCoordinates(IVariableID,RIndependentV
   
   IMPLICIT NONE
 
-  INTEGER(IKIND) :: &
-       IErr,ind,jnd,IVariableID,IVectorID,IAtomID
+  INTEGER(IKIND) :: IErr,ind,jnd,IVariableID,IVectorID,IAtomID
   REAL(RKIND),DIMENSION(IIndependentVariables),INTENT(IN) :: &
        RIndependentVariableValues
 
@@ -1209,14 +1101,14 @@ SUBROUTINE ConvertVectorMovementsIntoAtomicCoordinates(IVariableID,RIndependentV
   
 END SUBROUTINE ConvertVectorMovementsIntoAtomicCoordinates
 
+!%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
 SUBROUTINE InitialiseWeightingCoefficients(IErr)
   
   USE MyNumbers
-  
   USE CConst; USE IConst; USE RConst
   USE IPara; USE RPara; USE SPara; USE CPara
   USE BlochPara
-  
   USE IChannels
   
   USE MPI
@@ -1224,22 +1116,17 @@ SUBROUTINE InitialiseWeightingCoefficients(IErr)
   
   IMPLICIT NONE
 
-  INTEGER(IKIND) :: &
-       IErr,ind
-  REAL(RKIND),DIMENSION(:),ALLOCATABLE :: &
-       RWeightingCoefficientsDummy
+  INTEGER(IKIND) :: IErr,ind
+  REAL(RKIND),DIMENSION(:),ALLOCATABLE :: RWeightingCoefficientsDummy
 
-  ALLOCATE( &
-       RWeightingCoefficients(IReflectOut),&
-       STAT=IErr)
+  ALLOCATE(RWeightingCoefficients(INoOfLacbedPatterns),STAT=IErr)
   IF( IErr.NE.0 ) THEN
      PRINT*,"InitialiseWeightingCoefficients(", my_rank, ") error ", IErr, &
           " in allocation RWeightingCoefficients"
      RETURN
   ENDIF
-  ALLOCATE( &
-       RWeightingCoefficientsDummy(IReflectOut),&
-       STAT=IErr)
+
+  ALLOCATE(RWeightingCoefficientsDummy(INoOfLacbedPatterns),STAT=IErr)
   IF( IErr.NE.0 ) THEN
      PRINT*,"InitialiseWeightingCoefficients(", my_rank, ") error ", IErr, &
           " in allocation RWeightingCoefficients"
@@ -1250,32 +1137,24 @@ SUBROUTINE InitialiseWeightingCoefficients(IErr)
   CASE(0)
      RWeightingCoefficients = ONE
   CASE(1)
-     RWeightingCoefficientsDummy = RgVecMag(IOutputReflections)/MAXVAL(RgVecMag(IOutputReflections))
+     RWeightingCoefficientsDummy = RgPoolMag(IOutputReflections)/MAXVAL(RgPoolMag(IOutputReflections))
      IF(SIZE(RWeightingCoefficients).GT.1) THEN
         RWeightingCoefficientsDummy(1) = RWeightingCoefficients(2)/TWO 
      END IF
-     DO ind = 1,IReflectOut
-        RWeightingCoefficients(ind) = RWeightingCoefficientsDummy(IReflectOut-(ind-1))
+     DO ind = 1,INoOfLacbedPatterns
+        RWeightingCoefficients(ind) = RWeightingCoefficientsDummy(INoOfLacbedPatterns-(ind-1))
      END DO
-!!$     RWeightingCoefficients = 1/RgVecMag(IOutputReflections)
+!!$     RWeightingCoefficients = 1/RgPoolMag(IOutputReflections)
   CASE(2)
-     RWeightingCoefficients = RgVecMag(IOutputReflections)/MAXVAL(RgVecMag(IOutputReflections))
+     RWeightingCoefficients = RgPoolMag(IOutputReflections)/MAXVAL(RgPoolMag(IOutputReflections))
      IF(SIZE(RWeightingCoefficients).GT.1) THEN
         RWeightingCoefficients(1) = RWeightingCoefficients(2)/TWO 
      END IF
   END SELECT
 
-  DEALLOCATE(&
-       RgVecMag,&
-       STAT=IErr)
-  IF( IErr.NE.0 ) THEN
-     PRINT*,"InitialiseWeightingCoefficients(", my_rank, ") error ", IErr, &
-          " in Deallocation RgVecMag"
-     RETURN
-  ENDIF
-
-
 END SUBROUTINE InitialiseWeightingCoefficients
+
+!%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 REAL(RKIND) FUNCTION RStandardError(RStandardDeviation,RMean,RFigureofMerit,IErr)
 
@@ -1306,18 +1185,13 @@ REAL(RKIND) FUNCTION RStandardError(RStandardDeviation,RMean,RFigureofMerit,IErr
      RStandardDeviation = SQRT(&
           ((REAL(IStandardDeviationCalls,RKIND)*RStandardDeviation**2)+&
           (RFigureofMerit-RMean)**2)/ &
-          REAL(IStandardDeviationCalls+1,RKIND))
-     
+          REAL(IStandardDeviationCalls+1,RKIND))   
   ELSE
-
      RMean = RFigureofMerit
      RStandardDeviation = ZERO
-
   END IF
      
   RStandardError = RStandardDeviation/SQRT(REAL(IStandardDeviationCalls+1,RKIND))
-
   IStandardDeviationCalls = IStandardDeviationCalls + 1
-
      
 END FUNCTION  RStandardError

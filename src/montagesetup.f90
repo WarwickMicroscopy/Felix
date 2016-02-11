@@ -55,11 +55,10 @@ SUBROUTINE MontageSetup(RMontageImages,RIndividualReflectionImages,IErr)
   
   IMPLICIT NONE
 
-  INTEGER(IKIND):: &
-       IErr,IThicknessIndex,knd,ind,jnd
+  INTEGER(IKIND):: IErr,IThicknessIndex,knd,ind,jnd
   REAL(RKIND),DIMENSION(MAXVAL(IImageSizeXY),&
        MAXVAL(IImageSizeXY),IThicknessCount):: RMontageImages
-  REAL(RKIND),DIMENSION(IReflectOut,IThicknessCount,IPixelTotal):: &
+  REAL(RKIND),DIMENSION(INoOfLacbedPatterns,IThicknessCount,IPixelTotal):: &
        RIndividualReflectionImages
   
   CALL Message("MontageSetup",IMust,IErr)
@@ -68,13 +67,8 @@ SUBROUTINE MontageSetup(RMontageImages,RIndividualReflectionImages,IErr)
         DO knd = 1,IPixelTotal
            jnd = IPixelLocations(knd,1)
            ind = IPixelLocations(knd,2)
-           CALL MontageInitialisation(&
-                ind,&
-                jnd,&
-                IThicknessIndex,&
-                RMontageImages,&
-                RIndividualReflectionImages(:,IThicknessIndex,knd),&
-                IErr)
+           CALL MontageInitialisation(ind,jnd,IThicknessIndex,RMontageImages,&
+                RIndividualReflectionImages(:,IThicknessIndex,knd),IErr)
            IF( IErr.NE.0 ) THEN
               PRINT*,"MontageSetup(", my_rank, ") error ", IErr, &
                    " in MakeMontagePixel"
