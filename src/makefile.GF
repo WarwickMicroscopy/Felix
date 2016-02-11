@@ -45,6 +45,9 @@
 unixOS := $(shell uname -s)
 cyg := $(shell expr substr $(unixOS) 1 6)
 
+GLOBALgfortranF90FLAGS = -ffree-line-length-none -fbounds-check -fno-range-check -fimplicit-none # debug
+GLOBALgfortranF77FLAGS = -fbounds-check -fno-range-check # debug
+
 ifeq ($(unixOS),Linux)
 
  linux := $(shell (lsb_release -si))
@@ -61,9 +64,8 @@ ifeq ($(unixOS),Linux)
 
    F90 = mpif90
    FC = gfortran -ffixed-form -std=legacy
-   F90FLAGS = -fbounds-check -fno-range-check -fimplicit-none # debug
-   #F90FLAGS = -m64 -fno-range-check -pg -ffree-line-length-none # profiling
-   F77FLAGS = -fbounds-check -fno-range-check # debug
+   F90FLAGS = $(GLOBALgfortranF90FLAGS)
+   F77FLAGS = $(GLOBALgfortranF90FLAGS)
 
    LIBFLAGS= \
    -L/csc/minerva/software/gompi/1.7.10/ScaLAPACK/2.0.2-openblas-0.2.8-lapack-3.4.2/lib \
@@ -77,11 +79,8 @@ ifeq ($(unixOS),Linux)
 
    F90 = ftn
    FC = ftn
-   F90FLAGS = # release
-   #F90FLAGS = -fbounds-check -fno-range-check -fimplicit-none -fcray-pointer # debug
-   #F90FLAGS = pg -fbounds-check -fno-range-check -fimplicit-none # profiling
-   F77FLAGS = # debug
-   #F77FLAGS = -fbounds-check -fno-range-check # debug
+   F90FLAGS = $(GLOBALgfortranF90FLAGS) -fcray-pointer
+   F77FLAGS = $(GLOBALgfortranF90FLAGS)
 
    INCLUDEDIR = /opt # ARCHER
 
@@ -105,9 +104,8 @@ ifeq ($(unixOS),Linux)
    else
     F90 = mpif90
     FC = gfortran -ffixed-form -std=legacy 
-    F90FLAGS = -fbounds-check -fno-range-check -fimplicit-none -fcray-pointer -fexternal-blas # debug
-    #F90FLAGS = -pg -fbounds-check -fno-range-check -fimplicit-none # profiling
-    F77FLAGS = -fbounds-check -fno-range-check # debug
+    F90FLAGS = $(GLOBALgfortranF90FLAGS) -fcray-pointer -fexternal-blas 
+    F77FLAGS = $(GLOBALgfortranF77FLAGS) 
    endif
   endif
  
@@ -117,9 +115,9 @@ ifeq ($(unixOS),Linux)
   INCLUDEDIR = /usr/share/doc
   LIBFLAGS = -llapack -lblas -lfftw3
   F90 = mpif90
-  F90FLAGS = -fbounds-check -fno-range-check -fimplicit-none -fcray-pointer -fexternal-blas
-  FC = gfortran -ffixed-form -std=legacy
-  F77FLAGS = -fbounds-check -fno-range-check
+  FC = gfortran -ffixed-form -std=legacy	
+  F90FLAGS = $(GLOBALgfortranF90FLAGS) -fcray-pointer -fexternal-blas
+  F77FLAGS = $(GLOBALgfortranF90FLAGS)
 
  else ifeq ($(linux),Debian) #Debian
   $(info Compiling on $(linux), $(unixOS))
@@ -127,9 +125,9 @@ ifeq ($(unixOS),Linux)
   INCLUDEDIR = /usr/share/doc
   LIBFLAGS = -llapack -lblas -lfftw3
   F90 = mpif90
-  F90FLAGS = -fbounds-check -fno-range-check -fimplicit-none -fcray-pointer -fexternal-blas
   FC = gfortran -ffixed-form -std=legacy
-  F77FLAGS = -fbounds-check -fno-range-check
+  F90FLAGS = $(GLOBALgfortranF90FLAGS) -fcray-pointer -fexternal-blas
+  F77FLAGS = $(GLOBALgfortranF90FLAGS)
 
  else ifeq ($(linux),openSUSE project) #openSUSE machine
   $(info Compiling on $(linux), $(unixOS))
@@ -137,9 +135,9 @@ ifeq ($(unixOS),Linux)
   LIBFLAGS = -llapack -lblas -lfftw3
   INCLUDEDIR = /usr/lib64
   F90 = mpif90
-  F90FLAGS = -fbounds-check -fno-range-check -fimplicit-none -fcray-pointer -fexternal-blas
   FC = gfortran -ffixed-form -std=legacy
-  F77FLAGS = -fbounds-check -fno-range-check
+  F90FLAGS = $(GLOBALgfortranF90FLAGS) -fcray-pointer -fexternal-blas
+  F77FLAGS = $(GLOBALgfortranF90FLAGS)
 
  else ifeq ($(linux),CentOS) #CentOS machine
   $(info Compiling on $(linux), $(unixOS))
@@ -147,29 +145,29 @@ ifeq ($(unixOS),Linux)
   LIBFLAGS = -llapack -lblas -lfftw3
   INCLUDEDIR = /usr/lib64/
   F90 = /usr/lib64/openmpi/bin/mpif90
-  F90FLAGS = -fbounds-check -fno-range-check -fimplicit-none -fcray-pointer -fexternal-blas
   FC = gfortran -ffixed-form -std=legacy
-  F77FLAGS = -fbounds-check -fno-range-check
- 
+  F90FLAGS = $(GLOBALgfortranF90FLAGS) -fcray-pointer -fexternal-blas
+  F77FLAGS = $(GLOBALgfortranF90FLAGS)
+
  else ifeq ($(linux),LinuxMint)
   $(info Compiling on $(linux))
    
   LIBFLAGS = -llapack -lblas -lfftw3
   INCLUDEDIR = /usr/lib/
   F90 = mpif90
-  F90FLAGS = -fbounds-check -fno-range-check -fimplicit-none -fcray-pointer -fexternal-blas
   FC = gfortran -ffixed-form -std=legacy
-  F77FLAGS = -fbounds-check -fno-range-check
- 
+  F90FLAGS = $(GLOBALgfortranF90FLAGS) -fcray-pointer -fexternal-blas
+  F77FLAGS = $(GLOBALgfortranF90FLAGS)
+
  else ifeq ($(linux),Scientific) #Scientific Linux
   $(info Compiling on Scientific Linux)
 
   LIBFLAGS = -llapack -lblas -lfftw3
   INCLUDEDIR = /usr/lib64/
   F90 = /usr/lib64/openmpi/bin/mpif90
-  F90FLAGS = -fbounds-check -fno-range-check -fimplicit-none -fcray-pointer -fexternal-blas
   FC = gfortran -ffixed-form -std=legacy
-  F77FLAGS = -fbounds-check -fno-range-check
+  F90FLAGS = $(GLOBALgfortranF90FLAGS) -fcray-pointer -fexternal-blas
+  F77FLAGS = $(GLOBALgfortranF90FLAGS)
 
  else #default
   $(info Compiling on default)
@@ -180,8 +178,9 @@ ifeq ($(unixOS),Linux)
 
   F90 = mpif90
   FC = gfortran -ffixed-form -std=legacy
-  F90FLAGS = -fbounds-check -fno-range-check -fimplicit-none -fcray-pointer -fexternal-blas
-  F77FLAGS = -fbounds-check -fno-range-check
+  F90FLAGS = $(GLOBALgfortranF90FLAGS) -fcray-pointer -fexternal-blas
+  F77FLAGS = $(GLOBALgfortranF90FLAGS)
+
  endif
 
 else ifeq ($(unixOS),Darwin) #MAC
@@ -189,9 +188,8 @@ else ifeq ($(unixOS),Darwin) #MAC
 
  F90 = mpifort-openmpi-mp
  FC = gfortran-mp-4.5 -ffixed-form -std=legacy
- F90FLAGS = -fbounds-check -fno-range-check -fimplicit-none -fcray-pointer -fexternal-blas
- #F90FLAGS = -pg -fbounds-check -fno-range-check -fimplicit-none
- F77FLAGS = -fbounds-check -fno-range-check # debug
+ F90FLAGS = $(GLOBALgfortranF90FLAGS) -fcray-pointer -fexternal-blas
+ F77FLAGS = $(GLOBALgfortranF90FLAGS)
 
  INCLUDEDIR = /usr/local/lib/ # RAR Linux
 
@@ -202,8 +200,8 @@ else ifeq ($(cyg),CYGWIN)
 
  F90 = mpif90
  FC = gfortran -ffixed-form -std=legacy
- F90FLAGS = -fbounds-check -fno-range-check -fimplicit-none -fcray-pointer -fexternal-blas
- F77FLAGS = -fbounds-check -fno-range-check 
+ F90FLAGS = $(GLOBALgfortranF90FLAGS) -fcray-pointer -fexternal-blas
+ F77FLAGS = $(GLOBALgfortranF90FLAGS)
 
  INCLUDEDIR = /lib/ # cygwin default
 
@@ -218,8 +216,9 @@ else #default
 
  F90 = mpif90
  FC = gfortran -ffixed-form -std-legacy
- F90FLAGS = -fbounds-check -fno-range-check -fimplicit-none -fcray-pointer -fexternal-blas
- F77FLAGS = -fbounds-check -fno-range-check
+ F90FLAGS = $(GLOBALgfortranF90FLAGS) -fcray-pointer -fexternal-blas
+ F77FLAGS = $(GLOBALgfortranF90FLAGS)
+
 endif
 
 # NOTE if linking against $(NAG_SHARED) you must set the environment variable
