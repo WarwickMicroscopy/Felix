@@ -131,23 +131,17 @@ SUBROUTINE FelixFunction(LInitialSimulationFLAG,IErr)
   
   ALLOCATE(RDevPara(nReflections), STAT=IErr)
   IF( IErr.NE.0 ) THEN
-     PRINT*,"felixfunction(",my_rank,")error in ALLOCATE RDevPara"
+     PRINT*,"felixfunction(",my_rank,")error allocating RDevPara"
      RETURN
   END IF
-
-  ALLOCATE(IStrongBeamList(nReflections), &
-       STAT=IErr)
+  ALLOCATE(IStrongBeamList(nReflections),STAT=IErr)
   IF( IErr.NE.0 ) THEN
-     PRINT*,"Felixfunction(", my_rank, ") error ", IErr, &
-          " in ALLOCATE() of DYNAMIC variables IStrongBeamList"
+     PRINT*,"felixfunction(",my_rank,")error allocating IStrongBeamList"
      RETURN
   END IF
-
-  ALLOCATE(IWeakBeamList(nReflections), & 
-       STAT=IErr)
+  ALLOCATE(IWeakBeamList(nReflections),STAT=IErr)
   IF( IErr.NE.0 ) THEN
-     PRINT*,"Felixfunction(", my_rank, ") error ", IErr, &
-          " in ALLOCATE() of DYNAMIC variables IWeakBeamList"
+     PRINT*,"felixfunction(",my_rank,")error allocating IWeakBeamList"
      RETURN
   END IF
 

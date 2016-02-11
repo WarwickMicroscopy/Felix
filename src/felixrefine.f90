@@ -130,7 +130,7 @@ PROGRAM Felixrefine
   ALLOCATE(RImageExpi(2*IPixelCount,2*IPixelCount,INoOfLacbedPatterns),&
        STAT=IErr)  
   IF( IErr.NE.0 ) THEN
-     PRINT*,"felixrefine(",my_rank,") error in allocation of RImageExpi"
+     PRINT*,"felixrefine(",my_rank,")error allocating RImageExpi"
      GOTO 9999
   END IF
 
@@ -766,8 +766,9 @@ SUBROUTINE RankSymmetryRelatedStructureFactor(IErr)
   
   IMPLICIT NONE 
   
-  INTEGER(IKIND) :: IErr,ind
+  INTEGER(IKIND) :: IErr,ind,jnd,Iuid
   INTEGER(IKIND),DIMENSION(2) :: ILoc
+  CHARACTER*200 :: SPrintString
 
   IF((IWriteFLAG.GE.10.AND.my_rank.EQ.0).OR.IWriteFLAG.GE.10) THEN
      PRINT*,"RankSymmetryRelatedStructureFactor(",my_rank,")"
@@ -776,17 +777,51 @@ SUBROUTINE RankSymmetryRelatedStructureFactor(IErr)
   ALLOCATE(ISymmetryRelations(nReflections,nReflections), &
        STAT=IErr)
   IF( IErr.NE.0 ) THEN
-     PRINT*,"RankSymmetryRelatedStructureFactor(", my_rank, ") error ", IErr, &
-          " in ALLOCATE() of ISymmetryRelations"
+     PRINT*,"RankSymmetryRelatedStructureFactor(",my_rank,")error allocating ISymmetryRelations"
      RETURN
   ENDIF
   
-  CALL SymmetryRelatedStructureFactorDetermination (IErr)
+!zz  CALL SymmetryRelatedStructureFactorDetermination (IErr)
+!zz  IF( IErr.NE.0 ) THEN
+!zz     PRINT*,"RankSymmetryRelatedStructureFactor(",my_rank,")error in  SymmetryRelatedStructureFactorDetermination"
+!zz     RETURN
+!zz  ENDIF
+
+!!$%%%%%%% used to be SymmetryRelatedStructureFactorDetermination
+  RgSumMat = RgSumMat+ABS(REAL(CUgMatNoAbs))+ABS(AIMAG(CUgMatNoAbs))
+  ISymmetryRelations = 0_IKIND 
+  Iuid = 0_IKIND 
+  DO ind = 1,nReflections
+     DO jnd = 1,ind
+        IF(ISymmetryRelations(ind,jnd).NE.0) THEN
+           CYCLE
+        ELSE
+           Iuid = Iuid + 1_IKIND
+           !Ug Fill the symmetry relation matrix with incrementing numbers that have the sign of the imaginary part
+		   WHERE (ABS(RgSumMat-RgSumMat(ind,jnd)).LE.RTolerance)
+              ISymmetryRelations = Iuid*SIGN(1_IKIND,NINT(AIMAG(CUgMatNoAbs)/TINY**2))
+           END WHERE
+        END IF
+     END DO
+  END DO
+
+  IF((IWriteFLAG.GE.0.AND.my_rank.EQ.0).OR.IWriteFLAG.GE.10) THEN
+     WRITE(SPrintString,FMT='(I5,A25)') Iuid," unique structure factors"
+     PRINT*,TRIM(ADJUSTL(SPrintString))
+  END IF
+ 
+  ALLOCATE(IEquivalentUgKey(Iuid),STAT=IErr)
   IF( IErr.NE.0 ) THEN
-     PRINT*,"RankSymmetryRelatedStructureFactor(", my_rank, ") error ", IErr, &
-          " in SymmetryRelatedStructureFactorDetermination"
+     PRINT*,"RankSymmetryRelatedStructureFactor(",my_rank,")error allocating IEquivalentUgKey"
      RETURN
-  ENDIF
+  END IF
+  ALLOCATE(CUgToRefine(Iuid),&
+       STAT=IErr)
+  IF( IErr.NE.0 ) THEN
+     PRINT*,"RankSymmetryRelatedStructureFactor(",my_rank,")error allocating CUgToRefine"
+     RETURN
+  END IF
+!!$%%%%%%%
   
   DO ind = 1,(SIZE(IEquivalentUgKey))
      ILoc = MINLOC(ABS(ISymmetryRelations-ind))
@@ -846,7 +881,7 @@ SUBROUTINE SimplexInitialisation(RSimplexVolume,RSimplexFoM,RIndependentVariable
 
   IF(my_rank.EQ.0) THEN   
      IThicknessCount= (RFinalThickness- RInitialThickness)/RDeltaThickness + 1
-     IIterationCount = 0; !Initial Simulation is iteration zero
+     !IIterationCount = 0; !Initial Simulation is iteration zero !!! moved to felixrefine
      IExitFLAG = 0; ! Do not exit
      IPreviousPrintedIteration = -IPrint
      CALL CreateImagesAndWriteOutput(IIterationCount,IExitFLAG,IErr) 

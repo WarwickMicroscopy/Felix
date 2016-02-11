@@ -119,11 +119,6 @@ SUBROUTINE SymmetryRelatedStructureFactorDetermination (IErr)
      END DO
   END DO
 
-!yy DO ind = 1,4!yy
-!yy  WRITE(SPrintString,FMT='(I1,A1,4(1X,I2))') ind,":",ISymmetryRelations(ind,1:4)
-!yy  PRINT*,TRIM(ADJUSTL(SPrintString))
-!yy END DO
-
   IF((IWriteFLAG.GE.0.AND.my_rank.EQ.0).OR.IWriteFLAG.GE.10) THEN
      WRITE(SPrintString,FMT='(I5,A25)') Iuid," unique structure factors"
      PRINT*,TRIM(ADJUSTL(SPrintString))
@@ -132,15 +127,14 @@ SUBROUTINE SymmetryRelatedStructureFactorDetermination (IErr)
  
   ALLOCATE(IEquivalentUgKey(Iuid),STAT=IErr)
   IF( IErr.NE.0 ) THEN
-     PRINT*,"SymmetryRelatedStructureFactorDetermination(", my_rank, ") error ", IErr, &
-          " in ALLOCATE() IEquivalentUgKey"
+     PRINT*,"SymmetryRelatedStructureFactorDetermination(",my_rank,")error allocating IEquivalentUgKey"
      RETURN
   END IF
  
   ALLOCATE(CUgToRefine(Iuid),&
        STAT=IErr)
   IF( IErr.NE.0 ) THEN
-     PRINT*,"SymmetryRelatedStructureFactorDetermination(", my_rank, ") error ", IErr, " in ALLOCATE() CUgToRefine"
+     PRINT*,"SymmetryRelatedStructureFactorDetermination(",my_rank,")error allocating CUgToRefine"
      RETURN
   END IF
   
