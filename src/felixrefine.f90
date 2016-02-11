@@ -353,7 +353,6 @@ END IF
 !zz temp deallocation to get it to work
 DEALLOCATE(RgPoolT,IAnisoDWFT,IAtoms,ROcc,RDWF)
 
-
   IF(IAbsorbFLAG.NE.0) THEN
      CALL StructureFactorsWithAbsorption(IErr)
      IF( IErr.NE.0 ) THEN
@@ -362,13 +361,26 @@ DEALLOCATE(RgPoolT,IAnisoDWFT,IAtoms,ROcc,RDWF)
      END IF
   END IF
 
+  IF(IRefineModeSelectionArray(1).EQ.1) THEN !It's a Ug refinement
+     CALL RankSymmetryRelatedStructureFactor(IErr)
+     IF( IErr.NE.0 ) THEN
+        PRINT*,"felixrefine(",my_rank,")error in RankSymmetryRelatedStructureFactor"
+        GOTO 9999
+     END IF
+  END IF
+
+!Now change StructureFactorRefinementSetup fr722 and UpdateStructureFactors ff1040
+  
+!zz temp deallocation to get it to work
+DEALLOCATE(ISymmetryRelations,IEquivalentUgKey,CUgToRefine)
+
 !zz temp deallocation to get it to work
 DEALLOCATE(RgSumMat,CUgMat,CUgMatNoAbs,CUgMatPrime)
   
   !--------------------------------------------------------------------
   ! Setup Simplex Variables
   !--------------------------------------------------------------------
-  IF(IRefineModeSelectionArray(2).EQ.1) THEN 
+  IF(IRefineModeSelectionArray(2).EQ.1) THEN !It's an atom coordinate refinement
      CALL SetupAtomicVectorMovements(IErr)
      IF( IErr.NE.0 ) THEN
         PRINT*,"felixrefine (", my_rank, ") error in SetupAtomicVectorMovements"
@@ -821,16 +833,16 @@ SUBROUTINE RankSymmetryRelatedStructureFactor(IErr)
      PRINT*,"RankSymmetryRelatedStructureFactor(",my_rank,")error allocating CUgToRefine"
      RETURN
   END IF
-!!$%%%%%%%
+!!$%%%%%%% used to be SymmetryRelatedStructureFactorDetermination
   
-  DO ind = 1,(SIZE(IEquivalentUgKey))
+  DO ind = 1,Iuid
      ILoc = MINLOC(ABS(ISymmetryRelations-ind))
      IEquivalentUgKey(ind) = ind
      CUgToRefine(ind) = CUgMatNoAbs(ILoc(1),ILoc(2))
 !RB     PRINT*,"CUgToRefine",ind,IEquivalentUgKey(ind),CUgToRefine(ind)
   END DO
   
-  CALL ReSortUgs(IEquivalentUgKey,CUgToRefine,SIZE(CUgToRefine,DIM=1))
+  CALL ReSortUgs(IEquivalentUgKey,CUgToRefine,Iuid)
 
 END SUBROUTINE RankSymmetryRelatedStructureFactor
 
@@ -930,13 +942,11 @@ SUBROUTINE SimplexInitialisation(RSimplexVolume,RSimplexFoM,RIndependentVariable
      PRINT*,"SimplexInitialisation(",my_rank,") error deallocating CUgMatNoAbs"
      RETURN
   ENDIF
-
   DEALLOCATE(CUgMatPrime,STAT=IErr)  
   IF( IErr.NE.0 ) THEN
      PRINT*,"SimplexInitialisation(",my_rank,") error deallocating CUgMatPrime"
      RETURN
   ENDIF
- 
   DEALLOCATE(CUgMat,STAT=IErr)  
   IF( IErr.NE.0 ) THEN
      PRINT*,"SimplexInitialisation(",my_rank,") error deallocating CUgMat"
@@ -964,7 +974,6 @@ SUBROUTINE SimplexInitialisation(RSimplexVolume,RSimplexFoM,RIndependentVariable
            PRINT*,"--------------------------------"
            WRITE(SPrintString,FMT='(A8,I2,A4,I3)') "Simplex ",ind," of ",IIndependentVariables+1
            PRINT*,TRIM(ADJUSTL(SPrintString))
- !          PRINT*,"-------- Simplex",ind,"of",IIndependentVariables+1
            PRINT*,"--------------------------------"
         END IF
 
@@ -982,7 +991,6 @@ SUBROUTINE SimplexInitialisation(RSimplexVolume,RSimplexFoM,RIndependentVariable
  !         PRINT*,"--------------------------------"
           WRITE(SPrintString,FMT='(A16,F7.5))') "Figure of merit ",RSimplexFoM(ind)
           PRINT*,TRIM(ADJUSTL(SPrintString))
-!          PRINT*,"-------- Figure of Merit" ,RSimplexFoM(ind)        
  !         PRINT*,"---------------------------------------------------------"
         END IF
      END DO
@@ -1057,18 +1065,15 @@ USE MyNumbers
         RSimplexVolume(ind,(IAllowedVectors+1):) = &
              RIndependentVariableValues((IAllowedVectors+1):)*&
              (1+(RRandomNumbers*RRandomSigns*RSimplexLengthScale))
-        
         DEALLOCATE(RRandomSigns,RRandomNumbers)
         
      END DO
      
   ELSE
      ALLOCATE(RRandomSigns(IIndependentVariables),&
-          RRandomNumbers(IIndependentVariables),&
-          STAT=IErr)
+          RRandomNumbers(IIndependentVariables),STAT=IErr)
      
      DO ind = 1,(IIndependentVariables+1)
-        
         CALL RandomSequence(RRandomNumbers,IIndependentVariables,ind,IErr)
         CALL RandomSequence(RRandomSigns,IIndependentVariables,2*ind,IErr)
         WHERE (RRandomSigns.LT.HALF)
@@ -1076,13 +1081,10 @@ USE MyNumbers
         ELSEWHERE
            RRandomSigns = -ONE
         END WHERE
-        
-        
         RSimplexVolume(ind,:) = &
              RIndependentVariableValues(:)*&
              (1+(RRandomNumbers*RRandomSigns*RSimplexLengthScale))
      END DO
-     
         DEALLOCATE(RRandomSigns,RRandomNumbers)
      
   END IF
@@ -1113,10 +1115,9 @@ SUBROUTINE InitialiseAtomicVectorMagnitudes(IVariableID,RCorrectedMovement,IErr)
   
   IMPLICIT NONE
 
-  INTEGER(IKIND) :: &
-       IErr,ind,IVariableID
-  REAL(RKIND) :: &
-       RNegativeMovement,RPositiveMovement,RCorrectedMovement,RANDOMNUMBER
+  INTEGER(IKIND) :: IErr,ind,IVariableID
+  REAL(RKIND) :: RNegativeMovement,RPositiveMovement,RCorrectedMovement,RANDOMNUMBER
+
   RNegativeMovement = RSimplexLengthScale*(-1.0_RKIND)
   RPositiveMovement = RSimplexLengthScale
 
@@ -1131,7 +1132,6 @@ END SUBROUTINE InitialiseAtomicVectorMagnitudes
 !!$  %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 SUBROUTINE RandomSequence(RRandomSequence,IRandomSequenceLength,ISeedModifier,IErr)
-
 !!$  %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 !!$  % Sets up a pseudo random sequence and selects a number
 !!$  %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%

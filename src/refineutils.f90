@@ -46,21 +46,13 @@ REAL(RKIND) FUNCTION PhaseCorrelate(RImageSim,RImageExpiDummy,IErr,IXsizeIn,IYSi
 
   IMPLICIT NONE
 
-  INTEGER(IKIND) :: &
-       IErr,IXsizeIn,IYSizeIn
-
-  REAL(RKIND),DIMENSION(IXSizeIn,IYSizeIn) :: &
-       RImageExpiDummy,RImageSim
+  INTEGER(IKIND) :: IErr,IXsizeIn,IYSizeIn
+  REAL(RKIND),DIMENSION(IXSizeIn,IYSizeIn) :: RImageExpiDummy,RImageSim
   
-  type(C_PTR) :: &
-       Iplan
-
-  real(C_DOUBLE), pointer :: &
-       RImageSimDummy(:,:)
-  type(C_PTR) :: & 
-       p1,p2,p3,p4
-  complex(C_DOUBLE_COMPLEX), pointer :: &
-       CDummy1(:,:),CDummy2(:,:),CCorrelatedImage(:,:)
+  type(C_PTR) :: Iplan
+  real(C_DOUBLE), pointer :: RImageSimDummy(:,:)
+  type(C_PTR) :: p1,p2,p3,p4
+  complex(C_DOUBLE_COMPLEX), pointer :: CDummy1(:,:),CDummy2(:,:),CCorrelatedImage(:,:)
   integer(C_INT) :: IX,IY
   
   IX = IXSizeIn
@@ -82,11 +74,9 @@ REAL(RKIND) FUNCTION PhaseCorrelate(RImageSim,RImageExpiDummy,IErr,IXsizeIn,IYSi
 
   RImageSimDummy = RImageSim
 
-
   !PRINT*,RImageSimDummy(:2,:2)
 
   ! Plan and Execute the fft of the Simulated Data 
-  
   Iplan = FFTW_PLAN_DFT_r2c_2D(IX,IY,RImageSimDummy,CDummy1,FFTW_ESTIMATE)
   CALL FFTW_EXECUTE_DFT_R2C(Iplan,RImageSimDummy,CDummy1)
   CALL FFTW_DESTROY_PLAN(Iplan)
@@ -99,9 +89,7 @@ REAL(RKIND) FUNCTION PhaseCorrelate(RImageSim,RImageExpiDummy,IErr,IXsizeIn,IYSi
   !PRINT*,RImageSimDummy(:2,:2)
  
   ! Plan and Execute the fft of the Experimental Data 
-
   Iplan = FFTW_PLAN_DFT_R2C_2D(IX,IY,RImageSimDummy,CDummy2,FFTW_ESTIMATE)
-
   CALL FFTW_EXECUTE_DFT_R2C(Iplan,RImageSimDummy,CDummy2)
   CALL FFTW_DESTROY_PLAN(Iplan)
 
@@ -109,18 +97,14 @@ REAL(RKIND) FUNCTION PhaseCorrelate(RImageSim,RImageExpiDummy,IErr,IXsizeIn,IYSi
 
   WHERE(ABS(CDummy1*CONJG(CDummy2)).NE.ZERO)
      CCorrelatedImage = (CDummy1*CONJG(CDummy2))/&
-          (&
-          ABS(CDummy1*CONJG(CDummy2)))
+          (ABS(CDummy1*CONJG(CDummy2)))
   ELSEWHERE 
      CCorrelatedImage = CZERO
   END WHERE
   
   ! Plan and Execute the inverse fft of the phase correlation
-
   Iplan = FFTW_PLAN_DFT_C2R_2D(IX,IY,CCorrelatedImage,RImageSimDummy,FFTW_ESTIMATE)
-
   CALL FFTW_EXECUTE_DFT_C2R(Iplan,CCorrelatedImage,RImageSimDummy)
-
   CALL FFTW_DESTROY_PLAN(Iplan)
 
   
@@ -150,17 +134,15 @@ SUBROUTINE ReSortUgs( ISymmetryIntegers,CUgs, N )
 
   IMPLICIT NONE
 
-  INTEGER (IKIND) N,IDummy,ISymmetryIntegers(N)
-  REAL(RKIND) RhklarraySearch(THREEDIM), RhklarrayCompare(THREEDIM)
-  COMPLEX(CKIND) CUgSearch,CUgCompare,CUgs(N)
-  REAL(KIND=RKIND) ALN2I, LocalTINY
+  INTEGER(IKIND) :: N,IDummy,ISymmetryIntegers(N)
+  INTEGER(IKIND) :: NN,M,L,K,J,I,LOGNB2
+  REAL(RKIND) :: RhklarraySearch(THREEDIM),RhklarrayCompare(THREEDIM)
+  REAL(RKIND) :: ALN2I,LocalTINY
+  COMPLEX(CKIND) :: CUgSearch,CUgCompare,Cdummy,CUgs(N)
   PARAMETER (ALN2I=1.4426950D0, LocalTINY=1.D-5)
-  
-  INTEGER (IKIND) NN,M,L,K,J,I,LOGNB2, index
-  COMPLEX(CKIND) Cdummy
 
-  IF((IWriteFLAG.GE.0.AND.my_rank.EQ.0).OR.IWriteFLAG.GE.10) THEN
-     PRINT*,"ReSort()"
+  IF((IWriteFLAG.GE.10.AND.my_rank.EQ.0).OR.IWriteFLAG.GE.10) THEN
+     PRINT*,"Sorting Ugs"
   END IF
   
   LOGNB2=INT(LOG(REAL(N))*ALN2I+LocalTINY)
@@ -171,34 +153,22 @@ SUBROUTINE ReSortUgs( ISymmetryIntegers,CUgs, N )
      DO 11 J=1,K
         I=J
 3       CONTINUE
-        L=I+M
-        
+        L=I+M     
         CUgSearch = CUgs(L)
         CUgCompare = CUgs(I)
-        IF( &
-             (ABS(CUgSearch)) .GT. &!RB sort on modulus ABS?
-             (ABS(CUgCompare))) THEN
- !          DO 100
-              !IF(my_rank.eq.0) THEN
-              !   PRINT*,I
-              !END IF
+        IF( (ABS(CUgSearch)).GT.(ABS(CUgCompare)) ) THEN!RB sort on modulus ABS
               Cdummy = CUgs(I)
               CUgs(I)= CUgs(L)
               Cugs(L)= Cdummy
               Idummy = ISymmetryIntegers(I)
               ISymmetryIntegers(I)= ISymmetryIntegers(L)
               ISymmetryIntegers(L)= Idummy
-!100        ENDDO
-           
            I=I-M
            IF(I.GE.1) GOTO 3
         ENDIF
 11   ENDDO
 12 ENDDO
   
-  !PRINT*,"Finishing ResortHKL"
-
-  !	PRINT*,"array0(1),array0(N)",array0(1),array0(N)
   RETURN
 
 END SUBROUTINE ReSortUgs
