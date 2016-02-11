@@ -406,7 +406,7 @@ DEALLOCATE(RgSumMat,CUgMat,CUgMatNoAbs,CUgMatPrime)
     IF ( IIndependentVariables.EQ.1 ) THEN 
       PRINT*,"Only one independent variable"
 	ELSE
-      WRITE(SPrintString,FMT='(I3,1X,A21))') IIndependentVariables,"independent variables"
+      WRITE(SPrintString,FMT='(I3,1X,A21)') IIndependentVariables,"independent variables"
       PRINT*,TRIM(ADJUSTL(SPrintString))
     END IF
   END IF
@@ -980,7 +980,7 @@ SUBROUTINE SimplexInitialisation(RSimplexVolume,RSimplexFoM,RIndependentVariable
         
         IF((IWriteFLAG.GE.0.AND.my_rank.EQ.0).OR.IWriteFLAG.GE.10) THEN
  !         PRINT*,"--------------------------------"
-          WRITE(SPrintString,FMT='(A16,F7.5))') "Figure of merit ",RSimplexFoM(ind)
+          WRITE(SPrintString,FMT='(A16,F7.5)') "Figure of merit ",RSimplexFoM(ind)
           PRINT*,TRIM(ADJUSTL(SPrintString))
 !          PRINT*,"-------- Figure of Merit" ,RSimplexFoM(ind)        
  !         PRINT*,"---------------------------------------------------------"
