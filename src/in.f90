@@ -58,19 +58,14 @@ SUBROUTINE ReadInpFile( IErr )
   IMPLICIT NONE
 
 
-  INTEGER(IKIND) :: &
-       IErr, ILine,ind,IPos,IPos1,IPos2
-  REAL(RKIND) :: &
-       ROfIter
-  CHARACTER*200 ::&
-       SImageMode,SElements,SRefineMode,SStringFromNumber,SRefineYESNO,&
+  INTEGER(IKIND) :: IErr, ILine,ind,IPos,IPos1,IPos2
+  REAL(RKIND) :: ROfIter
+  CHARACTER*200 :: SImageMode,SElements,SRefineMode,SStringFromNumber,SRefineYESNO,&
        SAtomicSites,SFormatString,SLengthofNumberString
-  CHARACTER*200 :: &
-       SDirectionX,SIncidentBeamDirection,SNormalDirectionX
+  CHARACTER*200 :: SDirectionX,SIncidentBeamDirection,SNormalDirectionX
   
 
-  OPEN(UNIT= IChInp, ERR= 120, FILE= "felix.inp",&
-       STATUS= 'OLD')
+  OPEN(UNIT= IChInp, ERR= 120, FILE= "felix.inp",STATUS= 'OLD')
   ILine= 1
 
 
@@ -452,23 +447,15 @@ SUBROUTINE ReadInpFile( IErr )
      PRINT*,"Input(): EOF in READ at line", ILine
      CALL WriteOutInputFile (IErr)
   END IF
-  
-  ! dump the input help
-
   IErr= 1
   RETURN
 !changed name from input to readinputparameters  
 END SUBROUTINE ReadInpFile
-   
 
 ! -----------------------------------------------------------------------
-!
-!
-!	IErr	error code
-! ----------------------------------------------------------------------
 
 SUBROUTINE ReadScaFile( IErr )
-
+!completely pointless subroutine that just calls another subroutine
   USE MyNumbers
   USE WriteToScreen
   
@@ -485,14 +472,13 @@ SUBROUTINE ReadScaFile( IErr )
   INTEGER IErr, ILine
 
      CALL Message("ReadScaFile",IMust,IErr)
-
      CALL Message("ReadScaFile",IInfo,IErr,MessageString="Reading in Scattering Factors")
-  
      CALL ScatteringFactors(IScatterFactorMethodFLAG,IErr)
-
   
 END SUBROUTINE ReadScaFile
   
+! -----------------------------------------------------------------------
+
 SUBROUTINE ReadHklFile(IErr)
 
   USE WriteToScreen
@@ -517,17 +503,13 @@ SUBROUTINE ReadHklFile(IErr)
 
   CALL Message ("ReadHklFile",IMust,IErr)  
 
-  OPEN(Unit = IChInp,FILE="felix.hkl",&
-       STATUS='OLD',ERR=10)
+  OPEN(Unit = IChInp,FILE="felix.hkl",STATUS='OLD',ERR=10)
 
-  CALL Message ("ReadHklFile",IInfo,IErr, &
-       MessageString =" Felix has detected .hkl and is entering selected hkl mode") 
+  CALL Message ("ReadHklFile",IInfo,IErr,MessageString ="Using hkl list") 
    
   ILine = 0
 
   IHKLSelectFLAG=1
-  
-  CALL Message ("ReadHklFile",IInfo,IErr,MessageString = " Selected hkl mode engaged") 
   
   DO
      READ(UNIT= IChInp, END=100, FMT='(a)') dummy1
@@ -536,16 +518,14 @@ SUBROUTINE ReadHklFile(IErr)
 
   100 ILength=ILine
 
-  ALLOCATE(RInputHKLs(ILength,THREEDIM),&
-       STAT=IErr)
+  ALLOCATE(RInputHKLs(ILength,THREEDIM),STAT=IErr)
   IF( IErr.NE.0 ) THEN
-     PRINT*,"ReadHklFile(): error in memory ALLOCATE()"
+     PRINT*,"ReadHklFile(",my_rank,")error allocating RInputHKLs"
      RETURN
   ENDIF
-  ALLOCATE(IOutputReflections(ILength),&
-       STAT=IErr)
+  ALLOCATE(IOutputReflections(ILength),STAT=IErr)
   IF( IErr.NE.0 ) THEN
-     PRINT*,"ReadHklFile(): error in memory ALLOCATE()"
+     PRINT*,"ReadHklFile(",my_rank,")error allocating IOutputReflections"
      RETURN
   ENDIF
   REWIND(UNIT=IChInp)
@@ -562,37 +542,31 @@ SUBROUTINE ReadHklFile(IErr)
      
      
      !Scan String for h
-
      IPos1 = SCAN(dummy1,'[')
      IPos2 = SCAN(dummy1,',')
      dummy2 = dummy1((IPos1+1):(IPos2-1))
      READ(dummy2,'(I20)') h
 
-     !Scan String for k
-     
+     !Scan String for k   
      IPos1 = SCAN(dummy1((IPos2+1):),',') + IPos2
      dummy2 = dummy1((IPos2+1):(IPos1-1))
      READ(dummy2,'(I20)') k
 
      !Scan String for l     
-
      IPos2 = SCAN(dummy1((IPos1+1):),']') + IPos1
      dummy2 = dummy1((IPos1+1):(IPos2-1))
      READ(dummy2,'(I20)') l
 
      ! Convert to REALs
-
      ILine=ILine+1
      RInputHKLs(ILine,1) = REAL(h,RKIND)
      RInputHKLs(ILine,2) = REAL(k,RKIND)
-     RInputHKLs(ILine,3) = REAL(l,RKIND)
-     
-     !Why Zero?
-!!$     IF((my_rank.EQ.0.AND.IWriteFLAG.GE.3).OR.IWriteFLAG.GE.10) THEN
-     WRITE(SHKLString,'(3(I4.1,1X))') NINT(RInputHKLs(ILine,:))
-     CALL Message ("ReadHklFile",IInfo,IErr,MessageVariable = "Input HKL is",MessageString = SHKLString) 
+     RInputHKLs(ILine,3) = REAL(l,RKIND)   
 
-!!$     END IF
+     IF((my_rank.EQ.0.AND.IWriteFLAG.GE.3).OR.IWriteFLAG.GE.10) THEN
+        WRITE(SHKLString,'(3(I4.1,1X))') NINT(RInputHKLs(ILine,:))
+        CALL Message ("ReadHklFile",IInfo,IErr,MessageVariable = "Input HKL is",MessageString = SHKLString) 
+     END IF
   END DO
 
   INoOfLacbedPatterns = ILength
@@ -605,6 +579,8 @@ SUBROUTINE ReadHklFile(IErr)
 
   RETURN
 END SUBROUTINE ReadHklFile
+
+!%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
   
 SUBROUTINE DetermineRefineableAtomicSites(SAtomicSites,IErr)
 

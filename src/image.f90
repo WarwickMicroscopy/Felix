@@ -60,15 +60,13 @@ SUBROUTINE ImageInitialisation( IErr )
   !Determine Positions of reflections in final image (may not need to be here)
   CALL Message("ImageInitialisation",IInfo,IErr, MessageVariable = "nReflections", IVariable = nReflections)
   CALL Message("ImageInitialisation",IInfo,IErr, MessageVariable = "RMinimumGMag", RVariable = RMinimumGMag)
-  PRINT*,"RB boo ImageInitialisation1"
 
   ! positions of the centres of the disks
   DO ind=1,nReflections
      RhklPositions(ind,1) = RgPoolT(ind,1)/RMinimumGMag
      RhklPositions(ind,2) = RgPoolT(ind,2)/RMinimumGMag
   ENDDO
-  PRINT*,"RB ImageInitialisation"
-  PRINT*,"RB ImageInitialisation IOutputReflections",IOutputReflections
+
   ! size of final image
   IF(RConvergenceAngle .LT. ONE) THEN
      DummyConvergenceAngle=RConvergenceAngle
@@ -203,7 +201,6 @@ END SUBROUTINE MontageInitialisation
 !---------------------------------------------------------------------
 !
 SUBROUTINE ImageMaskInitialisation (IErr)
-
 !!$%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 !!$%
 !!$%    Creates a circular or square image mask depending on the value of IMaskFLAG
@@ -227,8 +224,12 @@ SUBROUTINE ImageMaskInitialisation (IErr)
   REAL(RKIND) :: Rradius, RImageRadius
   
   CALL Message("ImageMaskInitialisation",IMust,IErr)
-  PRINT*,"RB boo2"
-
+  
+  ALLOCATE(RMask(2*IPixelCount,2*IPixelCount),STAT=IErr)
+  IF( IErr.NE.0 ) THEN
+    PRINT*,"ImageMaskInitialisation(",my_rank,")error allocating RMask"
+    RETURN
+  END IF
   IPixelTotal =0
   SELECT CASE (IMaskFLAG)
   CASE(0) ! circle
@@ -270,7 +271,7 @@ SUBROUTINE ImageMaskInitialisation (IErr)
   ALLOCATE(IPixelLocations(IPixelTotal,2), &
        STAT=IErr)
   IF( IErr.NE.0 ) THEN
-     PRINT*,"ImagemaskInitialization(", my_rank, ") error ", IErr, " in ALLOCATE of IPixelLocations"
+     PRINT*,"ImagemaskInitialization(",my_rank,")error allocating IPixelLocations"
      RETURN
   ENDIF
 

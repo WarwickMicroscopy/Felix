@@ -54,34 +54,30 @@ SUBROUTINE ImageSetup (IErr)
   
   ! Image initialisation 
   CALL Message("ImageSetup",IMust,IErr)
-  PRINT*,"RB boo imagesetup1"
+
   CALL ImageInitialisation( IErr )
   IF( IErr.NE.0 ) THEN
      PRINT*,"ImageSetup(",my_rank,")error in ImageInitialistion"
      RETURN
   END IF
-  PRINT*,"RB boo imagesetup2"
-  
+ 
   !--------------------------------------------------------------------
   ! define image masks
   !--------------------------------------------------------------------
-      
-  ALLOCATE(RMask(2*IPixelCount,2*IPixelCount),STAT=IErr)
-  IF( IErr.NE.0 ) THEN
-     PRINT*,"ImageSetup(",my_rank,")error in allocating RMask"
-     RETURN
-  END IF
+     !RB moved to  ImageMaskInitialisation
+!  ALLOCATE(RMask(2*IPixelCount,2*IPixelCount),STAT=IErr)
+!!  IF( IErr.NE.0 ) THEN
+ !    PRINT*,"ImageSetup(",my_rank,")error in allocating RMask"
+!     RETURN
+!  END IF
 
-  !Calls subroutine that sets up masking image
-  PRINT*,"RB boo imagesetup3"
-
+  !Set up masking image
   CALL ImageMaskInitialisation(IErr)
   IF( IErr.NE.0 ) THEN
      PRINT*,"ImageSetup(",my_rank,")error in ImageMaskInitialisation"
      RETURN
   END IF
 
-  CALL Message("ImageSetup",IInfo,IErr, &
-       MessageVariable = "IPixelTotal", IVariable = IPixelTotal)
+  CALL Message("ImageSetup",IInfo,IErr,MessageVariable = "IPixelTotal", IVariable = IPixelTotal)
 
 END SUBROUTINE ImageSetup

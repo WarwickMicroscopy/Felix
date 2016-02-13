@@ -49,8 +49,7 @@ SUBROUTINE BlochCoefficientCalculation(IYPixelIndex,IXPixelIndex,IPixelNumber,IF
   
   INTEGER(IKIND) :: IYPixelIndex,IXPixelIndex,hnd,knd,IPixelNumber,pnd,&
        ierr,IThickness,IThicknessIndex,ILowerLimit,IUpperLimit,IFirstPixelToCalculate       
-  REAL(RKIND) :: &
-       RPixelGVectorXPosition,RPixelGVectorYPosition, RThickness,RKn
+  REAL(RKIND) :: RPixelGVectorXPosition,RPixelGVectorYPosition, RThickness,RKn
 
   CHARACTER*40 surname
   CHARACTER*200 SindString, SjndString, SPixelCount, SnBeams,SWeakBeamIndex 
@@ -71,7 +70,6 @@ SUBROUTINE BlochCoefficientCalculation(IYPixelIndex,IXPixelIndex,IPixelNumber,IF
    END IF
 
   RPixelGVectorXPosition=(REAL(IYPixelIndex,RKIND)-REAL(IPixelCount,RKIND)-0.5_RKIND)*RDeltaK ! x-position in the disk
-  
   RPixelGVectorYPosition=(REAL(IXPixelIndex,RKIND)-REAL(IPixelCount,RKIND)-0.5_RKIND)*RDeltaK ! y-position in the disk
     
   ! we are inside the mask
@@ -97,7 +95,6 @@ SUBROUTINE BlochCoefficientCalculation(IYPixelIndex,IXPixelIndex,IPixelNumber,IF
   
   ! TiltedK used to be called Kprime2
   ! the vector of the incoming tilted beam
-
   CALL KVectorsCalculation(RPixelGVectorXPosition,RPixelGVectorYPosition,IErr)
   IF( IErr.NE.0 ) THEN
      PRINT*,"BlochCoefficientCalculation(", my_rank, ") error ", IErr, &
@@ -106,27 +103,24 @@ SUBROUTINE BlochCoefficientCalculation(IYPixelIndex,IXPixelIndex,IPixelNumber,IF
   END IF
 
   RKn = DOT_PRODUCT(RTiltedK,RNormDirM)
-
-  ! Compute the deviation parameter for ALL reflections
-  ! within RBSMaxGVecAmp
-
-  CALL DeviationParameterCalculation(IErr)
-  IF( IErr.NE.0 ) THEN
-     PRINT*,"BlochCoefficientCalculation(", my_rank, ") error ", IErr, &
-          " in Calculation of Deviation Parameter"
-     RETURN
-  END IF
+  !Compute the deviation parameter for reflection pool
+  DO knd=1,nReflections
+     ! DevPara is deviation parameter, also known as Sg 
+     RDevPara(knd)= -( RBigK + DOT_PRODUCT(RgPoolT(knd,:),RTiltedK(:)) /RBigK) + &
+          SQRT( &
+          ( RBigK**2 + DOT_PRODUCT(RgPoolT(knd,:),RTiltedK(:)) )**2 /RBigK**2 - &
+          (RgPoolMag(knd)**2 + TWO*DOT_PRODUCT(RgPoolT(knd,:),RTiltedK(:))) )
+  END DO
 
   ! select only those beams where the Ewald sphere is close to the
   ! reciprocal lattice, i.e. within RBSMaxDeviationPara
-
   CALL StrongAndWeakBeamsDetermination(IErr)!RB IAdditionalBmaxStrongBeamList abd IAdditionalPmaxStrongBeamList allocated in here
   IF( IErr.NE.0 ) THEN
      PRINT*,"BlochCoefficientCalculation(", my_rank, ") error ", IErr, &
           " in Determination of Strong and Weak beams"
      RETURN
   END IF
- 
+
   ! select the highest reflection that corresponds to a strong beam
   nBeams= IStrongBeamIndex
 
@@ -601,7 +595,7 @@ SUBROUTINE StrongAndWeakBeamsDetermination(IErr)
         RDummySg(IMinimum) = 1000000 !Large number
      END IF
   END DO
-  
+
   IStrongBeamIndex=0
   IWeakBeamIndex=0
   DO knd=1,nReflections
@@ -621,7 +615,7 @@ SUBROUTINE StrongAndWeakBeamsDetermination(IErr)
 
   IAdditionalBmaxStrongBeams = 0
   IAdditionalPmaxStrongBeams = 0
-  
+
   IF(IStrongBeamIndex+IMinWeakBeams.GT.nReflections) THEN
      IErr = 1
   END IF
@@ -652,7 +646,7 @@ SUBROUTINE StrongAndWeakBeamsDetermination(IErr)
         RDummySg(IMaximum) = 0.D0 !Large number
      END IF
   END DO
-  
+
   IWeakBeamIndex=0
   IWeakBeamList = 0
   
@@ -673,7 +667,7 @@ SUBROUTINE StrongAndWeakBeamsDetermination(IErr)
         IFound = 0
      ENDIF
   ENDDO
-  
+
   ALLOCATE(IAdditionalBmaxStrongBeamList(IWeakBeamIndex),STAT=IErr)
   IF( IErr.NE.0 ) THEN
      PRINT*,"StrongAndWeakBeamsDetermination(",my_rank,")error allocating IAdditionalBmaxStrongBeamList"
@@ -776,7 +770,7 @@ SUBROUTINE StrongAndWeakBeamsDetermination(IErr)
           IAdditionalPmaxStrongBeamList(:IAdditionalPmaxStrongBeams)
      IStrongBeamIndex = IStrongBeamIndex  + IAdditionalPmaxStrongBeams
   END IF
-  
+
   IWeakBeamIndex=0
   IWeakBeamList = 0
   

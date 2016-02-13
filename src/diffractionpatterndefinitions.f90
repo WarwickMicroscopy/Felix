@@ -448,8 +448,7 @@ SUBROUTINE SpecificReflectionDetermination (IErr)
     CALL Message("SpecificReflectionDetermination",IMust,IErr)
     
   IFind = 0
- PRINT*,"RB SpecificReflectionDetermination ",IOutputReflections
-  
+
   IF(IHKLSelectFLAG.EQ.1) THEN
      DO ind = 1,SIZE(RInputHKLs,DIM=1)
         DO jnd = 1,SIZE(Rhkl,DIM=1)

@@ -186,10 +186,19 @@ RFullIsotropicDebyeWallerFactor,IFullAtomicNumber,IFullAnisotropicDWFTensor)
 ! Fill the list of reflections Rhkl as indices h,k,l
   ALLOCATE(Rhkl(INhkl,THREEDIM),STAT=IErr)
   CALL HKLMake(IHKLMAXValue,RZDirC,RHOLZAcceptanceAngle,IErr)
-! sort them in descending order of magnitude  
+  
+  ! sort them in descending order of magnitude
+  ! may result in an error when the reflection pool does not reach the highest hkl of the experimental data? 
   CALL SortHKL(Rhkl,INhkl,IErr) 
   IF( IErr.NE.0 ) THEN
      PRINT*,"felixrefine(",my_rank,")error in SortHKL"
+     GOTO 9999
+  END IF
+
+  !Assign numbers to the different reflections in IOutputReflections
+  CALL SpecificReflectionDetermination (IErr)
+  IF( IErr.NE.0 ) THEN
+     PRINT*,"felixrefine(",my_rank,")error in SpecificReflectionDetermination"
      GOTO 9999
   END IF
   
@@ -329,7 +338,7 @@ RFullIsotropicDebyeWallerFactor,IFullAtomicNumber,IFullAnisotropicDWFTensor)
   ENDDO
   
 !zz temp deallocation to get it to work
-DEALLOCATE(Rhkl,RgPoolMag,RgPoolMagLaue)!
+DEALLOCATE(Rhkl,RgPoolMagLaue)!,RgPoolMag
 IF (RAcceptanceAngle.NE.ZERO.AND.IZOLZFLAG.EQ.0) THEN
   DEALLOCATE(IOriginGVecIdentifier)
     PRINT*,"felixrefine deallocating IOriginGVecIdentifier"
@@ -363,10 +372,10 @@ DEALLOCATE(IAnisoDWFT,IAtoms,ROcc,RDWF)!RgPoolT,
 !Now change StructureFactorRefinementSetup fr722 and UpdateStructureFactors ff1040
   
 !zz temp deallocation to get it to work
-DEALLOCATE(ISymmetryRelations,IEquivalentUgKey,CUgToRefine)
+!DEALLOCATE(ISymmetryRelations,IEquivalentUgKey,CUgToRefine)
 
 !zz temp deallocation to get it to work
-DEALLOCATE(RgSumMat,CUgMat,CUgMatNoAbs,CUgMatPrime)
+!DEALLOCATE(RgSumMat,CUgMat,CUgMatNoAbs,CUgMatPrime)
 
   !--------------------------------------------------------------------
   ! Setup Simplex Variables
@@ -441,17 +450,52 @@ DEALLOCATE(RgSumMat,CUgMat,CUgMatNoAbs,CUgMatPrime)
      END IF
   END DO 
 
-  !  Don't know what it does but produces a number for IOutputReflections
-  !CALL SpecificReflectionDetermination (IErr)
+  !--------------------------------------------------------------------
+  ! Setup Images for output
+  ALLOCATE(RhklPositions(nReflections,2),STAT=IErr)
   IF( IErr.NE.0 ) THEN
-     PRINT*,"felixrefine(",my_rank,")error in SpecificReflectionDetermination"
-     GOTO 9999
+     PRINT*,"felixrefine(",my_rank,") error allocating RhklPositions"
+     RETURN
   END IF
-    
+ 
+  CALL ImageSetup( IErr )
+  IF( IErr.NE.0 ) THEN
+     PRINT*,"felixrefine(",my_rank,") error in ImageSetup"
+     RETURN
+  END IF 
+  
+  !--------------------------------------------------------------------
+  ! Allocate memory for deviation parameter and bloch calc in main loop
+  !--------------------------------------------------------------------
+  ALLOCATE(RDevPara(nReflections),STAT=IErr)
+  IF( IErr.NE.0 ) THEN
+     PRINT*,"felixrefine(",my_rank,")error allocating RDevPara"
+     RETURN
+  END IF
+  ALLOCATE(IStrongBeamList(nReflections),STAT=IErr)
+  IF( IErr.NE.0 ) THEN
+     PRINT*,"felixrefine(",my_rank,")error allocating IStrongBeamList"
+     RETURN
+  END IF
+  ALLOCATE(IWeakBeamList(nReflections),STAT=IErr)
+  IF( IErr.NE.0 ) THEN
+     PRINT*,"felixrefine(",my_rank,")error allocating IWeakBeamList"
+     RETURN
+  END IF
+  ALLOCATE(CFullWaveFunctions(nReflections),STAT=IErr)
+  IF( IErr.NE.0 ) THEN
+     PRINT*,"felixrefine(",my_rank,")error allocating CFullWaveFunctions"
+     RETURN
+  END IF
+  ALLOCATE(RFullWaveIntensity(nReflections),STAT=IErr)
+  IF( IErr.NE.0 ) THEN
+     PRINT*,"felixrefine(",my_rank,")error allocating RFullWaveIntensity"
+     RETURN
+  END IF  
+  
   !--------------------------------------------------------------------
   ! Initialise Simplex
   !--------------------------------------------------------------------
-
   ALLOCATE(RSimplexVolume(IIndependentVariables+1,IIndependentVariables), STAT=IErr)  
   IF( IErr.NE.0 ) THEN
      PRINT*,"felixrefine(",my_rank,")error allocating RSimplexVolume"
@@ -867,16 +911,15 @@ SUBROUTINE SimplexInitialisation(RSimplexVolume,RSimplexFoM,RIndependentVariable
      PRINT*,"SimplexInitialisation(",my_rank,")error in FelixFunction"
      RETURN
   ENDIF
-    
+
   CALL InitialiseWeightingCoefficients(IErr)
   IF( IErr.NE.0 ) THEN
      PRINT*,"SimplexInitialisation(",my_rank,")error in InitialiseWeightingCoefficients"
      RETURN
   ENDIF
 
-  IF(my_rank.EQ.0) THEN   
+  IF(my_rank.EQ.0) THEN   !RB isn't thickness count calculated somewhere else too?
      IThicknessCount= (RFinalThickness- RInitialThickness)/RDeltaThickness + 1
-     !IIterationCount = 0; !Initial Simulation is iteration zero !!! moved to felixrefine
      IExitFLAG = 0; ! Do not exit
      IPreviousPrintedIteration = -IPrint
      CALL CreateImagesAndWriteOutput(IIterationCount,IExitFLAG,IErr) 
@@ -891,7 +934,7 @@ SUBROUTINE SimplexInitialisation(RSimplexVolume,RSimplexFoM,RIndependentVariable
         RETURN
      ENDIF
   END IF
-
+    PRINT*,"RB FelixFunction finished"
   CALL RefinementVariableSetup(RIndependentVariableValues,IErr)
   IF( IErr.NE.0 ) THEN
      PRINT*,"SimplexInitialisation(", my_rank, ") error in RefinementVariableSetup()"
@@ -1100,7 +1143,7 @@ SUBROUTINE InitialiseAtomicVectorMagnitudes(IVariableID,RCorrectedMovement,IErr)
 
   RNegativeMovement = RSimplexLengthScale*(-1.0_RKIND)
   RPositiveMovement = RSimplexLengthScale
-
+!RB this check can be done in less lines than it takes to call the subroutine
   IF(RANDOMNUMBER(IVariableID,IErr).LT.0.5_RKIND) THEN
      CALL OutofUnitCellCheck(IVariableID,RNegativeMovement,RCorrectedMovement,IErr)
   ELSE
@@ -1163,7 +1206,6 @@ END SUBROUTINE  RANDOMSEQUENCE
 !!$  %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 REAL(RKIND) FUNCTION RANDOMNUMBER(IRequestedNumber,IErr)
-
 !!$  %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 !!$  % Sets up a pseudo random sequence and selects a number
 !!$  %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -1181,12 +1223,9 @@ REAL(RKIND) FUNCTION RANDOMNUMBER(IRequestedNumber,IErr)
 
   IMPLICIT NONE
 
-  INTEGER(IKIND) :: &
-       IErr,values(1:8), k,IRequestedNumber
-  INTEGER(IKIND), DIMENSION(:), ALLOCATABLE :: &
-       seed
-  REAL(RKIND),DIMENSION(IRequestedNumber) :: &
-       RRandomNumberSequence
+  INTEGER(IKIND) :: IErr,values(1:8), k,IRequestedNumber
+  INTEGER(IKIND), DIMENSION(:), ALLOCATABLE :: seed
+  REAL(RKIND),DIMENSION(IRequestedNumber) :: RRandomNumberSequence
   
   CALL DATE_AND_TIME(values=values)
   
@@ -1211,7 +1250,6 @@ END FUNCTION RANDOMNUMBER
 !!$  %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 SUBROUTINE OutofUnitCellCheck(IVariableID,RProposedMovement,RCorrectedMovement,IErr)
-
 !!$  %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 !!$  % Checks that vector movement applied by the simplex initialisation
 !!$  % does not move an atom out fo the unit cell, and if it does

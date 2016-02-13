@@ -238,18 +238,12 @@ SUBROUTINE WriteOutSimplex(RSimplexVolume,RSimplexFoM,IDimensions,RStandardDevia
 
   IMPLICIT NONE
 
-  INTEGER(IKIND) :: &
-       IErr,IDimensions,ind,IIterations
-  REAL(RKIND),DIMENSION(IDimensions+1,IDimensions),INTENT(IN) :: &
-       RSimplexVolume
-  REAL(RKIND),DIMENSION(IDimensions+1),INTENT(IN) :: &
-       RSimplexFoM
-  REAL(RKIND),DIMENSION(IDimensions+1) :: &
-       RData
-  REAL(RKIND) :: &
-       RStandardDeviation,RMean
-  CHARACTER*200 :: &
-       CSizeofData,SFormatString
+  INTEGER(IKIND) :: IErr,IDimensions,ind,IIterations
+  REAL(RKIND),DIMENSION(IDimensions+1,IDimensions),INTENT(IN) :: RSimplexVolume
+  REAL(RKIND),DIMENSION(IDimensions+1),INTENT(IN) :: RSimplexFoM
+  REAL(RKIND),DIMENSION(IDimensions+1) :: RData
+  REAL(RKIND) :: RStandardDeviation,RMean
+  CHARACTER*200 :: CSizeofData,SFormatString
   
   WRITE(CSizeofData,*) IDimensions+1
   WRITE(SFormatString,*) "("//TRIM(ADJUSTL(CSizeofData))//"(1F6.3,1X),A1)"
@@ -268,7 +262,7 @@ END SUBROUTINE WriteOutSimplex
 !!$----------------------------------------------------------------------------
 
 SUBROUTINE SaveSimplex(RSimplexVolume,RSimplexFoM,IDimensions,RStandardDeviation,RMean,IIterations,IErr)
-
+!what a useless subroutine, just calls two others
   USE MyNumbers
 
   USE IConst; USE RConst
@@ -280,14 +274,10 @@ SUBROUTINE SaveSimplex(RSimplexVolume,RSimplexFoM,IDimensions,RStandardDeviation
 
   IMPLICIT NONE
 
-  INTEGER(IKIND) :: &
-       IErr,IDimensions,IIterations
-  REAL(RKIND),DIMENSION(IDimensions+1,IDimensions),INTENT(IN) :: &
-       RSimplexVolume
-  REAL(RKIND),DIMENSION(IDimensions+1),INTENT(IN) :: &
-       RSimplexFoM
-  REAL(RKIND) :: &
-       RStandardDeviation,RMean
+  INTEGER(IKIND) :: IErr,IDimensions,IIterations
+  REAL(RKIND),DIMENSION(IDimensions+1,IDimensions),INTENT(IN) :: RSimplexVolume
+  REAL(RKIND),DIMENSION(IDimensions+1),INTENT(IN) :: RSimplexFoM
+  REAL(RKIND) :: RStandardDeviation,RMean
 
   CALL OpenSimplexOutput(IErr)
  
