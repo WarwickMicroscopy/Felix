@@ -137,121 +137,77 @@ SUBROUTINE BlochCoefficientCalculation(IYPixelIndex,IXPixelIndex,IPixelNumber,IF
   !--------------------------------------------------------------------
   
   !Eigen Problem Solving
-  ALLOCATE(CBeamProjectionMatrix(nBeams,nReflections), &
-       STAT=IErr)
+  ALLOCATE(CBeamProjectionMatrix(nBeams,nReflections),STAT=IErr)
   IF( IErr.NE.0 ) THEN
-     PRINT*,"BlochCoefficientCalculation(", my_rank, ") error ", IErr, &
-          " in ALLOCATE() of DYNAMIC variables CBeamProjectionMatrix"
+     PRINT*,"BlochCoefficientCalculation(",my_rank,")error allocating CBeamProjectionMatrix"
      RETURN
   END IF
-
-  ALLOCATE(CDummyBeamMatrix(nBeams,nReflections), &
-       STAT=IErr)
+  ALLOCATE(CDummyBeamMatrix(nBeams,nReflections),STAT=IErr)
   IF( IErr.NE.0 ) THEN
-     PRINT*,"BlochCoefficientCalculation(", my_rank, ") error ", IErr, &
-          " in ALLOCATE() of DYNAMIC variables CDummyBeamMatrix"
+     PRINT*,"BlochCoefficientCalculation(",my_rank,")error allocating CDummyBeamMatrix"
      RETURN
   END IF
-
-  ALLOCATE(CUgMatEffective(nBeams,nBeams), &
-       STAT=IErr)
+  ALLOCATE(CUgMatEffective(nBeams,nBeams),STAT=IErr)
   IF( IErr.NE.0 ) THEN
-     PRINT*,"BlochCoefficientCalculation(", my_rank, ") error ", IErr, &
-          " in ALLOCATE() of DYNAMIC variables CUgMatEffective"
+     PRINT*,"BlochCoefficientCalculation(",my_rank,")error allocating CUgMatEffective"
      RETURN
   END IF
-  
-  ALLOCATE(CEigenVectors(nBeams,nBeams), &
-       STAT=IErr)
+    ALLOCATE(CEigenVectors(nBeams,nBeams),STAT=IErr)
   IF( IErr.NE.0 ) THEN
-     PRINT*,"BlochCoefficientCalculation(", my_rank, ") error ", IErr, &
-          " in ALLOCATE() of DYNAMIC variables CEigenVectors"
+     PRINT*,"BlochCoefficientCalculation(",my_rank,")error allocating CEigenVectors"
      RETURN
   END IF
-
-  ALLOCATE(CEigenValues(nBeams), &
-       STAT=IErr)
+  ALLOCATE(CEigenValues(nBeams),STAT=IErr)
   IF( IErr.NE.0 ) THEN
-     PRINT*,"BlochCoefficientCalculation(", my_rank, ") error ", IErr, &
-          " in ALLOCATE() of DYNAMIC variables CEigenValues"
+     PRINT*,"BlochCoefficientCalculation(",my_rank,")error allocating CEigenValues"
      RETURN
   END IF
-
-  ALLOCATE(CInvertedEigenVectors(nBeams,nBeams), &
-       STAT=IErr)
+  ALLOCATE(CInvertedEigenVectors(nBeams,nBeams),STAT=IErr)
   IF( IErr.NE.0 ) THEN
-     PRINT*,"BlochCoefficientCalculation(", my_rank, ") error ", IErr, &
-          " in ALLOCATE() of DYNAMIC variables CInvertedEigenVectors"
-     PRINT*,"Failure Occured at Thickness,Chunk,Pixel,nBeams = ",IPixelCountTotal,nBeams
-     
-     RETURN
-  END IF
-
-  ALLOCATE(CBeamTranspose(nReflections,nBeams), &
-       STAT=IErr)
-  IF( IErr.NE.0 ) THEN
-     PRINT*,"BlochCoefficientCalculation(", my_rank, ") error ", IErr, &
-          " in ALLOCATE() of DYNAMIC variables CBeamTranspose"
-     RETURN
-  END IF
-
-  ALLOCATE(CUgMatPartial(nReflections,nBeams), &
-       STAT=IErr)
-  IF( IErr.NE.0 ) THEN
-     PRINT*,"BlochCoefficientCalculation(", my_rank, ") error ", IErr, &
-          " in ALLOCATE() of DYNAMIC variables CUgMatPartial"
-     RETURN
-  END IF
-
-  ALLOCATE(CAlphaWeightingCoefficients(nBeams), &
-       STAT=IErr)
-  IF( IErr.NE.0 ) THEN
-     PRINT*,"BlochCoefficientCalculation(", my_rank, ") error ", IErr, &
-          " in ALLOCATE() of DYNAMIC variables CAlphaWeightingCoefficients"
-     PRINT*,"Failure Occured at Thickness,Chunk,Pixel,nBeams = ",IPixelCountTotal,nBeams
-     
-     RETURN
-  END IF
-
-  ALLOCATE(CEigenValueDependentTerms(nBeams,nBeams), &
-       STAT=IErr)
-  IF( IErr.NE.0 ) THEN
-     PRINT*,"BlochCoefficientCalculation(", my_rank, ") error ", IErr, &
-          " in ALLOCATE() of DYNAMIC variables CEigenValueDependentTerms"
-     PRINT*,"Failure Occured at Thickness,Chunk,Pixel,nBeams = ",IPixelCountTotal,nBeams
-     
-     RETURN
-  END IF
-
-  ALLOCATE(CWaveFunctions(nBeams), &
-       STAT=IErr)
-  IF( IErr.NE.0 ) THEN
-     PRINT*,"BlochCoefficientCalculation(", my_rank, ") error ", IErr, &
-          " in ALLOCATE() of DYNAMIC variables CWaveFunctions"
-     PRINT*,"Failure Occured at Thickness,Chunk,Pixel,nBeams = ",IPixelCountTotal,nBeams
-     
-     RETURN
-  END IF
-
-  ALLOCATE(RWaveIntensity(nBeams), &
-       STAT=IErr)
-  IF( IErr.NE.0 ) THEN
-     PRINT*,"BlochCoefficientCalculation(", my_rank, ") error ", IErr, &
-          " in ALLOCATE() of DYNAMIC variables RWaveIntensity"
-     PRINT*,"Failure Occured at Thickness,Chunk,Pixel,nBeams = ",IPixelCountTotal,nBeams
-     
-     RETURN
-  END IF
-
-  ALLOCATE(CPsi0(nBeams), & 
-       STAT=IErr)
-  IF( IErr.NE.0 ) THEN
-     PRINT*,"BlochCoefficientCalculation(", my_rank, ") error ", IErr, &
-          " in ALLOCATE() of DYNAMIC variables CPsi0"
+     PRINT*,"BlochCoefficientCalculation(",my_rank,")error allocating CInvertedEigenVectors"
      PRINT*,"Failure Occured at Thickness,Chunk,Pixel,nBeams = ",IPixelCountTotal,nBeams
      RETURN
   END IF
-
+  ALLOCATE(CBeamTranspose(nReflections,nBeams),STAT=IErr)
+  IF( IErr.NE.0 ) THEN
+     PRINT*,"BlochCoefficientCalculation(",my_rank,")error allocating CBeamTranspose"
+     RETURN
+  END IF
+  ALLOCATE(CUgMatPartial(nReflections,nBeams),STAT=IErr)
+  IF( IErr.NE.0 ) THEN
+     PRINT*,"",my_rank,")error allocating CUgMatPartial"
+     RETURN
+  END IF
+  ALLOCATE(CAlphaWeightingCoefficients(nBeams),STAT=IErr)
+  IF( IErr.NE.0 ) THEN
+     PRINT*,"BlochCoefficientCalculation(",my_rank,")error allocating CAlphaWeightingCoefficients"
+     PRINT*,"Failure Occured at Thickness,Chunk,Pixel,nBeams = ",IPixelCountTotal,nBeams
+     RETURN
+  END IF
+  ALLOCATE(CEigenValueDependentTerms(nBeams,nBeams),STAT=IErr)
+  IF( IErr.NE.0 ) THEN
+     PRINT*,"BlochCoefficientCalculation(",my_rank,")error allocating CEigenValueDependentTerms"
+     PRINT*,"Failure Occured at Thickness,Chunk,Pixel,nBeams = ",IPixelCountTotal,nBeams 
+     RETURN
+  END IF
+  ALLOCATE(CWaveFunctions(nBeams),STAT=IErr)
+  IF( IErr.NE.0 ) THEN
+     PRINT*,"BlochCoefficientCalculation(",my_rank,")error allocating CWaveFunctions"
+     PRINT*,"Failure Occured at Thickness,Chunk,Pixel,nBeams = ",IPixelCountTotal,nBeams
+     RETURN
+  END IF
+  ALLOCATE(RWaveIntensity(nBeams),STAT=IErr)
+  IF( IErr.NE.0 ) THEN
+     PRINT*,"BlochCoefficientCalculation(",my_rank,")error allocating RWaveIntensity"
+     PRINT*,"Failure Occured at Thickness,Chunk,Pixel,nBeams = ",IPixelCountTotal,nBeams
+     RETURN
+  END IF
+  ALLOCATE(CPsi0(nBeams),STAT=IErr)
+  IF( IErr.NE.0 ) THEN
+     PRINT*,"BlochCoefficientCalculation(",my_rank,")error allocating CPsi0"
+     PRINT*,"Failure Occured at Thickness,Chunk,Pixel,nBeams = ",IPixelCountTotal,nBeams
+     RETURN
+  END IF
   !--------------------------------------------------------------------
   ! construct the effective UgMat (for strong beams only at the moment)
   !--------------------------------------------------------------------
@@ -451,12 +407,9 @@ SUBROUTINE CreateWaveFunctions(RThickness,IErr)
 
   IMPLICIT NONE
   
-  INTEGER(IKIND) :: &
-       ind,jnd,knd,hnd,IErr, ifullind, iuniind,gnd,ichnk
-  REAL(RKIND) :: &
-       RThickness 
-  COMPLEX(CKIND),DIMENSION(:,:),ALLOCATABLE :: &
-       CDummyEigenVectors
+  INTEGER(IKIND) :: ind,jnd,knd,hnd,IErr, ifullind, iuniind,gnd,ichnk
+  REAL(RKIND) :: RThickness 
+  COMPLEX(CKIND),DIMENSION(:,:),ALLOCATABLE :: CDummyEigenVectors
 
   IF (my_rank.EQ.0) THEN
      DO WHILE (IMessageCounter .LT.6)
@@ -471,11 +424,9 @@ SUBROUTINE CreateWaveFunctions(RThickness,IErr)
   CPsi0 = CZERO
   IF(nBeams .GE. 0) CPsi0(1) = CONE
   
-  ALLOCATE(CDummyEigenVectors(nBeams,nBeams), &
-       STAT=IErr)
+  ALLOCATE(CDummyEigenVectors(nBeams,nBeams),STAT=IErr)
   IF( IErr.NE.0 ) THEN
-     PRINT*,"CreateWavefunctions(", my_rank, ") error ", IErr, &
-          " in ALLOCATE() of DYNAMIC variables CDummyEigenVectors"
+     PRINT*,"CreateWavefunctions(",my_rank,")error allocating CDummyEigenVectors"
      RETURN
   ENDIF
   
@@ -527,8 +478,7 @@ SUBROUTINE CreateWaveFunctions(RThickness,IErr)
   DEALLOCATE(CDummyEigenVectors, &
        STAT=IErr)
   IF( IErr.NE.0 ) THEN
-     PRINT*,"CreateWavefunctions(", my_rank, ") error ", IErr, &
-          " in DEALLOCATE() of DYNAMIC variables CDummyEigenVectors"
+     PRINT*,"CreateWavefunctions(",my_rank,")error deallocating CDummyEigenVectors"
      RETURN
   ENDIF
   
@@ -724,11 +674,9 @@ SUBROUTINE StrongAndWeakBeamsDetermination(IErr)
      ENDIF
   ENDDO
   
-  ALLOCATE(IAdditionalBmaxStrongBeamList(IWeakBeamIndex),&
-       STAT=IErr)
+  ALLOCATE(IAdditionalBmaxStrongBeamList(IWeakBeamIndex),STAT=IErr)
   IF( IErr.NE.0 ) THEN
-     PRINT*,"StrongAndWeakBeamsDetermination(", my_rank, ") error ", IErr, &
-          " in ALLOCATE() of DYNAMIC variables IAdditionalBmaxStrongBeamList"
+     PRINT*,"StrongAndWeakBeamsDetermination(",my_rank,")error allocating IAdditionalBmaxStrongBeamList"
      RETURN
   ENDIF
   
@@ -790,11 +738,9 @@ SUBROUTINE StrongAndWeakBeamsDetermination(IErr)
      ENDIF
   ENDDO
 
-  ALLOCATE(IAdditionalPmaxStrongBeamList(IWeakBeamIndex),&
-       STAT=IErr)
+  ALLOCATE(IAdditionalPmaxStrongBeamList(IWeakBeamIndex),STAT=IErr)
   IF( IErr.NE.0 ) THEN
-     PRINT*,"StrongAndWeakBeamsDetermination(", my_rank, ") error ", IErr, &
-          " in ALLOCATE() of DYNAMIC variables IAdditionalPmaxStrongBeamList"
+     PRINT*,"StrongAndWeakBeamsDetermination(",my_rank,")error allocating PmaxStrongBeamList"
      RETURN
   ENDIF
   
@@ -854,15 +800,12 @@ SUBROUTINE StrongAndWeakBeamsDetermination(IErr)
 !RB  
   DEALLOCATE(IAdditionalBmaxStrongBeamList,STAT=IErr)
   IF( IErr.NE.0 ) THEN
-     PRINT*,"StrongAndWeakBeamsDetermination(", my_rank, ") error ", IErr, &
-          " in DEALLOCATE() of IAdditionalBmaxStrongBeamList"
+     PRINT*,"StrongAndWeakBeamsDetermination(",my_rank,")error deallocating IAdditionalBmaxStrongBeamList"
      RETURN
   ENDIF
-  
   DEALLOCATE(IAdditionalPmaxStrongBeamList,STAT=IErr)
   IF( IErr.NE.0 ) THEN
-     PRINT*,"StrongAndWeakBeamsDetermination(", my_rank, ") error ", IErr, &
-          " in DEALLOCATE() of IAdditionalPmaxStrongBeamList"
+     PRINT*,"StrongAndWeakBeamsDetermination(",my_rank,")error deallocating IAdditionalPmaxStrongBeamList"
      RETURN
   ENDIF
 

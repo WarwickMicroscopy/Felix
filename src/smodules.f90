@@ -386,18 +386,13 @@ END MODULE CPara
 MODULE SPara
   USE MyNumbers
   
-  CHARACTER*1 :: &
-       SSpaceGroupName
-  CHARACTER*10 :: &
-       SSpaceGrp
-  CHARACTER*2, DIMENSION(:), ALLOCATABLE :: &
-       SFullAtomicNameVec
+  CHARACTER*1 :: SSpaceGroupName
+  CHARACTER*10 :: SSpaceGrp
+  CHARACTER*2, DIMENSION(:), ALLOCATABLE :: SFullAtomicNameVec
   
-  CHARACTER*2, DIMENSION(:), ALLOCATABLE :: &
-       SAtomName, SMNP
+  CHARACTER*2, DIMENSION(:), ALLOCATABLE :: SAtomName, SMNP
 
-  CHARACTER*1,DIMENSION(:),ALLOCATABLE :: &
-       SWyckoffSymbols
+  CHARACTER*1,DIMENSION(:),ALLOCATABLE :: SWyckoffSymbols
   
 END MODULE SPara
 

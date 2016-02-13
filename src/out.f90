@@ -247,14 +247,14 @@ SUBROUTINE OpenReflectionImage(IChOutWrite, surname, IErr,IReflectWriting,IImage
   CASE(MontageOut)
   CASE DEFAULT
      IF(IHKLSelectFLAG.EQ.0) THEn
-        WRITE(h,*)  NINT(RHKL(IReflectWriting,1))
-        WRITE(k,*)  NINT(RHKL(IReflectWriting,2))
-        WRITE(l,*)  NINT(RHKL(IReflectWriting,3))
+        WRITE(h,*)  NINT(Rhkl(IReflectWriting,1))
+        WRITE(k,*)  NINT(Rhkl(IReflectWriting,2))
+        WRITE(l,*)  NINT(Rhkl(IReflectWriting,3))
      ELSE
         
-        WRITE(h,*)  NINT(RHKL(IOutPutReflections(IReflectWriting),1))
-        WRITE(k,*)  NINT(RHKL(IOutPutReflections(IReflectWriting),2))
-        WRITE(l,*)  NINT(RHKL(IOutPutReflections(IReflectWriting),3))
+        WRITE(h,*)  NINT(Rhkl(IOutPutReflections(IReflectWriting),1))
+        WRITE(k,*)  NINT(Rhkl(IOutPutReflections(IReflectWriting),2))
+        WRITE(l,*)  NINT(Rhkl(IOutPutReflections(IReflectWriting),3))
      END IF
   END SELECT
 

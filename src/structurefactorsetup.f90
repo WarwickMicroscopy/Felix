@@ -80,7 +80,6 @@ SUBROUTINE StructureFactorSetup(IErr)
      RETURN
   END IF  
 
-
   CALL GMatrixInitialisation (IErr)
   IF( IErr.NE.0 ) THEN
      PRINT*,"StructureFactorSetup(",my_rank,")error in GMatrixInitialisation"
@@ -130,5 +129,5 @@ SUBROUTINE StructureFactorSetup(IErr)
      PRINT*,"StructureFactorSetup(",my_rank,")error deallocating RrVecMat"
      RETURN
   ENDIF
-
+ 
 END SUBROUTINE StructureFactorSetup

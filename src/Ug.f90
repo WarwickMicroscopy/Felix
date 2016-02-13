@@ -130,7 +130,6 @@ SUBROUTINE SymmetryRelatedStructureFactorDetermination (IErr)
      PRINT*,"SymmetryRelatedStructureFactorDetermination(",my_rank,")error allocating IEquivalentUgKey"
      RETURN
   END IF
- 
   ALLOCATE(CUgToRefine(Iuid),&
        STAT=IErr)
   IF( IErr.NE.0 ) THEN

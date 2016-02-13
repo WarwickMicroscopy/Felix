@@ -39,7 +39,7 @@
 !	is based on ShellSort from "Numerical Recipes", routine SHELL().
 !---------------------------------------------------------------------
 
-SUBROUTINE SortHKL( RHKLarray,N,IErr )
+SUBROUTINE SortHKL( Rhklarray,N,IErr )
 
   USE MyNumbers
   USE WriteToScreen
@@ -57,7 +57,7 @@ SUBROUTINE SortHKL( RHKLarray,N,IErr )
 
   INTEGER (IKIND) :: IErr,NN,M,L,K,J,I,LOGNB2,index
   INTEGER (IKIND),INTENT(IN) :: N
-  REAL(RKIND),INTENT(INOUT) :: RHKLarray(N,THREEDIM)
+  REAL(RKIND),INTENT(INOUT) :: Rhklarray(N,THREEDIM)
   REAL(RKIND) :: RhklarraySearch(THREEDIM), RhklarrayCompare(THREEDIM)
   REAL(RKIND) :: ALN2I, LocalTINY
   PARAMETER (ALN2I=1.4426950D0, LocalTINY=1.D-5)
@@ -94,12 +94,12 @@ SUBROUTINE SortHKL( RHKLarray,N,IErr )
              Rhklarray(I,2)*RbrVecO + &
              Rhklarray(I,3)*RcrVecO
         IF( &
-             DOT_PRODUCT(RHKLarraySearch(:),RHKLarraySearch(:)) .LT. &
-             DOT_PRODUCT(RHKLarrayCompare(:),RHKLarrayCompare(:))) THEN
+             DOT_PRODUCT(RhklarraySearch(:),RhklarraySearch(:)) .LT. &
+             DOT_PRODUCT(RhklarrayCompare(:),RhklarrayCompare(:))) THEN
            DO 100 index=1,THREEDIM
-              dummy        = RHKLarray(I,index)
-              RHKLarray(I,index)= RHKLarray(L,index)
-              RHKLarray(L,index)= dummy
+              dummy        = Rhklarray(I,index)
+              Rhklarray(I,index)= Rhklarray(L,index)
+              Rhklarray(L,index)= dummy
 100        ENDDO
            
            I=I-M

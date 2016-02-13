@@ -512,10 +512,8 @@ SUBROUTINE ReadHklFile(IErr)
 
   IMPLICIT NONE
 
-  INTEGER(IKIND) :: &
-       ILine,ILength,IErr,h,k,l,ind,IPos1,IPos2
-  CHARACTER*200 :: &
-       dummy1,dummy2,SHKLString
+  INTEGER(IKIND) :: ILine,ILength,IErr,h,k,l,ind,IPos1,IPos2
+  CHARACTER*200 :: dummy1,dummy2,SHKLString
 
   CALL Message ("ReadHklFile",IMust,IErr)  
 
@@ -544,14 +542,12 @@ SUBROUTINE ReadHklFile(IErr)
      PRINT*,"ReadHklFile(): error in memory ALLOCATE()"
      RETURN
   ENDIF
-
   ALLOCATE(IOutputReflections(ILength),&
        STAT=IErr)
   IF( IErr.NE.0 ) THEN
      PRINT*,"ReadHklFile(): error in memory ALLOCATE()"
      RETURN
   ENDIF
-  
   REWIND(UNIT=IChInp)
   
   ILine = 0
@@ -642,7 +638,6 @@ SUBROUTINE DetermineRefineableAtomicSites(SAtomicSites,IErr)
         PRINT*,"ReadInpFile(): error in memory ALLOCATE()"
         RETURN
      ENDIF
-
      
      PRINT*,SIZE(IAtomicSitesToRefine)
      WRITE(SLengthofNumberString,*) LEN(SAtomicSites((IPos1+1):(IPos2-1))) 
@@ -658,8 +653,7 @@ SUBROUTINE DetermineRefineableAtomicSites(SAtomicSites,IErr)
         IF (IPos2-IPos1.LE.1) EXIT
      END DO
      
-     ALLOCATE(IAtomicSitesToRefine(IPos),&
-          STAT=IErr)
+     ALLOCATE(IAtomicSitesToRefine(IPos),STAT=IErr)
      IF( IErr.NE.0 ) THEN
         PRINT*,"ReadInpFile(): error in memory ALLOCATE()"
         RETURN
@@ -719,7 +713,7 @@ SUBROUTINE ReadExperimentalImages(IErr)
         PRINT*,"ReadExperimentalImages (", my_rank, ") error in Allocation()"
         RETURN
      ENDIF
-     
+    
      CALL ReadImageForRefinement(IErr)  
      IF( IErr.NE.0 ) THEN
         PRINT*,"ReadExperimentalImages (", my_rank, ") error in ReadImageForRefinement()"
@@ -742,7 +736,6 @@ SUBROUTINE ReadExperimentalImages(IErr)
         PRINT*,"ReadExperimentalImages (", my_rank, ") error in deAllocation()"
         RETURN
      ENDIF
-
      
      CLOSE(IChInImage,IOSTAT=IErr) 
      IF( IErr.NE.0 ) THEN

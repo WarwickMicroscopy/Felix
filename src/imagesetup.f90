@@ -54,12 +54,13 @@ SUBROUTINE ImageSetup (IErr)
   
   ! Image initialisation 
   CALL Message("ImageSetup",IMust,IErr)
-
+  PRINT*,"RB boo imagesetup1"
   CALL ImageInitialisation( IErr )
   IF( IErr.NE.0 ) THEN
      PRINT*,"ImageSetup(",my_rank,")error in ImageInitialistion"
      RETURN
   END IF
+  PRINT*,"RB boo imagesetup2"
   
   !--------------------------------------------------------------------
   ! define image masks
@@ -72,6 +73,7 @@ SUBROUTINE ImageSetup (IErr)
   END IF
 
   !Calls subroutine that sets up masking image
+  PRINT*,"RB boo imagesetup3"
 
   CALL ImageMaskInitialisation(IErr)
   IF( IErr.NE.0 ) THEN

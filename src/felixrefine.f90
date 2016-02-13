@@ -55,13 +55,13 @@ PROGRAM Felixrefine
 
   INTEGER(IKIND) :: IHours,IMinutes,ISeconds,IErr,IMilliSeconds,IIterationFLAG,&
        ind,jnd,knd,ICalls,IIterationCount,ICutOff,IHOLZgPoolMag,IBSMaxLocGVecAmp,&
-	   ILaueLevel,INumTotalReflections,ITotalLaueZoneLevel,&
+	   ILaueLevel,INumTotalReflections,ITotalLaueZoneLevel,INhkl,&
 	   INumInitReflections,IZerothLaueZoneLevel,INumFinalReflections
   REAL(RKIND) :: StartTime, CurrentTime, Duration, TotalDurationEstimate,&
        RFigureOfMerit,SimplexFunction,RHOLZAcceptanceAngle,RLaueZoneGz
   INTEGER(IKIND) :: IStartTime, ICurrentTime ,IRate
   INTEGER(IKIND), DIMENSION(:),ALLOCATABLE :: IOriginGVecIdentifier
-  REAL(RKIND),DIMENSION(:,:),ALLOCATABLE :: RSimplexVolume
+  REAL(RKIND), DIMENSION(:,:), ALLOCATABLE :: RSimplexVolume
   REAL(RKIND),DIMENSION(:),ALLOCATABLE :: RSimplexFoM,RIndependentVariableValues
   REAL(RKIND), DIMENSION(:,:), ALLOCATABLE :: RgDummyVecMat,RgPoolMagLaue
   REAL(RKIND) :: RBCASTREAL,RStandardDeviation,RMean,RGzUnitVec,RMinLaueZoneValue,&
@@ -127,13 +127,12 @@ PROGRAM Felixrefine
      GOTO 9999
   END IF  
   
-  ALLOCATE(RImageExpi(2*IPixelCount,2*IPixelCount,INoOfLacbedPatterns),&
-       STAT=IErr)  
+  ALLOCATE(RImageExpi(2*IPixelCount,2*IPixelCount,INoOfLacbedPatterns),STAT=IErr)  
   IF( IErr.NE.0 ) THEN
      PRINT*,"felixrefine(",my_rank,")error allocating RImageExpi"
      GOTO 9999
   END IF
-
+  
   CALL ReadExperimentalImages(IErr)
   IF( IErr.NE.0 ) THEN
      PRINT*,"felixrefine(",my_rank,") error in ReadExperimentalImages"
@@ -151,7 +150,7 @@ PROGRAM Felixrefine
   
   CALL CrystalLatticeVectorDetermination(IErr)
   IF( IErr.NE.0 ) THEN
-     PRINT*,"felixrefine(",my_rank,") error in CrystalLatticeVectorDetermination"
+     PRINT*,"felixrefine(",my_rank,")error in CrystalLatticeVectorDetermination"
      GOTO 9999
   ENDIF
 
@@ -171,53 +170,44 @@ PROGRAM Felixrefine
 DEALLOCATE(RFullPartialOccupancy,SMNP,MNP,RFullAtomicFracCoordVec,SFullAtomicNameVec, &
 RFullIsotropicDebyeWallerFactor,IFullAtomicNumber,IFullAnisotropicDWFTensor)
 
+! set up reflection pool
+!-----------------------------------------
 !zz from diffractionpatterninitialisation/reflectiondetermination
-  ind = 0!here acts as a flag
-  jnd = 0
-  IhklMaxValue = 15!RB starting value for maximum hkl, increments if necessary
-  RHOLZAcceptanceAngle=TWODEG2RADIAN!RB maximum acceptance angle for HOLZ, suspect way too low
-  DO WHILE (ind.EQ.0)
-     jnd = jnd+1     
-     CALL NewHKLMake(IhklMaxValue,RZDirC,RHOLZAcceptanceAngle,IErr)!zz Rhkl is allocated in here
-      IF( IErr.NE.0 ) THEN
-        PRINT*,"felixrefine(",my_rank,")error in NewHKLMake()"
-        GOTO 9999
-     END IF
-     IF(SIZE(Rhkl,DIM=1).LT.IMinReflectionPool) THEN!double the reflection pool
-        IhklMaxValue = IhklMaxValue*2
-        DEALLOCATE(Rhkl,STAT=ierr)
-        CALL NewHKLMake(IhklMaxValue,RZDirC,RHOLZAcceptanceAngle,IErr)
-		IF( IErr.NE.0 ) THEN
-           PRINT*,"felixrefine(",my_rank,")error deallocating Rhkl"
-           GOTO 9999
-        END IF
-        CYCLE
-     ELSE
-        ind = 1
-     END IF
+  RHOLZAcceptanceAngle=TWODEG2RADIAN!RB seems way too low?
+  IHKLMAXValue = 5!RB starting value, increments in loop below
+! Count the reflections that make up the pool of g-vectors
+!Note the application of acceptance angle is incorrect since it uses hkl;
+!it should use the reciprocal lattice vectors as calculated in RgPool
+  CALL HKLCount(IHKLMAXValue,RZDirC,INhkl,RHOLZAcceptanceAngle,IErr)
+  DO WHILE (INhkl.LT.IMinReflectionPool) 
+     IHKLMAXValue = IHKLMAXValue*2
+     CALL HKLCount(IHKLMAXValue,RZDirC,INhkl,RHOLZAcceptanceAngle,IErr)
   END DO
-  
-  CALL SortHKL(Rhkl,SIZE(Rhkl,1),IErr) 
+! Fill the list of reflections Rhkl as indices h,k,l
+  ALLOCATE(Rhkl(INhkl,THREEDIM),STAT=IErr)
+  CALL HKLMake(IHKLMAXValue,RZDirC,RHOLZAcceptanceAngle,IErr)
+! sort them in descending order of magnitude  
+  CALL SortHKL(Rhkl,INhkl,IErr) 
   IF( IErr.NE.0 ) THEN
      PRINT*,"felixrefine(",my_rank,")error in SortHKL"
      GOTO 9999
   END IF
   
 !allocations-----------------------------------  
-  ALLOCATE(RgPoolT(SIZE(Rhkl,DIM=1),THREEDIM),STAT=IErr)
+  ALLOCATE(RgPoolT(INhkl,THREEDIM),STAT=IErr)
   IF(IErr.NE.0) THEN
      PRINT*,"felixrefine(",my_rank,")error allocating RgPoolT"
      GOTO 9999
   END IF
-  ALLOCATE(RgDummyVecMat(SIZE(Rhkl,DIM=1),THREEDIM),STAT=IErr)
+  ALLOCATE(RgDummyVecMat(INhkl,THREEDIM),STAT=IErr)
   IF(IErr.NE.0) THEN
      PRINT*,"felixrefine(",my_rank,")error allocating RgDummyVecMat"
      GOTO 9999
   END IF
  
-!Calculate the g vector RgPoolT in reciprocal angstrom units (in the microscope reference frame?)
+!Calculate the g vector list RgPoolT in reciprocal angstrom units (in the microscope reference frame?)
   ICutOff = 1
-  DO ind=1,SIZE(Rhkl,DIM=1)
+  DO ind=1,INhkl
      WRITE(Sind,'(I10.1)')ind
      DO jnd=1,THREEDIM
         RgPoolT(ind,jnd)= &
@@ -248,7 +238,7 @@ RFullIsotropicDebyeWallerFactor,IFullAtomicNumber,IFullAnisotropicDWFTensor)
   !doing what, here? More sorting inlo Laue zones? 
   !zz temp deallocation to get it to work
   DEALLOCATE(RgDummyVecMat)
-  ALLOCATE(RgPoolMagLaue(SIZE(Rhkl,DIM=1),ITotalLaueZoneLevel),STAT=IErr)
+  ALLOCATE(RgPoolMagLaue(INhkl,ITotalLaueZoneLevel),STAT=IErr)
   IF( IErr.NE.0 ) THEN
      PRINT*,"felixrefine(",my_rank,")error allocating RgPoolMagLaue"
      GOTO 9999
@@ -258,7 +248,7 @@ RFullIsotropicDebyeWallerFactor,IFullAtomicNumber,IFullAnisotropicDWFTensor)
      DO ind=1,ITotalLaueZoneLevel
         ILaueLevel=ind-IZerothLaueZoneLevel
         RLaueZoneGz=RGzUnitVec*ILaueLevel
-        DO jnd=1,SIZE(Rhkl,DIM=1)
+        DO jnd=1,INhkl
            IF(RgPoolT(jnd,3).GE.(RLaueZoneGz-TINY).AND. &
                 RgPoolT(jnd,3).LE.(RLaueZoneGz+TINY)) THEN
               RgPoolMagLaue(jnd,ind)=SQRT((RgPoolT(jnd,1)**2)+(RgPoolT(jnd,2)**2))              
@@ -276,7 +266,7 @@ RFullIsotropicDebyeWallerFactor,IFullAtomicNumber,IFullAnisotropicDWFTensor)
         INumTotalReflections=INumTotalReflections+INumInitReflections
      END DO
      knd=0
-     DO ind=1,SIZE(Rhkl,DIM=1)
+     DO ind=1,INhkl
         IF(SUM(RgPoolMagLaue(ind,:))/REAL(ITotalLaueZoneLevel,RKIND).GT.NEGHUGE) THEN
            knd=knd+1
         END IF
@@ -291,7 +281,7 @@ RFullIsotropicDebyeWallerFactor,IFullAtomicNumber,IFullAnisotropicDWFTensor)
 
      IOriginGVecIdentifier=0
      knd=1
-     DO ind=1,SIZE(Rhkl,DIM=1)
+     DO ind=1,INhkl
         IF((SUM(RgPoolMagLaue(ind,:))/REAL(ITotalLaueZoneLevel,RKIND)).GT.NEGHUGE) THEN
            IOriginGVecIdentifier(knd)=ind
            knd=knd+1
@@ -300,12 +290,12 @@ RFullIsotropicDebyeWallerFactor,IFullAtomicNumber,IFullAnisotropicDWFTensor)
   END IF
 
   !calculate g vector magnitudes for the reflection pool RgPoolMag in reciprocal Angstrom units
-  ALLOCATE(RgPoolMag(SIZE(Rhkl,DIM=1)),STAT=IErr)
+  ALLOCATE(RgPoolMag(INhkl),STAT=IErr)
   IF(IErr.NE.0) THEN
      PRINT*,"felixrefine(",my_rank,")error allocating RgPoolMag"
      GOTO 9999
   END IF
-  DO ind=1,SIZE(Rhkl,DIM=1)
+  DO ind=1,INhkl
      RgPoolMag(ind)= SQRT(DOT_PRODUCT(RgPoolT(ind,:),RgPoolT(ind,:)))
   ENDDO
 
@@ -332,16 +322,17 @@ RFullIsotropicDebyeWallerFactor,IFullAtomicNumber,IFullAnisotropicDWFTensor)
   nReflections = 0
   nStrongBeams = 0
   nWeakBeams = 0
-  DO ind=1,SIZE(Rhkl,DIM=1)
+  DO ind=1,INhkl
      IF (ABS(RgPoolMag(ind)).LE.RBSMaxGVecAmp) THEN
         nReflections = nReflections + 1
      END IF
   ENDDO
   
 !zz temp deallocation to get it to work
-DEALLOCATE(Rhkl,RgPoolMag,RgPoolMagLaue)
+DEALLOCATE(Rhkl,RgPoolMag,RgPoolMagLaue)!
 IF (RAcceptanceAngle.NE.ZERO.AND.IZOLZFLAG.EQ.0) THEN
   DEALLOCATE(IOriginGVecIdentifier)
+    PRINT*,"felixrefine deallocating IOriginGVecIdentifier"
 END IF
 
   CALL StructureFactorSetup(IErr)
@@ -351,7 +342,7 @@ END IF
   END IF
   
 !zz temp deallocation to get it to work
-DEALLOCATE(RgPoolT,IAnisoDWFT,IAtoms,ROcc,RDWF)
+DEALLOCATE(IAnisoDWFT,IAtoms,ROcc,RDWF)!RgPoolT,
 
   IF(IAbsorbFLAG.NE.0) THEN
      CALL StructureFactorsWithAbsorption(IErr)
@@ -376,7 +367,7 @@ DEALLOCATE(ISymmetryRelations,IEquivalentUgKey,CUgToRefine)
 
 !zz temp deallocation to get it to work
 DEALLOCATE(RgSumMat,CUgMat,CUgMatNoAbs,CUgMatPrime)
-  
+
   !--------------------------------------------------------------------
   ! Setup Simplex Variables
   !--------------------------------------------------------------------
@@ -426,12 +417,12 @@ DEALLOCATE(RgSumMat,CUgMat,CUgMatNoAbs,CUgMatPrime)
   !allocations--------------------------------------------------------------------
   ALLOCATE(IIterativeVariableUniqueIDs(IIndependentVariables,5),STAT=IErr)
   IF( IErr.NE.0 ) THEN
-     PRINT*,"felixrefine (", my_rank, ") error allocating IIterativeVariableUniqueIDs"
+     PRINT*,"felixrefine(",my_rank,")error allocating IIterativeVariableUniqueIDs"
      GOTO 9999
   ENDIF
   ALLOCATE(RIndependentVariableValues(IIndependentVariables),STAT=IErr)  
   IF( IErr.NE.0 ) THEN
-     PRINT*,"felixrefine (", my_rank, ") error allocating RIndependentVariableValues"
+     PRINT*,"felixrefine(",my_rank,")error allocating  RIndependentVariableValues"
      GOTO 9999
   END IF
 
@@ -449,25 +440,26 @@ DEALLOCATE(RgSumMat,CUgMat,CUgMatNoAbs,CUgMatPrime)
         END DO
      END IF
   END DO 
-!  DO ind=1,IIndependentVariables!RB debug
-!    PRINT*,"zz" IIterativeVariableUniqueIDs(ind,:)
-!  END DO
+
+  !  Don't know what it does but produces a number for IOutputReflections
+  !CALL SpecificReflectionDetermination (IErr)
+  IF( IErr.NE.0 ) THEN
+     PRINT*,"felixrefine(",my_rank,")error in SpecificReflectionDetermination"
+     GOTO 9999
+  END IF
     
   !--------------------------------------------------------------------
   ! Initialise Simplex
   !--------------------------------------------------------------------
 
-  ALLOCATE(RSimplexVolume(IIndependentVariables+1,IIndependentVariables),&
-       STAT=IErr)  
+  ALLOCATE(RSimplexVolume(IIndependentVariables+1,IIndependentVariables), STAT=IErr)  
   IF( IErr.NE.0 ) THEN
-     PRINT*,"felixrefine (", my_rank, ") error in Allocation()"
+     PRINT*,"felixrefine(",my_rank,")error allocating RSimplexVolume"
      GOTO 9999
   END IF
-
-  ALLOCATE(RSimplexFoM(IIndependentVariables),&
-       STAT=IErr)  
+  ALLOCATE(RSimplexFoM(IIndependentVariables),STAT=IErr)  
   IF( IErr.NE.0 ) THEN
-     PRINT*,"felixrefine (", my_rank, ") error in Allocation()"
+     PRINT*,"felixrefine(",my_rank,")error allocating RSimplexFoM"
      GOTO 9999
   END IF
   
@@ -475,10 +467,10 @@ DEALLOCATE(RgSumMat,CUgMat,CUgMatNoAbs,CUgMatPrime)
 
   CALL SimplexInitialisation(RSimplexVolume,RSimplexFoM,RIndependentVariableValues,IIterationCount,RStandardDeviation,RMean,IErr)
   IF( IErr.NE.0 ) THEN
-     PRINT*,"felixrefine (", my_rank, ") error in SimplexInitialisation()"
+     PRINT*,"felixrefine(",my_rank,")error in SimplexInitialisation"
      GOTO 9999
   END IF
-     
+    PRINT*,"Simplex Initialisation complete"   
   !--------------------------------------------------------------------
   ! Apply Simplex Method
   !--------------------------------------------------------------------
@@ -488,7 +480,7 @@ DEALLOCATE(RgSumMat,CUgMat,CUgMatNoAbs,CUgMatPrime)
        IIndependentVariables,IIndependentVariables,&
        RExitCriteria,IIterationCount,RStandardDeviation,RMean,IErr)
   IF( IErr.NE.0 ) THEN
-     PRINT*,"felixrefine (", my_rank, ") error in NDimensionalDownhillSimplex()"
+     PRINT*,"felixrefine(",my_rank,")error in NDimensionalDownhillSimplex()"
      GOTO 9999
   ENDIF
 
@@ -500,7 +492,6 @@ DEALLOCATE(RgSumMat,CUgMat,CUgMatNoAbs,CUgMatPrime)
      PRINT*,"felixrefine (", my_rank, ") error deallocating IIterativeVariableUniqueIDs"
      GOTO 9999
   ENDIF
-
   DEALLOCATE(RImageExpi,STAT=IErr)  
   IF( IErr.NE.0 ) THEN
      PRINT*,"felixrefine (", my_rank, ") error deallocating RImageExpi"
@@ -786,18 +777,11 @@ SUBROUTINE RankSymmetryRelatedStructureFactor(IErr)
      PRINT*,"RankSymmetryRelatedStructureFactor(",my_rank,")"
   END IF
   
-  ALLOCATE(ISymmetryRelations(nReflections,nReflections), &
-       STAT=IErr)
+  ALLOCATE(ISymmetryRelations(nReflections,nReflections),STAT=IErr)
   IF( IErr.NE.0 ) THEN
      PRINT*,"RankSymmetryRelatedStructureFactor(",my_rank,")error allocating ISymmetryRelations"
      RETURN
   ENDIF
-  
-!zz  CALL SymmetryRelatedStructureFactorDetermination (IErr)
-!zz  IF( IErr.NE.0 ) THEN
-!zz     PRINT*,"RankSymmetryRelatedStructureFactor(",my_rank,")error in  SymmetryRelatedStructureFactorDetermination"
-!zz     RETURN
-!zz  ENDIF
 
 !!$%%%%%%% used to be SymmetryRelatedStructureFactorDetermination
   RgSumMat = RgSumMat+ABS(REAL(CUgMatNoAbs))+ABS(AIMAG(CUgMatNoAbs))
@@ -827,8 +811,7 @@ SUBROUTINE RankSymmetryRelatedStructureFactor(IErr)
      PRINT*,"RankSymmetryRelatedStructureFactor(",my_rank,")error allocating IEquivalentUgKey"
      RETURN
   END IF
-  ALLOCATE(CUgToRefine(Iuid),&
-       STAT=IErr)
+  ALLOCATE(CUgToRefine(Iuid),STAT=IErr)
   IF( IErr.NE.0 ) THEN
      PRINT*,"RankSymmetryRelatedStructureFactor(",my_rank,")error allocating CUgToRefine"
      RETURN
@@ -865,7 +848,7 @@ SUBROUTINE SimplexInitialisation(RSimplexVolume,RSimplexFoM,RIndependentVariable
   IMPLICIT NONE
 
   INTEGER(IKIND) :: IErr,ind,jnd,IExitFLAG
-  LOGICAL :: LInitialSimulationFLAG = .TRUE. ! Its value is meaningless :)
+  LOGICAL :: LInitialSimulationFLAG = .TRUE. ! Its value is meaningless :) RB thanks, that's helpful, honestly;
   REAL(RKIND),DIMENSION(IIndependentVariables+1,IIndependentVariables),INTENT(OUT) :: RSimplexVolume
   REAL(RKIND),DIMENSION(IIndependentVariables+1),INTENT(OUT) :: RSimplexFoM
   REAL(RKIND) :: SimplexFunction,RSimplexDummy
@@ -878,16 +861,16 @@ SUBROUTINE SimplexInitialisation(RSimplexVolume,RSimplexFoM,RIndependentVariable
   IF(IWriteFLAG.GE.10.AND.my_rank.EQ.0) THEN
      PRINT*,"SimplexInitialisation(",my_rank,")"
   END IF
-      
+
   CALL FelixFunction(LInitialSimulationFLAG,IErr)!RB first thing!!
   IF( IErr.NE.0 ) THEN
-     PRINT*,"SimplexInitialisation(", my_rank, ") error in PerformInitialSimulation()"
+     PRINT*,"SimplexInitialisation(",my_rank,")error in FelixFunction"
      RETURN
   ENDIF
-       
+    
   CALL InitialiseWeightingCoefficients(IErr)
   IF( IErr.NE.0 ) THEN
-     PRINT*,"SimplexInitialisation(", my_rank, ") error in InitialiseWeightingCoefficients()"
+     PRINT*,"SimplexInitialisation(",my_rank,")error in InitialiseWeightingCoefficients"
      RETURN
   ENDIF
 
@@ -898,18 +881,17 @@ SUBROUTINE SimplexInitialisation(RSimplexVolume,RSimplexFoM,RIndependentVariable
      IPreviousPrintedIteration = -IPrint
      CALL CreateImagesAndWriteOutput(IIterationCount,IExitFLAG,IErr) 
      IF( IErr.NE.0 ) THEN
-        PRINT*,"SimplexFunction(", my_rank, ") error ", IErr, &
-             " in CreateImagesAndWriteOutput"
+        PRINT*,"SimplexInitialisation(",my_rank,")error in CreateImagesAndWriteOutput"
         RETURN
      ENDIF
   ELSE
-     DEALLOCATE(Rhkl,STAT=IErr)  
+     DEALLOCATE(Rhkl,STAT=IErr)  !zz why deallocate depending upon processor rank?
      IF( IErr.NE.0 ) THEN
         PRINT*,"SimplexInitialisation(",my_rank,") error deallocating Rhkl"
         RETURN
      ENDIF
   END IF
-  
+
   CALL RefinementVariableSetup(RIndependentVariableValues,IErr)
   IF( IErr.NE.0 ) THEN
      PRINT*,"SimplexInitialisation(", my_rank, ") error in RefinementVariableSetup()"
@@ -931,6 +913,7 @@ SUBROUTINE SimplexInitialisation(RSimplexVolume,RSimplexFoM,RIndependentVariable
      ENDIF
      
   ENDIF
+
 !RB     PRINT*,"Deallocating CUgMat,CUgMatNoAbs,CUgMatPrime in felixrefine" NB Also deallocated in felixfunction!!!
   DEALLOCATE(RgSumMat,STAT=IErr)
   IF( IErr.NE.0 ) THEN
@@ -952,18 +935,14 @@ SUBROUTINE SimplexInitialisation(RSimplexVolume,RSimplexFoM,RIndependentVariable
      PRINT*,"SimplexInitialisation(",my_rank,") error deallocating CUgMat"
      RETURN
   ENDIF
-
 !!$ RandomSequence
-
   IF(IContinueFLAG.EQ.0) THEN
      IF(my_rank.EQ.0) THEN
         CALL CreateRandomisedSimplex(RSimplexVolume,&
              RIndependentVariableValues,IErr)
-
         CALL MPI_BCAST(RSimplexVolume,(IIndependentVariables+1)*(IIndependentVariables),MPI_DOUBLE_PRECISION,0,MPI_COMM_WORLD,IErr)
      ELSE
         CALL MPI_BCAST(RSimplexVolume,(IIndependentVariables+1)*(IIndependentVariables),MPI_DOUBLE_PRECISION,0,MPI_COMM_WORLD,IErr)
-
      END IF
 
      IPreviousPrintedIteration = -IPrint ! Ensures print out on first iteration
@@ -976,27 +955,27 @@ SUBROUTINE SimplexInitialisation(RSimplexVolume,RSimplexFoM,RIndependentVariable
            PRINT*,TRIM(ADJUSTL(SPrintString))
            PRINT*,"--------------------------------"
         END IF
-
         RSimplexDummy = SimplexFunction(RSimplexVolume(ind,:),1,0,IErr)
         IF( IErr.NE.0 ) THEN
            PRINT*,"SimplexInitialisation(", my_rank, ") error in SimplexFunction()"
            RETURN
         ENDIF
-        
         RStandardTolerance = RStandardError(RStandardDeviation,RMean,RSimplexDummy,IErr)
         
         RSimplexFoM(ind) =  RSimplexDummy
+  PRINT*,"Figure of merit",ind,":", RSimplexFoM(ind)
         
-        IF((IWriteFLAG.GE.0.AND.my_rank.EQ.0).OR.IWriteFLAG.GE.10) THEN
+!        IF((IWriteFLAG.GE.0.AND.my_rank.EQ.0).OR.IWriteFLAG.GE.10) THEN
  !         PRINT*,"--------------------------------"
           WRITE(SPrintString,FMT='(A16,F7.5))') "Figure of merit ",RSimplexFoM(ind)
           PRINT*,TRIM(ADJUSTL(SPrintString))
  !         PRINT*,"---------------------------------------------------------"
-        END IF
+!        END IF
+        PRINT*,"boo!4",ind
      END DO
-     
+
   ELSE
-     
+    
      CALL RecoverSavedSimplex(RSimplexVolume,RSimplexFoM,RStandardDeviation,RMean,IIterationCount,IErr)
      IF( IErr.NE.0 ) THEN
         PRINT*,"SimplexInitialisation (", my_rank, ") error in RecoverSavedSimplex()"
@@ -1004,6 +983,7 @@ SUBROUTINE SimplexInitialisation(RSimplexVolume,RSimplexFoM,RIndependentVariable
      ENDIF
      
   END IF
+ 
        
 END SUBROUTINE SimplexInitialisation
 
@@ -1443,32 +1423,29 @@ SUBROUTINE SetupAtomicVectorMovements(IErr)
   
   CALL ConvertSpaceGroupToNumber(ISpaceGrp,IErr)
   IF( IErr.NE.0 ) THEN
-     PRINT*,"felixrefine (", my_rank, ") error in ConvertSpaceGroupToNumber"
+     PRINT*,"SetupAtomicVectorMovements(",my_rank,")error in ConvertSpaceGroupToNumber"
      RETURN
   ENDIF
 
-  ALLOCATE(IVectors(SIZE(SWyckoffSymbols)),&
-       STAT=IErr)
+  ALLOCATE(IVectors(SIZE(SWyckoffSymbols)),STAT=IErr)
   IF( IErr.NE.0 ) THEN
      PRINT*,"felixrefine (", my_rank, ") error in Allocation() of IVectors"
      RETURN
   ENDIF
   
-!XX PRINT*, "Wyckoff Symbols: ",SWyckoffSymbols!XX
   DO ind = 1,SIZE(SWyckoffSymbols)!NB SIZE(SWyckoffSymbols)=IAtomicSitesToRefine
      CALL CountAllowedMovements(ISpaceGrp,SWyckoffSymbols(ind),IVectors(ind),IErr)
      IF( IErr.NE.0 ) THEN
-        PRINT*,"felixrefine (", my_rank, ") error in CountAllowedMovements "
+        PRINT*,"SetupAtomicVectorMovements(",my_rank,")error in CountAllowedMovements "
         RETURN
      ENDIF    
   END DO
- !XX PRINT*, IVectors," IVectors"!XX
   
   IAllowedVectors = SUM(IVectors)
   
   ALLOCATE(IAllowedVectorIDs(IAllowedVectors),STAT=IErr)
   IF( IErr.NE.0 ) THEN
-     PRINT*,"felixrefine (", my_rank, ") error in Allocation() of IAllowedVectorIDs"
+     PRINT*,"SetupAtomicVectorMovements(", my_rank, ") error in Allocation() of IAllowedVectorIDs"
      RETURN
   ENDIF
   
@@ -1483,14 +1460,12 @@ SUBROUTINE SetupAtomicVectorMovements(IErr)
   
   ALLOCATE(RAllowedVectors(IAllowedVectors,THREEDIM),STAT=IErr)
   IF( IErr.NE.0 ) THEN
-     PRINT*,"felixrefine (", my_rank, ") error in Allocation() of RAllowedVectors"
+     PRINT*,"SetupAtomicVectorMovements(",my_rank,")error Allocation  RAllowedVectors"
      RETURN
   ENDIF
-  
-  ALLOCATE(RAllowedVectorMagnitudes(IAllowedVectors),&
-       STAT=IErr)
+  ALLOCATE(RAllowedVectorMagnitudes(IAllowedVectors),STAT=IErr)
   IF( IErr.NE.0 ) THEN
-     PRINT*,"felixrefine (", my_rank, ") error in Allocation() of RAllowedVectorMagnitudes"
+     PRINT*,"SetupAtomicVectorMovements(",my_rank,")error Allocation  RAllowedVectorMagnitudes"
      RETURN
   ENDIF
   
@@ -1501,7 +1476,7 @@ SUBROUTINE SetupAtomicVectorMovements(IErr)
           RAllowedVectors(SUM(IVectors(:(ind-1)))+1:SUM(IVectors(:(ind))),:),&
           IVectors(ind),IErr)
      IF( IErr.NE.0 ) THEN
-        PRINT*,"felixrefine (", my_rank, ") error in DetermineAllowedMovements"
+        PRINT*,"SetupAtomicVectorMovements(",my_rank,")error in DetermineAllowedMovements"
         RETURN
      ENDIF
      
@@ -1512,11 +1487,9 @@ SUBROUTINE SetupAtomicVectorMovements(IErr)
   !--------------------------------------------------------------------
   
   ALLOCATE(RInitialAtomSiteFracCoordVec(&
-       SIZE(RAtomSiteFracCoordVec,DIM=1),&
-       SIZE(RAtomSiteFracCoordVec,DIM=2)),&
-       STAT=IErr)
+       SIZE(RAtomSiteFracCoordVec,DIM=1),SIZE(RAtomSiteFracCoordVec,DIM=2)),STAT=IErr)
   IF( IErr.NE.0 ) THEN
-     PRINT*,"felixrefine (", my_rank, ") error in ALLOCATE() of RInitialAtomSiteFracCoordVec "
+     PRINT*,"SetupAtomicVectorMovements(",my_rank,")error ALLOCATE RInitialAtomSiteFracCoordVec "
      RETURN
   ENDIF
   

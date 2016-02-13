@@ -213,21 +213,18 @@ SUBROUTINE AllAtomPositions(IErr)
      PRINT*,"AllAtomPositions(",my_rank,") error in ALLOCATE RFullAtomicFracCoordVec"
      RETURN
   END IF
-  
   ALLOCATE(SFullAtomicNameVec( &
        SIZE(RSymVec,1)*SIZE(RAtomSiteFracCoordVec,1)),STAT=IErr)  
   IF( IErr.NE.0 ) THEN
      PRINT*,"AllAtomPositions(",my_rank,") error in ALLOCATE SFullAtomicNameVec"
      RETURN
   END IF
-  
   ALLOCATE(RFullPartialOccupancy( &
        SIZE(RSymVec,1)*SIZE(RAtomSiteFracCoordVec,1)),STAT=IErr)  
   IF( IErr.NE.0 ) THEN
      PRINT*,"AllAtomPositions(",my_rank,") error in ALLOCATE RFullPartialOccupancy"
      RETURN
   END IF
-  
   ALLOCATE(RFullIsotropicDebyeWallerFactor( &
        SIZE(RSymVec,1)*SIZE(RAtomSiteFracCoordVec,1)),STAT=IErr)  
   IF( IErr.NE.0 ) THEN
@@ -240,7 +237,6 @@ SUBROUTINE AllAtomPositions(IErr)
      PRINT*,"AllAtomPositions(",my_rank,") error in ALLOCATE IFullAtomicNumber"
      RETURN
   END IF
-  
   ALLOCATE(IFullAnisotropicDWFTensor( &
        SIZE(RSymVec,1)*SIZE(RAtomSiteFracCoordVec,1)),STAT=IErr)  
   IF( IErr.NE.0 ) THEN
@@ -296,31 +292,26 @@ SUBROUTINE AllAtomPositions(IErr)
      PRINT*,"CrystalUniqueFractionalAtomicPostitionsCalculation(", my_rank, ") error ", IErr, " in ALLOCATE MNP"
      RETURN
   ENDIF
-
   ALLOCATE(SMNP(ITotalAtoms),STAT=IErr)
   IF( IErr.NE.0 ) THEN
      PRINT*,"CrystalUniqueFractionalAtomicPostitionsCalculation(", my_rank, ") error ", IErr, " in ALLOCATE SMNP"
      RETURN
   ENDIF
-
   ALLOCATE(RDWF(ITotalAtoms),STAT=IErr)
   IF( IErr.NE.0 ) THEN
      PRINT*,"CrystalUniqueFractionalAtomicPostitionsCalculation(", my_rank, ") error ", IErr, " in ALLOCATE RDWF"
      RETURN
   ENDIF
-
   ALLOCATE(ROcc(ITotalAtoms),STAT=IErr)
   IF( IErr.NE.0 ) THEN
      PRINT*,"CrystalUniqueFractionalAtomicPostitionsCalculation(", my_rank, ") error ", IErr, " in ALLOCATE ROcc"
      RETURN
   ENDIF
-
   ALLOCATE(IAtoms(ITotalAtoms),STAT=IErr)
   IF( IErr.NE.0 ) THEN
      PRINT*,"CrystalUniqueFractionalAtomicPostitionsCalculation(", my_rank, ") error ", IErr, " in ALLOCATE IAtoms"
      RETURN
   ENDIF
-
   ALLOCATE(IAnisoDWFT(ITotalAtoms),STAT=IErr)
   IF( IErr.NE.0 ) THEN
      PRINT*,"CrystalUniqueFractionalAtomicPostitionsCalculation(", my_rank, ") error ", IErr, " in ALLOCATE IAnisoDWFT"
@@ -444,31 +435,26 @@ SUBROUTINE CrystalUniqueFractionalAtomicPostitionsCalculation (IErr)
      PRINT*,"CrystalUniqueFractionalAtomicPostitionsCalculation(", my_rank, ") error ", IErr, " in ALLOCATE MNP"
      RETURN
   ENDIF
-
   ALLOCATE(SMNP(ITotalAtoms),STAT=IErr)
   IF( IErr.NE.0 ) THEN
      PRINT*,"CrystalUniqueFractionalAtomicPostitionsCalculation(", my_rank, ") error ", IErr, " in ALLOCATE SMNP"
      RETURN
   ENDIF
-
   ALLOCATE(RDWF(ITotalAtoms),STAT=IErr)
   IF( IErr.NE.0 ) THEN
      PRINT*,"CrystalUniqueFractionalAtomicPostitionsCalculation(", my_rank, ") error ", IErr, " in ALLOCATE RDWF"
      RETURN
   ENDIF
-
   ALLOCATE(ROcc(ITotalAtoms),STAT=IErr)
   IF( IErr.NE.0 ) THEN
      PRINT*,"CrystalUniqueFractionalAtomicPostitionsCalculation(", my_rank, ") error ", IErr, " in ALLOCATE ROcc"
      RETURN
   ENDIF
-
   ALLOCATE(IAtoms(ITotalAtoms),STAT=IErr)
   IF( IErr.NE.0 ) THEN
      PRINT*,"CrystalUniqueFractionalAtomicPostitionsCalculation(", my_rank, ") error ", IErr, " in ALLOCATE IAtoms"
      RETURN
   ENDIF
-
   ALLOCATE(IAnisoDWFT(ITotalAtoms),STAT=IErr)
   IF( IErr.NE.0 ) THEN
      PRINT*,"CrystalUniqueFractionalAtomicPostitionsCalculation(", my_rank, ") error ", IErr, " in ALLOCATE IAnisoDWFT"

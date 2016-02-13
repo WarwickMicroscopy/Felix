@@ -65,9 +65,7 @@ SUBROUTINE NDimensionalDownhillSimplex(RSimplexVolume,y,mp,np,ndim,ftol,iter,RSt
            RSimplexVolume(1,n)=RSimplexVolume(ilo,n)
            RSimplexVolume(ilo,n)=swap
         END DO
-        
         psum = RESHAPE(RSimplexVolume(MAXLOC(y),:),SHAPE(psum)) ! psum = simplex point with highest correlation
-
         RSendPacket = [-10000.0_RKIND, psum, REAL(iter,RKIND)]
         CALL MPI_BCAST(RSendPacket,ndim+2,MPI_DOUBLE_PRECISION,0,MPI_COMM_WORLD,IErr)
         ytry = SimplexFunction(psum,iter,1,IErr)
@@ -75,17 +73,15 @@ SUBROUTINE NDimensionalDownhillSimplex(RSimplexVolume,y,mp,np,ndim,ftol,iter,RSt
      END IF
      
      IF (iter.GE.ITMAX) THEN
-        
         psum = RESHAPE(RSimplexVolume(MAXLOC(y),:),SHAPE(psum)) ! psum = simplex point with highest correlation
-
         IErr = 1
         RSendPacket = [-10000.0_RKIND, psum, REAL(iter,RKIND)]
         CALL MPI_BCAST(RSendPacket,ndim+2,MPI_DOUBLE_PRECISION,0,MPI_COMM_WORLD,IErr)
-        PRINT*,"ITMAX exceeded in NDimensionalDownhillSimplex"
+        PRINT*,"Simplex halted after",ITMAX,"iterations"
         RETURN
      END IF
      
-     CALL SaveSimplex(RSimplexVolume,y,np,RStandardDeviation,RMean,iter,IErr)
+     !CALL SaveSimplex(RSimplexVolume,y,np,RStandardDeviation,RMean,iter,IErr)
     
      PRINT*,"--------------------------------"
      WRITE(SPrintString,FMT='(A10,I4,A18,F7.5))') "Iteration ",iter,", figure of merit ",ytry
@@ -171,16 +167,10 @@ REAL(RKIND) FUNCTION SimplexExtrapolate(RSimplexVolume,y,psum,mp,np,ndim,ihi,fac
 
   IMPLICIT NONE
   
-  INTEGER(IKIND) :: &
-       ihi,mp,ndim,np,NMAX,IErr,iter
-  REAL(RKIND) :: &
-       fac,RSimplexVolume(mp,np),psum(np),y(mp),SimplexFunction,RSendPacket(ndim+2)
+  INTEGER(IKIND) :: ihi,mp,ndim,np,NMAX,IErr,iter,j
+  REAL(RKIND) :: fac,RSimplexVolume(mp,np),psum(np),y(mp),SimplexFunction,RSendPacket(ndim+2)
+  REAL(RKIND) :: fac1,fac2,ytry,ptry(ndim)
   PARAMETER(NMAX=1000)
-
-  INTEGER(IKIND) :: &
-       j
-  REAL(RKIND) :: &
-       fac1,fac2,ytry,ptry(ndim)
 
   fac1=(1.0-fac)/ndim
   fac2=fac1-fac
@@ -221,11 +211,9 @@ SUBROUTINE OpenSimplexOutput(IErr)
 
   IMPLICIT NONE
 
-  INTEGER(IKIND) :: &
-       IErr
+  INTEGER(IKIND) :: IErr
 
-  CHARACTER*200 :: &
-       filename
+  CHARACTER*200 :: filename
 
   WRITE(filename,*) "fr-Simplex.txt"
 
