@@ -57,14 +57,8 @@ SUBROUTINE WriteIterationOutput(IIterationCount,IThicknessIndex,IExitFlag,IErr)
   
   IF(IExitFLAG.EQ.1.OR.(IIterationCount.GE.(IPreviousPrintedIteration+IPrint))) THEN
      IThickness = (RInitialThickness + (IThicknessIndex-1)*RDeltaThickness)/10!RB in nm 
-!RB     WRITE(path,"(A10,I5.5,A3,I1.1,I1.1,I1.1,I1.1,A2,I5.5,A2,I5.5,A2,I5.5)") &    
      WRITE(path,"(A10,I4.4,A1,I3.3,A3,I3.3,A1,I3.3)") &
           "Iteration",IIterationCount,&
-!RB          "-f-",&
-!RB          IScatterFactorMethodFLAG, &
-!RB          IZolzFLAG, &
-!RB          IAbsorbFLAG, &
-!RB          IAnisoDebyeWallerFactorFlag,&
           "_",IThickness,&
           "nm_",2*IPixelcount,&
           "x",2*IPixelcount
@@ -74,10 +68,11 @@ SUBROUTINE WriteIterationOutput(IIterationCount,IThicknessIndex,IExitFlag,IErr)
      IF (IExitFLAG.EQ.0) THEN 
         WRITE(SPrintString,FMT='(A16,I4,A35)') "Writing output; ",&
 		IIterationCount-IPreviousPrintedIteration," iterations since the previous save"
-        PRINT*,TRIM(ADJUSTL(SPrintString))
      ELSE
-	 
+        WRITE(SPrintString,FMT='(A28,I4,A35)') "Exiting and writing output; ",&
+		IIterationCount-IPreviousPrintedIteration," iterations since the previous save" 
 	 END IF
+        PRINT*,TRIM(ADJUSTL(SPrintString))
      
      IPreviousPrintedIteration = IIterationCount
 

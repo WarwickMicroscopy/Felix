@@ -527,17 +527,18 @@ DEALLOCATE(IAnisoDWFT,IAtoms,ROcc,RDWF)!RgPoolT,
      PRINT*,"felixrefine(",my_rank,")error in SimplexInitialisation"
      GOTO 9999
   END IF
-    PRINT*,"Simplex Initialisation complete"   
+
+  IIterationCount = 1  
+ 
   !--------------------------------------------------------------------
   ! Apply Simplex Method
   !--------------------------------------------------------------------
-
   CALL NDimensionalDownhillSimplex(RSimplexVolume,RSimplexFoM,&
        IIndependentVariables+1,&
        IIndependentVariables,IIndependentVariables,&
        RExitCriteria,IIterationCount,RStandardDeviation,RMean,IErr)
   IF( IErr.NE.0 ) THEN
-     PRINT*,"felixrefine(",my_rank,")error in NDimensionalDownhillSimplex()"
+     PRINT*,"felixrefine(",my_rank,")error in NDimensionalDownhillSimplex"
      GOTO 9999
   ENDIF
 
