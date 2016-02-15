@@ -66,9 +66,9 @@ PROGRAM Felixrefine
   REAL(RKIND), DIMENSION(:,:), ALLOCATABLE :: RgDummyVecMat,RgPoolMagLaue
   REAL(RKIND) :: RBCASTREAL,RStandardDeviation,RMean,RGzUnitVec,RMinLaueZoneValue,&
        RMaxLaueZoneValue,RMaxAcceptanceGVecMag,RLaueZoneElectronWaveVectorMag
-  CHARACTER*40 :: my_rank_string ,SPrintString
+  CHARACTER*40 :: my_rank_string
   CHARACTER*20 :: Sind
-  
+  CHARACTER*200 :: SPrintString
   !-------------------------------------------------------------------
   ! constants
   CALL Init_Numbers
@@ -113,15 +113,12 @@ PROGRAM Felixrefine
 
   !--------------------------------------------------------------------
   ! timing startup
-  !--------------------------------------------------------------------
-
   CALL SYSTEM_CLOCK(count_rate=IRate)
   CALL SYSTEM_CLOCK(IStarttime)
 
   !--------------------------------------------------------------------
   ! INPUT section 
-  !--------------------------------------------------------------------
-  CALL ReadInput (IErr)
+   CALL ReadInput (IErr)
   IF( IErr.NE.0 ) THEN
      PRINT*,"felixrefine(",my_rank,") error in ReadInput"
      GOTO 9999
@@ -141,7 +138,6 @@ PROGRAM Felixrefine
 
   !--------------------------------------------------------------------
   ! Initial simulation and variable setup
-  !--------------------------------------------------------------------
   CALL MicroscopySettings( IErr )
   IF( IErr.NE.0 ) THEN
     PRINT*,"felixrefine(",my_rank,") error in MicroscopySettings"
@@ -159,7 +155,6 @@ PROGRAM Felixrefine
      PRINT*,"felixrefine(",my_rank,")error allocating RrVecMat"
      GOTO 9999
   ENDIF
-  
   CALL AllAtomPositions(IErr)
   IF( IErr.NE.0 ) THEN
      PRINT*,"felixrefine(",my_rank,")error in AllAtomPositions"
@@ -351,7 +346,7 @@ RFullIsotropicDebyeWallerFactor,IFullAtomicNumber,IFullAnisotropicDWFTensor)
   ENDDO
 
 !zz temp deallocation to get it to work
-DEALLOCATE(RgPoolMagLaue)!,Rhkl,RgPoolMag
+DEALLOCATE(RgPoolMagLaue)!
 IF (RAcceptanceAngle.NE.ZERO.AND.IZOLZFLAG.EQ.0) THEN
   DEALLOCATE(IOriginGVecIdentifier)
     PRINT*,"felixrefine deallocating IOriginGVecIdentifier"
@@ -364,7 +359,7 @@ END IF
   END IF
   
 !zz temp deallocation to get it to work
-DEALLOCATE(IAnisoDWFT,IAtoms,ROcc,RDWF)!RgPoolT,
+DEALLOCATE(IAnisoDWFT,IAtoms,ROcc,RDWF)!
 
   IF(IAbsorbFLAG.NE.0) THEN
      CALL StructureFactorsWithAbsorption(IErr)
@@ -384,11 +379,8 @@ DEALLOCATE(IAnisoDWFT,IAtoms,ROcc,RDWF)!RgPoolT,
 
 !Now change StructureFactorRefinementSetup fr722 and UpdateStructureFactors ff1040
  
-!zz temp deallocation to get it to work
-!DEALLOCATE(ISymmetryRelations,IEquivalentUgKey,CUgToRefine)
-
-!zz temp deallocation to get it to work
-!DEALLOCATE(RgSumMat,CUgMat,CUgMatNoAbs,CUgMatPrime)
+!zz not deallocating ISymmetryRelations,IEquivalentUgKey,CUgToRefine,RgSumMat,CUgMat,
+!CUgMatNoAbs,CUgMatPrime,Rhkl,RgPoolMag,RgPoolT,
 
   !--------------------------------------------------------------------
   ! Setup Simplex Variables
@@ -452,7 +444,6 @@ DEALLOCATE(IAnisoDWFT,IAtoms,ROcc,RDWF)!RgPoolT,
   !  Assign IDs  
   IIterativeVariableUniqueIDs = 0
   ICalls = 0
-
   DO ind = 1,IRefinementVariableTypes !Loop over all possible iterative variables
      IF(IRefineModeSelectionArray(ind).EQ.1) THEN
         DO jnd = 1,INoofElementsForEachRefinementType(ind)
@@ -470,8 +461,7 @@ DEALLOCATE(IAnisoDWFT,IAtoms,ROcc,RDWF)!RgPoolT,
      PRINT*,"felixrefine(",my_rank,") error allocating RhklPositions"
      RETURN
   END IF
- 
-  CALL ImageSetup( IErr )
+   CALL ImageSetup( IErr )
   IF( IErr.NE.0 ) THEN
      PRINT*,"felixrefine(",my_rank,") error in ImageSetup"
      RETURN
@@ -479,7 +469,6 @@ DEALLOCATE(IAnisoDWFT,IAtoms,ROcc,RDWF)!RgPoolT,
 
   !--------------------------------------------------------------------
   ! Allocate memory for deviation parameter and bloch calc in main loop
-  !--------------------------------------------------------------------
   ALLOCATE(RDevPara(nReflections),STAT=IErr)
   IF( IErr.NE.0 ) THEN
      PRINT*,"felixrefine(",my_rank,")error allocating RDevPara"
@@ -508,7 +497,6 @@ DEALLOCATE(IAnisoDWFT,IAtoms,ROcc,RDWF)!RgPoolT,
   
   !--------------------------------------------------------------------
   ! Initialise Simplex
-  !--------------------------------------------------------------------
   ALLOCATE(RSimplexVolume(IIndependentVariables+1,IIndependentVariables), STAT=IErr)  
   IF( IErr.NE.0 ) THEN
      PRINT*,"felixrefine(",my_rank,")error allocating RSimplexVolume"
@@ -532,7 +520,6 @@ DEALLOCATE(IAnisoDWFT,IAtoms,ROcc,RDWF)!RgPoolT,
  
   !--------------------------------------------------------------------
   ! Apply Simplex Method
-  !--------------------------------------------------------------------
   CALL NDimensionalDownhillSimplex(RSimplexVolume,RSimplexFoM,&
        IIndependentVariables+1,&
        IIndependentVariables,IIndependentVariables,&
@@ -547,15 +534,16 @@ DEALLOCATE(IAnisoDWFT,IAtoms,ROcc,RDWF)!RgPoolT,
   !--------------------------------------------------------------------
   DEALLOCATE(IIterativeVariableUniqueIDs,STAT=IErr)
   IF( IErr.NE.0 ) THEN
-     PRINT*,"felixrefine (", my_rank, ") error deallocating IIterativeVariableUniqueIDs"
+     PRINT*,"felixrefine(",my_rank,") error deallocating IIterativeVariableUniqueIDs"
      GOTO 9999
   ENDIF
   DEALLOCATE(RImageExpi,STAT=IErr)  
   IF( IErr.NE.0 ) THEN
-     PRINT*,"felixrefine (", my_rank, ") error deallocating RImageExpi"
+     PRINT*,"felixrefine(",my_rank,") error deallocating RImageExpi"
      GOTO 9999
   ENDIF
-
+  DEALLOCATE(ISymmetryRelations,IEquivalentUgKey,CUgToRefine,RgSumMat,CUgMat,&
+    CUgMatNoAbs,CUgMatPrime,Rhkl,RgPoolMag,RgPoolT)
   !--------------------------------------------------------------------
   ! finish off
   !--------------------------------------------------------------------
@@ -566,12 +554,18 @@ DEALLOCATE(IAnisoDWFT,IAtoms,ROcc,RDWF)!RgPoolT,
   Duration=REAL(ICurrentTime-IStartTime)/REAL(IRate)
   IHours = FLOOR(Duration/3600.0D0)
   IMinutes = FLOOR(MOD(Duration,3600.0D0)/60.0D0)
-  ISeconds = MOD(Duration,3600.0D0)-IMinutes*60
+  ISeconds = INT(MOD(Duration,3600.0D0)-IMinutes*60)
   IMilliSeconds = INT((Duration-(IHours*3600+IMinutes*60+ISeconds))*1000,IKIND)
 
-  PRINT*, "felixrefine( ", TRIM(ADJUSTL(my_rank_string)), " ) ", &
-       RStr, ", used time=", IHours, "hrs ", &
-       IMinutes,"mins ",ISeconds,"secs ", IMilliSeconds,"millisecs"
+!  PRINT*, "felixrefine( ", TRIM(ADJUSTL(my_rank_string)), " ) ", &
+!       RStr, ", used time=", IHours, "hrs ", &
+!       IMinutes,"mins ",ISeconds,"secs ", IMilliSeconds,"millisecs"!
+  PRINT*,"--------------------------------"
+  WRITE(SPrintString,FMT='(A24,I3,A5,I2,A6,I2,A4)')&
+  "Refinement completed in ",IHours," hrs ",IMinutes," mins ",ISeconds," sec"
+  PRINT*,TRIM(ADJUSTL(SPrintString))
+  PRINT*,"--------------------------------"
+  PRINT*,"||||||||||||||||||||||||||||||||"
 
   !--------------------------------------------------------------------
   ! Shut down MPI
@@ -585,6 +579,7 @@ DEALLOCATE(IAnisoDWFT,IAtoms,ROcc,RDWF)!RgPoolT,
   ENDIF
   
   ! clean shutdown
+
   STOP
   
 END PROGRAM Felixrefine
@@ -933,18 +928,11 @@ SUBROUTINE SimplexInitialisation(RSimplexVolume,RSimplexFoM,RIndependentVariable
   ENDIF
 
   IF(my_rank.EQ.0) THEN   
-     !IThicknessCount= (RFinalThickness- RInitialThickness)/RDeltaThickness + 1!RB already calculated in felixrefine
      IExitFLAG = 0; ! Do not exit
      IPreviousPrintedIteration = -IPrint!RB ensuring baseline simulation is printed
      CALL CreateImagesAndWriteOutput(IIterationCount,IExitFLAG,IErr) 
      IF( IErr.NE.0 ) THEN
         PRINT*,"SimplexInitialisation(",my_rank,")error in CreateImagesAndWriteOutput"
-        RETURN
-     ENDIF
-  ELSE
-     !DEALLOCATE(Rhkl,STAT=IErr)  !zz why deallocate depending upon processor rank?
-     IF( IErr.NE.0 ) THEN
-        PRINT*,"SimplexInitialisation(",my_rank,") error deallocating Rhkl"
         RETURN
      ENDIF
   END IF
@@ -955,13 +943,7 @@ SUBROUTINE SimplexInitialisation(RSimplexVolume,RSimplexFoM,RIndependentVariable
      RETURN
   ENDIF
   
-  !RB already done in felixrefine
   IF(IRefineModeSelectionArray(1).EQ.1) THEN
-     !CALL RankSymmetryRelatedStructureFactor(IErr)
-     !IF( IErr.NE.0 ) THEN
-     !   PRINT*,"SimplexInitialisation(", my_rank, ") error in RankSymmetryRelatedStructureFactor()"
-     !   RETURN
-     !ENDIF
      CALL StructureFactorRefinementSetup(RIndependentVariableValues,IIterationCount,IErr)
      IF( IErr.NE.0 ) THEN
         PRINT*,"SimplexInitialisation(", my_rank, ") error in StructureFactorRefinementSetup()"
@@ -969,27 +951,6 @@ SUBROUTINE SimplexInitialisation(RSimplexVolume,RSimplexFoM,RIndependentVariable
      ENDIF
   ENDIF
 
-!RB  deallocate in felixrefine
-  !DEALLOCATE(RgSumMat,STAT=IErr)
-  IF( IErr.NE.0 ) THEN
-     PRINT*,"SimplexInitialisation(",my_rank,") error deallocating RgSumMat"
-     RETURN
-  ENDIF
-  !DEALLOCATE(CUgMatNoAbs,STAT=IErr)  
-  IF( IErr.NE.0 ) THEN
-     PRINT*,"SimplexInitialisation(",my_rank,") error deallocating CUgMatNoAbs"
-     RETURN
-  ENDIF
-  !DEALLOCATE(CUgMatPrime,STAT=IErr)  
-  IF( IErr.NE.0 ) THEN
-     PRINT*,"SimplexInitialisation(",my_rank,") error deallocating CUgMatPrime"
-     RETURN
-  ENDIF
-  !DEALLOCATE(CUgMat,STAT=IErr)  
-  IF( IErr.NE.0 ) THEN
-     PRINT*,"SimplexInitialisation(",my_rank,") error deallocating CUgMat"
-     RETURN
-  ENDIF
 !!$ RandomSequence
   IF(IContinueFLAG.EQ.0) THEN
      IF(my_rank.EQ.0) THEN
@@ -998,8 +959,6 @@ SUBROUTINE SimplexInitialisation(RSimplexVolume,RSimplexFoM,RIndependentVariable
      ELSE
         CALL MPI_BCAST(RSimplexVolume,(IIndependentVariables+1)*(IIndependentVariables),MPI_DOUBLE_PRECISION,0,MPI_COMM_WORLD,IErr)
      END IF
-
-     !IPreviousPrintedIteration = -IPrint ! Ensures print out on first iteration
 
      DO ind = 1,(IIndependentVariables+1)
         
