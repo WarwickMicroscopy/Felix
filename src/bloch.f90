@@ -97,9 +97,9 @@ SUBROUTINE BlochCoefficientCalculation(IYPixelIndex,IXPixelIndex,IPixelNumber,IF
           " In Calculation of KVectors"
      RETURN
   END IF
-
   RKn = DOT_PRODUCT(RTiltedK,RNormDirM)
-  !Compute the deviation parameter for reflection pool
+  
+  !Compute the deviation parameter for reflection pool !RB could be done as part of initialisation
   DO knd=1,nReflections
      ! DevPara is deviation parameter, also known as Sg 
      RDevPara(knd)= -( RBigK + DOT_PRODUCT(RgPoolT(knd,:),RTiltedK(:)) /RBigK) + &
@@ -112,8 +112,7 @@ SUBROUTINE BlochCoefficientCalculation(IYPixelIndex,IXPixelIndex,IPixelNumber,IF
   ! reciprocal lattice, i.e. within RBSMaxDeviationPara
   CALL StrongAndWeakBeamsDetermination(IErr)!RB IAdditionalBmaxStrongBeamList abd IAdditionalPmaxStrongBeamList allocated in here
   IF( IErr.NE.0 ) THEN
-     PRINT*,"BlochCoefficientCalculation(", my_rank, ") error ", IErr, &
-          " in Determination of Strong and Weak beams"
+     PRINT*,"BlochCoefficientCalculation(",my_rank,") error in Determination of Strong and Weak beams"
      RETURN
   END IF
 
@@ -762,7 +761,7 @@ SUBROUTINE StrongAndWeakBeamsDetermination(IErr)
      IStrongBeamIndex = IStrongBeamIndex  + IAdditionalPmaxStrongBeams
   END IF
 
-  IWeakBeamIndex=0
+  IWeakBeamIndex = 0
   IWeakBeamList = 0
   
   DO knd=1,nReflections

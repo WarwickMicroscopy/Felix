@@ -932,10 +932,10 @@ SUBROUTINE SimplexInitialisation(RSimplexVolume,RSimplexFoM,RIndependentVariable
      RETURN
   ENDIF
 
-  IF(my_rank.EQ.0) THEN   !RB isn't thickness count calculated somewhere else too?
-     IThicknessCount= (RFinalThickness- RInitialThickness)/RDeltaThickness + 1
+  IF(my_rank.EQ.0) THEN   
+     !IThicknessCount= (RFinalThickness- RInitialThickness)/RDeltaThickness + 1!RB already calculated in felixrefine
      IExitFLAG = 0; ! Do not exit
-     IPreviousPrintedIteration = -IPrint
+     IPreviousPrintedIteration = -IPrint!RB ensuring baseline simulation is printed
      CALL CreateImagesAndWriteOutput(IIterationCount,IExitFLAG,IErr) 
      IF( IErr.NE.0 ) THEN
         PRINT*,"SimplexInitialisation(",my_rank,")error in CreateImagesAndWriteOutput"
@@ -999,7 +999,7 @@ SUBROUTINE SimplexInitialisation(RSimplexVolume,RSimplexFoM,RIndependentVariable
         CALL MPI_BCAST(RSimplexVolume,(IIndependentVariables+1)*(IIndependentVariables),MPI_DOUBLE_PRECISION,0,MPI_COMM_WORLD,IErr)
      END IF
 
-     IPreviousPrintedIteration = -IPrint ! Ensures print out on first iteration
+     !IPreviousPrintedIteration = -IPrint ! Ensures print out on first iteration
 
      DO ind = 1,(IIndependentVariables+1)
         
@@ -1338,18 +1338,20 @@ SUBROUTINE ApplyNewStructureFactors(IErr)
   
    CUgMatDummy = CZERO
 
-!!$  Populate Ug Matrix with new iterative elements, maintain Hermiticity
+!!$  Populate Ug Matrix with new iterative elements, include proportional absorption here for now !RB not good
   DO ind = 1,INoofUgs
      WHERE(ISymmetryRelations.EQ.IEquivalentUgKey(ind))
-        CUgMatDummy = CUgToRefine(ind)
+        CUgMatDummy = CUgToRefine(ind)+&
+		CUgToRefine(ind)*EXP(CIMAGONE*PI/2)*(RAbsorptionPercentage/100_RKIND)
      END WHERE
      WHERE(ISymmetryRelations.EQ.-IEquivalentUgKey(ind))!RB 
-        CUgMatDummy = CONJG(CUgToRefine(ind))
+        CUgMatDummy = CONJG(CUgToRefine(ind))+&
+		CONJG(CUgToRefine(ind))*EXP(CIMAGONE*PI/2)*(RAbsorptionPercentage/100_RKIND)
      END WHERE
   END DO
 
   WHERE(ABS(CUgMatDummy).GT.TINY)
-     CUgMatNoAbs = CUgMatDummy!RB
+     CUgMat = CUgMatDummy!RB
   END WHERE
 
 !!$  CUgMatNoAbs now contains the new values from the iterative process

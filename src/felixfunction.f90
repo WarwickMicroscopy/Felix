@@ -106,7 +106,7 @@ SUBROUTINE FelixFunction(LInitialSimulationFLAG,IErr)
 !     RETURN
 !  END IF
 
-  IF((IRefineModeSelectionArray(1).EQ.1).AND.(LInitialSimulationFLAG.NEQV..TRUE.)) THEN
+  IF((IRefineModeSelectionArray(1).EQ.1)) THEN!.AND.(LInitialSimulationFLAG.NEQV..TRUE.)) THEN
      CALL ApplyNewStructureFactors(IErr)
      IF( IErr.NE.0 ) THEN
         PRINT*,"felixfunction(",my_rank,")error in ApplyNewStructureFactors()"
@@ -219,7 +219,6 @@ SUBROUTINE FelixFunction(LInitialSimulationFLAG,IErr)
      PRINT*,"Felixfunction(",my_rank,")error allocating Root Reflections"
      RETURN
   END IF
-  
   IF(IImageFLAG.GE.3) THEN
      ALLOCATE(CAmplitudeandPhaseRoot(INoOfLacbedPatterns,IThicknessCount,IPixelTotal),&
           STAT=IErr)
@@ -232,16 +231,15 @@ SUBROUTINE FelixFunction(LInitialSimulationFLAG,IErr)
 
   RIndividualReflectionsRoot = ZERO
 
+  !position of pixels calculated by this core
   ALLOCATE(IDisplacements(p),ICount(p),STAT=IErr)
   IF( IErr.NE.0 ) THEN
      PRINT*,"Felixfunction(",my_rank,")error allocating IDisplacements and/or ICount"
      RETURN
   END IF
-
   DO pnd = 1,p
      IDisplacements(pnd) = (IPixelTotal*(pnd-1)/p)
-     ICount(pnd) = (((IPixelTotal*(pnd)/p) - (IPixelTotal*(pnd-1)/p)))*INoOfLacbedPatterns*IThicknessCount
-          
+     ICount(pnd) = (((IPixelTotal*(pnd)/p) - (IPixelTotal*(pnd-1)/p)))*INoOfLacbedPatterns*IThicknessCount    
   END DO
   
   DO ind = 1,p
@@ -644,14 +642,14 @@ REAL(RKIND) FUNCTION SimplexFunction(RIndependentVariableValues,IIterationCount,
   END IF
 
   CALL FelixFunction(LInitialSimulationFLAG,IErr) ! Simulate !!  
-  IF( IErr.NE.0 ) THEN
+  IF( IErr.NE.0 ) THEN !NB RIndividualReflections is allocated here & comes out with the simulated images
      PRINT*,"SimplexFunction(",my_rank,")error in FelixFunction"
      RETURN
   END IF
 
   IF(my_rank.EQ.0) THEN   
      CALL CreateImagesAndWriteOutput(IIterationCount,IExitFLAG,IErr) 
-     IF( IErr.NE.0 ) THEN
+     IF( IErr.NE.0 ) THEN !NB RIndividualReflections is deallocated here after saving
         PRINT*,"SimplexFunction(",my_rank,")error in CreateImagesAndWriteOutput"
         RETURN
      ENDIF

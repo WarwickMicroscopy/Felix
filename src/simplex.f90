@@ -20,8 +20,8 @@ SUBROUTINE NDimensionalDownhillSimplex(RSimplexVolume,y,mp,np,ndim,ftol,iter,RSt
   CHARACTER*200 :: SPrintString
 
   IF(my_rank.EQ.0) THEN
-     PRINT*,"Beginning Simplex",IErr
-     
+     PRINT*,"Beginning Simplex"
+     PRINT*,"Iteration",iter
 1    DO n = 1,ndim
         sum = 0
         DO m=1,ndim+1
@@ -29,7 +29,6 @@ SUBROUTINE NDimensionalDownhillSimplex(RSimplexVolume,y,mp,np,ndim,ftol,iter,RSt
         ENDDO
         psum(n) = sum
      ENDDO
-     
 2    ilo = 1
      ysave = ytry
      IF (y(1).GT.y(2)) THEN
@@ -48,13 +47,13 @@ SUBROUTINE NDimensionalDownhillSimplex(RSimplexVolume,y,mp,np,ndim,ftol,iter,RSt
            IF(i.NE.ihi) inhi=i
         END IF
      ENDDO
-     
+
      rtol=2.*ABS(y(ihi)-y(ilo))/(ABS(y(ihi))+ABS(y(ilo)))
 
      RStandardTolerance = RStandardError(RStandardDeviation,RMean,ytry,IErr)
 
 !     PRINT*,"Current tolerance",rtol,ftol!RB,RStandardTolerance
-     WRITE(SPrintString,FMT='(A21,F7.5,A14,F7.5)') "Change in fit index ",rtol,", will end at ",ftol
+     WRITE(SPrintString,FMT='(A14,F7.5,A14,F7.5)') "Simplex range ",rtol,", will end at ",ftol
      PRINT*,TRIM(ADJUSTL(SPrintString))
      IF(rtol.LT.ftol) THEN
         swap=y(1)
@@ -86,7 +85,6 @@ SUBROUTINE NDimensionalDownhillSimplex(RSimplexVolume,y,mp,np,ndim,ftol,iter,RSt
      PRINT*,"--------------------------------"
      WRITE(SPrintString,FMT='(A10,I4,A18,F7.5))') "Iteration ",iter,", figure of merit ",ytry
      PRINT*,TRIM(ADJUSTL(SPrintString))
-!     PRINT*,"Iteration",iter,"Figure of Merit",ytry
      PRINT*,"--------------------------------"
 
      iter=iter+2
@@ -99,15 +97,11 @@ SUBROUTINE NDimensionalDownhillSimplex(RSimplexVolume,y,mp,np,ndim,ftol,iter,RSt
         ysave=y(ihi)
         ytry=SimplexExtrapolate(RSimplexVolume,y,psum,mp,np,ndim,ihi,0.5D0,iter,IErr)
         IF(ytry.GE.ysave) THEN
-           
            PRINT*,"-----------------------------------------------------"
            PRINT*,"Entering Expansion Phase Expect",ndim+1,"Simulations"
            PRINT*,"-----------------------------------------------------"
-
            DO i=1,ndim+1
-
               PRINT*,"Expansion Simulation",i
-
               IF(i.NE.ilo) THEN
                  DO j=1,ndim
                     psum(j)=0.5*(RSimplexVolume(i,j)+RSimplexVolume(ilo,j))
@@ -122,31 +116,23 @@ SUBROUTINE NDimensionalDownhillSimplex(RSimplexVolume,y,mp,np,ndim,ftol,iter,RSt
            GOTO 1
         ENDIF
      ELSE
-
         iter=iter-1
      ENDIF
      GOTO 2
-     
   ELSE
      
      DO
         CALL MPI_BCAST(RSendPacket,ndim+2,MPI_DOUBLE_PRECISION,0,MPI_COMM_WORLD,IErr)
-        
-        RExitFlag = RSendPacket(1)
-                        
+        RExitFlag = RSendPacket(1)                
         IF(RExitFlag.LT.ZERO) THEN
            IExitFLAG = 1
         ELSE
            IExitFLAG = 0
         END IF
-           
         psum = RSendPacket(2:(ndim+1))
         iter = NINT(RSendPacket(ndim+2),KIND=IKIND)
-
         ytry = SimplexFunction(psum,iter,IExitFLAG,IErr) ! Doesnt matter what this result is
-
         IF(IExitFLAG.EQ.1) RETURN
-        
      END DO
      
   END IF
