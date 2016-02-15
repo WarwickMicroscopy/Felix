@@ -126,7 +126,7 @@ PROGRAM Felixrefine
      PRINT*,"felixrefine(",my_rank,") error in ReadInput"
      GOTO 9999
   END IF  
-  
+
   ALLOCATE(RImageExpi(2*IPixelCount,2*IPixelCount,INoOfLacbedPatterns),STAT=IErr)  
   IF( IErr.NE.0 ) THEN
      PRINT*,"felixrefine(",my_rank,")error allocating RImageExpi"
@@ -201,7 +201,7 @@ RFullIsotropicDebyeWallerFactor,IFullAtomicNumber,IFullAnisotropicDWFTensor)
      PRINT*,"felixrefine(",my_rank,")error in SpecificReflectionDetermination"
      GOTO 9999
   END IF
-  
+
 !allocations-----------------------------------  
   ALLOCATE(RgPoolT(INhkl,THREEDIM),STAT=IErr)
   IF(IErr.NE.0) THEN
@@ -308,6 +308,19 @@ RFullIsotropicDebyeWallerFactor,IFullAtomicNumber,IFullAnisotropicDWFTensor)
      RgPoolMag(ind)= SQRT(DOT_PRODUCT(RgPoolT(ind,:),RgPoolT(ind,:)))
   ENDDO
 
+  !some other basic numbers
+  ALLOCATE(RgVecVec(INhkl),STAT=IErr)
+  IF( IErr.NE.0 ) THEN
+     PRINT*,"felixrefine(",my_rank,")error allocating RgVecVec"
+     RETURN
+  END IF
+  CALL DiffractionPatternCalculation(IErr)
+    IF( IErr.NE.0 ) THEN
+     PRINT*,"felixrefine(",my_rank,")error in DiffractionPatternCalculation"
+     GOTO 9999
+  END IF
+ 
+  !acceptance angle
   IF(RAcceptanceAngle.NE.ZERO.AND.IZOLZFLAG.EQ.1) THEN
      RMaxAcceptanceGVecMag=(RElectronWaveVectorMagnitude*TAN(RAcceptanceAngle*DEG2RADIAN))
      IF(RgPoolMag(IMinReflectionPool).GT.RMaxAcceptanceGVecMag) THEN
@@ -336,9 +349,9 @@ RFullIsotropicDebyeWallerFactor,IFullAtomicNumber,IFullAnisotropicDWFTensor)
         nReflections = nReflections + 1
      END IF
   ENDDO
-  
+
 !zz temp deallocation to get it to work
-DEALLOCATE(Rhkl,RgPoolMagLaue)!,RgPoolMag
+DEALLOCATE(RgPoolMagLaue)!,Rhkl,RgPoolMag
 IF (RAcceptanceAngle.NE.ZERO.AND.IZOLZFLAG.EQ.0) THEN
   DEALLOCATE(IOriginGVecIdentifier)
     PRINT*,"felixrefine deallocating IOriginGVecIdentifier"
@@ -370,7 +383,7 @@ DEALLOCATE(IAnisoDWFT,IAtoms,ROcc,RDWF)!RgPoolT,
   END IF
 
 !Now change StructureFactorRefinementSetup fr722 and UpdateStructureFactors ff1040
-  
+ 
 !zz temp deallocation to get it to work
 !DEALLOCATE(ISymmetryRelations,IEquivalentUgKey,CUgToRefine)
 
@@ -463,7 +476,7 @@ DEALLOCATE(IAnisoDWFT,IAtoms,ROcc,RDWF)!RgPoolT,
      PRINT*,"felixrefine(",my_rank,") error in ImageSetup"
      RETURN
   END IF 
-  
+
   !--------------------------------------------------------------------
   ! Allocate memory for deviation parameter and bloch calc in main loop
   !--------------------------------------------------------------------
@@ -928,7 +941,7 @@ SUBROUTINE SimplexInitialisation(RSimplexVolume,RSimplexFoM,RIndependentVariable
         RETURN
      ENDIF
   ELSE
-     DEALLOCATE(Rhkl,STAT=IErr)  !zz why deallocate depending upon processor rank?
+     !DEALLOCATE(Rhkl,STAT=IErr)  !zz why deallocate depending upon processor rank?
      IF( IErr.NE.0 ) THEN
         PRINT*,"SimplexInitialisation(",my_rank,") error deallocating Rhkl"
         RETURN

@@ -541,7 +541,7 @@ SUBROUTINE DiffractionPatternCalculation (IErr)
        MessageVariable = "MinimumGMag", RVariable = RMinimumGMag)
   
   IF (nReflections.LT.INoOfLacbedPatterns) THEN
-     INoOfLacbedPatterns = nReflections
+     nReflections = INoOfLacbedPatterns
   END IF
   
   CALL Message("DiffractionPatternCalculation",IInfo,IErr, &

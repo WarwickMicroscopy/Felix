@@ -242,7 +242,7 @@ SUBROUTINE OpenReflectionImage(IChOutWrite, surname, IErr,IReflectWriting,IImage
           MessageString = "is looping. Dependent on ImageFLAG also (called more than once while looping)")
      IMessageCounter = IMessageCounter +1
   END IF
-  
+
   SELECT CASE(IChOutWrite)
   CASE(MontageOut)
   CASE DEFAULT

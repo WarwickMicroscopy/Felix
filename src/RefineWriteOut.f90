@@ -36,6 +36,206 @@
 ! $Id: Felixrefine.f90,v 1.89 2014/04/28 12:26:19 phslaz Exp $
 !%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
+SUBROUTINE WriteIterationOutput(IIterationCount,IThicknessIndex,IExitFlag,IErr)
+
+  USE MyNumbers
+  
+  USE CConst; USE IConst; USE RConst
+  USE IPara; USE RPara; USE SPara; USE CPara
+  USE BlochPara
+
+  USE IChannels
+
+  USE MPI
+  USE MyMPI
+
+  IMPLICIT NONE
+
+  INTEGER(IKIND) :: IErr,IIterationCount,IThickness
+  INTEGER(IKIND),INTENT(IN) :: IThicknessIndex,IExitFLAG
+  CHARACTER*200 :: path
+  
+  IF(IExitFLAG.EQ.1.OR.(IIterationCount.GE.(IPreviousPrintedIteration+IPrint))) THEN
+     IThickness = (RInitialThickness + (IThicknessIndex-1)*RDeltaThickness)/10!RB in nm 
+!RB     WRITE(path,"(A10,I5.5,A3,I1.1,I1.1,I1.1,I1.1,A2,I5.5,A2,I5.5,A2,I5.5)") &    
+     WRITE(path,"(A10,I4.4,A1,I3.3,A3,I3.3,A1,I3.3)") &
+          "Iteration",IIterationCount,&
+!RB          "-f-",&
+!RB          IScatterFactorMethodFLAG, &
+!RB          IZolzFLAG, &
+!RB          IAbsorbFLAG, &
+!RB          IAnisoDebyeWallerFactorFlag,&
+          "_",IThickness,&
+          "nm_",2*IPixelcount,&
+          "x",2*IPixelcount
+     
+     call system('mkdir ' // path)
+     
+     PRINT*,"IExitFLAG = ",IExitFLAG,"; there have been",&
+          IIterationCount-IPreviousPrintedIteration,"iterations from my last print"
+     
+     IPreviousPrintedIteration = IIterationCount
+
+     CALL WriteIterationImages(path,IThicknessIndex,IErr)
+     IF( IErr.NE.0 ) THEN
+        PRINT*,"WriteIterationOutput(",my_rank,")error in WriteIterationImages"
+        RETURN
+     END IF
+
+     CALL WriteIterationStructure(path,IErr) 
+     IF( IErr.NE.0 ) THEN
+        PRINT*,"WriteIterationOutput(",my_rank,")error in WriteIterationStructure"
+        RETURN
+     ENDIF
+           
+     CALL WriteStructureFactors(path,IErr)
+     IF( IErr.NE.0 ) THEN
+        PRINT*,"WriteIterationOutput(",my_rank,")error in WriteStructureFactors()"
+        RETURN
+     ENDIF
+
+     CALL WriteOutVariables(IIterationCount,IErr)
+     IF( IErr.NE.0 ) THEN
+        PRINT*,"WriteIterationOutput(",my_rank,")error in WriteOutVariables()"
+        RETURN
+     ENDIF
+  END IF
+  
+END SUBROUTINE WriteIterationOutput
+
+!!$  %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+SUBROUTINE WriteIterationImages(path,IThicknessIndex,IErr)
+
+  USE MyNumbers
+  
+  USE CConst; USE IConst; USE RConst
+  USE IPara; USE RPara; USE SPara; USE CPara
+  USE BlochPara
+
+  USE IChannels
+
+  USE MPI
+  USE MyMPI
+
+  IMPLICIT NONE
+
+  INTEGER(IKIND) :: IErr,ind,jnd,hnd,gnd,IThicknessIndex
+  REAL(RKIND),DIMENSION(2*IPixelCount,2*IPixelCount) :: RImage
+  CHARACTER*200,INTENT(IN) :: path
+
+  DO ind = 1,INoOfLacbedPatterns
+     CALL OpenReflectionImage(IChOutWIImage,path,IErr,ind,2*IPixelCount,2_IKIND)
+     IF( IErr.NE.0 ) THEN
+        PRINT*,"WriteIterationImages(",my_rank,") error in OpenReflectionImage()"
+        RETURN
+     ENDIF
+
+     RImage = ZERO
+     DO jnd = 1,IPixelTotal
+        gnd = IPixelLocations(jnd,1)
+        hnd = IPixelLocations(jnd,2)
+        RImage(gnd,hnd) = RIndividualReflections(ind,IThicknessIndex,jnd)
+     END DO
+
+     CALL WriteReflectionImage(IChOutWIImage,&
+          RImage,IErr,2*IPixelCount,2*IPixelCount,2_IKIND)       
+     IF( IErr.NE.0 ) THEN
+        PRINT*,"WriteIterationImages(", my_rank, ") error in WriteReflectionImage()"
+        RETURN
+     ENDIF
+     
+     CLOSE(IChOutWIImage,IOSTAT=IErr)       
+     IF( IErr.NE.0 ) THEN
+        PRINT*,"WriteIterationImages(", my_rank, ") error Closing Reflection Image()"
+        RETURN
+     ENDIF
+     
+  END DO
+
+END SUBROUTINE WriteIterationImages
+
+!!$  %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+SUBROUTINE WriteIterationStructure(path,IErr)
+
+  USE MyNumbers
+  
+  USE CConst; USE IConst; USE RConst
+  USE IPara; USE RPara; USE SPara; USE CPara
+  USE BlochPara
+
+  USE IChannels
+
+  USE MPI
+  USE MyMPI
+
+  IMPLICIT NONE
+
+  INTEGER(IKIND) :: IErr,jnd
+  CHARACTER*200,INTENT(IN) :: path
+  CHARACTER*200 :: SPrintString,filename,fullpath
+
+!!$  Write out non symmetrically related atomic positions
+
+  WRITE(filename,*) "Structure.cif"
+  WRITE(fullpath,*) TRIM(ADJUSTL(path)),'/',TRIM(ADJUSTL(filename))
+
+  OPEN(UNIT=IChOutSimplex,STATUS='UNKNOWN',&
+        FILE=TRIM(ADJUSTL(fullpath)))
+ !RB
+  WRITE(IChOutSimplex,FMT='(A16))') "data_felixrefine"
+  WRITE(IChOutSimplex,FMT='(A5))') "loop_"
+  WRITE(IChOutSimplex,FMT='(A14,1X,F9.6))') "_cell_length_a",RLengthX
+  WRITE(IChOutSimplex,FMT='(A14,1X,F9.6))') "_cell_length_b",RLengthY
+  WRITE(IChOutSimplex,FMT='(A14,1X,F9.6))') "_cell_length_c",RLengthZ
+  WRITE(IChOutSimplex,FMT='(A17,1X,F9.6))') "_cell_angle_alpha",RAlpha*180/PI
+  WRITE(IChOutSimplex,FMT='(A16,1X,F9.6))') "_cell_angle_beta",RBeta*180/PI
+  WRITE(IChOutSimplex,FMT='(A17,1X,F9.6))') "_cell_angle_gamma",RGamma*180/PI
+  WRITE(IChOutSimplex,FMT='(A30,1X,A10))') "_symmetry_space_group_name_H-M '",SSpaceGrp,"'"
+  WRITE(IChOutSimplex,FMT='(A5))') " "
+  WRITE(IChOutSimplex,FMT='(A5))') "loop_"
+  WRITE(IChOutSimplex,FMT='(A22))') "_atom_site_type_symbol"
+!  WRITE(IChOutSimplex,FMT='(A25))') "_atom_site_Wyckoff_symbol"
+  WRITE(IChOutSimplex,FMT='(A18))') "_atom_site_fract_x"
+  WRITE(IChOutSimplex,FMT='(A18))') "_atom_site_fract_y"
+  WRITE(IChOutSimplex,FMT='(A18))') "_atom_site_fract_z"
+!  WRITE(IChOutSimplex,FMT='(A25))') "_atom_site_B_iso_or_equiv"
+!  WRITE(IChOutSimplex,FMT='(A20))') "_atom_site_occupancy"
+
+  DO jnd = 1,SIZE(RAtomSiteFracCoordVec,DIM=1)!RB only gives refined atoms, needs work
+     WRITE(IChOutSimplex,FMT='(A2,1X,3(F9.6,1X))') &
+	 SAtomName(jnd),RAtomSiteFracCoordVec(jnd,:)
+!     WRITE(IChOutSimplex,FMT='(A2,1X,A1,1X,3(F9.6,1X),F5.3,1X,F5.3)') &
+!	 SAtomName(jnd),SWyckoffSymbols(jnd),RAtomSiteFracCoordVec(jnd,:), &
+!	 RIsotropicDebyeWallerFactors(jnd),RAtomicSitePartialOccupancy(jnd)
+  END DO
+  WRITE(IChOutSimplex,FMT='(A22))') "#End of refinement cif"
+  
+  CLOSE(IChOutSimplex)
+
+!!$  Write out full atomic positions
+
+  !CALL ExperimentalSetup(IErr)!RB Really? wtf?!?
+  !IF( IErr.NE.0 ) THEN
+  !   PRINT*,"WriteIterationStructure(", my_rank, ") error ", IErr, &
+  !        " in ExperimentalSetup"
+  !   RETURN
+  !ENDIF
+
+!XX  WRITE(filename,*) "StructureFull.txt"
+!XX  WRITE(fullpath,*) TRIM(ADJUSTL(path)),'/',TRIM(ADJUSTL(filename))
+!XXPRINT*,"MNP,SMNP"  
+!XX  OPEN(UNIT=IChOutSimplex,STATUS='UNKNOWN',&
+!XX        FILE=TRIM(ADJUSTL(fullpath)))
+!XX    DO jnd = 1,SIZE(MNP,DIM=1)
+!XX     WRITE(IChOutSimplex,FMT='(A2,1X,3(F9.6,1X))') SMNP(jnd),MNP(jnd,1:3)
+!XX    END DO
+!XX  CLOSE(IChOutSimplex)
+
+END SUBROUTINE WriteIterationStructure
+
+!!$  %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 SUBROUTINE WriteOutVariables(IIterationCount,IErr)
 
@@ -149,80 +349,6 @@ END SUBROUTINE WriteOutVariables
 
 !%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-SUBROUTINE WriteIterationOutput(IIterationCount,IThicknessIndex,IExitFlag,IErr)
-
-  USE MyNumbers
-  
-  USE CConst; USE IConst; USE RConst
-  USE IPara; USE RPara; USE SPara; USE CPara
-  USE BlochPara
-
-  USE IChannels
-
-  USE MPI
-  USE MyMPI
-
-  IMPLICIT NONE
-
-  INTEGER(IKIND) :: IErr,IIterationCount,IThickness
-  INTEGER(IKIND),INTENT(IN) :: IThicknessIndex,IExitFLAG
-  CHARACTER*200 :: path
-  
-  IF(IExitFLAG.EQ.1.OR.(IIterationCount.GE.(IPreviousPrintedIteration+IPrint))) THEN
-     
-
-     IThickness = (RInitialThickness + (IThicknessIndex-1)*RDeltaThickness)/10!RB in nm 
-     
-!RB     WRITE(path,"(A10,I5.5,A3,I1.1,I1.1,I1.1,I1.1,A2,I5.5,A2,I5.5,A2,I5.5)") &    
-     WRITE(path,"(A10,I4.4,A1,I3.3,A3,I3.3,A1,I3.3)") &
-          "Iteration",IIterationCount,&
-!RB          "-f-",&
-!RB          IScatterFactorMethodFLAG, &
-!RB          IZolzFLAG, &
-!RB          IAbsorbFLAG, &
-!RB          IAnisoDebyeWallerFactorFlag,&
-          "_",IThickness,&
-          "nm_",2*IPixelcount,&
-          "x",2*IPixelcount
-     
-     call system('mkdir ' // path)
-     
-     PRINT*,"IExitFLAG = ",IExitFLAG,"; there have been",&
-          IIterationCount-IPreviousPrintedIteration,"iterations from my last print"
-     
-     IPreviousPrintedIteration = IIterationCount
-      
-     CALL WriteIterationImages(path,IThicknessIndex,IErr)
-     IF( IErr.NE.0 ) THEN
-        PRINT*,"WriteIterationOutput(", my_rank, ") error ", IErr, &
-             " in WriteIterationImages"
-        RETURN
-     END IF
-
-     CALL WriteIterationStructure(path,IErr) 
-     IF( IErr.NE.0 ) THEN
-        PRINT*,"WriteIterationOutput(", my_rank, ") error ", IErr, &
-             " in WriteIterationStructure"
-        RETURN
-     ENDIF
-           
-     CALL WriteStructureFactors(path,IErr)
-     IF( IErr.NE.0 ) THEN
-        PRINT*,"Felixfunction(", my_rank, ") error ",IErr,"in WriteStructureFactors()"
-        RETURN
-     ENDIF
-
-     CALL WriteOutVariables(IIterationCount,IErr)
-     IF( IErr.NE.0 ) THEN
-        PRINT*,"Felixfunction(", my_rank, ") error ",IErr,"in WriteOutVariables()"
-        RETURN
-     ENDIF
-  END IF
-  
-END SUBROUTINE WriteIterationOutput
-
-!!$  %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-
 SUBROUTINE WriteStructureFactors(path,IErr)
 
   USE MyNumbers
@@ -256,133 +382,3 @@ SUBROUTINE WriteStructureFactors(path,IErr)
 END SUBROUTINE WriteStructureFactors
 
 !!$  %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-
-SUBROUTINE WriteIterationStructure(path,IErr)
-
-  USE MyNumbers
-  
-  USE CConst; USE IConst; USE RConst
-  USE IPara; USE RPara; USE SPara; USE CPara
-  USE BlochPara
-
-  USE IChannels
-
-  USE MPI
-  USE MyMPI
-
-  IMPLICIT NONE
-
-  INTEGER(IKIND) :: IErr,jnd
-  CHARACTER*200,INTENT(IN) :: path
-  CHARACTER*200 :: SPrintString,filename,fullpath
-
-!!$  Write out non symmetrically related atomic positions
-
-  WRITE(filename,*) "Structure.cif"
-  WRITE(fullpath,*) TRIM(ADJUSTL(path)),'/',TRIM(ADJUSTL(filename))
-
-  OPEN(UNIT=IChOutSimplex,STATUS='UNKNOWN',&
-        FILE=TRIM(ADJUSTL(fullpath)))
- !RB
-  WRITE(IChOutSimplex,FMT='(A16))') "data_felixrefine"
-  WRITE(IChOutSimplex,FMT='(A5))') "loop_"
-  WRITE(IChOutSimplex,FMT='(A14,1X,F9.6))') "_cell_length_a",RLengthX
-  WRITE(IChOutSimplex,FMT='(A14,1X,F9.6))') "_cell_length_b",RLengthY
-  WRITE(IChOutSimplex,FMT='(A14,1X,F9.6))') "_cell_length_c",RLengthZ
-  WRITE(IChOutSimplex,FMT='(A17,1X,F9.6))') "_cell_angle_alpha",RAlpha*180/PI
-  WRITE(IChOutSimplex,FMT='(A16,1X,F9.6))') "_cell_angle_beta",RBeta*180/PI
-  WRITE(IChOutSimplex,FMT='(A17,1X,F9.6))') "_cell_angle_gamma",RGamma*180/PI
-  WRITE(IChOutSimplex,FMT='(A30,1X,A10))') "_symmetry_space_group_name_H-M '",SSpaceGrp,"'"
-  WRITE(IChOutSimplex,FMT='(A5))') " "
-  WRITE(IChOutSimplex,FMT='(A5))') "loop_"
-  WRITE(IChOutSimplex,FMT='(A22))') "_atom_site_type_symbol"
-!  WRITE(IChOutSimplex,FMT='(A25))') "_atom_site_Wyckoff_symbol"
-  WRITE(IChOutSimplex,FMT='(A18))') "_atom_site_fract_x"
-  WRITE(IChOutSimplex,FMT='(A18))') "_atom_site_fract_y"
-  WRITE(IChOutSimplex,FMT='(A18))') "_atom_site_fract_z"
-!  WRITE(IChOutSimplex,FMT='(A25))') "_atom_site_B_iso_or_equiv"
-!  WRITE(IChOutSimplex,FMT='(A20))') "_atom_site_occupancy"
-
-  DO jnd = 1,SIZE(RAtomSiteFracCoordVec,DIM=1)!RB only gives refined atoms, needs work
-     WRITE(IChOutSimplex,FMT='(A2,1X,3(F9.6,1X))') &
-	 SAtomName(jnd),RAtomSiteFracCoordVec(jnd,:)
-!     WRITE(IChOutSimplex,FMT='(A2,1X,A1,1X,3(F9.6,1X),F5.3,1X,F5.3)') &
-!	 SAtomName(jnd),SWyckoffSymbols(jnd),RAtomSiteFracCoordVec(jnd,:), &
-!	 RIsotropicDebyeWallerFactors(jnd),RAtomicSitePartialOccupancy(jnd)
-  END DO
-  WRITE(IChOutSimplex,FMT='(A22))') "#End of refinement cif"
-  
-  CLOSE(IChOutSimplex)
-
-!!$  Write out full atomic positions
-
-  !CALL ExperimentalSetup(IErr)!RB Really? wtf?!?
-  !IF( IErr.NE.0 ) THEN
-  !   PRINT*,"WriteIterationStructure(", my_rank, ") error ", IErr, &
-  !        " in ExperimentalSetup"
-  !   RETURN
-  !ENDIF
-
-!XX  WRITE(filename,*) "StructureFull.txt"
-!XX  WRITE(fullpath,*) TRIM(ADJUSTL(path)),'/',TRIM(ADJUSTL(filename))
-!XXPRINT*,"MNP,SMNP"  
-!XX  OPEN(UNIT=IChOutSimplex,STATUS='UNKNOWN',&
-!XX        FILE=TRIM(ADJUSTL(fullpath)))
-!XX    DO jnd = 1,SIZE(MNP,DIM=1)
-!XX     WRITE(IChOutSimplex,FMT='(A2,1X,3(F9.6,1X))') SMNP(jnd),MNP(jnd,1:3)
-!XX    END DO
-!XX  CLOSE(IChOutSimplex)
-
-END SUBROUTINE WriteIterationStructure
-
-!!$  %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-
-SUBROUTINE WriteIterationImages(path,IThicknessIndex,IErr)
-
-  USE MyNumbers
-  
-  USE CConst; USE IConst; USE RConst
-  USE IPara; USE RPara; USE SPara; USE CPara
-  USE BlochPara
-
-  USE IChannels
-
-  USE MPI
-  USE MyMPI
-
-  IMPLICIT NONE
-
-  INTEGER(IKIND) :: IErr,ind,jnd,hnd,gnd,IThicknessIndex
-  REAL(RKIND),DIMENSION(2*IPixelCount,2*IPixelCount) :: RImage
-  CHARACTER*200,INTENT(IN) :: path
-
-  DO ind = 1,INoOfLacbedPatterns
-     CALL OpenReflectionImage(IChOutWIImage,path,IErr,ind,2*IPixelCount,2_IKIND)
-     IF( IErr.NE.0 ) THEN
-        PRINT*,"WriteIterationImages(", my_rank, ") error in OpenReflectionImage()"
-        RETURN
-     ENDIF
-     
-     RImage = ZERO
-     DO jnd = 1,IPixelTotal
-        gnd = IPixelLocations(jnd,1)
-        hnd = IPixelLocations(jnd,2)
-        RImage(gnd,hnd) = RIndividualReflections(ind,IThicknessIndex,jnd)
-     END DO
-     
-     CALL WriteReflectionImage(IChOutWIImage,&
-          RImage,IErr,2*IPixelCount,2*IPixelCount,2_IKIND)       
-     IF( IErr.NE.0 ) THEN
-        PRINT*,"WriteIterationImages(", my_rank, ") error in WriteReflectionImage()"
-        RETURN
-     ENDIF
-     
-     CLOSE(IChOutWIImage,IOSTAT=IErr)       
-     IF( IErr.NE.0 ) THEN
-        PRINT*,"WriteIterationImages(", my_rank, ") error Closing Reflection Image()"
-        RETURN
-     ENDIF
-     
-  END DO
-
-END SUBROUTINE WriteIterationImages

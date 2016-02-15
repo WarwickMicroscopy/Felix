@@ -114,7 +114,7 @@ SUBROUTINE FelixFunction(LInitialSimulationFLAG,IErr)
         RETURN
      END IF
   END IF
-   PRINT*,"RB Applied NewStructureFactors"
+
 !RB no need to recalculate the Ug pool either   
 !  IF(IAbsorbFLAG.NE.0) THEN
 !     CALL StructureFactorsWithAbsorption(IErr)
@@ -267,8 +267,7 @@ SUBROUTINE FelixFunction(LInitialSimulationFLAG,IErr)
           ICount,IDisplacements,MPI_DOUBLE_COMPLEX,0, &
           MPI_COMM_WORLD,IErr)
      IF( IErr.NE.0 ) THEN
-        PRINT*,"Felixfunction(", my_rank, ") error ", IErr, &
-             " In MPI_GATHERV"
+        PRINT*,"Felixfunction(", my_rank, ") error in MPI_GATHERV"
         RETURN
      END IF   
   END IF
@@ -276,8 +275,7 @@ SUBROUTINE FelixFunction(LInitialSimulationFLAG,IErr)
   IF(IImageFLAG.GE.3) THEN
      DEALLOCATE(CAmplitudeandPhase,STAT=IErr)
      IF( IErr.NE.0 ) THEN
-        PRINT*,"Felixfunction(", my_rank, ") error ", IErr, &
-             " Deallocating CAmplitudePhase"
+        PRINT*,"Felixfunction(", my_rank, ") error deallocating CAmplitudePhase"
         RETURN
      END IF   
   END IF
@@ -285,8 +283,7 @@ SUBROUTINE FelixFunction(LInitialSimulationFLAG,IErr)
   IF(IImageFLAG.LE.2) THEN
      DEALLOCATE(RIndividualReflections,STAT=IErr)
      IF( IErr.NE.0 ) THEN
-        PRINT*,"Felixfunction(", my_rank, ") error ", IErr, &
-             " Deallocating RIndividualReflections"
+        PRINT*,"Felixfunction(", my_rank, ") error deallocating RIndividualReflections"
         RETURN
      END IF   
   END IF
@@ -295,10 +292,9 @@ SUBROUTINE FelixFunction(LInitialSimulationFLAG,IErr)
      RIndividualReflectionsRoot = &
           CAmplitudeandPhaseRoot * CONJG(CAmplitudeandPhaseRoot)
   END IF
-  
-  IF(my_rank.EQ.0) THEN
-     ALLOCATE(RIndividualReflections(INoOfLacbedPatterns,IThicknessCount,IPixelTotal),&
-          STAT=IErr)
+
+  IF(my_rank.EQ.0) THEN!RB reallocate for output
+     ALLOCATE(RIndividualReflections(INoOfLacbedPatterns,IThicknessCount,IPixelTotal),STAT=IErr)
      IF( IErr.NE.0 ) THEN
         PRINT*,"Felixfunction(", my_rank, ") error ", IErr, &
              " in ALLOCATE() of DYNAMIC variables Root Reflections"
@@ -313,11 +309,6 @@ SUBROUTINE FelixFunction(LInitialSimulationFLAG,IErr)
   !--------------------------------------------------------------------
   
   !Dellocate Variables
-  DEALLOCATE(IPixelLocations,STAT=IErr)
-  IF( IErr.NE.0 ) THEN
-     PRINT*,"Felixfunction(",my_rank,")error deallocating IPixelLocations"
-     RETURN
-  END IF
   DEALLOCATE(IDisplacements,STAT=IErr)
   IF( IErr.NE.0 ) THEN
      PRINT*,"Felixfunction(",my_rank,")error deallocating IDisplacements"
@@ -326,6 +317,11 @@ SUBROUTINE FelixFunction(LInitialSimulationFLAG,IErr)
   DEALLOCATE(ICount,STAT=IErr)
   IF( IErr.NE.0 ) THEN
      PRINT*,"Felixfunction(",my_rank,")error deallocating ICount"
+     RETURN
+  END IF
+  !DEALLOCATE(IPixelLocations,STAT=IErr)
+  IF( IErr.NE.0 ) THEN
+     PRINT*,"Felixfunction(",my_rank,")error deallocating IPixelLocations"
      RETURN
   END IF
 !  DEALLOCATE(RhklPositions,STAT=IErr)
@@ -501,22 +497,19 @@ SUBROUTINE CalculateFigureofMeritandDetermineThickness(IThicknessCountFinal,IErr
      DO ind = 1,IThicknessCount
         
         ICountedPixels = 0
-
         RSimulatedImageForPhaseCorrelation = ZERO
-
         RIndependentCrossCorrelation = ZERO
 
-        DO jnd = 1,2*IPixelCount
+        DO jnd = 1,2*IPixelCount!RB does this have to be done here
            DO knd = 1,2*IPixelCount
               IF(ABS(RMask(jnd,knd)).GT.TINY) THEN
                  ICountedPixels = ICountedPixels+1
-                                  
                  RSimulatedImageForPhaseCorrelation(jnd,knd) = &
                       RIndividualReflections(hnd,ind,ICountedPixels)
               END IF
            END DO
         END DO
-                
+               
         SELECT CASE (IImageProcessingFLAG)
         CASE(0)
            RExperimentalImage = RImageExpi(:,:,hnd)
@@ -600,10 +593,6 @@ SUBROUTINE CalculateFigureofMeritandDetermineThickness(IThicknessCountFinal,IErr
      PRINT*,TRIM(ADJUSTL(SPrintString))
      !XXPRINT*,"---------------------------------------------------------"
 !     PRINT*,"Specimen thickness",NINT(RThickness),"Angstroms"
-  END IF
-
-  IF (RCrossCorrelation.NE.RCrossCorrelation) THEN!RB what?
-     IErr = 1
   END IF
 
 END SUBROUTINE CalculateFigureofMeritandDetermineThickness
@@ -718,20 +707,20 @@ SUBROUTINE CreateImagesAndWriteOutput(IIterationCount,IExitFLAG,IErr)
   IMPLICIT NONE
   
   INTEGER(IKIND) :: IErr,IThicknessIndex,IIterationCount,IExitFLAG
-  !RB allocation now in the subroutine
+  !RB allocation now called from Image setup in felixrefine
   !ALLOCATE(RMask(2*IPixelCount,2*IPixelCount),STAT=IErr)
-  IF( IErr.NE.0 ) THEN
-     PRINT*,"CreateImagesAndWriteOutput(",my_rank,")error allocating RMask"
-     RETURN
-  ENDIF
+  !IF( IErr.NE.0 ) THEN
+  !   PRINT*,"CreateImagesAndWriteOutput(",my_rank,")error allocating RMask"
+  !   RETURN
+  !ENDIF
   !RB mask has already been calculated
   !CALL ImageMaskInitialisation(IErr)
-  IF( IErr.NE.0 ) THEN
-     PRINT*,"CreateImagesAndWriteOutput(", my_rank, ") error ", IErr, &
-          " in ImageMaskInitialisation"
-     RETURN
-  ENDIF
-  PRINT*,"RB CalculateFigureofMeritandDetermineThickness now"
+  !IF( IErr.NE.0 ) THEN
+  !   PRINT*,"CreateImagesAndWriteOutput(", my_rank, ") error ", IErr, &
+  !        " in ImageMaskInitialisation"
+  !   RETURN
+  !ENDIF
+
   CALL CalculateFigureofMeritandDetermineThickness(IThicknessIndex,IErr)
   IF( IErr.NE.0 ) THEN
      PRINT*,"CreateImagesAndWriteOutput(", my_rank, ") error ", IErr, &
@@ -744,10 +733,9 @@ SUBROUTINE CreateImagesAndWriteOutput(IIterationCount,IExitFLAG,IErr)
      PRINT*,"CreateImagesAndWriteOutput(",my_rank,")error deallocating RMask"
      RETURN
   ENDIF
-  PRINT*,"RB CalculateFigureofMeritandDetermineThickness complete"
+
   
-!!$     OUTPUT -------------------------------------
-  
+!!$     OUTPUT -------------------------------------  
   CALL WriteIterationOutput(IIterationCount,IThicknessIndex,IExitFLAG,IErr)
   IF( IErr.NE.0 ) THEN
      PRINT*,"CreateImagesAndWriteOutput(",my_rank,")error in WriteIterationOutput"
