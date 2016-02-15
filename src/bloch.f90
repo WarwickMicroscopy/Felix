@@ -50,16 +50,13 @@ SUBROUTINE BlochCoefficientCalculation(IYPixelIndex,IXPixelIndex,IPixelNumber,IF
   INTEGER(IKIND) :: IYPixelIndex,IXPixelIndex,hnd,knd,IPixelNumber,pnd,&
        ierr,IThickness,IThicknessIndex,ILowerLimit,IUpperLimit,IFirstPixelToCalculate       
   REAL(RKIND) :: RPixelGVectorXPosition,RPixelGVectorYPosition, RThickness,RKn
-
+  COMPLEX(CKIND) sumC,sumD
+  COMPLEX(CKIND), DIMENSION(:,:), ALLOCATABLE :: CGeneralSolutionMatrix, &
+       CGeneralEigenVectors,CBeamTranspose,CUgMatPartial
+  COMPLEX(CKIND),DIMENSION(:),ALLOCATABLE :: CGeneralEigenValues
   CHARACTER*40 surname
   CHARACTER*200 SindString, SjndString, SPixelCount, SnBeams,SWeakBeamIndex 
-
-  COMPLEX(CKIND) sumC,sumD
-
-  COMPLEX(CKIND), DIMENSION(:,:), ALLOCATABLE :: &
-       CGeneralSolutionMatrix, CGeneralEigenVectors,CBeamTranspose,CUgMatPartial
-  COMPLEX(CKIND),DIMENSION(:),ALLOCATABLE :: CGeneralEigenValues
-
+   
    IF (my_rank.EQ.0) THEN
       DO WHILE (IMessageCounter .LT.1)
          CALL Message("BlochCoefficientCalculation",IMust,IErr)
@@ -93,8 +90,7 @@ SUBROUTINE BlochCoefficientCalculation(IYPixelIndex,IXPixelIndex,IPixelNumber,IF
   ! calculate deviation parameter Sg for the tilted Ewald spheres
   !--------------------------------------------------------------------
   
-  ! TiltedK used to be called Kprime2
-  ! the vector of the incoming tilted beam
+  ! TiltedK is the vector of the incoming tilted beam
   CALL KVectorsCalculation(RPixelGVectorXPosition,RPixelGVectorYPosition,IErr)
   IF( IErr.NE.0 ) THEN
      PRINT*,"BlochCoefficientCalculation(", my_rank, ") error ", IErr, &
@@ -111,7 +107,7 @@ SUBROUTINE BlochCoefficientCalculation(IYPixelIndex,IXPixelIndex,IPixelNumber,IF
           ( RBigK**2 + DOT_PRODUCT(RgPoolT(knd,:),RTiltedK(:)) )**2 /RBigK**2 - &
           (RgPoolMag(knd)**2 + TWO*DOT_PRODUCT(RgPoolT(knd,:),RTiltedK(:))) )
   END DO
-
+  
   ! select only those beams where the Ewald sphere is close to the
   ! reciprocal lattice, i.e. within RBSMaxDeviationPara
   CALL StrongAndWeakBeamsDetermination(IErr)!RB IAdditionalBmaxStrongBeamList abd IAdditionalPmaxStrongBeamList allocated in here
@@ -129,7 +125,7 @@ SUBROUTINE BlochCoefficientCalculation(IYPixelIndex,IXPixelIndex,IPixelNumber,IF
   !--------------------------------------------------------------------
   ! ALLOCATE memory for eigen problem
   !--------------------------------------------------------------------
-  
+
   !Eigen Problem Solving
   ALLOCATE(CBeamProjectionMatrix(nBeams,nReflections),STAT=IErr)
   IF( IErr.NE.0 ) THEN
@@ -223,22 +219,18 @@ SUBROUTINE BlochCoefficientCalculation(IYPixelIndex,IXPixelIndex,IPixelNumber,IF
   !--------------------------------------------------------------------
   ! back to eigen problem solution
   !--------------------------------------------------------------------
-  
+
   ! compute the effective Ug matrix by selecting only those beams
   ! for which IStrongBeamList has an entry
-  
   CBeamProjectionMatrix= CZERO
   DO knd=1,nBeams
      CBeamProjectionMatrix(knd,IStrongBeamList(knd))=CONE
   ENDDO
-
   CUgMatEffective = CZERO
-
   CBeamTranspose=TRANSPOSE(CBeamProjectionMatrix)
 
   CALL ZGEMM('N','N',nReflections,nBeams,nReflections,CONE,CUgMat, &
        nReflections,CBeamTranspose,nReflections,CZERO,CUgMatPartial,nReflections)
-
   CALL ZGEMM('N','N',nBeams,nBeams,nReflections,CONE,CBeamProjectionMatrix, &
        nBeams,CUgMatPartial,nReflections,CZERO,CUgMatEffective,nBeams)
 
@@ -273,7 +265,6 @@ SUBROUTINE BlochCoefficientCalculation(IYPixelIndex,IXPixelIndex,IPixelNumber,IF
      DO hnd=1,nBeams
         CUgMatEffective(hnd,hnd) = CUgMatEffective(hnd,hnd)+RDevPara(IStrongBeamList(hnd))
      ENDDO
-     
      
      ! add the weak beams perturbatively for the 1st column (sumC) and
      ! the diagonal elements (sumD)

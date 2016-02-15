@@ -53,7 +53,7 @@ SUBROUTINE WriteIterationOutput(IIterationCount,IThicknessIndex,IExitFlag,IErr)
 
   INTEGER(IKIND) :: IErr,IIterationCount,IThickness
   INTEGER(IKIND),INTENT(IN) :: IThicknessIndex,IExitFLAG
-  CHARACTER*200 :: path
+  CHARACTER*200 :: path,SPrintString
   
   IF(IExitFLAG.EQ.1.OR.(IIterationCount.GE.(IPreviousPrintedIteration+IPrint))) THEN
      IThickness = (RInitialThickness + (IThicknessIndex-1)*RDeltaThickness)/10!RB in nm 
@@ -70,9 +70,14 @@ SUBROUTINE WriteIterationOutput(IIterationCount,IThicknessIndex,IExitFlag,IErr)
           "x",2*IPixelcount
      
      call system('mkdir ' // path)
-     
-     PRINT*,"IExitFLAG = ",IExitFLAG,"; there have been",&
-          IIterationCount-IPreviousPrintedIteration,"iterations from my last print"
+
+     IF (IExitFLAG.EQ.0) THEN 
+        WRITE(SPrintString,FMT='(A16,I4,A35)') "Writing output; ",&
+		IIterationCount-IPreviousPrintedIteration," iterations since the previous save"
+        PRINT*,TRIM(ADJUSTL(SPrintString))
+     ELSE
+	 
+	 END IF
      
      IPreviousPrintedIteration = IIterationCount
 

@@ -787,7 +787,7 @@ SUBROUTINE StructureFactorRefinementSetup(RIndependentVariableValues,IIterationC
   INTEGER(IKIND),INTENT(IN) :: IIterationCount
   CHARACTER*200 :: SPrintString
 
-  IF((IWriteFLAG.GE.0.AND.my_rank.EQ.0).OR.IWriteFLAG.GE.10) THEN
+  IF((IWriteFLAG.GE.5.AND.my_rank.EQ.0).OR.IWriteFLAG.GE.10) THEN
      PRINT*,"StructureFactorRefinementSetup(",my_rank,")"
   END IF
 
@@ -947,46 +947,44 @@ SUBROUTINE SimplexInitialisation(RSimplexVolume,RSimplexFoM,RIndependentVariable
         RETURN
      ENDIF
   END IF
-    PRINT*,"RB FelixFunction finished"
+ 
   CALL RefinementVariableSetup(RIndependentVariableValues,IErr)
   IF( IErr.NE.0 ) THEN
      PRINT*,"SimplexInitialisation(", my_rank, ") error in RefinementVariableSetup()"
      RETURN
   ENDIF
   
+  !RB already done in felixrefine
   IF(IRefineModeSelectionArray(1).EQ.1) THEN
-     
-     CALL RankSymmetryRelatedStructureFactor(IErr)
-     IF( IErr.NE.0 ) THEN
-        PRINT*,"SimplexInitialisation(", my_rank, ") error in RankSymmetryRelatedStructureFactor()"
-        RETURN
-     ENDIF
-     
+     !CALL RankSymmetryRelatedStructureFactor(IErr)
+     !IF( IErr.NE.0 ) THEN
+     !   PRINT*,"SimplexInitialisation(", my_rank, ") error in RankSymmetryRelatedStructureFactor()"
+     !   RETURN
+     !ENDIF
      CALL StructureFactorRefinementSetup(RIndependentVariableValues,IIterationCount,IErr)
      IF( IErr.NE.0 ) THEN
         PRINT*,"SimplexInitialisation(", my_rank, ") error in StructureFactorRefinementSetup()"
         RETURN
      ENDIF
-     
   ENDIF
 
-!RB     PRINT*,"Deallocating CUgMat,CUgMatNoAbs,CUgMatPrime in felixrefine" NB Also deallocated in felixfunction!!!
-  DEALLOCATE(RgSumMat,STAT=IErr)
+!RB  deallocate in felixrefine
+  !DEALLOCATE(RgSumMat,STAT=IErr)
   IF( IErr.NE.0 ) THEN
      PRINT*,"SimplexInitialisation(",my_rank,") error deallocating RgSumMat"
      RETURN
   ENDIF
-  DEALLOCATE(CUgMatNoAbs,STAT=IErr)  
+  !DEALLOCATE(CUgMatNoAbs,STAT=IErr)  
   IF( IErr.NE.0 ) THEN
      PRINT*,"SimplexInitialisation(",my_rank,") error deallocating CUgMatNoAbs"
      RETURN
   ENDIF
-  DEALLOCATE(CUgMatPrime,STAT=IErr)  
+  !DEALLOCATE(CUgMatPrime,STAT=IErr)  
   IF( IErr.NE.0 ) THEN
      PRINT*,"SimplexInitialisation(",my_rank,") error deallocating CUgMatPrime"
      RETURN
   ENDIF
-  DEALLOCATE(CUgMat,STAT=IErr)  
+  !DEALLOCATE(CUgMat,STAT=IErr)  
   IF( IErr.NE.0 ) THEN
      PRINT*,"SimplexInitialisation(",my_rank,") error deallocating CUgMat"
      RETURN
@@ -994,8 +992,7 @@ SUBROUTINE SimplexInitialisation(RSimplexVolume,RSimplexFoM,RIndependentVariable
 !!$ RandomSequence
   IF(IContinueFLAG.EQ.0) THEN
      IF(my_rank.EQ.0) THEN
-        CALL CreateRandomisedSimplex(RSimplexVolume,&
-             RIndependentVariableValues,IErr)
+        CALL CreateRandomisedSimplex(RSimplexVolume,RIndependentVariableValues,IErr)
         CALL MPI_BCAST(RSimplexVolume,(IIndependentVariables+1)*(IIndependentVariables),MPI_DOUBLE_PRECISION,0,MPI_COMM_WORLD,IErr)
      ELSE
         CALL MPI_BCAST(RSimplexVolume,(IIndependentVariables+1)*(IIndependentVariables),MPI_DOUBLE_PRECISION,0,MPI_COMM_WORLD,IErr)
@@ -1017,17 +1014,12 @@ SUBROUTINE SimplexInitialisation(RSimplexVolume,RSimplexFoM,RIndependentVariable
            RETURN
         ENDIF
         RStandardTolerance = RStandardError(RStandardDeviation,RMean,RSimplexDummy,IErr)
-        
         RSimplexFoM(ind) =  RSimplexDummy
-  PRINT*,"Figure of merit",ind,":", RSimplexFoM(ind)
         
-!        IF((IWriteFLAG.GE.0.AND.my_rank.EQ.0).OR.IWriteFLAG.GE.10) THEN
- !         PRINT*,"--------------------------------"
+        IF((IWriteFLAG.GE.0.AND.my_rank.EQ.0).OR.IWriteFLAG.GE.10) THEN
           WRITE(SPrintString,FMT='(A16,F7.5))') "Figure of merit ",RSimplexFoM(ind)
           PRINT*,TRIM(ADJUSTL(SPrintString))
- !         PRINT*,"---------------------------------------------------------"
-!        END IF
-        PRINT*,"boo!4",ind
+        END IF
      END DO
 
   ELSE
@@ -1039,7 +1031,6 @@ SUBROUTINE SimplexInitialisation(RSimplexVolume,RSimplexFoM,RIndependentVariable
      ENDIF
      
   END IF
- 
        
 END SUBROUTINE SimplexInitialisation
 

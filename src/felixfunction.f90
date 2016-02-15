@@ -98,7 +98,6 @@ SUBROUTINE FelixFunction(LInitialSimulationFLAG,IErr)
   ! MAIN section
   !--------------------------------------------------------------------
 
-
 !!$  Structure Factors must be calculated without absorption for refinement to work
 !  CALL StructureFactorSetup(IErr)!RB no need to calculate the reflection pool every time
 ! (only true for Ug refinement, will need to be reinstated for other refinements)
@@ -192,9 +191,9 @@ SUBROUTINE FelixFunction(LInitialSimulationFLAG,IErr)
 
   IMAXCBuffer = 200000
   IPixelComputed= 0
-  
-  IF(IWriteFLAG.GE.10.AND.my_rank.EQ.0) THEN
-     PRINT*,"Felixfunction(",my_rank,") Entering BlochLoop()"
+ 
+  IF(IWriteFLAG.GE.0.AND.my_rank.EQ.0) THEN
+     PRINT*,"Bloch wave calculation..."
   END IF
 
   DO knd = ILocalPixelCountMin,ILocalPixelCountMax,1
@@ -202,8 +201,7 @@ SUBROUTINE FelixFunction(LInitialSimulationFLAG,IErr)
      ind = IPixelLocations(knd,2)
      CALL BlochCoefficientCalculation(ind,jnd,knd,ILocalPixelCountMin,IErr)
      IF( IErr.NE.0 ) THEN
-        PRINT*,"Felixfunction(", my_rank, ") error ", IErr, &
-             " in BlochCofficientCalculation"
+        PRINT*,"Felixfunction(",my_rank,") error in BlochCofficientCalculation"
         RETURN
      END IF
   END DO
@@ -211,11 +209,10 @@ SUBROUTINE FelixFunction(LInitialSimulationFLAG,IErr)
   IF((IWriteFLAG.GE.6.AND.my_rank.EQ.0).OR.IWriteFLAG.GE.10) THEN
      PRINT*,"Felixfunction : ",my_rank," is exiting calculation loop"
   END IF
-
+ 
   !--------------------------------------------------------------------
   ! close outfiles
   !--------------------------------------------------------------------
-  
   ALLOCATE(RIndividualReflectionsRoot(INoOfLacbedPatterns,IThicknessCount,IPixelTotal),&
        STAT=IErr)
   IF( IErr.NE.0 ) THEN
@@ -303,12 +300,11 @@ SUBROUTINE FelixFunction(LInitialSimulationFLAG,IErr)
      
      RIndividualReflections = RIndividualReflectionsRoot
   END IF
-  
+
   !--------------------------------------------------------------------
   ! free memory
   !--------------------------------------------------------------------
-  
-  !Dellocate Variables
+  !Dellocate local Variables
   DEALLOCATE(IDisplacements,STAT=IErr)
   IF( IErr.NE.0 ) THEN
      PRINT*,"Felixfunction(",my_rank,")error deallocating IDisplacements"
@@ -622,7 +618,6 @@ REAL(RKIND) FUNCTION SimplexFunction(RIndependentVariableValues,IIterationCount,
   IF(IWriteFLAG.GE.10.AND.my_rank.EQ.0) THEN
      PRINT*,"SimplexFunction(",my_rank,")"
   END IF
-  
 
   IF(IRefineModeSelectionArray(1).EQ.1) THEN  !Ug refinement   
      CALL UpdateStructureFactors(RIndependentVariableValues,IErr)
@@ -664,28 +659,28 @@ REAL(RKIND) FUNCTION SimplexFunction(RIndependentVariableValues,IIterationCount,
      SimplexFunction = RCrossCorrelation     
   END IF
 
-!RB   NB Also deallocated in felixrefine!!!
-  DEALLOCATE(RgSumMat,STAT=IErr)
-  IF( IErr.NE.0 ) THEN
-     PRINT*,"felixsim(", my_rank, ") error ", IErr, &
-          " in Deallocation of RgSumMat"
-     RETURN
-  ENDIF
-  DEALLOCATE(CUgMatNoAbs,STAT=IErr)  
-  IF( IErr.NE.0 ) THEN
-     PRINT*,"SimplexInitialisation (", my_rank, ") error in Deallocation()"
-     RETURN
-  ENDIF
- DEALLOCATE(CUgMatPrime,STAT=IErr)  
-  IF( IErr.NE.0 ) THEN
-     PRINT*,"SimplexInitialisation (", my_rank, ") error in Deallocation()"
-     RETURN
-  ENDIF
-  DEALLOCATE(CUgMat,STAT=IErr)  
-  IF( IErr.NE.0 ) THEN
-     PRINT*,"SimplexInitialisation (", my_rank, ") error in Deallocation()"
-     RETURN
-  ENDIF
+!RB   Now deallocated in felixrefine
+  !DEALLOCATE(RgSumMat,STAT=IErr)
+  !IF( IErr.NE.0 ) THEN
+  !   PRINT*,"felixsim(", my_rank, ") error ", IErr, &
+  !        " in Deallocation of RgSumMat"
+  !   RETURN
+  !ENDIF
+  !!DEALLOCATE(CUgMatNoAbs,STAT=IErr)  
+  !IF( IErr.NE.0 ) THEN
+  !   PRINT*,"SimplexInitialisation (", my_rank, ") error in Deallocation()"
+  !   RETURN
+  !ENDIF
+ !DEALLOCATE(CUgMatPrime,STAT=IErr)  
+  !IF( IErr.NE.0 ) THEN
+  !   PRINT*,"SimplexInitialisation (", my_rank, ") error in Deallocation()"
+  !   RETURN
+  !ENDIF
+  !DEALLOCATE(CUgMat,STAT=IErr)  
+  !IF( IErr.NE.0 ) THEN
+  !   PRINT*,"SimplexInitialisation (", my_rank, ") error in Deallocation()"
+  !   RETURN
+  !ENDIF
   
 END FUNCTION SimplexFunction
 
@@ -729,11 +724,10 @@ SUBROUTINE CreateImagesAndWriteOutput(IIterationCount,IExitFLAG,IErr)
   ENDIF
   !this only needs deallocation at felixrefine exit
   !DEALLOCATE(RMask,STAT=IErr)
-  IF( IErr.NE.0 ) THEN
-     PRINT*,"CreateImagesAndWriteOutput(",my_rank,")error deallocating RMask"
-     RETURN
-  ENDIF
-
+  !IF( IErr.NE.0 ) THEN
+  !   PRINT*,"CreateImagesAndWriteOutput(",my_rank,")error deallocating RMask"
+  !   RETURN
+  !ENDIF
   
 !!$     OUTPUT -------------------------------------  
   CALL WriteIterationOutput(IIterationCount,IThicknessIndex,IExitFLAG,IErr)
@@ -743,22 +737,23 @@ SUBROUTINE CreateImagesAndWriteOutput(IIterationCount,IExitFLAG,IErr)
   ENDIF
 
 !!$     FINISH OUTPUT  --------------------------------
-  
-  DEALLOCATE(RIndividualReflections,STAT=IErr)
+
+  DEALLOCATE(RIndividualReflections,STAT=IErr)!RB deallocate output images
   IF( IErr.NE.0 ) THEN
      PRINT*,"CreateImagesAndWriteOutput(",my_rank,")error deallocating RIndividualReflections"
      RETURN
   ENDIF
-  DEALLOCATE(IPixelLocations,STAT=IErr)
-  IF( IErr.NE.0 ) THEN
-     PRINT*,"CreateImagesAndWriteOutput(",my_rank,")error deallocating IPixelLocations"
-     RETURN
-  ENDIF
-  DEALLOCATE(Rhkl,STAT=IErr)
-  IF( IErr.NE.0 ) THEN
-     PRINT*,"CreateImagesAndWriteOutput(",my_rank,")error deallocating Rhkl"
-     RETURN
-  ENDIF
+  !RB now deallocated in felixrefine
+  ! DEALLOCATE(IPixelLocations,STAT=IErr)
+  !IF( IErr.NE.0 ) THEN
+  !   PRINT*,"CreateImagesAndWriteOutput(",my_rank,")error deallocating IPixelLocations"
+  !   RETURN
+  !ENDIF
+!  DEALLOCATE(Rhkl,STAT=IErr)
+  !IF( IErr.NE.0 ) THEN
+  !   PRINT*,"CreateImagesAndWriteOutput(",my_rank,")error deallocating Rhkl"
+  !   RETURN
+  !ENDIF
 
 END SUBROUTINE CreateImagesAndWriteOutput
 
