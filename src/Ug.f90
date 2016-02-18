@@ -65,8 +65,10 @@ SUBROUTINE GMatrixInitialisation (IErr)
   ENDDO
   !Ug take the 2 pi back out of the magnitude...   
   RgMatMag = RgMatMag/TWOPI
-  !Ug for symmetry determination
-  RgSumMat = SUM(ABS(RgMatMat),3)
+  !For symmetry determination, only in Ug refinement
+  IF((IRefineModeSelectionArray(1).EQ.1)) THEN
+    RgSumMat = SUM(ABS(RgMatMat),3)
+  END IF
   
 END SUBROUTINE GMatrixInitialisation
 
@@ -175,7 +177,6 @@ SUBROUTINE StructureFactorInitialisation (IErr)
 
            SELECT CASE (IScatterFactorMethodFLAG)! calculate f_e(q) as in Eq. C.15 of Kirkland, "Advanced Computing in EM"
 
-
            CASE(0) ! Kirkland Method using 3 Gaussians and 3 Lorentzians
               RAtomicFormFactor = ZERO
               DO knd = 1,3
@@ -187,10 +188,8 @@ SUBROUTINE StructureFactorInitialisation (IErr)
                  oddindgauss = oddindlorentz + 6
                  !Kirkland Method uses summation of 3 Gaussians and 3 Lorentzians (summed in loop)
                  RAtomicFormFactor = RAtomicFormFactor + &
-                                !3 Lorentzians
                       LORENTZIAN(RScattFactors(ICurrentAtom,oddindlorentz), RgMatMag(ind,jnd),ZERO,&
                       RScattFactors(ICurrentAtom,evenindlorentz))+ &
-                                !3 Gaussians
                       GAUSSIAN(RScattFactors(ICurrentAtom,oddindgauss),RgMatMag(ind,jnd),ZERO, & 
                       1/(SQRT(2*RScattFactors(ICurrentAtom,evenindgauss))),ZERO)
               END DO
@@ -200,7 +199,6 @@ SUBROUTINE StructureFactorInitialisation (IErr)
               DO knd = 1, 4
                  !Peng Method uses summation of 4 Gaussians
                  RAtomicFormFactor = RAtomicFormFactor + &
-                                !4 Gaussians
                       GAUSSIAN(RScattFactors(ICurrentAtom,knd),RgMatMag(ind,jnd),ZERO, & 
                       SQRT(2/RScattFactors(ICurrentAtom,knd+4)),ZERO)
               END DO
@@ -212,7 +210,6 @@ SUBROUTINE StructureFactorInitialisation (IErr)
                  oddindgauss = knd*2 -1
                  !Doyle &Turner uses summation of 4 Gaussians
                  RAtomicFormFactor = RAtomicFormFactor + &
-                                !4 Gaussians
                       GAUSSIAN(RScattFactors(ICurrentAtom,oddindgauss),RgMatMag(ind,jnd),ZERO, & 
                       SQRT(2/RScattFactors(ICurrentAtom,evenindgauss)),ZERO)
               END DO
@@ -229,9 +226,8 @@ SUBROUTINE StructureFactorInitialisation (IErr)
               END DO
 
            END SELECT
-
+  !PRINT*,"RB StructureFactorInitialisation!"
            ! initialize potential as in Eq. (6.10) of Kirkland
-
            RAtomicFormFactor = RAtomicFormFactor*ROcc(lnd)
            IF (IAnisoDebyeWallerFactorFlag.EQ.0) THEN
               IF(RDWF(lnd).GT.10.OR.RDWF(lnd).LT.0) THEN
@@ -251,7 +247,8 @@ SUBROUTINE StructureFactorInitialisation (IErr)
                 DOT_PRODUCT(RgMatMat(ind,jnd,:), RrVecMat(lnd,:)) &
                 )
         ENDDO
-        CUgMatNoAbs(ind,jnd)=((((TWOPI**2)* RRelativisticCorrection) / &!Ug
+  !PRINT*,"RB StructureFactorInitialisation2"
+  CUgMatNoAbs(ind,jnd)=((((TWOPI**2)* RRelativisticCorrection) / &!Ug
              (PI * RVolume)) * CVgij)
      ENDDO
   ENDDO
@@ -265,7 +262,7 @@ SUBROUTINE StructureFactorInitialisation (IErr)
   DO ind=1,nReflections!Ug now halve the diagonal again
      CUgMatNoAbs(ind,ind)=CUgMatNoAbs(ind,ind)-RMeanInnerCrystalPotential!Ug
   ENDDO
-  
+
   RMeanInnerPotentialVolts = RMeanInnerCrystalPotential*(((RPlanckConstant**2)/ &
        (TWO*RElectronMass*RElectronCharge*TWOPI**2))*&
        RAngstromConversion*RAngstromConversion)

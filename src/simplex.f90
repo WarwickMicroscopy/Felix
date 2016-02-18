@@ -81,9 +81,18 @@ SUBROUTINE NDimensionalDownhillSimplex(RSimplexVolume,y,mp,np,ndim,ftol,iter,RSt
      END IF
      
      !CALL SaveSimplex(RSimplexVolume,y,np,RStandardDeviation,RMean,iter,IErr)
-    
      PRINT*,"--------------------------------"
-     WRITE(SPrintString,FMT='(A10,I4,A18,F7.5))') "Iteration ",iter,", figure of merit ",ytry
+     IF (iter.EQ.1) THEN    
+       WRITE(SPrintString,FMT='(A15)') "First iteration"
+	 ELSE IF (iter.LT.10) THEN
+       WRITE(SPrintString,FMT='(A10,I1,A18,F7.5)') "Iteration ",iter,", figure of merit ",ytry
+	 ELSE IF (iter.LT.100) THEN
+       WRITE(SPrintString,FMT='(A10,I2,A18,F7.5)') "Iteration ",iter,", figure of merit ",ytry
+	 ELSE IF (iter.LT.1000) THEN
+       WRITE(SPrintString,FMT='(A10,I3,A18,F7.5)') "Iteration ",iter,", figure of merit ",ytry
+	 ELSE
+       WRITE(SPrintString,FMT='(A10,I5,A18,F7.5)') "Iteration ",iter,", figure of merit ",ytry
+	 END IF
      PRINT*,TRIM(ADJUSTL(SPrintString))
      PRINT*,"--------------------------------"
 
@@ -203,8 +212,7 @@ SUBROUTINE OpenSimplexOutput(IErr)
 
   WRITE(filename,*) "fr-Simplex.txt"
 
-  OPEN(UNIT=IChOutSimplex,STATUS='UNKNOWN',&
-        FILE=TRIM(ADJUSTL(filename)))
+  OPEN( UNIT=IChOutSimplex,STATUS='UNKNOWN',FILE=TRIM( ADJUSTL(filename)) )
 
 END SUBROUTINE OpenSimplexOutput
 

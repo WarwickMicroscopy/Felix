@@ -73,39 +73,20 @@ SUBROUTINE StructureFactorSetup(IErr)
      PRINT*,"StructureFactorSetup(",my_rank,")error allocating RgMatMag"
      RETURN
   END IF
-!RB  NB Also deallocated in felixfunction!!!
-  ALLOCATE(RgSumMat(nReflections,nReflections),STAT=IErr)  !RB Matrix of sums of indices - for symmetry equivalence  
-  IF( IErr.NE.0 ) THEN
+!RB Matrix of sums of indices - for symmetry equivalence  in the Ug matrix, only for Ug refinement
+  IF(IRefineModeSelectionArray(1).EQ.1) THEN
+    ALLOCATE(RgSumMat(nReflections,nReflections),STAT=IErr)  
+    IF( IErr.NE.0 ) THEN
      PRINT*,"StructureFactorSetup(",my_rank,")error allocating RgSumMat"
      RETURN
-  END IF  
+    END IF  
+  END IF
 
   CALL GMatrixInitialisation (IErr)
   IF( IErr.NE.0 ) THEN
      PRINT*,"StructureFactorSetup(",my_rank,")error in GMatrixInitialisation"
      RETURN
   END IF
-
-  
-  !RB  NB Also deallocated in felixfunction!!!
-  !Allocation--------------------------------------------------------
-  ALLOCATE(CUgMat(nReflections,nReflections),STAT=IErr)  !RB Matrix including absorption
-  IF( IErr.NE.0 ) THEN
-     PRINT*,"StructureFactorSetup(",my_rank,")error allocating CUgMat"
-     RETURN
-  END IF
-  !RB Matrix without absorption
-  ALLOCATE(CUgMatNoAbs(nReflections,nReflections),STAT=IErr)
-  IF( IErr.NE.0 ) THEN
-     PRINT*,"StructureFactorSetup(",my_rank,")error allocating CUgMatNoAbs"
-     RETURN
-  END IF
-  !RB Matrix for absorption  
-  ALLOCATE(CUgMatPrime(nReflections,nReflections),STAT=IErr)
-  IF( IErr.NE.0 ) THEN
-     PRINT*,"StructureFactorSetup(",my_rank,")error allocating CUgMatPrime"
-     RETURN
-  END IF  
 
   CALL StructureFactorInitialisation (IErr)
   IF( IErr.NE.0 ) THEN
@@ -129,5 +110,5 @@ SUBROUTINE StructureFactorSetup(IErr)
      PRINT*,"StructureFactorSetup(",my_rank,")error deallocating RrVecMat"
      RETURN
   ENDIF
- 
+
 END SUBROUTINE StructureFactorSetup

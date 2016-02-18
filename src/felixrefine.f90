@@ -143,7 +143,7 @@ PROGRAM Felixrefine
     PRINT*,"felixrefine(",my_rank,") error in MicroscopySettings"
     GOTO 9999
   ENDIF  
-  
+ 
   CALL CrystalLatticeVectorDetermination(IErr)
   IF( IErr.NE.0 ) THEN
      PRINT*,"felixrefine(",my_rank,")error in CrystalLatticeVectorDetermination"
@@ -314,7 +314,7 @@ RFullIsotropicDebyeWallerFactor,IFullAtomicNumber,IFullAnisotropicDWFTensor)
      PRINT*,"felixrefine(",my_rank,")error in DiffractionPatternCalculation"
      GOTO 9999
   END IF
- 
+
   !acceptance angle
   IF(RAcceptanceAngle.NE.ZERO.AND.IZOLZFLAG.EQ.1) THEN
      RMaxAcceptanceGVecMag=(RElectronWaveVectorMagnitude*TAN(RAcceptanceAngle*DEG2RADIAN))
@@ -346,12 +346,32 @@ RFullIsotropicDebyeWallerFactor,IFullAtomicNumber,IFullAnisotropicDWFTensor)
   ENDDO
 
 !zz temp deallocation to get it to work
-DEALLOCATE(RgPoolMagLaue)!
-IF (RAcceptanceAngle.NE.ZERO.AND.IZOLZFLAG.EQ.0) THEN
-  DEALLOCATE(IOriginGVecIdentifier)
+  DEALLOCATE(RgPoolMagLaue)!
+  IF (RAcceptanceAngle.NE.ZERO.AND.IZOLZFLAG.EQ.0) THEN
+    DEALLOCATE(IOriginGVecIdentifier)
     PRINT*,"felixrefine deallocating IOriginGVecIdentifier"
-END IF
+  END IF
 
+
+  !Calculate Ug matrix--------------------------------------------------------
+  ALLOCATE(CUgMat(nReflections,nReflections),STAT=IErr)  !RB Matrix including absorption
+  IF( IErr.NE.0 ) THEN
+     PRINT*,"felixrefine(",my_rank,")error allocating CUgMat"
+     RETURN
+  END IF
+  !RB Matrix without absorption
+  ALLOCATE(CUgMatNoAbs(nReflections,nReflections),STAT=IErr)
+  IF( IErr.NE.0 ) THEN
+     PRINT*,"felixrefine(",my_rank,")error allocating CUgMatNoAbs"
+     RETURN
+  END IF
+  !RB Absorption  
+  ALLOCATE(CUgMatPrime(nReflections,nReflections),STAT=IErr)
+  IF( IErr.NE.0 ) THEN
+     PRINT*,"felixrefine(",my_rank,")error allocating CUgMatPrime"
+     RETURN
+  END IF
+  
   CALL StructureFactorSetup(IErr)
   IF( IErr.NE.0 ) THEN
      PRINT*,"felixrefine(",my_rank,")error in StructureFactorSetup"
@@ -359,7 +379,7 @@ END IF
   END IF
   
 !zz temp deallocation to get it to work
-DEALLOCATE(IAnisoDWFT,IAtoms,ROcc,RDWF)!
+!DEALLOCATE(IAnisoDWFT),RDWF,IAtoms,ROcc
 
   IF(IAbsorbFLAG.NE.0) THEN
      CALL StructureFactorsWithAbsorption(IErr)
@@ -376,11 +396,15 @@ DEALLOCATE(IAnisoDWFT,IAtoms,ROcc,RDWF)!
         GOTO 9999
      END IF
   END IF
+  
+  IF(IRefineModeSelectionArray(1).EQ.1) THEN!RB don't need consituent parts of Ug matrix for Ug refinement
+    DEALLOCATE(CUgMatNoAbs,CUgMatPrime,STAT=IErr)
+  END IF
 
 !Now change StructureFactorRefinementSetup fr722 and UpdateStructureFactors ff1040
  
 !zz not deallocating ISymmetryRelations,IEquivalentUgKey,CUgToRefine,RgSumMat,CUgMat,
-!CUgMatNoAbs,CUgMatPrime,Rhkl,RgPoolMag,RgPoolT,
+!Rhkl,RgPoolMag,RgPoolT,
 
   !--------------------------------------------------------------------
   ! Setup Simplex Variables
@@ -417,7 +441,8 @@ DEALLOCATE(IAnisoDWFT,IAtoms,ROcc,RDWF)!
        IRefineModeSelectionArray(10)
   INoofElementsForEachRefinementType(11) = &
        IRefineModeSelectionArray(11)
-  
+ 
+  !Number of independent variables
   IIndependentVariables = SUM(INoofElementsForEachRefinementType)
   IF(my_rank.EQ.0) THEN
     IF ( IIndependentVariables.EQ.1 ) THEN 
@@ -542,8 +567,13 @@ DEALLOCATE(IAnisoDWFT,IAtoms,ROcc,RDWF)!
      PRINT*,"felixrefine(",my_rank,") error deallocating RImageExpi"
      GOTO 9999
   ENDIF
-  DEALLOCATE(ISymmetryRelations,IEquivalentUgKey,CUgToRefine,RgSumMat,CUgMat,&
-    CUgMatNoAbs,CUgMatPrime,Rhkl,RgPoolMag,RgPoolT)
+
+  DEALLOCATE(ISymmetryRelations,IEquivalentUgKey,CUgToRefine)
+  DEALLOCATE(Rhkl,RgPoolMag,RgPoolT,CUgMat)
+  IF (IRefineModeSelectionArray(1).EQ.1) THEN
+    DEALLOCATE(RgSumMat)
+  END IF  
+	
   !--------------------------------------------------------------------
   ! finish off
   !--------------------------------------------------------------------
@@ -829,7 +859,7 @@ SUBROUTINE RankSymmetryRelatedStructureFactor(IErr)
   IF((IWriteFLAG.GE.10.AND.my_rank.EQ.0).OR.IWriteFLAG.GE.10) THEN
      PRINT*,"RankSymmetryRelatedStructureFactor(",my_rank,")"
   END IF
-  
+
   ALLOCATE(ISymmetryRelations(nReflections,nReflections),STAT=IErr)
   IF( IErr.NE.0 ) THEN
      PRINT*,"RankSymmetryRelatedStructureFactor(",my_rank,")error allocating ISymmetryRelations"
@@ -915,7 +945,7 @@ SUBROUTINE SimplexInitialisation(RSimplexVolume,RSimplexFoM,RIndependentVariable
      PRINT*,"SimplexInitialisation(",my_rank,")"
   END IF
 
-  CALL FelixFunction(LInitialSimulationFLAG,IErr)!RB first thing!!
+  CALL FelixFunction(LInitialSimulationFLAG,IErr)
   IF( IErr.NE.0 ) THEN
      PRINT*,"SimplexInitialisation(",my_rank,")error in FelixFunction"
      RETURN
@@ -936,13 +966,13 @@ SUBROUTINE SimplexInitialisation(RSimplexVolume,RSimplexFoM,RIndependentVariable
         RETURN
      ENDIF
   END IF
- 
+
   CALL RefinementVariableSetup(RIndependentVariableValues,IErr)
   IF( IErr.NE.0 ) THEN
      PRINT*,"SimplexInitialisation(", my_rank, ") error in RefinementVariableSetup()"
      RETURN
   ENDIF
-  
+ 
   IF(IRefineModeSelectionArray(1).EQ.1) THEN
      CALL StructureFactorRefinementSetup(RIndependentVariableValues,IIterationCount,IErr)
      IF( IErr.NE.0 ) THEN
@@ -952,7 +982,7 @@ SUBROUTINE SimplexInitialisation(RSimplexVolume,RSimplexFoM,RIndependentVariable
   ENDIF
 
 !!$ RandomSequence
-  IF(IContinueFLAG.EQ.0) THEN
+  !IF(IContinueFLAG.EQ.0) THEN
      IF(my_rank.EQ.0) THEN
         CALL CreateRandomisedSimplex(RSimplexVolume,RIndependentVariableValues,IErr)
         CALL MPI_BCAST(RSimplexVolume,(IIndependentVariables+1)*(IIndependentVariables),MPI_DOUBLE_PRECISION,0,MPI_COMM_WORLD,IErr)
@@ -961,7 +991,6 @@ SUBROUTINE SimplexInitialisation(RSimplexVolume,RSimplexFoM,RIndependentVariable
      END IF
 
      DO ind = 1,(IIndependentVariables+1)
-        
         IF((IWriteFLAG.GE.0.AND.my_rank.EQ.0).OR.IWriteFLAG.GE.10) THEN
            PRINT*,"--------------------------------"
            WRITE(SPrintString,FMT='(A8,I2,A4,I3)') "Simplex ",ind," of ",IIndependentVariables+1
@@ -970,28 +999,27 @@ SUBROUTINE SimplexInitialisation(RSimplexVolume,RSimplexFoM,RIndependentVariable
         END IF
         RSimplexDummy = SimplexFunction(RSimplexVolume(ind,:),1,0,IErr)
         IF( IErr.NE.0 ) THEN
-           PRINT*,"SimplexInitialisation(", my_rank, ") error in SimplexFunction()"
+           PRINT*,"SimplexInitialisation(",my_rank,") error in SimplexFunction"
            RETURN
         ENDIF
         RStandardTolerance = RStandardError(RStandardDeviation,RMean,RSimplexDummy,IErr)
         RSimplexFoM(ind) =  RSimplexDummy
-        
         IF((IWriteFLAG.GE.0.AND.my_rank.EQ.0).OR.IWriteFLAG.GE.10) THEN
           WRITE(SPrintString,FMT='(A16,F7.5))') "Figure of merit ",RSimplexFoM(ind)
           PRINT*,TRIM(ADJUSTL(SPrintString))
         END IF
      END DO
 
-  ELSE
+  !ELSE
     
-     CALL RecoverSavedSimplex(RSimplexVolume,RSimplexFoM,RStandardDeviation,RMean,IIterationCount,IErr)
-     IF( IErr.NE.0 ) THEN
-        PRINT*,"SimplexInitialisation (", my_rank, ") error in RecoverSavedSimplex()"
-        RETURN
-     ENDIF
+   !  CALL RecoverSavedSimplex(RSimplexVolume,RSimplexFoM,RStandardDeviation,RMean,IIterationCount,IErr)
+   !  IF( IErr.NE.0 ) THEN
+   !     PRINT*,"SimplexInitialisation (", my_rank, ") error in RecoverSavedSimplex()"
+   !     RETURN
+   !  ENDIF
      
-  END IF
-       
+  !END IF
+     
 END SUBROUTINE SimplexInitialisation
 
 !%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%

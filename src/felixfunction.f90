@@ -71,11 +71,23 @@ SUBROUTINE FelixFunction(LInitialSimulationFLAG,IErr)
  
   IDiffractionFLAG = 0!what does this mean
 
-  IF((IRefineModeSelectionArray(1).EQ.1)) THEN!.AND.(LInitialSimulationFLAG.NEQV..TRUE.)) THEN
+  IF((IRefineModeSelectionArray(1).EQ.1)) THEN!RB Ug refinement, replace selected Ug's
      CALL ApplyNewStructureFactors(IErr)
      IF( IErr.NE.0 ) THEN
-        PRINT*,"felixfunction(",my_rank,")error in ApplyNewStructureFactors()"
-        RETURN
+       PRINT*,"felixfunction(",my_rank,")error in ApplyNewStructureFactors()"
+       RETURN
+     END IF
+  ELSE!RB other refinement, recalculate Ug pool matrix
+
+     CALL StructureFactorSetup(IErr)
+     IF( IErr.NE.0 ) THEN
+       PRINT*,"felixfunction(",my_rank,")error in StructureFactorInitialisation"
+       RETURN
+     END IF
+     CALL StructureFactorsWithAbsorption (IErr) 
+     IF( IErr.NE.0 ) THEN
+       PRINT*,"felixfunction(",my_rank,")error in StructureFactorsWithAbsorption()"
+       RETURN
      END IF
   END IF
 
@@ -217,9 +229,7 @@ SUBROUTINE FelixFunction(LInitialSimulationFLAG,IErr)
      RIndividualReflections = RIndividualReflectionsRoot
   END IF
 
-  !--------------------------------------------------------------------
-  ! free memory
-  !--------------------------------------------------------------------
+
   !Dellocate local Variables !RB RIndividualReflections stays allocated until the images are written
   DEALLOCATE(IDisplacements,STAT=IErr)
   IF( IErr.NE.0 ) THEN
