@@ -62,7 +62,7 @@ PROGRAM felixsim
        ILocalPixelCountMin, ILocalPixelCountMax
   INTEGER :: IStartTime, ICurrentTime ,IRate
   INTEGER(IKIND), DIMENSION(:), ALLOCATABLE :: IDisplacements,ICount
-  REAL(RKIND),DIMENSION(:,:,:),ALLOCATABLE :: RIndividualReflectionsRoot,&
+  REAL(RKIND),DIMENSION(:,:,:),ALLOCATABLE :: RSimulatedPatterns,&
        RFinalMontageImageRoot
   COMPLEX(CKIND),DIMENSION(:,:,:), ALLOCATABLE :: CAmplitudeandPhaseRoot
   CHARACTER*40 surname, my_rank_string 
@@ -314,7 +314,7 @@ PROGRAM felixsim
   !   PRINT*,"felixsim : ",my_rank," is exiting calculation loop"
   !END IF
 
-  ALLOCATE(RIndividualReflectionsRoot(INoOfLacbedPatterns,IThicknessCount,IPixelTotal),&
+  ALLOCATE(RSimulatedPatterns(INoOfLacbedPatterns,IThicknessCount,IPixelTotal),&
        STAT=IErr)
   IF( IErr.NE.0 ) THEN
      PRINT*,"felixsim(", my_rank, ") error ", IErr, &
@@ -333,7 +333,7 @@ PROGRAM felixsim
      CAmplitudeandPhaseRoot = CZERO
   END IF
 
-  RIndividualReflectionsRoot = ZERO
+  RSimulatedPatterns = ZERO
 
   ALLOCATE(IDisplacements(p),ICount(p),STAT=IErr)
   IF( IErr.NE.0 ) THEN
@@ -349,7 +349,7 @@ PROGRAM felixsim
 
   IF(IImageFLAG.LE.2) THEN
      CALL MPI_GATHERV(RIndividualReflections,SIZE(RIndividualReflections),&
-          MPI_DOUBLE_PRECISION,RIndividualReflectionsRoot,&
+          MPI_DOUBLE_PRECISION,RSimulatedPatterns,&
           ICount,IDisplacements,MPI_DOUBLE_PRECISION,0,&
           MPI_COMM_WORLD,IErr)
      IF( IErr.NE.0 ) THEN
@@ -401,12 +401,12 @@ PROGRAM felixsim
   END IF
 
   IF(my_rank.EQ.0.AND.IImageFLAG.GE.3) THEN
-     RIndividualReflectionsRoot = &
+     RSimulatedPatterns = &
           CAmplitudeandPhaseRoot * CONJG(CAmplitudeandPhaseRoot)
   END IF
 
   IF(my_rank.EQ.0) THEN
-     CALL MontageSetup(RFinalMontageImageRoot,RIndividualReflectionsRoot,IErr)
+     CALL MontageSetup(RFinalMontageImageRoot,RSimulatedPatterns,IErr)
      IF( IErr.NE.0 ) THEN
         PRINT*,"felixsim(", my_rank, ") error ", IErr, &
              " in MontageSetup"
@@ -420,7 +420,7 @@ PROGRAM felixsim
 
   IF (my_rank.EQ.0) THEN
 
-     CALL WriteOutput(CAmplitudeandPhaseRoot,RIndividualReflectionsRoot,RFinalMontageImageRoot,IErr)
+     CALL WriteOutput(CAmplitudeandPhaseRoot,RSimulatedPatterns,RFinalMontageImageRoot,IErr)
      IF( IErr.NE.0 ) THEN
         PRINT*,"felixsim(", my_rank, ") error ", IErr, &
              " in WriteOutput"
@@ -543,9 +543,9 @@ PROGRAM felixsim
      ENDIF
   END IF
 
-  DEALLOCATE(RIndividualReflectionsRoot,STAT=IErr) 
+  DEALLOCATE(RSimulatedPatterns,STAT=IErr) 
   IF( IErr.NE.0 ) THEN
-     PRINT*,"felixsim(", my_rank, ") error in Deallocation of RIndividualReflectionsRoot "
+     PRINT*,"felixsim(", my_rank, ") error in Deallocation of RSimulatedPatterns "
      GOTO 9999  
   ENDIF
   

@@ -550,10 +550,8 @@ SUBROUTINE WriteToScreenandFile(SStringtoWrite,IErr)
   
   IMPLICIT NONE
 
-  INTEGER(IKIND):: &
-       IErr
-  CHARACTER(*) :: &
-       SStringtoWrite
+  INTEGER(IKIND):: IErr
+  CHARACTER(*) :: SStringtoWrite
 
   PRINT*,TRIM(ADJUSTL(SStringtoWrite))
   WRITE(UNIT=IChInp,FMT='(A)') TRIM(ADJUSTL(SStringtoWrite))

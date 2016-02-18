@@ -19,7 +19,7 @@ IXDirectionFLAG           = 1
 IPixelCount               = 35
 
 # beam selection criteria
-IMinReflectionPool        = 69
+IMinReflectionPool        = 70
 IMinStrongBeams           = 10
 IMinWeakBeams             = 0
 RBSBMax                   = 0.1

@@ -226,7 +226,7 @@ SUBROUTINE StructureFactorInitialisation (IErr)
               END DO
 
            END SELECT
-  !PRINT*,"RB StructureFactorInitialisation!"
+
            ! initialize potential as in Eq. (6.10) of Kirkland
            RAtomicFormFactor = RAtomicFormFactor*ROcc(lnd)
            IF (IAnisoDebyeWallerFactorFlag.EQ.0) THEN
@@ -247,7 +247,7 @@ SUBROUTINE StructureFactorInitialisation (IErr)
                 DOT_PRODUCT(RgMatMat(ind,jnd,:), RrVecMat(lnd,:)) &
                 )
         ENDDO
-  !PRINT*,"RB StructureFactorInitialisation2"
+
   CUgMatNoAbs(ind,jnd)=((((TWOPI**2)* RRelativisticCorrection) / &!Ug
              (PI * RVolume)) * CVgij)
      ENDDO

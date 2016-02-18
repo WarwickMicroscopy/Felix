@@ -38,12 +38,11 @@
 
 !--------------------------------------------------------------------
 MODULE CConst
+
   CHARACTER*30, PARAMETER :: RStr= "Version :VERSION:, Build :BUILD:"
   CHARACTER*30, PARAMETER :: DStr= "Date :DATE:, :TIME:"
   CHARACTER*30, PARAMETER :: AStr= "Status :RLSTATUS:, Author :AUTHOR:"
-
   CHARACTER*8 CSpaceGrp(230)
-
   DATA CSpaceGrp/"P1","P-1","P2","P21","C2","Pm","Pc","Cm",&
        "Cc","P2/m","P21/m","C2/m","P2/c","P21/c","C2/c", &
        "P222","P2221","P21212","P212121","C2221","C222","F222", &
@@ -73,10 +72,8 @@ MODULE CConst
        "P4332","P4132","I4132","P-43m","F-43m","I-43m","P-43n","F-43c", &
        "I-43d","Pm-3m","Pn-3n","Pm-3n","Pn-3m","Fm-3m","Fm-3c","Fd-3m", &
        "Fd-3c","Im-3m","Ia-3d"/
-  
   CHARACTER*2 :: &
        SElementSymbolMatrix(103)
-  
   DATA SElementSymbolMatrix/" H", "He", "Li", "Be", " B", " C", " N", "O", "F", "Ne", &
        "Na", "Mg", "Al", "Si", "P", "S", "Cl", "Ar", "K", "Ca", &
        "Sc", "Ti", "V", "Cr", "Mn", "Fe", "Co", "Ni", "Cu", "Zn", &
@@ -88,10 +85,7 @@ MODULE CConst
         "Tl", "Pb", "Bi", "Po", "At", "Rn", "Fr", "Ra", "Ac", "Th", &
         "Pa", "U", "Np", "Pu", "Am", "Cm", "Bk", "Cf", "Es", "Fm",& 
         "Md","No","Lr"/
-
-  CHARACTER*8 :: &
-       CAlphabet(26)
-
+  CHARACTER*8 :: CAlphabet(26)
   DATA CAlphabet/"Aa","Bb","Cc","Dd","Ee","Ff","Gg","Hh","Ii","Jj","Kk","Ll",&
        "Mm","Nn","Oo","Pp","Qq","Rr","Ss","Tt","Uu","Vv","Ww","Xx","Yy","Zz"/
 
@@ -125,7 +119,6 @@ MODULE IConst
        ICritError = 6
 
 END MODULE IConst
-
 !--------------------------------------------------------------------
 MODULE RConst
   USE MyNumbers
@@ -137,11 +130,9 @@ MODULE RConst
        RPlanckConstant=REAL(6.62606957D-34,RKIND), &
        RElectronCharge=REAL(1.602176565D-19,RKIND), &
        RAngstromConversion=REAL(1.D10,RKIND)
-  REAL(RKIND), PARAMETER :: &
-       RTolerance =REAL( 1E-7,RKIND)
+  REAL(RKIND), PARAMETER :: RTolerance =REAL( 1E-7,RKIND)
     
 END MODULE RConst
-
 !--------------------------------------------------------------------
 MODULE IPara
   USE MyNumbers
@@ -149,7 +140,6 @@ MODULE IPara
   
   !Write Out
   INTEGER(IKIND) :: IMAXRBuffer,  IMAXCBuffer     
-  
   !Input Flags
   INTEGER(IKIND) :: IWriteFLAG,IDebugFLAG,IScatterFactorMethodFLAG, &
        IMaskFLAG, IVolumeFLAG, &
@@ -158,91 +148,67 @@ MODULE IPara
        IPseudoCubicFLAG,IXDirectionFLAG,IDevFLAG, &
        IRefineModeFLAG,ISoftwareMode,IHKLSelectFLAG,IPrint,IRefineSwitch,&
        IWeightingFLAG,IContinueFLAG,ICorrelationFLAG,IImageProcessingFLAG
-
   !Minimum Reflections etc
   INTEGER(IKIND) :: IMinReflectionPool,IMinStrongBeams,IMinWeakBeams
-
   !OtherFLAGS
   INTEGER(IKIND) :: IDiffractionFLAG=0
-
   !Disk Radius
-  INTEGER(IKIND) :: IPixelCount
-  
+  INTEGER(IKIND) :: IPixelCount 
   !Crystal Settings
   INTEGER(IKIND) :: ITotalAtoms
-
   ! Name2Atom index
   INTEGER(IKIND), DIMENSION(:), ALLOCATABLE :: IAtomicNumber,IAtoms
-
   !Microscope Settings
   INTEGER(IKIND) :: IIncidentBeamDirectionX, IIncidentBeamDirectionY, &
        IIncidentBeamDirectionZ, &
        IXDirectionX, IXDirectionY, IXDirectionZ, &
        INormalDirectionX,INormalDirectionY,INormalDirectionZ
-
   !Iterative Ug
   INTEGER(IKIND) :: INoofUgs
-
   !LACBED Input
-
   INTEGER(IKIND) :: INoOfLacbedPatterns
-
   !Beams from selection criteria
   INTEGER(IKIND) :: nReflections,nStrongBeams,nWeakBeams,nBeams,IHKLMAXValue
   INTEGER(IKIND), DIMENSION(:), ALLOCATABLE :: IAnisotropicDWFTensor, IAnisoDWFT
-
   !Main
   INTEGER(IKIND) :: IPixelTotal, INAtomsUnitCell,IPixelComputed
   INTEGER, DIMENSION(2) :: IImageSizeXY
-
   !Refinement FLAGS
   INTEGER(IKIND) :: IImageOutputFLAG
-  
   !LACBED
   INTEGER(IKIND),DIMENSION(:,:), ALLOCATABLE :: ILACBEDStrongBeamList, IPixelLocation, ISymmetryRelations
   INTEGER(IKIND),DIMENSION(:), ALLOCATABLE :: InBeams,IStrongBeamList,IOutputReflections,IEquivalentUgKey
-
   !inpcif
   INTEGER(IKIND) :: ISymCount
   INTEGER(IKIND), DIMENSION(:), ALLOCATABLE :: IFullAtomicNumber, IFullAnisotropicDWFTensor
   INTEGER(IKIND) :: IPixelCountTotal
-
   !LACBED Writing
   INTEGER(IKIND) :: ISeperateFolderFlag
-  
   ! Thickness loop Variables
   INTEGER(IKIND) :: IThicknessCount
   INTEGER(IKIND),DIMENSION(:,:),ALLOCATABLE :: IPixelLocations
-
   !Refine Parameters
   INTEGER(IKIND) :: IFluxIterationSteps,IElements
   INTEGER(IKIND), DIMENSION(2) :: IOffset
   INTEGER(IKIND), DIMENSION(:),ALLOCATABLE :: IElementList
-
   !Ug Calculation
   INTEGER(IKIND) :: ICurrentAtom,IAtom
-
   !Refinement   
   INTEGER(IKIND),DIMENSION(IRefinementVariableTypes) :: IRefineModeSelectionArray
   INTEGER(IKIND),DIMENSION(IRefinementVariableTypes) :: INoofElementsForEachRefinementType  !zz
   INTEGER(IKIND),DIMENSION(:,:),ALLOCATABLE :: IIterativeVariableUniqueIDs
-
    !List of Atomic Sites for Refinement
    INTEGER(IKIND),DIMENSION(:),ALLOCATABLE :: IAtomicSitesToRefine
-
    !Simplex Variables
    INTEGER(IKIND) :: IIndependentVariables
-
    ! Refinement Vectors
    INTEGER(IKIND) :: IAllowedVectors
    INTEGER(IKIND),DIMENSION(:),ALLOCATABLE :: IAllowedVectorIDs
-   INTEGER(IKIND) :: IFelixCount,IPreviousPrintedIteration,IStandardDeviationCalls
-   
+   INTEGER(IKIND) :: IFelixCount,IPreviousPrintedIteration,IStandardDeviationCalls  
    !Message Counter (Avoid subroutines printing out message more than once)
    INTEGER(IKIND) :: IMessageCounter=0
 
 END MODULE IPara
-
 !--------------------------------------------------------------------
 MODULE RPara
   USE MyNumbers
@@ -250,11 +216,9 @@ MODULE RPara
   USE IConst
 
   !INPUT Section
-  
   !Beam Selection Criteria
   REAL(RKIND) :: RBSMaxDeviationPara, RBSMaxGVecAmp, RBSBethePara, &
-       RBSBmax, RBSPMax
-  
+       RBSBmax, RBSPMax 
   !Crystallography
   REAL(RKIND) :: RLengthX,RLengthY,RLengthZ,RVolume,RAlpha,RBeta,RGamma, &
        RDebyeWallerConstant,RAbsorptionPercentage
@@ -263,32 +227,24 @@ MODULE RPara
   REAL(RKIND), DIMENSION(:,:), ALLOCATABLE :: RSymVec,RAtomSiteFracCoordVec, MNP,&
        RUniqueKey
   REAL(RKIND), DIMENSION(:,:,:), ALLOCATABLE :: RSymMat
-
   !Microscope Parameters
   REAL(RKIND) :: RConvergenceAngle, RAcceleratingVoltage,RInnerConvergenceAngle
   REAL(RKIND) :: RElectronVelocity, RElectronWaveLength, &
        RElectronWaveVectorMagnitude, RRelativisticCorrection, &
        RRelativisticMass, RBraggCentral, RAcceptanceAngle
-
   !LACBED
   REAL(RKIND) :: RInitialThickness,RFinalThickness,RDeltaThickness, &
        RInitialDebyeWallerFactor,RFinalDebyeWallerFactor,&
        RDeltaDebyeWallerFactor
-
   !Iterative Ugs
   REAL(RKIND) :: RPercentageUgChange
-
   !Debye Waller Factor not sure if we use this 
   REAL(RKIND) :: RMeanSquaredDisplacement
-
-
   !HKL indices 
   REAL(RKIND), DIMENSION(:,:), ALLOCATABLE :: Rhkl 
   REAL(RKIND), DIMENSION(:,:), ALLOCATABLE :: RInputHKLs
-
   ! scattering factors
   REAL(RKIND), DIMENSION(:,:), ALLOCATABLE :: RScattFactors 
-
   ! Crystallography 
   ! Real Space and Reciprocal Lattice Vectors in Orthogonal and Microscope
   ! reference framce
@@ -302,7 +258,6 @@ MODULE RPara
   REAL(RKIND) :: RBaseVec(THREEDIM,THREEDIM), &
        RInvBaseVec(THREEDIM,THREEDIM)
   REAL(RKIND), DIMENSION(:,:,:), ALLOCATABLE :: RAnisotropicDebyeWallerFactorTensor
-  
   !Diffraction Pattern Definitions
   REAL(RKIND), DIMENSION(:), ALLOCATABLE :: RgPoolMag, RSg
   REAL(RKIND), DIMENSION(:,:), ALLOCATABLE :: RgPool, RgPoolT, RgPoolMagLaueZone
@@ -310,11 +265,9 @@ MODULE RPara
   REAL(RKIND) :: RDeltaK, RMinimumGMag,RGVectorMagnitude
   REAL(RKIND),DIMENSION(THREEDIM) :: RGVector
   REAL(RKIND),DIMENSION(:),ALLOCATABLE :: RgVecVec
-
   !Image Initialisation
   REAL(RKIND),DIMENSION(:,:),ALLOCATABLE :: RhklPositions
   REAL(RKIND),DIMENSION(:,:,:),ALLOCATABLE :: RFinalMontageImage
-
   !Main Program
   REAL(RKIND) :: RMeanInnerCrystalPotential
   REAL(RKIND),DIMENSION(:,:),ALLOCATABLE :: RMask, RgMatMag, RgSumMat!RB
@@ -323,51 +276,41 @@ MODULE RPara
        RInnerIntegralLowerBound,RInnerIntegralUpperBound,&
        RInnerIntegrationParameterGMagPrime,&
        ROuterIntegrationParameterGMagPrime
-  
   !LACBED Program
   REAL(RKIND), DIMENSION(:,:), ALLOCATABLE :: RFullAtomicFracCoordVec
   REAL(RKIND), DIMENSION(:), ALLOCATABLE :: RFullPartialOccupancy, RFullIsotropicDebyeWallerFactor
-
   !WaveFunction Arrays
   REAL(RKIND),DIMENSION(:),ALLOCATABLE :: RWaveIntensity,RFullWaveIntensity
   REAL(RKIND), DIMENSION(:,:,:), ALLOCATABLE :: RIndividualReflections
-
   !Refinement Variables
   REAL(RKIND), DIMENSION(:,:),ALLOCATABLE :: RImageIn
   REAL(RKIND) :: RCrossCorrelation,RDeltaUgChange,RlowerBoundUgChange,RUpperBoundUgChange
-
   !Ug' Unique Values
   REAL(RKIND),DIMENSION(:),ALLOCATABLE :: RUniqueUgPrimeValues
-  
-  ! Experimental Images for felixrefine
+  ! Experimental Images
+  REAL(RKIND),DIMENSION(:,:,:),ALLOCATABLE :: RSimulatedPatterns  
+  ! Simulated Images
   REAL(RKIND),DIMENSION(:,:,:),ALLOCATABLE :: RImageExpi  
-
   !Iterative Variable Value
   REAL(RKIND) :: RValue
-
   !Refinement Vectors
   REAL(RKIND),DIMENSION(:,:),ALLOCATABLE :: RAllowedVectors
   REAL(RKIND),DIMENSION(:),ALLOCATABLE :: RAllowedVectorMagnitudes
   REAL(RKIND) :: RSimplexLengthScale,RExitCriteria,RSimplexStandardDeviation,RSimplexMean,RRSoSScalingFactor
-
   !Refinement Initial Coordinates
   REAL(RKIND),DIMENSION(:,:),ALLOCATABLE :: RInitialAtomSiteFracCoordVec
-
   !Weighting Coefficients for figure of merit combination
   REAL(RKIND),DIMENSION(:),ALLOCATABLE :: RWeightingCoefficients
 
 END MODULE RPara
-
-!!$%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-
+!--------------------------------------------------------------------
 MODULE CPara
 
   USE MyNumbers
 
   COMPLEX(CKIND), DIMENSION(:,:), ALLOCATABLE :: &
        CUgMatNoAbs,CUgMatPrime,CUgMat, CUgMatEffective,CEigenValuesChunk
-  COMPLEX(CKIND), DIMENSION(:,:,:), ALLOCATABLE :: &
-       CEigenVectorsChunk
+  COMPLEX(CKIND), DIMENSION(:,:,:), ALLOCATABLE :: CEigenVectorsChunk
   COMPLEX(CKIND),DIMENSION(:),ALLOCATABLE :: &
        CAlphaWeightingCoefficients, CPsi0,CUgToRefine
   COMPLEX(CKIND),DIMENSION(:,:), ALLOCATABLE :: &
@@ -375,77 +318,58 @@ MODULE CPara
        CBeamProjectionMatrix,CDummyBeamMatrix
   COMPLEX(CKIND),DIMENSION(:),ALLOCATABLE :: &
        CEigenValues,CGammaValues, CWaveFunctions,CFullWaveFunctions
-  COMPLEX(CKIND),DIMENSION(:,:),ALLOCATABLE :: &
-       CEigenVectors
-  COMPLEX(CKIND), DIMENSION(:,:,:), ALLOCATABLE :: &
-       CAmplitudeandPhase
+  COMPLEX(CKIND),DIMENSION(:,:),ALLOCATABLE :: CEigenVectors
+  COMPLEX(CKIND), DIMENSION(:,:,:), ALLOCATABLE :: CAmplitudeandPhase
 
 END MODULE CPara
-
 !--------------------------------------------------------------------
 MODULE SPara
   USE MyNumbers
   
   CHARACTER*1 :: SSpaceGroupName
   CHARACTER*10 :: SSpaceGrp
-  CHARACTER*2, DIMENSION(:), ALLOCATABLE :: SFullAtomicNameVec
-  
+  CHARACTER*2, DIMENSION(:), ALLOCATABLE :: SFullAtomicNameVec 
   CHARACTER*2, DIMENSION(:), ALLOCATABLE :: SAtomName, SMNP
-
   CHARACTER*1,DIMENSION(:),ALLOCATABLE :: SWyckoffSymbols
   
 END MODULE SPara
-
 !--------------------------------------------------------------------
 ! Input- and Outputchannels
 MODULE IChannels
-  INTEGER, PARAMETER :: &
-       IChInp= 40, &
+  INTEGER, PARAMETER :: IChInp= 40, &
        IChOutWF= 41, IChOutWI= 42, &
        IChOutEV= 43, IChOutEX= 44, &
        IChOutUM= 45, IChOut=46, &
        IChInImage = 51
-  INTEGER :: &
-       IChOutWF_MPI, IChOutWI_MPI, &
+  INTEGER :: IChOutWF_MPI, IChOutWI_MPI, &
        IChOutES_MPI, IChOutUM_MPI, &
        IChOut_MPI 
   INTEGER, PARAMETER :: &
        IChOutWFImageReal= 47, IChOutWFImagePhase= 48, &
        IChOutWIImage= 49, MontageOut = 50,IChOutSimplex = 52
 END MODULE IChannels
-
+!--------------------------------------------------------------------
 MODULE BlochPara
-  
+  ! eigen problem variables  
   USE MyNumbers
   USE IConst
   USE MPI
   USE MyMPI
-  
-  !--------------------------------------------------------------------
-  ! eigen problem variables
-  !--------------------------------------------------------------------
-  
-  REAL(RKIND) RBigK
-  
-  INTEGER(IKIND) IStrongBeamIndex, IWeakBeamIndex
-  INTEGER(IKIND),DIMENSION(:), ALLOCATABLE :: &
-       IWeakBeamList
-  REAL(RKIND),DIMENSION(:), ALLOCATABLE :: &
-       RDevPara
-  REAL(RKIND), DIMENSION(THREEDIM) :: &
-       RTiltedK
-  REAL(8), DIMENSION(:), ALLOCATABLE :: &
-       RROutArray, RIOutArray
-  COMPLEX(CKIND),DIMENSION(:,:), ALLOCATABLE :: &
-       CEigenSaveTemp
-END MODULE BlochPara
 
+  INTEGER(IKIND) IStrongBeamIndex, IWeakBeamIndex
+  INTEGER(IKIND),DIMENSION(:), ALLOCATABLE :: IWeakBeamList
+  REAL(RKIND) RBigK
+  REAL(RKIND),DIMENSION(:), ALLOCATABLE :: RDevPara
+  REAL(RKIND), DIMENSION(THREEDIM) :: RTiltedK
+  REAL(8), DIMENSION(:), ALLOCATABLE :: RROutArray, RIOutArray
+  COMPLEX(CKIND),DIMENSION(:,:), ALLOCATABLE :: CEigenSaveTemp
+END MODULE BlochPara
+!--------------------------------------------------------------------
 MODULE Refinement
 
 USE MyNumbers
 
-REAL(RKIND),PARAMETER :: &
-  RExitCondition = -10000.0,&
+REAL(RKIND),PARAMETER :: RExitCondition = -10000.0,&
   RStayCondition = 10000.0
 
 END MODULE 

@@ -73,14 +73,6 @@ SUBROUTINE StructureFactorSetup(IErr)
      PRINT*,"StructureFactorSetup(",my_rank,")error allocating RgMatMag"
      RETURN
   END IF
-!RB Matrix of sums of indices - for symmetry equivalence  in the Ug matrix, only for Ug refinement
-  IF(IRefineModeSelectionArray(1).EQ.1) THEN
-    ALLOCATE(RgSumMat(nReflections,nReflections),STAT=IErr)  
-    IF( IErr.NE.0 ) THEN
-     PRINT*,"StructureFactorSetup(",my_rank,")error allocating RgSumMat"
-     RETURN
-    END IF  
-  END IF
 
   CALL GMatrixInitialisation (IErr)
   IF( IErr.NE.0 ) THEN
@@ -105,10 +97,5 @@ SUBROUTINE StructureFactorSetup(IErr)
      PRINT*,"StructureFactorSetup(",my_rank,")error deallocating RgMatMag"
      RETURN
   END IF
-  DEALLOCATE(RrVecMat,STAT=IErr)
-  IF( IErr.NE.0 ) THEN
-     PRINT*,"StructureFactorSetup(",my_rank,")error deallocating RrVecMat"
-     RETURN
-  ENDIF
 
 END SUBROUTINE StructureFactorSetup

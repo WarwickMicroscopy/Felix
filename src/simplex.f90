@@ -20,8 +20,6 @@ SUBROUTINE NDimensionalDownhillSimplex(RSimplexVolume,y,mp,np,ndim,ftol,iter,RSt
   CHARACTER*200 :: SPrintString
 
   IF(my_rank.EQ.0) THEN
-     PRINT*,"Beginning Simplex"
-     PRINT*,"Iteration",iter
 1    DO n = 1,ndim
         sum = 0
         DO m=1,ndim+1
@@ -52,7 +50,6 @@ SUBROUTINE NDimensionalDownhillSimplex(RSimplexVolume,y,mp,np,ndim,ftol,iter,RSt
 
      RStandardTolerance = RStandardError(RStandardDeviation,RMean,ytry,IErr)
 
-!     PRINT*,"Current tolerance",rtol,ftol!RB,RStandardTolerance
      WRITE(SPrintString,FMT='(A14,F7.5,A14,F7.5)') "Simplex range ",rtol,", will end at ",ftol
      PRINT*,TRIM(ADJUSTL(SPrintString))
      IF(rtol.LT.ftol) THEN

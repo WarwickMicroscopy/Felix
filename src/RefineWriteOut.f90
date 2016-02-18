@@ -139,7 +139,7 @@ SUBROUTINE WriteIterationImages(path,IThicknessIndex,IErr)
      DO jnd = 1,IPixelTotal
         gnd = IPixelLocations(jnd,1)
         hnd = IPixelLocations(jnd,2)
-        RImage(gnd,hnd) = RIndividualReflections(ind,IThicknessIndex,jnd)
+        RImage(gnd,hnd) = RSimulatedPatterns(ind,IThicknessIndex,jnd)
      END DO
 
      CALL WriteReflectionImage(IChOutWIImage,&

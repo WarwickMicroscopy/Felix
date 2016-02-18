@@ -323,7 +323,6 @@ RFullIsotropicDebyeWallerFactor,IFullAtomicNumber,IFullAnisotropicDWFTensor)
      ELSE
         RBSMaxGVecAmp = RgPoolMag(IMinReflectionPool)
      END IF
-
   ELSEIF(RAcceptanceAngle.NE.ZERO.AND.IZOLZFLAG.EQ.0) THEN
      IBSMaxLocGVecAmp=MAXVAL(IOriginGVecIdentifier)
      RBSMaxGVecAmp=RgPoolMag(IBSMaxLocGVecAmp)
@@ -335,6 +334,9 @@ RFullIsotropicDebyeWallerFactor,IFullAtomicNumber,IFullAnisotropicDWFTensor)
   ELSE
      RBSMaxGVecAmp = RgPoolMag(IMinReflectionPool)
   END IF
+  
+  IThicknessCount= (RFinalThickness-RInitialThickness)/RDeltaThickness + 1
+
   !count reflections up to cutoff magnitude
   nReflections = 0
   nStrongBeams = 0
@@ -371,6 +373,14 @@ RFullIsotropicDebyeWallerFactor,IFullAtomicNumber,IFullAnisotropicDWFTensor)
      PRINT*,"felixrefine(",my_rank,")error allocating CUgMatPrime"
      RETURN
   END IF
+!RB Matrix of sums of indices - for symmetry equivalence  in the Ug matrix, only for Ug refinement
+  IF(IRefineModeSelectionArray(1).EQ.1) THEN
+    ALLOCATE(RgSumMat(nReflections,nReflections),STAT=IErr)  
+    IF( IErr.NE.0 ) THEN
+     PRINT*,"StructureFactorSetup(",my_rank,")error allocating RgSumMat"
+     RETURN
+    END IF  
+  END IF
   
   CALL StructureFactorSetup(IErr)
   IF( IErr.NE.0 ) THEN
@@ -378,6 +388,7 @@ RFullIsotropicDebyeWallerFactor,IFullAtomicNumber,IFullAnisotropicDWFTensor)
      GOTO 9999
   END IF
   
+
 !zz temp deallocation to get it to work
 !DEALLOCATE(IAnisoDWFT),RDWF,IAtoms,ROcc
 
@@ -390,17 +401,15 @@ RFullIsotropicDebyeWallerFactor,IFullAtomicNumber,IFullAnisotropicDWFTensor)
   END IF
 
   IF(IRefineModeSelectionArray(1).EQ.1) THEN !It's a Ug refinement
-     CALL RankSymmetryRelatedStructureFactor(IErr)
+  DEALLOCATE(RrVecMat,STAT=IErr)!Don't need this any more
+  CALL RankSymmetryRelatedStructureFactor(IErr)
      IF( IErr.NE.0 ) THEN
         PRINT*,"felixrefine(",my_rank,")error in RankSymmetryRelatedStructureFactor"
         GOTO 9999
      END IF
+    DEALLOCATE(CUgMatNoAbs,CUgMatPrime,STAT=IErr)!Don't need this any more
   END IF
   
-  IF(IRefineModeSelectionArray(1).EQ.1) THEN!RB don't need consituent parts of Ug matrix for Ug refinement
-    DEALLOCATE(CUgMatNoAbs,CUgMatPrime,STAT=IErr)
-  END IF
-
 !Now change StructureFactorRefinementSetup fr722 and UpdateStructureFactors ff1040
  
 !zz not deallocating ISymmetryRelations,IEquivalentUgKey,CUgToRefine,RgSumMat,CUgMat,
@@ -491,6 +500,22 @@ RFullIsotropicDebyeWallerFactor,IFullAtomicNumber,IFullAnisotropicDWFTensor)
      PRINT*,"felixrefine(",my_rank,") error in ImageSetup"
      RETURN
   END IF 
+  !All the individual calculations go into these root images later with MPI_GATHERV
+  ALLOCATE(RSimulatedPatterns(INoOfLacbedPatterns,IThicknessCount,IPixelTotal),STAT=IErr)
+  IF( IErr.NE.0 ) THEN
+     PRINT*,"felixrefine(",my_rank,")error allocating Root Reflections"
+     RETURN
+  END IF
+  RSimulatedPatterns = ZERO
+  !IF(IImageFLAG.GE.3) THEN!RB Bloch wave amplitude and phase, to be sorted out if desired later
+  !   ALLOCATE(CAmplitudeandPhaseRoot(INoOfLacbedPatterns,IThicknessCount,IPixelTotal),&
+  !        STAT=IErr)
+  !   IF( IErr.NE.0 ) THEN
+  !      PRINT*,"Felixfunction(",my_rank,")error allocating Root Amplitude and Phase"
+  !      RETURN
+  !   END IF
+  !   CAmplitudeandPhaseRoot = CZERO
+  !END IF
 
   !--------------------------------------------------------------------
   ! Allocate memory for deviation parameter and bloch calc in main loop
@@ -567,11 +592,20 @@ RFullIsotropicDebyeWallerFactor,IFullAtomicNumber,IFullAnisotropicDWFTensor)
      PRINT*,"felixrefine(",my_rank,") error deallocating RImageExpi"
      GOTO 9999
   ENDIF
+!  IF(IImageFLAG.GE.3) THEN!RB Bloch wave amplitude and phase, to be sorted out if desired later
+!     DEALLOCATE(CAmplitudeandPhaseRoot,STAT=IErr)     
+!     IF( IErr.NE.0 ) THEN
+!        PRINT*,"Felixfunction(",my_rank,")error deallocating CAmplitudeandPhase"
+!        RETURN  
+!     END IF
+!  END IF
 
   DEALLOCATE(ISymmetryRelations,IEquivalentUgKey,CUgToRefine)
-  DEALLOCATE(Rhkl,RgPoolMag,RgPoolT,CUgMat)
+  DEALLOCATE(Rhkl,RgPoolMag,RgPoolT,CUgMat,RSimulatedPatterns)
   IF (IRefineModeSelectionArray(1).EQ.1) THEN
     DEALLOCATE(RgSumMat)
+  ELSE
+	DEALLOCATE(RrVecMat,CUgMatNoAbs,CUgMatPrime)
   END IF  
 	
   !--------------------------------------------------------------------
@@ -587,16 +621,14 @@ RFullIsotropicDebyeWallerFactor,IFullAtomicNumber,IFullAnisotropicDWFTensor)
   ISeconds = INT(MOD(Duration,3600.0D0)-IMinutes*60)
   IMilliSeconds = INT((Duration-(IHours*3600+IMinutes*60+ISeconds))*1000,IKIND)
 
-!  PRINT*, "felixrefine( ", TRIM(ADJUSTL(my_rank_string)), " ) ", &
-!       RStr, ", used time=", IHours, "hrs ", &
-!       IMinutes,"mins ",ISeconds,"secs ", IMilliSeconds,"millisecs"!
-  PRINT*,"--------------------------------"
-  WRITE(SPrintString,FMT='(A24,I3,A5,I2,A6,I2,A4)')&
-  "Refinement completed in ",IHours," hrs ",IMinutes," mins ",ISeconds," sec"
-  PRINT*,TRIM(ADJUSTL(SPrintString))
-  PRINT*,"--------------------------------"
-  PRINT*,"||||||||||||||||||||||||||||||||"
-
+  IF(my_rank.EQ.0) THEN
+    PRINT*,"--------------------------------"
+    WRITE(SPrintString,FMT='(A24,I3,A5,I2,A6,I2,A4)')&
+    "Refinement completed in ",IHours," hrs ",IMinutes," mins ",ISeconds," sec"
+    PRINT*,TRIM(ADJUSTL(SPrintString))
+    PRINT*,"--------------------------------"
+    PRINT*,"||||||||||||||||||||||||||||||||"
+  END IF
   !--------------------------------------------------------------------
   ! Shut down MPI
   !--------------------------------------------------------------------
