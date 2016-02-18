@@ -68,12 +68,13 @@ SUBROUTINE NDimensionalDownhillSimplex(RSimplexVolume,y,mp,np,ndim,ftol,iter,RSt
         RETURN
      END IF
      
-     IF (iter.GE.ITMAX) THEN
+     IF (iter.GE.ITMAX) THEN!We have reached the iteration limit, finish off
         psum = RESHAPE(RSimplexVolume(MAXLOC(y),:),SHAPE(psum)) ! psum = simplex point with highest correlation
         IErr = 1
         RSendPacket = [-10000.0_RKIND, psum, REAL(iter,RKIND)]
         CALL MPI_BCAST(RSendPacket,ndim+2,MPI_DOUBLE_PRECISION,0,MPI_COMM_WORLD,IErr)
-        PRINT*,"Simplex halted after",ITMAX,"iterations"
+        WRITE(SPrintString,FMT='(A22,I3,A11)') "Simplex halted after  ",iter," iterations"
+        PRINT*,TRIM(ADJUSTL(SPrintString))
         RETURN
      END IF
      
@@ -92,10 +93,10 @@ SUBROUTINE NDimensionalDownhillSimplex(RSimplexVolume,y,mp,np,ndim,ftol,iter,RSt
 	 END IF
      PRINT*,TRIM(ADJUSTL(SPrintString))
      PRINT*,"--------------------------------"
-
      iter=iter+2
     
      ytry = SimplexExtrapolate(RSimplexVolume,y,psum,mp,np,ndim,ihi,-1.0D0,iter,IErr)
+
      
      IF (ytry.LE.y(ilo).OR.my_rank.NE.0) THEN
         ytry = SimplexExtrapolate(RSimplexVolume,y,psum,mp,np,ndim,ihi,2.0D0,iter,IErr)
@@ -126,8 +127,8 @@ SUBROUTINE NDimensionalDownhillSimplex(RSimplexVolume,y,mp,np,ndim,ftol,iter,RSt
      ENDIF
      GOTO 2
   ELSE
-     
-     DO
+     DO!We have reached the exit criteria, finish off
+        RSendPacket = [-10000.0_RKIND, psum, REAL(iter,RKIND)]!RB added this line but no idea what I'm doing 
         CALL MPI_BCAST(RSendPacket,ndim+2,MPI_DOUBLE_PRECISION,0,MPI_COMM_WORLD,IErr)
         RExitFlag = RSendPacket(1)                
         IF(RExitFlag.LT.ZERO) THEN
@@ -140,7 +141,7 @@ SUBROUTINE NDimensionalDownhillSimplex(RSimplexVolume,y,mp,np,ndim,ftol,iter,RSt
         ytry = SimplexFunction(psum,iter,IExitFLAG,IErr) ! Doesnt matter what this result is
         IF(IExitFLAG.EQ.1) RETURN
      END DO
-     
+
   END IF
   
 END SUBROUTINE NDimensionalDownhillSimplex
@@ -163,7 +164,8 @@ REAL(RKIND) FUNCTION SimplexExtrapolate(RSimplexVolume,y,psum,mp,np,ndim,ihi,fac
   REAL(RKIND) :: fac,RSimplexVolume(mp,np),psum(np),y(mp),SimplexFunction,RSendPacket(ndim+2)
   REAL(RKIND) :: fac1,fac2,ytry,ptry(ndim)
   PARAMETER(NMAX=1000)
-
+  CHARACTER*200 :: SPrintString
+  
   fac1=(1.0-fac)/ndim
   fac2=fac1-fac
   DO j=1,ndim

@@ -131,8 +131,6 @@ END SUBROUTINE OpenData
 ! --------------------------------------------------------------------
 ! OpenData
 ! --------------------------------------------------------------------
-
-
 SUBROUTINE OpenImageForReadIn(IErr,filename)
 
   USE MyNumbers
@@ -151,22 +149,14 @@ SUBROUTINE OpenImageForReadIn(IErr,filename)
   CHARACTER*34 filename
 
   IF((IWriteFLAG.GE.10.AND.my_rank.EQ.0).OR.IWriteFLAG.GE.10) THEN
-
      PRINT*,"OpenImageForReadIn()"
-
   END IF
-
-  !filename = "Felix.img"
-
   IF((IWriteFLAG.GE.10.AND.my_rank.EQ.0).OR.IWriteFLAG.GE.10) THEN
-     
-     PRINT*,filename
-
+    PRINT*,filename
   END IF
 
   OPEN(UNIT= IChInImage, ERR= 10, STATUS= 'UNKNOWN', FILE=TRIM(ADJUSTL(filename)),FORM='UNFORMATTED',&
        ACCESS='DIRECT',IOSTAT=Ierr,RECL=2*IPixelCount*8)
-
   RETURN
 
   ! error in OPEN detected
@@ -208,7 +198,6 @@ END SUBROUTINE ReadImageForRefinement
 ! --------------------------------------------------------------------
 ! Open Reflection Image
 ! --------------------------------------------------------------------
-
 SUBROUTINE OpenReflectionImage(IChOutWrite, surname, IErr,IReflectWriting,IImageSizeX,ind)
 
   USE MyNumbers
@@ -251,7 +240,6 @@ SUBROUTINE OpenReflectionImage(IChOutWrite, surname, IErr,IReflectWriting,IImage
         WRITE(k,*)  NINT(Rhkl(IReflectWriting,2))
         WRITE(l,*)  NINT(Rhkl(IReflectWriting,3))
      ELSE
-        
         WRITE(h,*)  NINT(Rhkl(IOutPutReflections(IReflectWriting),1))
         WRITE(k,*)  NINT(Rhkl(IOutPutReflections(IReflectWriting),2))
         WRITE(l,*)  NINT(Rhkl(IOutPutReflections(IReflectWriting),3))
@@ -398,14 +386,11 @@ SUBROUTINE WriteCif(IErr)
 
   INCLUDE       'ciftbx-f90.cmn'
 
-  INTEGER(IKIND) :: &
-       IErr
+  INTEGER(IKIND) :: IErr
   REAL(RKIND),DIMENSION(SIZE(RAtomSiteFracCoordVec,DIM=1),SIZE(RAtomSiteFracCoordVec,DIM=2)) :: &
        ROutputData
-  REAL(RKIND),DIMENSION(2,3) :: &
-       RUnitCellParameters
-  LOGICAL :: &
-       f1
+  REAL(RKIND),DIMENSION(2,3) :: RUnitCellParameters
+  LOGICAL :: f1
 
   IF(.NOT.dict_('cif_core.dic','valid')) THEN
      PRINT*,"Requested Core Dictionary not Present"
@@ -441,8 +426,7 @@ SUBROUTINE WriteOutInputFile (IErr)
   
   IMPLICIT NONE
 
-  INTEGER(IKIND):: &
-       IErr
+  INTEGER(IKIND):: IErr
 
 !!$  IF(ISoftwareMode.LT.2) THEN
      CALL Message("WriteOutInputFile",IMust,IErr)
@@ -532,7 +516,7 @@ SUBROUTINE WriteOutInputFile (IErr)
 END SUBROUTINE WriteOutInputFile
 
 SUBROUTINE WriteToScreenandFile(SStringtoWrite,IErr)
-  
+  !This is a pointless subroutine
   USE WriteToScreen
   USE MyNumbers
   

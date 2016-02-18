@@ -48,20 +48,8 @@ SUBROUTINE CrystallographyInitialisation( IErr )
   INTEGER(IKIND) :: IErr, ind
  
   CALL Message("CrystallographyInitialisation",IMust,IErr)
-    
-  IF(IDiffractionFLAG.EQ.1) THEN!RB what is this about
-     DEALLOCATE(RFullAtomicFracCoordVec,SFullAtomicNameVec,&
-          RFullPartialOccupancy,RFullIsotropicDebyeWallerFactor, &
-          IFullAtomicNumber, IFullAnisotropicDWFTensor, &
-          MNP,SMNP,RDWF,ROcc,IAtoms,IAnisoDWFT,STAT=IErr)
-     IF( IErr.NE.0 ) THEN
-        PRINT*,"CrystallographyInitialisation(", my_rank, ") error ", IErr, &
-             " in DEALLOCATE()"
-        RETURN
-     ENDIF
-  END IF
-  
-  IF(IPseudoCubicFLAG.EQ.1.AND.IDiffractionFLAG.EQ.0) THEN
+     
+  IF(IPseudoCubicFLAG.EQ.1) THEN!.AND.IDiffractionFLAG.EQ.0) THEN
      RZDirC(1) = (IIncidentBeamDirectionX/THREE)+&
           (IIncidentBeamDirectionY/THREE)-&
           (TWO*(IIncidentBeamDirectionZ/THREE))

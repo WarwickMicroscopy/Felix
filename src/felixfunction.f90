@@ -36,7 +36,6 @@
 ! $Id: Felixrefine.f90,v 1.89 2014/04/28 12:26:19 phslaz Exp $
 !%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-!!$REAL(RKIND) FUNCTION FelixFunction(IIterationFLAG,IErr)
 SUBROUTINE FelixFunction(LInitialSimulationFLAG,IErr)
 
   USE MyNumbers
@@ -60,15 +59,54 @@ SUBROUTINE FelixFunction(LInitialSimulationFLAG,IErr)
         ILocalPixelCountMax,IIterationFLAG
   INTEGER(IKIND) :: IAbsorbTag = 0
   INTEGER(IKIND), DIMENSION(:), ALLOCATABLE :: IDisplacements,ICount
-  LOGICAL,INTENT(IN) :: LInitialSimulationFLAG !If function is being called during initialisation
+  LOGICAL,INTENT(INOUT) :: LInitialSimulationFLAG !If function is being called during initialisation
   REAL(RKIND),DIMENSION(:,:,:),ALLOCATABLE :: RFinalMontageImageRoot
 !  COMPLEX(CKIND),DIMENSION(:,:,:), ALLOCATABLE :: CAmplitudeandPhaseRoot !RB Bloch wave amplitude and phase, to be sorted out if desired later
+
 
   IF(IWriteFLAG.GE.10.AND.my_rank.EQ.0) THEN
      PRINT*,"Felix function"
   END IF
- 
-  IDiffractionFLAG = 0!what does this mean
+
+  IF((IWriteFLAG.GE.6.AND.my_rank.EQ.0).OR.IWriteFLAG.GE.10) THEN
+     PRINT*,"Felixfunction(", my_rank, "): starting the eigenvalue problem"
+     PRINT*,"Felixfunction(",my_rank,")pixels",ILocalPixelCountMin," to ",ILocalPixelCountMax
+  END IF
+
+!Allocations for the pixels dealt with by this core  
+!  IF(IImageFLAG.LE.2) THEN
+    ILocalPixelCountMin= (IPixelTotal*(my_rank)/p)+1!RB what is p?
+    ILocalPixelCountMax= (IPixelTotal*(my_rank+1)/p) 
+    ALLOCATE(RIndividualReflections(INoOfLacbedPatterns,IThicknessCount,&
+          (ILocalPixelCountMax-ILocalPixelCountMin)+1),STAT=IErr)
+    IF( IErr.NE.0 ) THEN
+      PRINT*,"Felixfunction(",my_rank,")error allocating RIndividualReflections"
+    RETURN
+    END IF
+    !position of pixels calculated by this core
+    ALLOCATE(IDisplacements(p),ICount(p),STAT=IErr)
+    IF( IErr.NE.0 ) THEN
+       PRINT*,"Felixfunction(",my_rank,")error allocating IDisplacements and/or ICount"
+       RETURN
+    END IF
+    DO pnd = 1,p
+       IDisplacements(pnd) = (IPixelTotal*(pnd-1)/p)
+       ICount(pnd) = (((IPixelTotal*(pnd)/p) - (IPixelTotal*(pnd-1)/p)))*INoOfLacbedPatterns*IThicknessCount    
+    END DO
+    DO ind = 1,p
+      IDisplacements(ind) = (IDisplacements(ind))*INoOfLacbedPatterns*IThicknessCount
+    END DO
+
+  RIndividualReflections = ZERO
+!  ELSE
+!     ALLOCATE(CAmplitudeandPhase(INoOfLacbedPatterns,IThicknessCount,&
+!          (ILocalPixelCountMax-ILocalPixelCountMin)+1),STAT=IErr)
+!     IF( IErr.NE.0 ) THEN
+!        PRINT*,"Felixfunction(",my_rank,")error allocating Amplitude and Phase"
+!        RETURN
+!     END IF
+!     CAmplitudeandPhase = CZERO
+!  END IF
 
   IF((IRefineModeSelectionArray(1).EQ.1)) THEN!RB Ug refinement, replace selected Ug's
      CALL ApplyNewStructureFactors(IErr)
@@ -88,38 +126,6 @@ SUBROUTINE FelixFunction(LInitialSimulationFLAG,IErr)
        RETURN
      END IF
   END IF
-
-  !--------------------------------------------------------------------
-  ! MAIN LOOP: solve for each (ind,jnd) pixel
-  !--------------------------------------------------------------------
-  ILocalPixelCountMin= (IPixelTotal*(my_rank)/p)+1!RB what is p?
-  ILocalPixelCountMax= (IPixelTotal*(my_rank+1)/p) 
-
-  IF((IWriteFLAG.GE.6.AND.my_rank.EQ.0).OR.IWriteFLAG.GE.10) THEN
-     PRINT*,"Felixfunction(", my_rank, "): starting the eigenvalue problem"
-     PRINT*,"Felixfunction(", my_rank, "): for lines ", ILocalPixelCountMin, &
-          " to ", ILocalPixelCountMax
-  END IF
-!PRINT*,"Felixfunction(",my_rank,")pixels",ILocalPixelCountMin," to ",ILocalPixelCountMax
-
-!Allocations for the pixels dealt with by this core  
-!  IF(IImageFLAG.LE.2) THEN
-     ALLOCATE(RIndividualReflections(INoOfLacbedPatterns,IThicknessCount,&
-          (ILocalPixelCountMax-ILocalPixelCountMin)+1),STAT=IErr)
-     IF( IErr.NE.0 ) THEN
-        PRINT*,"Felixfunction(",my_rank,")error allocating RIndividualReflections"
-        RETURN
-     END IF
-     RIndividualReflections = ZERO
-!  ELSE
-!     ALLOCATE(CAmplitudeandPhase(INoOfLacbedPatterns,IThicknessCount,&
-!          (ILocalPixelCountMax-ILocalPixelCountMin)+1),STAT=IErr)
-!     IF( IErr.NE.0 ) THEN
-!        PRINT*,"Felixfunction(",my_rank,")error allocating Amplitude and Phase"
-!        RETURN
-!     END IF
-!     CAmplitudeandPhase = CZERO
-!  END IF
 
   IMAXCBuffer = 200000!RB what are these?
   IPixelComputed= 0
@@ -142,21 +148,8 @@ SUBROUTINE FelixFunction(LInitialSimulationFLAG,IErr)
      PRINT*,"Felixfunction : ",my_rank," is exiting calculation loop"
   END IF
  
-  !position of pixels calculated by this core
-  ALLOCATE(IDisplacements(p),ICount(p),STAT=IErr)
-  IF( IErr.NE.0 ) THEN
-     PRINT*,"Felixfunction(",my_rank,")error allocating IDisplacements and/or ICount"
-     RETURN
-  END IF
-  DO pnd = 1,p
-     IDisplacements(pnd) = (IPixelTotal*(pnd-1)/p)
-     ICount(pnd) = (((IPixelTotal*(pnd)/p) - (IPixelTotal*(pnd-1)/p)))*INoOfLacbedPatterns*IThicknessCount    
-  END DO
-  DO ind = 1,p
-        IDisplacements(ind) = (IDisplacements(ind))*INoOfLacbedPatterns*IThicknessCount
-  END DO
    
-!  IF(IImageFLAG.LE.2) THEN!RB Bloch wave amplitude and phase, to be sorted out if desired later
+!  IF(IImageFLAG.LE.2) THEN
      CALL MPI_GATHERV(RIndividualReflections,SIZE(RIndividualReflections),&
           MPI_DOUBLE_PRECISION,RSimulatedPatterns,&
           ICount,IDisplacements,MPI_DOUBLE_PRECISION,0,&
@@ -165,7 +158,7 @@ SUBROUTINE FelixFunction(LInitialSimulationFLAG,IErr)
         PRINT*,"Felixfunction(",my_rank,")error",IErr,"in MPI_GATHERV"
         RETURN
      END IF     
- ! ELSE     
+ ! ELSE     !RB Bloch wave amplitude and phase, to be sorted out if desired later
  !    CALL MPI_GATHERV(CAmplitudeandPhase,SIZE(CAmplitudeandPhase),&
  !         MPI_DOUBLE_COMPLEX,CAmplitudeandPhaseRoot,&
  !         ICount,IDisplacements,MPI_DOUBLE_COMPLEX,0, &
@@ -184,39 +177,30 @@ SUBROUTINE FelixFunction(LInitialSimulationFLAG,IErr)
  !       RETURN
  !    END IF   
  ! END IF 
-!  IF(IImageFLAG.LE.2) THEN
-     DEALLOCATE(RIndividualReflections,STAT=IErr)
-!     IF( IErr.NE.0 ) THEN
-!        PRINT*,"Felixfunction(", my_rank, ")error deallocating RIndividualReflections"
-!        RETURN
-!     END IF   
-!  END IF
+
+
   
 !  IF(my_rank.EQ.0.AND.IImageFLAG.GE.3) THEN
 !     RSimulatedPatterns = &
 !          CAmplitudeandPhaseRoot * CONJG(CAmplitudeandPhaseRoot)
 !  END IF
 
-!  IF(my_rank.EQ.0) THEN!RB reallocate for output, just core 0
-!     ALLOCATE(RIndividualReflections(INoOfLacbedPatterns,IThicknessCount,IPixelTotal),STAT=IErr)
+  !Dellocate local Variables !RB RIndividualReflections stays allocated until the images are written
+  DEALLOCATE(RIndividualReflections,STAT=IErr)
 !     IF( IErr.NE.0 ) THEN
-!        PRINT*,"Felixfunction(", my_rank, ") error allocating Root Reflections"
+!        PRINT*,"Felixfunction(", my_rank, ")error deallocating RIndividualReflections"
 !        RETURN
 !     END IF   
-!     RIndividualReflections = RSimulatedPatterns
-!  END IF
-
-  !Dellocate local Variables !RB RIndividualReflections stays allocated until the images are written
   DEALLOCATE(IDisplacements,STAT=IErr)
-  IF( IErr.NE.0 ) THEN
-     PRINT*,"Felixfunction(",my_rank,")error deallocating IDisplacements"
-     RETURN
-  END IF
+!  IF( IErr.NE.0 ) THEN
+!     PRINT*,"Felixfunction(",my_rank,")error deallocating IDisplacements"
+!     RETURN
+!  END IF
   DEALLOCATE(ICount,STAT=IErr)
-  IF( IErr.NE.0 ) THEN
-     PRINT*,"Felixfunction(",my_rank,")error deallocating ICount"
-     RETURN
-  END IF
+!  IF( IErr.NE.0 ) THEN
+!     PRINT*,"Felixfunction(",my_rank,")error deallocating ICount"
+!     RETURN
+!  END IF
 
 END SUBROUTINE FelixFunction
 
@@ -406,14 +390,14 @@ REAL(RKIND) FUNCTION SimplexFunction(RIndependentVariableValues,IIterationCount,
   END IF
 
   CALL FelixFunction(LInitialSimulationFLAG,IErr) ! Simulate !!  
-  IF( IErr.NE.0 ) THEN !NB RIndividualReflections is allocated here & comes out with the simulated images
+  IF( IErr.NE.0 ) THEN
      PRINT*,"SimplexFunction(",my_rank,")error in FelixFunction"
      RETURN
   END IF
 
   IF(my_rank.EQ.0) THEN   
      CALL CreateImagesAndWriteOutput(IIterationCount,IExitFLAG,IErr) 
-     IF( IErr.NE.0 ) THEN !NB RIndividualReflections is deallocated here after saving
+     IF( IErr.NE.0 ) THEN
         PRINT*,"SimplexFunction(",my_rank,")error in CreateImagesAndWriteOutput"
         RETURN
      ENDIF
@@ -568,9 +552,8 @@ SUBROUTINE PrintVariables(IErr)
      IF (IRefineModeSelectionArray(ind).EQ.1) THEN
         SELECT CASE(ind)
         CASE(1)
-           WRITE(SPrintString,FMT='(A18,1X,F9.4)') "Current Absorption",RAbsorptionPercentage
+           WRITE(SPrintString,FMT='(A18,1X,F5.2)') "Current Absorption",RAbsorptionPercentage
            PRINT*,TRIM(ADJUSTL(SPrintString))
-!           PRINT*,"Current Absorption",RAbsorptionPercentage
            PRINT*,"Current Structure Factors"!RB should also put in hkl here
            DO jnd = 2,INoofUgs+1!yy since no.1 is 000
    !           RUgAmplitude=( REAL(CUgToRefine(jnd))**2 + AIMAG(CUgToRefine(jnd))**2 )**0.5!RB

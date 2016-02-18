@@ -407,7 +407,7 @@ RFullIsotropicDebyeWallerFactor,IFullAtomicNumber,IFullAnisotropicDWFTensor)
         PRINT*,"felixrefine(",my_rank,")error in RankSymmetryRelatedStructureFactor"
         GOTO 9999
      END IF
-    DEALLOCATE(CUgMatNoAbs,CUgMatPrime,STAT=IErr)!Don't need this any more
+    DEALLOCATE(CUgMatNoAbs,CUgMatPrime,STAT=IErr)!Don't need these any more
   END IF
   
 !Now change StructureFactorRefinementSetup fr722 and UpdateStructureFactors ff1040
@@ -613,7 +613,6 @@ RFullIsotropicDebyeWallerFactor,IFullAtomicNumber,IFullAnisotropicDWFTensor)
   !--------------------------------------------------------------------
   
   WRITE(my_rank_string,*) my_rank
-    
   CALL SYSTEM_CLOCK(ICurrentTime)
   Duration=REAL(ICurrentTime-IStartTime)/REAL(IRate)
   IHours = FLOOR(Duration/3600.0D0)
@@ -963,7 +962,7 @@ SUBROUTINE SimplexInitialisation(RSimplexVolume,RSimplexFoM,RIndependentVariable
   IMPLICIT NONE
 
   INTEGER(IKIND) :: IErr,ind,jnd,IExitFLAG
-  LOGICAL :: LInitialSimulationFLAG = .TRUE. ! Its value is meaningless :) RB thanks, that's helpful, honestly;
+  LOGICAL :: LInitialSimulationFLAG = .TRUE.
   REAL(RKIND),DIMENSION(IIndependentVariables+1,IIndependentVariables),INTENT(OUT) :: RSimplexVolume
   REAL(RKIND),DIMENSION(IIndependentVariables+1),INTENT(OUT) :: RSimplexFoM
   REAL(RKIND) :: SimplexFunction,RSimplexDummy
@@ -989,13 +988,13 @@ SUBROUTINE SimplexInitialisation(RSimplexVolume,RSimplexFoM,RIndependentVariable
      RETURN
   ENDIF
 
-  IF(my_rank.EQ.0) THEN   
-     IExitFLAG = 0; ! Do not exit
-     IPreviousPrintedIteration = -IPrint!RB ensuring baseline simulation is printed
+   IExitFLAG = 0; ! Do not exit
+   IPreviousPrintedIteration = -IPrint!RB ensuring baseline simulation is printed
+   IF(my_rank.EQ.0) THEN   
      CALL CreateImagesAndWriteOutput(IIterationCount,IExitFLAG,IErr) 
      IF( IErr.NE.0 ) THEN
-        PRINT*,"SimplexInitialisation(",my_rank,")error in CreateImagesAndWriteOutput"
-        RETURN
+       PRINT*,"SimplexInitialisation(",my_rank,")error in CreateImagesAndWriteOutput"
+       RETURN
      ENDIF
   END IF
 
@@ -1017,10 +1016,8 @@ SUBROUTINE SimplexInitialisation(RSimplexVolume,RSimplexFoM,RIndependentVariable
   !IF(IContinueFLAG.EQ.0) THEN
      IF(my_rank.EQ.0) THEN
         CALL CreateRandomisedSimplex(RSimplexVolume,RIndependentVariableValues,IErr)
-        CALL MPI_BCAST(RSimplexVolume,(IIndependentVariables+1)*(IIndependentVariables),MPI_DOUBLE_PRECISION,0,MPI_COMM_WORLD,IErr)
-     ELSE
-        CALL MPI_BCAST(RSimplexVolume,(IIndependentVariables+1)*(IIndependentVariables),MPI_DOUBLE_PRECISION,0,MPI_COMM_WORLD,IErr)
      END IF
+     CALL MPI_BCAST(RSimplexVolume,(IIndependentVariables+1)*(IIndependentVariables),MPI_DOUBLE_PRECISION,0,MPI_COMM_WORLD,IErr)
 
      DO ind = 1,(IIndependentVariables+1)
         IF((IWriteFLAG.GE.0.AND.my_rank.EQ.0).OR.IWriteFLAG.GE.10) THEN
@@ -1181,7 +1178,6 @@ END SUBROUTINE InitialiseAtomicVectorMagnitudes
 SUBROUTINE RandomSequence(RRandomSequence,IRandomSequenceLength,ISeedModifier,IErr)
 !!$  %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 !!$  % Sets up a pseudo random sequence and selects a number
-!!$  %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
   USE MyNumbers
   
@@ -1196,12 +1192,9 @@ SUBROUTINE RandomSequence(RRandomSequence,IRandomSequenceLength,ISeedModifier,IE
 
   IMPLICIT NONE
 
-  INTEGER(IKIND) :: &
-       IErr,Ivalues(1:8), k,IRandomSequenceLength,ISeedModifier
-  INTEGER(IKIND), DIMENSION(:), ALLOCATABLE :: &
-       seed
-  REAL(RKIND),DIMENSION(IRandomSequenceLength) :: &
-       RRandomSequence
+  INTEGER(IKIND) :: IErr,Ivalues(1:8), k,IRandomSequenceLength,ISeedModifier
+  INTEGER(IKIND), DIMENSION(:), ALLOCATABLE :: seed
+  REAL(RKIND),DIMENSION(IRandomSequenceLength) :: RRandomSequence
   
   CALL DATE_AND_TIME(VALUES=Ivalues)
 
