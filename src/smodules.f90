@@ -130,7 +130,7 @@ MODULE RConst
        RPlanckConstant=REAL(6.62606957D-34,RKIND), &
        RElectronCharge=REAL(1.602176565D-19,RKIND), &
        RAngstromConversion=REAL(1.D10,RKIND)
-  REAL(RKIND), PARAMETER :: RTolerance =REAL( 1E-7,RKIND)
+  REAL(RKIND), PARAMETER :: RTolerance =REAL(1E-7,RKIND)
     
 END MODULE RConst
 !--------------------------------------------------------------------
@@ -287,11 +287,11 @@ MODULE RPara
   REAL(RKIND), DIMENSION(:,:),ALLOCATABLE :: RImageIn
   REAL(RKIND) :: RCrossCorrelation,RDeltaUgChange,RlowerBoundUgChange,RUpperBoundUgChange
   !Ug' Unique Values
-  REAL(RKIND),DIMENSION(:),ALLOCATABLE :: RUniqueUgPrimeValues
+  REAL(RKIND),DIMENSION(:),ALLOCATABLE :: RUniqueUgPrimeValues!RB not used?
   ! Experimental Images
-  REAL(RKIND),DIMENSION(:,:,:),ALLOCATABLE :: RSimulatedPatterns  
-  ! Simulated Images
   REAL(RKIND),DIMENSION(:,:,:),ALLOCATABLE :: RImageExpi  
+  ! Simulated Images
+  REAL(RKIND),DIMENSION(:,:,:),ALLOCATABLE :: RSimulatedPatterns  
   !Iterative Variable Value
   REAL(RKIND) :: RValue
   !Refinement Vectors

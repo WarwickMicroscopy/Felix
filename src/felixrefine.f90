@@ -400,11 +400,39 @@ RFullIsotropicDebyeWallerFactor,IFullAtomicNumber,IFullAnisotropicDWFTensor)
 
   IF(IRefineModeSelectionArray(1).EQ.1) THEN !It's a Ug refinement
   DEALLOCATE(RrVecMat,STAT=IErr)!Don't need this any more
-  CALL RankSymmetryRelatedStructureFactor(IErr)
+  CALL SetupUgsToRefine(IErr)
      IF( IErr.NE.0 ) THEN
-        PRINT*,"felixrefine(",my_rank,")error in RankSymmetryRelatedStructureFactor"
+        PRINT*,"felixrefine(",my_rank,")error in SetupUgsToRefine"
         GOTO 9999
      END IF
+  IF(my_rank.EQ.0) THEN
+    IF ( INoOfVariables.EQ.1 ) THEN 
+      PRINT*,"Only one independent variable"
+	ELSE
+      WRITE(SPrintString,FMT='(I3,1X,A21))') INoOfVariables,"independent variables"
+      PRINT*,TRIM(ADJUSTL(SPrintString))
+    END IF
+  END IF
+  ALLOCATE(RIndependentVariable(INoOfVariables),STAT=IErr)  
+  IF( IErr.NE.0 ) THEN
+     PRINT*,"felixrefine(",my_rank,")error allocating RIndependentVariable"
+     GOTO 9999
+  END IF
+  
+ !Fill up the IndependentVariable list with Ug components  
+  jnd=1
+  DO ind = 2,INoofUgs+1!RB ignore the first one as it is the internal potential
+    IF ( REAL(CUgToRefine(ind),RKIND).GE.RTolerance ) THEN
+      RIndependentVariable(jnd) = REAL(CUgToRefine(ind),RKIND)
+      jnd=jnd+1
+	END IF
+    IF (AIMAG(CUgToRefine(ind)).GE.RTolerance) THEN
+      RIndependentVariable(jnd) = AIMAG(CUgToRefine(ind))
+      jnd=jnd+1
+	END IF
+  END DO
+  RIndependentVariable(jnd) = RAbsorptionPercentage!RB absorption always included in structure factor refinement as last variable
+  
     DEALLOCATE(CUgMatNoAbs,CUgMatPrime,STAT=IErr)!Don't need these any more
   END IF
   
@@ -415,50 +443,48 @@ RFullIsotropicDebyeWallerFactor,IFullAtomicNumber,IFullAnisotropicDWFTensor)
 
   !--------------------------------------------------------------------
   ! Setup Simplex Variables
-  !--------------------------------------------------------------------
-  IF(IRefineModeSelectionArray(2).EQ.1) THEN !It's an atom coordinate refinement
-     CALL SetupAtomicVectorMovements(IErr)
-     IF( IErr.NE.0 ) THEN
-        PRINT*,"felixrefine (", my_rank, ") error in SetupAtomicVectorMovements"
-        GOTO 9999
-     END IF
-  END IF
-
-  !--------------------------------------------------------------------
-  !  DetermineNumberofRefinementVariablesPerType
-  INoofElementsForEachRefinementType(1) = &
-       IRefineModeSelectionArray(1)*(INoofUgs*2+1)!RB +1 is for absorption
-  INoofElementsForEachRefinementType(2) = &
-       IRefineModeSelectionArray(2)*IAllowedVectors
-  INoofElementsForEachRefinementType(3) = &
-       IRefineModeSelectionArray(3)*SIZE(IAtomicSitesToRefine)
-  INoofElementsForEachRefinementType(4) = &
-       IRefineModeSelectionArray(4)*SIZE(IAtomicSitesToRefine)
-  INoofElementsForEachRefinementType(5) = &
-       IRefineModeSelectionArray(5)*SIZE(IAtomicSitesToRefine)*6
-  INoofElementsForEachRefinementType(6) = &
-       IRefineModeSelectionArray(6)*3
-  INoofElementsForEachRefinementType(7) = &
-       IRefineModeSelectionArray(7)*3
-  INoofElementsForEachRefinementType(8) = &
-       IRefineModeSelectionArray(8)
-  INoofElementsForEachRefinementType(9) = &
-       IRefineModeSelectionArray(9)
-  INoofElementsForEachRefinementType(10) = &
-       IRefineModeSelectionArray(10)
-  INoofElementsForEachRefinementType(11) = &
-       IRefineModeSelectionArray(11)
+  !--------------------------------------------------------------------!RB restore later for other types of refinement
+!  IF(IRefineModeSelectionArray(2).EQ.1) THEN !It's an atom coordinate refinement
+!     CALL SetupAtomicVectorMovements(IErr)
+!     IF( IErr.NE.0 ) THEN
+!        PRINT*,"felixrefine (", my_rank, ") error in SetupAtomicVectorMovements"
+!        GOTO 9999
+!     END IF
+!  END IF
+!  INoofElementsForEachRefinementType(2) = &
+!       IRefineModeSelectionArray(2)*IAllowedVectors
+!  INoofElementsForEachRefinementType(3) = &
+!       IRefineModeSelectionArray(3)*SIZE(IAtomicSitesToRefine)
+!  INoofElementsForEachRefinementType(4) = &
+!       IRefineModeSelectionArray(4)*SIZE(IAtomicSitesToRefine)
+!  INoofElementsForEachRefinementType(5) = &
+!       IRefineModeSelectionArray(5)*SIZE(IAtomicSitesToRefine)*6
+!  INoofElementsForEachRefinementType(6) = &
+!       IRefineModeSelectionArray(6)*3
+!  INoofElementsForEachRefinementType(7) = &
+!       IRefineModeSelectionArray(7)*3
+!  INoofElementsForEachRefinementType(8) = &
+!       IRefineModeSelectionArray(8)
+!  INoofElementsForEachRefinementType(9) = &
+!       IRefineModeSelectionArray(9)
+!  INoofElementsForEachRefinementType(10) = &
+!       IRefineModeSelectionArray(10)
+!  INoofElementsForEachRefinementType(11) = &
+!       IRefineModeSelectionArray(11)
  
   !Number of independent variables
-  INoOfVariables = SUM(INoofElementsForEachRefinementType)
-  IF(my_rank.EQ.0) THEN
-    IF ( INoOfVariables.EQ.1 ) THEN 
-      PRINT*,"Only one independent variable"
-	ELSE
-      WRITE(SPrintString,FMT='(I3,1X,A21))') INoOfVariables,"independent variables"
-      PRINT*,TRIM(ADJUSTL(SPrintString))
-    END IF
-  END IF
+!  INoOfVariables = SUM(INoofElementsForEachRefinementType)
+
+
+!This has been calculated in SetupUgsToRefine
+!  IF(my_rank.EQ.0) THEN
+!    IF ( INoOfVariables.EQ.1 ) THEN 
+!      PRINT*,"Only one independent variable"!
+!	ELSE
+!      WRITE(SPrintString,FMT='(I3,1X,A21))') INoOfVariables,"independent variables"
+!      PRINT*,TRIM(ADJUSTL(SPrintString))
+!    END IF
+!  END IF
 
   !--------------------------------------------------------------------
   !  Assign IDs
@@ -467,11 +493,6 @@ RFullIsotropicDebyeWallerFactor,IFullAtomicNumber,IFullAnisotropicDWFTensor)
      PRINT*,"felixrefine(",my_rank,")error allocating IIterativeVariableUniqueIDs"
      GOTO 9999
   ENDIF
-  ALLOCATE(RIndependentVariable(INoOfVariables),STAT=IErr)  
-  IF( IErr.NE.0 ) THEN
-     PRINT*,"felixrefine(",my_rank,")error allocating RIndependentVariable"
-     GOTO 9999
-  END IF
   IIterativeVariableUniqueIDs = 0
   ICalls = 0
   DO ind = 1,IRefinementVariableTypes !Loop over all possible iterative variables
@@ -841,7 +862,7 @@ SUBROUTINE RefinementVariableSetup(RIndependentVariable,IErr)
 END SUBROUTINE RefinementVariableSetup
  
 !%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-
+!now redundant?
 SUBROUTINE StructureFactorRefinementSetup(RIndependentVariable,IIterationCount,IErr)
   
   USE MyNumbers
@@ -879,11 +900,11 @@ END SUBROUTINE StructureFactorRefinementSetup
 
 !%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-SUBROUTINE RankSymmetryRelatedStructureFactor(IErr)
+SUBROUTINE SetupUgsToRefine(IErr)
   
   USE MyNumbers
   
-  USE CConst; USE IConst
+  USE CConst; USE IConst; USE RConst
   USE IPara; USE RPara; USE CPara
   USE BlochPara
 
@@ -899,16 +920,17 @@ SUBROUTINE RankSymmetryRelatedStructureFactor(IErr)
   CHARACTER*200 :: SPrintString
 
   IF((IWriteFLAG.GE.10.AND.my_rank.EQ.0).OR.IWriteFLAG.GE.10) THEN
-     PRINT*,"RankSymmetryRelatedStructureFactor(",my_rank,")"
+     PRINT*,"SetupUgsToRefine(",my_rank,")"
   END IF
 
+  !Matrix with numbers marking equivalent Ug's
   ALLOCATE(ISymmetryRelations(nReflections,nReflections),STAT=IErr)
   IF( IErr.NE.0 ) THEN
-     PRINT*,"RankSymmetryRelatedStructureFactor(",my_rank,")error allocating ISymmetryRelations"
+     PRINT*,"SetupUgsToRefine(",my_rank,")error allocating ISymmetryRelations"
      RETURN
   ENDIF
 
-!!$%%%%%%% used to be SymmetryRelatedStructureFactorDetermination
+!Equivalent Ug's are identified by the sum of their abs(indices)plus the sum of abs(Ug)'s with no absorption
   RgSumMat = RgSumMat+ABS(REAL(CUgMatNoAbs))+ABS(AIMAG(CUgMatNoAbs))
   ISymmetryRelations = 0_IKIND 
   Iuid = 0_IKIND 
@@ -930,29 +952,42 @@ SUBROUTINE RankSymmetryRelatedStructureFactor(IErr)
      WRITE(SPrintString,FMT='(I5,A25)') Iuid," unique structure factors"
      PRINT*,TRIM(ADJUSTL(SPrintString))
   END IF
- 
+
+!Link each number with its Ug, up to the number of  unique Ug's Iuid
   ALLOCATE(IEquivalentUgKey(Iuid),STAT=IErr)
   IF( IErr.NE.0 ) THEN
-     PRINT*,"RankSymmetryRelatedStructureFactor(",my_rank,")error allocating IEquivalentUgKey"
+     PRINT*,"SetupUgsToRefine(",my_rank,")error allocating IEquivalentUgKey"
      RETURN
   END IF
   ALLOCATE(CUgToRefine(Iuid),STAT=IErr)
   IF( IErr.NE.0 ) THEN
-     PRINT*,"RankSymmetryRelatedStructureFactor(",my_rank,")error allocating CUgToRefine"
+     PRINT*,"SetupUgsToRefine(",my_rank,")error allocating CUgToRefine"
      RETURN
   END IF
-!!$%%%%%%% used to be SymmetryRelatedStructureFactorDetermination
   
   DO ind = 1,Iuid
      ILoc = MINLOC(ABS(ISymmetryRelations-ind))
      IEquivalentUgKey(ind) = ind
      CUgToRefine(ind) = CUgMatNoAbs(ILoc(1),ILoc(2))
-!RB     PRINT*,"CUgToRefine",ind,IEquivalentUgKey(ind),CUgToRefine(ind)
   END DO
-  
+
+!Put them in descending order of magnitude  
   CALL ReSortUgs(IEquivalentUgKey,CUgToRefine,Iuid)
 
-END SUBROUTINE RankSymmetryRelatedStructureFactor
+!Count the number of Independent Variables  
+  jnd=1
+  DO ind = 2,INoofUgs+1!RB ignore the first one as it is the internal potential
+    IF ( REAL(CUgToRefine(ind),RKIND).GE.RTolerance ) THEN
+      jnd=jnd+1
+	END IF
+    IF (AIMAG(CUgToRefine(ind)).GE.RTolerance) THEN
+      jnd=jnd+1
+	END IF
+  END DO
+  
+  INoOfVariables = jnd !RB last +1 is for absorption
+  
+END SUBROUTINE SetupUgsToRefine
 
 !%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
@@ -1009,19 +1044,19 @@ SUBROUTINE SimplexInitialisation(RSimplexVariable,RSimplexFoM,RIndependentVariab
      ENDIF
   END IF
 
-  CALL RefinementVariableSetup(RIndependentVariable,IErr)
-  IF( IErr.NE.0 ) THEN
-     PRINT*,"SimplexInitialisation(", my_rank, ") error in RefinementVariableSetup()"
-     RETURN
-  ENDIF
+!  CALL RefinementVariableSetup(RIndependentVariable,IErr)
+!  IF( IErr.NE.0 ) THEN
+!     PRINT*,"SimplexInitialisation(", my_rank, ") error in RefinementVariableSetup()"
+!     RETURN
+!  ENDIF
  
-  IF(IRefineModeSelectionArray(1).EQ.1) THEN
-     CALL StructureFactorRefinementSetup(RIndependentVariable,IIterationCount,IErr)
-     IF( IErr.NE.0 ) THEN
-        PRINT*,"SimplexInitialisation(", my_rank, ") error in StructureFactorRefinementSetup()"
-        RETURN
-     ENDIF
-  ENDIF
+!  IF(IRefineModeSelectionArray(1).EQ.1) THEN
+!     CALL StructureFactorRefinementSetup(RIndependentVariable,IIterationCount,IErr)
+!     IF( IErr.NE.0 ) THEN
+!        PRINT*,"SimplexInitialisation(", my_rank, ") error in StructureFactorRefinementSetup()"
+!        RETURN
+!     ENDIF
+!  ENDIF
 
 !!$ RandomSequence
   !IF(IContinueFLAG.EQ.0) THEN

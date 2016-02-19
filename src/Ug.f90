@@ -83,7 +83,7 @@ SUBROUTINE SymmetryRelatedStructureFactorDetermination (IErr)
 !!$%    (allowing for the hermiticity)
 !!$%
 !!$%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-  
+  !!This is now redundant
   USE MyNumbers
   USE WriteToScreen
   
@@ -287,7 +287,7 @@ END SUBROUTINE StructureFactorInitialisation
 !%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 SUBROUTINE StructureFactorsWithAbsorption(IErr)         
-!RB this is a lot of bumf for 3 lines of code
+!RB this is a lot of bumf for 1 line of code
 
   USE MyNumbers
   USE WriteToScreen
