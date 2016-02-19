@@ -200,7 +200,7 @@ MODULE IPara
   !List of Atomic Sites for Refinement
   INTEGER(IKIND),DIMENSION(:),ALLOCATABLE :: IAtomicSitesToRefine
   !Simplex Variables
-  INTEGER(IKIND) :: IIndependentVariables,ILocalPixelCountMin,ILocalPixelCountMax
+  INTEGER(IKIND) :: INoOfVariables,ILocalPixelCountMin,ILocalPixelCountMax
   INTEGER(IKIND), DIMENSION(:), ALLOCATABLE :: IDisplacements,ICount
   ! Refinement Vectors
   INTEGER(IKIND) :: IAllowedVectors

@@ -60,35 +60,26 @@ SUBROUTINE FelixFunction(LInitialSimulationFLAG,IErr)
 
   LOGICAL,INTENT(INOUT) :: LInitialSimulationFLAG !If function is being called during initialisation
   REAL(RKIND),DIMENSION(:,:,:),ALLOCATABLE :: RFinalMontageImageRoot
-!  COMPLEX(CKIND),DIMENSION(:,:,:), ALLOCATABLE :: CAmplitudeandPhaseRoot !RB Bloch wave amplitude and phase, to be sorted out if desired later
 
-  IF(IWriteFLAG.GE.10.AND.my_rank.EQ.0) THEN
+  IF(IWriteFLAG.GE.3.AND.my_rank.EQ.0) THEN
      PRINT*,"Felix function"
   END IF
-
   IF((IWriteFLAG.GE.6.AND.my_rank.EQ.0).OR.IWriteFLAG.GE.10) THEN
      PRINT*,"Felixfunction(", my_rank, "): starting the eigenvalue problem"
      PRINT*,"Felixfunction(",my_rank,")pixels",ILocalPixelCountMin," to ",ILocalPixelCountMax
   END IF
 
+!Reset simuation--------------------------------------------------------------------  
   RIndividualReflections = ZERO
-!  ELSE
-!     ALLOCATE(CAmplitudeandPhase(INoOfLacbedPatterns,IThicknessCount,&
-!          (ILocalPixelCountMax-ILocalPixelCountMin)+1),STAT=IErr)
-!     IF( IErr.NE.0 ) THEN
-!        PRINT*,"Felixfunction(",my_rank,")error allocating Amplitude and Phase"
-!        RETURN
-!     END IF
-!     CAmplitudeandPhase = CZERO
-!  END IF
 
+!Update scattering matrix--------------------------------------------------------------------  
   IF((IRefineModeSelectionArray(1).EQ.1)) THEN!RB Ug refinement, replace selected Ug's
      CALL ApplyNewStructureFactors(IErr)
      IF( IErr.NE.0 ) THEN
        PRINT*,"felixfunction(",my_rank,")error in ApplyNewStructureFactors()"
        RETURN
      END IF
-  ELSE!RB other refinement, recalculate Ug pool matrix
+  ELSE!RB other refinement, recalculate Ug pool
      CALL StructureFactorSetup(IErr)
      IF( IErr.NE.0 ) THEN
        PRINT*,"felixfunction(",my_rank,")error in StructureFactorInitialisation"
@@ -103,11 +94,11 @@ SUBROUTINE FelixFunction(LInitialSimulationFLAG,IErr)
 
   IMAXCBuffer = 200000!RB what are these?
   IPixelComputed= 0
- 
+
+!Simulation on this core--------------------------------------------------------------------  
   IF(IWriteFLAG.GE.0.AND.my_rank.EQ.0) THEN
     PRINT*,"Bloch wave calculation..."
   END IF
-
   DO knd = ILocalPixelCountMin,ILocalPixelCountMax,1
      jnd = IPixelLocations(knd,1)
      ind = IPixelLocations(knd,2)
@@ -118,12 +109,7 @@ SUBROUTINE FelixFunction(LInitialSimulationFLAG,IErr)
      END IF
   END DO
   
-  IF((IWriteFLAG.GE.6.AND.my_rank.EQ.0).OR.IWriteFLAG.GE.10) THEN
-     PRINT*,"Felixfunction : ",my_rank," is exiting calculation loop"
-  END IF
- 
-   
-!  IF(IImageFLAG.LE.2) THEN
+!MPI gatherv into RSimulatedPatterns--------------------------------------------------------------------  
      CALL MPI_GATHERV(RIndividualReflections,SIZE(RIndividualReflections),&
           MPI_DOUBLE_PRECISION,RSimulatedPatterns,&
           ICount,IDisplacements,MPI_DOUBLE_PRECISION,0,&
@@ -132,49 +118,6 @@ SUBROUTINE FelixFunction(LInitialSimulationFLAG,IErr)
         PRINT*,"Felixfunction(",my_rank,")error",IErr,"in MPI_GATHERV"
         RETURN
      END IF     
- ! ELSE     !RB Bloch wave amplitude and phase, to be sorted out if desired later
- !    CALL MPI_GATHERV(CAmplitudeandPhase,SIZE(CAmplitudeandPhase),&
- !         MPI_DOUBLE_COMPLEX,CAmplitudeandPhaseRoot,&
- !         ICount,IDisplacements,MPI_DOUBLE_COMPLEX,0, &
- !         MPI_COMM_WORLD,IErr)
- !    IF( IErr.NE.0 ) THEN
- !       PRINT*,"Felixfunction(", my_rank, ") error in MPI_GATHERV"
- !       RETURN
- !    END IF   
- ! END IF
-  
-  !deallocate images for this core
- ! IF(IImageFLAG.GE.3) THEN
- !    DEALLOCATE(CAmplitudeandPhase,STAT=IErr)
- !    IF( IErr.NE.0 ) THEN
- !       PRINT*,"Felixfunction(", my_rank, ") error deallocating CAmplitudePhase"
- !       RETURN
- !    END IF   
- ! END IF 
-
-
-  
-!  IF(my_rank.EQ.0.AND.IImageFLAG.GE.3) THEN
-!     RSimulatedPatterns = &
-!          CAmplitudeandPhaseRoot * CONJG(CAmplitudeandPhaseRoot)
-!  END IF
-
-  !Dellocate local Variables !RB RIndividualReflections stays allocated until the images are written
-!  DEALLOCATE(RIndividualReflections,STAT=IErr)
-!     IF( IErr.NE.0 ) THEN
-!        PRINT*,"Felixfunction(", my_rank, ")error deallocating RIndividualReflections"
-!        RETURN
-!     END IF   
-!  DEALLOCATE(IDisplacements,STAT=IErr)
-!  IF( IErr.NE.0 ) THEN
-!     PRINT*,"Felixfunction(",my_rank,")error deallocating IDisplacements"
-!     RETURN
-!  END IF
-!  DEALLOCATE(ICount,STAT=IErr)
-!  IF( IErr.NE.0 ) THEN
-!     PRINT*,"Felixfunction(",my_rank,")error deallocating ICount"
-!     RETURN
-!  END IF
 
 END SUBROUTINE FelixFunction
 
@@ -315,7 +258,7 @@ END SUBROUTINE CalculateFigureofMeritandDetermineThickness
 
 !%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-REAL(RKIND) FUNCTION SimplexFunction(RIndependentVariableValues,IIterationCount,IExitFLAG,IErr)
+REAL(RKIND) FUNCTION SimplexFunction(RIndependentVariable,IIterationCount,IExitFLAG,IErr)
 
   USE MyNumbers
   
@@ -331,7 +274,7 @@ REAL(RKIND) FUNCTION SimplexFunction(RIndependentVariableValues,IIterationCount,
   IMPLICIT NONE
   
   INTEGER(IKIND) :: IErr,IExitFLAG,IThickness
-  REAL(RKIND),DIMENSION(IIndependentVariables),INTENT(INOUT) :: RIndependentVariableValues
+  REAL(RKIND),DIMENSION(INoOfVariables),INTENT(INOUT) :: RIndependentVariable
   INTEGER(IKIND),INTENT(IN) :: IIterationCount
   LOGICAL :: LInitialSimulationFLAG = .FALSE.
   
@@ -340,13 +283,13 @@ REAL(RKIND) FUNCTION SimplexFunction(RIndependentVariableValues,IIterationCount,
   END IF
 
   IF(IRefineModeSelectionArray(1).EQ.1) THEN  !Ug refinement   
-     CALL UpdateStructureFactors(RIndependentVariableValues,IErr)
+     CALL UpdateStructureFactors(RIndependentVariable,IErr)
      IF( IErr.NE.0 ) THEN
         PRINT*,"SimplexFunction(",my_rank,")error in UpdateStructureFactors"
         RETURN
      END IF     
   ELSE !everything else
-     CALL UpdateVariables(RIndependentVariableValues,IErr)
+     CALL UpdateVariables(RIndependentVariable,IErr)
      IF( IErr.NE.0 ) THEN
         PRINT*,"SimplexFunction(",my_rank,")error in UpdateVariables"
         RETURN
@@ -425,7 +368,7 @@ END SUBROUTINE CreateImagesAndWriteOutput
 
 !%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-SUBROUTINE UpdateVariables(RIndependentVariableValues,IErr)
+SUBROUTINE UpdateVariables(RIndependentVariable,IErr)
 
   USE MyNumbers
   
@@ -441,58 +384,58 @@ SUBROUTINE UpdateVariables(RIndependentVariableValues,IErr)
   IMPLICIT NONE
 
   INTEGER(IKIND) :: IVariableType,IErr,ind
-  REAL(RKIND),DIMENSION(IIndependentVariables),INTENT(IN) :: RIndependentVariableValues
+  REAL(RKIND),DIMENSION(INoOfVariables),INTENT(IN) :: RIndependentVariable
 
   !!$  Fill the Independent Value array with values
   IF(IRefineModeSelectionArray(2).EQ.1) THEN     
      RAtomSiteFracCoordVec = RInitialAtomSiteFracCoordVec
   END IF
 
-  DO ind = 1,IIndependentVariables
+  DO ind = 1,INoOfVariables
      IVariableType = IIterativeVariableUniqueIDs(ind,2)
      SELECT CASE (IVariableType)
      CASE(1)
 	    !RB structure factor refinement, do in UpdateStructureFactors
      CASE(2)
-        CALL ConvertVectorMovementsIntoAtomicCoordinates(ind,RIndependentVariableValues,IErr)
+        CALL ConvertVectorMovementsIntoAtomicCoordinates(ind,RIndependentVariable,IErr)
      CASE(3)
         RAtomicSitePartialOccupancy(IIterativeVariableUniqueIDs(ind,3)) = &
-             RIndependentVariableValues(ind)
+             RIndependentVariable(ind)
      CASE(4)
         RIsotropicDebyeWallerFactors(IIterativeVariableUniqueIDs(ind,3)) = &
-             RIndependentVariableValues(ind)
+             RIndependentVariable(ind)
      CASE(5)
         RAnisotropicDebyeWallerFactorTensor(&
              IIterativeVariableUniqueIDs(ind,3),&
              IIterativeVariableUniqueIDs(ind,4),&
              IIterativeVariableUniqueIDs(ind,5)) = & 
-             RIndependentVariableValues(ind)
+             RIndependentVariable(ind)
      CASE(6)
         SELECT CASE(IIterativeVariableUniqueIDs(ind,3))
         CASE(1)
-           RLengthX = RIndependentVariableValues(ind)
+           RLengthX = RIndependentVariable(ind)
         CASE(2)
-           RLengthY = RIndependentVariableValues(ind)
+           RLengthY = RIndependentVariable(ind)
         CASE(3)
-           RLengthZ = RIndependentVariableValues(ind)
+           RLengthZ = RIndependentVariable(ind)
         END SELECT
      CASE(7)
         SELECT CASE(IIterativeVariableUniqueIDs(ind,3))
         CASE(1)
-           RAlpha = RIndependentVariableValues(ind)
+           RAlpha = RIndependentVariable(ind)
         CASE(2)
-           RBeta = RIndependentVariableValues(ind)
+           RBeta = RIndependentVariable(ind)
         CASE(3)
-           RGamma = RIndependentVariableValues(ind)
+           RGamma = RIndependentVariable(ind)
         END SELECT
      CASE(8)
-        RConvergenceAngle = RIndependentVariableValues(ind)
+        RConvergenceAngle = RIndependentVariable(ind)
      CASE(9)
-        RAbsorptionPercentage = RIndependentVariableValues(ind)
+        RAbsorptionPercentage = RIndependentVariable(ind)
      CASE(10)
-        RAcceleratingVoltage = RIndependentVariableValues(ind)
+        RAcceleratingVoltage = RIndependentVariable(ind)
      CASE(11)
-        RRSoSScalingFactor = RIndependentVariableValues(ind)
+        RRSoSScalingFactor = RIndependentVariable(ind)
      END SELECT
   END DO
 
@@ -534,27 +477,30 @@ SUBROUTINE PrintVariables(IErr)
    !           RUgPhase=ATAN2(AIMAG(CUgToRefine(jnd)),REAL(CUgToRefine(jnd)))*180/PI!RB
               WRITE(SPrintString,FMT='(2(1X,F9.4))') REAL(CUgToRefine(jnd)),AIMAG(CUgToRefine(jnd))
               PRINT*,TRIM(ADJUSTL(SPrintString))
-!XX              PRINT*,CUgToRefine(jnd)!,": Amplitude ",RUgAmplitude,", phase ",RUgPhase
            END DO           
-        CASE(2)
+
+		   CASE(2)
            PRINT*,"Current Atomic Coordinates"
            DO jnd = 1,SIZE(RAtomSiteFracCoordVec,DIM=1)
               WRITE(SPrintString,FMT='(A2,3(1X,F9.4))') SAtomName(jnd),RAtomSiteFracCoordVec(jnd,:)
               PRINT*,TRIM(ADJUSTL(SPrintString))              
            END DO
-        CASE(3)
+
+		   CASE(3)
            PRINT*,"Current Atomic Occupancy"
            DO jnd = 1,SIZE(RAtomicSitePartialOccupancy,DIM=1)
               WRITE(SPrintString,FMT='(A2,1X,F9.6)') SAtomName(jnd),RAtomicSitePartialOccupancy(jnd)
               PRINT*,TRIM(ADJUSTL(SPrintString))
            END DO
-        CASE(4)
+
+		   CASE(4)
            PRINT*,"Current Isotropic Debye Waller Factors"
            DO jnd = 1,SIZE(RIsotropicDebyeWallerFactors,DIM=1)
               WRITE(SPrintString,FMT='(A2,1X,F9.6)') SAtomName(jnd),RIsotropicDebyeWallerFactors(jnd)
               PRINT*,TRIM(ADJUSTL(SPrintString))
            END DO
-        CASE(5)
+
+		   CASE(5)
            PRINT*,"Current Anisotropic Debye Waller Factors"
            DO jnd = 1,SIZE(RAnisotropicDebyeWallerFactorTensor,DIM=1)
               DO knd = 1,3
@@ -562,27 +508,33 @@ SUBROUTINE PrintVariables(IErr)
               PRINT*,TRIM(ADJUSTL(SPrintString))
               END DO
            END DO
-        CASE(6)
+
+		   CASE(6)
            PRINT*,"Current Unit Cell Parameters"
            WRITE(SPrintString,FMT='(3(1X,F9.6))') RLengthX,RLengthY,RLengthZ
               PRINT*,TRIM(ADJUSTL(SPrintString))
-        CASE(7)
+
+		  CASE(7)
            PRINT*,"Current Unit Cell Angles"
            WRITE(SPrintString,FMT='(3(F9.6,1X))') RAlpha,RBeta,RGamma
               PRINT*,TRIM(ADJUSTL(SPrintString))
-        CASE(8)
+
+		  CASE(8)
            PRINT*,"Current Convergence Angle"
            WRITE(SPrintString,FMT='((F9.6,1X))') RConvergenceAngle
               PRINT*,TRIM(ADJUSTL(SPrintString))
-        CASE(9)
+
+		  CASE(9)
            PRINT*,"Current Absorption Percentage"
            WRITE(SPrintString,FMT='((F9.6,1X))') RAbsorptionPercentage
               PRINT*,TRIM(ADJUSTL(SPrintString))
-        CASE(10)
+
+		  CASE(10)
            PRINT*,"Current Accelerating Voltage"
            WRITE(SPrintString,FMT='((F9.6,1X))') RAcceleratingVoltage
               PRINT*,TRIM(ADJUSTL(SPrintString))
-        CASE(11)
+
+		  CASE(11)
            PRINT*,"Current Residual Sum of Squares Scaling Factor"
            WRITE(SPrintString,FMT='((F9.6,1X))') RRSoSScalingFactor
               PRINT*,TRIM(ADJUSTL(SPrintString))
@@ -594,7 +546,7 @@ END SUBROUTINE PrintVariables
 
 !%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-SUBROUTINE UpdateStructureFactors(RIndependentVariableValues,IErr)
+SUBROUTINE UpdateStructureFactors(RIndependentVariable,IErr)
   
   USE MyNumbers
   
@@ -610,21 +562,21 @@ SUBROUTINE UpdateStructureFactors(RIndependentVariableValues,IErr)
   IMPLICIT NONE
   
   INTEGER(IKIND) :: IErr,ind
-  REAL(RKIND),DIMENSION(IIndependentVariables),INTENT(IN) :: RIndependentVariableValues
+  REAL(RKIND),DIMENSION(INoOfVariables),INTENT(IN) :: RIndependentVariable
 
   IF(IRefineModeSelectionArray(1).EQ.1) THEN
      DO ind = 1,INoofUgs
         CUgToRefine(ind+1) = &!yy ind+1 instead of ind
-             CMPLX(RIndependentVariableValues((ind-1)*2+1),RIndependentVariableValues((ind-1)*2+2),CKIND)
+             CMPLX(RIndependentVariable((ind-1)*2+1),RIndependentVariable((ind-1)*2+2),CKIND)
      END DO
-	 RAbsorptionPercentage = RIndependentVariableValues(2*INoofUgs+1)!RB
+	 RAbsorptionPercentage = RIndependentVariable(2*INoofUgs+1)!RB
   END IF
   
 END SUBROUTINE UpdateStructureFactors
 
 !%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-SUBROUTINE ConvertVectorMovementsIntoAtomicCoordinates(IVariableID,RIndependentVariableValues,IErr)
+SUBROUTINE ConvertVectorMovementsIntoAtomicCoordinates(IVariableID,RIndependentVariable,IErr)
 
   USE MyNumbers
   
@@ -640,8 +592,8 @@ SUBROUTINE ConvertVectorMovementsIntoAtomicCoordinates(IVariableID,RIndependentV
   IMPLICIT NONE
 
   INTEGER(IKIND) :: IErr,ind,jnd,IVariableID,IVectorID,IAtomID
-  REAL(RKIND),DIMENSION(IIndependentVariables),INTENT(IN) :: &
-       RIndependentVariableValues
+  REAL(RKIND),DIMENSION(INoOfVariables),INTENT(IN) :: &
+       RIndependentVariable
 
 !!$  Use IVariableID to determine which vector is being applied (IVectorID)
   IVectorID = IIterativeVariableUniqueIDs(IVariableID,3)
@@ -651,7 +603,7 @@ SUBROUTINE ConvertVectorMovementsIntoAtomicCoordinates(IVariableID,RIndependentV
 
 !!$  Use IAtomID to applied the IVectodID Vector to the IAtomID atomic coordinate
   RAtomSiteFracCoordVec(IAtomID,:) = RAtomSiteFracCoordVec(IAtomID,:) + &
-       RIndependentVariableValues(IVariableID)*RAllowedVectors(IVectorID,:)
+       RIndependentVariable(IVariableID)*RAllowedVectors(IVectorID,:)
   
 END SUBROUTINE ConvertVectorMovementsIntoAtomicCoordinates
 

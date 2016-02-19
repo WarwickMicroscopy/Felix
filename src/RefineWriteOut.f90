@@ -316,7 +316,7 @@ SUBROUTINE WriteOutVariables(IIterationCount,IErr)
            IEnd = ind*2
            RDataOut(IStart:IEnd) = [REAL(REAL(CUgMat(ind,1)),RKIND), REAL(AIMAG(CUgMat(ind,1)),RKIND)]
         END DO
-		RDataOut(IEnd+1) = RAbsorptionPercentage!RIndependentVariableValues(2*INoofUgs+1)!RB last variable is absorption
+		RDataOut(IEnd+1) = RAbsorptionPercentage!RIndependentVariable(2*INoofUgs+1)!RB last variable is absorption
      CASE(2)
         RDataOut(IStart:IEnd) = RESHAPE(TRANSPOSE(RAtomSiteFracCoordVec),SHAPE(RDataOut(IStart:IEnd)))
      CASE(3)

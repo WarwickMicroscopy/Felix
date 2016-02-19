@@ -132,8 +132,7 @@ SUBROUTINE SymmetryRelatedStructureFactorDetermination (IErr)
      PRINT*,"SymmetryRelatedStructureFactorDetermination(",my_rank,")error allocating IEquivalentUgKey"
      RETURN
   END IF
-  ALLOCATE(CUgToRefine(Iuid),&
-       STAT=IErr)
+  ALLOCATE(CUgToRefine(Iuid),STAT=IErr)
   IF( IErr.NE.0 ) THEN
      PRINT*,"SymmetryRelatedStructureFactorDetermination(",my_rank,")error allocating CUgToRefine"
      RETURN
@@ -160,7 +159,7 @@ SUBROUTINE StructureFactorInitialisation (IErr)
   IMPLICIT NONE
 
   INTEGER(IKIND) :: ind,jnd,knd,lnd,oddindlorentz,evenindlorentz,oddindgauss, &
-       evenindgauss,imaxj,IFound,ICount,currentatom,IErr
+       evenindgauss,currentatom,IErr
   INTEGER(IKIND),DIMENSION(2) :: IPos,ILoc
   COMPLEX(CKIND) :: CVgij
   REAL(RKIND) :: RMeanInnerPotentialVolts,RAtomicFormFactor, Lorentzian,Gaussian
@@ -270,13 +269,9 @@ SUBROUTINE StructureFactorInitialisation (IErr)
   CALL Message("StructureFactorInitialisation",IMoreInfo,IErr, &
        MessageVariable = "RMeanInnerCrystalPotential", &
        RVariable = RMeanInnerCrystalPotential)
-
   CALL Message("StructureFactorInitialisation",IMoreInfo,IErr, &
        MessageVariable = "RMeanInnerPotentialVolts", &
        RVariable = RMeanInnerPotentialVolts)
-
-  !Now initialisation calls the Ug calculation subroutines
-  !Used to be in Setup
 
   !--------------------------------------------------------------------
   ! high-energy approximation (not HOLZ compatible)

@@ -87,14 +87,14 @@ SUBROUTINE StructureFactorSetup(IErr)
   END IF
 
   !Dellocation-------------------------------------------------------- 
-  DEALLOCATE(RgMatMat,STAT=IErr)
-  IF( IErr.NE.0 ) THEN
-     PRINT*,"StructureFactorSetup(",my_rank,")error deallocating RgMatMat"
-     RETURN
-  END IF
   DEALLOCATE(RgMatMag,STAT=IErr)
   IF( IErr.NE.0 ) THEN
      PRINT*,"StructureFactorSetup(",my_rank,")error deallocating RgMatMag"
+     RETURN
+  END IF
+  DEALLOCATE(RgMatMat,STAT=IErr)
+  IF( IErr.NE.0 ) THEN
+     PRINT*,"StructureFactorSetup(",my_rank,")error deallocating RgMatMat"
      RETURN
   END IF
 

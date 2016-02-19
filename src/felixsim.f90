@@ -58,12 +58,9 @@ PROGRAM felixsim
 
   REAL(RKIND) :: RThickness,Duration,time, norm
   INTEGER(IKIND) :: ind,jnd,hnd,knd,pnd,gnd,IErr, &
-       IHours,IMinutes,ISeconds,IMilliSeconds,IThicknessIndex, &
-       ILocalPixelCountMin, ILocalPixelCountMax
+       IHours,IMinutes,ISeconds,IMilliSeconds,IThicknessIndex
   INTEGER :: IStartTime, ICurrentTime ,IRate
-  INTEGER(IKIND), DIMENSION(:), ALLOCATABLE :: IDisplacements,ICount
-  REAL(RKIND),DIMENSION(:,:,:),ALLOCATABLE :: RSimulatedPatterns,&
-       RFinalMontageImageRoot
+  REAL(RKIND),DIMENSION(:,:,:),ALLOCATABLE :: RFinalMontageImageRoot
   COMPLEX(CKIND),DIMENSION(:,:,:), ALLOCATABLE :: CAmplitudeandPhaseRoot
   CHARACTER*40 surname, my_rank_string 
   CHARACTER*1000  SLocalPixelCountMin, SLocalPixelCountMax

@@ -61,8 +61,8 @@ PROGRAM Felixrefine
        RFigureOfMerit,SimplexFunction,RHOLZAcceptanceAngle,RLaueZoneGz
   INTEGER(IKIND) :: IStartTime, ICurrentTime ,IRate
   INTEGER(IKIND), DIMENSION(:),ALLOCATABLE :: IOriginGVecIdentifier
-  REAL(RKIND), DIMENSION(:,:), ALLOCATABLE :: RSimplexVolume
-  REAL(RKIND),DIMENSION(:),ALLOCATABLE :: RSimplexFoM,RIndependentVariableValues
+  REAL(RKIND), DIMENSION(:,:), ALLOCATABLE :: RSimplexVariable
+  REAL(RKIND),DIMENSION(:),ALLOCATABLE :: RSimplexFoM,RIndependentVariable
   REAL(RKIND), DIMENSION(:,:), ALLOCATABLE :: RgDummyVecMat,RgPoolMagLaue
   REAL(RKIND) :: RBCASTREAL,RStandardDeviation,RMean,RGzUnitVec,RMinLaueZoneValue,&
        RMaxLaueZoneValue,RMaxAcceptanceGVecMag,RLaueZoneElectronWaveVectorMag
@@ -450,30 +450,28 @@ RFullIsotropicDebyeWallerFactor,IFullAtomicNumber,IFullAnisotropicDWFTensor)
        IRefineModeSelectionArray(11)
  
   !Number of independent variables
-  IIndependentVariables = SUM(INoofElementsForEachRefinementType)
+  INoOfVariables = SUM(INoofElementsForEachRefinementType)
   IF(my_rank.EQ.0) THEN
-    IF ( IIndependentVariables.EQ.1 ) THEN 
+    IF ( INoOfVariables.EQ.1 ) THEN 
       PRINT*,"Only one independent variable"
 	ELSE
-      WRITE(SPrintString,FMT='(I3,1X,A21))') IIndependentVariables,"independent variables"
+      WRITE(SPrintString,FMT='(I3,1X,A21))') INoOfVariables,"independent variables"
       PRINT*,TRIM(ADJUSTL(SPrintString))
     END IF
   END IF
 
-  !allocations--------------------------------------------------------------------
-  ALLOCATE(IIterativeVariableUniqueIDs(IIndependentVariables,5),STAT=IErr)
+  !--------------------------------------------------------------------
+  !  Assign IDs
+  ALLOCATE(IIterativeVariableUniqueIDs(INoOfVariables,5),STAT=IErr)
   IF( IErr.NE.0 ) THEN
      PRINT*,"felixrefine(",my_rank,")error allocating IIterativeVariableUniqueIDs"
      GOTO 9999
   ENDIF
-  ALLOCATE(RIndependentVariableValues(IIndependentVariables),STAT=IErr)  
+  ALLOCATE(RIndependentVariable(INoOfVariables),STAT=IErr)  
   IF( IErr.NE.0 ) THEN
-     PRINT*,"felixrefine(",my_rank,")error allocating  RIndependentVariableValues"
+     PRINT*,"felixrefine(",my_rank,")error allocating RIndependentVariable"
      GOTO 9999
   END IF
-
-  !--------------------------------------------------------------------
-  !  Assign IDs  
   IIterativeVariableUniqueIDs = 0
   ICalls = 0
   DO ind = 1,IRefinementVariableTypes !Loop over all possible iterative variables
@@ -565,12 +563,12 @@ RFullIsotropicDebyeWallerFactor,IFullAtomicNumber,IFullAnisotropicDWFTensor)
   
   !--------------------------------------------------------------------
   ! Initialise Simplex
-  ALLOCATE(RSimplexVolume(IIndependentVariables+1,IIndependentVariables), STAT=IErr)  
+  ALLOCATE(RSimplexVariable(INoOfVariables+1,INoOfVariables), STAT=IErr)  
   IF( IErr.NE.0 ) THEN
-     PRINT*,"felixrefine(",my_rank,")error allocating RSimplexVolume"
+     PRINT*,"felixrefine(",my_rank,")error allocating RSimplexVariable"
      GOTO 9999
   END IF
-  ALLOCATE(RSimplexFoM(IIndependentVariables),STAT=IErr)  
+  ALLOCATE(RSimplexFoM(INoOfVariables),STAT=IErr)  
   IF( IErr.NE.0 ) THEN
      PRINT*,"felixrefine(",my_rank,")error allocating RSimplexFoM"
      GOTO 9999
@@ -578,7 +576,7 @@ RFullIsotropicDebyeWallerFactor,IFullAtomicNumber,IFullAnisotropicDWFTensor)
   
   IIterationCount = 0
 
-  CALL SimplexInitialisation(RSimplexVolume,RSimplexFoM,RIndependentVariableValues,IIterationCount,RStandardDeviation,RMean,IErr)
+  CALL SimplexInitialisation(RSimplexVariable,RSimplexFoM,RIndependentVariable,IIterationCount,RStandardDeviation,RMean,IErr)
   IF( IErr.NE.0 ) THEN
      PRINT*,"felixrefine(",my_rank,")error in SimplexInitialisation"
      GOTO 9999
@@ -588,9 +586,9 @@ RFullIsotropicDebyeWallerFactor,IFullAtomicNumber,IFullAnisotropicDWFTensor)
  
   !--------------------------------------------------------------------
   ! Apply Simplex Method
-  CALL NDimensionalDownhillSimplex(RSimplexVolume,RSimplexFoM,&
-       IIndependentVariables+1,&
-       IIndependentVariables,IIndependentVariables,&
+  CALL NDimensionalDownhillSimplex(RSimplexVariable,RSimplexFoM,&
+       INoOfVariables+1,&
+       INoOfVariables,INoOfVariables,&
        RExitCriteria,IIterationCount,RStandardDeviation,RMean,IErr)
   IF( IErr.NE.0 ) THEN
      PRINT*,"felixrefine(",my_rank,")error in NDimensionalDownhillSimplex"
@@ -610,13 +608,6 @@ RFullIsotropicDebyeWallerFactor,IFullAtomicNumber,IFullAnisotropicDWFTensor)
      PRINT*,"felixrefine(",my_rank,") error deallocating RImageExpi"
      GOTO 9999
   ENDIF
-!  IF(IImageFLAG.GE.3) THEN!RB Bloch wave amplitude and phase, to be sorted out if desired later
-!     DEALLOCATE(CAmplitudeandPhaseRoot,STAT=IErr)     
-!     IF( IErr.NE.0 ) THEN
-!        PRINT*,"Felixfunction(",my_rank,")error deallocating CAmplitudeandPhase"
-!        RETURN  
-!     END IF
-!  END IF
 
   DEALLOCATE(ISymmetryRelations,IEquivalentUgKey,CUgToRefine)
   DEALLOCATE(RIndividualReflections,IDisplacements,ICount)
@@ -629,8 +620,6 @@ RFullIsotropicDebyeWallerFactor,IFullAtomicNumber,IFullAnisotropicDWFTensor)
 	
   !--------------------------------------------------------------------
   ! finish off
-  !--------------------------------------------------------------------
-  
   WRITE(my_rank_string,*) my_rank
   CALL SYSTEM_CLOCK(ICurrentTime)
   Duration=REAL(ICurrentTime-IStartTime)/REAL(IRate)
@@ -683,7 +672,7 @@ SUBROUTINE AssignArrayLocationsToIterationVariables(IIterativeVariableType,IVari
 
   INTEGER(IKIND) :: IIterativeVariableType,IVariableNo,IErr,IArrayIndex,&
        IAnisotropicDebyeWallerFactorElementNo
-  INTEGER(IKIND),DIMENSION(IIndependentVariables,5),INTENT(OUT) :: IArrayToFill  
+  INTEGER(IKIND),DIMENSION(INoOfVariables,5),INTENT(OUT) :: IArrayToFill  
 
 !!$  Calculate How Many of Each Variable Type There are
 !  CALL DetermineNumberofRefinementVariablesPerType(INoofElementsForEachRefinementType,IErr)
@@ -762,7 +751,7 @@ END SUBROUTINE AssignArrayLocationsToIterationVariables
 
 !%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-SUBROUTINE RefinementVariableSetup(RIndependentVariableValues,IErr)
+SUBROUTINE RefinementVariableSetup(RIndependentVariable,IErr)
   
   USE MyNumbers
   
@@ -778,7 +767,7 @@ SUBROUTINE RefinementVariableSetup(RIndependentVariableValues,IErr)
   IMPLICIT NONE
   
   INTEGER(IKIND) :: IErr,ind,IVariableType
-  REAL(RKIND),DIMENSION(IIndependentVariables),INTENT(OUT) :: RIndependentVariableValues
+  REAL(RKIND),DIMENSION(INoOfVariables),INTENT(OUT) :: RIndependentVariable
   
   IF((IWriteFLAG.GE.10.AND.my_rank.EQ.0).OR.IWriteFLAG.GE.10) THEN
      PRINT*,"RefinementVariableSetup(",my_rank,")"
@@ -786,22 +775,32 @@ SUBROUTINE RefinementVariableSetup(RIndependentVariableValues,IErr)
   
 !!$  Fill the Independent Value array with values
 
-  DO ind = 1,IIndependentVariables
+  DO ind = 1,INoOfVariables
      IVariableType = IIterativeVariableUniqueIDs(ind,2)
      SELECT CASE (IVariableType)
      CASE(1)
 	    !Structure factor refinement, define in SymmetryRelatedStructureFactorDetermination
-     CASE(2)
-        RIndependentVariableValues(ind) = &
+!  IF(IRefineModeSelectionArray(1).EQ.1) THEN
+!     DO ind = 1,INoofUgs !RB ignore the first one as it is the internal potential
+!        RIndependentVariable((ind-1)*2+1) = &!yy
+!             REAL(CUgToRefine(ind+1),RKIND)!yy ind+1 instead of ind
+!        RIndependentVariable((ind-1)*2+2) = &
+!             AIMAG(CUgToRefine(ind+1))!yy ind+1 instead of ind
+!     END DO
+!  END IF
+!  RIndependentVariable(2*INoofUgs+1) = RAbsorptionPercentage!RB absorption always included in structure factor refinement as last variable
+
+  CASE(2)
+        RIndependentVariable(ind) = &
              RAllowedVectorMagnitudes(IIterativeVariableUniqueIDs(ind,3))
      CASE(3)
-        RIndependentVariableValues(ind) = &
+        RIndependentVariable(ind) = &
              RAtomicSitePartialOccupancy(IIterativeVariableUniqueIDs(ind,3))
      CASE(4)
-        RIndependentVariableValues(ind) = &
+        RIndependentVariable(ind) = &
              RIsotropicDebyeWallerFactors(IIterativeVariableUniqueIDs(ind,3))
      CASE(5)
-        RIndependentVariableValues(ind) = &
+        RIndependentVariable(ind) = &
              RAnisotropicDebyeWallerFactorTensor(&
              IIterativeVariableUniqueIDs(ind,3),&
              IIterativeVariableUniqueIDs(ind,4),&
@@ -809,32 +808,32 @@ SUBROUTINE RefinementVariableSetup(RIndependentVariableValues,IErr)
      CASE(6)
         SELECT CASE(IIterativeVariableUniqueIDs(ind,3))
         CASE(1)
-           RIndependentVariableValues(ind) = RLengthX
+           RIndependentVariable(ind) = RLengthX
         CASE(2)
-           RIndependentVariableValues(ind) = RLengthY
+           RIndependentVariable(ind) = RLengthY
         CASE(3)
-           RIndependentVariableValues(ind) = RLengthZ
+           RIndependentVariable(ind) = RLengthZ
         END SELECT
      CASE(7)
         SELECT CASE(IIterativeVariableUniqueIDs(ind,3))
         CASE(1)
-           RIndependentVariableValues(ind) = RAlpha
+           RIndependentVariable(ind) = RAlpha
         CASE(2)
-           RIndependentVariableValues(ind) = RBeta
+           RIndependentVariable(ind) = RBeta
         CASE(3)
-           RIndependentVariableValues(ind) = RGamma
+           RIndependentVariable(ind) = RGamma
         END SELECT
      CASE(8)
-        RIndependentVariableValues(ind) = &
+        RIndependentVariable(ind) = &
              RConvergenceAngle
      CASE(9)
-        RIndependentVariableValues(ind) = &
+        RIndependentVariable(ind) = &
              RAbsorptionPercentage
      CASE(10)
-        RIndependentVariableValues(ind) = &
+        RIndependentVariable(ind) = &
              RAcceleratingVoltage
      CASE(11)
-        RIndependentVariableValues(ind) = &
+        RIndependentVariable(ind) = &
              RRSoSScalingFactor
      END SELECT
   END DO
@@ -843,7 +842,7 @@ END SUBROUTINE RefinementVariableSetup
  
 !%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-SUBROUTINE StructureFactorRefinementSetup(RIndependentVariableValues,IIterationCount,IErr)
+SUBROUTINE StructureFactorRefinementSetup(RIndependentVariable,IIterationCount,IErr)
   
   USE MyNumbers
   
@@ -858,8 +857,8 @@ SUBROUTINE StructureFactorRefinementSetup(RIndependentVariableValues,IIterationC
   
   IMPLICIT NONE
   
-  INTEGER(IKIND) :: IErr,ind
-  REAL(RKIND),DIMENSION(IIndependentVariables),INTENT(OUT) :: RIndependentVariableValues
+  INTEGER(IKIND) :: IErr,ind,jnd
+  REAL(RKIND),DIMENSION(INoOfVariables),INTENT(OUT) :: RIndependentVariable
   INTEGER(IKIND),INTENT(IN) :: IIterationCount
   CHARACTER*200 :: SPrintString
 
@@ -867,21 +866,14 @@ SUBROUTINE StructureFactorRefinementSetup(RIndependentVariableValues,IIterationC
      PRINT*,"StructureFactorRefinementSetup(",my_rank,")"
   END IF
 
-  IF(IRefineModeSelectionArray(1).EQ.1) THEN
-     DO ind = 1,INoofUgs !RB ignore the first one as it is the internal potential
-        RIndependentVariableValues((ind-1)*2+1) = &!yy
-             REAL(CUgToRefine(ind+1),RKIND)!yy ind+1 instead of ind
-        RIndependentVariableValues((ind-1)*2+2) = &
-             AIMAG(CUgToRefine(ind+1))!yy ind+1 instead of ind
-     END DO
-  END IF
-  RIndependentVariableValues(2*INoofUgs+1) = RAbsorptionPercentage!RB absorption always included in structure factor refinement as last variable
-
-!yyDO ind = 1,2*INoofUgs+1!yy
-!yy  WRITE(SPrintString,FMT='(A3,I2,A1,F7.4)') "RB ",ind,":",RIndependentVariableValues(ind)
-!yy  PRINT*,TRIM(ADJUSTL(SPrintString))
-!yy END DO
-
+  !jnd =0
+  DO ind = 1,INoofUgs !RB ignore the first one as it is the internal potential
+     RIndependentVariable((ind-1)*2+1) = &!yy
+          REAL(CUgToRefine(ind+1),RKIND)!yy ind+1 instead of ind
+     RIndependentVariable((ind-1)*2+2) = &
+          AIMAG(CUgToRefine(ind+1))!yy ind+1 instead of ind
+  END DO
+  RIndependentVariable(2*INoofUgs+1) = RAbsorptionPercentage!RB absorption always included in structure factor refinement as last variable
 
 END SUBROUTINE StructureFactorRefinementSetup
 
@@ -964,7 +956,7 @@ END SUBROUTINE RankSymmetryRelatedStructureFactor
 
 !%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-SUBROUTINE SimplexInitialisation(RSimplexVolume,RSimplexFoM,RIndependentVariableValues,&
+SUBROUTINE SimplexInitialisation(RSimplexVariable,RSimplexFoM,RIndependentVariable,&
      IIterationCount,RStandardDeviation,RMean,IErr)
   
   USE MyNumbers
@@ -982,10 +974,10 @@ SUBROUTINE SimplexInitialisation(RSimplexVolume,RSimplexFoM,RIndependentVariable
 
   INTEGER(IKIND) :: IErr,ind,jnd,IExitFLAG
   LOGICAL :: LInitialSimulationFLAG = .TRUE.
-  REAL(RKIND),DIMENSION(IIndependentVariables+1,IIndependentVariables),INTENT(OUT) :: RSimplexVolume
-  REAL(RKIND),DIMENSION(IIndependentVariables+1),INTENT(OUT) :: RSimplexFoM
+  REAL(RKIND),DIMENSION(INoOfVariables+1,INoOfVariables),INTENT(OUT) :: RSimplexVariable
+  REAL(RKIND),DIMENSION(INoOfVariables+1),INTENT(OUT) :: RSimplexFoM
   REAL(RKIND) :: SimplexFunction,RSimplexDummy
-  REAL(RKIND),DIMENSION(IIndependentVariables),INTENT(INOUT) :: RIndependentVariableValues
+  REAL(RKIND),DIMENSION(INoOfVariables),INTENT(INOUT) :: RIndependentVariable
   INTEGER(IKIND),INTENT(INOUT) :: IIterationCount
   REAL(RKIND),INTENT(OUT) :: RStandardDeviation,RMean
   REAL(RKIND) :: RStandardError,RStandardTolerance
@@ -1017,14 +1009,14 @@ SUBROUTINE SimplexInitialisation(RSimplexVolume,RSimplexFoM,RIndependentVariable
      ENDIF
   END IF
 
-  CALL RefinementVariableSetup(RIndependentVariableValues,IErr)
+  CALL RefinementVariableSetup(RIndependentVariable,IErr)
   IF( IErr.NE.0 ) THEN
      PRINT*,"SimplexInitialisation(", my_rank, ") error in RefinementVariableSetup()"
      RETURN
   ENDIF
  
   IF(IRefineModeSelectionArray(1).EQ.1) THEN
-     CALL StructureFactorRefinementSetup(RIndependentVariableValues,IIterationCount,IErr)
+     CALL StructureFactorRefinementSetup(RIndependentVariable,IIterationCount,IErr)
      IF( IErr.NE.0 ) THEN
         PRINT*,"SimplexInitialisation(", my_rank, ") error in StructureFactorRefinementSetup()"
         RETURN
@@ -1034,18 +1026,18 @@ SUBROUTINE SimplexInitialisation(RSimplexVolume,RSimplexFoM,RIndependentVariable
 !!$ RandomSequence
   !IF(IContinueFLAG.EQ.0) THEN
      IF(my_rank.EQ.0) THEN
-        CALL CreateRandomisedSimplex(RSimplexVolume,RIndependentVariableValues,IErr)
+        CALL CreateRandomisedSimplex(RSimplexVariable,RIndependentVariable,IErr)
      END IF
-     CALL MPI_BCAST(RSimplexVolume,(IIndependentVariables+1)*(IIndependentVariables),MPI_DOUBLE_PRECISION,0,MPI_COMM_WORLD,IErr)
+     CALL MPI_BCAST(RSimplexVariable,(INoOfVariables+1)*(INoOfVariables),MPI_DOUBLE_PRECISION,0,MPI_COMM_WORLD,IErr)
 
-     DO ind = 1,(IIndependentVariables+1)
+     DO ind = 1,(INoOfVariables+1)
         IF((IWriteFLAG.GE.0.AND.my_rank.EQ.0).OR.IWriteFLAG.GE.10) THEN
            PRINT*,"--------------------------------"
-           WRITE(SPrintString,FMT='(A8,I2,A4,I3)') "Simplex ",ind," of ",IIndependentVariables+1
+           WRITE(SPrintString,FMT='(A8,I2,A4,I3)') "Simplex ",ind," of ",INoOfVariables+1
            PRINT*,TRIM(ADJUSTL(SPrintString))
            PRINT*,"--------------------------------"
         END IF
-        RSimplexDummy = SimplexFunction(RSimplexVolume(ind,:),1,0,IErr)
+        RSimplexDummy = SimplexFunction(RSimplexVariable(ind,:),1,0,IErr)
         IF( IErr.NE.0 ) THEN
            PRINT*,"SimplexInitialisation(",my_rank,") error in SimplexFunction"
            RETURN
@@ -1060,7 +1052,7 @@ SUBROUTINE SimplexInitialisation(RSimplexVolume,RSimplexFoM,RIndependentVariable
 
   !ELSE
     
-   !  CALL RecoverSavedSimplex(RSimplexVolume,RSimplexFoM,RStandardDeviation,RMean,IIterationCount,IErr)
+   !  CALL RecoverSavedSimplex(RSimplexVariable,RSimplexFoM,RStandardDeviation,RMean,IIterationCount,IErr)
    !  IF( IErr.NE.0 ) THEN
    !     PRINT*,"SimplexInitialisation (", my_rank, ") error in RecoverSavedSimplex()"
    !     RETURN
@@ -1072,7 +1064,7 @@ END SUBROUTINE SimplexInitialisation
 
 !%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-SUBROUTINE CreateRandomisedSimplex(RSimplexVolume,RIndependentVariableValues,IErr)
+SUBROUTINE CreateRandomisedSimplex(RSimplexVariable,RIndependentVariable,IErr)
 
 USE MyNumbers
   
@@ -1087,11 +1079,11 @@ USE MyNumbers
   
   INTEGER(IKIND) :: IErr,ind
   REAL(RKIND),DIMENSION(:),ALLOCATABLE :: RRandomSigns,RRandomNumbers
-  REAL(RKIND),DIMENSION(IIndependentVariables+1,IIndependentVariables),INTENT(OUT) :: RSimplexVolume
-  REAL(RKIND),DIMENSION(IIndependentVariables),INTENT(INOUT) :: RIndependentVariableValues
+  REAL(RKIND),DIMENSION(INoOfVariables+1,INoOfVariables),INTENT(OUT) :: RSimplexVariable
+  REAL(RKIND),DIMENSION(INoOfVariables),INTENT(INOUT) :: RIndependentVariable
   
   IF(IRefineModeSelectionArray(2).EQ.1) THEN
-     DO ind = 1,(IIndependentVariables+1)
+     DO ind = 1,(INoOfVariables+1)
         ALLOCATE(RRandomSigns(IAllowedVectors),RRandomNumbers(IAllowedVectors),&
              STAT=IErr)       
         
@@ -1103,49 +1095,44 @@ USE MyNumbers
         ELSEWHERE
            RRandomSigns = -ONE
         END WHERE
-        
-        RSimplexVolume(ind,:IAllowedVectors) = &
+        RSimplexVariable(ind,:IAllowedVectors) = &
              RRandomNumbers*RRandomSigns*RSimplexLengthScale
-        
-        DEALLOCATE(RRandomSigns,RRandomNumbers)
-        
-        ALLOCATE(RRandomSigns(IIndependentVariables-IAllowedVectors),&
-             RRandomNumbers(IIndependentVariables-IAllowedVectors),&
+        DEALLOCATE(RRandomSigns,RRandomNumbers) 
+        ALLOCATE(RRandomSigns(INoOfVariables-IAllowedVectors),&
+             RRandomNumbers(INoOfVariables-IAllowedVectors),&
              STAT=IErr)
         
 !!$           Randomise Everything else
-        
         CALL RandomSequence(RRandomNumbers,&
-             IIndependentVariables-IAllowedVectors,ind,IErr)
+             INoOfVariables-IAllowedVectors,ind,IErr)
         CALL RandomSequence(RRandomSigns,&
-             IIndependentVariables-IAllowedVectors,2*ind,IErr)
+             INoOfVariables-IAllowedVectors,2*ind,IErr)
         WHERE (RRandomSigns.LT.HALF)
            RRandomSigns = ONE
         ELSEWHERE
            RRandomSigns = -ONE
         END WHERE
-        
-        RSimplexVolume(ind,(IAllowedVectors+1):) = &
-             RIndependentVariableValues((IAllowedVectors+1):)*&
+        RSimplexVariable(ind,(IAllowedVectors+1):) = &
+             RIndependentVariable((IAllowedVectors+1):)*&
              (1+(RRandomNumbers*RRandomSigns*RSimplexLengthScale))
         DEALLOCATE(RRandomSigns,RRandomNumbers)
         
      END DO
      
   ELSE
-     ALLOCATE(RRandomSigns(IIndependentVariables),&
-          RRandomNumbers(IIndependentVariables),STAT=IErr)
+     ALLOCATE(RRandomSigns(INoOfVariables),&
+          RRandomNumbers(INoOfVariables),STAT=IErr)
      
-     DO ind = 1,(IIndependentVariables+1)
-        CALL RandomSequence(RRandomNumbers,IIndependentVariables,ind,IErr)
-        CALL RandomSequence(RRandomSigns,IIndependentVariables,2*ind,IErr)
+     DO ind = 1,(INoOfVariables+1)
+        CALL RandomSequence(RRandomNumbers,INoOfVariables,ind,IErr)
+        CALL RandomSequence(RRandomSigns,INoOfVariables,2*ind,IErr)
         WHERE (RRandomSigns.LT.HALF)
            RRandomSigns = ONE
         ELSEWHERE
            RRandomSigns = -ONE
         END WHERE
-        RSimplexVolume(ind,:) = &
-             RIndependentVariableValues(:)*&
+        RSimplexVariable(ind,:) = &
+             RIndependentVariable(:)*&
              (1+(RRandomNumbers*RRandomSigns*RSimplexLengthScale))
      END DO
         DEALLOCATE(RRandomSigns,RRandomNumbers)
@@ -1384,9 +1371,6 @@ SUBROUTINE ApplyNewStructureFactors(IErr)
   WHERE(ABS(CUgMatDummy).GT.TINY)
      CUgMat = CUgMatDummy!RB
   END WHERE
-
-!!$  CUgMatNoAbs now contains the new values from the iterative process
-! N.B. CUgMatNoAbs is without absorption and therefore Hermitian
   
 END SUBROUTINE ApplyNewStructureFactors
 
@@ -1427,7 +1411,7 @@ END SUBROUTINE CreateIdentityMatrix
 
 !!$  %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-SUBROUTINE RecoverSavedSimplex(RSimplexVolume,RSimplexFoM,RStandardDeviation,RMean,IIterationCount,IErr)
+SUBROUTINE RecoverSavedSimplex(RSimplexVariable,RSimplexFoM,RStandardDeviation,RMean,IIterationCount,IErr)
 
 !!$  %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 !!$  % This Subroutine reads the fr-simplex.txt file from a previous
@@ -1450,9 +1434,9 @@ SUBROUTINE RecoverSavedSimplex(RSimplexVolume,RSimplexFoM,RStandardDeviation,RMe
 
   INTEGER(IKIND) :: &
        IErr,ind,IIterationCount
-  REAL(RKIND),DIMENSION(IIndependentVariables+1,IIndependentVariables) :: &
-       RSimplexVolume
-  REAL(RKIND),DIMENSION(IIndependentVariables+1) :: &
+  REAL(RKIND),DIMENSION(INoOfVariables+1,INoOfVariables) :: &
+       RSimplexVariable
+  REAL(RKIND),DIMENSION(INoOfVariables+1) :: &
        RSimplexFoM
   REAL(RKIND) :: &
        RStandardDeviation,RMean
@@ -1464,11 +1448,11 @@ SUBROUTINE RecoverSavedSimplex(RSimplexVolume,RSimplexFoM,RStandardDeviation,RMe
   OPEN(UNIT=IChOutSimplex,STATUS='UNKNOWN',&
         FILE=TRIM(ADJUSTL(filename)))
   
-  WRITE(CSizeofData,*) IIndependentVariables+1
+  WRITE(CSizeofData,*) INoOfVariables+1
   WRITE(SFormatString,*) "("//TRIM(ADJUSTL(CSizeofData))//"(1F6.3,1X),A1)"
 
-  DO ind = 1,(IIndependentVariables+1)
-     READ(IChOutSimplex,FMT=SFormatString) RSimplexVolume(ind,:),RSimplexFoM(ind)
+  DO ind = 1,(INoOfVariables+1)
+     READ(IChOutSimplex,FMT=SFormatString) RSimplexVariable(ind,:),RSimplexFoM(ind)
   END DO
     
   READ(IChOutSimplex,FMT="(2(1F6.3,1X),I5.1,I5.1,A1)") RStandardDeviation,RMean,IStandardDeviationCalls,IIterationCount

@@ -630,7 +630,7 @@ SUBROUTINE ConvertSpaceGroupToNumber(ISpaceGrp,IErr)
 
   IMPLICIT NONE
 
-  INTEGER(IKIND) :: IErr,ICount,IIndex,ind
+  INTEGER(IKIND) :: IErr,jnd,IIndex,ind
   INTEGER(IKIND),INTENT(OUT) :: ISpaceGrp
   CHARACTER(LEN(SSpaceGrp)) :: SSpaceGrpNoSpaces
   CHARACTER*20 :: SSpaceGrpToCompare
@@ -641,7 +641,7 @@ SUBROUTINE ConvertSpaceGroupToNumber(ISpaceGrp,IErr)
 
 !!$  Push Spaces In SSpaceGrp to the end of the String
   
-  ICount = 0
+  jnd = 0
   ISpaceGrp = 0
   SSpaceGrpNoSpaces = ' '
   SSpaceGrpToCompare = ' '
@@ -649,8 +649,8 @@ SUBROUTINE ConvertSpaceGroupToNumber(ISpaceGrp,IErr)
   DO ind = 1,LEN(SSpaceGrp)
      IF(INDEX(STRING='abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ01234567879-/',&
           SUBSTRING=SSpaceGrp(ind:ind)).NE.0) THEN
-        ICount = ICount + 1
-        SSpaceGrpNoSpaces(ICount:ICount) = SSpaceGrp(ind:ind)
+        jnd = jnd + 1
+        SSpaceGrpNoSpaces(jnd:jnd) = SSpaceGrp(ind:ind)
      END IF
   END DO
   
@@ -678,6 +678,8 @@ SUBROUTINE ConvertSpaceGroupToNumber(ISpaceGrp,IErr)
   END IF
   
 END SUBROUTINE ConvertSpaceGroupToNumber
+
+!!$%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 SUBROUTINE StrLowCase( Input_String,Output_String,IErr ) 
 
