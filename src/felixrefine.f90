@@ -354,7 +354,6 @@ RFullIsotropicDebyeWallerFactor,IFullAtomicNumber,IFullAnisotropicDWFTensor)
     PRINT*,"felixrefine deallocating IOriginGVecIdentifier"
   END IF
 
-
   !Calculate Ug matrix--------------------------------------------------------
   ALLOCATE(CUgMat(nReflections,nReflections),STAT=IErr)  !RB Matrix including absorption
   IF( IErr.NE.0 ) THEN
@@ -387,7 +386,6 @@ RFullIsotropicDebyeWallerFactor,IFullAtomicNumber,IFullAnisotropicDWFTensor)
      PRINT*,"felixrefine(",my_rank,")error in StructureFactorSetup"
      GOTO 9999
   END IF
-  
 
 !zz temp deallocation to get it to work
 !DEALLOCATE(IAnisoDWFT),RDWF,IAtoms,ROcc
@@ -507,6 +505,26 @@ RFullIsotropicDebyeWallerFactor,IFullAtomicNumber,IFullAnisotropicDWFTensor)
      RETURN
   END IF
   RSimulatedPatterns = ZERO
+  !Allocations for the pixels to be calculated by this core  
+  ILocalPixelCountMin= (IPixelTotal*(my_rank)/p)+1
+  ILocalPixelCountMax= (IPixelTotal*(my_rank+1)/p) 
+  ALLOCATE(RIndividualReflections(INoOfLacbedPatterns,IThicknessCount,&
+         (ILocalPixelCountMax-ILocalPixelCountMin)+1),STAT=IErr)
+  IF( IErr.NE.0 ) THEN
+    PRINT*,"felixrefine(",my_rank,")error allocating RIndividualReflections"
+    RETURN
+  END IF
+  !position of pixels calculated by this core
+  ALLOCATE(IDisplacements(p),ICount(p),STAT=IErr)
+  IF( IErr.NE.0 ) THEN
+     PRINT*,"felixrefine(",my_rank,")error allocating IDisplacements and/or ICount"
+     RETURN
+  END IF
+  DO ind = 1,p
+     IDisplacements(ind) = (IPixelTotal*(ind-1)/p)*INoOfLacbedPatterns*IThicknessCount
+     ICount(ind) = (((IPixelTotal*(ind)/p) - (IPixelTotal*(ind-1)/p)))*INoOfLacbedPatterns*IThicknessCount    
+  END DO
+ 
   !IF(IImageFLAG.GE.3) THEN!RB Bloch wave amplitude and phase, to be sorted out if desired later
   !   ALLOCATE(CAmplitudeandPhaseRoot(INoOfLacbedPatterns,IThicknessCount,IPixelTotal),&
   !        STAT=IErr)
@@ -601,6 +619,7 @@ RFullIsotropicDebyeWallerFactor,IFullAtomicNumber,IFullAnisotropicDWFTensor)
 !  END IF
 
   DEALLOCATE(ISymmetryRelations,IEquivalentUgKey,CUgToRefine)
+  DEALLOCATE(RIndividualReflections,IDisplacements,ICount)
   DEALLOCATE(Rhkl,RgPoolMag,RgPoolT,CUgMat,RSimulatedPatterns)
   IF (IRefineModeSelectionArray(1).EQ.1) THEN
     DEALLOCATE(RgSumMat)
@@ -1475,7 +1494,7 @@ SUBROUTINE SetupAtomicVectorMovements(IErr)
   
   IMPLICIT NONE
 
-  INTEGER(IKIND) :: IErr,ICount,jnd,ind,ISpaceGrp
+  INTEGER(IKIND) :: IErr,knd,jnd,ind,ISpaceGrp
   INTEGER(IKIND),DIMENSION(:),ALLOCATABLE :: IVectors
   
   CALL ConvertSpaceGroupToNumber(ISpaceGrp,IErr)
@@ -1506,12 +1525,12 @@ SUBROUTINE SetupAtomicVectorMovements(IErr)
      RETURN
   ENDIF
   
-  ICount = 0
+  knd = 0
   
   DO ind = 1,SIZE(SWyckoffSymbols)
      DO jnd = 1,IVectors(ind)
-        ICount = ICount + 1
-        IAllowedVectorIDs(ICount) = IAtomicSitesToRefine(ind)
+        knd = knd + 1
+        IAllowedVectorIDs(knd) = IAtomicSitesToRefine(ind)
      END DO
   END DO
   

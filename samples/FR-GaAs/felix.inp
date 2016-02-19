@@ -56,7 +56,7 @@ IImageProcessingFLAG     = 0
 
 # Ug Iteration
 
-INoofUgs                  = 6
+INoofUgs                  = 3
 
 # Structural Refinement
 

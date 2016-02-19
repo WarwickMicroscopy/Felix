@@ -197,16 +197,17 @@ MODULE IPara
   INTEGER(IKIND),DIMENSION(IRefinementVariableTypes) :: IRefineModeSelectionArray
   INTEGER(IKIND),DIMENSION(IRefinementVariableTypes) :: INoofElementsForEachRefinementType  !zz
   INTEGER(IKIND),DIMENSION(:,:),ALLOCATABLE :: IIterativeVariableUniqueIDs
-   !List of Atomic Sites for Refinement
-   INTEGER(IKIND),DIMENSION(:),ALLOCATABLE :: IAtomicSitesToRefine
-   !Simplex Variables
-   INTEGER(IKIND) :: IIndependentVariables
-   ! Refinement Vectors
-   INTEGER(IKIND) :: IAllowedVectors
-   INTEGER(IKIND),DIMENSION(:),ALLOCATABLE :: IAllowedVectorIDs
-   INTEGER(IKIND) :: IFelixCount,IPreviousPrintedIteration,IStandardDeviationCalls  
-   !Message Counter (Avoid subroutines printing out message more than once)
-   INTEGER(IKIND) :: IMessageCounter=0
+  !List of Atomic Sites for Refinement
+  INTEGER(IKIND),DIMENSION(:),ALLOCATABLE :: IAtomicSitesToRefine
+  !Simplex Variables
+  INTEGER(IKIND) :: IIndependentVariables,ILocalPixelCountMin,ILocalPixelCountMax
+  INTEGER(IKIND), DIMENSION(:), ALLOCATABLE :: IDisplacements,ICount
+  ! Refinement Vectors
+  INTEGER(IKIND) :: IAllowedVectors
+  INTEGER(IKIND),DIMENSION(:),ALLOCATABLE :: IAllowedVectorIDs
+  INTEGER(IKIND) :: IFelixCount,IPreviousPrintedIteration,IStandardDeviationCalls  
+  !Message Counter (Avoid subroutines printing out message more than once)
+  INTEGER(IKIND) :: IMessageCounter=0
 
 END MODULE IPara
 !--------------------------------------------------------------------
