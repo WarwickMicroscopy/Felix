@@ -968,10 +968,10 @@ SUBROUTINE SetupUgsToRefine(IErr)
 !Count the number of Independent Variables  
   jnd=1
   DO ind = 2,INoofUgs+1!RB ignore the first one as it is the internal potential
-    IF ( REAL(CUgToRefine(ind),RKIND).GE.RTolerance ) THEN
+    IF ( ABS(REAL(CUgToRefine(ind),RKIND)).GE.RTolerance ) THEN
       jnd=jnd+1
 	END IF
-    IF (AIMAG(CUgToRefine(ind)).GE.RTolerance) THEN
+    IF ( ABS(AIMAG(CUgToRefine(ind))).GE.RTolerance) THEN
       jnd=jnd+1
 	END IF
   END DO

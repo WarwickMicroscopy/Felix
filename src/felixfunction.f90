@@ -475,7 +475,7 @@ SUBROUTINE PrintVariables(IErr)
            DO jnd = 2,INoofUgs+1!yy since no.1 is 000
    !           RUgAmplitude=( REAL(CUgToRefine(jnd))**2 + AIMAG(CUgToRefine(jnd))**2 )**0.5!RB
    !           RUgPhase=ATAN2(AIMAG(CUgToRefine(jnd)),REAL(CUgToRefine(jnd)))*180/PI!RB
-              WRITE(SPrintString,FMT='(2(1X,F9.4))') REAL(CUgToRefine(jnd)),AIMAG(CUgToRefine(jnd))
+              WRITE(SPrintString,FMT='(3(1X,I3.1),2(1X,F9.4))') NINT(Rhkl(jnd,:)),CUgToRefine(jnd)
               PRINT*,TRIM(ADJUSTL(SPrintString))
            END DO           
 
@@ -566,16 +566,16 @@ SUBROUTINE UpdateStructureFactors(RIndependentVariable,IErr)
 
   jnd=1
   DO ind = 2,INoofUgs+1
-    IF ( (REAL(CUgToRefine(ind),RKIND).GE.RTolerance).AND.&
-       (AIMAG(CUgToRefine(ind)).GE.RTolerance)) THEN!use both real and imag parts
+    IF ( (ABS(REAL(CUgToRefine(ind),RKIND)).GE.RTolerance).AND.&
+       (ABS(AIMAG(CUgToRefine(ind))).GE.RTolerance)) THEN!use both real and imag parts
 	  CUgToRefine(ind)=&
 	  CMPLX(RIndependentVariable(jnd),RIndependentVariable(jnd+1))!do I need ,CKIND) here?
       jnd=jnd+2
-	ELSEIF ( AIMAG(CUgToRefine(ind)).LT.RTolerance ) THEN!use only real part
+	ELSEIF ( ABS(AIMAG(CUgToRefine(ind))).LT.RTolerance ) THEN!use only real part
 	  CUgToRefine(ind)=&
 	  CMPLX(RIndependentVariable(jnd),ZERO)
       jnd=jnd+1
-    ELSEIF ( REAL(CUgToRefine(ind),RKIND).LT.RTolerance ) THEN!use only imag part
+    ELSEIF ( ABS(REAL(CUgToRefine(ind),RKIND)).LT.RTolerance ) THEN!use only imag part
 	  CUgToRefine(ind)=&
 	  CMPLX(ZERO,RIndependentVariable(jnd))
       jnd=jnd+1
