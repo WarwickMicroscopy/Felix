@@ -399,40 +399,41 @@ RFullIsotropicDebyeWallerFactor,IFullAtomicNumber,IFullAnisotropicDWFTensor)
   END IF
 
   IF(IRefineModeSelectionArray(1).EQ.1) THEN !It's a Ug refinement
-  DEALLOCATE(RrVecMat,STAT=IErr)!Don't need this any more
-  CALL SetupUgsToRefine(IErr)
-     IF( IErr.NE.0 ) THEN
+    DEALLOCATE(RrVecMat,STAT=IErr)!Don't need this any more
+    !Identify unique Ug's and count the number of independent variables INoOfVariables
+    !We count over INoofUgs, specified in felix.inp
+    !The count excludes Ug components that are zero and U(000), the inner potential
+    CALL SetupUgsToRefine(IErr)
+      IF( IErr.NE.0 ) THEN
         PRINT*,"felixrefine(",my_rank,")error in SetupUgsToRefine"
         GOTO 9999
-     END IF
-  IF(my_rank.EQ.0) THEN
-    IF ( INoOfVariables.EQ.1 ) THEN 
-      PRINT*,"Only one independent variable"
-	ELSE
-      WRITE(SPrintString,FMT='(I3,1X,A21))') INoOfVariables,"independent variables"
-      PRINT*,TRIM(ADJUSTL(SPrintString))
+      END IF
+    IF(my_rank.EQ.0) THEN
+      IF ( INoOfVariables.EQ.1 ) THEN 
+        PRINT*,"Only one independent variable"
+	  ELSE
+        WRITE(SPrintString,FMT='(I3,1X,A21))') INoOfVariables,"independent variables"
+        PRINT*,TRIM(ADJUSTL(SPrintString))
+      END IF
     END IF
-  END IF
-  ALLOCATE(RIndependentVariable(INoOfVariables),STAT=IErr)  
-  IF( IErr.NE.0 ) THEN
-     PRINT*,"felixrefine(",my_rank,")error allocating RIndependentVariable"
-     GOTO 9999
-  END IF
-  
- !Fill up the IndependentVariable list with Ug components  
-  jnd=1
-  DO ind = 2,INoofUgs+1!RB ignore the first one as it is the internal potential
-    IF ( REAL(CUgToRefine(ind),RKIND).GE.RTolerance ) THEN
-      RIndependentVariable(jnd) = REAL(CUgToRefine(ind),RKIND)
-      jnd=jnd+1
-	END IF
-    IF (AIMAG(CUgToRefine(ind)).GE.RTolerance) THEN
-      RIndependentVariable(jnd) = AIMAG(CUgToRefine(ind))
-      jnd=jnd+1
-	END IF
-  END DO
-  RIndependentVariable(jnd) = RAbsorptionPercentage!RB absorption always included in structure factor refinement as last variable
-  
+    ALLOCATE(RIndependentVariable(INoOfVariables),STAT=IErr)  
+    IF( IErr.NE.0 ) THEN
+      PRINT*,"felixrefine(",my_rank,")error allocating RIndependentVariable"
+      GOTO 9999
+    END IF
+    !Fill up the IndependentVariable list with Ug components  
+    jnd=1
+    DO ind = 2,INoofUgs+1!start from 2 since the first one is the inner potential
+      IF ( REAL(CUgToRefine(ind),RKIND).GE.RTolerance ) THEN
+        RIndependentVariable(jnd) = REAL(CUgToRefine(ind),RKIND)
+        jnd=jnd+1
+	  END IF
+      IF (AIMAG(CUgToRefine(ind)).GE.RTolerance) THEN
+        RIndependentVariable(jnd) = AIMAG(CUgToRefine(ind))
+        jnd=jnd+1
+      END IF
+    END DO
+    RIndependentVariable(jnd) = RAbsorptionPercentage!RB absorption always included in structure factor refinement as last variable
     DEALLOCATE(CUgMatNoAbs,CUgMatPrime,STAT=IErr)!Don't need these any more
   END IF
   
@@ -543,16 +544,6 @@ RFullIsotropicDebyeWallerFactor,IFullAtomicNumber,IFullAnisotropicDWFTensor)
      IDisplacements(ind) = (IPixelTotal*(ind-1)/p)*INoOfLacbedPatterns*IThicknessCount
      ICount(ind) = (((IPixelTotal*(ind)/p) - (IPixelTotal*(ind-1)/p)))*INoOfLacbedPatterns*IThicknessCount    
   END DO
- 
-  !IF(IImageFLAG.GE.3) THEN!RB Bloch wave amplitude and phase, to be sorted out if desired later
-  !   ALLOCATE(CAmplitudeandPhaseRoot(INoOfLacbedPatterns,IThicknessCount,IPixelTotal),&
-  !        STAT=IErr)
-  !   IF( IErr.NE.0 ) THEN
-  !      PRINT*,"Felixfunction(",my_rank,")error allocating Root Amplitude and Phase"
-  !      RETURN
-  !   END IF
-  !   CAmplitudeandPhaseRoot = CZERO
-  !END IF
 
   !--------------------------------------------------------------------
   ! Allocate memory for deviation parameter and bloch calc in main loop
@@ -669,7 +660,6 @@ RFullIsotropicDebyeWallerFactor,IFullAtomicNumber,IFullAnisotropicDWFTensor)
   ENDIF
   
   ! clean shutdown
-
   STOP
   
 END PROGRAM Felixrefine
@@ -930,6 +920,7 @@ SUBROUTINE SetupUgsToRefine(IErr)
      RETURN
   ENDIF
 
+!Count equivalent Ugs
 !Equivalent Ug's are identified by the sum of their abs(indices)plus the sum of abs(Ug)'s with no absorption
   RgSumMat = RgSumMat+ABS(REAL(CUgMatNoAbs))+ABS(AIMAG(CUgMatNoAbs))
   ISymmetryRelations = 0_IKIND 
@@ -953,7 +944,7 @@ SUBROUTINE SetupUgsToRefine(IErr)
      PRINT*,TRIM(ADJUSTL(SPrintString))
   END IF
 
-!Link each number with its Ug, up to the number of  unique Ug's Iuid
+!Link each number with its Ug, up to the number of unique Ug's Iuid
   ALLOCATE(IEquivalentUgKey(Iuid),STAT=IErr)
   IF( IErr.NE.0 ) THEN
      PRINT*,"SetupUgsToRefine(",my_rank,")error allocating IEquivalentUgKey"

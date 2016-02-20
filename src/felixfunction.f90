@@ -561,16 +561,29 @@ SUBROUTINE UpdateStructureFactors(RIndependentVariable,IErr)
   
   IMPLICIT NONE
   
-  INTEGER(IKIND) :: IErr,ind
+  INTEGER(IKIND) :: IErr,ind,jnd
   REAL(RKIND),DIMENSION(INoOfVariables),INTENT(IN) :: RIndependentVariable
 
-  IF(IRefineModeSelectionArray(1).EQ.1) THEN
-     DO ind = 1,INoofUgs
-        CUgToRefine(ind+1) = &!yy ind+1 instead of ind
-             CMPLX(RIndependentVariable((ind-1)*2+1),RIndependentVariable((ind-1)*2+2),CKIND)
-     END DO
-	 RAbsorptionPercentage = RIndependentVariable(2*INoofUgs+1)!RB
-  END IF
+  jnd=1
+  DO ind = 2,INoofUgs+1
+    IF ( (REAL(CUgToRefine(ind),RKIND).GE.RTolerance).AND.&
+       (AIMAG(CUgToRefine(ind)).GE.RTolerance)) THEN!use both real and imag parts
+	  CUgToRefine(ind)=&
+	  CMPLX(RIndependentVariable(jnd),RIndependentVariable(jnd+1))!do I need ,CKIND) here?
+      jnd=jnd+2
+	ELSEIF ( AIMAG(CUgToRefine(ind)).LT.RTolerance ) THEN!use only real part
+	  CUgToRefine(ind)=&
+	  CMPLX(RIndependentVariable(jnd),ZERO)
+      jnd=jnd+1
+    ELSEIF ( REAL(CUgToRefine(ind),RKIND).LT.RTolerance ) THEN!use only imag part
+	  CUgToRefine(ind)=&
+	  CMPLX(ZERO,RIndependentVariable(jnd))
+      jnd=jnd+1
+    ELSE!should never happen
+	  PRINT*,"Warning - zero structure factor!",ind,":",CUgToRefine(ind)
+    END IF
+  END DO
+  RAbsorptionPercentage = RIndependentVariable(jnd)
   
 END SUBROUTINE UpdateStructureFactors
 
