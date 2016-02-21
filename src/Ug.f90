@@ -163,7 +163,8 @@ SUBROUTINE StructureFactorInitialisation (IErr)
   INTEGER(IKIND),DIMENSION(2) :: IPos,ILoc
   COMPLEX(CKIND) :: CVgij
   REAL(RKIND) :: RMeanInnerPotentialVolts,RAtomicFormFactor, Lorentzian,Gaussian
-
+  CHARACTER*200 :: SPrintString
+  
   CALL Message("StructureFactorInitialisation",IMust,IErr)
 
   CUgMatNoAbs = CZERO
@@ -261,7 +262,7 @@ SUBROUTINE StructureFactorInitialisation (IErr)
   DO ind=1,nReflections!Ug now halve the diagonal again
      CUgMatNoAbs(ind,ind)=CUgMatNoAbs(ind,ind)-RMeanInnerCrystalPotential!Ug
   ENDDO
-
+  	 
   RMeanInnerPotentialVolts = RMeanInnerCrystalPotential*(((RPlanckConstant**2)/ &
        (TWO*RElectronMass*RElectronCharge*TWOPI**2))*&
        RAngstromConversion*RAngstromConversion)
@@ -318,14 +319,13 @@ SUBROUTINE StructureFactorsWithAbsorption(IErr)
      
      CUgMatPrime = CUgMatNoAbs*EXP(CIMAGONE*PI/2)*(RAbsorptionPercentage/100_RKIND)!Ug
      CUgMat =  CUgMatNoAbs+CUgMatPrime!Ug
-!  WRITE(SPrintString,FMT='(A2,8(1X,F5.2))') "1:",CUgMatNoAbs(1,1),CUgMatNoAbs(1,2),CUgMatNoAbs(1,3),CUgMatNoAbs(1,4)
-!  PRINT*,TRIM(ADJUSTL(SPrintString))
-!  WRITE(SPrintString,FMT='(A2,8(1X,F5.2))') "2:",CUgMatNoAbs(2,1),CUgMatNoAbs(2,2),CUgMatNoAbs(2,3),CUgMatNoAbs(2,4)
-!  PRINT*,TRIM(ADJUSTL(SPrintString))
-!  WRITE(SPrintString,FMT='(A2,8(1X,F5.2))') "3:",CUgMatNoAbs(3,1),CUgMatNoAbs(3,2),CUgMatNoAbs(3,3),CUgMatNoAbs(3,4)
-!  PRINT*,TRIM(ADJUSTL(SPrintString))
-!  WRITE(SPrintString,FMT='(A2,8(1X,F5.2))') "4:",CUgMatNoAbs(4,1),CUgMatNoAbs(4,2),CUgMatNoAbs(4,3),CUgMatNoAbs(4,4)
-!  PRINT*,TRIM(ADJUSTL(SPrintString))
+	 
+ ! IF(IWriteFLAG.EQ.3.AND.my_rank.EQ.0) THEN
+ !   DO ind =1,6
+ !    WRITE(SPrintString,FMT='(10(1X,F5.2))') CUgMatNoAbs(ind,1:5)
+ !    PRINT*,TRIM(ADJUSTL(SPrintString))
+ !   END DO
+ ! END IF
   
   CASE Default
  

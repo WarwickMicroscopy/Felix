@@ -401,6 +401,7 @@ RFullIsotropicDebyeWallerFactor,IFullAtomicNumber,IFullAnisotropicDWFTensor)
   IF(IRefineModeSelectionArray(1).EQ.1) THEN !It's a Ug refinement
     DEALLOCATE(RrVecMat,STAT=IErr)!Don't need this any more
     !Identify unique Ug's and count the number of independent variables INoOfVariables
+	!using the Hermitian matrix CUgMatNoAbs
     !We count over INoofUgs, specified in felix.inp
     !The count excludes Ug components that are zero and U(000), the inner potential
     CALL SetupUgsToRefine(IErr)
@@ -421,15 +422,19 @@ RFullIsotropicDebyeWallerFactor,IFullAtomicNumber,IFullAnisotropicDWFTensor)
       PRINT*,"felixrefine(",my_rank,")error allocating RIndependentVariable"
       GOTO 9999
     END IF
-    !Fill up the IndependentVariable list with Ug components  
+    !Fill up the IndependentVariable list with CUgMatNoAbs components
     jnd=1
     DO ind = 2,INoofUgs+1!start from 2 since the first one is the inner potential
-      IF ( REAL(CUgToRefine(ind),RKIND).GE.RTolerance ) THEN
+      IF ( ABS(REAL(CUgToRefine(ind),RKIND)).GE.RTolerance ) THEN
         RIndependentVariable(jnd) = REAL(CUgToRefine(ind),RKIND)
+!        WRITE(SPrintString,FMT='(3(I3,A1),F5.2)') ind,",",jnd,":",IEquivalentUgKey(ind),":",RIndependentVariable(jnd)
+!        PRINT*,TRIM(ADJUSTL(SPrintString))
         jnd=jnd+1
 	  END IF
-      IF (AIMAG(CUgToRefine(ind)).GE.RTolerance) THEN
+      IF ( ABS(AIMAG(CUgToRefine(ind))).GE.RTolerance ) THEN
         RIndependentVariable(jnd) = AIMAG(CUgToRefine(ind))
+!        WRITE(SPrintString,FMT='(3(I3,A1),F5.2)') ind,",",jnd,":",IEquivalentUgKey(ind),":",RIndependentVariable(jnd)
+!        PRINT*,TRIM(ADJUSTL(SPrintString))
         jnd=jnd+1
       END IF
     END DO
@@ -891,6 +896,10 @@ END SUBROUTINE StructureFactorRefinementSetup
 !%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 SUBROUTINE SetupUgsToRefine(IErr)
+!Identify unique Ug's and count the number of independent variables INoOfVariables
+!using the Hermitian matrix CUgMatNoAbs
+!We count over INoofUgs, specified in felix.inp
+!The count excludes Ug components that are zero and U(000), the inner potential
   
   USE MyNumbers
   
@@ -909,7 +918,7 @@ SUBROUTINE SetupUgsToRefine(IErr)
   INTEGER(IKIND),DIMENSION(2) :: ILoc
   CHARACTER*200 :: SPrintString
 
-  IF((IWriteFLAG.GE.10.AND.my_rank.EQ.0).OR.IWriteFLAG.GE.10) THEN
+  IF((IWriteFLAG.GE.5.AND.my_rank.EQ.0).OR.IWriteFLAG.GE.10) THEN
      PRINT*,"SetupUgsToRefine(",my_rank,")"
   END IF
 
@@ -932,7 +941,7 @@ SUBROUTINE SetupUgsToRefine(IErr)
         ELSE
            Iuid = Iuid + 1_IKIND
            !Ug Fill the symmetry relation matrix with incrementing numbers that have the sign of the imaginary part
-		   WHERE (ABS(RgSumMat-RgSumMat(ind,jnd)).LE.RTolerance)
+		   WHERE (ABS(RgSumMat-ABS(RgSumMat(ind,jnd))).LE.RTolerance)
               ISymmetryRelations = Iuid*SIGN(1_IKIND,NINT(AIMAG(CUgMatNoAbs)/TINY**2))
            END WHERE
         END IF
@@ -942,6 +951,16 @@ SUBROUTINE SetupUgsToRefine(IErr)
   IF((IWriteFLAG.GE.0.AND.my_rank.EQ.0).OR.IWriteFLAG.GE.10) THEN
      WRITE(SPrintString,FMT='(I5,A25)') Iuid," unique structure factors"
      PRINT*,TRIM(ADJUSTL(SPrintString))
+  END IF
+  IF(IWriteFLAG.EQ.3.AND.my_rank.EQ.0) THEN
+    DO ind =1,8
+     WRITE(SPrintString,FMT='(8(2X,F5.2,1X,F5.2))') CUgMatNoAbs(ind,1:8)
+     PRINT*,TRIM(ADJUSTL(SPrintString))
+    END DO
+    DO ind =1,8
+     WRITE(SPrintString,FMT='(3(1X,I3),8(1X,I3))') NINT(Rhkl(ind,:)),ISymmetryRelations(ind,1:8)
+     PRINT*,TRIM(ADJUSTL(SPrintString))
+    END DO
   END IF
 
 !Link each number with its Ug, up to the number of unique Ug's Iuid
@@ -962,16 +981,39 @@ SUBROUTINE SetupUgsToRefine(IErr)
      CUgToRefine(ind) = CUgMatNoAbs(ILoc(1),ILoc(2))
   END DO
 
+   IF(IWriteFLAG.EQ.3.AND.my_rank.EQ.0) THEN
+   PRINT*,"before sorting"
+    DO ind =1,11
+     WRITE(SPrintString,FMT='(I3,A1,F5.2,A1,2(1X,F5.2))')&
+	 IEquivalentUgKey(ind),":",ABS(CUgToRefine(ind)),",",CUgToRefine(ind)
+     PRINT*,TRIM(ADJUSTL(SPrintString))
+    END DO
+  END IF
+  
 !Put them in descending order of magnitude  
   CALL ReSortUgs(IEquivalentUgKey,CUgToRefine,Iuid)
 
-!Count the number of Independent Variables  
+   IF(IWriteFLAG.EQ.3.AND.my_rank.EQ.0) THEN
+   PRINT*,"after sorting"
+    DO ind =1,11
+     WRITE(SPrintString,FMT='(I3,A1,F5.2,A1,2(1X,F5.2))')&
+	 IEquivalentUgKey(ind),":",ABS(CUgToRefine(ind)),",",CUgToRefine(ind)
+     PRINT*,TRIM(ADJUSTL(SPrintString))
+    END DO
+  END IF
+
+!Count the number of Independent Variables
+ 
   jnd=1
   DO ind = 2,INoofUgs+1!RB ignore the first one as it is the internal potential
     IF ( ABS(REAL(CUgToRefine(ind),RKIND)).GE.RTolerance ) THEN
+!      WRITE(SPrintString,FMT='(3(I3,A1),F5.2)') ind,",",jnd,":",IEquivalentUgKey(ind),":",ABS(REAL(CUgToRefine(ind),RKIND))
+!      PRINT*,TRIM(ADJUSTL(SPrintString))
       jnd=jnd+1
 	END IF
-    IF ( ABS(AIMAG(CUgToRefine(ind))).GE.RTolerance) THEN
+    IF ( ABS(AIMAG(CUgToRefine(ind))).GE.RTolerance ) THEN
+!      WRITE(SPrintString,FMT='(3(I3,A1),F5.2)') ind,",",jnd,":",IEquivalentUgKey(ind),":",ABS(AIMAG(CUgToRefine(ind)))
+!      PRINT*,TRIM(ADJUSTL(SPrintString))
       jnd=jnd+1
 	END IF
   END DO
@@ -1408,7 +1450,7 @@ SUBROUTINE CreateIdentityMatrix(IIdentityMatrix,ISize,IErr)
 !!$  % This Subroutine creates an identity matrix of size
 !!$  % ISize * ISize
 !!$  %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-
+!why do we have this????
   USE MyNumbers
   
   USE CConst; USE IConst; USE RConst

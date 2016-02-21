@@ -323,31 +323,26 @@ SUBROUTINE ReadInpFile( IErr )
      END DO
      
      IF((IWriteFLAG.GE.0.AND.my_rank.EQ.0).OR.IWriteFLAG.GE.10) THEN
-        IF(IWriteFLAG.GE.4) THEN
-		  IF(IRefineModeSelectionArray(1).EQ.1) PRINT*,"Refining Structure Factors "
-		  IF(IRefineModeSelectionArray(2).EQ.1) PRINT*,"Refining Atomic Coordinates"
-		  IF(IRefineModeSelectionArray(3).EQ.1) PRINT*,"Refining Occupancies "
-		  IF(IRefineModeSelectionArray(4).EQ.1) PRINT*,"Refining Isotropic Debye Waller Factors"
-		  IF(IRefineModeSelectionArray(5).EQ.1) PRINT*,"Refining Anisotropic Debye Waller Factors "
-		  IF(IRefineModeSelectionArray(6).EQ.1) PRINT*,"Refining Lattice Lengths "
-		  IF(IRefineModeSelectionArray(7).EQ.1) PRINT*,"Refining Lattice Angles "
-		  IF(IRefineModeSelectionArray(8).EQ.1) PRINT*,"Refining Convergence Angle "
-		  IF(IRefineModeSelectionArray(9).EQ.1) PRINT*,"Refining Absorption"
-		  IF(IRefineModeSelectionArray(10).EQ.1) PRINT*,"Refining Accelerating Voltage "
-		  IF(IRefineModeSelectionArray(11).EQ.1) PRINT*,"Refining Scale Factor "
-        ELSE
-           PRINT*,"IRefineModeSelectionArray = ",IRefineModeSelectionArray
-        END IF
+       IF(IRefineModeSelectionArray(1).EQ.1) PRINT*,"Refining Structure Factors "
+       IF(IRefineModeSelectionArray(2).EQ.1) PRINT*,"Refining Atomic Coordinates"
+       IF(IRefineModeSelectionArray(3).EQ.1) PRINT*,"Refining Occupancies "
+       IF(IRefineModeSelectionArray(4).EQ.1) PRINT*,"Refining Isotropic Debye Waller Factors"
+       IF(IRefineModeSelectionArray(5).EQ.1) PRINT*,"Refining Anisotropic Debye Waller Factors "
+       IF(IRefineModeSelectionArray(6).EQ.1) PRINT*,"Refining Lattice Lengths "
+       IF(IRefineModeSelectionArray(7).EQ.1) PRINT*,"Refining Lattice Angles "
+       IF(IRefineModeSelectionArray(8).EQ.1) PRINT*,"Refining Convergence Angle "
+       IF(IRefineModeSelectionArray(9).EQ.1) PRINT*,"Refining Absorption"
+       IF(IRefineModeSelectionArray(10).EQ.1) PRINT*,"Refining Accelerating Voltage "
+       IF(IRefineModeSelectionArray(11).EQ.1) PRINT*,"Refining Scale Factor "
      END IF
     
      !Check if user has requested Ug refinement and anything else which isnt possible
         
      IF(IRefineModeSelectionArray(1).EQ.1.AND.SUM(IRefineModeSelectionArray).GT.1) THEN         
-!!$        CALL Message ("ReadInpFile",IMust,IErr,MessageVariable ="Structure factors must be refined seperately")
         IF(my_rank.EQ.0) THEN
            PRINT*,"Structure factors must be refined seperately"
         END IF
-       IErr = 1
+        IErr = 1
         RETURN
      END IF
 

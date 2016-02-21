@@ -61,7 +61,7 @@ SUBROUTINE FelixFunction(LInitialSimulationFLAG,IErr)
   LOGICAL,INTENT(INOUT) :: LInitialSimulationFLAG !If function is being called during initialisation
   REAL(RKIND),DIMENSION(:,:,:),ALLOCATABLE :: RFinalMontageImageRoot
 
-  IF(IWriteFLAG.GE.3.AND.my_rank.EQ.0) THEN
+  IF(IWriteFLAG.GE.6.AND.my_rank.EQ.0) THEN
      PRINT*,"Felix function"
   END IF
   IF((IWriteFLAG.GE.6.AND.my_rank.EQ.0).OR.IWriteFLAG.GE.10) THEN
@@ -475,7 +475,7 @@ SUBROUTINE PrintVariables(IErr)
            DO jnd = 2,INoofUgs+1!yy since no.1 is 000
    !           RUgAmplitude=( REAL(CUgToRefine(jnd))**2 + AIMAG(CUgToRefine(jnd))**2 )**0.5!RB
    !           RUgPhase=ATAN2(AIMAG(CUgToRefine(jnd)),REAL(CUgToRefine(jnd)))*180/PI!RB
-              WRITE(SPrintString,FMT='(3(1X,I3.1),2(1X,F9.4))') NINT(Rhkl(jnd,:)),CUgToRefine(jnd)
+              WRITE(SPrintString,FMT='(2(1X,F9.4))') CUgToRefine(jnd)
               PRINT*,TRIM(ADJUSTL(SPrintString))
            END DO           
 
@@ -563,24 +563,32 @@ SUBROUTINE UpdateStructureFactors(RIndependentVariable,IErr)
   
   INTEGER(IKIND) :: IErr,ind,jnd
   REAL(RKIND),DIMENSION(INoOfVariables),INTENT(IN) :: RIndependentVariable
+  CHARACTER*200 :: SPrintString
+	
+!NB these are Ug's without absorption
 
   jnd=1
   DO ind = 2,INoofUgs+1
     IF ( (ABS(REAL(CUgToRefine(ind),RKIND)).GE.RTolerance).AND.&
        (ABS(AIMAG(CUgToRefine(ind))).GE.RTolerance)) THEN!use both real and imag parts
-	  CUgToRefine(ind)=&
-	  CMPLX(RIndependentVariable(jnd),RIndependentVariable(jnd+1))!do I need ,CKIND) here?
+!        WRITE(SPrintString,FMT='(I3,A1,F5.2)') jnd,":",RIndependentVariable(jnd)
+!        PRINT*,TRIM(ADJUSTL(SPrintString))
+!        WRITE(SPrintString,FMT='(I3,A1,F5.2)') jnd+1,":",RIndependentVariable(jnd+1)
+!        PRINT*,TRIM(ADJUSTL(SPrintString))
+	  CUgToRefine(ind)=CMPLX(RIndependentVariable(jnd),RIndependentVariable(jnd+1))
       jnd=jnd+2
 	ELSEIF ( ABS(AIMAG(CUgToRefine(ind))).LT.RTolerance ) THEN!use only real part
-	  CUgToRefine(ind)=&
-	  CMPLX(RIndependentVariable(jnd),ZERO)
+!        WRITE(SPrintString,FMT='(I3,A1,F5.2)') jnd,":",RIndependentVariable(jnd)
+!        PRINT*,TRIM(ADJUSTL(SPrintString))
+	  CUgToRefine(ind)=CMPLX(RIndependentVariable(jnd),ZERO)
       jnd=jnd+1
     ELSEIF ( ABS(REAL(CUgToRefine(ind),RKIND)).LT.RTolerance ) THEN!use only imag part
-	  CUgToRefine(ind)=&
-	  CMPLX(ZERO,RIndependentVariable(jnd))
+!        WRITE(SPrintString,FMT='(I3,A1,F5.2)') jnd,":",RIndependentVariable(jnd)
+!        PRINT*,TRIM(ADJUSTL(SPrintString))
+	  CUgToRefine(ind)=CMPLX(ZERO,RIndependentVariable(jnd))
       jnd=jnd+1
     ELSE!should never happen
-	  PRINT*,"Warning - zero structure factor!",ind,":",CUgToRefine(ind)
+	  PRINT*,"Warning - zero structure factor!",ind,":",CUgToRefine(IEquivalentUgKey(ind))
     END IF
   END DO
   RAbsorptionPercentage = RIndependentVariable(jnd)
@@ -687,17 +695,13 @@ REAL(RKIND) FUNCTION RStandardError(RStandardDeviation,RMean,RFigureofMerit,IErr
   
   IMPLICIT NONE
 
-  INTEGER(IKIND) :: &
-      IErr
-  REAL(RKIND),INTENT(INOUT) :: &
-       RStandardDeviation,RMean
-  REAL(RKIND),INTENT(IN) :: &
-       RFigureofMerit
+  INTEGER(IKIND) :: IErr
+  REAL(RKIND),INTENT(INOUT) :: RStandardDeviation,RMean
+  REAL(RKIND),INTENT(IN) :: RFigureofMerit
   
   IF (IStandardDeviationCalls.GT.1) THEN
      RMean = (RMean*REAL(IStandardDeviationCalls,RKIND) + &
           RFigureofMerit)/REAL(IStandardDeviationCalls+1,RKIND)
-     
      RStandardDeviation = SQRT(&
           ((REAL(IStandardDeviationCalls,RKIND)*RStandardDeviation**2)+&
           (RFigureofMerit-RMean)**2)/ &
@@ -706,7 +710,6 @@ REAL(RKIND) FUNCTION RStandardError(RStandardDeviation,RMean,RFigureofMerit,IErr
      RMean = RFigureofMerit
      RStandardDeviation = ZERO
   END IF
-     
   RStandardError = RStandardDeviation/SQRT(REAL(IStandardDeviationCalls+1,RKIND))
   IStandardDeviationCalls = IStandardDeviationCalls + 1
      
