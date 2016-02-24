@@ -471,11 +471,10 @@ SUBROUTINE PrintVariables(IErr)
         CASE(1)
            WRITE(SPrintString,FMT='(A18,1X,F5.2)') "Current Absorption",RAbsorptionPercentage
            PRINT*,TRIM(ADJUSTL(SPrintString))
-           PRINT*,"Current Structure Factors"!RB should also put in hkl here
+           PRINT*,"Current Structure Factors : amplitude, phase (deg)"!RB should also put in hkl here
            DO jnd = 2,INoofUgs+1!yy since no.1 is 000
-   !           RUgAmplitude=( REAL(CUgToRefine(jnd))**2 + AIMAG(CUgToRefine(jnd))**2 )**0.5!RB
-   !           RUgPhase=ATAN2(AIMAG(CUgToRefine(jnd)),REAL(CUgToRefine(jnd)))*180/PI!RB
-              WRITE(SPrintString,FMT='(2(1X,F9.4))') CUgToRefine(jnd)
+              WRITE(SPrintString,FMT='(2(1X,F7.3),3X,A1,1X,F7.3,1X,F6.2)') CUgToRefine(jnd),&
+			  ABS(CUgToRefine(jnd)),180*ATAN2(AIMAG(CUgToRefine(jnd)),REAL(CUgToRefine(jnd)))/PI
               PRINT*,TRIM(ADJUSTL(SPrintString))
            END DO           
 
