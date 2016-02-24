@@ -473,7 +473,7 @@ SUBROUTINE PrintVariables(IErr)
            PRINT*,TRIM(ADJUSTL(SPrintString))
            PRINT*,"Current Structure Factors : amplitude, phase (deg)"!RB should also put in hkl here
            DO jnd = 2,INoofUgs+1!yy since no.1 is 000
-              WRITE(SPrintString,FMT='(2(1X,F7.3),3X,A1,1X,F7.3,1X,F6.2)') CUgToRefine(jnd),&
+              WRITE(SPrintString,FMT='(2(1X,F7.3),2X,A1,1X,F6.3,1X,F6.2)') CUgToRefine(jnd),":",&
 			  ABS(CUgToRefine(jnd)),180*ATAN2(AIMAG(CUgToRefine(jnd)),REAL(CUgToRefine(jnd)))/PI
               PRINT*,TRIM(ADJUSTL(SPrintString))
            END DO           
