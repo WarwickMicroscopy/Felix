@@ -188,24 +188,24 @@ SUBROUTINE WriteIterationStructure(path,IErr)
   OPEN(UNIT=IChOutSimplex,STATUS='UNKNOWN',&
         FILE=TRIM(ADJUSTL(fullpath)))
  !RB
-  WRITE(IChOutSimplex,FMT='(A16))') "data_felixrefine"
-  WRITE(IChOutSimplex,FMT='(A5))') "loop_"
-  WRITE(IChOutSimplex,FMT='(A14,1X,F9.6))') "_cell_length_a",RLengthX
-  WRITE(IChOutSimplex,FMT='(A14,1X,F9.6))') "_cell_length_b",RLengthY
-  WRITE(IChOutSimplex,FMT='(A14,1X,F9.6))') "_cell_length_c",RLengthZ
-  WRITE(IChOutSimplex,FMT='(A17,1X,F9.6))') "_cell_angle_alpha",RAlpha*180/PI
-  WRITE(IChOutSimplex,FMT='(A16,1X,F9.6))') "_cell_angle_beta",RBeta*180/PI
-  WRITE(IChOutSimplex,FMT='(A17,1X,F9.6))') "_cell_angle_gamma",RGamma*180/PI
-  WRITE(IChOutSimplex,FMT='(A30,1X,A10))') "_symmetry_space_group_name_H-M '",SSpaceGrp,"'"
-  WRITE(IChOutSimplex,FMT='(A5))') " "
-  WRITE(IChOutSimplex,FMT='(A5))') "loop_"
-  WRITE(IChOutSimplex,FMT='(A22))') "_atom_site_type_symbol"
-!  WRITE(IChOutSimplex,FMT='(A25))') "_atom_site_Wyckoff_symbol"
-  WRITE(IChOutSimplex,FMT='(A18))') "_atom_site_fract_x"
-  WRITE(IChOutSimplex,FMT='(A18))') "_atom_site_fract_y"
-  WRITE(IChOutSimplex,FMT='(A18))') "_atom_site_fract_z"
-!  WRITE(IChOutSimplex,FMT='(A25))') "_atom_site_B_iso_or_equiv"
-!  WRITE(IChOutSimplex,FMT='(A20))') "_atom_site_occupancy"
+  WRITE(IChOutSimplex,FMT='(A16)') "data_felixrefine"
+  WRITE(IChOutSimplex,FMT='(A5)') "loop_"
+  WRITE(IChOutSimplex,FMT='(A14,1X,F9.6)') "_cell_length_a",RLengthX
+  WRITE(IChOutSimplex,FMT='(A14,1X,F9.6)') "_cell_length_b",RLengthY
+  WRITE(IChOutSimplex,FMT='(A14,1X,F9.6)') "_cell_length_c",RLengthZ
+  WRITE(IChOutSimplex,FMT='(A17,1X,F9.6)') "_cell_angle_alpha",RAlpha*180/PI
+  WRITE(IChOutSimplex,FMT='(A16,1X,F9.6)') "_cell_angle_beta",RBeta*180/PI
+  WRITE(IChOutSimplex,FMT='(A17,1X,F9.6)') "_cell_angle_gamma",RGamma*180/PI
+  WRITE(IChOutSimplex,FMT='(A30,1X,A10)') "_symmetry_space_group_name_H-M '",SSpaceGrp,"'"
+  WRITE(IChOutSimplex,FMT='(A5)') " "
+  WRITE(IChOutSimplex,FMT='(A5)') "loop_"
+  WRITE(IChOutSimplex,FMT='(A22)') "_atom_site_type_symbol"
+!  WRITE(IChOutSimplex,FMT='(A25)') "_atom_site_Wyckoff_symbol"
+  WRITE(IChOutSimplex,FMT='(A18)') "_atom_site_fract_x"
+  WRITE(IChOutSimplex,FMT='(A18)') "_atom_site_fract_y"
+  WRITE(IChOutSimplex,FMT='(A18)') "_atom_site_fract_z"
+!  WRITE(IChOutSimplex,FMT='(A25)') "_atom_site_B_iso_or_equiv"
+!  WRITE(IChOutSimplex,FMT='(A20)') "_atom_site_occupancy"
 
   DO jnd = 1,SIZE(RAtomSiteFracCoordVec,DIM=1)!RB only gives refined atoms, needs work
      WRITE(IChOutSimplex,FMT='(A2,1X,3(F9.6,1X))') &
@@ -214,7 +214,7 @@ SUBROUTINE WriteIterationStructure(path,IErr)
 !	 SAtomName(jnd),SWyckoffSymbols(jnd),RAtomSiteFracCoordVec(jnd,:), &
 !	 RIsotropicDebyeWallerFactors(jnd),RAtomicSitePartialOccupancy(jnd)
   END DO
-  WRITE(IChOutSimplex,FMT='(A22))') "#End of refinement cif"
+  WRITE(IChOutSimplex,FMT='(A22)') "#End of refinement cif"
   
   CLOSE(IChOutSimplex)
 

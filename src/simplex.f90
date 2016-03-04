@@ -91,6 +91,7 @@ SUBROUTINE NDimensionalDownhillSimplex(RSimplexVariable,y,mp,np,ndim,ftol,iter,R
 	 ELSE
        WRITE(SPrintString,FMT='(A10,I5,A18,F7.5)') "Iteration ",iter,", figure of merit ",ytry
 	 END IF
+
      PRINT*,TRIM(ADJUSTL(SPrintString))
      PRINT*,"--------------------------------"
      iter=iter+2
@@ -105,7 +106,7 @@ SUBROUTINE NDimensionalDownhillSimplex(RSimplexVariable,y,mp,np,ndim,ftol,iter,R
         ytry=SimplexExtrapolate(RSimplexVariable,y,psum,mp,np,ndim,ihi,0.5D0,iter,IErr)
         IF(ytry.GE.ysave) THEN
            PRINT*,"-----------------------------------------------------"
-           PRINT*,"Entering Expansion Phase Expect",ndim+1,"Simulations"
+           PRINT*,"Entering Expansion Phase, Expect",ndim+1,"Simulations"
            PRINT*,"-----------------------------------------------------"
            DO i=1,ndim+1
               PRINT*,"Expansion Simulation",i

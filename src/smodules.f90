@@ -99,8 +99,8 @@ MODULE IConst
        THREEDIM= 3, &
        ADD_OUT_INFO=6, &
        IParallelFLAG=0,&
-       IRandomFLAG = 0, &
-       IFixedSeed = 123456789,&
+       IRandomFLAG = 1, &
+       IFixedSeed = 123456787,&
        IRefinementVariableTypes = 11,&
        NElements=103
 

@@ -492,6 +492,7 @@ RFullIsotropicDebyeWallerFactor,IFullAtomicNumber,IFullAnisotropicDWFTensor)
 !    END IF
 !  END IF
 
+
   !--------------------------------------------------------------------
   !  Assign IDs
   ALLOCATE(IIterativeVariableUniqueIDs(INoOfVariables,5),STAT=IErr)
