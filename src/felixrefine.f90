@@ -585,7 +585,7 @@ RFullIsotropicDebyeWallerFactor,IFullAtomicNumber,IFullAnisotropicDWFTensor)
      PRINT*,"felixrefine(",my_rank,")error allocating RSimplexVariable"
      GOTO 9999
   END IF
-  ALLOCATE(RSimplexFoM(INoOfVariables),STAT=IErr)  
+  ALLOCATE(RSimplexFoM(INoOfVariables+1),STAT=IErr)  
   IF( IErr.NE.0 ) THEN
      PRINT*,"felixrefine(",my_rank,")error allocating RSimplexFoM"
      GOTO 9999
