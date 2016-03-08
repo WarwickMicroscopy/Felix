@@ -145,15 +145,15 @@ PROGRAM Felixrefine
     GOTO 9999
   ENDIF  
  
-  CALL CrystalLatticeVectorDetermination(IErr)
+  CALL ReciprocalLattice(IErr)
   IF( IErr.NE.0 ) THEN
-     PRINT*,"felixrefine(",my_rank,")error in CrystalLatticeVectorDetermination"
+     PRINT*,"felixrefine(",my_rank,")error in ReciprocalLattice"
      GOTO 9999
   ENDIF
 
-  ALLOCATE(RrVecMat(ITotalAtoms,THREEDIM),STAT=IErr)
+  ALLOCATE(RAtomCoordinate(ITotalAtoms,THREEDIM),STAT=IErr)
   IF( IErr.NE.0 ) THEN
-     PRINT*,"felixrefine(",my_rank,")error allocating RrVecMat"
+     PRINT*,"felixrefine(",my_rank,")error allocating RAtomCoordinate"
      GOTO 9999
   ENDIF
   CALL AllAtomPositions(IErr)
@@ -397,7 +397,7 @@ RFullIsotropicDebyeWallerFactor,IFullAtomicNumber,IFullAnisotropicDWFTensor)
   END IF
 
   IF(IRefineModeSelectionArray(1).EQ.1) THEN !It's a Ug refinement
-    DEALLOCATE(RrVecMat,STAT=IErr)!Don't need this any more
+    DEALLOCATE(RAtomCoordinate,STAT=IErr)!Don't need this any more
     !Identify unique Ug's and count the number of independent variables INoOfVariables
 	!using the Hermitian matrix CUgMatNoAbs
     !We count over INoofUgs, specified in felix.inp
@@ -676,7 +676,7 @@ RFullIsotropicDebyeWallerFactor,IFullAtomicNumber,IFullAnisotropicDWFTensor)
   IF (IRefineModeSelectionArray(1).EQ.1) THEN
     DEALLOCATE(RgSumMat)
   ELSE
-	DEALLOCATE(RrVecMat,CUgMatNoAbs,CUgMatPrime)
+	DEALLOCATE(RAtomCoordinate,CUgMatNoAbs,CUgMatPrime)
   END IF  
 	
   !--------------------------------------------------------------------

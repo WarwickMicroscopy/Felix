@@ -57,9 +57,9 @@ SUBROUTINE ExperimentalSetup (IErr)
   ! Allocate Crystallography Variables
   !--------------------------------------------------------------------
 
-  ALLOCATE(RrVecMat(ITotalAtoms,THREEDIM),STAT=IErr)
+  ALLOCATE(RAtomCoordinate(ITotalAtoms,THREEDIM),STAT=IErr)
   IF( IErr.NE.0 ) THEN
-     PRINT*,"ExperimentalSetup(",my_rank,")error allocating RrVecMat"
+     PRINT*,"ExperimentalSetup(",my_rank,")error allocating RAtomCoordinate"
      RETURN
   ENDIF
   

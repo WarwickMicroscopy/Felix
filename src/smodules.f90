@@ -255,7 +255,7 @@ MODULE RPara
        RarVecO, RbrVecO, RcrVecO, &
        RarVecM, RbrVecM, RcrVecM, &
        RXDirC, RZDirC, RNormDirC,RNormDirM
-  REAL(RKIND), DIMENSION(:,:), ALLOCATABLE :: RrVecMat
+  REAL(RKIND), DIMENSION(:,:), ALLOCATABLE :: RAtomCoordinate
   REAL(RKIND) :: RBaseVec(THREEDIM,THREEDIM), &
        RInvBaseVec(THREEDIM,THREEDIM)
   REAL(RKIND), DIMENSION(:,:,:), ALLOCATABLE :: RAnisotropicDebyeWallerFactorTensor
