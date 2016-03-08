@@ -185,8 +185,7 @@ SUBROUTINE WriteIterationStructure(path,IErr)
   WRITE(filename,*) "Structure.cif"
   WRITE(fullpath,*) TRIM(ADJUSTL(path)),'/',TRIM(ADJUSTL(filename))
 
-  OPEN(UNIT=IChOutSimplex,STATUS='UNKNOWN',&
-        FILE=TRIM(ADJUSTL(fullpath)))
+  OPEN(UNIT=IChOutSimplex,STATUS='UNKNOWN',FILE=TRIM(ADJUSTL(fullpath)))
  !RB
   WRITE(IChOutSimplex,FMT='(A16)') "data_felixrefine"
   WRITE(IChOutSimplex,FMT='(A5)') "loop_"
@@ -219,13 +218,6 @@ SUBROUTINE WriteIterationStructure(path,IErr)
   CLOSE(IChOutSimplex)
 
 !!$  Write out full atomic positions
-
-  !CALL ExperimentalSetup(IErr)!RB Really? wtf?!?
-  !IF( IErr.NE.0 ) THEN
-  !   PRINT*,"WriteIterationStructure(", my_rank, ") error ", IErr, &
-  !        " in ExperimentalSetup"
-  !   RETURN
-  !ENDIF
 
 !XX  WRITE(filename,*) "StructureFull.txt"
 !XX  WRITE(fullpath,*) TRIM(ADJUSTL(path)),'/',TRIM(ADJUSTL(filename))
@@ -265,7 +257,7 @@ SUBROUTINE WriteOutVariables(IIterationCount,IErr)
   ! Need to Determine total no. of variables to be written out, this is different from the no. of refinement variables
   
   IOutputVariables(1) =  IRefineModeSelectionArray(1) * &
-       2*nReflections ! Structure Factors are Complex so require two output variables each     
+       2*INoofUgs+1 ! Structure Factors are Complex so require two output variables each     
   IOutputVariables(2) = IRefineModeSelectionArray(2) * & !Structural Coordinates
        (SIZE(RAtomSiteFracCoordVec,DIM=1) * SIZE(RAtomSiteFracCoordVec,DIM=2))
   IOutputVariables(3) = &
@@ -292,29 +284,25 @@ SUBROUTINE WriteOutVariables(IIterationCount,IErr)
   
   ITotalOutputVariables = SUM(IOutputVariables) ! Total Output
   
-  ALLOCATE(RDataOut(ITotalOutputVariables), &
-       STAT=IErr)
+  ALLOCATE(RDataOut(ITotalOutputVariables),STAT=IErr)
 
   DO jnd = 1,IRefinementVariableTypes
-
      IF(IRefineModeSelectionArray(jnd).EQ.0) THEN
         CYCLE !The refinement variable type is not being refined, skip
      END IF
-     
      IF(jnd.EQ.1) THEN
         IStart = 1
      ELSE
         IStart = SUM(IOutputVariables(1:(jnd-1)))+1
      END IF
-
      IEND = SUM(IOutputVariables(1:jnd))
 
      SELECT CASE(jnd)
      CASE(1)
-        DO ind = 1,15!RB nReflections
+        DO ind = 1,INoofUgs
            IStart = (ind*2)-1
            IEnd = ind*2
-           RDataOut(IStart:IEnd) = [REAL(REAL(CUgMat(ind,1)),RKIND), REAL(AIMAG(CUgMat(ind,1)),RKIND)]
+           RDataOut(IStart:IEnd) = [REAL(CUgToRefine(ind)), REAL(AIMAG(CUgToRefine(ind)),RKIND)]
         END DO
 		RDataOut(IEnd+1) = RAbsorptionPercentage!RIndependentVariable(2*INoofUgs+1)!RB last variable is absorption
      CASE(2)
