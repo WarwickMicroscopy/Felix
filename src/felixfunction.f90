@@ -567,7 +567,7 @@ SUBROUTINE UpdateStructureFactors(RIndependentVariable,IErr)
 !NB these are Ug's without absorption
 
   jnd=1
-  DO ind = 2,INoofUgs+1
+  DO ind = 1+IUgOffset,INoofUgs+IUgOffset
     IF ( (ABS(REAL(CUgToRefine(ind),RKIND)).GE.RTolerance).AND.&
        (ABS(AIMAG(CUgToRefine(ind))).GE.RTolerance)) THEN!use both real and imag parts
 !        WRITE(SPrintString,FMT='(I3,A1,F5.2)') jnd,":",RIndependentVariable(jnd)

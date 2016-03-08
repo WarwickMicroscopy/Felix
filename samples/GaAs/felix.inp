@@ -19,7 +19,7 @@ IXDirectionFLAG           = 1
 IPixelCount               = 35
 
 # beam selection criteria
-IMinReflectionPool        = 70
+IMinReflectionPool        = 100
 IMinStrongBeams           = 10
 IMinWeakBeams             = 0
 RBSBMax                   = 0.1
@@ -27,7 +27,7 @@ RBSPMax                   = 0.1
 
 # crystal settings
 RDebyeWallerConstant      = 0.54
-RAbsorptionPer            = 12.436
+RAbsorptionPer            = 8.0
 
 # microscope settings
 ROuterConvergenceAngle    = 2.4545
@@ -56,7 +56,7 @@ IImageProcessingFLAG     = 0
 
 # Ug Iteration
 
-INoofUgs                  = 2
+INoofUgs                  = 1
 
 # Structural Refinement
 
@@ -64,10 +64,10 @@ IAtomicSites              = (1,2)
 
 # Refinement Output
 
-IPrint                    = 10
+IPrint                    = 3
 
 # Simplex Initialisation
 
 RSimplexLengthScale       = 5.0 
-RExitCriteria             = 0.007
+RExitCriteria             = 0.0001
 
