@@ -100,7 +100,7 @@ PROGRAM Felixrefine
   END IF
 
   !--------------------------------------------------------------------
-  ! protocal feature startup
+  ! startup
   IF((IWriteFLAG.GE.0.AND.my_rank.EQ.0).OR.IWriteFLAG.GE.10) THEN
      PRINT*,"--------------------------------------------------------------"
      PRINT*,"Felixrefine: ", RStr
@@ -144,15 +144,15 @@ PROGRAM Felixrefine
     GOTO 9999
   ENDIF  
  
-  CALL CrystalLatticeVectorDetermination(IErr)
+  CALL ReciprocalLattice(IErr)
   IF( IErr.NE.0 ) THEN
-     PRINT*,"felixrefine(",my_rank,")error in CrystalLatticeVectorDetermination"
+     PRINT*,"felixrefine(",my_rank,")error in ReciprocalLattice"
      GOTO 9999
   ENDIF
 
-  ALLOCATE(RrVecMat(ITotalAtoms,THREEDIM),STAT=IErr)
+  ALLOCATE(RAtomCoordinate(ITotalAtoms,THREEDIM),STAT=IErr)
   IF( IErr.NE.0 ) THEN
-     PRINT*,"felixrefine(",my_rank,")error allocating RrVecMat"
+     PRINT*,"felixrefine(",my_rank,")error allocating RAtomCoordinate"
      GOTO 9999
   ENDIF
   CALL AllAtomPositions(IErr)
@@ -161,7 +161,7 @@ PROGRAM Felixrefine
      GOTO 9999
   ENDIF
 
-!zz temp deallocation to get it to work
+!deallocations
 DEALLOCATE(RFullPartialOccupancy,SMNP,MNP,RFullAtomicFracCoordVec,SFullAtomicNameVec, &
 RFullIsotropicDebyeWallerFactor,IFullAtomicNumber,IFullAnisotropicDWFTensor)
 
@@ -240,7 +240,7 @@ RFullIsotropicDebyeWallerFactor,IFullAtomicNumber,IFullAnisotropicDWFTensor)
   RMinLaueZoneValue=MINVAL(RgDummyVecMat(:,3),DIM=1)
   ITotalLaueZoneLevel=NINT(RMaxLaueZoneValue+ABS(RMinLaueZoneValue)+1,IKIND)
   !doing what, here? More sorting inlo Laue zones? 
-  !zz temp deallocation to get it to work
+  !deallocation
   DEALLOCATE(RgDummyVecMat)
   ALLOCATE(RgPoolMagLaue(INhkl,ITotalLaueZoneLevel),STAT=IErr)
   IF( IErr.NE.0 ) THEN
@@ -399,7 +399,7 @@ RFullIsotropicDebyeWallerFactor,IFullAtomicNumber,IFullAnisotropicDWFTensor)
   END IF
 
   IF(IRefineModeSelectionArray(1).EQ.1) THEN !It's a Ug refinement
-    DEALLOCATE(RrVecMat,STAT=IErr)!Don't need this any more
+    DEALLOCATE(RAtomCoordinate,STAT=IErr)!Don't need this any more
     !Identify unique Ug's and count the number of independent variables INoOfVariables
 	!using the Hermitian matrix CUgMatNoAbs
     !We count over INoofUgs, specified in felix.inp
@@ -442,11 +442,6 @@ RFullIsotropicDebyeWallerFactor,IFullAtomicNumber,IFullAnisotropicDWFTensor)
     DEALLOCATE(CUgMatNoAbs,CUgMatPrime,STAT=IErr)!Don't need these any more
   END IF
   
-!Now change StructureFactorRefinementSetup fr722 and UpdateStructureFactors ff1040
- 
-!zz not deallocating ISymmetryRelations,IEquivalentUgKey,CUgToRefine,RgSumMat,CUgMat,
-!Rhkl,RgPoolMag,RgPoolT,
-
   !--------------------------------------------------------------------
   ! Setup Simplex Variables
   !--------------------------------------------------------------------!RB restore later for other types of refinement
@@ -457,31 +452,18 @@ RFullIsotropicDebyeWallerFactor,IFullAtomicNumber,IFullAnisotropicDWFTensor)
 !        GOTO 9999
 !     END IF
 !  END IF
-!  INoofElementsForEachRefinementType(2) = &
-!       IRefineModeSelectionArray(2)*IAllowedVectors
-!  INoofElementsForEachRefinementType(3) = &
-!       IRefineModeSelectionArray(3)*SIZE(IAtomicSitesToRefine)
-!  INoofElementsForEachRefinementType(4) = &
-!       IRefineModeSelectionArray(4)*SIZE(IAtomicSitesToRefine)
-!  INoofElementsForEachRefinementType(5) = &
-!       IRefineModeSelectionArray(5)*SIZE(IAtomicSitesToRefine)*6
-!  INoofElementsForEachRefinementType(6) = &
-!       IRefineModeSelectionArray(6)*3
-!  INoofElementsForEachRefinementType(7) = &
-!       IRefineModeSelectionArray(7)*3
-!  INoofElementsForEachRefinementType(8) = &
-!       IRefineModeSelectionArray(8)
-!  INoofElementsForEachRefinementType(9) = &
-!       IRefineModeSelectionArray(9)
-!  INoofElementsForEachRefinementType(10) = &
-!       IRefineModeSelectionArray(10)
-!  INoofElementsForEachRefinementType(11) = &
-!       IRefineModeSelectionArray(11)
- 
+!  INoofElementsForEachRefinementType(2)=IRefineModeSelectionArray(2)*IAllowedVectors
+!  INoofElementsForEachRefinementType(3)=IRefineModeSelectionArray(3)*SIZE(IAtomicSitesToRefine)
+!  INoofElementsForEachRefinementType(4)=IRefineModeSelectionArray(4)*SIZE(IAtomicSitesToRefine)
+!  INoofElementsForEachRefinementType(5)=IRefineModeSelectionArray(5)*SIZE(IAtomicSitesToRefine)*6
+!  INoofElementsForEachRefinementType(6)=IRefineModeSelectionArray(6)*3
+!  INoofElementsForEachRefinementType(7)=IRefineModeSelectionArray(7)*3
+!  INoofElementsForEachRefinementType(8)=IRefineModeSelectionArray(8)
+!  INoofElementsForEachRefinementType(9)=IRefineModeSelectionArray(9)
+!  INoofElementsForEachRefinementType(10)=IRefineModeSelectionArray(10)
+!  INoofElementsForEachRefinementType(11)=IRefineModeSelectionArray(11)
   !Number of independent variables
 !  INoOfVariables = SUM(INoofElementsForEachRefinementType)
-
-
 !This has been calculated in SetupUgsToRefine
 !  IF(my_rank.EQ.0) THEN
 !    IF ( INoOfVariables.EQ.1 ) THEN 
@@ -494,7 +476,7 @@ RFullIsotropicDebyeWallerFactor,IFullAtomicNumber,IFullAnisotropicDWFTensor)
 
 
   !--------------------------------------------------------------------
-  !  Assign IDs
+  !  Assign IDs - not sure if this is still used?
   ALLOCATE(IIterativeVariableUniqueIDs(INoOfVariables,5),STAT=IErr)
   IF( IErr.NE.0 ) THEN
      PRINT*,"felixrefine(",my_rank,")error allocating IIterativeVariableUniqueIDs"
@@ -524,7 +506,7 @@ RFullIsotropicDebyeWallerFactor,IFullAtomicNumber,IFullAnisotropicDWFTensor)
      PRINT*,"felixrefine(",my_rank,") error in ImageSetup"
      RETURN
   END IF 
-  !All the individual calculations go into these root images later with MPI_GATHERV
+  !All the individual calculations go into RSimulatedPatterns later with MPI_GATHERV
   ALLOCATE(RSimulatedPatterns(INoOfLacbedPatterns,IThicknessCount,IPixelTotal),STAT=IErr)
   IF( IErr.NE.0 ) THEN
      PRINT*,"felixrefine(",my_rank,")error allocating Root Reflections"
@@ -633,7 +615,7 @@ RFullIsotropicDebyeWallerFactor,IFullAtomicNumber,IFullAnisotropicDWFTensor)
   IF (IRefineModeSelectionArray(1).EQ.1) THEN
     DEALLOCATE(RgSumMat)
   ELSE
-	DEALLOCATE(RrVecMat,CUgMatNoAbs,CUgMatPrime)
+	DEALLOCATE(RAtomCoordinate,CUgMatNoAbs,CUgMatPrime)
   END IF  
 	
   !--------------------------------------------------------------------
@@ -670,6 +652,92 @@ RFullIsotropicDebyeWallerFactor,IFullAtomicNumber,IFullAnisotropicDWFTensor)
   
 END PROGRAM Felixrefine
 !%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+!%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+SUBROUTINE mnbrak(Rax,Rbx,Rcx,Rfa,Rfb,Rfc)
+!From Numerical recipes in Fortran section 10.1, adapted for use here
+
+  USE MyNumbers
+  
+  USE CConst; USE IConst; USE RConst
+  USE IPara; USE RPara; USE SPara; USE CPara
+  USE BlochPara
+
+  USE IChannels
+
+  USE MPI
+  USE MyMPI
+
+  IMPLICIT NONE
+  
+  REAL(RKIND) :: Rax,Rax,Rbx,Rcx,Rfa,Rfb,Rfc,Rgold,RGlimit
+  PARAMETER (Rgold=1.618034, RGlimit=100.0)
+  !Given distinct initial points Rax and Rbx this routine searches in the downhill direction
+  !and returns new points Rax, Rbx and Rcx that bracket a minimum, with their values Rfa, Rfb, Rfc.
+  !Rgold is the (golden) ratio by which intervals are magnified
+  !RGlimit is the maximum magnification allowed
+  REAL(RKIND) :: Rdum,Rfu,Rq,Rr,Ru,Rulim
+  Rfa=felixfunction(Rax)
+  Rfb=felixfunction(Rbx)
+  IF (Rfb.GT.Rfa) THEN!switch a and b so that a->b is downhill
+    Rdum-Rax
+	Rax=Rbx
+	Rbx=Rdum
+	Rdum=Rfb
+	Rfb=Rfa
+	Rfa=Rdum
+  END IF
+  Rcx=Rbx+Rgold*(Rbx-Rcx)!first guess for c
+  Rfc==felixfunction(Rcx)
+1 IF (Rfb.GE.Rfc) THEN
+    Rr=(Rbx-Rax)*(Rfb-Rfc)
+    Rr=(Rbx-Rcx)*(Rfb-Rfa)
+	Ru=Rbx-((Rbx-Rcx)*Rq-(Rbx-Rax)*Rr)/(TWO*SIGN(MAX(ABS(Rq-Rr),TINY),Rq-Rr))
+	Rulim=Rbx+RGlimit*(Rcx-Rbx)
+	IF ((Rbx-Ru)*(Ru-Rcx).GT.ZERO) THEN
+	  Rfu=felixfunction(Ru)
+	  IF (Rfu.LT.Rfc) THEN
+        Rax=Rbx
+        Rfa=Rfb
+        Rbx=Ru
+        Rfb=Rfu
+        GOTO 1
+      ELSE IF(Rfu.GT.Rfb) THEN
+        Rcx=Ru
+        Rfc=Rfu
+        GOTO 1
+      END IF
+      Ru=Rcx+Rgold*(Rcx-Rbx)
+      Rfu=felixfunction(Ru)
+    ELSE IF((Rcx-Ru)*(Ru-Rulim).GT.0) THEN
+      Rfu=felixfunction(Ru)
+      IF(Rfu.LT.Rfc) THEN
+        Rbx=Rcx
+        Rcx=Ru
+        Ru=Rcx+Rgold*(Rcx-Rbx)
+        Rfb=Rfc
+        Rfc=Rfu
+        Rfu=felixfunction(Ru)
+      ENDIF
+    ELSE IF((Ru-Rulim)*(Rulim-Rcx).GE.0) THEN
+      Ru=Rulim
+      Rfu=felixfunction(Ru)
+    ELSE
+      Ru=Rcx+Rgold*(Rcx-Rbx)
+      Rfu=felixfunction(Ru)
+    END IF
+    Rax=Rbx
+    Rbx=Rcx
+    Rcx=Ru
+    Rfa=Rfb
+    Rfb=Rfc
+    Rfc=Rfu
+    GOTO 1
+  END IF
+  RETURN
+
+END SUBROUTINE mnbrak
+
 !%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 SUBROUTINE AssignArrayLocationsToIterationVariables(IIterativeVariableType,IVariableNo,IArrayToFill,IErr)

@@ -32,7 +32,7 @@
 !
 !%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-SUBROUTINE CrystalLatticeVectorDetermination(IErr)
+SUBROUTINE ReciprocalLattice(IErr)
   
   USE MyNumbers
   USE WriteToScreen
@@ -51,7 +51,7 @@ SUBROUTINE CrystalLatticeVectorDetermination(IErr)
   CHARACTER*50 indString
   CHARACTER*400  RTMatString
 
-  CALL Message("CrystalLatticeVectorDetermination",IMust,IErr)
+  CALL Message("ReciprocalLattice",IMust,IErr)
 
   ! Setup Crystal Lattice Vectors: orthogonal reference frame in Angstrom units
 
@@ -86,15 +86,15 @@ SUBROUTINE CrystalLatticeVectorDetermination(IErr)
      IF(SCAN(SSpaceGroupName,'rR').NE.0) THEN
         IF(ABS(RTTest).LT.TINY) THEN
            SSpaceGroupName = TRIM(ADJUSTL("V"))
-           CALL Message("CrystalLatticeVectorDetermination",IMust,IErr, &
+           CALL Message("ReciprocalLattice",IMust,IErr, &
                 MessageString = "Warning: Crystal is either Obverse or Reverse,")
-           CALL Message("CrystalLatticeVectorDetermination",IMust,IErr, &
+           CALL Message("ReciprocalLattice",IMust,IErr, &
                 MessageString = "Selection Rules are not Currently In place to determine the difference,")
-           CALL Message("CrystalLatticeVectorDetermination",IMust,IErr, &
+           CALL Message("ReciprocalLattice",IMust,IErr, &
                 MessageString = "felix will assume the crystal is Obverse")
         ELSE
            SSpaceGroupName=TRIM(ADJUSTL('P'))
-           CALL Message("CrystalLatticeVectorDetermination",IMust,IErr, &
+           CALL Message("ReciprocalLattice",IMust,IErr, &
                 MessageString = "Crystal is in Primitive setting (Rhombohedral axes)")
         END IF
      END IF
@@ -124,12 +124,12 @@ SUBROUTINE CrystalLatticeVectorDetermination(IErr)
   RTMatC2O(:,2)= RbVecO(:)
   RTMatC2O(:,3)= RcVecO(:)
 
-  CALL Message("CrystalLatticeVectorDetermination",IMoreInfo,IErr,MessageString = "RTMatC2O")
+  CALL Message("ReciprocalLattice",IMoreInfo,IErr,MessageString = "RTMatC2O")
   
   DO ind=1,THREEDIM
      WRITE(indString,*)ind
      WRITE(RTMatString,'(3(F8.3,1X))') RTMatC2O(:,ind)
-     CALL Message("CrystalLatticeVectorDetermination",IMoreInfo,IErr, &
+     CALL Message("ReciprocalLattice",IMoreInfo,IErr, &
           MessageVariable = "RTMatC2O(:,"//TRIM(ADJUSTL(indString))//")", &
           MessageString = TRIM(ADJUSTL(RTMatString)))
   END DO
@@ -148,12 +148,12 @@ SUBROUTINE CrystalLatticeVectorDetermination(IErr)
   RTMatO2M(2,:)= RYDirO(:)
   RTMatO2M(3,:)= RZDirO(:)
 
-  CALL Message("CrystalLatticeVectorDetermination",IMoreInfo,IErr,MessageString = "RTMatO2M")
+  CALL Message("ReciprocalLattice",IMoreInfo,IErr,MessageString = "RTMatO2M")
 
   DO ind=1,THREEDIM
      WRITE(indString,*)ind
      WRITE(RTMatString,'(3(F8.3,1X))') RTMatO2M(:,ind)
-     CALL Message("CrystalLatticeVectorDetermination",IMoreInfo,IErr, &
+     CALL Message("ReciprocalLattice",IMoreInfo,IErr, &
           MessageVariable = "RTMatO2M(:,"//TRIM(ADJUSTL(indString))//")", &
           MessageString = TRIM(ADJUSTL(RTMatString)))
   END DO
@@ -179,7 +179,7 @@ SUBROUTINE CrystalLatticeVectorDetermination(IErr)
   RbrVecM= TWOPI*CROSS(RcVecM,RaVecM)/DOT_PRODUCT(RcVecM,CROSS(RaVecM,RbVecM))
   RcrVecM= TWOPI*CROSS(RaVecM,RbVecM)/DOT_PRODUCT(RaVecM,CROSS(RbVecM,RcVecM))
   
-END SUBROUTINE CrystalLatticeVectorDetermination
+END SUBROUTINE ReciprocalLattice
 
 !%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
@@ -384,7 +384,7 @@ SUBROUTINE AllAtomPositions(IErr)
   
   DO ind=1,SIZE(MNP,DIM=1)
      DO jnd=1,THREEDIM
-        RrVecMat(ind,jnd)= MNP(ind,1)*RaVecM(jnd) + MNP(ind,2)*RbVecM(jnd) + MNP(ind,3)*RcVecM(jnd)
+        RAtomCoordinate(ind,jnd)= MNP(ind,1)*RaVecM(jnd) + MNP(ind,2)*RbVecM(jnd) + MNP(ind,3)*RcVecM(jnd)
      ENDDO
   ENDDO
   
@@ -395,8 +395,8 @@ SUBROUTINE AllAtomPositions(IErr)
   
   DO ind = 1,INAtomsUnitCell
      DO jnd = 1,THREEDIM
-        IF (ABS(RrVecMat(ind,jnd)).LE.TINY) THEN
-           RrVecMat(ind,jnd) = ZERO
+        IF (ABS(RAtomCoordinate(ind,jnd)).LE.TINY) THEN
+           RAtomCoordinate(ind,jnd) = ZERO
         ENDIF
      ENDDO
   ENDDO
@@ -527,7 +527,7 @@ SUBROUTINE CrystalUniqueFractionalAtomicPostitionsCalculation (IErr)
   
   DO ind=1,SIZE(MNP,DIM=1)
      DO jnd=1,THREEDIM
-        RrVecMat(ind,jnd)= MNP(ind,1)*RaVecM(jnd) + MNP(ind,2)*RbVecM(jnd) + MNP(ind,3)*RcVecM(jnd)
+        RAtomCoordinate(ind,jnd)= MNP(ind,1)*RaVecM(jnd) + MNP(ind,2)*RbVecM(jnd) + MNP(ind,3)*RcVecM(jnd)
      ENDDO
   ENDDO
   
@@ -538,8 +538,8 @@ SUBROUTINE CrystalUniqueFractionalAtomicPostitionsCalculation (IErr)
   
   DO ind = 1,INAtomsUnitCell
      DO jnd = 1,THREEDIM
-        IF (ABS(RrVecMat(ind,jnd)).LE.TINY) THEN
-           RrVecMat(ind,jnd) = ZERO
+        IF (ABS(RAtomCoordinate(ind,jnd)).LE.TINY) THEN
+           RAtomCoordinate(ind,jnd) = ZERO
         ENDIF
      ENDDO
   ENDDO

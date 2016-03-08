@@ -244,7 +244,7 @@ SUBROUTINE StructureFactorInitialisation (IErr)
            END IF
            CVgij = CVgij + RAtomicFormFactor * &
                 EXP(-CIMAGONE* &
-                DOT_PRODUCT(RgMatMat(ind,jnd,:), RrVecMat(lnd,:)) &
+                DOT_PRODUCT(RgMatMat(ind,jnd,:), RAtomCoordinate(lnd,:)) &
                 )
         ENDDO
 

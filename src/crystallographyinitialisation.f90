@@ -110,10 +110,10 @@ SUBROUTINE CrystallographyInitialisation( IErr )
      
   END IF
 
-  CALL CrystalLatticeVectorDetermination(IErr)
+  CALL ReciprocalLattice(IErr)
   IF( IErr.NE.0 ) THEN
      PRINT*,"CrystallographyInitialisation(", my_rank, ") error ", IErr, &
-             " in CrystalLatticeVectorDetermination"
+             " in ReciprocalLattice"
      RETURN
   ENDIF
 
