@@ -55,17 +55,18 @@ PROGRAM Felixrefine
 
   INTEGER(IKIND) :: IHours,IMinutes,ISeconds,IErr,IMilliSeconds,IIterationFLAG,&
        ind,jnd,knd,ICalls,IIterationCount,ICutOff,IHOLZgPoolMag,IBSMaxLocGVecAmp,&
-	   ILaueLevel,INumTotalReflections,ITotalLaueZoneLevel,INhkl,&
+	   ILaueLevel,INumTotalReflections,ITotalLaueZoneLevel,INhkl,IExitFLAG,&
 	   INumInitReflections,IZerothLaueZoneLevel,INumFinalReflections
-  REAL(RKIND) :: StartTime, CurrentTime, Duration, TotalDurationEstimate,&
-       RFigureOfMerit,SimplexFunction,RHOLZAcceptanceAngle,RLaueZoneGz
   INTEGER(IKIND) :: IStartTime, ICurrentTime ,IRate
   INTEGER(IKIND), DIMENSION(:),ALLOCATABLE :: IOriginGVecIdentifier
+  REAL(RKIND) :: StartTime, CurrentTime, Duration, TotalDurationEstimate,&
+       RFigureOfMerit,SimplexFunction,RHOLZAcceptanceAngle,RLaueZoneGz
   REAL(RKIND), DIMENSION(:,:), ALLOCATABLE :: RSimplexVariable
   REAL(RKIND),DIMENSION(:),ALLOCATABLE :: RSimplexFoM,RIndependentVariable
   REAL(RKIND), DIMENSION(:,:), ALLOCATABLE :: RgDummyVecMat,RgPoolMagLaue
   REAL(RKIND) :: RBCASTREAL,RStandardDeviation,RMean,RGzUnitVec,RMinLaueZoneValue,&
        RMaxLaueZoneValue,RMaxAcceptanceGVecMag,RLaueZoneElectronWaveVectorMag
+  LOGICAL :: LInitialSimulationFLAG = .TRUE.
   CHARACTER*40 :: my_rank_string
   CHARACTER*20 :: Sind
   CHARACTER*200 :: SPrintString
@@ -347,7 +348,7 @@ RFullIsotropicDebyeWallerFactor,IFullAtomicNumber,IFullAnisotropicDWFTensor)
      END IF
   ENDDO
 
-!zz temp deallocation to get it to work
+!deallocation
   DEALLOCATE(RgPoolMagLaue)!
   IF (RAcceptanceAngle.NE.ZERO.AND.IZOLZFLAG.EQ.0) THEN
     DEALLOCATE(IOriginGVecIdentifier)
@@ -386,9 +387,6 @@ RFullIsotropicDebyeWallerFactor,IFullAtomicNumber,IFullAnisotropicDWFTensor)
      PRINT*,"felixrefine(",my_rank,")error in StructureFactorSetup"
      GOTO 9999
   END IF
-
-!zz temp deallocation to get it to work
-!DEALLOCATE(IAnisoDWFT),RDWF,IAtoms,ROcc
 
   IF(IAbsorbFLAG.NE.0) THEN
      CALL StructureFactorsWithAbsorption(IErr)
@@ -578,7 +576,31 @@ RFullIsotropicDebyeWallerFactor,IFullAtomicNumber,IFullAnisotropicDWFTensor)
      PRINT*,"felixrefine(",my_rank,")error allocating RFullWaveIntensity"
      RETURN
   END IF  
+  CALL InitialiseWeightingCoefficients(IErr)
+  IF( IErr.NE.0 ) THEN
+     PRINT*,"felixrefine(",my_rank,")error in InitialiseWeightingCoefficients"
+     GOTO 9999
+  ENDIF
   
+  !--------------------------------------------------------------------
+  !baseline simulation
+  IIterationCount = 0
+  CALL FelixFunction(LInitialSimulationFLAG,IErr)
+  IF( IErr.NE.0 ) THEN
+     PRINT*,"felixrefine(",my_rank,")error in FelixFunction"
+     RETURN
+  ENDIF
+  !Baseline simulation output, core 0 only
+  IExitFLAG = 0; !Do not exit
+  IPreviousPrintedIteration = -IPrint!RB ensuring baseline simulation is printed
+  IF(my_rank.EQ.0) THEN   
+    CALL CreateImagesAndWriteOutput(IIterationCount,IExitFLAG,IErr) 
+    IF( IErr.NE.0 ) THEN
+      PRINT*,"felixrefine(",my_rank,")error in CreateImagesAndWriteOutput"
+      GOTO 9999
+    ENDIF
+  END IF
+
   !--------------------------------------------------------------------
   ! Initialise Simplex
   ALLOCATE(RSimplexVariable(INoOfVariables+1,INoOfVariables), STAT=IErr)  
@@ -590,20 +612,41 @@ RFullIsotropicDebyeWallerFactor,IFullAtomicNumber,IFullAnisotropicDWFTensor)
   IF( IErr.NE.0 ) THEN
      PRINT*,"felixrefine(",my_rank,")error allocating RSimplexFoM"
      GOTO 9999
+  END IF 
+
+  IF(my_rank.EQ.0) THEN
+    CALL CreateRandomisedSimplex(RSimplexVariable,RIndependentVariable,IErr)
   END IF
   
-  IIterationCount = 0
-
-  CALL SimplexInitialisation(RSimplexVariable,RSimplexFoM,RIndependentVariable,IIterationCount,RStandardDeviation,RMean,IErr)
-  IF( IErr.NE.0 ) THEN
-     PRINT*,"felixrefine(",my_rank,")error in SimplexInitialisation"
-     GOTO 9999
-  END IF
+  !=====================================send RSimplexVariable out to all cores
+  CALL MPI_BCAST(RSimplexVariable,(INoOfVariables+1)*(INoOfVariables),MPI_DOUBLE_PRECISION,0,MPI_COMM_WORLD,IErr)
+  !=====================================
+  
+  !--------------------------------------------------------------------
+  ! Perform initial simplex simulations
+  DO ind = 1,(INoOfVariables+1)
+    IF((IWriteFLAG.GE.0.AND.my_rank.EQ.0).OR.IWriteFLAG.GE.10) THEN
+       PRINT*,"--------------------------------"
+       WRITE(SPrintString,FMT='(A8,I2,A4,I3)') "Simplex ",ind," of ",INoOfVariables+1
+       PRINT*,TRIM(ADJUSTL(SPrintString))
+       PRINT*,"--------------------------------"
+    END IF
+    RSimplexFoM(ind) = SimplexFunction(RSimplexVariable(ind,:),1,0,IErr)
+    IF( IErr.NE.0 ) THEN
+       PRINT*,"SimplexInitialisation(",my_rank,") error in SimplexFunction"
+       GOTO 9999
+    ENDIF
+    !RStandardTolerance = RStandardError(RStandardDeviation,RMean,RSimplexFoM(ind),IErr)
+    IF((IWriteFLAG.GE.0.AND.my_rank.EQ.0).OR.IWriteFLAG.GE.10) THEN
+      WRITE(SPrintString,FMT='(A16,F7.5))') "Figure of merit ",RSimplexFoM(ind)
+      PRINT*,TRIM(ADJUSTL(SPrintString))
+    END IF
+  END DO
 
   IIterationCount = 1  
  
   !--------------------------------------------------------------------
-  ! Apply Simplex Method
+  ! Apply Simplex Method to iterate
   CALL NDimensionalDownhillSimplex(RSimplexVariable,RSimplexFoM,&
        INoOfVariables+1,&
        INoOfVariables,INoOfVariables,&
@@ -1027,7 +1070,7 @@ END SUBROUTINE SetupUgsToRefine
 
 SUBROUTINE SimplexInitialisation(RSimplexVariable,RSimplexFoM,RIndependentVariable,&
      IIterationCount,RStandardDeviation,RMean,IErr)
-  
+!This is now redundant  
   USE MyNumbers
   
   USE CConst; USE IConst; USE RConst
