@@ -356,30 +356,16 @@ RFullIsotropicDebyeWallerFactor,IFullAtomicNumber,IFullAnisotropicDWFTensor)
   END IF
 
   !Calculate Ug matrix--------------------------------------------------------
+  ALLOCATE(CUgMatNoAbs(nReflections,nReflections),STAT=IErr)  !RB Matrix without absorption
+  ALLOCATE(CUgMatPrime(nReflections,nReflections),STAT=IErr)  !RB Matrix of just absorption  
   ALLOCATE(CUgMat(nReflections,nReflections),STAT=IErr)  !RB Matrix including absorption
-  IF( IErr.NE.0 ) THEN
-     PRINT*,"felixrefine(",my_rank,")error allocating CUgMat"
-     RETURN
-  END IF
-  !RB Matrix without absorption
-  ALLOCATE(CUgMatNoAbs(nReflections,nReflections),STAT=IErr)
-  IF( IErr.NE.0 ) THEN
-     PRINT*,"felixrefine(",my_rank,")error allocating CUgMatNoAbs"
-     RETURN
-  END IF
-  !RB Absorption  
-  ALLOCATE(CUgMatPrime(nReflections,nReflections),STAT=IErr)
-  IF( IErr.NE.0 ) THEN
-     PRINT*,"felixrefine(",my_rank,")error allocating CUgMatPrime"
-     RETURN
-  END IF
-!RB Matrix of sums of indices - for symmetry equivalence  in the Ug matrix, only for Ug refinement
+  !RB Matrix of sums of indices - for symmetry equivalence  in the Ug matrix, only for Ug refinement
   IF(IRefineModeSelectionArray(1).EQ.1) THEN
     ALLOCATE(RgSumMat(nReflections,nReflections),STAT=IErr)  
-    IF( IErr.NE.0 ) THEN
-     PRINT*,"StructureFactorSetup(",my_rank,")error allocating RgSumMat"
+  END IF
+  IF( IErr.NE.0 ) THEN
+     PRINT*,"felixrefine(",my_rank,")error allocating CUgMat or its components"
      RETURN
-    END IF  
   END IF
   
   CALL StructureFactorSetup(IErr)
@@ -403,7 +389,13 @@ RFullIsotropicDebyeWallerFactor,IFullAtomicNumber,IFullAnisotropicDWFTensor)
     !We count over INoofUgs, specified in felix.inp
     !The count excludes Ug components that are zero and U(000), the inner potential
 	IUgOffset=1!choose how many Ug's to skip in the refinement, 1 is the inner potential...
-    CALL SetupUgsToRefine(IErr)
+
+    ALLOCATE(ISymmetryRelations(nReflections,nReflections),STAT=IErr)!Matrix with numbers marking equivalent Ug's
+    IF( IErr.NE.0 ) THEN
+      PRINT*,"felixrefine(",my_rank,")error allocating ISymmetryRelations"
+      RETURN
+    ENDIF
+    CALL SetupUgsToRefine(IErr)!NB IEquivalentUgKey and CUgToRefine allocated in here
     IF( IErr.NE.0 ) THEN
       PRINT*,"felixrefine(",my_rank,")error in SetupUgsToRefine"
       GOTO 9999
@@ -425,17 +417,17 @@ RFullIsotropicDebyeWallerFactor,IFullAtomicNumber,IFullAnisotropicDWFTensor)
     END IF
     !Fill up the IndependentVariable list with CUgMatNoAbs components
     jnd=1
-    DO ind = 1+IUgOffset,INoofUgs+IUgOffset !start from 2 since the first one is the inner potential
+    DO ind = 1+IUgOffset,INoofUgs+IUgOffset !*** temp changes so real part only***
       IF ( ABS(REAL(CUgToRefine(ind),RKIND)).GE.RTolerance ) THEN
         RIndependentVariable(jnd) = REAL(CUgToRefine(ind),RKIND)
         jnd=jnd+1
 	  END IF
-      IF ( ABS(AIMAG(CUgToRefine(ind))).GE.RTolerance ) THEN
-        RIndependentVariable(jnd) = AIMAG(CUgToRefine(ind))
-        jnd=jnd+1
-      END IF
+!      IF ( ABS(AIMAG(CUgToRefine(ind))).GE.RTolerance ) THEN
+!        RIndependentVariable(jnd) = AIMAG(CUgToRefine(ind))
+!        jnd=jnd+1
+!      END IF
     END DO
-    RIndependentVariable(jnd) = RAbsorptionPercentage!RB absorption always included in structure factor refinement as last variable
+!    RIndependentVariable(jnd) = RAbsorptionPercentage!RB absorption always included in structure factor refinement as last variable
 	
     DEALLOCATE(CUgMatNoAbs,STAT=IErr)
     DEALLOCATE(CUgMatPrime,STAT=IErr)
@@ -923,13 +915,6 @@ SUBROUTINE SetupUgsToRefine(IErr)
      PRINT*,"SetupUgsToRefine(",my_rank,")"
   END IF
 
-  !Matrix with numbers marking equivalent Ug's
-  ALLOCATE(ISymmetryRelations(nReflections,nReflections),STAT=IErr)
-  IF( IErr.NE.0 ) THEN
-     PRINT*,"SetupUgsToRefine(",my_rank,")error allocating ISymmetryRelations"
-     RETURN
-  ENDIF
-
 !Count equivalent Ugs
 !Equivalent Ug's are identified by the sum of their abs(indices)plus the sum of abs(Ug)'s with no absorption
   RgSumMat = RgSumMat+ABS(REAL(CUgMatNoAbs))+ABS(AIMAG(CUgMatNoAbs))
@@ -986,15 +971,15 @@ SUBROUTINE SetupUgsToRefine(IErr)
 
 !Count the number of Independent Variables
   jnd=1
-  DO ind = 1+IUgOffset,INoofUgs+IUgOffset !minimum IUgOffset is 1 as the first one is the internal potential
-    IF ( ABS(REAL(CUgToRefine(ind),RKIND)).GE.RTolerance ) THEN
+  DO ind = 1+IUgOffset,INoofUgs+IUgOffset !*** temp changes so real part only***
+  !  IF ( ABS(REAL(CUgToRefine(ind),RKIND)).GE.RTolerance ) THEN
       jnd=jnd+1
-	END IF
-    IF ( ABS(AIMAG(CUgToRefine(ind))).GE.RTolerance ) THEN
-      jnd=jnd+1
-	END IF
+!	END IF
+!    IF ( ABS(AIMAG(CUgToRefine(ind))).GE.RTolerance ) THEN
+!      jnd=jnd+1
+!	END IF
   END DO
-  INoOfVariables = jnd !RB btw last +1 is for absorption
+  INoOfVariables = jnd-1 !RB btw last +1 is for absorption !*** temp -1 ***
   
 END SUBROUTINE SetupUgsToRefine
 

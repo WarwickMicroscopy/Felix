@@ -566,22 +566,23 @@ SUBROUTINE UpdateStructureFactors(RIndependentVariable,IErr)
 	
 !NB these are Ug's without absorption
   jnd=1
-  DO ind = 1+IUgOffset,INoofUgs+IUgOffset
-    IF ( (ABS(REAL(CUgToRefine(ind),RKIND)).GE.RTolerance).AND.&
-       (ABS(AIMAG(CUgToRefine(ind))).GE.RTolerance)) THEN!use both real and imag parts
-	  CUgToRefine(ind)=CMPLX(RIndependentVariable(jnd),RIndependentVariable(jnd+1))
-      jnd=jnd+2
-	ELSEIF ( ABS(AIMAG(CUgToRefine(ind))).LT.RTolerance ) THEN!use only real part
-	  CUgToRefine(ind)=CMPLX(RIndependentVariable(jnd),ZERO)
+  DO ind = 1+IUgOffset,INoofUgs+IUgOffset!*** temp changes so real part only***
+  !  IF ( (ABS(REAL(CUgToRefine(ind),RKIND)).GE.RTolerance).AND.&
+  !     (ABS(AIMAG(CUgToRefine(ind))).GE.RTolerance)) THEN!use both real and imag parts
+!	  CUgToRefine(ind)=CMPLX(RIndependentVariable(jnd),RIndependentVariable(jnd+1))
+!      jnd=jnd+2
+!	ELSEIF ( ABS(AIMAG(CUgToRefine(ind))).LT.RTolerance ) THEN!use only real part
+!	  CUgToRefine(ind)=CMPLX(RIndependentVariable(jnd),ZERO)
+	  CUgToRefine(ind)=CMPLX(RIndependentVariable(jnd),AIMAG(CUgToRefine(ind)))
       jnd=jnd+1
-    ELSEIF ( ABS(REAL(CUgToRefine(ind),RKIND)).LT.RTolerance ) THEN!use only imag part
-	  CUgToRefine(ind)=CMPLX(ZERO,RIndependentVariable(jnd))
-      jnd=jnd+1
-    ELSE!should never happen
-	  PRINT*,"Warning - zero structure factor!",ind,":",CUgToRefine(IEquivalentUgKey(ind))
-    END IF
+!    ELSEIF ( ABS(REAL(CUgToRefine(ind),RKIND)).LT.RTolerance ) THEN!use only imag part
+!	  CUgToRefine(ind)=CMPLX(ZERO,RIndependentVariable(jnd))
+!      jnd=jnd+1
+!    ELSE!should never happen
+!	  PRINT*,"Warning - zero structure factor!",ind,":",CUgToRefine(IEquivalentUgKey(ind))
+!    END IF
   END DO
-  RAbsorptionPercentage = RIndependentVariable(jnd)
+!  RAbsorptionPercentage = RIndependentVariable(jnd)
   
 END SUBROUTINE UpdateStructureFactors
 
@@ -621,7 +622,7 @@ END SUBROUTINE ConvertVectorMovementsIntoAtomicCoordinates
 !%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 SUBROUTINE InitialiseWeightingCoefficients(IErr)
-  
+!Now redundant  
   USE MyNumbers
   USE CConst; USE IConst; USE RConst
   USE IPara; USE RPara; USE SPara; USE CPara
