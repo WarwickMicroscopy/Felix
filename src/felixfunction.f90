@@ -565,25 +565,16 @@ SUBROUTINE UpdateStructureFactors(RIndependentVariable,IErr)
   CHARACTER*200 :: SPrintString
 	
 !NB these are Ug's without absorption
-
   jnd=1
   DO ind = 1+IUgOffset,INoofUgs+IUgOffset
     IF ( (ABS(REAL(CUgToRefine(ind),RKIND)).GE.RTolerance).AND.&
        (ABS(AIMAG(CUgToRefine(ind))).GE.RTolerance)) THEN!use both real and imag parts
-!        WRITE(SPrintString,FMT='(I3,A1,F5.2)') jnd,":",RIndependentVariable(jnd)
-!        PRINT*,TRIM(ADJUSTL(SPrintString))
-!        WRITE(SPrintString,FMT='(I3,A1,F5.2)') jnd+1,":",RIndependentVariable(jnd+1)
-!        PRINT*,TRIM(ADJUSTL(SPrintString))
 	  CUgToRefine(ind)=CMPLX(RIndependentVariable(jnd),RIndependentVariable(jnd+1))
       jnd=jnd+2
 	ELSEIF ( ABS(AIMAG(CUgToRefine(ind))).LT.RTolerance ) THEN!use only real part
-!        WRITE(SPrintString,FMT='(I3,A1,F5.2)') jnd,":",RIndependentVariable(jnd)
-!        PRINT*,TRIM(ADJUSTL(SPrintString))
 	  CUgToRefine(ind)=CMPLX(RIndependentVariable(jnd),ZERO)
       jnd=jnd+1
     ELSEIF ( ABS(REAL(CUgToRefine(ind),RKIND)).LT.RTolerance ) THEN!use only imag part
-!        WRITE(SPrintString,FMT='(I3,A1,F5.2)') jnd,":",RIndependentVariable(jnd)
-!        PRINT*,TRIM(ADJUSTL(SPrintString))
 	  CUgToRefine(ind)=CMPLX(ZERO,RIndependentVariable(jnd))
       jnd=jnd+1
     ELSE!should never happen
