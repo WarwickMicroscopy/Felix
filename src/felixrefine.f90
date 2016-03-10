@@ -429,8 +429,6 @@ RFullIsotropicDebyeWallerFactor,IFullAtomicNumber,IFullAnisotropicDWFTensor)
     END DO
 !    RIndependentVariable(jnd) = RAbsorptionPercentage!RB absorption always included in structure factor refinement as last variable
 	
-    DEALLOCATE(CUgMatNoAbs,STAT=IErr)
-    DEALLOCATE(CUgMatPrime,STAT=IErr)
 	IF( IErr.NE.0 ) THEN
       PRINT*,"felixrefine(",my_rank,")error in deallocation CUgMatNoAbs,CUgMatPrime"
       GOTO 9999
@@ -639,6 +637,8 @@ RFullIsotropicDebyeWallerFactor,IFullAtomicNumber,IFullAnisotropicDWFTensor)
   !--------------------------------------------------------------------
   ! Deallocate Memory
   !--------------------------------------------------------------------
+  DEALLOCATE(CUgMatNoAbs,STAT=IErr)
+  DEALLOCATE(CUgMatPrime,STAT=IErr)
   DEALLOCATE(RWeightingCoefficients,STAT=IErr)
   DEALLOCATE(RImageExpi,STAT=IErr)  
   DEALLOCATE(ISymmetryRelations,STAT=IErr)
@@ -656,8 +656,6 @@ RFullIsotropicDebyeWallerFactor,IFullAtomicNumber,IFullAnisotropicDWFTensor)
     DEALLOCATE(RgSumMat,STAT=IErr)
   ELSE
 	DEALLOCATE(RAtomCoordinate,STAT=IErr)
-	DEALLOCATE(CUgMatNoAbs,STAT=IErr)
-	DEALLOCATE(CUgMatPrime,STAT=IErr)
   END IF  
   IF( IErr.NE.0 ) THEN
      PRINT*,"felixrefine(",my_rank,")error in final deallocations"
@@ -939,17 +937,24 @@ SUBROUTINE SetupUgsToRefine(IErr)
      PRINT*,TRIM(ADJUSTL(SPrintString))
   END IF
   IF(IWriteFLAG.EQ.3.AND.my_rank.EQ.0) THEN
-    DO ind =1,8
-     WRITE(SPrintString,FMT='(8(2X,F5.2,1X,F5.2))') CUgMatNoAbs(ind,1:8)
+    PRINT*,"Ug matrix:"
+    DO ind =1,20
+     WRITE(SPrintString,FMT='(12(2X,F5.2,1X,F5.2))') CUgMatNoAbs(ind,1:12)
+     PRINT*,TRIM(SPrintString)
+    END DO
+    PRINT*,"RgSum matrix:"
+    DO ind =1,20
+     WRITE(SPrintString,FMT='(12(2X,F5.2))') RgSumMat(ind,1:12)
      PRINT*,TRIM(ADJUSTL(SPrintString))
     END DO
-    DO ind =1,8
-     WRITE(SPrintString,FMT='(3(1X,I3),8(1X,I3))') NINT(Rhkl(ind,:)),ISymmetryRelations(ind,1:8)
-     PRINT*,TRIM(ADJUSTL(SPrintString))
+	PRINT*,"hkl: symmetry matrix"
+    DO ind =1,20
+     WRITE(SPrintString,FMT='(3(1X,I3),A1,12(2X,I3))') NINT(Rhkl(ind,:)),":",ISymmetryRelations(ind,1:12)
+     PRINT*,TRIM(SPrintString)
     END DO
   END IF
 
-!Link each number with its Ug, up to the number of unique Ug's Iuid
+!Link each number (key) with its Ug, from 1 to the number of unique Ug's Iuid
   ALLOCATE(IEquivalentUgKey(Iuid),STAT=IErr)
   IF( IErr.NE.0 ) THEN
      PRINT*,"SetupUgsToRefine(",my_rank,")error allocating IEquivalentUgKey"
@@ -1282,10 +1287,18 @@ SUBROUTINE ApplyNewStructureFactors(IErr)
      WHERE(ISymmetryRelations.EQ.IEquivalentUgKey(ind))
         CUgMatDummy = CUgToRefine(ind)+&
 		CUgToRefine(ind)*EXP(CIMAGONE*PI/2_RKIND)*(RAbsorptionPercentage/100_RKIND)
-     END WHERE
+!        CUgMatDummy = CMPLX( REAL(CUgToRefine(ind)+&
+!		CUgToRefine(ind)*EXP(CIMAGONE*PI/2_RKIND)*&
+!		(RAbsorptionPercentage/100_RKIND)),&
+!		AIMAG(CUgToRefine(ind)) )  
+	 END WHERE
      WHERE(ISymmetryRelations.EQ.-IEquivalentUgKey(ind))
-        CUgMatDummy = CONJG(CUgToRefine(ind))+&
-		CONJG(CUgToRefine(ind))*EXP(CIMAGONE*PI/2_RKIND)*(RAbsorptionPercentage/100_RKIND)
+!        CUgMatDummy = CONJG(CUgToRefine(ind))+&
+!		CONJG(CUgToRefine(ind))*EXP(CIMAGONE*PI/2_RKIND)*(RAbsorptionPercentage/100_RKIND)
+        CUgMatDummy = CMPLX( REAL(CUgToRefine(ind)+&
+		CUgToRefine(ind)*EXP(CIMAGONE*PI/2_RKIND)*&
+		(RAbsorptionPercentage/100_RKIND)),&
+		-AIMAG(CUgToRefine(ind)) )  
      END WHERE
   END DO
 

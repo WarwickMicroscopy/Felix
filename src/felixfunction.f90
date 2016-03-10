@@ -273,7 +273,7 @@ REAL(RKIND) FUNCTION SimplexFunction(RIndependentVariable,IIterationCount,IExitF
 
   IMPLICIT NONE
   
-  INTEGER(IKIND) :: IErr,IExitFLAG,IThickness
+  INTEGER(IKIND) :: IErr,IExitFLAG,IThickness,ind,jnd
   REAL(RKIND),DIMENSION(INoOfVariables),INTENT(INOUT) :: RIndependentVariable
   INTEGER(IKIND),INTENT(IN) :: IIterationCount
   LOGICAL :: LInitialSimulationFLAG = .FALSE.
@@ -282,12 +282,26 @@ REAL(RKIND) FUNCTION SimplexFunction(RIndependentVariable,IIterationCount,IExitF
      PRINT*,"SimplexFunction(",my_rank,")"
   END IF
 
-  IF(IRefineModeSelectionArray(1).EQ.1) THEN  !Ug refinement   
-     CALL UpdateStructureFactors(RIndependentVariable,IErr)
-     IF( IErr.NE.0 ) THEN
-        PRINT*,"SimplexFunction(",my_rank,")error in UpdateStructureFactors"
-        RETURN
-     END IF     
+  IF(IRefineModeSelectionArray(1).EQ.1) THEN  !Ug refinement; update structure factors 
+    !NB these are Ug's without absorption, used to be update structure factors
+    jnd=1
+    DO ind = 1+IUgOffset,INoofUgs+IUgOffset!*** temp changes so real part only***
+!      IF ( (ABS(REAL(CUgToRefine(ind),RKIND)).GE.RTolerance).AND.&
+!           (ABS(AIMAG(CUgToRefine(ind))).GE.RTolerance)) THEN!use both real and imag parts
+!        CUgToRefine(ind)=CMPLX(RIndependentVariable(jnd),RIndependentVariable(jnd+1))
+!        jnd=jnd+2
+!      ELSEIF ( ABS(AIMAG(CUgToRefine(ind))).LT.RTolerance ) THEN!use only real part
+!        CUgToRefine(ind)=CMPLX(RIndependentVariable(jnd),ZERO)
+        CUgToRefine(ind)=CMPLX(RIndependentVariable(jnd),AIMAG(CUgToRefine(ind)))
+        jnd=jnd+1
+!      ELSEIF ( ABS(REAL(CUgToRefine(ind),RKIND)).LT.RTolerance ) THEN!use only imag part
+!        CUgToRefine(ind)=CMPLX(ZERO,RIndependentVariable(jnd))
+!        jnd=jnd+1
+!      ELSE!should never happen
+!	    PRINT*,"Warning - zero structure factor!",ind,":",CUgToRefine(IEquivalentUgKey(ind))
+!      END IF
+    END DO
+!    RAbsorptionPercentage = RIndependentVariable(jnd)
   ELSE !everything else
      CALL UpdateVariables(RIndependentVariable,IErr)
      IF( IErr.NE.0 ) THEN
@@ -472,7 +486,7 @@ SUBROUTINE PrintVariables(IErr)
            WRITE(SPrintString,FMT='(A18,1X,F5.2)') "Current Absorption",RAbsorptionPercentage
            PRINT*,TRIM(ADJUSTL(SPrintString))
            PRINT*,"Current Structure Factors : amplitude, phase (deg)"!RB should also put in hkl here
-           DO jnd = 2,INoofUgs+1!yy since no.1 is 000
+           DO jnd = 1+IUgOffset,INoofUgs+IUgOffset
               WRITE(SPrintString,FMT='(2(1X,F7.3),2X,A1,1X,F6.3,1X,F6.2)') CUgToRefine(jnd),":",&
 			  ABS(CUgToRefine(jnd)),180*ATAN2(AIMAG(CUgToRefine(jnd)),REAL(CUgToRefine(jnd)))/PI
               PRINT*,TRIM(ADJUSTL(SPrintString))
