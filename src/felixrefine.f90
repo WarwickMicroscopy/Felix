@@ -388,7 +388,7 @@ RFullIsotropicDebyeWallerFactor,IFullAtomicNumber,IFullAnisotropicDWFTensor)
 	!using the Hermitian matrix CUgMatNoAbs
     !We count over INoofUgs, specified in felix.inp
     !The count excludes Ug components that are zero and U(000), the inner potential
-	IUgOffset=1!choose how many Ug's to skip in the refinement, 1 is the inner potential...
+	IUgOffset=2!choose how many Ug's to skip in the refinement, 1 is the inner potential...
 
     ALLOCATE(ISymmetryRelations(nReflections,nReflections),STAT=IErr)!Matrix with numbers marking equivalent Ug's
     IF( IErr.NE.0 ) THEN
@@ -422,12 +422,12 @@ RFullIsotropicDebyeWallerFactor,IFullAtomicNumber,IFullAnisotropicDWFTensor)
         RIndependentVariable(jnd) = REAL(CUgToRefine(ind),RKIND)
         jnd=jnd+1
 	  END IF
-!      IF ( ABS(AIMAG(CUgToRefine(ind))).GE.RTolerance ) THEN
-!        RIndependentVariable(jnd) = AIMAG(CUgToRefine(ind))
-!        jnd=jnd+1
-!      END IF
+!***      IF ( ABS(AIMAG(CUgToRefine(ind))).GE.RTolerance ) THEN
+!***        RIndependentVariable(jnd) = AIMAG(CUgToRefine(ind))
+!***        jnd=jnd+1
+!***      END IF
     END DO
-!    RIndependentVariable(jnd) = RAbsorptionPercentage!RB absorption always included in structure factor refinement as last variable
+!***    RIndependentVariable(jnd) = RAbsorptionPercentage!RB absorption always included in structure factor refinement as last variable
 	
 	IF( IErr.NE.0 ) THEN
       PRINT*,"felixrefine(",my_rank,")error in deallocation CUgMatNoAbs,CUgMatPrime"
@@ -977,14 +977,14 @@ SUBROUTINE SetupUgsToRefine(IErr)
 !Count the number of Independent Variables
   jnd=1
   DO ind = 1+IUgOffset,INoofUgs+IUgOffset !*** temp changes so real part only***
-  !  IF ( ABS(REAL(CUgToRefine(ind),RKIND)).GE.RTolerance ) THEN
+!***     IF ( ABS(REAL(CUgToRefine(ind),RKIND)).GE.RTolerance ) THEN
       jnd=jnd+1
-!	END IF
-!    IF ( ABS(AIMAG(CUgToRefine(ind))).GE.RTolerance ) THEN
-!      jnd=jnd+1
-!	END IF
+!***	END IF
+!***    IF ( ABS(AIMAG(CUgToRefine(ind))).GE.RTolerance ) THEN
+!***      jnd=jnd+1
+!***	END IF
   END DO
-  INoOfVariables = jnd-1 !RB btw last +1 is for absorption !*** temp -1 ***
+  INoOfVariables = jnd-1 !RB btw last +1 is for absorption !*** delete the -1 to revert***
   
 END SUBROUTINE SetupUgsToRefine
 
@@ -1287,14 +1287,14 @@ SUBROUTINE ApplyNewStructureFactors(IErr)
      WHERE(ISymmetryRelations.EQ.IEquivalentUgKey(ind))
         CUgMatDummy = CUgToRefine(ind)+&
 		CUgToRefine(ind)*EXP(CIMAGONE*PI/2_RKIND)*(RAbsorptionPercentage/100_RKIND)
-!        CUgMatDummy = CMPLX( REAL(CUgToRefine(ind)+&
-!		CUgToRefine(ind)*EXP(CIMAGONE*PI/2_RKIND)*&
-!		(RAbsorptionPercentage/100_RKIND)),&
-!		AIMAG(CUgToRefine(ind)) )  
+!***        CUgMatDummy = CMPLX( REAL(CUgToRefine(ind)+&
+!***   	CUgToRefine(ind)*EXP(CIMAGONE*PI/2_RKIND)*&
+!***	(RAbsorptionPercentage/100_RKIND)),&
+!***	AIMAG(CUgToRefine(ind)) )  
 	 END WHERE
      WHERE(ISymmetryRelations.EQ.-IEquivalentUgKey(ind))
-!        CUgMatDummy = CONJG(CUgToRefine(ind))+&
-!		CONJG(CUgToRefine(ind))*EXP(CIMAGONE*PI/2_RKIND)*(RAbsorptionPercentage/100_RKIND)
+!***        CUgMatDummy = CONJG(CUgToRefine(ind))+&
+!***		CONJG(CUgToRefine(ind))*EXP(CIMAGONE*PI/2_RKIND)*(RAbsorptionPercentage/100_RKIND)
         CUgMatDummy = CMPLX( REAL(CUgToRefine(ind)+&
 		CUgToRefine(ind)*EXP(CIMAGONE*PI/2_RKIND)*&
 		(RAbsorptionPercentage/100_RKIND)),&

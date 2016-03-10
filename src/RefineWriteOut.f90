@@ -299,12 +299,12 @@ SUBROUTINE WriteOutVariables(IIterationCount,IErr)
 
      SELECT CASE(jnd)
      CASE(1)
-        DO ind = 1,INoofUgs
+        DO ind = 1+IUgOffset,INoofUgs+IUgOffset
            IStart = (ind*2)-1
            IEnd = ind*2
            RDataOut(IStart:IEnd) = [REAL(CUgToRefine(ind)), REAL(AIMAG(CUgToRefine(ind)),RKIND)]
         END DO
-		RDataOut(IEnd+1) = RAbsorptionPercentage!RIndependentVariable(2*INoofUgs+1)!RB last variable is absorption
+		!***RDataOut(IEnd+1) = RAbsorptionPercentage!RIndependentVariable(2*INoofUgs+1)!RB last variable is absorption
      CASE(2)
         RDataOut(IStart:IEnd) = RESHAPE(TRANSPOSE(RAtomSiteFracCoordVec),SHAPE(RDataOut(IStart:IEnd)))
      CASE(3)
