@@ -388,7 +388,7 @@ RFullIsotropicDebyeWallerFactor,IFullAtomicNumber,IFullAnisotropicDWFTensor)
 	!using the Hermitian matrix CUgMatNoAbs
     !We count over INoofUgs, specified in felix.inp
     !The count excludes Ug components that are zero and U(000), the inner potential
-	IUgOffset=2!choose how many Ug's to skip in the refinement, 1 is the inner potential...
+	IUgOffset=20!choose how many Ug's to skip in the refinement, 1 is the inner potential...
 
     ALLOCATE(ISymmetryRelations(nReflections,nReflections),STAT=IErr)!Matrix with numbers marking equivalent Ug's
     IF( IErr.NE.0 ) THEN
@@ -1256,10 +1256,10 @@ END SUBROUTINE OutofUnitCellCheck
 !!$  %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 SUBROUTINE ApplyNewStructureFactors(IErr)
-
+!now redundant
 !!$  %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-!!$  % Subroutine to place iteratively determined Structure factors
-!!$  % to Ug Matrix
+!!$  % Subroutine to place iterating Structure factors
+!!$  % into Ug Matrix (including absorption!)
 !!$  %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
   
   USE MyNumbers
@@ -1277,9 +1277,9 @@ SUBROUTINE ApplyNewStructureFactors(IErr)
 
   INTEGER(IKIND) :: IErr,ind
   COMPLEX(CKIND),DIMENSION(nReflections,nReflections) :: CUgMatDummy
+  COMPLEX(CKIND) :: CNewUg
 
 !!$  Dummy Matrix to contain new iterative values
-  
    CUgMatDummy = CZERO
 
 !!$  Populate Ug Matrix with new iterative elements, include proportional absorption here for now !RB not good
@@ -1287,18 +1287,14 @@ SUBROUTINE ApplyNewStructureFactors(IErr)
      WHERE(ISymmetryRelations.EQ.IEquivalentUgKey(ind))
         CUgMatDummy = CUgToRefine(ind)+&
 		CUgToRefine(ind)*EXP(CIMAGONE*PI/2_RKIND)*(RAbsorptionPercentage/100_RKIND)
-!***        CUgMatDummy = CMPLX( REAL(CUgToRefine(ind)+&
-!***   	CUgToRefine(ind)*EXP(CIMAGONE*PI/2_RKIND)*&
-!***	(RAbsorptionPercentage/100_RKIND)),&
-!***	AIMAG(CUgToRefine(ind)) )  
 	 END WHERE
      WHERE(ISymmetryRelations.EQ.-IEquivalentUgKey(ind))
-!***        CUgMatDummy = CONJG(CUgToRefine(ind))+&
-!***		CONJG(CUgToRefine(ind))*EXP(CIMAGONE*PI/2_RKIND)*(RAbsorptionPercentage/100_RKIND)
-        CUgMatDummy = CMPLX( REAL(CUgToRefine(ind)+&
-		CUgToRefine(ind)*EXP(CIMAGONE*PI/2_RKIND)*&
-		(RAbsorptionPercentage/100_RKIND)),&
-		-AIMAG(CUgToRefine(ind)) )  
+        CUgMatDummy = CONJG(CUgToRefine(ind))+&
+		CONJG(CUgToRefine(ind))*EXP(CIMAGONE*PI/2_RKIND)*(RAbsorptionPercentage/100_RKIND)
+!        CUgMatDummy = CMPLX( REAL(CUgToRefine(ind)+&
+!		CUgToRefine(ind)*EXP(CIMAGONE*PI/2_RKIND)*&
+!		(RAbsorptionPercentage/100_RKIND)),&
+!		-AIMAG(CUgToRefine(ind)) )  
      END WHERE
   END DO
 

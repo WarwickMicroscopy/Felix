@@ -299,7 +299,7 @@ SUBROUTINE WriteOutVariables(IIterationCount,IErr)
 
      SELECT CASE(jnd)
      CASE(1)
-        DO ind = 1+IUgOffset,INoofUgs+IUgOffset
+        DO ind = 1,INoofUgs
            IStart = (ind*2)-1
            IEnd = ind*2
            RDataOut(IStart:IEnd) = [REAL(CUgToRefine(ind)), REAL(AIMAG(CUgToRefine(ind)),RKIND)]

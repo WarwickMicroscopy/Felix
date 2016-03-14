@@ -74,11 +74,11 @@ SUBROUTINE FelixFunction(LInitialSimulationFLAG,IErr)
 
 !Update scattering matrix--------------------------------------------------------------------  
   IF((IRefineModeSelectionArray(1).EQ.1)) THEN!RB Ug refinement, replace selected Ug's
-     CALL ApplyNewStructureFactors(IErr)
-     IF( IErr.NE.0 ) THEN
-       PRINT*,"felixfunction(",my_rank,")error in ApplyNewStructureFactors()"
-       RETURN
-     END IF
+     !CALL ApplyNewStructureFactors(IErr) !NOW IN SimplexFunction!***
+     !IF( IErr.NE.0 ) THEN
+     !  PRINT*,"felixfunction(",my_rank,")error in ApplyNewStructureFactors()"
+     !  RETURN
+     !END IF
   ELSE!RB other refinement, recalculate Ug pool
      CALL StructureFactorSetup(IErr)
      IF( IErr.NE.0 ) THEN
@@ -276,6 +276,7 @@ REAL(RKIND) FUNCTION SimplexFunction(RIndependentVariable,IIterationCount,IExitF
   INTEGER(IKIND) :: IErr,IExitFLAG,IThickness,ind,jnd
   REAL(RKIND),DIMENSION(INoOfVariables),INTENT(INOUT) :: RIndependentVariable
   INTEGER(IKIND),INTENT(IN) :: IIterationCount
+  COMPLEX(CKIND),DIMENSION(nReflections,nReflections) :: CUgMatDummy
   LOGICAL :: LInitialSimulationFLAG = .FALSE.
   
   IF(IWriteFLAG.GE.10.AND.my_rank.EQ.0) THEN
@@ -283,6 +284,8 @@ REAL(RKIND) FUNCTION SimplexFunction(RIndependentVariable,IIterationCount,IExitF
   END IF
 
   IF(IRefineModeSelectionArray(1).EQ.1) THEN  !Ug refinement; update structure factors 
+  !Dummy Matrix to contain new iterative values
+    CUgMatDummy = CZERO
     !NB these are Ug's without absorption, used to be the suroutine UpdateStructureFactors
     jnd=1
     DO ind = 1+IUgOffset,INoofUgs+IUgOffset!*** temp changes so real part only***
@@ -300,8 +303,19 @@ REAL(RKIND) FUNCTION SimplexFunction(RIndependentVariable,IIterationCount,IExitF
 !***      ELSE!should never happen
 !***	    PRINT*,"Warning - zero structure factor!",ind,":",CUgToRefine(IEquivalentUgKey(ind))
 !***      END IF
+     WHERE(ISymmetryRelations.EQ.IEquivalentUgKey(ind))
+        CUgMatDummy = CUgToRefine(ind)+&
+		CUgToRefine(ind)*EXP(CIMAGONE*PI/2_RKIND)*(RAbsorptionPercentage/100_RKIND)
+	 END WHERE
+     WHERE(ISymmetryRelations.EQ.-IEquivalentUgKey(ind))
+        CUgMatDummy = CONJG(CUgToRefine(ind))+&
+		CONJG(CUgToRefine(ind))*EXP(CIMAGONE*PI/2_RKIND)*(RAbsorptionPercentage/100_RKIND)
+     END WHERE
     END DO
-!***    RAbsorptionPercentage = RIndependentVariable(jnd)
+    WHERE(ABS(CUgMatDummy).GT.TINY)
+      CUgMat = CUgMatDummy
+    END WHERE
+	!***    RAbsorptionPercentage = RIndependentVariable(jnd)
   ELSE !everything else
      CALL UpdateVariables(RIndependentVariable,IErr)
      IF( IErr.NE.0 ) THEN
