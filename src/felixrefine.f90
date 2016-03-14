@@ -1255,57 +1255,6 @@ END SUBROUTINE OutofUnitCellCheck
 
 !!$  %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-SUBROUTINE ApplyNewStructureFactors(IErr)
-!now redundant
-!!$  %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-!!$  % Subroutine to place iterating Structure factors
-!!$  % into Ug Matrix (including absorption!)
-!!$  %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-  
-  USE MyNumbers
-  
-  USE CConst; USE IConst; USE RConst
-  USE IPara; USE RPara; USE SPara; USE CPara
-  USE BlochPara
-
-  USE IChannels
-
-  USE MPI
-  USE MyMPI
-
-  IMPLICIT NONE
-
-  INTEGER(IKIND) :: IErr,ind
-  COMPLEX(CKIND),DIMENSION(nReflections,nReflections) :: CUgMatDummy
-  COMPLEX(CKIND) :: CNewUg
-
-!!$  Dummy Matrix to contain new iterative values
-   CUgMatDummy = CZERO
-
-!!$  Populate Ug Matrix with new iterative elements, include proportional absorption here for now !RB not good
-  DO ind = 1+IUgOffset,INoofUgs+IUgOffset
-     WHERE(ISymmetryRelations.EQ.IEquivalentUgKey(ind))
-        CUgMatDummy = CUgToRefine(ind)+&
-		CUgToRefine(ind)*EXP(CIMAGONE*PI/2_RKIND)*(RAbsorptionPercentage/100_RKIND)
-	 END WHERE
-     WHERE(ISymmetryRelations.EQ.-IEquivalentUgKey(ind))
-        CUgMatDummy = CONJG(CUgToRefine(ind))+&
-		CONJG(CUgToRefine(ind))*EXP(CIMAGONE*PI/2_RKIND)*(RAbsorptionPercentage/100_RKIND)
-!        CUgMatDummy = CMPLX( REAL(CUgToRefine(ind)+&
-!		CUgToRefine(ind)*EXP(CIMAGONE*PI/2_RKIND)*&
-!		(RAbsorptionPercentage/100_RKIND)),&
-!		-AIMAG(CUgToRefine(ind)) )  
-     END WHERE
-  END DO
-
-  WHERE(ABS(CUgMatDummy).GT.TINY)
-     CUgMat = CUgMatDummy
-  END WHERE
-  
-END SUBROUTINE ApplyNewStructureFactors
-
-!!$  %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-
 SUBROUTINE CreateIdentityMatrix(IIdentityMatrix,ISize,IErr)
 
 !!$  %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%

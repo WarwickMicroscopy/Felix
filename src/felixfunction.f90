@@ -649,56 +649,6 @@ END SUBROUTINE ConvertVectorMovementsIntoAtomicCoordinates
 
 !%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-SUBROUTINE InitialiseWeightingCoefficients(IErr)
-!Now redundant  
-  USE MyNumbers
-  USE CConst; USE IConst; USE RConst
-  USE IPara; USE RPara; USE SPara; USE CPara
-  USE BlochPara
-  USE IChannels
-  
-  USE MPI
-  USE MyMPI
-  
-  IMPLICIT NONE
-
-  INTEGER(IKIND) :: IErr,ind
-  REAL(RKIND),DIMENSION(:),ALLOCATABLE :: RWeightingCoefficientsDummy
-
-  ALLOCATE(RWeightingCoefficients(INoOfLacbedPatterns),STAT=IErr)
-  IF( IErr.NE.0 ) THEN
-     PRINT*,"InitialiseWeightingCoefficients(",my_rank,")error allocating RWeightingCoefficients"
-     RETURN
-  ENDIF
-  ALLOCATE(RWeightingCoefficientsDummy(INoOfLacbedPatterns),STAT=IErr)
-  IF( IErr.NE.0 ) THEN
-     PRINT*,"InitialiseWeightingCoefficients(",my_rank,")error allocating RWeightingCoefficientsDummy"
-     RETURN
-  ENDIF
-  
-  SELECT CASE (IWeightingFLAG)
-  CASE(0)
-     RWeightingCoefficients = ONE
-  CASE(1)
-     RWeightingCoefficientsDummy = RgPoolMag(IOutputReflections)/MAXVAL(RgPoolMag(IOutputReflections))
-     IF(SIZE(RWeightingCoefficients).GT.1) THEN
-        RWeightingCoefficientsDummy(1) = RWeightingCoefficients(2)/TWO 
-     END IF
-     DO ind = 1,INoOfLacbedPatterns
-        RWeightingCoefficients(ind) = RWeightingCoefficientsDummy(INoOfLacbedPatterns-(ind-1))
-     END DO
-!!$     RWeightingCoefficients = 1/RgPoolMag(IOutputReflections)
-  CASE(2)
-     RWeightingCoefficients = RgPoolMag(IOutputReflections)/MAXVAL(RgPoolMag(IOutputReflections))
-     IF(SIZE(RWeightingCoefficients).GT.1) THEN
-        RWeightingCoefficients(1) = RWeightingCoefficients(2)/TWO 
-     END IF
-  END SELECT
-
-END SUBROUTINE InitialiseWeightingCoefficients
-
-!%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-
 REAL(RKIND) FUNCTION RStandardError(RStandardDeviation,RMean,RFigureofMerit,IErr)
 
   USE MyNumbers
