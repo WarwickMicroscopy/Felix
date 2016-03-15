@@ -374,13 +374,13 @@ RFullIsotropicDebyeWallerFactor,IFullAtomicNumber,IFullAnisotropicDWFTensor)
      GOTO 9999
   END IF
 
-  IF(IAbsorbFLAG.NE.0) THEN
-     CALL StructureFactorsWithAbsorption(IErr)
-     IF( IErr.NE.0 ) THEN
-        PRINT*,"felixrefine(",my_rank,")error in StructureFactorsWithAbsorption"
-        GOTO 9999
-     END IF
-  END IF
+ ! IF(IAbsorbFLAG.NE.0) THEN
+ !    CALL StructureFactorsWithAbsorption(IErr)
+ !    IF( IErr.NE.0 ) THEN
+ !       PRINT*,"felixrefine(",my_rank,")error in StructureFactorsWithAbsorption"
+ !       GOTO 9999
+ !    END IF
+ ! END IF
 
   IF(IRefineModeSelectionArray(1).EQ.1) THEN !It's a Ug refinement
     DEALLOCATE(RAtomCoordinate,STAT=IErr)!Don't need this any more
@@ -388,7 +388,7 @@ RFullIsotropicDebyeWallerFactor,IFullAtomicNumber,IFullAnisotropicDWFTensor)
 	!using the Hermitian matrix CUgMatNoAbs
     !We count over INoofUgs, specified in felix.inp
     !The count excludes Ug components that are zero and U(000), the inner potential
-	IUgOffset=30!choose how many Ug's to skip in the refinement, 1 is the inner potential...
+	IUgOffset=1!choose how many Ug's to skip in the refinement, 1 is the inner potential...
 
     ALLOCATE(ISymmetryRelations(nReflections,nReflections),STAT=IErr)!Matrix with numbers marking equivalent Ug's
     IF( IErr.NE.0 ) THEN
@@ -427,7 +427,7 @@ RFullIsotropicDebyeWallerFactor,IFullAtomicNumber,IFullAnisotropicDWFTensor)
         jnd=jnd+1!===
       END IF!===
     END DO
-    RIndependentVariable(jnd) = RAbsorptionPercentage!===RB absorption always included in structure factor refinement as last variable
+    RIndependentVariable(jnd) = RAbsorptionPercentage![[[!===RB absorption always included in structure factor refinement as last variable
 	
 	IF( IErr.NE.0 ) THEN
       PRINT*,"felixrefine(",my_rank,")error in deallocation CUgMatNoAbs,CUgMatPrime"
@@ -915,7 +915,7 @@ SUBROUTINE SetupUgsToRefine(IErr)
 
 !Count equivalent Ugs
 !Equivalent Ug's are identified by the sum of their abs(indices)plus the sum of abs(Ug)'s with no absorption
-  RgSumMat = RgSumMat+ABS(REAL(CUgMatNoAbs))+ABS(AIMAG(CUgMatNoAbs))
+!  RgSumMat = RgSumMat+ABS(REAL(CUgMatNoAbs))+ABS(AIMAG(CUgMatNoAbs))!do I need to add RgMatMag here as well, to avoid any ambiguities?
   ISymmetryRelations = 0_IKIND 
   Iuid = 0_IKIND 
   DO ind = 1,nReflections
@@ -954,15 +954,11 @@ SUBROUTINE SetupUgsToRefine(IErr)
     END DO
   END IF
 
-!Link each number (key) with its Ug, from 1 to the number of unique Ug's Iuid
+!Link each key with its Ug, from 1 to the number of unique Ug's Iuid
   ALLOCATE(IEquivalentUgKey(Iuid),STAT=IErr)
-  IF( IErr.NE.0 ) THEN
-     PRINT*,"SetupUgsToRefine(",my_rank,")error allocating IEquivalentUgKey"
-     RETURN
-  END IF
   ALLOCATE(CUgToRefine(Iuid),STAT=IErr)
   IF( IErr.NE.0 ) THEN
-     PRINT*,"SetupUgsToRefine(",my_rank,")error allocating CUgToRefine"
+     PRINT*,"SetupUgsToRefine(",my_rank,")error allocating IEquivalentUgKey or CUgToRefine"
      RETURN
   END IF
   DO ind = 1,Iuid
@@ -976,15 +972,15 @@ SUBROUTINE SetupUgsToRefine(IErr)
 
 !Count the number of Independent Variables
   jnd=1
-  DO ind = 1+IUgOffset,INoofUgs+IUgOffset !=== temp comment out so real part only***
-     IF ( ABS(REAL(CUgToRefine(ind),RKIND)).GE.RTolerance ) THEN!===
+  DO ind = 1+IUgOffset,INoofUgs+IUgOffset !=== temp comment out !=== for real part only***
+    IF ( ABS(REAL(CUgToRefine(ind),RKIND)).GE.RTolerance ) THEN!===
       jnd=jnd+1
 	END IF!===
     IF ( ABS(AIMAG(CUgToRefine(ind))).GE.RTolerance ) THEN!===
       jnd=jnd+1!===
 	END IF!===
   END DO
-  INoOfVariables = jnd!===-1 !===RB btw last +1 is for absorption !*** delete the -1 to revert***
+  INoOfVariables = jnd![[[-1 !===the last increment is for absorption ![[[ delete the -1 to include absorption***
   
 END SUBROUTINE SetupUgsToRefine
 

@@ -55,7 +55,7 @@ SUBROUTINE StructureFactorSetup(IErr)
 
   IMPLICIT NONE
 
-  INTEGER(IKIND) :: IErr
+  INTEGER(IKIND) :: ind,jnd,IErr
 
   CALL Message("StructureFactorSetup",IMust,IErr)
 
@@ -74,16 +74,32 @@ SUBROUTINE StructureFactorSetup(IErr)
      RETURN
   END IF
 
-  CALL GMatrixInitialisation (IErr)
-  IF( IErr.NE.0 ) THEN
-     PRINT*,"StructureFactorSetup(",my_rank,")error in GMatrixInitialisation"
-     RETURN
-  END IF
+  !CALL GMatrixInitialisation (IErr)
+  !IF( IErr.NE.0 ) THEN
+  !   PRINT*,"StructureFactorSetup(",my_rank,")error in GMatrixInitialisation"
+  !   RETURN
+  !END IF
+  !RgMatMat is a matrix of g-vectors that corresponds to the CUgMatNoAbs matrix
+  !RgMatMag is a matrix of their magnitides
+  !RgPool is a list of g-vectors in the microscope ref frame, units of 1/A, multiplied by 2 pi
+  DO ind=1,nReflections
+     DO jnd=1,nReflections
+        RgMatMat(ind,jnd,:)= RgPoolT(ind,:)-RgPoolT(jnd,:)
+        RgMatMag(ind,jnd)= SQRT(DOT_PRODUCT(RgMatMat(ind,jnd,:),RgMatMat(ind,jnd,:)))
+     ENDDO
+  ENDDO
+  !Ug take the 2 pi back out of the magnitude...   
+  RgMatMag = RgMatMag/TWOPI
 
   CALL StructureFactorInitialisation (IErr)
   IF( IErr.NE.0 ) THEN
      PRINT*,"StructureFactorSetup(",my_rank,")error in StructureFactorInitialisation"
      RETURN
+  END IF
+  
+  !For symmetry determination, only in Ug refinement
+  IF((IRefineModeSelectionArray(1).EQ.1)) THEN
+    RgSumMat = SUM(ABS(RgMatMat),3)+RgMatMag+ABS(REAL(CUgMatNoAbs))+ABS(AIMAG(CUgMatNoAbs))
   END IF
 
   !Dellocation-------------------------------------------------------- 

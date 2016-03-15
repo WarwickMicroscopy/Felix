@@ -315,7 +315,7 @@ REAL(RKIND) FUNCTION SimplexFunction(RIndependentVariable,IIterationCount,IExitF
     WHERE(ABS(CUgMatDummy).GT.TINY)
       CUgMat = CUgMatDummy
     END WHERE
-	    RAbsorptionPercentage = RIndependentVariable(jnd)!===
+	    RAbsorptionPercentage = RIndependentVariable(jnd)!===![[[
   ELSE !everything else
      CALL UpdateVariables(RIndependentVariable,IErr)
      IF( IErr.NE.0 ) THEN
