@@ -374,14 +374,6 @@ RFullIsotropicDebyeWallerFactor,IFullAtomicNumber,IFullAnisotropicDWFTensor)
      GOTO 9999
   END IF
 
- ! IF(IAbsorbFLAG.NE.0) THEN
- !    CALL StructureFactorsWithAbsorption(IErr)
- !    IF( IErr.NE.0 ) THEN
- !       PRINT*,"felixrefine(",my_rank,")error in StructureFactorsWithAbsorption"
- !       GOTO 9999
- !    END IF
- ! END IF
-
   IF(IRefineModeSelectionArray(1).EQ.1) THEN !It's a Ug refinement
     DEALLOCATE(RAtomCoordinate,STAT=IErr)!Don't need this any more
     !Identify unique Ug's and count the number of independent variables INoOfVariables

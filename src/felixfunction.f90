@@ -144,7 +144,7 @@ SUBROUTINE CalculateFigureofMeritandDetermineThickness(IThicknessCountFinal,IErr
   INTEGER(IKIND),INTENT(OUT) :: IThicknessCountFinal
   REAL(RKIND),DIMENSION(2*IPixelCount,2*IPixelCount) :: RSimulatedImageForPhaseCorrelation,RExperimentalImage
   REAL(RKIND) :: RCrossCorrelationOld,RIndependentCrossCorrelation,RThickness,&
-	   PhaseCorrelate,Normalised2DCrossCorrelation,ResidualSumofSquares
+	   PhaseCorrelate,Normalised2DCrossCorrelation,ResidualSumofSquares,RThicknessRange
   REAL(RKIND),DIMENSION(INoOfLacbedPatterns) :: RReflectionCrossCorrelations,RReflectionThickness
   CHARACTER*200 :: SPrintString
        
@@ -235,22 +235,22 @@ SUBROUTINE CalculateFigureofMeritandDetermineThickness(IThicknessCountFinal,IErr
 		   IThicknessByReflection(hnd)*RDeltaThickness
         END IF
      END DO
-
      RReflectionCrossCorrelations(hnd) = RCrossCorrelationOld
-     
   END DO
+!RB assume that the thickness is given by the mean of individual thicknesses  
+  IThicknessCountFinal = SUM(IThicknessByReflection)/INoOfLacbedPatterns
+  RThickness = RInitialThickness + (IThicknessCountFinal-1)*RDeltaThickness
+  RThicknessRange=( MAXVAL(IThicknessByReflection)-MINVAL(IThicknessByReflection) )*&
+                  RDeltaThickness
 
   RCrossCorrelation = &
        SUM(RReflectionCrossCorrelations*RWeightingCoefficients)/&
        REAL(INoOfLacbedPatterns,RKIND)
-!RB assume that the thickness is given by the mean of individual thicknesses  
-  IThicknessCountFinal = SUM(IThicknessByReflection)/INoOfLacbedPatterns
-
-  RThickness = RInitialThickness + (IThicknessCountFinal-1)*RDeltaThickness 
-  
 
   IF(my_rank.eq.0) THEN
      WRITE(SPrintString,FMT='(A18,I4,A10)') "Specimen thickness ",NINT(RThickness)," Angstroms"
+     PRINT*,TRIM(ADJUSTL(SPrintString))
+     WRITE(SPrintString,FMT='(A15,I4,A10)') "Thickness range",NINT(RThicknessRange)," Angstroms"
      PRINT*,TRIM(ADJUSTL(SPrintString))
   END IF
 
@@ -385,13 +385,6 @@ SUBROUTINE CreateImagesAndWriteOutput(IIterationCount,IExitFLAG,IErr)
      RETURN
   ENDIF
 
-!deallocate--------------------------------
-  !DEALLOCATE(RIndividualReflections,STAT=IErr)!RB deallocate output images
-  !IF( IErr.NE.0 ) THEN
-  !   PRINT*,"CreateImagesAndWriteOutput(",my_rank,")error deallocating RIndividualReflections"
-  !   RETURN
-  !ENDIF
-  
 END SUBROUTINE CreateImagesAndWriteOutput
 
 !%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%

@@ -74,11 +74,6 @@ SUBROUTINE StructureFactorSetup(IErr)
      RETURN
   END IF
 
-  !CALL GMatrixInitialisation (IErr)
-  !IF( IErr.NE.0 ) THEN
-  !   PRINT*,"StructureFactorSetup(",my_rank,")error in GMatrixInitialisation"
-  !   RETURN
-  !END IF
   !RgMatMat is a matrix of g-vectors that corresponds to the CUgMatNoAbs matrix
   !RgMatMag is a matrix of their magnitides
   !RgPool is a list of g-vectors in the microscope ref frame, units of 1/A, multiplied by 2 pi
