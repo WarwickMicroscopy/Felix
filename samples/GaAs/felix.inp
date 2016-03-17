@@ -52,11 +52,11 @@ IRefineModeFLAG          = A
 IWeightingFLAG           = 0
 IContinueFLAG            = 0
 ICorrelationFLAG         = 2
-IImageProcessingFLAG     = 0
+IImageProcessingFLAG     = 4
 
 # Ug Iteration
 
-INoofUgs                  = 5
+INoofUgs                  = 1
 
 # Structural Refinement
 

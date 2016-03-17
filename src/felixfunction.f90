@@ -142,9 +142,9 @@ SUBROUTINE CalculateFigureofMeritandDetermineThickness(IThicknessCountFinal,IErr
   INTEGER(IKIND) :: ind,jnd,knd,IErr,ICountedPixels,IThickness,hnd
   INTEGER(IKIND),DIMENSION(INoOfLacbedPatterns) :: IThicknessByReflection
   INTEGER(IKIND),INTENT(OUT) :: IThicknessCountFinal
-  REAL(RKIND),DIMENSION(2*IPixelCount,2*IPixelCount) :: RSimulatedImageForPhaseCorrelation,RExperimentalImage
+  REAL(RKIND),DIMENSION(2*IPixelCount,2*IPixelCount) :: RSimulatedImage,RExperimentalImage
   REAL(RKIND) :: RCrossCorrelationOld,RIndependentCrossCorrelation,RThickness,&
-	   PhaseCorrelate,Normalised2DCrossCorrelation,ResidualSumofSquares,RThicknessRange
+	   PhaseCorrelate,Normalised2DCrossCorrelation,ResidualSumofSquares,RThicknessRange,Rradius
   REAL(RKIND),DIMENSION(INoOfLacbedPatterns) :: RReflectionCrossCorrelations,RReflectionThickness
   CHARACTER*200 :: SPrintString
        
@@ -159,77 +159,67 @@ SUBROUTINE CalculateFigureofMeritandDetermineThickness(IThicknessCountFinal,IErr
      RCrossCorrelationOld = 1.0E15 !A large Number
      RThickness = ZERO
      DO ind = 1,IThicknessCount
-        
         ICountedPixels = 0
-        RSimulatedImageForPhaseCorrelation = ZERO
+        RSimulatedImage = ZERO
         RIndependentCrossCorrelation = ZERO
-
-        DO jnd = 1,2*IPixelCount!RB does this have to be done here
-           DO knd = 1,2*IPixelCount
-              IF(ABS(RMask(jnd,knd)).GT.TINY) THEN
-                 ICountedPixels = ICountedPixels+1
-                 RSimulatedImageForPhaseCorrelation(jnd,knd) = &
-                      RSimulatedPatterns(hnd,ind,ICountedPixels)
-              END IF
-           END DO
+        DO jnd = 1,2*IPixelCount!RB why does this masking have to be done here?
+          DO knd = 1,2*IPixelCount
+            IF(ABS(RMask(jnd,knd)).GT.TINY) THEN
+              ICountedPixels = ICountedPixels+1
+              RSimulatedImage(jnd,knd) = RSimulatedPatterns(hnd,ind,ICountedPixels)
+            END IF
+          END DO
         END DO
                
         SELECT CASE (IImageProcessingFLAG)
-        CASE(0)
-           RExperimentalImage = RImageExpi(:,:,hnd)
-        CASE(1)
-           RSimulatedImageForPhaseCorrelation = &
-                SQRT(RSimulatedImageForPhaseCorrelation)
-           RExperimentalImage = &
-                SQRT(RImageExpi(:,:,hnd))
-        CASE(2)
-           WHERE (RSimulatedImageForPhaseCorrelation.GT.TINY**2)
-              RSimulatedImageForPhaseCorrelation = &
-                   LOG(RSimulatedImageForPhaseCorrelation)
-           ELSEWHERE
-              RSimulatedImageForPhaseCorrelation = &
-                   TINY**2
-           END WHERE
+        CASE(0)!no processing
+          RExperimentalImage = RImageExpi(:,:,hnd)
+		   
+        CASE(1)!square root before perfoming corration
+          RSimulatedImage=SQRT(RSimulatedImage)
+          RExperimentalImage =  SQRT(RImageExpi(:,:,hnd))
+		   
+        CASE(2)!log before performing correlation
+          WHERE (RSimulatedImage.GT.TINY**2)
+            RSimulatedImage=LOG(RSimulatedImage)
+          ELSEWHERE
+            RSimulatedImage = TINY**2
+          END WHERE
+          WHERE (RExperimentalImage.GT.TINY**2)
+            RExperimentalImage = LOG(RImageExpi(:,:,hnd))
+          ELSEWHERE
+            RExperimentalImage =  TINY**2
+          END WHERE
               
-           WHERE (RExperimentalImage.GT.TINY**2)
-              RExperimentalImage = &
-                   LOG(RImageExpi(:,:,hnd))
-           ELSEWHERE
-              RExperimentalImage = &
-                   TINY**2
-           END WHERE
-              
+        CASE(4)!Apply gaussian blur to simulated image
+          RExperimentalImage = RImageExpi(:,:,hnd)
+		  Rradius=1.25_RKIND!!!*+*+ will need to be added as a line in felix.inp +*+*!!!
+		  CALL BlurG(RSimulatedImage,Rradius)
         END SELECT
 
+		
         SELECT CASE (ICorrelationFLAG)
            
         CASE(0) ! Phase Correlation
-           
-           RIndependentCrossCorrelation = &
-                ONE-& ! So Perfect Correlation = 0 not 1
+           RIndependentCrossCorrelation=ONE-& ! So Perfect Correlation = 0 not 1
                 PhaseCorrelate(&
-                RSimulatedImageForPhaseCorrelation,RExperimentalImage,&
+                RSimulatedImage,RExperimentalImage,&
                 IErr,2*IPixelCount,2*IPixelCount)
            
         CASE(1) ! Residual Sum of Squares (Non functional)
-           RIndependentCrossCorrelation = &
-                ResidualSumofSquares(&
-                RSimulatedImageForPhaseCorrelation,RImageExpi(:,:,hnd),IErr)
+           RIndependentCrossCorrelation = ResidualSumofSquares(&
+                RSimulatedImage,RImageExpi(:,:,hnd),IErr)
            
         CASE(2) ! Normalised Cross Correlation
-
-           RIndependentCrossCorrelation = &
-                ONE-& ! So Perfect Correlation = 0 not 1
+           RIndependentCrossCorrelation = ONE-& ! So Perfect Correlation = 0 not 1
                 Normalised2DCrossCorrelation(&
-                RSimulatedImageForPhaseCorrelation,RExperimentalImage,&
+                RSimulatedImage,RExperimentalImage,&
                 (/2*IPixelCount, 2*IPixelCount/),IPixelTotal,IErr)
            
         END SELECT
                 
         IF(ABS(RIndependentCrossCorrelation).LT.RCrossCorrelationOld) THEN
-
            RCrossCorrelationOld = RIndependentCrossCorrelation
-
            IThicknessByReflection(hnd) = ind
            RReflectionThickness(hnd) = RInitialThickness +&
 		   IThicknessByReflection(hnd)*RDeltaThickness
@@ -625,8 +615,7 @@ SUBROUTINE ConvertVectorMovementsIntoAtomicCoordinates(IVariableID,RIndependentV
   IMPLICIT NONE
 
   INTEGER(IKIND) :: IErr,ind,jnd,IVariableID,IVectorID,IAtomID
-  REAL(RKIND),DIMENSION(INoOfVariables),INTENT(IN) :: &
-       RIndependentVariable
+  REAL(RKIND),DIMENSION(INoOfVariables),INTENT(IN) :: RIndependentVariable
 
 !!$  Use IVariableID to determine which vector is being applied (IVectorID)
   IVectorID = IIterativeVariableUniqueIDs(IVariableID,3)
@@ -639,6 +628,58 @@ SUBROUTINE ConvertVectorMovementsIntoAtomicCoordinates(IVariableID,RIndependentV
        RIndependentVariable(IVariableID)*RAllowedVectors(IVectorID,:)
   
 END SUBROUTINE ConvertVectorMovementsIntoAtomicCoordinates
+
+!%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+SUBROUTINE BlurG(RImageToBlur,Rradius,IErr)
+  !performs a 2D Gaussian blur on the input image
+  USE MyNumbers
+  
+  USE CConst; USE IConst; USE RConst
+  USE IPara; USE RPara; USE SPara; USE CPara
+  USE BlochPara
+  
+  USE IChannels
+  
+  USE MPI
+  USE MyMPI
+  
+  IMPLICIT NONE
+
+  INTEGER(IKIND) :: IErr,ind,IKernelRadius,IKernelSize
+  REAL(RKIND),DIMENSION(100_IKIND) :: RGauss1D
+!  REAL(RKIND),DIMENSION(:), ALLOCATABLE :: RGauss1D!why doesn't this work
+  REAL(RKIND),DIMENSION(2*IPixelCount,2*IPixelCount) :: RImageToBlur,RTempImage
+  REAL(RKIND) :: Rradius,Rind,Rsum
+
+  !set up a 1D kernel of appropriate size  
+  IKernelRadius=NINT(3*Rradius)
+  IKernelSize = 2*IKernelRadius + 1
+!  PRINT*,"IKernel",IKernelRadius,IKernelSize
+!  ALLOCATE(RGauss1D(IKernelSize),STAT=IErr)!ffs
+  Rsum=0
+  DO ind=-IKernelRadius,IKernelRadius
+    Rind=REAL(ind)
+    RGauss1D(ind+IKernelRadius+1)=EXP(-(Rind**2)/((2*Rradius)**2))
+	Rsum=Rsum+EXP(-(Rind**2)/((2*Rradius)**2))
+  END DO
+  RGauss1D=RGauss1D/Rsum!normalise
+  RTempImage=RImageToBlur*0_RKIND;!reset the temp image
+  
+  !apply the kernel in direction 1
+  DO ind = -IKernelRadius,IKernelRadius
+    RTempImage=RTempImage+CSHIFT(RImageToBlur,ind,DIM=1)*RGauss1D(ind+IKernelRadius+1)
+  END DO
+  RImageToBlur=RTempImage;!make the 1D blurred image the input for the next direction
+  RTempImage=RImageToBlur*0_RKIND;!reset the temp image
+
+  !apply the kernel in direction 2  
+  DO ind = -IKernelRadius,IKernelRadius
+    RTempImage=RTempImage+CSHIFT(RImageToBlur,ind,DIM=2)*RGauss1D(ind+IKernelRadius+1);
+  END DO
+  RImageToBlur=RTempImage;
+
+END SUBROUTINE BlurG
 
 !%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
