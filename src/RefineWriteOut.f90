@@ -322,7 +322,7 @@ SUBROUTINE WriteOutVariables(IIterationCount,IErr)
      IF(IRefineModeSelectionArray(jnd).EQ.0) THEN
         CYCLE !The refinement variable type is not being refined, skip
      END IF
-     IF(jnd.EQ.1) THEN
+     IF(jnd.EQ.1) THEN!It's an atom coordinate refinement
         IStart = 1
      ELSE
         IStart = SUM(IOutputVariables(1:(jnd-1)))+1
@@ -331,12 +331,13 @@ SUBROUTINE WriteOutVariables(IIterationCount,IErr)
 
      SELECT CASE(jnd)
      CASE(1)
+!        DO ind = 1+IUgOffset,INoofUgs+IUgOffset
         DO ind = 1,INoofUgs
            IStart = (ind*2)-1
            IEnd = ind*2
-           RDataOut(IStart:IEnd) = [REAL(CUgToRefine(ind)), REAL(AIMAG(CUgToRefine(ind)),RKIND)]
+           RDataOut(IStart:IEnd) = [REAL(CUgToRefine(ind+IUgOffset)), REAL(AIMAG(CUgToRefine(ind+IUgOffset)),RKIND)]
         END DO
-		!***RDataOut(IEnd+1) = RAbsorptionPercentage!RIndependentVariable(2*INoofUgs+1)!RB last variable is absorption
+		RDataOut(IEnd+1) = RAbsorptionPercentage!RB last variable is absorption
      CASE(2)
         RDataOut(IStart:IEnd) = RESHAPE(TRANSPOSE(RAtomSiteFracCoordVec),SHAPE(RDataOut(IStart:IEnd)))
      CASE(3)
@@ -365,7 +366,7 @@ SUBROUTINE WriteOutVariables(IIterationCount,IErr)
 
   OPEN(UNIT=IChOutSimplex,file='IterationLog.txt',form='formatted',status='unknown',position='append')
 
-  WRITE(UNIT=IChOutSimplex,FMT=SFormat) IIterationCount, RCrossCorrelation,RDataOut
+  WRITE(UNIT=IChOutSimplex,FMT=SFormat) IIterationCount,RCrossCorrelation,RDataOut
 
   CLOSE(IChOutSimplex)
 
