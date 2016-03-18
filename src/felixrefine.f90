@@ -505,6 +505,7 @@ RFullIsotropicDebyeWallerFactor,IFullAtomicNumber,IFullAnisotropicDWFTensor)
      RETURN
   END IF 
   !All the individual calculations go into RSimulatedPatterns later with MPI_GATHERV
+  !(Note that RSimulatedPatterns is a vector with respect to pixels, not a 2D image)
   ALLOCATE(RSimulatedPatterns(INoOfLacbedPatterns,IThicknessCount,IPixelTotal),STAT=IErr)
   IF( IErr.NE.0 ) THEN
      PRINT*,"felixrefine(",my_rank,")error allocating RSimulatedPatterns"
@@ -1301,14 +1302,10 @@ SUBROUTINE RecoverSavedSimplex(RSimplexVariable,RSimplexFoM,RStandardDeviation,R
 
   INTEGER(IKIND) :: &
        IErr,ind,IIterationCount
-  REAL(RKIND),DIMENSION(INoOfVariables+1,INoOfVariables) :: &
-       RSimplexVariable
-  REAL(RKIND),DIMENSION(INoOfVariables+1) :: &
-       RSimplexFoM
-  REAL(RKIND) :: &
-       RStandardDeviation,RMean
-  CHARACTER*200 :: &
-       CSizeofData,SFormatString,filename
+  REAL(RKIND),DIMENSION(INoOfVariables+1,INoOfVariables) :: RSimplexVariable
+  REAL(RKIND),DIMENSION(INoOfVariables+1) :: RSimplexFoM
+  REAL(RKIND) :: RStandardDeviation,RMean
+  CHARACTER*200 :: CSizeofData,SFormatString,filename
 
   WRITE(filename,*) "fr-Simplex.txt"
 

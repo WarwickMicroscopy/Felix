@@ -161,7 +161,6 @@ SUBROUTINE CalculateFigureofMeritandDetermineThickness(IThicknessCountFinal,IErr
      DO ind = 1,IThicknessCount
         ICountedPixels = 0
         RSimulatedImage = ZERO
-        RIndependentCrossCorrelation = ZERO
         DO jnd = 1,2*IPixelCount!RB why does this masking have to be done here?
           DO knd = 1,2*IPixelCount
             IF(ABS(RMask(jnd,knd)).GT.TINY) THEN
@@ -193,11 +192,12 @@ SUBROUTINE CalculateFigureofMeritandDetermineThickness(IThicknessCountFinal,IErr
               
         CASE(4)!Apply gaussian blur to simulated image
           RExperimentalImage = RImageExpi(:,:,hnd)
-		  Rradius=1.25_RKIND!!!*+*+ will need to be added as a line in felix.inp +*+*!!!
+		  Rradius=0.95_RKIND!!!*+*+ will need to be added as a line in felix.inp +*+*!!!
 		  CALL BlurG(RSimulatedImage,Rradius)
+		  
         END SELECT
 
-		
+        RIndependentCrossCorrelation = ZERO	
         SELECT CASE (ICorrelationFLAG)
            
         CASE(0) ! Phase Correlation
@@ -233,8 +233,7 @@ SUBROUTINE CalculateFigureofMeritandDetermineThickness(IThicknessCountFinal,IErr
   RThicknessRange=( MAXVAL(IThicknessByReflection)-MINVAL(IThicknessByReflection) )*&
                   RDeltaThickness
 
-  RCrossCorrelation = &
-       SUM(RReflectionCrossCorrelations*RWeightingCoefficients)/&
+  RCrossCorrelation = SUM(RReflectionCrossCorrelations*RWeightingCoefficients)/&
        REAL(INoOfLacbedPatterns,RKIND)
 
   IF(my_rank.eq.0) THEN

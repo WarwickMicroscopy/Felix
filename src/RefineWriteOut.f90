@@ -37,7 +37,7 @@
 !%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 SUBROUTINE WriteIterationOutput(IIterationCount,IThicknessIndex,IExitFlag,IErr)
-
+!This code needs to be taken up a subroutine level and combined with CalculateFigureofMeritandDetermineThickness to avoid repeated calculation of the image to output and BlurG
   USE MyNumbers
   
   USE CConst; USE IConst; USE RConst
@@ -51,8 +51,10 @@ SUBROUTINE WriteIterationOutput(IIterationCount,IThicknessIndex,IExitFlag,IErr)
 
   IMPLICIT NONE
 
-  INTEGER(IKIND) :: IErr,IIterationCount,IThickness
+  INTEGER(IKIND) :: IErr,IIterationCount,IThickness,ind,jnd,gnd,hnd
   INTEGER(IKIND),INTENT(IN) :: IThicknessIndex,IExitFLAG
+  REAL(RKIND),DIMENSION(2*IPixelCount,2*IPixelCount) :: RImage
+  REAL(RKIND) :: Rradius
   CHARACTER*200 :: path,SPrintString
   
   IF(IExitFLAG.EQ.1.OR.(IIterationCount.GE.(IPreviousPrintedIteration+IPrint))) THEN
@@ -80,11 +82,41 @@ SUBROUTINE WriteIterationOutput(IIterationCount,IThicknessIndex,IExitFlag,IErr)
      
      IPreviousPrintedIteration = IIterationCount
 
-     CALL WriteIterationImages(path,IThicknessIndex,IErr)
+!    Was WriteIterationImages
+  DO ind = 1,INoOfLacbedPatterns
+     CALL OpenReflectionImage(IChOutWIImage,path,IErr,ind,2*IPixelCount,2_IKIND)
      IF( IErr.NE.0 ) THEN
-        PRINT*,"WriteIterationOutput(",my_rank,")error in WriteIterationImages"
+        PRINT*,"WriteIterationImages(",my_rank,") error in OpenReflectionImage()"
         RETURN
-     END IF
+     ENDIF
+	 !convert vector RSimulatedPatterns into 2D RImage (again, was done once in CalculateFigureofMeritandDetermineThickness
+     RImage = ZERO
+     DO jnd = 1,IPixelTotal
+        gnd = IPixelLocations(jnd,1)
+        hnd = IPixelLocations(jnd,2)
+        RImage(gnd,hnd) = RSimulatedPatterns(ind,IThicknessIndex,jnd)
+     END DO
+	 
+	 !Apply blur again, temp fix until all subroutines combined into one
+	 IF (IImageProcessingFLAG.EQ.4) THEN
+       Rradius=0.95_RKIND!!!*+*+ will need to be added as a line in felix.inp +*+*!!!
+       CALL BlurG(RImage,Rradius)
+	 END IF
+
+     CALL WriteReflectionImage(IChOutWIImage,&
+          RImage,IErr,2*IPixelCount,2*IPixelCount,2_IKIND)       
+     IF( IErr.NE.0 ) THEN
+        PRINT*,"WriteIterationImages(", my_rank, ") error in WriteReflectionImage()"
+        RETURN
+     ENDIF
+     
+     CLOSE(IChOutWIImage,IOSTAT=IErr)       
+     IF( IErr.NE.0 ) THEN
+        PRINT*,"WriteIterationImages(", my_rank, ") error Closing Reflection Image()"
+        RETURN
+     ENDIF
+     
+  END DO
 
      CALL WriteIterationStructure(path,IErr) 
      IF( IErr.NE.0 ) THEN
