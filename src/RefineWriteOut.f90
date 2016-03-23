@@ -53,7 +53,7 @@ SUBROUTINE WriteIterationOutput(IIterationCount,IThicknessIndex,IExitFlag,IErr)
 
   INTEGER(IKIND) :: IErr,IIterationCount,IThickness,ind,jnd,gnd,hnd
   INTEGER(IKIND),INTENT(IN) :: IThicknessIndex,IExitFLAG
-  REAL(RKIND),DIMENSION(2*IPixelCount,2*IPixelCount) :: RImage
+  REAL(RKIND),DIMENSION(2*IPixelCount,2*IPixelCount) :: RImageToWrite
   REAL(RKIND) :: Rradius
   CHARACTER*200 :: path,SPrintString
   
@@ -89,22 +89,22 @@ SUBROUTINE WriteIterationOutput(IIterationCount,IThicknessIndex,IExitFlag,IErr)
         PRINT*,"WriteIterationImages(",my_rank,") error in OpenReflectionImage()"
         RETURN
      ENDIF
-	 !convert vector RSimulatedPatterns into 2D RImage (again, was done once in CalculateFigureofMeritandDetermineThickness
-     RImage = ZERO
+	 !convert vector RSimulatedPatterns into 2D RImageToWrite (again, was done once in CalculateFigureofMeritandDetermineThickness
+     RImageToWrite = ZERO
      DO jnd = 1,IPixelTotal
         gnd = IPixelLocations(jnd,1)
         hnd = IPixelLocations(jnd,2)
-        RImage(gnd,hnd) = RSimulatedPatterns(ind,IThicknessIndex,jnd)
+        RImageToWrite(gnd,hnd) = RSimulatedPatterns(ind,IThicknessIndex,jnd)
      END DO
 	 
 	 !Apply blur again, temp fix until all subroutines combined into one
 	 IF (IImageProcessingFLAG.EQ.4) THEN
        Rradius=0.95_RKIND!!!*+*+ will need to be added as a line in felix.inp +*+*!!!
-       CALL BlurG(RImage,Rradius)
+       CALL BlurG(RImageToWrite,Rradius,IErr)
 	 END IF
 
      CALL WriteReflectionImage(IChOutWIImage,&
-          RImage,IErr,2*IPixelCount,2*IPixelCount,2_IKIND)       
+          RImageToWrite,IErr,2*IPixelCount,2*IPixelCount,2_IKIND)       
      IF( IErr.NE.0 ) THEN
         PRINT*,"WriteIterationImages(", my_rank, ") error in WriteReflectionImage()"
         RETURN
@@ -142,7 +142,7 @@ END SUBROUTINE WriteIterationOutput
 !!$  %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 SUBROUTINE WriteIterationImages(path,IThicknessIndex,IErr)
-
+!now redundant
   USE MyNumbers
   
   USE CConst; USE IConst; USE RConst
@@ -157,7 +157,7 @@ SUBROUTINE WriteIterationImages(path,IThicknessIndex,IErr)
   IMPLICIT NONE
 
   INTEGER(IKIND) :: IErr,ind,jnd,hnd,gnd,IThicknessIndex
-  REAL(RKIND),DIMENSION(2*IPixelCount,2*IPixelCount) :: RImage
+  REAL(RKIND),DIMENSION(2*IPixelCount,2*IPixelCount) :: RImageToWrite
   CHARACTER*200,INTENT(IN) :: path
 
   DO ind = 1,INoOfLacbedPatterns
@@ -167,15 +167,15 @@ SUBROUTINE WriteIterationImages(path,IThicknessIndex,IErr)
         RETURN
      ENDIF
 
-     RImage = ZERO
+     RImageToWrite = ZERO
      DO jnd = 1,IPixelTotal
         gnd = IPixelLocations(jnd,1)
         hnd = IPixelLocations(jnd,2)
-        RImage(gnd,hnd) = RSimulatedPatterns(ind,IThicknessIndex,jnd)
+        RImageToWrite(gnd,hnd) = RSimulatedPatterns(ind,IThicknessIndex,jnd)
      END DO
 
      CALL WriteReflectionImage(IChOutWIImage,&
-          RImage,IErr,2*IPixelCount,2*IPixelCount,2_IKIND)       
+          RImageToWrite,IErr,2*IPixelCount,2*IPixelCount,2_IKIND)       
      IF( IErr.NE.0 ) THEN
         PRINT*,"WriteIterationImages(", my_rank, ") error in WriteReflectionImage()"
         RETURN
