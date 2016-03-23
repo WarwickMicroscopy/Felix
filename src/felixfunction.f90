@@ -171,6 +171,7 @@ SUBROUTINE CalculateFigureofMeritandDetermineThickness(IThicknessCountFinal,IErr
       END DO
                
       SELECT CASE (IImageProcessingFLAG)
+
       CASE(0)!no processing
         RExperimentalImage = RImageExpi(:,:,hnd)
            
@@ -696,11 +697,6 @@ SUBROUTINE BlurG(RImageToBlur,Rradius,IErr)
     END IF
     RTempImage=RTempImage+RShiftImage*RGauss1D(ind+IKernelRadius+1)
   END DO
-  !blank border
-!  RTempImage(1:CEILING(Rradius),:)=ZERO
-!  RTempImage(:,1:CEILING(Rradius))=ZERO
-!  RTempImage(2*IPixelCount-FLOOR(Rradius):2*IPixelCount,:)=ZERO
-!  RTempImage(:,(2*IPixelCount-FLOOR(Rradius)):2*IPixelCount)=ZERO
   RImageToBlur=RTempImage;
   DEALLOCATE(RGauss1D,STAT=IErr)
 

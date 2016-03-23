@@ -162,9 +162,9 @@ PROGRAM felixsim
   ALLOCATE(RhklPositions(nReflections,2),STAT=IErr)
   IF( IErr.NE.0 ) THEN
      PRINT*,"imagesetup(",my_rank,") error",IErr,"in ALLOCATE RhklPositions"
-     RETURN
+     GOTO 9999
   END IF
-     PRINT*,"ALLOCATE RhklPositions"
+  PRINT*,"ALLOCATE RhklPositions"
 
   CALL ImageSetup( IErr )
   IF( IErr.NE.0 ) THEN
