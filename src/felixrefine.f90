@@ -386,7 +386,7 @@ RFullIsotropicDebyeWallerFactor,IFullAtomicNumber,IFullAnisotropicDWFTensor)
     ALLOCATE(ISymmetryRelations(nReflections,nReflections),STAT=IErr)!Matrix with numbers marking equivalent Ug's
     IF( IErr.NE.0 ) THEN
       PRINT*,"felixrefine(",my_rank,")error allocating ISymmetryRelations"
-      RETURN
+      GOTO 9999
     ENDIF
     CALL SetupUgsToRefine(IErr)!NB IEquivalentUgKey and CUgToRefine allocated in here
     IF( IErr.NE.0 ) THEN
