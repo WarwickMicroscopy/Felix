@@ -193,7 +193,7 @@ SUBROUTINE CalculateFigureofMeritandDetermineThickness(IThicknessCountFinal,IErr
         CASE(4)!Apply gaussian blur to simulated image
           RExperimentalImage = RImageExpi(:,:,hnd)
 		  Rradius=0.95_RKIND!!!*+*+ will need to be added as a line in felix.inp +*+*!!!
-		  CALL BlurG(RSimulatedImage,Rradius)
+		  CALL BlurG(RSimulatedImage,Rradius,IErr)
 		  
         END SELECT
 

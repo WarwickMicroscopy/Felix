@@ -3581,6 +3581,7 @@ C
          logical    dtype_, tbxxoldd
          include   'ciftbx.sys'
          integer    nln, ii
+         integer    lastnb
          character  name*(*),temp*(NUMCHAR),
      *              type*4
 C

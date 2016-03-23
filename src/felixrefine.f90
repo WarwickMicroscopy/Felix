@@ -397,7 +397,7 @@ RFullIsotropicDebyeWallerFactor,IFullAtomicNumber,IFullAnisotropicDWFTensor)
       IF ( INoOfVariables.EQ.1 ) THEN 
         PRINT*,"Only one independent variable"
 	  ELSE
-        WRITE(SPrintString,FMT='(I3,1X,A21))') INoOfVariables,"independent variables"
+        WRITE(SPrintString,FMT='(I3,1X,A21)') INoOfVariables,"independent variables"
         PRINT*,TRIM(ADJUSTL(SPrintString))
       END IF
     END IF
@@ -611,7 +611,7 @@ RFullIsotropicDebyeWallerFactor,IFullAtomicNumber,IFullAnisotropicDWFTensor)
     ENDIF
     !RStandardTolerance = RStandardError(RStandardDeviation,RMean,RSimplexFoM(ind),IErr)
     IF((IWriteFLAG.GE.0.AND.my_rank.EQ.0).OR.IWriteFLAG.GE.10) THEN
-      WRITE(SPrintString,FMT='(A16,F7.5))') "Figure of merit ",RSimplexFoM(ind)
+      WRITE(SPrintString,FMT='(A16,F7.5)') "Figure of merit ",RSimplexFoM(ind)
       PRINT*,TRIM(ADJUSTL(SPrintString))
     END IF
   END DO
