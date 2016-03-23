@@ -307,8 +307,8 @@ RFullIsotropicDebyeWallerFactor,IFullAtomicNumber,IFullAnisotropicDWFTensor)
   !some other basic numbers
   ALLOCATE(RgVecVec(INhkl),STAT=IErr)
   IF( IErr.NE.0 ) THEN
-     PRINT*,"felixrefine(",my_rank,")error allocating RgVecVec"
-     RETURN
+     PRINT*,"felixrefine(",my_rank,") error allocating RgVecVec"
+     GOTO 9999
   END IF
   CALL DiffractionPatternCalculation(IErr)
     IF( IErr.NE.0 ) THEN
@@ -359,13 +359,14 @@ RFullIsotropicDebyeWallerFactor,IFullAtomicNumber,IFullAnisotropicDWFTensor)
   ALLOCATE(CUgMatNoAbs(nReflections,nReflections),STAT=IErr)  !RB Matrix without absorption
   ALLOCATE(CUgMatPrime(nReflections,nReflections),STAT=IErr)  !RB Matrix of just absorption  
   ALLOCATE(CUgMat(nReflections,nReflections),STAT=IErr)  !RB Matrix including absorption
+
   !RB Matrix of sums of indices - for symmetry equivalence  in the Ug matrix, only for Ug refinement
   IF(IRefineModeSelectionArray(1).EQ.1) THEN
     ALLOCATE(RgSumMat(nReflections,nReflections),STAT=IErr)  
   END IF
   IF( IErr.NE.0 ) THEN
-     PRINT*,"felixrefine(",my_rank,")error allocating CUgMat or its components"
-     RETURN
+     PRINT*,"felixrefine(",my_rank,") error allocating CUgMat or its components"
+     GOTO 9999
   END IF
   
   CALL StructureFactorSetup(IErr)
@@ -497,19 +498,19 @@ RFullIsotropicDebyeWallerFactor,IFullAtomicNumber,IFullAnisotropicDWFTensor)
   ALLOCATE(RhklPositions(nReflections,2),STAT=IErr)
   IF( IErr.NE.0 ) THEN
      PRINT*,"felixrefine(",my_rank,") error allocating RhklPositions"
-     RETURN
+     GOTO 9999
   END IF
   CALL ImageSetup( IErr )
   IF( IErr.NE.0 ) THEN
      PRINT*,"felixrefine(",my_rank,") error in ImageSetup"
-     RETURN
+     GOTO 9999
   END IF 
   !All the individual calculations go into RSimulatedPatterns later with MPI_GATHERV
   !(Note that RSimulatedPatterns is a vector with respect to pixels, not a 2D image)
   ALLOCATE(RSimulatedPatterns(INoOfLacbedPatterns,IThicknessCount,IPixelTotal),STAT=IErr)
   IF( IErr.NE.0 ) THEN
-     PRINT*,"felixrefine(",my_rank,")error allocating RSimulatedPatterns"
-     RETURN
+     PRINT*,"felixrefine(",my_rank,") error allocating Root Reflections"
+     GOTO 9999
   END IF
   RSimulatedPatterns = ZERO
   !Allocations for the pixels to be calculated by this core  
@@ -519,13 +520,13 @@ RFullIsotropicDebyeWallerFactor,IFullAtomicNumber,IFullAnisotropicDWFTensor)
          (ILocalPixelCountMax-ILocalPixelCountMin)+1),STAT=IErr)
   IF( IErr.NE.0 ) THEN
     PRINT*,"felixrefine(",my_rank,")error allocating RIndividualReflections"
-    RETURN
+    GOTO 9999
   END IF
   !position of pixels calculated by this core
   ALLOCATE(IDisplacements(p),ICount(p),STAT=IErr)
   IF( IErr.NE.0 ) THEN
      PRINT*,"felixrefine(",my_rank,")error allocating IDisplacements and/or ICount"
-     RETURN
+     GOTO 9999
   END IF
   DO ind = 1,p
      IDisplacements(ind) = (IPixelTotal*(ind-1)/p)*INoOfLacbedPatterns*IThicknessCount
@@ -556,7 +557,7 @@ RFullIsotropicDebyeWallerFactor,IFullAtomicNumber,IFullAnisotropicDWFTensor)
   ALLOCATE(CFullWaveFunctions(nReflections),STAT=IErr)
   ALLOCATE(RFullWaveIntensity(nReflections),STAT=IErr)
   IF( IErr.NE.0 ) THEN
-     PRINT*,"felixrefine(",my_rank,")error in allocations for Bloch calculation"
+     PRINT*,"felixrefine(",my_rank,") error in allocations for Bloch calculation"
      GOTO 9999
   END IF
   !--------------------------------------------------------------------
@@ -565,7 +566,7 @@ RFullIsotropicDebyeWallerFactor,IFullAtomicNumber,IFullAnisotropicDWFTensor)
   CALL FelixFunction(LInitialSimulationFLAG,IErr)
   IF( IErr.NE.0 ) THEN
      PRINT*,"felixrefine(",my_rank,")error in FelixFunction"
-     RETURN
+     GOTO 9999
   ENDIF
   !Baseline simulation output, core 0 only
   IExitFLAG = 0; !Do not exit
