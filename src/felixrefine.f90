@@ -306,8 +306,8 @@ RFullIsotropicDebyeWallerFactor,IFullAtomicNumber,IFullAnisotropicDWFTensor)
   !some other basic numbers
   ALLOCATE(RgVecVec(INhkl),STAT=IErr)
   IF( IErr.NE.0 ) THEN
-     PRINT*,"felixrefine(",my_rank,")error allocating RgVecVec"
-     RETURN
+     PRINT*,"felixrefine(",my_rank,") error allocating RgVecVec"
+     GOTO 9999
   END IF
   CALL DiffractionPatternCalculation(IErr)
     IF( IErr.NE.0 ) THEN
@@ -357,27 +357,27 @@ RFullIsotropicDebyeWallerFactor,IFullAtomicNumber,IFullAnisotropicDWFTensor)
   !Calculate Ug matrix--------------------------------------------------------
   ALLOCATE(CUgMat(nReflections,nReflections),STAT=IErr)  !RB Matrix including absorption
   IF( IErr.NE.0 ) THEN
-     PRINT*,"felixrefine(",my_rank,")error allocating CUgMat"
-     RETURN
+     PRINT*,"felixrefine(",my_rank,") error allocating CUgMat"
+     GOTO 9999
   END IF
   !RB Matrix without absorption
   ALLOCATE(CUgMatNoAbs(nReflections,nReflections),STAT=IErr)
   IF( IErr.NE.0 ) THEN
-     PRINT*,"felixrefine(",my_rank,")error allocating CUgMatNoAbs"
-     RETURN
+     PRINT*,"felixrefine(",my_rank,") error allocating CUgMatNoAbs"
+     GOTO 9999
   END IF
   !RB Absorption  
   ALLOCATE(CUgMatPrime(nReflections,nReflections),STAT=IErr)
   IF( IErr.NE.0 ) THEN
-     PRINT*,"felixrefine(",my_rank,")error allocating CUgMatPrime"
-     RETURN
+     PRINT*,"felixrefine(",my_rank,") error allocating CUgMatPrime"
+     GOTO 9999
   END IF
 !RB Matrix of sums of indices - for symmetry equivalence  in the Ug matrix, only for Ug refinement
   IF(IRefineModeSelectionArray(1).EQ.1) THEN
     ALLOCATE(RgSumMat(nReflections,nReflections),STAT=IErr)  
     IF( IErr.NE.0 ) THEN
-     PRINT*,"StructureFactorSetup(",my_rank,")error allocating RgSumMat"
-     RETURN
+     PRINT*,"StructureFactorSetup(",my_rank,") error allocating RgSumMat"
+     GOTO 9999
     END IF  
   END IF
   
@@ -413,7 +413,7 @@ RFullIsotropicDebyeWallerFactor,IFullAtomicNumber,IFullAnisotropicDWFTensor)
       IF ( INoOfVariables.EQ.1 ) THEN 
         PRINT*,"Only one independent variable"
 	  ELSE
-        WRITE(SPrintString,FMT='(I3,1X,A21))') INoOfVariables,"independent variables"
+        WRITE(SPrintString,FMT='(I3,1X,A21)') INoOfVariables,"independent variables"
         PRINT*,TRIM(ADJUSTL(SPrintString))
       END IF
     END IF
@@ -517,18 +517,18 @@ RFullIsotropicDebyeWallerFactor,IFullAtomicNumber,IFullAnisotropicDWFTensor)
   ALLOCATE(RhklPositions(nReflections,2),STAT=IErr)
   IF( IErr.NE.0 ) THEN
      PRINT*,"felixrefine(",my_rank,") error allocating RhklPositions"
-     RETURN
+     GOTO 9999
   END IF
    CALL ImageSetup( IErr )
   IF( IErr.NE.0 ) THEN
      PRINT*,"felixrefine(",my_rank,") error in ImageSetup"
-     RETURN
+     GOTO 9999
   END IF 
   !All the individual calculations go into these root images later with MPI_GATHERV
   ALLOCATE(RSimulatedPatterns(INoOfLacbedPatterns,IThicknessCount,IPixelTotal),STAT=IErr)
   IF( IErr.NE.0 ) THEN
      PRINT*,"felixrefine(",my_rank,")error allocating Root Reflections"
-     RETURN
+     GOTO 9999
   END IF
   RSimulatedPatterns = ZERO
   !Allocations for the pixels to be calculated by this core  
@@ -538,13 +538,13 @@ RFullIsotropicDebyeWallerFactor,IFullAtomicNumber,IFullAnisotropicDWFTensor)
          (ILocalPixelCountMax-ILocalPixelCountMin)+1),STAT=IErr)
   IF( IErr.NE.0 ) THEN
     PRINT*,"felixrefine(",my_rank,")error allocating RIndividualReflections"
-    RETURN
+    GOTO 9999
   END IF
   !position of pixels calculated by this core
   ALLOCATE(IDisplacements(p),ICount(p),STAT=IErr)
   IF( IErr.NE.0 ) THEN
      PRINT*,"felixrefine(",my_rank,")error allocating IDisplacements and/or ICount"
-     RETURN
+     GOTO 9999
   END IF
   DO ind = 1,p
      IDisplacements(ind) = (IPixelTotal*(ind-1)/p)*INoOfLacbedPatterns*IThicknessCount
@@ -556,27 +556,27 @@ RFullIsotropicDebyeWallerFactor,IFullAtomicNumber,IFullAnisotropicDWFTensor)
   ALLOCATE(RDevPara(nReflections),STAT=IErr)
   IF( IErr.NE.0 ) THEN
      PRINT*,"felixrefine(",my_rank,")error allocating RDevPara"
-     RETURN
+     GOTO 9999
   END IF
   ALLOCATE(IStrongBeamList(nReflections),STAT=IErr)
   IF( IErr.NE.0 ) THEN
      PRINT*,"felixrefine(",my_rank,")error allocating IStrongBeamList"
-     RETURN
+     GOTO 9999
   END IF
   ALLOCATE(IWeakBeamList(nReflections),STAT=IErr)
   IF( IErr.NE.0 ) THEN
      PRINT*,"felixrefine(",my_rank,")error allocating IWeakBeamList"
-     RETURN
+     GOTO 9999
   END IF
   ALLOCATE(CFullWaveFunctions(nReflections),STAT=IErr)
   IF( IErr.NE.0 ) THEN
      PRINT*,"felixrefine(",my_rank,")error allocating CFullWaveFunctions"
-     RETURN
+     GOTO 9999
   END IF
   ALLOCATE(RFullWaveIntensity(nReflections),STAT=IErr)
   IF( IErr.NE.0 ) THEN
      PRINT*,"felixrefine(",my_rank,")error allocating RFullWaveIntensity"
-     RETURN
+     GOTO 9999
   END IF  
   
   !--------------------------------------------------------------------
@@ -1114,7 +1114,7 @@ SUBROUTINE SimplexInitialisation(RSimplexVariable,RSimplexFoM,RIndependentVariab
         RStandardTolerance = RStandardError(RStandardDeviation,RMean,RSimplexDummy,IErr)
         RSimplexFoM(ind) =  RSimplexDummy
         IF((IWriteFLAG.GE.0.AND.my_rank.EQ.0).OR.IWriteFLAG.GE.10) THEN
-          WRITE(SPrintString,FMT='(A16,F7.5))') "Figure of merit ",RSimplexFoM(ind)
+          WRITE(SPrintString,FMT='(A16,F7.5)') "Figure of merit ",RSimplexFoM(ind)
           PRINT*,TRIM(ADJUSTL(SPrintString))
         END IF
      END DO
