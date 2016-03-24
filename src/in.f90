@@ -674,31 +674,34 @@ SUBROUTINE ReadExperimentalImages(IErr)
      
      WRITE(filename,"(A6,I3.3,A4)") "felix.",ind,".img"
      
-     CALL OpenImageForReadIn(IErr,filename)  
-     IF( IErr.NE.0 ) THEN
-        PRINT*,"ReadExperimentalImages (", my_rank, ") error in OpenImageForReadIn()"
-        RETURN
-     END IF
-     
-     ALLOCATE(RImageIn(2*IPixelCount,2*IPixelCount), STAT=IErr)  
-     IF( IErr.NE.0 ) THEN
-        PRINT*,"ReadExperimentalImages (", my_rank, ") error in Allocation()"
-        RETURN
-     ENDIF
+!     CALL OpenImageForReadIn(IErr,filename)  
+!     IF( IErr.NE.0 ) THEN
+!        PRINT*,"ReadExperimentalImages (", my_rank, ") error in OpenImageForReadIn()"
+!        RETURN
+!     END IF
+
+    OPEN(UNIT= IChInImage, ERR= 10, STATUS= 'UNKNOWN', FILE=TRIM(ADJUSTL(filename)),FORM='UNFORMATTED',&
+       ACCESS='DIRECT',IOSTAT=Ierr,RECL=2*IPixelCount*8)
+	   
+    ALLOCATE(RImageIn(2*IPixelCount,2*IPixelCount), STAT=IErr)  
+    IF( IErr.NE.0 ) THEN
+      PRINT*,"ReadExperimentalImages(",my_rank,")error allocating RImageIn"
+      RETURN
+    ENDIF
     
      DO jnd=1,2*IPixelCount
         READ(IChInImage,rec=jnd,ERR=10) RImageIn(jnd,:)
      END DO
+	 
 !     CALL ReadImageForRefinement(IErr)  
-
-     IF( IErr.NE.0 ) THEN
-        PRINT*,"ReadExperimentalImages (", my_rank, ") error in ReadImageForRefinement()"
-        RETURN
-     ELSE
-        IF((IWriteFLAG.GE.6.AND.my_rank.EQ.0).OR.IWriteFLAG.GE.10) THEN
-           PRINT*,"Image Read In Successful"
-        END IF
-     ENDIF
+!     IF( IErr.NE.0 ) THEN
+!        PRINT*,"ReadExperimentalImages (", my_rank, ") error in ReadImageForRefinement()"
+!        RETURN
+!     ELSE
+!        IF((IWriteFLAG.GE.6.AND.my_rank.EQ.0).OR.IWriteFLAG.GE.10) THEN
+!           PRINT*,"Image Read In Successful"
+!        END IF
+!     ENDIF
      
      IF(MINVAL(RImageIn).LT.ZERO.AND.(my_rank.EQ.0)) THEN
         PRINT*,"Warning! There are negative values in your experimental images"
@@ -706,12 +709,7 @@ SUBROUTINE ReadExperimentalImages(IErr)
      END IF
 
      RImageExpi(:,:,ind) = RImageIn
-     
      DEALLOCATE(RImageIn, STAT=IErr)  
-     IF( IErr.NE.0 ) THEN
-        PRINT*,"ReadExperimentalImages (", my_rank, ") error in deAllocation()"
-        RETURN
-     ENDIF
      
      CLOSE(IChInImage,IOSTAT=IErr) 
      IF( IErr.NE.0 ) THEN

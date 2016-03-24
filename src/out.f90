@@ -132,7 +132,7 @@ END SUBROUTINE OpenData
 ! OpenData
 ! --------------------------------------------------------------------
 SUBROUTINE OpenImageForReadIn(IErr,filename)
-
+!this is redundant
   USE MyNumbers
 
   USE IConst; USE RConst
@@ -168,7 +168,7 @@ END SUBROUTINE OpenImageForReadIn
 
 !%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 SUBROUTINE ReadImageForRefinement(IErr)
-
+!this is redundant
   USE MyNumbers
 
   USE IConst; USE RConst
