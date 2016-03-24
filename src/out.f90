@@ -166,6 +166,7 @@ SUBROUTINE OpenImageForReadIn(IErr,filename)
   
 END SUBROUTINE OpenImageForReadIn
 
+!%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 SUBROUTINE ReadImageForRefinement(IErr)
 
   USE MyNumbers
@@ -186,12 +187,13 @@ SUBROUTINE ReadImageForRefinement(IErr)
   END IF
 
   DO ind=1,2*IPixelCount
-     READ(IChInImage,rec=ind) RImageIn(ind,:)
+     READ(IChInImage,rec=ind,ERR=10) RImageIn(ind,:)
   END DO
-  IF( IErr.NE.0 ) THEN
-     PRINT*,"ReadImageForRefinement (", my_rank, ") error in READ()",IErr
-     RETURN
-  ENDIF
+  RETURN
+
+10 IErr=1
+  PRINT*,"ReadImageForRefinement (", my_rank, ") error in READ()",IErr
+  RETURN
   
 END SUBROUTINE ReadImageForRefinement
 

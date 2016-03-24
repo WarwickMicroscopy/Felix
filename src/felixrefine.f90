@@ -70,6 +70,7 @@ PROGRAM Felixrefine
   CHARACTER*40 :: my_rank_string
   CHARACTER*20 :: Sind
   CHARACTER*200 :: SPrintString
+
   !-------------------------------------------------------------------
   ! constants
   CALL Init_Numbers
@@ -104,10 +105,10 @@ PROGRAM Felixrefine
   ! protocal feature startup
   IF((IWriteFLAG.GE.0.AND.my_rank.EQ.0).OR.IWriteFLAG.GE.10) THEN
      PRINT*,"--------------------------------------------------------------"
-     PRINT*,"Felixrefine: ", RStr
-     PRINT*,"          ", DStr
-     PRINT*,"          ", AStr
-     PRINT*,"          on rank= ", my_rank, " of ", p, " in total."
+     PRINT*,"felixrefine: ", RStr
+     PRINT*,"             ", DStr
+     PRINT*,"             ", AStr
+     PRINT*,"    on rank= ", my_rank, " of ", p, " in total."
      PRINT*,"--------------------------------------------------------------"
   END IF
   ISoftwareMode =2 ! felixrefinemode

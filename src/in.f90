@@ -649,6 +649,7 @@ SUBROUTINE DetermineRefineableAtomicSites(SAtomicSites,IErr)
   
 END SUBROUTINE DetermineRefineableAtomicSites
 
+!%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 SUBROUTINE ReadExperimentalImages(IErr)
 
  USE MyNumbers
@@ -664,7 +665,7 @@ SUBROUTINE ReadExperimentalImages(IErr)
 
   IMPLICIT NONE
   
-  INTEGER(IKIND) :: ind,IErr
+  INTEGER(IKIND) :: ind,jnd,IErr
   INTEGER(IKIND) :: INegError = 0
   CHARACTER*34 :: filename
   CHARACTER*200 :: SPrintString
@@ -685,7 +686,11 @@ SUBROUTINE ReadExperimentalImages(IErr)
         RETURN
      ENDIF
     
-     CALL ReadImageForRefinement(IErr)  
+     DO jnd=1,2*IPixelCount
+        READ(IChInImage,rec=jnd,ERR=10) RImageIn(jnd,:)
+     END DO
+!     CALL ReadImageForRefinement(IErr)  
+
      IF( IErr.NE.0 ) THEN
         PRINT*,"ReadExperimentalImages (", my_rank, ") error in ReadImageForRefinement()"
         RETURN
@@ -728,6 +733,13 @@ SUBROUTINE ReadExperimentalImages(IErr)
 !        PRINT*, INoOfLacbedPatterns,"experimental images successfully loaded"
     END IF
   END IF
+
+  RETURN
+
+10 IErr=1
+    PRINT*,"ReadExperimentalImages(", my_rank, ") error in READ() at record=", &
+         jnd, " of file ", TRIM(filename), " with ind=", ind
+    RETURN
 
 END SUBROUTINE ReadExperimentalImages
 
