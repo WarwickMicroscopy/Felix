@@ -1,1 +1,1 @@
-makefile.GF
+makefile-tinis.IC

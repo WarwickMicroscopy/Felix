@@ -12,7 +12,7 @@
 module load intel impi imkl FFTW
 
 pwd
-cd ~/Projects/D-LACBED/Felix/samples/FR-GaAs/
+cd ~/Felix/samples/FR-GaAs/
 pwd
 ls
 srun -n 24 ../../src/felixrefine
