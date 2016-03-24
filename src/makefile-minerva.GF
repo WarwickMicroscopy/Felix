@@ -38,6 +38,7 @@
 
 #module swap oldmodules minerva-2.0
 #module load goolf-1.7.10
+$(info please run: module swap oldmodules minerva-2.0; module load goolf-1.7.10)
 
 F90 = mpif90
 FC = gfortran -ffixed-form -std=legacy
@@ -53,13 +54,15 @@ LIBFLAGS= \
 
 #LD_LIBRARY_PATH=/hpcwarwick/mathlib/gnu/lib/:$LD_LIBRARY_PATH
 
-SIMOBJECTFILES = gmodules.o smodules.o message.o errorcodes.o felixsim.o util.o in.o out.o readinput.o \
+SIMOBJECTFILES = gmodules.o smodules.o message.o errorcodes.o felixsim.o \
+inputmodules.o scatteringfactors.o util.o in.o out.o readinput.o \
 readcif.o experimentalsetup.o imagesetup.o montagesetup.o refineutils.o \
 structurefactorsetup.o ciftbx.o hash_funcs.o eigen.o invert.o microscopy.o \
 diffractionpatterndefinitions.o diffractionpatterninitialisation.o crystallographyinitialisation.o \
 crystallography.o bloch.o Ug.o image.o errorchecks.o writeoutput.o dqng.o xerror.o d1mach.o
 
-REFINEOBJECTFILES = gmodules.o smodules.o inputmodules.o message.o errorcodes.o felixrefine.o util.o in.o out.o readcif.o \
+REFINEOBJECTFILES = gmodules.o smodules.o inputmodules.o message.o \
+errorcodes.o felixrefine.o scatteringfactors.o util.o in.o out.o readcif.o \
 experimentalsetup.o imagesetup.o montagesetup.o structurefactorsetup.o readinput.o\
 eigen.o invert.o microscopy.o diffractionpatterndefinitions.o diffractionpatterninitialisation.o \
 crystallographyinitialisation.o crystallography.o bloch.o Ug.o image.o ciftbx.o simplex.o\

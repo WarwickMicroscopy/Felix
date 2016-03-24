@@ -45,10 +45,9 @@ SUBROUTINE NDimensionalDownhillSimplex(RSimplexVariable,y,mp,np,ndim,ftol,iter,R
            IF(i.NE.ihi) inhi=i
         END IF
      ENDDO
-
      rtol=2.*ABS(y(ihi)-y(ilo))/(ABS(y(ihi))+ABS(y(ilo)))
-
-     RStandardTolerance = RStandardError(RStandardDeviation,RMean,ytry,IErr)
+!unused?
+!     RStandardTolerance = RStandardError(RStandardDeviation,RMean,ytry,IErr)
 
      WRITE(SPrintString,FMT='(A14,F7.5,A14,F7.5)') "Simplex range ",rtol,", will end at ",ftol
      PRINT*,TRIM(ADJUSTL(SPrintString))
@@ -91,13 +90,11 @@ SUBROUTINE NDimensionalDownhillSimplex(RSimplexVariable,y,mp,np,ndim,ftol,iter,R
 	 ELSE
        WRITE(SPrintString,FMT='(A10,I5,A18,F7.5)') "Iteration ",iter,", figure of merit ",ytry
 	 END IF
-
      PRINT*,TRIM(ADJUSTL(SPrintString))
      PRINT*,"--------------------------------"
      iter=iter+2
     
      ytry = SimplexExtrapolate(RSimplexVariable,y,psum,mp,np,ndim,ihi,-1.0D0,iter,IErr)
-
      
      IF (ytry.LE.y(ilo).OR.my_rank.NE.0) THEN
         ytry = SimplexExtrapolate(RSimplexVariable,y,psum,mp,np,ndim,ihi,2.0D0,iter,IErr)
@@ -128,8 +125,7 @@ SUBROUTINE NDimensionalDownhillSimplex(RSimplexVariable,y,mp,np,ndim,ftol,iter,R
      ENDIF
      GOTO 2
   ELSE
-     DO!We have reached the exit criteria, finish off
-        RSendPacket = [-10000.0_RKIND, psum, REAL(iter,RKIND)]!RB added this line but no idea what I'm doing 
+     DO!Latch to loop cores other than zero waiting for MPI_BCAST (is it really necessary) 
         CALL MPI_BCAST(RSendPacket,ndim+2,MPI_DOUBLE_PRECISION,0,MPI_COMM_WORLD,IErr)
         RExitFlag = RSendPacket(1)                
         IF(RExitFlag.LT.ZERO) THEN

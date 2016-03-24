@@ -52,7 +52,7 @@ IRefineModeFLAG          = A
 IWeightingFLAG           = 0
 IContinueFLAG            = 0
 ICorrelationFLAG         = 2
-IImageProcessingFLAG     = 0
+IImageProcessingFLAG     = 4
 
 # Ug Iteration
 
@@ -69,5 +69,5 @@ IPrint                    = 10
 # Simplex Initialisation
 
 RSimplexLengthScale       = 5.0 
-RExitCriteria             = 0.0001
+RExitCriteria             = 0.007
 
