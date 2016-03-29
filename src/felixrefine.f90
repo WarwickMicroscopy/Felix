@@ -60,7 +60,7 @@ PROGRAM Felixrefine
   INTEGER(IKIND) :: IStartTime,ICurrentTime,IRate
   INTEGER(IKIND), DIMENSION(:),ALLOCATABLE :: IOriginGVecIdentifier
   REAL(RKIND) :: StartTime, CurrentTime, Duration, TotalDurationEstimate,&
-       RFigureOfMerit,SimplexFunction,RHOLZAcceptanceAngle,RLaueZoneGz
+       RFigureOfMerit,RHOLZAcceptanceAngle,RLaueZoneGz
   REAL(RKIND), DIMENSION(:,:), ALLOCATABLE :: RSimplexVariable
   REAL(RKIND),DIMENSION(:),ALLOCATABLE :: RSimplexFoM,RIndependentVariable
   REAL(RKIND), DIMENSION(:,:), ALLOCATABLE :: RgDummyVecMat,RgPoolMagLaue
@@ -606,12 +606,12 @@ RFullIsotropicDebyeWallerFactor,IFullAtomicNumber,IFullAnisotropicDWFTensor)
        PRINT*,TRIM(ADJUSTL(SPrintString))
        PRINT*,"--------------------------------"
     END IF
-    RSimplexFoM(ind) = SimplexFunction(RSimplexVariable(ind,:),1,0,IErr)
+    CALL SimulateAndFit(RSimplexFoM(ind),RSimplexVariable(ind,:),1,0,IErr)
     IF( IErr.NE.0 ) THEN
-       PRINT*,"SimplexInitialisation(",my_rank,") error in SimplexFunction"
+       PRINT*,"SimplexInitialisation(",my_rank,") error in SimulateAndFit"
        GOTO 9999
     ENDIF
-    !RStandardTolerance = RStandardError(RStandardDeviation,RMean,RSimplexFoM(ind),IErr)
+
     IF((IWriteFLAG.GE.0.AND.my_rank.EQ.0).OR.IWriteFLAG.GE.10) THEN
       WRITE(SPrintString,FMT='(A16,F7.5)') "Figure of merit ",RSimplexFoM(ind)
       PRINT*,TRIM(ADJUSTL(SPrintString))

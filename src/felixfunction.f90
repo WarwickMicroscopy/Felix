@@ -36,220 +36,7 @@
 ! $Id: Felixrefine.f90,v 1.89 2014/04/28 12:26:19 phslaz Exp $
 !%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-SUBROUTINE FelixFunction(LInitialSimulationFLAG,IErr)
-
-  USE MyNumbers
-  
-  USE CConst; USE IConst; USE RConst
-  USE IPara; USE RPara; USE SPara; USE CPara
-  USE BlochPara
-
-  USE IChannels
-
-  USE MPI
-  USE MyMPI
-
-  IMPLICIT NONE
-
-  !--------------------------------------------------------------------
-  ! local variable definitions
-  !--------------------------------------------------------------------
-  
-  INTEGER(IKIND) :: IErr,ind,jnd,knd,pnd,IThicknessIndex,IIterationFLAG
-  INTEGER(IKIND) :: IAbsorbTag = 0
-
-  LOGICAL,INTENT(INOUT) :: LInitialSimulationFLAG !If function is being called during initialisation
-  REAL(RKIND),DIMENSION(:,:,:),ALLOCATABLE :: RFinalMontageImageRoot
-
-  IF(IWriteFLAG.GE.6.AND.my_rank.EQ.0) THEN
-     PRINT*,"Felix function"
-  END IF
-  IF((IWriteFLAG.GE.6.AND.my_rank.EQ.0).OR.IWriteFLAG.GE.10) THEN
-     PRINT*,"Felixfunction(", my_rank, "): starting the eigenvalue problem"
-     PRINT*,"Felixfunction(",my_rank,")pixels",ILocalPixelCountMin," to ",ILocalPixelCountMax
-  END IF
-
-!Reset simuation--------------------------------------------------------------------  
-  RIndividualReflections = ZERO
-
-!Update scattering matrix--------------------------------------------------------------------  
-  IF((IRefineModeSelectionArray(1).EQ.1)) THEN!RB Ug refinement, replace selected Ug's
-     !CALL ApplyNewStructureFactors(IErr) !NOW IN SimplexFunction!***
-     !IF( IErr.NE.0 ) THEN
-     !  PRINT*,"felixfunction(",my_rank,")error in ApplyNewStructureFactors()"
-     !  RETURN
-     !END IF
-  ELSE!RB other refinement, recalculate Ug pool
-     CALL StructureFactorSetup(IErr)
-     IF( IErr.NE.0 ) THEN
-       PRINT*,"felixfunction(",my_rank,")error in StructureFactorInitialisation"
-       RETURN
-     END IF
-     CALL StructureFactorsWithAbsorption (IErr) 
-     IF( IErr.NE.0 ) THEN
-       PRINT*,"felixfunction(",my_rank,")error in StructureFactorsWithAbsorption()"
-       RETURN
-     END IF
-  END IF
-
-  IMAXCBuffer = 200000!RB what are these?
-  IPixelComputed= 0
-
-!Simulation on this core--------------------------------------------------------------------  
-  IF(IWriteFLAG.GE.0.AND.my_rank.EQ.0) THEN
-    PRINT*,"Bloch wave calculation..."
-  END IF
-  DO knd = ILocalPixelCountMin,ILocalPixelCountMax,1
-     jnd = IPixelLocations(knd,1)
-     ind = IPixelLocations(knd,2)
-     CALL BlochCoefficientCalculation(ind,jnd,knd,ILocalPixelCountMin,IErr)
-     IF( IErr.NE.0 ) THEN
-        PRINT*,"Felixfunction(",my_rank,") error in BlochCofficientCalculation"
-        RETURN
-     END IF
-  END DO
-  
-!MPI gatherv into RSimulatedPatterns--------------------------------------------------------------------  
-     CALL MPI_GATHERV(RIndividualReflections,SIZE(RIndividualReflections),&
-          MPI_DOUBLE_PRECISION,RSimulatedPatterns,&
-          ICount,IDisplacements,MPI_DOUBLE_PRECISION,0,&
-          MPI_COMM_WORLD,IErr)
-     IF( IErr.NE.0 ) THEN
-        PRINT*,"Felixfunction(",my_rank,")error",IErr,"in MPI_GATHERV"
-        RETURN
-     END IF     
-
-END SUBROUTINE FelixFunction
-
-!%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-!%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-
-SUBROUTINE CalculateFigureofMeritandDetermineThickness(IThicknessCountFinal,IErr)
-  
-  USE MyNumbers
-  
-  USE CConst; USE IConst; USE RConst
-  USE IPara; USE RPara; USE SPara; USE CPara
-  USE BlochPara
-
-  USE IChannels
-
-  USE MPI
-  USE MyMPI
-
-  IMPLICIT NONE
-
-  INTEGER(IKIND) :: ind,jnd,knd,IErr,ICountedPixels,IThickness,hnd
-  INTEGER(IKIND),DIMENSION(INoOfLacbedPatterns) :: IThicknessByReflection
-  INTEGER(IKIND),INTENT(OUT) :: IThicknessCountFinal
-  REAL(RKIND),DIMENSION(2*IPixelCount,2*IPixelCount) :: RSimulatedImage,RExperimentalImage
-  REAL(RKIND) :: RCrossCorrelationOld,RIndependentCrossCorrelation,RThickness,&
-       PhaseCorrelate,Normalised2DCrossCorrelation,ResidualSumofSquares,RThicknessRange,Rradius
-  REAL(RKIND),DIMENSION(INoOfLacbedPatterns) :: RReflectionCrossCorrelations,RReflectionThickness
-  CHARACTER*200 :: SPrintString
-       
-  
-  IF(IWriteFLAG.GE.10.AND.my_rank.EQ.0) THEN
-     PRINT*,"CalculateFigureofMeritandDetermineThickness(",my_rank,")"
-  END IF
-
-  RReflectionCrossCorrelations = ZERO
-
-  DO hnd = 1,INoOfLacbedPatterns
-    RCrossCorrelationOld = 1.0E15 !A large Number
-    RThickness = ZERO
-    DO ind = 1,IThicknessCount
-      ICountedPixels = 0
-      RSimulatedImage = ZERO
-      DO jnd = 1,2*IPixelCount!RB why does this masking have to be done here?
-        DO knd = 1,2*IPixelCount
-          IF(ABS(RMask(jnd,knd)).GT.TINY) THEN
-            ICountedPixels = ICountedPixels+1
-            RSimulatedImage(jnd,knd) = RSimulatedPatterns(hnd,ind,ICountedPixels)
-          END IF
-        END DO
-      END DO
-               
-      SELECT CASE (IImageProcessingFLAG)
-
-      CASE(0)!no processing
-        RExperimentalImage = RImageExpi(:,:,hnd)
-           
-      CASE(1)!square root before perfoming corration
-        RSimulatedImage=SQRT(RSimulatedImage)
-        RExperimentalImage =  SQRT(RImageExpi(:,:,hnd))
-           
-      CASE(2)!log before performing correlation
-        WHERE (RSimulatedImage.GT.TINY**2)
-          RSimulatedImage=LOG(RSimulatedImage)
-        ELSEWHERE
-          RSimulatedImage = TINY**2
-        END WHERE
-        WHERE (RExperimentalImage.GT.TINY**2)
-          RExperimentalImage = LOG(RImageExpi(:,:,hnd))
-        ELSEWHERE
-          RExperimentalImage =  TINY**2
-        END WHERE
-              
-      CASE(4)!Apply gaussian blur to simulated image
-        RExperimentalImage = RImageExpi(:,:,hnd)
-        Rradius=0.95_RKIND!!!*+*+ will need to be added as a line in felix.inp +*+*!!!
-        !IF(my_rank.eq.0) THEN
-        !  PRINT*,"Gaussian blur radius =",Rradius
-        !END IF
-        CALL BlurG(RSimulatedImage,Rradius,IErr)
-          
-      END SELECT
-
-      RIndependentCrossCorrelation = ZERO   
-      SELECT CASE (ICorrelationFLAG)
-         
-      CASE(0) ! Phase Correlation
-        RIndependentCrossCorrelation=ONE-& ! So Perfect Correlation = 0 not 1
-           PhaseCorrelate(RSimulatedImage,RExperimentalImage,&
-           IErr,2*IPixelCount,2*IPixelCount)
-           
-      CASE(1) ! Residual Sum of Squares (Non functional)
-        RIndependentCrossCorrelation = ResidualSumofSquares(&
-                RSimulatedImage,RImageExpi(:,:,hnd),IErr)
-           
-      CASE(2) ! Normalised Cross Correlation
-        RIndependentCrossCorrelation = ONE-& ! So Perfect Correlation = 0 not 1
-           Normalised2DCrossCorrelation(RSimulatedImage,RExperimentalImage,&
-                (/2*IPixelCount, 2*IPixelCount/),IPixelTotal,IErr)
-           
-      END SELECT
-                
-      IF(ABS(RIndependentCrossCorrelation).LT.RCrossCorrelationOld) THEN
-        RCrossCorrelationOld = RIndependentCrossCorrelation
-        IThicknessByReflection(hnd) = ind
-        RReflectionThickness(hnd) = RInitialThickness +&
-        IThicknessByReflection(hnd)*RDeltaThickness
-      END IF
-    END DO
-    RReflectionCrossCorrelations(hnd) = RCrossCorrelationOld
-  END DO
-  !RB assume that the thickness is given by the mean of individual thicknesses  
-  IThicknessCountFinal = SUM(IThicknessByReflection)/INoOfLacbedPatterns
-  RThickness = RInitialThickness + (IThicknessCountFinal-1)*RDeltaThickness
-  RThicknessRange=( MAXVAL(IThicknessByReflection)-MINVAL(IThicknessByReflection) )*&
-                  RDeltaThickness
-
-  RCrossCorrelation = SUM(RReflectionCrossCorrelations*RWeightingCoefficients)/&
-       REAL(INoOfLacbedPatterns,RKIND)
-
-  IF(my_rank.eq.0) THEN
-    WRITE(SPrintString,FMT='(A18,I4,A10)') "Specimen thickness ",NINT(RThickness)," Angstroms"
-    PRINT*,TRIM(ADJUSTL(SPrintString))
-    WRITE(SPrintString,FMT='(A15,I4,A10)') "Thickness range",NINT(RThicknessRange)," Angstroms"
-    PRINT*,TRIM(ADJUSTL(SPrintString))
-  END IF
-
-END SUBROUTINE CalculateFigureofMeritandDetermineThickness
-
-!%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-
-REAL(RKIND) FUNCTION SimplexFunction(RIndependentVariable,IIterationCount,IExitFLAG,IErr)
+SUBROUTINE SimulateAndFit(RFigureofMerit,RIndependentVariable,IIterationCount,IExitFLAG,IErr)
 
   USE MyNumbers
   
@@ -265,13 +52,14 @@ REAL(RKIND) FUNCTION SimplexFunction(RIndependentVariable,IIterationCount,IExitF
   IMPLICIT NONE
   
   INTEGER(IKIND) :: IErr,IExitFLAG,IThickness,ind,jnd
-  REAL(RKIND),DIMENSION(INoOfVariables),INTENT(INOUT) :: RIndependentVariable
+  REAL(RKIND),DIMENSION(INoOfVariables) :: RIndependentVariable
+  REAL(RKIND) :: RFigureofMerit
   INTEGER(IKIND),INTENT(IN) :: IIterationCount
   COMPLEX(CKIND),DIMENSION(nReflections,nReflections) :: CUgMatDummy
   LOGICAL :: LInitialSimulationFLAG = .FALSE.
   
   IF(IWriteFLAG.GE.10.AND.my_rank.EQ.0) THEN
-     PRINT*,"SimplexFunction(",my_rank,")"
+     PRINT*,"SimulateAndFit(",my_rank,")"
   END IF
 
   IF(IRefineModeSelectionArray(1).EQ.1) THEN  !Ug refinement; update structure factors 
@@ -306,11 +94,12 @@ REAL(RKIND) FUNCTION SimplexFunction(RIndependentVariable,IIterationCount,IExitF
     WHERE(ABS(CUgMatDummy).GT.TINY)
       CUgMat = CUgMatDummy
     END WHERE
-        RAbsorptionPercentage = RIndependentVariable(jnd)!===![[[
+    RAbsorptionPercentage = RIndependentVariable(jnd)!===![[[
+	PRINT*,"UpdateStructureFactors: absorption=",RAbsorptionPercentage
   ELSE !everything else
      CALL UpdateVariables(RIndependentVariable,IErr)
      IF( IErr.NE.0 ) THEN
-        PRINT*,"SimplexFunction(",my_rank,")error in UpdateVariables"
+        PRINT*,"SimulateAndFit(",my_rank,")error in UpdateVariables"
         RETURN
      END IF
      WHERE(RAtomSiteFracCoordVec.LT.0) RAtomSiteFracCoordVec=RAtomSiteFracCoordVec+ONE
@@ -320,33 +109,248 @@ REAL(RKIND) FUNCTION SimplexFunction(RIndependentVariable,IIterationCount,IExitF
   IF (my_rank.EQ.0) THEN
      CALL PrintVariables(IErr)
      IF( IErr.NE.0 ) THEN
-        PRINT*,"SimplexFunction(",my_rank,")error in PrintVariables"
+        PRINT*,"SimulateAndFit(",my_rank,")error in PrintVariables"
         RETURN
      END IF
   END IF
 
   CALL FelixFunction(LInitialSimulationFLAG,IErr) ! Simulate !!  
   IF( IErr.NE.0 ) THEN
-     PRINT*,"SimplexFunction(",my_rank,")error in FelixFunction"
+     PRINT*,"SimulateAndFit(",my_rank,")error in FelixFunction"
      RETURN
   END IF
 
   IF(my_rank.EQ.0) THEN   
      CALL CreateImagesAndWriteOutput(IIterationCount,IExitFLAG,IErr) 
      IF( IErr.NE.0 ) THEN
-        PRINT*,"SimplexFunction(",my_rank,")error in CreateImagesAndWriteOutput"
+        PRINT*,"SimulateAndFit(",my_rank,")error in CreateImagesAndWriteOutput"
         RETURN
      ENDIF
 !This is the key parameter!!!****     
-     SimplexFunction = RCrossCorrelation     
+     RFigureofMerit = RCrossCorrelation     
   END IF
 
-END FUNCTION SimplexFunction
+END SUBROUTINE SimulateAndFit
+
+!%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+SUBROUTINE FelixFunction(LInitialSimulationFLAG,IErr)
+
+  USE MyNumbers
+  
+  USE CConst; USE IConst; USE RConst
+  USE IPara; USE RPara; USE SPara; USE CPara
+  USE BlochPara
+
+  USE IChannels
+
+  USE MPI
+  USE MyMPI
+
+  IMPLICIT NONE
+
+  !--------------------------------------------------------------------
+  ! local variable definitions
+  !--------------------------------------------------------------------
+  
+  INTEGER(IKIND) :: IErr,ind,jnd,knd,pnd,IThicknessIndex,IIterationFLAG
+  INTEGER(IKIND) :: IAbsorbTag = 0
+  REAL(RKIND),DIMENSION(:,:,:),ALLOCATABLE :: RFinalMontageImageRoot
+  LOGICAL,INTENT(INOUT) :: LInitialSimulationFLAG !If function is being called during initialisation
+
+
+  IF(IWriteFLAG.GE.6.AND.my_rank.EQ.0) THEN
+     PRINT*,"Felix function"
+  END IF
+  IF((IWriteFLAG.GE.6.AND.my_rank.EQ.0).OR.IWriteFLAG.GE.10) THEN
+     PRINT*,"Felixfunction(", my_rank, "): starting the eigenvalue problem"
+     PRINT*,"Felixfunction(",my_rank,")pixels",ILocalPixelCountMin," to ",ILocalPixelCountMax
+  END IF
+
+!Reset simuation--------------------------------------------------------------------  
+  RIndividualReflections = ZERO
+
+!Update scattering matrix--------------------------------------------------------------------  
+  IF((IRefineModeSelectionArray(1).EQ.1)) THEN!RB Ug refinement, replace selected Ug's
+     !CALL ApplyNewStructureFactors(IErr) !NOW IN SimulateAndFit!***
+     !IF( IErr.NE.0 ) THEN
+     !  PRINT*,"felixfunction(",my_rank,")error in ApplyNewStructureFactors()"
+     !  RETURN
+     !END IF
+  ELSE!RB other refinement, recalculate Ug pool
+     CALL StructureFactorSetup(IErr)
+     IF( IErr.NE.0 ) THEN
+       PRINT*,"felixfunction(",my_rank,")error in StructureFactorInitialisation"
+       RETURN
+     END IF
+     CALL StructureFactorsWithAbsorption (IErr) 
+     IF( IErr.NE.0 ) THEN
+       PRINT*,"felixfunction(",my_rank,")error in StructureFactorsWithAbsorption()"
+       RETURN
+     END IF
+  END IF
+
+  IMAXCBuffer = 200000!RB what are these?
+  IPixelComputed= 0
+
+!Simulation (different local pixels for each core)--------------------------------------------------------------------  
+  IF(IWriteFLAG.GE.0.AND.my_rank.EQ.0) THEN
+    PRINT*,"Bloch wave calculation..."
+  END IF
+  DO knd = ILocalPixelCountMin,ILocalPixelCountMax,1
+     jnd = IPixelLocations(knd,1)
+     ind = IPixelLocations(knd,2)
+     CALL BlochCoefficientCalculation(ind,jnd,knd,ILocalPixelCountMin,IErr)
+     IF( IErr.NE.0 ) THEN
+        PRINT*,"Felixfunction(",my_rank,") error in BlochCofficientCalculation"
+        RETURN
+     END IF
+  END DO
+  
+!MPI gatherv into RSimulatedPatterns--------------------------------------------------------------------  
+     CALL MPI_GATHERV(RIndividualReflections,SIZE(RIndividualReflections),&
+          MPI_DOUBLE_PRECISION,RSimulatedPatterns,&
+          ICount,IDisplacements,MPI_DOUBLE_PRECISION,0,&
+          MPI_COMM_WORLD,IErr)
+     IF( IErr.NE.0 ) THEN
+        PRINT*,"Felixfunction(",my_rank,")error",IErr,"in MPI_GATHERV"
+        RETURN
+     END IF     
+
+END SUBROUTINE FelixFunction
+
+!%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+!%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+SUBROUTINE CalculateFigureofMeritandDetermineThickness(IThicknessCountFinal,IErr)
+  !NB core 0 only
+  USE MyNumbers
+  
+  USE CConst; USE IConst; USE RConst
+  USE IPara; USE RPara; USE SPara; USE CPara
+  USE BlochPara
+
+  USE IChannels
+
+  USE MPI
+  USE MyMPI
+
+  IMPLICIT NONE
+
+  INTEGER(IKIND) :: ind,jnd,knd,IErr,ICountedPixels,IThickness,hnd
+  INTEGER(IKIND),DIMENSION(INoOfLacbedPatterns) :: IThicknessByReflection
+  INTEGER(IKIND),INTENT(OUT) :: IThicknessCountFinal
+  REAL(RKIND),DIMENSION(2*IPixelCount,2*IPixelCount) :: RSimulatedImage,RExperimentalImage
+  REAL(RKIND) :: RCrossCorrelationOld,RIndependentCrossCorrelation,RThickness,&
+       PhaseCorrelate,Normalised2DCrossCorrelation,ResidualSumofSquares,RThicknessRange,Rradius
+  REAL(RKIND),DIMENSION(INoOfLacbedPatterns) :: RReflectionCrossCorrelations,RReflectionThickness
+  CHARACTER*200 :: SPrintString
+       
+  
+  IF (IWriteFLAG.GE.10) THEN
+     PRINT*,"CalculateFigureofMeritandDetermineThickness(",my_rank,")"
+  END IF
+
+  RReflectionCrossCorrelations = ZERO
+
+  DO hnd = 1,INoOfLacbedPatterns
+    RCrossCorrelationOld = 1.0E15 !A large Number
+    RThickness = ZERO
+    DO ind = 1,IThicknessCount
+      ICountedPixels = 0
+      RSimulatedImage = ZERO
+	  !put 1D array RSimulatedPatterns into 2D image RSimulatedImage
+      !remember dimensions of RSimulatedPatterns(INoOfLacbedPatterns,IThicknessCount,IPixelTotal)
+      DO jnd = 1,2*IPixelCount
+        DO knd = 1,2*IPixelCount
+          ICountedPixels = ICountedPixels+1
+          RSimulatedImage(jnd,knd) = RSimulatedPatterns(hnd,ind,ICountedPixels)
+        END DO
+      END DO
+               
+      SELECT CASE (IImageProcessingFLAG)
+
+      CASE(0)!no processing
+        RExperimentalImage = RImageExpi(:,:,hnd)
+           
+      CASE(1)!square root before perfoming corration
+        RSimulatedImage=SQRT(RSimulatedImage)
+        RExperimentalImage =  SQRT(RImageExpi(:,:,hnd))
+           
+      CASE(2)!log before performing correlation
+        WHERE (RSimulatedImage.GT.TINY**2)
+          RSimulatedImage=LOG(RSimulatedImage)
+        ELSEWHERE
+          RSimulatedImage = TINY**2
+        END WHERE
+        WHERE (RExperimentalImage.GT.TINY**2)
+          RExperimentalImage = LOG(RImageExpi(:,:,hnd))
+        ELSEWHERE
+          RExperimentalImage =  TINY**2
+        END WHERE
+              
+      CASE(4)!Apply gaussian blur to simulated image
+        RExperimentalImage = RImageExpi(:,:,hnd)
+        Rradius=0.95_RKIND!!!*+*+ will need to be added as a line in felix.inp +*+*!!!
+       ! IF(my_rank.EQ.0) THEN
+       !   PRINT*,"Gaussian blur radius =",Rradius
+       ! END IF
+		PRINT*,"1RSimulatedImage(10,10)",RSimulatedImage(10,10)
+        CALL BlurG(RSimulatedImage,Rradius,IErr)
+		PRINT*,"2RSimulatedImage(10,10)",RSimulatedImage(10,10)
+		
+      END SELECT
+
+      RIndependentCrossCorrelation = ZERO   
+      SELECT CASE (ICorrelationFLAG)
+         
+      CASE(0) ! Phase Correlation
+        RIndependentCrossCorrelation=ONE-& ! So Perfect Correlation = 0 not 1
+           PhaseCorrelate(RSimulatedImage,RExperimentalImage,&
+           IErr,2*IPixelCount,2*IPixelCount)
+           
+      CASE(1) ! Residual Sum of Squares (Non functional)
+        RIndependentCrossCorrelation = ResidualSumofSquares(&
+                RSimulatedImage,RImageExpi(:,:,hnd),IErr)
+           
+      CASE(2) ! Normalised Cross Correlation
+           PRINT*,"crosscorrelation starting"
+		   RIndependentCrossCorrelation = ONE-& ! So Perfect Correlation = 0 not 1
+           Normalised2DCrossCorrelation(RSimulatedImage,RExperimentalImage,IErr)
+
+      END SELECT
+                
+      IF(ABS(RIndependentCrossCorrelation).LT.RCrossCorrelationOld) THEN
+        RCrossCorrelationOld = RIndependentCrossCorrelation
+        IThicknessByReflection(hnd) = ind
+        RReflectionThickness(hnd) = RInitialThickness +&
+        IThicknessByReflection(hnd)*RDeltaThickness
+      END IF
+    END DO
+    RReflectionCrossCorrelations(hnd) = RCrossCorrelationOld
+  END DO
+  !RB assume that the thickness is given by the mean of individual thicknesses  
+  IThicknessCountFinal = SUM(IThicknessByReflection)/INoOfLacbedPatterns
+  RThickness = RInitialThickness + (IThicknessCountFinal-1)*RDeltaThickness
+  RThicknessRange=( MAXVAL(IThicknessByReflection)-MINVAL(IThicknessByReflection) )*&
+                  RDeltaThickness
+
+  RCrossCorrelation = SUM(RReflectionCrossCorrelations*RWeightingCoefficients)/&
+       REAL(INoOfLacbedPatterns,RKIND)
+
+  IF(my_rank.eq.0) THEN
+    WRITE(SPrintString,FMT='(A18,I4,A10)') "Specimen thickness ",NINT(RThickness)," Angstroms"
+    PRINT*,TRIM(ADJUSTL(SPrintString))
+    WRITE(SPrintString,FMT='(A15,I4,A10)') "Thickness range",NINT(RThicknessRange)," Angstroms"
+    PRINT*,TRIM(ADJUSTL(SPrintString))
+  END IF
+
+END SUBROUTINE CalculateFigureofMeritandDetermineThickness
 
 !%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 SUBROUTINE CreateImagesAndWriteOutput(IIterationCount,IExitFLAG,IErr)
-
+!NB core 0 only
   USE MyNumbers
   
   USE CConst; USE IConst; USE RConst
@@ -634,6 +638,7 @@ END SUBROUTINE ConvertVectorMovementsIntoAtomicCoordinates
 
 SUBROUTINE BlurG(RImageToBlur,Rradius,IErr)
   !performs a 2D Gaussian blur on the input image
+  !renormalises the output image to have the same min and max as the input image
   USE MyNumbers
   
   USE CConst; USE IConst; USE RConst
@@ -650,7 +655,11 @@ SUBROUTINE BlurG(RImageToBlur,Rradius,IErr)
   INTEGER(IKIND) :: IErr,ind,jnd,IKernelRadius,IKernelSize
   REAL(RKIND),DIMENSION(:), ALLOCATABLE :: RGauss1D
   REAL(RKIND),DIMENSION(2*IPixelCount,2*IPixelCount) :: RImageToBlur,RTempImage,RShiftImage
-  REAL(RKIND) :: Rradius,Rind,Rsum
+  REAL(RKIND) :: Rradius,Rind,Rsum,Rmin,Rmax
+  
+  !get min and max of input image
+  Rmin=MINVAL(RImageToBlur)
+  Rmax=MAXVAL(RImageToBlur)
 
   !set up a 1D kernel of appropriate size  
   IKernelRadius=NINT(3*Rradius)
@@ -659,7 +668,7 @@ SUBROUTINE BlurG(RImageToBlur,Rradius,IErr)
   DO ind=-IKernelRadius,IKernelRadius
     Rind=REAL(ind)
     RGauss1D(ind+IKernelRadius+1)=EXP(-(Rind**2)/((2*Rradius)**2))
-    Rsum=Rsum+EXP(-(Rind**2)/((2*Rradius)**2))
+    Rsum=Rsum+RGauss1D(ind+IKernelRadius+1)
   END DO
   RGauss1D=RGauss1D/Rsum!normalise
   RTempImage=RImageToBlur*0_RKIND;!reset the temp image
@@ -679,7 +688,9 @@ SUBROUTINE BlurG(RImageToBlur,Rradius,IErr)
     END IF
     RTempImage=RTempImage+RShiftImage*RGauss1D(ind+IKernelRadius+1)
   END DO
-  RImageToBlur=RTempImage;!make the 1D blurred image the input for the next direction
+  
+  !make the 1D blurred image the input for the next direction
+  RImageToBlur=RTempImage;
   RTempImage=RImageToBlur*0_RKIND;!reset the temp image
 
   !apply the kernel in direction 2  
@@ -697,9 +708,14 @@ SUBROUTINE BlurG(RImageToBlur,Rradius,IErr)
     END IF
     RTempImage=RTempImage+RShiftImage*RGauss1D(ind+IKernelRadius+1)
   END DO
-  RImageToBlur=RTempImage;
   DEALLOCATE(RGauss1D,STAT=IErr)
 
+  !set intensity range of outpt image to match that of the input image
+  RTempImage=RTempImage-MINVAL(RTempImage)
+  RTempImage=RTempImage*(Rmax-Rmin)/MAXVAL(RTempImage)+Rmin
+  !return the blurred image
+  RImageToBlur=RTempImage;
+  
 END SUBROUTINE BlurG
 
 !%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
