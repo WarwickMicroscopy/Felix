@@ -82,10 +82,7 @@ REAL(RKIND) FUNCTION PhaseCorrelate(RImageSim,RImageExpiDummy,IErr,IXsizeIn,IYSi
   CALL FFTW_DESTROY_PLAN(Iplan)
 
   ! Set the dummy array to the input experimental data
-
   RImageSimDummy = RImageExpiDummy 
-
-
   !PRINT*,RImageSimDummy(:2,:2)
  
   ! Plan and Execute the fft of the Experimental Data 
@@ -94,7 +91,6 @@ REAL(RKIND) FUNCTION PhaseCorrelate(RImageSim,RImageExpiDummy,IErr,IXsizeIn,IYSi
   CALL FFTW_DESTROY_PLAN(Iplan)
 
   !Calculate the Phase Correlation
-
   WHERE(ABS(CDummy1*CONJG(CDummy2)).NE.ZERO)
      CCorrelatedImage = (CDummy1*CONJG(CDummy2))/&
           (ABS(CDummy1*CONJG(CDummy2)))
@@ -107,7 +103,6 @@ REAL(RKIND) FUNCTION PhaseCorrelate(RImageSim,RImageExpiDummy,IErr,IXsizeIn,IYSi
   CALL FFTW_EXECUTE_DFT_C2R(Iplan,CCorrelatedImage,RImageSimDummy)
   CALL FFTW_DESTROY_PLAN(Iplan)
 
-  
 !!$  RCrossCorrelation = MAXVAL(RImageSimDummy)/(IX*IY)
   PhaseCorrelate = MAXVAL(RImageSimDummy)/(IX*IY)
   IOffset = MAXLOC(RImageSimDummy)
@@ -122,6 +117,7 @@ REAL(RKIND) FUNCTION PhaseCorrelate(RImageSim,RImageExpiDummy,IErr,IXsizeIn,IYSi
 END FUNCTION  PhaseCorrelate
 
 !%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
 SUBROUTINE ReSortUgs( ISymmetryIntegers,CUgs, N )
   
   USE MyNumbers
@@ -173,6 +169,8 @@ SUBROUTINE ReSortUgs( ISymmetryIntegers,CUgs, N )
 
 END SUBROUTINE ReSortUgs
 
+!%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
 REAL(RKIND) FUNCTION ResidualSumofSquares(RImage1,RImage2,IErr)
   
   USE MyNumbers
@@ -200,7 +198,9 @@ REAL(RKIND) FUNCTION ResidualSumofSquares(RImage1,RImage2,IErr)
 
 END FUNCTION ResidualSumofSquares
 
-REAL(RKIND) FUNCTION Normalised2DCrossCorrelation(RImage1,RImage2,IImageSize,ITotalPixelsInImage,IErr)
+!%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+REAL(RKIND) FUNCTION Normalised2DCrossCorrelation(RImage1,RImage2,IErr)
 
   USE MyNumbers
   
@@ -212,12 +212,11 @@ REAL(RKIND) FUNCTION Normalised2DCrossCorrelation(RImage1,RImage2,IImageSize,ITo
 
   IMPLICIT NONE
 
-  INTEGER(IKIND) :: IErr,ITotalPixelsInImage
-  INTEGER(IKIND),DIMENSION(2) :: IImageSize
-  REAL(RKIND),DIMENSION(IImageSize(1),IImageSize(2)),INTENT(IN) :: RImage1,RImage2
+  INTEGER(IKIND) :: IErr
+  REAL(RKIND),DIMENSION(2*IPixelCount,2*IPixelCount),INTENT(IN) :: RImage1,RImage2
   REAL(RKIND) :: RImage1Mean,RImage2Mean,RImage1StandardDeviation,RImage2StandardDeviation,RPixelTotal
     
-  RPixelTotal = REAL(ITotalPixelsInImage,RKIND)  
+  RPixelTotal = REAL(2*IPixelCount*2*IPixelCount,RKIND)  
   RImage1Mean = SUM(RImage1)/RPixelTotal
   RImage2Mean = SUM(RImage2)/RPixelTotal
   RImage1StandardDeviation = SQRT(SUM(((RImage1-RImage1Mean)**2) / &
