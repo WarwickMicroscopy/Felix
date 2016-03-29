@@ -95,7 +95,7 @@ SUBROUTINE SimulateAndFit(RFigureofMerit,RIndependentVariable,IIterationCount,IE
       CUgMat = CUgMatDummy
     END WHERE
     RAbsorptionPercentage = RIndependentVariable(jnd)!===![[[
-	PRINT*,"UpdateStructureFactors: absorption=",RAbsorptionPercentage
+!	PRINT*,"UpdateStructureFactors: absorption=",RAbsorptionPercentage
   ELSE !everything else
      CALL UpdateVariables(RIndependentVariable,IErr)
      IF( IErr.NE.0 ) THEN
@@ -295,9 +295,7 @@ SUBROUTINE CalculateFigureofMeritandDetermineThickness(IThicknessCountFinal,IErr
        ! IF(my_rank.EQ.0) THEN
        !   PRINT*,"Gaussian blur radius =",Rradius
        ! END IF
-		PRINT*,"1RSimulatedImage(10,10)",RSimulatedImage(10,10)
         CALL BlurG(RSimulatedImage,Rradius,IErr)
-		PRINT*,"2RSimulatedImage(10,10)",RSimulatedImage(10,10)
 		
       END SELECT
 
@@ -314,8 +312,7 @@ SUBROUTINE CalculateFigureofMeritandDetermineThickness(IThicknessCountFinal,IErr
                 RSimulatedImage,RImageExpi(:,:,hnd),IErr)
            
       CASE(2) ! Normalised Cross Correlation
-           PRINT*,"crosscorrelation starting"
-		   RIndependentCrossCorrelation = ONE-& ! So Perfect Correlation = 0 not 1
+ 		   RIndependentCrossCorrelation = ONE-& ! So Perfect Correlation = 0 not 1
            Normalised2DCrossCorrelation(RSimulatedImage,RExperimentalImage,IErr)
 
       END SELECT
