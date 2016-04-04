@@ -760,9 +760,137 @@ SUBROUTINE mnbrak(Rax,Rbx,Rcx,Rfa,Rfb,Rfc)
     Rfc=Rfu
     GOTO 1
   END IF
+  
   RETURN
 
 END SUBROUTINE mnbrak
+
+!%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+  FUNCTION Rbrent(Rax,Rbx,Rcx,F,Rtol,Rxmin)
+  !given a function F(Rx) and a bracketing triplet of abscissas Rax,Rbx,Rcx 
+  !where bx is between ax and cx, and F(bx) is less than F(ax) or F(cx)
+  !this routine isolates the minimum to a precision of tol using Brent's method
+  !position of minimum is Rxmin and its value there is Rbrent
+  USE MyNumbers
+  USE WriteToScreen
+
+  USE CConst; USE IConst
+  USE IPara; USE RPara; USE CPara
+  USE BlochPara
+
+  USE IChannels
+
+  USE MPI
+  USE MyMPI
+
+  IMPLICIT NONE
+  
+  INTEGER(IKIND) :: Iiter,Iitmax
+  REAL(RKIND) :: Ra,Rb,Rax,Rbx,Rcx,Rd,Re,Rfx,Rfv,Rfw,Rp,Rq,Rr,Ru,Rv,Rw,Rx,Rxm
+  REAL(RKIND) :: Rtol,Rtol1,Rtol2,RzEPS,ReTemp,RcGold,Rbrent
+  PARAMETER (Iitmax=100,RcGold=0.3819660,RzEPS=1.0E-10)
+  
+  IExitFLAG=0!We never exit felixrefine from this subroutine
+  Ra=MIN(Rax,Rcx) 
+  Rb=MAX(Rax,Rcx) 
+  Rv=Rbx 
+  Rw=Rv 
+  Rx=Rv 
+  Re=ZERO
+  !Felixfunction here
+  Rfx=F(Rx) 
+  Rfv=Rfx 
+  Rfw=Rfx 
+  DO 11 Iiter=1,Iitmax !main loop
+    Rxm=0.5*(Ra+Rb) 
+    Rtol1=Rtol*ABS(Rx)+RzEPS 
+    Rtol2=2.*Rtol1 
+    IF (ABS(Rx-Rxm).LE.(Rtol2-.5*(Rb-Ra))) GOTO 3 !Test for done
+    IF( ABS(Re).GT.Rtol1) THEN 
+      Rr=(Rx-Rw)*(Rfx-Rfv) 
+      Rq=(Rx-Rv)*(Rfx-Rfw) 
+      Rp=(Rx-Rv)*Rq-(Rx-Rw)*Rr 
+      Rq=2.*(Rq-Rr) 
+      IF (Rq.GT.ZERO) THEN
+	    Rp=-Rp 
+      END IF
+      Rq=ABS(Rq) 
+      ReTemp=Re 
+      Re=Rd 
+      IF (ABS(Rp).GE.ABS(.5*Rq*ReTemp).OR.Rp.LE.Rq*(Ra-Rx).OR. Rp.GE.Rq*(Rb-Rx)) GOTO 1 
+      Rd=Rp/Rq !parabolic fit
+      Ru=Rx+Rd 
+      IF (Ru-Ra.LT.Rtol2 .OR. Rb-Ru.LT.Rtol2) Rd=SIGN(Rtol1,Rxm-Rx) GOTO 2 !skip golden section 
+    ENDIF 
+1   IF (Rx.GE.Rxm) THEN!golden section 
+      Re=Ra-Rx 
+    ELSE 
+      Re=Rb-Rx 
+    ENDIF 
+    Rd=RcGold*Re 
+2   IF (ABS(Rd).GE.Rtol1) THEN!end of branching, Rd is either golden section or parabolic
+      Ru=Rx+Rd 
+    ELSE 
+      Ru=Rx+SIGN(Rtol1,Rd) 
+    ENDIF 
+  !Felixfunction here
+    Rfu=F(Ru) 
+	CALL SimulateAndFit(Rfu,1,Iiter,IExitFLAG,IErr)
+    IF (Rfu.LE.Rfx) THEN 
+      IF (Ru.GE.Rx) THEN 
+        Ra=Rx 
+      ELSE 
+        Rb=Rx 
+      ENDIF 
+      Rv=Rw 
+      Rfv=Rfw 
+      Rw=Rx 
+      Rfw=Rfx 
+      Rx=Ru 
+      Rfx=Rfu 
+    ELSE
+      IF(Ru.LT.Rx) THEN
+	    Ra=Ru
+      ELSE
+	    Rb=Ru
+      END IF
+      IF (Rfu.LE.Rfw .OR. Rw.EQ.Rx) THEN
+	    Rv=Rw
+		Rfv=Rfw
+		Rw=Ru
+		Rfw=Rfu
+      ELSE IF (Rfu.LE.Rfv .OR. Rv.EQ.Rx .OR. Rv.EQ.Rw) THEN
+	    Rv=Ru
+	    Rfv=Rfu
+      END IF
+    END IF
+        IF(Ru.LT.Rx) THEN 
+          Ra=Ru 
+        ELSE 
+          Rb=Ru 
+        ENDIF 
+        IF(Rfu.LE.Rfw .OR. Rw.EQ.Rx) THEN 
+          Rv=Rw 
+          Rfv=Rfw 
+          Rw=Ru 
+          Rfw=Rfu 
+        ELSE IF(Rfu.LE.Rfv .OR. Rv.EQ.Rx .OR. Rv.EQ.Rw) THEN 
+          Rv=Ru 
+          Rfv=Rfu 
+        ENDIF 
+      ENDIF 
+11 END DO 
+
+  PRINT*,"Brent exceeded maximum iterations."
+  IErr=1
+  
+3 Rxmin=Rx 
+  Rbrent=Rfx 
+	  
+  RETURN
+  
+  END FUNCTION Rbrent
 
 !%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
