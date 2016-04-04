@@ -11,24 +11,25 @@ SUBROUTINE NDimensionalDownhillSimplex(RSimplexVariable,y,mp,np,ndim,ftol,iter,R
   IMPLICIT NONE
 
   INTEGER(IKIND) :: iter,mp,ndim,np,NMAX,ITMAX,IErr
-  REAL(RKIND) :: ftol,RSimplexVariable(mp,np),y(mp),SimplexFunction,SimplexExtrapolate,RSendPacket(ndim+2),RExitFlag
+  REAL(RKIND) :: ftol,RSimplexVariable(mp,np),y(mp),SimplexExtrapolate,RSendPacket(ndim+2),RExitFlag
+  REAL(RKIND) :: rtol,Rsum,swap,ysave,Rytry,psum(ndim),amotry,RStandardDeviation,RMean,RStandardError,RStandardTolerance
   PARAMETER (NMAX=1000,ITMAX=50000)
 
   INTEGER(IKIND) :: i,ihi,ilo,inhi,j,m,n,IExitFlag
-  REAL(RKIND) :: rtol,sum,swap,ysave,ytry,psum(ndim),amotry,&
-       RStandardDeviation,RMean,RStandardError,RStandardTolerance
   CHARACTER*200 :: SPrintString
+  
+  Rytry=ZERO!initial value, has no significance
 
   IF(my_rank.EQ.0) THEN
 1    DO n = 1,ndim
-        sum = 0
+        Rsum = 0
         DO m=1,ndim+1
-           sum=sum+RSimplexVariable(m,n)
+           Rsum=Rsum+RSimplexVariable(m,n)
         ENDDO
-        psum(n) = sum
+        psum(n) = Rsum
      ENDDO
 2    ilo = 1
-     ysave = ytry
+     ysave = Rytry
      IF (y(1).GT.y(2)) THEN
         ihi=1
         inhi=2
@@ -45,10 +46,8 @@ SUBROUTINE NDimensionalDownhillSimplex(RSimplexVariable,y,mp,np,ndim,ftol,iter,R
            IF(i.NE.ihi) inhi=i
         END IF
      ENDDO
-
      rtol=2.*ABS(y(ihi)-y(ilo))/(ABS(y(ihi))+ABS(y(ilo)))
 
-     RStandardTolerance = RStandardError(RStandardDeviation,RMean,ytry,IErr)
 
      WRITE(SPrintString,FMT='(A14,F7.5,A14,F7.5)') "Simplex range ",rtol,", will end at ",ftol
      PRINT*,TRIM(ADJUSTL(SPrintString))
@@ -64,7 +63,7 @@ SUBROUTINE NDimensionalDownhillSimplex(RSimplexVariable,y,mp,np,ndim,ftol,iter,R
         psum = RESHAPE(RSimplexVariable(MAXLOC(y),:),SHAPE(psum)) ! psum = simplex point with highest correlation
         RSendPacket = [-10000.0_RKIND, psum, REAL(iter,RKIND)]
         CALL MPI_BCAST(RSendPacket,ndim+2,MPI_DOUBLE_PRECISION,0,MPI_COMM_WORLD,IErr)
-        ytry = SimplexFunction(psum,iter,1,IErr)
+        CALL SimulateAndFit(Rytry,psum,iter,1,IErr)
         RETURN
      END IF
      
@@ -83,28 +82,26 @@ SUBROUTINE NDimensionalDownhillSimplex(RSimplexVariable,y,mp,np,ndim,ftol,iter,R
      IF (iter.EQ.1) THEN    
        WRITE(SPrintString,FMT='(A15)') "First iteration"
 	 ELSE IF (iter.LT.10) THEN
-       WRITE(SPrintString,FMT='(A10,I1,A18,F7.5)') "Iteration ",iter,", figure of merit ",ytry
+       WRITE(SPrintString,FMT='(A10,I1,A18,F7.5)') "Iteration ",iter,", figure of merit ",Rytry
 	 ELSE IF (iter.LT.100) THEN
-       WRITE(SPrintString,FMT='(A10,I2,A18,F7.5)') "Iteration ",iter,", figure of merit ",ytry
+       WRITE(SPrintString,FMT='(A10,I2,A18,F7.5)') "Iteration ",iter,", figure of merit ",Rytry
 	 ELSE IF (iter.LT.1000) THEN
-       WRITE(SPrintString,FMT='(A10,I3,A18,F7.5)') "Iteration ",iter,", figure of merit ",ytry
+       WRITE(SPrintString,FMT='(A10,I3,A18,F7.5)') "Iteration ",iter,", figure of merit ",Rytry
 	 ELSE
-       WRITE(SPrintString,FMT='(A10,I5,A18,F7.5)') "Iteration ",iter,", figure of merit ",ytry
+       WRITE(SPrintString,FMT='(A10,I5,A18,F7.5)') "Iteration ",iter,", figure of merit ",Rytry
 	 END IF
-
      PRINT*,TRIM(ADJUSTL(SPrintString))
      PRINT*,"--------------------------------"
      iter=iter+2
     
-     ytry = SimplexExtrapolate(RSimplexVariable,y,psum,mp,np,ndim,ihi,-1.0D0,iter,IErr)
-
+     Rytry = SimplexExtrapolate(RSimplexVariable,y,psum,mp,np,ndim,ihi,-1.0D0,iter,IErr)
      
-     IF (ytry.LE.y(ilo).OR.my_rank.NE.0) THEN
-        ytry = SimplexExtrapolate(RSimplexVariable,y,psum,mp,np,ndim,ihi,2.0D0,iter,IErr)
-     ELSEIF (ytry.GE.y(inhi)) THEN
+     IF (Rytry.LE.y(ilo).OR.my_rank.NE.0) THEN
+        Rytry = SimplexExtrapolate(RSimplexVariable,y,psum,mp,np,ndim,ihi,2.0D0,iter,IErr)
+     ELSEIF (Rytry.GE.y(inhi)) THEN
         ysave=y(ihi)
-        ytry=SimplexExtrapolate(RSimplexVariable,y,psum,mp,np,ndim,ihi,0.5D0,iter,IErr)
-        IF(ytry.GE.ysave) THEN
+        Rytry=SimplexExtrapolate(RSimplexVariable,y,psum,mp,np,ndim,ihi,0.5D0,iter,IErr)
+        IF(Rytry.GE.ysave) THEN
            PRINT*,"-----------------------------------------------------"
            PRINT*,"Entering Expansion Phase, Expect",ndim+1,"Simulations"
            PRINT*,"-----------------------------------------------------"
@@ -117,7 +114,7 @@ SUBROUTINE NDimensionalDownhillSimplex(RSimplexVariable,y,mp,np,ndim,ftol,iter,R
                  ENDDO
                  RSendPacket = [10000.0_RKIND, psum, REAL(iter,RKIND)]
                  CALL MPI_BCAST(RSendPacket,ndim+2,MPI_DOUBLE_PRECISION,0,MPI_COMM_WORLD,IErr)
-                 y(i)=SimplexFunction(psum,iter,0,IErr)
+                 CALL SimulateAndFit(y(i),psum,iter,0,IErr)
               ENDIF
            ENDDO
            iter=iter+ndim
@@ -128,8 +125,7 @@ SUBROUTINE NDimensionalDownhillSimplex(RSimplexVariable,y,mp,np,ndim,ftol,iter,R
      ENDIF
      GOTO 2
   ELSE
-     DO!We have reached the exit criteria, finish off
-        RSendPacket = [-10000.0_RKIND, psum, REAL(iter,RKIND)]!RB added this line but no idea what I'm doing 
+     DO!Latch to loop cores other than zero waiting for MPI_BCAST (is it really necessary) 
         CALL MPI_BCAST(RSendPacket,ndim+2,MPI_DOUBLE_PRECISION,0,MPI_COMM_WORLD,IErr)
         RExitFlag = RSendPacket(1)                
         IF(RExitFlag.LT.ZERO) THEN
@@ -139,7 +135,7 @@ SUBROUTINE NDimensionalDownhillSimplex(RSimplexVariable,y,mp,np,ndim,ftol,iter,R
         END IF
         psum = RSendPacket(2:(ndim+1))
         iter = NINT(RSendPacket(ndim+2),KIND=IKIND)
-        ytry = SimplexFunction(psum,iter,IExitFLAG,IErr) ! Doesnt matter what this result is
+        CALL SimulateAndFit(Rytry,psum,iter,IExitFLAG,IErr) ! Doesnt matter what this result is
         IF(IExitFLAG.EQ.1) RETURN
      END DO
 
@@ -162,8 +158,8 @@ REAL(RKIND) FUNCTION SimplexExtrapolate(RSimplexVariable,y,psum,mp,np,ndim,ihi,f
   IMPLICIT NONE
   
   INTEGER(IKIND) :: ihi,mp,ndim,np,NMAX,IErr,iter,j
-  REAL(RKIND) :: fac,RSimplexVariable(mp,np),psum(np),y(mp),SimplexFunction,RSendPacket(ndim+2)
-  REAL(RKIND) :: fac1,fac2,ytry,ptry(ndim)
+  REAL(RKIND) :: fac,RSimplexVariable(mp,np),psum(np),y(mp),RSendPacket(ndim+2)
+  REAL(RKIND) :: fac1,fac2,Rytry,ptry(ndim)
   PARAMETER(NMAX=1000)
   CHARACTER*200 :: SPrintString
   
@@ -174,18 +170,17 @@ REAL(RKIND) FUNCTION SimplexExtrapolate(RSimplexVariable,y,psum,mp,np,ndim,ihi,f
   ENDDO
   RSendPacket = [10000.0_RKIND, ptry, REAL(iter,RKIND)]
   CALL MPI_BCAST(RSendPacket,ndim+2,MPI_DOUBLE_PRECISION,0,MPI_COMM_WORLD,IErr)
+  CALL SimulateAndFit(Rytry,ptry,iter,0,IErr)
   
-  ytry=SimplexFunction(ptry,iter,0,IErr)
-  
-  IF (ytry.LT.y(ihi)) THEN
-     y(ihi)=ytry
+  IF (Rytry.LT.y(ihi)) THEN
+     y(ihi)=Rytry
      DO j=1,ndim
         psum(j)=psum(j)-RSimplexVariable(ihi,j)+ptry(j)
         RSimplexVariable(ihi,j)=ptry(j)
      ENDDO
   ENDIF
 
-  SimplexExtrapolate=ytry
+  SimplexExtrapolate=Rytry
 
   RETURN
 END FUNCTION SimplexExtrapolate

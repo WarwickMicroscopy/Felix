@@ -36,6 +36,104 @@
 ! $Id: Felixrefine.f90,v 1.89 2014/04/28 12:26:19 phslaz Exp $
 !%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
+SUBROUTINE SimulateAndFit(RFigureofMerit,RIndependentVariable,IIterationCount,IExitFLAG,IErr)
+
+  USE MyNumbers
+  
+  USE CConst; USE IConst; USE RConst
+  USE IPara; USE RPara; USE SPara; USE CPara
+  USE BlochPara
+
+  USE IChannels
+
+  USE MPI
+  USE MyMPI
+
+  IMPLICIT NONE
+  
+  INTEGER(IKIND) :: IErr,IExitFLAG,IThickness,ind,jnd
+  REAL(RKIND),DIMENSION(INoOfVariables) :: RIndependentVariable
+  REAL(RKIND) :: RFigureofMerit
+  INTEGER(IKIND),INTENT(IN) :: IIterationCount
+  COMPLEX(CKIND),DIMENSION(nReflections,nReflections) :: CUgMatDummy
+  LOGICAL :: LInitialSimulationFLAG = .FALSE.
+  
+  IF(IWriteFLAG.GE.10.AND.my_rank.EQ.0) THEN
+     PRINT*,"SimulateAndFit(",my_rank,")"
+  END IF
+
+  IF(IRefineModeSelectionArray(1).EQ.1) THEN  !Ug refinement; update structure factors 
+  !Dummy Matrix to contain new iterative values
+    CUgMatDummy = CZERO
+    !NB these are Ug's without absorption, used to be the suroutine UpdateStructureFactors
+    jnd=1
+    DO ind = 1+IUgOffset,INoofUgs+IUgOffset!=== temp changes so real part only***
+      IF ( (ABS(REAL(CUgToRefine(ind),RKIND)).GE.RTolerance).AND.&!===
+           (ABS(AIMAG(CUgToRefine(ind))).GE.RTolerance)) THEN!===use both real and imag parts
+        CUgToRefine(ind)=CMPLX(RIndependentVariable(jnd),RIndependentVariable(jnd+1))!===
+        jnd=jnd+2!===
+      ELSEIF ( ABS(AIMAG(CUgToRefine(ind))).LT.RTolerance ) THEN!===use only real part
+        CUgToRefine(ind)=CMPLX(RIndependentVariable(jnd),ZERO)!===
+!===        CUgToRefine(ind)=CMPLX(RIndependentVariable(jnd),AIMAG(CUgToRefine(ind)))!replacement line, remove to revert
+        jnd=jnd+1
+      ELSEIF ( ABS(REAL(CUgToRefine(ind),RKIND)).LT.RTolerance ) THEN!===use only imag part
+        CUgToRefine(ind)=CMPLX(ZERO,RIndependentVariable(jnd))!===
+        jnd=jnd+1!===
+      ELSE!===should never happen
+        PRINT*,"Warning - zero structure factor!",ind,":",CUgToRefine(IEquivalentUgKey(ind))!===
+      END IF!===
+     WHERE(ISymmetryRelations.EQ.IEquivalentUgKey(ind))
+        CUgMatDummy = CUgToRefine(ind)+&
+        CUgToRefine(ind)*EXP(CIMAGONE*PI/2_RKIND)*(RAbsorptionPercentage/100_RKIND)
+     END WHERE
+     WHERE(ISymmetryRelations.EQ.-IEquivalentUgKey(ind))
+        CUgMatDummy = CONJG(CUgToRefine(ind))+&
+        CONJG(CUgToRefine(ind))*EXP(CIMAGONE*PI/2_RKIND)*(RAbsorptionPercentage/100_RKIND)
+     END WHERE
+    END DO
+    WHERE(ABS(CUgMatDummy).GT.TINY)
+      CUgMat = CUgMatDummy
+    END WHERE
+    RAbsorptionPercentage = RIndependentVariable(jnd)!===![[[
+!	PRINT*,"UpdateStructureFactors: absorption=",RAbsorptionPercentage
+  ELSE !everything else
+     CALL UpdateVariables(RIndependentVariable,IErr)
+     IF( IErr.NE.0 ) THEN
+        PRINT*,"SimulateAndFit(",my_rank,")error in UpdateVariables"
+        RETURN
+     END IF
+     WHERE(RAtomSiteFracCoordVec.LT.0) RAtomSiteFracCoordVec=RAtomSiteFracCoordVec+ONE
+     WHERE(RAtomSiteFracCoordVec.GT.1) RAtomSiteFracCoordVec=RAtomSiteFracCoordVec-ONE
+  END IF
+
+  IF (my_rank.EQ.0) THEN
+     CALL PrintVariables(IErr)
+     IF( IErr.NE.0 ) THEN
+        PRINT*,"SimulateAndFit(",my_rank,")error in PrintVariables"
+        RETURN
+     END IF
+  END IF
+
+  CALL FelixFunction(LInitialSimulationFLAG,IErr) ! Simulate !!  
+  IF( IErr.NE.0 ) THEN
+     PRINT*,"SimulateAndFit(",my_rank,")error in FelixFunction"
+     RETURN
+  END IF
+
+  IF(my_rank.EQ.0) THEN   
+     CALL CreateImagesAndWriteOutput(IIterationCount,IExitFLAG,IErr) 
+     IF( IErr.NE.0 ) THEN
+        PRINT*,"SimulateAndFit(",my_rank,")error in CreateImagesAndWriteOutput"
+        RETURN
+     ENDIF
+!This is the key parameter!!!****     
+     RFigureofMerit = RCrossCorrelation     
+  END IF
+
+END SUBROUTINE SimulateAndFit
+
+!%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
 SUBROUTINE FelixFunction(LInitialSimulationFLAG,IErr)
 
   USE MyNumbers
@@ -57,9 +155,9 @@ SUBROUTINE FelixFunction(LInitialSimulationFLAG,IErr)
   
   INTEGER(IKIND) :: IErr,ind,jnd,knd,pnd,IThicknessIndex,IIterationFLAG
   INTEGER(IKIND) :: IAbsorbTag = 0
-
-  LOGICAL,INTENT(INOUT) :: LInitialSimulationFLAG !If function is being called during initialisation
   REAL(RKIND),DIMENSION(:,:,:),ALLOCATABLE :: RFinalMontageImageRoot
+  LOGICAL,INTENT(INOUT) :: LInitialSimulationFLAG !If function is being called during initialisation
+
 
   IF(IWriteFLAG.GE.6.AND.my_rank.EQ.0) THEN
      PRINT*,"Felix function"
@@ -74,11 +172,11 @@ SUBROUTINE FelixFunction(LInitialSimulationFLAG,IErr)
 
 !Update scattering matrix--------------------------------------------------------------------  
   IF((IRefineModeSelectionArray(1).EQ.1)) THEN!RB Ug refinement, replace selected Ug's
-     CALL ApplyNewStructureFactors(IErr)
-     IF( IErr.NE.0 ) THEN
-       PRINT*,"felixfunction(",my_rank,")error in ApplyNewStructureFactors()"
-       RETURN
-     END IF
+     !CALL ApplyNewStructureFactors(IErr) !NOW IN SimulateAndFit!***
+     !IF( IErr.NE.0 ) THEN
+     !  PRINT*,"felixfunction(",my_rank,")error in ApplyNewStructureFactors()"
+     !  RETURN
+     !END IF
   ELSE!RB other refinement, recalculate Ug pool
      CALL StructureFactorSetup(IErr)
      IF( IErr.NE.0 ) THEN
@@ -95,7 +193,7 @@ SUBROUTINE FelixFunction(LInitialSimulationFLAG,IErr)
   IMAXCBuffer = 200000!RB what are these?
   IPixelComputed= 0
 
-!Simulation on this core--------------------------------------------------------------------  
+!Simulation (different local pixels for each core)--------------------------------------------------------------------  
   IF(IWriteFLAG.GE.0.AND.my_rank.EQ.0) THEN
     PRINT*,"Bloch wave calculation..."
   END IF
@@ -125,7 +223,7 @@ END SUBROUTINE FelixFunction
 !%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 SUBROUTINE CalculateFigureofMeritandDetermineThickness(IThicknessCountFinal,IErr)
-  
+  !NB core 0 only
   USE MyNumbers
   
   USE CConst; USE IConst; USE RConst
@@ -142,192 +240,114 @@ SUBROUTINE CalculateFigureofMeritandDetermineThickness(IThicknessCountFinal,IErr
   INTEGER(IKIND) :: ind,jnd,knd,IErr,ICountedPixels,IThickness,hnd
   INTEGER(IKIND),DIMENSION(INoOfLacbedPatterns) :: IThicknessByReflection
   INTEGER(IKIND),INTENT(OUT) :: IThicknessCountFinal
-  REAL(RKIND),DIMENSION(2*IPixelCount,2*IPixelCount) :: RSimulatedImageForPhaseCorrelation,RExperimentalImage
+  REAL(RKIND),DIMENSION(2*IPixelCount,2*IPixelCount) :: RSimulatedImage,RExperimentalImage
   REAL(RKIND) :: RCrossCorrelationOld,RIndependentCrossCorrelation,RThickness,&
-	   PhaseCorrelate,Normalised2DCrossCorrelation,ResidualSumofSquares
+       PhaseCorrelate,Normalised2DCrossCorrelation,ResidualSumofSquares,RThicknessRange,Rradius
   REAL(RKIND),DIMENSION(INoOfLacbedPatterns) :: RReflectionCrossCorrelations,RReflectionThickness
   CHARACTER*200 :: SPrintString
        
   
-  IF(IWriteFLAG.GE.10.AND.my_rank.EQ.0) THEN
+  IF (IWriteFLAG.GE.10) THEN
      PRINT*,"CalculateFigureofMeritandDetermineThickness(",my_rank,")"
   END IF
 
   RReflectionCrossCorrelations = ZERO
 
   DO hnd = 1,INoOfLacbedPatterns
-     RCrossCorrelationOld = 1.0E15 !A large Number
-     RThickness = ZERO
-     DO ind = 1,IThicknessCount
-        
-        ICountedPixels = 0
-        RSimulatedImageForPhaseCorrelation = ZERO
-        RIndependentCrossCorrelation = ZERO
-
-        DO jnd = 1,2*IPixelCount!RB does this have to be done here
-           DO knd = 1,2*IPixelCount
-              IF(ABS(RMask(jnd,knd)).GT.TINY) THEN
-                 ICountedPixels = ICountedPixels+1
-                 RSimulatedImageForPhaseCorrelation(jnd,knd) = &
-                      RSimulatedPatterns(hnd,ind,ICountedPixels)
-              END IF
-           END DO
+    RCrossCorrelationOld = 1.0E15 !A large Number
+    RThickness = ZERO
+    DO ind = 1,IThicknessCount
+      ICountedPixels = 0
+      RSimulatedImage = ZERO
+	  !put 1D array RSimulatedPatterns into 2D image RSimulatedImage
+      !remember dimensions of RSimulatedPatterns(INoOfLacbedPatterns,IThicknessCount,IPixelTotal)
+      DO jnd = 1,2*IPixelCount
+        DO knd = 1,2*IPixelCount
+          ICountedPixels = ICountedPixels+1
+          RSimulatedImage(jnd,knd) = RSimulatedPatterns(hnd,ind,ICountedPixels)
         END DO
+      END DO
                
-        SELECT CASE (IImageProcessingFLAG)
-        CASE(0)
-           RExperimentalImage = RImageExpi(:,:,hnd)
-        CASE(1)
-           RSimulatedImageForPhaseCorrelation = &
-                SQRT(RSimulatedImageForPhaseCorrelation)
-           RExperimentalImage = &
-                SQRT(RImageExpi(:,:,hnd))
-        CASE(2)
-           WHERE (RSimulatedImageForPhaseCorrelation.GT.TINY**2)
-              RSimulatedImageForPhaseCorrelation = &
-                   LOG(RSimulatedImageForPhaseCorrelation)
-           ELSEWHERE
-              RSimulatedImageForPhaseCorrelation = &
-                   TINY**2
-           END WHERE
-              
-           WHERE (RExperimentalImage.GT.TINY**2)
-              RExperimentalImage = &
-                   LOG(RImageExpi(:,:,hnd))
-           ELSEWHERE
-              RExperimentalImage = &
-                   TINY**2
-           END WHERE
-              
-        END SELECT
+      SELECT CASE (IImageProcessingFLAG)
 
-        SELECT CASE (ICorrelationFLAG)
+      CASE(0)!no processing
+        RExperimentalImage = RImageExpi(:,:,hnd)
            
-        CASE(0) ! Phase Correlation
+      CASE(1)!square root before perfoming corration
+        RSimulatedImage=SQRT(RSimulatedImage)
+        RExperimentalImage =  SQRT(RImageExpi(:,:,hnd))
            
-           RIndependentCrossCorrelation = &
-                ONE-& ! So Perfect Correlation = 0 not 1
-                PhaseCorrelate(&
-                RSimulatedImageForPhaseCorrelation,RExperimentalImage,&
-                IErr,2*IPixelCount,2*IPixelCount)
-           
-        CASE(1) ! Residual Sum of Squares (Non functional)
-           RIndependentCrossCorrelation = &
-                ResidualSumofSquares(&
-                RSimulatedImageForPhaseCorrelation,RImageExpi(:,:,hnd),IErr)
-           
-        CASE(2) ! Normalised Cross Correlation
+      CASE(2)!log before performing correlation
+        WHERE (RSimulatedImage.GT.TINY**2)
+          RSimulatedImage=LOG(RSimulatedImage)
+        ELSEWHERE
+          RSimulatedImage = TINY**2
+        END WHERE
+        WHERE (RExperimentalImage.GT.TINY**2)
+          RExperimentalImage = LOG(RImageExpi(:,:,hnd))
+        ELSEWHERE
+          RExperimentalImage =  TINY**2
+        END WHERE
+              
+      CASE(4)!Apply gaussian blur to simulated image
+        RExperimentalImage = RImageExpi(:,:,hnd)
+        Rradius=0.95_RKIND!!!*+*+ will need to be added as a line in felix.inp +*+*!!!
+       ! IF(my_rank.EQ.0) THEN
+       !   PRINT*,"Gaussian blur radius =",Rradius
+       ! END IF
+        CALL BlurG(RSimulatedImage,Rradius,IErr)
+		
+      END SELECT
 
-           RIndependentCrossCorrelation = &
-                ONE-& ! So Perfect Correlation = 0 not 1
-                Normalised2DCrossCorrelation(&
-                RSimulatedImageForPhaseCorrelation,RExperimentalImage,&
-                (/2*IPixelCount, 2*IPixelCount/),IPixelTotal,IErr)
+      RIndependentCrossCorrelation = ZERO   
+      SELECT CASE (ICorrelationFLAG)
+         
+      CASE(0) ! Phase Correlation
+        RIndependentCrossCorrelation=ONE-& ! So Perfect Correlation = 0 not 1
+           PhaseCorrelate(RSimulatedImage,RExperimentalImage,&
+           IErr,2*IPixelCount,2*IPixelCount)
            
-        END SELECT
+      CASE(1) ! Residual Sum of Squares (Non functional)
+        RIndependentCrossCorrelation = ResidualSumofSquares(&
+                RSimulatedImage,RImageExpi(:,:,hnd),IErr)
+           
+      CASE(2) ! Normalised Cross Correlation
+ 		   RIndependentCrossCorrelation = ONE-& ! So Perfect Correlation = 0 not 1
+           Normalised2DCrossCorrelation(RSimulatedImage,RExperimentalImage,IErr)
+
+      END SELECT
                 
-        IF(ABS(RIndependentCrossCorrelation).LT.RCrossCorrelationOld) THEN
-
-           RCrossCorrelationOld = RIndependentCrossCorrelation
-
-           IThicknessByReflection(hnd) = ind
-           RReflectionThickness(hnd) = RInitialThickness +&
-		   IThicknessByReflection(hnd)*RDeltaThickness
-        END IF
-     END DO
-
-     RReflectionCrossCorrelations(hnd) = RCrossCorrelationOld
-     
+      IF(ABS(RIndependentCrossCorrelation).LT.RCrossCorrelationOld) THEN
+        RCrossCorrelationOld = RIndependentCrossCorrelation
+        IThicknessByReflection(hnd) = ind
+        RReflectionThickness(hnd) = RInitialThickness +&
+        IThicknessByReflection(hnd)*RDeltaThickness
+      END IF
+    END DO
+    RReflectionCrossCorrelations(hnd) = RCrossCorrelationOld
   END DO
-
-  RCrossCorrelation = &
-       SUM(RReflectionCrossCorrelations*RWeightingCoefficients)/&
-       REAL(INoOfLacbedPatterns,RKIND)
-!RB assume that the thickness is given by the mean of individual thicknesses  
+  !RB assume that the thickness is given by the mean of individual thicknesses  
   IThicknessCountFinal = SUM(IThicknessByReflection)/INoOfLacbedPatterns
+  RThickness = RInitialThickness + (IThicknessCountFinal-1)*RDeltaThickness
+  RThicknessRange=( MAXVAL(IThicknessByReflection)-MINVAL(IThicknessByReflection) )*&
+                  RDeltaThickness
 
-  RThickness = RInitialThickness + (IThicknessCountFinal-1)*RDeltaThickness 
-  
+  RCrossCorrelation = SUM(RReflectionCrossCorrelations*RWeightingCoefficients)/&
+       REAL(INoOfLacbedPatterns,RKIND)
 
   IF(my_rank.eq.0) THEN
-     WRITE(SPrintString,FMT='(A18,I4,A10)') "Specimen thickness ",NINT(RThickness)," Angstroms"
-     PRINT*,TRIM(ADJUSTL(SPrintString))
+    WRITE(SPrintString,FMT='(A18,I4,A10)') "Specimen thickness ",NINT(RThickness)," Angstroms"
+    PRINT*,TRIM(ADJUSTL(SPrintString))
+    WRITE(SPrintString,FMT='(A15,I4,A10)') "Thickness range",NINT(RThicknessRange)," Angstroms"
+    PRINT*,TRIM(ADJUSTL(SPrintString))
   END IF
 
 END SUBROUTINE CalculateFigureofMeritandDetermineThickness
 
 !%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-REAL(RKIND) FUNCTION SimplexFunction(RIndependentVariable,IIterationCount,IExitFLAG,IErr)
-
-  USE MyNumbers
-  
-  USE CConst; USE IConst; USE RConst
-  USE IPara; USE RPara; USE SPara; USE CPara
-  USE BlochPara
-
-  USE IChannels
-
-  USE MPI
-  USE MyMPI
-
-  IMPLICIT NONE
-  
-  INTEGER(IKIND) :: IErr,IExitFLAG,IThickness
-  REAL(RKIND),DIMENSION(INoOfVariables),INTENT(INOUT) :: RIndependentVariable
-  INTEGER(IKIND),INTENT(IN) :: IIterationCount
-  LOGICAL :: LInitialSimulationFLAG = .FALSE.
-  
-  IF(IWriteFLAG.GE.10.AND.my_rank.EQ.0) THEN
-     PRINT*,"SimplexFunction(",my_rank,")"
-  END IF
-
-  IF(IRefineModeSelectionArray(1).EQ.1) THEN  !Ug refinement   
-     CALL UpdateStructureFactors(RIndependentVariable,IErr)
-     IF( IErr.NE.0 ) THEN
-        PRINT*,"SimplexFunction(",my_rank,")error in UpdateStructureFactors"
-        RETURN
-     END IF     
-  ELSE !everything else
-     CALL UpdateVariables(RIndependentVariable,IErr)
-     IF( IErr.NE.0 ) THEN
-        PRINT*,"SimplexFunction(",my_rank,")error in UpdateVariables"
-        RETURN
-     END IF
-     WHERE(RAtomSiteFracCoordVec.LT.0) RAtomSiteFracCoordVec=RAtomSiteFracCoordVec+ONE
-     WHERE(RAtomSiteFracCoordVec.GT.1) RAtomSiteFracCoordVec=RAtomSiteFracCoordVec-ONE
-  END IF
-
-  IF (my_rank.EQ.0) THEN
-     CALL PrintVariables(IErr)
-     IF( IErr.NE.0 ) THEN
-        PRINT*,"SimplexFunction(",my_rank,")error in PrintVariables"
-        RETURN
-     END IF
-  END IF
-
-  CALL FelixFunction(LInitialSimulationFLAG,IErr) ! Simulate !!  
-  IF( IErr.NE.0 ) THEN
-     PRINT*,"SimplexFunction(",my_rank,")error in FelixFunction"
-     RETURN
-  END IF
-
-  IF(my_rank.EQ.0) THEN   
-     CALL CreateImagesAndWriteOutput(IIterationCount,IExitFLAG,IErr) 
-     IF( IErr.NE.0 ) THEN
-        PRINT*,"SimplexFunction(",my_rank,")error in CreateImagesAndWriteOutput"
-        RETURN
-     ENDIF
-!This is the key parameter!!!****     
-     SimplexFunction = RCrossCorrelation     
-  END IF
-
-END FUNCTION SimplexFunction
-
-!%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-
 SUBROUTINE CreateImagesAndWriteOutput(IIterationCount,IExitFLAG,IErr)
-
+!NB core 0 only
   USE MyNumbers
   
   USE CConst; USE IConst; USE RConst
@@ -357,13 +377,6 @@ SUBROUTINE CreateImagesAndWriteOutput(IIterationCount,IExitFLAG,IErr)
      RETURN
   ENDIF
 
-!deallocate--------------------------------
-  !DEALLOCATE(RIndividualReflections,STAT=IErr)!RB deallocate output images
-  !IF( IErr.NE.0 ) THEN
-  !   PRINT*,"CreateImagesAndWriteOutput(",my_rank,")error deallocating RIndividualReflections"
-  !   RETURN
-  !ENDIF
-  
 END SUBROUTINE CreateImagesAndWriteOutput
 
 !%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -395,7 +408,7 @@ SUBROUTINE UpdateVariables(RIndependentVariable,IErr)
      IVariableType = IIterativeVariableUniqueIDs(ind,2)
      SELECT CASE (IVariableType)
      CASE(1)
-	    !RB structure factor refinement, do in UpdateStructureFactors
+        !RB structure factor refinement, do in UpdateStructureFactors
      CASE(2)
         CALL ConvertVectorMovementsIntoAtomicCoordinates(ind,RIndependentVariable,IErr)
      CASE(3)
@@ -472,34 +485,34 @@ SUBROUTINE PrintVariables(IErr)
            WRITE(SPrintString,FMT='(A18,1X,F5.2)') "Current Absorption",RAbsorptionPercentage
            PRINT*,TRIM(ADJUSTL(SPrintString))
            PRINT*,"Current Structure Factors : amplitude, phase (deg)"!RB should also put in hkl here
-           DO jnd = 2,INoofUgs+1!yy since no.1 is 000
+           DO jnd = 1+IUgOffset,INoofUgs+IUgOffset
               WRITE(SPrintString,FMT='(2(1X,F7.3),2X,A1,1X,F6.3,1X,F6.2)') CUgToRefine(jnd),":",&
-			  ABS(CUgToRefine(jnd)),180*ATAN2(AIMAG(CUgToRefine(jnd)),REAL(CUgToRefine(jnd)))/PI
+              ABS(CUgToRefine(jnd)),180*ATAN2(AIMAG(CUgToRefine(jnd)),REAL(CUgToRefine(jnd)))/PI
               PRINT*,TRIM(ADJUSTL(SPrintString))
            END DO           
 
-		   CASE(2)
+           CASE(2)
            PRINT*,"Current Atomic Coordinates"
            DO jnd = 1,SIZE(RAtomSiteFracCoordVec,DIM=1)
               WRITE(SPrintString,FMT='(A2,3(1X,F9.4))') SAtomName(jnd),RAtomSiteFracCoordVec(jnd,:)
               PRINT*,TRIM(ADJUSTL(SPrintString))              
            END DO
 
-		   CASE(3)
+           CASE(3)
            PRINT*,"Current Atomic Occupancy"
            DO jnd = 1,SIZE(RAtomicSitePartialOccupancy,DIM=1)
               WRITE(SPrintString,FMT='(A2,1X,F9.6)') SAtomName(jnd),RAtomicSitePartialOccupancy(jnd)
               PRINT*,TRIM(ADJUSTL(SPrintString))
            END DO
 
-		   CASE(4)
+           CASE(4)
            PRINT*,"Current Isotropic Debye Waller Factors"
            DO jnd = 1,SIZE(RIsotropicDebyeWallerFactors,DIM=1)
               WRITE(SPrintString,FMT='(A2,1X,F9.6)') SAtomName(jnd),RIsotropicDebyeWallerFactors(jnd)
               PRINT*,TRIM(ADJUSTL(SPrintString))
            END DO
 
-		   CASE(5)
+           CASE(5)
            PRINT*,"Current Anisotropic Debye Waller Factors"
            DO jnd = 1,SIZE(RAnisotropicDebyeWallerFactorTensor,DIM=1)
               DO knd = 1,3
@@ -508,32 +521,32 @@ SUBROUTINE PrintVariables(IErr)
               END DO
            END DO
 
-		   CASE(6)
+           CASE(6)
            PRINT*,"Current Unit Cell Parameters"
            WRITE(SPrintString,FMT='(3(1X,F9.6))') RLengthX,RLengthY,RLengthZ
               PRINT*,TRIM(ADJUSTL(SPrintString))
 
-		  CASE(7)
+          CASE(7)
            PRINT*,"Current Unit Cell Angles"
            WRITE(SPrintString,FMT='(3(F9.6,1X))') RAlpha,RBeta,RGamma
               PRINT*,TRIM(ADJUSTL(SPrintString))
 
-		  CASE(8)
+          CASE(8)
            PRINT*,"Current Convergence Angle"
            WRITE(SPrintString,FMT='((F9.6,1X))') RConvergenceAngle
               PRINT*,TRIM(ADJUSTL(SPrintString))
 
-		  CASE(9)
+          CASE(9)
            PRINT*,"Current Absorption Percentage"
            WRITE(SPrintString,FMT='((F9.6,1X))') RAbsorptionPercentage
               PRINT*,TRIM(ADJUSTL(SPrintString))
 
-		  CASE(10)
+          CASE(10)
            PRINT*,"Current Accelerating Voltage"
            WRITE(SPrintString,FMT='((F9.6,1X))') RAcceleratingVoltage
               PRINT*,TRIM(ADJUSTL(SPrintString))
 
-		  CASE(11)
+          CASE(11)
            PRINT*,"Current Residual Sum of Squares Scaling Factor"
            WRITE(SPrintString,FMT='((F9.6,1X))') RRSoSScalingFactor
               PRINT*,TRIM(ADJUSTL(SPrintString))
@@ -563,34 +576,26 @@ SUBROUTINE UpdateStructureFactors(RIndependentVariable,IErr)
   INTEGER(IKIND) :: IErr,ind,jnd
   REAL(RKIND),DIMENSION(INoOfVariables),INTENT(IN) :: RIndependentVariable
   CHARACTER*200 :: SPrintString
-	
+    
 !NB these are Ug's without absorption
-
   jnd=1
-  DO ind = 2,INoofUgs+1
-    IF ( (ABS(REAL(CUgToRefine(ind),RKIND)).GE.RTolerance).AND.&
-       (ABS(AIMAG(CUgToRefine(ind))).GE.RTolerance)) THEN!use both real and imag parts
-!        WRITE(SPrintString,FMT='(I3,A1,F5.2)') jnd,":",RIndependentVariable(jnd)
-!        PRINT*,TRIM(ADJUSTL(SPrintString))
-!        WRITE(SPrintString,FMT='(I3,A1,F5.2)') jnd+1,":",RIndependentVariable(jnd+1)
-!        PRINT*,TRIM(ADJUSTL(SPrintString))
-	  CUgToRefine(ind)=CMPLX(RIndependentVariable(jnd),RIndependentVariable(jnd+1))
-      jnd=jnd+2
-	ELSEIF ( ABS(AIMAG(CUgToRefine(ind))).LT.RTolerance ) THEN!use only real part
-!        WRITE(SPrintString,FMT='(I3,A1,F5.2)') jnd,":",RIndependentVariable(jnd)
-!        PRINT*,TRIM(ADJUSTL(SPrintString))
-	  CUgToRefine(ind)=CMPLX(RIndependentVariable(jnd),ZERO)
+  DO ind = 1+IUgOffset,INoofUgs+IUgOffset!=== temp changes so real part only***
+    IF ( (ABS(REAL(CUgToRefine(ind),RKIND)).GE.RTolerance).AND.&!===
+       (ABS(AIMAG(CUgToRefine(ind))).GE.RTolerance)) THEN!use both real and imag parts!===
+      CUgToRefine(ind)=CMPLX(RIndependentVariable(jnd),RIndependentVariable(jnd+1))!===
+      jnd=jnd+2!===
+    ELSEIF ( ABS(AIMAG(CUgToRefine(ind))).LT.RTolerance ) THEN!use only real part!===
+      CUgToRefine(ind)=CMPLX(RIndependentVariable(jnd),ZERO)!===
+!===      CUgToRefine(ind)=CMPLX(RIndependentVariable(jnd),AIMAG(CUgToRefine(ind)))!===replacement line, delete to revert
       jnd=jnd+1
-    ELSEIF ( ABS(REAL(CUgToRefine(ind),RKIND)).LT.RTolerance ) THEN!use only imag part
-!        WRITE(SPrintString,FMT='(I3,A1,F5.2)') jnd,":",RIndependentVariable(jnd)
-!        PRINT*,TRIM(ADJUSTL(SPrintString))
-	  CUgToRefine(ind)=CMPLX(ZERO,RIndependentVariable(jnd))
-      jnd=jnd+1
-    ELSE!should never happen
-	  PRINT*,"Warning - zero structure factor!",ind,":",CUgToRefine(IEquivalentUgKey(ind))
-    END IF
+    ELSEIF ( ABS(REAL(CUgToRefine(ind),RKIND)).LT.RTolerance ) THEN!===use only imag part
+      CUgToRefine(ind)=CMPLX(ZERO,RIndependentVariable(jnd))!===
+      jnd=jnd+1!===
+    ELSE!should never happen!===
+      PRINT*,"Warning - zero structure factor!",ind,":",CUgToRefine(IEquivalentUgKey(ind))!===
+    END IF!===
   END DO
-  RAbsorptionPercentage = RIndependentVariable(jnd)
+  RAbsorptionPercentage = RIndependentVariable(jnd)!===
   
 END SUBROUTINE UpdateStructureFactors
 
@@ -612,8 +617,7 @@ SUBROUTINE ConvertVectorMovementsIntoAtomicCoordinates(IVariableID,RIndependentV
   IMPLICIT NONE
 
   INTEGER(IKIND) :: IErr,ind,jnd,IVariableID,IVectorID,IAtomID
-  REAL(RKIND),DIMENSION(INoOfVariables),INTENT(IN) :: &
-       RIndependentVariable
+  REAL(RKIND),DIMENSION(INoOfVariables),INTENT(IN) :: RIndependentVariable
 
 !!$  Use IVariableID to determine which vector is being applied (IVectorID)
   IVectorID = IIterativeVariableUniqueIDs(IVariableID,3)
@@ -629,12 +633,15 @@ END SUBROUTINE ConvertVectorMovementsIntoAtomicCoordinates
 
 !%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-SUBROUTINE InitialiseWeightingCoefficients(IErr)
-  
+SUBROUTINE BlurG(RImageToBlur,Rradius,IErr)
+  !performs a 2D Gaussian blur on the input image
+  !renormalises the output image to have the same min and max as the input image
   USE MyNumbers
+  
   USE CConst; USE IConst; USE RConst
   USE IPara; USE RPara; USE SPara; USE CPara
   USE BlochPara
+  
   USE IChannels
   
   USE MPI
@@ -642,40 +649,71 @@ SUBROUTINE InitialiseWeightingCoefficients(IErr)
   
   IMPLICIT NONE
 
-  INTEGER(IKIND) :: IErr,ind
-  REAL(RKIND),DIMENSION(:),ALLOCATABLE :: RWeightingCoefficientsDummy
-
-  ALLOCATE(RWeightingCoefficients(INoOfLacbedPatterns),STAT=IErr)
-  IF( IErr.NE.0 ) THEN
-     PRINT*,"InitialiseWeightingCoefficients(",my_rank,")error allocating RWeightingCoefficients"
-     RETURN
-  ENDIF
-  ALLOCATE(RWeightingCoefficientsDummy(INoOfLacbedPatterns),STAT=IErr)
-  IF( IErr.NE.0 ) THEN
-     PRINT*,"InitialiseWeightingCoefficients(",my_rank,")error allocating RWeightingCoefficientsDummy"
-     RETURN
-  ENDIF
+  INTEGER(IKIND) :: IErr,ind,jnd,IKernelRadius,IKernelSize
+  REAL(RKIND),DIMENSION(:), ALLOCATABLE :: RGauss1D
+  REAL(RKIND),DIMENSION(2*IPixelCount,2*IPixelCount) :: RImageToBlur,RTempImage,RShiftImage
+  REAL(RKIND) :: Rradius,Rind,Rsum,Rmin,Rmax
   
-  SELECT CASE (IWeightingFLAG)
-  CASE(0)
-     RWeightingCoefficients = ONE
-  CASE(1)
-     RWeightingCoefficientsDummy = RgPoolMag(IOutputReflections)/MAXVAL(RgPoolMag(IOutputReflections))
-     IF(SIZE(RWeightingCoefficients).GT.1) THEN
-        RWeightingCoefficientsDummy(1) = RWeightingCoefficients(2)/TWO 
-     END IF
-     DO ind = 1,INoOfLacbedPatterns
-        RWeightingCoefficients(ind) = RWeightingCoefficientsDummy(INoOfLacbedPatterns-(ind-1))
-     END DO
-!!$     RWeightingCoefficients = 1/RgPoolMag(IOutputReflections)
-  CASE(2)
-     RWeightingCoefficients = RgPoolMag(IOutputReflections)/MAXVAL(RgPoolMag(IOutputReflections))
-     IF(SIZE(RWeightingCoefficients).GT.1) THEN
-        RWeightingCoefficients(1) = RWeightingCoefficients(2)/TWO 
-     END IF
-  END SELECT
+  !get min and max of input image
+  Rmin=MINVAL(RImageToBlur)
+  Rmax=MAXVAL(RImageToBlur)
 
-END SUBROUTINE InitialiseWeightingCoefficients
+  !set up a 1D kernel of appropriate size  
+  IKernelRadius=NINT(3*Rradius)
+  ALLOCATE(RGauss1D(2*IKernelRadius+1),STAT=IErr)!ffs
+  Rsum=0
+  DO ind=-IKernelRadius,IKernelRadius
+    Rind=REAL(ind)
+    RGauss1D(ind+IKernelRadius+1)=EXP(-(Rind**2)/((2*Rradius)**2))
+    Rsum=Rsum+RGauss1D(ind+IKernelRadius+1)
+  END DO
+  RGauss1D=RGauss1D/Rsum!normalise
+  RTempImage=RImageToBlur*0_RKIND;!reset the temp image
+  
+  !apply the kernel in direction 1
+  DO ind = -IKernelRadius,IKernelRadius
+    IF (ind.LT.0) THEN
+      RShiftImage(1:2*IPixelCount+ind,:)=RImageToBlur(1-ind:2*IPixelCount,:)
+      DO jnd = 1,1-ind!edge fill on right
+        RShiftImage(2*IPixelCount-jnd+1,:)=RImageToBlur(2*IPixelCount,:)
+      END DO
+    ELSE
+      RShiftImage(1+ind:2*IPixelCount,:)=RImageToBlur(1:2*IPixelCount-ind,:)
+      DO jnd = 1,1+ind!edge fill on left
+        RShiftImage(jnd,:)=RImageToBlur(1,:)
+      END DO
+    END IF
+    RTempImage=RTempImage+RShiftImage*RGauss1D(ind+IKernelRadius+1)
+  END DO
+  
+  !make the 1D blurred image the input for the next direction
+  RImageToBlur=RTempImage;
+  RTempImage=RImageToBlur*0_RKIND;!reset the temp image
+
+  !apply the kernel in direction 2  
+  DO ind = -IKernelRadius,IKernelRadius
+    IF (ind.LT.0) THEN
+      RShiftImage(:,1:2*IPixelCount+ind)=RImageToBlur(:,1-ind:2*IPixelCount)
+      DO jnd = 1,1-ind!edge fill on bottom
+        RShiftImage(:,2*IPixelCount-jnd+1)=RImageToBlur(:,2*IPixelCount)
+      END DO
+    ELSE
+      RShiftImage(:,1+ind:2*IPixelCount)=RImageToBlur(:,1:2*IPixelCount-ind)
+      DO jnd = 1,1+ind!edge fill on top
+        RShiftImage(:,jnd)=RImageToBlur(:,1)
+      END DO
+    END IF
+    RTempImage=RTempImage+RShiftImage*RGauss1D(ind+IKernelRadius+1)
+  END DO
+  DEALLOCATE(RGauss1D,STAT=IErr)
+
+  !set intensity range of outpt image to match that of the input image
+  RTempImage=RTempImage-MINVAL(RTempImage)
+  RTempImage=RTempImage*(Rmax-Rmin)/MAXVAL(RTempImage)+Rmin
+  !return the blurred image
+  RImageToBlur=RTempImage;
+  
+END SUBROUTINE BlurG
 
 !%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 

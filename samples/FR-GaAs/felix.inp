@@ -19,8 +19,8 @@ IXDirectionFLAG           = 1
 IPixelCount               = 35
 
 # beam selection criteria
-IMinReflectionPool        = 1100
-IMinStrongBeams           = 200
+IMinReflectionPool        = 110
+IMinStrongBeams           = 10
 IMinWeakBeams             = 0
 RBSBMax                   = 0.1
 RBSPMax                   = 0.1
@@ -52,11 +52,11 @@ IRefineModeFLAG          = A
 IWeightingFLAG           = 0
 IContinueFLAG            = 0
 ICorrelationFLAG         = 2
-IImageProcessingFLAG     = 0
+IImageProcessingFLAG     = 4
 
 # Ug Iteration
 
-INoofUgs                  = 1
+INoofUgs                  = 3
 
 # Structural Refinement
 
@@ -69,5 +69,5 @@ IPrint                    = 10
 # Simplex Initialisation
 
 RSimplexLengthScale       = 5.0 
-RExitCriteria             = 0.0001
+RExitCriteria             = 0.007
 

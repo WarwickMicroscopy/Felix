@@ -132,7 +132,7 @@ END SUBROUTINE OpenData
 ! OpenData
 ! --------------------------------------------------------------------
 SUBROUTINE OpenImageForReadIn(IErr,filename)
-
+!this is redundant
   USE MyNumbers
 
   USE IConst; USE RConst
@@ -166,8 +166,9 @@ SUBROUTINE OpenImageForReadIn(IErr,filename)
   
 END SUBROUTINE OpenImageForReadIn
 
+!%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 SUBROUTINE ReadImageForRefinement(IErr)
-
+!this is redundant
   USE MyNumbers
 
   USE IConst; USE RConst
@@ -186,12 +187,13 @@ SUBROUTINE ReadImageForRefinement(IErr)
   END IF
 
   DO ind=1,2*IPixelCount
-     READ(IChInImage,rec=ind) RImageIn(ind,:)
+     READ(IChInImage,rec=ind,ERR=10) RImageIn(ind,:)
   END DO
-  IF( IErr.NE.0 ) THEN
-     PRINT*,"ReadImageForRefinement (", my_rank, ") error in READ()",IErr
-     RETURN
-  ENDIF
+  RETURN
+
+10 IErr=1
+  PRINT*,"ReadImageForRefinement (", my_rank, ") error in READ()",IErr
+  RETURN
   
 END SUBROUTINE ReadImageForRefinement
 

@@ -37,7 +37,7 @@
 !%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 SUBROUTINE WriteIterationOutput(IIterationCount,IThicknessIndex,IExitFlag,IErr)
-
+!This code needs to be taken up a subroutine level and combined with CalculateFigureofMeritandDetermineThickness to avoid repeated calculation of the image to output and BlurG
   USE MyNumbers
   
   USE CConst; USE IConst; USE RConst
@@ -51,8 +51,10 @@ SUBROUTINE WriteIterationOutput(IIterationCount,IThicknessIndex,IExitFlag,IErr)
 
   IMPLICIT NONE
 
-  INTEGER(IKIND) :: IErr,IIterationCount,IThickness
+  INTEGER(IKIND) :: IErr,IIterationCount,IThickness,ind,jnd,gnd,hnd
   INTEGER(IKIND),INTENT(IN) :: IThicknessIndex,IExitFLAG
+  REAL(RKIND),DIMENSION(2*IPixelCount,2*IPixelCount) :: RImageToWrite
+  REAL(RKIND) :: Rradius
   CHARACTER*200 :: path,SPrintString
   
   IF(IExitFLAG.EQ.1.OR.(IIterationCount.GE.(IPreviousPrintedIteration+IPrint))) THEN
@@ -80,11 +82,41 @@ SUBROUTINE WriteIterationOutput(IIterationCount,IThicknessIndex,IExitFlag,IErr)
      
      IPreviousPrintedIteration = IIterationCount
 
-     CALL WriteIterationImages(path,IThicknessIndex,IErr)
+!    Was WriteIterationImages
+  DO ind = 1,INoOfLacbedPatterns
+     CALL OpenReflectionImage(IChOutWIImage,path,IErr,ind,2*IPixelCount,2_IKIND)
      IF( IErr.NE.0 ) THEN
-        PRINT*,"WriteIterationOutput(",my_rank,")error in WriteIterationImages"
+        PRINT*,"WriteIterationImages(",my_rank,") error in OpenReflectionImage()"
         RETURN
-     END IF
+     ENDIF
+	 !convert vector RSimulatedPatterns into 2D RImageToWrite (again, was done once in CalculateFigureofMeritandDetermineThickness
+     RImageToWrite = ZERO
+     DO jnd = 1,IPixelTotal
+        gnd = IPixelLocations(jnd,1)
+        hnd = IPixelLocations(jnd,2)
+        RImageToWrite(gnd,hnd) = RSimulatedPatterns(ind,IThicknessIndex,jnd)
+     END DO
+	 
+	 !Apply blur again, temp fix until all subroutines combined into one
+	 IF (IImageProcessingFLAG.EQ.4) THEN
+       Rradius=0.95_RKIND!!!*+*+ will need to be added as a line in felix.inp +*+*!!!
+       CALL BlurG(RImageToWrite,Rradius,IErr)
+	 END IF
+
+     CALL WriteReflectionImage(IChOutWIImage,&
+          RImageToWrite,IErr,2*IPixelCount,2*IPixelCount,2_IKIND)       
+     IF( IErr.NE.0 ) THEN
+        PRINT*,"WriteIterationImages(", my_rank, ") error in WriteReflectionImage()"
+        RETURN
+     ENDIF
+     
+     CLOSE(IChOutWIImage,IOSTAT=IErr)       
+     IF( IErr.NE.0 ) THEN
+        PRINT*,"WriteIterationImages(", my_rank, ") error Closing Reflection Image()"
+        RETURN
+     ENDIF
+     
+  END DO
 
      CALL WriteIterationStructure(path,IErr) 
      IF( IErr.NE.0 ) THEN
@@ -110,7 +142,7 @@ END SUBROUTINE WriteIterationOutput
 !!$  %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 SUBROUTINE WriteIterationImages(path,IThicknessIndex,IErr)
-
+!now redundant
   USE MyNumbers
   
   USE CConst; USE IConst; USE RConst
@@ -125,7 +157,7 @@ SUBROUTINE WriteIterationImages(path,IThicknessIndex,IErr)
   IMPLICIT NONE
 
   INTEGER(IKIND) :: IErr,ind,jnd,hnd,gnd,IThicknessIndex
-  REAL(RKIND),DIMENSION(2*IPixelCount,2*IPixelCount) :: RImage
+  REAL(RKIND),DIMENSION(2*IPixelCount,2*IPixelCount) :: RImageToWrite
   CHARACTER*200,INTENT(IN) :: path
 
   DO ind = 1,INoOfLacbedPatterns
@@ -135,15 +167,15 @@ SUBROUTINE WriteIterationImages(path,IThicknessIndex,IErr)
         RETURN
      ENDIF
 
-     RImage = ZERO
+     RImageToWrite = ZERO
      DO jnd = 1,IPixelTotal
         gnd = IPixelLocations(jnd,1)
         hnd = IPixelLocations(jnd,2)
-        RImage(gnd,hnd) = RSimulatedPatterns(ind,IThicknessIndex,jnd)
+        RImageToWrite(gnd,hnd) = RSimulatedPatterns(ind,IThicknessIndex,jnd)
      END DO
 
      CALL WriteReflectionImage(IChOutWIImage,&
-          RImage,IErr,2*IPixelCount,2*IPixelCount,2_IKIND)       
+          RImageToWrite,IErr,2*IPixelCount,2*IPixelCount,2_IKIND)       
      IF( IErr.NE.0 ) THEN
         PRINT*,"WriteIterationImages(", my_rank, ") error in WriteReflectionImage()"
         RETURN
@@ -290,7 +322,7 @@ SUBROUTINE WriteOutVariables(IIterationCount,IErr)
      IF(IRefineModeSelectionArray(jnd).EQ.0) THEN
         CYCLE !The refinement variable type is not being refined, skip
      END IF
-     IF(jnd.EQ.1) THEN
+     IF(jnd.EQ.1) THEN!It's an atom coordinate refinement
         IStart = 1
      ELSE
         IStart = SUM(IOutputVariables(1:(jnd-1)))+1
@@ -299,12 +331,13 @@ SUBROUTINE WriteOutVariables(IIterationCount,IErr)
 
      SELECT CASE(jnd)
      CASE(1)
+!        DO ind = 1+IUgOffset,INoofUgs+IUgOffset
         DO ind = 1,INoofUgs
            IStart = (ind*2)-1
            IEnd = ind*2
-           RDataOut(IStart:IEnd) = [REAL(CUgToRefine(ind)), REAL(AIMAG(CUgToRefine(ind)),RKIND)]
+           RDataOut(IStart:IEnd) = [REAL(CUgToRefine(ind+IUgOffset)), REAL(AIMAG(CUgToRefine(ind+IUgOffset)),RKIND)]
         END DO
-		RDataOut(IEnd+1) = RAbsorptionPercentage!RIndependentVariable(2*INoofUgs+1)!RB last variable is absorption
+		RDataOut(IEnd+1) = RAbsorptionPercentage!RB last variable is absorption
      CASE(2)
         RDataOut(IStart:IEnd) = RESHAPE(TRANSPOSE(RAtomSiteFracCoordVec),SHAPE(RDataOut(IStart:IEnd)))
      CASE(3)
@@ -333,7 +366,7 @@ SUBROUTINE WriteOutVariables(IIterationCount,IErr)
 
   OPEN(UNIT=IChOutSimplex,file='IterationLog.txt',form='formatted',status='unknown',position='append')
 
-  WRITE(UNIT=IChOutSimplex,FMT=SFormat) IIterationCount, RCrossCorrelation,RDataOut
+  WRITE(UNIT=IChOutSimplex,FMT=SFormat) IIterationCount,RCrossCorrelation,RDataOut
 
   CLOSE(IChOutSimplex)
 

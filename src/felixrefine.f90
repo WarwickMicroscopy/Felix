@@ -55,20 +55,22 @@ PROGRAM Felixrefine
 
   INTEGER(IKIND) :: IHours,IMinutes,ISeconds,IErr,IMilliSeconds,IIterationFLAG,&
        ind,jnd,knd,ICalls,IIterationCount,ICutOff,IHOLZgPoolMag,IBSMaxLocGVecAmp,&
-	   ILaueLevel,INumTotalReflections,ITotalLaueZoneLevel,INhkl,&
+	   ILaueLevel,INumTotalReflections,ITotalLaueZoneLevel,INhkl,IExitFLAG,&
 	   INumInitReflections,IZerothLaueZoneLevel,INumFinalReflections
-  REAL(RKIND) :: StartTime, CurrentTime, Duration, TotalDurationEstimate,&
-       RFigureOfMerit,SimplexFunction,RHOLZAcceptanceAngle,RLaueZoneGz
-  INTEGER(IKIND) :: IStartTime, ICurrentTime ,IRate
+  INTEGER(IKIND) :: IStartTime,ICurrentTime,IRate
   INTEGER(IKIND), DIMENSION(:),ALLOCATABLE :: IOriginGVecIdentifier
+  REAL(RKIND) :: StartTime, CurrentTime, Duration, TotalDurationEstimate,&
+       RFigureOfMerit,RHOLZAcceptanceAngle,RLaueZoneGz
   REAL(RKIND), DIMENSION(:,:), ALLOCATABLE :: RSimplexVariable
   REAL(RKIND),DIMENSION(:),ALLOCATABLE :: RSimplexFoM,RIndependentVariable
   REAL(RKIND), DIMENSION(:,:), ALLOCATABLE :: RgDummyVecMat,RgPoolMagLaue
   REAL(RKIND) :: RBCASTREAL,RStandardDeviation,RMean,RGzUnitVec,RMinLaueZoneValue,&
        RMaxLaueZoneValue,RMaxAcceptanceGVecMag,RLaueZoneElectronWaveVectorMag
+  LOGICAL :: LInitialSimulationFLAG = .TRUE.
   CHARACTER*40 :: my_rank_string
   CHARACTER*20 :: Sind
   CHARACTER*200 :: SPrintString
+
   !-------------------------------------------------------------------
   ! constants
   CALL Init_Numbers
@@ -103,10 +105,10 @@ PROGRAM Felixrefine
   ! startup
   IF((IWriteFLAG.GE.0.AND.my_rank.EQ.0).OR.IWriteFLAG.GE.10) THEN
      PRINT*,"--------------------------------------------------------------"
-     PRINT*,"Felixrefine: ", RStr
-     PRINT*,"          ", DStr
-     PRINT*,"          ", AStr
-     PRINT*,"          on rank= ", my_rank, " of ", p, " in total."
+     PRINT*,"felixrefine: ", RStr
+     PRINT*,"             ", DStr
+     PRINT*,"             ", AStr
+     PRINT*,"    on rank= ", my_rank, " of ", p, " in total."
      PRINT*,"--------------------------------------------------------------"
   END IF
   ISoftwareMode =2 ! felixrefinemode
@@ -306,8 +308,8 @@ RFullIsotropicDebyeWallerFactor,IFullAtomicNumber,IFullAnisotropicDWFTensor)
   !some other basic numbers
   ALLOCATE(RgVecVec(INhkl),STAT=IErr)
   IF( IErr.NE.0 ) THEN
-     PRINT*,"felixrefine(",my_rank,")error allocating RgVecVec"
-     RETURN
+     PRINT*,"felixrefine(",my_rank,") error allocating RgVecVec"
+     GOTO 9999
   END IF
   CALL DiffractionPatternCalculation(IErr)
     IF( IErr.NE.0 ) THEN
@@ -347,7 +349,7 @@ RFullIsotropicDebyeWallerFactor,IFullAtomicNumber,IFullAnisotropicDWFTensor)
      END IF
   ENDDO
 
-!zz temp deallocation to get it to work
+!deallocation
   DEALLOCATE(RgPoolMagLaue)!
   IF (RAcceptanceAngle.NE.ZERO.AND.IZOLZFLAG.EQ.0) THEN
     DEALLOCATE(IOriginGVecIdentifier)
@@ -355,30 +357,17 @@ RFullIsotropicDebyeWallerFactor,IFullAtomicNumber,IFullAnisotropicDWFTensor)
   END IF
 
   !Calculate Ug matrix--------------------------------------------------------
+  ALLOCATE(CUgMatNoAbs(nReflections,nReflections),STAT=IErr)  !RB Matrix without absorption
+  ALLOCATE(CUgMatPrime(nReflections,nReflections),STAT=IErr)  !RB Matrix of just absorption  
   ALLOCATE(CUgMat(nReflections,nReflections),STAT=IErr)  !RB Matrix including absorption
-  IF( IErr.NE.0 ) THEN
-     PRINT*,"felixrefine(",my_rank,")error allocating CUgMat"
-     RETURN
-  END IF
-  !RB Matrix without absorption
-  ALLOCATE(CUgMatNoAbs(nReflections,nReflections),STAT=IErr)
-  IF( IErr.NE.0 ) THEN
-     PRINT*,"felixrefine(",my_rank,")error allocating CUgMatNoAbs"
-     RETURN
-  END IF
-  !RB Absorption  
-  ALLOCATE(CUgMatPrime(nReflections,nReflections),STAT=IErr)
-  IF( IErr.NE.0 ) THEN
-     PRINT*,"felixrefine(",my_rank,")error allocating CUgMatPrime"
-     RETURN
-  END IF
-!RB Matrix of sums of indices - for symmetry equivalence  in the Ug matrix, only for Ug refinement
+
+  !RB Matrix of sums of indices - for symmetry equivalence  in the Ug matrix, only for Ug refinement
   IF(IRefineModeSelectionArray(1).EQ.1) THEN
     ALLOCATE(RgSumMat(nReflections,nReflections),STAT=IErr)  
-    IF( IErr.NE.0 ) THEN
-     PRINT*,"StructureFactorSetup(",my_rank,")error allocating RgSumMat"
-     RETURN
-    END IF  
+  END IF
+  IF( IErr.NE.0 ) THEN
+     PRINT*,"felixrefine(",my_rank,") error allocating CUgMat or its components"
+     GOTO 9999
   END IF
   
   CALL StructureFactorSetup(IErr)
@@ -387,36 +376,34 @@ RFullIsotropicDebyeWallerFactor,IFullAtomicNumber,IFullAnisotropicDWFTensor)
      GOTO 9999
   END IF
 
-!zz temp deallocation to get it to work
-!DEALLOCATE(IAnisoDWFT),RDWF,IAtoms,ROcc
-
-  IF(IAbsorbFLAG.NE.0) THEN
-     CALL StructureFactorsWithAbsorption(IErr)
-     IF( IErr.NE.0 ) THEN
-        PRINT*,"felixrefine(",my_rank,")error in StructureFactorsWithAbsorption"
-        GOTO 9999
-     END IF
-  END IF
-
   IF(IRefineModeSelectionArray(1).EQ.1) THEN !It's a Ug refinement
     DEALLOCATE(RAtomCoordinate,STAT=IErr)!Don't need this any more
     !Identify unique Ug's and count the number of independent variables INoOfVariables
 	!using the Hermitian matrix CUgMatNoAbs
     !We count over INoofUgs, specified in felix.inp
     !The count excludes Ug components that are zero and U(000), the inner potential
-    CALL SetupUgsToRefine(IErr)
-      IF( IErr.NE.0 ) THEN
-        PRINT*,"felixrefine(",my_rank,")error in SetupUgsToRefine"
-        GOTO 9999
-      END IF
+	IUgOffset=1!choose how many Ug's to skip in the refinement, 1 is the inner potential...
+
+    ALLOCATE(ISymmetryRelations(nReflections,nReflections),STAT=IErr)!Matrix with numbers marking equivalent Ug's
+    IF( IErr.NE.0 ) THEN
+      PRINT*,"felixrefine(",my_rank,")error allocating ISymmetryRelations"
+      GOTO 9999
+    ENDIF
+    CALL SetupUgsToRefine(IErr)!NB IEquivalentUgKey and CUgToRefine allocated in here
+    IF( IErr.NE.0 ) THEN
+      PRINT*,"felixrefine(",my_rank,")error in SetupUgsToRefine"
+      GOTO 9999
+    END IF
+	
     IF(my_rank.EQ.0) THEN
       IF ( INoOfVariables.EQ.1 ) THEN 
         PRINT*,"Only one independent variable"
 	  ELSE
-        WRITE(SPrintString,FMT='(I3,1X,A21))') INoOfVariables,"independent variables"
+        WRITE(SPrintString,FMT='(I3,1X,A21)') INoOfVariables,"independent variables"
         PRINT*,TRIM(ADJUSTL(SPrintString))
       END IF
     END IF
+	
     ALLOCATE(RIndependentVariable(INoOfVariables),STAT=IErr)  
     IF( IErr.NE.0 ) THEN
       PRINT*,"felixrefine(",my_rank,")error allocating RIndependentVariable"
@@ -424,24 +411,24 @@ RFullIsotropicDebyeWallerFactor,IFullAtomicNumber,IFullAnisotropicDWFTensor)
     END IF
     !Fill up the IndependentVariable list with CUgMatNoAbs components
     jnd=1
-    DO ind = 2,INoofUgs+1!start from 2 since the first one is the inner potential
+    DO ind = 1+IUgOffset,INoofUgs+IUgOffset !=== temp changes so real part only***
       IF ( ABS(REAL(CUgToRefine(ind),RKIND)).GE.RTolerance ) THEN
         RIndependentVariable(jnd) = REAL(CUgToRefine(ind),RKIND)
-!        WRITE(SPrintString,FMT='(3(I3,A1),F5.2)') ind,",",jnd,":",IEquivalentUgKey(ind),":",RIndependentVariable(jnd)
-!        PRINT*,TRIM(ADJUSTL(SPrintString))
         jnd=jnd+1
 	  END IF
-      IF ( ABS(AIMAG(CUgToRefine(ind))).GE.RTolerance ) THEN
-        RIndependentVariable(jnd) = AIMAG(CUgToRefine(ind))
-!        WRITE(SPrintString,FMT='(3(I3,A1),F5.2)') ind,",",jnd,":",IEquivalentUgKey(ind),":",RIndependentVariable(jnd)
-!        PRINT*,TRIM(ADJUSTL(SPrintString))
-        jnd=jnd+1
-      END IF
+      IF ( ABS(AIMAG(CUgToRefine(ind))).GE.RTolerance ) THEN!===
+        RIndependentVariable(jnd) = AIMAG(CUgToRefine(ind))!===
+        jnd=jnd+1!===
+      END IF!===
     END DO
-    RIndependentVariable(jnd) = RAbsorptionPercentage!RB absorption always included in structure factor refinement as last variable
-    DEALLOCATE(CUgMatNoAbs,CUgMatPrime,STAT=IErr)!Don't need these any more
+    RIndependentVariable(jnd) = RAbsorptionPercentage![[[!===RB absorption always included in structure factor refinement as last variable
+	
+	IF( IErr.NE.0 ) THEN
+      PRINT*,"felixrefine(",my_rank,")error in deallocation CUgMatNoAbs,CUgMatPrime"
+      GOTO 9999
+    END IF
   END IF
-  
+ 
   !--------------------------------------------------------------------
   ! Setup Simplex Variables
   !--------------------------------------------------------------------!RB restore later for other types of refinement
@@ -476,41 +463,42 @@ RFullIsotropicDebyeWallerFactor,IFullAtomicNumber,IFullAnisotropicDWFTensor)
 
 
   !--------------------------------------------------------------------
-  !  Assign IDs - not sure if this is still used?
-  ALLOCATE(IIterativeVariableUniqueIDs(INoOfVariables,5),STAT=IErr)
-  IF( IErr.NE.0 ) THEN
-     PRINT*,"felixrefine(",my_rank,")error allocating IIterativeVariableUniqueIDs"
-     GOTO 9999
-  ENDIF
-  IIterativeVariableUniqueIDs = 0
-  ICalls = 0
-  DO ind = 1,IRefinementVariableTypes !Loop over all possible iterative variables
-     IF(IRefineModeSelectionArray(ind).EQ.1) THEN
-        DO jnd = 1,INoofElementsForEachRefinementType(ind)
-           ICalls = ICalls + 1
-           IIterativeVariableUniqueIDs(ICalls,1) = ICalls
-           CALL AssignArrayLocationsToIterationVariables(ind,jnd,IIterativeVariableUniqueIDs,IErr)
-        END DO
-     END IF
-  END DO 
+  !  Assign IDs - is this needed for a Ug refinement?
+!  ALLOCATE(IIterativeVariableUniqueIDs(INoOfVariables,5),STAT=IErr)
+!  IF( IErr.NE.0 ) THEN
+!     PRINT*,"felixrefine(",my_rank,")error allocating IIterativeVariableUniqueIDs"
+!     GOTO 9999
+!  ENDIF
+!  IIterativeVariableUniqueIDs = 0
+!  ICalls = 0
+!  DO ind = 1,IRefinementVariableTypes !Loop over all possible iterative variables
+!     IF(IRefineModeSelectionArray(ind).EQ.1) THEN
+!        DO jnd = 1,INoofElementsForEachRefinementType(ind)
+!           ICalls = ICalls + 1
+!           IIterativeVariableUniqueIDs(ICalls,1) = ICalls
+!           CALL AssignArrayLocationsToIterationVariables(ind,jnd,IIterativeVariableUniqueIDs,IErr)
+!        END DO
+!     END IF
+!  END DO 
 
   !--------------------------------------------------------------------
   ! Setup Images for output
   ALLOCATE(RhklPositions(nReflections,2),STAT=IErr)
   IF( IErr.NE.0 ) THEN
      PRINT*,"felixrefine(",my_rank,") error allocating RhklPositions"
-     RETURN
+     GOTO 9999
   END IF
-   CALL ImageSetup( IErr )
+  CALL ImageSetup( IErr )
   IF( IErr.NE.0 ) THEN
      PRINT*,"felixrefine(",my_rank,") error in ImageSetup"
-     RETURN
+     GOTO 9999
   END IF 
   !All the individual calculations go into RSimulatedPatterns later with MPI_GATHERV
+  !(Note that RSimulatedPatterns is a vector with respect to pixels, not a 2D image)
   ALLOCATE(RSimulatedPatterns(INoOfLacbedPatterns,IThicknessCount,IPixelTotal),STAT=IErr)
   IF( IErr.NE.0 ) THEN
-     PRINT*,"felixrefine(",my_rank,")error allocating Root Reflections"
-     RETURN
+     PRINT*,"felixrefine(",my_rank,") error allocating Root Reflections"
+     GOTO 9999
   END IF
   RSimulatedPatterns = ZERO
   !Allocations for the pixels to be calculated by this core  
@@ -520,13 +508,13 @@ RFullIsotropicDebyeWallerFactor,IFullAtomicNumber,IFullAnisotropicDWFTensor)
          (ILocalPixelCountMax-ILocalPixelCountMin)+1),STAT=IErr)
   IF( IErr.NE.0 ) THEN
     PRINT*,"felixrefine(",my_rank,")error allocating RIndividualReflections"
-    RETURN
+    GOTO 9999
   END IF
   !position of pixels calculated by this core
   ALLOCATE(IDisplacements(p),ICount(p),STAT=IErr)
   IF( IErr.NE.0 ) THEN
      PRINT*,"felixrefine(",my_rank,")error allocating IDisplacements and/or ICount"
-     RETURN
+     GOTO 9999
   END IF
   DO ind = 1,p
      IDisplacements(ind) = (IPixelTotal*(ind-1)/p)*INoOfLacbedPatterns*IThicknessCount
@@ -534,61 +522,94 @@ RFullIsotropicDebyeWallerFactor,IFullAtomicNumber,IFullAnisotropicDWFTensor)
   END DO
 
   !--------------------------------------------------------------------
+  ! Weighting parameter
+  ALLOCATE(RWeightingCoefficients(INoOfLacbedPatterns),STAT=IErr) 
+  SELECT CASE (IWeightingFLAG)
+  CASE(0)!uniform weighting
+     RWeightingCoefficients = ONE
+  CASE(1)!smaller g's more important
+     DO ind = 1,INoOfLacbedPatterns!NB untested, does RgPoolMag(ind)match output reflection (ind)???
+        RWeightingCoefficients(ind) = RgPoolMag(ind)/MAXVAL(RgPoolMag)
+     END DO
+  CASE(2)!larger g's more important
+     DO ind = 1,INoOfLacbedPatterns
+        RWeightingCoefficients(ind) = MAXVAL(RgPoolMag)/RgPoolMag(ind)
+     END DO
+  END SELECT
+
+  !--------------------------------------------------------------------
   ! Allocate memory for deviation parameter and bloch calc in main loop
   ALLOCATE(RDevPara(nReflections),STAT=IErr)
-  IF( IErr.NE.0 ) THEN
-     PRINT*,"felixrefine(",my_rank,")error allocating RDevPara"
-     RETURN
-  END IF
   ALLOCATE(IStrongBeamList(nReflections),STAT=IErr)
-  IF( IErr.NE.0 ) THEN
-     PRINT*,"felixrefine(",my_rank,")error allocating IStrongBeamList"
-     RETURN
-  END IF
   ALLOCATE(IWeakBeamList(nReflections),STAT=IErr)
-  IF( IErr.NE.0 ) THEN
-     PRINT*,"felixrefine(",my_rank,")error allocating IWeakBeamList"
-     RETURN
-  END IF
   ALLOCATE(CFullWaveFunctions(nReflections),STAT=IErr)
-  IF( IErr.NE.0 ) THEN
-     PRINT*,"felixrefine(",my_rank,")error allocating CFullWaveFunctions"
-     RETURN
-  END IF
   ALLOCATE(RFullWaveIntensity(nReflections),STAT=IErr)
   IF( IErr.NE.0 ) THEN
-     PRINT*,"felixrefine(",my_rank,")error allocating RFullWaveIntensity"
-     RETURN
-  END IF  
-  
+     PRINT*,"felixrefine(",my_rank,") error in allocations for Bloch calculation"
+     GOTO 9999
+  END IF
+  !--------------------------------------------------------------------
+  !baseline simulation
+  IIterationCount = 0
+  CALL FelixFunction(LInitialSimulationFLAG,IErr)
+  IF( IErr.NE.0 ) THEN
+     PRINT*,"felixrefine(",my_rank,")error in FelixFunction"
+     GOTO 9999
+  ENDIF
+  !Baseline simulation output, core 0 only
+  IExitFLAG = 0; !Do not exit
+  IPreviousPrintedIteration = -IPrint!RB ensuring baseline simulation is printed
+  IF(my_rank.EQ.0) THEN   
+    CALL CreateImagesAndWriteOutput(IIterationCount,IExitFLAG,IErr) 
+    IF( IErr.NE.0 ) THEN
+      PRINT*,"felixrefine(",my_rank,")error in CreateImagesAndWriteOutput"
+      GOTO 9999
+    ENDIF
+  END IF
+
   !--------------------------------------------------------------------
   ! Initialise Simplex
   ALLOCATE(RSimplexVariable(INoOfVariables+1,INoOfVariables), STAT=IErr)  
-  IF( IErr.NE.0 ) THEN
-     PRINT*,"felixrefine(",my_rank,")error allocating RSimplexVariable"
-     GOTO 9999
-  END IF
   ALLOCATE(RSimplexFoM(INoOfVariables+1),STAT=IErr)  
   IF( IErr.NE.0 ) THEN
      PRINT*,"felixrefine(",my_rank,")error allocating RSimplexFoM"
      GOTO 9999
   END IF
   
-  IIterationCount = 0
-
-  CALL SimplexInitialisation(RSimplexVariable,RSimplexFoM,RIndependentVariable,IIterationCount,RStandardDeviation,RMean,IErr)
-  IF( IErr.NE.0 ) THEN
-     PRINT*,"felixrefine(",my_rank,")error in SimplexInitialisation"
-     GOTO 9999
+  IF(my_rank.EQ.0) THEN
+    CALL CreateRandomisedSimplex(RSimplexVariable,RIndependentVariable,IErr)
   END IF
-
-  IIterationCount = 1  
- 
+  
+  !=====================================send RSimplexVariable out to all cores
+  CALL MPI_BCAST(RSimplexVariable,(INoOfVariables+1)*(INoOfVariables),MPI_DOUBLE_PRECISION,0,MPI_COMM_WORLD,IErr)
+  !=====================================
+  
   !--------------------------------------------------------------------
-  ! Apply Simplex Method
+  ! Perform initial simplex simulations
+  DO ind = 1,(INoOfVariables+1)
+    IF((IWriteFLAG.GE.0.AND.my_rank.EQ.0).OR.IWriteFLAG.GE.10) THEN
+       PRINT*,"--------------------------------"
+       WRITE(SPrintString,FMT='(A8,I2,A4,I3)') "Simplex ",ind," of ",INoOfVariables+1
+       PRINT*,TRIM(ADJUSTL(SPrintString))
+       PRINT*,"--------------------------------"
+    END IF
+    CALL SimulateAndFit(RSimplexFoM(ind),RSimplexVariable(ind,:),1,0,IErr)
+    IF( IErr.NE.0 ) THEN
+       PRINT*,"SimplexInitialisation(",my_rank,") error in SimulateAndFit"
+       GOTO 9999
+    ENDIF
+
+    IF((IWriteFLAG.GE.0.AND.my_rank.EQ.0).OR.IWriteFLAG.GE.10) THEN
+      WRITE(SPrintString,FMT='(A16,F7.5)') "Figure of merit ",RSimplexFoM(ind)
+      PRINT*,TRIM(ADJUSTL(SPrintString))
+    END IF
+  END DO
+
+  !--------------------------------------------------------------------
+  ! Apply Simplex Method and iterate
+  IIterationCount = 1  
   CALL NDimensionalDownhillSimplex(RSimplexVariable,RSimplexFoM,&
-       INoOfVariables+1,&
-       INoOfVariables,INoOfVariables,&
+       INoOfVariables+1,INoOfVariables,INoOfVariables,&
        RExitCriteria,IIterationCount,RStandardDeviation,RMean,IErr)
   IF( IErr.NE.0 ) THEN
      PRINT*,"felixrefine(",my_rank,")error in NDimensionalDownhillSimplex"
@@ -598,26 +619,31 @@ RFullIsotropicDebyeWallerFactor,IFullAtomicNumber,IFullAnisotropicDWFTensor)
   !--------------------------------------------------------------------
   ! Deallocate Memory
   !--------------------------------------------------------------------
-  DEALLOCATE(IIterativeVariableUniqueIDs,STAT=IErr)
-  IF( IErr.NE.0 ) THEN
-     PRINT*,"felixrefine(",my_rank,") error deallocating IIterativeVariableUniqueIDs"
-     GOTO 9999
-  ENDIF
+  DEALLOCATE(CUgMatNoAbs,STAT=IErr)
+  DEALLOCATE(CUgMatPrime,STAT=IErr)
+  DEALLOCATE(RWeightingCoefficients,STAT=IErr)
   DEALLOCATE(RImageExpi,STAT=IErr)  
-  IF( IErr.NE.0 ) THEN
-     PRINT*,"felixrefine(",my_rank,") error deallocating RImageExpi"
-     GOTO 9999
-  ENDIF
-
-  DEALLOCATE(ISymmetryRelations,IEquivalentUgKey,CUgToRefine)
-  DEALLOCATE(RIndividualReflections,IDisplacements,ICount)
-  DEALLOCATE(Rhkl,RgPoolMag,RgPoolT,CUgMat,RSimulatedPatterns)
+  DEALLOCATE(ISymmetryRelations,STAT=IErr)
+  DEALLOCATE(IEquivalentUgKey,STAT=IErr)
+  DEALLOCATE(CUgToRefine,STAT=IErr)
+  DEALLOCATE(RIndividualReflections,STAT=IErr)
+  DEALLOCATE(IDisplacements,STAT=IErr)
+  DEALLOCATE(ICount,STAT=IErr)
+  DEALLOCATE(Rhkl,STAT=IErr)
+  DEALLOCATE(RgPoolMag,STAT=IErr)
+  DEALLOCATE(RgPoolT,STAT=IErr)
+  DEALLOCATE(CUgMat,STAT=IErr)
+  DEALLOCATE(RSimulatedPatterns,STAT=IErr)
   IF (IRefineModeSelectionArray(1).EQ.1) THEN
-    DEALLOCATE(RgSumMat)
+    DEALLOCATE(RgSumMat,STAT=IErr)
   ELSE
-	DEALLOCATE(RAtomCoordinate,CUgMatNoAbs,CUgMatPrime)
+	DEALLOCATE(RAtomCoordinate,STAT=IErr)
   END IF  
-	
+  IF( IErr.NE.0 ) THEN
+     PRINT*,"felixrefine(",my_rank,")error in final deallocations"
+     GOTO 9999
+  END IF
+  
   !--------------------------------------------------------------------
   ! finish off
   WRITE(my_rank_string,*) my_rank
@@ -926,49 +952,13 @@ SUBROUTINE RefinementVariableSetup(RIndependentVariable,IErr)
 END SUBROUTINE RefinementVariableSetup
  
 !%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-!now redundant?
-SUBROUTINE StructureFactorRefinementSetup(RIndependentVariable,IIterationCount,IErr)
-  
-  USE MyNumbers
-  
-  USE CConst; USE IConst; USE RConst
-  USE IPara; USE RPara; USE SPara; USE CPara
-  USE BlochPara
-  
-  USE IChannels
-  
-  USE MPI
-  USE MyMPI
-  
-  IMPLICIT NONE
-  
-  INTEGER(IKIND) :: IErr,ind,jnd
-  REAL(RKIND),DIMENSION(INoOfVariables),INTENT(OUT) :: RIndependentVariable
-  INTEGER(IKIND),INTENT(IN) :: IIterationCount
-  CHARACTER*200 :: SPrintString
-
-  IF((IWriteFLAG.GE.5.AND.my_rank.EQ.0).OR.IWriteFLAG.GE.10) THEN
-     PRINT*,"StructureFactorRefinementSetup(",my_rank,")"
-  END IF
-
-  !jnd =0
-  DO ind = 1,INoofUgs !RB ignore the first one as it is the internal potential
-     RIndependentVariable((ind-1)*2+1) = &!yy
-          REAL(CUgToRefine(ind+1),RKIND)!yy ind+1 instead of ind
-     RIndependentVariable((ind-1)*2+2) = &
-          AIMAG(CUgToRefine(ind+1))!yy ind+1 instead of ind
-  END DO
-  RIndependentVariable(2*INoofUgs+1) = RAbsorptionPercentage!RB absorption always included in structure factor refinement as last variable
-
-END SUBROUTINE StructureFactorRefinementSetup
-
-!%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 SUBROUTINE SetupUgsToRefine(IErr)
 !Identify unique Ug's and count the number of independent variables INoOfVariables
 !using the Hermitian matrix CUgMatNoAbs
 !We count over INoofUgs, specified in felix.inp
-!The count excludes Ug components that are zero and U(000), the inner potential
+!The count excludes Ug components that are zero and starts at 1+IUgOffset
+!IUgOffset should be at least 1 to exclude U(000), the inner potential
   
   USE MyNumbers
   
@@ -991,16 +981,9 @@ SUBROUTINE SetupUgsToRefine(IErr)
      PRINT*,"SetupUgsToRefine(",my_rank,")"
   END IF
 
-  !Matrix with numbers marking equivalent Ug's
-  ALLOCATE(ISymmetryRelations(nReflections,nReflections),STAT=IErr)
-  IF( IErr.NE.0 ) THEN
-     PRINT*,"SetupUgsToRefine(",my_rank,")error allocating ISymmetryRelations"
-     RETURN
-  ENDIF
-
 !Count equivalent Ugs
 !Equivalent Ug's are identified by the sum of their abs(indices)plus the sum of abs(Ug)'s with no absorption
-  RgSumMat = RgSumMat+ABS(REAL(CUgMatNoAbs))+ABS(AIMAG(CUgMatNoAbs))
+!  RgSumMat = RgSumMat+ABS(REAL(CUgMatNoAbs))+ABS(AIMAG(CUgMatNoAbs))!do I need to add RgMatMag here as well, to avoid any ambiguities?
   ISymmetryRelations = 0_IKIND 
   Iuid = 0_IKIND 
   DO ind = 1,nReflections
@@ -1022,182 +1005,52 @@ SUBROUTINE SetupUgsToRefine(IErr)
      PRINT*,TRIM(ADJUSTL(SPrintString))
   END IF
   IF(IWriteFLAG.EQ.3.AND.my_rank.EQ.0) THEN
-    DO ind =1,8
-     WRITE(SPrintString,FMT='(8(2X,F5.2,1X,F5.2))') CUgMatNoAbs(ind,1:8)
+    PRINT*,"Ug matrix:"
+    DO ind =1,20
+     WRITE(SPrintString,FMT='(12(2X,F5.2,1X,F5.2))') CUgMatNoAbs(ind,1:12)
+     PRINT*,TRIM(SPrintString)
+    END DO
+    PRINT*,"RgSum matrix:"
+    DO ind =1,20
+     WRITE(SPrintString,FMT='(12(2X,F5.2))') RgSumMat(ind,1:12)
      PRINT*,TRIM(ADJUSTL(SPrintString))
     END DO
-    DO ind =1,8
-     WRITE(SPrintString,FMT='(3(1X,I3),8(1X,I3))') NINT(Rhkl(ind,:)),ISymmetryRelations(ind,1:8)
-     PRINT*,TRIM(ADJUSTL(SPrintString))
+	PRINT*,"hkl: symmetry matrix"
+    DO ind =1,20
+     WRITE(SPrintString,FMT='(3(1X,I3),A1,12(2X,I3))') NINT(Rhkl(ind,:)),":",ISymmetryRelations(ind,1:12)
+     PRINT*,TRIM(SPrintString)
     END DO
   END IF
 
-!Link each number with its Ug, up to the number of unique Ug's Iuid
+!Link each key with its Ug, from 1 to the number of unique Ug's Iuid
   ALLOCATE(IEquivalentUgKey(Iuid),STAT=IErr)
-  IF( IErr.NE.0 ) THEN
-     PRINT*,"SetupUgsToRefine(",my_rank,")error allocating IEquivalentUgKey"
-     RETURN
-  END IF
   ALLOCATE(CUgToRefine(Iuid),STAT=IErr)
   IF( IErr.NE.0 ) THEN
-     PRINT*,"SetupUgsToRefine(",my_rank,")error allocating CUgToRefine"
+     PRINT*,"SetupUgsToRefine(",my_rank,")error allocating IEquivalentUgKey or CUgToRefine"
      RETURN
   END IF
-  
   DO ind = 1,Iuid
      ILoc = MINLOC(ABS(ISymmetryRelations-ind))
      IEquivalentUgKey(ind) = ind
      CUgToRefine(ind) = CUgMatNoAbs(ILoc(1),ILoc(2))
   END DO
-
-   IF(IWriteFLAG.EQ.3.AND.my_rank.EQ.0) THEN
-   PRINT*,"before sorting"
-    DO ind =1,11
-     WRITE(SPrintString,FMT='(I3,A1,F5.2,A1,2(1X,F5.2))')&
-	 IEquivalentUgKey(ind),":",ABS(CUgToRefine(ind)),",",CUgToRefine(ind)
-     PRINT*,TRIM(ADJUSTL(SPrintString))
-    END DO
-  END IF
   
 !Put them in descending order of magnitude  
   CALL ReSortUgs(IEquivalentUgKey,CUgToRefine,Iuid)
 
-   IF(IWriteFLAG.EQ.3.AND.my_rank.EQ.0) THEN
-   PRINT*,"after sorting"
-    DO ind =1,11
-     WRITE(SPrintString,FMT='(I3,A1,F5.2,A1,2(1X,F5.2))')&
-	 IEquivalentUgKey(ind),":",ABS(CUgToRefine(ind)),",",CUgToRefine(ind)
-     PRINT*,TRIM(ADJUSTL(SPrintString))
-    END DO
-  END IF
-
 !Count the number of Independent Variables
- 
   jnd=1
-  DO ind = 2,INoofUgs+1!RB ignore the first one as it is the internal potential
-    IF ( ABS(REAL(CUgToRefine(ind),RKIND)).GE.RTolerance ) THEN
-!      WRITE(SPrintString,FMT='(3(I3,A1),F5.2)') ind,",",jnd,":",IEquivalentUgKey(ind),":",ABS(REAL(CUgToRefine(ind),RKIND))
-!      PRINT*,TRIM(ADJUSTL(SPrintString))
+  DO ind = 1+IUgOffset,INoofUgs+IUgOffset !=== temp comment out !=== for real part only***
+    IF ( ABS(REAL(CUgToRefine(ind),RKIND)).GE.RTolerance ) THEN!===
       jnd=jnd+1
-	END IF
-    IF ( ABS(AIMAG(CUgToRefine(ind))).GE.RTolerance ) THEN
-!      WRITE(SPrintString,FMT='(3(I3,A1),F5.2)') ind,",",jnd,":",IEquivalentUgKey(ind),":",ABS(AIMAG(CUgToRefine(ind)))
-!      PRINT*,TRIM(ADJUSTL(SPrintString))
-      jnd=jnd+1
-	END IF
+	END IF!===
+    IF ( ABS(AIMAG(CUgToRefine(ind))).GE.RTolerance ) THEN!===
+      jnd=jnd+1!===
+	END IF!===
   END DO
-  
-  INoOfVariables = jnd !RB last +1 is for absorption
+  INoOfVariables = jnd![[[-1 !===the last increment is for absorption ![[[ delete the -1 to include absorption***
   
 END SUBROUTINE SetupUgsToRefine
-
-!%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-
-SUBROUTINE SimplexInitialisation(RSimplexVariable,RSimplexFoM,RIndependentVariable,&
-     IIterationCount,RStandardDeviation,RMean,IErr)
-  
-  USE MyNumbers
-  
-  USE CConst; USE IConst; USE RConst
-  USE IPara; USE RPara; USE SPara; USE CPara
-  USE BlochPara
-  
-  USE IChannels
-  
-  USE MPI
-  USE MyMPI
-  
-  IMPLICIT NONE
-
-  INTEGER(IKIND) :: IErr,ind,jnd,IExitFLAG
-  LOGICAL :: LInitialSimulationFLAG = .TRUE.
-  REAL(RKIND),DIMENSION(INoOfVariables+1,INoOfVariables),INTENT(OUT) :: RSimplexVariable
-  REAL(RKIND),DIMENSION(INoOfVariables+1),INTENT(OUT) :: RSimplexFoM
-  REAL(RKIND) :: SimplexFunction,RSimplexDummy
-  REAL(RKIND),DIMENSION(INoOfVariables),INTENT(INOUT) :: RIndependentVariable
-  INTEGER(IKIND),INTENT(INOUT) :: IIterationCount
-  REAL(RKIND),INTENT(OUT) :: RStandardDeviation,RMean
-  REAL(RKIND) :: RStandardError,RStandardTolerance
-  CHARACTER*200 :: SPrintString
-
-  IF(IWriteFLAG.GE.10.AND.my_rank.EQ.0) THEN
-     PRINT*,"SimplexInitialisation(",my_rank,")"
-  END IF
-
-  CALL FelixFunction(LInitialSimulationFLAG,IErr)
-  IF( IErr.NE.0 ) THEN
-     PRINT*,"SimplexInitialisation(",my_rank,")error in FelixFunction"
-     RETURN
-  ENDIF
-
-  CALL InitialiseWeightingCoefficients(IErr)
-  IF( IErr.NE.0 ) THEN
-     PRINT*,"SimplexInitialisation(",my_rank,")error in InitialiseWeightingCoefficients"
-     RETURN
-  ENDIF
-
-   IExitFLAG = 0; ! Do not exit
-   IPreviousPrintedIteration = -IPrint!RB ensuring baseline simulation is printed
-   IF(my_rank.EQ.0) THEN   
-     CALL CreateImagesAndWriteOutput(IIterationCount,IExitFLAG,IErr) 
-     IF( IErr.NE.0 ) THEN
-       PRINT*,"SimplexInitialisation(",my_rank,")error in CreateImagesAndWriteOutput"
-       RETURN
-     ENDIF
-  END IF
-
-!  CALL RefinementVariableSetup(RIndependentVariable,IErr)
-!  IF( IErr.NE.0 ) THEN
-!     PRINT*,"SimplexInitialisation(", my_rank, ") error in RefinementVariableSetup()"
-!     RETURN
-!  ENDIF
- 
-!  IF(IRefineModeSelectionArray(1).EQ.1) THEN
-!     CALL StructureFactorRefinementSetup(RIndependentVariable,IIterationCount,IErr)
-!     IF( IErr.NE.0 ) THEN
-!        PRINT*,"SimplexInitialisation(", my_rank, ") error in StructureFactorRefinementSetup()"
-!        RETURN
-!     ENDIF
-!  ENDIF
-
-!!$ RandomSequence
-  !IF(IContinueFLAG.EQ.0) THEN
-     IF(my_rank.EQ.0) THEN
-        CALL CreateRandomisedSimplex(RSimplexVariable,RIndependentVariable,IErr)
-     END IF
-     CALL MPI_BCAST(RSimplexVariable,(INoOfVariables+1)*(INoOfVariables),MPI_DOUBLE_PRECISION,0,MPI_COMM_WORLD,IErr)
-
-     DO ind = 1,(INoOfVariables+1)
-        IF((IWriteFLAG.GE.0.AND.my_rank.EQ.0).OR.IWriteFLAG.GE.10) THEN
-           PRINT*,"--------------------------------"
-           WRITE(SPrintString,FMT='(A8,I2,A4,I3)') "Simplex ",ind," of ",INoOfVariables+1
-           PRINT*,TRIM(ADJUSTL(SPrintString))
-           PRINT*,"--------------------------------"
-        END IF
-        RSimplexDummy = SimplexFunction(RSimplexVariable(ind,:),1,0,IErr)
-        IF( IErr.NE.0 ) THEN
-           PRINT*,"SimplexInitialisation(",my_rank,") error in SimplexFunction"
-           RETURN
-        ENDIF
-        RStandardTolerance = RStandardError(RStandardDeviation,RMean,RSimplexDummy,IErr)
-        RSimplexFoM(ind) =  RSimplexDummy
-        IF((IWriteFLAG.GE.0.AND.my_rank.EQ.0).OR.IWriteFLAG.GE.10) THEN
-          WRITE(SPrintString,FMT='(A16,F7.5))') "Figure of merit ",RSimplexFoM(ind)
-          PRINT*,TRIM(ADJUSTL(SPrintString))
-        END IF
-     END DO
-
-  !ELSE
-    
-   !  CALL RecoverSavedSimplex(RSimplexVariable,RSimplexFoM,RStandardDeviation,RMean,IIterationCount,IErr)
-   !  IF( IErr.NE.0 ) THEN
-   !     PRINT*,"SimplexInitialisation (", my_rank, ") error in RecoverSavedSimplex()"
-   !     RETURN
-   !  ENDIF
-     
-  !END IF
-     
-END SUBROUTINE SimplexInitialisation
 
 !%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
@@ -1466,53 +1319,6 @@ END SUBROUTINE OutofUnitCellCheck
 
 !!$  %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-SUBROUTINE ApplyNewStructureFactors(IErr)
-
-!!$  %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-!!$  % Subroutine to place iteratively determined Structure factors
-!!$  % to Ug Matrix
-!!$  %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-  
-  USE MyNumbers
-  
-  USE CConst; USE IConst; USE RConst
-  USE IPara; USE RPara; USE SPara; USE CPara
-  USE BlochPara
-
-  USE IChannels
-
-  USE MPI
-  USE MyMPI
-
-  IMPLICIT NONE
-
-  INTEGER(IKIND) :: IErr,ind
-  COMPLEX(CKIND),DIMENSION(nReflections,nReflections) :: CUgMatDummy
-
-!!$  Dummy Matrix to contain new iterative values
-  
-   CUgMatDummy = CZERO
-
-!!$  Populate Ug Matrix with new iterative elements, include proportional absorption here for now !RB not good
-  DO ind = 1,INoofUgs
-     WHERE(ISymmetryRelations.EQ.IEquivalentUgKey(ind))
-        CUgMatDummy = CUgToRefine(ind)+&
-		CUgToRefine(ind)*EXP(CIMAGONE*PI/2)*(RAbsorptionPercentage/100_RKIND)
-     END WHERE
-     WHERE(ISymmetryRelations.EQ.-IEquivalentUgKey(ind))!RB 
-        CUgMatDummy = CONJG(CUgToRefine(ind))+&
-		CONJG(CUgToRefine(ind))*EXP(CIMAGONE*PI/2)*(RAbsorptionPercentage/100_RKIND)
-     END WHERE
-  END DO
-
-  WHERE(ABS(CUgMatDummy).GT.TINY)
-     CUgMat = CUgMatDummy!RB
-  END WHERE
-  
-END SUBROUTINE ApplyNewStructureFactors
-
-!!$  %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-
 SUBROUTINE CreateIdentityMatrix(IIdentityMatrix,ISize,IErr)
 
 !!$  %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -1571,14 +1377,10 @@ SUBROUTINE RecoverSavedSimplex(RSimplexVariable,RSimplexFoM,RStandardDeviation,R
 
   INTEGER(IKIND) :: &
        IErr,ind,IIterationCount
-  REAL(RKIND),DIMENSION(INoOfVariables+1,INoOfVariables) :: &
-       RSimplexVariable
-  REAL(RKIND),DIMENSION(INoOfVariables+1) :: &
-       RSimplexFoM
-  REAL(RKIND) :: &
-       RStandardDeviation,RMean
-  CHARACTER*200 :: &
-       CSizeofData,SFormatString,filename
+  REAL(RKIND),DIMENSION(INoOfVariables+1,INoOfVariables) :: RSimplexVariable
+  REAL(RKIND),DIMENSION(INoOfVariables+1) :: RSimplexFoM
+  REAL(RKIND) :: RStandardDeviation,RMean
+  CHARACTER*200 :: CSizeofData,SFormatString,filename
 
   WRITE(filename,*) "fr-Simplex.txt"
 

@@ -40,7 +40,7 @@ SUBROUTINE GMatrixInitialisation (IErr)
 !!$%   their magnitudes 
 !!$%
 !!$%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-  
+ ! This is now redundant, moved to StructureFactorSetup
   USE MyNumbers
   USE WriteToScreen
   
@@ -83,7 +83,7 @@ SUBROUTINE SymmetryRelatedStructureFactorDetermination (IErr)
 !!$%    (allowing for the hermiticity)
 !!$%
 !!$%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-  !!This is now redundant
+  !!This is now redundant, moved to SetupUgsToRefine
   USE MyNumbers
   USE WriteToScreen
   
@@ -248,8 +248,8 @@ SUBROUTINE StructureFactorInitialisation (IErr)
                 )
         ENDDO
 
-  CUgMatNoAbs(ind,jnd)=((((TWOPI**2)* RRelativisticCorrection) / &!Ug
-             (PI * RVolume)) * CVgij)
+  CUgMatNoAbs(ind,jnd)=((((TWOPI**2)*RRelativisticCorrection) / &!Ug
+             (PI*RVolume))*CVgij)
      ENDDO
   ENDDO
 
@@ -259,7 +259,7 @@ SUBROUTINE StructureFactorInitialisation (IErr)
   !and also doubles the values on the diagonal
   CUgMatNoAbs = CUgMatNoAbs + CONJG(TRANSPOSE(CUgMatNoAbs))!Ug
 
-  DO ind=1,nReflections!Ug now halve the diagonal again
+  DO ind=1,nReflections!Now halve the diagonal again
      CUgMatNoAbs(ind,ind)=CUgMatNoAbs(ind,ind)-RMeanInnerCrystalPotential!Ug
   ENDDO
   	 
@@ -277,18 +277,39 @@ SUBROUTINE StructureFactorInitialisation (IErr)
   !--------------------------------------------------------------------
   ! high-energy approximation (not HOLZ compatible)
   !--------------------------------------------------------------------
-
   RBigK= SQRT(RElectronWaveVectorMagnitude**2 + RMeanInnerCrystalPotential)
-
   CALL Message("StructureFactorInitialisation",IInfo,IErr, &
        MessageVariable = "RBigK", RVariable = RBigK)
 
+  !Absorption
+  CUgMatPrime = CZERO
+    
+  SELECT CASE (IAbsorbFLAG)
+
+  CASE(1)
+
+!!$     THE PROPORTIONAL MODEL OF ABSORPTION
+     CUgMatPrime = CUgMatNoAbs*EXP(CIMAGONE*PI/2)*(RAbsorptionPercentage/100_RKIND)!Ug
+     CUgMat =  CUgMatNoAbs+CUgMatPrime!Ug
+	 
+  IF(IWriteFLAG.EQ.3.AND.my_rank.EQ.0) THEN
+    DO ind =1,8
+     WRITE(SPrintString,FMT='(16(1X,F5.2))') CUgMatNoAbs(ind,1:8)
+     PRINT*,TRIM(ADJUSTL(SPrintString))
+    END DO
+  END IF
+  
+  CASE Default
+ 
+  END SELECT	   
+	   
+	   
 END SUBROUTINE StructureFactorInitialisation
 
 !%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 SUBROUTINE StructureFactorsWithAbsorption(IErr)         
-!RB this is a lot of bumf for 1 line of code
+!RB now redundant, moved into StructureFactorInitialisation
 
   USE MyNumbers
   USE WriteToScreen
