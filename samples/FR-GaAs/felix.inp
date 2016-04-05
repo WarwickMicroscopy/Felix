@@ -48,7 +48,7 @@ IReflectOut              = 1
 # FelixRefine Input
 
 #Refinement Specific Flags
-IRefineModeFLAG          = A
+IRefineModeFLAG          = L
 IWeightingFLAG           = 0
 IContinueFLAG            = 0
 ICorrelationFLAG         = 2

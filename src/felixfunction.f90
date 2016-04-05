@@ -36,7 +36,7 @@
 ! $Id: Felixrefine.f90,v 1.89 2014/04/28 12:26:19 phslaz Exp $
 !%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-SUBROUTINE SimulateAndFit(RFigureofMerit,RIndependentVariable,IIterationCount,IExitFLAG,IErr)
+SUBROUTINE SimulateAndFit(RFigureofMerit,RIndependentVariable,Iiter,IExitFLAG,IErr)
 
   USE MyNumbers
   
@@ -54,7 +54,7 @@ SUBROUTINE SimulateAndFit(RFigureofMerit,RIndependentVariable,IIterationCount,IE
   INTEGER(IKIND) :: IErr,IExitFLAG,IThickness,ind,jnd
   REAL(RKIND),DIMENSION(INoOfVariables) :: RIndependentVariable
   REAL(RKIND) :: RFigureofMerit
-  INTEGER(IKIND),INTENT(IN) :: IIterationCount
+  INTEGER(IKIND),INTENT(IN) :: Iiter
   COMPLEX(CKIND),DIMENSION(nReflections,nReflections) :: CUgMatDummy
   LOGICAL :: LInitialSimulationFLAG = .FALSE.
   
@@ -62,7 +62,7 @@ SUBROUTINE SimulateAndFit(RFigureofMerit,RIndependentVariable,IIterationCount,IE
      PRINT*,"SimulateAndFit(",my_rank,")"
   END IF
 
-  IF(IRefineModeSelectionArray(1).EQ.1) THEN  !Ug refinement; update structure factors 
+  IF (IRefineMode(1).EQ.1 .OR. IRefineMode(12).EQ.1) THEN  !Ug refinement; update structure factors 
   !Dummy Matrix to contain new iterative values
     CUgMatDummy = CZERO
     !NB these are Ug's without absorption, used to be the suroutine UpdateStructureFactors
@@ -121,7 +121,7 @@ SUBROUTINE SimulateAndFit(RFigureofMerit,RIndependentVariable,IIterationCount,IE
   END IF
 
   IF(my_rank.EQ.0) THEN   
-     CALL CreateImagesAndWriteOutput(IIterationCount,IExitFLAG,IErr) 
+     CALL CreateImagesAndWriteOutput(Iiter,IExitFLAG,IErr) 
      IF( IErr.NE.0 ) THEN
         PRINT*,"SimulateAndFit(",my_rank,")error in CreateImagesAndWriteOutput"
         RETURN
@@ -159,9 +159,6 @@ SUBROUTINE FelixFunction(LInitialSimulationFLAG,IErr)
   LOGICAL,INTENT(INOUT) :: LInitialSimulationFLAG !If function is being called during initialisation
 
 
-  IF(IWriteFLAG.GE.6.AND.my_rank.EQ.0) THEN
-     PRINT*,"Felix function"
-  END IF
   IF((IWriteFLAG.GE.6.AND.my_rank.EQ.0).OR.IWriteFLAG.GE.10) THEN
      PRINT*,"Felixfunction(", my_rank, "): starting the eigenvalue problem"
      PRINT*,"Felixfunction(",my_rank,")pixels",ILocalPixelCountMin," to ",ILocalPixelCountMax
@@ -171,7 +168,7 @@ SUBROUTINE FelixFunction(LInitialSimulationFLAG,IErr)
   RIndividualReflections = ZERO
 
 !Update scattering matrix--------------------------------------------------------------------  
-  IF((IRefineModeSelectionArray(1).EQ.1)) THEN!RB Ug refinement, replace selected Ug's
+  IF (IRefineMode(1).EQ.1 .OR. IRefineMode(12).EQ.1) THEN!RB Ug refinement, replace selected Ug's
      !CALL ApplyNewStructureFactors(IErr) !NOW IN SimulateAndFit!***
      !IF( IErr.NE.0 ) THEN
      !  PRINT*,"felixfunction(",my_rank,")error in ApplyNewStructureFactors()"
@@ -346,7 +343,7 @@ END SUBROUTINE CalculateFigureofMeritandDetermineThickness
 
 !%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-SUBROUTINE CreateImagesAndWriteOutput(IIterationCount,IExitFLAG,IErr)
+SUBROUTINE CreateImagesAndWriteOutput(Iiter,IExitFLAG,IErr)
 !NB core 0 only
   USE MyNumbers
   
@@ -361,7 +358,7 @@ SUBROUTINE CreateImagesAndWriteOutput(IIterationCount,IExitFLAG,IErr)
   
   IMPLICIT NONE
   
-  INTEGER(IKIND) :: IErr,IThicknessIndex,IIterationCount,IExitFLAG
+  INTEGER(IKIND) :: IErr,IThicknessIndex,Iiter,IExitFLAG
 
   CALL CalculateFigureofMeritandDetermineThickness(IThicknessIndex,IErr)
   IF( IErr.NE.0 ) THEN
@@ -371,7 +368,7 @@ SUBROUTINE CreateImagesAndWriteOutput(IIterationCount,IExitFLAG,IErr)
   ENDIF
   
 !!$     OUTPUT -------------------------------------  
-  CALL WriteIterationOutput(IIterationCount,IThicknessIndex,IExitFLAG,IErr)
+  CALL WriteIterationOutput(Iiter,IThicknessIndex,IExitFLAG,IErr)
   IF( IErr.NE.0 ) THEN
      PRINT*,"CreateImagesAndWriteOutput(",my_rank,")error in WriteIterationOutput"
      RETURN
@@ -400,7 +397,7 @@ SUBROUTINE UpdateVariables(RIndependentVariable,IErr)
   REAL(RKIND),DIMENSION(INoOfVariables),INTENT(IN) :: RIndependentVariable
 
   !!$  Fill the Independent Value array with values
-  IF(IRefineModeSelectionArray(2).EQ.1) THEN     
+  IF(IRefineMode(2).EQ.1) THEN     
      RAtomSiteFracCoordVec = RInitialAtomSiteFracCoordVec
   END IF
 
@@ -479,7 +476,7 @@ SUBROUTINE PrintVariables(IErr)
   RCrystalVector = [RLengthX,RLengthY,RLengthZ]
 
   DO ind = 1,IRefinementVariableTypes
-     IF (IRefineModeSelectionArray(ind).EQ.1) THEN
+     IF (IRefineMode(ind).EQ.1) THEN
         SELECT CASE(ind)
         CASE(1)
            WRITE(SPrintString,FMT='(A18,1X,F5.2)') "Current Absorption",RAbsorptionPercentage

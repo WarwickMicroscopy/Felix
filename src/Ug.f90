@@ -66,7 +66,7 @@ SUBROUTINE GMatrixInitialisation (IErr)
   !Ug take the 2 pi back out of the magnitude...   
   RgMatMag = RgMatMag/TWOPI
   !For symmetry determination, only in Ug refinement
-  IF((IRefineModeSelectionArray(1).EQ.1)) THEN
+  IF (IRefineMode(1).EQ.1 .OR. IRefineMode(12).EQ.1) THEN
     RgSumMat = SUM(ABS(RgMatMat),3)
   END IF
   

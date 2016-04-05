@@ -66,6 +66,7 @@ PROGRAM Felixrefine
   REAL(RKIND), DIMENSION(:,:), ALLOCATABLE :: RgDummyVecMat,RgPoolMagLaue
   REAL(RKIND) :: RBCASTREAL,RStandardDeviation,RMean,RGzUnitVec,RMinLaueZoneValue,&
        RMaxLaueZoneValue,RMaxAcceptanceGVecMag,RLaueZoneElectronWaveVectorMag
+  REAL(RKIND) :: RdeltaUg,Rtol,RpointA,RpointB,RpointC,RfitA,RfitB,RfitC,Rbrent
   LOGICAL :: LInitialSimulationFLAG = .TRUE.
   CHARACTER*40 :: my_rank_string
   CHARACTER*20 :: Sind
@@ -362,7 +363,7 @@ RFullIsotropicDebyeWallerFactor,IFullAtomicNumber,IFullAnisotropicDWFTensor)
   ALLOCATE(CUgMat(nReflections,nReflections),STAT=IErr)  !RB Matrix including absorption
 
   !RB Matrix of sums of indices - for symmetry equivalence  in the Ug matrix, only for Ug refinement
-  IF(IRefineModeSelectionArray(1).EQ.1) THEN
+  IF(IRefineMode(1).EQ.1 .OR. IRefineMode(12).EQ.1) THEN
     ALLOCATE(RgSumMat(nReflections,nReflections),STAT=IErr)  
   END IF
   IF( IErr.NE.0 ) THEN
@@ -376,7 +377,7 @@ RFullIsotropicDebyeWallerFactor,IFullAtomicNumber,IFullAnisotropicDWFTensor)
      GOTO 9999
   END IF
 
-  IF(IRefineModeSelectionArray(1).EQ.1) THEN !It's a Ug refinement
+  IF(IRefineMode(1).EQ.1 .OR. IRefineMode(12).EQ.1) THEN !It's a Ug refinement
     DEALLOCATE(RAtomCoordinate,STAT=IErr)!Don't need this any more
     !Identify unique Ug's and count the number of independent variables INoOfVariables
 	!using the Hermitian matrix CUgMatNoAbs
@@ -432,23 +433,23 @@ RFullIsotropicDebyeWallerFactor,IFullAtomicNumber,IFullAnisotropicDWFTensor)
   !--------------------------------------------------------------------
   ! Setup Simplex Variables
   !--------------------------------------------------------------------!RB restore later for other types of refinement
-!  IF(IRefineModeSelectionArray(2).EQ.1) THEN !It's an atom coordinate refinement
+!  IF(IRefineMode(2).EQ.1) THEN !It's an atom coordinate refinement
 !     CALL SetupAtomicVectorMovements(IErr)
 !     IF( IErr.NE.0 ) THEN
 !        PRINT*,"felixrefine (", my_rank, ") error in SetupAtomicVectorMovements"
 !        GOTO 9999
 !     END IF
 !  END IF
-!  INoofElementsForEachRefinementType(2)=IRefineModeSelectionArray(2)*IAllowedVectors
-!  INoofElementsForEachRefinementType(3)=IRefineModeSelectionArray(3)*SIZE(IAtomicSitesToRefine)
-!  INoofElementsForEachRefinementType(4)=IRefineModeSelectionArray(4)*SIZE(IAtomicSitesToRefine)
-!  INoofElementsForEachRefinementType(5)=IRefineModeSelectionArray(5)*SIZE(IAtomicSitesToRefine)*6
-!  INoofElementsForEachRefinementType(6)=IRefineModeSelectionArray(6)*3
-!  INoofElementsForEachRefinementType(7)=IRefineModeSelectionArray(7)*3
-!  INoofElementsForEachRefinementType(8)=IRefineModeSelectionArray(8)
-!  INoofElementsForEachRefinementType(9)=IRefineModeSelectionArray(9)
-!  INoofElementsForEachRefinementType(10)=IRefineModeSelectionArray(10)
-!  INoofElementsForEachRefinementType(11)=IRefineModeSelectionArray(11)
+!  INoofElementsForEachRefinementType(2)=IRefineMode(2)*IAllowedVectors
+!  INoofElementsForEachRefinementType(3)=IRefineMode(3)*SIZE(IAtomicSitesToRefine)
+!  INoofElementsForEachRefinementType(4)=IRefineMode(4)*SIZE(IAtomicSitesToRefine)
+!  INoofElementsForEachRefinementType(5)=IRefineMode(5)*SIZE(IAtomicSitesToRefine)*6
+!  INoofElementsForEachRefinementType(6)=IRefineMode(6)*3
+!  INoofElementsForEachRefinementType(7)=IRefineMode(7)*3
+!  INoofElementsForEachRefinementType(8)=IRefineMode(8)
+!  INoofElementsForEachRefinementType(9)=IRefineMode(9)
+!  INoofElementsForEachRefinementType(10)=IRefineMode(10)
+!  INoofElementsForEachRefinementType(11)=IRefineMode(11)
   !Number of independent variables
 !  INoOfVariables = SUM(INoofElementsForEachRefinementType)
 !This has been calculated in SetupUgsToRefine
@@ -472,7 +473,7 @@ RFullIsotropicDebyeWallerFactor,IFullAtomicNumber,IFullAnisotropicDWFTensor)
 !  IIterativeVariableUniqueIDs = 0
 !  ICalls = 0
 !  DO ind = 1,IRefinementVariableTypes !Loop over all possible iterative variables
-!     IF(IRefineModeSelectionArray(ind).EQ.1) THEN
+!     IF(IRefineMode(ind).EQ.1) THEN
 !        DO jnd = 1,INoofElementsForEachRefinementType(ind)
 !           ICalls = ICalls + 1
 !           IIterativeVariableUniqueIDs(ICalls,1) = ICalls
@@ -555,67 +556,92 @@ RFullIsotropicDebyeWallerFactor,IFullAtomicNumber,IFullAnisotropicDWFTensor)
   IF( IErr.NE.0 ) THEN
      PRINT*,"felixrefine(",my_rank,")error in FelixFunction"
      GOTO 9999
-  ENDIF
+  END IF
   !Baseline simulation output, core 0 only
-  IExitFLAG = 0; !Do not exit
+  IExitFLAG = 0 !Do not exit
+  RFigureofMerit=10.0!Initall value
   IPreviousPrintedIteration = -IPrint!RB ensuring baseline simulation is printed
   IF(my_rank.EQ.0) THEN   
     CALL CreateImagesAndWriteOutput(IIterationCount,IExitFLAG,IErr) 
     IF( IErr.NE.0 ) THEN
       PRINT*,"felixrefine(",my_rank,")error in CreateImagesAndWriteOutput"
       GOTO 9999
-    ENDIF
-  END IF
-
-  !--------------------------------------------------------------------
-  ! Initialise Simplex
-  ALLOCATE(RSimplexVariable(INoOfVariables+1,INoOfVariables), STAT=IErr)  
-  ALLOCATE(RSimplexFoM(INoOfVariables+1),STAT=IErr)  
-  IF( IErr.NE.0 ) THEN
-     PRINT*,"felixrefine(",my_rank,")error allocating RSimplexFoM"
-     GOTO 9999
-  END IF
-  
-  IF(my_rank.EQ.0) THEN
-    CALL CreateRandomisedSimplex(RSimplexVariable,RIndependentVariable,IErr)
-  END IF
-  
-  !=====================================send RSimplexVariable out to all cores
-  CALL MPI_BCAST(RSimplexVariable,(INoOfVariables+1)*(INoOfVariables),MPI_DOUBLE_PRECISION,0,MPI_COMM_WORLD,IErr)
-  !=====================================
-  
-  !--------------------------------------------------------------------
-  ! Perform initial simplex simulations
-  DO ind = 1,(INoOfVariables+1)
-    IF((IWriteFLAG.GE.0.AND.my_rank.EQ.0).OR.IWriteFLAG.GE.10) THEN
-       PRINT*,"--------------------------------"
-       WRITE(SPrintString,FMT='(A8,I2,A4,I3)') "Simplex ",ind," of ",INoOfVariables+1
-       PRINT*,TRIM(ADJUSTL(SPrintString))
-       PRINT*,"--------------------------------"
     END IF
-    CALL SimulateAndFit(RSimplexFoM(ind),RSimplexVariable(ind,:),1,0,IErr)
+  END IF
+PRINT*,"gonna bisect, yeah"
+  IF (IRefineMode(12).EQ.1) THEN
+    !bisection
+	RdeltaUg=0.01!1% change of the Ug component to start
+	Rtol=0.01! precision 0.1 (in what units, eh? Do find out...)
+	DO ind = 1,INoOfVariables!work through Ug components one at a time
+	  RpointA=RIndependentVariable(ind)
+	  RpointB=(1+RdeltaUg)*RIndependentVariable(ind)
+	  RpointC=ZERO!doesn't matter since this will be the intermediate point returned by mnbrak
+	  !bracket the minimum between point A and B
+      IF(my_rank.EQ.0) THEN
+        PRINT*,"--------------------------------"
+        WRITE(SPrintString,FMT='(A20,I3,A4,I4)') "Optimising variable ",ind," of ",INoOfVariables
+        PRINT*,TRIM(ADJUSTL(SPrintString))
+	    WRITE(SPrintString,FMT='(A20,F7.5,A18,F7.5)') "Initial value ",RpointA,": figure of merit ",RFigureofMerit
+        PRINT*,TRIM(ADJUSTL(SPrintString))
+      END IF	  
+	  CALL mnbrak(RIndependentVariable,RpointA,RpointB,RpointC,RfitA,RfitB,RfitC,ind,IErr)
+	  !find the minimum using Brent's method
+	  CALL BRENT(Rbrent,RIndependentVariable,RpointA,RpointB,RpointC,Rtol,RFigureofMerit,ind,IErr)
+	  RIndependentVariable(ind)=Rbrent
+      IF(my_rank.EQ.0) THEN
+	    WRITE(SPrintString,FMT='(A12,F7.5,A18,F7.5)') "Final value ",Rbrent,": figure of merit ",RFigureofMerit
+        PRINT*,TRIM(ADJUSTL(SPrintString))
+        CALL CreateImagesAndWriteOutput(IIterationCount,IExitFLAG,IErr) 
+        IF( IErr.NE.0 ) THEN
+          PRINT*,"felixrefine(",my_rank,")error in CreateImagesAndWriteOutput"
+          GOTO 9999
+        END IF
+      END IF	  
+	END DO
+  ELSE
+    ! Initialise Simplex
+    ALLOCATE(RSimplexVariable(INoOfVariables+1,INoOfVariables), STAT=IErr)  
+    ALLOCATE(RSimplexFoM(INoOfVariables+1),STAT=IErr)  
     IF( IErr.NE.0 ) THEN
-       PRINT*,"SimplexInitialisation(",my_rank,") error in SimulateAndFit"
-       GOTO 9999
-    ENDIF
-
-    IF((IWriteFLAG.GE.0.AND.my_rank.EQ.0).OR.IWriteFLAG.GE.10) THEN
-      WRITE(SPrintString,FMT='(A16,F7.5)') "Figure of merit ",RSimplexFoM(ind)
-      PRINT*,TRIM(ADJUSTL(SPrintString))
+      PRINT*,"felixrefine(",my_rank,")error allocating RSimplexFoM"
+      GOTO 9999
     END IF
-  END DO
-
-  !--------------------------------------------------------------------
-  ! Apply Simplex Method and iterate
-  IIterationCount = 1  
-  CALL NDimensionalDownhillSimplex(RSimplexVariable,RSimplexFoM,&
+    IF(my_rank.EQ.0) THEN
+      CALL CreateRandomisedSimplex(RSimplexVariable,RIndependentVariable,IErr)
+    END IF
+    !=====================================send RSimplexVariable out to all cores
+    CALL MPI_BCAST(RSimplexVariable,(INoOfVariables+1)*(INoOfVariables),MPI_DOUBLE_PRECISION,0,MPI_COMM_WORLD,IErr)
+    !=====================================
+    ! Perform initial simplex simulations
+    DO ind = 1,(INoOfVariables+1)
+      IF((IWriteFLAG.GE.0.AND.my_rank.EQ.0).OR.IWriteFLAG.GE.10) THEN
+        PRINT*,"--------------------------------"
+        WRITE(SPrintString,FMT='(A8,I2,A4,I3)') "Simplex ",ind," of ",INoOfVariables+1
+        PRINT*,TRIM(ADJUSTL(SPrintString))
+        PRINT*,"--------------------------------"
+      END IF
+      CALL SimulateAndFit(RSimplexFoM(ind),RSimplexVariable(ind,:),1,0,IErr)
+      IF( IErr.NE.0 ) THEN
+        PRINT*,"SimplexInitialisation(",my_rank,") error in SimulateAndFit"
+        GOTO 9999
+      ENDIF
+      IF((IWriteFLAG.GE.0.AND.my_rank.EQ.0).OR.IWriteFLAG.GE.10) THEN
+        WRITE(SPrintString,FMT='(A16,F7.5)') "Figure of merit ",RSimplexFoM(ind)
+        PRINT*,TRIM(ADJUSTL(SPrintString))
+      END IF
+    END DO
+    ! Apply Simplex Method and iterate
+    IIterationCount = 1  
+    CALL NDimensionalDownhillSimplex(RSimplexVariable,RSimplexFoM,&
        INoOfVariables+1,INoOfVariables,INoOfVariables,&
        RExitCriteria,IIterationCount,RStandardDeviation,RMean,IErr)
-  IF( IErr.NE.0 ) THEN
-     PRINT*,"felixrefine(",my_rank,")error in NDimensionalDownhillSimplex"
-     GOTO 9999
-  ENDIF
+    IF( IErr.NE.0 ) THEN
+      PRINT*,"felixrefine(",my_rank,")error in NDimensionalDownhillSimplex"
+      GOTO 9999
+    ENDIF
 
+  END IF
   !--------------------------------------------------------------------
   ! Deallocate Memory
   !--------------------------------------------------------------------
@@ -634,7 +660,7 @@ RFullIsotropicDebyeWallerFactor,IFullAtomicNumber,IFullAnisotropicDWFTensor)
   DEALLOCATE(RgPoolT,STAT=IErr)
   DEALLOCATE(CUgMat,STAT=IErr)
   DEALLOCATE(RSimulatedPatterns,STAT=IErr)
-  IF (IRefineModeSelectionArray(1).EQ.1) THEN
+  IF (IRefineMode(1).EQ.1 .OR. IRefineMode(12).EQ.1) THEN
     DEALLOCATE(RgSumMat,STAT=IErr)
   ELSE
 	DEALLOCATE(RAtomCoordinate,STAT=IErr)
@@ -680,7 +706,7 @@ END PROGRAM Felixrefine
 !%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 !%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-SUBROUTINE mnbrak(Rax,Rbx,Rcx,Rfa,Rfb,Rfc)
+SUBROUTINE mnbrak(RIndependentVariable,Rax,Rbx,Rcx,Rfa,Rfb,Rfc,ind,IErr)
 !From Numerical recipes in Fortran section 10.1, adapted for use here
 
   USE MyNumbers
@@ -696,17 +722,25 @@ SUBROUTINE mnbrak(Rax,Rbx,Rcx,Rfa,Rfb,Rfc)
 
   IMPLICIT NONE
   
-  REAL(RKIND) :: Rax,Rax,Rbx,Rcx,Rfa,Rfb,Rfc,Rgold,RGlimit
+  REAL(RKIND) :: Rax,Rbx,Rcx,Rfa,Rfb,Rfc,Rgold,RGlimit
+  REAL(RKIND) :: Rdum,Rfu,Rq,Rr,Ru,Rulim
+  REAL(RKIND),DIMENSION(INoOfVariables) :: RIndependentVariable
+  INTEGER(IKIND) :: IErr,Iiter,IExitFLAG,ind
   PARAMETER (Rgold=1.618034, RGlimit=100.0)
   !Given distinct initial points Rax and Rbx this routine searches in the downhill direction
   !and returns new points Rax, Rbx and Rcx that bracket a minimum, with their values Rfa, Rfb, Rfc.
   !Rgold is the (golden) ratio by which intervals are magnified
   !RGlimit is the maximum magnification allowed
-  REAL(RKIND) :: Rdum,Rfu,Rq,Rr,Ru,Rulim
-  Rfa=felixfunction(Rax)
-  Rfb=felixfunction(Rbx)
+  
+  IExitFLAG=0!we never exit from this subroutine
+  !Rfa=F(Rax)
+  RIndependentVariable(ind)=Rax
+  CALL SimulateAndFit(Rfa,RIndependentVariable,Iiter,IExitFLAG,IErr)
+  !Rfb=F(Rbx)
+  RIndependentVariable(ind)=Rbx
+  CALL SimulateAndFit(Rfb,RIndependentVariable,Iiter,IExitFLAG,IErr)
   IF (Rfb.GT.Rfa) THEN!switch a and b so that a->b is downhill
-    Rdum-Rax
+    Rdum=Rax
 	Rax=Rbx
 	Rbx=Rdum
 	Rdum=Rfb
@@ -714,14 +748,18 @@ SUBROUTINE mnbrak(Rax,Rbx,Rcx,Rfa,Rfb,Rfc)
 	Rfa=Rdum
   END IF
   Rcx=Rbx+Rgold*(Rbx-Rcx)!first guess for c
-  Rfc==felixfunction(Rcx)
+  !Rfc=F(Rcx)
+  RIndependentVariable(ind)=Rcx
+  CALL SimulateAndFit(Rfc,RIndependentVariable,Iiter,IExitFLAG,IErr)
 1 IF (Rfb.GE.Rfc) THEN
     Rr=(Rbx-Rax)*(Rfb-Rfc)
     Rr=(Rbx-Rcx)*(Rfb-Rfa)
 	Ru=Rbx-((Rbx-Rcx)*Rq-(Rbx-Rax)*Rr)/(TWO*SIGN(MAX(ABS(Rq-Rr),TINY),Rq-Rr))
 	Rulim=Rbx+RGlimit*(Rcx-Rbx)
 	IF ((Rbx-Ru)*(Ru-Rcx).GT.ZERO) THEN
-	  Rfu=felixfunction(Ru)
+	  !Rfu=F(Ru)
+      RIndependentVariable(ind)=Ru
+      CALL SimulateAndFit(Rfu,RIndependentVariable,Iiter,IExitFLAG,IErr)
 	  IF (Rfu.LT.Rfc) THEN
         Rax=Rbx
         Rfa=Rfb
@@ -734,23 +772,33 @@ SUBROUTINE mnbrak(Rax,Rbx,Rcx,Rfa,Rfb,Rfc)
         GOTO 1
       END IF
       Ru=Rcx+Rgold*(Rcx-Rbx)
-      Rfu=felixfunction(Ru)
+      !Rfu=F(Ru)
+      RIndependentVariable(ind)=Ru
+      CALL SimulateAndFit(Rfu,RIndependentVariable,Iiter,IExitFLAG,IErr)
     ELSE IF((Rcx-Ru)*(Ru-Rulim).GT.0) THEN
-      Rfu=felixfunction(Ru)
+      !Rfu=F(Ru)
+      RIndependentVariable(ind)=Ru
+      CALL SimulateAndFit(Rfu,RIndependentVariable,Iiter,IExitFLAG,IErr)
       IF(Rfu.LT.Rfc) THEN
         Rbx=Rcx
         Rcx=Ru
         Ru=Rcx+Rgold*(Rcx-Rbx)
         Rfb=Rfc
         Rfc=Rfu
-        Rfu=felixfunction(Ru)
+        !Rfu=F(Ru)
+        RIndependentVariable(ind)=Ru
+        CALL SimulateAndFit(Rfu,RIndependentVariable,Iiter,IExitFLAG,IErr)
       ENDIF
     ELSE IF((Ru-Rulim)*(Rulim-Rcx).GE.0) THEN
       Ru=Rulim
-      Rfu=felixfunction(Ru)
+      !Rfu=F(Ru)
+      RIndependentVariable(ind)=Ru
+      CALL SimulateAndFit(Rfu,RIndependentVariable,Iiter,IExitFLAG,IErr)
     ELSE
       Ru=Rcx+Rgold*(Rcx-Rbx)
-      Rfu=felixfunction(Ru)
+      !Rfu=F(Ru)
+      RIndependentVariable(ind)=Ru
+      CALL SimulateAndFit(Rfu,RIndependentVariable,Iiter,IExitFLAG,IErr)
     END IF
     Rax=Rbx
     Rbx=Rcx
@@ -767,7 +815,7 @@ END SUBROUTINE mnbrak
 
 !%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-  FUNCTION Rbrent(Rax,Rbx,Rcx,F,Rtol,Rxmin)
+SUBROUTINE BRENT(Rbrent,RIndependentVariable,Rax,Rbx,Rcx,Rtol,Rxmin,ind,IErr)
   !given a function F(Rx) and a bracketing triplet of abscissas Rax,Rbx,Rcx 
   !where bx is between ax and cx, and F(bx) is less than F(ax) or F(cx)
   !this routine isolates the minimum to a precision of tol using Brent's method
@@ -786,9 +834,10 @@ END SUBROUTINE mnbrak
 
   IMPLICIT NONE
   
-  INTEGER(IKIND) :: Iiter,Iitmax
-  REAL(RKIND) :: Ra,Rb,Rax,Rbx,Rcx,Rd,Re,Rfx,Rfv,Rfw,Rp,Rq,Rr,Ru,Rv,Rw,Rx,Rxm
-  REAL(RKIND) :: Rtol,Rtol1,Rtol2,RzEPS,ReTemp,RcGold,Rbrent
+  INTEGER(IKIND) :: Iiter,Iitmax,IExitFLAG,ind,IErr
+  REAL(RKIND) :: Ra,Rb,Rax,Rbx,Rcx,Rd,Re,Rfx,Rfu,Rfv,Rfw,Rp,Rq,Rr,Ru,Rv,Rw,Rx,Rxm
+  REAL(RKIND) :: Rtol,Rtol1,Rtol2,RzEPS,ReTemp,RcGold,Rbrent,Rxmin
+  REAL(RKIND),DIMENSION(INoOfVariables) :: RIndependentVariable
   PARAMETER (Iitmax=100,RcGold=0.3819660,RzEPS=1.0E-10)
   
   IExitFLAG=0!We never exit felixrefine from this subroutine
@@ -798,15 +847,18 @@ END SUBROUTINE mnbrak
   Rw=Rv 
   Rx=Rv 
   Re=ZERO
-  !Felixfunction here
-  Rfx=F(Rx) 
+  !Rfx=F(Rx)
+  RIndependentVariable(ind)=Rx
+  CALL SimulateAndFit(Rfx,RIndependentVariable,Iiter,IExitFLAG,IErr)
   Rfv=Rfx 
   Rfw=Rfx 
-  DO 11 Iiter=1,Iitmax !main loop
+  DO Iiter=1,Iitmax !main loop
     Rxm=0.5*(Ra+Rb) 
     Rtol1=Rtol*ABS(Rx)+RzEPS 
     Rtol2=2.*Rtol1 
-    IF (ABS(Rx-Rxm).LE.(Rtol2-.5*(Rb-Ra))) GOTO 3 !Test for done
+    IF (ABS(Rx-Rxm).LE.(Rtol2-.5*(Rb-Ra))) THEN!Test for done
+      GOTO 3
+	END IF
     IF( ABS(Re).GT.Rtol1) THEN 
       Rr=(Rx-Rw)*(Rfx-Rfv) 
       Rq=(Rx-Rv)*(Rfx-Rfw) 
@@ -821,22 +873,25 @@ END SUBROUTINE mnbrak
       IF (ABS(Rp).GE.ABS(.5*Rq*ReTemp).OR.Rp.LE.Rq*(Ra-Rx).OR. Rp.GE.Rq*(Rb-Rx)) GOTO 1 
       Rd=Rp/Rq !parabolic fit
       Ru=Rx+Rd 
-      IF (Ru-Ra.LT.Rtol2 .OR. Rb-Ru.LT.Rtol2) Rd=SIGN(Rtol1,Rxm-Rx) GOTO 2 !skip golden section 
-    ENDIF 
+      IF (Ru-Ra.LT.Rtol2 .OR. Rb-Ru.LT.Rtol2) THEN!skip golden section 
+        Rd=SIGN(Rtol1,Rxm-Rx)
+      END IF
+      GOTO 2
+    END IF 
 1   IF (Rx.GE.Rxm) THEN!golden section 
       Re=Ra-Rx 
     ELSE 
       Re=Rb-Rx 
-    ENDIF 
+    END IF 
     Rd=RcGold*Re 
 2   IF (ABS(Rd).GE.Rtol1) THEN!end of branching, Rd is either golden section or parabolic
       Ru=Rx+Rd 
     ELSE 
       Ru=Rx+SIGN(Rtol1,Rd) 
-    ENDIF 
-  !Felixfunction here
-    Rfu=F(Ru) 
-	CALL SimulateAndFit(Rfu,1,Iiter,IExitFLAG,IErr)
+    END IF 
+    !Rfu=F(Ru) 
+    RIndependentVariable(ind)=Ru
+	CALL SimulateAndFit(Rfu,RIndependentVariable,Iiter,IExitFLAG,IErr)
     IF (Rfu.LE.Rfx) THEN 
       IF (Ru.GE.Rx) THEN 
         Ra=Rx 
@@ -865,32 +920,33 @@ END SUBROUTINE mnbrak
 	    Rfv=Rfu
       END IF
     END IF
-        IF(Ru.LT.Rx) THEN 
-          Ra=Ru 
-        ELSE 
-          Rb=Ru 
-        ENDIF 
-        IF(Rfu.LE.Rfw .OR. Rw.EQ.Rx) THEN 
-          Rv=Rw 
-          Rfv=Rfw 
-          Rw=Ru 
-          Rfw=Rfu 
-        ELSE IF(Rfu.LE.Rfv .OR. Rv.EQ.Rx .OR. Rv.EQ.Rw) THEN 
-          Rv=Ru 
-          Rfv=Rfu 
-        ENDIF 
-      ENDIF 
-11 END DO 
+    IF(Ru.LT.Rx) THEN 
+      Ra=Ru 
+    ELSE 
+      Rb=Ru 
+    END IF 
+    IF(Rfu.LE.Rfw .OR. Rw.EQ.Rx) THEN 
+      Rv=Rw 
+      Rfv=Rfw 
+      Rw=Ru 
+      Rfw=Rfu 
+    ELSE IF(Rfu.LE.Rfv .OR. Rv.EQ.Rx .OR. Rv.EQ.Rw) THEN 
+      Rv=Ru 
+      Rfv=Rfu 
+    END IF 
+  END DO 
 
-  PRINT*,"Brent exceeded maximum iterations."
-  IErr=1
+  IF (my_rank.EQ.0) THEN
+    PRINT*,"Brent exceeded maximum iterations."
+    IErr=1
+  END IF
   
 3 Rxmin=Rx 
   Rbrent=Rfx 
 	  
   RETURN
   
-  END FUNCTION Rbrent
+END SUBROUTINE BRENT
 
 !%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
@@ -1019,17 +1075,7 @@ SUBROUTINE RefinementVariableSetup(RIndependentVariable,IErr)
      SELECT CASE (IVariableType)
      CASE(1)
 	    !Structure factor refinement, define in SymmetryRelatedStructureFactorDetermination
-!  IF(IRefineModeSelectionArray(1).EQ.1) THEN
-!     DO ind = 1,INoofUgs !RB ignore the first one as it is the internal potential
-!        RIndependentVariable((ind-1)*2+1) = &!yy
-!             REAL(CUgToRefine(ind+1),RKIND)!yy ind+1 instead of ind
-!        RIndependentVariable((ind-1)*2+2) = &
-!             AIMAG(CUgToRefine(ind+1))!yy ind+1 instead of ind
-!     END DO
-!  END IF
-!  RIndependentVariable(2*INoofUgs+1) = RAbsorptionPercentage!RB absorption always included in structure factor refinement as last variable
-
-  CASE(2)
+    CASE(2)
         RIndependentVariable(ind) = &
              RAllowedVectorMagnitudes(IIterativeVariableUniqueIDs(ind,3))
      CASE(3)
@@ -1074,6 +1120,8 @@ SUBROUTINE RefinementVariableSetup(RIndependentVariable,IErr)
      CASE(11)
         RIndependentVariable(ind) = &
              RRSoSScalingFactor
+     CASE(12)
+	    !Structure factor refinement, define in SymmetryRelatedStructureFactorDetermination
      END SELECT
   END DO
 
@@ -1200,7 +1248,7 @@ USE MyNumbers
   REAL(RKIND),DIMENSION(INoOfVariables+1,INoOfVariables),INTENT(OUT) :: RSimplexVariable
   REAL(RKIND),DIMENSION(INoOfVariables),INTENT(INOUT) :: RIndependentVariable
   
-  IF(IRefineModeSelectionArray(2).EQ.1) THEN
+  IF(IRefineMode(2).EQ.1) THEN!it's an atomic coordinate refinement
      DO ind = 1,(INoOfVariables+1)
         ALLOCATE(RRandomSigns(IAllowedVectors),RRandomNumbers(IAllowedVectors),&
              STAT=IErr)       

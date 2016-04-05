@@ -299,46 +299,43 @@ SUBROUTINE ReadInpFile( IErr )
 
      !-----------------------------------------------------------------------
      ! felixrefine Input
-     
      ILine= ILine+1; READ(IChInp,ERR=20,END=30,FMT='(A)')
      ILine= ILine+1; READ(IChInp,ERR=20,END=30,FMT='(A)')
      ILine= ILine+1; READ(IChInp,ERR=20,END=30,FMT='(A)')
      
      !-----------------------------------------------------------------------
      ! Refinement Specific Flags
-     
-     ILine= ILine+1; READ(IChInp,ERR=20,END=30,FMT='(A)')
-     
+     ILine= ILine+1; READ(IChInp,ERR=20,END=30,FMT='(A)')  
      ILine= ILine+1
 
      READ(IChInp,FMT='(A)',ERR=20,END=30) SRefineMode
      SRefineMode = SRefineMode((SCAN(SRefineMode,"=")+1):)
-     IRefineModeSelectionArray = 0
+     IRefineMode = 0
 
      DO ind = 1,IRefinementVariableTypes
-!!$        PRINT*,CAlphabet(ind),SRefineMode,SCAN(TRIM(ADJUSTL(SRefineMode)),TRIM(ADJUSTL(CAlphabet(ind))))
         IF(SCAN(TRIM(ADJUSTL(SRefineMode)),TRIM(ADJUSTL(CAlphabet(ind)))).NE.0) THEN
-           IRefineModeSelectionArray(ind) = 1
+           IRefineMode(ind) = 1
         END IF
      END DO
      
      IF((IWriteFLAG.GE.0.AND.my_rank.EQ.0).OR.IWriteFLAG.GE.10) THEN
-       IF(IRefineModeSelectionArray(1).EQ.1) PRINT*,"Refining Structure Factors "
-       IF(IRefineModeSelectionArray(2).EQ.1) PRINT*,"Refining Atomic Coordinates"
-       IF(IRefineModeSelectionArray(3).EQ.1) PRINT*,"Refining Occupancies "
-       IF(IRefineModeSelectionArray(4).EQ.1) PRINT*,"Refining Isotropic Debye Waller Factors"
-       IF(IRefineModeSelectionArray(5).EQ.1) PRINT*,"Refining Anisotropic Debye Waller Factors "
-       IF(IRefineModeSelectionArray(6).EQ.1) PRINT*,"Refining Lattice Lengths "
-       IF(IRefineModeSelectionArray(7).EQ.1) PRINT*,"Refining Lattice Angles "
-       IF(IRefineModeSelectionArray(8).EQ.1) PRINT*,"Refining Convergence Angle "
-       IF(IRefineModeSelectionArray(9).EQ.1) PRINT*,"Refining Absorption"
-       IF(IRefineModeSelectionArray(10).EQ.1) PRINT*,"Refining Accelerating Voltage "
-       IF(IRefineModeSelectionArray(11).EQ.1) PRINT*,"Refining Scale Factor "
+       IF(IRefineMode(1).EQ.1) PRINT*, "A:Refining Structure Factors by Simplex"
+       IF(IRefineMode(2).EQ.1) PRINT*, "B:Refining Atomic Coordinates"
+       IF(IRefineMode(3).EQ.1) PRINT*, "C:Refining Occupancies "
+       IF(IRefineMode(4).EQ.1) PRINT*, "D:Refining Isotropic Debye Waller Factors"
+       IF(IRefineMode(5).EQ.1) PRINT*, "E:Refining Anisotropic Debye Waller Factors "
+       IF(IRefineMode(6).EQ.1) PRINT*, "F:Refining Lattice Lengths "
+       IF(IRefineMode(7).EQ.1) PRINT*, "G:Refining Lattice Angles "
+       IF(IRefineMode(8).EQ.1) PRINT*, "H:Refining Convergence Angle "
+       IF(IRefineMode(9).EQ.1) PRINT*, "I:Refining Absorption"
+       IF(IRefineMode(10).EQ.1) PRINT*,"J:Refining Accelerating Voltage "
+       IF(IRefineMode(11).EQ.1) PRINT*,"K:Refining Scale Factor "
+       IF(IRefineMode(12).EQ.1) PRINT*,"L:Refining Structure Factors by bisection"
      END IF
     
      !Check if user has requested Ug refinement and anything else which isnt possible
         
-     IF(IRefineModeSelectionArray(1).EQ.1.AND.SUM(IRefineModeSelectionArray).GT.1) THEN         
+     IF((IRefineMode(1).EQ.1 .OR. IRefineMode(12).EQ.1).AND.SUM(IRefineMode).GT.1) THEN         
         IF(my_rank.EQ.0) THEN
            PRINT*,"Structure factors must be refined seperately"
         END IF
@@ -596,7 +593,7 @@ SUBROUTINE DetermineRefineableAtomicSites(SAtomicSites,IErr)
   IPos1 = SCAN(SAtomicSites,'(')
   IPos2 = SCAN(SAtomicSites,')')
   IF(((IPos2-IPos1).EQ.1).OR.(IPos1.EQ.0).OR.(IPos2.EQ.0)) THEN
-     IF(IRefineModeSelectionArray(2).EQ.1) THEN
+     IF(IRefineMode(2).EQ.1) THEN
         PRINT*,"You Have Not Specfied Atomic Sites to Refine" 
         IErr = 1
         RETURN

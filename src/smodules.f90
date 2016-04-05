@@ -101,7 +101,7 @@ MODULE IConst
        IParallelFLAG=0,&
        IRandomFLAG = 1, &
        IFixedSeed = 123456787,&
-       IRefinementVariableTypes = 11,&
+       IRefinementVariableTypes = 12,&
        NElements=103
 
   !PriorityFLAG values - to match to the WriteFLAG - will change eventually,
@@ -194,7 +194,7 @@ MODULE IPara
   !Ug Calculation
   INTEGER(IKIND) :: ICurrentAtom,IAtom
   !Refinement   
-  INTEGER(IKIND),DIMENSION(IRefinementVariableTypes) :: IRefineModeSelectionArray
+  INTEGER(IKIND),DIMENSION(IRefinementVariableTypes) :: IRefineMode
   INTEGER(IKIND),DIMENSION(IRefinementVariableTypes) :: INoofElementsForEachRefinementType  !zz
   INTEGER(IKIND),DIMENSION(:,:),ALLOCATABLE :: IIterativeVariableUniqueIDs
   !List of Atomic Sites for Refinement

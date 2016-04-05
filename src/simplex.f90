@@ -48,7 +48,6 @@ SUBROUTINE NDimensionalDownhillSimplex(RSimplexVariable,y,mp,np,ndim,ftol,iter,R
      ENDDO
      rtol=2.*ABS(y(ihi)-y(ilo))/(ABS(y(ihi))+ABS(y(ilo)))
 
-
      WRITE(SPrintString,FMT='(A14,F7.5,A14,F7.5)') "Simplex range ",rtol,", will end at ",ftol
      PRINT*,TRIM(ADJUSTL(SPrintString))
      IF(rtol.LT.ftol) THEN

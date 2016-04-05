@@ -288,38 +288,38 @@ SUBROUTINE WriteOutVariables(IIterationCount,IErr)
 
   ! Need to Determine total no. of variables to be written out, this is different from the no. of refinement variables
   
-  IOutputVariables(1) =  IRefineModeSelectionArray(1) * &
+  IOutputVariables(1) =  IRefineMode(1) * &
        2*INoofUgs+1 ! Structure Factors are Complex so require two output variables each     
-  IOutputVariables(2) = IRefineModeSelectionArray(2) * & !Structural Coordinates
+  IOutputVariables(2) = IRefineMode(2) * & !Structural Coordinates
        (SIZE(RAtomSiteFracCoordVec,DIM=1) * SIZE(RAtomSiteFracCoordVec,DIM=2))
   IOutputVariables(3) = &
-       IRefineModeSelectionArray(3) * & !Atomic Site Occupancies
+       IRefineMode(3) * & !Atomic Site Occupancies
        SIZE(RAtomicSitePartialOccupancy,DIM=1)
   IOutputVariables(4) = &
-       IRefineModeSelectionArray(4) * & !Isotropic Debye Waller Factors
+       IRefineMode(4) * & !Isotropic Debye Waller Factors
        SIZE(RIsotropicDebyeWallerFactors,DIM=1)
   IOutputVariables(5) = &
-       IRefineModeSelectionArray(5) * & !Anisotropic Debye Waller Factors
+       IRefineMode(5) * & !Anisotropic Debye Waller Factors
        SIZE(RAnisotropicDebyeWallerFactorTensor)
   IOutputVariables(6) = &    
-       IRefineModeSelectionArray(6) * 3 !Lattice Parameters (a,b,c) 
+       IRefineMode(6) * 3 !Lattice Parameters (a,b,c) 
   IOutputVariables(7) = &
-       IRefineModeSelectionArray(7) * 3 !Lattice Angles (alpha,beta,gamma)
+       IRefineMode(7) * 3 !Lattice Angles (alpha,beta,gamma)
   IOutputVariables(8) = & 
-       IRefineModeSelectionArray(8) !Convergence angle
+       IRefineMode(8) !Convergence angle
   IOutputVariables(9) = &
-       IRefineModeSelectionArray(9) !Absorption
+       IRefineMode(9) !Absorption
   IOutputVariables(10) = &
-       IRefineModeSelectionArray(10) !Accelerating Voltage
+       IRefineMode(10) !Accelerating Voltage
   IOutputVariables(11) = &
-       IRefineModeSelectionArray(11) !Residual Sum of Squares Scaling Factor
+       IRefineMode(11) !Residual Sum of Squares Scaling Factor
   
   ITotalOutputVariables = SUM(IOutputVariables) ! Total Output
   
   ALLOCATE(RDataOut(ITotalOutputVariables),STAT=IErr)
 
   DO jnd = 1,IRefinementVariableTypes
-     IF(IRefineModeSelectionArray(jnd).EQ.0) THEN
+     IF(IRefineMode(jnd).EQ.0) THEN
         CYCLE !The refinement variable type is not being refined, skip
      END IF
      IF(jnd.EQ.1) THEN!It's an atom coordinate refinement
