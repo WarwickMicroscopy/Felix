@@ -54,7 +54,7 @@ PROGRAM Felixrefine
   IMPLICIT NONE
 
   INTEGER(IKIND) :: IHours,IMinutes,ISeconds,IErr,IMilliSeconds,IIterationFLAG,&
-       ind,jnd,knd,ICalls,IIterationCount,ICutOff,IHOLZgPoolMag,IBSMaxLocGVecAmp,&
+       ind,jnd,knd,ICalls,Iter,ICutOff,IHOLZgPoolMag,IBSMaxLocGVecAmp,&
 	   ILaueLevel,INumTotalReflections,ITotalLaueZoneLevel,INhkl,IExitFLAG,&
 	   INumInitReflections,IZerothLaueZoneLevel,INumFinalReflections
   INTEGER(IKIND) :: IStartTime,ICurrentTime,IRate
@@ -551,7 +551,7 @@ RFullIsotropicDebyeWallerFactor,IFullAtomicNumber,IFullAnisotropicDWFTensor)
   END IF
   !--------------------------------------------------------------------
   !baseline simulation
-  IIterationCount = 0
+  Iter = 0
   CALL FelixFunction(LInitialSimulationFLAG,IErr)
   IF( IErr.NE.0 ) THEN
      PRINT*,"felixrefine(",my_rank,")error in FelixFunction"
@@ -559,40 +559,51 @@ RFullIsotropicDebyeWallerFactor,IFullAtomicNumber,IFullAnisotropicDWFTensor)
   END IF
   !Baseline simulation output, core 0 only
   IExitFLAG = 0 !Do not exit
-  RFigureofMerit=10.0!Initall value
-  IPreviousPrintedIteration = -IPrint!RB ensuring baseline simulation is printed
+  RFigureofMerit=9.999!Inital value
+  IPreviousPrintedIteration = -100!RB ensuring baseline simulation is printed
   IF(my_rank.EQ.0) THEN   
-    CALL CreateImagesAndWriteOutput(IIterationCount,IExitFLAG,IErr) 
+    CALL CreateImagesAndWriteOutput(Iter,IExitFLAG,IErr) 
     IF( IErr.NE.0 ) THEN
       PRINT*,"felixrefine(",my_rank,")error in CreateImagesAndWriteOutput"
       GOTO 9999
     END IF
   END IF
-PRINT*,"gonna bisect, yeah"
+
   IF (IRefineMode(12).EQ.1) THEN
     !bisection
-	RdeltaUg=0.01!1% change of the Ug component to start
-	Rtol=0.01! precision 0.1 (in what units, eh? Do find out...)
+	RdeltaUg=0.01!5% change of the Ug component to start
+	Rtol=0.005! precision 0.1 (in what units, eh? Do find out...)
 	DO ind = 1,INoOfVariables!work through Ug components one at a time
+	  Iter=Iter+IPrint
 	  RpointA=RIndependentVariable(ind)
-	  RpointB=(1+RdeltaUg)*RIndependentVariable(ind)
+	  RpointB=RIndependentVariable(ind)+ABS(RdeltaUg*RIndependentVariable(ind))!b must be > a
 	  RpointC=ZERO!doesn't matter since this will be the intermediate point returned by mnbrak
 	  !bracket the minimum between point A and B
       IF(my_rank.EQ.0) THEN
         PRINT*,"--------------------------------"
         WRITE(SPrintString,FMT='(A20,I3,A4,I4)') "Optimising variable ",ind," of ",INoOfVariables
         PRINT*,TRIM(ADJUSTL(SPrintString))
-	    WRITE(SPrintString,FMT='(A20,F7.5,A18,F7.5)') "Initial value ",RpointA,": figure of merit ",RFigureofMerit
+	    WRITE(SPrintString,FMT='(A14,F5.3,A18,F7.5)') "Initial value ",RpointA,": figure of merit ",RFigureofMerit
         PRINT*,TRIM(ADJUSTL(SPrintString))
+		PRINT*,"Bracketing..."
       END IF	  
 	  CALL mnbrak(RIndependentVariable,RpointA,RpointB,RpointC,RfitA,RfitB,RfitC,ind,IErr)
+      IF(my_rank.EQ.0) THEN
+        PRINT*,"--------------------------------"
+        WRITE(SPrintString,FMT='(A19,F5.3,A1,F7.5,A6,F5.3,A1,F7.5,A1)')&
+		"Minimum is between ",RpointA,"(",RfitA,") and ",RpointC,"(",RfitC,")"
+        PRINT*,TRIM(ADJUSTL(SPrintString))
+	    WRITE(SPrintString,FMT='(A14,F5.3,A18,F7.5)') "Current value ",RpointB,": figure of merit ",RfitB
+        PRINT*,TRIM(ADJUSTL(SPrintString))
+		PRINT*,"Finding best fit..."
+      END IF	  
 	  !find the minimum using Brent's method
-	  CALL BRENT(Rbrent,RIndependentVariable,RpointA,RpointB,RpointC,Rtol,RFigureofMerit,ind,IErr)
+	  CALL BRENT(RFigureofMerit,RIndependentVariable,RpointA,RpointB,RpointC,Rtol,Rbrent,ind,IErr)
 	  RIndependentVariable(ind)=Rbrent
       IF(my_rank.EQ.0) THEN
-	    WRITE(SPrintString,FMT='(A12,F7.5,A18,F7.5)') "Final value ",Rbrent,": figure of merit ",RFigureofMerit
+	    WRITE(SPrintString,FMT='(A12,F5.3,A18,F7.5)') "Final value ",Rbrent,": figure of merit ",RFigureofMerit
         PRINT*,TRIM(ADJUSTL(SPrintString))
-        CALL CreateImagesAndWriteOutput(IIterationCount,IExitFLAG,IErr) 
+        CALL CreateImagesAndWriteOutput(Iter,IExitFLAG,IErr) 
         IF( IErr.NE.0 ) THEN
           PRINT*,"felixrefine(",my_rank,")error in CreateImagesAndWriteOutput"
           GOTO 9999
@@ -632,10 +643,10 @@ PRINT*,"gonna bisect, yeah"
       END IF
     END DO
     ! Apply Simplex Method and iterate
-    IIterationCount = 1  
+    Iter = 1  
     CALL NDimensionalDownhillSimplex(RSimplexVariable,RSimplexFoM,&
        INoOfVariables+1,INoOfVariables,INoOfVariables,&
-       RExitCriteria,IIterationCount,RStandardDeviation,RMean,IErr)
+       RExitCriteria,Iter,RStandardDeviation,RMean,IErr)
     IF( IErr.NE.0 ) THEN
       PRINT*,"felixrefine(",my_rank,")error in NDimensionalDownhillSimplex"
       GOTO 9999
@@ -732,14 +743,18 @@ SUBROUTINE mnbrak(RIndependentVariable,Rax,Rbx,Rcx,Rfa,Rfb,Rfc,ind,IErr)
   !Rgold is the (golden) ratio by which intervals are magnified
   !RGlimit is the maximum magnification allowed
   
+  Iiter=0!we don't write out while bracketing
   IExitFLAG=0!we never exit from this subroutine
   !Rfa=F(Rax)
   RIndependentVariable(ind)=Rax
   CALL SimulateAndFit(Rfa,RIndependentVariable,Iiter,IExitFLAG,IErr)
+  !PRINT*,"a ",Rax,": ",Rfa
   !Rfb=F(Rbx)
   RIndependentVariable(ind)=Rbx
   CALL SimulateAndFit(Rfb,RIndependentVariable,Iiter,IExitFLAG,IErr)
+  !PRINT*,"b ",Rbx,": ",Rfb
   IF (Rfb.GT.Rfa) THEN!switch a and b so that a->b is downhill
+  !PRINT*,"a->b is uphill,swap"
     Rdum=Rax
 	Rax=Rbx
 	Rbx=Rdum
@@ -747,38 +762,42 @@ SUBROUTINE mnbrak(RIndependentVariable,Rax,Rbx,Rcx,Rfa,Rfb,Rfc,ind,IErr)
 	Rfb=Rfa
 	Rfa=Rdum
   END IF
-  Rcx=Rbx+Rgold*(Rbx-Rcx)!first guess for c
+  Rcx=Rbx+Rgold*(Rbx-Rax)!first guess for c
   !Rfc=F(Rcx)
   RIndependentVariable(ind)=Rcx
   CALL SimulateAndFit(Rfc,RIndependentVariable,Iiter,IExitFLAG,IErr)
+  !PRINT*,"c ",Rcx,": ",Rfc
 1 IF (Rfb.GE.Rfc) THEN
     Rr=(Rbx-Rax)*(Rfb-Rfc)
-    Rr=(Rbx-Rcx)*(Rfb-Rfa)
+    Rq=(Rbx-Rcx)*(Rfb-Rfa)
 	Ru=Rbx-((Rbx-Rcx)*Rq-(Rbx-Rax)*Rr)/(TWO*SIGN(MAX(ABS(Rq-Rr),TINY),Rq-Rr))
 	Rulim=Rbx+RGlimit*(Rcx-Rbx)
 	IF ((Rbx-Ru)*(Ru-Rcx).GT.ZERO) THEN
 	  !Rfu=F(Ru)
       RIndependentVariable(ind)=Ru
       CALL SimulateAndFit(Rfu,RIndependentVariable,Iiter,IExitFLAG,IErr)
-	  IF (Rfu.LT.Rfc) THEN
+      !PRINT*,"u ",Ru,": ",Rfu
+      IF (Rfu.LT.Rfc) THEN!min is between b and c
         Rax=Rbx
         Rfa=Rfb
         Rbx=Ru
         Rfb=Rfu
-        GOTO 1
-      ELSE IF(Rfu.GT.Rfb) THEN
+        GOTO 2
+      ELSE IF(Rfu.GT.Rfb) THEN!min is between a and u
         Rcx=Ru
         Rfc=Rfu
-        GOTO 1
+        GOTO 2
       END IF
-      Ru=Rcx+Rgold*(Rcx-Rbx)
+      Ru=Rcx+Rgold*(Rcx-Rbx)!parabolic fit was no good, default to golden ratio
       !Rfu=F(Ru)
       RIndependentVariable(ind)=Ru
       CALL SimulateAndFit(Rfu,RIndependentVariable,Iiter,IExitFLAG,IErr)
+      !PRINT*,"u ",Ru,": ",Rfu
     ELSE IF((Rcx-Ru)*(Ru-Rulim).GT.0) THEN
       !Rfu=F(Ru)
       RIndependentVariable(ind)=Ru
       CALL SimulateAndFit(Rfu,RIndependentVariable,Iiter,IExitFLAG,IErr)
+	  !PRINT*,"u ",Ru,": ",Rfu
       IF(Rfu.LT.Rfc) THEN
         Rbx=Rcx
         Rcx=Ru
@@ -788,25 +807,55 @@ SUBROUTINE mnbrak(RIndependentVariable,Rax,Rbx,Rcx,Rfa,Rfb,Rfc,ind,IErr)
         !Rfu=F(Ru)
         RIndependentVariable(ind)=Ru
         CALL SimulateAndFit(Rfu,RIndependentVariable,Iiter,IExitFLAG,IErr)
+		!PRINT*,"u ",Ru,": ",Rfu
       ENDIF
     ELSE IF((Ru-Rulim)*(Rulim-Rcx).GE.0) THEN
       Ru=Rulim
       !Rfu=F(Ru)
       RIndependentVariable(ind)=Ru
       CALL SimulateAndFit(Rfu,RIndependentVariable,Iiter,IExitFLAG,IErr)
+	  !PRINT*,"u ",Ru,": ",Rfu
     ELSE
       Ru=Rcx+Rgold*(Rcx-Rbx)
       !Rfu=F(Ru)
       RIndependentVariable(ind)=Ru
       CALL SimulateAndFit(Rfu,RIndependentVariable,Iiter,IExitFLAG,IErr)
+	  !PRINT*,"u ",Ru,": ",Rfu
     END IF
-    Rax=Rbx
+    Rax=Rbx!shimmy along a bit, do
     Rbx=Rcx
     Rcx=Ru
     Rfa=Rfb
     Rfb=Rfc
     Rfc=Rfu
     GOTO 1
+  END IF
+  
+  !put in order
+2  IF (Rax.NE.MIN(Rax,Rbx,Rcx)) THEN
+    IF (Rbx.EQ.MIN(Rax,Rbx,Rcx)) THEN!swap a and b
+      Rdum=Rax
+	  Rax=Rbx
+	  Rbx=Rdum
+	  Rdum=Rfa
+	  Rfa=Rfb
+	  Rfb=Rdum
+	ELSE!swap a and c
+      Rdum=Rax
+	  Rax=Rcx
+	  Rcx=Rdum
+	  Rdum=Rfa
+	  Rfa=Rfc
+	  Rfc=Rdum
+	END IF
+  END IF
+  IF (Rcx.NE.MAX(Rax,Rbx,Rcx)) THEN!swap b and c
+    Rdum=Rbx
+	Rbx=Rcx
+	Rcx=Rdum
+	Rdum=Rfb
+	Rfb=Rfc
+	Rfc=Rdum
   END IF
   
   RETURN
@@ -839,17 +888,19 @@ SUBROUTINE BRENT(Rbrent,RIndependentVariable,Rax,Rbx,Rcx,Rtol,Rxmin,ind,IErr)
   REAL(RKIND) :: Rtol,Rtol1,Rtol2,RzEPS,ReTemp,RcGold,Rbrent,Rxmin
   REAL(RKIND),DIMENSION(INoOfVariables) :: RIndependentVariable
   PARAMETER (Iitmax=100,RcGold=0.3819660,RzEPS=1.0E-10)
-  
+
+  Iiter=IPreviousPrintedIteration-IPrint!write out while minimising  
   IExitFLAG=0!We never exit felixrefine from this subroutine
   Ra=MIN(Rax,Rcx) 
   Rb=MAX(Rax,Rcx) 
   Rv=Rbx 
-  Rw=Rv 
-  Rx=Rv 
+  Rw=Rbx 
+  Rx=Rbx 
   Re=ZERO
   !Rfx=F(Rx)
   RIndependentVariable(ind)=Rx
-  CALL SimulateAndFit(Rfx,RIndependentVariable,Iiter,IExitFLAG,IErr)
+  CALL SimulateAndFit(Rfx,RIndependentVariable,Iiter,IExitFLAG,IErr)!this is a repeat, can be removed if RfitB is passed
+  !PRINT*,"x ",Rx,": ",Rfx
   Rfv=Rfx 
   Rfw=Rfx 
   DO Iiter=1,Iitmax !main loop
@@ -873,10 +924,10 @@ SUBROUTINE BRENT(Rbrent,RIndependentVariable,Rax,Rbx,Rcx,Rtol,Rxmin,ind,IErr)
       IF (ABS(Rp).GE.ABS(.5*Rq*ReTemp).OR.Rp.LE.Rq*(Ra-Rx).OR. Rp.GE.Rq*(Rb-Rx)) GOTO 1 
       Rd=Rp/Rq !parabolic fit
       Ru=Rx+Rd 
-      IF (Ru-Ra.LT.Rtol2 .OR. Rb-Ru.LT.Rtol2) THEN!skip golden section 
+      IF (Ru-Ra.LT.Rtol2 .OR. Rb-Ru.LT.Rtol2) THEN 
         Rd=SIGN(Rtol1,Rxm-Rx)
       END IF
-      GOTO 2
+      GOTO 2!skip golden section
     END IF 
 1   IF (Rx.GE.Rxm) THEN!golden section 
       Re=Ra-Rx 
@@ -892,6 +943,7 @@ SUBROUTINE BRENT(Rbrent,RIndependentVariable,Rax,Rbx,Rcx,Rtol,Rxmin,ind,IErr)
     !Rfu=F(Ru) 
     RIndependentVariable(ind)=Ru
 	CALL SimulateAndFit(Rfu,RIndependentVariable,Iiter,IExitFLAG,IErr)
+	!PRINT*,"u ",Ru,": ",Rfu
     IF (Rfu.LE.Rfx) THEN 
       IF (Ru.GE.Rx) THEN 
         Ra=Rx 
@@ -943,7 +995,7 @@ SUBROUTINE BRENT(Rbrent,RIndependentVariable,Rax,Rbx,Rcx,Rtol,Rxmin,ind,IErr)
   
 3 Rxmin=Rx 
   Rbrent=Rfx 
-	  
+  
   RETURN
   
 END SUBROUTINE BRENT
@@ -1530,7 +1582,7 @@ END SUBROUTINE CreateIdentityMatrix
 
 !!$  %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-SUBROUTINE RecoverSavedSimplex(RSimplexVariable,RSimplexFoM,RStandardDeviation,RMean,IIterationCount,IErr)
+SUBROUTINE RecoverSavedSimplex(RSimplexVariable,RSimplexFoM,RStandardDeviation,RMean,Iter,IErr)
 
 !!$  %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 !!$  % This Subroutine reads the fr-simplex.txt file from a previous
@@ -1552,7 +1604,7 @@ SUBROUTINE RecoverSavedSimplex(RSimplexVariable,RSimplexFoM,RStandardDeviation,R
   IMPLICIT NONE
 
   INTEGER(IKIND) :: &
-       IErr,ind,IIterationCount
+       IErr,ind,Iter
   REAL(RKIND),DIMENSION(INoOfVariables+1,INoOfVariables) :: RSimplexVariable
   REAL(RKIND),DIMENSION(INoOfVariables+1) :: RSimplexFoM
   REAL(RKIND) :: RStandardDeviation,RMean
@@ -1570,7 +1622,7 @@ SUBROUTINE RecoverSavedSimplex(RSimplexVariable,RSimplexFoM,RStandardDeviation,R
      READ(IChOutSimplex,FMT=SFormatString) RSimplexVariable(ind,:),RSimplexFoM(ind)
   END DO
     
-  READ(IChOutSimplex,FMT="(2(1F6.3,1X),I5.1,I5.1,A1)") RStandardDeviation,RMean,IStandardDeviationCalls,IIterationCount
+  READ(IChOutSimplex,FMT="(2(1F6.3,1X),I5.1,I5.1,A1)") RStandardDeviation,RMean,IStandardDeviationCalls,Iter
 
   CLOSE(IChOutSimplex)
 

@@ -36,7 +36,7 @@
 ! $Id: Felixrefine.f90,v 1.89 2014/04/28 12:26:19 phslaz Exp $
 !%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-SUBROUTINE WriteIterationOutput(IIterationCount,IThicknessIndex,IExitFlag,IErr)
+SUBROUTINE WriteIterationOutput(Iter,IThicknessIndex,IExitFlag,IErr)
 !This code needs to be taken up a subroutine level and combined with CalculateFigureofMeritandDetermineThickness to avoid repeated calculation of the image to output and BlurG
   USE MyNumbers
   
@@ -51,16 +51,16 @@ SUBROUTINE WriteIterationOutput(IIterationCount,IThicknessIndex,IExitFlag,IErr)
 
   IMPLICIT NONE
 
-  INTEGER(IKIND) :: IErr,IIterationCount,IThickness,ind,jnd,gnd,hnd
+  INTEGER(IKIND) :: IErr,Iter,IThickness,ind,jnd,gnd,hnd
   INTEGER(IKIND),INTENT(IN) :: IThicknessIndex,IExitFLAG
   REAL(RKIND),DIMENSION(2*IPixelCount,2*IPixelCount) :: RImageToWrite
   REAL(RKIND) :: Rradius
   CHARACTER*200 :: path,SPrintString
-  
-  IF(IExitFLAG.EQ.1.OR.(IIterationCount.GE.(IPreviousPrintedIteration+IPrint))) THEN
+!PRINT*,"Iter",Iter,IPreviousPrintedIteration,IPrint
+  IF(IExitFLAG.EQ.1.OR.(Iter.GE.(IPreviousPrintedIteration+IPrint))) THEN
      IThickness = (RInitialThickness + (IThicknessIndex-1)*RDeltaThickness)/10!RB in nm 
      WRITE(path,"(A10,I4.4,A1,I3.3,A3,I3.3,A1,I3.3)") &
-          "Iteration",IIterationCount,&
+          "Iteration",Iter,&
           "_",IThickness,&
           "nm_",2*IPixelcount,&
           "x",2*IPixelcount
@@ -72,15 +72,15 @@ SUBROUTINE WriteIterationOutput(IIterationCount,IThicknessIndex,IExitFlag,IErr)
          WRITE(SPrintString,FMT='(A35)') "Writing output; baseline simulation"
 	   ELSE
          WRITE(SPrintString,FMT='(A16,I4,A35)') "Writing output; ",&
-		 IIterationCount-IPreviousPrintedIteration," iterations since the previous save"
+		 Iter-IPreviousPrintedIteration," iterations since the previous save"
 	   END IF
      ELSE
         WRITE(SPrintString,FMT='(A28,I4,A35)') "Exiting and writing output; ",&
-		IIterationCount-IPreviousPrintedIteration," iterations since the previous save" 
+		Iter-IPreviousPrintedIteration," iterations since the previous save" 
 	 END IF
         PRINT*,TRIM(ADJUSTL(SPrintString))
      
-     IPreviousPrintedIteration = IIterationCount
+     IPreviousPrintedIteration = Iter
 
 !    Was WriteIterationImages
   DO ind = 1,INoOfLacbedPatterns
@@ -123,14 +123,14 @@ SUBROUTINE WriteIterationOutput(IIterationCount,IThicknessIndex,IExitFlag,IErr)
         PRINT*,"WriteIterationOutput(",my_rank,")error in WriteIterationStructure"
         RETURN
      ENDIF
-           
+
      CALL WriteStructureFactors(path,IErr)
      IF( IErr.NE.0 ) THEN
         PRINT*,"WriteIterationOutput(",my_rank,")error in WriteStructureFactors()"
         RETURN
      ENDIF
 
-     CALL WriteOutVariables(IIterationCount,IErr)
+     CALL WriteOutVariables(Iter,IErr)
      IF( IErr.NE.0 ) THEN
         PRINT*,"WriteIterationOutput(",my_rank,")error in WriteOutVariables()"
         RETURN
@@ -265,7 +265,7 @@ END SUBROUTINE WriteIterationStructure
 
 !!$  %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-SUBROUTINE WriteOutVariables(IIterationCount,IErr)
+SUBROUTINE WriteOutVariables(Iter,IErr)
 
   USE MyNumbers
   
@@ -281,7 +281,7 @@ SUBROUTINE WriteOutVariables(IIterationCount,IErr)
   IMPLICIT NONE
 
   INTEGER(IKIND) :: IErr,ind,IStart,IEnd,jnd,ITotalOutputVariables
-  INTEGER(IKIND),INTENT(IN) :: IIterationCount
+  INTEGER(IKIND),INTENT(IN) :: Iter
   CHARACTER*200 :: SFormat,STotalOutputVariables
   INTEGER(IKIND),DIMENSION(IRefinementVariableTypes) :: IOutputVariables
   REAL(RKIND),DIMENSION(:),ALLOCATABLE :: RDataOut
@@ -313,6 +313,8 @@ SUBROUTINE WriteOutVariables(IIterationCount,IErr)
        IRefineMode(10) !Accelerating Voltage
   IOutputVariables(11) = &
        IRefineMode(11) !Residual Sum of Squares Scaling Factor
+  IOutputVariables(12) =  IRefineMode(12) * &
+       2*INoofUgs+1 ! Structure Factors are Complex so require two output variables each     
   
   ITotalOutputVariables = SUM(IOutputVariables) ! Total Output
   
@@ -331,7 +333,6 @@ SUBROUTINE WriteOutVariables(IIterationCount,IErr)
 
      SELECT CASE(jnd)
      CASE(1)
-!        DO ind = 1+IUgOffset,INoofUgs+IUgOffset
         DO ind = 1,INoofUgs
            IStart = (ind*2)-1
            IEnd = ind*2
@@ -358,7 +359,14 @@ SUBROUTINE WriteOutVariables(IIterationCount,IErr)
         RDataOut(IStart:IEnd) = RAcceleratingVoltage
      CASE(11)
         RDataOut(IStart:IEnd) = RRSoSScalingFactor
-     END SELECT
+     CASE(12)
+        DO ind = 1,INoofUgs
+           IStart = (ind*2)-1
+           IEnd = ind*2
+           RDataOut(IStart:IEnd) = [REAL(CUgToRefine(ind+IUgOffset)), REAL(AIMAG(CUgToRefine(ind+IUgOffset)),RKIND)]
+        END DO
+		RDataOut(IEnd+1) = RAbsorptionPercentage!RB last variable is absorption
+    END SELECT
   END DO
 
   WRITE(STotalOutputVariables,*) ITotalOutputVariables
@@ -366,7 +374,7 @@ SUBROUTINE WriteOutVariables(IIterationCount,IErr)
 
   OPEN(UNIT=IChOutSimplex,file='IterationLog.txt',form='formatted',status='unknown',position='append')
 
-  WRITE(UNIT=IChOutSimplex,FMT=SFormat) IIterationCount,RCrossCorrelation,RDataOut
+  WRITE(UNIT=IChOutSimplex,FMT=SFormat) Iter,RCrossCorrelation,RDataOut
 
   CLOSE(IChOutSimplex)
 
