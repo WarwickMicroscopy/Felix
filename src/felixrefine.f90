@@ -66,7 +66,7 @@ PROGRAM Felixrefine
   REAL(RKIND), DIMENSION(:,:), ALLOCATABLE :: RgDummyVecMat,RgPoolMagLaue
   REAL(RKIND) :: RBCASTREAL,RStandardDeviation,RMean,RGzUnitVec,RMinLaueZoneValue,&
        RMaxLaueZoneValue,RMaxAcceptanceGVecMag,RLaueZoneElectronWaveVectorMag
-  REAL(RKIND) :: RdeltaUg,Rtol,RpointA,RpointB,RpointC,RfitA,RfitB,RfitC,Rbrent
+  REAL(RKIND) :: RdeltaUg,Rtol,RpointA,RpointB,RpointC,RfitA,RfitB,RfitC,RbestFit
   LOGICAL :: LInitialSimulationFLAG = .TRUE.
   CHARACTER*40 :: my_rank_string
   CHARACTER*20 :: Sind
@@ -571,8 +571,8 @@ RFullIsotropicDebyeWallerFactor,IFullAtomicNumber,IFullAnisotropicDWFTensor)
 
   IF (IRefineMode(12).EQ.1) THEN
     !bisection
-	RdeltaUg=0.01!5% change of the Ug component to start
-	Rtol=0.005! precision 0.1 (in what units, eh? Do find out...)
+	RdeltaUg=0.01!1% change of the Ug component to start
+	Rtol=0.01! precision 0.01 (in what units, eh? Do find out...)
 	DO ind = 1,INoOfVariables!work through Ug components one at a time
 	  Iter=Iter+IPrint
 	  RpointA=RIndependentVariable(ind)
@@ -597,20 +597,23 @@ RFullIsotropicDebyeWallerFactor,IFullAtomicNumber,IFullAnisotropicDWFTensor)
         PRINT*,TRIM(ADJUSTL(SPrintString))
 		PRINT*,"Finding best fit..."
       END IF	  
-	  !find the minimum using Brent's method
-	  CALL BRENT(RFigureofMerit,RIndependentVariable,RpointA,RpointB,RpointC,Rtol,Rbrent,ind,IErr)
-	  RIndependentVariable(ind)=Rbrent
+	  !find the minimum using Brent's method, pass best figure of merit in
+	  RFigureofMerit=RfitB
+	  CALL BRENT(RFigureofMerit,RIndependentVariable,RpointA,RpointB,RpointC,Rtol,RbestFit,ind,IErr)
+	  RIndependentVariable(ind)=RbestFit
       IF(my_rank.EQ.0) THEN
-	    WRITE(SPrintString,FMT='(A12,F5.3,A18,F7.5)') "Final value ",Rbrent,": figure of merit ",RFigureofMerit
-        PRINT*,TRIM(ADJUSTL(SPrintString))
         CALL CreateImagesAndWriteOutput(Iter,IExitFLAG,IErr) 
         IF( IErr.NE.0 ) THEN
           PRINT*,"felixrefine(",my_rank,")error in CreateImagesAndWriteOutput"
           GOTO 9999
         END IF
+	    WRITE(SPrintString,FMT='(A12,F5.3,A18,F7.5)') "Final value ",RbestFit,": figure of merit ",RFigureofMerit
+        PRINT*,TRIM(ADJUSTL(SPrintString))
       END IF	  
 	END DO
+	
   ELSE
+  
     ! Initialise Simplex
     ALLOCATE(RSimplexVariable(INoOfVariables+1,INoOfVariables), STAT=IErr)  
     ALLOCATE(RSimplexFoM(INoOfVariables+1),STAT=IErr)  
@@ -897,12 +900,9 @@ SUBROUTINE BRENT(Rbrent,RIndependentVariable,Rax,Rbx,Rcx,Rtol,Rxmin,ind,IErr)
   Rw=Rbx 
   Rx=Rbx 
   Re=ZERO
-  !Rfx=F(Rx)
-  RIndependentVariable(ind)=Rx
-  CALL SimulateAndFit(Rfx,RIndependentVariable,Iiter,IExitFLAG,IErr)!this is a repeat, can be removed if RfitB is passed
-  !PRINT*,"x ",Rx,": ",Rfx
-  Rfv=Rfx 
-  Rfw=Rfx 
+  Rfx=Rbrent
+  Rfv=Rbrent 
+  Rfw=Rbrent
   DO Iiter=1,Iitmax !main loop
     Rxm=0.5*(Ra+Rb) 
     Rtol1=Rtol*ABS(Rx)+RzEPS 
