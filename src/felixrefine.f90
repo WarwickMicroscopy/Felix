@@ -551,6 +551,7 @@ RFullIsotropicDebyeWallerFactor,IFullAtomicNumber,IFullAnisotropicDWFTensor)
   END IF
   !--------------------------------------------------------------------
   !baseline simulation
+  RFigureofMerit=9.999!Inital value
   Iter = 0
   CALL FelixFunction(LInitialSimulationFLAG,IErr)
   IF( IErr.NE.0 ) THEN
@@ -559,7 +560,6 @@ RFullIsotropicDebyeWallerFactor,IFullAtomicNumber,IFullAnisotropicDWFTensor)
   END IF
   !Baseline simulation output, core 0 only
   IExitFLAG = 0 !Do not exit
-  RFigureofMerit=9.999!Inital value
   IPreviousPrintedIteration = -100!RB ensuring baseline simulation is printed
   IF(my_rank.EQ.0) THEN   
     CALL CreateImagesAndWriteOutput(Iter,IExitFLAG,IErr) 
@@ -571,9 +571,10 @@ RFullIsotropicDebyeWallerFactor,IFullAtomicNumber,IFullAnisotropicDWFTensor)
 
   IF (IRefineMode(12).EQ.1) THEN
     !bisection
-	RdeltaUg=0.01!1% change of the Ug component to start
-	Rtol=0.01! precision 0.01 (in what units, eh? Do find out...)
-	DO ind = 1,INoOfVariables!work through Ug components one at a time
+	RdeltaUg=0.01!RSimplexLengthScale/100.0!use simplex length scale
+	Rtol=0.002! precision 0.01 (in what units, eh? Do find out...)
+	DO jnd=1,10!10 cycles to see how it converges
+	 DO ind = 1,INoOfVariables!work through Ug components one at a time
 	  Iter=Iter+IPrint
 	  RpointA=RIndependentVariable(ind)
 	  RpointB=RIndependentVariable(ind)+ABS(RdeltaUg*RIndependentVariable(ind))!b must be > a
@@ -581,21 +582,21 @@ RFullIsotropicDebyeWallerFactor,IFullAtomicNumber,IFullAnisotropicDWFTensor)
 	  !bracket the minimum between point A and B
       IF(my_rank.EQ.0) THEN
         PRINT*,"--------------------------------"
-        WRITE(SPrintString,FMT='(A20,I3,A4,I4)') "Optimising variable ",ind," of ",INoOfVariables
+        WRITE(SPrintString,FMT='(A20,I2,A4,I3)') "Optimising variable ",ind," of ",INoOfVariables
         PRINT*,TRIM(ADJUSTL(SPrintString))
-	    WRITE(SPrintString,FMT='(A14,F5.3,A18,F7.5)') "Initial value ",RpointA,": figure of merit ",RFigureofMerit
+	    WRITE(SPrintString,FMT='(A14,F8.6,A18,F8.6)') "Initial value ",RpointA,": figure of merit ",RFigureofMerit
         PRINT*,TRIM(ADJUSTL(SPrintString))
-		PRINT*,"Bracketing..."
+		!PRINT*,"Bracketing..."
       END IF	  
 	  CALL mnbrak(RIndependentVariable,RpointA,RpointB,RpointC,RfitA,RfitB,RfitC,ind,IErr)
       IF(my_rank.EQ.0) THEN
-        PRINT*,"--------------------------------"
-        WRITE(SPrintString,FMT='(A19,F5.3,A1,F7.5,A6,F5.3,A1,F7.5,A1)')&
+        !PRINT*,"--------------------------------"
+        WRITE(SPrintString,FMT='(A19,F8.6,A1,F8.6,A6,F8.6,A1,F8.6,A1)')&
 		"Minimum is between ",RpointA,"(",RfitA,") and ",RpointC,"(",RfitC,")"
-        PRINT*,TRIM(ADJUSTL(SPrintString))
-	    WRITE(SPrintString,FMT='(A14,F5.3,A18,F7.5)') "Current value ",RpointB,": figure of merit ",RfitB
-        PRINT*,TRIM(ADJUSTL(SPrintString))
-		PRINT*,"Finding best fit..."
+        !PRINT*,TRIM(ADJUSTL(SPrintString))
+	    WRITE(SPrintString,FMT='(A14,F8.6,A18,F8.6)') "Current value ",RpointB,": figure of merit ",RfitB
+        !PRINT*,TRIM(ADJUSTL(SPrintString))
+		!PRINT*,"Finding best fit..."
       END IF	  
 	  !find the minimum using Brent's method, pass best figure of merit in
 	  RFigureofMerit=RfitB
@@ -607,9 +608,10 @@ RFullIsotropicDebyeWallerFactor,IFullAtomicNumber,IFullAnisotropicDWFTensor)
           PRINT*,"felixrefine(",my_rank,")error in CreateImagesAndWriteOutput"
           GOTO 9999
         END IF
-	    WRITE(SPrintString,FMT='(A12,F5.3,A18,F7.5)') "Final value ",RbestFit,": figure of merit ",RFigureofMerit
+	    WRITE(SPrintString,FMT='(A12,F8.6,A18,F8.6)') "Final value ",RbestFit,": figure of merit ",RFigureofMerit
         PRINT*,TRIM(ADJUSTL(SPrintString))
-      END IF	  
+      END IF
+     END DO	  
 	END DO
 	
   ELSE
@@ -867,11 +869,11 @@ END SUBROUTINE mnbrak
 
 !%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-SUBROUTINE BRENT(Rbrent,RIndependentVariable,Rax,Rbx,Rcx,Rtol,Rxmin,ind,IErr)
+SUBROUTINE BRENT(Rbrent,RIndependentVariable,Rax,Rbx,Rcx,Rtol,RbestFit,ind,IErr)
   !given a function F(Rx) and a bracketing triplet of abscissas Rax,Rbx,Rcx 
   !where bx is between ax and cx, and F(bx) is less than F(ax) or F(cx)
   !this routine isolates the minimum to a precision of tol using Brent's method
-  !position of minimum is Rxmin and its value there is Rbrent
+  !position of minimum is RbestFit and its value there is Rbrent
   USE MyNumbers
   USE WriteToScreen
 
@@ -888,7 +890,7 @@ SUBROUTINE BRENT(Rbrent,RIndependentVariable,Rax,Rbx,Rcx,Rtol,Rxmin,ind,IErr)
   
   INTEGER(IKIND) :: Iiter,Iitmax,IExitFLAG,ind,IErr
   REAL(RKIND) :: Ra,Rb,Rax,Rbx,Rcx,Rd,Re,Rfx,Rfu,Rfv,Rfw,Rp,Rq,Rr,Ru,Rv,Rw,Rx,Rxm
-  REAL(RKIND) :: Rtol,Rtol1,Rtol2,RzEPS,ReTemp,RcGold,Rbrent,Rxmin
+  REAL(RKIND) :: Rtol,Rtol1,Rtol2,RzEPS,ReTemp,RcGold,Rbrent,RbestFit
   REAL(RKIND),DIMENSION(INoOfVariables) :: RIndependentVariable
   PARAMETER (Iitmax=100,RcGold=0.3819660,RzEPS=1.0E-10)
 
@@ -940,10 +942,11 @@ SUBROUTINE BRENT(Rbrent,RIndependentVariable,Rax,Rbx,Rcx,Rtol,Rxmin,ind,IErr)
     ELSE 
       Ru=Rx+SIGN(Rtol1,Rd) 
     END IF 
-    !Rfu=F(Ru) 
     RIndependentVariable(ind)=Ru
 	CALL SimulateAndFit(Rfu,RIndependentVariable,Iiter,IExitFLAG,IErr)
-	!PRINT*,"u ",Ru,": ",Rfu
+    !IF(my_rank.EQ.0) THEN
+	!  PRINT*,Ru,": ",Rfu
+	!END IF
     IF (Rfu.LE.Rfx) THEN 
       IF (Ru.GE.Rx) THEN 
         Ra=Rx 
@@ -993,8 +996,12 @@ SUBROUTINE BRENT(Rbrent,RIndependentVariable,Rax,Rbx,Rcx,Rtol,Rxmin,ind,IErr)
     IErr=1
   END IF
   
-3 Rxmin=Rx 
-  Rbrent=Rfx 
+3 IF (Rfx.LT.Rbrent) THEN!only accept if outgoing fit is better than incoming one
+    RbestFit=Rx 
+    Rbrent=Rfx 
+  ELSE
+    RbestFit=Rbx
+  END IF
   
   RETURN
   

@@ -127,9 +127,11 @@ SUBROUTINE SimulateAndFit(RFigureofMerit,RIndependentVariable,Iiter,IExitFLAG,IE
         RETURN
      ENDIF
 !This is the key parameter!!!****     
-     RFigureofMerit = RCrossCorrelation     
+     RFigureofMerit = RCrossCorrelation
   END IF
-
+  
+  CALL MPI_BCAST(RFigureofMerit,1,MPI_DOUBLE_PRECISION,0,MPI_COMM_WORLD,IErr)
+  
 END SUBROUTINE SimulateAndFit
 
 !%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -192,7 +194,7 @@ SUBROUTINE FelixFunction(LInitialSimulationFLAG,IErr)
 
 !Simulation (different local pixels for each core)--------------------------------------------------------------------  
   IF(IWriteFLAG.GE.0.AND.my_rank.EQ.0) THEN
-    PRINT*,"Bloch wave calculation..."
+    !PRINT*,"Bloch wave calculation..."!RB temp suppression of output
   END IF
   DO knd = ILocalPixelCountMin,ILocalPixelCountMax,1
      jnd = IPixelLocations(knd,1)
@@ -334,9 +336,9 @@ SUBROUTINE CalculateFigureofMeritandDetermineThickness(IThicknessCountFinal,IErr
 
   IF(my_rank.eq.0) THEN
     WRITE(SPrintString,FMT='(A18,I4,A10)') "Specimen thickness ",NINT(RThickness)," Angstroms"
-    PRINT*,TRIM(ADJUSTL(SPrintString))
+    !PRINT*,TRIM(ADJUSTL(SPrintString)) !RB temp supression of output
     WRITE(SPrintString,FMT='(A15,I4,A10)') "Thickness range",NINT(RThicknessRange)," Angstroms"
-    PRINT*,TRIM(ADJUSTL(SPrintString))
+    !PRINT*,TRIM(ADJUSTL(SPrintString))
   END IF
 
 END SUBROUTINE CalculateFigureofMeritandDetermineThickness
