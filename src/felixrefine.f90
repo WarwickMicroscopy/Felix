@@ -908,8 +908,9 @@ SUBROUTINE BRENT(Rbrent,RIndependentVariable,Rax,Rbx,Rcx,Rtol,RbestFit,ind,IErr)
   DO Iiter=1,Iitmax !main loop
     Rxm=0.5*(Ra+Rb) 
     Rtol1=Rtol*ABS(Rx)+RzEPS 
-    Rtol2=2.*Rtol1 
-    IF (ABS(Rx-Rxm).LE.(Rtol2-.5*(Rb-Ra))) THEN!Test for done
+    Rtol2=2.*Rtol1
+	!Test for done, only accept if outgoing fit is better than incoming one
+    IF ((ABS(Rx-Rxm).LE.(Rtol2-.5*(Rb-Ra))).AND.(Rfx.LT.Rbrent)) THEN
       GOTO 3
 	END IF
     IF( ABS(Re).GT.Rtol1) THEN 
@@ -996,12 +997,12 @@ SUBROUTINE BRENT(Rbrent,RIndependentVariable,Rax,Rbx,Rcx,Rtol,RbestFit,ind,IErr)
     IErr=1
   END IF
   
-3 IF (Rfx.LT.Rbrent) THEN!only accept if outgoing fit is better than incoming one
+3 !IF (Rfx.LT.Rbrent) THEN!only accept if outgoing fit is better than incoming one
     RbestFit=Rx 
     Rbrent=Rfx 
-  ELSE
-    RbestFit=Rbx
-  END IF
+  !ELSE
+  !  RbestFit=Rbx
+  !END IF
   
   RETURN
   
