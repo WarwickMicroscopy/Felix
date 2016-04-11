@@ -997,8 +997,8 @@ SUBROUTINE BRENT(Rbrent,RIndependentVariable,Rax,Rbx,Rcx,Rtol,RbestFit,ind,IErr)
     IErr=1
   END IF
   
-3 !IF (Rfx.LT.Rbrent) THEN!only accept if outgoing fit is better than incoming one
-    RbestFit=Rx 
+!3  IF (Rfx.LT.Rbrent) THEN!only accept if outgoing fit is better than incoming one
+3   RbestFit=Rx 
     Rbrent=Rfx 
   !ELSE
   !  RbestFit=Rbx
