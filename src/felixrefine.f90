@@ -593,9 +593,9 @@ RFullIsotropicDebyeWallerFactor,IFullAtomicNumber,IFullAnisotropicDWFTensor)
         !PRINT*,"--------------------------------"
         WRITE(SPrintString,FMT='(A19,F8.6,A1,F8.6,A6,F8.6,A1,F8.6,A1)')&
 		"Minimum is between ",RpointA,"(",RfitA,") and ",RpointC,"(",RfitC,")"
-        !PRINT*,TRIM(ADJUSTL(SPrintString))
+        PRINT*,TRIM(ADJUSTL(SPrintString))
 	    WRITE(SPrintString,FMT='(A14,F8.6,A18,F8.6)') "Current value ",RpointB,": figure of merit ",RfitB
-        !PRINT*,TRIM(ADJUSTL(SPrintString))
+        PRINT*,TRIM(ADJUSTL(SPrintString))
 		!PRINT*,"Finding best fit..."
       END IF	  
 	  !find the minimum using Brent's method, pass best figure of merit in
