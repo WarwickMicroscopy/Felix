@@ -238,12 +238,12 @@ SUBROUTINE WriteIterationStructure(path,IErr)
 !  WRITE(IChOutSimplex,FMT='(A25)') "_atom_site_B_iso_or_equiv"
 !  WRITE(IChOutSimplex,FMT='(A20)') "_atom_site_occupancy"
 
-  DO jnd = 1,SIZE(RAtomSiteFracCoordVec,DIM=1)!RB only gives refined atoms, needs work
+  DO jnd = 1,SIZE(RBasisAtomPosition,DIM=1)!RB only gives refined atoms, needs work
      WRITE(IChOutSimplex,FMT='(A2,1X,3(F9.6,1X))') &
-	 SAtomName(jnd),RAtomSiteFracCoordVec(jnd,:)
+	 SBasisAtomName(jnd),RBasisAtomPosition(jnd,:)
 !     WRITE(IChOutSimplex,FMT='(A2,1X,A1,1X,3(F9.6,1X),F5.3,1X,F5.3)') &
-!	 SAtomName(jnd),SWyckoffSymbols(jnd),RAtomSiteFracCoordVec(jnd,:), &
-!	 RIsotropicDebyeWallerFactors(jnd),RAtomicSitePartialOccupancy(jnd)
+!	 SBasisAtomName(jnd),SWyckoffSymbols(jnd),RBasisAtomPosition(jnd,:), &
+!	 RBasisIsoDW(jnd),RBasisOccupancy(jnd)
   END DO
   WRITE(IChOutSimplex,FMT='(A22)') "#End of refinement cif"
   
@@ -291,13 +291,13 @@ SUBROUTINE WriteOutVariables(Iter,IErr)
   IOutputVariables(1) =  IRefineMode(1) * &
        2*INoofUgs+1 ! Structure Factors are Complex so require two output variables each     
   IOutputVariables(2) = IRefineMode(2) * & !Structural Coordinates
-       (SIZE(RAtomSiteFracCoordVec,DIM=1) * SIZE(RAtomSiteFracCoordVec,DIM=2))
+       (SIZE(RBasisAtomPosition,DIM=1) * SIZE(RBasisAtomPosition,DIM=2))
   IOutputVariables(3) = &
        IRefineMode(3) * & !Atomic Site Occupancies
-       SIZE(RAtomicSitePartialOccupancy,DIM=1)
+       SIZE(RBasisOccupancy,DIM=1)
   IOutputVariables(4) = &
        IRefineMode(4) * & !Isotropic Debye Waller Factors
-       SIZE(RIsotropicDebyeWallerFactors,DIM=1)
+       SIZE(RBasisIsoDW,DIM=1)
   IOutputVariables(5) = &
        IRefineMode(5) * & !Anisotropic Debye Waller Factors
        SIZE(RAnisotropicDebyeWallerFactorTensor)
@@ -340,11 +340,11 @@ SUBROUTINE WriteOutVariables(Iter,IErr)
         END DO
 		RDataOut(IEnd+1) = RAbsorptionPercentage!RB last variable is absorption
      CASE(2)
-        RDataOut(IStart:IEnd) = RESHAPE(TRANSPOSE(RAtomSiteFracCoordVec),SHAPE(RDataOut(IStart:IEnd)))
+        RDataOut(IStart:IEnd) = RESHAPE(TRANSPOSE(RBasisAtomPosition),SHAPE(RDataOut(IStart:IEnd)))
      CASE(3)
-        RDataOut(IStart:IEnd) = RAtomicSitePartialOccupancy
+        RDataOut(IStart:IEnd) = RBasisOccupancy
      CASE(4)
-        RDataOut(IStart:IEnd) = RIsotropicDebyeWallerFactors
+        RDataOut(IStart:IEnd) = RBasisIsoDW
      CASE(5)
         RDataOut(IStart:IEnd) = RESHAPE(RAnisotropicDebyeWallerFactorTensor,SHAPE(RDataOut(IStart:IEnd)))
      CASE(6)

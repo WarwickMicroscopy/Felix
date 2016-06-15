@@ -54,7 +54,7 @@ SUBROUTINE DetermineAllowedMovements(ISpaceGrp,SWyckoffSymbol,RVector,IVector,IE
 
   INTEGER(IKIND) :: ISpaceGrp,IErr,IVector,ind
   CHARACTER*1 :: SWyckoffSymbol
-  REAL(RKIND),DIMENSION(IVector,THREEDIM),INTENT(OUT) :: RVector
+  REAL(RKIND),DIMENSION(IVector,ITHREE),INTENT(OUT) :: RVector
 
   !Tells user, entering DetermineAllowedMovements
   CALL Message("DetermineAllowedMovements",IMust,IErr)

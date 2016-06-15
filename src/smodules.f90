@@ -96,7 +96,7 @@ MODULE IConst
   USE MyNumbers
   INTEGER(IKIND), PARAMETER :: &
        MAXWriteFLAG= 10, &
-       THREEDIM= 3, &
+       ITHREE= 3, &
        ADD_OUT_INFO=6, &
        IParallelFLAG=0,&
        IRandomFLAG = 1, &
@@ -155,9 +155,9 @@ MODULE IPara
   !Disk Radius
   INTEGER(IKIND) :: IPixelCount 
   !Crystal Settings
-  INTEGER(IKIND) :: ITotalAtoms
+  INTEGER(IKIND) :: IMaxPossibleNAtomsUnitCell
   ! Name2Atom index
-  INTEGER(IKIND), DIMENSION(:), ALLOCATABLE :: IAtomicNumber,IAtoms
+  INTEGER(IKIND), DIMENSION(:), ALLOCATABLE :: IBasisAtomicNumber,IAtoms
   !Microscope Settings
   INTEGER(IKIND) :: IIncidentBeamDirectionX, IIncidentBeamDirectionY, &
        IIncidentBeamDirectionZ, &
@@ -169,7 +169,7 @@ MODULE IPara
   INTEGER(IKIND) :: INoOfLacbedPatterns
   !Beams from selection criteria
   INTEGER(IKIND) :: nReflections,nStrongBeams,nWeakBeams,nBeams,IHKLMAXValue
-  INTEGER(IKIND), DIMENSION(:), ALLOCATABLE :: IAnisotropicDWFTensor, IAnisoDWFT
+  INTEGER(IKIND), DIMENSION(:), ALLOCATABLE :: IBasisAnisoDW, IAnisoDWFT
   !Main
   INTEGER(IKIND) :: IPixelTotal, INAtomsUnitCell,IPixelComputed
   INTEGER, DIMENSION(2) :: IImageSizeXY
@@ -180,7 +180,7 @@ MODULE IPara
   INTEGER(IKIND),DIMENSION(:), ALLOCATABLE :: InBeams,IStrongBeamList,IOutputReflections,IEquivalentUgKey
   !inpcif
   INTEGER(IKIND) :: ISymCount
-  INTEGER(IKIND), DIMENSION(:), ALLOCATABLE :: IFullAtomicNumber, IFullAnisotropicDWFTensor
+  INTEGER(IKIND), DIMENSION(:), ALLOCATABLE :: IAtomicNumber, IAnisoDW
   INTEGER(IKIND) :: IPixelCountTotal
   !LACBED Writing
   INTEGER(IKIND) :: ISeperateFolderFlag
@@ -224,8 +224,8 @@ MODULE RPara
   REAL(RKIND) :: RLengthX,RLengthY,RLengthZ,RVolume,RAlpha,RBeta,RGamma, &
        RDebyeWallerConstant,RAbsorptionPercentage
   REAL(RKIND), DIMENSION(:), ALLOCATABLE :: &
-       RIsotropicDebyeWallerFactors, RAtomicSitePartialOccupancy, RDWF, ROcc
-  REAL(RKIND), DIMENSION(:,:), ALLOCATABLE :: RSymVec,RAtomSiteFracCoordVec, MNP,&
+       RBasisIsoDW, RBasisOccupancy, RDWF, ROcc
+  REAL(RKIND), DIMENSION(:,:), ALLOCATABLE :: RSymVec,RBasisAtomPosition, MNP,&
        RUniqueKey
   REAL(RKIND), DIMENSION(:,:,:), ALLOCATABLE :: RSymMat
   !Microscope Parameters
@@ -249,22 +249,22 @@ MODULE RPara
   ! Crystallography 
   ! Real Space and Reciprocal Lattice Vectors in Orthogonal and Microscope
   ! reference framce
-  REAL(RKIND), DIMENSION(THREEDIM) :: RXDirM,RYDirM,RZDirM,& 
+  REAL(RKIND), DIMENSION(ITHREE) :: RXDirM,RYDirM,RZDirM,& 
        RaVecO, RbVecO, RcVecO, &
        RaVecM, RbVecM, RcVecM, &
        RarVecO, RbrVecO, RcrVecO, &
        RarVecM, RbrVecM, RcrVecM, &
        RXDirC, RZDirC, RNormDirC,RNormDirM
   REAL(RKIND), DIMENSION(:,:), ALLOCATABLE :: RAtomCoordinate
-  REAL(RKIND) :: RBaseVec(THREEDIM,THREEDIM), &
-       RInvBaseVec(THREEDIM,THREEDIM)
+  REAL(RKIND) :: RBaseVec(ITHREE,ITHREE), &
+       RInvBaseVec(ITHREE,ITHREE)
   REAL(RKIND), DIMENSION(:,:,:), ALLOCATABLE :: RAnisotropicDebyeWallerFactorTensor
   !Diffraction Pattern Definitions
   REAL(RKIND), DIMENSION(:), ALLOCATABLE :: RgPoolMag, RSg
   REAL(RKIND), DIMENSION(:,:), ALLOCATABLE :: RgPool, RgPoolT, RgPoolMagLaueZone
-  REAL(RKIND), DIMENSION(THREEDIM,THREEDIM) :: RTMat
+  REAL(RKIND), DIMENSION(ITHREE,ITHREE) :: RTMat
   REAL(RKIND) :: RDeltaK, RMinimumGMag,RGVectorMagnitude
-  REAL(RKIND),DIMENSION(THREEDIM) :: RGVector
+  REAL(RKIND),DIMENSION(ITHREE) :: RGVector
   REAL(RKIND),DIMENSION(:),ALLOCATABLE :: RgVecVec
   !Image Initialisation
   REAL(RKIND),DIMENSION(:,:),ALLOCATABLE :: RhklPositions
@@ -278,8 +278,8 @@ MODULE RPara
        RInnerIntegrationParameterGMagPrime,&
        ROuterIntegrationParameterGMagPrime
   !LACBED Program
-  REAL(RKIND), DIMENSION(:,:), ALLOCATABLE :: RFullAtomicFracCoordVec
-  REAL(RKIND), DIMENSION(:), ALLOCATABLE :: RFullPartialOccupancy, RFullIsotropicDebyeWallerFactor
+  REAL(RKIND), DIMENSION(:,:), ALLOCATABLE :: RAtomPosition
+  REAL(RKIND), DIMENSION(:), ALLOCATABLE :: ROccupancy, RIsoDW
   !WaveFunction Arrays
   REAL(RKIND),DIMENSION(:),ALLOCATABLE :: RWaveIntensity,RFullWaveIntensity
   REAL(RKIND), DIMENSION(:,:,:), ALLOCATABLE :: RIndividualReflections
@@ -299,7 +299,7 @@ MODULE RPara
   REAL(RKIND),DIMENSION(:),ALLOCATABLE :: RAllowedVectorMagnitudes
   REAL(RKIND) :: RSimplexLengthScale,RExitCriteria,RSimplexStandardDeviation,RSimplexMean,RRSoSScalingFactor
   !Refinement Initial Coordinates
-  REAL(RKIND),DIMENSION(:,:),ALLOCATABLE :: RInitialAtomSiteFracCoordVec
+  REAL(RKIND),DIMENSION(:,:),ALLOCATABLE :: RInitialAtomPosition
   !Weighting Coefficients for figure of merit combination
   REAL(RKIND),DIMENSION(:),ALLOCATABLE :: RWeightingCoefficients
 
@@ -329,8 +329,8 @@ MODULE SPara
   
   CHARACTER*1 :: SSpaceGroupName
   CHARACTER*10 :: SSpaceGrp
-  CHARACTER*2, DIMENSION(:), ALLOCATABLE :: SFullAtomicNameVec 
-  CHARACTER*2, DIMENSION(:), ALLOCATABLE :: SAtomName, SMNP
+  CHARACTER*2, DIMENSION(:), ALLOCATABLE :: SAtomName 
+  CHARACTER*2, DIMENSION(:), ALLOCATABLE :: SBasisAtomName, SMNP
   CHARACTER*1,DIMENSION(:),ALLOCATABLE :: SWyckoffSymbols
   
 END MODULE SPara
@@ -361,7 +361,7 @@ MODULE BlochPara
   INTEGER(IKIND),DIMENSION(:), ALLOCATABLE :: IWeakBeamList
   REAL(RKIND) RBigK
   REAL(RKIND),DIMENSION(:), ALLOCATABLE :: RDevPara
-  REAL(RKIND), DIMENSION(THREEDIM) :: RTiltedK
+  REAL(RKIND), DIMENSION(ITHREE) :: RTiltedK
   REAL(8), DIMENSION(:), ALLOCATABLE :: RROutArray, RIOutArray
   COMPLEX(CKIND),DIMENSION(:,:), ALLOCATABLE :: CEigenSaveTemp
 END MODULE BlochPara

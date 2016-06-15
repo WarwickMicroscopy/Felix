@@ -389,7 +389,7 @@ SUBROUTINE WriteCif(IErr)
   INCLUDE       'ciftbx-f90.cmn'
 
   INTEGER(IKIND) :: IErr
-  REAL(RKIND),DIMENSION(SIZE(RAtomSiteFracCoordVec,DIM=1),SIZE(RAtomSiteFracCoordVec,DIM=2)) :: &
+  REAL(RKIND),DIMENSION(SIZE(RBasisAtomPosition,DIM=1),SIZE(RBasisAtomPosition,DIM=2)) :: &
        ROutputData
   REAL(RKIND),DIMENSION(2,3) :: RUnitCellParameters
   LOGICAL :: f1

@@ -88,7 +88,7 @@ SUBROUTINE ReflectionDetermination( IErr )
      CALL HKLCount(IHKLMAXValue,RZDirC,INhkl,RHOLZAcceptanceAngle,IErr)
   END DO
 ! Fill the list of reflections Rhkl
-  ALLOCATE(Rhkl(INhkl,THREEDIM),STAT=IErr)
+  ALLOCATE(Rhkl(INhkl,ITHREE),STAT=IErr)
   CALL HKLMake(IHKLMAXValue,RZDirC,INhkl,Rhkl,RHOLZAcceptanceAngle,IErr)
 
   CALL SortHKL(Rhkl,INhkl,IErr)
@@ -110,12 +110,12 @@ SUBROUTINE ReflectionDetermination( IErr )
      END IF
   END IF
 
-  ALLOCATE(RgPoolT(INhkl,THREEDIM),STAT=IErr)
+  ALLOCATE(RgPoolT(INhkl,ITHREE),STAT=IErr)
   IF( IErr.NE.0 ) THEN
      PRINT*,"DiffractionPatternDefinitions(",my_rank,")error allocating RgPoolT"
      RETURN
   END IF
-  ALLOCATE(RgDummyVecMat(INhkl,THREEDIM),STAT=IErr)
+  ALLOCATE(RgDummyVecMat(INhkl,ITHREE),STAT=IErr)
   IF( IErr.NE.0 ) THEN
      PRINT*,"DiffractionPatternDefinitions(",my_rank,")error allocating RgDummyVecMat"
      RETURN
@@ -141,7 +141,7 @@ SUBROUTINE ReflectionDetermination( IErr )
   ICutOff = 1
   DO ind=1,INhkl
      WRITE(Sind,'(I10.1)')ind
-     DO jnd=1,THREEDIM
+     DO jnd=1,ITHREE
         RgPoolT(ind,jnd)= &!RB what is RgPoolT???
              Rhkl(ind,1)*RarVecM(jnd) + &
              Rhkl(ind,2)*RbrVecM(jnd) + &
@@ -576,7 +576,7 @@ SUBROUTINE HKLCount(Ihklmax,Rhkl0Vec,INhkl,RHOLZAcceptanceAngle,IErr)
   
   INTEGER(IKIND) :: IErr,Ihklmax,ind,jnd,knd,INhkl
   REAL(RKIND) :: RHOLZAcceptanceAngle
-  REAL(RKIND), DIMENSION(THREEDIM) :: Rhkl0Vec,RhklDummyUnitVec,RhklDummyVec,Rhkl0UnitVec
+  REAL(RKIND), DIMENSION(ITHREE) :: Rhkl0Vec,RhklDummyUnitVec,RhklDummyVec,Rhkl0UnitVec
 
   CALL Message("HKLCount",IMust,IErr)
 
@@ -729,8 +729,8 @@ SUBROUTINE HKLMake(Ihklmax,Rhkl0Vec,RHOLZAcceptanceAngle,IErr)
   
   INTEGER(IKIND) :: IErr,Ihklmax,ind,jnd,knd,lnd
   REAL(RKIND) :: RHOLZAcceptanceAngle
-  REAL(RKIND),DIMENSION(THREEDIM) :: Rhkl0Vec,RhklDummyUnitVec,RhklDummyVec,Rhkl0UnitVec
-!  REAL(RKIND), DIMENSION(INhkl,THREEDIM) :: Rhkl 
+  REAL(RKIND),DIMENSION(ITHREE) :: Rhkl0Vec,RhklDummyUnitVec,RhklDummyVec,Rhkl0UnitVec
+!  REAL(RKIND), DIMENSION(INhkl,ITHREE) :: Rhkl 
 
   CALL Message("HKLCount",IMust,IErr)
 
@@ -893,7 +893,7 @@ SUBROUTINE NewHKLMake(Ihklmax,Rhkl0Vec,RHOLZAcceptanceAngle,IErr)
   
   INTEGER(IKIND) :: IErr, Ihklmax,ind,jnd,knd,INhkl
   REAL(RKIND) :: RHOLZAcceptanceAngle
-  REAL(RKIND), DIMENSION(THREEDIM) :: Rhkl0Vec,RhklDummyUnitVec,RhklDummyVec,Rhkl0UnitVec
+  REAL(RKIND), DIMENSION(ITHREE) :: Rhkl0Vec,RhklDummyUnitVec,RhklDummyVec,Rhkl0UnitVec
 !  REAL(RKIND), DIMENSION(:,:), ALLOCATABLE :: Rhkl 
 
   CALL Message("NewHKLMake",IMust,IErr)
@@ -1028,7 +1028,7 @@ SUBROUTINE NewHKLMake(Ihklmax,Rhkl0Vec,RHOLZAcceptanceAngle,IErr)
   END DO
 
 !RB now allocate the hkl list...  
-  ALLOCATE(Rhkl(INhkl,THREEDIM),STAT=IErr)
+  ALLOCATE(Rhkl(INhkl,ITHREE),STAT=IErr)
   IF( IErr.NE.0 ) THEN
      PRINT*,"hklMake(",my_rank,")error allocating Rhkl"
      RETURN

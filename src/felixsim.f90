@@ -137,8 +137,8 @@ PROGRAM felixsim
   ENDIF
   
   CALL Message("felixsim",IMust,IErr)   
-  CALL Message("felixsim",IInfo,IErr, MessageVariable = "ITotalAtoms", &
-       IVariable = ITotalAtoms)
+  CALL Message("felixsim",IInfo,IErr, MessageVariable = "IMaxPossibleNAtomsUnitCell", &
+       IVariable = IMaxPossibleNAtomsUnitCell)
 
   !-------------------------------------------------------------------- 
   !Setup Experimental Variables
@@ -560,45 +560,45 @@ PROGRAM felixsim
      GOTO 9999
   ENDIF
 
-  DEALLOCATE(RFullAtomicFracCoordVec,STAT=IErr)
+  DEALLOCATE(RAtomPosition,STAT=IErr)
   IF( IErr.NE.0 ) THEN
      PRINT*,"felixsim(", my_rank, ") error ", IErr, &
-          " in Deallocation RFullAtomicFracCoordVec"
+          " in Deallocation RAtomPosition"
      GOTO 9999
   ENDIF
 
-  DEALLOCATE(SFullAtomicNameVec,STAT=IErr)
+  DEALLOCATE(SAtomName,STAT=IErr)
   IF( IErr.NE.0 ) THEN
      PRINT*,"felixsim(", my_rank, ") error ", IErr, &
-          " in Deallocation SFullAtomicNameVec"
+          " in Deallocation SAtomName"
      GOTO 9999
   ENDIF
 
-  DEALLOCATE(IFullAnisotropicDWFTensor,STAT=IErr)
+  DEALLOCATE(IAnisoDW,STAT=IErr)
   IF( IErr.NE.0 ) THEN
      PRINT*,"felixsim(", my_rank, ") error ", IErr, &
-          " in Deallocation IFullAnisotropicDWFTensor"
+          " in Deallocation IAnisoDW"
      GOTO 9999
   ENDIF
 
-  DEALLOCATE(IFullAtomicNumber,STAT=IErr)
+  DEALLOCATE(IAtomicNumber,STAT=IErr)
   IF( IErr.NE.0 ) THEN
      PRINT*,"felixsim(", my_rank, ") error ", IErr, &
-          " in Deallocation IFullAtomicNumber"
+          " in Deallocation IAtomicNumber"
      GOTO 9999
   ENDIF
   
-  DEALLOCATE(RFullIsotropicDebyeWallerFactor,STAT=IErr)
+  DEALLOCATE(RIsoDW,STAT=IErr)
   IF( IErr.NE.0 ) THEN
      PRINT*,"felixsim(", my_rank, ") error ", IErr, &
-          " in Deallocation RFullIsotropicDebyeWallerFactor"
+          " in Deallocation RIsoDW"
      GOTO 9999
   ENDIF
 
-  DEALLOCATE(RFullPartialOccupancy,STAT=IErr)
+  DEALLOCATE(ROccupancy,STAT=IErr)
   IF( IErr.NE.0 ) THEN
      PRINT*,"felixsim(", my_rank, ") error ", IErr, &
-          " in Deallocation RFullPartialOccupancy"
+          " in Deallocation ROccupancy"
      GOTO 9999
   ENDIF
 

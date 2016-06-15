@@ -4,7 +4,7 @@
 !
 ! Richard Beanland, Keith Evans, Rudolf A Roemer and Alexander Hubert
 !
-! (C) 2013/14, all right reserved
+! (C) 2013/14/15/16, all rights reserved
 !
 ! Version: :VERSION:
 ! Date:    :DATE:
@@ -153,11 +153,6 @@ PROGRAM Felixrefine
      GOTO 9999
   ENDIF
 
-  ALLOCATE(RAtomCoordinate(ITotalAtoms,THREEDIM),STAT=IErr)
-  IF( IErr.NE.0 ) THEN
-     PRINT*,"felixrefine(",my_rank,")error allocating RAtomCoordinate"
-     GOTO 9999
-  ENDIF
   CALL AllAtomPositions(IErr)
   IF( IErr.NE.0 ) THEN
      PRINT*,"felixrefine(",my_rank,")error in AllAtomPositions"
@@ -165,8 +160,7 @@ PROGRAM Felixrefine
   ENDIF
 
 !deallocations
-DEALLOCATE(RFullPartialOccupancy,SMNP,MNP,RFullAtomicFracCoordVec,SFullAtomicNameVec, &
-RFullIsotropicDebyeWallerFactor,IFullAtomicNumber,IFullAnisotropicDWFTensor)
+!DEALLOCATE(SMNP,MNP,ROccupancy,RAtomPosition,SAtomName,RIsoDW,IAtomicNumber,IAnisoDW)
 
 ! set up reflection pool
 !-----------------------------------------
@@ -182,7 +176,7 @@ RFullIsotropicDebyeWallerFactor,IFullAtomicNumber,IFullAnisotropicDWFTensor)
      CALL HKLCount(IHKLMAXValue,RZDirC,INhkl,RHOLZAcceptanceAngle,IErr)
   END DO
 ! Fill the list of reflections Rhkl as indices h,k,l
-  ALLOCATE(Rhkl(INhkl,THREEDIM),STAT=IErr)
+  ALLOCATE(Rhkl(INhkl,ITHREE),STAT=IErr)
   CALL HKLMake(IHKLMAXValue,RZDirC,RHOLZAcceptanceAngle,IErr)
   
   ! sort them in descending order of magnitude
@@ -201,12 +195,12 @@ RFullIsotropicDebyeWallerFactor,IFullAtomicNumber,IFullAnisotropicDWFTensor)
   END IF
 
 !allocations-----------------------------------  
-  ALLOCATE(RgPoolT(INhkl,THREEDIM),STAT=IErr)
+  ALLOCATE(RgPoolT(INhkl,ITHREE),STAT=IErr)
   IF(IErr.NE.0) THEN
      PRINT*,"felixrefine(",my_rank,")error allocating RgPoolT"
      GOTO 9999
   END IF
-  ALLOCATE(RgDummyVecMat(INhkl,THREEDIM),STAT=IErr)
+  ALLOCATE(RgDummyVecMat(INhkl,ITHREE),STAT=IErr)
   IF(IErr.NE.0) THEN
      PRINT*,"felixrefine(",my_rank,")error allocating RgDummyVecMat"
      GOTO 9999
@@ -216,7 +210,7 @@ RFullIsotropicDebyeWallerFactor,IFullAtomicNumber,IFullAnisotropicDWFTensor)
   ICutOff = 1
   DO ind=1,INhkl
      WRITE(Sind,'(I10.1)')ind
-     DO jnd=1,THREEDIM
+     DO jnd=1,ITHREE
         RgPoolT(ind,jnd)= &
              Rhkl(ind,1)*RarVecM(jnd) + &
              Rhkl(ind,2)*RbrVecM(jnd) + &
@@ -1140,10 +1134,10 @@ SUBROUTINE RefinementVariableSetup(RIndependentVariable,IErr)
              RAllowedVectorMagnitudes(IIterativeVariableUniqueIDs(ind,3))
      CASE(3)
         RIndependentVariable(ind) = &
-             RAtomicSitePartialOccupancy(IIterativeVariableUniqueIDs(ind,3))
+             RBasisOccupancy(IIterativeVariableUniqueIDs(ind,3))
      CASE(4)
         RIndependentVariable(ind) = &
-             RIsotropicDebyeWallerFactors(IIterativeVariableUniqueIDs(ind,3))
+             RBasisIsoDW(IIterativeVariableUniqueIDs(ind,3))
      CASE(5)
         RIndependentVariable(ind) = &
              RAnisotropicDebyeWallerFactorTensor(&
@@ -1520,7 +1514,7 @@ SUBROUTINE OutofUnitCellCheck(IVariableID,RProposedMovement,RCorrectedMovement,I
   IMPLICIT NONE
   
   INTEGER(IKIND) :: ind,IErr,IVariableID,IAtomID,IVectorID
-  REAL(RKIND),DIMENSION(THREEDIM) :: RProposedAtomicCoordinate,RDummyMovement
+  REAL(RKIND),DIMENSION(ITHREE) :: RProposedAtomicCoordinate,RDummyMovement
   REAL(RKIND),INTENT(IN) :: RProposedMovement
   REAL(RKIND),INTENT(OUT) :: RCorrectedMovement
   
@@ -1528,17 +1522,17 @@ SUBROUTINE OutofUnitCellCheck(IVariableID,RProposedMovement,RCorrectedMovement,I
   
   IAtomID = IAllowedVectorIDs(IVectorID)
  
-  RProposedAtomicCoordinate(:) = RAtomSiteFracCoordVec(IAtomID,:) + &
+  RProposedAtomicCoordinate(:) = RBasisAtomPosition(IAtomID,:) + &
        RProposedMovement*RAllowedVectors(IVectorID,:)
 
   RDummyMovement = RProposedMovement
 
   IF(ANY(RProposedAtomicCoordinate.GT.ONE).OR.ANY(RProposedAtomicCoordinate.LT.ZERO)) THEN
-     DO ind = 1,THREEDIM
+     DO ind = 1,ITHREE
         IF (RProposedAtomicCoordinate(ind).GT.ONE) THEN
-           RDummyMovement(ind) = (ONE-RAtomSiteFracCoordVec(IAtomID,ind))/RAllowedVectors(IVectorID,ind)
+           RDummyMovement(ind) = (ONE-RBasisAtomPosition(IAtomID,ind))/RAllowedVectors(IVectorID,ind)
         ELSEIF(RProposedAtomicCoordinate(ind).LT.ZERO) THEN
-           RDummyMovement(ind) = (-RAtomSiteFracCoordVec(IAtomID,ind))/RAllowedVectors(IVectorID,ind)
+           RDummyMovement(ind) = (-RBasisAtomPosition(IAtomID,ind))/RAllowedVectors(IVectorID,ind)
         ELSE
            RDummyMovement(ind) = RProposedMovement
         END IF
@@ -1693,7 +1687,7 @@ SUBROUTINE SetupAtomicVectorMovements(IErr)
      END DO
   END DO
   
-  ALLOCATE(RAllowedVectors(IAllowedVectors,THREEDIM),STAT=IErr)
+  ALLOCATE(RAllowedVectors(IAllowedVectors,ITHREE),STAT=IErr)
   IF( IErr.NE.0 ) THEN
      PRINT*,"SetupAtomicVectorMovements(",my_rank,")error Allocation  RAllowedVectors"
      RETURN
@@ -1721,13 +1715,12 @@ SUBROUTINE SetupAtomicVectorMovements(IErr)
   ! Save Atomic Coordinates  
   !--------------------------------------------------------------------
   
-  ALLOCATE(RInitialAtomSiteFracCoordVec(&
-       SIZE(RAtomSiteFracCoordVec,DIM=1),SIZE(RAtomSiteFracCoordVec,DIM=2)),STAT=IErr)
+  ALLOCATE(RInitialAtomPosition(SIZE(RBasisAtomPosition,DIM=1),SIZE(RBasisAtomPosition,DIM=2)),STAT=IErr)
   IF( IErr.NE.0 ) THEN
-     PRINT*,"SetupAtomicVectorMovements(",my_rank,")error ALLOCATE RInitialAtomSiteFracCoordVec "
+     PRINT*,"SetupAtomicVectorMovements(",my_rank,")error ALLOCATE RInitialAtomPosition "
      RETURN
   ENDIF
   
-  RInitialAtomSiteFracCoordVec = RAtomSiteFracCoordVec
+  RInitialAtomPosition = RBasisAtomPosition
   
 END SUBROUTINE SetupAtomicVectorMovements

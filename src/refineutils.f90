@@ -132,7 +132,7 @@ SUBROUTINE ReSortUgs( ISymmetryIntegers,CUgs, N )
 
   INTEGER(IKIND) :: N,IDummy,ISymmetryIntegers(N)
   INTEGER(IKIND) :: NN,M,L,K,J,I,LOGNB2
-  REAL(RKIND) :: RhklarraySearch(THREEDIM),RhklarrayCompare(THREEDIM)
+  REAL(RKIND) :: RhklarraySearch(ITHREE),RhklarrayCompare(ITHREE)
   REAL(RKIND) :: ALN2I,LocalTINY
   COMPLEX(CKIND) :: CUgSearch,CUgCompare,Cdummy,CUgs(N)
   PARAMETER (ALN2I=1.4426950D0, LocalTINY=1.D-5)

@@ -63,6 +63,7 @@ SUBROUTINE SimulateAndFit(RFigureofMerit,RIndependentVariable,Iiter,IExitFLAG,IE
   END IF
 
   IF (IRefineMode(1).EQ.1 .OR. IRefineMode(12).EQ.1) THEN  !Ug refinement; update structure factors 
+  
   !Dummy Matrix to contain new iterative values
     CUgMatDummy = CZERO
     !NB these are Ug's without absorption, used to be the suroutine UpdateStructureFactors
@@ -95,15 +96,16 @@ SUBROUTINE SimulateAndFit(RFigureofMerit,RIndependentVariable,Iiter,IExitFLAG,IE
       CUgMat = CUgMatDummy
     END WHERE
     RAbsorptionPercentage = RIndependentVariable(jnd)!===![[[
-!	PRINT*,"UpdateStructureFactors: absorption=",RAbsorptionPercentage
+
   ELSE !everything else
+  
      CALL UpdateVariables(RIndependentVariable,IErr)
      IF( IErr.NE.0 ) THEN
         PRINT*,"SimulateAndFit(",my_rank,")error in UpdateVariables"
         RETURN
      END IF
-     WHERE(RAtomSiteFracCoordVec.LT.0) RAtomSiteFracCoordVec=RAtomSiteFracCoordVec+ONE
-     WHERE(RAtomSiteFracCoordVec.GT.1) RAtomSiteFracCoordVec=RAtomSiteFracCoordVec-ONE
+	 RBasisAtomPosition=MOD(RBasisAtomPosition,ONE)
+	 
   END IF
 
   IF (my_rank.EQ.0) THEN
@@ -400,7 +402,7 @@ SUBROUTINE UpdateVariables(RIndependentVariable,IErr)
 
   !!$  Fill the Independent Value array with values
   IF(IRefineMode(2).EQ.1) THEN     
-     RAtomSiteFracCoordVec = RInitialAtomSiteFracCoordVec
+     RBasisAtomPosition = RInitialAtomPosition
   END IF
 
   DO ind = 1,INoOfVariables
@@ -411,10 +413,10 @@ SUBROUTINE UpdateVariables(RIndependentVariable,IErr)
      CASE(2)
         CALL ConvertVectorMovementsIntoAtomicCoordinates(ind,RIndependentVariable,IErr)
      CASE(3)
-        RAtomicSitePartialOccupancy(IIterativeVariableUniqueIDs(ind,3)) = &
+        RBasisOccupancy(IIterativeVariableUniqueIDs(ind,3)) = &
              RIndependentVariable(ind)
      CASE(4)
-        RIsotropicDebyeWallerFactors(IIterativeVariableUniqueIDs(ind,3)) = &
+        RBasisIsoDW(IIterativeVariableUniqueIDs(ind,3)) = &
              RIndependentVariable(ind)
      CASE(5)
         RAnisotropicDebyeWallerFactorTensor(&
@@ -492,22 +494,22 @@ SUBROUTINE PrintVariables(IErr)
 
            CASE(2)
            PRINT*,"Current Atomic Coordinates"
-           DO jnd = 1,SIZE(RAtomSiteFracCoordVec,DIM=1)
-              WRITE(SPrintString,FMT='(A2,3(1X,F9.4))') SAtomName(jnd),RAtomSiteFracCoordVec(jnd,:)
+           DO jnd = 1,SIZE(RBasisAtomPosition,DIM=1)
+              WRITE(SPrintString,FMT='(A2,3(1X,F9.4))') SBasisAtomName(jnd),RBasisAtomPosition(jnd,:)
               PRINT*,TRIM(ADJUSTL(SPrintString))              
            END DO
 
            CASE(3)
            PRINT*,"Current Atomic Occupancy"
-           DO jnd = 1,SIZE(RAtomicSitePartialOccupancy,DIM=1)
-              WRITE(SPrintString,FMT='(A2,1X,F9.6)') SAtomName(jnd),RAtomicSitePartialOccupancy(jnd)
+           DO jnd = 1,SIZE(RBasisOccupancy,DIM=1)
+              WRITE(SPrintString,FMT='(A2,1X,F9.6)') SBasisAtomName(jnd),RBasisOccupancy(jnd)
               PRINT*,TRIM(ADJUSTL(SPrintString))
            END DO
 
            CASE(4)
            PRINT*,"Current Isotropic Debye Waller Factors"
-           DO jnd = 1,SIZE(RIsotropicDebyeWallerFactors,DIM=1)
-              WRITE(SPrintString,FMT='(A2,1X,F9.6)') SAtomName(jnd),RIsotropicDebyeWallerFactors(jnd)
+           DO jnd = 1,SIZE(RBasisIsoDW,DIM=1)
+              WRITE(SPrintString,FMT='(A2,1X,F9.6)') SBasisAtomName(jnd),RBasisIsoDW(jnd)
               PRINT*,TRIM(ADJUSTL(SPrintString))
            END DO
 
@@ -515,7 +517,7 @@ SUBROUTINE PrintVariables(IErr)
            PRINT*,"Current Anisotropic Debye Waller Factors"
            DO jnd = 1,SIZE(RAnisotropicDebyeWallerFactorTensor,DIM=1)
               DO knd = 1,3
-                 WRITE(SPrintString,FMT='(A2,3(1X,F9.4))') SAtomName(jnd),RAnisotropicDebyeWallerFactorTensor(jnd,knd,:)
+                 WRITE(SPrintString,FMT='(A2,3(1X,F9.4))') SBasisAtomName(jnd),RAnisotropicDebyeWallerFactorTensor(jnd,knd,:)
               PRINT*,TRIM(ADJUSTL(SPrintString))
               END DO
            END DO
@@ -625,7 +627,7 @@ SUBROUTINE ConvertVectorMovementsIntoAtomicCoordinates(IVariableID,RIndependentV
   IAtomID = IAllowedVectorIDs(IVectorID)
 
 !!$  Use IAtomID to applied the IVectodID Vector to the IAtomID atomic coordinate
-  RAtomSiteFracCoordVec(IAtomID,:) = RAtomSiteFracCoordVec(IAtomID,:) + &
+  RBasisAtomPosition(IAtomID,:) = RBasisAtomPosition(IAtomID,:) + &
        RIndependentVariable(IVariableID)*RAllowedVectors(IVectorID,:)
   
 END SUBROUTINE ConvertVectorMovementsIntoAtomicCoordinates

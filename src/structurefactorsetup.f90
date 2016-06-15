@@ -63,7 +63,7 @@ SUBROUTINE StructureFactorSetup(IErr)
   ! Calculate Reflection Matrix
   !--------------------------------------------------------------------
   !Allocation--------------------------------------------------------
-  ALLOCATE(RgMatMat(nReflections,nReflections,THREEDIM),STAT=IErr)
+  ALLOCATE(RgMatMat(nReflections,nReflections,ITHREE),STAT=IErr)
   IF( IErr.NE.0 ) THEN
      PRINT*,"StructureFactorSetup(",my_rank,")error allocating RgMatMat"
      RETURN

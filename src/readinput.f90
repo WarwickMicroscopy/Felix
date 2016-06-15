@@ -36,7 +36,7 @@
 ! $Id: ReadInputFile.f90,v 1.23 2014/04/28 12:26:19 phslaz Exp $
 !%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-!Calls the varoius functions which read in all the required data/parameters
+!Calls the various functions which read in all the required data/parameters
 !(doxygen)
 SUBROUTINE ReadInput(IErr)
 

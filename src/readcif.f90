@@ -97,7 +97,7 @@ SUBROUTINE ReadCif(IErr)
   INTEGER IAtomCount, ICommaPosLeft, ICommaPosRight, &
        Ipos,Idpos, IXYZminus,IFRACminus, Inum,Idenom,IAtomID
   
-  CHARACTER*32 Csym(THREEDIM)
+  CHARACTER*32 Csym(ITHREE)
 
   INTEGER IErr,ind,jnd
 
@@ -339,38 +339,38 @@ SUBROUTINE ReadCif(IErr)
   
   CALL Message("Read CIF",IInfo,IErr,MessageVariable = "IAtomCount", IVariable = IAtomCount) 
  
-  ALLOCATE(RAtomSiteFracCoordVec(IAtomCount,THREEDIM),STAT=IErr)
+  ALLOCATE(RBasisAtomPosition(IAtomCount,ITHREE),STAT=IErr)
   IF( IErr.NE.0 ) THEN
      PRINT*,"ReadCif(", my_rank, ") error ", IErr, " in ALLOCATE()"
      RETURN
   END IF
-  ALLOCATE(SAtomName(IAtomCount),STAT=IErr)
+  ALLOCATE(SBasisAtomName(IAtomCount),STAT=IErr)
   IF( IErr.NE.0 ) THEN
      PRINT*,"ReadCif(", my_rank, ") error ", IErr, " in ALLOCATE()"
      RETURN
   END IF
-  ALLOCATE(IAtomicNumber(IAtomCount),STAT=IErr)
+  ALLOCATE(IBasisAtomicNumber(IAtomCount),STAT=IErr)
   IF( IErr.NE.0 ) THEN
      PRINT*,"ReadCif(", my_rank, ") error ", IErr, " in ALLOCATE()"
      RETURN
   END IF
-  ALLOCATE(RIsotropicDebyeWallerFactors(IAtomCount),STAT=IErr)
+  ALLOCATE(RBasisIsoDW(IAtomCount),STAT=IErr)
   IF( IErr.NE.0 ) THEN
      PRINT*,"ReadCif(", my_rank, ") error ", IErr, " in ALLOCATE()"
      RETURN
   END IF
-  ALLOCATE(RAtomicSitePartialOccupancy(IAtomCount),STAT=IErr)
+  ALLOCATE(RBasisOccupancy(IAtomCount),STAT=IErr)
   IF( IErr.NE.0 ) THEN
      PRINT*,"ReadCif(", my_rank, ") error ", IErr, " in ALLOCATE()"
      RETURN
   END IF
-  ALLOCATE(RAnisotropicDebyeWallerFactorTensor(IAtomCount,THREEDIM,THREEDIM), &
+  ALLOCATE(RAnisotropicDebyeWallerFactorTensor(IAtomCount,ITHREE,ITHREE), &
        STAT=IErr)
   IF( IErr.NE.0 ) THEN
      PRINT*,"ReadCif(", my_rank, ") error ", IErr, " in ALLOCATE()"
      RETURN
   END IF
-  ALLOCATE(IAnisotropicDWFTensor(IAtomCount),STAT=IErr)
+  ALLOCATE(IBasisAnisoDW(IAtomCount),STAT=IErr)
   IF( IErr.NE.0 ) THEN
      PRINT*,"ReadCif(", my_rank, ") error ", IErr, " in ALLOCATE()"
      RETURN
@@ -380,22 +380,22 @@ SUBROUTINE ReadCif(IErr)
 
   ! actual data loop
 
-  ITotalAtoms=0
+  IMaxPossibleNAtomsUnitCell=0
   DO ind=1,IAtomCount
    
      f1 = char_('_atom_site_label', name)
-     SAtomName(ind)=name(1:2)
+     SBasisAtomName(ind)=name(1:2)
      ! remove the oxcidation state numbers
-     Ipos=SCAN(SAtomName(ind),"1234567890")
+     Ipos=SCAN(SBasisAtomName(ind),"1234567890")
 
      IF(Ipos>0) THEN
-        WRITE(SAtomName(ind),'(A1,A1)') name(1:1)," "
+        WRITE(SBasisAtomName(ind),'(A1,A1)') name(1:1)," "
      END IF
 
      WRITE(Sind,*) ind
-     CALL CONVERTAtomName2Number(SAtomName(ind),IAtomicNumber(ind), IErr)
+     CALL CONVERTAtomName2Number(SBasisAtomName(ind),IBasisAtomicNumber(ind), IErr)
      CALL Message("Read CIF",IInfo,IErr,MessageVariable = &
-	 "IAtomicNumber("//TRIM(ADJUSTL(Sind))//")", IVariable = IAtomicNumber(ind))
+	 "IBasisAtomicNumber("//TRIM(ADJUSTL(Sind))//")", IVariable = IBasisAtomicNumber(ind))
 
      IF(loop_ .NEQV. .TRUE.) EXIT
      
@@ -406,7 +406,7 @@ SUBROUTINE ReadCif(IErr)
   CALL CifReset(IErr)
   DO ind=1,IAtomCount
      f2 = numb_('_atom_site_fract_x', x, sx)
-     RAtomSiteFracCoordVec(ind,1)= x
+     RBasisAtomPosition(ind,1)= x
   END DO
 
   !----------------------------------------------------
@@ -415,7 +415,7 @@ SUBROUTINE ReadCif(IErr)
 
   DO ind=1,IAtomCount
      f2 = numb_('_atom_site_fract_y', y, sy)
-     RAtomSiteFracCoordVec(ind,2)= y
+     RBasisAtomPosition(ind,2)= y
   END DO
 
   !----------------------------------------------------
@@ -424,7 +424,7 @@ SUBROUTINE ReadCif(IErr)
 
   DO ind=1,IAtomCount
      f2 = numb_('_atom_site_fract_z', z, sz)
-     RAtomSiteFracCoordVec(ind,3)= z
+     RBasisAtomPosition(ind,3)= z
   END DO 
 
   !----------------------------------------------------
@@ -437,9 +437,9 @@ SUBROUTINE ReadCif(IErr)
      f2 = numb_('_atom_site_B_iso_or_equiv',B,sB)
      f2 = numb_('_atom_site_U_iso_or_equiv', Uso, suso)
      IF(ABS(B).GT.TINY) THEN
-        RIsotropicDebyeWallerFactors(ind) = B
+        RBasisIsoDW(ind) = B
      ELSEIF(ABS(Uso).GT.TINY) THEN
-        RIsotropicDebyeWallerFactors(ind) = Uso*(8*PI**2)
+        RBasisIsoDW(ind) = Uso*(8*PI**2)
      END IF
      
      IF(ABS(B).LT.TINY.AND.ABS(Uso).LT.TINY) THEN
@@ -462,14 +462,14 @@ SUBROUTINE ReadCif(IErr)
   
   DO ind=1,IAtomCount
      f2 = numb_('_atom_site_occupancy',Occ, sOcc)
-     RAtomicSitePartialOccupancy(ind) = Occ
+     RBasisOccupancy(ind) = Occ
   END DO
 
   !----------------------------------------------------
   ! RESET
   CALL CifReset(IErr)
  
-!RB branch here depending on felixsim or felixrefine
+!Branch here depending on felixsim or felixrefine
   IF (ISoftwareMode.NE.0) THEN !felixrefine
   
     ALLOCATE(SWyckoffSymbols(SIZE(IAtomicSitesToRefine)),STAT=IErr)
@@ -477,9 +477,9 @@ SUBROUTINE ReadCif(IErr)
      PRINT*,"Read Cif (refine)(", my_rank, ") error ", IErr, " in ALLOCATE()"
      RETURN
     END IF
-    DO ind=1,IAtomCount!RB
+    DO ind=1,IAtomCount
      f2 = char_('_atom_site_Wyckoff_symbol',name)
-     WHERE (IAtomicSitesToRefine.EQ.ind)!RB
+     WHERE (IAtomicSitesToRefine.EQ.ind)
 	   SWyckoffSymbols = name
 	 END WHERE
     END DO
@@ -491,7 +491,7 @@ SUBROUTINE ReadCif(IErr)
      PRINT*,"Read Cif (sim)(", my_rank, ") error ", IErr, " in ALLOCATE()"
      RETURN
     END IF
-    DO ind=1,IAtomCount!RB
+    DO ind=1,IAtomCount
      f2 = char_('_atom_site_Wyckoff_symbol',name)
 	 SWyckoffSymbols(ind) = name
     END DO
@@ -515,7 +515,7 @@ SUBROUTINE ReadCif(IErr)
      RAnisotropicDebyeWallerFactorTensor(ind,1,2) = u
      f2 = numb_('_atom_site_aniso_U_13',u,su) 
      RAnisotropicDebyeWallerFactorTensor(ind,1,3) = u
-     IAnisotropicDWFTensor(ind) = ind
+     IBasisAnisoDW(ind) = ind
   END DO
 
   IF(((IWriteFLAG.GE.1.AND.my_rank.EQ.0).OR.IWriteFLAG.GE.10).AND.IAnisoDebyeWallerFactorFlag.EQ.1) THEN
@@ -533,14 +533,11 @@ SUBROUTINE ReadCif(IErr)
   ISymCount=0
   DO 
      f1 = char_('_symmetry_equiv_pos_as_xyz', name)
-
      DO 
         f2 = char_(name, line)
         ISymCount=ISymCount+1
-
         IF(text_ .NEQV. .TRUE.) EXIT
      END DO
-
      IF(loop_ .NEQV. .TRUE.) EXIT
   END DO
 
@@ -550,16 +547,10 @@ SUBROUTINE ReadCif(IErr)
   !   PRINT*,"ReadCif(", my_rank, ") found", ISymCount, "symmetries"
   !END IF
   
-  ALLOCATE(RSymVec(ISymCount,THREEDIM), &
-       STAT=IErr)
+  ALLOCATE(RSymVec(ISymCount,ITHREE),STAT=IErr)
+  ALLOCATE(RSymMat(ISymCount,ITHREE,ITHREE),STAT=IErr)
   IF( IErr.NE.0 ) THEN
-     PRINT*,"ReadCif(", my_rank, ") error ", IErr, " in ALLOCATE()"
-     RETURN
-  END IF
-  ALLOCATE(RSymMat(ISymCount,THREEDIM,THREEDIM), &
-       STAT=IErr)
-  IF( IErr.NE.0 ) THEN
-     PRINT*,"ReadCif(", my_rank, ") error ", IErr, " in ALLOCATE()"
+     PRINT*,"ReadCif(",my_rank,")error",IErr,"in allocations"
      RETURN
   END IF
   
@@ -574,27 +565,22 @@ SUBROUTINE ReadCif(IErr)
      DO 
         f2 = char_(name, line)
         ISymCount=ISymCount+1
-
         ICommaPosLeft = SCAN(name, ",")
         ICommaPosRight= SCAN(name, ",",.TRUE.)
-
         Csym(1)= name(1:ICommaPosLeft-1)
         Csym(2)= name(ICommaPosLeft+1:ICommaPosRight-1)
         Csym(3)= name(ICommaPosRight+1:LEN_TRIM(name))
 
-        DO ind=1,THREEDIM
-
+        DO ind=1,ITHREE
            IXYZminus=1
            IFRACminus=1
-           
            name= Csym(ind)
-
            Ipos= SCAN(name, "xX")
            IF(Ipos > 0) THEN ! there is an X
               IF(Ipos>1) THEN
                  IF(name(Ipos-1:Ipos-1)=="-") IXYZminus=-1
               END IF
-              RSymMat(ISymCount, ind,1)=IXYZminus
+              RSymMat(ISymCount,ind,1)=IXYZminus
            END IF
            
            Ipos= SCAN(name, "yY")
@@ -618,7 +604,7 @@ SUBROUTINE ReadCif(IErr)
               IF(Ipos < LEN_TRIM(NAME) ) THEN ! there is an /
                  Inum  = IACHAR(name(Ipos-1:Ipos-1))-48
                  Idenom= IACHAR(name(Ipos+1:Ipos+1))-48
-                 
+
                  IF(Ipos>2) THEN
                     IF(name(Ipos-2:Ipos-2)=="-") IFRACminus=-1
                  END IF
@@ -636,14 +622,15 @@ SUBROUTINE ReadCif(IErr)
   !closes the cif file
   CALL close_
   
+!RB now redundant
   !moved return until after the Call counttotalatoms
-  IF (ITotalAtoms.EQ.0) THEN
-     CALL CountTotalAtoms(IErr)
-     IF( IErr.NE.0 ) THEN
-        PRINT*,"ReadCif(", my_rank, ") error in CountTotalAtoms()"
-       ! GOTO 9999
-     END IF
-  END IF
+!  IF (IMaxPossibleNAtomsUnitCell.EQ.0) THEN
+!     CALL CountTotalAtoms(IErr)
+!     IF( IErr.NE.0 ) THEN
+!        PRINT*,"ReadCif(", my_rank, ") error in CountTotalAtoms()"
+!       ! GOTO 9999
+!     END IF
+!  END IF
 
 !!$Reset Message Counter
 IMessageCounter =0  

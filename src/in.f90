@@ -510,7 +510,7 @@ SUBROUTINE ReadHklFile(IErr)
 
   100 ILength=ILine
 
-  ALLOCATE(RInputHKLs(ILength,THREEDIM),STAT=IErr)
+  ALLOCATE(RInputHKLs(ILength,ITHREE),STAT=IErr)
   IF( IErr.NE.0 ) THEN
      PRINT*,"ReadHklFile(",my_rank,")error allocating RInputHKLs"
      RETURN

@@ -34,8 +34,7 @@
 
 !--------------------------------------------------------------------
 !	Sort:
-!
-!	sort the Lyapunov eigenvalues s.t. the largest comes first. RESORT()
+!	sort s.t. the largest comes first. RESORT()
 !	is based on ShellSort from "Numerical Recipes", routine SHELL().
 !---------------------------------------------------------------------
 
@@ -57,8 +56,8 @@ SUBROUTINE SortHKL( Rhklarray,N,IErr )
 
   INTEGER (IKIND) :: IErr,NN,M,L,K,J,I,LOGNB2,index
   INTEGER (IKIND),INTENT(IN) :: N
-  REAL(RKIND),INTENT(INOUT) :: Rhklarray(N,THREEDIM)
-  REAL(RKIND) :: RhklarraySearch(THREEDIM), RhklarrayCompare(THREEDIM)
+  REAL(RKIND),INTENT(INOUT) :: Rhklarray(N,ITHREE)
+  REAL(RKIND) :: RhklarraySearch(ITHREE), RhklarrayCompare(ITHREE)
   REAL(RKIND) :: ALN2I, LocalTINY
   PARAMETER (ALN2I=1.4426950D0, LocalTINY=1.D-5)
   
@@ -96,7 +95,7 @@ SUBROUTINE SortHKL( Rhklarray,N,IErr )
         IF( &
              DOT_PRODUCT(RhklarraySearch(:),RhklarraySearch(:)) .LT. &
              DOT_PRODUCT(RhklarrayCompare(:),RhklarrayCompare(:))) THEN
-           DO 100 index=1,THREEDIM
+           DO 100 index=1,ITHREE
               dummy        = Rhklarray(I,index)
               Rhklarray(I,index)= Rhklarray(L,index)
               Rhklarray(L,index)= dummy
@@ -112,14 +111,10 @@ SUBROUTINE SortHKL( Rhklarray,N,IErr )
 
 END SUBROUTINE SortHKL
 
-!---------------------------------------------------------------------
-SUBROUTINE CONVERTAtomName2Number(name, number, IErr)
+!%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-!!$  %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-!!$  %
+SUBROUTINE CONVERTAtomName2Number(name, number, IErr)
 !!$  %    Converts atomic symbols to atomic numbers, used to read cif file
-!!$  %
-!!$  %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
   
   USE WriteToScreen
   USE IPara
@@ -159,9 +154,9 @@ SUBROUTINE CONVERTAtomName2Number(name, number, IErr)
 
 END SUBROUTINE CONVERTAtomName2Number
 
+!%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-!---------------------------------------------------------------------
-SUBROUTINE CountTotalAtoms(IErr)
+SUBROUTINE CountTotalAtoms(IErr)!RB now redundant
 
   USE MyNumbers
   USE WriteToScreen
@@ -182,69 +177,41 @@ SUBROUTINE CountTotalAtoms(IErr)
 
   CALL Message("CountTotalAtoms",IMust,IErr)
      
-  ITotalAtoms = 0
+  IMaxPossibleNAtomsUnitCell = 0
 
-  ALLOCATE(RFullAtomicFracCoordVec( &
-       SIZE(RSymVec,1)*SIZE(RAtomSiteFracCoordVec,1),&
-       THREEDIM), &
-       STAT=IErr)
+  ALLOCATE(RAtomPosition(SIZE(RSymVec,1)*SIZE(RBasisAtomPosition,1),ITHREE),STAT=IErr)
   IF( IErr.NE.0 ) THEN
      PRINT*,"CountTotalAtoms(", my_rank, ") error ", IErr, " in ALLOCATE()"
      RETURN
   ENDIF
-  ALLOCATE(SFullAtomicNameVec( &
-       SIZE(RSymVec,1)*SIZE(RAtomSiteFracCoordVec,1)), &
-       STAT=IErr)
+  ALLOCATE(SAtomName(SIZE(RSymVec,1)*SIZE(RBasisAtomPosition,1)),STAT=IErr)
   IF( IErr.NE.0 ) THEN
      PRINT*,"CountTotalAtoms(", my_rank, ") error ", IErr, " in ALLOCATE()"
      RETURN
   ENDIF
 
-  RFullAtomicFracCoordVec = ZERO
+  RAtomPosition = ZERO
 
   CALL Message("CountTotalAtoms",IAllInfo,IErr, &
-       MessageVariable = "Size of RFullAtomicFracCoordVec", &
-       IVariable = SIZE(RFullAtomicFracCoordVec,1))
+       MessageVariable = "Size of RAtomPosition", &
+       IVariable = SIZE(RAtomPosition,1))
 
+  !Apply symmetry elements to generate equivalent positions	   
   DO ind=1, SIZE(RSymVec,DIM=1)
-     DO jnd=1, SIZE(RAtomSiteFracCoordVec,DIM=1)
-       
-        Ifullind= SIZE(RSymVec,1)*(jnd-1) + ind
-        RFullAtomicFracCoordVec(Ifullind,:)= &
-             MATMUL(RSymMat(ind,:,:),RAtomSiteFracCoordVec(jnd,:)) &
-             + RSymVec(ind,:)
-        SFullAtomicNameVec(Ifullind) = SAtomName(jnd)
-        
-        ! renormalize such that all values are non-negative
-        DO knd=1,THREEDIM
-           IF( RFullAtomicFracCoordVec(Ifullind,knd) .LT. ZERO) THEN
-              RFullAtomicFracCoordVec(Ifullind,knd)= &
-                   RFullAtomicFracCoordVec(Ifullind,knd)+1.D0
-           ENDIF
-        ENDDO
-        
+    DO jnd=1, SIZE(RBasisAtomPosition,DIM=1)     
+      Ifullind= SIZE(RSymVec,1)*(jnd-1) + ind
+      RAtomPosition(Ifullind,:)= &
+             MATMUL(RSymMat(ind,:,:),RBasisAtomPosition(jnd,:))+RSymVec(ind,:)
+      SAtomName(Ifullind) = SBasisAtomName(jnd)
      ENDDO
-     
   ENDDO
-
-  DO ind = 1,SIZE(RFullAtomicFracCoordVec,DIM=1)
-     DO jnd = 1,SIZE(RFullAtomicFracCoordVec,DIM=2)
-        IF (RFullAtomicFracCoordVec(ind,jnd).LT.ZERO) THEN
-           RFullAtomicFracCoordVec(ind,jnd) = &
-                RFullAtomicFracCoordVec(ind,jnd) + ONE
-        END IF
-        IF (RFullAtomicFracCoordVec(ind,jnd).GE.ONE) THEN
-           RFullAtomicFracCoordVec(ind,jnd) = &
-                RFullAtomicFracCoordVec(ind,jnd) - ONE
-        END IF
-     END DO
-  END DO
+  RAtomPosition=MOD(RAtomPosition,ONE)
 
   ! Calculate the set of unique fractional atomic positions
-  CALL Message("CountTotalAtoms",IMoreInfo,IErr, MessageVariable = "ITotalAtoms", &
-       IVariable = ITotalAtoms)
+  CALL Message("CountTotalAtoms",IMoreInfo,IErr, MessageVariable = "IMaxPossibleNAtomsUnitCell", &
+       IVariable = IMaxPossibleNAtomsUnitCell)
 
-  ALLOCATE(MNP(1000,THREEDIM),STAT=IErr)
+  ALLOCATE(MNP(1000,ITHREE),STAT=IErr)
   IF( IErr.NE.0 ) THEN
      PRINT*,"CountTotalAtoms(", my_rank, ") error ", IErr, " in ALLOCATE()"
      RETURN
@@ -258,41 +225,38 @@ SUBROUTINE CountTotalAtoms(IErr)
   
   MNP = ZERO
   
-  MNP(1,:)= RFullAtomicFracCoordVec(1,:)
-  SMNP(1)= SFullAtomicNameVec(1)
+  MNP(1,:)= RAtomPosition(1,:)
+  SMNP(1)= SAtomName(1)
   
   Iuniind = 1
   
-  IF(ITotalAtoms.EQ.0)THEN
+  IF(IMaxPossibleNAtomsUnitCell.EQ.0)THEN
      
-     DO ind=2,SIZE(RFullAtomicFracCoordVec,1)
-        
+     DO ind=2,SIZE(RAtomPosition,1)
         DO jnd=1,Iuniind
            
-           IF ( RFullAtomicFracCoordVec(ind,1) .EQ. MNP(jnd,1) .AND. &
-                RFullAtomicFracCoordVec(ind,2) .EQ. MNP(jnd,2) .AND. &
-                RFullAtomicFracCoordVec(ind,3) .EQ. MNP(jnd,3) .AND. &
-                SFullAtomicNameVec(ind) .EQ. SMNP(jnd) ) THEN
+           IF ( RAtomPosition(ind,1) .EQ. MNP(jnd,1) .AND. &
+                RAtomPosition(ind,2) .EQ. MNP(jnd,2) .AND. &
+                RAtomPosition(ind,3) .EQ. MNP(jnd,3) .AND. &
+                SAtomName(ind) .EQ. SMNP(jnd) ) THEN
               !this seems NOT a unique coordinate
               Lunique=.FALSE.
               EXIT
            ENDIF
            Lunique=.TRUE.
         ENDDO
-        
         IF(Lunique .EQV. .TRUE.) THEN
            Iuniind=Iuniind+1
-           MNP(Iuniind,:)= RFullAtomicFracCoordVec(ind,:)
-           SMNP(Iuniind)= SFullAtomicNameVec(ind)
+           MNP(Iuniind,:)= RAtomPosition(ind,:)
+           SMNP(Iuniind)= SAtomName(ind)
         ENDIF
-        
      ENDDO
      
-     ITotalAtoms = Iuniind
+     IMaxPossibleNAtomsUnitCell = Iuniind
      
   END IF
   
-  CALL Message("CountTotalAtoms",IMoreInfo,IErr,MessageVariable = "ITotalAtoms",IVariable=ITotalAtoms)
+  CALL Message("CountTotalAtoms",IMoreInfo,IErr,MessageVariable = "IMaxPossibleNAtomsUnitCell",IVariable=IMaxPossibleNAtomsUnitCell)
 
   DEALLOCATE(MNP,STAT=IErr)
   IF( IErr.NE.0 ) THEN
@@ -304,14 +268,14 @@ SUBROUTINE CountTotalAtoms(IErr)
      PRINT*,"CountTotalAtoms(",my_rank,")error",IErr,"deallocating SMNP"
      RETURN
   END IF
-  DEALLOCATE(RFullAtomicFracCoordVec,STAT=IErr)
+  DEALLOCATE(RAtomPosition,STAT=IErr)
   IF( IErr.NE.0 ) THEN
-     PRINT*,"CountTotalAtoms(",my_rank,")error",IErr,"deallocating RFullAtomicFracCoordVec"
+     PRINT*,"CountTotalAtoms(",my_rank,")error",IErr,"deallocating RAtomPosition"
      RETURN
   END IF
-  DEALLOCATE(SFullAtomicNameVec,STAT=IErr)
+  DEALLOCATE(SAtomName,STAT=IErr)
   IF( IErr.NE.0 ) THEN
-     PRINT*,"CountTotalAtoms(",my_rank,")error",IErr,"deallocating SFullAtomicNameVec"
+     PRINT*,"CountTotalAtoms(",my_rank,")error",IErr,"deallocating SAtomName"
      RETURN
   ENDIF
   
@@ -323,17 +287,13 @@ SUBROUTINE GreatestCommonDivisor(ITotalProcesses,INooDWFs,ISubgroups)
 
 USE MyNumbers
 
-INTEGER(IKIND) :: &
-     a,b,c
-INTEGER(IKIND), INTENT(IN) :: &
-     ITotalProcesses,INooDWFs
-INTEGER(IKIND), INTENT(OUT) :: &
-     ISubgroups
+INTEGER(IKIND) :: a,b,c
+INTEGER(IKIND), INTENT(IN) :: ITotalProcesses,INooDWFs
+INTEGER(IKIND), INTENT(OUT) :: ISubgroups
 
 a = ITotalProcesses
 b = INooDWFs
 c = 0
-
 
   DO                    ! now we have a <= b
      c = MOD(a, b)      !    compute c, the reminder
@@ -341,10 +301,11 @@ c = 0
      a = b              !    otherwise, b becomes a
      b = c              !    and c becomes b
   END DO                !    go back
-
 ISubgroups = b
 
 END SUBROUTINE GreatestCommonDivisor
+
+!%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 !Defines a Lorentzian Distribution for any parameter input
 FUNCTION Lorentzian(FWHM,x,x_0,offset)
@@ -360,6 +321,8 @@ FUNCTION Lorentzian(FWHM,x,x_0,offset)
   LORENTZIAN = FWHM/(((x+x_0)**2)+offset)
   
 END FUNCTION Lorentzian
+
+!%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 !Defines a Gaussian distribution for any parameter input 
 FUNCTION Gaussian(height,x,peakcentre,standarddeviation,intercept)
