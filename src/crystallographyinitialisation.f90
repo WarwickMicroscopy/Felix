@@ -117,10 +117,10 @@ SUBROUTINE CrystallographyInitialisation( IErr )
      RETURN
   ENDIF
 
-  CALL AllAtomPositions(IErr)
+  CALL UniqueAtomPositions(IErr)
   IF( IErr.NE.0 ) THEN
      PRINT*,"CrystallographyInitialisation(", my_rank, ") error ", IErr, &
-             " in AllAtomPositions "
+             " in UniqueAtomPositions "
      RETURN
   ENDIF
 

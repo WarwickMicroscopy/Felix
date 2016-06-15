@@ -253,11 +253,11 @@ SUBROUTINE WriteIterationStructure(path,IErr)
 
 !XX  WRITE(filename,*) "StructureFull.txt"
 !XX  WRITE(fullpath,*) TRIM(ADJUSTL(path)),'/',TRIM(ADJUSTL(filename))
-!XXPRINT*,"MNP,SMNP"  
+!XXPRINT*,"RAtomPosition,SAtomName"  
 !XX  OPEN(UNIT=IChOutSimplex,STATUS='UNKNOWN',&
 !XX        FILE=TRIM(ADJUSTL(fullpath)))
-!XX    DO jnd = 1,SIZE(MNP,DIM=1)
-!XX     WRITE(IChOutSimplex,FMT='(A2,1X,3(F9.6,1X))') SMNP(jnd),MNP(jnd,1:3)
+!XX    DO jnd = 1,SIZE(RAtomPosition,DIM=1)
+!XX     WRITE(IChOutSimplex,FMT='(A2,1X,3(F9.6,1X))') SAtomName(jnd),RAtomPosition(jnd,1:3)
 !XX    END DO
 !XX  CLOSE(IChOutSimplex)
 

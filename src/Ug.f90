@@ -173,7 +173,7 @@ SUBROUTINE StructureFactorInitialisation (IErr)
      DO jnd=1,ind 
         CVgij= 0.0D0
         DO lnd=1,INAtomsUnitCell
-           ICurrentAtom = IAtoms(lnd)!Atomic number
+           ICurrentAtom = IAtomicNumber(lnd)!Atomic number
 
            SELECT CASE (IScatterFactorMethodFLAG)! calculate f_e(q) as in Eq. C.15 of Kirkland, "Advanced Computing in EM"
 
@@ -228,18 +228,18 @@ SUBROUTINE StructureFactorInitialisation (IErr)
            END SELECT
 
            ! initialize potential as in Eq. (6.10) of Kirkland
-           RAtomicFormFactor = RAtomicFormFactor*ROcc(lnd)
+           RAtomicFormFactor = RAtomicFormFactor*ROccupancy(lnd)
            IF (IAnisoDebyeWallerFactorFlag.EQ.0) THEN
-              IF(RDWF(lnd).GT.10.OR.RDWF(lnd).LT.0) THEN
-                 RDWF(lnd) = RDebyeWallerConstant
+              IF(RIsoDW(lnd).GT.10.OR.RIsoDW(lnd).LT.0) THEN
+                 RIsoDW(lnd) = RDebyeWallerConstant
               END IF
               RAtomicFormFactor = RAtomicFormFactor * &
-                   EXP(-((RgMatMag(ind,jnd)/2.D0)**2)*RDWF(lnd))
+                   EXP(-((RgMatMag(ind,jnd)/2.D0)**2)*RIsoDW(lnd))
            ELSE
               RAtomicFormFactor = RAtomicFormFactor * &
                    EXP(-TWOPI*DOT_PRODUCT(RgMatMat(ind,jnd,:), &
                    MATMUL( RAnisotropicDebyeWallerFactorTensor( &
-                   IAnisoDWFT(lnd),:,:), &
+                   RAnisoDW(lnd),:,:), &
                    RgMatMat(ind,jnd,:))))
            END IF
            CVgij = CVgij + RAtomicFormFactor * &

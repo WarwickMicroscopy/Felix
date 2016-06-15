@@ -157,7 +157,7 @@ MODULE IPara
   !Crystal Settings
   INTEGER(IKIND) :: IMaxPossibleNAtomsUnitCell
   ! Name2Atom index
-  INTEGER(IKIND), DIMENSION(:), ALLOCATABLE :: IBasisAtomicNumber,IAtoms
+  INTEGER(IKIND), DIMENSION(:), ALLOCATABLE :: IBasisAtomicNumber,IAtomicNumber
   !Microscope Settings
   INTEGER(IKIND) :: IIncidentBeamDirectionX, IIncidentBeamDirectionY, &
        IIncidentBeamDirectionZ, &
@@ -169,7 +169,7 @@ MODULE IPara
   INTEGER(IKIND) :: INoOfLacbedPatterns
   !Beams from selection criteria
   INTEGER(IKIND) :: nReflections,nStrongBeams,nWeakBeams,nBeams,IHKLMAXValue
-  INTEGER(IKIND), DIMENSION(:), ALLOCATABLE :: IBasisAnisoDW, IAnisoDWFT
+  INTEGER(IKIND), DIMENSION(:), ALLOCATABLE :: IBasisAnisoDW, RAnisoDW
   !Main
   INTEGER(IKIND) :: IPixelTotal, INAtomsUnitCell,IPixelComputed
   INTEGER, DIMENSION(2) :: IImageSizeXY
@@ -180,7 +180,7 @@ MODULE IPara
   INTEGER(IKIND),DIMENSION(:), ALLOCATABLE :: InBeams,IStrongBeamList,IOutputReflections,IEquivalentUgKey
   !inpcif
   INTEGER(IKIND) :: ISymCount
-  INTEGER(IKIND), DIMENSION(:), ALLOCATABLE :: IAtomicNumber, IAnisoDW
+  INTEGER(IKIND), DIMENSION(:), ALLOCATABLE :: IAllAtomicNumber, RAllAnisoDW
   INTEGER(IKIND) :: IPixelCountTotal
   !LACBED Writing
   INTEGER(IKIND) :: ISeperateFolderFlag
@@ -224,8 +224,8 @@ MODULE RPara
   REAL(RKIND) :: RLengthX,RLengthY,RLengthZ,RVolume,RAlpha,RBeta,RGamma, &
        RDebyeWallerConstant,RAbsorptionPercentage
   REAL(RKIND), DIMENSION(:), ALLOCATABLE :: &
-       RBasisIsoDW, RBasisOccupancy, RDWF, ROcc
-  REAL(RKIND), DIMENSION(:,:), ALLOCATABLE :: RSymVec,RBasisAtomPosition, MNP,&
+       RBasisIsoDW, RBasisOccupancy, RIsoDW, ROccupancy
+  REAL(RKIND), DIMENSION(:,:), ALLOCATABLE :: RSymVec,RBasisAtomPosition, RAtomPosition,&
        RUniqueKey
   REAL(RKIND), DIMENSION(:,:,:), ALLOCATABLE :: RSymMat
   !Microscope Parameters
@@ -278,8 +278,8 @@ MODULE RPara
        RInnerIntegrationParameterGMagPrime,&
        ROuterIntegrationParameterGMagPrime
   !LACBED Program
-  REAL(RKIND), DIMENSION(:,:), ALLOCATABLE :: RAtomPosition
-  REAL(RKIND), DIMENSION(:), ALLOCATABLE :: ROccupancy, RIsoDW
+  REAL(RKIND), DIMENSION(:,:), ALLOCATABLE :: RAllAtomPosition
+  REAL(RKIND), DIMENSION(:), ALLOCATABLE :: RAllOccupancy, RAllIsoDW
   !WaveFunction Arrays
   REAL(RKIND),DIMENSION(:),ALLOCATABLE :: RWaveIntensity,RFullWaveIntensity
   REAL(RKIND), DIMENSION(:,:,:), ALLOCATABLE :: RIndividualReflections
@@ -329,8 +329,8 @@ MODULE SPara
   
   CHARACTER*1 :: SSpaceGroupName
   CHARACTER*10 :: SSpaceGrp
-  CHARACTER*2, DIMENSION(:), ALLOCATABLE :: SAtomName 
-  CHARACTER*2, DIMENSION(:), ALLOCATABLE :: SBasisAtomName, SMNP
+  CHARACTER*2, DIMENSION(:), ALLOCATABLE :: SAllAtomName 
+  CHARACTER*2, DIMENSION(:), ALLOCATABLE :: SBasisAtomName, SAtomName
   CHARACTER*1,DIMENSION(:),ALLOCATABLE :: SWyckoffSymbols
   
 END MODULE SPara

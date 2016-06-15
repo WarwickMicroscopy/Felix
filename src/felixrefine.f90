@@ -153,14 +153,13 @@ PROGRAM Felixrefine
      GOTO 9999
   ENDIF
 
-  CALL AllAtomPositions(IErr)
+  CALL UniqueAtomPositions(IErr)
   IF( IErr.NE.0 ) THEN
-     PRINT*,"felixrefine(",my_rank,")error in AllAtomPositions"
+     PRINT*,"felixrefine(",my_rank,")error in UniqueAtomPositions"
      GOTO 9999
   ENDIF
-
-!deallocations
-!DEALLOCATE(SMNP,MNP,ROccupancy,RAtomPosition,SAtomName,RIsoDW,IAtomicNumber,IAnisoDW)
+  !probably shouldn't deallocate here?
+  DEALLOCATE(SAtomName,RAtomPosition,STAT=IErr)
 
 ! set up reflection pool
 !-----------------------------------------
@@ -196,13 +195,9 @@ PROGRAM Felixrefine
 
 !allocations-----------------------------------  
   ALLOCATE(RgPoolT(INhkl,ITHREE),STAT=IErr)
-  IF(IErr.NE.0) THEN
-     PRINT*,"felixrefine(",my_rank,")error allocating RgPoolT"
-     GOTO 9999
-  END IF
   ALLOCATE(RgDummyVecMat(INhkl,ITHREE),STAT=IErr)
   IF(IErr.NE.0) THEN
-     PRINT*,"felixrefine(",my_rank,")error allocating RgDummyVecMat"
+     PRINT*,"felixrefine(",my_rank,")error allocating"
      GOTO 9999
   END IF
  
@@ -427,14 +422,14 @@ PROGRAM Felixrefine
   !--------------------------------------------------------------------
   ! Setup Simplex Variables
   !--------------------------------------------------------------------!RB restore later for other types of refinement
-!  IF(IRefineMode(2).EQ.1) THEN !It's an atom coordinate refinement
-!     CALL SetupAtomicVectorMovements(IErr)
-!     IF( IErr.NE.0 ) THEN
-!        PRINT*,"felixrefine (", my_rank, ") error in SetupAtomicVectorMovements"
-!        GOTO 9999
-!     END IF
-!  END IF
-!  INoofElementsForEachRefinementType(2)=IRefineMode(2)*IAllowedVectors
+  IF(IRefineMode(2).EQ.1) THEN !It's an atom coordinate refinement
+      CALL SetupAtomicVectorMovements(IErr)
+     IF( IErr.NE.0 ) THEN
+        PRINT*,"felixrefine (", my_rank, ") error in SetupAtomicVectorMovements"
+        GOTO 9999
+     END IF
+  END IF
+  INoofElementsForEachRefinementType(2)=IRefineMode(2)*IAllowedVectors
 !  INoofElementsForEachRefinementType(3)=IRefineMode(3)*SIZE(IAtomicSitesToRefine)
 !  INoofElementsForEachRefinementType(4)=IRefineMode(4)*SIZE(IAtomicSitesToRefine)
 !  INoofElementsForEachRefinementType(5)=IRefineMode(5)*SIZE(IAtomicSitesToRefine)*6
@@ -445,7 +440,7 @@ PROGRAM Felixrefine
 !  INoofElementsForEachRefinementType(10)=IRefineMode(10)
 !  INoofElementsForEachRefinementType(11)=IRefineMode(11)
   !Number of independent variables
-!  INoOfVariables = SUM(INoofElementsForEachRefinementType)
+  INoOfVariables = SUM(INoofElementsForEachRefinementType)
 !This has been calculated in SetupUgsToRefine
 !  IF(my_rank.EQ.0) THEN
 !    IF ( INoOfVariables.EQ.1 ) THEN 
@@ -458,23 +453,23 @@ PROGRAM Felixrefine
 
 
   !--------------------------------------------------------------------
-  !  Assign IDs - is this needed for a Ug refinement?
-!  ALLOCATE(IIterativeVariableUniqueIDs(INoOfVariables,5),STAT=IErr)
-!  IF( IErr.NE.0 ) THEN
-!     PRINT*,"felixrefine(",my_rank,")error allocating IIterativeVariableUniqueIDs"
-!     GOTO 9999
-!  ENDIF
-!  IIterativeVariableUniqueIDs = 0
-!  ICalls = 0
-!  DO ind = 1,IRefinementVariableTypes !Loop over all possible iterative variables
-!     IF(IRefineMode(ind).EQ.1) THEN
-!        DO jnd = 1,INoofElementsForEachRefinementType(ind)
-!           ICalls = ICalls + 1
-!           IIterativeVariableUniqueIDs(ICalls,1) = ICalls
-!           CALL AssignArrayLocationsToIterationVariables(ind,jnd,IIterativeVariableUniqueIDs,IErr)
-!        END DO
-!     END IF
-!  END DO 
+  !  Assign IDs - not needed for a Ug refinement
+  ALLOCATE(IIterativeVariableUniqueIDs(INoOfVariables,5),STAT=IErr)
+  IF( IErr.NE.0 ) THEN
+     PRINT*,"felixrefine(",my_rank,")error allocating IIterativeVariableUniqueIDs"
+     GOTO 9999
+  ENDIF
+  IIterativeVariableUniqueIDs = 0
+  ICalls = 0
+  DO ind = 2,IRefinementVariableTypes !Loop over iterative variables apart from Ug's
+    IF(IRefineMode(ind).EQ.1) THEN
+      DO jnd = 1,INoofElementsForEachRefinementType(ind)
+        ICalls = ICalls + 1
+        IIterativeVariableUniqueIDs(ICalls,1) = ICalls
+        CALL AssignArrayLocationsToIterationVariables(ind,jnd,IIterativeVariableUniqueIDs,IErr)
+      END DO
+    END IF
+  END DO 
 
   !--------------------------------------------------------------------
   ! Setup Images for output
@@ -1673,13 +1668,14 @@ SUBROUTINE SetupAtomicVectorMovements(IErr)
   IAllowedVectors = SUM(IVectors)
   
   ALLOCATE(IAllowedVectorIDs(IAllowedVectors),STAT=IErr)
+  ALLOCATE(RAllowedVectors(IAllowedVectors,ITHREE),STAT=IErr)
+  ALLOCATE(RAllowedVectorMagnitudes(IAllowedVectors),STAT=IErr)
   IF( IErr.NE.0 ) THEN
-     PRINT*,"SetupAtomicVectorMovements(", my_rank, ") error in Allocation() of IAllowedVectorIDs"
+     PRINT*,"SetupAtomicVectorMovements(",my_rank,")error in allocation"
      RETURN
   ENDIF
   
   knd = 0
-  
   DO ind = 1,SIZE(SWyckoffSymbols)
      DO jnd = 1,IVectors(ind)
         knd = knd + 1
@@ -1687,19 +1683,7 @@ SUBROUTINE SetupAtomicVectorMovements(IErr)
      END DO
   END DO
   
-  ALLOCATE(RAllowedVectors(IAllowedVectors,ITHREE),STAT=IErr)
-  IF( IErr.NE.0 ) THEN
-     PRINT*,"SetupAtomicVectorMovements(",my_rank,")error Allocation  RAllowedVectors"
-     RETURN
-  ENDIF
-  ALLOCATE(RAllowedVectorMagnitudes(IAllowedVectors),STAT=IErr)
-  IF( IErr.NE.0 ) THEN
-     PRINT*,"SetupAtomicVectorMovements(",my_rank,")error Allocation  RAllowedVectorMagnitudes"
-     RETURN
-  ENDIF
-  
   RAllowedVectorMagnitudes = ZERO
-  
   DO ind = 1,SIZE(SWyckoffSymbols)
      CALL DetermineAllowedMovements(ISpaceGrp,SWyckoffSymbols(ind),&
           RAllowedVectors(SUM(IVectors(:(ind-1)))+1:SUM(IVectors(:(ind))),:),&
@@ -1708,19 +1692,12 @@ SUBROUTINE SetupAtomicVectorMovements(IErr)
         PRINT*,"SetupAtomicVectorMovements(",my_rank,")error in DetermineAllowedMovements"
         RETURN
      ENDIF
-     
   END DO
   
-  !--------------------------------------------------------------------
-  ! Save Atomic Coordinates  
-  !--------------------------------------------------------------------
-  
-  ALLOCATE(RInitialAtomPosition(SIZE(RBasisAtomPosition,DIM=1),SIZE(RBasisAtomPosition,DIM=2)),STAT=IErr)
+  ALLOCATE(RInitialAtomPosition(SIZE(RBasisAtomPosition,1),ITHREE),STAT=IErr)
   IF( IErr.NE.0 ) THEN
      PRINT*,"SetupAtomicVectorMovements(",my_rank,")error ALLOCATE RInitialAtomPosition "
      RETURN
   ENDIF
-  
   RInitialAtomPosition = RBasisAtomPosition
-  
 END SUBROUTINE SetupAtomicVectorMovements

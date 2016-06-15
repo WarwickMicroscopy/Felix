@@ -546,20 +546,6 @@ PROGRAM felixsim
      GOTO 9999  
   ENDIF
   
-  DEALLOCATE(MNP,STAT=IErr)
-  IF( IErr.NE.0 ) THEN
-     PRINT*,"felixsim(", my_rank, ") error ", IErr, &
-          " in Deallocation MNP"
-     GOTO 9999
-  ENDIF
-
-  DEALLOCATE(SMNP,STAT=IErr)
-  IF( IErr.NE.0 ) THEN
-     PRINT*,"felixsim(", my_rank, ") error ", IErr, &
-          " in Deallocation SMNP"
-     GOTO 9999
-  ENDIF
-
   DEALLOCATE(RAtomPosition,STAT=IErr)
   IF( IErr.NE.0 ) THEN
      PRINT*,"felixsim(", my_rank, ") error ", IErr, &
@@ -574,20 +560,48 @@ PROGRAM felixsim
      GOTO 9999
   ENDIF
 
-  DEALLOCATE(IAnisoDW,STAT=IErr)
+  DEALLOCATE(RAllAtomPosition,STAT=IErr)
   IF( IErr.NE.0 ) THEN
      PRINT*,"felixsim(", my_rank, ") error ", IErr, &
-          " in Deallocation IAnisoDW"
+          " in Deallocation RAllAtomPosition"
      GOTO 9999
   ENDIF
 
-  DEALLOCATE(IAtomicNumber,STAT=IErr)
+  DEALLOCATE(SAllAtomName,STAT=IErr)
   IF( IErr.NE.0 ) THEN
      PRINT*,"felixsim(", my_rank, ") error ", IErr, &
-          " in Deallocation IAtomicNumber"
+          " in Deallocation SAllAtomName"
+     GOTO 9999
+  ENDIF
+
+  DEALLOCATE(RAllAnisoDW,STAT=IErr)
+  IF( IErr.NE.0 ) THEN
+     PRINT*,"felixsim(", my_rank, ") error ", IErr, &
+          " in Deallocation RAllAnisoDW"
+     GOTO 9999
+  ENDIF
+
+  DEALLOCATE(IAllAtomicNumber,STAT=IErr)
+  IF( IErr.NE.0 ) THEN
+     PRINT*,"felixsim(", my_rank, ") error ", IErr, &
+          " in Deallocation IAllAtomicNumber"
      GOTO 9999
   ENDIF
   
+  DEALLOCATE(RAllIsoDW,STAT=IErr)
+  IF( IErr.NE.0 ) THEN
+     PRINT*,"felixsim(", my_rank, ") error ", IErr, &
+          " in Deallocation RAllIsoDW"
+     GOTO 9999
+  ENDIF
+
+  DEALLOCATE(RAllOccupancy,STAT=IErr)
+  IF( IErr.NE.0 ) THEN
+     PRINT*,"felixsim(", my_rank, ") error ", IErr, &
+          " in Deallocation RAllOccupancy"
+     GOTO 9999
+  ENDIF
+
   DEALLOCATE(RIsoDW,STAT=IErr)
   IF( IErr.NE.0 ) THEN
      PRINT*,"felixsim(", my_rank, ") error ", IErr, &
@@ -601,32 +615,18 @@ PROGRAM felixsim
           " in Deallocation ROccupancy"
      GOTO 9999
   ENDIF
-
-  DEALLOCATE(RDWF,STAT=IErr)
+  
+  DEALLOCATE(IAtomicNumber,STAT=IErr)
   IF( IErr.NE.0 ) THEN
      PRINT*,"felixsim(", my_rank, ") error ", IErr, &
-          " in Deallocation RDWF"
-     GOTO 9999
-  ENDIF
-
-  DEALLOCATE(ROcc,STAT=IErr)
-  IF( IErr.NE.0 ) THEN
-     PRINT*,"felixsim(", my_rank, ") error ", IErr, &
-          " in Deallocation ROcc"
+          " in Deallocation IAtomicNumber"
      GOTO 9999
   ENDIF
   
-  DEALLOCATE(IAtoms,STAT=IErr)
+  DEALLOCATE(RAnisoDW,STAT=IErr)
   IF( IErr.NE.0 ) THEN
      PRINT*,"felixsim(", my_rank, ") error ", IErr, &
-          " in Deallocation IAtoms"
-     GOTO 9999
-  ENDIF
-  
-  DEALLOCATE(IAnisoDWFT,STAT=IErr)
-  IF( IErr.NE.0 ) THEN
-     PRINT*,"felixsim(", my_rank, ") error ", IErr, &
-          " in Deallocation IAnisoDWFT"
+          " in Deallocation RAnisoDW"
      GOTO 9999
   ENDIF
   

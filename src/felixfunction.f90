@@ -104,7 +104,7 @@ SUBROUTINE SimulateAndFit(RFigureofMerit,RIndependentVariable,Iiter,IExitFLAG,IE
         PRINT*,"SimulateAndFit(",my_rank,")error in UpdateVariables"
         RETURN
      END IF
-	 RBasisAtomPosition=MOD(RBasisAtomPosition,ONE)
+	 RBasisAtomPosition=MODULO(RBasisAtomPosition,ONE)
 	 
   END IF
 
