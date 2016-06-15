@@ -260,7 +260,6 @@ SUBROUTINE AllAtomPositions(IErr)
   ROcc(1) = ROccupancy(1)
   IAtoms(1) = IAtomicNumber(1)
   IAnisoDWFT(1) = IAnisoDW(1)
-PRINT*,1,": ",MNP(1,:)
   jnd=2
   DO ind=2,IMaxPossibleNAtomsUnitCell!work through all possible atom coords
     Lunique=.TRUE.
