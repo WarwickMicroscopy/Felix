@@ -180,7 +180,6 @@ MODULE IPara
   INTEGER(IKIND),DIMENSION(:), ALLOCATABLE :: InBeams,IStrongBeamList,IOutputReflections,IEquivalentUgKey
   !inpcif
   INTEGER(IKIND) :: ISymCount
-  INTEGER(IKIND), DIMENSION(:), ALLOCATABLE :: IAllAtomicNumber, RAllAnisoDW
   INTEGER(IKIND) :: IPixelCountTotal
   !LACBED Writing
   INTEGER(IKIND) :: ISeperateFolderFlag
@@ -277,9 +276,6 @@ MODULE RPara
        RInnerIntegralLowerBound,RInnerIntegralUpperBound,&
        RInnerIntegrationParameterGMagPrime,&
        ROuterIntegrationParameterGMagPrime
-  !LACBED Program
-  REAL(RKIND), DIMENSION(:,:), ALLOCATABLE :: RAllAtomPosition
-  REAL(RKIND), DIMENSION(:), ALLOCATABLE :: RAllOccupancy, RAllIsoDW
   !WaveFunction Arrays
   REAL(RKIND),DIMENSION(:),ALLOCATABLE :: RWaveIntensity,RFullWaveIntensity
   REAL(RKIND), DIMENSION(:,:,:), ALLOCATABLE :: RIndividualReflections
@@ -329,7 +325,6 @@ MODULE SPara
   
   CHARACTER*1 :: SSpaceGroupName
   CHARACTER*10 :: SSpaceGrp
-  CHARACTER*2, DIMENSION(:), ALLOCATABLE :: SAllAtomName 
   CHARACTER*2, DIMENSION(:), ALLOCATABLE :: SBasisAtomName, SAtomName
   CHARACTER*1,DIMENSION(:),ALLOCATABLE :: SWyckoffSymbols
   

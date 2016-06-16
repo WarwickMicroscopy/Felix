@@ -153,13 +153,31 @@ PROGRAM Felixrefine
      GOTO 9999
   ENDIF
 
+  !Total possible atoms/unit cell
+  IMaxPossibleNAtomsUnitCell=SIZE(RBasisAtomPosition,1)*SIZE(RSymVec,1)
+  !These are over-allocated since the actual size is not known before the calculation of unique positions
+  !AtomPosition is in fractional unit cell coordinates, like BasisAtomPosition
+  ALLOCATE(RAtomPosition(IMaxPossibleNAtomsUnitCell,ITHREE),STAT=IErr)
+  !AtomCoordinate is in the microscopy reference frame in Angstrom units
+  ALLOCATE(RAtomCoordinate(IMaxPossibleNAtomsUnitCell,ITHREE),STAT=IErr)
+  !Atom name
+  ALLOCATE(SAtomName(IMaxPossibleNAtomsUnitCell),STAT=IErr)
+  !Isotropic Debye-Waller factor
+  ALLOCATE(RIsoDW(IMaxPossibleNAtomsUnitCell),STAT=IErr)
+  ALLOCATE(ROccupancy(IMaxPossibleNAtomsUnitCell),STAT=IErr)
+  ALLOCATE(IAtomicNumber(IMaxPossibleNAtomsUnitCell),STAT=IErr)
+  !Anisotropic Debye-Waller factor (why is it an integer????)
+  ALLOCATE(RAnisoDW(IMaxPossibleNAtomsUnitCell),STAT=IErr)
+  IF( IErr.NE.0 ) THEN
+     PRINT*,"felixrefine(",my_rank,")error in atom position allocations"
+     GOTO 9999
+  ENDIF
   CALL UniqueAtomPositions(IErr)
   IF( IErr.NE.0 ) THEN
      PRINT*,"felixrefine(",my_rank,")error in UniqueAtomPositions"
      GOTO 9999
   ENDIF
-  !probably shouldn't deallocate here?
-  DEALLOCATE(SAtomName,RAtomPosition,STAT=IErr)
+  !Perhaps should now re-allocate RAtomPosition,SAtomName,RIsoDW,ROccupancy,IAtomicNumber,RAnisoDW to match INAtomsUnitCell???
 
 ! set up reflection pool
 !-----------------------------------------
@@ -367,7 +385,6 @@ PROGRAM Felixrefine
   END IF
 
   IF(IRefineMode(1).EQ.1 .OR. IRefineMode(12).EQ.1) THEN !It's a Ug refinement
-    DEALLOCATE(RAtomCoordinate,STAT=IErr)!Don't need this any more
     !Identify unique Ug's and count the number of independent variables INoOfVariables
 	!using the Hermitian matrix CUgMatNoAbs
     !We count over INoofUgs, specified in felix.inp
@@ -423,11 +440,11 @@ PROGRAM Felixrefine
   ! Setup Simplex Variables
   !--------------------------------------------------------------------!RB restore later for other types of refinement
   IF(IRefineMode(2).EQ.1) THEN !It's an atom coordinate refinement
-      CALL SetupAtomicVectorMovements(IErr)
-     IF( IErr.NE.0 ) THEN
-        PRINT*,"felixrefine (", my_rank, ") error in SetupAtomicVectorMovements"
-        GOTO 9999
-     END IF
+    CALL SetupAtomicVectorMovements(IErr)
+    IF(IErr.NE.0) THEN
+      PRINT*,"felixrefine(",my_rank,")error in SetupAtomicVectorMovements"
+      GOTO 9999
+    END IF
   END IF
   INoofElementsForEachRefinementType(2)=IRefineMode(2)*IAllowedVectors
 !  INoofElementsForEachRefinementType(3)=IRefineMode(3)*SIZE(IAtomicSitesToRefine)
@@ -454,23 +471,24 @@ PROGRAM Felixrefine
 
   !--------------------------------------------------------------------
   !  Assign IDs - not needed for a Ug refinement
-  ALLOCATE(IIterativeVariableUniqueIDs(INoOfVariables,5),STAT=IErr)
-  IF( IErr.NE.0 ) THEN
-     PRINT*,"felixrefine(",my_rank,")error allocating IIterativeVariableUniqueIDs"
-     GOTO 9999
-  ENDIF
-  IIterativeVariableUniqueIDs = 0
-  ICalls = 0
-  DO ind = 2,IRefinementVariableTypes !Loop over iterative variables apart from Ug's
-    IF(IRefineMode(ind).EQ.1) THEN
-      DO jnd = 1,INoofElementsForEachRefinementType(ind)
-        ICalls = ICalls + 1
-        IIterativeVariableUniqueIDs(ICalls,1) = ICalls
-        CALL AssignArrayLocationsToIterationVariables(ind,jnd,IIterativeVariableUniqueIDs,IErr)
-      END DO
-    END IF
-  END DO 
-
+  IF (IRefineMode(12)+IRefineMode(12).EQ.0) THEN
+    ALLOCATE(IIterativeVariableUniqueIDs(INoOfVariables,5),STAT=IErr)
+    IF( IErr.NE.0 ) THEN
+      PRINT*,"felixrefine(",my_rank,")error allocating IIterativeVariableUniqueIDs"
+      GOTO 9999
+    ENDIF
+    IIterativeVariableUniqueIDs = 0
+    ICalls = 0
+    DO ind = 2,IRefinementVariableTypes !Loop over iterative variables apart from Ug's
+      IF(IRefineMode(ind).EQ.1) THEN
+        DO jnd = 1,INoofElementsForEachRefinementType(ind)
+          ICalls = ICalls + 1
+          IIterativeVariableUniqueIDs(ICalls,1) = ICalls
+          CALL AssignArrayLocationsToIterationVariables(ind,jnd,IIterativeVariableUniqueIDs,IErr)
+        END DO
+      END IF
+    END DO 
+  END IF
   !--------------------------------------------------------------------
   ! Setup Images for output
   ALLOCATE(RhklPositions(nReflections,2),STAT=IErr)
@@ -559,7 +577,7 @@ PROGRAM Felixrefine
   END IF
 
   IF (IRefineMode(12).EQ.1) THEN
-    !bisection
+    !bisection on Ug's
 	RdeltaUg=0.01!RSimplexLengthScale/100.0!use simplex length scale
 	Rtol=0.002! precision 0.01 (in what units, eh? Do find out...)
 	DO jnd=1,10!10 cycles to see how it converges
@@ -665,10 +683,17 @@ PROGRAM Felixrefine
   DEALLOCATE(RgPoolT,STAT=IErr)
   DEALLOCATE(CUgMat,STAT=IErr)
   DEALLOCATE(RSimulatedPatterns,STAT=IErr)
-  IF (IRefineMode(1).EQ.1 .OR. IRefineMode(12).EQ.1) THEN
+  DEALLOCATE(RAtomPosition,STAT=IErr)
+  DEALLOCATE(SAtomName,STAT=IErr)
+  DEALLOCATE(RIsoDW,STAT=IErr)
+  DEALLOCATE(ROccupancy,STAT=IErr)
+  DEALLOCATE(IAtomicNumber,STAT=IErr)
+  DEALLOCATE(RAnisoDW,STAT=IErr)
+  DEALLOCATE(RAtomCoordinate,STAT=IErr)
+  IF (IRefineMode(1)+IRefineMode(12).EQ.1) THEN
     DEALLOCATE(RgSumMat,STAT=IErr)
   ELSE
-	DEALLOCATE(RAtomCoordinate,STAT=IErr)
+	DEALLOCATE(IIterativeVariableUniqueIDs,STAT=IErr)
   END IF  
   IF( IErr.NE.0 ) THEN
      PRINT*,"felixrefine(",my_rank,")error in final deallocations"
@@ -1657,7 +1682,7 @@ SUBROUTINE SetupAtomicVectorMovements(IErr)
      RETURN
   ENDIF
   
-  DO ind = 1,SIZE(SWyckoffSymbols)!NB SIZE(SWyckoffSymbols)=IAtomicSitesToRefine
+  DO ind = 1,SIZE(SWyckoffSymbols)!NB SIZE(SWyckoffSymbols)=IAtomicSitesToRefine?
      CALL CountAllowedMovements(ISpaceGrp,SWyckoffSymbols(ind),IVectors(ind),IErr)
      IF( IErr.NE.0 ) THEN
         PRINT*,"SetupAtomicVectorMovements(",my_rank,")error in CountAllowedMovements "
@@ -1677,27 +1702,27 @@ SUBROUTINE SetupAtomicVectorMovements(IErr)
   
   knd = 0
   DO ind = 1,SIZE(SWyckoffSymbols)
-     DO jnd = 1,IVectors(ind)
-        knd = knd + 1
-        IAllowedVectorIDs(knd) = IAtomicSitesToRefine(ind)
-     END DO
+    DO jnd = 1,IVectors(ind)
+      knd = knd + 1
+      IAllowedVectorIDs(knd) = IAtomicSitesToRefine(ind)
+    END DO
   END DO
   
   RAllowedVectorMagnitudes = ZERO
   DO ind = 1,SIZE(SWyckoffSymbols)
-     CALL DetermineAllowedMovements(ISpaceGrp,SWyckoffSymbols(ind),&
-          RAllowedVectors(SUM(IVectors(:(ind-1)))+1:SUM(IVectors(:(ind))),:),&
-          IVectors(ind),IErr)
-     IF( IErr.NE.0 ) THEN
-        PRINT*,"SetupAtomicVectorMovements(",my_rank,")error in DetermineAllowedMovements"
-        RETURN
-     ENDIF
+    CALL DetermineAllowedMovements(ISpaceGrp,SWyckoffSymbols(ind),&
+         RAllowedVectors(SUM(IVectors(:(ind-1)))+1:SUM(IVectors(:(ind))),:),&
+         IVectors(ind),IErr)
+    IF( IErr.NE.0 ) THEN
+      PRINT*,"SetupAtomicVectorMovements(",my_rank,")error in DetermineAllowedMovements"
+      RETURN
+    ENDIF
   END DO
   
   ALLOCATE(RInitialAtomPosition(SIZE(RBasisAtomPosition,1),ITHREE),STAT=IErr)
   IF( IErr.NE.0 ) THEN
-     PRINT*,"SetupAtomicVectorMovements(",my_rank,")error ALLOCATE RInitialAtomPosition "
-     RETURN
+    PRINT*,"SetupAtomicVectorMovements(",my_rank,")error ALLOCATE RInitialAtomPosition "
+    RETURN
   ENDIF
   RInitialAtomPosition = RBasisAtomPosition
 END SUBROUTINE SetupAtomicVectorMovements

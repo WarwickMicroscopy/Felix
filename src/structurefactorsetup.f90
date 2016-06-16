@@ -64,13 +64,9 @@ SUBROUTINE StructureFactorSetup(IErr)
   !--------------------------------------------------------------------
   !Allocation--------------------------------------------------------
   ALLOCATE(RgMatMat(nReflections,nReflections,ITHREE),STAT=IErr)
-  IF( IErr.NE.0 ) THEN
-     PRINT*,"StructureFactorSetup(",my_rank,")error allocating RgMatMat"
-     RETURN
-  END IF 
   ALLOCATE(RgMatMag(nReflections,nReflections),STAT=IErr)
   IF( IErr.NE.0 ) THEN
-     PRINT*,"StructureFactorSetup(",my_rank,")error allocating RgMatMag"
+     PRINT*,"StructureFactorSetup(",my_rank,")error in allocations"
      RETURN
   END IF
 
@@ -99,13 +95,9 @@ SUBROUTINE StructureFactorSetup(IErr)
 
   !Dellocation-------------------------------------------------------- 
   DEALLOCATE(RgMatMag,STAT=IErr)
-  IF( IErr.NE.0 ) THEN
-     PRINT*,"StructureFactorSetup(",my_rank,")error deallocating RgMatMag"
-     RETURN
-  END IF
   DEALLOCATE(RgMatMat,STAT=IErr)
   IF( IErr.NE.0 ) THEN
-     PRINT*,"StructureFactorSetup(",my_rank,")error deallocating RgMatMat"
+     PRINT*,"StructureFactorSetup(",my_rank,")error deallocations"
      RETURN
   END IF
 

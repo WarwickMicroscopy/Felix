@@ -98,13 +98,20 @@ SUBROUTINE SimulateAndFit(RFigureofMerit,RIndependentVariable,Iiter,IExitFLAG,IE
     RAbsorptionPercentage = RIndependentVariable(jnd)!===![[[
 
   ELSE !everything else
-  
-     CALL UpdateVariables(RIndependentVariable,IErr)
-     IF( IErr.NE.0 ) THEN
-        PRINT*,"SimulateAndFit(",my_rank,")error in UpdateVariables"
-        RETURN
-     END IF
-	 RBasisAtomPosition=MODULO(RBasisAtomPosition,ONE)
+
+	!Change variables
+    CALL UpdateVariables(RIndependentVariable,IErr)
+    IF( IErr.NE.0 ) THEN
+      PRINT*,"SimulateAndFit(",my_rank,")error in UpdateVariables"
+      RETURN
+    END IF
+	!recalculate unit cell
+	!RBasisAtomPosition=MODULO(RBasisAtomPosition,ONE)
+    CALL UniqueAtomPositions(IErr)
+    IF( IErr.NE.0 ) THEN
+      PRINT*,"SimulateAndFit(",my_rank,")error in UniqueAtomPositions"
+      RETURN
+    END IF
 	 
   END IF
 
@@ -397,21 +404,28 @@ SUBROUTINE UpdateVariables(RIndependentVariable,IErr)
 
   IMPLICIT NONE
 
-  INTEGER(IKIND) :: IVariableType,IErr,ind
+  INTEGER(IKIND) :: IVariableType,IVectorID,IAtomID,IErr,ind
   REAL(RKIND),DIMENSION(INoOfVariables),INTENT(IN) :: RIndependentVariable
 
   !!$  Fill the Independent Value array with values
   IF(IRefineMode(2).EQ.1) THEN     
-     RBasisAtomPosition = RInitialAtomPosition
+     RBasisAtomPosition = RInitialAtomPosition!RB is this redundant? 
   END IF
 
   DO ind = 1,INoOfVariables
-     IVariableType = IIterativeVariableUniqueIDs(ind,2)
-     SELECT CASE (IVariableType)
-     CASE(1)
-        !RB structure factor refinement, do in UpdateStructureFactors
-     CASE(2)
-        CALL ConvertVectorMovementsIntoAtomicCoordinates(ind,RIndependentVariable,IErr)
+    IVariableType = IIterativeVariableUniqueIDs(ind,2)
+    SELECT CASE (IVariableType)
+    CASE(1)
+      !RB structure factor refinement, do in UpdateStructureFactors
+    CASE(2)
+      !CALL ConvertVectorMovementsIntoAtomicCoordinates(ind,RIndependentVariable,IErr)
+	  !The vector being used
+	  IVectorID = IIterativeVariableUniqueIDs(ind,3)
+	  !The atom being moved
+      IAtomID = IAllowedVectorIDs(IVectorID)
+	  !Change in position
+      RBasisAtomPosition(IAtomID,:) = RBasisAtomPosition(IAtomID,:) + &
+         RIndependentVariable(ind)*RAllowedVectors(IVectorID,:)
      CASE(3)
         RBasisOccupancy(IIterativeVariableUniqueIDs(ind,3)) = &
              RIndependentVariable(ind)
@@ -603,7 +617,7 @@ END SUBROUTINE UpdateStructureFactors
 !%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 SUBROUTINE ConvertVectorMovementsIntoAtomicCoordinates(IVariableID,RIndependentVariable,IErr)
-
+!RB this is now redundant, moved up to Update Variables
   USE MyNumbers
   
   USE CConst; USE IConst; USE RConst
@@ -622,10 +636,8 @@ SUBROUTINE ConvertVectorMovementsIntoAtomicCoordinates(IVariableID,RIndependentV
 
 !!$  Use IVariableID to determine which vector is being applied (IVectorID)
   IVectorID = IIterativeVariableUniqueIDs(IVariableID,3)
-
 !!$  Use IVectorID to determine which atomic coordinate the vector is to be applied to (IAtomID)
   IAtomID = IAllowedVectorIDs(IVectorID)
-
 !!$  Use IAtomID to applied the IVectodID Vector to the IAtomID atomic coordinate
   RBasisAtomPosition(IAtomID,:) = RBasisAtomPosition(IAtomID,:) + &
        RIndependentVariable(IVariableID)*RAllowedVectors(IVectorID,:)

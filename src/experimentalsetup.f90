@@ -56,12 +56,12 @@ SUBROUTINE ExperimentalSetup (IErr)
   !--------------------------------------------------------------------
   ! Allocate Crystallography Variables
   !--------------------------------------------------------------------
-
-  ALLOCATE(RAtomCoordinate(IMaxPossibleNAtomsUnitCell,ITHREE),STAT=IErr)
-  IF( IErr.NE.0 ) THEN
-     PRINT*,"ExperimentalSetup(",my_rank,")error allocating RAtomCoordinate"
-     RETURN
-  ENDIF
+  !Allocation now done in UniqueAtomPositions
+  !ALLOCATE(RAtomCoordinate(IMaxPossibleNAtomsUnitCell,ITHREE),STAT=IErr)
+  !IF( IErr.NE.0 ) THEN
+  !   PRINT*,"ExperimentalSetup(",my_rank,")error allocating RAtomCoordinate"
+  !   RETURN
+  !ENDIF
   
   !--------------------------------------------------------------------
   ! microscopy settings

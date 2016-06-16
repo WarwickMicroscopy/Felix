@@ -199,9 +199,12 @@ SUBROUTINE UniqueAtomPositions(IErr)
   
   IMPLICIT NONE
   
-  INTEGER(IKIND) :: IErr,ind,jnd,knd,Ifullind,Iuniind
-  REAL(RKIND):: norm
+  INTEGER(IKIND) :: IErr,ind,jnd,knd
+  INTEGER(IKIND), DIMENSION(:), ALLOCATABLE :: IAllAtomicNumber, RAllAnisoDW
+  REAL(RKIND), DIMENSION(:,:), ALLOCATABLE :: RAllAtomPosition
+  REAL(RKIND), DIMENSION(:), ALLOCATABLE :: RAllOccupancy, RAllIsoDW
   LOGICAL :: Lunique
+  CHARACTER*2, DIMENSION(:), ALLOCATABLE :: SAllAtomName 
   CHARACTER*100 RAtomPositionString
   CHARACTER*100 indString
 
@@ -240,20 +243,6 @@ SUBROUTINE UniqueAtomPositions(IErr)
   ! Now reduce to the set of unique fractional atomic positions, used to be subroutine CrystalUniqueFractionalAtomicPostitionsCalculation
   CALL Message("UniqueAtomPositions",IMust,IErr)
   
-  !Initial value of total atoms/unit cell, set to the maximum and reduce to correct value at the end
-  IMaxPossibleNAtomsUnitCell=SIZE(RBasisAtomPosition,1)*SIZE(RSymVec,1)
-
-  ALLOCATE(RAtomPosition(IMaxPossibleNAtomsUnitCell,ITHREE),STAT=IErr)
-  ALLOCATE(SAtomName(IMaxPossibleNAtomsUnitCell),STAT=IErr)
-  ALLOCATE(RIsoDW(IMaxPossibleNAtomsUnitCell),STAT=IErr)
-  ALLOCATE(ROccupancy(IMaxPossibleNAtomsUnitCell),STAT=IErr)
-  ALLOCATE(IAtomicNumber(IMaxPossibleNAtomsUnitCell),STAT=IErr)
-  ALLOCATE(RAnisoDW(IMaxPossibleNAtomsUnitCell),STAT=IErr)
-  IF( IErr.NE.0 ) THEN
-     PRINT*,"UniqueAtomPositions(",my_rank,")error in allocations"
-     RETURN
-  ENDIF
-
   !first atom
   RAtomPosition(1,:)= RAllAtomPosition(1,:)
   SAtomName(1)= SAllAtomName(1)
@@ -262,7 +251,8 @@ SUBROUTINE UniqueAtomPositions(IErr)
   IAtomicNumber(1) = IAllAtomicNumber(1)
   RAnisoDW(1) = RAllAnisoDW(1)
   jnd=2
-  DO ind=2,IMaxPossibleNAtomsUnitCell!work through all possible atom coords
+  !work through all possible atom coords and check for duplicates
+  DO ind=2,IMaxPossibleNAtomsUnitCell
     Lunique=.TRUE.
     DO knd=1,jnd-1!check against the unique ones found so far
 	  !PRINT*,ind,jnd,SUM(ABS(RAllAtomPosition(ind,:)-RAtomPosition(knd,:)))
@@ -284,7 +274,14 @@ SUBROUTINE UniqueAtomPositions(IErr)
     ENDIF
   ENDDO
   INAtomsUnitCell= jnd-1
-  
+
+  !Finished with these variables now
+  DEALLOCATE(RAllAtomPosition,SAllAtomName,RAllOccupancy,RAllIsoDW,IAllAtomicNumber,RAllAnisoDW)
+  IF( IErr.NE.0 ) THEN
+     PRINT*,"UniqueAtomPositions(",my_rank,")error deallocating RAllAtomPositions"
+     RETURN
+  ENDIF
+    
 !!$  Display the above variables to the user - index stored as string for formatting using message subroutine
   CALL Message("UniqueAtomPositions",IInfo,IErr, &
        MessageVariable = "NAtomsUnitCell",IVariable = INAtomsUnitCell) 
@@ -308,23 +305,11 @@ SUBROUTINE UniqueAtomPositions(IErr)
               MessageVariable = "RAnisoDW("//TRIM(ADJUSTL(indString))//")",IVariable =RAnisoDW(ind))
   END DO
 
-  ALLOCATE(RAtomCoordinate(INAtomsUnitCell,ITHREE),STAT=IErr)!this is a global variable
-  IF( IErr.NE.0 ) THEN
-     PRINT*,"UniqueAtomPositions(",my_rank,")error allocating RAtomCoordinate"
-     RETURN
-  ENDIF
   ! Calculate atomic position vectors r from Fractional Coordinates and Lattice Vectors
-  ! in microscopy reference frame in Angstrom units
   DO ind=1,INAtomsUnitCell
     DO jnd=1,ITHREE
        RAtomCoordinate(ind,jnd)= RAtomPosition(ind,1)*RaVecM(jnd)+RAtomPosition(ind,2)*RbVecM(jnd)+RAtomPosition(ind,3)*RcVecM(jnd)
     ENDDO
   ENDDO
 
-  DEALLOCATE(RAllAtomPosition,SAllAtomName,RAllOccupancy,RAllIsoDW,IAllAtomicNumber,RAllAnisoDW)
-  IF( IErr.NE.0 ) THEN
-     PRINT*,"UniqueAtomPositions(",my_rank,")error allocating RAtomCoordinate"
-     RETURN
-  ENDIF
-  
 END SUBROUTINE UniqueAtomPositions

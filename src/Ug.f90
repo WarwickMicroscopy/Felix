@@ -242,10 +242,8 @@ SUBROUTINE StructureFactorInitialisation (IErr)
                    RAnisoDW(lnd),:,:), &
                    RgMatMat(ind,jnd,:))))
            END IF
-           CVgij = CVgij + RAtomicFormFactor * &
-                EXP(-CIMAGONE* &
-                DOT_PRODUCT(RgMatMat(ind,jnd,:), RAtomCoordinate(lnd,:)) &
-                )
+           CVgij = CVgij + RAtomicFormFactor * EXP(-CIMAGONE* &
+              DOT_PRODUCT(RgMatMat(ind,jnd,:), RAtomCoordinate(lnd,:)) )
         ENDDO
 
   CUgMatNoAbs(ind,jnd)=((((TWOPI**2)*RRelativisticCorrection) / &!Ug

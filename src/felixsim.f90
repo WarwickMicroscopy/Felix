@@ -560,48 +560,6 @@ PROGRAM felixsim
      GOTO 9999
   ENDIF
 
-  DEALLOCATE(RAllAtomPosition,STAT=IErr)
-  IF( IErr.NE.0 ) THEN
-     PRINT*,"felixsim(", my_rank, ") error ", IErr, &
-          " in Deallocation RAllAtomPosition"
-     GOTO 9999
-  ENDIF
-
-  DEALLOCATE(SAllAtomName,STAT=IErr)
-  IF( IErr.NE.0 ) THEN
-     PRINT*,"felixsim(", my_rank, ") error ", IErr, &
-          " in Deallocation SAllAtomName"
-     GOTO 9999
-  ENDIF
-
-  DEALLOCATE(RAllAnisoDW,STAT=IErr)
-  IF( IErr.NE.0 ) THEN
-     PRINT*,"felixsim(", my_rank, ") error ", IErr, &
-          " in Deallocation RAllAnisoDW"
-     GOTO 9999
-  ENDIF
-
-  DEALLOCATE(IAllAtomicNumber,STAT=IErr)
-  IF( IErr.NE.0 ) THEN
-     PRINT*,"felixsim(", my_rank, ") error ", IErr, &
-          " in Deallocation IAllAtomicNumber"
-     GOTO 9999
-  ENDIF
-  
-  DEALLOCATE(RAllIsoDW,STAT=IErr)
-  IF( IErr.NE.0 ) THEN
-     PRINT*,"felixsim(", my_rank, ") error ", IErr, &
-          " in Deallocation RAllIsoDW"
-     GOTO 9999
-  ENDIF
-
-  DEALLOCATE(RAllOccupancy,STAT=IErr)
-  IF( IErr.NE.0 ) THEN
-     PRINT*,"felixsim(", my_rank, ") error ", IErr, &
-          " in Deallocation RAllOccupancy"
-     GOTO 9999
-  ENDIF
-
   DEALLOCATE(RIsoDW,STAT=IErr)
   IF( IErr.NE.0 ) THEN
      PRINT*,"felixsim(", my_rank, ") error ", IErr, &
