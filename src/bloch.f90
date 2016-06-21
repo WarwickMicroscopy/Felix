@@ -595,7 +595,7 @@ SUBROUTINE StrongAndWeakBeamsDetermination(IErr)
      ENDIF
   ENDDO
   
-  RDummySg = ABS(RMeanInnerCrystalPotential/RDevPara)
+  RDummySg = ABS(RMeanInnerPotential/RDevPara)
   
   jnd = 0
 
@@ -643,7 +643,7 @@ SUBROUTINE StrongAndWeakBeamsDetermination(IErr)
   DO knd=1,nReflections
      IFound = 0
      IF( (ABS(RDevPara(knd)) .GT. RBSMaxDeviationPara).AND. &
-          (ABS(RMeanInnerCrystalPotential/RDevPara(knd)) .GE. RBSBethePara)) THEN
+          (ABS(RMeanInnerPotential/RDevPara(knd)) .GE. RBSBethePara)) THEN
         DO ind = 1,IStrongBeamIndex
            IF(IStrongBeamList(ind).EQ.knd) THEN
               IFound = IFound + 1
@@ -707,7 +707,7 @@ SUBROUTINE StrongAndWeakBeamsDetermination(IErr)
   DO knd=1,nReflections
      IFound = 0
      IF( (ABS(RDevPara(knd)) .GT. RBSMaxDeviationPara).AND. &
-          (ABS(RMeanInnerCrystalPotential/RDevPara(knd)) .GE. RBSBethePara)) THEN
+          (ABS(RMeanInnerPotential/RDevPara(knd)) .GE. RBSBethePara)) THEN
         DO ind = 1,IStrongBeamIndex
            IF(IStrongBeamList(ind).EQ.knd) THEN
               IFound = IFound + 1
@@ -767,7 +767,7 @@ SUBROUTINE StrongAndWeakBeamsDetermination(IErr)
   DO knd=1,nReflections
      IFound = 0
      IF( (ABS(RDevPara(knd)) .GT. RBSMaxDeviationPara).AND. &
-          (ABS(RMeanInnerCrystalPotential/RDevPara(knd)) .GE. RBSBethePara)) THEN
+          (ABS(RMeanInnerPotential/RDevPara(knd)) .GE. RBSBethePara)) THEN
         DO ind = 1,IStrongBeamIndex
            IF(IStrongBeamList(ind).EQ.knd) THEN
               IFound = IFound + 1

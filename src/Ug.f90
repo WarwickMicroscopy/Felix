@@ -64,8 +64,6 @@ SUBROUTINE GMatrixInitialisation (IErr)
         RgMatrixMagnitude(ind,jnd)= SQRT(DOT_PRODUCT(RgMatrix(ind,jnd,:),RgMatrix(ind,jnd,:)))
      ENDDO
   ENDDO
-  !Ug take the 2 pi back out of the magnitude...   
-  RgMatrixMagnitude = RgMatrixMagnitude/TWOPI
   !For symmetry determination, only in Ug refinement
   IF (IRefineMode(1).EQ.1 .OR. IRefineMode(12).EQ.1) THEN
     RgSumMat = SUM(ABS(RgMatrix),3)
@@ -163,147 +161,145 @@ SUBROUTINE StructureFactorInitialisation (IErr)
        evenindgauss,currentatom,IErr
   INTEGER(IKIND),DIMENSION(2) :: IPos,ILoc
   COMPLEX(CKIND) :: CVgij
-  REAL(RKIND) :: RMeanInnerPotentialVolts,RAtomicFormFactor,Lorentzian,Gaussian,Kirkland
+  REAL(RKIND) :: RMeanInnerPotentialVolts,RAtomicFormFactor,Lorentzian,Gaussian,Kirkland,Rfactor
   CHARACTER*200 :: SPrintString
   
   CALL Message("StructureFactorInitialisation",IMust,IErr)
 
+  !Conversion factor from structure factors to volts. h^2/(2pi*m0*e*CellVolume), see e.g. Kirkland eqn. C.5
+  Rfactor=(RPlanckConstant**2)*(RAngstromConversion**3)/(TWOPI*RElectronMass*RElectronCharge*RVolume)
+  !Calculate Ug matrix
   CUgMatNoAbs = CZERO
-
   DO ind=1,nReflections
-     DO jnd=1,ind 
-        CVgij= 0.0D0
-        DO lnd=1,INAtomsUnitCell
-           ICurrentAtom = IAtomicNumber(lnd)!Atomic number
+    DO jnd=1,ind
+      !The Fourier component of the potential Vg goes in location (i,j)
+      CVgij= 0.0D0!this is in Volts
+      DO lnd=1,INAtomsUnitCell
+        ICurrentAtom = IAtomicNumber(lnd)!Atomic number
+        SELECT CASE (IScatterFactorMethodFLAG)! calculate f_e(q)
 
-           SELECT CASE (IScatterFactorMethodFLAG)! calculate f_e(q) as in Eq. C.15 of Kirkland, "Advanced Computing in EM"
-
-           CASE(0) ! Kirkland Method using 3 Gaussians and 3 Lorentzians
-              RAtomicFormFactor = Kirkland(ICurrentAtom,RgMatrixMagnitude(ind,jnd))
-!              RAtomicFormFactor = ZERO
-!              DO knd = 1,3
-!                 !odd and even indicies for Lorentzian function
-!                 evenindlorentz = knd*2
-!                 oddindlorentz = knd*2 -1
-!                 !odd and even indicies for Gaussian function
-!                 evenindgauss = evenindlorentz + 6
-!                 oddindgauss = oddindlorentz + 6
-!                 !Kirkland Method uses summation of 3 Gaussians and 3 Lorentzians (summed in loop)
-!                 RAtomicFormFactor = RAtomicFormFactor + &
-!                      LORENTZIAN(RScattFactors(ICurrentAtom,oddindlorentz), RgMatrixMagnitude(ind,jnd),ZERO,&
-!                      RScattFactors(ICurrentAtom,evenindlorentz))+ &
-!                      GAUSSIAN(RScattFactors(ICurrentAtom,oddindgauss),RgMatrixMagnitude(ind,jnd),ZERO, & 
-!                      1/(SQRT(2*RScattFactors(ICurrentAtom,evenindgauss))),ZERO)
-!              END DO
-
-           CASE(1) ! 8 Parameter Method with Scattering Parameters from Peng et al 1996 
-              RAtomicFormFactor = ZERO
-              DO knd = 1, 4
-                 !Peng Method uses summation of 4 Gaussians
-                 RAtomicFormFactor = RAtomicFormFactor + &
-                      GAUSSIAN(RScattFactors(ICurrentAtom,knd),RgMatrixMagnitude(ind,jnd),ZERO, & 
-                      SQRT(2/RScattFactors(ICurrentAtom,knd+4)),ZERO)
-              END DO
+        CASE(0) ! Kirkland Method using 3 Gaussians and 3 Lorentzians, NB Kirkland scattering factor is in Angstrom units
+          RAtomicFormFactor = Kirkland(IAtomicNumber(lnd),RgMatrixMagnitude(ind,jnd))
+  
+        CASE(1) ! 8 Parameter Method with Scattering Parameters from Peng et al 1996 
+          RAtomicFormFactor = ZERO
+          DO knd = 1, 4
+            !Peng Method uses summation of 4 Gaussians
+            RAtomicFormFactor = RAtomicFormFactor + &
+              GAUSSIAN(RScattFactors(ICurrentAtom,knd),RgMatrixMagnitude(ind,jnd),ZERO, & 
+              SQRT(2/RScattFactors(ICurrentAtom,knd+4)),ZERO)
+          END DO
 			  
-           CASE(2) ! 8 Parameter Method with Scattering Parameters from Doyle and Turner Method (1968)
-              RAtomicFormFactor = ZERO
-              DO knd = 1, 4
-                 evenindgauss = knd*2
-                 oddindgauss = knd*2 -1
-                 !Doyle &Turner uses summation of 4 Gaussians
-                 RAtomicFormFactor = RAtomicFormFactor + &
-                      GAUSSIAN(RScattFactors(ICurrentAtom,oddindgauss),RgMatrixMagnitude(ind,jnd),ZERO, & 
-                      SQRT(2/RScattFactors(ICurrentAtom,evenindgauss)),ZERO)
-              END DO
+        CASE(2) ! 8 Parameter Method with Scattering Parameters from Doyle and Turner Method (1968)
+          RAtomicFormFactor = ZERO
+          DO knd = 1, 4
+            evenindgauss = knd*2
+            oddindgauss = knd*2 -1
+            !Doyle &Turner uses summation of 4 Gaussians
+            RAtomicFormFactor = RAtomicFormFactor + &
+              GAUSSIAN(RScattFactors(ICurrentAtom,oddindgauss),RgMatrixMagnitude(ind,jnd),ZERO, & 
+              SQRT(2/RScattFactors(ICurrentAtom,evenindgauss)),ZERO)
+          END DO
 
-           CASE(3) ! 10 Parameter method with Scattering Parameters from Lobato et al. 2014
-              RAtomicFormFactor = ZERO
-              DO knd = 1,5
-                 evenindlorentz=knd+5
-                 RAtomicFormFactor = RAtomicFormFactor + &
-                      LORENTZIAN(RScattFactors(ICurrentAtom,knd)* &
-                      (TWO+RScattFactors(ICurrentAtom,evenindlorentz)*(RgMatrixMagnitude(ind,jnd)**TWO)), &
-                      ONE, &
-                      RScattFactors(ICurrentAtom,evenindlorentz)*(RgMatrixMagnitude(ind,jnd)**TWO),ZERO)
-              END DO
+        CASE(3) ! 10 Parameter method with Scattering Parameters from Lobato et al. 2014
+          RAtomicFormFactor = ZERO
+          DO knd = 1,5
+            evenindlorentz=knd+5
+            RAtomicFormFactor = RAtomicFormFactor + &
+              LORENTZIAN(RScattFactors(ICurrentAtom,knd)* &
+             (TWO+RScattFactors(ICurrentAtom,evenindlorentz)*(RgMatrixMagnitude(ind,jnd)**TWO)),ONE, &
+              RScattFactors(ICurrentAtom,evenindlorentz)*(RgMatrixMagnitude(ind,jnd)**TWO),ZERO)
+          END DO
 
-           END SELECT
-
-           ! initialize potential as in Eq. (6.10) of Kirkland
-           RAtomicFormFactor = RAtomicFormFactor*ROccupancy(lnd)
-           IF (IAnisoDebyeWallerFactorFlag.EQ.0) THEN
-              IF(RIsoDW(lnd).GT.10.OR.RIsoDW(lnd).LT.0) THEN
-                 RIsoDW(lnd) = RDebyeWallerConstant
-              END IF
-              RAtomicFormFactor = RAtomicFormFactor * &
-                   EXP(-((RgMatrixMagnitude(ind,jnd)/2.D0)**2)*RIsoDW(lnd))
-           ELSE
-              RAtomicFormFactor = RAtomicFormFactor * &
-                   EXP(-TWOPI*DOT_PRODUCT(RgMatrix(ind,jnd,:), &
-                   MATMUL( RAnisotropicDebyeWallerFactorTensor( &
-                   RAnisoDW(lnd),:,:), &
-                   RgMatrix(ind,jnd,:))))
-           END IF
-           CVgij = CVgij + RAtomicFormFactor * EXP(-CIMAGONE* &
-              DOT_PRODUCT(RgMatrix(ind,jnd,:), RAtomCoordinate(lnd,:)) )
-        ENDDO
-
-  CUgMatNoAbs(ind,jnd)=((((TWOPI**2)*RRelativisticCorrection) / &!Ug
-             (PI*RVolume))*CVgij)
-     ENDDO
+        END SELECT
+        ! Occupancy
+        RAtomicFormFactor = RAtomicFormFactor*ROccupancy(lnd)
+        IF (IAnisoDebyeWallerFactorFlag.EQ.0) THEN
+          IF(RIsoDW(lnd).GT.10.OR.RIsoDW(lnd).LT.0) THEN
+            RIsoDW(lnd) = RDebyeWallerConstant
+          END IF
+          !Isotropic D-W factor
+          !RAtomicFormFactor = RAtomicFormFactor*EXP(-((RgMatrixMagnitude(ind,jnd)/2.D0)**2)*RIsoDW(lnd))
+        ELSE!this will need sorting out, not sure if it works
+          RAtomicFormFactor = RAtomicFormFactor * &
+            EXP(-TWOPI*DOT_PRODUCT(RgMatrix(ind,jnd,:), &
+            MATMUL( RAnisotropicDebyeWallerFactorTensor( &
+            RAnisoDW(lnd),:,:),RgMatrix(ind,jnd,:))))
+        END IF
+		!The structure factor equation, CVgij in Volts
+        CVgij = CVgij + Rfactor*RAtomicFormFactor * EXP(-TWOPI*CIMAGONE* &
+        DOT_PRODUCT(RgMatrix(ind,jnd,:), RAtomCoordinate(lnd,:)) )/RAngstromConversion
+      ENDDO
+	  !This is the Vg matrix, converted at the end to Ug
+      CUgMatNoAbs(ind,jnd)=CVgij
+      !CUgMatNoAbs(ind,jnd)=((((TWOPI**2)*RRelativisticCorrection)/(PI*RVolume))*CVgij)
+    ENDDO
   ENDDO
-
-  RMeanInnerCrystalPotential= REAL(CUgMatNoAbs(1,1))!Ug
-
-  !NB Only the lower half of the Ug matrix was calculated, this completes the upper half
+  RMeanInnerPotential= REAL(CUgMatNoAbs(1,1))
+  IF(IWriteFLAG.EQ.3.AND.my_rank.EQ.0) THEN
+    PRINT*,"MeanInnerPotential=",RMeanInnerPotential
+  END IF
+  !NB Only the lower half of the Vg matrix was calculated, this completes the upper half
   !and also doubles the values on the diagonal
   CUgMatNoAbs = CUgMatNoAbs + CONJG(TRANSPOSE(CUgMatNoAbs))!Ug
-
   DO ind=1,nReflections!Now halve the diagonal again
-     CUgMatNoAbs(ind,ind)=CUgMatNoAbs(ind,ind)-RMeanInnerCrystalPotential!Ug
+     CUgMatNoAbs(ind,ind)=CUgMatNoAbs(ind,ind)-RMeanInnerPotential!Ug
   ENDDO
+  !Now convert to Ug=Vg*(2*m*e/h^2)
+  CUgMatNoAbs=CUgMatNoAbs*TWO*RElectronMass*RRelativisticCorrection*RElectronCharge/(RPlanckConstant**2)
+  !If we use k-vectors in angstroms we must divide U0 by 10^20 since we use K^2=k^2+U0
+  CUgMatNoAbs=CUgMatNoAbs/(RAngstromConversion**2)
+  !PRINT*,"U0=",REAL(CUgMatNoAbs(1,1))
+  
+  !Alternative way of calculating the mean inner potential as the sum of scattering factors at g=0 multiplied by h^2/(2pi*m0*e*CellVolume)
+  !RMeanInnerPotential=ZERO
+  !DO ind=1,INAtomsUnitCell
+  !  RMeanInnerPotential = RMeanInnerPotential+Kirkland(IAtomicNumber(ind),ZERO)/RAngstromConversion
+  !END DO
+  !RMeanInnerPotential = RMeanInnerPotential*Rfactor
+  !PRINT*,"MeanInnerPotential=",RMeanInnerPotential
   	 
-  RMeanInnerPotentialVolts = RMeanInnerCrystalPotential*(((RPlanckConstant**2)/ &
-       (TWO*RElectronMass*RElectronCharge*TWOPI**2))*&
-       RAngstromConversion*RAngstromConversion)
-
+!  RMeanInnerPotentialVolts = RMeanInnerPotential*(((RPlanckConstant**2)/ &
+!       (TWO*RElectronMass*RElectronCharge*TWOPI**2))*&
+!       RAngstromConversion*RAngstromConversion)
+!  PRINT*,"MeanInnerPotential=",RMeanInnerPotentialVolts,"Volts"
+  
   CALL Message("StructureFactorInitialisation",IMoreInfo,IErr, &
-       MessageVariable = "RMeanInnerCrystalPotential", &
-       RVariable = RMeanInnerCrystalPotential)
-  CALL Message("StructureFactorInitialisation",IMoreInfo,IErr, &
-       MessageVariable = "RMeanInnerPotentialVolts", &
-       RVariable = RMeanInnerPotentialVolts)
+       MessageVariable = "RMeanInnerPotential", &
+       RVariable = RMeanInnerPotential)
 
   !--------------------------------------------------------------------
   ! high-energy approximation (not HOLZ compatible)
-  !--------------------------------------------------------------------
-  RBigK= SQRT(RElectronWaveVectorMagnitude**2 + RMeanInnerCrystalPotential)
+  !K^2=k^2+U0
+  RBigK= SQRT(RElectronWaveVectorMagnitude**2 + REAL(CUgMatNoAbs(1,1)))
   CALL Message("StructureFactorInitialisation",IInfo,IErr, &
        MessageVariable = "RBigK", RVariable = RBigK)
-
+  
   !Absorption
   CUgMatPrime = CZERO
     
   SELECT CASE (IAbsorbFLAG)
 
   CASE(1)
+!!$ Proportional
+    CUgMatPrime = CUgMatNoAbs*EXP(CIMAGONE*PI/2)*(RAbsorptionPercentage/100_RKIND)!Ug
+    CUgMat =  CUgMatNoAbs+CUgMatPrime!Ug
 
-!!$     THE PROPORTIONAL MODEL OF ABSORPTION
-     CUgMatPrime = CUgMatNoAbs*EXP(CIMAGONE*PI/2)*(RAbsorptionPercentage/100_RKIND)!Ug
-     CUgMat =  CUgMatNoAbs+CUgMatPrime!Ug
-	 
-  IF(IWriteFLAG.EQ.3.AND.my_rank.EQ.0) THEN
-   PRINT*,"Ug matrix, no absorption"
-	DO ind =1,8
-     WRITE(SPrintString,FMT='(16(1X,F5.2))') CUgMatNoAbs(ind,1:8)
-     PRINT*,TRIM(ADJUSTL(SPrintString))
-    END DO
-  END IF
+  CASE(2)
+  !!$ Bird & King
+
   
   CASE Default
  
-  END SELECT	   
-	   
+  END SELECT
+  
+  IF(IWriteFLAG.EQ.3.AND.my_rank.EQ.0) THEN
+   PRINT*,"Ug matrix, no absorption"
+	DO ind =1,8
+     WRITE(SPrintString,FMT='(16(1X,F5.2))') CUgMat(ind,1:8)
+     PRINT*,TRIM(ADJUSTL(SPrintString))
+    END DO
+  END IF	   
 	   
 END SUBROUTINE StructureFactorInitialisation
 

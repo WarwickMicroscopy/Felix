@@ -269,7 +269,7 @@ MODULE RPara
   REAL(RKIND),DIMENSION(:,:),ALLOCATABLE :: RhklPositions
   REAL(RKIND),DIMENSION(:,:,:),ALLOCATABLE :: RFinalMontageImage
   !Main Program
-  REAL(RKIND) :: RMeanInnerCrystalPotential
+  REAL(RKIND) :: RMeanInnerPotential
   REAL(RKIND),DIMENSION(:,:),ALLOCATABLE :: RMask, RgMatrixMagnitude, RgSumMat!RB
   REAL(RKIND),DIMENSION(:,:,:),ALLOCATABLE :: RgMatrix
   REAL(RKIND) :: ROuterIntegralLowerBound,ROuterIntegralUpperBound,&

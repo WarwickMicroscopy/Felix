@@ -53,21 +53,21 @@ SUBROUTINE MicroscopySettings( IErr )
 
   ROneThousand = 1000.0_RKIND
 
-  RElectronVelocity= RSpeedOfLight * &
-       SQRT( ONE - ( (RElectronMass*RSpeedOfLight**2) / &
+  !Electron velocity in metres per second
+  RElectronVelocity= RSpeedOfLight*SQRT(ONE-((RElectronMass*RSpeedOfLight**2)/ &
        (RElectronCharge*RAcceleratingVoltage*ROneThousand + &
         RElectronMass*RSpeedOfLight**2) )**2 )
-
+  
+  !Electron wavelength in Angstroms
   RElectronWaveLength= RPlanckConstant / &
        ( SQRT(TWO*RElectronMass*RElectronCharge*RAcceleratingVoltage*ROneThousand) * &
          SQRT(ONE + (RElectronCharge*RAcceleratingVoltage*ROneThousand) / &
-          (TWO*RElectronMass*RSpeedOfLight**2) &
-       )) * RAngstromConversion
-
-  RElectronWaveVectorMagnitude=TWOPI/RElectronWaveLength
+          (TWO*RElectronMass*RSpeedOfLight**2) ))* RAngstromConversion
+  
+  !(NB k=1/lamda and exp(2*pi*i*q.r), optical convention)
+  RElectronWaveVectorMagnitude=ONE/RElectronWaveLength
   RRelativisticCorrection= ONE/SQRT( ONE - (RElectronVelocity/RSpeedOfLight)**2 )
   RRelativisticMass= RRelativisticCorrection*RElectronMass
-
    
   CALL Message("MicroscopySettings",IInfo,IErr, &
        MessageVariable = "ElectronVelocity",RVariable = RElectronVelocity)
