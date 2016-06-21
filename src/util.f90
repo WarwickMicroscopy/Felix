@@ -209,3 +209,31 @@ FUNCTION Gaussian(height,x,peakcentre,standarddeviation,intercept)
   Gaussian = height*exp(-(((x-peakcentre)**2)/(2*(standarddeviation**2))))+ intercept
   
 END FUNCTION Gaussian
+
+!%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+!Defines a Kirkland scattering factor 
+FUNCTION Kirkland(Iz,Rq)
+!From Appendix C of Kirkland, "Advanced Computing in Electron Microscopy", 2nd ed.
+!z is atomic number, q is magnitude of scattering vector in Angstroms (NB exp(2*pi*i*q.r), optical convention)
+  USE MyNumbers
+  USE CConst; USE IConst
+  USE IPara; USE RPara; USE CPara
+  USE BlochPara
+  
+  IMPLICIT NONE
+  
+  INTEGER(IKIND) :: Iz,ind
+  REAL(RKIND):: Kirkland,Ra,Rb,Rc,Rd,Rq
+
+  Kirkland=ZERO;
+  !Equation C.15
+  DO ind = 1,3
+    Ra=RScattFactors(Iz,ind*2-1);
+    Rb=RScattFactors(Iz,ind*2);
+    Rc=RScattFactors(Iz,ind*2+5);
+    Rd=RScattFactors(Iz,ind*2+6);
+    Kirkland = Kirkland + Ra/((Rq**2)+Rb)+Rc*EXP(-(Rd*Rq**2));
+  END DO
+  
+END FUNCTION Kirkland

@@ -63,7 +63,7 @@ SUBROUTINE SimulateAndFit(RFigureofMerit,RIndependentVariable,Iiter,IExitFLAG,IE
   END IF
 
   IF (IRefineMode(1).EQ.1 .OR. IRefineMode(12).EQ.1) THEN  !Ug refinement; update structure factors 
-  
+
   !Dummy Matrix to contain new iterative values
     CUgMatDummy = CZERO
     !NB these are Ug's without absorption, used to be the suroutine UpdateStructureFactors
@@ -106,7 +106,6 @@ SUBROUTINE SimulateAndFit(RFigureofMerit,RIndependentVariable,Iiter,IExitFLAG,IE
       RETURN
     END IF
 	!recalculate unit cell
-	!RBasisAtomPosition=MODULO(RBasisAtomPosition,ONE)
     CALL UniqueAtomPositions(IErr)
     IF( IErr.NE.0 ) THEN
       PRINT*,"SimulateAndFit(",my_rank,")error in UniqueAtomPositions"

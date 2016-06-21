@@ -38,7 +38,7 @@
 !%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 SUBROUTINE ReflectionDetermination( IErr )
-
+!this is redundant for felixrefine
   USE MyNumbers
   USE WriteToScreen
   USE ErrorCodes
@@ -66,19 +66,6 @@ SUBROUTINE ReflectionDetermination( IErr )
 
   CALL Message("ReflectionDetermination",IMust,IErr)
 
- ! icheck = 0
-!  ihklrun = 0
-  
-!  DO WHILE (icheck.EQ.0)
-!     ihklrun = ihklrun+1     
-
-
- !    CALL NewHKLMake(IHKLMAXValue,RZDirC,RHOLZAcceptanceAngle,IErr)
- !    IF( IErr.NE.0 ) THEN
- !       PRINT*,"Reflectiondetermination(", my_rank, ") error in NewHKLMake()"
- !       RETURN
- !    END IF
-
  !Count the reflections that fit inside IHKLMAXValue and RHOLZAcceptanceAngle, INhkl
   RHOLZAcceptanceAngle=TWODEG2RADIAN!RB seems way too low?
   IHKLMAXValue = 5!RB starting value, increments in loop below
@@ -88,6 +75,7 @@ SUBROUTINE ReflectionDetermination( IErr )
      CALL HKLCount(IHKLMAXValue,RZDirC,INhkl,RHOLZAcceptanceAngle,IErr)
   END DO
 ! Fill the list of reflections Rhkl
+!N.B. Rhkl are in integer form [h,k,l] but are REAL to allow dot products etc.
   ALLOCATE(Rhkl(INhkl,ITHREE),STAT=IErr)
   CALL HKLMake(IHKLMAXValue,RZDirC,INhkl,Rhkl,RHOLZAcceptanceAngle,IErr)
 
@@ -142,10 +130,8 @@ SUBROUTINE ReflectionDetermination( IErr )
   DO ind=1,INhkl
      WRITE(Sind,'(I10.1)')ind
      DO jnd=1,ITHREE
-        RgPoolT(ind,jnd)= &!RB what is RgPoolT???
-             Rhkl(ind,1)*RarVecM(jnd) + &
-             Rhkl(ind,2)*RbrVecM(jnd) + &
-             Rhkl(ind,3)*RcrVecM(jnd)
+        RgPoolT(ind,jnd)= Rhkl(ind,1)*RarVecM(jnd)+ &
+             Rhkl(ind,2)*RbrVecM(jnd)+Rhkl(ind,3)*RcrVecM(jnd)
         RgDummyVecMat(ind,jnd)=RgPoolT(ind,jnd)
      ENDDO
      CALL Message("ReflectionDetermination",IMoreInfo,IErr, &
@@ -508,7 +494,7 @@ END SUBROUTINE SpecificReflectionDetermination
 !!$%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 SUBROUTINE DiffractionPatternCalculation (IErr)
-  
+  !RB This is now redundant
   USE MyNumbers
   USE WriteToScreen
   USE IConst
@@ -524,7 +510,6 @@ SUBROUTINE DiffractionPatternCalculation (IErr)
   
   CALL Message("DiffractionPatternCalculation",IMust,IErr)
   
-  RNormDirM = RNormDirM/sqrt(DOT_PRODUCT(RNormDirM,RNormDirM))
   
   DO ind =1,SIZE(Rhkl,DIM=1)
      RgVecVec(ind) = DOT_PRODUCT(RgPoolT(ind,:),RNormDirM)
@@ -735,139 +720,135 @@ SUBROUTINE HKLMake(Ihklmax,Rhkl0Vec,RHOLZAcceptanceAngle,IErr)
   CALL Message("HKLCount",IMust,IErr)
 
   lnd = 0
-  Rhkl0UnitVec= Rhkl0Vec/SQRT(DOT_PRODUCT(REAL(Rhkl0Vec,RKIND),REAL(Rhkl0Vec,RKIND)))
+  Rhkl0UnitVec= Rhkl0Vec/SQRT(DOT_PRODUCT(REAL(Rhkl0Vec,RKIND),REAL(Rhkl0Vec,RKIND)))!?isn't RhklDummyVec already real??
 
   DO ind=-Ihklmax,Ihklmax,1
-     DO jnd=-Ihklmax,Ihklmax,1
-        DO knd=-Ihklmax,Ihklmax,1
-
-           RhklDummyVec= REAL((/ ind,jnd,knd /),RKIND)
-
-           IF(ind.NE.0.AND.jnd.NE.0.AND.knd.NE.0) THEN
-              RhklDummyUnitVec= RhklDummyVec / &
-                   SQRT(DOT_PRODUCT(REAL(RhklDummyVec,RKIND),REAL(RhklDummyVec,RKIND)))
-           ELSE
-              RhklDummyUnitVec = RhklDummyVec
-           END IF
+    DO jnd=-Ihklmax,Ihklmax,1
+      DO knd=-Ihklmax,Ihklmax,1
+        RhklDummyVec= REAL((/ ind,jnd,knd /),RKIND)
+        IF(ind.NE.0.AND.jnd.NE.0.AND.knd.NE.0) THEN
+          RhklDummyUnitVec= RhklDummyVec / &
+            SQRT(DOT_PRODUCT(REAL(RhklDummyVec,RKIND),REAL(RhklDummyVec,RKIND)))!?isn't RhklDummyVec already real??
+        ELSE
+          RhklDummyUnitVec = RhklDummyVec
+        END IF
            
-           SELECT CASE(SSpaceGroupName)
-		   
-           CASE("F") !Face Centred
-              IF(((ABS(MOD(RhklDummyVec(1)+RhklDummyVec(2),TWO)).LE.TINY).AND.&
-                   (ABS(MOD(RhklDummyVec(2)+RhklDummyVec(3),TWO)).LE.TINY).AND.&
-                   (ABS(MOD(RhklDummyVec(1)+RhklDummyVec(3),TWO)).LE.TINY)).OR.&
-                   (((ABS(MOD(RhklDummyVec(1),TWO))).LE.TINY).AND.&
-                   ((ABS(MOD(RhklDummyVec(2),TWO))).LE.TINY).AND.&
-                   ((ABS(MOD(RhklDummyVec(3),TWO))).LE.TINY)).OR.&
-                   (((ABS(MOD(RhklDummyVec(1),TWO))).GT.TINY).AND.&
-                   ((ABS(MOD(RhklDummyVec(2),TWO))).GT.TINY).AND.&
-                   ((ABS(MOD(RhklDummyVec(3),TWO))).GT.TINY))) THEN
-                 IF(IZolzFLAG.EQ.1) THEN
-                    IF( ABS(DOT_PRODUCT(RhklDummyUnitVec,Rhkl0UnitVec)) .LE. TINY ) THEN
-                       lnd=lnd+1
-                       Rhkl(lnd,:)= RhklDummyVec
-                    END IF
-                 ELSEIF (ABS(DOT_PRODUCT(RhklDummyUnitVec,Rhkl0UnitVec)).LE.sin(RHOLZAcceptanceAngle)) THEN
-                    lnd =  lnd + 1
-                    Rhkl(lnd,:) = RhklDummyVec                 
-                 END IF
+        SELECT CASE(SSpaceGroupName)
+          CASE("F") !Face Centred
+            IF(((ABS(MOD(RhklDummyVec(1)+RhklDummyVec(2),TWO)).LE.TINY).AND.&
+                (ABS(MOD(RhklDummyVec(2)+RhklDummyVec(3),TWO)).LE.TINY).AND.&
+                (ABS(MOD(RhklDummyVec(1)+RhklDummyVec(3),TWO)).LE.TINY)).OR.&
+              (((ABS(MOD(RhklDummyVec(1),TWO))).LE.TINY).AND.&
+               ((ABS(MOD(RhklDummyVec(2),TWO))).LE.TINY).AND.&
+               ((ABS(MOD(RhklDummyVec(3),TWO))).LE.TINY)).OR.&
+              (((ABS(MOD(RhklDummyVec(1),TWO))).GT.TINY).AND.&
+               ((ABS(MOD(RhklDummyVec(2),TWO))).GT.TINY).AND.&
+               ((ABS(MOD(RhklDummyVec(3),TWO))).GT.TINY))) THEN
+              IF(IZolzFLAG.EQ.1) THEN
+                IF( ABS(DOT_PRODUCT(RhklDummyUnitVec,Rhkl0UnitVec)) .LE. TINY ) THEN
+                  lnd=lnd+1
+                  Rhkl(lnd,:)=RhklDummyVec
+                END IF
+              ELSEIF (ABS(DOT_PRODUCT(RhklDummyUnitVec,Rhkl0UnitVec)).LE.sin(RHOLZAcceptanceAngle)) THEN
+                lnd=lnd+1
+                Rhkl(lnd,:)=RhklDummyVec                 
               END IF
+            END IF
 			  
-           CASE("I")! Body Centred
-              IF(ABS(MOD(RhklDummyVec(1)+RhklDummyVec(2)+RhklDummyVec(3),TWO)).LE.TINY) THEN
-                 IF(IZolzFLAG.EQ.1) THEN
-                    IF( ABS(DOT_PRODUCT(RhklDummyUnitVec,Rhkl0UnitVec)) .LE. TINY ) THEN
-                       lnd=lnd+1
-                       Rhkl(lnd,:)= RhklDummyVec
-                    END IF
-                 ELSEIF (ABS(DOT_PRODUCT(RhklDummyUnitVec,Rhkl0UnitVec)).LE.sin(RHOLZAcceptanceAngle)) THEN
-                    lnd =  lnd + 1
-                    Rhkl(lnd,:) = RhklDummyVec                 
-                 END IF
+          CASE("I")! Body Centred
+            IF(ABS(MOD(RhklDummyVec(1)+RhklDummyVec(2)+RhklDummyVec(3),TWO)).LE.TINY) THEN
+              IF(IZolzFLAG.EQ.1) THEN
+                IF( ABS(DOT_PRODUCT(RhklDummyUnitVec,Rhkl0UnitVec)) .LE. TINY ) THEN
+                  lnd=lnd+1
+                  Rhkl(lnd,:)= RhklDummyVec
+                END IF
+              ELSEIF (ABS(DOT_PRODUCT(RhklDummyUnitVec,Rhkl0UnitVec)).LE.sin(RHOLZAcceptanceAngle)) THEN
+                lnd =  lnd + 1
+                Rhkl(lnd,:) = RhklDummyVec                 
               END IF
+            END IF
 			  
-           CASE("A")! A-Face Centred
-              IF(ABS(MOD(RhklDummyVec(2)+RhklDummyVec(3),TWO)).LE.TINY) THEN
-                 IF(IZolzFLAG.EQ.1) THEN
-                    IF( ABS(DOT_PRODUCT(RhklDummyUnitVec,Rhkl0UnitVec)) .LE. TINY ) THEN
-                       lnd=lnd+1
-                       Rhkl(lnd,:)= RhklDummyVec
-                    END IF
-                 ELSEIF (ABS(DOT_PRODUCT(RhklDummyUnitVec,Rhkl0UnitVec)).LE.sin(RHOLZAcceptanceAngle)) THEN
-                    lnd =  lnd + 1
-                    Rhkl(lnd,:) = RhklDummyVec                 
-                 END IF
+          CASE("A")! A-Face Centred
+            IF(ABS(MOD(RhklDummyVec(2)+RhklDummyVec(3),TWO)).LE.TINY) THEN
+              IF(IZolzFLAG.EQ.1) THEN
+                IF( ABS(DOT_PRODUCT(RhklDummyUnitVec,Rhkl0UnitVec)) .LE. TINY ) THEN
+                  lnd=lnd+1
+                  Rhkl(lnd,:)= RhklDummyVec
+                END IF
+              ELSEIF (ABS(DOT_PRODUCT(RhklDummyUnitVec,Rhkl0UnitVec)).LE.sin(RHOLZAcceptanceAngle)) THEN
+                lnd =  lnd + 1
+                Rhkl(lnd,:) = RhklDummyVec                 
               END IF
+            END IF
 			  
            CASE("B")! B-Face Centred
-              IF(ABS(MOD(RhklDummyVec(1)+RhklDummyVec(3),TWO)).LE.TINY) THEN
-                 IF(IZolzFLAG.EQ.1) THEN
-                    IF( ABS(DOT_PRODUCT(RhklDummyUnitVec,Rhkl0UnitVec)) .LE. TINY ) THEN
-                       lnd=lnd+1
-                       Rhkl(lnd,:)= RhklDummyVec
-                    END IF
-                 ELSEIF (ABS(DOT_PRODUCT(RhklDummyUnitVec,Rhkl0UnitVec)).LE.sin(RHOLZAcceptanceAngle)) THEN
-                    lnd =  lnd + 1
-                    Rhkl(lnd,:) = RhklDummyVec                 
-                 END IF
-              END IF
-			  
-           CASE("C")! C-Face Centred
-              IF(ABS(MOD(RhklDummyVec(1)+RhklDummyVec(2),TWO)).LE.TINY) THEN
-                 IF(IZolzFLAG.EQ.1) THEN
-                    IF( ABS(DOT_PRODUCT(RhklDummyUnitVec,Rhkl0UnitVec)) .LE. TINY ) THEN
-                       lnd=lnd+1
-                       Rhkl(lnd,:)= RhklDummyVec
-                    END IF
-                 ELSEIF (ABS(DOT_PRODUCT(RhklDummyUnitVec,Rhkl0UnitVec)).LE.sin(RHOLZAcceptanceAngle)) THEN
-                    lnd =  lnd + 1
-                    Rhkl(lnd,:) = RhklDummyVec                 
-                 END IF
-              END IF
-			  
-           CASE("R")! Rhombohedral Reverse
-              IF(ABS(MOD(RhklDummyVec(1)-RhklDummyVec(2)+RhklDummyVec(3),THREE)).LE.TINY) THEN
-                 IF(IZolzFLAG.EQ.1) THEN
-                    IF( ABS(DOT_PRODUCT(RhklDummyUnitVec,Rhkl0UnitVec)) .LE. TINY ) THEN
-                       lnd=lnd+1
-                       Rhkl(lnd,:)= RhklDummyVec
-                    END IF
-                 ELSEIF (ABS(DOT_PRODUCT(RhklDummyUnitVec,Rhkl0UnitVec)).LE.sin(RHOLZAcceptanceAngle)) THEN
-                    lnd =  lnd + 1
-                    Rhkl(lnd,:) = RhklDummyVec                 
-                 END IF
-              END IF
-			  
-           CASE("V")! Rhombohedral Obverse
-              IF(ABS(MOD(-RhklDummyVec(1)+RhklDummyVec(2)+RhklDummyVec(3),THREE)).LE.TINY) THEN
-                IF(IZolzFLAG.EQ.1) THEN
-                    IF( ABS(DOT_PRODUCT(RhklDummyUnitVec,Rhkl0UnitVec)) .LE. TINY ) THEN
-                       lnd=lnd+1
-                       Rhkl(lnd,:)= RhklDummyVec
-                    END IF
-                 ELSEIF (ABS(DOT_PRODUCT(RhklDummyUnitVec,Rhkl0UnitVec)).LE.sin(RHOLZAcceptanceAngle)) THEN
-                    lnd =  lnd + 1
-                    Rhkl(lnd,:) = RhklDummyVec                 
-                 END IF
-              END IF
-			  
-           CASE("P")! Primitive
-
-		   IF(IZolzFLAG.EQ.1) THEN
+             IF(ABS(MOD(RhklDummyVec(1)+RhklDummyVec(3),TWO)).LE.TINY) THEN
+               IF(IZolzFLAG.EQ.1) THEN
                  IF( ABS(DOT_PRODUCT(RhklDummyUnitVec,Rhkl0UnitVec)) .LE. TINY ) THEN
-                    lnd=lnd+1
-                    Rhkl(lnd,:)= RhklDummyVec
+                   lnd=lnd+1
+                   Rhkl(lnd,:)= RhklDummyVec
                  END IF
-              ELSEIF (ABS(DOT_PRODUCT(RhklDummyUnitVec,Rhkl0UnitVec)).LE.sin(RHOLZAcceptanceAngle)) THEN
+               ELSEIF (ABS(DOT_PRODUCT(RhklDummyUnitVec,Rhkl0UnitVec)).LE.sin(RHOLZAcceptanceAngle)) THEN
                  lnd =  lnd + 1
                  Rhkl(lnd,:) = RhklDummyVec                 
-              END IF
+               END IF
+             END IF
+			  
+           CASE("C")! C-Face Centred
+             IF(ABS(MOD(RhklDummyVec(1)+RhklDummyVec(2),TWO)).LE.TINY) THEN
+               IF(IZolzFLAG.EQ.1) THEN
+                 IF( ABS(DOT_PRODUCT(RhklDummyUnitVec,Rhkl0UnitVec)) .LE. TINY ) THEN
+                   lnd=lnd+1
+                   Rhkl(lnd,:)= RhklDummyVec
+                 END IF
+               ELSEIF (ABS(DOT_PRODUCT(RhklDummyUnitVec,Rhkl0UnitVec)).LE.sin(RHOLZAcceptanceAngle)) THEN
+                 lnd =  lnd + 1
+                 Rhkl(lnd,:) = RhklDummyVec                 
+               END IF
+             END IF
+			  
+           CASE("R")! Rhombohedral Reverse
+             IF(ABS(MOD(RhklDummyVec(1)-RhklDummyVec(2)+RhklDummyVec(3),THREE)).LE.TINY) THEN
+               IF(IZolzFLAG.EQ.1) THEN
+                 IF( ABS(DOT_PRODUCT(RhklDummyUnitVec,Rhkl0UnitVec)) .LE. TINY ) THEN
+                   lnd=lnd+1
+                   Rhkl(lnd,:)= RhklDummyVec
+                 END IF
+               ELSEIF (ABS(DOT_PRODUCT(RhklDummyUnitVec,Rhkl0UnitVec)).LE.sin(RHOLZAcceptanceAngle)) THEN
+                 lnd =  lnd + 1
+                 Rhkl(lnd,:) = RhklDummyVec                 
+               END IF
+             END IF
+			  
+           CASE("V")! Rhombohedral Obverse
+             IF(ABS(MOD(-RhklDummyVec(1)+RhklDummyVec(2)+RhklDummyVec(3),THREE)).LE.TINY) THEN
+               IF(IZolzFLAG.EQ.1) THEN
+                 IF( ABS(DOT_PRODUCT(RhklDummyUnitVec,Rhkl0UnitVec)) .LE. TINY ) THEN
+                   lnd=lnd+1
+                   Rhkl(lnd,:)= RhklDummyVec
+                 END IF
+               ELSEIF (ABS(DOT_PRODUCT(RhklDummyUnitVec,Rhkl0UnitVec)).LE.sin(RHOLZAcceptanceAngle)) THEN
+                 lnd =  lnd + 1
+                 Rhkl(lnd,:) = RhklDummyVec                 
+               END IF
+             END IF
+			  
+           CASE("P")! Primitive
+             IF(IZolzFLAG.EQ.1) THEN
+               IF( ABS(DOT_PRODUCT(RhklDummyUnitVec,Rhkl0UnitVec)) .LE. TINY ) THEN
+                 lnd=lnd+1
+                 Rhkl(lnd,:)= RhklDummyVec
+               END IF
+             ELSEIF (ABS(DOT_PRODUCT(RhklDummyUnitVec,Rhkl0UnitVec)).LE.sin(RHOLZAcceptanceAngle)) THEN
+               lnd =  lnd + 1
+               Rhkl(lnd,:) = RhklDummyVec                 
+             END IF
 			  
            CASE DEFAULT!RB should never get here since already been through HKLcount
-              PRINT*,"HKLMake(): unknown space group", SSpaceGroupName, "--- aborting"
-              IErr=1
-              RETURN
-           END SELECT
+             PRINT*,"HKLMake(): unknown space group", SSpaceGroupName, "--- aborting"
+             IErr=1
+             RETURN
+         END SELECT
 
         END DO
      END DO

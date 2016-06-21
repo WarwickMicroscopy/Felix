@@ -70,10 +70,11 @@ SUBROUTINE DetermineAllowedMovements(ISpaceGrp,SWyckoffSymbol,RVector,IVector,IE
        RVector(2,:) = (/ZERO, ONE, ZERO/)
        RVector(3,:) = (/ZERO, ZERO, ONE/)
      CASE DEFAULT
-        PRINT*,"---------------------------------------"
-        PRINT*,"This Wyckoff Symbol for this space group is not yet implemented"
-        PRINT*,"You can correct this in symmetry.f90"
-        PRINT*,"---------------------------------------"        
+       PRINT*,"---------------------------------------"
+       PRINT*,"This Wyckoff Symbol for this space group is not yet implemented"
+       PRINT*,"You can correct this in symmetry.f90"
+       PRINT*,"---------------------------------------"
+	   IErr=1		
      END SELECT
 !!$  CASE(2)
 !!$  CASE(3)
@@ -119,10 +120,11 @@ SUBROUTINE DetermineAllowedMovements(ISpaceGrp,SWyckoffSymbol,RVector,IVector,IE
        RVector(2,:) = (/ZERO, ONE, ZERO/)
        RVector(3,:) = (/ZERO, ZERO, ONE/)
      CASE DEFAULT
-        PRINT*,"---------------------------------------"
-        PRINT*,"This Wyckoff Symbol for this space group is not yet implemented"
-        PRINT*,"You can correct this in symmetry.f90"
-        PRINT*,"---------------------------------------"     
+       PRINT*,"---------------------------------------"
+       PRINT*,"This Wyckoff Symbol for this space group is not yet implemented"
+       PRINT*,"You can correct this in symmetry.f90"
+       PRINT*,"---------------------------------------"
+	   IErr=1		
      END SELECT
 !!$  CASE(37)
 !!$  CASE(38)
@@ -323,6 +325,7 @@ SUBROUTINE DetermineAllowedMovements(ISpaceGrp,SWyckoffSymbol,RVector,IVector,IE
      PRINT*,"This space group is not yet implemented"
      PRINT*,"You can correct this in symmetry.f90"
      PRINT*,"---------------------------------------"
+	 IErr=1
   END SELECT
 END SUBROUTINE DetermineAllowedMovements
 

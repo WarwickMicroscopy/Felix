@@ -117,9 +117,7 @@ SUBROUTINE ReciprocalLattice(IErr)
      END IF
   ENDDO
 
-  ! Transform from orthogonal reference frame to microscope reference frame
-  
-  ! RTmat transforms from crystal reference to orthogonal frame
+  ! RTmat transforms from crystal to orthogonal reference frame
   RTMatC2O(:,1)= RaVecO(:)
   RTMatC2O(:,2)= RbVecO(:)
   RTMatC2O(:,3)= RcVecO(:)
@@ -134,13 +132,13 @@ SUBROUTINE ReciprocalLattice(IErr)
           MessageString = TRIM(ADJUSTL(RTMatString)))
   END DO
   
-  ! R?DirO vectors are reference vectors in orthogonal frame
+  ! R?DirO vectors are unit reciprocal lattice vectors in orthogonal frame
+  ! R?DirC vectors are the reciprocal lattice vectors that define the x-axis of the
+  ! diffraction pattern and the beam direction, they are given in felix.inp
   RXDirO= RXDirC(1)*RarVecO + RXDirC(2)*RbrVecO + RXDirC(3)*RcrVecO
   RXDirO= RXDirO/SQRT(DOT_PRODUCT(RXDirO,RXDirO))
-
   RZDirO= RZDirC(1)*RaVecO + RZDirC(2)*RbVecO + RZDirC(3)*RcVecO
   RZDirO= RZDirO/SQRT(DOT_PRODUCT(RZDirO,RZDirO))
-
   RYDirO= CROSS(RZDirO,RXDirO)
 
   ! RTmatO2M transforms from orthogonal to microscope reference frame
@@ -163,13 +161,13 @@ SUBROUTINE ReciprocalLattice(IErr)
   !RYDirM = MATMUL(RTMatO2M,RYDirO)
   !RZDirM = MATMUL(RTMatO2M,MatMUL(RTMatC2O,RZDirC))
   
-  !RB This is never used, but should be?
+  !This is used in diffraction pattern calculation subroutine
   RNormDirM = MATMUL(RTMatO2M,MatMUL(RTMatC2O,RNormDirC))
   RNormDirM = RNormDirM/SQRT(DOT_PRODUCT(RNormDirM,RNormDirM)) 
   
   ! now transform from crystal reference frame to orthogonal and then to microscope frame
 
-  ! since RVec is already in orthogonal frame, only transform into microscope frame needed
+  ! since R?VecO is already in orthogonal frame, only transform into microscope frame needed
   RaVecM= MATMUL(RTMatO2M,RaVecO)
   RbVecM= MATMUL(RTMatO2M,RbVecO)
   RcVecM= MATMUL(RTMatO2M,RcVecO)
@@ -186,6 +184,7 @@ END SUBROUTINE ReciprocalLattice
 SUBROUTINE UniqueAtomPositions(IErr)
 !---------------------------------------------------------------
 !Calculates the FULL set of possible fractional atomic positions
+!And then gets rid of duplicates
 !---------------------------------------------------------------
   
   USE WriteToScreen
@@ -241,9 +240,8 @@ SUBROUTINE UniqueAtomPositions(IErr)
 
   !--------------------------------------------------------------------  
   ! Now reduce to the set of unique fractional atomic positions, used to be subroutine CrystalUniqueFractionalAtomicPostitionsCalculation
-  CALL Message("UniqueAtomPositions",IMust,IErr)
   
-  !first atom
+  !first atom has to be in this set
   RAtomPosition(1,:)= RAllAtomPosition(1,:)
   SAtomName(1)= SAllAtomName(1)
   RIsoDW(1) = RAllIsoDW(1)
@@ -278,7 +276,7 @@ SUBROUTINE UniqueAtomPositions(IErr)
   !Finished with these variables now
   DEALLOCATE(RAllAtomPosition,SAllAtomName,RAllOccupancy,RAllIsoDW,IAllAtomicNumber,RAllAnisoDW)
   IF( IErr.NE.0 ) THEN
-     PRINT*,"UniqueAtomPositions(",my_rank,")error deallocating RAllAtomPositions"
+     PRINT*,"UniqueAtomPositions(",my_rank,")error deallocating RAllAtomPositions etc"
      RETURN
   ENDIF
     
@@ -305,7 +303,8 @@ SUBROUTINE UniqueAtomPositions(IErr)
               MessageVariable = "RAnisoDW("//TRIM(ADJUSTL(indString))//")",IVariable =RAnisoDW(ind))
   END DO
 
-  ! Calculate atomic position vectors r from Fractional Coordinates and Lattice Vectors
+  ! Calculate atomic position vectors RAtomCoordinate from Fractional Coordinates and Lattice Vectors
+  ! In microscope reference frame, in Angstrom units
   DO ind=1,INAtomsUnitCell
     DO jnd=1,ITHREE
        RAtomCoordinate(ind,jnd)= RAtomPosition(ind,1)*RaVecM(jnd)+RAtomPosition(ind,2)*RbVecM(jnd)+RAtomPosition(ind,3)*RcVecM(jnd)

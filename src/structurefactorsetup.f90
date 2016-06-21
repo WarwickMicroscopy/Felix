@@ -72,7 +72,7 @@ SUBROUTINE StructureFactorSetup(IErr)
 
   !RgMatMat is a matrix of g-vectors that corresponds to the CUgMatNoAbs matrix
   !RgMatMag is a matrix of their magnitides
-  !RgPool is a list of g-vectors in the microscope ref frame, units of 1/A, multiplied by 2 pi
+  !RgPool is a list of g-vectors in the microscope ref frame, units of 1/A, (multiplied by 2 pi??)
   DO ind=1,nReflections
      DO jnd=1,nReflections
         RgMatMat(ind,jnd,:)= RgPoolT(ind,:)-RgPoolT(jnd,:)

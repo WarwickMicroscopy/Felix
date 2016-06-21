@@ -48,7 +48,7 @@ IReflectOut              = 1
 # FelixRefine Input
 
 #Refinement Specific Flags
-IRefineModeFLAG          = L
+IRefineModeFLAG          = A
 IWeightingFLAG           = 0
 IContinueFLAG            = 0
 ICorrelationFLAG         = 2
@@ -56,7 +56,7 @@ IImageProcessingFLAG     = 4
 
 # Ug Iteration
 
-INoofUgs                  = 10
+INoofUgs                  = 2
 
 # Structural Refinement
 

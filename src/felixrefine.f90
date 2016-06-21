@@ -155,7 +155,7 @@ PROGRAM Felixrefine
 
   !Total possible atoms/unit cell
   IMaxPossibleNAtomsUnitCell=SIZE(RBasisAtomPosition,1)*SIZE(RSymVec,1)
-  !These are over-allocated since the actual size is not known before the calculation of unique positions
+  !The following are over-allocated since the actual size is not known before the calculation of unique positions
   !AtomPosition is in fractional unit cell coordinates, like BasisAtomPosition
   ALLOCATE(RAtomPosition(IMaxPossibleNAtomsUnitCell,ITHREE),STAT=IErr)
   !AtomCoordinate is in the microscopy reference frame in Angstrom units
@@ -192,7 +192,8 @@ PROGRAM Felixrefine
      IHKLMAXValue = IHKLMAXValue*2
      CALL HKLCount(IHKLMAXValue,RZDirC,INhkl,RHOLZAcceptanceAngle,IErr)
   END DO
-! Fill the list of reflections Rhkl as indices h,k,l
+  ! Fill the list of reflections Rhkl
+  ! N.B. Rhkl are in integer form [h,k,l] but are REAL to allow dot products etc.
   ALLOCATE(Rhkl(INhkl,ITHREE),STAT=IErr)
   CALL HKLMake(IHKLMAXValue,RZDirC,RHOLZAcceptanceAngle,IErr)
   
@@ -222,13 +223,11 @@ PROGRAM Felixrefine
 !Calculate the g vector list RgPoolT in reciprocal angstrom units (in the microscope reference frame?)
   ICutOff = 1
   DO ind=1,INhkl
-     WRITE(Sind,'(I10.1)')ind
-     DO jnd=1,ITHREE
-        RgPoolT(ind,jnd)= &
-             Rhkl(ind,1)*RarVecM(jnd) + &
-             Rhkl(ind,2)*RbrVecM(jnd) + &
-             Rhkl(ind,3)*RcrVecM(jnd)
-        RgDummyVecMat(ind,jnd)=RgPoolT(ind,jnd)
+    DO jnd=1,ITHREE
+      RgPoolT(ind,jnd)= Rhkl(ind,1)*RarVecM(jnd) + &
+        Rhkl(ind,2)*RbrVecM(jnd) + Rhkl(ind,3)*RcrVecM(jnd)
+      !this is just a duplicate of RgPoolT, why?
+      RgDummyVecMat(ind,jnd)=RgPoolT(ind,jnd)
      ENDDO
 	 !If a g-vector has a non-zero z-component it is not in the ZOLZ
      IF((RgPoolT(ind,3).GT.TINY.OR.RgPoolT(ind,3).LT.-TINY).AND.ICutOff.NE.0) THEN
@@ -243,7 +242,7 @@ PROGRAM Felixrefine
   
   !sort into Laue Zones 
   WHERE(RgDummyVecMat(:,3).GT.TINY.OR.RgDummyVecMat(:,3).LT.-TINY)
-     RgDummyVecMat(:,3)=RgDummyVecMat(:,3)/RGzUnitVec!possible divide by zero from line 237?
+     RgDummyVecMat(:,3)=RgDummyVecMat(:,3)/RGzUnitVec!possible divide by zero from line 239?
   END WHERE
   !min&max Laue Zones 
   RMaxLaueZoneValue=MAXVAL(RgDummyVecMat(:,3),DIM=1)
@@ -303,7 +302,8 @@ PROGRAM Felixrefine
      END DO
   END IF
 
-  !calculate g vector magnitudes for the reflection pool RgPoolMag in reciprocal Angstrom units
+  !calculate g vector magnitudes for the reflection pool RgPoolMag
+  !in reciprocal Angstrom units, in the Microscope reference frame
   ALLOCATE(RgPoolMag(INhkl),STAT=IErr)
   IF(IErr.NE.0) THEN
      PRINT*,"felixrefine(",my_rank,")error allocating RgPoolMag"
@@ -313,17 +313,26 @@ PROGRAM Felixrefine
      RgPoolMag(ind)= SQRT(DOT_PRODUCT(RgPoolT(ind,:),RgPoolT(ind,:)))
   ENDDO
 
-  !some other basic numbers
+  !some other basic numbers, used to be DiffractionPatternCalculation
   ALLOCATE(RgVecVec(INhkl),STAT=IErr)
   IF( IErr.NE.0 ) THEN
      PRINT*,"felixrefine(",my_rank,") error allocating RgVecVec"
      GOTO 9999
   END IF
-  CALL DiffractionPatternCalculation(IErr)
-    IF( IErr.NE.0 ) THEN
-     PRINT*,"felixrefine(",my_rank,")error in DiffractionPatternCalculation"
-     GOTO 9999
+  DO ind =1,INhkl
+    RgVecVec(ind) = DOT_PRODUCT(RgPoolT(ind,:),RNormDirM)
+  END DO
+  RMinimumGMag = RgPoolMag(2)
+  IF (nReflections.LT.INoOfLacbedPatterns) THEN
+     nReflections = INoOfLacbedPatterns
   END IF
+  ! resolution in k space
+  RDeltaK = RMinimumGMag*RConvergenceAngle/REAL(IPixelCount,RKIND)
+!  CALL DiffractionPatternCalculation(IErr)
+!    IF( IErr.NE.0 ) THEN
+!     PRINT*,"felixrefine(",my_rank,")error in DiffractionPatternCalculation"
+!     GOTO 9999
+!  END IF
 
   !acceptance angle
   IF(RAcceptanceAngle.NE.ZERO.AND.IZOLZFLAG.EQ.1) THEN
@@ -418,7 +427,7 @@ PROGRAM Felixrefine
     END IF
     !Fill up the IndependentVariable list with CUgMatNoAbs components
     jnd=1
-    DO ind = 1+IUgOffset,INoofUgs+IUgOffset !=== temp changes so real part only***
+    DO ind = 1+IUgOffset,INoofUgs+IUgOffset !comment out !=== for real part only***
       IF ( ABS(REAL(CUgToRefine(ind),RKIND)).GE.RTolerance ) THEN
         RIndependentVariable(jnd) = REAL(CUgToRefine(ind),RKIND)
         jnd=jnd+1
@@ -438,7 +447,7 @@ PROGRAM Felixrefine
  
   !--------------------------------------------------------------------
   ! Setup Simplex Variables
-  !--------------------------------------------------------------------!RB restore later for other types of refinement
+  !--------------------------------------------------------------------
   IF(IRefineMode(2).EQ.1) THEN !It's an atom coordinate refinement
     CALL SetupAtomicVectorMovements(IErr)
     IF(IErr.NE.0) THEN
@@ -446,28 +455,20 @@ PROGRAM Felixrefine
       GOTO 9999
     END IF
   END IF
-  INoofElementsForEachRefinementType(2)=IRefineMode(2)*IAllowedVectors
-!  INoofElementsForEachRefinementType(3)=IRefineMode(3)*SIZE(IAtomicSitesToRefine)
-!  INoofElementsForEachRefinementType(4)=IRefineMode(4)*SIZE(IAtomicSitesToRefine)
-!  INoofElementsForEachRefinementType(5)=IRefineMode(5)*SIZE(IAtomicSitesToRefine)*6
-!  INoofElementsForEachRefinementType(6)=IRefineMode(6)*3
-!  INoofElementsForEachRefinementType(7)=IRefineMode(7)*3
-!  INoofElementsForEachRefinementType(8)=IRefineMode(8)
-!  INoofElementsForEachRefinementType(9)=IRefineMode(9)
-!  INoofElementsForEachRefinementType(10)=IRefineMode(10)
-!  INoofElementsForEachRefinementType(11)=IRefineMode(11)
-  !Number of independent variables
-  INoOfVariables = SUM(INoofElementsForEachRefinementType)
-!This has been calculated in SetupUgsToRefine
-!  IF(my_rank.EQ.0) THEN
-!    IF ( INoOfVariables.EQ.1 ) THEN 
-!      PRINT*,"Only one independent variable"!
-!	ELSE
-!      WRITE(SPrintString,FMT='(I3,1X,A21))') INoOfVariables,"independent variables"
-!      PRINT*,TRIM(ADJUSTL(SPrintString))
-!    END IF
-!  END IF
-
+  IF(IRefineMode(1)+IRefineMode(12).EQ.0) THEN !It's not a Ug refinement, so we need to count variables
+    INoofElementsForEachRefinementType(2)=IRefineMode(2)*IAllowedVectors!Atomic coordinates
+    INoofElementsForEachRefinementType(3)=IRefineMode(3)*SIZE(IAtomicSitesToRefine)!Occupancy
+    INoofElementsForEachRefinementType(4)=IRefineMode(4)*SIZE(IAtomicSitesToRefine)!Isotropic DW
+    INoofElementsForEachRefinementType(5)=IRefineMode(5)*SIZE(IAtomicSitesToRefine)*6!Anisotropic DW
+    INoofElementsForEachRefinementType(6)=IRefineMode(6)*3!Unit cell dimensions
+    INoofElementsForEachRefinementType(7)=IRefineMode(7)*3!Unit cell angles
+    INoofElementsForEachRefinementType(8)=IRefineMode(8)!Convergence angle
+    INoofElementsForEachRefinementType(9)=IRefineMode(9)!Percentage Absorption
+    INoofElementsForEachRefinementType(10)=IRefineMode(10)!kV
+    INoofElementsForEachRefinementType(11)=IRefineMode(11)!Scaling factor
+    !Number of independent variables
+    INoOfVariables = SUM(INoofElementsForEachRefinementType)
+  END IF
 
   !--------------------------------------------------------------------
   !  Assign IDs - not needed for a Ug refinement
@@ -1299,7 +1300,7 @@ SUBROUTINE SetupUgsToRefine(IErr)
 	END IF!===
   END DO
   INoOfVariables = jnd![[[-1 !===the last increment is for absorption ![[[ delete the -1 to include absorption***
-  
+
 END SUBROUTINE SetupUgsToRefine
 
 !%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%

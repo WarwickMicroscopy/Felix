@@ -162,7 +162,7 @@ SUBROUTINE StructureFactorInitialisation (IErr)
        evenindgauss,currentatom,IErr
   INTEGER(IKIND),DIMENSION(2) :: IPos,ILoc
   COMPLEX(CKIND) :: CVgij
-  REAL(RKIND) :: RMeanInnerPotentialVolts,RAtomicFormFactor, Lorentzian,Gaussian
+  REAL(RKIND) :: RMeanInnerPotentialVolts,RAtomicFormFactor,Lorentzian,Gaussian,Kirkland
   CHARACTER*200 :: SPrintString
   
   CALL Message("StructureFactorInitialisation",IMust,IErr)
@@ -178,21 +178,22 @@ SUBROUTINE StructureFactorInitialisation (IErr)
            SELECT CASE (IScatterFactorMethodFLAG)! calculate f_e(q) as in Eq. C.15 of Kirkland, "Advanced Computing in EM"
 
            CASE(0) ! Kirkland Method using 3 Gaussians and 3 Lorentzians
-              RAtomicFormFactor = ZERO
-              DO knd = 1,3
-                 !odd and even indicies for Lorentzian function
-                 evenindlorentz = knd*2
-                 oddindlorentz = knd*2 -1
-                 !odd and even indicies for Gaussian function
-                 evenindgauss = evenindlorentz + 6
-                 oddindgauss = oddindlorentz + 6
-                 !Kirkland Method uses summation of 3 Gaussians and 3 Lorentzians (summed in loop)
-                 RAtomicFormFactor = RAtomicFormFactor + &
-                      LORENTZIAN(RScattFactors(ICurrentAtom,oddindlorentz), RgMatMag(ind,jnd),ZERO,&
-                      RScattFactors(ICurrentAtom,evenindlorentz))+ &
-                      GAUSSIAN(RScattFactors(ICurrentAtom,oddindgauss),RgMatMag(ind,jnd),ZERO, & 
-                      1/(SQRT(2*RScattFactors(ICurrentAtom,evenindgauss))),ZERO)
-              END DO
+              RAtomicFormFactor = Kirkland(ICurrentAtom,RgMatMag(ind,jnd))
+!              RAtomicFormFactor = ZERO
+!              DO knd = 1,3
+!                 !odd and even indicies for Lorentzian function
+!                 evenindlorentz = knd*2
+!                 oddindlorentz = knd*2 -1
+!                 !odd and even indicies for Gaussian function
+!                 evenindgauss = evenindlorentz + 6
+!                 oddindgauss = oddindlorentz + 6
+!                 !Kirkland Method uses summation of 3 Gaussians and 3 Lorentzians (summed in loop)
+!                 RAtomicFormFactor = RAtomicFormFactor + &
+!                      LORENTZIAN(RScattFactors(ICurrentAtom,oddindlorentz), RgMatMag(ind,jnd),ZERO,&
+!                      RScattFactors(ICurrentAtom,evenindlorentz))+ &
+!                      GAUSSIAN(RScattFactors(ICurrentAtom,oddindgauss),RgMatMag(ind,jnd),ZERO, & 
+!                      1/(SQRT(2*RScattFactors(ICurrentAtom,evenindgauss))),ZERO)
+!              END DO
 
            CASE(1) ! 8 Parameter Method with Scattering Parameters from Peng et al 1996 
               RAtomicFormFactor = ZERO
