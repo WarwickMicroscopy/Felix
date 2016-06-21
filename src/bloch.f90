@@ -55,7 +55,7 @@ SUBROUTINE BlochCoefficientCalculation(IYPixelIndex,IXPixelIndex,IPixelNumber,IF
        CGeneralEigenVectors,CBeamTranspose,CUgMatPartial
   COMPLEX(CKIND),DIMENSION(:),ALLOCATABLE :: CGeneralEigenValues
   CHARACTER*40 surname
-  CHARACTER*200 SindString, SjndString, SPixelCount, SnBeams,SWeakBeamIndex 
+  CHARACTER*200 SindString,SjndString,SPixelCount,SnBeams,SWeakBeamIndex,SPrintString
    
    IF (my_rank.EQ.0) THEN
       DO WHILE (IMessageCounter .LT.1)
@@ -91,20 +91,24 @@ SUBROUTINE BlochCoefficientCalculation(IYPixelIndex,IXPixelIndex,IPixelNumber,IF
   !--------------------------------------------------------------------
   
   ! TiltedK is the vector of the incoming tilted beam
-  CALL KVectorsCalculation(RPixelGVectorXPosition,RPixelGVectorYPosition,IErr)
-  IF( IErr.NE.0 ) THEN
-     PRINT*,"BlochCoefficientCalculation(", my_rank, ") error ", IErr, &
-          " In Calculation of KVectors"
-     RETURN
-  END IF
+  !CALL KVectorsCalculation(RPixelGVectorXPosition,RPixelGVectorYPosition,IErr)
+  !IF( IErr.NE.0 ) THEN
+  !   PRINT*,"BlochCoefficientCalculation(", my_rank, ") error ", IErr, &
+  !        " In Calculation of KVectors"
+  !   RETURN
+  !END IF
+  
+  !TiltedK is in units of (1/A), in the microscope ref frame(NB exp(2*pi*i*k.r), optical convention)
+  RTiltedK(1)= RPixelGVectorXPosition  !!$  kx - based on crystal orientation
+  RTiltedK(2)= RPixelGVectorYPosition  !!$  ky - based on crystal orientation
+  RTiltedK(3)= SQRT(RBigK**2 - RPixelGVectorXPosition**2 - RPixelGVectorYPosition**2)  !!$  kz -  from: ky^2 +kx^2 +kz^2 = K^2  
   RKn = DOT_PRODUCT(RTiltedK,RNormDirM)
   
   !Compute the deviation parameter for reflection pool !RB could be done as part of initialisation
   DO knd=1,nReflections
      ! DevPara is deviation parameter, also known as Sg 
      RDevPara(knd)= -( RBigK + DOT_PRODUCT(RgPool(knd,:),RTiltedK(:)) /RBigK) + &
-          SQRT( &
-          ( RBigK**2 + DOT_PRODUCT(RgPool(knd,:),RTiltedK(:)) )**2 /RBigK**2 - &
+          SQRT( ( RBigK**2 + DOT_PRODUCT(RgPool(knd,:),RTiltedK(:)) )**2 /RBigK**2 - &
           (RgPoolMag(knd)**2 + TWO*DOT_PRODUCT(RgPool(knd,:),RTiltedK(:))) )
   END DO
   
@@ -240,65 +244,57 @@ SUBROUTINE BlochCoefficientCalculation(IYPixelIndex,IXPixelIndex,IPixelNumber,IF
 !!$       )
 
   IF (IZolzFLAG.EQ.0) THEN
-
-     DO hnd=1,nBeams
-        CUgMatEffective(hnd,hnd) = CUgMatEffective(hnd,hnd) + TWO*RBigK*RDevPara(IStrongBeamList(hnd))
-     ENDDO
-     DO knd =1,nBeams ! Columns
-        
-        DO hnd = 1,nBeams ! Rows
-
-           CUgMatEffective(knd,hnd) = CUgMatEffective(knd,hnd) / &
-                (SQRT(1+RgDotNorm(IStrongBeamList(knd))/RKn)*SQRT(1+RgDotNorm(IStrongBeamList(hnd))/RKn))
-           
-        END DO
-     END DO
-     
-     CUgMatEffective = CUgMatEffective/(TWO*RBigK)
+    DO hnd=1,nBeams
+      CUgMatEffective(hnd,hnd) = CUgMatEffective(hnd,hnd) + TWO*RBigK*RDevPara(IStrongBeamList(hnd))
+    ENDDO
+    DO knd =1,nBeams ! Columns
+      DO hnd = 1,nBeams ! Rows
+        CUgMatEffective(knd,hnd) = CUgMatEffective(knd,hnd) / &
+         (SQRT(1+RgDotNorm(IStrongBeamList(knd))/RKn)*SQRT(1+RgDotNorm(IStrongBeamList(hnd))/RKn))
+      END DO
+    END DO
+    CUgMatEffective = CUgMatEffective/(TWO*RBigK)
   ELSE
-     
-     CUgMatEffective = CUgMatEffective/(TWO*RBigK)
-     
-      ! set the diagonal parts of the matrix to be equal to 
-     ! strong beam deviation parameters (*2 BigK) 
-     DO hnd=1,nBeams
-        CUgMatEffective(hnd,hnd) = CUgMatEffective(hnd,hnd)+RDevPara(IStrongBeamList(hnd))
-     ENDDO
-     
-     ! add the weak beams perturbatively for the 1st column (sumC) and
-     ! the diagonal elements (sumD)
-     
-     DO knd=2,nBeams
-        sumC= CZERO
-        sumD= CZERO
-        DO hnd=1,IWeakBeamIndex
-           
-           sumC = sumC + &
-                REAL(CUgMat(IStrongBeamList(knd),IWeakBeamList(hnd))) * &
-                REAL(CUgMat(IWeakBeamList(hnd),1)) / &
-                (4*RBigK*RBigK*RDevPara(IWeakBeamList(hnd)))
-           
-           sumD = sumD + &
-                REAL(CUgMat(IStrongBeamList(knd),IWeakBeamList(hnd))) * &
-                REAL(CUgMat(IWeakBeamList(hnd),IStrongBeamList(knd))) / &
-                (4*RBigK*RBigK*RDevPara(IWeakBeamList(hnd)))
-           
-        ENDDO
-        CUgMatEffective(knd,1)= CUgMatEffective(knd,1) - sumC
-        CUgMatEffective(knd,knd)= CUgMatEffective(knd,knd) - sumD
-     ENDDO
-     
+    CUgMatEffective = CUgMatEffective/(TWO*RBigK)
+    ! set the diagonal parts of the matrix to be equal to 
+    ! strong beam deviation parameters (*2 BigK) 
+    DO hnd=1,nBeams
+      CUgMatEffective(hnd,hnd) = CUgMatEffective(hnd,hnd)+RDevPara(IStrongBeamList(hnd))
+    ENDDO
+    ! add the weak beams perturbatively for the 1st column (sumC) and
+    ! the diagonal elements (sumD)
+    DO knd=2,nBeams
+      sumC= CZERO
+      sumD= CZERO
+      DO hnd=1,IWeakBeamIndex
+        sumC = sumC + &
+          REAL(CUgMat(IStrongBeamList(knd),IWeakBeamList(hnd))) * &
+          REAL(CUgMat(IWeakBeamList(hnd),1)) / &
+         (4*RBigK*RBigK*RDevPara(IWeakBeamList(hnd)))
+        sumD = sumD + &
+          REAL(CUgMat(IStrongBeamList(knd),IWeakBeamList(hnd))) * &
+          REAL(CUgMat(IWeakBeamList(hnd),IStrongBeamList(knd))) / &
+         (4*RBigK*RBigK*RDevPara(IWeakBeamList(hnd)))
+      ENDDO
+      CUgMatEffective(knd,1)= CUgMatEffective(knd,1) - sumC
+      CUgMatEffective(knd,knd)= CUgMatEffective(knd,knd) - sumD
+    ENDDO
   END IF
-   
+
+  IF(IWriteFLAG.EQ.3.AND.my_rank.EQ.0) THEN
+   PRINT*,"Effective Ug matrix"
+	DO hnd =1,8
+     WRITE(SPrintString,FMT='(16(1X,F5.2))') CUgMatEffective(hnd,1:8)
+     PRINT*,TRIM(ADJUSTL(SPrintString))
+    END DO
+  END IF	
+  
   !--------------------------------------------------------------------
   ! diagonalize the UgMatEffective
   !--------------------------------------------------------------------
    
   IF (IZolzFLAG.EQ.0) THEN
-     CALL EigenSpectrum(nBeams, &
-          CUgMatEffective, &
-          CEigenValues(:), CEigenVectors(:,:), &
-          IErr)
+     CALL EigenSpectrum(nBeams,CUgMatEffective,CEigenValues(:), CEigenVectors(:,:),IErr)
      IF( IErr.NE.0 ) THEN
         PRINT*,"BlochCoefficientCalculation(", my_rank, ") error in EigenSpectrum()"
         RETURN

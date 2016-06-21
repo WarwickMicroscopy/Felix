@@ -312,9 +312,9 @@ PROGRAM Felixrefine
   DO ind=1,INhkl
      RgPoolMag(ind)= SQRT(DOT_PRODUCT(RgPool(ind,:),RgPool(ind,:)))
   ENDDO
-  IF(IWriteFLAG.EQ.3.AND.my_rank.EQ.0) THEN
+  IF(IWriteFLAG.EQ.6.AND.my_rank.EQ.0) THEN
     DO ind =1,INhkl
-	 WRITE(SPrintString,FMT='(I3,A4,3(F6.2,1X),A12,F7.4,A4)') ind,": g=",Rhkl(ind,:),", magnitude ",RgPoolMag(ind)," 1/A"
+	 WRITE(SPrintString,FMT='(I3,A4,3(F3.0,1X),A12,F7.4,A4)') ind,": g=",Rhkl(ind,:),", magnitude ",RgPoolMag(ind)," 1/A"
      PRINT*,TRIM(ADJUSTL(SPrintString))
     END DO
   END IF

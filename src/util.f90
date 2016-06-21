@@ -211,7 +211,7 @@ END FUNCTION Gaussian
 !Defines a Kirkland scattering factor 
 FUNCTION Kirkland(Iz,Rq)
 !From Appendix C of Kirkland, "Advanced Computing in Electron Microscopy", 2nd ed.
-!z is atomic number, q is magnitude of scattering vector in Angstroms (NB exp(2*pi*i*q.r), optical convention)
+!z is atomic number, q is magnitude of scattering vector in 1/A (NB exp(2*pi*i*q.r), optical convention)
 !Kirkland scattering factor is in Angstrom units
   USE MyNumbers
   USE CConst; USE IConst

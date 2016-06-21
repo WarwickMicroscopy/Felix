@@ -218,7 +218,7 @@ SUBROUTINE StructureFactorInitialisation (IErr)
           IF(RIsoDW(lnd).GT.10.OR.RIsoDW(lnd).LT.0) THEN
             RIsoDW(lnd) = RDebyeWallerConstant
           END IF
-          !Isotropic D-W factor
+          !Isotropic D-W factor ***!!REPLACE! PLEASE DON'T LEAVE COMMENTED OUT***!!!
           !RAtomicFormFactor = RAtomicFormFactor*EXP(-((RgMatrixMagnitude(ind,jnd)/2.D0)**2)*RIsoDW(lnd))
         ELSE!this will need sorting out, not sure if it works
           RAtomicFormFactor = RAtomicFormFactor * &
@@ -247,8 +247,9 @@ SUBROUTINE StructureFactorInitialisation (IErr)
   ENDDO
   !Now convert to Ug=Vg*(2*m*e/h^2)
   CUgMatNoAbs=CUgMatNoAbs*TWO*RElectronMass*RRelativisticCorrection*RElectronCharge/(RPlanckConstant**2)
+  
   !If we use k-vectors in angstroms we must divide U0 by 10^20 since we use K^2=k^2+U0
-  CUgMatNoAbs=CUgMatNoAbs/(RAngstromConversion**2)
+  CUgMatNoAbs=TWOPI*TWOPI*CUgMatNoAbs/(RAngstromConversion**2)
   !PRINT*,"U0=",REAL(CUgMatNoAbs(1,1))
   
   !Alternative way of calculating the mean inner potential as the sum of scattering factors at g=0 multiplied by h^2/(2pi*m0*e*CellVolume)
@@ -271,9 +272,13 @@ SUBROUTINE StructureFactorInitialisation (IErr)
   !--------------------------------------------------------------------
   ! high-energy approximation (not HOLZ compatible)
   !K^2=k^2+U0
+  !version with Ug's in SI units
+  !RBigK= SQRT((RElectronWaveVectorMagnitude*RAngstromConversion)**2 + REAL(CUgMatNoAbs(1,1)))/RAngstromConversion
+  !version with Ug's in 1/(A^2)
   RBigK= SQRT(RElectronWaveVectorMagnitude**2 + REAL(CUgMatNoAbs(1,1)))
   CALL Message("StructureFactorInitialisation",IInfo,IErr, &
        MessageVariable = "RBigK", RVariable = RBigK)
+  !PRINT*,"RBigK=",RBigK
   
   !Absorption
   CUgMatPrime = CZERO
