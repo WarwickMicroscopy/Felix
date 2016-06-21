@@ -102,10 +102,10 @@ SUBROUTINE BlochCoefficientCalculation(IYPixelIndex,IXPixelIndex,IPixelNumber,IF
   !Compute the deviation parameter for reflection pool !RB could be done as part of initialisation
   DO knd=1,nReflections
      ! DevPara is deviation parameter, also known as Sg 
-     RDevPara(knd)= -( RBigK + DOT_PRODUCT(RgPoolT(knd,:),RTiltedK(:)) /RBigK) + &
+     RDevPara(knd)= -( RBigK + DOT_PRODUCT(RgPool(knd,:),RTiltedK(:)) /RBigK) + &
           SQRT( &
-          ( RBigK**2 + DOT_PRODUCT(RgPoolT(knd,:),RTiltedK(:)) )**2 /RBigK**2 - &
-          (RgPoolMag(knd)**2 + TWO*DOT_PRODUCT(RgPoolT(knd,:),RTiltedK(:))) )
+          ( RBigK**2 + DOT_PRODUCT(RgPool(knd,:),RTiltedK(:)) )**2 /RBigK**2 - &
+          (RgPoolMag(knd)**2 + TWO*DOT_PRODUCT(RgPool(knd,:),RTiltedK(:))) )
   END DO
   
   ! select only those beams where the Ewald sphere is close to the
@@ -249,7 +249,7 @@ SUBROUTINE BlochCoefficientCalculation(IYPixelIndex,IXPixelIndex,IPixelNumber,IF
         DO hnd = 1,nBeams ! Rows
 
            CUgMatEffective(knd,hnd) = CUgMatEffective(knd,hnd) / &
-                (SQRT(1+RgVecVec(IStrongBeamList(knd))/RKn)*SQRT(1+RgVecVec(IStrongBeamList(hnd))/RKn))
+                (SQRT(1+RgDotNorm(IStrongBeamList(knd))/RKn)*SQRT(1+RgDotNorm(IStrongBeamList(hnd))/RKn))
            
         END DO
      END DO
@@ -306,7 +306,7 @@ SUBROUTINE BlochCoefficientCalculation(IYPixelIndex,IXPixelIndex,IPixelNumber,IF
      CEigenValues = CEigenValues * RKn/RBigK
      DO knd = 1,nBeams
         CEigenVectors(knd,:) = CEigenVectors(knd,:) / &
-             SQRT(1+RgVecVec(IStrongBeamList(knd))/RKn)
+             SQRT(1+RgDotNorm(IStrongBeamList(knd))/RKn)
      END DO
   ELSE
      CALL EigenSpectrum(nBeams, &
@@ -532,11 +532,11 @@ SUBROUTINE DeviationParameterCalculation(IErr)
   DO knd=1,nReflections
      ! DevPara is devitaion parameter, also known as Sg 
      RDevPara(knd)= &
-          -( RBigK + DOT_PRODUCT(RgPoolT(knd,:),RTiltedK(:)) /RBigK) + &
+          -( RBigK + DOT_PRODUCT(RgPool(knd,:),RTiltedK(:)) /RBigK) + &
           SQRT( &
-          ( RBigK**2 + DOT_PRODUCT(RgPoolT(knd,:),RTiltedK(:)) )**2 /RBigK**2 - &
+          ( RBigK**2 + DOT_PRODUCT(RgPool(knd,:),RTiltedK(:)) )**2 /RBigK**2 - &
           (RgPoolMag(knd)**2 + &
-          TWO* DOT_PRODUCT(RgPoolT(knd,:),RTiltedK(:))) &
+          TWO* DOT_PRODUCT(RgPool(knd,:),RTiltedK(:))) &
           )
   END DO
 

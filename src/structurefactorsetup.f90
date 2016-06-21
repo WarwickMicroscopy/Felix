@@ -56,32 +56,38 @@ SUBROUTINE StructureFactorSetup(IErr)
   IMPLICIT NONE
 
   INTEGER(IKIND) :: ind,jnd,IErr
-
+  CHARACTER*200 :: SPrintString
+  
   CALL Message("StructureFactorSetup",IMust,IErr)
 
   !--------------------------------------------------------------------
   ! Calculate Reflection Matrix
   !--------------------------------------------------------------------
   !Allocation--------------------------------------------------------
-  ALLOCATE(RgMatMat(nReflections,nReflections,ITHREE),STAT=IErr)
-  ALLOCATE(RgMatMag(nReflections,nReflections),STAT=IErr)
+  ALLOCATE(RgMatrix(nReflections,nReflections,ITHREE),STAT=IErr)
+  ALLOCATE(RgMatrixMagnitude(nReflections,nReflections),STAT=IErr)
   IF( IErr.NE.0 ) THEN
      PRINT*,"StructureFactorSetup(",my_rank,")error in allocations"
      RETURN
   END IF
 
-  !RgMatMat is a matrix of g-vectors that corresponds to the CUgMatNoAbs matrix
-  !RgMatMag is a matrix of their magnitides
+  !RgMatrix is a matrix of g-vectors that corresponds to the CUgMatNoAbs matrix
+  !RgMatrixMagnitude is a matrix of their magnitides
   !RgPool is a list of g-vectors in the microscope ref frame, units of 1/A, (multiplied by 2 pi??)
   DO ind=1,nReflections
      DO jnd=1,nReflections
-        RgMatMat(ind,jnd,:)= RgPoolT(ind,:)-RgPoolT(jnd,:)
-        RgMatMag(ind,jnd)= SQRT(DOT_PRODUCT(RgMatMat(ind,jnd,:),RgMatMat(ind,jnd,:)))
+        RgMatrix(ind,jnd,:)= RgPool(ind,:)-RgPool(jnd,:)
+        RgMatrixMagnitude(ind,jnd)= SQRT(DOT_PRODUCT(RgMatrix(ind,jnd,:),RgMatrix(ind,jnd,:)))
      ENDDO
   ENDDO
-  !Ug take the 2 pi back out of the magnitude...   
-  RgMatMag = RgMatMag/TWOPI
-
+  IF(IWriteFLAG.EQ.3.AND.my_rank.EQ.0) THEN
+	PRINT*,"g-vector magnitude matrix (1/A)"
+	DO ind =1,8
+     WRITE(SPrintString,FMT='(16(1X,F5.2))') RgMatrixMagnitude(ind,1:8)
+     PRINT*,TRIM(ADJUSTL(SPrintString))
+    END DO
+  END IF
+  
   CALL StructureFactorInitialisation (IErr)
   IF( IErr.NE.0 ) THEN
      PRINT*,"StructureFactorSetup(",my_rank,")error in StructureFactorInitialisation"
@@ -90,12 +96,12 @@ SUBROUTINE StructureFactorSetup(IErr)
   
   !For symmetry determination, only in Ug refinement
   IF (IRefineMode(1).EQ.1 .OR. IRefineMode(12).EQ.1) THEN
-    RgSumMat = SUM(ABS(RgMatMat),3)+RgMatMag+ABS(REAL(CUgMatNoAbs))+ABS(AIMAG(CUgMatNoAbs))
+    RgSumMat = SUM(ABS(RgMatrix),3)+RgMatrixMagnitude+ABS(REAL(CUgMatNoAbs))+ABS(AIMAG(CUgMatNoAbs))
   END IF
 
   !Dellocation-------------------------------------------------------- 
-  DEALLOCATE(RgMatMag,STAT=IErr)
-  DEALLOCATE(RgMatMat,STAT=IErr)
+  DEALLOCATE(RgMatrixMagnitude,STAT=IErr)
+  DEALLOCATE(RgMatrix,STAT=IErr)
   IF( IErr.NE.0 ) THEN
      PRINT*,"StructureFactorSetup(",my_rank,")error deallocations"
      RETURN

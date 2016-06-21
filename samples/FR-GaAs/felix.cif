@@ -9,9 +9,9 @@ _chemical_name_structure_type ZnS(cF8)
 _exptl_crystal_density_diffrn 5.32
 _cell_measurement_temperature 296.
 loop_
-_cell_length_a 5.652
-_cell_length_b 5.652
-_cell_length_c 5.652
+_cell_length_a 5.65325
+_cell_length_b 5.65325
+_cell_length_c 5.65325
 _cell_angle_alpha 90.0
 _cell_angle_beta 90.0
 _cell_angle_gamma 90.0

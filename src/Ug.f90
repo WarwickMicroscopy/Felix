@@ -56,18 +56,19 @@ SUBROUTINE GMatrixInitialisation (IErr)
   INTEGER(IKIND) :: ind,jnd,IErr
 
   CALL Message("GMatrixInitialisation",IMust,IErr)
-!Ug RgPool is a list of g-vectors in the microscope ref frame, units of 1/A, multiplied by 2 pi
+  !Ug RgPool is a list of g-vectors in the microscope ref frame, units of 1/A
+  ! Note that reciprocal lattice vectors dot not have two pi included, we are using the optical convention exp(2*pi*i*g.r)
   DO ind=1,nReflections
      DO jnd=1,nReflections
-        RgMatMat(ind,jnd,:)= RgPoolT(ind,:)-RgPoolT(jnd,:)
-        RgMatMag(ind,jnd)= SQRT(DOT_PRODUCT(RgMatMat(ind,jnd,:),RgMatMat(ind,jnd,:)))
+        RgMatrix(ind,jnd,:)= RgPool(ind,:)-RgPool(jnd,:)
+        RgMatrixMagnitude(ind,jnd)= SQRT(DOT_PRODUCT(RgMatrix(ind,jnd,:),RgMatrix(ind,jnd,:)))
      ENDDO
   ENDDO
   !Ug take the 2 pi back out of the magnitude...   
-  RgMatMag = RgMatMag/TWOPI
+  RgMatrixMagnitude = RgMatrixMagnitude/TWOPI
   !For symmetry determination, only in Ug refinement
   IF (IRefineMode(1).EQ.1 .OR. IRefineMode(12).EQ.1) THEN
-    RgSumMat = SUM(ABS(RgMatMat),3)
+    RgSumMat = SUM(ABS(RgMatrix),3)
   END IF
   
 END SUBROUTINE GMatrixInitialisation
@@ -178,7 +179,7 @@ SUBROUTINE StructureFactorInitialisation (IErr)
            SELECT CASE (IScatterFactorMethodFLAG)! calculate f_e(q) as in Eq. C.15 of Kirkland, "Advanced Computing in EM"
 
            CASE(0) ! Kirkland Method using 3 Gaussians and 3 Lorentzians
-              RAtomicFormFactor = Kirkland(ICurrentAtom,RgMatMag(ind,jnd))
+              RAtomicFormFactor = Kirkland(ICurrentAtom,RgMatrixMagnitude(ind,jnd))
 !              RAtomicFormFactor = ZERO
 !              DO knd = 1,3
 !                 !odd and even indicies for Lorentzian function
@@ -189,9 +190,9 @@ SUBROUTINE StructureFactorInitialisation (IErr)
 !                 oddindgauss = oddindlorentz + 6
 !                 !Kirkland Method uses summation of 3 Gaussians and 3 Lorentzians (summed in loop)
 !                 RAtomicFormFactor = RAtomicFormFactor + &
-!                      LORENTZIAN(RScattFactors(ICurrentAtom,oddindlorentz), RgMatMag(ind,jnd),ZERO,&
+!                      LORENTZIAN(RScattFactors(ICurrentAtom,oddindlorentz), RgMatrixMagnitude(ind,jnd),ZERO,&
 !                      RScattFactors(ICurrentAtom,evenindlorentz))+ &
-!                      GAUSSIAN(RScattFactors(ICurrentAtom,oddindgauss),RgMatMag(ind,jnd),ZERO, & 
+!                      GAUSSIAN(RScattFactors(ICurrentAtom,oddindgauss),RgMatrixMagnitude(ind,jnd),ZERO, & 
 !                      1/(SQRT(2*RScattFactors(ICurrentAtom,evenindgauss))),ZERO)
 !              END DO
 
@@ -200,7 +201,7 @@ SUBROUTINE StructureFactorInitialisation (IErr)
               DO knd = 1, 4
                  !Peng Method uses summation of 4 Gaussians
                  RAtomicFormFactor = RAtomicFormFactor + &
-                      GAUSSIAN(RScattFactors(ICurrentAtom,knd),RgMatMag(ind,jnd),ZERO, & 
+                      GAUSSIAN(RScattFactors(ICurrentAtom,knd),RgMatrixMagnitude(ind,jnd),ZERO, & 
                       SQRT(2/RScattFactors(ICurrentAtom,knd+4)),ZERO)
               END DO
 			  
@@ -211,7 +212,7 @@ SUBROUTINE StructureFactorInitialisation (IErr)
                  oddindgauss = knd*2 -1
                  !Doyle &Turner uses summation of 4 Gaussians
                  RAtomicFormFactor = RAtomicFormFactor + &
-                      GAUSSIAN(RScattFactors(ICurrentAtom,oddindgauss),RgMatMag(ind,jnd),ZERO, & 
+                      GAUSSIAN(RScattFactors(ICurrentAtom,oddindgauss),RgMatrixMagnitude(ind,jnd),ZERO, & 
                       SQRT(2/RScattFactors(ICurrentAtom,evenindgauss)),ZERO)
               END DO
 
@@ -221,9 +222,9 @@ SUBROUTINE StructureFactorInitialisation (IErr)
                  evenindlorentz=knd+5
                  RAtomicFormFactor = RAtomicFormFactor + &
                       LORENTZIAN(RScattFactors(ICurrentAtom,knd)* &
-                      (TWO+RScattFactors(ICurrentAtom,evenindlorentz)*(RgMatMag(ind,jnd)**TWO)), &
+                      (TWO+RScattFactors(ICurrentAtom,evenindlorentz)*(RgMatrixMagnitude(ind,jnd)**TWO)), &
                       ONE, &
-                      RScattFactors(ICurrentAtom,evenindlorentz)*(RgMatMag(ind,jnd)**TWO),ZERO)
+                      RScattFactors(ICurrentAtom,evenindlorentz)*(RgMatrixMagnitude(ind,jnd)**TWO),ZERO)
               END DO
 
            END SELECT
@@ -235,16 +236,16 @@ SUBROUTINE StructureFactorInitialisation (IErr)
                  RIsoDW(lnd) = RDebyeWallerConstant
               END IF
               RAtomicFormFactor = RAtomicFormFactor * &
-                   EXP(-((RgMatMag(ind,jnd)/2.D0)**2)*RIsoDW(lnd))
+                   EXP(-((RgMatrixMagnitude(ind,jnd)/2.D0)**2)*RIsoDW(lnd))
            ELSE
               RAtomicFormFactor = RAtomicFormFactor * &
-                   EXP(-TWOPI*DOT_PRODUCT(RgMatMat(ind,jnd,:), &
+                   EXP(-TWOPI*DOT_PRODUCT(RgMatrix(ind,jnd,:), &
                    MATMUL( RAnisotropicDebyeWallerFactorTensor( &
                    RAnisoDW(lnd),:,:), &
-                   RgMatMat(ind,jnd,:))))
+                   RgMatrix(ind,jnd,:))))
            END IF
            CVgij = CVgij + RAtomicFormFactor * EXP(-CIMAGONE* &
-              DOT_PRODUCT(RgMatMat(ind,jnd,:), RAtomCoordinate(lnd,:)) )
+              DOT_PRODUCT(RgMatrix(ind,jnd,:), RAtomCoordinate(lnd,:)) )
         ENDDO
 
   CUgMatNoAbs(ind,jnd)=((((TWOPI**2)*RRelativisticCorrection) / &!Ug
@@ -292,7 +293,8 @@ SUBROUTINE StructureFactorInitialisation (IErr)
      CUgMat =  CUgMatNoAbs+CUgMatPrime!Ug
 	 
   IF(IWriteFLAG.EQ.3.AND.my_rank.EQ.0) THEN
-    DO ind =1,8
+   PRINT*,"Ug matrix, no absorption"
+	DO ind =1,8
      WRITE(SPrintString,FMT='(16(1X,F5.2))') CUgMatNoAbs(ind,1:8)
      PRINT*,TRIM(ADJUSTL(SPrintString))
     END DO

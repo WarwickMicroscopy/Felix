@@ -100,10 +100,10 @@ SUBROUTINE ReciprocalLattice(IErr)
      END IF
   END IF
   ! Set up Reciprocal Lattice Vectors: orthogonal reference frame in 1/Angstrom units
-  ! Note that reciprocal lattice vectors have two pi included!!	
-  RarVecO= TWOPI*CROSS(RbVecO,RcVecO)/DOT_PRODUCT(RbVecO,CROSS(RcVecO,RaVecO))
-  RbrVecO= TWOPI*CROSS(RcVecO,RaVecO)/DOT_PRODUCT(RcVecO,CROSS(RaVecO,RbVecO))
-  RcrVecO= TWOPI*CROSS(RaVecO,RbVecO)/DOT_PRODUCT(RaVecO,CROSS(RbVecO,RcVecO))
+  ! Note that reciprocal lattice vectors dot not have two pi included, we are using the optical convention exp(2*pi*i*g.r)
+  RarVecO= CROSS(RbVecO,RcVecO)/DOT_PRODUCT(RbVecO,CROSS(RcVecO,RaVecO))
+  RbrVecO= CROSS(RcVecO,RaVecO)/DOT_PRODUCT(RcVecO,CROSS(RaVecO,RbVecO))
+  RcrVecO= CROSS(RaVecO,RbVecO)/DOT_PRODUCT(RaVecO,CROSS(RbVecO,RcVecO))
 
   DO ind=1,ITHREE
      IF (abs(RarVecO(ind)).lt.TINY) THEN
@@ -172,10 +172,11 @@ SUBROUTINE ReciprocalLattice(IErr)
   RbVecM= MATMUL(RTMatO2M,RbVecO)
   RcVecM= MATMUL(RTMatO2M,RcVecO)
   
-  ! create new set of reciprocal lattice vectors
-  RarVecM= TWOPI*CROSS(RbVecM,RcVecM)/DOT_PRODUCT(RbVecM,CROSS(RcVecM,RaVecM))
-  RbrVecM= TWOPI*CROSS(RcVecM,RaVecM)/DOT_PRODUCT(RcVecM,CROSS(RaVecM,RbVecM))
-  RcrVecM= TWOPI*CROSS(RaVecM,RbVecM)/DOT_PRODUCT(RaVecM,CROSS(RbVecM,RcVecM))
+  ! create new set of reciprocal lattice vectors in Microscope reference frame
+  ! Note that reciprocal lattice vectors dot not have two pi included, we are using the optical convention exp(2*pi*i*g.r)
+  RarVecM= CROSS(RbVecM,RcVecM)/DOT_PRODUCT(RbVecM,CROSS(RcVecM,RaVecM))
+  RbrVecM= CROSS(RcVecM,RaVecM)/DOT_PRODUCT(RcVecM,CROSS(RaVecM,RbVecM))
+  RcrVecM= CROSS(RaVecM,RbVecM)/DOT_PRODUCT(RaVecM,CROSS(RbVecM,RcVecM))
   
 END SUBROUTINE ReciprocalLattice
 

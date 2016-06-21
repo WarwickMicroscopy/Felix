@@ -54,6 +54,8 @@ SUBROUTINE ReflectionDetermination( IErr )
 
   IMPLICIT NONE
   INTEGER(IKIND) :: IErr
+  PRINT*,"Attempt to use subroutine ReflectionDetermination!"
+  IErr=1
 
 END SUBROUTINE ReflectionDetermination
 
@@ -152,7 +154,7 @@ SUBROUTINE DiffractionPatternCalculation (IErr)
   
   
   DO ind =1,SIZE(Rhkl,DIM=1)
-     RgVecVec(ind) = DOT_PRODUCT(RgPoolT(ind,:),RNormDirM)
+     RgDotNorm(ind) = DOT_PRODUCT(RgPool(ind,:),RNormDirM)
   END DO
   
   CALL Message("DiffractionPatternCalculation",IInfo,IErr, &

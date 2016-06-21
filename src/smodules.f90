@@ -260,18 +260,18 @@ MODULE RPara
   REAL(RKIND), DIMENSION(:,:,:), ALLOCATABLE :: RAnisotropicDebyeWallerFactorTensor
   !Diffraction Pattern Definitions
   REAL(RKIND), DIMENSION(:), ALLOCATABLE :: RgPoolMag, RSg
-  REAL(RKIND), DIMENSION(:,:), ALLOCATABLE :: RgPool, RgPoolT, RgPoolMagLaueZone
+  REAL(RKIND), DIMENSION(:,:), ALLOCATABLE :: RgPool, RgPoolMagLaueZone
   REAL(RKIND), DIMENSION(ITHREE,ITHREE) :: RTMat
   REAL(RKIND) :: RDeltaK, RMinimumGMag,RGVectorMagnitude
   REAL(RKIND),DIMENSION(ITHREE) :: RGVector
-  REAL(RKIND),DIMENSION(:),ALLOCATABLE :: RgVecVec
+  REAL(RKIND),DIMENSION(:),ALLOCATABLE :: RgDotNorm
   !Image Initialisation
   REAL(RKIND),DIMENSION(:,:),ALLOCATABLE :: RhklPositions
   REAL(RKIND),DIMENSION(:,:,:),ALLOCATABLE :: RFinalMontageImage
   !Main Program
   REAL(RKIND) :: RMeanInnerCrystalPotential
-  REAL(RKIND),DIMENSION(:,:),ALLOCATABLE :: RMask, RgMatMag, RgSumMat!RB
-  REAL(RKIND),DIMENSION(:,:,:),ALLOCATABLE :: RgMatMat
+  REAL(RKIND),DIMENSION(:,:),ALLOCATABLE :: RMask, RgMatrixMagnitude, RgSumMat!RB
+  REAL(RKIND),DIMENSION(:,:,:),ALLOCATABLE :: RgMatrix
   REAL(RKIND) :: ROuterIntegralLowerBound,ROuterIntegralUpperBound,&
        RInnerIntegralLowerBound,RInnerIntegralUpperBound,&
        RInnerIntegrationParameterGMagPrime,&

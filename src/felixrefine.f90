@@ -213,25 +213,25 @@ PROGRAM Felixrefine
   END IF
 
 !allocations-----------------------------------  
-  ALLOCATE(RgPoolT(INhkl,ITHREE),STAT=IErr)
+  ALLOCATE(RgPool(INhkl,ITHREE),STAT=IErr)
   ALLOCATE(RgDummyVecMat(INhkl,ITHREE),STAT=IErr)
   IF(IErr.NE.0) THEN
      PRINT*,"felixrefine(",my_rank,")error allocating"
      GOTO 9999
   END IF
  
-!Calculate the g vector list RgPoolT in reciprocal angstrom units (in the microscope reference frame?)
+!Calculate the g vector list RgPool in reciprocal angstrom units (in the microscope reference frame?)
   ICutOff = 1
   DO ind=1,INhkl
     DO jnd=1,ITHREE
-      RgPoolT(ind,jnd)= Rhkl(ind,1)*RarVecM(jnd) + &
+      RgPool(ind,jnd)= Rhkl(ind,1)*RarVecM(jnd) + &
         Rhkl(ind,2)*RbrVecM(jnd) + Rhkl(ind,3)*RcrVecM(jnd)
-      !this is just a duplicate of RgPoolT, why?
-      RgDummyVecMat(ind,jnd)=RgPoolT(ind,jnd)
+      !this is just a duplicate of RgPool, why?
+      RgDummyVecMat(ind,jnd)=RgPool(ind,jnd)
      ENDDO
 	 !If a g-vector has a non-zero z-component it is not in the ZOLZ
-     IF((RgPoolT(ind,3).GT.TINY.OR.RgPoolT(ind,3).LT.-TINY).AND.ICutOff.NE.0) THEN
-        RGzUnitVec=ABS(RgPoolT(ind,3))
+     IF((RgPool(ind,3).GT.TINY.OR.RgPool(ind,3).LT.-TINY).AND.ICutOff.NE.0) THEN
+        RGzUnitVec=ABS(RgPool(ind,3))
         ICutOff=0
      END IF
   ENDDO
@@ -262,9 +262,9 @@ PROGRAM Felixrefine
         ILaueLevel=ind-IZerothLaueZoneLevel
         RLaueZoneGz=RGzUnitVec*ILaueLevel
         DO jnd=1,INhkl
-           IF(RgPoolT(jnd,3).GE.(RLaueZoneGz-TINY).AND. &
-                RgPoolT(jnd,3).LE.(RLaueZoneGz+TINY)) THEN
-              RgPoolMagLaue(jnd,ind)=SQRT((RgPoolT(jnd,1)**2)+(RgPoolT(jnd,2)**2))              
+           IF(RgPool(jnd,3).GE.(RLaueZoneGz-TINY).AND. &
+                RgPool(jnd,3).LE.(RLaueZoneGz+TINY)) THEN
+              RgPoolMagLaue(jnd,ind)=SQRT((RgPool(jnd,1)**2)+(RgPool(jnd,2)**2))              
            ELSE
               RgPoolMagLaue(jnd,ind)=NEGHUGE
            END IF
@@ -310,17 +310,23 @@ PROGRAM Felixrefine
      GOTO 9999
   END IF
   DO ind=1,INhkl
-     RgPoolMag(ind)= SQRT(DOT_PRODUCT(RgPoolT(ind,:),RgPoolT(ind,:)))
+     RgPoolMag(ind)= SQRT(DOT_PRODUCT(RgPool(ind,:),RgPool(ind,:)))
   ENDDO
+  IF(IWriteFLAG.EQ.3.AND.my_rank.EQ.0) THEN
+    DO ind =1,INhkl
+	 WRITE(SPrintString,FMT='(I3,A4,3(F6.2,1X),A12,F7.4,A4)') ind,": g=",Rhkl(ind,:),", magnitude ",RgPoolMag(ind)," 1/A"
+     PRINT*,TRIM(ADJUSTL(SPrintString))
+    END DO
+  END IF
 
   !some other basic numbers, used to be DiffractionPatternCalculation
-  ALLOCATE(RgVecVec(INhkl),STAT=IErr)
+  ALLOCATE(RgDotNorm(INhkl),STAT=IErr)
   IF( IErr.NE.0 ) THEN
-     PRINT*,"felixrefine(",my_rank,") error allocating RgVecVec"
+     PRINT*,"felixrefine(",my_rank,") error allocating RgDotNorm"
      GOTO 9999
   END IF
   DO ind =1,INhkl
-    RgVecVec(ind) = DOT_PRODUCT(RgPoolT(ind,:),RNormDirM)
+    RgDotNorm(ind) = DOT_PRODUCT(RgPool(ind,:),RNormDirM)
   END DO
   RMinimumGMag = RgPoolMag(2)
   IF (nReflections.LT.INoOfLacbedPatterns) THEN
@@ -328,11 +334,6 @@ PROGRAM Felixrefine
   END IF
   ! resolution in k space
   RDeltaK = RMinimumGMag*RConvergenceAngle/REAL(IPixelCount,RKIND)
-!  CALL DiffractionPatternCalculation(IErr)
-!    IF( IErr.NE.0 ) THEN
-!     PRINT*,"felixrefine(",my_rank,")error in DiffractionPatternCalculation"
-!     GOTO 9999
-!  END IF
 
   !acceptance angle
   IF(RAcceptanceAngle.NE.ZERO.AND.IZOLZFLAG.EQ.1) THEN
@@ -681,7 +682,7 @@ PROGRAM Felixrefine
   DEALLOCATE(ICount,STAT=IErr)
   DEALLOCATE(Rhkl,STAT=IErr)
   DEALLOCATE(RgPoolMag,STAT=IErr)
-  DEALLOCATE(RgPoolT,STAT=IErr)
+  DEALLOCATE(RgPool,STAT=IErr)
   DEALLOCATE(CUgMat,STAT=IErr)
   DEALLOCATE(RSimulatedPatterns,STAT=IErr)
   DEALLOCATE(RAtomPosition,STAT=IErr)
@@ -1234,7 +1235,7 @@ SUBROUTINE SetupUgsToRefine(IErr)
 
 !Count equivalent Ugs
 !Equivalent Ug's are identified by the sum of their abs(indices)plus the sum of abs(Ug)'s with no absorption
-!  RgSumMat = RgSumMat+ABS(REAL(CUgMatNoAbs))+ABS(AIMAG(CUgMatNoAbs))!do I need to add RgMatMag here as well, to avoid any ambiguities?
+!  RgSumMat = RgSumMat+ABS(REAL(CUgMatNoAbs))+ABS(AIMAG(CUgMatNoAbs))!do I need to add RgMatrixMagnitude here as well, to avoid any ambiguities?
   ISymmetryRelations = 0_IKIND 
   Iuid = 0_IKIND 
   DO ind = 1,nReflections

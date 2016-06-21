@@ -54,7 +54,7 @@ SUBROUTINE SortHKL( Rhklarray,N,IErr )
 
   IMPLICIT NONE
 
-  INTEGER (IKIND) :: IErr,NN,M,L,K,J,I,LOGNB2,index
+  INTEGER (IKIND) :: IErr,NN,M,L,K,J,I,LOGNB2,ind
   INTEGER (IKIND),INTENT(IN) :: N
   REAL(RKIND),INTENT(INOUT) :: Rhklarray(N,ITHREE)
   REAL(RKIND) :: RhklarraySearch(ITHREE), RhklarrayCompare(ITHREE)
@@ -72,7 +72,7 @@ SUBROUTINE SortHKL( Rhklarray,N,IErr )
   J = 0
   I = 0
   LOGNB2 = 0
-  index = 0
+  ind = 0
   RhklarraySearch = 0.0D0
   RhklarrayCompare = 0.0D0
   dummy = 0.0D0
@@ -92,15 +92,13 @@ SUBROUTINE SortHKL( Rhklarray,N,IErr )
         RhklarrayCompare = Rhklarray(I,1)*RarVecO + &
              Rhklarray(I,2)*RbrVecO + &
              Rhklarray(I,3)*RcrVecO
-        IF( &
-             DOT_PRODUCT(RhklarraySearch(:),RhklarraySearch(:)) .LT. &
-             DOT_PRODUCT(RhklarrayCompare(:),RhklarrayCompare(:))) THEN
-           DO 100 index=1,ITHREE
-              dummy        = Rhklarray(I,index)
-              Rhklarray(I,index)= Rhklarray(L,index)
-              Rhklarray(L,index)= dummy
+        IF( DOT_PRODUCT(RhklarraySearch(:),RhklarraySearch(:)) .LT. &
+            DOT_PRODUCT(RhklarrayCompare(:),RhklarrayCompare(:))) THEN
+           DO 100 ind=1,ITHREE
+              dummy        = Rhklarray(I,ind)
+              Rhklarray(I,ind)= Rhklarray(L,ind)
+              Rhklarray(L,ind)= dummy
 100        ENDDO
-           
            I=I-M
            IF(I.GE.1) GOTO 3
         ENDIF
@@ -125,10 +123,8 @@ SUBROUTINE CONVERTAtomName2Number(name, number, IErr)
 
   IMPLICIT NONE
   
-  INTEGER :: &
-       IErr, ind, number
-  CHARACTER*2 :: &
-       name
+  INTEGER :: IErr, ind, number
+  CHARACTER*2 :: name
 
 !!$  Subroutine within loop, therefore only want to print this message once
   DO WHILE (IMessageCounter.LT.1)
