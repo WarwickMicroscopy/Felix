@@ -5,7 +5,7 @@
 # FelixSim input
 
 # control flags
-IWriteFLAG                = 4
+IWriteFLAG                = 3
 IImageFLAG                = 1
 IScatterFactorMethodFLAG  = 0
 IMaskFLAG                 = 1
@@ -19,8 +19,8 @@ IXDirectionFLAG           = 1
 IPixelCount               = 35
 
 # beam selection criteria
-IMinReflectionPool        = 1200
-IMinStrongBeams           = 200
+IMinReflectionPool        = 120
+IMinStrongBeams           = 20
 IMinWeakBeams             = 0
 RBSBMax                   = 0.1
 RBSPMax                   = 0.1

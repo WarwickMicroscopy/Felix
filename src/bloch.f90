@@ -281,7 +281,7 @@ SUBROUTINE BlochCoefficientCalculation(IYPixelIndex,IXPixelIndex,IPixelNumber,IF
     ENDDO
   END IF
 
-  IF(IWriteFLAG.EQ.3.AND.my_rank.EQ.0) THEN
+  IF(IWriteFLAG.EQ.6.AND.my_rank.EQ.0) THEN
    PRINT*,"Effective Ug matrix"
 	DO hnd =1,8
      WRITE(SPrintString,FMT='(16(1X,F5.2))') CUgMatEffective(hnd,1:8)
