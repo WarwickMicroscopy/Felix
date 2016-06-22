@@ -106,10 +106,17 @@ SUBROUTINE BlochCoefficientCalculation(IYPixelIndex,IXPixelIndex,IPixelNumber,IF
   
   !Compute the deviation parameter for reflection pool !RB could be done as part of initialisation
   DO knd=1,nReflections
-     ! DevPara is deviation parameter, also known as Sg 
-     RDevPara(knd)= -( RBigK + DOT_PRODUCT(RgPool(knd,:),RTiltedK(:)) /RBigK) + &
-          SQRT( ( RBigK**2 + DOT_PRODUCT(RgPool(knd,:),RTiltedK(:)) )**2 /RBigK**2 - &
-          (RgPoolMag(knd)**2 + TWO*DOT_PRODUCT(RgPool(knd,:),RTiltedK(:))) )
+    ! DevPara is deviation parameter, also known as Sg 
+    RDevPara(knd)= -( RBigK + DOT_PRODUCT(RgPool(knd,:),RTiltedK(:)) /RBigK) + &
+      SQRT( ( RBigK**2 + DOT_PRODUCT(RgPool(knd,:),RTiltedK(:)) )**2 /RBigK**2 - &
+      (RgPoolMag(knd)**2 + TWO*DOT_PRODUCT(RgPool(knd,:),RTiltedK(:))) )
+    IF(IWriteFLAG.EQ.6.AND.my_rank.EQ.0.AND.knd.EQ.2.AND.IYPixelIndex.EQ.10.AND.IXPixelIndex.EQ.10) THEN
+      PRINT*,"RBigK",RBigK
+      PRINT*,"Rhkl(knd)",Rhkl(knd,:)
+      PRINT*,"RgPool(knd)",RgPool(knd,:)
+      PRINT*,"RTiltedK",RTiltedK
+      PRINT*,"RDevPara",RDevPara(knd)
+    END IF
   END DO
   
   ! select only those beams where the Ewald sphere is close to the
@@ -281,7 +288,7 @@ SUBROUTINE BlochCoefficientCalculation(IYPixelIndex,IXPixelIndex,IPixelNumber,IF
     ENDDO
   END IF
 
-  IF(IWriteFLAG.EQ.6.AND.my_rank.EQ.0) THEN
+  IF(IWriteFLAG.EQ.7.AND.my_rank.EQ.0) THEN
    PRINT*,"Effective Ug matrix"
 	DO hnd =1,8
      WRITE(SPrintString,FMT='(16(1X,F5.2))') CUgMatEffective(hnd,1:8)

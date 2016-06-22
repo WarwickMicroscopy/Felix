@@ -111,7 +111,7 @@ END SUBROUTINE SortHKL
 
 !%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-SUBROUTINE CONVERTAtomName2Number(name, number, IErr)
+SUBROUTINE CONVERTAtomName2Number(SElement, Iz, IErr)
 !!$  %    Converts atomic symbols to atomic numbers, used to read cif file
   
   USE WriteToScreen
@@ -123,8 +123,8 @@ SUBROUTINE CONVERTAtomName2Number(name, number, IErr)
 
   IMPLICIT NONE
   
-  INTEGER :: IErr, ind, number
-  CHARACTER*2 :: name
+  INTEGER :: IErr, ind, Iz
+  CHARACTER*2 :: SElement
 
 !!$  Subroutine within loop, therefore only want to print this message once
   DO WHILE (IMessageCounter.LT.1)
@@ -135,16 +135,13 @@ SUBROUTINE CONVERTAtomName2Number(name, number, IErr)
  
 
   DO ind=1,NElements
-     IF(TRIM(name)==TRIM(SElementSymbolMatrix(ind))) THEN
-        number= ind
-        IF((IWriteFLAG.EQ.6.AND.my_rank.EQ.0).OR.IWriteFLAG.GE.10) THEN
-           PRINT*,"DBG: name, number ", name, number
-        END IF
-           RETURN
+     IF(TRIM(SElement)==TRIM(SElementSymbolMatrix(ind))) THEN
+        Iz= ind
+        RETURN
      ENDIF
   ENDDO
 
-  PRINT*,"CONVERTAtomName2Number(): could not find index for atom of name ", name
+  PRINT*,"CONVERTAtomName2Number(): could not find index for atom of name ", SElement
   IErr=1
   RETURN
 

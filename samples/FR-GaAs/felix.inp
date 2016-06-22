@@ -5,7 +5,7 @@
 # FelixSim input
 
 # control flags
-IWriteFLAG                = 3
+IWriteFLAG                = 6
 IImageFLAG                = 1
 IScatterFactorMethodFLAG  = 0
 IMaskFLAG                 = 1
@@ -48,7 +48,7 @@ IReflectOut              = 1
 # FelixRefine Input
 
 #Refinement Specific Flags
-IRefineModeFLAG          = A
+IRefineModeFLAG          = L
 IWeightingFLAG           = 0
 IContinueFLAG            = 0
 ICorrelationFLAG         = 2
@@ -69,5 +69,5 @@ IPrint                    = 10
 # Simplex Initialisation
 
 RSimplexLengthScale       = 1.0 
-RExitCriteria             = 0.002
+RExitCriteria             = 0.007
 
