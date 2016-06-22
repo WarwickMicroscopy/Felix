@@ -250,7 +250,7 @@ SUBROUTINE StructureFactorInitialisation (IErr)
   
   !If we use k-vectors in angstroms we must divide U0 by 10^20 since we use K^2=k^2+U0
   CUgMatNoAbs=TWOPI*TWOPI*CUgMatNoAbs/(RAngstromConversion**2)
-  PRINT*,"U0=",REAL(CUgMatNoAbs(1,1))
+  !PRINT*,"U0=",REAL(CUgMatNoAbs(1,1))
   
   !Alternative way of calculating the mean inner potential as the sum of scattering factors at g=0 multiplied by h^2/(2pi*m0*e*CellVolume)
   !RMeanInnerPotential=ZERO

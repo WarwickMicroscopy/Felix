@@ -259,7 +259,7 @@ SUBROUTINE ReadInpFile( IErr )
        MessageString=ADJUSTL(TRIM(SNormalDirectionX)))
   CALL ThreeDimVectorReadIn(SNormalDirectionX,'[',']',RNormDirC)
   CALL Message ("ReadInpFile",IInfo+IDebug,IErr,MessageVariable ="RNormDirC",RVector=RNormDirC)
-  PRINT*,"Sample normal=",RNormDirC
+
   ILine= ILine+1
   READ(IChInp,15,ERR=20,END=30) RAcceleratingVoltage
   CALL Message ("ReadInpFile",IInfo+IDebug,IErr,MessageVariable ="RAcceleratingVolatage",RVariable=RAcceleratingVoltage)
