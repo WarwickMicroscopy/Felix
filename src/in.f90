@@ -239,6 +239,8 @@ SUBROUTINE ReadInpFile( IErr )
   READ(IChInp,15,ERR=20,END=30) RInnerConvergenceAngle
   CALL Message ("ReadInpFile",IInfo,IErr,MessageVariable ="RInnerConvergenceAngle",RVariable=RInnerConvergenceAngle)
 
+  ! RZDirC,RXDirC,RNormDirC vectors are reciprocal lattice vectors that define the beam direction, x-axis of the
+  ! diffraction pattern and the surface normal respectively
   ILine= ILine+1
   READ(IChInp,FMT='(27X,A)',END=30) SIncidentBeamDirection
   CALL Message ("ReadInpFile",IInfo,IErr,MessageVariable ="IIncidentBeamDirection", &

@@ -64,8 +64,8 @@ SUBROUTINE MicroscopySettings( IErr )
          SQRT(ONE + (RElectronCharge*RAcceleratingVoltage*ROneThousand) / &
           (TWO*RElectronMass*RSpeedOfLight**2) ))* RAngstromConversion
   
-  !(NB k=1/lamda and exp(2*pi*i*q.r), optical convention)
-  RElectronWaveVectorMagnitude=ONE/RElectronWaveLength
+  !(NB k=2pi/lambda and exp(i*k.r), physics convention)
+  RElectronWaveVectorMagnitude=TWOPI/RElectronWaveLength
   RRelativisticCorrection= ONE/SQRT( ONE - (RElectronVelocity/RSpeedOfLight)**2 )
   RRelativisticMass= RRelativisticCorrection*RElectronMass
    

@@ -100,10 +100,11 @@ SUBROUTINE ReciprocalLattice(IErr)
      END IF
   END IF
   ! Set up Reciprocal Lattice Vectors: orthogonal reference frame in 1/Angstrom units
-  ! Note that reciprocal lattice vectors dot not have two pi included, we are using the optical convention exp(2*pi*i*g.r)
-  RarVecO= CROSS(RbVecO,RcVecO)/DOT_PRODUCT(RbVecO,CROSS(RcVecO,RaVecO))
-  RbrVecO= CROSS(RcVecO,RaVecO)/DOT_PRODUCT(RcVecO,CROSS(RaVecO,RbVecO))
-  RcrVecO= CROSS(RaVecO,RbVecO)/DOT_PRODUCT(RaVecO,CROSS(RbVecO,RcVecO))
+  ! RarDirO,RbrDirO,RcrDirO vectors are reciprocal lattice vectors 2pi/a, 2pi/b, 2pi/c in an orthogonal frame
+  ! Note that reciprocal lattice vectors have two pi included, we are using the physics convention exp(i*g.r)
+  RarVecO= TWOPI*CROSS(RbVecO,RcVecO)/DOT_PRODUCT(RbVecO,CROSS(RcVecO,RaVecO))
+  RbrVecO= TWOPI*CROSS(RcVecO,RaVecO)/DOT_PRODUCT(RcVecO,CROSS(RaVecO,RbVecO))
+  RcrVecO= TWOPI*CROSS(RaVecO,RbVecO)/DOT_PRODUCT(RaVecO,CROSS(RbVecO,RcVecO))
 
   DO ind=1,ITHREE
      IF (abs(RarVecO(ind)).lt.TINY) THEN
@@ -117,24 +118,23 @@ SUBROUTINE ReciprocalLattice(IErr)
      END IF
   ENDDO
 
-  ! RTmat transforms from crystal to orthogonal reference frame
+  ! RTmat transforms from crystal (implicit units)to orthogonal reference frame (Angstrom units)
   RTMatC2O(:,1)= RaVecO(:)
   RTMatC2O(:,2)= RbVecO(:)
   RTMatC2O(:,3)= RcVecO(:)
 
   CALL Message("ReciprocalLattice",IMoreInfo,IErr,MessageString = "RTMatC2O")
-  
   DO ind=1,ITHREE
-     WRITE(indString,*)ind
-     WRITE(RTMatString,'(3(F8.3,1X))') RTMatC2O(:,ind)
-     CALL Message("ReciprocalLattice",IMoreInfo,IErr, &
-          MessageVariable = "RTMatC2O(:,"//TRIM(ADJUSTL(indString))//")", &
-          MessageString = TRIM(ADJUSTL(RTMatString)))
+    WRITE(indString,*)ind
+    WRITE(RTMatString,'(3(F8.3,1X))') RTMatC2O(:,ind)
+    CALL Message("ReciprocalLattice",IMoreInfo,IErr, &
+         MessageVariable = "RTMatC2O(:,"//TRIM(ADJUSTL(indString))//")", &
+         MessageString = TRIM(ADJUSTL(RTMatString)))
   END DO
   
-  ! R?DirO vectors are unit reciprocal lattice vectors in orthogonal frame
-  ! R?DirC vectors are the reciprocal lattice vectors that define the x-axis of the
+  ! RXDirC,RYDirC,RZDirC vectors are the reciprocal lattice vectors that define the x-axis of the
   ! diffraction pattern and the beam direction, they are given in felix.inp
+  ! RXDirO,RYDirO,RZDirO vectors are UNIT reciprocal lattice vectors parallel to the above in an orthogonal frame
   RXDirO= RXDirC(1)*RarVecO + RXDirC(2)*RbrVecO + RXDirC(3)*RcrVecO
   RXDirO= RXDirO/SQRT(DOT_PRODUCT(RXDirO,RXDirO))
   RZDirO= RZDirC(1)*RaVecO + RZDirC(2)*RbVecO + RZDirC(3)*RcVecO
@@ -147,7 +147,6 @@ SUBROUTINE ReciprocalLattice(IErr)
   RTMatO2M(3,:)= RZDirO(:)
 
   CALL Message("ReciprocalLattice",IMoreInfo,IErr,MessageString = "RTMatO2M")
-
   DO ind=1,ITHREE
      WRITE(indString,*)ind
      WRITE(RTMatString,'(3(F8.3,1X))') RTMatO2M(:,ind)
@@ -155,28 +154,24 @@ SUBROUTINE ReciprocalLattice(IErr)
           MessageVariable = "RTMatO2M(:,"//TRIM(ADJUSTL(indString))//")", &
           MessageString = TRIM(ADJUSTL(RTMatString)))
   END DO
-    ! now transform from crystal reference frame to orthogonal and then to microscope frame
-
-  !RXDirM = MATMUL(RTMatO2M,MatMUL(RTMatC2O,RXDirC))
-  !RYDirM = MATMUL(RTMatO2M,RYDirO)
-  !RZDirM = MATMUL(RTMatO2M,MatMUL(RTMatC2O,RZDirC))
   
+  !Unit normal to the specimen in real space
   !This is used in diffraction pattern calculation subroutine
   RNormDirM = MATMUL(RTMatO2M,MatMUL(RTMatC2O,RNormDirC))
   RNormDirM = RNormDirM/SQRT(DOT_PRODUCT(RNormDirM,RNormDirM)) 
   
   ! now transform from crystal reference frame to orthogonal and then to microscope frame
 
-  ! since R?VecO is already in orthogonal frame, only transform into microscope frame needed
+  ! RaVecM, RbVecM, RbVecM unit cell vectors in Angstrom units in the microscope frame
   RaVecM= MATMUL(RTMatO2M,RaVecO)
   RbVecM= MATMUL(RTMatO2M,RbVecO)
   RcVecM= MATMUL(RTMatO2M,RcVecO)
   
   ! create new set of reciprocal lattice vectors in Microscope reference frame
-  ! Note that reciprocal lattice vectors dot not have two pi included, we are using the optical convention exp(2*pi*i*g.r)
-  RarVecM= CROSS(RbVecM,RcVecM)/DOT_PRODUCT(RbVecM,CROSS(RcVecM,RaVecM))
-  RbrVecM= CROSS(RcVecM,RaVecM)/DOT_PRODUCT(RcVecM,CROSS(RaVecM,RbVecM))
-  RcrVecM= CROSS(RaVecM,RbVecM)/DOT_PRODUCT(RaVecM,CROSS(RbVecM,RcVecM))
+  ! Note that reciprocal lattice vectors dot have two pi included, we are using the optical convention exp(i*g.r)
+  RarVecM= TWOPI*CROSS(RbVecM,RcVecM)/DOT_PRODUCT(RbVecM,CROSS(RcVecM,RaVecM))
+  RbrVecM= TWOPI*CROSS(RcVecM,RaVecM)/DOT_PRODUCT(RcVecM,CROSS(RaVecM,RbVecM))
+  RcrVecM= TWOPI*CROSS(RaVecM,RbVecM)/DOT_PRODUCT(RaVecM,CROSS(RbVecM,RcVecM))
   
 END SUBROUTINE ReciprocalLattice
 

@@ -73,7 +73,7 @@ SUBROUTINE StructureFactorSetup(IErr)
 
   !RgMatrix is a matrix of g-vectors that corresponds to the CUgMatNoAbs matrix
   !RgMatrixMagnitude is a matrix of their magnitides
-  !RgPool is a list of g-vectors in the microscope ref frame, units of 1/A (NB exp(2*pi*i*q.r), optical convention)
+  !RgPool is a list of 2pi*g-vectors in the microscope ref frame, units of 1/A (NB exp(i*q.r), optical convention)
   DO ind=1,nReflections
      DO jnd=1,nReflections
         RgMatrix(ind,jnd,:)= RgPool(ind,:)-RgPool(jnd,:)
@@ -81,7 +81,7 @@ SUBROUTINE StructureFactorSetup(IErr)
      ENDDO
   ENDDO
   IF(IWriteFLAG.EQ.3.AND.my_rank.EQ.0) THEN
-	PRINT*,"g-vector magnitude matrix (1/A)"
+	PRINT*,"g-vector magnitude matrix (2pi/A)"
 	DO ind =1,8
      WRITE(SPrintString,FMT='(16(1X,F5.2))') RgMatrixMagnitude(ind,1:8)
      PRINT*,TRIM(ADJUSTL(SPrintString))

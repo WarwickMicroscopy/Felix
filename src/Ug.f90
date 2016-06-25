@@ -161,13 +161,13 @@ SUBROUTINE StructureFactorInitialisation (IErr)
        evenindgauss,currentatom,IErr
   INTEGER(IKIND),DIMENSION(2) :: IPos,ILoc
   COMPLEX(CKIND) :: CVgij
-  REAL(RKIND) :: RMeanInnerPotentialVolts,RAtomicFormFactor,Lorentzian,Gaussian,Kirkland,Rfactor
+  REAL(RKIND) :: RMeanInnerPotentialVolts,RScatteringFactor,Lorentzian,Gaussian,Kirkland,RScattFacToVolts
   CHARACTER*200 :: SPrintString
   
   CALL Message("StructureFactorInitialisation",IMust,IErr)
 
-  !Conversion factor from structure factors to volts. h^2/(2pi*m0*e*CellVolume), see e.g. Kirkland eqn. C.5
-  Rfactor=(RPlanckConstant**2)*(RAngstromConversion**3)/(TWOPI*RElectronMass*RElectronCharge*RVolume)
+  !Conversion factor from scattering factors to volts. h^2/(2pi*m0*e*CellVolume), see e.g. Kirkland eqn. C.5
+  RScattFacToVolts=(RPlanckConstant**2)*(RAngstromConversion**3)/(TWOPI*RElectronMass*RElectronCharge*RVolume)
   !Calculate Ug matrix
   CUgMatNoAbs = CZERO
   DO ind=1,nReflections
@@ -179,33 +179,33 @@ SUBROUTINE StructureFactorInitialisation (IErr)
         SELECT CASE (IScatterFactorMethodFLAG)! calculate f_e(q)
 
         CASE(0) ! Kirkland Method using 3 Gaussians and 3 Lorentzians, NB Kirkland scattering factor is in Angstrom units
-          RAtomicFormFactor = Kirkland(IAtomicNumber(lnd),RgMatrixMagnitude(ind,jnd))
+          RScatteringFactor = Kirkland(IAtomicNumber(lnd),RgMatrixMagnitude(ind,jnd))
   
         CASE(1) ! 8 Parameter Method with Scattering Parameters from Peng et al 1996 
-          RAtomicFormFactor = ZERO
+          RScatteringFactor = ZERO
           DO knd = 1, 4
             !Peng Method uses summation of 4 Gaussians
-            RAtomicFormFactor = RAtomicFormFactor + &
+            RScatteringFactor = RScatteringFactor + &
               GAUSSIAN(RScattFactors(ICurrentAtom,knd),RgMatrixMagnitude(ind,jnd),ZERO, & 
               SQRT(2/RScattFactors(ICurrentAtom,knd+4)),ZERO)
           END DO
 			  
         CASE(2) ! 8 Parameter Method with Scattering Parameters from Doyle and Turner Method (1968)
-          RAtomicFormFactor = ZERO
+          RScatteringFactor = ZERO
           DO knd = 1, 4
             evenindgauss = knd*2
             oddindgauss = knd*2 -1
             !Doyle &Turner uses summation of 4 Gaussians
-            RAtomicFormFactor = RAtomicFormFactor + &
+            RScatteringFactor = RScatteringFactor + &
               GAUSSIAN(RScattFactors(ICurrentAtom,oddindgauss),RgMatrixMagnitude(ind,jnd),ZERO, & 
               SQRT(2/RScattFactors(ICurrentAtom,evenindgauss)),ZERO)
           END DO
 
         CASE(3) ! 10 Parameter method with Scattering Parameters from Lobato et al. 2014
-          RAtomicFormFactor = ZERO
+          RScatteringFactor = ZERO
           DO knd = 1,5
             evenindlorentz=knd+5
-            RAtomicFormFactor = RAtomicFormFactor + &
+            RScatteringFactor = RScatteringFactor + &
               LORENTZIAN(RScattFactors(ICurrentAtom,knd)* &
              (TWO+RScattFactors(ICurrentAtom,evenindlorentz)*(RgMatrixMagnitude(ind,jnd)**TWO)),ONE, &
               RScattFactors(ICurrentAtom,evenindlorentz)*(RgMatrixMagnitude(ind,jnd)**TWO),ZERO)
@@ -213,31 +213,31 @@ SUBROUTINE StructureFactorInitialisation (IErr)
 
         END SELECT
         ! Occupancy
-        RAtomicFormFactor = RAtomicFormFactor*ROccupancy(lnd)
+        RScatteringFactor = RScatteringFactor*ROccupancy(lnd)
         IF (IAnisoDebyeWallerFactorFlag.EQ.0) THEN
           IF(RIsoDW(lnd).GT.10.OR.RIsoDW(lnd).LT.0) THEN
             RIsoDW(lnd) = RDebyeWallerConstant
           END IF
-          !Isotropic D-W factor ***!!REPLACE! PLEASE DON'T LEAVE COMMENTED OUT***!!!
-          !RAtomicFormFactor = RAtomicFormFactor*EXP(-((RgMatrixMagnitude(ind,jnd)/2.D0)**2)*RIsoDW(lnd))
+          !Isotropic D-W factor
+          RScatteringFactor = RScatteringFactor*EXP(-((RgMatrixMagnitude(ind,jnd)/2.D0)**2)*RIsoDW(lnd))
         ELSE!this will need sorting out, not sure if it works
-          RAtomicFormFactor = RAtomicFormFactor * &
+          RScatteringFactor = RScatteringFactor * &
             EXP(-TWOPI*DOT_PRODUCT(RgMatrix(ind,jnd,:), &
             MATMUL( RAnisotropicDebyeWallerFactorTensor( &
             RAnisoDW(lnd),:,:),RgMatrix(ind,jnd,:))))
         END IF
 		!The structure factor equation, CVgij in Volts
-        CVgij = CVgij + Rfactor*RAtomicFormFactor * EXP(-TWOPI*CIMAGONE* &
+        CVgij = CVgij + RScattFacToVolts*RScatteringFactor * EXP(-TWOPI*CIMAGONE* &
         DOT_PRODUCT(RgMatrix(ind,jnd,:), RAtomCoordinate(lnd,:)) )/RAngstromConversion
       ENDDO
-	  !This is the Vg matrix, converted at the end to Ug
+	  !This is actually still the Vg matrix, converted at the end to Ug
       CUgMatNoAbs(ind,jnd)=CVgij
       !CUgMatNoAbs(ind,jnd)=((((TWOPI**2)*RRelativisticCorrection)/(PI*RVolume))*CVgij)
     ENDDO
   ENDDO
   RMeanInnerPotential= REAL(CUgMatNoAbs(1,1))
   IF(IWriteFLAG.EQ.3.AND.my_rank.EQ.0) THEN
-    PRINT*,"MeanInnerPotential=",RMeanInnerPotential
+    PRINT*,"MeanInnerPotential1=",RMeanInnerPotential
   END IF
   !NB Only the lower half of the Vg matrix was calculated, this completes the upper half
   !and also doubles the values on the diagonal
@@ -250,15 +250,15 @@ SUBROUTINE StructureFactorInitialisation (IErr)
   
   !If we use k-vectors in angstroms we must divide U0 by 10^20 since we use K^2=k^2+U0
   CUgMatNoAbs=TWOPI*TWOPI*CUgMatNoAbs/(RAngstromConversion**2)
-  !PRINT*,"U0=",REAL(CUgMatNoAbs(1,1))
+  PRINT*,"U0=",REAL(CUgMatNoAbs(1,1))
   
   !Alternative way of calculating the mean inner potential as the sum of scattering factors at g=0 multiplied by h^2/(2pi*m0*e*CellVolume)
   !RMeanInnerPotential=ZERO
   !DO ind=1,INAtomsUnitCell
   !  RMeanInnerPotential = RMeanInnerPotential+Kirkland(IAtomicNumber(ind),ZERO)/RAngstromConversion
   !END DO
-  !RMeanInnerPotential = RMeanInnerPotential*Rfactor
-  !PRINT*,"MeanInnerPotential=",RMeanInnerPotential
+  !RMeanInnerPotential = RMeanInnerPotential*RScattFacToVolts
+  !PRINT*,"MeanInnerPotential2=",RMeanInnerPotential
   	 
 !  RMeanInnerPotentialVolts = RMeanInnerPotential*(((RPlanckConstant**2)/ &
 !       (TWO*RElectronMass*RElectronCharge*TWOPI**2))*&
@@ -278,7 +278,9 @@ SUBROUTINE StructureFactorInitialisation (IErr)
   RBigK= SQRT(RElectronWaveVectorMagnitude**2 + REAL(CUgMatNoAbs(1,1)))
   CALL Message("StructureFactorInitialisation",IInfo,IErr, &
        MessageVariable = "RBigK", RVariable = RBigK)
-  !PRINT*,"RBigK=",RBigK
+  IF(IWriteFLAG.EQ.3.AND.my_rank.EQ.0) THEN
+    PRINT*,"RBigK=",RBigK
+  END IF
   
   !Absorption
   CUgMatPrime = CZERO
@@ -299,7 +301,7 @@ SUBROUTINE StructureFactorInitialisation (IErr)
   END SELECT
   
   IF(IWriteFLAG.EQ.3.AND.my_rank.EQ.0) THEN
-   PRINT*,"Ug matrix, no absorption"
+   PRINT*,"Ug matrix, including absorption"
 	DO ind =1,8
      WRITE(SPrintString,FMT='(16(1X,F5.2))') CUgMat(ind,1:8)
      PRINT*,TRIM(ADJUSTL(SPrintString))
@@ -307,52 +309,3 @@ SUBROUTINE StructureFactorInitialisation (IErr)
   END IF	   
 	   
 END SUBROUTINE StructureFactorInitialisation
-
-!%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-
-SUBROUTINE StructureFactorsWithAbsorption(IErr)         
-!RB now redundant, moved into StructureFactorInitialisation
-
-  USE MyNumbers
-  USE WriteToScreen
-  
-  USE CConst; USE IConst
-  USE IPara; USE RPara; USE CPara
-  USE BlochPara
-
-  USE IChannels
-
-  USE MPI
-  USE MyMPI
-  
-  IMPLICIT NONE 
-  
-  INTEGER(IKIND) :: IErr,ind
-  CHARACTER*200 :: SPrintString
-
-   CALL Message("StructureFactorsWithAbsorption",IMust,IErr)
-
-  CUgMatPrime = CZERO
-    
-  SELECT CASE (IAbsorbFLAG)
-
-  CASE(1)
-
-!!$     THE PROPORTIONAL MODEL OF ABSORPTION
-     
-     CUgMatPrime = CUgMatNoAbs*EXP(CIMAGONE*PI/2)*(RAbsorptionPercentage/100_RKIND)!Ug
-     CUgMat =  CUgMatNoAbs+CUgMatPrime!Ug
-	 
- ! IF(IWriteFLAG.EQ.3.AND.my_rank.EQ.0) THEN
- !   DO ind =1,6
- !    WRITE(SPrintString,FMT='(10(1X,F5.2))') CUgMatNoAbs(ind,1:5)
- !    PRINT*,TRIM(ADJUSTL(SPrintString))
- !   END DO
- ! END IF
-  
-  CASE Default
- 
-  END SELECT
-  
-END SUBROUTINE StructureFactorsWithAbsorption
-  

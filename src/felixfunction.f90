@@ -190,11 +190,6 @@ SUBROUTINE FelixFunction(LInitialSimulationFLAG,IErr)
        PRINT*,"felixfunction(",my_rank,")error in StructureFactorInitialisation"
        RETURN
      END IF
-     CALL StructureFactorsWithAbsorption (IErr) 
-     IF( IErr.NE.0 ) THEN
-       PRINT*,"felixfunction(",my_rank,")error in StructureFactorsWithAbsorption()"
-       RETURN
-     END IF
   END IF
 
   IMAXCBuffer = 200000!RB what are these?

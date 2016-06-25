@@ -5,7 +5,7 @@
 # FelixSim input
 
 # control flags
-IWriteFLAG                = 4
+IWriteFLAG                = 3
 IImageFLAG                = 1
 IScatterFactorMethodFLAG  = 0
 IMaskFLAG                 = 1

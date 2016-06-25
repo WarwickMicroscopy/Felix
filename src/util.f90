@@ -206,9 +206,9 @@ END FUNCTION Gaussian
 !%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 !Defines a Kirkland scattering factor 
-FUNCTION Kirkland(Iz,Rq)
+FUNCTION Kirkland(Iz,Rs)
 !From Appendix C of Kirkland, "Advanced Computing in Electron Microscopy", 2nd ed.
-!z is atomic number, q is magnitude of scattering vector in 1/A (NB exp(2*pi*i*q.r), optical convention)
+!z is atomic number, s is magnitude of scattering vector in 1/A (NB exp(i*s.r), physics convention)
 !Kirkland scattering factor is in Angstrom units
   USE MyNumbers
   USE CConst; USE IConst
@@ -218,8 +218,10 @@ FUNCTION Kirkland(Iz,Rq)
   IMPLICIT NONE
   
   INTEGER(IKIND) :: Iz,ind
-  REAL(RKIND):: Kirkland,Ra,Rb,Rc,Rd,Rq
+  REAL(RKIND):: Kirkland,Ra,Rb,Rc,Rd,Rs,Rq
 
+  !NB Kirkland scattering factors are calculated in the optics convention exp(2*pi*i*q.r)
+  Rq=Rs/TWOPI
   Kirkland=ZERO;
   !Equation C.15
   DO ind = 1,3

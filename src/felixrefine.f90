@@ -302,7 +302,7 @@ PROGRAM Felixrefine
      END DO
   END IF
 
-  !calculate g vector magnitudes for the reflection pool RgPoolMag
+  !calculate 2pi*g vector magnitudes for the reflection pool RgPoolMag
   !in reciprocal Angstrom units, in the Microscope reference frame
   ALLOCATE(RgPoolMag(INhkl),STAT=IErr)
   IF(IErr.NE.0) THEN
@@ -319,7 +319,7 @@ PROGRAM Felixrefine
     END DO
   END IF
 
-  !some other basic numbers, used to be DiffractionPatternCalculation
+  !g-vector components parallel to the surface unit normal
   ALLOCATE(RgDotNorm(INhkl),STAT=IErr)
   IF( IErr.NE.0 ) THEN
      PRINT*,"felixrefine(",my_rank,") error allocating RgDotNorm"
