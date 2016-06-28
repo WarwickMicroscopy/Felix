@@ -49,7 +49,7 @@ SUBROUTINE BlochCoefficientCalculation(IYPixelIndex,IXPixelIndex,IPixelNumber,IF
   
   INTEGER(IKIND) :: IYPixelIndex,IXPixelIndex,hnd,knd,IPixelNumber,pnd,&
        ierr,IThickness,IThicknessIndex,ILowerLimit,IUpperLimit,IFirstPixelToCalculate       
-  REAL(RKIND) :: RPixelGVectorXPosition,RPixelGVectorYPosition, RThickness,RKn
+  REAL(RKIND) :: RThickness,RKn
   COMPLEX(CKIND) sumC,sumD
   COMPLEX(CKIND), DIMENSION(:,:), ALLOCATABLE :: CGeneralSolutionMatrix, &
        CGeneralEigenVectors,CBeamTranspose,CUgMatPartial
@@ -65,9 +65,6 @@ SUBROUTINE BlochCoefficientCalculation(IYPixelIndex,IXPixelIndex,IPixelNumber,IF
       IMessageCounter = IMessageCounter +1
     END DO
   END IF
-
-  RPixelGVectorXPosition=(REAL(IYPixelIndex,RKIND)-REAL(IPixelCount,RKIND)-0.5_RKIND)*RDeltaK ! x-position in the disk
-  RPixelGVectorYPosition=(REAL(IXPixelIndex,RKIND)-REAL(IPixelCount,RKIND)-0.5_RKIND)*RDeltaK ! y-position in the disk
     
   ! we are inside the mask
   IPixelComputed= IPixelComputed + 1
@@ -82,20 +79,23 @@ SUBROUTINE BlochCoefficientCalculation(IYPixelIndex,IXPixelIndex,IPixelNumber,IF
        &"//TRIM(ADJUSTL(SPixelCount))//") in total")
 
   !--------------------------------------------------------------------
-  ! calculate deviation parameter Sg for the tilted Ewald spheres
   ! TiltedK is the vector of the incoming tilted beam
-  !TiltedK is in units of (1/A), in the microscope ref frame(NB exp(2*pi*i*k.r), optical convention)
-  RTiltedK(1)= RPixelGVectorXPosition  !!$  kx - based on crystal orientation
-  RTiltedK(2)= RPixelGVectorYPosition  !!$  ky - based on crystal orientation
-  RTiltedK(3)= SQRT(RBigK**2 - RPixelGVectorXPosition**2 - RPixelGVectorYPosition**2)  !!$  kz -  from: ky^2 +kx^2 +kz^2 = K^2  
+  ! in units of (1/A), in the microscope ref frame(NB exp(i*k.r), physics convention)
+  RTiltedK(1)= (REAL(IYPixelIndex,RKIND)-REAL(IPixelCount,RKIND)-0.5_RKIND)*RDeltaK ! x-position in k-space
+  RTiltedK(2)= (REAL(IXPixelIndex,RKIND)-REAL(IPixelCount,RKIND)-0.5_RKIND)*RDeltaK ! y-position in k-space
+  RTiltedK(3)= SQRT(RBigK**2 - RTiltedK(1)**2 - RTiltedK(2)**2) 
   RKn = DOT_PRODUCT(RTiltedK,RNormDirM)
   
   !Compute the deviation parameter for reflection pool
   !NB RDevPara is in units of (1/A), in the microscope ref frame(NB exp(i*s.r), physics convention)
   DO knd=1,nReflections
-    RDevPara(knd)= -( RBigK + DOT_PRODUCT(RgPool(knd,:),RTiltedK(:)) /RBigK) + &
-      SQRT( ( RBigK**2 + DOT_PRODUCT(RgPool(knd,:),RTiltedK(:)) )**2 /RBigK**2 - &
-      (RgPoolMag(knd)**2 + TWO*DOT_PRODUCT(RgPool(knd,:),RTiltedK(:))) )
+    !Sg parallel to z: Sg=-[k'z+gz-sqrt( (k'z+gz)^2-2k'.g-g^2)]
+    RDevPara(knd)= -RTiltedK(3)-RgPool(knd,3)+&
+	SQRT( (RTiltedK(3)+RgPool(knd,3))**2-2*DOT_PRODUCT(RgPool(knd,:),RTiltedK(:))-RgPoolMag(knd)**2)
+	!Keith's old version, Sg parallel to k'
+    !RDevPara(knd)= -( RBigK + DOT_PRODUCT(RgPool(knd,:),RTiltedK(:)) /RBigK) + &
+    !  SQRT( ( RBigK**2 + DOT_PRODUCT(RgPool(knd,:),RTiltedK(:)) )**2 /RBigK**2 - &
+    !  (RgPoolMag(knd)**2 + TWO*DOT_PRODUCT(RgPool(knd,:),RTiltedK(:))) )
     IF(IWriteFLAG.EQ.6.AND.my_rank.EQ.0.AND.knd.EQ.2.AND.IYPixelIndex.EQ.10.AND.IXPixelIndex.EQ.10) THEN
       PRINT*,"RBigK",RBigK
       PRINT*,"Rhkl(knd)",Rhkl(knd,:)
@@ -112,8 +112,10 @@ SUBROUTINE BlochCoefficientCalculation(IYPixelIndex,IXPixelIndex,IPixelNumber,IF
      PRINT*,"BlochCoefficientCalculation(",my_rank,") error in Determination of Strong and Weak beams"
      RETURN
   END IF
-
-  ! select the highest reflection that corresponds to a strong beam
+  IF(IWriteFLAG.EQ.6.AND.my_rank.EQ.0.AND.IYPixelIndex.EQ.10.AND.IXPixelIndex.EQ.10) THEN
+    PRINT*,"IStrongBeamIndex",IStrongBeamIndex
+    PRINT*,"IStrongBeamList",IStrongBeamList
+  END IF  ! select the highest reflection that corresponds to a strong beam
   nBeams= IStrongBeamIndex
 
   !--------------------------------------------------------------------
@@ -121,7 +123,7 @@ SUBROUTINE BlochCoefficientCalculation(IYPixelIndex,IXPixelIndex,IPixelNumber,IF
   !--------------------------------------------------------------------
   ALLOCATE(CBeamProjectionMatrix(nBeams,nReflections),STAT=IErr)
   ALLOCATE(CDummyBeamMatrix(nBeams,nReflections),STAT=IErr)
-  ALLOCATE(CUgMatEffective(nBeams,nBeams),STAT=IErr)
+  ALLOCATE(CUgSgMatrix(nBeams,nBeams),STAT=IErr)
   ALLOCATE(CEigenVectors(nBeams,nBeams),STAT=IErr)
   ALLOCATE(CEigenValues(nBeams),STAT=IErr)
   ALLOCATE(CInvertedEigenVectors(nBeams,nBeams),STAT=IErr)
@@ -151,31 +153,31 @@ SUBROUTINE BlochCoefficientCalculation(IYPixelIndex,IXPixelIndex,IPixelNumber,IF
   DO knd=1,nBeams
      CBeamProjectionMatrix(knd,IStrongBeamList(knd))=CONE
   ENDDO
-  CUgMatEffective = CZERO
+  CUgSgMatrix = CZERO
   CBeamTranspose=TRANSPOSE(CBeamProjectionMatrix)
 
   CALL ZGEMM('N','N',nReflections,nBeams,nReflections,CONE,CUgMat, &
        nReflections,CBeamTranspose,nReflections,CZERO,CUgMatPartial,nReflections)
   CALL ZGEMM('N','N',nBeams,nBeams,nReflections,CONE,CBeamProjectionMatrix, &
-       nBeams,CUgMatPartial,nReflections,CZERO,CUgMatEffective,nBeams)
+       nBeams,CUgMatPartial,nReflections,CZERO,CUgSgMatrix,nBeams)
 
   IF (IZolzFLAG.EQ.0) THEN
     DO hnd=1,nBeams
-      CUgMatEffective(hnd,hnd) = CUgMatEffective(hnd,hnd) + TWO*RBigK*RDevPara(IStrongBeamList(hnd))
+      CUgSgMatrix(hnd,hnd) = CUgSgMatrix(hnd,hnd) + TWO*RBigK*RDevPara(IStrongBeamList(hnd))
     ENDDO
     DO knd =1,nBeams ! Columns
       DO hnd = 1,nBeams ! Rows
-        CUgMatEffective(knd,hnd) = CUgMatEffective(knd,hnd) / &
+        CUgSgMatrix(knd,hnd) = CUgSgMatrix(knd,hnd) / &
          (SQRT(1+RgDotNorm(IStrongBeamList(knd))/RKn)*SQRT(1+RgDotNorm(IStrongBeamList(hnd))/RKn))
       END DO
     END DO
-    CUgMatEffective = CUgMatEffective/(TWO*RBigK)
+    CUgSgMatrix = CUgSgMatrix/(TWO*RBigK)
   ELSE
-    CUgMatEffective = CUgMatEffective/(TWO*RBigK)
+    CUgSgMatrix = CUgSgMatrix/(TWO*RBigK)
     ! set the diagonal parts of the matrix to be equal to 
     ! strong beam deviation parameters (*2 BigK) 
     DO hnd=1,nBeams
-      CUgMatEffective(hnd,hnd) = CUgMatEffective(hnd,hnd)+RDevPara(IStrongBeamList(hnd))
+      CUgSgMatrix(hnd,hnd) = CUgSgMatrix(hnd,hnd)+RDevPara(IStrongBeamList(hnd))
     ENDDO
     ! add the weak beams perturbatively for the 1st column (sumC) and
     ! the diagonal elements (sumD)
@@ -192,15 +194,15 @@ SUBROUTINE BlochCoefficientCalculation(IYPixelIndex,IXPixelIndex,IPixelNumber,IF
           REAL(CUgMat(IWeakBeamList(hnd),IStrongBeamList(knd))) / &
          (4*RBigK*RBigK*RDevPara(IWeakBeamList(hnd)))
       ENDDO
-      CUgMatEffective(knd,1)= CUgMatEffective(knd,1) - sumC
-      CUgMatEffective(knd,knd)= CUgMatEffective(knd,knd) - sumD
+      CUgSgMatrix(knd,1)= CUgSgMatrix(knd,1) - sumC
+      CUgSgMatrix(knd,knd)= CUgSgMatrix(knd,knd) - sumD
     ENDDO
   END IF
 
-  IF(IWriteFLAG.EQ.7.AND.my_rank.EQ.0) THEN
+  IF(IWriteFLAG.EQ.3.AND.my_rank.EQ.0.AND.IYPixelIndex.EQ.10.AND.IXPixelIndex.EQ.10) THEN
    PRINT*,"Effective Ug matrix"
 	DO hnd =1,8
-     WRITE(SPrintString,FMT='(16(1X,F5.2))') CUgMatEffective(hnd,1:8)
+     WRITE(SPrintString,FMT='(16(1X,E14.7))') CUgSgMatrix(hnd,1:4)
      PRINT*,TRIM(ADJUSTL(SPrintString))
     END DO
   END IF	
@@ -208,7 +210,7 @@ SUBROUTINE BlochCoefficientCalculation(IYPixelIndex,IXPixelIndex,IPixelNumber,IF
   !--------------------------------------------------------------------
   ! diagonalize the UgMatEffective
   IF (IZolzFLAG.EQ.0) THEN
-     CALL EigenSpectrum(nBeams,CUgMatEffective,CEigenValues(:), CEigenVectors(:,:),IErr)
+     CALL EigenSpectrum(nBeams,CUgSgMatrix,CEigenValues(:), CEigenVectors(:,:),IErr)
      IF( IErr.NE.0 ) THEN
         PRINT*,"BlochCoefficientCalculation(", my_rank, ") error in EigenSpectrum()"
         RETURN
@@ -219,7 +221,7 @@ SUBROUTINE BlochCoefficientCalculation(IYPixelIndex,IXPixelIndex,IPixelNumber,IF
              SQRT(1+RgDotNorm(IStrongBeamList(knd))/RKn)
      END DO
   ELSE
-     CALL EigenSpectrum(nBeams,CUgMatEffective,CEigenValues(:),CEigenVectors(:,:),IErr)
+     CALL EigenSpectrum(nBeams,CUgSgMatrix,CEigenValues(:),CEigenVectors(:,:),IErr)
      IF( IErr.NE.0 ) THEN
         PRINT*,"BlochCoefficientCalculation(", my_rank, ") error in EigenSpectrum()"
         RETURN
@@ -260,9 +262,7 @@ SUBROUTINE BlochCoefficientCalculation(IYPixelIndex,IXPixelIndex,IPixelNumber,IF
   
   !--------------------------------------------------------------------
   ! DEALLOCATE eigen problem memory
-  !--------------------------------------------------------------------
-  
-  DEALLOCATE(CUgMatEffective,CPsi0, &
+  DEALLOCATE(CUgSgMatrix,CPsi0, &
        CBeamTranspose, CUgMatPartial, &
        CInvertedEigenVectors, CAlphaWeightingCoefficients, &
        CEigenValues,CEigenVectors,CEigenValueDependentTerms, &
@@ -354,77 +354,6 @@ END SUBROUTINE CreateWavefunctions
 
 !%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-!!$Calculates the x,y,z components of the incident tilted k_vector
-SUBROUTINE KVectorsCalculation(RPixelGVectorXPosition,RPixelGVectorYPosition,IErr)
-!This is redundant
-  USE WriteToScreen
-  USE MyNumbers
-  
-  USE CConst; USE IConst
-  USE IPara; USE RPara; USE CPara; USE SPara
-  USE IChannels
-  USE BlochPara
-  
-  USE MPI
-  USE MyMPI
-
-  IMPLICIT NONE
-  
-  REAL(RKIND) :: RPixelGVectorXPosition,RPixelGVectorYPosition
-  INTEGER(IKIND) :: IErr
-
-  IF (my_rank.EQ.0) THEN
-     DO WHILE (IMessageCounter .LT.2)
-        CALL Message("KVectorsCalculation",IMust,IErr)
-        IMessageCounter = IMessageCounter +1
-     END DO
-  END IF
-
-  !!$  k_x - based on crystal orientation
-  RTiltedK(1)= RPixelGVectorXPosition
-  !!$  k_y - based on crystal orientation
-  RTiltedK(2)= RPixelGVectorYPosition
-  !!$  k_z - taken from: k_z = (k_y)^2 + (k_x)^2 + (k_z)^2 = K^2  
-  RTiltedK(3)= SQRT(RBigK**2 - RPixelGVectorXPosition**2 - RPixelGVectorYPosition**2)
-  
-END SUBROUTINE KVectorsCalculation
-
-!%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-
-SUBROUTINE DeviationParameterCalculation(IErr)
-!This is redundant
-  USE WriteToScreen
-  USE MyNumbers
-  
-  USE CConst; USE IConst
-  USE IPara; USE RPara; USE CPara; USE SPara
-  USE IChannels
-  USE BlochPara
-  
-  USE MPI
-  USE MyMPI
-
-  INTEGER(IKIND) :: knd,IErr
-  
-  IF (my_rank.EQ.0) THEN
-     DO WHILE (IMessageCounter .LT.3)
-        CALL Message("DeviationParameterCalculation",IMust,IErr)
-        IMessageCounter = IMessageCounter +1
-     END DO
-  END IF
-
-  DO knd=1,nReflections
-     ! DevPara is devitaion parameter, also known as Sg 
-     RDevPara(knd)= -( RBigK + DOT_PRODUCT(RgPool(knd,:),RTiltedK(:)) /RBigK) + &
-          SQRT( ( RBigK**2 + DOT_PRODUCT(RgPool(knd,:),RTiltedK(:)) )**2 /RBigK**2 - &
-          (RgPoolMag(knd)**2 + &
-          TWO* DOT_PRODUCT(RgPool(knd,:),RTiltedK(:))) )
-  END DO
-
-END SUBROUTINE DeviationParameterCalculation
-
-!%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-
 SUBROUTINE StrongAndWeakBeamsDetermination(IErr)
   
   USE WriteToScreen
@@ -451,38 +380,37 @@ SUBROUTINE StrongAndWeakBeamsDetermination(IErr)
   END IF
 
   !----------------------------------------------------------------------------
-  ! Determine RBSMaxDeviationPara
+  ! Determine RBSMaxDeviationPara, the deviation parameter for which there are 
+  ! IMinStrongBeams reflections with smaller deviation parameters
   IStrongBeamList = 0
-  RDummySg = ABS(RDevPara)
+  RDummySg = ABS(RDevPara)!list of ABS(Sg) for the different reflections for this pixel
   DO ind=1,IMinStrongBeams
-    IMinimum = MINLOC(RDummySg,1)
+    IMinimum = MINLOC(RDummySg,1)!find the position of the smallest Sg
     IF(ind.EQ.IMinStrongBeams) THEN
-       RBSMaxDeviationPara = ABS(RDummySg(IMinimum))
-    ELSE
-      RDummySg(IMinimum) = 1000000 !Large number
+       RBSMaxDeviationPara = RDummySg(IMinimum)
+    ELSE!why else?
+      RDummySg(IMinimum) = 1000000 !we're not at IMinStrongBeams, fill with aLarge number
     END IF
   END DO
   IStrongBeamIndex=0
-  IWeakBeamIndex=0
   DO knd=1,nReflections
     IF( ABS(RDevPara(knd)) .LE. RBSMaxDeviationPara ) THEN
       IStrongBeamIndex= IStrongBeamIndex +1
-      IStrongBeamList(IStrongBeamIndex)= knd
+      IStrongBeamList(IStrongBeamIndex)= knd!list of reflection ID no.s up to nStrongBeams
     ENDIF
   ENDDO
-  RDummySg = ABS(RMeanInnerPotential/RDevPara)
-  
-  !----------------------------------------------------------------------------
-  ! Apply Bmax Criteria 
-  IAdditionalBmaxStrongBeams = 0
-  IAdditionalPmaxStrongBeams = 0
   IF(IStrongBeamIndex+IMinWeakBeams.GT.nReflections) IErr = 1
   IF( IErr.NE.0 ) THEN
     PRINT*,"StrongAndWeakBeamDetermination(", my_rank, ") error ", IErr, &
           " Insufficient reflections to accommodate all Strong and Weak Beams"
     RETURN
   ENDIF
-    
+  
+  !----------------------------------------------------------------------------
+  ! Apply Bmax Criteria 
+  RDummySg = ABS(RMeanInnerPotential/RDevPara)!WTF is this??
+  IAdditionalBmaxStrongBeams = 0
+  IAdditionalPmaxStrongBeams = 0
   jnd=0
   DO ind=1,nReflections
     ICheck = 0
@@ -494,6 +422,7 @@ SUBROUTINE StrongAndWeakBeamsDetermination(IErr)
       END IF
     END DO
     IF(ICheck.EQ.0) THEN
+	  PRINT*,"Sg wierdness"
       jnd = jnd+1
     END IF
     IF(jnd.EQ.IMinWeakBeams) THEN

@@ -306,7 +306,7 @@ MODULE CPara
   USE MyNumbers
 
   COMPLEX(CKIND), DIMENSION(:,:), ALLOCATABLE :: &
-       CUgMatNoAbs,CUgMatPrime,CUgMat, CUgMatEffective,CEigenValuesChunk
+       CUgMatNoAbs,CUgMatPrime,CUgMat, CUgSgMatrix,CEigenValuesChunk
   COMPLEX(CKIND), DIMENSION(:,:,:), ALLOCATABLE :: CEigenVectorsChunk
   COMPLEX(CKIND),DIMENSION(:),ALLOCATABLE :: &
        CAlphaWeightingCoefficients, CPsi0,CUgToRefine

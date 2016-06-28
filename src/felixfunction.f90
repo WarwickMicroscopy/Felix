@@ -197,7 +197,7 @@ SUBROUTINE FelixFunction(LInitialSimulationFLAG,IErr)
 
 !Simulation (different local pixels for each core)--------------------------------------------------------------------  
   IF(IWriteFLAG.GE.0.AND.my_rank.EQ.0) THEN
-    !PRINT*,"Bloch wave calculation..."!RB temp suppression of output
+    PRINT*,"Bloch wave calculation..."
   END IF
   DO knd = ILocalPixelCountMin,ILocalPixelCountMax,1
      jnd = IPixelLocations(knd,1)

@@ -71,9 +71,9 @@ SUBROUTINE StructureFactorSetup(IErr)
      RETURN
   END IF
 
-  !RgMatrix is a matrix of g-vectors that corresponds to the CUgMatNoAbs matrix
-  !RgMatrixMagnitude is a matrix of their magnitides
   !RgPool is a list of 2pi*g-vectors in the microscope ref frame, units of 1/A (NB exp(i*q.r), optical convention)
+  !RgMatrix is a matrix of 2pi*g-vectors that corresponds to the CUgMatNoAbs matrix
+  !RgMatrixMagnitude is a matrix of their magnitudes
   DO ind=1,nReflections
      DO jnd=1,nReflections
         RgMatrix(ind,jnd,:)= RgPool(ind,:)-RgPool(jnd,:)

@@ -219,15 +219,15 @@ SUBROUTINE StructureFactorInitialisation (IErr)
             RIsoDW(lnd) = RDebyeWallerConstant
           END IF
           !Isotropic D-W factor
-          RScatteringFactor = RScatteringFactor*EXP(-((RgMatrixMagnitude(ind,jnd)/2.D0)**2)*RIsoDW(lnd))
+          !RScatteringFactor = RScatteringFactor*EXP(-((RgMatrixMagnitude(ind,jnd)/2.D0)**2)*RIsoDW(lnd))
         ELSE!this will need sorting out, not sure if it works
           RScatteringFactor = RScatteringFactor * &
-            EXP(-TWOPI*DOT_PRODUCT(RgMatrix(ind,jnd,:), &
+            EXP(-DOT_PRODUCT(RgMatrix(ind,jnd,:), &
             MATMUL( RAnisotropicDebyeWallerFactorTensor( &
             RAnisoDW(lnd),:,:),RgMatrix(ind,jnd,:))))
         END IF
 		!The structure factor equation, CVgij in Volts
-        CVgij = CVgij + RScattFacToVolts*RScatteringFactor * EXP(-TWOPI*CIMAGONE* &
+        CVgij = CVgij + RScattFacToVolts*RScatteringFactor * EXP(-CIMAGONE* &
         DOT_PRODUCT(RgMatrix(ind,jnd,:), RAtomCoordinate(lnd,:)) )/RAngstromConversion
       ENDDO
 	  !This is actually still the Vg matrix, converted at the end to Ug
@@ -237,20 +237,23 @@ SUBROUTINE StructureFactorInitialisation (IErr)
   ENDDO
   RMeanInnerPotential= REAL(CUgMatNoAbs(1,1))
   IF(IWriteFLAG.EQ.3.AND.my_rank.EQ.0) THEN
-    PRINT*,"MeanInnerPotential1=",RMeanInnerPotential
+    PRINT*,"MeanInnerPotential=",RMeanInnerPotential,"Volts"
   END IF
   !NB Only the lower half of the Vg matrix was calculated, this completes the upper half
   !and also doubles the values on the diagonal
-  CUgMatNoAbs = CUgMatNoAbs + CONJG(TRANSPOSE(CUgMatNoAbs))!Ug
+  CUgMatNoAbs = CUgMatNoAbs + CONJG(TRANSPOSE(CUgMatNoAbs))
   DO ind=1,nReflections!Now halve the diagonal again
-     CUgMatNoAbs(ind,ind)=CUgMatNoAbs(ind,ind)-RMeanInnerPotential!Ug
+     CUgMatNoAbs(ind,ind)=CUgMatNoAbs(ind,ind)-RMeanInnerPotential
   ENDDO
   !Now convert to Ug=Vg*(2*m*e/h^2)
   CUgMatNoAbs=CUgMatNoAbs*TWO*RElectronMass*RRelativisticCorrection*RElectronCharge/(RPlanckConstant**2)
   
-  !If we use k-vectors in angstroms we must divide U0 by 10^20 since we use K^2=k^2+U0
+  !If we use k-vectors AND Ug's in reciprocal angstroms we must divide U0 by 10^20 since we use K^2=k^2+U0
+  !NB DON'T UNDERSTAND THE 4pi**2 HERE
   CUgMatNoAbs=TWOPI*TWOPI*CUgMatNoAbs/(RAngstromConversion**2)
-  PRINT*,"U0=",REAL(CUgMatNoAbs(1,1))
+  IF(IWriteFLAG.EQ.3.AND.my_rank.EQ.0) THEN
+    PRINT*,"U0=",REAL(CUgMatNoAbs(1,1))
+  END IF
   
   !Alternative way of calculating the mean inner potential as the sum of scattering factors at g=0 multiplied by h^2/(2pi*m0*e*CellVolume)
   !RMeanInnerPotential=ZERO
@@ -259,22 +262,14 @@ SUBROUTINE StructureFactorInitialisation (IErr)
   !END DO
   !RMeanInnerPotential = RMeanInnerPotential*RScattFacToVolts
   !PRINT*,"MeanInnerPotential2=",RMeanInnerPotential
-  	 
-!  RMeanInnerPotentialVolts = RMeanInnerPotential*(((RPlanckConstant**2)/ &
-!       (TWO*RElectronMass*RElectronCharge*TWOPI**2))*&
-!       RAngstromConversion*RAngstromConversion)
-!  PRINT*,"MeanInnerPotential=",RMeanInnerPotentialVolts,"Volts"
-  
   CALL Message("StructureFactorInitialisation",IMoreInfo,IErr, &
        MessageVariable = "RMeanInnerPotential", &
        RVariable = RMeanInnerPotential)
 
   !--------------------------------------------------------------------
   ! high-energy approximation (not HOLZ compatible)
+  !Wave vector in crystal
   !K^2=k^2+U0
-  !version with Ug's in SI units
-  !RBigK= SQRT((RElectronWaveVectorMagnitude*RAngstromConversion)**2 + REAL(CUgMatNoAbs(1,1)))/RAngstromConversion
-  !version with Ug's in 1/(A^2)
   RBigK= SQRT(RElectronWaveVectorMagnitude**2 + REAL(CUgMatNoAbs(1,1)))
   CALL Message("StructureFactorInitialisation",IInfo,IErr, &
        MessageVariable = "RBigK", RVariable = RBigK)
@@ -301,9 +296,9 @@ SUBROUTINE StructureFactorInitialisation (IErr)
   END SELECT
   
   IF(IWriteFLAG.EQ.3.AND.my_rank.EQ.0) THEN
-   PRINT*,"Ug matrix, including absorption"
+   PRINT*,"Ug matrix, not including absorption"
 	DO ind =1,8
-     WRITE(SPrintString,FMT='(16(1X,F5.2))') CUgMat(ind,1:8)
+     WRITE(SPrintString,FMT='(16(1X,F5.2))') CUgMatNoAbs(ind,1:8)
      PRINT*,TRIM(ADJUSTL(SPrintString))
     END DO
   END IF	   

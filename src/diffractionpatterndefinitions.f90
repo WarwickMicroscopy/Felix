@@ -517,7 +517,6 @@ SUBROUTINE NewHKLMake(Ihklmax,Rhkl0Vec,RHOLZAcceptanceAngle,IErr)
   INTEGER(IKIND) :: IErr, Ihklmax,ind,jnd,knd,INhkl
   REAL(RKIND) :: RHOLZAcceptanceAngle
   REAL(RKIND), DIMENSION(ITHREE) :: Rhkl0Vec,RhklDummyUnitVec,RhklDummyVec,Rhkl0UnitVec
-!  REAL(RKIND), DIMENSION(:,:), ALLOCATABLE :: Rhkl 
 
   CALL Message("NewHKLMake",IMust,IErr)
 
@@ -525,7 +524,8 @@ SUBROUTINE NewHKLMake(Ihklmax,Rhkl0Vec,RHOLZAcceptanceAngle,IErr)
   
   Rhkl0UnitVec= Rhkl0Vec/SQRT(DOT_PRODUCT(REAL(Rhkl0Vec,RKIND),REAL(Rhkl0Vec,RKIND)))
 
-!RB first count the number of reflections in the acceptance angle
+!First count the number of reflections in the acceptance angle
+!??? doesn't this only work for cubic systems?  Where are the magnitudes of the reciprocal lattice vectors?
   DO ind=-Ihklmax,Ihklmax,1
      DO jnd=-Ihklmax,Ihklmax,1
         DO knd=-Ihklmax,Ihklmax,1          

@@ -48,17 +48,12 @@ SUBROUTINE EigenSpectrum(IMatrixDimension, MatrixToBeDiagonalised, EigenValues, 
 
   IMPLICIT NONE
 
-  INTEGER(IKIND) :: &
-       IMatrixDimension, IErr
-  COMPLEX(RKIND) :: &
-       MatrixToBeDiagonalised(IMatrixDimension,IMatrixDimension), &
+  INTEGER(IKIND) :: IMatrixDimension, IErr
+  COMPLEX(RKIND) :: MatrixToBeDiagonalised(IMatrixDimension,IMatrixDimension), &
        EigenValues(IMatrixDimension), EigenVectors(IMatrixDimension,IMatrixDimension)
-  INTEGER(IKIND) :: &
-       WorkSpaceDimension
-  COMPLEX(CKIND),DIMENSION(:), ALLOCATABLE :: &
-       CWorkSpace
-  REAL(RKIND), DIMENSION(:), ALLOCATABLE :: &
-       WorkSpace
+  INTEGER(IKIND) :: WorkSpaceDimension
+  COMPLEX(CKIND),DIMENSION(:), ALLOCATABLE :: CWorkSpace
+  REAL(RKIND), DIMENSION(:), ALLOCATABLE :: WorkSpace
   EXTERNAL ZGEEV
 
   IF (my_rank.EQ.0) THEN
@@ -70,21 +65,9 @@ SUBROUTINE EigenSpectrum(IMatrixDimension, MatrixToBeDiagonalised, EigenValues, 
 
   ! ------------------------------------------------
   ! find optimum size of arrays
-  ! ------------------------------------------------
-
   WorkSpaceDimension=1
-
-  ALLOCATE(&
-       CWorkSpace(WorkSpaceDimension), &
-       STAT = IErr)
-  IF( IErr.NE.0 ) THEN
-     PRINT*,"EigenSpectrum: error in ALLOCATE() for work arrays (query stage)"
-     RETURN
-  END IF
-
-  ALLOCATE(&
-       WorkSpace(2*IMatrixDimension), &
-       STAT = IErr)
+  ALLOCATE(CWorkSpace(WorkSpaceDimension),STAT = IErr)
+  ALLOCATE(WorkSpace(2*IMatrixDimension),STAT = IErr)
   IF( IErr.NE.0 ) THEN
      PRINT*,"EigenSpectrum: error in ALLOCATE() for work arrays (query stage)"
      RETURN
@@ -103,20 +86,9 @@ SUBROUTINE EigenSpectrum(IMatrixDimension, MatrixToBeDiagonalised, EigenValues, 
   WorkSpaceDimension = INT(CWorkSpace(1))
 
   ! ------------------------------------------------
-  ! ALLOCATE necessary memory
-  ! ------------------------------------------------
-
-  DEALLOCATE(&
-       CWorkSpace,&
-       STAT=IErr)
-  IF( IErr.NE.0 ) THEN
-     PRINT*,"EigenSpectrum: error in ALLOCATE() for work arrays (final stage)"
-     RETURN
-  END IF
-
-  ALLOCATE(&
-       CWorkSpace(WorkSpaceDimension),&
-       STAT = IErr)
+  ! REALLOCATE necessary memory
+  DEALLOCATE(CWorkSpace,STAT=IErr)
+  ALLOCATE(CWorkSpace(WorkSpaceDimension),STAT = IErr)
   IF( IErr.NE.0 ) THEN
      PRINT*,"EigenSpectrum: error in ALLOCATE() for work arrays (final stage)"
      RETURN
@@ -124,8 +96,6 @@ SUBROUTINE EigenSpectrum(IMatrixDimension, MatrixToBeDiagonalised, EigenValues, 
 
   ! ------------------------------------------------
   ! do the actual call to get the spectrum
-  ! ------------------------------------------------
-
   CALL ZGEEV('N','V', IMatrixDimension, MatrixToBeDiagonalised, IMatrixDimension,&
        EigenValues, 0,1, EigenVectors,IMatrixDimension, &
        CWorkSpace, WorkSpaceDimension, WorkSpace, IErr )
@@ -134,19 +104,10 @@ SUBROUTINE EigenSpectrum(IMatrixDimension, MatrixToBeDiagonalised, EigenValues, 
      RETURN
   ENDIF
 
-  DEALLOCATE(&
-       CWorkSpace,&
-       STAT = IErr)
+  DEALLOCATE(CWorkSpace,STAT = IErr)
+  DEALLOCATE(WorkSpace,STAT = IErr)
   IF( IErr.NE.0 ) THEN
-     PRINT*,"EigenSpectrum: error in ALLOCATE() for work arrays (final stage)"
-     RETURN
-  ENDIF
-
-  DEALLOCATE(&
-       WorkSpace,&
-       STAT = IErr)
-  IF( IErr.NE.0 ) THEN
-     PRINT*,"EigenSpectrum: error in ALLOCATE() for work arrays (final stage)"
+     PRINT*,"EigenSpectrum: error in DEALLOCATE() for work arrays (final stage)"
      RETURN
   ENDIF
 
