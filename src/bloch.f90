@@ -171,36 +171,45 @@ SUBROUTINE BlochCoefficientCalculation(IYPixelIndex,IXPixelIndex,IPixelNumber,IF
          (SQRT(1+RgDotNorm(IStrongBeamList(knd))/RKn)*SQRT(1+RgDotNorm(IStrongBeamList(hnd))/RKn))
       END DO
     END DO
-    CUgSgMatrix = CUgSgMatrix/(TWO*RBigK)
+    CUgSgMatrix = (TWOPI**2)*CUgSgMatrix/(TWO*RBigK)
   ELSE
-    CUgSgMatrix = CUgSgMatrix/(TWO*RBigK)
     ! set the diagonal parts of the matrix to be equal to 
     ! strong beam deviation parameters (*2 BigK) 
     DO hnd=1,nBeams
-      CUgSgMatrix(hnd,hnd) = CUgSgMatrix(hnd,hnd)+RDevPara(IStrongBeamList(hnd))
+      CUgSgMatrix(hnd,hnd) = CUgSgMatrix(hnd,hnd)+TWO*RBigK*RDevPara(IStrongBeamList(hnd))
     ENDDO
     ! add the weak beams perturbatively for the 1st column (sumC) and
     ! the diagonal elements (sumD)
-    DO knd=2,nBeams
-      sumC= CZERO
-      sumD= CZERO
-      DO hnd=1,IWeakBeamIndex
-        sumC = sumC + &
-          REAL(CUgMat(IStrongBeamList(knd),IWeakBeamList(hnd))) * &
-          REAL(CUgMat(IWeakBeamList(hnd),1)) / &
-         (4*RBigK*RBigK*RDevPara(IWeakBeamList(hnd)))
-        sumD = sumD + &
-          REAL(CUgMat(IStrongBeamList(knd),IWeakBeamList(hnd))) * &
-          REAL(CUgMat(IWeakBeamList(hnd),IStrongBeamList(knd))) / &
-         (4*RBigK*RBigK*RDevPara(IWeakBeamList(hnd)))
-      ENDDO
-      CUgSgMatrix(knd,1)= CUgSgMatrix(knd,1) - sumC
-      CUgSgMatrix(knd,knd)= CUgSgMatrix(knd,knd) - sumD
-    ENDDO
+!    DO knd=2,nBeams
+!      sumC=CZERO
+!      sumD=CZERO
+!      DO hnd=1,IWeakBeamIndex
+    !   sumC=sumC + &
+		!Zuo&Weickenmeier Ultramicroscopy 57 (1995) 375-383 eq.4
+    !    CUgMat(IStrongBeamList(knd),IWeakBeamList(hnd))*&
+    !    CUgMat(IWeakBeamList(hnd),1)/(TWO*RBigK*RDevPara(IWeakBeamList(hnd)))
+!          REAL(CUgMat(IStrongBeamList(knd),IWeakBeamList(hnd))) * &
+!          REAL(CUgMat(IWeakBeamList(hnd),1)) / &
+!         (4*RBigK*RBigK*RDevPara(IWeakBeamList(hnd)))
+    !    sumD = sumD + &
+		!Zuo&Weickenmeier Ultramicroscopy 57 (1995) 375-383 eq.5
+    !    CUgMat(IStrongBeamList(knd),IWeakBeamList(hnd))*&
+    !    CUgMat(IWeakBeamList(hnd),IStrongBeamList(knd))/&
+    !    (TWO*RBigK*RDevPara(IWeakBeamList(hnd)))
+!          REAL(CUgMat(IStrongBeamList(knd),IWeakBeamList(hnd))) * &
+!          REAL(CUgMat(IWeakBeamList(hnd),IStrongBeamList(knd))) / &
+!         (4*RBigK*RBigK*RDevPara(IWeakBeamList(hnd)))
+    !  ENDDO
+    !  CUgSgMatrix(knd,1)= CUgSgMatrix(knd,1) - sumC
+    !  CUgSgMatrix(knd,knd)= CUgSgMatrix(knd,knd) - sumD
+    !ENDDO
+	!Divide by 2K so off-diagonal elementa are Ug/2K, diagonal elements are Sg
+	!DON'T KNOW WHERE THE 4pi^2 COMES FROM!
+    CUgSgMatrix = (TWOPI**2)*CUgSgMatrix/(TWO*RBigK)
   END IF
 
   IF(IWriteFLAG.EQ.3.AND.my_rank.EQ.0.AND.IYPixelIndex.EQ.10.AND.IXPixelIndex.EQ.10) THEN
-   PRINT*,"Effective Ug matrix"
+   PRINT*,"Ug/2K + {Sg} matrix"
 	DO hnd =1,8
      WRITE(SPrintString,FMT='(16(1X,E14.7))') CUgSgMatrix(hnd,1:4)
      PRINT*,TRIM(ADJUSTL(SPrintString))
@@ -262,8 +271,7 @@ SUBROUTINE BlochCoefficientCalculation(IYPixelIndex,IXPixelIndex,IPixelNumber,IF
   
   !--------------------------------------------------------------------
   ! DEALLOCATE eigen problem memory
-  DEALLOCATE(CUgSgMatrix,CPsi0, &
-       CBeamTranspose, CUgMatPartial, &
+  DEALLOCATE(CUgSgMatrix,CPsi0,CBeamTranspose, CUgMatPartial, &
        CInvertedEigenVectors, CAlphaWeightingCoefficients, &
        CEigenValues,CEigenVectors,CEigenValueDependentTerms, &
        CBeamProjectionMatrix, CDummyBeamMatrix,CWavefunctions, &
@@ -369,7 +377,7 @@ SUBROUTINE StrongAndWeakBeamsDetermination(IErr)
   INTEGER(IKIND) :: ind,knd,IErr,IMinimum,IMaximum,ICheck,jnd,hnd, &
        IAdditionalBmaxStrongBeams,IAdditionalPmaxStrongBeams,&
        IBeamIterationCounter,IFound
-  REAL(RKIND) :: RDummySg(nReflections), sumC
+  REAL(RKIND) :: RDummySg(nReflections),RPertStrength,RMinPertStrength,sumC
   INTEGER(IKIND), DIMENSION(:),ALLOCATABLE  :: IAdditionalBmaxStrongBeamList,IAdditionalPmaxStrongBeamList
 
   IF (my_rank.EQ.0) THEN
@@ -380,25 +388,44 @@ SUBROUTINE StrongAndWeakBeamsDetermination(IErr)
   END IF
 
   !----------------------------------------------------------------------------
-  ! Determine RBSMaxDeviationPara, the deviation parameter for which there are 
-  ! IMinStrongBeams reflections with smaller deviation parameters
-  IStrongBeamList = 0
+  !STRONG BEAMS
+  !First use deviation parameter to find strong beams
+  !Use IMinStrongBeams to calculate the maximum value of Sg, RBSMaxDeviationPara
+  IStrongBeamList = 0_IKIND
+  RBSMaxDeviationPara = ZERO
+  RMinPertStrength=-NEGHUGE!a big number
   RDummySg = ABS(RDevPara)!list of ABS(Sg) for the different reflections for this pixel
   DO ind=1,IMinStrongBeams
-    IMinimum = MINLOC(RDummySg,1)!find the position of the smallest Sg
-    IF(ind.EQ.IMinStrongBeams) THEN
-       RBSMaxDeviationPara = RDummySg(IMinimum)
-    ELSE!why else?
-      RDummySg(IMinimum) = 1000000 !we're not at IMinStrongBeams, fill with aLarge number
+    !find the smallest Sg
+    IMinimum = MINLOC(RDummySg,1)
+	!does it have the largest Sg so far?
+    IF(RDummySg(IMinimum).GT.RBSMaxDeviationPara) THEN
+      RBSMaxDeviationPara = ABS(RDevPara(IMinimum))
+	END IF
+	!does it have the smallest perturbation strength so far?
+    !PerturbationStrength Eq. 8 Zuo Ultramicroscopy 57 (1995) 375, |Ug/2KSg|
+    RPertStrength = ABS(CUgMat(IMinimum,1)/(TWO*RBigK*RDevPara(IMinimum)))
+    IF(RPertStrength.LT.RMinPertStrength) THEN
+      RMinPertStrength = RPertStrength
     END IF
+    RDummySg(IMinimum)=-NEGHUGE!finished with this one, on to the next
   END DO
+  IF(IWriteFLAG.EQ.3.AND.my_rank.EQ.0) THEN
+    PRINT*, "Sg limit for strong beams=",RBSMaxDeviationPara
+    PRINT*, "Minimum perturbation for strong beams=",RMinPertStrength
+  END IF
+  !Now count the reflectionswith Sg <= RBSMaxDeviationPara or RPertStrength>RMinPertStrength
   IStrongBeamIndex=0
-  DO knd=1,nReflections
-    IF( ABS(RDevPara(knd)) .LE. RBSMaxDeviationPara ) THEN
+  DO ind=1,nReflections
+    RPertStrength = ABS(CUgMat(ind,1)/(TWO*RBigK*RDevPara(ind)))
+    IF(ABS(RDevPara(ind)).LE.RBSMaxDeviationPara.OR.RPertStrength.GE.RMinPertStrength) THEN!it's a strong beam, add it to the list
       IStrongBeamIndex= IStrongBeamIndex +1
-      IStrongBeamList(IStrongBeamIndex)= knd!list of reflection ID no.s up to nStrongBeams
+      IStrongBeamList(IStrongBeamIndex)= ind!list of reflection ID no.s up to nStrongBeams
     ENDIF
   ENDDO
+  IF(IWriteFLAG.EQ.3.AND.my_rank.EQ.0) THEN
+    PRINT*, IStrongBeamIndex,"strong beams"
+  ENDIF
   IF(IStrongBeamIndex+IMinWeakBeams.GT.nReflections) IErr = 1
   IF( IErr.NE.0 ) THEN
     PRINT*,"StrongAndWeakBeamDetermination(", my_rank, ") error ", IErr, &
@@ -407,165 +434,22 @@ SUBROUTINE StrongAndWeakBeamsDetermination(IErr)
   ENDIF
   
   !----------------------------------------------------------------------------
-  ! Apply Bmax Criteria 
-  RDummySg = ABS(RMeanInnerPotential/RDevPara)!WTF is this??
-  IAdditionalBmaxStrongBeams = 0
-  IAdditionalPmaxStrongBeams = 0
-  jnd=0
-  DO ind=1,nReflections
-    ICheck = 0
-    IMaximum = MAXLOC(RDummySg,1)
-    DO knd = 1,IStrongBeamIndex
-      IF(IMaximum.EQ.IStrongBeamList(knd)) THEN
-        ICheck = 1
-        EXIT
-      END IF
-    END DO
-    IF(ICheck.EQ.0) THEN
-	  PRINT*,"Sg wierdness"
-      jnd = jnd+1
-    END IF
-    IF(jnd.EQ.IMinWeakBeams) THEN
-      RBSBethePara = (RDummySg(IMaximum))
-    ELSE
-      RDummySg(IMaximum) = 0.D0 !Large number
-    END IF
-  END DO
-
-  IWeakBeamIndex=0
-  IWeakBeamList = 0
-  DO knd=1,nReflections
-    IFound = 0
-    IF( (ABS(RDevPara(knd)) .GT. RBSMaxDeviationPara).AND. &
-        (ABS(RMeanInnerPotential/RDevPara(knd)) .GE. RBSBethePara)) THEN
-      DO ind = 1,IStrongBeamIndex
-        IF(IStrongBeamList(ind).EQ.knd) THEN
-          IFound=IFound+1
-        END IF
-      END DO
-      IF(IFound.EQ.0) THEN
-        IWeakBeamIndex= IWeakBeamIndex +1
-        IWeakBeamList(IWeakBeamIndex)= knd
-      END IF
-      IFound = 0
-    ENDIF
-  ENDDO
-
-  ALLOCATE(IAdditionalBmaxStrongBeamList(IWeakBeamIndex),STAT=IErr)
-  IF( IErr.NE.0 ) THEN
-     PRINT*,"StrongAndWeakBeamsDetermination(",my_rank,")error allocating IAdditionalBmaxStrongBeamList"
-     RETURN
-  ENDIF
-  
-  IAdditionalBmaxStrongBeamList = 0
-  DO knd = 2,IStrongBeamIndex
-    DO hnd = 1,IWeakBeamIndex
-      IFound = 0
-      sumC = ZERO
-      sumC = sumC + REAL(CUgMatNoAbs(IStrongBeamList(knd),IWeakBeamList(hnd)))* &
-             REAL(CUgMatNoAbs(IWeakBeamList(hnd),1)) / &
-             (2*RBigK*RDevPara(IWeakBeamList(hnd)))
-      sumC = sumC/REAL(CUgMatNoAbs(IStrongBeamList(knd),1))
-      IF(ABS(sumC).GE.RBSBmax) THEN
-        DO ind =1,IWeakBeamIndex
-          IF(IAdditionalBmaxStrongBeamList(ind).EQ.IWeakBeamList(hnd)) THEN
-            IFound = IFound+1
-          END IF
-        END DO
-        IF(IFound.EQ.0) THEN
-          IAdditionalBmaxStrongBeams = IAdditionalBmaxStrongBeams + 1
-          IAdditionalBmaxStrongBeamList(IAdditionalBmaxStrongBeams) = IWeakBeamList(hnd)
-        END IF
-      END IF
-    END DO
-  END DO
-  
-  IF(IAdditionalBmaxStrongBeams.NE.0) THEN
-     IStrongBeamList((IStrongBeamIndex+1):(IStrongBeamIndex+IAdditionalBmaxStrongBeams)) = &
-          IAdditionalBmaxStrongBeamList(:IAdditionalBmaxStrongBeams)
-     IStrongBeamIndex = IStrongBeamIndex  +IAdditionalBmaxStrongBeams
-  END IF
-
-  !----------------------------------------------------------------------------
-  ! Apply Pmax Criteria 
-  IWeakBeamIndex=0
-  IWeakBeamList = 0
-  DO knd=1,nReflections
-    IFound = 0
-    IF( (ABS(RDevPara(knd)) .GT. RBSMaxDeviationPara).AND. &
-        (ABS(RMeanInnerPotential/RDevPara(knd)) .GE. RBSBethePara)) THEN
-      DO ind = 1,IStrongBeamIndex
-        IF(IStrongBeamList(ind).EQ.knd) THEN
-          IFound = IFound + 1
-        END IF
-      END DO
-      IF(IFound.EQ.0) THEN
-        IWeakBeamIndex= IWeakBeamIndex +1
-        IWeakBeamList(IWeakBeamIndex)= knd
-      END IF
-      IFound = 0
-    ENDIF
-  ENDDO
-
-  ALLOCATE(IAdditionalPmaxStrongBeamList(IWeakBeamIndex),STAT=IErr)
-  IF( IErr.NE.0 ) THEN
-     PRINT*,"StrongAndWeakBeamsDetermination(",my_rank,")error allocating PmaxStrongBeamList"
-     RETURN
-  ENDIF
-  
-  IAdditionalPmaxStrongBeamList = 0
-  DO knd = 1,IAdditionalBmaxStrongBeams
-    DO hnd = 1,IWeakBeamIndex
-      IFound = 0
-      sumC = ZERO
-      sumC = sumC +REAL(CUgMatNoAbs(IAdditionalBmaxStrongBeamList(knd),IWeakBeamList(hnd)))* &
-             REAL(CUgMatNoAbs(IWeakBeamList(hnd),1)) / &
-             (2*RBigK*RDevPara(IWeakBeamList(hnd)))
-      sumC = sumC/REAL(CUgMatNoAbs(IAdditionalBmaxStrongBeamList(knd),1))
-      IF(ABS(REAL(sumC)).GE.RBSPmax) THEN
-        DO ind =1,IWeakBeamIndex
-          IF(IAdditionalPmaxStrongBeamList(ind).EQ.IWeakBeamList(hnd)) THEN
-            IFound = IFound+1
-          END IF
-        END DO
-        IF(IFound.EQ.0) THEN
-          IAdditionalPmaxStrongBeams = IAdditionalPmaxStrongBeams + 1
-          IAdditionalPmaxStrongBeamList(IAdditionalPmaxStrongBeams) = IWeakBeamList(hnd)
-        END IF
-      END IF
-    END DO
-  END DO
-  
-  IF(IAdditionalPmaxStrongBeams.NE.0) THEN
-    IStrongBeamList((IStrongBeamIndex+1):(IStrongBeamIndex+IAdditionalPmaxStrongBeams)) = &
-          IAdditionalPmaxStrongBeamList(:IAdditionalPmaxStrongBeams)
-    IStrongBeamIndex = IStrongBeamIndex  + IAdditionalPmaxStrongBeams
-  END IF
-
+  !WEAK BEAMS
+  !Weak beams must have a perturbation strength greater than 1/10 of the weakest strong beam
+  RMinPertStrength=RMinPertStrength/TEN
   IWeakBeamIndex = 0
   IWeakBeamList = 0
-  DO knd=1,nReflections
-    IFound = 0
-    IF( (ABS(RDevPara(knd)) .GT. RBSMaxDeviationPara).AND. &
-        (ABS(RMeanInnerPotential/RDevPara(knd)) .GE. RBSBethePara)) THEN
-       DO ind = 1,IStrongBeamIndex
-         IF(IStrongBeamList(ind).EQ.knd) THEN
-           IFound = IFound + 1
-         END IF
-      END DO
-      IF(IFound.EQ.0) THEN
+  DO ind=1,nReflections
+    IF(MINVAL(ABS(IStrongBeamList-ind)).NE.0) THEN!it's not a strong beam
+      RPertStrength = ABS(CUgMat(ind,1)/(TWO*RBigK*RDevPara(ind)))
+	  IF(RPertStrength.GE.RMinPertStrength) THEN!but it is strong enough to be a weak beam
         IWeakBeamIndex= IWeakBeamIndex +1
-        IWeakBeamList(IWeakBeamIndex)= knd
-      END IF
-      IFound = 0
+        IWeakBeamList(IWeakBeamIndex)= ind	    
+      ENDIF
     ENDIF
   ENDDO
-
-  DEALLOCATE(IAdditionalBmaxStrongBeamList,STAT=IErr)
-  DEALLOCATE(IAdditionalPmaxStrongBeamList,STAT=IErr)
-  IF( IErr.NE.0 ) THEN
-     PRINT*,"StrongAndWeakBeamsDetermination(",my_rank,")error in deallocations"
-     RETURN
+  IF(IWriteFLAG.EQ.3.AND.my_rank.EQ.0) THEN
+    PRINT*, IWeakBeamIndex,"weak beams"
   ENDIF
 
 END SUBROUTINE StrongAndWeakBeamsDetermination

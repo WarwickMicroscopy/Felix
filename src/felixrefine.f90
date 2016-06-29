@@ -118,7 +118,9 @@ PROGRAM Felixrefine
   ! timing startup
   CALL SYSTEM_CLOCK(count_rate=IRate)
   CALL SYSTEM_CLOCK(IStarttime)
-
+  IF(my_rank.EQ.0) THEN
+    PRINT*,"time=",IStarttime
+  END IF
   !--------------------------------------------------------------------
   ! INPUT section 
    CALL ReadInput (IErr)
@@ -1263,16 +1265,16 @@ SUBROUTINE SetupUgsToRefine(IErr)
      PRINT*,TRIM(ADJUSTL(SPrintString))
   END IF
   IF(IWriteFLAG.EQ.3.AND.my_rank.EQ.0) THEN
-    PRINT*,"Ug matrix:"
+    PRINT*,"Ug matrix: nm^-2"
     DO ind =1,20
-     WRITE(SPrintString,FMT='(12(2X,F5.2,1X,F5.2))') CUgMatNoAbs(ind,1:12)
+     WRITE(SPrintString,FMT='(12(2X,F6.2,1X,F6.2))') 100*CUgMatNoAbs(ind,1:8)
      PRINT*,TRIM(SPrintString)
     END DO
-    PRINT*,"RgSum matrix:"
-    DO ind =1,20
-     WRITE(SPrintString,FMT='(12(2X,F5.2))') RgSumMat(ind,1:12)
-     PRINT*,TRIM(ADJUSTL(SPrintString))
-    END DO
+    !PRINT*,"RgSum matrix:"
+    !DO ind =1,20
+    ! WRITE(SPrintString,FMT='(12(2X,F5.2))') RgSumMat(ind,1:12)
+    ! PRINT*,TRIM(ADJUSTL(SPrintString))
+    !END DO
 	PRINT*,"hkl: symmetry matrix"
     DO ind =1,20
      WRITE(SPrintString,FMT='(3(1X,I3),A1,12(2X,I3))') NINT(Rhkl(ind,:)),":",ISymmetryRelations(ind,1:12)

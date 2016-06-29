@@ -208,7 +208,14 @@ SUBROUTINE FelixFunction(LInitialSimulationFLAG,IErr)
         RETURN
      END IF
   END DO
-  
+ 
+  !--------------------------------------------------------------------
+  ! timing
+  IF(my_rank.EQ.0) THEN
+    CALL SYSTEM_CLOCK(ind)
+    PRINT*,"time=",ind
+  END IF
+ 
 !MPI gatherv into RSimulatedPatterns--------------------------------------------------------------------  
      CALL MPI_GATHERV(RIndividualReflections,SIZE(RIndividualReflections),&
           MPI_DOUBLE_PRECISION,RSimulatedPatterns,&
@@ -493,9 +500,9 @@ SUBROUTINE PrintVariables(IErr)
         CASE(1)
            WRITE(SPrintString,FMT='(A18,1X,F5.2)') "Current Absorption",RAbsorptionPercentage
            PRINT*,TRIM(ADJUSTL(SPrintString))
-           PRINT*,"Current Structure Factors : amplitude, phase (deg)"!RB should also put in hkl here
+           PRINT*,"Current Structure Factors nm^-2: amplitude, phase (deg)"!RB should also put in hkl here
            DO jnd = 1+IUgOffset,INoofUgs+IUgOffset
-              WRITE(SPrintString,FMT='(2(1X,F7.3),2X,A1,1X,F6.3,1X,F6.2)') CUgToRefine(jnd),":",&
+              WRITE(SPrintString,FMT='(2(1X,F7.3),2X,A1,1X,F6.3,1X,F6.2)') 100*CUgToRefine(jnd),":",&
               ABS(CUgToRefine(jnd)),180*ATAN2(AIMAG(CUgToRefine(jnd)),REAL(CUgToRefine(jnd)))/PI
               PRINT*,TRIM(ADJUSTL(SPrintString))
            END DO           

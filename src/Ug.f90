@@ -218,8 +218,8 @@ SUBROUTINE StructureFactorInitialisation (IErr)
           IF(RIsoDW(lnd).GT.10.OR.RIsoDW(lnd).LT.0) THEN
             RIsoDW(lnd) = RDebyeWallerConstant
           END IF
-          !Isotropic D-W factor
-          !RScatteringFactor = RScatteringFactor*EXP(-((RgMatrixMagnitude(ind,jnd)/2.D0)**2)*RIsoDW(lnd))
+          !Isotropic D-W factor exp(-B sin(theta)^2/lamda^2) = exp(-Bs^2)=exp(-Bg^2/16pi^2), see e.g. Bird&King
+          RScatteringFactor = RScatteringFactor*EXP(-RIsoDW(lnd)*(RgMatrixMagnitude(ind,jnd)**2)/(4*TWOPI**2) )
         ELSE!this will need sorting out, not sure if it works
           RScatteringFactor = RScatteringFactor * &
             EXP(-DOT_PRODUCT(RgMatrix(ind,jnd,:), &
@@ -236,21 +236,22 @@ SUBROUTINE StructureFactorInitialisation (IErr)
     ENDDO
   ENDDO
   RMeanInnerPotential= REAL(CUgMatNoAbs(1,1))
-  IF(IWriteFLAG.EQ.3.AND.my_rank.EQ.0) THEN
-    PRINT*,"MeanInnerPotential=",RMeanInnerPotential,"Volts"
+  IF(my_rank.EQ.0) THEN
+    WRITE(SPrintString,FMT='(A20,F5.2,1X,A6)') "MeanInnerPotential= ",RMeanInnerPotential," Volts"
+	PRINT*,TRIM(ADJUSTL(SPrintString))
   END IF
-  !NB Only the lower half of the Vg matrix was calculated, this completes the upper half
-  !and also doubles the values on the diagonal
-  CUgMatNoAbs = CUgMatNoAbs + CONJG(TRANSPOSE(CUgMatNoAbs))
-  DO ind=1,nReflections!Now halve the diagonal again
+  DO ind=1,nReflections!Take the Mean Inner Potential off the diagonal 
      CUgMatNoAbs(ind,ind)=CUgMatNoAbs(ind,ind)-RMeanInnerPotential
   ENDDO
+  !NB Only the lower half of the Vg matrix was calculated, this completes the upper half
+  CUgMatNoAbs = CUgMatNoAbs + CONJG(TRANSPOSE(CUgMatNoAbs))
   !Now convert to Ug=Vg*(2*m*e/h^2)
   CUgMatNoAbs=CUgMatNoAbs*TWO*RElectronMass*RRelativisticCorrection*RElectronCharge/(RPlanckConstant**2)
-  
-  !If we use k-vectors AND Ug's in reciprocal angstroms we must divide U0 by 10^20 since we use K^2=k^2+U0
+  !Divide U0 by 10^20 to convert Planck constant to A 
+  CUgMatNoAbs=CUgMatNoAbs/(RAngstromConversion**2)
   !NB DON'T UNDERSTAND THE 4pi**2 HERE
-  CUgMatNoAbs=TWOPI*TWOPI*CUgMatNoAbs/(RAngstromConversion**2)
+
+  !CUgMatNoAbs=TWOPI*TWOPI*CUgMatNoAbs/(RAngstromConversion**2)
   IF(IWriteFLAG.EQ.3.AND.my_rank.EQ.0) THEN
     PRINT*,"U0=",REAL(CUgMatNoAbs(1,1))
   END IF
@@ -296,9 +297,9 @@ SUBROUTINE StructureFactorInitialisation (IErr)
   END SELECT
   
   IF(IWriteFLAG.EQ.3.AND.my_rank.EQ.0) THEN
-   PRINT*,"Ug matrix, not including absorption"
-	DO ind =1,8
-     WRITE(SPrintString,FMT='(16(1X,F5.2))') CUgMatNoAbs(ind,1:8)
+   PRINT*,"Ug matrix, including absorption (nm^-2)"
+	DO ind =1,20
+     WRITE(SPrintString,FMT='(16(1X,F6.2))') 100*CUgMat(ind,1:8)
      PRINT*,TRIM(ADJUSTL(SPrintString))
     END DO
   END IF	   
