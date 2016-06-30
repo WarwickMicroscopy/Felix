@@ -204,8 +204,8 @@ SUBROUTINE BlochCoefficientCalculation(IYPixelIndex,IXPixelIndex,IPixelNumber,IF
     !  CUgSgMatrix(knd,knd)= CUgSgMatrix(knd,knd) - sumD
     !ENDDO
 	!Divide by 2K so off-diagonal elementa are Ug/2K, diagonal elements are Sg
-	!DON'T KNOW WHERE THE 4pi^2 COMES FROM!(TWOPI**2)*
-    CUgSgMatrix = CUgSgMatrix/(TWO*RBigK)
+	!DON'T KNOW WHERE THE 4pi^2 COMES FROM!!   *(TWO*RBigK)
+    CUgSgMatrix = CUgSgMatrix/(TWOPI**2)
   END IF
 
   IF(IWriteFLAG.EQ.3.AND.IYPixelIndex.EQ.10.AND.IXPixelIndex.EQ.10) THEN

@@ -299,8 +299,8 @@ SUBROUTINE StructureFactorInitialisation (IErr)
   IF(IWriteFLAG.EQ.3.AND.my_rank.EQ.0) THEN
    PRINT*,"Ug matrix, including absorption (nm^-2)"
 	DO ind =1,20
-     WRITE(SPrintString,FMT='(3(I3,1X),A1,16(1X,F6.2))') NINT(Rhkl(ind,:)),":",100*CUgMat(ind,1:8)
-     PRINT*,TRIM(ADJUSTL(SPrintString))
+     WRITE(SPrintString,FMT='(3(1X,I3),A1,16(1X,F6.2))') NINT(Rhkl(ind,:)),":",100*CUgMat(ind,1:8)
+     PRINT*,TRIM(SPrintString)
     END DO
   END IF	   
 	   
