@@ -176,7 +176,7 @@ SUBROUTINE BlochCoefficientCalculation(IYPixelIndex,IXPixelIndex,IPixelNumber,IF
     ! set the diagonal parts of the matrix to be equal to 
     ! strong beam deviation parameters (*2 BigK) 
     DO ind=1,nBeams
-      CUgSgMatrix(ind,ind) = CUgSgMatrix(ind,ind)+TWO*RBigK*RDevPara(IStrongBeamList(ind))
+      CUgSgMatrix(ind,ind) = TWO*RBigK*RDevPara(IStrongBeamList(ind))/(TWOPI*TWOPI)
     ENDDO
     ! add the weak beams perturbatively for the 1st column (sumC) and
     ! the diagonal elements (sumD)
@@ -205,14 +205,14 @@ SUBROUTINE BlochCoefficientCalculation(IYPixelIndex,IXPixelIndex,IPixelNumber,IF
     !ENDDO
 	!Divide by 2K so off-diagonal elementa are Ug/2K, diagonal elements are Sg
 	!DON'T KNOW WHERE THE 4pi^2 COMES FROM!!   *(TWO*RBigK)
-    CUgSgMatrix = CUgSgMatrix/(TWOPI**2)
+    CUgSgMatrix = TWOPI*TWOPI*CUgSgMatrix/(TWO*RBigK)
   END IF
 
   IF(IWriteFLAG.EQ.3.AND.IYPixelIndex.EQ.10.AND.IXPixelIndex.EQ.10) THEN
    PRINT*,"Ug/2K + {Sg} matrix (nm^-2)"
 	DO ind =1,8
-     WRITE(SPrintString,FMT='(3(1X,I3),A1,16(1X,F6.2))') NINT(Rhkl(ind,:)),":",100*CUgSgMatrix(ind,1:8)
-     PRINT*,TRIM(ADJUSTL(SPrintString))
+     WRITE(SPrintString,FMT='(3(1X,I3),A1,8(1X,F7.3,F7.3))') NINT(Rhkl(ind,:)),":",100*CUgSgMatrix(ind,1:8)
+     PRINT*,TRIM(SPrintString)
     END DO
   END IF	
   
