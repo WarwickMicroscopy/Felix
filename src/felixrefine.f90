@@ -118,9 +118,7 @@ PROGRAM Felixrefine
   ! timing startup
   CALL SYSTEM_CLOCK(count_rate=IRate)
   CALL SYSTEM_CLOCK(IStarttime)
-  IF(my_rank.EQ.0) THEN
-    PRINT*,"time=",IStarttime
-  END IF
+
   !--------------------------------------------------------------------
   ! INPUT section 
    CALL ReadInput (IErr)
@@ -574,6 +572,18 @@ PROGRAM Felixrefine
   IF( IErr.NE.0 ) THEN
      PRINT*,"felixrefine(",my_rank,")error in FelixFunction"
      GOTO 9999
+  END IF
+  !--------------------------------------------------------------------
+  !timing
+  CALL SYSTEM_CLOCK(ICurrentTime)
+  Duration=REAL(ICurrentTime-IStartTime)/REAL(IRate)
+  IHours = FLOOR(Duration/3600.0D0)
+  IMinutes = FLOOR(MOD(Duration,3600.0D0)/60.0D0)
+  ISeconds = INT(MOD(Duration,3600.0D0)-IMinutes*60)
+  IF(my_rank.EQ.0) THEN
+    WRITE(SPrintString,FMT='(A24,I3,A5,I2,A6,I2,A4)')&
+    "Simulation completed in ",IHours," hrs ",IMinutes," mins ",ISeconds," sec"
+    PRINT*,TRIM(ADJUSTL(SPrintString))
   END IF
   !Baseline simulation output, core 0 only
   IExitFLAG = 0 !Do not exit
@@ -1265,11 +1275,11 @@ SUBROUTINE SetupUgsToRefine(IErr)
      PRINT*,TRIM(ADJUSTL(SPrintString))
   END IF
   IF(IWriteFLAG.EQ.3.AND.my_rank.EQ.0) THEN
-    PRINT*,"Ug matrix: nm^-2"
-    DO ind =1,20
-     WRITE(SPrintString,FMT='(12(2X,F6.2,1X,F6.2))') 100*CUgMatNoAbs(ind,1:8)
-     PRINT*,TRIM(SPrintString)
-    END DO
+    !PRINT*,"Ug matrix: nm^-2"
+    !DO ind =1,20
+    ! WRITE(SPrintString,FMT='(12(2X,F6.2,1X,F6.2))') 100*CUgMatNoAbs(ind,1:8)
+    ! PRINT*,TRIM(SPrintString)
+    !END DO
     !PRINT*,"RgSum matrix:"
     !DO ind =1,20
     ! WRITE(SPrintString,FMT='(12(2X,F5.2))') RgSumMat(ind,1:12)

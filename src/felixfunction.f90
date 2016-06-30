@@ -209,13 +209,6 @@ SUBROUTINE FelixFunction(LInitialSimulationFLAG,IErr)
      END IF
   END DO
  
-  !--------------------------------------------------------------------
-  ! timing
-  IF(my_rank.EQ.0) THEN
-    CALL SYSTEM_CLOCK(ind)
-    PRINT*,"time=",ind
-  END IF
- 
 !MPI gatherv into RSimulatedPatterns--------------------------------------------------------------------  
      CALL MPI_GATHERV(RIndividualReflections,SIZE(RIndividualReflections),&
           MPI_DOUBLE_PRECISION,RSimulatedPatterns,&
@@ -265,6 +258,7 @@ SUBROUTINE CalculateFigureofMeritandDetermineThickness(IThicknessCountFinal,IErr
   DO hnd = 1,INoOfLacbedPatterns
     RCrossCorrelationOld = 1.0E15 !A large Number
     RThickness = ZERO
+    IThicknessByReflection(hnd) = 1!default value if no correlation
     DO ind = 1,IThicknessCount
       ICountedPixels = 0
       RSimulatedImage = ZERO
@@ -335,7 +329,7 @@ SUBROUTINE CalculateFigureofMeritandDetermineThickness(IThicknessCountFinal,IErr
     END DO
     RReflectionCrossCorrelations(hnd) = RCrossCorrelationOld
   END DO
-  !RB assume that the thickness is given by the mean of individual thicknesses  
+  !RB assume that the best thickness is given by the mean of individual thicknesses  
   IThicknessCountFinal = SUM(IThicknessByReflection)/INoOfLacbedPatterns
   RThickness = RInitialThickness + (IThicknessCountFinal-1)*RDeltaThickness
   RThicknessRange=( MAXVAL(IThicknessByReflection)-MINVAL(IThicknessByReflection) )*&
@@ -346,9 +340,9 @@ SUBROUTINE CalculateFigureofMeritandDetermineThickness(IThicknessCountFinal,IErr
 
   IF(my_rank.eq.0) THEN
     WRITE(SPrintString,FMT='(A18,I4,A10)') "Specimen thickness ",NINT(RThickness)," Angstroms"
-    !PRINT*,TRIM(ADJUSTL(SPrintString)) !RB temp supression of output
+    PRINT*,TRIM(ADJUSTL(SPrintString))
     WRITE(SPrintString,FMT='(A15,I4,A10)') "Thickness range",NINT(RThicknessRange)," Angstroms"
-    !PRINT*,TRIM(ADJUSTL(SPrintString))
+    PRINT*,TRIM(ADJUSTL(SPrintString))
   END IF
 
 END SUBROUTINE CalculateFigureofMeritandDetermineThickness

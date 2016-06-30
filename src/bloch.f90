@@ -47,7 +47,7 @@ SUBROUTINE BlochCoefficientCalculation(IYPixelIndex,IXPixelIndex,IPixelNumber,IF
   
   IMPLICIT NONE
   
-  INTEGER(IKIND) :: IYPixelIndex,IXPixelIndex,hnd,knd,IPixelNumber,pnd,&
+  INTEGER(IKIND) :: IYPixelIndex,IXPixelIndex,ind,knd,IPixelNumber,pnd,&
        ierr,IThickness,IThicknessIndex,ILowerLimit,IUpperLimit,IFirstPixelToCalculate       
   REAL(RKIND) :: RThickness,RKn
   COMPLEX(CKIND) sumC,sumD
@@ -96,7 +96,7 @@ SUBROUTINE BlochCoefficientCalculation(IYPixelIndex,IXPixelIndex,IPixelNumber,IF
     !RDevPara(knd)= -( RBigK + DOT_PRODUCT(RgPool(knd,:),RTiltedK(:)) /RBigK) + &
     !  SQRT( ( RBigK**2 + DOT_PRODUCT(RgPool(knd,:),RTiltedK(:)) )**2 /RBigK**2 - &
     !  (RgPoolMag(knd)**2 + TWO*DOT_PRODUCT(RgPool(knd,:),RTiltedK(:))) )
-    IF(IWriteFLAG.EQ.6.AND.my_rank.EQ.0.AND.knd.EQ.2.AND.IYPixelIndex.EQ.10.AND.IXPixelIndex.EQ.10) THEN
+    IF(IWriteFLAG.EQ.6.AND.knd.EQ.2.AND.IYPixelIndex.EQ.10.AND.IXPixelIndex.EQ.10) THEN
       PRINT*,"RBigK",RBigK
       PRINT*,"Rhkl(knd)",Rhkl(knd,:)
       PRINT*,"RgPool(knd)",RgPool(knd,:)
@@ -112,9 +112,9 @@ SUBROUTINE BlochCoefficientCalculation(IYPixelIndex,IXPixelIndex,IPixelNumber,IF
      PRINT*,"BlochCoefficientCalculation(",my_rank,") error in Determination of Strong and Weak beams"
      RETURN
   END IF
-  IF(IWriteFLAG.EQ.6.AND.my_rank.EQ.0.AND.IYPixelIndex.EQ.10.AND.IXPixelIndex.EQ.10) THEN
-    PRINT*,"IStrongBeamIndex",IStrongBeamIndex
-    PRINT*,"IStrongBeamList",IStrongBeamList
+  IF(IWriteFLAG.EQ.3.AND.IYPixelIndex.EQ.10.AND.IXPixelIndex.EQ.10) THEN
+    PRINT*, IStrongBeamIndex,"strong beams"
+    PRINT*, IWeakBeamIndex,"weak beams"
   END IF  ! select the highest reflection that corresponds to a strong beam
   nBeams= IStrongBeamIndex
 
@@ -162,56 +162,56 @@ SUBROUTINE BlochCoefficientCalculation(IYPixelIndex,IXPixelIndex,IPixelNumber,IF
        nBeams,CUgMatPartial,nReflections,CZERO,CUgSgMatrix,nBeams)
 
   IF (IZolzFLAG.EQ.0) THEN
-    DO hnd=1,nBeams
-      CUgSgMatrix(hnd,hnd) = CUgSgMatrix(hnd,hnd) + TWO*RBigK*RDevPara(IStrongBeamList(hnd))
+    DO ind=1,nBeams
+      CUgSgMatrix(ind,ind) = CUgSgMatrix(ind,ind) + TWO*RBigK*RDevPara(IStrongBeamList(ind))
     ENDDO
     DO knd =1,nBeams ! Columns
-      DO hnd = 1,nBeams ! Rows
-        CUgSgMatrix(knd,hnd) = CUgSgMatrix(knd,hnd) / &
-         (SQRT(1+RgDotNorm(IStrongBeamList(knd))/RKn)*SQRT(1+RgDotNorm(IStrongBeamList(hnd))/RKn))
+      DO ind = 1,nBeams ! Rows
+        CUgSgMatrix(knd,ind) = CUgSgMatrix(knd,ind) / &
+         (SQRT(1+RgDotNorm(IStrongBeamList(knd))/RKn)*SQRT(1+RgDotNorm(IStrongBeamList(ind))/RKn))
       END DO
     END DO
     CUgSgMatrix = (TWOPI**2)*CUgSgMatrix/(TWO*RBigK)
   ELSE
     ! set the diagonal parts of the matrix to be equal to 
     ! strong beam deviation parameters (*2 BigK) 
-    DO hnd=1,nBeams
-      CUgSgMatrix(hnd,hnd) = CUgSgMatrix(hnd,hnd)+TWO*RBigK*RDevPara(IStrongBeamList(hnd))
+    DO ind=1,nBeams
+      CUgSgMatrix(ind,ind) = CUgSgMatrix(ind,ind)+TWO*RBigK*RDevPara(IStrongBeamList(ind))
     ENDDO
     ! add the weak beams perturbatively for the 1st column (sumC) and
     ! the diagonal elements (sumD)
 !    DO knd=2,nBeams
 !      sumC=CZERO
 !      sumD=CZERO
-!      DO hnd=1,IWeakBeamIndex
+!      DO ind=1,IWeakBeamIndex
     !   sumC=sumC + &
 		!Zuo&Weickenmeier Ultramicroscopy 57 (1995) 375-383 eq.4
-    !    CUgMat(IStrongBeamList(knd),IWeakBeamList(hnd))*&
-    !    CUgMat(IWeakBeamList(hnd),1)/(TWO*RBigK*RDevPara(IWeakBeamList(hnd)))
-!          REAL(CUgMat(IStrongBeamList(knd),IWeakBeamList(hnd))) * &
-!          REAL(CUgMat(IWeakBeamList(hnd),1)) / &
-!         (4*RBigK*RBigK*RDevPara(IWeakBeamList(hnd)))
+    !    CUgMat(IStrongBeamList(knd),IWeakBeamList(ind))*&
+    !    CUgMat(IWeakBeamList(ind),1)/(TWO*RBigK*RDevPara(IWeakBeamList(ind)))
+!          REAL(CUgMat(IStrongBeamList(knd),IWeakBeamList(ind))) * &
+!          REAL(CUgMat(IWeakBeamList(ind),1)) / &
+!         (4*RBigK*RBigK*RDevPara(IWeakBeamList(ind)))
     !    sumD = sumD + &
 		!Zuo&Weickenmeier Ultramicroscopy 57 (1995) 375-383 eq.5
-    !    CUgMat(IStrongBeamList(knd),IWeakBeamList(hnd))*&
-    !    CUgMat(IWeakBeamList(hnd),IStrongBeamList(knd))/&
-    !    (TWO*RBigK*RDevPara(IWeakBeamList(hnd)))
-!          REAL(CUgMat(IStrongBeamList(knd),IWeakBeamList(hnd))) * &
-!          REAL(CUgMat(IWeakBeamList(hnd),IStrongBeamList(knd))) / &
-!         (4*RBigK*RBigK*RDevPara(IWeakBeamList(hnd)))
+    !    CUgMat(IStrongBeamList(knd),IWeakBeamList(ind))*&
+    !    CUgMat(IWeakBeamList(ind),IStrongBeamList(knd))/&
+    !    (TWO*RBigK*RDevPara(IWeakBeamList(ind)))
+!          REAL(CUgMat(IStrongBeamList(knd),IWeakBeamList(ind))) * &
+!          REAL(CUgMat(IWeakBeamList(ind),IStrongBeamList(knd))) / &
+!         (4*RBigK*RBigK*RDevPara(IWeakBeamList(ind)))
     !  ENDDO
     !  CUgSgMatrix(knd,1)= CUgSgMatrix(knd,1) - sumC
     !  CUgSgMatrix(knd,knd)= CUgSgMatrix(knd,knd) - sumD
     !ENDDO
 	!Divide by 2K so off-diagonal elementa are Ug/2K, diagonal elements are Sg
-	!DON'T KNOW WHERE THE 4pi^2 COMES FROM!
-    CUgSgMatrix = (TWOPI**2)*CUgSgMatrix/(TWO*RBigK)
+	!DON'T KNOW WHERE THE 4pi^2 COMES FROM!(TWOPI**2)*
+    CUgSgMatrix = CUgSgMatrix/(TWO*RBigK)
   END IF
 
-  IF(IWriteFLAG.EQ.3.AND.my_rank.EQ.0.AND.IYPixelIndex.EQ.10.AND.IXPixelIndex.EQ.10) THEN
-   PRINT*,"Ug/2K + {Sg} matrix"
-	DO hnd =1,8
-     WRITE(SPrintString,FMT='(16(1X,E14.7))') CUgSgMatrix(hnd,1:4)
+  IF(IWriteFLAG.EQ.3.AND.IYPixelIndex.EQ.10.AND.IXPixelIndex.EQ.10) THEN
+   PRINT*,"Ug/2K + {Sg} matrix (nm^-2)"
+	DO ind =1,8
+     WRITE(SPrintString,FMT='(3(1X,I3),A1,16(1X,F6.2))') NINT(Rhkl(ind,:)),":",100*CUgSgMatrix(ind,1:8)
      PRINT*,TRIM(ADJUSTL(SPrintString))
     END DO
   END IF	
@@ -410,7 +410,7 @@ SUBROUTINE StrongAndWeakBeamsDetermination(IErr)
     END IF
     RDummySg(IMinimum)=-NEGHUGE!finished with this one, on to the next
   END DO
-  IF(IWriteFLAG.EQ.3.AND.my_rank.EQ.0) THEN
+  IF(IWriteFLAG.EQ.6.AND.my_rank.EQ.0) THEN
     PRINT*, "Sg limit for strong beams=",RBSMaxDeviationPara
     PRINT*, "Minimum perturbation for strong beams=",RMinPertStrength
   END IF
@@ -423,7 +423,7 @@ SUBROUTINE StrongAndWeakBeamsDetermination(IErr)
       IStrongBeamList(IStrongBeamIndex)= ind!list of reflection ID no.s up to nStrongBeams
     ENDIF
   ENDDO
-  IF(IWriteFLAG.EQ.3.AND.my_rank.EQ.0) THEN
+  IF(IWriteFLAG.EQ.6.AND.my_rank.EQ.0) THEN
     PRINT*, IStrongBeamIndex,"strong beams"
   ENDIF
   IF(IStrongBeamIndex+IMinWeakBeams.GT.nReflections) IErr = 1
@@ -448,7 +448,7 @@ SUBROUTINE StrongAndWeakBeamsDetermination(IErr)
       ENDIF
     ENDIF
   ENDDO
-  IF(IWriteFLAG.EQ.3.AND.my_rank.EQ.0) THEN
+  IF(IWriteFLAG.EQ.6.AND.my_rank.EQ.0) THEN
     PRINT*, IWeakBeamIndex,"weak beams"
   ENDIF
 
