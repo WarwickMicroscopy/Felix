@@ -240,21 +240,15 @@ SUBROUTINE StructureFactorInitialisation (IErr)
     WRITE(SPrintString,FMT='(A20,F5.2,1X,A6)') "MeanInnerPotential= ",RMeanInnerPotential," Volts"
 	PRINT*,TRIM(ADJUSTL(SPrintString))
   END IF
-  !NB Only the lower half of the Vg matrix was calculated, this completes the upper half
-  CUgMatNoAbs = CUgMatNoAbs + CONJG(TRANSPOSE(CUgMatNoAbs))
   DO ind=1,nReflections!Take the Mean Inner Potential off the diagonal 
      CUgMatNoAbs(ind,ind)=CUgMatNoAbs(ind,ind)-RMeanInnerPotential
   ENDDO
+  !NB Only the lower half of the Vg matrix was calculated, this completes the upper half
+  CUgMatNoAbs = CUgMatNoAbs + CONJG(TRANSPOSE(CUgMatNoAbs))
   !Now convert to Ug=Vg*(2*m*e/h^2)
   CUgMatNoAbs=CUgMatNoAbs*TWO*RElectronMass*RRelativisticCorrection*RElectronCharge/(RPlanckConstant**2)
   !Divide U0 by 10^20 to convert Planck constant to A 
   CUgMatNoAbs=CUgMatNoAbs/(RAngstromConversion**2)
-  !NB DON'T UNDERSTAND THE 4pi**2 HERE
-
-  !CUgMatNoAbs=TWOPI*TWOPI*CUgMatNoAbs/(RAngstromConversion**2)
-  IF(IWriteFLAG.EQ.3.AND.my_rank.EQ.0) THEN
-    PRINT*,"U0=",REAL(CUgMatNoAbs(1,1))
-  END IF
   
   !Alternative way of calculating the mean inner potential as the sum of scattering factors at g=0 multiplied by h^2/(2pi*m0*e*CellVolume)
   !RMeanInnerPotential=ZERO

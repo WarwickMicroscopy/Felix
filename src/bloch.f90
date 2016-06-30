@@ -173,38 +173,43 @@ SUBROUTINE BlochCoefficientCalculation(IYPixelIndex,IXPixelIndex,IPixelNumber,IF
     END DO
     CUgSgMatrix = (TWOPI**2)*CUgSgMatrix/(TWO*RBigK)
   ELSE
-    ! set the diagonal parts of the matrix to be equal to 
-    ! strong beam deviation parameters (*2 BigK) 
+    ! replace the diagonal parts with strong beam deviation parameters
     DO ind=1,nBeams
       CUgSgMatrix(ind,ind) = TWO*RBigK*RDevPara(IStrongBeamList(ind))/(TWOPI*TWOPI)
     ENDDO
     ! add the weak beams perturbatively for the 1st column (sumC) and
     ! the diagonal elements (sumD)
-!    DO knd=2,nBeams
-!      sumC=CZERO
-!      sumD=CZERO
-!      DO ind=1,IWeakBeamIndex
-    !   sumC=sumC + &
+    DO knd=2,nBeams
+      sumC=CZERO
+      sumD=CZERO
+      DO ind=1,IWeakBeamIndex
+       sumC=sumC + &
 		!Zuo&Weickenmeier Ultramicroscopy 57 (1995) 375-383 eq.4
-    !    CUgMat(IStrongBeamList(knd),IWeakBeamList(ind))*&
-    !    CUgMat(IWeakBeamList(ind),1)/(TWO*RBigK*RDevPara(IWeakBeamList(ind)))
+        CUgMat(IStrongBeamList(knd),IWeakBeamList(ind))*&
+        CUgMat(IWeakBeamList(ind),1)/(TWO*RBigK*RDevPara(IWeakBeamList(ind)))
+!Keith's old version
 !          REAL(CUgMat(IStrongBeamList(knd),IWeakBeamList(ind))) * &
 !          REAL(CUgMat(IWeakBeamList(ind),1)) / &
 !         (4*RBigK*RBigK*RDevPara(IWeakBeamList(ind)))
-    !    sumD = sumD + &
+        sumD = sumD + &
 		!Zuo&Weickenmeier Ultramicroscopy 57 (1995) 375-383 eq.5
-    !    CUgMat(IStrongBeamList(knd),IWeakBeamList(ind))*&
-    !    CUgMat(IWeakBeamList(ind),IStrongBeamList(knd))/&
-    !    (TWO*RBigK*RDevPara(IWeakBeamList(ind)))
+        CUgMat(IStrongBeamList(knd),IWeakBeamList(ind))*&
+        CUgMat(IWeakBeamList(ind),IStrongBeamList(knd))/&
+        (TWO*RBigK*RDevPara(IWeakBeamList(ind)))
+!Keith's old version
 !          REAL(CUgMat(IStrongBeamList(knd),IWeakBeamList(ind))) * &
 !          REAL(CUgMat(IWeakBeamList(ind),IStrongBeamList(knd))) / &
 !         (4*RBigK*RBigK*RDevPara(IWeakBeamList(ind)))
-    !  ENDDO
-    !  CUgSgMatrix(knd,1)= CUgSgMatrix(knd,1) - sumC
-    !  CUgSgMatrix(knd,knd)= CUgSgMatrix(knd,knd) - sumD
-    !ENDDO
+      ENDDO
+	  !Replace the Ug's
+	  WHERE (CUgSgMatrix.EQ.CUgSgMatrix(knd,1))
+        CUgSgMatrix= CUgSgMatrix(knd,1) - sumC
+	  END WHERE
+	  !Replace the Sg's
+      CUgSgMatrix(knd,knd)= CUgSgMatrix(knd,knd) - TWO*RBigK*sumD/(TWOPI*TWOPI)
+    ENDDO
 	!Divide by 2K so off-diagonal elementa are Ug/2K, diagonal elements are Sg
-	!DON'T KNOW WHERE THE 4pi^2 COMES FROM!!   *(TWO*RBigK)
+	!DON'T KNOW WHERE THE 4pi^2 COMES FROM!! 
     CUgSgMatrix = TWOPI*TWOPI*CUgSgMatrix/(TWO*RBigK)
   END IF
 
@@ -435,8 +440,9 @@ SUBROUTINE StrongAndWeakBeamsDetermination(IErr)
   
   !----------------------------------------------------------------------------
   !WEAK BEAMS
-  !Weak beams must have a perturbation strength greater than 1/10 of the weakest strong beam
-  RMinPertStrength=RMinPertStrength/TEN
+  !Weak beams must have a perturbation strength greater than 1/20 of the weakest strong beam
+  !This value based on a convergence test 30 June 2016 using GaAs[110], 000 beam
+  RMinPertStrength=0.05*RMinPertStrength
   IWeakBeamIndex = 0
   IWeakBeamList = 0
   DO ind=1,nReflections
