@@ -63,7 +63,6 @@ SUBROUTINE SimulateAndFit(RFigureofMerit,RIndependentVariable,Iiter,IExitFLAG,IE
   END IF
 
   IF (IRefineMode(1).EQ.1 .OR. IRefineMode(12).EQ.1) THEN  !Ug refinement; update structure factors 
-
   !Dummy Matrix to contain new iterative values
     CUgMatDummy = CZERO
     !NB these are Ug's without absorption, used to be the suroutine UpdateStructureFactors
@@ -111,7 +110,7 @@ SUBROUTINE SimulateAndFit(RFigureofMerit,RIndependentVariable,Iiter,IExitFLAG,IE
       PRINT*,"SimulateAndFit(",my_rank,")error in UniqueAtomPositions"
       RETURN
     END IF
-	 
+
   END IF
 
   IF (my_rank.EQ.0) THEN
@@ -137,9 +136,8 @@ SUBROUTINE SimulateAndFit(RFigureofMerit,RIndependentVariable,Iiter,IExitFLAG,IE
 !This is the key parameter!!!****     
      RFigureofMerit = RCrossCorrelation
   END IF
-  
   CALL MPI_BCAST(RFigureofMerit,1,MPI_DOUBLE_PRECISION,0,MPI_COMM_WORLD,IErr)
-  
+
 END SUBROUTINE SimulateAndFit
 
 !%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -350,6 +348,7 @@ END SUBROUTINE CalculateFigureofMeritandDetermineThickness
 !%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 SUBROUTINE CreateImagesAndWriteOutput(Iiter,IExitFLAG,IErr)
+
 !NB core 0 only
   USE MyNumbers
   

@@ -642,13 +642,14 @@ PROGRAM Felixrefine
 	END DO
 	
   ELSE
-  
+
     ! Initialise Simplex
     ALLOCATE(RSimplexVariable(INoOfVariables+1,INoOfVariables), STAT=IErr)  
     ALLOCATE(RSimplexFoM(INoOfVariables+1),STAT=IErr)  
     IF( IErr.NE.0 ) THEN
       PRINT*,"felixrefine(",my_rank,")error allocating RSimplexFoM"
       GOTO 9999
+
     END IF
     IF(my_rank.EQ.0) THEN
       CALL CreateRandomisedSimplex(RSimplexVariable,RIndependentVariable,IErr)
