@@ -157,11 +157,13 @@ SUBROUTINE StructureFactorInitialisation (IErr)
 
   IMPLICIT NONE
 
-  INTEGER(IKIND) :: ind,jnd,knd,lnd,oddindlorentz,evenindlorentz,oddindgauss, &
+  INTEGER(IKIND) :: ind,jnd,knd,lnd,mnd,oddindlorentz,evenindlorentz,oddindgauss, &
        evenindgauss,currentatom,IErr
   INTEGER(IKIND),DIMENSION(2) :: IPos,ILoc
   COMPLEX(CKIND) :: CVgij
-  REAL(RKIND) :: RMeanInnerPotentialVolts,RScatteringFactor,Lorentzian,Gaussian,Kirkland,RScattFacToVolts
+  REAL(RKIND) :: RMeanInnerPotentialVolts,RScatteringFactor,Lorentzian,Gaussian,Kirkland,&
+        BirdKing,RScattFacToVolts,Rintegrand
+  REAL(RKIND),DIMENSION(2) :: RSprime
   CHARACTER*200 :: SPrintString
   
   CALL Message("StructureFactorInitialisation",IMust,IErr)
@@ -269,26 +271,36 @@ SUBROUTINE StructureFactorInitialisation (IErr)
   CALL Message("StructureFactorInitialisation",IInfo,IErr, &
        MessageVariable = "RBigK", RVariable = RBigK)
   IF(IWriteFLAG.EQ.3.AND.my_rank.EQ.0) THEN
-    PRINT*,"RBigK=",RBigK
+    WRITE(SPrintString,FMT='(A4,F5.1,A10)') "K = ",RBigK," Angstroms"
   END IF
   
   !Absorption
   CUgMatPrime = CZERO
-    
   SELECT CASE (IAbsorbFLAG)
-
-  CASE(1)
-!!$ Proportional
-    CUgMatPrime = CUgMatNoAbs*EXP(CIMAGONE*PI/2)*(RAbsorptionPercentage/100_RKIND)!Ug
-    CUgMat =  CUgMatNoAbs+CUgMatPrime!Ug
-
-  CASE(2)
-  !!$ Bird & King
-
+    CASE(1)
+    !!$ Proportional
+      CUgMatPrime = CUgMatNoAbs*EXP(CIMAGONE*PI/2)*(RAbsorptionPercentage/100_RKIND)!Ug
+    CASE(2)
+    !!$ Bird & King
+    !Uses numerical integration of a function BirdKing to calculate absorptive form factor
+	DO ind=1,nReflections
+      DO jnd=1,ind
+        DO knd=1,INAtomsUnitCell
+          !integrand is over s'x, s'y and is a function of s', Z, g, D-W factor
+          DO lnd=0,100!s'x
+            DO mnd=0,100!s'y
+			  RSprime(1)=REAL(lnd,RKIND)!*some number to get the scale right
+			  RSprime(2)=REAL(mnd,RKIND)!*some number to get the scale right
+              Rintegrand=BirdKing(RSprime,IAtomicNumber(knd),RgMatrixMagnitude(ind,jnd),RIsoDW(knd))
+            END DO
+          END DO
+        END DO
+      END DO
+    END DO
   
-  CASE Default
- 
+    CASE Default
   END SELECT
+  CUgMat = CUgMatNoAbs+CUgMatPrime!Ug
   
   IF(IWriteFLAG.EQ.3.AND.my_rank.EQ.0) THEN
    PRINT*,"Ug matrix, including absorption (nm^-2)"
