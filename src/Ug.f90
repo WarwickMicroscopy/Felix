@@ -131,9 +131,9 @@ SUBROUTINE SymmetryRelatedStructureFactorDetermination (IErr)
      PRINT*,"SymmetryRelatedStructureFactorDetermination(",my_rank,")error allocating IEquivalentUgKey"
      RETURN
   END IF
-  ALLOCATE(CUgToRefine(Iuid),STAT=IErr)
+  ALLOCATE(CUniqueUg(Iuid),STAT=IErr)
   IF( IErr.NE.0 ) THEN
-     PRINT*,"SymmetryRelatedStructureFactorDetermination(",my_rank,")error allocating CUgToRefine"
+     PRINT*,"SymmetryRelatedStructureFactorDetermination(",my_rank,")error allocating CUniqueUg"
      RETURN
   END IF
   
@@ -158,7 +158,7 @@ SUBROUTINE StructureFactorInitialisation (IErr)
   IMPLICIT NONE
 
   INTEGER(IKIND) :: ind,jnd,knd,lnd,mnd,oddindlorentz,evenindlorentz,oddindgauss, &
-       evenindgauss,currentatom,IErr
+       evenindgauss,currentatom,IErr,Iuid
   INTEGER(IKIND),DIMENSION(2) :: IPos,ILoc
   COMPLEX(CKIND) :: CVgij
   REAL(RKIND) :: RMeanInnerPotentialVolts,RScatteringFactor,Lorentzian,Gaussian,Kirkland,&
@@ -262,7 +262,6 @@ SUBROUTINE StructureFactorInitialisation (IErr)
        MessageVariable = "RMeanInnerPotential", &
        RVariable = RMeanInnerPotential)
 
-  !--------------------------------------------------------------------
   ! high-energy approximation (not HOLZ compatible)
   !Wave vector in crystal
   !K^2=k^2+U0
@@ -274,6 +273,54 @@ SUBROUTINE StructureFactorInitialisation (IErr)
 	PRINT*,TRIM(ADJUSTL(SPrintString))
   END IF
 
+  !--------------------------------------------------------------------
+  !Count equivalent Ugs
+  !Equivalent Ug's are identified by the sum of their abs(indices)plus the sum of abs(Ug)'s with no absorption
+  RgSumMat = SUM(ABS(RgMatrix),3)+RgMatrixMagnitude+ABS(REAL(CUgMatNoAbs))+ABS(AIMAG(CUgMatNoAbs))
+  ISymmetryRelations = 0_IKIND 
+  Iuid = 0_IKIND 
+  DO ind = 1,nReflections
+    DO jnd = 1,ind
+      IF(ISymmetryRelations(ind,jnd).NE.0) THEN
+        CYCLE
+      ELSE
+        Iuid = Iuid + 1_IKIND
+        !Ug Fill the symmetry relation matrix with incrementing numbers that have the sign of the imaginary part
+	    WHERE (ABS(RgSumMat-ABS(RgSumMat(ind,jnd))).LE.RTolerance)
+          ISymmetryRelations = Iuid*SIGN(1_IKIND,NINT(AIMAG(CUgMatNoAbs)/TINY**2))
+        END WHERE
+      END IF
+    END DO
+  END DO
+
+  IF((IWriteFLAG.GE.0.AND.my_rank.EQ.0).OR.IWriteFLAG.GE.10) THEN
+    WRITE(SPrintString,FMT='(I5,A25)') Iuid," unique structure factors"
+    PRINT*,TRIM(ADJUSTL(SPrintString))
+  END IF
+  IF(IWriteFLAG.EQ.3.AND.my_rank.EQ.0) THEN
+	PRINT*,"hkl: symmetry matrix"
+    DO ind =1,20
+      WRITE(SPrintString,FMT='(3(1X,I3),A1,12(2X,I3))') NINT(Rhkl(ind,:)),":",ISymmetryRelations(ind,1:12)
+      PRINT*,TRIM(SPrintString)
+    END DO
+  END IF
+
+!Link each key with its Ug, from 1 to the number of unique Ug's Iuid
+  ALLOCATE(IEquivalentUgKey(Iuid),STAT=IErr)
+  ALLOCATE(CUniqueUg(Iuid),STAT=IErr)
+  IF( IErr.NE.0 ) THEN
+    PRINT*,"SetupUgsToRefine(",my_rank,")error allocating IEquivalentUgKey or CUniqueUg"
+    RETURN
+  END IF
+  DO ind = 1,Iuid
+    ILoc = MINLOC(ABS(ISymmetryRelations-ind))
+    IEquivalentUgKey(ind) = ind
+    CUniqueUg(ind) = CUgMatNoAbs(ILoc(1),ILoc(2))
+  END DO
+  
+!Put them in descending order of magnitude  
+  CALL ReSortUgs(IEquivalentUgKey,CUniqueUg,Iuid)  
+  
 END SUBROUTINE StructureFactorInitialisation
 
 SUBROUTINE Absorption (IErr)  

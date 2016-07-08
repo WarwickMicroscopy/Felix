@@ -68,27 +68,27 @@ SUBROUTINE SimulateAndFit(RFigureofMerit,RIndependentVariable,Iiter,IExitFLAG,IE
     !NB these are Ug's without absorption, used to be the suroutine UpdateStructureFactors
     jnd=1
     DO ind = 1+IUgOffset,INoofUgs+IUgOffset!=== temp changes so real part only***
-      IF ( (ABS(REAL(CUgToRefine(ind),RKIND)).GE.RTolerance).AND.&!===
-           (ABS(AIMAG(CUgToRefine(ind))).GE.RTolerance)) THEN!===use both real and imag parts
-        CUgToRefine(ind)=CMPLX(RIndependentVariable(jnd),RIndependentVariable(jnd+1))!===
+      IF ( (ABS(REAL(CUniqueUg(ind),RKIND)).GE.RTolerance).AND.&!===
+           (ABS(AIMAG(CUniqueUg(ind))).GE.RTolerance)) THEN!===use both real and imag parts
+        CUniqueUg(ind)=CMPLX(RIndependentVariable(jnd),RIndependentVariable(jnd+1))!===
         jnd=jnd+2!===
-      ELSEIF ( ABS(AIMAG(CUgToRefine(ind))).LT.RTolerance ) THEN!===use only real part
-        CUgToRefine(ind)=CMPLX(RIndependentVariable(jnd),ZERO)!===
-!===        CUgToRefine(ind)=CMPLX(RIndependentVariable(jnd),AIMAG(CUgToRefine(ind)))!replacement line, remove to revert
+      ELSEIF ( ABS(AIMAG(CUniqueUg(ind))).LT.RTolerance ) THEN!===use only real part
+        CUniqueUg(ind)=CMPLX(RIndependentVariable(jnd),ZERO)!===
+!===        CUniqueUg(ind)=CMPLX(RIndependentVariable(jnd),AIMAG(CUniqueUg(ind)))!replacement line, remove to revert
         jnd=jnd+1
-      ELSEIF ( ABS(REAL(CUgToRefine(ind),RKIND)).LT.RTolerance ) THEN!===use only imag part
-        CUgToRefine(ind)=CMPLX(ZERO,RIndependentVariable(jnd))!===
+      ELSEIF ( ABS(REAL(CUniqueUg(ind),RKIND)).LT.RTolerance ) THEN!===use only imag part
+        CUniqueUg(ind)=CMPLX(ZERO,RIndependentVariable(jnd))!===
         jnd=jnd+1!===
       ELSE!===should never happen
-        PRINT*,"Warning - zero structure factor!",ind,":",CUgToRefine(IEquivalentUgKey(ind))!===
+        PRINT*,"Warning - zero structure factor!",ind,":",CUniqueUg(IEquivalentUgKey(ind))!===
       END IF!===
      WHERE(ISymmetryRelations.EQ.IEquivalentUgKey(ind))
-        CUgMatDummy = CUgToRefine(ind)+&
-        CUgToRefine(ind)*EXP(CIMAGONE*PI/2_RKIND)*(RAbsorptionPercentage/100_RKIND)
+        CUgMatDummy = CUniqueUg(ind)+&
+        CUniqueUg(ind)*EXP(CIMAGONE*PI/2_RKIND)*(RAbsorptionPercentage/100_RKIND)
      END WHERE
      WHERE(ISymmetryRelations.EQ.-IEquivalentUgKey(ind))
-        CUgMatDummy = CONJG(CUgToRefine(ind))+&
-        CONJG(CUgToRefine(ind))*EXP(CIMAGONE*PI/2_RKIND)*(RAbsorptionPercentage/100_RKIND)
+        CUgMatDummy = CONJG(CUniqueUg(ind))+&
+        CONJG(CUniqueUg(ind))*EXP(CIMAGONE*PI/2_RKIND)*(RAbsorptionPercentage/100_RKIND)
      END WHERE
     END DO
     WHERE(ABS(CUgMatDummy).GT.TINY)
@@ -495,8 +495,8 @@ SUBROUTINE PrintVariables(IErr)
            PRINT*,TRIM(ADJUSTL(SPrintString))
            PRINT*,"Current Structure Factors nm^-2: amplitude, phase (deg)"!RB should also put in hkl here
            DO jnd = 1+IUgOffset,INoofUgs+IUgOffset
-              WRITE(SPrintString,FMT='(2(1X,F7.3),2X,A1,1X,F6.3,1X,F6.2)') 100*CUgToRefine(jnd),":",&
-              ABS(CUgToRefine(jnd)),180*ATAN2(AIMAG(CUgToRefine(jnd)),REAL(CUgToRefine(jnd)))/PI
+              WRITE(SPrintString,FMT='(2(1X,F7.3),2X,A1,1X,F6.3,1X,F6.2)') 100*CUniqueUg(jnd),":",&
+              ABS(CUniqueUg(jnd)),180*ATAN2(AIMAG(CUniqueUg(jnd)),REAL(CUniqueUg(jnd)))/PI
               PRINT*,TRIM(ADJUSTL(SPrintString))
            END DO           
 
@@ -589,19 +589,19 @@ SUBROUTINE UpdateStructureFactors(RIndependentVariable,IErr)
 !NB these are Ug's without absorption
   jnd=1
   DO ind = 1+IUgOffset,INoofUgs+IUgOffset!=== temp changes so real part only***
-    IF ( (ABS(REAL(CUgToRefine(ind),RKIND)).GE.RTolerance).AND.&!===
-       (ABS(AIMAG(CUgToRefine(ind))).GE.RTolerance)) THEN!use both real and imag parts!===
-      CUgToRefine(ind)=CMPLX(RIndependentVariable(jnd),RIndependentVariable(jnd+1))!===
+    IF ( (ABS(REAL(CUniqueUg(ind),RKIND)).GE.RTolerance).AND.&!===
+       (ABS(AIMAG(CUniqueUg(ind))).GE.RTolerance)) THEN!use both real and imag parts!===
+      CUniqueUg(ind)=CMPLX(RIndependentVariable(jnd),RIndependentVariable(jnd+1))!===
       jnd=jnd+2!===
-    ELSEIF ( ABS(AIMAG(CUgToRefine(ind))).LT.RTolerance ) THEN!use only real part!===
-      CUgToRefine(ind)=CMPLX(RIndependentVariable(jnd),ZERO)!===
-!===      CUgToRefine(ind)=CMPLX(RIndependentVariable(jnd),AIMAG(CUgToRefine(ind)))!===replacement line, delete to revert
+    ELSEIF ( ABS(AIMAG(CUniqueUg(ind))).LT.RTolerance ) THEN!use only real part!===
+      CUniqueUg(ind)=CMPLX(RIndependentVariable(jnd),ZERO)!===
+!===      CUniqueUg(ind)=CMPLX(RIndependentVariable(jnd),AIMAG(CUniqueUg(ind)))!===replacement line, delete to revert
       jnd=jnd+1
-    ELSEIF ( ABS(REAL(CUgToRefine(ind),RKIND)).LT.RTolerance ) THEN!===use only imag part
-      CUgToRefine(ind)=CMPLX(ZERO,RIndependentVariable(jnd))!===
+    ELSEIF ( ABS(REAL(CUniqueUg(ind),RKIND)).LT.RTolerance ) THEN!===use only imag part
+      CUniqueUg(ind)=CMPLX(ZERO,RIndependentVariable(jnd))!===
       jnd=jnd+1!===
     ELSE!should never happen!===
-      PRINT*,"Warning - zero structure factor!",ind,":",CUgToRefine(IEquivalentUgKey(ind))!===
+      PRINT*,"Warning - zero structure factor!",ind,":",CUniqueUg(IEquivalentUgKey(ind))!===
     END IF!===
   END DO
   RAbsorptionPercentage = RIndependentVariable(jnd)!===

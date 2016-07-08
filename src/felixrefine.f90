@@ -380,15 +380,13 @@ PROGRAM Felixrefine
   END IF
 
   !Calculate Ug matrix etc.--------------------------------------------------------
-  ALLOCATE(CUgMatNoAbs(nReflections,nReflections),STAT=IErr)  !RB Matrix without absorption
-  ALLOCATE(CUgMatPrime(nReflections,nReflections),STAT=IErr)  !RB Matrix of just absorption  
-  ALLOCATE(CUgMat(nReflections,nReflections),STAT=IErr)  !RB Matrix including absorption
-  !RgMatrix is a matrix of 2pi*g-vectors that corresponds to the CUgMatNoAbs matrix
-  ALLOCATE(RgMatrix(nReflections,nReflections,ITHREE),STAT=IErr)
-  !RgMatrixMagnitude is a matrix of their magnitudes
-  ALLOCATE(RgMatrixMagnitude(nReflections,nReflections),STAT=IErr)
-  !Matrix of sums of indices - for symmetry equivalence  in the Ug matrix
-  ALLOCATE(RgSumMat(nReflections,nReflections),STAT=IErr)  
+  ALLOCATE(CUgMatNoAbs(nReflections,nReflections),STAT=IErr)  !RB Ug Matrix without absorption
+  ALLOCATE(CUgMatPrime(nReflections,nReflections),STAT=IErr)  !RB U'g Matrix of just absorption  
+  ALLOCATE(CUgMat(nReflections,nReflections),STAT=IErr)  !RB Ug+U'g Matrix, including absorption
+  ALLOCATE(RgMatrix(nReflections,nReflections,ITHREE),STAT=IErr)  !Matrix of 2pi*g-vectors that corresponds to the CUgMatNoAbs matrix
+  ALLOCATE(RgMatrixMagnitude(nReflections,nReflections),STAT=IErr)  !Matrix of their magnitudes
+  ALLOCATE(RgSumMat(nReflections,nReflections),STAT=IErr)  !Matrix of sums of indices - for symmetry equivalence  in the Ug matrix
+  ALLOCATE(ISymmetryRelations(nReflections,nReflections),STAT=IErr)!Matrix with numbers marking equivalent Ug's
   IF( IErr.NE.0 ) THEN
      PRINT*,"felixrefine(",my_rank,") error allocating CUgMat or its components"
      GOTO 9999
@@ -410,41 +408,36 @@ PROGRAM Felixrefine
     END DO
   END IF
   !Calculate Ug matrix the slow way, for each individual enry in CUgMatNoAbs(1:nReflections,1:nReflections)
-  CALL StructureFactorInitialisation (IErr)
+  CALL StructureFactorInitialisation (IErr)!NB IEquivalentUgKey and CUniqueUg allocated in here
+  !We now have a list of unique Ug's, can deallocate matrices we needed for that calculation 
+  DEALLOCATE(RgSumMat,STAT=IErr)
+  DEALLOCATE(RgMatrix,STAT=IErr)
+  DEALLOCATE(RgMatrixMagnitude,STAT=IErr)
+  IF( IErr.NE.0 ) THEN
+     PRINT*,"StructureFactorSetup(",my_rank,")error in deallocations"
+     GOTO 9999
+  END IF
+  
   CALL Absorption (IErr)
   IF( IErr.NE.0 ) THEN
      PRINT*,"StructureFactorSetup(",my_rank,")error in StructureFactorInitialisation"
      GOTO 9999
   END IF
   
-  !For determination of equivalent Ug's
-  RgSumMat = SUM(ABS(RgMatrix),3)+RgMatrixMagnitude+ABS(REAL(CUgMatNoAbs))+ABS(AIMAG(CUgMatNoAbs))
 
-  !Dellocation-------------------------------------------------------- 
-  DEALLOCATE(RgMatrixMagnitude,STAT=IErr)
-  DEALLOCATE(RgMatrix,STAT=IErr)
-  IF( IErr.NE.0 ) THEN
-     PRINT*,"StructureFactorSetup(",my_rank,")error deallocations"
-     GOTO 9999
-  END IF
-  
   IF(IRefineMode(1).EQ.1 .OR. IRefineMode(12).EQ.1) THEN !It's a Ug refinement
-    !Identify unique Ug's and count the number of independent variables INoOfVariables
-	!using the Hermitian matrix CUgMatNoAbs
-    !We count over INoofUgs, specified in felix.inp
-    !The count excludes Ug components that are zero and U(000), the inner potential
 	IUgOffset=1!choose how many Ug's to skip in the refinement, 1 is the inner potential...
-
-    ALLOCATE(ISymmetryRelations(nReflections,nReflections),STAT=IErr)!Matrix with numbers marking equivalent Ug's
-    IF( IErr.NE.0 ) THEN
-      PRINT*,"felixrefine(",my_rank,")error allocating ISymmetryRelations"
-      GOTO 9999
-    ENDIF
-    CALL SetupUgsToRefine(IErr)!NB IEquivalentUgKey and CUgToRefine allocated in here
-    IF( IErr.NE.0 ) THEN
-      PRINT*,"felixrefine(",my_rank,")error in SetupUgsToRefine"
-      GOTO 9999
-    END IF
+    !Count the number of Independent Variables
+    jnd=1
+    DO ind = 1+IUgOffset,INoofUgs+IUgOffset !=== temp comment out !=== for real part only***
+      IF ( ABS(REAL(CUniqueUg(ind),RKIND)).GE.RTolerance ) THEN!===
+        jnd=jnd+1
+	  END IF!===
+      IF ( ABS(AIMAG(CUniqueUg(ind))).GE.RTolerance ) THEN!===
+        jnd=jnd+1!===
+	  END IF!===
+    END DO
+    INoOfVariables = jnd![[[-1 !===the last increment is for absorption ![[[ delete the -1 to include absorption***
 	
     IF(my_rank.EQ.0) THEN
       IF ( INoOfVariables.EQ.1 ) THEN 
@@ -463,21 +456,17 @@ PROGRAM Felixrefine
     !Fill up the IndependentVariable list with CUgMatNoAbs components
     jnd=1
     DO ind = 1+IUgOffset,INoofUgs+IUgOffset !comment out !=== for real part only***
-      IF ( ABS(REAL(CUgToRefine(ind),RKIND)).GE.RTolerance ) THEN
-        RIndependentVariable(jnd) = REAL(CUgToRefine(ind),RKIND)
+      IF ( ABS(REAL(CUniqueUg(ind),RKIND)).GE.RTolerance ) THEN
+        RIndependentVariable(jnd) = REAL(CUniqueUg(ind),RKIND)
         jnd=jnd+1
 	  END IF
-      IF ( ABS(AIMAG(CUgToRefine(ind))).GE.RTolerance ) THEN!===
-        RIndependentVariable(jnd) = AIMAG(CUgToRefine(ind))!===
+      IF ( ABS(AIMAG(CUniqueUg(ind))).GE.RTolerance ) THEN!===
+        RIndependentVariable(jnd) = AIMAG(CUniqueUg(ind))!===
         jnd=jnd+1!===
       END IF!===
     END DO
     RIndependentVariable(jnd) = RAbsorptionPercentage![[[!===RB absorption always included in structure factor refinement as last variable
-	
-	IF( IErr.NE.0 ) THEN
-      PRINT*,"felixrefine(",my_rank,")error in deallocation CUgMatNoAbs,CUgMatPrime"
-      GOTO 9999
-    END IF
+
   END IF
  
   !--------------------------------------------------------------------
@@ -723,7 +712,7 @@ PROGRAM Felixrefine
   DEALLOCATE(RImageExpi,STAT=IErr)  
   DEALLOCATE(ISymmetryRelations,STAT=IErr)
   DEALLOCATE(IEquivalentUgKey,STAT=IErr)
-  DEALLOCATE(CUgToRefine,STAT=IErr)
+  DEALLOCATE(CUniqueUg,STAT=IErr)
   DEALLOCATE(RIndividualReflections,STAT=IErr)
   DEALLOCATE(IDisplacements,STAT=IErr)
   DEALLOCATE(ICount,STAT=IErr)
@@ -739,7 +728,6 @@ PROGRAM Felixrefine
   DEALLOCATE(IAtomicNumber,STAT=IErr)
   DEALLOCATE(RAnisoDW,STAT=IErr)
   DEALLOCATE(RAtomCoordinate,STAT=IErr)
-  DEALLOCATE(RgSumMat,STAT=IErr)
   IF (IRefineMode(12)+IRefineMode(12).EQ.0) THEN
   	DEALLOCATE(IIterativeVariableUniqueIDs,STAT=IErr)
   END IF  
@@ -1248,107 +1236,6 @@ SUBROUTINE RefinementVariableSetup(RIndependentVariable,IErr)
   END DO
 
 END SUBROUTINE RefinementVariableSetup
- 
-!%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-
-SUBROUTINE SetupUgsToRefine(IErr)
-!Identify unique Ug's and count the number of independent variables INoOfVariables
-!using the Hermitian matrix CUgMatNoAbs
-!We count over INoofUgs, specified in felix.inp
-!The count excludes Ug components that are zero and starts at 1+IUgOffset
-!IUgOffset should be at least 1 to exclude U(000), the inner potential
-  
-  USE MyNumbers
-  
-  USE CConst; USE IConst; USE RConst
-  USE IPara; USE RPara; USE CPara
-  USE BlochPara
-
-  USE IChannels
-
-  USE MPI
-  USE MyMPI
-  
-  IMPLICIT NONE 
-  
-  INTEGER(IKIND) :: IErr,ind,jnd,Iuid
-  INTEGER(IKIND),DIMENSION(2) :: ILoc
-  CHARACTER*200 :: SPrintString
-
-  IF((IWriteFLAG.GE.5.AND.my_rank.EQ.0).OR.IWriteFLAG.GE.10) THEN
-     PRINT*,"SetupUgsToRefine(",my_rank,")"
-  END IF
-
-!Count equivalent Ugs
-!Equivalent Ug's are identified by the sum of their abs(indices)plus the sum of abs(Ug)'s with no absorption
-!  RgSumMat = RgSumMat+ABS(REAL(CUgMatNoAbs))+ABS(AIMAG(CUgMatNoAbs))!do I need to add RgMatrixMagnitude here as well, to avoid any ambiguities?
-  ISymmetryRelations = 0_IKIND 
-  Iuid = 0_IKIND 
-  DO ind = 1,nReflections
-     DO jnd = 1,ind
-        IF(ISymmetryRelations(ind,jnd).NE.0) THEN
-           CYCLE
-        ELSE
-           Iuid = Iuid + 1_IKIND
-           !Ug Fill the symmetry relation matrix with incrementing numbers that have the sign of the imaginary part
-		   WHERE (ABS(RgSumMat-ABS(RgSumMat(ind,jnd))).LE.RTolerance)
-              ISymmetryRelations = Iuid*SIGN(1_IKIND,NINT(AIMAG(CUgMatNoAbs)/TINY**2))
-           END WHERE
-        END IF
-     END DO
-  END DO
-
-  IF((IWriteFLAG.GE.0.AND.my_rank.EQ.0).OR.IWriteFLAG.GE.10) THEN
-     WRITE(SPrintString,FMT='(I5,A25)') Iuid," unique structure factors"
-     PRINT*,TRIM(ADJUSTL(SPrintString))
-  END IF
-  IF(IWriteFLAG.EQ.3.AND.my_rank.EQ.0) THEN
-    !PRINT*,"Ug matrix: nm^-2"
-    !DO ind =1,20
-    ! WRITE(SPrintString,FMT='(12(2X,F6.2,1X,F6.2))') 100*CUgMatNoAbs(ind,1:8)
-    ! PRINT*,TRIM(SPrintString)
-    !END DO
-    !PRINT*,"RgSum matrix:"
-    !DO ind =1,20
-    ! WRITE(SPrintString,FMT='(12(2X,F5.2))') RgSumMat(ind,1:12)
-    ! PRINT*,TRIM(ADJUSTL(SPrintString))
-    !END DO
-	PRINT*,"hkl: symmetry matrix"
-    DO ind =1,20
-     WRITE(SPrintString,FMT='(3(1X,I3),A1,12(2X,I3))') NINT(Rhkl(ind,:)),":",ISymmetryRelations(ind,1:12)
-     PRINT*,TRIM(SPrintString)
-    END DO
-  END IF
-
-!Link each key with its Ug, from 1 to the number of unique Ug's Iuid
-  ALLOCATE(IEquivalentUgKey(Iuid),STAT=IErr)
-  ALLOCATE(CUgToRefine(Iuid),STAT=IErr)
-  IF( IErr.NE.0 ) THEN
-     PRINT*,"SetupUgsToRefine(",my_rank,")error allocating IEquivalentUgKey or CUgToRefine"
-     RETURN
-  END IF
-  DO ind = 1,Iuid
-     ILoc = MINLOC(ABS(ISymmetryRelations-ind))
-     IEquivalentUgKey(ind) = ind
-     CUgToRefine(ind) = CUgMatNoAbs(ILoc(1),ILoc(2))
-  END DO
-  
-!Put them in descending order of magnitude  
-  CALL ReSortUgs(IEquivalentUgKey,CUgToRefine,Iuid)
-
-!Count the number of Independent Variables
-  jnd=1
-  DO ind = 1+IUgOffset,INoofUgs+IUgOffset !=== temp comment out !=== for real part only***
-    IF ( ABS(REAL(CUgToRefine(ind),RKIND)).GE.RTolerance ) THEN!===
-      jnd=jnd+1
-	END IF!===
-    IF ( ABS(AIMAG(CUgToRefine(ind))).GE.RTolerance ) THEN!===
-      jnd=jnd+1!===
-	END IF!===
-  END DO
-  INoOfVariables = jnd![[[-1 !===the last increment is for absorption ![[[ delete the -1 to include absorption***
-
-END SUBROUTINE SetupUgsToRefine
 
 !%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 

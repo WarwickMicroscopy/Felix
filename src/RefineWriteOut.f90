@@ -336,7 +336,7 @@ SUBROUTINE WriteOutVariables(Iter,IErr)
         DO ind = 1,INoofUgs
            IStart = (ind*2)-1
            IEnd = ind*2
-           RDataOut(IStart:IEnd) = [REAL(CUgToRefine(ind+IUgOffset)), REAL(AIMAG(CUgToRefine(ind+IUgOffset)),RKIND)]
+           RDataOut(IStart:IEnd) = [REAL(CUniqueUg(ind+IUgOffset)), REAL(AIMAG(CUniqueUg(ind+IUgOffset)),RKIND)]
         END DO
 		RDataOut(IEnd+1) = RAbsorptionPercentage!RB last variable is absorption
      CASE(2)
@@ -363,7 +363,7 @@ SUBROUTINE WriteOutVariables(Iter,IErr)
         DO ind = 1,INoofUgs
            IStart = (ind*2)-1
            IEnd = ind*2
-           RDataOut(IStart:IEnd) = [REAL(CUgToRefine(ind+IUgOffset)), REAL(AIMAG(CUgToRefine(ind+IUgOffset)),RKIND)]
+           RDataOut(IStart:IEnd) = [REAL(CUniqueUg(ind+IUgOffset)), REAL(AIMAG(CUniqueUg(ind+IUgOffset)),RKIND)]
         END DO
 		RDataOut(IEnd+1) = RAbsorptionPercentage!RB last variable is absorption
     END SELECT

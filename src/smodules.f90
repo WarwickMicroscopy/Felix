@@ -309,7 +309,7 @@ MODULE CPara
        CUgMatNoAbs,CUgMatPrime,CUgMat, CUgSgMatrix,CEigenValuesChunk
   COMPLEX(CKIND), DIMENSION(:,:,:), ALLOCATABLE :: CEigenVectorsChunk
   COMPLEX(CKIND),DIMENSION(:),ALLOCATABLE :: &
-       CAlphaWeightingCoefficients, CPsi0,CUgToRefine
+       CAlphaWeightingCoefficients, CPsi0,CUniqueUg
   COMPLEX(CKIND),DIMENSION(:,:), ALLOCATABLE :: &
        CEigenValueDependentTerms,CInvertedEigenVectors, &
        CBeamProjectionMatrix,CDummyBeamMatrix
