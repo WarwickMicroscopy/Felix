@@ -162,8 +162,7 @@ SUBROUTINE StructureFactorInitialisation (IErr)
   INTEGER(IKIND),DIMENSION(2) :: IPos,ILoc
   COMPLEX(CKIND) :: CVgij
   REAL(RKIND) :: RMeanInnerPotentialVolts,RScatteringFactor,Lorentzian,Gaussian,Kirkland,&
-        BirdKing,RScattFacToVolts,Rintegrand
-  REAL(RKIND),DIMENSION(2) :: RSprime
+        RScattFacToVolts
   CHARACTER*200 :: SPrintString
   
   CALL Message("StructureFactorInitialisation",IMust,IErr)
@@ -272,35 +271,77 @@ SUBROUTINE StructureFactorInitialisation (IErr)
        MessageVariable = "RBigK", RVariable = RBigK)
   IF(IWriteFLAG.EQ.3.AND.my_rank.EQ.0) THEN
     WRITE(SPrintString,FMT='(A4,F5.1,A10)') "K = ",RBigK," Angstroms"
+	PRINT*,TRIM(ADJUSTL(SPrintString))
   END IF
+
+END SUBROUTINE StructureFactorInitialisation
+
+SUBROUTINE Absorption (IErr)  
+
+  USE MyNumbers
+  USE WriteToScreen
+
+  USE CConst; USE IConst
+  USE IPara; USE RPara; USE CPara
+  USE BlochPara
+
+  USE IChannels
+
+  USE MPI
+  USE MyMPI
+
+  IMPLICIT NONE
+
+  INTEGER(IKIND) :: ind,jnd,knd,lnd,mnd,IErr
+  REAL(RKIND),DIMENSION(2) :: RSprime
+  REAL(RKIND) :: Rintegrand,BirdKing
+  CHARACTER*200 :: SPrintString
   
-  !Absorption
   CUgMatPrime = CZERO
   SELECT CASE (IAbsorbFLAG)
     CASE(1)
     !!$ Proportional
-      CUgMatPrime = CUgMatNoAbs*EXP(CIMAGONE*PI/2)*(RAbsorptionPercentage/100_RKIND)!Ug
+      CUgMatPrime = CUgMatNoAbs*EXP(CIMAGONE*PI/2)*(RAbsorptionPercentage/100_RKIND)
+	  
     CASE(2)
     !!$ Bird & King
+    IF(IWriteFLAG.EQ.3.AND.my_rank.EQ.0) THEN
+      PRINT*,"Starting absorptive form factor calculation..."
+    END IF
     !Uses numerical integration of a function BirdKing to calculate absorptive form factor
 	DO ind=1,nReflections
+      !IF(IWriteFLAG.EQ.3.AND.my_rank.EQ.0) THEN
+      !  PRINT*,ind,"of",nReflections
+      !END IF
       DO jnd=1,ind
         DO knd=1,INAtomsUnitCell
           !integrand is over s'x, s'y and is a function of s', Z, g, D-W factor
-          DO lnd=0,100!s'x
-            DO mnd=0,100!s'y
-			  RSprime(1)=REAL(lnd,RKIND)!*some number to get the scale right
-			  RSprime(2)=REAL(mnd,RKIND)!*some number to get the scale right
+          DO lnd=0,10!s'x
+            DO mnd=0,10!s'y
+              RSprime(1)=REAL(lnd,RKIND)!*some number to get the scale right
+              RSprime(2)=REAL(mnd,RKIND)!*some number to get the scale right
               Rintegrand=BirdKing(RSprime,IAtomicNumber(knd),RgMatrixMagnitude(ind,jnd),RIsoDW(knd))
+              CUgMatPrime(ind,jnd)=CUgMatPrime(ind,jnd)+Rintegrand
             END DO
           END DO
         END DO
       END DO
-    END DO
-  
+      !IF(IWriteFLAG.EQ.3.AND.my_rank.EQ.0) THEN
+      !  PRINT*,"U'g=",CUgMatPrime(ind,jnd)
+      !END IF
+   END DO
+    IF(IWriteFLAG.EQ.3.AND.my_rank.EQ.0) THEN
+      PRINT*,"done"
+    END IF
+    !NB Only the lower half of the U'g matrix was calculated, this completes the upper half
+    CUgMatPrime = CUgMatPrime + CONJG(TRANSPOSE(CUgMatPrime))!Need to think about this
+    !Keep with proportional model while debugging
+	CUgMatPrime = CUgMatNoAbs*EXP(CIMAGONE*PI/2)*(RAbsorptionPercentage/100_RKIND)
+	
     CASE Default
+	
   END SELECT
-  CUgMat = CUgMatNoAbs+CUgMatPrime!Ug
+  CUgMat = CUgMatNoAbs+CUgMatPrime
   
   IF(IWriteFLAG.EQ.3.AND.my_rank.EQ.0) THEN
    PRINT*,"Ug matrix, including absorption (nm^-2)"
@@ -310,4 +351,4 @@ SUBROUTINE StructureFactorInitialisation (IErr)
     END DO
   END IF	   
 	   
-END SUBROUTINE StructureFactorInitialisation
+END SUBROUTINE Absorption

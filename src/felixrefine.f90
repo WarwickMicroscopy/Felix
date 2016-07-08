@@ -181,7 +181,6 @@ PROGRAM Felixrefine
 
 ! set up reflection pool
 !-----------------------------------------
-!zz from diffractionpatterninitialisation/reflectiondetermination
   RHOLZAcceptanceAngle=TWODEG2RADIAN!RB seems way too low?
   IHKLMAXValue = 5!RB starting value, increments in loop below
 ! Count the reflections that make up the pool of g-vectors
@@ -213,6 +212,7 @@ PROGRAM Felixrefine
   END IF
 
 !allocations-----------------------------------  
+  !RgPool is a list of 2pi*g-vectors in the microscope ref frame, units of 1/A (NB exp(i*q.r), physics convention)
   ALLOCATE(RgPool(INhkl,ITHREE),STAT=IErr)
   ALLOCATE(RgDummyVecMat(INhkl,ITHREE),STAT=IErr)
   IF(IErr.NE.0) THEN
@@ -220,7 +220,7 @@ PROGRAM Felixrefine
      GOTO 9999
   END IF
  
-!Calculate the g vector list RgPool in reciprocal angstrom units (in the microscope reference frame?)
+!Calculate the g vector list RgPool in reciprocal angstrom units in the microscope reference frame
   ICutOff = 1
   DO ind=1,INhkl
     DO jnd=1,ITHREE
@@ -291,7 +291,6 @@ PROGRAM Felixrefine
         PRINT*,"felixrefine(",my_rank,")error allocating IOriginGVecIdentifier"
         GOTO 9999
      END IF
-
      IOriginGVecIdentifier=0
      knd=1
      DO ind=1,INhkl
@@ -368,9 +367,9 @@ PROGRAM Felixrefine
   nStrongBeams = 0
   nWeakBeams = 0
   DO ind=1,INhkl
-     IF (ABS(RgPoolMag(ind)).LE.RBSMaxGVecAmp) THEN
-        nReflections = nReflections + 1
-     END IF
+    IF (ABS(RgPoolMag(ind)).LE.RBSMaxGVecAmp) THEN
+      nReflections=nReflections+1
+    END IF
   ENDDO
 
 !deallocation
@@ -380,26 +379,55 @@ PROGRAM Felixrefine
     PRINT*,"felixrefine deallocating IOriginGVecIdentifier"
   END IF
 
-  !Calculate Ug matrix--------------------------------------------------------
+  !Calculate Ug matrix etc.--------------------------------------------------------
   ALLOCATE(CUgMatNoAbs(nReflections,nReflections),STAT=IErr)  !RB Matrix without absorption
   ALLOCATE(CUgMatPrime(nReflections,nReflections),STAT=IErr)  !RB Matrix of just absorption  
   ALLOCATE(CUgMat(nReflections,nReflections),STAT=IErr)  !RB Matrix including absorption
-
-  !RB Matrix of sums of indices - for symmetry equivalence  in the Ug matrix, only for Ug refinement
-  IF(IRefineMode(1).EQ.1 .OR. IRefineMode(12).EQ.1) THEN
-    ALLOCATE(RgSumMat(nReflections,nReflections),STAT=IErr)  
-  END IF
+  !RgMatrix is a matrix of 2pi*g-vectors that corresponds to the CUgMatNoAbs matrix
+  ALLOCATE(RgMatrix(nReflections,nReflections,ITHREE),STAT=IErr)
+  !RgMatrixMagnitude is a matrix of their magnitudes
+  ALLOCATE(RgMatrixMagnitude(nReflections,nReflections),STAT=IErr)
+  !Matrix of sums of indices - for symmetry equivalence  in the Ug matrix
+  ALLOCATE(RgSumMat(nReflections,nReflections),STAT=IErr)  
   IF( IErr.NE.0 ) THEN
      PRINT*,"felixrefine(",my_rank,") error allocating CUgMat or its components"
      GOTO 9999
   END IF
   
-  CALL StructureFactorSetup(IErr)
+  !--------------------------------------------------------------------
+  ! Calculate Reflection Matrix
+  DO ind=1,nReflections
+     DO jnd=1,nReflections
+        RgMatrix(ind,jnd,:)= RgPool(ind,:)-RgPool(jnd,:)
+        RgMatrixMagnitude(ind,jnd)= SQRT(DOT_PRODUCT(RgMatrix(ind,jnd,:),RgMatrix(ind,jnd,:)))
+     ENDDO
+  ENDDO
+  IF(IWriteFLAG.EQ.3.AND.my_rank.EQ.0) THEN
+	PRINT*,"g-vector magnitude matrix (2pi/A)"
+	DO ind =1,8
+     WRITE(SPrintString,FMT='(16(1X,F5.2))') RgMatrixMagnitude(ind,1:8)
+     PRINT*,TRIM(ADJUSTL(SPrintString))
+    END DO
+  END IF
+  !Calculate Ug matrix the slow way, for each individual enry in CUgMatNoAbs(1:nReflections,1:nReflections)
+  CALL StructureFactorInitialisation (IErr)
+  CALL Absorption (IErr)
   IF( IErr.NE.0 ) THEN
-     PRINT*,"felixrefine(",my_rank,")error in StructureFactorSetup"
+     PRINT*,"StructureFactorSetup(",my_rank,")error in StructureFactorInitialisation"
      GOTO 9999
   END IF
+  
+  !For determination of equivalent Ug's
+  RgSumMat = SUM(ABS(RgMatrix),3)+RgMatrixMagnitude+ABS(REAL(CUgMatNoAbs))+ABS(AIMAG(CUgMatNoAbs))
 
+  !Dellocation-------------------------------------------------------- 
+  DEALLOCATE(RgMatrixMagnitude,STAT=IErr)
+  DEALLOCATE(RgMatrix,STAT=IErr)
+  IF( IErr.NE.0 ) THEN
+     PRINT*,"StructureFactorSetup(",my_rank,")error deallocations"
+     GOTO 9999
+  END IF
+  
   IF(IRefineMode(1).EQ.1 .OR. IRefineMode(12).EQ.1) THEN !It's a Ug refinement
     !Identify unique Ug's and count the number of independent variables INoOfVariables
 	!using the Hermitian matrix CUgMatNoAbs
@@ -711,10 +739,9 @@ PROGRAM Felixrefine
   DEALLOCATE(IAtomicNumber,STAT=IErr)
   DEALLOCATE(RAnisoDW,STAT=IErr)
   DEALLOCATE(RAtomCoordinate,STAT=IErr)
-  IF (IRefineMode(1)+IRefineMode(12).EQ.1) THEN
-    DEALLOCATE(RgSumMat,STAT=IErr)
-  ELSE
-	DEALLOCATE(IIterativeVariableUniqueIDs,STAT=IErr)
+  DEALLOCATE(RgSumMat,STAT=IErr)
+  IF (IRefineMode(12)+IRefineMode(12).EQ.0) THEN
+  	DEALLOCATE(IIterativeVariableUniqueIDs,STAT=IErr)
   END IF  
   IF( IErr.NE.0 ) THEN
      PRINT*,"felixrefine(",my_rank,")error in final deallocations"
