@@ -449,15 +449,27 @@ SUBROUTINE Integrate(RResult,IErr)
 
   INTEGER(IKIND) :: IErr,Ieval
   INTEGER(IKIND), PARAMETER :: inf=1
-  REAL(RKIND), EXTERNAL :: BirdKing
+!  REAL(RKIND), EXTERNAL :: BirdKing
+  REAL(RKIND), EXTERNAL :: debug
   REAL(RKIND) :: RAccuracy,RError,RResult
   COMPLEX(CKIND) :: CfPrime
   
   RAccuracy=0.1!accuracy of integration
-  CALL dqagi(BirdKing,ZERO,inf,0,RAccuracy,RResult,RError,Ieval,IErr)
+  !CALL dqagi(BirdKing,ZERO,inf,0,RAccuracy,RResult,RError,Ieval,IErr)
+  CALL dqagi(debug,ZERO,inf,ZERO,RAccuracy,RResult,RError,Ieval,IErr)
   
 END SUBROUTINE Integrate
 
+FUNCTION debug(x)
+  USE MyNumbers
+  USE CConst; USE IConst
+  USE IPara; USE RPara; USE CPara
+  
+  IMPLICIT NONE
+  REAL(RKIND):: debug,x
+  debug=x/(1+x**4)
+
+END FUNCTION debug
 !%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 !Defines a Kirkland scattering factor 
