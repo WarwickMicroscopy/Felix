@@ -176,19 +176,21 @@ SUBROUTINE StructureFactorInitialisation (IErr)
       !The Fourier component of the potential Vg goes in location (i,j)
       CVgij= 0.0D0!this is in Volts
       DO lnd=1,INAtomsUnitCell
-        ICurrentAtom = IAtomicNumber(lnd)!Atomic number
+        ICurrentZ = IAtomicNumber(lnd)!Atomic number
+        RCurrentG = RgMatrixMagnitude(ind,jnd)!g-vector magnitude, global variable
         SELECT CASE (IScatterFactorMethodFLAG)! calculate f_e(q)
 
         CASE(0) ! Kirkland Method using 3 Gaussians and 3 Lorentzians, NB Kirkland scattering factor is in Angstrom units
-          RScatteringFactor = Kirkland(IAtomicNumber(lnd),RgMatrixMagnitude(ind,jnd))
+		  !NB atomic number and g-vector passed as global variables
+          RScatteringFactor = Kirkland(RgMatrixMagnitude(ind,jnd))
   
         CASE(1) ! 8 Parameter Method with Scattering Parameters from Peng et al 1996 
           RScatteringFactor = ZERO
           DO knd = 1, 4
             !Peng Method uses summation of 4 Gaussians
             RScatteringFactor = RScatteringFactor + &
-              GAUSSIAN(RScattFactors(ICurrentAtom,knd),RgMatrixMagnitude(ind,jnd),ZERO, & 
-              SQRT(2/RScattFactors(ICurrentAtom,knd+4)),ZERO)
+              GAUSSIAN(RScattFactors(ICurrentZ,knd),RgMatrixMagnitude(ind,jnd),ZERO, & 
+              SQRT(2/RScattFactors(ICurrentZ,knd+4)),ZERO)
           END DO
 			  
         CASE(2) ! 8 Parameter Method with Scattering Parameters from Doyle and Turner Method (1968)
@@ -198,8 +200,8 @@ SUBROUTINE StructureFactorInitialisation (IErr)
             oddindgauss = knd*2 -1
             !Doyle &Turner uses summation of 4 Gaussians
             RScatteringFactor = RScatteringFactor + &
-              GAUSSIAN(RScattFactors(ICurrentAtom,oddindgauss),RgMatrixMagnitude(ind,jnd),ZERO, & 
-              SQRT(2/RScattFactors(ICurrentAtom,evenindgauss)),ZERO)
+              GAUSSIAN(RScattFactors(ICurrentZ,oddindgauss),RgMatrixMagnitude(ind,jnd),ZERO, & 
+              SQRT(2/RScattFactors(ICurrentZ,evenindgauss)),ZERO)
           END DO
 
         CASE(3) ! 10 Parameter method with Scattering Parameters from Lobato et al. 2014
@@ -207,9 +209,9 @@ SUBROUTINE StructureFactorInitialisation (IErr)
           DO knd = 1,5
             evenindlorentz=knd+5
             RScatteringFactor = RScatteringFactor + &
-              LORENTZIAN(RScattFactors(ICurrentAtom,knd)* &
-             (TWO+RScattFactors(ICurrentAtom,evenindlorentz)*(RgMatrixMagnitude(ind,jnd)**TWO)),ONE, &
-              RScattFactors(ICurrentAtom,evenindlorentz)*(RgMatrixMagnitude(ind,jnd)**TWO),ZERO)
+              LORENTZIAN(RScattFactors(ICurrentZ,knd)* &
+             (TWO+RScattFactors(ICurrentZ,evenindlorentz)*(RgMatrixMagnitude(ind,jnd)**TWO)),ONE, &
+              RScattFactors(ICurrentZ,evenindlorentz)*(RgMatrixMagnitude(ind,jnd)**TWO),ZERO)
           END DO
 
         END SELECT
@@ -339,16 +341,16 @@ SUBROUTINE Absorption (IErr)
 
   IMPLICIT NONE
 
-  INTEGER(IKIND) :: ind,jnd,knd,lnd,mnd,IErr
-  REAL(RKIND),DIMENSION(2) :: RSprime
-  REAL(RKIND) :: Rintegrand,BirdKing
+  INTEGER(IKIND) :: ind,jnd,knd,lnd,mnd,IErr,Ieval
+  REAL(RKIND) :: Rintegral,RfPrime
+  COMPLEX(CKIND) :: CfPrime
   CHARACTER*200 :: SPrintString
   
   CUgMatPrime = CZERO
   SELECT CASE (IAbsorbFLAG)
     CASE(1)
     !!$ Proportional
-      CUgMatPrime = CUgMatNoAbs*EXP(CIMAGONE*PI/2)*(RAbsorptionPercentage/100_RKIND)
+    CUgMatPrime = CUgMatNoAbs*EXP(CIMAGONE*PI/2)*(RAbsorptionPercentage/100_RKIND)
 	  
     CASE(2)
     !!$ Bird & King
@@ -356,26 +358,26 @@ SUBROUTINE Absorption (IErr)
       PRINT*,"Starting absorptive form factor calculation..."
     END IF
     !Uses numerical integration of a function BirdKing to calculate absorptive form factor
-	DO ind=1,nReflections
-      !IF(IWriteFLAG.EQ.3.AND.my_rank.EQ.0) THEN
-      !  PRINT*,ind,"of",nReflections
-      !END IF
-      DO jnd=1,ind
-        DO knd=1,INAtomsUnitCell
-          !integrand is over s'x, s'y and is a function of s', Z, g, D-W factor
-          DO lnd=0,10!s'x
-            DO mnd=0,10!s'y
-              RSprime(1)=REAL(lnd,RKIND)!*some number to get the scale right
-              RSprime(2)=REAL(mnd,RKIND)!*some number to get the scale right
-              Rintegrand=BirdKing(RSprime,IAtomicNumber(knd),RgMatrixMagnitude(ind,jnd),RIsoDW(knd))
-              CUgMatPrime(ind,jnd)=CUgMatPrime(ind,jnd)+Rintegrand
-            END DO
-          END DO
-        END DO
+	DO ind=2,nReflections!work down the first column of the Ug matrix
+      IF(IWriteFLAG.EQ.3.AND.my_rank.EQ.0) THEN
+        PRINT*,ind,"of",nReflections
+      END IF
+	  RfPrime=0
+      DO knd=1,INAtomsUnitCell
+	    ICurrentZ = IAtomicNumber(knd)!Atomic number, global variable
+        RCurrentB = RIsoDW(knd)!Debye-Waller constant, global variable
+        RCurrentG = RgMatrixMagnitude(ind,1)!g-vector magnitude, global variable
+		CALL DoubleIntegrate(Rintegral,IErr)
+        IF( IErr.NE.0 ) THEN
+          PRINT*,"Absorption(",my_rank,") error in Integrate"
+          RETURN
+        ENDIF
+		RfPrime=RfPrime+Rintegral
       END DO
-      !IF(IWriteFLAG.EQ.3.AND.my_rank.EQ.0) THEN
-      !  PRINT*,"U'g=",CUgMatPrime(ind,jnd)
-      !END IF
+	  CfPrime=COMPLEX(0_RKIND,Rfprime)
+      IF(IWriteFLAG.EQ.3.AND.my_rank.EQ.0) THEN
+        PRINT*,"U'g=",CUgMatPrime(ind,jnd)
+      END IF
    END DO
     IF(IWriteFLAG.EQ.3.AND.my_rank.EQ.0) THEN
       PRINT*,"done"
@@ -399,3 +401,121 @@ SUBROUTINE Absorption (IErr)
   END IF	   
 	   
 END SUBROUTINE Absorption
+
+!%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+SUBROUTINE DoubleIntegrate(RResult,IErr) 
+
+  USE MyNumbers
+  USE WriteToScreen
+
+  USE CConst; USE IConst
+  USE IPara; USE RPara; USE CPara
+  USE BlochPara
+
+  USE IChannels
+
+  USE MPI
+  USE MyMPI
+
+  IMPLICIT NONE
+
+  INTEGER(IKIND) :: IErr
+  REAL(RKIND) :: RResult
+
+  !Will become a 2d integral, nothing here yet until it works
+  RSprimeY=0!second dimension, global variable
+  CALL Integrate(RResult,IErr)
+ 
+END SUBROUTINE DoubleIntegrate
+
+!%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+SUBROUTINE Integrate(RResult,IErr) 
+
+  USE MyNumbers
+  USE WriteToScreen
+
+  USE CConst; USE IConst
+  USE IPara; USE RPara; USE CPara
+  USE BlochPara
+
+  USE IChannels
+
+  USE MPI
+  USE MyMPI
+
+  IMPLICIT NONE
+
+  INTEGER(IKIND) :: IErr,Ieval
+  INTEGER(IKIND), PARAMETER :: inf=1
+  REAL(RKIND), EXTERNAL :: BirdKing
+  REAL(RKIND) :: RAccuracy,RError,RResult
+  COMPLEX(CKIND) :: CfPrime
+  
+  RAccuracy=0.1!accuracy of integration
+  CALL dqagi(BirdKing,ZERO,inf,0,RAccuracy,RResult,RError,Ieval,IErr)
+  
+END SUBROUTINE Integrate
+
+!%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+!Defines a Kirkland scattering factor 
+FUNCTION Kirkland(Rg)
+  !From Appendix C of Kirkland, "Advanced Computing in Electron Microscopy", 2nd ed.
+  !ICurrentZ is atomic number, global variable
+  !RCurrentG is magnitude of scattering vector in 1/A (NB exp(i*g.r), physics convention), global variable
+  !Kirkland scattering factor is in Angstrom units
+  !Rg is a dummy variable, just to give the function an argument, and is not used
+  USE MyNumbers
+  USE CConst; USE IConst
+  USE IPara; USE RPara; USE CPara
+  USE BlochPara
+  
+  IMPLICIT NONE
+  
+  INTEGER(IKIND) :: ind,IErr
+  REAL(RKIND):: Kirkland,Ra,Rb,Rc,Rd,Rq,Rg
+
+  !NB Kirkland scattering factors are calculated in the optics convention exp(2*pi*i*q.r)
+  Rq=RCurrentG/TWOPI
+  Kirkland=ZERO;
+  !Equation C.15
+  DO ind = 1,3
+    Ra=RScattFactors(ICurrentZ,ind*2-1);
+    Rb=RScattFactors(ICurrentZ,ind*2);
+    Rc=RScattFactors(ICurrentZ,ind*2+5);
+    Rd=RScattFactors(ICurrentZ,ind*2+6);
+    Kirkland = Kirkland + Ra/((Rq**2)+Rb)+Rc*EXP(-(Rd*Rq**2));
+  END DO
+  
+END FUNCTION Kirkland
+
+!%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+!Defines a Bird & King integrand to calculate an absorptive scattering factor 
+FUNCTION BirdKing(RSprimeX)
+  !From Bird and King, Acta Cryst A46, 202 (1990)
+  !ICurrentZ is atomic number, global variable
+  !RCurrentB is Debye-Waller constant b=8*pi*<u^2>, where u is mean square thermal vibration amplitude in Angstroms, global variable
+  !RCurrentG is magnitude of scattering vector in 1/A (NB exp(i*g.r), physics convention, global variable
+  !RSprime is dummy parameter for integration [s'x s'y]
+  !RSprimeY is passed as a global variable so we just have an integral in 1D from 0 to inf
+  USE MyNumbers
+  USE CConst; USE IConst
+  USE IPara; USE RPara; USE CPara
+  USE BlochPara
+  
+  IMPLICIT NONE
+  
+  INTEGER(IKIND) :: ind
+  REAL(RKIND):: BirdKing,Rs,Rg1,Rg2,Kirkland,RSprimeX
+  REAL(RKIND),DIMENSION(2) :: RGprime
+  RGprime=2*TWOPI*(/RSprimeX,RSprimeY/)
+  !Since [s'x s'y]  is a dummy parameter for integration I can assign s'x //g
+  Rg1=SQRT( (RCurrentG/2+RGprime(1))**2 + RGprime(2)**2 )
+  Rg2=SQRT( (RCurrentG/2-RGprime(1))**2 - RGprime(2)**2 )
+  BirdKing=Kirkland(Rg1)*Kirkland(Rg2)*&
+  (1-EXP(-2*RCurrentB*(RSprimeX**2+RSprimeY**2-RCurrentG**2/(16*TWOPI**2)) ) )
+  
+END FUNCTION BirdKing

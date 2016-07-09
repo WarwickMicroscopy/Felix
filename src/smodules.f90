@@ -191,7 +191,7 @@ MODULE IPara
   INTEGER(IKIND), DIMENSION(2) :: IOffset
   INTEGER(IKIND), DIMENSION(:),ALLOCATABLE :: IElementList
   !Ug Calculation
-  INTEGER(IKIND) :: ICurrentAtom,IAtom
+  INTEGER(IKIND) :: ICurrentZ
   !Refinement   
   INTEGER(IKIND),DIMENSION(IRefinementVariableTypes) :: IRefineMode
   INTEGER(IKIND),DIMENSION(IRefinementVariableTypes) :: INoofElementsForEachRefinementType  !zz
@@ -217,29 +217,29 @@ MODULE RPara
 
   !INPUT Section
   !Beam Selection Criteria
-  REAL(RKIND) :: RBSMaxDeviationPara, RBSMaxGVecAmp, RBSBethePara, &
+  REAL(RKIND) :: RBSMaxDeviationPara,RBSMaxGVecAmp,RBSBethePara, &
        RBSBmax, RBSPMax 
   !Crystallography
   REAL(RKIND) :: RLengthX,RLengthY,RLengthZ,RVolume,RAlpha,RBeta,RGamma, &
        RDebyeWallerConstant,RAbsorptionPercentage
   REAL(RKIND), DIMENSION(:), ALLOCATABLE :: &
        RBasisIsoDW, RBasisOccupancy, RIsoDW, ROccupancy
-  REAL(RKIND), DIMENSION(:,:), ALLOCATABLE :: RSymVec,RBasisAtomPosition, RAtomPosition,&
-       RUniqueKey
+  REAL(RKIND), DIMENSION(:,:), ALLOCATABLE :: RSymVec,RBasisAtomPosition, &
+       RAtomPosition,RUniqueKey
   REAL(RKIND), DIMENSION(:,:,:), ALLOCATABLE :: RSymMat
   !Microscope Parameters
-  REAL(RKIND) :: RConvergenceAngle, RAcceleratingVoltage,RInnerConvergenceAngle
-  REAL(RKIND) :: RElectronVelocity, RElectronWaveLength, &
-       RElectronWaveVectorMagnitude, RRelativisticCorrection, &
-       RRelativisticMass, RBraggCentral, RAcceptanceAngle
+  REAL(RKIND) :: RConvergenceAngle,RAcceleratingVoltage,RInnerConvergenceAngle
+  REAL(RKIND) :: RElectronVelocity,RElectronWaveLength, &
+       RElectronWaveVectorMagnitude,RRelativisticCorrection, &
+       RRelativisticMass,RBraggCentral,RAcceptanceAngle
   !LACBED
   REAL(RKIND) :: RInitialThickness,RFinalThickness,RDeltaThickness, &
        RInitialDebyeWallerFactor,RFinalDebyeWallerFactor,&
        RDeltaDebyeWallerFactor
   !Iterative Ugs
   REAL(RKIND) :: RPercentageUgChange
-  !Debye Waller Factor not sure if we use this 
-  REAL(RKIND) :: RMeanSquaredDisplacement
+  !Debye Waller Constant, g-vector magnitude, dummy [s'x s'y] for absorption calc
+  REAL(RKIND) :: RCurrentB,RCurrentG,RSprimeY
   !HKL indices 
   REAL(RKIND), DIMENSION(:,:), ALLOCATABLE :: Rhkl 
   REAL(RKIND), DIMENSION(:,:), ALLOCATABLE :: RInputHKLs

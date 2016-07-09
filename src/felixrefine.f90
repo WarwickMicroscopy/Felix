@@ -412,12 +412,14 @@ PROGRAM Felixrefine
   !We now have a list of unique Ug's, can deallocate matrices we needed for that calculation 
   DEALLOCATE(RgSumMat,STAT=IErr)
   DEALLOCATE(RgMatrix,STAT=IErr)
-  DEALLOCATE(RgMatrixMagnitude,STAT=IErr)
   IF( IErr.NE.0 ) THEN
      PRINT*,"StructureFactorSetup(",my_rank,")error in deallocations"
      GOTO 9999
   END IF
   
+  IF(IWriteFLAG.EQ.3.AND.my_rank.EQ.0) THEN
+	PRINT*,"Starting absorption calculation"
+  END IF
   CALL Absorption (IErr)
   IF( IErr.NE.0 ) THEN
      PRINT*,"StructureFactorSetup(",my_rank,")error in StructureFactorInitialisation"
@@ -728,6 +730,7 @@ PROGRAM Felixrefine
   DEALLOCATE(IAtomicNumber,STAT=IErr)
   DEALLOCATE(RAnisoDW,STAT=IErr)
   DEALLOCATE(RAtomCoordinate,STAT=IErr)
+  DEALLOCATE(RgMatrixMagnitude,STAT=IErr)
   IF (IRefineMode(12)+IRefineMode(12).EQ.0) THEN
   	DEALLOCATE(IIterativeVariableUniqueIDs,STAT=IErr)
   END IF  
@@ -1313,7 +1316,6 @@ USE MyNumbers
         DEALLOCATE(RRandomSigns,RRandomNumbers)
      
   END IF
-  
 
 END SUBROUTINE CreateRandomisedSimplex
 
@@ -1455,6 +1457,7 @@ SUBROUTINE OutofUnitCellCheck(IVariableID,RProposedMovement,RCorrectedMovement,I
 !!$  % as if the atom had moved from one unit cell into the neighbouring one
 !!$  %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
+!!!Can't this just be done in one line with MODULO???!!!
   USE MyNumbers
   
   USE CConst; USE IConst; USE RConst

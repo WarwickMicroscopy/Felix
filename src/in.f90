@@ -218,7 +218,7 @@ SUBROUTINE ReadInpFile( IErr )
   READ(IChInp,15,ERR=20,END=30) RDebyeWallerConstant
   CALL Message ("ReadInpFile",IInfo,IErr,MessageVariable ="RDebyeWallerConstant",RVariable=RDebyeWallerConstant)
 
-  RMeanSquaredDisplacement= RDebyeWallerConstant/(8*PI**2)
+  !NB Mean Square Displacement= RDebyeWallerConstant/(8*PI**2)
   
   ILine= ILine+1
   READ(IChInp,15,ERR=20,END=30) RAbsorptionPercentage

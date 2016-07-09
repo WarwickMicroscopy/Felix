@@ -10,7 +10,7 @@ IImageFLAG                = 1
 IScatterFactorMethodFLAG  = 0
 IMaskFLAG                 = 1
 IZolzFLAG                 = 1
-IAbsorbFLAG               = 1
+IAbsorbFLAG               = 2
 IAnisoDebyeWallerFlag     = 0
 IPseudoCubicFLAG          = 0
 IXDirectionFLAG           = 1
@@ -19,8 +19,8 @@ IXDirectionFLAG           = 1
 IPixelCount               = 35
 
 # beam selection criteria
-IMinReflectionPool        = 1000
-IMinStrongBeams           = 12
+IMinReflectionPool        = 300
+IMinStrongBeams           = 6
 IMinWeakBeams             = 0
 RBSBMax                   = 0.1
 RBSPMax                   = 0.1

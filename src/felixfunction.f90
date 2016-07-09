@@ -64,8 +64,7 @@ SUBROUTINE SimulateAndFit(RFigureofMerit,RIndependentVariable,Iiter,IExitFLAG,IE
 
   IF (IRefineMode(1).EQ.1 .OR. IRefineMode(12).EQ.1) THEN  !Ug refinement; update structure factors 
   !Dummy Matrix to contain new iterative values
-    CUgMatDummy = CZERO
-    !NB these are Ug's without absorption, used to be the suroutine UpdateStructureFactors
+    CUgMatDummy = CZERO    !NB these are Ug's without absorption
     jnd=1
     DO ind = 1+IUgOffset,INoofUgs+IUgOffset!=== temp changes so real part only***
       IF ( (ABS(REAL(CUniqueUg(ind),RKIND)).GE.RTolerance).AND.&!===
