@@ -449,14 +449,21 @@ SUBROUTINE Integrate(RResult,IErr)
 
   INTEGER(IKIND) :: IErr,Ieval
   INTEGER(IKIND), PARAMETER :: inf=1
+  INTEGER(IKIND), PARAMETER :: limit=500
+  INTEGER(IKIND), PARAMETER :: lenw= limit*4
 !  REAL(RKIND), EXTERNAL :: BirdKing
   REAL(RKIND), EXTERNAL :: debug
   REAL(RKIND) :: RAccuracy,RError,RResult
   COMPLEX(CKIND) :: CfPrime
+
+  INTEGER(IKIND) last, iwork(limit)
+  REAL(RKIND) work(lenw)
   
-  RAccuracy=0.1!accuracy of integration
+  RAccuracy=0.1D0!accuracy of integration
   !CALL dqagi(BirdKing,ZERO,inf,0,RAccuracy,RResult,RError,Ieval,IErr)
-  CALL dqagi(debug,ZERO,inf,ZERO,RAccuracy,RResult,RError,Ieval,IErr)
+  CALL dqagi(debug,ZERO,inf,ZERO,RAccuracy,RResult,RError,Ieval,IErr,&
+       limit, lenw, last, iwork, work )
+  PRINT*,RResult,RError
   
 END SUBROUTINE Integrate
 
