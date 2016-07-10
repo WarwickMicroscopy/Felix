@@ -418,20 +418,24 @@ SUBROUTINE DoubleIntegrate(RResult,IErr)
 
   IMPLICIT NONE
 
-  INTEGER(IKIND) :: IErr
-  REAL(RKIND) :: RResult
-
-  !Will become a 2d integral, nothing here yet until it works
-  RSprimeY=0!second dimension, global variable
-
-  CALL Integrate(RResult,IErr)
-
+  INTEGER(IKIND) :: IErr,Ieval
+  INTEGER(IKIND), PARAMETER :: inf=1
+  INTEGER(IKIND), PARAMETER :: limit=500
+  INTEGER(IKIND), PARAMETER :: lenw= limit*4
+  REAL(RKIND), EXTERNAL :: IntegrateBK
+  REAL(RKIND) :: RAccuracy,RError,RResult
+  INTEGER(IKIND) last, iwork(limit)
+  REAL(RKIND) work(lenw)
+  
+  RAccuracy=0.00000001D0!accuracy of integration
+  CALL dqagi(IntegrateBK,ZERO,inf,0,RAccuracy,RResult,RError,Ieval,IErr,&
+       limit, lenw, last, iwork, work )
   
 END SUBROUTINE DoubleIntegrate
 
 !%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-SUBROUTINE Integrate(RResult,IErr) 
+FUNCTION IntegrateBK(Sy) 
 
   USE MyNumbers
   USE WriteToScreen
@@ -451,35 +455,20 @@ SUBROUTINE Integrate(RResult,IErr)
   INTEGER(IKIND), PARAMETER :: inf=1
   INTEGER(IKIND), PARAMETER :: limit=500
   INTEGER(IKIND), PARAMETER :: lenw= limit*4
-!  REAL(RKIND), EXTERNAL :: BirdKing
-  REAL(RKIND) :: BirdKing
-!  REAL(RKIND), EXTERNAL :: debug
-  REAL(RKIND) :: RAccuracy,RError,RResult,dd,ee
-  COMPLEX(CKIND) :: CfPrime
-
+  REAL(RKIND), EXTERNAL :: BirdKing
+  REAL(RKIND) :: RAccuracy,RError,RResult,IntegrateBK,Sy
   INTEGER(IKIND) last, iwork(limit)
   REAL(RKIND) work(lenw)
-
-  ee=0.0
-  dd=BirdKing(ee)
-  PRINT*,ee,":", dd
-  ee=1.0
-  dd=BirdKing(ee)
-  PRINT*,ee,":", dd
-  ee=10.0
-  dd=BirdKing(ee) 
-  PRINT*,ee,":", dd
-  ee=1000.0
-  dd=BirdKing(ee) 
-  PRINT*,ee,":", dd
- 
-  RAccuracy=0.1D0!accuracy of integration
-  !CALL dqagi(BirdKing,ZERO,inf,0,RAccuracy,RResult,RError,Ieval,IErr,&
-  !CALL dqagi(debug,ZERO,inf,ZERO,RAccuracy,RResult,RError,Ieval,IErr,&
-!       limit, lenw, last, iwork, work )
-!  PRINT*,RResult,RError
+  !NB can't print from here as it is called EXTERNAL in DoubleIntegrate
+  !RSprimeY is passed as a global variable so we just have an integral in 1D from 0 to infinity
+  RSprimeY=Sy
   
-END SUBROUTINE Integrate
+  RAccuracy=0.00000001D0!accuracy of integration
+  CALL dqagi(BirdKing,ZERO,inf,0,RAccuracy,RResult,RError,Ieval,IErr,&
+       limit, lenw, last, iwork, work )
+  IntegrateBK=RResult
+  
+END FUNCTION IntegrateBK
 
 !%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
@@ -490,7 +479,7 @@ FUNCTION BirdKing(RSprimeX)
   !RCurrentB is Debye-Waller constant b=8*pi*<u^2>, where u is mean square thermal vibration amplitude in Angstroms, global variable
   !RCurrentG is magnitude of scattering vector in 1/A (NB exp(i*g.r), physics convention, global variable
   !RSprime is dummy parameter for integration [s'x s'y]
-  !RSprimeY is passed as a global variable so we just have an integral in 1D from 0 to inf
+  !NB can't print from here as it is called EXTERNAL in Integrate
   USE MyNumbers
   USE CConst; USE IConst
   USE IPara; USE RPara; USE CPara
@@ -508,7 +497,6 @@ FUNCTION BirdKing(RSprimeX)
   Rg2=SQRT( (RCurrentG/2-RGprime(1))**2 - RGprime(2)**2 )
   RsEff=RSprimeX**2+RSprimeY**2-RCurrentG**2/(16*TWOPI**2)
   BirdKing=Kirkland(Rg1)*Kirkland(Rg2)*(1-EXP(-2*RCurrentB*RsEff ) )
-  PRINT*,"g'=",RGprime,":",Kirkland(Rg1),BirdKing
   
 END FUNCTION BirdKing
 
@@ -527,10 +515,9 @@ END FUNCTION debug
 !Defines a Kirkland scattering factor 
 FUNCTION Kirkland(Rg)
   !From Appendix C of Kirkland, "Advanced Computing in Electron Microscopy", 2nd ed.
-  !ICurrentZ is atomic number, global variable
-  !RCurrentG is magnitude of scattering vector in 1/A (NB exp(i*g.r), physics convention), global variable
+  !ICurrentZ is atomic number, passed as a global variable
+  !Rg is magnitude of scattering vector in 1/A (NB exp(i*g.r), physics convention), global variable
   !Kirkland scattering factor is in Angstrom units
-  !Rg is a dummy variable, just to give the function an argument, and is not used
   USE MyNumbers
   USE CConst; USE IConst
   USE IPara; USE RPara; USE CPara
@@ -542,7 +529,7 @@ FUNCTION Kirkland(Rg)
   REAL(RKIND):: Kirkland,Ra,Rb,Rc,Rd,Rq,Rg
 
   !NB Kirkland scattering factors are calculated in the optics convention exp(2*pi*i*q.r)
-  Rq=RCurrentG/TWOPI
+  Rq=Rg/TWOPI
   Kirkland=ZERO;
   !Equation C.15
   DO ind = 1,3
