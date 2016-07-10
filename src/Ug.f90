@@ -358,12 +358,12 @@ SUBROUTINE Absorption (IErr)
       PRINT*,"Starting absorptive form factor calculation..."
     END IF
     !Uses numerical integration of a function BirdKing to calculate absorptive form factor
-	DO ind=2,nReflections!work down the first column of the Ug matrix
+	DO ind=2,2!nReflections!work down the first column of the Ug matrix
       IF(IWriteFLAG.EQ.3.AND.my_rank.EQ.0) THEN
         PRINT*,ind,"of",nReflections
       END IF
 	  RfPrime=0
-      DO knd=1,INAtomsUnitCell
+      DO knd=1,1!INAtomsUnitCell
 	    ICurrentZ = IAtomicNumber(knd)!Atomic number, global variable
         RCurrentB = RIsoDW(knd)!Debye-Waller constant, global variable
         RCurrentG = RgMatrixMagnitude(ind,1)!g-vector magnitude, global variable
@@ -374,14 +374,12 @@ SUBROUTINE Absorption (IErr)
         ENDIF
 		RfPrime=RfPrime+Rintegral
       END DO
-	  CfPrime=COMPLEX(0_RKIND,Rfprime)
+	  CfPrime=Rfprime*CIMAGONE
       IF(IWriteFLAG.EQ.3.AND.my_rank.EQ.0) THEN
-        PRINT*,"U'g=",CUgMatPrime(ind,jnd)
+        PRINT*,"U'g=",CfPrime!CUgMatPrime(ind,1)
       END IF
    END DO
-    IF(IWriteFLAG.EQ.3.AND.my_rank.EQ.0) THEN
-      PRINT*,"done"
-    END IF
+
     !NB Only the lower half of the U'g matrix was calculated, this completes the upper half
     CUgMatPrime = CUgMatPrime + CONJG(TRANSPOSE(CUgMatPrime))!Need to think about this
     !Keep with proportional model while debugging
@@ -425,8 +423,10 @@ SUBROUTINE DoubleIntegrate(RResult,IErr)
 
   !Will become a 2d integral, nothing here yet until it works
   RSprimeY=0!second dimension, global variable
+
   CALL Integrate(RResult,IErr)
- 
+
+  
 END SUBROUTINE DoubleIntegrate
 
 !%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -452,20 +452,65 @@ SUBROUTINE Integrate(RResult,IErr)
   INTEGER(IKIND), PARAMETER :: limit=500
   INTEGER(IKIND), PARAMETER :: lenw= limit*4
 !  REAL(RKIND), EXTERNAL :: BirdKing
-  REAL(RKIND), EXTERNAL :: debug
-  REAL(RKIND) :: RAccuracy,RError,RResult
+  REAL(RKIND) :: BirdKing
+!  REAL(RKIND), EXTERNAL :: debug
+  REAL(RKIND) :: RAccuracy,RError,RResult,dd,ee
   COMPLEX(CKIND) :: CfPrime
 
   INTEGER(IKIND) last, iwork(limit)
   REAL(RKIND) work(lenw)
-  
+
+  ee=0.0
+  dd=BirdKing(ee)
+  PRINT*,ee,":", dd
+  ee=1.0
+  dd=BirdKing(ee)
+  PRINT*,ee,":", dd
+  ee=10.0
+  dd=BirdKing(ee) 
+  PRINT*,ee,":", dd
+  ee=1000.0
+  dd=BirdKing(ee) 
+  PRINT*,ee,":", dd
+ 
   RAccuracy=0.1D0!accuracy of integration
-  !CALL dqagi(BirdKing,ZERO,inf,0,RAccuracy,RResult,RError,Ieval,IErr)
-  CALL dqagi(debug,ZERO,inf,ZERO,RAccuracy,RResult,RError,Ieval,IErr,&
-       limit, lenw, last, iwork, work )
-  PRINT*,RResult,RError
+  !CALL dqagi(BirdKing,ZERO,inf,0,RAccuracy,RResult,RError,Ieval,IErr,&
+  !CALL dqagi(debug,ZERO,inf,ZERO,RAccuracy,RResult,RError,Ieval,IErr,&
+!       limit, lenw, last, iwork, work )
+!  PRINT*,RResult,RError
   
 END SUBROUTINE Integrate
+
+!%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+!Defines a Bird & King integrand to calculate an absorptive scattering factor 
+FUNCTION BirdKing(RSprimeX)
+  !From Bird and King, Acta Cryst A46, 202 (1990)
+  !ICurrentZ is atomic number, global variable
+  !RCurrentB is Debye-Waller constant b=8*pi*<u^2>, where u is mean square thermal vibration amplitude in Angstroms, global variable
+  !RCurrentG is magnitude of scattering vector in 1/A (NB exp(i*g.r), physics convention, global variable
+  !RSprime is dummy parameter for integration [s'x s'y]
+  !RSprimeY is passed as a global variable so we just have an integral in 1D from 0 to inf
+  USE MyNumbers
+  USE CConst; USE IConst
+  USE IPara; USE RPara; USE CPara
+  USE BlochPara
+  
+  IMPLICIT NONE
+  
+  INTEGER(IKIND) :: ind
+  REAL(RKIND):: BirdKing,Rs,Rg1,Rg2,RsEff,Kirkland
+  REAL(RKIND), INTENT(IN) :: RSprimeX
+  REAL(RKIND),DIMENSION(2) :: RGprime
+  RGprime=2*TWOPI*(/RSprimeX,RSprimeY/)
+  !Since [s'x s'y]  is a dummy parameter for integration I can assign s'x //g
+  Rg1=SQRT( (RCurrentG/2+RGprime(1))**2 + RGprime(2)**2 )
+  Rg2=SQRT( (RCurrentG/2-RGprime(1))**2 - RGprime(2)**2 )
+  RsEff=RSprimeX**2+RSprimeY**2-RCurrentG**2/(16*TWOPI**2)
+  BirdKing=Kirkland(Rg1)*Kirkland(Rg2)*(1-EXP(-2*RCurrentB*RsEff ) )
+  PRINT*,"g'=",RGprime,":",Kirkland(Rg1),BirdKing
+  
+END FUNCTION BirdKing
 
 FUNCTION debug(x)
   USE MyNumbers
@@ -509,32 +554,3 @@ FUNCTION Kirkland(Rg)
   END DO
   
 END FUNCTION Kirkland
-
-!%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-
-!Defines a Bird & King integrand to calculate an absorptive scattering factor 
-FUNCTION BirdKing(RSprimeX)
-  !From Bird and King, Acta Cryst A46, 202 (1990)
-  !ICurrentZ is atomic number, global variable
-  !RCurrentB is Debye-Waller constant b=8*pi*<u^2>, where u is mean square thermal vibration amplitude in Angstroms, global variable
-  !RCurrentG is magnitude of scattering vector in 1/A (NB exp(i*g.r), physics convention, global variable
-  !RSprime is dummy parameter for integration [s'x s'y]
-  !RSprimeY is passed as a global variable so we just have an integral in 1D from 0 to inf
-  USE MyNumbers
-  USE CConst; USE IConst
-  USE IPara; USE RPara; USE CPara
-  USE BlochPara
-  
-  IMPLICIT NONE
-  
-  INTEGER(IKIND) :: ind
-  REAL(RKIND):: BirdKing,Rs,Rg1,Rg2,Kirkland,RSprimeX
-  REAL(RKIND),DIMENSION(2) :: RGprime
-  RGprime=2*TWOPI*(/RSprimeX,RSprimeY/)
-  !Since [s'x s'y]  is a dummy parameter for integration I can assign s'x //g
-  Rg1=SQRT( (RCurrentG/2+RGprime(1))**2 + RGprime(2)**2 )
-  Rg2=SQRT( (RCurrentG/2-RGprime(1))**2 - RGprime(2)**2 )
-  BirdKing=Kirkland(Rg1)*Kirkland(Rg2)*&
-  (1-EXP(-2*RCurrentB*(RSprimeX**2+RSprimeY**2-RCurrentG**2/(16*TWOPI**2)) ) )
-  
-END FUNCTION BirdKing
