@@ -418,18 +418,22 @@ SUBROUTINE DoubleIntegrate(RResult,IErr)
 
   IMPLICIT NONE
 
-  INTEGER(IKIND) :: IErr,Ieval
   INTEGER(IKIND), PARAMETER :: inf=1
   INTEGER(IKIND), PARAMETER :: limit=500
   INTEGER(IKIND), PARAMETER :: lenw= limit*4
+  INTEGER(IKIND) :: IErr,Ieval,last, iwork(limit)
   REAL(RKIND), EXTERNAL :: IntegrateBK
-  REAL(RKIND) :: RAccuracy,RError,RResult
-  INTEGER(IKIND) last, iwork(limit)
-  REAL(RKIND) work(lenw)
+  REAL(RKIND) :: RAccuracy,RError,RResult,dd
+  REAL(RKIND) :: work(lenw)
   
+  dd=1.0
   RAccuracy=0.00000001D0!accuracy of integration
+  !use single integration IntegrateBK as an external function of one variable
+  !Quadpack integration 0 to infinity
   CALL dqagi(IntegrateBK,ZERO,inf,0,RAccuracy,RResult,RError,Ieval,IErr,&
        limit, lenw, last, iwork, work )
+  !The integration is actually -inf to inf in 2 dimensions. We use symmetry to just do 0 to inf, so multiply by 4
+  RResult=RResult*4
   
 END SUBROUTINE DoubleIntegrate
 
@@ -456,17 +460,17 @@ FUNCTION IntegrateBK(Sy)
   INTEGER(IKIND), PARAMETER :: limit=500
   INTEGER(IKIND), PARAMETER :: lenw= limit*4
   REAL(RKIND), EXTERNAL :: BirdKing
-  REAL(RKIND) :: RAccuracy,RError,RResult,IntegrateBK,Sy
+  REAL(RKIND) :: RAccuracy,RError,IntegrateBK,Sy
   INTEGER(IKIND) last, iwork(limit)
   REAL(RKIND) work(lenw)
-  !NB can't print from here as it is called EXTERNAL in DoubleIntegrate
-  !RSprimeY is passed as a global variable so we just have an integral in 1D from 0 to infinity
+
+  !RSprimeY is passed into BirdKing as a global variable
   RSprimeY=Sy
-  
   RAccuracy=0.00000001D0!accuracy of integration
-  CALL dqagi(BirdKing,ZERO,inf,0,RAccuracy,RResult,RError,Ieval,IErr,&
+  !use BirdKing as an external function of one variable
+  !Quadpack integration 0 to infinity
+  CALL dqagi(BirdKing,ZERO,inf,0,RAccuracy,IntegrateBK,RError,Ieval,IErr,&
        limit, lenw, last, iwork, work )
-  IntegrateBK=RResult
   
 END FUNCTION IntegrateBK
 
@@ -491,25 +495,17 @@ FUNCTION BirdKing(RSprimeX)
   REAL(RKIND):: BirdKing,Rs,Rg1,Rg2,RsEff,Kirkland
   REAL(RKIND), INTENT(IN) :: RSprimeX
   REAL(RKIND),DIMENSION(2) :: RGprime
+  
+  !NB Kirkland scattering factors in optics convention
   RGprime=2*TWOPI*(/RSprimeX,RSprimeY/)
   !Since [s'x s'y]  is a dummy parameter for integration I can assign s'x //g
   Rg1=SQRT( (RCurrentG/2+RGprime(1))**2 + RGprime(2)**2 )
-  Rg2=SQRT( (RCurrentG/2-RGprime(1))**2 - RGprime(2)**2 )
+  Rg2=SQRT( (RCurrentG/2-RGprime(1))**2 + RGprime(2)**2 )
   RsEff=RSprimeX**2+RSprimeY**2-RCurrentG**2/(16*TWOPI**2)
   BirdKing=Kirkland(Rg1)*Kirkland(Rg2)*(1-EXP(-2*RCurrentB*RsEff ) )
   
 END FUNCTION BirdKing
 
-FUNCTION debug(x)
-  USE MyNumbers
-  USE CConst; USE IConst
-  USE IPara; USE RPara; USE CPara
-  
-  IMPLICIT NONE
-  REAL(RKIND):: debug,x
-  debug=x/(1+x**4)
-
-END FUNCTION debug
 !%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 !Defines a Kirkland scattering factor 
