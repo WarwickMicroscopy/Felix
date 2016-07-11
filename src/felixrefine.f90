@@ -212,7 +212,7 @@ PROGRAM Felixrefine
   END IF
 
 !allocations-----------------------------------  
-  !RgPool is a list of 2pi*g-vectors in the microscope ref frame, units of 1/A (NB exp(i*q.r), physics convention)
+  !RgPool is a list of 2pi*g-vectors in the microscope ref frame, units of 1/A (NB exp(-i*q.r),  physics negative convention)
   ALLOCATE(RgPool(INhkl,ITHREE),STAT=IErr)
   ALLOCATE(RgDummyVecMat(INhkl,ITHREE),STAT=IErr)
   IF(IErr.NE.0) THEN
@@ -411,21 +411,29 @@ PROGRAM Felixrefine
   CALL StructureFactorInitialisation (IErr)!NB IEquivalentUgKey and CUniqueUg allocated in here
   !We now have a list of unique Ug's, can deallocate matrices we needed for that calculation 
   DEALLOCATE(RgSumMat,STAT=IErr)
-  DEALLOCATE(RgMatrix,STAT=IErr)
   IF( IErr.NE.0 ) THEN
      PRINT*,"StructureFactorSetup(",my_rank,")error in deallocations"
      GOTO 9999
   END IF
   
   IF(IWriteFLAG.EQ.3.AND.my_rank.EQ.0) THEN
-	PRINT*,"Starting absorption calculation"
+	PRINT*,"Starting absorption calculation",SIZE(IEquivalentUgKey),"beams"
   END IF
   CALL Absorption (IErr)
   IF( IErr.NE.0 ) THEN
      PRINT*,"StructureFactorSetup(",my_rank,")error in StructureFactorInitialisation"
      GOTO 9999
   END IF
-  
+  CALL SYSTEM_CLOCK(ICurrentTime)
+  Duration=REAL(ICurrentTime-IStartTime)/REAL(IRate)
+  IHours = FLOOR(Duration/3600.0D0)
+  IMinutes = FLOOR(MOD(Duration,3600.0D0)/60.0D0)
+  ISeconds = INT(MOD(Duration,3600.0D0)-IMinutes*60)
+  IF(my_rank.EQ.0) THEN
+    WRITE(SPrintString,FMT='(A24,I3,A5,I2,A6,I2,A4)')&
+    "Absorption completed in ",IHours," hrs ",IMinutes," mins ",ISeconds," sec"
+    PRINT*,TRIM(ADJUSTL(SPrintString))
+  END IF 
 
   IF(IRefineMode(1).EQ.1 .OR. IRefineMode(12).EQ.1) THEN !It's a Ug refinement
 	IUgOffset=1!choose how many Ug's to skip in the refinement, 1 is the inner potential...
@@ -708,6 +716,7 @@ PROGRAM Felixrefine
   !--------------------------------------------------------------------
   ! Deallocate Memory
   !--------------------------------------------------------------------
+  DEALLOCATE(CUgMat,STAT=IErr)
   DEALLOCATE(CUgMatNoAbs,STAT=IErr)
   DEALLOCATE(CUgMatPrime,STAT=IErr)
   DEALLOCATE(RWeightingCoefficients,STAT=IErr)
@@ -721,7 +730,7 @@ PROGRAM Felixrefine
   DEALLOCATE(Rhkl,STAT=IErr)
   DEALLOCATE(RgPoolMag,STAT=IErr)
   DEALLOCATE(RgPool,STAT=IErr)
-  DEALLOCATE(CUgMat,STAT=IErr)
+  DEALLOCATE(RgMatrix,STAT=IErr)
   DEALLOCATE(RSimulatedPatterns,STAT=IErr)
   DEALLOCATE(RAtomPosition,STAT=IErr)
   DEALLOCATE(SAtomName,STAT=IErr)

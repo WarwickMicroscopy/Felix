@@ -83,7 +83,7 @@ SUBROUTINE SimulateAndFit(RFigureofMerit,RIndependentVariable,Iiter,IExitFLAG,IE
       END IF!===
      WHERE(ISymmetryRelations.EQ.IEquivalentUgKey(ind))
         CUgMatDummy = CUniqueUg(ind)+&
-        CUniqueUg(ind)*EXP(CIMAGONE*PI/2_RKIND)*(RAbsorptionPercentage/100_RKIND)
+        CUniqueUg(ind)*EXP(CIMAGONE*PI/2_RKIND)*(RAbsorptionPercentage/100_RKIND)!!REDO ABSORTION HERE
      END WHERE
      WHERE(ISymmetryRelations.EQ.-IEquivalentUgKey(ind))
         CUgMatDummy = CONJG(CUniqueUg(ind))+&

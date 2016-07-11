@@ -168,7 +168,8 @@ SUBROUTINE StructureFactorInitialisation (IErr)
   CALL Message("StructureFactorInitialisation",IMust,IErr)
 
   !Conversion factor from scattering factors to volts. h^2/(2pi*m0*e*CellVolume), see e.g. Kirkland eqn. C.5
-  RScattFacToVolts=(RPlanckConstant**2)*(RAngstromConversion**3)/(TWOPI*RElectronMass*RElectronCharge*RVolume)
+  !NB RVolume is already in A unlike RPlanckConstant
+  RScattFacToVolts=(RPlanckConstant**2)*(RAngstromConversion**2)/(TWOPI*RElectronMass*RElectronCharge*RVolume)
   !Calculate Ug matrix
   CUgMatNoAbs = CZERO
   DO ind=1,nReflections
@@ -177,7 +178,7 @@ SUBROUTINE StructureFactorInitialisation (IErr)
       CVgij= 0.0D0!this is in Volts
       DO lnd=1,INAtomsUnitCell
         ICurrentZ = IAtomicNumber(lnd)!Atomic number
-        RCurrentG = RgMatrixMagnitude(ind,jnd)!g-vector magnitude, global variable
+        RCurrentGMagnitude = RgMatrixMagnitude(ind,jnd)!g-vector magnitude, global variable
         SELECT CASE (IScatterFactorMethodFLAG)! calculate f_e(q)
 
         CASE(0) ! Kirkland Method using 3 Gaussians and 3 Lorentzians, NB Kirkland scattering factor is in Angstrom units
@@ -229,13 +230,12 @@ SUBROUTINE StructureFactorInitialisation (IErr)
             MATMUL( RAnisotropicDebyeWallerFactorTensor( &
             RAnisoDW(lnd),:,:),RgMatrix(ind,jnd,:))))
         END IF
-		!The structure factor equation, CVgij in Volts
+		!The structure factor equation, complex Vg(ind,jnd)=sum(f*exp(-ig.r) in Volts
         CVgij = CVgij + RScattFacToVolts*RScatteringFactor * EXP(-CIMAGONE* &
-        DOT_PRODUCT(RgMatrix(ind,jnd,:), RAtomCoordinate(lnd,:)) )/RAngstromConversion
+        DOT_PRODUCT(RgMatrix(ind,jnd,:), RAtomCoordinate(lnd,:)) )
       ENDDO
 	  !This is actually still the Vg matrix, converted at the end to Ug
       CUgMatNoAbs(ind,jnd)=CVgij
-      !CUgMatNoAbs(ind,jnd)=((((TWOPI**2)*RRelativisticCorrection)/(PI*RVolume))*CVgij)
     ENDDO
   ENDDO
   RMeanInnerPotential= REAL(CUgMatNoAbs(1,1))
@@ -243,7 +243,7 @@ SUBROUTINE StructureFactorInitialisation (IErr)
     WRITE(SPrintString,FMT='(A20,F5.2,1X,A6)') "MeanInnerPotential= ",RMeanInnerPotential," Volts"
 	PRINT*,TRIM(ADJUSTL(SPrintString))
   END IF
-  DO ind=1,nReflections!Take the Mean Inner Potential off the diagonal 
+  DO ind=1,nReflections!Take the Mean Inner Potential off the diagonal (zero diagonal, there are quicker ways to do this!)
      CUgMatNoAbs(ind,ind)=CUgMatNoAbs(ind,ind)-RMeanInnerPotential
   ENDDO
   !NB Only the lower half of the Vg matrix was calculated, this completes the upper half
@@ -341,10 +341,15 @@ SUBROUTINE Absorption (IErr)
 
   IMPLICIT NONE
 
-  INTEGER(IKIND) :: ind,jnd,knd,lnd,mnd,IErr,Ieval
-  REAL(RKIND) :: Rintegral,RfPrime
-  COMPLEX(CKIND) :: CfPrime
+  INTEGER(IKIND) :: ind,jnd,knd,lnd,mnd,IErr
+  INTEGER(IKIND),DIMENSION(2) :: ILoc
+  REAL(RKIND) :: Rintegral,RfPrime,RScattFacToVolts,RAbsPreFactor
+  REAL(RKIND),DIMENSION(3) :: RCurrentG
+  COMPLEX(CKIND) :: CVgPrime,CUgPrime
   CHARACTER*200 :: SPrintString
+  
+  RScattFacToVolts=(RPlanckConstant**2)*(RAngstromConversion**2)/(TWOPI*RElectronMass*RElectronCharge*RVolume)
+  RAbsPreFactor=TWO*RPlanckConstant*RAngstromConversion/(RElectronMass*RElectronVelocity)
   
   CUgMatPrime = CZERO
   SELECT CASE (IAbsorbFLAG)
@@ -354,41 +359,56 @@ SUBROUTINE Absorption (IErr)
 	  
     CASE(2)
     !!$ Bird & King
-    IF(IWriteFLAG.EQ.3.AND.my_rank.EQ.0) THEN
-      PRINT*,"Starting absorptive form factor calculation..."
-    END IF
-    !Uses numerical integration of a function BirdKing to calculate absorptive form factor
-	DO ind=2,2!nReflections!work down the first column of the Ug matrix
-      IF(IWriteFLAG.EQ.3.AND.my_rank.EQ.0) THEN
-        PRINT*,ind,"of",nReflections
-      END IF
-	  RfPrime=0
-      DO knd=1,1!INAtomsUnitCell
+	!Work through unique Ug's 
+	DO ind=1,SIZE(IEquivalentUgKey)
+      CVgPrime = CZERO
+	  !number of this Ug
+	  jnd=IEquivalentUgKey(ind)
+	  !find the position of this Ug in the matrix
+	  ILoc = MINLOC(ABS(ISymmetryRelations-jnd))
+      RCurrentG = RgMatrix(ILoc(1),ILoc(2),:)!g-vector, local variable
+      RCurrentGMagnitude = RgMatrixMagnitude(ILoc(1),ILoc(2))!g-vector magnitude, global variable
+	  !Structure factor calculation for absorptive form factors
+      DO knd=1,INAtomsUnitCell
 	    ICurrentZ = IAtomicNumber(knd)!Atomic number, global variable
         RCurrentB = RIsoDW(knd)!Debye-Waller constant, global variable
-        RCurrentG = RgMatrixMagnitude(ind,1)!g-vector magnitude, global variable
-		CALL DoubleIntegrate(Rintegral,IErr)
+        !Uses numerical integration to calculate absorptive form factor
+		CALL DoubleIntegrate(RfPrime,IErr)
         IF( IErr.NE.0 ) THEN
-          PRINT*,"Absorption(",my_rank,") error in Integrate"
+          PRINT*,"Absorption(",my_rank,") error in Bird&King integration"
           RETURN
         ENDIF
-		RfPrime=RfPrime+Rintegral
+        ! Occupancy
+        RfPrime=RfPrime*ROccupancy(knd)
+	    !Debye Waller factor, isotropic only 
+		RfPrime=RfPrime*EXP(-RIsoDW(knd)*(RCurrentGMagnitude**2)/(4*TWOPI**2) )
+		!Absorptive Structure factor f'
+	    CVgPrime=CVgPrime+CIMAGONE*Rfprime*EXP(-CIMAGONE*DOT_PRODUCT(RCurrentG,RAtomCoordinate(knd,:)) )
       END DO
-	  CfPrime=Rfprime*CIMAGONE
-      IF(IWriteFLAG.EQ.3.AND.my_rank.EQ.0) THEN
-        PRINT*,"U'g=",CfPrime!CUgMatPrime(ind,1)
-      END IF
-   END DO
-
-    !NB Only the lower half of the U'g matrix was calculated, this completes the upper half
-    CUgMatPrime = CUgMatPrime + CONJG(TRANSPOSE(CUgMatPrime))!Need to think about this
-    !Keep with proportional model while debugging
-	CUgMatPrime = CUgMatNoAbs*EXP(CIMAGONE*PI/2)*(RAbsorptionPercentage/100_RKIND)
+	  !f' in volts
+	  CVgPrime=CVgPrime*RAbsPreFactor*RScattFacToVolts
+      !Convert to U'g=V'g*(2*m*e/h^2)	  
+	  CUgPrime=CVgPrime*TWO*RElectronMass*RRelativisticCorrection*RElectronCharge/(RPlanckConstant**2)
+	  CUgPrime=CUgPrime/(RAngstromConversion**2)
+	  !Fill CUgMatPrime
+      WHERE(ISymmetryRelations.EQ.jnd)
+        CUgMatPrime = CUgPrime
+      END WHERE
+	  !NB for imaginary potential U'(g)=-U'(-g)*
+      WHERE(ISymmetryRelations.EQ.-jnd)
+        CUgMatPrime = -CONJG(CUgPrime)
+      END WHERE
+    END DO
+    IF(IWriteFLAG.EQ.3.AND.my_rank.EQ.0) THEN
+      PRINT*,"Done"
+    END IF
 	
     CASE Default
+	!Default case is no absorption
 	
   END SELECT
-  CUgMat = CUgMatNoAbs+CUgMatPrime
+  !The final Ug matrix with absorption
+  CUgMat=CUgMatNoAbs+CUgMatPrime
   
   IF(IWriteFLAG.EQ.3.AND.my_rank.EQ.0) THEN
    PRINT*,"Ug matrix, including absorption (nm^-2)"
@@ -481,7 +501,7 @@ FUNCTION BirdKing(RSprimeX)
   !From Bird and King, Acta Cryst A46, 202 (1990)
   !ICurrentZ is atomic number, global variable
   !RCurrentB is Debye-Waller constant b=8*pi*<u^2>, where u is mean square thermal vibration amplitude in Angstroms, global variable
-  !RCurrentG is magnitude of scattering vector in 1/A (NB exp(i*g.r), physics convention, global variable
+  !RCurrentGMagnitude is magnitude of scattering vector in 1/A (NB exp(-i*g.r), physics negative convention, global variable
   !RSprime is dummy parameter for integration [s'x s'y]
   !NB can't print from here as it is called EXTERNAL in Integrate
   USE MyNumbers
@@ -499,9 +519,9 @@ FUNCTION BirdKing(RSprimeX)
   !NB Kirkland scattering factors in optics convention
   RGprime=2*TWOPI*(/RSprimeX,RSprimeY/)
   !Since [s'x s'y]  is a dummy parameter for integration I can assign s'x //g
-  Rg1=SQRT( (RCurrentG/2+RGprime(1))**2 + RGprime(2)**2 )
-  Rg2=SQRT( (RCurrentG/2-RGprime(1))**2 + RGprime(2)**2 )
-  RsEff=RSprimeX**2+RSprimeY**2-RCurrentG**2/(16*TWOPI**2)
+  Rg1=SQRT( (RCurrentGMagnitude/2+RGprime(1))**2 + RGprime(2)**2 )
+  Rg2=SQRT( (RCurrentGMagnitude/2-RGprime(1))**2 + RGprime(2)**2 )
+  RsEff=RSprimeX**2+RSprimeY**2-RCurrentGMagnitude**2/(16*TWOPI**2)
   BirdKing=Kirkland(Rg1)*Kirkland(Rg2)*(1-EXP(-2*RCurrentB*RsEff ) )
   
 END FUNCTION BirdKing
@@ -512,7 +532,7 @@ END FUNCTION BirdKing
 FUNCTION Kirkland(Rg)
   !From Appendix C of Kirkland, "Advanced Computing in Electron Microscopy", 2nd ed.
   !ICurrentZ is atomic number, passed as a global variable
-  !Rg is magnitude of scattering vector in 1/A (NB exp(i*g.r), physics convention), global variable
+  !Rg is magnitude of scattering vector in 1/A (NB exp(-i*g.r), physics negative convention), global variable
   !Kirkland scattering factor is in Angstrom units
   USE MyNumbers
   USE CConst; USE IConst

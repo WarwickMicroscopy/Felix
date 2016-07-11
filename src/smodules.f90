@@ -124,12 +124,12 @@ MODULE RConst
   USE MyNumbers
   
   REAL(RKIND), PARAMETER :: &
-       RSpeedOfLight=REAL(2.99762458D+8,RKIND), &
-       RElectronMass=REAL(9.10938291D-31,RKIND), &
-       RElectronMassMeV=REAL(0.510998928,RKIND), &
-       RPlanckConstant=REAL(6.62606957D-34,RKIND), &
-       RElectronCharge=REAL(1.602176565D-19,RKIND), &
-       RAngstromConversion=REAL(1.D10,RKIND)
+       RSpeedOfLight=REAL(2.99762458D+8,RKIND), &! in m/s
+       RElectronMass=REAL(9.10938291D-31,RKIND), &!in kg
+       RElectronMassMeV=REAL(0.510998928,RKIND), &!don't think we ever use this
+       RPlanckConstant=REAL(6.62606957D-34,RKIND), &! in kg m^2 /s
+       RElectronCharge=REAL(1.602176565D-19,RKIND), &!in C
+       RAngstromConversion=REAL(1.D10,RKIND)! So [1A (in m)] * RAngstromConversion = 1
   REAL(RKIND), PARAMETER :: RTolerance =REAL(1E-7,RKIND)
     
 END MODULE RConst
@@ -239,7 +239,7 @@ MODULE RPara
   !Iterative Ugs
   REAL(RKIND) :: RPercentageUgChange
   !Debye Waller Constant, g-vector magnitude, dummy [s'x s'y] for absorption calc
-  REAL(RKIND) :: RCurrentB,RCurrentG,RSprimeY
+  REAL(RKIND) :: RCurrentB,RCurrentGMagnitude,RSprimeY
   !HKL indices 
   REAL(RKIND), DIMENSION(:,:), ALLOCATABLE :: Rhkl 
   REAL(RKIND), DIMENSION(:,:), ALLOCATABLE :: RInputHKLs
