@@ -152,6 +152,7 @@ MODULE IPara
   INTEGER(IKIND) :: IMinReflectionPool,IMinStrongBeams,IMinWeakBeams
   !OtherFLAGS
   INTEGER(IKIND) :: IDiffractionFLAG=0
+  INTEGER(IKIND) :: IInitialSimulationFLAG
   !Disk Radius
   INTEGER(IKIND) :: IPixelCount 
   !Crystal Settings

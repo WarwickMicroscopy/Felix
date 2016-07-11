@@ -276,52 +276,53 @@ SUBROUTINE StructureFactorInitialisation (IErr)
   END IF
 
   !--------------------------------------------------------------------
-  !Count equivalent Ugs
+  !Count equivalent Ugs, only the first time round
+  IF (IInitialSimulationFLAG.EQ.1) THEN
   !Equivalent Ug's are identified by the sum of their abs(indices)plus the sum of abs(Ug)'s with no absorption
-  RgSumMat = SUM(ABS(RgMatrix),3)+RgMatrixMagnitude+ABS(REAL(CUgMatNoAbs))+ABS(AIMAG(CUgMatNoAbs))
-  ISymmetryRelations = 0_IKIND 
-  Iuid = 0_IKIND 
-  DO ind = 1,nReflections
-    DO jnd = 1,ind
-      IF(ISymmetryRelations(ind,jnd).NE.0) THEN
-        CYCLE
-      ELSE
-        Iuid = Iuid + 1_IKIND
-        !Ug Fill the symmetry relation matrix with incrementing numbers that have the sign of the imaginary part
-	    WHERE (ABS(RgSumMat-ABS(RgSumMat(ind,jnd))).LE.RTolerance)
-          ISymmetryRelations = Iuid*SIGN(1_IKIND,NINT(AIMAG(CUgMatNoAbs)/TINY**2))
-        END WHERE
-      END IF
+    RgSumMat = SUM(ABS(RgMatrix),3)+RgMatrixMagnitude+ABS(REAL(CUgMatNoAbs))+ABS(AIMAG(CUgMatNoAbs))
+    ISymmetryRelations = 0_IKIND 
+    Iuid = 0_IKIND 
+    DO ind = 1,nReflections
+      DO jnd = 1,ind
+        IF(ISymmetryRelations(ind,jnd).NE.0) THEN
+          CYCLE
+        ELSE
+          Iuid = Iuid + 1_IKIND
+          !Ug Fill the symmetry relation matrix with incrementing numbers that have the sign of the imaginary part
+	      WHERE (ABS(RgSumMat-ABS(RgSumMat(ind,jnd))).LE.RTolerance)
+            ISymmetryRelations = Iuid*SIGN(1_IKIND,NINT(AIMAG(CUgMatNoAbs)/TINY**2))
+          END WHERE
+        END IF
+      END DO
     END DO
-  END DO
 
-  IF((IWriteFLAG.GE.0.AND.my_rank.EQ.0).OR.IWriteFLAG.GE.10) THEN
-    WRITE(SPrintString,FMT='(I5,A25)') Iuid," unique structure factors"
-    PRINT*,TRIM(ADJUSTL(SPrintString))
-  END IF
-  IF(IWriteFLAG.EQ.3.AND.my_rank.EQ.0) THEN
-	PRINT*,"hkl: symmetry matrix"
-    DO ind =1,20
-      WRITE(SPrintString,FMT='(3(1X,I3),A1,12(2X,I3))') NINT(Rhkl(ind,:)),":",ISymmetryRelations(ind,1:12)
-      PRINT*,TRIM(SPrintString)
+    IF((IWriteFLAG.GE.0.AND.my_rank.EQ.0).OR.IWriteFLAG.GE.10) THEN
+      WRITE(SPrintString,FMT='(I5,A25)') Iuid," unique structure factors"
+      PRINT*,TRIM(ADJUSTL(SPrintString))
+    END IF
+    IF(IWriteFLAG.EQ.3.AND.my_rank.EQ.0) THEN
+	  PRINT*,"hkl: symmetry matrix"
+      DO ind =1,20
+        WRITE(SPrintString,FMT='(3(1X,I3),A1,12(2X,I3))') NINT(Rhkl(ind,:)),":",ISymmetryRelations(ind,1:12)
+        PRINT*,TRIM(SPrintString)
+      END DO
+    END IF
+
+    !Link each key with its Ug, from 1 to the number of unique Ug's Iuid
+    ALLOCATE(IEquivalentUgKey(Iuid),STAT=IErr)
+    ALLOCATE(CUniqueUg(Iuid),STAT=IErr)
+    IF( IErr.NE.0 ) THEN
+      PRINT*,"SetupUgsToRefine(",my_rank,")error allocating IEquivalentUgKey or CUniqueUg"
+      RETURN
+    END IF
+    DO ind = 1,Iuid
+      ILoc = MINLOC(ABS(ISymmetryRelations-ind))
+      IEquivalentUgKey(ind) = ind
+      CUniqueUg(ind) = CUgMatNoAbs(ILoc(1),ILoc(2))
     END DO
+    !Put them in descending order of magnitude  
+    CALL ReSortUgs(IEquivalentUgKey,CUniqueUg,Iuid)  
   END IF
-
-!Link each key with its Ug, from 1 to the number of unique Ug's Iuid
-  ALLOCATE(IEquivalentUgKey(Iuid),STAT=IErr)
-  ALLOCATE(CUniqueUg(Iuid),STAT=IErr)
-  IF( IErr.NE.0 ) THEN
-    PRINT*,"SetupUgsToRefine(",my_rank,")error allocating IEquivalentUgKey or CUniqueUg"
-    RETURN
-  END IF
-  DO ind = 1,Iuid
-    ILoc = MINLOC(ABS(ISymmetryRelations-ind))
-    IEquivalentUgKey(ind) = ind
-    CUniqueUg(ind) = CUgMatNoAbs(ILoc(1),ILoc(2))
-  END DO
-  
-!Put them in descending order of magnitude  
-  CALL ReSortUgs(IEquivalentUgKey,CUniqueUg,Iuid)  
   
 END SUBROUTINE StructureFactorInitialisation
 
@@ -341,7 +342,7 @@ SUBROUTINE Absorption (IErr)
 
   IMPLICIT NONE
 
-  INTEGER(IKIND) :: ind,jnd,knd,lnd,mnd,IErr
+  INTEGER(IKIND) :: ind,jnd,knd,lnd,mnd,IErr,IUniqueUgs,ILocalUgCountMin,ILocalUgCountMax
   INTEGER(IKIND),DIMENSION(2) :: ILoc
   REAL(RKIND) :: Rintegral,RfPrime,RScattFacToVolts,RAbsPreFactor
   REAL(RKIND),DIMENSION(3) :: RCurrentG
@@ -359,8 +360,12 @@ SUBROUTINE Absorption (IErr)
 	  
     CASE(2)
     !!$ Bird & King
-	!Work through unique Ug's 
-	DO ind=1,SIZE(IEquivalentUgKey)
+	!Work through unique Ug's
+	IUniqueUgs=SIZE(IEquivalentUgKey)
+    !Allocations for the pixels to be calculated by this core  
+    !ILocalUgCountMin= (IUniqueUgs*(my_rank)/p)+1
+    !ILocalUgCountMax= (IUniqueUgs*(my_rank+1)/p) 
+	DO ind=1,IUniqueUgs
       CVgPrime = CZERO
 	  !number of this Ug
 	  jnd=IEquivalentUgKey(ind)

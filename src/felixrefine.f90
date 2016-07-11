@@ -67,7 +67,6 @@ PROGRAM Felixrefine
   REAL(RKIND) :: RBCASTREAL,RStandardDeviation,RMean,RGzUnitVec,RMinLaueZoneValue,&
        RMaxLaueZoneValue,RMaxAcceptanceGVecMag,RLaueZoneElectronWaveVectorMag
   REAL(RKIND) :: RdeltaUg,Rtol,RpointA,RpointB,RpointC,RfitA,RfitB,RfitC,RbestFit
-  LOGICAL :: LInitialSimulationFLAG = .TRUE.
   CHARACTER*40 :: my_rank_string
   CHARACTER*20 :: Sind
   CHARACTER*200 :: SPrintString
@@ -79,6 +78,7 @@ PROGRAM Felixrefine
   !-------------------------------------------------------------------
   ! set the error value to zero, will change upon error
   IErr=0
+  IInitialSimulationFLAG = 1
 
   !--------------------------------------------------------------------
   ! MPI initialization
@@ -257,48 +257,47 @@ PROGRAM Felixrefine
      GOTO 9999
   END IF
   IF(RAcceptanceAngle.NE.ZERO.AND.IZOLZFLAG.EQ.0) THEN
-     INumtotalReflections=0
-     DO ind=1,ITotalLaueZoneLevel
-        ILaueLevel=ind-IZerothLaueZoneLevel
-        RLaueZoneGz=RGzUnitVec*ILaueLevel
-        DO jnd=1,INhkl
-           IF(RgPool(jnd,3).GE.(RLaueZoneGz-TINY).AND. &
-                RgPool(jnd,3).LE.(RLaueZoneGz+TINY)) THEN
-              RgPoolMagLaue(jnd,ind)=SQRT((RgPool(jnd,1)**2)+(RgPool(jnd,2)**2))              
-           ELSE
-              RgPoolMagLaue(jnd,ind)=NEGHUGE
-           END IF
-        END DO
-        INumInitReflections=COUNT(RgPoolMagLaue(:,ind).NE.NEGHUGE)
-        RLaueZoneElectronWaveVectorMag=RElectronWaveVectorMagnitude-ABS(RLaueZoneGz)           
-        RMaxAcceptanceGVecMag=(RLaueZoneElectronWaveVectorMag*TAN(RAcceptanceAngle*DEG2RADIAN))
-        WHERE(ABS(RgPoolMagLaue(:,ind)).GT.RMaxAcceptanceGVecMag)
-           RgPoolMagLaue(:,ind)=NEGHUGE
-        END WHERE
-        INumFinalReflections=COUNT(RgPoolMagLaue(:,ind).NE.NEGHUGE)
-        INumTotalReflections=INumTotalReflections+INumInitReflections
-     END DO
-     knd=0
-     DO ind=1,INhkl
-        IF(SUM(RgPoolMagLaue(ind,:))/REAL(ITotalLaueZoneLevel,RKIND).GT.NEGHUGE) THEN
-           knd=knd+1
+    INumtotalReflections=0
+    DO ind=1,ITotalLaueZoneLevel
+      ILaueLevel=ind-IZerothLaueZoneLevel
+      RLaueZoneGz=RGzUnitVec*ILaueLevel
+      DO jnd=1,INhkl
+        IF(RgPool(jnd,3).GE.(RLaueZoneGz-TINY).AND. &
+             RgPool(jnd,3).LE.(RLaueZoneGz+TINY)) THEN
+          RgPoolMagLaue(jnd,ind)=SQRT((RgPool(jnd,1)**2)+(RgPool(jnd,2)**2))              
+        ELSE
+          RgPoolMagLaue(jnd,ind)=NEGHUGE
         END IF
-     END DO
-     IHOLZgPoolMag=knd
-
-     ALLOCATE(IOriginGVecIdentifier(IHOLZgPoolMag),STAT=IErr)
-     IF( IErr.NE.0 ) THEN
-        PRINT*,"felixrefine(",my_rank,")error allocating IOriginGVecIdentifier"
-        GOTO 9999
-     END IF
-     IOriginGVecIdentifier=0
-     knd=1
-     DO ind=1,INhkl
-        IF((SUM(RgPoolMagLaue(ind,:))/REAL(ITotalLaueZoneLevel,RKIND)).GT.NEGHUGE) THEN
-           IOriginGVecIdentifier(knd)=ind
-           knd=knd+1
-        END IF
-     END DO
+      END DO
+      INumInitReflections=COUNT(RgPoolMagLaue(:,ind).NE.NEGHUGE)
+      RLaueZoneElectronWaveVectorMag=RElectronWaveVectorMagnitude-ABS(RLaueZoneGz)           
+      RMaxAcceptanceGVecMag=(RLaueZoneElectronWaveVectorMag*TAN(RAcceptanceAngle*DEG2RADIAN))
+      WHERE(ABS(RgPoolMagLaue(:,ind)).GT.RMaxAcceptanceGVecMag)
+        RgPoolMagLaue(:,ind)=NEGHUGE
+      END WHERE
+      INumFinalReflections=COUNT(RgPoolMagLaue(:,ind).NE.NEGHUGE)
+      INumTotalReflections=INumTotalReflections+INumInitReflections
+    END DO
+    knd=0
+    DO ind=1,INhkl
+      IF(SUM(RgPoolMagLaue(ind,:))/REAL(ITotalLaueZoneLevel,RKIND).GT.NEGHUGE) THEN
+        knd=knd+1
+      END IF
+    END DO
+    IHOLZgPoolMag=knd
+    ALLOCATE(IOriginGVecIdentifier(IHOLZgPoolMag),STAT=IErr)
+    IF( IErr.NE.0 ) THEN
+      PRINT*,"felixrefine(",my_rank,")error allocating IOriginGVecIdentifier"
+      GOTO 9999
+    END IF
+    IOriginGVecIdentifier=0
+    knd=1
+    DO ind=1,INhkl
+      IF((SUM(RgPoolMagLaue(ind,:))/REAL(ITotalLaueZoneLevel,RKIND)).GT.NEGHUGE) THEN
+        IOriginGVecIdentifier(knd)=ind
+        knd=knd+1
+      END IF
+    END DO
   END IF
 
   !calculate 2pi*g vector magnitudes for the reflection pool RgPoolMag
@@ -407,15 +406,8 @@ PROGRAM Felixrefine
      PRINT*,TRIM(ADJUSTL(SPrintString))
     END DO
   END IF
-  !Calculate Ug matrix the slow way, for each individual enry in CUgMatNoAbs(1:nReflections,1:nReflections)
+  !Calculate Ug matrix for each individual enry in CUgMatNoAbs(1:nReflections,1:nReflections)
   CALL StructureFactorInitialisation (IErr)!NB IEquivalentUgKey and CUniqueUg allocated in here
-  !We now have a list of unique Ug's, can deallocate matrices we needed for that calculation 
-  DEALLOCATE(RgSumMat,STAT=IErr)
-  IF( IErr.NE.0 ) THEN
-     PRINT*,"StructureFactorSetup(",my_rank,")error in deallocations"
-     GOTO 9999
-  END IF
-  
   IF(IWriteFLAG.EQ.3.AND.my_rank.EQ.0) THEN
 	PRINT*,"Starting absorption calculation",SIZE(IEquivalentUgKey),"beams"
   END IF
@@ -502,11 +494,8 @@ PROGRAM Felixrefine
     INoofElementsForEachRefinementType(11)=IRefineMode(11)!Scaling factor
     !Number of independent variables
     INoOfVariables = SUM(INoofElementsForEachRefinementType)
-  END IF
-
-  !--------------------------------------------------------------------
-  !  Assign IDs - not needed for a Ug refinement
-  IF (IRefineMode(12)+IRefineMode(12).EQ.0) THEN
+    !--------------------------------------------------------------------
+    !Assign IDs - not needed for a Ug refinement
     ALLOCATE(IIterativeVariableUniqueIDs(INoOfVariables,5),STAT=IErr)
     IF( IErr.NE.0 ) THEN
       PRINT*,"felixrefine(",my_rank,")error allocating IIterativeVariableUniqueIDs"
@@ -595,7 +584,7 @@ PROGRAM Felixrefine
   !baseline simulation
   RFigureofMerit=9.999!Inital value
   Iter = 0
-  CALL FelixFunction(LInitialSimulationFLAG,IErr)
+  CALL FelixFunction(IErr)
   IF( IErr.NE.0 ) THEN
      PRINT*,"felixrefine(",my_rank,")error in FelixFunction"
      GOTO 9999
@@ -731,6 +720,7 @@ PROGRAM Felixrefine
   DEALLOCATE(RgPoolMag,STAT=IErr)
   DEALLOCATE(RgPool,STAT=IErr)
   DEALLOCATE(RgMatrix,STAT=IErr)
+  DEALLOCATE(RgSumMat,STAT=IErr)
   DEALLOCATE(RSimulatedPatterns,STAT=IErr)
   DEALLOCATE(RAtomPosition,STAT=IErr)
   DEALLOCATE(SAtomName,STAT=IErr)

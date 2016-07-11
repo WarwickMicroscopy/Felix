@@ -80,19 +80,23 @@ SUBROUTINE SimulateAndFit(RFigureofMerit,RIndependentVariable,Iiter,IExitFLAG,IE
         jnd=jnd+1!===
       ELSE!===should never happen
         PRINT*,"Warning - zero structure factor!",ind,":",CUniqueUg(IEquivalentUgKey(ind))!===
+		IErr=1
       END IF!===
-     WHERE(ISymmetryRelations.EQ.IEquivalentUgKey(ind))
-        CUgMatDummy = CUniqueUg(ind)+&
-        CUniqueUg(ind)*EXP(CIMAGONE*PI/2_RKIND)*(RAbsorptionPercentage/100_RKIND)!!REDO ABSORTION HERE
-     END WHERE
-     WHERE(ISymmetryRelations.EQ.-IEquivalentUgKey(ind))
-        CUgMatDummy = CONJG(CUniqueUg(ind))+&
-        CONJG(CUniqueUg(ind))*EXP(CIMAGONE*PI/2_RKIND)*(RAbsorptionPercentage/100_RKIND)
-     END WHERE
+      WHERE(ISymmetryRelations.EQ.IEquivalentUgKey(ind))
+        CUgMatDummy = CUniqueUg(ind)
+      END WHERE
+      WHERE(ISymmetryRelations.EQ.-IEquivalentUgKey(ind))
+        CUgMatDummy = CONJG(CUniqueUg(ind))
+      END WHERE
     END DO
     WHERE(ABS(CUgMatDummy).GT.TINY)
-      CUgMat = CUgMatDummy
+      CUgMatNoAbs = CUgMatDummy
     END WHERE
+	CALL Absorption(IErr)
+    IF( IErr.NE.0 ) THEN
+      PRINT*,"SimulateAndFit(",my_rank,")error in Absorption"
+      RETURN
+    END IF	
     RAbsorptionPercentage = RIndependentVariable(jnd)!===![[[
 
   ELSE !everything else
@@ -113,27 +117,27 @@ SUBROUTINE SimulateAndFit(RFigureofMerit,RIndependentVariable,Iiter,IExitFLAG,IE
   END IF
 
   IF (my_rank.EQ.0) THEN
-     CALL PrintVariables(IErr)
-     IF( IErr.NE.0 ) THEN
-        PRINT*,"SimulateAndFit(",my_rank,")error in PrintVariables"
-        RETURN
-     END IF
+    CALL PrintVariables(IErr)
+    IF( IErr.NE.0 ) THEN
+      PRINT*,"SimulateAndFit(",my_rank,")error in PrintVariables"
+      RETURN
+    END IF
   END IF
 
   CALL FelixFunction(LInitialSimulationFLAG,IErr) ! Simulate !!  
   IF( IErr.NE.0 ) THEN
-     PRINT*,"SimulateAndFit(",my_rank,")error in FelixFunction"
-     RETURN
+    PRINT*,"SimulateAndFit(",my_rank,")error in FelixFunction"
+    RETURN
   END IF
 
   IF(my_rank.EQ.0) THEN   
-     CALL CreateImagesAndWriteOutput(Iiter,IExitFLAG,IErr) 
-     IF( IErr.NE.0 ) THEN
-        PRINT*,"SimulateAndFit(",my_rank,")error in CreateImagesAndWriteOutput"
-        RETURN
-     ENDIF
+    CALL CreateImagesAndWriteOutput(Iiter,IExitFLAG,IErr) 
+    IF( IErr.NE.0 ) THEN
+      PRINT*,"SimulateAndFit(",my_rank,")error in CreateImagesAndWriteOutput"
+      RETURN
+    ENDIF
 !This is the key parameter!!!****     
-     RFigureofMerit = RCrossCorrelation
+    RFigureofMerit = RCrossCorrelation
   END IF
   CALL MPI_BCAST(RFigureofMerit,1,MPI_DOUBLE_PRECISION,0,MPI_COMM_WORLD,IErr)
 
@@ -141,7 +145,7 @@ END SUBROUTINE SimulateAndFit
 
 !%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-SUBROUTINE FelixFunction(LInitialSimulationFLAG,IErr)
+SUBROUTINE FelixFunction(IErr)
 
   USE MyNumbers
   
@@ -163,30 +167,23 @@ SUBROUTINE FelixFunction(LInitialSimulationFLAG,IErr)
   INTEGER(IKIND) :: IErr,ind,jnd,knd,pnd,IThicknessIndex,IIterationFLAG
   INTEGER(IKIND) :: IAbsorbTag = 0
   REAL(RKIND),DIMENSION(:,:,:),ALLOCATABLE :: RFinalMontageImageRoot
-  LOGICAL,INTENT(INOUT) :: LInitialSimulationFLAG !If function is being called during initialisation
-
 
   IF((IWriteFLAG.GE.6.AND.my_rank.EQ.0).OR.IWriteFLAG.GE.10) THEN
      PRINT*,"Felixfunction(", my_rank, "): starting the eigenvalue problem"
      PRINT*,"Felixfunction(",my_rank,")pixels",ILocalPixelCountMin," to ",ILocalPixelCountMax
   END IF
 
-!Reset simuation--------------------------------------------------------------------  
+  !Reset simuation--------------------------------------------------------------------  
   RIndividualReflections = ZERO
-
-!Update scattering matrix--------------------------------------------------------------------  
-  IF (IRefineMode(1).EQ.1 .OR. IRefineMode(12).EQ.1) THEN!RB Ug refinement, replace selected Ug's
-     !CALL ApplyNewStructureFactors(IErr) !NOW IN SimulateAndFit!***
-     !IF( IErr.NE.0 ) THEN
-     !  PRINT*,"felixfunction(",my_rank,")error in ApplyNewStructureFactors()"
-     !  RETURN
-     !END IF
-  ELSE!RB other refinement, recalculate Ug pool
-     CALL StructureFactorSetup(IErr)
-     IF( IErr.NE.0 ) THEN
-       PRINT*,"felixfunction(",my_rank,")error in StructureFactorInitialisation"
-       RETURN
-     END IF
+  !Update scattering matrix--------------------------------------------------------------------  
+  IF (IRefineMode(1).NE.1 .AND. IRefineMode(12).NE.1 .AND. IInitialSimulationFLAG.NE.1) THEN
+    !Iterating, but not a Ug refinement, recalculate all Ug's
+    CALL StructureFactorInitialisation(IErr)
+    CALL Absorption (IErr)
+    IF( IErr.NE.0 ) THEN
+      PRINT*,"felixfunction(",my_rank,")error in StructureFactorInitialisation"
+      RETURN
+    END IF
   END IF
 
   IMAXCBuffer = 200000!RB what are these?
@@ -206,15 +203,17 @@ SUBROUTINE FelixFunction(LInitialSimulationFLAG,IErr)
      END IF
   END DO
  
-!MPI gatherv into RSimulatedPatterns--------------------------------------------------------------------  
-     CALL MPI_GATHERV(RIndividualReflections,SIZE(RIndividualReflections),&
-          MPI_DOUBLE_PRECISION,RSimulatedPatterns,&
-          ICount,IDisplacements,MPI_DOUBLE_PRECISION,0,&
-          MPI_COMM_WORLD,IErr)
-     IF( IErr.NE.0 ) THEN
-        PRINT*,"Felixfunction(",my_rank,")error",IErr,"in MPI_GATHERV"
-        RETURN
-     END IF     
+  !MPI gatherv into RSimulatedPatterns--------------------------------------------------------------------  
+  CALL MPI_GATHERV(RIndividualReflections,SIZE(RIndividualReflections),&
+       MPI_DOUBLE_PRECISION,RSimulatedPatterns,&
+       ICount,IDisplacements,MPI_DOUBLE_PRECISION,0,&
+       MPI_COMM_WORLD,IErr)
+  IF( IErr.NE.0 ) THEN
+    PRINT*,"Felixfunction(",my_rank,")error",IErr,"in MPI_GATHERV"
+    RETURN
+  END IF
+  !We have done at least one simulation now
+  IInitialSimulationFLAG=0
 
 END SUBROUTINE FelixFunction
 
