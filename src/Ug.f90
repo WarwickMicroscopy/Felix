@@ -409,17 +409,22 @@ SUBROUTINE Absorption (IErr)
 	  CLocalUgPrime(ind-ILocalUgCountMin+1)=CVgPrime*TWO*RElectronMass*RRelativisticCorrection*RElectronCharge/((RPlanckConstant*RAngstromConversion)**2)
     END DO
     !MPI gatherv the new U'g s into CUgPrime--------------------------------------------------------------------  
-    CALL MPI_GATHERV(CLocalUgPrime,SIZE(CLocalUgPrime),&
-       MPI_DOUBLE_PRECISION,CUgPrime,Inum,Ipos,MPI_DOUBLE_PRECISION,0,&
-       MPI_COMM_WORLD,IErr)
+	!NB MPI_GATHERV(BufferToSend,No.of elements,datatype,  ReceivingArray,No.of elements,)
+    CALL MPI_GATHERV(CLocalUgPrime,SIZE(CLocalUgPrime),MPI_COMPLEX,&
+	                 CUgPrime,Inum,Ipos,MPI_COMPLEX,&
+					 root,MPI_COMM_WORLD,IErr)
     IF(IErr.NE.0) THEN
       PRINT*,"Felixfunction(",my_rank,")error",IErr,"in MPI_GATHERV"
       RETURN
     END IF
 	!and send out the full list to all cores
-	CALL MPI_BCAST(CUgPrime,1,MPI_DOUBLE_PRECISION,0,MPI_COMM_WORLD,IErr)
+	CALL MPI_BCAST(CUgPrime,SIZE(CUgPrime),MPI_COMPLEX,&
+	               root,MPI_COMM_WORLD,IErr)
     IF(IWriteFLAG.EQ.3.AND.my_rank.EQ.0) THEN
-	  PRINT*,"local U'g:",Inum
+	  PRINT*,"Size",SIZE(CLocalUgPrime)
+	  PRINT*,"Ipos",Ipos
+	  PRINT*,"Inum",Inum
+	  PRINT*,"local U'g:"
 	  DO ind=1,SIZE(CLocalUgPrime)
 	    PRINT*,ILocalUgCountMin+ind-1,CLocalUgPrime(ind)
       END DO

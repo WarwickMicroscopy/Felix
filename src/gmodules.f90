@@ -124,6 +124,7 @@ MODULE MyMPI
   USE MyNumbers
 
   INTEGER(IKIND) :: my_rank, p, srce, dest
+  INTEGER, PARAMETER :: root = 0
   INTEGER, DIMENSION(MPI_STATUS_SIZE) :: status_info
   
 END MODULE MyMPI
