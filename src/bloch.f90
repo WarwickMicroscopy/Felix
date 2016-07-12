@@ -215,8 +215,8 @@ SUBROUTINE BlochCoefficientCalculation(IYPixelIndex,IXPixelIndex,IPixelNumber,IF
 
   IF(IWriteFLAG.EQ.3.AND.IYPixelIndex.EQ.10.AND.IXPixelIndex.EQ.10) THEN
    PRINT*,"Ug/2K + {Sg} matrix (nm^-2)"
-	DO ind =1,8
-     WRITE(SPrintString,FMT='(3(1X,I3),A1,8(1X,F7.3,F7.3))') NINT(Rhkl(ind,:)),":",100*CUgSgMatrix(ind,1:8)
+	DO ind =1,6
+     WRITE(SPrintString,FMT='(3(1X,I3),A1,8(1X,F7.3,F7.3))') NINT(Rhkl(ind,:)),":",100*CUgSgMatrix(ind,1:6)
      PRINT*,TRIM(SPrintString)
     END DO
   END IF	

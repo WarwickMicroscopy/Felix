@@ -533,19 +533,15 @@ PROGRAM Felixrefine
      GOTO 9999
   END IF
   RSimulatedPatterns = ZERO
-  !Allocations for the pixels to be calculated by this core  
+  !The pixels to be calculated by this core  
   ILocalPixelCountMin= (IPixelTotal*(my_rank)/p)+1
   ILocalPixelCountMax= (IPixelTotal*(my_rank+1)/p) 
   ALLOCATE(RIndividualReflections(INoOfLacbedPatterns,IThicknessCount,&
          (ILocalPixelCountMax-ILocalPixelCountMin)+1),STAT=IErr)
-  IF( IErr.NE.0 ) THEN
-    PRINT*,"felixrefine(",my_rank,")error allocating RIndividualReflections"
-    GOTO 9999
-  END IF
-  !position of pixels calculated by this core
+  !position of pixels calculated by this core, IDisplacements and ICount are global variables
   ALLOCATE(IDisplacements(p),ICount(p),STAT=IErr)
   IF( IErr.NE.0 ) THEN
-     PRINT*,"felixrefine(",my_rank,")error allocating IDisplacements and/or ICount"
+     PRINT*,"felixrefine(",my_rank,")error in local allocations for MPI"
      GOTO 9999
   END IF
   DO ind = 1,p
@@ -730,7 +726,7 @@ PROGRAM Felixrefine
   DEALLOCATE(RAnisoDW,STAT=IErr)
   DEALLOCATE(RAtomCoordinate,STAT=IErr)
   DEALLOCATE(RgMatrixMagnitude,STAT=IErr)
-  IF (IRefineMode(12)+IRefineMode(12).EQ.0) THEN
+  IF (IRefineMode(1)+IRefineMode(12).EQ.0) THEN
   	DEALLOCATE(IIterativeVariableUniqueIDs,STAT=IErr)
   END IF  
   IF( IErr.NE.0 ) THEN

@@ -346,7 +346,9 @@ SUBROUTINE Absorption (IErr)
   INTEGER(IKIND),DIMENSION(2) :: ILoc
   REAL(RKIND) :: Rintegral,RfPrime,RScattFacToVolts,RAbsPreFactor
   REAL(RKIND),DIMENSION(3) :: RCurrentG
-  COMPLEX(CKIND) :: CVgPrime,CUgPrime
+  COMPLEX(CKIND),DIMENSION(:),ALLOCATABLE :: CLocalUgPrime,CUgPrime
+  INTEGER(IKIND),DIMENSION(:),ALLOCATABLE :: Ipos,Inum
+  COMPLEX(CKIND) :: CVgPrime
   CHARACTER*200 :: SPrintString
   
   RScattFacToVolts=(RPlanckConstant**2)*(RAngstromConversion**2)/(TWOPI*RElectronMass*RElectronCharge*RVolume)
@@ -362,22 +364,33 @@ SUBROUTINE Absorption (IErr)
     !!$ Bird & King
 	!Work through unique Ug's
 	IUniqueUgs=SIZE(IEquivalentUgKey)
-    !Allocations for the pixels to be calculated by this core  
-    !ILocalUgCountMin= (IUniqueUgs*(my_rank)/p)+1
-    !ILocalUgCountMax= (IUniqueUgs*(my_rank+1)/p) 
-	DO ind=1,IUniqueUgs
+    !Allocations for the U'g to be calculated by this core  
+    ILocalUgCountMin= (IUniqueUgs*(my_rank)/p)+1
+    ILocalUgCountMax= (IUniqueUgs*(my_rank+1)/p)
+    ALLOCATE(Ipos(p),Inum(p),STAT=IErr)
+    ALLOCATE(CLocalUgPrime(ILocalUgCountMax-ILocalUgCountMin+1),STAT=IErr)!U'g list for this core
+    ALLOCATE(CUgPrime(IUniqueUgs),STAT=IErr)!complete U'g list
+    IF( IErr.NE.0 ) THEN
+      PRINT*,"Absorption(",my_rank,") error in allocations"
+      RETURN
+    ENDIF
+	DO ind = 1,p!p is the number of cores
+      Ipos(ind) = 1*(IUniqueUgs*(ind-1)/p)!position in the MPI buffer, *2 for Re,Im
+      Inum(ind) = 1*(IUniqueUgs*(ind)/p - IUniqueUgs*(ind-1)/p)!number of U'g components, *2 for Re,Im 
+    END DO
+	DO ind=ILocalUgCountMin,ILocalUgCountMax!Different U'g s for each core
       CVgPrime = CZERO
 	  !number of this Ug
 	  jnd=IEquivalentUgKey(ind)
 	  !find the position of this Ug in the matrix
 	  ILoc = MINLOC(ABS(ISymmetryRelations-jnd))
-      RCurrentG = RgMatrix(ILoc(1),ILoc(2),:)!g-vector, local variable
+      RCurrentG = RgMatrix(ILoc(1),ILoc(2),:)!g-vector, global variable
       RCurrentGMagnitude = RgMatrixMagnitude(ILoc(1),ILoc(2))!g-vector magnitude, global variable
 	  !Structure factor calculation for absorptive form factors
       DO knd=1,INAtomsUnitCell
 	    ICurrentZ = IAtomicNumber(knd)!Atomic number, global variable
         RCurrentB = RIsoDW(knd)!Debye-Waller constant, global variable
-        !Uses numerical integration to calculate absorptive form factor
+        !Uses numerical integration to calculate absorptive form factor f'
 		CALL DoubleIntegrate(RfPrime,IErr)
         IF( IErr.NE.0 ) THEN
           PRINT*,"Absorption(",my_rank,") error in Bird&King integration"
@@ -387,26 +400,47 @@ SUBROUTINE Absorption (IErr)
         RfPrime=RfPrime*ROccupancy(knd)
 	    !Debye Waller factor, isotropic only 
 		RfPrime=RfPrime*EXP(-RIsoDW(knd)*(RCurrentGMagnitude**2)/(4*TWOPI**2) )
-		!Absorptive Structure factor f'
+		!Absorptive Structure factor equation giving imaginary potential
 	    CVgPrime=CVgPrime+CIMAGONE*Rfprime*EXP(-CIMAGONE*DOT_PRODUCT(RCurrentG,RAtomCoordinate(knd,:)) )
       END DO
-	  !f' in volts
+	  !V'g in volts
 	  CVgPrime=CVgPrime*RAbsPreFactor*RScattFacToVolts
       !Convert to U'g=V'g*(2*m*e/h^2)	  
-	  CUgPrime=CVgPrime*TWO*RElectronMass*RRelativisticCorrection*RElectronCharge/(RPlanckConstant**2)
-	  CUgPrime=CUgPrime/(RAngstromConversion**2)
-	  !Fill CUgMatPrime
+	  CLocalUgPrime(ind-ILocalUgCountMin+1)=CVgPrime*TWO*RElectronMass*RRelativisticCorrection*RElectronCharge/((RPlanckConstant*RAngstromConversion)**2)
+    END DO
+    !MPI gatherv the new U'g s into CUgPrime--------------------------------------------------------------------  
+    CALL MPI_GATHERV(CLocalUgPrime,SIZE(CLocalUgPrime),&
+       MPI_DOUBLE_PRECISION,CUgPrime,Inum,Ipos,MPI_DOUBLE_PRECISION,0,&
+       MPI_COMM_WORLD,IErr)
+    IF(IErr.NE.0) THEN
+      PRINT*,"Felixfunction(",my_rank,")error",IErr,"in MPI_GATHERV"
+      RETURN
+    END IF
+	!and send out the full list to all cores
+	CALL MPI_BCAST(CUgPrime,1,MPI_DOUBLE_PRECISION,0,MPI_COMM_WORLD,IErr)
+    IF(IWriteFLAG.EQ.3.AND.my_rank.EQ.0) THEN
+	  PRINT*,"local U'g:",Inum
+	  DO ind=1,SIZE(CLocalUgPrime)
+	    PRINT*,ILocalUgCountMin+ind-1,CLocalUgPrime(ind)
+      END DO
+	  PRINT*,"MPI gathered U'g:"
+	  DO ind=1,2*SIZE(CLocalUgPrime)
+        PRINT*,ind,CUgPrime(ind)
+      END DO
+    END IF
+	!Construct CUgMatPrime
+    DO ind=1,IUniqueUgs
+    !number of this Ug
+      jnd=IEquivalentUgKey(ind)
+      !Fill CUgMatPrime
       WHERE(ISymmetryRelations.EQ.jnd)
-        CUgMatPrime = CUgPrime
+        CUgMatPrime = CUgPrime(ind)
       END WHERE
 	  !NB for imaginary potential U'(g)=-U'(-g)*
       WHERE(ISymmetryRelations.EQ.-jnd)
-        CUgMatPrime = -CONJG(CUgPrime)
+        CUgMatPrime = -CONJG(CUgPrime(ind))
       END WHERE
-    END DO
-    IF(IWriteFLAG.EQ.3.AND.my_rank.EQ.0) THEN
-      PRINT*,"Done"
-    END IF
+	END DO
 	
     CASE Default
 	!Default case is no absorption

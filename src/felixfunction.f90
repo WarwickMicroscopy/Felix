@@ -175,9 +175,8 @@ SUBROUTINE FelixFunction(IErr)
 
   !Reset simuation--------------------------------------------------------------------  
   RIndividualReflections = ZERO
-  !Update scattering matrix--------------------------------------------------------------------  
+  !Update scattering matrix, if it's not a Ug refinement and it's not the baseline simulation-------------------------------------  
   IF (IRefineMode(1).NE.1 .AND. IRefineMode(12).NE.1 .AND. IInitialSimulationFLAG.NE.1) THEN
-    !Iterating, but not a Ug refinement, recalculate all Ug's
     CALL StructureFactorInitialisation(IErr)
     CALL Absorption (IErr)
     IF( IErr.NE.0 ) THEN
@@ -185,7 +184,6 @@ SUBROUTINE FelixFunction(IErr)
       RETURN
     END IF
   END IF
-
   IMAXCBuffer = 200000!RB what are these?
   IPixelComputed= 0
 
@@ -194,13 +192,13 @@ SUBROUTINE FelixFunction(IErr)
     PRINT*,"Bloch wave calculation..."
   END IF
   DO knd = ILocalPixelCountMin,ILocalPixelCountMax,1
-     jnd = IPixelLocations(knd,1)
-     ind = IPixelLocations(knd,2)
-     CALL BlochCoefficientCalculation(ind,jnd,knd,ILocalPixelCountMin,IErr)
-     IF( IErr.NE.0 ) THEN
-        PRINT*,"Felixfunction(",my_rank,") error in BlochCofficientCalculation"
-        RETURN
-     END IF
+    jnd = IPixelLocations(knd,1)
+    ind = IPixelLocations(knd,2)
+    CALL BlochCoefficientCalculation(ind,jnd,knd,ILocalPixelCountMin,IErr)
+    IF( IErr.NE.0 ) THEN
+      PRINT*,"Felixfunction(",my_rank,") error in BlochCofficientCalculation"
+      RETURN
+    END IF
   END DO
  
   !MPI gatherv into RSimulatedPatterns--------------------------------------------------------------------  
