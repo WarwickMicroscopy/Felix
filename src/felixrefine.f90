@@ -495,6 +495,13 @@ PROGRAM Felixrefine
     !Number of independent variables
     INoOfVariables = SUM(INoofElementsForEachRefinementType)
     !--------------------------------------------------------------------
+    ALLOCATE(RIndependentVariable(INoOfVariables),STAT=IErr)
+	!Fill up the IndependentVariable list with CUgMatNoAbs components
+    IF(IRefineMode(4).EQ.1) THEN!Isotropic DW
+	  DO ind=1,SIZE(IAtomicSitesToRefine)
+        RIndependentVariable(ind)=RIsoDW(ind)
+	  END DO
+	END IF
     !Assign IDs - not needed for a Ug refinement
     ALLOCATE(IIterativeVariableUniqueIDs(INoOfVariables,5),STAT=IErr)
     IF( IErr.NE.0 ) THEN
@@ -1293,23 +1300,29 @@ USE MyNumbers
      END DO
      
   ELSE
-     ALLOCATE(RRandomSigns(INoOfVariables),&
-          RRandomNumbers(INoOfVariables),STAT=IErr)
-     
-     DO ind = 1,(INoOfVariables+1)
-        CALL RandomSequence(RRandomNumbers,INoOfVariables,ind,IErr)
-        CALL RandomSequence(RRandomSigns,INoOfVariables,2*ind,IErr)
-        WHERE (RRandomSigns.LT.HALF)
-           RRandomSigns = ONE
-        ELSEWHERE
-           RRandomSigns = -ONE
-        END WHERE
-        RSimplexVariable(ind,:) = &
-             RIndependentVariable(:)*&
-             (1+(RRandomNumbers*RRandomSigns*RSimplexLengthScale))
-     END DO
-        DEALLOCATE(RRandomSigns,RRandomNumbers)
-     
+
+    ALLOCATE(RRandomSigns(INoOfVariables),RRandomNumbers(INoOfVariables),STAT=IErr)
+    IF( IErr.NE.0 ) THEN
+      PRINT*,"CreateRandomisedSimplex(",my_rank,")error in Allocation"
+      RETURN
+    END IF     
+    DO ind = 1,(INoOfVariables+1)
+      CALL RandomSequence(RRandomNumbers,INoOfVariables,ind,IErr)
+      CALL RandomSequence(RRandomSigns,INoOfVariables,2*ind,IErr)
+      WHERE (RRandomSigns.LT.HALF)
+        RRandomSigns=ONE
+      ELSEWHERE
+        RRandomSigns=-ONE
+      END WHERE
+	  RSimplexVariable(ind,:)=RIndependentVariable(:)*&
+                              (1+(RRandomNumbers*RRandomSigns*RSimplexLengthScale))
+    END DO
+    DEALLOCATE(RRandomSigns,STAT=IErr)
+	DEALLOCATE(RRandomNumbers,STAT=IErr)
+     IF( IErr.NE.0 ) THEN
+      PRINT*,"CreateRandomisedSimplex(",my_rank,")error in deallocation"
+      RETURN
+    END IF      
   END IF
 
 END SUBROUTINE CreateRandomisedSimplex

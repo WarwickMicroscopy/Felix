@@ -19,7 +19,7 @@ IXDirectionFLAG           = 1
 IPixelCount               = 35
 
 # beam selection criteria
-IMinReflectionPool        = 1000
+IMinReflectionPool        = 800
 IMinStrongBeams           = 20
 IMinWeakBeams             = 0
 RBSBMax                   = 0.1
@@ -48,7 +48,7 @@ IReflectOut              = 1
 # FelixRefine Input
 
 #Refinement Specific Flags
-IRefineModeFLAG          = A
+IRefineModeFLAG          = D
 IWeightingFLAG           = 0
 IContinueFLAG            = 0
 ICorrelationFLAG         = 2
@@ -68,6 +68,6 @@ IPrint                    = 10
 
 # Simplex Initialisation
 
-RSimplexLengthScale       = 1.0 
-RExitCriteria             = 0.007
+RSimplexLengthScale       = 4.0 
+RExitCriteria             = 0.001
 

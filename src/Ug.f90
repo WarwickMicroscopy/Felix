@@ -239,7 +239,7 @@ SUBROUTINE StructureFactorInitialisation (IErr)
     ENDDO
   ENDDO
   RMeanInnerPotential= REAL(CUgMatNoAbs(1,1))
-  IF(my_rank.EQ.0) THEN
+  IF(my_rank.EQ.0 .AND. IInitialSimulationFLAG.EQ.1) THEN
     WRITE(SPrintString,FMT='(A20,F5.2,1X,A6)') "MeanInnerPotential= ",RMeanInnerPotential," Volts"
 	PRINT*,TRIM(ADJUSTL(SPrintString))
   END IF
