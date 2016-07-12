@@ -347,6 +347,7 @@ SUBROUTINE Absorption (IErr)
   REAL(RKIND) :: Rintegral,RfPrime,RScattFacToVolts,RAbsPreFactor
   REAL(RKIND),DIMENSION(3) :: RCurrentG
   COMPLEX(CKIND),DIMENSION(:),ALLOCATABLE :: CLocalUgPrime,CUgPrime
+  REAL(RKIND),DIMENSION(:),ALLOCATABLE :: RLocalUgReal,RLocalUgImag,RUgReal,RUgImag
   INTEGER(IKIND),DIMENSION(:),ALLOCATABLE :: Ipos,Inum
   COMPLEX(CKIND) :: CVgPrime
   CHARACTER*200 :: SPrintString
@@ -369,14 +370,18 @@ SUBROUTINE Absorption (IErr)
     ILocalUgCountMax= (IUniqueUgs*(my_rank+1)/p)
     ALLOCATE(Ipos(p),Inum(p),STAT=IErr)
     ALLOCATE(CLocalUgPrime(ILocalUgCountMax-ILocalUgCountMin+1),STAT=IErr)!U'g list for this core
+    ALLOCATE(RLocalUgReal(ILocalUgCountMax-ILocalUgCountMin+1),STAT=IErr)!U'g list for this core [Re,Im]
+    ALLOCATE(RLocalUgImag(ILocalUgCountMax-ILocalUgCountMin+1),STAT=IErr)!U'g list for this core [Re,Im]
     ALLOCATE(CUgPrime(IUniqueUgs),STAT=IErr)!complete U'g list
+    ALLOCATE(RUgReal(IUniqueUgs),STAT=IErr)!complete U'g list [Re,]
+    ALLOCATE(RUgImag(IUniqueUgs),STAT=IErr)!complete U'g list [Im]
     IF( IErr.NE.0 ) THEN
       PRINT*,"Absorption(",my_rank,") error in allocations"
       RETURN
     ENDIF
 	DO ind = 1,p!p is the number of cores
-      Ipos(ind) = 1*(IUniqueUgs*(ind-1)/p)!position in the MPI buffer, *2 for Re,Im
-      Inum(ind) = 1*(IUniqueUgs*(ind)/p - IUniqueUgs*(ind-1)/p)!number of U'g components, *2 for Re,Im 
+      Ipos(ind) = IUniqueUgs*(ind-1)/p!position in the MPI buffer
+      Inum(ind) = IUniqueUgs*(ind)/p - IUniqueUgs*(ind-1)/p!number of U'g components
     END DO
 	DO ind=ILocalUgCountMin,ILocalUgCountMax!Different U'g s for each core
       CVgPrime = CZERO
@@ -408,31 +413,40 @@ SUBROUTINE Absorption (IErr)
       !Convert to U'g=V'g*(2*m*e/h^2)	  
 	  CLocalUgPrime(ind-ILocalUgCountMin+1)=CVgPrime*TWO*RElectronMass*RRelativisticCorrection*RElectronCharge/((RPlanckConstant*RAngstromConversion)**2)
     END DO
+	!I give up trying to MPI a complex number, do it with a real one
+	RLocalUgReal=REAL(CLocalUgPrime)
+	RLocalUgImag=AIMAG(CLocalUgPrime)
     !MPI gatherv the new U'g s into CUgPrime--------------------------------------------------------------------  
 	!NB MPI_GATHERV(BufferToSend,No.of elements,datatype,  ReceivingArray,No.of elements,)
-    CALL MPI_GATHERV(CLocalUgPrime,SIZE(CLocalUgPrime),MPI_COMPLEX,&
-	                 CUgPrime,Inum,Ipos,MPI_COMPLEX,&
+    CALL MPI_GATHERV(RLocalUgReal,SIZE(RLocalUgReal),MPI_DOUBLE_PRECISION,&
+	                 RUgReal,Inum,Ipos,MPI_DOUBLE_PRECISION,&
+					 root,MPI_COMM_WORLD,IErr)
+    CALL MPI_GATHERV(RLocalUgImag,SIZE(RLocalUgImag),MPI_DOUBLE_PRECISION,&
+	                 RUgImag,Inum,Ipos,MPI_DOUBLE_PRECISION,&
 					 root,MPI_COMM_WORLD,IErr)
     IF(IErr.NE.0) THEN
       PRINT*,"Felixfunction(",my_rank,")error",IErr,"in MPI_GATHERV"
       RETURN
     END IF
-	!and send out the full list to all cores
-	CALL MPI_BCAST(CUgPrime,SIZE(CUgPrime),MPI_COMPLEX,&
+    !=====================================and send out the full list to all cores
+	CALL MPI_BCAST(RUgReal,IUniqueUgs,MPI_DOUBLE_PRECISION,&
 	               root,MPI_COMM_WORLD,IErr)
-    IF(IWriteFLAG.EQ.3.AND.my_rank.EQ.0) THEN
-	  PRINT*,"Size",SIZE(CLocalUgPrime)
-	  PRINT*,"Ipos",Ipos
-	  PRINT*,"Inum",Inum
-	  PRINT*,"local U'g:"
-	  DO ind=1,SIZE(CLocalUgPrime)
-	    PRINT*,ILocalUgCountMin+ind-1,CLocalUgPrime(ind)
-      END DO
-	  PRINT*,"MPI gathered U'g:"
-	  DO ind=1,2*SIZE(CLocalUgPrime)
-        PRINT*,ind,CUgPrime(ind)
-      END DO
-    END IF
+	CALL MPI_BCAST(RUgImag,IUniqueUgs,MPI_DOUBLE_PRECISION,&
+	               root,MPI_COMM_WORLD,IErr)
+    !=====================================
+	DO ind=1,IUniqueUgs
+	  CUgPrime(ind)=COMPLEX(RUgReal(ind),RUgImag(ind))
+	END DO
+!    IF(IWriteFLAG.EQ.3.AND.my_rank.EQ.1) THEN
+!	  PRINT*,"local U'g:"
+!	  DO ind=1,SIZE(CLocalUgPrime)
+!	    PRINT*,ILocalUgCountMin+ind-1,CLocalUgPrime(ind)
+!      END DO
+!	  PRINT*,"MPI gathered U'g:"
+!	  DO ind=1,2*SIZE(CLocalUgPrime)
+!        PRINT*,ind,CUgPrime(ind)
+!      END DO
+!    END IF
 	!Construct CUgMatPrime
     DO ind=1,IUniqueUgs
     !number of this Ug

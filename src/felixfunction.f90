@@ -202,10 +202,9 @@ SUBROUTINE FelixFunction(IErr)
   END DO
  
   !MPI gatherv into RSimulatedPatterns--------------------------------------------------------------------  
-  CALL MPI_GATHERV(RIndividualReflections,SIZE(RIndividualReflections),&
-       MPI_DOUBLE_PRECISION,RSimulatedPatterns,&
-       ICount,IDisplacements,MPI_DOUBLE_PRECISION,0,&
-       MPI_COMM_WORLD,IErr)
+  CALL MPI_GATHERV(RIndividualReflections,SIZE(RIndividualReflections),MPI_DOUBLE_PRECISION,&
+                   RSimulatedPatterns,ICount,IDisplacements,MPI_DOUBLE_PRECISION,&
+				   root,MPI_COMM_WORLD,IErr)
   IF( IErr.NE.0 ) THEN
     PRINT*,"Felixfunction(",my_rank,")error",IErr,"in MPI_GATHERV"
     RETURN
