@@ -56,9 +56,9 @@ SUBROUTINE WriteIterationOutput(Iter,IThicknessIndex,IExitFlag,IErr)
   REAL(RKIND),DIMENSION(2*IPixelCount,2*IPixelCount) :: RImageToWrite
   REAL(RKIND) :: Rradius
   CHARACTER*200 :: path,SPrintString
-!PRINT*,"Iter",Iter,IPreviousPrintedIteration,IPrint
+
   IF(IExitFLAG.EQ.1.OR.(Iter.GE.(IPreviousPrintedIteration+IPrint))) THEN
-     IThickness = (RInitialThickness + (IThicknessIndex-1)*RDeltaThickness)/10!RB in nm 
+     IThickness = (RInitialThickness + (IThicknessIndex-1)*RDeltaThickness)/10!in nm 
      WRITE(path,"(A10,I4.4,A1,I3.3,A3,I3.3,A1,I3.3)") &
           "Iteration",Iter,&
           "_",IThickness,&

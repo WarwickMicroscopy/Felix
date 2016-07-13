@@ -136,7 +136,7 @@ SUBROUTINE SimulateAndFit(RFigureofMerit,RIndependentVariable,Iiter,IExitFLAG,IE
       PRINT*,"SimulateAndFit(",my_rank,")error in CreateImagesAndWriteOutput"
       RETURN
     ENDIF
-!This is the key parameter!!!****     
+    !This is the key parameter!!!****     
     RFigureofMerit = RCrossCorrelation
   END IF
   CALL MPI_BCAST(RFigureofMerit,1,MPI_DOUBLE_PRECISION,0,MPI_COMM_WORLD,IErr)
@@ -287,7 +287,7 @@ SUBROUTINE CalculateFigureofMeritandDetermineThickness(IThicknessCountFinal,IErr
               
       CASE(4)!Apply gaussian blur to simulated image
         RExperimentalImage = RImageExpi(:,:,hnd)
-        Rradius=0.95_RKIND!!!*+*+ will need to be added as a line in felix.inp +*+*!!!
+        Rradius=1.45_RKIND!!!*+*+ blur will need to be added as a line in felix.inp +*+*!!!
        ! IF(my_rank.EQ.0) THEN
        !   PRINT*,"Gaussian blur radius =",Rradius
        ! END IF
