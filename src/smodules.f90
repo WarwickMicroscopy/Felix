@@ -145,7 +145,7 @@ MODULE IPara
        IMaskFLAG, IVolumeFLAG, &
        IZolzFLAG,IAbsorbFLAG, IAnisoDebyeWallerFactorFlag, &
        IImageFLAG,IBeamConvergenceFLAG,  &
-       IPseudoCubicFLAG,IXDirectionFLAG,IDevFLAG, &
+       IDevFLAG, &
        IRefineModeFLAG,ISoftwareMode,IHKLSelectFLAG,IPrint,IRefineSwitch,&
        IWeightingFLAG,IContinueFLAG,ICorrelationFLAG,IImageProcessingFLAG
   !Minimum Reflections etc
@@ -208,7 +208,8 @@ MODULE IPara
   INTEGER(IKIND) :: IFelixCount,IPreviousPrintedIteration,IStandardDeviationCalls  
   !Message Counter (Avoid subroutines printing out message more than once)
   INTEGER(IKIND) :: IMessageCounter=0
-
+  !Temporary hardcoded PseudoCubic 'off' setting before removal
+  INTEGER(IKIND) :: IPseudoCubicFLAG=0
 END MODULE IPara
 !--------------------------------------------------------------------
 MODULE RPara
