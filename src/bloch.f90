@@ -394,36 +394,36 @@ SUBROUTINE StrongAndWeakBeamsDetermination(IErr)
 
   !----------------------------------------------------------------------------
   !STRONG BEAMS
-  !First use deviation parameter to find strong beams
+  !Use perturbation strength to define strong beams
+  !PerturbationStrength Eq. 8 Zuo Ultramicroscopy 57 (1995) 375, |Ug/2KSg|
   !Use IMinStrongBeams to calculate the maximum value of Sg, RBSMaxDeviationPara
   IStrongBeamList = 0_IKIND
   RBSMaxDeviationPara = ZERO
-  RMinPertStrength=-NEGHUGE!a big number
+  RMinPertStrength=0.00001!1e-04 gives about 140 strong beams In Ca3Mn2O7
   RDummySg = ABS(RDevPara)!list of ABS(Sg) for the different reflections for this pixel
-  DO ind=1,IMinStrongBeams
-    !find the smallest Sg
-    IMinimum = MINLOC(RDummySg,1)
-	!does it have the largest Sg so far?
-    IF(RDummySg(IMinimum).GT.RBSMaxDeviationPara) THEN
-      RBSMaxDeviationPara = ABS(RDevPara(IMinimum))
-	END IF
-	!does it have the smallest perturbation strength so far?
-    !PerturbationStrength Eq. 8 Zuo Ultramicroscopy 57 (1995) 375, |Ug/2KSg|
-    RPertStrength = ABS(CUgMat(IMinimum,1)/(TWO*RBigK*RDevPara(IMinimum)))
-    IF(RPertStrength.LT.RMinPertStrength) THEN
-      RMinPertStrength = RPertStrength
-    END IF
-    RDummySg(IMinimum)=-NEGHUGE!finished with this one, on to the next
-  END DO
+!  DO ind=1,IMinStrongBeams
+!    !find the smallest Sg
+!    IMinimum = MINLOC(RDummySg,1)
+!	!does it have the largest Sg so far?
+!    IF(RDummySg(IMinimum).GT.RBSMaxDeviationPara) THEN
+!      RBSMaxDeviationPara = ABS(RDevPara(IMinimum))
+!	END IF
+!	!does it have the smallest perturbation strength so far?
+!    RPertStrength = ABS(CUgMat(IMinimum,1)/(TWO*RBigK*RDevPara(IMinimum)))
+!    IF(RPertStrength.LT.RMinPertStrength) THEN
+!      RMinPertStrength = RPertStrength
+!    END IF
+!    RDummySg(IMinimum)=-NEGHUGE!finished with this one, on to the next
+!  END DO
   IF(IWriteFLAG.EQ.6.AND.my_rank.EQ.0) THEN
-    PRINT*, "Sg limit for strong beams=",RBSMaxDeviationPara
+!    PRINT*, "Sg limit for strong beams=",RBSMaxDeviationPara
     PRINT*, "Minimum perturbation for strong beams=",RMinPertStrength
   END IF
-  !Now count the reflectionswith Sg <= RBSMaxDeviationPara or RPertStrength>RMinPertStrength
+  !Count the reflectionswith Sg <= RBSMaxDeviationPara or RPertStrength>RMinPertStrength
   IStrongBeamIndex=0
   DO ind=1,nReflections
     RPertStrength = ABS(CUgMat(ind,1)/(TWO*RBigK*RDevPara(ind)))
-    IF(ABS(RDevPara(ind)).LE.RBSMaxDeviationPara.OR.RPertStrength.GE.RMinPertStrength) THEN!it's a strong beam, add it to the list
+    IF(RPertStrength.GE.RMinPertStrength) THEN!it's a strong beam, add it to the list
       IStrongBeamIndex= IStrongBeamIndex +1
       IStrongBeamList(IStrongBeamIndex)= ind!list of reflection ID no.s up to nStrongBeams
     ENDIF

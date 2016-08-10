@@ -115,7 +115,7 @@ SUBROUTINE NDimensionalDownhillSimplex(RSimplexVariable,y,mp,np,ndim,ftol,iter,R
         PRINT*,"Entering Contraction Phase, Expect",ndim+1,"Simulations"
         PRINT*,"-----------------------------------------------------"
         DO i=1,ndim+1
-          PRINT*,"Expansion Simulation",i
+          PRINT*,"Contraction Simulation",i
           IF(i.NE.ilo) THEN
             DO j=1,ndim
               psum(j)=0.5*(RSimplexVariable(i,j)+RSimplexVariable(ilo,j))
