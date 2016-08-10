@@ -152,8 +152,8 @@ SUBROUTINE ReadInpFile( IErr )
   CALL Message ("ReadInpFile",IInfo,IErr,MessageVariable ="IMaskFLAG",IVariable=IMaskFLAG)
 
   ILine= ILine+1
-  READ(IChInp,10,ERR=20,END=30) IZolzFLAG
-  CALL Message ("ReadInpFile",IInfo,IErr,MessageVariable ="IZolzFLAG",IVariable=IZolzFLAG)
+  READ(IChInp,10,ERR=20,END=30) IHolzFLAG
+  CALL Message ("ReadInpFile",IInfo,IErr,MessageVariable ="IHolzFLAG",IVariable=IHolzFLAG)
 
   ILine= ILine+1
   READ(IChInp,10,ERR=20,END=30) IAbsorbFLAG

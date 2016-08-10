@@ -161,7 +161,7 @@ SUBROUTINE BlochCoefficientCalculation(IYPixelIndex,IXPixelIndex,IPixelNumber,IF
   CALL ZGEMM('N','N',nBeams,nBeams,nReflections,CONE,CBeamProjectionMatrix, &
        nBeams,CUgMatPartial,nReflections,CZERO,CUgSgMatrix,nBeams)
 
-  IF (IZolzFLAG.EQ.0) THEN
+  IF (IHolzFLAG.EQ.1) THEN
     DO ind=1,nBeams
       CUgSgMatrix(ind,ind) = CUgSgMatrix(ind,ind) + TWO*RBigK*RDevPara(IStrongBeamList(ind))
     ENDDO
@@ -223,7 +223,7 @@ SUBROUTINE BlochCoefficientCalculation(IYPixelIndex,IXPixelIndex,IPixelNumber,IF
   
   !--------------------------------------------------------------------
   ! diagonalize the UgMatEffective
-  IF (IZolzFLAG.EQ.0) THEN
+  IF (IHolzFLAG.EQ.1) THEN
      CALL EigenSpectrum(nBeams,CUgSgMatrix,CEigenValues(:), CEigenVectors(:,:),IErr)
      IF( IErr.NE.0 ) THEN
         PRINT*,"BlochCoefficientCalculation(", my_rank, ") error in EigenSpectrum()"

@@ -143,7 +143,7 @@ MODULE IPara
   !Input Flags
   INTEGER(IKIND) :: IWriteFLAG,IDebugFLAG,IScatterFactorMethodFLAG, &
        IMaskFLAG, IVolumeFLAG, &
-       IZolzFLAG,IAbsorbFLAG, IAnisoDebyeWallerFactorFlag, &
+       IHolzFLAG,IAbsorbFLAG, IAnisoDebyeWallerFactorFlag, &
        IImageFLAG,IBeamConvergenceFLAG,  &
        IDevFLAG, &
        IRefineModeFLAG,ISoftwareMode,IHKLSelectFLAG,IPrint,IRefineSwitch,&
@@ -208,8 +208,6 @@ MODULE IPara
   INTEGER(IKIND) :: IFelixCount,IPreviousPrintedIteration,IStandardDeviationCalls  
   !Message Counter (Avoid subroutines printing out message more than once)
   INTEGER(IKIND) :: IMessageCounter=0
-  !Temporary hardcoded PseudoCubic 'off' setting before removal
-  INTEGER(IKIND) :: IPseudoCubicFLAG=0
 END MODULE IPara
 !--------------------------------------------------------------------
 MODULE RPara
@@ -230,7 +228,7 @@ MODULE RPara
        RAtomPosition,RUniqueKey
   REAL(RKIND), DIMENSION(:,:,:), ALLOCATABLE :: RSymMat
   !Microscope Parameters
-  REAL(RKIND) :: RConvergenceAngle,RAcceleratingVoltage,RInnerConvergenceAngle
+  REAL(RKIND) :: RConvergenceAngle,RAcceleratingVoltage
   REAL(RKIND) :: RElectronVelocity,RElectronWaveLength, &
        RElectronWaveVectorMagnitude,RRelativisticCorrection, &
        RRelativisticMass,RBraggCentral,RAcceptanceAngle

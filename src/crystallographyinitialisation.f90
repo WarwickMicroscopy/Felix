@@ -49,66 +49,7 @@ SUBROUTINE CrystallographyInitialisation( IErr )
  
   CALL Message("CrystallographyInitialisation",IMust,IErr)
      
-  IF(IPseudoCubicFLAG.EQ.1) THEN!.AND.IDiffractionFLAG.EQ.0) THEN
-     RZDirC(1) = (IIncidentBeamDirectionX/THREE)+&
-          (IIncidentBeamDirectionY/THREE)-&
-          (TWO*(IIncidentBeamDirectionZ/THREE))
-     RZDirC(2) = (-IIncidentBeamDirectionX/THREE)+&
-          (TWO*(IIncidentBeamDirectionY/THREE))-&
-          (IIncidentBeamDirectionZ/THREE)
-     RZDirC(3) = (IIncidentBeamDirectionX/THREE)+&
-          (IIncidentBeamDirectionY/THREE)+&
-          (IIncidentBeamDirectionZ/THREE)
-     RXDirC(1) = (IXDirectionX/THREE)+&
-          (IXDirectionY/THREE)-&
-          (TWO*(IXDirectionZ/THREE))
-     RXDirC(2) = (-IXDirectionX/THREE)+&
-          (TWO*(IXDirectionY/THREE))-&
-          (IXDirectionZ/THREE)
-     RXDirC(3) = (IXDirectionX/THREE)+&
-          (IXDirectionY/THREE)+&
-          (IXDirectionZ/THREE)
-     RNormDirC(1) = (INormalDirectionX/THREE)+&
-          (INormalDirectionY/THREE)-&
-          (TWO*(INormalDirectionZ/THREE))
-     RNormDirC(2) = (-INormalDirectionX/THREE)+&
-          (TWO*(INormalDirectionY/THREE))-&
-          (INormalDirectionZ/THREE)
-     RNormDirC(3) = (INormalDirectionX/THREE)+&
-          (INormalDirectionY/THREE)+&
-          (INormAlDirectionZ/THREE)
-
-     DO ind =1,3
-        IF(ABS(RZDirC(ind)).LE.TINY) THEN
-           RZDirC(ind) = REAL(100000000.0,RKIND) ! A large number
-        END IF
-        IF(ABS(RXDirC(ind)).LE.TINY) THEN
-           RXDirC(ind) = REAL(100000000.0,RKIND) ! A large number
-        END IF
-        IF(ABS(RNormDirC(ind)).LE.TINY) THEN
-           RNormDirC(ind) = REAL(100000000.0,RKIND) ! A large number
-        END IF
-     END DO
-        RZDirC = RZDirC/MINVAL(ABS(RZDirC))
-        RXDirC = RXDirC/MINVAL(ABS(RXDirC))
-
-     DO ind =1,3
-        IF(RZDirC(ind).GT.REAL(10000000.0,RKIND)) THEN
-           RZDirC(ind) = ZERO ! A large number
-        END IF
-        IF(RXDirC(ind).GT.REAL(10000000.0,RKIND)) THEN
-           RXDirC(ind) = ZERO ! A large number
-        END IF
-        IF(RNormDirC(ind).GT.REAL(10000000.0,RKIND)) THEN
-           RNormDirC(ind) = ZERO ! A large number
-        END IF
-     END DO
-     
-     RZDirC = REAL(NINT(RZDirC))
-     RXDirC = REAL(NINT(RXDirC))
-     RNormDirC = REAL(NINT(RNormDirC))
-     
-  END IF
+  !Removed PseudoCubic translation
 
   CALL ReciprocalLattice(IErr)
   IF( IErr.NE.0 ) THEN
