@@ -312,7 +312,7 @@ PROGRAM Felixrefine
   ENDDO
   IF(IWriteFLAG.EQ.6.AND.my_rank.EQ.0) THEN
     DO ind =1,INhkl
-	 WRITE(SPrintString,FMT='(I3,A4,3(F3.0,1X),A12,F7.4,A4)') ind,": g=",Rhkl(ind,:),", magnitude ",RgPoolMag(ind)," 1/A"
+	 WRITE(SPrintString,FMT='(I4,A4,3(I4,1X),A12,F7.4,A4)') ind,": g=",NINT(Rhkl(ind,:)),", magnitude ",RgPoolMag(ind)," 1/A"
      PRINT*,TRIM(ADJUSTL(SPrintString))
     END DO
   END IF
@@ -328,7 +328,7 @@ PROGRAM Felixrefine
   END DO
   IF(IWriteFLAG.EQ.6.AND.my_rank.EQ.0) THEN
     DO ind =1,INhkl
-	 WRITE(SPrintString,FMT='(I3,A4,3(F3.0,1X),A7,F7.4,A4)') ind,": g=",Rhkl(ind,:),", g.n= ",RgDotNorm(ind)," 1/A"
+	 WRITE(SPrintString,FMT='(I4,A4,3(I4,1X),A7,F12.9,A4)') ind,": g=",NINT(Rhkl(ind,:)),", g.n= ",RgDotNorm(ind)," 1/A"
      PRINT*,TRIM(ADJUSTL(SPrintString))
     END DO
   END IF
