@@ -159,7 +159,7 @@ SUBROUTINE ReciprocalLattice(IErr)
   !This is used in diffraction pattern calculation subroutine
   RNormDirM = MATMUL(RTMatO2M,MatMUL(RTMatC2O,RNormDirC))
   RNormDirM = RNormDirM/SQRT(DOT_PRODUCT(RNormDirM,RNormDirM)) 
-  
+
   ! now transform from crystal reference frame to orthogonal and then to microscope frame
 
   ! RaVecM, RbVecM, RbVecM unit cell vectors in Angstrom units in the microscope frame

@@ -60,7 +60,7 @@ PROGRAM Felixrefine
   INTEGER(IKIND) :: IStartTime,ICurrentTime,IRate
   INTEGER(IKIND), DIMENSION(:),ALLOCATABLE :: IOriginGVecIdentifier
   REAL(RKIND) :: StartTime, CurrentTime, Duration, TotalDurationEstimate,&
-       RFigureOfMerit,RHOLZAcceptanceAngle,RLaueZoneGz
+       RFigureOfMerit,RHOLZAcceptanceAngle,RLaueZoneGz,RMaxGMag
   REAL(RKIND), DIMENSION(:,:), ALLOCATABLE :: RSimplexVariable
   REAL(RKIND),DIMENSION(:),ALLOCATABLE :: RSimplexFoM,RIndependentVariable
   REAL(RKIND), DIMENSION(:,:), ALLOCATABLE :: RgDummyVecMat,RgPoolMagLaue
@@ -158,7 +158,7 @@ PROGRAM Felixrefine
   !The following are over-allocated since the actual size is not known before the calculation of unique positions
   !AtomPosition is in fractional unit cell coordinates, like BasisAtomPosition
   ALLOCATE(RAtomPosition(IMaxPossibleNAtomsUnitCell,ITHREE),STAT=IErr)
-  !AtomCoordinate is in the microscopy reference frame in Angstrom units
+  !AtomCoordinate is in the microscope reference frame in Angstrom units
   ALLOCATE(RAtomCoordinate(IMaxPossibleNAtomsUnitCell,ITHREE),STAT=IErr)
   !Atom name
   ALLOCATE(SAtomName(IMaxPossibleNAtomsUnitCell),STAT=IErr)
@@ -333,9 +333,7 @@ PROGRAM Felixrefine
     END DO
   END IF
   RMinimumGMag = RgPoolMag(2)
-  IF (nReflections.LT.INoOfLacbedPatterns) THEN
-     nReflections = INoOfLacbedPatterns
-  END IF
+
   ! resolution in k space
   RDeltaK = RMinimumGMag*RConvergenceAngle/REAL(IPixelCount,RKIND)
 
@@ -343,35 +341,38 @@ PROGRAM Felixrefine
   IF(RAcceptanceAngle.NE.ZERO.AND.IZOLZFLAG.EQ.1) THEN
      RMaxAcceptanceGVecMag=(RElectronWaveVectorMagnitude*TAN(RAcceptanceAngle*DEG2RADIAN))
      IF(RgPoolMag(IMinReflectionPool).GT.RMaxAcceptanceGVecMag) THEN
-        RBSMaxGVecAmp = RMaxAcceptanceGVecMag 
+        RMaxGMag = RMaxAcceptanceGVecMag 
      ELSE
-        RBSMaxGVecAmp = RgPoolMag(IMinReflectionPool)
+        RMaxGMag = RgPoolMag(IMinReflectionPool)
      END IF
   ELSEIF(RAcceptanceAngle.NE.ZERO.AND.IZOLZFLAG.EQ.0) THEN
      IBSMaxLocGVecAmp=MAXVAL(IOriginGVecIdentifier)
-     RBSMaxGVecAmp=RgPoolMag(IBSMaxLocGVecAmp)
+     RMaxGMag=RgPoolMag(IBSMaxLocGVecAmp)
      IF(RgPoolMag(IBSMaxLocGVecAmp).LT.RgPoolMag(IMinreflectionPool)) THEN
 
      ELSE
-        RBSMaxGVecAmp = RgPoolMag(IMinReflectionPool)
+        RMaxGMag = RgPoolMag(IMinReflectionPool)
      END IF
   ELSE
-     RBSMaxGVecAmp = RgPoolMag(IMinReflectionPool)
+     RMaxGMag = RgPoolMag(IMinReflectionPool)
   END IF
   
   IThicknessCount= (RFinalThickness-RInitialThickness)/RDeltaThickness + 1
 
   !count reflections up to cutoff magnitude
-  nReflections = 0
-  nStrongBeams = 0
-  nWeakBeams = 0
+  nReflections=0_IKIND
   DO ind=1,INhkl
-    IF (ABS(RgPoolMag(ind)).LE.RBSMaxGVecAmp) THEN
+    IF (ABS(RgPoolMag(ind)).LE.RMaxGMag) THEN
       nReflections=nReflections+1
     END IF
   ENDDO
-
-!deallocation
+  IF (nReflections.LT.INoOfLacbedPatterns) THEN
+     nReflections = INoOfLacbedPatterns
+  END IF
+  !Temporary - ignore acceptance angle and use the full g Pool
+  nReflections=INhkl
+  
+  !deallocation
   DEALLOCATE(RgPoolMagLaue)!
   IF (RAcceptanceAngle.NE.ZERO.AND.IZOLZFLAG.EQ.0) THEN
     DEALLOCATE(IOriginGVecIdentifier)
@@ -386,7 +387,7 @@ PROGRAM Felixrefine
   ALLOCATE(RgMatrixMagnitude(nReflections,nReflections),STAT=IErr)  !Matrix of their magnitudes
   ALLOCATE(RgSumMat(nReflections,nReflections),STAT=IErr)  !Matrix of sums of indices - for symmetry equivalence  in the Ug matrix
   ALLOCATE(ISymmetryRelations(nReflections,nReflections),STAT=IErr)!Matrix with numbers marking equivalent Ug's
-  IF( IErr.NE.0 ) THEN
+  IF (IErr.NE.0) THEN
      PRINT*,"felixrefine(",my_rank,") error allocating CUgMat or its components"
      GOTO 9999
   END IF

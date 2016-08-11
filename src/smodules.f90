@@ -170,7 +170,7 @@ MODULE IPara
   INTEGER(IKIND) :: INoOfLacbedPatterns
   !Beams from selection criteria
   INTEGER(IKIND) :: nReflections,nStrongBeams,nWeakBeams,nBeams,IHKLMAXValue
-  INTEGER(IKIND), DIMENSION(:), ALLOCATABLE :: IBasisAnisoDW, RAnisoDW
+  INTEGER(IKIND), DIMENSION(:), ALLOCATABLE :: IBasisAnisoDW,IStrongBeamList, RAnisoDW
   !Main
   INTEGER(IKIND) :: IPixelTotal, INAtomsUnitCell,IPixelComputed
   INTEGER, DIMENSION(2) :: IImageSizeXY
@@ -178,7 +178,7 @@ MODULE IPara
   INTEGER(IKIND) :: IImageOutputFLAG
   !LACBED
   INTEGER(IKIND),DIMENSION(:,:), ALLOCATABLE :: ILACBEDStrongBeamList, IPixelLocation, ISymmetryRelations
-  INTEGER(IKIND),DIMENSION(:), ALLOCATABLE :: InBeams,IStrongBeamList,IOutputReflections,IEquivalentUgKey
+  INTEGER(IKIND),DIMENSION(:), ALLOCATABLE :: InBeams,IOutputReflections,IEquivalentUgKey
   !inpcif
   INTEGER(IKIND) :: ISymCount
   INTEGER(IKIND) :: IPixelCountTotal
@@ -218,8 +218,7 @@ MODULE RPara
 
   !INPUT Section
   !Beam Selection Criteria
-  REAL(RKIND) :: RBSMaxDeviationPara,RBSMaxGVecAmp,RBSBethePara, &
-       RBSBmax, RBSPMax 
+  REAL(RKIND) :: RBSBmax, RBSPMax 
   !Crystallography
   REAL(RKIND) :: RLengthX,RLengthY,RLengthZ,RVolume,RAlpha,RBeta,RGamma, &
        RDebyeWallerConstant,RAbsorptionPercentage
@@ -353,7 +352,6 @@ MODULE BlochPara
   USE MPI
   USE MyMPI
 
-  INTEGER(IKIND) IStrongBeamIndex, IWeakBeamIndex
   INTEGER(IKIND),DIMENSION(:), ALLOCATABLE :: IWeakBeamList
   REAL(RKIND) RBigK
   REAL(RKIND),DIMENSION(:), ALLOCATABLE :: RDevPara

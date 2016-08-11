@@ -155,10 +155,7 @@ SUBROUTINE DiffractionPatternCalculation (IErr)
   
   DO ind =1,SIZE(Rhkl,DIM=1)
      RgDotNorm(ind) = DOT_PRODUCT(RgPool(ind,:),RNormDirM)
-  END DO
-  
-  CALL Message("DiffractionPatternCalculation",IInfo,IErr, &
-       MessageVariable = "GMax", RVariable = RBSMaxGVecAmp)     
+  END DO   
   
   ! smallest g is gmag(2) IF 000 beam is included !!!add error catch here
   

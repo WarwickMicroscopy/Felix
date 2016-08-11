@@ -326,6 +326,8 @@ SUBROUTINE StructureFactorInitialisation (IErr)
   
 END SUBROUTINE StructureFactorInitialisation
 
+!!$%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
 SUBROUTINE Absorption (IErr)  
 
   USE MyNumbers
