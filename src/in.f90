@@ -238,12 +238,6 @@ SUBROUTINE ReadInpFile( IErr )
 
   ILine= ILine+1
   READ(IChInp,FMT='(27X,A)',END=30) SDirectionX
-
-  !Read in the user specified X-direction, if 'A' felix automatically selects the closest g-vector
-  IF (INDEX(SDirectionX,'A').NE.0) THEN
-     IXDirectionFLAG=0
-  ELSE
-     IXDirectionFLAG=1
      CALL Message ("ReadInpFile",IInfo,IErr,MessageVariable ="IDirection", &
           MessageString=ADJUSTL(TRIM(SDirectionX)))
      CALL ThreeDimVectorReadIn(SDirectionX,'[',']',RXDirC)
