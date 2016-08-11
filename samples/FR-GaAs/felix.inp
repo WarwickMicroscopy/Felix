@@ -51,6 +51,10 @@ IContinueFLAG            = 0
 ICorrelationFLAG         = 2
 IImageProcessingFLAG     = 4
 
+#Gaussian Blur
+
+RBlurRadius              = 1.45
+
 # Ug Iteration
 
 INoofUgs                  = 1

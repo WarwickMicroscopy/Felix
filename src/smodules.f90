@@ -298,6 +298,8 @@ MODULE RPara
   REAL(RKIND),DIMENSION(:,:),ALLOCATABLE :: RInitialAtomPosition
   !Weighting Coefficients for figure of merit combination
   REAL(RKIND),DIMENSION(:),ALLOCATABLE :: RWeightingCoefficients
+  !Gaussian blur radius (pixels^2?)
+  REAL(RKIND) :: RBlurRadius
 
 END MODULE RPara
 !--------------------------------------------------------------------

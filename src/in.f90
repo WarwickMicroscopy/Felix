@@ -328,7 +328,7 @@ SUBROUTINE ReadInpFile( IErr )
         
      IF((IRefineMode(1).EQ.1 .OR. IRefineMode(12).EQ.1).AND.SUM(IRefineMode).GT.1) THEN         
         IF(my_rank.EQ.0) THEN
-           PRINT*,"Structure factors must be refined seperately"
+           PRINT*,"Structure factors must be refined separately"
         END IF
         IErr = 1
         RETURN
@@ -356,6 +356,13 @@ SUBROUTINE ReadInpFile( IErr )
      ILine= ILine+1; READ(IChInp,ERR=20,END=30,FMT='(A)')
 
      ILine= ILine+1
+     READ(IChInp,15,ERR=20,END=30) RBlurRadius
+     CALL Message ("ReadInpFile",IInfo,IErr,MessageVariable ="RBlurRadius",RVariable = RBlurRadius)
+
+     ILine= ILine+1; READ(IChInp,ERR=20,END=30,FMT='(A)')
+     ILine= ILine+1; READ(IChInp,ERR=20,END=30,FMT='(A)')
+     ILine= ILine+1; READ(IChInp,ERR=20,END=30,FMT='(A)')
+
      READ(IChInp,10,ERR=20,END=30) INoofUgs
      CALL Message ("ReadInpFile",IInfo,IErr,MessageVariable ="INoofUgs",IVariable = INoofUgs)
      
