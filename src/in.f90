@@ -242,7 +242,7 @@ SUBROUTINE ReadInpFile( IErr )
           MessageString=ADJUSTL(TRIM(SDirectionX)))
      CALL ThreeDimVectorReadIn(SDirectionX,'[',']',RXDirC)
      CALL Message ("ReadInpFile",IInfo+IDebug,IErr,MessageVariable ="RXDirC",RVector=RXDirC)
-  END IF
+  
 
   ILine= ILine+1
   READ(IChInp,FMT='(27X,A)',ERR=20,END=30) SNormalDirectionX
@@ -250,7 +250,6 @@ SUBROUTINE ReadInpFile( IErr )
           MessageString=ADJUSTL(TRIM(SNormalDirectionX)))
      CALL ThreeDimVectorReadIn(SNormalDirectionX,'[',']',RNormDirC)
      CALL Message ("ReadInpFile",IInfo+IDebug,IErr,MessageVariable ="RNormDirC",RVector=RNormDirC)
-  END IF
 
   ILine= ILine+1
   READ(IChInp,15,ERR=20,END=30) RAcceleratingVoltage

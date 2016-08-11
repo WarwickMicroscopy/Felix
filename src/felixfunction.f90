@@ -56,7 +56,6 @@ SUBROUTINE SimulateAndFit(RFigureofMerit,RIndependentVariable,Iiter,IExitFLAG,IE
   REAL(RKIND) :: RFigureofMerit
   INTEGER(IKIND),INTENT(IN) :: Iiter
   COMPLEX(CKIND),DIMENSION(nReflections,nReflections) :: CUgMatDummy
-  LOGICAL :: LInitialSimulationFLAG = .FALSE.
   
   IF(IWriteFLAG.GE.10.AND.my_rank.EQ.0) THEN
      PRINT*,"SimulateAndFit(",my_rank,")"
@@ -124,7 +123,7 @@ SUBROUTINE SimulateAndFit(RFigureofMerit,RIndependentVariable,Iiter,IExitFLAG,IE
     END IF
   END IF
 
-  CALL FelixFunction(LInitialSimulationFLAG,IErr) ! Simulate !!  
+  CALL FelixFunction(IErr) ! Simulate !!  
   IF( IErr.NE.0 ) THEN
     PRINT*,"SimulateAndFit(",my_rank,")error in FelixFunction"
     RETURN
