@@ -369,8 +369,6 @@ PROGRAM Felixrefine
   IF (nReflections.LT.INoOfLacbedPatterns) THEN
      nReflections = INoOfLacbedPatterns
   END IF
-  !Temporary - ignore acceptance angle and use the full g Pool
-  !nReflections=INhkl
   
   !deallocation
   DEALLOCATE(RgPoolMagLaue)!
