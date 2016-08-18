@@ -56,22 +56,21 @@ ifeq ($(unixOS),Linux)
   HPC := $(shell expr substr $(shell uname -n) 1 3)
   ARCHER := $(shell expr substr $(shell uname -n) 1 2)
 
-  ifeq ($(HPC),hpc) #minerva hpc
-   $(info Compiling on minerva $(HPC))
+  ifeq ($(HPC),hpc) #tinis hpc
+   $(info Compiling on tinis $(HPC))
    $(info Please ensure to run: )
-   $(info "module swap oldmodules minerva-2.0")
-   $(info "module load goolf-1.7.10")
+   $(info please run: module load intel impi imkl FFTW)
 
-   F90 = mpif90
-   FC = gfortran -ffixed-form -std=legacy
-   F90FLAGS = $(GLOBALgfortranF90FLAGS)
-   F77FLAGS = $(GLOBALgfortranF90FLAGS)
+   F90 = mpiifort
+   FC = ifort -fixed
+   F90FLAGS = -132 -r8 -u -C -g -traceback -check noarg_temp_created #debug
+   #F90FLAGS = -132 -r8 -u -g -p #profiling
+   F77FLAGS = -r8 #debug
 
    LIBFLAGS= \
-   -L/csc/minerva/software/gompi/1.7.10/ScaLAPACK/2.0.2-openblas-0.2.8-lapack-3.4.2/lib \
-   -L/csc/minerva/software/gompi/1.7.10/OpenBLAS/0.2.8-lapack-3.4.2/lib \
-   -lopenblas \
-   -lfftw3
+   -mkl -mkl=cluster -qopenmp -I${MKLROOT}/include/intel64/ilp64 -I${MKLROOT}/include -lfftw3
+
+   INCLUDEDIR= #/hpcwarwick/mathlib/gnu/lib
 
   else ifeq ($(ARCHER),es) #ARCHER
    $(info Compiling on ARCHER)
