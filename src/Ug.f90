@@ -114,7 +114,7 @@ SUBROUTINE SymmetryRelatedStructureFactorDetermination (IErr)
            Iuid = Iuid + 1_IKIND
            !Ug Fill the symmetry relation matrix with incrementing numbers that have the sign of the imaginary part
 		   WHERE (ABS(RgSumMat-RgSumMat(ind,jnd)).LE.RTolerance)
-              ISymmetryRelations = Iuid*SIGN(1_IKIND,NINT(AIMAG(CUgMatNoAbs)/TINY**2))
+              ISymmetryRelations = Iuid*SIGN(1_IKIND,NINT(AIMAG(CUgMatNoAbs)/(TINY**2)))
            END WHERE
         END IF
      END DO
@@ -290,7 +290,7 @@ SUBROUTINE StructureFactorInitialisation (IErr)
           Iuid = Iuid + 1_IKIND
           !Ug Fill the symmetry relation matrix with incrementing numbers that have the sign of the imaginary part
 	      WHERE (ABS(RgSumMat-ABS(RgSumMat(ind,jnd))).LE.RTolerance)
-            ISymmetryRelations = Iuid*SIGN(1_IKIND,NINT(AIMAG(CUgMatNoAbs)/TINY**2))
+            ISymmetryRelations = Iuid*SIGN(1_IKIND,NINT(AIMAG(CUgMatNoAbs)/(TINY**2)))
           END WHERE
         END IF
       END DO
