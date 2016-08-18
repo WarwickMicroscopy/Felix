@@ -123,6 +123,11 @@ SUBROUTINE WriteIterationOutput(Iter,IThicknessIndex,IExitFlag,IErr)
      ENDIF
   END IF
   
+  RETURN
+  
+  !line 10, only called on error in writing
+10 IErr=1
+  
 END SUBROUTINE WriteIterationOutput
 
 !!$  %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
