@@ -81,7 +81,6 @@ SUBROUTINE ReadInpFile( IErr )
 
   ILine= ILine+1; READ(IChInp,ERR=20,END=30,FMT='(A)') 
   ILine= ILine+1; READ(IChInp,ERR=20,END=30,FMT='(A)')
-  ILine= ILine+1; READ(IChInp,ERR=20,END=30,FMT='(A)')
 
   ! ----------------------------------------------------------------------
   ! control flags
@@ -192,14 +191,6 @@ SUBROUTINE ReadInpFile( IErr )
   READ(IChInp,10,ERR=20,END=30) IMinWeakBeams
   CALL Message ("ReadInpFile",IInfo,IErr,MessageVariable ="IMinWeakBeams",IVariable=IMinWeakBeams)
 
-  ILine= ILine+1
-  READ(IChInp,15,ERR=20,END=30) RBSBMax
-  CALL Message ("ReadInpFile",IInfo,IErr,MessageVariable ="RBSBMax",RVariable=RBSBMax)
-
-  ILine= ILine+1
-  READ(IChInp,15,ERR=20,END=30) RBSPMax
-  CALL Message ("ReadInpFile",IInfo,IErr,MessageVariable ="RBSPMax",RVariable=RBSPMax)
-
   ! ----------------------------------------------------------------------
   ! crystal settings
   
@@ -238,18 +229,18 @@ SUBROUTINE ReadInpFile( IErr )
 
   ILine= ILine+1
   READ(IChInp,FMT='(27X,A)',END=30) SDirectionX
-     CALL Message ("ReadInpFile",IInfo,IErr,MessageVariable ="IDirection", &
-          MessageString=ADJUSTL(TRIM(SDirectionX)))
-     CALL ThreeDimVectorReadIn(SDirectionX,'[',']',RXDirC)
-     CALL Message ("ReadInpFile",IInfo+IDebug,IErr,MessageVariable ="RXDirC",RVector=RXDirC)
+  CALL Message ("ReadInpFile",IInfo,IErr,MessageVariable ="IDirection", &
+       MessageString=ADJUSTL(TRIM(SDirectionX)))
+  CALL ThreeDimVectorReadIn(SDirectionX,'[',']',RXDirC)
+  CALL Message ("ReadInpFile",IInfo+IDebug,IErr,MessageVariable ="RXDirC",RVector=RXDirC)
   
 
   ILine= ILine+1
   READ(IChInp,FMT='(27X,A)',ERR=20,END=30) SNormalDirectionX
-     CALL Message ("ReadInpFile",IInfo,IErr,MessageVariable ="INormalDirection", &
-          MessageString=ADJUSTL(TRIM(SNormalDirectionX)))
-     CALL ThreeDimVectorReadIn(SNormalDirectionX,'[',']',RNormDirC)
-     CALL Message ("ReadInpFile",IInfo+IDebug,IErr,MessageVariable ="RNormDirC",RVector=RNormDirC)
+  CALL Message ("ReadInpFile",IInfo,IErr,MessageVariable ="INormalDirection", &
+       MessageString=ADJUSTL(TRIM(SNormalDirectionX)))
+  CALL ThreeDimVectorReadIn(SNormalDirectionX,'[',']',RNormDirC)
+  CALL Message ("ReadInpFile",IInfo+IDebug,IErr,MessageVariable ="RNormDirC",RVector=RNormDirC)
 
   ILine= ILine+1
   READ(IChInp,15,ERR=20,END=30) RAcceleratingVoltage
@@ -262,7 +253,6 @@ SUBROUTINE ReadInpFile( IErr )
   ! ----------------------------------------------------------------------
   ! Title Space
   
-  ILine= ILine+1; READ(IChInp,ERR=20,END=30,FMT='(A)')
   ILine= ILine+1; READ(IChInp,ERR=20,END=30,FMT='(A)')
   ILine= ILine+1; READ(IChInp,ERR=20,END=30,FMT='(A)')
 
@@ -285,20 +275,16 @@ SUBROUTINE ReadInpFile( IErr )
   READ(IChInp,10,ERR=20,END=30) INoOfLacbedPatterns
   CALL Message ("ReadInpFile",IInfo,IErr,MessageVariable ="INoOfLacbedPatterns",IVariable=INoOfLacbedPatterns)
 
+  !-----------------------------------------------------------------------
+  ! felixrefine Input
 
   IF(ISoftwareMode.EQ.2) THEN
-
-     !-----------------------------------------------------------------------
-     ! felixrefine Input
-     ILine= ILine+1; READ(IChInp,ERR=20,END=30,FMT='(A)')
-     ILine= ILine+1; READ(IChInp,ERR=20,END=30,FMT='(A)')
-     ILine= ILine+1; READ(IChInp,ERR=20,END=30,FMT='(A)')
-     
+    
      !-----------------------------------------------------------------------
      ! Refinement Specific Flags
      ILine= ILine+1; READ(IChInp,ERR=20,END=30,FMT='(A)')  
+     ILine= ILine+1; READ(IChInp,ERR=20,END=30,FMT='(A)')
      ILine= ILine+1
-
      READ(IChInp,FMT='(A)',ERR=20,END=30) SRefineMode
      SRefineMode = SRefineMode((SCAN(SRefineMode,"=")+1):)
      IRefineMode = 0
@@ -350,29 +336,19 @@ SUBROUTINE ReadInpFile( IErr )
      ILine= ILine+1
      READ(IChInp,10,ERR=20,END=30) IImageProcessingFLAG
      CALL Message ("ReadInpFile",IInfo,IErr,MessageVariable ="IImageProcessingFLAG",IVariable=IImageProcessingFLAG)
-     
-     ILine= ILine+1; READ(IChInp,ERR=20,END=30,FMT='(A)')
-     ILine= ILine+1; READ(IChInp,ERR=20,END=30,FMT='(A)')
-     ILine= ILine+1; READ(IChInp,ERR=20,END=30,FMT='(A)')
 
      ILine= ILine+1
      READ(IChInp,15,ERR=20,END=30) RBlurRadius
      CALL Message ("ReadInpFile",IInfo,IErr,MessageVariable ="RBlurRadius",RVariable = RBlurRadius)
-
-     ILine= ILine+1; READ(IChInp,ERR=20,END=30,FMT='(A)')
-     ILine= ILine+1; READ(IChInp,ERR=20,END=30,FMT='(A)')
-     ILine= ILine+1; READ(IChInp,ERR=20,END=30,FMT='(A)')
-
+     
+     ILine = ILine+1
      READ(IChInp,10,ERR=20,END=30) INoofUgs
      CALL Message ("ReadInpFile",IInfo,IErr,MessageVariable ="INoofUgs",IVariable = INoofUgs)
      
      !-----------------------------------------------------------------------
      ! Iterative Structural input
-
-     ILine= ILine+1; READ(IChInp,ERR=20,END=30,FMT='(A)')
-     ILine= ILine+1; READ(IChInp,ERR=20,END=30,FMT='(A)')
-     ILine= ILine+1; READ(IChInp,ERR=20,END=30,FMT='(A)')
      
+     ILine=ILine+1
      READ(IChInp,FMT='(A)',ERR=20,END=30) SAtomicSites
 
      CALL DetermineRefineableAtomicSites(SAtomicSites,IErr)
@@ -381,17 +357,9 @@ SUBROUTINE ReadInpFile( IErr )
         RETURN
      ENDIF
 
-     ILine= ILine+1; READ(IChInp,ERR=20,END=30,FMT='(A)')
-     ILine= ILine+1; READ(IChInp,ERR=20,END=30,FMT='(A)')
-     ILine= ILine+1; READ(IChInp,ERR=20,END=30,FMT='(A)')
-     
      ILine= ILine+1
      READ(IChInp,10,ERR=20,END=30) IPrint
      CALL Message ("ReadInpFile",IInfo,IErr,MessageVariable ="IPrint",IVariable = IPrint)
-
-     ILine= ILine+1; READ(IChInp,ERR=20,END=30,FMT='(A)')
-     ILine= ILine+1; READ(IChInp,ERR=20,END=30,FMT='(A)')
-     ILine= ILine+1; READ(IChInp,ERR=20,END=30,FMT='(A)')
      
      ILine= ILine+1
      READ(IChInp,15,ERR=20,END=30) RSimplexLengthScale

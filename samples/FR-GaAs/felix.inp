@@ -1,8 +1,7 @@
-# Input file for FelixSim/Draw/Refine version :VERSION: Build :BUILD:
+# Input file for Felix version :VERSION: Build :BUILD:
 # ------------------------------------
 
 # ------------------------------------
-# FelixSim input
 
 # control flags
 IWriteFLAG                = 4
@@ -20,8 +19,6 @@ IPixelCount               = 35
 IMinReflectionPool        = 1000
 IMinStrongBeams           = 33
 IMinWeakBeams             = 0
-RBSBMax                   = 0.1
-RBSPMax                   = 0.1
 
 # crystal settings
 RDebyeWallerConstant      = 0.54
@@ -36,13 +33,10 @@ RAcceleratingVoltage (kV) = 200.0
 RAcceptanceAngle          = 0.0
 
 # Image Output Options
-
 RInitialThickness        = 800.0
 RFinalThickness          = 900.0
 RDeltaThickness          = 10.0
 IReflectOut              = 1
-
-# FelixRefine Input
 
 #Refinement Specific Flags
 IRefineModeFLAG          = D
@@ -50,25 +44,10 @@ IWeightingFLAG           = 0
 IContinueFLAG            = 0
 ICorrelationFLAG         = 2
 IImageProcessingFLAG     = 4
-
-#Gaussian Blur
-
 RBlurRadius              = 1.45
-
-# Ug Iteration
-
 INoofUgs                  = 1
-
-# Structural Refinement
-
 IAtomicSites              = (1,2)
-
-# Refinement Output
-
 IPrint                    = 4
-
-# Simplex Initialisation
-
 RSimplexLengthScale       = 5.0 
 RExitCriteria             = 0.00001
 
