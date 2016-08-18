@@ -256,7 +256,7 @@ PROGRAM Felixrefine
      PRINT*,"felixrefine(",my_rank,")error allocating RgPoolMagLaue"
      GOTO 9999
   END IF
-  IF(RAcceptanceAngle.NE.ZERO.AND.IZOLZFLAG.EQ.0) THEN
+  IF(RAcceptanceAngle.NE.ZERO.AND.IHOLZFLAG.EQ.1) THEN
     INumtotalReflections=0
     DO ind=1,ITotalLaueZoneLevel
       ILaueLevel=ind-IZerothLaueZoneLevel
@@ -338,14 +338,14 @@ PROGRAM Felixrefine
   RDeltaK = RMinimumGMag*RConvergenceAngle/REAL(IPixelCount,RKIND)
 
   !acceptance angle
-  IF(RAcceptanceAngle.NE.ZERO.AND.IZOLZFLAG.EQ.1) THEN
+  IF(RAcceptanceAngle.NE.ZERO.AND.IHOLZFLAG.EQ.0) THEN
      RMaxAcceptanceGVecMag=(RElectronWaveVectorMagnitude*TAN(RAcceptanceAngle*DEG2RADIAN))
      IF(RgPoolMag(IMinReflectionPool).GT.RMaxAcceptanceGVecMag) THEN
         RMaxGMag = RMaxAcceptanceGVecMag 
      ELSE
         RMaxGMag = RgPoolMag(IMinReflectionPool)
      END IF
-  ELSEIF(RAcceptanceAngle.NE.ZERO.AND.IZOLZFLAG.EQ.0) THEN
+  ELSEIF(RAcceptanceAngle.NE.ZERO.AND.IHOLZFLAG.EQ.1) THEN
      IBSMaxLocGVecAmp=MAXVAL(IOriginGVecIdentifier)
      RMaxGMag=RgPoolMag(IBSMaxLocGVecAmp)
      IF(RgPoolMag(IBSMaxLocGVecAmp).LT.RgPoolMag(IMinreflectionPool)) THEN
@@ -372,7 +372,7 @@ PROGRAM Felixrefine
   
   !deallocation
   DEALLOCATE(RgPoolMagLaue)!
-  IF (RAcceptanceAngle.NE.ZERO.AND.IZOLZFLAG.EQ.0) THEN
+  IF (RAcceptanceAngle.NE.ZERO.AND.IHOLZFLAG.EQ.1) THEN
     DEALLOCATE(IOriginGVecIdentifier)
     PRINT*,"felixrefine deallocating IOriginGVecIdentifier"
   END IF

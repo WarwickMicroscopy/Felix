@@ -286,7 +286,7 @@ SUBROUTINE CalculateFigureofMeritandDetermineThickness(IThicknessCountFinal,IErr
               
       CASE(4)!Apply gaussian blur to simulated image
         RExperimentalImage = RImageExpi(:,:,hnd)
-        Rradius=1.45_RKIND!!!*+*+ blur will need to be added as a line in felix.inp +*+*!!!
+        Rradius=RBlurRadius!added in input file!
        ! IF(my_rank.EQ.0) THEN
        !   PRINT*,"Gaussian blur radius =",Rradius
        ! END IF

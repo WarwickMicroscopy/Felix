@@ -9,11 +9,9 @@ IWriteFLAG                = 4
 IImageFLAG                = 1
 IScatterFactorMethodFLAG  = 0
 IMaskFLAG                 = 1
-IZolzFLAG                 = 1
+IHolzFLAG                 = 0
 IAbsorbFLAG               = 2
 IAnisoDebyeWallerFlag     = 0
-IPseudoCubicFLAG          = 0
-IXDirectionFLAG           = 1
 
 # radius of the beam in pixels
 IPixelCount               = 35
@@ -31,7 +29,6 @@ RAbsorptionPer            = 7.8
 
 # microscope settings
 ROuterConvergenceAngle    = 2.4545
-RInnerConvergenceAngle    = 0.0
 IIncidentBeamDirection    = [-1,1,0]
 IXDirection               = [-1,-1,0]
 INormalDirection          = [-1,1,0]
@@ -53,6 +50,10 @@ IWeightingFLAG           = 0
 IContinueFLAG            = 0
 ICorrelationFLAG         = 2
 IImageProcessingFLAG     = 4
+
+#Gaussian Blur
+
+RBlurRadius              = 1.45
 
 # Ug Iteration
 

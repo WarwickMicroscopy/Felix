@@ -37,6 +37,7 @@
 ! $Id: diffractionpatterndefinitions.f90,v 2 2016/02/12 R.Beanland
 !%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
+! for future removal
 SUBROUTINE ReflectionDetermination( IErr )
 !this is redundant for felixrefine
   USE MyNumbers
@@ -230,7 +231,7 @@ SUBROUTINE HKLCount(Ihklmax,Rhkl0Vec,INhkl,RHOLZAcceptanceAngle,IErr)
                    (((ABS(MOD(RhklDummyVec(1),TWO))).GT.TINY).AND.&
                    ((ABS(MOD(RhklDummyVec(2),TWO))).GT.TINY).AND.&
                    ((ABS(MOD(RhklDummyVec(3),TWO))).GT.TINY))) THEN
-                 IF(IZolzFLAG.EQ.1) THEN
+                 IF(IHolzFLAG.EQ.0) THEN
                     IF( ABS(DOT_PRODUCT(RhklDummyUnitVec,Rhkl0UnitVec)) .LE. TINY ) THEN
                        INhkl=INhkl+1
                     END IF
@@ -242,7 +243,7 @@ SUBROUTINE HKLCount(Ihklmax,Rhkl0Vec,INhkl,RHOLZAcceptanceAngle,IErr)
 			  
            CASE("I")! Body Centred
               IF(ABS(MOD(RhklDummyVec(1)+RhklDummyVec(2)+RhklDummyVec(3),TWO)).LE.TINY) THEN
-                 IF(IZolzFLAG.EQ.1) THEN
+                 IF(IHolzFLAG.EQ.0) THEN
                     IF( ABS(DOT_PRODUCT(RhklDummyUnitVec,Rhkl0UnitVec)) .LE. TINY ) THEN
                        INhkl=INhkl+1
                     END IF
@@ -254,7 +255,7 @@ SUBROUTINE HKLCount(Ihklmax,Rhkl0Vec,INhkl,RHOLZAcceptanceAngle,IErr)
 			  
            CASE("A")! A-Face Centred
               IF(ABS(MOD(RhklDummyVec(2)+RhklDummyVec(3),TWO)).LE.TINY) THEN
-                 IF(IZolzFLAG.EQ.1) THEN
+                 IF(IHolzFLAG.EQ.0) THEN
                     IF( ABS(DOT_PRODUCT(RhklDummyUnitVec,Rhkl0UnitVec)) .LE. TINY ) THEN
                        INhkl=INhkl+1
                     END IF
@@ -266,7 +267,7 @@ SUBROUTINE HKLCount(Ihklmax,Rhkl0Vec,INhkl,RHOLZAcceptanceAngle,IErr)
 			  
            CASE("B")! B-Face Centred
               IF(ABS(MOD(RhklDummyVec(1)+RhklDummyVec(3),TWO)).LE.TINY) THEN
-                 IF(IZolzFLAG.EQ.1) THEN
+                 IF(IHolzFLAG.EQ.0) THEN
                     IF( ABS(DOT_PRODUCT(RhklDummyUnitVec,Rhkl0UnitVec)) .LE. TINY ) THEN
                        INhkl=INhkl+1
                     END IF
@@ -278,7 +279,7 @@ SUBROUTINE HKLCount(Ihklmax,Rhkl0Vec,INhkl,RHOLZAcceptanceAngle,IErr)
 			  
            CASE("C")! C-Face Centred
               IF(ABS(MOD(RhklDummyVec(1)+RhklDummyVec(2),TWO)).LE.TINY) THEN
-                 IF(IZolzFLAG.EQ.1) THEN
+                 IF(IHolzFLAG.EQ.0) THEN
                     IF( ABS(DOT_PRODUCT(RhklDummyUnitVec,Rhkl0UnitVec)) .LE. TINY ) THEN
                        INhkl=INhkl+1
                     END IF
@@ -290,7 +291,7 @@ SUBROUTINE HKLCount(Ihklmax,Rhkl0Vec,INhkl,RHOLZAcceptanceAngle,IErr)
 			  
            CASE("R")! Rhombohedral Reverse
               IF(ABS(MOD(RhklDummyVec(1)-RhklDummyVec(2)+RhklDummyVec(3),THREE)).LE.TINY) THEN
-                 IF(IZolzFLAG.EQ.1) THEN
+                 IF(IHolzFLAG.EQ.0) THEN
                     IF( ABS(DOT_PRODUCT(RhklDummyUnitVec,Rhkl0UnitVec)) .LE. TINY ) THEN
                        INhkl=INhkl+1
                     END IF
@@ -302,7 +303,7 @@ SUBROUTINE HKLCount(Ihklmax,Rhkl0Vec,INhkl,RHOLZAcceptanceAngle,IErr)
 			  
            CASE("V")! Rhombohedral Obverse
               IF(ABS(MOD(-RhklDummyVec(1)+RhklDummyVec(2)+RhklDummyVec(3),THREE)).LE.TINY) THEN
-                 IF(IZolzFLAG.EQ.1) THEN
+                 IF(IHolzFLAG.EQ.0) THEN
                     IF( ABS(DOT_PRODUCT(RhklDummyUnitVec,Rhkl0UnitVec)) .LE. TINY ) THEN
                        INhkl=INhkl+1
                     END IF
@@ -313,7 +314,7 @@ SUBROUTINE HKLCount(Ihklmax,Rhkl0Vec,INhkl,RHOLZAcceptanceAngle,IErr)
               END IF
 			  
            CASE("P")! Primitive
-              IF(IZolzFLAG.EQ.1) THEN
+              IF(IHolzFLAG.EQ.0) THEN
                  IF( ABS(DOT_PRODUCT(RhklDummyUnitVec,Rhkl0UnitVec)) .LE. TINY ) THEN
                     INhkl=INhkl+1
                  END IF
@@ -383,7 +384,7 @@ SUBROUTINE HKLMake(Ihklmax,Rhkl0Vec,RHOLZAcceptanceAngle,IErr)
               (((ABS(MOD(RhklDummyVec(1),TWO))).GT.TINY).AND.&
                ((ABS(MOD(RhklDummyVec(2),TWO))).GT.TINY).AND.&
                ((ABS(MOD(RhklDummyVec(3),TWO))).GT.TINY))) THEN
-              IF(IZolzFLAG.EQ.1) THEN
+              IF(IHolzFLAG.EQ.0) THEN
                 IF( ABS(DOT_PRODUCT(RhklDummyUnitVec,Rhkl0UnitVec)) .LE. TINY ) THEN
                   lnd=lnd+1
                   Rhkl(lnd,:)=RhklDummyVec
@@ -396,7 +397,7 @@ SUBROUTINE HKLMake(Ihklmax,Rhkl0Vec,RHOLZAcceptanceAngle,IErr)
 			  
           CASE("I")! Body Centred
             IF(ABS(MOD(RhklDummyVec(1)+RhklDummyVec(2)+RhklDummyVec(3),TWO)).LE.TINY) THEN
-              IF(IZolzFLAG.EQ.1) THEN
+              IF(IHolzFLAG.EQ.0) THEN
                 IF( ABS(DOT_PRODUCT(RhklDummyUnitVec,Rhkl0UnitVec)) .LE. TINY ) THEN
                   lnd=lnd+1
                   Rhkl(lnd,:)= RhklDummyVec
@@ -409,7 +410,7 @@ SUBROUTINE HKLMake(Ihklmax,Rhkl0Vec,RHOLZAcceptanceAngle,IErr)
 			  
           CASE("A")! A-Face Centred
             IF(ABS(MOD(RhklDummyVec(2)+RhklDummyVec(3),TWO)).LE.TINY) THEN
-              IF(IZolzFLAG.EQ.1) THEN
+              IF(IHolzFLAG.EQ.0) THEN
                 IF( ABS(DOT_PRODUCT(RhklDummyUnitVec,Rhkl0UnitVec)) .LE. TINY ) THEN
                   lnd=lnd+1
                   Rhkl(lnd,:)= RhklDummyVec
@@ -422,7 +423,7 @@ SUBROUTINE HKLMake(Ihklmax,Rhkl0Vec,RHOLZAcceptanceAngle,IErr)
 			  
            CASE("B")! B-Face Centred
              IF(ABS(MOD(RhklDummyVec(1)+RhklDummyVec(3),TWO)).LE.TINY) THEN
-               IF(IZolzFLAG.EQ.1) THEN
+               IF(IHolzFLAG.EQ.0) THEN
                  IF( ABS(DOT_PRODUCT(RhklDummyUnitVec,Rhkl0UnitVec)) .LE. TINY ) THEN
                    lnd=lnd+1
                    Rhkl(lnd,:)= RhklDummyVec
@@ -435,7 +436,7 @@ SUBROUTINE HKLMake(Ihklmax,Rhkl0Vec,RHOLZAcceptanceAngle,IErr)
 			  
            CASE("C")! C-Face Centred
              IF(ABS(MOD(RhklDummyVec(1)+RhklDummyVec(2),TWO)).LE.TINY) THEN
-               IF(IZolzFLAG.EQ.1) THEN
+               IF(IHolzFLAG.EQ.0) THEN
                  IF( ABS(DOT_PRODUCT(RhklDummyUnitVec,Rhkl0UnitVec)) .LE. TINY ) THEN
                    lnd=lnd+1
                    Rhkl(lnd,:)= RhklDummyVec
@@ -448,7 +449,7 @@ SUBROUTINE HKLMake(Ihklmax,Rhkl0Vec,RHOLZAcceptanceAngle,IErr)
 			  
            CASE("R")! Rhombohedral Reverse
              IF(ABS(MOD(RhklDummyVec(1)-RhklDummyVec(2)+RhklDummyVec(3),THREE)).LE.TINY) THEN
-               IF(IZolzFLAG.EQ.1) THEN
+               IF(IHolzFLAG.EQ.0) THEN
                  IF( ABS(DOT_PRODUCT(RhklDummyUnitVec,Rhkl0UnitVec)) .LE. TINY ) THEN
                    lnd=lnd+1
                    Rhkl(lnd,:)= RhklDummyVec
@@ -461,7 +462,7 @@ SUBROUTINE HKLMake(Ihklmax,Rhkl0Vec,RHOLZAcceptanceAngle,IErr)
 			  
            CASE("V")! Rhombohedral Obverse
              IF(ABS(MOD(-RhklDummyVec(1)+RhklDummyVec(2)+RhklDummyVec(3),THREE)).LE.TINY) THEN
-               IF(IZolzFLAG.EQ.1) THEN
+               IF(IHolzFLAG.EQ.0) THEN
                  IF( ABS(DOT_PRODUCT(RhklDummyUnitVec,Rhkl0UnitVec)) .LE. TINY ) THEN
                    lnd=lnd+1
                    Rhkl(lnd,:)= RhklDummyVec
@@ -473,7 +474,7 @@ SUBROUTINE HKLMake(Ihklmax,Rhkl0Vec,RHOLZAcceptanceAngle,IErr)
              END IF
 			  
            CASE("P")! Primitive
-             IF(IZolzFLAG.EQ.1) THEN
+             IF(IHolzFLAG.EQ.0) THEN
                IF( ABS(DOT_PRODUCT(RhklDummyUnitVec,Rhkl0UnitVec)) .LE. TINY ) THEN
                  lnd=lnd+1
                  Rhkl(lnd,:)= RhklDummyVec
@@ -546,7 +547,7 @@ SUBROUTINE NewHKLMake(Ihklmax,Rhkl0Vec,RHOLZAcceptanceAngle,IErr)
                    (((ABS(MOD(RhklDummyVec(1),TWO))).GT.TINY).AND.&
                    ((ABS(MOD(RhklDummyVec(2),TWO))).GT.TINY).AND.&
                    ((ABS(MOD(RhklDummyVec(3),TWO))).GT.TINY))) THEN
-                 IF(IZolzFLAG.EQ.1) THEN
+                 IF(IHolzFLAG.EQ.0) THEN
                     IF( ABS(DOT_PRODUCT(RhklDummyUnitVec,Rhkl0UnitVec)) .LE. TINY ) THEN
                        INhkl=INhkl+1
                     END IF
@@ -558,7 +559,7 @@ SUBROUTINE NewHKLMake(Ihklmax,Rhkl0Vec,RHOLZAcceptanceAngle,IErr)
 			  
            CASE("I")! Body Centred
               IF(ABS(MOD(RhklDummyVec(1)+RhklDummyVec(2)+RhklDummyVec(3),TWO)).LE.TINY) THEN
-                 IF(IZolzFLAG.EQ.1) THEN
+                 IF(IHolzFLAG.EQ.0) THEN
                     IF( ABS(DOT_PRODUCT(RhklDummyUnitVec,Rhkl0UnitVec)) .LE. TINY ) THEN
                        INhkl=INhkl+1
                     END IF
@@ -570,7 +571,7 @@ SUBROUTINE NewHKLMake(Ihklmax,Rhkl0Vec,RHOLZAcceptanceAngle,IErr)
 			  
            CASE("A")! A-Face Centred
               IF(ABS(MOD(RhklDummyVec(2)+RhklDummyVec(3),TWO)).LE.TINY) THEN
-                 IF(IZolzFLAG.EQ.1) THEN
+                 IF(IHolzFLAG.EQ.0) THEN
                     IF( ABS(DOT_PRODUCT(RhklDummyUnitVec,Rhkl0UnitVec)) .LE. TINY ) THEN
                        INhkl=INhkl+1
                     END IF
@@ -582,7 +583,7 @@ SUBROUTINE NewHKLMake(Ihklmax,Rhkl0Vec,RHOLZAcceptanceAngle,IErr)
 			  
            CASE("B")! B-Face Centred
               IF(ABS(MOD(RhklDummyVec(1)+RhklDummyVec(3),TWO)).LE.TINY) THEN
-                 IF(IZolzFLAG.EQ.1) THEN
+                 IF(IHolzFLAG.EQ.0) THEN
                     IF( ABS(DOT_PRODUCT(RhklDummyUnitVec,Rhkl0UnitVec)) .LE. TINY ) THEN
                        INhkl=INhkl+1
                     END IF
@@ -594,7 +595,7 @@ SUBROUTINE NewHKLMake(Ihklmax,Rhkl0Vec,RHOLZAcceptanceAngle,IErr)
 			  
            CASE("C")! C-Face Centred
               IF(ABS(MOD(RhklDummyVec(1)+RhklDummyVec(2),TWO)).LE.TINY) THEN
-                 IF(IZolzFLAG.EQ.1) THEN
+                 IF(IHolzFLAG.EQ.0) THEN
                     IF( ABS(DOT_PRODUCT(RhklDummyUnitVec,Rhkl0UnitVec)) .LE. TINY ) THEN
                        INhkl=INhkl+1
                     END IF
@@ -606,7 +607,7 @@ SUBROUTINE NewHKLMake(Ihklmax,Rhkl0Vec,RHOLZAcceptanceAngle,IErr)
 			  
            CASE("R")! Rhombohedral Reverse
               IF(ABS(MOD(RhklDummyVec(1)-RhklDummyVec(2)+RhklDummyVec(3),THREE)).LE.TINY) THEN
-                 IF(IZolzFLAG.EQ.1) THEN
+                 IF(IHolzFLAG.EQ.0) THEN
                     IF( ABS(DOT_PRODUCT(RhklDummyUnitVec,Rhkl0UnitVec)) .LE. TINY ) THEN
                        INhkl=INhkl+1
                     END IF
@@ -618,7 +619,7 @@ SUBROUTINE NewHKLMake(Ihklmax,Rhkl0Vec,RHOLZAcceptanceAngle,IErr)
 			  
            CASE("V")! Rhombohedral Obverse
               IF(ABS(MOD(-RhklDummyVec(1)+RhklDummyVec(2)+RhklDummyVec(3),THREE)).LE.TINY) THEN
-                 IF(IZolzFLAG.EQ.1) THEN
+                 IF(IHolzFLAG.EQ.0) THEN
                     IF( ABS(DOT_PRODUCT(RhklDummyUnitVec,Rhkl0UnitVec)) .LE. TINY ) THEN
                        INhkl=INhkl+1
                     END IF
@@ -629,7 +630,7 @@ SUBROUTINE NewHKLMake(Ihklmax,Rhkl0Vec,RHOLZAcceptanceAngle,IErr)
               END IF
 			  
            CASE("P")! Primitive
-              IF(IZolzFLAG.EQ.1) THEN
+              IF(IHolzFLAG.EQ.0) THEN
                  IF( ABS(DOT_PRODUCT(RhklDummyUnitVec,Rhkl0UnitVec)) .LE. TINY ) THEN
                     INhkl=INhkl+1
                  END IF
@@ -682,7 +683,7 @@ SUBROUTINE NewHKLMake(Ihklmax,Rhkl0Vec,RHOLZAcceptanceAngle,IErr)
                    (((ABS(MOD(RhklDummyVec(1),TWO))).GT.TINY).AND.&
                    ((ABS(MOD(RhklDummyVec(2),TWO))).GT.TINY).AND.&
                    ((ABS(MOD(RhklDummyVec(3),TWO))).GT.TINY))) THEN
-                 IF(IZolzFLAG.EQ.1) THEN
+                 IF(IHolzFLAG.EQ.0) THEN
                     IF( ABS(DOT_PRODUCT(RhklDummyUnitVec,Rhkl0UnitVec)) .LE. TINY ) THEN
                        INhkl=INhkl+1
                        Rhkl(INhkl,:)= RhklDummyVec
@@ -695,7 +696,7 @@ SUBROUTINE NewHKLMake(Ihklmax,Rhkl0Vec,RHOLZAcceptanceAngle,IErr)
 			  
            CASE("I")! Body Centred
               IF(ABS(MOD(RhklDummyVec(1)+RhklDummyVec(2)+RhklDummyVec(3),TWO)).LE.TINY) THEN
-                 IF(IZolzFLAG.EQ.1) THEN
+                 IF(IHolzFLAG.EQ.0) THEN
                     IF( ABS(DOT_PRODUCT(RhklDummyUnitVec,Rhkl0UnitVec)) .LE. TINY ) THEN
                        INhkl=INhkl+1
                        Rhkl(INhkl,:)= RhklDummyVec
@@ -708,7 +709,7 @@ SUBROUTINE NewHKLMake(Ihklmax,Rhkl0Vec,RHOLZAcceptanceAngle,IErr)
 			  
            CASE("A")! A-Face Centred
               IF(ABS(MOD(RhklDummyVec(2)+RhklDummyVec(3),TWO)).LE.TINY) THEN
-                 IF(IZolzFLAG.EQ.1) THEN
+                 IF(IHolzFLAG.EQ.0) THEN
                     IF( ABS(DOT_PRODUCT(RhklDummyUnitVec,Rhkl0UnitVec)) .LE. TINY ) THEN
                        INhkl=INhkl+1
                        Rhkl(INhkl,:)= RhklDummyVec
@@ -721,7 +722,7 @@ SUBROUTINE NewHKLMake(Ihklmax,Rhkl0Vec,RHOLZAcceptanceAngle,IErr)
 			  
            CASE("B")! B-Face Centred
               IF(ABS(MOD(RhklDummyVec(1)+RhklDummyVec(3),TWO)).LE.TINY) THEN
-                 IF(IZolzFLAG.EQ.1) THEN
+                 IF(IHolzFLAG.EQ.0) THEN
                     IF( ABS(DOT_PRODUCT(RhklDummyUnitVec,Rhkl0UnitVec)) .LE. TINY ) THEN
                        INhkl=INhkl+1
                        Rhkl(INhkl,:)= RhklDummyVec
@@ -734,7 +735,7 @@ SUBROUTINE NewHKLMake(Ihklmax,Rhkl0Vec,RHOLZAcceptanceAngle,IErr)
 			  
            CASE("C")! C-Face Centred
               IF(ABS(MOD(RhklDummyVec(1)+RhklDummyVec(2),TWO)).LE.TINY) THEN
-                 IF(IZolzFLAG.EQ.1) THEN
+                 IF(IHolzFLAG.EQ.0) THEN
                     IF( ABS(DOT_PRODUCT(RhklDummyUnitVec,Rhkl0UnitVec)) .LE. TINY ) THEN
                        INhkl=INhkl+1
                        Rhkl(INhkl,:)= RhklDummyVec
@@ -747,7 +748,7 @@ SUBROUTINE NewHKLMake(Ihklmax,Rhkl0Vec,RHOLZAcceptanceAngle,IErr)
 			  
            CASE("R")! Rhombohedral Reverse
               IF(ABS(MOD(RhklDummyVec(1)-RhklDummyVec(2)+RhklDummyVec(3),THREE)).LE.TINY) THEN
-                 IF(IZolzFLAG.EQ.1) THEN
+                 IF(IHolzFLAG.EQ.0) THEN
                     IF( ABS(DOT_PRODUCT(RhklDummyUnitVec,Rhkl0UnitVec)) .LE. TINY ) THEN
                        INhkl=INhkl+1
                        Rhkl(INhkl,:)= RhklDummyVec
@@ -760,7 +761,7 @@ SUBROUTINE NewHKLMake(Ihklmax,Rhkl0Vec,RHOLZAcceptanceAngle,IErr)
 			  
            CASE("V")! Rhombohedral Obverse
               IF(ABS(MOD(-RhklDummyVec(1)+RhklDummyVec(2)+RhklDummyVec(3),THREE)).LE.TINY) THEN
-                IF(IZolzFLAG.EQ.1) THEN
+                IF(IHolzFLAG.EQ.0) THEN
                     IF( ABS(DOT_PRODUCT(RhklDummyUnitVec,Rhkl0UnitVec)) .LE. TINY ) THEN
                        INhkl=INhkl+1
                        Rhkl(INhkl,:)= RhklDummyVec
@@ -773,7 +774,7 @@ SUBROUTINE NewHKLMake(Ihklmax,Rhkl0Vec,RHOLZAcceptanceAngle,IErr)
 			  
            CASE("P")! Primitive
 
-		   IF(IZolzFLAG.EQ.1) THEN
+		   IF(IHolzFLAG.EQ.0) THEN
                  IF( ABS(DOT_PRODUCT(RhklDummyUnitVec,Rhkl0UnitVec)) .LE. TINY ) THEN
                     INhkl=INhkl+1
                     Rhkl(INhkl,:)= RhklDummyVec

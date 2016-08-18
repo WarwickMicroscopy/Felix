@@ -143,9 +143,9 @@ MODULE IPara
   !Input Flags
   INTEGER(IKIND) :: IWriteFLAG,IDebugFLAG,IScatterFactorMethodFLAG, &
        IMaskFLAG, IVolumeFLAG, &
-       IZolzFLAG,IAbsorbFLAG, IAnisoDebyeWallerFactorFlag, &
+       IHolzFLAG,IAbsorbFLAG, IAnisoDebyeWallerFactorFlag, &
        IImageFLAG,IBeamConvergenceFLAG,  &
-       IPseudoCubicFLAG,IXDirectionFLAG,IDevFLAG, &
+       IDevFLAG, &
        IRefineModeFLAG,ISoftwareMode,IHKLSelectFLAG,IPrint,IRefineSwitch,&
        IWeightingFLAG,IContinueFLAG,ICorrelationFLAG,IImageProcessingFLAG
   !Minimum Reflections etc
@@ -208,7 +208,6 @@ MODULE IPara
   INTEGER(IKIND) :: IFelixCount,IPreviousPrintedIteration,IStandardDeviationCalls  
   !Message Counter (Avoid subroutines printing out message more than once)
   INTEGER(IKIND) :: IMessageCounter=0
-
 END MODULE IPara
 !--------------------------------------------------------------------
 MODULE RPara
@@ -228,7 +227,7 @@ MODULE RPara
        RAtomPosition,RUniqueKey
   REAL(RKIND), DIMENSION(:,:,:), ALLOCATABLE :: RSymMat
   !Microscope Parameters
-  REAL(RKIND) :: RConvergenceAngle,RAcceleratingVoltage,RInnerConvergenceAngle
+  REAL(RKIND) :: RConvergenceAngle,RAcceleratingVoltage
   REAL(RKIND) :: RElectronVelocity,RElectronWaveLength, &
        RElectronWaveVectorMagnitude,RRelativisticCorrection, &
        RRelativisticMass,RBraggCentral,RAcceptanceAngle
@@ -298,6 +297,8 @@ MODULE RPara
   REAL(RKIND),DIMENSION(:,:),ALLOCATABLE :: RInitialAtomPosition
   !Weighting Coefficients for figure of merit combination
   REAL(RKIND),DIMENSION(:),ALLOCATABLE :: RWeightingCoefficients
+  !Gaussian blur radius in pixels
+  REAL(RKIND) :: RBlurRadius
 
 END MODULE RPara
 !--------------------------------------------------------------------

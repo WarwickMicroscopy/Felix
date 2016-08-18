@@ -152,8 +152,8 @@ SUBROUTINE ReadInpFile( IErr )
   CALL Message ("ReadInpFile",IInfo,IErr,MessageVariable ="IMaskFLAG",IVariable=IMaskFLAG)
 
   ILine= ILine+1
-  READ(IChInp,10,ERR=20,END=30) IZolzFLAG
-  CALL Message ("ReadInpFile",IInfo,IErr,MessageVariable ="IZolzFLAG",IVariable=IZolzFLAG)
+  READ(IChInp,10,ERR=20,END=30) IHolzFLAG
+  CALL Message ("ReadInpFile",IInfo,IErr,MessageVariable ="IHolzFLAG",IVariable=IHolzFLAG)
 
   ILine= ILine+1
   READ(IChInp,10,ERR=20,END=30) IAbsorbFLAG
@@ -162,15 +162,6 @@ SUBROUTINE ReadInpFile( IErr )
   ILine= ILine+1
   READ(IChInp,10,ERR=20,END=30) IAnisoDebyeWallerFactorFlag
   CALL Message ("ReadInpFile",IInfo,IErr,MessageVariable ="IAnisoDebyeWallerFactorFlag",IVariable=IAnisoDebyeWallerFactorFlag)
-
-  ILine= ILine+1
-  READ(IChInp,10,ERR=20,END=30) IPseudoCubicFLAG
-  CALL Message ("ReadInpFile",IInfo,IErr,MessageVariable ="IPseudoCubicFLAG",IVariable=IPseudoCubicFLAG)
-
-  ILine= ILine+1
-  READ(IChInp,10,ERR=20,END=30) IXDirectionFLAG
-  CALL Message ("ReadInpFile",IInfo,IErr,MessageVariable ="IXDirectionFLAG",IVariable=IXDirectionFLAG)
-
 
   ! ----------------------------------------------------------------------
   ! beam details
@@ -235,9 +226,6 @@ SUBROUTINE ReadInpFile( IErr )
   READ(IChInp,15,ERR=20,END=30) RConvergenceAngle
   CALL Message ("ReadInpFile",IInfo,IErr,MessageVariable ="ROuterConvergenceAngle",RVariable=RConvergenceAngle)
 
-  ILine= ILine+1
-  READ(IChInp,15,ERR=20,END=30) RInnerConvergenceAngle
-  CALL Message ("ReadInpFile",IInfo,IErr,MessageVariable ="RInnerConvergenceAngle",RVariable=RInnerConvergenceAngle)
 
   ! RZDirC,RXDirC,RNormDirC vectors are reciprocal lattice vectors that define the beam direction, x-axis of the
   ! diffraction pattern and the surface normal respectively
@@ -250,17 +238,18 @@ SUBROUTINE ReadInpFile( IErr )
 
   ILine= ILine+1
   READ(IChInp,FMT='(27X,A)',END=30) SDirectionX
-  CALL Message ("ReadInpFile",IInfo,IErr,MessageVariable ="IDirection", &
-       MessageString=ADJUSTL(TRIM(SDirectionX)))
-  CALL ThreeDimVectorReadIn(SDirectionX,'[',']',RXDirC)
-  CALL Message ("ReadInpFile",IInfo+IDebug,IErr,MessageVariable ="RXDirC",RVector=RXDirC)
+     CALL Message ("ReadInpFile",IInfo,IErr,MessageVariable ="IDirection", &
+          MessageString=ADJUSTL(TRIM(SDirectionX)))
+     CALL ThreeDimVectorReadIn(SDirectionX,'[',']',RXDirC)
+     CALL Message ("ReadInpFile",IInfo+IDebug,IErr,MessageVariable ="RXDirC",RVector=RXDirC)
+  
 
   ILine= ILine+1
   READ(IChInp,FMT='(27X,A)',ERR=20,END=30) SNormalDirectionX
-  CALL Message ("ReadInpFile",IInfo,IErr,MessageVariable ="INormalDirection", &
-       MessageString=ADJUSTL(TRIM(SNormalDirectionX)))
-  CALL ThreeDimVectorReadIn(SNormalDirectionX,'[',']',RNormDirC)
-  CALL Message ("ReadInpFile",IInfo+IDebug,IErr,MessageVariable ="RNormDirC",RVector=RNormDirC)
+     CALL Message ("ReadInpFile",IInfo,IErr,MessageVariable ="INormalDirection", &
+          MessageString=ADJUSTL(TRIM(SNormalDirectionX)))
+     CALL ThreeDimVectorReadIn(SNormalDirectionX,'[',']',RNormDirC)
+     CALL Message ("ReadInpFile",IInfo+IDebug,IErr,MessageVariable ="RNormDirC",RVector=RNormDirC)
 
   ILine= ILine+1
   READ(IChInp,15,ERR=20,END=30) RAcceleratingVoltage
@@ -339,7 +328,7 @@ SUBROUTINE ReadInpFile( IErr )
         
      IF((IRefineMode(1).EQ.1 .OR. IRefineMode(12).EQ.1).AND.SUM(IRefineMode).GT.1) THEN         
         IF(my_rank.EQ.0) THEN
-           PRINT*,"Structure factors must be refined seperately"
+           PRINT*,"Structure factors must be refined separately"
         END IF
         IErr = 1
         RETURN
@@ -367,6 +356,13 @@ SUBROUTINE ReadInpFile( IErr )
      ILine= ILine+1; READ(IChInp,ERR=20,END=30,FMT='(A)')
 
      ILine= ILine+1
+     READ(IChInp,15,ERR=20,END=30) RBlurRadius
+     CALL Message ("ReadInpFile",IInfo,IErr,MessageVariable ="RBlurRadius",RVariable = RBlurRadius)
+
+     ILine= ILine+1; READ(IChInp,ERR=20,END=30,FMT='(A)')
+     ILine= ILine+1; READ(IChInp,ERR=20,END=30,FMT='(A)')
+     ILine= ILine+1; READ(IChInp,ERR=20,END=30,FMT='(A)')
+
      READ(IChInp,10,ERR=20,END=30) INoofUgs
      CALL Message ("ReadInpFile",IInfo,IErr,MessageVariable ="INoofUgs",IVariable = INoofUgs)
      
