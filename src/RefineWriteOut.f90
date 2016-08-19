@@ -43,7 +43,6 @@ SUBROUTINE WriteIterationOutput(Iter,IThicknessIndex,IExitFlag,IErr)
   INTEGER(IKIND) :: IErr,Iter,IThickness,ind,jnd,IBytesize
   INTEGER(IKIND),INTENT(IN) :: IThicknessIndex,IExitFLAG
   REAL(RKIND),DIMENSION(2*IPixelCount*2*IPixelCount) :: RImageToWrite
-  REAL(RKIND) :: Rradius
   CHARACTER*200 :: path,h,k,l,SPrintString,filename
   
   IBytesize=2
@@ -76,10 +75,9 @@ SUBROUTINE WriteIterationOutput(Iter,IThicknessIndex,IExitFlag,IErr)
       RImageToWrite = RSimulatedPatterns(ind,IThicknessIndex,:)
 	  
 	  !Apply blur again, temp fix until all subroutines combined into one
-	  IF (IImageProcessingFLAG.EQ.4) THEN
-        Rradius=1.45_RKIND!!!*+*+ will need to be added as a line in felix.inp +*+*!!!
-        CALL BlurG(RImageToWrite,Rradius,IErr)
-	  END IF
+      IF (IImageProcessingFLAG.EQ.4) THEN
+         CALL BlurG(RImageToWrite,IErr)
+      END IF
 	  
 	  !make the path/filename
       IF(IHKLSelectFLAG.EQ.0) THEN!hkl's with order determined by felix

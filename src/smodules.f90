@@ -1,6 +1,6 @@
 !%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 !
-! felixsim
+! felix
 !
 ! Richard Beanland, Keith Evans, Rudolf A Roemer and Alexander Hubert
 !
@@ -15,7 +15,7 @@
 ! 
 !%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 !
-!  This file is part of felixsim.
+!  This file is part of felix.
 !
 !  felixsim is free software: you can redistribute it and/or modify
 !  it under the terms of the GNU General Public License as published by
@@ -215,9 +215,7 @@ MODULE RPara
   USE RConst
   USE IConst
 
-  !INPUT Section
-  !Beam Selection Criteria
-  REAL(RKIND) :: RBSBmax, RBSPMax 
+  !INPUT Section 
   !Crystallography
   REAL(RKIND) :: RLengthX,RLengthY,RLengthZ,RVolume,RAlpha,RBeta,RGamma, &
        RDebyeWallerConstant,RAbsorptionPercentage

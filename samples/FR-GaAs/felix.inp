@@ -45,9 +45,9 @@ IContinueFLAG            = 0
 ICorrelationFLAG         = 2
 IImageProcessingFLAG     = 4
 RBlurRadius              = 1.45
-INoofUgs                  = 1
-IAtomicSites              = (1,2)
-IPrint                    = 4
-RSimplexLengthScale       = 5.0 
-RExitCriteria             = 0.00001
+INoofUgs                 = 1
+IAtomicSites             = (1,2)
+IPrint                   = 4
+RSimplexLengthScale      = 5.0 
+RExitCriteria            = 0.00001
 

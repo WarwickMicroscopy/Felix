@@ -236,7 +236,7 @@ SUBROUTINE CalculateFigureofMeritandDetermineThickness(IThicknessCountFinal,IErr
   INTEGER(IKIND),INTENT(OUT) :: IThicknessCountFinal
   REAL(RKIND),DIMENSION(2*IPixelCount,2*IPixelCount) :: RSimulatedImage,RExperimentalImage
   REAL(RKIND) :: RCrossCorrelationOld,RIndependentCrossCorrelation,RThickness,&
-       PhaseCorrelate,Normalised2DCrossCorrelation,ResidualSumofSquares,RThicknessRange,Rradius
+       PhaseCorrelate,Normalised2DCrossCorrelation,ResidualSumofSquares,RThicknessRange
   REAL(RKIND),DIMENSION(INoOfLacbedPatterns) :: RReflectionCrossCorrelations,RReflectionThickness
   CHARACTER*200 :: SPrintString
        
@@ -286,11 +286,10 @@ SUBROUTINE CalculateFigureofMeritandDetermineThickness(IThicknessCountFinal,IErr
               
       CASE(4)!Apply gaussian blur to simulated image
         RExperimentalImage = RImageExpi(:,:,hnd)
-        Rradius=RBlurRadius!added in input file!
        ! IF(my_rank.EQ.0) THEN
-       !   PRINT*,"Gaussian blur radius =",Rradius
+       !   PRINT*,"Gaussian blur radius =",RBlurRadius
        ! END IF
-        CALL BlurG(RSimulatedImage,Rradius,IErr)
+        CALL BlurG(RSimulatedImage,IErr)
 		
       END SELECT
 
@@ -634,7 +633,7 @@ END SUBROUTINE ConvertVectorMovementsIntoAtomicCoordinates
 
 !%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-SUBROUTINE BlurG(RImageToBlur,Rradius,IErr)
+SUBROUTINE BlurG(RImageToBlur,IErr)
   !performs a 2D Gaussian blur on the input image
   !renormalises the output image to have the same min and max as the input image
   USE MyNumbers
@@ -653,19 +652,19 @@ SUBROUTINE BlurG(RImageToBlur,Rradius,IErr)
   INTEGER(IKIND) :: IErr,ind,jnd,IKernelRadius,IKernelSize
   REAL(RKIND),DIMENSION(:), ALLOCATABLE :: RGauss1D
   REAL(RKIND),DIMENSION(2*IPixelCount,2*IPixelCount) :: RImageToBlur,RTempImage,RShiftImage
-  REAL(RKIND) :: Rradius,Rind,Rsum,Rmin,Rmax
+  REAL(RKIND) :: Rind,Rsum,Rmin,Rmax
   
   !get min and max of input image
   Rmin=MINVAL(RImageToBlur)
   Rmax=MAXVAL(RImageToBlur)
 
   !set up a 1D kernel of appropriate size  
-  IKernelRadius=NINT(3*Rradius)
+  IKernelRadius=NINT(3*RBlurRadius)
   ALLOCATE(RGauss1D(2*IKernelRadius+1),STAT=IErr)!ffs
   Rsum=0
   DO ind=-IKernelRadius,IKernelRadius
     Rind=REAL(ind)
-    RGauss1D(ind+IKernelRadius+1)=EXP(-(Rind**2)/((2*Rradius)**2))
+    RGauss1D(ind+IKernelRadius+1)=EXP(-(Rind**2)/((2*RBlurRadius)**2))
     Rsum=Rsum+RGauss1D(ind+IKernelRadius+1)
   END DO
   RGauss1D=RGauss1D/Rsum!normalise
