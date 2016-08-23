@@ -277,7 +277,7 @@ SUBROUTINE ReadInpFile( IErr )
 
   !-----------------------------------------------------------------------
   ! felixrefine Input
-
+  ! Needs Removal
   IF(ISoftwareMode.EQ.2) THEN
     
      !-----------------------------------------------------------------------
@@ -286,9 +286,14 @@ SUBROUTINE ReadInpFile( IErr )
      ILine= ILine+1; READ(IChInp,ERR=20,END=30,FMT='(A)')
      ILine= ILine+1
      READ(IChInp,FMT='(A)',ERR=20,END=30) SRefineMode
+
+     !Simulation Mode for input of "S"
+     IF ((ADJUSTL(TRIM(SRefineMode)).EQ."S").OR.(ADJUSTL(TRIM(SRefineMode)).EQ."s")) THEN
+        ISimFLAG=1
+     ELSE
+        ISimFLAG=0
      SRefineMode = SRefineMode((SCAN(SRefineMode,"=")+1):)
      IRefineMode = 0
-
      DO ind = 1,IRefinementVariableTypes
         IF(SCAN(TRIM(ADJUSTL(SRefineMode)),TRIM(ADJUSTL(CAlphabet(ind)))).NE.0) THEN
            IRefineMode(ind) = 1
@@ -308,8 +313,9 @@ SUBROUTINE ReadInpFile( IErr )
        IF(IRefineMode(10).EQ.1) PRINT*,"J:Refining Accelerating Voltage "
        IF(IRefineMode(11).EQ.1) PRINT*,"K:Refining Scale Factor "
        IF(IRefineMode(12).EQ.1) PRINT*,"L:Refining Structure Factors by bisection"
-     END IF
-    
+       IF(ISimFlag.EQ.1) PRINT*,"S:Simulation mode"
+    END IF
+ 
      !Check if user has requested Ug refinement and anything else which isnt possible
         
      IF((IRefineMode(1).EQ.1 .OR. IRefineMode(12).EQ.1).AND.SUM(IRefineMode).GT.1) THEN         
@@ -319,7 +325,7 @@ SUBROUTINE ReadInpFile( IErr )
         IErr = 1
         RETURN
      END IF
-
+  END IF
 
      ILine= ILine+1
      READ(IChInp,10,ERR=20,END=30) IWeightingFLAG

@@ -613,6 +613,14 @@ PROGRAM Felixrefine
       GOTO 9999
     END IF
   END IF
+  
+  !For felixsim program ends here, large else statement
+  IF (ISimFLAG.EQ.1) THEN
+
+     IF(my_rank.EQ.0) THEN
+        PRINT*, "End of felixsim, cleaning up"
+     END IF
+  ELSE
 
   IF (IRefineMode(12).EQ.1) THEN
     !bisection on Ug's
@@ -704,6 +712,8 @@ PROGRAM Felixrefine
     ENDIF
 
   END IF
+
+END IF !If RefineMode(19).EQ.1 - i.e. felixsim mode above skipped
   !--------------------------------------------------------------------
   ! Deallocate Memory
   !--------------------------------------------------------------------
