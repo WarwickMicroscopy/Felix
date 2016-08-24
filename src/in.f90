@@ -162,6 +162,9 @@ SUBROUTINE ReadInpFile( IErr )
   READ(IChInp,10,ERR=20,END=30) IAnisoDebyeWallerFactorFlag
   CALL Message ("ReadInpFile",IInfo,IErr,MessageVariable ="IAnisoDebyeWallerFactorFlag",IVariable=IAnisoDebyeWallerFactorFlag)
 
+  ILine= ILine+1
+  READ(IChInp,10,ERR=20,END=30) IByteSize
+  CALL Message ("ReadInpFile",IInfo,IErr,MessageVariable ="IByteSize",IVariable=IByteSize)
   ! ----------------------------------------------------------------------
   ! beam details
   
@@ -288,7 +291,7 @@ SUBROUTINE ReadInpFile( IErr )
      READ(IChInp,FMT='(A)',ERR=20,END=30) SRefineMode
 
      !Simulation Mode for input of "S"
-     IF ((ADJUSTL(TRIM(SRefineMode)).EQ."S").OR.(ADJUSTL(TRIM(SRefineMode)).EQ."s")) THEN
+     IF(SCAN(TRIM(ADJUSTL(SRefineMode)),TRIM(ADJUSTL(CAlphabet(19)))).NE.0) THEN
         ISimFLAG=1
      ELSE
         ISimFLAG=0
@@ -635,14 +638,14 @@ SUBROUTINE ReadExperimentalImages(IErr)
   IMPLICIT NONE
   
   REAL(RKIND) :: RPixel,RImageLine(2*IPixelCount)
-  INTEGER(IKIND) :: ind,jnd,knd,IErr,IByteSize
+  INTEGER(IKIND) :: ind,jnd,knd,IErr
   INTEGER(IKIND) :: INegError = 0
   CHARACTER*34 :: filename
   CHARACTER*200 :: SPrintString
 
-  IByteSize=2!2bytes=64-bit input file (NB tinis specifies in bytes, not bits)
+  !for IBytesize: 2bytes=64-bit input file (NB tinis specifies in bytes, not bits)
   !NB when this subroutine is working get rid of the pointless variable RImageIn
-  ALLOCATE(RImageIn(2*IPixelCount,2*IPixelCount), STAT=IErr)  
+  ALLOCATE(RImageIn(2*IPixelCount,2*IPixelCount), STAT=IErr)
   IF( IErr.NE.0 ) THEN
     PRINT*,"ReadExperimentalImages(",my_rank,")error allocating RImageIn"
     RETURN

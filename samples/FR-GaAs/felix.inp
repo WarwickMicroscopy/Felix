@@ -11,13 +11,14 @@ IMaskFLAG                 = 1
 IHolzFLAG                 = 0
 IAbsorbFLAG               = 2
 IAnisoDebyeWallerFlag     = 0
+IByteSize                 = 8
 
 # radius of the beam in pixels
 IPixelCount               = 35
 
 # beam selection criteria
-IMinReflectionPool        = 1000
-IMinStrongBeams           = 33
+IMinReflectionPool        = 100
+IMinStrongBeams           = 8
 IMinWeakBeams             = 0
 
 # crystal settings
@@ -39,7 +40,7 @@ RDeltaThickness          = 10.0
 IReflectOut              = 1
 
 #Refinement Specific Flags
-IRefineModeFLAG          = D
+IRefineModeFLAG          = S
 IWeightingFLAG           = 0
 IContinueFLAG            = 0
 ICorrelationFLAG         = 2
@@ -50,4 +51,3 @@ IAtomicSites             = (1,2)
 IPrint                   = 4
 RSimplexLengthScale      = 5.0 
 RExitCriteria            = 0.00001
-

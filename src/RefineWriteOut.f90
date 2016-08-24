@@ -40,12 +40,11 @@ SUBROUTINE WriteIterationOutput(Iter,IThicknessIndex,IExitFlag,IErr)
 
   IMPLICIT NONE
 
-  INTEGER(IKIND) :: IErr,Iter,IThickness,ind,jnd,IBytesize
+  INTEGER(IKIND) :: IErr,Iter,IThickness,ind,jnd
   INTEGER(IKIND),INTENT(IN) :: IThicknessIndex,IExitFLAG
   REAL(RKIND),DIMENSION(2*IPixelCount*2*IPixelCount) :: RImageToWrite
   CHARACTER*200 :: path,h,k,l,SPrintString,filename
   
-  IBytesize=2
   
   IF(IExitFLAG.EQ.1.OR.(Iter.GE.(IPreviousPrintedIteration+IPrint))) THEN
     IThickness = (RInitialThickness + (IThicknessIndex-1)*RDeltaThickness)/10!RB in nm 

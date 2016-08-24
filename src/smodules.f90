@@ -147,7 +147,8 @@ MODULE IPara
        IImageFLAG,IBeamConvergenceFLAG,  &
        IDevFLAG, &
        IRefineModeFLAG,ISoftwareMode,IHKLSelectFLAG,IPrint,IRefineSwitch,&
-       IWeightingFLAG,IContinueFLAG,ICorrelationFLAG,IImageProcessingFLAG
+       IWeightingFLAG,IContinueFLAG,ICorrelationFLAG,IImageProcessingFLAG,&
+       IByteSize
   !Minimum Reflections etc
   INTEGER(IKIND) :: IMinReflectionPool,IMinStrongBeams,IMinWeakBeams
   !OtherFLAGS

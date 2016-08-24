@@ -613,10 +613,9 @@ PROGRAM Felixrefine
       GOTO 9999
     END IF
   END IF
-  
-  !For felixsim program ends here, large else statement
-  IF (ISimFLAG.EQ.1) THEN
 
+  !for felixsim program ends here, large if-else statement, deallocations still applied at end
+  IF (ISimFLAG.EQ.1) THEN
      IF(my_rank.EQ.0) THEN
         PRINT*, "End of felixsim, cleaning up"
      END IF
