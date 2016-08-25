@@ -133,10 +133,13 @@ PROGRAM Felixrefine
      GOTO 9999
   END IF
   
-  CALL ReadExperimentalImages(IErr)
-  IF( IErr.NE.0 ) THEN
-     PRINT*,"felixrefine(",my_rank,") error in ReadExperimentalImages"
-     GOTO 9999
+  !If felixrefine is running
+  IF (ISimFLAG.EQ.0) THEN
+     CALL ReadExperimentalImages(IErr)
+     IF( IErr.NE.0 ) THEN
+        PRINT*,"felixrefine(",my_rank,") error in ReadExperimentalImages"
+        GOTO 9999
+     END IF
   END IF
 
   !--------------------------------------------------------------------
