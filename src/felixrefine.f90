@@ -607,7 +607,12 @@ PROGRAM Felixrefine
     PRINT*,TRIM(ADJUSTL(SPrintString))
   END IF
   !Baseline simulation output, core 0 only
-  IExitFLAG = 0 !Do not exit
+  IF (ISimFLAG.EQ.1) THEN
+     IExitFLAG = 1 !Exit (sim)
+  ELSE
+     IExitFLAG = 0 !Do not exit (refine)
+  ENDIF
+
   IPreviousPrintedIteration = -100!RB ensuring baseline simulation is printed
   IF(my_rank.EQ.0) THEN   
     CALL CreateImagesAndWriteOutput(Iter,IExitFLAG,IErr) 
@@ -715,7 +720,7 @@ PROGRAM Felixrefine
 
   END IF
 
-END IF !If RefineMode(19).EQ.1 - i.e. felixsim mode above skipped
+END IF !If RefineMode(19).EQ.1 - i.e. if felixsim mode above skipped
   !--------------------------------------------------------------------
   ! Deallocate Memory
   !--------------------------------------------------------------------

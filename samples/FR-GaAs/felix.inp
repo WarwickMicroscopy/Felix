@@ -5,7 +5,7 @@
 
 # control flags
 IWriteFLAG                = 4
-IImageFLAG                = 1
+IImageFLAG                = 10
 IScatterFactorMethodFLAG  = 0
 IMaskFLAG                 = 1
 IHolzFLAG                 = 0
@@ -37,7 +37,7 @@ RAcceptanceAngle          = 0.0
 RInitialThickness        = 800.0
 RFinalThickness          = 900.0
 RDeltaThickness          = 10.0
-IReflectOut              = 1
+IReflectOut              = 10
 
 #Refinement Specific Flags
 IRefineModeFLAG          = S

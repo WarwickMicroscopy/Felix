@@ -358,12 +358,14 @@ SUBROUTINE CreateImagesAndWriteOutput(Iiter,IExitFLAG,IErr)
   
   INTEGER(IKIND) :: IErr,IThicknessIndex,Iiter,IExitFLAG
 
-  CALL CalculateFigureofMeritandDetermineThickness(IThicknessIndex,IErr)
-  IF( IErr.NE.0 ) THEN
-     PRINT*,"CreateImagesAndWriteOutput(", my_rank, ") error ", IErr, &
-          "Calling function CalculateFigureofMeritandDetermineThickness"
-     RETURN
-  ENDIF
+  IF (ISimFLAG.EQ.0) THEN !Refine Mode (not needed for sim mode)
+     CALL CalculateFigureofMeritandDetermineThickness(IThicknessIndex,IErr)
+     IF( IErr.NE.0 ) THEN
+        PRINT*,"CreateImagesAndWriteOutput(", my_rank, ") error ", IErr, &
+             "Calling function CalculateFigureofMeritandDetermineThickness"
+        RETURN
+     ENDIF
+  END IF
   
 !!$     OUTPUT -------------------------------------  
   CALL WriteIterationOutput(Iiter,IThicknessIndex,IExitFLAG,IErr)
