@@ -62,35 +62,20 @@ SUBROUTINE OpenData(IChOutWrite, prefix, surname, IErr)
 
   IMPLICIT NONE
 
-  CHARACTER*27 :: &
-       surname, surnamelength
-  CHARACTER*2 :: &
-       prefix,postfix
-  INTEGER(IKIND) :: &
-       IChOutWrite, IErr
-  CHARACTER*34 :: &
-       filename
-  INTEGER(IKIND) :: &
-       index
+  CHARACTER*27 :: surname, surnamelength
+  CHARACTER*2 :: prefix,postfix
+  INTEGER(IKIND) :: IChOutWrite, IErr
+  CHARACTER*34 :: filename
+  INTEGER(IKIND) :: index
 
  ! CALL Message("OpenData",IMust,IErr)
   IF((IWriteFLAG.GE.2.AND.my_rank.EQ.0).OR.IWriteFLAG.GE.10) THEN
-
-     PRINT*,"OpenData()"
-
+    PRINT*,"OpenData()"
   END IF
-  
   WRITE(surnamelength,*) LEN_TRIM(surname)
-
   WRITE(filename,"(A2,A2,A1,A"//TRIM(surnamelength)//",A4)") "F-",prefix,"-",surname,".txt"
-
-!  CALL Message("OpenData",IAllInfo,IErr,MessageVariable = "filename", & 
-!       MessageString = filename)
-
   IF(IWriteFLAG.GE.10) THEN
-     
-     PRINT*,filename
-
+    PRINT*,filename
   END IF
 
   IF (IWriteFLAG.GE.10) THEN
@@ -115,7 +100,6 @@ SUBROUTINE OpenData(IChOutWrite, prefix, surname, IErr)
              "channel "
      END SELECT
   END IF
-
   OPEN(UNIT= IChOutWrite, ERR= 10, STATUS= 'UNKNOWN', FILE=TRIM(filename))
 
   RETURN
@@ -286,7 +270,6 @@ SUBROUTINE OpenReflectionImage(IChOutWrite, surname, IErr,IReflectWriting,IImage
      TRIM(ADJUSTL(h)),&
      TRIM(ADJUSTL(k)),&
      TRIM(ADJUSTL(l)),&
-     !RB TRIM(ADJUSTL(Simagesize)),&
      TRIM(ADJUSTL(fileext))
 	 
   CASE(MontageOut)        

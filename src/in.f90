@@ -449,6 +449,7 @@ END SUBROUTINE ReadInpFile
 ! -----------------------------------------------------------------------
 
 SUBROUTINE ReadScaFile( IErr )
+!This is now redundant
 !completely pointless subroutine that just calls another subroutine
   USE MyNumbers
   USE WriteToScreen
@@ -492,86 +493,68 @@ SUBROUTINE ReadHklFile(IErr)
 
   IMPLICIT NONE
 
-  INTEGER(IKIND) :: ILine,ILength,IErr,h,k,l,ind,IPos1,IPos2
-  CHARACTER*200 :: dummy1,dummy2,SHKLString
+  INTEGER(IKIND) :: ILine,IErr,h,k,l,ind,IPos1,IPos2
+  CHARACTER*200 :: dummy1,dummy2,SPrintString
 
   CALL Message ("ReadHklFile",IMust,IErr)  
-
+  CALL Message ("ReadHklFile",IInfo,IErr,MessageString ="Using hkl list")
+  
   OPEN(Unit = IChInp,FILE="felix.hkl",STATUS='OLD',ERR=10)
-
-  CALL Message ("ReadHklFile",IInfo,IErr,MessageString ="Using hkl list") 
-   
   ILine = 0
-
   IHKLSelectFLAG=1
   
+  !count the number of lines in felix.hkl: this is the number of reflections to output, INoOfLacbedPatterns
   DO
-     READ(UNIT= IChInp, END=100, FMT='(a)') dummy1
-     ILine=ILine+1
+    READ(UNIT= IChInp, END=100, FMT='(a)') dummy1
+    ILine=ILine+1
   ENDDO
+  100 INoOfLacbedPatterns=ILine
 
-  100 ILength=ILine
-
-  ALLOCATE(RInputHKLs(ILength,ITHREE),STAT=IErr)
+  ALLOCATE(RInputHKLs(INoOfLacbedPatterns,ITHREE),STAT=IErr)
+  ALLOCATE(IOutputReflections(INoOfLacbedPatterns),STAT=IErr)
   IF( IErr.NE.0 ) THEN
-     PRINT*,"ReadHklFile(",my_rank,")error allocating RInputHKLs"
+     PRINT*,"ReadHklFile(",my_rank,")error in allocations"
      RETURN
   ENDIF
-  ALLOCATE(IOutputReflections(ILength),STAT=IErr)
-  IF( IErr.NE.0 ) THEN
-     PRINT*,"ReadHklFile(",my_rank,")error allocating IOutputReflections"
-     RETURN
-  ENDIF
+  
+  !read in the hkls
   REWIND(UNIT=IChInp)
-  
-  ILine = 0
-  
-  CALL Message ("ReadHklFile",IMoreInfo,IErr,MessageString = " Printing selected hkl's") 
-  
-  DO ind = 1,ILength
-     
-     ! READ HKL in as String
-     
-     READ(UNIT= IChInp,FMT='(A)' ) dummy1
-     
-     
-     !Scan String for h
-     IPos1 = SCAN(dummy1,'[')
-     IPos2 = SCAN(dummy1,',')
-     dummy2 = dummy1((IPos1+1):(IPos2-1))
-     READ(dummy2,'(I20)') h
+  ILine = 0 
+  DO ind = 1,INoOfLacbedPatterns
+    ! READ HKL in as String
+    READ(UNIT= IChInp,FMT='(A)' ) dummy1
+    !Scan String for h
+    IPos1 = SCAN(dummy1,'[')
+    IPos2 = SCAN(dummy1,',')
+    dummy2 = dummy1((IPos1+1):(IPos2-1))
+    READ(dummy2,'(I20)') h
+    !Scan String for k   
+    IPos1 = SCAN(dummy1((IPos2+1):),',') + IPos2
+    dummy2 = dummy1((IPos2+1):(IPos1-1))
+    READ(dummy2,'(I20)') k
+    !Scan String for l     
+    IPos2 = SCAN(dummy1((IPos1+1):),']') + IPos1
+    dummy2 = dummy1((IPos1+1):(IPos2-1))
+    READ(dummy2,'(I20)') l
+    ! Convert to REALs
+    ILine=ILine+1
+    RInputHKLs(ILine,1) = REAL(h,RKIND)
+    RInputHKLs(ILine,2) = REAL(k,RKIND)
+    RInputHKLs(ILine,3) = REAL(l,RKIND)   
 
-     !Scan String for k   
-     IPos1 = SCAN(dummy1((IPos2+1):),',') + IPos2
-     dummy2 = dummy1((IPos2+1):(IPos1-1))
-     READ(dummy2,'(I20)') k
-
-     !Scan String for l     
-     IPos2 = SCAN(dummy1((IPos1+1):),']') + IPos1
-     dummy2 = dummy1((IPos1+1):(IPos2-1))
-     READ(dummy2,'(I20)') l
-
-     ! Convert to REALs
-     ILine=ILine+1
-     RInputHKLs(ILine,1) = REAL(h,RKIND)
-     RInputHKLs(ILine,2) = REAL(k,RKIND)
-     RInputHKLs(ILine,3) = REAL(l,RKIND)   
-
-     IF((my_rank.EQ.0.AND.IWriteFLAG.GE.3).OR.IWriteFLAG.GE.10) THEN
-        WRITE(SHKLString,'(3(I4.1,1X))') NINT(RInputHKLs(ILine,:))
-        CALL Message ("ReadHklFile",IInfo,IErr,MessageVariable = "Input HKL is",MessageString = SHKLString) 
-     END IF
+    IF((my_rank.EQ.0.AND.IWriteFLAG.GE.3).OR.IWriteFLAG.GE.10) THEN
+      WRITE(SPrintString,'(3(I4.1,1X))') NINT(RInputHKLs(ILine,:))
+	  PRINT*,TRIM(ADJUSTL(SPrintString))
+      CALL Message ("ReadHklFile",IInfo,IErr,MessageVariable = "Input HKL is",MessageString = SPrintString) 
+    END IF
   END DO
-
-  INoOfLacbedPatterns = ILength
 
   RETURN
 
   10 IHKLSelectFLAG=0
+    CALL Message ("ReadHklFile",IInfo,IErr,MessageString = "Did not find .hkl file continuing in normal mode") 
+    RETURN
   
-  CALL Message ("ReadHklFile",IInfo,IErr,MessageString = "Did not find .hkl file continuing in normal mode") 
-
-  RETURN
 END SUBROUTINE ReadHklFile
 
 !%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -668,39 +651,38 @@ SUBROUTINE ReadExperimentalImages(IErr)
   INTEGER(IKIND) :: INegError = 0
   CHARACTER*34 :: filename
   CHARACTER*200 :: SPrintString
+  CHARACTER*4 :: h,k,l
 
+  ALLOCATE(RImageIn(2*IPixelCount,2*IPixelCount), STAT=IErr)  
+  IF( IErr.NE.0 ) THEN
+    PRINT*,"ReadExperimentalImages(",my_rank,")error allocating RImageIn"
+    RETURN
+  ENDIF
+  
   DO ind = 1,INoOfLacbedPatterns
-     
-     WRITE(filename,"(A6,I3.3,A4)") "felix.",ind,".img"
-     OPEN(UNIT= IChInImage, ERR= 10, STATUS= 'UNKNOWN', FILE=TRIM(ADJUSTL(filename)),FORM='UNFORMATTED',&
+    WRITE(h,*)  NINT(RInputHKLs,1))
+    WRITE(k,*)  NINT(RInputHKLs,2))
+    WRITE(l,*)  NINT(RInputHKLs,3))
+    WRITE(filename,*) TRIM(ADJUSTL(h)),TRIM(ADJUSTL(k)),TRIM(ADJUSTL(l)),".img"
+    !WRITE(filename,"(A6,I3.3,A4)") "felix.",ind,".img"
+    OPEN(UNIT= IChInImage, ERR= 10, STATUS= 'UNKNOWN', FILE=TRIM(ADJUSTL(filename)),FORM='UNFORMATTED',&
        ACCESS='DIRECT',IOSTAT=Ierr,RECL=2*IPixelCount*8)
-	   
-    ALLOCATE(RImageIn(2*IPixelCount,2*IPixelCount), STAT=IErr)  
+    DO jnd=1,2*IPixelCount
+      READ(IChInImage,rec=jnd,ERR=10) RImageIn(jnd,:)
+    END DO
+    IF(MINVAL(RImageIn).LT.ZERO.AND.(my_rank.EQ.0)) THEN
+      PRINT*,"Warning! There are negative values in your experimental images"
+      INegError = INegError + 1
+    END IF
+    RImageExpi(:,:,ind) = RImageIn
+    CLOSE(IChInImage,IOSTAT=IErr) 
     IF( IErr.NE.0 ) THEN
-      PRINT*,"ReadExperimentalImages(",my_rank,")error allocating RImageIn"
+      PRINT*,"ReadExperimentalImages (", my_rank, ") error in CLOSE()"
       RETURN
-    ENDIF
-    
-     DO jnd=1,2*IPixelCount
-        READ(IChInImage,rec=jnd,ERR=10) RImageIn(jnd,:)
-     END DO
-     
-     IF(MINVAL(RImageIn).LT.ZERO.AND.(my_rank.EQ.0)) THEN
-        PRINT*,"Warning! There are negative values in your experimental images"
-        INegError = INegError + 1
-     END IF
-
-     RImageExpi(:,:,ind) = RImageIn
-     DEALLOCATE(RImageIn, STAT=IErr)  
-     
-     CLOSE(IChInImage,IOSTAT=IErr) 
-     IF( IErr.NE.0 ) THEN
-        PRINT*,"ReadExperimentalImages (", my_rank, ") error in CLOSE()"
-        RETURN
-     END IF
-
+    END IF
   END DO
-
+  DEALLOCATE(RImageIn,STAT=IErr)
+  
   IF (INegError.NE.0) THEN
      IErr = 1
      PRINT*,"No. of Images with Negative Values",INegError

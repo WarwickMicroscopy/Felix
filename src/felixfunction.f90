@@ -286,11 +286,11 @@ SUBROUTINE CalculateFigureofMeritandDetermineThickness(IThicknessCountFinal,IErr
               
       CASE(4)!Apply gaussian blur to simulated image
         RExperimentalImage = RImageExpi(:,:,hnd)
-        Rradius=1.45_RKIND!!!*+*+ blur will need to be added as a line in felix.inp +*+*!!!
+        Rradius=0.0_RKIND!!!*+*+ blur will need to be added as a line in felix.inp +*+*!!!
        ! IF(my_rank.EQ.0) THEN
        !   PRINT*,"Gaussian blur radius =",Rradius
        ! END IF
-        CALL BlurG(RSimulatedImage,Rradius,IErr)
+        !CALL BlurG(RSimulatedImage,Rradius,IErr)
 		
       END SELECT
 
@@ -366,11 +366,15 @@ SUBROUTINE CreateImagesAndWriteOutput(Iiter,IExitFLAG,IErr)
      RETURN
   ENDIF
   
-!!$     OUTPUT -------------------------------------  
-  CALL WriteIterationOutput(Iiter,IThicknessIndex,IExitFLAG,IErr)
-  IF( IErr.NE.0 ) THEN
-     PRINT*,"CreateImagesAndWriteOutput(",my_rank,")error in WriteIterationOutput"
-     RETURN
+!!$     OUTPUT ------------------------------------- 
+  !write to disc if we have done enough iterations or have finished
+  IF(IExitFLAG.EQ.1.OR.(Iter.GE.(IPreviousPrintedIteration+IPrint))) THEN
+    CALL WriteIterationOutput(Iiter,IThicknessIndex,IExitFLAG,IErr)
+    IF( IErr.NE.0 ) THEN
+      PRINT*,"CreateImagesAndWriteOutput(",my_rank,")error in WriteIterationOutput"
+      RETURN
+    ENDIF 
+    IPreviousPrintedIteration = Iter!reset iteration counter
   ENDIF
 
 END SUBROUTINE CreateImagesAndWriteOutput

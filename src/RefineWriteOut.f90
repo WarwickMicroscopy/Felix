@@ -57,92 +57,86 @@ SUBROUTINE WriteIterationOutput(Iter,IThicknessIndex,IExitFlag,IErr)
   REAL(RKIND) :: Rradius
   CHARACTER*200 :: path,SPrintString
 
-  IF(IExitFLAG.EQ.1.OR.(Iter.GE.(IPreviousPrintedIteration+IPrint))) THEN
-     IThickness = (RInitialThickness + (IThicknessIndex-1)*RDeltaThickness)/10!in nm 
-     WRITE(path,"(A10,I4.4,A1,I3.3,A3,I3.3,A1,I3.3)") &
-          "Iteration",Iter,&
-          "_",IThickness,&
-          "nm_",2*IPixelcount,&
-          "x",2*IPixelcount
+  IThickness = (RInitialThickness + (IThicknessIndex-1)*RDeltaThickness)/10!in nm 
+  WRITE(path,"(A10,I4.4,A1,I3.3,A3,I3.3,A1,I3.3)") &
+          "Iteration",Iter,"_",IThickness,"nm_",2*IPixelcount,"x",2*IPixelcount
      
-     call system('mkdir ' // path)
+  call system('mkdir ' // path)
 
-     IF (IExitFLAG.EQ.0) THEN
-	   IF (IPreviousPrintedIteration.LT.0) THEN
-         WRITE(SPrintString,FMT='(A35)') "Writing output; baseline simulation"
-	   ELSE
-         WRITE(SPrintString,FMT='(A16,I4,A35)') "Writing output; ",&
-		 Iter-IPreviousPrintedIteration," iterations since the previous save"
-	   END IF
-     ELSE
-        WRITE(SPrintString,FMT='(A28,I4,A35)') "Exiting and writing output; ",&
-		Iter-IPreviousPrintedIteration," iterations since the previous save" 
-	 END IF
-        PRINT*,TRIM(ADJUSTL(SPrintString))
-     
-     IPreviousPrintedIteration = Iter
+  IF (IExitFLAG.EQ.0) THEN
+    IF (IPreviousPrintedIteration.LT.0) THEN
+      WRITE(SPrintString,FMT='(A35)') "Writing output; baseline simulation"
+    ELSE
+      WRITE(SPrintString,FMT='(A16,I4,A35)') "Writing output; ",&
+      Iter-IPreviousPrintedIteration," iterations since the previous save"
+    END IF
+  ELSE
+    WRITE(SPrintString,FMT='(A28,I4,A35)') "Exiting and writing output; ",&
+    Iter-IPreviousPrintedIteration," iterations since the previous save" 
+  END IF
+  PRINT*,TRIM(ADJUSTL(SPrintString))
 
-!    Was WriteIterationImages
+
+  !    Was WriteIterationImages
   DO ind = 1,INoOfLacbedPatterns
-     CALL OpenReflectionImage(IChOutWIImage,path,IErr,ind,2*IPixelCount,2_IKIND)
-     IF( IErr.NE.0 ) THEN
-        PRINT*,"WriteIterationImages(",my_rank,") error in OpenReflectionImage()"
-        RETURN
-     ENDIF
-	 !convert vector RSimulatedPatterns into 2D RImageToWrite (again, was done once in CalculateFigureofMeritandDetermineThickness
-     RImageToWrite = ZERO
-     DO jnd = 1,IPixelTotal
-        gnd = IPixelLocations(jnd,1)
-        hnd = IPixelLocations(jnd,2)
-        RImageToWrite(gnd,hnd) = RSimulatedPatterns(ind,IThicknessIndex,jnd)
-     END DO
+    CALL OpenReflectionImage(IChOutWIImage,path,IErr,ind,2*IPixelCount,2_IKIND)
+    IF( IErr.NE.0 ) THEN
+      PRINT*,"WriteIterationImages(",my_rank,") error in OpenReflectionImage()"
+      RETURN
+    ENDIF
+    !convert vector RSimulatedPatterns into 2D RImageToWrite (again! was done once in CalculateFigureofMeritandDetermineThickness
+    RImageToWrite = ZERO
+    DO jnd = 1,IPixelTotal
+      gnd = IPixelLocations(jnd,1)
+      hnd = IPixelLocations(jnd,2)
+      RImageToWrite(gnd,hnd) = RSimulatedPatterns(ind,IThicknessIndex,jnd)
+    END DO
 	 
-	 !Apply blur again, temp fix until all subroutines combined into one
-	 IF (IImageProcessingFLAG.EQ.4) THEN
-       Rradius=0.95_RKIND!!!*+*+ will need to be added as a line in felix.inp +*+*!!!
-       CALL BlurG(RImageToWrite,Rradius,IErr)
-	 END IF
+    !Apply blur again, temp fix until all subroutines combined into one
+    IF (IImageProcessingFLAG.EQ.4) THEN
+      Rradius=0.9_RKIND!!!*+*+ will need to be added as a line in felix.inp +*+*!!!
+      CALL BlurG(RImageToWrite,Rradius,IErr)
+	END IF
 
-     CALL WriteReflectionImage(IChOutWIImage,&
-          RImageToWrite,IErr,2*IPixelCount,2*IPixelCount,2_IKIND)       
-     IF( IErr.NE.0 ) THEN
-        PRINT*,"WriteIterationImages(", my_rank, ") error in WriteReflectionImage()"
-        RETURN
-     ENDIF
+    DO ind = 1,2*IPixelCount
+     WRITE(IChOutWIImage,rec=ind) RImageToWrite(ind,:)
+    END DO
+    !CALL WriteReflectionImage(IChOutWIImage,&
+    !   RImageToWrite,IErr,2*IPixelCount,2*IPixelCount,2_IKIND)       
+    !IF( IErr.NE.0 ) THEN
+    !  PRINT*,"WriteIterationImages(", my_rank, ") error in WriteReflectionImage()"
+    !  RETURN
+    !ENDIF
      
-     CLOSE(IChOutWIImage,IOSTAT=IErr)       
-     IF( IErr.NE.0 ) THEN
-        PRINT*,"WriteIterationImages(", my_rank, ") error Closing Reflection Image()"
-        RETURN
-     ENDIF
-     
+    CLOSE(IChOutWIImage,IOSTAT=IErr)       
+    IF( IErr.NE.0 ) THEN
+      PRINT*,"WriteIterationImages(", my_rank, ") error Closing Reflection Image()"
+      RETURN
+    ENDIF
   END DO
 
-     CALL WriteIterationStructure(path,IErr) 
-     IF( IErr.NE.0 ) THEN
-        PRINT*,"WriteIterationOutput(",my_rank,")error in WriteIterationStructure"
-        RETURN
-     ENDIF
-
-     CALL WriteStructureFactors(path,IErr)
-     IF( IErr.NE.0 ) THEN
-        PRINT*,"WriteIterationOutput(",my_rank,")error in WriteStructureFactors()"
-        RETURN
-     ENDIF
-
-     CALL WriteOutVariables(Iter,IErr)
-     IF( IErr.NE.0 ) THEN
-        PRINT*,"WriteIterationOutput(",my_rank,")error in WriteOutVariables()"
-        RETURN
-     ENDIF
-  END IF
+  CALL WriteIterationStructure(path,IErr) 
+  IF( IErr.NE.0 ) THEN
+    PRINT*,"WriteIterationOutput(",my_rank,")error in WriteIterationStructure"
+    RETURN
+  ENDIF
+  CALL WriteStructureFactors(path,IErr)
+  IF( IErr.NE.0 ) THEN
+    PRINT*,"WriteIterationOutput(",my_rank,")error in WriteStructureFactors()"
+    RETURN
+  ENDIF
+  CALL WriteOutVariables(Iter,IErr)
+  IF( IErr.NE.0 ) THEN
+    PRINT*,"WriteIterationOutput(",my_rank,")error in WriteOutVariables()"
+    RETURN
+  ENDIF
   
 END SUBROUTINE WriteIterationOutput
 
 !!$  %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 SUBROUTINE WriteIterationImages(path,IThicknessIndex,IErr)
-!now redundant
+!this is now redundant
   USE MyNumbers
   
   USE CConst; USE IConst; USE RConst
