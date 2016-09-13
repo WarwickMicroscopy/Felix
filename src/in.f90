@@ -509,6 +509,10 @@ SUBROUTINE ReadHklFile(IErr)
     ILine=ILine+1
   ENDDO
   100 INoOfLacbedPatterns=ILine
+  IF (IWriteFLAG.EQ.2.AND.my_rank.EQ.0) THEN
+    WRITE(SPrintString,FMT='(I3,A28)') INoOfLacbedPatterns," experimental images to load"
+    PRINT*,TRIM(ADJUSTL(SPrintString))
+  END IF
 
   ALLOCATE(RInputHKLs(INoOfLacbedPatterns,ITHREE),STAT=IErr)
   ALLOCATE(IOutputReflections(INoOfLacbedPatterns),STAT=IErr)
@@ -647,26 +651,31 @@ SUBROUTINE ReadExperimentalImages(IErr)
 
   IMPLICIT NONE
   
-  INTEGER(IKIND) :: ind,jnd,IErr
+  INTEGER(IKIND) :: ind,jnd,IErr,Ibytesize
   INTEGER(IKIND) :: INegError = 0
   CHARACTER*34 :: filename
   CHARACTER*200 :: SPrintString
-  CHARACTER*4 :: h,k,l
+  CHARACTER*10 :: h,k,l
 
-  ALLOCATE(RImageIn(2*IPixelCount,2*IPixelCount), STAT=IErr)  
+  Ibytesize=8
+  
+  ALLOCATE(RImageIn(2*IPixelCount,2*IPixelCount), STAT=IErr)  !could do without this variable and load directly into RImageExpi
   IF( IErr.NE.0 ) THEN
     PRINT*,"ReadExperimentalImages(",my_rank,")error allocating RImageIn"
     RETURN
-  ENDIF
-  
+  END IF
+
   DO ind = 1,INoOfLacbedPatterns
-    WRITE(h,*)  NINT(RInputHKLs,1))
-    WRITE(k,*)  NINT(RInputHKLs,2))
-    WRITE(l,*)  NINT(RInputHKLs,3))
+    WRITE(h,'(I3.1)')  NINT(RInputHKLs(ind,1))
+    WRITE(k,'(I3.1)')  NINT(RInputHKLs(ind,2))
+    WRITE(l,'(I3.1)')  NINT(RInputHKLs(ind,3))
     WRITE(filename,*) TRIM(ADJUSTL(h)),TRIM(ADJUSTL(k)),TRIM(ADJUSTL(l)),".img"
-    !WRITE(filename,"(A6,I3.3,A4)") "felix.",ind,".img"
+	IF (IWriteFLAG.EQ.2.AND.my_rank.EQ.0) THEN
+	  PRINT*,filename
+	END IF
+    !WRITE(filename,"(A6,I3.3,A4)") "felix.",ind,".img"  !old version with format felix.000.img
     OPEN(UNIT= IChInImage, ERR= 10, STATUS= 'UNKNOWN', FILE=TRIM(ADJUSTL(filename)),FORM='UNFORMATTED',&
-       ACCESS='DIRECT',IOSTAT=Ierr,RECL=2*IPixelCount*8)
+       ACCESS='DIRECT',IOSTAT=Ierr,RECL=2*IPixelCount*Ibytesize)
     DO jnd=1,2*IPixelCount
       READ(IChInImage,rec=jnd,ERR=10) RImageIn(jnd,:)
     END DO
@@ -684,15 +693,13 @@ SUBROUTINE ReadExperimentalImages(IErr)
   DEALLOCATE(RImageIn,STAT=IErr)
   
   IF (INegError.NE.0) THEN
-     IErr = 1
-     PRINT*,"No. of Images with Negative Values",INegError
+    IErr = 1
+    PRINT*,"No. of Images with Negative Values",INegError
   END IF
 
-  IF (my_rank.EQ.0) THEN
-    IF (IErr.EQ.0) THEN
-     WRITE(SPrintString,FMT='(I3,A40)') INoOfLacbedPatterns," experimental images successfully loaded"
-     PRINT*,TRIM(ADJUSTL(SPrintString))
-    END IF
+  IF (my_rank.EQ.0.AND.IErr.EQ.0) THEN
+    WRITE(SPrintString,FMT='(I3,A40)') INoOfLacbedPatterns," experimental images successfully loaded"
+    PRINT*,TRIM(ADJUSTL(SPrintString))
   END IF
 
   RETURN

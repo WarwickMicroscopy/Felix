@@ -121,18 +121,33 @@ PROGRAM Felixrefine
 
   !--------------------------------------------------------------------
   ! INPUT section 
-   CALL ReadInput (IErr)
+  !felix.inp
+  CALL ReadInpFile(IErr)
   IF( IErr.NE.0 ) THEN
-     PRINT*,"felixrefine(",my_rank,") error in ReadInput"
-     GOTO 9999
-  END IF  
+    PRINT*,"felixrefine(",my_rank,")error reading felix.inp"
+    GOTO 9999
+  ENDIF
+  !felix.cif
+  CALL ReadCif(IErr)!branch in here depending on ISoftwareMode, needs to be taken out
+  IF( IErr.NE.0 ) THEN
+    PRINT*,"felixrefine(",my_rank,")error reading felix.cif"
+    GOTO 9999
+  ENDIF
+
+  !experimental images
+  !felix.hkl
+  CALL ReadHklFile(IErr)
+  IF( IErr.NE.0 ) THEN
+    PRINT*,"felixrefine(",my_rank,")error reading felix.hkl"
+    GOTO 9999
+  ENDIF
 
   ALLOCATE(RImageExpi(2*IPixelCount,2*IPixelCount,INoOfLacbedPatterns),STAT=IErr)  
   IF( IErr.NE.0 ) THEN
      PRINT*,"felixrefine(",my_rank,")error allocating RImageExpi"
      GOTO 9999
   END IF
-  
+
   CALL ReadExperimentalImages(IErr)
   IF( IErr.NE.0 ) THEN
      PRINT*,"felixrefine(",my_rank,") error in ReadExperimentalImages"
@@ -140,13 +155,19 @@ PROGRAM Felixrefine
   END IF
 
   !--------------------------------------------------------------------
-  ! Initial simulation and variable setup
-  CALL MicroscopySettings( IErr )
+  ! Scattering factors
+  CALL ScatteringFactors(IScatterFactorMethodFLAG,IErr)
+  IF( IErr.NE.0 ) THEN
+    PRINT*,"felixrefine(",my_rank,") error in ScatteringFactors"
+    GOTO 9999
+  ENDIF
+  !Geometry
+  CALL MicroscopySettings(IErr)
   IF( IErr.NE.0 ) THEN
     PRINT*,"felixrefine(",my_rank,") error in MicroscopySettings"
     GOTO 9999
   ENDIF  
- 
+  !Reciprocal lattice
   CALL ReciprocalLattice(IErr)
   IF( IErr.NE.0 ) THEN
      PRINT*,"felixrefine(",my_rank,")error in ReciprocalLattice"
@@ -309,7 +330,7 @@ PROGRAM Felixrefine
   END IF
   DO ind=1,INhkl
      RgPoolMag(ind)= SQRT(DOT_PRODUCT(RgPool(ind,:),RgPool(ind,:)))
-  ENDDO
+  END DO
   IF(IWriteFLAG.EQ.6.AND.my_rank.EQ.0) THEN
     DO ind =1,INhkl
 	 WRITE(SPrintString,FMT='(I4,A4,3(I4,1X),A12,F7.4,A4)') ind,": g=",NINT(Rhkl(ind,:)),", magnitude ",RgPoolMag(ind)," 1/A"

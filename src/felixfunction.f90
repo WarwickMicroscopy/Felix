@@ -331,7 +331,7 @@ SUBROUTINE CalculateFigureofMeritandDetermineThickness(IThicknessCountFinal,IErr
        REAL(INoOfLacbedPatterns,RKIND)
 
   IF(my_rank.eq.0) THEN
-    WRITE(SPrintString,FMT='(A18,I4,A10)') "Specimen thickness ",NINT(RThickness)," Angstroms"
+    WRITE(SPrintString,FMT='(A19,I4,A10)') "Specimen thickness ",NINT(RThickness)," Angstroms"
     PRINT*,TRIM(ADJUSTL(SPrintString))
     WRITE(SPrintString,FMT='(A15,I4,A10)') "Thickness range",NINT(RThicknessRange)," Angstroms"
     PRINT*,TRIM(ADJUSTL(SPrintString))
@@ -368,13 +368,13 @@ SUBROUTINE CreateImagesAndWriteOutput(Iiter,IExitFLAG,IErr)
   
 !!$     OUTPUT ------------------------------------- 
   !write to disc if we have done enough iterations or have finished
-  IF(IExitFLAG.EQ.1.OR.(Iter.GE.(IPreviousPrintedIteration+IPrint))) THEN
+  IF(IExitFLAG.EQ.1.OR.(Iiter.GE.(IPreviousPrintedIteration+IPrint))) THEN
     CALL WriteIterationOutput(Iiter,IThicknessIndex,IExitFLAG,IErr)
     IF( IErr.NE.0 ) THEN
       PRINT*,"CreateImagesAndWriteOutput(",my_rank,")error in WriteIterationOutput"
       RETURN
     ENDIF 
-    IPreviousPrintedIteration = Iter!reset iteration counter
+    IPreviousPrintedIteration = Iiter!reset iteration counter
   ENDIF
 
 END SUBROUTINE CreateImagesAndWriteOutput

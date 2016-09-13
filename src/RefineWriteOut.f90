@@ -98,8 +98,8 @@ SUBROUTINE WriteIterationOutput(Iter,IThicknessIndex,IExitFlag,IErr)
       CALL BlurG(RImageToWrite,Rradius,IErr)
 	END IF
 
-    DO ind = 1,2*IPixelCount
-     WRITE(IChOutWIImage,rec=ind) RImageToWrite(ind,:)
+    DO jnd = 1,2*IPixelCount
+     WRITE(IChOutWIImage,rec=jnd) RImageToWrite(jnd,:)
     END DO
     !CALL WriteReflectionImage(IChOutWIImage,&
     !   RImageToWrite,IErr,2*IPixelCount,2*IPixelCount,2_IKIND)       

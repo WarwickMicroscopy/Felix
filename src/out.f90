@@ -259,7 +259,6 @@ SUBROUTINE OpenReflectionImage(IChOutWrite, surname, IErr,IReflectWriting,IImage
      TRIM(ADJUSTL(h)),&
      TRIM(ADJUSTL(k)),&
      TRIM(ADJUSTL(l)),&
-     !RB TRIM(ADJUSTL(Simagesize)),&
      TRIM(ADJUSTL(fileext))
 	 
   CASE(IChOutWIImage) 
@@ -306,7 +305,7 @@ END SUBROUTINE OpenReflectionImage
 !-----------------------------------------------------------------
 
 SUBROUTINE WriteReflectionImage( IChOutWrite, data, IErr,IImageSizeX,IImageSizeY,knd)
-
+!this is now redundant
   USE MyNumbers
   USE WriteToScreen
 

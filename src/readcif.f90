@@ -132,7 +132,7 @@ SUBROUTINE ReadCif(IErr)
      IErr=1
      RETURN
   END IF
-  
+
   ! Assign the data block to be accessed
 120 IF(.NOT.data_(' ')) THEN
      IF((IWriteFLAG.GE.1.AND.my_rank.EQ.0).OR.IWriteFLAG.GE.10) THEN
@@ -241,7 +241,7 @@ SUBROUTINE ReadCif(IErr)
  ! IF((IWriteFLAG.GE.1.AND.my_rank.EQ.0).OR.IWriteFLAG.GE.10) THEN
  !    PRINT*,"ReadCif(", my_rank, ")       ",siga,sigb,sigc
  ! END IF
-  
+
   f1 = numb_('_cell_volume', cela, siga)
   
   !Error message
@@ -326,7 +326,7 @@ SUBROUTINE ReadCif(IErr)
   ! ----------------------------------------------------------
   ! Extract atom site data in a loop
   CALL Message("Read CIF",IInfo,IErr,MessageString = "Atom sites")
-  
+
   ! counting loop
   IAtomCount=0
   DO 
@@ -338,7 +338,7 @@ SUBROUTINE ReadCif(IErr)
   END DO
   
   CALL Message("Read CIF",IInfo,IErr,MessageVariable = "IAtomCount", IVariable = IAtomCount) 
- 
+
   ALLOCATE(RBasisAtomPosition(IAtomCount,ITHREE),STAT=IErr)
   IF( IErr.NE.0 ) THEN
      PRINT*,"ReadCif(", my_rank, ") error ", IErr, " in ALLOCATE()"
@@ -400,7 +400,7 @@ SUBROUTINE ReadCif(IErr)
      IF(loop_ .NEQV. .TRUE.) EXIT
      
   END DO
-  
+
   !----------------------------------------------------
   ! RESET
   CALL CifReset(IErr)
@@ -468,7 +468,7 @@ SUBROUTINE ReadCif(IErr)
   !----------------------------------------------------
   ! RESET
   CALL CifReset(IErr)
- 
+
 !Branch here depending on felixsim or felixrefine
   IF (ISoftwareMode.NE.0) THEN !felixrefine
   
