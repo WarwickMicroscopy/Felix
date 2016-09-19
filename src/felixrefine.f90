@@ -133,21 +133,19 @@ PROGRAM Felixrefine
     PRINT*,"felixrefine(",my_rank,")error reading felix.cif"
     GOTO 9999
   ENDIF
-
-  !experimental images
   !felix.hkl
-  CALL ReadHklFile(IErr)
+  CALL ReadHklFile(IErr)!the list of hkl's to input/output
   IF( IErr.NE.0 ) THEN
     PRINT*,"felixrefine(",my_rank,")error reading felix.hkl"
     GOTO 9999
   ENDIF
 
+  !experimental images
   ALLOCATE(RImageExpi(2*IPixelCount,2*IPixelCount,INoOfLacbedPatterns),STAT=IErr)  
   IF( IErr.NE.0 ) THEN
      PRINT*,"felixrefine(",my_rank,")error allocating RImageExpi"
      GOTO 9999
   END IF
-
   CALL ReadExperimentalImages(IErr)
   IF( IErr.NE.0 ) THEN
      PRINT*,"felixrefine(",my_rank,") error in ReadExperimentalImages"
@@ -563,6 +561,7 @@ PROGRAM Felixrefine
   !The pixels to be calculated by this core  
   ILocalPixelCountMin= (IPixelTotal*(my_rank)/p)+1
   ILocalPixelCountMax= (IPixelTotal*(my_rank+1)/p) 
+  !
   ALLOCATE(RIndividualReflections(INoOfLacbedPatterns,IThicknessCount,&
          (ILocalPixelCountMax-ILocalPixelCountMin)+1),STAT=IErr)
   !position of pixels calculated by this core, IDisplacements and ICount are global variables

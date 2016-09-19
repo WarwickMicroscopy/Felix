@@ -473,7 +473,6 @@ SUBROUTINE ReadScaFile( IErr )
 END SUBROUTINE ReadScaFile
   
 ! -----------------------------------------------------------------------
-
 SUBROUTINE ReadHklFile(IErr)
 
   USE WriteToScreen

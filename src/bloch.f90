@@ -48,7 +48,7 @@ SUBROUTINE BlochCoefficientCalculation(IYPixelIndex,IXPixelIndex,IPixelNumber,IF
   IMPLICIT NONE
   
   INTEGER(IKIND) :: IYPixelIndex,IXPixelIndex,ind,knd,IPixelNumber,pnd,&
-       ierr,IThickness,IThicknessIndex,ILowerLimit,IUpperLimit,IFirstPixelToCalculate       
+       Ierr,IThickness,IThicknessIndex,ILowerLimit,IUpperLimit,IFirstPixelToCalculate       
   REAL(RKIND) :: RThickness,RKn
   COMPLEX(CKIND) sumC,sumD
   COMPLEX(CKIND), DIMENSION(:,:), ALLOCATABLE :: CGeneralSolutionMatrix, &
@@ -137,9 +137,6 @@ SUBROUTINE BlochCoefficientCalculation(IYPixelIndex,IXPixelIndex,IPixelNumber,IF
   ALLOCATE(CUgMatPartial(nReflections,nBeams),STAT=IErr)
   ALLOCATE(CAlphaWeightingCoefficients(nBeams),STAT=IErr)
   ALLOCATE(CEigenValueDependentTerms(nBeams,nBeams),STAT=IErr)
-  ALLOCATE(CWaveFunctions(nBeams),STAT=IErr)
-  ALLOCATE(RWaveIntensity(nBeams),STAT=IErr)
-  ALLOCATE(CPsi0(nBeams),STAT=IErr)
   IF( IErr.NE.0 ) THEN
      PRINT*,"BlochCoefficientCalculation(",my_rank,")error in allocations"
      RETURN
@@ -155,12 +152,12 @@ SUBROUTINE BlochCoefficientCalculation(IYPixelIndex,IXPixelIndex,IPixelNumber,IF
 
   CUgSgMatrix = CZERO
   CBeamTranspose=TRANSPOSE(CBeamProjectionMatrix)
-
+  !reduce the matrix to just include strong beams using some nifty matrix multiplication
   CALL ZGEMM('N','N',nReflections,nBeams,nReflections,CONE,CUgMat, &
        nReflections,CBeamTranspose,nReflections,CZERO,CUgMatPartial,nReflections)
   CALL ZGEMM('N','N',nBeams,nBeams,nReflections,CONE,CBeamProjectionMatrix, &
        nBeams,CUgMatPartial,nReflections,CZERO,CUgSgMatrix,nBeams)
-  
+  !add the deviation parameters on the diagonal
   IF (IZolzFLAG.EQ.0) THEN
     DO ind=1,nBeams
       CUgSgMatrix(ind,ind) = CUgSgMatrix(ind,ind) + TWO*RBigK*RDevPara(IStrongBeamList(ind))
@@ -213,7 +210,7 @@ SUBROUTINE BlochCoefficientCalculation(IYPixelIndex,IXPixelIndex,IPixelNumber,IF
     CUgSgMatrix = TWOPI*TWOPI*CUgSgMatrix/(TWO*RBigK)
   END IF
   
-  IF(IWriteFLAG.EQ.3.AND.IYPixelIndex.EQ.10.AND.IXPixelIndex.EQ.10) THEN
+  IF(IWriteFLAG.EQ.3.AND.IYPixelIndex.EQ.10.AND.IXPixelIndex.EQ.10) THEN!output data from 1 pixel to show working
    PRINT*,"Ug/2K + {Sg} matrix (nm^-2)"
 	DO ind =1,6
      WRITE(SPrintString,FMT='(3(1X,I3),A1,8(1X,F7.3,F7.3))') NINT(Rhkl(ind,:)),":",100*CUgSgMatrix(ind,1:6)
@@ -224,65 +221,62 @@ SUBROUTINE BlochCoefficientCalculation(IYPixelIndex,IXPixelIndex,IPixelNumber,IF
   !--------------------------------------------------------------------
   ! diagonalize the UgMatEffective
   IF (IZolzFLAG.EQ.0) THEN
-     CALL EigenSpectrum(nBeams,CUgSgMatrix,CEigenValues(:), CEigenVectors(:,:),IErr)
-     IF( IErr.NE.0 ) THEN
-        PRINT*,"BlochCoefficientCalculation(", my_rank, ") error in EigenSpectrum()"
-        RETURN
-     END IF
-     CEigenValues = CEigenValues * RKn/RBigK
-     DO knd = 1,nBeams
-        CEigenVectors(knd,:) = CEigenVectors(knd,:) / &
+    CALL EigenSpectrum(nBeams,CUgSgMatrix,CEigenValues(:), CEigenVectors(:,:),IErr)
+    !What is this doing?
+    CEigenValues = CEigenValues * RKn/RBigK
+    DO knd = 1,nBeams
+      CEigenVectors(knd,:) = CEigenVectors(knd,:) / &
              SQRT(1+RgDotNorm(IStrongBeamList(knd))/RKn)
-     END DO
+    END DO
   ELSE
-     CALL EigenSpectrum(nBeams,CUgSgMatrix,CEigenValues(:),CEigenVectors(:,:),IErr)
-     IF( IErr.NE.0 ) THEN
-        PRINT*,"BlochCoefficientCalculation(", my_rank, ") error in EigenSpectrum()"
-        RETURN
-     END IF
+    CALL EigenSpectrum(nBeams,CUgSgMatrix,CEigenValues(:),CEigenVectors(:,:),IErr)
+  END IF
+  IF( IErr.NE.0 ) THEN
+    PRINT*,"BlochCoefficientCalculation(",my_rank,") error in EigenSpectrum()"
+    RETURN
   END IF
  
+  !Calculate intensities for different specimen thicknesses
   DO IThicknessIndex=1,IThicknessCount,1
-     RThickness = RInitialThickness + REAL((IThicknessIndex-1),RKIND)*RDeltaThickness 
-     IThickness = NINT(RInitialThickness + REAL((IThicknessIndex-1),RKIND)*RDeltaThickness,IKIND) 
-     CALL CreateWaveFunctions(RThickness,IErr)
-     IF( IErr.NE.0 ) THEN
-        PRINT*,"BlochCoefficientCalculation(", my_rank, ") error in CreateWavefunction()"
-        RETURN
-     END IF
-     !Collection Wave Intensities from all thickness for later writing
-     IF(IHKLSelectFLAG.EQ.0) THEN
-        IF(IImageFLAG.LE.2) THEN
-           RIndividualReflections(1:INoOfLacbedPatterns,IThicknessIndex,(IPixelNumber-IFirstPixelToCalculate)+1) = &
-                RFullWaveIntensity(1:INoOfLacbedPatterns)
-        ELSE
-           CAmplitudeandPhase(1:INoOfLacbedPatterns,IThicknessIndex,(IPixelNumber-IFirstPixelToCalculate)+1) = &
-                CFullWavefunctions(1:INoOfLacbedPatterns)
-        END IF
-     ELSE
-        IF(IImageFLAG.LE.2) THEN
-           DO pnd = 1,INoOfLacbedPatterns
-              RIndividualReflections(pnd,IThicknessIndex,(IPixelNumber-IFirstPixelToCalculate)+1) = &
-                   RFullWaveIntensity(IOutputReflections(pnd))
-           END DO
-        ELSE
-           DO pnd = 1,INoOfLacbedPatterns
-              CAmplitudeandPhase(pnd,IThicknessIndex,(IPixelNumber-IFirstPixelToCalculate)+1) = &
-                   CFullWavefunctions(IOutputReflections(pnd))
-           END DO
-        END IF
-     END IF
+    RThickness = RInitialThickness + REAL((IThicknessIndex-1),RKIND)*RDeltaThickness 
+    IThickness = NINT(RInitialThickness + REAL((IThicknessIndex-1),RKIND)*RDeltaThickness,IKIND) 
+    CALL CreateWaveFunctions(RThickness,IErr)
+    IF( IErr.NE.0 ) THEN
+      PRINT*,"BlochCoefficientCalculation(", my_rank, ") error in CreateWavefunction()"
+      RETURN
+    END IF
+    !Collect Intensities from all thickness for later writing
+    IF(IHKLSelectFLAG.EQ.0) THEN!we are using hkl list from felix.hkl
+      IF(IImageFLAG.LE.2) THEN!output is 0=montage, 1=individual images
+        RIndividualReflections(1:INoOfLacbedPatterns,IThicknessIndex,(IPixelNumber-IFirstPixelToCalculate)+1) = &
+             RFullWaveIntensity(1:INoOfLacbedPatterns)
+      ELSE!output is 2=amplitude+phase images
+        CAmplitudeandPhase(1:INoOfLacbedPatterns,IThicknessIndex,(IPixelNumber-IFirstPixelToCalculate)+1) = &
+             CFullWavefunctions(1:INoOfLacbedPatterns)
+      END IF
+    ELSE!we are using hkl list from [where?]
+      IF(IImageFLAG.LE.2) THEN
+        DO pnd = 1,INoOfLacbedPatterns
+          RIndividualReflections(pnd,IThicknessIndex,(IPixelNumber-IFirstPixelToCalculate)+1) = &
+               RFullWaveIntensity(IOutputReflections(pnd))
+        END DO
+      ELSE
+        DO pnd = 1,INoOfLacbedPatterns
+          CAmplitudeandPhase(pnd,IThicknessIndex,(IPixelNumber-IFirstPixelToCalculate)+1) = &
+               CFullWavefunctions(IOutputReflections(pnd))
+        END DO
+      END IF
+    END IF
   END DO
   
   !--------------------------------------------------------------------
   ! DEALLOCATE eigen problem memory
-  DEALLOCATE(CUgSgMatrix,CPsi0,CBeamTranspose, CUgMatPartial, &
+  DEALLOCATE(CUgSgMatrix,CBeamTranspose, CUgMatPartial, &
        CInvertedEigenVectors, CAlphaWeightingCoefficients, &
        CEigenValues,CEigenVectors,CEigenValueDependentTerms, &
-       CBeamProjectionMatrix, CDummyBeamMatrix,CWavefunctions, &
-       RWaveIntensity,STAT=IErr)
+       CBeamProjectionMatrix, CDummyBeamMatrix,STAT=IErr)
   IF( IErr.NE.0 ) THEN
-     PRINT*,"BlochCoefficientCalculation(", my_rank, ") error in Deallocation()"
+     PRINT*,"BlochCoefficientCalculation(",my_rank,") error in Deallocations"
      RETURN
   ENDIF
   
@@ -291,7 +285,7 @@ END SUBROUTINE BlochCoefficientCalculation
 !%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 SUBROUTINE CreateWaveFunctions(RThickness,IErr)
-
+!Calculates diffracted intensity for a specific thickness
   USE WriteToScreen
   USE MyNumbers
   
@@ -309,29 +303,25 @@ SUBROUTINE CreateWaveFunctions(RThickness,IErr)
   REAL(RKIND) :: RThickness 
   COMPLEX(CKIND),DIMENSION(:,:),ALLOCATABLE :: CDummyEigenVectors
 
-  IF (my_rank.EQ.0) THEN
-     DO WHILE (IMessageCounter .LT.6)
-        CALL Message("CreateWaveFunctions",IMust,IErr)
-        IMessageCounter = IMessageCounter +1
-     END DO
-  END IF
-  
-  !--------------------------------------------------------------------
-  ! calculate wavefunctions
-  !--------------------------------------------------------------------
-  CPsi0 = CZERO
-  IF(nBeams .GE. 0) CPsi0(1) = CONE
-  
+  !Allocate global variables for eigen problem
+  ALLOCATE(RWaveIntensity(nBeams),STAT=IErr)  
+  ALLOCATE(CWaveFunctions(nBeams),STAT=IErr)
   ALLOCATE(CDummyEigenVectors(nBeams,nBeams),STAT=IErr)
   IF( IErr.NE.0 ) THEN
-     PRINT*,"CreateWavefunctions(",my_rank,")error allocating CDummyEigenVectors"
+     PRINT*,"CreateWavefunctions(",my_rank,")error in allocations"
      RETURN
   ENDIF
+  
+  !The top surface boundary conditions
+  ALLOCATE(CPsi0(nBeams),STAT=IErr) 
+  CPsi0 = CZERO!all diffracted beams are zero
+  CPsi0(1) = CONE! the 000 beam has unit amplitude
   
   ! Invert the EigenVector matrix
   CDummyEigenVectors = CEigenVectors
   CALL INVERT(nBeams,CDummyEigenVectors(:,:),CInvertedEigenVectors,IErr)
 
+  !put in the thickness
   !From EQ 6.32 in Kirkland Advance Computing in EM
   CAlphaWeightingCoefficients = MATMUL(CInvertedEigenVectors(1:nBeams,1:nBeams),CPsi0) 
   CEigenValueDependentTerms= CZERO
@@ -339,11 +329,12 @@ SUBROUTINE CreateWaveFunctions(RThickness,IErr)
     CEigenValueDependentTerms(hnd,hnd)=EXP(CIMAGONE*CMPLX(RThickness,ZERO,CKIND)*CEigenValues(hnd)) 
   ENDDO
   
+  !The diffracted intensity for each beam
   ! EQ 6.35 in Kirkland Advance Computing in EM
   ! C-1*C*alpha 
   CWaveFunctions(:)=MATMUL(MATMUL(CEigenVectors(1:nBeams,1:nBeams),CEigenValueDependentTerms), & 
        CAlphaWeightingCoefficients(:) )
-  DO hnd=1,nBeams
+  DO hnd=1,nBeams!possible small time saving here by only calculating the (tens of)output reflections rather than all strong beams (hundreds)
      RWaveIntensity(hnd)=CONJG(CWaveFunctions(hnd)) * CWaveFunctions(hnd)
   ENDDO  
   
@@ -357,7 +348,7 @@ SUBROUTINE CreateWaveFunctions(RThickness,IErr)
      RFullWaveIntensity(IStrongBeamList(knd))=RWaveIntensity(knd)
   ENDDO
   
-  DEALLOCATE(CDummyEigenVectors,STAT=IErr)
+  DEALLOCATE(CDummyEigenVectors,RWaveIntensity,CWavefunctions,CPsi0,STAT=IErr)
   IF( IErr.NE.0 ) THEN
      PRINT*,"CreateWavefunctions(",my_rank,")error deallocating CDummyEigenVectors"
      RETURN

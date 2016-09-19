@@ -65,22 +65,24 @@ SUBROUTINE SimulateAndFit(RFigureofMerit,RIndependentVariable,Iiter,IExitFLAG,IE
   !Dummy Matrix to contain new iterative values
     CUgMatDummy = CZERO    !NB these are Ug's without absorption
     jnd=1
-    DO ind = 1+IUgOffset,INoofUgs+IUgOffset!=== temp changes so real part only***
-      IF ( (ABS(REAL(CUniqueUg(ind),RKIND)).GE.RTolerance).AND.&!===
-           (ABS(AIMAG(CUniqueUg(ind))).GE.RTolerance)) THEN!===use both real and imag parts
-        CUniqueUg(ind)=CMPLX(RIndependentVariable(jnd),RIndependentVariable(jnd+1))!===
-        jnd=jnd+2!===
-      ELSEIF ( ABS(AIMAG(CUniqueUg(ind))).LT.RTolerance ) THEN!===use only real part
-        CUniqueUg(ind)=CMPLX(RIndependentVariable(jnd),ZERO)!===
-!===        CUniqueUg(ind)=CMPLX(RIndependentVariable(jnd),AIMAG(CUniqueUg(ind)))!replacement line, remove to revert
+	!work through the Ug's to update
+    DO ind = 1+IUgOffset,INoofUgs+IUgOffset
+	  !Don't update components smaller than RTolerance: 3 possible types of Ug, complex, real and imaginary
+      IF ( (ABS(REAL(CUniqueUg(ind),RKIND)).GE.RTolerance).AND.&
+           (ABS(AIMAG(CUniqueUg(ind))).GE.RTolerance)) THEN!use both real and imag parts
+        CUniqueUg(ind)=CMPLX(RIndependentVariable(jnd),RIndependentVariable(jnd+1))
+        jnd=jnd+2
+      ELSEIF ( ABS(AIMAG(CUniqueUg(ind))).LT.RTolerance ) THEN!use only real part
+        CUniqueUg(ind)=CMPLX(RIndependentVariable(jnd),ZERO)
         jnd=jnd+1
-      ELSEIF ( ABS(REAL(CUniqueUg(ind),RKIND)).LT.RTolerance ) THEN!===use only imag part
-        CUniqueUg(ind)=CMPLX(ZERO,RIndependentVariable(jnd))!===
-        jnd=jnd+1!===
-      ELSE!===should never happen
+      ELSEIF ( ABS(REAL(CUniqueUg(ind),RKIND)).LT.RTolerance ) THEN!use only imag part
+        CUniqueUg(ind)=CMPLX(ZERO,RIndependentVariable(jnd))
+        jnd=jnd+1
+      ELSE!should never happen
         PRINT*,"Warning - zero structure factor!",ind,":",CUniqueUg(IEquivalentUgKey(ind))!===
 		IErr=1
-      END IF!===
+      END IF
+	  !Update the Ug matrix for this Ug
       WHERE(ISymmetryRelations.EQ.IEquivalentUgKey(ind))
         CUgMatDummy = CUniqueUg(ind)
       END WHERE
@@ -88,6 +90,7 @@ SUBROUTINE SimulateAndFit(RFigureofMerit,RIndependentVariable,Iiter,IExitFLAG,IE
         CUgMatDummy = CONJG(CUniqueUg(ind))
       END WHERE
     END DO
+	!put the changes into CUgMatNoAbs
     WHERE(ABS(CUgMatDummy).GT.TINY)
       CUgMatNoAbs = CUgMatDummy
     END WHERE
@@ -97,9 +100,7 @@ SUBROUTINE SimulateAndFit(RFigureofMerit,RIndependentVariable,Iiter,IExitFLAG,IE
       RETURN
     END IF	
     RAbsorptionPercentage = RIndependentVariable(jnd)!===![[[
-
   ELSE !everything else
-
 	!Change variables
     CALL UpdateVariables(RIndependentVariable,IErr)
     IF( IErr.NE.0 ) THEN
@@ -112,7 +113,6 @@ SUBROUTINE SimulateAndFit(RFigureofMerit,RIndependentVariable,Iiter,IExitFLAG,IE
       PRINT*,"SimulateAndFit(",my_rank,")error in UniqueAtomPositions"
       RETURN
     END IF
-
   END IF
 
   IF (my_rank.EQ.0) THEN
@@ -129,15 +129,27 @@ SUBROUTINE SimulateAndFit(RFigureofMerit,RIndependentVariable,Iiter,IExitFLAG,IE
     RETURN
   END IF
 
-  IF(my_rank.EQ.0) THEN   
-    CALL CreateImagesAndWriteOutput(Iiter,IExitFLAG,IErr) 
+  IF(my_rank.EQ.0) THEN
+    CALL CalculateFigureofMeritandDetermineThickness(IThicknessIndex,IErr)
     IF( IErr.NE.0 ) THEN
-      PRINT*,"SimulateAndFit(",my_rank,")error in CreateImagesAndWriteOutput"
+      PRINT*,"SimulateAndFit(0) error",IErr,"in CalculateFigureofMeritandDetermineThickness"
       RETURN
-    ENDIF
-    !This is the key parameter!!!****     
+    END IF
+    !This is the key parameter
     RFigureofMerit = RCrossCorrelation
+
+    !write to disc if we have done enough iterations or have finished
+    IF(IExitFLAG.EQ.1.OR.(Iiter.GE.(IPreviousPrintedIteration+IPrint))) THEN
+      CALL WriteIterationOutput(Iiter,IThicknessIndex,IExitFLAG,IErr)
+      IF( IErr.NE.0 ) THEN
+        PRINT*,"SimulateAndFit(0) error in WriteIterationOutput"
+        RETURN
+      ENDIF 
+      IPreviousPrintedIteration = Iiter!reset iteration counter
+    END IF
   END IF
+  
+  !Send the fit index to all cores
   CALL MPI_BCAST(RFigureofMerit,1,MPI_DOUBLE_PRECISION,0,MPI_COMM_WORLD,IErr)
 
 END SUBROUTINE SimulateAndFit
@@ -286,11 +298,8 @@ SUBROUTINE CalculateFigureofMeritandDetermineThickness(IThicknessCountFinal,IErr
               
       CASE(4)!Apply gaussian blur to simulated image
         RExperimentalImage = RImageExpi(:,:,hnd)
-        Rradius=0.0_RKIND!!!*+*+ blur will need to be added as a line in felix.inp +*+*!!!
-       ! IF(my_rank.EQ.0) THEN
-       !   PRINT*,"Gaussian blur radius =",Rradius
-       ! END IF
-        !CALL BlurG(RSimulatedImage,Rradius,IErr)
+        Rradius=0.8_RKIND!!!*+*+ blur will need to be added as a line in felix.inp +*+*!!!
+        CALL BlurG(RSimulatedImage,Rradius,IErr)
 		
       END SELECT
 
@@ -342,7 +351,7 @@ END SUBROUTINE CalculateFigureofMeritandDetermineThickness
 !%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 SUBROUTINE CreateImagesAndWriteOutput(Iiter,IExitFLAG,IErr)
-
+!This is redundant, a subroutine that just calls 2 other subroutines...
 !NB core 0 only
   USE MyNumbers
   

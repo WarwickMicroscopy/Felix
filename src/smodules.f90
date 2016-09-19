@@ -277,7 +277,7 @@ MODULE RPara
        RInnerIntegrationParameterGMagPrime,&
        ROuterIntegrationParameterGMagPrime
   !WaveFunction Arrays
-  REAL(RKIND),DIMENSION(:),ALLOCATABLE :: RWaveIntensity,RFullWaveIntensity
+  REAL(RKIND),DIMENSION(:),ALLOCATABLE :: RWaveIntensity,RFullWaveIntensity,RSumIntensity
   REAL(RKIND), DIMENSION(:,:,:), ALLOCATABLE :: RIndividualReflections
   !Refinement Variables
   REAL(RKIND), DIMENSION(:,:),ALLOCATABLE :: RImageIn

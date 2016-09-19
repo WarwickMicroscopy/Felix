@@ -77,7 +77,7 @@ SUBROUTINE WriteIterationOutput(Iter,IThicknessIndex,IExitFlag,IErr)
   PRINT*,TRIM(ADJUSTL(SPrintString))
 
 
-  !    Was WriteIterationImages
+  !Write Images to disc
   DO ind = 1,INoOfLacbedPatterns
     CALL OpenReflectionImage(IChOutWIImage,path,IErr,ind,2*IPixelCount,2_IKIND)
     IF( IErr.NE.0 ) THEN
@@ -94,23 +94,16 @@ SUBROUTINE WriteIterationOutput(Iter,IThicknessIndex,IExitFlag,IErr)
 	 
     !Apply blur again, temp fix until all subroutines combined into one
     IF (IImageProcessingFLAG.EQ.4) THEN
-      Rradius=0.9_RKIND!!!*+*+ will need to be added as a line in felix.inp +*+*!!!
+      Rradius=0.8_RKIND!!!*+*+ will need to be added as a line in felix.inp +*+*!!!
       CALL BlurG(RImageToWrite,Rradius,IErr)
 	END IF
 
     DO jnd = 1,2*IPixelCount
      WRITE(IChOutWIImage,rec=jnd) RImageToWrite(jnd,:)
     END DO
-    !CALL WriteReflectionImage(IChOutWIImage,&
-    !   RImageToWrite,IErr,2*IPixelCount,2*IPixelCount,2_IKIND)       
-    !IF( IErr.NE.0 ) THEN
-    !  PRINT*,"WriteIterationImages(", my_rank, ") error in WriteReflectionImage()"
-    !  RETURN
-    !ENDIF
-     
     CLOSE(IChOutWIImage,IOSTAT=IErr)       
     IF( IErr.NE.0 ) THEN
-      PRINT*,"WriteIterationImages(", my_rank, ") error Closing Reflection Image()"
+      PRINT*,"WriteIterationOutput(", my_rank, ") error Closing Reflection Image()"
       RETURN
     ENDIF
   END DO
