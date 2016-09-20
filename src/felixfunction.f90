@@ -313,11 +313,6 @@ SUBROUTINE CalculateFigureofMeritandDetermineThickness(IThicknessCountFinal,IErr
         ELSEWHERE
           RExperimentalImage =  TINY**2
         END WHERE
-              
-      !CASE(4)!Apply gaussian blur to simulated image
-      !  RExperimentalImage = RImageExpi(:,:,hnd)
-      !  Rradius=0.8_RKIND!!!*+*+ blur will need to be added as a line in felix.inp +*+*!!!
-      !  CALL BlurG(RSimulatedImage,Rradius,IErr)
 		
       END SELECT
 
@@ -338,15 +333,17 @@ SUBROUTINE CalculateFigureofMeritandDetermineThickness(IThicknessCountFinal,IErr
            Normalised2DCrossCorrelation(RSimulatedImage,RExperimentalImage,IErr)
 
       END SELECT
-                
-      IF(ABS(RIndependentCrossCorrelation).LT.RCrossCorrelationOld) THEN
-        RCrossCorrelationOld = RIndependentCrossCorrelation
+      
+      !Why do we only update the cross correlation if it is better?      
+      !IF(ABS(RIndependentCrossCorrelation).LT.RCrossCorrelationOld) THEN
+        !RCrossCorrelationOld = RIndependentCrossCorrelation
         IThicknessByReflection(hnd) = ind
         RReflectionThickness(hnd) = RInitialThickness +&
         IThicknessByReflection(hnd)*RDeltaThickness
-      END IF
+      !END IF
     END DO
-    RReflectionCrossCorrelations(hnd) = RCrossCorrelationOld
+    !RReflectionCrossCorrelations(hnd) = RCrossCorrelationOld
+    RReflectionCrossCorrelations(hnd) = RIndependentCrossCorrelation!try without the condition
   END DO
   !RB assume that the best thickness is given by the mean of individual thicknesses  
   IThicknessCountFinal = SUM(IThicknessByReflection)/INoOfLacbedPatterns
@@ -358,7 +355,7 @@ SUBROUTINE CalculateFigureofMeritandDetermineThickness(IThicknessCountFinal,IErr
        REAL(INoOfLacbedPatterns,RKIND)
 
   IF(my_rank.eq.0) THEN
-    WRITE(SPrintString,FMT='(A16,F7.5)') "Figure of merit ",RCrossCorrelation
+    WRITE(SPrintString,FMT='(A16,F8.5)') "Figure of merit ",RCrossCorrelation
     PRINT*,TRIM(ADJUSTL(SPrintString))
     WRITE(SPrintString,FMT='(A19,I4,A10)') "Specimen thickness ",NINT(RThickness)," Angstroms"
     PRINT*,TRIM(ADJUSTL(SPrintString))

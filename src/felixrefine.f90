@@ -629,7 +629,7 @@ PROGRAM Felixrefine
   !--------------------------------------------------------------------
   !Baseline output, core 0 only
   IExitFLAG = 0 !Do not exit
-  IPreviousPrintedIteration = -100!RB ensuring baseline simulation is printed
+  IPreviousPrintedIteration = 0!RB ensuring baseline simulation is printed
   IF(my_rank.EQ.0) THEN   
     CALL CalculateFigureofMeritandDetermineThickness(IThicknessIndex,IErr)
     RFigureofMerit = RCrossCorrelation
@@ -717,10 +717,10 @@ PROGRAM Felixrefine
         PRINT*,"SimplexInitialisation(",my_rank,") error in SimulateAndFit"
         GOTO 9999
       ENDIF
-      IF((IWriteFLAG.GE.0.AND.my_rank.EQ.0).OR.IWriteFLAG.GE.10) THEN
-        WRITE(SPrintString,FMT='(A16,F7.5)') "Figure of merit ",RSimplexFoM(ind)
-        PRINT*,TRIM(ADJUSTL(SPrintString))
-      END IF
+      !IF((IWriteFLAG.GE.0.AND.my_rank.EQ.0).OR.IWriteFLAG.GE.10) THEN
+      !  WRITE(SPrintString,FMT='(A16,F7.5)') "Figure of merit ",RSimplexFoM(ind)
+      !  PRINT*,TRIM(ADJUSTL(SPrintString))
+      !END IF
       !Add to average
       RImageAvi=RImageAvi+RImageSimi 
     END DO

@@ -65,7 +65,7 @@ SUBROUTINE WriteIterationOutput(Iter,IThicknessIndex,IExitFlag,IErr)
   call system('mkdir ' // path)
 
   IF (IExitFLAG.EQ.0) THEN
-    IF (IPreviousPrintedIteration.LT.0) THEN
+    IF (IPreviousPrintedIteration.EQ.0) THEN
       WRITE(SPrintString,FMT='(A35)') "Writing output; baseline simulation"
     ELSE
       WRITE(SPrintString,FMT='(A16,I4,A35)') "Writing output; ",&
