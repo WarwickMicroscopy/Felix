@@ -51,7 +51,7 @@ SUBROUTINE SimulateAndFit(RFigureofMerit,RIndependentVariable,Iiter,IExitFLAG,IE
 
   IMPLICIT NONE
   
-  INTEGER(IKIND) :: IErr,IExitFLAG,IThickness,ind,jnd
+  INTEGER(IKIND) :: IErr,IExitFLAG,IThicknessIndex,ind,jnd
   REAL(RKIND),DIMENSION(INoOfVariables) :: RIndependentVariable
   REAL(RKIND) :: RFigureofMerit
   INTEGER(IKIND),INTENT(IN) :: Iiter
@@ -178,7 +178,9 @@ SUBROUTINE FelixFunction(IErr)
   INTEGER(IKIND) :: IErr,ind,jnd,knd,pnd,IThicknessIndex,IIterationFLAG
   INTEGER(IKIND) :: IAbsorbTag = 0
   REAL(RKIND),DIMENSION(:,:,:),ALLOCATABLE :: RFinalMontageImageRoot
-
+  REAL(RKIND),DIMENSION(:,:),ALLOCATABLE :: RTempImage 
+  REAL(RKIND) :: Rradius 
+  
   IF(IWriteFLAG.GE.10.AND.my_rank.EQ.0) THEN
      PRINT*,"Felixfunction(", my_rank, "): starting the eigenvalue problem"
      PRINT*,"Felixfunction(",my_rank,")pixels",ILocalPixelCountMin," to ",ILocalPixelCountMax
@@ -220,6 +222,31 @@ SUBROUTINE FelixFunction(IErr)
     PRINT*,"Felixfunction(",my_rank,")error",IErr,"in MPI_GATHERV"
     RETURN
   END IF
+  !put 1D array RSimulatedPatterns into 2D image RImageSimi
+  !remember dimensions of RSimulatedPatterns(INoOfLacbedPatterns,IThicknessCount,IPixelTotal)
+  !and RImageSimi(width, height,INoOfLacbedPatterns,IThicknessCount )
+  RImageSimi = ZERO
+  ind = 0
+  DO jnd = 1,2*IPixelCount
+    DO knd = 1,2*IPixelCount
+      ind = ind+1
+      RImageSimi(jnd,knd,:,:) = RSimulatedPatterns(:,:,ind)
+    END DO
+  END DO
+
+  !!!Temporary under ImageProcessingFlag, blur will be added as a line in felix.inp +*+*!!!
+  Rradius=0.8_RKIND
+  IF (IImageProcessingFLAG.EQ.4) THEN
+    ALLOCATE(RTempImage(2*IPixelCount,2*IPixelCount),STAT=IErr)
+    DO ind=1,INoOfLacbedPatterns
+	  DO jnd=1,IThicknessCount
+        RTempImage = RImageSimi(:,:,ind,jnd)
+        CALL BlurG(RTempImage,Rradius,IErr)
+        RImageSimi(:,:,ind,jnd) = RTempImage 
+	  END DO
+	END DO
+  END IF
+
   !We have done at least one simulation now
   IInitialSimulationFLAG=0
 
@@ -243,7 +270,7 @@ SUBROUTINE CalculateFigureofMeritandDetermineThickness(IThicknessCountFinal,IErr
 
   IMPLICIT NONE
 
-  INTEGER(IKIND) :: ind,jnd,knd,IErr,ICountedPixels,IThickness,hnd
+  INTEGER(IKIND) :: ind,jnd,knd,IErr,IThickness,hnd
   INTEGER(IKIND),DIMENSION(INoOfLacbedPatterns) :: IThicknessByReflection
   INTEGER(IKIND),INTENT(OUT) :: IThicknessCountFinal
   REAL(RKIND),DIMENSION(2*IPixelCount,2*IPixelCount) :: RSimulatedImage,RExperimentalImage
@@ -264,16 +291,7 @@ SUBROUTINE CalculateFigureofMeritandDetermineThickness(IThicknessCountFinal,IErr
     RThickness = ZERO
     IThicknessByReflection(hnd) = 1!default value if no correlation
     DO ind = 1,IThicknessCount
-      ICountedPixels = 0
-      RSimulatedImage = ZERO
-	  !put 1D array RSimulatedPatterns into 2D image RSimulatedImage
-      !remember dimensions of RSimulatedPatterns(INoOfLacbedPatterns,IThicknessCount,IPixelTotal)
-      DO jnd = 1,2*IPixelCount
-        DO knd = 1,2*IPixelCount
-          ICountedPixels = ICountedPixels+1
-          RSimulatedImage(jnd,knd) = RSimulatedPatterns(hnd,ind,ICountedPixels)
-        END DO
-      END DO
+      RSimulatedImage = RImageSimi(:,:,hnd,ind)
                
       SELECT CASE (IImageProcessingFLAG)
 
@@ -282,7 +300,7 @@ SUBROUTINE CalculateFigureofMeritandDetermineThickness(IThicknessCountFinal,IErr
            
       CASE(1)!square root before perfoming corration
         RSimulatedImage=SQRT(RSimulatedImage)
-        RExperimentalImage =  SQRT(RImageExpi(:,:,hnd))
+        RExperimentalImage=SQRT(RImageExpi(:,:,hnd))
            
       CASE(2)!log before performing correlation
         WHERE (RSimulatedImage.GT.TINY**2)
@@ -296,10 +314,10 @@ SUBROUTINE CalculateFigureofMeritandDetermineThickness(IThicknessCountFinal,IErr
           RExperimentalImage =  TINY**2
         END WHERE
               
-      CASE(4)!Apply gaussian blur to simulated image
-        RExperimentalImage = RImageExpi(:,:,hnd)
-        Rradius=0.8_RKIND!!!*+*+ blur will need to be added as a line in felix.inp +*+*!!!
-        CALL BlurG(RSimulatedImage,Rradius,IErr)
+      !CASE(4)!Apply gaussian blur to simulated image
+      !  RExperimentalImage = RImageExpi(:,:,hnd)
+      !  Rradius=0.8_RKIND!!!*+*+ blur will need to be added as a line in felix.inp +*+*!!!
+      !  CALL BlurG(RSimulatedImage,Rradius,IErr)
 		
       END SELECT
 
@@ -340,6 +358,8 @@ SUBROUTINE CalculateFigureofMeritandDetermineThickness(IThicknessCountFinal,IErr
        REAL(INoOfLacbedPatterns,RKIND)
 
   IF(my_rank.eq.0) THEN
+    WRITE(SPrintString,FMT='(A16,F7.5)') "Figure of merit ",RCrossCorrelation
+    PRINT*,TRIM(ADJUSTL(SPrintString))
     WRITE(SPrintString,FMT='(A19,I4,A10)') "Specimen thickness ",NINT(RThickness)," Angstroms"
     PRINT*,TRIM(ADJUSTL(SPrintString))
     WRITE(SPrintString,FMT='(A15,I4,A10)') "Thickness range",NINT(RThicknessRange)," Angstroms"

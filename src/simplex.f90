@@ -82,17 +82,17 @@ SUBROUTINE NDimensionalDownhillSimplex(RSimplexVariable,y,mp,np,ndim,ftol,iter,R
     IF (iter.EQ.1) THEN    
       WRITE(SPrintString,FMT='(A15)') "First iteration"
 	ELSE IF (iter.LT.10) THEN
-      WRITE(SPrintString,FMT='(A10,I1,A18,F7.5,A11,F7.5)')&
-	  "Iteration ",iter,", figure of merit ",Rytry,": best fit ",y(ilo)
+      WRITE(SPrintString,FMT='(A10,I1,A18,F7.5)')&
+	  "Iteration ",iter,", best fit so far ",y(ilo)
 	ELSE IF (iter.LT.100) THEN
-      WRITE(SPrintString,FMT='(A10,I2,A18,F7.5,A11,F7.5)')&
-	  "Iteration ",iter,", figure of merit ",Rytry,": best fit ",y(ilo)
+      WRITE(SPrintString,FMT='(A10,I2,A18,F7.5)')&
+	  "Iteration ",iter,", best fit so far ",y(ilo)
 	ELSE IF (iter.LT.1000) THEN
-      WRITE(SPrintString,FMT='(A10,I3,A18,F7.5,A11,F7.5)')&
-	  "Iteration ",iter,", figure of merit ",Rytry,": best fit ",y(ilo)
+      WRITE(SPrintString,FMT='(A10,I3,A18,F7.5)')&
+	  "Iteration ",iter,", best fit so far ",y(ilo)
 	ELSE
-      WRITE(SPrintString,FMT='(A10,I5,A18,F7.5,A11,F7.5)')&
-	  "Iteration ",iter,", figure of merit ",Rytry,": best fit ",y(ilo)
+      WRITE(SPrintString,FMT='(A10,I5,A18,F7.5)')&
+	  "Iteration ",iter,", best fit so far ",y(ilo)
 	END IF
     PRINT*,TRIM(ADJUSTL(SPrintString))
     WRITE(SPrintString,FMT='(A14,F7.5,A14,F7.5)') "Simplex range ",rtol,", will end at ",ftol
@@ -102,14 +102,14 @@ SUBROUTINE NDimensionalDownhillSimplex(RSimplexVariable,y,mp,np,ndim,ftol,iter,R
     iter=iter+2
     !begin a new iteration, reflect the simplex from the high point
     Rytry = SimplexExtrapolate(RSimplexVariable,y,psum,mp,np,ndim,ihi,-1.0D0,iter,IErr)
-    PRINT*,"------------------------------------------ -1"
+    PRINT*,"Simplex reflection of worst point:"
     IF (Rytry.LE.y(ilo)) THEN !the reflected point is better than the best point, extrapolate by 2 times again
       Rytry = SimplexExtrapolate(RSimplexVariable,y,psum,mp,np,ndim,ihi,2.0D0,iter,IErr)
-      PRINT*,"------------------------------------------ +2"
+      PRINT*,"Best fit so far, going further:"
     ELSEIF (Rytry.GE.y(inhi)) THEN !the reflected point is worse than the second-highest, so look for an intermediate lower point 
       ysave=y(ihi)
       Rytry=SimplexExtrapolate(RSimplexVariable,y,psum,mp,np,ndim,ihi,0.5D0,iter,IErr)
-      PRINT*,"------------------------------------------ 0.5"
+      PRINT*,"Poor result, interpolating for a better one:"
       IF(Rytry.GE.ysave) THEN !can't get rid of the highest point, contract about the best point
         PRINT*,"-----------------------------------------------------"
         PRINT*,"Entering Contraction Phase, Expect",ndim+1,"Simulations"

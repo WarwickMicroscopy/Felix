@@ -284,10 +284,14 @@ MODULE RPara
   REAL(RKIND) :: RCrossCorrelation,RDeltaUgChange,RlowerBoundUgChange,RUpperBoundUgChange
   !Ug' Unique Values
   REAL(RKIND),DIMENSION(:),ALLOCATABLE :: RUniqueUgPrimeValues!RB not used?
-  ! Experimental Images
+  ! Experimental Images (width,height, no.of patterns)
   REAL(RKIND),DIMENSION(:,:,:),ALLOCATABLE :: RImageExpi  
-  ! Simulated Images
-  REAL(RKIND),DIMENSION(:,:,:),ALLOCATABLE :: RSimulatedPatterns  
+  ! Simulated Images as a 1D array (no. of patterns, no of thicknesses, totalpixels)
+  REAL(RKIND),DIMENSION(:,:,:),ALLOCATABLE :: RSimulatedPatterns
+  ! Simulated Images as images (width,height, no.of patterns, no of thicknesses)
+  REAL(RKIND),DIMENSION(:,:,:,:),ALLOCATABLE :: RImageSimi
+  ! Average simulated Images (width,height, no.of patterns, no of thicknesses)
+  REAL(RKIND),DIMENSION(:,:,:,:),ALLOCATABLE :: RImageAvi  
   !Iterative Variable Value
   REAL(RKIND) :: RValue
   !Refinement Vectors

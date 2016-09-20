@@ -248,7 +248,6 @@ SUBROUTINE OpenReflectionImage(IChOutWrite, surname, IErr,IReflectWriting,IImage
      TRIM(ADJUSTL(h)),&
      TRIM(ADJUSTL(k)),&
      TRIM(ADJUSTL(l)),&
-     !RB TRIM(ADJUSTL(Simagesize)),&
      TRIM(ADJUSTL(fileext))
 	 
   CASE(IChOutWFImagePhase)        
@@ -263,7 +262,7 @@ SUBROUTINE OpenReflectionImage(IChOutWrite, surname, IErr,IReflectWriting,IImage
 	 
   CASE(IChOutWIImage) 
      IF (IWriteFLAG.GE.10) THEN
-        PRINT*, "OpenImage: opening image for WAVE INTENSITIES"
+        PRINT*, "OpenImage: opening image for INTENSITIES"
      ENDIF
      WRITE(filename,*) TRIM(ADJUSTL(surname)),"/",&
      TRIM(ADJUSTL(h)),&

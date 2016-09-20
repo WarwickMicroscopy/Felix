@@ -53,11 +53,10 @@ PROGRAM Felixrefine
   ! local variable definitions
   IMPLICIT NONE
 
-  INTEGER(IKIND) :: IHours,IMinutes,ISeconds,IErr,IMilliSeconds,IIterationFLAG,&
-       ind,jnd,knd,ICalls,Iter,ICutOff,IHOLZgPoolMag,IBSMaxLocGVecAmp,&
+  INTEGER(IKIND) :: IErr,IIterationFLAG,ind,jnd,knd,ICalls,Iter,ICutOff,IHOLZgPoolMag,IBSMaxLocGVecAmp,&
 	   ILaueLevel,INumTotalReflections,ITotalLaueZoneLevel,INhkl,IExitFLAG,&
-	   INumInitReflections,IZerothLaueZoneLevel,INumFinalReflections
-  INTEGER(IKIND) :: IStartTime,ICurrentTime,IRate
+	   INumInitReflections,IZerothLaueZoneLevel,INumFinalReflections,IThicknessIndex
+  INTEGER(IKIND) :: IHours,IMinutes,ISeconds,IMilliSeconds,IStartTime,ICurrentTime,IRate
   INTEGER(IKIND), DIMENSION(:),ALLOCATABLE :: IOriginGVecIdentifier
   REAL(RKIND) :: StartTime, CurrentTime, Duration, TotalDurationEstimate,&
        RFigureOfMerit,RHOLZAcceptanceAngle,RLaueZoneGz,RMaxGMag
@@ -545,7 +544,7 @@ PROGRAM Felixrefine
      PRINT*,"felixrefine(",my_rank,") error allocating RhklPositions"
      GOTO 9999
   END IF
-  CALL ImageSetup( IErr )
+  CALL ImageSetup(IErr)!what does this do?
   IF( IErr.NE.0 ) THEN
      PRINT*,"felixrefine(",my_rank,") error in ImageSetup"
      GOTO 9999
@@ -553,8 +552,12 @@ PROGRAM Felixrefine
   !All the individual calculations go into RSimulatedPatterns later with MPI_GATHERV
   !(Note that RSimulatedPatterns is a vector with respect to pixels, not a 2D image)
   ALLOCATE(RSimulatedPatterns(INoOfLacbedPatterns,IThicknessCount,IPixelTotal),STAT=IErr)
+  !Images to match RImageExpi (NB there are other variables called RImageSim, be careful!)
+  ALLOCATE(RImageSimi(2*IPixelCount,2*IPixelCount,INoOfLacbedPatterns,IThicknessCount),STAT=IErr)
+  !Average Images to calculate mask
+  ALLOCATE(RImageAvi(2*IPixelCount,2*IPixelCount,INoOfLacbedPatterns,IThicknessCount),STAT=IErr)
   IF( IErr.NE.0 ) THEN
-     PRINT*,"felixrefine(",my_rank,") error allocating Root Reflections"
+     PRINT*,"felixrefine(",my_rank,") error allocating simulated patterns"
      GOTO 9999
   END IF
   RSimulatedPatterns = ZERO
@@ -592,7 +595,7 @@ PROGRAM Felixrefine
   END SELECT
 
   !--------------------------------------------------------------------
-  ! Allocate memory for deviation parameter and bloch calc in main loop
+  ! Allocate memory for deviation parameter and bloch calc here in main loop
   ALLOCATE(RDevPara(nReflections),STAT=IErr)
   ALLOCATE(IStrongBeamList(nReflections),STAT=IErr)
   ALLOCATE(IWeakBeamList(nReflections),STAT=IErr)
@@ -606,9 +609,9 @@ PROGRAM Felixrefine
   !baseline simulation
   RFigureofMerit=9.999!Inital value
   Iter = 0
-  CALL FelixFunction(IErr)
+  CALL FelixFunction(IErr) ! Simulate !! 
   IF( IErr.NE.0 ) THEN
-     PRINT*,"felixrefine(",my_rank,")error in FelixFunction"
+     PRINT*,"felixrefine(",my_rank,")error",IErr,"in FelixFunction"
      GOTO 9999
   END IF
   !--------------------------------------------------------------------
@@ -623,17 +626,24 @@ PROGRAM Felixrefine
     "Simulation completed in ",IHours," hrs ",IMinutes," mins ",ISeconds," sec"
     PRINT*,TRIM(ADJUSTL(SPrintString))
   END IF
-  !Baseline simulation output, core 0 only
+  !--------------------------------------------------------------------
+  !Baseline output, core 0 only
   IExitFLAG = 0 !Do not exit
   IPreviousPrintedIteration = -100!RB ensuring baseline simulation is printed
   IF(my_rank.EQ.0) THEN   
-    CALL CreateImagesAndWriteOutput(Iter,IExitFLAG,IErr) 
+    CALL CalculateFigureofMeritandDetermineThickness(IThicknessIndex,IErr)
+    RFigureofMerit = RCrossCorrelation
+    CALL WriteIterationOutput(Iter,IThicknessIndex,IExitFLAG,IErr)
     IF( IErr.NE.0 ) THEN
-      PRINT*,"felixrefine(",my_rank,")error in CreateImagesAndWriteOutput"
+      PRINT*,"felixrefine(0) error",IErr,"in CalculateFigureofMeritandDetermineThickness"
       GOTO 9999
     END IF
   END IF
-
+  !--------------------------------------------------------------------
+  !Add baseline to average
+  RImageAvi=RImageSimi  
+  
+  
   IF (IRefineMode(12).EQ.1) THEN
     !bisection on Ug's
 	RdeltaUg=0.01!RSimplexLengthScale/100.0!use simplex length scale
@@ -687,7 +697,6 @@ PROGRAM Felixrefine
     IF( IErr.NE.0 ) THEN
       PRINT*,"felixrefine(",my_rank,")error allocating RSimplexFoM"
       GOTO 9999
-
     END IF
     IF(my_rank.EQ.0) THEN
       CALL CreateRandomisedSimplex(RSimplexVariable,RIndependentVariable,IErr)
@@ -712,7 +721,11 @@ PROGRAM Felixrefine
         WRITE(SPrintString,FMT='(A16,F7.5)') "Figure of merit ",RSimplexFoM(ind)
         PRINT*,TRIM(ADJUSTL(SPrintString))
       END IF
+      !Add to average
+      RImageAvi=RImageAvi+RImageSimi 
     END DO
+    !Renormalise average
+    RImageAvi=RImageAvi/(INoOfVariables+2)
     ! Apply Simplex Method and iterate
     Iter = 1  
     CALL NDimensionalDownhillSimplex(RSimplexVariable,RSimplexFoM,&

@@ -37,7 +37,7 @@
 !%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 SUBROUTINE WriteIterationOutput(Iter,IThicknessIndex,IExitFlag,IErr)
-!This code needs to be taken up a subroutine level and combined with CalculateFigureofMeritandDetermineThickness to avoid repeated calculation of the image to output and BlurG
+!This could be improved by bringing the content of subroutines up to this level
   USE MyNumbers
   
   USE CConst; USE IConst; USE RConst
@@ -55,8 +55,9 @@ SUBROUTINE WriteIterationOutput(Iter,IThicknessIndex,IExitFlag,IErr)
   INTEGER(IKIND),INTENT(IN) :: IThicknessIndex,IExitFLAG
   REAL(RKIND),DIMENSION(2*IPixelCount,2*IPixelCount) :: RImageToWrite
   REAL(RKIND) :: Rradius
-  CHARACTER*200 :: path,SPrintString
-
+  CHARACTER*200 :: path,SPrintString,filename
+  CHARACTER*20 :: h,k,l
+  
   IThickness = (RInitialThickness + (IThicknessIndex-1)*RDeltaThickness)/10!in nm 
   WRITE(path,"(A10,I4.4,A1,I3.3,A3,I3.3,A1,I3.3)") &
           "Iteration",Iter,"_",IThickness,"nm_",2*IPixelcount,"x",2*IPixelcount
@@ -76,53 +77,51 @@ SUBROUTINE WriteIterationOutput(Iter,IThicknessIndex,IExitFlag,IErr)
   END IF
   PRINT*,TRIM(ADJUSTL(SPrintString))
 
-
-  !Write Images to disc
+  !Write Images to disk
   DO ind = 1,INoOfLacbedPatterns
-    CALL OpenReflectionImage(IChOutWIImage,path,IErr,ind,2*IPixelCount,2_IKIND)
-    IF( IErr.NE.0 ) THEN
-      PRINT*,"WriteIterationImages(",my_rank,") error in OpenReflectionImage()"
-      RETURN
-    ENDIF
-    !convert vector RSimulatedPatterns into 2D RImageToWrite (again! was done once in CalculateFigureofMeritandDetermineThickness
-    RImageToWrite = ZERO
-    DO jnd = 1,IPixelTotal
-      gnd = IPixelLocations(jnd,1)
-      hnd = IPixelLocations(jnd,2)
-      RImageToWrite(gnd,hnd) = RSimulatedPatterns(ind,IThicknessIndex,jnd)
-    END DO
-	 
-    !Apply blur again, temp fix until all subroutines combined into one
-    IF (IImageProcessingFLAG.EQ.4) THEN
-      Rradius=0.8_RKIND!!!*+*+ will need to be added as a line in felix.inp +*+*!!!
-      CALL BlurG(RImageToWrite,Rradius,IErr)
-	END IF
-
+    !make the path/filename
+    WRITE(h,*)  NINT(Rhkl(IOutPutReflections(ind),1))
+    WRITE(k,*)  NINT(Rhkl(IOutPutReflections(ind),2))
+    WRITE(l,*)  NINT(Rhkl(IOutPutReflections(ind),3))
+    WRITE(filename,*) TRIM(ADJUSTL(path)),"/",&
+    TRIM(ADJUSTL(h)),TRIM(ADJUSTL(k)),TRIM(ADJUSTL(l)),TRIM(ADJUSTL(".bin"))
+	
+    RImageToWrite = RImageSimi(:,:,ind,IThicknessIndex)
+	
+    OPEN(UNIT=IChOutWIImage, ERR=10, STATUS= 'UNKNOWN', FILE=TRIM(ADJUSTL(filename)),&
+	FORM='UNFORMATTED',ACCESS='DIRECT',IOSTAT=IErr,RECL=2*IPixelCount*8)
+!    CALL OpenReflectionImage(IChOutWIImage,path,IErr,ind,2*IPixelCount,2_IKIND)
     DO jnd = 1,2*IPixelCount
      WRITE(IChOutWIImage,rec=jnd) RImageToWrite(jnd,:)
     END DO
     CLOSE(IChOutWIImage,IOSTAT=IErr)       
     IF( IErr.NE.0 ) THEN
-      PRINT*,"WriteIterationOutput(", my_rank, ") error Closing Reflection Image()"
+      PRINT*,"WriteIterationOutput(0) error writing image",ind
       RETURN
     ENDIF
   END DO
 
   CALL WriteIterationStructure(path,IErr) 
   IF( IErr.NE.0 ) THEN
-    PRINT*,"WriteIterationOutput(",my_rank,")error in WriteIterationStructure"
+    PRINT*,"WriteIterationOutput(0) error in WriteIterationStructure"
     RETURN
   ENDIF
   CALL WriteStructureFactors(path,IErr)
   IF( IErr.NE.0 ) THEN
-    PRINT*,"WriteIterationOutput(",my_rank,")error in WriteStructureFactors()"
+    PRINT*,"WriteIterationOutput(0) error in WriteStructureFactors()"
     RETURN
   ENDIF
   CALL WriteOutVariables(Iter,IErr)
   IF( IErr.NE.0 ) THEN
-    PRINT*,"WriteIterationOutput(",my_rank,")error in WriteOutVariables()"
+    PRINT*,"WriteIterationOutput(0) error in WriteOutVariables()"
     RETURN
   ENDIF
+
+  RETURN  
+  ! error in OPEN detected
+10 PRINT*,"WriteIterationOutput(0) error opening",filename
+  IErr= 1
+  RETURN
   
 END SUBROUTINE WriteIterationOutput
 
