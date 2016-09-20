@@ -54,7 +54,6 @@ SUBROUTINE WriteIterationOutput(Iter,IThicknessIndex,IExitFlag,IErr)
   INTEGER(IKIND) :: IErr,Iter,IThickness,ind,jnd,gnd,hnd
   INTEGER(IKIND),INTENT(IN) :: IThicknessIndex,IExitFLAG
   REAL(RKIND),DIMENSION(2*IPixelCount,2*IPixelCount) :: RImageToWrite
-  REAL(RKIND) :: Rradius
   CHARACTER*200 :: path,SPrintString,filename
   CHARACTER*20 :: h,k,l
   
@@ -85,7 +84,9 @@ SUBROUTINE WriteIterationOutput(Iter,IThicknessIndex,IExitFlag,IErr)
     WRITE(l,*)  NINT(Rhkl(IOutPutReflections(ind),3))
     WRITE(filename,*) TRIM(ADJUSTL(path)),"/",&
     TRIM(ADJUSTL(h)),TRIM(ADJUSTL(k)),TRIM(ADJUSTL(l)),TRIM(ADJUSTL(".bin"))
-	
+	IF (IWriteFLAG.EQ.6) THEN
+      PRINT*,filename
+    END IF
     RImageToWrite = RImageSimi(:,:,ind,IThicknessIndex)
 	
     OPEN(UNIT=IChOutWIImage, ERR=10, STATUS= 'UNKNOWN', FILE=TRIM(ADJUSTL(filename)),&
@@ -351,7 +352,9 @@ SUBROUTINE WriteOutVariables(Iter,IErr)
            IEnd = ind*2
            RDataOut(IStart:IEnd) = [REAL(CUniqueUg(ind+IUgOffset)), REAL(AIMAG(CUniqueUg(ind+IUgOffset)),RKIND)]
         END DO
-		RDataOut(IEnd+1) = RAbsorptionPercentage!RB last variable is absorption
+        IF (IAbsorbFLAG.EQ.1) THEN
+		  RDataOut(IEnd+1) = RAbsorptionPercentage!RB last variable is proportional absorption
+        END IF
     END SELECT
   END DO
 
@@ -360,7 +363,7 @@ SUBROUTINE WriteOutVariables(Iter,IErr)
 
   OPEN(UNIT=IChOutSimplex,file='IterationLog.txt',form='formatted',status='unknown',position='append')
 
-  WRITE(UNIT=IChOutSimplex,FMT=SFormat) Iter,RCrossCorrelation,RDataOut
+  WRITE(UNIT=IChOutSimplex,FMT=SFormat) Iter,RFigureofMerit,RDataOut
 
   CLOSE(IChOutSimplex)
 

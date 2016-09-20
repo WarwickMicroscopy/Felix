@@ -239,7 +239,7 @@ SUBROUTINE BlochCoefficientCalculation(IYPixelIndex,IXPixelIndex,IPixelNumber,IF
   !Calculate intensities for different specimen thicknesses
   DO IThicknessIndex=1,IThicknessCount,1
     RThickness = RInitialThickness + REAL((IThicknessIndex-1),RKIND)*RDeltaThickness 
-    IThickness = NINT(RInitialThickness + REAL((IThicknessIndex-1),RKIND)*RDeltaThickness,IKIND) 
+    IThickness = NINT(RThickness,IKIND)
     CALL CreateWaveFunctions(RThickness,IErr)
     IF( IErr.NE.0 ) THEN
       PRINT*,"BlochCoefficientCalculation(", my_rank, ") error in CreateWavefunction()"
@@ -328,7 +328,6 @@ SUBROUTINE CreateWaveFunctions(RThickness,IErr)
   DO hnd=1,nBeams     ! This is a diagonal matrix
     CEigenValueDependentTerms(hnd,hnd)=EXP(CIMAGONE*CMPLX(RThickness,ZERO,CKIND)*CEigenValues(hnd)) 
   ENDDO
-  
   !The diffracted intensity for each beam
   ! EQ 6.35 in Kirkland Advance Computing in EM
   ! C-1*C*alpha 

@@ -281,7 +281,7 @@ MODULE RPara
   REAL(RKIND), DIMENSION(:,:,:), ALLOCATABLE :: RIndividualReflections
   !Refinement Variables
   REAL(RKIND), DIMENSION(:,:),ALLOCATABLE :: RImageIn
-  REAL(RKIND) :: RCrossCorrelation,RDeltaUgChange,RlowerBoundUgChange,RUpperBoundUgChange
+  REAL(RKIND) :: RFigureofMerit,RDeltaUgChange,RlowerBoundUgChange,RUpperBoundUgChange
   !Ug' Unique Values
   REAL(RKIND),DIMENSION(:),ALLOCATABLE :: RUniqueUgPrimeValues!RB not used?
   ! Experimental Images (width,height, no.of patterns)

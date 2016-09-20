@@ -36,7 +36,7 @@
 ! $Id: Felixrefine.f90,v 1.89 2014/04/28 12:26:19 phslaz Exp $
 !%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-SUBROUTINE SimulateAndFit(RFigureofMerit,RIndependentVariable,Iiter,IExitFLAG,IErr)
+SUBROUTINE SimulateAndFit(RIndependentVariable,Iiter,IExitFLAG,IErr)
 
   USE MyNumbers
   
@@ -53,7 +53,6 @@ SUBROUTINE SimulateAndFit(RFigureofMerit,RIndependentVariable,Iiter,IExitFLAG,IE
   
   INTEGER(IKIND) :: IErr,IExitFLAG,IThicknessIndex,ind,jnd
   REAL(RKIND),DIMENSION(INoOfVariables) :: RIndependentVariable
-  REAL(RKIND) :: RFigureofMerit
   INTEGER(IKIND),INTENT(IN) :: Iiter
   COMPLEX(CKIND),DIMENSION(nReflections,nReflections) :: CUgMatDummy
   
@@ -99,7 +98,7 @@ SUBROUTINE SimulateAndFit(RFigureofMerit,RIndependentVariable,Iiter,IExitFLAG,IE
       PRINT*,"SimulateAndFit(",my_rank,")error in Absorption"
       RETURN
     END IF	
-    RAbsorptionPercentage = RIndependentVariable(jnd)!===![[[
+    RAbsorptionPercentage = RIndependentVariable(jnd)!===![[[!needs to be updated for AbsorbFLAG 2
   ELSE !everything else
 	!Change variables
     CALL UpdateVariables(RIndependentVariable,IErr)
@@ -135,10 +134,7 @@ SUBROUTINE SimulateAndFit(RFigureofMerit,RIndependentVariable,Iiter,IExitFLAG,IE
       PRINT*,"SimulateAndFit(0) error",IErr,"in CalculateFigureofMeritandDetermineThickness"
       RETURN
     END IF
-    !This is the key parameter
-    RFigureofMerit = RCrossCorrelation
-
-    !write to disc if we have done enough iterations or have finished
+    !write to disk if we have done enough iterations or have finished
     IF(IExitFLAG.EQ.1.OR.(Iiter.GE.(IPreviousPrintedIteration+IPrint))) THEN
       CALL WriteIterationOutput(Iiter,IThicknessIndex,IExitFLAG,IErr)
       IF( IErr.NE.0 ) THEN
@@ -151,7 +147,7 @@ SUBROUTINE SimulateAndFit(RFigureofMerit,RIndependentVariable,Iiter,IExitFLAG,IE
   
   !Send the fit index to all cores
   CALL MPI_BCAST(RFigureofMerit,1,MPI_DOUBLE_PRECISION,0,MPI_COMM_WORLD,IErr)
-
+  
 END SUBROUTINE SimulateAndFit
 
 !%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -175,7 +171,7 @@ SUBROUTINE FelixFunction(IErr)
   ! local variable definitions
   !--------------------------------------------------------------------
   
-  INTEGER(IKIND) :: IErr,ind,jnd,knd,pnd,IThicknessIndex,IIterationFLAG
+  INTEGER(IKIND) :: IErr,ind,jnd,knd,pnd,IIterationFLAG
   INTEGER(IKIND) :: IAbsorbTag = 0
   REAL(RKIND),DIMENSION(:,:,:),ALLOCATABLE :: RFinalMontageImageRoot
   REAL(RKIND),DIMENSION(:,:),ALLOCATABLE :: RTempImage 
@@ -235,7 +231,7 @@ SUBROUTINE FelixFunction(IErr)
   END DO
 
   !!!Temporary under ImageProcessingFlag, blur will be added as a line in felix.inp +*+*!!!
-  Rradius=0.8_RKIND
+  Rradius=0.65_RKIND
   IF (IImageProcessingFLAG.EQ.4) THEN
     ALLOCATE(RTempImage(2*IPixelCount,2*IPixelCount),STAT=IErr)
     DO ind=1,INoOfLacbedPatterns
@@ -255,7 +251,7 @@ END SUBROUTINE FelixFunction
 !%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 !%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-SUBROUTINE CalculateFigureofMeritandDetermineThickness(IThicknessCountFinal,IErr)
+SUBROUTINE CalculateFigureofMeritandDetermineThickness(IBestThicknessIndex,IErr)
   !NB core 0 only
   USE MyNumbers
   
@@ -271,37 +267,54 @@ SUBROUTINE CalculateFigureofMeritandDetermineThickness(IThicknessCountFinal,IErr
   IMPLICIT NONE
 
   INTEGER(IKIND) :: ind,jnd,knd,IErr,IThickness,hnd
-  INTEGER(IKIND),DIMENSION(INoOfLacbedPatterns) :: IThicknessByReflection
-  INTEGER(IKIND),INTENT(OUT) :: IThicknessCountFinal
+  INTEGER(IKIND),DIMENSION(INoOfLacbedPatterns) :: IBestImageThicknessIndex
+  INTEGER(IKIND),INTENT(OUT) :: IBestThicknessIndex
   REAL(RKIND),DIMENSION(2*IPixelCount,2*IPixelCount) :: RSimulatedImage,RExperimentalImage
-  REAL(RKIND) :: RCrossCorrelationOld,RIndependentCrossCorrelation,RThickness,&
+  REAL(RKIND) :: RTotalCorrelation,RBestTotalCorrelation,RImageCorrelation,RBestThickness,&
        PhaseCorrelate,Normalised2DCrossCorrelation,ResidualSumofSquares,RThicknessRange,Rradius
-  REAL(RKIND),DIMENSION(INoOfLacbedPatterns) :: RReflectionCrossCorrelations,RReflectionThickness
+  REAL(RKIND),DIMENSION(INoOfLacbedPatterns) :: RBestCorrelation
   CHARACTER*200 :: SPrintString
-       
+  CHARACTER*20 :: Snum       
   
   IF (IWriteFLAG.GE.10) THEN
      PRINT*,"CalculateFigureofMeritandDetermineThickness(",my_rank,")"
   END IF
 
-  RReflectionCrossCorrelations = ZERO
+  RBestCorrelation = ONE !The best correlation for each image will go in here, initialise at the maximum value
+  RBestTotalCorrelation = 1 !The best mean of all correlations
+  IBestImageThicknessIndex = 1 !The thickness with the lowest figure of merit for each image
+  DO jnd = 1,IThicknessCount
+    RTotalCorrelation = ZERO !The sum of all individual correlations, initialise at 0
+    DO ind = 1,INoOfLacbedPatterns
+      RSimulatedImage = RImageSimi(:,:,ind,jnd)
+      RExperimentalImage = RImageExpi(:,:,ind) 
+    
+!debug
+!    WRITE(Snum,*) ind
+!    WRITE(SPrintString,*) "Expt.",TRIM(ADJUSTL(Snum)),".bin"
+!    OPEN(UNIT=IChOutWIImage, ERR=10, STATUS= 'UNKNOWN', FILE=SPrintString,&!
+!	FORM='UNFORMATTED',ACCESS='DIRECT',IOSTAT=IErr,RECL=2*IPixelCount*8)
+!    DO hnd = 1,2*IPixelCount
+!     WRITE(IChOutWIImage,rec=jnd) RExperimentalImage(jnd,:)
+!    END DO
+!    CLOSE(IChOutWIImage,IOSTAT=IErr)
+!    RSimulatedImage = RImageSimi(:,:,ind,1)    
+!    WRITE(SPrintString,*) "Sim.",TRIM(ADJUSTL(Snum)),".bin"
+!    OPEN(UNIT=IChOutWIImage, ERR=10, STATUS= 'UNKNOWN', FILE=SPrintString,&!
+!	FORM='UNFORMATTED',ACCESS='DIRECT',IOSTAT=IErr,RECL=2*IPixelCount*8)
+!    DO hnd = 1,2*IPixelCount
+!     WRITE(IChOutWIImage,rec=jnd) RSimulatedImage(jnd,:)
+!    END DO
+!    CLOSE(IChOutWIImage,IOSTAT=IErr)     
+!debug    
 
-  DO hnd = 1,INoOfLacbedPatterns
-    RCrossCorrelationOld = 1.0E15 !A large Number
-    RThickness = ZERO
-    IThicknessByReflection(hnd) = 1!default value if no correlation
-    DO ind = 1,IThicknessCount
-      RSimulatedImage = RImageSimi(:,:,hnd,ind)
-               
+
+      !image processing----------------------------------- 
       SELECT CASE (IImageProcessingFLAG)
-
-      CASE(0)!no processing
-        RExperimentalImage = RImageExpi(:,:,hnd)
-           
+      !CASE(0)!no processing
       CASE(1)!square root before perfoming corration
         RSimulatedImage=SQRT(RSimulatedImage)
-        RExperimentalImage=SQRT(RImageExpi(:,:,hnd))
-           
+        RExperimentalImage=SQRT(RImageExpi(:,:,ind))
       CASE(2)!log before performing correlation
         WHERE (RSimulatedImage.GT.TINY**2)
           RSimulatedImage=LOG(RSimulatedImage)
@@ -309,60 +322,66 @@ SUBROUTINE CalculateFigureofMeritandDetermineThickness(IThicknessCountFinal,IErr
           RSimulatedImage = TINY**2
         END WHERE
         WHERE (RExperimentalImage.GT.TINY**2)
-          RExperimentalImage = LOG(RImageExpi(:,:,hnd))
+          RExperimentalImage = LOG(RImageExpi(:,:,ind))
         ELSEWHERE
           RExperimentalImage =  TINY**2
         END WHERE
-		
-      END SELECT
-
-      RIndependentCrossCorrelation = ZERO   
-      SELECT CASE (ICorrelationFLAG)
-         
-      CASE(0) ! Phase Correlation
-        RIndependentCrossCorrelation=ONE-& ! So Perfect Correlation = 0 not 1
-           PhaseCorrelate(RSimulatedImage,RExperimentalImage,&
-           IErr,2*IPixelCount,2*IPixelCount)
-           
-      CASE(1) ! Residual Sum of Squares (Non functional)
-        RIndependentCrossCorrelation = ResidualSumofSquares(&
-                RSimulatedImage,RImageExpi(:,:,hnd),IErr)
-           
-      CASE(2) ! Normalised Cross Correlation
- 		   RIndependentCrossCorrelation = ONE-& ! So Perfect Correlation = 0 not 1
-           Normalised2DCrossCorrelation(RSimulatedImage,RExperimentalImage,IErr)
-
       END SELECT
       
-      !Why do we only update the cross correlation if it is better?      
-      !IF(ABS(RIndependentCrossCorrelation).LT.RCrossCorrelationOld) THEN
-        !RCrossCorrelationOld = RIndependentCrossCorrelation
-        IThicknessByReflection(hnd) = ind
-        RReflectionThickness(hnd) = RInitialThickness +&
-        IThicknessByReflection(hnd)*RDeltaThickness
-      !END IF
+      !Correlation type-----------------------------------
+      SELECT CASE (ICorrelationFLAG)
+      CASE(0) ! Phase Correlation
+        RImageCorrelation=ONE-& ! NB Perfect Correlation = 0 not 1
+           PhaseCorrelate(RSimulatedImage,RExperimentalImage,&
+           IErr,2*IPixelCount,2*IPixelCount)
+      CASE(1) ! Residual Sum of Squares (Non functional)
+        RImageCorrelation = ResidualSumofSquares(&
+                RSimulatedImage,RImageExpi(:,:,ind),IErr)
+      CASE(2) ! Normalised Cross Correlation
+ 		RImageCorrelation = ONE-& ! NB Perfect Correlation = 0 not 1
+           Normalised2DCrossCorrelation(RSimulatedImage,RExperimentalImage,IErr)
+        !PRINT*,"pattern",ind,"thickness",jnd,": FoM=",RImageCorrelation
+      END SELECT
+      
+      !Update best image correlation values if we need to     
+      IF(RImageCorrelation.LT.RBestCorrelation(ind)) THEN
+        RBestCorrelation(ind) = RImageCorrelation
+        IBestImageThicknessIndex(ind) = jnd
+      END IF
+      RTotalCorrelation = RTotalCorrelation + RImageCorrelation
     END DO
-    !RReflectionCrossCorrelations(hnd) = RCrossCorrelationOld
-    RReflectionCrossCorrelations(hnd) = RIndependentCrossCorrelation!try without the condition
+    !The best total correlation
+    RTotalCorrelation=RTotalCorrelation/REAL(INoOfLacbedPatterns,RKIND)
+    IF(RTotalCorrelation.LT.RBestTotalCorrelation) THEN
+      RBestTotalCorrelation = RTotalCorrelation
+      IBestThicknessIndex = jnd
+    END IF
   END DO
-  !RB assume that the best thickness is given by the mean of individual thicknesses  
-  IThicknessCountFinal = SUM(IThicknessByReflection)/INoOfLacbedPatterns
-  RThickness = RInitialThickness + (IThicknessCountFinal-1)*RDeltaThickness
-  RThicknessRange=( MAXVAL(IThicknessByReflection)-MINVAL(IThicknessByReflection) )*&
-                  RDeltaThickness
+  
+  !!The figure of merit, global variable
+  RFigureofMerit = RBestTotalCorrelation
+  
+  !Alternative: assume that the best thickness is given by the mean of individual thicknesses  
+!  IBestThicknessIndex = SUM(IBestImageThicknessIndex)/INoOfLacbedPatterns
+!  RBestThickness = RInitialThickness + (IBestThicknessIndex-1)*RDeltaThickness
+!  RFigureofMerit = SUM(RBestCorrelation*RWeightingCoefficients)/&
+!       REAL(INoOfLacbedPatterns,RKIND)
 
-  RCrossCorrelation = SUM(RReflectionCrossCorrelations*RWeightingCoefficients)/&
-       REAL(INoOfLacbedPatterns,RKIND)
-
+  !Output to screen-----------------------------------
   IF(my_rank.eq.0) THEN
-    WRITE(SPrintString,FMT='(A16,F8.5)') "Figure of merit ",RCrossCorrelation
+    RBestThickness = RInitialThickness +IBestThicknessIndex*RDeltaThickness
+    RThicknessRange=( MAXVAL(IBestImageThicknessIndex)-MINVAL(IBestImageThicknessIndex) )*RDeltaThickness
+    WRITE(SPrintString,FMT='(A16,F8.5)') "Figure of merit ",RBestTotalCorrelation
     PRINT*,TRIM(ADJUSTL(SPrintString))
-    WRITE(SPrintString,FMT='(A19,I4,A10)') "Specimen thickness ",NINT(RThickness)," Angstroms"
+    WRITE(SPrintString,FMT='(A19,I4,A10)') "Specimen thickness ",NINT(RBestThickness)," Angstroms"
     PRINT*,TRIM(ADJUSTL(SPrintString))
     WRITE(SPrintString,FMT='(A15,I4,A10)') "Thickness range",NINT(RThicknessRange)," Angstroms"
     PRINT*,TRIM(ADJUSTL(SPrintString))
   END IF
 
+  RETURN
+10 RETURN
+  
 END SUBROUTINE CalculateFigureofMeritandDetermineThickness
 
 !%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -748,7 +767,7 @@ END SUBROUTINE BlurG
 
 !%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-REAL(RKIND) FUNCTION RStandardError(RStandardDeviation,RMean,RFigureofMerit,IErr)
+REAL(RKIND) FUNCTION RStandardError(RStandardDeviation,RMean,IErr)
 
   USE MyNumbers
   
@@ -765,7 +784,6 @@ REAL(RKIND) FUNCTION RStandardError(RStandardDeviation,RMean,RFigureofMerit,IErr
 
   INTEGER(IKIND) :: IErr
   REAL(RKIND),INTENT(INOUT) :: RStandardDeviation,RMean
-  REAL(RKIND),INTENT(IN) :: RFigureofMerit
   
   IF (IStandardDeviationCalls.GT.1) THEN
      RMean = (RMean*REAL(IStandardDeviationCalls,RKIND) + &

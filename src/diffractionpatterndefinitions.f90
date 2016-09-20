@@ -78,45 +78,43 @@ SUBROUTINE SpecificReflectionDetermination (IErr)
   IFind = 0
 
   IF(IHKLSelectFLAG.EQ.1) THEN
-     DO ind = 1,SIZE(RInputHKLs,DIM=1)
-        DO jnd = 1,SIZE(Rhkl,DIM=1)
-           IF(ABS(Rhkl(jnd,1)-RInputHKLs(ind,1)).LE.RTolerance.AND.&
-                ABS(Rhkl(jnd,2)-RInputHKLs(ind,2)).LE.RTolerance.AND.&
-                ABS(Rhkl(jnd,3)-RInputHKLs(ind,3)).LE.RTolerance) THEN
-              IFound = 0
-              DO knd = 1,IFind
-                 IF(ABS(Rhkl(IOutputReflections(knd),1)-RInputHKLs(ind,1)).LE.RTolerance.AND.&
-                      ABS(Rhkl(IOutputReflections(knd),2)-RInputHKLs(ind,2)).LE.RTolerance.AND.&
-                      ABS(Rhkl(IOutputReflections(knd),3)-RInputHKLs(ind,3)).LE.RTolerance) THEN
-                    IFound = 1
-                    EXIT
-                 END IF
-              END DO
-
-              IF(IFound.EQ.0) THEN
-                 IFind = IFind +1
-                 IOutputReflections(IFind) = jnd
-                 CALL Message("SpecificReflectionDetermination",IMoreInfo,IErr, &
-                      MessageVariable = "At",IVariable = jnd)
-              ELSE 
-                 CALL Message("SpecificReflectionDetermination",IMoreInfo,IErr, &
-                      MessageVariable = "At",IVariable = jnd)
-                 CALL Message("SpecificReflectionDetermination",IMoreInfo,IErr, &
-                      MessageString = "However it is not unique")
-                 
-              END IF
+    DO ind = 1,SIZE(RInputHKLs,DIM=1)
+      DO jnd = 1,SIZE(Rhkl,DIM=1)
+        IF(ABS(Rhkl(jnd,1)-RInputHKLs(ind,1)).LE.RTolerance.AND.&
+           ABS(Rhkl(jnd,2)-RInputHKLs(ind,2)).LE.RTolerance.AND.&
+           ABS(Rhkl(jnd,3)-RInputHKLs(ind,3)).LE.RTolerance) THEN
+          IFound = 0
+          DO knd = 1,IFind
+            IF(ABS(Rhkl(IOutputReflections(knd),1)-RInputHKLs(ind,1)).LE.RTolerance.AND.&
+               ABS(Rhkl(IOutputReflections(knd),2)-RInputHKLs(ind,2)).LE.RTolerance.AND.&
+               ABS(Rhkl(IOutputReflections(knd),3)-RInputHKLs(ind,3)).LE.RTolerance) THEN
+              IFound = 1
               EXIT
-           ELSE
-              IF((jnd.EQ.SIZE(Rhkl,DIM=1).AND.IWriteFLAG.GE.3.AND.my_rank.EQ.0).or.&
+            END IF
+          END DO
+          IF(IFound.EQ.0) THEN
+            IFind = IFind +1
+            IOutputReflections(IFind) = jnd
+            CALL Message("SpecificReflectionDetermination",IMoreInfo,IErr, &
+                 MessageVariable = "At",IVariable = jnd)
+          ELSE 
+            CALL Message("SpecificReflectionDetermination",IMoreInfo,IErr, &
+                 MessageVariable = "At",IVariable = jnd)
+            CALL Message("SpecificReflectionDetermination",IMoreInfo,IErr, &
+                 MessageString = "However it is not unique")
+          END IF
+          EXIT
+        ELSE
+          IF((jnd.EQ.SIZE(Rhkl,DIM=1).AND.IWriteFLAG.GE.3.AND.my_rank.EQ.0).or.&
                    (jnd.EQ.SIZE(Rhkl,DIM=1).AND.IWriteFLAG.GE.10)) THEN
-                 PRINT*,"DiffractionPatternDefinitions(",my_rank,&
+            PRINT*,"DiffractionPatternDefinitions(",my_rank,&
                       ") Could Not Find Requested HKL ",&
                       RInputHKLs(ind,:)," Will Ignore and Continue"
-              END IF
-              CYCLE
-           END IF
-        END DO
-     END DO
+          END IF
+          CYCLE
+        END IF
+      END DO
+    END DO
      
      IF(IFind.LE.0) THEN
         IErr = 1

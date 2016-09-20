@@ -213,9 +213,19 @@ REAL(RKIND) FUNCTION Normalised2DCrossCorrelation(RImage1,RImage2,IErr)
   IMPLICIT NONE
 
   INTEGER(IKIND) :: IErr
-  REAL(RKIND),DIMENSION(2*IPixelCount,2*IPixelCount),INTENT(IN) :: RImage1,RImage2
-  REAL(RKIND) :: RImage1Mean,RImage2Mean,RImage1StandardDeviation,RImage2StandardDeviation,RPixelTotal
-    
+  REAL(RKIND),DIMENSION(2*IPixelCount,2*IPixelCount) :: RImage1,RImage2
+  REAL(RKIND) :: RImage1Mean,RImage2Mean,RImage1StandardDeviation,RImage2StandardDeviation,RPixelTotal,&
+                 RImage1Min,RImage2Min,RImage1Max,RImage2Max
+
+  !Added: normalisation so both images have the range 0 to 1, probably unneccesary(?!)
+  RImage1Min=MINVAL(RImage1)
+  RImage1Max=MAXVAL(RImage1)
+  RImage1=(RImage1-RImage1Min)/(RImage1Max-RImage1Min)
+  RImage2Min=MINVAL(RImage2)
+  RImage2Max=MAXVAL(RImage2)
+  RImage2=(RImage2-RImage2Min)/(RImage2Max-RImage2Min)
+  
+  !Original code  
   RPixelTotal = REAL(2*IPixelCount*2*IPixelCount,RKIND)  
   RImage1Mean = SUM(RImage1)/RPixelTotal
   RImage2Mean = SUM(RImage2)/RPixelTotal
