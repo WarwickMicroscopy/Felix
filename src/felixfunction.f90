@@ -311,7 +311,7 @@ SUBROUTINE CalculateFigureofMeritandDetermineThickness(IThicknessCountFinal,IErr
 
       END SELECT
                 
-      IF(ABS(RIndependentCrossCorrelation).LT.RCrossCorrelationOld) THEN
+      IF((ABS(RIndependentCrossCorrelation).LT.RCrossCorrelationOld).AND.(ISimFLAG.EQ.0)) THEN !Refine Mode (not needed for sim mode)
         RCrossCorrelationOld = RIndependentCrossCorrelation
         IThicknessByReflection(hnd) = ind
         RReflectionThickness(hnd) = RInitialThickness +&
@@ -326,8 +326,10 @@ SUBROUTINE CalculateFigureofMeritandDetermineThickness(IThicknessCountFinal,IErr
   RThicknessRange=( MAXVAL(IThicknessByReflection)-MINVAL(IThicknessByReflection) )*&
                   RDeltaThickness
 
-  RCrossCorrelation = SUM(RReflectionCrossCorrelations*RWeightingCoefficients)/&
-       REAL(INoOfLacbedPatterns,RKIND)
+  IF (ISimFLAG.EQ.0) THEN !Refine Mode (not needed for sim mode)
+     RCrossCorrelation = SUM(RReflectionCrossCorrelations*RWeightingCoefficients)/&
+          REAL(INoOfLacbedPatterns,RKIND)
+  END IF
 
   IF(my_rank.eq.0) THEN
     WRITE(SPrintString,FMT='(A18,I4,A10)') "Specimen thickness ",NINT(RThickness)," Angstroms"
@@ -358,14 +360,14 @@ SUBROUTINE CreateImagesAndWriteOutput(Iiter,IExitFLAG,IErr)
   
   INTEGER(IKIND) :: IErr,IThicknessIndex,Iiter,IExitFLAG
 
-  IF (ISimFLAG.EQ.0) THEN !Refine Mode (not needed for sim mode)
-     CALL CalculateFigureofMeritandDetermineThickness(IThicknessIndex,IErr)
-     IF( IErr.NE.0 ) THEN
-        PRINT*,"CreateImagesAndWriteOutput(", my_rank, ") error ", IErr, &
-             "Calling function CalculateFigureofMeritandDetermineThickness"
-        RETURN
-     ENDIF
-  END IF
+  
+  CALL CalculateFigureofMeritandDetermineThickness(IThicknessIndex,IErr)
+  IF( IErr.NE.0 ) THEN
+     PRINT*,"CreateImagesAndWriteOutput(", my_rank, ") error ", IErr, &
+          "Calling function CalculateFigureofMeritandDetermineThickness"
+     RETURN
+  ENDIF
+
   
 !!$     OUTPUT -------------------------------------  
   CALL WriteIterationOutput(Iiter,IThicknessIndex,IExitFLAG,IErr)

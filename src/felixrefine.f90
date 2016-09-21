@@ -606,6 +606,7 @@ PROGRAM Felixrefine
     "Simulation completed in ",IHours," hrs ",IMinutes," mins ",ISeconds," sec"
     PRINT*,TRIM(ADJUSTL(SPrintString))
   END IF
+
   !Baseline simulation output, core 0 only
   IF (ISimFLAG.EQ.1) THEN
      IExitFLAG = 1 !Exit (sim)
