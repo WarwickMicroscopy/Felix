@@ -57,12 +57,11 @@ PROGRAM Felixrefine
 	   ILaueLevel,INumTotalReflections,ITotalLaueZoneLevel,INhkl,IExitFLAG,&
 	   INumInitReflections,IZerothLaueZoneLevel,INumFinalReflections,IThicknessIndex
   INTEGER(IKIND) :: IHours,IMinutes,ISeconds,IMilliSeconds,IStartTime,ICurrentTime,IRate
-  INTEGER(IKIND), DIMENSION(:),ALLOCATABLE :: IOriginGVecIdentifier
+  INTEGER(IKIND),DIMENSION(:),ALLOCATABLE :: IOriginGVecIdentifier
   REAL(RKIND) :: StartTime, CurrentTime, Duration, TotalDurationEstimate,&
        RHOLZAcceptanceAngle,RLaueZoneGz,RMaxGMag
-  REAL(RKIND), DIMENSION(:,:), ALLOCATABLE :: RSimplexVariable
+  REAL(RKIND),DIMENSION(:,:),ALLOCATABLE :: RSimplexVariable,RgDummyVecMat,RgPoolMagLaue,RTestImage
   REAL(RKIND),DIMENSION(:),ALLOCATABLE :: RSimplexFoM,RIndependentVariable
-  REAL(RKIND), DIMENSION(:,:), ALLOCATABLE :: RgDummyVecMat,RgPoolMagLaue
   REAL(RKIND) :: RBCASTREAL,RStandardDeviation,RMean,RGzUnitVec,RMinLaueZoneValue,&
        RMaxLaueZoneValue,RMaxAcceptanceGVecMag,RLaueZoneElectronWaveVectorMag
   REAL(RKIND) :: RdeltaUg,Rtol,RpointA,RpointB,RpointC,RfitA,RfitB,RfitC,RbestFit
@@ -556,6 +555,8 @@ PROGRAM Felixrefine
   ALLOCATE(RImageSimi(2*IPixelCount,2*IPixelCount,INoOfLacbedPatterns,IThicknessCount),STAT=IErr)
   !Average Images to calculate mask
   ALLOCATE(RImageAvi(2*IPixelCount,2*IPixelCount,INoOfLacbedPatterns,IThicknessCount),STAT=IErr)
+  !Mask Images
+  ALLOCATE(RImageMask(2*IPixelCount,2*IPixelCount,INoOfLacbedPatterns),STAT=IErr)
   IF( IErr.NE.0 ) THEN
      PRINT*,"felixrefine(",my_rank,") error allocating simulated patterns"
      GOTO 9999
@@ -638,8 +639,9 @@ PROGRAM Felixrefine
       GOTO 9999
     END IF
   END IF
-  !Send the fit index to all cores
+  !=====================================!Send the fit index to all cores
   CALL MPI_BCAST(RFigureofMerit,1,MPI_DOUBLE_PRECISION,0,MPI_COMM_WORLD,IErr)
+  !=====================================
 
   !--------------------------------------------------------------------
   !Add baseline to average
@@ -718,12 +720,37 @@ PROGRAM Felixrefine
         PRINT*,"SimplexInitialisation(",my_rank,") error in SimulateAndFit"
         GOTO 9999
       ENDIF
-      RSimplexFoM(ind)=RFigureofMerit
+      RSimplexFoM(ind)=RFigureofMerit!RFigureofMerit is returned as a global variable
       !Add to average
       RImageAvi=RImageAvi+RImageSimi 
     END DO
     !Renormalise average
     RImageAvi=RImageAvi/(INoOfVariables+2)!+2 because there is the baseline and the simplex simulations
+    !Simple start, just take thickness 1 and the last simplex simulation to make the mask
+    !ideally would work out which pixels have the highest SD during simplex setup
+    RImageMask=ABS(RImageAvi(:,:,:,1)-RImageSimi(:,:,:,1))
+    WHERE (RImageMask.GT.0.01)!1% threshold to start with
+      RImageMask=ONE
+    ELSEWHERE
+      RImageMask=ZERO
+    END WHERE
+    
+    !temporary output to have a look
+    ALLOCATE(RTestImage(2*IPixelCount,2*IPixelCount),STAT=IErr)
+    DO ind = 1,INoOfLacbedPatterns
+      RTestImage=RImageMask(:,:,ind)
+      WRITE(Sind,*) ind
+      WRITE(SPrintString,*) "Mask.",TRIM(ADJUSTL(Sind)),".bin"
+      OPEN(UNIT=IChOutWIImage, ERR=10, STATUS= 'UNKNOWN', FILE=SPrintString,&!
+      FORM='UNFORMATTED',ACCESS='DIRECT',IOSTAT=IErr,RECL=2*IPixelCount*8)
+      DO jnd = 1,2*IPixelCount
+        WRITE(IChOutWIImage,rec=jnd) RTestImage(jnd,:)
+      END DO
+      CLOSE(IChOutWIImage,IOSTAT=IErr)
+    END DO
+    DEALLOCATE(RTestImage)
+ 
+    !--------------------------------------------------------------------    
     ! Apply Simplex Method and iterate
     Iter = 1  
     CALL NDimensionalDownhillSimplex(RSimplexVariable,RSimplexFoM,&
@@ -733,8 +760,8 @@ PROGRAM Felixrefine
       PRINT*,"felixrefine(",my_rank,")error in NDimensionalDownhillSimplex"
       GOTO 9999
     ENDIF
-
   END IF
+  
   !--------------------------------------------------------------------
   ! Deallocate Memory
   !--------------------------------------------------------------------
@@ -793,8 +820,7 @@ PROGRAM Felixrefine
   ! Shut down MPI
   !--------------------------------------------------------------------
 
-9999 &
-  CALL MPI_Finalize(IErr)
+9999 CALL MPI_Finalize(IErr)
   IF( IErr.NE.0 ) THEN
      PRINT*,"Felixrefine(", my_rank, ") error ", IErr, " in MPI_Finalize()"
      STOP
@@ -803,6 +829,8 @@ PROGRAM Felixrefine
   ! clean shutdown
   STOP
   
+10  GOTO 9999  
+
 END PROGRAM Felixrefine
 !%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 !%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%

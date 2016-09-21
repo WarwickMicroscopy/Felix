@@ -145,8 +145,9 @@ SUBROUTINE SimulateAndFit(RIndependentVariable,Iiter,IExitFLAG,IErr)
     END IF
   END IF
   
-  !Send the fit index to all cores
+  !=====================================Send the fit index to all cores
   CALL MPI_BCAST(RFigureofMerit,1,MPI_DOUBLE_PRECISION,0,MPI_COMM_WORLD,IErr)
+  !=====================================
   
 END SUBROUTINE SimulateAndFit
 
@@ -295,7 +296,7 @@ SUBROUTINE CalculateFigureofMeritandDetermineThickness(IBestThicknessIndex,IErr)
 !    OPEN(UNIT=IChOutWIImage, ERR=10, STATUS= 'UNKNOWN', FILE=SPrintString,&!
 !	FORM='UNFORMATTED',ACCESS='DIRECT',IOSTAT=IErr,RECL=2*IPixelCount*8)
 !    DO hnd = 1,2*IPixelCount
-!     WRITE(IChOutWIImage,rec=jnd) RExperimentalImage(jnd,:)
+!     WRITE(IChOutWIImage,rec=hnd) RExperimentalImage(hnd,:)
 !    END DO
 !    CLOSE(IChOutWIImage,IOSTAT=IErr)
 !    RSimulatedImage = RImageSimi(:,:,ind,1)    
@@ -303,7 +304,7 @@ SUBROUTINE CalculateFigureofMeritandDetermineThickness(IBestThicknessIndex,IErr)
 !    OPEN(UNIT=IChOutWIImage, ERR=10, STATUS= 'UNKNOWN', FILE=SPrintString,&!
 !	FORM='UNFORMATTED',ACCESS='DIRECT',IOSTAT=IErr,RECL=2*IPixelCount*8)
 !    DO hnd = 1,2*IPixelCount
-!     WRITE(IChOutWIImage,rec=jnd) RSimulatedImage(jnd,:)
+!     WRITE(IChOutWIImage,rec=hnd) RSimulatedImage(hnd,:)
 !    END DO
 !    CLOSE(IChOutWIImage,IOSTAT=IErr)     
 !debug    
@@ -369,7 +370,7 @@ SUBROUTINE CalculateFigureofMeritandDetermineThickness(IBestThicknessIndex,IErr)
 
   !Output to screen-----------------------------------
   IF(my_rank.eq.0) THEN
-    RBestThickness = RInitialThickness +IBestThicknessIndex*RDeltaThickness
+    RBestThickness = RInitialThickness +(IBestThicknessIndex-1)*RDeltaThickness
     RThicknessRange=( MAXVAL(IBestImageThicknessIndex)-MINVAL(IBestImageThicknessIndex) )*RDeltaThickness
     WRITE(SPrintString,FMT='(A16,F8.5)') "Figure of merit ",RBestTotalCorrelation
     PRINT*,TRIM(ADJUSTL(SPrintString))
@@ -379,8 +380,8 @@ SUBROUTINE CalculateFigureofMeritandDetermineThickness(IBestThicknessIndex,IErr)
     PRINT*,TRIM(ADJUSTL(SPrintString))
   END IF
 
-  RETURN
-10 RETURN
+!  RETURN
+!10 RETURN !for debug
   
 END SUBROUTINE CalculateFigureofMeritandDetermineThickness
 
