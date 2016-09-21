@@ -48,6 +48,10 @@ SUBROUTINE WriteIterationOutput(Iter,IThicknessIndex,IExitFlag,IErr)
   
   IF(IExitFLAG.EQ.1.OR.(Iter.GE.(IPreviousPrintedIteration+IPrint))) THEN
     IThickness = (RInitialThickness + (IThicknessIndex-1)*RDeltaThickness)/10!RB in nm 
+    PRINT*,"IThickness ", IThickness
+    PRINT*,"RInitialThickness", RInitialThickness
+    PRINT*,"IThicknessIndex", IThicknessIndex
+    PRINT*,"RDeltaThickness", RDeltaThickness
     WRITE(path,"(A9,I4.4,A1,I3.3,A3,I3.3,A1,I3.3)") &
       "Iteration",Iter,"_",IThickness,"nm_",2*IPixelcount,"x",2*IPixelcount
     CALL system('mkdir ' // path)
