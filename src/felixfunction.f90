@@ -311,7 +311,7 @@ SUBROUTINE CalculateFigureofMeritandDetermineThickness(IThicknessCountFinal,IErr
 
       END SELECT
                 
-      IF((ABS(RIndependentCrossCorrelation).LT.RCrossCorrelationOld).AND.(ISimFLAG.EQ.0)) THEN !Refine Mode (not needed for sim mode)
+      IF(ABS(RIndependentCrossCorrelation).LT.RCrossCorrelationOld) THEN 
         RCrossCorrelationOld = RIndependentCrossCorrelation
         IThicknessByReflection(hnd) = ind
         RReflectionThickness(hnd) = RInitialThickness +&
@@ -320,15 +320,21 @@ SUBROUTINE CalculateFigureofMeritandDetermineThickness(IThicknessCountFinal,IErr
     END DO
     RReflectionCrossCorrelations(hnd) = RCrossCorrelationOld
   END DO
-  !RB assume that the best thickness is given by the mean of individual thicknesses  
-  IThicknessCountFinal = SUM(IThicknessByReflection)/INoOfLacbedPatterns
-  RThickness = RInitialThickness + (IThicknessCountFinal-1)*RDeltaThickness
-  RThicknessRange=( MAXVAL(IThicknessByReflection)-MINVAL(IThicknessByReflection) )*&
-                  RDeltaThickness
 
-  IF (ISimFLAG.EQ.0) THEN !Refine Mode (not needed for sim mode)
+  !RB assume that the best thickness is given by the mean of individual thicknesses  
+  IF (ISimFLAG.EQ.0) THEN !Refine Mode (Output Single Image)
+     IThicknessCountFinal = SUM(IThicknessByReflection)/INoOfLacbedPatterns
+     RThickness = RInitialThickness + (IThicknessCountFinal-1)*RDeltaThickness
+     RThicknessRange=( MAXVAL(IThicknessByReflection)-MINVAL(IThicknessByReflection) )*&
+          RDeltaThickness
      RCrossCorrelation = SUM(RReflectionCrossCorrelations*RWeightingCoefficients)/&
           REAL(INoOfLacbedPatterns,RKIND)
+   
+  ELSE !Sim Mode (Output all thicknesses)
+     IThicknessCountFinal = INoOfLacbedPatterns
+     RThickness = RInitialThickness + (IThicknessCountFinal-1)*RDeltaThickness
+     RThicknessRange=( MAXVAL(IThicknessByReflection)-MINVAL(IThicknessByReflection) )*&
+          RDeltaThickness
   END IF
 
   IF(my_rank.eq.0) THEN
@@ -358,26 +364,37 @@ SUBROUTINE CreateImagesAndWriteOutput(Iiter,IExitFLAG,IErr)
   
   IMPLICIT NONE
   
-  INTEGER(IKIND) :: IErr,IThicknessIndex,Iiter,IExitFLAG
+  INTEGER(IKIND) :: IErr,IThicknessIndex,IThicknessCountFinal,Iiter,IExitFLAG
 
   
-  CALL CalculateFigureofMeritandDetermineThickness(IThicknessIndex,IErr)
+  CALL CalculateFigureofMeritandDetermineThickness(IThicknessCountFinal,IErr)
   IF( IErr.NE.0 ) THEN
      PRINT*,"CreateImagesAndWriteOutput(", my_rank, ") error ", IErr, &
           "Calling function CalculateFigureofMeritandDetermineThickness"
      RETURN
   ENDIF
 
-  
 !!$     OUTPUT -------------------------------------  
-  CALL WriteIterationOutput(Iiter,IThicknessIndex,IExitFLAG,IErr)
-  IF( IErr.NE.0 ) THEN
-     PRINT*,"CreateImagesAndWriteOutput(",my_rank,")error in WriteIterationOutput"
-     RETURN
-  ENDIF
-
+  IF (ISimFLAG.EQ.0) THEN !Refine Mode, Only one Thickness output
+     IThicknessIndex=IThicknessCountFinal
+     CALL WriteIterationOutput(Iiter,IThicknessIndex,IExitFLAG,IErr)
+     IF( IErr.NE.0 ) THEN
+        PRINT*,"CreateImagesAndWriteOutput(",my_rank,")error in WriteIterationOutput"
+        RETURN
+     ENDIF
+          
+  ELSE !Sim mode - All Thicknesses Output, IThicknessCountFinal equals NoofLacbed patterns
+     DO IThicknessIndex = 1,IThicknessCountFinal
+        CALL WriteIterationOutput(Iiter,IThicknessIndex,IExitFLAG,IErr)
+        IF( IErr.NE.0 ) THEN
+           PRINT*,"CreateImagesAndWriteOutput(",my_rank,")error in WriteIterationOutput"
+           RETURN
+        ENDIF
+     END DO
+  END IF
+!!$           ----------------------------------------
 END SUBROUTINE CreateImagesAndWriteOutput
-
+   
 !%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 SUBROUTINE UpdateVariables(RIndependentVariable,IErr)
