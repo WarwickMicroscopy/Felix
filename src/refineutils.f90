@@ -161,7 +161,7 @@ SUBROUTINE ReSortUgs( ISymmetryIntegers,CUgs, N )
               ISymmetryIntegers(L)= Idummy
            I=I-M
            IF(I.GE.1) GOTO 3
-        ENDIF
+        END IF
 11   ENDDO
 12 ENDDO
   
@@ -216,25 +216,57 @@ REAL(RKIND) FUNCTION Normalised2DCrossCorrelation(RImage1,RImage2,IErr)
   REAL(RKIND),DIMENSION(2*IPixelCount,2*IPixelCount) :: RImage1,RImage2
   REAL(RKIND) :: RImage1Mean,RImage2Mean,RImage1StandardDeviation,RImage2StandardDeviation,RPixelTotal,&
                  RImage1Min,RImage2Min,RImage1Max,RImage2Max
-
-  !Added: normalisation so both images have the range 0 to 1, probably unneccesary(?!)
-  RImage1Min=MINVAL(RImage1)
-  RImage1Max=MAXVAL(RImage1)
-  RImage1=(RImage1-RImage1Min)/(RImage1Max-RImage1Min)
-  RImage2Min=MINVAL(RImage2)
-  RImage2Max=MAXVAL(RImage2)
-  RImage2=(RImage2-RImage2Min)/(RImage2Max-RImage2Min)
   
-  !Original code  
   RPixelTotal = REAL(2*IPixelCount*2*IPixelCount,RKIND)  
   RImage1Mean = SUM(RImage1)/RPixelTotal
   RImage2Mean = SUM(RImage2)/RPixelTotal
-  RImage1StandardDeviation = SQRT(SUM(((RImage1-RImage1Mean)**2) / &
-       RPixelTotal))
-  RImage2StandardDeviation = SQRT(SUM(((RImage2-RImage2Mean)**2) / &
-       RPixelTotal))
-    Normalised2DCrossCorrelation=(ONE/RPixelTotal)*SUM( &
+  RImage1StandardDeviation=SQRT(SUM(((RImage1-RImage1Mean)**2)/RPixelTotal))
+  RImage2StandardDeviation=SQRT(SUM(((RImage2-RImage2Mean)**2)/RPixelTotal))
+  Normalised2DCrossCorrelation=(ONE/RPixelTotal)*SUM( &
        ((RImage1-RImage1Mean)*(RImage2-RImage2Mean))/&
        (RImage1StandardDeviation*RImage2StandardDeviation))
 
 END FUNCTION Normalised2DCrossCorrelation
+
+!%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+REAL(RKIND) FUNCTION MaskedCorrelation(RImage1,RImage2,RBinaryMask,IErr)
+
+  USE MyNumbers
+  
+  USE CConst; USE IConst
+  USE IPara; USE RPara
+  USE IChannels
+  USE MPI
+  USE MyMPI
+
+  IMPLICIT NONE
+
+  INTEGER(IKIND) :: IErr
+  REAL(RKIND),DIMENSION(2*IPixelCount,2*IPixelCount) :: RImage1,RImage2,RBinaryMask
+  REAL(RKIND) :: RImage1Mean,RImage2Mean,RImage1StandardDeviation,RImage2StandardDeviation,RPixelTotal,&
+                 RImage1Min,RImage2Min,RImage1Max,RImage2Max
+  CHARACTER*200 :: path,SPrintString
+  
+  IF (SUM(RBinaryMask).GT.ZERO) THEN
+    RPixelTotal = SUM(RBinaryMask)!Mask has value 1 for pixels of interest and zero elsewhere
+    IF (IWriteFLAG.EQ.6) THEN
+      WRITE(SPrintString,FMT='(A5,F7.0,A7)') "Mask ",RPixelTotal," pixels"
+      PRINT*,TRIM(ADJUSTL(SPrintString))
+    END IF
+  ELSE
+    RPixelTotal = REAL(2*IPixelCount*2*IPixelCount,RKIND)
+    IF (IWriteFLAG.EQ.6) THEN
+      PRINT*,"Empty mask"
+    END IF
+  END IF  
+  RImage1=RImage1*RBinaryMask
+  RImage2=RImage2*RBinaryMask
+  RImage1Mean = SUM(RImage1)/RPixelTotal
+  RImage2Mean = SUM(RImage2)/RPixelTotal
+  RImage1StandardDeviation=SQRT(SUM(((RImage1-RImage1Mean)**2)/RPixelTotal))
+  RImage2StandardDeviation=SQRT(SUM(((RImage2-RImage2Mean)**2)/RPixelTotal))
+  MaskedCorrelation=(ONE/RPixelTotal)*SUM( &
+       ((RImage1-RImage1Mean)*(RImage2-RImage2Mean))/&
+       (RImage1StandardDeviation*RImage2StandardDeviation))
+END FUNCTION MaskedCorrelation

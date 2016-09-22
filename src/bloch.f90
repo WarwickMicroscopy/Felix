@@ -96,7 +96,7 @@ SUBROUTINE BlochCoefficientCalculation(IYPixelIndex,IXPixelIndex,IPixelNumber,IF
     !RDevPara(knd)= -( RBigK + DOT_PRODUCT(RgPool(knd,:),RTiltedK(:)) /RBigK) + &
     !  SQRT( ( RBigK**2 + DOT_PRODUCT(RgPool(knd,:),RTiltedK(:)) )**2 /RBigK**2 - &
     !  (RgPoolMag(knd)**2 + TWO*DOT_PRODUCT(RgPool(knd,:),RTiltedK(:))) )
-    IF(IWriteFLAG.EQ.6.AND.knd.EQ.2.AND.IYPixelIndex.EQ.10.AND.IXPixelIndex.EQ.10) THEN
+    IF(IWriteFLAG.EQ.7.AND.knd.EQ.2.AND.IYPixelIndex.EQ.10.AND.IXPixelIndex.EQ.10) THEN
       PRINT*,"RBigK",RBigK
       PRINT*,"Rhkl(knd)",Rhkl(knd,:)
       PRINT*,"RgPool(knd)",RgPool(knd,:)
@@ -112,7 +112,7 @@ SUBROUTINE BlochCoefficientCalculation(IYPixelIndex,IXPixelIndex,IPixelNumber,IF
      PRINT*,"BlochCoefficientCalculation(",my_rank,") error in Determination of Strong and Weak beams"
      RETURN
   END IF
-  IF(IWriteFLAG.EQ.6.AND.my_rank.EQ.0) THEN
+  IF(IWriteFLAG.EQ.7.AND.my_rank.EQ.0) THEN
     PRINT*, nBeams,"strong beams"
 	PRINT*, nWeakBeams,"weak beams"
     PRINT*, nReflections,"nReflections"
@@ -278,7 +278,7 @@ SUBROUTINE BlochCoefficientCalculation(IYPixelIndex,IXPixelIndex,IPixelNumber,IF
   IF( IErr.NE.0 ) THEN
      PRINT*,"BlochCoefficientCalculation(",my_rank,") error in Deallocations"
      RETURN
-  ENDIF
+  END IF
   
 END SUBROUTINE BlochCoefficientCalculation
 
@@ -310,7 +310,7 @@ SUBROUTINE CreateWaveFunctions(RThickness,IErr)
   IF( IErr.NE.0 ) THEN
      PRINT*,"CreateWavefunctions(",my_rank,")error in allocations"
      RETURN
-  ENDIF
+  END IF
   
   !The top surface boundary conditions
   ALLOCATE(CPsi0(nBeams),STAT=IErr) 
@@ -351,7 +351,7 @@ SUBROUTINE CreateWaveFunctions(RThickness,IErr)
   IF( IErr.NE.0 ) THEN
      PRINT*,"CreateWavefunctions(",my_rank,")error deallocating CDummyEigenVectors"
      RETURN
-  ENDIF
+  END IF
   
 END SUBROUTINE CreateWavefunctions
 
@@ -414,7 +414,7 @@ SUBROUTINE StrongAndWeakBeamsDetermination(IErr)
   END DO
   !this is used to give the dimension of the Bloch wave problem
   nBeams=ind-1  
-  IF(IWriteFLAG.EQ.6.AND.my_rank.EQ.0) THEN
+  IF(IWriteFLAG.EQ.7.AND.my_rank.EQ.0) THEN
     PRINT*, "Strong Beam List"
     PRINT*, IStrongBeamList
     PRINT*, "Sg limit for strong beams=",RMaxSg
@@ -426,7 +426,7 @@ SUBROUTINE StrongAndWeakBeamsDetermination(IErr)
     PRINT*,"StrongAndWeakBeamDetermination(", my_rank, ") error ", IErr, &
           " Insufficient reflections to accommodate all Strong and Weak Beams"
     RETURN
-  ENDIF
+  END IF
   
   !----------------------------------------------------------------------------
   !WEAK BEAMS
@@ -440,10 +440,10 @@ SUBROUTINE StrongAndWeakBeamsDetermination(IErr)
 	END WHERE
     RMinPertWeak=0.9*RMinPertWeak
   END DO
-  IF(IWriteFLAG.EQ.6.AND.my_rank.EQ.0) THEN
+  IF(IWriteFLAG.EQ.7.AND.my_rank.EQ.0) THEN
     PRINT*, SUM(IWeak),"weak beams"
     PRINT*, "Smallest perturbation strength=",RMinPertWeak
-  ENDIF
+  END IF
   !give the weak beams a number in IWeakBeamList
   IWeakBeamList=0_IKIND
   ind=1_IKIND
@@ -454,7 +454,7 @@ SUBROUTINE StrongAndWeakBeamsDetermination(IErr)
     END IF
   END DO
   nWeakBeams=ind-1
-  IF(IWriteFLAG.EQ.6.AND.my_rank.EQ.0) THEN
+  IF(IWriteFLAG.EQ.7.AND.my_rank.EQ.0) THEN
     PRINT*, "Weak Beam List"
     PRINT*, IWeakBeamList
 	PRINT*, "Smallest perturbation strength=",RMinPertWeak

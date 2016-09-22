@@ -243,7 +243,7 @@ SUBROUTINE OpenReflectionImage(IChOutWrite, surname, IErr,IReflectWriting,IImage
   CASE(IChOutWFImageReal)        
      IF (IWriteFLAG.GE.10) THEN
         PRINT*, "OpenImage: opening image for WAVE FUNCTION REAL PART (WR*.txt)"
-     ENDIF
+     END IF
      WRITE(filename,*) TRIM(ADJUSTL(surname)),"/Real-",&
      TRIM(ADJUSTL(h)),&
      TRIM(ADJUSTL(k)),&
@@ -253,7 +253,7 @@ SUBROUTINE OpenReflectionImage(IChOutWrite, surname, IErr,IReflectWriting,IImage
   CASE(IChOutWFImagePhase)        
      IF (IWriteFLAG.GE.10) THEN
         PRINT*, "OpenImage: opening image for WAVE FUNCTION PHASE PART (WP*.txt)"
-     ENDIF
+     END IF
      WRITE(filename,*) TRIM(ADJUSTL(surname)),"/Imag-",&
      TRIM(ADJUSTL(h)),&
      TRIM(ADJUSTL(k)),&
@@ -263,7 +263,7 @@ SUBROUTINE OpenReflectionImage(IChOutWrite, surname, IErr,IReflectWriting,IImage
   CASE(IChOutWIImage) 
      IF (IWriteFLAG.GE.10) THEN
         PRINT*, "OpenImage: opening image for INTENSITIES"
-     ENDIF
+     END IF
      WRITE(filename,*) TRIM(ADJUSTL(surname)),"/",&
      TRIM(ADJUSTL(h)),&
      TRIM(ADJUSTL(k)),&
@@ -275,12 +275,12 @@ SUBROUTINE OpenReflectionImage(IChOutWrite, surname, IErr,IReflectWriting,IImage
           TRIM(ADJUSTL(fileext))
      IF (IWriteFLAG.GE.10) THEN
         PRINT*, "OpenImage: opening image for WAVE INTENSITIES"
-     ENDIF
+     END IF
 	 
   CASE DEFAULT
      IF (IWriteFLAG.GE.10) THEN
         PRINT*, "OpenImage: opening UNKNOWN channel ", IChOutWrite
-     ENDIF
+     END IF
 	 
   END SELECT
   

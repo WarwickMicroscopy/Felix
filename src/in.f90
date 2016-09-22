@@ -383,7 +383,7 @@ SUBROUTINE ReadInpFile( IErr )
      IF( IErr.NE.0 ) THEN
         PRINT*,"ReadInpFile(): error in DetermineRefineableAtomicSites()"
         RETURN
-     ENDIF
+     END IF
 
      ILine= ILine+1; READ(IChInp,ERR=20,END=30,FMT='(A)')
      ILine= ILine+1; READ(IChInp,ERR=20,END=30,FMT='(A)')
@@ -518,7 +518,7 @@ SUBROUTINE ReadHklFile(IErr)
   IF( IErr.NE.0 ) THEN
      PRINT*,"ReadHklFile(",my_rank,")error in allocations"
      RETURN
-  ENDIF
+  END IF
   
   !read in the hkls
   REWIND(UNIT=IChInp)
@@ -593,7 +593,7 @@ SUBROUTINE DetermineRefineableAtomicSites(SAtomicSites,IErr)
      IF( IErr.NE.0 ) THEN
         PRINT*,"ReadInpFile(): error in memory ALLOCATE()"
         RETURN
-     ENDIF
+     END IF
      
      PRINT*,SIZE(IAtomicSitesToRefine)
      WRITE(SLengthofNumberString,*) LEN(SAtomicSites((IPos1+1):(IPos2-1))) 
@@ -613,7 +613,7 @@ SUBROUTINE DetermineRefineableAtomicSites(SAtomicSites,IErr)
      IF( IErr.NE.0 ) THEN
         PRINT*,"ReadInpFile(): error in memory ALLOCATE()"
         RETURN
-     ENDIF
+     END IF
      
      IPos1 = SCAN(SAtomicSites,'(')
      DO ind = 1,SIZE(IAtomicSitesToRefine,DIM=1)

@@ -122,7 +122,7 @@ SUBROUTINE SpecificReflectionDetermination (IErr)
            PRINT*,"DiffractionPatternDefinitions(", my_rank, ") error ", IErr, &
                 " No requested HKLs are allowed using the purposed geometry"
            RETURN
-        ENDIF
+        END IF
      END IF
      IF(INoOfLacbedPatterns.NE.IFind) THEN
         INoOfLacbedPatterns = IFind
@@ -235,7 +235,7 @@ SUBROUTINE HKLCount(Ihklmax,Rhkl0Vec,INhkl,RHOLZAcceptanceAngle,IErr)
                  ELSEIF (ABS(DOT_PRODUCT(RhklDummyUnitVec,Rhkl0UnitVec)) &
                       .LE.SIN(RHOLZAcceptanceAngle)) THEN
                     INhkl = INhkl +1       
-                 ENDIF
+                 END IF
               END IF
 			  
            CASE("I")! Body Centred
@@ -247,7 +247,7 @@ SUBROUTINE HKLCount(Ihklmax,Rhkl0Vec,INhkl,RHOLZAcceptanceAngle,IErr)
                  ELSEIF (ABS(DOT_PRODUCT(RhklDummyUnitVec,Rhkl0UnitVec)) &
                       .LE.SIN(RHOLZAcceptanceAngle)) THEN
                     INhkl = INhkl +1       
-                 ENDIF
+                 END IF
               END IF
 			  
            CASE("A")! A-Face Centred
@@ -259,7 +259,7 @@ SUBROUTINE HKLCount(Ihklmax,Rhkl0Vec,INhkl,RHOLZAcceptanceAngle,IErr)
                  ELSEIF (ABS(DOT_PRODUCT(RhklDummyUnitVec,Rhkl0UnitVec)) &
                       .LE.SIN(RHOLZAcceptanceAngle)) THEN
                     INhkl = INhkl +1       
-                 ENDIF
+                 END IF
               END IF
 			  
            CASE("B")! B-Face Centred
@@ -271,7 +271,7 @@ SUBROUTINE HKLCount(Ihklmax,Rhkl0Vec,INhkl,RHOLZAcceptanceAngle,IErr)
                  ELSEIF (ABS(DOT_PRODUCT(RhklDummyUnitVec,Rhkl0UnitVec)) &
                       .LE.SIN(RHOLZAcceptanceAngle)) THEN
                     INhkl = INhkl +1
-                 ENDIF
+                 END IF
               END IF
 			  
            CASE("C")! C-Face Centred
@@ -283,7 +283,7 @@ SUBROUTINE HKLCount(Ihklmax,Rhkl0Vec,INhkl,RHOLZAcceptanceAngle,IErr)
                  ELSEIF (ABS(DOT_PRODUCT(RhklDummyUnitVec,Rhkl0UnitVec)) &
                       .LE.SIN(RHOLZAcceptanceAngle)) THEN
                     INhkl = INhkl +1       
-                 ENDIF
+                 END IF
               END IF
 			  
            CASE("R")! Rhombohedral Reverse
@@ -295,7 +295,7 @@ SUBROUTINE HKLCount(Ihklmax,Rhkl0Vec,INhkl,RHOLZAcceptanceAngle,IErr)
                  ELSEIF (ABS(DOT_PRODUCT(RhklDummyUnitVec,Rhkl0UnitVec)) &
                       .LE.SIN(RHOLZAcceptanceAngle)) THEN
                     INhkl = INhkl +1       
-                 ENDIF
+                 END IF
               END IF
 			  
            CASE("V")! Rhombohedral Obverse
@@ -307,7 +307,7 @@ SUBROUTINE HKLCount(Ihklmax,Rhkl0Vec,INhkl,RHOLZAcceptanceAngle,IErr)
                  ELSEIF (ABS(DOT_PRODUCT(RhklDummyUnitVec,Rhkl0UnitVec)) &
                       .LE.SIN(RHOLZAcceptanceAngle)) THEN
                     INhkl = INhkl +1       
-                 ENDIF
+                 END IF
               END IF
 			  
            CASE("P")! Primitive
@@ -318,7 +318,7 @@ SUBROUTINE HKLCount(Ihklmax,Rhkl0Vec,INhkl,RHOLZAcceptanceAngle,IErr)
               ELSEIF (ABS(DOT_PRODUCT(RhklDummyUnitVec,Rhkl0UnitVec)) &
                    .LE.SIN(RHOLZAcceptanceAngle)) THEN
                  INhkl = INhkl +1       
-              ENDIF
+              END IF
 			  
            CASE DEFAULT
               PRINT*,"HKLMake: unknown space group", SSpaceGroupName, ", aborting"
@@ -551,7 +551,7 @@ SUBROUTINE NewHKLMake(Ihklmax,Rhkl0Vec,RHOLZAcceptanceAngle,IErr)
                  ELSEIF (ABS(DOT_PRODUCT(RhklDummyUnitVec,Rhkl0UnitVec)) &
                       .LE.SIN(RHOLZAcceptanceAngle)) THEN
                     INhkl = INhkl +1       
-                 ENDIF
+                 END IF
               END IF
 			  
            CASE("I")! Body Centred
@@ -563,7 +563,7 @@ SUBROUTINE NewHKLMake(Ihklmax,Rhkl0Vec,RHOLZAcceptanceAngle,IErr)
                  ELSEIF (ABS(DOT_PRODUCT(RhklDummyUnitVec,Rhkl0UnitVec)) &
                       .LE.SIN(RHOLZAcceptanceAngle)) THEN
                     INhkl = INhkl +1       
-                 ENDIF
+                 END IF
               END IF
 			  
            CASE("A")! A-Face Centred
@@ -575,7 +575,7 @@ SUBROUTINE NewHKLMake(Ihklmax,Rhkl0Vec,RHOLZAcceptanceAngle,IErr)
                  ELSEIF (ABS(DOT_PRODUCT(RhklDummyUnitVec,Rhkl0UnitVec)) &
                       .LE.SIN(RHOLZAcceptanceAngle)) THEN
                     INhkl = INhkl +1       
-                 ENDIF
+                 END IF
               END IF
 			  
            CASE("B")! B-Face Centred
@@ -587,7 +587,7 @@ SUBROUTINE NewHKLMake(Ihklmax,Rhkl0Vec,RHOLZAcceptanceAngle,IErr)
                  ELSEIF (ABS(DOT_PRODUCT(RhklDummyUnitVec,Rhkl0UnitVec)) &
                       .LE.SIN(RHOLZAcceptanceAngle)) THEN
                     INhkl = INhkl +1
-                 ENDIF
+                 END IF
               END IF
 			  
            CASE("C")! C-Face Centred
@@ -599,7 +599,7 @@ SUBROUTINE NewHKLMake(Ihklmax,Rhkl0Vec,RHOLZAcceptanceAngle,IErr)
                  ELSEIF (ABS(DOT_PRODUCT(RhklDummyUnitVec,Rhkl0UnitVec)) &
                       .LE.SIN(RHOLZAcceptanceAngle)) THEN
                     INhkl = INhkl +1       
-                 ENDIF
+                 END IF
               END IF
 			  
            CASE("R")! Rhombohedral Reverse
@@ -611,7 +611,7 @@ SUBROUTINE NewHKLMake(Ihklmax,Rhkl0Vec,RHOLZAcceptanceAngle,IErr)
                  ELSEIF (ABS(DOT_PRODUCT(RhklDummyUnitVec,Rhkl0UnitVec)) &
                       .LE.SIN(RHOLZAcceptanceAngle)) THEN
                     INhkl = INhkl +1       
-                 ENDIF
+                 END IF
               END IF
 			  
            CASE("V")! Rhombohedral Obverse
@@ -623,7 +623,7 @@ SUBROUTINE NewHKLMake(Ihklmax,Rhkl0Vec,RHOLZAcceptanceAngle,IErr)
                  ELSEIF (ABS(DOT_PRODUCT(RhklDummyUnitVec,Rhkl0UnitVec)) &
                       .LE.SIN(RHOLZAcceptanceAngle)) THEN
                     INhkl = INhkl +1       
-                 ENDIF
+                 END IF
               END IF
 			  
            CASE("P")! Primitive
@@ -634,7 +634,7 @@ SUBROUTINE NewHKLMake(Ihklmax,Rhkl0Vec,RHOLZAcceptanceAngle,IErr)
               ELSEIF (ABS(DOT_PRODUCT(RhklDummyUnitVec,Rhkl0UnitVec)) &
                    .LE.SIN(RHOLZAcceptanceAngle)) THEN
                  INhkl = INhkl +1       
-              ENDIF
+              END IF
            CASE DEFAULT
               PRINT*,"HKLMake: unknown space group", SSpaceGroupName, ", aborting"
               IErr=1
@@ -650,7 +650,7 @@ SUBROUTINE NewHKLMake(Ihklmax,Rhkl0Vec,RHOLZAcceptanceAngle,IErr)
   IF( IErr.NE.0 ) THEN
      PRINT*,"hklMake(",my_rank,")error allocating Rhkl"
      RETURN
-  ENDIF
+  END IF
 
 !RB ...and calculate it all again, filling Rhkl  
   INhkl = 0

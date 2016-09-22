@@ -83,16 +83,16 @@ SUBROUTINE NDimensionalDownhillSimplex(RSimplexVariable,y,mp,np,ndim,ftol,iter,R
     IF (iter.EQ.1) THEN    
       WRITE(SPrintString,FMT='(A15)') "First iteration"
 	ELSE IF (iter.LT.10) THEN
-      WRITE(SPrintString,FMT='(A10,I1,A22,F7.5)')&
+      WRITE(SPrintString,FMT='(A10,I1,A22,F9.7)')&
 	  "Iteration ",iter,", current best fit is ",y(ilo)
 	ELSE IF (iter.LT.100) THEN
-      WRITE(SPrintString,FMT='(A10,I2,A22,F7.5)')&
+      WRITE(SPrintString,FMT='(A10,I2,A22,F9.7)')&
 	  "Iteration ",iter,", current best fit is ",y(ilo)
 	ELSE IF (iter.LT.1000) THEN
-      WRITE(SPrintString,FMT='(A10,I3,A22,F7.5)')&
+      WRITE(SPrintString,FMT='(A10,I3,A22,F9.7)')&
 	  "Iteration ",iter,", current best fit is ",y(ilo)
 	ELSE
-      WRITE(SPrintString,FMT='(A10,I5,A22,F7.5)')&
+      WRITE(SPrintString,FMT='(A10,I5,A22,F9.7)')&
 	  "Iteration ",iter,", current best fit is ",y(ilo)
 	END IF
     PRINT*,TRIM(ADJUSTL(SPrintString))
@@ -126,14 +126,14 @@ SUBROUTINE NDimensionalDownhillSimplex(RSimplexVariable,y,mp,np,ndim,ftol,iter,R
             CALL MPI_BCAST(RSendPacket,ndim+2,MPI_DOUBLE_PRECISION,0,MPI_COMM_WORLD,IErr)
             CALL SimulateAndFit(psum,iter,0,IErr)
             y(i)=RFigureofMerit
-          ENDIF
+          END IF
         ENDDO
         iter=iter+ndim
         GOTO 1 !go back to see if we are done and the next iteration
-      ENDIF
+      END IF
     ELSE
       iter=iter-1
-    ENDIF
+    END IF
     GOTO 2
   ELSE
     DO!Latch to loop cores other than zero waiting for MPI_BCAST (is it really necessary) 
@@ -192,7 +192,7 @@ REAL(RKIND) FUNCTION SimplexExtrapolate(RSimplexVariable,y,psum,mp,np,ndim,ihi,f
         psum(j)=psum(j)-RSimplexVariable(ihi,j)+ptry(j)
         RSimplexVariable(ihi,j)=ptry(j)
      ENDDO
-  ENDIF
+  END IF
 
   SimplexExtrapolate=Rytry
 

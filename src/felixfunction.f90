@@ -36,7 +36,7 @@
 ! $Id: Felixrefine.f90,v 1.89 2014/04/28 12:26:19 phslaz Exp $
 !%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-SUBROUTINE SimulateAndFit(RIndependentVariable,Iiter,IExitFLAG,IErr)
+SUBROUTINE SimulateAndFit(RIndependentVariable,Iter,IExitFLAG,IErr)
 
   USE MyNumbers
   
@@ -53,7 +53,7 @@ SUBROUTINE SimulateAndFit(RIndependentVariable,Iiter,IExitFLAG,IErr)
   
   INTEGER(IKIND) :: IErr,IExitFLAG,IThicknessIndex,ind,jnd
   REAL(RKIND),DIMENSION(INoOfVariables) :: RIndependentVariable
-  INTEGER(IKIND),INTENT(IN) :: Iiter
+  INTEGER(IKIND),INTENT(IN) :: Iter
   COMPLEX(CKIND),DIMENSION(nReflections,nReflections) :: CUgMatDummy
   
   IF(IWriteFLAG.GE.10.AND.my_rank.EQ.0) THEN
@@ -129,19 +129,19 @@ SUBROUTINE SimulateAndFit(RIndependentVariable,Iiter,IExitFLAG,IErr)
   END IF
 
   IF(my_rank.EQ.0) THEN
-    CALL CalculateFigureofMeritandDetermineThickness(IThicknessIndex,IErr)
+    CALL CalculateFigureofMeritandDetermineThickness(Iter,IThicknessIndex,IErr)
     IF( IErr.NE.0 ) THEN
       PRINT*,"SimulateAndFit(0) error",IErr,"in CalculateFigureofMeritandDetermineThickness"
       RETURN
     END IF
     !write to disk if we have done enough iterations or have finished
-    IF(IExitFLAG.EQ.1.OR.(Iiter.GE.(IPreviousPrintedIteration+IPrint))) THEN
-      CALL WriteIterationOutput(Iiter,IThicknessIndex,IExitFLAG,IErr)
+    IF(IExitFLAG.EQ.1.OR.(Iter.GE.(IPreviousPrintedIteration+IPrint))) THEN
+      CALL WriteIterationOutput(Iter,IThicknessIndex,IExitFLAG,IErr)
       IF( IErr.NE.0 ) THEN
         PRINT*,"SimulateAndFit(0) error in WriteIterationOutput"
         RETURN
-      ENDIF 
-      IPreviousPrintedIteration = Iiter!reset iteration counter
+      END IF 
+      IPreviousPrintedIteration = Iter!reset iteration counter
     END IF
   END IF
   
@@ -211,10 +211,11 @@ SUBROUTINE FelixFunction(IErr)
     END IF
   END DO
  
-  !MPI gatherv into RSimulatedPatterns--------------------------------------------------------------------  
+  !=====================================!MPI gatherv into RSimulatedPatterns--------------------------------------------------------------------  
   CALL MPI_GATHERV(RIndividualReflections,SIZE(RIndividualReflections),MPI_DOUBLE_PRECISION,&
                    RSimulatedPatterns,ICount,IDisplacements,MPI_DOUBLE_PRECISION,&
 				   root,MPI_COMM_WORLD,IErr)
+  !=====================================
   IF( IErr.NE.0 ) THEN
     PRINT*,"Felixfunction(",my_rank,")error",IErr,"in MPI_GATHERV"
     RETURN
@@ -252,7 +253,7 @@ END SUBROUTINE FelixFunction
 !%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 !%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-SUBROUTINE CalculateFigureofMeritandDetermineThickness(IBestThicknessIndex,IErr)
+SUBROUTINE CalculateFigureofMeritandDetermineThickness(Iter,IBestThicknessIndex,IErr)
   !NB core 0 only
   USE MyNumbers
   
@@ -267,12 +268,13 @@ SUBROUTINE CalculateFigureofMeritandDetermineThickness(IBestThicknessIndex,IErr)
 
   IMPLICIT NONE
 
-  INTEGER(IKIND) :: ind,jnd,knd,IErr,IThickness,hnd
+  INTEGER(IKIND) :: ind,jnd,knd,IErr,IThickness,hnd,Iter
   INTEGER(IKIND),DIMENSION(INoOfLacbedPatterns) :: IBestImageThicknessIndex
   INTEGER(IKIND),INTENT(OUT) :: IBestThicknessIndex
-  REAL(RKIND),DIMENSION(2*IPixelCount,2*IPixelCount) :: RSimulatedImage,RExperimentalImage
+  REAL(RKIND),DIMENSION(2*IPixelCount,2*IPixelCount) :: RSimulatedImage,RExperimentalImage,RMaskImage
   REAL(RKIND) :: RTotalCorrelation,RBestTotalCorrelation,RImageCorrelation,RBestThickness,&
-       PhaseCorrelate,Normalised2DCrossCorrelation,ResidualSumofSquares,RThicknessRange,Rradius
+       PhaseCorrelate,Normalised2DCrossCorrelation,MaskedCorrelation,ResidualSumofSquares,&
+       RThicknessRange,Rradius
   REAL(RKIND),DIMENSION(INoOfLacbedPatterns) :: RBestCorrelation
   CHARACTER*200 :: SPrintString
   CHARACTER*20 :: Snum       
@@ -289,27 +291,27 @@ SUBROUTINE CalculateFigureofMeritandDetermineThickness(IBestThicknessIndex,IErr)
     DO ind = 1,INoOfLacbedPatterns
       RSimulatedImage = RImageSimi(:,:,ind,jnd)
       RExperimentalImage = RImageExpi(:,:,ind) 
-    
-!debug
-!    WRITE(Snum,*) ind
+      RMaskImage=RImageMask(:,:,ind)    
+!debug output to file
+    WRITE(Snum,*) ind
 !    WRITE(SPrintString,*) "Expt.",TRIM(ADJUSTL(Snum)),".bin"
-!    OPEN(UNIT=IChOutWIImage, ERR=10, STATUS= 'UNKNOWN', FILE=SPrintString,&!
-!	FORM='UNFORMATTED',ACCESS='DIRECT',IOSTAT=IErr,RECL=2*IPixelCount*8)
+!    OPEN(UNIT=IChOutWIImage, ERR=10, STATUS= 'UNKNOWN', FILE=SPrintString,&
+!      FORM='UNFORMATTED',ACCESS='DIRECT',IOSTAT=IErr,RECL=2*IPixelCount*8)
 !    DO hnd = 1,2*IPixelCount
 !     WRITE(IChOutWIImage,rec=hnd) RExperimentalImage(hnd,:)
 !    END DO
 !    CLOSE(IChOutWIImage,IOSTAT=IErr)
+
 !    RSimulatedImage = RImageSimi(:,:,ind,1)    
 !    WRITE(SPrintString,*) "Sim.",TRIM(ADJUSTL(Snum)),".bin"
-!    OPEN(UNIT=IChOutWIImage, ERR=10, STATUS= 'UNKNOWN', FILE=SPrintString,&!
-!	FORM='UNFORMATTED',ACCESS='DIRECT',IOSTAT=IErr,RECL=2*IPixelCount*8)
+!    PRINT*,TRIM(ADJUSTL(SPrintString))
+!    OPEN(UNIT=IChOutWIImage, ERR=10, STATUS= 'UNKNOWN', FILE=SPrintString,&
+!      FORM='UNFORMATTED',ACCESS='DIRECT',IOSTAT=IErr,RECL=2*IPixelCount*8)
 !    DO hnd = 1,2*IPixelCount
 !     WRITE(IChOutWIImage,rec=hnd) RSimulatedImage(hnd,:)
 !    END DO
 !    CLOSE(IChOutWIImage,IOSTAT=IErr)     
 !debug    
-
-
       !image processing----------------------------------- 
       SELECT CASE (IImageProcessingFLAG)
       !CASE(0)!no processing
@@ -342,6 +344,18 @@ SUBROUTINE CalculateFigureofMeritandDetermineThickness(IBestThicknessIndex,IErr)
  		RImageCorrelation = ONE-& ! NB Perfect Correlation = 0 not 1
            Normalised2DCrossCorrelation(RSimulatedImage,RExperimentalImage,IErr)
         !PRINT*,"pattern",ind,"thickness",jnd,": FoM=",RImageCorrelation
+      CASE(3) ! Masked Cross Correlation
+        IF (Iter.LE.0) THEN!we are in baseline sim or simplex initialisation: do a normalised2D CC
+ 		  RImageCorrelation = ONE-&
+           Normalised2DCrossCorrelation(RSimulatedImage,RExperimentalImage,IErr)   
+        ELSE!we are refining: do a masked CC
+ 		  RImageCorrelation = ONE-& ! NB Perfect Correlation = 0 not 1
+           MaskedCorrelation(RSimulatedImage,RExperimentalImage,RMaskImage,IErr)
+        END IF
+        IF (IWriteFLAG.EQ.6) THEN
+          WRITE(SPrintString,FMT='(A8,I2,A12,I2,A6,F7.5)') "Pattern ",ind,", thickness ",jnd,": FoM=",RImageCorrelation
+          PRINT*,TRIM(ADJUSTL(SPrintString))
+        END IF
       END SELECT
       
       !Update best image correlation values if we need to     
@@ -372,7 +386,7 @@ SUBROUTINE CalculateFigureofMeritandDetermineThickness(IBestThicknessIndex,IErr)
   IF(my_rank.eq.0) THEN
     RBestThickness = RInitialThickness +(IBestThicknessIndex-1)*RDeltaThickness
     RThicknessRange=( MAXVAL(IBestImageThicknessIndex)-MINVAL(IBestImageThicknessIndex) )*RDeltaThickness
-    WRITE(SPrintString,FMT='(A16,F8.5)') "Figure of merit ",RBestTotalCorrelation
+    WRITE(SPrintString,FMT='(A16,F9.7)') "Figure of merit ",RBestTotalCorrelation
     PRINT*,TRIM(ADJUSTL(SPrintString))
     WRITE(SPrintString,FMT='(A19,I4,A10)') "Specimen thickness ",NINT(RBestThickness)," Angstroms"
     PRINT*,TRIM(ADJUSTL(SPrintString))
@@ -380,14 +394,14 @@ SUBROUTINE CalculateFigureofMeritandDetermineThickness(IBestThicknessIndex,IErr)
     PRINT*,TRIM(ADJUSTL(SPrintString))
   END IF
 
-!  RETURN
-!10 RETURN !for debug
+  RETURN
+10 RETURN !for debug
   
 END SUBROUTINE CalculateFigureofMeritandDetermineThickness
 
 !%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-SUBROUTINE CreateImagesAndWriteOutput(Iiter,IExitFLAG,IErr)
+SUBROUTINE CreateImagesAndWriteOutput(Iter,IExitFLAG,IErr)
 !This is redundant, a subroutine that just calls 2 other subroutines...
 !NB core 0 only
   USE MyNumbers
@@ -403,25 +417,25 @@ SUBROUTINE CreateImagesAndWriteOutput(Iiter,IExitFLAG,IErr)
   
   IMPLICIT NONE
   
-  INTEGER(IKIND) :: IErr,IThicknessIndex,Iiter,IExitFLAG
+  INTEGER(IKIND) :: IErr,IThicknessIndex,Iter,IExitFLAG
 
   CALL CalculateFigureofMeritandDetermineThickness(IThicknessIndex,IErr)
   IF( IErr.NE.0 ) THEN
      PRINT*,"CreateImagesAndWriteOutput(", my_rank, ") error ", IErr, &
           "Calling function CalculateFigureofMeritandDetermineThickness"
      RETURN
-  ENDIF
+  END IF
   
 !!$     OUTPUT ------------------------------------- 
   !write to disc if we have done enough iterations or have finished
-  IF(IExitFLAG.EQ.1.OR.(Iiter.GE.(IPreviousPrintedIteration+IPrint))) THEN
-    CALL WriteIterationOutput(Iiter,IThicknessIndex,IExitFLAG,IErr)
+  IF(IExitFLAG.EQ.1.OR.(Iter.GE.(IPreviousPrintedIteration+IPrint))) THEN
+    CALL WriteIterationOutput(Iter,IThicknessIndex,IExitFLAG,IErr)
     IF( IErr.NE.0 ) THEN
       PRINT*,"CreateImagesAndWriteOutput(",my_rank,")error in WriteIterationOutput"
       RETURN
-    ENDIF 
-    IPreviousPrintedIteration = Iiter!reset iteration counter
-  ENDIF
+    END IF 
+    IPreviousPrintedIteration = Iter!reset iteration counter
+  END IF
 
 END SUBROUTINE CreateImagesAndWriteOutput
 

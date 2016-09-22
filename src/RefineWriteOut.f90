@@ -99,24 +99,24 @@ SUBROUTINE WriteIterationOutput(Iter,IThicknessIndex,IExitFlag,IErr)
     IF( IErr.NE.0 ) THEN
       PRINT*,"WriteIterationOutput(0) error writing image",ind
       RETURN
-    ENDIF
+    END IF
   END DO
 
   CALL WriteIterationStructure(path,IErr) 
   IF( IErr.NE.0 ) THEN
     PRINT*,"WriteIterationOutput(0) error in WriteIterationStructure"
     RETURN
-  ENDIF
+  END IF
   CALL WriteStructureFactors(path,IErr)
   IF( IErr.NE.0 ) THEN
     PRINT*,"WriteIterationOutput(0) error in WriteStructureFactors()"
     RETURN
-  ENDIF
+  END IF
   CALL WriteOutVariables(Iter,IErr)
   IF( IErr.NE.0 ) THEN
     PRINT*,"WriteIterationOutput(0) error in WriteOutVariables()"
     RETURN
-  ENDIF
+  END IF
 
   RETURN  
   ! error in OPEN detected
@@ -152,7 +152,7 @@ SUBROUTINE WriteIterationImages(path,IThicknessIndex,IErr)
      IF( IErr.NE.0 ) THEN
         PRINT*,"WriteIterationImages(",my_rank,") error in OpenReflectionImage()"
         RETURN
-     ENDIF
+     END IF
 
      RImageToWrite = ZERO
      DO jnd = 1,IPixelTotal
@@ -166,13 +166,13 @@ SUBROUTINE WriteIterationImages(path,IThicknessIndex,IErr)
      IF( IErr.NE.0 ) THEN
         PRINT*,"WriteIterationImages(", my_rank, ") error in WriteReflectionImage()"
         RETURN
-     ENDIF
+     END IF
      
      CLOSE(IChOutWIImage,IOSTAT=IErr)       
      IF( IErr.NE.0 ) THEN
         PRINT*,"WriteIterationImages(", my_rank, ") error Closing Reflection Image()"
         RETURN
-     ENDIF
+     END IF
      
   END DO
 

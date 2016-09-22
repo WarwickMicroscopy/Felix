@@ -291,7 +291,7 @@ MODULE RPara
   ! Simulated Images as images (width,height, no.of patterns, no of thicknesses)
   REAL(RKIND),DIMENSION(:,:,:,:),ALLOCATABLE :: RImageSimi
   ! Average simulated Images (width,height, no.of patterns, no of thicknesses)
-  REAL(RKIND),DIMENSION(:,:,:,:),ALLOCATABLE :: RImageAvi
+  REAL(RKIND),DIMENSION(:,:,:,:),ALLOCATABLE :: RImageAvi,RImageBase
   ! Image masks (width,height, no.of patterns)
   REAL(RKIND),DIMENSION(:,:,:),ALLOCATABLE :: RImageMask
   !Iterative Variable Value

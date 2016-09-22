@@ -124,19 +124,19 @@ PROGRAM Felixrefine
   IF( IErr.NE.0 ) THEN
     PRINT*,"felixrefine(",my_rank,")error reading felix.inp"
     GOTO 9999
-  ENDIF
+  END IF
   !felix.cif
   CALL ReadCif(IErr)!branch in here depending on ISoftwareMode, needs to be taken out
   IF( IErr.NE.0 ) THEN
     PRINT*,"felixrefine(",my_rank,")error reading felix.cif"
     GOTO 9999
-  ENDIF
+  END IF
   !felix.hkl
   CALL ReadHklFile(IErr)!the list of hkl's to input/output
   IF( IErr.NE.0 ) THEN
     PRINT*,"felixrefine(",my_rank,")error reading felix.hkl"
     GOTO 9999
-  ENDIF
+  END IF
 
   !experimental images
   ALLOCATE(RImageExpi(2*IPixelCount,2*IPixelCount,INoOfLacbedPatterns),STAT=IErr)  
@@ -156,19 +156,19 @@ PROGRAM Felixrefine
   IF( IErr.NE.0 ) THEN
     PRINT*,"felixrefine(",my_rank,") error in ScatteringFactors"
     GOTO 9999
-  ENDIF
+  END IF
   !Geometry
   CALL MicroscopySettings(IErr)
   IF( IErr.NE.0 ) THEN
     PRINT*,"felixrefine(",my_rank,") error in MicroscopySettings"
     GOTO 9999
-  ENDIF  
+  END IF  
   !Reciprocal lattice
   CALL ReciprocalLattice(IErr)
   IF( IErr.NE.0 ) THEN
      PRINT*,"felixrefine(",my_rank,")error in ReciprocalLattice"
      GOTO 9999
-  ENDIF
+  END IF
 
   !Total possible atoms/unit cell
   IMaxPossibleNAtomsUnitCell=SIZE(RBasisAtomPosition,1)*SIZE(RSymVec,1)
@@ -188,12 +188,12 @@ PROGRAM Felixrefine
   IF( IErr.NE.0 ) THEN
      PRINT*,"felixrefine(",my_rank,")error in atom position allocations"
      GOTO 9999
-  ENDIF
+  END IF
   CALL UniqueAtomPositions(IErr)
   IF( IErr.NE.0 ) THEN
      PRINT*,"felixrefine(",my_rank,")error in UniqueAtomPositions"
      GOTO 9999
-  ENDIF
+  END IF
   !Perhaps should now re-allocate RAtomPosition,SAtomName,RIsoDW,ROccupancy,IAtomicNumber,RAnisoDW to match INAtomsUnitCell???
 
 ! set up reflection pool
@@ -523,7 +523,7 @@ PROGRAM Felixrefine
     IF( IErr.NE.0 ) THEN
       PRINT*,"felixrefine(",my_rank,")error allocating IIterativeVariableUniqueIDs"
       GOTO 9999
-    ENDIF
+    END IF
     IIterativeVariableUniqueIDs = 0
     ICalls = 0
     DO ind = 2,IRefinementVariableTypes !Loop over iterative variables apart from Ug's
@@ -553,8 +553,11 @@ PROGRAM Felixrefine
   ALLOCATE(RSimulatedPatterns(INoOfLacbedPatterns,IThicknessCount,IPixelTotal),STAT=IErr)
   !Images to match RImageExpi (NB there are other variables called RImageSim, be careful!)
   ALLOCATE(RImageSimi(2*IPixelCount,2*IPixelCount,INoOfLacbedPatterns,IThicknessCount),STAT=IErr)
+  !Baseline Images to calculate mask
+  ALLOCATE(RImageBase(2*IPixelCount,2*IPixelCount,INoOfLacbedPatterns,IThicknessCount),STAT=IErr)
   !Average Images to calculate mask
   ALLOCATE(RImageAvi(2*IPixelCount,2*IPixelCount,INoOfLacbedPatterns,IThicknessCount),STAT=IErr)
+  RImageAvi=ZERO
   !Mask Images
   ALLOCATE(RImageMask(2*IPixelCount,2*IPixelCount,INoOfLacbedPatterns),STAT=IErr)
   IF( IErr.NE.0 ) THEN
@@ -607,13 +610,14 @@ PROGRAM Felixrefine
   END IF
   !--------------------------------------------------------------------
   !baseline simulation
-  RFigureofMerit=666.666!Inital value,diabolically
+  RFigureofMerit=666.666!Inital large value,diabolically
   Iter = 0
   CALL FelixFunction(IErr) ! Simulate !! 
   IF( IErr.NE.0 ) THEN
      PRINT*,"felixrefine(",my_rank,")error",IErr,"in FelixFunction"
      GOTO 9999
   END IF
+
   !--------------------------------------------------------------------
   !timing
   CALL SYSTEM_CLOCK(ICurrentTime)
@@ -632,21 +636,21 @@ PROGRAM Felixrefine
   IPreviousPrintedIteration = 0!RB ensuring baseline simulation is printed
   IF(my_rank.EQ.0) THEN
     !Figure of merit is passed back as a global variable
-    CALL CalculateFigureofMeritandDetermineThickness(IThicknessIndex,IErr)
+    CALL CalculateFigureofMeritandDetermineThickness(Iter,IThicknessIndex,IErr)
     CALL WriteIterationOutput(Iter,IThicknessIndex,IExitFLAG,IErr)
     IF( IErr.NE.0 ) THEN
       PRINT*,"felixrefine(0) error",IErr,"in CalculateFigureofMeritandDetermineThickness"
       GOTO 9999
     END IF
+    !Save baseline simulation
+    RImageBase=RImageSimi  
+    RImageAvi=RImageSimi  
   END IF
   !=====================================!Send the fit index to all cores
   CALL MPI_BCAST(RFigureofMerit,1,MPI_DOUBLE_PRECISION,0,MPI_COMM_WORLD,IErr)
   !=====================================
 
   !--------------------------------------------------------------------
-  !Add baseline to average
-  RImageAvi=RImageSimi  
-  
   IF (IRefineMode(12).EQ.1) THEN
     !bisection on Ug's
 	RdeltaUg=0.01!RSimplexLengthScale/100.0!use simplex length scale
@@ -715,40 +719,49 @@ PROGRAM Felixrefine
         PRINT*,TRIM(ADJUSTL(SPrintString))
         PRINT*,"--------------------------------"
       END IF
-      CALL SimulateAndFit(RSimplexVariable(ind,:),1,0,IErr)
+      CALL SimulateAndFit(RSimplexVariable(ind,:),Iter,0,IErr)!Working as iteration 0
       IF( IErr.NE.0 ) THEN
         PRINT*,"SimplexInitialisation(",my_rank,") error in SimulateAndFit"
         GOTO 9999
-      ENDIF
+      END IF
       RSimplexFoM(ind)=RFigureofMerit!RFigureofMerit is returned as a global variable
-      !Add to average
-      RImageAvi=RImageAvi+RImageSimi 
+      !Add to 'average' (extreme difference from baseline)
+      IF(my_rank.EQ.0) THEN
+        WHERE (ABS(RImageSimi-RImageBase).GT.ABS(RImageAvi-RImageBase))!replace pixels that are the most different from baseline
+          RImageAvi=RImageSimi
+        END WHERE
+      END IF
     END DO
-    !Renormalise average
-    RImageAvi=RImageAvi/(INoOfVariables+2)!+2 because there is the baseline and the simplex simulations
-    !Simple start, just take thickness 1 and the last simplex simulation to make the mask
-    !ideally would work out which pixels have the highest SD during simplex setup
-    RImageMask=ABS(RImageAvi(:,:,:,1)-RImageSimi(:,:,:,1))
-    WHERE (RImageMask.GT.0.01)!1% threshold to start with
-      RImageMask=ONE
-    ELSEWHERE
-      RImageMask=ZERO
-    END WHERE
-    
-    !temporary output to have a look
-    ALLOCATE(RTestImage(2*IPixelCount,2*IPixelCount),STAT=IErr)
-    DO ind = 1,INoOfLacbedPatterns
-      RTestImage=RImageMask(:,:,ind)
-      WRITE(Sind,*) ind
-      WRITE(SPrintString,*) "Mask.",TRIM(ADJUSTL(Sind)),".bin"
-      OPEN(UNIT=IChOutWIImage, ERR=10, STATUS= 'UNKNOWN', FILE=SPrintString,&!
-      FORM='UNFORMATTED',ACCESS='DIRECT',IOSTAT=IErr,RECL=2*IPixelCount*8)
-      DO jnd = 1,2*IPixelCount
-        WRITE(IChOutWIImage,rec=jnd) RTestImage(jnd,:)
+
+    IF(my_rank.EQ.0) THEN
+      !Simple start, just take thickness 1 
+      RImageMask=RImageAvi(:,:,:,1)-RImageBase(:,:,:,1)
+      DO ind = 1,INoOfLacbedPatterns!mask each pattern individually
+        !***top 90% threshold (to start with, may change or become user defined?)
+        WHERE (ABS(RImageMask(:,:,ind)).GT.0.1*MAXVAL(ABS(RImageMask(:,:,ind))))
+          RImageMask(:,:,ind)=ONE
+        ELSEWHERE
+          RImageMask(:,:,ind)=ZERO
+        END WHERE
       END DO
-      CLOSE(IChOutWIImage,IOSTAT=IErr)
-    END DO
-    DEALLOCATE(RTestImage)
+    
+      !flagged output to have a look at the masks
+      IF (IWriteFLAG.EQ.6) THEN
+        ALLOCATE(RTestImage(2*IPixelCount,2*IPixelCount),STAT=IErr)
+        DO ind = 1,INoOfLacbedPatterns
+          RTestImage=RImageMask(:,:,ind)
+          WRITE(Sind,*) ind
+          WRITE(SPrintString,*) "Mask.",TRIM(ADJUSTL(Sind)),".bin"
+          OPEN(UNIT=IChOutWIImage, ERR=10, STATUS= 'UNKNOWN', FILE=SPrintString,&!
+          FORM='UNFORMATTED',ACCESS='DIRECT',IOSTAT=IErr,RECL=2*IPixelCount*8)
+          DO jnd = 1,2*IPixelCount
+            WRITE(IChOutWIImage,rec=jnd) RTestImage(jnd,:)
+          END DO
+          CLOSE(IChOutWIImage,IOSTAT=IErr)
+        END DO
+        DEALLOCATE(RTestImage)
+      END IF
+    END IF
  
     !--------------------------------------------------------------------    
     ! Apply Simplex Method and iterate
@@ -759,7 +772,7 @@ PROGRAM Felixrefine
     IF( IErr.NE.0 ) THEN
       PRINT*,"felixrefine(",my_rank,")error in NDimensionalDownhillSimplex"
       GOTO 9999
-    ENDIF
+    END IF
   END IF
   
   !--------------------------------------------------------------------
@@ -824,7 +837,7 @@ PROGRAM Felixrefine
   IF( IErr.NE.0 ) THEN
      PRINT*,"Felixrefine(", my_rank, ") error ", IErr, " in MPI_Finalize()"
      STOP
-  ENDIF
+  END IF
   
   ! clean shutdown
   STOP
@@ -920,7 +933,7 @@ SUBROUTINE mnbrak(RIndependentVariable,Rax,Rbx,Rcx,Rfa,Rfb,Rfc,ind,IErr)
         RIndependentVariable(ind)=Ru
         CALL SimulateAndFit(RIndependentVariable,Iiter,IExitFLAG,IErr)
 		Rfu=RFigureofMerit
-      ENDIF
+      END IF
     ELSE IF((Ru-Rulim)*(Rulim-Rcx).GE.0) THEN
       Ru=Rulim
       RIndependentVariable(ind)=Ru
@@ -1057,7 +1070,7 @@ SUBROUTINE BRENT(Rbrent,RIndependentVariable,Rax,Rbx,Rcx,Rtol,RbestFit,ind,IErr)
         Ra=Rx 
       ELSE 
         Rb=Rx 
-      ENDIF 
+      END IF 
       Rv=Rw 
       Rfv=Rfw 
       Rw=Rx 
@@ -1669,20 +1682,20 @@ SUBROUTINE SetupAtomicVectorMovements(IErr)
   IF( IErr.NE.0 ) THEN
      PRINT*,"SetupAtomicVectorMovements(",my_rank,")error in ConvertSpaceGroupToNumber"
      RETURN
-  ENDIF
+  END IF
 
   ALLOCATE(IVectors(SIZE(SWyckoffSymbols)),STAT=IErr)
   IF( IErr.NE.0 ) THEN
      PRINT*,"felixrefine (", my_rank, ") error in Allocation() of IVectors"
      RETURN
-  ENDIF
+  END IF
   
   DO ind = 1,SIZE(SWyckoffSymbols)!NB SIZE(SWyckoffSymbols)=IAtomicSitesToRefine?
      CALL CountAllowedMovements(ISpaceGrp,SWyckoffSymbols(ind),IVectors(ind),IErr)
      IF( IErr.NE.0 ) THEN
         PRINT*,"SetupAtomicVectorMovements(",my_rank,")error in CountAllowedMovements "
         RETURN
-     ENDIF    
+     END IF    
   END DO
   
   IAllowedVectors = SUM(IVectors)
@@ -1693,7 +1706,7 @@ SUBROUTINE SetupAtomicVectorMovements(IErr)
   IF( IErr.NE.0 ) THEN
      PRINT*,"SetupAtomicVectorMovements(",my_rank,")error in allocation"
      RETURN
-  ENDIF
+  END IF
   
   knd = 0
   DO ind = 1,SIZE(SWyckoffSymbols)
@@ -1711,13 +1724,13 @@ SUBROUTINE SetupAtomicVectorMovements(IErr)
     IF( IErr.NE.0 ) THEN
       PRINT*,"SetupAtomicVectorMovements(",my_rank,")error in DetermineAllowedMovements"
       RETURN
-    ENDIF
+    END IF
   END DO
   
   ALLOCATE(RInitialAtomPosition(SIZE(RBasisAtomPosition,1),ITHREE),STAT=IErr)
   IF( IErr.NE.0 ) THEN
     PRINT*,"SetupAtomicVectorMovements(",my_rank,")error ALLOCATE RInitialAtomPosition "
     RETURN
-  ENDIF
+  END IF
   RInitialAtomPosition = RBasisAtomPosition
 END SUBROUTINE SetupAtomicVectorMovements
