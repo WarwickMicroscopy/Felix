@@ -66,7 +66,7 @@ PROGRAM Felixrefine
        RMaxLaueZoneValue,RMaxAcceptanceGVecMag,RLaueZoneElectronWaveVectorMag
   REAL(RKIND) :: RdeltaUg,Rtol,RpointA,RpointB,RpointC,RfitA,RfitB,RfitC,RbestFit
   CHARACTER*40 :: my_rank_string
-  CHARACTER*20 :: Sind
+  CHARACTER*20 :: Snd,h,k,l
   CHARACTER*200 :: SPrintString
 
   !-------------------------------------------------------------------
@@ -327,7 +327,7 @@ PROGRAM Felixrefine
   DO ind=1,INhkl
      RgPoolMag(ind)= SQRT(DOT_PRODUCT(RgPool(ind,:),RgPool(ind,:)))
   END DO
-  IF(IWriteFLAG.EQ.6.AND.my_rank.EQ.0) THEN
+  IF(IWriteFLAG.EQ.7.AND.my_rank.EQ.0) THEN
     DO ind =1,INhkl
 	 WRITE(SPrintString,FMT='(I4,A4,3(I4,1X),A12,F7.4,A4)') ind,": g=",NINT(Rhkl(ind,:)),", magnitude ",RgPoolMag(ind)," 1/A"
      PRINT*,TRIM(ADJUSTL(SPrintString))
@@ -343,7 +343,7 @@ PROGRAM Felixrefine
   DO ind =1,INhkl
     RgDotNorm(ind) = DOT_PRODUCT(RgPool(ind,:),RNormDirM)
   END DO
-!  IF(IWriteFLAG.EQ.6.AND.my_rank.EQ.0) THEN
+!  IF(IWriteFLAG.EQ.7.AND.my_rank.EQ.0) THEN
 !    DO ind =1,INhkl
 !	 WRITE(SPrintString,FMT='(I4,A4,3(I4,1X),A7,E8.1,A4)') ind,": g=",NINT(Rhkl(ind,:)),", g.n= ",RgDotNorm(ind)," 1/A"
 !     PRINT*,TRIM(ADJUSTL(SPrintString))
@@ -746,12 +746,14 @@ PROGRAM Felixrefine
       END DO
     
       !flagged output to have a look at the masks
-      IF (IWriteFLAG.EQ.6) THEN
+      IF (IWriteFLAG.EQ.5) THEN
         ALLOCATE(RTestImage(2*IPixelCount,2*IPixelCount),STAT=IErr)
         DO ind = 1,INoOfLacbedPatterns
           RTestImage=RImageMask(:,:,ind)
-          WRITE(Sind,*) ind
-          WRITE(SPrintString,*) "Mask.",TRIM(ADJUSTL(Sind)),".bin"
+          WRITE(h,*)  NINT(Rhkl(IOutPutReflections(ind),1))
+          WRITE(k,*)  NINT(Rhkl(IOutPutReflections(ind),2))
+          WRITE(l,*)  NINT(Rhkl(IOutPutReflections(ind),3))
+          WRITE(SPrintString,*) TRIM(ADJUSTL(h)),TRIM(ADJUSTL(k)),TRIM(ADJUSTL(l)),".mask"
           OPEN(UNIT=IChOutWIImage, ERR=10, STATUS= 'UNKNOWN', FILE=SPrintString,&!
           FORM='UNFORMATTED',ACCESS='DIRECT',IOSTAT=IErr,RECL=2*IPixelCount*8)
           DO jnd = 1,2*IPixelCount
@@ -773,6 +775,13 @@ PROGRAM Felixrefine
       PRINT*,"felixrefine(",my_rank,")error in NDimensionalDownhillSimplex"
       GOTO 9999
     END IF
+  END IF
+
+  !--------------------------------------------------------------------    
+  !Final output  
+  IF(my_rank.EQ.0) THEN
+    IWriteFLAG=6
+    CALL CalculateFigureofMeritandDetermineThickness(Iter,IThicknessIndex,IErr)
   END IF
   
   !--------------------------------------------------------------------

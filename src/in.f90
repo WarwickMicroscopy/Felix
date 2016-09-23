@@ -508,7 +508,7 @@ SUBROUTINE ReadHklFile(IErr)
     ILine=ILine+1
   ENDDO
   100 INoOfLacbedPatterns=ILine
-  IF (IWriteFLAG.EQ.6.AND.my_rank.EQ.0) THEN
+  IF (IWriteFLAG.EQ.7.AND.my_rank.EQ.0) THEN
     WRITE(SPrintString,FMT='(I3,A28)') INoOfLacbedPatterns," experimental images to load"
     PRINT*,TRIM(ADJUSTL(SPrintString))
   END IF
@@ -669,7 +669,7 @@ SUBROUTINE ReadExperimentalImages(IErr)
     WRITE(k,'(I3.1)')  NINT(RInputHKLs(ind,2))
     WRITE(l,'(I3.1)')  NINT(RInputHKLs(ind,3))
     WRITE(filename,*) TRIM(ADJUSTL(h)),TRIM(ADJUSTL(k)),TRIM(ADJUSTL(l)),".img"
-	IF (IWriteFLAG.EQ.6.AND.my_rank.EQ.0) THEN
+	IF (IWriteFLAG.EQ.7.AND.my_rank.EQ.0) THEN
 	  PRINT*,filename
 	END IF
     !WRITE(filename,"(A6,I3.3,A4)") "felix.",ind,".img"  !old version with format felix.000.img

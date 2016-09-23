@@ -110,7 +110,7 @@ SUBROUTINE NDimensionalDownhillSimplex(RSimplexVariable,y,mp,np,ndim,ftol,iter,R
     ELSEIF (Rytry.GE.y(inhi)) THEN !the reflected point is worse than the second-highest, so look for an intermediate lower point 
       ysave=y(ihi)
       Rytry=SimplexExtrapolate(RSimplexVariable,y,psum,mp,np,ndim,ihi,0.5D0,iter,IErr)
-      PRINT*,"Interpolating:"
+      PRINT*,"Interpolation:"
       IF(Rytry.GE.ysave) THEN !can't get rid of the highest point, contract about the best point
         PRINT*,"-----------------------------------------------------"
         PRINT*,"Entering Contraction Phase, Expect",ndim+1,"Simulations"
