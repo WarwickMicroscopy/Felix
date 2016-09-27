@@ -47,14 +47,23 @@ SUBROUTINE WriteIterationOutput(Iter,IThicknessIndex,IExitFlag,IErr)
   
   
   IF(IExitFLAG.EQ.1.OR.(Iter.GE.(IPreviousPrintedIteration+IPrint))) THEN
-    IThickness = (RInitialThickness + (IThicknessIndex-1)*RDeltaThickness)/10!RB in nm 
-    PRINT*,"IThickness ", IThickness
-    PRINT*,"RInitialThickness", RInitialThickness
-    PRINT*,"IThicknessIndex", IThicknessIndex
-    PRINT*,"RDeltaThickness", RDeltaThickness
-    WRITE(path,"(A9,I4.4,A1,I3.3,A3,I3.3,A1,I3.3)") &
-      "Iteration",Iter,"_",IThickness,"nm_",2*IPixelcount,"x",2*IPixelcount
-    CALL system('mkdir ' // path)
+     IThickness = (RInitialThickness + (IThicknessIndex-1)*RDeltaThickness)/10!RB in nm 
+     PRINT*,"IThickness ", IThickness
+     PRINT*,"RInitialThickness", RInitialThickness
+     PRINT*,"IThicknessIndex", IThicknessIndex
+     PRINT*,"RDeltaThickness", RDeltaThickness
+     
+     IF (ISimFLAG.EQ.0) THEN !felixrefine output
+        WRITE(path,"(A9,I4.4,A1,I3.3,A3,I3.3,A1,I3.3)") &
+             "Iteration",Iter,"_",IThickness,"nm_",2*IPixelcount,"x",2*IPixelcount
+        CALL system('mkdir ' // path)
+       
+     ELSE !Sim Output
+        WRITE(path,"(A11,I3.3,A3,I3.3,A1,I3.3)") &
+            "Simulation_",IThickness,"nm_",2*IPixelcount,"x",2*IPixelcount
+        CALL system('mkdir ' // path)
+      
+     END IF
 
     IF (IExitFLAG.EQ.0) THEN
       IF (IPreviousPrintedIteration.LT.0) THEN
@@ -76,12 +85,14 @@ SUBROUTINE WriteIterationOutput(Iter,IThicknessIndex,IExitFlag,IErr)
       !put appropriate RSimulatedPatterns into vector RImageToWrite
       !remember dimensions of RSimulatedPatterns(INoOfLacbedPatterns,IThicknessCount,IPixelTotal)
       RImageToWrite = RSimulatedPatterns(ind,IThicknessIndex,:)
-	  
+	  PRINT*,"num of Lacbed Patterns ", ind , "Thickness ", IThicknessIndex 
 	  !Apply blur again, temp fix until all subroutines combined into one
       IF (IImageProcessingFLAG.EQ.4) THEN
          CALL BlurG(RImageToWrite,IErr)
       END IF
 	  
+      PRINT*,"Rhkl",Rhkl(ind,1)
+      PRINT*, "IHKLSelectFLAG", IHKLSelectFLAG
 	  !make the path/filename
       IF(IHKLSelectFLAG.EQ.0) THEN!hkl's with order determined by felix
         WRITE(h,*)  NINT(Rhkl(ind,1))
@@ -92,8 +103,12 @@ SUBROUTINE WriteIterationOutput(Iter,IThicknessIndex,IExitFlag,IErr)
         WRITE(k,*)  NINT(Rhkl(IOutPutReflections(ind),2))
         WRITE(l,*)  NINT(Rhkl(IOutPutReflections(ind),3))
       END IF
+     
       WRITE(filename,*) "/",TRIM(ADJUSTL(h)),TRIM(ADJUSTL(k)),TRIM(ADJUSTL(l)),".bin"
       WRITE(filename,*) TRIM(ADJUSTL(path)),TRIM(ADJUSTL(filename))  
+       IF (ind.EQ.1) THEN 
+         PRINT*,"FILENAME   ", filename
+      END IF
       !write the data	
       OPEN(UNIT=IChOutWIImage, ERR=10, STATUS= 'UNKNOWN', FILE=filename,FORM='UNFORMATTED',&
          ACCESS='DIRECT',IOSTAT=IErr,RECL=2*IPixelcount*2*IPixelcount*IBytesize)	

@@ -385,6 +385,7 @@ SUBROUTINE CreateImagesAndWriteOutput(Iiter,IExitFLAG,IErr)
           
   ELSE !Sim mode - All Thicknesses Output, IThicknessCountFinal equals NoofLacbed patterns
      DO IThicknessIndex = 1,IThicknessCountFinal
+        PRINT*, "IThicknessIndex Loop", IThicknessIndex
         CALL WriteIterationOutput(Iiter,IThicknessIndex,IExitFLAG,IErr)
         IF( IErr.NE.0 ) THEN
            PRINT*,"CreateImagesAndWriteOutput(",my_rank,")error in WriteIterationOutput"
