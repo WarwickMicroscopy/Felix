@@ -43,7 +43,7 @@ SUBROUTINE WriteIterationOutput(Iter,IThicknessIndex,IExitFlag,IErr)
   INTEGER(IKIND) :: IErr,Iter,IThickness,ind,jnd
   INTEGER(IKIND),INTENT(IN) :: IThicknessIndex,IExitFLAG
   REAL(RKIND),DIMENSION(2*IPixelCount*2*IPixelCount) :: RImageToWrite
-  CHARACTER*200 :: path,h,k,l,SPrintString,filename
+  CHARACTER*200 :: path,h,k,l,SPrintString,filename,hklname
   
   
   IF(IExitFLAG.EQ.1.OR.(Iter.GE.(IPreviousPrintedIteration+IPrint))) THEN
@@ -59,10 +59,12 @@ SUBROUTINE WriteIterationOutput(Iter,IThicknessIndex,IExitFlag,IErr)
         CALL system('mkdir ' // path)
        
      ELSE !Sim Output
-        WRITE(path,"(A11,I3.3,A3,I3.3,A1,I3.3)") &
-            "Simulation_",IThickness,"nm_",2*IPixelcount,"x",2*IPixelcount
-        CALL system('mkdir ' // path)
-      
+        DO ind=1,INoOfLacbedPatterns
+           WRITE(path,"(A11,I3.3,A3,I3.3,A1,I3.3)") &
+                "Simulation_",IThickness,"nm_",2*IPixelcount,"x",2*IPixelcount
+           CALL system('mkdir ' // path)
+        END DO
+
      END IF
 
     IF (IExitFLAG.EQ.0) THEN
@@ -104,9 +106,12 @@ SUBROUTINE WriteIterationOutput(Iter,IThicknessIndex,IExitFlag,IErr)
         WRITE(l,*)  NINT(Rhkl(IOutPutReflections(ind),3))
       END IF
      
-      WRITE(filename,*) "/",TRIM(ADJUSTL(h)),TRIM(ADJUSTL(k)),TRIM(ADJUSTL(l)),".bin"
-      WRITE(filename,*) TRIM(ADJUSTL(path)),TRIM(ADJUSTL(filename))  
-       IF (ind.EQ.1) THEN 
+      WRITE(hklname,*) "_",TRIM(ADJUSTL(h)),TRIM(ADJUSTL(k)),TRIM(ADJUSTL(l)),".bin"
+      IF (ind.EQ.10) THEN 
+         PRINT*,"FILENAME  1: ", hklname
+      END IF
+      WRITE(filename,*) TRIM(ADJUSTL(path)),TRIM(ADJUSTL(hklname))  
+       IF (ind.EQ.10) THEN 
          PRINT*,"FILENAME   ", filename
       END IF
       !write the data	
