@@ -48,10 +48,6 @@ SUBROUTINE WriteIterationOutput(Iter,IThicknessIndex,IExitFlag,IErr)
   
   IF(IExitFLAG.EQ.1.OR.(Iter.GE.(IPreviousPrintedIteration+IPrint))) THEN
      IThickness = (RInitialThickness + (IThicknessIndex-1)*RDeltaThickness)/10!RB in nm 
-     PRINT*,"IThickness ", IThickness
-     PRINT*,"RInitialThickness", RInitialThickness
-     PRINT*,"IThicknessIndex", IThicknessIndex
-     PRINT*,"RDeltaThickness", RDeltaThickness
      
      IF (ISimFLAG.EQ.0) THEN !felixrefine output
         WRITE(path,"(A9,I4.4,A1,I3.3,A3,I3.3,A1,I3.3)") &
@@ -59,43 +55,42 @@ SUBROUTINE WriteIterationOutput(Iter,IThicknessIndex,IExitFlag,IErr)
         CALL system('mkdir ' // path)
        
      ELSE !Sim Output
-        DO ind=1,INoOfLacbedPatterns
-           WRITE(path,"(A11,I3.3,A3,I3.3,A1,I3.3)") &
-                "Simulation_",IThickness,"nm_",2*IPixelcount,"x",2*IPixelcount
+           WRITE(path,"(A4,I3.3,A3,I3.3,A1,I3.3)") &
+                "Sim_",IThickness,"nm_",2*IPixelcount,"x",2*IPixelcount
            CALL system('mkdir ' // path)
-        END DO
 
      END IF
 
-    IF (IExitFLAG.EQ.0) THEN
-      IF (IPreviousPrintedIteration.LT.0) THEN
-        WRITE(SPrintString,FMT='(A35)') "Writing output; baseline simulation"
-	  ELSE
-        WRITE(SPrintString,FMT='(A16,I4,A35)') "Writing output; ",&
-	    Iter-IPreviousPrintedIteration," iterations since the previous save"
-	  END IF
-    ELSE
-      WRITE(SPrintString,FMT='(A28,I4,A35)') "Exiting and writing output; ",&
-	  Iter-IPreviousPrintedIteration," iterations since the previous save" 
-	END IF
-    PRINT*,TRIM(ADJUSTL(SPrintString))
+     IF (IExitFLAG.EQ.0) THEN
+        IF (IPreviousPrintedIteration.LT.0) THEN
+           WRITE(SPrintString,FMT='(A35)') "Writing output; baseline simulation"
+        ELSE
+           WRITE(SPrintString,FMT='(A16,I4,A35)') "Writing output; ",&
+                Iter-IPreviousPrintedIteration," iterations since the previous save"
+        END IF
+     ELSE IF (ISimFLAG.EQ.0) THEN !refine output
+        WRITE(SPrintString,FMT='(A28,I4,A35)') "Exiting and writing output; ",&
+           Iter-IPreviousPrintedIteration," iterations since the previous save"
+     ELSE IF (IThicknessIndex.EQ.1) THEN
+        WRITE(SPrintString,FMT='(A28)') "Exiting and writing output; "
+     END IF
 
-    IPreviousPrintedIteration = Iter
+     PRINT*,TRIM(ADJUSTL(SPrintString))
+
+     IPreviousPrintedIteration = Iter
 
     !Output
     DO ind = 1,INoOfLacbedPatterns
       !put appropriate RSimulatedPatterns into vector RImageToWrite
       !remember dimensions of RSimulatedPatterns(INoOfLacbedPatterns,IThicknessCount,IPixelTotal)
       RImageToWrite = RSimulatedPatterns(ind,IThicknessIndex,:)
-	  PRINT*,"num of Lacbed Patterns ", ind , "Thickness ", IThicknessIndex 
-	  !Apply blur again, temp fix until all subroutines combined into one
+
+      !Apply blur again, temp fix until all subroutines combined into one
       IF (IImageProcessingFLAG.EQ.4) THEN
          CALL BlurG(RImageToWrite,IErr)
       END IF
-	  
-      PRINT*,"Rhkl",Rhkl(ind,1)
-      PRINT*, "IHKLSelectFLAG", IHKLSelectFLAG
-	  !make the path/filename
+
+      !make the path/filename
       IF(IHKLSelectFLAG.EQ.0) THEN!hkl's with order determined by felix
         WRITE(h,*)  NINT(Rhkl(ind,1))
         WRITE(k,*)  NINT(Rhkl(ind,2))
@@ -106,26 +101,20 @@ SUBROUTINE WriteIterationOutput(Iter,IThicknessIndex,IExitFlag,IErr)
         WRITE(l,*)  NINT(Rhkl(IOutPutReflections(ind),3))
       END IF
      
-      WRITE(hklname,*) "_",TRIM(ADJUSTL(h)),TRIM(ADJUSTL(k)),TRIM(ADJUSTL(l)),".bin"
-      IF (ind.EQ.10) THEN 
-         PRINT*,"FILENAME  1: ", hklname
-      END IF
-      WRITE(filename,*) TRIM(ADJUSTL(path)),TRIM(ADJUSTL(hklname))  
-       IF (ind.EQ.10) THEN 
-         PRINT*,"FILENAME   ", filename
-      END IF
+      WRITE(hklname,*) "/",TRIM(ADJUSTL(h)),TRIM(ADJUSTL(k)),TRIM(ADJUSTL(l)),".bin"
+
       !write the data	
-      OPEN(UNIT=IChOutWIImage, ERR=10, STATUS= 'UNKNOWN', FILE=filename,FORM='UNFORMATTED',&
-         ACCESS='DIRECT',IOSTAT=IErr,RECL=2*IPixelcount*2*IPixelcount*IBytesize)	
+      OPEN(UNIT=IChOutWIImage, ERR=10, STATUS= 'UNKNOWN', FILE=TRIM(ADJUSTL(path))//TRIM(ADJUSTL(hklname)),FORM='UNFORMATTED',&
+           ACCESS='DIRECT',IOSTAT=IErr,RECL=2*IPixelcount*2*IPixelcount*IBytesize)
       WRITE(IChOutWIImage,REC=1) RImageToWrite	 
       CLOSE(IChOutWIImage,IOSTAT=IErr) 
       IF( IErr.NE.0 ) THEN
-        PRINT*,"WriteIterationImages(", my_rank, ") error Closing Reflection Image()"
-        RETURN
+         PRINT*,"WriteIterationImages(", my_rank, ") error Closing Reflection Image()"
+         RETURN
       ENDIF
-    END DO	
-
-     CALL WriteIterationStructure(path,IErr) 
+   END DO
+   
+   CALL WriteIterationStructure(path,IErr) 
      IF( IErr.NE.0 ) THEN
         PRINT*,"WriteIterationOutput(",my_rank,")error in WriteIterationStructure"
         RETURN
