@@ -72,11 +72,12 @@ SUBROUTINE WriteIterationOutput(Iter,IThicknessIndex,IExitFlag,IErr)
         WRITE(SPrintString,FMT='(A28,I4,A35)') "Exiting and writing output; ",&
            Iter-IPreviousPrintedIteration," iterations since the previous save"
      ELSE IF (IThicknessIndex.EQ.1) THEN
-        WRITE(SPrintString,FMT='(A28)') "Exiting and writing output; "
+        PRINT*, "Exiting and writing output; " !only needs to be printed once in sim mode
      END IF
 
-     PRINT*,TRIM(ADJUSTL(SPrintString))
-
+     IF (ISimFLAG.EQ.0) THEN !refine mode
+        PRINT*,TRIM(ADJUSTL(SPrintString)) !No loop over function in refine mode
+     END IF
      IPreviousPrintedIteration = Iter
 
     !Output
