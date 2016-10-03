@@ -331,7 +331,7 @@ SUBROUTINE CalculateFigureofMeritandDetermineThickness(IThicknessCountFinal,IErr
           REAL(INoOfLacbedPatterns,RKIND)
    
   ELSE !Sim Mode (Output all thicknesses)
-     IThicknessCountFinal = INoOfLacbedPatterns
+     IThicknessCountFinal = IThicknessCount
      RThickness = RInitialThickness + (IThicknessCountFinal-1)*RDeltaThickness
      RThicknessRange=( MAXVAL(IThicknessByReflection)-MINVAL(IThicknessByReflection) )*&
           RDeltaThickness
@@ -382,8 +382,9 @@ SUBROUTINE CreateImagesAndWriteOutput(Iiter,IExitFLAG,IErr)
         PRINT*,"CreateImagesAndWriteOutput(",my_rank,")error in WriteIterationOutput"
         RETURN
      ENDIF
-          
+     
   ELSE !Sim mode - All Thicknesses Output, IThicknessCountFinal equals NoofLacbed patterns
+     PRINT*, "IThicknessCountFinal  ", IThicknessCountFinal
      DO IThicknessIndex = 1,IThicknessCountFinal
         CALL WriteIterationOutput(Iiter,IThicknessIndex,IExitFLAG,IErr)
         IF( IErr.NE.0 ) THEN
