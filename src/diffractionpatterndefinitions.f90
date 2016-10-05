@@ -110,7 +110,7 @@ SUBROUTINE SpecificReflectionDetermination (IErr)
                    (jnd.EQ.SIZE(Rhkl,DIM=1).AND.IWriteFLAG.GE.10)) THEN
             PRINT*,"DiffractionPatternDefinitions(",my_rank,&
                       ") Could Not Find Requested HKL ",&
-                      RInputHKLs(ind,:)," Will Ignore and Continue"
+                      NINT(RInputHKLs(ind,:))," Will Ignore and Continue"
           END IF
           CYCLE
         END IF

@@ -39,9 +39,9 @@
 !--------------------------------------------------------------------
 MODULE CConst
 
-  CHARACTER*30, PARAMETER :: RStr= "Version :tinis3:, Build :1:"
-  CHARACTER*30, PARAMETER :: DStr= "Date :18 August 2016:"
-  CHARACTER*30, PARAMETER :: AStr= "Status :in test:, Author :Richard:"
+  CHARACTER*30, PARAMETER :: RStr= "Version :RB_input:, Build :1:"
+  CHARACTER*30, PARAMETER :: DStr= "Date :5 October 2016:"
+  CHARACTER*40, PARAMETER :: AStr= "Status :in test:, Author :Richard+Alex:"
   CHARACTER*8 CSpaceGrp(230)
   DATA CSpaceGrp/"P1","P-1","P2","P21","C2","Pm","Pc","Cm",&
        "Cc","P2/m","P21/m","C2/m","P2/c","P21/c","C2/c", &
@@ -144,8 +144,7 @@ MODULE IPara
   INTEGER(IKIND) :: IWriteFLAG,IDebugFLAG,IScatterFactorMethodFLAG, &
        IMaskFLAG, IVolumeFLAG, &
        IHolzFLAG,IAbsorbFLAG, IAnisoDebyeWallerFactorFlag, &
-       IImageFLAG,IBeamConvergenceFLAG,  &
-       IDevFLAG, &
+       IImageFLAG,IBeamConvergenceFLAG,IDevFLAG, &
        IRefineModeFLAG,ISoftwareMode,IHKLSelectFLAG,IPrint,IRefineSwitch,&
        IWeightingFLAG,IContinueFLAG,ICorrelationFLAG,IImageProcessingFLAG,&
        IByteSize

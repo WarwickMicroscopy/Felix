@@ -215,6 +215,11 @@ PROGRAM Felixrefine
   ! N.B. Rhkl are in integer form [h,k,l] but are REAL to allow dot products etc.
   ALLOCATE(Rhkl(INhkl,ITHREE),STAT=IErr)
   CALL HKLMake(IHKLMAXValue,RZDirC,RHOLZAcceptanceAngle,IErr)
+  IF (my_rank.EQ.0.AND.IWriteFLAG.EQ.7) THEN
+    DO ind=1,INhkl
+     PRINT*,ind,":",NINT(Rhkl(ind,:))
+    END DO
+  END IF    
   
   ! sort them in descending order of magnitude
   ! may result in an error when the reflection pool does not reach the highest hkl of the experimental data? 

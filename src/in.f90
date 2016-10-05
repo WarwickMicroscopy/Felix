@@ -263,13 +263,11 @@ SUBROUTINE ReadInpFile( IErr )
 
   ! ----------------------------------------------------------------------
   ! Title Space
-
   ILine= ILine+1; READ(IChInp,ERR=20,END=30,FMT='(A)')
   ILine= ILine+1; READ(IChInp,ERR=20,END=30,FMT='(A)')
 
   ! ----------------------------------------------------------------------
   ! Image Output Options
-
   ILine= ILine+1
   READ(IChInp,15,ERR=20,END=30) RInitialThickness
   CALL Message ("ReadInpFile",IInfo,IErr,MessageVariable ="RInitialThickness",RVariable=RInitialThickness)
@@ -641,16 +639,14 @@ SUBROUTINE ReadExperimentalImages(IErr)
 
   IMPLICIT NONE
 
-  INTEGER(IKIND) :: ind,jnd,IErr,IBytes
+  INTEGER(IKIND) :: ind,jnd,IErr
   INTEGER(IKIND) :: INegError = 0
   CHARACTER*34 :: filename
   CHARACTER*200 :: SPrintString
   CHARACTER*10 :: h,k,l
 
-  IBytes=8
 
-
-  !for IBytes: 2bytes=64-bit input file (NB tinis specifies in bytes, not bits)
+  !for IByteSize: 2bytes=64-bit input file (NB tinis specifies in bytes, not bits)
   !NB when this subroutine is working get rid of the pointless variable RImageIn
   ALLOCATE(RImageIn(2*IPixelCount,2*IPixelCount), STAT=IErr)
   IF( IErr.NE.0 ) THEN
@@ -669,7 +665,7 @@ SUBROUTINE ReadExperimentalImages(IErr)
      END IF
      !WRITE(filename,"(A6,I3.3,A4)") "felix.",ind,".img"  !old version with format felix.000.img
      OPEN(UNIT= IChInImage, ERR= 10, STATUS= 'UNKNOWN', FILE=TRIM(ADJUSTL(filename)),FORM='UNFORMATTED',&
-          ACCESS='DIRECT',IOSTAT=Ierr,RECL=2*IPixelCount*IBytes)
+          ACCESS='DIRECT',IOSTAT=Ierr,RECL=2*IPixelCount*IByteSize)
      DO jnd=1,2*IPixelCount
         READ(IChInImage,rec=jnd,ERR=10) RImageIn(jnd,:)
      END DO
