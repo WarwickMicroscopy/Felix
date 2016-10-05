@@ -145,58 +145,66 @@ SUBROUTINE ReadInpFile( IErr )
   ILine= ILine+1
   READ(IChInp,10,ERR=20,END=30) IScatterFactorMethodFLAG
   CALL Message ("ReadInpFile",IInfo,IErr,MessageVariable ="IScatterFactorMethodFLAG",IVariable=IScatterFactorMethodFLAG)
-
+  IF(my_rank.EQ.0.AND.IWriteFLAG.EQ.7) PRINT*,"IScatterFactorMethodFLAG=",IScatterFactorMethodFLAG
+  
   ILine= ILine+1
   READ(IChInp,10,ERR=20,END=30) IMaskFLAG
   CALL Message ("ReadInpFile",IInfo,IErr,MessageVariable ="IMaskFLAG",IVariable=IMaskFLAG)
-
+  IF(my_rank.EQ.0.AND.IWriteFLAG.EQ.7) PRINT*,"IMaskFLAG=",IMaskFLAG
+  
   ILine= ILine+1
   READ(IChInp,10,ERR=20,END=30) IHolzFLAG
   CALL Message ("ReadInpFile",IInfo,IErr,MessageVariable ="IHolzFLAG",IVariable=IHolzFLAG)
-
+  IF(my_rank.EQ.0.AND.IWriteFLAG.EQ.7) PRINT*,"IHolzFLAG=",IHolzFLAG
+  
   ILine= ILine+1
   READ(IChInp,10,ERR=20,END=30) IAbsorbFLAG
   CALL Message ("ReadInpFile",IInfo,IErr,MessageVariable ="IAbsorbFLAG",IVariable=IAbsorbFLAG)
+  IF(my_rank.EQ.0.AND.IWriteFLAG.EQ.7) PRINT*,"IAbsorbFLAG=",IAbsorbFLAG
 
   ILine= ILine+1
   READ(IChInp,10,ERR=20,END=30) IAnisoDebyeWallerFactorFlag
   CALL Message ("ReadInpFile",IInfo,IErr,MessageVariable ="IAnisoDebyeWallerFactorFlag",IVariable=IAnisoDebyeWallerFactorFlag)
+  IF(my_rank.EQ.0.AND.IWriteFLAG.EQ.7) PRINT*,"IAnisoDebyeWallerFactorFlag=",IAnisoDebyeWallerFactorFlag
 
   ILine= ILine+1
   READ(IChInp,10,ERR=20,END=30) IByteSize
   CALL Message ("ReadInpFile",IInfo,IErr,MessageVariable ="IByteSize",IVariable=IByteSize)
+  IF(my_rank.EQ.0.AND.IWriteFLAG.EQ.7) PRINT*,"IByteSize=",IByteSize
+
   ! ----------------------------------------------------------------------
   ! beam details
-
   ILine= ILine+1; READ(IChInp,ERR=20,END=30,FMT='(A)')
   ILine= ILine+1; READ(IChInp,ERR=20,END=30,FMT='(A)')
 
   ILine= ILine+1
   READ(IChInp,10,ERR=20,END=30) IPixelCount
   CALL Message ("ReadInpFile",IInfo,IErr,MessageVariable ="IPixelCount",IVariable=IPixelCount)
+  IF(my_rank.EQ.0.AND.IWriteFLAG.EQ.7) PRINT*,"IPixelCount=",IPixelCount
 
 
   ! ----------------------------------------------------------------------
   ! beam selection criteria
-
   ILine= ILine+1; READ(IChInp,ERR=20,END=30,FMT='(A)')
   ILine= ILine+1; READ(IChInp,ERR=20,END=30,FMT='(A)')
 
   ILine= ILine+1
   READ(IChInp,10,ERR=20,END=30) IMinReflectionPool
   CALL Message ("ReadInpFile",IInfo,IErr,MessageVariable ="IMinReflectionPool",IVariable=IMinReflectionPool)
+  IF(my_rank.EQ.0.AND.IWriteFLAG.EQ.7) PRINT*,"IMinReflectionPool=",IMinReflectionPool
 
   ILine= ILine+1
   READ(IChInp,10,ERR=20,END=30) IMinStrongBeams
   CALL Message ("ReadInpFile",IInfo,IErr,MessageVariable ="IMinStrongBeams",IVariable=IMinStrongBeams)
+  IF(my_rank.EQ.0.AND.IWriteFLAG.EQ.7) PRINT*,"IMinStrongBeams=",IMinStrongBeams
 
   ILine= ILine+1
   READ(IChInp,10,ERR=20,END=30) IMinWeakBeams
   CALL Message ("ReadInpFile",IInfo,IErr,MessageVariable ="IMinWeakBeams",IVariable=IMinWeakBeams)
+  IF(my_rank.EQ.0.AND.IWriteFLAG.EQ.7) PRINT*,"IMinWeakBeams=",IMinWeakBeams
 
   ! ----------------------------------------------------------------------
   ! crystal settings
-
   ILine= ILine+1; READ(IChInp,ERR=20,END=30,FMT='(A)')
   ILine= ILine+1; READ(IChInp,ERR=20,END=30,FMT='(A)')
   ILine= ILine+1
@@ -265,18 +273,22 @@ SUBROUTINE ReadInpFile( IErr )
   ILine= ILine+1
   READ(IChInp,15,ERR=20,END=30) RInitialThickness
   CALL Message ("ReadInpFile",IInfo,IErr,MessageVariable ="RInitialThickness",RVariable=RInitialThickness)
+  IF(my_rank.EQ.0.AND.IWriteFLAG.EQ.7) PRINT*,"RInitialThickness=",RInitialThickness
 
   ILine= ILine+1
   READ(IChInp,15,ERR=20,END=30) RFinalThickness
   CALL Message ("ReadInpFile",IInfo,IErr,MessageVariable ="RFinalThickness",RVariable=RFinalThickness)
+  IF(my_rank.EQ.0.AND.IWriteFLAG.EQ.7) PRINT*,"RFinalThickness=",RFinalThickness
 
   ILine= ILine+1
   READ(IChInp,15,ERR=20,END=30) RDeltaThickness
   CALL Message ("ReadInpFile",IInfo,IErr,MessageVariable ="RDeltaThickness",RVariable=RDeltaThickness)
+  IF(my_rank.EQ.0.AND.IWriteFLAG.EQ.7) PRINT*,"RDeltaThickness=",RDeltaThickness
 
   ILine= ILine+1
   READ(IChInp,10,ERR=20,END=30) INoOfLacbedPatterns
   CALL Message ("ReadInpFile",IInfo,IErr,MessageVariable ="INoOfLacbedPatterns",IVariable=INoOfLacbedPatterns)
+  IF(my_rank.EQ.0.AND.IWriteFLAG.EQ.7) PRINT*,"INoOfLacbedPatterns=",INoOfLacbedPatterns
 
   !-----------------------------------------------------------------------
   ! felixrefine Input
@@ -397,26 +409,32 @@ SUBROUTINE ReadInpFile( IErr )
      PRINT*,""
      CALL WriteOutInputFile (IErr)
   END IF
-
+  IErr=1
+  RETURN
+  
   !	error in CLOSE detected
 130 IF(my_rank.EQ.0) THEN
      PRINT*,"Input(): ERR in CLOSE"
   END IF
-
+  IErr=1
+  RETURN
+  
   !	error in READ detected
 20 IF(my_rank.EQ.0) THEN
-     PRINT*,"Input(): ERR in READ at line", ILine
+     PRINT*,"Input(): ERRor in READ at line", ILine
      CALL WriteOutInputFile (IErr)
   END IF
-
+  IErr=1
+  RETURN
+  
   !	EOF in READ occured prematurely
 30 IF(my_rank.EQ.0) THEN
      PRINT*,"Input(): EOF in READ at line", ILine
      CALL WriteOutInputFile (IErr)
   END IF
-  IErr= 1
+  IErr=1
   RETURN
-  !changed name from input to readinputparameters  
+
 END SUBROUTINE ReadInpFile
 
 ! -----------------------------------------------------------------------
