@@ -166,7 +166,7 @@ SUBROUTINE WriteOutput( CAmplitudeandPhaseImages,RReflectionImages,RMontageImage
         WRITE(path,"(A2,I1.1,I1.1,I1.1,I1.1,A2,I5.5,A2,I5.5,A2,I5.5)") &
              "f-",&
              IScatterFactorMethodFLAG, &
-             IZolzFLAG, &
+             IHolzFLAG, &
              IAbsorbFLAG, &
              IAnisoDebyeWallerFactorFlag,&
              "-T",IThickness,&

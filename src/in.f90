@@ -81,7 +81,6 @@ SUBROUTINE ReadInpFile( IErr )
 
   ILine= ILine+1; READ(IChInp,ERR=20,END=30,FMT='(A)') 
   ILine= ILine+1; READ(IChInp,ERR=20,END=30,FMT='(A)')
-  ILine= ILine+1; READ(IChInp,ERR=20,END=30,FMT='(A)')
 
   ! ----------------------------------------------------------------------
   ! control flags
@@ -152,8 +151,8 @@ SUBROUTINE ReadInpFile( IErr )
   CALL Message ("ReadInpFile",IInfo,IErr,MessageVariable ="IMaskFLAG",IVariable=IMaskFLAG)
 
   ILine= ILine+1
-  READ(IChInp,10,ERR=20,END=30) IZolzFLAG
-  CALL Message ("ReadInpFile",IInfo,IErr,MessageVariable ="IZolzFLAG",IVariable=IZolzFLAG)
+  READ(IChInp,10,ERR=20,END=30) IHolzFLAG
+  CALL Message ("ReadInpFile",IInfo,IErr,MessageVariable ="IHolzFLAG",IVariable=IHolzFLAG)
 
   ILine= ILine+1
   READ(IChInp,10,ERR=20,END=30) IAbsorbFLAG
@@ -164,14 +163,8 @@ SUBROUTINE ReadInpFile( IErr )
   CALL Message ("ReadInpFile",IInfo,IErr,MessageVariable ="IAnisoDebyeWallerFactorFlag",IVariable=IAnisoDebyeWallerFactorFlag)
 
   ILine= ILine+1
-  READ(IChInp,10,ERR=20,END=30) IPseudoCubicFLAG
-  CALL Message ("ReadInpFile",IInfo,IErr,MessageVariable ="IPseudoCubicFLAG",IVariable=IPseudoCubicFLAG)
-
-  ILine= ILine+1
-  READ(IChInp,10,ERR=20,END=30) IXDirectionFLAG
-  CALL Message ("ReadInpFile",IInfo,IErr,MessageVariable ="IXDirectionFLAG",IVariable=IXDirectionFLAG)
-
-
+  READ(IChInp,10,ERR=20,END=30) IByteSize
+  CALL Message ("ReadInpFile",IInfo,IErr,MessageVariable ="IByteSize",IVariable=IByteSize)
   ! ----------------------------------------------------------------------
   ! beam details
   
@@ -201,14 +194,6 @@ SUBROUTINE ReadInpFile( IErr )
   READ(IChInp,10,ERR=20,END=30) IMinWeakBeams
   CALL Message ("ReadInpFile",IInfo,IErr,MessageVariable ="IMinWeakBeams",IVariable=IMinWeakBeams)
 
-  ILine= ILine+1
-  READ(IChInp,15,ERR=20,END=30) RBSBMax
-  CALL Message ("ReadInpFile",IInfo,IErr,MessageVariable ="RBSBMax",RVariable=RBSBMax)
-
-  ILine= ILine+1
-  READ(IChInp,15,ERR=20,END=30) RBSPMax
-  CALL Message ("ReadInpFile",IInfo,IErr,MessageVariable ="RBSPMax",RVariable=RBSPMax)
-
   ! ----------------------------------------------------------------------
   ! crystal settings
   
@@ -235,9 +220,6 @@ SUBROUTINE ReadInpFile( IErr )
   READ(IChInp,15,ERR=20,END=30) RConvergenceAngle
   CALL Message ("ReadInpFile",IInfo,IErr,MessageVariable ="ROuterConvergenceAngle",RVariable=RConvergenceAngle)
 
-  ILine= ILine+1
-  READ(IChInp,15,ERR=20,END=30) RInnerConvergenceAngle
-  CALL Message ("ReadInpFile",IInfo,IErr,MessageVariable ="RInnerConvergenceAngle",RVariable=RInnerConvergenceAngle)
 
   ! RZDirC,RXDirC,RNormDirC vectors are reciprocal lattice vectors that define the beam direction, x-axis of the
   ! diffraction pattern and the surface normal respectively
@@ -254,6 +236,7 @@ SUBROUTINE ReadInpFile( IErr )
        MessageString=ADJUSTL(TRIM(SDirectionX)))
   CALL ThreeDimVectorReadIn(SDirectionX,'[',']',RXDirC)
   CALL Message ("ReadInpFile",IInfo+IDebug,IErr,MessageVariable ="RXDirC",RVector=RXDirC)
+  
 
   ILine= ILine+1
   READ(IChInp,FMT='(27X,A)',ERR=20,END=30) SNormalDirectionX
@@ -273,7 +256,6 @@ SUBROUTINE ReadInpFile( IErr )
   ! ----------------------------------------------------------------------
   ! Title Space
   
-  ILine= ILine+1; READ(IChInp,ERR=20,END=30,FMT='(A)')
   ILine= ILine+1; READ(IChInp,ERR=20,END=30,FMT='(A)')
   ILine= ILine+1; READ(IChInp,ERR=20,END=30,FMT='(A)')
 
@@ -296,24 +278,25 @@ SUBROUTINE ReadInpFile( IErr )
   READ(IChInp,10,ERR=20,END=30) INoOfLacbedPatterns
   CALL Message ("ReadInpFile",IInfo,IErr,MessageVariable ="INoOfLacbedPatterns",IVariable=INoOfLacbedPatterns)
 
-
+  !-----------------------------------------------------------------------
+  ! felixrefine Input
+  ! Needs Removal
   IF(ISoftwareMode.EQ.2) THEN
-
-     !-----------------------------------------------------------------------
-     ! felixrefine Input
-     ILine= ILine+1; READ(IChInp,ERR=20,END=30,FMT='(A)')
-     ILine= ILine+1; READ(IChInp,ERR=20,END=30,FMT='(A)')
-     ILine= ILine+1; READ(IChInp,ERR=20,END=30,FMT='(A)')
-     
+    
      !-----------------------------------------------------------------------
      ! Refinement Specific Flags
      ILine= ILine+1; READ(IChInp,ERR=20,END=30,FMT='(A)')  
+     ILine= ILine+1; READ(IChInp,ERR=20,END=30,FMT='(A)')
      ILine= ILine+1
-
      READ(IChInp,FMT='(A)',ERR=20,END=30) SRefineMode
+
+     !Simulation Mode for input of "S"
+     IF(SCAN(TRIM(ADJUSTL(SRefineMode)),TRIM(ADJUSTL(CAlphabet(19)))).NE.0) THEN
+        ISimFLAG=1
+     ELSE
+        ISimFLAG=0
      SRefineMode = SRefineMode((SCAN(SRefineMode,"=")+1):)
      IRefineMode = 0
-
      DO ind = 1,IRefinementVariableTypes
         IF(SCAN(TRIM(ADJUSTL(SRefineMode)),TRIM(ADJUSTL(CAlphabet(ind)))).NE.0) THEN
            IRefineMode(ind) = 1
@@ -333,18 +316,19 @@ SUBROUTINE ReadInpFile( IErr )
        IF(IRefineMode(10).EQ.1) PRINT*,"J:Refining Accelerating Voltage "
        IF(IRefineMode(11).EQ.1) PRINT*,"K:Refining Scale Factor "
        IF(IRefineMode(12).EQ.1) PRINT*,"L:Refining Structure Factors by bisection"
-     END IF
-    
+       IF(ISimFlag.EQ.1) PRINT*,"S:Simulation mode"
+    END IF
+ 
      !Check if user has requested Ug refinement and anything else which isnt possible
         
      IF((IRefineMode(1).EQ.1 .OR. IRefineMode(12).EQ.1).AND.SUM(IRefineMode).GT.1) THEN         
         IF(my_rank.EQ.0) THEN
-           PRINT*,"Structure factors must be refined seperately"
+           PRINT*,"Structure factors must be refined separately"
         END IF
         IErr = 1
         RETURN
      END IF
-
+  END IF
 
      ILine= ILine+1
      READ(IChInp,10,ERR=20,END=30) IWeightingFLAG
@@ -361,22 +345,19 @@ SUBROUTINE ReadInpFile( IErr )
      ILine= ILine+1
      READ(IChInp,10,ERR=20,END=30) IImageProcessingFLAG
      CALL Message ("ReadInpFile",IInfo,IErr,MessageVariable ="IImageProcessingFLAG",IVariable=IImageProcessingFLAG)
-     
-     ILine= ILine+1; READ(IChInp,ERR=20,END=30,FMT='(A)')
-     ILine= ILine+1; READ(IChInp,ERR=20,END=30,FMT='(A)')
-     ILine= ILine+1; READ(IChInp,ERR=20,END=30,FMT='(A)')
 
      ILine= ILine+1
+     READ(IChInp,15,ERR=20,END=30) RBlurRadius
+     CALL Message ("ReadInpFile",IInfo,IErr,MessageVariable ="RBlurRadius",RVariable = RBlurRadius)
+     
+     ILine = ILine+1
      READ(IChInp,10,ERR=20,END=30) INoofUgs
      CALL Message ("ReadInpFile",IInfo,IErr,MessageVariable ="INoofUgs",IVariable = INoofUgs)
      
      !-----------------------------------------------------------------------
      ! Iterative Structural input
-
-     ILine= ILine+1; READ(IChInp,ERR=20,END=30,FMT='(A)')
-     ILine= ILine+1; READ(IChInp,ERR=20,END=30,FMT='(A)')
-     ILine= ILine+1; READ(IChInp,ERR=20,END=30,FMT='(A)')
      
+     ILine=ILine+1
      READ(IChInp,FMT='(A)',ERR=20,END=30) SAtomicSites
 
      CALL DetermineRefineableAtomicSites(SAtomicSites,IErr)
@@ -385,17 +366,9 @@ SUBROUTINE ReadInpFile( IErr )
         RETURN
      END IF
 
-     ILine= ILine+1; READ(IChInp,ERR=20,END=30,FMT='(A)')
-     ILine= ILine+1; READ(IChInp,ERR=20,END=30,FMT='(A)')
-     ILine= ILine+1; READ(IChInp,ERR=20,END=30,FMT='(A)')
-     
      ILine= ILine+1
      READ(IChInp,10,ERR=20,END=30) IPrint
      CALL Message ("ReadInpFile",IInfo,IErr,MessageVariable ="IPrint",IVariable = IPrint)
-
-     ILine= ILine+1; READ(IChInp,ERR=20,END=30,FMT='(A)')
-     ILine= ILine+1; READ(IChInp,ERR=20,END=30,FMT='(A)')
-     ILine= ILine+1; READ(IChInp,ERR=20,END=30,FMT='(A)')
      
      ILine= ILine+1
      READ(IChInp,15,ERR=20,END=30) RSimplexLengthScale
@@ -650,13 +623,13 @@ SUBROUTINE ReadExperimentalImages(IErr)
 
   IMPLICIT NONE
   
-  INTEGER(IKIND) :: ind,jnd,IErr,Ibytesize
+  INTEGER(IKIND) :: ind,jnd,IErr,IBytes
   INTEGER(IKIND) :: INegError = 0
   CHARACTER*34 :: filename
   CHARACTER*200 :: SPrintString
   CHARACTER*10 :: h,k,l
 
-  Ibytesize=8
+  IBytes=8
   
   ALLOCATE(RImageIn(2*IPixelCount,2*IPixelCount), STAT=IErr)  !could do without this variable and load directly into RImageExpi
   IF( IErr.NE.0 ) THEN
@@ -664,6 +637,15 @@ SUBROUTINE ReadExperimentalImages(IErr)
     RETURN
   END IF
 
+  !for IBytes: 2bytes=64-bit input file (NB tinis specifies in bytes, not bits)
+  !NB when this subroutine is working get rid of the pointless variable RImageIn
+  ALLOCATE(RImageIn(2*IPixelCount,2*IPixelCount), STAT=IErr)
+  IF( IErr.NE.0 ) THEN
+    PRINT*,"ReadExperimentalImages(",my_rank,")error allocating RImageIn"
+    RETURN
+  ENDIF
+  RImageIn=ZERO
+  
   DO ind = 1,INoOfLacbedPatterns
     WRITE(h,'(I3.1)')  NINT(RInputHKLs(ind,1))
     WRITE(k,'(I3.1)')  NINT(RInputHKLs(ind,2))
@@ -674,7 +656,7 @@ SUBROUTINE ReadExperimentalImages(IErr)
 	END IF
     !WRITE(filename,"(A6,I3.3,A4)") "felix.",ind,".img"  !old version with format felix.000.img
     OPEN(UNIT= IChInImage, ERR= 10, STATUS= 'UNKNOWN', FILE=TRIM(ADJUSTL(filename)),FORM='UNFORMATTED',&
-       ACCESS='DIRECT',IOSTAT=Ierr,RECL=2*IPixelCount*Ibytesize)
+       ACCESS='DIRECT',IOSTAT=Ierr,RECL=2*IPixelCount*IBytes)
     DO jnd=1,2*IPixelCount
       READ(IChInImage,rec=jnd,ERR=10) RImageIn(jnd,:)
     END DO
@@ -704,10 +686,8 @@ SUBROUTINE ReadExperimentalImages(IErr)
   RETURN
 
 10 IErr=1
-    PRINT*,"ReadExperimentalImages(", my_rank, ") error in READ() at record=", &
-         jnd, " of file ", TRIM(filename), " with ind=", ind
-    RETURN
-
+   PRINT*,"ReadExperimentalImages(", my_rank, ")error reading ",TRIM(ADJUSTL(filename)),", line ",jnd
+   RETURN
 END SUBROUTINE ReadExperimentalImages
 
 !%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%

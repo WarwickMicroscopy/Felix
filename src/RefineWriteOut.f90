@@ -4,14 +4,7 @@
 !
 ! Richard Beanland, Keith Evans, Rudolf A Roemer and Alexander Hubert
 !
-! (C) 2013/14, all right reserved
-!
-! Version: :VERSION:
-! Date:    :DATE:
-! Time:    :TIME:
-! Status:  :RLSTATUS:
-! Build:   :BUILD:
-! Author:  :AUTHOR:
+! (C) 2013/14/15/16, all right reserved
 ! 
 !%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 !
@@ -32,10 +25,6 @@
 !
 !%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-!%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-! $Id: Felixrefine.f90,v 1.89 2014/04/28 12:26:19 phslaz Exp $
-!%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-
 SUBROUTINE WriteIterationOutput(Iter,IThicknessIndex,IExitFlag,IErr)
 !This could be improved by bringing the content of subroutines up to this level
   USE MyNumbers
@@ -51,31 +40,35 @@ SUBROUTINE WriteIterationOutput(Iter,IThicknessIndex,IExitFlag,IErr)
 
   IMPLICIT NONE
 
-  INTEGER(IKIND) :: IErr,Iter,IThickness,ind,jnd,gnd,hnd
+  INTEGER(IKIND) :: IErr,Iter,IThickness,ind,jnd
   INTEGER(IKIND),INTENT(IN) :: IThicknessIndex,IExitFLAG
   REAL(RKIND),DIMENSION(2*IPixelCount,2*IPixelCount) :: RImageToWrite
   CHARACTER*200 :: path,SPrintString,filename
   CHARACTER*20 :: h,k,l
   
   IThickness = (RInitialThickness + (IThicknessIndex-1)*RDeltaThickness)/10!in nm 
-  WRITE(path,"(A10,I4.4,A1,I3.3,A3,I3.3,A1,I3.3)") &
-          "Iteration",Iter,"_",IThickness,"nm_",2*IPixelcount,"x",2*IPixelcount
-     
+
+  IF (ISimFLAG.EQ.0) THEN !felixrefine output
+    WRITE(path,"(A9,I4.4,A1,I3.3,A3,I3.3,A1,I3.3)") &
+         "Iteration",Iter,"_",IThickness,"nm_",2*IPixelcount,"x",2*IPixelcount
+  ELSE !Sim Output
+    WRITE(path,"(A4,I3.3,A3,I3.3,A1,I3.3)") &
+          "Sim_",IThickness,"nm_",2*IPixelcount,"x",2*IPixelcount
+  END IF
   call system('mkdir ' // path)
 
-  IF (IExitFLAG.EQ.0) THEN
+  IF (ISimFLAG.EQ.1.AND.IThicknessIndex.EQ.1) THEN !sim output
+    PRINT*, "Exiting and writing output; "
+  ELSE IF (IExitFLAG.EQ.0) THEN !refine output
     IF (IPreviousPrintedIteration.EQ.0) THEN
       WRITE(SPrintString,FMT='(A35)') "Writing output; baseline simulation"
     ELSE
       WRITE(SPrintString,FMT='(A16,I4,A35)') "Writing output; ",&
-      Iter-IPreviousPrintedIteration," iterations since the previous save"
+        Iter-IPreviousPrintedIteration," iterations since the previous save"
     END IF
-  ELSE
-    WRITE(SPrintString,FMT='(A28,I4,A35)') "Exiting and writing output; ",&
-    Iter-IPreviousPrintedIteration," iterations since the previous save" 
+    PRINT*,TRIM(ADJUSTL(SPrintString))
   END IF
-  PRINT*,TRIM(ADJUSTL(SPrintString))
-
+  
   !Write Images to disk
   DO ind = 1,INoOfLacbedPatterns
     !make the path/filename
@@ -118,6 +111,8 @@ SUBROUTINE WriteIterationOutput(Iter,IThicknessIndex,IExitFlag,IErr)
     RETURN
   END IF
 
+  IPreviousPrintedIteration = Iter 
+  
   RETURN  
   ! error in OPEN detected
 10 PRINT*,"WriteIterationOutput(0) error opening",filename
@@ -125,58 +120,6 @@ SUBROUTINE WriteIterationOutput(Iter,IThicknessIndex,IExitFlag,IErr)
   RETURN
   
 END SUBROUTINE WriteIterationOutput
-
-!!$  %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-
-SUBROUTINE WriteIterationImages(path,IThicknessIndex,IErr)
-!this is now redundant
-  USE MyNumbers
-  
-  USE CConst; USE IConst; USE RConst
-  USE IPara; USE RPara; USE SPara; USE CPara
-  USE BlochPara
-
-  USE IChannels
-
-  USE MPI
-  USE MyMPI
-
-  IMPLICIT NONE
-
-  INTEGER(IKIND) :: IErr,ind,jnd,hnd,gnd,IThicknessIndex
-  REAL(RKIND),DIMENSION(2*IPixelCount,2*IPixelCount) :: RImageToWrite
-  CHARACTER*200,INTENT(IN) :: path
-
-  DO ind = 1,INoOfLacbedPatterns
-     CALL OpenReflectionImage(IChOutWIImage,path,IErr,ind,2*IPixelCount,2_IKIND)
-     IF( IErr.NE.0 ) THEN
-        PRINT*,"WriteIterationImages(",my_rank,") error in OpenReflectionImage()"
-        RETURN
-     END IF
-
-     RImageToWrite = ZERO
-     DO jnd = 1,IPixelTotal
-        gnd = IPixelLocations(jnd,1)
-        hnd = IPixelLocations(jnd,2)
-        RImageToWrite(gnd,hnd) = RSimulatedPatterns(ind,IThicknessIndex,jnd)
-     END DO
-
-     CALL WriteReflectionImage(IChOutWIImage,&
-          RImageToWrite,IErr,2*IPixelCount,2*IPixelCount,2_IKIND)       
-     IF( IErr.NE.0 ) THEN
-        PRINT*,"WriteIterationImages(", my_rank, ") error in WriteReflectionImage()"
-        RETURN
-     END IF
-     
-     CLOSE(IChOutWIImage,IOSTAT=IErr)       
-     IF( IErr.NE.0 ) THEN
-        PRINT*,"WriteIterationImages(", my_rank, ") error Closing Reflection Image()"
-        RETURN
-     END IF
-     
-  END DO
-
-END SUBROUTINE WriteIterationImages
 
 !!$  %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 

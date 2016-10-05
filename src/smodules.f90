@@ -1,6 +1,6 @@
 !%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 !
-! felixsim
+! felix
 !
 ! Richard Beanland, Keith Evans, Rudolf A Roemer and Alexander Hubert
 !
@@ -15,7 +15,7 @@
 ! 
 !%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 !
-!  This file is part of felixsim.
+!  This file is part of felix.
 !
 !  felixsim is free software: you can redistribute it and/or modify
 !  it under the terms of the GNU General Public License as published by
@@ -39,9 +39,9 @@
 !--------------------------------------------------------------------
 MODULE CConst
 
-  CHARACTER*30, PARAMETER :: RStr= "Version :VERSION:, Build :BUILD:"
-  CHARACTER*30, PARAMETER :: DStr= "Date :DATE:, :TIME:"
-  CHARACTER*30, PARAMETER :: AStr= "Status :RLSTATUS:, Author :AUTHOR:"
+  CHARACTER*30, PARAMETER :: RStr= "Version :tinis3:, Build :1:"
+  CHARACTER*30, PARAMETER :: DStr= "Date :18 August 2016:"
+  CHARACTER*30, PARAMETER :: AStr= "Status :in test:, Author :Richard:"
   CHARACTER*8 CSpaceGrp(230)
   DATA CSpaceGrp/"P1","P-1","P2","P21","C2","Pm","Pc","Cm",&
        "Cc","P2/m","P21/m","C2/m","P2/c","P21/c","C2/c", &
@@ -143,16 +143,18 @@ MODULE IPara
   !Input Flags
   INTEGER(IKIND) :: IWriteFLAG,IDebugFLAG,IScatterFactorMethodFLAG, &
        IMaskFLAG, IVolumeFLAG, &
-       IZolzFLAG,IAbsorbFLAG, IAnisoDebyeWallerFactorFlag, &
+       IHolzFLAG,IAbsorbFLAG, IAnisoDebyeWallerFactorFlag, &
        IImageFLAG,IBeamConvergenceFLAG,  &
-       IPseudoCubicFLAG,IXDirectionFLAG,IDevFLAG, &
+       IDevFLAG, &
        IRefineModeFLAG,ISoftwareMode,IHKLSelectFLAG,IPrint,IRefineSwitch,&
-       IWeightingFLAG,IContinueFLAG,ICorrelationFLAG,IImageProcessingFLAG
+       IWeightingFLAG,IContinueFLAG,ICorrelationFLAG,IImageProcessingFLAG,&
+       IByteSize
   !Minimum Reflections etc
   INTEGER(IKIND) :: IMinReflectionPool,IMinStrongBeams,IMinWeakBeams
   !OtherFLAGS
   INTEGER(IKIND) :: IDiffractionFLAG=0
   INTEGER(IKIND) :: IInitialSimulationFLAG
+  INTEGER(IKIND) :: ISimFLAG
   !Disk Radius
   INTEGER(IKIND) :: IPixelCount 
   !Crystal Settings
@@ -208,7 +210,6 @@ MODULE IPara
   INTEGER(IKIND) :: IFelixCount,IPreviousPrintedIteration,IStandardDeviationCalls  
   !Message Counter (Avoid subroutines printing out message more than once)
   INTEGER(IKIND) :: IMessageCounter=0
-
 END MODULE IPara
 !--------------------------------------------------------------------
 MODULE RPara
@@ -216,9 +217,7 @@ MODULE RPara
   USE RConst
   USE IConst
 
-  !INPUT Section
-  !Beam Selection Criteria
-  REAL(RKIND) :: RBSBmax, RBSPMax 
+  !INPUT Section 
   !Crystallography
   REAL(RKIND) :: RLengthX,RLengthY,RLengthZ,RVolume,RAlpha,RBeta,RGamma, &
        RDebyeWallerConstant,RAbsorptionPercentage
@@ -228,7 +227,7 @@ MODULE RPara
        RAtomPosition,RUniqueKey
   REAL(RKIND), DIMENSION(:,:,:), ALLOCATABLE :: RSymMat
   !Microscope Parameters
-  REAL(RKIND) :: RConvergenceAngle,RAcceleratingVoltage,RInnerConvergenceAngle
+  REAL(RKIND) :: RConvergenceAngle,RAcceleratingVoltage
   REAL(RKIND) :: RElectronVelocity,RElectronWaveLength, &
        RElectronWaveVectorMagnitude,RRelativisticCorrection, &
        RRelativisticMass,RBraggCentral,RAcceptanceAngle
@@ -304,6 +303,8 @@ MODULE RPara
   REAL(RKIND),DIMENSION(:,:),ALLOCATABLE :: RInitialAtomPosition
   !Weighting Coefficients for figure of merit combination
   REAL(RKIND),DIMENSION(:),ALLOCATABLE :: RWeightingCoefficients
+  !Gaussian blur radius in pixels
+  REAL(RKIND) :: RBlurRadius
 
 END MODULE RPara
 !--------------------------------------------------------------------

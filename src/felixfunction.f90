@@ -398,47 +398,7 @@ SUBROUTINE CalculateFigureofMeritandDetermineThickness(Iter,IBestThicknessIndex,
 10 RETURN !for debug
   
 END SUBROUTINE CalculateFigureofMeritandDetermineThickness
-
-!%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-
-SUBROUTINE CreateImagesAndWriteOutput(Iter,IExitFLAG,IErr)
-!This is redundant, a subroutine that just calls 2 other subroutines...
-!NB core 0 only
-  USE MyNumbers
-  
-  USE CConst; USE IConst; USE RConst
-  USE IPara; USE RPara; USE SPara; USE CPara
-  USE BlochPara
-
-  USE IChannels
-
-  USE MPI
-  USE MyMPI
-  
-  IMPLICIT NONE
-  
-  INTEGER(IKIND) :: IErr,IThicknessIndex,Iter,IExitFLAG
-
-  CALL CalculateFigureofMeritandDetermineThickness(IThicknessIndex,IErr)
-  IF( IErr.NE.0 ) THEN
-     PRINT*,"CreateImagesAndWriteOutput(", my_rank, ") error ", IErr, &
-          "Calling function CalculateFigureofMeritandDetermineThickness"
-     RETURN
-  END IF
-  
-!!$     OUTPUT ------------------------------------- 
-  !write to disc if we have done enough iterations or have finished
-  IF(IExitFLAG.EQ.1.OR.(Iter.GE.(IPreviousPrintedIteration+IPrint))) THEN
-    CALL WriteIterationOutput(Iter,IThicknessIndex,IExitFLAG,IErr)
-    IF( IErr.NE.0 ) THEN
-      PRINT*,"CreateImagesAndWriteOutput(",my_rank,")error in WriteIterationOutput"
-      RETURN
-    END IF 
-    IPreviousPrintedIteration = Iter!reset iteration counter
-  END IF
-
-END SUBROUTINE CreateImagesAndWriteOutput
-
+   
 !%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 SUBROUTINE UpdateVariables(RIndependentVariable,IErr)
@@ -698,7 +658,7 @@ END SUBROUTINE ConvertVectorMovementsIntoAtomicCoordinates
 
 !%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-SUBROUTINE BlurG(RImageToBlur,Rradius,IErr)
+SUBROUTINE BlurG(RImageToBlur,IErr)
   !performs a 2D Gaussian blur on the input image
   !renormalises the output image to have the same min and max as the input image
   USE MyNumbers
@@ -717,19 +677,19 @@ SUBROUTINE BlurG(RImageToBlur,Rradius,IErr)
   INTEGER(IKIND) :: IErr,ind,jnd,IKernelRadius,IKernelSize
   REAL(RKIND),DIMENSION(:), ALLOCATABLE :: RGauss1D
   REAL(RKIND),DIMENSION(2*IPixelCount,2*IPixelCount) :: RImageToBlur,RTempImage,RShiftImage
-  REAL(RKIND) :: Rradius,Rind,Rsum,Rmin,Rmax
+  REAL(RKIND) :: Rind,Rsum,Rmin,Rmax
   
   !get min and max of input image
   Rmin=MINVAL(RImageToBlur)
   Rmax=MAXVAL(RImageToBlur)
 
   !set up a 1D kernel of appropriate size  
-  IKernelRadius=NINT(3*Rradius)
+  IKernelRadius=NINT(3*RBlurRadius)
   ALLOCATE(RGauss1D(2*IKernelRadius+1),STAT=IErr)!ffs
   Rsum=0
   DO ind=-IKernelRadius,IKernelRadius
     Rind=REAL(ind)
-    RGauss1D(ind+IKernelRadius+1)=EXP(-(Rind**2)/((2*Rradius)**2))
+    RGauss1D(ind+IKernelRadius+1)=EXP(-(Rind**2)/((2*RBlurRadius)**2))
     Rsum=Rsum+RGauss1D(ind+IKernelRadius+1)
   END DO
   RGauss1D=RGauss1D/Rsum!normalise

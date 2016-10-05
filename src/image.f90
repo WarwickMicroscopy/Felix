@@ -252,20 +252,7 @@ SUBROUTINE ImageMaskInitialisation (IErr)
      IPixelTotal = (2*IPixelCount)**2
   END SELECT
 
-  IF (RInnerConvergenceAngle.GT.ZERO) THEN
-     DO ind=1,2*IPixelCount
-        DO jnd=1,2*IPixelCount
-           Rradius= (ind-(REAL(IPixelCount,RKIND)+0.5))**2 + &
-                (jnd-(REAL(IPixelCount,RKIND)+0.5))**2
-           Rradius=SQRT(DBLE(Rradius))
-           RImageRadius = (IPixelCount+0.5)*(RInnerConvergenceAngle/RConvergenceAngle)
-           IF(Rradius.LE.RImageRadius) THEN
-              RMask(jnd,ind) = 0
-              IPixelTotal= IPixelTotal - 1
-           END IF
-        ENDDO
-     ENDDO
-  END IF
+ !Removed InnerConvergenceAngle here
 
   ALLOCATE(IPixelLocations(IPixelTotal,2),STAT=IErr)
   IF( IErr.NE.0 ) THEN

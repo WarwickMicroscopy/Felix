@@ -157,8 +157,7 @@ SUBROUTINE BlochCoefficientCalculation(IYPixelIndex,IXPixelIndex,IPixelNumber,IF
        nReflections,CBeamTranspose,nReflections,CZERO,CUgMatPartial,nReflections)
   CALL ZGEMM('N','N',nBeams,nBeams,nReflections,CONE,CBeamProjectionMatrix, &
        nBeams,CUgMatPartial,nReflections,CZERO,CUgSgMatrix,nBeams)
-  !add the deviation parameters on the diagonal
-  IF (IZolzFLAG.EQ.0) THEN
+  IF (IHolzFLAG.EQ.1) THEN
     DO ind=1,nBeams
       CUgSgMatrix(ind,ind) = CUgSgMatrix(ind,ind) + TWO*RBigK*RDevPara(IStrongBeamList(ind))
     ENDDO
@@ -220,13 +219,16 @@ SUBROUTINE BlochCoefficientCalculation(IYPixelIndex,IXPixelIndex,IPixelNumber,IF
   
   !--------------------------------------------------------------------
   ! diagonalize the UgMatEffective
-  IF (IZolzFLAG.EQ.0) THEN
+  IF (IHolzFLAG.EQ.1) THEN
     CALL EigenSpectrum(nBeams,CUgSgMatrix,CEigenValues(:), CEigenVectors(:,:),IErr)
-    !What is this doing?
-    CEigenValues = CEigenValues * RKn/RBigK
+    IF( IErr.NE.0 ) THEN
+      PRINT*,"BlochCoefficientCalculation(", my_rank, ") error in EigenSpectrum()"
+      RETURN
+    END IF
+    CEigenValues = CEigenValues * RKn/RBigK    !What is this doing?
     DO knd = 1,nBeams
       CEigenVectors(knd,:) = CEigenVectors(knd,:) / &
-             SQRT(1+RgDotNorm(IStrongBeamList(knd))/RKn)
+            SQRT(1+RgDotNorm(IStrongBeamList(knd))/RKn)
     END DO
   ELSE
     CALL EigenSpectrum(nBeams,CUgSgMatrix,CEigenValues(:),CEigenVectors(:,:),IErr)

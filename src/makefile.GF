@@ -48,32 +48,18 @@ cyg := $(shell expr substr $(unixOS) 1 6)
 GLOBALgfortranF90FLAGS = -ffree-line-length-none -fbounds-check -fno-range-check -fimplicit-none # debug
 GLOBALgfortranF77FLAGS = -fbounds-check -fno-range-check # debug
 
+
 ifeq ($(unixOS),Linux)
 
  linux := $(shell (lsb_release -si))
+ tiniscut =$(subst /, , $(MODULEPATH))
+ tinis :=$(word 2, $(tiniscut))
 
- ifeq ($(linux),SUSE LINUX) #CSC machines
-  HPC := $(shell expr substr $(shell uname -n) 1 3)
-  ARCHER := $(shell expr substr $(shell uname -n) 1 2)
-
-  ifeq ($(HPC),hpc) #minerva hpc
-   $(info Compiling on minerva $(HPC))
-   $(info Please ensure to run: )
-   $(info "module swap oldmodules minerva-2.0")
-   $(info "module load goolf-1.7.10")
-
-   F90 = mpif90
-   FC = gfortran -ffixed-form -std=legacy
-   F90FLAGS = $(GLOBALgfortranF90FLAGS)
-   F77FLAGS = $(GLOBALgfortranF90FLAGS)
-
-   LIBFLAGS= \
-   -L/csc/minerva/software/gompi/1.7.10/ScaLAPACK/2.0.2-openblas-0.2.8-lapack-3.4.2/lib \
-   -L/csc/minerva/software/gompi/1.7.10/OpenBLAS/0.2.8-lapack-3.4.2/lib \
-   -lopenblas \
-   -lfftw3
-
-  else ifeq ($(ARCHER),es) #ARCHER
+  ifeq ($(linux),SUSE LINUX) #CSC machines
+   HPC := $(shell expr substr $(shell uname -n) 1 3)
+   ARCHER := $(shell expr substr $(shell uname -n) 1 2)
+   
+   ifeq ($(ARCHER),es) #ARCHER
    $(info Compiling on ARCHER)
    $(info Please ensure to run "module load fftw")
 
@@ -87,7 +73,8 @@ ifeq ($(unixOS),Linux)
    #LIBFLAGS= -llapack -lblas -lfftw3 # CSC
    #LIBFLAGS= -lcray-libsci
 
-  else #CSC
+   else #CSC
+
    $(info Compiling on CSC, $(linux))
    $(info Please ensure to run "module load ompi/1.6.4/gnu/4.3.4" )
 
@@ -95,19 +82,19 @@ ifeq ($(unixOS),Linux)
 
    LIBFLAGS= -llapack -lblas -lfftw3 
 
-   ifeq ($(FOO),BAR) #ifort compiler
-    F90 = mpif90
-    FC = ifort 
-    F90FLAGS =
-    F77FLAGS =
+    ifeq ($(FOO),BAR) #ifort compiler
+     F90 = mpif90
+     FC = ifort 
+     F90FLAGS =
+     F77FLAGS =
 
-   else
-    F90 = mpif90
-    FC = gfortran -ffixed-form -std=legacy 
-    F90FLAGS = $(GLOBALgfortranF90FLAGS) -fcray-pointer -fexternal-blas 
-    F77FLAGS = $(GLOBALgfortranF77FLAGS) 
+    else
+     F90 = mpif90
+     FC = gfortran -ffixed-form -std=legacy 
+     F90FLAGS = $(GLOBALgfortranF90FLAGS) -fcray-pointer -fexternal-blas 
+     F77FLAGS = $(GLOBALgfortranF77FLAGS) 
+    endif	     
    endif
-  endif
  
  else ifeq ($(linux),Ubuntu) #Ubuntu machine
   $(info Compiling on $(linux), $(unixOS))
@@ -169,19 +156,37 @@ ifeq ($(unixOS),Linux)
   F90FLAGS = $(GLOBALgfortranF90FLAGS) -fcray-pointer -fexternal-blas
   F77FLAGS = $(GLOBALgfortranF90FLAGS)
 
- else #default
-  $(info Compiling on default)
+ else #default or tinis
+
+  ifeq ($(tinis),tinis) #tinis hpc
+   $(info Compiling on tinis)
+   $(info please run: module load intel impi imkl FFTW)
+
+   F90 = mpiifort
+   FC = ifort -fixed
+   F90FLAGS = -132 -r8 -u -C -g -traceback -check noarg_temp_created #debug
+   #F90FLAGS = -132 -r8 -u -g -p #profiling
+   F77FLAGS = -r8 #debug
+
+   LIBFLAGS= \
+   -mkl -mkl=cluster -qopenmp -I${MKLROOT}/include/intel64/ilp64 -I${MKLROOT}/include -lfftw3
+
+   INCLUDEDIR= #/hpcwarwick/mathlib/gnu/lib
+
+   else #default
+
+    $(info Compiling on default)
   
-  INCLUDEDIR = /warwick/mathlib/gnu/x86_64/
+   INCLUDEDIR = /warwick/mathlib/gnu/x86_64/
 
-  LIBFLAGS = -llapack -lblas -lfftw3
+   LIBFLAGS = -llapack -lblas -lfftw3
 
-  F90 = mpif90
-  FC = gfortran -ffixed-form -std=legacy
-  F90FLAGS = $(GLOBALgfortranF90FLAGS) -fcray-pointer -fexternal-blas
-  F77FLAGS = $(GLOBALgfortranF90FLAGS)
-
- endif
+    F90 = mpif90
+    FC = gfortran -ffixed-form -std=legacy
+    F90FLAGS = $(GLOBALgfortranF90FLAGS) -fcray-pointer -fexternal-blas
+    F77FLAGS = $(GLOBALgfortranF90FLAGS)
+   endif
+endif
 
 else ifeq ($(unixOS),Darwin) #MAC
  $(info Compiling on $(unixOS), OS X)

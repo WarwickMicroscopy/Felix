@@ -138,16 +138,19 @@ PROGRAM Felixrefine
     GOTO 9999
   END IF
 
-  !experimental images
-  ALLOCATE(RImageExpi(2*IPixelCount,2*IPixelCount,INoOfLacbedPatterns),STAT=IErr)  
-  IF( IErr.NE.0 ) THEN
-     PRINT*,"felixrefine(",my_rank,")error allocating RImageExpi"
-     GOTO 9999
-  END IF
-  CALL ReadExperimentalImages(IErr)
-  IF( IErr.NE.0 ) THEN
-     PRINT*,"felixrefine(",my_rank,") error in ReadExperimentalImages"
-     GOTO 9999
+
+  IF (ISimFLAG.EQ.0) THEN  !If felixrefine is running
+    !read experimental images
+    ALLOCATE(RImageExpi(2*IPixelCount,2*IPixelCount,INoOfLacbedPatterns),STAT=IErr)  
+    IF( IErr.NE.0 ) THEN
+      PRINT*,"felixrefine(",my_rank,")error allocating RImageExpi"
+      GOTO 9999
+    END IF
+    CALL ReadExperimentalImages(IErr)
+    IF( IErr.NE.0 ) THEN
+      PRINT*,"felixrefine(",my_rank,") error in ReadExperimentalImages"
+      GOTO 9999
+    END IF
   END IF
 
   !--------------------------------------------------------------------
@@ -273,7 +276,7 @@ PROGRAM Felixrefine
      PRINT*,"felixrefine(",my_rank,")error allocating RgPoolMagLaue"
      GOTO 9999
   END IF
-  IF(RAcceptanceAngle.NE.ZERO.AND.IZOLZFLAG.EQ.0) THEN
+  IF(RAcceptanceAngle.NE.ZERO.AND.IHOLZFLAG.EQ.1) THEN
     INumtotalReflections=0
     DO ind=1,ITotalLaueZoneLevel
       ILaueLevel=ind-IZerothLaueZoneLevel
@@ -355,14 +358,14 @@ PROGRAM Felixrefine
   RDeltaK = RMinimumGMag*RConvergenceAngle/REAL(IPixelCount,RKIND)
 
   !acceptance angle
-  IF(RAcceptanceAngle.NE.ZERO.AND.IZOLZFLAG.EQ.1) THEN
+  IF(RAcceptanceAngle.NE.ZERO.AND.IHOLZFLAG.EQ.0) THEN
      RMaxAcceptanceGVecMag=(RElectronWaveVectorMagnitude*TAN(RAcceptanceAngle*DEG2RADIAN))
      IF(RgPoolMag(IMinReflectionPool).GT.RMaxAcceptanceGVecMag) THEN
         RMaxGMag = RMaxAcceptanceGVecMag 
      ELSE
         RMaxGMag = RgPoolMag(IMinReflectionPool)
      END IF
-  ELSEIF(RAcceptanceAngle.NE.ZERO.AND.IZOLZFLAG.EQ.0) THEN
+  ELSEIF(RAcceptanceAngle.NE.ZERO.AND.IHOLZFLAG.EQ.1) THEN
      IBSMaxLocGVecAmp=MAXVAL(IOriginGVecIdentifier)
      RMaxGMag=RgPoolMag(IBSMaxLocGVecAmp)
      IF(RgPoolMag(IBSMaxLocGVecAmp).LT.RgPoolMag(IMinreflectionPool)) THEN
@@ -389,7 +392,7 @@ PROGRAM Felixrefine
   
   !deallocation
   DEALLOCATE(RgPoolMagLaue)!
-  IF (RAcceptanceAngle.NE.ZERO.AND.IZOLZFLAG.EQ.0) THEN
+  IF (RAcceptanceAngle.NE.ZERO.AND.IHOLZFLAG.EQ.1) THEN
     DEALLOCATE(IOriginGVecIdentifier)
     PRINT*,"felixrefine deallocating IOriginGVecIdentifier"
   END IF
@@ -630,6 +633,7 @@ PROGRAM Felixrefine
     "Simulation completed in ",IHours," hrs ",IMinutes," mins ",ISeconds," sec"
     PRINT*,TRIM(ADJUSTL(SPrintString))
   END IF
+
   !--------------------------------------------------------------------
   !Baseline output, core 0 only
   IExitFLAG = 0 !Do not exit
@@ -637,20 +641,43 @@ PROGRAM Felixrefine
   IF(my_rank.EQ.0) THEN
     !Figure of merit is passed back as a global variable
     CALL CalculateFigureofMeritandDetermineThickness(Iter,IThicknessIndex,IErr)
-    CALL WriteIterationOutput(Iter,IThicknessIndex,IExitFLAG,IErr)
     IF( IErr.NE.0 ) THEN
       PRINT*,"felixrefine(0) error",IErr,"in CalculateFigureofMeritandDetermineThickness"
       GOTO 9999
     END IF
-    !Save baseline simulation
-    RImageBase=RImageSimi  
-    RImageAvi=RImageSimi  
+    IF (ISimFLAG.EQ.0) THEN !Refine Mode, Only one Thickness output
+      !Keep baseline simulation
+      RImageBase=RImageSimi  
+      RImageAvi=RImageSimi  
+      CALL WriteIterationOutput(Iter,IThicknessIndex,IExitFLAG,IErr)
+      IF( IErr.NE.0 ) THEN
+        PRINT*,"felixrefine(0) error in WriteIterationOutput"
+        GOTO 9999
+      ENDIF
+    ELSE !Sim mode - All Thicknesses Output
+      PRINT*, "Writing simulations for ", IThicknessCount,"thicknesses"
+      DO IThicknessIndex = 1,IThicknessCount
+        CALL WriteIterationOutput(Iter,IThicknessIndex,IExitFLAG,IErr)
+        IF( IErr.NE.0 ) THEN
+          PRINT*,"felixrefine(0) error in WriteIterationOutput"
+          RETURN
+        END IF
+      END DO
+    END IF
+
   END IF
   !=====================================!Send the fit index to all cores
   CALL MPI_BCAST(RFigureofMerit,1,MPI_DOUBLE_PRECISION,0,MPI_COMM_WORLD,IErr)
   !=====================================
 
-  !--------------------------------------------------------------------
+  !for felixsim program ends here, large if-else statement, deallocations still applied at end
+  IF (ISimFLAG.EQ.1) THEN
+     IF(my_rank.EQ.0) THEN
+        PRINT*, "End of felixsim, cleaning up"
+     END IF
+     GOTO 9999
+  ELSE
+
   IF (IRefineMode(12).EQ.1) THEN
     !bisection on Ug's
 	RdeltaUg=0.01!RSimplexLengthScale/100.0!use simplex length scale
@@ -685,11 +712,17 @@ PROGRAM Felixrefine
 	  CALL BRENT(RFigureofMerit,RIndependentVariable,RpointA,RpointB,RpointC,Rtol,RbestFit,ind,IErr)
 	  RIndependentVariable(ind)=RbestFit
       IF(my_rank.EQ.0) THEN
-        CALL CreateImagesAndWriteOutput(Iter,IExitFLAG,IErr) 
+        !Figure of merit is passed back as a global variable
+        CALL CalculateFigureofMeritandDetermineThickness(Iter,IThicknessIndex,IErr)
         IF( IErr.NE.0 ) THEN
-          PRINT*,"felixrefine(",my_rank,")error in CreateImagesAndWriteOutput"
+          PRINT*,"felixrefine(0) error",IErr,"in CalculateFigureofMeritandDetermineThickness"
           GOTO 9999
         END IF
+        CALL WriteIterationOutput(Iter,IThicknessIndex,IExitFLAG,IErr)
+        IF( IErr.NE.0 ) THEN
+          PRINT*,"felixrefine(0) error in WriteIterationOutput"
+          GOTO 9999
+        ENDIF        
 	    WRITE(SPrintString,FMT='(A12,F8.6,A18,F8.6)') "Final value ",RbestFit,": figure of merit ",RFigureofMerit
         PRINT*,TRIM(ADJUSTL(SPrintString))
       END IF
@@ -784,6 +817,9 @@ PROGRAM Felixrefine
     CALL CalculateFigureofMeritandDetermineThickness(Iter,IThicknessIndex,IErr)
   END IF
   
+  END IF !If RefineMode(19).EQ.1 - i.e. if felixsim mode above skipped
+
+  
   !--------------------------------------------------------------------
   ! Deallocate Memory
   !--------------------------------------------------------------------
@@ -791,7 +827,6 @@ PROGRAM Felixrefine
   DEALLOCATE(CUgMatNoAbs,STAT=IErr)
   DEALLOCATE(CUgMatPrime,STAT=IErr)
   DEALLOCATE(RWeightingCoefficients,STAT=IErr)
-  DEALLOCATE(RImageExpi,STAT=IErr)  
   DEALLOCATE(ISymmetryRelations,STAT=IErr)
   DEALLOCATE(IEquivalentUgKey,STAT=IErr)
   DEALLOCATE(CUniqueUg,STAT=IErr)
@@ -814,6 +849,9 @@ PROGRAM Felixrefine
   DEALLOCATE(RgMatrixMagnitude,STAT=IErr)
   IF (IRefineMode(1)+IRefineMode(12).EQ.0) THEN
   	DEALLOCATE(IIterativeVariableUniqueIDs,STAT=IErr)
+  END IF
+  IF (ISimFLAG.EQ.0) THEN
+    DEALLOCATE(RImageExpi,STAT=IErr)  
   END IF  
   IF( IErr.NE.0 ) THEN
      PRINT*,"felixrefine(",my_rank,")error in final deallocations"
