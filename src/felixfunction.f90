@@ -239,7 +239,7 @@ SUBROUTINE FelixFunction(IErr)
     DO ind=1,INoOfLacbedPatterns
 	  DO jnd=1,IThicknessCount
         RTempImage = RImageSimi(:,:,ind,jnd)
-        CALL BlurG(RTempImage,Rradius,IErr)
+        CALL BlurG(RTempImage,IErr)
         RImageSimi(:,:,ind,jnd) = RTempImage 
 	  END DO
 	END DO
