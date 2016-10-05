@@ -746,7 +746,7 @@ PROGRAM Felixrefine
       END DO
     
       !flagged output to have a look at the masks
-      IF (IWriteFLAG.EQ.5) THEN
+      IF (IWriteFLAG.EQ.6) THEN
         ALLOCATE(RTestImage(2*IPixelCount,2*IPixelCount),STAT=IErr)
         DO ind = 1,INoOfLacbedPatterns
           RTestImage=RImageMask(:,:,ind)
