@@ -39,9 +39,10 @@
 !--------------------------------------------------------------------
 MODULE CConst
 
-  CHARACTER*30, PARAMETER :: RStr= "Version :RB_input:, Build :1:"
-  CHARACTER*30, PARAMETER :: DStr= "Date :5 October 2016:"
-  CHARACTER*40, PARAMETER :: AStr= "Status :in test:, Author :Richard+Alex:"
+  CHARACTER*30, PARAMETER :: RStr= "Version: VERSION / BUILD / RLSSTATUS"
+  CHARACTER*30, PARAMETER :: DStr= "Date: DATE / TIME"
+  CHARACTER*40, PARAMETER :: AStr= "Status: AUTHOR"
+  
   CHARACTER*8 CSpaceGrp(230)
   DATA CSpaceGrp/"P1","P-1","P2","P21","C2","Pm","Pc","Cm",&
        "Cc","P2/m","P21/m","C2/m","P2/c","P21/c","C2/c", &
@@ -72,6 +73,7 @@ MODULE CConst
        "P4332","P4132","I4132","P-43m","F-43m","I-43m","P-43n","F-43c", &
        "I-43d","Pm-3m","Pn-3n","Pm-3n","Pn-3m","Fm-3m","Fm-3c","Fd-3m", &
        "Fd-3c","Im-3m","Ia-3d"/
+
   CHARACTER*2 :: &
        SElementSymbolMatrix(103)
   DATA SElementSymbolMatrix/" H", "He", "Li", "Be", " B", " C", " N", "O", "F", "Ne", &
@@ -85,6 +87,7 @@ MODULE CConst
         "Tl", "Pb", "Bi", "Po", "At", "Rn", "Fr", "Ra", "Ac", "Th", &
         "Pa", "U", "Np", "Pu", "Am", "Cm", "Bk", "Cf", "Es", "Fm",& 
         "Md","No","Lr"/
+
   CHARACTER*8 :: CAlphabet(26)
   DATA CAlphabet/"Aa","Bb","Cc","Dd","Ee","Ff","Gg","Hh","Ii","Jj","Kk","Ll",&
        "Mm","Nn","Oo","Pp","Qq","Rr","Ss","Tt","Uu","Vv","Ww","Xx","Yy","Zz"/
@@ -308,7 +311,6 @@ MODULE RPara
 END MODULE RPara
 !--------------------------------------------------------------------
 MODULE CPara
-
   USE MyNumbers
 
   COMPLEX(CKIND), DIMENSION(:,:), ALLOCATABLE :: &
@@ -370,7 +372,8 @@ MODULE Refinement
 
 USE MyNumbers
 
-REAL(RKIND),PARAMETER :: RExitCondition = -10000.0,&
-  RStayCondition = 10000.0
+REAL(RKIND),PARAMETER :: &
+     RExitCondition = -10000.0_RKIND,&
+     RStayCondition = 10000.0_RKIND
 
 END MODULE 
