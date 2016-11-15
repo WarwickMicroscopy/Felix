@@ -351,12 +351,12 @@ PROGRAM Felixrefine
   DO ind =1,INhkl
     RgDotNorm(ind) = DOT_PRODUCT(RgPool(ind,:),RNormDirM)
   END DO
-!  IF(IWriteFLAG.EQ.7.AND.my_rank.EQ.0) THEN
-!    DO ind =1,INhkl
-!	 WRITE(SPrintString,FMT='(I4,A4,3(I4,1X),A7,E8.1,A4)') ind,": g=",NINT(Rhkl(ind,:)),", g.n= ",RgDotNorm(ind)," 1/A"
-!     PRINT*,TRIM(ADJUSTL(SPrintString))
-!    END DO
-!  END IF
+  IF(IWriteFLAG.EQ.7.AND.my_rank.EQ.0) THEN
+    DO ind =1,INhkl
+	 WRITE(SPrintString,FMT='(I4,A4,3(I4,1X),A7,E8.1,A4)') ind,": g=",NINT(Rhkl(ind,:)),", g.n= ",RgDotNorm(ind)," 1/A"
+     PRINT*,TRIM(ADJUSTL(SPrintString))
+    END DO
+  END IF
   RMinimumGMag = RgPoolMag(2)
 
   ! resolution in k space

@@ -309,10 +309,8 @@ INTEGER(IKIND) FUNCTION CountPixels(IErr)
   
   IMPLICIT NONE
   
-  INTEGER(IKIND) :: &
-       ind,jnd, IErr
-  REAL(RKIND) :: &
-       Rradius, RImageRadius
+  INTEGER(IKIND) :: ind,jnd, IErr
+  REAL(RKIND) :: Rradius, RImageRadius
   
   IF((IWriteFLAG.EQ.6.AND.my_rank.EQ.0).OR.IWriteFLAG.GE.10) THEN
      PRINT*,"CountPixels (",my_rank,")"

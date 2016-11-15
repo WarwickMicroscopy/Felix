@@ -534,7 +534,7 @@ SUBROUTINE ReadHklFile(IErr)
      RInputHKLs(ILine,2) = REAL(k,RKIND)
      RInputHKLs(ILine,3) = REAL(l,RKIND)   
 
-     IF((my_rank.EQ.0.AND.IWriteFLAG.GE.3).OR.IWriteFLAG.GE.10) THEN
+     IF(my_rank.EQ.0.AND.IWriteFLAG.EQ.6) THEN
         WRITE(SPrintString,'(3(I4.1,1X))') NINT(RInputHKLs(ILine,:))
         PRINT*,TRIM(ADJUSTL(SPrintString))
         CALL Message ("ReadHklFile",IInfo,IErr,MessageVariable = "Input HKL is",MessageString = SPrintString) 
