@@ -153,7 +153,6 @@ SUBROUTINE DiffractionPatternCalculation (IErr)
   
   ! resolution in k space
   RDeltaK = RMinimumGMag*RConvergenceAngle/REAL(IPixelCount,RKIND)
-  !CALL Message("DiffractionPatternCalculation",IInfo,IErr,MessageVariable = "RDeltaK", RVariable = RDeltaK)
 
   RETURN
 
@@ -179,8 +178,6 @@ SUBROUTINE HKLCount(Ihklmax,Rhkl0Vec,INhkl,RHOLZAcceptanceAngle,IErr)
   INTEGER(IKIND) :: IErr,Ihklmax,ind,jnd,knd,INhkl
   REAL(RKIND) :: RHOLZAcceptanceAngle
   REAL(RKIND), DIMENSION(ITHREE) :: Rhkl0Vec,RhklDummyUnitVec,RhklDummyVec,Rhkl0UnitVec
-
-  !CALL Message("HKLCount",IMust,IErr)
 
   INhkl = 0
   Rhkl0UnitVec= Rhkl0Vec/SQRT(DOT_PRODUCT(REAL(Rhkl0Vec,RKIND),REAL(Rhkl0Vec,RKIND)))
@@ -332,9 +329,6 @@ SUBROUTINE HKLMake(Ihklmax,Rhkl0Vec,RHOLZAcceptanceAngle,IErr)
   INTEGER(IKIND) :: IErr,Ihklmax,ind,jnd,knd,lnd
   REAL(RKIND) :: RHOLZAcceptanceAngle
   REAL(RKIND),DIMENSION(ITHREE) :: Rhkl0Vec,RhklDummyUnitVec,RhklDummyVec,Rhkl0UnitVec
-!  REAL(RKIND), DIMENSION(INhkl,ITHREE) :: Rhkl 
-
-  !CALL Message("HKLCount",IMust,IErr)
 
   lnd = 0
   Rhkl0UnitVec= Rhkl0Vec/SQRT(DOT_PRODUCT(REAL(Rhkl0Vec,RKIND),REAL(Rhkl0Vec,RKIND)))!?isn't RhklDummyVec already real??
@@ -492,8 +486,6 @@ SUBROUTINE NewHKLMake(Ihklmax,Rhkl0Vec,RHOLZAcceptanceAngle,IErr)
   INTEGER(IKIND) :: IErr, Ihklmax,ind,jnd,knd,INhkl
   REAL(RKIND) :: RHOLZAcceptanceAngle
   REAL(RKIND), DIMENSION(ITHREE) :: Rhkl0Vec,RhklDummyUnitVec,RhklDummyVec,Rhkl0UnitVec
-
-  !CALL Message("NewHKLMake",IMust,IErr)
 
   INhkl = 0
   

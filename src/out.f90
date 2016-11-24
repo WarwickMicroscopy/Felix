@@ -36,18 +36,8 @@
 ! $Id: out.f90,v 1.59 2014/04/28 12:26:19 phslaz Exp $
 !%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-
-!---------------------------------------------------------------------
-!This file contains all the output subroutines
-!---------------------------------------------------------------------
-
-
-
 ! --------------------------------------------------------------------
 ! OpenData
-! --------------------------------------------------------------------
-
-
 SUBROUTINE OpenData(IChOutWrite, prefix, surname, IErr)
 
   USE MyNumbers
@@ -68,7 +58,6 @@ SUBROUTINE OpenData(IChOutWrite, prefix, surname, IErr)
   CHARACTER*34 :: filename
   INTEGER(IKIND) :: index
 
- ! !!!CALL Message("OpenData",IMust,IErr)
   IF((IWriteFLAG.GE.2.AND.my_rank.EQ.0).OR.IWriteFLAG.GE.10) THEN
     PRINT*,"OpenData()"
   END IF
@@ -106,7 +95,6 @@ SUBROUTINE OpenData(IChOutWrite, prefix, surname, IErr)
 
   ! error in OPEN detected
 10 PRINT*,"WriteDataC(): ERR in OPEN()"
-  !PRINT*, "file ", filename, " does not exist --- REOPEN not possible!"
   IErr= 1
   RETURN
   
@@ -209,13 +197,6 @@ SUBROUTINE OpenReflectionImage(IChOutWrite, surname, IErr,IReflectWriting,IImage
   CHARACTER*60 Simagesize
   INTEGER index,ind
 
-  !!$  Only Prints out this message once when iterating (i.e. when in 1st iteration)
-
-  IF (IMessageCounter.LT.1) THEN
-     !!!CALL Message("OpenReflectionImage",IMust,IErr)
-     IMessageCounter = IMessageCounter +1
-  END IF
-
   SELECT CASE(IChOutWrite)
   CASE(MontageOut)
   CASE DEFAULT
@@ -281,10 +262,6 @@ SUBROUTINE OpenReflectionImage(IChOutWrite, surname, IErr,IReflectWriting,IImage
      END IF
 	 
   END SELECT
-  
-  !!!CALL Message("OpenReflectionImage",IInfo,IErr, MessageVariable = "filename", &
-       !MessageString = filename)
-
 
   OPEN(UNIT=IChOutWrite, ERR=10, STATUS= 'UNKNOWN', FILE=TRIM(ADJUSTL(filename)),FORM='UNFORMATTED',&
        ACCESS='DIRECT',IOSTAT=Ierr,RECL=IImageSizeX*8)
@@ -322,8 +299,6 @@ SUBROUTINE WriteReflectionImage( IChOutWrite, data, IErr,IImageSizeX,IImageSizeY
   CHARACTER*100 CSizeofData
   INTEGER ind,knd, IChOutWrite
   CHARACTER*100 SFormatString
-
-  !!!CALL Message("WriteReflectionImage",IMust,IErr)
      
   DO ind = 1,(IImageSizeY)
      WRITE(IChOutWrite,rec=ind) data(ind,:)
@@ -401,9 +376,6 @@ SUBROUTINE WriteOutInputFile (IErr)
   IMPLICIT NONE
 
   INTEGER(IKIND):: IErr
-
-!!$  IF(ISoftwareMode.LT.2) THEN
-     !!!CALL Message("WriteOutInputFile",IMust,IErr)
      
      OPEN(UNIT= IChInp,FILE= "felix.inp.sample",&
        STATUS= 'UNKNOWN')
@@ -465,7 +437,6 @@ SUBROUTINE WriteOutInputFile (IErr)
         CALL WriteToScreenandFile(ADJUSTL("RExitCriteria            = 0.0001"),IErr)
      END IF
         CLOSE(UNIT=IChInp)
-!!$END IF
         
 END SUBROUTINE WriteOutInputFile
 

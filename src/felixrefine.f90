@@ -526,11 +526,17 @@ PROGRAM Felixrefine
     INoOfVariables = SUM(INoofElementsForEachRefinementType)
     !--------------------------------------------------------------------
     ALLOCATE(RIndependentVariable(INoOfVariables),STAT=IErr)
-	!Fill up the IndependentVariable list with CUgMatNoAbs components
+	!Fill up the IndependentVariable list 
+    ind=1
     IF(IRefineMode(4).EQ.1) THEN!Isotropic DW
-	  DO ind=1,SIZE(IAtomicSitesToRefine)
+	  DO jnd=1,SIZE(IAtomicSitesToRefine)
         RIndependentVariable(ind)=RIsoDW(ind)
+        ind=ind+1
 	  END DO
+	END IF
+    IF(IRefineMode(8).EQ.1) THEN!Convergence angle
+      RIndependentVariable(ind)=RConvergenceAngle
+      ind=ind+1
 	END IF
     !Assign IDs - not needed for a Ug refinement
     ALLOCATE(IIterativeVariableUniqueIDs(INoOfVariables,5),STAT=IErr)
@@ -687,8 +693,7 @@ PROGRAM Felixrefine
   CALL MPI_BCAST(RFigureofMerit,1,MPI_DOUBLE_PRECISION,0,MPI_COMM_WORLD,IErr)
   !=====================================
 
-  IF (IRefineMode(12).EQ.1) THEN
-    !bisection on Ug's
+  IF (IRefineMode(12).EQ.1) THEN    !bisection on Ug's
 	RdeltaUg=0.01!RSimplexLengthScale/100.0!use simplex length scale
 	Rtol=0.002! precision 0.01 (in what units, eh? Do find out...)
 	DO jnd=1,10!10 cycles to see how it converges
@@ -750,12 +755,16 @@ PROGRAM Felixrefine
     IF(my_rank.EQ.0) THEN
       CALL CreateRandomisedSimplex(RSimplexVariable,RIndependentVariable,IErr)
     END IF
+!    IF(my_rank.EQ.0) THEN
+!      PRINT*,"RIndependentVariable",RIndependentVariable
+!      PRINT*,"RSimplexVariable",RSimplexVariable
+!    END IF
     !=====================================send RSimplexVariable out to all cores
     CALL MPI_BCAST(RSimplexVariable,(INoOfVariables+1)*(INoOfVariables),MPI_DOUBLE_PRECISION,0,MPI_COMM_WORLD,IErr)
     !=====================================
     ! Perform initial simplex simulations
     DO ind = 1,(INoOfVariables+1)
-      IF((IWriteFLAG.GE.0.AND.my_rank.EQ.0).OR.IWriteFLAG.GE.10) THEN
+      IF(my_rank.EQ.0) THEN
         PRINT*,"--------------------------------"
         WRITE(SPrintString,FMT='(A8,I2,A4,I3)') "Simplex ",ind," of ",INoOfVariables+1
         PRINT*,TRIM(ADJUSTL(SPrintString))
@@ -1371,67 +1380,57 @@ USE MyNumbers
   REAL(RKIND),DIMENSION(INoOfVariables),INTENT(INOUT) :: RIndependentVariable
   
   IF(IRefineMode(2).EQ.1) THEN!it's an atomic coordinate refinement
-     DO ind = 1,(INoOfVariables+1)
-        ALLOCATE(RRandomSigns(IAllowedVectors),RRandomNumbers(IAllowedVectors),&
-             STAT=IErr)       
-        
-!!$           Randomise Atomic Displacements
-        CALL RandomSequence(RRandomNumbers,IAllowedVectors,ind,IErr)
-        CALL RandomSequence(RRandomSigns,IAllowedVectors,2*ind,IErr)
-        WHERE (RRandomSigns.LT.HALF)
-           RRandomSigns = ONE
-        ELSEWHERE
-           RRandomSigns = -ONE
-        END WHERE
-        RSimplexVariable(ind,:IAllowedVectors) = &
+    DO ind = 1,(INoOfVariables+1)
+      ALLOCATE(RRandomSigns(IAllowedVectors),RRandomNumbers(IAllowedVectors),STAT=IErr)       
+!!$         Randomise Atomic Displacements
+      CALL RandomSequence(RRandomNumbers,IAllowedVectors,ind,IErr)
+      CALL RandomSequence(RRandomSigns,IAllowedVectors,2*ind,IErr)
+      WHERE (RRandomSigns.LT.HALF)
+        RRandomSigns = ONE
+      ELSEWHERE
+        RRandomSigns = -ONE
+      END WHERE
+      RSimplexVariable(ind,:IAllowedVectors) = &
              RRandomNumbers*RRandomSigns*RSimplexLengthScale
-        DEALLOCATE(RRandomSigns,RRandomNumbers) 
-        ALLOCATE(RRandomSigns(INoOfVariables-IAllowedVectors),&
-             RRandomNumbers(INoOfVariables-IAllowedVectors),&
-             STAT=IErr)
-        
+      DEALLOCATE(RRandomSigns,RRandomNumbers,STAT=IErr)
+      ALLOCATE(RRandomSigns(INoOfVariables-IAllowedVectors),&
+             RRandomNumbers(INoOfVariables-IAllowedVectors),STAT=IErr)
 !!$           Randomise Everything else
-        CALL RandomSequence(RRandomNumbers,&
-             INoOfVariables-IAllowedVectors,ind,IErr)
-        CALL RandomSequence(RRandomSigns,&
-             INoOfVariables-IAllowedVectors,2*ind,IErr)
-        WHERE (RRandomSigns.LT.HALF)
-           RRandomSigns = ONE
-        ELSEWHERE
-           RRandomSigns = -ONE
-        END WHERE
-        RSimplexVariable(ind,(IAllowedVectors+1):) = &
+      CALL RandomSequence(RRandomNumbers,INoOfVariables-IAllowedVectors,ind,IErr)
+      CALL RandomSequence(RRandomSigns,INoOfVariables-IAllowedVectors,2*ind,IErr)
+      WHERE (RRandomSigns.LT.HALF)
+        RRandomSigns = ONE
+      ELSEWHERE
+        RRandomSigns = -ONE
+      END WHERE
+      RSimplexVariable(ind,(IAllowedVectors+1):) = &
              RIndependentVariable((IAllowedVectors+1):)*&
              (1+(RRandomNumbers*RRandomSigns*RSimplexLengthScale))
-        DEALLOCATE(RRandomSigns,RRandomNumbers)
-        
-     END DO
-     
-  ELSE
-
-    ALLOCATE(RRandomSigns(INoOfVariables),RRandomNumbers(INoOfVariables),STAT=IErr)
-    IF( IErr.NE.0 ) THEN
-      PRINT*,"CreateRandomisedSimplex(",my_rank,")error in Allocation"
-      RETURN
-    END IF     
-    DO ind = 1,(INoOfVariables+1)
-      CALL RandomSequence(RRandomNumbers,INoOfVariables,ind,IErr)
-      CALL RandomSequence(RRandomSigns,INoOfVariables,2*ind,IErr)
-      WHERE (RRandomSigns.LT.HALF)
-        RRandomSigns=ONE
-      ELSEWHERE
-        RRandomSigns=-ONE
-      END WHERE
-	  RSimplexVariable(ind,:)=RIndependentVariable(:)*&
-                              (1+(RRandomNumbers*RRandomSigns*RSimplexLengthScale))
+      DEALLOCATE(RRandomSigns,RRandomNumbers,STAT=IErr)
     END DO
-    DEALLOCATE(RRandomSigns,STAT=IErr)
-	DEALLOCATE(RRandomNumbers,STAT=IErr)
-     IF( IErr.NE.0 ) THEN
-      PRINT*,"CreateRandomisedSimplex(",my_rank,")error in deallocation"
-      RETURN
-    END IF      
-  END IF
+  ELSE
+   ALLOCATE(RRandomSigns(INoOfVariables),RRandomNumbers(INoOfVariables),STAT=IErr)
+   IF( IErr.NE.0 ) THEN
+     PRINT*,"CreateRandomisedSimplex(",my_rank,")error in Allocation"
+     RETURN
+   END IF     
+   DO ind = 1,(INoOfVariables+1)
+     CALL RandomSequence(RRandomNumbers,INoOfVariables,ind,IErr)
+     CALL RandomSequence(RRandomSigns,INoOfVariables,2*ind,IErr)
+     WHERE (RRandomSigns.LT.HALF)
+       RRandomSigns=ONE
+     ELSEWHERE
+       RRandomSigns=-ONE
+     END WHERE
+     RSimplexVariable(ind,:)=RIndependentVariable(:)*&
+                              (1+(RRandomNumbers*RRandomSigns*RSimplexLengthScale))
+   END DO
+   DEALLOCATE(RRandomSigns,RRandomNumbers,STAT=IErr)
+   IF( IErr.NE.0 ) THEN
+     PRINT*,"CreateRandomisedSimplex(",my_rank,")error in deallocation"
+     RETURN
+   END IF      
+ END IF
 
 END SUBROUTINE CreateRandomisedSimplex
 

@@ -189,9 +189,7 @@ SUBROUTINE ImageMaskInitialisation (IErr)
   
   INTEGER(IKIND) :: ind,jnd, ierr,InnerRadiusFLAG
   REAL(RKIND) :: Rradius, RImageRadius
-  
-  !CALL Message("ImageMaskInitialisation",IMust,IErr)
-  
+
   ALLOCATE(RMask(2*IPixelCount,2*IPixelCount),STAT=IErr)
   IF( IErr.NE.0 ) THEN
     PRINT*,"ImageMaskInitialisation(",my_rank,")error allocating RMask"

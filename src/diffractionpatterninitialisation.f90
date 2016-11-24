@@ -48,8 +48,6 @@ SUBROUTINE DiffractionPatternInitialisation
 
   INTEGER(IKIND) :: IErr
 
-  !CALL Message("DiffractionPatternInitialisation",IMust,IErr)
-
   CALL ReflectionDetermination (IErr)
   IF( IErr.NE.0 ) THEN
      PRINT*,"DiffractionPatternInitialisation(",my_rank,")error", IErr, &

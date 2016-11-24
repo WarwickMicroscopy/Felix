@@ -36,7 +36,7 @@
 !Subroutine reads in a message the user wants to display to the screen, The IWriteFLAG
 !is then compared to the PriorityFLAG which determines whether it will get printed out or not.
 MODULE WriteToScreen
-CONTAINS
+CONTAINS!aim to make this redundant
 
   SUBROUTINE Message(ProgramName,IPriorityFLAG,IErr,MessageVariable,RVariable,IVariable, &
        RVector,RMatrix,CVariable,MessageString)

@@ -113,7 +113,7 @@ SUBROUTINE ReadCif(IErr)
   END IF
   ! Open the CIF to be accessed
 
-100 name='felix.cif'
+  name='felix.cif'
   IF(.NOT.ocif_(name)) THEN
     IF(my_rank.EQ.0) THEN
       PRINT*,"Cannot find .cif, exiting"
@@ -123,22 +123,13 @@ SUBROUTINE ReadCif(IErr)
   END IF
 
   ! Assign the data block to be accessed
-120 IF(.NOT.data_(' ')) THEN
+  IF(.NOT.data_(' ')) THEN
     IF(my_rank.EQ.0) THEN
       PRINT*,"No cif data_ statement found"
     END IF
     IErr=1
   END IF
-  
-130 IF(my_rank.EQ.0) THEN
-     !CALL Message("ReadCIF",IInfo,IErr,MessageVariable = "Access items in data block ", !MessageString = bloc_)
-  END IF
-  !CALL Message("ReadCIF",IMoreInfo,IErr,!MessageString = "Cell length origin") 
-  !CALL Message("ReadCIF",IMoreInfo,IErr,MessageVariable = "RLengthX",RVariable = RLengthX)
-  !CALL Message("ReadCIF",IMoreInfo,IErr,MessageVariable = "RLengthY",RVariable = RLengthY)
-  !CALL Message("ReadCIF",IMoreInfo,IErr,MessageVariable = "RLengthZ",RVariable = RLengthZ)
-  
-  
+ 
   ! Extract some cell dimensions; test all is OK
   ! NEED TO PUT IN A CHECK FOR LENGTH UNITS
   siga = 0.
@@ -154,18 +145,7 @@ SUBROUTINE ReadCif(IErr)
      END IF
      IErr=1
   END IF
-
   RLengthX=cela; RLengthY=celb; RLengthZ=celc
-  !CALL Message("ReadCIF",IInfo,IErr,!MessageString = "Cell length") 
-  !CALL Message("ReadCIF",IInfo,IErr,MessageVariable = "RLengthX",RVariable = RLengthX)
-  !CALL Message("ReadCIF",IInfo,IErr,MessageVariable = "RLengthY",RVariable = RLengthY)
-  !CALL Message("ReadCIF",IInfo,IErr,MessageVariable = "RLengthZ",RVariable = RLengthZ)
-
-  !CALL Message("ReadCIF",IMoreInfo,IErr,!MessageString = "Standard deviation of length") 
-  !CALL Message("ReadCIF",IMoreInfo,IErr,MessageVariable = "siga",RVariable = REAL(siga,RKIND))
-  !CALL Message("ReadCIF",IMoreInfo,IErr,MessageVariable = "sigb",RVariable = REAL(sigb,RKIND))
-  !CALL Message("ReadCIF",IMoreInfo,IErr,MessageVariable = "sigc",RVariable = REAL(sigc,RKIND))
-
 
   siga = 0.
   sigb = 0.
@@ -173,8 +153,7 @@ SUBROUTINE ReadCif(IErr)
   f1 = numb_('_cell_angle_alpha', cela, siga)
   f2 = numb_('_cell_angle_beta', celb, sigb)
   f3 = numb_('_cell_angle_gamma', celc, sigc)
-  
-  IF(.NOT.(f1.AND.f2.AND.f3)) THEN
+   IF(.NOT.(f1.AND.f2.AND.f3)) THEN
     IF(my_rank.EQ.0) THEN
       PRINT*,"ReadCif(", my_rank, ") Cell angle(s) missing!"
     END IF
@@ -182,11 +161,6 @@ SUBROUTINE ReadCif(IErr)
   END IF
 
   ! convert angles from degrees to radians
-  !CALL Message("ReadCIF",IMoreInfo,IErr,!MessageString = "Angle (input)")
-  !CALL Message("ReadCIF",IMoreInfo,IErr,MessageVariable = "cela",RVariable = REAL(cela,RKIND))
-  !CALL Message("ReadCIF",IMoreInfo,IErr,MessageVariable = "celb",RVariable = REAL(celb,RKIND))
-  !CALL Message("ReadCIF",IMoreInfo,IErr,MessageVariable = "celc",RVariable = REAL(celc,RKIND))
-
   IF (cela.GT.TWOPI) THEN!assume this angle is expressed in degrees
     RAlpha=cela*DEG2RADIAN;
   END IF
@@ -251,12 +225,10 @@ SUBROUTINE ReadCif(IErr)
     END IF
   END IF
 
-  !CALL Message("Read CIF",IInfo,IErr,MessageVariable = "Space Group",MessageString =name(1:long_))
   SSpaceGroupName=TRIM(name(1:1))
   SSpaceGrp = TRIM(ADJUSTL(name))
   
-  !sometimes space group is input in lowercase letters - below changes the first letter to
-  !uppercase
+  !sometimes space group is input in lowercase letters - below changes the first letter to uppercase
   IF (SCAN(alphabet,SSpaceGroupName).GT.26) THEN
      SSpaceGroupName=SAlphabetarray(SCAN(alphabet,SSpaceGroupName)-26)
   END IF
@@ -267,8 +239,6 @@ SUBROUTINE ReadCif(IErr)
   
   ! ----------------------------------------------------------
   ! Extract atom site data in a loop
-  !CALL Message("Read CIF",IInfo,IErr,!MessageString = "Atom sites")
-
   ! counting loop
   IAtomCount=0
   DO 
@@ -359,10 +329,6 @@ SUBROUTINE ReadCif(IErr)
 	  SWyckoffSymbols(ind) = name
     END DO
   END IF
-
-  !----------------------------------------------------
-  ! RESET
-  !CALL CifReset(IErr)
   
   DO ind=1,IAtomCount
     f2 = numb_('_atom_site_aniso_U_11',u,su) 
@@ -384,13 +350,6 @@ SUBROUTINE ReadCif(IErr)
      PRINT*,"RAnisotropicDebyeWallerFactorTensor",RAnisotropicDebyeWallerFactorTensor
   END IF
 
-  ! ----------------------------------------------------------
-  ! Extract atom site data in a loop
-  !CALL Message("Read CIF",IInfo,IErr, !MessageString = "Symmetries")      
-  !IF((IWriteFLAG.GE.1.AND.my_rank.EQ.0).OR.IWriteFLAG.GE.10) THEN
-  !   PRINT*,"ReadCif(", my_rank, ") Symmetries"
-  !END IF
-
   ! counting loop
   ISymCount=0
   DO 
@@ -403,11 +362,6 @@ SUBROUTINE ReadCif(IErr)
     IF(loop_ .NEQV. .TRUE.) EXIT
   END DO
 
-  !CALL Message("ReadCIF",IInfo,IErr,MessageVariable = "found",IVariable = ISymCount, !MessageString = "symmetries")
-  !IF((IWriteFLAG.GE.1.AND.my_rank.EQ.0).OR.IWriteFLAG.GE.10) THEN
-  !   PRINT*,"ReadCif(", my_rank, ") found", ISymCount, "symmetries"
-  !END IF
-  
   ALLOCATE(RSymVec(ISymCount,ITHREE),STAT=IErr)
   ALLOCATE(RSymMat(ISymCount,ITHREE,ITHREE),STAT=IErr)
   IF( IErr.NE.0 ) THEN
@@ -485,15 +439,3 @@ IMessageCounter =0
   RETURN
 
 END SUBROUTINE ReadCif
-!%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-SUBROUTINE CifReset(IErr)
-  
-  USE WriteToScreen
-  USE IConst
-
-  USE IPara
-
-  IMPLICIT NONE
-  INTEGER(IKIND):: IErr
-
-END SUBROUTINE CifReset

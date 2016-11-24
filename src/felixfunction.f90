@@ -99,12 +99,19 @@ SUBROUTINE SimulateAndFit(RIndependentVariable,Iter,IExitFLAG,IErr)
         RETURN
      END IF
      RAbsorptionPercentage = RIndependentVariable(jnd)!===![[[!needs to be updated for AbsorbFLAG 2
-  ELSE !everything else
+  ELSE  !everything else
      !Change variables
      CALL UpdateVariables(RIndependentVariable,IErr)
      IF( IErr.NE.0 ) THEN
         PRINT*,"SimulateAndFit(",my_rank,")error in UpdateVariables"
         RETURN
+     END IF
+     IF (IRefineMode(8).EQ.1) THEN
+       !IF(my_rank.EQ.0) THEN
+       !  PRINT*,"bibble",RConvergenceAngle
+       !END IF
+       !recalculate k-vectors
+       RDeltaK = RMinimumGMag*RConvergenceAngle/REAL(IPixelCount,RKIND)
      END IF
      !recalculate unit cell
      CALL UniqueAtomPositions(IErr)
@@ -427,6 +434,9 @@ SUBROUTINE UpdateVariables(RIndependentVariable,IErr)
 
   DO ind = 1,INoOfVariables
      IVariableType = IIterativeVariableUniqueIDs(ind,2)
+     IF(my_rank.EQ.0) THEN
+      PRINT*,"IVariableType",IVariableType
+     END IF
      SELECT CASE (IVariableType)
      CASE(1)
         !RB structure factor refinement, do in UpdateStructureFactors
@@ -560,8 +570,7 @@ SUBROUTINE PrintVariables(IErr)
            PRINT*,TRIM(ADJUSTL(SPrintString))
 
         CASE(8)
-           PRINT*,"Current Convergence Angle"
-           WRITE(SPrintString,FMT='((F9.6,1X))') RConvergenceAngle
+           WRITE(SPrintString,FMT='(A27,F5.2)') "Current Convergence Angle: ",RConvergenceAngle
            PRINT*,TRIM(ADJUSTL(SPrintString))
 
         CASE(9)
