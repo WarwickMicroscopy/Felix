@@ -49,37 +49,21 @@ CONTAINS
 
     IMPLICIT NONE
 
-    CHARACTER(*), INTENT (IN), OPTIONAL ::  &
-         MessageVariable, MessageString
-    REAL(RKIND),INTENT(IN), OPTIONAL :: &
-         RVariable, RVector(:), RMatrix(:,:) 
-    INTEGER(IKIND),INTENT (IN), OPTIONAL :: &
-         IVariable
-    COMPLEX(CKIND),INTENT (IN), OPTIONAL :: &
-         CVariable
-
-    INTEGER(IKIND) :: &
-         ISizeVector,ISizeMatrixX,ISizeMatrixY
-
-    CHARACTER(*),INTENT (IN) :: &
-         ProgramName
-    INTEGER(IKIND) :: &
-         IErr,IPriorityFLAG,ind,jnd,knd, &
-         ILengthofMessageVariable
-
-    CHARACTER*100 &
-         SVariable, SVariableTemp,SVariableOld, my_rank_string, &
+    CHARACTER(*), INTENT (IN), OPTIONAL :: MessageVariable, MessageString
+    REAL(RKIND),INTENT(IN), OPTIONAL :: RVariable, RVector(:), RMatrix(:,:) 
+    INTEGER(IKIND),INTENT (IN), OPTIONAL :: IVariable
+    COMPLEX(CKIND),INTENT (IN), OPTIONAL :: CVariable
+    INTEGER(IKIND) :: ISizeVector,ISizeMatrixX,ISizeMatrixY
+    CHARACTER(*),INTENT (IN) :: ProgramName
+    INTEGER(IKIND) :: IErr,IPriorityFLAG,ind,jnd,knd,ILengthofMessageVariable
+    CHARACTER*100 SVariable, SVariableTemp,SVariableOld, my_rank_string, &
          DebugString,Sind,SFormatofDebugMessageDummy, &
          SFormatofDebugMessage
-    CHARACTER*30,DIMENSION(:), ALLOCATABLE :: &
-         SVariableVector
-    CHARACTER*30,DIMENSION(:,:), ALLOCATABLE :: &
-         SVariableMatrix, SVariableMatrixDummy
+    CHARACTER*30,DIMENSION(:), ALLOCATABLE :: SVariableVector
+    CHARACTER*30,DIMENSION(:,:), ALLOCATABLE :: SVariableMatrix, SVariableMatrixDummy
 
-    INTEGER(IKIND) :: &
-         IMatrixPresentSwitch,ILengthofLine,IMaxLengthIndicator,ILineBreaks, &
+    INTEGER(IKIND) :: IMatrixPresentSwitch,ILengthofLine,IMaxLengthIndicator,ILineBreaks, &
          INumElementsinFinalLine,INumCharactersinOneLine,INumFulllineCharacters
-
 
     !Variable that switches message subroutine to matrix printing mode 
     IMatrixPresentSwitch=0
@@ -97,9 +81,7 @@ CONTAINS
 !!$  and allocates appropriately. Stores in a long string SVariable
     ELSE IF (PRESENT(RVector)) THEN
        ISizeVector=SIZE(RVector)
-       ALLOCATE(&
-            SVariableVector(ISizeVector),&
-            STAT=IErr)
+       ALLOCATE(SVariableVector(ISizeVector),STAT=IErr)
        IF( IErr.NE.0 ) THEN
           PRINT*,"felixrefine (", my_rank, ") error in Allocation() of IIterativeVariableUniqueIDs"
           RETURN
@@ -122,34 +104,14 @@ CONTAINS
        IMatrixPresentSwitch=1
        ISizeMatrixX=SIZE(RMatrix,1,IKIND)
        ISizeMatrixY=SIZE(RMatrix,2,IKIND)
-       ALLOCATE(&
-            SVariableMatrix(ISizeMatrixX,ISizematrixY), &
-            STAT=IErr)
+       ALLOCATE(SVariableMatrix(ISizeMatrixX,ISizematrixY),STAT=IErr)
+       ALLOCATE(SVariableMatrixDummy(ISizeMatrixX,ISizematrixY),STAT=IErr)
        IF( IErr.NE.0 ) THEN
-          PRINT*,"felixsim (", my_rank, ") error in Allocation() of SVariableMatrix"
+          PRINT*,"felixsim (", my_rank, ") error in Allocation"
           RETURN
        ENDIF
-
-       ALLOCATE(&
-            SVariableMatrixDummy(ISizeMatrixX,ISizematrixY), &
-            STAT=IErr)
-       IF( IErr.NE.0 ) THEN
-          PRINT*,"felixsim (", my_rank, ") error in Allocation() of SVariableMatrixDummy"
-          RETURN
-       ENDIF
-
-    ELSE
        SVariable = ""
     END IF
-
-
-!!$  If IWriteFLAG is set to over 100 - IDebugFLAG is activated, IWriteFLAG set back to normal setting
-
-    IF (IWriteFLAG.GE.100) THEN
-       IDebugFLAG = IWriteFLAG
-       IWriteFLAG = IDebugFLAG - 100
-    END IF
-
 
 !!$  If IPriorityFLAG is over 100 (Debug messaging) below won't execute
 !!$  Prints out specified variation of message (dependent on presence of variables), to the screen
@@ -158,30 +120,30 @@ CONTAINS
        ! Checks if MessageVariable & MessageString has been read into the function
        IF (PRESENT(MessageVariable).AND.PRESENT(MessageString)) THEN
           !Prints out message
-          IF((IPriorityFLAG.LE.IWriteFLAG.AND.my_rank.EQ.0.AND.ISoftwareMode.LT.IRefineSwitch) &
-               .OR.IWriteFLAG.GE.10.AND.ISoftwareMode .LT. IRefineSwitch) THEN
+          IF((IPriorityFLAG.LE.IWriteFLAG.AND.my_rank.EQ.0) &
+               .OR.IWriteFLAG.GE.10) THEN
              PRINT*,ProgramName,"( ",TRIM(ADJUSTL(my_rank_string))," ) ", &
                   TRIM(MessageVariable)," = ",TRIM(ADJUSTL(SVariable)),"  ",TRIM(ADJUSTL(MessageString))
           END IF
 
        ELSE IF (PRESENT(MessageVariable)) THEN
 
-          IF((IPriorityFLAG.LE.IWriteFLAG.AND.my_rank.EQ.0.AND.ISoftwareMode.LT.IRefineSwitch) &
-               .OR.IWriteFLAG.GE.10.AND.ISoftwareMode .LT. IRefineSwitch) THEN
+          IF((IPriorityFLAG.LE.IWriteFLAG.AND.my_rank.EQ.0) &
+               .OR.IWriteFLAG.GE.10) THEN
              PRINT*,ProgramName,"( ",TRIM(ADJUSTL(my_rank_string))," ) ",&
                   TRIM(ADJUSTL(MessageVariable))," = ",TRIM(ADJUSTL(SVariable))
           END IF
 
        ELSE IF (PRESENT(MessageString)) THEN
 
-          IF((IPriorityFLAG.LE.IWriteFLAG.AND.my_rank.EQ.0.AND.ISoftwareMode.LT.IRefineSwitch) &
-               .OR.IWriteFLAG.GE.10.AND.ISoftwareMode .LT. IRefineSwitch) THEN
+          IF((IPriorityFLAG.LE.IWriteFLAG.AND.my_rank.EQ.0) &
+               .OR.IWriteFLAG.GE.10) THEN
              PRINT*,ProgramName,"( ",TRIM(ADJUSTL(my_rank_string))," ) ", TRIM(ADJUSTL(MessageString))
           END IF
 
        ELSE
-          IF((IPriorityFLAG.LE.IWriteFLAG.AND.my_rank.EQ.0.AND.ISoftwareMode.LT.IRefineSwitch) &
-               .OR.IWriteFLAG.GE.10.AND.ISoftwareMode .LT. IRefineSwitch) THEN
+          IF((IPriorityFLAG.LE.IWriteFLAG.AND.my_rank.EQ.0) &
+               .OR.IWriteFLAG.GE.10) THEN
              PRINT*,ProgramName,"( ",TRIM(ADJUSTL(my_rank_string))," ) "
           END IF
        END IF
@@ -199,8 +161,8 @@ CONTAINS
        ! Checks if MessageVariable & MessageString has been read into the function
        IF (PRESENT(MessageVariable).AND.PRESENT(MessageString)) THEN
           !Prints out message
-          IF((IPriorityFLAG.LE.IDebugFLAG.AND.my_rank.EQ.0.AND.ISoftwareMode.LT.IRefineSwitch) &
-               .OR.IDebugFLAG.GE.110.AND.ISoftwareMode .LT. IRefineSwitch) THEN
+          IF((IPriorityFLAG.LE.IDebugFLAG.AND.my_rank.EQ.0) &
+               .OR.IDebugFLAG.GE.110) THEN
              PRINT*,"DBG_MESSAGE: ",ProgramName,"( ",TRIM(ADJUSTL(my_rank_string))," ) ", &
                   TRIM(ADJUSTL(MessageVariable))," = ",TRIM(ADJUSTL(SVariable)),"  ", &
                   TRIM(ADJUSTL(MessageString))
@@ -208,24 +170,24 @@ CONTAINS
 
        ELSE IF (PRESENT(MessageVariable)) THEN
 
-          IF((IPriorityFLAG.LE.IDebugFLAG.AND.my_rank.EQ.0.AND.ISoftwareMode.LT.IRefineSwitch) &
-               .OR.IDebugFLAG.GE.110.AND.ISoftwareMode .LT. IRefineSwitch) THEN
+          IF((IPriorityFLAG.LE.IDebugFLAG.AND.my_rank.EQ.0) &
+               .OR.IDebugFLAG.GE.110) THEN
              PRINT*,"DBG_MESSAGE: ",ProgramName,"( ",TRIM(ADJUSTL(my_rank_string))," ) ", &
                   TRIM(ADJUSTL(MessageVariable))," = ",TRIM(ADJUSTL(SVariable))
           END IF
 
        ELSE IF (PRESENT(MessageString)) THEN
 
-          IF((IPriorityFLAG.LE.IDebugFLAG.AND.my_rank.EQ.0.AND.ISoftwareMode.LT.IRefineSwitch) &
-               .OR.IDebugFLAG.GE.110.AND.ISoftwareMode .LT. IRefineSwitch) THEN
+          IF((IPriorityFLAG.LE.IDebugFLAG.AND.my_rank.EQ.0) &
+               .OR.IDebugFLAG.GE.110) THEN
              PRINT*,"DBG_MESSAGE: ",ProgramName,"( ",TRIM(ADJUSTL(my_rank_string))," ) ", & 
                   TRIM(ADJUSTL(MessageString))
           END IF
 
        ELSE
 
-          IF((IPriorityFLAG.LE.IDebugFLAG.AND.my_rank.EQ.0.AND.ISoftwareMode.LT.IRefineSwitch) &
-               .OR.IDebugFLAG.GE.110.AND.ISoftwareMode .LT. IRefineSwitch) THEN
+          IF((IPriorityFLAG.LE.IDebugFLAG.AND.my_rank.EQ.0) &
+               .OR.IDebugFLAG.GE.110) THEN
              PRINT*,"DBG_MESSAGE: ",ProgramName,"( ",TRIM(ADJUSTL(my_rank_string))," ) "
           END IF
        END IF
@@ -236,8 +198,8 @@ CONTAINS
 !!$  message format.
     ELSE IF(IPriorityFLAG.GE.100.AND.IMatrixPresentSwitch.EQ.1) THEN
 
-       IF((IPriorityFLAG.LE.IDebugFLAG.AND.my_rank.EQ.0.AND.ISoftwareMode.LT.IRefineSwitch) &
-            .OR.IDebugFLAG.GE.110.AND.ISoftwareMode .LT. IRefineSwitch) THEN
+       IF((IPriorityFLAG.LE.IDebugFLAG.AND.my_rank.EQ.0) &
+            .OR.IDebugFLAG.GE.110) THEN
 
 !!$       Loop over rows (ISizeMatrixX) and columns (ISizeMatrixY) - concatenate each row into 
 !!$       a dummy variable: SVariable, if matrix is too long (row wise) counter counts how many 

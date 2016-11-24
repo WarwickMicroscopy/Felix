@@ -61,7 +61,7 @@ SUBROUTINE MontageSetup(RMontageImages,RIndividualReflectionImages,IErr)
   REAL(RKIND),DIMENSION(INoOfLacbedPatterns,IThicknessCount,IPixelTotal):: &
        RIndividualReflectionImages
   
-  CALL Message("MontageSetup",IMust,IErr)
+  !CALL Message("MontageSetup",IMust,IErr)
 
      DO IThicknessIndex =1,IThicknessCount
         DO knd = 1,IPixelTotal

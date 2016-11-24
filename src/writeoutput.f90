@@ -57,7 +57,7 @@ SUBROUTINE WriteOutput( CAmplitudeandPhaseImages,RReflectionImages,RMontageImage
   CHARACTER*40 :: surname, path
   CHARACTER*25 :: SThickness, SThicknessLength
       
-  CALL Message("WriteOutput",IMust,IErr)
+  !CALL Message("WriteOutput",IMust,IErr)
 
   ALLOCATE(RImage(2*IPixelCount,2*IPixelCount),STAT=IErr)
   IF( IErr.NE.0 ) THEN
@@ -66,7 +66,7 @@ SUBROUTINE WriteOutput( CAmplitudeandPhaseImages,RReflectionImages,RMontageImage
      RETURN
   ENDIF
 
-  CALL Message("WriteOutput",IAllInfo,IErr,MessageString = "Writing Images")
+  !CALL Message("WriteOutput",IAllInfo,IErr,!MessageString = "Writing Images")
 
   !--------------------------------------------------------
   ! Make an output directory
@@ -104,7 +104,7 @@ SUBROUTINE WriteOutput( CAmplitudeandPhaseImages,RReflectionImages,RMontageImage
         ENDIF
            
 
-        CALL Message("WriteOutput",IMoreInfo,IErr,MessageVariable = "working on RThickness",RVariable = RThickness )
+        !CALL Message("WriteOutput",IMoreInfo,IErr,MessageVariable = "working on RThickness",RVariable = RThickness )
 
         CALL WriteReflectionImage(MontageOut,RMontageImages(:,:,knd), &
              IErr,MAXVAL(IImageSizeXY),MAXVAL(IImageSizeXY),knd)

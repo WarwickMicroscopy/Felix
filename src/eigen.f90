@@ -58,7 +58,7 @@ SUBROUTINE EigenSpectrum(IMatrixDimension, MatrixToBeDiagonalised, EigenValues, 
 
   IF (my_rank.EQ.0) THEN
      DO WHILE (IMessageCounter .LT.5)
-        CALL Message("EigenSpectrum",IMust,IErr)
+        !CALL Message("EigenSpectrum",IMust,IErr)
         IMessageCounter = IMessageCounter +1
      END DO
   END IF

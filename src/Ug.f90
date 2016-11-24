@@ -55,7 +55,6 @@ SUBROUTINE GMatrixInitialisation (IErr)
   
   INTEGER(IKIND) :: ind,jnd,IErr
 
-  CALL Message("GMatrixInitialisation",IMust,IErr)
   !Ug RgPool is a list of g-vectors in the microscope ref frame, units of 1/A
   ! Note that reciprocal lattice vectors dot not have two pi included, we are using the optical convention exp(2*pi*i*g.r)
   DO ind=1,nReflections
@@ -98,8 +97,6 @@ SUBROUTINE SymmetryRelatedStructureFactorDetermination (IErr)
   
   INTEGER(IKIND) :: ind,jnd,ierr,knd,Iuid
   CHARACTER*200 :: SPrintString
-
-  CALL Message("SymmetryRelatedStructureFactorDetermination",IMust,IErr)
 
   RgSumMat = RgSumMat+ABS(REAL(CUgMatNoAbs))+ABS(AIMAG(CUgMatNoAbs))
 
@@ -164,8 +161,6 @@ SUBROUTINE StructureFactorInitialisation (IErr)
   REAL(RKIND) :: RMeanInnerPotentialVolts,RScatteringFactor,Lorentzian,Gaussian,Kirkland,&
         RScattFacToVolts
   CHARACTER*200 :: SPrintString
-  
-  CALL Message("StructureFactorInitialisation",IMust,IErr)
 
   !Conversion factor from scattering factors to volts. h^2/(2pi*m0*e*CellVolume), see e.g. Kirkland eqn. C.5
   !NB RVolume is already in A unlike RPlanckConstant
@@ -259,17 +254,12 @@ SUBROUTINE StructureFactorInitialisation (IErr)
   !  RMeanInnerPotential = RMeanInnerPotential+Kirkland(IAtomicNumber(ind),ZERO)/RAngstromConversion
   !END DO
   !RMeanInnerPotential = RMeanInnerPotential*RScattFacToVolts
-  !PRINT*,"MeanInnerPotential2=",RMeanInnerPotential
-  CALL Message("StructureFactorInitialisation",IMoreInfo,IErr, &
-       MessageVariable = "RMeanInnerPotential", &
-       RVariable = RMeanInnerPotential)
+
 
   ! high-energy approximation (not HOLZ compatible)
   !Wave vector in crystal
   !K^2=k^2+U0
   RBigK= SQRT(RElectronWaveVectorMagnitude**2 + REAL(CUgMatNoAbs(1,1)))
-  CALL Message("StructureFactorInitialisation",IInfo,IErr, &
-       MessageVariable = "RBigK", RVariable = RBigK)
   IF(IWriteFLAG.EQ.3.AND.my_rank.EQ.0) THEN
     WRITE(SPrintString,FMT='(A4,F5.1,A10)') "K = ",RBigK," Angstroms"
 	PRINT*,TRIM(ADJUSTL(SPrintString))

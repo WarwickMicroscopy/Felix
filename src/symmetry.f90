@@ -57,7 +57,7 @@ SUBROUTINE DetermineAllowedMovements(ISpaceGrp,SWyckoffSymbol,RVector,IVector,IE
   REAL(RKIND),DIMENSION(IVector,ITHREE),INTENT(OUT) :: RVector
 
   !Tells user, entering DetermineAllowedMovements
-  CALL Message("DetermineAllowedMovements",IMust,IErr)
+  !CALL Message("DetermineAllowedMovements",IMust,IErr)
 
   SELECT CASE(ISpaceGrp)
   CASE(1)
@@ -352,7 +352,7 @@ SUBROUTINE CountAllowedMovements(ISpaceGrp,SWyckoffSymbol,IVectors,IErr)
   CHARACTER*1 :: SWyckoffSymbol
 
   !Tells user, entering CountAllowedMovements
-  CALL Message("CountAllowedMovements",IMust,IErr)
+  !CALL Message("CountAllowedMovements",IMust,IErr)
   
   SELECT CASE(ISpaceGrp)
   CASE(1)
@@ -640,7 +640,7 @@ SUBROUTINE ConvertSpaceGroupToNumber(ISpaceGrp,IErr)
        
   
   !Tells user, entering ConvertSpaceGroupToNumber
-  CALL Message("ConvertSpaceGroupToNumber",IMust,IErr)
+  !CALL Message("ConvertSpaceGroupToNumber",IMust,IErr)
 
 !!$  Push Spaces In SSpaceGrp to the end of the String
   

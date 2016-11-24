@@ -68,7 +68,7 @@ SUBROUTINE OpenData(IChOutWrite, prefix, surname, IErr)
   CHARACTER*34 :: filename
   INTEGER(IKIND) :: index
 
- ! CALL Message("OpenData",IMust,IErr)
+ ! !!!CALL Message("OpenData",IMust,IErr)
   IF((IWriteFLAG.GE.2.AND.my_rank.EQ.0).OR.IWriteFLAG.GE.10) THEN
     PRINT*,"OpenData()"
   END IF
@@ -212,9 +212,7 @@ SUBROUTINE OpenReflectionImage(IChOutWrite, surname, IErr,IReflectWriting,IImage
   !!$  Only Prints out this message once when iterating (i.e. when in 1st iteration)
 
   IF (IMessageCounter.LT.1) THEN
-     CALL Message("OpenReflectionImage",IMust,IErr)
-      CALL Message("OpenReflectionImage",IMust+IDebug,IErr,&
-          MessageString = "is looping. Dependent on ImageFLAG also (called more than once while looping)")
+     !!!CALL Message("OpenReflectionImage",IMust,IErr)
      IMessageCounter = IMessageCounter +1
   END IF
 
@@ -284,8 +282,8 @@ SUBROUTINE OpenReflectionImage(IChOutWrite, surname, IErr,IReflectWriting,IImage
 	 
   END SELECT
   
-  CALL Message("OpenReflectionImage",IInfo,IErr, MessageVariable = "filename", &
-       MessageString = filename)
+  !!!CALL Message("OpenReflectionImage",IInfo,IErr, MessageVariable = "filename", &
+       !MessageString = filename)
 
 
   OPEN(UNIT=IChOutWrite, ERR=10, STATUS= 'UNKNOWN', FILE=TRIM(ADJUSTL(filename)),FORM='UNFORMATTED',&
@@ -325,18 +323,11 @@ SUBROUTINE WriteReflectionImage( IChOutWrite, data, IErr,IImageSizeX,IImageSizeY
   INTEGER ind,knd, IChOutWrite
   CHARACTER*100 SFormatString
 
-
-  IF (IMessageCounter.LT.2) THEN
-     CALL Message("WriteReflectionImage",IMust,IErr)
-     CALL Message("WriteReflectionImage",IMust+IDebug,IErr, &
-          MessageString = "is looping. Dependent on ImageFLAG also (called more than once while looping)")
-     IMessageCounter = IMessageCounter +1
-  END IF
+  !!!CALL Message("WriteReflectionImage",IMust,IErr)
      
   DO ind = 1,(IImageSizeY)
      WRITE(IChOutWrite,rec=ind) data(ind,:)
   END DO
-
 
   RETURN
   ! error in WRITE detected
@@ -412,7 +403,7 @@ SUBROUTINE WriteOutInputFile (IErr)
   INTEGER(IKIND):: IErr
 
 !!$  IF(ISoftwareMode.LT.2) THEN
-     CALL Message("WriteOutInputFile",IMust,IErr)
+     !!!CALL Message("WriteOutInputFile",IMust,IErr)
      
      OPEN(UNIT= IChInp,FILE= "felix.inp.sample",&
        STATUS= 'UNKNOWN')

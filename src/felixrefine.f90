@@ -102,7 +102,7 @@ PROGRAM Felixrefine
 
   !--------------------------------------------------------------------
   ! startup
-  IF((IWriteFLAG.GE.0.AND.my_rank.EQ.0).OR.IWriteFLAG.GE.10) THEN
+  IF(my_rank.EQ.0) THEN
      PRINT*,"--------------------------------------------------------------"
      PRINT*,"felixrefine: ", RStr
      PRINT*,"             ", DStr
@@ -110,7 +110,6 @@ PROGRAM Felixrefine
      PRINT*,"    on rank= ", my_rank, " of ", p, " in total."
      PRINT*,"--------------------------------------------------------------"
   END IF
-  ISoftwareMode =2 ! felixrefinemode
 
   !--------------------------------------------------------------------
   ! timing startup
@@ -137,9 +136,8 @@ PROGRAM Felixrefine
     PRINT*,"felixrefine(",my_rank,")error reading felix.hkl"
     GOTO 9999
   END IF
-
-
-  IF (ISimFLAG.EQ.0) THEN  !If felixrefine is running
+  
+  IF (ISimFLAG.EQ.0) THEN  !felixrefine
     !read experimental images
     ALLOCATE(RImageExpi(2*IPixelCount,2*IPixelCount,INoOfLacbedPatterns),STAT=IErr)  
     IF( IErr.NE.0 ) THEN
@@ -151,6 +149,8 @@ PROGRAM Felixrefine
       PRINT*,"felixrefine(",my_rank,") error in ReadExperimentalImages"
       GOTO 9999
     END IF
+  ELSEIF(my_rank.EQ.0) THEN
+    PRINT*,"Simulation only"
   END IF
 
   !--------------------------------------------------------------------
@@ -160,12 +160,18 @@ PROGRAM Felixrefine
     PRINT*,"felixrefine(",my_rank,") error in ScatteringFactors"
     GOTO 9999
   END IF
-  !Geometry
-  CALL MicroscopySettings(IErr)
-  IF( IErr.NE.0 ) THEN
-    PRINT*,"felixrefine(",my_rank,") error in MicroscopySettings"
-    GOTO 9999
-  END IF  
+  !Electron velocity in metres per second
+  RElectronVelocity=RSpeedOfLight*SQRT(ONE-((RElectronMass*RSpeedOfLight**2)/ &
+    (RElectronCharge*RAcceleratingVoltage*THOUSAND+RElectronMass*RSpeedOfLight**2) )**2 )
+  !Electron wavelength in Angstroms
+  RElectronWaveLength= RPlanckConstant / &
+    ( SQRT(TWO*RElectronMass*RElectronCharge*RAcceleratingVoltage*THOUSAND) * &
+      SQRT(ONE + (RElectronCharge*RAcceleratingVoltage*THOUSAND) / &
+      (TWO*RElectronMass*RSpeedOfLight**2) ))* RAngstromConversion
+  !(NB k=2pi/lambda and exp(i*k.r), physics convention)
+  RElectronWaveVectorMagnitude=TWOPI/RElectronWaveLength
+  RRelativisticCorrection= ONE/SQRT( ONE - (RElectronVelocity/RSpeedOfLight)**2 )
+  RRelativisticMass= RRelativisticCorrection*RElectronMass
   !Reciprocal lattice
   CALL ReciprocalLattice(IErr)
   IF( IErr.NE.0 ) THEN
@@ -643,14 +649,29 @@ PROGRAM Felixrefine
   !Baseline output, core 0 only
   IExitFLAG = 0 !Do not exit
   IPreviousPrintedIteration = 0!RB ensuring baseline simulation is printed
-  IF(my_rank.EQ.0) THEN
-    !Figure of merit is passed back as a global variable
-    CALL CalculateFigureofMeritandDetermineThickness(Iter,IThicknessIndex,IErr)
-    IF( IErr.NE.0 ) THEN
-      PRINT*,"felixrefine(0) error",IErr,"in CalculateFigureofMeritandDetermineThickness"
-      GOTO 9999
+  IF (ISimFLAG.EQ.1) THEN !Sim mode - All Thicknesses Output     
+    IF(my_rank.EQ.0) THEN
+      WRITE(SPrintString,FMT='(A24,I3,A12)')&
+           "Writing simulations for ", IThicknessCount," thicknesses"
+      PRINT*,TRIM(ADJUSTL(SPrintString))
+      DO IThicknessIndex = 1,IThicknessCount
+        CALL WriteIterationOutput(Iter,IThicknessIndex,IExitFLAG,IErr)
+        IF( IErr.NE.0 ) THEN
+          PRINT*,"felixrefine(0) error in WriteIterationOutput"
+          GOTO 9999
+        END IF
+      END DO
     END IF
-    IF (ISimFLAG.EQ.0) THEN !Refine Mode, Only one Thickness output
+    !felixsim program skips to end
+    GOTO 8888    
+  ELSE!Refine Mode, only one thickness output 
+    IF(my_rank.EQ.0) THEN
+      !Figure of merit is passed back as a global variable
+      CALL CalculateFigureofMeritandDetermineThickness(Iter,IThicknessIndex,IErr)
+      IF( IErr.NE.0 ) THEN
+        PRINT*,"felixrefine(0) error",IErr,"in CalculateFigureofMeritandDetermineThickness"
+        GOTO 9999
+      END IF
       !Keep baseline simulation
       RImageBase=RImageSimi  
       RImageAvi=RImageSimi  
@@ -658,30 +679,13 @@ PROGRAM Felixrefine
       IF( IErr.NE.0 ) THEN
         PRINT*,"felixrefine(0) error in WriteIterationOutput"
         GOTO 9999
-      ENDIF
-    ELSE !Sim mode - All Thicknesses Output
-      PRINT*, "Writing simulations for ", IThicknessCount,"thicknesses"
-      DO IThicknessIndex = 1,IThicknessCount
-        CALL WriteIterationOutput(Iter,IThicknessIndex,IExitFLAG,IErr)
-        IF( IErr.NE.0 ) THEN
-          PRINT*,"felixrefine(0) error in WriteIterationOutput"
-          RETURN
-        END IF
-      END DO
+      END IF
     END IF
-
   END IF
+  
   !=====================================!Send the fit index to all cores
   CALL MPI_BCAST(RFigureofMerit,1,MPI_DOUBLE_PRECISION,0,MPI_COMM_WORLD,IErr)
   !=====================================
-
-  !for felixsim program ends here, large if-else statement, deallocations still applied at end
-  IF (ISimFLAG.EQ.1) THEN
-     IF(my_rank.EQ.0) THEN
-        PRINT*, "End of felixsim, cleaning up"
-     END IF
-     GOTO 9999
-  ELSE
 
   IF (IRefineMode(12).EQ.1) THEN
     !bisection on Ug's
@@ -815,20 +819,10 @@ PROGRAM Felixrefine
     END IF
   END IF
 
-  !--------------------------------------------------------------------    
-  !Final output  
-  IF(my_rank.EQ.0) THEN
-    IWriteFLAG=6
-    CALL CalculateFigureofMeritandDetermineThickness(Iter,IThicknessIndex,IErr)
-  END IF
-  
-  END IF !If RefineMode(19).EQ.1 - i.e. if felixsim mode above skipped
-
-  
   !--------------------------------------------------------------------
   ! Deallocate Memory
   !--------------------------------------------------------------------
-  DEALLOCATE(CUgMat,STAT=IErr)
+8888  DEALLOCATE(CUgMat,STAT=IErr)!FelixSim comes here to finish off  
   DEALLOCATE(CUgMatNoAbs,STAT=IErr)
   DEALLOCATE(CUgMatPrime,STAT=IErr)
   DEALLOCATE(RWeightingCoefficients,STAT=IErr)
@@ -875,8 +869,8 @@ PROGRAM Felixrefine
 
   IF(my_rank.EQ.0) THEN
     PRINT*,"--------------------------------"
-    WRITE(SPrintString,FMT='(A24,I3,A5,I2,A6,I2,A4)')&
-    "Refinement completed in ",IHours," hrs ",IMinutes," mins ",ISeconds," sec"
+    WRITE(SPrintString,FMT='(A25,I3,A5,I2,A6,I2,A4)')&
+    "Calculation completed in ",IHours," hrs ",IMinutes," mins ",ISeconds," sec"
     PRINT*,TRIM(ADJUSTL(SPrintString))
     PRINT*,"--------------------------------"
     PRINT*,"||||||||||||||||||||||||||||||||"

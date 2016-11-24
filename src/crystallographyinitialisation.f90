@@ -47,7 +47,7 @@ SUBROUTINE CrystallographyInitialisation( IErr )
 
   INTEGER(IKIND) :: IErr, ind
  
-  CALL Message("CrystallographyInitialisation",IMust,IErr)
+  !CALL Message("CrystallographyInitialisation",IMust,IErr)
      
   !Removed PseudoCubic translation
 

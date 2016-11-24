@@ -64,7 +64,7 @@ SUBROUTINE ReadInput(IErr)
      RETURN
   ENDIF
 
-  CALL Message("ReadInput",IMust,IErr)
+  !CALL Message("ReadInput",IMust,IErr)
 
   !felix.hkl
   CALL ReadHklFile(IErr)

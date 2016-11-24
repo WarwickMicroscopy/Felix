@@ -63,7 +63,7 @@ SUBROUTINE SortHKL( Rhklarray,N,IErr )
   
   REAL(RKIND) :: dummy
 
-  CALL Message("SortHkl",IMust,IErr)
+  !CALL Message("SortHkl",IMust,IErr)
   
   NN = 0
   M = 0
@@ -128,8 +128,8 @@ SUBROUTINE CONVERTAtomName2Number(SElement, Iz, IErr)
 
 !!$  Subroutine within loop, therefore only want to print this message once
   DO WHILE (IMessageCounter.LT.1)
-     CALL Message("CONVERTAtomName2Number",IMust,IErr)
-     CALL Message("CONVERTAtomName2Number",IMust+IDEBUG,IErr,MessageString = "Is looping")
+     !CALL Message("CONVERTAtomName2Number",IMust,IErr)
+     !CALL Message("CONVERTAtomName2Number",IMust+IDEBUG,IErr,!MessageString = "Is looping")
      IMessageCounter = IMessageCounter +1
   END DO
  

@@ -58,7 +58,7 @@ SUBROUTINE StructureFactorSetup(IErr)
   INTEGER(IKIND) :: ind,jnd,IErr
   CHARACTER*200 :: SPrintString
   
-  CALL Message("StructureFactorSetup",IMust,IErr)
+  !CALL Message("StructureFactorSetup",IMust,IErr)
 
   !--------------------------------------------------------------------
   ! Calculate Reflection Matrix

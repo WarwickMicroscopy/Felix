@@ -73,8 +73,6 @@ SUBROUTINE SpecificReflectionDetermination (IErr)
   IMPLICIT NONE
 
   INTEGER(IKIND) :: IFind,IFound,ind,jnd,knd,IErr
-
-  CALL Message("SpecificReflectionDetermination",IMust,IErr)
     
   IFind = 0
 
@@ -96,13 +94,6 @@ SUBROUTINE SpecificReflectionDetermination (IErr)
           IF(IFound.EQ.0) THEN
             IFind = IFind +1
             IOutputReflections(IFind) = jnd
-            CALL Message("SpecificReflectionDetermination",IMoreInfo,IErr, &
-                 MessageVariable = "At",IVariable = jnd)
-          ELSE 
-            CALL Message("SpecificReflectionDetermination",IMoreInfo,IErr, &
-                 MessageVariable = "At",IVariable = jnd)
-            CALL Message("SpecificReflectionDetermination",IMoreInfo,IErr, &
-                 MessageString = "However it is not unique")
           END IF
           EXIT
         ELSE
@@ -149,32 +140,20 @@ SUBROUTINE DiffractionPatternCalculation (IErr)
   INTEGER(IKIND) :: ind,IErr
   CHARACTER*20 :: Sind
   
-  CALL Message("DiffractionPatternCalculation",IMust,IErr)
-  
-  
   DO ind =1,SIZE(Rhkl,DIM=1)
      RgDotNorm(ind) = DOT_PRODUCT(RgPool(ind,:),RNormDirM)
   END DO   
   
   ! smallest g is gmag(2) IF 000 beam is included !!!add error catch here
-  
   RMinimumGMag = RgPoolMag(2)
-  
-  CALL Message("DiffractionPatternCalculation",IInfo,IErr, &
-       MessageVariable = "MinimumGMag", RVariable = RMinimumGMag)
   
   IF (nReflections.LT.INoOfLacbedPatterns) THEN
      nReflections = INoOfLacbedPatterns
   END IF
   
-  CALL Message("DiffractionPatternCalculation",IInfo,IErr, &
-       MessageVariable = "No. of Reflections", IVariable = nReflections)
-  
   ! resolution in k space
   RDeltaK = RMinimumGMag*RConvergenceAngle/REAL(IPixelCount,RKIND)
-
-  CALL Message("DiffractionPatternCalculation",IInfo,IErr, &
-       MessageVariable = "RDeltaK", RVariable = RDeltaK)
+  !CALL Message("DiffractionPatternCalculation",IInfo,IErr,MessageVariable = "RDeltaK", RVariable = RDeltaK)
 
   RETURN
 
@@ -201,7 +180,7 @@ SUBROUTINE HKLCount(Ihklmax,Rhkl0Vec,INhkl,RHOLZAcceptanceAngle,IErr)
   REAL(RKIND) :: RHOLZAcceptanceAngle
   REAL(RKIND), DIMENSION(ITHREE) :: Rhkl0Vec,RhklDummyUnitVec,RhklDummyVec,Rhkl0UnitVec
 
-  CALL Message("HKLCount",IMust,IErr)
+  !CALL Message("HKLCount",IMust,IErr)
 
   INhkl = 0
   Rhkl0UnitVec= Rhkl0Vec/SQRT(DOT_PRODUCT(REAL(Rhkl0Vec,RKIND),REAL(Rhkl0Vec,RKIND)))
@@ -355,7 +334,7 @@ SUBROUTINE HKLMake(Ihklmax,Rhkl0Vec,RHOLZAcceptanceAngle,IErr)
   REAL(RKIND),DIMENSION(ITHREE) :: Rhkl0Vec,RhklDummyUnitVec,RhklDummyVec,Rhkl0UnitVec
 !  REAL(RKIND), DIMENSION(INhkl,ITHREE) :: Rhkl 
 
-  CALL Message("HKLCount",IMust,IErr)
+  !CALL Message("HKLCount",IMust,IErr)
 
   lnd = 0
   Rhkl0UnitVec= Rhkl0Vec/SQRT(DOT_PRODUCT(REAL(Rhkl0Vec,RKIND),REAL(Rhkl0Vec,RKIND)))!?isn't RhklDummyVec already real??
@@ -514,7 +493,7 @@ SUBROUTINE NewHKLMake(Ihklmax,Rhkl0Vec,RHOLZAcceptanceAngle,IErr)
   REAL(RKIND) :: RHOLZAcceptanceAngle
   REAL(RKIND), DIMENSION(ITHREE) :: Rhkl0Vec,RhklDummyUnitVec,RhklDummyVec,Rhkl0UnitVec
 
-  CALL Message("NewHKLMake",IMust,IErr)
+  !CALL Message("NewHKLMake",IMust,IErr)
 
   INhkl = 0
   

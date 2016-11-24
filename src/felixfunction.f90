@@ -391,7 +391,7 @@ SUBROUTINE CalculateFigureofMeritandDetermineThickness(Iter,IBestThicknessIndex,
     PRINT*,TRIM(ADJUSTL(SPrintString))
     WRITE(SPrintString,FMT='(A19,I4,A10)') "Specimen thickness ",NINT(RBestThickness)," Angstroms"
     PRINT*,TRIM(ADJUSTL(SPrintString))
-    WRITE(SPrintString,FMT='(A15,I4,A10)') "Thickness range",NINT(RThicknessRange)," Angstroms"
+    WRITE(SPrintString,FMT='(A16,I4,A10)') "Thickness range ",NINT(RThicknessRange)," Angstroms"
     PRINT*,TRIM(ADJUSTL(SPrintString))
   END IF
 

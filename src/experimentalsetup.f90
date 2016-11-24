@@ -51,7 +51,7 @@ SUBROUTINE ExperimentalSetup (IErr)
 
   INTEGER(IKIND) :: IErr
 
-  CALL Message("ExperimentalSetup",IMust,IErr)
+  !CALL Message("ExperimentalSetup",IMust,IErr)
   
   !--------------------------------------------------------------------
   ! Allocate Crystallography Variables

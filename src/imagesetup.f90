@@ -53,7 +53,7 @@ SUBROUTINE ImageSetup (IErr)
 
   
   ! Image initialisation 
-  CALL Message("ImageSetup",IMust,IErr)
+  !CALL Message("ImageSetup",IMust,IErr)
 
   CALL ImageInitialisation( IErr )
   IF( IErr.NE.0 ) THEN
@@ -78,6 +78,6 @@ SUBROUTINE ImageSetup (IErr)
      RETURN
   END IF
 
-  CALL Message("ImageSetup",IInfo,IErr,MessageVariable = "IPixelTotal", IVariable = IPixelTotal)
+  !CALL Message("ImageSetup",IInfo,IErr,MessageVariable = "IPixelTotal", IVariable = IPixelTotal)
 
 END SUBROUTINE ImageSetup

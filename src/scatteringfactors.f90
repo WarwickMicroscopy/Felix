@@ -60,7 +60,7 @@ SUBROUTINE ScatteringFactors(IScatteringMethodSwitch,IErr)
   REAL(RKIND) :: &
        RKirkland(103,12), RPeng(103,8), RDoyleAndTurner(103,8), RLobato(103,10), RAtomicNumbers(103,1)
 
-  CALL Message("ScatteringFactors",IMust,IErr)
+  !CALL Message("ScatteringFactors",IMust,IErr)
 
 !!$Assign Atomic numbers to local variable (not required in felix but may have future purpose)
 !!$These are associated with each row of the scattering factors
@@ -975,9 +975,9 @@ SUBROUTINE ScatteringFactors(IScatteringMethodSwitch,IErr)
 
   CASE DEFAULT
 
-     CALL Message("ScatteringFactors",IMust,IErr, &
-          MessageVariable="Scattering tables do not exist for IScatteringMethodFlag", &
-          IVariable=IScatterFactorMethodFLAG, MessageString="Aborting")
+     !CALL Message("ScatteringFactors",IMust,IErr, &
+     !     MessageVariable="Scattering tables do not exist for IScatteringMethodFlag", &
+     !     IVariable=IScatterFactorMethodFLAG, !MessageString="Aborting")
      IErr=1
 
   END SELECT
