@@ -227,7 +227,7 @@ SUBROUTINE ReadInpFile( IErr )
       IF(IRefineMode(5).EQ.1) PRINT*, "E:Refining Anisotropic Debye Waller Factors "
       IF(IRefineMode(6).EQ.1) PRINT*, "F:Refining Lattice Lengths "
       IF(IRefineMode(7).EQ.1) PRINT*, "G:Refining Lattice Angles "
-      IF(IRefineMode(8).EQ.1) PRINT*, "H:Refining Convergence Angle: starting value ",RConvergenceAngle
+      IF(IRefineMode(8).EQ.1) PRINT*, "H:Refining Convergence Angle"
       IF(IRefineMode(9).EQ.1) PRINT*, "I:Refining Absorption"
       IF(IRefineMode(10).EQ.1) PRINT*,"J:Refining Accelerating Voltage "
       IF(IRefineMode(11).EQ.1) PRINT*,"K:Refining Scale Factor "

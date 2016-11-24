@@ -434,9 +434,6 @@ SUBROUTINE UpdateVariables(RIndependentVariable,IErr)
 
   DO ind = 1,INoOfVariables
      IVariableType = IIterativeVariableUniqueIDs(ind,2)
-     IF(my_rank.EQ.0) THEN
-      PRINT*,"IVariableType",IVariableType
-     END IF
      SELECT CASE (IVariableType)
      CASE(1)
         !RB structure factor refinement, do in UpdateStructureFactors
