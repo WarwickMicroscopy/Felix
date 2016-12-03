@@ -60,8 +60,9 @@ PROGRAM Felixrefine
   INTEGER(IKIND),DIMENSION(:),ALLOCATABLE :: IOriginGVecIdentifier
   REAL(RKIND) :: StartTime, CurrentTime, Duration, TotalDurationEstimate,&
        RHOLZAcceptanceAngle,RLaueZoneGz,RMaxGMag
-  REAL(RKIND),DIMENSION(:,:),ALLOCATABLE :: RSimplexVariable,RgDummyVecMat,RgPoolMagLaue,RTestImage
-  REAL(RKIND),DIMENSION(:),ALLOCATABLE :: RSimplexFoM,RIndependentVariable
+  REAL(RKIND),DIMENSION(:,:),ALLOCATABLE :: RSimplexVariable,RgDummyVecMat,RgPoolMagLaue,RTestImage,&
+       ROnes,RVarMatrix,RSimp!,RIdentity
+  REAL(RKIND),DIMENSION(:),ALLOCATABLE :: RSimplexFoM,RIndependentVariable,ROneCol
   REAL(RKIND) :: RBCASTREAL,RStandardDeviation,RMean,RGzUnitVec,RMinLaueZoneValue,&
        RMaxLaueZoneValue,RMaxAcceptanceGVecMag,RLaueZoneElectronWaveVectorMag
   REAL(RKIND) :: RdeltaUg,Rtol,RpointA,RpointB,RpointC,RfitA,RfitB,RfitC,RbestFit
@@ -753,7 +754,19 @@ PROGRAM Felixrefine
       GOTO 9999
     END IF
     IF(my_rank.EQ.0) THEN
-      CALL CreateRandomisedSimplex(RSimplexVariable,RIndependentVariable,IErr)
+	  ALLOCATE(ROnes(INoOfVariables+1,INoOfVariables), STAT=IErr)!matrix of ones
+	  ALLOCATE(RSimp(INoOfVariables+1,INoOfVariables), STAT=IErr)!matrix of one +/-RSimplexLengthScale
+	  ALLOCATE(RVarMatrix(INoOfVariables,INoOfVariables+1), STAT=IErr)!matrix of variables as rows
+	  !ALLOCATE(RIdentity(INoOfVariables,INoOfVariables), STAT=IErr)!identity matrix
+	  ROnes=1.0
+	  !RIdentity=0.0
+	  !FORALL(ind = 1:INoOfVariables) RIdentity(ind,ind) = 1.0
+	  RSimp=1.0
+	  FORALL(ind = 1:INoOfVariables) RSimp(ind,ind) = -1.0
+	  RSimp=RSimp*RSimplexLengthScale/HUNDRED + ROnes
+	  FORALL(ind = 1:INoOfVariables+1) RVarMatrix(:,ind) = RIndependentVariable
+	  RSimplexVariable=MATMUL(RSimp,RVarMatrix)
+      !CALL CreateRandomisedSimplex(RSimplexVariable,RIndependentVariable,IErr)
     END IF
 !    IF(my_rank.EQ.0) THEN
 !      PRINT*,"RIndependentVariable",RIndependentVariable

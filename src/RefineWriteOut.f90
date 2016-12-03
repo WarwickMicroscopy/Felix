@@ -57,7 +57,7 @@ SUBROUTINE WriteIterationOutput(Iter,IThicknessIndex,IExitFlag,IErr)
   END IF
   call system('mkdir ' // path)
 
-  IF (ISimFLAG.EQ.0.AND.IExitFLAG.EQ.0) THEN !sim output
+  IF (ISimFLAG.EQ.0.AND.IExitFLAG.EQ.0) THEN !felixrefine output
     IF (IPreviousPrintedIteration.EQ.0) THEN
       WRITE(SPrintString,FMT='(A35)') "Writing output; baseline simulation"
     ELSE
@@ -82,7 +82,6 @@ SUBROUTINE WriteIterationOutput(Iter,IThicknessIndex,IExitFlag,IErr)
 	
     OPEN(UNIT=IChOutWIImage, ERR=10, STATUS= 'UNKNOWN', FILE=TRIM(ADJUSTL(filename)),&
 	FORM='UNFORMATTED',ACCESS='DIRECT',IOSTAT=IErr,RECL=2*IPixelCount*8)
-!    CALL OpenReflectionImage(IChOutWIImage,path,IErr,ind,2*IPixelCount,2_IKIND)
     DO jnd = 1,2*IPixelCount
      WRITE(IChOutWIImage,rec=jnd) RImageToWrite(jnd,:)
     END DO
@@ -216,38 +215,21 @@ SUBROUTINE WriteOutVariables(Iter,IErr)
 
   ! Need to Determine total no. of variables to be written out, this is different from the no. of refinement variables
   
-  IOutputVariables(1) =  IRefineMode(1) * &
-       2*INoofUgs+1 ! Structure Factors are Complex so require two output variables each     
-  IOutputVariables(2) = IRefineMode(2) * & !Structural Coordinates
-       (SIZE(RBasisAtomPosition,DIM=1) * SIZE(RBasisAtomPosition,DIM=2))
-  IOutputVariables(3) = &
-       IRefineMode(3) * & !Atomic Site Occupancies
-       SIZE(RBasisOccupancy,DIM=1)
-  IOutputVariables(4) = &
-       IRefineMode(4) * & !Isotropic Debye Waller Factors
-       SIZE(RBasisIsoDW,DIM=1)
-  IOutputVariables(5) = &
-       IRefineMode(5) * & !Anisotropic Debye Waller Factors
-       SIZE(RAnisotropicDebyeWallerFactorTensor)
-  IOutputVariables(6) = &    
-       IRefineMode(6) * 3 !Lattice Parameters (a,b,c) 
-  IOutputVariables(7) = &
-       IRefineMode(7) * 3 !Lattice Angles (alpha,beta,gamma)
-  IOutputVariables(8) = & 
-       IRefineMode(8) !Convergence angle
-  IOutputVariables(9) = &
-       IRefineMode(9) !Absorption
-  IOutputVariables(10) = &
-       IRefineMode(10) !Accelerating Voltage
-  IOutputVariables(11) = &
-       IRefineMode(11) !Residual Sum of Squares Scaling Factor
-  IOutputVariables(12) =  IRefineMode(12) * &
-       2*INoofUgs+1 ! Structure Factors are Complex so require two output variables each     
-  
+  IOutputVariables(1) =  IRefineMode(1)*2*INoofUgs+1 ! Structure Factors are Complex so require two output variables each     
+  IOutputVariables(2) = IRefineMode(2)*SIZE(RBasisAtomPosition,DIM=1)*SIZE(RBasisAtomPosition,DIM=2) !Structural Coordinates
+  IOutputVariables(3) = IRefineMode(3)*SIZE(RBasisOccupancy,DIM=1) !Atomic Site Occupancies
+  IOutputVariables(4) = IRefineMode(4)*SIZE(RBasisIsoDW,DIM=1) !Isotropic Debye Waller Factors
+  IOutputVariables(5) = IRefineMode(5)*SIZE(RAnisotropicDebyeWallerFactorTensor)!Anisotropic Debye Waller Factors
+  IOutputVariables(6) = IRefineMode(6) * 3 !Lattice Parameters (a,b,c) 
+  IOutputVariables(7) = IRefineMode(7) * 3 !Lattice Angles (alpha,beta,gamma)
+  IOutputVariables(8) = IRefineMode(8) !Convergence angle
+  IOutputVariables(9) = IRefineMode(9) !Absorption
+  IOutputVariables(10) = IRefineMode(10) !Accelerating Voltage
+  IOutputVariables(11) = IRefineMode(11) !Residual Sum of Squares Scaling Factor
+  IOutputVariables(12) =  IRefineMode(12) * 2*INoofUgs+1 ! Structure Factors are Complex so require two output variables each     
   ITotalOutputVariables = SUM(IOutputVariables) ! Total Output
   
   ALLOCATE(RDataOut(ITotalOutputVariables),STAT=IErr)
-
   DO jnd = 1,IRefinementVariableTypes
      IF(IRefineMode(jnd).EQ.0) THEN
         CYCLE !The refinement variable type is not being refined, skip
@@ -303,9 +285,7 @@ SUBROUTINE WriteOutVariables(Iter,IErr)
   WRITE(SFormat,*) "(I5.1,1X,F13.9,1X,"//TRIM(ADJUSTL(STotalOutputVariables))//"(F13.9,1X))"
 
   OPEN(UNIT=IChOutSimplex,file='IterationLog.txt',form='formatted',status='unknown',position='append')
-
   WRITE(UNIT=IChOutSimplex,FMT=SFormat) Iter,RFigureofMerit,RDataOut
-
   CLOSE(IChOutSimplex)
 
 END SUBROUTINE WriteOutVariables

@@ -39,9 +39,9 @@
 !--------------------------------------------------------------------
 MODULE CConst
 
-  CHARACTER*30, PARAMETER :: RStr= "Version: VERSION / BUILD / RLSSTATUS"
-  CHARACTER*30, PARAMETER :: DStr= "Date: DATE / TIME"
-  CHARACTER*40, PARAMETER :: AStr= "Status: AUTHOR"
+  CHARACTER*30, PARAMETER :: RStr= "Version: Master / BUILD / Alpha"
+  CHARACTER*30, PARAMETER :: DStr= "Date: 24-11-2016"
+  CHARACTER*50, PARAMETER :: AStr= "Status: testing convergence angle refinement"
   
   CHARACTER*8 CSpaceGrp(230)
   DATA CSpaceGrp/"P1","P-1","P2","P21","C2","Pm","Pc","Cm",&

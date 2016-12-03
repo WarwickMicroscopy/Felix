@@ -55,7 +55,8 @@ SUBROUTINE SimulateAndFit(RIndependentVariable,Iter,IExitFLAG,IErr)
   REAL(RKIND),DIMENSION(INoOfVariables) :: RIndependentVariable
   INTEGER(IKIND),INTENT(IN) :: Iter
   COMPLEX(CKIND),DIMENSION(nReflections,nReflections) :: CUgMatDummy
-
+  CHARACTER*200 :: SFormat
+  
   IF(IWriteFLAG.GE.10.AND.my_rank.EQ.0) THEN
      PRINT*,"SimulateAndFit(",my_rank,")"
   END IF
@@ -107,11 +108,14 @@ SUBROUTINE SimulateAndFit(RIndependentVariable,Iter,IExitFLAG,IErr)
         RETURN
      END IF
      IF (IRefineMode(8).EQ.1) THEN
-       !IF(my_rank.EQ.0) THEN
-       !  PRINT*,"bibble",RConvergenceAngle
-       !END IF
        !recalculate k-vectors
        RDeltaK = RMinimumGMag*RConvergenceAngle/REAL(IPixelCount,RKIND)
+       IF (my_rank.EQ.0) THEN
+         WRITE(SFormat,*) "(I5.1,1X,F13.9,1X,F13.9,1X)"
+         OPEN(UNIT=IChOutSimplex,file='IterationLog.txt',form='formatted',status='unknown',position='append')
+         WRITE(UNIT=IChOutSimplex,FMT=SFormat) Iter,RFigureofMerit,RConvergenceAngle
+         CLOSE(IChOutSimplex)
+       END IF
      END IF
      !recalculate unit cell
      CALL UniqueAtomPositions(IErr)
@@ -281,10 +285,6 @@ SUBROUTINE CalculateFigureofMeritandDetermineThickness(Iter,IBestThicknessIndex,
   REAL(RKIND),DIMENSION(INoOfLacbedPatterns) :: RBestCorrelation
   CHARACTER*200 :: SPrintString
   CHARACTER*20 :: Snum       
-
-  IF (IWriteFLAG.GE.10) THEN
-     PRINT*,"CalculateFigureofMeritandDetermineThickness(",my_rank,")"
-  END IF
 
   RBestCorrelation = TEN !The best correlation for each image will go in here, initialise at the maximum value
   RBestTotalCorrelation = TEN !The best mean of all correlations
