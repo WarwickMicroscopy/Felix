@@ -32,10 +32,6 @@
 !
 !%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-!%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-! $Id: Felixrefine.f90,v 1.89 2014/04/28 12:26:19 phslaz Exp $
-!%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-
 PROGRAM Felixrefine
  
   USE MyNumbers
@@ -65,7 +61,6 @@ PROGRAM Felixrefine
   REAL(RKIND),DIMENSION(:),ALLOCATABLE :: RSimplexFoM,RIndependentVariable,ROneCol
   REAL(RKIND) :: RBCASTREAL,RStandardDeviation,RMean,RGzUnitVec,RMinLaueZoneValue,&
        RMaxLaueZoneValue,RMaxAcceptanceGVecMag,RLaueZoneElectronWaveVectorMag
-  REAL(RKIND) :: RdeltaUg,Rtol,RpointA,RpointB,RpointC,RfitA,RfitB,RfitC,RbestFit
   CHARACTER*40 :: my_rank_string
   CHARACTER*20 :: Snd,h,k,l
   CHARACTER*200 :: SPrintString
@@ -138,7 +133,7 @@ PROGRAM Felixrefine
     GOTO 9999
   END IF
   
-  IF (ISimFLAG.EQ.0) THEN  !felixrefine
+  IF (ISimFLAG.EQ.0) THEN!it's a refinement
     !read experimental images
     ALLOCATE(RImageExpi(2*IPixelCount,2*IPixelCount,INoOfLacbedPatterns),STAT=IErr)  
     IF( IErr.NE.0 ) THEN
@@ -498,12 +493,14 @@ PROGRAM Felixrefine
         jnd=jnd+1!===
       END IF!===
     END DO
-    RIndependentVariable(jnd) = RAbsorptionPercentage![[[!===RB absorption always included in structure factor refinement as last variable
+	IF (IAbsorbFLAG.EQ.1) THEN!Proportional absorption included in structure factor refinement as last variable
+      RIndependentVariable(jnd) = RAbsorptionPercentage
+    END IF
 
   END IF
  
   !--------------------------------------------------------------------
-  ! Setup Simplex Variables
+  ! Setup Variables
   !--------------------------------------------------------------------
   IF(IRefineMode(2).EQ.1) THEN !It's an atom coordinate refinement
     CALL SetupAtomicVectorMovements(IErr)
@@ -522,7 +519,7 @@ PROGRAM Felixrefine
     INoofElementsForEachRefinementType(8)=IRefineMode(8)!Convergence angle
     INoofElementsForEachRefinementType(9)=IRefineMode(9)!Percentage Absorption
     INoofElementsForEachRefinementType(10)=IRefineMode(10)!kV
-    INoofElementsForEachRefinementType(11)=IRefineMode(11)!Scaling factor
+    INoofElementsForEachRefinementType(11)=IRefineMode(11)!Scaling factor, don't know what this does
     !Number of independent variables
     INoOfVariables = SUM(INoofElementsForEachRefinementType)
     !--------------------------------------------------------------------
@@ -694,56 +691,12 @@ PROGRAM Felixrefine
   CALL MPI_BCAST(RFigureofMerit,1,MPI_DOUBLE_PRECISION,0,MPI_COMM_WORLD,IErr)
   !=====================================
 
-  IF (IRefineMode(12).EQ.1) THEN    !bisection on Ug's
-	RdeltaUg=0.01!RSimplexLengthScale/100.0!use simplex length scale
-	Rtol=0.002! precision 0.01 (in what units, eh? Do find out...)
-	DO jnd=1,10!10 cycles to see how it converges
-	 DO ind = 1,INoOfVariables!work through Ug components one at a time
-	  Iter=Iter+IPrint
-	  RpointA=RIndependentVariable(ind)
-	  RpointB=RIndependentVariable(ind)+ABS(RdeltaUg*RIndependentVariable(ind))!b must be > a
-	  RpointC=ZERO!doesn't matter since this will be the intermediate point returned by mnbrak
-	  !bracket the minimum between point A and B
-      IF(my_rank.EQ.0) THEN
-        PRINT*,"--------------------------------"
-        WRITE(SPrintString,FMT='(A20,I2,A4,I3)') "Optimising variable ",ind," of ",INoOfVariables
-        PRINT*,TRIM(ADJUSTL(SPrintString))
-	    WRITE(SPrintString,FMT='(A14,F8.6,A18,F8.6)') "Initial value ",RpointA,": figure of merit ",RFigureofMerit
-        PRINT*,TRIM(ADJUSTL(SPrintString))
-		!PRINT*,"Bracketing..."
-      END IF	  
-	  CALL mnbrak(RIndependentVariable,RpointA,RpointB,RpointC,RfitA,RfitB,RfitC,ind,IErr)
-      IF(my_rank.EQ.0) THEN
-        !PRINT*,"--------------------------------"
-        WRITE(SPrintString,FMT='(A19,F8.6,A1,F8.6,A6,F8.6,A1,F8.6,A1)')&
-		"Minimum is between ",RpointA,"(",RfitA,") and ",RpointC,"(",RfitC,")"
-        PRINT*,TRIM(ADJUSTL(SPrintString))
-	    WRITE(SPrintString,FMT='(A14,F8.6,A18,F8.6)') "Current value ",RpointB,": figure of merit ",RfitB
-        PRINT*,TRIM(ADJUSTL(SPrintString))
-		!PRINT*,"Finding best fit..."
-      END IF	  
-	  !find the minimum using Brent's method, pass best figure of merit in
-	  RFigureofMerit=RfitB
-	  CALL BRENT(RFigureofMerit,RIndependentVariable,RpointA,RpointB,RpointC,Rtol,RbestFit,ind,IErr)
-	  RIndependentVariable(ind)=RbestFit
-      IF(my_rank.EQ.0) THEN
-        !Figure of merit is passed back as a global variable
-        CALL CalculateFigureofMeritandDetermineThickness(Iter,IThicknessIndex,IErr)
-        IF( IErr.NE.0 ) THEN
-          PRINT*,"felixrefine(0) error",IErr,"in CalculateFigureofMeritandDetermineThickness"
-          GOTO 9999
-        END IF
-        CALL WriteIterationOutput(Iter,IThicknessIndex,IExitFLAG,IErr)
-        IF( IErr.NE.0 ) THEN
-          PRINT*,"felixrefine(0) error in WriteIterationOutput"
-          GOTO 9999
-        ENDIF        
-	    WRITE(SPrintString,FMT='(A12,F8.6,A18,F8.6)') "Final value ",RbestFit,": figure of merit ",RFigureofMerit
-        PRINT*,TRIM(ADJUSTL(SPrintString))
-      END IF
-     END DO	  
-	END DO
-	
+  IF (IRefineMode(11).EQ.1.OR.IRefineMode(12).EQ.1) THEN    !bisection on Ug's
+	IF (IRefineMode(12).EQ.1) THEN
+      CALL UgBisection(RIndependentVariable,IErr)
+    ELSE
+      
+    END IF
   ELSE
 
     ! Initialise Simplex
@@ -1321,17 +1274,13 @@ SUBROUTINE RefinementVariableSetup(RIndependentVariable,IErr)
      CASE(1)
 	    !Structure factor refinement, define in SymmetryRelatedStructureFactorDetermination
     CASE(2)
-        RIndependentVariable(ind) = &
-             RAllowedVectorMagnitudes(IIterativeVariableUniqueIDs(ind,3))
+        RIndependentVariable(ind) = RAllowedVectorMagnitudes(IIterativeVariableUniqueIDs(ind,3))
      CASE(3)
-        RIndependentVariable(ind) = &
-             RBasisOccupancy(IIterativeVariableUniqueIDs(ind,3))
+        RIndependentVariable(ind) = RBasisOccupancy(IIterativeVariableUniqueIDs(ind,3))
      CASE(4)
-        RIndependentVariable(ind) = &
-             RBasisIsoDW(IIterativeVariableUniqueIDs(ind,3))
+        RIndependentVariable(ind) = RBasisIsoDW(IIterativeVariableUniqueIDs(ind,3))
      CASE(5)
-        RIndependentVariable(ind) = &
-             RAnisotropicDebyeWallerFactorTensor(&
+        RIndependentVariable(ind) = RAnisotropicDebyeWallerFactorTensor(&
              IIterativeVariableUniqueIDs(ind,3),&
              IIterativeVariableUniqueIDs(ind,4),&
              IIterativeVariableUniqueIDs(ind,5))
@@ -1354,17 +1303,13 @@ SUBROUTINE RefinementVariableSetup(RIndependentVariable,IErr)
            RIndependentVariable(ind) = RGamma
         END SELECT
      CASE(8)
-        RIndependentVariable(ind) = &
-             RConvergenceAngle
+        RIndependentVariable(ind) = RConvergenceAngle
      CASE(9)
-        RIndependentVariable(ind) = &
-             RAbsorptionPercentage
+        RIndependentVariable(ind) = RAbsorptionPercentage
      CASE(10)
-        RIndependentVariable(ind) = &
-             RAcceleratingVoltage
+        RIndependentVariable(ind) = RAcceleratingVoltage
      CASE(11)
-        RIndependentVariable(ind) = &
-             RRSoSScalingFactor
+        RIndependentVariable(ind) = RRSoSScalingFactor
      CASE(12)
 	    !Structure factor refinement, define in SymmetryRelatedStructureFactorDetermination
      END SELECT
@@ -1632,41 +1577,6 @@ SUBROUTINE OutofUnitCellCheck(IVariableID,RProposedMovement,RCorrectedMovement,I
   END IF
 
 END SUBROUTINE OutofUnitCellCheck
-
-!!$  %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-
-SUBROUTINE CreateIdentityMatrix(IIdentityMatrix,ISize,IErr)
-
-!!$  %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-!!$  % This Subroutine creates an identity matrix of size
-!!$  % ISize * ISize
-!!$  %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-!why do we have this????
-  USE MyNumbers
-  
-  USE CConst; USE IConst; USE RConst
-  USE IPara; USE RPara; USE SPara; USE CPara
-  USE BlochPara
-
-  USE IChannels
-
-  USE MPI
-  USE MyMPI
-
-  IMPLICIT NONE
-  
-  INTEGER(IKIND) :: &
-       IErr,ISize,ind
-  INTEGER(IKIND),DIMENSION(ISize,ISize) :: &
-       IIdentityMatrix
-
-  IIdentityMatrix = 0
-
-  DO ind = 1,ISize
-     IIdentityMatrix(ind,ind) = 1
-  END DO
-
-END SUBROUTINE CreateIdentityMatrix
 
 !!$  %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 

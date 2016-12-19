@@ -230,7 +230,7 @@ SUBROUTINE ReadInpFile( IErr )
       IF(IRefineMode(8).EQ.1) PRINT*, "H:Refining Convergence Angle"
       IF(IRefineMode(9).EQ.1) PRINT*, "I:Refining Absorption"
       IF(IRefineMode(10).EQ.1) PRINT*,"J:Refining Accelerating Voltage "
-      IF(IRefineMode(11).EQ.1) PRINT*,"K:Refining Scale Factor "
+      IF(IRefineMode(11).EQ.1) PRINT*,"K:Refinement by parabola"
       IF(IRefineMode(12).EQ.1) PRINT*,"L:Refining Structure Factors by bisection"
       IF(ISimFlag.EQ.1) PRINT*,"S:Simulation mode"
     END IF

@@ -747,6 +747,81 @@ SUBROUTINE BlurG(RImageToBlur,IErr)
 
 END SUBROUTINE BlurG
 
+!!$  %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+SUBROUTINE UgBisection(RIndependentVariable,IErr)
+!RB this is just dumped here out of the way while I try parabolic fitting,
+! don't expect it to work without debugging!!
+  USE MyNumbers
+  
+  USE CConst; USE IConst; USE RConst
+  USE IPara; USE RPara; USE SPara; USE CPara
+  USE BlochPara
+
+  USE IChannels
+
+  USE MPI
+  USE MyMPI
+  
+  IMPLICIT NONE
+
+  INTEGER(IKIND) :: IErr,ind,jnd,knd,Iter,IThicknessIndex,IExitFLAG
+  REAL(RKIND) :: RdeltaUg,Rtol,RpointA,RpointB,RpointC,RfitA,RfitB,RfitC,RbestFit
+  REAL(RKIND),DIMENSION(INoOfVariables) :: RIndependentVariable
+  CHARACTER*200 :: SPrintString
+
+  IExitFLAG = 0 !Do not exit - needs checking to see if it is appropriate now
+  	RdeltaUg=0.01!RSimplexLengthScale/100.0!use simplex length scale
+	Rtol=0.002! precision 0.01 (in what units, eh? Do find out...)
+	DO jnd=1,10!10 cycles to see how it converges
+	 DO ind = 1,INoOfVariables!work through Ug components one at a time
+	  Iter=Iter+IPrint
+	  RpointA=RIndependentVariable(ind)
+	  RpointB=RIndependentVariable(ind)+ABS(RdeltaUg*RIndependentVariable(ind))!b must be > a
+	  RpointC=ZERO!doesn't matter since this will be the intermediate point returned by mnbrak
+	  !bracket the minimum between point A and B
+      IF(my_rank.EQ.0) THEN
+        PRINT*,"--------------------------------"
+        WRITE(SPrintString,FMT='(A20,I2,A4,I3)') "Optimising variable ",ind," of ",INoOfVariables
+        PRINT*,TRIM(ADJUSTL(SPrintString))
+	    WRITE(SPrintString,FMT='(A14,F8.6,A18,F8.6)') "Initial value ",RpointA,": figure of merit ",RFigureofMerit
+        PRINT*,TRIM(ADJUSTL(SPrintString))
+		!PRINT*,"Bracketing..."
+      END IF	  
+	  CALL mnbrak(RIndependentVariable,RpointA,RpointB,RpointC,RfitA,RfitB,RfitC,ind,IErr)
+      IF(my_rank.EQ.0) THEN
+        !PRINT*,"--------------------------------"
+        WRITE(SPrintString,FMT='(A19,F8.6,A1,F8.6,A6,F8.6,A1,F8.6,A1)')&
+		"Minimum is between ",RpointA,"(",RfitA,") and ",RpointC,"(",RfitC,")"
+        PRINT*,TRIM(ADJUSTL(SPrintString))
+	    WRITE(SPrintString,FMT='(A14,F8.6,A18,F8.6)') "Current value ",RpointB,": figure of merit ",RfitB
+        PRINT*,TRIM(ADJUSTL(SPrintString))
+		!PRINT*,"Finding best fit..."
+      END IF	  
+	  !find the minimum using Brent's method, pass best figure of merit in
+	  RFigureofMerit=RfitB
+	  CALL BRENT(RFigureofMerit,RIndependentVariable,RpointA,RpointB,RpointC,Rtol,RbestFit,ind,IErr)
+	  RIndependentVariable(ind)=RbestFit
+      IF(my_rank.EQ.0) THEN
+        !Figure of merit is passed back as a global variable
+        CALL CalculateFigureofMeritandDetermineThickness(Iter,IThicknessIndex,IErr)
+        IF( IErr.NE.0 ) THEN
+          PRINT*,"felixrefine(0) error",IErr,"in CalculateFigureofMeritandDetermineThickness"
+          RETURN
+        END IF
+        CALL WriteIterationOutput(Iter,IThicknessIndex,IExitFLAG,IErr)
+        IF( IErr.NE.0 ) THEN
+          PRINT*,"felixrefine(0) error in WriteIterationOutput"
+          RETURN
+        ENDIF        
+	    WRITE(SPrintString,FMT='(A12,F8.6,A18,F8.6)') "Final value ",RbestFit,": figure of merit ",RFigureofMerit
+        PRINT*,TRIM(ADJUSTL(SPrintString))
+      END IF
+     END DO	  
+	END DO
+  
+END SUBROUTINE UgBisection
+
 !%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 REAL(RKIND) FUNCTION RStandardError(RStandardDeviation,RMean,IErr)
@@ -784,18 +859,21 @@ REAL(RKIND) FUNCTION RStandardError(RStandardDeviation,RMean,IErr)
 END FUNCTION  RStandardError
 !%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-REAL(RKIND) FUNCTION Parabo3(Rx,Ry,Rxv,IErr)
+SUBROUTINE Parabo3(Rx,Ry,Rxv,Ryv,IErr)
   !Input is a vector Rx with three x-coordinates and  Ry with three y-coordinates 
   !Output is the x-coordinate of the vertex of the fitted parabola, Rxv
   !The y-coordinate of the vertex of the fitted parabola is Ryv
+  USE MyNumbers
+
   IMPLICIT NONE
   
   REAL(RKIND) :: Rx,Ry,Rxv,Ryv,Ra,Rb,Rc,Rd
+  INTEGER(IKIND) :: IErr
   
   Rd = (Rx(1)-Rx(2))*(Rx(1)-Rx(3))*(Rx(2)-Rx(3));
   Ra = (Rx(3)*(Ry(2)-Ry(1))+Rx(2)*(Ry(1)-Ry(3))+Rx(1)*(Ry(3)-Ry(2)))/Rd;
   Rb = (Rx(3)*Rx(3)*(Ry(1)-Ry(2))+Rx(2)*Rx(2)*(Ry(3)-Ry(1))+Rx(1)*Rx(1)*(Ry(2)-Ry(3)))/Rd;
-  !Rc = (Rx(2)*Rx(3)*(Rx(2)-Rx(3))*Ry(1)+Rx(3)*Rx(1)*(Rx(3)-Rx(1))*Ry(2)+Rx(1)*Rx(2)*(Rx(1)-Rx(2))*Ry(3))/Rd;
+  Rc = (Rx(2)*Rx(3)*(Rx(2)-Rx(3))*Ry(1)+Rx(3)*Rx(1)*(Rx(3)-Rx(1))*Ry(2)+Rx(1)*Rx(2)*(Rx(1)-Rx(2))*Ry(3))/Rd;
   Rxv = -Rb/(2*Ra);
-  !Ryv = Rc-Rb*Rb/(4*Ra);
-END FUNCTION  Parabo3
+  Ryv = Rc-Rb*Rb/(4*Ra);
+END SUBROUTINE  Parabo3

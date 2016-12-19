@@ -225,7 +225,7 @@ SUBROUTINE WriteOutVariables(Iter,IErr)
   IOutputVariables(8) = IRefineMode(8) !Convergence angle
   IOutputVariables(9) = IRefineMode(9) !Absorption
   IOutputVariables(10) = IRefineMode(10) !Accelerating Voltage
-  IOutputVariables(11) = IRefineMode(11) !Residual Sum of Squares Scaling Factor
+  !IRefineMode(11) gives no new parameters, it's a method
   IOutputVariables(12) =  IRefineMode(12) * 2*INoofUgs+1 ! Structure Factors are Complex so require two output variables each     
   ITotalOutputVariables = SUM(IOutputVariables) ! Total Output
   
