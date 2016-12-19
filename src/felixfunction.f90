@@ -782,3 +782,20 @@ REAL(RKIND) FUNCTION RStandardError(RStandardDeviation,RMean,IErr)
   IStandardDeviationCalls = IStandardDeviationCalls + 1
 
 END FUNCTION  RStandardError
+!%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+REAL(RKIND) FUNCTION Parabo3(Rx,Ry,Rxv,IErr)
+  !Input is a vector Rx with three x-coordinates and  Ry with three y-coordinates 
+  !Output is the x-coordinate of the vertex of the fitted parabola, Rxv
+  !The y-coordinate of the vertex of the fitted parabola is Ryv
+  IMPLICIT NONE
+  
+  REAL(RKIND) :: Rx,Ry,Rxv,Ryv,Ra,Rb,Rc,Rd
+  
+  Rd = (Rx(1)-Rx(2))*(Rx(1)-Rx(3))*(Rx(2)-Rx(3));
+  Ra = (Rx(3)*(Ry(2)-Ry(1))+Rx(2)*(Ry(1)-Ry(3))+Rx(1)*(Ry(3)-Ry(2)))/Rd;
+  Rb = (Rx(3)*Rx(3)*(Ry(1)-Ry(2))+Rx(2)*Rx(2)*(Ry(3)-Ry(1))+Rx(1)*Rx(1)*(Ry(2)-Ry(3)))/Rd;
+  !Rc = (Rx(2)*Rx(3)*(Rx(2)-Rx(3))*Ry(1)+Rx(3)*Rx(1)*(Rx(3)-Rx(1))*Ry(2)+Rx(1)*Rx(2)*(Rx(1)-Rx(2))*Ry(3))/Rd;
+  Rxv = -Rb/(2*Ra);
+  !Ryv = Rc-Rb*Rb/(4*Ra);
+END FUNCTION  Parabo3
