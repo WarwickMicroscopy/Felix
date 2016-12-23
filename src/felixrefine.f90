@@ -53,6 +53,7 @@ PROGRAM Felixrefine
 	   ILaueLevel,INumTotalReflections,ITotalLaueZoneLevel,INhkl,IExitFLAG,&
 	   INumInitReflections,IZerothLaueZoneLevel,INumFinalReflections,IThicknessIndex
   INTEGER(IKIND) :: IHours,IMinutes,ISeconds,IMilliSeconds,IStartTime,ICurrentTime,IRate
+  INTEGER(IKIND),DIMENSION(IThree) :: IFitRank
   INTEGER(IKIND),DIMENSION(:),ALLOCATABLE :: IOriginGVecIdentifier
   REAL(RKIND) :: StartTime, CurrentTime, Duration, TotalDurationEstimate,&
        RHOLZAcceptanceAngle,RLaueZoneGz,RMaxGMag
@@ -699,14 +700,14 @@ PROGRAM Felixrefine
   CASE(1)!Simplex
     ALLOCATE(RSimplexVariable(INoOfVariables+1,INoOfVariables), STAT=IErr)  
     ALLOCATE(RSimplexFoM(INoOfVariables+1),STAT=IErr)  
-    IF( IErr.NE.0 ) THEN
-      PRINT*,"felixrefine(",my_rank,")error allocating RSimplexFoM"
-      GOTO 9999
-    END IF
-    IF(my_rank.EQ.0) THEN
+    IF(my_rank.EQ.0) THEN!NB Since simplex is not random, could be calculated by all cores
 	  ALLOCATE(ROnes(INoOfVariables+1,INoOfVariables), STAT=IErr)!matrix of ones
 	  ALLOCATE(RSimp(INoOfVariables+1,INoOfVariables), STAT=IErr)!matrix of one +/-RSimplexLengthScale
 	  ALLOCATE(RVarMatrix(INoOfVariables,INoOfVariables), STAT=IErr)!diagonal matrix of variables as rows
+      IF( IErr.NE.0 ) THEN
+        PRINT*,"felixrefine(",my_rank,")error allocating simplex variables"
+        GOTO 9999
+      END IF
 	  ROnes=1.0
 	  RSimp=1.0
 	  RVarMatrix=0.0
@@ -787,18 +788,68 @@ PROGRAM Felixrefine
     CALL UgBisection(RIndependentVariable,IErr)
     
   CASE(3)!Parabola
-    ALLOCATE(RCurrentVar(INoOfVariables),STAT=IErr)
+    ALLOCATE(RCurrentVar(INoOfVariables),STAT=IErr)!used to send out for simulations
     ALLOCATE(Rvar(INoOfVariables,ITHREE),STAT=IErr)!the three points to simulate
     ALLOCATE(Rfit(INoOfVariables,ITHREE),STAT=IErr)!their fit indices
-    !put the baseline coordinate into position 1 
-	Rvar(:,1)=RIndependentVariable(:)
+    IF( IErr.NE.0 ) THEN
+      PRINT*,"felixrefine(",my_rank,")error allocating parabola variables"
+      GOTO 9999
+    END IF
+    !put the baseline coordinates into Rvar 
+	FORALL(ind = 1:3) Rvar(:,ind)=RIndependentVariable(:)
 	Rfit(:,1)=RFigureofMerit
+    !Simulate second point for first variable
     !put the next coordinate into position 2
-    DO ind = 1,INoOfVariables
-      Iter=Iter+IPrint
-	  Rvar(ind,2)=RIndependentVariable(ind)*(ONE+RSimplexLengthScale/HUNDRED) 
-    END DO
-    !Simulate a point 
+    Rvar(1,2)=Rvar(1,1)*(ONE+RSimplexLengthScale)
+    Iter=1
+    RCurrentVar=Rvar(:,2)
+    IF(my_rank.EQ.0) THEN
+      PRINT*,"--------------------------------"
+      WRITE(SPrintString,FMT='(A21)') "Point 2 of variable 1"
+      PRINT*,TRIM(ADJUSTL(SPrintString))
+    END IF
+    CALL SimulateAndFit(RCurrentVar,Iter,IExitFLAG,IErr)
+    Rfit(1,2)=RFigureofMerit
+    IF(my_rank.EQ.0) THEN
+      WRITE(SPrintString,FMT='(A10,I1,A12,F9.7)')&
+	  "Iteration ",Iter,", fit index ",RFigureofMerit
+	END IF
+    !choose a third point, going downhill
+    IF (Rfit(1,2).LT.Rfit(1,1)) THEN!we went the right way, continue
+      Rvar(1,3)=Rvar(1,1)*(ONE+2*RSimplexLengthScale)
+    ELSE!go the other way
+      Rvar(1,3)=Rvar(1,1)*(ONE-RSimplexLengthScale)
+    END IF
+    Iter=Iter+1
+    RCurrentVar=Rvar(:,3)
+    IF(my_rank.EQ.0) THEN
+      PRINT*,"--------------------------------"
+      WRITE(SPrintString,FMT='(A21)') "Point 3 of variable 1"
+      PRINT*,TRIM(ADJUSTL(SPrintString))
+    END IF
+    CALL SimulateAndFit(RCurrentVar,Iter,IExitFLAG,IErr)
+    Rfit(1,3)=RFigureofMerit
+    IF(my_rank.EQ.0) THEN
+      WRITE(SPrintString,FMT='(A10,I1,A12,F9.7)')&
+	  "Iteration ",Iter,", fit index ",RFigureofMerit
+
+    !rank the fits
+    IFitRank=2
+    IFitRank(MAXLOC(Rfit(1,:)))=3
+    IFitRank(MINLOC(Rfit(1,:)))=1
+    PRINT*,IFitRank
+    !check the three points make a concave set
+    !IF ((+MIN(Rfit(1,:))/TWO).GT.
+	END IF     
+     
+     
+     
+     
+     
+     
+     
+     
+     
   CASE DEFAULT!Simulation only
     IF (my_rank.EQ.0) THEN
       PRINT*,"No refinement, simulation only"

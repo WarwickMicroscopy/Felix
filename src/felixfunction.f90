@@ -97,13 +97,13 @@ SUBROUTINE SimulateAndFit(RIndependentVariable,Iter,IExitFLAG,IErr)
      END IF
      RAbsorptionPercentage = RIndependentVariable(jnd)!===![[[!needs to be updated for AbsorbFLAG 2
   ELSE  !everything else
-    !Change variables
+    !Update variables
     CALL UpdateVariables(RIndependentVariable,IErr)
     IF( IErr.NE.0 ) THEN
       PRINT*,"SimulateAndFit(",my_rank,")error in UpdateVariables"
       RETURN
     END IF
-    IF (IRefineMode(8).EQ.1) THEN
+    IF (IRefineMode(8).EQ.1) THEN!convergence angle
        !recalculate k-vectors
        RDeltaK = RMinimumGMag*RConvergenceAngle/REAL(IPixelCount,RKIND)
        IF (my_rank.EQ.0) THEN

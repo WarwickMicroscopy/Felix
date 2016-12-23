@@ -41,7 +41,7 @@ MODULE CConst
 
   CHARACTER*50, PARAMETER :: RStr= "Version: RB_parabola / BUILD / Alpha"
   CHARACTER*50, PARAMETER :: DStr= "Date: 23-12-2016"
-  CHARACTER*50, PARAMETER :: AStr= "Status: testing parabolic refinement"
+  CHARACTER*50, PARAMETER :: AStr= "Status: writing parabolic refinement"
   
   CHARACTER*8 CSpaceGrp(230)
   DATA CSpaceGrp/"P1","P-1","P2","P21","C2","Pm","Pc","Cm",&

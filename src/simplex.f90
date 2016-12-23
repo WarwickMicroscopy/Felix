@@ -20,7 +20,7 @@ SUBROUTINE NDimensionalDownhillSimplex(RSimplexVariable,y,mp,np,ndim,ftol,iter,R
   
   Rytry=ZERO!initial value, has no significance
 
-  IF(my_rank.EQ.0) THEN
+  IF(my_rank.EQ.0) THEN!why is this here, should be outside the subroutine?
 1   DO n=1,ndim !enter here when starting or have just overall contracted
       Rsum=0 !recalculate psum
       DO m=1,ndim+1
