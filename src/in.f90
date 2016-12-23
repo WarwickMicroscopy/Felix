@@ -230,7 +230,7 @@ SUBROUTINE ReadInpFile( IErr )
       IF(ISimFlag.EQ.1) PRINT*,"S:Simulation mode"
     END IF
     !Check if user has requested Ug refinement and anything else which isnt possible
-    IF((IRefineMode(1).EQ.1 .OR. IRefineMode(12).EQ.1).AND.SUM(IRefineMode).GT.1) THEN         
+    IF((IRefineMode(1).EQ.1).AND.SUM(IRefineMode).GT.1) THEN         
       IF(my_rank.EQ.0) THEN
         PRINT*,"Structure factors must be refined separately"
       END IF
@@ -247,9 +247,9 @@ SUBROUTINE ReadInpFile( IErr )
       IF(IMethodFLAG.EQ.2) PRINT*, "Refining by Bisection"
       IF(IMethodFLAG.EQ.3) PRINT*, "Refining by Parabola"
   END IF  
-  ! -----ICorrelationFLAG-----------------------------------------------------------------
+  ! -----ICorrelationFLAG: 0=phase,1=sumSq,2=NormalisedCC,3=masked
   ILine= ILine+1; READ(IChInp,10,ERR=20,END=30) ICorrelationFLAG
-  ! -----IImageProcessingFLAG-----------------------------------------------------------------
+  ! -----IImageProcessingFLAG: 0=no processing,1=sqrt,2=log,4=Gaussian blur
   ILine= ILine+1; READ(IChInp,10,ERR=20,END=30) IImageProcessingFLAG
   ! -----RBlurRadius-----------------------------------------------------------------
   ILine= ILine+1; READ(IChInp,15,ERR=20,END=30) RBlurRadius

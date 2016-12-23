@@ -56,10 +56,6 @@ SUBROUTINE SimulateAndFit(RIndependentVariable,Iter,IExitFLAG,IErr)
   INTEGER(IKIND),INTENT(IN) :: Iter
   COMPLEX(CKIND),DIMENSION(nReflections,nReflections) :: CUgMatDummy
   CHARACTER*200 :: SFormat
-  
-  IF(IWriteFLAG.GE.10.AND.my_rank.EQ.0) THEN
-     PRINT*,"SimulateAndFit(",my_rank,")"
-  END IF
 
   IF (IRefineMode(1).EQ.1) THEN  !Ug refinement; update structure factors 
      !Dummy Matrix to contain new iterative values
@@ -291,27 +287,10 @@ SUBROUTINE CalculateFigureofMeritandDetermineThickness(Iter,IBestThicknessIndex,
     RTotalCorrelation = ZERO !The sum of all individual correlations, initialise at 0
     DO ind = 1,INoOfLacbedPatterns
       RSimulatedImage = RImageSimi(:,:,ind,jnd)
-      RExperimentalImage = RImageExpi(:,:,ind) 
-      RMaskImage=RImageMask(:,:,ind)    
-      !debug output to file
-      !WRITE(Snum,*) ind
-      !    WRITE(SPrintString,*) "Expt.",TRIM(ADJUSTL(Snum)),".bin"
-      !    OPEN(UNIT=IChOutWIImage, ERR=10, STATUS= 'UNKNOWN', FILE=SPrintString,&
-      !      FORM='UNFORMATTED',ACCESS='DIRECT',IOSTAT=IErr,RECL=2*IPixelCount*8)
-      !    DO hnd = 1,2*IPixelCount
-      !     WRITE(IChOutWIImage,rec=hnd) RExperimentalImage(hnd,:)
-      !    END DO
-      !    CLOSE(IChOutWIImage,IOSTAT=IErr)
-       !    RSimulatedImage = RImageSimi(:,:,ind,1)    
-      !    WRITE(SPrintString,*) "Sim.",TRIM(ADJUSTL(Snum)),".bin"
-      !    PRINT*,TRIM(ADJUSTL(SPrintString))
-      !    OPEN(UNIT=IChOutWIImage, ERR=10, STATUS= 'UNKNOWN', FILE=SPrintString,&
-      !      FORM='UNFORMATTED',ACCESS='DIRECT',IOSTAT=IErr,RECL=2*IPixelCount*8)
-      !    DO hnd = 1,2*IPixelCount
-      !     WRITE(IChOutWIImage,rec=hnd) RSimulatedImage(hnd,:)
-      !    END DO
-      !    CLOSE(IChOutWIImage,IOSTAT=IErr)     
-      !debug  
+      RExperimentalImage = RImageExpi(:,:,ind)
+      IF (ICorrelationFLAG.EQ.3) THEN!masked correltion, update mask
+        RMaskImage=RImageMask(:,:,ind)
+      END IF
       
       !image processing----------------------------------- 
       SELECT CASE (IImageProcessingFLAG)
@@ -330,7 +309,7 @@ SUBROUTINE CalculateFigureofMeritandDetermineThickness(Iter,IBestThicknessIndex,
         ELSEWHERE
           RExperimentalImage =  TINY**2
         END WHERE
-      !NB CASE(4) is masked correlation, dealt with elsewhere
+      !NB CASE(4) is gaussian blur, dealt with elsewhere
       END SELECT
       !
       

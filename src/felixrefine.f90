@@ -707,7 +707,6 @@ PROGRAM Felixrefine
 	  ALLOCATE(ROnes(INoOfVariables+1,INoOfVariables), STAT=IErr)!matrix of ones
 	  ALLOCATE(RSimp(INoOfVariables+1,INoOfVariables), STAT=IErr)!matrix of one +/-RSimplexLengthScale
 	  ALLOCATE(RVarMatrix(INoOfVariables,INoOfVariables), STAT=IErr)!diagonal matrix of variables as rows
-	  !ALLOCATE(RIdentity(INoOfVariables,INoOfVariables), STAT=IErr)!identity matrix
 	  ROnes=1.0
 	  RSimp=1.0
 	  RVarMatrix=0.0
