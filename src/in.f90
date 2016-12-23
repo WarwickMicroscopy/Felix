@@ -32,10 +32,6 @@
 !
 !%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-!%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-! $Id: out.f90,v 1.59 2014/04/28 12:26:19 phslaz Exp $
-!%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-
 !-----------------------------------------------------------------------
 !ReadInputParameters: Read the input file
 !
@@ -64,13 +60,12 @@ SUBROUTINE ReadInpFile( IErr )
        SAtomicSites,SFormatString,SLengthofNumberString
   CHARACTER*200 :: SDirectionX,SIncidentBeamDirection,SNormalDirectionX
 
-
   OPEN(UNIT= IChInp, ERR= 120, FILE= "felix.inp",STATUS= 'OLD')
   ILine= 1
 
 
   ! ----------------------------------------------------------------------
-  ! There are six introductory comment lines which are currently ignored
+  ! There are six introductory comment lines which are ignored
   ILine= ILine+1; READ(IChInp,ERR=20,END=30,FMT='(A)')
   ILine= ILine+1; READ(IChInp,ERR=20,END=30,FMT='(A)')
   ILine= ILine+1; READ(IChInp,ERR=20,END=30,FMT='(A)')
@@ -220,7 +215,7 @@ SUBROUTINE ReadInpFile( IErr )
       END IF
     END DO
     IF(my_rank.EQ.0) THEN
-      IF(IRefineMode(1).EQ.1) PRINT*, "A:Refining Structure Factors by Simplex"
+      IF(IRefineMode(1).EQ.1) PRINT*, "A:Refining Structure Factors"
       IF(IRefineMode(2).EQ.1) PRINT*, "B:Refining Atomic Coordinates"
       IF(IRefineMode(3).EQ.1) PRINT*, "C:Refining Occupancies "
       IF(IRefineMode(4).EQ.1) PRINT*, "D:Refining Isotropic Debye Waller Factors"
@@ -230,8 +225,8 @@ SUBROUTINE ReadInpFile( IErr )
       IF(IRefineMode(8).EQ.1) PRINT*, "H:Refining Convergence Angle"
       IF(IRefineMode(9).EQ.1) PRINT*, "I:Refining Absorption"
       IF(IRefineMode(10).EQ.1) PRINT*,"J:Refining Accelerating Voltage "
-      IF(IRefineMode(11).EQ.1) PRINT*,"K:Refinement by parabola"
-      IF(IRefineMode(12).EQ.1) PRINT*,"L:Refining Structure Factors by bisection"
+      !IF(IRefineMode(11).EQ.1) PRINT*,"K:Refinement by parabola"
+      !IF(IRefineMode(12).EQ.1) PRINT*,"L:Refining Structure Factors by bisection"
       IF(ISimFlag.EQ.1) PRINT*,"S:Simulation mode"
     END IF
     !Check if user has requested Ug refinement and anything else which isnt possible
@@ -245,8 +240,13 @@ SUBROUTINE ReadInpFile( IErr )
   END IF
   ! -----IWeightingFLAG-----------------------------------------------------------------
   ILine= ILine+1; READ(IChInp,10,ERR=20,END=30) IWeightingFLAG
-  ! -----IContinueFLAG-----------------------------------------------------------------
-  ILine= ILine+1; READ(IChInp,10,ERR=20,END=30) IContinueFLAG
+  ! -----IMethodFLAG-----------------------------------------------------------------
+  ILine= ILine+1; READ(IChInp,10,ERR=20,END=30) IMethodFLAG
+  IF (my_rank.EQ.0) THEN
+      IF(IMethodFLAG.EQ.1) PRINT*, "Refining by Simplex"
+      IF(IMethodFLAG.EQ.2) PRINT*, "Refining by Bisection"
+      IF(IMethodFLAG.EQ.3) PRINT*, "Refining by Parabola"
+  END IF  
   ! -----ICorrelationFLAG-----------------------------------------------------------------
   ILine= ILine+1; READ(IChInp,10,ERR=20,END=30) ICorrelationFLAG
   ! -----IImageProcessingFLAG-----------------------------------------------------------------

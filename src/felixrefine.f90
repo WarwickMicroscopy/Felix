@@ -57,8 +57,8 @@ PROGRAM Felixrefine
   REAL(RKIND) :: StartTime, CurrentTime, Duration, TotalDurationEstimate,&
        RHOLZAcceptanceAngle,RLaueZoneGz,RMaxGMag
   REAL(RKIND),DIMENSION(:,:),ALLOCATABLE :: RSimplexVariable,RgDummyVecMat,RgPoolMagLaue,RTestImage,&
-       ROnes,RVarMatrix,RSimp!,RIdentity
-  REAL(RKIND),DIMENSION(:),ALLOCATABLE :: RSimplexFoM,RIndependentVariable,ROneCol
+       ROnes,RVarMatrix,RSimp,Rvar,Rfit!,RIdentity
+  REAL(RKIND),DIMENSION(:),ALLOCATABLE :: RSimplexFoM,RIndependentVariable,ROneCol,RCurrentVar
   REAL(RKIND) :: RBCASTREAL,RStandardDeviation,RMean,RGzUnitVec,RMinLaueZoneValue,&
        RMaxLaueZoneValue,RMaxAcceptanceGVecMag,RLaueZoneElectronWaveVectorMag
   CHARACTER*40 :: my_rank_string
@@ -145,7 +145,7 @@ PROGRAM Felixrefine
       PRINT*,"felixrefine(",my_rank,") error in ReadExperimentalImages"
       GOTO 9999
     END IF
-  ELSEIF(my_rank.EQ.0) THEN
+  ELSE IF(my_rank.EQ.0) THEN
     PRINT*,"Simulation only"
   END IF
 
@@ -201,8 +201,8 @@ PROGRAM Felixrefine
   END IF
   !Perhaps should now re-allocate RAtomPosition,SAtomName,RIsoDW,ROccupancy,IAtomicNumber,RAnisoDW to match INAtomsUnitCell???
 
-! set up reflection pool
 !-----------------------------------------
+! set up reflection pool
   RHOLZAcceptanceAngle=TWODEG2RADIAN!RB seems way too low?
   IHKLMAXValue = 5!RB starting value, increments in loop below
 ! Count the reflections that make up the pool of g-vectors
@@ -238,7 +238,6 @@ PROGRAM Felixrefine
      GOTO 9999
   END IF
 
-!allocations-----------------------------------  
   !RgPool is a list of 2pi*g-vectors in the microscope ref frame, units of 1/A (NB exp(-i*q.r),  physics negative convention)
   ALLOCATE(RgPool(INhkl,ITHREE),STAT=IErr)
   ALLOCATE(RgDummyVecMat(INhkl,ITHREE),STAT=IErr)
@@ -247,7 +246,7 @@ PROGRAM Felixrefine
      GOTO 9999
   END IF
  
-!Calculate the g vector list RgPool in reciprocal angstrom units in the microscope reference frame
+  !Calculate the g vector list RgPool in reciprocal angstrom units in the microscope reference frame
   ICutOff = 1
   DO ind=1,INhkl
     DO jnd=1,ITHREE
@@ -361,9 +360,9 @@ PROGRAM Felixrefine
   END IF
   RMinimumGMag = RgPoolMag(2)
 
+!-----------------------------------------
   ! resolution in k space
   RDeltaK = RMinimumGMag*RConvergenceAngle/REAL(IPixelCount,RKIND)
-
   !acceptance angle
   IF(RAcceptanceAngle.NE.ZERO.AND.IHOLZFLAG.EQ.0) THEN
      RMaxAcceptanceGVecMag=(RElectronWaveVectorMagnitude*TAN(RAcceptanceAngle*DEG2RADIAN))
@@ -384,8 +383,6 @@ PROGRAM Felixrefine
      RMaxGMag = RgPoolMag(IMinReflectionPool)
   END IF
   
-  IThicknessCount= (RFinalThickness-RInitialThickness)/RDeltaThickness + 1
-
   !count reflections up to cutoff magnitude
   nReflections=0_IKIND
   DO ind=1,INhkl
@@ -419,6 +416,7 @@ PROGRAM Felixrefine
   
   !--------------------------------------------------------------------
   ! Calculate Reflection Matrix
+  IThicknessCount= (RFinalThickness-RInitialThickness)/RDeltaThickness + 1
   DO ind=1,nReflections
      DO jnd=1,nReflections
         RgMatrix(ind,jnd,:)= RgPool(ind,:)-RgPool(jnd,:)
@@ -554,6 +552,7 @@ PROGRAM Felixrefine
       END IF
     END DO 
   END IF
+
   !--------------------------------------------------------------------
   ! Setup Images for output
   ALLOCATE(RhklPositions(nReflections,2),STAT=IErr)
@@ -571,13 +570,15 @@ PROGRAM Felixrefine
   ALLOCATE(RSimulatedPatterns(INoOfLacbedPatterns,IThicknessCount,IPixelTotal),STAT=IErr)
   !Images to match RImageExpi (NB there are other variables called RImageSim, be careful!)
   ALLOCATE(RImageSimi(2*IPixelCount,2*IPixelCount,INoOfLacbedPatterns,IThicknessCount),STAT=IErr)
-  !Baseline Images to calculate mask
-  ALLOCATE(RImageBase(2*IPixelCount,2*IPixelCount,INoOfLacbedPatterns,IThicknessCount),STAT=IErr)
-  !Average Images to calculate mask
-  ALLOCATE(RImageAvi(2*IPixelCount,2*IPixelCount,INoOfLacbedPatterns,IThicknessCount),STAT=IErr)
-  RImageAvi=ZERO
-  !Mask Images
-  ALLOCATE(RImageMask(2*IPixelCount,2*IPixelCount,INoOfLacbedPatterns),STAT=IErr)
+  IF (ICorrelationFLAG.EQ.3) THEN!allocate images for the mask
+    !Baseline Images to calculate mask
+    ALLOCATE(RImageBase(2*IPixelCount,2*IPixelCount,INoOfLacbedPatterns,IThicknessCount),STAT=IErr)
+    !Average Images to calculate mask
+    ALLOCATE(RImageAvi(2*IPixelCount,2*IPixelCount,INoOfLacbedPatterns,IThicknessCount),STAT=IErr)
+    RImageAvi=ZERO
+    !Mask Images
+    ALLOCATE(RImageMask(2*IPixelCount,2*IPixelCount,INoOfLacbedPatterns),STAT=IErr)
+  END IF
   IF( IErr.NE.0 ) THEN
      PRINT*,"felixrefine(",my_rank,") error allocating simulated patterns"
      GOTO 9999
@@ -676,30 +677,27 @@ PROGRAM Felixrefine
         PRINT*,"felixrefine(0) error",IErr,"in CalculateFigureofMeritandDetermineThickness"
         GOTO 9999
       END IF
-      !Keep baseline simulation
-      RImageBase=RImageSimi  
-      RImageAvi=RImageSimi  
+      !Keep baseline simulation for masked correlation
+      IF (ICorrelationFLAG.EQ.3) THEN
+        RImageBase=RImageSimi  
+        RImageAvi=RImageSimi 
+      END IF        
       CALL WriteIterationOutput(Iter,IThicknessIndex,IExitFLAG,IErr)
       IF( IErr.NE.0 ) THEN
         PRINT*,"felixrefine(0) error in WriteIterationOutput"
         GOTO 9999
       END IF
     END IF
-  END IF
-  
   !=====================================!Send the fit index to all cores
   CALL MPI_BCAST(RFigureofMerit,1,MPI_DOUBLE_PRECISION,0,MPI_COMM_WORLD,IErr)
   !=====================================
-
-  IF (IRefineMode(11).EQ.1.OR.IRefineMode(12).EQ.1) THEN    !bisection on Ug's
-	IF (IRefineMode(12).EQ.1) THEN
-      CALL UgBisection(RIndependentVariable,IErr)
-    ELSE
-      
-    END IF
-  ELSE
-
-    ! Initialise Simplex
+  END IF
+  
+  !--------------------------------------------------------------------
+  !Branch depending upon refinement method
+  !We have INoOfVariables to refine, held in RIndependentVariable(1:INoOfVariables)
+  SELECT CASE(IMethodFLAG)
+  CASE(1)!Simplex
     ALLOCATE(RSimplexVariable(INoOfVariables+1,INoOfVariables), STAT=IErr)  
     ALLOCATE(RSimplexFoM(INoOfVariables+1),STAT=IErr)  
     IF( IErr.NE.0 ) THEN
@@ -720,11 +718,9 @@ PROGRAM Felixrefine
 	  FORALL(ind = 1:INoOfVariables+1) RVarMatrix(:,ind) = RIndependentVariable
 	  RSimplexVariable=MATMUL(RSimp,RVarMatrix)
       !CALL CreateRandomisedSimplex(RSimplexVariable,RIndependentVariable,IErr)
+      PRINT*,"RIndependentVariable",RIndependentVariable
+      PRINT*,"RSimplexVariable",RSimplexVariable
     END IF
-!    IF(my_rank.EQ.0) THEN
-!      PRINT*,"RIndependentVariable",RIndependentVariable
-!      PRINT*,"RSimplexVariable",RSimplexVariable
-!    END IF
     !=====================================send RSimplexVariable out to all cores
     CALL MPI_BCAST(RSimplexVariable,(INoOfVariables+1)*(INoOfVariables),MPI_DOUBLE_PRECISION,0,MPI_COMM_WORLD,IErr)
     !=====================================
@@ -742,15 +738,16 @@ PROGRAM Felixrefine
         GOTO 9999
       END IF
       RSimplexFoM(ind)=RFigureofMerit!RFigureofMerit is returned as a global variable
-      !Add to 'average' (extreme difference from baseline)
-      IF(my_rank.EQ.0) THEN
+      !For masked correlation, add to 'average' (extreme difference from baseline)
+      IF(my_rank.EQ.0.AND.ICorrelationFLAG.EQ.3) THEN!NB will need to be moved.redone for parabolic
         WHERE (ABS(RImageSimi-RImageBase).GT.ABS(RImageAvi-RImageBase))!replace pixels that are the most different from baseline
           RImageAvi=RImageSimi
         END WHERE
       END IF
     END DO
-
-    IF(my_rank.EQ.0) THEN
+   !--------------------------------------------------------------------
+   !set up masked fitting using the simplex setup
+   IF (my_rank.EQ.0.AND.ICorrelationFLAG.EQ.3) THEN
       !Simple start, just take thickness 1 
       RImageMask=RImageAvi(:,:,:,1)-RImageBase(:,:,:,1)
       DO ind = 1,INoOfLacbedPatterns!mask each pattern individually
@@ -781,7 +778,6 @@ PROGRAM Felixrefine
         DEALLOCATE(RTestImage)
       END IF
     END IF
- 
     !--------------------------------------------------------------------    
     ! Apply Simplex Method and iterate
     Iter = 1  
@@ -792,7 +788,25 @@ PROGRAM Felixrefine
       PRINT*,"felixrefine(",my_rank,")error in NDimensionalDownhillSimplex"
       GOTO 9999
     END IF
-  END IF
+  
+  CASE(2)!Bisection
+    CALL UgBisection(RIndependentVariable,IErr)
+    
+  CASE(3)!Parabola
+    ALLOCATE(RCurrentVar(INoOfVariables),STAT=IErr)
+    ALLOCATE(Rvar(INoOfVariables,ITHREE),STAT=IErr)!the three points to simulate
+    ALLOCATE(Rfit(INoOfVariables,ITHREE),STAT=IErr)!their fit indices
+    !put the baseline coordinate into position 1 
+	Rvar(:,1)=RIndependentVariable(:)
+	Rfit(:,1)=RFigureofMerit
+    !put the next coordinate into position 2
+    DO ind = 1,INoOfVariables
+      Iter=Iter+IPrint
+	  Rvar(ind,2)=RIndependentVariable(ind)*(ONE+RSimplexLengthScale/HUNDRED) 
+    END DO
+    !Simulate a point 
+    
+  END SELECT 
 
   !--------------------------------------------------------------------
   ! Deallocate Memory
@@ -1320,7 +1334,7 @@ END SUBROUTINE RefinementVariableSetup
 !%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 SUBROUTINE CreateRandomisedSimplex(RSimplexVariable,RIndependentVariable,IErr)
-
+!This is now redundant
 USE MyNumbers
   
   USE CConst; USE IConst; USE RConst

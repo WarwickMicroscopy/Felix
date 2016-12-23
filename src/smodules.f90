@@ -149,7 +149,7 @@ MODULE IPara
        IHolzFLAG,IAbsorbFLAG, IAnisoDebyeWallerFactorFlag, &
        IImageFLAG,IBeamConvergenceFLAG,IDevFLAG, &
        IRefineModeFLAG,ISoftwareMode,IHKLSelectFLAG,IPrint,IRefineSwitch,&
-       IWeightingFLAG,IContinueFLAG,ICorrelationFLAG,IImageProcessingFLAG,&
+       IWeightingFLAG,IMethodFLAG,ICorrelationFLAG,IImageProcessingFLAG,&
        IByteSize
   !Minimum Reflections etc
   INTEGER(IKIND) :: IMinReflectionPool,IMinStrongBeams,IMinWeakBeams

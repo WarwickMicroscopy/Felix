@@ -101,13 +101,13 @@ SUBROUTINE SimulateAndFit(RIndependentVariable,Iter,IExitFLAG,IErr)
      END IF
      RAbsorptionPercentage = RIndependentVariable(jnd)!===![[[!needs to be updated for AbsorbFLAG 2
   ELSE  !everything else
-     !Change variables
-     CALL UpdateVariables(RIndependentVariable,IErr)
-     IF( IErr.NE.0 ) THEN
-        PRINT*,"SimulateAndFit(",my_rank,")error in UpdateVariables"
-        RETURN
-     END IF
-     IF (IRefineMode(8).EQ.1) THEN
+    !Change variables
+    CALL UpdateVariables(RIndependentVariable,IErr)
+    IF( IErr.NE.0 ) THEN
+      PRINT*,"SimulateAndFit(",my_rank,")error in UpdateVariables"
+      RETURN
+    END IF
+    IF (IRefineMode(8).EQ.1) THEN
        !recalculate k-vectors
        RDeltaK = RMinimumGMag*RConvergenceAngle/REAL(IPixelCount,RKIND)
        IF (my_rank.EQ.0) THEN
@@ -117,15 +117,22 @@ SUBROUTINE SimulateAndFit(RIndependentVariable,Iter,IExitFLAG,IErr)
          CLOSE(IChOutSimplex)
        END IF
      END IF
-     !recalculate unit cell
-     CALL UniqueAtomPositions(IErr)
-     IF( IErr.NE.0 ) THEN
-        PRINT*,"SimulateAndFit(",my_rank,")error in UniqueAtomPositions"
-        RETURN
-     END IF
+    !recalculate unit cell
+    CALL UniqueAtomPositions(IErr)
+    IF( IErr.NE.0 ) THEN
+      PRINT*,"SimulateAndFit(",my_rank,")error in UniqueAtomPositions"
+      RETURN
+    END IF
+    !Update scattering matrix
+    CALL StructureFactorInitialisation(IErr)
+    CALL Absorption (IErr)
+    IF( IErr.NE.0 ) THEN
+      PRINT*,"felixfunction(",my_rank,")error in StructureFactorInitialisation"
+      RETURN
+    END IF
   END IF
 
-  IF (my_rank.EQ.0) THEN
+  IF (my_rank.EQ.0) THEN!send current values to screen
      CALL PrintVariables(IErr)
      IF( IErr.NE.0 ) THEN
         PRINT*,"SimulateAndFit(",my_rank,")error in PrintVariables"
@@ -193,20 +200,11 @@ SUBROUTINE FelixFunction(IErr)
 
   !Reset simuation--------------------------------------------------------------------  
   RIndividualReflections = ZERO
-  !Update scattering matrix, if it's not a Ug refinement and it's not the baseline simulation-------------------------------------  
-  IF (IRefineMode(1).NE.1 .AND. IRefineMode(12).NE.1 .AND. IInitialSimulationFLAG.NE.1) THEN
-     CALL StructureFactorInitialisation(IErr)
-     CALL Absorption (IErr)
-     IF( IErr.NE.0 ) THEN
-        PRINT*,"felixfunction(",my_rank,")error in StructureFactorInitialisation"
-        RETURN
-     END IF
-  END IF
-  IMAXCBuffer = 200000!RB what are these?
-  IPixelComputed= 0
+  !IMAXCBuffer = 200000!RB what are these?
+  !IPixelComputed= 0
 
   !Simulation (different local pixels for each core)--------------------------------------------------------------------  
-  IF(IWriteFLAG.GE.0.AND.my_rank.EQ.0) THEN
+  IF(my_rank.EQ.0) THEN
      PRINT*,"Bloch wave calculation..."
   END IF
   DO knd = ILocalPixelCountMin,ILocalPixelCountMax,1
