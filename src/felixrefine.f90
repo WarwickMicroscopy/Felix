@@ -706,27 +706,15 @@ PROGRAM Felixrefine
     IF(my_rank.EQ.0) THEN
 	  ALLOCATE(ROnes(INoOfVariables+1,INoOfVariables), STAT=IErr)!matrix of ones
 	  ALLOCATE(RSimp(INoOfVariables+1,INoOfVariables), STAT=IErr)!matrix of one +/-RSimplexLengthScale
-	  ALLOCATE(RVarMatrix(INoOfVariables,INoOfVariables+1), STAT=IErr)!matrix of variables as rows
+	  ALLOCATE(RVarMatrix(INoOfVariables,INoOfVariables), STAT=IErr)!diagonal matrix of variables as rows
 	  !ALLOCATE(RIdentity(INoOfVariables,INoOfVariables), STAT=IErr)!identity matrix
 	  ROnes=1.0
-	  !RIdentity=0.0
-	  !FORALL(ind = 1:INoOfVariables) RIdentity(ind,ind) = 1.0
 	  RSimp=1.0
+	  RVarMatrix=0.0
 	  FORALL(ind = 1:INoOfVariables) RSimp(ind,ind) = -1.0
-	  RSimp=RSimp*RSimplexLengthScale/HUNDRED + ROnes
-	  FORALL(ind = 1:INoOfVariables+1) RVarMatrix(:,ind) = RIndependentVariable
-      PRINT*,"RSimp"
-      DO ind = 1,(INoOfVariables)
-        PRINT*,RSimp(:,ind)
-      END DO
-      PRINT*,"RVarMatrix"
-      DO ind = 1,(INoOfVariables)
-        PRINT*,RVarMatrix(ind,:)
-      END DO
-	  RSimplexVariable=MATMUL(RVarMatrix,RSimp)
-      !CALL CreateRandomisedSimplex(RSimplexVariable,RIndependentVariable,IErr)
-      PRINT*,"RIndependentVariable",RIndependentVariable
-      PRINT*,"RSimplexVariable",RSimplexVariable
+	  RSimp=RSimp*RSimplexLengthScale + ROnes
+	  FORALL(ind = 1:INoOfVariables) RVarMatrix(ind,ind) = RIndependentVariable(ind)
+	  RSimplexVariable=MATMUL(RSimp,RVarMatrix)
     END IF
     !=====================================send RSimplexVariable out to all cores
     CALL MPI_BCAST(RSimplexVariable,(INoOfVariables+1)*(INoOfVariables),MPI_DOUBLE_PRECISION,0,MPI_COMM_WORLD,IErr)
@@ -1341,81 +1329,6 @@ SUBROUTINE RefinementVariableSetup(RIndependentVariable,IErr)
   END DO
 
 END SUBROUTINE RefinementVariableSetup
-
-!%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-
-SUBROUTINE CreateRandomisedSimplex(RSimplexVariable,RIndependentVariable,IErr)
-!This is now redundant
-USE MyNumbers
-  
-  USE CConst; USE IConst; USE RConst
-  USE IPara; USE RPara; USE SPara; USE CPara
-  USE BlochPara 
-  USE IChannels
-  USE MPI
-  USE MyMPI
-  
-  IMPLICIT NONE
-  
-  INTEGER(IKIND) :: IErr,ind
-  REAL(RKIND),DIMENSION(:),ALLOCATABLE :: RRandomSigns,RRandomNumbers
-  REAL(RKIND),DIMENSION(INoOfVariables+1,INoOfVariables),INTENT(OUT) :: RSimplexVariable
-  REAL(RKIND),DIMENSION(INoOfVariables),INTENT(INOUT) :: RIndependentVariable
-  
-  IF(IRefineMode(2).EQ.1) THEN!it's an atomic coordinate refinement
-    DO ind = 1,(INoOfVariables+1)
-      ALLOCATE(RRandomSigns(IAllowedVectors),RRandomNumbers(IAllowedVectors),STAT=IErr)       
-!!$         Randomise Atomic Displacements
-      CALL RandomSequence(RRandomNumbers,IAllowedVectors,ind,IErr)
-      CALL RandomSequence(RRandomSigns,IAllowedVectors,2*ind,IErr)
-      WHERE (RRandomSigns.LT.HALF)
-        RRandomSigns = ONE
-      ELSEWHERE
-        RRandomSigns = -ONE
-      END WHERE
-      RSimplexVariable(ind,:IAllowedVectors) = &
-             RRandomNumbers*RRandomSigns*RSimplexLengthScale
-      DEALLOCATE(RRandomSigns,RRandomNumbers,STAT=IErr)
-      ALLOCATE(RRandomSigns(INoOfVariables-IAllowedVectors),&
-             RRandomNumbers(INoOfVariables-IAllowedVectors),STAT=IErr)
-!!$           Randomise Everything else
-      CALL RandomSequence(RRandomNumbers,INoOfVariables-IAllowedVectors,ind,IErr)
-      CALL RandomSequence(RRandomSigns,INoOfVariables-IAllowedVectors,2*ind,IErr)
-      WHERE (RRandomSigns.LT.HALF)
-        RRandomSigns = ONE
-      ELSEWHERE
-        RRandomSigns = -ONE
-      END WHERE
-      RSimplexVariable(ind,(IAllowedVectors+1):) = &
-             RIndependentVariable((IAllowedVectors+1):)*&
-             (1+(RRandomNumbers*RRandomSigns*RSimplexLengthScale))
-      DEALLOCATE(RRandomSigns,RRandomNumbers,STAT=IErr)
-    END DO
-  ELSE
-   ALLOCATE(RRandomSigns(INoOfVariables),RRandomNumbers(INoOfVariables),STAT=IErr)
-   IF( IErr.NE.0 ) THEN
-     PRINT*,"CreateRandomisedSimplex(",my_rank,")error in Allocation"
-     RETURN
-   END IF     
-   DO ind = 1,(INoOfVariables+1)
-     CALL RandomSequence(RRandomNumbers,INoOfVariables,ind,IErr)
-     CALL RandomSequence(RRandomSigns,INoOfVariables,2*ind,IErr)
-     WHERE (RRandomSigns.LT.HALF)
-       RRandomSigns=ONE
-     ELSEWHERE
-       RRandomSigns=-ONE
-     END WHERE
-     RSimplexVariable(ind,:)=RIndependentVariable(:)*&
-                              (1+(RRandomNumbers*RRandomSigns*RSimplexLengthScale))
-   END DO
-   DEALLOCATE(RRandomSigns,RRandomNumbers,STAT=IErr)
-   IF( IErr.NE.0 ) THEN
-     PRINT*,"CreateRandomisedSimplex(",my_rank,")error in deallocation"
-     RETURN
-   END IF      
- END IF
-
-END SUBROUTINE CreateRandomisedSimplex
 
 !!$  %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 

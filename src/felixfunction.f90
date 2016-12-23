@@ -61,7 +61,7 @@ SUBROUTINE SimulateAndFit(RIndependentVariable,Iter,IExitFLAG,IErr)
      PRINT*,"SimulateAndFit(",my_rank,")"
   END IF
 
-  IF (IRefineMode(1).EQ.1 .OR. IRefineMode(12).EQ.1) THEN  !Ug refinement; update structure factors 
+  IF (IRefineMode(1).EQ.1) THEN  !Ug refinement; update structure factors 
      !Dummy Matrix to contain new iterative values
      CUgMatDummy = CZERO    !NB these are Ug's without absorption
      jnd=1
@@ -330,7 +330,7 @@ SUBROUTINE CalculateFigureofMeritandDetermineThickness(Iter,IBestThicknessIndex,
         ELSEWHERE
           RExperimentalImage =  TINY**2
         END WHERE
-      !NB CASE(4) is dealt with elsewhere
+      !NB CASE(4) is masked correlation, dealt with elsewhere
       END SELECT
       !
       
