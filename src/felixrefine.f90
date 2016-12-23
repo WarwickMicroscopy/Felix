@@ -451,7 +451,7 @@ PROGRAM Felixrefine
     PRINT*,TRIM(ADJUSTL(SPrintString))
   END IF 
 
-  IF(IRefineMode(1).EQ.1 .OR. IRefineMode(12).EQ.1) THEN !It's a Ug refinement
+  IF(IRefineMode(1).EQ.1) THEN !It's a Ug refinement
 	IUgOffset=1!choose how many Ug's to skip in the refinement, 1 is the inner potential...
     !Count the number of Independent Variables
     jnd=1
@@ -507,7 +507,7 @@ PROGRAM Felixrefine
       GOTO 9999
     END IF
   END IF
-  IF(IRefineMode(1)+IRefineMode(12).EQ.0) THEN !It's not a Ug refinement, so we need to count variables
+  IF(IRefineMode(1).EQ.0) THEN !It's not a Ug refinement, so we need to count variables
     INoofElementsForEachRefinementType(2)=IRefineMode(2)*IAllowedVectors!Atomic coordinates
     INoofElementsForEachRefinementType(3)=IRefineMode(3)*SIZE(IAtomicSitesToRefine)!Occupancy
     INoofElementsForEachRefinementType(4)=IRefineMode(4)*SIZE(IAtomicSitesToRefine)!Isotropic DW
@@ -517,7 +517,6 @@ PROGRAM Felixrefine
     INoofElementsForEachRefinementType(8)=IRefineMode(8)!Convergence angle
     INoofElementsForEachRefinementType(9)=IRefineMode(9)!Percentage Absorption
     INoofElementsForEachRefinementType(10)=IRefineMode(10)!kV
-    INoofElementsForEachRefinementType(11)=IRefineMode(11)!Scaling factor, don't know what this does
     !Number of independent variables
     INoOfVariables = SUM(INoofElementsForEachRefinementType)
     !--------------------------------------------------------------------
@@ -623,7 +622,7 @@ PROGRAM Felixrefine
   ALLOCATE(IWeakBeamList(nReflections),STAT=IErr)
   ALLOCATE(CFullWaveFunctions(nReflections),STAT=IErr)
   ALLOCATE(RFullWaveIntensity(nReflections),STAT=IErr)
-  IF( IErr.NE.0 ) THEN
+  IF (IErr.NE.0) THEN
      PRINT*,"felixrefine(",my_rank,") error in allocations for Bloch calculation"
      GOTO 9999
   END IF
@@ -632,7 +631,7 @@ PROGRAM Felixrefine
   RFigureofMerit=666.666!Inital large value,diabolically
   Iter = 0
   CALL FelixFunction(IErr) ! Simulate !! 
-  IF( IErr.NE.0 ) THEN
+  IF (IErr.NE.0) THEN
      PRINT*,"felixrefine(",my_rank,")error",IErr,"in FelixFunction"
      GOTO 9999
   END IF
@@ -644,7 +643,7 @@ PROGRAM Felixrefine
   IHours = FLOOR(Duration/3600.0D0)
   IMinutes = FLOOR(MOD(Duration,3600.0D0)/60.0D0)
   ISeconds = INT(MOD(Duration,3600.0D0)-IMinutes*60)
-  IF(my_rank.EQ.0) THEN
+  IF (my_rank.EQ.0) THEN
     WRITE(SPrintString,FMT='(A24,I3,A5,I2,A6,I2,A4)')&
     "Simulation completed in ",IHours," hrs ",IMinutes," mins ",ISeconds," sec"
     PRINT*,TRIM(ADJUSTL(SPrintString))
@@ -684,13 +683,13 @@ PROGRAM Felixrefine
       END IF        
       CALL WriteIterationOutput(Iter,IThicknessIndex,IExitFLAG,IErr)
       IF( IErr.NE.0 ) THEN
-        PRINT*,"felixrefine(0) error in WriteIterationOutput"
+        PRINT*,"Error in WriteIterationOutput"
         GOTO 9999
       END IF
     END IF
-  !=====================================!Send the fit index to all cores
-  CALL MPI_BCAST(RFigureofMerit,1,MPI_DOUBLE_PRECISION,0,MPI_COMM_WORLD,IErr)
-  !=====================================
+    !=====================================!Send the fit index to all cores
+    CALL MPI_BCAST(RFigureofMerit,1,MPI_DOUBLE_PRECISION,0,MPI_COMM_WORLD,IErr)
+    !=====================================
   END IF
   
   !--------------------------------------------------------------------
@@ -716,7 +715,15 @@ PROGRAM Felixrefine
 	  FORALL(ind = 1:INoOfVariables) RSimp(ind,ind) = -1.0
 	  RSimp=RSimp*RSimplexLengthScale/HUNDRED + ROnes
 	  FORALL(ind = 1:INoOfVariables+1) RVarMatrix(:,ind) = RIndependentVariable
-	  RSimplexVariable=MATMUL(RSimp,RVarMatrix)
+      PRINT*,"RSimp"
+      DO ind = 1,(INoOfVariables)
+        PRINT*,RSimp(:,ind)
+      END DO
+      PRINT*,"RVarMatrix"
+      DO ind = 1,(INoOfVariables)
+        PRINT*,RVarMatrix(ind,:)
+      END DO
+	  RSimplexVariable=MATMUL(RVarMatrix,RSimp)
       !CALL CreateRandomisedSimplex(RSimplexVariable,RIndependentVariable,IErr)
       PRINT*,"RIndependentVariable",RIndependentVariable
       PRINT*,"RSimplexVariable",RSimplexVariable
@@ -805,7 +812,11 @@ PROGRAM Felixrefine
 	  Rvar(ind,2)=RIndependentVariable(ind)*(ONE+RSimplexLengthScale/HUNDRED) 
     END DO
     !Simulate a point 
-    
+  CASE DEFAULT!Simulation only
+    IF (my_rank.EQ.0) THEN
+      PRINT*,"No refinement, simulation only"
+    END IF
+      
   END SELECT 
 
   !--------------------------------------------------------------------
@@ -835,7 +846,7 @@ PROGRAM Felixrefine
   DEALLOCATE(RAnisoDW,STAT=IErr)
   DEALLOCATE(RAtomCoordinate,STAT=IErr)
   DEALLOCATE(RgMatrixMagnitude,STAT=IErr)
-  IF (IRefineMode(1)+IRefineMode(12).EQ.0) THEN
+  IF (IRefineMode(1).EQ.0) THEN
   	DEALLOCATE(IIterativeVariableUniqueIDs,STAT=IErr)
   END IF
   IF (ISimFLAG.EQ.0) THEN

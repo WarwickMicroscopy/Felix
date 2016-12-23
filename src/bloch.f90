@@ -86,7 +86,7 @@ SUBROUTINE BlochCoefficientCalculation(IYPixelIndex,IXPixelIndex,IPixelNumber,IF
       PRINT*,"RDevPara",RDevPara(knd)
     END IF
   END DO
-  
+
   ! select only those beams where the Ewald sphere is close to the
   ! reciprocal lattice, i.e. within RBSMaxDeviationPara
   CALL StrongAndWeakBeamsDetermination(IErr)

@@ -99,12 +99,12 @@ SUBROUTINE WriteIterationOutput(Iter,IThicknessIndex,IExitFlag,IErr)
   END IF
   CALL WriteStructureFactors(path,IErr)
   IF( IErr.NE.0 ) THEN
-    PRINT*,"WriteIterationOutput(0) error in WriteStructureFactors()"
+    PRINT*,"WriteIterationOutput(0) error in WriteStructureFactors"
     RETURN
   END IF
   CALL WriteOutVariables(Iter,IErr)
   IF( IErr.NE.0 ) THEN
-    PRINT*,"WriteIterationOutput(0) error in WriteOutVariables()"
+    PRINT*,"WriteIterationOutput(0) error in WriteOutVariables"
     RETURN
   END IF
 
@@ -215,7 +215,11 @@ SUBROUTINE WriteOutVariables(Iter,IErr)
 
   ! Need to Determine total no. of variables to be written out, this is different from the no. of refinement variables
   
-  IOutputVariables(1) =  IRefineMode(1)*2*INoofUgs+1 ! Structure Factors are Complex so require two output variables each     
+  IF (IAbsorbFLAG.EQ.2) THEN! Structure Factors are complex so require two output variables each
+    IOutputVariables(1) = IRefineMode(1)*2*INoofUgs+1 !plus one for proportional absorption     
+  ELSE
+    IOutputVariables(1) = IRefineMode(1)*2*INoofUgs     
+  END IF
   IOutputVariables(2) = IRefineMode(2)*SIZE(RBasisAtomPosition,DIM=1)*SIZE(RBasisAtomPosition,DIM=2) !Structural Coordinates
   IOutputVariables(3) = IRefineMode(3)*SIZE(RBasisOccupancy,DIM=1) !Atomic Site Occupancies
   IOutputVariables(4) = IRefineMode(4)*SIZE(RBasisIsoDW,DIM=1) !Isotropic Debye Waller Factors
@@ -225,10 +229,8 @@ SUBROUTINE WriteOutVariables(Iter,IErr)
   IOutputVariables(8) = IRefineMode(8) !Convergence angle
   IOutputVariables(9) = IRefineMode(9) !Absorption
   IOutputVariables(10) = IRefineMode(10) !Accelerating Voltage
-  !IRefineMode(11) gives no new parameters, it's a method
-  IOutputVariables(12) =  IRefineMode(12) * 2*INoofUgs+1 ! Structure Factors are Complex so require two output variables each     
   ITotalOutputVariables = SUM(IOutputVariables) ! Total Output
-  
+
   ALLOCATE(RDataOut(ITotalOutputVariables),STAT=IErr)
   DO jnd = 1,IRefinementVariableTypes
      IF(IRefineMode(jnd).EQ.0) THEN

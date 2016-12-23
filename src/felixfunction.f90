@@ -193,28 +193,28 @@ SUBROUTINE FelixFunction(IErr)
   REAL(RKIND),DIMENSION(:,:,:),ALLOCATABLE :: RFinalMontageImageRoot
   REAL(RKIND),DIMENSION(:,:),ALLOCATABLE :: RTempImage 
 
-  IF(IWriteFLAG.GE.10.AND.my_rank.EQ.0) THEN
+  IF (IWriteFLAG.GE.10.AND.my_rank.EQ.0) THEN
      PRINT*,"Felixfunction(", my_rank, "): starting the eigenvalue problem"
      PRINT*,"Felixfunction(",my_rank,")pixels",ILocalPixelCountMin," to ",ILocalPixelCountMax
   END IF
 
   !Reset simuation--------------------------------------------------------------------  
   RIndividualReflections = ZERO
-  !IMAXCBuffer = 200000!RB what are these?
-  !IPixelComputed= 0
+  IMAXCBuffer = 200000!RB what are these?
+  IPixelComputed= 0
 
   !Simulation (different local pixels for each core)--------------------------------------------------------------------  
-  IF(my_rank.EQ.0) THEN
-     PRINT*,"Bloch wave calculation..."
+  IF (my_rank.EQ.0) THEN
+    PRINT*,"Bloch wave calculation..."
   END IF
   DO knd = ILocalPixelCountMin,ILocalPixelCountMax,1
-     jnd = IPixelLocations(knd,1)
-     ind = IPixelLocations(knd,2)
-     CALL BlochCoefficientCalculation(ind,jnd,knd,ILocalPixelCountMin,IErr)
-     IF( IErr.NE.0 ) THEN
-        PRINT*,"Felixfunction(",my_rank,") error in BlochCofficientCalculation"
-        RETURN
-     END IF
+    jnd = IPixelLocations(knd,1)
+    ind = IPixelLocations(knd,2)
+    CALL BlochCoefficientCalculation(ind,jnd,knd,ILocalPixelCountMin,IErr)
+    IF( IErr.NE.0 ) THEN
+      PRINT*,"Felixfunction(",my_rank,") error in BlochCofficientCalculation"
+      RETURN
+    END IF
   END DO
 
   !=====================================!MPI gatherv into RSimulatedPatterns--------------------------------------------------------------------  

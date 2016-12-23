@@ -39,9 +39,9 @@
 !--------------------------------------------------------------------
 MODULE CConst
 
-  CHARACTER*30, PARAMETER :: RStr= "Version: Master / BUILD / Alpha"
-  CHARACTER*30, PARAMETER :: DStr= "Date: 24-11-2016"
-  CHARACTER*50, PARAMETER :: AStr= "Status: testing convergence angle refinement"
+  CHARACTER*50, PARAMETER :: RStr= "Version: RB_parabola / BUILD / Alpha"
+  CHARACTER*50, PARAMETER :: DStr= "Date: 23-12-2016"
+  CHARACTER*50, PARAMETER :: AStr= "Status: testing parabolic refinement"
   
   CHARACTER*8 CSpaceGrp(230)
   DATA CSpaceGrp/"P1","P-1","P2","P21","C2","Pm","Pc","Cm",&
@@ -104,7 +104,7 @@ MODULE IConst
        IParallelFLAG=0,&
        IRandomFLAG = 1, &
        IFixedSeed = 123456787,&
-       IRefinementVariableTypes = 12,&
+       IRefinementVariableTypes = 10,&
        NElements=103
 
   !PriorityFLAG values - to match to the WriteFLAG - will change eventually,
