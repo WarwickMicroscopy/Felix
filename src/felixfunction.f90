@@ -838,19 +838,20 @@ END FUNCTION  RStandardError
 
 SUBROUTINE Parabo3(Rx,Ry,Rxv,Ryv,IErr)
   !Input is a vector Rx with three x-coordinates and  Ry with three y-coordinates 
-  !Output is the x-coordinate of the vertex of the fitted parabola, Rxv
-  !The y-coordinate of the vertex of the fitted parabola is Ryv
+  !Output is the x- and y-coordinate of the vertex of the fitted parabola, Rxv Ryv
+
   USE MyNumbers
 
   IMPLICIT NONE
   
-  REAL(RKIND) :: Rx,Ry,Rxv,Ryv,Ra,Rb,Rc,Rd
+  REAL(RKIND) :: Ra,Rb,Rc,Rd,Rxv,Ryv
+  REAL(RKIND),DIMENSION(3) :: Rx,Ry
   INTEGER(IKIND) :: IErr
   
-  Rd = (Rx(1)-Rx(2))*(Rx(1)-Rx(3))*(Rx(2)-Rx(3));
-  Ra = (Rx(3)*(Ry(2)-Ry(1))+Rx(2)*(Ry(1)-Ry(3))+Rx(1)*(Ry(3)-Ry(2)))/Rd;
-  Rb = (Rx(3)*Rx(3)*(Ry(1)-Ry(2))+Rx(2)*Rx(2)*(Ry(3)-Ry(1))+Rx(1)*Rx(1)*(Ry(2)-Ry(3)))/Rd;
-  Rc = (Rx(2)*Rx(3)*(Rx(2)-Rx(3))*Ry(1)+Rx(3)*Rx(1)*(Rx(3)-Rx(1))*Ry(2)+Rx(1)*Rx(2)*(Rx(1)-Rx(2))*Ry(3))/Rd;
-  Rxv = -Rb/(2*Ra);
-  Ryv = Rc-Rb*Rb/(4*Ra);
+  Rd = (Rx(1)-Rx(2))*(Rx(1)-Rx(3))*(Rx(2)-Rx(3))
+  Ra = (Rx(3)*(Ry(2)-Ry(1))+Rx(2)*(Ry(1)-Ry(3))+Rx(1)*(Ry(3)-Ry(2)))/Rd
+  Rb = (Rx(3)*Rx(3)*(Ry(1)-Ry(2))+Rx(2)*Rx(2)*(Ry(3)-Ry(1))+Rx(1)*Rx(1)*(Ry(2)-Ry(3)))/Rd
+  Rc = (Rx(2)*Rx(3)*(Rx(2)-Rx(3))*Ry(1)+Rx(3)*Rx(1)*(Rx(3)-Rx(1))*Ry(2)+Rx(1)*Rx(2)*(Rx(1)-Rx(2))*Ry(3))/Rd
+  Rxv = -Rb/(2*Ra);!x-coord
+  Ryv = Rc-Rb*Rb/(4*Ra)!y-coord
 END SUBROUTINE  Parabo3

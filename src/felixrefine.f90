@@ -53,15 +53,14 @@ PROGRAM Felixrefine
 	   ILaueLevel,INumTotalReflections,ITotalLaueZoneLevel,INhkl,IExitFLAG,&
 	   INumInitReflections,IZerothLaueZoneLevel,INumFinalReflections,IThicknessIndex
   INTEGER(IKIND) :: IHours,IMinutes,ISeconds,IMilliSeconds,IStartTime,ICurrentTime,IRate
-  INTEGER(IKIND),DIMENSION(IThree) :: IFitRank
   INTEGER(IKIND),DIMENSION(:),ALLOCATABLE :: IOriginGVecIdentifier
   REAL(RKIND) :: StartTime, CurrentTime, Duration, TotalDurationEstimate,&
        RHOLZAcceptanceAngle,RLaueZoneGz,RMaxGMag
+  REAL(RKIND) :: RBCASTREAL,RStandardDeviation,RMean,RGzUnitVec,RMinLaueZoneValue,&
+       RMaxLaueZoneValue,RMaxAcceptanceGVecMag,RLaueZoneElectronWaveVectorMag,RVar0,RFit0
+  REAL(RKIND),DIMENSION(:),ALLOCATABLE :: RSimplexFoM,RIndependentVariable,RCurrentVar,RStep
   REAL(RKIND),DIMENSION(:,:),ALLOCATABLE :: RSimplexVariable,RgDummyVecMat,RgPoolMagLaue,RTestImage,&
        ROnes,RVarMatrix,RSimp,Rvar,Rfit!,RIdentity
-  REAL(RKIND),DIMENSION(:),ALLOCATABLE :: RSimplexFoM,RIndependentVariable,ROneCol,RCurrentVar
-  REAL(RKIND) :: RBCASTREAL,RStandardDeviation,RMean,RGzUnitVec,RMinLaueZoneValue,&
-       RMaxLaueZoneValue,RMaxAcceptanceGVecMag,RLaueZoneElectronWaveVectorMag
   CHARACTER*40 :: my_rank_string
   CHARACTER*20 :: Snd,h,k,l
   CHARACTER*200 :: SPrintString
@@ -789,6 +788,7 @@ PROGRAM Felixrefine
     
   CASE(3)!Parabola
     ALLOCATE(RCurrentVar(INoOfVariables),STAT=IErr)!used to send out for simulations
+    ALLOCATE(RStep(INoOfVariables),STAT=IErr)!step size in parameter space
     ALLOCATE(Rvar(INoOfVariables,ITHREE),STAT=IErr)!the three points to simulate
     ALLOCATE(Rfit(INoOfVariables,ITHREE),STAT=IErr)!their fit indices
     IF( IErr.NE.0 ) THEN
@@ -797,53 +797,65 @@ PROGRAM Felixrefine
     END IF
     !put the baseline coordinates into Rvar 
 	FORALL(ind = 1:3) Rvar(:,ind)=RIndependentVariable(:)
+    !initialise RStep
+    FORALL(ind = 1:INoOfVariables) RStep(ind)=RIndependentVariable(ind)*RSimplexLengthScale
 	Rfit(:,1)=RFigureofMerit
-    !Simulate second point for first variable
+    DO ind=1,INoOfVariables
     !put the next coordinate into position 2
-    Rvar(1,2)=Rvar(1,1)*(ONE+RSimplexLengthScale)
+    Rvar(ind,2)=Rvar(ind,1)+RStep(ind)
     Iter=1
     RCurrentVar=Rvar(:,2)
     IF(my_rank.EQ.0) THEN
       PRINT*,"--------------------------------"
-      WRITE(SPrintString,FMT='(A21)') "Point 2 of variable 1"
+      WRITE(SPrintString,FMT='(A20,I2)') "Point 2 of variable ",ind
       PRINT*,TRIM(ADJUSTL(SPrintString))
     END IF
     CALL SimulateAndFit(RCurrentVar,Iter,IExitFLAG,IErr)
-    Rfit(1,2)=RFigureofMerit
+    Rfit(ind,2)=RFigureofMerit
     IF(my_rank.EQ.0) THEN
       WRITE(SPrintString,FMT='(A10,I1,A12,F9.7)')&
 	  "Iteration ",Iter,", fit index ",RFigureofMerit
+      PRINT*,TRIM(ADJUSTL(SPrintString))
 	END IF
     !choose a third point, going downhill
-    IF (Rfit(1,2).LT.Rfit(1,1)) THEN!we went the right way, continue
-      Rvar(1,3)=Rvar(1,1)*(ONE+2*RSimplexLengthScale)
-    ELSE!go the other way
-      Rvar(1,3)=Rvar(1,1)*(ONE-RSimplexLengthScale)
+    IF (Rfit(ind,2).GT.Rfit(ind,1)) THEN!we went the wrong way, change sign of RStep
+      RStep(ind)=-2*RStep(ind)
     END IF
+      Rvar(ind,3)=Rvar(ind,2)+RStep(ind)
     Iter=Iter+1
     RCurrentVar=Rvar(:,3)
     IF(my_rank.EQ.0) THEN
       PRINT*,"--------------------------------"
-      WRITE(SPrintString,FMT='(A21)') "Point 3 of variable 1"
+      WRITE(SPrintString,FMT='(A20,I2)') "Point 3 of variable ",ind
       PRINT*,TRIM(ADJUSTL(SPrintString))
     END IF
     CALL SimulateAndFit(RCurrentVar,Iter,IExitFLAG,IErr)
-    Rfit(1,3)=RFigureofMerit
+    Rfit(ind,3)=RFigureofMerit
     IF(my_rank.EQ.0) THEN
       WRITE(SPrintString,FMT='(A10,I1,A12,F9.7)')&
 	  "Iteration ",Iter,", fit index ",RFigureofMerit
-
-    !rank the fits
-    IFitRank=2
-    IFitRank(MAXLOC(Rfit(1,:)))=3
-    IFitRank(MINLOC(Rfit(1,:)))=1
-    PRINT*,IFitRank
-    !check the three points make a concave set
-    !IF ((+MIN(Rfit(1,:))/TWO).GT.
+      PRINT*,TRIM(ADJUSTL(SPrintString))
 	END IF     
-     
-     
-     
+    !check the three points make a concave set
+    IF (1.5*(MINVAL(Rfit(ind,:))+MAXVAL(Rfit(ind,:))).GT.SUM(Rfit(ind,:))) THEN!its concave
+      CALL Parabo3(Rvar(ind,:),Rfit(ind,:),RVar0,RFit0,IErr)
+      IF(my_rank.EQ.0) THEN
+        PRINT*,"concave set of points, predict minimum at",RVar0
+        PRINT*,"with fit index",RFit0
+      END IF
+      RCurrentVar(ind)=RVar0
+    ELSE!it's convex, keep going
+      IF(my_rank.EQ.0) THEN
+        PRINT*,"convex set of points, continuing"
+      END IF
+      !so what do I do now?
+    END IF
+    CALL SimulateAndFit(RCurrentVar,Iter,IExitFLAG,IErr)     
+    !replace maximum in RVar
+    RVar(ind,MAXLOC(RVar(ind,:)))=RVar0
+    RFit(ind,MAXLOC(RVar(ind,:)))=RFigureofMerit
+    !think about what state Rvar and Rfit should be for the next loop!
+    END DO 
      
      
      
