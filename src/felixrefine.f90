@@ -56,7 +56,7 @@ PROGRAM Felixrefine
   INTEGER(IKIND),DIMENSION(:),ALLOCATABLE :: IOriginGVecIdentifier,Itemp
   REAL(RKIND) :: StartTime, CurrentTime, Duration, TotalDurationEstimate,&
        RHOLZAcceptanceAngle,RLaueZoneGz,RMaxGMag
-  REAL(RKIND) :: RBCASTREAL,RStandardDeviation,RMean,RGzUnitVec,RMinLaueZoneValue,&
+  REAL(RKIND) :: RBCASTREAL,RStandardDeviation,RMean,RGzUnitVec,RMinLaueZoneValue,Rdf,RLastFit,&
        RMaxLaueZoneValue,RMaxAcceptanceGVecMag,RLaueZoneElectronWaveVectorMag,Rvar0,Rfit0
   REAL(RKIND),DIMENSION(:),ALLOCATABLE :: RSimplexFoM,RIndependentVariable,RCurrentVar,RStep
   REAL(RKIND),DIMENSION(:,:),ALLOCATABLE :: RSimplexVariable,RgDummyVecMat,RgPoolMagLaue,RTestImage,&
@@ -796,29 +796,28 @@ PROGRAM Felixrefine
       PRINT*,"felixrefine(",my_rank,")error allocating parabola variables"
       GOTO 9999
     END IF
-    !put the baseline coordinates into Rvar 
+    !put the baseline coordinates into Rvar & Rfit
 	FORALL(ind = 1:3) Rvar(:,ind)=RIndependentVariable(:)
 	Rfit=RFigureofMerit
+    RLastFit=RFigureofMerit
+    Rdf=RFigureofMerit
     !initialise RStep
     FORALL(ind = 1:INoOfVariables) RStep(ind)=RIndependentVariable(ind)*RSimplexLengthScale
     Iter=1
+    
+    DO WHILE (Rdf.GE.RExitCriteria)
+    !loop over variables
     DO ind=1,INoOfVariables
-      Itemp=MAXLOC(Rfit(ind,:))!the worst point
-      jnd=Itemp(1)
-      !IF(my_rank.EQ.0) PRINT*,"worst=",jnd
-      Itemp=MINLOC(Rfit(ind,:))!the best point
-      knd=Itemp(1)
-      !IF(my_rank.EQ.0) PRINT*,"best=",knd
-      IF (jnd.EQ.knd) THEN!make a false bad index for jnd (will be replaced) and do again
-        Rfit(ind,jnd)=Rfit(ind,jnd)+0.1
-        Itemp=MINLOC(Rfit(ind,:))!the best point
-        knd=Itemp(1)
-        !IF(my_rank.EQ.0) PRINT*,"best=",knd
-      END IF
-      lnd=6-jnd-knd!the mid point
-      !make a new coordinate from the best point and replace the worst
-      Rvar(ind,jnd)=Rvar(ind,knd)+RStep(ind)
-      Rfit(ind,jnd)=0.0!false good index, will be replaced
+      !we start with all coords and fits the same
+      !The best coordinate so far
+      Itemp=MINLOC(Rfit(ind,:))
+      Rvar0=Rvar(ind,Itemp(1))
+      FORALL(jnd = 1:3) Rvar(ind,jnd)=Rvar0
+      !assuming we found the best point, needs a condition adding here if this is not the case
+      FORALL(jnd = 1:3) Rfit(ind,jnd)=RFigureofMerit
+      !make a new coordinate for point 2
+      Rvar(ind,2)=Rvar(ind,1)+RStep(ind)
+      Rfit(ind,2)=0.0!false good index, will be replaced
       !choose the best points from all variables to simulate
       DO mnd = 1,INoOfVariables
         Itemp=MINLOC(Rfit(mnd,:))
@@ -826,25 +825,20 @@ PROGRAM Felixrefine
       END DO
       IF(my_rank.EQ.0) THEN
         PRINT*,"--------------------------------"
-        WRITE(SPrintString,FMT='(A6,I2,A13,I2)') "Point ",knd," of variable ",ind
+        WRITE(SPrintString,FMT='(A20,I2)') "Point 2 of variable ",ind
         PRINT*,TRIM(ADJUSTL(SPrintString))
       END IF
       CALL SimulateAndFit(RCurrentVar,Iter,IExitFLAG,IErr)
       Iter=Iter+1
-      Rfit(ind,jnd)=RFigureofMerit
-      IF(my_rank.EQ.0) THEN
-        WRITE(SPrintString,FMT='(A10,I1,A12,F9.7)')&
-        "Iteration ",Iter,", fit index ",RFigureofMerit
-        PRINT*,TRIM(ADJUSTL(SPrintString))
-      END IF
-      !choose a third point to go in position lnd, going downhill
-      Rfit(ind,lnd)=0.0!false good index, will be replaced
-      IF (Rfit(ind,jnd).GT.Rfit(ind,knd)) THEN!new jnd is not better than the best, go the other way
+      Rfit(ind,2)=RFigureofMerit
+      !choose a third coordinate to go in position 3, going downhill
+      IF (Rfit(ind,2).GT.Rfit(ind,1)) THEN!new 2 is not better than 1, go the other way
         RStep(ind)=-RStep(ind)
-        Rvar(ind,lnd)=Rvar(ind,knd)+RStep(ind)
+        Rvar(ind,3)=Rvar(ind,1)+RStep(ind)
       ELSE!it is better, keep going
-        Rvar(ind,lnd)=Rvar(ind,jnd)+RStep(ind)
+        Rvar(ind,3)=Rvar(ind,2)+RStep(ind)
       END IF
+      Rfit(ind,3)=0.0!false good index, will be replaced
       !choose the best points from all variables to simulate
       DO mnd = 1,INoOfVariables
         Itemp=MINLOC(Rfit(mnd,:))
@@ -852,27 +846,28 @@ PROGRAM Felixrefine
       END DO
       IF(my_rank.EQ.0) THEN
         PRINT*,"--------------------------------"
-        WRITE(SPrintString,FMT='(A6,I2,A13,I2)') "Point ",knd," of variable ",ind
+        WRITE(SPrintString,FMT='(A20,I2)') "Point 3 of variable ",ind
         PRINT*,TRIM(ADJUSTL(SPrintString))
       END IF
       CALL SimulateAndFit(RCurrentVar,Iter,IExitFLAG,IErr)
       Iter=Iter+1
-      Rfit(ind,lnd)=RFigureofMerit
-      IF(my_rank.EQ.0) THEN
-        WRITE(SPrintString,FMT='(A10,I1,A12,F9.7)')&
-        "Iteration ",Iter,", fit index ",RFigureofMerit
-        PRINT*,TRIM(ADJUSTL(SPrintString))
-      END IF     
+      Rfit(ind,3)=RFigureofMerit
       !now make a prediction and replace worst point
-      Itemp=MAXLOC(Rfit(ind,:))!the worst point
+99    Itemp=MAXLOC(Rfit(ind,:))!the worst point
       jnd=Itemp(1)
       Itemp=MINLOC(Rfit(ind,:))!the best point
       knd=Itemp(1)
+      lnd=6-jnd-knd!the mid point
       !check the three points make a concave set
-      IF (1.5*(MINVAL(Rfit(ind,:))+MAXVAL(Rfit(ind,:))).GT.SUM(Rfit(ind,:))) THEN!its concave
+      RFit0=Rfit(ind,knd) +(Rvar(ind,lnd)-Rvar(ind,knd))*&
+            (Rfit(ind,jnd)-Rfit(ind,knd))/(Rvar(ind,jnd)-Rvar(ind,knd))
+      IF (RFit0.GT.Rfit(ind,lnd)) THEN!its concave
         CALL Parabo3(Rvar(ind,:),Rfit(ind,:),RVar0,RFit0,IErr)
         IF(my_rank.EQ.0) THEN
-          WRITE(SPrintString,FMT='(A32,F9.7,A16,F9.7)') &
+          WRITE(SPrintString,FMT='(A2,3(F4.2,1X),A3,3(F6.4,1X))') &
+             "x=",Rvar(ind,:),",y=",Rfit(ind,:)
+          PRINT*,TRIM(ADJUSTL(SPrintString))
+          WRITE(SPrintString,FMT='(A32,F8.6,A16,F8.6)') &
              "Concave set, predict minimum at ",RVar0," with fit index ",RFit0
           PRINT*,TRIM(ADJUSTL(SPrintString))
         END IF
@@ -880,10 +875,25 @@ PROGRAM Felixrefine
         RFit(ind,jnd)=RFit0
       ELSE!it's convex, keep going
         IF(my_rank.EQ.0) THEN
-          PRINT*,"convex set of points, continuing"
+          WRITE(SPrintString,FMT='(A3,F6.4,A3,F6.4)') &
+             "y'=",RFit0,",y=",Rfit(ind,lnd)
+          PRINT*,TRIM(ADJUSTL(SPrintString))
+          WRITE(SPrintString,FMT='(A2,3(F4.2,1X),A3,3(F6.4,1X))') &
+             "x=",Rvar(ind,:),",y=",Rfit(ind,:)
+          PRINT*,TRIM(ADJUSTL(SPrintString))
+          PRINT*,"Convex set, continuing"
         END IF
-        Rvar(ind,jnd)=Rvar(ind,jnd)+RStep(ind)!step again from best point
+        Rvar(ind,jnd)=Rvar(ind,knd)+RStep(ind)!step again from best point
         RFit(ind,jnd)=0.0
+        !choose the best points from all variables to simulate
+        DO mnd = 1,INoOfVariables
+          Itemp=MINLOC(Rfit(mnd,:))
+          RCurrentVar(mnd)=Rvar(mnd,Itemp(1))
+        END DO
+        CALL SimulateAndFit(RCurrentVar,Iter,IExitFLAG,IErr)     
+        Iter=Iter+1
+        Rfit(ind,jnd)=RFigureofMerit
+        GOTO 99
       END IF
       !choose the best points from all variables to simulate
       DO mnd = 1,INoOfVariables
@@ -892,18 +902,21 @@ PROGRAM Felixrefine
       END DO
       CALL SimulateAndFit(RCurrentVar,Iter,IExitFLAG,IErr)     
       Iter=Iter+1
-      Rfit(ind,lnd)=RFigureofMerit
-      IF(my_rank.EQ.0) THEN
-        WRITE(SPrintString,FMT='(A10,I1,A12,F9.7)')&
-        "Iteration ",Iter,", fit index ",RFigureofMerit
-        PRINT*,TRIM(ADJUSTL(SPrintString))
-      END IF    
       RFit(ind,jnd)=RFigureofMerit
-    !think about what state Rvar and Rfit should be for the next loop!
+      !think about what state Rvar and Rfit should be for the next loop!
+      !look at the range for each variable?
+      !decrease the step size?
+      !RStep(ind)=RStep(ind)/2
+      !Choose a parameter set at 45 degrees?
     END DO 
-     
-     
-     
+    Rdf=RLastFit-RFigureofMerit
+    IF(my_rank.EQ.0) THEN
+      PRINT*,"--------------------------------"
+      WRITE(SPrintString,FMT='(A19,F8.6,A15,F8.6)') "Improvement in fit ",Rdf,", will stop at ",RExitCriteria
+      PRINT*,TRIM(ADJUSTL(SPrintString))
+    END IF
+    RLastFit=RFigureofMerit
+    END DO
      
      
      

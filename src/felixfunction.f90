@@ -371,7 +371,7 @@ SUBROUTINE CalculateFigureofMeritandDetermineThickness(Iter,IBestThicknessIndex,
   IF(my_rank.eq.0) THEN
     RBestThickness = RInitialThickness +(IBestThicknessIndex-1)*RDeltaThickness
     RThicknessRange=( MAXVAL(IBestImageThicknessIndex)-MINVAL(IBestImageThicknessIndex) )*RDeltaThickness
-    WRITE(SPrintString,FMT='(A16,F9.7)') "Figure of merit ",RBestTotalCorrelation
+    WRITE(SPrintString,FMT='(A16,F8.6)') "Figure of merit ",RBestTotalCorrelation
     PRINT*,TRIM(ADJUSTL(SPrintString))
     WRITE(SPrintString,FMT='(A19,I4,A10)') "Specimen thickness ",NINT(RBestThickness)," Angstroms"
     PRINT*,TRIM(ADJUSTL(SPrintString))
@@ -839,7 +839,7 @@ END FUNCTION  RStandardError
 SUBROUTINE Parabo3(Rx,Ry,Rxv,Ryv,IErr)
   !Input is a vector Rx with three x-coordinates and  Ry with three y-coordinates 
   !Output is the x- and y-coordinate of the vertex of the fitted parabola, Rxv Ryv
-
+  !Using Cramer's rules to solve the system of equations to give Ra(x^2)+Rb(x)+Rc=(y)
   USE MyNumbers
 
   IMPLICIT NONE
@@ -848,10 +848,11 @@ SUBROUTINE Parabo3(Rx,Ry,Rxv,Ryv,IErr)
   REAL(RKIND),DIMENSION(3) :: Rx,Ry
   INTEGER(IKIND) :: IErr
   
-  Rd = (Rx(1)-Rx(2))*(Rx(1)-Rx(3))*(Rx(2)-Rx(3))
-  Ra = (Rx(3)*(Ry(2)-Ry(1))+Rx(2)*(Ry(1)-Ry(3))+Rx(1)*(Ry(3)-Ry(2)))/Rd
-  Rb = (Rx(3)*Rx(3)*(Ry(1)-Ry(2))+Rx(2)*Rx(2)*(Ry(3)-Ry(1))+Rx(1)*Rx(1)*(Ry(2)-Ry(3)))/Rd
-  Rc = (Rx(2)*Rx(3)*(Rx(2)-Rx(3))*Ry(1)+Rx(3)*Rx(1)*(Rx(3)-Rx(1))*Ry(2)+Rx(1)*Rx(2)*(Rx(1)-Rx(2))*Ry(3))/Rd
+  Rd = Rx(1)*Rx(1)*(Rx(2)-Rx(3)) + Rx(2)*Rx(2)*(Rx(3)-Rx(1)) + Rx(3)*Rx(3)*(Rx(1)-Rx(2))
+  Ra =(Rx(1)*(Ry(3)-Ry(2)) + Rx(2)*(Ry(1)-Ry(3)) + Rx(3)*(Ry(2)-Ry(1)))/Rd
+  Rb =(Rx(1)*Rx(1)*(Ry(2)-Ry(3)) + Rx(2)*Rx(2)*(Ry(3)-Ry(1)) + Rx(3)*Rx(3)*(Ry(1)-Ry(2)))/Rd
+  Rc =(Rx(1)*Rx(1)*(Rx(2)*Ry(3)-Rx(3)*Ry(2)) + Rx(2)*Rx(2)*(Rx(3)*Ry(1)-Rx(1)*Ry(3))&
+      +Rx(3)*Rx(3)*(Rx(1)*Ry(2)-Rx(2)*Ry(1)))/Rd
   Rxv = -Rb/(2*Ra);!x-coord
   Ryv = Rc-Rb*Rb/(4*Ra)!y-coord
 END SUBROUTINE  Parabo3
