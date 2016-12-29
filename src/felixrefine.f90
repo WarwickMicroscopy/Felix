@@ -813,10 +813,8 @@ PROGRAM Felixrefine
       !The best coordinate so far
       Itemp=MINLOC(Rfit(ind,:))
       FORALL(jnd = 1:3) Rvar(ind,jnd)=Rvar(ind,Itemp(1))
-      IF(my_rank.EQ.0) PRINT*,"Rvar(ind,:)=",Rvar(ind,:)
       !start with best fit index in all locations
       FORALL(jnd = 1:3) Rfit(ind,jnd)=Rfit0
-      IF(my_rank.EQ.0) PRINT*,"Rfit(ind,:)=",Rfit(ind,:)
       !make a new coordinate for point 2
       Rvar(ind,2)=Rvar(ind,1)+RStep(ind)
       Rfit(ind,2)=0.0!false good index, will be replaced
@@ -860,19 +858,24 @@ PROGRAM Felixrefine
       Itemp=MINLOC(Rvar(ind,:))!lowest x
       knd=Itemp(1)
       lnd=6-jnd-knd!the mid x
-      !IF(my_rank.EQ.0) PRINT*,"worst=",jnd,"best=",knd
       !check the three points make a concave set
       RFit1=Rfit(ind,knd) +(Rvar(ind,lnd)-Rvar(ind,knd))*&
             (Rfit(ind,jnd)-Rfit(ind,knd))/(Rvar(ind,jnd)-Rvar(ind,knd))
       IF (RFit1.GT.Rfit(ind,lnd)) THEN!its concave
         CALL Parabo3(Rvar(ind,:),Rfit(ind,:),RVar0,RFit0,IErr)
         IF(my_rank.EQ.0) THEN
-          WRITE(SPrintString,FMT='(A2,3(F4.2,1X),A3,3(F6.4,1X))') &
-             "x=",Rvar(ind,:),",y=",Rfit(ind,:)
-          PRINT*,TRIM(ADJUSTL(SPrintString))
           WRITE(SPrintString,FMT='(A32,F8.6,A16,F8.6)') &
              "Concave set, predict minimum at ",RVar0," with fit index ",RFit0
           PRINT*,TRIM(ADJUSTL(SPrintString))
+        END IF
+        !restrict D-W factor to a minimum value, will need amending for other variables
+        IF (RVar0.LT.0.5) THEN
+          RVar0=0.5
+          IF(my_rank.EQ.0) THEN
+            WRITE(SPrintString,FMT='(A32,F8.6,A16,F8.6)') &
+             "Restrict minimum to ",RVar0
+            PRINT*,TRIM(ADJUSTL(SPrintString))
+          END IF
         END IF
         Itemp=MAXLOC(Rvar(ind,:))!worst point
         jnd=Itemp(1)
@@ -914,14 +917,7 @@ PROGRAM Felixrefine
       RFit(ind,jnd)=RFigureofMerit
       !what's the best fit?
       RFit0=MINVAL(Rfit)!the best point
-      !IF(my_rank.EQ.0) PRINT*,"**********"
-      !IF(my_rank.EQ.0) PRINT*,"Rvar(ind,:)=",Rvar(ind,:)
-      !IF(my_rank.EQ.0) PRINT*,"Rfit(ind,:)=",Rfit(ind,:)      
       Itemp=MINLOC(Rfit(ind,:))
-      !IF(my_rank.EQ.0) PRINT*,"point",Itemp,"is the best for parameter",ind
-      !IF(my_rank.EQ.0) PRINT*,"with value",Rvar(ind,Itemp(1))
-      !think about what state Rvar and Rfit should be for the next loop!
-      !look at the range for each variable?
       !decrease the step size?
       RStep(ind)=RStep(ind)*0.8
       !Choose a parameter set at 45 degrees?
@@ -932,7 +928,7 @@ PROGRAM Felixrefine
       WRITE(SPrintString,FMT='(A19,F8.6,A15,F8.6)') "Improvement in fit ",Rdf,", will stop at ",RExitCriteria
       PRINT*,TRIM(ADJUSTL(SPrintString))
     END IF
-    RLastFit=RFigureofMerit
+    RLastFit=RFit0
     END DO
      
      
