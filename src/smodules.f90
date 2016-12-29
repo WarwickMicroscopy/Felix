@@ -313,16 +313,12 @@ END MODULE RPara
 MODULE CPara
   USE MyNumbers
 
-  COMPLEX(CKIND), DIMENSION(:,:), ALLOCATABLE :: &
-       CUgMatNoAbs,CUgMatPrime,CUgMat, CUgSgMatrix,CEigenValuesChunk
+  COMPLEX(CKIND), DIMENSION(:,:), ALLOCATABLE :: CUgMatNoAbs,CUgMatPrime,CUgMat,CUgSgMatrix,CEigenValuesChunk
   COMPLEX(CKIND), DIMENSION(:,:,:), ALLOCATABLE :: CEigenVectorsChunk
-  COMPLEX(CKIND),DIMENSION(:),ALLOCATABLE :: &
-       CAlphaWeightingCoefficients, CPsi0,CUniqueUg
-  COMPLEX(CKIND),DIMENSION(:,:), ALLOCATABLE :: &
-       CEigenValueDependentTerms,CInvertedEigenVectors, &
+  COMPLEX(CKIND),DIMENSION(:),ALLOCATABLE :: CAlphaWeightingCoefficients, CPsi0,CUniqueUg
+  COMPLEX(CKIND),DIMENSION(:,:), ALLOCATABLE :: CEigenValueDependentTerms,CInvertedEigenVectors, &
        CBeamProjectionMatrix,CDummyBeamMatrix
-  COMPLEX(CKIND),DIMENSION(:),ALLOCATABLE :: &
-       CEigenValues,CGammaValues, CWaveFunctions,CFullWaveFunctions
+  COMPLEX(CKIND),DIMENSION(:),ALLOCATABLE :: CEigenValues,CGammaValues, CWaveFunctions,CFullWaveFunctions
   COMPLEX(CKIND),DIMENSION(:,:),ALLOCATABLE :: CEigenVectors
   COMPLEX(CKIND), DIMENSION(:,:,:), ALLOCATABLE :: CAmplitudeandPhase
 

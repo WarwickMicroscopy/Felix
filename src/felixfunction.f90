@@ -371,7 +371,7 @@ SUBROUTINE CalculateFigureofMeritandDetermineThickness(Iter,IBestThicknessIndex,
   IF(my_rank.eq.0) THEN
     RBestThickness = RInitialThickness +(IBestThicknessIndex-1)*RDeltaThickness
     RThicknessRange=( MAXVAL(IBestImageThicknessIndex)-MINVAL(IBestImageThicknessIndex) )*RDeltaThickness
-    WRITE(SPrintString,FMT='(A16,F8.6)') "Figure of merit ",RBestTotalCorrelation
+    WRITE(SPrintString,FMT='(A16,F6.4)') "Figure of merit ",RBestTotalCorrelation
     PRINT*,TRIM(ADJUSTL(SPrintString))
     WRITE(SPrintString,FMT='(A19,I4,A10)') "Specimen thickness ",NINT(RBestThickness)," Angstroms"
     PRINT*,TRIM(ADJUSTL(SPrintString))

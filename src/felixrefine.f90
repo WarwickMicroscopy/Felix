@@ -53,14 +53,15 @@ PROGRAM Felixrefine
 	   IBSMaxLocGVecAmp,ILaueLevel,INumTotalReflections,ITotalLaueZoneLevel,INhkl,IExitFLAG,&
 	   INumInitReflections,IZerothLaueZoneLevel,INumFinalReflections,IThicknessIndex
   INTEGER(IKIND) :: IHours,IMinutes,ISeconds,IMilliSeconds,IStartTime,ICurrentTime,IRate
-  INTEGER(IKIND),DIMENSION(:),ALLOCATABLE :: IOriginGVecIdentifier,Itemp
+  INTEGER(IKIND),DIMENSION(:),ALLOCATABLE :: IOriginGVecIdentifier
   REAL(RKIND) :: StartTime, CurrentTime, Duration, TotalDurationEstimate,&
        RHOLZAcceptanceAngle,RLaueZoneGz,RMaxGMag
   REAL(RKIND) :: RBCASTREAL,RStandardDeviation,RMean,RGzUnitVec,RMinLaueZoneValue,Rdf,RLastFit,&
        RMaxLaueZoneValue,RMaxAcceptanceGVecMag,RLaueZoneElectronWaveVectorMag,Rvar0,Rfit0,Rfit1
   REAL(RKIND),DIMENSION(:),ALLOCATABLE :: RSimplexFoM,RIndependentVariable,RCurrentVar,RStep
   REAL(RKIND),DIMENSION(:,:),ALLOCATABLE :: RSimplexVariable,RgDummyVecMat,RgPoolMagLaue,RTestImage,&
-       ROnes,RVarMatrix,RSimp,Rvar,Rfit!,RIdentity
+       ROnes,RVarMatrix,RSimp,Rvar,Rfit
+  REAL(RKIND),DIMENSION(2,2) :: T45
   CHARACTER*40 :: my_rank_string
   CHARACTER*20 :: Snd,h,k,l
   CHARACTER*200 :: SPrintString
@@ -791,11 +792,12 @@ PROGRAM Felixrefine
     ALLOCATE(RStep(INoOfVariables),STAT=IErr)!step size in parameter space
     ALLOCATE(Rvar(INoOfVariables,ITHREE),STAT=IErr)!for each variable, three coordinates
     ALLOCATE(Rfit(INoOfVariables,ITHREE),STAT=IErr)!their fit indices
-    ALLOCATE(Itemp(1),STAT=IErr)!temp home for maxloc, until I can work out to reshape to shape(0)
     IF( IErr.NE.0 ) THEN
       PRINT*,"felixrefine(",my_rank,")error allocating parabola variables"
       GOTO 9999
     END IF
+    !45 degree rotation matrix
+    T45=RESHAPE((/ SQRTTWO, -SQRTTWO, SQRTTWO, SQRTTWO /), SHAPE(T45))
     !put the baseline coordinates into Rvar & Rfit
 	FORALL(ind = 1:3) Rvar(:,ind)=RIndependentVariable(:)
 	Rfit=RFigureofMerit
@@ -811,8 +813,7 @@ PROGRAM Felixrefine
     DO ind=1,INoOfVariables
       !we start with all coords and fits the same
       !The best coordinate so far
-      Itemp=MINLOC(Rfit(ind,:))
-      FORALL(jnd = 1:3) Rvar(ind,jnd)=Rvar(ind,Itemp(1))
+      FORALL(jnd = 1:3) Rvar(ind,jnd)=Rvar(ind,MINLOC(Rfit(ind,:),1))
       !start with best fit index in all locations
       FORALL(jnd = 1:3) Rfit(ind,jnd)=Rfit0
       !make a new coordinate for point 2
@@ -820,8 +821,7 @@ PROGRAM Felixrefine
       Rfit(ind,2)=0.0!false good index, will be replaced
       !choose the best points from all variables to simulate
       DO mnd = 1,INoOfVariables
-        Itemp=MINLOC(Rfit(mnd,:))
-        RCurrentVar(mnd)=Rvar(mnd,Itemp(1))
+        RCurrentVar(mnd)=Rvar(mnd,MINLOC(Rfit(mnd,:),1))
       END DO
       IF(my_rank.EQ.0) THEN
         PRINT*,"--------------------------------"
@@ -841,8 +841,7 @@ PROGRAM Felixrefine
       Rfit(ind,3)=0.0!false good index, will be replaced
       !choose the best points from all variables to simulate
       DO mnd = 1,INoOfVariables
-        Itemp=MINLOC(Rfit(mnd,:))
-        RCurrentVar(mnd)=Rvar(mnd,Itemp(1))
+        RCurrentVar(mnd)=Rvar(mnd,MINLOC(Rfit(mnd,:),1))
       END DO
       IF(my_rank.EQ.0) THEN
         PRINT*,"--------------------------------"
@@ -853,18 +852,18 @@ PROGRAM Felixrefine
       Iter=Iter+1
       Rfit(ind,3)=RFigureofMerit
       !now make a prediction and replace worst point
-99    Itemp=MAXLOC(Rvar(ind,:))!highest x
-      jnd=Itemp(1)
-      Itemp=MINLOC(Rvar(ind,:))!lowest x
-      knd=Itemp(1)
+99    jnd=MAXLOC(Rvar(ind,:),1)!highest x
+      knd=MINLOC(Rvar(ind,:),1)!lowest x
       lnd=6-jnd-knd!the mid x
       !check the three points make a concave set
       RFit1=Rfit(ind,knd) +(Rvar(ind,lnd)-Rvar(ind,knd))*&
             (Rfit(ind,jnd)-Rfit(ind,knd))/(Rvar(ind,jnd)-Rvar(ind,knd))
+      jnd=MAXLOC(Rfit(ind,:),1)!worst point
+      knd=MINLOC(Rfit(ind,:),1)!best point
       IF (RFit1.GT.Rfit(ind,lnd)) THEN!its concave
         CALL Parabo3(Rvar(ind,:),Rfit(ind,:),RVar0,RFit0,IErr)
         IF(my_rank.EQ.0) THEN
-          WRITE(SPrintString,FMT='(A32,F8.6,A16,F8.6)') &
+          WRITE(SPrintString,FMT='(A32,F6.4,A16,F6.4)') &
              "Concave set, predict minimum at ",RVar0," with fit index ",RFit0
           PRINT*,TRIM(ADJUSTL(SPrintString))
         END IF
@@ -872,14 +871,12 @@ PROGRAM Felixrefine
         IF (RVar0.LT.0.5) THEN
           RVar0=0.5
           IF(my_rank.EQ.0) THEN
-            WRITE(SPrintString,FMT='(A32,F8.6,A16,F8.6)') &
+            WRITE(SPrintString,FMT='(A32,F6.4,A16,F6.4)') &
              "Restrict minimum to ",RVar0
             PRINT*,TRIM(ADJUSTL(SPrintString))
           END IF
         END IF
-        Itemp=MAXLOC(Rvar(ind,:))!worst point
-        jnd=Itemp(1)
-        RVar(ind,jnd)=RVar0
+        RVar(ind,jnd)=RVar0!replace worst point
         RFit(ind,jnd)=RFit0
       ELSE!it's convex, keep going
         IF(my_rank.EQ.0) THEN
@@ -891,16 +888,12 @@ PROGRAM Felixrefine
           !PRINT*,TRIM(ADJUSTL(SPrintString))
           PRINT*,"Convex set, continuing"
         END IF
-        Itemp=MAXLOC(Rvar(ind,:))!worst point
-        jnd=Itemp(1)
-        Itemp=MINLOC(Rvar(ind,:))!best point
-        knd=Itemp(1)
+        !replace worst point with a step on from best point
         Rvar(ind,jnd)=Rvar(ind,knd)+RStep(ind)!step again from best point
         RFit(ind,jnd)=0.0
         !choose the best points from all variables to simulate
         DO mnd = 1,INoOfVariables
-          Itemp=MINLOC(Rfit(mnd,:))
-          RCurrentVar(mnd)=Rvar(mnd,Itemp(1))
+          RCurrentVar(mnd)=Rvar(mnd,MINLOC(Rfit(mnd,:),1))
         END DO
         CALL SimulateAndFit(RCurrentVar,Iter,IExitFLAG,IErr)     
         Iter=Iter+1
@@ -909,15 +902,13 @@ PROGRAM Felixrefine
       END IF
       !choose the best points from all variables to simulate
       DO mnd = 1,INoOfVariables
-        Itemp=MINLOC(Rfit(mnd,:))
-        RCurrentVar(mnd)=Rvar(mnd,Itemp(1))
+        RCurrentVar(mnd)=Rvar(mnd,MINLOC(Rfit(mnd,:),1))
       END DO
       CALL SimulateAndFit(RCurrentVar,Iter,IExitFLAG,IErr)     
       Iter=Iter+1
       RFit(ind,jnd)=RFigureofMerit
       !what's the best fit?
       RFit0=MINVAL(Rfit)!the best point
-      Itemp=MINLOC(Rfit(ind,:))
       !decrease the step size?
       RStep(ind)=RStep(ind)*0.8
       !Choose a parameter set at 45 degrees?
