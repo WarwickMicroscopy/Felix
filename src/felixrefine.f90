@@ -55,13 +55,12 @@ PROGRAM Felixrefine
   INTEGER(IKIND) :: IHours,IMinutes,ISeconds,IMilliSeconds,IStartTime,ICurrentTime,IRate
   INTEGER(IKIND),DIMENSION(:),ALLOCATABLE :: IOriginGVecIdentifier
   REAL(RKIND) :: StartTime, CurrentTime, Duration, TotalDurationEstimate,&
-       RHOLZAcceptanceAngle,RLaueZoneGz,RMaxGMag
+       RHOLZAcceptanceAngle,RLaueZoneGz,RMaxGMag,RPvecMag
   REAL(RKIND) :: RBCASTREAL,RStandardDeviation,RMean,RGzUnitVec,RMinLaueZoneValue,Rdf,RLastFit,&
-       RMaxLaueZoneValue,RMaxAcceptanceGVecMag,RLaueZoneElectronWaveVectorMag,Rvar0,Rfit0,Rfit1
-  REAL(RKIND),DIMENSION(:),ALLOCATABLE :: RSimplexFoM,RIndependentVariable,RCurrentVar,RStep
+       RMaxLaueZoneValue,RMaxAcceptanceGVecMag,RLaueZoneElectronWaveVectorMag,RvarMin,RfitMin,Rfit1
+  REAL(RKIND),DIMENSION(:),ALLOCATABLE :: RSimplexFoM,RIndependentVariable,RCurrentVar,RStep,RPvar,RVar0,RPfit,RPvec
   REAL(RKIND),DIMENSION(:,:),ALLOCATABLE :: RSimplexVariable,RgDummyVecMat,RgPoolMagLaue,RTestImage,&
-       ROnes,RVarMatrix,RSimp,Rvar,Rfit
-  REAL(RKIND),DIMENSION(2,2) :: T45
+       ROnes,RVarMatrix,RSimp,Rvar,Rfit,R45
   CHARACTER*40 :: my_rank_string
   CHARACTER*20 :: Snd,h,k,l
   CHARACTER*200 :: SPrintString
@@ -788,144 +787,106 @@ PROGRAM Felixrefine
     CALL UgBisection(RIndependentVariable,IErr)
     
   CASE(3)!Parabola
+    ALLOCATE(RVar0(INoOfVariables),STAT=IErr)!best value for each variable
     ALLOCATE(RCurrentVar(INoOfVariables),STAT=IErr)!used to send out for simulations
+    ALLOCATE(RPVec(INoOfVariables),STAT=IErr)!the vector describing the current line in parameter space
     ALLOCATE(RStep(INoOfVariables),STAT=IErr)!step size in parameter space
     ALLOCATE(Rvar(INoOfVariables,ITHREE),STAT=IErr)!for each variable, three coordinates
     ALLOCATE(Rfit(INoOfVariables,ITHREE),STAT=IErr)!their fit indices
+    ALLOCATE(RPvar(ITHREE),STAT=IErr)!three coordinates for current variable 
+    ALLOCATE(RPfit(ITHREE),STAT=IErr)!three fits for current variable 
+    ALLOCATE(R45(2,2),STAT=IErr)!matrix that converts into RCurrentVar for simulation
     IF( IErr.NE.0 ) THEN
       PRINT*,"felixrefine(",my_rank,")error allocating parabola variables"
       GOTO 9999
     END IF
     !45 degree rotation matrix
-    T45=RESHAPE((/ SQRTTWO, -SQRTTWO, SQRTTWO, SQRTTWO /), SHAPE(T45))
+    R45=RESHAPE((/ SQRTTWO, -SQRTTWO, SQRTTWO, SQRTTWO /), SHAPE(R45))
     !put the baseline coordinates into Rvar & Rfit
-	FORALL(ind = 1:3) Rvar(:,ind)=RIndependentVariable(:)
+	FORALL(ind = 1:3) Rvar(:,ind)=RIndependentVariable(:)   
+    ! probably don't need all of these variables
 	Rfit=RFigureofMerit
     RLastFit=RFigureofMerit
     Rdf=RFigureofMerit
-    RFit0=RFigureofMerit
+    !RFit0=RFigureofMerit
     !initialise RStep
     FORALL(ind = 1:INoOfVariables) RStep(ind)=RIndependentVariable(ind)*RSimplexLengthScale
     Iter=1
     !switch between 45 degree coords depending on I45
     I45=1
-    DO WHILE (Rdf.GE.RExitCriteria)
+    
+    !***
     !loop over variables
-      DO ind=1,INoOfVariables
-        !we start with all coords and fits the same
-        !The best coordinate so far
-        FORALL(jnd = 1:3) Rvar(ind,jnd)=Rvar(ind,MINLOC(Rfit(ind,:),1))
-        !start with best fit index in all locations
-        FORALL(jnd = 1:3) Rfit(ind,jnd)=Rfit0
-        !make a new coordinate for point 2
-        Rvar(ind,2)=Rvar(ind,1)+RStep(ind)
-        Rfit(ind,2)=0.0!false good index, will be replaced
-        !choose the best points from all variables to simulate
-        DO mnd = 1,INoOfVariables
-          RCurrentVar(mnd)=Rvar(mnd,MINLOC(Rfit(mnd,:),1))
-        END DO
-        !Use 45 degree rotated basis, will only work for 2 variables!!!
-  !      IF (I45.EQ.1) THEN
-  !        RCurrentVar=MATMUL(T45,RCurrentVar)
-  !      END IF
-        IF(my_rank.EQ.0) THEN
-          PRINT*,"--------------------------------"
-          WRITE(SPrintString,FMT='(A20,I2)') "Point 2 of variable ",ind
-          PRINT*,TRIM(ADJUSTL(SPrintString))
-        END IF
-        CALL SimulateAndFit(RCurrentVar,Iter,IExitFLAG,IErr)
-        Iter=Iter+1
-        Rfit(ind,2)=RFigureofMerit
-        !choose a third coordinate to go in position 3, going downhill
-        IF (Rfit(ind,2).GT.Rfit(ind,1)) THEN!new 2 is not better than 1, go the other way
-          RStep(ind)=-RStep(ind)
-          Rvar(ind,3)=Rvar(ind,1)+RStep(ind)
-        ELSE!it is better, keep going
-          Rvar(ind,3)=Rvar(ind,2)+RStep(ind)
-        END IF
-        Rfit(ind,3)=0.0!false good index, will be replaced
-        !choose the best points from all variables to simulate
-        DO mnd = 1,INoOfVariables
-          RCurrentVar(mnd)=Rvar(mnd,MINLOC(Rfit(mnd,:),1))
-        END DO
-        IF(my_rank.EQ.0) THEN
-          PRINT*,"--------------------------------"
-          WRITE(SPrintString,FMT='(A20,I2)') "Point 3 of variable ",ind
-          PRINT*,TRIM(ADJUSTL(SPrintString))
-        END IF
-        CALL SimulateAndFit(RCurrentVar,Iter,IExitFLAG,IErr)
-        Iter=Iter+1
-        Rfit(ind,3)=RFigureofMerit
-        !now make a prediction and replace worst point
-99      jnd=MAXLOC(Rvar(ind,:),1)!highest x
-        knd=MINLOC(Rvar(ind,:),1)!lowest x
-        lnd=6-jnd-knd!the mid x
-        !check the three points make a concave set
-        RFit1=Rfit(ind,knd) +(Rvar(ind,lnd)-Rvar(ind,knd))*&
-              (Rfit(ind,jnd)-Rfit(ind,knd))/(Rvar(ind,jnd)-Rvar(ind,knd))
-        jnd=MAXLOC(Rfit(ind,:),1)!worst point
-        knd=MINLOC(Rfit(ind,:),1)!best point
-        IF (RFit1.GT.Rfit(ind,lnd)) THEN!its concave
-          CALL Parabo3(Rvar(ind,:),Rfit(ind,:),RVar0,RFit0,IErr)
-          IF(my_rank.EQ.0) THEN
-            WRITE(SPrintString,FMT='(A32,F6.4,A16,F6.4)') &
-             "Concave set, predict minimum at ",RVar0," with fit index ",RFit0
-            PRINT*,TRIM(ADJUSTL(SPrintString))
-          END IF
-          !restrict D-W factor to a minimum value, will need amending for other variables
-          IF (RVar0.LT.0.5) THEN
-            RVar0=0.5
-            IF(my_rank.EQ.0) THEN
-              WRITE(SPrintString,FMT='(A32,F6.4,A16,F6.4)') &
-               "Restrict minimum to ",RVar0
-              PRINT*,TRIM(ADJUSTL(SPrintString))
-            END IF
-          END IF
-          RVar(ind,jnd)=RVar0!replace worst point
-          RFit(ind,jnd)=RFit0
-        ELSE!it's convex, keep going
-          IF(my_rank.EQ.0) THEN
-            !WRITE(SPrintString,FMT='(A3,F6.4,A3,F6.4)') &
-            !   "y'=",RFit1,",y=",Rfit(ind,lnd)
-            !PRINT*,TRIM(ADJUSTL(SPrintString))
-            !WRITE(SPrintString,FMT='(A2,3(F4.2,1X),A3,3(F6.4,1X))') &
-            !   "x=",Rvar(ind,:),",y=",Rfit(ind,:)
-            !PRINT*,TRIM(ADJUSTL(SPrintString))
-            PRINT*,"Convex set, continuing"
-          END IF
-          !replace worst point with a step on from best point
-          Rvar(ind,jnd)=Rvar(ind,knd)+RStep(ind)!step again from best point
-          RFit(ind,jnd)=0.0
-          !choose the best points from all variables to simulate
-          DO mnd = 1,INoOfVariables
-            RCurrentVar(mnd)=Rvar(mnd,MINLOC(Rfit(mnd,:),1))
-          END DO
-          CALL SimulateAndFit(RCurrentVar,Iter,IExitFLAG,IErr)     
-          Iter=Iter+1
-          Rfit(ind,jnd)=RFigureofMerit
-          GOTO 99
-        END IF
-        !choose the best points from all variables to simulate
-        DO mnd = 1,INoOfVariables
-          RCurrentVar(mnd)=Rvar(mnd,MINLOC(Rfit(mnd,:),1))
-        END DO
-        CALL SimulateAndFit(RCurrentVar,Iter,IExitFLAG,IErr)     
-        Iter=Iter+1
-        RFit(ind,jnd)=RFigureofMerit
-        !what's the best fit?
-        RFit0=MINVAL(Rfit)!the best point
-        !decrease the step size and flip to 45 degree set?
-        RStep(ind)=RStep(ind)*0.8
-        I45=-I45
-        !Choose a parameter set at 45 degrees?
-      END DO 
-      Rdf=RLastFit-RFit0
-      RLastFit=RFit0
-      IF(my_rank.EQ.0) THEN
-        PRINT*,"--------------------------------"
-        WRITE(SPrintString,FMT='(A19,F8.6,A15,F8.6)') "Improvement in fit ",Rdf,", will stop at ",RExitCriteria
-        PRINT*,TRIM(ADJUSTL(SPrintString))
+    DO ind=1,INoOfVariables
+      !incoming point in parameter space
+      RVar0=RIndependentVariable
+      !initial coordinate on the line is point zero
+      RPvar=ZERO
+      !with the current fit index
+	  RPfit=RFigureofMerit
+      !Vector for this refinement
+      RPvec=0.0
+      RPvec(ind)=1.0
+      RPvecMag=RIndependentVariable(1)*RSimplexLengthScale
+      RPvar(2)=RPvecMag!second point
+      RCurrentVar=RVar0+RPvec*RPvar(2)!x2=x1+v2
+      CALL SimulateAndFit(RCurrentVar,Iter,IExitFLAG,IErr)
+      Iter=Iter+1
+      RPfit(2)=RFigureofMerit
+      IF (RPfit(2).GT.RPfit(1)) THEN!new 2 is not better than 1, go the other way
+        RPvecMag=-RPvecMag
+        RPvar(3)=RPvar(1)+RPvecMag
+      ELSE!it is better, keep going
+        RPvar(3)=RPvar(2)+RPvecMag
       END IF
+      RCurrentVar=RVar0+RPvec*RPvar(3)!x3=x1+v3
+      CALL SimulateAndFit(RCurrentVar,Iter,IExitFLAG,IErr)
+      Iter=Iter+1
+      RPfit(3)=RFigureofMerit
+      !now make a prediction and replace worst point
+99    jnd=MAXLOC(RPvar,1)!highest x
+      knd=MINLOC(RPvar,1)!lowest x
+      lnd=6-jnd-knd!the mid x
+      !check the three points make a concave set
+      RFit1=RPfit(knd)+(RPvar(lnd)-RPvar(knd))*(RPfit(jnd)-RPfit(knd))/(RPvar(jnd)-RPvar(knd))
+      jnd=MAXLOC(RPfit,1)!worst point
+      knd=MINLOC(RPfit,1)!best point
+      IF (RFit1.GT.RPfit(lnd)) THEN!its concave
+        CALL Parabo3(RPvar,RPfit,RvarMin,RfitMin,IErr)
+        IF(my_rank.EQ.0) THEN
+          !WRITE(SPrintString,FMT='(A44,F6.4)') &
+          ! "Concave set, predict minimum with fit index ",RfitMin
+          WRITE(SPrintString,FMT='(A2,3(F4.2,1X),A3,3(F6.4,1X))') &
+           "x=",RPvar,",y=",RPfit
+          PRINT*,TRIM(ADJUSTL(SPrintString))
+          WRITE(SPrintString,FMT='(A32,F6.4,A16,F6.4)') &
+             "Concave set, predict minimum at ",Rvar0(ind)+RvarMin," with fit index ",RfitMin
+          PRINT*,TRIM(ADJUSTL(SPrintString))
+        END IF
+        RPvar(jnd)=RvarMin
+      ELSE!it's convex, keep going until it is concave
+        IF(my_rank.EQ.0) THEN
+          WRITE(SPrintString,FMT='(A2,3(F4.2,1X),A3,3(F6.4,1X))') &
+           "x=",RPvar,",y=",RPfit
+          PRINT*,TRIM(ADJUSTL(SPrintString))
+          PRINT*,"Convex set, continuing"
+        END IF
+        !replace worst point with a step on from best point
+        RPvar(jnd)=RPvar(knd)+RPvecMag!step again from best point
+        RCurrentVar=RVar0+RPvec*RPvar(jnd)
+        CALL SimulateAndFit(RCurrentVar,Iter,IExitFLAG,IErr)
+        Iter=Iter+1
+        RPfit(jnd)=RFigureofMerit
+        GOTO 99
+      END IF
+      !replace worst point with parabolic prediction
+      RCurrentVar=RVar0+RPvec*RPvar(jnd)
+      CALL SimulateAndFit(RCurrentVar,Iter,IExitFLAG,IErr)
+      Iter=Iter+1
+      RPfit(jnd)=RFigureofMerit
+      knd=MINLOC(RPfit,1)!best point
+      !put best fit into RIndependentVariable
+      RIndependentVariable=RVar0+RPvec*RPvar(knd)
     END DO
      
      
