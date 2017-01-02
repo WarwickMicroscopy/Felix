@@ -804,30 +804,31 @@ PROGRAM Felixrefine
     
     DO WHILE (Rdf.GE.RExitCriteria)
       !loop over variables
-      DO ind=1,INoOfVariables
+      IF (I45.EQ.0) THEN
+        mnd=INoOfVariables
+        IF(my_rank.EQ.0) THEN
+          PRINT*,"Refining individual variables"
+        END IF
+      ELSE
+        mnd=INoOfVariables-1
+        IF(my_rank.EQ.0) THEN
+          PRINT*,"Refining pair of variables"
+        END IF
+      END IF
+      DO ind=1,mnd
+        !Vector for this refinement
+        RPvec=0.0
+        RPvec(ind)=1.0
+        RPvecMag=RIndependentVariable(ind)*RSimplexLengthScale
+        IF (I45.EQ.1) RPvec(ind+1)=1.0
+        IF (I45.EQ.2) RPvec(ind+1)=-1.0
+        
         !incoming point in parameter space
         RVar0=RIndependentVariable
         !initial coordinate on the line is point zero
         RPvar=ZERO
         !with the current fit index
 	    RPfit=RFigureofMerit
-        !Vector for this refinement
-        RPvec=0.0
-        RPvec(ind)=1.0
-        !include another variable depending on the flag
-        IF (ind.NE.INoOfVariables) THEN
-          IF (I45.EQ.1) RPvec(ind+1)=1.0
-          IF (I45.EQ.-1) RPvec(ind+1)=-1.0
-        ELSE!iterate the flag for the last variable in the loop  
-          IF (I45.EQ.0) THEN
-            I45=1
-          ELSE
-            IF (I45.EQ.-1) I45=0
-            IF (I45.EQ.1) I45=-1
-            GO TO 99!and skip the last loop if the flag isn't zero
-          END IF
-        END IF
-        RPvecMag=RIndependentVariable(1)*RSimplexLengthScale
         RPvar(2)=RPvecMag!second point
         RCurrentVar=RVar0+RPvec*RPvar(2)!x2=x1+v2
         CALL SimulateAndFit(RCurrentVar,Iter,IExitFLAG,IErr)
@@ -880,17 +881,24 @@ PROGRAM Felixrefine
           GOTO 95
         END IF
         !replace worst point with parabolic prediction
-        RCurrentVar=RVar0+RPvec*RPvar(jnd)
+        IF(my_rank.EQ.0) THEN
+          PRINT*,"New point is",RVar0,"plus",RPvec*RPvar(jnd)
+        END IF
+        !RCurrentVar=RVar0+RPvec*RPvar(jnd)
+        RCurrentVar=RVar0+RPvec*RvarMin
         CALL SimulateAndFit(RCurrentVar,Iter,IExitFLAG,IErr)
         Iter=Iter+1
         RPfit(jnd)=RFigureofMerit
 99      knd=MINLOC(RPfit,1)!best point
         !put best fit into RIndependentVariable
         RIndependentVariable=RVar0+RPvec*RPvar(knd)
+        IF (ind.EQ.mnd) I45=MODULO(I45+1,3)!Increment flag on last loop
       END DO
       !improvement in fit
-      Rdf=RLastFit-RPfit(knd) 
-      RLastFit=RPfit(knd)
+      IF (RPfit(knd).LT.RLastFit) THEN
+        Rdf=RLastFit-RPfit(knd) 
+        RLastFit=RPfit(knd)
+      END IF
       IF(my_rank.EQ.0) THEN
         PRINT*,"--------------------------------"
         WRITE(SPrintString,FMT='(A19,F8.6,A15,F8.6)') "Improvement in fit ",Rdf,", will stop at ",RExitCriteria
