@@ -55,8 +55,13 @@ SUBROUTINE SimulateAndFit(RIndependentVariable,Iter,IExitFLAG,IErr)
   REAL(RKIND),DIMENSION(INoOfVariables) :: RIndependentVariable
   INTEGER(IKIND),INTENT(IN) :: Iter
   COMPLEX(CKIND),DIMENSION(nReflections,nReflections) :: CUgMatDummy
-  CHARACTER*200 :: SFormat
+  CHARACTER*200 :: SFormat,SPrintString
 
+  IF (my_rank.EQ.0) THEN
+     WRITE(SPrintString,FMT='(A10,I3)') "Iteration ",Iter
+     PRINT*,TRIM(ADJUSTL(SPrintString))
+  END IF
+  
   IF (IRefineMode(1).EQ.1) THEN  !Ug refinement; update structure factors 
      !Dummy Matrix to contain new iterative values
      CUgMatDummy = CZERO    !NB these are Ug's without absorption
@@ -188,11 +193,6 @@ SUBROUTINE FelixFunction(IErr)
   INTEGER(IKIND) :: IAbsorbTag = 0
   REAL(RKIND),DIMENSION(:,:,:),ALLOCATABLE :: RFinalMontageImageRoot
   REAL(RKIND),DIMENSION(:,:),ALLOCATABLE :: RTempImage 
-
-  IF (IWriteFLAG.GE.10.AND.my_rank.EQ.0) THEN
-     PRINT*,"Felixfunction(", my_rank, "): starting the eigenvalue problem"
-     PRINT*,"Felixfunction(",my_rank,")pixels",ILocalPixelCountMin," to ",ILocalPixelCountMax
-  END IF
 
   !Reset simuation--------------------------------------------------------------------  
   RIndividualReflections = ZERO

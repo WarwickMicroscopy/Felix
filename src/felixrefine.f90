@@ -816,7 +816,7 @@ PROGRAM Felixrefine
         IF(my_rank.EQ.0) THEN
           PRINT*,"Refining individual variables"
         END IF
-      ELSE
+      ELSE IF (INoOfVariables.GT.1) THEN
         mnd=INoOfVariables-1
         IF(my_rank.EQ.0) THEN
           PRINT*,"Refining pairs of variables"
@@ -830,7 +830,7 @@ PROGRAM Felixrefine
         IF (I45.EQ.2) RPvec(ind+1)=-1.0
         !incoming point in parameter space
         RVar0=RIndependentVariable
-        RPvecMag=RIndependentVariable(ind)*RSimplexLengthScale
+        RPvecMag=RIndependentVariable(ind)*RPscale!*(1/SQRT(1+REAL(ABS(I45))))
         !initial coordinate on the line is point zero
         Rvar=ZERO
         !with the current fit index
@@ -861,12 +861,7 @@ PROGRAM Felixrefine
         Rconvex=Rfit(lnd)-(Rfit(knd)+(Rvar(lnd)-Rvar(knd))*(Rfit(jnd)-Rfit(knd))/(Rvar(jnd)-Rvar(knd)))
         !IF(my_rank.EQ.0) PRINT*,"Rtest=",Rtest,"Rconvex=",Rconvex
         DO WHILE (Rconvex.GT.0.1*Rtest)!if it isn't more than 10% concave, keep going until it is sufficiently concave
-          IF(my_rank.EQ.0) THEN
-            !WRITE(SPrintString,FMT='(A2,3(F4.2,1X),A3,3(F6.4,1X))') &
-            ! "x=",Rvar,",y=",Rfit
-            !PRINT*,TRIM(ADJUSTL(SPrintString))
-            PRINT*,"Convex, continuing"
-          END IF
+          IF(my_rank.EQ.0) PRINT*,"Convex, continuing"
           jnd=MAXLOC(Rfit,1)!worst fit
           knd=MINLOC(Rfit,1)!best fit
           lnd=6-jnd-knd!the mid fit
@@ -891,7 +886,7 @@ PROGRAM Felixrefine
           lnd=6-jnd-knd!the mid x
           Rconvex=Rfit(lnd)-(Rfit(knd)+(Rvar(lnd)-Rvar(knd))*(Rfit(jnd)-Rfit(knd))/(Rvar(jnd)-Rvar(knd)))
           Rtest=-ABS(Rfit(jnd)-Rfit(knd))
-        IF(my_rank.EQ.0) PRINT*,"Rtest=",Rtest,"Rconvex=",Rconvex
+        !IF(my_rank.EQ.0) PRINT*,"Rtest=",Rtest,"Rconvex=",Rconvex
         END DO
         !now make a prediction and replace worst point
         CALL Parabo3(Rvar,Rfit,RvarMin,RfitMin,IErr)
@@ -924,7 +919,7 @@ PROGRAM Felixrefine
           knd=MINLOC(Rfit,1)
           RIndependentVariable=RVar0+RPvec*Rvar(knd)
         END IF
-        IF (ind.EQ.mnd) I45=MODULO(I45+1,3)!Increment flag on last loop
+        IF (ind.EQ.mnd.AND.INoOfVariables.GT.1) I45=MODULO(I45+1,3)!Increment flag on last loop
       END DO
       !shrink length scale as we progress
       RPscale=RPscale*0.75
