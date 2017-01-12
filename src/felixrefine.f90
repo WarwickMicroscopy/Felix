@@ -923,15 +923,15 @@ PROGRAM Felixrefine
       END DO
       !shrink length scale as we progress
       RPscale=RPscale*0.75
-      !improvement in fit
-      IF (RBestFit.LT.RLastFit) THEN
+      !improvement in fit, but only when we refine individual variables
+      IF (RBestFit.LT.RLastFit.AND.I45.EQ.0) THEN
         Rdf=RLastFit-RBestFit 
         RLastFit=RBestFit
-      END IF
-      IF(my_rank.EQ.0) THEN
-        PRINT*,"--------------------------------"
-        WRITE(SPrintString,FMT='(A19,F8.6,A15,F8.6)') "Improvement in fit ",Rdf,", will stop at ",RExitCriteria
-        PRINT*,TRIM(ADJUSTL(SPrintString))
+        IF(my_rank.EQ.0) THEN
+          PRINT*,"--------------------------------"
+          WRITE(SPrintString,FMT='(A19,F8.6,A15,F8.6)') "Improvement in fit ",Rdf,", will stop at ",RExitCriteria
+          PRINT*,TRIM(ADJUSTL(SPrintString))
+        END IF
       END IF
     END DO
 

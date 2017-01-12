@@ -544,7 +544,7 @@ SUBROUTINE PrintVariables(IErr)
            PRINT*,TRIM(ADJUSTL(SPrintString))
 
         CASE(8)
-           WRITE(SPrintString,FMT='(A27,F5.2)') "Current Convergence Angle: ",RConvergenceAngle
+           WRITE(SPrintString,FMT='(A27,F7.4)') "Current Convergence Angle: ",RConvergenceAngle
            PRINT*,TRIM(ADJUSTL(SPrintString))
 
         CASE(9)
