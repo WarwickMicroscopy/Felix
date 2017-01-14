@@ -272,7 +272,8 @@ SUBROUTINE CalculateFigureofMeritandDetermineThickness(Iter,IBestThicknessIndex,
   INTEGER(IKIND) :: ind,jnd,knd,IErr,IThickness,hnd,Iter
   INTEGER(IKIND),DIMENSION(INoOfLacbedPatterns) :: IBestImageThicknessIndex
   INTEGER(IKIND),INTENT(OUT) :: IBestThicknessIndex
-  REAL(RKIND),DIMENSION(2*IPixelCount,2*IPixelCount) :: RSimulatedImage,RExperimentalImage,RMaskImage
+  REAL(RKIND),DIMENSION(2*IPixelCount,2*IPixelCount) :: RSimulatedImage,RExperimentalImage
+  REAL(RKIND),DIMENSION(:,:),ALLOCATABLE :: RMaskImage
   REAL(RKIND) :: RTotalCorrelation,RBestTotalCorrelation,RImageCorrelation,RBestThickness,&
        PhaseCorrelate,Normalised2DCrossCorrelation,MaskedCorrelation,ResidualSumofSquares,&
        RThicknessRange,Rradius
@@ -280,6 +281,9 @@ SUBROUTINE CalculateFigureofMeritandDetermineThickness(Iter,IBestThicknessIndex,
   CHARACTER*200 :: SPrintString
   CHARACTER*20 :: Snum       
 
+  IF (ICorrelationFLAG.EQ.3) THEN!Memory saving  only allocate mask if needed
+    ALLOCATE(RMaskImage(2*IPixelCount,2*IPixelCount),STAT=IErr)
+  END IF
   RBestCorrelation = TEN !The best correlation for each image will go in here, initialise at the maximum value
   RBestTotalCorrelation = TEN !The best mean of all correlations
   IBestImageThicknessIndex = 1 !The thickness with the lowest figure of merit for each image

@@ -221,6 +221,7 @@ SUBROUTINE BlochCoefficientCalculation(IYPixelIndex,IXPixelIndex,IPixelNumber,IF
   END IF
  
   !Calculate intensities for different specimen thicknesses
+  !***ADD VARIABLE PATH LENGTH HERE***
   DO IThicknessIndex=1,IThicknessCount,1
     RThickness = RInitialThickness + REAL((IThicknessIndex-1),RKIND)*RDeltaThickness 
     IThickness = NINT(RThickness,IKIND)
