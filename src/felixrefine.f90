@@ -787,8 +787,8 @@ PROGRAM Felixrefine
     CALL UgBisection(RIndependentVariable,IErr)
     
   CASE(3)!Parabola
-    ALLOCATE(RVar0(INoOfVariables),STAT=IErr)!incoming value for each variable
-    ALLOCATE(RCurrentVar(INoOfVariables),STAT=IErr)!used to send out for simulations
+    ALLOCATE(RVar0(INoOfVariables),STAT=IErr)!incoming set of variables
+    ALLOCATE(RCurrentVar(INoOfVariables),STAT=IErr)!set of variables to send out for simulations
     ALLOCATE(RPVec(INoOfVariables),STAT=IErr)!the vector describing the current line in parameter space
     ALLOCATE(Rvar(ITHREE),STAT=IErr)!three coordinates for current variable 
     ALLOCATE(Rfit(ITHREE),STAT=IErr)!three fits for current variable 
@@ -837,7 +837,7 @@ PROGRAM Felixrefine
 	    Rfit=RFigureofMerit
         Rvar(2)=RPvecMag!second point
         !Check that D-W factor is not less than zero
-        IF (Rvar(2).LE.-RCurrentVar(ind).AND.IRefineMode(4).EQ.1) Rvar(2)=-RCurrentVar(ind)+0.1!make the second point equal to 0.1 if less than zero DW factoris asked for
+        IF (Rvar(2).LE.-RVar0(ind).AND.IRefineMode(4).EQ.1) Rvar(2)=-RVar0(ind)+0.1!make the second point equal to 0.1 if less than zero DW factoris asked for
         RCurrentVar=RVar0+RPvec*Rvar(2)
         CALL SimulateAndFit(RCurrentVar,Iter,IExitFLAG,IErr)
         Iter=Iter+1
@@ -848,7 +848,7 @@ PROGRAM Felixrefine
         ELSE!it is better, keep going
           Rvar(3)=Rvar(2)+RPvecMag
         END IF
-        IF (Rvar(3).LE.-RCurrentVar(ind).AND.IRefineMode(4).EQ.1) Rvar(3)=-RCurrentVar(ind)!make the third point equal to 0.0 if less than zero DW is asked for
+        IF (Rvar(3).LE.-RVar0(ind).AND.IRefineMode(4).EQ.1) Rvar(3)=-RVar0(ind)!make the third point equal to 0.0 if less than zero DW is asked for
         RCurrentVar=RVar0+RPvec*Rvar(3)!x3=x1+v3
         CALL SimulateAndFit(RCurrentVar,Iter,IExitFLAG,IErr)
         Iter=Iter+1
@@ -869,7 +869,7 @@ PROGRAM Felixrefine
           !replace mid point with a step on from best point
           RPvecMag=RPvecMag*2!double the step size
           Rvar(lnd)=Rvar(knd)+RPvecMag
-          IF (Rvar(lnd).LE.-RCurrentVar(ind).AND.IRefineMode(4).EQ.1) Rvar(lnd)=-RCurrentVar(ind)!make the third point equal to 0.0 if less than zero DW is asked for
+          IF (Rvar(lnd).LE.-RVar0(ind).AND.IRefineMode(4).EQ.1) Rvar(lnd)=-RVar0(ind)!make the third point equal to 0.0 if less than zero DW is asked for
           RCurrentVar=RVar0+RPvec*Rvar(lnd)
           CALL SimulateAndFit(RCurrentVar,Iter,IExitFLAG,IErr)
           Iter=Iter+1
@@ -905,7 +905,7 @@ PROGRAM Felixrefine
         knd=MINLOC(Rfit,1)!best point
         !replace worst point with parabolic prediction and put into RIndependentVariable
         Rvar(jnd)=RvarMin
-        IF (Rvar(jnd).LE.-RCurrentVar(ind).AND.IRefineMode(4).EQ.1) Rvar(jnd)=-RCurrentVar(ind)!Check that D-W factor is not less than zero
+        IF (Rvar(jnd).LE.-RVar0(ind).AND.IRefineMode(4).EQ.1) Rvar(jnd)=-RVar0(ind)!Check that D-W factor is not less than zero
         RCurrentVar=RVar0+RPvec*Rvar(jnd)
         CALL SimulateAndFit(RCurrentVar,Iter,IExitFLAG,IErr)
         Iter=Iter+1
