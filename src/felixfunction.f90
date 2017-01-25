@@ -100,7 +100,9 @@ SUBROUTINE SimulateAndFit(RIndependentVariable,Iter,IExitFLAG,IErr)
         PRINT*,"SimulateAndFit(",my_rank,")error in Absorption"
         RETURN
      END IF
-     RAbsorptionPercentage = RIndependentVariable(jnd)!===![[[!needs to be updated for AbsorbFLAG 2
+     IF (IAbsorbFLAG.EQ.1) THEN!proportional absorption
+       RAbsorptionPercentage = RIndependentVariable(jnd)
+     END IF
   ELSE  !everything else
     !Update variables
     CALL UpdateVariables(RIndependentVariable,IErr)

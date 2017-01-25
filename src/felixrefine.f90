@@ -928,8 +928,8 @@ PROGRAM Felixrefine
         END IF
         IF (ind.EQ.mnd.AND.INoOfVariables.GT.1) I45=MODULO(I45+1,3)!Increment flag on last loop
       END DO
-      !shrink length scale as we progress
-      RPscale=RPscale*0.75
+      !shrink length scale as we progress, by a smaller amount depending on the no of variables: 1->1/2; 2->3/4; 3->5/6; 4->7/8; 5->9/10;
+      RPscale=RPscale*(1.0-1.0/(2.0*REAL(INoOfVariables)))
       !improvement in fit, but only when we refine individual variables
       IF (RBestFit.LT.RLastFit.AND.I45.EQ.0) THEN
         Rdf=RLastFit-RBestFit 
