@@ -495,78 +495,80 @@ SUBROUTINE PrintVariables(IErr)
   RCrystalVector = [RLengthX,RLengthY,RLengthZ]
 
   DO ind = 1,IRefinementVariableTypes
-     IF (IRefineMode(ind).EQ.1) THEN
-        SELECT CASE(ind)
-        CASE(1)
-           WRITE(SPrintString,FMT='(A18,1X,F5.2)') "Current Absorption",RAbsorptionPercentage
-           PRINT*,TRIM(ADJUSTL(SPrintString))
-           PRINT*,"Current Structure Factors nm^-2: amplitude, phase (deg)"!RB should also put in hkl here
-           DO jnd = 1+IUgOffset,INoofUgs+IUgOffset
-              WRITE(SPrintString,FMT='(2(1X,F7.3),2X,A1,1X,F6.3,1X,F6.2)') 100*CUniqueUg(jnd),":",&
-                   ABS(CUniqueUg(jnd)),180*ATAN2(AIMAG(CUniqueUg(jnd)),REAL(CUniqueUg(jnd)))/PI
-              PRINT*,TRIM(ADJUSTL(SPrintString))
-           END DO
+    IF (IRefineMode(ind).EQ.1) THEN
+      SELECT CASE(ind)
+      CASE(1)
+        IF (IAbsorbFLAG.EQ.2) THEN!proportional absorption
+          WRITE(SPrintString,FMT='(A18,1X,F5.2)') "Current Absorption",RAbsorptionPercentage
+          PRINT*,TRIM(ADJUSTL(SPrintString))
+        END IF
+        PRINT*,"Current Structure Factors nm^-2: amplitude, phase (deg)"!RB should also put in hkl here
+        DO jnd = 1+IUgOffset,INoofUgs+IUgOffset
+          WRITE(SPrintString,FMT='(2(1X,F7.3),2X,A1,1X,F6.3,1X,F6.2)') 100*CUniqueUg(jnd),":",&
+               ABS(CUniqueUg(jnd)),180*ATAN2(AIMAG(CUniqueUg(jnd)),REAL(CUniqueUg(jnd)))/PI
+          PRINT*,TRIM(ADJUSTL(SPrintString))
+        END DO
 
-        CASE(2)
-           PRINT*,"Current Atomic Coordinates"
-           DO jnd = 1,SIZE(RBasisAtomPosition,DIM=1)
-              WRITE(SPrintString,FMT='(A2,3(1X,F9.4))') SBasisAtomName(jnd),RBasisAtomPosition(jnd,:)
-              PRINT*,TRIM(ADJUSTL(SPrintString))              
-           END DO
+      CASE(2)
+        PRINT*,"Current Atomic Coordinates"
+        DO jnd = 1,SIZE(RBasisAtomPosition,DIM=1)
+          WRITE(SPrintString,FMT='(A2,3(1X,F9.4))') SBasisAtomName(jnd),RBasisAtomPosition(jnd,:)
+          PRINT*,TRIM(ADJUSTL(SPrintString))              
+        END DO
 
-        CASE(3)
-           PRINT*,"Current Atomic Occupancy"
-           DO jnd = 1,SIZE(RBasisOccupancy,DIM=1)
-              WRITE(SPrintString,FMT='(A2,1X,F9.6)') SBasisAtomName(jnd),RBasisOccupancy(jnd)
-              PRINT*,TRIM(ADJUSTL(SPrintString))
-           END DO
+      CASE(3)
+        PRINT*,"Current Atomic Occupancy"
+        DO jnd = 1,SIZE(RBasisOccupancy,DIM=1)
+          WRITE(SPrintString,FMT='(A2,1X,F9.6)') SBasisAtomName(jnd),RBasisOccupancy(jnd)
+          PRINT*,TRIM(ADJUSTL(SPrintString))
+        END DO
 
-        CASE(4)
-           PRINT*,"Current Isotropic Debye Waller Factors"
-           DO jnd = 1,SIZE(RBasisIsoDW,DIM=1)
-              WRITE(SPrintString,FMT='(A2,1X,F9.6)') SBasisAtomName(jnd),RBasisIsoDW(jnd)
-              PRINT*,TRIM(ADJUSTL(SPrintString))
-           END DO
+      CASE(4)
+        PRINT*,"Current Isotropic Debye Waller Factors"
+        DO jnd = 1,SIZE(RBasisIsoDW,DIM=1)
+          WRITE(SPrintString,FMT='(A2,1X,F9.6)') SBasisAtomName(jnd),RBasisIsoDW(jnd)
+          PRINT*,TRIM(ADJUSTL(SPrintString))
+        END DO
 
-        CASE(5)
-           PRINT*,"Current Anisotropic Debye Waller Factors"
-           DO jnd = 1,SIZE(RAnisotropicDebyeWallerFactorTensor,DIM=1)
-              DO knd = 1,3
-                 WRITE(SPrintString,FMT='(A2,3(1X,F9.4))') SBasisAtomName(jnd),RAnisotropicDebyeWallerFactorTensor(jnd,knd,:)
-                 PRINT*,TRIM(ADJUSTL(SPrintString))
-              END DO
-           END DO
+      CASE(5)
+        PRINT*,"Current Anisotropic Debye Waller Factors"
+        DO jnd = 1,SIZE(RAnisotropicDebyeWallerFactorTensor,DIM=1)
+          DO knd = 1,3
+            WRITE(SPrintString,FMT='(A2,3(1X,F9.4))') SBasisAtomName(jnd),RAnisotropicDebyeWallerFactorTensor(jnd,knd,:)
+            PRINT*,TRIM(ADJUSTL(SPrintString))
+          END DO
+        END DO
 
-        CASE(6)
-           PRINT*,"Current Unit Cell Parameters"
-           WRITE(SPrintString,FMT='(3(1X,F9.6))') RLengthX,RLengthY,RLengthZ
-           PRINT*,TRIM(ADJUSTL(SPrintString))
+      CASE(6)
+        PRINT*,"Current Unit Cell Parameters"
+        WRITE(SPrintString,FMT='(3(1X,F9.6))') RLengthX,RLengthY,RLengthZ
+        PRINT*,TRIM(ADJUSTL(SPrintString))
 
-        CASE(7)
-           PRINT*,"Current Unit Cell Angles"
-           WRITE(SPrintString,FMT='(3(F9.6,1X))') RAlpha,RBeta,RGamma
-           PRINT*,TRIM(ADJUSTL(SPrintString))
+      CASE(7)
+        PRINT*,"Current Unit Cell Angles"
+        WRITE(SPrintString,FMT='(3(F9.6,1X))') RAlpha,RBeta,RGamma
+        PRINT*,TRIM(ADJUSTL(SPrintString))
 
-        CASE(8)
-           WRITE(SPrintString,FMT='(A27,F7.4)') "Current Convergence Angle: ",RConvergenceAngle
-           PRINT*,TRIM(ADJUSTL(SPrintString))
+      CASE(8)
+        WRITE(SPrintString,FMT='(A27,F7.4)') "Current Convergence Angle: ",RConvergenceAngle
+        PRINT*,TRIM(ADJUSTL(SPrintString))
 
-        CASE(9)
-           PRINT*,"Current Absorption Percentage"
-           WRITE(SPrintString,FMT='((F9.6,1X))') RAbsorptionPercentage
-           PRINT*,TRIM(ADJUSTL(SPrintString))
+      CASE(9)
+        PRINT*,"Current Absorption Percentage"
+        WRITE(SPrintString,FMT='((F9.6,1X))') RAbsorptionPercentage
+        PRINT*,TRIM(ADJUSTL(SPrintString))
 
-        CASE(10)
-           PRINT*,"Current Accelerating Voltage"
-           WRITE(SPrintString,FMT='((F9.6,1X))') RAcceleratingVoltage
-           PRINT*,TRIM(ADJUSTL(SPrintString))
+      CASE(10)
+        PRINT*,"Current Accelerating Voltage"
+        WRITE(SPrintString,FMT='((F9.6,1X))') RAcceleratingVoltage
+        PRINT*,TRIM(ADJUSTL(SPrintString))
 
-        CASE(11)
-           PRINT*,"Current Residual Sum of Squares Scaling Factor"
-           WRITE(SPrintString,FMT='((F9.6,1X))') RRSoSScalingFactor
-           PRINT*,TRIM(ADJUSTL(SPrintString))
-        END SELECT
-     END IF
+      CASE(11)
+        PRINT*,"Current Residual Sum of Squares Scaling Factor"
+        WRITE(SPrintString,FMT='((F9.6,1X))') RRSoSScalingFactor
+        PRINT*,TRIM(ADJUSTL(SPrintString))
+      END SELECT
+    END IF
   END DO
 
 END SUBROUTINE PrintVariables
