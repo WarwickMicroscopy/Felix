@@ -463,8 +463,12 @@ PROGRAM Felixrefine
         jnd=jnd+1!===
 	  END IF!===
     END DO
-    INoOfVariables = jnd![[[-1 !===the last increment is for absorption ![[[ delete the -1 to include absorption***
-	
+    IF (IAbsorbFLAG.EQ.1) THEN!proportional absorption
+      INoOfVariables = jnd!the last increment is for absorption
+	ELSE
+      INoOfVariables = jnd-1
+    END IF
+    
     IF(my_rank.EQ.0) THEN
       IF ( INoOfVariables.EQ.1 ) THEN 
         PRINT*,"Only one independent variable"
@@ -939,7 +943,7 @@ PROGRAM Felixrefine
     END DO
 
     
-  CASE DEFAULT!Simulation only
+  CASE DEFAULT!Simulation only, should never happen
     IF (my_rank.EQ.0) THEN
       PRINT*,"No refinement, simulation only"
     END IF

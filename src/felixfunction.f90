@@ -498,7 +498,7 @@ SUBROUTINE PrintVariables(IErr)
     IF (IRefineMode(ind).EQ.1) THEN
       SELECT CASE(ind)
       CASE(1)
-        IF (IAbsorbFLAG.EQ.2) THEN!proportional absorption
+        IF (IAbsorbFLAG.EQ.1) THEN!proportional absorption
           WRITE(SPrintString,FMT='(A18,1X,F5.2)') "Current Absorption",RAbsorptionPercentage
           PRINT*,TRIM(ADJUSTL(SPrintString))
         END IF
