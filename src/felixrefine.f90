@@ -871,7 +871,7 @@ PROGRAM Felixrefine
           knd=MINLOC(Rfit,1)!best fit
           lnd=6-jnd-knd!the mid fit
           !replace mid point with a step on from best point
-          RPvecMag=RPvecMag*2!double the step size
+          RPvecMag=RPvecMag*(0.5+SQRT(5.0)/2.0)!increase the step size by the golden ratio
           Rvar(lnd)=Rvar(knd)+RPvecMag
           IF (Rvar(lnd).LE.-RVar0(ind).AND.IRefineMode(4).EQ.1) Rvar(lnd)=-RVar0(ind)!make the third point equal to 0.0 if less than zero DW is asked for
           RCurrentVar=RVar0+RPvec*Rvar(lnd)
@@ -929,7 +929,8 @@ PROGRAM Felixrefine
         IF (ind.EQ.mnd.AND.INoOfVariables.GT.1) I45=MODULO(I45+1,3)!Increment flag on last loop
       END DO
       !shrink length scale as we progress, by a smaller amount depending on the no of variables: 1->1/2; 2->3/4; 3->5/6; 4->7/8; 5->9/10;
-      RPscale=RPscale*(1.0-1.0/(2.0*REAL(INoOfVariables)))
+      !RPscale=RPscale*(1.0-1.0/(2.0*REAL(INoOfVariables)))
+      RPscale=RPscale*0.85
       !improvement in fit, but only when we refine individual variables
       IF (RBestFit.LT.RLastFit.AND.I45.EQ.0) THEN
         Rdf=RLastFit-RBestFit 
