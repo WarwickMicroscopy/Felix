@@ -841,7 +841,8 @@ PROGRAM Felixrefine
 	    Rfit=RFigureofMerit
         Rvar(2)=RPvecMag!second point
         !Check that D-W factor is not less than zero
-        IF (Rvar(2).LE.-RVar0(ind).AND.IRefineMode(4).EQ.1) Rvar(2)=-RVar0(ind)+0.1!make the second point equal to 0.1 if less than zero DW factoris asked for
+        IF (Rvar(2).LE.-RVar0(ind).AND.IRefineMode(4).EQ.1) Rvar(2)=-RVar0(ind)+0.1!make the second point equal to 0.1 if less than zero DW factor is asked for
+        IF (Rvar(2).LE.-RVar0(ind).AND.IRefineMode(1).EQ.1) Rvar(2)=-RVar0(ind)+0.001!make the second point equal to 0.001 if less than zero Ug is asked for
         RCurrentVar=RVar0+RPvec*Rvar(2)
         CALL SimulateAndFit(RCurrentVar,Iter,IExitFLAG,IErr)
         Iter=Iter+1
@@ -853,6 +854,7 @@ PROGRAM Felixrefine
           Rvar(3)=Rvar(2)+RPvecMag
         END IF
         IF (Rvar(3).LE.-RVar0(ind).AND.IRefineMode(4).EQ.1) Rvar(3)=-RVar0(ind)!make the third point equal to 0.0 if less than zero DW is asked for
+        IF (Rvar(3).LE.-RVar0(ind).AND.IRefineMode(1).EQ.1) Rvar(3)=-RVar0(ind)!make the third point equal to 0.0 if less than zero Ug is asked for
         RCurrentVar=RVar0+RPvec*Rvar(3)!x3=x1+v3
         CALL SimulateAndFit(RCurrentVar,Iter,IExitFLAG,IErr)
         Iter=Iter+1
@@ -874,6 +876,7 @@ PROGRAM Felixrefine
           RPvecMag=RPvecMag*(0.5+SQRT(5.0)/2.0)!increase the step size by the golden ratio
           Rvar(lnd)=Rvar(knd)+RPvecMag
           IF (Rvar(lnd).LE.-RVar0(ind).AND.IRefineMode(4).EQ.1) Rvar(lnd)=-RVar0(ind)!make the third point equal to 0.0 if less than zero DW is asked for
+          IF (Rvar(lnd).LE.-RVar0(ind).AND.IRefineMode(1).EQ.1) Rvar(lnd)=-RVar0(ind)!make the third point equal to 0.0 if less than zero Ug is asked for
           RCurrentVar=RVar0+RPvec*Rvar(lnd)
           CALL SimulateAndFit(RCurrentVar,Iter,IExitFLAG,IErr)
           Iter=Iter+1
@@ -910,6 +913,7 @@ PROGRAM Felixrefine
         !replace worst point with parabolic prediction and put into RIndependentVariable
         Rvar(jnd)=RvarMin
         IF (Rvar(jnd).LE.-RVar0(ind).AND.IRefineMode(4).EQ.1) Rvar(jnd)=-RVar0(ind)!Check that D-W factor is not less than zero
+        IF (Rvar(jnd).LE.-RVar0(ind).AND.IRefineMode(1).EQ.1) Rvar(jnd)=-RVar0(ind)!Check that Ug is not less than zero
         RCurrentVar=RVar0+RPvec*Rvar(jnd)
         CALL SimulateAndFit(RCurrentVar,Iter,IExitFLAG,IErr)
         Iter=Iter+1
