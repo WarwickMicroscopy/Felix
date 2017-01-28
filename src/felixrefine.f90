@@ -55,7 +55,7 @@ PROGRAM Felixrefine
   INTEGER(IKIND) :: IHours,IMinutes,ISeconds,IMilliSeconds,IStartTime,ICurrentTime,IRate
   INTEGER(IKIND),DIMENSION(:),ALLOCATABLE :: IOriginGVecIdentifier
   REAL(RKIND) :: StartTime, CurrentTime, Duration, TotalDurationEstimate,&
-       RHOLZAcceptanceAngle,RLaueZoneGz,RMaxGMag,RPvecMag,RPscale
+       RHOLZAcceptanceAngle,RLaueZoneGz,RMaxGMag,RPvecMag,RPscale,RMaxUgStep
   REAL(RKIND) :: RBCASTREAL,RStandardDeviation,RMean,RGzUnitVec,RMinLaueZoneValue,Rdf,RLastFit,RBestFit,&
        RMaxLaueZoneValue,RMaxAcceptanceGVecMag,RLaueZoneElectronWaveVectorMag,RvarMin,RfitMin,Rconvex,Rtest
   REAL(RKIND),DIMENSION(:),ALLOCATABLE :: RSimplexFoM,RIndependentVariable,RCurrentVar,Rvar,RVar0,Rfit,RPvec
@@ -813,6 +813,7 @@ PROGRAM Felixrefine
     !END IF
     !Start refinement at the input length scale
     RPscale=RSimplexLengthScale
+    RMaxUgStep=0.005!maximum step in Ug is 0.5 nm^-2, 0.005 A^-2
     DO WHILE (Rdf.GE.RExitCriteria)
       !loop over variables
       IF (I45.EQ.0) THEN
@@ -842,7 +843,6 @@ PROGRAM Felixrefine
         Rvar(2)=RPvecMag!second point
         !Check that D-W factor is not less than zero
         IF (Rvar(2).LE.-RVar0(ind).AND.IRefineMode(4).EQ.1) Rvar(2)=-RVar0(ind)+0.1!make the second point equal to 0.1 if less than zero DW factor is asked for
-        IF (Rvar(2).LE.-RVar0(ind).AND.IRefineMode(1).EQ.1) Rvar(2)=-RVar0(ind)+0.001!make the second point equal to 0.001 if less than zero Ug is asked for
         RCurrentVar=RVar0+RPvec*Rvar(2)
         CALL SimulateAndFit(RCurrentVar,Iter,IExitFLAG,IErr)
         Iter=Iter+1
@@ -854,7 +854,6 @@ PROGRAM Felixrefine
           Rvar(3)=Rvar(2)+RPvecMag
         END IF
         IF (Rvar(3).LE.-RVar0(ind).AND.IRefineMode(4).EQ.1) Rvar(3)=-RVar0(ind)!make the third point equal to 0.0 if less than zero DW is asked for
-        IF (Rvar(3).LE.-RVar0(ind).AND.IRefineMode(1).EQ.1) Rvar(3)=-RVar0(ind)!make the third point equal to 0.0 if less than zero Ug is asked for
         RCurrentVar=RVar0+RPvec*Rvar(3)!x3=x1+v3
         CALL SimulateAndFit(RCurrentVar,Iter,IExitFLAG,IErr)
         Iter=Iter+1
@@ -874,9 +873,9 @@ PROGRAM Felixrefine
           lnd=6-jnd-knd!the mid fit
           !replace mid point with a step on from best point
           RPvecMag=RPvecMag*(0.5+SQRT(5.0)/2.0)!increase the step size by the golden ratio
+          IF (ABS(RPvecMag).GT.RMaxUgStep.AND.IRefineMode(1).EQ.1) RPvecMag=SIGN(RMaxUgStep,RPvecMag)!maximum step in Ug is RMaxUgStep
           Rvar(lnd)=Rvar(knd)+RPvecMag
           IF (Rvar(lnd).LE.-RVar0(ind).AND.IRefineMode(4).EQ.1) Rvar(lnd)=-RVar0(ind)!make the third point equal to 0.0 if less than zero DW is asked for
-          IF (Rvar(lnd).LE.-RVar0(ind).AND.IRefineMode(1).EQ.1) Rvar(lnd)=-RVar0(ind)!make the third point equal to 0.0 if less than zero Ug is asked for
           RCurrentVar=RVar0+RPvec*Rvar(lnd)
           CALL SimulateAndFit(RCurrentVar,Iter,IExitFLAG,IErr)
           Iter=Iter+1
@@ -913,7 +912,6 @@ PROGRAM Felixrefine
         !replace worst point with parabolic prediction and put into RIndependentVariable
         Rvar(jnd)=RvarMin
         IF (Rvar(jnd).LE.-RVar0(ind).AND.IRefineMode(4).EQ.1) Rvar(jnd)=-RVar0(ind)!Check that D-W factor is not less than zero
-        IF (Rvar(jnd).LE.-RVar0(ind).AND.IRefineMode(1).EQ.1) Rvar(jnd)=-RVar0(ind)!Check that Ug is not less than zero
         RCurrentVar=RVar0+RPvec*Rvar(jnd)
         CALL SimulateAndFit(RCurrentVar,Iter,IExitFLAG,IErr)
         Iter=Iter+1

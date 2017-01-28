@@ -93,7 +93,7 @@ SUBROUTINE StructureFactorSetup(IErr)
   END IF
   
   !For symmetry determination, only in Ug refinement
-  IF (IRefineMode(1).EQ.1 .OR. IRefineMode(12).EQ.1) THEN
+  IF (IRefineMode(1).EQ.1) THEN
     RgSumMat = SUM(ABS(RgMatrix),3)+RgMatrixMagnitude+ABS(REAL(CUgMatNoAbs))+ABS(AIMAG(CUgMatNoAbs))
   END IF
 
