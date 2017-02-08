@@ -806,12 +806,6 @@ PROGRAM Felixrefine
     Iter=1
     !switch between 45 degree coords depending on I45
     I45=0
-    !IF(my_rank.EQ.0) THEN
-    !  WRITE(SPrintString,FMT='(A18,F8.6)') &
-    !   "Best fit so far = ",RBestFit
-    !  PRINT*,TRIM(ADJUSTL(SPrintString))
-    !END IF
-    !Start refinement at the input length scale
     RPscale=RSimplexLengthScale
     RMaxUgStep=0.005!maximum step in Ug is 0.5 nm^-2, 0.005 A^-2
     DO WHILE (Rdf.GE.RExitCriteria)
@@ -842,7 +836,7 @@ PROGRAM Felixrefine
 	    Rfit=RFigureofMerit
         Rvar(2)=RPvecMag!second point
         !Check that D-W factor is not less than zero
-        IF (Rvar(2).LE.-RVar0(ind).AND.IRefineMode(4).EQ.1) Rvar(2)=-RVar0(ind)+0.1!make the second point equal to 0.1 if less than zero DW factor is asked for
+        IF (Rvar(2).LE.-RVar0(ind).AND.IRefineMode(4).EQ.1) Rvar(2)=-RVar0(ind)/RPvec(ind)+0.1!make the second point equal to 0.1 if less than zero DW factor is asked for
         RCurrentVar=RVar0+RPvec*Rvar(2)
         CALL SimulateAndFit(RCurrentVar,Iter,IExitFLAG,IErr)
         Iter=Iter+1
@@ -853,7 +847,7 @@ PROGRAM Felixrefine
         ELSE!it is better, keep going
           Rvar(3)=Rvar(2)+RPvecMag
         END IF
-        IF (Rvar(3).LE.-RVar0(ind).AND.IRefineMode(4).EQ.1) Rvar(3)=-RVar0(ind)!make the third point equal to 0.0 if less than zero DW is asked for
+        IF (Rvar(3).LE.-RVar0(ind).AND.IRefineMode(4).EQ.1) Rvar(3)=-RVar0(ind)/RPvec(ind)!if less than zero DW is requested, make the third point equal to 0.0 
         RCurrentVar=RVar0+RPvec*Rvar(3)!x3=x1+v3
         CALL SimulateAndFit(RCurrentVar,Iter,IExitFLAG,IErr)
         Iter=Iter+1
@@ -862,7 +856,7 @@ PROGRAM Felixrefine
         jnd=MAXLOC(Rvar,1)!highest x
         knd=MINLOC(Rvar,1)!lowest x
         lnd=6-jnd-knd!the mid x
-        Rtest=-ABS(Rfit(jnd)-Rfit(knd))!Rtest=0.0 would be a straight line
+        Rtest=-ABS(Rfit(jnd)-Rfit(knd))!Rtest=0.0 would be a straight line, >0=convex, <0=concave
         !Rconvex is the calculated fit index at the mid x, if ithere was a straight line between lowest and highest x
         Rconvex=Rfit(lnd)-(Rfit(knd)+(Rvar(lnd)-Rvar(knd))*(Rfit(jnd)-Rfit(knd))/(Rvar(jnd)-Rvar(knd)))
         !IF(my_rank.EQ.0) PRINT*,"Rtest=",Rtest,"Rconvex=",Rconvex
@@ -875,8 +869,9 @@ PROGRAM Felixrefine
           RPvecMag=RPvecMag*(0.5+SQRT(5.0)/2.0)!increase the step size by the golden ratio
           IF (ABS(RPvecMag).GT.RMaxUgStep.AND.IRefineMode(1).EQ.1) RPvecMag=SIGN(RMaxUgStep,RPvecMag)!maximum step in Ug is RMaxUgStep
           Rvar(lnd)=Rvar(knd)+RPvecMag
-          IF (Rvar(lnd).LE.-RVar0(ind).AND.IRefineMode(4).EQ.1) Rvar(lnd)=-RVar0(ind)!make the third point equal to 0.0 if less than zero DW is asked for
+          IF (Rvar(lnd).LT.-RVar0(ind).AND.IRefineMode(4).EQ.1) Rvar(lnd)=-RVar0(ind)/RPvec(ind)!if less than zero DW is requested, make the third point equal to 0.0...
           RCurrentVar=RVar0+RPvec*Rvar(lnd)
+          IF(my_rank.EQ.0) PRINT*,"RCurrentVar=",RCurrentVar
           CALL SimulateAndFit(RCurrentVar,Iter,IExitFLAG,IErr)
           Iter=Iter+1
           Rfit(lnd)=RFigureofMerit
@@ -894,45 +889,50 @@ PROGRAM Felixrefine
           Rconvex=Rfit(lnd)-(Rfit(knd)+(Rvar(lnd)-Rvar(knd))*(Rfit(jnd)-Rfit(knd))/(Rvar(jnd)-Rvar(knd)))
           Rtest=-ABS(Rfit(jnd)-Rfit(knd))
           !If a DW factor is zero stop looking for the minimum and move on to the next
-          IF (RCurrentVar(ind).EQ.0.0.AND.IRefineMode(4).EQ.1) Rconvex=0.1*Rtest+1.0!
-        !IF(my_rank.EQ.0) PRINT*,"Rtest=",Rtest,"Rconvex=",Rconvex
+          IF (RCurrentVar(ind).LE.TINY.AND.IRefineMode(4).EQ.1) Rconvex=-666.!
+          !IF(my_rank.EQ.0) PRINT*,"RCurrentVar(ind)=",RCurrentVar(ind)
+          !IF(my_rank.EQ.0) PRINT*,"Rtest=",Rtest,"Rconvex=",Rconvex
         END DO
         !now make a prediction and replace worst point
-        CALL Parabo3(Rvar,Rfit,RvarMin,RfitMin,IErr)
-        IF (my_rank.EQ.0) THEN
-          !WRITE(SPrintString,FMT='(A2,3(F4.2,1X),A3,3(F6.4,1X))') &
-          ! "x=",Rvar,",y=",Rfit
-          !PRINT*,TRIM(ADJUSTL(SPrintString))
-          WRITE(SPrintString,FMT='(A32,F6.4,A16,F6.4)') &
-             "Concave set, predict minimum at ",Rvar0(ind)+RvarMin," with fit index ",RfitMin
-          PRINT*,TRIM(ADJUSTL(SPrintString))
+        IF (RCurrentVar(ind).LE.TINY.AND.IRefineMode(4).EQ.1) THEN!don't do this if we have reached zero D-W factor
+          IF (my_rank.EQ.0) PRINT*,"Using zero Debye Waller factor, refining next variable"
+        ELSE
+          CALL Parabo3(Rvar,Rfit,RvarMin,RfitMin,IErr)
+          IF (my_rank.EQ.0) THEN
+            !WRITE(SPrintString,FMT='(A2,3(F4.2,1X),A3,3(F6.4,1X))') &
+            ! "x=",Rvar,",y=",Rfit
+            !PRINT*,TRIM(ADJUSTL(SPrintString))
+            WRITE(SPrintString,FMT='(A32,F6.4,A16,F6.4)') &
+               "Concave set, predict minimum at ",Rvar0(ind)+RvarMin," with fit index ",RfitMin
+            PRINT*,TRIM(ADJUSTL(SPrintString))
+          END IF
+          jnd=MAXLOC(Rfit,1)!worst point
+          knd=MINLOC(Rfit,1)!best point
+          !replace worst point with parabolic prediction and put into RIndependentVariable
+          Rvar(jnd)=RvarMin
+          IF (Rvar(jnd).LE.-RVar0(ind).AND.IRefineMode(4).EQ.1) Rvar(jnd)=-RVar0(ind)!Check that D-W factor is not less than zero
+          RCurrentVar=RVar0+RPvec*Rvar(jnd)
+          CALL SimulateAndFit(RCurrentVar,Iter,IExitFLAG,IErr)
+          Iter=Iter+1
         END IF
-        jnd=MAXLOC(Rfit,1)!worst point
-        knd=MINLOC(Rfit,1)!best point
-        !replace worst point with parabolic prediction and put into RIndependentVariable
-        Rvar(jnd)=RvarMin
-        IF (Rvar(jnd).LE.-RVar0(ind).AND.IRefineMode(4).EQ.1) Rvar(jnd)=-RVar0(ind)!Check that D-W factor is not less than zero
-        RCurrentVar=RVar0+RPvec*Rvar(jnd)
-        CALL SimulateAndFit(RCurrentVar,Iter,IExitFLAG,IErr)
-        Iter=Iter+1
         Rfit(jnd)=RFigureofMerit
         IF (RFigureofMerit.LT.RBestFit) THEN!this is our best point
           RIndependentVariable=RCurrentVar
           RBestFit=RFigureofMerit
-          IF(my_rank.EQ.0) THEN
-            WRITE(SPrintString,FMT='(A18,F8.6)') &
-             "Best fit so far = ",RBestFit
-            PRINT*,TRIM(ADJUSTL(SPrintString))
-          END IF
         ELSE!a different point is the best
           knd=MINLOC(Rfit,1)
           RIndependentVariable=RVar0+RPvec*Rvar(knd)
         END IF
+        IF(my_rank.EQ.0) THEN
+          WRITE(SPrintString,FMT='(A18,F8.6)') &
+           "Best fit so far = ",RBestFit
+          PRINT*,TRIM(ADJUSTL(SPrintString))
+        END IF
         IF (ind.EQ.mnd.AND.INoOfVariables.GT.1) I45=MODULO(I45+1,3)!Increment flag on last loop
       END DO
       !shrink length scale as we progress, by a smaller amount depending on the no of variables: 1->1/2; 2->3/4; 3->5/6; 4->7/8; 5->9/10;
-      !RPscale=RPscale*(1.0-1.0/(2.0*REAL(INoOfVariables)))
-      RPscale=RPscale*0.85
+      RPscale=RPscale*(1.0-1.0/(2.0*REAL(INoOfVariables)))
+      !RPscale=RPscale*0.85
       !improvement in fit, but only when we refine individual variables
       IF (RBestFit.LT.RLastFit.AND.I45.EQ.0) THEN
         Rdf=RLastFit-RBestFit 

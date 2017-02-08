@@ -315,14 +315,13 @@ SUBROUTINE WriteStructureFactors(path,IErr)
 
   WRITE(filename,*) "StructureFactors.txt"
   WRITE(fullpath,*) TRIM(ADJUSTL(path)),'/',TRIM(ADJUSTL(filename))
-  OPEN(UNIT=IChOutSimplex,STATUS='UNKNOWN',&
-       FILE=TRIM(ADJUSTL(fullpath)))
+  OPEN(UNIT=IChOut,STATUS='UNKNOWN',FILE=TRIM(ADJUSTL(fullpath)))
 
   DO ind = 1,nReflections
-     WRITE(IChOutSimplex,FMT='(3I5.1,2F13.9)') NINT(Rhkl(ind,:)),CUgMat(ind,1)
+     WRITE(IChOut,FMT='(3I5.1,2F13.9)') NINT(Rhkl(ind,:)),CUgMat(ind,1)
   END DO
 
-  CLOSE(IChOutSimplex)
+  CLOSE(IChOut)
 
 END SUBROUTINE WriteStructureFactors
 

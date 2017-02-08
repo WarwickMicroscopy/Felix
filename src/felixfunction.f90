@@ -58,7 +58,7 @@ SUBROUTINE SimulateAndFit(RIndependentVariable,Iter,IExitFLAG,IErr)
   CHARACTER*200 :: SFormat,SPrintString
 
   IF (my_rank.EQ.0) THEN
-     WRITE(SPrintString,FMT='(A10,I3)') "Iteration ",Iter
+     WRITE(SPrintString,FMT='(A10,I4)') "Iteration ",Iter
      PRINT*,TRIM(ADJUSTL(SPrintString))
   END IF
   
@@ -377,7 +377,7 @@ SUBROUTINE CalculateFigureofMeritandDetermineThickness(Iter,IBestThicknessIndex,
   IF(my_rank.eq.0) THEN
     RBestThickness = RInitialThickness +(IBestThicknessIndex-1)*RDeltaThickness
     RThicknessRange=( MAXVAL(IBestImageThicknessIndex)-MINVAL(IBestImageThicknessIndex) )*RDeltaThickness
-    WRITE(SPrintString,FMT='(A16,F7.5)') "Figure of merit ",RBestTotalCorrelation
+    WRITE(SPrintString,FMT='(A16,F8.6)') "Figure of merit ",RBestTotalCorrelation
     PRINT*,TRIM(ADJUSTL(SPrintString))
     WRITE(SPrintString,FMT='(A19,I4,A10)') "Specimen thickness ",NINT(RBestThickness)," Angstroms"
     PRINT*,TRIM(ADJUSTL(SPrintString))
