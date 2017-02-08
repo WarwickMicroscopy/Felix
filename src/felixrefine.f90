@@ -871,7 +871,6 @@ PROGRAM Felixrefine
           Rvar(lnd)=Rvar(knd)+RPvecMag
           IF (Rvar(lnd).LT.-RVar0(ind).AND.IRefineMode(4).EQ.1) Rvar(lnd)=-RVar0(ind)/RPvec(ind)!if less than zero DW is requested, make the third point equal to 0.0...
           RCurrentVar=RVar0+RPvec*Rvar(lnd)
-          IF(my_rank.EQ.0) PRINT*,"RCurrentVar=",RCurrentVar
           CALL SimulateAndFit(RCurrentVar,Iter,IExitFLAG,IErr)
           Iter=Iter+1
           Rfit(lnd)=RFigureofMerit
