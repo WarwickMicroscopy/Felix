@@ -242,7 +242,7 @@ PROGRAM Felixrefine
   ALLOCATE(RgPool(INhkl,ITHREE),STAT=IErr)
   ALLOCATE(RgDummyVecMat(INhkl,ITHREE),STAT=IErr)
   IF(IErr.NE.0) THEN
-     PRINT*,"felixrefine(",my_rank,")error allocating"
+     PRINT*,"felixrefine(",my_rank,")error allocating RgPool"
      GOTO 9999
   END IF
  
@@ -451,7 +451,7 @@ PROGRAM Felixrefine
     PRINT*,TRIM(ADJUSTL(SPrintString))
   END IF 
 
-  IF(IRefineMode(1).EQ.1) THEN !It's a Ug refinement
+  IF(IRefineMode(1).EQ.1) THEN !It's a Ug refinement, A
 	IUgOffset=1!choose how many Ug's to skip in the refinement, 1 is the inner potential...
     !Count the number of Independent Variables
     jnd=1
@@ -504,7 +504,7 @@ PROGRAM Felixrefine
   !--------------------------------------------------------------------
   ! Setup Variables
   !--------------------------------------------------------------------
-  IF(IRefineMode(2).EQ.1) THEN !It's an atom coordinate refinement
+  IF(IRefineMode(2).EQ.1) THEN !It's an atom coordinate refinement, B
     CALL SetupAtomicVectorMovements(IErr)
     IF(IErr.NE.0) THEN
       PRINT*,"felixrefine(",my_rank,")error in SetupAtomicVectorMovements"
@@ -512,15 +512,15 @@ PROGRAM Felixrefine
     END IF
   END IF
   IF(IRefineMode(1).EQ.0) THEN !It's not a Ug refinement, so we need to count variables
-    INoofElementsForEachRefinementType(2)=IRefineMode(2)*IAllowedVectors!Atomic coordinates
-    INoofElementsForEachRefinementType(3)=IRefineMode(3)*SIZE(IAtomicSitesToRefine)!Occupancy
-    INoofElementsForEachRefinementType(4)=IRefineMode(4)*SIZE(IAtomicSitesToRefine)!Isotropic DW
-    INoofElementsForEachRefinementType(5)=IRefineMode(5)*SIZE(IAtomicSitesToRefine)*6!Anisotropic DW
-    INoofElementsForEachRefinementType(6)=IRefineMode(6)*3!Unit cell dimensions
-    INoofElementsForEachRefinementType(7)=IRefineMode(7)*3!Unit cell angles
-    INoofElementsForEachRefinementType(8)=IRefineMode(8)!Convergence angle
-    INoofElementsForEachRefinementType(9)=IRefineMode(9)!Percentage Absorption
-    INoofElementsForEachRefinementType(10)=IRefineMode(10)!kV
+    INoofElementsForEachRefinementType(2)=IRefineMode(2)*IAllowedVectors!Atomic coordinates, B
+    INoofElementsForEachRefinementType(3)=IRefineMode(3)*SIZE(IAtomicSitesToRefine)!Occupancy, C
+    INoofElementsForEachRefinementType(4)=IRefineMode(4)*SIZE(IAtomicSitesToRefine)!Isotropic DW, D
+    INoofElementsForEachRefinementType(5)=IRefineMode(5)*SIZE(IAtomicSitesToRefine)*6!Anisotropic DW, E
+    INoofElementsForEachRefinementType(6)=IRefineMode(6)*3!Unit cell dimensions, F
+    INoofElementsForEachRefinementType(7)=IRefineMode(7)*3!Unit cell angles, G
+    INoofElementsForEachRefinementType(8)=IRefineMode(8)!Convergence angle, H
+    INoofElementsForEachRefinementType(9)=IRefineMode(9)!Percentage Absorption, I
+    INoofElementsForEachRefinementType(10)=IRefineMode(10)!kV, J
     !Number of independent variables
     INoOfVariables = SUM(INoofElementsForEachRefinementType)
     IF(INoOfVariables.EQ.0) THEN !there's no refinement requested, say so and quit (could be done when reading felix.inp)
@@ -532,13 +532,19 @@ PROGRAM Felixrefine
     ALLOCATE(RIndependentVariable(INoOfVariables),STAT=IErr)
 	!Fill up the IndependentVariable list 
     ind=1
-    IF(IRefineMode(4).EQ.1) THEN!Isotropic DW
+    IF(IRefineMode(3).EQ.1) THEN!Isotropic DW, C
 	  DO jnd=1,SIZE(IAtomicSitesToRefine)
-        RIndependentVariable(ind)=RIsoDW(ind)
+        RIndependentVariable(ind)=RBasisOccupancy(IAtomicSitesToRefine(jnd))
         ind=ind+1
 	  END DO
 	END IF
-    IF(IRefineMode(8).EQ.1) THEN!Convergence angle
+    IF(IRefineMode(4).EQ.1) THEN!Isotropic DW, D
+	  DO jnd=1,SIZE(IAtomicSitesToRefine)
+        RIndependentVariable(ind)=RIsoDW(IAtomicSitesToRefine(jnd))
+        ind=ind+1
+	  END DO
+	END IF
+    IF(IRefineMode(8).EQ.1) THEN!Convergence angle, H
       RIndependentVariable(ind)=RConvergenceAngle
       ind=ind+1
 	END IF
@@ -1334,25 +1340,25 @@ SUBROUTINE AssignArrayLocationsToIterationVariables(IIterativeVariableType,IVari
 
   SELECT CASE(IIterativeVariableType)
 
-  CASE(1) ! Ugs
+  CASE(1) ! Ugs, A
      IArrayToFill(IArrayIndex,2) = IIterativeVariableType
      IArrayToFill(IArrayIndex,3) = &
           NINT(REAL(INoofUgs,RKIND)*(REAL(IVariableNo/REAL(INoofUgs,RKIND),RKIND)-&
           CEILING(REAL(IVariableNo/REAL(INoofUgs,RKIND),RKIND)))+REAL(INoofUgs,RKIND))
 
-  CASE(2) ! Coordinates (x,y,z)
+  CASE(2) ! Coordinates (x,y,z), B
      IArrayToFill(IArrayIndex,2) = IIterativeVariableType
      IArrayToFill(IArrayIndex,3) = IVariableNo
 
-  CASE(3) ! Atomic Site Occupancies
+  CASE(3) ! Occupancies, C
      IArrayToFill(IArrayIndex,2) = IIterativeVariableType
      IArrayToFill(IArrayIndex,3) = IAtomicSitesToRefine(IVariableNo)
 
-  CASE(4) ! Isotropic Debye Waller Factors 
+  CASE(4) ! Isotropic Debye Waller Factors , D
      IArrayToFill(IArrayIndex,2) = IIterativeVariableType
      IArrayToFill(IArrayIndex,3) = IAtomicSitesToRefine(IVariableNo)
 
-  CASE(5) ! Anisotropic Debye Waller Factors (a11-a33)
+  CASE(5) ! Anisotropic Debye Waller Factors (a11-a33), E
      IArrayToFill(IArrayIndex,2) = IIterativeVariableType
      IArrayToFill(IArrayIndex,3) = IAtomicSitesToRefine(INT(CEILING(REAL(IVariableNo/6.0D0,RKIND))))
      IAnisotropicDebyeWallerFactorElementNo = &
@@ -1375,28 +1381,25 @@ SUBROUTINE AssignArrayLocationsToIterationVariables(IIterativeVariableType,IVari
 
         END SELECT
 
-  CASE(6) ! Lattice Parameters
+  CASE(6) ! Lattice Parameters, E
      IArrayToFill(IArrayIndex,2) = IIterativeVariableType
      IArrayToFill(IArrayIndex,3) = &
           NINT(3.D0*(REAL(IVariableNo/3.0D0,RKIND)-CEILING(REAL(IVariableNo/3.0D0,RKIND)))+3.0D0)
      
-  CASE(7) ! Lattice Angles
+  CASE(7) ! Lattice Angles, F
      IArrayToFill(IArrayIndex,2) = IIterativeVariableType
      IArrayToFill(IArrayIndex,3) = &
           NINT(3.D0*(REAL(IVariableNo/3.0D0,RKIND)-CEILING(REAL(IVariableNo/3.0D0,RKIND)))+3.0D0)
 
-  CASE(8) 
+  CASE(8) !Convergence angle, H
      IArrayToFill(IArrayIndex,2) = IIterativeVariableType
 
-  CASE(9)  
+  CASE(9)  !Percentage Absorption, I
      IArrayToFill(IArrayIndex,2) = IIterativeVariableType
 
-  CASE(10)
+  CASE(10)!kV, J
      IArrayToFill(IArrayIndex,2) = IIterativeVariableType
 
-  CASE(11)
-     IArrayToFill(IArrayIndex,2) = IIterativeVariableType
-     
   END SELECT
   
 END SUBROUTINE AssignArrayLocationsToIterationVariables
@@ -1404,7 +1407,7 @@ END SUBROUTINE AssignArrayLocationsToIterationVariables
 !%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 SUBROUTINE RefinementVariableSetup(RIndependentVariable,IErr)
-  
+!This is redundant  
   USE MyNumbers
   
   USE CConst; USE IConst; USE RConst

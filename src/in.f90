@@ -433,13 +433,13 @@ SUBROUTINE DetermineRefineableAtomicSites(SAtomicSites,IErr)
   IMPLICIT NONE  
 
   INTEGER(IKIND) :: IPos,IPos1,IPos2,IErr,ind
-  CHARACTER*200 :: SAtomicSites,SFormatString,SLengthofNumberString
+  CHARACTER*200 :: SAtomicSites,SFormatString,SLengthofNumberString,SPrintString
 
   IPos1 = SCAN(SAtomicSites,'(')
   IPos2 = SCAN(SAtomicSites,')')
   IF(((IPos2-IPos1).EQ.1).OR.(IPos1.EQ.0).OR.(IPos2.EQ.0)) THEN
      IF(IRefineMode(2).EQ.1) THEN
-        PRINT*,"You Have Not Specfied Atomic Sites to Refine" 
+        IF (my_rank.EQ.0) PRINT*,"You Have Not Specfied Atomic Sites to Refine" 
         IErr = 1
         RETURN
      END IF
@@ -447,12 +447,9 @@ SUBROUTINE DetermineRefineableAtomicSites(SAtomicSites,IErr)
 
   IF ((IPos2-IPos1).GT.1.AND.SCAN(SAtomicSites,',').EQ.0) THEN
      ALLOCATE(IAtomicSitesToRefine(1),STAT=IErr)
-     IF( IErr.NE.0 ) THEN
-        PRINT*,"ReadInpFile(): error in memory ALLOCATE()"
-        RETURN
-     END IF
-
-     PRINT*,SIZE(IAtomicSitesToRefine)
+     IF(IErr.NE.0.AND.(my_rank.EQ.0)) PRINT*,&
+       "DetermineRefineableAtomicSites: error allocating IAtomicSitesToRefine"
+     IF (my_rank.EQ.0) PRINT*,SIZE(IAtomicSitesToRefine)
      WRITE(SLengthofNumberString,*) LEN(SAtomicSites((IPos1+1):(IPos2-1))) 
      WRITE(SFormatString,*) "(I"//TRIM(ADJUSTL(SLengthofNumberString))//")"
      READ(SAtomicSites((IPos1+1):(IPos2-1)),FMT=SFormatString) IAtomicSitesToRefine(1)
@@ -467,11 +464,9 @@ SUBROUTINE DetermineRefineableAtomicSites(SAtomicSites,IErr)
      END DO
 
      ALLOCATE(IAtomicSitesToRefine(IPos),STAT=IErr)
-     IF( IErr.NE.0 ) THEN
-        PRINT*,"ReadInpFile(): error in memory ALLOCATE()"
-        RETURN
-     END IF
-
+     IF(IErr.NE.0.AND.(my_rank.EQ.0)) PRINT*,&
+       "DetermineRefineableAtomicSites: error allocating IAtomicSitesToRefine"
+       
      IPos1 = SCAN(SAtomicSites,'(')
      DO ind = 1,SIZE(IAtomicSitesToRefine,DIM=1)
         IF(SCAN(SAtomicSites((IPos1+1):IPos2),',').NE.0) THEN
@@ -487,8 +482,9 @@ SUBROUTINE DetermineRefineableAtomicSites(SAtomicSites,IErr)
         END IF
      END DO
   END IF
-  !XX PRINT*, "Refining atoms",IAtomicSitesToRefine!XX     
-
+  WRITE(SPrintString,FMT='(A15,10(I2,1X))') "Refining atoms ",IAtomicSitesToRefine
+  IF(my_rank.EQ.0) PRINT*,TRIM(ADJUSTL(SPrintString))
+  
 END SUBROUTINE DetermineRefineableAtomicSites
 
 !%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%

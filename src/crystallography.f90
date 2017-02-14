@@ -236,7 +236,7 @@ SUBROUTINE UniqueAtomPositions(IErr)
       jnd=jnd+1
     ENDIF
   ENDDO
-  INAtomsUnitCell= jnd-1
+  INAtomsUnitCell= jnd-1!this is how many unique atoms there are in the unit cell
 
   !Finished with these variables now
   DEALLOCATE(RAllAtomPosition,SAllAtomName,RAllOccupancy,RAllIsoDW,IAllAtomicNumber,RAllAnisoDW)

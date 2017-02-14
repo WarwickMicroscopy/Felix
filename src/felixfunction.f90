@@ -416,58 +416,57 @@ SUBROUTINE UpdateVariables(RIndependentVariable,IErr)
   END IF
 
   DO ind = 1,INoOfVariables
-     IVariableType = IIterativeVariableUniqueIDs(ind,2)
-     SELECT CASE (IVariableType)
-     CASE(1)
-        !RB structure factor refinement, do in UpdateStructureFactors
-     CASE(2)
-        !CALL ConvertVectorMovementsIntoAtomicCoordinates(ind,RIndependentVariable,IErr)
-        !The vector being used
-        IVectorID = IIterativeVariableUniqueIDs(ind,3)
-        !The atom being moved
-        IAtomID = IAllowedVectorIDs(IVectorID)
-        !Change in position
-        RBasisAtomPosition(IAtomID,:) = RBasisAtomPosition(IAtomID,:) + &
+    IVariableType = IIterativeVariableUniqueIDs(ind,2)
+    SELECT CASE (IVariableType)
+    CASE(1) !A: structure factor refinement, do in UpdateStructureFactors
+      
+    CASE(2)
+      !CALL ConvertVectorMovementsIntoAtomicCoordinates(ind,RIndependentVariable,IErr)
+      !The vector being used
+      IVectorID = IIterativeVariableUniqueIDs(ind,3)
+      !The atom being moved
+      IAtomID = IAllowedVectorIDs(IVectorID)
+      !Change in position
+      RBasisAtomPosition(IAtomID,:) = RBasisAtomPosition(IAtomID,:) + &
              RIndependentVariable(ind)*RAllowedVectors(IVectorID,:)
-     CASE(3)
-        RBasisOccupancy(IIterativeVariableUniqueIDs(ind,3)) = &
-             RIndependentVariable(ind)
-     CASE(4)
-        RBasisIsoDW(IIterativeVariableUniqueIDs(ind,3)) = &
-             RIndependentVariable(ind)
-     CASE(5)
-        RAnisotropicDebyeWallerFactorTensor(&
-             IIterativeVariableUniqueIDs(ind,3),&
-             IIterativeVariableUniqueIDs(ind,4),&
-             IIterativeVariableUniqueIDs(ind,5)) = & 
-             RIndependentVariable(ind)
-     CASE(6)
-        SELECT CASE(IIterativeVariableUniqueIDs(ind,3))
-        CASE(1)
-           RLengthX = RIndependentVariable(ind)
-        CASE(2)
-           RLengthY = RIndependentVariable(ind)
-        CASE(3)
-           RLengthZ = RIndependentVariable(ind)
-        END SELECT
-     CASE(7)
-        SELECT CASE(IIterativeVariableUniqueIDs(ind,3))
-        CASE(1)
-           RAlpha = RIndependentVariable(ind)
-        CASE(2)
-           RBeta = RIndependentVariable(ind)
-        CASE(3)
-           RGamma = RIndependentVariable(ind)
-        END SELECT
-     CASE(8)
-        RConvergenceAngle = RIndependentVariable(ind)
-     CASE(9)
-        RAbsorptionPercentage = RIndependentVariable(ind)
-     CASE(10)
-        RAcceleratingVoltage = RIndependentVariable(ind)
-     CASE(11)
-        RRSoSScalingFactor = RIndependentVariable(ind)
-     END SELECT
+    CASE(3)
+      RBasisOccupancy(IIterativeVariableUniqueIDs(ind,3))=RIndependentVariable(ind)
+ 
+      CASE(4)
+      RBasisIsoDW(IIterativeVariableUniqueIDs(ind,3))=RIndependentVariable(ind)
+    CASE(5)
+      RAnisotropicDebyeWallerFactorTensor(&
+           IIterativeVariableUniqueIDs(ind,3),&
+           IIterativeVariableUniqueIDs(ind,4),&
+           IIterativeVariableUniqueIDs(ind,5)) = & 
+           RIndependentVariable(ind)
+    CASE(6)
+      SELECT CASE(IIterativeVariableUniqueIDs(ind,3))
+      CASE(1)
+        RLengthX = RIndependentVariable(ind)
+      CASE(2)
+        RLengthY = RIndependentVariable(ind)
+      CASE(3)
+        RLengthZ = RIndependentVariable(ind)
+      END SELECT
+    CASE(7)
+      SELECT CASE(IIterativeVariableUniqueIDs(ind,3))
+      CASE(1)
+        RAlpha = RIndependentVariable(ind)
+      CASE(2)
+        RBeta = RIndependentVariable(ind)
+      CASE(3)
+        RGamma = RIndependentVariable(ind)
+      END SELECT
+    CASE(8)
+      RConvergenceAngle = RIndependentVariable(ind)
+    CASE(9)
+      RAbsorptionPercentage = RIndependentVariable(ind)
+    CASE(10)
+      RAcceleratingVoltage = RIndependentVariable(ind)
+    CASE(11)
+      RRSoSScalingFactor = RIndependentVariable(ind)
+    END SELECT
   END DO
 
 END SUBROUTINE UpdateVariables
@@ -521,7 +520,7 @@ SUBROUTINE PrintVariables(IErr)
       CASE(3)
         PRINT*,"Current Atomic Occupancy"
         DO jnd = 1,SIZE(RBasisOccupancy,DIM=1)
-          WRITE(SPrintString,FMT='(A2,1X,F9.6)') SBasisAtomName(jnd),RBasisOccupancy(jnd)
+          WRITE(SPrintString,FMT='(A2,1X,F6.3)') SBasisAtomName(jnd),RBasisOccupancy(jnd)
           PRINT*,TRIM(ADJUSTL(SPrintString))
         END DO
 
