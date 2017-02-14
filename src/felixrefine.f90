@@ -523,6 +523,11 @@ PROGRAM Felixrefine
     INoofElementsForEachRefinementType(10)=IRefineMode(10)!kV
     !Number of independent variables
     INoOfVariables = SUM(INoofElementsForEachRefinementType)
+    IF(INoOfVariables.EQ.0) THEN !there's no refinement requested, say so and quit (could be done when reading felix.inp)
+      IF (my_rank.EQ.0) PRINT*,"No refinement variables! Check IRefineModeFLAG in felix.inp"
+      IF (my_rank.EQ.0) PRINT*,"Valid refine modes are A,B,C,D,E,F,G,H,I,J,S"
+      GOTO 9999
+    END IF
     !--------------------------------------------------------------------
     ALLOCATE(RIndependentVariable(INoOfVariables),STAT=IErr)
 	!Fill up the IndependentVariable list 
@@ -812,14 +817,10 @@ PROGRAM Felixrefine
       !loop over variables
       IF (I45.EQ.0) THEN
         mnd=INoOfVariables
-        IF(my_rank.EQ.0) THEN
-          PRINT*,"Refining individual variables"
-        END IF
+        IF(my_rank.EQ.0) PRINT*,"Refining individual variables"
       ELSE IF (INoOfVariables.GT.1) THEN
         mnd=INoOfVariables-1
-        IF(my_rank.EQ.0) THEN
-          PRINT*,"Refining pairs of variables"
-        END IF
+        IF(my_rank.EQ.0) PRINT*,"Refining pairs of variables"
       END IF
       DO ind=1,mnd
         !Vector for this refinement
