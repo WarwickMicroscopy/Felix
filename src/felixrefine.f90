@@ -386,19 +386,14 @@ PROGRAM Felixrefine
   !count reflections up to cutoff magnitude
   nReflections=0_IKIND
   DO ind=1,INhkl
-    IF (ABS(RgPoolMag(ind)).LE.RMaxGMag) THEN
-      nReflections=nReflections+1
-    END IF
+    IF (ABS(RgPoolMag(ind)).LE.RMaxGMag) nReflections=nReflections+1
   ENDDO
-  IF (nReflections.LT.INoOfLacbedPatterns) THEN
-     nReflections = INoOfLacbedPatterns
-  END IF
+  IF (nReflections.LT.INoOfLacbedPatterns) nReflections = INoOfLacbedPatterns
   
   !deallocation
   DEALLOCATE(RgPoolMagLaue)!
   IF (RAcceptanceAngle.NE.ZERO.AND.IHOLZFLAG.EQ.1) THEN
     DEALLOCATE(IOriginGVecIdentifier)
-    PRINT*,"felixrefine deallocating IOriginGVecIdentifier"
   END IF
 
   !Calculate Ug matrix etc.--------------------------------------------------------
@@ -432,9 +427,7 @@ PROGRAM Felixrefine
   END IF
   !Calculate Ug matrix for each individual enry in CUgMatNoAbs(1:nReflections,1:nReflections)
   CALL StructureFactorInitialisation (IErr)!NB IEquivalentUgKey and CUniqueUg allocated in here
-  IF(IWriteFLAG.EQ.3.AND.my_rank.EQ.0) THEN
-	PRINT*,"Starting absorption calculation",SIZE(IEquivalentUgKey),"beams"
-  END IF
+  IF(IWriteFLAG.EQ.3.AND.my_rank.EQ.0) PRINT*,"Starting absorption calculation",SIZE(IEquivalentUgKey),"beams"
   CALL Absorption (IErr)
   IF( IErr.NE.0 ) THEN
      PRINT*,"StructureFactorSetup(",my_rank,")error in StructureFactorInitialisation"
@@ -451,20 +444,19 @@ PROGRAM Felixrefine
     PRINT*,TRIM(ADJUSTL(SPrintString))
   END IF 
 
+  !--------------------------------------------------------------------
+  ! Set up Ug refinement variables
+  !--------------------------------------------------------------------
   IF(IRefineMode(1).EQ.1) THEN !It's a Ug refinement, A
 	IUgOffset=1!choose how many Ug's to skip in the refinement, 1 is the inner potential...
     !Count the number of Independent Variables
     jnd=1
     DO ind = 1+IUgOffset,INoofUgs+IUgOffset !=== temp comment out !=== for real part only***
-      IF ( ABS(REAL(CUniqueUg(ind),RKIND)).GE.RTolerance ) THEN!===
-        jnd=jnd+1
-	  END IF!===
-      IF ( ABS(AIMAG(CUniqueUg(ind))).GE.RTolerance ) THEN!===
-        jnd=jnd+1!===
-	  END IF!===
+      IF ( ABS(REAL(CUniqueUg(ind),RKIND)).GE.RTolerance ) jnd=jnd+1!===
+      IF ( ABS(AIMAG(CUniqueUg(ind))).GE.RTolerance ) jnd=jnd+1!===
     END DO
     IF (IAbsorbFLAG.EQ.1) THEN!proportional absorption
-      INoOfVariables = jnd!the last increment is for absorption
+      INoOfVariables = jnd!the last variable is for absorption
 	ELSE
       INoOfVariables = jnd-1
     END IF
@@ -495,14 +487,12 @@ PROGRAM Felixrefine
         jnd=jnd+1!===
       END IF!===
     END DO
-	IF (IAbsorbFLAG.EQ.1) THEN!Proportional absorption included in structure factor refinement as last variable
-      RIndependentVariable(jnd) = RAbsorptionPercentage
-    END IF
+	IF (IAbsorbFLAG.EQ.1) RIndependentVariable(jnd) = RAbsorptionPercentage!Proportional absorption included in structure factor refinement as last variable
 
   END IF
  
   !--------------------------------------------------------------------
-  ! Setup Variables
+  ! Set up other variables
   !--------------------------------------------------------------------
   IF(IRefineMode(2).EQ.1) THEN !It's an atom coordinate refinement, B
     CALL SetupAtomicVectorMovements(IErr)
@@ -568,7 +558,7 @@ PROGRAM Felixrefine
   END IF
 
   !--------------------------------------------------------------------
-  ! Setup Images for output
+  ! Set up images for output
   ALLOCATE(RhklPositions(nReflections,2),STAT=IErr)
   IF( IErr.NE.0 ) THEN
      PRINT*,"felixrefine(",my_rank,") error allocating RhklPositions"
@@ -836,13 +826,13 @@ PROGRAM Felixrefine
         IF (I45.EQ.2) RPvec(ind+1)=-1.0
         !incoming point in parameter space
         RVar0=RIndependentVariable
-        RPvecMag=RIndependentVariable(ind)*RPscale!*(1/SQRT(1+REAL(ABS(I45))))
+        RPvecMag=RIndependentVariable(ind)*RPscale*(1/SQRT(1+REAL(ABS(I45))))
         !initial coordinate on the line is point zero
         Rvar=ZERO
         !with the current fit index
 	    Rfit=RFigureofMerit
         Rvar(2)=RPvecMag!second point
-        !Check that D-W factor is not less than zero
+        !IF (Rvar(2).LE.-RVar0(ind).AND.IRefineMode(3).EQ.1) Rvar(2)=-RVar0(ind)/RPvec(ind)+0.1!make the second point equal to 0.1 if less than zero occupancy is asked for
         IF (Rvar(2).LE.-RVar0(ind).AND.IRefineMode(4).EQ.1) Rvar(2)=-RVar0(ind)/RPvec(ind)+0.1!make the second point equal to 0.1 if less than zero DW factor is asked for
         RCurrentVar=RVar0+RPvec*Rvar(2)
         CALL SimulateAndFit(RCurrentVar,Iter,IExitFLAG,IErr)
@@ -851,7 +841,7 @@ PROGRAM Felixrefine
         IF (Rfit(2).GT.Rfit(1)) THEN!new 2 is not better than 1, go the other way
           RPvecMag=-RPvecMag
           Rvar(3)=Rvar(1)+RPvecMag
-        ELSE!it is better, keep going
+        ELSE!it is better, so keep going
           Rvar(3)=Rvar(2)+RPvecMag
         END IF
         IF (Rvar(3).LE.-RVar0(ind).AND.IRefineMode(4).EQ.1) Rvar(3)=-RVar0(ind)/RPvec(ind)!if less than zero DW is requested, make the third point equal to 0.0 
@@ -900,7 +890,7 @@ PROGRAM Felixrefine
           !IF(my_rank.EQ.0) PRINT*,"Rtest=",Rtest,"Rconvex=",Rconvex
         END DO
         !now make a prediction and replace worst point
-        IF (RCurrentVar(ind).LE.TINY.AND.IRefineMode(4).EQ.1) THEN!don't do this if we have reached zero D-W factor
+        IF (RCurrentVar(ind).LE.TINY.AND.IRefineMode(4).EQ.1) THEN!We have reached zero D-W factor, skip the prediction
           IF (my_rank.EQ.0) PRINT*,"Using zero Debye Waller factor, refining next variable"
         ELSE
           CALL Parabo3(Rvar,Rfit,RvarMin,RfitMin,IErr)
@@ -916,6 +906,7 @@ PROGRAM Felixrefine
           knd=MINLOC(Rfit,1)!best point
           !replace worst point with parabolic prediction and put into RIndependentVariable
           Rvar(jnd)=RvarMin
+          !IF (Rvar(jnd).LE.-RVar0(ind).AND.IRefineMode(3).EQ.1) Rvar(jnd)=-RVar0(ind)!Check that occupancy is not less than zero (apart from H??)
           IF (Rvar(jnd).LE.-RVar0(ind).AND.IRefineMode(4).EQ.1) Rvar(jnd)=-RVar0(ind)!Check that D-W factor is not less than zero
           RCurrentVar=RVar0+RPvec*Rvar(jnd)
           CALL SimulateAndFit(RCurrentVar,Iter,IExitFLAG,IErr)

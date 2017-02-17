@@ -188,9 +188,7 @@ SUBROUTINE ReadCif(IErr)
     IVolumeFLAG= 1
   END IF
 
-  IF(IWriteFLAG.EQ.14.AND.my_rank.EQ.0) THEN
-    PRINT*,"Unit cell volume",RVolume
-  END IF
+  IF(IWriteFLAG.EQ.14.AND.my_rank.EQ.0) PRINT*,"Unit cell volume",RVolume
 
   DO      
     f1 = char_('_atom_type_symbol', name)
