@@ -51,7 +51,7 @@ PROGRAM Felixrefine
 
   INTEGER(IKIND) :: IErr,IIterationFLAG,ind,jnd,knd,lnd,mnd,nnd,ICalls,Iter,ICutOff,IHOLZgPoolMag,&
 	   IBSMaxLocGVecAmp,ILaueLevel,INumTotalReflections,ITotalLaueZoneLevel,INhkl,IExitFLAG,&
-	   INumInitReflections,IZerothLaueZoneLevel,INumFinalReflections,IThicknessIndex,I45
+	   INumInitReflections,IZerothLaueZoneLevel,INumFinalReflections,IThicknessIndex,I45,IVariableType
   INTEGER(IKIND) :: IHours,IMinutes,ISeconds,IMilliSeconds,IStartTime,ICurrentTime,IRate
   INTEGER(IKIND),DIMENSION(:),ALLOCATABLE :: IOriginGVecIdentifier
   REAL(RKIND) :: StartTime, CurrentTime, Duration, TotalDurationEstimate,&
@@ -545,12 +545,12 @@ PROGRAM Felixrefine
       GOTO 9999
     END IF
     IIterativeVariableUniqueIDs = 0
-    ICalls = 0
+    knd = 0
     DO ind = 2,IRefinementVariableTypes !Loop over iterative variables apart from Ug's
       IF(IRefineMode(ind).EQ.1) THEN
         DO jnd = 1,INoofElementsForEachRefinementType(ind)
-          ICalls = ICalls + 1
-          IIterativeVariableUniqueIDs(ICalls,1) = ICalls
+          knd = knd + 1
+          IIterativeVariableUniqueIDs(knd,1) = knd!elements (:,1) just have the number of the index in, pointless and never used
           CALL AssignArrayLocationsToIterationVariables(ind,jnd,IIterativeVariableUniqueIDs,IErr)
         END DO
       END IF
@@ -700,6 +700,7 @@ PROGRAM Felixrefine
   !--------------------------------------------------------------------
   !Branch depending upon refinement method
   !We have INoOfVariables to refine, held in RIndependentVariable(1:INoOfVariables)
+  !For single variables, their type is held in IIterativeVariableUniqueIDs(1:INoOfVariables,2)
   SELECT CASE(IMethodFLAG)
   CASE(1)!Simplex
     ALLOCATE(RSimplexVariable(INoOfVariables+1,INoOfVariables), STAT=IErr)  
@@ -827,13 +828,29 @@ PROGRAM Felixrefine
         !incoming point in parameter space
         RVar0=RIndependentVariable
         RPvecMag=RIndependentVariable(ind)*RPscale*(1/SQRT(1+REAL(ABS(I45))))
+        !The type of variable being refined 
+        IVariableType=IIterativeVariableUniqueIDs(ind,2)
+        IF(my_rank.EQ.0) THEN
+        SELECT CASE(IVariableType)
+          CASE(1)
+            PRINT*,"Ug refinement"
+          CASE(2)
+            PRINT*,"Atomic coordinate refinement"
+          CASE(3)
+            PRINT*,"Occupancy refinement"
+          CASE(4)
+            PRINT*,"Isotropic Debye-Waller factor refinement"
+          CASE(5)
+            PRINT*,"Convergence angle refinement"
+          END SELECT
+        END IF
         !initial coordinate on the line is point zero
         Rvar=ZERO
         !with the current fit index
 	    Rfit=RFigureofMerit
-        Rvar(2)=RPvecMag!second point
+        Rvar(2)=RPvecMag!second point  
         !IF (Rvar(2).LE.-RVar0(ind).AND.IRefineMode(3).EQ.1) Rvar(2)=-RVar0(ind)/RPvec(ind)+0.1!make the second point equal to 0.1 if less than zero occupancy is asked for
-        IF (Rvar(2).LE.-RVar0(ind).AND.IRefineMode(4).EQ.1) Rvar(2)=-RVar0(ind)/RPvec(ind)+0.1!make the second point equal to 0.1 if less than zero DW factor is asked for
+        IF (Rvar(2).LE.-RVar0(ind).AND.IVariableType.EQ.4) Rvar(2)=-RVar0(ind)/RPvec(ind)+0.1!make the second point equal to 0.1 if less than zero DW factor is asked for
         RCurrentVar=RVar0+RPvec*Rvar(2)
         CALL SimulateAndFit(RCurrentVar,Iter,IExitFLAG,IErr)
         Iter=Iter+1
@@ -844,7 +861,7 @@ PROGRAM Felixrefine
         ELSE!it is better, so keep going
           Rvar(3)=Rvar(2)+RPvecMag
         END IF
-        IF (Rvar(3).LE.-RVar0(ind).AND.IRefineMode(4).EQ.1) Rvar(3)=-RVar0(ind)/RPvec(ind)!if less than zero DW is requested, make the third point equal to 0.0 
+        IF (Rvar(3).LE.-RVar0(ind).AND.IVariableType.EQ.4) Rvar(3)=-RVar0(ind)/RPvec(ind)!if less than zero DW is requested, make the third point equal to 0.0 
         RCurrentVar=RVar0+RPvec*Rvar(3)!x3=x1+v3
         CALL SimulateAndFit(RCurrentVar,Iter,IExitFLAG,IErr)
         Iter=Iter+1
@@ -866,7 +883,7 @@ PROGRAM Felixrefine
           RPvecMag=RPvecMag*(0.5+SQRT(5.0)/2.0)!increase the step size by the golden ratio
           IF (ABS(RPvecMag).GT.RMaxUgStep.AND.IRefineMode(1).EQ.1) RPvecMag=SIGN(RMaxUgStep,RPvecMag)!maximum step in Ug is RMaxUgStep
           Rvar(lnd)=Rvar(knd)+RPvecMag
-          IF (Rvar(lnd).LT.-RVar0(ind).AND.IRefineMode(4).EQ.1) Rvar(lnd)=-RVar0(ind)/RPvec(ind)!if less than zero DW is requested, make the third point equal to 0.0...
+          IF (Rvar(lnd).LT.-RVar0(ind).AND.IVariableType.EQ.4) Rvar(lnd)=-RVar0(ind)/RPvec(ind)!if less than zero DW is requested, make the third point equal to 0.0...
           RCurrentVar=RVar0+RPvec*Rvar(lnd)
           CALL SimulateAndFit(RCurrentVar,Iter,IExitFLAG,IErr)
           Iter=Iter+1
@@ -885,12 +902,12 @@ PROGRAM Felixrefine
           Rconvex=Rfit(lnd)-(Rfit(knd)+(Rvar(lnd)-Rvar(knd))*(Rfit(jnd)-Rfit(knd))/(Rvar(jnd)-Rvar(knd)))
           Rtest=-ABS(Rfit(jnd)-Rfit(knd))
           !If a DW factor is zero stop looking for the minimum and move on to the next
-          IF (RCurrentVar(ind).LE.TINY.AND.IRefineMode(4).EQ.1) Rconvex=-666.!
+          IF (RCurrentVar(ind).LE.TINY.AND.IVariableType.EQ.4) Rconvex=-666.!
           !IF(my_rank.EQ.0) PRINT*,"RCurrentVar(ind)=",RCurrentVar(ind)
           !IF(my_rank.EQ.0) PRINT*,"Rtest=",Rtest,"Rconvex=",Rconvex
         END DO
         !now make a prediction and replace worst point
-        IF (RCurrentVar(ind).LE.TINY.AND.IRefineMode(4).EQ.1) THEN!We have reached zero D-W factor, skip the prediction
+        IF (RCurrentVar(ind).LE.TINY.AND.IVariableType.EQ.4) THEN!We have reached zero D-W factor, skip the prediction
           IF (my_rank.EQ.0) PRINT*,"Using zero Debye Waller factor, refining next variable"
         ELSE
           CALL Parabo3(Rvar,Rfit,RvarMin,RfitMin,IErr)
@@ -929,7 +946,6 @@ PROGRAM Felixrefine
       END DO
       !shrink length scale as we progress, by a smaller amount depending on the no of variables: 1->1/2; 2->3/4; 3->5/6; 4->7/8; 5->9/10;
       RPscale=RPscale*(1.0-1.0/(2.0*REAL(INoOfVariables)))
-      !RPscale=RPscale*0.85
       !improvement in fit, but only when we refine individual variables
       IF (RBestFit.LT.RLastFit.AND.I45.EQ.0) THEN
         Rdf=RLastFit-RBestFit 
