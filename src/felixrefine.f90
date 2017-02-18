@@ -924,7 +924,7 @@ PROGRAM Felixrefine
           !replace worst point with parabolic prediction and put into RIndependentVariable
           Rvar(jnd)=RvarMin
           !IF (Rvar(jnd).LE.-RVar0(ind).AND.IRefineMode(3).EQ.1) Rvar(jnd)=-RVar0(ind)!Check that occupancy is not less than zero (apart from H??)
-          IF (Rvar(jnd).LE.-RVar0(ind).AND.IRefineMode(4).EQ.1) Rvar(jnd)=-RVar0(ind)!Check that D-W factor is not less than zero
+          IF (Rvar(jnd).LE.-RVar0(ind).AND.IVariableType.EQ.4) Rvar(jnd)=-RVar0(ind)!Check that D-W factor is not less than zero
           RCurrentVar=RVar0+RPvec*Rvar(jnd)
           CALL SimulateAndFit(RCurrentVar,Iter,IExitFLAG,IErr)
           Iter=Iter+1

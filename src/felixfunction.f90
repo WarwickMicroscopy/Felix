@@ -527,7 +527,7 @@ SUBROUTINE PrintVariables(IErr)
       CASE(4)
         PRINT*,"Current Isotropic Debye Waller Factors"
         DO jnd = 1,SIZE(RBasisIsoDW,DIM=1)
-          WRITE(SPrintString,FMT='(A2,1X,F9.6)') SBasisAtomName(jnd),RBasisIsoDW(jnd)
+          WRITE(SPrintString,FMT='(A2,1X,F6.3)') SBasisAtomName(jnd),RBasisIsoDW(jnd)
           PRINT*,TRIM(ADJUSTL(SPrintString))
         END DO
 
