@@ -63,9 +63,6 @@ SUBROUTINE ReadInput(IErr)
           " in ReadInpFile()"
      RETURN
   ENDIF
-
-  CALL Message("ReadInput",IMust,IErr)
-
   !felix.hkl
   CALL ReadHklFile(IErr)
   IF( IErr.NE.0 ) THEN

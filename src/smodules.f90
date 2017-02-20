@@ -39,9 +39,9 @@
 !--------------------------------------------------------------------
 MODULE CConst
 
-  CHARACTER*30, PARAMETER :: RStr= "Version: VERSION / BUILD / RLSSTATUS"
-  CHARACTER*30, PARAMETER :: DStr= "Date: DATE / TIME"
-  CHARACTER*40, PARAMETER :: AStr= "Status: AUTHOR"
+  CHARACTER*50, PARAMETER :: RStr= "Version: master / BUILD / Alpha"
+  CHARACTER*50, PARAMETER :: DStr= "Date: 12-01-2017"
+  CHARACTER*50, PARAMETER :: AStr= "Status: Parabolic refinement working"
   
   CHARACTER*8 CSpaceGrp(230)
   DATA CSpaceGrp/"P1","P-1","P2","P21","C2","Pm","Pc","Cm",&
@@ -104,7 +104,7 @@ MODULE IConst
        IParallelFLAG=0,&
        IRandomFLAG = 1, &
        IFixedSeed = 123456787,&
-       IRefinementVariableTypes = 12,&
+       IRefinementVariableTypes = 10,&
        NElements=103
 
   !PriorityFLAG values - to match to the WriteFLAG - will change eventually,
@@ -149,7 +149,7 @@ MODULE IPara
        IHolzFLAG,IAbsorbFLAG, IAnisoDebyeWallerFactorFlag, &
        IImageFLAG,IBeamConvergenceFLAG,IDevFLAG, &
        IRefineModeFLAG,ISoftwareMode,IHKLSelectFLAG,IPrint,IRefineSwitch,&
-       IWeightingFLAG,IContinueFLAG,ICorrelationFLAG,IImageProcessingFLAG,&
+       IWeightingFLAG,IMethodFLAG,ICorrelationFLAG,IImageProcessingFLAG,&
        IByteSize
   !Minimum Reflections etc
   INTEGER(IKIND) :: IMinReflectionPool,IMinStrongBeams,IMinWeakBeams
@@ -313,16 +313,12 @@ END MODULE RPara
 MODULE CPara
   USE MyNumbers
 
-  COMPLEX(CKIND), DIMENSION(:,:), ALLOCATABLE :: &
-       CUgMatNoAbs,CUgMatPrime,CUgMat, CUgSgMatrix,CEigenValuesChunk
+  COMPLEX(CKIND), DIMENSION(:,:), ALLOCATABLE :: CUgMatNoAbs,CUgMatPrime,CUgMat,CUgSgMatrix,CEigenValuesChunk
   COMPLEX(CKIND), DIMENSION(:,:,:), ALLOCATABLE :: CEigenVectorsChunk
-  COMPLEX(CKIND),DIMENSION(:),ALLOCATABLE :: &
-       CAlphaWeightingCoefficients, CPsi0,CUniqueUg
-  COMPLEX(CKIND),DIMENSION(:,:), ALLOCATABLE :: &
-       CEigenValueDependentTerms,CInvertedEigenVectors, &
+  COMPLEX(CKIND),DIMENSION(:),ALLOCATABLE :: CAlphaWeightingCoefficients, CPsi0,CUniqueUg
+  COMPLEX(CKIND),DIMENSION(:,:), ALLOCATABLE :: CEigenValueDependentTerms,CInvertedEigenVectors, &
        CBeamProjectionMatrix,CDummyBeamMatrix
-  COMPLEX(CKIND),DIMENSION(:),ALLOCATABLE :: &
-       CEigenValues,CGammaValues, CWaveFunctions,CFullWaveFunctions
+  COMPLEX(CKIND),DIMENSION(:),ALLOCATABLE :: CEigenValues,CGammaValues, CWaveFunctions,CFullWaveFunctions
   COMPLEX(CKIND),DIMENSION(:,:),ALLOCATABLE :: CEigenVectors
   COMPLEX(CKIND), DIMENSION(:,:,:), ALLOCATABLE :: CAmplitudeandPhase
 
@@ -345,11 +341,8 @@ MODULE IChannels
        IChOutEV= 43, IChOutEX= 44, &
        IChOutUM= 45, IChOut=46, &
        IChInImage = 51
-  INTEGER :: IChOutWF_MPI, IChOutWI_MPI, &
-       IChOutES_MPI, IChOutUM_MPI, &
-       IChOut_MPI 
-  INTEGER, PARAMETER :: &
-       IChOutWFImageReal= 47, IChOutWFImagePhase= 48, &
+  INTEGER :: IChOutWF_MPI,IChOutWI_MPI,IChOutES_MPI,IChOutUM_MPI,IChOut_MPI 
+  INTEGER, PARAMETER :: IChOutWFImageReal= 47, IChOutWFImagePhase= 48, &
        IChOutWIImage= 49, MontageOut = 50,IChOutSimplex = 52
 END MODULE IChannels
 !--------------------------------------------------------------------

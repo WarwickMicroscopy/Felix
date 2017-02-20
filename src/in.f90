@@ -32,10 +32,6 @@
 !
 !%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-!%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-! $Id: out.f90,v 1.59 2014/04/28 12:26:19 phslaz Exp $
-!%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-
 !-----------------------------------------------------------------------
 !ReadInputParameters: Read the input file
 !
@@ -64,43 +60,21 @@ SUBROUTINE ReadInpFile( IErr )
        SAtomicSites,SFormatString,SLengthofNumberString
   CHARACTER*200 :: SDirectionX,SIncidentBeamDirection,SNormalDirectionX
 
-
   OPEN(UNIT= IChInp, ERR= 120, FILE= "felix.inp",STATUS= 'OLD')
   ILine= 1
 
 
   ! ----------------------------------------------------------------------
-  ! introductory comment lines
-
+  ! There are six introductory comment lines which are ignored
   ILine= ILine+1; READ(IChInp,ERR=20,END=30,FMT='(A)')
   ILine= ILine+1; READ(IChInp,ERR=20,END=30,FMT='(A)')
   ILine= ILine+1; READ(IChInp,ERR=20,END=30,FMT='(A)')
-
-  ! ----------------------------------------------------------------------
-  ! BLOCH method input
-
   ILine= ILine+1; READ(IChInp,ERR=20,END=30,FMT='(A)') 
   ILine= ILine+1; READ(IChInp,ERR=20,END=30,FMT='(A)')
-
-  ! ----------------------------------------------------------------------
-  ! control flags
-
   ILine= ILine+1; READ(IChInp,ERR=20,END=30,FMT='(A)')
-
-  ILine= ILine+1
-  READ(IChInp,10,ERR=20,END=30) IWriteFLAG
-
-!!$If the user wants to print out the normal sim messages 
-!!$for debugging, they need to select a WriteFlag of above 100
-  IF ((IWriteFLAG.GE.100).AND.(ISoftwareMode.EQ.2)) THEN
-     IRefineSwitch = 3
-  ELSE
-     IRefineSwitch = 2
-  END IF
-
-  CALL Message ("ReadInpFile",IMust,IErr)
-  CALL Message ("ReadInpFile",IInfo,IErr,MessageVariable="IWriteFLAG",IVariable=IWriteFLAG)
-
+  ! -----IWriteFLAG-----------------------------------------------------------------
+  ILine= ILine+1; READ(IChInp,10,ERR=20,END=30) IWriteFLAG
+  ! -----IImageFLAG-----------------------------------------------------------------
   ILine= ILine+1
   READ(IChInp,FMT='(A)',ERR=20,END=30) SImageMode
   IPos = 0
@@ -139,272 +113,173 @@ SUBROUTINE ReadInpFile( IErr )
   CASE (3)
      IImageFlag = 6
   END SELECT
-
-  CALL Message ("ReadInpFile",IInfo,IErr,MessageVariable ="IImageFLAG",IVariable=IImageFLAG)
-
-  ILine= ILine+1
-  READ(IChInp,10,ERR=20,END=30) IScatterFactorMethodFLAG
-  CALL Message ("ReadInpFile",IInfo,IErr,MessageVariable ="IScatterFactorMethodFLAG",IVariable=IScatterFactorMethodFLAG)
+  ! -----IScatterFactorMethodFLAG-----------------------------------------------------------------
+  ILine= ILine+1; READ(IChInp,10,ERR=20,END=30) IScatterFactorMethodFLAG
   IF(my_rank.EQ.0.AND.IWriteFLAG.EQ.7) PRINT*,"IScatterFactorMethodFLAG=",IScatterFactorMethodFLAG
-  
-  ILine= ILine+1
-  READ(IChInp,10,ERR=20,END=30) IMaskFLAG
-  CALL Message ("ReadInpFile",IInfo,IErr,MessageVariable ="IMaskFLAG",IVariable=IMaskFLAG)
+  ! -----IMaskFLAG-----------------------------------------------------------------
+  ILine= ILine+1; READ(IChInp,10,ERR=20,END=30) IMaskFLAG
+  !!!CALL Message ("ReadInpFile",IInfo,IErr,MessageVariable ="IMaskFLAG",IVariable=IMaskFLAG)
   IF(my_rank.EQ.0.AND.IWriteFLAG.EQ.7) PRINT*,"IMaskFLAG=",IMaskFLAG
-  
-  ILine= ILine+1
-  READ(IChInp,10,ERR=20,END=30) IHolzFLAG
-  CALL Message ("ReadInpFile",IInfo,IErr,MessageVariable ="IHolzFLAG",IVariable=IHolzFLAG)
+  ! -----IHolzFLAG-----------------------------------------------------------------
+  ILine= ILine+1; READ(IChInp,10,ERR=20,END=30) IHolzFLAG
+  !!!CALL Message ("ReadInpFile",IInfo,IErr,MessageVariable ="IHolzFLAG",IVariable=IHolzFLAG)
   IF(my_rank.EQ.0.AND.IWriteFLAG.EQ.7) PRINT*,"IHolzFLAG=",IHolzFLAG
-  
-  ILine= ILine+1
-  READ(IChInp,10,ERR=20,END=30) IAbsorbFLAG
-  CALL Message ("ReadInpFile",IInfo,IErr,MessageVariable ="IAbsorbFLAG",IVariable=IAbsorbFLAG)
+  ! -----IAbsorbFLAG-----------------------------------------------------------------
+  ILine= ILine+1; READ(IChInp,10,ERR=20,END=30) IAbsorbFLAG
+  !!!CALL Message ("ReadInpFile",IInfo,IErr,MessageVariable ="IAbsorbFLAG",IVariable=IAbsorbFLAG)
   IF(my_rank.EQ.0.AND.IWriteFLAG.EQ.7) PRINT*,"IAbsorbFLAG=",IAbsorbFLAG
-
-  ILine= ILine+1
-  READ(IChInp,10,ERR=20,END=30) IAnisoDebyeWallerFactorFlag
-  CALL Message ("ReadInpFile",IInfo,IErr,MessageVariable ="IAnisoDebyeWallerFactorFlag",IVariable=IAnisoDebyeWallerFactorFlag)
+  ! -----IAnisoDebyeWallerFactorFlag-----------------------------------------------------------------
+  ILine= ILine+1; READ(IChInp,10,ERR=20,END=30) IAnisoDebyeWallerFactorFlag
+  !!!CALL Message ("ReadInpFile",IInfo,IErr,MessageVariable ="IAnisoDebyeWallerFactorFlag",IVariable=IAnisoDebyeWallerFactorFlag)
   IF(my_rank.EQ.0.AND.IWriteFLAG.EQ.7) PRINT*,"IAnisoDebyeWallerFactorFlag=",IAnisoDebyeWallerFactorFlag
-
-  ILine= ILine+1
-  READ(IChInp,10,ERR=20,END=30) IByteSize
-  CALL Message ("ReadInpFile",IInfo,IErr,MessageVariable ="IByteSize",IVariable=IByteSize)
+  ! -----IByteSize-----------------------------------------------------------------depends on system being used, 8 for csc,4 for tinis
+  ILine= ILine+1; READ(IChInp,10,ERR=20,END=30) IByteSize
+  !!!CALL Message ("ReadInpFile",IInfo,IErr,MessageVariable ="IByteSize",IVariable=IByteSize)
   IF(my_rank.EQ.0.AND.IWriteFLAG.EQ.7) PRINT*,"IByteSize=",IByteSize
 
-  ! ----------------------------------------------------------------------
-  ! beam details
+  ! ----Two comment lines----------------------# radius of the beam in pixels
   ILine= ILine+1; READ(IChInp,ERR=20,END=30,FMT='(A)')
   ILine= ILine+1; READ(IChInp,ERR=20,END=30,FMT='(A)')
-
-  ILine= ILine+1
-  READ(IChInp,10,ERR=20,END=30) IPixelCount
-  CALL Message ("ReadInpFile",IInfo,IErr,MessageVariable ="IPixelCount",IVariable=IPixelCount)
+  ! -----IPixelCount-----------------------------------------------------------------
+  ILine= ILine+1; READ(IChInp,10,ERR=20,END=30) IPixelCount
   IF(my_rank.EQ.0.AND.IWriteFLAG.EQ.7) PRINT*,"IPixelCount=",IPixelCount
 
-
-  ! ----------------------------------------------------------------------
-  ! beam selection criteria
+  ! ----Two comment lines----------------------# beam selection criteria
   ILine= ILine+1; READ(IChInp,ERR=20,END=30,FMT='(A)')
   ILine= ILine+1; READ(IChInp,ERR=20,END=30,FMT='(A)')
-
-  ILine= ILine+1
-  READ(IChInp,10,ERR=20,END=30) IMinReflectionPool
-  CALL Message ("ReadInpFile",IInfo,IErr,MessageVariable ="IMinReflectionPool",IVariable=IMinReflectionPool)
+  ! -----IMinReflectionPool-----------------------------------------------------------------
+  ILine= ILine+1; READ(IChInp,10,ERR=20,END=30) IMinReflectionPool
   IF(my_rank.EQ.0.AND.IWriteFLAG.EQ.7) PRINT*,"IMinReflectionPool=",IMinReflectionPool
-
-  ILine= ILine+1
-  READ(IChInp,10,ERR=20,END=30) IMinStrongBeams
-  CALL Message ("ReadInpFile",IInfo,IErr,MessageVariable ="IMinStrongBeams",IVariable=IMinStrongBeams)
+  ! -----IMinStrongBeams-----------------------------------------------------------------
+  ILine= ILine+1; READ(IChInp,10,ERR=20,END=30) IMinStrongBeams
   IF(my_rank.EQ.0.AND.IWriteFLAG.EQ.7) PRINT*,"IMinStrongBeams=",IMinStrongBeams
-
+  ! -----IMinWeakBeams-----------------------------------------------------------------
   ILine= ILine+1
   READ(IChInp,10,ERR=20,END=30) IMinWeakBeams
-  CALL Message ("ReadInpFile",IInfo,IErr,MessageVariable ="IMinWeakBeams",IVariable=IMinWeakBeams)
   IF(my_rank.EQ.0.AND.IWriteFLAG.EQ.7) PRINT*,"IMinWeakBeams=",IMinWeakBeams
 
-  ! ----------------------------------------------------------------------
-  ! crystal settings
+  ! ----Two comment lines----------------------# crystal settings
   ILine= ILine+1; READ(IChInp,ERR=20,END=30,FMT='(A)')
   ILine= ILine+1; READ(IChInp,ERR=20,END=30,FMT='(A)')
-  ILine= ILine+1
-  READ(IChInp,15,ERR=20,END=30) RDebyeWallerConstant
-  CALL Message ("ReadInpFile",IInfo,IErr,MessageVariable ="RDebyeWallerConstant",RVariable=RDebyeWallerConstant)
-
-  !NB Mean Square Displacement= RDebyeWallerConstant/(8*PI**2)
-
+  ! -----RDebyeWallerConstant-----------------------------------------------------------------default, if not specified in .cif
+  ILine= ILine+1; READ(IChInp,15,ERR=20,END=30) RDebyeWallerConstant
+  ! -----RAbsorptionPercentage-----------------------------------------------------------------for proportional model of absorption
   ILine= ILine+1
   READ(IChInp,15,ERR=20,END=30) RAbsorptionPercentage
-  CALL Message ("ReadInpFile",IInfo,IErr,MessageVariable ="RAbsorptionPercentage",RVariable=RAbsorptionPercentage)
 
-
-  ! ----------------------------------------------------------------------
-  ! microscopy settings
-
+  ! ----Two comment lines----------------------# microscope settings
   ILine= ILine+1; READ(IChInp,ERR=20,END=30,FMT='(A)')
   ILine= ILine+1; READ(IChInp,ERR=20,END=30,FMT='(A)')
-
-  ILine= ILine+1
-  READ(IChInp,15,ERR=20,END=30) RConvergenceAngle
-  CALL Message ("ReadInpFile",IInfo,IErr,MessageVariable ="ROuterConvergenceAngle",RVariable=RConvergenceAngle)
-
-
-  ! RZDirC,RXDirC,RNormDirC vectors are reciprocal lattice vectors that define the beam direction, x-axis of the
-  ! diffraction pattern and the surface normal respectively
-  ILine= ILine+1
-  READ(IChInp,FMT='(27X,A)',END=30) SIncidentBeamDirection
-  CALL Message ("ReadInpFile",IInfo,IErr,MessageVariable ="IIncidentBeamDirection", &
-       MessageString=ADJUSTL(TRIM(SIncidentBeamDirection)))
+  ! -----RConvergenceAngle-----------------------------------------------------------------
+  ILine= ILine+1; READ(IChInp,15,ERR=20,END=30) RConvergenceAngle
+   ! -----SIncidentBeamDirection-----------------------------------------------------------------IIncidentBeamDirection
+  ILine= ILine+1; READ(IChInp,FMT='(27X,A)',END=30) SIncidentBeamDirection
   CALL ThreeDimVectorReadIn(SIncidentBeamDirection,'[',']',RZDirC)
-  CALL Message ("ReadInpFile",IInfo+IDebug,IErr,MessageVariable ="RZDirC",RVector=RZDirC)
-
-  ILine= ILine+1
-  READ(IChInp,FMT='(27X,A)',END=30) SDirectionX
-  CALL Message ("ReadInpFile",IInfo,IErr,MessageVariable ="IDirection", &
-       MessageString=ADJUSTL(TRIM(SDirectionX)))
+  ! -----SDirectionX-----------------------------------------------------------------IXDirection
+  ILine= ILine+1; READ(IChInp,FMT='(27X,A)',END=30) SDirectionX
   CALL ThreeDimVectorReadIn(SDirectionX,'[',']',RXDirC)
-  CALL Message ("ReadInpFile",IInfo+IDebug,IErr,MessageVariable ="RXDirC",RVector=RXDirC)
-
-
-  ILine= ILine+1
-  READ(IChInp,FMT='(27X,A)',ERR=20,END=30) SNormalDirectionX
-  CALL Message ("ReadInpFile",IInfo,IErr,MessageVariable ="INormalDirection", &
-       MessageString=ADJUSTL(TRIM(SNormalDirectionX)))
+  ! -----SNormalDirectionX-----------------------------------------------------------------INormalDirection
+  ILine= ILine+1; READ(IChInp,FMT='(27X,A)',ERR=20,END=30) SNormalDirectionX
   CALL ThreeDimVectorReadIn(SNormalDirectionX,'[',']',RNormDirC)
-  CALL Message ("ReadInpFile",IInfo+IDebug,IErr,MessageVariable ="RNormDirC",RVector=RNormDirC)
+  ! -----RAcceleratingVoltage-----------------------------------------------------------------
+  ILine= ILine+1; READ(IChInp,15,ERR=20,END=30) RAcceleratingVoltage
+  ! -----RAcceptanceAngle-----------------------------------------------------------------
+  ILine=ILine+1; READ(IChInp,15,ERR=20,END=30) RAcceptanceAngle
 
-  ILine= ILine+1
-  READ(IChInp,15,ERR=20,END=30) RAcceleratingVoltage
-  CALL Message ("ReadInpFile",IInfo+IDebug,IErr,MessageVariable ="RAcceleratingVolatage",RVariable=RAcceleratingVoltage)
-
-  ILine=ILine+1
-  READ(IChInp,15,ERR=20,END=30) RAcceptanceAngle
-  CALL Message ("ReadInpFile",IInfo,IErr,MessageVariable ="RAcceptanceAngle",RVariable=RAcceptanceAngle)
-
-  ! ----------------------------------------------------------------------
-  ! Title Space
+  ! ----Two comment lines----------------------# specimen thickness
   ILine= ILine+1; READ(IChInp,ERR=20,END=30,FMT='(A)')
   ILine= ILine+1; READ(IChInp,ERR=20,END=30,FMT='(A)')
+  ! -----RInitialThickness-----------------------------------------------------------------
+  ILine= ILine+1; READ(IChInp,15,ERR=20,END=30) RInitialThickness
+  ! -----RFinalThickness-----------------------------------------------------------------
+  ILine= ILine+1; READ(IChInp,15,ERR=20,END=30) RFinalThickness
+  ! -----RDeltaThickness-----------------------------------------------------------------
+  ILine= ILine+1; READ(IChInp,15,ERR=20,END=30) RDeltaThickness
+  ! -----INoOfLacbedPatterns-----------------------------------------------------------------
+  ILine= ILine+1; READ(IChInp,10,ERR=20,END=30) INoOfLacbedPatterns
 
-  ! ----------------------------------------------------------------------
-  ! Image Output Options
-  ILine= ILine+1
-  READ(IChInp,15,ERR=20,END=30) RInitialThickness
-  CALL Message ("ReadInpFile",IInfo,IErr,MessageVariable ="RInitialThickness",RVariable=RInitialThickness)
-  IF(my_rank.EQ.0.AND.IWriteFLAG.EQ.7) PRINT*,"RInitialThickness=",RInitialThickness
-
-  ILine= ILine+1
-  READ(IChInp,15,ERR=20,END=30) RFinalThickness
-  CALL Message ("ReadInpFile",IInfo,IErr,MessageVariable ="RFinalThickness",RVariable=RFinalThickness)
-  IF(my_rank.EQ.0.AND.IWriteFLAG.EQ.7) PRINT*,"RFinalThickness=",RFinalThickness
-
-  ILine= ILine+1
-  READ(IChInp,15,ERR=20,END=30) RDeltaThickness
-  CALL Message ("ReadInpFile",IInfo,IErr,MessageVariable ="RDeltaThickness",RVariable=RDeltaThickness)
-  IF(my_rank.EQ.0.AND.IWriteFLAG.EQ.7) PRINT*,"RDeltaThickness=",RDeltaThickness
-
-  ILine= ILine+1
-  READ(IChInp,10,ERR=20,END=30) INoOfLacbedPatterns
-  CALL Message ("ReadInpFile",IInfo,IErr,MessageVariable ="INoOfLacbedPatterns",IVariable=INoOfLacbedPatterns)
-  IF(my_rank.EQ.0.AND.IWriteFLAG.EQ.7) PRINT*,"INoOfLacbedPatterns=",INoOfLacbedPatterns
-
-  !-----------------------------------------------------------------------
-  ! felixrefine Input
-  ! Needs Removal
-  IF(ISoftwareMode.EQ.2) THEN
-
-     !-----------------------------------------------------------------------
-     ! Refinement Specific Flags
-     ILine= ILine+1; READ(IChInp,ERR=20,END=30,FMT='(A)')  
-     ILine= ILine+1; READ(IChInp,ERR=20,END=30,FMT='(A)')
-     ILine= ILine+1
-     READ(IChInp,FMT='(A)',ERR=20,END=30) SRefineMode
-
-     !Simulation Mode for input of "S"
-     IF(SCAN(TRIM(ADJUSTL(SRefineMode)),TRIM(ADJUSTL(CAlphabet(19)))).NE.0) THEN
-        ISimFLAG=1
-     ELSE
-        ISimFLAG=0
-        SRefineMode = SRefineMode((SCAN(SRefineMode,"=")+1):)
-        IRefineMode = 0
-        DO ind = 1,IRefinementVariableTypes
-           IF(SCAN(TRIM(ADJUSTL(SRefineMode)),TRIM(ADJUSTL(CAlphabet(ind)))).NE.0) THEN
-              IRefineMode(ind) = 1
-           END IF
-        END DO
-
-        IF((IWriteFLAG.GE.0.AND.my_rank.EQ.0).OR.IWriteFLAG.GE.10) THEN
-           IF(IRefineMode(1).EQ.1) PRINT*, "A:Refining Structure Factors by Simplex"
-           IF(IRefineMode(2).EQ.1) PRINT*, "B:Refining Atomic Coordinates"
-           IF(IRefineMode(3).EQ.1) PRINT*, "C:Refining Occupancies "
-           IF(IRefineMode(4).EQ.1) PRINT*, "D:Refining Isotropic Debye Waller Factors"
-           IF(IRefineMode(5).EQ.1) PRINT*, "E:Refining Anisotropic Debye Waller Factors "
-           IF(IRefineMode(6).EQ.1) PRINT*, "F:Refining Lattice Lengths "
-           IF(IRefineMode(7).EQ.1) PRINT*, "G:Refining Lattice Angles "
-           IF(IRefineMode(8).EQ.1) PRINT*, "H:Refining Convergence Angle "
-           IF(IRefineMode(9).EQ.1) PRINT*, "I:Refining Absorption"
-           IF(IRefineMode(10).EQ.1) PRINT*,"J:Refining Accelerating Voltage "
-           IF(IRefineMode(11).EQ.1) PRINT*,"K:Refining Scale Factor "
-           IF(IRefineMode(12).EQ.1) PRINT*,"L:Refining Structure Factors by bisection"
-           IF(ISimFlag.EQ.1) PRINT*,"S:Simulation mode"
-        END IF
-
-        !Check if user has requested Ug refinement and anything else which isnt possible
-
-        IF((IRefineMode(1).EQ.1 .OR. IRefineMode(12).EQ.1).AND.SUM(IRefineMode).GT.1) THEN         
-           IF(my_rank.EQ.0) THEN
-              PRINT*,"Structure factors must be refined separately"
-           END IF
-           IErr = 1
-           RETURN
-        END IF
-     END IF
-
-     ILine= ILine+1
-     READ(IChInp,10,ERR=20,END=30) IWeightingFLAG
-     CALL Message ("ReadInpFile",IInfo,IErr,MessageVariable ="IWeightingFLAG",IVariable=IWeightingFLAG)
-
-     ILine= ILine+1
-     READ(IChInp,10,ERR=20,END=30) IContinueFLAG
-     CALL Message ("ReadInpFile",IInfo,IErr,MessageVariable ="IContinueFLAG",IVariable=IContinueFLAG)
-
-     ILine= ILine+1
-     READ(IChInp,10,ERR=20,END=30) ICorrelationFLAG
-     CALL Message ("ReadInpFile",IInfo,IErr,MessageVariable ="ICorrelationFLAG",IVariable=ICorrelationFLAG)
-
-     ILine= ILine+1
-     READ(IChInp,10,ERR=20,END=30) IImageProcessingFLAG
-     CALL Message ("ReadInpFile",IInfo,IErr,MessageVariable ="IImageProcessingFLAG",IVariable=IImageProcessingFLAG)
-
-     ILine= ILine+1
-     READ(IChInp,15,ERR=20,END=30) RBlurRadius
-     CALL Message ("ReadInpFile",IInfo,IErr,MessageVariable ="RBlurRadius",RVariable = RBlurRadius)
-
-     ILine = ILine+1
-     READ(IChInp,10,ERR=20,END=30) INoofUgs
-     CALL Message ("ReadInpFile",IInfo,IErr,MessageVariable ="INoofUgs",IVariable = INoofUgs)
-
-     !-----------------------------------------------------------------------
-     ! Iterative Structural input
-
-     ILine=ILine+1
-     READ(IChInp,FMT='(A)',ERR=20,END=30) SAtomicSites
-
-     CALL DetermineRefineableAtomicSites(SAtomicSites,IErr)
-     IF( IErr.NE.0 ) THEN
-        PRINT*,"ReadInpFile(): error in DetermineRefineableAtomicSites()"
-        RETURN
-     END IF
-
-     ILine= ILine+1
-     READ(IChInp,10,ERR=20,END=30) IPrint
-     CALL Message ("ReadInpFile",IInfo,IErr,MessageVariable ="IPrint",IVariable = IPrint)
-
-     ILine= ILine+1
-     READ(IChInp,15,ERR=20,END=30) RSimplexLengthScale
-     CALL Message ("ReadInpFile",IInfo,IErr,MessageVariable ="RSimplexLengthScale",RVariable = RSimplexLengthScale)
-     RSimplexLengthScale = RSimplexLengthScale/100.0
-
-     ILine= ILine+1
-     READ(IChInp,15,ERR=20,END=30) RExitCriteria
-     CALL Message ("ReadInpFile",IInfo,IErr,MessageVariable ="RExitCriteria",RVariable = RExitCriteria)
+  ! ----Two comment lines----------------------# Refinement Specific Flags
+  ILine= ILine+1; READ(IChInp,ERR=20,END=30,FMT='(A)')  
+  ILine= ILine+1; READ(IChInp,ERR=20,END=30,FMT='(A)')
+  ! -----IRefineModeFLAG-----------------------------------------------------------------
+  ILine= ILine+1; READ(IChInp,FMT='(A)',ERR=20,END=30) SRefineMode
+  IF(SCAN(TRIM(ADJUSTL(SRefineMode)),TRIM(ADJUSTL(CAlphabet(19)))).NE.0) THEN
+    ISimFLAG=1!Simulation only
+  ELSE
+    ISimFLAG=0
+    SRefineMode = SRefineMode((SCAN(SRefineMode,"=")+1):)
+    IRefineMode = 0
+    DO ind = 1,IRefinementVariableTypes
+      IF(SCAN(TRIM(ADJUSTL(SRefineMode)),TRIM(ADJUSTL(CAlphabet(ind)))).NE.0) THEN
+        IRefineMode(ind) = 1
+      END IF
+    END DO
+    IF(my_rank.EQ.0) THEN
+      IF(IRefineMode(1).EQ.1) PRINT*, "A:Refining Structure Factors"
+      IF(IRefineMode(2).EQ.1) PRINT*, "B:Refining Atomic Coordinates"
+      IF(IRefineMode(3).EQ.1) PRINT*, "C:Refining Occupancies "
+      IF(IRefineMode(4).EQ.1) PRINT*, "D:Refining Isotropic Debye Waller Factors"
+      IF(IRefineMode(5).EQ.1) PRINT*, "E:Refining Anisotropic Debye Waller Factors "
+      IF(IRefineMode(6).EQ.1) PRINT*, "F:Refining Lattice Lengths "
+      IF(IRefineMode(7).EQ.1) PRINT*, "G:Refining Lattice Angles "
+      IF(IRefineMode(8).EQ.1) PRINT*, "H:Refining Convergence Angle"
+      IF(IRefineMode(9).EQ.1) PRINT*, "I:Refining Absorption"
+      IF(IRefineMode(10).EQ.1) PRINT*,"J:Refining Accelerating Voltage "
+      !IF(IRefineMode(11).EQ.1) PRINT*,"K:Refinement by parabola"
+      !IF(IRefineMode(12).EQ.1) PRINT*,"L:Refining Structure Factors by bisection"
+      IF(ISimFlag.EQ.1) PRINT*,"S:Simulation mode"
+    END IF
+    !Check if user has requested Ug refinement and anything else which isnt possible
+    IF((IRefineMode(1).EQ.1).AND.SUM(IRefineMode).GT.1) THEN         
+      IF(my_rank.EQ.0) THEN
+        PRINT*,"Structure factors must be refined separately"
+      END IF
+      IErr = 1
+      RETURN
+    END IF
   END IF
+  ! -----IWeightingFLAG-----------------------------------------------------------------
+  ILine= ILine+1; READ(IChInp,10,ERR=20,END=30) IWeightingFLAG
+  ! -----IMethodFLAG-----------------------------------------------------------------
+  ILine= ILine+1; READ(IChInp,10,ERR=20,END=30) IMethodFLAG
+  IF (my_rank.EQ.0) THEN
+      IF(IMethodFLAG.EQ.1) PRINT*, "Refining by Simplex"
+      IF(IMethodFLAG.EQ.2) PRINT*, "Refining by Bisection"
+      IF(IMethodFLAG.EQ.3) PRINT*, "Refining by Parabola"
+  END IF  
+  ! -----ICorrelationFLAG: 0=phase,1=sumSq,2=NormalisedCC,3=masked
+  ILine= ILine+1; READ(IChInp,10,ERR=20,END=30) ICorrelationFLAG
+  ! -----IImageProcessingFLAG: 0=no processing,1=sqrt,2=log,4=Gaussian blur
+  ILine= ILine+1; READ(IChInp,10,ERR=20,END=30) IImageProcessingFLAG
+  ! -----RBlurRadius-----------------------------------------------------------------
+  ILine= ILine+1; READ(IChInp,15,ERR=20,END=30) RBlurRadius
+  ! -----INoofUgs-----------------------------------------------------------------
+  ILine= ILine+1; READ(IChInp,10,ERR=20,END=30) INoofUgs
+  ! -----SAtomicSites-----------------------------------------------------------------
+  ILine=ILine+1; READ(IChInp,FMT='(A)',ERR=20,END=30) SAtomicSites
+  CALL DetermineRefineableAtomicSites(SAtomicSites,IErr)
+  IF( IErr.NE.0 ) THEN
+    PRINT*,"ReadInpFile(): error in DetermineRefineableAtomicSites()"
+    RETURN
+  END IF
+  ! -----IPrint-----------------------------------------------------------------
+  ILine= ILine+1; READ(IChInp,10,ERR=20,END=30) IPrint
+  ! -----RSimplexLengthScale-----------------------------------------------------------------
+  ILine= ILine+1; READ(IChInp,15,ERR=20,END=30) RSimplexLengthScale
+  RSimplexLengthScale = RSimplexLengthScale/100.0
+  ! -----RExitCriteria-----------------------------------------------------------------
+  ILine= ILine+1; READ(IChInp,15,ERR=20,END=30) RExitCriteria
 
 10 FORMAT(27X,I15.1)
-  ! 10	FORMAT("IMAXIteration= ",I15.1)
 15 FORMAT(27X,F18.9)
-  ! 15     FORMAT("IMAXIteration= ",F18.9)
 
   CLOSE(IChInp, ERR=130)
-
-  ! check the parameters for validity
 
   RETURN
 
   !	error in OPEN detected
 120 IF(my_rank.EQ.0) THEN
      PRINT*,"ReadInpFile(): ERR in OPEN"
-     PRINT*,""
      CALL WriteOutInputFile (IErr)
   END IF
   IErr=1
@@ -455,8 +330,6 @@ SUBROUTINE ReadScaFile( IErr )
 
   INTEGER IErr, ILine
 
-  CALL Message("ReadScaFile",IMust,IErr)
-  CALL Message("ReadScaFile",IInfo,IErr,MessageString="Reading in Scattering Factors")
   CALL ScatteringFactors(IScatterFactorMethodFLAG,IErr)
 
 END SUBROUTINE ReadScaFile
@@ -483,9 +356,6 @@ SUBROUTINE ReadHklFile(IErr)
 
   INTEGER(IKIND) :: ILine,IErr,h,k,l,ind,IPos1,IPos2
   CHARACTER*200 :: dummy1,dummy2,SPrintString
-
-  CALL Message ("ReadHklFile",IMust,IErr)  
-  CALL Message ("ReadHklFile",IInfo,IErr,MessageString ="Using hkl list")
 
   OPEN(Unit = IChInp,FILE="felix.hkl",STATUS='OLD',ERR=10)
   ILine = 0
@@ -534,17 +404,15 @@ SUBROUTINE ReadHklFile(IErr)
      RInputHKLs(ILine,2) = REAL(k,RKIND)
      RInputHKLs(ILine,3) = REAL(l,RKIND)   
 
-     IF((my_rank.EQ.0.AND.IWriteFLAG.GE.3).OR.IWriteFLAG.GE.10) THEN
+     IF(my_rank.EQ.0.AND.IWriteFLAG.EQ.6) THEN
         WRITE(SPrintString,'(3(I4.1,1X))') NINT(RInputHKLs(ILine,:))
         PRINT*,TRIM(ADJUSTL(SPrintString))
-        CALL Message ("ReadHklFile",IInfo,IErr,MessageVariable = "Input HKL is",MessageString = SPrintString) 
      END IF
   END DO
 
   RETURN
 
 10 IHKLSelectFLAG=0
-  CALL Message ("ReadHklFile",IInfo,IErr,MessageString = "Did not find .hkl file continuing in normal mode") 
   RETURN
 
 END SUBROUTINE ReadHklFile

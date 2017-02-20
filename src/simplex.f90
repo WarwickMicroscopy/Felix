@@ -20,7 +20,7 @@ SUBROUTINE NDimensionalDownhillSimplex(RSimplexVariable,y,mp,np,ndim,ftol,iter,R
   
   Rytry=ZERO!initial value, has no significance
 
-  IF(my_rank.EQ.0) THEN
+  IF(my_rank.EQ.0) THEN!why is this here, should be outside the subroutine?
 1   DO n=1,ndim !enter here when starting or have just overall contracted
       Rsum=0 !recalculate psum
       DO m=1,ndim+1
@@ -63,6 +63,7 @@ SUBROUTINE NDimensionalDownhillSimplex(RSimplexVariable,y,mp,np,ndim,ftol,iter,R
       psum = RESHAPE(RSimplexVariable(MAXLOC(y),:),SHAPE(psum)) ! psum = simplex point with highest correlation
       RSendPacket = [-10000.0_RKIND, psum, REAL(iter,RKIND)]
       CALL MPI_BCAST(RSendPacket,ndim+2,MPI_DOUBLE_PRECISION,0,MPI_COMM_WORLD,IErr)
+      !Simulate-------------------------------------------------------------
       CALL SimulateAndFit(psum,iter,1,IErr)
       Rytry=RFigureofMerit
       RETURN
@@ -124,6 +125,7 @@ SUBROUTINE NDimensionalDownhillSimplex(RSimplexVariable,y,mp,np,ndim,ftol,iter,R
             ENDDO
             RSendPacket = [10000.0_RKIND, psum, REAL(iter,RKIND)]
             CALL MPI_BCAST(RSendPacket,ndim+2,MPI_DOUBLE_PRECISION,0,MPI_COMM_WORLD,IErr)
+            !Simulate-------------------------------------------------------------
             CALL SimulateAndFit(psum,iter,0,IErr)
             y(i)=RFigureofMerit
           END IF
@@ -146,6 +148,7 @@ SUBROUTINE NDimensionalDownhillSimplex(RSimplexVariable,y,mp,np,ndim,ftol,iter,R
       END IF
       psum = RSendPacket(2:(ndim+1))
       iter = NINT(RSendPacket(ndim+2),KIND=IKIND)
+      !Simulate-------------------------------------------------------------
       CALL SimulateAndFit(psum,iter,IExitFLAG,IErr)
       Rytry=RFigureofMerit
       IF(IExitFLAG.EQ.1) RETURN
@@ -183,6 +186,7 @@ REAL(RKIND) FUNCTION SimplexExtrapolate(RSimplexVariable,y,psum,mp,np,ndim,ihi,f
   ENDDO
   RSendPacket = [10000.0_RKIND, ptry, REAL(iter,RKIND)]
   CALL MPI_BCAST(RSendPacket,ndim+2,MPI_DOUBLE_PRECISION,0,MPI_COMM_WORLD,IErr)
+  !Simulate-------------------------------------------------------------
   CALL SimulateAndFit(ptry,iter,0,IErr)
   Rytry=RFigureofMerit
       

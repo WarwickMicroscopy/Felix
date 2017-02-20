@@ -46,9 +46,7 @@ SUBROUTINE CrystallographyInitialisation( IErr )
   IMPLICIT NONE
 
   INTEGER(IKIND) :: IErr, ind
- 
-  CALL Message("CrystallographyInitialisation",IMust,IErr)
-     
+
   !Removed PseudoCubic translation
 
   CALL ReciprocalLattice(IErr)

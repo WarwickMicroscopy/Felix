@@ -56,13 +56,6 @@ SUBROUTINE EigenSpectrum(IMatrixDimension, MatrixToBeDiagonalised, EigenValues, 
   REAL(RKIND), DIMENSION(:), ALLOCATABLE :: WorkSpace
   EXTERNAL ZGEEV
 
-  IF (my_rank.EQ.0) THEN
-     DO WHILE (IMessageCounter .LT.5)
-        CALL Message("EigenSpectrum",IMust,IErr)
-        IMessageCounter = IMessageCounter +1
-     END DO
-  END IF
-
   ! ------------------------------------------------
   ! find optimum size of arrays
   WorkSpaceDimension=1

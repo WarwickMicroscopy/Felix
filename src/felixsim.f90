@@ -136,9 +136,8 @@ PROGRAM felixsim
      GOTO 9999
   ENDIF
   
-  CALL Message("felixsim",IMust,IErr)   
-  CALL Message("felixsim",IInfo,IErr, MessageVariable = "IMaxPossibleNAtomsUnitCell", &
-       IVariable = IMaxPossibleNAtomsUnitCell)
+  !CALL Message("felixsim",IMust,IErr)   
+  !CALL Message("felixsim",IInfo,IErr, MessageVariable = "IMaxPossibleNAtomsUnitCell", IVariable = IMaxPossibleNAtomsUnitCell)
 
   !-------------------------------------------------------------------- 
   !Setup Experimental Variables
@@ -221,9 +220,8 @@ PROGRAM felixsim
   WRITE(SLocalPixelCountMax,"(I6.1)")ILocalPixelCountMax
 
 
-  CALL Message("felixsim",IAllInfo,IErr,MessageString=": starting the eigenvalue problem")
-  CALL Message("felixsim",IAllInfo,IErr,MessageString="for lines " // &
-       TRIM(ADJUSTL(SLocalPixelCountMin)) // " to "// TRIM(ADJUSTL(SLocalPixelCountMax)))
+  !CALL Message("felixsim",IAllInfo,IErr,!MessageString=": starting the eigenvalue problem")
+  !CALL Message("felixsim",IAllInfo,IErr,!MessageString="for lines " // TRIM(ADJUSTL(SLocalPixelCountMin)) // " to "// TRIM(ADJUSTL(SLocalPixelCountMax)))
        
 
 !!$  IF((IWriteFLAG.GE.6.AND.my_rank.EQ.0).OR.IWriteFLAG.GE.10) THEN
@@ -281,15 +279,6 @@ PROGRAM felixsim
   IMAXCBuffer = 200000
   IPixelComputed= 0
   
-  IF((IWriteFLAG.GE.0.AND.my_rank.EQ.0.AND.ISoftwareMode.LT.2) &
-       .OR.IWriteFLAG.GE.10.AND.ISoftwareMode .LT. 2) THEN
-
-     PRINT*,"*********************************"
-     CALL Message("felixsim",ISilent,IErr,MessageString = " Entering BlochLoop")   
-     PRINT*,"*********************************"
-     
-  END IF
-  
   DO knd = ILocalPixelCountMin,ILocalPixelCountMax,1
      ind = IPixelLocations(knd,2)
      jnd = IPixelLocations(knd,1)
@@ -304,12 +293,6 @@ PROGRAM felixsim
 !!$     reset message counterF
   IMessageCounter = 0
 
-  CALL Message("felixsim",IAllInfo,IErr,&
-       MessageString="is exiting calculation loop")
-
-  !IF((IWriteFLAG.GE.6.AND.my_rank.EQ.0).OR.IWriteFLAG.GE.10) THEN
-  !   PRINT*,"felixsim : ",my_rank," is exiting calculation loop"
-  !END IF
 
   ALLOCATE(RSimulatedPatterns(INoOfLacbedPatterns,IThicknessCount,IPixelTotal),&
        STAT=IErr)

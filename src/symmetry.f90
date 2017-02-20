@@ -56,9 +56,6 @@ SUBROUTINE DetermineAllowedMovements(ISpaceGrp,SWyckoffSymbol,RVector,IVector,IE
   CHARACTER*1 :: SWyckoffSymbol
   REAL(RKIND),DIMENSION(IVector,ITHREE),INTENT(OUT) :: RVector
 
-  !Tells user, entering DetermineAllowedMovements
-  CALL Message("DetermineAllowedMovements",IMust,IErr)
-
   SELECT CASE(ISpaceGrp)
   CASE(1)
      SELECT CASE (SWyckoffSymbol)
@@ -350,9 +347,6 @@ SUBROUTINE CountAllowedMovements(ISpaceGrp,SWyckoffSymbol,IVectors,IErr)
   INTEGER(IKIND),INTENT(IN) :: ISpaceGrp
   INTEGER(IKIND) :: IVectors,IErr
   CHARACTER*1 :: SWyckoffSymbol
-
-  !Tells user, entering CountAllowedMovements
-  CALL Message("CountAllowedMovements",IMust,IErr)
   
   SELECT CASE(ISpaceGrp)
   CASE(1)
@@ -637,10 +631,6 @@ SUBROUTINE ConvertSpaceGroupToNumber(ISpaceGrp,IErr)
   INTEGER(IKIND),INTENT(OUT) :: ISpaceGrp
   CHARACTER(LEN(SSpaceGrp)) :: SSpaceGrpNoSpaces
   CHARACTER*20 :: SSpaceGrpToCompare
-       
-  
-  !Tells user, entering ConvertSpaceGroupToNumber
-  CALL Message("ConvertSpaceGroupToNumber",IMust,IErr)
 
 !!$  Push Spaces In SSpaceGrp to the end of the String
   
@@ -699,21 +689,16 @@ SUBROUTINE StrLowCase( Input_String,Output_String,IErr )
 
   IMPLICIT NONE
 
-  CHARACTER(*), INTENT(IN)     :: &
-       Input_String
-  CHARACTER(LEN(Input_String)) :: &
-       Output_String
-  CHARACTER(*),PARAMETER :: &
-       LOWER_CASE = 'abcdefghijklmnopqrstuvwxyz',&
+  CHARACTER(*), INTENT(IN) :: Input_String
+  CHARACTER(LEN(Input_String)) :: Output_String
+  CHARACTER(*),PARAMETER :: LOWER_CASE = 'abcdefghijklmnopqrstuvwxyz',&
        UPPER_CASE = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ' 
-  INTEGER(IKIND) :: &
-       ind, n,IErr
+  INTEGER(IKIND) :: ind, n,IErr
 
   ! Copy input string
   Output_String = Input_String
   
   ! Convert case character by character
-
   DO ind = 1, LEN(Output_String,KIND=IKIND)
      n = INDEX(UPPER_CASE, Output_String(ind:ind))
      IF ( n.NE.0 ) Output_String(ind:ind) = LOWER_CASE(n:n)
@@ -721,7 +706,7 @@ SUBROUTINE StrLowCase( Input_String,Output_String,IErr )
 END SUBROUTINE  StrLowCase
 
 SUBROUTINE MakeUnitVector(RVector,IErr)
-
+!This is a pointless subroutine, make redundant
   USE MyNumbers
   
   USE CConst; USE IConst; USE RConst

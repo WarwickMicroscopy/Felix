@@ -51,33 +51,8 @@ SUBROUTINE ExperimentalSetup (IErr)
 
   INTEGER(IKIND) :: IErr
 
-  CALL Message("ExperimentalSetup",IMust,IErr)
-  
-  !--------------------------------------------------------------------
-  ! Allocate Crystallography Variables
-  !--------------------------------------------------------------------
-  !Allocation now done in UniqueAtomPositions
-  !ALLOCATE(RAtomCoordinate(IMaxPossibleNAtomsUnitCell,ITHREE),STAT=IErr)
-  !IF( IErr.NE.0 ) THEN
-  !   PRINT*,"ExperimentalSetup(",my_rank,")error allocating RAtomCoordinate"
-  !   RETURN
-  !ENDIF
-  
-  !--------------------------------------------------------------------
-  ! microscopy settings
-  !--------------------------------------------------------------------
-
-!zz  CALL MicroscopySettings( IErr )
-!zz  IF( IErr.NE.0 ) THEN
-!zz     PRINT*,"ExperimentalSetup(", my_rank, ") error",IErr, "in MicroscopySettings()"
-!zz     !Call error function here. MPI error
-!zz     RETURN
-!zz  ENDIF
-
   !--------------------------------------------------------------------
   ! crystallography settings
-  !-------------------------------------------------------------------
-
   CALL CrystallographyInitialisation( IErr )
   IF( IErr.NE.0 ) THEN
      PRINT*,"ExperimentalSetup(",my_rank,")error",IErr,"in CrystallographyInitialisation()"

@@ -33,7 +33,7 @@
 !%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 SUBROUTINE MicroscopySettings( IErr )
-
+!This is now redundant
   USE MyNumbers
   USE WriteToScreen
   
@@ -48,8 +48,6 @@ SUBROUTINE MicroscopySettings( IErr )
 
   REAL(RKIND)::norm,dummy,ROneThousand
   INTEGER :: IErr
-
-  CALL Message("MicroscopySettings",IMust,IErr)
 
   ROneThousand = 1000.0_RKIND
 
@@ -68,15 +66,6 @@ SUBROUTINE MicroscopySettings( IErr )
   RElectronWaveVectorMagnitude=TWOPI/RElectronWaveLength
   RRelativisticCorrection= ONE/SQRT( ONE - (RElectronVelocity/RSpeedOfLight)**2 )
   RRelativisticMass= RRelativisticCorrection*RElectronMass
-   
-  CALL Message("MicroscopySettings",IInfo,IErr, &
-       MessageVariable = "ElectronVelocity",RVariable = RElectronVelocity)
-  CALL Message("MicroscopySettings",IInfo,IErr, &
-       MessageVariable = "ElectronWavelength",RVariable = RElectronWaveLength)
-  CALL Message("MicroscopySettings",IInfo,IErr, &
-       MessageVariable = "ElectronWaveVectorMagnitude",RVariable = RElectronWaveVectorMagnitude)
-  CALL Message("MicroscopySettings",IInfo,IErr, &
-       MessageVariable = "RelativisticCorrection",RVariable = RRelativisticCorrection)
      
   RETURN
 

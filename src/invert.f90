@@ -58,23 +58,6 @@ SUBROUTINE INVERT(MatrixSize,Matrix,InvertedMatrix,IErr)
   INTEGER, DIMENSION(:), ALLOCATABLE :: IPIV
   COMPLEX(KIND=CKIND), DIMENSION(:), ALLOCATABLE :: WORK
   
-  !PRINT*,"DBG: Invert()"
-!!$
-!!$  B = CZERO 
-!!$  DO I=1,M
-!!$     B(I,I) = CONE
-!!$  END DO
-  !INFO=0
-
-  IF (my_rank.EQ.0) THEN
-     DO WHILE (IMessageCounter .LT.7)
-        CALL Message("Invert",IMust,IErr)
-        CALL Message("Invert",IMust+IDebug,IErr, & 
-             MessageString = "is the last subroutine to be called within BlochLoop")
-        IMessageCounter = IMessageCounter +1
-     END DO
-  END IF
-  
   ALLOCATE(IPIV(MatrixSize),STAT=IErr)
   IF( IErr.NE.0 ) THEN
      PRINT*,"Invert(): ERR in ALLOCATE(IPIV(MatrixSize)) statement, MatrixSize=", MatrixSize
@@ -83,7 +66,6 @@ SUBROUTINE INVERT(MatrixSize,Matrix,InvertedMatrix,IErr)
   
   CALL ZGETRF(MatrixSize,MatrixSize,Matrix,MatrixSize,IPIV,IErr)
   LWORK = MatrixSize*MatrixSize
-  !LWORK = 0
   IF ( IErr.NE.0 ) THEN
      PRINT *,'Invert() : Datatype Error: IFAIL=',INFO
      RETURN
@@ -104,7 +86,6 @@ SUBROUTINE INVERT(MatrixSize,Matrix,InvertedMatrix,IErr)
      PRINT *,'Invert : Deallocation Error',INFO
      RETURN
   END IF
-  !DEALLOCATE(IPIV,WORK)
   InvertedMatrix = Matrix  
   RETURN
 END SUBROUTINE INVERT

@@ -56,8 +56,6 @@ SUBROUTINE WriteOutput( CAmplitudeandPhaseImages,RReflectionImages,RMontageImage
   COMPLEX(CKIND),DIMENSION(INoOfLacbedPatterns,IThicknessCount,IPixelTotal):: CAmplitudeandPhaseImages
   CHARACTER*40 :: surname, path
   CHARACTER*25 :: SThickness, SThicknessLength
-      
-  CALL Message("WriteOutput",IMust,IErr)
 
   ALLOCATE(RImage(2*IPixelCount,2*IPixelCount),STAT=IErr)
   IF( IErr.NE.0 ) THEN
@@ -65,8 +63,6 @@ SUBROUTINE WriteOutput( CAmplitudeandPhaseImages,RReflectionImages,RMontageImage
           " in ALLOCATE() of DYNAMIC variables RImage"
      RETURN
   ENDIF
-
-  CALL Message("WriteOutput",IAllInfo,IErr,MessageString = "Writing Images")
 
   !--------------------------------------------------------
   ! Make an output directory
@@ -87,24 +83,12 @@ SUBROUTINE WriteOutput( CAmplitudeandPhaseImages,RReflectionImages,RMontageImage
 
         WRITE(surname,"(A8,I4.4,A4,I5.5,A1,I5.5)") &
             "Montage_",IThickness/10,"_nm_",MAXVAL(IImageSizeXY),"x",MAXVAL(IImageSizeXY)
-!        WRITE(surname,"(A2,I1.1,I1.1,I1.1,I1.1,A2,I5.5,A2,I5.5,A2,I5.5)") &
-!             "f-",&
-!             IScatterFactorMethodFLAG, &
-!             IZolzFLAG, &
-!             IAbsorbFLAG, &
-!             IAnisoDebyeWallerFactorFlag,&
-!             "-T",IThickness,&
-!             "-P",MAXVAL(IImageSizeXY),&
-!             "-P",MAXVAL(IImageSizeXY)
         
         CALL OpenReflectionImage(MontageOut,surname,IErr,0,MAXVAL(IImageSizeXY),knd)
         IF( IErr.NE.0 ) THEN
            PRINT*,"WriteOutput(", my_rank, ") error in OpenData()"
            RETURN
         ENDIF
-           
-
-        CALL Message("WriteOutput",IMoreInfo,IErr,MessageVariable = "working on RThickness",RVariable = RThickness )
 
         CALL WriteReflectionImage(MontageOut,RMontageImages(:,:,knd), &
              IErr,MAXVAL(IImageSizeXY),MAXVAL(IImageSizeXY),knd)
@@ -120,16 +104,6 @@ SUBROUTINE WriteOutput( CAmplitudeandPhaseImages,RReflectionImages,RMontageImage
      !--------------------------------------------------------
      
      IF(IImageFLAG.EQ.1.OR.IImageFLAG.EQ.2.OR.IImageFLAG.EQ.5.OR.IImageFLAG.EQ.6) THEN
-        
-!        WRITE(path,"(A2,I1.1,I1.1,I1.1,I1.1,A2,I5.5,A2,I5.5,A2,I5.5)") &
-!             "f-",&
-!             IScatterFactorMethodFLAG, &
-!             IZolzFLAG, &
-!             IAbsorbFLAG, &
-!             IAnisoDebyeWallerFactorFlag,&
-!             "-T",IThickness,&
-!             "-P",2*IPixelcount,&
-!             "-P",2*IPixelcount
 
         WRITE(path,"(A9,I3.3,A3,I4.4,A1,I4.4,A1)") &
             "felixsim_",IThickness/10,"nm_",2*IPixelcount,"x",2*IPixelcount,"/"
@@ -220,19 +194,14 @@ SUBROUTINE WriteOutput( CAmplitudeandPhaseImages,RReflectionImages,RMontageImage
               RETURN
            ENDIF
            
-           
            CLOSE(IChOutWFImageReal,IOSTAT = IErr)
            CALL ErrorChecks("WriteOutput","WriteOutput",ICritError,IErr)
-
            CLOSE(IChOutWFImagePhase,IOSTAT = IErr)
            CALL ErrorChecks("WriteOutput","WriteOutput",ICritError,IErr)
          
         END DO
      END IF
   END DO
-
-!!$  Resets the Message Counter (For future entering subroutine messages)
-  IMessageCounter = 0  
 
   DEALLOCATE(RImage,STAT=IErr)       
   IF( IErr.NE.0 ) THEN

@@ -55,44 +55,33 @@ SUBROUTINE ImageInitialisation( IErr )
   REAL(RKIND) :: DummyConvergenceAngle
   INTEGER(IKIND) :: IErr,ind,jnd
 
-  CALL Message("ImageInitialisation",IMust,IErr)
-  
-  !Determine Positions of reflections in final image (may not need to be here)
-  CALL Message("ImageInitialisation",IInfo,IErr, MessageVariable = "nReflections", IVariable = nReflections)
-  CALL Message("ImageInitialisation",IInfo,IErr, MessageVariable = "RMinimumGMag", RVariable = RMinimumGMag)
-
   ! positions of the centres of the disks
   DO ind=1,nReflections
-     RhklPositions(ind,1) = RgPool(ind,1)/RMinimumGMag
-     RhklPositions(ind,2) = RgPool(ind,2)/RMinimumGMag
+    RhklPositions(ind,1) = RgPool(ind,1)/RMinimumGMag
+    RhklPositions(ind,2) = RgPool(ind,2)/RMinimumGMag
   ENDDO
 
   ! size of final image
   IF(RConvergenceAngle .LT. ONE) THEN
-     DummyConvergenceAngle=RConvergenceAngle
+    DummyConvergenceAngle=RConvergenceAngle
   ELSE
-     DummyConvergenceAngle=0.95_RKIND
+    DummyConvergenceAngle=0.95_RKIND
   END IF
   IF(IHKLSelectFLAG.EQ.0) THEN
-     DO ind=1,2
-        IImageSizeXY(ind)= CEILING(&
-             FOUR*REAL(IPixelCount,RKIND)/DummyConvergenceAngle * &
-             (MAXVAL(ABS(RhklPositions(1:INoOfLacbedPatterns,ind)))+ONE) )
-     ENDDO
+    DO ind=1,2
+      IImageSizeXY(ind)= CEILING(&
+           FOUR*REAL(IPixelCount,RKIND)/DummyConvergenceAngle * &
+          (MAXVAL(ABS(RhklPositions(1:INoOfLacbedPatterns,ind)))+ONE) )
+    ENDDO
   ELSE
-     DO ind=1,2
-        DO jnd = 1,INoOfLacbedPatterns
-           IImageSizeXY(ind)= CEILING(&
-                FOUR*REAL(IPixelCount,RKIND)/DummyConvergenceAngle * &
-                (MAXVAL(ABS(RhklPositions(IOutputReflections(1:INoOfLacbedPatterns),ind)))+ONE) )
-        END DO
-     ENDDO
+    DO ind=1,2
+      DO jnd = 1,INoOfLacbedPatterns
+        IImageSizeXY(ind)= CEILING(&
+           FOUR*REAL(IPixelCount,RKIND)/DummyConvergenceAngle * &
+          (MAXVAL(ABS(RhklPositions(IOutputReflections(1:INoOfLacbedPatterns),ind)))+ONE) )
+      END DO
+    ENDDO
   END IF
-
-  DO ind=1,2
-     CALL Message("ImageInitialisation",IInfo,IErr, &
-          MessageVariable = "IImageSizeXY(ind)", IVariable = IImageSizeXY(ind))
-  END DO
   
   RETURN
 
@@ -122,69 +111,47 @@ SUBROUTINE MontageInitialisation(IPixelHorizontalPosition,IPixelVerticalPosition
   
   IMPLICIT NONE
   
-  INTEGER(IKIND) ::&
-       IThicknessindex, IMontagePixelVerticalPosition, IMontagePixelHorizontalPosition,&
+  INTEGER(IKIND) ::IThicknessindex, IMontagePixelVerticalPosition, IMontagePixelHorizontalPosition,&
        hnd,IPixelHorizontalPosition,IPixelVerticalPosition,Ierr
-  REAL(RKIND), DIMENSION(MAXVAL(IImageSizeXY),MAXVAL(IImageSizeXY),IThicknessCount),INTENT(OUT) :: &
-       RMontageImage
+  REAL(RKIND), DIMENSION(MAXVAL(IImageSizeXY),MAXVAL(IImageSizeXY),IThicknessCount),INTENT(OUT) :: RMontageImage
   REAL(RKIND), DIMENSION(INoOfLacbedPatterns) :: RIntensityValues
-
-!!$  Only print out once when first entered - use message counter
-
-  IF (my_rank.EQ.0) THEN
-     DO WHILE (IMessageCounter .LT.1)
-        CALL Message("MontageInitialisation",IMust,IErr)
-        CALL Message("MontageInitialisation",IMust+IDebug,IErr,MessageString="Is looping (called from MontageSetup)")
-        IMessageCounter = IMessageCounter +1
-     END DO
-  END IF
  
  DO hnd = 1,INoOfLacbedPatterns
-
-     IF(IHKLSelectFLAG.EQ.0) THEN
-        
-        IF (RConvergenceAngle.LT.ONE) THEN
-           IMontagePixelVerticalPosition = &
-                NINT(MAXVAL(IImageSizeXY)/TWO+TWO*(IPixelCount/RConvergenceAngle)*RhklPositions(hnd,2))
-           IMontagePixelHorizontalPosition = &
-                NINT(MAXVAL(IImageSizeXY)/TWO+TWO*(IPixelCount/RConvergenceAngle)*RhklPositions(hnd,1))
-        ELSE
-        
+   IF(IHKLSelectFLAG.EQ.0) THEN
+     IF (RConvergenceAngle.LT.ONE) THEN
+       IMontagePixelVerticalPosition = &
+           NINT(MAXVAL(IImageSizeXY)/TWO+TWO*(IPixelCount/RConvergenceAngle)*RhklPositions(hnd,2))
+       IMontagePixelHorizontalPosition = &
+           NINT(MAXVAL(IImageSizeXY)/TWO+TWO*(IPixelCount/RConvergenceAngle)*RhklPositions(hnd,1))
+     ELSE
 !!$           If the Convergence angle is > 1 causing disk overlap in experimental pattern, 
 !!$           then plot as if convergence angle was 0.95 (non-physical but makes a pretty picture)
-           IMontagePixelVerticalPosition = &
+       IMontagePixelVerticalPosition = &
                 NINT(MAXVAL(IImageSizeXY)/TWO+TWO*(IPixelCount/0.95D0)*RhklPositions(hnd,2))
-           IMontagePixelHorizontalPosition = &
+       IMontagePixelHorizontalPosition = &
                 NINT(MAXVAL(IImageSizeXY)/TWO+TWO*(IPixelCount/0.95D0)*RhklPositions(hnd,1))
-        END IF
-
-        RMontageImage(&
-             IMontagePixelVerticalPosition-IPixelCount+IPixelVerticalPosition,&
+     END IF
+     RMontageImage(IMontagePixelVerticalPosition-IPixelCount+IPixelVerticalPosition,&
              IMontagePixelHorizontalPosition-IPixelCount+IPixelHorizontalPosition,&
              IThicknessIndex) = &
-             RMontageImage(&
-             IMontagePixelVerticalPosition-IPixelCount+IPixelVerticalPosition,&
+             RMontageImage(IMontagePixelVerticalPosition-IPixelCount+IPixelVerticalPosition,&
              IMontagePixelHorizontalPosition-IPixelCount+IPixelHorizontalPosition,&
-             IThicknessIndex) + &
-             RIntensityValues(hnd)
-        
+             IThicknessIndex) + RIntensityValues(hnd)
      ELSE  
-      
-        IF (RConvergenceAngle.LT.ONE) THEN
-           IMontagePixelVerticalPosition = &
+       IF (RConvergenceAngle.LT.ONE) THEN
+         IMontagePixelVerticalPosition = &
                 NINT(MAXVAL(IImageSizeXY)/TWO+TWO*(IPixelCount/RConvergenceAngle)*RhklPositions(IOutputReflections(hnd),2))
-           IMontagePixelHorizontalPosition = &
+         IMontagePixelHorizontalPosition = &
                 NINT(MAXVAL(IImageSizeXY)/TWO+TWO*(IPixelCount/RConvergenceAngle)*RhklPositions(IOutputReflections(hnd),1))
-        ELSE
+       ELSE
 !!$           If the Convergence angle is > 1 causing disk overlap in experimental pattern, 
 !!$           then plot as if convergence angle was 0.95 (non-physical but makes a pretty picture)
-           IMontagePixelVerticalPosition = &
+         IMontagePixelVerticalPosition = &
                 NINT(MAXVAL(IImageSizeXY)/TWO+TWO*(IPixelCount/0.95D0)*RhklPositions(IOutputReflections(hnd),2))
-           IMontagePixelHorizontalPosition = &
+         IMontagePixelHorizontalPosition = &
                 NINT(MAXVAL(IImageSizeXY)/TWO+TWO*(IPixelCount/0.95D0)*RhklPositions(IOutputReflections(hnd),1))
-        END IF
-
-        RMontageImage(&
+       END IF
+       RMontageImage(&
              IMontagePixelVerticalPosition-IPixelCount+IPixelVerticalPosition,&
              IMontagePixelHorizontalPosition-IPixelCount+IPixelHorizontalPosition,&
              IThicknessIndex) = &
@@ -193,7 +160,7 @@ SUBROUTINE MontageInitialisation(IPixelHorizontalPosition,IPixelVerticalPosition
              IMontagePixelHorizontalPosition-IPixelCount+IPixelHorizontalPosition,&
              IThicknessIndex) + &
              RIntensityValues(hnd)
-     END IF
+    END IF
   END DO
 
 END SUBROUTINE MontageInitialisation
@@ -222,9 +189,7 @@ SUBROUTINE ImageMaskInitialisation (IErr)
   
   INTEGER(IKIND) :: ind,jnd, ierr,InnerRadiusFLAG
   REAL(RKIND) :: Rradius, RImageRadius
-  
-  CALL Message("ImageMaskInitialisation",IMust,IErr)
-  
+
   ALLOCATE(RMask(2*IPixelCount,2*IPixelCount),STAT=IErr)
   IF( IErr.NE.0 ) THEN
     PRINT*,"ImageMaskInitialisation(",my_rank,")error allocating RMask"
@@ -309,10 +274,8 @@ INTEGER(IKIND) FUNCTION CountPixels(IErr)
   
   IMPLICIT NONE
   
-  INTEGER(IKIND) :: &
-       ind,jnd, IErr
-  REAL(RKIND) :: &
-       Rradius, RImageRadius
+  INTEGER(IKIND) :: ind,jnd, IErr
+  REAL(RKIND) :: Rradius, RImageRadius
   
   IF((IWriteFLAG.EQ.6.AND.my_rank.EQ.0).OR.IWriteFLAG.GE.10) THEN
      PRINT*,"CountPixels (",my_rank,")"

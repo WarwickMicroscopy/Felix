@@ -56,27 +56,9 @@ SUBROUTINE BlochCoefficientCalculation(IYPixelIndex,IXPixelIndex,IPixelNumber,IF
   COMPLEX(CKIND),DIMENSION(:),ALLOCATABLE :: CGeneralEigenValues
   CHARACTER*40 surname
   CHARACTER*200 SindString,SjndString,SPixelCount,SnBeams,SWeakBeamIndex,SPrintString
-   
-  IF (my_rank.EQ.0) THEN
-    DO WHILE (IMessageCounter .LT.1)
-      CALL Message("BlochCoefficientCalculation",IMust,IErr)
-      CALL Message("BlochCoefficientCalculation",IMust+IDebug,IErr, & 
-              MessageString = "is looping, and calling subroutines itself, They are:")
-      IMessageCounter = IMessageCounter +1
-    END DO
-  END IF
     
   ! we are inside the mask
   IPixelComputed= IPixelComputed + 1
-
-  !!$   Displays Pixel currently working on
-  WRITE(SindString,'(I6.1)') IYPixelIndex
-  WRITE(SjndString,'(I6.1)') IXPixelIndex
-  WRITE(SPixelCount,'(I6.1)') 2*IPixelCount
-  CALL Message("BlochCoefficientCalculation",IAllInfo,IErr, &
-       MessageString="working on pixel("//TRIM(ADJUSTL(SindString))//",&
-       &"//TRIM(ADJUSTL(SjndString))//") of ("//TRIM(ADJUSTL(SPixelCount))//",&
-       &"//TRIM(ADJUSTL(SPixelCount))//") in total")
 
   !--------------------------------------------------------------------
   ! TiltedK is the vector of the incoming tilted beam
@@ -104,7 +86,7 @@ SUBROUTINE BlochCoefficientCalculation(IYPixelIndex,IXPixelIndex,IPixelNumber,IF
       PRINT*,"RDevPara",RDevPara(knd)
     END IF
   END DO
-  
+
   ! select only those beams where the Ewald sphere is close to the
   ! reciprocal lattice, i.e. within RBSMaxDeviationPara
   CALL StrongAndWeakBeamsDetermination(IErr)
@@ -239,6 +221,7 @@ SUBROUTINE BlochCoefficientCalculation(IYPixelIndex,IXPixelIndex,IPixelNumber,IF
   END IF
  
   !Calculate intensities for different specimen thicknesses
+  !***ADD VARIABLE PATH LENGTH HERE***
   DO IThicknessIndex=1,IThicknessCount,1
     RThickness = RInitialThickness + REAL((IThicknessIndex-1),RKIND)*RDeltaThickness 
     IThickness = NINT(RThickness,IKIND)
@@ -375,13 +358,6 @@ SUBROUTINE StrongAndWeakBeamsDetermination(IErr)
   INTEGER(IKIND),DIMENSION(:) :: IStrong(nReflections),IWeak(nReflections)
   REAL(RKIND) :: RMaxSg,RMinPertStrong,RMinPertWeak
   REAL(RKIND),DIMENSION(:) :: RPertStrength(nReflections)
-
-  IF (my_rank.EQ.0) THEN
-    DO WHILE (IMessageCounter .LT.4)
-      CALL Message("StrongAndWeakBeamsDetermination",IMust,IErr)
-      IMessageCounter = IMessageCounter +1
-     END DO
-  END IF
 
   !----------------------------------------------------------------------------
   !STRONG BEAMS
