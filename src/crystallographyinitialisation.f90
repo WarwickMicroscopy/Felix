@@ -33,7 +33,7 @@
 !%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 SUBROUTINE CrystallographyInitialisation( IErr )
-
+!This is redundant
   USE MyNumbers
   USE WriteToScreen
   

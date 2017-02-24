@@ -220,7 +220,7 @@ SUBROUTINE UniqueAtomPositions(IErr)
     DO knd=1,jnd-1!check against the unique ones found so far
 	  !PRINT*,ind,jnd,SUM(ABS(RAllAtomPosition(ind,:)-RAtomPosition(knd,:)))
       IF (SUM(ABS(RAllAtomPosition(ind,:)-RAtomPosition(knd,:))).LE.TINY) THEN  !position is the same
-        IF (SAllAtomName(ind).EQ.SAtomName(knd)) THEN !name is the same too, so not unique
+        IF (SAllAtomName(ind).EQ.SAtomName(knd).AND.RAllIsoDW(ind).EQ.RIsoDW(knd)) THEN !name i&D-W factor are the same too, so not unique
 		  Lunique=.FALSE.
 		  EXIT
 		ENDIF
@@ -228,7 +228,7 @@ SUBROUTINE UniqueAtomPositions(IErr)
     ENDDO
 	IF (Lunique .EQV. .TRUE.) THEN
       RAtomPosition(jnd,:)= RAllAtomPosition(ind,:)
-      SAtomName(jnd)= SAllAtomName(ind)!never used
+      SAtomName(jnd)= SAllAtomName(ind)
       RIsoDW(jnd) = RAllIsoDW(ind)
       ROccupancy(jnd) = RAllOccupancy(ind)
       IAtomicNumber(jnd) = IAllAtomicNumber(ind)!
@@ -237,7 +237,7 @@ SUBROUTINE UniqueAtomPositions(IErr)
     ENDIF
   ENDDO
   INAtomsUnitCell= jnd-1!this is how many unique atoms there are in the unit cell
-
+  
   !Finished with these variables now
   DEALLOCATE(RAllAtomPosition,SAllAtomName,RAllOccupancy,RAllIsoDW,IAllAtomicNumber,RAllAnisoDW)
   IF( IErr.NE.0 ) THEN

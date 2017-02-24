@@ -791,6 +791,7 @@ PROGRAM Felixrefine
   
   CASE(2)!Bisection
     CALL UgBisection(RIndependentVariable,IErr)
+    IF( IErr.NE.0 ) PRINT*,"Error in UgBisection"
     
   CASE(3)!Parabola
     ALLOCATE(RVar0(INoOfVariables),STAT=IErr)!incoming set of variables
@@ -866,6 +867,7 @@ PROGRAM Felixrefine
         CALL SimulateAndFit(RCurrentVar,Iter,IExitFLAG,IErr)
         Iter=Iter+1
         Rfit(3)=RFigureofMerit
+        IF (RFigureofMerit.LT.RBestFit) RBestFit=RFigureofMerit
         !check the three points make a concave set
         jnd=MAXLOC(Rvar,1)!highest x
         knd=MINLOC(Rvar,1)!lowest x
@@ -874,7 +876,7 @@ PROGRAM Felixrefine
         !Rconvex is the calculated fit index at the mid x, if ithere was a straight line between lowest and highest x
         Rconvex=Rfit(lnd)-(Rfit(knd)+(Rvar(lnd)-Rvar(knd))*(Rfit(jnd)-Rfit(knd))/(Rvar(jnd)-Rvar(knd)))
         !IF(my_rank.EQ.0) PRINT*,"Rtest=",Rtest,"Rconvex=",Rconvex
-        DO WHILE (Rconvex.GT.0.1*Rtest)!if it isn't more than 10% concave, keep going until it is sufficiently concave
+        DO WHILE (Rconvex.GT.0.05*Rtest)!if it isn't more than 5% concave, keep going until it is sufficiently concave
           IF(my_rank.EQ.0) PRINT*,"Convex, continuing"
           jnd=MAXLOC(Rfit,1)!worst fit
           knd=MINLOC(Rfit,1)!best fit
@@ -908,6 +910,7 @@ PROGRAM Felixrefine
         END DO
         !now make a prediction and replace worst point
         IF (RCurrentVar(ind).LE.TINY.AND.IVariableType.EQ.4) THEN!We have reached zero D-W factor, skip the prediction
+          CALL SimulateAndFit(RCurrentVar,Iter,IExitFLAG,IErr)
           IF (my_rank.EQ.0) PRINT*,"Using zero Debye Waller factor, refining next variable"
         ELSE
           CALL Parabo3(Rvar,Rfit,RvarMin,RfitMin,IErr)
@@ -927,8 +930,8 @@ PROGRAM Felixrefine
           IF (Rvar(jnd).LE.-RVar0(ind).AND.IVariableType.EQ.4) Rvar(jnd)=-RVar0(ind)!Check that D-W factor is not less than zero
           RCurrentVar=RVar0+RPvec*Rvar(jnd)
           CALL SimulateAndFit(RCurrentVar,Iter,IExitFLAG,IErr)
-          Iter=Iter+1
         END IF
+        Iter=Iter+1
         Rfit(jnd)=RFigureofMerit
         IF (RFigureofMerit.LT.RBestFit) THEN!this is our best point
           RIndependentVariable=RCurrentVar
@@ -957,14 +960,21 @@ PROGRAM Felixrefine
         END IF
       END IF
     END DO
-
     
-  CASE DEFAULT!Simulation only, should never happen
+  CASE DEFAULT!Should never happen
     IF (my_rank.EQ.0) THEN
-      PRINT*,"No refinement, simulation only"
+      PRINT*,"No refinement, exiting"
     END IF
       
   END SELECT 
+  !--------------------------------
+  !The refinement has finished, output final simulation
+  IF(my_rank.EQ.0) THEN
+    CALL CalculateFigureofMeritandDetermineThickness(Iter,IThicknessIndex,IErr)
+    IF( IErr.NE.0 ) PRINT*,"Error in final Figure of Merit"
+    CALL WriteIterationOutput(Iter,IThicknessIndex,IExitFLAG,IErr)
+    IF( IErr.NE.0 ) PRINT*,"Error in final output"
+  END IF
 
   !--------------------------------------------------------------------
   ! Deallocate Memory
