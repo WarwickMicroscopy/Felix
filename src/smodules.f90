@@ -329,7 +329,8 @@ MODULE SPara
   
   CHARACTER*1 :: SSpaceGroupName
   CHARACTER*10 :: SSpaceGrp
-  CHARACTER*2, DIMENSION(:), ALLOCATABLE :: SBasisAtomName, SAtomName
+  CHARACTER*2, DIMENSION(:), ALLOCATABLE :: SBasisAtomSymbol,SAtomSymbol
+  CHARACTER*5, DIMENSION(:), ALLOCATABLE :: SBasisAtomLabel,SAtomLabel !limits up to 999 atoms of same kind, e.g. Sr999
   CHARACTER*1,DIMENSION(:),ALLOCATABLE :: SWyckoffSymbols
   
 END MODULE SPara

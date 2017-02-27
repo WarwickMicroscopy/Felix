@@ -121,7 +121,7 @@ PROGRAM Felixrefine
     GOTO 9999
   END IF
   !felix.cif
-  CALL ReadCif(IErr)!branch in here depending on ISoftwareMode, needs to be taken out
+  CALL ReadCif(IErr)!there is a branch in here depending on ISoftwareMode that needs to be taken out
   IF( IErr.NE.0 ) THEN
     PRINT*,"felixrefine(",my_rank,")error reading felix.cif"
     GOTO 9999
@@ -182,8 +182,10 @@ PROGRAM Felixrefine
   ALLOCATE(RAtomPosition(IMaxPossibleNAtomsUnitCell,ITHREE),STAT=IErr)
   !AtomCoordinate is in the microscope reference frame in Angstrom units
   ALLOCATE(RAtomCoordinate(IMaxPossibleNAtomsUnitCell,ITHREE),STAT=IErr)
-  !Atom name
-  ALLOCATE(SAtomName(IMaxPossibleNAtomsUnitCell),STAT=IErr)
+  !Atom label, e.g. Sr12 for the twelth Strontium atom
+  ALLOCATE(SAtomLabel(IMaxPossibleNAtomsUnitCell),STAT=IErr)
+  !Atom symbol, e.g. Sr (from periodic table)
+  ALLOCATE(SAtomSymbol(IMaxPossibleNAtomsUnitCell),STAT=IErr)
   !Isotropic Debye-Waller factor
   ALLOCATE(RIsoDW(IMaxPossibleNAtomsUnitCell),STAT=IErr)
   ALLOCATE(ROccupancy(IMaxPossibleNAtomsUnitCell),STAT=IErr)
@@ -199,7 +201,7 @@ PROGRAM Felixrefine
      PRINT*,"felixrefine(",my_rank,")error in UniqueAtomPositions"
      GOTO 9999
   END IF
-  !Perhaps should now re-allocate RAtomPosition,SAtomName,RIsoDW,ROccupancy,IAtomicNumber,RAnisoDW to match INAtomsUnitCell???
+  !Perhaps should now re-allocate RAtomPosition,SAtomSymbol,RIsoDW,ROccupancy,IAtomicNumber,RAnisoDW to match INAtomsUnitCell???
 
 !-----------------------------------------
 ! set up reflection pool
@@ -803,6 +805,12 @@ PROGRAM Felixrefine
       PRINT*,"felixrefine(",my_rank,")error allocating parabola variables"
       GOTO 9999
     END IF
+    DO ind=1,4
+      IF(IWriteFLAG.EQ.14.AND.my_rank.EQ.0) THEN
+        PRINT*,"Atom ",ind,":",SBasisAtomSymbol(ind),IBasisAtomicNumber(ind),"[",RBasisAtomPosition(ind,:),"]"
+        PRINT*,"Atom ",ind,"DW",RBasisIsoDW(ind),", occupancy",RBasisOccupancy(ind)
+      END IF
+    END DO
     RLastFit=RFigureofMerit
     RBestFit=RFigureofMerit
     Rdf=RFigureofMerit
@@ -862,7 +870,7 @@ PROGRAM Felixrefine
         ELSE!it is better, so keep going
           Rvar(3)=Rvar(2)+RPvecMag
         END IF
-        IF (Rvar(3).LE.-RVar0(ind).AND.IVariableType.EQ.4) Rvar(3)=-RVar0(ind)/RPvec(ind)!if less than zero DW is requested, make the third point equal to 0.0 
+        IF (Rvar(3).LE.-RVar0(ind).AND.IVariableType.EQ.4) Rvar(3)=-RVar0(ind)/RPvec(ind)+0.05!if less than zero DW is requested, make the third point equal to 0.05
         RCurrentVar=RVar0+RPvec*Rvar(3)!x3=x1+v3
         CALL SimulateAndFit(RCurrentVar,Iter,IExitFLAG,IErr)
         Iter=Iter+1
@@ -875,7 +883,6 @@ PROGRAM Felixrefine
         Rtest=-ABS(Rfit(jnd)-Rfit(knd))!Rtest=0.0 would be a straight line, >0=convex, <0=concave
         !Rconvex is the calculated fit index at the mid x, if ithere was a straight line between lowest and highest x
         Rconvex=Rfit(lnd)-(Rfit(knd)+(Rvar(lnd)-Rvar(knd))*(Rfit(jnd)-Rfit(knd))/(Rvar(jnd)-Rvar(knd)))
-        !IF(my_rank.EQ.0) PRINT*,"Rtest=",Rtest,"Rconvex=",Rconvex
         DO WHILE (Rconvex.GT.0.05*Rtest)!if it isn't more than 5% concave, keep going until it is sufficiently concave
           IF(my_rank.EQ.0) PRINT*,"Convex, continuing"
           jnd=MAXLOC(Rfit,1)!worst fit
@@ -885,7 +892,11 @@ PROGRAM Felixrefine
           RPvecMag=RPvecMag*(0.5+SQRT(5.0)/2.0)!increase the step size by the golden ratio
           IF (ABS(RPvecMag).GT.RMaxUgStep.AND.IRefineMode(1).EQ.1) RPvecMag=SIGN(RMaxUgStep,RPvecMag)!maximum step in Ug is RMaxUgStep
           Rvar(lnd)=Rvar(knd)+RPvecMag
-          IF (Rvar(lnd).LT.-RVar0(ind).AND.IVariableType.EQ.4) Rvar(lnd)=-RVar0(ind)/RPvec(ind)!if less than zero DW is requested, make the third point equal to 0.0...
+          IF (Rvar(lnd).LT.-RVar0(ind).AND.IVariableType.EQ.4) THEN
+            Rvar(lnd)=-RVar0(ind)/RPvec(ind)!if less than zero DW is requested, make the third point equal to 0.0...
+            RCurrentVar=RVar0+RPvec*Rvar(lnd)!set up for simulation outside the loop
+            EXIT
+          END IF
           RCurrentVar=RVar0+RPvec*Rvar(lnd)
           CALL SimulateAndFit(RCurrentVar,Iter,IExitFLAG,IErr)
           Iter=Iter+1
@@ -903,8 +914,6 @@ PROGRAM Felixrefine
           lnd=6-jnd-knd!the mid x
           Rconvex=Rfit(lnd)-(Rfit(knd)+(Rvar(lnd)-Rvar(knd))*(Rfit(jnd)-Rfit(knd))/(Rvar(jnd)-Rvar(knd)))
           Rtest=-ABS(Rfit(jnd)-Rfit(knd))
-          !If a DW factor is zero stop looking for the minimum and move on to the next
-          IF (RCurrentVar(ind).LE.TINY.AND.IVariableType.EQ.4) Rconvex=-666.!
           !IF(my_rank.EQ.0) PRINT*,"RCurrentVar(ind)=",RCurrentVar(ind)
           !IF(my_rank.EQ.0) PRINT*,"Rtest=",Rtest,"Rconvex=",Rconvex
         END DO
@@ -918,7 +927,7 @@ PROGRAM Felixrefine
             !WRITE(SPrintString,FMT='(A2,3(F4.2,1X),A3,3(F6.4,1X))') &
             ! "x=",Rvar,",y=",Rfit
             !PRINT*,TRIM(ADJUSTL(SPrintString))
-            WRITE(SPrintString,FMT='(A32,F6.4,A16,F6.4)') &
+            WRITE(SPrintString,FMT='(A32,F7.4,A16,F6.4)') &
                "Concave set, predict minimum at ",Rvar0(ind)+RvarMin," with fit index ",RfitMin
             PRINT*,TRIM(ADJUSTL(SPrintString))
           END IF
@@ -996,7 +1005,7 @@ PROGRAM Felixrefine
   DEALLOCATE(RgSumMat,STAT=IErr)
   DEALLOCATE(RSimulatedPatterns,STAT=IErr)
   DEALLOCATE(RAtomPosition,STAT=IErr)
-  DEALLOCATE(SAtomName,STAT=IErr)
+  DEALLOCATE(SAtomSymbol,STAT=IErr)
   DEALLOCATE(RIsoDW,STAT=IErr)
   DEALLOCATE(ROccupancy,STAT=IErr)
   DEALLOCATE(IAtomicNumber,STAT=IErr)

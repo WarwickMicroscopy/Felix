@@ -167,9 +167,9 @@ SUBROUTINE WriteIterationStructure(path,IErr)
 
   DO jnd = 1,SIZE(RBasisAtomPosition,DIM=1)!RB only gives refined atoms, needs work
      WRITE(IChOutSimplex,FMT='(A2,1X,3(F9.6,1X))') &
-	 SBasisAtomName(jnd),RBasisAtomPosition(jnd,:)
+	 SBasisAtomSymbol(jnd),RBasisAtomPosition(jnd,:)
 !     WRITE(IChOutSimplex,FMT='(A2,1X,A1,1X,3(F9.6,1X),F5.3,1X,F5.3)') &
-!	 SBasisAtomName(jnd),SWyckoffSymbols(jnd),RBasisAtomPosition(jnd,:), &
+!	 SBasisAtomSymbol(jnd),SWyckoffSymbols(jnd),RBasisAtomPosition(jnd,:), &
 !	 RBasisIsoDW(jnd),RBasisOccupancy(jnd)
   END DO
   WRITE(IChOutSimplex,FMT='(A22)') "#End of refinement cif"
@@ -180,11 +180,11 @@ SUBROUTINE WriteIterationStructure(path,IErr)
 
 !XX  WRITE(filename,*) "StructureFull.txt"
 !XX  WRITE(fullpath,*) TRIM(ADJUSTL(path)),'/',TRIM(ADJUSTL(filename))
-!XXPRINT*,"RAtomPosition,SAtomName"  
+!XXPRINT*,"RAtomPosition,SAtomSymbol"  
 !XX  OPEN(UNIT=IChOutSimplex,STATUS='UNKNOWN',&
 !XX        FILE=TRIM(ADJUSTL(fullpath)))
 !XX    DO jnd = 1,SIZE(RAtomPosition,DIM=1)
-!XX     WRITE(IChOutSimplex,FMT='(A2,1X,3(F9.6,1X))') SAtomName(jnd),RAtomPosition(jnd,1:3)
+!XX     WRITE(IChOutSimplex,FMT='(A2,1X,3(F9.6,1X))') SAtomSymbol(jnd),RAtomPosition(jnd,1:3)
 !XX    END DO
 !XX  CLOSE(IChOutSimplex)
 

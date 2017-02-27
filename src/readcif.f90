@@ -245,19 +245,18 @@ SUBROUTINE ReadCif(IErr)
     IF(loop_ .NEQV. .TRUE.) EXIT
   END DO
   
-  IF(IWriteFLAG.EQ.14.AND.my_rank.EQ.0) THEN
-    PRINT*,"IAtomCount ",IAtomCount
-  END IF
+  IF(IWriteFLAG.EQ.14.AND.my_rank.EQ.0) PRINT*,"IAtomCount ",IAtomCount
   
   ALLOCATE(RBasisAtomPosition(IAtomCount,ITHREE),STAT=IErr)
-  ALLOCATE(SBasisAtomName(IAtomCount),STAT=IErr)
+  ALLOCATE(SBasisAtomLabel(IAtomCount),STAT=IErr)
+  ALLOCATE(SBasisAtomSymbol(IAtomCount),STAT=IErr)
   ALLOCATE(IBasisAtomicNumber(IAtomCount),STAT=IErr)
   ALLOCATE(RBasisIsoDW(IAtomCount),STAT=IErr)
   ALLOCATE(RBasisOccupancy(IAtomCount),STAT=IErr)
   ALLOCATE(RAnisotropicDebyeWallerFactorTensor(IAtomCount,ITHREE,ITHREE),STAT=IErr)
   ALLOCATE(IBasisAnisoDW(IAtomCount),STAT=IErr)
   IF( IErr.NE.0 ) THEN
-     PRINT*,"ReadCif(", my_rank, ") error ", IErr, " in ALLOCATE()"
+     PRINT*,"ReadCif(",my_rank,") error ", IErr, " allocating basis variables"
      RETURN
   END IF
 
@@ -268,20 +267,22 @@ SUBROUTINE ReadCif(IErr)
     B = 0.D0
     Uso = 0.D0
     f1 = char_('_atom_site_label', name)
-    SBasisAtomName(ind)=name(1:2)
+    SBasisAtomLabel(ind)=name
+    f1 = char_('_atom_site_type_symbol', name)
+    SBasisAtomSymbol(ind)=name(1:2)
     ! remove the oxidation state numbers
-    Ipos=SCAN(SBasisAtomName(ind),"1234567890")
+    Ipos=SCAN(SBasisAtomSymbol(ind),"1234567890")
     IF(Ipos>0) THEN
-      WRITE(SBasisAtomName(ind),'(A1,A1)') name(1:1)," "
+      WRITE(SBasisAtomSymbol(ind),'(A1,A1)') name(1:1)," "
     END IF
     WRITE(Sind,*) ind
-    CALL CONVERTAtomName2Number(SBasisAtomName(ind),IBasisAtomicNumber(ind), IErr)
+    CALL CONVERTAtomName2Number(SBasisAtomSymbol(ind),IBasisAtomicNumber(ind), IErr)
     f2 = numb_('_atom_site_fract_x', x, sx)
-    RBasisAtomPosition(ind,1)= x
+    RBasisAtomPosition(ind,1)=x
     f2 = numb_('_atom_site_fract_y', y, sy)
-    RBasisAtomPosition(ind,2)= y
+    RBasisAtomPosition(ind,2)=y
     f2 = numb_('_atom_site_fract_z', z, sz)
-    RBasisAtomPosition(ind,3)= z
+    RBasisAtomPosition(ind,3)=z
     f2 = numb_('_atom_site_B_iso_or_equiv',B,sB)
     f2 = numb_('_atom_site_U_iso_or_equiv',Uso,suso)	
     IF(ABS(B).GT.TINY) THEN
@@ -297,7 +298,7 @@ SUBROUTINE ReadCif(IErr)
     RBasisOccupancy(ind) = Occ
 
     IF(IWriteFLAG.EQ.14.AND.my_rank.EQ.0) THEN
-      PRINT*,"Atom ",ind,":",SBasisAtomName(ind),IBasisAtomicNumber(ind),"[",RBasisAtomPosition(ind,:),"]"
+      PRINT*,"Atom ",ind,":",SBasisAtomLabel(ind),SBasisAtomSymbol(ind),IBasisAtomicNumber(ind),"[",RBasisAtomPosition(ind,:),"]"
       PRINT*,"Atom ",ind,"DW",RBasisIsoDW(ind),", occupancy",RBasisOccupancy(ind)
     END IF
     IF(loop_ .NEQV. .TRUE.) EXIT
