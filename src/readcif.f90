@@ -71,8 +71,8 @@ SUBROUTINE ReadCif(IErr)
   INCLUDE       'ciftbx-f90.cmn'
 
   LOGICAL       f1,f2,f3
-  CHARACTER*32  name,Sind
-  CHARACTER*80  line
+  CHARACTER*32  name
+  CHARACTER*80  line,SPrintString
   CHARACTER*4   label(6)
   CHARACTER*1   SAlphabetarray(52)
   CHARACTER*52  alphabet
@@ -236,32 +236,31 @@ SUBROUTINE ReadCif(IErr)
   END IF
   
   ! ----------------------------------------------------------
-  ! Extract atom site data in a loop
-  ! counting loop
+  ! Extract atom site data
+  ! count how many atoms
   IAtomCount=0
   DO 
     f1 = char_('_atom_site_label', name)
     IAtomCount= IAtomCount+1
-    IF(loop_ .NEQV. .TRUE.) EXIT
+    IF (loop_ .NEQV. .TRUE.) EXIT
   END DO
-  
+  !allocate variables
   IF(IWriteFLAG.EQ.14.AND.my_rank.EQ.0) PRINT*,"IAtomCount ",IAtomCount
-  
   ALLOCATE(RBasisAtomPosition(IAtomCount,ITHREE),STAT=IErr)
   ALLOCATE(SBasisAtomLabel(IAtomCount),STAT=IErr)
   ALLOCATE(SBasisAtomSymbol(IAtomCount),STAT=IErr)
   ALLOCATE(IBasisAtomicNumber(IAtomCount),STAT=IErr)
+  IBasisAtomicNumber = 0
   ALLOCATE(RBasisIsoDW(IAtomCount),STAT=IErr)
   ALLOCATE(RBasisOccupancy(IAtomCount),STAT=IErr)
   ALLOCATE(RAnisotropicDebyeWallerFactorTensor(IAtomCount,ITHREE,ITHREE),STAT=IErr)
+  RAnisotropicDebyeWallerFactorTensor = ZERO
   ALLOCATE(IBasisAnisoDW(IAtomCount),STAT=IErr)
   IF( IErr.NE.0 ) THEN
-     PRINT*,"ReadCif(",my_rank,") error ", IErr, " allocating basis variables"
+     PRINT*,"ReadCif(",my_rank,") error ", IErr, " allocating cif variables"
      RETURN
   END IF
-
-  RAnisotropicDebyeWallerFactorTensor = ZERO
-  ! actual data loop
+  ! data loop
   IMaxPossibleNAtomsUnitCell=0
   DO ind=1,IAtomCount
     B = 0.D0
@@ -270,13 +269,21 @@ SUBROUTINE ReadCif(IErr)
     SBasisAtomLabel(ind)=name
     f1 = char_('_atom_site_type_symbol', name)
     SBasisAtomSymbol(ind)=name(1:2)
-    ! remove the oxidation state numbers
+    ! remove any oxidation state numbers
     Ipos=SCAN(SBasisAtomSymbol(ind),"1234567890")
-    IF(Ipos>0) THEN
-      WRITE(SBasisAtomSymbol(ind),'(A1,A1)') name(1:1)," "
+    IF (Ipos.GT.0) WRITE(SBasisAtomSymbol(ind),'(A1,A1)') name(1:1)," "
+    !get atomic number
+    DO jnd=1,NElements
+      IF(TRIM(SBasisAtomSymbol(ind)).EQ.TRIM(SElementSymbolMatrix(jnd))) THEN
+        IBasisAtomicNumber(ind)=jnd
+      END IF
+    END DO
+    IF (IBasisAtomicNumber(ind).EQ.0.AND.my_rank.EQ.0) THEN
+      WRITE(SPrintString,FMT='(A26,I3,A9,A5,1X,A2,A4,I3,A3,3F7.4,A1)')&
+      "Could not find Z for atom ",ind,", symbol ",SBasisAtomSymbol(ind)
+      PRINT*,TRIM(ADJUSTL(SPrintString))
+      IErr=1
     END IF
-    WRITE(Sind,*) ind
-    CALL CONVERTAtomName2Number(SBasisAtomSymbol(ind),IBasisAtomicNumber(ind), IErr)
     f2 = numb_('_atom_site_fract_x', x, sx)
     RBasisAtomPosition(ind,1)=x
     f2 = numb_('_atom_site_fract_y', y, sy)
@@ -297,14 +304,16 @@ SUBROUTINE ReadCif(IErr)
     f2 = numb_('_atom_site_occupancy',Occ, sOcc)
     RBasisOccupancy(ind) = Occ
 
-    IF(IWriteFLAG.EQ.14.AND.my_rank.EQ.0) THEN
-      PRINT*,"Atom ",ind,":",SBasisAtomLabel(ind),SBasisAtomSymbol(ind),IBasisAtomicNumber(ind),"[",RBasisAtomPosition(ind,:),"]"
-      PRINT*,"Atom ",ind,"DW",RBasisIsoDW(ind),", occupancy",RBasisOccupancy(ind)
+    IF(my_rank.EQ.0) THEN!IWriteFLAG.EQ.14.AND.
+      WRITE(SPrintString,FMT='(A4,I3,A2,A5,1X,A2,A3,I3,A3,3F7.4,A7,F5.3,A12,F7.4)')&
+      "Atom",ind,": ",SBasisAtomLabel(ind),SBasisAtomSymbol(ind)," Z=",IBasisAtomicNumber(ind),&
+      ", [",RBasisAtomPosition(ind,:),"], DWF=",RBasisIsoDW(ind),", occupancy=",RBasisOccupancy(ind)
+      PRINT*,TRIM(ADJUSTL(SPrintString))
     END IF
     IF(loop_ .NEQV. .TRUE.) EXIT
   END DO
 
-!Branch here depending on felixsim or felixrefine
+!Branch here depending on felixsim or felixrefine (WHY?  Can't we just read all of them in?)
   IF (ISoftwareMode.NE.0) THEN !felixrefine
     ALLOCATE(SWyckoffSymbols(SIZE(IAtomicSitesToRefine)),STAT=IErr)
     IF( IErr.NE.0 ) THEN
