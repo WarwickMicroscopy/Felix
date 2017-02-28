@@ -859,11 +859,12 @@ PROGRAM Felixrefine
         ELSE!it is better, so keep going
           Rvar(3)=Rvar(2)+RPvecMag
         END IF
-        IF (Rvar(3).LE.-RVar0(ind).AND.IVariableType.EQ.4) Rvar(3)=-RVar0(ind)/RPvec(ind)!if less than zero DW is requested, make the third point equal to 0.0 
+        IF (Rvar(3).LE.-RVar0(ind).AND.IVariableType.EQ.4) Rvar(3)=-RVar0(ind)/RPvec(ind)+0.05!if less than zero DW is requested, make the third point equal to 0.05
         RCurrentVar=RVar0+RPvec*Rvar(3)!x3=x1+v3
         CALL SimulateAndFit(RCurrentVar,Iter,IExitFLAG,IErr)
         Iter=Iter+1
         Rfit(3)=RFigureofMerit
+        IF (RFigureofMerit.LT.RBestFit) RBestFit=RFigureofMerit
         !check the three points make a concave set
         jnd=MAXLOC(Rvar,1)!highest x
         knd=MINLOC(Rvar,1)!lowest x
@@ -871,7 +872,6 @@ PROGRAM Felixrefine
         Rtest=-ABS(Rfit(jnd)-Rfit(knd))!Rtest=0.0 would be a straight line, >0=convex, <0=concave
         !Rconvex is the calculated fit index at the mid x, if ithere was a straight line between lowest and highest x
         Rconvex=Rfit(lnd)-(Rfit(knd)+(Rvar(lnd)-Rvar(knd))*(Rfit(jnd)-Rfit(knd))/(Rvar(jnd)-Rvar(knd)))
-        !IF(my_rank.EQ.0) PRINT*,"Rtest=",Rtest,"Rconvex=",Rconvex
         DO WHILE (Rconvex.GT.0.1*Rtest)!if it isn't more than 10% concave, keep going until it is sufficiently concave
           IF(my_rank.EQ.0) PRINT*,"Convex, continuing"
           jnd=MAXLOC(Rfit,1)!worst fit
@@ -881,7 +881,11 @@ PROGRAM Felixrefine
           RPvecMag=RPvecMag*(0.5+SQRT(5.0)/2.0)!increase the step size by the golden ratio
           IF (ABS(RPvecMag).GT.RMaxUgStep.AND.IRefineMode(1).EQ.1) RPvecMag=SIGN(RMaxUgStep,RPvecMag)!maximum step in Ug is RMaxUgStep
           Rvar(lnd)=Rvar(knd)+RPvecMag
-          IF (Rvar(lnd).LT.-RVar0(ind).AND.IVariableType.EQ.4) Rvar(lnd)=-RVar0(ind)/RPvec(ind)!if less than zero DW is requested, make the third point equal to 0.0...
+          IF (Rvar(lnd).LT.-RVar0(ind).AND.IVariableType.EQ.4) THEN
+            Rvar(lnd)=-RVar0(ind)/RPvec(ind)!if less than zero DW is requested, make the third point equal to 0.0...
+            RCurrentVar=RVar0+RPvec*Rvar(lnd)!set up for simulation outside the loop
+            EXIT
+          END IF
           RCurrentVar=RVar0+RPvec*Rvar(lnd)
           CALL SimulateAndFit(RCurrentVar,Iter,IExitFLAG,IErr)
           Iter=Iter+1
@@ -899,13 +903,12 @@ PROGRAM Felixrefine
           lnd=6-jnd-knd!the mid x
           Rconvex=Rfit(lnd)-(Rfit(knd)+(Rvar(lnd)-Rvar(knd))*(Rfit(jnd)-Rfit(knd))/(Rvar(jnd)-Rvar(knd)))
           Rtest=-ABS(Rfit(jnd)-Rfit(knd))
-          !If a DW factor is zero stop looking for the minimum and move on to the next
-          IF (RCurrentVar(ind).LE.TINY.AND.IVariableType.EQ.4) Rconvex=-666.!
           !IF(my_rank.EQ.0) PRINT*,"RCurrentVar(ind)=",RCurrentVar(ind)
           !IF(my_rank.EQ.0) PRINT*,"Rtest=",Rtest,"Rconvex=",Rconvex
         END DO
         !now make a prediction and replace worst point
         IF (RCurrentVar(ind).LE.TINY.AND.IVariableType.EQ.4) THEN!We have reached zero D-W factor, skip the prediction
+          CALL SimulateAndFit(RCurrentVar,Iter,IExitFLAG,IErr)
           IF (my_rank.EQ.0) PRINT*,"Using zero Debye Waller factor, refining next variable"
         ELSE
           CALL Parabo3(Rvar,Rfit,RvarMin,RfitMin,IErr)
