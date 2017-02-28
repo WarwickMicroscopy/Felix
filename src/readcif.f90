@@ -71,7 +71,7 @@ SUBROUTINE ReadCif(IErr)
   INCLUDE       'ciftbx-f90.cmn'
 
   LOGICAL       f1,f2,f3
-  CHARACTER*32  name
+  CHARACTER*32  name,Sind
   CHARACTER*80  line,SPrintString
   CHARACTER*4   label(6)
   CHARACTER*1   SAlphabetarray(52)
@@ -242,13 +242,12 @@ SUBROUTINE ReadCif(IErr)
   DO 
     f1 = char_('_atom_site_label', name)
     IAtomCount= IAtomCount+1
-    IF (loop_ .NEQV. .TRUE.) EXIT
+    IF(loop_ .NEQV. .TRUE.) EXIT
   END DO
   !allocate variables
-  IF(IWriteFLAG.EQ.14.AND.my_rank.EQ.0) PRINT*,"IAtomCount ",IAtomCount
   ALLOCATE(RBasisAtomPosition(IAtomCount,ITHREE),STAT=IErr)
   ALLOCATE(SBasisAtomLabel(IAtomCount),STAT=IErr)
-  ALLOCATE(SBasisAtomSymbol(IAtomCount),STAT=IErr)
+  ALLOCATE(SBasisAtomName(IAtomCount),STAT=IErr)
   ALLOCATE(IBasisAtomicNumber(IAtomCount),STAT=IErr)
   IBasisAtomicNumber = 0
   ALLOCATE(RBasisIsoDW(IAtomCount),STAT=IErr)
@@ -257,10 +256,11 @@ SUBROUTINE ReadCif(IErr)
   RAnisotropicDebyeWallerFactorTensor = ZERO
   ALLOCATE(IBasisAnisoDW(IAtomCount),STAT=IErr)
   IF( IErr.NE.0 ) THEN
-     PRINT*,"ReadCif(",my_rank,") error ", IErr, " allocating cif variables"
+     PRINT*,"ReadCif(", my_rank, ") error ", IErr, " in ALLOCATE()"
      RETURN
   END IF
-  ! data loop
+
+  ! input data loop
   IMaxPossibleNAtomsUnitCell=0
   DO ind=1,IAtomCount
     B = 0.D0
@@ -268,28 +268,30 @@ SUBROUTINE ReadCif(IErr)
     f1 = char_('_atom_site_label', name)
     SBasisAtomLabel(ind)=name
     f1 = char_('_atom_site_type_symbol', name)
-    SBasisAtomSymbol(ind)=name(1:2)
-    ! remove any oxidation state numbers
-    Ipos=SCAN(SBasisAtomSymbol(ind),"1234567890")
-    IF (Ipos.GT.0) WRITE(SBasisAtomSymbol(ind),'(A1,A1)') name(1:1)," "
+    SBasisAtomName(ind)=name(1:2)
+    ! remove the oxidation state numbers
+    Ipos=SCAN(SBasisAtomName(ind),"1234567890")
+    IF (Ipos.GT.0) WRITE(SBasisAtomName(ind),'(A1,A1)') name(1:1)," "
+    WRITE(Sind,*) ind!unused, remove?
+    !CALL CONVERTAtomName2Number(SBasisAtomName(ind),IBasisAtomicNumber(ind), IErr)
     !get atomic number
     DO jnd=1,NElements
-      IF(TRIM(SBasisAtomSymbol(ind)).EQ.TRIM(SElementSymbolMatrix(jnd))) THEN
+      IF(TRIM(SBasisAtomName(ind)).EQ.TRIM(SElementSymbolMatrix(jnd))) THEN
         IBasisAtomicNumber(ind)=jnd
       END IF
     END DO
     IF (IBasisAtomicNumber(ind).EQ.0.AND.my_rank.EQ.0) THEN
       WRITE(SPrintString,FMT='(A26,I3,A9,A5,1X,A2,A4,I3,A3,3F7.4,A1)')&
-      "Could not find Z for atom ",ind,", symbol ",SBasisAtomSymbol(ind)
+      "Could not find Z for atom ",ind,", symbol ",SBasisAtomName(ind)
       PRINT*,TRIM(ADJUSTL(SPrintString))
       IErr=1
     END IF
     f2 = numb_('_atom_site_fract_x', x, sx)
-    RBasisAtomPosition(ind,1)=x
+    RBasisAtomPosition(ind,1)= x
     f2 = numb_('_atom_site_fract_y', y, sy)
-    RBasisAtomPosition(ind,2)=y
+    RBasisAtomPosition(ind,2)= y
     f2 = numb_('_atom_site_fract_z', z, sz)
-    RBasisAtomPosition(ind,3)=z
+    RBasisAtomPosition(ind,3)= z
     f2 = numb_('_atom_site_B_iso_or_equiv',B,sB)
     f2 = numb_('_atom_site_U_iso_or_equiv',Uso,suso)	
     IF(ABS(B).GT.TINY) THEN
@@ -304,16 +306,16 @@ SUBROUTINE ReadCif(IErr)
     f2 = numb_('_atom_site_occupancy',Occ, sOcc)
     RBasisOccupancy(ind) = Occ
 
-    IF(my_rank.EQ.0) THEN!IWriteFLAG.EQ.14.AND.
-      WRITE(SPrintString,FMT='(A4,I3,A2,A5,1X,A2,A3,I3,A3,3F7.4,A7,F5.3,A12,F7.4)')&
-      "Atom",ind,": ",SBasisAtomLabel(ind),SBasisAtomSymbol(ind)," Z=",IBasisAtomicNumber(ind),&
+    IF(IWriteFLAG.EQ.7.AND.my_rank.EQ.0) THEN!optional output
+      WRITE(SPrintString,FMT='(A4,I3,A2,A5,1X,A2,A3,I2,A3,3F7.4,A7,F5.3,A12,F7.4)')&
+      "Atom",ind,": ",SBasisAtomLabel(ind),SBasisAtomName(ind)," Z=",IBasisAtomicNumber(ind),&
       ", [",RBasisAtomPosition(ind,:),"], DWF=",RBasisIsoDW(ind),", occupancy=",RBasisOccupancy(ind)
       PRINT*,TRIM(ADJUSTL(SPrintString))
     END IF
     IF(loop_ .NEQV. .TRUE.) EXIT
   END DO
 
-!Branch here depending on felixsim or felixrefine (WHY?  Can't we just read all of them in?)
+!Branch here depending on felixsim or felixrefine
   IF (ISoftwareMode.NE.0) THEN !felixrefine
     ALLOCATE(SWyckoffSymbols(SIZE(IAtomicSitesToRefine)),STAT=IErr)
     IF( IErr.NE.0 ) THEN

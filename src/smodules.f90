@@ -39,8 +39,8 @@
 !--------------------------------------------------------------------
 MODULE CConst
 
-  CHARACTER*50, PARAMETER :: RStr= "Version: RB_parabolic / BUILD / Alpha"
-  CHARACTER*50, PARAMETER :: DStr= "Date: 18-02-2017"
+  CHARACTER*50, PARAMETER :: RStr= "Version: master / BUILD / Alpha"
+  CHARACTER*50, PARAMETER :: DStr= "Date: 12-01-2017"
   CHARACTER*50, PARAMETER :: AStr= "Status: Parabolic refinement test&debug"
   
   CHARACTER*8 CSpaceGrp(230)
@@ -329,8 +329,8 @@ MODULE SPara
   
   CHARACTER*1 :: SSpaceGroupName
   CHARACTER*10 :: SSpaceGrp
-  CHARACTER*2, DIMENSION(:), ALLOCATABLE :: SBasisAtomSymbol,SAtomSymbol
-  CHARACTER*5, DIMENSION(:), ALLOCATABLE :: SBasisAtomLabel,SAtomLabel !limits up to 999 atoms of same kind, e.g. Sr999
+  CHARACTER*5, DIMENSION(:),ALLOCATABLE :: SBasisAtomLabel,SAtomLabel
+  CHARACTER*2, DIMENSION(:),ALLOCATABLE :: SBasisAtomName, SAtomName
   CHARACTER*1,DIMENSION(:),ALLOCATABLE :: SWyckoffSymbols
   
 END MODULE SPara

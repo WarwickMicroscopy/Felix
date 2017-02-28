@@ -536,10 +536,10 @@ PROGRAM felixsim
      GOTO 9999
   ENDIF
 
-  DEALLOCATE(SAtomSymbol,STAT=IErr)
+  DEALLOCATE(SAtomName,STAT=IErr)
   IF( IErr.NE.0 ) THEN
      PRINT*,"felixsim(", my_rank, ") error ", IErr, &
-          " in Deallocation SAtomSymbol"
+          " in Deallocation SAtomName"
      GOTO 9999
   ENDIF
 

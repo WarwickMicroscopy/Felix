@@ -417,14 +417,12 @@ SUBROUTINE Absorption (IErr)
       PRINT*,"Felixfunction(",my_rank,")error",IErr,"in MPI_GATHERV"
       RETURN
     END IF
-    PRINT*,"bing bong", my_rank
     !=====================================and send out the full list to all cores
 	CALL MPI_BCAST(RUgReal,IUniqueUgs,MPI_DOUBLE_PRECISION,&
 	               root,MPI_COMM_WORLD,IErr)
 	CALL MPI_BCAST(RUgImag,IUniqueUgs,MPI_DOUBLE_PRECISION,&
 	               root,MPI_COMM_WORLD,IErr)
     !=====================================
-    PRINT*,"bang!", my_rank
 	DO ind=1,IUniqueUgs
 	  CUgPrime(ind)=CMPLX(RUgReal(ind),RUgImag(ind))
 	END DO

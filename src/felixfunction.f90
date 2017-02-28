@@ -513,21 +513,21 @@ SUBROUTINE PrintVariables(IErr)
       CASE(2)
         PRINT*,"Current Atomic Coordinates"
         DO jnd = 1,SIZE(RBasisAtomPosition,DIM=1)
-          WRITE(SPrintString,FMT='(A2,3(1X,F9.4))') SBasisAtomSymbol(jnd),RBasisAtomPosition(jnd,:)
+          WRITE(SPrintString,FMT='(A3,3(1X,F9.4))') SBasisAtomLabel(jnd),RBasisAtomPosition(jnd,:)
           PRINT*,TRIM(ADJUSTL(SPrintString))              
         END DO
 
       CASE(3)
         PRINT*,"Current Atomic Occupancy"
         DO jnd = 1,SIZE(RBasisOccupancy,DIM=1)
-          WRITE(SPrintString,FMT='(A2,1X,F6.3)') SBasisAtomSymbol(jnd),RBasisOccupancy(jnd)
+          WRITE(SPrintString,FMT='(A3,1X,F6.3)') SBasisAtomLabel(jnd),RBasisOccupancy(jnd)
           PRINT*,TRIM(ADJUSTL(SPrintString))
         END DO
 
       CASE(4)
         PRINT*,"Current Isotropic Debye Waller Factors"
         DO jnd = 1,SIZE(RBasisIsoDW,DIM=1)
-          WRITE(SPrintString,FMT='(A2,1X,F6.3)') SBasisAtomSymbol(jnd),RBasisIsoDW(jnd)
+          WRITE(SPrintString,FMT='(A3,1X,F6.3)') SBasisAtomLabel(jnd),RBasisIsoDW(jnd)
           PRINT*,TRIM(ADJUSTL(SPrintString))
         END DO
 
@@ -535,7 +535,7 @@ SUBROUTINE PrintVariables(IErr)
         PRINT*,"Current Anisotropic Debye Waller Factors"
         DO jnd = 1,SIZE(RAnisotropicDebyeWallerFactorTensor,DIM=1)
           DO knd = 1,3
-            WRITE(SPrintString,FMT='(A2,3(1X,F9.4))') SBasisAtomSymbol(jnd),RAnisotropicDebyeWallerFactorTensor(jnd,knd,:)
+            WRITE(SPrintString,FMT='(A3,3(1X,F9.4))') SBasisAtomLabel(jnd),RAnisotropicDebyeWallerFactorTensor(jnd,knd,:)
             PRINT*,TRIM(ADJUSTL(SPrintString))
           END DO
         END DO
