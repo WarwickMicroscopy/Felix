@@ -856,11 +856,11 @@ PROGRAM Felixrefine
         IF (RFigureofMerit.LT.RBestFit) THEN!always update RCurrentVar with the best fit
           RBestFit=RFigureofMerit
           RIndependentVariable=RCurrentVar
-          IF(my_rank.EQ.0) THEN
-            WRITE(SPrintString,FMT='(A18,F8.6)') &
-             "Best fit so far = ",RBestFit
-            PRINT*,TRIM(ADJUSTL(SPrintString))
-          END IF
+        END IF
+        IF(my_rank.EQ.0) THEN
+          WRITE(SPrintString,FMT='(A18,F8.6)') &
+           "Best fit so far = ",RBestFit
+          PRINT*,TRIM(ADJUSTL(SPrintString))
         END IF
         !third point
         IF (Rfit(2).GT.Rfit(1)) THEN!new 2 is not better than 1, go the other way
@@ -872,18 +872,17 @@ PROGRAM Felixrefine
           RDeltaVar=(RVar0*RPvec)*2*RPvecMag!the change in all variables, note term in brackets is vector multiplication
         END IF
         RCurrentVar=RVar0+RDeltaVar!new set of variables to simulate
-        !IF(my_rank.EQ.0) PRINT*,"Delta,current",RDeltaVar,RCurrentVar
         CALL SimulateAndFit(RCurrentVar,Iter,IExitFLAG,IErr)
         Iter=Iter+1
         Rfit(3)=RFigureofMerit
         IF (RFigureofMerit.LT.RBestFit) THEN!always update RCurrentVar with the best fit
           RBestFit=RFigureofMerit
           RIndependentVariable=RCurrentVar
-          IF(my_rank.EQ.0) THEN
-            WRITE(SPrintString,FMT='(A18,F8.6)') &
-             "Best fit so far = ",RBestFit
-            PRINT*,TRIM(ADJUSTL(SPrintString))
-          END IF
+        END IF
+        IF(my_rank.EQ.0) THEN
+          WRITE(SPrintString,FMT='(A18,F8.6)') &
+           "Best fit so far = ",RBestFit
+          PRINT*,TRIM(ADJUSTL(SPrintString))
         END IF
         !check the three points make a concave set
         jnd=MAXLOC(Rvar,1)!highest x
@@ -905,12 +904,10 @@ PROGRAM Felixrefine
             Rvar(lnd)=ZERO!if , make the third point equal to 0.0...
             RDeltaVar=-(RVar0*RPVec)
             RCurrentVar=RVar0+RDeltaVar!new set of variables to simulate outside the loop
-            !IF(my_rank.EQ.0) PRINT*,"Delta,current",RDeltaVar,RCurrentVar
-            EXIT
+             EXIT
           ELSE
             RDeltaVar=(RVar0*RPvec)*(Rvar(lnd)-SIGN(ONE,Rvar(lnd)))/RVar0(ind)
             RCurrentVar=RVar0+RDeltaVar!new set of variables to simulate inside the loop
-            !IF(my_rank.EQ.0) PRINT*,"Delta,current",RDeltaVar,RCurrentVar
           END IF
           CALL SimulateAndFit(RCurrentVar,Iter,IExitFLAG,IErr)
           Iter=Iter+1
@@ -918,11 +915,11 @@ PROGRAM Felixrefine
           IF (RFigureofMerit.LT.RBestFit) THEN!always update RIndependentVariable with the best fit
             RBestFit=RFigureofMerit
             RIndependentVariable=RCurrentVar
-            IF(my_rank.EQ.0) THEN
-              WRITE(SPrintString,FMT='(A18,F8.6)') &
-               "Best fit so far = ",RBestFit
-              PRINT*,TRIM(ADJUSTL(SPrintString))
-            END IF
+          END IF
+          IF(my_rank.EQ.0) THEN
+            WRITE(SPrintString,FMT='(A18,F8.6)') &
+             "Best fit so far = ",RBestFit
+            PRINT*,TRIM(ADJUSTL(SPrintString))
           END IF
           jnd=MAXLOC(Rvar,1)!highest x
           knd=MINLOC(Rvar,1)!lowest x
@@ -937,11 +934,11 @@ PROGRAM Felixrefine
           IF (RFigureofMerit.LT.RBestFit) THEN!always update RIndependentVariable with the best fit
             RBestFit=RFigureofMerit
             RIndependentVariable=RCurrentVar
-            IF(my_rank.EQ.0) THEN
-              WRITE(SPrintString,FMT='(A18,F8.6)') &
-               "Best fit so far = ",RBestFit
-              PRINT*,TRIM(ADJUSTL(SPrintString))
-            END IF
+          END IF
+          IF(my_rank.EQ.0) THEN
+            WRITE(SPrintString,FMT='(A18,F8.6)') &
+             "Best fit so far = ",RBestFit
+            PRINT*,TRIM(ADJUSTL(SPrintString))
           END IF
           IF (my_rank.EQ.0) PRINT*,"Reached zero Debye Waller factor, refining next variable"
         ELSE
@@ -953,13 +950,13 @@ PROGRAM Felixrefine
           END IF
           jnd=MAXLOC(Rfit,1)!worst point
           knd=MINLOC(Rfit,1)!best point
-          !replace worst point with parabolic prediction and put into RIndependentVariable
+          !replace worst point with parabolic prediction and put into RCurrentVar
           Rvar(jnd)=RvarMin
           IF (Rvar(jnd).LT.ZERO.AND.IVariableType.EQ.4) THEN!less than zero DW is requested
             Rvar(jnd)=ZERO!if , make the third point equal to 0.0...
             RDeltaVar=-(RVar0*RPVec)
           ELSE
-            RDeltaVar=(RVar0*RPvec)*(Rvar(jnd)-SIGN(ONE,Rvar(jnd)))/RVar0(ind)
+            RDeltaVar=(RVar0*RPvec)*(Rvar(jnd)-RVar0(ind))/RVar0(ind)
           END IF
           RCurrentVar=RVar0+RDeltaVar!new set of variables to simulate
           CALL SimulateAndFit(RCurrentVar,Iter,IExitFLAG,IErr)
@@ -968,11 +965,11 @@ PROGRAM Felixrefine
           IF (RFigureofMerit.LT.RBestFit) THEN!always update RIndependentVariable with the best fit
             RBestFit=RFigureofMerit
             RIndependentVariable=RCurrentVar
-            IF(my_rank.EQ.0) THEN
-              WRITE(SPrintString,FMT='(A18,F8.6)') &
-               "Best fit so far = ",RBestFit
-              PRINT*,TRIM(ADJUSTL(SPrintString))
-            END IF
+          END IF
+          IF(my_rank.EQ.0) THEN
+            WRITE(SPrintString,FMT='(A18,F8.6)') &
+             "Best fit so far = ",RBestFit
+            PRINT*,TRIM(ADJUSTL(SPrintString))
           END IF
         END IF
         IF (ind.EQ.mnd.AND.INoOfVariables.GT.1) I45=MODULO(I45+1,3)!Increment flag on last loop
