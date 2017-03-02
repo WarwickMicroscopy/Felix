@@ -53,7 +53,7 @@ SUBROUTINE SimulateAndFit(RIndependentVariable,Iter,IExitFLAG,IErr)
 
   INTEGER(IKIND) :: IErr,IExitFLAG,IThicknessIndex,ind,jnd
   REAL(RKIND),DIMENSION(INoOfVariables) :: RIndependentVariable
-  INTEGER(IKIND),INTENT(IN) :: Iter
+  INTEGER(IKIND),INTENT(INOUT) :: Iter
   COMPLEX(CKIND),DIMENSION(nReflections,nReflections) :: CUgMatDummy
   CHARACTER*200 :: SFormat,SPrintString
 
@@ -148,7 +148,7 @@ SUBROUTINE SimulateAndFit(RIndependentVariable,Iter,IExitFLAG,IErr)
      PRINT*,"SimulateAndFit(",my_rank,")error in FelixFunction"
      RETURN
   END IF
-
+  Iter=Iter+1
   IF(my_rank.EQ.0) THEN
     IF (ISimFLAG.EQ.0) THEN!Only calculate figure of merit if we are refining
       CALL CalculateFigureofMeritandDetermineThickness(Iter,IThicknessIndex,IErr)
