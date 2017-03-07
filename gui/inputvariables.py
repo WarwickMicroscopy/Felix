@@ -40,26 +40,24 @@ def combof(pool, maxn):
 
 class input_var(): #input variable
     
-    def __init__(self, name):
+    def __init__(self, name, infoText=''):
+
         self.name = name
+        if infoText == '':
+            self.infoText = name
+        else: 
+            self.infoText = infoText
+
         #check name isinstance(name, str)
-
-    def onInfo(self, name):
-        dlg = wx.MessageDialog(None, self.name + "\n2nd line..." + "\n\nmoreinfo",
-            caption = "info", style = wx.OK | wx.ICON_INFORMATION)
-        dlg.ShowModal()
-        dlg.Destroy()
-
-
-        
+       
 class combo_var(input_var): #combo variable - select option from list
 
-    def __init__(self, name, choices, defaultRef=0, maxchoice = -1):
+    def __init__(self, name, choices, defaultRef=0, maxchoice = -1, infoText=''):
         if maxchoice == -1:
             maxchoice = 1
 
         #all(isinstance(elem, str) for elem in choices)
-        input_var.__init__(self, name)
+        input_var.__init__(self, name, infoText)
         self.choices, self.refList = combof(choices, maxchoice)
         self.defaultRef = defaultRef
         
@@ -95,9 +93,8 @@ class combo_var(input_var): #combo variable - select option from list
 
 class value_var(input_var):
     
-    def __init__(self, name):
-        input_var.__init__(self, name)
-        
+    def __init__(self, name, infoText=''):
+        input_var.__init__(self, name, infoText)        
 
                         
     def inputWidget(self, panel):
@@ -144,7 +141,7 @@ class seperator():
 ###INPUT VARIABLES      
 iv =[
     seperator('Flag Variables'),
-    combo_var('IWriteFLAG', ['0','5','11']),    
+    combo_var('IWriteFLAG', ['0','5','11'], infoText = 'For detailed terminal info...'),    
     combo_var('IImageFLAG', ['Diffractions','Reflections',
                     'Amplitude+Phase'], 2, maxchoice = 3),
     combo_var('IOutputFLAG', ['Nothing','Ug Matrix','Eigenspectra',
@@ -173,7 +170,7 @@ iv =[
     value_var('RDebyeWallerConstant'),
     value_var('RAbsorptionPer'),
     value_var('RConvergenceAngle'),
-    value_var('IIncidentBeamDirectionX'),
+    value_var('IIncidentBeamDirectionX', infoText = 'IIncidentBeamDirectionX coordinate'),
     value_var('IIncidentBeamDirectionY'),
     value_var('IIncidentBeamDirectionZ'),
     value_var('IXDirectionX'),
