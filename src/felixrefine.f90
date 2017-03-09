@@ -826,7 +826,6 @@ PROGRAM Felixrefine
         !incoming point in parameter space
         RVar0=RIndependentVariable
         RPvecMag=RIndependentVariable(ind)*RPscale*(1/SQRT(1+REAL(ABS(I45))))
-    !IF(my_rank.EQ.0) PRINT*,"RPvecMag",RPvecMag
         !The type of variable being refined 
         IVariableType=IIterativeVariableUniqueIDs(ind,2)
         IF(my_rank.EQ.0) THEN
@@ -843,14 +842,12 @@ PROGRAM Felixrefine
             PRINT*,"Convergence angle refinement"
           END SELECT
         END IF
-        !initial coordinate on the line is point zero
-        IF (RVar0(ind).LE.ZERO.AND.IVariableType.EQ.4) THEN! DW factor is zero, reset
-          IF(my_rank.EQ.0) PRINT*,"Zero DW factor, resetting to 0.1"
+        !initial coordinate 
+        IF (RVar0(ind).LE.0.1.AND.IVariableType.EQ.4) THEN! DW factor is too small, reset
+          IF(my_rank.EQ.0) PRINT*,"Small Debye Waller factor, resetting to 0.1"
           RVar0(ind)=0.1
           RCurrentVar=RVar0
           RPvecMag=RPscale
-    !IF(my_rank.EQ.0) PRINT*,"RPvecMag",RPvecMag
-    !IF(my_rank.EQ.0) PRINT*,"RVar1",Rvar,": Current",RCurrentVar
           CALL SimulateAndFit(RCurrentVar,Iter,IExitFLAG,IErr)
           CALL BestFitCheck(RFigureofMerit,RBestFit,RCurrentVar,RIndependentVariable,Iter,IErr)
         END IF
@@ -859,7 +856,6 @@ PROGRAM Felixrefine
 	    Rfit=RFigureofMerit!with the current fit index
         Rvar(2)=Rvar(1)+RPvecMag!second point  
         RCurrentVar=RVar0+RPvec*(Rvar(2)-RVar0(ind))
-    !IF(my_rank.EQ.0) PRINT*,"RVar2",Rvar,": Current",RCurrentVar
         CALL SimulateAndFit(RCurrentVar,Iter,IExitFLAG,IErr)
         CALL BestFitCheck(RFigureofMerit,RBestFit,RCurrentVar,RIndependentVariable,Iter,IErr)
         Rfit(2)=RFigureofMerit
@@ -871,7 +867,6 @@ PROGRAM Felixrefine
           Rvar(3)=Rvar(2)+RPvecMag
         END IF
         RCurrentVar=RVar0+RPvec*(Rvar(3)-RVar0(ind))!x3=x1+v3
-    !IF(my_rank.EQ.0) PRINT*,"RVar3",Rvar,": Current",RCurrentVar
         CALL SimulateAndFit(RCurrentVar,Iter,IExitFLAG,IErr)
         CALL BestFitCheck(RFigureofMerit,RBestFit,RCurrentVar,RIndependentVariable,Iter,IErr)
         Rfit(3)=RFigureofMerit
@@ -897,13 +892,12 @@ PROGRAM Felixrefine
             EXIT
           END IF
           RCurrentVar=RVar0+RPvec*(Rvar(lnd)-RVar0(ind))
-          IF (I45.NE.0) THEN!check for paired DW factor <0
+          IF (I45.NE.0) THEN!check for paired DW factor <0 THIS ISN'T WORKING
             IF (RCurrentVar(ind+1).LE.ZERO.AND.IIterativeVariableUniqueIDs(ind+1,2).EQ.4) THEN!less than zero DW is requested
               RCurrentVar=RVar0-RPvec*RCurrentVar(ind+1)
               EXIT
             END IF
           END IF
-    !IF(my_rank.EQ.0) PRINT*,"RVarC",Rvar,": Current",RCurrentVar
           CALL SimulateAndFit(RCurrentVar,Iter,IExitFLAG,IErr)
           CALL BestFitCheck(RFigureofMerit,RBestFit,RCurrentVar,RIndependentVariable,Iter,IErr)
           Rfit(lnd)=RFigureofMerit
@@ -914,13 +908,11 @@ PROGRAM Felixrefine
           Rtest=-ABS(Rfit(jnd)-Rfit(knd))
         END DO
         !now make a prediction and replace worst point
-        IF (RCurrentVar(ind).LE.TINY.AND.IVariableType.EQ.4) THEN!We have reached zero D-W factor, skip the prediction
-    !IF(my_rank.EQ.0) PRINT*,"RVarP0",Rvar,": Current",RCurrentVar
+        IF (RCurrentVar(ind).LE.TINY.AND.IVariableType.EQ.4) THEN!We reached zero D-W factor in convexity test, skip the prediction
           CALL SimulateAndFit(RCurrentVar,Iter,IExitFLAG,IErr)
           CALL BestFitCheck(RFigureofMerit,RBestFit,RCurrentVar,RIndependentVariable,Iter,IErr)
           IF (my_rank.EQ.0) PRINT*,"Using zero Debye Waller factor, refining next variable"
         ELSE
-    !IF(my_rank.EQ.0) PRINT*,"RVar,Rfit",Rvar,Rfit
           CALL Parabo3(Rvar,Rfit,RvarMin,RfitMin,IErr)
           IF (my_rank.EQ.0) THEN
             WRITE(SPrintString,FMT='(A32,F6.4,A16,F6.4)') &
@@ -933,7 +925,7 @@ PROGRAM Felixrefine
           Rvar(jnd)=RvarMin
           IF (Rvar(jnd).LT.ZERO.AND.IVariableType.EQ.4) Rvar(jnd)=ZERO!We have reached zero D-W factor
           RCurrentVar=RVar0+RPvec*(Rvar(jnd)-RVar0(ind))
-          IF (I45.NE.0) THEN!check for paired DW factor <0
+          IF (I45.NE.0) THEN!check for paired DW factor <0 THIS ISN'T WORKING
             IF (RCurrentVar(ind+1).LE.ZERO.AND.IIterativeVariableUniqueIDs(ind+1,2).EQ.4) THEN!less than zero DW is requested
               RCurrentVar=RVar0-RPvec*RCurrentVar(ind+1)
             END IF
@@ -958,7 +950,9 @@ PROGRAM Felixrefine
         END IF
       END IF
     END DO
-
+    !finallly simulate and output the best fit
+    IExitFLAG=1
+    CALL SimulateAndFit(RIndependentVariable,Iter,IExitFLAG,IErr)
     
   CASE DEFAULT!Simulation only, should never happen
     IF (my_rank.EQ.0) THEN

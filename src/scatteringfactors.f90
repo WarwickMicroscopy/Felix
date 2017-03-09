@@ -57,25 +57,6 @@ SUBROUTINE ScatteringFactors(IScatteringMethodSwitch,IErr)
   INTEGER(IKIND):: IScatteringMethodSwitch,IScattDimension,IErr,ind
   REAL(RKIND) :: RKirkland(103,12), RPeng(103,8), RDoyleAndTurner(103,8), RLobato(103,10), RAtomicNumbers(103,1)
 
-!!$Assign Atomic numbers to local variable (not required in felix but may have future purpose)
-!!$These are associated with each row of the scattering factors
-  DATA RAtomicNumbers(1:103,1)/ &
-       1.000000000E+00,2.000000000E+00,3.000000000E+00,4.000000000E+00,5.000000000E+00,6.000000000E+00,7.000000000E+00, &
-       8.000000000E+00,9.000000000E+00,1.000000000E+01,1.100000000E+01,1.200000000E+01,1.300000000E+01,1.400000000E+01, &
-       1.500000000E+01,1.600000000E+01,1.700000000E+01,1.800000000E+01,1.900000000E+01,2.000000000E+01,2.100000000E+01, &
-       2.200000000E+01,2.300000000E+01,2.400000000E+01,2.500000000E+01,2.600000000E+01,2.700000000E+01,2.800000000E+01, &
-       2.900000000E+01,3.000000000E+01,3.100000000E+01,3.200000000E+01,3.300000000E+01,3.400000000E+01,3.500000000E+01, &
-       3.600000000E+01,3.700000000E+01,3.800000000E+01,3.900000000E+01,4.000000000E+01,4.100000000E+01,4.200000000E+01, &
-       4.300000000E+01,4.400000000E+01,4.500000000E+01,4.600000000E+01,4.700000000E+01,4.800000000E+01,4.900000000E+01, &
-       5.000000000E+01,5.100000000E+01,5.200000000E+01,5.300000000E+01,5.400000000E+01,5.500000000E+01,5.600000000E+01, &
-       5.700000000E+01,5.800000000E+01,5.900000000E+01,6.000000000E+01,6.100000000E+01,6.200000000E+01,6.300000000E+01, &
-       6.400000000E+01,6.500000000E+01,6.600000000E+01,6.700000000E+01,6.800000000E+01,6.900000000E+01,7.000000000E+01, &
-       7.100000000E+01,7.200000000E+01,7.300000000E+01,7.400000000E+01,7.500000000E+01,7.600000000E+01,7.700000000E+01, &
-       7.800000000E+01,7.900000000E+01,8.000000000E+01,8.100000000E+01,8.200000000E+01,8.300000000E+01,8.400000000E+01, &
-       8.500000000E+01,8.600000000E+01,8.700000000E+01,8.800000000E+01,8.900000000E+01,9.000000000E+01,9.100000000E+01, &
-       9.200000000E+01,9.300000000E+01,9.400000000E+01,9.500000000E+01,9.600000000E+01,9.700000000E+01,9.800000000E+01, &
-       9.900000000E+01,1.000000000E+02,1.010000000E+02,1.020000000E+02,1.030000000E+02/
-
   SELECT CASE(IScatteringMethodSwitch)
 
   CASE(0)
@@ -292,9 +273,9 @@ SUBROUTINE ScatteringFactors(IScatteringMethodSwitch,IErr)
      IScattDimension=12
 
 !!$Allocate Global Scattering factor array 
-     ALLOCATE(RScattFactors(SIZE(RAtomicNumbers,1,IKIND),IScattDimension), STAT=IErr)
+     ALLOCATE(RScattFactors(103,IScattDimension), STAT=IErr)
      IF( IErr.NE.0 ) THEN
-        PRINT*,"ReadScaFile(): error in memory ALLOCATE()"
+        PRINT*,"ScatteringFactors: error in memory allocation"
         RETURN
      ENDIF
 
@@ -515,9 +496,9 @@ SUBROUTINE ScatteringFactors(IScatteringMethodSwitch,IErr)
      IScattDimension=8
 
 !!$Allocate Global Scattering factor array 
-     ALLOCATE(RScattFactors(SIZE(RAtomicNumbers,1,IKIND),IScattDimension), STAT=IErr)
+     ALLOCATE(RScattFactors(103,IScattDimension), STAT=IErr)
      IF( IErr.NE.0 ) THEN
-        PRINT*,"ReadScaFile(): error in memory ALLOCATE()"
+        PRINT*,"ScatteringFactors: error in memory allocation"
         RETURN
      ENDIF
 
@@ -737,9 +718,9 @@ SUBROUTINE ScatteringFactors(IScatteringMethodSwitch,IErr)
      IScattDimension=8
 
 !!$Allocate Global Scattering factor array 
-     ALLOCATE(RScattFactors(SIZE(RAtomicNumbers,1,IKIND),IScattDimension), STAT=IErr)
+     ALLOCATE(RScattFactors(103,IScattDimension), STAT=IErr)
      IF( IErr.NE.0 ) THEN
-        PRINT*,"ReadScaFile(): error in memory ALLOCATE()"
+        PRINT*,"ScatteringFactors: error in memory allocation"
         RETURN
      ENDIF
 
@@ -959,9 +940,9 @@ SUBROUTINE ScatteringFactors(IScatteringMethodSwitch,IErr)
      IScattDimension=10
 
 !!$Allocate Global Scattering factor array 
-     ALLOCATE(RScattFactors(SIZE(RAtomicNumbers,1,IKIND),IScattDimension), STAT=IErr)
+     ALLOCATE(RScattFactors(103,IScattDimension), STAT=IErr)
      IF( IErr.NE.0 ) THEN
-        PRINT*,"ReadScaFile(): error in memory ALLOCATE()"
+        PRINT*,"ScatteringFactors: error in memory allocation"
         RETURN
      ENDIF
 

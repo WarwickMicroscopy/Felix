@@ -273,12 +273,12 @@ SUBROUTINE ReadCif(IErr)
     Ipos=SCAN(SBasisAtomName(ind),"1234567890")
     IF (Ipos.GT.0) WRITE(SBasisAtomName(ind),'(A1,A1)') name(1:1)," "
     WRITE(Sind,*) ind!unused, remove?
-    !CALL CONVERTAtomName2Number(SBasisAtomName(ind),IBasisAtomicNumber(ind), IErr)
     !get atomic number
     DO jnd=1,NElements
       IF(TRIM(SBasisAtomName(ind)).EQ.TRIM(SElementSymbolMatrix(jnd))) THEN
         IBasisAtomicNumber(ind)=jnd
       END IF
+      IF(IBasisAtomicNumber(ind).EQ.104) IBasisAtomicNumber(ind)=1!Element 'Q', hydrogen-like
     END DO
     IF (IBasisAtomicNumber(ind).EQ.0.AND.my_rank.EQ.0) THEN
       WRITE(SPrintString,FMT='(A26,I3,A9,A5,1X,A2,A4,I3,A3,3F7.4,A1)')&

@@ -148,7 +148,7 @@ SUBROUTINE SimulateAndFit(RIndependentVariable,Iter,IExitFLAG,IErr)
      PRINT*,"SimulateAndFit(",my_rank,")error in FelixFunction"
      RETURN
   END IF
-  Iter=Iter+1
+  IF (IMethodFLAG.NE.1) Iter=Iter+1!iterate for methods other than simplex
   IF(my_rank.EQ.0) THEN
     IF (ISimFLAG.EQ.0) THEN!Only calculate figure of merit if we are refining
       CALL CalculateFigureofMeritandDetermineThickness(Iter,IThicknessIndex,IErr)

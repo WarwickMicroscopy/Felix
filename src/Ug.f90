@@ -117,7 +117,7 @@ SUBROUTINE SymmetryRelatedStructureFactorDetermination (IErr)
      END DO
   END DO
 
-  IF((IWriteFLAG.GE.0.AND.my_rank.EQ.0).OR.IWriteFLAG.GE.10) THEN
+  IF (my_rank.EQ.0) THEN
      WRITE(SPrintString,FMT='(I5,A25)') Iuid," unique structure factors"
      PRINT*,TRIM(ADJUSTL(SPrintString))
 !     PRINT*,"Unique Ugs = ",Iuid
@@ -144,7 +144,7 @@ SUBROUTINE StructureFactorInitialisation (IErr)
   USE WriteToScreen
 
   USE CConst; USE IConst
-  USE IPara; USE RPara; USE CPara
+  USE IPara; USE RPara; USE CPara; USE SPara
   USE BlochPara
 
   USE IChannels
@@ -179,6 +179,7 @@ SUBROUTINE StructureFactorInitialisation (IErr)
         CASE(0) ! Kirkland Method using 3 Gaussians and 3 Lorentzians, NB Kirkland scattering factor is in Angstrom units
 		  !NB atomic number and g-vector passed as global variables
           RScatteringFactor = Kirkland(RgMatrixMagnitude(ind,jnd))
+          IF(TRIM(SAtomName(lnd)).EQ."Q") RScatteringFactor = Kirkland(0.1*RgMatrixMagnitude(ind,jnd))!Element Q is like hydrogen but 10 times smaller
   
         CASE(1) ! 8 Parameter Method with Scattering Parameters from Peng et al 1996 
           RScatteringFactor = ZERO
@@ -402,7 +403,7 @@ SUBROUTINE Absorption (IErr)
       !Convert to U'g=V'g*(2*m*e/h^2)	  
 	  CLocalUgPrime(ind-ILocalUgCountMin+1)=CVgPrime*TWO*RElectronMass*RRelativisticCorrection*RElectronCharge/((RPlanckConstant*RAngstromConversion)**2)
     END DO
-	!I give up trying to MPI a complex number, do it with a real one
+	!I give up trying to MPI a complex number, do it with two real ones
 	RLocalUgReal=REAL(CLocalUgPrime)
 	RLocalUgImag=AIMAG(CLocalUgPrime)
     !MPI gatherv the new U'g s into CUgPrime--------------------------------------------------------------------  
@@ -489,7 +490,7 @@ SUBROUTINE DoubleIntegrate(RResult,IErr)
   !Quadpack integration 0 to infinity
   CALL dqagi(IntegrateBK,ZERO,inf,0,RAccuracy,RResult,RError,Ieval,IErr,&
        limit, lenw, last, iwork, work )
-  !The integration is actually -inf to inf in 2 dimensions. We use symmetry to just do 0 to inf, so multiply by 4
+  !The integration required is actually -inf to inf in 2 dimensions. We used symmetry to just do 0 to inf, so multiply by 4
   RResult=RResult*4
   
 END SUBROUTINE DoubleIntegrate
