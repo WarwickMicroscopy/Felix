@@ -179,7 +179,7 @@ SUBROUTINE StructureFactorInitialisation (IErr)
         CASE(0) ! Kirkland Method using 3 Gaussians and 3 Lorentzians, NB Kirkland scattering factor is in Angstrom units
 		  !NB atomic number and g-vector passed as global variables
           RScatteringFactor = Kirkland(RgMatrixMagnitude(ind,jnd))
-          IF(TRIM(SAtomName(lnd)).EQ."Q") RScatteringFactor = Kirkland(0.1*RgMatrixMagnitude(ind,jnd))!Element Q is like hydrogen but 10 times smaller
+          IF(TRIM(SAtomName(lnd)).EQ."Q") RScatteringFactor = Kirkland(0.2*RgMatrixMagnitude(ind,jnd))!Element Q is like hydrogen but 5 times smaller
   
         CASE(1) ! 8 Parameter Method with Scattering Parameters from Peng et al 1996 
           RScatteringFactor = ZERO
