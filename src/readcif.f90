@@ -278,7 +278,6 @@ SUBROUTINE ReadCif(IErr)
       IF(TRIM(SBasisAtomName(ind)).EQ.TRIM(SElementSymbolMatrix(jnd))) THEN
         IBasisAtomicNumber(ind)=jnd
       END IF
-      IF(IBasisAtomicNumber(ind).EQ.104) IBasisAtomicNumber(ind)=1!Element 'Q', hydrogen-like
     END DO
     IF (IBasisAtomicNumber(ind).EQ.0.AND.my_rank.EQ.0) THEN
       WRITE(SPrintString,FMT='(A26,I3,A9,A5,1X,A2,A4,I3,A3,3F7.4,A1)')&

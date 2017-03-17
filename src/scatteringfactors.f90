@@ -38,8 +38,7 @@
 
 !> Contains all of the scattering coefficients for each of the following methods:
 !! Kirkland, Peng, Doyle & Turner, Lobato.
-!! These will be read in on an atom by atom basis. Format of coefficients can be
-!! found in extended documentation 
+!! Fictitious element "Q" is atomic number 104, Kirkland only, 1/5 width of H
 SUBROUTINE ScatteringFactors(IScatteringMethodSwitch,IErr)
 
   USE MyNumbers
@@ -55,13 +54,14 @@ SUBROUTINE ScatteringFactors(IScatteringMethodSwitch,IErr)
   IMPLICIT NONE
 
   INTEGER(IKIND):: IScatteringMethodSwitch,IScattDimension,IErr,ind
-  REAL(RKIND) :: RKirkland(103,12), RPeng(103,8), RDoyleAndTurner(103,8), RLobato(103,10), RAtomicNumbers(103,1)
+  REAL(RKIND) :: RKirkland(104,12), RPeng(104,8), RDoyleAndTurner(104,8), RLobato(104,10), RAtomicNumbers(104,1)
 
   SELECT CASE(IScatteringMethodSwitch)
 
   CASE(0)
 
 !!$Kirkland Tables
+     !in the format a1 b1 a2 b2 a3 b3 c1 d1 c2 d2 c3 d3
      DATA RKirkland(1,1:12)/4.202983240E-03,2.253508880E-01,6.277625050E-02,2.253669500E-01,3.009073470E-02,2.253317560E-01, &
           6.777566950E-02,4.388540010E+00,3.566092370E-03,4.038848230E-01,2.761358150E-02,1.444901660E+00/
      DATA RKirkland(2,1:12)/1.875437040E-05,2.124279970E-01,4.105958000E-04,3.322122790E-01,1.963000590E-01,5.173251520E-01, &
@@ -268,12 +268,14 @@ SUBROUTINE ScatteringFactors(IScatteringMethodSwitch,IErr)
           2.361142490E+00,1.681648030E+01,1.262772920E-01,7.503046330E-02,3.813645010E-01,3.993058520E-01/
      DATA RKirkland(103,1:12)/4.867380140E+00,1.603205200E+01,3.199744010E-01,6.708711380E-02,4.588724250E+00,5.770393730E-01, &
           1.214824480E-01,7.222758990E-02,2.316398720E+00,1.412797370E+01,3.792581370E-01,3.899734840E-01/
+     DATA RKirkland(104,1:12)/1.681193296E-04,9.014035520E-03,2.511050020E-03,9.014678000E-03,1.203629388E-03,9.013270240E-03, &
+          6.777566950E-02,2.194270005E+01,3.566092370E-03,2.019424115E+00,2.761358150E-02,7.224508300E+00/
 
 !!$Kirkland has 12 numbers for each element
      IScattDimension=12
 
 !!$Allocate Global Scattering factor array 
-     ALLOCATE(RScattFactors(103,IScattDimension), STAT=IErr)
+     ALLOCATE(RScattFactors(104,IScattDimension), STAT=IErr)
      IF( IErr.NE.0 ) THEN
         PRINT*,"ScatteringFactors: error in memory allocation"
         RETURN
@@ -496,7 +498,7 @@ SUBROUTINE ScatteringFactors(IScatteringMethodSwitch,IErr)
      IScattDimension=8
 
 !!$Allocate Global Scattering factor array 
-     ALLOCATE(RScattFactors(103,IScattDimension), STAT=IErr)
+     ALLOCATE(RScattFactors(104,IScattDimension), STAT=IErr)
      IF( IErr.NE.0 ) THEN
         PRINT*,"ScatteringFactors: error in memory allocation"
         RETURN
@@ -718,7 +720,7 @@ SUBROUTINE ScatteringFactors(IScatteringMethodSwitch,IErr)
      IScattDimension=8
 
 !!$Allocate Global Scattering factor array 
-     ALLOCATE(RScattFactors(103,IScattDimension), STAT=IErr)
+     ALLOCATE(RScattFactors(104,IScattDimension), STAT=IErr)
      IF( IErr.NE.0 ) THEN
         PRINT*,"ScatteringFactors: error in memory allocation"
         RETURN
@@ -940,7 +942,7 @@ SUBROUTINE ScatteringFactors(IScatteringMethodSwitch,IErr)
      IScattDimension=10
 
 !!$Allocate Global Scattering factor array 
-     ALLOCATE(RScattFactors(103,IScattDimension), STAT=IErr)
+     ALLOCATE(RScattFactors(104,IScattDimension), STAT=IErr)
      IF( IErr.NE.0 ) THEN
         PRINT*,"ScatteringFactors: error in memory allocation"
         RETURN

@@ -825,6 +825,7 @@ PROGRAM Felixrefine
         IF (I45.EQ.2) RPvec(ind+1)=-1.0
         !incoming point in parameter space
         RVar0=RIndependentVariable
+        !vector in parameter space
         RPvecMag=RIndependentVariable(ind)*RPscale*(1/SQRT(1+REAL(ABS(I45))))
         !The type of variable being refined 
         IVariableType=IIterativeVariableUniqueIDs(ind,2)

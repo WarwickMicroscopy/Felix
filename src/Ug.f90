@@ -179,7 +179,6 @@ SUBROUTINE StructureFactorInitialisation (IErr)
         CASE(0) ! Kirkland Method using 3 Gaussians and 3 Lorentzians, NB Kirkland scattering factor is in Angstrom units
 		  !NB atomic number and g-vector passed as global variables
           RScatteringFactor = Kirkland(RgMatrixMagnitude(ind,jnd))
-          IF(TRIM(SAtomName(lnd)).EQ."Q") RScatteringFactor = Kirkland(0.2*RgMatrixMagnitude(ind,jnd))!Element Q is like hydrogen but 5 times smaller
   
         CASE(1) ! 8 Parameter Method with Scattering Parameters from Peng et al 1996 
           RScatteringFactor = ZERO
@@ -561,6 +560,8 @@ FUNCTION BirdKing(RSprimeX)
   Rg2=SQRT( (RCurrentGMagnitude/2-RGprime(1))**2 + RGprime(2)**2 )
   RsEff=RSprimeX**2+RSprimeY**2-RCurrentGMagnitude**2/(16*TWOPI**2)
   BirdKing=Kirkland(Rg1)*Kirkland(Rg2)*(1-EXP(-2*RCurrentB*RsEff ) )
+  !Element Q...
+  !IF (ICurrentZ.EQ.1)
   
 END FUNCTION BirdKing
 
