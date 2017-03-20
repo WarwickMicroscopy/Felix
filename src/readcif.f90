@@ -72,7 +72,7 @@ SUBROUTINE ReadCif(IErr)
 
   LOGICAL       f1,f2,f3
   CHARACTER*32  name,Sind
-  CHARACTER*80  line
+  CHARACTER*80  line,SPrintString
   CHARACTER*4   label(6)
   CHARACTER*1   SAlphabetarray(52)
   CHARACTER*52  alphabet
@@ -188,9 +188,7 @@ SUBROUTINE ReadCif(IErr)
     IVolumeFLAG= 1
   END IF
 
-  IF(IWriteFLAG.EQ.14.AND.my_rank.EQ.0) THEN
-    PRINT*,"Unit cell volume",RVolume
-  END IF
+  IF(IWriteFLAG.EQ.14.AND.my_rank.EQ.0) PRINT*,"Unit cell volume",RVolume
 
   DO      
     f1 = char_('_atom_type_symbol', name)
@@ -238,46 +236,55 @@ SUBROUTINE ReadCif(IErr)
   END IF
   
   ! ----------------------------------------------------------
-  ! Extract atom site data in a loop
-  ! counting loop
+  ! Extract atom site data
+  ! count how many atoms
   IAtomCount=0
   DO 
     f1 = char_('_atom_site_label', name)
     IAtomCount= IAtomCount+1
     IF(loop_ .NEQV. .TRUE.) EXIT
   END DO
-  
-  IF(IWriteFLAG.EQ.14.AND.my_rank.EQ.0) THEN
-    PRINT*,"IAtomCount ",IAtomCount
-  END IF
-  
+  !allocate variables
   ALLOCATE(RBasisAtomPosition(IAtomCount,ITHREE),STAT=IErr)
+  ALLOCATE(SBasisAtomLabel(IAtomCount),STAT=IErr)
   ALLOCATE(SBasisAtomName(IAtomCount),STAT=IErr)
   ALLOCATE(IBasisAtomicNumber(IAtomCount),STAT=IErr)
+  IBasisAtomicNumber = 0
   ALLOCATE(RBasisIsoDW(IAtomCount),STAT=IErr)
   ALLOCATE(RBasisOccupancy(IAtomCount),STAT=IErr)
   ALLOCATE(RAnisotropicDebyeWallerFactorTensor(IAtomCount,ITHREE,ITHREE),STAT=IErr)
+  RAnisotropicDebyeWallerFactorTensor = ZERO
   ALLOCATE(IBasisAnisoDW(IAtomCount),STAT=IErr)
   IF( IErr.NE.0 ) THEN
      PRINT*,"ReadCif(", my_rank, ") error ", IErr, " in ALLOCATE()"
      RETURN
   END IF
 
-  RAnisotropicDebyeWallerFactorTensor = ZERO
-  ! actual data loop
+  ! input data loop
   IMaxPossibleNAtomsUnitCell=0
   DO ind=1,IAtomCount
     B = 0.D0
     Uso = 0.D0
     f1 = char_('_atom_site_label', name)
+    SBasisAtomLabel(ind)=name
+    f1 = char_('_atom_site_type_symbol', name)
     SBasisAtomName(ind)=name(1:2)
     ! remove the oxidation state numbers
     Ipos=SCAN(SBasisAtomName(ind),"1234567890")
-    IF(Ipos>0) THEN
-      WRITE(SBasisAtomName(ind),'(A1,A1)') name(1:1)," "
+    IF (Ipos.GT.0) WRITE(SBasisAtomName(ind),'(A1,A1)') name(1:1)," "
+    WRITE(Sind,*) ind!unused, remove?
+    !get atomic number
+    DO jnd=1,NElements
+      IF(TRIM(SBasisAtomName(ind)).EQ.TRIM(SElementSymbolMatrix(jnd))) THEN
+        IBasisAtomicNumber(ind)=jnd
+      END IF
+    END DO
+    IF (IBasisAtomicNumber(ind).EQ.0.AND.my_rank.EQ.0) THEN
+      WRITE(SPrintString,FMT='(A26,I3,A9,A5,1X,A2,A4,I3,A3,3F7.4,A1)')&
+      "Could not find Z for atom ",ind,", symbol ",SBasisAtomName(ind)
+      PRINT*,TRIM(ADJUSTL(SPrintString))
+      IErr=1
     END IF
-    WRITE(Sind,*) ind
-    CALL CONVERTAtomName2Number(SBasisAtomName(ind),IBasisAtomicNumber(ind), IErr)
     f2 = numb_('_atom_site_fract_x', x, sx)
     RBasisAtomPosition(ind,1)= x
     f2 = numb_('_atom_site_fract_y', y, sy)
@@ -298,9 +305,11 @@ SUBROUTINE ReadCif(IErr)
     f2 = numb_('_atom_site_occupancy',Occ, sOcc)
     RBasisOccupancy(ind) = Occ
 
-    IF(IWriteFLAG.EQ.14.AND.my_rank.EQ.0) THEN
-      PRINT*,"Atom ",ind,":",SBasisAtomName(ind),IBasisAtomicNumber(ind),"[",RBasisAtomPosition(ind,:),"]"
-      PRINT*,"Atom ",ind,"DW",RBasisIsoDW(ind),", occupancy",RBasisOccupancy(ind)
+    IF(IWriteFLAG.EQ.7.AND.my_rank.EQ.0) THEN!optional output
+      WRITE(SPrintString,FMT='(A4,I3,A2,A5,1X,A2,A3,I2,A3,3F7.4,A7,F5.3,A12,F7.4)')&
+      "Atom",ind,": ",SBasisAtomLabel(ind),SBasisAtomName(ind)," Z=",IBasisAtomicNumber(ind),&
+      ", [",RBasisAtomPosition(ind,:),"], DWF=",RBasisIsoDW(ind),", occupancy=",RBasisOccupancy(ind)
+      PRINT*,TRIM(ADJUSTL(SPrintString))
     END IF
     IF(loop_ .NEQV. .TRUE.) EXIT
   END DO

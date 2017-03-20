@@ -38,8 +38,7 @@
 
 !> Contains all of the scattering coefficients for each of the following methods:
 !! Kirkland, Peng, Doyle & Turner, Lobato.
-!! These will be read in on an atom by atom basis. Format of coefficients can be
-!! found in extended documentation 
+!! Fictitious element "Q" is atomic number 104, Kirkland only, 1/5 width of H
 SUBROUTINE ScatteringFactors(IScatteringMethodSwitch,IErr)
 
   USE MyNumbers
@@ -55,32 +54,14 @@ SUBROUTINE ScatteringFactors(IScatteringMethodSwitch,IErr)
   IMPLICIT NONE
 
   INTEGER(IKIND):: IScatteringMethodSwitch,IScattDimension,IErr,ind
-  REAL(RKIND) :: RKirkland(103,12), RPeng(103,8), RDoyleAndTurner(103,8), RLobato(103,10), RAtomicNumbers(103,1)
-
-!!$Assign Atomic numbers to local variable (not required in felix but may have future purpose)
-!!$These are associated with each row of the scattering factors
-  DATA RAtomicNumbers(1:103,1)/ &
-       1.000000000E+00,2.000000000E+00,3.000000000E+00,4.000000000E+00,5.000000000E+00,6.000000000E+00,7.000000000E+00, &
-       8.000000000E+00,9.000000000E+00,1.000000000E+01,1.100000000E+01,1.200000000E+01,1.300000000E+01,1.400000000E+01, &
-       1.500000000E+01,1.600000000E+01,1.700000000E+01,1.800000000E+01,1.900000000E+01,2.000000000E+01,2.100000000E+01, &
-       2.200000000E+01,2.300000000E+01,2.400000000E+01,2.500000000E+01,2.600000000E+01,2.700000000E+01,2.800000000E+01, &
-       2.900000000E+01,3.000000000E+01,3.100000000E+01,3.200000000E+01,3.300000000E+01,3.400000000E+01,3.500000000E+01, &
-       3.600000000E+01,3.700000000E+01,3.800000000E+01,3.900000000E+01,4.000000000E+01,4.100000000E+01,4.200000000E+01, &
-       4.300000000E+01,4.400000000E+01,4.500000000E+01,4.600000000E+01,4.700000000E+01,4.800000000E+01,4.900000000E+01, &
-       5.000000000E+01,5.100000000E+01,5.200000000E+01,5.300000000E+01,5.400000000E+01,5.500000000E+01,5.600000000E+01, &
-       5.700000000E+01,5.800000000E+01,5.900000000E+01,6.000000000E+01,6.100000000E+01,6.200000000E+01,6.300000000E+01, &
-       6.400000000E+01,6.500000000E+01,6.600000000E+01,6.700000000E+01,6.800000000E+01,6.900000000E+01,7.000000000E+01, &
-       7.100000000E+01,7.200000000E+01,7.300000000E+01,7.400000000E+01,7.500000000E+01,7.600000000E+01,7.700000000E+01, &
-       7.800000000E+01,7.900000000E+01,8.000000000E+01,8.100000000E+01,8.200000000E+01,8.300000000E+01,8.400000000E+01, &
-       8.500000000E+01,8.600000000E+01,8.700000000E+01,8.800000000E+01,8.900000000E+01,9.000000000E+01,9.100000000E+01, &
-       9.200000000E+01,9.300000000E+01,9.400000000E+01,9.500000000E+01,9.600000000E+01,9.700000000E+01,9.800000000E+01, &
-       9.900000000E+01,1.000000000E+02,1.010000000E+02,1.020000000E+02,1.030000000E+02/
+  REAL(RKIND) :: RKirkland(104,12), RPeng(104,8), RDoyleAndTurner(104,8), RLobato(104,10), RAtomicNumbers(104,1)
 
   SELECT CASE(IScatteringMethodSwitch)
 
   CASE(0)
 
 !!$Kirkland Tables
+     !in the format a1 b1 a2 b2 a3 b3 c1 d1 c2 d2 c3 d3
      DATA RKirkland(1,1:12)/4.202983240E-03,2.253508880E-01,6.277625050E-02,2.253669500E-01,3.009073470E-02,2.253317560E-01, &
           6.777566950E-02,4.388540010E+00,3.566092370E-03,4.038848230E-01,2.761358150E-02,1.444901660E+00/
      DATA RKirkland(2,1:12)/1.875437040E-05,2.124279970E-01,4.105958000E-04,3.322122790E-01,1.963000590E-01,5.173251520E-01, &
@@ -287,14 +268,20 @@ SUBROUTINE ScatteringFactors(IScatteringMethodSwitch,IErr)
           2.361142490E+00,1.681648030E+01,1.262772920E-01,7.503046330E-02,3.813645010E-01,3.993058520E-01/
      DATA RKirkland(103,1:12)/4.867380140E+00,1.603205200E+01,3.199744010E-01,6.708711380E-02,4.588724250E+00,5.770393730E-01, &
           1.214824480E-01,7.222758990E-02,2.316398720E+00,1.412797370E+01,3.792581370E-01,3.899734840E-01/
+    !Element Q, FWHM = H/5
+    ! DATA RKirkland(104,1:12)/1.681193296E-04,9.014035520E-03,2.511050020E-03,9.014678000E-03,1.203629388E-03,9.013270240E-03, &
+    !      6.777566950E-02,2.194270005E+01,3.566092370E-03,2.019424115E+00,2.761358150E-02,7.224508300E+00/
+    !Element Q, FWHM = H/10
+     DATA RKirkland(104,1:12)/4.202983240E-05,2.253508880E-03,6.277625050E-04,2.253669500E-03,3.009073470E-04,2.253317560E-03, &
+          6.777566950E-02,4.388540010E+01,3.566092370E-03,4.038848230E+00,2.761358150E-02,1.444901660E+01/
 
 !!$Kirkland has 12 numbers for each element
      IScattDimension=12
 
 !!$Allocate Global Scattering factor array 
-     ALLOCATE(RScattFactors(SIZE(RAtomicNumbers,1,IKIND),IScattDimension), STAT=IErr)
+     ALLOCATE(RScattFactors(104,IScattDimension), STAT=IErr)
      IF( IErr.NE.0 ) THEN
-        PRINT*,"ReadScaFile(): error in memory ALLOCATE()"
+        PRINT*,"ScatteringFactors: error in memory allocation"
         RETURN
      ENDIF
 
@@ -515,9 +502,9 @@ SUBROUTINE ScatteringFactors(IScatteringMethodSwitch,IErr)
      IScattDimension=8
 
 !!$Allocate Global Scattering factor array 
-     ALLOCATE(RScattFactors(SIZE(RAtomicNumbers,1,IKIND),IScattDimension), STAT=IErr)
+     ALLOCATE(RScattFactors(104,IScattDimension), STAT=IErr)
      IF( IErr.NE.0 ) THEN
-        PRINT*,"ReadScaFile(): error in memory ALLOCATE()"
+        PRINT*,"ScatteringFactors: error in memory allocation"
         RETURN
      ENDIF
 
@@ -737,9 +724,9 @@ SUBROUTINE ScatteringFactors(IScatteringMethodSwitch,IErr)
      IScattDimension=8
 
 !!$Allocate Global Scattering factor array 
-     ALLOCATE(RScattFactors(SIZE(RAtomicNumbers,1,IKIND),IScattDimension), STAT=IErr)
+     ALLOCATE(RScattFactors(104,IScattDimension), STAT=IErr)
      IF( IErr.NE.0 ) THEN
-        PRINT*,"ReadScaFile(): error in memory ALLOCATE()"
+        PRINT*,"ScatteringFactors: error in memory allocation"
         RETURN
      ENDIF
 
@@ -959,9 +946,9 @@ SUBROUTINE ScatteringFactors(IScatteringMethodSwitch,IErr)
      IScattDimension=10
 
 !!$Allocate Global Scattering factor array 
-     ALLOCATE(RScattFactors(SIZE(RAtomicNumbers,1,IKIND),IScattDimension), STAT=IErr)
+     ALLOCATE(RScattFactors(104,IScattDimension), STAT=IErr)
      IF( IErr.NE.0 ) THEN
-        PRINT*,"ReadScaFile(): error in memory ALLOCATE()"
+        PRINT*,"ScatteringFactors: error in memory allocation"
         RETURN
      ENDIF
 

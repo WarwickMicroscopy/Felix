@@ -117,7 +117,7 @@ SUBROUTINE SymmetryRelatedStructureFactorDetermination (IErr)
      END DO
   END DO
 
-  IF((IWriteFLAG.GE.0.AND.my_rank.EQ.0).OR.IWriteFLAG.GE.10) THEN
+  IF (my_rank.EQ.0) THEN
      WRITE(SPrintString,FMT='(I5,A25)') Iuid," unique structure factors"
      PRINT*,TRIM(ADJUSTL(SPrintString))
 !     PRINT*,"Unique Ugs = ",Iuid
@@ -144,7 +144,7 @@ SUBROUTINE StructureFactorInitialisation (IErr)
   USE WriteToScreen
 
   USE CConst; USE IConst
-  USE IPara; USE RPara; USE CPara
+  USE IPara; USE RPara; USE CPara; USE SPara
   USE BlochPara
 
   USE IChannels
@@ -162,9 +162,9 @@ SUBROUTINE StructureFactorInitialisation (IErr)
         RScattFacToVolts
   CHARACTER*200 :: SPrintString
 
-  !Conversion factor from scattering factors to volts. h^2/(2pi*m0*e*CellVolume), see e.g. Kirkland eqn. C.5
+  !Conversion factor from scattering factors to volts. h^2/(2pi*m0*e), see e.g. Kirkland eqn. C.5
   !NB RVolume is already in A unlike RPlanckConstant
-  RScattFacToVolts=(RPlanckConstant**2)*(RAngstromConversion**2)/(TWOPI*RElectronMass*RElectronCharge*RVolume)
+  RScattFacToVolts=(RPlanckConstant**2)*(RAngstromConversion**2)/(TWOPI*RElectronMass*RElectronCharge)
   !Calculate Ug matrix
   CUgMatNoAbs = CZERO
   DO ind=1,nReflections
@@ -214,9 +214,7 @@ SUBROUTINE StructureFactorInitialisation (IErr)
         ! Occupancy
         RScatteringFactor = RScatteringFactor*ROccupancy(lnd)
         IF (IAnisoDebyeWallerFactorFlag.EQ.0) THEN
-          IF(RIsoDW(lnd).GT.10.OR.RIsoDW(lnd).LT.0) THEN
-            RIsoDW(lnd) = RDebyeWallerConstant
-          END IF
+          IF(RIsoDW(lnd).GT.10.OR.RIsoDW(lnd).LT.0) RIsoDW(lnd) = RDebyeWallerConstant
           !Isotropic D-W factor exp(-B sin(theta)^2/lamda^2) = exp(-Bs^2)=exp(-Bg^2/16pi^2), see e.g. Bird&King
           RScatteringFactor = RScatteringFactor*EXP(-RIsoDW(lnd)*(RgMatrixMagnitude(ind,jnd)**2)/(4*TWOPI**2) )
         ELSE!this will need sorting out, not sure if it works
@@ -230,7 +228,7 @@ SUBROUTINE StructureFactorInitialisation (IErr)
         DOT_PRODUCT(RgMatrix(ind,jnd,:), RAtomCoordinate(lnd,:)) )
       ENDDO
 	  !This is actually still the Vg matrix, converted at the end to Ug
-      CUgMatNoAbs(ind,jnd)=CVgij
+      CUgMatNoAbs(ind,jnd)=CVgij/RVolume!Why RVolume here?
     ENDDO
   ENDDO
   RMeanInnerPotential= REAL(CUgMatNoAbs(1,1))
@@ -243,7 +241,7 @@ SUBROUTINE StructureFactorInitialisation (IErr)
   ENDDO
   !NB Only the lower half of the Vg matrix was calculated, this completes the upper half
   CUgMatNoAbs = CUgMatNoAbs + CONJG(TRANSPOSE(CUgMatNoAbs))
-  !Now convert to Ug=Vg*(2*m*e/h^2)
+  !Now convert to Ug=Vg*(2*m*e/h^2), where m is relativistic electron mass
   CUgMatNoAbs=CUgMatNoAbs*TWO*RElectronMass*RRelativisticCorrection*RElectronCharge/(RPlanckConstant**2)
   !Divide U0 by 10^20 to convert Planck constant to A 
   CUgMatNoAbs=CUgMatNoAbs/(RAngstromConversion**2)
@@ -254,7 +252,6 @@ SUBROUTINE StructureFactorInitialisation (IErr)
   !  RMeanInnerPotential = RMeanInnerPotential+Kirkland(IAtomicNumber(ind),ZERO)/RAngstromConversion
   !END DO
   !RMeanInnerPotential = RMeanInnerPotential*RScattFacToVolts
-
 
   ! high-energy approximation (not HOLZ compatible)
   !Wave vector in crystal
@@ -286,13 +283,13 @@ SUBROUTINE StructureFactorInitialisation (IErr)
       END DO
     END DO
 
-    IF((IWriteFLAG.GE.0.AND.my_rank.EQ.0).OR.IWriteFLAG.GE.10) THEN
+    IF(my_rank.EQ.0) THEN
       WRITE(SPrintString,FMT='(I5,A25)') Iuid," unique structure factors"
       PRINT*,TRIM(ADJUSTL(SPrintString))
     END IF
     IF(IWriteFLAG.EQ.3.AND.my_rank.EQ.0) THEN
 	  PRINT*,"hkl: symmetry matrix"
-      DO ind =1,20
+      DO ind =1,10
         WRITE(SPrintString,FMT='(3(1X,I3),A1,12(2X,I3))') NINT(Rhkl(ind,:)),":",ISymmetryRelations(ind,1:12)
         PRINT*,TRIM(SPrintString)
       END DO
@@ -405,7 +402,7 @@ SUBROUTINE Absorption (IErr)
       !Convert to U'g=V'g*(2*m*e/h^2)	  
 	  CLocalUgPrime(ind-ILocalUgCountMin+1)=CVgPrime*TWO*RElectronMass*RRelativisticCorrection*RElectronCharge/((RPlanckConstant*RAngstromConversion)**2)
     END DO
-	!I give up trying to MPI a complex number, do it with a real one
+	!I give up trying to MPI a complex number, do it with two real ones
 	RLocalUgReal=REAL(CLocalUgPrime)
 	RLocalUgImag=AIMAG(CLocalUgPrime)
     !MPI gatherv the new U'g s into CUgPrime--------------------------------------------------------------------  
@@ -429,16 +426,6 @@ SUBROUTINE Absorption (IErr)
 	DO ind=1,IUniqueUgs
 	  CUgPrime(ind)=CMPLX(RUgReal(ind),RUgImag(ind))
 	END DO
-!    IF(IWriteFLAG.EQ.3.AND.my_rank.EQ.1) THEN
-!	  PRINT*,"local U'g:"
-!	  DO ind=1,SIZE(CLocalUgPrime)
-!	    PRINT*,ILocalUgCountMin+ind-1,CLocalUgPrime(ind)
-!      END DO
-!	  PRINT*,"MPI gathered U'g:"
-!	  DO ind=1,2*SIZE(CLocalUgPrime)
-!        PRINT*,ind,CUgPrime(ind)
-!      END DO
-!    END IF
 	!Construct CUgMatPrime
     DO ind=1,IUniqueUgs
     !number of this Ug
@@ -462,7 +449,7 @@ SUBROUTINE Absorption (IErr)
   
   IF(IWriteFLAG.EQ.3.AND.my_rank.EQ.0) THEN
    PRINT*,"Ug matrix, including absorption (nm^-2)"
-	DO ind =1,20
+	DO ind =1,10
      WRITE(SPrintString,FMT='(3(1X,I3),A1,8(1X,F6.2,F6.2))') NINT(Rhkl(ind,:)),":",100*CUgMat(ind,1:8)
      PRINT*,TRIM(SPrintString)
     END DO
@@ -502,7 +489,7 @@ SUBROUTINE DoubleIntegrate(RResult,IErr)
   !Quadpack integration 0 to infinity
   CALL dqagi(IntegrateBK,ZERO,inf,0,RAccuracy,RResult,RError,Ieval,IErr,&
        limit, lenw, last, iwork, work )
-  !The integration is actually -inf to inf in 2 dimensions. We use symmetry to just do 0 to inf, so multiply by 4
+  !The integration required is actually -inf to inf in 2 dimensions. We used symmetry to just do 0 to inf, so multiply by 4
   RResult=RResult*4
   
 END SUBROUTINE DoubleIntegrate
@@ -573,6 +560,8 @@ FUNCTION BirdKing(RSprimeX)
   Rg2=SQRT( (RCurrentGMagnitude/2-RGprime(1))**2 + RGprime(2)**2 )
   RsEff=RSprimeX**2+RSprimeY**2-RCurrentGMagnitude**2/(16*TWOPI**2)
   BirdKing=Kirkland(Rg1)*Kirkland(Rg2)*(1-EXP(-2*RCurrentB*RsEff ) )
+  !Element Q...
+  !IF (ICurrentZ.EQ.1)
   
 END FUNCTION BirdKing
 

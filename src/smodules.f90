@@ -41,7 +41,7 @@ MODULE CConst
 
   CHARACTER*50, PARAMETER :: RStr= "Version: master / BUILD / Alpha"
   CHARACTER*50, PARAMETER :: DStr= "Date: 12-01-2017"
-  CHARACTER*50, PARAMETER :: AStr= "Status: Parabolic refinement working"
+  CHARACTER*50, PARAMETER :: AStr= "Status: Parabolic refinement test&debug"
   
   CHARACTER*8 CSpaceGrp(230)
   DATA CSpaceGrp/"P1","P-1","P2","P21","C2","Pm","Pc","Cm",&
@@ -74,9 +74,8 @@ MODULE CConst
        "I-43d","Pm-3m","Pn-3n","Pm-3n","Pn-3m","Fm-3m","Fm-3c","Fd-3m", &
        "Fd-3c","Im-3m","Ia-3d"/
 
-  CHARACTER*2 :: &
-       SElementSymbolMatrix(103)
-  DATA SElementSymbolMatrix/" H", "He", "Li", "Be", " B", " C", " N", "O", "F", "Ne", &
+  CHARACTER*2 :: SElementSymbolMatrix(104)
+  DATA SElementSymbolMatrix/"H", "He", "Li", "Be", " B", " C", " N", "O", "F", "Ne", &
        "Na", "Mg", "Al", "Si", "P", "S", "Cl", "Ar", "K", "Ca", &
        "Sc", "Ti", "V", "Cr", "Mn", "Fe", "Co", "Ni", "Cu", "Zn", &
         "Ga", "Ge", "As", "Se", "Br", "Kr", "Rb", "Sr", "Y", "Zr", &
@@ -86,7 +85,7 @@ MODULE CConst
         "Lu", "Hf", "Ta", "W", "Re", "Os", "Ir", "Pt", "Au", "Hg", &
         "Tl", "Pb", "Bi", "Po", "At", "Rn", "Fr", "Ra", "Ac", "Th", &
         "Pa", "U", "Np", "Pu", "Am", "Cm", "Bk", "Cf", "Es", "Fm",& 
-        "Md","No","Lr"/
+        "Md","No","Lr","Q"/!Note element 'Q' added to end of list
 
   CHARACTER*8 :: CAlphabet(26)
   DATA CAlphabet/"Aa","Bb","Cc","Dd","Ee","Ff","Gg","Hh","Ii","Jj","Kk","Ll",&
@@ -105,7 +104,7 @@ MODULE IConst
        IRandomFLAG = 1, &
        IFixedSeed = 123456787,&
        IRefinementVariableTypes = 10,&
-       NElements=103
+       NElements=104
 
   !PriorityFLAG values - to match to the WriteFLAG - will change eventually,
   !hence why the silent & Must are both 0, no Silent option yet.
@@ -223,8 +222,7 @@ MODULE RPara
   !Crystallography
   REAL(RKIND) :: RLengthX,RLengthY,RLengthZ,RVolume,RAlpha,RBeta,RGamma, &
        RDebyeWallerConstant,RAbsorptionPercentage
-  REAL(RKIND), DIMENSION(:), ALLOCATABLE :: &
-       RBasisIsoDW, RBasisOccupancy, RIsoDW, ROccupancy
+  REAL(RKIND), DIMENSION(:), ALLOCATABLE :: RBasisIsoDW, RBasisOccupancy, RIsoDW, ROccupancy
   REAL(RKIND), DIMENSION(:,:), ALLOCATABLE :: RSymVec,RBasisAtomPosition, &
        RAtomPosition,RUniqueKey
   REAL(RKIND), DIMENSION(:,:,:), ALLOCATABLE :: RSymMat
@@ -329,7 +327,8 @@ MODULE SPara
   
   CHARACTER*1 :: SSpaceGroupName
   CHARACTER*10 :: SSpaceGrp
-  CHARACTER*2, DIMENSION(:), ALLOCATABLE :: SBasisAtomName, SAtomName
+  CHARACTER*5, DIMENSION(:),ALLOCATABLE :: SBasisAtomLabel,SAtomLabel
+  CHARACTER*2, DIMENSION(:),ALLOCATABLE :: SBasisAtomName, SAtomName
   CHARACTER*1,DIMENSION(:),ALLOCATABLE :: SWyckoffSymbols
   
 END MODULE SPara

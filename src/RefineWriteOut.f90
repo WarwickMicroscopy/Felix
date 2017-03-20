@@ -92,9 +92,9 @@ SUBROUTINE WriteIterationOutput(Iter,IThicknessIndex,IExitFlag,IErr)
     END IF
   END DO
 
-  CALL WriteIterationStructure(path,IErr) 
+  CALL WriteIterationCIF(path,IErr) 
   IF( IErr.NE.0 ) THEN
-    PRINT*,"WriteIterationOutput(0) error in WriteIterationStructure"
+    PRINT*,"WriteIterationOutput(0) error in WriteIterationCIF"
     RETURN
   END IF
   CALL WriteStructureFactors(path,IErr)
@@ -120,7 +120,7 @@ END SUBROUTINE WriteIterationOutput
 
 !!$  %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-SUBROUTINE WriteIterationStructure(path,IErr)
+SUBROUTINE WriteIterationCIF(path,IErr)
 
   USE MyNumbers
   
@@ -188,7 +188,7 @@ SUBROUTINE WriteIterationStructure(path,IErr)
 !XX    END DO
 !XX  CLOSE(IChOutSimplex)
 
-END SUBROUTINE WriteIterationStructure
+END SUBROUTINE WriteIterationCIF
 
 !!$  %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
