@@ -5,7 +5,7 @@
 
 # control flags
 IWriteFLAG                = 4
-IImageFLAG                = 10
+IImageFLAG                = 1
 IScatterFactorMethodFLAG  = 0
 IMaskFLAG                 = 1
 IHolzFLAG                 = 0
@@ -22,7 +22,7 @@ IMinStrongBeams           = 8
 IMinWeakBeams             = 0
 
 # crystal settings
-RDebyeWallerConstant      = 0.54
+RDebyeWallerConstant      = 0.0
 RAbsorptionPer            = 7.8
 
 # microscope settings
@@ -40,9 +40,9 @@ RDeltaThickness          = 10.0
 IReflectOut              = 10
 
 #Refinement Specific Flags
-IRefineModeFLAG          = S
+IRefineModeFLAG          = D
 IWeightingFLAG           = 0
-IContinueFLAG            = 0
+IMethodFLAG              = 3
 ICorrelationFLAG         = 2
 IImageProcessingFLAG     = 4
 RBlurRadius              = 1.45

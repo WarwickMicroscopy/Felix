@@ -916,7 +916,7 @@ PROGRAM Felixrefine
         ELSE
           CALL Parabo3(Rvar,Rfit,RvarMin,RfitMin,IErr)
           IF (my_rank.EQ.0) THEN
-            WRITE(SPrintString,FMT='(A32,F6.4,A16,F6.4)') &
+            WRITE(SPrintString,FMT='(A32,F7.4,A16,F6.4)') &
                "Concave set, predict minimum at ",RvarMin," with fit index ",RfitMin
             PRINT*,TRIM(ADJUSTL(SPrintString))
           END IF
