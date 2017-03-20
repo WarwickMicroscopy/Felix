@@ -101,7 +101,7 @@ SUBROUTINE StructureFactorSetup(IErr)
   DEALLOCATE(RgMatrixMagnitude,STAT=IErr)
   DEALLOCATE(RgMatrix,STAT=IErr)
   IF( IErr.NE.0 ) THEN
-     PRINT*,"StructureFactorSetup(",my_rank,")error deallocations"
+     PRINT*,"StructureFactorSetup(",my_rank,")error in deallocations"
      RETURN
   END IF
 
