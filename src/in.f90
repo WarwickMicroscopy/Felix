@@ -249,7 +249,7 @@ SUBROUTINE ReadInpFile( IErr )
   END IF  
   ! -----ICorrelationFLAG: 0=phase,1=sumSq,2=NormalisedCC,3=masked
   ILine= ILine+1; READ(IChInp,10,ERR=20,END=30) ICorrelationFLAG
-  ! -----IImageProcessingFLAG: 0=no processing,1=sqrt,2=log,4=Gaussian blur
+  ! -----IImageProcessingFLAG: 0=no processing,1=sqrt,2=log
   ILine= ILine+1; READ(IChInp,10,ERR=20,END=30) IImageProcessingFLAG
   ! -----RBlurRadius-----------------------------------------------------------------
   ILine= ILine+1; READ(IChInp,15,ERR=20,END=30) RBlurRadius

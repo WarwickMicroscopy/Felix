@@ -157,7 +157,13 @@ SUBROUTINE SimulateAndFit(RIndependentVariable,Iter,IExitFLAG,IErr)
         RETURN
       END IF
     END IF
-    !write to disk if we have done enough iterations or have finished
+    !Write current variable list and fit to IterationLog.txt
+    CALL WriteOutVariables(Iter,IErr)
+    IF( IErr.NE.0 ) THEN
+      PRINT*,"WriteIterationOutput(0) error in WriteOutVariables"
+      RETURN
+    END IF
+    !write images to disk every IPrint iterations, or when finished
     IF(IExitFLAG.EQ.1.OR.(Iter.GE.(IPreviousPrintedIteration+IPrint))) THEN
       CALL WriteIterationOutput(Iter,IThicknessIndex,IExitFLAG,IErr)
       IF( IErr.NE.0 ) THEN
@@ -236,8 +242,8 @@ SUBROUTINE FelixFunction(IErr)
      END DO
   END DO
 
-  !Gaussian blur to match experiment when ImageProcessingFlag=4 using global variable RBlurRadius
-  IF (IImageProcessingFLAG.EQ.4) THEN
+  !Gaussian blur to match experiment using global variable RBlurRadius
+  IF (RBlurRadius.GT.TINY) THEN
      ALLOCATE(RTempImage(2*IPixelCount,2*IPixelCount),STAT=IErr)
      DO ind=1,INoOfLacbedPatterns
         DO jnd=1,IThicknessCount
@@ -315,7 +321,7 @@ SUBROUTINE CalculateFigureofMeritandDetermineThickness(Iter,IBestThicknessIndex,
         ELSEWHERE
           RExperimentalImage =  TINY**2
         END WHERE
-      !NB CASE(4) is gaussian blur, dealt with elsewhere
+      
       END SELECT
       !
       
