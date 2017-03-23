@@ -102,11 +102,6 @@ SUBROUTINE WriteIterationOutput(Iter,IThicknessIndex,IExitFlag,IErr)
     PRINT*,"WriteIterationOutput(0) error in WriteStructureFactors"
     RETURN
   END IF
-  CALL WriteOutVariables(Iter,IErr)
-  IF( IErr.NE.0 ) THEN
-    PRINT*,"WriteIterationOutput(0) error in WriteOutVariables"
-    RETURN
-  END IF
 
   IPreviousPrintedIteration = Iter 
   

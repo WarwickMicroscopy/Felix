@@ -36,7 +36,7 @@
 # $Id: makefile.GF,v 1.2 2014/03/27 18:13:30 phsht Exp $
 #
 # cygwin needs: gcc, gfortran, make, git, openmpi, lapack, fftw3
-# CSC modules needed: ompi/1.6.4/gnu/4.3.4
+# CSC modules needed: ompi/2.0.1/gnu/4.9.2
 # minerva modules needed: minerva-2.0, goolf-1.7.10
 # ARCHER modules needed: cray-libsci/13.0.1, fftw, cray-mpich/7.1.1
 # 
@@ -76,7 +76,7 @@ ifeq ($(unixOS),Linux)
    else #CSC
 
    $(info Compiling on CSC, $(linux))
-   $(info Please ensure to run "module load ompi/1.6.4/gnu/4.3.4" )
+   $(info Please ensure to run "module load ompi/2.0.1/gnu/4.9.2" )
 
    INCLUDEDIR = /warwick/mathlib/gnu/x86_64/
 
