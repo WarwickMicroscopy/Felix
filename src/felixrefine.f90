@@ -951,7 +951,7 @@ PROGRAM Felixrefine
         END IF
       END IF
     END DO
-    !finallly simulate and output the best fit
+    !We are done, finallly simulate and output the best fit
     IExitFLAG=1
     CALL SimulateAndFit(RIndependentVariable,Iter,IExitFLAG,IErr)
     
