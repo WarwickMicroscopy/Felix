@@ -804,29 +804,18 @@ PROGRAM Felixrefine
     RBestFit=RFigureofMerit
     Rdf=RFigureofMerit
     Iter=1
-    !switch between 45 degree coords depending on I45
+    !switch between 45 degree coords depending on I45 (0,+1,-1)
     I45=0
     RPscale=RSimplexLengthScale
     RMaxUgStep=0.005!maximum step in Ug is 0.5 nm^-2, 0.005 A^-2
     DO WHILE (Rdf.GE.RExitCriteria)
       !loop over variables
       IF (I45.EQ.0) THEN
-        mnd=INoOfVariables
-        IF(my_rank.EQ.0) PRINT*,"Refining individual variables"
+        IF (my_rank.EQ.0) PRINT*,"Refining individual variables"
       ELSE IF (INoOfVariables.GT.1) THEN
-        mnd=INoOfVariables-1
-        IF(my_rank.EQ.0) PRINT*,"Refining pairs of variables"
+        IF (my_rank.EQ.0) PRINT*,"Refining pairs of variables"
       END IF
-      DO ind=1,mnd
-        !Vector for this refinement
-        RPvec=0.0
-        RPvec(ind)=1.0
-        IF (I45.EQ.1) RPvec(ind+1)=1.0
-        IF (I45.EQ.2) RPvec(ind+1)=-1.0
-        !incoming point in parameter space
-        RVar0=RIndependentVariable
-        !vector in parameter space
-        RPvecMag=RIndependentVariable(ind)*RPscale*(1/SQRT(1+REAL(ABS(I45))))
+      DO ind=1,INoOfVariables
         !The type of variable being refined 
         IVariableType=IIterativeVariableUniqueIDs(ind,2)
         IF(my_rank.EQ.0) THEN
@@ -843,8 +832,20 @@ PROGRAM Felixrefine
             PRINT*,"Convergence angle refinement"
           END SELECT
         END IF
-        !initial coordinate 
-        IF (RVar0(ind).LE.0.1.AND.IVariableType.EQ.4) THEN! DW factor is too small, reset
+        !Vector for this refinement
+        RPvec=0.0
+        RPvec(ind)=1.0
+        IF (INoOfVariables.GT.2) THEN!wrap around variable pairing
+          IF (ind.NE.INoOfVariables) THEN
+            RPvec(ind+1)=REAL(I45)
+          ELSE!this is the last variable, pair it with the first
+            RPvec(1)=REAL(I45)
+          END IF
+        END IF
+        !incoming point in parameter space
+        RVar0=RIndependentVariable
+        ! Small DW factor check
+        IF (RVar0(ind).LE.0.1.AND.IVariableType.EQ.4) THEN
           IF(my_rank.EQ.0) PRINT*,"Small Debye Waller factor, resetting to 0.1"
           RVar0(ind)=0.1
           RCurrentVar=RVar0
@@ -852,11 +853,13 @@ PROGRAM Felixrefine
           CALL SimulateAndFit(RCurrentVar,Iter,IExitFLAG,IErr)
           CALL BestFitCheck(RFigureofMerit,RBestFit,RCurrentVar,RIndependentVariable,Iter,IErr)
         END IF
-        Rvar=ZERO
-        Rvar(1)=RVar0(ind)!initial coordinate is current value
+        Rvar=ZERO!reset 3-point variable
+        !vector in parameter space
+        RPvecMag=RIndependentVariable(ind)*RPscale*(1/SQRT(1+REAL(ABS(I45))))
+        Rvar(1)=RVar0(ind)!first point is current value
 	    Rfit=RFigureofMerit!with the current fit index
-        Rvar(2)=Rvar(1)+RPvecMag!second point  
-        RCurrentVar=RVar0+RPvec*(Rvar(2)-RVar0(ind))
+        Rvar(2)=Rvar(1)+RPvecMag!second point 
+        RCurrentVar=RVar0+RPvec*(Rvar(2)-RVar0(ind))!Update the parameters to simulate
         CALL SimulateAndFit(RCurrentVar,Iter,IExitFLAG,IErr)
         CALL BestFitCheck(RFigureofMerit,RBestFit,RCurrentVar,RIndependentVariable,Iter,IErr)
         Rfit(2)=RFigureofMerit
@@ -888,17 +891,17 @@ PROGRAM Felixrefine
           IF (ABS(RPvecMag).GT.RMaxUgStep.AND.IRefineMode(1).EQ.1) RPvecMag=SIGN(RMaxUgStep,RPvecMag)!maximum step in Ug is RMaxUgStep
           Rvar(lnd)=Rvar(knd)+RPvecMag
           IF (Rvar(lnd).LE.ZERO.AND.IVariableType.EQ.4) THEN!less than zero DW is requested
-            Rvar(lnd)=ZERO!if , make the third point equal to 0.0...
-            RCurrentVar=RVar0-RPvec*RVar0(ind)!set up for simulation outside the loop
+            Rvar(lnd)=ZERO!limit it to 0.0
+            RCurrentVar=RVar0-RPvec*RVar0(ind)!and set up for simulation outside the loop
             EXIT
           END IF
           RCurrentVar=RVar0+RPvec*(Rvar(lnd)-RVar0(ind))
-          IF (I45.NE.0) THEN!check for paired DW factor <0 THIS ISN'T WORKING
-            IF (RCurrentVar(ind+1).LE.ZERO.AND.IIterativeVariableUniqueIDs(ind+1,2).EQ.4) THEN!less than zero DW is requested
-              RCurrentVar=RVar0-RPvec*RCurrentVar(ind+1)
-              EXIT
-            END IF
-          END IF
+          !IF (I45.NE.0) THEN!check for paired DW factor <0 THIS ISN'T WORKING
+          !  IF (RCurrentVar(ind+1).LE.ZERO.AND.IIterativeVariableUniqueIDs(ind+1,2).EQ.4) THEN!less than zero DW is requested
+          !    RCurrentVar=RVar0-RPvec*RCurrentVar(ind+1)
+          !    EXIT
+          !  END IF
+          !END IF
           CALL SimulateAndFit(RCurrentVar,Iter,IExitFLAG,IErr)
           CALL BestFitCheck(RFigureofMerit,RBestFit,RCurrentVar,RIndependentVariable,Iter,IErr)
           Rfit(lnd)=RFigureofMerit
@@ -926,17 +929,17 @@ PROGRAM Felixrefine
           Rvar(jnd)=RvarMin
           IF (Rvar(jnd).LT.ZERO.AND.IVariableType.EQ.4) Rvar(jnd)=ZERO!We have reached zero D-W factor
           RCurrentVar=RVar0+RPvec*(Rvar(jnd)-RVar0(ind))
-          IF (I45.NE.0) THEN!check for paired DW factor <0 THIS ISN'T WORKING
-            IF (RCurrentVar(ind+1).LE.ZERO.AND.IIterativeVariableUniqueIDs(ind+1,2).EQ.4) THEN!less than zero DW is requested
-              RCurrentVar=RVar0-RPvec*RCurrentVar(ind+1)
-            END IF
-          END IF
+          !IF (I45.NE.0) THEN!check for paired DW factor <0 THIS ISN'T WORKING
+          !  IF (RCurrentVar(ind+1).LE.ZERO.AND.IIterativeVariableUniqueIDs(ind+1,2).EQ.4) THEN!less than zero DW is requested
+          !    RCurrentVar=RVar0-RPvec*RCurrentVar(ind+1)
+          !  END IF
+          !END IF
           !IF(my_rank.EQ.0) PRINT*,"RVarP",Rvar,": Current",RCurrentVar
           CALL SimulateAndFit(RCurrentVar,Iter,IExitFLAG,IErr)
           CALL BestFitCheck(RFigureofMerit,RBestFit,RCurrentVar,RIndependentVariable,Iter,IErr)
         END IF
         Rfit(jnd)=RFigureofMerit
-        IF (ind.EQ.mnd.AND.INoOfVariables.GT.1) I45=MODULO(I45+1,3)!Increment flag on last loop
+        IF (ind.EQ.INoOfVariables.AND.INoOfVariables.GT.1) I45=MODULO(I45+1,3)-1!Increment pairing flag on last loop
       END DO
       !shrink length scale as we progress, by a smaller amount depending on the no of variables: 1->1/2; 2->3/4; 3->5/6; 4->7/8; 5->9/10;
       RPscale=RPscale*(1.0-1.0/(2.0*REAL(INoOfVariables)))
