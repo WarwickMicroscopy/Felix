@@ -482,7 +482,7 @@ SUBROUTINE DetermineRefineableAtomicSites(SAtomicSites,IErr)
         END IF
      END DO
   END IF
-  WRITE(SPrintString,FMT='(A15,10(I2,1X))') "Refining atoms ",IAtomicSitesToRefine
+  WRITE(SPrintString,FMT='(A15,50(I2,1X))') "Refining atoms ",IAtomicSitesToRefine
   IF(my_rank.EQ.0) PRINT*,TRIM(ADJUSTL(SPrintString))
   
 END SUBROUTINE DetermineRefineableAtomicSites
