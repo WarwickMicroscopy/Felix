@@ -849,8 +849,7 @@ PROGRAM Felixrefine
             IF (INoOfVariables.GT.2) THEN
               RPvec(1)=REAL(I45)!wrap around variable pairing
            ELSE
-             !IF (my_rank.EQ.0) PRINT*, "No wrap around for 2 variables"
-             IF (I45.NE.0) EXIT!if there are only 2 variables there's no wrap around
+             IF (I45.NE.0.AND.INoOfVariables.EQ.2) EXIT!if there are only 2 variables there's no wrap around
            END IF
           END IF
         END IF
