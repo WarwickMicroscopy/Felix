@@ -830,7 +830,7 @@ PROGRAM Felixrefine
           IF (I45.EQ.0) PRINT*,"Refining individual variable"
           IF (INoOfVariables.GT.1) THEN
             IF (ICycle.EQ.1) THEN
-              PRINT*,"*****Refining overall direction*****"
+              PRINT*,"Refining all variables"
             ELSE
               IF (ABS(I45).GT.0) PRINT*,"Refining pairs of variables"
             END IF
@@ -840,21 +840,21 @@ PROGRAM Felixrefine
         RPvec=0.0
         RPvec(ind)=1.0
         IF (ICycle.EQ.1) THEN!look down the average refinement direction
-          RPvec=(RCurrentVar-RLastVar)/RCurrentVar(ind)!normalised vector
+          RPvec=(RCurrentVar-RLastVar)/(RCurrentVar(1)-RLastVar(1))
           RLastVar=RCurrentVar
         ELSE!look down the direction specified by I45
           IF (ind.NE.INoOfVariables) THEN
             RPvec(ind+1)=REAL(I45)!pairs of variables
-          ELSE!the final paramater
+          ELSE!the final parameter
             IF (INoOfVariables.GT.2) THEN
               RPvec(1)=REAL(I45)!wrap around variable pairing
            ELSE
-             IF (my_rank.EQ.0) PRINT*, "No wrap around for 2 variables"
+             !IF (my_rank.EQ.0) PRINT*, "No wrap around for 2 variables"
              IF (I45.NE.0) EXIT!if there are only 2 variables there's no wrap around
            END IF
           END IF
         END IF
-        IF(my_rank.EQ.0) PRINT*, "Vector=",RPvec
+        !IF(my_rank.EQ.0) PRINT*, "Vector=",RPvec
         !incoming point in parameter space
         RVar0=RIndependentVariable
         ! Small DW factor (<0.1) check
@@ -953,15 +953,11 @@ PROGRAM Felixrefine
           CALL SimulateAndFit(RCurrentVar,Iter,IExitFLAG,IErr)
           CALL BestFitCheck(RFigureofMerit,RBestFit,RCurrentVar,RIndependentVariable,IErr)
         END IF
-        IF (ICycle.EQ.1) THEN
-          IF (my_rank.EQ.0) PRINT*, "*****Average direction refinement finished*****"
-          EXIT!we have just done an average direction refinement, quit the NoOfVariables loop
-        END IF
+        IF (ICycle.EQ.1) EXIT!we have just done an average direction refinement, quit the NoOfVariables loop
       END DO
       !We have refined all variables, check where we go next and update last fit etc.
-      IF (INoOfVariables.GT.1) THEN!multiple variables
+      IF (INoOfVariables.GT.1) THEN!refining multiple variables
         IF(ICycle.EQ.0) I45=MODULO(I45+2,3)-1!Increment pairing flag
-        IF (my_rank.EQ.0) PRINT*, "I45=",I45
         IF (I45.EQ.-1) THEN!we have finished a cycle
           IF (ICycle.EQ.0) THEN!we haven't done an average direction refinement, set the flag
             ICycle=1
@@ -976,7 +972,7 @@ PROGRAM Felixrefine
             END IF
           END IF
         END IF
-      ELSE!just one variable
+      ELSE!refining just one variable
         IF (RBestFit.LT.RLastFit) THEN
           Rdf=RLastFit-RBestFit 
           RLastFit=RBestFit
@@ -988,7 +984,7 @@ PROGRAM Felixrefine
         END IF
       END IF
       !shrink length scale as we progress, by a smaller amount depending on the no of variables: 1->1/2; 2->3/4; 3->5/6; 4->7/8; 5->9/10;
-      RPscale=RPscale*(1.0-1.0/(2.0*REAL(INoOfVariables)))
+      RPscale=RPscale*(1.0-1.0/(4.0*REAL(INoOfVariables)))
     END DO
     !We are done, finallly simulate and output the best fit
     IExitFLAG=1
