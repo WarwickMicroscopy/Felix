@@ -811,10 +811,10 @@ PROGRAM Felixrefine
     RMaxUgStep=0.005!maximum step in Ug is 0.5 nm^-2, 0.005 A^-2
     DO WHILE (Rdf.GE.RExitCriteria)
       !loop over variables
-      DO ind=1,INoOfVariables
+      DO ind=1,INoOfVariables-1
         !The type of variable being refined 
         IVariableType=IIterativeVariableUniqueIDs(ind,2)
-        IF(my_rank.EQ.0) THEN!print to screen
+        IF (my_rank.EQ.0) THEN!print to screen
         SELECT CASE(IVariableType)
           CASE(1)
             PRINT*,"Ug refinement"
@@ -836,28 +836,35 @@ PROGRAM Felixrefine
             END IF
           END IF
         END IF
-        !Vector in n-dimensional parameter space for this refinement
-        RPvec=0.0
-        RPvec(ind)=1.0
+        RVar0=RIndependentVariable!incoming point in n-dimensional parameter space
+        RPvec=ZERO!Vector in n-dimensional parameter space for this refinement
+        RPvec(ind)=RPscale!just look along this parameter to begin with
         IF (ICycle.EQ.1) THEN!look down the average refinement direction
           RPvec=(RCurrentVar-RLastVar)/(RCurrentVar(1)-RLastVar(1))
           RLastVar=RCurrentVar
-        ELSE!look down the direction specified by I45
-          IF (ind.NE.INoOfVariables) THEN
-            RPvec(ind+1)=REAL(I45)!pairs of variables
-          ELSE!the final parameter
-            IF (INoOfVariables.GT.2) THEN
-              RPvec(1)=REAL(I45)!wrap around variable pairing
-           ELSE
-             IF (I45.NE.0.AND.INoOfVariables.EQ.2) EXIT!if there are only 2 variables there's no wrap around
-           END IF
-          END IF
+        ELSE IF (INoOfVariables.GT.1) THEN!pair-wise maximum gradient for more than one variable
+          WRITE(SPrintString,FMT='(A38,I3,A5,I3)') "Finding maximum gradient for variables",ind," and ",ind+1
+          IF (my_rank.EQ.0) PRINT*, TRIM(ADJUSTL(SPrintString))
+          !NB R3fit contains the three fit indices
+          R3fit(1)=RFigureofMerit!point 1 is the incoming simulation and fit index
+          RCurrentVar=RVar0+RPvec!second point
+          CALL SimulateAndFit(RCurrentVar,Iter,IExitFLAG,IErr)
+          CALL BestFitCheck(RFigureofMerit,RBestFit,RCurrentVar,RIndependentVariable,IErr)
+          R3fit(2)=RFigureofMerit
+          RPvec(ind+1)=RPscale!now look along diagonal for third point
+          RCurrentVar=RVar0+RPvec!Update the parameters to simulate
+          CALL SimulateAndFit(RCurrentVar,Iter,IExitFLAG,IErr)
+          CALL BestFitCheck(RFigureofMerit,RBestFit,RCurrentVar,RIndependentVariable,IErr)
+          R3fit(3)=RFigureofMerit
+          !optimum gradient vector from the three points, with max value unity
+          RPvec=ZERO!reset
+          RPvec(ind)=ONE
+          RPvec(ind+1)=(R3fit(3)-R3fit(2))/(R3fit(2)-R3fit(1))
         END IF
-        !IF(my_rank.EQ.0) PRINT*, "Vector=",RPvec
-        !incoming point in parameter space
-        RVar0=RIndependentVariable
+        IF (my_rank.EQ.0) PRINT*, "Vector=",RPvec
+        RVar0=RIndependentVariable!the best point of the three
         ! Small DW factor (<0.1) check
-        IF (RVar0(ind).LE.0.1.AND.IVariableType.EQ.4) THEN
+        IF (IVariableType.EQ.4.AND.RVar0(ind).LE.0.1) THEN
           IF(my_rank.EQ.0) PRINT*,"Small Debye Waller factor, resetting to 0.1"
           RVar0(ind)=0.1
           RCurrentVar=RVar0
@@ -866,14 +873,13 @@ PROGRAM Felixrefine
           !update RIndependentVariable if necessary
           CALL BestFitCheck(RFigureofMerit,RBestFit,RCurrentVar,RIndependentVariable,IErr)
         END IF
-        R3var=ZERO!R3var contains the three coordinates for current variable 
-        !R3fit contains the three fits for current variable 
-        !magnitude of vector in parameter space
-        RPvecMag=RVar0(ind)*RPscale*(1/SQRT(1+REAL(ABS(I45))))
         R3var(1)=RVar0(ind)!first point is current value
-	    R3fit=RFigureofMerit!with the current fit index
+        R3fit(1)=RFigureofMerit!with the current fit index
+        !magnitude of vector in parameter space, scaled to be a fraction of the largest number in RPvec
+        RPvecMag=RVar0(ind)*RPscale/MAX(ABS(RPvec(ind)),ABS(RPvec(ind+1)))
+        IF (my_rank.EQ.0) PRINT*, "RPvecMag=",RPvecMag
         R3var(2)=R3var(1)+RPvecMag!second point 
-        RCurrentVar=RVar0+RPvec*(R3var(2)-RVar0(ind))!Update the parameters to simulate
+        RCurrentVar=RVar0+RPvec*RPvecMag!Update the parameters to simulate
         CALL SimulateAndFit(RCurrentVar,Iter,IExitFLAG,IErr)
         CALL BestFitCheck(RFigureofMerit,RBestFit,RCurrentVar,RIndependentVariable,IErr)
         R3fit(2)=RFigureofMerit
@@ -956,19 +962,16 @@ PROGRAM Felixrefine
       END DO
       !We have refined all variables, check where we go next and update last fit etc.
       IF (INoOfVariables.GT.1) THEN!refining multiple variables
-        IF(ICycle.EQ.0) I45=MODULO(I45+2,3)-1!Increment pairing flag
-        IF (I45.EQ.-1) THEN!we have finished a cycle
-          IF (ICycle.EQ.0) THEN!we haven't done an average direction refinement, set the flag
-            ICycle=1
-          ELSE!we just did an average direction refinement, go back to I45 and update RLastFit and Rdf
-            ICycle=0
-            Rdf=RLastFit-RBestFit 
-            RLastFit=RBestFit
-            IF(my_rank.EQ.0) THEN
-              PRINT*,"--------------------------------"
-              WRITE(SPrintString,FMT='(A19,F8.6,A15,F8.6)') "Improvement in fit ",Rdf,", will stop at ",RExitCriteria
-              PRINT*,TRIM(ADJUSTL(SPrintString))
-            END IF
+        IF (ICycle.EQ.0) THEN!we haven't done an average direction refinement, set the flag
+          ICycle=1
+        ELSE!we just did an average direction refinement, go back to I45 and update RLastFit and Rdf
+          ICycle=0
+          Rdf=RLastFit-RBestFit 
+          RLastFit=RBestFit
+          IF(my_rank.EQ.0) THEN
+            PRINT*,"--------------------------------"
+            WRITE(SPrintString,FMT='(A19,F8.6,A15,F8.6)') "Improvement in fit ",Rdf,", will stop at ",RExitCriteria
+            PRINT*,TRIM(ADJUSTL(SPrintString))
           END IF
         END IF
       ELSE!refining just one variable
@@ -1851,8 +1854,7 @@ SUBROUTINE BestFitCheck(RFoM,RBest,RCurrent,RIndependentVariable,IErr)
     RIndependentVariable=RCurrent
   END IF
   IF(my_rank.EQ.0) THEN
-    WRITE(SPrintString,FMT='(A18,F8.6)') &
-     "Best fit so far = ",RBest
+    WRITE(SPrintString,FMT='(A18,F8.6)') "Best fit so far = ",RBest
     PRINT*,TRIM(ADJUSTL(SPrintString))
   END IF
         
