@@ -838,31 +838,35 @@ PROGRAM Felixrefine
         END IF
         RVar0=RIndependentVariable!incoming point in n-dimensional parameter space
         RPvec=ZERO!Vector in n-dimensional parameter space for this refinement
-        RPvec(ind)=RPscale!just look along this parameter to begin with
+        IF (my_rank.EQ.0) PRINT*, "Current parameters=",RIndependentVariable
         IF (ICycle.EQ.1) THEN!look down the average refinement direction
           RPvec=(RCurrentVar-RLastVar)/(RCurrentVar(1)-RLastVar(1))
+          IF (ABS(SUM(RPvec))-1.GT.ABS(SUM(RPvec)).OR.ABS(SUM(RPvec)).EQ.ABS(SUM(RPvec))) EXIT!Infinity and NaN check
           RLastVar=RCurrentVar
         ELSE IF (INoOfVariables.GT.1) THEN!pair-wise maximum gradient for more than one variable
-          WRITE(SPrintString,FMT='(A38,I3,A5,I3)') "Finding maximum gradient for variables",ind," and ",ind+1
+          WRITE(SPrintString,FMT='(A38,I3,A4,I3)') "Finding maximum gradient for variables",ind," and",ind+1
           IF (my_rank.EQ.0) PRINT*, TRIM(ADJUSTL(SPrintString))
           !NB R3fit contains the three fit indices
           R3fit(1)=RFigureofMerit!point 1 is the incoming simulation and fit index
+          RPvec(ind)=RPscale!change current variable for second point
           RCurrentVar=RVar0+RPvec!second point
           CALL SimulateAndFit(RCurrentVar,Iter,IExitFLAG,IErr)
           CALL BestFitCheck(RFigureofMerit,RBestFit,RCurrentVar,RIndependentVariable,IErr)
           R3fit(2)=RFigureofMerit
-          RPvec(ind+1)=RPscale!now look along diagonal for third point
+          RPvec(ind+1)=RPscale!now look along combination of 2 parameters for third point
           RCurrentVar=RVar0+RPvec!Update the parameters to simulate
           CALL SimulateAndFit(RCurrentVar,Iter,IExitFLAG,IErr)
           CALL BestFitCheck(RFigureofMerit,RBestFit,RCurrentVar,RIndependentVariable,IErr)
           R3fit(3)=RFigureofMerit
-          !optimum gradient vector from the three points, with max value unity
+          !optimum gradient vector from the three points
           RPvec=ZERO!reset
           RPvec(ind)=ONE
           RPvec(ind+1)=(R3fit(3)-R3fit(2))/(R3fit(2)-R3fit(1))
         END IF
         IF (my_rank.EQ.0) PRINT*, "Vector=",RPvec
+        IF (my_rank.EQ.0) PRINT*, "Current parameters=",RIndependentVariable
         RVar0=RIndependentVariable!the best point of the three
+        CALL SimulateAndFit(RVar0,Iter,IExitFLAG,IErr)
         ! Small DW factor (<0.1) check
         IF (IVariableType.EQ.4.AND.RVar0(ind).LE.0.1) THEN
           IF(my_rank.EQ.0) PRINT*,"Small Debye Waller factor, resetting to 0.1"
@@ -986,7 +990,7 @@ PROGRAM Felixrefine
         END IF
       END IF
       !shrink length scale as we progress, by a smaller amount depending on the no of variables: 1->1/2; 2->3/4; 3->5/6; 4->7/8; 5->9/10;
-      RPscale=RPscale*(1.0-1.0/(4.0*REAL(INoOfVariables)))
+      RPscale=RPscale*(ONE-ONE/(TWO*REAL(INoOfVariables)))
     END DO
     !We are done, finallly simulate and output the best fit
     IExitFLAG=1
