@@ -886,28 +886,28 @@ PROGRAM Felixrefine
         END IF
         R3var(1)=RVar0(ind)!first point is current value
         R3fit(1)=RFigureofMerit!with the current fit index
-        IF (my_rank.EQ.0) PRINT*,"point 1",R3var(1),"fit",R3fit(1)
+        !IF (my_rank.EQ.0) PRINT*,"point 1",R3var(1),"fit",R3fit(1)
         !magnitude of vector in parameter space
         RPvecMag=RVar0(ind)*RPscale
         !IF (my_rank.EQ.0) PRINT*, "RPvecMag=",RPvecMag
-        R3var(2)=RVar0(ind)+RPvec(ind)*RPvecMag!second point 
         RCurrentVar=RVar0+RPvec*RPvecMag!Update the parameters to simulate
+        R3var(2)=RCurrentVar(ind)!second point 
         CALL SimulateAndFit(RCurrentVar,Iter,IExitFLAG,IErr)
         CALL BestFitCheck(RFigureofMerit,RBestFit,RCurrentVar,RIndependentVariable,IErr)
         R3fit(2)=RFigureofMerit
-        IF (my_rank.EQ.0) PRINT*,"point 2",R3var(2),"fit",R3fit(2)
+        !IF (my_rank.EQ.0) PRINT*,"point 2",R3var(2),"fit",R3fit(2)
         !third point
         IF (R3fit(2).GT.R3fit(1)) THEN!new 2 is not better than 1, go the other way
           RPvecMag=-RPvecMag
-          R3var(3)=RVar0(ind)+RPvec(ind)*RPvecMag
+          RCurrentVar=RVar0+RPvec*RPvecMag
         ELSE!it is better, so keep going
-          R3var(3)=R3var(2)+RPvec(ind)*RPvecMag
+          RCurrentVar=RVar0+TWO*RPvec*RPvecMag
         END IF
-        RCurrentVar=RVar0+RPvec*(R3var(3)-RVar0(ind))!x3=x1+v3
+        R3var(3)=RCurrentVar(ind)!third point
         CALL SimulateAndFit(RCurrentVar,Iter,IExitFLAG,IErr)
         CALL BestFitCheck(RFigureofMerit,RBestFit,RCurrentVar,RIndependentVariable,IErr)
         R3fit(3)=RFigureofMerit
-        IF (my_rank.EQ.0) PRINT*,"point 3",R3var(3),"fit",R3fit(3)
+        !IF (my_rank.EQ.0) PRINT*,"point 3",R3var(3),"fit",R3fit(3)
         !check the three points make a concave set
         jnd=MAXLOC(R3var,1)!highest x
         knd=MINLOC(R3var,1)!lowest x
@@ -921,15 +921,16 @@ PROGRAM Felixrefine
           knd=MINLOC(R3fit,1)!best fit
           lnd=6-jnd-knd!the mid fit
           !replace mid point with a step on from best point
-          RPvecMag=RPvecMag*(0.5+SQRT(5.0)/2.0)!increase the step size by the golden ratio
+          RPvecMag=(R3var(knd)-RVar0(ind))*(0.5+SQRT(5.0)/2.0)/RPvec(ind)!increase the step size by the golden ratio
           IF (ABS(RPvecMag).GT.RMaxUgStep.AND.IRefineMode(1).EQ.1) RPvecMag=SIGN(RMaxUgStep,RPvecMag)!maximum step in Ug is RMaxUgStep
-          R3var(lnd)=R3var(knd)+RPvec(ind)*RPvecMag
+          RCurrentVar=RVar0+RPvec*RPvecMag
+          R3var(lnd)=RCurrentVar(ind)!third point
           IF (R3var(lnd).LE.ZERO.AND.IVariableType.EQ.4) THEN!less than zero DW is requested
             R3var(lnd)=ZERO!limit it to 0.0
             RCurrentVar=RVar0-RPvec*RVar0(ind)!and set up for simulation outside the loop
             EXIT
           END IF
-          RCurrentVar=RVar0+RPvec*(R3var(lnd)-RVar0(ind))
+          IF (my_rank.EQ.0) PRINT*,"next point",R3var(lnd)
           CALL SimulateAndFit(RCurrentVar,Iter,IExitFLAG,IErr)
           CALL BestFitCheck(RFigureofMerit,RBestFit,RCurrentVar,RIndependentVariable,IErr)
           R3fit(lnd)=RFigureofMerit
@@ -956,7 +957,7 @@ PROGRAM Felixrefine
           !replace worst point with parabolic prediction and put into RIndependentVariable
           R3var(jnd)=RvarMin
           IF (R3var(jnd).LT.ZERO.AND.IVariableType.EQ.4) R3var(jnd)=ZERO!We have reached zero D-W factor
-          RCurrentVar=RVar0+RPvec*(R3var(jnd)-RVar0(ind))
+          RCurrentVar=RVar0+RPvec*(R3var(jnd)-RVar0(ind))/RPvec(ind)
           CALL SimulateAndFit(RCurrentVar,Iter,IExitFLAG,IErr)
           CALL BestFitCheck(RFigureofMerit,RBestFit,RCurrentVar,RIndependentVariable,IErr)
         END IF
