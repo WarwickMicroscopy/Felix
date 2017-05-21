@@ -924,13 +924,12 @@ PROGRAM Felixrefine
           RPvecMag=(R3var(knd)-RVar0(ind))*(0.5+SQRT(5.0)/2.0)/RPvec(ind)!increase the step size by the golden ratio
           IF (ABS(RPvecMag).GT.RMaxUgStep.AND.IRefineMode(1).EQ.1) RPvecMag=SIGN(RMaxUgStep,RPvecMag)!maximum step in Ug is RMaxUgStep
           RCurrentVar=RVar0+RPvec*RPvecMag
-          R3var(lnd)=RCurrentVar(ind)!third point
+          R3var(lnd)=RCurrentVar(ind)!next point
           IF (R3var(lnd).LE.ZERO.AND.IVariableType.EQ.4) THEN!less than zero DW is requested
             R3var(lnd)=ZERO!limit it to 0.0
             RCurrentVar=RVar0-RPvec*RVar0(ind)!and set up for simulation outside the loop
             EXIT
           END IF
-          IF (my_rank.EQ.0) PRINT*,"next point",R3var(lnd)
           CALL SimulateAndFit(RCurrentVar,Iter,IExitFLAG,IErr)
           CALL BestFitCheck(RFigureofMerit,RBestFit,RCurrentVar,RIndependentVariable,IErr)
           R3fit(lnd)=RFigureofMerit
@@ -955,9 +954,9 @@ PROGRAM Felixrefine
           jnd=MAXLOC(R3fit,1)!worst point
           knd=MINLOC(R3fit,1)!best point
           !replace worst point with parabolic prediction and put into RIndependentVariable
-          R3var(jnd)=RvarMin
-          IF (R3var(jnd).LT.ZERO.AND.IVariableType.EQ.4) R3var(jnd)=ZERO!We have reached zero D-W factor
-          RCurrentVar=RVar0+RPvec*(R3var(jnd)-RVar0(ind))/RPvec(ind)
+          IF (RvarMin.LT.ZERO.AND.IVariableType.EQ.4) RvarMin=ZERO!We have reached zero D-W factor
+          RCurrentVar=RVar0+RPvec*(RvarMin-RVar0(ind))/RPvec(ind)
+          R3var(jnd)=RCurrentVar(ind)!do I need this?
           CALL SimulateAndFit(RCurrentVar,Iter,IExitFLAG,IErr)
           CALL BestFitCheck(RFigureofMerit,RBestFit,RCurrentVar,RIndependentVariable,IErr)
         END IF
