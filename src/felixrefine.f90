@@ -53,15 +53,15 @@ PROGRAM Felixrefine
 	   IBSMaxLocGVecAmp,ILaueLevel,INumTotalReflections,ITotalLaueZoneLevel,INhkl,IExitFLAG,ICycle,&
 	   INumInitReflections,IZerothLaueZoneLevel,INumFinalReflections,IThicknessIndex,IVariableType
   INTEGER(IKIND) :: IHours,IMinutes,ISeconds,IMilliSeconds,IStartTime,ICurrentTime,IRate
-  INTEGER(IKIND),DIMENSION(:),ALLOCATABLE :: IOriginGVecIdentifier,Ipivot
+  INTEGER(IKIND),DIMENSION(:),ALLOCATABLE :: IOriginGVecIdentifier
   REAL(RKIND) :: StartTime, CurrentTime, Duration, TotalDurationEstimate,&
-       RHOLZAcceptanceAngle,RLaueZoneGz,RMaxGMag,RPvecMag,RPscale,RMaxUgStep
+       RHOLZAcceptanceAngle,RLaueZoneGz,RMaxGMag,RPvecMag,RPscale,RMaxUgStep,Rdx
   REAL(RKIND) :: RBCASTREAL,RStandardDeviation,RMean,RGzUnitVec,RMinLaueZoneValue,Rdf,RLastFit,RBestFit,&
        RMaxLaueZoneValue,RMaxAcceptanceGVecMag,RLaueZoneElectronWaveVectorMag,RvarMin,RfitMin,RFit0,Rconvex,Rtest
-  REAL(RKIND),DIMENSION(:),ALLOCATABLE :: RSimplexFoM,RIndependentVariable,RCurrentVar,RVar0,RLastVar,RPvec,RFitVec,Rwork
+  REAL(RKIND),DIMENSION(:),ALLOCATABLE :: RSimplexFoM,RIndependentVariable,RCurrentVar,RVar0,RLastVar,RPvec,RFitVec
   REAL(RKIND),DIMENSION(ITHREE) :: R3var,R3fit
   REAL(RKIND),DIMENSION(:,:),ALLOCATABLE :: RSimplexVariable,RgDummyVecMat,RgPoolMagLaue,RTestImage,&
-       ROnes,RVarMatrix,RSimp,RGradMatrix,RInvGradMatrix
+       ROnes,RVarMatrix,RSimp
   CHARACTER*40 :: my_rank_string
   CHARACTER*20 :: Snd,h,k,l
   CHARACTER*200 :: SPrintString
@@ -793,11 +793,7 @@ PROGRAM Felixrefine
     ALLOCATE(RCurrentVar(INoOfVariables),STAT=IErr)!set of variables to send out for simulations
     ALLOCATE(RLastVar(INoOfVariables),STAT=IErr)!set of variables updated each cycle
     ALLOCATE(RPVec(INoOfVariables),STAT=IErr)!the vector describing the current line in parameter space
-    ALLOCATE(RGradMatrix(INoOfVariables,INoOfVariables),STAT=IErr)!the matrix to determine gradient
-    ALLOCATE(RInvGradMatrix(INoOfVariables,INoOfVariables),STAT=IErr)!the inverse of RGradMatrix
     ALLOCATE(RFitVec(INoOfVariables),STAT=IErr)!the vector of fits
-    ALLOCATE(Ipivot(INoOfVariables),STAT=IErr)!pivot list
-    ALLOCATE(Rwork(INoOfVariables),STAT=IErr)!work aray for LAPACK inverse
     IF( IErr.NE.0 ) THEN
       PRINT*,"felixrefine(",my_rank,")error allocating parabola variables"
       GOTO 9999
@@ -806,48 +802,24 @@ PROGRAM Felixrefine
     RLastFit=RBestFit
     RLastVar=RIndependentVariable
     Rdf=ONE
-
     Iter=1
     RPscale=RSimplexLengthScale
     DO WHILE (Rdf.GE.RExitCriteria)
-      !find the fit when all parameters are zero
-      IF (my_rank.EQ.0) PRINT*,"Null vector simulation"
-      CALL SimulateAndFit(ZERO,Iter,IExitFLAG,IErr)
-      RFit0=RFigureofMerit
-      IF (my_rank.EQ.0) PRINT*,RFit0
       RVar0=RIndependentVariable!incoming point in n-dimensional parameter space
-      !set up RGradMatrix
-      DO ind=1,INoOfVariables
-        RGradMatrix(ind,:)=RVar0
-        RGradMatrix(ind,ind)=RVar0(ind)+RPscale/5.0
-        IF (my_rank.EQ.0) PRINT*,RGradMatrix(ind,:)
-      END DO
-      RInvGradMatrix=RGradMatrix
-      CALL DGETRF(INoOfVariables, INoOfVariables, RInvGradMatrix, INoOfVariables, Ipivot, IErr)
-      IF( IErr.NE.0 ) THEN
-        PRINT*,"felixrefine(",my_rank,")Singular matrix in gradient calculation"
-        GOTO 9999
-      END IF
-      CALL DGETRI(INoOfVariables, RInvGradMatrix, INoOfVariables, Ipivot, Rwork, INoOfVariables, IErr)
-      IF( IErr.NE.0 ) THEN
-        PRINT*,"felixrefine(",my_rank,")Matrix inversion failed in gradient calculation"
-        GOTO 9999
-      END IF
-      DO ind=1,INoOfVariables
-        IF (my_rank.EQ.0) PRINT*,RInvGradMatrix(ind,:)
-      END DO      !calculate corresponding fit values
+      RFit0=RFigureofMerit!incoming fit
+      !calculate individual gradients
       DO ind=1,INoOfVariables
         WRITE(SPrintString,FMT='(A17,I2,A3,I3)') "Finding gradient,",ind," of",INoOfVariables
         IF (my_rank.EQ.0) PRINT*, TRIM(ADJUSTL(SPrintString))
-        RCurrentVar=RGradMatrix(ind,:)
+        Rdx=RPscale/5.0!small change in current variable is dx
+        RCurrentVar=RVar0
+        RCurrentVar(ind)=RCurrentVar(ind)+Rdx!***ADD IN RANDOM DIRECTION HERE***
         CALL SimulateAndFit(RCurrentVar,Iter,IExitFLAG,IErr)
         CALL BestFitCheck(RFigureofMerit,RBestFit,RCurrentVar,RIndependentVariable,IErr)
-        RFitVec(ind)=RFigureofMerit-RFit0
+        RFitVec(ind)=RFigureofMerit
+        RPVec(ind)=(RFit0-RFigureofMerit)/Rdx!-df/dx - actually don't need the dx since it is constant, keep if needed later
       END DO
-      !maximum gradient vector
-      IF (my_rank.EQ.0) PRINT*,"FitVec",RFitVec
-      RPVec=MATMUL(RInvGradMatrix,RFitVec)
-      IF (my_rank.EQ.0) PRINT*,RPVec
+      !normalise gradient vector
       RPvecMag=ZERO
       DO ind=1,INoOfVariables
         RPvecMag=RPvecMag+RPvec(ind)**2
@@ -855,6 +827,8 @@ PROGRAM Felixrefine
       RPvec=RPvec/SQRT(RPvecMag)!unity vector along direction of max gradient
       WRITE(SPrintString,FMT='(A20,20(F6.3,1X))') "Refinement vector = ",RPvec
       IF (my_rank.EQ.0) PRINT*, TRIM(ADJUSTL(SPrintString))
+      RVar0=RIndependentVariable!the best point of gradient calculation
+      RFigureofMerit=MINVAL(RFitVec)!the best fit
       !three points to find the miniimum
       R3var(1)=RVar0(1)!first point is current value
       R3fit(1)=RFigureofMerit!point 1 is the incoming simulation and fit index
@@ -941,7 +915,7 @@ PROGRAM Felixrefine
     !We are done, finallly simulate and output the best fit
     IExitFLAG=1
     CALL SimulateAndFit(RIndependentVariable,Iter,IExitFLAG,IErr)
-    DEALLOCATE(RVar0,RCurrentVar,RLastVar,RPVec,RGradMatrix,Ipivot,STAT=IErr)    
+    DEALLOCATE(RVar0,RCurrentVar,RLastVar,RPVec,RFitVec,STAT=IErr)    
     
   CASE(3)!Parabola
     ALLOCATE(RVar0(INoOfVariables),STAT=IErr)!incoming set of variables
