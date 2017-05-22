@@ -244,7 +244,7 @@ SUBROUTINE ReadInpFile( IErr )
   ILine= ILine+1; READ(IChInp,10,ERR=20,END=30) IMethodFLAG
   IF (my_rank.EQ.0) THEN
       IF(IMethodFLAG.EQ.1) PRINT*, "Refining by Simplex"
-      IF(IMethodFLAG.EQ.2) PRINT*, "Refining by Bisection"
+      IF(IMethodFLAG.EQ.2) PRINT*, "Refining by Max gradient"
       IF(IMethodFLAG.EQ.3) PRINT*, "Refining by Parabola"
   END IF  
   ! -----ICorrelationFLAG: 0=phase,1=sumSq,2=NormalisedCC,3=masked
