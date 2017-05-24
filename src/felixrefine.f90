@@ -811,13 +811,14 @@ PROGRAM Felixrefine
       DO ind=1,INoOfVariables
         WRITE(SPrintString,FMT='(A17,I2,A3,I3)') "Finding gradient,",ind," of",INoOfVariables
         IF (my_rank.EQ.0) PRINT*, TRIM(ADJUSTL(SPrintString))
-        Rdx=RPscale/5.0!small change in current variable is dx
+        CALL RANDOM_NUMBER(Rdx)!Use random sign to vary the line when we get close to the minimum
+        Rdx=(Rdx-0.5)*RPscale/(5.0*ABS(Rdx-0.5))!small change in current variable is dx
         RCurrentVar=RVar0
-        RCurrentVar(ind)=RCurrentVar(ind)+Rdx!***ADD IN RANDOM DIRECTION HERE***
+        RCurrentVar(ind)=RCurrentVar(ind)+Rdx
         CALL SimulateAndFit(RCurrentVar,Iter,IExitFLAG,IErr)
         CALL BestFitCheck(RFigureofMerit,RBestFit,RCurrentVar,RIndependentVariable,IErr)
         RFitVec(ind)=RFigureofMerit
-        RPVec(ind)=(RFit0-RFigureofMerit)/Rdx!-df/dx - actually don't need the dx since it is constant, keep if needed later
+        RPVec(ind)=(RFit0-RFigureofMerit)/Rdx!-df/dx: need the dx to keep track of sign
       END DO
       !normalise gradient vector
       RPvecMag=ZERO
@@ -895,7 +896,7 @@ PROGRAM Felixrefine
              "Concave set, predict minimum at ",RvarMin," with fit index ",RfitMin
           PRINT*,TRIM(ADJUSTL(SPrintString))
         END IF
-        !Put predictioninto RIndependentVariable
+        !Put prediction into RIndependentVariable
         IF (RvarMin.LT.ZERO.AND.IVariableType.EQ.4) RvarMin=ZERO!We have reached zero D-W factor
         RCurrentVar=RVar0+RPvec*(RvarMin-RVar0(1))/RPvec(1)
         CALL SimulateAndFit(RCurrentVar,Iter,IExitFLAG,IErr)
