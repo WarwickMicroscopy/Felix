@@ -54,7 +54,7 @@ PROGRAM Felixrefine
 	   INumInitReflections,IZerothLaueZoneLevel,INumFinalReflections,IThicknessIndex,IVariableType
   INTEGER(IKIND) :: IHours,IMinutes,ISeconds,IMilliSeconds,IStartTime,ICurrentTime,IRate
   INTEGER(IKIND),DIMENSION(:),ALLOCATABLE :: IOriginGVecIdentifier
-  REAL(RKIND) :: StartTime, CurrentTime, Duration, TotalDurationEstimate,&
+  REAL(RKIND) :: StartTime, CurrentTime, Duration, TotalDurationEstimate,RANDOMNUMBER,&
        RHOLZAcceptanceAngle,RLaueZoneGz,RMaxGMag,RPvecMag,RPscale,RMaxUgStep,Rdx
   REAL(RKIND) :: RBCASTREAL,RStandardDeviation,RMean,RGzUnitVec,RMinLaueZoneValue,Rdf,RLastFit,RBestFit,&
        RMaxLaueZoneValue,RMaxAcceptanceGVecMag,RLaueZoneElectronWaveVectorMag,RvarMin,RfitMin,RFit0,Rconvex,Rtest
@@ -351,10 +351,10 @@ PROGRAM Felixrefine
   DO ind =1,INhkl
     RgDotNorm(ind) = DOT_PRODUCT(RgPool(ind,:),RNormDirM)
   END DO
-  IF(IWriteFLAG.EQ.7.AND.my_rank.EQ.0) THEN
+  IF(IWriteFLAG.EQ.7) THEN
     DO ind =1,INhkl
 	 WRITE(SPrintString,FMT='(I4,A4,3(I4,1X),A7,E8.1,A4)') ind,": g=",NINT(Rhkl(ind,:)),", g.n= ",RgDotNorm(ind)," 1/A"
-     PRINT*,TRIM(ADJUSTL(SPrintString))
+     IF (my_rank.EQ.0) PRINT*,TRIM(ADJUSTL(SPrintString))
     END DO
   END IF
   RMinimumGMag = RgPoolMag(2)
@@ -811,8 +811,9 @@ PROGRAM Felixrefine
       DO ind=1,INoOfVariables
         WRITE(SPrintString,FMT='(A17,I2,A3,I3)') "Finding gradient,",ind," of",INoOfVariables
         IF (my_rank.EQ.0) PRINT*, TRIM(ADJUSTL(SPrintString))
-        CALL RANDOM_NUMBER(Rdx)!Use random sign to vary the line when we get close to the minimum
-        Rdx=(Rdx-0.5)*RPscale/(5.0*ABS(Rdx-0.5))!small change in current variable is dx
+        CALL SYSTEM_CLOCK(jnd)!Use system clock to make a random number and vary the sign of dx
+        Rdx=(REAL(MOD(jnd,10))/TEN)-0.45!numbers 0-4 give minus, 5-9 give plus
+        Rdx=Rdx*RPscale/ABS(Rdx)!small change in current variable is dx
         RCurrentVar=RVar0
         RCurrentVar(ind)=RCurrentVar(ind)+Rdx
         CALL SimulateAndFit(RCurrentVar,Iter,IExitFLAG,IErr)
