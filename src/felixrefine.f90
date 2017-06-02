@@ -801,31 +801,64 @@ PROGRAM Felixrefine
     RBestFit=RFigureofMerit
     RLastFit=RBestFit
     RLastVar=RIndependentVariable
+    RCurrentVar=ONE
     Rdf=ONE
     Iter=1
     RPscale=RSimplexLengthScale
+    nnd=0!max/min gradient flag
     DO WHILE (Rdf.GE.RExitCriteria)
       RVar0=RIndependentVariable!incoming point in n-dimensional parameter space
       RFit0=RFigureofMerit!incoming fit
-      !calculate individual gradients
-      DO ind=1,INoOfVariables
-        WRITE(SPrintString,FMT='(A17,I2,A3,I3)') "Finding gradient,",ind," of",INoOfVariables
-        IF (my_rank.EQ.0) PRINT*, TRIM(ADJUSTL(SPrintString))
-        CALL SYSTEM_CLOCK(jnd)!Use system clock to make a random number and vary the sign of dx
-        Rdx=(REAL(MOD(jnd,10))/TEN)-0.45!numbers 0-4 give minus, 5-9 give plus
-        Rdx=Rdx*RPscale/ABS(Rdx)!small change in current variable is dx
-        RCurrentVar=RVar0
-        RCurrentVar(ind)=RCurrentVar(ind)+Rdx
-        CALL SimulateAndFit(RCurrentVar,Iter,IExitFLAG,IErr)
-        CALL BestFitCheck(RFigureofMerit,RBestFit,RCurrentVar,RIndependentVariable,IErr)
-        RFitVec(ind)=RFigureofMerit
-        RPVec(ind)=(RFit0-RFigureofMerit)/Rdx!-df/dx: need the dx to keep track of sign
-      END DO
-      !normalise gradient vector
+      IF (nnd.EQ.0) THEN!max gradient
+        DO ind=1,INoOfVariables!calculate individual gradients
+          IVariableType=IIterativeVariableUniqueIDs(ind,2)!The type of variable being refined 
+          IF (my_rank.EQ.0) THEN!print to screen
+           SELECT CASE(IVariableType)
+            CASE(1)
+              PRINT*,"Ug refinement"
+            CASE(2)
+              PRINT*,"Atomic coordinate refinement"
+            CASE(3)
+              PRINT*,"Occupancy refinement"
+            CASE(4)
+              PRINT*,"Isotropic Debye-Waller factor refinement"
+            CASE(5)
+              PRINT*,"Convergence angle refinement"
+           END SELECT
+          END IF
+          IF (RCurrentVar(ind).LE.TINY.AND.IVariableType.EQ.4) THEN!skip zero DW factor
+            RPVec(ind)=TINY
+            EXIT
+          END IF
+          WRITE(SPrintString,FMT='(A17,I2,A3,I3)') "Finding gradient,",ind," of",INoOfVariables
+          IF (my_rank.EQ.0) PRINT*, TRIM(ADJUSTL(SPrintString))
+          CALL SYSTEM_CLOCK(mnd)!Use system clock to make a random number and vary the sign of dx
+          Rdx=(REAL(MOD(mnd,10))/TEN)-0.45!numbers 0-4 give minus, 5-9 give plus
+          Rdx=0.1*Rdx*RPscale/ABS(Rdx)!small change in current variable (RPscale/10)is dx
+          RCurrentVar=RVar0
+          RCurrentVar(ind)=RCurrentVar(ind)+Rdx
+          CALL SimulateAndFit(RCurrentVar,Iter,IExitFLAG,IErr)
+          CALL BestFitCheck(RFigureofMerit,RBestFit,RCurrentVar,RIndependentVariable,IErr)
+          RFitVec(ind)=RFigureofMerit
+          RPVec(ind)=(RFit0-RFigureofMerit)/Rdx!-df/dx: need the dx to keep track of sign
+        END DO
+        nnd=1!do min gradient next time
+      ELSE!min gradient - to explore along a valley
+        DO ind=1,INoOfVariables!invert gradient, ignoring zeros
+          IF (ABS(RPVec(ind)).GT.TINY) RPVec(ind)=1/RPVec(ind)
+        END DO
+        IF (my_rank.EQ.0) PRINT*, "Checking minimum gradient"
+        nnd=0!do max gradient next time
+      END IF
       RPvecMag=ZERO
-      DO ind=1,INoOfVariables
+      DO ind=1,INoOfVariables!normalise gradient vector
         RPvecMag=RPvecMag+RPvec(ind)**2
       END DO
+      IF (RPvecMag-ONE.EQ.RPvecMag.OR.RPvecMag.NE.RPvecMag) THEN!Infinity and NaN check
+        WRITE(SPrintString,FMT='(A27,20(F6.3,1X))') "Error in refinement vector ",RPvec
+        IF (my_rank.EQ.0) PRINT*, TRIM(ADJUSTL(SPrintString))
+        EXIT
+      END IF
       RPvec=RPvec/SQRT(RPvecMag)!unity vector along direction of max gradient
       WRITE(SPrintString,FMT='(A20,20(F6.3,1X))') "Refinement vector = ",RPvec
       IF (my_rank.EQ.0) PRINT*, TRIM(ADJUSTL(SPrintString))
@@ -871,11 +904,11 @@ PROGRAM Felixrefine
         IF (ABS(RPvecMag).GT.RMaxUgStep.AND.IRefineMode(1).EQ.1) RPvecMag=SIGN(RMaxUgStep,RPvecMag)!maximum step in Ug is RMaxUgStep
         RCurrentVar=RVar0+RPvec*RPvecMag
         R3var(lnd)=RCurrentVar(1)!next point
-        IF (R3var(lnd).LE.ZERO.AND.IVariableType.EQ.4) THEN!less than zero DW is requested
-          R3var(lnd)=ZERO!limit it to 0.0
-          RCurrentVar=RVar0-RPvec*RVar0(1)!and set up for simulation outside the loop
-          EXIT
-        END IF
+!        IF (R3var(lnd).LE.ZERO.AND.IVariableType.EQ.4) THEN!less than zero DW is requested
+!          R3var(lnd)=ZERO!limit it to 0.0
+!          RCurrentVar=RVar0-RPvec*RVar0(1)!and set up for simulation outside the loop
+!          EXIT
+!        END IF
         CALL SimulateAndFit(RCurrentVar,Iter,IExitFLAG,IErr)
         CALL BestFitCheck(RFigureofMerit,RBestFit,RCurrentVar,RIndependentVariable,IErr)
         R3fit(lnd)=RFigureofMerit
@@ -886,11 +919,11 @@ PROGRAM Felixrefine
         Rtest=-ABS(R3fit(jnd)-R3fit(knd))
       END DO
       !now make a prediction
-      IF (RCurrentVar(1).LE.TINY.AND.IVariableType.EQ.4) THEN!We reached zero D-W factor in convexity test, skip the prediction
-        CALL SimulateAndFit(RCurrentVar,Iter,IExitFLAG,IErr)!***NEEDS UPDATING
-        CALL BestFitCheck(RFigureofMerit,RBestFit,RCurrentVar,RIndependentVariable,IErr)
-        IF (my_rank.EQ.0) PRINT*,"Using zero Debye Waller factor, refining next variable"
-      ELSE
+!      IF (RCurrentVar(1).LE.TINY.AND.IVariableType.EQ.4) THEN!We reached zero D-W factor in convexity test, skip the prediction
+!        CALL SimulateAndFit(RCurrentVar,Iter,IExitFLAG,IErr)!***NEEDS UPDATING
+!        CALL BestFitCheck(RFigureofMerit,RBestFit,RCurrentVar,RIndependentVariable,IErr)
+!        IF (my_rank.EQ.0) PRINT*,"Using zero Debye Waller factor, refining next variable"
+!      ELSE
         CALL Parabo3(R3var,R3fit,RvarMin,RfitMin,IErr)
         IF (my_rank.EQ.0) THEN
           WRITE(SPrintString,FMT='(A32,F7.4,A16,F6.4)') &
@@ -898,11 +931,11 @@ PROGRAM Felixrefine
           PRINT*,TRIM(ADJUSTL(SPrintString))
         END IF
         !Put prediction into RIndependentVariable
-        IF (RvarMin.LT.ZERO.AND.IVariableType.EQ.4) RvarMin=ZERO!We have reached zero D-W factor
+!        IF (RvarMin.LT.ZERO.AND.IVariableType.EQ.4) RvarMin=ZERO!We have reached zero D-W factor
         RCurrentVar=RVar0+RPvec*(RvarMin-RVar0(1))/RPvec(1)
         CALL SimulateAndFit(RCurrentVar,Iter,IExitFLAG,IErr)
         CALL BestFitCheck(RFigureofMerit,RBestFit,RCurrentVar,RIndependentVariable,IErr)
-      END IF
+!      END IF
       !check where we go next and update last fit etc.
       Rdf=RLastFit-RBestFit 
       RLastFit=RBestFit
@@ -953,7 +986,7 @@ PROGRAM Felixrefine
             PRINT*,"Isotropic Debye-Waller factor refinement"
           CASE(5)
             PRINT*,"Convergence angle refinement"
-          END SELECT
+        END SELECT
           IF (INoOfVariables.GT.1) THEN
             IF (ICycle.EQ.1) THEN
               PRINT*,"Refining all variables"
