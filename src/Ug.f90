@@ -159,7 +159,7 @@ SUBROUTINE StructureFactorInitialisation (IErr)
   INTEGER(IKIND),DIMENSION(2) :: IPos,ILoc
   COMPLEX(CKIND) :: CVgij
   REAL(RKIND) :: RMeanInnerPotentialVolts,RScatteringFactor,Lorentzian,Gaussian,Kirkland,&
-        RScattFacToVolts
+        RScattFacToVolts,RTheta
   CHARACTER*200 :: SPrintString
 
   !Conversion factor from scattering factors to volts. h^2/(2pi*m0*e), see e.g. Kirkland eqn. C.5
@@ -172,7 +172,7 @@ SUBROUTINE StructureFactorInitialisation (IErr)
       !The Fourier component of the potential Vg goes in location (i,j)
       CVgij= 0.0D0!this is in Volts
       DO lnd=1,INAtomsUnitCell
-        ICurrentZ = IAtomicNumber(lnd)!Atomic number
+        ICurrentZ = IAtomicNumber(lnd)!Atomic number, NB passed as a global variable for absorption
         RCurrentGMagnitude = RgMatrixMagnitude(ind,jnd)!g-vector magnitude, global variable
         SELECT CASE (IScatterFactorMethodFLAG)! calculate f_e(q)
 
@@ -213,6 +213,7 @@ SUBROUTINE StructureFactorInitialisation (IErr)
         END SELECT
         ! Occupancy
         RScatteringFactor = RScatteringFactor*ROccupancy(lnd)
+        !Debye-Waller factor
         IF (IAnisoDebyeWallerFactorFlag.EQ.0) THEN
           IF(RIsoDW(lnd).GT.10.OR.RIsoDW(lnd).LT.0) RIsoDW(lnd) = RDebyeWallerConstant
           !Isotropic D-W factor exp(-B sin(theta)^2/lamda^2) = exp(-Bs^2)=exp(-Bg^2/16pi^2), see e.g. Bird&King
@@ -223,6 +224,13 @@ SUBROUTINE StructureFactorInitialisation (IErr)
             MATMUL( RAnisotropicDebyeWallerFactorTensor( &
             RAnisoDW(lnd),:,:),RgMatrix(ind,jnd,:))))
         END IF
+        
+        !Multipole, hack to begin with: z means 4-fold atom
+        !IF (SWyckoffSymbols(lnd).EQ."z") THEN
+        !  Rtheta=ACOS(RgMatrix(ind,jnd,1)/RgMatrixMagnitude(ind,jnd))!using g.[100]
+        !  RScatteringFactor = RScatteringFactor * COS(FOUR*RTheta)
+        !END IF
+        
 		!The structure factor equation, complex Vg(ind,jnd)=sum(f*exp(-ig.r) in Volts
         CVgij = CVgij + RScattFacToVolts*RScatteringFactor * EXP(-CIMAGONE* &
         DOT_PRODUCT(RgMatrix(ind,jnd,:), RAtomCoordinate(lnd,:)) )

@@ -919,35 +919,30 @@ PROGRAM Felixrefine
         Rtest=-ABS(R3fit(jnd)-R3fit(knd))
       END DO
       !now make a prediction
-!      IF (RCurrentVar(1).LE.TINY.AND.IVariableType.EQ.4) THEN!We reached zero D-W factor in convexity test, skip the prediction
-!        CALL SimulateAndFit(RCurrentVar,Iter,IExitFLAG,IErr)!***NEEDS UPDATING
-!        CALL BestFitCheck(RFigureofMerit,RBestFit,RCurrentVar,RIndependentVariable,IErr)
-!        IF (my_rank.EQ.0) PRINT*,"Using zero Debye Waller factor, refining next variable"
-!      ELSE
-        CALL Parabo3(R3var,R3fit,RvarMin,RfitMin,IErr)
-        IF (my_rank.EQ.0) THEN
-          WRITE(SPrintString,FMT='(A32,F7.4,A16,F6.4)') &
-             "Concave set, predict minimum at ",RvarMin," with fit index ",RfitMin
+      CALL Parabo3(R3var,R3fit,RvarMin,RfitMin,IErr)
+      IF (my_rank.EQ.0) THEN
+        WRITE(SPrintString,FMT='(A32,F7.4,A16,F6.4)') &
+           "Concave set, predict minimum at ",RvarMin," with fit index ",RfitMin
+        PRINT*,TRIM(ADJUSTL(SPrintString))
+      END IF
+      !Put prediction into RIndependentVariable
+      RCurrentVar=RVar0+RPvec*(RvarMin-RVar0(1))/RPvec(1)
+      CALL SimulateAndFit(RCurrentVar,Iter,IExitFLAG,IErr)
+      CALL BestFitCheck(RFigureofMerit,RBestFit,RCurrentVar,RIndependentVariable,IErr)
+      !check where we go next and update last fit etc.
+      IF (nnd.EQ.0) THEN!only update LastFit after a max gradient refinement
+        Rdf=RLastFit-RBestFit 
+        RLastFit=RBestFit
+        IF(my_rank.EQ.0) THEN
+          PRINT*,"--------------------------------"
+          WRITE(SPrintString,FMT='(A19,F8.6,A15,F8.6)') "Improvement in fit ",Rdf,", will stop at ",RExitCriteria
           PRINT*,TRIM(ADJUSTL(SPrintString))
         END IF
-        !Put prediction into RIndependentVariable
-!        IF (RvarMin.LT.ZERO.AND.IVariableType.EQ.4) RvarMin=ZERO!We have reached zero D-W factor
-        RCurrentVar=RVar0+RPvec*(RvarMin-RVar0(1))/RPvec(1)
-        CALL SimulateAndFit(RCurrentVar,Iter,IExitFLAG,IErr)
-        CALL BestFitCheck(RFigureofMerit,RBestFit,RCurrentVar,RIndependentVariable,IErr)
-!      END IF
-      !check where we go next and update last fit etc.
-      Rdf=RLastFit-RBestFit 
-      RLastFit=RBestFit
-      IF(my_rank.EQ.0) THEN
-        PRINT*,"--------------------------------"
-        WRITE(SPrintString,FMT='(A19,F8.6,A15,F8.6)') "Improvement in fit ",Rdf,", will stop at ",RExitCriteria
-        PRINT*,TRIM(ADJUSTL(SPrintString))
       END IF
       !shrink length scale as we progress, by a smaller amount depending on the no of variables: 1->1/2; 2->3/4; 3->5/6; 4->7/8; 5->9/10;
       RPscale=RPscale*(ONE-ONE/(TWO*REAL(INoOfVariables)))
     END DO    
-    !We are done, finallly simulate and output the best fit
+    !We are done, simulate and output the best fit
     IExitFLAG=1
     CALL SimulateAndFit(RIndependentVariable,Iter,IExitFLAG,IErr)
     DEALLOCATE(RVar0,RCurrentVar,RLastVar,RPVec,RFitVec,STAT=IErr)    
