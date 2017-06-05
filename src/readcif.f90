@@ -71,7 +71,7 @@ SUBROUTINE ReadCif(IErr)
   INCLUDE       'ciftbx-f90.cmn'
 
   LOGICAL       f1,f2,f3
-  CHARACTER*32  name,Sind
+  CHARACTER*32  name
   CHARACTER*80  line,SPrintString
   CHARACTER*4   label(6)
   CHARACTER*1   SAlphabetarray(52)
@@ -272,7 +272,6 @@ SUBROUTINE ReadCif(IErr)
     ! remove the oxidation state numbers
     Ipos=SCAN(SBasisAtomName(ind),"1234567890")
     IF (Ipos.GT.0) WRITE(SBasisAtomName(ind),'(A1,A1)') name(1:1)," "
-    WRITE(Sind,*) ind!unused, remove?
     !get atomic number
     DO jnd=1,NElements
       IF(TRIM(SBasisAtomName(ind)).EQ.TRIM(SElementSymbolMatrix(jnd))) THEN
