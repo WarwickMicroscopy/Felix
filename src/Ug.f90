@@ -225,11 +225,11 @@ SUBROUTINE StructureFactorInitialisation (IErr)
             RAnisoDW(lnd),:,:),RgMatrix(ind,jnd,:))))
         END IF
         
-        !Multipole, hack to begin with: z means 4-fold atom
-        !IF (SWyckoffSymbols(lnd).EQ."z") THEN
+        !Multipole, hack to begin with: atomic number 105 means 4-fold atom
+        IF (ICurrentZ.EQ.105) THEN
         !  Rtheta=ACOS(RgMatrix(ind,jnd,1)/RgMatrixMagnitude(ind,jnd))!using g.[100]
         !  RScatteringFactor = RScatteringFactor * COS(FOUR*RTheta)
-        !END IF
+        END IF
         
 		!The structure factor equation, complex Vg(ind,jnd)=sum(f*exp(-ig.r) in Volts
         CVgij = CVgij + RScattFacToVolts*RScatteringFactor * EXP(-CIMAGONE* &

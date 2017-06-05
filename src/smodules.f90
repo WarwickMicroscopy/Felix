@@ -39,9 +39,9 @@
 !--------------------------------------------------------------------
 MODULE CConst
 
-  CHARACTER*50, PARAMETER :: RStr= "Version: master / BUILD / Alpha"
-  CHARACTER*50, PARAMETER :: DStr= "Date: 17-05-2017"
-  CHARACTER*50, PARAMETER :: AStr= "Status: Parabolic refinement test&debug"
+  CHARACTER*50, PARAMETER :: RStr= "Version: multipole / BUILD / Alpha"
+  CHARACTER*50, PARAMETER :: DStr= "Date: 05-06-2017"
+  CHARACTER*50, PARAMETER :: AStr= "Status: multipole atom refinement"
   
   CHARACTER*8 CSpaceGrp(230)
   DATA CSpaceGrp/"P1","P-1","P2","P21","C2","Pm","Pc","Cm",&
