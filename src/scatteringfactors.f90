@@ -32,13 +32,11 @@
 !!$
 !!$%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 !!$
-!!$%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-!!$ $Id: scatteringfactors.f90,v 1.2 2014/03/27 18:13:30 phsht Exp $
-!!$%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 !> Contains all of the scattering coefficients for each of the following methods:
 !! Kirkland, Peng, Doyle & Turner, Lobato.
 !! Fictitious element "Q" is atomic number 104, Kirkland only, 1/5 width of H
+!! Fictitious elements "J" are multipole pseudoatoms, Ja,Jb... etc.
 SUBROUTINE ScatteringFactors(IScatteringMethodSwitch,IErr)
 
   USE MyNumbers
@@ -54,7 +52,7 @@ SUBROUTINE ScatteringFactors(IScatteringMethodSwitch,IErr)
   IMPLICIT NONE
 
   INTEGER(IKIND):: IScatteringMethodSwitch,IScattDimension,IErr,ind
-  REAL(RKIND) :: RKirkland(104,12), RPeng(104,8), RDoyleAndTurner(104,8), RLobato(104,10), RAtomicNumbers(104,1)
+  REAL(RKIND) :: RKirkland(105,12), RPeng(105,8), RDoyleAndTurner(105,8), RLobato(105,10), RAtomicNumbers(105,1)
 
   SELECT CASE(IScatteringMethodSwitch)
 
@@ -276,7 +274,7 @@ SUBROUTINE ScatteringFactors(IScatteringMethodSwitch,IErr)
      IScattDimension=12
 
 !!$Allocate Global Scattering factor array 
-     ALLOCATE(RScattFactors(104,IScattDimension), STAT=IErr)
+     ALLOCATE(RScattFactors(105,IScattDimension), STAT=IErr)
      IF( IErr.NE.0 ) THEN
         PRINT*,"ScatteringFactors: error in memory allocation"
         RETURN
@@ -499,7 +497,7 @@ SUBROUTINE ScatteringFactors(IScatteringMethodSwitch,IErr)
      IScattDimension=8
 
 !!$Allocate Global Scattering factor array 
-     ALLOCATE(RScattFactors(104,IScattDimension), STAT=IErr)
+     ALLOCATE(RScattFactors(105,IScattDimension), STAT=IErr)
      IF( IErr.NE.0 ) THEN
         PRINT*,"ScatteringFactors: error in memory allocation"
         RETURN
@@ -721,7 +719,7 @@ SUBROUTINE ScatteringFactors(IScatteringMethodSwitch,IErr)
      IScattDimension=8
 
 !!$Allocate Global Scattering factor array 
-     ALLOCATE(RScattFactors(104,IScattDimension), STAT=IErr)
+     ALLOCATE(RScattFactors(105,IScattDimension), STAT=IErr)
      IF( IErr.NE.0 ) THEN
         PRINT*,"ScatteringFactors: error in memory allocation"
         RETURN
@@ -943,7 +941,7 @@ SUBROUTINE ScatteringFactors(IScatteringMethodSwitch,IErr)
      IScattDimension=10
 
 !!$Allocate Global Scattering factor array 
-     ALLOCATE(RScattFactors(104,IScattDimension), STAT=IErr)
+     ALLOCATE(RScattFactors(105,IScattDimension), STAT=IErr)
      IF( IErr.NE.0 ) THEN
         PRINT*,"ScatteringFactors: error in memory allocation"
         RETURN

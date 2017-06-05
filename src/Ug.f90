@@ -225,8 +225,8 @@ SUBROUTINE StructureFactorInitialisation (IErr)
             RAnisoDW(lnd),:,:),RgMatrix(ind,jnd,:))))
         END IF
         
-        !Multipole, hack to begin with: atomic number 105 means 4-fold atom
-        IF (ICurrentZ.EQ.105) THEN
+        !Multipole, hack to begin with: atomic label Ja means 4-fold pseudoatom
+        IF (SAtomLabel(lnd).EQ."Ja") THEN
           !  Rtheta=ACOS(RgMatrix(ind,jnd,1)/RgMatrixMagnitude(ind,jnd))!using g.[100]
           !  RScatteringFactor = RScatteringFactor * COS(FOUR*RTheta)
         END IF

@@ -36,7 +36,49 @@
 ! $Id: smodules.f90,v 1.63 2014/04/28 12:26:19 phslaz Exp $
 !%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
+
 !--------------------------------------------------------------------
+MODULE IConst
+  USE MyNumbers
+  INTEGER(IKIND), PARAMETER :: &
+       MAXWriteFLAG= 10, &
+       ITHREE= 3, &
+       ADD_OUT_INFO=6, &
+       IParallelFLAG=0,&
+       IRandomFLAG = 1, &
+       IFixedSeed = 123456787,&
+       IRefinementVariableTypes = 10,&
+       INElements=105
+
+  !PriorityFLAG values - to match to the WriteFLAG - will change eventually,
+  !hence why the silent & Must are both 0, no Silent option yet.
+  !IInfo is now IWriteFLAG = 1, IAllInfo is IWriteFLAG = 10
+  INTEGER(IKIND), PARAMETER :: &
+       ISilent = 0 ,&
+       IMust = 1 ,&
+       IInfo = 2 ,&
+       IMoreInfo = 3, &
+       IAllInfo = 10, &
+       IDebug = 100, &
+       IWarning = 4, &
+       IPotError = 5, &
+       ICritError = 6
+
+END MODULE IConst
+!--------------------------------------------------------------------
+MODULE RConst
+  USE MyNumbers
+  
+  REAL(RKIND), PARAMETER :: &
+       RSpeedOfLight=REAL(2.99762458D+8,RKIND), &! in m/s
+       RElectronMass=REAL(9.10938291D-31,RKIND), &!in kg
+       RElectronMassMeV=REAL(0.510998928,RKIND), &!don't think we ever use this
+       RPlanckConstant=REAL(6.62606957D-34,RKIND), &! in kg m^2 /s
+       RElectronCharge=REAL(1.602176565D-19,RKIND), &!in C
+       RAngstromConversion=REAL(1.D10,RKIND)! So [1A (in m)] * RAngstromConversion = 1
+  REAL(RKIND), PARAMETER :: RTolerance =REAL(1E-7,RKIND)
+    
+END MODULE RConst!--------------------------------------------------------------------
 MODULE CConst
 
   CHARACTER*50, PARAMETER :: RStr= "Version: multipole / BUILD / Alpha"
@@ -74,7 +116,7 @@ MODULE CConst
        "I-43d","Pm-3m","Pn-3n","Pm-3n","Pn-3m","Fm-3m","Fm-3c","Fd-3m", &
        "Fd-3c","Im-3m","Ia-3d"/
 
-  CHARACTER*2 :: SElementSymbolMatrix(104)
+  CHARACTER*2 :: SElementSymbolMatrix(105)!N.B. Number must equal INElements
   DATA SElementSymbolMatrix/"H", "He", "Li", "Be", " B", " C", " N", "O", "F", "Ne", &
        "Na", "Mg", "Al", "Si", "P", "S", "Cl", "Ar", "K", "Ca", &
        "Sc", "Ti", "V", "Cr", "Mn", "Fe", "Co", "Ni", "Cu", "Zn", &
@@ -85,7 +127,7 @@ MODULE CConst
         "Lu", "Hf", "Ta", "W", "Re", "Os", "Ir", "Pt", "Au", "Hg", &
         "Tl", "Pb", "Bi", "Po", "At", "Rn", "Fr", "Ra", "Ac", "Th", &
         "Pa", "U", "Np", "Pu", "Am", "Cm", "Bk", "Cf", "Es", "Fm",& 
-        "Md","No","Lr","Q"/!Note element 'Q' added to end of list
+        "Md","No","Lr","Q","Ja"/!Note element 'Q', 'Ja'... etc. added to end of list
 
   CHARACTER*8 :: CAlphabet(26)
   DATA CAlphabet/"Aa","Bb","Cc","Dd","Ee","Ff","Gg","Hh","Ii","Jj","Kk","Ll",&
@@ -93,48 +135,6 @@ MODULE CConst
 
 END MODULE CConst
 
-!--------------------------------------------------------------------
-MODULE IConst
-  USE MyNumbers
-  INTEGER(IKIND), PARAMETER :: &
-       MAXWriteFLAG= 10, &
-       ITHREE= 3, &
-       ADD_OUT_INFO=6, &
-       IParallelFLAG=0,&
-       IRandomFLAG = 1, &
-       IFixedSeed = 123456787,&
-       IRefinementVariableTypes = 10,&
-       NElements=104
-
-  !PriorityFLAG values - to match to the WriteFLAG - will change eventually,
-  !hence why the silent & Must are both 0, no Silent option yet.
-  !IInfo is now IWriteFLAG = 1, IAllInfo is IWriteFLAG = 10
-  INTEGER(IKIND), PARAMETER :: &
-       ISilent = 0 ,&
-       IMust = 1 ,&
-       IInfo = 2 ,&
-       IMoreInfo = 3, &
-       IAllInfo = 10, &
-       IDebug = 100, &
-       IWarning = 4, &
-       IPotError = 5, &
-       ICritError = 6
-
-END MODULE IConst
-!--------------------------------------------------------------------
-MODULE RConst
-  USE MyNumbers
-  
-  REAL(RKIND), PARAMETER :: &
-       RSpeedOfLight=REAL(2.99762458D+8,RKIND), &! in m/s
-       RElectronMass=REAL(9.10938291D-31,RKIND), &!in kg
-       RElectronMassMeV=REAL(0.510998928,RKIND), &!don't think we ever use this
-       RPlanckConstant=REAL(6.62606957D-34,RKIND), &! in kg m^2 /s
-       RElectronCharge=REAL(1.602176565D-19,RKIND), &!in C
-       RAngstromConversion=REAL(1.D10,RKIND)! So [1A (in m)] * RAngstromConversion = 1
-  REAL(RKIND), PARAMETER :: RTolerance =REAL(1E-7,RKIND)
-    
-END MODULE RConst
 !--------------------------------------------------------------------
 MODULE IPara
   USE MyNumbers
@@ -191,7 +191,7 @@ MODULE IPara
   INTEGER(IKIND) :: IThicknessCount
   INTEGER(IKIND),DIMENSION(:,:),ALLOCATABLE :: IPixelLocations
   !Refine Parameters
-  INTEGER(IKIND) :: IFluxIterationSteps,IElements
+  INTEGER(IKIND) :: IFluxIterationSteps
   INTEGER(IKIND), DIMENSION(2) :: IOffset
   INTEGER(IKIND), DIMENSION(:),ALLOCATABLE :: IElementList
   !Ug Calculation
