@@ -32,10 +32,6 @@
 !
 !%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-!%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-! $Id: ReadCif.f90,v 1.23 2014/04/28 12:26:19 phslaz Exp $
-!%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-
 SUBROUTINE ReadCif(IErr)
 
   ! -----------------------------------------------------------------------
@@ -249,22 +245,23 @@ SUBROUTINE ReadCif(IErr)
   ALLOCATE(SBasisAtomLabel(IAtomCount),STAT=IErr)
   ALLOCATE(SBasisAtomName(IAtomCount),STAT=IErr)
   ALLOCATE(IBasisAtomicNumber(IAtomCount),STAT=IErr)
-  IBasisAtomicNumber = 0
   ALLOCATE(RBasisIsoDW(IAtomCount),STAT=IErr)
   ALLOCATE(RBasisOccupancy(IAtomCount),STAT=IErr)
   ALLOCATE(RAnisotropicDebyeWallerFactorTensor(IAtomCount,ITHREE,ITHREE),STAT=IErr)
-  RAnisotropicDebyeWallerFactorTensor = ZERO
   ALLOCATE(IBasisAnisoDW(IAtomCount),STAT=IErr)
   IF( IErr.NE.0 ) THEN
      PRINT*,"ReadCif(", my_rank, ") error ", IErr, " in ALLOCATE()"
      RETURN
   END IF
 
+  !initialise variables
+  IBasisAtomicNumber = 0
+  RAnisotropicDebyeWallerFactorTensor = ZERO
+  IMaxPossibleNAtomsUnitCell = 0
   ! input data loop
-  IMaxPossibleNAtomsUnitCell=0
   DO ind=1,IAtomCount
-    B = 0.D0
-    Uso = 0.D0
+    B = ZERO
+    Uso = ZERO
     f1 = char_('_atom_site_label', name)
     SBasisAtomLabel(ind)=name
     f1 = char_('_atom_site_type_symbol', name)
@@ -273,7 +270,7 @@ SUBROUTINE ReadCif(IErr)
     Ipos=SCAN(SBasisAtomName(ind),"1234567890")
     IF (Ipos.GT.0) WRITE(SBasisAtomName(ind),'(A1,A1)') name(1:1)," "
     !get atomic number
-    DO jnd=1,105!NB must match NElements
+    DO jnd=1,109!NB must match SElementSymbolMatrix defined in smodules line 73
       IF(TRIM(SBasisAtomName(ind)).EQ.TRIM(SElementSymbolMatrix(jnd))) THEN
         IBasisAtomicNumber(ind)=jnd
       END IF

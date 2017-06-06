@@ -159,12 +159,48 @@ SUBROUTINE StructureFactorInitialisation (IErr)
   INTEGER(IKIND),DIMENSION(2) :: IPos,ILoc
   COMPLEX(CKIND) :: CVgij
   REAL(RKIND) :: RMeanInnerPotentialVolts,RScatteringFactor,Lorentzian,Gaussian,Kirkland,&
-        RScattFacToVolts,RTheta
+        RScattFacToVolts,RPScale,RPMag,Rx,Ry,Rr,RPalpha,RTheta,Rfold
   CHARACTER*200 :: SPrintString
 
   !Conversion factor from scattering factors to volts. h^2/(2pi*m0*e), see e.g. Kirkland eqn. C.5
   !NB RVolume is already in A unlike RPlanckConstant
   RScattFacToVolts=(RPlanckConstant**2)*(RAngstromConversion**2)/(TWOPI*RElectronMass*RElectronCharge)
+  !Initialise pseudoatom potential
+  RPScale=1.0D-12!one picometre per pixel
+  RPMag=RElectronCharge!Magnitude of pseudoatom potential, in volts
+  DO lnd=1,INAtomsUnitCell!For later: if pseudoatoms are incorporated properly count how many there are and make RPseudoAtom ,CPseudoScatt allocatable
+    IF (IAtomicNumber(lnd).GE.105) THEN!we have a pseudoatom
+      IF (IAtomicNumber(lnd).EQ.105) Rfold=ZERO   !Ja
+      IF (IAtomicNumber(lnd).EQ.106) Rfold=ONE    !Jb
+      IF (IAtomicNumber(lnd).EQ.107) Rfold=TWO    !Jc
+      IF (IAtomicNumber(lnd).EQ.108) Rfold=THREE  !Jd
+      IF (IAtomicNumber(lnd).EQ.109) Rfold=FOUR   !Je
+      IF (IAtomicNumber(lnd).EQ.110) Rfold=SIX    !Jf
+      !potential in real space
+      RPalpha=100000000000.0*RIsoDW(lnd)!The Debye-Waller factor is used to determine alpha for pseudoatoms
+      DO ind=1,1024
+        DO jnd=1,1024
+          Rx=RPScale*(REAL(ind-512)-HALF)!x&y run from -511.5 to +511.5 picometres
+          Ry=RPScale*(REAL(jnd-512)-HALF)
+          Rr=SQRT(Rx*Rx+Ry*Ry)
+          Rtheta=ACOS(Rx/Rr)
+          RPseudoAtom(ind,jnd)=RPMag*Rr*EXP(-RPalpha*Rr)*COS(Rfold*Rtheta)
+        END DO
+      END DO
+      !output to check
+      IF (my_rank.EQ.0) THEN
+        WRITE(SPrintString,*) "pseudo.img"
+        OPEN(UNIT=IChOutWIImage, ERR=10, STATUS= 'UNKNOWN', FILE=SPrintString,&!
+        FORM='UNFORMATTED',ACCESS='DIRECT',IOSTAT=IErr,RECL=8192)
+        DO jnd = 1,1024
+            WRITE(IChOutWIImage,rec=jnd) RPseudoAtom(jnd,:)
+        END DO
+        CLOSE(IChOutWIImage,IOSTAT=IErr)
+      END IF  
+      !CPseudoScatt = a 2d fft of RPseudoAtom
+    END IF
+  END DO
+
   !Calculate Ug matrix
   CUgMatNoAbs = CZERO
   DO ind=1,nReflections
@@ -174,63 +210,65 @@ SUBROUTINE StructureFactorInitialisation (IErr)
       DO lnd=1,INAtomsUnitCell
         ICurrentZ = IAtomicNumber(lnd)!Atomic number, NB passed as a global variable for absorption
         RCurrentGMagnitude = RgMatrixMagnitude(ind,jnd)!g-vector magnitude, global variable
-        SELECT CASE (IScatterFactorMethodFLAG)! calculate f_e(q)
+        IF (ICurrentZ.LT.105) THEN!It's not a pseudoatom
 
-        CASE(0) ! Kirkland Method using 3 Gaussians and 3 Lorentzians, NB Kirkland scattering factor is in Angstrom units
-		  !NB atomic number and g-vector passed as global variables
-          RScatteringFactor = Kirkland(RgMatrixMagnitude(ind,jnd))
+          SELECT CASE (IScatterFactorMethodFLAG)! calculate f_e(q)
+          
+          CASE(0) ! Kirkland Method using 3 Gaussians and 3 Lorentzians, NB Kirkland scattering factor is in Angstrom units
+	  	  !NB atomic number and g-vector passed as global variables
+          RScatteringFactor = Kirkland(RCurrentGMagnitude)
   
-        CASE(1) ! 8 Parameter Method with Scattering Parameters from Peng et al 1996 
+          CASE(1) ! 8 Parameter Method with Scattering Parameters from Peng et al 1996 
           RScatteringFactor = ZERO
           DO knd = 1, 4
             !Peng Method uses summation of 4 Gaussians
             RScatteringFactor = RScatteringFactor + &
-              GAUSSIAN(RScattFactors(ICurrentZ,knd),RgMatrixMagnitude(ind,jnd),ZERO, & 
+              GAUSSIAN(RScattFactors(ICurrentZ,knd),RCurrentGMagnitude,ZERO, & 
               SQRT(2/RScattFactors(ICurrentZ,knd+4)),ZERO)
           END DO
 			  
-        CASE(2) ! 8 Parameter Method with Scattering Parameters from Doyle and Turner Method (1968)
+          CASE(2) ! 8 Parameter Method with Scattering Parameters from Doyle and Turner Method (1968)
           RScatteringFactor = ZERO
           DO knd = 1, 4
             evenindgauss = knd*2
             oddindgauss = knd*2 -1
             !Doyle &Turner uses summation of 4 Gaussians
             RScatteringFactor = RScatteringFactor + &
-              GAUSSIAN(RScattFactors(ICurrentZ,oddindgauss),RgMatrixMagnitude(ind,jnd),ZERO, & 
+              GAUSSIAN(RScattFactors(ICurrentZ,oddindgauss),RCurrentGMagnitude,ZERO, & 
               SQRT(2/RScattFactors(ICurrentZ,evenindgauss)),ZERO)
           END DO
 
-        CASE(3) ! 10 Parameter method with Scattering Parameters from Lobato et al. 2014
+          CASE(3) ! 10 Parameter method with Scattering Parameters from Lobato et al. 2014
           RScatteringFactor = ZERO
           DO knd = 1,5
             evenindlorentz=knd+5
             RScatteringFactor = RScatteringFactor + &
               LORENTZIAN(RScattFactors(ICurrentZ,knd)* &
-             (TWO+RScattFactors(ICurrentZ,evenindlorentz)*(RgMatrixMagnitude(ind,jnd)**TWO)),ONE, &
-              RScattFactors(ICurrentZ,evenindlorentz)*(RgMatrixMagnitude(ind,jnd)**TWO),ZERO)
+             (TWO+RScattFactors(ICurrentZ,evenindlorentz)*(RCurrentGMagnitude**TWO)),ONE, &
+              RScattFactors(ICurrentZ,evenindlorentz)*(RCurrentGMagnitude**TWO),ZERO)
           END DO
 
-        END SELECT
+          END SELECT
+        ELSE!Multipole
+          Rtheta=ACOS(RgMatrix(ind,jnd,1)/RCurrentGMagnitude)!using g.[100]
+          IF (ICurrentZ.EQ.109) THEN
+            !IF (my_rank.EQ.0) PRINT*,"4-fold multipole, code Je"
+ 
+          END IF
+        END IF
         ! Occupancy
         RScatteringFactor = RScatteringFactor*ROccupancy(lnd)
         !Debye-Waller factor
         IF (IAnisoDebyeWallerFactorFlag.EQ.0) THEN
           IF(RIsoDW(lnd).GT.10.OR.RIsoDW(lnd).LT.0) RIsoDW(lnd) = RDebyeWallerConstant
           !Isotropic D-W factor exp(-B sin(theta)^2/lamda^2) = exp(-Bs^2)=exp(-Bg^2/16pi^2), see e.g. Bird&King
-          RScatteringFactor = RScatteringFactor*EXP(-RIsoDW(lnd)*(RgMatrixMagnitude(ind,jnd)**2)/(4*TWOPI**2) )
+          RScatteringFactor = RScatteringFactor*EXP(-RIsoDW(lnd)*(RCurrentGMagnitude**2)/(4*TWOPI**2) )
         ELSE!this will need sorting out, not sure if it works
           RScatteringFactor = RScatteringFactor * &
             EXP(-DOT_PRODUCT(RgMatrix(ind,jnd,:), &
             MATMUL( RAnisotropicDebyeWallerFactorTensor( &
             RAnisoDW(lnd),:,:),RgMatrix(ind,jnd,:))))
         END IF
-        
-        !Multipole, hack to begin with: atomic label Ja means 4-fold pseudoatom
-        IF (SAtomLabel(lnd).EQ."Ja") THEN
-          !  Rtheta=ACOS(RgMatrix(ind,jnd,1)/RgMatrixMagnitude(ind,jnd))!using g.[100]
-          !  RScatteringFactor = RScatteringFactor * COS(FOUR*RTheta)
-        END IF
-        
 		!The structure factor equation, complex Vg(ind,jnd)=sum(f*exp(-ig.r) in Volts
         CVgij = CVgij + RScattFacToVolts*RScatteringFactor * EXP(-CIMAGONE* &
         DOT_PRODUCT(RgMatrix(ind,jnd,:), RAtomCoordinate(lnd,:)) )
@@ -318,7 +356,11 @@ SUBROUTINE StructureFactorInitialisation (IErr)
     !Put them in descending order of magnitude  
     CALL ReSortUgs(IEquivalentUgKey,CUniqueUg,Iuid)  
   END IF
+  RETURN
   
+10 IErr=1
+  IF(my_rank.EQ.0)PRINT*,"Error in saving pseudoatom image"
+
 END SUBROUTINE StructureFactorInitialisation
 
 !!$%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -370,83 +412,88 @@ SUBROUTINE Absorption (IErr)
     ALLOCATE(RLocalUgReal(ILocalUgCountMax-ILocalUgCountMin+1),STAT=IErr)!U'g list for this core [Re,Im]
     ALLOCATE(RLocalUgImag(ILocalUgCountMax-ILocalUgCountMin+1),STAT=IErr)!U'g list for this core [Re,Im]
     ALLOCATE(CUgPrime(IUniqueUgs),STAT=IErr)!complete U'g list
-    ALLOCATE(RUgReal(IUniqueUgs),STAT=IErr)!complete U'g list [Re,]
+    ALLOCATE(RUgReal(IUniqueUgs),STAT=IErr)!complete U'g list [Re]
     ALLOCATE(RUgImag(IUniqueUgs),STAT=IErr)!complete U'g list [Im]
     IF( IErr.NE.0 ) THEN
       PRINT*,"Absorption(",my_rank,") error in allocations"
       RETURN
     ENDIF
-	DO ind = 1,p!p is the number of cores
+    DO ind = 1,p!p is the number of cores
       Ipos(ind) = IUniqueUgs*(ind-1)/p!position in the MPI buffer
       Inum(ind) = IUniqueUgs*(ind)/p - IUniqueUgs*(ind-1)/p!number of U'g components
     END DO
-	DO ind=ILocalUgCountMin,ILocalUgCountMax!Different U'g s for each core
+    DO ind=ILocalUgCountMin,ILocalUgCountMax!Different U'g s for each core
       CVgPrime = CZERO
-	  !number of this Ug
-	  jnd=IEquivalentUgKey(ind)
-	  !find the position of this Ug in the matrix
-	  ILoc = MINLOC(ABS(ISymmetryRelations-jnd))
+      !number of this Ug
+      jnd=IEquivalentUgKey(ind)
+      !find the position of this Ug in the matrix
+      ILoc = MINLOC(ABS(ISymmetryRelations-jnd))
       RCurrentG = RgMatrix(ILoc(1),ILoc(2),:)!g-vector, global variable
       RCurrentGMagnitude = RgMatrixMagnitude(ILoc(1),ILoc(2))!g-vector magnitude, global variable
-	  !Structure factor calculation for absorptive form factors
+      !Structure factor calculation for absorptive form factors
       DO knd=1,INAtomsUnitCell
-	    ICurrentZ = IAtomicNumber(knd)!Atomic number, global variable
+        ICurrentZ = IAtomicNumber(knd)!Atomic number, global variable
         RCurrentB = RIsoDW(knd)!Debye-Waller constant, global variable
-        !Uses numerical integration to calculate absorptive form factor f'
-		CALL DoubleIntegrate(RfPrime,IErr)
-        IF( IErr.NE.0 ) THEN
-          PRINT*,"Absorption(",my_rank,") error in Bird&King integration"
-          RETURN
-        ENDIF
+        IF (ICurrentZ.LT.105) THEN!It's not a pseudoatom 
+          !Uses numerical integration to calculate absorptive form factor f'
+          CALL DoubleIntegrate(RfPrime,IErr)!NB uses Kirkland scattering factors
+          IF(IErr.NE.0) THEN
+            PRINT*,"Absorption(",my_rank,") error in Bird&King integration"
+            RETURN
+          END IF
+        ELSE!It is a pseudoatom, use proportional model
+          !TO BE WRITTEN
+          !RfPrime=1.0*(RAbsorptionPercentage/100_RKIND)
+        END IF
         ! Occupancy
         RfPrime=RfPrime*ROccupancy(knd)
-	    !Debye Waller factor, isotropic only 
-		RfPrime=RfPrime*EXP(-RIsoDW(knd)*(RCurrentGMagnitude**2)/(4*TWOPI**2) )
-		!Absorptive Structure factor equation giving imaginary potential
+        !Debye Waller factor, isotropic only 
+        RfPrime=RfPrime*EXP(-RIsoDW(knd)*(RCurrentGMagnitude**2)/(4*TWOPI**2) )
+        !Absorptive Structure factor equation giving imaginary potential
 	    CVgPrime=CVgPrime+CIMAGONE*Rfprime*EXP(-CIMAGONE*DOT_PRODUCT(RCurrentG,RAtomCoordinate(knd,:)) )
       END DO
-	  !V'g in volts
-	  CVgPrime=CVgPrime*RAbsPreFactor*RScattFacToVolts
+      !V'g in volts
+      CVgPrime=CVgPrime*RAbsPreFactor*RScattFacToVolts
       !Convert to U'g=V'g*(2*m*e/h^2)	  
-	  CLocalUgPrime(ind-ILocalUgCountMin+1)=CVgPrime*TWO*RElectronMass*RRelativisticCorrection*RElectronCharge/((RPlanckConstant*RAngstromConversion)**2)
+      CLocalUgPrime(ind-ILocalUgCountMin+1)=CVgPrime*TWO*RElectronMass*RRelativisticCorrection*RElectronCharge/((RPlanckConstant*RAngstromConversion)**2)
     END DO
-	!I give up trying to MPI a complex number, do it with two real ones
-	RLocalUgReal=REAL(CLocalUgPrime)
-	RLocalUgImag=AIMAG(CLocalUgPrime)
+    !I give up trying to MPI a complex number, do it with two real ones
+    RLocalUgReal=REAL(CLocalUgPrime)
+    RLocalUgImag=AIMAG(CLocalUgPrime)
     !MPI gatherv the new U'g s into CUgPrime--------------------------------------------------------------------  
-	!NB MPI_GATHERV(BufferToSend,No.of elements,datatype,  ReceivingArray,No.of elements,)
+    !NB MPI_GATHERV(BufferToSend,No.of elements,datatype,  ReceivingArray,No.of elements,)
     CALL MPI_GATHERV(RLocalUgReal,SIZE(RLocalUgReal),MPI_DOUBLE_PRECISION,&
-	                 RUgReal,Inum,Ipos,MPI_DOUBLE_PRECISION,&
-					 root,MPI_COMM_WORLD,IErr)
+                   RUgReal,Inum,Ipos,MPI_DOUBLE_PRECISION,&
+                   root,MPI_COMM_WORLD,IErr)
     CALL MPI_GATHERV(RLocalUgImag,SIZE(RLocalUgImag),MPI_DOUBLE_PRECISION,&
-	                 RUgImag,Inum,Ipos,MPI_DOUBLE_PRECISION,&
-					 root,MPI_COMM_WORLD,IErr)
+                   RUgImag,Inum,Ipos,MPI_DOUBLE_PRECISION,&
+                   root,MPI_COMM_WORLD,IErr)
     IF(IErr.NE.0) THEN
       PRINT*,"Felixfunction(",my_rank,")error",IErr,"in MPI_GATHERV"
       RETURN
     END IF
     !=====================================and send out the full list to all cores
-	CALL MPI_BCAST(RUgReal,IUniqueUgs,MPI_DOUBLE_PRECISION,&
-	               root,MPI_COMM_WORLD,IErr)
-	CALL MPI_BCAST(RUgImag,IUniqueUgs,MPI_DOUBLE_PRECISION,&
-	               root,MPI_COMM_WORLD,IErr)
+    CALL MPI_BCAST(RUgReal,IUniqueUgs,MPI_DOUBLE_PRECISION,&
+                   root,MPI_COMM_WORLD,IErr)
+    CALL MPI_BCAST(RUgImag,IUniqueUgs,MPI_DOUBLE_PRECISION,&
+                   root,MPI_COMM_WORLD,IErr)
     !=====================================
-	DO ind=1,IUniqueUgs
-	  CUgPrime(ind)=CMPLX(RUgReal(ind),RUgImag(ind))
-	END DO
-	!Construct CUgMatPrime
     DO ind=1,IUniqueUgs
-    !number of this Ug
+      CUgPrime(ind)=CMPLX(RUgReal(ind),RUgImag(ind))
+    END DO
+    !Construct CUgMatPrime
+    DO ind=1,IUniqueUgs
+      !number of this Ug
       jnd=IEquivalentUgKey(ind)
       !Fill CUgMatPrime
       WHERE(ISymmetryRelations.EQ.jnd)
         CUgMatPrime = CUgPrime(ind)
       END WHERE
-	  !NB for imaginary potential U'(g)=-U'(-g)*
+      !NB for imaginary potential U'(g)=-U'(-g)*
       WHERE(ISymmetryRelations.EQ.-jnd)
         CUgMatPrime = -CONJG(CUgPrime(ind))
       END WHERE
-	END DO
+    END DO
 	
     CASE Default
 	!Default case is no absorption
@@ -491,7 +538,7 @@ SUBROUTINE DoubleIntegrate(RResult,IErr)
   REAL(RKIND) :: RAccuracy,RError,RResult,dd
   REAL(RKIND) :: work(lenw)
   
-  dd=1.0
+  dd=1.0!Do I need this? what does it do?
   RAccuracy=0.00000001D0!accuracy of integration
   !use single integration IntegrateBK as an external function of one variable
   !Quadpack integration 0 to infinity
@@ -529,7 +576,7 @@ FUNCTION IntegrateBK(Sy)
   INTEGER(IKIND) last, iwork(limit)
   REAL(RKIND) work(lenw)
 
-  !RSprimeY is passed into BirdKing as a global variable
+  !RSprimeY is passed into BirdKing as a global variable since we can't integrate a function of 2 variables with dqagi
   RSprimeY=Sy
   RAccuracy=0.00000001D0!accuracy of integration
   !use BirdKing as an external function of one variable

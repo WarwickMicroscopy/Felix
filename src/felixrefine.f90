@@ -428,7 +428,7 @@ PROGRAM Felixrefine
   CALL StructureFactorInitialisation (IErr)!NB IEquivalentUgKey and CUniqueUg allocated in here
   IF(IWriteFLAG.EQ.3.AND.my_rank.EQ.0) PRINT*,"Starting absorption calculation",SIZE(IEquivalentUgKey),"beams"
   CALL Absorption (IErr)
-  IF( IErr.NE.0 ) THEN
+  IF( IErr.NE.0) THEN
      PRINT*,"StructureFactorSetup(",my_rank,")error in StructureFactorInitialisation"
      GOTO 9999
   END IF
@@ -437,11 +437,9 @@ PROGRAM Felixrefine
   IHours = FLOOR(Duration/3600.0D0)
   IMinutes = FLOOR(MOD(Duration,3600.0D0)/60.0D0)
   ISeconds = INT(MOD(Duration,3600.0D0)-IMinutes*60)
-  IF(my_rank.EQ.0) THEN
-    WRITE(SPrintString,FMT='(A24,I3,A5,I2,A6,I2,A4)')&
+  WRITE(SPrintString,FMT='(A24,I3,A5,I2,A6,I2,A4)')&
     "Absorption completed in ",IHours," hrs ",IMinutes," mins ",ISeconds," sec"
-    PRINT*,TRIM(ADJUSTL(SPrintString))
-  END IF 
+  IF(my_rank.EQ.0) PRINT*,TRIM(ADJUSTL(SPrintString))
 
   !--------------------------------------------------------------------
   ! Set up Ug refinement variables
@@ -559,12 +557,12 @@ PROGRAM Felixrefine
   !--------------------------------------------------------------------
   ! Set up images for output
   ALLOCATE(RhklPositions(nReflections,2),STAT=IErr)
-  IF( IErr.NE.0 ) THEN
+  IF( IErr.NE.0) THEN
      PRINT*,"felixrefine(",my_rank,") error allocating RhklPositions"
      GOTO 9999
   END IF
   CALL ImageSetup(IErr)!what does this do?
-  IF( IErr.NE.0 ) THEN
+  IF( IErr.NE.0) THEN
      PRINT*,"felixrefine(",my_rank,") error in ImageSetup"
      GOTO 9999
   END IF 
@@ -582,7 +580,7 @@ PROGRAM Felixrefine
     !Mask Images
     ALLOCATE(RImageMask(2*IPixelCount,2*IPixelCount,INoOfLacbedPatterns),STAT=IErr)
   END IF
-  IF( IErr.NE.0 ) THEN
+  IF( IErr.NE.0) THEN
      PRINT*,"felixrefine(",my_rank,") error allocating simulated patterns"
      GOTO 9999
   END IF
@@ -594,7 +592,7 @@ PROGRAM Felixrefine
          (ILocalPixelCountMax-ILocalPixelCountMin)+1),STAT=IErr)
   !position of pixels calculated by this core, IDisplacements and ICount are global variables
   ALLOCATE(IDisplacements(p),ICount(p),STAT=IErr)
-  IF( IErr.NE.0 ) THEN
+  IF( IErr.NE.0) THEN
      PRINT*,"felixrefine(",my_rank,")error in local allocations for MPI"
      GOTO 9999
   END IF
@@ -768,7 +766,7 @@ PROGRAM Felixrefine
           WRITE(l,*)  NINT(Rhkl(IOutPutReflections(ind),3))
           WRITE(SPrintString,*) TRIM(ADJUSTL(h)),TRIM(ADJUSTL(k)),TRIM(ADJUSTL(l)),".mask"
           OPEN(UNIT=IChOutWIImage, ERR=10, STATUS= 'UNKNOWN', FILE=SPrintString,&!
-          FORM='UNFORMATTED',ACCESS='DIRECT',IOSTAT=IErr,RECL=2*IPixelCount*8)
+          FORM='UNFORMATTED',ACCESS='DIRECT',IOSTAT=IErr,RECL=2*IPixelCount*8)!??Does the 8=IByteSize???
           DO jnd = 1,2*IPixelCount
             WRITE(IChOutWIImage,rec=jnd) RTestImage(jnd,:)
           END DO

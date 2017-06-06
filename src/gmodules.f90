@@ -32,10 +32,6 @@
 !
 !%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-!%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-! $Id: gmodules.f90,v 1.11 2014/03/25 15:37:30 phsht Exp $
-!%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-
 MODULE MyNumbers     
   IMPLICIT NONE
 
@@ -45,8 +41,8 @@ MODULE MyNumbers
 
   REAL(KIND=RKIND) :: PI,TWOPI,ONEPLS,ONEMNS,SQRTHALF,SQRTTWO,DEG2RADIAN, TWODEG2RADIAN
 
-  REAL(RKIND), PARAMETER :: ZERO=0.0_RKIND, ONE=1.0_RKIND, TWO=2.0_RKIND, &
-       THREE=3.0_RKIND, FOUR=4.0_RKIND, TEN=10.0_RKIND, HUNDRED=100.0_RKIND, THOUSAND=1000.0_RKIND
+  REAL(RKIND), PARAMETER :: ZERO=0.0_RKIND,ONE=1.0_RKIND,TWO=2.0_RKIND,THREE=3.0_RKIND, &
+        FOUR=4.0_RKIND,SIX=6.0_RKIND,TEN=10.0_RKIND,HUNDRED=100.0_RKIND,THOUSAND=1000.0_RKIND
   COMPLEX(RKIND), PARAMETER :: CZERO = (0.0_RKIND,0.0_RKIND), CONE = (1.0_RKIND,0.0_RKIND), &
        CIMAGONE= (0.0_RKIND,1.0_RKIND)            
 
