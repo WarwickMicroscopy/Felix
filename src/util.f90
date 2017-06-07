@@ -107,36 +107,6 @@ SUBROUTINE SortHKL( Rhklarray,N,IErr )
 
 END SUBROUTINE SortHKL
 
-!%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-
-SUBROUTINE CONVERTAtomName2Number(SElement, Iz, IErr)
-!!$  %    Converts atomic symbols to atomic numbers, used to read cif file
-  
-  USE WriteToScreen
-  USE IPara
-  USE MPI
-  USE MyMPI
-  USE IConst
-  USE CConst
-
-  IMPLICIT NONE
-  
-  INTEGER :: IErr, ind, Iz
-  CHARACTER*2 :: SElement
-
-  DO ind=1,NElements
-     IF(TRIM(SElement)==TRIM(SElementSymbolMatrix(ind))) THEN
-        Iz= ind
-        RETURN
-     ENDIF
-  ENDDO
-
-  PRINT*,"CONVERTAtomName2Number(): could not find index for atom of name ", SElement
-  IErr=1
-  RETURN
-
-END SUBROUTINE CONVERTAtomName2Number
-
 !!$  %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 SUBROUTINE GreatestCommonDivisor(ITotalProcesses,INooDWFs,ISubgroups)

@@ -145,7 +145,7 @@ SUBROUTINE StructureFactorInitialisation (IErr)
 
   USE CConst; USE IConst
   USE IPara; USE RPara; USE CPara; USE SPara
-  USE BlochPara
+  USE BlochPara; USE MyFFTW
 
   USE IChannels
 
@@ -155,18 +155,22 @@ SUBROUTINE StructureFactorInitialisation (IErr)
   IMPLICIT NONE
 
   INTEGER(IKIND) :: ind,jnd,knd,lnd,mnd,oddindlorentz,evenindlorentz,oddindgauss, &
-       evenindgauss,currentatom,IErr,Iuid
+       evenindgauss,currentatom,IErr,Iuid,IPsize,Iplan_forward,Ix,Iy
   INTEGER(IKIND),DIMENSION(2) :: IPos,ILoc
-  COMPLEX(CKIND) :: CVgij
+  COMPLEX(CKIND) :: CVgij,CFpseudo
   REAL(RKIND) :: RMeanInnerPotentialVolts,RScatteringFactor,Lorentzian,Gaussian,Kirkland,&
         RScattFacToVolts,RPScale,RPMag,Rx,Ry,Rr,RPalpha,RTheta,Rfold
   CHARACTER*200 :: SPrintString
+  REAL(RKIND),DIMENSION(1024,1024) :: RRealPScatt,RImagPScatt
 
   !Conversion factor from scattering factors to volts. h^2/(2pi*m0*e), see e.g. Kirkland eqn. C.5
   !NB RVolume is already in A unlike RPlanckConstant
   RScattFacToVolts=(RPlanckConstant**2)*(RAngstromConversion**2)/(TWOPI*RElectronMass*RElectronCharge)
   !Initialise pseudoatom potential
-  RPScale=1.0D-12!one picometre per pixel
+  RPScale=0.01!one picometre per pixel
+  IPsize=1024!Size of the array used to calculate the pseudoatom FFT, must be an even number
+  ALLOCATE(CPseudoAtom(IPsize,IPsize),STAT=IErr)!Matrix with Pseudoatom potential (real space)
+  ALLOCATE(CPseudoScatt(IPsize,IPsize),STAT=IErr)!Matrix with Pseudoatom scattering factor (reciprocal space)
   RPMag=RElectronCharge!Magnitude of pseudoatom potential, in volts
   DO lnd=1,INAtomsUnitCell!For later: if pseudoatoms are incorporated properly count how many there are and make RPseudoAtom ,CPseudoScatt allocatable
     IF (IAtomicNumber(lnd).GE.105) THEN!we have a pseudoatom
@@ -177,27 +181,41 @@ SUBROUTINE StructureFactorInitialisation (IErr)
       IF (IAtomicNumber(lnd).EQ.109) Rfold=FOUR   !Je
       IF (IAtomicNumber(lnd).EQ.110) Rfold=SIX    !Jf
       !potential in real space
-      RPalpha=100000000000.0*RIsoDW(lnd)!The Debye-Waller factor is used to determine alpha for pseudoatoms
-      DO ind=1,1024
-        DO jnd=1,1024
-          Rx=RPScale*(REAL(ind-512)-HALF)!x&y run from -511.5 to +511.5 picometres
-          Ry=RPScale*(REAL(jnd-512)-HALF)
+      RPalpha=10.0*RIsoDW(lnd)!The Debye-Waller factor is used to determine alpha for pseudoatoms
+      DO ind=1,IPsize
+        DO jnd=1,IPsize
+          Rx=RPScale*(REAL(ind-(IPsize/2))-HALF)!x&y run from e.g. -511.5 to +511.5 picometres
+          Ry=RPScale*(REAL(jnd-(IPsize/2))-HALF)
           Rr=SQRT(Rx*Rx+Ry*Ry)
           Rtheta=ACOS(Rx/Rr)
-          RPseudoAtom(ind,jnd)=RPMag*Rr*EXP(-RPalpha*Rr)*COS(Rfold*Rtheta)
+          CPseudoAtom(ind,jnd)=CMPLX(RPMag*Rr*EXP(-RPalpha*Rr)*COS(Rfold*Rtheta),ZERO)
         END DO
       END DO
-      !output to check
-      IF (my_rank.EQ.0) THEN
+      IF (my_rank.EQ.0) THEN!output to check
         WRITE(SPrintString,*) "pseudo.img"
         OPEN(UNIT=IChOutWIImage, ERR=10, STATUS= 'UNKNOWN', FILE=SPrintString,&!
         FORM='UNFORMATTED',ACCESS='DIRECT',IOSTAT=IErr,RECL=8192)
-        DO jnd = 1,1024
-            WRITE(IChOutWIImage,rec=jnd) RPseudoAtom(jnd,:)
+        DO jnd = 1,IPsize
+            WRITE(IChOutWIImage,rec=jnd) REAL(CPseudoAtom(jnd,:))
         END DO
         CLOSE(IChOutWIImage,IOSTAT=IErr)
-      END IF  
+      END IF
       !CPseudoScatt = a 2d fft of RPseudoAtom
+      CALL dfftw_plan_dft_2d_ (Iplan_forward, IPsize,IPsize, CPseudoAtom, CPseudoScatt,&
+           FFTW_FORWARD,FFTW_ESTIMATE )!Could be moved to an initialisation step if there are no other plans?
+      CALL dfftw_execute_ (Iplan_forward)
+      CALL dfftw_destroy_plan_ (Iplan_forward )!could be moved to clean up
+      IF (my_rank.EQ.0) THEN!output to check
+        RRealPScatt=REAL(CPseudoScatt)
+        WRITE(SPrintString,*) "pseudoRfft.img"
+        OPEN(UNIT=IChOutWIImage, ERR=10, STATUS= 'UNKNOWN', FILE=SPrintString,&!
+        FORM='UNFORMATTED',ACCESS='DIRECT',IOSTAT=IErr,RECL=8192)
+        DO jnd = 1,IPsize
+            WRITE(IChOutWIImage,rec=jnd) RRealPScatt(jnd,:)
+        END DO
+        CLOSE(IChOutWIImage,IOSTAT=IErr)
+      END IF
+      
     END IF
   END DO
 
@@ -249,29 +267,48 @@ SUBROUTINE StructureFactorInitialisation (IErr)
           END DO
 
           END SELECT
-        ELSE!Multipole
-          Rtheta=ACOS(RgMatrix(ind,jnd,1)/RCurrentGMagnitude)!using g.[100]
-          IF (ICurrentZ.EQ.109) THEN
-            !IF (my_rank.EQ.0) PRINT*,"4-fold multipole, code Je"
- 
+          ! Occupancy
+          RScatteringFactor = RScatteringFactor*ROccupancy(lnd)
+          !Debye-Waller factor
+          IF (IAnisoDebyeWallerFactorFlag.EQ.0) THEN
+            IF(RIsoDW(lnd).GT.10.OR.RIsoDW(lnd).LT.0) RIsoDW(lnd) = RDebyeWallerConstant
+            !Isotropic D-W factor exp(-B sin(theta)^2/lamda^2) = exp(-Bs^2)=exp(-Bg^2/16pi^2), see e.g. Bird&King
+            RScatteringFactor = RScatteringFactor*EXP(-RIsoDW(lnd)*(RCurrentGMagnitude**2)/(FOUR*TWOPI**2) )
+          ELSE!this will need sorting out, not sure if it works
+            RScatteringFactor = RScatteringFactor * &
+              EXP(-DOT_PRODUCT(RgMatrix(ind,jnd,:), &
+              MATMUL( RAnisotropicDebyeWallerFactorTensor( &
+              RAnisoDW(lnd),:,:),RgMatrix(ind,jnd,:))))
           END IF
+          !The structure factor equation, complex Vg(ind,jnd)=sum(f*exp(-ig.r) in Volts
+          CVgij = CVgij + RScattFacToVolts*RScatteringFactor * EXP(-CIMAGONE* &
+                  DOT_PRODUCT(RgMatrix(ind,jnd,:), RAtomCoordinate(lnd,:)) )
+        ELSE!Multipole
+          IF (TWO*ABS(RCurrentGMagnitude)*REAL(IPsize)*RPscale.GE.ONE) THEN!g vector is out of range of the fft
+            CFpseudo=CZERO
+          ELSE!Find the pixel corresponding to g
+            Ix=NINT(RgMatrix(ind,jnd,1)*REAL(IPsize)*REAL(IPsize)*RPscale)
+            Iy=NINT(RgMatrix(ind,jnd,2)*REAL(IPsize)*REAL(IPsize)*RPscale)
+            IF (Ix.LE.0) Ix=Ix+IPsize!fft has the origin at [0,0], negative numbers wrap around from edges
+            IF (Iy.LE.0) Iy=Iy+IPsize
+            IF (my_rank.EQ.0) PRINT*,"RCurrentGMagnitude",RCurrentGMagnitude
+            IF (my_rank.EQ.0) PRINT*,"gx,gy",RgMatrix(ind,jnd,1),RgMatrix(ind,jnd,2)
+            IF (my_rank.EQ.0) PRINT*,"x,y",Ix,Iy
+            CFpseudo=CPseudoScatt(Ix,Iy)
+          END IF
+          ! Occupancy
+          CFpseudo = CFpseudo*ROccupancy(lnd)
+          !Debye-Waller factor - isotropic only, for now
+          IF (IAnisoDebyeWallerFactorFlag.NE.0) THEN
+            IF (my_rank.EQ.0) PRINT*,"Pseudo atom - isotropic Debye-Waller factor only!"
+            IErr=1
+            RETURN
+          END IF
+          !Need to work out how to get the DW factor from the real atom at the same site!
+          CFpseudo = CFpseudo*EXP(-RIsoDW(lnd+1)*(RCurrentGMagnitude**2)/(FOUR*TWOPI**2) )!assume it is the next atom in the list, for now
+          CVgij = CVgij + RScattFacToVolts*CFpseudo*EXP(-CIMAGONE* &
+                  DOT_PRODUCT(RgMatrix(ind,jnd,:), RAtomCoordinate(lnd,:)) )
         END IF
-        ! Occupancy
-        RScatteringFactor = RScatteringFactor*ROccupancy(lnd)
-        !Debye-Waller factor
-        IF (IAnisoDebyeWallerFactorFlag.EQ.0) THEN
-          IF(RIsoDW(lnd).GT.10.OR.RIsoDW(lnd).LT.0) RIsoDW(lnd) = RDebyeWallerConstant
-          !Isotropic D-W factor exp(-B sin(theta)^2/lamda^2) = exp(-Bs^2)=exp(-Bg^2/16pi^2), see e.g. Bird&King
-          RScatteringFactor = RScatteringFactor*EXP(-RIsoDW(lnd)*(RCurrentGMagnitude**2)/(4*TWOPI**2) )
-        ELSE!this will need sorting out, not sure if it works
-          RScatteringFactor = RScatteringFactor * &
-            EXP(-DOT_PRODUCT(RgMatrix(ind,jnd,:), &
-            MATMUL( RAnisotropicDebyeWallerFactorTensor( &
-            RAnisoDW(lnd),:,:),RgMatrix(ind,jnd,:))))
-        END IF
-		!The structure factor equation, complex Vg(ind,jnd)=sum(f*exp(-ig.r) in Volts
-        CVgij = CVgij + RScattFacToVolts*RScatteringFactor * EXP(-CIMAGONE* &
-        DOT_PRODUCT(RgMatrix(ind,jnd,:), RAtomCoordinate(lnd,:)) )
       ENDDO
 	  !This is actually still the Vg matrix, converted at the end to Ug
       CUgMatNoAbs(ind,jnd)=CVgij/RVolume!Why RVolume here?

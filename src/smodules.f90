@@ -34,7 +34,7 @@
 
 
 MODULE CConst
-
+  USE MyNumbers
   CHARACTER*50, PARAMETER :: RStr= "Version: multipole / BUILD / Alpha"
   CHARACTER*50, PARAMETER :: DStr= "Date: 06-06-2017"
   CHARACTER*50, PARAMETER :: AStr= "Status: multipole atom refinement" 
@@ -70,7 +70,7 @@ MODULE CConst
        "I-43d","Pm-3m","Pn-3n","Pm-3n","Pn-3m","Fm-3m","Fm-3c","Fd-3m", &
        "Fd-3c","Im-3m","Ia-3d"/
 
-  CHARACTER*2 :: SElementSymbolMatrix(110)!N.B. Number must equal INElements
+  CHARACTER*2 :: SElementSymbolMatrix(INElements)!N.B. Number must equal INElements
   DATA SElementSymbolMatrix/"H", "He", "Li", "Be", " B", " C", " N", "O", "F", "Ne", &
        "Na", "Mg", "Al", "Si", "P", "S", "Cl", "Ar", "K", "Ca", &
        "Sc", "Ti", "V", "Cr", "Mn", "Fe", "Co", "Ni", "Cu", "Zn", &
@@ -98,8 +98,7 @@ MODULE IConst
        IParallelFLAG=0,&
        IRandomFLAG = 1, &
        IFixedSeed = 123456787,&
-       IRefinementVariableTypes = 10,&
-       INElements=105
+       IRefinementVariableTypes = 10
 
   !PriorityFLAG values - to match to the WriteFLAG - will change eventually,
   !hence why the silent & Must are both 0, no Silent option yet.
@@ -237,8 +236,7 @@ MODULE RPara
   REAL(RKIND), DIMENSION(:,:), ALLOCATABLE :: Rhkl 
   REAL(RKIND), DIMENSION(:,:), ALLOCATABLE :: RInputHKLs
   ! scattering factors
-  REAL(RKIND), DIMENSION(:,:), ALLOCATABLE :: RScattFactors 
-  REAL(RKIND), DIMENSION(1024,1024) :: RPseudoAtom 
+  REAL(RKIND), DIMENSION(:,:), ALLOCATABLE :: RScattFactors!,RPseudoAtom
   ! Crystallography 
   ! Real Space and Reciprocal Lattice Vectors in Orthogonal and Microscope
   ! reference framce
@@ -306,15 +304,12 @@ END MODULE RPara
 MODULE CPara
   USE MyNumbers
 
-  COMPLEX(CKIND), DIMENSION(:,:), ALLOCATABLE :: CUgMatNoAbs,CUgMatPrime,CUgMat,CUgSgMatrix,CEigenValuesChunk
-  COMPLEX(CKIND), DIMENSION(:,:,:), ALLOCATABLE :: CEigenVectorsChunk
-  COMPLEX(CKIND),DIMENSION(:),ALLOCATABLE :: CAlphaWeightingCoefficients, CPsi0,CUniqueUg
-  COMPLEX(CKIND),DIMENSION(:,:), ALLOCATABLE :: CEigenValueDependentTerms,CInvertedEigenVectors, &
-       CBeamProjectionMatrix,CDummyBeamMatrix
-  COMPLEX(CKIND),DIMENSION(:),ALLOCATABLE :: CEigenValues,CGammaValues, CWaveFunctions,CFullWaveFunctions
-  COMPLEX(CKIND),DIMENSION(:,:),ALLOCATABLE :: CEigenVectors
-  COMPLEX(CKIND), DIMENSION(:,:,:), ALLOCATABLE :: CAmplitudeandPhase
-  COMPLEX(CKIND), DIMENSION(1024,1024) :: CPseudoScatt 
+  COMPLEX(CKIND),DIMENSION(:),ALLOCATABLE :: CAlphaWeightingCoefficients, CPsi0,CUniqueUg,CEigenValues,&
+                CGammaValues, CWaveFunctions,CFullWaveFunctions
+  COMPLEX(CKIND), DIMENSION(:,:), ALLOCATABLE :: CUgMatNoAbs,CUgMatPrime,CUgMat,CUgSgMatrix,CEigenValuesChunk,&
+                CEigenVectors,CEigenValueDependentTerms,CInvertedEigenVectors,CBeamProjectionMatrix,&
+                CDummyBeamMatrix,CPseudoScatt,CPseudoAtom
+  COMPLEX(CKIND), DIMENSION(:,:,:), ALLOCATABLE :: CEigenVectorsChunk,CAmplitudeandPhase
 
 END MODULE CPara
 !--------------------------------------------------------------------

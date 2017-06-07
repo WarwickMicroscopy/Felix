@@ -240,6 +240,13 @@ SUBROUTINE ReadCif(IErr)
     IAtomCount= IAtomCount+1
     IF(loop_ .NEQV. .TRUE.) EXIT
   END DO
+  !check for consistency with IAtomicSitesToRefine
+  IF (SIZE(IAtomicSitesToRefine,DIM=1).GT.IAtomCount) THEN
+    PRINT*,"Number of atomic sites to refine is larger than the number of atoms"
+    PRINT*,"Please correct in felix.inp"
+    IErr=1
+    RETURN
+  END IF
   !allocate variables
   ALLOCATE(RBasisAtomPosition(IAtomCount,ITHREE),STAT=IErr)
   ALLOCATE(SBasisAtomLabel(IAtomCount),STAT=IErr)
@@ -270,14 +277,14 @@ SUBROUTINE ReadCif(IErr)
     Ipos=SCAN(SBasisAtomName(ind),"1234567890")
     IF (Ipos.GT.0) WRITE(SBasisAtomName(ind),'(A1,A1)') name(1:1)," "
     !get atomic number
-    DO jnd=1,109!NB must match SElementSymbolMatrix defined in smodules line 73
+    DO jnd=1,INElements!NB must match SElementSymbolMatrix defined in smodules line 73
       IF(TRIM(SBasisAtomName(ind)).EQ.TRIM(SElementSymbolMatrix(jnd))) THEN
         IBasisAtomicNumber(ind)=jnd
       END IF
     END DO
     IF (IBasisAtomicNumber(ind).EQ.0.AND.my_rank.EQ.0) THEN
-      WRITE(SPrintString,FMT='(A26,I3,A9,A5,1X,A2,A4,I3,A3,3F7.4,A1)')&
-      "Could not find Z for atom ",ind,", symbol ",SBasisAtomName(ind)
+      WRITE(SPrintString,FMT='(A35,I3,A9,A5,1X,A2,A4,I3,A3,3F7.4,A1)')&
+      "ReadCif: Could not find Z for atom ",ind,", symbol ",SBasisAtomName(ind)
       PRINT*,TRIM(ADJUSTL(SPrintString))
       IErr=1
     END IF
