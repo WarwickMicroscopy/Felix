@@ -142,7 +142,7 @@ SUBROUTINE SimulateAndFit(RIndependentVariable,Iter,IExitFLAG,IErr)
         RETURN
      END IF
   END IF
-
+  RSimulatedPatterns = ZERO!Reset simulation
   CALL FelixFunction(IErr) ! Simulate !!  
   IF( IErr.NE.0 ) THEN
      PRINT*,"SimulateAndFit(",my_rank,")error in FelixFunction"
@@ -208,9 +208,7 @@ SUBROUTINE FelixFunction(IErr)
   IPixelComputed= 0
 
   !Simulation (different local pixels for each core)--------------------------------------------------------------------  
-  IF (my_rank.EQ.0) THEN
-    PRINT*,"Bloch wave calculation..."
-  END IF
+  IF (my_rank.EQ.0) PRINT*,"Bloch wave calculation..."
   DO knd = ILocalPixelCountMin,ILocalPixelCountMax,1
     jnd = IPixelLocations(knd,1)
     ind = IPixelLocations(knd,2)
