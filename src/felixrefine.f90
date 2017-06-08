@@ -255,7 +255,7 @@ PROGRAM Felixrefine
       RgDummyVecMat(ind,jnd)=RgPool(ind,jnd)
      ENDDO
 	 !If a g-vector has a non-zero z-component it is not in the ZOLZ
-     IF((RgPool(ind,3).GT.TINY.OR.RgPool(ind,3).LT.-TINY).AND.ICutOff.NE.0) THEN
+     IF(ABS(RgPool(ind,3)).GT.TINY.AND.ICutOff.NE.0) THEN
         RGzUnitVec=ABS(RgPool(ind,3))
         ICutOff=0
      END IF
@@ -266,8 +266,8 @@ PROGRAM Felixrefine
   END IF
   
   !sort into Laue Zones 
-  WHERE(RgDummyVecMat(:,3).GT.TINY.OR.RgDummyVecMat(:,3).LT.-TINY)
-     RgDummyVecMat(:,3)=RgDummyVecMat(:,3)/RGzUnitVec!possible divide by zero from line 239?
+  WHERE(ABS(RgPool(:,3)).GT.TINY)
+     RgDummyVecMat(:,3)=RgDummyVecMat(:,3)/RGzUnitVec!possible divide by zero from line 265?
   END WHERE
   !min&max Laue Zones 
   RMaxLaueZoneValue=MAXVAL(RgDummyVecMat(:,3),DIM=1)
@@ -421,6 +421,11 @@ PROGRAM Felixrefine
 	PRINT*,"g-vector magnitude matrix (2pi/A)"
 	DO ind =1,8
      WRITE(SPrintString,FMT='(16(1X,F5.2))') RgMatrixMagnitude(ind,1:8)
+     PRINT*,TRIM(ADJUSTL(SPrintString))
+    END DO
+	PRINT*,"first column of g-vectors"
+	DO ind =1,8
+     WRITE(SPrintString,FMT='(3(1X,F5.2))') RgMatrix(ind,1,:)
      PRINT*,TRIM(ADJUSTL(SPrintString))
     END DO
   END IF

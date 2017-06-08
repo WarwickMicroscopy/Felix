@@ -32,112 +32,6 @@
 !
 !%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-SUBROUTINE GMatrixInitialisation (IErr)
-
-!!$%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-!!$%
-!!$%   Creates a matrix of every inter G vector (i.e. g1-g2) and
-!!$%   their magnitudes 
-!!$%
-!!$%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
- ! This is now redundant, moved to StructureFactorSetup
-  USE MyNumbers
-  USE WriteToScreen
-  
-  USE CConst; USE IConst
-  USE IPara; USE RPara
-
-  USE IChannels
-  USE MPI
-  USE MyMPI
-  
-  IMPLICIT NONE
-  
-  INTEGER(IKIND) :: ind,jnd,IErr
-
-  !Ug RgPool is a list of g-vectors in the microscope ref frame, units of 1/A
-  ! Note that reciprocal lattice vectors dot not have two pi included, we are using the optical convention exp(2*pi*i*g.r)
-  DO ind=1,nReflections
-     DO jnd=1,nReflections
-        RgMatrix(ind,jnd,:)= RgPool(ind,:)-RgPool(jnd,:)
-        RgMatrixMagnitude(ind,jnd)= SQRT(DOT_PRODUCT(RgMatrix(ind,jnd,:),RgMatrix(ind,jnd,:)))
-     ENDDO
-  ENDDO
-  !For symmetry determination, only in Ug refinement
-  IF (IRefineMode(1).EQ.1) THEN
-    RgSumMat = SUM(ABS(RgMatrix),3)
-  END IF
-  
-END SUBROUTINE GMatrixInitialisation
-
-!!$%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-
-SUBROUTINE SymmetryRelatedStructureFactorDetermination (IErr)
-
-!!$%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-!!$%
-!!$%    Determines which structure factors are related by symmetry, by assuming 
-!!$%    that two structure factors with identical absolute values are related
-!!$%    (allowing for the hermiticity)
-!!$%
-!!$%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-  !!This is now redundant, moved to SetupUgsToRefine
-  USE MyNumbers
-  USE WriteToScreen
-  
-  USE CConst; USE IConst
-  USE IPara; USE RPara; USE CPara
-
-  USE IChannels
-
-  USE MPI
-  USE MyMPI
-    
-  IMPLICIT NONE
-  
-  INTEGER(IKIND) :: ind,jnd,ierr,knd,Iuid
-  CHARACTER*200 :: SPrintString
-
-  RgSumMat = RgSumMat+ABS(REAL(CUgMatNoAbs))+ABS(AIMAG(CUgMatNoAbs))
-
-  ISymmetryRelations = 0_IKIND 
-  Iuid = 0_IKIND
-  
-  DO ind = 1,nReflections
-     DO jnd = 1,ind
-        IF(ISymmetryRelations(ind,jnd).NE.0) THEN
-           CYCLE
-        ELSE
-           Iuid = Iuid + 1_IKIND
-           !Ug Fill the symmetry relation matrix with incrementing numbers that have the sign of the imaginary part
-		   WHERE (ABS(RgSumMat-RgSumMat(ind,jnd)).LE.RTolerance)
-              ISymmetryRelations = Iuid*SIGN(1_IKIND,NINT(AIMAG(CUgMatNoAbs)/(TINY**2)))
-           END WHERE
-        END IF
-     END DO
-  END DO
-
-  IF (my_rank.EQ.0) THEN
-     WRITE(SPrintString,FMT='(I5,A25)') Iuid," unique structure factors"
-     PRINT*,TRIM(ADJUSTL(SPrintString))
-!     PRINT*,"Unique Ugs = ",Iuid
-  END IF
- 
-  ALLOCATE(IEquivalentUgKey(Iuid),STAT=IErr)
-  IF( IErr.NE.0 ) THEN
-     PRINT*,"SymmetryRelatedStructureFactorDetermination(",my_rank,")error allocating IEquivalentUgKey"
-     RETURN
-  END IF
-  ALLOCATE(CUniqueUg(Iuid),STAT=IErr)
-  IF( IErr.NE.0 ) THEN
-     PRINT*,"SymmetryRelatedStructureFactorDetermination(",my_rank,")error allocating CUniqueUg"
-     RETURN
-  END IF
-  
-END SUBROUTINE SymmetryRelatedStructureFactorDetermination
-
-!!$%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-
 SUBROUTINE StructureFactorInitialisation (IErr)
 
   USE MyNumbers
@@ -167,12 +61,12 @@ SUBROUTINE StructureFactorInitialisation (IErr)
   !NB RVolume is already in A unlike RPlanckConstant
   RScattFacToVolts=(RPlanckConstant**2)*(RAngstromConversion**2)/(TWOPI*RElectronMass*RElectronCharge)
   !Initialise pseudoatom potential
-  RPScale=0.01!one picometre per pixel
-  IPsize=1024!Size of the array used to calculate the pseudoatom FFT, must be an even number
+  RPScale=0.01!one picometre per pixel, working in Angstroms
+  IPsize=1024!Size of the array used to calculate the pseudoatom FFT, must be an EVEN number
   ALLOCATE(CPseudoAtom(IPsize,IPsize),STAT=IErr)!Matrix with Pseudoatom potential (real space)
   ALLOCATE(CPseudoScatt(IPsize,IPsize),STAT=IErr)!Matrix with Pseudoatom scattering factor (reciprocal space)
-  RPMag=RElectronCharge!Magnitude of pseudoatom potential, in volts
-  DO lnd=1,INAtomsUnitCell!For later: if pseudoatoms are incorporated properly count how many there are and make RPseudoAtom ,CPseudoScatt allocatable
+  RPMag=0.025!Magnitude of pseudoatom potential, in volts
+  DO lnd=1,INAtomsUnitCell!For later: if pseudoatoms are incorporated properly count them and give CPseudoAtom ,CPseudoScatt a 3rd dimension
     IF (IAtomicNumber(lnd).GE.105) THEN!we have a pseudoatom
       IF (IAtomicNumber(lnd).EQ.105) Rfold=ZERO   !Ja
       IF (IAtomicNumber(lnd).EQ.106) Rfold=ONE    !Jb
@@ -188,7 +82,7 @@ SUBROUTINE StructureFactorInitialisation (IErr)
           Ry=RPScale*(REAL(jnd-(IPsize/2))-HALF)
           Rr=SQRT(Rx*Rx+Ry*Ry)
           Rtheta=ACOS(Rx/Rr)
-          CPseudoAtom(ind,jnd)=CMPLX(RPMag*Rr*EXP(-RPalpha*Rr)*COS(Rfold*Rtheta),ZERO)
+          CPseudoAtom(ind,jnd)=CMPLX(RPMag*Rr*EXP(-RPalpha*Rr)*COS(Rfold*Rtheta),ZERO)!Easier to make a complex input to fftw rather than fanny around with the different format needed for a real input. Lazy.
         END DO
       END DO
       IF (my_rank.EQ.0) THEN!output to check
@@ -204,9 +98,9 @@ SUBROUTINE StructureFactorInitialisation (IErr)
       CALL dfftw_plan_dft_2d_ (Iplan_forward, IPsize,IPsize, CPseudoAtom, CPseudoScatt,&
            FFTW_FORWARD,FFTW_ESTIMATE )!Could be moved to an initialisation step if there are no other plans?
       CALL dfftw_execute_ (Iplan_forward)
-      CALL dfftw_destroy_plan_ (Iplan_forward )!could be moved to clean up
+      CALL dfftw_destroy_plan_ (Iplan_forward)!could be moved to clean up?
       IF (my_rank.EQ.0) THEN!output to check
-        RRealPScatt=REAL(CPseudoScatt)
+        RRealPScatt=ABS(CPseudoScatt)
         WRITE(SPrintString,*) "pseudoRfft.img"
         OPEN(UNIT=IChOutWIImage, ERR=10, STATUS= 'UNKNOWN', FILE=SPrintString,&!
         FORM='UNFORMATTED',ACCESS='DIRECT',IOSTAT=IErr,RECL=8192)
@@ -284,16 +178,17 @@ SUBROUTINE StructureFactorInitialisation (IErr)
           CVgij = CVgij + RScattFacToVolts*RScatteringFactor * EXP(-CIMAGONE* &
                   DOT_PRODUCT(RgMatrix(ind,jnd,:), RAtomCoordinate(lnd,:)) )
         ELSE!Multipole
-          IF (TWO*ABS(RCurrentGMagnitude)*REAL(IPsize)*RPscale.GE.ONE) THEN!g vector is out of range of the fft
+          !IF (my_rank.EQ.0) PRINT*,"RCurrentGMagnitude",RCurrentGMagnitude
+          !IF (my_rank.EQ.0) PRINT*,"test:",RElectronWaveLength*ABS(RCurrentGMagnitude)*REAL(IPsize)*RPscale/TWOPI
+          IF (RElectronWaveLength*ABS(RCurrentGMagnitude)*REAL(IPsize)*RPscale/TWOPI.GE.ONE) THEN!g vector is out of range of the fft
             CFpseudo=CZERO
           ELSE!Find the pixel corresponding to g
-            Ix=NINT(RgMatrix(ind,jnd,1)*REAL(IPsize)*REAL(IPsize)*RPscale)
-            Iy=NINT(RgMatrix(ind,jnd,2)*REAL(IPsize)*REAL(IPsize)*RPscale)
+            Ix=NINT(RElectronWaveLength*RgMatrix(ind,jnd,1)*REAL(IPsize)*REAL(IPsize)*RPscale/(TWO*TWOPI))
+            Iy=NINT(RElectronWaveLength*RgMatrix(ind,jnd,2)*REAL(IPsize)*REAL(IPsize)*RPscale/(TWO*TWOPI))
             IF (Ix.LE.0) Ix=Ix+IPsize!fft has the origin at [0,0], negative numbers wrap around from edges
             IF (Iy.LE.0) Iy=Iy+IPsize
-            IF (my_rank.EQ.0) PRINT*,"RCurrentGMagnitude",RCurrentGMagnitude
-            IF (my_rank.EQ.0) PRINT*,"gx,gy",RgMatrix(ind,jnd,1),RgMatrix(ind,jnd,2)
-            IF (my_rank.EQ.0) PRINT*,"x,y",Ix,Iy
+            !IF (my_rank.EQ.0) PRINT*,ind,jnd,"gx,gy",RgMatrix(ind,jnd,1),RgMatrix(ind,jnd,2)
+            !IF (my_rank.EQ.0) PRINT*,ind,jnd,"x,y",Ix,Iy
             CFpseudo=CPseudoScatt(Ix,Iy)
           END IF
           ! Occupancy
