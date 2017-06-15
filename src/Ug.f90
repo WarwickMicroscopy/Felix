@@ -62,7 +62,7 @@ SUBROUTINE StructureFactorInitialisation (IErr)
   RScattFacToVolts=(RPlanckConstant**2)*(RAngstromConversion**2)/(TWOPI*RElectronMass*RElectronCharge)
   !Initialise pseudoatom potential
   RPScale=0.01!one picometre per pixel, working in Angstroms
-  IPsize=1024!Size of the array used to calculate the pseudoatom FFT, must be an EVEN number
+  IPsize=1024!Size of the array used to calculate the pseudoatom FFT, must be an EVEN number (preferably 2^n)
   ALLOCATE(CPseudoAtom(IPsize,IPsize),STAT=IErr)!Matrix with Pseudoatom potential (real space)
   ALLOCATE(CPseudoScatt(IPsize,IPsize),STAT=IErr)!Matrix with Pseudoatom scattering factor (reciprocal space)
   RPMag=0.025!Magnitude of pseudoatom potential, in volts
@@ -82,7 +82,7 @@ SUBROUTINE StructureFactorInitialisation (IErr)
           Ry=RPScale*(REAL(jnd-(IPsize/2))-HALF)
           Rr=SQRT(Rx*Rx+Ry*Ry)
           Rtheta=ACOS(Rx/Rr)
-          CPseudoAtom(ind,jnd)=CMPLX(RPMag*Rr*EXP(-RPalpha*Rr)*COS(Rfold*Rtheta),ZERO)!Easier to make a complex input to fftw rather than fanny around with the different format needed for a real input. Lazy.
+          CPseudoAtom(ind,jnd)=CMPLX(RPMag*RPalpha*Rr*EXP(-RPalpha*Rr)*COS(Rfold*Rtheta),ZERO)!Easier to make a complex input to fftw rather than fanny around with the different format needed for a real input. Lazy.
         END DO
       END DO
       IF (my_rank.EQ.0) THEN!output to check
