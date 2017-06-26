@@ -121,12 +121,12 @@ SUBROUTINE StructureFactorInitialisation (IErr)
   CUgMatNoAbs = CZERO
   DO ind=1,nReflections
     DO jnd=1,ind
+      RCurrentGMagnitude = RgMatrixMagnitude(ind,jnd)!g-vector magnitude, global variable
       !The Fourier component of the potential Vg goes in location (i,j)
-      CVgij= 0.0D0!this is in Volts
+      CVgij=CZERO!this is in Volts
       mnd=0!pseudoatom counter
       DO lnd=1,INAtomsUnitCell
         ICurrentZ = IAtomicNumber(lnd)!Atomic number, NB passed as a global variable for absorption
-        RCurrentGMagnitude = RgMatrixMagnitude(ind,jnd)!g-vector magnitude, global variable
         IF (ICurrentZ.LT.105) THEN!It's not a pseudoatom
 
           SELECT CASE (IScatterFactorMethodFLAG)! calculate f_e(q)
@@ -180,7 +180,9 @@ SUBROUTINE StructureFactorInitialisation (IErr)
               RAnisoDW(lnd),:,:),RgMatrix(ind,jnd,:))))
           END IF
           !The structure factor equation, complex Vg(ind,jnd)=sum(f*exp(-ig.r) in Volts
-          CVgij = CVgij + RScattFacToVolts*RScatteringFactor * EXP(-CIMAGONE* &
+!          CVgij = CVgij + RScattFacToVolts*RScatteringFactor * EXP(-CIMAGONE* &
+!                  DOT_PRODUCT(RgMatrix(ind,jnd,:), RAtomCoordinate(lnd,:)) )
+          CVgij = CVgij + RScatteringFactor * EXP(-CIMAGONE* &
                   DOT_PRODUCT(RgMatrix(ind,jnd,:), RAtomCoordinate(lnd,:)) )
         ELSE!pseudoatom
           mnd=mnd+1
@@ -202,23 +204,34 @@ SUBROUTINE StructureFactorInitialisation (IErr)
         END IF
       ENDDO
       !This is actually still the Vg matrix, converted at the end to Ug
-      CUgMatNoAbs(ind,jnd)=CVgij/RVolume!Why RVolume here?
+!      CUgMatNoAbs(ind,jnd)=CVgij/RVolume!Why RVolume here?
+      CUgMatNoAbs(ind,jnd)=CVgij*RRelativisticCorrection/(PI*RVolume)
     ENDDO
   ENDDO
-  RMeanInnerPotential= REAL(CUgMatNoAbs(1,1))
+!  RMeanInnerPotential= REAL(CUgMatNoAbs(1,1))
+  RMeanInnerPotential= REAL(CUgMatNoAbs(1,1))*(RPlanckConstant**2)*(RAngstromConversion**2)/(TWO*RElectronMass*RRelativisticCorrection*RElectronCharge)
   IF(my_rank.EQ.0 .AND. IInitialSimulationFLAG.EQ.1) THEN
     WRITE(SPrintString,FMT='(A20,F5.2,1X,A6)') "MeanInnerPotential= ",RMeanInnerPotential," Volts"
     PRINT*,TRIM(ADJUSTL(SPrintString))
   END IF
   DO ind=1,nReflections!Take the Mean Inner Potential off the diagonal (zero diagonal, there are quicker ways to do this!)
-     CUgMatNoAbs(ind,ind)=CUgMatNoAbs(ind,ind)-RMeanInnerPotential
+     CUgMatNoAbs(ind,ind)=ZERO
+!     CUgMatNoAbs(ind,ind)=CUgMatNoAbs(ind,ind)-RMeanInnerPotential
   ENDDO
   !NB Only the lower half of the Vg matrix was calculated, this completes the upper half
   CUgMatNoAbs = CUgMatNoAbs + CONJG(TRANSPOSE(CUgMatNoAbs))
   !Now convert to Ug=Vg*(2*m*e/h^2), where m is relativistic electron mass
-  CUgMatNoAbs=CUgMatNoAbs*TWO*RElectronMass*RRelativisticCorrection*RElectronCharge/(RPlanckConstant**2)
+!  CUgMatNoAbs=CUgMatNoAbs*TWO*RElectronMass*RRelativisticCorrection*RElectronCharge/(RPlanckConstant**2)
   !Divide U0 by 10^20 to convert Planck constant to A 
-  CUgMatNoAbs=CUgMatNoAbs/(RAngstromConversion**2)
+!  CUgMatNoAbs=CUgMatNoAbs/(RAngstromConversion**2)
+
+  IF(IWriteFLAG.EQ.3.AND.my_rank.EQ.0) THEN
+    PRINT*,"Ug matrix, without absorption (nm^-2)"
+	DO ind =1,16
+     WRITE(SPrintString,FMT='(3(1X,I3),A1,8(1X,F7.3,F7.3))') NINT(Rhkl(ind,:)),":",100*CUgMatNoAbs(ind,1:8)
+     PRINT*,TRIM(SPrintString)
+    END DO
+  END IF
   
   !Alternative way of calculating the mean inner potential as the sum of scattering factors at g=0 multiplied by h^2/(2pi*m0*e*CellVolume)
   !RMeanInnerPotential=ZERO
@@ -237,7 +250,7 @@ SUBROUTINE StructureFactorInitialisation (IErr)
   END IF
 
   !--------------------------------------------------------------------
-  !Count equivalent Ugs, only the first time round
+  !Count equivalent Ugs
   IF (IInitialSimulationFLAG.EQ.1) THEN
   !Equivalent Ug's are identified by the sum of their abs(indices)plus the sum of abs(Ug)'s with no absorption
     RgSumMat = SUM(ABS(RgMatrix),3)+RgMatrixMagnitude+ABS(REAL(CUgMatNoAbs))+ABS(AIMAG(CUgMatNoAbs))
@@ -314,11 +327,15 @@ SUBROUTINE UpdateUgMatrix(IErr)
   REAL(RKIND) :: Lorentzian,Gaussian,Kirkland,RScattFacToVolts,RScatteringFactor
   REAL(RKIND),DIMENSION(3) :: RCurrentG
   COMPLEX(CKIND) :: CVgij,CFpseudo
-  
-  RScattFacToVolts=(RPlanckConstant**2)*(RAngstromConversion**2)/(TWOPI*RElectronMass*RElectronCharge)
+  CHARACTER*200 :: SPrintString
+
+  !CReset Ug matrix  
+  CUgMatNoAbs = CZERO
+  !RScattFacToVolts=(RPlanckConstant**2)*(RAngstromConversion**2)/(TWOPI*RElectronMass*RElectronCharge)
   !Work through unique Ug's
   IUniqueUgs=SIZE(IEquivalentUgKey)
   DO ind=1,IUniqueUgs
+    CVgij=CZERO
     !number of this Ug
     jnd=IEquivalentUgKey(ind)
     !find the position of this Ug in the matrix
@@ -372,18 +389,18 @@ SUBROUTINE UpdateUgMatrix(IErr)
         RScatteringFactor = RScatteringFactor*ROccupancy(lnd)
         !Debye-Waller factor
         IF (IAnisoDebyeWallerFactorFlag.EQ.0) THEN
-          IF(RIsoDW(lnd).GT.10.OR.RIsoDW(lnd).LT.0) RIsoDW(lnd) = RDebyeWallerConstant
+          IF(RCurrentB.GT.10.OR.RCurrentB.LT.0) RCurrentB = RDebyeWallerConstant
           !Isotropic D-W factor exp(-B sin(theta)^2/lamda^2) = exp(-Bs^2)=exp(-Bg^2/16pi^2), see e.g. Bird&King
-          RScatteringFactor = RScatteringFactor*EXP(-RIsoDW(lnd)*(RCurrentGMagnitude**2)/(FOUR*TWOPI**2) )
+          RScatteringFactor = RScatteringFactor*EXP(-RCurrentB*(RCurrentGMagnitude**2)/(FOUR*TWOPI**2) )
         ELSE!this will need sorting out, not sure if it works
           RScatteringFactor = RScatteringFactor * &
-            EXP(-DOT_PRODUCT(RgMatrix(ind,jnd,:), &
+            EXP(-DOT_PRODUCT(RgMatrix(ILoc(1),ILoc(2),:), &
             MATMUL( RAnisotropicDebyeWallerFactorTensor( &
-            RAnisoDW(lnd),:,:),RgMatrix(ind,jnd,:))))
+            RAnisoDW(lnd),:,:),RgMatrix(ILoc(1),ILoc(2),:))))
         END IF
-        !The structure factor equation, complex Vg(ind,jnd)=sum(f*exp(-ig.r) in Volts
-        CVgij = CVgij + RScattFacToVolts*RScatteringFactor * EXP(-CIMAGONE* &
-                DOT_PRODUCT(RgMatrix(ind,jnd,:), RAtomCoordinate(lnd,:)) )
+        !The structure factor equation, complex Vg(ILoc(1),ILoc(2))=sum(f*exp(-ig.r) in Volts
+        CVgij = CVgij+RScatteringFactor*EXP(-CIMAGONE* &
+                DOT_PRODUCT(RCurrentG, RAtomCoordinate(lnd,:)) )
       ELSE!It is a pseudoatom
         mnd=mnd+1
         CALL PseudoAtom(CFpseudo,ILoc(1),ILoc(2),mnd,IErr)
@@ -398,18 +415,30 @@ SUBROUTINE UpdateUgMatrix(IErr)
         !DW factor: Need to work out how to get it the from the real atom at the same site!
         CFpseudo = CFpseudo*EXP(-RIsoDW(lnd+1)*(RCurrentGMagnitude**2)/(FOUR*TWOPI**2) )!assume it is the next atom in the list, for now
         CVgij = CVgij + RScattFacToVolts*CFpseudo*EXP(-CIMAGONE* &
-                DOT_PRODUCT(RgMatrix(ind,jnd,:), RAtomCoordinate(lnd,:)) )
+                DOT_PRODUCT(RgMatrix(ILoc(1),ILoc(2),:), RAtomCoordinate(lnd,:)) )
       END IF
     END DO
     !now replace the values in the Ug matrix
     WHERE(ISymmetryRelations.EQ.jnd)
-      CUgMatNoAbs=CVgij
+      CUgMatNoAbs=CVgij*RRelativisticCorrection/(PI*RVolume)
     END WHERE
     !NB for imaginary potential U(g)=U(-g)*
     WHERE(ISymmetryRelations.EQ.-jnd)
-      CUgMatNoAbs = CONJG(CVgij)
+      CUgMatNoAbs = CONJG(CVgij)*RRelativisticCorrection/(PI*RVolume)
     END WHERE
   END DO
+  DO ind=1,nReflections!zero diagonal
+     CUgMatNoAbs(ind,ind)=ZERO
+  ENDDO
+
+  
+  IF(IWriteFLAG.EQ.3.AND.my_rank.EQ.0) THEN
+    PRINT*,"Updated Ug matrix, without absorption (nm^-2)"
+	DO ind =1,16
+     WRITE(SPrintString,FMT='(3(1X,I3),A1,8(1X,F7.3,F7.3))') NINT(Rhkl(ind,:)),":",100*CUgMatNoAbs(ind,1:8)
+     PRINT*,TRIM(SPrintString)
+    END DO
+  END IF
   
   END SUBROUTINE UpdateUgMatrix
 
