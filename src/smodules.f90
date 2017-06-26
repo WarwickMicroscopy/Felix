@@ -231,7 +231,7 @@ MODULE RPara
   !Iterative Ugs
   REAL(RKIND) :: RPercentageUgChange
   !Debye Waller Constant, g-vector magnitude, dummy [s'x s'y] for absorption calc
-  REAL(RKIND) :: RCurrentB,RCurrentGMagnitude,RSprimeY
+  REAL(RKIND) :: RCurrentB,RCurrentGMagnitude,RSprimeY,RPScale
   !HKL indices 
   REAL(RKIND), DIMENSION(:,:), ALLOCATABLE :: Rhkl 
   REAL(RKIND), DIMENSION(:,:), ALLOCATABLE :: RInputHKLs

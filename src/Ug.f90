@@ -53,7 +53,7 @@ SUBROUTINE StructureFactorInitialisation (IErr)
   INTEGER(IKIND),DIMENSION(2) :: IPos,ILoc
   COMPLEX(CKIND) :: CVgij,CFpseudo
   REAL(RKIND) :: RMeanInnerPotentialVolts,RScatteringFactor,Lorentzian,Gaussian,Kirkland,&
-        RScattFacToVolts,RPScale,RPMag,Rx,Ry,Rr,RPalpha,RTheta,Rfold
+        RScattFacToVolts,RPMag,Rx,Ry,Rr,RPalpha,RTheta,Rfold
   CHARACTER*200 :: SPrintString
  
   !Conversion factor from scattering factors to volts. h^2/(2pi*m0*e), see e.g. Kirkland eqn. C.5
@@ -68,7 +68,7 @@ SUBROUTINE StructureFactorInitialisation (IErr)
   IPsize=1024!Size of the array used to calculate the pseudoatom FFT, global variable, must be an EVEN number (preferably 2^n)!For later: give CPseudoAtom ,CPseudoScatt a 3rd dimension?
   ALLOCATE(CPseudoAtom(IPsize,IPsize,IPseudo),STAT=IErr)!Matrices with Pseudoatom potentials (real space)- could just have one reusable matrix to save memory
   ALLOCATE(CPseudoScatt(IPsize,IPsize,IPseudo),STAT=IErr)!Matrices with Pseudoatom scattering factor (reciprocal space)
-  RPScale=0.01!one picometre per pixel, working in Angstroms
+  RPScale=0.01!one picometre per pixel, working in Angstroms, global variable
   RPMag=0.025!Magnitude of pseudoatom potential, in volts - so that the numbers in felix.cif are sensible
   knd=0!pseudoatom counter
   DO lnd=1,INAtomsUnitCell 
@@ -92,8 +92,8 @@ SUBROUTINE StructureFactorInitialisation (IErr)
         END DO
       END DO
       IF (my_rank.EQ.0) THEN!output to check
-        WRITE(SPrintString,*) "pseudoPotential",knd,".img"
-        OPEN(UNIT=IChOutWIImage, ERR=10, STATUS= 'UNKNOWN', FILE=TRIM(ADJUSTL(SPrintString)),&
+        WRITE(SPrintString,FMT='(A15,I1,A3)') "PseudoPotential",knd,".img"
+        OPEN(UNIT=IChOutWIImage, ERR=10, STATUS= 'UNKNOWN', FILE=SPrintString,&
              FORM='UNFORMATTED',ACCESS='DIRECT',IOSTAT=IErr,RECL=8192)
         DO jnd = 1,IPsize
             WRITE(IChOutWIImage,rec=jnd) REAL(CPseudoAtom(jnd,:,knd))
@@ -106,7 +106,7 @@ SUBROUTINE StructureFactorInitialisation (IErr)
       CALL dfftw_execute_ (Iplan_forward)
       CALL dfftw_destroy_plan_ (Iplan_forward)!could be moved to clean up?
       IF (my_rank.EQ.0) THEN!output to check
-        WRITE(SPrintString,*) "pseudoFactor",knd,".img"
+        WRITE(SPrintString,FMT='(A12,I1,A3)') "PseudoFactor",knd,".img"
         OPEN(UNIT=IChOutWIImage, ERR=10, STATUS= 'UNKNOWN', FILE=SPrintString,&
              FORM='UNFORMATTED',ACCESS='DIRECT',IOSTAT=IErr,RECL=8192)
         DO jnd = 1,IPsize
@@ -185,7 +185,7 @@ SUBROUTINE StructureFactorInitialisation (IErr)
         ELSE!pseudoatom
           knd=knd+1
           CALL PseudoAtom(CFpseudo,ind,jnd,knd,IErr)
-          IF(my_rank.EQ.0) PRINT*,knd,"CFpseudo",CFpseudo
+          !IF(my_rank.EQ.0) PRINT*,knd,"CFpseudo",CFpseudo
           ! Occupancy
           CFpseudo = CFpseudo*ROccupancy(lnd)
           !Debye-Waller factor - isotropic only, for now
@@ -588,7 +588,7 @@ END FUNCTION Kirkland
 SUBROUTINE PseudoAtom(CFpseudo,i,j,k,IErr)
   !Reads a scattering factor from the kth Stewart pseudoatom in CPseudoScatt 
   !RCurrentGMagnitude is passed as a global variable
-  !IPsize is the size of the matrix holding the scattering factor, global variable
+  !IPsize is the size, RPscale the scale factor, of the matrix holding the scattering factor, global variable
   !i and j give the location of the g-vector in the appropriate matrices
   USE MyNumbers
   USE CConst; USE IConst
@@ -598,7 +598,7 @@ SUBROUTINE PseudoAtom(CFpseudo,i,j,k,IErr)
   IMPLICIT NONE
   
   INTEGER(IKIND) :: i,j,k,Ix,Iy,IErr
-  REAL(RKIND) :: RPScale,RPMag,Rx,Ry,Rr,Rtheta
+  REAL(RKIND) :: RPMag,Rx,Ry,Rr,Rtheta
   COMPLEX(CKIND) :: CFpseudo
 
   IF (RElectronWaveLength*ABS(RCurrentGMagnitude)*REAL(IPsize)*RPscale/TWOPI.GE.ONE) THEN!g vector is out of range of the fft

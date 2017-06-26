@@ -55,7 +55,7 @@ PROGRAM Felixrefine
   INTEGER(IKIND) :: IHours,IMinutes,ISeconds,IMilliSeconds,IStartTime,ICurrentTime,IRate
   INTEGER(IKIND),DIMENSION(:),ALLOCATABLE :: IOriginGVecIdentifier
   REAL(RKIND) :: StartTime, CurrentTime, Duration, TotalDurationEstimate,RANDOMNUMBER,&
-       RHOLZAcceptanceAngle,RLaueZoneGz,RMaxGMag,RPvecMag,RPscale,RMaxUgStep,Rdx
+       RHOLZAcceptanceAngle,RLaueZoneGz,RMaxGMag,RPvecMag,RScale,RMaxUgStep,Rdx
   REAL(RKIND) :: RBCASTREAL,RStandardDeviation,RMean,RGzUnitVec,RMinLaueZoneValue,Rdf,RLastFit,RBestFit,&
        RMaxLaueZoneValue,RMaxAcceptanceGVecMag,RLaueZoneElectronWaveVectorMag,RvarMin,RfitMin,RFit0,Rconvex,Rtest
   REAL(RKIND),DIMENSION(:),ALLOCATABLE :: RSimplexFoM,RIndependentVariable,RCurrentVar,RVar0,RLastVar,RPvec,RFitVec
@@ -807,7 +807,7 @@ PROGRAM Felixrefine
     RCurrentVar=ONE
     Rdf=ONE
     Iter=1
-    RPscale=RSimplexLengthScale
+    RScale=RSimplexLengthScale
     nnd=0!max/min gradient flag
     DO WHILE (Rdf.GE.RExitCriteria)
       RVar0=RIndependentVariable!incoming point in n-dimensional parameter space
@@ -837,7 +837,7 @@ PROGRAM Felixrefine
           IF (my_rank.EQ.0) PRINT*, TRIM(ADJUSTL(SPrintString))
           CALL SYSTEM_CLOCK(mnd)!Use system clock to make a random number and vary the sign of dx
           Rdx=(REAL(MOD(mnd,10))/TEN)-0.45!numbers 0-4 give minus, 5-9 give plus
-          Rdx=0.1*Rdx*RPscale/ABS(Rdx)!small change in current variable (RPscale/10)is dx
+          Rdx=0.1*Rdx*RScale/ABS(Rdx)!small change in current variable (RScale/10)is dx
           RCurrentVar=RVar0
           RCurrentVar(ind)=RCurrentVar(ind)+Rdx
           CALL SimulateAndFit(RCurrentVar,Iter,IExitFLAG,IErr)
@@ -875,7 +875,7 @@ PROGRAM Felixrefine
       !three points to find the miniimum
       R3var(1)=RVar0(1)!first point is current value
       R3fit(1)=RFigureofMerit!point 1 is the incoming simulation and fit index
-      RPvecMag=RVar0(1)*RPscale!RPvecMag is used here to give the magnitude of vector in parameter space 
+      RPvecMag=RVar0(1)*RScale!RPvecMag is used here to give the magnitude of vector in parameter space 
       RCurrentVar=RVar0+RPvec*RPvecMag!Update the parameters to simulate
       R3var(2)=RCurrentVar(1)!second point 
       IF (my_rank.EQ.0) PRINT*,"Refining, point 2 of 3"
@@ -942,7 +942,7 @@ PROGRAM Felixrefine
         END IF
       END IF
       !shrink length scale as we progress, by a smaller amount depending on the no of variables: 1->1/2; 2->3/4; 3->5/6; 4->7/8; 5->9/10;
-      RPscale=RPscale*(ONE-ONE/(TWO*REAL(INoOfVariables)))
+      RScale=RScale*(ONE-ONE/(TWO*REAL(INoOfVariables)))
     END DO    
     !We are done, simulate and output the best fit
     IExitFLAG=1
@@ -964,7 +964,7 @@ PROGRAM Felixrefine
     Rdf=RFigureofMerit
     Iter=1
     ICycle=0!Each time we do a complete cycle we will have a look down the average refinement direction
-    RPscale=RSimplexLengthScale
+    RScale=RSimplexLengthScale
     RMaxUgStep=0.005!maximum step in Ug is 0.5 nm^-2, 0.005 A^-2
     DO WHILE (Rdf.GE.RExitCriteria)
       !loop over variables
@@ -1009,12 +1009,12 @@ PROGRAM Felixrefine
           IF (my_rank.EQ.0) PRINT*, TRIM(ADJUSTL(SPrintString))
           !NB R3fit contains the three fit indices
           R3fit(1)=RFigureofMerit!point 1 is the incoming simulation and fit index
-          RPvec(ind)=RPscale/5.0!small change in current variable for second point
+          RPvec(ind)=RScale/5.0!small change in current variable for second point
           RCurrentVar=RVar0+RPvec!second point
           CALL SimulateAndFit(RCurrentVar,Iter,IExitFLAG,IErr)
           CALL BestFitCheck(RFigureofMerit,RBestFit,RCurrentVar,RIndependentVariable,IErr)
           R3fit(2)=RFigureofMerit
-          RPvec(ind+1)=RPscale/5.0!now look along combination of 2 parameters for third point
+          RPvec(ind+1)=RScale/5.0!now look along combination of 2 parameters for third point
           RCurrentVar=RVar0+RPvec!Update the parameters to simulate
           WRITE(SPrintString,FMT='(A38,I3,A4,I3)') "Finding maximum gradient for variables",ind," and",ind+1
           IF (my_rank.EQ.0) PRINT*, TRIM(ADJUSTL(SPrintString))
@@ -1037,7 +1037,7 @@ PROGRAM Felixrefine
           IF(my_rank.EQ.0) PRINT*,"Small Debye Waller factor, resetting to 0.1"
           RVar0(ind)=0.1
           RCurrentVar=RVar0
-          RPvecMag=RPscale
+          RPvecMag=RScale
           CALL SimulateAndFit(RCurrentVar,Iter,IExitFLAG,IErr)
           !update RIndependentVariable if necessary
           CALL BestFitCheck(RFigureofMerit,RBestFit,RCurrentVar,RIndependentVariable,IErr)
@@ -1046,7 +1046,7 @@ PROGRAM Felixrefine
         R3fit(1)=RFigureofMerit!with the current fit index
         !IF (my_rank.EQ.0) PRINT*,"point 1",R3var(1),"fit",R3fit(1)
         !magnitude of vector in parameter space
-        RPvecMag=RVar0(ind)*RPscale
+        RPvecMag=RVar0(ind)*RScale
         !IF (my_rank.EQ.0) PRINT*, "RPvecMag=",RPvecMag
         RCurrentVar=RVar0+RPvec*RPvecMag!Update the parameters to simulate
         R3var(2)=RCurrentVar(ind)!second point 
@@ -1147,7 +1147,7 @@ PROGRAM Felixrefine
         END IF
       END IF
       !shrink length scale as we progress, by a smaller amount depending on the no of variables: 1->1/2; 2->3/4; 3->5/6; 4->7/8; 5->9/10;
-      RPscale=RPscale*(ONE-ONE/(TWO*REAL(INoOfVariables)))
+      RScale=RScale*(ONE-ONE/(TWO*REAL(INoOfVariables)))
     END DO
     !We are done, finallly simulate and output the best fit
     IExitFLAG=1
