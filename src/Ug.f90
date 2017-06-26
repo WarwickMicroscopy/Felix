@@ -93,7 +93,7 @@ SUBROUTINE StructureFactorInitialisation (IErr)
       END DO
       IF (my_rank.EQ.0) THEN!output to check
         WRITE(SPrintString,*) "pseudoPotential",knd,".img"
-        OPEN(UNIT=IChOutWIImage, ERR=10, STATUS= 'UNKNOWN', FILE=SPrintString,&
+        OPEN(UNIT=IChOutWIImage, ERR=10, STATUS= 'UNKNOWN', FILE=TRIM(ADJUSTL(SPrintString)),&
              FORM='UNFORMATTED',ACCESS='DIRECT',IOSTAT=IErr,RECL=8192)
         DO jnd = 1,IPsize
             WRITE(IChOutWIImage,rec=jnd) REAL(CPseudoAtom(jnd,:,knd))
@@ -185,6 +185,7 @@ SUBROUTINE StructureFactorInitialisation (IErr)
         ELSE!pseudoatom
           knd=knd+1
           CALL PseudoAtom(CFpseudo,ind,jnd,knd,IErr)
+          IF(my_rank.EQ.0) PRINT*,knd,"CFpseudo",CFpseudo
           ! Occupancy
           CFpseudo = CFpseudo*ROccupancy(lnd)
           !Debye-Waller factor - isotropic only, for now
@@ -374,6 +375,7 @@ SUBROUTINE Absorption (IErr)
           lnd=lnd+1
           CALL PseudoAtom(CFpseudo,ILoc(1),ILoc(2),lnd,IErr)
           RfPrime=CFpseudo*EXP(CIMAGONE*PI/2)*(RAbsorptionPercentage/HUNDRED)
+          RfPrime=ZERO
         END IF
         ! Occupancy
         RfPrime=RfPrime*ROccupancy(knd)

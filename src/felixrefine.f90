@@ -885,10 +885,10 @@ PROGRAM Felixrefine
       !third point
       IF (R3fit(2).GT.R3fit(1)) THEN!new 2 is not better than 1, go the other way
         RPvecMag=-RPvecMag
-        RCurrentVar=RVar0+RPvec*RPvecMag
       ELSE!it is better, so keep going
-        RCurrentVar=RVar0+TWO*RPvec*RPvecMag
+        RVar0=RCurrentVar
       END IF
+      RCurrentVar=RVar0+RPvec*RPvecMag
       R3var(3)=RCurrentVar(1)!third point
       IF (my_rank.EQ.0) PRINT*,"Refining, point 3 of 3"
       CALL SimulateAndFit(RCurrentVar,Iter,IExitFLAG,IErr)
@@ -908,7 +908,7 @@ PROGRAM Felixrefine
         lnd=6-jnd-knd!the mid fit
         !replace mid point with a step on from best point
         !RPvecMag=(R3var(knd)-RVar0(1))*(0.5+SQRT(5.0)/2.0)/RPvec(1)!increase the step size by the golden ratio
-        RPvecMag=RPvecMag*2!double the step size
+        RPvecMag=TWO*RPvecMag!double the step size
         IF (ABS(RPvecMag).GT.RMaxUgStep.AND.IRefineMode(1).EQ.1) RPvecMag=SIGN(RMaxUgStep,RPvecMag)!maximum step in Ug is RMaxUgStep
         RCurrentVar=RVar0+RPvec*RPvecMag
         R3var(lnd)=RCurrentVar(1)!next point
