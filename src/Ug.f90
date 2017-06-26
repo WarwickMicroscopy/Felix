@@ -55,7 +55,7 @@ SUBROUTINE StructureFactorInitialisation (IErr)
   REAL(RKIND) :: RMeanInnerPotentialVolts,RScatteringFactor,Lorentzian,Gaussian,Kirkland,&
         RScattFacToVolts,RPMag,Rx,Ry,Rr,RPalpha,RTheta,Rfold
   CHARACTER*200 :: SPrintString
- 
+  
   !Conversion factor from scattering factors to volts. h^2/(2pi*m0*e), see e.g. Kirkland eqn. C.5
   !NB RVolume is already in A unlike RPlanckConstant
   RScattFacToVolts=(RPlanckConstant**2)*(RAngstromConversion**2)/(TWOPI*RElectronMass*RElectronCharge)
@@ -69,7 +69,8 @@ SUBROUTINE StructureFactorInitialisation (IErr)
   ALLOCATE(CPseudoAtom(IPsize,IPsize,IPseudo),STAT=IErr)!Matrices with Pseudoatom potentials (real space)- could just have one reusable matrix to save memory
   ALLOCATE(CPseudoScatt(IPsize,IPsize,IPseudo),STAT=IErr)!Matrices with Pseudoatom scattering factor (reciprocal space)
   RPScale=0.01!one picometre per pixel, working in Angstroms, global variable
-  RPMag=0.025!Magnitude of pseudoatom potential, in volts - so that the numbers in felix.cif are sensible
+  !Magnitude of pseudoatom potential, in volts
+  RPMag=0.01815!set such that a Ja gives the same Ug matrix as a hydrogen atom
   mnd=0!pseudoatom counter
   DO lnd=1,INAtomsUnitCell 
     IF (IAtomicNumber(lnd).GE.105) THEN!we have a pseudoatom
@@ -128,44 +129,7 @@ SUBROUTINE StructureFactorInitialisation (IErr)
       DO lnd=1,INAtomsUnitCell
         ICurrentZ = IAtomicNumber(lnd)!Atomic number, NB passed as a global variable for absorption
         IF (ICurrentZ.LT.105) THEN!It's not a pseudoatom
-
-          SELECT CASE (IScatterFactorMethodFLAG)! calculate f_e(q)
-          
-          CASE(0) ! Kirkland Method using 3 Gaussians and 3 Lorentzians, NB Kirkland scattering factor is in Angstrom units
-          !NB atomic number and g-vector passed as global variables
-          RScatteringFactor = Kirkland(RCurrentGMagnitude)
-  
-          CASE(1) ! 8 Parameter Method with Scattering Parameters from Peng et al 1996 
-          RScatteringFactor = ZERO
-          DO knd = 1, 4
-            !Peng Method uses summation of 4 Gaussians
-            RScatteringFactor = RScatteringFactor + &
-              GAUSSIAN(RScattFactors(ICurrentZ,knd),RCurrentGMagnitude,ZERO, & 
-              SQRT(2/RScattFactors(ICurrentZ,knd+4)),ZERO)
-          END DO
-  
-          CASE(2) ! 8 Parameter Method with Scattering Parameters from Doyle and Turner Method (1968)
-          RScatteringFactor = ZERO
-          DO knd = 1, 4
-            evenindgauss = knd*2
-            oddindgauss = knd*2 -1
-            !Doyle &Turner uses summation of 4 Gaussians
-            RScatteringFactor = RScatteringFactor + &
-              GAUSSIAN(RScattFactors(ICurrentZ,oddindgauss),RCurrentGMagnitude,ZERO, & 
-              SQRT(2/RScattFactors(ICurrentZ,evenindgauss)),ZERO)
-          END DO
-
-          CASE(3) ! 10 Parameter method with Scattering Parameters from Lobato et al. 2014
-          RScatteringFactor = ZERO
-          DO knd = 1,5
-            evenindlorentz=knd+5
-            RScatteringFactor = RScatteringFactor + &
-              LORENTZIAN(RScattFactors(ICurrentZ,knd)* &
-             (TWO+RScattFactors(ICurrentZ,evenindlorentz)*(RCurrentGMagnitude**TWO)),ONE, &
-              RScattFactors(ICurrentZ,evenindlorentz)*(RCurrentGMagnitude**TWO),ZERO)
-          END DO
-
-          END SELECT
+          CALL AtomicScatteringFactor(RScatteringFactor,IErr)!returns RScatteringFactor as a global variable
           ! Occupancy
           RScatteringFactor = RScatteringFactor*ROccupancy(lnd)
           !Debye-Waller factor
@@ -180,10 +144,7 @@ SUBROUTINE StructureFactorInitialisation (IErr)
               RAnisoDW(lnd),:,:),RgMatrix(ind,jnd,:))))
           END IF
           !The structure factor equation, complex Vg(ind,jnd)=sum(f*exp(-ig.r) in Volts
-!          CVgij = CVgij + RScattFacToVolts*RScatteringFactor * EXP(-CIMAGONE* &
-!                  DOT_PRODUCT(RgMatrix(ind,jnd,:), RAtomCoordinate(lnd,:)) )
-          CVgij = CVgij + RScatteringFactor * EXP(-CIMAGONE* &
-                  DOT_PRODUCT(RgMatrix(ind,jnd,:), RAtomCoordinate(lnd,:)) )
+          CVgij=CVgij+RScatteringFactor*EXP(-CIMAGONE*DOT_PRODUCT(RgMatrix(ind,jnd,:), RAtomCoordinate(lnd,:)) )
         ELSE!pseudoatom
           mnd=mnd+1
           CALL PseudoAtom(CFpseudo,ind,jnd,mnd,IErr)
@@ -198,33 +159,19 @@ SUBROUTINE StructureFactorInitialisation (IErr)
           END IF
           !DW factor: Need to work out how to get it the from the real atom at the same site!
           CFpseudo = CFpseudo*EXP(-RIsoDW(lnd+1)*(RCurrentGMagnitude**2)/(FOUR*TWOPI**2) )!assume it is the next atom in the list, for now
-
-          CVgij = CVgij + RScattFacToVolts*CFpseudo*EXP(-CIMAGONE* &
-                  DOT_PRODUCT(RgMatrix(ind,jnd,:), RAtomCoordinate(lnd,:)) )
+          CVgij=CVgij+CFpseudo*EXP(-CIMAGONE*DOT_PRODUCT(RgMatrix(ind,jnd,:), RAtomCoordinate(lnd,:)) )
         END IF
       ENDDO
-      !This is actually still the Vg matrix, converted at the end to Ug
-!      CUgMatNoAbs(ind,jnd)=CVgij/RVolume!Why RVolume here?
-      CUgMatNoAbs(ind,jnd)=CVgij*RRelativisticCorrection/(PI*RVolume)
+      CUgMatNoAbs(ind,jnd)=CVgij
     ENDDO
   ENDDO
-!  RMeanInnerPotential= REAL(CUgMatNoAbs(1,1))
-  RMeanInnerPotential= REAL(CUgMatNoAbs(1,1))*(RPlanckConstant**2)*(RAngstromConversion**2)/(TWO*RElectronMass*RRelativisticCorrection*RElectronCharge)
-  IF(my_rank.EQ.0 .AND. IInitialSimulationFLAG.EQ.1) THEN
-    WRITE(SPrintString,FMT='(A20,F5.2,1X,A6)') "MeanInnerPotential= ",RMeanInnerPotential," Volts"
-    PRINT*,TRIM(ADJUSTL(SPrintString))
-  END IF
-  DO ind=1,nReflections!Take the Mean Inner Potential off the diagonal (zero diagonal, there are quicker ways to do this!)
-     CUgMatNoAbs(ind,ind)=ZERO
-!     CUgMatNoAbs(ind,ind)=CUgMatNoAbs(ind,ind)-RMeanInnerPotential
-  ENDDO
+
+  CUgMatNoAbs=CUgMatNoAbs*RRelativisticCorrection/(PI*RVolume)!Why RVolume here?
   !NB Only the lower half of the Vg matrix was calculated, this completes the upper half
   CUgMatNoAbs = CUgMatNoAbs + CONJG(TRANSPOSE(CUgMatNoAbs))
-  !Now convert to Ug=Vg*(2*m*e/h^2), where m is relativistic electron mass
-!  CUgMatNoAbs=CUgMatNoAbs*TWO*RElectronMass*RRelativisticCorrection*RElectronCharge/(RPlanckConstant**2)
-  !Divide U0 by 10^20 to convert Planck constant to A 
-!  CUgMatNoAbs=CUgMatNoAbs/(RAngstromConversion**2)
-
+  DO ind=1,nReflections
+    CUgMatNoAbs(ind,ind)=CZERO
+  END DO
   IF(IWriteFLAG.EQ.3.AND.my_rank.EQ.0) THEN
     PRINT*,"Ug matrix, without absorption (nm^-2)"
 	DO ind =1,16
@@ -233,12 +180,21 @@ SUBROUTINE StructureFactorInitialisation (IErr)
     END DO
   END IF
   
-  !Alternative way of calculating the mean inner potential as the sum of scattering factors at g=0 multiplied by h^2/(2pi*m0*e*CellVolume)
-  !RMeanInnerPotential=ZERO
-  !DO ind=1,INAtomsUnitCell
-  !  RMeanInnerPotential = RMeanInnerPotential+Kirkland(IAtomicNumber(ind),ZERO)/RAngstromConversion
-  !END DO
-  !RMeanInnerPotential = RMeanInnerPotential*RScattFacToVolts
+  !Calculate the mean inner potential as the sum of scattering factors at g=0 multiplied by h^2/(2pi*m0*e*CellVolume)
+  RMeanInnerPotential=ZERO
+  RCurrentGMagnitude=ZERO
+  DO ind=1,INAtomsUnitCell
+    ICurrentZ = IAtomicNumber(ind)
+    IF(ICurrentZ.LT.105) THEN!It's not a pseudoatom
+      CALL AtomicScatteringFactor(RScatteringFactor,IErr)
+      IF(IWriteFLAG.EQ.3.AND.my_rank.EQ.0) PRINT*,ind,"g=0",RScatteringFactor
+      RMeanInnerPotential = RMeanInnerPotential+RScatteringFactor
+    END IF
+  END DO
+  IF(my_rank.EQ.0) THEN
+    WRITE(SPrintString,FMT='(A20,F5.2,1X,A6)') "MeanInnerPotential= ",RMeanInnerPotential," Volts"
+    PRINT*,TRIM(ADJUSTL(SPrintString))
+  END IF
 
   ! high-energy approximation (not HOLZ compatible)
   !Wave vector in crystal
@@ -335,63 +291,26 @@ SUBROUTINE UpdateUgMatrix(IErr)
   !Work through unique Ug's
   IUniqueUgs=SIZE(IEquivalentUgKey)
   DO ind=1,IUniqueUgs
-    CVgij=CZERO
     !number of this Ug
     jnd=IEquivalentUgKey(ind)
     !find the position of this Ug in the matrix
     ILoc = MINLOC(ABS(ISymmetryRelations-jnd))
     RCurrentG = RgMatrix(ILoc(1),ILoc(2),:)!g-vector, local variable
     RCurrentGMagnitude = RgMatrixMagnitude(ILoc(1),ILoc(2))!g-vector magnitude, global variable
+    CVgij=CZERO
     mnd=0!pseudoatom counter
     DO lnd=1,INAtomsUnitCell
       ICurrentZ = IAtomicNumber(lnd)!Atomic number, global variable
       RCurrentB = RIsoDW(lnd)!Debye-Waller constant, global variable
       IF (ICurrentZ.LT.105) THEN!It's not a pseudoatom 
-
-        SELECT CASE (IScatterFactorMethodFLAG)! calculate f_e(q)
-          
-        CASE(0) ! Kirkland Method using 3 Gaussians and 3 Lorentzians, NB Kirkland scattering factor is in Angstrom units
-        !NB atomic number and g-vector passed as global variables
-        RScatteringFactor = Kirkland(RCurrentGMagnitude)
-  
-        CASE(1) ! 8 Parameter Method with Scattering Parameters from Peng et al 1996 
-        RScatteringFactor = ZERO
-        DO knd = 1, 4
-          !Peng Method uses summation of 4 Gaussians
-          RScatteringFactor = RScatteringFactor + &
-            GAUSSIAN(RScattFactors(ICurrentZ,knd),RCurrentGMagnitude,ZERO, & 
-            SQRT(2/RScattFactors(ICurrentZ,knd+4)),ZERO)
-        END DO
-  
-        CASE(2) ! 8 Parameter Method with Scattering Parameters from Doyle and Turner Method (1968)
-        RScatteringFactor = ZERO
-        DO knd = 1, 4
-          evenindgauss = knd*2
-          oddindgauss = knd*2 -1
-          !Doyle &Turner uses summation of 4 Gaussians
-          RScatteringFactor = RScatteringFactor + &
-            GAUSSIAN(RScattFactors(ICurrentZ,oddindgauss),RCurrentGMagnitude,ZERO, & 
-            SQRT(2/RScattFactors(ICurrentZ,evenindgauss)),ZERO)
-        END DO
-
-        CASE(3) ! 10 Parameter method with Scattering Parameters from Lobato et al. 2014
-        RScatteringFactor = ZERO
-        DO knd = 1,5
-          evenindlorentz=knd+5
-          RScatteringFactor = RScatteringFactor + &
-            LORENTZIAN(RScattFactors(ICurrentZ,knd)* &
-           (TWO+RScattFactors(ICurrentZ,evenindlorentz)*(RCurrentGMagnitude**TWO)),ONE, &
-            RScattFactors(ICurrentZ,evenindlorentz)*(RCurrentGMagnitude**TWO),ZERO)
-        END DO
-
-        END SELECT
+        CALL AtomicScatteringFactor(RScatteringFactor,IErr)
         ! Occupancy
         RScatteringFactor = RScatteringFactor*ROccupancy(lnd)
         !Debye-Waller factor
         IF (IAnisoDebyeWallerFactorFlag.EQ.0) THEN
           IF(RCurrentB.GT.10.OR.RCurrentB.LT.0) RCurrentB = RDebyeWallerConstant
           !Isotropic D-W factor exp(-B sin(theta)^2/lamda^2) = exp(-Bs^2)=exp(-Bg^2/16pi^2), see e.g. Bird&King
-          RScatteringFactor = RScatteringFactor*EXP(-RCurrentB*(RCurrentGMagnitude**2)/(FOUR*TWOPI**2) )
+          RScatteringFactor = RScatteringFactor*EXP(-RIsoDW(lnd)*(RCurrentGMagnitude**2)/(FOUR*TWOPI**2) )
         ELSE!this will need sorting out, not sure if it works
           RScatteringFactor = RScatteringFactor * &
             EXP(-DOT_PRODUCT(RgMatrix(ILoc(1),ILoc(2),:), &
@@ -399,8 +318,7 @@ SUBROUTINE UpdateUgMatrix(IErr)
             RAnisoDW(lnd),:,:),RgMatrix(ILoc(1),ILoc(2),:))))
         END IF
         !The structure factor equation, complex Vg(ILoc(1),ILoc(2))=sum(f*exp(-ig.r) in Volts
-        CVgij = CVgij+RScatteringFactor*EXP(-CIMAGONE* &
-                DOT_PRODUCT(RCurrentG, RAtomCoordinate(lnd,:)) )
+        CVgij = CVgij+RScatteringFactor*EXP(-CIMAGONE*DOT_PRODUCT(RCurrentG, RAtomCoordinate(lnd,:)) )
       ELSE!It is a pseudoatom
         mnd=mnd+1
         CALL PseudoAtom(CFpseudo,ILoc(1),ILoc(2),mnd,IErr)
@@ -413,24 +331,24 @@ SUBROUTINE UpdateUgMatrix(IErr)
           RETURN
         END IF
         !DW factor: Need to work out how to get it the from the real atom at the same site!
-        CFpseudo = CFpseudo*EXP(-RIsoDW(lnd+1)*(RCurrentGMagnitude**2)/(FOUR*TWOPI**2) )!assume it is the next atom in the list, for now
-        CVgij = CVgij + RScattFacToVolts*CFpseudo*EXP(-CIMAGONE* &
-                DOT_PRODUCT(RgMatrix(ILoc(1),ILoc(2),:), RAtomCoordinate(lnd,:)) )
+        CFpseudo=CFpseudo*EXP(-RIsoDW(lnd+1)*(RCurrentGMagnitude**2)/(FOUR*TWOPI**2) )!assume it is the next atom in the list, for now
+        CVgij=CVgij+CFpseudo*EXP(-CIMAGONE*DOT_PRODUCT(RgMatrix(ILoc(1),ILoc(2),:), RAtomCoordinate(lnd,:)) )
       END IF
     END DO
     !now replace the values in the Ug matrix
     WHERE(ISymmetryRelations.EQ.jnd)
-      CUgMatNoAbs=CVgij*RRelativisticCorrection/(PI*RVolume)
+      CUgMatNoAbs=CVgij
     END WHERE
     !NB for imaginary potential U(g)=U(-g)*
     WHERE(ISymmetryRelations.EQ.-jnd)
-      CUgMatNoAbs = CONJG(CVgij)*RRelativisticCorrection/(PI*RVolume)
+      CUgMatNoAbs = CONJG(CVgij)
     END WHERE
   END DO
+
+  CUgMatNoAbs=CUgMatNoAbs*RRelativisticCorrection/(PI*RVolume)
   DO ind=1,nReflections!zero diagonal
      CUgMatNoAbs(ind,ind)=ZERO
   ENDDO
-
   
   IF(IWriteFLAG.EQ.3.AND.my_rank.EQ.0) THEN
     PRINT*,"Updated Ug matrix, without absorption (nm^-2)"
@@ -441,6 +359,61 @@ SUBROUTINE UpdateUgMatrix(IErr)
   END IF
   
   END SUBROUTINE UpdateUgMatrix
+
+!!$%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+  SUBROUTINE AtomicScatteringFactor(RScatteringFactor,IErr)  
+
+  USE MyNumbers
+  USE WriteToScreen
+
+  USE CConst; USE IConst
+  USE IPara; USE RPara; USE CPara
+  USE BlochPara
+
+  USE IChannels
+  
+  IMPLICIT NONE
+
+  INTEGER(IKIND) :: ind,jnd,knd,IErr
+  REAL(RKIND) :: Kirkland,GAUSSIAN,LORENTZIAN,RScatteringFactor
+  
+  RScatteringFactor = ZERO
+  SELECT CASE (IScatterFactorMethodFLAG)
+          
+  CASE(0) ! Kirkland Method using 3 Gaussians and 3 Lorentzians, NB Kirkland scattering factor is in Angstrom units
+    !NB atomic number and g-vector passed as global variables
+    RScatteringFactor = Kirkland(RCurrentGMagnitude)
+      
+  CASE(1) ! 8 Parameter Method with Scattering Parameters from Peng et al 1996 
+    DO ind = 1,4
+      !Peng Method uses summation of 4 Gaussians
+      RScatteringFactor = RScatteringFactor + &
+        GAUSSIAN(RScattFactors(ICurrentZ,ind),RCurrentGMagnitude,ZERO, & 
+        SQRT(2/RScattFactors(ICurrentZ,ind+4)),ZERO)
+    END DO
+  
+  CASE(2) ! 8 Parameter Method with Scattering Parameters from Doyle and Turner Method (1968)
+    DO ind = 1,4
+      jnd = ind*2
+      knd = ind*2 -1
+      !Doyle &Turner uses summation of 4 Gaussians
+      RScatteringFactor = RScatteringFactor + &
+        GAUSSIAN(RScattFactors(ICurrentZ,knd),RCurrentGMagnitude,ZERO, & 
+        SQRT(2/RScattFactors(ICurrentZ,jnd)),ZERO)
+    END DO
+      
+  CASE(3) ! 10 Parameter method with Scattering Parameters from Lobato et al. 2014
+    DO ind = 1,5
+      jnd=ind+5
+      RScatteringFactor = RScatteringFactor + &
+        LORENTZIAN(RScattFactors(ICurrentZ,ind)* &
+       (TWO+RScattFactors(ICurrentZ,jnd)*(RCurrentGMagnitude**TWO)),ONE, &
+        RScattFactors(ICurrentZ,jnd)*(RCurrentGMagnitude**TWO),ZERO)
+    END DO
+
+    END SELECT
+
+  END SUBROUTINE AtomicScatteringFactor
 
 !!$%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 

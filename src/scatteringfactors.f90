@@ -54,6 +54,8 @@ SUBROUTINE ScatteringFactors(IScatteringMethodSwitch,IErr)
   INTEGER(IKIND):: IScatteringMethodSwitch,IScattDimension,IErr,ind
   REAL(RKIND) :: RKirkland(105,12), RPeng(105,8), RDoyleAndTurner(105,8), RLobato(105,10), RAtomicNumbers(105,1)
 
+  IF(IWriteFLAG.EQ.3.AND.my_rank.EQ.0) PRINT*,"Loading parameters for scattering factor calculation"
+  
   SELECT CASE(IScatteringMethodSwitch)
 
   CASE(0)

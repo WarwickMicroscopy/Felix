@@ -507,7 +507,6 @@ SUBROUTINE ReadExperimentalImages(IErr)
   CHARACTER*200 :: SPrintString
   CHARACTER*10 :: h,k,l
 
-
   !for IByteSize: 2bytes=64-bit input file (NB tinis specifies in bytes, not bits)
   !NB when this subroutine is working get rid of the pointless variable RImageIn
   ALLOCATE(RImageIn(2*IPixelCount,2*IPixelCount), STAT=IErr)
@@ -522,19 +521,12 @@ SUBROUTINE ReadExperimentalImages(IErr)
      WRITE(k,'(I3.1)')  NINT(RInputHKLs(ind,2))
      WRITE(l,'(I3.1)')  NINT(RInputHKLs(ind,3))
      WRITE(filename,*) TRIM(ADJUSTL(h)),TRIM(ADJUSTL(k)),TRIM(ADJUSTL(l)),".img"
-     IF (IWriteFLAG.EQ.7.AND.my_rank.EQ.0) THEN
-        PRINT*,filename
-     END IF
-     !WRITE(filename,"(A6,I3.3,A4)") "felix.",ind,".img"  !old version with format felix.000.img
+     IF (IWriteFLAG.EQ.7.AND.my_rank.EQ.0) PRINT*,filename
      OPEN(UNIT= IChInImage, ERR= 10, STATUS= 'UNKNOWN', FILE=TRIM(ADJUSTL(filename)),FORM='UNFORMATTED',&
           ACCESS='DIRECT',IOSTAT=Ierr,RECL=2*IPixelCount*IByteSize)
      DO jnd=1,2*IPixelCount
         READ(IChInImage,rec=jnd,ERR=10) RImageIn(jnd,:)
      END DO
-     IF(MINVAL(RImageIn).LT.ZERO.AND.(my_rank.EQ.0)) THEN
-        PRINT*,"Warning! There are negative values in your experimental images"
-        INegError = INegError + 1
-     END IF
      RImageExpi(:,:,ind) = RImageIn
      CLOSE(IChInImage,IOSTAT=IErr) 
      IF( IErr.NE.0 ) THEN
@@ -543,11 +535,6 @@ SUBROUTINE ReadExperimentalImages(IErr)
      END IF
   END DO
   DEALLOCATE(RImageIn,STAT=IErr)
-
-  IF (INegError.NE.0) THEN
-     IErr = 1
-     PRINT*,"No. of Images with Negative Values",INegError
-  END IF
 
   IF (my_rank.EQ.0.AND.IErr.EQ.0) THEN
      WRITE(SPrintString,FMT='(I3,A40)') INoOfLacbedPatterns," experimental images successfully loaded"

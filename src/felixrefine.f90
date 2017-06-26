@@ -149,7 +149,6 @@ PROGRAM Felixrefine
   ELSE IF(my_rank.EQ.0) THEN
     PRINT*,"Simulation only"
   END IF
-
   !--------------------------------------------------------------------
   ! Scattering factors
   CALL ScatteringFactors(IScatterFactorMethodFLAG,IErr)
