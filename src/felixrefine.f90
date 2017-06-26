@@ -1188,6 +1188,8 @@ PROGRAM Felixrefine
   DEALLOCATE(RAnisoDW,STAT=IErr)
   DEALLOCATE(RAtomCoordinate,STAT=IErr)
   DEALLOCATE(RgMatrixMagnitude,STAT=IErr)
+  DEALLOCATE(CPseudoAtom,STAT=IErr)
+  DEALLOCATE(CPseudoScatt,STAT=IErr)
   IF (IRefineMode(1).EQ.0) THEN
   	DEALLOCATE(IIterativeVariableUniqueIDs,STAT=IErr)
   END IF

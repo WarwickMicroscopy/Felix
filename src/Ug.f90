@@ -70,10 +70,10 @@ SUBROUTINE StructureFactorInitialisation (IErr)
   ALLOCATE(CPseudoScatt(IPsize,IPsize,IPseudo),STAT=IErr)!Matrices with Pseudoatom scattering factor (reciprocal space)
   RPScale=0.01!one picometre per pixel, working in Angstroms, global variable
   RPMag=0.025!Magnitude of pseudoatom potential, in volts - so that the numbers in felix.cif are sensible
-  knd=0!pseudoatom counter
+  mnd=0!pseudoatom counter
   DO lnd=1,INAtomsUnitCell 
     IF (IAtomicNumber(lnd).GE.105) THEN!we have a pseudoatom
-      knd=knd+1
+      mnd=mnd+1
       RPalpha=10.0*RIsoDW(lnd)!The Debye-Waller factor is used to determine alpha for pseudoatoms
       IF (IAtomicNumber(lnd).EQ.105) Rfold=ZERO   !Ja
       IF (IAtomicNumber(lnd).EQ.106) Rfold=ONE    !Jb
@@ -88,29 +88,29 @@ SUBROUTINE StructureFactorInitialisation (IErr)
           Ry=RPScale*(REAL(jnd-(IPsize/2))-HALF)
           Rr=SQRT(Rx*Rx+Ry*Ry)
           Rtheta=ACOS(Rx/Rr)
-          CPseudoAtom(ind,jnd,knd)=CMPLX(RPMag*RPalpha*Rr*EXP(-RPalpha*Rr)*COS(Rfold*Rtheta),ZERO)!Easier to make a complex input to fftw rather than fanny around with the different format needed for a real input. Lazy.
+          CPseudoAtom(ind,jnd,mnd)=CMPLX(RPMag*RPalpha*Rr*EXP(-RPalpha*Rr)*COS(Rfold*Rtheta),ZERO)!Easier to make a complex input to fftw rather than fanny around with the different format needed for a real input. Lazy.
         END DO
       END DO
       IF (my_rank.EQ.0) THEN!output to check
-        WRITE(SPrintString,FMT='(A15,I1,A3)') "PseudoPotential",knd,".img"
+        WRITE(SPrintString,FMT='(A15,I1,A3)') "PseudoPotential",mnd,".img"
         OPEN(UNIT=IChOutWIImage, ERR=10, STATUS= 'UNKNOWN', FILE=SPrintString,&
              FORM='UNFORMATTED',ACCESS='DIRECT',IOSTAT=IErr,RECL=8192)
         DO jnd = 1,IPsize
-            WRITE(IChOutWIImage,rec=jnd) REAL(CPseudoAtom(jnd,:,knd))
+            WRITE(IChOutWIImage,rec=jnd) REAL(CPseudoAtom(jnd,:,mnd))
         END DO
         CLOSE(IChOutWIImage,IOSTAT=IErr)
       END IF
       !CPseudoScatt = a 2d fft of RPseudoAtom
-      CALL dfftw_plan_dft_2d_ (Iplan_forward, IPsize,IPsize, CPseudoAtom(:,:,knd), CPseudoScatt(:,:,knd),&
+      CALL dfftw_plan_dft_2d_ (Iplan_forward, IPsize,IPsize, CPseudoAtom(:,:,mnd), CPseudoScatt(:,:,mnd),&
            FFTW_FORWARD,FFTW_ESTIMATE )!Could be moved to an initialisation step if there are no other plans?
       CALL dfftw_execute_ (Iplan_forward)
       CALL dfftw_destroy_plan_ (Iplan_forward)!could be moved to clean up?
       IF (my_rank.EQ.0) THEN!output to check
-        WRITE(SPrintString,FMT='(A12,I1,A3)') "PseudoFactor",knd,".img"
+        WRITE(SPrintString,FMT='(A12,I1,A3)') "PseudoFactor",mnd,".img"
         OPEN(UNIT=IChOutWIImage, ERR=10, STATUS= 'UNKNOWN', FILE=SPrintString,&
              FORM='UNFORMATTED',ACCESS='DIRECT',IOSTAT=IErr,RECL=8192)
         DO jnd = 1,IPsize
-            WRITE(IChOutWIImage,rec=jnd) ABS(CPseudoScatt(jnd,:,knd))
+            WRITE(IChOutWIImage,rec=jnd) ABS(CPseudoScatt(jnd,:,mnd))
         END DO
         CLOSE(IChOutWIImage,IOSTAT=IErr)
       END IF
@@ -123,7 +123,7 @@ SUBROUTINE StructureFactorInitialisation (IErr)
     DO jnd=1,ind
       !The Fourier component of the potential Vg goes in location (i,j)
       CVgij= 0.0D0!this is in Volts
-      knd=0!pseudoatom counter
+      mnd=0!pseudoatom counter
       DO lnd=1,INAtomsUnitCell
         ICurrentZ = IAtomicNumber(lnd)!Atomic number, NB passed as a global variable for absorption
         RCurrentGMagnitude = RgMatrixMagnitude(ind,jnd)!g-vector magnitude, global variable
@@ -183,8 +183,8 @@ SUBROUTINE StructureFactorInitialisation (IErr)
           CVgij = CVgij + RScattFacToVolts*RScatteringFactor * EXP(-CIMAGONE* &
                   DOT_PRODUCT(RgMatrix(ind,jnd,:), RAtomCoordinate(lnd,:)) )
         ELSE!pseudoatom
-          knd=knd+1
-          CALL PseudoAtom(CFpseudo,ind,jnd,knd,IErr)
+          mnd=mnd+1
+          CALL PseudoAtom(CFpseudo,ind,jnd,mnd,IErr)
           !IF (my_rank.EQ.0) PRINT*,ind,jnd,"CFpseudo",CFpseudo
           ! Occupancy
           CFpseudo = CFpseudo*ROccupancy(lnd)
@@ -293,6 +293,128 @@ END SUBROUTINE StructureFactorInitialisation
 
 !!$%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
+SUBROUTINE UpdateUgMatrix(IErr)
+
+  USE MyNumbers
+  USE WriteToScreen
+
+  USE CConst; USE IConst
+  USE IPara; USE RPara; USE CPara; USE SPara
+  USE BlochPara; USE MyFFTW
+
+  USE IChannels
+
+  USE MPI
+  USE MyMPI
+
+  IMPLICIT NONE
+  
+  INTEGER(IKIND) :: IUniqueUgs,ind,jnd,knd,lnd,mnd,evenindlorentz,oddindgauss,evenindgauss,IErr
+  INTEGER(IKIND),DIMENSION(2) :: ILoc  
+  REAL(RKIND) :: Lorentzian,Gaussian,Kirkland,RScattFacToVolts,RScatteringFactor
+  REAL(RKIND),DIMENSION(3) :: RCurrentG
+  COMPLEX(CKIND) :: CVgij,CFpseudo
+  
+  RScattFacToVolts=(RPlanckConstant**2)*(RAngstromConversion**2)/(TWOPI*RElectronMass*RElectronCharge)
+  !Work through unique Ug's
+  IUniqueUgs=SIZE(IEquivalentUgKey)
+  DO ind=1,IUniqueUgs
+    !number of this Ug
+    jnd=IEquivalentUgKey(ind)
+    !find the position of this Ug in the matrix
+    ILoc = MINLOC(ABS(ISymmetryRelations-jnd))
+    RCurrentG = RgMatrix(ILoc(1),ILoc(2),:)!g-vector, local variable
+    RCurrentGMagnitude = RgMatrixMagnitude(ILoc(1),ILoc(2))!g-vector magnitude, global variable
+    mnd=0!pseudoatom counter
+    DO lnd=1,INAtomsUnitCell
+      ICurrentZ = IAtomicNumber(lnd)!Atomic number, global variable
+      RCurrentB = RIsoDW(lnd)!Debye-Waller constant, global variable
+      IF (ICurrentZ.LT.105) THEN!It's not a pseudoatom 
+
+        SELECT CASE (IScatterFactorMethodFLAG)! calculate f_e(q)
+          
+        CASE(0) ! Kirkland Method using 3 Gaussians and 3 Lorentzians, NB Kirkland scattering factor is in Angstrom units
+        !NB atomic number and g-vector passed as global variables
+        RScatteringFactor = Kirkland(RCurrentGMagnitude)
+  
+        CASE(1) ! 8 Parameter Method with Scattering Parameters from Peng et al 1996 
+        RScatteringFactor = ZERO
+        DO knd = 1, 4
+          !Peng Method uses summation of 4 Gaussians
+          RScatteringFactor = RScatteringFactor + &
+            GAUSSIAN(RScattFactors(ICurrentZ,knd),RCurrentGMagnitude,ZERO, & 
+            SQRT(2/RScattFactors(ICurrentZ,knd+4)),ZERO)
+        END DO
+  
+        CASE(2) ! 8 Parameter Method with Scattering Parameters from Doyle and Turner Method (1968)
+        RScatteringFactor = ZERO
+        DO knd = 1, 4
+          evenindgauss = knd*2
+          oddindgauss = knd*2 -1
+          !Doyle &Turner uses summation of 4 Gaussians
+          RScatteringFactor = RScatteringFactor + &
+            GAUSSIAN(RScattFactors(ICurrentZ,oddindgauss),RCurrentGMagnitude,ZERO, & 
+            SQRT(2/RScattFactors(ICurrentZ,evenindgauss)),ZERO)
+        END DO
+
+        CASE(3) ! 10 Parameter method with Scattering Parameters from Lobato et al. 2014
+        RScatteringFactor = ZERO
+        DO knd = 1,5
+          evenindlorentz=knd+5
+          RScatteringFactor = RScatteringFactor + &
+            LORENTZIAN(RScattFactors(ICurrentZ,knd)* &
+           (TWO+RScattFactors(ICurrentZ,evenindlorentz)*(RCurrentGMagnitude**TWO)),ONE, &
+            RScattFactors(ICurrentZ,evenindlorentz)*(RCurrentGMagnitude**TWO),ZERO)
+        END DO
+
+        END SELECT
+        ! Occupancy
+        RScatteringFactor = RScatteringFactor*ROccupancy(lnd)
+        !Debye-Waller factor
+        IF (IAnisoDebyeWallerFactorFlag.EQ.0) THEN
+          IF(RIsoDW(lnd).GT.10.OR.RIsoDW(lnd).LT.0) RIsoDW(lnd) = RDebyeWallerConstant
+          !Isotropic D-W factor exp(-B sin(theta)^2/lamda^2) = exp(-Bs^2)=exp(-Bg^2/16pi^2), see e.g. Bird&King
+          RScatteringFactor = RScatteringFactor*EXP(-RIsoDW(lnd)*(RCurrentGMagnitude**2)/(FOUR*TWOPI**2) )
+        ELSE!this will need sorting out, not sure if it works
+          RScatteringFactor = RScatteringFactor * &
+            EXP(-DOT_PRODUCT(RgMatrix(ind,jnd,:), &
+            MATMUL( RAnisotropicDebyeWallerFactorTensor( &
+            RAnisoDW(lnd),:,:),RgMatrix(ind,jnd,:))))
+        END IF
+        !The structure factor equation, complex Vg(ind,jnd)=sum(f*exp(-ig.r) in Volts
+        CVgij = CVgij + RScattFacToVolts*RScatteringFactor * EXP(-CIMAGONE* &
+                DOT_PRODUCT(RgMatrix(ind,jnd,:), RAtomCoordinate(lnd,:)) )
+      ELSE!It is a pseudoatom
+        mnd=mnd+1
+        CALL PseudoAtom(CFpseudo,ILoc(1),ILoc(2),mnd,IErr)
+        ! Occupancy
+        CFpseudo = CFpseudo*ROccupancy(lnd)
+        !Debye-Waller factor - isotropic only, for now
+        IF (IAnisoDebyeWallerFactorFlag.NE.0) THEN
+          IF (my_rank.EQ.0) PRINT*,"Pseudo atom - isotropic Debye-Waller factor only!"
+          IErr=1
+          RETURN
+        END IF
+        !DW factor: Need to work out how to get it the from the real atom at the same site!
+        CFpseudo = CFpseudo*EXP(-RIsoDW(lnd+1)*(RCurrentGMagnitude**2)/(FOUR*TWOPI**2) )!assume it is the next atom in the list, for now
+        CVgij = CVgij + RScattFacToVolts*CFpseudo*EXP(-CIMAGONE* &
+                DOT_PRODUCT(RgMatrix(ind,jnd,:), RAtomCoordinate(lnd,:)) )
+      END IF
+    END DO
+    !now replace the values in the Ug matrix
+    WHERE(ISymmetryRelations.EQ.jnd)
+      CUgMatNoAbs=CVgij
+    END WHERE
+    !NB for imaginary potential U(g)=U(-g)*
+    WHERE(ISymmetryRelations.EQ.-jnd)
+      CUgMatNoAbs = CONJG(CVgij)
+    END WHERE
+  END DO
+  
+  END SUBROUTINE UpdateUgMatrix
+
+!!$%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
 SUBROUTINE Absorption (IErr)  
 
   USE MyNumbers
@@ -356,7 +478,7 @@ SUBROUTINE Absorption (IErr)
       jnd=IEquivalentUgKey(ind)
       !find the position of this Ug in the matrix
       ILoc = MINLOC(ABS(ISymmetryRelations-jnd))
-      RCurrentG = RgMatrix(ILoc(1),ILoc(2),:)!g-vector, global variable
+      RCurrentG = RgMatrix(ILoc(1),ILoc(2),:)!g-vector, local variable
       RCurrentGMagnitude = RgMatrixMagnitude(ILoc(1),ILoc(2))!g-vector magnitude, global variable
       lnd=0!pseudoatom counter
       !Structure factor calculation for absorptive form factors

@@ -127,10 +127,10 @@ SUBROUTINE SimulateAndFit(RIndependentVariable,Iter,IExitFLAG,IErr)
       RETURN
     END IF
     !Update scattering matrix
-    CALL StructureFactorInitialisation(IErr)
+    CALL UpdateUgMatrix(IErr)
     CALL Absorption (IErr)
     IF( IErr.NE.0 ) THEN
-      PRINT*,"felixfunction(",my_rank,")error in StructureFactorInitialisation"
+      PRINT*,"felixfunction(",my_rank,")error in UpdateUgMatrix"
       RETURN
     END IF
   END IF
