@@ -188,6 +188,7 @@ SUBROUTINE StructureFactorInitialisation (IErr)
           !IF(my_rank.EQ.0) PRINT*,knd,"CFpseudo",CFpseudo
           ! Occupancy
           CFpseudo = CFpseudo*ROccupancy(lnd)
+          IF (my_rank.EQ.0) PRINT*,ind,jnd,"CFpseudo",CFpseudo
           !Debye-Waller factor - isotropic only, for now
           IF (IAnisoDebyeWallerFactorFlag.NE.0) THEN
             IF (my_rank.EQ.0) PRINT*,"Pseudo atom - isotropic Debye-Waller factor only!"
@@ -196,8 +197,7 @@ SUBROUTINE StructureFactorInitialisation (IErr)
           END IF
           !DW factor: Need to work out how to get it the from the real atom at the same site!
           CFpseudo = CFpseudo*EXP(-RIsoDW(lnd+1)*(RCurrentGMagnitude**2)/(FOUR*TWOPI**2) )!assume it is the next atom in the list, for now
-          !Proportional absorption model - can't be applied here because the matrix is assumed to be Hermitian
-          !CFpseudo = CFpseudo+CFpseudo*EXP(CIMAGONE*PI/2)*(RAbsorptionPercentage/HUNDRED)
+
           CVgij = CVgij + RScattFacToVolts*CFpseudo*EXP(-CIMAGONE* &
                   DOT_PRODUCT(RgMatrix(ind,jnd,:), RAtomCoordinate(lnd,:)) )
         END IF
@@ -373,8 +373,8 @@ SUBROUTINE Absorption (IErr)
           END IF
         ELSE!It is a pseudoatom, proportional model 
           lnd=lnd+1
-          CALL PseudoAtom(CFpseudo,ILoc(1),ILoc(2),lnd,IErr)
-          RfPrime=CFpseudo*EXP(CIMAGONE*PI/2)*(RAbsorptionPercentage/HUNDRED)
+          !CALL PseudoAtom(CFpseudo,ILoc(1),ILoc(2),lnd,IErr)
+          !RfPrime=CFpseudo*EXP(CIMAGONE*PI/2)*(RAbsorptionPercentage/HUNDRED)
           RfPrime=ZERO
         END IF
         ! Occupancy
