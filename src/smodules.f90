@@ -36,8 +36,8 @@
 MODULE CConst
   USE MyNumbers
   CHARACTER*50, PARAMETER :: RStr= "Version: multipole / BUILD / Alpha"
-  CHARACTER*50, PARAMETER :: DStr= "Date: 06-06-2017"
-  CHARACTER*50, PARAMETER :: AStr= "Status: multipole atom refinement" 
+  CHARACTER*50, PARAMETER :: DStr= "Date: 16-06-2017"
+  CHARACTER*50, PARAMETER :: AStr= "Status: multipole atom test & debug" 
   
   CHARACTER*8 CSpaceGrp(230)
   DATA CSpaceGrp/"P1","P-1","P2","P21","C2","Pm","Pc","Cm",&
@@ -188,7 +188,7 @@ MODULE IPara
   INTEGER(IKIND), DIMENSION(2) :: IOffset
   INTEGER(IKIND), DIMENSION(:),ALLOCATABLE :: IElementList
   !Ug Calculation
-  INTEGER(IKIND) :: ICurrentZ
+  INTEGER(IKIND) :: ICurrentZ,IPsize
   !Refinement   
   INTEGER(IKIND),DIMENSION(IRefinementVariableTypes) :: IRefineMode
   INTEGER(IKIND),DIMENSION(IRefinementVariableTypes) :: INoofElementsForEachRefinementType  !zz
@@ -308,8 +308,8 @@ MODULE CPara
                 CGammaValues, CWaveFunctions,CFullWaveFunctions
   COMPLEX(CKIND), DIMENSION(:,:), ALLOCATABLE :: CUgMatNoAbs,CUgMatPrime,CUgMat,CUgSgMatrix,CEigenValuesChunk,&
                 CEigenVectors,CEigenValueDependentTerms,CInvertedEigenVectors,CBeamProjectionMatrix,&
-                CDummyBeamMatrix,CPseudoScatt,CPseudoAtom
-  COMPLEX(CKIND), DIMENSION(:,:,:), ALLOCATABLE :: CEigenVectorsChunk,CAmplitudeandPhase
+                CDummyBeamMatrix
+  COMPLEX(CKIND), DIMENSION(:,:,:), ALLOCATABLE :: CEigenVectorsChunk,CAmplitudeandPhase,CPseudoAtom,CPseudoScatt
 
 END MODULE CPara
 !--------------------------------------------------------------------

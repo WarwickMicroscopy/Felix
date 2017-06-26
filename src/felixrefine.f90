@@ -419,12 +419,12 @@ PROGRAM Felixrefine
   ENDDO
   IF(IWriteFLAG.EQ.3.AND.my_rank.EQ.0) THEN
 	PRINT*,"g-vector magnitude matrix (2pi/A)"
-	DO ind =1,8
+	DO ind =1,16
      WRITE(SPrintString,FMT='(16(1X,F5.2))') RgMatrixMagnitude(ind,1:8)
      PRINT*,TRIM(ADJUSTL(SPrintString))
     END DO
 	PRINT*,"first column of g-vectors"
-	DO ind =1,8
+	DO ind =1,16
      WRITE(SPrintString,FMT='(3(1X,F5.2))') RgMatrix(ind,1,:)
      PRINT*,TRIM(ADJUSTL(SPrintString))
     END DO
@@ -796,9 +796,9 @@ PROGRAM Felixrefine
     ALLOCATE(RCurrentVar(INoOfVariables),STAT=IErr)!set of variables to send out for simulations
     ALLOCATE(RLastVar(INoOfVariables),STAT=IErr)!set of variables updated each cycle
     ALLOCATE(RPVec(INoOfVariables),STAT=IErr)!the vector describing the current line in parameter space
-    ALLOCATE(RFitVec(INoOfVariables),STAT=IErr)!the vector of fits
+    ALLOCATE(RFitVec(INoOfVariables),STAT=IErr)!the list of fit indices resulting from small changes Rdf for each variable in RPVec
     IF( IErr.NE.0 ) THEN
-      PRINT*,"felixrefine(",my_rank,")error allocating parabola variables"
+      PRINT*,"felixrefine(",my_rank,")error allocating max gradient variables"
       GOTO 9999
     END IF
     RBestFit=RFigureofMerit
@@ -831,7 +831,7 @@ PROGRAM Felixrefine
           END IF
           IF (RCurrentVar(ind).LE.TINY.AND.IVariableType.EQ.4) THEN!skip zero DW factor
             RPVec(ind)=TINY
-            EXIT
+            CYCLE
           END IF
           WRITE(SPrintString,FMT='(A17,I2,A3,I3)') "Finding gradient,",ind," of",INoOfVariables
           IF (my_rank.EQ.0) PRINT*, TRIM(ADJUSTL(SPrintString))
@@ -841,20 +841,25 @@ PROGRAM Felixrefine
           RCurrentVar=RVar0
           RCurrentVar(ind)=RCurrentVar(ind)+Rdx
           CALL SimulateAndFit(RCurrentVar,Iter,IExitFLAG,IErr)
+          !BestFitCheck copies RCurrentVar into RIndependentVariable and updates RBestFit if the fit is better
           CALL BestFitCheck(RFigureofMerit,RBestFit,RCurrentVar,RIndependentVariable,IErr)
           RFitVec(ind)=RFigureofMerit
           RPVec(ind)=(RFit0-RFigureofMerit)/Rdx!-df/dx: need the dx to keep track of sign
         END DO
         nnd=1!do min gradient next time
       ELSE!min gradient - to explore along a valley
-        DO ind=1,INoOfVariables!invert gradient, ignoring zeros
-          IF (ABS(RPVec(ind)).GT.TINY) RPVec(ind)=1/RPVec(ind)
+        DO ind=1,INoOfVariables!invert gradient
+          IF (ABS(RPVec(ind)).GT.TINY) THEN!don't invert zeros
+            RPVec(ind)=1/RPVec(ind)
+          ELSE!just make them quite big
+            RPVec(ind)=TEN
+          END IF
         END DO
         IF (my_rank.EQ.0) PRINT*, "Checking minimum gradient"
         nnd=0!do max gradient next time
       END IF
-      RPvecMag=ZERO
-      DO ind=1,INoOfVariables!normalise gradient vector
+      RPvecMag=ZERO!RPvecMag is used here to normalise the max gradient vector RPvec
+      DO ind=1,INoOfVariables
         RPvecMag=RPvecMag+RPvec(ind)**2
       END DO
       IF (RPvecMag-ONE.EQ.RPvecMag.OR.RPvecMag.NE.RPvecMag) THEN!Infinity and NaN check
@@ -866,12 +871,11 @@ PROGRAM Felixrefine
       WRITE(SPrintString,FMT='(A20,20(F6.3,1X))') "Refinement vector = ",RPvec
       IF (my_rank.EQ.0) PRINT*, TRIM(ADJUSTL(SPrintString))
       RVar0=RIndependentVariable!the best point of gradient calculation
-      RFigureofMerit=MINVAL(RFitVec)!the best fit
+      RFigureofMerit=RBestFit!the best fit so far
       !three points to find the miniimum
       R3var(1)=RVar0(1)!first point is current value
       R3fit(1)=RFigureofMerit!point 1 is the incoming simulation and fit index
-      !magnitude of vector in parameter space
-      RPvecMag=RVar0(1)*RPscale    
+      RPvecMag=RVar0(1)*RPscale!RPvecMag is used here to give the magnitude of vector in parameter space 
       RCurrentVar=RVar0+RPvec*RPvecMag!Update the parameters to simulate
       R3var(2)=RCurrentVar(1)!second point 
       IF (my_rank.EQ.0) PRINT*,"Refining, point 2 of 3"
@@ -903,15 +907,11 @@ PROGRAM Felixrefine
         knd=MINLOC(R3fit,1)!best fit
         lnd=6-jnd-knd!the mid fit
         !replace mid point with a step on from best point
-        RPvecMag=(R3var(knd)-RVar0(1))*(0.5+SQRT(5.0)/2.0)/RPvec(1)!increase the step size by the golden ratio
+        !RPvecMag=(R3var(knd)-RVar0(1))*(0.5+SQRT(5.0)/2.0)/RPvec(1)!increase the step size by the golden ratio
+        RPvecMag=RPvecMag*2!double the step size
         IF (ABS(RPvecMag).GT.RMaxUgStep.AND.IRefineMode(1).EQ.1) RPvecMag=SIGN(RMaxUgStep,RPvecMag)!maximum step in Ug is RMaxUgStep
         RCurrentVar=RVar0+RPvec*RPvecMag
         R3var(lnd)=RCurrentVar(1)!next point
-!        IF (R3var(lnd).LE.ZERO.AND.IVariableType.EQ.4) THEN!less than zero DW is requested
-!          R3var(lnd)=ZERO!limit it to 0.0
-!          RCurrentVar=RVar0-RPvec*RVar0(1)!and set up for simulation outside the loop
-!          EXIT
-!        END IF
         CALL SimulateAndFit(RCurrentVar,Iter,IExitFLAG,IErr)
         CALL BestFitCheck(RFigureofMerit,RBestFit,RCurrentVar,RIndependentVariable,IErr)
         R3fit(lnd)=RFigureofMerit
@@ -928,8 +928,7 @@ PROGRAM Felixrefine
            "Concave set, predict minimum at ",RvarMin," with fit index ",RfitMin
         PRINT*,TRIM(ADJUSTL(SPrintString))
       END IF
-      !Put prediction into RIndependentVariable
-      RCurrentVar=RVar0+RPvec*(RvarMin-RVar0(1))/RPvec(1)
+      RCurrentVar=RVar0+RPvec*(RvarMin-RVar0(1))/RPvec(1)!Put prediction into RCurrentVar
       CALL SimulateAndFit(RCurrentVar,Iter,IExitFLAG,IErr)
       CALL BestFitCheck(RFigureofMerit,RBestFit,RCurrentVar,RIndependentVariable,IErr)
       !check where we go next and update last fit etc.
@@ -1071,6 +1070,7 @@ PROGRAM Felixrefine
         jnd=MAXLOC(R3var,1)!highest x
         knd=MINLOC(R3var,1)!lowest x
         lnd=6-jnd-knd!the mid x
+        IF (jnd.EQ.knd) lnd=jnd!covering the unlikely scenario that all simulations have the same fit index
         Rtest=-ABS(R3fit(jnd)-R3fit(knd))!Rtest=0.0 would be a straight line, >0=convex, <0=concave
         !Rconvex is the calculated fit index at the mid x, if ithere was a straight line between lowest and highest x
         Rconvex=R3fit(lnd)-(R3fit(knd)+(R3var(lnd)-R3var(knd))*(R3fit(jnd)-R3fit(knd))/(R3var(jnd)-R3var(knd)))
@@ -1122,7 +1122,7 @@ PROGRAM Felixrefine
         IF (ICycle.EQ.1) EXIT!we have just done an average direction refinement, quit the NoOfVariables loop
       END DO
       !We have refined all variables, check where we go next and update last fit etc.
-      IF (INoOfVariables.GT.1) THEN!refining multiple variables
+      IF (INoOfVariables.GT.2) THEN!refining multiple variables
         IF (ICycle.EQ.0) THEN!we haven't done an average direction refinement, set the flag
           ICycle=1
         ELSE!we just did an average direction refinement, go back to pairwise and update RLastFit and Rdf

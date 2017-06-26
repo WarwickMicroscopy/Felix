@@ -113,15 +113,15 @@ SUBROUTINE SimulateAndFit(RIndependentVariable,Iter,IExitFLAG,IErr)
     IF (IRefineMode(8).EQ.1) THEN!convergence angle
        !recalculate k-vectors
        RDeltaK = RMinimumGMag*RConvergenceAngle/REAL(IPixelCount,RKIND)
-       IF (my_rank.EQ.0) THEN
-         WRITE(SFormat,*) "(I5.1,1X,F13.9,1X,F13.9,1X)"
-         OPEN(UNIT=IChOutSimplex,file='IterationLog.txt',form='formatted',status='unknown',position='append')
-         WRITE(UNIT=IChOutSimplex,FMT=SFormat) Iter,RFigureofMerit,RConvergenceAngle
-         CLOSE(IChOutSimplex)
-       END IF
+       !IF (my_rank.EQ.0) THEN
+       !  WRITE(SFormat,*) "(I5.1,1X,F13.9,1X,F13.9,1X)"
+       !  OPEN(UNIT=IChOutSimplex,file='IterationLog.txt',form='formatted',status='unknown',position='append')
+       !  WRITE(UNIT=IChOutSimplex,FMT=SFormat) Iter,RFigureofMerit,RConvergenceAngle
+       !  CLOSE(IChOutSimplex)
+       !END IF
      END IF
     !recalculate unit cell
-    CALL UniqueAtomPositions(IErr)
+    CALL UniqueAtomPositions(IErr)!This is being called unnecessarily for some refinement modes
     IF( IErr.NE.0 ) THEN
       PRINT*,"SimulateAndFit(",my_rank,")error in UniqueAtomPositions"
       RETURN
@@ -257,7 +257,6 @@ SUBROUTINE FelixFunction(IErr)
 
 END SUBROUTINE FelixFunction
 
-!%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 !%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 SUBROUTINE CalculateFigureofMeritandDetermineThickness(Iter,IBestThicknessIndex,IErr)
