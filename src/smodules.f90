@@ -34,7 +34,7 @@
 
 
 MODULE CConst
-  USE MyNumbers
+ 
   CHARACTER*50, PARAMETER :: RStr= "Version: multipole / BUILD / Alpha"
   CHARACTER*50, PARAMETER :: DStr= "Date: 16-06-2017"
   CHARACTER*50, PARAMETER :: AStr= "Status: multipole atom test & debug" 
@@ -70,7 +70,7 @@ MODULE CConst
        "I-43d","Pm-3m","Pn-3n","Pm-3n","Pn-3m","Fm-3m","Fm-3c","Fd-3m", &
        "Fd-3c","Im-3m","Ia-3d"/
 
-  CHARACTER*2 :: SElementSymbolMatrix(INElements)!N.B. Number must equal INElements
+  CHARACTER*2 :: SElementSymbolMatrix(110)!N.B. Number must equal INElements
   DATA SElementSymbolMatrix/"H", "He", "Li", "Be", " B", " C", " N", "O", "F", "Ne", &
        "Na", "Mg", "Al", "Si", "P", "S", "Cl", "Ar", "K", "Ca", &
        "Sc", "Ti", "V", "Cr", "Mn", "Fe", "Co", "Ni", "Cu", "Zn", &
