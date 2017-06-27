@@ -225,11 +225,9 @@ SUBROUTINE ReadInpFile( IErr )
       IF(IRefineMode(8).EQ.1) PRINT*, "H:Refining Convergence Angle"
       IF(IRefineMode(9).EQ.1) PRINT*, "I:Refining Absorption"
       IF(IRefineMode(10).EQ.1) PRINT*,"J:Refining Accelerating Voltage "
-      !IF(IRefineMode(11).EQ.1) PRINT*,"K:Refinement by parabola"
-      !IF(IRefineMode(12).EQ.1) PRINT*,"L:Refining Structure Factors by bisection"
       IF(ISimFlag.EQ.1) PRINT*,"S:Simulation mode"
     END IF
-    !Check if user has requested Ug refinement and anything else which isnt possible
+    !Check if user has requested Ug refinement and anything else which isn't possible
     IF((IRefineMode(1).EQ.1).AND.SUM(IRefineMode).GT.1) THEN         
       IF(my_rank.EQ.0) THEN
         PRINT*,"Structure factors must be refined separately"
@@ -243,9 +241,9 @@ SUBROUTINE ReadInpFile( IErr )
   ! -----IMethodFLAG-----------------------------------------------------------------
   ILine= ILine+1; READ(IChInp,10,ERR=20,END=30) IMethodFLAG
   IF (my_rank.EQ.0) THEN
-      IF(IMethodFLAG.EQ.1) PRINT*, "Refining by Simplex"
-      IF(IMethodFLAG.EQ.2) PRINT*, "Refining by Max gradient"
-      IF(IMethodFLAG.EQ.3) PRINT*, "Refining by Parabola"
+      IF(IMethodFLAG.EQ.1) PRINT*, "Refining by simplex"
+      IF(IMethodFLAG.EQ.2) PRINT*, "Refining by maximum gradient"
+      IF(IMethodFLAG.EQ.3) PRINT*, "Refining by pairwise maximum gradient"
   END IF  
   ! -----ICorrelationFLAG: 0=phase,1=sumSq,2=NormalisedCC,3=masked
   ILine= ILine+1; READ(IChInp,10,ERR=20,END=30) ICorrelationFLAG
@@ -509,7 +507,6 @@ SUBROUTINE ReadExperimentalImages(IErr)
   CHARACTER*200 :: SPrintString
   CHARACTER*10 :: h,k,l
 
-
   !for IByteSize: 2bytes=64-bit input file (NB tinis specifies in bytes, not bits)
   !NB when this subroutine is working get rid of the pointless variable RImageIn
   ALLOCATE(RImageIn(2*IPixelCount,2*IPixelCount), STAT=IErr)
@@ -524,19 +521,12 @@ SUBROUTINE ReadExperimentalImages(IErr)
      WRITE(k,'(I3.1)')  NINT(RInputHKLs(ind,2))
      WRITE(l,'(I3.1)')  NINT(RInputHKLs(ind,3))
      WRITE(filename,*) TRIM(ADJUSTL(h)),TRIM(ADJUSTL(k)),TRIM(ADJUSTL(l)),".img"
-     IF (IWriteFLAG.EQ.7.AND.my_rank.EQ.0) THEN
-        PRINT*,filename
-     END IF
-     !WRITE(filename,"(A6,I3.3,A4)") "felix.",ind,".img"  !old version with format felix.000.img
+     IF (IWriteFLAG.EQ.7.AND.my_rank.EQ.0) PRINT*,filename
      OPEN(UNIT= IChInImage, ERR= 10, STATUS= 'UNKNOWN', FILE=TRIM(ADJUSTL(filename)),FORM='UNFORMATTED',&
           ACCESS='DIRECT',IOSTAT=Ierr,RECL=2*IPixelCount*IByteSize)
      DO jnd=1,2*IPixelCount
         READ(IChInImage,rec=jnd,ERR=10) RImageIn(jnd,:)
      END DO
-     IF(MINVAL(RImageIn).LT.ZERO.AND.(my_rank.EQ.0)) THEN
-        PRINT*,"Warning! There are negative values in your experimental images"
-        INegError = INegError + 1
-     END IF
      RImageExpi(:,:,ind) = RImageIn
      CLOSE(IChInImage,IOSTAT=IErr) 
      IF( IErr.NE.0 ) THEN
@@ -545,11 +535,6 @@ SUBROUTINE ReadExperimentalImages(IErr)
      END IF
   END DO
   DEALLOCATE(RImageIn,STAT=IErr)
-
-  IF (INegError.NE.0) THEN
-     IErr = 1
-     PRINT*,"No. of Images with Negative Values",INegError
-  END IF
 
   IF (my_rank.EQ.0.AND.IErr.EQ.0) THEN
      WRITE(SPrintString,FMT='(I3,A40)') INoOfLacbedPatterns," experimental images successfully loaded"

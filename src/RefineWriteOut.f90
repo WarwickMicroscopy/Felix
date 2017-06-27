@@ -236,7 +236,7 @@ SUBROUTINE WriteOutVariables(Iter,IErr)
      IF(jnd.EQ.1) THEN!It's an atom coordinate refinement
         IStart = 1
      ELSE
-        IStart = SUM(IOutputVariables(1:(jnd-1)))+1
+        IStart = SUM(IOutputVariables(1:(jnd-1)))+1!RB there is probably a better way of doing this
      END IF
      IEND = SUM(IOutputVariables(1:jnd))
 
