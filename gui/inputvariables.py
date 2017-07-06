@@ -2,7 +2,7 @@ import itertools
 import wx
 
 ### INPUT VARIABLES & WIDGET CLASSES
-def combof(pool, maxn):
+def combof(pool, maxn): #optional combination function for choice variables
     combolist = []
     indexlist = []    
     for r in range(1, maxn + 1):
@@ -52,7 +52,8 @@ class input_var(): #input variable
        
 class combo_var(input_var): #combo variable - select option from list
 
-    def __init__(self, name, choices, defaultRef=0, maxchoice = -1, infoText=''):
+    def __init__(self, name, choices, defaultRef=0, maxchoice = -1,
+                    infoText=''):
         if maxchoice == -1:
             maxchoice = 1
 
@@ -141,7 +142,8 @@ class seperator():
 ###INPUT VARIABLES      
 iv =[
     seperator('Flag Variables'),
-    combo_var('IWriteFLAG', ['0','5','11'], infoText = 'For detailed terminal info...'),    
+    combo_var('IWriteFLAG', ['0','5','11'],
+                    infoText = 'For detailed terminal info...'),    
     combo_var('IImageFLAG', ['Diffractions','Reflections',
                     'Amplitude+Phase'], 2, maxchoice = 3),
     combo_var('IOutputFLAG', ['Nothing','Ug Matrix','Eigenspectra',
@@ -170,7 +172,8 @@ iv =[
     value_var('RDebyeWallerConstant'),
     value_var('RAbsorptionPer'),
     value_var('RConvergenceAngle'),
-    value_var('IIncidentBeamDirectionX', infoText = 'IIncidentBeamDirectionX coordinate'),
+    value_var('IIncidentBeamDirectionX',
+                    infoText = 'IIncidentBeamDirectionX coordinate'),
     value_var('IIncidentBeamDirectionY'),
     value_var('IIncidentBeamDirectionZ'),
     value_var('IXDirectionX'),
