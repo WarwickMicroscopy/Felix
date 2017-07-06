@@ -130,10 +130,39 @@ MODULE MyFFTW
 
   USE, INTRINSIC :: ISO_C_BINDING
   IMPLICIT NONE
-  integer, parameter :: C_FFTW_R2R_KIND = C_INT32_T 
+  INTEGER, PARAMETER :: C_FFTW_R2R_KIND = C_INT32_T
   INCLUDE  'fftw3.f03'
   
 END MODULE MyFFTW
+
+MODULE MyStrings
+CONTAINS
+  
+  !strips (non-trailing) spaces from string 
+  FUNCTION STRIP(s1)  RESULT (s2) 
+    CHARACTER(*) :: s1
+    CHARACTER(LEN(s1)) :: s2 
+    INTEGER :: i, n
+    DO i = 1,len_trim(s1) 
+       IF (s1(i:i) == ' ') CYCLE 
+       n = n+1 
+       s2(n:n) = s1(i:i) 
+    END DO 
+  END FUNCTION
+
+  !SINT name to-be-changed, converts integer to char adding corresponding +/-
+  FUNCTION SINT(x) RESULT (SINTED) 
+    CHARACTER*20 SINTED  
+    INTEGER x
+    WRITE(SINTED, *) x
+    SINTED = TRIM(ADJUSTL(SINTED))
+    IF (x >= 0) THEN    
+      SINTED = TRIM(ADJUSTL('+')) // TRIM(ADJUSTL(SINTED))
+    END IF
+    RETURN
+  END FUNCTION
+  
+END MODULE MyStrings
   
 
 

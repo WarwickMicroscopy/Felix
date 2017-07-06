@@ -58,6 +58,7 @@ SUBROUTINE ReadCif(IErr)
 
   USE MyNumbers
   USE WriteToScreen
+  USE MyStrings
   
   USE CConst; USE IConst
   USE IPara; USE RPara; USE SPara
@@ -117,7 +118,7 @@ SUBROUTINE ReadCif(IErr)
   IF(.NOT.ocif_(name)) THEN
     IF(my_rank.EQ.0) THEN
       PRINT*,"Cannot find .cif, exiting"
-	END IF
+	  END IF
     IErr=1
     RETURN
   END IF
@@ -130,6 +131,16 @@ SUBROUTINE ReadCif(IErr)
     IErr=1
   END IF
  
+  ! read crystal forumla
+  f1 = char_('_chemical_formula_structural', name)
+  IF(.NOT.f1) THEN
+     IF(my_rank.EQ.0) THEN
+        PRINT*,"ReadCif(", my_rank, ") Chemical formula missing!"
+     END IF
+     IErr=1
+  END IF
+  chemicalformula = STRIP(name)
+
   ! Extract some cell dimensions; test all is OK
   ! NEED TO PUT IN A CHECK FOR LENGTH UNITS
   siga = 0.

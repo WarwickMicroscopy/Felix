@@ -28,6 +28,7 @@
 SUBROUTINE WriteIterationOutput(Iter,IThicknessIndex,IExitFlag,IErr)
 !This could be improved by bringing the content of subroutines up to this level
   USE MyNumbers
+  USE MyStrings
   
   USE CConst; USE IConst; USE RConst
   USE IPara; USE RPara; USE SPara; USE CPara
@@ -51,6 +52,7 @@ SUBROUTINE WriteIterationOutput(Iter,IThicknessIndex,IExitFlag,IErr)
   IF (ISimFLAG.EQ.0) THEN !felixrefine output
     WRITE(path,"(A9,I4.4,A1,I3.3,A3,I3.3,A1,I3.3)") &
          "Iteration",Iter,"_",IThickness,"nm_",2*IPixelcount,"x",2*IPixelcount
+    path = TRIM(chemicalformula) // path  !this adds chemical to folder name
   ELSE !Sim Output
     WRITE(path,"(A4,I3.3,A3,I3.3,A1,I3.3)") &
           "Sim_",IThickness,"nm_",2*IPixelcount,"x",2*IPixelcount
@@ -70,11 +72,19 @@ SUBROUTINE WriteIterationOutput(Iter,IThicknessIndex,IExitFlag,IErr)
   !Write Images to disk
   DO ind = 1,INoOfLacbedPatterns
     !make the path/filename
-    WRITE(h,*)  NINT(Rhkl(IOutPutReflections(ind),1))
-    WRITE(k,*)  NINT(Rhkl(IOutPutReflections(ind),2))
-    WRITE(l,*)  NINT(Rhkl(IOutPutReflections(ind),3))
-    WRITE(filename,*) TRIM(ADJUSTL(path)),"/",&
-    TRIM(ADJUSTL(h)),TRIM(ADJUSTL(k)),TRIM(ADJUSTL(l)),TRIM(ADJUSTL(".bin"))
+
+!    WRITE(h,*)  NINT(Rhkl(IOutPutReflections(ind),1))
+!    WRITE(k,*)  NINT(Rhkl(IOutPutReflections(ind),2))
+!    WRITE(l,*)  NINT(Rhkl(IOutPutReflections(ind),3))
+!    WRITE(filename,*) TRIM(ADJUSTL(path)),"/",&
+!    TRIM(ADJUSTL(h)),TRIM(ADJUSTL(k)),TRIM(ADJUSTL(l)),TRIM(ADJUSTL(".bin"))
+  
+    WRITE(filename,*) TRIM(ADJUSTL(path)),"/",TRIM(ADJUSTL(chemicalformula))
+    DO jnd = 1,3
+      filename = TRIM(ADJUSTL(filename)) // TRIM(ADJUSTL(SINT(NINT(Rhkl(IOutPutReflections(ind),jnd)))))
+    END DO
+    filename = filename // TRIM(ADJUSTL(".bin"))
+
 	IF (IWriteFLAG.EQ.6) THEN
       PRINT*,filename
     END IF
