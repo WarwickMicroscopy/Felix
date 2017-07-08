@@ -34,6 +34,7 @@
 
 
 MODULE CConst
+  USE MyNumbers
 
   CHARACTER*50, PARAMETER :: RStr= "Version: multipole / BUILD / Alpha"
   CHARACTER*50, PARAMETER :: DStr= "Date: 27-06-2017"
@@ -91,6 +92,7 @@ END MODULE CConst
 !--------------------------------------------------------------------
 MODULE IConst
   USE MyNumbers
+
   INTEGER(IKIND), PARAMETER :: &
        MAXWriteFLAG= 10, &
        ITHREE= 3, &
