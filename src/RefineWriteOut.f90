@@ -28,7 +28,6 @@
 SUBROUTINE WriteIterationOutput(Iter,IThicknessIndex,IExitFlag,IErr)
 !This could be improved by bringing the content of subroutines up to this level
   USE MyNumbers
-  USE MyStrings
   
   USE CConst; USE IConst; USE RConst
   USE IPara; USE RPara; USE SPara; USE CPara
