@@ -135,11 +135,11 @@ MODULE MyFFTW
   
 END MODULE MyFFTW
 
-MODULE MyStrings
+MODULE UtilityFunctions
 CONTAINS
   
-  !strips (non-trailing) spaces from string 
-  FUNCTION STRIP(s1)  RESULT (s2) 
+  ! Strips (non-trailing) spaces from string 
+  FUNCTION StripSpaces(s1)  RESULT (s2) 
     CHARACTER(*) :: s1
     CHARACTER(LEN(s1)) :: s2 
     INTEGER :: i, n
@@ -149,20 +149,8 @@ CONTAINS
        s2(n:n) = s1(i:i) 
     END DO 
   END FUNCTION
-
-  !SINT name to-be-changed, converts integer to char adding corresponding +/-
-  FUNCTION SINT(x) RESULT (SINTED) 
-    CHARACTER*20 SINTED  
-    INTEGER x
-    WRITE(SINTED, *) x
-    SINTED = TRIM(ADJUSTL(SINTED))
-    IF (x >= 0) THEN    
-      SINTED = TRIM(ADJUSTL('+')) // TRIM(ADJUSTL(SINTED))
-    END IF
-    RETURN
-  END FUNCTION
   
-END MODULE MyStrings
+END MODULE UtilityFunctions
   
 
 

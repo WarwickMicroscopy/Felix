@@ -58,7 +58,7 @@ SUBROUTINE ReadCif(IErr)
 
   USE MyNumbers
   USE WriteToScreen
-  USE MyStrings
+  USE UtilityFunctions
   
   USE CConst; USE IConst
   USE IPara; USE RPara; USE SPara
@@ -131,7 +131,7 @@ SUBROUTINE ReadCif(IErr)
     IErr=1
   END IF
  
-  ! read crystal forumla
+  ! Extracts crystal forumla
   f1 = char_('_chemical_formula_structural', name)
   IF(.NOT.f1) THEN
      IF(my_rank.EQ.0) THEN
@@ -139,7 +139,7 @@ SUBROUTINE ReadCif(IErr)
      END IF
      IErr=1
   END IF
-  chemicalformula = STRIP(name)
+  ChemicalFormula = StripSpaces(name) !  Strips spaces from formula string
 
   ! Extract some cell dimensions; test all is OK
   ! NEED TO PUT IN A CHECK FOR LENGTH UNITS

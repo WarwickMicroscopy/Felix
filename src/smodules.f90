@@ -325,7 +325,7 @@ END MODULE CPara
 MODULE SPara
   USE MyNumbers
   
-  CHARACTER*10 chemicalformula
+  CHARACTER*10 ChemicalFormula
   CHARACTER*1 :: SSpaceGroupName
   CHARACTER*10 :: SSpaceGrp
   CHARACTER*5, DIMENSION(:),ALLOCATABLE :: SBasisAtomLabel,SAtomLabel
