@@ -144,9 +144,9 @@ CONTAINS
     CHARACTER(LEN(s1)) :: s2 
     INTEGER :: i, n
     DO i = 1,len_trim(s1) 
-       IF (s1(i:i) == ' ') CYCLE 
-       n = n+1 
-       s2(n:n) = s1(i:i) 
+      IF (s1(i:i) == ' ') CYCLE 
+      n = n+1 
+      s2(n:n) = s1(i:i) 
     END DO 
   END FUNCTION
   
