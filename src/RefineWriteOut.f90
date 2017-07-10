@@ -44,13 +44,14 @@ SUBROUTINE WriteIterationOutput(Iter,IThicknessIndex,IExitFlag,IErr)
   INTEGER(IKIND),INTENT(IN) :: IThicknessIndex,IExitFLAG
   REAL(RKIND),DIMENSION(2*IPixelCount,2*IPixelCount) :: RImageToWrite
   CHARACTER*200 :: path,SPrintString,filename
-  CHARACTER*20 :: h,k,l
+  CHARACTER*20 :: IntString
   
   IThickness = (RInitialThickness + (IThicknessIndex-1)*RDeltaThickness)/10!in nm 
 
   IF (ISimFLAG.EQ.0) THEN !felixrefine output
     WRITE(path,"(A9,I4.4,A1,I3.3,A3,I3.3,A1,I3.3)") &
          "Iteration",Iter,"_",IThickness,"nm_",2*IPixelcount,"x",2*IPixelcount
+    path = TRIM(chemicalformula) // path  !this adds chemical to folder name
   ELSE !Sim Output
     WRITE(path,"(A4,I3.3,A3,I3.3,A1,I3.3)") &
           "Sim_",IThickness,"nm_",2*IPixelcount,"x",2*IPixelcount
@@ -67,19 +68,34 @@ SUBROUTINE WriteIterationOutput(Iter,IThicknessIndex,IExitFlag,IErr)
     PRINT*,TRIM(ADJUSTL(SPrintString))
   END IF
   
-  !Write Images to disk
+  ! Write Images to disk
   DO ind = 1,INoOfLacbedPatterns
-    !make the path/filename
-    WRITE(h,*)  NINT(Rhkl(IOutPutReflections(ind),1))
-    WRITE(k,*)  NINT(Rhkl(IOutPutReflections(ind),2))
-    WRITE(l,*)  NINT(Rhkl(IOutPutReflections(ind),3))
-    WRITE(filename,*) TRIM(ADJUSTL(path)),"/",&
-    TRIM(ADJUSTL(h)),TRIM(ADJUSTL(k)),TRIM(ADJUSTL(l)),TRIM(ADJUSTL(".bin"))
-	IF (IWriteFLAG.EQ.6) THEN
+    ! Make the path/filename
+
+!    WRITE(h,*)  NINT(Rhkl(IOutPutReflections(ind),1))
+!    WRITE(k,*)  NINT(Rhkl(IOutPutReflections(ind),2))
+!    WRITE(l,*)  NINT(Rhkl(IOutPutReflections(ind),3))
+!    WRITE(filename,*) TRIM(ADJUSTL(path)),"/",&
+!    TRIM(ADJUSTL(h)),TRIM(ADJUSTL(k)),TRIM(ADJUSTL(l)),TRIM(ADJUSTL(".bin"))
+  
+    ! Iterates over 3 vector components to make filename e.g. 'GaAs-2-2+0.bin.
+    WRITE(filename,*) TRIM(ADJUSTL(path)),"/",TRIM(ADJUSTL(chemicalformula))
+    DO jnd = 1,3
+      WRITE(IntString,*) NINT(Rhkl(IOutPutReflections(ind),jnd))
+      IF (NINT(Rhkl(IOutPutReflections(ind),jnd)) >= 0) THEN    
+        filename = TRIM(filename) // '+'
+      END IF
+      filename = TRIM(filename) // TRIM(ADJUSTL(IntString))
+    END DO
+    filename = TRIM(filename) // '.bin'
+
+	  IF (IWriteFLAG.EQ.6) THEN
       PRINT*,filename
     END IF
     RImageToWrite = RImageSimi(:,:,ind,IThicknessIndex)
 	
+
+    ! Writes data to output image .bin files
     OPEN(UNIT=IChOutWIImage, ERR=10, STATUS= 'UNKNOWN', FILE=TRIM(ADJUSTL(filename)),&
 	FORM='UNFORMATTED',ACCESS='DIRECT',IOSTAT=IErr,RECL=2*IPixelCount*8)
     DO jnd = 1,2*IPixelCount
