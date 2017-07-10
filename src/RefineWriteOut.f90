@@ -190,7 +190,7 @@ END SUBROUTINE WriteIterationCIF
 !!$  %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 SUBROUTINE WriteOutVariables(Iter,IErr)
-
+! adds the current fit and simulation parameters to IterationLog.txt
   USE MyNumbers
   
   USE CConst; USE IConst; USE RConst
@@ -292,7 +292,7 @@ END SUBROUTINE WriteOutVariables
 !%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 SUBROUTINE WriteStructureFactors(path,IErr)
-
+! Writes CUgMat into StructureFactors.txt
   USE MyNumbers
   
   USE CConst; USE IConst; USE RConst
