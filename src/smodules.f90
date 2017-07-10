@@ -32,16 +32,12 @@
 !
 !%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-!%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-! $Id: smodules.f90,v 1.63 2014/04/28 12:26:19 phslaz Exp $
-!%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-!--------------------------------------------------------------------
 MODULE CConst
 
-  CHARACTER*50, PARAMETER :: RStr= "Version: master / BUILD / Alpha"
-  CHARACTER*50, PARAMETER :: DStr= "Date: 23-03-2017"
-  CHARACTER*50, PARAMETER :: AStr= "Status: Parabolic refinement test&debug"
+  CHARACTER*50, PARAMETER :: RStr= "Version: multipole / BUILD / Alpha"
+  CHARACTER*50, PARAMETER :: DStr= "Date: 27-06-2017"
+  CHARACTER*50, PARAMETER :: AStr= "Status: multipole atom test & debug" 
   
   CHARACTER*8 CSpaceGrp(230)
   DATA CSpaceGrp/"P1","P-1","P2","P21","C2","Pm","Pc","Cm",&
@@ -74,7 +70,7 @@ MODULE CConst
        "I-43d","Pm-3m","Pn-3n","Pm-3n","Pn-3m","Fm-3m","Fm-3c","Fd-3m", &
        "Fd-3c","Im-3m","Ia-3d"/
 
-  CHARACTER*2 :: SElementSymbolMatrix(104)
+  CHARACTER*2 :: SElementSymbolMatrix(110)!N.B. Number must equal INElements
   DATA SElementSymbolMatrix/"H", "He", "Li", "Be", " B", " C", " N", "O", "F", "Ne", &
        "Na", "Mg", "Al", "Si", "P", "S", "Cl", "Ar", "K", "Ca", &
        "Sc", "Ti", "V", "Cr", "Mn", "Fe", "Co", "Ni", "Cu", "Zn", &
@@ -85,14 +81,13 @@ MODULE CConst
         "Lu", "Hf", "Ta", "W", "Re", "Os", "Ir", "Pt", "Au", "Hg", &
         "Tl", "Pb", "Bi", "Po", "At", "Rn", "Fr", "Ra", "Ac", "Th", &
         "Pa", "U", "Np", "Pu", "Am", "Cm", "Bk", "Cf", "Es", "Fm",& 
-        "Md","No","Lr","Q"/!Note element 'Q' added to end of list
+        "Md","No","Lr","Q","Ja","Jb","Jc","Jd","Je","Jf"/!Note element 'Q', 'Ja'... etc. added to end of list
 
   CHARACTER*8 :: CAlphabet(26)
   DATA CAlphabet/"Aa","Bb","Cc","Dd","Ee","Ff","Gg","Hh","Ii","Jj","Kk","Ll",&
        "Mm","Nn","Oo","Pp","Qq","Rr","Ss","Tt","Uu","Vv","Ww","Xx","Yy","Zz"/
 
 END MODULE CConst
-
 !--------------------------------------------------------------------
 MODULE IConst
   USE MyNumbers
@@ -103,8 +98,7 @@ MODULE IConst
        IParallelFLAG=0,&
        IRandomFLAG = 1, &
        IFixedSeed = 123456787,&
-       IRefinementVariableTypes = 10,&
-       NElements=104
+       IRefinementVariableTypes = 10
 
   !PriorityFLAG values - to match to the WriteFLAG - will change eventually,
   !hence why the silent & Must are both 0, no Silent option yet.
@@ -144,8 +138,7 @@ MODULE IPara
   INTEGER(IKIND) :: IMAXRBuffer,  IMAXCBuffer     
   !Input Flags
   INTEGER(IKIND) :: IWriteFLAG,IDebugFLAG,IScatterFactorMethodFLAG, &
-       IMaskFLAG, IVolumeFLAG, &
-       IHolzFLAG,IAbsorbFLAG, IAnisoDebyeWallerFactorFlag, &
+       IMaskFLAG, IVolumeFLAG,IHolzFLAG,IAbsorbFLAG, IAnisoDebyeWallerFactorFlag, &
        IImageFLAG,IBeamConvergenceFLAG,IDevFLAG, &
        IRefineModeFLAG,ISoftwareMode,IHKLSelectFLAG,IPrint,IRefineSwitch,&
        IWeightingFLAG,IMethodFLAG,ICorrelationFLAG,IImageProcessingFLAG,&
@@ -191,11 +184,11 @@ MODULE IPara
   INTEGER(IKIND) :: IThicknessCount
   INTEGER(IKIND),DIMENSION(:,:),ALLOCATABLE :: IPixelLocations
   !Refine Parameters
-  INTEGER(IKIND) :: IFluxIterationSteps,IElements
+  INTEGER(IKIND) :: IFluxIterationSteps
   INTEGER(IKIND), DIMENSION(2) :: IOffset
   INTEGER(IKIND), DIMENSION(:),ALLOCATABLE :: IElementList
   !Ug Calculation
-  INTEGER(IKIND) :: ICurrentZ
+  INTEGER(IKIND) :: ICurrentZ,IPsize
   !Refinement   
   INTEGER(IKIND),DIMENSION(IRefinementVariableTypes) :: IRefineMode
   INTEGER(IKIND),DIMENSION(IRefinementVariableTypes) :: INoofElementsForEachRefinementType  !zz
@@ -238,12 +231,12 @@ MODULE RPara
   !Iterative Ugs
   REAL(RKIND) :: RPercentageUgChange
   !Debye Waller Constant, g-vector magnitude, dummy [s'x s'y] for absorption calc
-  REAL(RKIND) :: RCurrentB,RCurrentGMagnitude,RSprimeY
+  REAL(RKIND) :: RCurrentB,RCurrentGMagnitude,RSprimeY,RPScale
   !HKL indices 
   REAL(RKIND), DIMENSION(:,:), ALLOCATABLE :: Rhkl 
   REAL(RKIND), DIMENSION(:,:), ALLOCATABLE :: RInputHKLs
   ! scattering factors
-  REAL(RKIND), DIMENSION(:,:), ALLOCATABLE :: RScattFactors 
+  REAL(RKIND), DIMENSION(:,:), ALLOCATABLE :: RScattFactors!,RPseudoAtom
   ! Crystallography 
   ! Real Space and Reciprocal Lattice Vectors in Orthogonal and Microscope
   ! reference framce
@@ -294,7 +287,7 @@ MODULE RPara
   ! Image masks (width,height, no.of patterns)
   REAL(RKIND),DIMENSION(:,:,:),ALLOCATABLE :: RImageMask
   !Iterative Variable Value
-  REAL(RKIND) :: RValue
+  REAL(RKIND) :: RValue!this is an awful name that doesn't mean anything
   !Refinement Vectors
   REAL(RKIND),DIMENSION(:,:),ALLOCATABLE :: RAllowedVectors
   REAL(RKIND),DIMENSION(:),ALLOCATABLE :: RAllowedVectorMagnitudes
@@ -311,14 +304,12 @@ END MODULE RPara
 MODULE CPara
   USE MyNumbers
 
-  COMPLEX(CKIND), DIMENSION(:,:), ALLOCATABLE :: CUgMatNoAbs,CUgMatPrime,CUgMat,CUgSgMatrix,CEigenValuesChunk
-  COMPLEX(CKIND), DIMENSION(:,:,:), ALLOCATABLE :: CEigenVectorsChunk
-  COMPLEX(CKIND),DIMENSION(:),ALLOCATABLE :: CAlphaWeightingCoefficients, CPsi0,CUniqueUg
-  COMPLEX(CKIND),DIMENSION(:,:), ALLOCATABLE :: CEigenValueDependentTerms,CInvertedEigenVectors, &
-       CBeamProjectionMatrix,CDummyBeamMatrix
-  COMPLEX(CKIND),DIMENSION(:),ALLOCATABLE :: CEigenValues,CGammaValues, CWaveFunctions,CFullWaveFunctions
-  COMPLEX(CKIND),DIMENSION(:,:),ALLOCATABLE :: CEigenVectors
-  COMPLEX(CKIND), DIMENSION(:,:,:), ALLOCATABLE :: CAmplitudeandPhase
+  COMPLEX(CKIND),DIMENSION(:),ALLOCATABLE :: CAlphaWeightingCoefficients, CPsi0,CUniqueUg,CEigenValues,&
+                CGammaValues, CWaveFunctions,CFullWaveFunctions
+  COMPLEX(CKIND), DIMENSION(:,:), ALLOCATABLE :: CUgMatNoAbs,CUgMatPrime,CUgMat,CUgSgMatrix,CEigenValuesChunk,&
+                CEigenVectors,CEigenValueDependentTerms,CInvertedEigenVectors,CBeamProjectionMatrix,&
+                CDummyBeamMatrix
+  COMPLEX(CKIND), DIMENSION(:,:,:), ALLOCATABLE :: CEigenVectorsChunk,CAmplitudeandPhase,CPseudoAtom,CPseudoScatt
 
 END MODULE CPara
 !--------------------------------------------------------------------

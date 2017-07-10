@@ -99,12 +99,6 @@ SUBROUTINE BlochCoefficientCalculation(IYPixelIndex,IXPixelIndex,IPixelNumber,IF
 	PRINT*, nWeakBeams,"weak beams"
     PRINT*, nReflections,"nReflections"
   END IF
-	
-  IF(IYPixelIndex.EQ.10.AND.IXPixelIndex.EQ.0) THEN
-    PRINT*, nBeams,"strong beams in pixel [10,10]"
-    PRINT*, nWeakBeams,"weak beams in pixel [10,10]"
-  END IF
-
 
   !--------------------------------------------------------------------
   ! ALLOCATE memory for eigen problem
@@ -192,8 +186,8 @@ SUBROUTINE BlochCoefficientCalculation(IYPixelIndex,IXPixelIndex,IPixelNumber,IF
   END IF
   
   IF(IWriteFLAG.EQ.3.AND.IYPixelIndex.EQ.10.AND.IXPixelIndex.EQ.10) THEN!output data from 1 pixel to show working
-   PRINT*,"Ug/2K + {Sg} matrix (nm^-2)"
-	DO ind =1,6
+   PRINT*,"Pixel [10,10] Ug/2K + {Sg} matrix (nm^-2)"
+	DO ind =1,16
      WRITE(SPrintString,FMT='(3(1X,I3),A1,8(1X,F7.3,F7.3))') NINT(Rhkl(ind,:)),":",100*CUgSgMatrix(ind,1:6)
      PRINT*,TRIM(SPrintString)
     END DO

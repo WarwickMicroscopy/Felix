@@ -50,15 +50,16 @@ PROGRAM Felixrefine
   IMPLICIT NONE
 
   INTEGER(IKIND) :: IErr,IIterationFLAG,ind,jnd,knd,lnd,mnd,nnd,ICalls,Iter,ICutOff,IHOLZgPoolMag,&
-	   IBSMaxLocGVecAmp,ILaueLevel,INumTotalReflections,ITotalLaueZoneLevel,INhkl,IExitFLAG,&
-	   INumInitReflections,IZerothLaueZoneLevel,INumFinalReflections,IThicknessIndex,I45,IVariableType
+	   IBSMaxLocGVecAmp,ILaueLevel,INumTotalReflections,ITotalLaueZoneLevel,INhkl,IExitFLAG,ICycle,&
+	   INumInitReflections,IZerothLaueZoneLevel,INumFinalReflections,IThicknessIndex,IVariableType
   INTEGER(IKIND) :: IHours,IMinutes,ISeconds,IMilliSeconds,IStartTime,ICurrentTime,IRate
   INTEGER(IKIND),DIMENSION(:),ALLOCATABLE :: IOriginGVecIdentifier
-  REAL(RKIND) :: StartTime, CurrentTime, Duration, TotalDurationEstimate,&
-       RHOLZAcceptanceAngle,RLaueZoneGz,RMaxGMag,RPvecMag,RPscale,RMaxUgStep
+  REAL(RKIND) :: StartTime, CurrentTime, Duration, TotalDurationEstimate,RANDOMNUMBER,&
+       RHOLZAcceptanceAngle,RLaueZoneGz,RMaxGMag,RPvecMag,RScale,RMaxUgStep,Rdx
   REAL(RKIND) :: RBCASTREAL,RStandardDeviation,RMean,RGzUnitVec,RMinLaueZoneValue,Rdf,RLastFit,RBestFit,&
-       RMaxLaueZoneValue,RMaxAcceptanceGVecMag,RLaueZoneElectronWaveVectorMag,RvarMin,RfitMin,Rconvex,Rtest
-  REAL(RKIND),DIMENSION(:),ALLOCATABLE :: RSimplexFoM,RIndependentVariable,RCurrentVar,Rvar,RVar0,Rfit,RPvec
+       RMaxLaueZoneValue,RMaxAcceptanceGVecMag,RLaueZoneElectronWaveVectorMag,RvarMin,RfitMin,RFit0,Rconvex,Rtest
+  REAL(RKIND),DIMENSION(:),ALLOCATABLE :: RSimplexFoM,RIndependentVariable,RCurrentVar,RVar0,RLastVar,RPvec,RFitVec
+  REAL(RKIND),DIMENSION(ITHREE) :: R3var,R3fit
   REAL(RKIND),DIMENSION(:,:),ALLOCATABLE :: RSimplexVariable,RgDummyVecMat,RgPoolMagLaue,RTestImage,&
        ROnes,RVarMatrix,RSimp
   CHARACTER*40 :: my_rank_string
@@ -148,7 +149,6 @@ PROGRAM Felixrefine
   ELSE IF(my_rank.EQ.0) THEN
     PRINT*,"Simulation only"
   END IF
-
   !--------------------------------------------------------------------
   ! Scattering factors
   CALL ScatteringFactors(IScatterFactorMethodFLAG,IErr)
@@ -254,7 +254,7 @@ PROGRAM Felixrefine
       RgDummyVecMat(ind,jnd)=RgPool(ind,jnd)
      ENDDO
 	 !If a g-vector has a non-zero z-component it is not in the ZOLZ
-     IF((RgPool(ind,3).GT.TINY.OR.RgPool(ind,3).LT.-TINY).AND.ICutOff.NE.0) THEN
+     IF(ABS(RgPool(ind,3)).GT.TINY.AND.ICutOff.NE.0) THEN
         RGzUnitVec=ABS(RgPool(ind,3))
         ICutOff=0
      END IF
@@ -265,8 +265,8 @@ PROGRAM Felixrefine
   END IF
   
   !sort into Laue Zones 
-  WHERE(RgDummyVecMat(:,3).GT.TINY.OR.RgDummyVecMat(:,3).LT.-TINY)
-     RgDummyVecMat(:,3)=RgDummyVecMat(:,3)/RGzUnitVec!possible divide by zero from line 239?
+  WHERE(ABS(RgPool(:,3)).GT.TINY)
+     RgDummyVecMat(:,3)=RgDummyVecMat(:,3)/RGzUnitVec!possible divide by zero from line 265?
   END WHERE
   !min&max Laue Zones 
   RMaxLaueZoneValue=MAXVAL(RgDummyVecMat(:,3),DIM=1)
@@ -350,10 +350,10 @@ PROGRAM Felixrefine
   DO ind =1,INhkl
     RgDotNorm(ind) = DOT_PRODUCT(RgPool(ind,:),RNormDirM)
   END DO
-  IF(IWriteFLAG.EQ.7.AND.my_rank.EQ.0) THEN
+  IF(IWriteFLAG.EQ.7) THEN
     DO ind =1,INhkl
 	 WRITE(SPrintString,FMT='(I4,A4,3(I4,1X),A7,E8.1,A4)') ind,": g=",NINT(Rhkl(ind,:)),", g.n= ",RgDotNorm(ind)," 1/A"
-     PRINT*,TRIM(ADJUSTL(SPrintString))
+     IF (my_rank.EQ.0) PRINT*,TRIM(ADJUSTL(SPrintString))
     END DO
   END IF
   RMinimumGMag = RgPoolMag(2)
@@ -418,8 +418,13 @@ PROGRAM Felixrefine
   ENDDO
   IF(IWriteFLAG.EQ.3.AND.my_rank.EQ.0) THEN
 	PRINT*,"g-vector magnitude matrix (2pi/A)"
-	DO ind =1,8
+	DO ind =1,16
      WRITE(SPrintString,FMT='(16(1X,F5.2))') RgMatrixMagnitude(ind,1:8)
+     PRINT*,TRIM(ADJUSTL(SPrintString))
+    END DO
+	PRINT*,"first column of g-vectors"
+	DO ind =1,16
+     WRITE(SPrintString,FMT='(3(1X,F5.2))') RgMatrix(ind,1,:)
      PRINT*,TRIM(ADJUSTL(SPrintString))
     END DO
   END IF
@@ -427,7 +432,7 @@ PROGRAM Felixrefine
   CALL StructureFactorInitialisation (IErr)!NB IEquivalentUgKey and CUniqueUg allocated in here
   IF(IWriteFLAG.EQ.3.AND.my_rank.EQ.0) PRINT*,"Starting absorption calculation",SIZE(IEquivalentUgKey),"beams"
   CALL Absorption (IErr)
-  IF( IErr.NE.0 ) THEN
+  IF( IErr.NE.0) THEN
      PRINT*,"StructureFactorSetup(",my_rank,")error in StructureFactorInitialisation"
      GOTO 9999
   END IF
@@ -436,11 +441,9 @@ PROGRAM Felixrefine
   IHours = FLOOR(Duration/3600.0D0)
   IMinutes = FLOOR(MOD(Duration,3600.0D0)/60.0D0)
   ISeconds = INT(MOD(Duration,3600.0D0)-IMinutes*60)
-  IF(my_rank.EQ.0) THEN
-    WRITE(SPrintString,FMT='(A24,I3,A5,I2,A6,I2,A4)')&
+  WRITE(SPrintString,FMT='(A24,I3,A5,I2,A6,I2,A4)')&
     "Absorption completed in ",IHours," hrs ",IMinutes," mins ",ISeconds," sec"
-    PRINT*,TRIM(ADJUSTL(SPrintString))
-  END IF 
+  IF(my_rank.EQ.0) PRINT*,TRIM(ADJUSTL(SPrintString))
 
   !--------------------------------------------------------------------
   ! Set up Ug refinement variables
@@ -449,7 +452,7 @@ PROGRAM Felixrefine
 	IUgOffset=1!choose how many Ug's to skip in the refinement, 1 is the inner potential...
     !Count the number of Independent Variables
     jnd=1
-    DO ind = 1+IUgOffset,INoofUgs+IUgOffset !=== temp comment out !=== for real part only***
+    DO ind = 1+IUgOffset,INoofUgs+IUgOffset !=== comment out !=== for real part only***
       IF ( ABS(REAL(CUniqueUg(ind),RKIND)).GE.RTolerance ) jnd=jnd+1!===
       IF ( ABS(AIMAG(CUniqueUg(ind))).GE.RTolerance ) jnd=jnd+1!===
     END DO
@@ -520,7 +523,7 @@ PROGRAM Felixrefine
     ALLOCATE(RIndependentVariable(INoOfVariables),STAT=IErr)
 	!Fill up the IndependentVariable list 
     ind=1
-    IF(IRefineMode(3).EQ.1) THEN!Isotropic DW, C
+    IF(IRefineMode(3).EQ.1) THEN!Occupancy, C
 	  DO jnd=1,SIZE(IAtomicSitesToRefine)
         RIndependentVariable(ind)=RBasisOccupancy(IAtomicSitesToRefine(jnd))
         ind=ind+1
@@ -558,12 +561,12 @@ PROGRAM Felixrefine
   !--------------------------------------------------------------------
   ! Set up images for output
   ALLOCATE(RhklPositions(nReflections,2),STAT=IErr)
-  IF( IErr.NE.0 ) THEN
+  IF( IErr.NE.0) THEN
      PRINT*,"felixrefine(",my_rank,") error allocating RhklPositions"
      GOTO 9999
   END IF
   CALL ImageSetup(IErr)!what does this do?
-  IF( IErr.NE.0 ) THEN
+  IF( IErr.NE.0) THEN
      PRINT*,"felixrefine(",my_rank,") error in ImageSetup"
      GOTO 9999
   END IF 
@@ -581,7 +584,7 @@ PROGRAM Felixrefine
     !Mask Images
     ALLOCATE(RImageMask(2*IPixelCount,2*IPixelCount,INoOfLacbedPatterns),STAT=IErr)
   END IF
-  IF( IErr.NE.0 ) THEN
+  IF( IErr.NE.0) THEN
      PRINT*,"felixrefine(",my_rank,") error allocating simulated patterns"
      GOTO 9999
   END IF
@@ -593,7 +596,7 @@ PROGRAM Felixrefine
          (ILocalPixelCountMax-ILocalPixelCountMin)+1),STAT=IErr)
   !position of pixels calculated by this core, IDisplacements and ICount are global variables
   ALLOCATE(IDisplacements(p),ICount(p),STAT=IErr)
-  IF( IErr.NE.0 ) THEN
+  IF( IErr.NE.0) THEN
      PRINT*,"felixrefine(",my_rank,")error in local allocations for MPI"
      GOTO 9999
   END IF
@@ -711,9 +714,9 @@ PROGRAM Felixrefine
         PRINT*,"felixrefine(",my_rank,")error allocating simplex variables"
         GOTO 9999
       END IF
-	  ROnes=1.0
-	  RSimp=1.0
-	  RVarMatrix=0.0
+	  ROnes=ONE
+	  RSimp=ONE
+	  RVarMatrix=ZERO
 	  FORALL(ind = 1:INoOfVariables) RSimp(ind,ind) = -1.0
 	  RSimp=RSimp*RSimplexLengthScale + ROnes
 	  FORALL(ind = 1:INoOfVariables) RVarMatrix(ind,ind) = RIndependentVariable(ind)
@@ -767,7 +770,7 @@ PROGRAM Felixrefine
           WRITE(l,*)  NINT(Rhkl(IOutPutReflections(ind),3))
           WRITE(SPrintString,*) TRIM(ADJUSTL(h)),TRIM(ADJUSTL(k)),TRIM(ADJUSTL(l)),".mask"
           OPEN(UNIT=IChOutWIImage, ERR=10, STATUS= 'UNKNOWN', FILE=SPrintString,&!
-          FORM='UNFORMATTED',ACCESS='DIRECT',IOSTAT=IErr,RECL=2*IPixelCount*8)
+          FORM='UNFORMATTED',ACCESS='DIRECT',IOSTAT=IErr,RECL=2*IPixelCount*8)!??Does the 8=IByteSize???
           DO jnd = 1,2*IPixelCount
             WRITE(IChOutWIImage,rec=jnd) RTestImage(jnd,:)
           END DO
@@ -787,49 +790,187 @@ PROGRAM Felixrefine
       GOTO 9999
     END IF
   
-  CASE(2)!Bisection
-    CALL UgBisection(RIndependentVariable,IErr)
+  CASE(2)!Maximum gradient
+    ALLOCATE(RVar0(INoOfVariables),STAT=IErr)!incoming set of variables
+    ALLOCATE(RCurrentVar(INoOfVariables),STAT=IErr)!set of variables to send out for simulations
+    ALLOCATE(RLastVar(INoOfVariables),STAT=IErr)!set of variables updated each cycle
+    ALLOCATE(RPVec(INoOfVariables),STAT=IErr)!the vector describing the current line in parameter space
+    ALLOCATE(RFitVec(INoOfVariables),STAT=IErr)!the list of fit indices resulting from small changes Rdf for each variable in RPVec
+    IF( IErr.NE.0 ) THEN
+      PRINT*,"felixrefine(",my_rank,")error allocating max gradient variables"
+      GOTO 9999
+    END IF
+    RBestFit=RFigureofMerit
+    RLastFit=RBestFit
+    RLastVar=RIndependentVariable
+    RCurrentVar=ONE
+    Rdf=ONE
+    Iter=1
+    RScale=RSimplexLengthScale
+    nnd=0!max/min gradient flag
+    DO WHILE (Rdf.GE.RExitCriteria)
+      RVar0=RIndependentVariable!incoming point in n-dimensional parameter space
+      RFit0=RFigureofMerit!incoming fit
+      IF (nnd.EQ.0) THEN!max gradient
+        DO ind=1,INoOfVariables!calculate individual gradients
+          IVariableType=IIterativeVariableUniqueIDs(ind,2)!The type of variable being refined 
+          IF (my_rank.EQ.0) THEN!print to screen
+           SELECT CASE(IVariableType)
+            CASE(1)
+              PRINT*,"Ug refinement"
+            CASE(2)
+              PRINT*,"Atomic coordinate refinement"
+            CASE(3)
+              PRINT*,"Occupancy refinement"
+            CASE(4)
+              PRINT*,"Isotropic Debye-Waller factor refinement"
+            CASE(5)
+              PRINT*,"Convergence angle refinement"
+           END SELECT
+          END IF
+          IF (RCurrentVar(ind).LE.TINY.AND.IVariableType.EQ.4) THEN!skip zero DW factor
+            RPVec(ind)=TINY
+            CYCLE
+          END IF
+          WRITE(SPrintString,FMT='(A17,I2,A3,I3)') "Finding gradient,",ind," of",INoOfVariables
+          IF (my_rank.EQ.0) PRINT*, TRIM(ADJUSTL(SPrintString))
+          CALL SYSTEM_CLOCK(mnd)!Use system clock to make a random number and vary the sign of dx
+          Rdx=(REAL(MOD(mnd,10))/TEN)-0.45!numbers 0-4 give minus, 5-9 give plus
+          Rdx=0.1*Rdx*RScale/ABS(Rdx)!small change in current variable (RScale/10)is dx
+          RCurrentVar=RVar0
+          RCurrentVar(ind)=RCurrentVar(ind)+Rdx
+          CALL SimulateAndFit(RCurrentVar,Iter,IExitFLAG,IErr)
+          !BestFitCheck copies RCurrentVar into RIndependentVariable and updates RBestFit if the fit is better
+          CALL BestFitCheck(RFigureofMerit,RBestFit,RCurrentVar,RIndependentVariable,IErr)
+          RFitVec(ind)=RFigureofMerit
+          RPVec(ind)=(RFit0-RFigureofMerit)/Rdx!-df/dx: need the dx to keep track of sign
+        END DO
+        nnd=1!do min gradient next time
+      ELSE!min gradient - to explore along a valley
+        DO ind=1,INoOfVariables!invert gradient
+          IF (ABS(RPVec(ind)).GT.TINY) THEN!don't invert zeros
+            RPVec(ind)=1/RPVec(ind)
+          ELSE!just make them quite big
+            RPVec(ind)=TEN
+          END IF
+        END DO
+        IF (my_rank.EQ.0) PRINT*, "Checking minimum gradient"
+        nnd=0!do max gradient next time
+      END IF
+      RPvecMag=ZERO!RPvecMag is used here to normalise the max gradient vector RPvec
+      DO ind=1,INoOfVariables
+        RPvecMag=RPvecMag+RPvec(ind)**2
+      END DO
+      IF (RPvecMag-ONE.EQ.RPvecMag.OR.RPvecMag.NE.RPvecMag) THEN!Infinity and NaN check
+        WRITE(SPrintString,FMT='(A27,20(F6.3,1X))') "Error in refinement vector ",RPvec
+        IF (my_rank.EQ.0) PRINT*, TRIM(ADJUSTL(SPrintString))
+        EXIT
+      END IF
+      RPvec=RPvec/SQRT(RPvecMag)!unity vector along direction of max gradient
+      WRITE(SPrintString,FMT='(A20,20(F6.3,1X))') "Refinement vector = ",RPvec
+      IF (my_rank.EQ.0) PRINT*, TRIM(ADJUSTL(SPrintString))
+      RVar0=RIndependentVariable!the best point of gradient calculation
+      RFigureofMerit=RBestFit!the best fit so far
+      !three points to find the miniimum
+      R3var(1)=RVar0(1)!first point is current value
+      R3fit(1)=RFigureofMerit!point 1 is the incoming simulation and fit index
+      RPvecMag=RVar0(1)*RScale!RPvecMag is used here to give the magnitude of vector in parameter space 
+      RCurrentVar=RVar0+RPvec*RPvecMag!Update the parameters to simulate
+      R3var(2)=RCurrentVar(1)!second point 
+      IF (my_rank.EQ.0) PRINT*,"Refining, point 2 of 3"
+      CALL SimulateAndFit(RCurrentVar,Iter,IExitFLAG,IErr)
+      CALL BestFitCheck(RFigureofMerit,RBestFit,RCurrentVar,RIndependentVariable,IErr)
+      R3fit(2)=RFigureofMerit
+      !third point
+      IF (R3fit(2).GT.R3fit(1)) THEN!new 2 is not better than 1, go the other way
+        RPvecMag=-RPvecMag
+      ELSE!it is better, so keep going
+        RVar0=RCurrentVar
+      END IF
+      RCurrentVar=RVar0+RPvec*RPvecMag
+      R3var(3)=RCurrentVar(1)!third point
+      IF (my_rank.EQ.0) PRINT*,"Refining, point 3 of 3"
+      CALL SimulateAndFit(RCurrentVar,Iter,IExitFLAG,IErr)
+      CALL BestFitCheck(RFigureofMerit,RBestFit,RCurrentVar,RIndependentVariable,IErr)
+      R3fit(3)=RFigureofMerit
+      !check the three points make a concave set
+      jnd=MAXLOC(R3var,1)!highest x
+      knd=MINLOC(R3var,1)!lowest x
+      lnd=6-jnd-knd!the mid x
+      Rtest=-ABS(R3fit(jnd)-R3fit(knd))!Rtest=0.0 would be a straight line, >0=convex, <0=concave
+      !Rconvex is the calculated fit index at the mid x, if ithere was a straight line between lowest and highest x
+      Rconvex=R3fit(lnd)-(R3fit(knd)+(R3var(lnd)-R3var(knd))*(R3fit(jnd)-R3fit(knd))/(R3var(jnd)-R3var(knd)))
+      DO WHILE (Rconvex.GT.0.1*Rtest)!if it isn't more than 10% concave, keep going until it is sufficiently concave
+        IF(my_rank.EQ.0) PRINT*,"Convex, continuing"
+        jnd=MAXLOC(R3fit,1)!worst fit
+        knd=MINLOC(R3fit,1)!best fit
+        lnd=6-jnd-knd!the mid fit
+        !replace mid point with a step on from best point
+        !RPvecMag=(R3var(knd)-RVar0(1))*(0.5+SQRT(5.0)/2.0)/RPvec(1)!increase the step size by the golden ratio
+        RPvecMag=TWO*RPvecMag!double the step size
+        IF (ABS(RPvecMag).GT.RMaxUgStep.AND.IRefineMode(1).EQ.1) RPvecMag=SIGN(RMaxUgStep,RPvecMag)!maximum step in Ug is RMaxUgStep
+        RCurrentVar=RVar0+RPvec*RPvecMag
+        R3var(lnd)=RCurrentVar(1)!next point
+        CALL SimulateAndFit(RCurrentVar,Iter,IExitFLAG,IErr)
+        CALL BestFitCheck(RFigureofMerit,RBestFit,RCurrentVar,RIndependentVariable,IErr)
+        R3fit(lnd)=RFigureofMerit
+        jnd=MAXLOC(R3var,1)!highest x
+        knd=MINLOC(R3var,1)!lowest x
+        lnd=6-jnd-knd!the mid x
+        Rconvex=R3fit(lnd)-(R3fit(knd)+(R3var(lnd)-R3var(knd))*(R3fit(jnd)-R3fit(knd))/(R3var(jnd)-R3var(knd)))
+        Rtest=-ABS(R3fit(jnd)-R3fit(knd))
+      END DO
+      !now make a prediction
+      CALL Parabo3(R3var,R3fit,RvarMin,RfitMin,IErr)
+      IF (my_rank.EQ.0) THEN
+        WRITE(SPrintString,FMT='(A32,F7.4,A16,F6.4)') &
+           "Concave set, predict minimum at ",RvarMin," with fit index ",RfitMin
+        PRINT*,TRIM(ADJUSTL(SPrintString))
+      END IF
+      RCurrentVar=RVar0+RPvec*(RvarMin-RVar0(1))/RPvec(1)!Put prediction into RCurrentVar
+      CALL SimulateAndFit(RCurrentVar,Iter,IExitFLAG,IErr)
+      CALL BestFitCheck(RFigureofMerit,RBestFit,RCurrentVar,RIndependentVariable,IErr)
+      !check where we go next and update last fit etc.
+      IF (nnd.EQ.0) THEN!only update LastFit after a max gradient refinement
+        Rdf=RLastFit-RBestFit 
+        RLastFit=RBestFit
+        IF(my_rank.EQ.0) THEN
+          PRINT*,"--------------------------------"
+          WRITE(SPrintString,FMT='(A19,F8.6,A15,F8.6)') "Improvement in fit ",Rdf,", will stop at ",RExitCriteria
+          PRINT*,TRIM(ADJUSTL(SPrintString))
+        END IF
+      END IF
+      !shrink length scale as we progress, by a smaller amount depending on the no of variables: 1->1/2; 2->3/4; 3->5/6; 4->7/8; 5->9/10;
+      RScale=RScale*(ONE-ONE/(TWO*REAL(INoOfVariables)))
+    END DO    
+    !We are done, simulate and output the best fit
+    IExitFLAG=1
+    CALL SimulateAndFit(RIndependentVariable,Iter,IExitFLAG,IErr)
+    DEALLOCATE(RVar0,RCurrentVar,RLastVar,RPVec,RFitVec,STAT=IErr)    
     
   CASE(3)!Parabola
     ALLOCATE(RVar0(INoOfVariables),STAT=IErr)!incoming set of variables
     ALLOCATE(RCurrentVar(INoOfVariables),STAT=IErr)!set of variables to send out for simulations
+    ALLOCATE(RLastVar(INoOfVariables),STAT=IErr)!set of variables updated each cycle
     ALLOCATE(RPVec(INoOfVariables),STAT=IErr)!the vector describing the current line in parameter space
-    ALLOCATE(Rvar(ITHREE),STAT=IErr)!three coordinates for current variable 
-    ALLOCATE(Rfit(ITHREE),STAT=IErr)!three fits for current variable 
     IF( IErr.NE.0 ) THEN
       PRINT*,"felixrefine(",my_rank,")error allocating parabola variables"
       GOTO 9999
     END IF
     RLastFit=RFigureofMerit
+    RLastVar=RIndependentVariable
     RBestFit=RFigureofMerit
     Rdf=RFigureofMerit
     Iter=1
-    !switch between 45 degree coords depending on I45
-    I45=0
-    RPscale=RSimplexLengthScale
+    ICycle=0!Each time we do a complete cycle we will have a look down the average refinement direction
+    RScale=RSimplexLengthScale
     RMaxUgStep=0.005!maximum step in Ug is 0.5 nm^-2, 0.005 A^-2
     DO WHILE (Rdf.GE.RExitCriteria)
       !loop over variables
-      IF (I45.EQ.0) THEN
-        mnd=INoOfVariables
-        IF(my_rank.EQ.0) PRINT*,"Refining individual variables"
-      ELSE IF (INoOfVariables.GT.1) THEN
-        mnd=INoOfVariables-1
-        IF(my_rank.EQ.0) PRINT*,"Refining pairs of variables"
-      END IF
-      DO ind=1,mnd
-        !Vector for this refinement
-        RPvec=0.0
-        RPvec(ind)=1.0
-        IF (I45.EQ.1) RPvec(ind+1)=1.0
-        IF (I45.EQ.2) RPvec(ind+1)=-1.0
-        !incoming point in parameter space
-        RVar0=RIndependentVariable
-        !vector in parameter space
-        RPvecMag=RIndependentVariable(ind)*RPscale*(1/SQRT(1+REAL(ABS(I45))))
+      DO ind=1,INoOfVariables
         !The type of variable being refined 
         IVariableType=IIterativeVariableUniqueIDs(ind,2)
-        IF(my_rank.EQ.0) THEN
+        IF (my_rank.EQ.0) THEN!print to screen
         SELECT CASE(IVariableType)
           CASE(1)
             PRINT*,"Ug refinement"
@@ -841,120 +982,177 @@ PROGRAM Felixrefine
             PRINT*,"Isotropic Debye-Waller factor refinement"
           CASE(5)
             PRINT*,"Convergence angle refinement"
-          END SELECT
+        END SELECT
+          IF (INoOfVariables.GT.1) THEN
+            IF (ICycle.EQ.1) THEN
+              PRINT*,"Refining all variables"
+            ELSE
+              PRINT*,"Refining pairs of variables"
+            END IF
+          END IF
         END IF
-        !initial coordinate 
-        IF (RVar0(ind).LE.0.1.AND.IVariableType.EQ.4) THEN! DW factor is too small, reset
+        RVar0=RIndependentVariable!incoming point in n-dimensional parameter space
+        RPvec=ZERO!Vector in n-dimensional parameter space for this refinement
+        !IF (my_rank.EQ.0) PRINT*, "Current parameters=",RIndependentVariable
+        IF (ICycle.EQ.1) THEN!look down the average refinement direction
+          RPvec=(RCurrentVar-RLastVar)/(RCurrentVar(1)-RLastVar(1))
+          RPvecMag=ZERO
+          DO jnd=1,INoOfVariables
+            RPvecMag=RPvecMag+RPvec(jnd)**2
+          END DO
+          RPvec=RPvec/SQRT(RPvecMag)!unity vector
+          RLastVar=RCurrentVar
+        ELSE IF (INoOfVariables.GT.1) THEN!pair-wise maximum gradient
+          IF (ind.EQ.INoOfVariables) EXIT!skip the last variable
+          WRITE(SPrintString,FMT='(A38,I3,A4,I3)') "Finding maximum gradient for variables",ind," and",ind+1
+          IF (my_rank.EQ.0) PRINT*, TRIM(ADJUSTL(SPrintString))
+          !NB R3fit contains the three fit indices
+          R3fit(1)=RFigureofMerit!point 1 is the incoming simulation and fit index
+          RPvec(ind)=RScale/5.0!small change in current variable for second point
+          RCurrentVar=RVar0+RPvec!second point
+          CALL SimulateAndFit(RCurrentVar,Iter,IExitFLAG,IErr)
+          CALL BestFitCheck(RFigureofMerit,RBestFit,RCurrentVar,RIndependentVariable,IErr)
+          R3fit(2)=RFigureofMerit
+          RPvec(ind+1)=RScale/5.0!now look along combination of 2 parameters for third point
+          RCurrentVar=RVar0+RPvec!Update the parameters to simulate
+          WRITE(SPrintString,FMT='(A38,I3,A4,I3)') "Finding maximum gradient for variables",ind," and",ind+1
+          IF (my_rank.EQ.0) PRINT*, TRIM(ADJUSTL(SPrintString))
+          CALL SimulateAndFit(RCurrentVar,Iter,IExitFLAG,IErr)
+          CALL BestFitCheck(RFigureofMerit,RBestFit,RCurrentVar,RIndependentVariable,IErr)
+          R3fit(3)=RFigureofMerit
+          !optimum gradient vector from the three points, magnitude unity
+          RPvec=ZERO!reset
+          RPvecMag=SQRT((R3fit(1)-R3fit(2))**2+(R3fit(2)-R3fit(3))**2)
+          RPvec(ind)=(R3fit(1)-R3fit(2))/RPvecMag
+          RPvec(ind+1)=(R3fit(2)-R3fit(3))/RPvecMag
+        END IF
+        WRITE(SPrintString,FMT='(A20,20(F6.3,1X))') "Refinement vector = ",RPvec
+        IF (my_rank.EQ.0) PRINT*, TRIM(ADJUSTL(SPrintString))
+        IF (ABS(SUM(RPvec))-1.GT.ABS(SUM(RPvec)).OR.ABS(SUM(RPvec)).NE.ABS(SUM(RPvec))) EXIT!Infinity and NaN check
+        RVar0=RIndependentVariable!the best point of the three
+        RFigureofMerit=MINVAL(R3fit)!the best fit of the three
+        ! Small DW factor (<0.1) check
+        IF (IVariableType.EQ.4.AND.RVar0(ind).LE.0.1) THEN
           IF(my_rank.EQ.0) PRINT*,"Small Debye Waller factor, resetting to 0.1"
           RVar0(ind)=0.1
           RCurrentVar=RVar0
-          RPvecMag=RPscale
+          RPvecMag=RScale
           CALL SimulateAndFit(RCurrentVar,Iter,IExitFLAG,IErr)
-          CALL BestFitCheck(RFigureofMerit,RBestFit,RCurrentVar,RIndependentVariable,Iter,IErr)
+          !update RIndependentVariable if necessary
+          CALL BestFitCheck(RFigureofMerit,RBestFit,RCurrentVar,RIndependentVariable,IErr)
         END IF
-        Rvar=ZERO
-        Rvar(1)=RVar0(ind)!initial coordinate is current value
-	    Rfit=RFigureofMerit!with the current fit index
-        Rvar(2)=Rvar(1)+RPvecMag!second point  
-        RCurrentVar=RVar0+RPvec*(Rvar(2)-RVar0(ind))
+        R3var(1)=RVar0(ind)!first point is current value
+        R3fit(1)=RFigureofMerit!with the current fit index
+        !IF (my_rank.EQ.0) PRINT*,"point 1",R3var(1),"fit",R3fit(1)
+        !magnitude of vector in parameter space
+        RPvecMag=RVar0(ind)*RScale
+        !IF (my_rank.EQ.0) PRINT*, "RPvecMag=",RPvecMag
+        RCurrentVar=RVar0+RPvec*RPvecMag!Update the parameters to simulate
+        R3var(2)=RCurrentVar(ind)!second point 
         CALL SimulateAndFit(RCurrentVar,Iter,IExitFLAG,IErr)
-        CALL BestFitCheck(RFigureofMerit,RBestFit,RCurrentVar,RIndependentVariable,Iter,IErr)
-        Rfit(2)=RFigureofMerit
+        CALL BestFitCheck(RFigureofMerit,RBestFit,RCurrentVar,RIndependentVariable,IErr)
+        R3fit(2)=RFigureofMerit
+        !IF (my_rank.EQ.0) PRINT*,"point 2",R3var(2),"fit",R3fit(2)
         !third point
-        IF (Rfit(2).GT.Rfit(1)) THEN!new 2 is not better than 1, go the other way
+        IF (R3fit(2).GT.R3fit(1)) THEN!new 2 is not better than 1, go the other way
           RPvecMag=-RPvecMag
-          Rvar(3)=Rvar(1)+RPvecMag
+          RCurrentVar=RVar0+RPvec*RPvecMag
         ELSE!it is better, so keep going
-          Rvar(3)=Rvar(2)+RPvecMag
+          RCurrentVar=RVar0+TWO*RPvec*RPvecMag
         END IF
-        RCurrentVar=RVar0+RPvec*(Rvar(3)-RVar0(ind))!x3=x1+v3
+        R3var(3)=RCurrentVar(ind)!third point
         CALL SimulateAndFit(RCurrentVar,Iter,IExitFLAG,IErr)
-        CALL BestFitCheck(RFigureofMerit,RBestFit,RCurrentVar,RIndependentVariable,Iter,IErr)
-        Rfit(3)=RFigureofMerit
+        CALL BestFitCheck(RFigureofMerit,RBestFit,RCurrentVar,RIndependentVariable,IErr)
+        R3fit(3)=RFigureofMerit
+        !IF (my_rank.EQ.0) PRINT*,"point 3",R3var(3),"fit",R3fit(3)
         !check the three points make a concave set
-        jnd=MAXLOC(Rvar,1)!highest x
-        knd=MINLOC(Rvar,1)!lowest x
+        jnd=MAXLOC(R3var,1)!highest x
+        knd=MINLOC(R3var,1)!lowest x
         lnd=6-jnd-knd!the mid x
-        Rtest=-ABS(Rfit(jnd)-Rfit(knd))!Rtest=0.0 would be a straight line, >0=convex, <0=concave
+        IF (jnd.EQ.knd) lnd=jnd!covering the unlikely scenario that all simulations have the same fit index
+        Rtest=-ABS(R3fit(jnd)-R3fit(knd))!Rtest=0.0 would be a straight line, >0=convex, <0=concave
         !Rconvex is the calculated fit index at the mid x, if ithere was a straight line between lowest and highest x
-        Rconvex=Rfit(lnd)-(Rfit(knd)+(Rvar(lnd)-Rvar(knd))*(Rfit(jnd)-Rfit(knd))/(Rvar(jnd)-Rvar(knd)))
+        Rconvex=R3fit(lnd)-(R3fit(knd)+(R3var(lnd)-R3var(knd))*(R3fit(jnd)-R3fit(knd))/(R3var(jnd)-R3var(knd)))
         DO WHILE (Rconvex.GT.0.1*Rtest)!if it isn't more than 10% concave, keep going until it is sufficiently concave
           IF(my_rank.EQ.0) PRINT*,"Convex, continuing"
-          jnd=MAXLOC(Rfit,1)!worst fit
-          knd=MINLOC(Rfit,1)!best fit
+          jnd=MAXLOC(R3fit,1)!worst fit
+          knd=MINLOC(R3fit,1)!best fit
           lnd=6-jnd-knd!the mid fit
           !replace mid point with a step on from best point
-          RPvecMag=RPvecMag*(0.5+SQRT(5.0)/2.0)!increase the step size by the golden ratio
+          RPvecMag=(R3var(knd)-RVar0(ind))*(0.5+SQRT(5.0)/2.0)/RPvec(ind)!increase the step size by the golden ratio
           IF (ABS(RPvecMag).GT.RMaxUgStep.AND.IRefineMode(1).EQ.1) RPvecMag=SIGN(RMaxUgStep,RPvecMag)!maximum step in Ug is RMaxUgStep
-          Rvar(lnd)=Rvar(knd)+RPvecMag
-          IF (Rvar(lnd).LE.ZERO.AND.IVariableType.EQ.4) THEN!less than zero DW is requested
-            Rvar(lnd)=ZERO!if , make the third point equal to 0.0...
-            RCurrentVar=RVar0-RPvec*RVar0(ind)!set up for simulation outside the loop
+          RCurrentVar=RVar0+RPvec*RPvecMag
+          R3var(lnd)=RCurrentVar(ind)!next point
+          IF (R3var(lnd).LE.ZERO.AND.IVariableType.EQ.4) THEN!less than zero DW is requested
+            R3var(lnd)=ZERO!limit it to 0.0
+            RCurrentVar=RVar0-RPvec*RVar0(ind)!and set up for simulation outside the loop
             EXIT
           END IF
-          RCurrentVar=RVar0+RPvec*(Rvar(lnd)-RVar0(ind))
-          IF (I45.NE.0) THEN!check for paired DW factor <0 THIS ISN'T WORKING
-            IF (RCurrentVar(ind+1).LE.ZERO.AND.IIterativeVariableUniqueIDs(ind+1,2).EQ.4) THEN!less than zero DW is requested
-              RCurrentVar=RVar0-RPvec*RCurrentVar(ind+1)
-              EXIT
-            END IF
-          END IF
           CALL SimulateAndFit(RCurrentVar,Iter,IExitFLAG,IErr)
-          CALL BestFitCheck(RFigureofMerit,RBestFit,RCurrentVar,RIndependentVariable,Iter,IErr)
-          Rfit(lnd)=RFigureofMerit
-          jnd=MAXLOC(Rvar,1)!highest x
-          knd=MINLOC(Rvar,1)!lowest x
+          CALL BestFitCheck(RFigureofMerit,RBestFit,RCurrentVar,RIndependentVariable,IErr)
+          R3fit(lnd)=RFigureofMerit
+          jnd=MAXLOC(R3var,1)!highest x
+          knd=MINLOC(R3var,1)!lowest x
           lnd=6-jnd-knd!the mid x
-          Rconvex=Rfit(lnd)-(Rfit(knd)+(Rvar(lnd)-Rvar(knd))*(Rfit(jnd)-Rfit(knd))/(Rvar(jnd)-Rvar(knd)))
-          Rtest=-ABS(Rfit(jnd)-Rfit(knd))
+          Rconvex=R3fit(lnd)-(R3fit(knd)+(R3var(lnd)-R3var(knd))*(R3fit(jnd)-R3fit(knd))/(R3var(jnd)-R3var(knd)))
+          Rtest=-ABS(R3fit(jnd)-R3fit(knd))
         END DO
-        !now make a prediction and replace worst point
+        !now make a prediction
         IF (RCurrentVar(ind).LE.TINY.AND.IVariableType.EQ.4) THEN!We reached zero D-W factor in convexity test, skip the prediction
           CALL SimulateAndFit(RCurrentVar,Iter,IExitFLAG,IErr)
-          CALL BestFitCheck(RFigureofMerit,RBestFit,RCurrentVar,RIndependentVariable,Iter,IErr)
+          CALL BestFitCheck(RFigureofMerit,RBestFit,RCurrentVar,RIndependentVariable,IErr)
           IF (my_rank.EQ.0) PRINT*,"Using zero Debye Waller factor, refining next variable"
         ELSE
-          CALL Parabo3(Rvar,Rfit,RvarMin,RfitMin,IErr)
+          CALL Parabo3(R3var,R3fit,RvarMin,RfitMin,IErr)
           IF (my_rank.EQ.0) THEN
             WRITE(SPrintString,FMT='(A32,F7.4,A16,F6.4)') &
                "Concave set, predict minimum at ",RvarMin," with fit index ",RfitMin
             PRINT*,TRIM(ADJUSTL(SPrintString))
           END IF
-          jnd=MAXLOC(Rfit,1)!worst point
-          knd=MINLOC(Rfit,1)!best point
-          !replace worst point with parabolic prediction and put into RIndependentVariable
-          Rvar(jnd)=RvarMin
-          IF (Rvar(jnd).LT.ZERO.AND.IVariableType.EQ.4) Rvar(jnd)=ZERO!We have reached zero D-W factor
-          RCurrentVar=RVar0+RPvec*(Rvar(jnd)-RVar0(ind))
-          IF (I45.NE.0) THEN!check for paired DW factor <0 THIS ISN'T WORKING
-            IF (RCurrentVar(ind+1).LE.ZERO.AND.IIterativeVariableUniqueIDs(ind+1,2).EQ.4) THEN!less than zero DW is requested
-              RCurrentVar=RVar0-RPvec*RCurrentVar(ind+1)
-            END IF
-          END IF
-          !IF(my_rank.EQ.0) PRINT*,"RVarP",Rvar,": Current",RCurrentVar
+          jnd=MAXLOC(R3fit,1)!worst point
+          knd=MINLOC(R3fit,1)!best point
+          !replace worst point with prediction and put into RIndependentVariable
+          IF (RvarMin.LT.ZERO.AND.IVariableType.EQ.4) RvarMin=ZERO!We have reached zero D-W factor
+          RCurrentVar=RVar0+RPvec*(RvarMin-RVar0(ind))/RPvec(ind)
+          !R3var(jnd)=RCurrentVar(ind)!do I need this?
           CALL SimulateAndFit(RCurrentVar,Iter,IExitFLAG,IErr)
-          CALL BestFitCheck(RFigureofMerit,RBestFit,RCurrentVar,RIndependentVariable,Iter,IErr)
+          CALL BestFitCheck(RFigureofMerit,RBestFit,RCurrentVar,RIndependentVariable,IErr)
         END IF
-        Rfit(jnd)=RFigureofMerit
-        IF (ind.EQ.mnd.AND.INoOfVariables.GT.1) I45=MODULO(I45+1,3)!Increment flag on last loop
+        IF (ICycle.EQ.1) EXIT!we have just done an average direction refinement, quit the NoOfVariables loop
       END DO
-      !shrink length scale as we progress, by a smaller amount depending on the no of variables: 1->1/2; 2->3/4; 3->5/6; 4->7/8; 5->9/10;
-      RPscale=RPscale*(1.0-1.0/(2.0*REAL(INoOfVariables)))
-      !improvement in fit, but only when we refine individual variables
-      IF (RBestFit.LT.RLastFit.AND.I45.EQ.0) THEN
-        Rdf=RLastFit-RBestFit 
-        RLastFit=RBestFit
-        IF(my_rank.EQ.0) THEN
-          PRINT*,"--------------------------------"
-          WRITE(SPrintString,FMT='(A19,F8.6,A15,F8.6)') "Improvement in fit ",Rdf,", will stop at ",RExitCriteria
-          PRINT*,TRIM(ADJUSTL(SPrintString))
+      !We have refined all variables, check where we go next and update last fit etc.
+      IF (INoOfVariables.GT.2) THEN!refining multiple variables
+        IF (ICycle.EQ.0) THEN!we haven't done an average direction refinement, set the flag
+          ICycle=1
+        ELSE!we just did an average direction refinement, go back to pairwise and update RLastFit and Rdf
+          ICycle=0
+          Rdf=RLastFit-RBestFit 
+          RLastFit=RBestFit
+          IF(my_rank.EQ.0) THEN
+            PRINT*,"--------------------------------"
+            WRITE(SPrintString,FMT='(A19,F8.6,A15,F8.6)') "Improvement in fit ",Rdf,", will stop at ",RExitCriteria
+            PRINT*,TRIM(ADJUSTL(SPrintString))
+          END IF
+        END IF
+      ELSE!refining just one variable
+        IF (RBestFit.LT.RLastFit) THEN
+          Rdf=RLastFit-RBestFit 
+          RLastFit=RBestFit
+          IF(my_rank.EQ.0) THEN
+            PRINT*,"--------------------------------"
+            WRITE(SPrintString,FMT='(A19,F8.6,A15,F8.6)') "Improvement in fit ",Rdf,", will stop at ",RExitCriteria
+            PRINT*,TRIM(ADJUSTL(SPrintString))
+          END IF
         END IF
       END IF
+      !shrink length scale as we progress, by a smaller amount depending on the no of variables: 1->1/2; 2->3/4; 3->5/6; 4->7/8; 5->9/10;
+      RScale=RScale*(ONE-ONE/(TWO*REAL(INoOfVariables)))
     END DO
-    !finallly simulate and output the best fit
+    !We are done, finallly simulate and output the best fit
     IExitFLAG=1
     CALL SimulateAndFit(RIndependentVariable,Iter,IExitFLAG,IErr)
-    
+    DEALLOCATE(RVar0,RCurrentVar,RLastVar,RPVec,STAT=IErr)    
+   
   CASE DEFAULT!Simulation only, should never happen
     IF (my_rank.EQ.0) THEN
       PRINT*,"No refinement, simulation only"
@@ -989,6 +1187,8 @@ PROGRAM Felixrefine
   DEALLOCATE(RAnisoDW,STAT=IErr)
   DEALLOCATE(RAtomCoordinate,STAT=IErr)
   DEALLOCATE(RgMatrixMagnitude,STAT=IErr)
+  DEALLOCATE(CPseudoAtom,STAT=IErr)
+  DEALLOCATE(CPseudoScatt,STAT=IErr)
   IF (IRefineMode(1).EQ.0) THEN
   	DEALLOCATE(IIterativeVariableUniqueIDs,STAT=IErr)
   END IF
@@ -1035,285 +1235,6 @@ PROGRAM Felixrefine
 
 END PROGRAM Felixrefine
 !%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-!%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-
-SUBROUTINE mnbrak(RIndependentVariable,Rax,Rbx,Rcx,Rfa,Rfb,Rfc,ind,IErr)
-!From Numerical recipes in Fortran section 10.1, adapted for use here
-
-  USE MyNumbers
-  
-  USE CConst; USE IConst; USE RConst
-  USE IPara; USE RPara; USE SPara; USE CPara
-  USE BlochPara
-
-  USE IChannels
-
-  USE MPI
-  USE MyMPI
-
-  IMPLICIT NONE
-  
-  REAL(RKIND) :: Rax,Rbx,Rcx,Rfa,Rfb,Rfc,Rgold,RGlimit
-  REAL(RKIND) :: Rdum,Rfu,Rq,Rr,Ru,Rulim
-  REAL(RKIND),DIMENSION(INoOfVariables) :: RIndependentVariable
-  INTEGER(IKIND) :: IErr,Iiter,IExitFLAG,ind
-  PARAMETER (Rgold=1.618034, RGlimit=100.0)
-  !Given distinct initial points Rax and Rbx this routine searches in the downhill direction
-  !and returns new points Rax, Rbx and Rcx that bracket a minimum, with their values Rfa, Rfb, Rfc.
-  !Rgold is the (golden) ratio by which intervals are magnified
-  !RGlimit is the maximum magnification allowed
-  
-  Iiter=0!we don't write out while bracketing
-  IExitFLAG=0!we never exit from this subroutine
-  RIndependentVariable(ind)=Rax
-  CALL SimulateAndFit(RIndependentVariable,Iiter,IExitFLAG,IErr)
-  Rfa=RFigureofMerit
-  RIndependentVariable(ind)=Rbx
-  CALL SimulateAndFit(RIndependentVariable,Iiter,IExitFLAG,IErr)
-  Rfb=RFigureofMerit
-  IF (Rfb.GT.Rfa) THEN!switch a and b so that a->b is downhill
-    Rdum=Rax
-	Rax=Rbx
-	Rbx=Rdum
-	Rdum=Rfb
-	Rfb=Rfa
-	Rfa=Rdum
-  END IF
-  Rcx=Rbx+Rgold*(Rbx-Rax)!first guess for c
-  !Rfc=F(Rcx)
-  RIndependentVariable(ind)=Rcx
-  CALL SimulateAndFit(RIndependentVariable,Iiter,IExitFLAG,IErr)
-  Rfc=RFigureofMerit
-1 IF (Rfb.GE.Rfc) THEN
-    Rr=(Rbx-Rax)*(Rfb-Rfc)
-    Rq=(Rbx-Rcx)*(Rfb-Rfa)
-	Ru=Rbx-((Rbx-Rcx)*Rq-(Rbx-Rax)*Rr)/(TWO*SIGN(MAX(ABS(Rq-Rr),TINY),Rq-Rr))
-	Rulim=Rbx+RGlimit*(Rcx-Rbx)
-	IF ((Rbx-Ru)*(Ru-Rcx).GT.ZERO) THEN
-      RIndependentVariable(ind)=Ru
-      CALL SimulateAndFit(RIndependentVariable,Iiter,IExitFLAG,IErr)
-      Rfu=RFigureofMerit
-      IF (Rfu.LT.Rfc) THEN!min is between b and c
-        Rax=Rbx
-        Rfa=Rfb
-        Rbx=Ru
-        Rfb=Rfu
-        GOTO 2
-      ELSE IF(Rfu.GT.Rfb) THEN!min is between a and u
-        Rcx=Ru
-        Rfc=Rfu
-        GOTO 2
-      END IF
-      Ru=Rcx+Rgold*(Rcx-Rbx)!parabolic fit was no good, default to golden ratio
-      RIndependentVariable(ind)=Ru
-      CALL SimulateAndFit(RIndependentVariable,Iiter,IExitFLAG,IErr)
-      Rfu=RFigureofMerit
-    ELSE IF((Rcx-Ru)*(Ru-Rulim).GT.0) THEN
-      RIndependentVariable(ind)=Ru
-      CALL SimulateAndFit(RIndependentVariable,Iiter,IExitFLAG,IErr)
-	  Rfu=RFigureofMerit
-      IF(Rfu.LT.Rfc) THEN
-        Rbx=Rcx
-        Rcx=Ru
-        Ru=Rcx+Rgold*(Rcx-Rbx)
-        Rfb=Rfc
-        Rfc=Rfu
-        !Rfu=F(Ru)
-        RIndependentVariable(ind)=Ru
-        CALL SimulateAndFit(RIndependentVariable,Iiter,IExitFLAG,IErr)
-		Rfu=RFigureofMerit
-      END IF
-    ELSE IF((Ru-Rulim)*(Rulim-Rcx).GE.0) THEN
-      Ru=Rulim
-      RIndependentVariable(ind)=Ru
-      CALL SimulateAndFit(RIndependentVariable,Iiter,IExitFLAG,IErr)
-	  Rfu=RFigureofMerit
-    ELSE
-      Ru=Rcx+Rgold*(Rcx-Rbx)
-      !Rfu=F(Ru)
-      RIndependentVariable(ind)=Ru
-      CALL SimulateAndFit(RIndependentVariable,Iiter,IExitFLAG,IErr)
-	  Rfu=RFigureofMerit
-    END IF
-    Rax=Rbx!shimmy along a bit, do
-    Rbx=Rcx
-    Rcx=Ru
-    Rfa=Rfb
-    Rfb=Rfc
-    Rfc=Rfu
-    GOTO 1
-  END IF
-  
-  !put in order
-2  IF (Rax.NE.MIN(Rax,Rbx,Rcx)) THEN
-    IF (Rbx.EQ.MIN(Rax,Rbx,Rcx)) THEN!swap a and b
-      Rdum=Rax
-	  Rax=Rbx
-	  Rbx=Rdum
-	  Rdum=Rfa
-	  Rfa=Rfb
-	  Rfb=Rdum
-	ELSE!swap a and c
-      Rdum=Rax
-	  Rax=Rcx
-	  Rcx=Rdum
-	  Rdum=Rfa
-	  Rfa=Rfc
-	  Rfc=Rdum
-	END IF
-  END IF
-  IF (Rcx.NE.MAX(Rax,Rbx,Rcx)) THEN!swap b and c
-    Rdum=Rbx
-	Rbx=Rcx
-	Rcx=Rdum
-	Rdum=Rfb
-	Rfb=Rfc
-	Rfc=Rdum
-  END IF
-  
-  RETURN
-
-END SUBROUTINE mnbrak
-
-!%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-
-SUBROUTINE BRENT(Rbrent,RIndependentVariable,Rax,Rbx,Rcx,Rtol,RbestFit,ind,IErr)
-  !given a function F(Rx) and a bracketing triplet of abscissas Rax,Rbx,Rcx 
-  !where bx is between ax and cx, and F(bx) is less than F(ax) or F(cx)
-  !this routine isolates the minimum to a precision of tol using Brent's method
-  !position of minimum is RbestFit and its value there is Rbrent
-  USE MyNumbers
-  USE WriteToScreen
-
-  USE CConst; USE IConst
-  USE IPara; USE RPara; USE CPara
-  USE BlochPara
-
-  USE IChannels
-
-  USE MPI
-  USE MyMPI
-
-  IMPLICIT NONE
-  
-  INTEGER(IKIND) :: Iiter,Iitmax,IExitFLAG,ind,IErr
-  REAL(RKIND) :: Ra,Rb,Rax,Rbx,Rcx,Rd,Re,Rfx,Rfu,Rfv,Rfw,Rp,Rq,Rr,Ru,Rv,Rw,Rx,Rxm
-  REAL(RKIND) :: Rtol,Rtol1,Rtol2,RzEPS,ReTemp,RcGold,Rbrent,RbestFit
-  REAL(RKIND),DIMENSION(INoOfVariables) :: RIndependentVariable
-  PARAMETER (Iitmax=100,RcGold=0.3819660,RzEPS=1.0E-10)
-
-  Iiter=IPreviousPrintedIteration-IPrint!write out while minimising  
-  IExitFLAG=0!We never exit felixrefine from this subroutine
-  Ra=MIN(Rax,Rcx) 
-  Rb=MAX(Rax,Rcx) 
-  Rv=Rbx 
-  Rw=Rbx 
-  Rx=Rbx 
-  Re=ZERO
-  Rfx=Rbrent
-  Rfv=Rbrent 
-  Rfw=Rbrent
-  DO Iiter=1,Iitmax !main loop
-    Rxm=0.5*(Ra+Rb) 
-    Rtol1=Rtol*ABS(Rx)+RzEPS 
-    Rtol2=2.*Rtol1
-	!Test for done, only accept if outgoing fit is better than incoming one
-    IF ((ABS(Rx-Rxm).LE.(Rtol2-.5*(Rb-Ra))).AND.(Rfx.LT.Rbrent)) THEN
-      GOTO 3
-	END IF
-    IF( ABS(Re).GT.Rtol1) THEN 
-      Rr=(Rx-Rw)*(Rfx-Rfv) 
-      Rq=(Rx-Rv)*(Rfx-Rfw) 
-      Rp=(Rx-Rv)*Rq-(Rx-Rw)*Rr 
-      Rq=2.*(Rq-Rr) 
-      IF (Rq.GT.ZERO) THEN
-	    Rp=-Rp 
-      END IF
-      Rq=ABS(Rq) 
-      ReTemp=Re 
-      Re=Rd 
-      IF (ABS(Rp).GE.ABS(.5*Rq*ReTemp).OR.Rp.LE.Rq*(Ra-Rx).OR. Rp.GE.Rq*(Rb-Rx)) GOTO 1 
-      Rd=Rp/Rq !parabolic fit
-      Ru=Rx+Rd 
-      IF (Ru-Ra.LT.Rtol2 .OR. Rb-Ru.LT.Rtol2) THEN 
-        Rd=SIGN(Rtol1,Rxm-Rx)
-      END IF
-      GOTO 2!skip golden section
-    END IF 
-1   IF (Rx.GE.Rxm) THEN!golden section 
-      Re=Ra-Rx 
-    ELSE 
-      Re=Rb-Rx 
-    END IF 
-    Rd=RcGold*Re 
-2   IF (ABS(Rd).GE.Rtol1) THEN!end of branching, Rd is either golden section or parabolic
-      Ru=Rx+Rd 
-    ELSE 
-      Ru=Rx+SIGN(Rtol1,Rd) 
-    END IF 
-    RIndependentVariable(ind)=Ru
-	CALL SimulateAndFit(RIndependentVariable,Iiter,IExitFLAG,IErr)
-    Rfu=RFigureofMerit
-    IF (Rfu.LE.Rfx) THEN 
-      IF (Ru.GE.Rx) THEN 
-        Ra=Rx 
-      ELSE 
-        Rb=Rx 
-      END IF 
-      Rv=Rw 
-      Rfv=Rfw 
-      Rw=Rx 
-      Rfw=Rfx 
-      Rx=Ru 
-      Rfx=Rfu 
-    ELSE
-      IF(Ru.LT.Rx) THEN
-	    Ra=Ru
-      ELSE
-	    Rb=Ru
-      END IF
-      IF (Rfu.LE.Rfw .OR. Rw.EQ.Rx) THEN
-	    Rv=Rw
-		Rfv=Rfw
-		Rw=Ru
-		Rfw=Rfu
-      ELSE IF (Rfu.LE.Rfv .OR. Rv.EQ.Rx .OR. Rv.EQ.Rw) THEN
-	    Rv=Ru
-	    Rfv=Rfu
-      END IF
-    END IF
-    IF(Ru.LT.Rx) THEN 
-      Ra=Ru 
-    ELSE 
-      Rb=Ru 
-    END IF 
-    IF(Rfu.LE.Rfw .OR. Rw.EQ.Rx) THEN 
-      Rv=Rw 
-      Rfv=Rfw 
-      Rw=Ru 
-      Rfw=Rfu 
-    ELSE IF(Rfu.LE.Rfv .OR. Rv.EQ.Rx .OR. Rv.EQ.Rw) THEN 
-      Rv=Ru 
-      Rfv=Rfu 
-    END IF 
-  END DO 
-
-  IF (my_rank.EQ.0) THEN
-    PRINT*,"Brent exceeded maximum iterations."
-    IErr=1
-  END IF
-  
-!3  IF (Rfx.LT.Rbrent) THEN!only accept if outgoing fit is better than incoming one
-3   RbestFit=Rx 
-    Rbrent=Rfx 
-  !ELSE
-  !  RbestFit=Rbx
-  !END IF
-  
-  RETURN
-  
-END SUBROUTINE BRENT
-
 !%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 SUBROUTINE AssignArrayLocationsToIterationVariables(IIterativeVariableType,IVariableNo,IArrayToFill,IErr)
@@ -1795,7 +1716,7 @@ END SUBROUTINE SetupAtomicVectorMovements
 
 !!$  %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-SUBROUTINE BestFitCheck(RFoM,RBest,RCurrent,RIndependentVariable,Iter,IErr)
+SUBROUTINE BestFitCheck(RFoM,RBest,RCurrent,RIndependentVariable,IErr)
 
   USE MyNumbers
   USE CConst; USE IConst; USE RConst
@@ -1809,7 +1730,7 @@ SUBROUTINE BestFitCheck(RFoM,RBest,RCurrent,RIndependentVariable,Iter,IErr)
   
   REAL(RKIND) :: RFoM,RBest!current figure of merit and the best figure of merit
   REAL(RKIND),DIMENSION(INoOfVariables) :: RCurrent,RIndependentVariable!current and best set of variables
-  INTEGER(IKIND) :: IErr,Iter
+  INTEGER(IKIND) :: IErr
   CHARACTER*200 :: SPrintString  
 
   IF (RFoM.LT.RBest) THEN
@@ -1817,8 +1738,7 @@ SUBROUTINE BestFitCheck(RFoM,RBest,RCurrent,RIndependentVariable,Iter,IErr)
     RIndependentVariable=RCurrent
   END IF
   IF(my_rank.EQ.0) THEN
-    WRITE(SPrintString,FMT='(A18,F8.6)') &
-     "Best fit so far = ",RBest
+    WRITE(SPrintString,FMT='(A18,F8.6)') "Best fit so far = ",RBest
     PRINT*,TRIM(ADJUSTL(SPrintString))
   END IF
         

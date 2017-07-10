@@ -159,29 +159,31 @@ SUBROUTINE WriteIterationCIF(path,IErr)
  !RB
   WRITE(IChOutSimplex,FMT='(A16)') "data_felixrefine"
   WRITE(IChOutSimplex,FMT='(A5)') "loop_"
-  WRITE(IChOutSimplex,FMT='(A14,1X,F9.6)') "_cell_length_a",RLengthX
-  WRITE(IChOutSimplex,FMT='(A14,1X,F9.6)') "_cell_length_b",RLengthY
-  WRITE(IChOutSimplex,FMT='(A14,1X,F9.6)') "_cell_length_c",RLengthZ
-  WRITE(IChOutSimplex,FMT='(A17,1X,F9.6)') "_cell_angle_alpha",RAlpha*180/PI
-  WRITE(IChOutSimplex,FMT='(A16,1X,F9.6)') "_cell_angle_beta",RBeta*180/PI
-  WRITE(IChOutSimplex,FMT='(A17,1X,F9.6)') "_cell_angle_gamma",RGamma*180/PI
-  WRITE(IChOutSimplex,FMT='(A30,1X,A10)') "_symmetry_space_group_name_H-M '",SSpaceGrp,"'"
+  WRITE(IChOutSimplex,FMT='(A14,1X,F7.4)') "_cell_length_a",RLengthX
+  WRITE(IChOutSimplex,FMT='(A14,1X,F7.4)') "_cell_length_b",RLengthY
+  WRITE(IChOutSimplex,FMT='(A14,1X,F7.4)') "_cell_length_c",RLengthZ
+  WRITE(IChOutSimplex,FMT='(A17,1X,F7.2)') "_cell_angle_alpha",RAlpha*180/PI
+  WRITE(IChOutSimplex,FMT='(A16,1X,F7.2)') "_cell_angle_beta",RBeta*180/PI
+  WRITE(IChOutSimplex,FMT='(A17,1X,F7.2)') "_cell_angle_gamma",RGamma*180/PI
+  WRITE(IChOutSimplex,FMT='(A32,A10,A1)') "_symmetry_space_group_name_H-M '",SSpaceGrp,"'"
   WRITE(IChOutSimplex,FMT='(A5)') " "
   WRITE(IChOutSimplex,FMT='(A5)') "loop_"
+  WRITE(IChOutSimplex,FMT='(A22)') "_atom_site_label"
   WRITE(IChOutSimplex,FMT='(A22)') "_atom_site_type_symbol"
+!  WRITE(IChOutSimplex,FMT='(A25)') "_atom_site_symmetry_multiplicity"
 !  WRITE(IChOutSimplex,FMT='(A25)') "_atom_site_Wyckoff_symbol"
   WRITE(IChOutSimplex,FMT='(A18)') "_atom_site_fract_x"
   WRITE(IChOutSimplex,FMT='(A18)') "_atom_site_fract_y"
   WRITE(IChOutSimplex,FMT='(A18)') "_atom_site_fract_z"
-!  WRITE(IChOutSimplex,FMT='(A25)') "_atom_site_B_iso_or_equiv"
-!  WRITE(IChOutSimplex,FMT='(A20)') "_atom_site_occupancy"
+  WRITE(IChOutSimplex,FMT='(A25)') "_atom_site_B_iso_or_equiv"
+  WRITE(IChOutSimplex,FMT='(A20)') "_atom_site_occupancy"
 
   DO jnd = 1,SIZE(RBasisAtomPosition,DIM=1)!RB only gives refined atoms, needs work
-     WRITE(IChOutSimplex,FMT='(A2,1X,3(F9.6,1X))') &
-	 SBasisAtomName(jnd),RBasisAtomPosition(jnd,:)
+     WRITE(IChOutSimplex,FMT='(2(A3,1X),3(F7.4,1X),2(F5.2,1X))') &
+	 SBasisAtomLabel(jnd),SBasisAtomName(jnd),RBasisAtomPosition(jnd,:),RBasisIsoDW(jnd),RBasisOccupancy(jnd)
 !     WRITE(IChOutSimplex,FMT='(A2,1X,A1,1X,3(F9.6,1X),F5.3,1X,F5.3)') &
 !	 SBasisAtomName(jnd),SWyckoffSymbols(jnd),RBasisAtomPosition(jnd,:), &
-!	 RBasisIsoDW(jnd),RBasisOccupancy(jnd)
+
   END DO
   WRITE(IChOutSimplex,FMT='(A22)') "#End of refinement cif"
   
@@ -204,7 +206,7 @@ END SUBROUTINE WriteIterationCIF
 !!$  %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 SUBROUTINE WriteOutVariables(Iter,IErr)
-
+! adds the current fit and simulation parameters to IterationLog.txt
   USE MyNumbers
   
   USE CConst; USE IConst; USE RConst
@@ -250,7 +252,7 @@ SUBROUTINE WriteOutVariables(Iter,IErr)
      IF(jnd.EQ.1) THEN!It's an atom coordinate refinement
         IStart = 1
      ELSE
-        IStart = SUM(IOutputVariables(1:(jnd-1)))+1
+        IStart = SUM(IOutputVariables(1:(jnd-1)))+1!RB there is probably a better way of doing this
      END IF
      IEND = SUM(IOutputVariables(1:jnd))
 
@@ -298,7 +300,7 @@ SUBROUTINE WriteOutVariables(Iter,IErr)
   WRITE(SFormat,*) "(I5.1,1X,F13.9,1X,"//TRIM(ADJUSTL(STotalOutputVariables))//"(F13.9,1X))"
 
   OPEN(UNIT=IChOutSimplex,file='IterationLog.txt',form='formatted',status='unknown',position='append')
-  WRITE(UNIT=IChOutSimplex,FMT=SFormat) Iter,RFigureofMerit,RDataOut
+  WRITE(UNIT=IChOutSimplex,FMT=SFormat) Iter-1,RFigureofMerit,RDataOut
   CLOSE(IChOutSimplex)
 
 END SUBROUTINE WriteOutVariables
@@ -306,7 +308,7 @@ END SUBROUTINE WriteOutVariables
 !%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 SUBROUTINE WriteStructureFactors(path,IErr)
-
+! Writes CUgMat into StructureFactors.txt
   USE MyNumbers
   
   USE CConst; USE IConst; USE RConst
