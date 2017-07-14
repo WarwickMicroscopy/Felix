@@ -1,19 +1,34 @@
-C%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-C
-C felixsim
-C
-C Richard Beanland, Keith Evans, Rudolf A Roemer and Alexander Hubert
-C
-C (C) 2013/14, all right reserved
-C
-C Version: :VERSION:
-C Date:    :DATE:
-C Time:    :TIME:
-C Status:  :RLSTATUS:
-C Build:   :BUILD:
-C Author:  :AUTHOR:
-C 
-C%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+!%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+!
+! Felix
+!
+! Richard Beanland, Keith Evans & Rudolf A Roemer
+!
+! (C) 2013-17, all rights reserved
+!
+! Version: :VERSION:
+! Date:    :DATE:
+! Time:    :TIME:
+! Status:  :RLSTATUS:
+! Build:   :BUILD:
+! Author:  :AUTHOR:
+! 
+!%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+!
+!  Felix is free software: you can redistribute it and/or modify
+!  it under the terms of the GNU General Public License as published by
+!  the Free Software Foundation, either version 3 of the License, or
+!  (at your option) any later version.
+!  
+!  Felix is distributed in the hope that it will be useful,
+!  but WITHOUT ANY WARRANTY; without even the implied warranty of
+!  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+!  GNU General Public License for more details.
+!  
+!  You should have received a copy of the GNU General Public License
+!  along with Felix.  If not, see <http://www.gnu.org/licenses/>.
+!
+!%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
          MODULE CIFtbxcmv      
 C

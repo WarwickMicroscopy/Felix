@@ -1,0 +1,22 @@
+data_felixrefine
+loop_
+_cell_length_a  3.8996
+_cell_length_b  3.8996
+_cell_length_c  3.8996
+_cell_angle_alpha   90.00
+_cell_angle_beta   90.00
+_cell_angle_gamma   90.00
+_symmetry_space_group_name_H-M 'P m -3 m  '
+     
+loop_
+      _atom_site_label
+_atom_site_type_symbol
+_atom_site_fract_x
+_atom_site_fract_y
+_atom_site_fract_z
+_atom_site_B_iso_or_equiv
+_atom_site_occupancy
+Sr1  Sr  0.0000  0.0000  0.0000  0.42  1.00
+Ti1  Ti  0.5000  0.5000  0.5000  1.10  1.00
+O1   O   0.0000  0.5000  0.5000  0.90  1.00
+#End of refinement cif

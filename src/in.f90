@@ -1,10 +1,10 @@
 !%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 !
-! felixsim
+! Felix
 !
-! Richard Beanland, Keith Evans, Rudolf A Roemer and Alexander Hubert
+! Richard Beanland, Keith Evans & Rudolf A Roemer
 !
-! (C) 2013/14, all right reserved
+! (C) 2013-17, all rights reserved
 !
 ! Version: :VERSION:
 ! Date:    :DATE:
@@ -15,20 +15,18 @@
 ! 
 !%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 !
-!  This file is part of felixsim.
-!
-!  felixsim is free software: you can redistribute it and/or modify
+!  Felix is free software: you can redistribute it and/or modify
 !  it under the terms of the GNU General Public License as published by
 !  the Free Software Foundation, either version 3 of the License, or
 !  (at your option) any later version.
 !  
-!  felixsim is distributed in the hope that it will be useful,
+!  Felix is distributed in the hope that it will be useful,
 !  but WITHOUT ANY WARRANTY; without even the implied warranty of
 !  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 !  GNU General Public License for more details.
 !  
 !  You should have received a copy of the GNU General Public License
-!  along with felixsim.  If not, see <http://www.gnu.org/licenses/>.
+!  along with Felix.  If not, see <http://www.gnu.org/licenses/>.
 !
 !%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
@@ -447,7 +445,7 @@ SUBROUTINE DetermineRefineableAtomicSites(SAtomicSites,IErr)
      ALLOCATE(IAtomicSitesToRefine(1),STAT=IErr)
      IF(IErr.NE.0.AND.(my_rank.EQ.0)) PRINT*,&
        "DetermineRefineableAtomicSites: error allocating IAtomicSitesToRefine"
-     IF (my_rank.EQ.0) PRINT*,SIZE(IAtomicSitesToRefine)
+     IF (my_rank.EQ.0) PRINT*,"SIZE(IAtomicSitesToRefine) =",SIZE(IAtomicSitesToRefine)
      WRITE(SLengthofNumberString,*) LEN(SAtomicSites((IPos1+1):(IPos2-1))) 
      WRITE(SFormatString,*) "(I"//TRIM(ADJUSTL(SLengthofNumberString))//")"
      READ(SAtomicSites((IPos1+1):(IPos2-1)),FMT=SFormatString) IAtomicSitesToRefine(1)
@@ -505,7 +503,7 @@ SUBROUTINE ReadExperimentalImages(IErr)
   INTEGER(IKIND) :: INegError = 0
   CHARACTER*34 :: filename
   CHARACTER*200 :: SPrintString
-  CHARACTER*10 :: h,k,l
+  CHARACTER*10 :: intstring
 
   !for IByteSize: 2bytes=64-bit input file (NB tinis specifies in bytes, not bits)
   !NB when this subroutine is working get rid of the pointless variable RImageIn
@@ -516,23 +514,32 @@ SUBROUTINE ReadExperimentalImages(IErr)
   ENDIF
   RImageIn=ZERO
 
-  DO ind = 1,INoOfLacbedPatterns
-     WRITE(h,'(I3.1)')  NINT(RInputHKLs(ind,1))
-     WRITE(k,'(I3.1)')  NINT(RInputHKLs(ind,2))
-     WRITE(l,'(I3.1)')  NINT(RInputHKLs(ind,3))
-     WRITE(filename,*) TRIM(ADJUSTL(h)),TRIM(ADJUSTL(k)),TRIM(ADJUSTL(l)),".img"
-     IF (IWriteFLAG.EQ.7.AND.my_rank.EQ.0) PRINT*,filename
-     OPEN(UNIT= IChInImage, ERR= 10, STATUS= 'UNKNOWN', FILE=TRIM(ADJUSTL(filename)),FORM='UNFORMATTED',&
+  DO ind = 1,INoOfLacbedPatterns  
+    ! An image expected for each LacbedPattern
+    ! Write corresponding filenames including chemical formula
+    WRITE(filename,*) TRIM(ADJUSTL(chemicalformula)),"_"
+    DO jnd = 1,3
+    WRITE(intstring,'(I3.1)')  NINT(RInputHKLs(ind,jnd))
+    IF (NINT(RInputHKLs(ind,jnd))>= 0) THEN    
+      filename = TRIM(filename) // '+'
+    END IF
+    filename = TRIM(filename) // TRIM(ADJUSTL(IntString))
+    END DO
+    filename = TRIM(filename) // '.img'
+    !PRINT*,filename
+    
+    IF (IWriteFLAG.EQ.7.AND.my_rank.EQ.0) PRINT*,filename
+    OPEN(UNIT= IChInImage, ERR= 10, STATUS= 'UNKNOWN', FILE=TRIM(ADJUSTL(filename)),FORM='UNFORMATTED',&
           ACCESS='DIRECT',IOSTAT=Ierr,RECL=2*IPixelCount*IByteSize)
-     DO jnd=1,2*IPixelCount
-        READ(IChInImage,rec=jnd,ERR=10) RImageIn(jnd,:)
-     END DO
-     RImageExpi(:,:,ind) = RImageIn
-     CLOSE(IChInImage,IOSTAT=IErr) 
-     IF( IErr.NE.0 ) THEN
-        PRINT*,"ReadExperimentalImages (", my_rank, ") error in CLOSE()"
-        RETURN
-     END IF
+    DO jnd=1,2*IPixelCount
+      READ(IChInImage,rec=jnd,ERR=10) RImageIn(jnd,:)
+    END DO
+    RImageExpi(:,:,ind) = RImageIn
+    CLOSE(IChInImage,IOSTAT=IErr) 
+    IF( IErr.NE.0 ) THEN
+      PRINT*,"ReadExperimentalImages (", my_rank, ") error in CLOSE()"
+      RETURN
+    END IF
   END DO
   DEALLOCATE(RImageIn,STAT=IErr)
 

@@ -1,10 +1,10 @@
 #%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 #
-# felixsim
+# Felix
 #
-# Richard Beanland, Keith Evans, Rudolf A Roemer and Alexander Hubert
+# Richard Beanland, Keith Evans & Rudolf A Roemer
 #
-# (C) 2013/14, all rights reserved
+# (C) 2013-17, all rights reserved
 #
 # Version: :VERSION:
 # Date:    :DATE:
@@ -15,20 +15,18 @@
 # 
 #%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 #
-#  This file is part of felixsim.
-#
-#  felixsim is free software: you can redistribute it and/or modify
+#  Felix is free software: you can redistribute it and/or modify
 #  it under the terms of the GNU General Public License as published by
 #  the Free Software Foundation, either version 3 of the License, or
 #  (at your option) any later version.
 #  
-#  felixsim is distributed in the hope that it will be useful,
+#  Felix is distributed in the hope that it will be useful,
 #  but WITHOUT ANY WARRANTY; without even the implied warranty of
 #  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 #  GNU General Public License for more details.
 #  
 #  You should have received a copy of the GNU General Public License
-#  along with felixsim.  If not, see <http://www.gnu.org/licenses/>.
+#  along with Felix.  If not, see <http://www.gnu.org/licenses/>.
 #
 #%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
@@ -230,12 +228,6 @@ endif
 # LD_LIBRARY_PATH=/warwick/mathlib/nag/ifort-x86_64/lib:$LD_LIBRARY_PATH
 # in order to run the code
 
-SIMOBJECTFILES = gmodules.o smodules.o message.o inputmodules.o errorcodes.o felixsim.o util.o scatteringfactors.o in.o out.o readinput.o \
-readcif.o experimentalsetup.o imagesetup.o montagesetup.o refineutils.o\
-structurefactorsetup.o ciftbx.o hash_funcs.o eigen.o invert.o microscopy.o \
-diffractionpatterndefinitions.o diffractionpatterninitialisation.o crystallographyinitialisation.o \
-crystallography.o bloch.o Ug.o image.o errorchecks.o writeoutput.o quadpack_double.f90 #dqng.o xerror.o d1mach.o 
-
 REFINEOBJECTFILES = gmodules.o smodules.o message.o inputmodules.o errorcodes.o felixrefine.o util.o scatteringfactors.o in.o out.o readcif.o \
 experimentalsetup.o imagesetup.o montagesetup.o structurefactorsetup.o readinput.o\
 eigen.o invert.o microscopy.o diffractionpatterndefinitions.o diffractionpatterninitialisation.o \
@@ -257,11 +249,7 @@ symmetry.o quadpack_double.f90
 %.o: %.F
 	$(FC) $(F77FLAGS) -DF77 -c $< -I$(INCLUDEDIR) $(LIBFLAGS)
 
-all:	felixsim felixrefine
- 
-felixsim: $(SIMOBJECTFILES)
-	$(F90) $(F90FLAGS) -o $@ $(SIMOBJECTFILES) -I$(INCLUDEDIR) $(LIBFLAGS)
-#	$(F90) -o $@ $(SIMOBJECTFILES) $(LIBFLAGS)
+all: felixrefine
 
 felixrefine: $(REFINEOBJECTFILES)
 	$(F90) $(F90FLAGS) -o $@ $(REFINEOBJECTFILES) -I$(INCLUDEDIR) $(LIBFLAGS)

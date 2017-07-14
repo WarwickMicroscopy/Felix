@@ -1,10 +1,10 @@
 !%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 !
-! felixrefine
+! Felix
 !
-! Richard Beanland, Keith Evans, Rudolf A Roemer and Alexander Hubert
+! Richard Beanland, Keith Evans & Rudolf A Roemer
 !
-! (C) 2013/14/15/16, all rights reserved
+! (C) 2013-17, all rights reserved
 !
 ! Version: :VERSION:
 ! Date:    :DATE:
@@ -15,20 +15,18 @@
 ! 
 !%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 !
-!  This file is part of felixrefine.
-!
-!  felixrefine is free software: you can redistribute it and/or modify
+!  Felix is free software: you can redistribute it and/or modify
 !  it under the terms of the GNU General Public License as published by
 !  the Free Software Foundation, either version 3 of the License, or
 !  (at your option) any later version.
 !  
-!  felixrefine is distributed in the hope that it will be useful,
+!  Felix is distributed in the hope that it will be useful,
 !  but WITHOUT ANY WARRANTY; without even the implied warranty of
 !  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 !  GNU General Public License for more details.
 !  
 !  You should have received a copy of the GNU General Public License
-!  along with felixrefine.  If not, see <http://www.gnu.org/licenses/>.
+!  along with Felix.  If not, see <http://www.gnu.org/licenses/>.
 !
 !%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
@@ -134,8 +132,8 @@ PROGRAM Felixrefine
     GOTO 9999
   END IF
   
-  IF (ISimFLAG.EQ.0) THEN!it's a refinement
-    !read experimental images
+  IF (ISimFLAG.EQ.0) THEN ! It's a refinement
+    ! Read experimental images
     ALLOCATE(RImageExpi(2*IPixelCount,2*IPixelCount,INoOfLacbedPatterns),STAT=IErr)  
     IF( IErr.NE.0 ) THEN
       PRINT*,"felixrefine(",my_rank,")error allocating RImageExpi"

@@ -1,27 +1,32 @@
 !%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 !
-! felixrefine
+! Felix
 !
-! Richard Beanland, Keith Evans, Rudolf A Roemer and Alexander Hubert
+! Richard Beanland, Keith Evans & Rudolf A Roemer
 !
-! (C) 2013/14/15/16, all right reserved
+! (C) 2013-17, all rights reserved
+!
+! Version: :VERSION:
+! Date:    :DATE:
+! Time:    :TIME:
+! Status:  :RLSTATUS:
+! Build:   :BUILD:
+! Author:  :AUTHOR:
 ! 
 !%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 !
-!  This file is part of felixrefine.
-!
-!  felixrefine is free software: you can redistribute it and/or modify
+!  Felix is free software: you can redistribute it and/or modify
 !  it under the terms of the GNU General Public License as published by
 !  the Free Software Foundation, either version 3 of the License, or
 !  (at your option) any later version.
 !  
-!  felixrefine is distributed in the hope that it will be useful,
+!  Felix is distributed in the hope that it will be useful,
 !  but WITHOUT ANY WARRANTY; without even the implied warranty of
 !  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 !  GNU General Public License for more details.
 !  
 !  You should have received a copy of the GNU General Public License
-!  along with felixrefine.  If not, see <http://www.gnu.org/licenses/>.
+!  along with Felix.  If not, see <http://www.gnu.org/licenses/>.
 !
 !%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
@@ -49,9 +54,9 @@ SUBROUTINE WriteIterationOutput(Iter,IThicknessIndex,IExitFlag,IErr)
   IThickness = (RInitialThickness + (IThicknessIndex-1)*RDeltaThickness)/10!in nm 
 
   IF (ISimFLAG.EQ.0) THEN !felixrefine output
-    WRITE(path,"(A9,I4.4,A1,I3.3,A3,I3.3,A1,I3.3)") &
-         "Iteration",Iter,"_",IThickness,"nm_",2*IPixelcount,"x",2*IPixelcount
-    path = TRIM(chemicalformula) // path  !this adds chemical to folder name
+    WRITE(path,"(A1,I4.4,A1,I3.3,A3,I3.3,A1,I3.3)") &
+         "I",Iter,"_",IThickness,"nm_",2*IPixelcount,"x",2*IPixelcount
+    path = TRIM(chemicalformula) // "_" // path  ! This adds chemical to folder name
   ELSE !Sim Output
     WRITE(path,"(A4,I3.3,A3,I3.3,A1,I3.3)") &
           "Sim_",IThickness,"nm_",2*IPixelcount,"x",2*IPixelcount
@@ -70,16 +75,12 @@ SUBROUTINE WriteIterationOutput(Iter,IThicknessIndex,IExitFlag,IErr)
   
   ! Write Images to disk
   DO ind = 1,INoOfLacbedPatterns
-    ! Make the path/filename
-
-!    WRITE(h,*)  NINT(Rhkl(IOutPutReflections(ind),1))
-!    WRITE(k,*)  NINT(Rhkl(IOutPutReflections(ind),2))
-!    WRITE(l,*)  NINT(Rhkl(IOutPutReflections(ind),3))
-!    WRITE(filename,*) TRIM(ADJUSTL(path)),"/",&
-!    TRIM(ADJUSTL(h)),TRIM(ADJUSTL(k)),TRIM(ADJUSTL(l)),TRIM(ADJUSTL(".bin"))
-  
+    ! Make the path/filenames  
     ! Iterates over 3 vector components to make filename e.g. 'GaAs-2-2+0.bin.
-    WRITE(filename,*) TRIM(ADJUSTL(path)),"/",TRIM(ADJUSTL(chemicalformula))
+    WRITE(filename,"(A1,I3.3,A3,I3.3,A1,I3.3,A1)")"_",IThickness,"nm_",&
+                2*IPixelcount,"x",2*IPixelcount,"_"
+    filename = TRIM(ADJUSTL(path))//"/"//TRIM(ADJUSTL(chemicalformula))&
+                //TRIM(ADJUSTL(filename))    
     DO jnd = 1,3
       WRITE(IntString,*) NINT(Rhkl(IOutPutReflections(ind),jnd))
       IF (NINT(Rhkl(IOutPutReflections(ind),jnd)) >= 0) THEN    
@@ -152,7 +153,7 @@ SUBROUTINE WriteIterationCIF(path,IErr)
 
 !!$  Write out non symmetrically related atomic positions
 
-  WRITE(filename,*) "Structure.cif"
+  WRITE(filename,*) "structure.cif"
   WRITE(fullpath,*) TRIM(ADJUSTL(path)),'/',TRIM(ADJUSTL(filename))
 
   OPEN(UNIT=IChOutSimplex,STATUS='UNKNOWN',FILE=TRIM(ADJUSTL(fullpath)))
@@ -299,7 +300,7 @@ SUBROUTINE WriteOutVariables(Iter,IErr)
   WRITE(STotalOutputVariables,*) ITotalOutputVariables
   WRITE(SFormat,*) "(I5.1,1X,F13.9,1X,"//TRIM(ADJUSTL(STotalOutputVariables))//"(F13.9,1X))"
 
-  OPEN(UNIT=IChOutSimplex,file='IterationLog.txt',form='formatted',status='unknown',position='append')
+  OPEN(UNIT=IChOutSimplex,file='iteration_log.txt',form='formatted',status='unknown',position='append')
   WRITE(UNIT=IChOutSimplex,FMT=SFormat) Iter-1,RFigureofMerit,RDataOut
   CLOSE(IChOutSimplex)
 
