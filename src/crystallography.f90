@@ -30,8 +30,20 @@
 !
 !%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
+! Conatained in this file below:
+! ReciprocalLattice()
+! UniqueAtomPositions()
+
+
+!>
+!! Procedure-description: Creates reciprocal lattice vectors in Microscope
+!! reference frame. This involves transforms between the orthogonal, crystal
+!! and microscopic frame. 
+!!
+!! Major-Authors: Keith Evans (2014), Richard Beanland (2016)
+!!
 SUBROUTINE ReciprocalLattice(IErr)
-  
+   
   USE MyNumbers
   USE WriteToScreen
   
@@ -146,11 +158,15 @@ END SUBROUTINE ReciprocalLattice
 
 !%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
+
+
+!>
+!! Procedure-description: Calculates the FULL set of possible fractional atomic positions
+!! and then gets rid of duplicates
+!!
+!! Major-Authors: Keith Evans (2014), Richard Beanland (2016, 2017)
+!!
 SUBROUTINE UniqueAtomPositions(IErr)
-!---------------------------------------------------------------
-!Calculates the FULL set of possible fractional atomic positions
-!And then gets rid of duplicates
-!---------------------------------------------------------------
   
   USE WriteToScreen
   USE MyNumbers
@@ -204,7 +220,8 @@ SUBROUTINE UniqueAtomPositions(IErr)
   WHERE(ABS(RAllAtomPosition).LT.TINY) RAllAtomPosition = ZERO 
 
   !--------------------------------------------------------------------  
-  ! Now reduce to the set of unique fractional atomic positions, used to be subroutine CrystalUniqueFractionalAtomicPostitionsCalculation
+  ! Now reduce to the set of unique fractional atomic positions, used to be 
+  ! subroutine CrystalUniqueFractionalAtomicPostitionsCalculation
   
   !first atom has to be in this set
   RAtomPosition(1,:)= RAllAtomPosition(1,:)

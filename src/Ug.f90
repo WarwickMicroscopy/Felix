@@ -30,6 +30,23 @@
 !
 !%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
+! All procedures conatained in this file:
+! StructureFactorInitialisation()
+! UpdateUgMatrix()
+! AtomicScatteringFactor()
+! Absorption()
+! DoubleIntegrate()
+! IntegrateBK()                 ?
+! BirdKing()                    ?
+! Kirkland()
+! PseudoAtom()
+
+
+!>
+!! Procedure-description:
+!!
+!! Major-Authors: Keith Evans (2014), Richard Beanland (2016)
+!!
 SUBROUTINE StructureFactorInitialisation (IErr)
 
   USE MyNumbers
@@ -260,6 +277,13 @@ END SUBROUTINE StructureFactorInitialisation
 
 !!$%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
+
+
+!>
+!! Procedure-description:
+!!
+!! Major-Authors: Richard Beanland (2016)
+!!
 SUBROUTINE UpdateUgMatrix(IErr)
 
   USE MyNumbers
@@ -356,10 +380,19 @@ SUBROUTINE UpdateUgMatrix(IErr)
     END DO
   END IF
   
-  END SUBROUTINE UpdateUgMatrix
+END SUBROUTINE UpdateUgMatrix
+
 
 !!$%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-  SUBROUTINE AtomicScatteringFactor(RScatteringFactor,IErr)  
+
+
+
+!>
+!! Procedure-description: Choose scattering factors using IScatterFactorMethodFLAG
+!!
+!! Major-Authors: Richard Beanland (2016)
+!!
+SUBROUTINE AtomicScatteringFactor(RScatteringFactor,IErr)  
 
   USE MyNumbers
   USE WriteToScreen
@@ -411,10 +444,17 @@ SUBROUTINE UpdateUgMatrix(IErr)
 
     END SELECT
 
-  END SUBROUTINE AtomicScatteringFactor
+END SUBROUTINE AtomicScatteringFactor
 
 !!$%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
+
+
+!>
+!! Procedure-description: Select case using IAbsorbFLAG
+!!
+!! Major-Authors: Keith Evans (2014), Richard Beanland (2016)
+!!
 SUBROUTINE Absorption (IErr)  
 
   USE MyNumbers
@@ -565,8 +605,15 @@ SUBROUTINE Absorption (IErr)
 	   
 END SUBROUTINE Absorption
 
-!%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+!!$%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
+
+
+!>
+!! Procedure-description:
+!!
+!! Major-Authors: Keith Evans (2014), Richard Beanland (2016)
+!!
 SUBROUTINE DoubleIntegrate(RResult,IErr) 
 
   USE MyNumbers
@@ -602,8 +649,15 @@ SUBROUTINE DoubleIntegrate(RResult,IErr)
   
 END SUBROUTINE DoubleIntegrate
 
-!%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+!!$%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
+
+
+!>
+!! Procedure-description:
+!!
+!! Major-Authors: Keith Evans (2014), Richard Beanland (2016)
+!!
 FUNCTION IntegrateBK(Sy) 
 
   USE MyNumbers
@@ -639,9 +693,16 @@ FUNCTION IntegrateBK(Sy)
   
 END FUNCTION IntegrateBK
 
-!%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+!!$%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-!Defines a Bird & King integrand to calculate an absorptive scattering factor 
+
+
+!>
+!! Procedure-description: Defines a Bird & King integrand to calculate an
+!! absorptive scattering factor 
+!!
+!! Major-Authors: Keith Evans (2014), Richard Beanland (2016)
+!!
 FUNCTION BirdKing(RSprimeX)
   !From Bird and King, Acta Cryst A46, 202 (1990)
   !ICurrentZ is atomic number, global variable
@@ -671,9 +732,15 @@ FUNCTION BirdKing(RSprimeX)
   
 END FUNCTION BirdKing
 
-!%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+!!$%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-!Returns a Kirkland scattering factor 
+
+
+!>
+!! Procedure-description: Returns a Kirkland scattering factor 
+!!
+!! Major-Authors: Keith Evans (2014), Richard Beanland (2016)
+!!
 FUNCTION Kirkland(Rg)
   !From Appendix C of Kirkland, "Advanced Computing in Electron Microscopy", 2nd ed.
   !ICurrentZ is atomic number, passed as a global variable
@@ -703,9 +770,15 @@ FUNCTION Kirkland(Rg)
   
 END FUNCTION Kirkland
 
-!%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+!!$%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-!Returns a PseudoAtom scattering factor 
+
+
+!>
+!! Procedure-description: Returns a PseudoAtom scattering factor 
+!!
+!! Major-Authors: Keith Evans (2014), Richard Beanland (2016)
+!!
 SUBROUTINE PseudoAtom(CFpseudo,i,j,k,IErr)
   !Reads a scattering factor from the kth Stewart pseudoatom in CPseudoScatt 
   !RCurrentGMagnitude is passed as a global variable

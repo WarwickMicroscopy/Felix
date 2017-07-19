@@ -34,10 +34,16 @@
 ! $Id: FelixSim.f90,v 1.89 2014/04/28 12:26:19 phslaz Exp $
 !%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
+
+!>
+!! Procedure-description: Prints error using ProgramInCurrently, ProgramWithIssue
+!! and handles some specific error code numbers
+!!
+!! Major-Authors: Alexander Hubert (2014, 2015)
+!!  
 SUBROUTINE ErrorChecks(ProgramInCurrently, ProgramWithIssue,IDamage,IErr)
   
   USE MyNumbers
-  USE ErrorCodes
   
   USE MPI
   USE MyMPI
@@ -46,20 +52,22 @@ SUBROUTINE ErrorChecks(ProgramInCurrently, ProgramWithIssue,IDamage,IErr)
   USE IConst
   
   IMPLICIT NONE
+
+  INTEGER(IKIND),PARAMETER :: IReflectionMismatch=222
   
   CHARACTER(*) ProgramInCurrently, ProgramWithIssue
   CHARACTER*100 :: myrankstring, IErrString
   
   INTEGER(IKIND) IErr, IDamage
 
-!!$  write my rank and Ierr into strings
+  ! write my rank and Ierr into strings
   WRITE(myrankstring,*) my_rank
   WRITE(IErrstring,*) IErr
   
-!!$  Only checks if IErr is anything other than zero,
-!!$  Will be expanded to include individual error codes
-!!$  Eventually case structure built up so for example
-!!$  will say - "in ALLOCATION etc ..." for a certain IErr number
+  ! Only checks if IErr is anything other than zero,
+  ! Will be expanded to include individual error codes
+  ! Eventually case structure built up so for example
+  ! will say - "in ALLOCATION etc ..." for a certain IErr number
   IF (IErr.NE.ZERO) THEN
      
      SELECT CASE (IDamage)

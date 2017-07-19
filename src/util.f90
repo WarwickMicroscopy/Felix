@@ -30,13 +30,25 @@
 !
 !%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-!--------------------------------------------------------------------
-!	Sort:
-!	sort s.t. the largest comes first. RESORT()
-!	is based on ShellSort from "Numerical Recipes", routine SHELL().
-!---------------------------------------------------------------------
+! All procedures conatained in this file:
+! SortHKL()
+! GreatestCommonDivisor()
+! Lorentzian()
+! Gaussian()
 
+
+!>
+!! Procedure-description: Sorts array into descending order
+!!
+!! Major-Authors: Keith Evans (2014), Richard Beanland (2016)
+!!
 SUBROUTINE SortHKL( Rhklarray,N,IErr )
+
+  !--------------------------------------------------------------------
+  !	Sort:
+  !	sort s.t. the largest comes first. RESORT()
+  !	is based on ShellSort from "Numerical Recipes", routine SHELL().
+  !---------------------------------------------------------------------  
 
   USE MyNumbers
   USE WriteToScreen
@@ -105,8 +117,14 @@ SUBROUTINE SortHKL( Rhklarray,N,IErr )
 
 END SUBROUTINE SortHKL
 
-!!$  %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+!%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
+
+!>
+!! Procedure-description:
+!!
+!! Major-Authors: Keith Evans (2014), Richard Beanland (2016)
+!!
 SUBROUTINE GreatestCommonDivisor(ITotalProcesses,INooDWFs,ISubgroups)
 
 USE MyNumbers
@@ -131,7 +149,12 @@ END SUBROUTINE GreatestCommonDivisor
 
 !%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-!Defines a Lorentzian Distribution for any parameter input
+
+!>
+!! Procedure-description: Defines a Lorentzian Distribution for any parameter input
+!!
+!! Major-Authors: Keith Evans (2014), Richard Beanland (2016)
+!!
 FUNCTION Lorentzian(FWHM,x,x_0,offset)
 
   USE MyNumbers
@@ -148,7 +171,12 @@ END FUNCTION Lorentzian
 
 !%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-!Defines a Gaussian distribution for any parameter input 
+
+!>
+!! Procedure-description: Defines a Gaussian distribution for any parameter input 
+!!
+!! Major-Authors: Keith Evans (2014), Richard Beanland (2016)
+!!
 FUNCTION Gaussian(height,x,peakcentre,standarddeviation,intercept)
 
   USE MyNumbers

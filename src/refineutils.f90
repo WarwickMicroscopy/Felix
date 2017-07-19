@@ -30,6 +30,24 @@
 !
 !%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
+! Refine Utilities
+! This file is a good place for utility functions / procedures
+
+! All procedures conatained in this file:
+! PhaseCorrelate()
+! ReSortUgs()
+! ResidualSumofSquares()
+! Normalised2DCrossCorrelation()
+! MaskedCorrelation()
+
+
+!>
+!! Procedure-description: Plan and Execute the fft of the Simulated Data. 
+!! Plan and Execute the fft of the Experimental Data. Plan and Execute the
+!! inverse fft of the phase correlation.
+!!
+!! Major-Authors: Keith Evans (2014), Richard Beanland (2016)
+!!
 REAL(RKIND) FUNCTION PhaseCorrelate(RImageSim,RImageExpiDummy,IErr,IXsizeIn,IYSizeIn)
   
   USE MyNumbers
@@ -101,7 +119,7 @@ REAL(RKIND) FUNCTION PhaseCorrelate(RImageSim,RImageExpiDummy,IErr,IXsizeIn,IYSi
   CALL FFTW_EXECUTE_DFT_C2R(Iplan,CCorrelatedImage,RImageSimDummy)
   CALL FFTW_DESTROY_PLAN(Iplan)
 
-!!$  RCrossCorrelation = MAXVAL(RImageSimDummy)/(IX*IY)
+  ! RCrossCorrelation = MAXVAL(RImageSimDummy)/(IX*IY)
   PhaseCorrelate = MAXVAL(RImageSimDummy)/(IX*IY)
   IOffset = MAXLOC(RImageSimDummy)
   
@@ -116,6 +134,12 @@ END FUNCTION  PhaseCorrelate
 
 !%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
+
+!>
+!! Procedure-description: 
+!!
+!! Major-Authors: Keith Evans (2014), Richard Beanland (2016)
+!!
 SUBROUTINE ReSortUgs( ISymmetryIntegers,CUgs, N )
   
   USE MyNumbers
@@ -169,6 +193,12 @@ END SUBROUTINE ReSortUgs
 
 !%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
+
+!>
+!! Procedure-description: 
+!!
+!! Major-Authors: Keith Evans (2014), Richard Beanland (2016)
+!!
 REAL(RKIND) FUNCTION ResidualSumofSquares(RImage1,RImage2,IErr)
   
   USE MyNumbers
@@ -198,6 +228,12 @@ END FUNCTION ResidualSumofSquares
 
 !%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
+
+!>
+!! Procedure-description: 
+!!
+!! Major-Authors: 'kidwhizz' (2015), Richard Beanland (2016)
+!!
 REAL(RKIND) FUNCTION Normalised2DCrossCorrelation(Rimg1,Rimg2,IErr)
 
   USE MyNumbers
@@ -227,6 +263,13 @@ END FUNCTION Normalised2DCrossCorrelation
 
 !%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
+
+
+!>
+!! Procedure-description: 
+!!
+!! Major-Authors: Richard Beanland (2016)
+!!
 REAL(RKIND) FUNCTION MaskedCorrelation(Rimg1,Rimg2,RBinaryMask,IErr)
 
   USE MyNumbers
@@ -265,4 +308,5 @@ REAL(RKIND) FUNCTION MaskedCorrelation(Rimg1,Rimg2,RBinaryMask,IErr)
   Rimg2StDev=SQRT(SUM(((Rimg2-Rimg2Mean)**2)/RPixelTotal))
   MaskedCorrelation=SUM(((Rimg1-Rimg1Mean)*(Rimg2-Rimg2Mean)))/&
        (Rimg1StDev*Rimg2StDev*RPixelTotal)
+
 END FUNCTION MaskedCorrelation

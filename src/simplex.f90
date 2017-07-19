@@ -30,9 +30,21 @@
 !
 !%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
+! A lot of these are currently out of use, but may be useful
+
+! All procedures conatained in this file:
+! NDimensionalDownhillSimplex()
+! SimplexExtrapolate()
+! OpenSimplexOutput()
+! WriteOutSimplex()
+! SaveSimplex() 
 
 
-
+!>
+!! Procedure-description: 
+!!
+!! Major-Authors: Keith Evans (2014), Richard Beanland (2016)
+!!
 SUBROUTINE NDimensionalDownhillSimplex(RSimplexVariable,y,mp,np,ndim,ftol,iter,RStandardDeviation,RMean,IErr)
 
   USE MyNumbers
@@ -83,7 +95,7 @@ SUBROUTINE NDimensionalDownhillSimplex(RSimplexVariable,y,mp,np,ndim,ftol,iter,R
         IF(i.NE.ihi) inhi=i
       END IF
     ENDDO
-	!compute the range from highest to lowest
+	  !compute the range from highest to lowest
     rtol=2.*ABS(y(ihi)-y(ilo))/(ABS(y(ihi))+ABS(y(ilo)))
 
     IF(rtol.LT.ftol) THEN !returning, put the best point in slot 1
@@ -193,8 +205,15 @@ SUBROUTINE NDimensionalDownhillSimplex(RSimplexVariable,y,mp,np,ndim,ftol,iter,R
   
 END SUBROUTINE NDimensionalDownhillSimplex
 
-!!$----------------------------------------------------------------------------
+!%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
+
+
+!>
+!! Procedure-description: 
+!!
+!! Major-Authors: Keith Evans (2014), Richard Beanland (2016)
+!!
 REAL(RKIND) FUNCTION SimplexExtrapolate(RSimplexVariable,y,psum,mp,np,ndim,ihi,fac,iter,IErr)
 
   USE MyNumbers
@@ -238,9 +257,15 @@ REAL(RKIND) FUNCTION SimplexExtrapolate(RSimplexVariable,y,psum,mp,np,ndim,ihi,f
   RETURN
 END FUNCTION SimplexExtrapolate
 
+!%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-!!$----------------------------------------------------------------------------
 
+
+!>
+!! Procedure-description: 
+!!
+!! Major-Authors: Keith Evans (2014), Richard Beanland (2016)
+!!
 SUBROUTINE OpenSimplexOutput(IErr)
 !ffs, 1 line of code
   USE MyNumbers
@@ -264,9 +289,15 @@ SUBROUTINE OpenSimplexOutput(IErr)
 
 END SUBROUTINE OpenSimplexOutput
 
+!%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-!!$----------------------------------------------------------------------------
 
+
+!>
+!! Procedure-description: 
+!!
+!! Major-Authors: Keith Evans (2014), Richard Beanland (2016)
+!!
 SUBROUTINE WriteOutSimplex(RSimplexVariable,RSimplexFoM,IDimensions,RStandardDeviation,RMean,IIterations,IErr)
 
   USE MyNumbers
@@ -301,10 +332,17 @@ SUBROUTINE WriteOutSimplex(RSimplexVariable,RSimplexFoM,IDimensions,RStandardDev
 
 END SUBROUTINE WriteOutSimplex
 
-!!$----------------------------------------------------------------------------
+!%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
+
+
+!>
+!! Procedure-description: 
+!!
+!! Major-Authors: Keith Evans (2014), Richard Beanland (2016)
+!!
 SUBROUTINE SaveSimplex(RSimplexVariable,RSimplexFoM,IDimensions,RStandardDeviation,RMean,IIterations,IErr)
-!what a useless subroutine, just calls two others
+  !what a useless subroutine, just calls two others
   USE MyNumbers
 
   USE IConst; USE RConst
@@ -326,6 +364,3 @@ SUBROUTINE SaveSimplex(RSimplexVariable,RSimplexFoM,IDimensions,RStandardDeviati
   CALL WriteOutSimplex(RSimplexVariable,RSimplexFoM,IDimensions,RStandardDeviation,RMean,IIterations,IErr)
 
 END SUBROUTINE SaveSimplex
-
-
-!!$----------------------------------------------------------------------------

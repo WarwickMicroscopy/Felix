@@ -30,6 +30,17 @@
 !
 !%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
+! All modules & procedures conatained in this file:
+! MyNumbers - INIT_NUMBERS, ARG, CROSS, DOT
+! MyMPI
+! MyFFTW
+
+!>
+!! Module-description: Some numeric computational and mathematical paramter
+!! constants as well as maths functions - INIT_NUMBERS, ARG, CROSS, DOT
+!!
+!! Major-Authors: Keith Evans (2014), Richard Beanland (2016)
+!!
 MODULE MyNumbers     
   IMPLICIT NONE
 
@@ -107,6 +118,12 @@ CONTAINS
   
 END MODULE MyNumbers
 
+
+!>
+!! Module-description: 
+!!
+!! Major-Authors: Keith Evans (2014), Richard Beanland (2016)
+!!
 MODULE MyMPI
 
   USE MPI
@@ -118,6 +135,11 @@ MODULE MyMPI
   
 END MODULE MyMPI
 
+!>
+!! Module-description:
+!!
+!! Major-Authors: Keith Evans (2014), Richard Beanland (2016)
+!!
 MODULE MyFFTW   
 
   USE, INTRINSIC :: ISO_C_BINDING
@@ -126,23 +148,6 @@ MODULE MyFFTW
   INCLUDE  'fftw3.f03'
   
 END MODULE MyFFTW
-
-MODULE UtilityFunctions
-CONTAINS
-  
-  ! Strips (non-trailing) spaces from string 
-  FUNCTION StripSpaces(s1)  RESULT (s2) 
-    CHARACTER(*) :: s1
-    CHARACTER(LEN(s1)) :: s2 
-    INTEGER :: i, n = 0
-    DO i = 1,len_trim(s1) 
-      IF (s1(i:i) == ' ') CYCLE 
-      n = n+1 
-      s2(n:n) = s1(i:i) 
-    END DO 
-  END FUNCTION
-  
-END MODULE UtilityFunctions
   
 
 

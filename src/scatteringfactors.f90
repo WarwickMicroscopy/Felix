@@ -30,11 +30,14 @@
 !
 !%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-
-!> Contains all of the scattering coefficients for each of the following methods:
-!! Kirkland, Peng, Doyle & Turner, Lobato.
+!>
+!! Procedure-description: Contains all of the scattering coefficients for each
+!! of the following methods: Kirkland, Peng, Doyle & Turner, Lobato.
 !! Fictitious element "Q" is atomic number 104, Kirkland only, 1/5 width of H
 !! Fictitious elements "J" are multipole pseudoatoms, Ja,Jb... etc.
+!!
+!! Major-Authors: Alexander Hubert (2014), Richard Beanland (2016)
+!!
 SUBROUTINE ScatteringFactors(IScatteringMethodSwitch,IErr)
 
   USE MyNumbers

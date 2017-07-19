@@ -30,12 +30,84 @@
 !
 !%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-!-----------------------------------------------------------------------
-!ReadInputParameters: Read the input file
-!
-!	IErr	error code
-! ----------------------------------------------------------------------
+! All procedures conatained in this file:
+! ReadInput( )
+! ReadInpFile( )
+! ReadHklFile( )
+! DetermineRefineableAtomicSites( )
+! ReadExperimentalImages( )
+! ThreeDimVectorReadIn( )
+! WriteOutInputFile( )
+! WriteToScreenandFile( )
 
+
+
+!>
+!! Procedure-description: Calls the various functions which read in all the
+!! required data/parameters - read felix.inp, .sca, .cif, .hkl
+!!
+!! Major-Authors: Keith Evans (2014), Richard Beanland (2016)
+!!
+SUBROUTINE ReadInput(IErr)
+
+  USE WriteToScreen
+  USE MyNumbers
+  USE IConst
+  USE IPara
+
+  USE MPI
+  USE MyMPI
+  
+  IMPLICIT NONE
+
+  INTEGER(IKIND):: IErr
+
+  !Calling all functions which read felix.inp, felix.sca and felix.cif
+  !(felix.hkl too depending on user preference)
+  !ensure all input files are in working directory
+  
+  !felix.inp
+  CALL ReadInpFile(IErr)
+  IF( IErr.NE.0 ) THEN
+     PRINT*,"ReadInput(", my_rank, ") error",IErr, &
+          " in ReadInpFile()"
+     RETURN
+  ENDIF
+  !felix.hkl
+  CALL ReadHklFile(IErr)
+  IF( IErr.NE.0 ) THEN
+     PRINT*,"ReadInput(", my_rank, ") error",IErr, &
+          "in ReadHklFile()"
+     RETURN
+  ENDIF
+
+  !felix.sca
+  CALL ScatteringFactors(IScatterFactorMethodFLAG,IErr)
+  IF( IErr.NE.0 ) THEN
+     PRINT*,"ReadInput(", my_rank, ") error",IErr, &
+          " in ReadScaFile()"
+     RETURN
+  ENDIF
+
+  !felix.cif
+  CALL ReadCif(IErr)
+  IF( IErr.NE.0 ) THEN
+     PRINT*,"ReadInput(", my_rank, ") error",IErr, &
+          "in ReadCif()"
+     RETURN
+  ENDIF
+
+END SUBROUTINE ReadInput
+
+!!$%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+
+
+!>
+!! Procedure-description:
+!!
+!! Major-Authors: Keith Evans (2014), Richard Beanland (2016)
+!!
 SUBROUTINE ReadInpFile( IErr )
 
   USE MyNumbers
@@ -47,7 +119,6 @@ SUBROUTINE ReadInpFile( IErr )
   USE MPI
   USE MyMPI
   USE WriteToScreen
-  USE InputModules
 
   IMPLICIT NONE
 
@@ -306,31 +377,16 @@ SUBROUTINE ReadInpFile( IErr )
 
 END SUBROUTINE ReadInpFile
 
-! -----------------------------------------------------------------------
-
-SUBROUTINE ReadScaFile( IErr )
-  !This is now redundant
-  !completely pointless subroutine that just calls another subroutine
-  USE MyNumbers
-  USE WriteToScreen
-
-  USE CConst; USE IConst
-  USE IPara; USE RPara
-  USE IChannels
-
-  USE MPI
-  USE MyMPI
-
-  IMPLICIT NONE
+!!$%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 
-  INTEGER IErr, ILine
 
-  CALL ScatteringFactors(IScatterFactorMethodFLAG,IErr)
 
-END SUBROUTINE ReadScaFile
-
-! -----------------------------------------------------------------------
+!>
+!! Procedure-description:
+!!
+!! Major-Authors: Keith Evans (2014), Richard Beanland (2016)
+!!
 SUBROUTINE ReadHklFile(IErr)
 
   USE WriteToScreen
@@ -415,6 +471,13 @@ END SUBROUTINE ReadHklFile
 
 !%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
+
+
+!>
+!! Procedure-description:
+!!
+!! Major-Authors: Keith Evans (2014), Richard Beanland (2016)
+!!
 SUBROUTINE DetermineRefineableAtomicSites(SAtomicSites,IErr)
 
   USE MyNumbers
@@ -484,6 +547,14 @@ SUBROUTINE DetermineRefineableAtomicSites(SAtomicSites,IErr)
 END SUBROUTINE DetermineRefineableAtomicSites
 
 !%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+
+
+!>
+!! Procedure-description:
+!!
+!! Major-Authors: Keith Evans (2014), Richard Beanland (2016)
+!!
 SUBROUTINE ReadExperimentalImages(IErr)
 
   USE MyNumbers
@@ -551,8 +622,213 @@ SUBROUTINE ReadExperimentalImages(IErr)
   RETURN
 
 10 IErr=1
+  PRINT*,"Error Message:"
   PRINT*,"ReadExperimentalImages(", my_rank, ")error reading ",TRIM(ADJUSTL(filename)),", line ",jnd
+  PRINT*,"From felix.cif ChemicalFormula = '","ChemicalFormula","'"
+  PRINT*,"Expect input .img files in a format like ChemicalFormula_-2-2+0.img"
+  PRINT*,"e.g. GaAs_+0+0-8.img"
+
   RETURN
+
 END SUBROUTINE ReadExperimentalImages
 
 !%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+
+
+!>
+!! Procedure-description: Function that reads in a 3D vector from a file,
+!! which has to have the form [I1,I2,I3] where I1,I2,I3 are Integers of any length.
+!! Used to read-in integer string vectors from felix.inp into real vectors 
+!!
+!! Major-Authors: Alexander Hubert (2015)
+!!
+SUBROUTINE ThreeDimVectorReadIn(SUnformattedVector,SOpenBracketDummy, &
+     SCloseBracketDummy,RFormattedVector)
+
+  ! e.g. CALL ThreeDimVectorReadIn(SIncidentBeamDirection,'[',']',RZDirC)
+  ! Current format has interesting bracket inputs
+
+  USE MyNumbers
+  
+  USE CConst; USE IConst; USE RConst
+  USE IPara; USE RPara; USE SPara; USE CPara
+  USE BlochPara
+
+  USE IChannels
+
+  USE MPI
+  USE MyMPI 
+ 
+  IMPLICIT NONE
+
+  CHARACTER(*), INTENT(IN) :: &
+       SUnformattedVector,SOpenBracketDummy,SCloseBracketDummy
+  REAL(RKIND),INTENT(OUT),DIMENSION(3) :: &
+       RFormattedVector
+
+  CHARACTER*1 :: &
+       SComma=',',SOpenBracket,SCloseBracket
+  CHARACTER*100 :: &
+       SFormattedVectorX,SFormattedVectorY,SFormattedVectorZ
+ 
+  LOGICAL :: &
+       LBACK=.TRUE.
+  
+  INTEGER(IKIND) :: &
+       IOpenBracketPosition, ICloseBracketPosition, IFirstCommaPosition, &
+       ILastCommaPosition
+  
+  ! Trim and adjustL bracket to ensure one character string
+  SOpenBracket=TRIM(ADJUSTL(SOpenBracketDummy))
+  SCloseBracket=TRIM(ADJUSTL(SCloseBracketDummy))
+  
+  ! Read in string to for the incident beam direction, convert these
+  ! to x,y,z coordinate integers with string manipulation
+  
+  IOpenBracketPosition=INDEX(SUnformattedVector,SOpenBracket)
+  ICloseBracketPosition=INDEX(SUnformattedVector,SCloseBracket)
+  IFirstCommaPosition=INDEX(SUnformattedVector,SComma)
+  ILastCommaPosition=INDEX(SUnformattedVector,SComma,LBACK)
+
+  ! Separate the Unformatted Vector String into its three X,Y,Z components
+  SFormattedVectorX=TRIM(ADJUSTL(SUnformattedVector(IOpenBracketPosition+1:IFirstCommaPosition-1)))
+  SFormattedVectorY=TRIM(ADJUSTL(SUnformattedVector(IFirstCommaPosition+1:ILastCommaPosition-1)))
+  SFormattedVectorZ=TRIM(ADJUSTL(SUnformattedVector(ILastCommaPosition+1:ICloseBracketPosition-1)))
+
+  ! Read in each string component into its associated position in real variable RFormattedVector
+  READ(SFormattedVectorX,*) RFormattedVector(1)
+  READ(SFormattedVectorY,*) RFormattedVector(2)
+  READ(SFormattedVectorZ,*) RFormattedVector(3)
+
+END SUBROUTINE ThreeDimVectorReadIn
+
+!%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+
+
+!>
+!! Procedure-description: Write out the sample input file, when none provided
+!!
+!! Major-Authors: Keith Evans (2014)
+!! 
+SUBROUTINE WriteOutInputFile (IErr)
+  
+  USE WriteToScreen
+  USE MyNumbers
+  
+  USE IConst
+  USE RConst
+  
+  USE IPara
+  USE RPara
+  USE CPara
+  USE SPara
+  USE IChannels
+
+  USE MPI
+  USE MyMPI
+  
+  IMPLICIT NONE
+
+  INTEGER(IKIND):: IErr
+     
+     OPEN(UNIT= IChInp,FILE= "felix.inp.sample",&
+       STATUS= 'UNKNOWN')
+     
+     CALL WriteToScreenandFile(ADJUSTL("# Input file for felixsim/draw/refine version :VERSION: Build :BUILD:"),IErr)
+     CALL WriteToScreenandFile(ADJUSTL("# ------------------------------------"),IErr)
+     CALL WriteToScreenandFile(ADJUSTL(""),IErr)
+     CALL WriteToScreenandFile(ADJUSTL("# ------------------------------------"),IErr)
+     CALL WriteToScreenandFile(ADJUSTL(""),IErr)
+     CALL WriteToScreenandFile(ADJUSTL("# control flags"),IErr)
+     CALL WriteToScreenandFile(ADJUSTL("IWriteFLAG                = 3"),IErr)
+     CALL WriteToScreenandFile(ADJUSTL("IImageFLAG                = 1"),IErr)
+     CALL WriteToScreenandFile(ADJUSTL("IScatterFactorMethodFLAG  = 0"),IErr)
+     CALL WriteToScreenandFile(ADJUSTL("IMaskFLAG                 = 1"),IErr)
+     CALL WriteToScreenandFile(ADJUSTL("IHolzFLAG                 = 0"),IErr)
+     CALL WriteToScreenandFile(ADJUSTL("IAbsorbFLAG               = 1"),IErr)
+     CALL WriteToScreenandFile(ADJUSTL("IAnisoDebyeWallerFlag     = 0"),IErr)
+     CALL WriteToScreenandFile(ADJUSTL(""),IErr)
+     CALL WriteToScreenandFile(ADJUSTL("# radius of the beam in pixels"),IErr)
+     CALL WriteToScreenandFile(ADJUSTL("IPixelCount               = 64"),IErr)
+     CALL WriteToScreenandFile(ADJUSTL(""),IErr)
+     CALL WriteToScreenandFile(ADJUSTL("# beam selection criteria"),IErr)
+     CALL WriteToScreenandFile(ADJUSTL("IMinReflectionPool        = 100"),IErr)
+     CALL WriteToScreenandFile(ADJUSTL("IMinStrongBeams           = 20"),IErr)
+     CALL WriteToScreenandFile(ADJUSTL("IMinWeakBeams             = 0"),IErr)
+     CALL WriteToScreenandFile(ADJUSTL(""),IErr)
+     CALL WriteToScreenandFile(ADJUSTL("# crystal settings"),IErr)
+     CALL WriteToScreenandFile(ADJUSTL("RDebyeWallerConstant      = 0.4668"),IErr)
+     CALL WriteToScreenandFile(ADJUSTL("RAbsorptionPer            = 2.9"),IErr)
+     CALL WriteToScreenandFile(ADJUSTL(""),IErr)
+     CALL WriteToScreenandFile(ADJUSTL("# microscope settings"),IErr)
+     CALL WriteToScreenandFile(ADJUSTL("ROuterConvergenceAngle    = 6.0"),IErr)
+     CALL WriteToScreenandFile(ADJUSTL("IIncidentBeamDirection    = [0,1,1]"),IErr)
+     CALL WriteToScreenandFile(ADJUSTL("IXDirection               = [1,0,0]"),IErr)
+     CALL WriteToScreenandFile(ADJUSTL("INormalDirection          = [0,1,1]"),IErr)
+     CALL WriteToScreenandFile(ADJUSTL("RAcceleratingVoltage (kV) = 200.0"),IErr)
+     CALL WriteToScreenandFile(ADJUSTL("RAcceptanceAngle          = 0.0"),IErr)
+     CALL WriteToScreenandFile(ADJUSTL(""),IErr)
+     CALL WriteToScreenandFile(ADJUSTL("# Image Output Options"),IErr)
+     CALL WriteToScreenandFile(ADJUSTL(""),IErr)
+     CALL WriteToScreenandFile(ADJUSTL("RInitialThickness        = 400.0"),IErr)
+     CALL WriteToScreenandFile(ADJUSTL("RFinalThickness          = 700.0"),IErr)
+     CALL WriteToScreenandFile(ADJUSTL("RDeltaThickness          = 10.0"),IErr)
+     CALL WriteToScreenandFile(ADJUSTL("INoOfLacbedPatterns              = 7"),IErr)
+
+     IF(ISoftwareMode.EQ.2) THEN
+        CALL WriteToScreenandFile(ADJUSTL(""),IErr)
+        CALL WriteToScreenandFile(ADJUSTL("#Refinement Specific Flags"),IErr)
+        CALL WriteToScreenandFile(ADJUSTL("IRefineModeFLAG          = B"),IErr)
+        CALL WriteToScreenandFile(ADJUSTL("IWeightingFLAG           = 0"),IErr)
+        CALL WriteToScreenandFile(ADJUSTL("IContinueFLAG            = 0"),IErr)
+        CALL WriteToScreenandFile(ADJUSTL("ICorrelationFLAG         = 0"),IErr)
+        CALL WriteToScreenandFile(ADJUSTL("IImageProcessingFLAG     = 0"),IErr)
+        CALL WriteToScreenandFile(ADJUSTL("RBlurRadius              = 1.45"),IErr)
+        CALL WriteToScreenandFile(ADJUSTL("INoofUgs                 = 10"),IErr)
+        CALL WriteToScreenandFile(ADJUSTL("IAtomicSites             = (1,2,6)"),IErr)
+        CALL WriteToScreenandFile(ADJUSTL("IPrint                   = 10"),IErr)
+        CALL WriteToScreenandFile(ADJUSTL("RSimplexLengthScale      = 5.0"),IErr)
+        CALL WriteToScreenandFile(ADJUSTL("RExitCriteria            = 0.0001"),IErr)
+     END IF
+        CLOSE(UNIT=IChInp)
+        
+END SUBROUTINE WriteOutInputFile
+
+!%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+
+
+!>
+!! Procedure-description: Prints to screen and file
+!!
+!! Major-Authors: 
+!!  
+SUBROUTINE WriteToScreenandFile(SStringtoWrite,IErr)
+  !This is a pointless subroutine
+  USE WriteToScreen
+  USE MyNumbers
+  
+  USE IConst
+  USE RConst
+  
+  USE IPara
+  USE RPara
+  USE CPara
+  USE SPara
+  USE IChannels
+
+  USE MPI
+  USE MyMPI
+  
+  IMPLICIT NONE
+
+  INTEGER(IKIND):: IErr
+  CHARACTER(*) :: SStringtoWrite
+
+  PRINT*,TRIM(ADJUSTL(SStringtoWrite))
+  WRITE(UNIT=IChInp,FMT='(A)') TRIM(ADJUSTL(SStringtoWrite))
+
+ END SUBROUTINE WriteToScreenandFile
+

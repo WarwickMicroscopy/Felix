@@ -31,8 +31,15 @@
 !%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 
-!Subroutine reads in a message the user wants to display to the screen, The IWriteFLAG
-!is then compared to the PriorityFLAG which determines whether it will get printed out or not.
+
+
+!>
+!! Procedure-description: Subroutine reads in a message the user wants to
+!! display to the screen, The IWriteFLAG is then compared to the PriorityFLAG
+!! which determines whether it will get printed out or not.
+!!
+!! Major-Authors: Alexander Hubert (2014, 2015)
+!!
 MODULE WriteToScreen
 CONTAINS!aim to make this redundant
 
@@ -66,7 +73,7 @@ CONTAINS!aim to make this redundant
     !Variable that switches message subroutine to matrix printing mode 
     IMatrixPresentSwitch=0
 
-!!$  Converts my_rank to string and then either the RVariable, IVariable, CVariable to a string
+    ! Converts my_rank to string and then either the RVariable, IVariable, CVariable to a string
     WRITE(my_rank_string,'(I6.1)') my_rank 
     IF (PRESENT(RVariable).AND.IPriorityFLAG.LT.100) THEN
        WRITE(SVariable,'(F15.3)') RVariable
@@ -75,8 +82,8 @@ CONTAINS!aim to make this redundant
     ELSE IF (PRESENT(CVariable)) THEN
        WRITE(SVariable,'(F30.16)') CVariable
 
-!!$  Converts a vector input into a string - finds the size of the input vector,
-!!$  and allocates appropriately. Stores in a long string SVariable
+    ! Converts a vector input into a string - finds the size of the input vector,
+    ! and allocates appropriately. Stores in a long string SVariable
     ELSE IF (PRESENT(RVector)) THEN
        ISizeVector=SIZE(RVector)
        ALLOCATE(SVariableVector(ISizeVector),STAT=IErr)
@@ -111,8 +118,8 @@ CONTAINS!aim to make this redundant
        SVariable = ""
     END IF
 
-!!$  If IPriorityFLAG is over 100 (Debug messaging) below won't execute
-!!$  Prints out specified variation of message (dependent on presence of variables), to the screen
+    ! If IPriorityFLAG is over 100 (Debug messaging) below won't execute
+    ! Prints out specified variation of message (dependent on presence of variables), to the screen
     IF (IPriorityFLAG .LT. 100.AND.IMatrixPresentSwitch.EQ.0) THEN 
 
        ! Checks if MessageVariable & MessageString has been read into the function
@@ -146,62 +153,62 @@ CONTAINS!aim to make this redundant
           END IF
        END IF
 
-!!$-----------------------------------------------------------------------------
-!!$  below only executes if message is a debug message and set in debug mode
-!!$  Debug messages are printed out here
+    !!$-----------------------------------------------------------------------------
+    ! below only executes if message is a debug message and set in debug mode
+    ! Debug messages are printed out here
     ELSE IF(IPriorityFLAG.GE.100.AND.IMatrixPresentSwitch.EQ.0) THEN
 
-!!$     Prints out Reals with greater precision
-       IF(PRESENT(RVariable)) THEN
-          WRITE(SVariable,'(F30.16)') RVariable
-       END IF
+      ! Prints out Reals with greater precision
+      IF(PRESENT(RVariable)) THEN
+        WRITE(SVariable,'(F30.16)') RVariable
+      END IF
 
-       ! Checks if MessageVariable & MessageString has been read into the function
-       IF (PRESENT(MessageVariable).AND.PRESENT(MessageString)) THEN
-          !Prints out message
-          IF((IPriorityFLAG.LE.IDebugFLAG.AND.my_rank.EQ.0) &
-               .OR.IDebugFLAG.GE.110) THEN
-             PRINT*,"DBG_MESSAGE: ",ProgramName,"( ",TRIM(ADJUSTL(my_rank_string))," ) ", &
-                  TRIM(ADJUSTL(MessageVariable))," = ",TRIM(ADJUSTL(SVariable)),"  ", &
-                  TRIM(ADJUSTL(MessageString))
-          END IF
+      ! Checks if MessageVariable & MessageString has been read into the function
+      IF (PRESENT(MessageVariable).AND.PRESENT(MessageString)) THEN
+        !Prints out message
+        IF((IPriorityFLAG.LE.IDebugFLAG.AND.my_rank.EQ.0) &
+             .OR.IDebugFLAG.GE.110) THEN
+           PRINT*,"DBG_MESSAGE: ",ProgramName,"( ",TRIM(ADJUSTL(my_rank_string))," ) ", &
+                TRIM(ADJUSTL(MessageVariable))," = ",TRIM(ADJUSTL(SVariable)),"  ", &
+                TRIM(ADJUSTL(MessageString))
+        END IF
 
-       ELSE IF (PRESENT(MessageVariable)) THEN
+      ELSE IF (PRESENT(MessageVariable)) THEN
 
-          IF((IPriorityFLAG.LE.IDebugFLAG.AND.my_rank.EQ.0) &
-               .OR.IDebugFLAG.GE.110) THEN
-             PRINT*,"DBG_MESSAGE: ",ProgramName,"( ",TRIM(ADJUSTL(my_rank_string))," ) ", &
-                  TRIM(ADJUSTL(MessageVariable))," = ",TRIM(ADJUSTL(SVariable))
-          END IF
+        IF((IPriorityFLAG.LE.IDebugFLAG.AND.my_rank.EQ.0) &
+             .OR.IDebugFLAG.GE.110) THEN
+           PRINT*,"DBG_MESSAGE: ",ProgramName,"( ",TRIM(ADJUSTL(my_rank_string))," ) ", &
+                TRIM(ADJUSTL(MessageVariable))," = ",TRIM(ADJUSTL(SVariable))
+        END IF
 
-       ELSE IF (PRESENT(MessageString)) THEN
+      ELSE IF (PRESENT(MessageString)) THEN
 
-          IF((IPriorityFLAG.LE.IDebugFLAG.AND.my_rank.EQ.0) &
-               .OR.IDebugFLAG.GE.110) THEN
-             PRINT*,"DBG_MESSAGE: ",ProgramName,"( ",TRIM(ADJUSTL(my_rank_string))," ) ", & 
-                  TRIM(ADJUSTL(MessageString))
-          END IF
+        IF((IPriorityFLAG.LE.IDebugFLAG.AND.my_rank.EQ.0) &
+             .OR.IDebugFLAG.GE.110) THEN
+           PRINT*,"DBG_MESSAGE: ",ProgramName,"( ",TRIM(ADJUSTL(my_rank_string))," ) ", & 
+                TRIM(ADJUSTL(MessageString))
+        END IF
 
-       ELSE
+      ELSE
 
-          IF((IPriorityFLAG.LE.IDebugFLAG.AND.my_rank.EQ.0) &
-               .OR.IDebugFLAG.GE.110) THEN
-             PRINT*,"DBG_MESSAGE: ",ProgramName,"( ",TRIM(ADJUSTL(my_rank_string))," ) "
-          END IF
-       END IF
+        IF((IPriorityFLAG.LE.IDebugFLAG.AND.my_rank.EQ.0) &
+             .OR.IDebugFLAG.GE.110) THEN
+           PRINT*,"DBG_MESSAGE: ",ProgramName,"( ",TRIM(ADJUSTL(my_rank_string))," ) "
+        END IF
+      END IF
 
-!!$-----------------------------------------------------------------------------
-!!$  Below executes in the special case of printing out a matrix - *only for DebugMode*
-!!$  We need to loop through each row of the matrix and Print to the screen in felix 
-!!$  message format.
+    !!$-----------------------------------------------------------------------------
+    ! Below executes in the special case of printing out a matrix - *only for DebugMode*
+    ! We need to loop through each row of the matrix and Print to the screen in felix 
+    ! message format.
     ELSE IF(IPriorityFLAG.GE.100.AND.IMatrixPresentSwitch.EQ.1) THEN
 
-       IF((IPriorityFLAG.LE.IDebugFLAG.AND.my_rank.EQ.0) &
-            .OR.IDebugFLAG.GE.110) THEN
+      IF((IPriorityFLAG.LE.IDebugFLAG.AND.my_rank.EQ.0) &
+        .OR.IDebugFLAG.GE.110) THEN
 
-!!$       Loop over rows (ISizeMatrixX) and columns (ISizeMatrixY) - concatenate each row into 
-!!$       a dummy variable: SVariable, if matrix is too long (row wise) counter counts how many 
-!!$       Line Breaks are required
+          ! Loop over rows (ISizeMatrixX) and columns (ISizeMatrixY) - concatenate each row into 
+          ! a dummy variable: SVariable, if matrix is too long (row wise) counter counts how many 
+          ! Line Breaks are required
           DO ind=1,ISizeMatrixX
              SVariableOld=""
              SVariableTemp=""
@@ -221,16 +228,16 @@ CONTAINS!aim to make this redundant
                 SVariableMatrix(ind,jnd)=TRIM(ADJUSTL(SVariableMatrixDummy(ind,jnd)))
              END DO
 
-!!$          We need to decipher the number of Elements in the final line of the row to be 
-!!$          printed to the screen
+             ! We need to decipher the number of Elements in the final line of the row to be 
+             ! printed to the screen
              INumElementsinFinalLine=MOD(ISizeMatrixY,ILengthofLine)
 
              WRITE(Sind,'(I8.1)') ind
 
-!!$          Checks if MessageVariable & MessageString has been read into the function
-!!$          Three Conditions - row is one line long or less, row is 2 lines long or row is
-!!$          greater than three lines long. The Print Statement is added for each case, this
-!!$          provides a consistent matrix format no matter the length of the row
+             ! Checks if MessageVariable & MessageString has been read into the function
+             ! Three Conditions - row is one line long or less, row is 2 lines long or row is
+             ! greater than three lines long. The Print Statement is added for each case, this
+             ! provides a consistent matrix format no matter the length of the row
              IF (PRESENT(MessageVariable).AND.PRESENT(MessageString)) THEN
 
                 IF(ISizeMatrixY.LE.ILengthofLine) THEN
@@ -296,10 +303,10 @@ CONTAINS!aim to make this redundant
                    END IF
                 END IF
 
-!!$          Checks if MessageVariable has been read into the function (no MessageString)
-!!$          Three Conditions - row is one line long or less, row is 2 lines long or row is
-!!$          greater than three lines long. The Print Statement is added for each case, this
-!!$          provides a consistent matrix format no matter the length of the row
+             ! Checks if MessageVariable has been read into the function (no MessageString)
+             ! Three Conditions - row is one line long or less, row is 2 lines long or row is
+             ! greater than three lines long. The Print Statement is added for each case, this
+             ! provides a consistent matrix format no matter the length of the row
              ELSE IF (PRESENT(MessageVariable)) THEN
 
                 IF(ISizeMatrixY.LE.ILengthofLine) THEN

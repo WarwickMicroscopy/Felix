@@ -30,6 +30,16 @@
 !
 !%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
+! All procedures conatained in this file:
+! AssignArrayLocationsToIterationVariables( )   --- 
+! RANDOMNUMBER( )                               ---
+! OutofUnitCellCheck( )                         ---     
+! SetupAtomicVectorMovements( )                 ---
+! BestFitCheck( )                               ---
+
+!>
+!! felixrefine
+!!
 PROGRAM Felixrefine
  
   USE MyNumbers
@@ -197,13 +207,13 @@ PROGRAM Felixrefine
   END IF
   !Perhaps should now re-allocate RAtomPosition,SAtomName,RIsoDW,ROccupancy,IAtomicNumber,RAnisoDW to match INAtomsUnitCell???
 
-!-----------------------------------------
-! set up reflection pool
+  !-----------------------------------------
+  ! set up reflection pool
   RHOLZAcceptanceAngle=TWODEG2RADIAN!RB seems way too low?
   IHKLMAXValue = 5!RB starting value, increments in loop below
-! Count the reflections that make up the pool of g-vectors
-!Note the application of acceptance angle is incorrect since it uses hkl;
-!it should use the reciprocal lattice vectors as calculated in RgPool
+  ! Count the reflections that make up the pool of g-vectors
+  !Note the application of acceptance angle is incorrect since it uses hkl;
+  !it should use the reciprocal lattice vectors as calculated in RgPool
   CALL HKLCount(IHKLMAXValue,RZDirC,INhkl,RHOLZAcceptanceAngle,IErr)
   DO WHILE (INhkl.LT.IMinReflectionPool) 
      IHKLMAXValue = IHKLMAXValue*2
@@ -356,7 +366,7 @@ PROGRAM Felixrefine
   END IF
   RMinimumGMag = RgPoolMag(2)
 
-!-----------------------------------------
+  !-----------------------------------------
   ! resolution in k space
   RDeltaK = RMinimumGMag*RConvergenceAngle/REAL(IPixelCount,RKIND)
   !acceptance angle
@@ -1161,7 +1171,8 @@ PROGRAM Felixrefine
   !--------------------------------------------------------------------
   ! Deallocate Memory
   !--------------------------------------------------------------------
-8888  DEALLOCATE(CUgMat,STAT=IErr)!FelixSim comes here to finish off  
+8888  CONTINUE
+  DEALLOCATE(CUgMat,STAT=IErr)!FelixSim comes here to finish off  
   DEALLOCATE(CUgMatNoAbs,STAT=IErr)
   DEALLOCATE(CUgMatPrime,STAT=IErr)
   DEALLOCATE(RWeightingCoefficients,STAT=IErr)
@@ -1235,8 +1246,14 @@ END PROGRAM Felixrefine
 !%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 !%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
+!>
+!! Procedure-description: Assign array locations to iteration variables, similar
+!! to IIterativeVariableUniqueIDs
+!!
+!! Major-Authors: Keith Evans (2014), Richard Beanland (2016)
+!!
 SUBROUTINE AssignArrayLocationsToIterationVariables(IIterativeVariableType,IVariableNo,IArrayToFill,IErr)
-!NB IArrayToFill here is equivalent to IIterativeVariableUniqueIDs outside this subroutine
+  !NB IArrayToFill here is equivalent to IIterativeVariableUniqueIDs outside this subroutine
   USE MyNumbers
   
   USE CConst; USE IConst; USE RConst
@@ -1254,10 +1271,10 @@ SUBROUTINE AssignArrayLocationsToIterationVariables(IIterativeVariableType,IVari
        IAnisotropicDebyeWallerFactorElementNo
   INTEGER(IKIND),DIMENSION(INoOfVariables,5),INTENT(OUT) :: IArrayToFill  
 
-!!$  Calculate How Many of Each Variable Type There are
+  ! Calculate How Many of Each Variable Type There are
 !  CALL DetermineNumberofRefinementVariablesPerType(INoofElementsForEachRefinementType,IErr)
   
-!!$  Where am I in the Array Right Now?
+  ! Where am I in the Array Right Now?
   IArrayIndex = SUM(INoofElementsForEachRefinementType(:(IIterativeVariableType-1)))+IVariableNo
 
   SELECT CASE(IIterativeVariableType)
@@ -1328,169 +1345,12 @@ END SUBROUTINE AssignArrayLocationsToIterationVariables
 
 !%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-SUBROUTINE RefinementVariableSetup(RIndependentVariable,IErr)
-!This is redundant  
-  USE MyNumbers
-  
-  USE CConst; USE IConst; USE RConst
-  USE IPara; USE RPara; USE SPara; USE CPara
-  USE BlochPara
-  
-  USE IChannels
-  
-  USE MPI
-  USE MyMPI
-  
-  IMPLICIT NONE
-  
-  INTEGER(IKIND) :: IErr,ind,IVariableType
-  REAL(RKIND),DIMENSION(INoOfVariables),INTENT(OUT) :: RIndependentVariable
-  
-  IF((IWriteFLAG.GE.10.AND.my_rank.EQ.0).OR.IWriteFLAG.GE.10) THEN
-     PRINT*,"RefinementVariableSetup(",my_rank,")"
-  END IF
-  
-!!$  Fill the Independent Value array with values
-
-  DO ind = 1,INoOfVariables
-     IVariableType = IIterativeVariableUniqueIDs(ind,2)
-     SELECT CASE (IVariableType)
-     CASE(1)
-	    !Structure factor refinement, define in SymmetryRelatedStructureFactorDetermination
-    CASE(2)
-        RIndependentVariable(ind) = RAllowedVectorMagnitudes(IIterativeVariableUniqueIDs(ind,3))
-     CASE(3)
-        RIndependentVariable(ind) = RBasisOccupancy(IIterativeVariableUniqueIDs(ind,3))
-     CASE(4)
-        RIndependentVariable(ind) = RBasisIsoDW(IIterativeVariableUniqueIDs(ind,3))
-     CASE(5)
-        RIndependentVariable(ind) = RAnisotropicDebyeWallerFactorTensor(&
-             IIterativeVariableUniqueIDs(ind,3),&
-             IIterativeVariableUniqueIDs(ind,4),&
-             IIterativeVariableUniqueIDs(ind,5))
-     CASE(6)
-        SELECT CASE(IIterativeVariableUniqueIDs(ind,3))
-        CASE(1)
-           RIndependentVariable(ind) = RLengthX
-        CASE(2)
-           RIndependentVariable(ind) = RLengthY
-        CASE(3)
-           RIndependentVariable(ind) = RLengthZ
-        END SELECT
-     CASE(7)
-        SELECT CASE(IIterativeVariableUniqueIDs(ind,3))
-        CASE(1)
-           RIndependentVariable(ind) = RAlpha
-        CASE(2)
-           RIndependentVariable(ind) = RBeta
-        CASE(3)
-           RIndependentVariable(ind) = RGamma
-        END SELECT
-     CASE(8)
-        RIndependentVariable(ind) = RConvergenceAngle
-     CASE(9)
-        RIndependentVariable(ind) = RAbsorptionPercentage
-     CASE(10)
-        RIndependentVariable(ind) = RAcceleratingVoltage
-     CASE(11)
-        RIndependentVariable(ind) = RRSoSScalingFactor
-     CASE(12)
-	    !Structure factor refinement, define in SymmetryRelatedStructureFactorDetermination
-     END SELECT
-  END DO
-
-END SUBROUTINE RefinementVariableSetup
-
-!!$  %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-
-SUBROUTINE InitialiseAtomicVectorMagnitudes(IVariableID,RCorrectedMovement,IErr)
-  
-!!$  %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-!!$  % Creates pseudo random movements of atoms using allowed vectors
-!!$  % to initialise the simplex, proposed movements which exit the unit
-!!$  $ cell are corrected to bring the atom back in on the opposite side
-!!$  %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-
-  USE MyNumbers
-  
-  USE CConst; USE IConst; USE RConst
-  USE IPara; USE RPara; USE SPara; USE CPara
-  USE BlochPara
-  
-  USE IChannels
-  
-  USE MPI
-  USE MyMPI
-  
-  IMPLICIT NONE
-
-  INTEGER(IKIND) :: IErr,ind,IVariableID
-  REAL(RKIND) :: RNegativeMovement,RPositiveMovement,RCorrectedMovement,RANDOMNUMBER
-
-  RNegativeMovement = RSimplexLengthScale*(-1.0_RKIND)
-  RPositiveMovement = RSimplexLengthScale
-!RB this check can be done in less lines than it takes to call the subroutine
-  IF(RANDOMNUMBER(IVariableID,IErr).LT.0.5_RKIND) THEN
-     CALL OutofUnitCellCheck(IVariableID,RNegativeMovement,RCorrectedMovement,IErr)
-  ELSE
-     CALL OutofUnitCellCheck(IVariableID,RPositiveMovement,RCorrectedMovement,IErr)
-  END IF
-
-END SUBROUTINE InitialiseAtomicVectorMagnitudes
-
-!!$  %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-
-SUBROUTINE RandomSequence(RRandomSequence,IRandomSequenceLength,ISeedModifier,IErr)
-!!$  %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-!!$  % Sets up a pseudo random sequence and selects a number
-
-  USE MyNumbers
-  
-  USE CConst; USE IConst; USE RConst
-  USE IPara; USE RPara; USE SPara; USE CPara
-  USE BlochPara
-
-  USE IChannels
-
-  USE MPI
-  USE MyMPI
-
-  IMPLICIT NONE
-
-  INTEGER(IKIND) :: IErr,Ivalues(1:8), k,IRandomSequenceLength,ISeedModifier
-  INTEGER(IKIND), DIMENSION(:), ALLOCATABLE :: seed
-  REAL(RKIND),DIMENSION(IRandomSequenceLength) :: RRandomSequence
-  
-  CALL DATE_AND_TIME(VALUES=Ivalues)
-
-  IValues = IValues*ISeedModifier
-!!$  CALL SYSTEM_CLOCK(
-  IF (IRandomFLAG.EQ.0) THEN
-     CALL RANDOM_SEED(size=k)
-     allocate(seed(1:k))
-     seed(:) = Ivalues(8)
-     CALL RANDOM_SEED(put=seed)
-  ELSE
-     CALL RANDOM_SEED(size=k)
-     ALLOCATE(seed(1:k))
-     seed(:) = IFixedSeed*ISeedModifier
-     CALL RANDOM_SEED(put=seed)
-  END IF
-   
-  DEALLOCATE(seed)
-
-  CALL RANDOM_NUMBER(RRandomSequence)
-  
-!!$  RANDOMSEQUENCE = RRandomNumberSequence(IRequestedNumber)
-  
-END SUBROUTINE  RANDOMSEQUENCE
-
-!!$  %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-
+!>
+!! Procedure-description: Sets up a pseudo random sequence and selects a number
+!!
+!! Major-Authors: Keith Evans (2014), Richard Beanland (2016)
+!!
 REAL(RKIND) FUNCTION RANDOMNUMBER(IRequestedNumber,IErr)
-!!$  %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-!!$  % Sets up a pseudo random sequence and selects a number
-!!$  %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
   USE MyNumbers
   
@@ -1531,15 +1391,18 @@ END FUNCTION RANDOMNUMBER
 
 !!$  %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-SUBROUTINE OutofUnitCellCheck(IVariableID,RProposedMovement,RCorrectedMovement,IErr)
-!!$  %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-!!$  % Checks that vector movement applied by the simplex initialisation
-!!$  % does not move an atom out fo the unit cell, and if it does
-!!$  % the atom is moved back into the unit cell on the opposite side
-!!$  % as if the atom had moved from one unit cell into the neighbouring one
-!!$  %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-!!!Can't this just be done in one line with MODULO???!!!
+!>
+!! Procedure-description: Checks that vector movement applied by the simplex
+!! initialisation does not move an atom out fo the unit cell, and if it does
+!! the atom is moved back into the unit cell on the opposite side as if the
+!! atom had moved from one unit cell into the neighbouring one
+!!
+!! Major-Authors: Keith Evans (2014), Richard Beanland (2016)
+!!
+SUBROUTINE OutofUnitCellCheck(IVariableID,RProposedMovement,RCorrectedMovement,IErr)
+
+  !Can't this just be done in one line with MODULO?
   USE MyNumbers
   
   USE CConst; USE IConst; USE RConst
@@ -1589,54 +1452,12 @@ END SUBROUTINE OutofUnitCellCheck
 
 !!$  %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-SUBROUTINE RecoverSavedSimplex(RSimplexVariable,RSimplexFoM,RStandardDeviation,RMean,Iter,IErr)
 
-!!$  %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-!!$  % This Subroutine reads the fr-simplex.txt file from a previous
-!!$  % refinement run, and recreates the simplex volume and tolerances
-!!$  % allowing for the continuation of a previous refinement
-!!$  %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-
-  USE MyNumbers
-  
-  USE CConst; USE IConst; USE RConst
-  USE IPara; USE RPara; USE SPara; USE CPara
-  USE BlochPara
-
-  USE IChannels
-
-  USE MPI
-  USE MyMPI
-
-  IMPLICIT NONE
-
-  INTEGER(IKIND) :: &
-       IErr,ind,Iter
-  REAL(RKIND),DIMENSION(INoOfVariables+1,INoOfVariables) :: RSimplexVariable
-  REAL(RKIND),DIMENSION(INoOfVariables+1) :: RSimplexFoM
-  REAL(RKIND) :: RStandardDeviation,RMean
-  CHARACTER*200 :: CSizeofData,SFormatString,filename
-
-  WRITE(filename,*) "fr-Simplex.txt"
-
-  OPEN(UNIT=IChOutSimplex,STATUS='UNKNOWN',&
-        FILE=TRIM(ADJUSTL(filename)))
-  
-  WRITE(CSizeofData,*) INoOfVariables+1
-  WRITE(SFormatString,*) "("//TRIM(ADJUSTL(CSizeofData))//"(1F6.3,1X),A1)"
-
-  DO ind = 1,(INoOfVariables+1)
-     READ(IChOutSimplex,FMT=SFormatString) RSimplexVariable(ind,:),RSimplexFoM(ind)
-  END DO
-    
-  READ(IChOutSimplex,FMT="(2(1F6.3,1X),I5.1,I5.1,A1)") RStandardDeviation,RMean,IStandardDeviationCalls,Iter
-
-  CLOSE(IChOutSimplex)
-
-END SUBROUTINE RecoverSavedSimplex
-
-!!$  %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-
+!>
+!! Procedure-description: Setup atomic vector movements
+!!
+!! Major-Authors: Richard Beanland (2016)
+!!
 SUBROUTINE SetupAtomicVectorMovements(IErr)
 
   USE MyNumbers
@@ -1714,6 +1535,12 @@ END SUBROUTINE SetupAtomicVectorMovements
 
 !!$  %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
+
+!>
+!! Procedure-description: Best fit check
+!!
+!! Major-Authors: Richard Beanland (2016)
+!!
 SUBROUTINE BestFitCheck(RFoM,RBest,RCurrent,RIndependentVariable,IErr)
 
   USE MyNumbers
@@ -1726,7 +1553,7 @@ SUBROUTINE BestFitCheck(RFoM,RBest,RCurrent,RIndependentVariable,IErr)
   
   IMPLICIT NONE
   
-  REAL(RKIND) :: RFoM,RBest!current figure of merit and the best figure of merit
+  REAL(RKIND) :: RFoM,RBest !current figure of merit and the best figure of merit
   REAL(RKIND),DIMENSION(INoOfVariables) :: RCurrent,RIndependentVariable!current and best set of variables
   INTEGER(IKIND) :: IErr
   CHARACTER*200 :: SPrintString  

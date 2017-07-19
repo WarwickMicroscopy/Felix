@@ -34,6 +34,18 @@
 ! $Id: smodules.f90,v 1.63 2014/04/28 12:26:19 phslaz Exp $
 !%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
+! All procedures conatained in this file:
+! DetermineAllowedMovements()
+! CountAllowedMovements()
+! ConvertSpaceGroupToNumber()
+! StrLowCase() 
+
+
+!>
+!! Procedure-description: 
+!!
+!! Major-Authors: Keith Evans (2014), Richard Beanland (2016)
+!!
 SUBROUTINE DetermineAllowedMovements(ISpaceGrp,SWyckoffSymbol,RVector,IVector,IErr)
 
   USE MyNumbers
@@ -324,8 +336,14 @@ SUBROUTINE DetermineAllowedMovements(ISpaceGrp,SWyckoffSymbol,RVector,IVector,IE
   END SELECT
 END SUBROUTINE DetermineAllowedMovements
 
-!!$%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+!%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
+
+!>
+!! Procedure-description: 
+!!
+!! Major-Authors: Keith Evans (2014), Richard Beanland (2016)
+!!
 SUBROUTINE CountAllowedMovements(ISpaceGrp,SWyckoffSymbol,IVectors,IErr)
 
   USE MyNumbers
@@ -607,8 +625,15 @@ SUBROUTINE CountAllowedMovements(ISpaceGrp,SWyckoffSymbol,IVectors,IErr)
   END SELECT
 END SUBROUTINE CountAllowedMovements
 
-!!$%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+!%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
+
+!>
+!! Procedure-description: Convert SSpacegrp to lower case and Compare
+!! SSpaceGrpNoSpaces with every space group
+!!
+!! Major-Authors: Keith Evans (2014), Richard Beanland (2016)
+!!
 SUBROUTINE ConvertSpaceGroupToNumber(ISpaceGrp,IErr)
 
   USE MyNumbers
@@ -630,7 +655,7 @@ SUBROUTINE ConvertSpaceGroupToNumber(ISpaceGrp,IErr)
   CHARACTER(LEN(SSpaceGrp)) :: SSpaceGrpNoSpaces
   CHARACTER*20 :: SSpaceGrpToCompare
 
-!!$  Push Spaces In SSpaceGrp to the end of the String
+  ! Push Spaces In SSpaceGrp to the end of the String
   
   jnd = 0
   ISpaceGrp = 0
@@ -645,11 +670,11 @@ SUBROUTINE ConvertSpaceGroupToNumber(ISpaceGrp,IErr)
      END IF
   END DO
   
-!!$  Convert SSpacegrp to lower case 
+  ! Convert SSpacegrp to lower case 
 
   CALL StrLowCase( SSpaceGrpNoSpaces,SSpaceGrpNoSpaces,IErr )
 
-!!$  Compare SSpaceGrpNoSpaces with every space group 
+  ! Compare SSpaceGrpNoSpaces with every space group 
 
   DO ind = 1,SIZE(CSpaceGrp)
 
@@ -670,8 +695,14 @@ SUBROUTINE ConvertSpaceGroupToNumber(ISpaceGrp,IErr)
   
 END SUBROUTINE ConvertSpaceGroupToNumber
 
-!!$%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+!%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
+
+!>
+!! Procedure-description: 
+!!
+!! Major-Authors: Keith Evans (2014), Richard Beanland (2016)
+!!
 SUBROUTINE StrLowCase( Input_String,Output_String,IErr ) 
 
   USE MyNumbers
@@ -703,27 +734,4 @@ SUBROUTINE StrLowCase( Input_String,Output_String,IErr )
   END DO
 END SUBROUTINE  StrLowCase
 
-SUBROUTINE MakeUnitVector(RVector,IErr)
-!This is a pointless subroutine, make redundant
-  USE MyNumbers
-  
-  USE CConst; USE IConst; USE RConst
-  USE IPara; USE RPara; USE SPara; USE CPara
-  USE BlochPara
 
-  USE IChannels
-
-  USE MPI
-  USE MyMPI
-
-  IMPLICIT NONE
-
-  INTEGER(IKIND) :: &
-       IErr,ind
-  REAL(RKIND),DIMENSION(:,:),INTENT(INOUT) :: &
-       RVector
-  
-  DO ind = 1,SIZE(RVector,DIM=1)
-     RVector(ind,:) = RVector(ind,:)/SQRT(SUM(RVector(ind,:)**2))
-  END DO
-END SUBROUTINE MakeUnitVector

@@ -30,7 +30,23 @@
 !
 !%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
+! All modules & procedures conatained in this file:
+! CConst
+! IConst
+! RConst
+! IPara
+! RPara
+! CPara
+! SPara
+! IChannels
+! BlochPara
+! Refinement
 
+!>
+!! Module-description: 
+!!
+!! Major-Authors: Keith Evans (2014), Richard Beanland (2016)
+!!
 MODULE CConst
 
   CHARACTER*50, PARAMETER :: RStr= "Version: multipole / BUILD / Alpha"
@@ -87,6 +103,12 @@ MODULE CConst
 
 END MODULE CConst
 !--------------------------------------------------------------------
+
+!>
+!! Module-description: 
+!!
+!! Major-Authors: Keith Evans (2014), Richard Beanland (2016)
+!!
 MODULE IConst
   USE MyNumbers
   INTEGER(IKIND), PARAMETER :: &
@@ -114,6 +136,13 @@ MODULE IConst
 
 END MODULE IConst
 !--------------------------------------------------------------------
+
+
+!>
+!! Module-description: 
+!!
+!! Major-Authors: Keith Evans (2014), Richard Beanland (2016)
+!!
 MODULE RConst
   USE MyNumbers
   
@@ -128,6 +157,12 @@ MODULE RConst
     
 END MODULE RConst
 !--------------------------------------------------------------------
+
+!>
+!! Module-description: 
+!!
+!! Major-Authors: Keith Evans (2014), Richard Beanland (2016)
+!!
 MODULE IPara
   USE MyNumbers
   USE IConst 
@@ -204,6 +239,12 @@ MODULE IPara
   INTEGER(IKIND) :: IMessageCounter=0
 END MODULE IPara
 !--------------------------------------------------------------------
+
+!>
+!! Module-description: 
+!!
+!! Major-Authors: Keith Evans (2014), Richard Beanland (2016)
+!!
 MODULE RPara
   USE MyNumbers
   USE RConst
@@ -299,6 +340,12 @@ MODULE RPara
 
 END MODULE RPara
 !--------------------------------------------------------------------
+
+!>
+!! Module-description: 
+!!
+!! Major-Authors: Keith Evans (2014), Richard Beanland (2016)
+!!
 MODULE CPara
   USE MyNumbers
 
@@ -311,6 +358,12 @@ MODULE CPara
 
 END MODULE CPara
 !--------------------------------------------------------------------
+
+!>
+!! Module-description: 
+!!
+!! Major-Authors: Keith Evans (2014), Richard Beanland (2016)
+!!
 MODULE SPara
   USE MyNumbers
   
@@ -323,7 +376,12 @@ MODULE SPara
   
 END MODULE SPara
 !--------------------------------------------------------------------
-! Input- and Outputchannels
+
+!>
+!! Module-description: Input and output channels
+!!
+!! Major-Authors: Keith Evans (2014), Richard Beanland (2016)
+!!
 MODULE IChannels
   INTEGER, PARAMETER :: IChInp= 40, &
        IChOutWF= 41, IChOutWI= 42, &
@@ -335,8 +393,13 @@ MODULE IChannels
        IChOutWIImage= 49, MontageOut = 50,IChOutSimplex = 52
 END MODULE IChannels
 !--------------------------------------------------------------------
-MODULE BlochPara
-  ! eigen problem variables  
+
+!>
+!! Module-description: Eigen problem variables
+!!
+!! Major-Authors: Keith Evans (2014), Richard Beanland (2016)
+!!
+MODULE BlochPara 
   USE MyNumbers
   USE IConst
   USE MPI
@@ -350,6 +413,12 @@ MODULE BlochPara
   COMPLEX(CKIND),DIMENSION(:,:), ALLOCATABLE :: CEigenSaveTemp
 END MODULE BlochPara
 !--------------------------------------------------------------------
+
+!>
+!! Module-description: Refinement
+!!
+!! Major-Authors: Keith Evans (2014), Richard Beanland (2016)
+!!
 MODULE Refinement
 
 USE MyNumbers

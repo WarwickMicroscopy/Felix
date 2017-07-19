@@ -30,6 +30,19 @@
 !
 !%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
+! Conatained in this file below:
+! BlochCoefficientCalculation()
+! CreateWaveFunctions()
+! StrongAndWeakBeamsDetermination()
+! EigenSpectrum()
+! INVERT()
+
+!>
+!! Procedure-description: Simulates the electron beam and calculates Bloch
+!! coefficients, conisdering complex amplitudes and iterating over the thickness
+!!
+!! Major-Authors: Keith Evans (2014), Richard Beanland (2016)
+!!
 SUBROUTINE BlochCoefficientCalculation(IYPixelIndex,IXPixelIndex,IPixelNumber,IFirstPixelToCalculate,IErr)
   
   USE WriteToScreen
@@ -50,7 +63,7 @@ SUBROUTINE BlochCoefficientCalculation(IYPixelIndex,IXPixelIndex,IPixelNumber,IF
   REAL(RKIND) :: RThickness,RKn
   COMPLEX(CKIND) sumC,sumD
   COMPLEX(CKIND), DIMENSION(:,:), ALLOCATABLE :: CGeneralSolutionMatrix, &
-       CGeneralEigenVectors,CBeamTranspose,CUgMatPartial
+       CGeneralEigenSpectrumEigenVectors,CBeamTranspose,CUgMatPartial
   COMPLEX(CKIND),DIMENSION(:),ALLOCATABLE :: CGeneralEigenValues
   CHARACTER*40 surname
   CHARACTER*200 SindString,SjndString,SPixelCount,SnBeams,SWeakBeamIndex,SPrintString
@@ -71,8 +84,8 @@ SUBROUTINE BlochCoefficientCalculation(IYPixelIndex,IXPixelIndex,IPixelNumber,IF
   DO knd=1,nReflections
     !Sg parallel to z: Sg=-[k'z+gz-sqrt( (k'z+gz)^2-2k'.g-g^2)]
     RDevPara(knd)= -RTiltedK(3)-RgPool(knd,3)+&
-	SQRT( (RTiltedK(3)+RgPool(knd,3))**2-2*DOT_PRODUCT(RgPool(knd,:),RTiltedK(:))-RgPoolMag(knd)**2)
-	!Keith's old version, Sg parallel to k'
+	  SQRT( (RTiltedK(3)+RgPool(knd,3))**2-2*DOT_PRODUCT(RgPool(knd,:),RTiltedK(:))-RgPoolMag(knd)**2)
+	  !Keith's old version, Sg parallel to k'
     !RDevPara(knd)= -( RBigK + DOT_PRODUCT(RgPool(knd,:),RTiltedK(:)) /RBigK) + &
     !  SQRT( ( RBigK**2 + DOT_PRODUCT(RgPool(knd,:),RTiltedK(:)) )**2 /RBigK**2 - &
     !  (RgPoolMag(knd)**2 + TWO*DOT_PRODUCT(RgPool(knd,:),RTiltedK(:))) )
@@ -153,23 +166,23 @@ SUBROUTINE BlochCoefficientCalculation(IYPixelIndex,IXPixelIndex,IPixelNumber,IF
       sumC=CZERO
       sumD=CZERO
       DO ind=1,nWeakBeams
-       sumC=sumC + &
-		!Zuo&Weickenmeier Ultramicroscopy 57 (1995) 375-383 eq.4
+        sumC=sumC + &
+		    !Zuo&Weickenmeier Ultramicroscopy 57 (1995) 375-383 eq.4
         CUgMat(IStrongBeamList(knd),IWeakBeamList(ind))*&
         CUgMat(IWeakBeamList(ind),1)/(TWO*RBigK*RDevPara(IWeakBeamList(ind)))
 !Keith's old version
-!          REAL(CUgMat(IStrongBeamList(knd),IWeakBeamList(ind))) * &
-!          REAL(CUgMat(IWeakBeamList(ind),1)) / &
-!         (4*RBigK*RBigK*RDevPara(IWeakBeamList(ind)))
+!        REAL(CUgMat(IStrongBeamList(knd),IWeakBeamList(ind))) * &
+!        REAL(CUgMat(IWeakBeamList(ind),1)) / &
+!        (4*RBigK*RBigK*RDevPara(IWeakBeamList(ind)))
         sumD = sumD + &
-		!Zuo&Weickenmeier Ultramicroscopy 57 (1995) 375-383 eq.5
+		    !Zuo&Weickenmeier Ultramicroscopy 57 (1995) 375-383 eq.5
         CUgMat(IStrongBeamList(knd),IWeakBeamList(ind))*&
         CUgMat(IWeakBeamList(ind),IStrongBeamList(knd))/&
         (TWO*RBigK*RDevPara(IWeakBeamList(ind)))
 !Keith's old version
-!          REAL(CUgMat(IStrongBeamList(knd),IWeakBeamList(ind))) * &
-!          REAL(CUgMat(IWeakBeamList(ind),IStrongBeamList(knd))) / &
-!         (4*RBigK*RBigK*RDevPara(IWeakBeamList(ind)))
+!        REAL(CUgMat(IStrongBeamList(knd),IWeakBeamList(ind))) * &
+!        REAL(CUgMat(IWeakBeamList(ind),IStrongBeamList(knd))) / &
+!        (4*RBigK*RBigK*RDevPara(IWeakBeamList(ind)))
       ENDDO
 	  !Replace the Ug's
 	  WHERE (CUgSgMatrix.EQ.CUgSgMatrix(knd,1))
@@ -180,7 +193,7 @@ SUBROUTINE BlochCoefficientCalculation(IYPixelIndex,IXPixelIndex,IPixelNumber,IF
     ENDDO
 	!Divide by 2K so off-diagonal elementa are Ug/2K, diagonal elements are Sg
 	!DON'T KNOW WHERE THE 4pi^2 COMES FROM!! 
-    CUgSgMatrix = TWOPI*TWOPI*CUgSgMatrix/(TWO*RBigK)
+  CUgSgMatrix = TWOPI*TWOPI*CUgSgMatrix/(TWO*RBigK)
   END IF
   
   IF(IWriteFLAG.EQ.3.AND.IYPixelIndex.EQ.10.AND.IXPixelIndex.EQ.10) THEN!output data from 1 pixel to show working
@@ -261,8 +274,16 @@ END SUBROUTINE BlochCoefficientCalculation
 
 !%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
+
+
+
+!>
+!! Procedure-description: Calculates diffracted intensity for a specific thickness
+!!
+!! Major-Authors: Keith Evans (2014), Richard Beanland (2016)
+!!
 SUBROUTINE CreateWaveFunctions(RThickness,IErr)
-!Calculates diffracted intensity for a specific thickness
+
   USE WriteToScreen
   USE MyNumbers
   
@@ -334,6 +355,17 @@ END SUBROUTINE CreateWavefunctions
 
 !%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
+
+
+
+
+!>
+!! Procedure-description: Determines number of weak and strong beams. Uses Sg and
+!! pertubation strengths and iterates over the number of weak and strong until
+!! there are enough.
+!!
+!! Major-Authors: Keith Evans (2014), Richard Beanland (2016)
+!!
 SUBROUTINE StrongAndWeakBeamsDetermination(IErr)
   
   USE WriteToScreen
@@ -429,4 +461,148 @@ SUBROUTINE StrongAndWeakBeamsDetermination(IErr)
     PRINT*, IWeakBeamList
 	PRINT*, "Smallest perturbation strength=",RMinPertWeak
   END IF
+
 END SUBROUTINE StrongAndWeakBeamsDetermination
+
+!%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+
+
+!>
+!! Procedure-description: Diagonalize a Matrix considering eigenvalues
+!!
+!! Major-Authors: Keith Evans (2014), Richard Beanland (2016)
+!!
+SUBROUTINE EigenSpectrum(IMatrixDimension, MatrixToBeDiagonalised, EigenValues, EigenVectors, IErr)
+
+  USE WriteToScreen
+  USE MyNumbers
+
+  USE IConst
+  USE IPara
+
+  USE MyMPI
+
+  IMPLICIT NONE
+
+  INTEGER(IKIND) :: IMatrixDimension, IErr
+  COMPLEX(RKIND) :: MatrixToBeDiagonalised(IMatrixDimension,IMatrixDimension), &
+       EigenValues(IMatrixDimension), EigenVectors(IMatrixDimension,IMatrixDimension)
+  INTEGER(IKIND) :: WorkSpaceDimension
+  COMPLEX(CKIND),DIMENSION(:), ALLOCATABLE :: CWorkSpace
+  REAL(RKIND), DIMENSION(:), ALLOCATABLE :: WorkSpace
+  EXTERNAL ZGEEV
+
+  ! ------------------------------------------------
+  ! find optimum size of arrays
+  WorkSpaceDimension=1
+  ALLOCATE(CWorkSpace(WorkSpaceDimension),STAT = IErr)
+  ALLOCATE(WorkSpace(2*IMatrixDimension),STAT = IErr)
+  IF( IErr.NE.0 ) THEN
+     PRINT*,"EigenSpectrum: error in ALLOCATE() for work arrays (query stage)"
+     RETURN
+  END IF
+
+  WorkSpaceDimension=-1
+
+  CALL ZGEEV('N','V', IMatrixDimension, MatrixToBeDiagonalised, IMatrixDimension,&
+       EigenValues, 0,1, EigenVectors,IMatrixDimension, &
+       CWorkSpace, WorkSpaceDimension, WorkSpace, IErr )
+  IF( IErr.NE.0 ) THEN
+     PRINT*,"EigenSpectrum: error in ZGEEV determining work arrays"
+     RETURN
+  END IF
+
+  WorkSpaceDimension = INT(CWorkSpace(1))
+
+  ! ------------------------------------------------
+  ! REALLOCATE necessary memory
+  DEALLOCATE(CWorkSpace,STAT=IErr)
+  ALLOCATE(CWorkSpace(WorkSpaceDimension),STAT = IErr)
+  IF( IErr.NE.0 ) THEN
+     PRINT*,"EigenSpectrum: error in ALLOCATE() for work arrays (final stage)"
+     RETURN
+  END IF
+
+  ! ------------------------------------------------
+  ! do the actual call to get the spectrum
+  CALL ZGEEV('N','V', IMatrixDimension, MatrixToBeDiagonalised, IMatrixDimension,&
+       EigenValues, 0,1, EigenVectors,IMatrixDimension, &
+       CWorkSpace, WorkSpaceDimension, WorkSpace, IErr )
+  IF( IErr.NE.0 ) THEN
+     PRINT*,"EigenSpectrum: error ", IErr, " in ZGEEV"
+     RETURN
+  ENDIF
+
+  DEALLOCATE(CWorkSpace,STAT = IErr)
+  DEALLOCATE(WorkSpace,STAT = IErr)
+  IF( IErr.NE.0 ) THEN
+     PRINT*,"EigenSpectrum: error in DEALLOCATE() for work arrays (final stage)"
+     RETURN
+  ENDIF
+
+  RETURN
+
+END SUBROUTINE EigenSpectrum
+!%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+
+
+!>
+!! Procedure-description: Invert an M*M Complex Matrix
+!!
+!! Major-Authors: Keith Evans (2014), Richard Beanland (2016)
+!!
+SUBROUTINE INVERT(MatrixSize,Matrix,InvertedMatrix,IErr)  
+
+  ! Matrix: the Matrix (Destroyed)
+  ! InvertedMatrix: the Inverse
+  USE WriteToScreen
+  USE MyNumbers
+
+  USE IConst
+  USE IPara
+
+  USE MyMPI
+  
+  IMPLICIT NONE
+  
+  INTEGER :: MatrixSize, LWORK, INFO, I, IErr
+  COMPLEX(KIND=CKIND), DIMENSION(1:MatrixSize,1:MatrixSize) :: Matrix
+  COMPLEX(KIND=CKIND), DIMENSION(1:MatrixSize,1:MatrixSize) :: InvertedMatrix
+  
+  INTEGER, DIMENSION(:), ALLOCATABLE :: IPIV
+  COMPLEX(KIND=CKIND), DIMENSION(:), ALLOCATABLE :: WORK
+  
+  ALLOCATE(IPIV(MatrixSize),STAT=IErr)
+  IF( IErr.NE.0 ) THEN
+     PRINT*,"Invert(): ERR in ALLOCATE(IPIV(MatrixSize)) statement, MatrixSize=", MatrixSize
+     RETURN
+  ENDIF
+  
+  CALL ZGETRF(MatrixSize,MatrixSize,Matrix,MatrixSize,IPIV,IErr)
+  LWORK = MatrixSize*MatrixSize
+  IF ( IErr.NE.0 ) THEN
+     PRINT *,'Invert() : Datatype Error: IFAIL=',INFO
+     RETURN
+  END IF
+  ALLOCATE(WORK(LWORK),STAT=IErr)   
+  IF( IErr.NE.0 ) THEN
+     PRINT*,"Invert(): ERR in ALLOCATE(WORK(LWORK)) statement, LWORK=", LWORK
+     RETURN
+  ENDIF
+  
+  CALL ZGETRI(MatrixSize,Matrix,MatrixSize,IPIV,WORK,LWORK,IErr)
+  IF ( IErr.NE.0 ) THEN
+     PRINT *,'Inversion Error: IFAIL=',INFO
+     RETURN
+  END IF
+  DEALLOCATE(IPIV,WORK,STAT=IErr)
+  IF ( IErr.NE.0 ) THEN
+     PRINT *,'Invert : Deallocation Error',INFO
+     RETURN
+  END IF
+  InvertedMatrix = Matrix  
+  RETURN
+
+END SUBROUTINE INVERT

@@ -30,13 +30,58 @@
 !
 !%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-SUBROUTINE ImageInitialisation( IErr )
+! All procedures conatained in this file:
+! ImageSetup( )
+! ImageInitialisation( )
+! MontageInitialisation( )
+! ImageMaskInitialisation( )
+! CountPixels( )
 
-!!$%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-!!$%
-!!$%     Determines Montage size as twice the distance to the furtherest pixel + 1
-!!$%
-!!$%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+!>
+!! Procedure-description: Image setup, including defining image masks
+!!
+!! Major-Authors: Keith Evans (2014), Richard Beanland (2016)
+!!
+SUBROUTINE ImageSetup (IErr) 
+
+  USE MyNumbers
+  USE WriteToScreen
+
+  USE IPara; USE RPara
+
+  USE MyMPI
+
+  IMPLICIT NONE
+
+  INTEGER(IKIND) :: IErr
+
+  CALL ImageInitialisation( IErr )
+  IF( IErr.NE.0 ) THEN
+     PRINT*,"ImageSetup(",my_rank,")error in ImageInitialistion"
+     RETURN
+  END IF
+ 
+  !--------------------------------------------------------------------
+  ! define image masks
+  CALL ImageMaskInitialisation(IErr)
+  IF( IErr.NE.0 ) THEN
+     PRINT*,"ImageSetup(",my_rank,")error in ImageMaskInitialisation"
+     RETURN
+  END IF
+
+END SUBROUTINE ImageSetup
+
+!%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+
+
+!>
+!! Procedure-description: Sets the positions of the centres of the disks
+!! and calculate the size of the final image
+!!
+!! Major-Authors: Keith Evans (2014), Richard Beanland (2016)
+!!
+SUBROUTINE ImageInitialisation( IErr )
 
   USE MyNumbers
   USE WriteToScreen
@@ -87,14 +132,16 @@ END SUBROUTINE ImageInitialisation
 
 !!$%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
+
+
+
+!>
+!! Procedure-description: Places Calculated pixels into montage 1 pixel, per reflection per call
+!!
+!! Major-Authors: Keith Evans (2014), Richard Beanland (2016)
+!!
 SUBROUTINE MontageInitialisation(IPixelHorizontalPosition,IPixelVerticalPosition,&
      IThicknessindex,RMontageImage,RIntensityValues,IErr)
-
-!!$%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-!!$%
-!!$%      Places Calculated pixels into montage 1 pixel, per reflection per call
-!!$%
-!!$%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
   USE WriteToScreen
   USE MyNumbers
@@ -122,8 +169,8 @@ SUBROUTINE MontageInitialisation(IPixelHorizontalPosition,IPixelVerticalPosition
        IMontagePixelHorizontalPosition = &
            NINT(MAXVAL(IImageSizeXY)/TWO+TWO*(IPixelCount/RConvergenceAngle)*RhklPositions(hnd,1))
      ELSE
-!!$           If the Convergence angle is > 1 causing disk overlap in experimental pattern, 
-!!$           then plot as if convergence angle was 0.95 (non-physical but makes a pretty picture)
+       ! If the Convergence angle is > 1 causing disk overlap in experimental pattern, 
+       ! then plot as if convergence angle was 0.95 (non-physical but makes a pretty picture)
        IMontagePixelVerticalPosition = &
                 NINT(MAXVAL(IImageSizeXY)/TWO+TWO*(IPixelCount/0.95D0)*RhklPositions(hnd,2))
        IMontagePixelHorizontalPosition = &
@@ -142,8 +189,8 @@ SUBROUTINE MontageInitialisation(IPixelHorizontalPosition,IPixelVerticalPosition
          IMontagePixelHorizontalPosition = &
                 NINT(MAXVAL(IImageSizeXY)/TWO+TWO*(IPixelCount/RConvergenceAngle)*RhklPositions(IOutputReflections(hnd),1))
        ELSE
-!!$           If the Convergence angle is > 1 causing disk overlap in experimental pattern, 
-!!$           then plot as if convergence angle was 0.95 (non-physical but makes a pretty picture)
+         ! If the Convergence angle is > 1 causing disk overlap in experimental pattern, 
+         ! then plot as if convergence angle was 0.95 (non-physical but makes a pretty picture)
          IMontagePixelVerticalPosition = &
                 NINT(MAXVAL(IImageSizeXY)/TWO+TWO*(IPixelCount/0.95D0)*RhklPositions(IOutputReflections(hnd),2))
          IMontagePixelHorizontalPosition = &
@@ -163,15 +210,19 @@ SUBROUTINE MontageInitialisation(IPixelHorizontalPosition,IPixelVerticalPosition
 
 END SUBROUTINE MontageInitialisation
 
-!---------------------------------------------------------------------
-!
+!!$%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+
+
+
+!>
+!! Procedure-description: Creates a circular or square image mask depending on
+!! the value of IMaskFLAG and assigns pixel locations for each one for MPI load
+!! balancing
+!!
+!! Major-Authors: Keith Evans (2014), Richard Beanland (2016)
+!!
 SUBROUTINE ImageMaskInitialisation (IErr)
-!!$%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-!!$%
-!!$%    Creates a circular or square image mask depending on the value of IMaskFLAG
-!!$%       and assigns pixel locations for each one for MPI load balancing
-!!$%
-!!$%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
   
   USE MyNumbers
   USE WriteToScreen
@@ -215,7 +266,7 @@ SUBROUTINE ImageMaskInitialisation (IErr)
      IPixelTotal = (2*IPixelCount)**2
   END SELECT
 
- !Removed InnerConvergenceAngle here
+  !Removed InnerConvergenceAngle here
 
   ALLOCATE(IPixelLocations(IPixelTotal,2),STAT=IErr)
   IF( IErr.NE.0 ) THEN
@@ -253,13 +304,14 @@ END SUBROUTINE ImageMaskInitialisation
 
 !!$%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
+
+
+!>
+!! Procedure-description: Counts pixels in requested image for memory allocation
+!!
+!! Major-Authors: Keith Evans (2014), Richard Beanland (2016)
+!!
 INTEGER(IKIND) FUNCTION CountPixels(IErr)
-  
-!!$%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-!!$%
-!!$%     Counts pixels in requested image for memory allocation
-!!$%
-!!$%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
   USE MyNumbers
   

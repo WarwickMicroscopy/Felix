@@ -30,6 +30,12 @@
 !
 !%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
+
+!>
+!! Procedure-description: Reads from felix.cif input file using toolbox
+!!
+!! Major-Authors: Keith Evans (2014), Richard Beanland (2016)
+!!
 SUBROUTINE ReadCif(IErr)
 
   ! -----------------------------------------------------------------------
@@ -52,7 +58,6 @@ SUBROUTINE ReadCif(IErr)
 
   USE MyNumbers
   USE WriteToScreen
-  USE UtilityFunctions
   
   USE CConst; USE IConst
   USE IPara; USE RPara; USE SPara
@@ -133,7 +138,7 @@ SUBROUTINE ReadCif(IErr)
      END IF
      IErr=1
   END IF
-  ChemicalFormula = StripSpaces(name) ! Strips spaces from formula string
+  ChemicalFormula = StripChars(name) ! Strips spaces, brackets etc. from formula string
 
   ! Extract some cell dimensions; test all is OK
   ! NEED TO PUT IN A CHECK FOR LENGTH UNITS
@@ -326,7 +331,7 @@ SUBROUTINE ReadCif(IErr)
     IF(loop_ .NEQV. .TRUE.) EXIT
   END DO
 
-!Branch here depending on felixsim or felixrefine
+  !Branch here depending on felixsim or felixrefine
   IF (ISoftwareMode.NE.0) THEN !felixrefine
     ALLOCATE(SWyckoffSymbols(SIZE(IAtomicSitesToRefine)),STAT=IErr)
     IF( IErr.NE.0 ) THEN
@@ -451,12 +456,34 @@ SUBROUTINE ReadCif(IErr)
     IF(loop_ .NEQV. .TRUE.) EXIT
   END DO
 
-  !closes the cif file
+  ! closes the cif file
   CALL close_
 
-!!$Reset Message Counter
-IMessageCounter =0  
+  ! Reset Message Counter
+  IMessageCounter =0  
   
   RETURN
+
+CONTAINS
+
+  !>
+  !! Procedure-description: Strips any character from string which is not simply
+  !! numeric or alphabetic
+  !!
+  !! Major-Authors: Keith Evans (2014), Richard Beanland (2016)
+  !! 
+  CHARACTER(len(string)) FUNCTION StripChars(string)
+    CHARACTER(*) :: string
+    INTEGER :: i, n = 0
+    DO i = 1,LEN_TRIM(string) 
+      IF ( VERIFY(string(i:i), &
+      "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ1234567890") &
+      == 1 ) THEN
+        CYCLE
+      END IF 
+      n = n+1 
+      StripChars(n:n) = string(i:i) 
+    END DO 
+  END FUNCTION
 
 END SUBROUTINE ReadCif

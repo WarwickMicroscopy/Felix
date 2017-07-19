@@ -30,6 +30,18 @@
 !
 !%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
+! All procedures conatained in this file:
+! WriteIterationOutput()
+! WriteIterationCIF()
+! WriteOutVariables()
+! WriteStructureFactors()
+
+
+!>
+!! Procedure-description: 
+!!
+!! Major-Authors: 'kidwhizz' (2015), Richard Beanland (2016)
+!!
 SUBROUTINE WriteIterationOutput(Iter,IThicknessIndex,IExitFlag,IErr)
 !This could be improved by bringing the content of subroutines up to this level
   USE MyNumbers
@@ -130,8 +142,15 @@ SUBROUTINE WriteIterationOutput(Iter,IThicknessIndex,IExitFlag,IErr)
   
 END SUBROUTINE WriteIterationOutput
 
-!!$  %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+!%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
+
+
+!>
+!! Procedure-description: Write out non symmetrically related atomic positions
+!!
+!! Major-Authors: 'kidwhizz' (2015), Richard Beanland (2016)
+!!
 SUBROUTINE WriteIterationCIF(path,IErr)
 
   USE MyNumbers
@@ -151,13 +170,13 @@ SUBROUTINE WriteIterationCIF(path,IErr)
   CHARACTER*200,INTENT(IN) :: path
   CHARACTER*200 :: SPrintString,filename,fullpath
 
-!!$  Write out non symmetrically related atomic positions
+  ! Write out non symmetrically related atomic positions
 
   WRITE(filename,*) "structure.cif"
   WRITE(fullpath,*) TRIM(ADJUSTL(path)),'/',TRIM(ADJUSTL(filename))
 
   OPEN(UNIT=IChOutSimplex,STATUS='UNKNOWN',FILE=TRIM(ADJUSTL(fullpath)))
- !RB
+  !RB
   WRITE(IChOutSimplex,FMT='(A16)') "data_felixrefine"
   WRITE(IChOutSimplex,FMT='(A5)') "loop_"
   WRITE(IChOutSimplex,FMT='(A14,1X,F7.4)') "_cell_length_a",RLengthX
@@ -180,9 +199,9 @@ SUBROUTINE WriteIterationCIF(path,IErr)
   WRITE(IChOutSimplex,FMT='(A20)') "_atom_site_occupancy"
 
   DO jnd = 1,SIZE(RBasisAtomPosition,DIM=1)!RB only gives refined atoms, needs work
-     WRITE(IChOutSimplex,FMT='(2(A3,1X),3(F7.4,1X),2(F5.2,1X))') &
+    WRITE(IChOutSimplex,FMT='(2(A3,1X),3(F7.4,1X),2(F5.2,1X))') &
 	 SBasisAtomLabel(jnd),SBasisAtomName(jnd),RBasisAtomPosition(jnd,:),RBasisIsoDW(jnd),RBasisOccupancy(jnd)
-!     WRITE(IChOutSimplex,FMT='(A2,1X,A1,1X,3(F9.6,1X),F5.3,1X,F5.3)') &
+!    WRITE(IChOutSimplex,FMT='(A2,1X,A1,1X,3(F9.6,1X),F5.3,1X,F5.3)') &
 !	 SBasisAtomName(jnd),SWyckoffSymbols(jnd),RBasisAtomPosition(jnd,:), &
 
   END DO
@@ -190,24 +209,31 @@ SUBROUTINE WriteIterationCIF(path,IErr)
   
   CLOSE(IChOutSimplex)
 
-!!$  Write out full atomic positions
+  ! Write out full atomic positions
 
-!XX  WRITE(filename,*) "StructureFull.txt"
-!XX  WRITE(fullpath,*) TRIM(ADJUSTL(path)),'/',TRIM(ADJUSTL(filename))
-!XXPRINT*,"RAtomPosition,SAtomName"  
-!XX  OPEN(UNIT=IChOutSimplex,STATUS='UNKNOWN',&
-!XX        FILE=TRIM(ADJUSTL(fullpath)))
-!XX    DO jnd = 1,SIZE(RAtomPosition,DIM=1)
-!XX     WRITE(IChOutSimplex,FMT='(A2,1X,3(F9.6,1X))') SAtomName(jnd),RAtomPosition(jnd,1:3)
-!XX    END DO
-!XX  CLOSE(IChOutSimplex)
+!  WRITE(filename,*) "StructureFull.txt"
+!  WRITE(fullpath,*) TRIM(ADJUSTL(path)),'/',TRIM(ADJUSTL(filename))
+!  PRINT*,"RAtomPosition,SAtomName"  
+!  OPEN(UNIT=IChOutSimplex,STATUS='UNKNOWN',&
+!        FILE=TRIM(ADJUSTL(fullpath)))
+!    DO jnd = 1,SIZE(RAtomPosition,DIM=1)
+!      WRITE(IChOutSimplex,FMT='(A2,1X,3(F9.6,1X))') SAtomName(jnd),RAtomPosition(jnd,1:3)
+!    END DO
+!  CLOSE(IChOutSimplex)
 
 END SUBROUTINE WriteIterationCIF
 
-!!$  %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+!%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
+
+
+!>
+!! Procedure-description: Adds the current fit and simulation parameters to IterationLog.txt
+!!
+!! Major-Authors: 'kidwhizz' (2015), Richard Beanland (2016)
+!!
 SUBROUTINE WriteOutVariables(Iter,IErr)
-! adds the current fit and simulation parameters to IterationLog.txt
+
   USE MyNumbers
   
   USE CConst; USE IConst; USE RConst
@@ -308,8 +334,15 @@ END SUBROUTINE WriteOutVariables
 
 !%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
+
+
+!>
+!! Procedure-description: Writes CUgMat into StructureFactors.txt
+!!
+!! Major-Authors: 'kidwhizz' (2015), Richard Beanland (2016)
+!!
 SUBROUTINE WriteStructureFactors(path,IErr)
-! Writes CUgMat into StructureFactors.txt
+
   USE MyNumbers
   
   USE CConst; USE IConst; USE RConst
@@ -338,5 +371,3 @@ SUBROUTINE WriteStructureFactors(path,IErr)
   CLOSE(IChOut)
 
 END SUBROUTINE WriteStructureFactors
-
-!!$  %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%

@@ -34,6 +34,23 @@
 ! $Id: Felixrefine.f90,v 1.89 2014/04/28 12:26:19 phslaz Exp $
 !%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
+! All procedures conatained in this file:
+! SimulateAndFit( )                               ---
+! FelixFunction( )                                ---
+! CalculateFigureofMeritandDetermineThickness( )  ---
+! UpdateVariables( )                              ---
+! PrintVariables( )                               ---
+! UpdateStructureFactors( )                       semi-obselete
+! ConvertVectorMovementsIntoAtomicCoordinates( )  semi-obselete
+! BlurG( )                                        ---
+! Parabo3( )                                      ---
+
+
+!>
+!! Procedure-description: Simulate and fit
+!!
+!! Major-Authors: Richard Beanland (2016)
+!!  
 SUBROUTINE SimulateAndFit(RIndependentVariable,Iter,IExitFLAG,IErr)
 
   USE MyNumbers
@@ -180,6 +197,14 @@ END SUBROUTINE SimulateAndFit
 
 !%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
+
+
+
+!>
+!! Procedure-description: Felixfunction
+!!
+!! Major-Authors: Keith Evans (2014), Richard Beanland (2016)
+!!  
 SUBROUTINE FelixFunction(IErr)
 
   USE MyNumbers
@@ -257,6 +282,15 @@ END SUBROUTINE FelixFunction
 
 !%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
+
+
+
+!>
+!! Procedure-description: Calculate figure of merit and determine Thickness, 
+!! involving image processing and correlation type.
+!!
+!! Major-Authors: Keith Evans (2014), Richard Beanland (2016)
+!!  
 SUBROUTINE CalculateFigureofMeritandDetermineThickness(Iter,IBestThicknessIndex,IErr)
   !NB core 0 only
   USE MyNumbers
@@ -284,10 +318,10 @@ SUBROUTINE CalculateFigureofMeritandDetermineThickness(Iter,IBestThicknessIndex,
   CHARACTER*200 :: SPrintString
   CHARACTER*20 :: Snum       
 
-  IF (ICorrelationFLAG.EQ.3) THEN!Memory saving  only allocate mask if needed
+  IF (ICorrelationFLAG.EQ.3) THEN !Memory saving  only allocate mask if needed
     ALLOCATE(RMaskImage(2*IPixelCount,2*IPixelCount),STAT=IErr)
   END IF
-  RBestCorrelation = TEN !The best correlation for each image will go in here, initialise at the maximum value
+  RBestCorrelation = TEN ! The best correlation for each image will go in here, initialise at the maximum value
   RBestTotalCorrelation = TEN !The best mean of all correlations
   IBestImageThicknessIndex = 1 !The thickness with the lowest figure of merit for each image
   DO jnd = 1,IThicknessCount
@@ -318,7 +352,6 @@ SUBROUTINE CalculateFigureofMeritandDetermineThickness(Iter,IBestThicknessIndex,
         END WHERE
       
       END SELECT
-      !
       
       !Correlation type-----------------------------------
       SELECT CASE (ICorrelationFLAG)
@@ -393,6 +426,13 @@ END SUBROUTINE CalculateFigureofMeritandDetermineThickness
 
 !%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
+
+
+!>
+!! Procedure-description: Fill the indepedent value array with values 
+!!
+!! Major-Authors: Keith Evans (2014), Richard Beanland (2016)
+!!  
 SUBROUTINE UpdateVariables(RIndependentVariable,IErr)
 
   USE MyNumbers
@@ -411,9 +451,8 @@ SUBROUTINE UpdateVariables(RIndependentVariable,IErr)
   INTEGER(IKIND) :: IVariableType,IVectorID,IAtomID,IErr,ind
   REAL(RKIND),DIMENSION(INoOfVariables),INTENT(IN) :: RIndependentVariable
 
-!!$  Fill the Independent Value array with values
   IF(IRefineMode(2).EQ.1) THEN     
-     RBasisAtomPosition = RInitialAtomPosition!RB is this redundant? 
+     RBasisAtomPosition = RInitialAtomPosition !RB is this redundant? 
   END IF
 
   DO ind = 1,INoOfVariables
@@ -433,7 +472,7 @@ SUBROUTINE UpdateVariables(RIndependentVariable,IErr)
     CASE(3)
       RBasisOccupancy(IIterativeVariableUniqueIDs(ind,3))=RIndependentVariable(ind)
  
-      CASE(4)
+    CASE(4)
       RBasisIsoDW(IIterativeVariableUniqueIDs(ind,3))=RIndependentVariable(ind)
     CASE(5)
       RAnisotropicDebyeWallerFactorTensor(&
@@ -474,6 +513,13 @@ END SUBROUTINE UpdateVariables
 
 !%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
+
+
+!>
+!! Procedure-description: Print variables
+!!
+!! Major-Authors: Keith Evans (2014), Richard Beanland (2016)
+!! 
 SUBROUTINE PrintVariables(IErr)
 
   USE WriteToScreen
@@ -577,6 +623,13 @@ END SUBROUTINE PrintVariables
 
 !%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
+
+
+!>
+!! Procedure-description: Update structure factors
+!!
+!! Major-Authors: Keith Evans (2014), Richard Beanland (2016)
+!! 
 SUBROUTINE UpdateStructureFactors(RIndependentVariable,IErr)
 
   USE MyNumbers
@@ -620,6 +673,13 @@ END SUBROUTINE UpdateStructureFactors
 
 !%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
+
+
+!>
+!! Procedure-description: Convert vector movements into atomic coordinates
+!!
+!! Major-Authors: Keith Evans (2014), Richard Beanland (2016)
+!! 
 SUBROUTINE ConvertVectorMovementsIntoAtomicCoordinates(IVariableID,RIndependentVariable,IErr)
   !RB this is now redundant, moved up to Update Variables
   USE MyNumbers
@@ -650,9 +710,17 @@ END SUBROUTINE ConvertVectorMovementsIntoAtomicCoordinates
 
 !%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
+
+
+!>
+!! Procedure-description: Performs a 2D Gaussian blur on the input image using 
+!! global variable RBlurRadius and renormalises the output image to have the
+!! same min and max as the input image
+!!
+!! Major-Authors: Richard Beanland (2016)
+!! 
 SUBROUTINE BlurG(RImageToBlur,IErr)
-  !performs a 2D Gaussian blur on the input image using global variable RBlurRadius
-  !renormalises the output image to have the same min and max as the input image
+
   USE MyNumbers
 
   USE CConst; USE IConst; USE RConst
@@ -734,45 +802,19 @@ END SUBROUTINE BlurG
 
 !!$  %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-REAL(RKIND) FUNCTION RStandardError(RStandardDeviation,RMean,IErr)
 
-  USE MyNumbers
 
-  USE CConst; USE IConst; USE RConst
-  USE IPara; USE RPara; USE SPara; USE CPara
-  USE BlochPara
 
-  USE IChannels
-
-  USE MPI
-  USE MyMPI
-
-  IMPLICIT NONE
-
-  INTEGER(IKIND) :: IErr
-  REAL(RKIND),INTENT(INOUT) :: RStandardDeviation,RMean
-
-  IF (IStandardDeviationCalls.GT.1) THEN
-     RMean = (RMean*REAL(IStandardDeviationCalls,RKIND) + &
-          RFigureofMerit)/REAL(IStandardDeviationCalls+1,RKIND)
-     RStandardDeviation = SQRT(&
-          ((REAL(IStandardDeviationCalls,RKIND)*RStandardDeviation**2)+&
-          (RFigureofMerit-RMean)**2)/ &
-          REAL(IStandardDeviationCalls+1,RKIND))   
-  ELSE
-     RMean = RFigureofMerit
-     RStandardDeviation = ZERO
-  END IF
-  RStandardError = RStandardDeviation/SQRT(REAL(IStandardDeviationCalls+1,RKIND))
-  IStandardDeviationCalls = IStandardDeviationCalls + 1
-
-END FUNCTION  RStandardError
-!%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-
+!>
+!! Procedure-description: Input is a vector Rx with three x-coordinates and 
+!! Ry with three y-coordinates. Output is the x- and y-coordinate of the vertex
+!! of the fitted parabola, Rxv Ryv. Using Cramer's rules to solve the system of
+!! equations to give Ra(x^2)+Rb(x)+Rc=(y)
+!!
+!! Major-Authors: Richard Beanland (2016)
+!! 
 SUBROUTINE Parabo3(Rx,Ry,Rxv,Ryv,IErr)
-  !Input is a vector Rx with three x-coordinates and  Ry with three y-coordinates 
-  !Output is the x- and y-coordinate of the vertex of the fitted parabola, Rxv Ryv
-  !Using Cramer's rules to solve the system of equations to give Ra(x^2)+Rb(x)+Rc=(y)
+
   USE MyNumbers
 
   IMPLICIT NONE
@@ -788,4 +830,5 @@ SUBROUTINE Parabo3(Rx,Ry,Rxv,Ryv,IErr)
       +Rx(3)*Rx(3)*(Rx(1)*Ry(2)-Rx(2)*Ry(1)))/Rd
   Rxv = -Rb/(2*Ra);!x-coord
   Ryv = Rc-Rb*Rb/(4*Ra)!y-coord
+
 END SUBROUTINE  Parabo3
