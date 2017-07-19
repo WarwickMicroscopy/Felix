@@ -1,0 +1,9 @@
+<map id="experimentalsetup" name="experimentalsetup">
+<area shape="rect" id="node2" href="$obselete_8f90.html#a4e1a0877095e231f8cb6f6b166c7f290" title="crystallographyinitialisation" alt="" coords="185,56,364,83"/>
+<area shape="rect" id="node6" href="$obselete_8f90.html#a66676507f85c5aa60fbe0d82d67b4ff9" title="diffractionpatterninitialisation" alt="" coords="181,107,368,133"/>
+<area shape="rect" id="node3" href="$crystallography_8f90.html#a0860d82af13316c7aad5ad449d073490" title="Procedure&#45;description: Creates reciprocal lattice vectors in Microscope reference frame..." alt="" coords="459,5,572,32"/>
+<area shape="rect" id="node5" href="$crystallography_8f90.html#a118dc8a18775a4efb509337c9c612dc2" title="Procedure&#45;description: Calculates the FULL set of possible fractional atomic positions and then gets ..." alt="" coords="445,56,586,83"/>
+<area shape="rect" id="node4" href="$namespacemynumbers.html#a089c488940881f62f9d4d072f83bd0f4" title="mynumbers::cross" alt="" coords="663,5,793,32"/>
+<area shape="rect" id="node7" href="$diffractionpatterndefinitions_8f90.html#a3ccb3f5891d41b40d928f04dc888d844" title="Procedure&#45;description: Assign numbers to the different reflections in IOutputReflections. " alt="" coords="416,107,615,133"/>
+<area shape="rect" id="node8" href="$obselete_8f90.html#a3d45ef7d35dd999aed29d2c34a05bc8c" title="diffractionpatterncalculation" alt="" coords="425,157,606,184"/>
+</map>

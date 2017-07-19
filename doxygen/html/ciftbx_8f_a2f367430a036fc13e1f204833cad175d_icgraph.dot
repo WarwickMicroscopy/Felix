@@ -1,0 +1,37 @@
+digraph "getstr"
+{
+  edge [fontname="Helvetica",fontsize="10",labelfontname="Helvetica",labelfontsize="10"];
+  node [fontname="Helvetica",fontsize="10",shape=record];
+  rankdir="LR";
+  Node1 [label="getstr",height=0.2,width=0.4,color="black", fillcolor="grey75", style="filled", fontcolor="black"];
+  Node1 -> Node2 [dir="back",color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node2 [label="data_",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$ciftbx_8f.html#acef84efd6e02fb3ddcab29ff8633a848"];
+  Node2 -> Node3 [dir="back",color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node3 [label="readcif",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$readcif_8f90.html#a851b318f1c18608adf2b40ba20d10014"];
+  Node3 -> Node4 [dir="back",color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node4 [label="felixrefine",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$felixrefine_8f90.html#aecbf263fc9c06070ed63b7a31c76bbef"];
+  Node3 -> Node5 [dir="back",color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node5 [label="readinput",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$readinput_8f90.html#a87d0c2ec1671e34d4efcabf08db9d396"];
+  Node5 -> Node6 [dir="back",color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node6 [label="felixsim",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$felixsim_8f90.html#ad36d8d5ddad66820866e3d05a4c66144"];
+  Node1 -> Node7 [dir="back",color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node7 [label="test_",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$ciftbx_8f.html#a7bf11278540621a732ea9c62c37f39d4"];
+  Node1 -> Node8 [dir="back",color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node8 [label="bkmrk_",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$ciftbx_8f.html#af581014d858d87ba2c87bbac0de5640a"];
+  Node1 -> Node9 [dir="back",color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node9 [label="find_",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$ciftbx_8f.html#a30b628eee0628904dba9c686a8ee7178"];
+  Node1 -> Node10 [dir="back",color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node10 [label="numb_",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$ciftbx_8f.html#a52533b45df7c78e9d743147a4ed381f3"];
+  Node10 -> Node3 [dir="back",color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node1 -> Node11 [dir="back",color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node11 [label="numd_",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$ciftbx_8f.html#a321db51a9a1b39f96c345271b840e3ca"];
+  Node1 -> Node12 [dir="back",color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node12 [label="charnp_",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$ciftbx_8f.html#a4c9835444462b49efe9e7b8cbe54beb1"];
+  Node1 -> Node13 [dir="back",color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node13 [label="tbxxgitm",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$ciftbx_8f.html#a39d2614384d61dc867b06c6bea0fa00c"];
+  Node13 -> Node7 [dir="back",color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node13 -> Node9 [dir="back",color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node13 -> Node10 [dir="back",color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node13 -> Node11 [dir="back",color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node13 -> Node12 [dir="back",color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+}

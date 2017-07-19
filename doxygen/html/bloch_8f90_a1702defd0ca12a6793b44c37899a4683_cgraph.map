@@ -1,0 +1,6 @@
+<map id="blochcoefficientcalculation" name="blochcoefficientcalculation">
+<area shape="rect" id="node2" href="$bloch_8f90.html#aa5311298c3519d3377e56eb9a045612f" title="Procedure&#45;description: Determines number of weak and strong beams. Uses Sg and pertubation strengths ..." alt="" coords="228,5,455,32"/>
+<area shape="rect" id="node3" href="$bloch_8f90.html#a32c715c31357d622ee204ff5e4043996" title="Procedure&#45;description: Diagonalize a Matrix considering eigenvalues. " alt="" coords="288,56,395,83"/>
+<area shape="rect" id="node4" href="$bloch_8f90.html#ac14e6af413f2c0c9c9f608f26a0044d8" title="Procedure&#45;description: Calculates diffracted intensity for a specific thickness. " alt="" coords="270,107,413,133"/>
+<area shape="rect" id="node5" href="$bloch_8f90.html#a9bb27b6fc6da4c04cd45693c074fac26" title="Procedure&#45;description: Invert an M*M Complex Matrix. " alt="" coords="503,107,557,133"/>
+</map>

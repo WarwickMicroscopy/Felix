@@ -1,0 +1,29 @@
+digraph "dqagie"
+{
+  edge [fontname="Helvetica",fontsize="10",labelfontname="Helvetica",labelfontsize="10"];
+  node [fontname="Helvetica",fontsize="10",shape=record];
+  rankdir="LR";
+  Node1 [label="dqagie",height=0.2,width=0.4,color="black", fillcolor="grey75", style="filled", fontcolor="black"];
+  Node1 -> Node2 [dir="back",color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node2 [label="dqagi",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$quadpack__double_8f90.html#aa62896aeb27d272531de002660a33d3c"];
+  Node2 -> Node3 [dir="back",color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node3 [label="doubleintegrate",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$Ug_8f90.html#a72eb459681c0220af8f3fbd3d64bb510"];
+  Node3 -> Node4 [dir="back",color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node4 [label="absorption",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$Ug_8f90.html#a5637638595593ffb09280db93d99adc1"];
+  Node4 -> Node5 [dir="back",color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node5 [label="simulateandfit",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$felixfunction_8f90.html#adcb9fd1a6de6119cd7591814585634cd"];
+  Node5 -> Node6 [dir="back",color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node6 [label="felixrefine",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$felixrefine_8f90.html#aecbf263fc9c06070ed63b7a31c76bbef"];
+  Node5 -> Node7 [dir="back",color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node7 [label="ndimensionaldownhillsimplex",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$simplex_8f90.html#a51042de79e202f5b883de0d70b0815dc"];
+  Node7 -> Node6 [dir="back",color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node5 -> Node8 [dir="back",color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node8 [label="simplexextrapolate",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$simplex_8f90.html#a25ad91b0853caf2e81addb68f144b5a1"];
+  Node4 -> Node6 [dir="back",color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node2 -> Node9 [dir="back",color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node9 [label="integratebk",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$Ug_8f90.html#a97a1ba7f90ab5fc4abd72181dcdb8775"];
+  Node1 -> Node10 [dir="back",color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node10 [label="dqawfe",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$quadpack__double_8f90.html#a8c991ec87bb2062a57a3ed106c26c19e"];
+  Node10 -> Node11 [dir="back",color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node11 [label="dqawf",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$quadpack__double_8f90.html#a14831c99e9c4752832697dea9fcae661"];
+}

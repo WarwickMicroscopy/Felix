@@ -1,0 +1,27 @@
+<map id="writecif" name="writecif">
+<area shape="rect" id="node2" href="$ciftbx_8f.html#a4b968cff97c84029fcb089e5754373eb" title="dict_" alt="" coords="459,549,509,576"/>
+<area shape="rect" id="node18" href="$ciftbx_8f.html#ad838ec2db43b50072a6258f0266e21e6" title="pfile_" alt="" coords="117,68,171,95"/>
+<area shape="rect" id="node19" href="$ciftbx_8f.html#a10a7a76ff70d108d323348dac44fe595" title="close_" alt="" coords="219,93,279,120"/>
+<area shape="rect" id="node26" href="$ciftbx_8f.html#ad9d6797ef14de7bbdee156bc2a5f6fc1" title="pdata_" alt="" coords="219,169,280,196"/>
+<area shape="rect" id="node3" href="$ciftbx_8f.html#af8e22df5498f1d8adafff18e46a84b4b" title="tbxxnlc" alt="" coords="573,499,637,525"/>
+<area shape="rect" id="node4" href="$hash__funcs_8f.html#a65961dd627a6f0cb48c02626574a9891" title="hash_init" alt="" coords="568,651,643,677"/>
+<area shape="rect" id="node9" href="$hash__funcs_8f.html#a659a0d85a1854db8b15266d21d55dbd8" title="hash_store" alt="" coords="952,752,1039,779"/>
+<area shape="rect" id="node11" href="$ciftbx_8f.html#af9e1269491fba3f7638d9de0e44a17d6" title="tbxxerr" alt="" coords="699,549,761,576"/>
+<area shape="rect" id="node13" href="$ciftbx_8f.html#a613190d7c9b1da4fd8701253ce259ec5" title="tbxxclc" alt="" coords="573,701,637,728"/>
+<area shape="rect" id="node14" href="$ciftbx_8f.html#a59970412fc0ae90f68f3a692c2071791" title="tbxxwarn" alt="" coords="693,321,767,348"/>
+<area shape="rect" id="node15" href="$ciftbx_8f.html#ac1949b97fd2afba1d86c2d6cd034645e" title="tbxxsstb" alt="" coords="569,448,641,475"/>
+<area shape="rect" id="node17" href="$ciftbx_8f.html#ad65b75446e85514dfa2e94471d6e02cc" title="tbxxcat" alt="" coords="573,752,638,779"/>
+<area shape="rect" id="node5" href="$hash__funcs_8f.html#a3a4bdd43e3433c8ea005132aadd4debd" title="hash_find" alt="" coords="691,689,769,716"/>
+<area shape="rect" id="node6" href="$hash__funcs_8f.html#a516e89b3112abb5e37ab02c396513689" title="hash_value" alt="" coords="1224,727,1312,753"/>
+<area shape="rect" id="node7" href="$ciftbx_8f.html#ad6414dfe068ee94ab596dec021afe0a0" title="lastnb" alt="" coords="1239,879,1297,905"/>
+<area shape="rect" id="node8" href="$hash__funcs_8f.html#a8f1dc4d4cb474fed9e89568a4362ee1f" title="hash_fnext" alt="" coords="817,727,904,753"/>
+<area shape="rect" id="node10" href="$hash__funcs_8f.html#ad86497829b2996444c2d269419cafe1f" title="hash_snext" alt="" coords="1087,803,1176,829"/>
+<area shape="rect" id="node12" href="$ciftbx_8f.html#a9b72f12a59116e461a5320d1621f18f6" title="tbxxcmsg" alt="" coords="821,448,900,475"/>
+<area shape="rect" id="node16" href="$ciftbx_8f.html#a301b7833037eef5d970025ed14694d58" title="tbxxrle" alt="" coords="699,448,761,475"/>
+<area shape="rect" id="node21" href="$ciftbx_8f.html#a1cd7fd5e37c6bcdc4dda03f5fce960d5" title="tbxxpstr" alt="" coords="571,144,640,171"/>
+<area shape="rect" id="node20" href="$ciftbx_8f.html#af807bd4e3b7f00bd373b91d2481c86bd" title="tbxxeot" alt="" coords="331,43,397,69"/>
+<area shape="rect" id="node22" href="$ciftbx_8f.html#a5853f335ad76aef455ba8a30712cdab5" title="tbxxpxct" alt="" coords="448,195,520,221"/>
+<area shape="rect" id="node23" href="$ciftbx_8f.html#a333cd3f7d454161170b6c98e7e9fb206" title="tbxxebkt" alt="" coords="328,93,400,120"/>
+<area shape="rect" id="node24" href="$ciftbx_8f.html#a6cf67dc9f2c8ba0cc134063c70e5b3d2" title="tbxxelp" alt="" coords="332,296,396,323"/>
+<area shape="rect" id="node25" href="$ciftbx_8f.html#a1ed2d07cf2076f7f4a492135553a18ce" title="tbxxpxot" alt="" coords="448,347,520,373"/>
+</map>

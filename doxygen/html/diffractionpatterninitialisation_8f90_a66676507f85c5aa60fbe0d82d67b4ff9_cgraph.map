@@ -1,0 +1,5 @@
+<map id="diffractionpatterninitialisation" name="diffractionpatterninitialisation">
+<area shape="rect" id="node2" href="$diffractionpatterndefinitions_8f90.html#a280f675d71225787a73316b9c8ff5623" title="reflectiondetermination" alt="" coords="263,5,416,32"/>
+<area shape="rect" id="node3" href="$diffractionpatterndefinitions_8f90.html#a3ccb3f5891d41b40d928f04dc888d844" title="specificreflectiondetermination" alt="" coords="240,56,439,83"/>
+<area shape="rect" id="node4" href="$diffractionpatterndefinitions_8f90.html#a3d45ef7d35dd999aed29d2c34a05bc8c" title="diffractionpatterncalculation" alt="" coords="249,107,430,133"/>
+</map>

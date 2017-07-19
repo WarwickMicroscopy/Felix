@@ -1,0 +1,19 @@
+digraph "blurg"
+{
+  edge [fontname="Helvetica",fontsize="10",labelfontname="Helvetica",labelfontsize="10"];
+  node [fontname="Helvetica",fontsize="10",shape=record];
+  rankdir="LR";
+  Node1 [label="blurg",height=0.2,width=0.4,color="black", fillcolor="grey75", style="filled", fontcolor="black"];
+  Node1 -> Node2 [dir="back",color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node2 [label="felixfunction",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$felixfunction_8f90.html#ae83fd801e24c7b920e1cf0ef9e358185"];
+  Node2 -> Node3 [dir="back",color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node3 [label="simulateandfit",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$felixfunction_8f90.html#adcb9fd1a6de6119cd7591814585634cd"];
+  Node3 -> Node4 [dir="back",color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node4 [label="felixrefine",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$felixrefine_8f90.html#aecbf263fc9c06070ed63b7a31c76bbef"];
+  Node3 -> Node5 [dir="back",color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node5 [label="ndimensionaldownhillsimplex",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$simplex_8f90.html#a51042de79e202f5b883de0d70b0815dc"];
+  Node5 -> Node4 [dir="back",color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node3 -> Node6 [dir="back",color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+  Node6 [label="simplexextrapolate",height=0.2,width=0.4,color="black", fillcolor="white", style="filled",URL="$simplex_8f90.html#a25ad91b0853caf2e81addb68f144b5a1"];
+  Node2 -> Node4 [dir="back",color="midnightblue",fontsize="10",style="solid",fontname="Helvetica"];
+}

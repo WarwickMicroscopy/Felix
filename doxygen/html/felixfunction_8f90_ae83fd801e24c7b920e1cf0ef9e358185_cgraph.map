@@ -1,0 +1,8 @@
+<map id="felixfunction" name="felixfunction">
+<area shape="rect" id="node2" href="$bloch_8f90.html#a1702defd0ca12a6793b44c37899a4683" title="Procedure&#45;description: Simulates the electron beam and calculates Bloch coefficients, conisdering complex amplitudes and iterating over the thickness. " alt="" coords="145,56,320,83"/>
+<area shape="rect" id="node7" href="$felixfunction_8f90.html#a37ef4d9b2ef4eaacbd5fc82ebb8843d9" title="Procedure&#45;description: Performs a 2D Gaussian blur on the input image using global variable RBlurRadi..." alt="" coords="207,107,258,133"/>
+<area shape="rect" id="node3" href="$bloch_8f90.html#aa5311298c3519d3377e56eb9a045612f" title="Procedure&#45;description: Determines number of weak and strong beams. Uses Sg and pertubation strengths ..." alt="" coords="368,5,595,32"/>
+<area shape="rect" id="node4" href="$bloch_8f90.html#a32c715c31357d622ee204ff5e4043996" title="Procedure&#45;description: Diagonalize a Matrix considering eigenvalues. " alt="" coords="428,56,535,83"/>
+<area shape="rect" id="node5" href="$bloch_8f90.html#ac14e6af413f2c0c9c9f608f26a0044d8" title="Procedure&#45;description: Calculates diffracted intensity for a specific thickness. " alt="" coords="410,107,553,133"/>
+<area shape="rect" id="node6" href="$bloch_8f90.html#a9bb27b6fc6da4c04cd45693c074fac26" title="Procedure&#45;description: Invert an M*M Complex Matrix. " alt="" coords="643,107,697,133"/>
+</map>
