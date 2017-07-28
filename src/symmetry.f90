@@ -1,10 +1,10 @@
 !%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 !
-! felixsim
+! Felix
 !
-! Richard Beanland, Keith Evans, Rudolf A Roemer and Alexander Hubert
+! Richard Beanland, Keith Evans & Rudolf A Roemer
 !
-! (C) 2013/14, all right reserved
+! (C) 2013-17, all rights reserved
 !
 ! Version: :VERSION:
 ! Date:    :DATE:
@@ -15,20 +15,18 @@
 ! 
 !%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 !
-!  This file is part of felixsim.
-!
-!  felixsim is free software: you can redistribute it and/or modify
+!  Felix is free software: you can redistribute it and/or modify
 !  it under the terms of the GNU General Public License as published by
 !  the Free Software Foundation, either version 3 of the License, or
 !  (at your option) any later version.
 !  
-!  felixsim is distributed in the hope that it will be useful,
+!  Felix is distributed in the hope that it will be useful,
 !  but WITHOUT ANY WARRANTY; without even the implied warranty of
 !  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 !  GNU General Public License for more details.
 !  
 !  You should have received a copy of the GNU General Public License
-!  along with felixsim.  If not, see <http://www.gnu.org/licenses/>.
+!  along with Felix.  If not, see <http://www.gnu.org/licenses/>.
 !
 !%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
@@ -36,17 +34,28 @@
 ! $Id: smodules.f90,v 1.63 2014/04/28 12:26:19 phslaz Exp $
 !%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
+! All procedures conatained in this file:
+! DetermineAllowedMovements()
+! CountAllowedMovements()
+! ConvertSpaceGroupToNumber()
+! StrLowCase() 
+
+
+!>
+!! Procedure-description: 
+!!
+!! Major-Authors: Keith Evans (2014), Richard Beanland (2016)
+!!
 SUBROUTINE DetermineAllowedMovements(ISpaceGrp,SWyckoffSymbol,RVector,IVector,IErr)
 
   USE MyNumbers
-  USE WriteToScreen
   
   USE CConst; USE IConst; USE RConst
   USE IPara; USE RPara; USE SPara; USE CPara
   USE BlochPara
 
   USE IChannels
-
+  USE message_mod
   USE MPI
   USE MyMPI
 
@@ -58,21 +67,21 @@ SUBROUTINE DetermineAllowedMovements(ISpaceGrp,SWyckoffSymbol,RVector,IVector,IE
 
   SELECT CASE(ISpaceGrp)
   CASE(1)
-     SELECT CASE (SWyckoffSymbol)
-     CASE('x')
-       RVector(1,:) = (/ZERO, ONE, ZERO/)
-       RVector(2,:) = (/ZERO, ZERO, ONE/)
-     CASE('b')
-       RVector(1,:) = (/ONE, ZERO, ZERO/)
-       RVector(2,:) = (/ZERO, ONE, ZERO/)
-       RVector(3,:) = (/ZERO, ZERO, ONE/)
-     CASE DEFAULT
-       PRINT*,"---------------------------------------"
-       PRINT*,"This Wyckoff Symbol for this space group is not yet implemented"
-       PRINT*,"You can correct this in symmetry.f90"
-       PRINT*,"---------------------------------------"
-	   IErr=1		
-     END SELECT
+    SELECT CASE (SWyckoffSymbol)
+    CASE('x')
+      RVector(1,:) = (/ZERO, ONE, ZERO/)
+      RVector(2,:) = (/ZERO, ZERO, ONE/)
+    CASE('b')
+      RVector(1,:) = (/ONE, ZERO, ZERO/)
+      RVector(2,:) = (/ZERO, ONE, ZERO/)
+      RVector(3,:) = (/ZERO, ZERO, ONE/)
+    CASE DEFAULT
+      CALL message( LM, "---------------------------------------" )
+      CALL message( LM, "This Wyckoff Symbol for this space group is not yet implemented")
+      CALL message( LM, "You can correct this in symmetry.f90")
+      CALL message( LM, "---------------------------------------") 
+      IErr=1		
+    END SELECT
 !!$  CASE(2)
 !!$  CASE(3)
 !!$  CASE(4)
@@ -117,10 +126,10 @@ SUBROUTINE DetermineAllowedMovements(ISpaceGrp,SWyckoffSymbol,RVector,IVector,IE
        RVector(2,:) = (/ZERO, ONE, ZERO/)
        RVector(3,:) = (/ZERO, ZERO, ONE/)
      CASE DEFAULT
-       PRINT*,"---------------------------------------"
-       PRINT*,"This Wyckoff Symbol for this space group is not yet implemented"
-       PRINT*,"You can correct this in symmetry.f90"
-       PRINT*,"---------------------------------------"
+        CALL message( LM, "---------------------------------------" )
+        CALL message( LM, "This Wyckoff Symbol for this space group is not yet implemented")
+        CALL message( LM, "You can correct this in symmetry.f90")
+        CALL message( LM, "---------------------------------------") 
 	   IErr=1		
      END SELECT
 !!$  CASE(37)
@@ -318,27 +327,31 @@ SUBROUTINE DetermineAllowedMovements(ISpaceGrp,SWyckoffSymbol,RVector,IVector,IE
 !!$  CASE(229)
 !!$  CASE(230)
   CASE DEFAULT
-     PRINT*,"---------------------------------------"
-     PRINT*,"This space group is not yet implemented"
-     PRINT*,"You can correct this in symmetry.f90"
-     PRINT*,"---------------------------------------"
-	 IErr=1
+    CALL message( LM, "---------------------------------------" )
+    CALL message( LM, "This space group is not yet implemented")
+    CALL message( LM, "You can correct this in symmetry.f90")
+    CALL message( LM, "---------------------------------------")  
   END SELECT
 END SUBROUTINE DetermineAllowedMovements
 
-!!$%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+!%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
+
+!>
+!! Procedure-description: 
+!!
+!! Major-Authors: Keith Evans (2014), Richard Beanland (2016)
+!!
 SUBROUTINE CountAllowedMovements(ISpaceGrp,SWyckoffSymbol,IVectors,IErr)
 
   USE MyNumbers
-  USE WriteToScreen
   
   USE CConst; USE IConst; USE RConst
   USE IPara; USE RPara; USE SPara; USE CPara
   USE BlochPara
 
   USE IChannels
-
+  USE message_mod
   USE MPI
   USE MyMPI
 
@@ -356,10 +369,10 @@ SUBROUTINE CountAllowedMovements(ISpaceGrp,SWyckoffSymbol,IVectors,IErr)
      CASE('b')
         IVectors = 3_IKIND
      CASE DEFAULT
-        PRINT*,"---------------------------------------"
-        PRINT*,"This Wyckoff Symbol for this space group is not yet implemented"
-        PRINT*,"You can correct this in symmetry.f90"
-        PRINT*,"---------------------------------------"     
+        CALL message( LM, "---------------------------------------" )
+        CALL message( LM, "This Wyckoff Symbol for this space group is not yet implemented")
+        CALL message( LM, "You can correct this in symmetry.f90")
+        CALL message( LM, "---------------------------------------")     
      END SELECT
 !!$  CASE(2)
 !!$  CASE(3)
@@ -402,10 +415,10 @@ SUBROUTINE CountAllowedMovements(ISpaceGrp,SWyckoffSymbol,IVectors,IErr)
      CASE('b')
         IVectors = 3_IKIND
      CASE DEFAULT
-        PRINT*,"---------------------------------------"
-        PRINT*,"This Wyckoff Symbol for this space group is not yet implemented"
-        PRINT*,"You can correct this in symmetry.f90"
-        PRINT*,"---------------------------------------"     
+        CALL message( LM, "---------------------------------------" )
+        CALL message( LM, "This Wyckoff Symbol for this space group is not yet implemented")
+        CALL message( LM, "You can correct this in symmetry.f90")
+        CALL message( LM, "---------------------------------------")     
      END SELECT
 !!$  CASE(37)
 !!$  CASE(38)
@@ -602,19 +615,25 @@ SUBROUTINE CountAllowedMovements(ISpaceGrp,SWyckoffSymbol,IVectors,IErr)
 !!$  CASE(229)
 !!$  CASE(230)
   CASE DEFAULT     
-     PRINT*,"---------------------------------------"
-     PRINT*,"This space group is not yet implemented"
-     PRINT*,"You can correct this in symmetry.f90"
-     PRINT*,"---------------------------------------"
+    CALL message( LM, "---------------------------------------" )
+    CALL message( LM, "This space group is not yet implemented")
+    CALL message( LM, "You can correct this in symmetry.f90")
+    CALL message( LM, "---------------------------------------")  
   END SELECT
 END SUBROUTINE CountAllowedMovements
 
-!!$%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+!%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
+
+!>
+!! Procedure-description: Convert SSpacegrp to lower case and Compare
+!! SSpaceGrpNoSpaces with every space group
+!!
+!! Major-Authors: Keith Evans (2014), Richard Beanland (2016)
+!!
 SUBROUTINE ConvertSpaceGroupToNumber(ISpaceGrp,IErr)
 
   USE MyNumbers
-  USE WriteToScreen
   
   USE CConst; USE IConst; USE RConst
   USE IPara; USE RPara; USE SPara; USE CPara
@@ -632,7 +651,7 @@ SUBROUTINE ConvertSpaceGroupToNumber(ISpaceGrp,IErr)
   CHARACTER(LEN(SSpaceGrp)) :: SSpaceGrpNoSpaces
   CHARACTER*20 :: SSpaceGrpToCompare
 
-!!$  Push Spaces In SSpaceGrp to the end of the String
+  ! Push Spaces In SSpaceGrp to the end of the String
   
   jnd = 0
   ISpaceGrp = 0
@@ -647,11 +666,11 @@ SUBROUTINE ConvertSpaceGroupToNumber(ISpaceGrp,IErr)
      END IF
   END DO
   
-!!$  Convert SSpacegrp to lower case 
+  ! Convert SSpacegrp to lower case 
 
   CALL StrLowCase( SSpaceGrpNoSpaces,SSpaceGrpNoSpaces,IErr )
 
-!!$  Compare SSpaceGrpNoSpaces with every space group 
+  ! Compare SSpaceGrpNoSpaces with every space group 
 
   DO ind = 1,SIZE(CSpaceGrp)
 
@@ -666,14 +685,20 @@ SUBROUTINE ConvertSpaceGroupToNumber(ISpaceGrp,IErr)
   IF(ISpaceGrp.EQ.0) THEN
      IErr = 1
      IF(my_rank.EQ.0) THEN
-        PRINT*,"Your Space Group",SSpaceGrpNoSpaces,"Was not found, Check your .cif file"
+        PRINT*,"Error:Your Space Group",SSpaceGrpNoSpaces,"Was not found, Check your .cif file"
      END IF
   END IF
   
 END SUBROUTINE ConvertSpaceGroupToNumber
 
-!!$%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+!%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
+
+!>
+!! Procedure-description: 
+!!
+!! Major-Authors: Keith Evans (2014), Richard Beanland (2016)
+!!
 SUBROUTINE StrLowCase( Input_String,Output_String,IErr ) 
 
   USE MyNumbers
@@ -683,7 +708,7 @@ SUBROUTINE StrLowCase( Input_String,Output_String,IErr )
   USE BlochPara
 
   USE IChannels
-
+  USE message_mod
   USE MPI
   USE MyMPI
 
@@ -705,27 +730,4 @@ SUBROUTINE StrLowCase( Input_String,Output_String,IErr )
   END DO
 END SUBROUTINE  StrLowCase
 
-SUBROUTINE MakeUnitVector(RVector,IErr)
-!This is a pointless subroutine, make redundant
-  USE MyNumbers
-  
-  USE CConst; USE IConst; USE RConst
-  USE IPara; USE RPara; USE SPara; USE CPara
-  USE BlochPara
 
-  USE IChannels
-
-  USE MPI
-  USE MyMPI
-
-  IMPLICIT NONE
-
-  INTEGER(IKIND) :: &
-       IErr,ind
-  REAL(RKIND),DIMENSION(:,:),INTENT(INOUT) :: &
-       RVector
-  
-  DO ind = 1,SIZE(RVector,DIM=1)
-     RVector(ind,:) = RVector(ind,:)/SQRT(SUM(RVector(ind,:)**2))
-  END DO
-END SUBROUTINE MakeUnitVector

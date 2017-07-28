@@ -1,30 +1,47 @@
 !%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 !
-! felixrefine
+! Felix
 !
-! Richard Beanland, Keith Evans, Rudolf A Roemer and Alexander Hubert
+! Richard Beanland, Keith Evans & Rudolf A Roemer
 !
-! (C) 2013/14/15/16, all right reserved
+! (C) 2013-17, all rights reserved
+!
+! Version: :VERSION:
+! Date:    :DATE:
+! Time:    :TIME:
+! Status:  :RLSTATUS:
+! Build:   :BUILD:
+! Author:  :AUTHOR:
 ! 
 !%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 !
-!  This file is part of felixrefine.
-!
-!  felixrefine is free software: you can redistribute it and/or modify
+!  Felix is free software: you can redistribute it and/or modify
 !  it under the terms of the GNU General Public License as published by
 !  the Free Software Foundation, either version 3 of the License, or
 !  (at your option) any later version.
 !  
-!  felixrefine is distributed in the hope that it will be useful,
+!  Felix is distributed in the hope that it will be useful,
 !  but WITHOUT ANY WARRANTY; without even the implied warranty of
 !  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 !  GNU General Public License for more details.
 !  
 !  You should have received a copy of the GNU General Public License
-!  along with felixrefine.  If not, see <http://www.gnu.org/licenses/>.
+!  along with Felix.  If not, see <http://www.gnu.org/licenses/>.
 !
 !%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
+! All procedures conatained in this file:
+! WriteIterationOutput()
+! WriteIterationCIF()
+! WriteOutVariables()
+! WriteStructureFactors()
+
+
+!>
+!! Procedure-description: 
+!!
+!! Major-Authors: 'kidwhizz' (2015), Richard Beanland (2016)
+!!
 SUBROUTINE WriteIterationOutput(Iter,IThicknessIndex,IExitFlag,IErr)
 !This could be improved by bringing the content of subroutines up to this level
   USE MyNumbers
@@ -34,7 +51,7 @@ SUBROUTINE WriteIterationOutput(Iter,IThicknessIndex,IExitFlag,IErr)
   USE BlochPara
 
   USE IChannels
-
+  USE message_mod
   USE MPI
   USE MyMPI
 
@@ -49,9 +66,9 @@ SUBROUTINE WriteIterationOutput(Iter,IThicknessIndex,IExitFlag,IErr)
   IThickness = (RInitialThickness + (IThicknessIndex-1)*RDeltaThickness)/10!in nm 
 
   IF (ISimFLAG.EQ.0) THEN !felixrefine output
-    WRITE(path,"(A9,I4.4,A1,I3.3,A3,I3.3,A1,I3.3)") &
-         "Iteration",Iter,"_",IThickness,"nm_",2*IPixelcount,"x",2*IPixelcount
-    path = TRIM(chemicalformula) // path  !this adds chemical to folder name
+    WRITE(path,"(A1,I4.4,A1,I3.3,A3,I3.3,A1,I3.3)") &
+         "I",Iter,"_",IThickness,"nm_",2*IPixelcount,"x",2*IPixelcount
+    path = TRIM(chemicalformula) // "_" // path  ! This adds chemical to folder name
   ELSE !Sim Output
     WRITE(path,"(A4,I3.3,A3,I3.3,A1,I3.3)") &
           "Sim_",IThickness,"nm_",2*IPixelcount,"x",2*IPixelcount
@@ -60,26 +77,21 @@ SUBROUTINE WriteIterationOutput(Iter,IThicknessIndex,IExitFlag,IErr)
 
   IF (ISimFLAG.EQ.0.AND.IExitFLAG.EQ.0) THEN !felixrefine output
     IF (IPreviousPrintedIteration.EQ.0) THEN
-      WRITE(SPrintString,FMT='(A35)') "Writing output; baseline simulation"
+      CALL message ( LS, "Writing output; baseline simulation" )
     ELSE
-      WRITE(SPrintString,FMT='(A16,I4,A35)') "Writing output; ",&
-        Iter-IPreviousPrintedIteration," iterations since the previous save"
+      CALL message ( LS, "Writing output; iterations since the previous save = ", &
+        Iter-IPreviousPrintedIteration)
     END IF
-    PRINT*,TRIM(ADJUSTL(SPrintString))
   END IF
   
   ! Write Images to disk
   DO ind = 1,INoOfLacbedPatterns
-    ! Make the path/filename
-
-!    WRITE(h,*)  NINT(Rhkl(IOutPutReflections(ind),1))
-!    WRITE(k,*)  NINT(Rhkl(IOutPutReflections(ind),2))
-!    WRITE(l,*)  NINT(Rhkl(IOutPutReflections(ind),3))
-!    WRITE(filename,*) TRIM(ADJUSTL(path)),"/",&
-!    TRIM(ADJUSTL(h)),TRIM(ADJUSTL(k)),TRIM(ADJUSTL(l)),TRIM(ADJUSTL(".bin"))
-  
+    ! Make the path/filenames  
     ! Iterates over 3 vector components to make filename e.g. 'GaAs-2-2+0.bin.
-    WRITE(filename,*) TRIM(ADJUSTL(path)),"/",TRIM(ADJUSTL(chemicalformula))
+    WRITE(filename,"(A1,I3.3,A3,I3.3,A1,I3.3,A1)")"_",IThickness,"nm_",&
+                2*IPixelcount,"x",2*IPixelcount,"_"
+    filename = TRIM(ADJUSTL(path))//"/"//TRIM(ADJUSTL(chemicalformula))&
+                //TRIM(ADJUSTL(filename))    
     DO jnd = 1,3
       WRITE(IntString,*) NINT(Rhkl(IOutPutReflections(ind),jnd))
       IF (NINT(Rhkl(IOutPutReflections(ind),jnd)) >= 0) THEN    
@@ -129,8 +141,15 @@ SUBROUTINE WriteIterationOutput(Iter,IThicknessIndex,IExitFlag,IErr)
   
 END SUBROUTINE WriteIterationOutput
 
-!!$  %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+!%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
+
+
+!>
+!! Procedure-description: Write out non symmetrically related atomic positions
+!!
+!! Major-Authors: 'kidwhizz' (2015), Richard Beanland (2016)
+!!
 SUBROUTINE WriteIterationCIF(path,IErr)
 
   USE MyNumbers
@@ -150,13 +169,13 @@ SUBROUTINE WriteIterationCIF(path,IErr)
   CHARACTER*200,INTENT(IN) :: path
   CHARACTER*200 :: SPrintString,filename,fullpath
 
-!!$  Write out non symmetrically related atomic positions
+  ! Write out non symmetrically related atomic positions
 
-  WRITE(filename,*) "Structure.cif"
+  WRITE(filename,*) "structure.cif"
   WRITE(fullpath,*) TRIM(ADJUSTL(path)),'/',TRIM(ADJUSTL(filename))
 
   OPEN(UNIT=IChOutSimplex,STATUS='UNKNOWN',FILE=TRIM(ADJUSTL(fullpath)))
- !RB
+  !RB
   WRITE(IChOutSimplex,FMT='(A16)') "data_felixrefine"
   WRITE(IChOutSimplex,FMT='(A5)') "loop_"
   WRITE(IChOutSimplex,FMT='(A14,1X,F7.4)') "_cell_length_a",RLengthX
@@ -179,9 +198,9 @@ SUBROUTINE WriteIterationCIF(path,IErr)
   WRITE(IChOutSimplex,FMT='(A20)') "_atom_site_occupancy"
 
   DO jnd = 1,SIZE(RBasisAtomPosition,DIM=1)!RB only gives refined atoms, needs work
-     WRITE(IChOutSimplex,FMT='(2(A3,1X),3(F7.4,1X),2(F5.2,1X))') &
+    WRITE(IChOutSimplex,FMT='(2(A3,1X),3(F7.4,1X),2(F5.2,1X))') &
 	 SBasisAtomLabel(jnd),SBasisAtomName(jnd),RBasisAtomPosition(jnd,:),RBasisIsoDW(jnd),RBasisOccupancy(jnd)
-!     WRITE(IChOutSimplex,FMT='(A2,1X,A1,1X,3(F9.6,1X),F5.3,1X,F5.3)') &
+!    WRITE(IChOutSimplex,FMT='(A2,1X,A1,1X,3(F9.6,1X),F5.3,1X,F5.3)') &
 !	 SBasisAtomName(jnd),SWyckoffSymbols(jnd),RBasisAtomPosition(jnd,:), &
 
   END DO
@@ -189,24 +208,31 @@ SUBROUTINE WriteIterationCIF(path,IErr)
   
   CLOSE(IChOutSimplex)
 
-!!$  Write out full atomic positions
+  ! Write out full atomic positions
 
-!XX  WRITE(filename,*) "StructureFull.txt"
-!XX  WRITE(fullpath,*) TRIM(ADJUSTL(path)),'/',TRIM(ADJUSTL(filename))
-!XXPRINT*,"RAtomPosition,SAtomName"  
-!XX  OPEN(UNIT=IChOutSimplex,STATUS='UNKNOWN',&
-!XX        FILE=TRIM(ADJUSTL(fullpath)))
-!XX    DO jnd = 1,SIZE(RAtomPosition,DIM=1)
-!XX     WRITE(IChOutSimplex,FMT='(A2,1X,3(F9.6,1X))') SAtomName(jnd),RAtomPosition(jnd,1:3)
-!XX    END DO
-!XX  CLOSE(IChOutSimplex)
+!  WRITE(filename,*) "StructureFull.txt"
+!  WRITE(fullpath,*) TRIM(ADJUSTL(path)),'/',TRIM(ADJUSTL(filename))
+!  PRINT*,"RAtomPosition,SAtomName"  
+!  OPEN(UNIT=IChOutSimplex,STATUS='UNKNOWN',&
+!        FILE=TRIM(ADJUSTL(fullpath)))
+!    DO jnd = 1,SIZE(RAtomPosition,DIM=1)
+!      WRITE(IChOutSimplex,FMT='(A2,1X,3(F9.6,1X))') SAtomName(jnd),RAtomPosition(jnd,1:3)
+!    END DO
+!  CLOSE(IChOutSimplex)
 
 END SUBROUTINE WriteIterationCIF
 
-!!$  %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+!%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
+
+
+!>
+!! Procedure-description: Adds the current fit and simulation parameters to IterationLog.txt
+!!
+!! Major-Authors: 'kidwhizz' (2015), Richard Beanland (2016)
+!!
 SUBROUTINE WriteOutVariables(Iter,IErr)
-! adds the current fit and simulation parameters to IterationLog.txt
+
   USE MyNumbers
   
   USE CConst; USE IConst; USE RConst
@@ -299,7 +325,7 @@ SUBROUTINE WriteOutVariables(Iter,IErr)
   WRITE(STotalOutputVariables,*) ITotalOutputVariables
   WRITE(SFormat,*) "(I5.1,1X,F13.9,1X,"//TRIM(ADJUSTL(STotalOutputVariables))//"(F13.9,1X))"
 
-  OPEN(UNIT=IChOutSimplex,file='IterationLog.txt',form='formatted',status='unknown',position='append')
+  OPEN(UNIT=IChOutSimplex,file='iteration_log.txt',form='formatted',status='unknown',position='append')
   WRITE(UNIT=IChOutSimplex,FMT=SFormat) Iter-1,RFigureofMerit,RDataOut
   CLOSE(IChOutSimplex)
 
@@ -307,8 +333,15 @@ END SUBROUTINE WriteOutVariables
 
 !%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
+
+
+!>
+!! Procedure-description: Writes CUgMat into StructureFactors.txt
+!!
+!! Major-Authors: 'kidwhizz' (2015), Richard Beanland (2016)
+!!
 SUBROUTINE WriteStructureFactors(path,IErr)
-! Writes CUgMat into StructureFactors.txt
+
   USE MyNumbers
   
   USE CConst; USE IConst; USE RConst
@@ -337,5 +370,3 @@ SUBROUTINE WriteStructureFactors(path,IErr)
   CLOSE(IChOut)
 
 END SUBROUTINE WriteStructureFactors
-
-!!$  %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%

@@ -1,10 +1,10 @@
 !%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 !
-! felixsim
+! Felix
 !
-! Richard Beanland, Keith Evans, Rudolf A Roemer and Alexander Hubert
+! Richard Beanland, Keith Evans & Rudolf A Roemer
 !
-! (C) 2013/14, all right reserved
+! (C) 2013-17, all rights reserved
 !
 ! Version: :VERSION:
 ! Date:    :DATE:
@@ -15,23 +15,39 @@
 ! 
 !%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 !
-!  This file is part of felixsim.
-!
-!  felixsim is free software: you can redistribute it and/or modify
+!  Felix is free software: you can redistribute it and/or modify
 !  it under the terms of the GNU General Public License as published by
 !  the Free Software Foundation, either version 3 of the License, or
 !  (at your option) any later version.
 !  
-!  felixsim is distributed in the hope that it will be useful,
+!  Felix is distributed in the hope that it will be useful,
 !  but WITHOUT ANY WARRANTY; without even the implied warranty of
 !  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 !  GNU General Public License for more details.
 !  
 !  You should have received a copy of the GNU General Public License
-!  along with felixsim.  If not, see <http://www.gnu.org/licenses/>.
+!  along with Felix.  If not, see <http://www.gnu.org/licenses/>.
 !
 !%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
+! Refine Utilities
+! This file is a good place for utility functions / procedures
+
+! All procedures conatained in this file:
+! PhaseCorrelate()
+! ReSortUgs()
+! ResidualSumofSquares()
+! Normalised2DCrossCorrelation()
+! MaskedCorrelation()
+
+
+!>
+!! Procedure-description: Plan and Execute the fft of the Simulated Data. 
+!! Plan and Execute the fft of the Experimental Data. Plan and Execute the
+!! inverse fft of the phase correlation.
+!!
+!! Major-Authors: Keith Evans (2014), Richard Beanland (2016)
+!!
 REAL(RKIND) FUNCTION PhaseCorrelate(RImageSim,RImageExpiDummy,IErr,IXsizeIn,IYSizeIn)
   
   USE MyNumbers
@@ -103,7 +119,7 @@ REAL(RKIND) FUNCTION PhaseCorrelate(RImageSim,RImageExpiDummy,IErr,IXsizeIn,IYSi
   CALL FFTW_EXECUTE_DFT_C2R(Iplan,CCorrelatedImage,RImageSimDummy)
   CALL FFTW_DESTROY_PLAN(Iplan)
 
-!!$  RCrossCorrelation = MAXVAL(RImageSimDummy)/(IX*IY)
+  ! RCrossCorrelation = MAXVAL(RImageSimDummy)/(IX*IY)
   PhaseCorrelate = MAXVAL(RImageSimDummy)/(IX*IY)
   IOffset = MAXLOC(RImageSimDummy)
   
@@ -118,6 +134,12 @@ END FUNCTION  PhaseCorrelate
 
 !%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
+
+!>
+!! Procedure-description: 
+!!
+!! Major-Authors: Keith Evans (2014), Richard Beanland (2016)
+!!
 SUBROUTINE ReSortUgs( ISymmetryIntegers,CUgs, N )
   
   USE MyNumbers
@@ -171,13 +193,20 @@ END SUBROUTINE ReSortUgs
 
 !%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
+
+!>
+!! Procedure-description: 
+!!
+!! Major-Authors: Keith Evans (2014), Richard Beanland (2016)
+!!
 REAL(RKIND) FUNCTION ResidualSumofSquares(RImage1,RImage2,IErr)
-  
+  !todo - this is excessively small underused subroutine & the message should be on debug mode
   USE MyNumbers
   
   USE CConst; USE IConst
   USE IPara; USE RPara
   USE IChannels
+  USE message_mod
   USE MPI
   USE MyMPI
 
@@ -190,16 +219,23 @@ REAL(RKIND) FUNCTION ResidualSumofSquares(RImage1,RImage2,IErr)
 
   RImage2 =  RImage2/(2.0**16.0)
 
-  PRINT*,"Residual Sum of Squares Before",ResidualSumofSquares,MAXVAL(RImage1),MAXVAL(RImage2)
+  CALL message ( LM, "Residual Sum of Squares Before",&
+        (/ ResidualSumofSquares,MAXVAL(RImage1),MAXVAL(RImage2) /) )
 
   ResidualSumofSquares = SUM((RImage2-RImage1)**2)
 
-  PRINT*,"Residual Sum of Squares After",ResidualSumofSquares
+  CALL message ( LM, "Residual Sum of Squares After",ResidualSumofSquares )
 
 END FUNCTION ResidualSumofSquares
 
 !%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
+
+!>
+!! Procedure-description: 
+!!
+!! Major-Authors: 'kidwhizz' (2015), Richard Beanland (2016)
+!!
 REAL(RKIND) FUNCTION Normalised2DCrossCorrelation(Rimg1,Rimg2,IErr)
 
   USE MyNumbers
@@ -229,6 +265,13 @@ END FUNCTION Normalised2DCrossCorrelation
 
 !%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
+
+
+!>
+!! Procedure-description: 
+!!
+!! Major-Authors: Richard Beanland (2016)
+!!
 REAL(RKIND) FUNCTION MaskedCorrelation(Rimg1,Rimg2,RBinaryMask,IErr)
 
   USE MyNumbers
@@ -236,6 +279,7 @@ REAL(RKIND) FUNCTION MaskedCorrelation(Rimg1,Rimg2,RBinaryMask,IErr)
   USE CConst; USE IConst
   USE IPara; USE RPara
   USE IChannels
+  USE message_mod
   USE MPI
   USE MyMPI
 
@@ -249,15 +293,10 @@ REAL(RKIND) FUNCTION MaskedCorrelation(Rimg1,Rimg2,RBinaryMask,IErr)
   
   IF (SUM(RBinaryMask).GT.ZERO) THEN
     RPixelTotal = SUM(RBinaryMask)!Mask has value 1 for pixels of interest and zero elsewhere
-    IF (IWriteFLAG.EQ.6) THEN
-      WRITE(SPrintString,FMT='(A5,F7.0,A7)') "Mask ",RPixelTotal," pixels"
-      PRINT*,TRIM(ADJUSTL(SPrintString))
-    END IF
+    CALL message ( LL, dbg6, "Mask pixels = ", RPixelTotal )
   ELSE
     RPixelTotal = REAL(2*IPixelCount*2*IPixelCount,RKIND)
-    IF (IWriteFLAG.EQ.6) THEN
-      PRINT*,"Empty mask"
-    END IF
+    CALL message ( LL, dbg6, "Empty, mask" )
   END IF  
   Rimg1=Rimg1*RBinaryMask
   Rimg2=Rimg2*RBinaryMask
@@ -267,4 +306,5 @@ REAL(RKIND) FUNCTION MaskedCorrelation(Rimg1,Rimg2,RBinaryMask,IErr)
   Rimg2StDev=SQRT(SUM(((Rimg2-Rimg2Mean)**2)/RPixelTotal))
   MaskedCorrelation=SUM(((Rimg1-Rimg1Mean)*(Rimg2-Rimg2Mean)))/&
        (Rimg1StDev*Rimg2StDev*RPixelTotal)
+
 END FUNCTION MaskedCorrelation

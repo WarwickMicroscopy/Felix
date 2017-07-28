@@ -1,0 +1,28 @@
+<map id="simulateandfit" name="simulateandfit">
+<area shape="rect" id="node2" href="$Ug_8f90.html#a5637638595593ffb09280db93d99adc1" title="Procedure&#45;description: Select case using IAbsorbFLAG. " alt="" coords="255,81,337,108"/>
+<area shape="rect" id="node11" href="$felixfunction_8f90.html#a755b5e0f494860250890e41afbbadc18" title="Procedure&#45;description: Fill the indepedent value array with values. " alt="" coords="239,132,353,159"/>
+<area shape="rect" id="node12" href="$crystallography_8f90.html#a118dc8a18775a4efb509337c9c612dc2" title="Procedure&#45;description: Calculates the FULL set of possible fractional atomic positions and then gets ..." alt="" coords="225,183,367,209"/>
+<area shape="rect" id="node13" href="$Ug_8f90.html#a303001c9b68873047619fef25a6c7d0c" title="Procedure&#45;description: " alt="" coords="241,233,351,260"/>
+<area shape="rect" id="node15" href="$felixfunction_8f90.html#a96bdfaa863faefd276811d580a87afb5" title="Procedure&#45;description: Print variables. " alt="" coords="247,284,345,311"/>
+<area shape="rect" id="node16" href="$felixfunction_8f90.html#ae83fd801e24c7b920e1cf0ef9e358185" title="Procedure&#45;description: Felixfunction. " alt="" coords="250,335,342,361"/>
+<area shape="rect" id="node23" href="$felixfunction_8f90.html#a121661ef25e3c87dd4ba59c48cc7ca87" title="Procedure&#45;description: Calculate figure of merit and determine Thickness, involving image processing ..." alt="" coords="156,385,436,412"/>
+<area shape="rect" id="node24" href="$RefineWriteOut_8f90.html#ae42042fbf6cb741297f6e4bf77061a6b" title="Procedure&#45;description: Adds the current fit and simulation parameters to IterationLog.txt. " alt="" coords="236,436,356,463"/>
+<area shape="rect" id="node25" href="$RefineWriteOut_8f90.html#a892a322c60916ccd590ce29c18491b2c" title="Procedure&#45;description: " alt="" coords="230,487,362,513"/>
+<area shape="rect" id="node3" href="$Ug_8f90.html#a72eb459681c0220af8f3fbd3d64bb510" title="Procedure&#45;description: " alt="" coords="516,81,627,108"/>
+<area shape="rect" id="node10" href="$Ug_8f90.html#abaeadfb0b984da3e9c7635c9fdef9e8c" title="Procedure&#45;description: Returns a PseudoAtom scattering factor. " alt="" coords="525,157,618,184"/>
+<area shape="rect" id="node4" href="$quadpack__double_8f90.html#aa62896aeb27d272531de002660a33d3c" title="dqagi" alt="" coords="793,81,847,108"/>
+<area shape="rect" id="node5" href="$quadpack__double_8f90.html#a4fa2ee03610525a32e9320c8dcb68a9f" title="dqagie" alt="" coords="981,56,1041,83"/>
+<area shape="rect" id="node9" href="$quadpack__double_8f90.html#a67a6f20accebb3703b2f2846a70a5274" title="xerror" alt="" coords="984,107,1039,133"/>
+<area shape="rect" id="node6" href="$quadpack__double_8f90.html#a67a70652c0a2551d7b6386ae8f36e221" title="dqk15i" alt="" coords="1089,5,1149,32"/>
+<area shape="rect" id="node7" href="$quadpack__double_8f90.html#af62f52644e9433300c2f42c6f7cdb304" title="dqpsrt" alt="" coords="1090,56,1149,83"/>
+<area shape="rect" id="node8" href="$quadpack__double_8f90.html#a84a50c59ba9bee75bf1df0525ede3888" title="dqelg" alt="" coords="1093,107,1146,133"/>
+<area shape="rect" id="node14" href="$Ug_8f90.html#a922097e87ed8a14f8e8ccdca2071dda5" title="Procedure&#45;description: Choose scattering factors using IScatterFactorMethodFLAG. " alt="" coords="496,233,647,260"/>
+<area shape="rect" id="node17" href="$bloch_8f90.html#a1702defd0ca12a6793b44c37899a4683" title="Procedure&#45;description: Simulates the electron beam and calculates Bloch coefficients, conisdering complex amplitudes and iterating over the thickness. " alt="" coords="484,309,659,336"/>
+<area shape="rect" id="node22" href="$felixfunction_8f90.html#a37ef4d9b2ef4eaacbd5fc82ebb8843d9" title="Procedure&#45;description: Performs a 2D Gaussian blur on the input image using global variable RBlurRadi..." alt="" coords="546,360,597,387"/>
+<area shape="rect" id="node18" href="$bloch_8f90.html#aa5311298c3519d3377e56eb9a045612f" title="Procedure&#45;description: Determines number of weak and strong beams. Uses Sg and pertubation strengths ..." alt="" coords="707,259,933,285"/>
+<area shape="rect" id="node19" href="$bloch_8f90.html#a32c715c31357d622ee204ff5e4043996" title="Procedure&#45;description: Diagonalize a Matrix considering eigenvalues. " alt="" coords="767,309,873,336"/>
+<area shape="rect" id="node20" href="$bloch_8f90.html#ac14e6af413f2c0c9c9f608f26a0044d8" title="Procedure&#45;description: Calculates diffracted intensity for a specific thickness. " alt="" coords="749,360,891,387"/>
+<area shape="rect" id="node21" href="$bloch_8f90.html#a9bb27b6fc6da4c04cd45693c074fac26" title="Procedure&#45;description: Invert an M*M Complex Matrix. " alt="" coords="984,360,1039,387"/>
+<area shape="rect" id="node26" href="$RefineWriteOut_8f90.html#a67665edb189ec69827990b828bfeac68" title="Procedure&#45;description: Write out non symmetrically related atomic positions. " alt="" coords="516,461,627,488"/>
+<area shape="rect" id="node27" href="$RefineWriteOut_8f90.html#accab8225cc247dab27cc57f4f5efb570" title="Procedure&#45;description: Writes CUgMat into StructureFactors.txt. " alt="" coords="501,512,642,539"/>
+</map>

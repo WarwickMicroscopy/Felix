@@ -1,10 +1,10 @@
 !%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 !
-! felixsim
+! Felix
 !
-! Richard Beanland, Keith Evans, Rudolf A Roemer and Alexander Hubert
+! Richard Beanland, Keith Evans & Rudolf A Roemer
 !
-! (C) 2013/14, all right reserved
+! (C) 2013-17, all rights reserved
 !
 ! Version: :VERSION:
 ! Date:    :DATE:
@@ -15,23 +15,27 @@
 ! 
 !%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 !
-!  This file is part of felixsim.
-!
-!  felixsim is free software: you can redistribute it and/or modify
+!  Felix is free software: you can redistribute it and/or modify
 !  it under the terms of the GNU General Public License as published by
 !  the Free Software Foundation, either version 3 of the License, or
 !  (at your option) any later version.
 !  
-!  felixsim is distributed in the hope that it will be useful,
+!  Felix is distributed in the hope that it will be useful,
 !  but WITHOUT ANY WARRANTY; without even the implied warranty of
 !  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 !  GNU General Public License for more details.
 !  
 !  You should have received a copy of the GNU General Public License
-!  along with felixsim.  If not, see <http://www.gnu.org/licenses/>.
+!  along with Felix.  If not, see <http://www.gnu.org/licenses/>.
 !
 !%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
+
+!>
+!! Procedure-description: Reads from felix.cif input file using toolbox
+!!
+!! Major-Authors: Keith Evans (2014), Richard Beanland (2016)
+!!
 SUBROUTINE ReadCif(IErr)
 
   ! -----------------------------------------------------------------------
@@ -53,14 +57,12 @@ SUBROUTINE ReadCif(IErr)
   ! at the start of EACH routine using the CIFtbx functions.
 
   USE MyNumbers
-  USE WriteToScreen
-  USE UtilityFunctions
   
   USE CConst; USE IConst
   USE IPara; USE RPara; USE SPara
   USE CPara
   USE IChannels
-
+  USE message_mod
   USE MyMPI
   
   IMPLICIT NONE
@@ -76,6 +78,7 @@ SUBROUTINE ReadCif(IErr)
   CHARACTER*2   rs
   CHARACTER*1   slash
   CHARACTER string*(30)
+  REAL(RKIND),DIMENSION(:),ALLOCATABLE :: RPrint
   REAL          cela,celb,celc,siga,sigb,sigc
   REAL          x,y,z,u,su,sx,sy,sz,B,sB,sOcc,Uso,suso,Occ
   REAL          numb,sdev,dum
@@ -113,7 +116,7 @@ SUBROUTINE ReadCif(IErr)
   name='felix.cif'
   IF(.NOT.ocif_(name)) THEN
     IF(my_rank.EQ.0) THEN
-      PRINT*,"Cannot find .cif, exiting"
+      PRINT*,"Error:Cannot find .cif, exiting"
 	  END IF
     IErr=1
     RETURN
@@ -122,7 +125,7 @@ SUBROUTINE ReadCif(IErr)
   ! Assign the data block to be accessed
   IF(.NOT.data_(' ')) THEN
     IF(my_rank.EQ.0) THEN
-      PRINT*,"No cif data_ statement found"
+      PRINT*,"Error:No cif data_ statement found"
     END IF
     IErr=1
   END IF
@@ -131,11 +134,11 @@ SUBROUTINE ReadCif(IErr)
   f1 = char_('_chemical_formula_structural', name)
   IF(.NOT.f1) THEN
      IF(my_rank.EQ.0) THEN
-        PRINT*,"ReadCif(", my_rank, ") Chemical formula missing!"
+        PRINT*,"Error:ReadCif(", my_rank, ") Chemical formula missing!"
      END IF
      IErr=1
   END IF
-  ChemicalFormula = StripSpaces(name) !  Strips spaces from formula string
+  ChemicalFormula = StripChars(name) ! Strips spaces, brackets etc. from formula string
 
   ! Extract some cell dimensions; test all is OK
   ! NEED TO PUT IN A CHECK FOR LENGTH UNITS
@@ -148,7 +151,7 @@ SUBROUTINE ReadCif(IErr)
   !error call
   IF(.NOT.(f1.AND.f2.AND.f3)) THEN
      IF(my_rank.EQ.0) THEN
-        PRINT*,"ReadCif(", my_rank, ") Cell dimension(s) missing!"
+        PRINT*,"Error:ReadCif(", my_rank, ") Cell dimension(s) missing!"
      END IF
      IErr=1
   END IF
@@ -162,7 +165,7 @@ SUBROUTINE ReadCif(IErr)
   f3 = numb_('_cell_angle_gamma', celc, sigc)
    IF(.NOT.(f1.AND.f2.AND.f3)) THEN
     IF(my_rank.EQ.0) THEN
-      PRINT*,"ReadCif(", my_rank, ") Cell angle(s) missing!"
+      PRINT*,"Error:ReadCif(", my_rank, ") Cell angle(s) missing!"
     END IF
     IErr=1
   END IF
@@ -178,10 +181,10 @@ SUBROUTINE ReadCif(IErr)
     RGamma=celc*DEG2RADIAN;
   END IF
 
-  IF(IWriteFLAG.EQ.14.AND.my_rank.EQ.0) THEN
-    PRINT*,"alpha,beta,gamma",RAlpha,RBeta,RGamma
-    PRINT*,"siga,sigb,sigc",siga,sigb,sigc
-  END IF
+  CALL message( LL, dbg14, "alpha,beta,gamma",(/ RAlpha,RBeta,RGamma /) )
+
+  CALL message( LL, dbg14, "siga,sigb,sigc", Real( (/ siga,sigb, sigc /) ,RKIND) )
+
 
   f1 = numb_('_cell_volume', cela, siga)
   !Cell volume
@@ -195,13 +198,11 @@ SUBROUTINE ReadCif(IErr)
     IVolumeFLAG= 1
   END IF
 
-  IF(IWriteFLAG.EQ.14.AND.my_rank.EQ.0) PRINT*,"Unit cell volume",RVolume
+  CALL message ( LL, "Unit cell volume", RVolume )
 
   DO      
     f1 = char_('_atom_type_symbol', name)
-    IF(IWriteFLAG.EQ.14.AND.my_rank.EQ.0) THEN
-      PRINT*,"_atom_type_symbol",f1
-    END IF
+    CALL message (LL, dbg14, "_atom_type_symbol",f1 )
     IF(loop_.NEQV. .TRUE.) EXIT
   END DO
 
@@ -217,9 +218,7 @@ SUBROUTINE ReadCif(IErr)
         f1 = numb_('_space_group_IT_number',numb,sx)
         IF (numb.LT.TINY) THEN
           !Error message
-          IF(my_rank.EQ.0) THEN
-            PRINT*,"No Space Group"
-          END IF
+          CALL message(LS,"No Space Group")
           IErr = 1
         ELSE
           name = CSpaceGrp(NINT(numb))
@@ -238,9 +237,7 @@ SUBROUTINE ReadCif(IErr)
      SSpaceGroupName=SAlphabetarray(SCAN(alphabet,SSpaceGroupName)-26)
   END IF
 
-  IF(IWriteFLAG.EQ.14.AND.my_rank.EQ.0) THEN
-    PRINT*,"_symmetry_space_group_name_H-M ",SSpaceGrp
-  END IF
+  CALL message( LL, dbg14, "_symmetry_space_group_name_H-M ", SSpaceGrp)
   
   ! ----------------------------------------------------------
   ! Extract atom site data
@@ -253,8 +250,8 @@ SUBROUTINE ReadCif(IErr)
   END DO
   !check for consistency with IAtomicSitesToRefine
   IF (SIZE(IAtomicSitesToRefine,DIM=1).GT.IAtomCount) THEN
-    PRINT*,"Number of atomic sites to refine is larger than the number of atoms"
-    PRINT*,"Please correct in felix.inp"
+    CALL message("Number of atomic sites to refine is larger than the number of atoms")
+    CALL message("Please correct in felix.inp")
     IErr=1
     RETURN
   END IF
@@ -268,7 +265,7 @@ SUBROUTINE ReadCif(IErr)
   ALLOCATE(RAnisotropicDebyeWallerFactorTensor(IAtomCount,ITHREE,ITHREE),STAT=IErr)
   ALLOCATE(IBasisAnisoDW(IAtomCount),STAT=IErr)
   IF( IErr.NE.0 ) THEN
-     PRINT*,"ReadCif(", my_rank, ") error ", IErr, " in ALLOCATE()"
+     PRINT*,"Error:ReadCif(", my_rank, ") error ", IErr, " in ALLOCATE()"
      RETURN
   END IF
 
@@ -296,7 +293,7 @@ SUBROUTINE ReadCif(IErr)
     IF (IBasisAtomicNumber(ind).EQ.0.AND.my_rank.EQ.0) THEN
       WRITE(SPrintString,FMT='(A35,I3,A9,A5,1X,A2,A4,I3,A3,3F7.4,A1)')&
       "ReadCif: Could not find Z for atom ",ind,", symbol ",SBasisAtomName(ind)
-      PRINT*,TRIM(ADJUSTL(SPrintString))
+      PRINT*,"Error:",TRIM(ADJUSTL(SPrintString))
       IErr=1
     END IF
     f2 = numb_('_atom_site_fract_x', x, sx)
@@ -319,20 +316,27 @@ SUBROUTINE ReadCif(IErr)
     f2 = numb_('_atom_site_occupancy',Occ, sOcc)
     RBasisOccupancy(ind) = Occ
 
-    IF(IWriteFLAG.EQ.7.AND.my_rank.EQ.0) THEN!optional output
-      WRITE(SPrintString,FMT='(A4,I3,A2,A5,1X,A2,A3,I2,A3,3F7.4,A7,F5.3,A12,F7.4)')&
-      "Atom",ind,": ",SBasisAtomLabel(ind),SBasisAtomName(ind)," Z=",IBasisAtomicNumber(ind),&
-      ", [",RBasisAtomPosition(ind,:),"], DWF=",RBasisIsoDW(ind),", occupancy=",RBasisOccupancy(ind)
-      PRINT*,TRIM(ADJUSTL(SPrintString))
-    END IF
+    !todo - a case where message subroutine struggles against classical print
+    !IF(IWriteFLAG.EQ.7.AND.my_rank.EQ.0) THEN!optional output
+    !  WRITE(SPrintString,FMT='(A4,I3,A2,A5,1X,A2,A3,I2,A3,3F7.4,A7,F5.3,A12,F7.4)')&
+    !  "Atom",ind,": ",SBasisAtomLabel(ind),SBasisAtomName(ind)," Z=",IBasisAtomicNumber(ind),&
+    !  ", [",RBasisAtomPosition(ind,:),"], DWF=",RBasisIsoDW(ind),", occupancy=",RBasisOccupancy(ind)
+    !  PRINT*,TRIM(ADJUSTL(SPrintString))
+    !END IF
+
+    CALL message( LL, dbg7, "For Atom ",ind)
+    CALL message( LL, dbg7, SBasisAtomLabel(ind)//SBasisAtomName(ind)//" Z=",IBasisAtomicNumber(ind) )
+    CALL message( LL, dbg7, "RBasisAtomPosition", RBasisAtomPosition(ind,:) )
+    CALL message( LL, dbg7, "(DWF, occupancy) respectively = ", (/ RBasisIsoDW(ind), RBasisOccupancy(ind) /) )
+    
     IF(loop_ .NEQV. .TRUE.) EXIT
   END DO
 
-!Branch here depending on felixsim or felixrefine
+  !Branch here depending on felixsim or felixrefine
   IF (ISoftwareMode.NE.0) THEN !felixrefine
     ALLOCATE(SWyckoffSymbols(SIZE(IAtomicSitesToRefine)),STAT=IErr)
     IF( IErr.NE.0 ) THEN
-      PRINT*,"Read Cif (refine)(", my_rank, ") error ", IErr, " in ALLOCATE()"
+      PRINT*,"Error:Read Cif (refine)(", my_rank, ") error ", IErr, " in ALLOCATE()"
      RETURN
     END IF
     DO ind=1,IAtomCount
@@ -344,7 +348,7 @@ SUBROUTINE ReadCif(IErr)
   ELSE !felixsim
     ALLOCATE(SWyckoffSymbols(IAtomCount),STAT=IErr)
     IF( IErr.NE.0 ) THEN
-      PRINT*,"Read Cif (sim)(", my_rank, ") error ", IErr, " in ALLOCATE()"
+      PRINT*,"Error:Read Cif (sim)(", my_rank, ") error ", IErr, " in ALLOCATE()"
       RETURN
     END IF
     DO ind=1,IAtomCount
@@ -367,11 +371,11 @@ SUBROUTINE ReadCif(IErr)
     f2 = numb_('_atom_site_aniso_U_13',u,su) 
     RAnisotropicDebyeWallerFactorTensor(ind,1,3) = u
     IBasisAnisoDW(ind) = ind
+    IF(IAnisoDebyeWallerFactorFlag.EQ.1) THEN
+      CALL message( LM,"RAnisotropicDebyeWallerFactorTensor, index = ",ind)
+      CALL message( LM, "..",RAnisotropicDebyeWallerFactorTensor(ind,:,:) )
+    END IF
   END DO
-
-  IF(my_rank.EQ.0.AND.IAnisoDebyeWallerFactorFlag.EQ.1) THEN
-     PRINT*,"RAnisotropicDebyeWallerFactorTensor",RAnisotropicDebyeWallerFactorTensor
-  END IF
 
   ! counting loop
   ISymCount=0
@@ -388,7 +392,7 @@ SUBROUTINE ReadCif(IErr)
   ALLOCATE(RSymVec(ISymCount,ITHREE),STAT=IErr)
   ALLOCATE(RSymMat(ISymCount,ITHREE,ITHREE),STAT=IErr)
   IF( IErr.NE.0 ) THEN
-     PRINT*,"ReadCif(",my_rank,")error",IErr,"in allocations"
+     PRINT*,"Error:ReadCif(",my_rank,")error",IErr,"in allocations"
      RETURN
   END IF
   
@@ -453,12 +457,34 @@ SUBROUTINE ReadCif(IErr)
     IF(loop_ .NEQV. .TRUE.) EXIT
   END DO
 
-  !closes the cif file
+  ! closes the cif file
   CALL close_
 
-!!$Reset Message Counter
-IMessageCounter =0  
+  ! Reset Message Counter
+  IMessageCounter =0  
   
   RETURN
+
+CONTAINS
+
+  !>
+  !! Procedure-description: Strips any character from string which is not simply
+  !! numeric or alphabetic
+  !!
+  !! Major-Authors: Keith Evans (2014), Richard Beanland (2016)
+  !! 
+  CHARACTER(len(string)) FUNCTION StripChars(string)
+    CHARACTER(*) :: string
+    INTEGER :: i, n = 0
+    DO i = 1,LEN_TRIM(string) 
+      IF ( VERIFY(string(i:i), &
+      "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ1234567890") &
+      == 1 ) THEN
+        CYCLE
+      END IF 
+      n = n+1 
+      StripChars(n:n) = string(i:i) 
+    END DO 
+  END FUNCTION
 
 END SUBROUTINE ReadCif

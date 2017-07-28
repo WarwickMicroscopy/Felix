@@ -1,0 +1,53 @@
+# Input file for Felix version :VERSION: Build :BUILD:
+# ------------------------------------
+
+# ------------------------------------
+
+# control flags
+IWriteFLAG                = 2
+IImageFLAG                = 1
+IScatterFactorMethodFLAG  = 0
+IMaskFLAG                 = 1
+IHolzFLAG                 = 0
+IAbsorbFLAG               = 2
+IAnisoDebyeWallerFlag     = 0
+IByteSize                 = 8
+
+# radius of the beam in pixels
+IPixelCount               = 35
+
+# beam selection criteria
+IMinReflectionPool        = 80
+IMinStrongBeams           = 5
+IMinWeakBeams             = 2
+
+# crystal settings
+RDebyeWallerConstant      = 0.0
+RAbsorptionPer            = 7.8
+
+# microscope settings
+ROuterConvergenceAngle    = 2.4545
+IIncidentBeamDirection    = [-1,1,0]
+IXDirection               = [-1,-1,0]
+INormalDirection          = [-1,1,0]
+RAcceleratingVoltage (kV) = 200.0
+RAcceptanceAngle          = 0.0
+
+# Image Output Options
+RInitialThickness        = 800.0
+RFinalThickness          = 900.0
+RDeltaThickness          = 10.0
+IReflectOut              = 10
+
+#Refinement Specific Flags
+IRefineModeFLAG          = D
+IWeightingFLAG           = 0
+IMethodFLAG              = 3
+ICorrelationFLAG         = 2
+IImageProcessingFLAG     = 4
+RBlurRadius              = 1.45
+INoofUgs                 = 1
+IAtomicSites             = (1,2)
+IPrint                   = 4
+RSimplexLengthScale      = 5.0 
+RExitCriteria            = 0.01

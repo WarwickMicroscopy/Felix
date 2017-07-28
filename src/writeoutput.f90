@@ -1,10 +1,10 @@
 !%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 !
-! felixsim
+! Felix
 !
-! Richard Beanland, Keith Evans, Rudolf A Roemer and Alexander Hubert
+! Richard Beanland, Keith Evans & Rudolf A Roemer
 !
-! (C) 2013/14, all right reserved
+! (C) 2013-17, all rights reserved
 !
 ! Version: :VERSION:
 ! Date:    :DATE:
@@ -15,27 +15,35 @@
 ! 
 !%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 !
-!  This file is part of felixsim.
-!
-!  felixsim is free software: you can redistribute it and/or modify
+!  Felix is free software: you can redistribute it and/or modify
 !  it under the terms of the GNU General Public License as published by
 !  the Free Software Foundation, either version 3 of the License, or
 !  (at your option) any later version.
 !  
-!  felixsim is distributed in the hope that it will be useful,
+!  Felix is distributed in the hope that it will be useful,
 !  but WITHOUT ANY WARRANTY; without even the implied warranty of
 !  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 !  GNU General Public License for more details.
 !  
 !  You should have received a copy of the GNU General Public License
-!  along with felixsim.  If not, see <http://www.gnu.org/licenses/>.
+!  along with Felix.  If not, see <http://www.gnu.org/licenses/>.
 !
 !%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
+! All procedures conatained in this file:
+! WriteOutput()
+! OpenReflectionImage()
+! WriteReflectionImage()
+
+!>
+!! Procedure-description: Makes output directory, writes montage, writes 
+!! reflections, and creates the image
+!!
+!! Major-Authors: Keith Evans (2014), Richard Beanland (2016)
+!!
 SUBROUTINE WriteOutput( CAmplitudeandPhaseImages,RReflectionImages,RMontageImages,IErr)
 
   USE MyNumbers
-  USE WriteToScreen
 
   USE CPara; USE IPara; USE SPara
   USE RPara
@@ -210,3 +218,159 @@ SUBROUTINE WriteOutput( CAmplitudeandPhaseImages,RReflectionImages,RMontageImage
   ENDIF
    
 END SUBROUTINE WriteOutput
+
+!!$%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+
+
+!>
+!! Procedure-description: Open Reflection Image
+!!
+!! Major-Authors: Keith Evans (2014), Richard Beanland (2016)
+!!
+SUBROUTINE OpenReflectionImage(IChOutWrite, surname, IErr,IReflectWriting,IImageSizeX,ind)
+
+  USE MyNumbers
+
+  USE IConst
+  USE RConst
+  
+  USE IPara
+  USE RPara
+
+  USE MPI
+  USE MyMPI
+
+  USE IChannels
+  IMPLICIT NONE
+
+  CHARACTER(*) :: surname
+  CHARACTER*20 :: prefix,postfix,h,k,l
+  INTEGER(IKIND) :: IChOutWrite, IErr,IReflectWriting,IImageSizeX
+  CHARACTER*250 filename
+  CHARACTER*40 fileext
+  CHARACTER*60 Simagesize
+  INTEGER index,ind
+
+  SELECT CASE(IChOutWrite)
+  CASE(MontageOut)
+  CASE DEFAULT
+     IF(IHKLSelectFLAG.EQ.0) THEn
+        WRITE(h,*)  NINT(Rhkl(IReflectWriting,1))
+        WRITE(k,*)  NINT(Rhkl(IReflectWriting,2))
+        WRITE(l,*)  NINT(Rhkl(IReflectWriting,3))
+     ELSE
+        WRITE(h,*)  NINT(Rhkl(IOutPutReflections(IReflectWriting),1))
+        WRITE(k,*)  NINT(Rhkl(IOutPutReflections(IReflectWriting),2))
+        WRITE(l,*)  NINT(Rhkl(IOutPutReflections(IReflectWriting),3))
+     END IF
+  END SELECT
+
+  WRITE(Simagesize,"(A2,I3.3,A2,I3.3)") &
+       "_",IImageSizeX,&
+       "x",IImageSizeX
+
+  WRITE(fileext,*) TRIM(ADJUSTL(".bin")) 
+  
+  SELECT CASE(IChOutWrite)
+  
+  CASE(IChOutWFImageReal)        
+     IF (IWriteFLAG.GE.10) THEN
+        PRINT*, "OpenImage: opening image for WAVE FUNCTION REAL PART (WR*.txt)"
+     END IF
+     WRITE(filename,*) TRIM(ADJUSTL(surname)),"/Real-",&
+     TRIM(ADJUSTL(h)),&
+     TRIM(ADJUSTL(k)),&
+     TRIM(ADJUSTL(l)),&
+     TRIM(ADJUSTL(fileext))
+	 
+  CASE(IChOutWFImagePhase)        
+     IF (IWriteFLAG.GE.10) THEN
+        PRINT*, "OpenImage: opening image for WAVE FUNCTION PHASE PART (WP*.txt)"
+     END IF
+     WRITE(filename,*) TRIM(ADJUSTL(surname)),"/Imag-",&
+     TRIM(ADJUSTL(h)),&
+     TRIM(ADJUSTL(k)),&
+     TRIM(ADJUSTL(l)),&
+     TRIM(ADJUSTL(fileext))
+	 
+  CASE(IChOutWIImage) 
+     IF (IWriteFLAG.GE.10) THEN
+        PRINT*, "OpenImage: opening image for INTENSITIES"
+     END IF
+     WRITE(filename,*) TRIM(ADJUSTL(surname)),"/",&
+     TRIM(ADJUSTL(h)),&
+     TRIM(ADJUSTL(k)),&
+     TRIM(ADJUSTL(l)),&
+     TRIM(ADJUSTL(fileext))
+	 
+  CASE(MontageOut)        
+     WRITE(filename,*) TRIM(ADJUSTL(surname)),"Montage_",&
+          TRIM(ADJUSTL(fileext))
+     IF (IWriteFLAG.GE.10) THEN
+        PRINT*, "OpenImage: opening image for WAVE INTENSITIES"
+     END IF
+	 
+  CASE DEFAULT
+     IF (IWriteFLAG.GE.10) THEN
+        PRINT*, "OpenImage: opening UNKNOWN channel ", IChOutWrite
+     END IF
+	 
+  END SELECT
+
+  OPEN(UNIT=IChOutWrite, ERR=10, STATUS= 'UNKNOWN', FILE=TRIM(ADJUSTL(filename)),FORM='UNFORMATTED',&
+       ACCESS='DIRECT',IOSTAT=Ierr,RECL=IImageSizeX*8)
+  RETURN
+   
+  ! error in OPEN detected
+10 PRINT*,"OpenReflectionImage(): ERR in OPEN()",IErr
+  IErr= 1
+  RETURN
+  
+END SUBROUTINE OpenReflectionImage
+
+!!$%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+
+!>
+!! Procedure-description: Write reflection images
+!!
+!! Major-Authors: Keith Evans (2014), Richard Beanland (2016)
+!!
+SUBROUTINE WriteReflectionImage( IChOutWrite, data, IErr,IImageSizeX,IImageSizeY,knd)
+  !this is now redundant
+  USE MyNumbers
+
+  USE IConst
+  USE RConst
+  
+  USE IPara
+  USE RPara
+
+  USE MPI
+  USE MyMPI
+
+  IMPLICIT NONE
+
+  INTEGER(KIND=IKIND) IErr,IImageSizeY,IImageSizeX
+  REAL(KIND=RKIND),DIMENSION(IImageSizeX,IImageSizeY) :: data
+  CHARACTER*100 CSizeofData
+  INTEGER ind,knd, IChOutWrite
+  CHARACTER*100 SFormatString
+     
+  DO ind = 1,(IImageSizeY)
+     WRITE(IChOutWrite,rec=ind) data(ind,:)
+  END DO
+
+  RETURN
+  ! error in WRITE detected
+20 PRINT*,"WriteReflectionImage(): ERR in WRITE()",Ierr
+  IErr= 1
+  RETURN
+
+  ! buffer too short
+30 PRINT*,"WriteImageR_MPI(): EOF in WRITE()"
+  IErr= 1
+  RETURN
+
+END SUBROUTINE WriteReflectionImage

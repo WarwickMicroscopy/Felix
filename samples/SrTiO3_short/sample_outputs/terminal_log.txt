@@ -1,0 +1,123 @@
+ --------------------------------------------------------------
+ felixrefine: Version: multipole / BUILD / Alpha                
+              Date: 27-06-2017                                  
+              Status: multipole atom test & debug               
+     on rank=            0  of            2  in total.
+ --------------------------------------------------------------
+ D:Refining Isotropic Debye Waller Factors
+ Refining by maximum gradient
+           1
+ Refining atoms  3
+ 49 experimental images successfully loaded
+ MeanInnerPotential= 27.76  Volts
+ 117 unique structure factors
+ Absorption completed in   0 hrs  0 mins  6 sec
+ Bloch wave calculation...
+ Simulation completed in   0 hrs  1 mins  5 sec
+ Figure of merit 0.195419
+ Specimen thickness  630 Angstroms
+ Thickness range    0 Angstroms
+ Writing output; baseline simulation
+ Isotropic Debye-Waller factor refinement
+ Finding gradient, 1 of  1
+ Iteration    1
+ Current Isotropic Debye Waller Factors
+ Sr1  0.415
+ Ti1  1.104
+ O1   0.899
+ Bloch wave calculation...
+ Figure of merit 0.194928
+ Specimen thickness  630 Angstroms
+ Thickness range    0 Angstroms
+ Writing output; baseline simulation
+ Best fit so far = 0.194928
+ Refinement vector =  1.000
+ Refining, point 2 of 3
+ Iteration    2
+ Current Isotropic Debye Waller Factors
+ Sr1  0.415
+ Ti1  1.104
+ O1   0.989
+ Bloch wave calculation...
+ Figure of merit 0.194344
+ Specimen thickness  630 Angstroms
+ Thickness range    0 Angstroms
+ Writing output;    1 iterations since the previous save
+ Best fit so far = 0.194344
+ Refining, point 3 of 3
+ Iteration    3
+ Current Isotropic Debye Waller Factors
+ Sr1  0.415
+ Ti1  1.104
+ O1   1.079
+ Bloch wave calculation...
+ Figure of merit 0.194060
+ Specimen thickness  630 Angstroms
+ Thickness range    0 Angstroms
+ Writing output;    1 iterations since the previous save
+ Best fit so far = 0.194060
+ Concave set, predict minimum at  1.1188 with fit index 0.1940
+ Iteration    4
+ Current Isotropic Debye Waller Factors
+ Sr1  0.415
+ Ti1  1.104
+ O1   1.119
+ Bloch wave calculation...
+ Figure of merit 0.194359
+ Specimen thickness  630 Angstroms
+ Thickness range    0 Angstroms
+ Writing output;    1 iterations since the previous save
+ Best fit so far = 0.194060
+ Checking minimum gradient
+ Refinement vector =  1.000
+ Refining, point 2 of 3
+ Iteration    5
+ Current Isotropic Debye Waller Factors
+ Sr1  0.415
+ Ti1  1.104
+ O1   1.132
+ Bloch wave calculation...
+ Figure of merit 0.194239
+ Specimen thickness  630 Angstroms
+ Thickness range    0 Angstroms
+ Writing output;    1 iterations since the previous save
+ Best fit so far = 0.194060
+ Refining, point 3 of 3
+ Iteration    6
+ Current Isotropic Debye Waller Factors
+ Sr1  0.415
+ Ti1  1.104
+ O1   1.025
+ Bloch wave calculation...
+ Figure of merit 0.194516
+ Specimen thickness  630 Angstroms
+ Thickness range    0 Angstroms
+ Writing output;    1 iterations since the previous save
+ Best fit so far = 0.194060
+ Concave set, predict minimum at  1.0903 with fit index 0.1940
+ Iteration    7
+ Current Isotropic Debye Waller Factors
+ Sr1  0.415
+ Ti1  1.104
+ O1   1.090
+ Bloch wave calculation...
+ Figure of merit 0.194160
+ Specimen thickness  630 Angstroms
+ Thickness range    0 Angstroms
+ Writing output;    1 iterations since the previous save
+ Best fit so far = 0.194060
+ --------------------------------
+ Improvement in fit 0.001359, will stop at 0.010000
+ Iteration    8
+ Current Isotropic Debye Waller Factors
+ Sr1  0.415
+ Ti1  1.104
+ O1   1.079
+ Bloch wave calculation...
+ Figure of merit 0.194060
+ Specimen thickness  630 Angstroms
+ Thickness range    0 Angstroms
+ --------------------------------
+ Calculation completed in   0 hrs 10 mins 39 sec
+ --------------------------------
+ ||||||||||||||||||||||||||||||||

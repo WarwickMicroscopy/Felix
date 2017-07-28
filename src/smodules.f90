@@ -1,10 +1,10 @@
 !%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 !
-! felix
+! Felix
 !
-! Richard Beanland, Keith Evans, Rudolf A Roemer and Alexander Hubert
+! Richard Beanland, Keith Evans & Rudolf A Roemer
 !
-! (C) 2013/14, all right reserved
+! (C) 2013-17, all rights reserved
 !
 ! Version: :VERSION:
 ! Date:    :DATE:
@@ -15,24 +15,38 @@
 ! 
 !%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 !
-!  This file is part of felix.
-!
-!  felixsim is free software: you can redistribute it and/or modify
+!  Felix is free software: you can redistribute it and/or modify
 !  it under the terms of the GNU General Public License as published by
 !  the Free Software Foundation, either version 3 of the License, or
 !  (at your option) any later version.
 !  
-!  felixsim is distributed in the hope that it will be useful,
+!  Felix is distributed in the hope that it will be useful,
 !  but WITHOUT ANY WARRANTY; without even the implied warranty of
 !  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 !  GNU General Public License for more details.
 !  
 !  You should have received a copy of the GNU General Public License
-!  along with felixsim.  If not, see <http://www.gnu.org/licenses/>.
+!  along with Felix.  If not, see <http://www.gnu.org/licenses/>.
 !
 !%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
+! All modules & procedures conatained in this file:
+! CConst
+! IConst
+! RConst
+! IPara
+! RPara
+! CPara
+! SPara
+! IChannels
+! BlochPara
+! Refinement
 
+!>
+!! Module-description: 
+!!
+!! Major-Authors: Keith Evans (2014), Richard Beanland (2016)
+!!
 MODULE CConst
 
   CHARACTER*50, PARAMETER :: RStr= "Version: multipole / BUILD / Alpha"
@@ -89,6 +103,12 @@ MODULE CConst
 
 END MODULE CConst
 !--------------------------------------------------------------------
+
+!>
+!! Module-description: 
+!!
+!! Major-Authors: Keith Evans (2014), Richard Beanland (2016)
+!!
 MODULE IConst
   USE MyNumbers
   INTEGER(IKIND), PARAMETER :: &
@@ -116,6 +136,13 @@ MODULE IConst
 
 END MODULE IConst
 !--------------------------------------------------------------------
+
+
+!>
+!! Module-description: 
+!!
+!! Major-Authors: Keith Evans (2014), Richard Beanland (2016)
+!!
 MODULE RConst
   USE MyNumbers
   
@@ -130,6 +157,12 @@ MODULE RConst
     
 END MODULE RConst
 !--------------------------------------------------------------------
+
+!>
+!! Module-description: 
+!!
+!! Major-Authors: Keith Evans (2014), Richard Beanland (2016)
+!!
 MODULE IPara
   USE MyNumbers
   USE IConst 
@@ -153,7 +186,7 @@ MODULE IPara
   INTEGER(IKIND) :: IPixelCount 
   !Crystal Settings
   INTEGER(IKIND) :: IMaxPossibleNAtomsUnitCell
-  ! Name2Atom index
+  !Name2Atom index
   INTEGER(IKIND), DIMENSION(:), ALLOCATABLE :: IBasisAtomicNumber,IAtomicNumber
   !Microscope Settings
   INTEGER(IKIND) :: IIncidentBeamDirectionX, IIncidentBeamDirectionY, &
@@ -180,7 +213,7 @@ MODULE IPara
   INTEGER(IKIND) :: IPixelCountTotal
   !LACBED Writing
   INTEGER(IKIND) :: ISeperateFolderFlag
-  ! Thickness loop Variables
+  !Thickness loop Variables
   INTEGER(IKIND) :: IThicknessCount
   INTEGER(IKIND),DIMENSION(:,:),ALLOCATABLE :: IPixelLocations
   !Refine Parameters
@@ -198,7 +231,7 @@ MODULE IPara
   !Simplex Variables
   INTEGER(IKIND) :: INoOfVariables,ILocalPixelCountMin,ILocalPixelCountMax,IUgOffset
   INTEGER(IKIND), DIMENSION(:), ALLOCATABLE :: IDisplacements,ICount
-  ! Refinement Vectors
+  !Refinement Vectors
   INTEGER(IKIND) :: IAllowedVectors
   INTEGER(IKIND),DIMENSION(:),ALLOCATABLE :: IAllowedVectorIDs
   INTEGER(IKIND) :: IFelixCount,IPreviousPrintedIteration,IStandardDeviationCalls  
@@ -206,6 +239,12 @@ MODULE IPara
   INTEGER(IKIND) :: IMessageCounter=0
 END MODULE IPara
 !--------------------------------------------------------------------
+
+!>
+!! Module-description: 
+!!
+!! Major-Authors: Keith Evans (2014), Richard Beanland (2016)
+!!
 MODULE RPara
   USE MyNumbers
   USE RConst
@@ -298,9 +337,14 @@ MODULE RPara
   REAL(RKIND),DIMENSION(:),ALLOCATABLE :: RWeightingCoefficients
   !Gaussian blur radius in pixels
   REAL(RKIND) :: RBlurRadius
-
 END MODULE RPara
 !--------------------------------------------------------------------
+
+!>
+!! Module-description: 
+!!
+!! Major-Authors: Keith Evans (2014), Richard Beanland (2016)
+!!
 MODULE CPara
   USE MyNumbers
 
@@ -313,6 +357,12 @@ MODULE CPara
 
 END MODULE CPara
 !--------------------------------------------------------------------
+
+!>
+!! Module-description: 
+!!
+!! Major-Authors: Keith Evans (2014), Richard Beanland (2016)
+!!
 MODULE SPara
   USE MyNumbers
   
@@ -325,7 +375,12 @@ MODULE SPara
   
 END MODULE SPara
 !--------------------------------------------------------------------
-! Input- and Outputchannels
+
+!>
+!! Module-description: Input and output channels
+!!
+!! Major-Authors: Keith Evans (2014), Richard Beanland (2016)
+!!
 MODULE IChannels
   INTEGER, PARAMETER :: IChInp= 40, &
        IChOutWF= 41, IChOutWI= 42, &
@@ -337,8 +392,13 @@ MODULE IChannels
        IChOutWIImage= 49, MontageOut = 50,IChOutSimplex = 52
 END MODULE IChannels
 !--------------------------------------------------------------------
-MODULE BlochPara
-  ! eigen problem variables  
+
+!>
+!! Module-description: Eigen problem variables
+!!
+!! Major-Authors: Keith Evans (2014), Richard Beanland (2016)
+!!
+MODULE BlochPara 
   USE MyNumbers
   USE IConst
   USE MPI
@@ -352,6 +412,12 @@ MODULE BlochPara
   COMPLEX(CKIND),DIMENSION(:,:), ALLOCATABLE :: CEigenSaveTemp
 END MODULE BlochPara
 !--------------------------------------------------------------------
+
+!>
+!! Module-description: Refinement
+!!
+!! Major-Authors: Keith Evans (2014), Richard Beanland (2016)
+!!
 MODULE Refinement
 
 USE MyNumbers

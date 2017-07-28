@@ -1,19 +1,3 @@
-C%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-C
-C felixsim
-C
-C Richard Beanland, Keith Evans, Rudolf A Roemer and Alexander Hubert
-C
-C (C) 2013/14, all right reserved
-C
-C Version: :VERSION:
-C Date:    :DATE:
-C Time:    :TIME:
-C Status:  :RLSTATUS:
-C Build:   :BUILD:
-C Author:  :AUTHOR:
-C 
-C%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
          MODULE CIFtbxcmv      
 C

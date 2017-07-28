@@ -1,51 +1,51 @@
-!!$%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-!!$
-!!$ felixsim
-!!$
-!!$ Richard Beanland, Keith Evans, Rudolf A Roemer and Alexander Hubert
-!!$
-!!$ (C) 2013/14, all rights reserved
-!!$
-!!$ Version: :VERSION:
-!!$ Date:    :DATE:
-!!$ Time:    :TIME:
-!!$ Status:  :RLSTATUS:
-!!$ Build:   :BUILD:
-!!$ Author:  :AUTHOR:
-!!$ 
-!!$%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-!!$
-!!$  This file is part of felixsim.
-!!$
-!!$  felixsim is free software: you can redistribute it and/or modify
-!!$  it under the terms of the GNU General Public License as published by
-!!$  the Free Software Foundation, either version 3 of the License, or
-!!$  (at your option) any later version.
-!!$  
-!!$  felixsim is distributed in the hope that it will be useful,
-!!$  but WITHOUT ANY WARRANTY; without even the implied warranty of
-!!$  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-!!$  GNU General Public License for more details.
-!!$  
-!!$  You should have received a copy of the GNU General Public License
-!!$  along with felixsim.  If not, see <http://www.gnu.org/licenses/>.
-!!$
-!!$%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-!!$
+!%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+!
+! Felix
+!
+! Richard Beanland, Keith Evans & Rudolf A Roemer
+!
+! (C) 2013-17, all rights reserved
+!
+! Version: :VERSION:
+! Date:    :DATE:
+! Time:    :TIME:
+! Status:  :RLSTATUS:
+! Build:   :BUILD:
+! Author:  :AUTHOR:
+! 
+!%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+!
+!  Felix is free software: you can redistribute it and/or modify
+!  it under the terms of the GNU General Public License as published by
+!  the Free Software Foundation, either version 3 of the License, or
+!  (at your option) any later version.
+!  
+!  Felix is distributed in the hope that it will be useful,
+!  but WITHOUT ANY WARRANTY; without even the implied warranty of
+!  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+!  GNU General Public License for more details.
+!  
+!  You should have received a copy of the GNU General Public License
+!  along with Felix.  If not, see <http://www.gnu.org/licenses/>.
+!
+!%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-!> Contains all of the scattering coefficients for each of the following methods:
-!! Kirkland, Peng, Doyle & Turner, Lobato.
+!>
+!! Procedure-description: Contains all of the scattering coefficients for each
+!! of the following methods: Kirkland, Peng, Doyle & Turner, Lobato.
 !! Fictitious element "Q" is atomic number 104, Kirkland only, 1/5 width of H
 !! Fictitious elements "J" are multipole pseudoatoms, Ja,Jb... etc.
+!!
+!! Major-Authors: Alexander Hubert (2014), Richard Beanland (2016)
+!!
 SUBROUTINE ScatteringFactors(IScatteringMethodSwitch,IErr)
 
   USE MyNumbers
-  USE WriteToScreen
 
   USE CConst; USE IConst
   USE IPara; USE RPara
   USE IChannels
-
+  USE message_mod
   USE MPI
   USE MyMPI
 
@@ -54,7 +54,7 @@ SUBROUTINE ScatteringFactors(IScatteringMethodSwitch,IErr)
   INTEGER(IKIND):: IScatteringMethodSwitch,IScattDimension,IErr,ind
   REAL(RKIND) :: RKirkland(105,12), RPeng(105,8), RDoyleAndTurner(105,8), RLobato(105,10), RAtomicNumbers(105,1)
 
-  IF(IWriteFLAG.EQ.3.AND.my_rank.EQ.0) PRINT*,"Loading parameters for scattering factor calculation"
+  CALL message ( LL, dbg3, "Loading parameters for scattering factor calculation" )
   
   SELECT CASE(IScatteringMethodSwitch)
 
@@ -278,7 +278,7 @@ SUBROUTINE ScatteringFactors(IScatteringMethodSwitch,IErr)
 !!$Allocate Global Scattering factor array 
      ALLOCATE(RScattFactors(105,IScattDimension), STAT=IErr)
      IF( IErr.NE.0 ) THEN
-        PRINT*,"ScatteringFactors: error in memory allocation"
+        PRINT*,"Error:ScatteringFactors: error in memory allocation"
         RETURN
      ENDIF
 
@@ -501,7 +501,7 @@ SUBROUTINE ScatteringFactors(IScatteringMethodSwitch,IErr)
 !!$Allocate Global Scattering factor array 
      ALLOCATE(RScattFactors(105,IScattDimension), STAT=IErr)
      IF( IErr.NE.0 ) THEN
-        PRINT*,"ScatteringFactors: error in memory allocation"
+        PRINT*,"Error:ScatteringFactors: error in memory allocation"
         RETURN
      ENDIF
 
@@ -723,7 +723,7 @@ SUBROUTINE ScatteringFactors(IScatteringMethodSwitch,IErr)
 !!$Allocate Global Scattering factor array 
      ALLOCATE(RScattFactors(105,IScattDimension), STAT=IErr)
      IF( IErr.NE.0 ) THEN
-        PRINT*,"ScatteringFactors: error in memory allocation"
+        PRINT*,"Error:ScatteringFactors: error in memory allocation"
         RETURN
      ENDIF
 
@@ -945,7 +945,7 @@ SUBROUTINE ScatteringFactors(IScatteringMethodSwitch,IErr)
 !!$Allocate Global Scattering factor array 
      ALLOCATE(RScattFactors(105,IScattDimension), STAT=IErr)
      IF( IErr.NE.0 ) THEN
-        PRINT*,"ScatteringFactors: error in memory allocation"
+        PRINT*,"Error:ScatteringFactors: error in memory allocation"
         RETURN
      ENDIF
 
@@ -954,7 +954,7 @@ SUBROUTINE ScatteringFactors(IScatteringMethodSwitch,IErr)
 
   CASE DEFAULT
     IF (my_rank.EQ.0) THEN
-      PRINT*,"Scattering factors do not exist, check IScatteringMethodFlag"
+      PRINT*,"Error:Scattering factors do not exist, check IScatteringMethodFlag"
     END IF
      IErr=1
 

@@ -1,10 +1,10 @@
 !%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 !
-! felixsim
+! Felix
 !
-! Richard Beanland, Keith Evans, Rudolf A Roemer and Alexander Hubert
+! Richard Beanland, Keith Evans & Rudolf A Roemer
 !
-! (C) 2013/14, all rights reserved
+! (C) 2013-17, all rights reserved
 !
 ! Version: :VERSION:
 ! Date:    :DATE:
@@ -15,37 +15,45 @@
 ! 
 !%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 !
-!  This file is part of felixsim.
-!
-!  felixsim is free software: you can redistribute it and/or modify
+!  Felix is free software: you can redistribute it and/or modify
 !  it under the terms of the GNU General Public License as published by
 !  the Free Software Foundation, either version 3 of the License, or
 !  (at your option) any later version.
 !  
-!  felixsim is distributed in the hope that it will be useful,
+!  Felix is distributed in the hope that it will be useful,
 !  but WITHOUT ANY WARRANTY; without even the implied warranty of
 !  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 !  GNU General Public License for more details.
 !  
 !  You should have received a copy of the GNU General Public License
-!  along with felixsim.  If not, see <http://www.gnu.org/licenses/>.
+!  along with Felix.  If not, see <http://www.gnu.org/licenses/>.
 !
 !%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-!--------------------------------------------------------------------
-!	Sort:
-!	sort s.t. the largest comes first. RESORT()
-!	is based on ShellSort from "Numerical Recipes", routine SHELL().
-!---------------------------------------------------------------------
+! All procedures conatained in this file:
+! SortHKL()
+! GreatestCommonDivisor()
+! Lorentzian()
+! Gaussian()
 
+
+!>
+!! Procedure-description: Sorts array into descending order
+!!
+!! Major-Authors: Keith Evans (2014), Richard Beanland (2016)
+!!
 SUBROUTINE SortHKL( Rhklarray,N,IErr )
 
+  !--------------------------------------------------------------------
+  !	Sort:
+  !	sort s.t. the largest comes first. RESORT()
+  !	is based on ShellSort from "Numerical Recipes", routine SHELL().
+  !---------------------------------------------------------------------  
+
   USE MyNumbers
-  USE WriteToScreen
     
   USE CConst; USE IConst
   USE IPara; USE RPara
-  USE WriteToScreen
 
   USE IChannels
 
@@ -107,8 +115,14 @@ SUBROUTINE SortHKL( Rhklarray,N,IErr )
 
 END SUBROUTINE SortHKL
 
-!!$  %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+!%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
+
+!>
+!! Procedure-description:
+!!
+!! Major-Authors: Keith Evans (2014), Richard Beanland (2016)
+!!
 SUBROUTINE GreatestCommonDivisor(ITotalProcesses,INooDWFs,ISubgroups)
 
 USE MyNumbers
@@ -133,7 +147,12 @@ END SUBROUTINE GreatestCommonDivisor
 
 !%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-!Defines a Lorentzian Distribution for any parameter input
+
+!>
+!! Procedure-description: Defines a Lorentzian Distribution for any parameter input
+!!
+!! Major-Authors: Keith Evans (2014), Richard Beanland (2016)
+!!
 FUNCTION Lorentzian(FWHM,x,x_0,offset)
 
   USE MyNumbers
@@ -150,7 +169,12 @@ END FUNCTION Lorentzian
 
 !%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-!Defines a Gaussian distribution for any parameter input 
+
+!>
+!! Procedure-description: Defines a Gaussian distribution for any parameter input 
+!!
+!! Major-Authors: Keith Evans (2014), Richard Beanland (2016)
+!!
 FUNCTION Gaussian(height,x,peakcentre,standarddeviation,intercept)
 
   USE MyNumbers

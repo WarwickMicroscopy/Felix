@@ -1,3 +1,50 @@
+!%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+!
+! Felix
+!
+! Richard Beanland, Keith Evans & Rudolf A Roemer
+!
+! (C) 2013-17, all rights reserved
+!
+! Version: :VERSION:
+! Date:    :DATE:
+! Time:    :TIME:
+! Status:  :RLSTATUS:
+! Build:   :BUILD:
+! Author:  :AUTHOR:
+! 
+!%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+!
+!  Felix is free software: you can redistribute it and/or modify
+!  it under the terms of the GNU General Public License as published by
+!  the Free Software Foundation, either version 3 of the License, or
+!  (at your option) any later version.
+!  
+!  Felix is distributed in the hope that it will be useful,
+!  but WITHOUT ANY WARRANTY; without even the implied warranty of
+!  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+!  GNU General Public License for more details.
+!  
+!  You should have received a copy of the GNU General Public License
+!  along with Felix.  If not, see <http://www.gnu.org/licenses/>.
+!
+!%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+! A lot of these are currently out of use, but may be useful
+
+! All procedures conatained in this file:
+! NDimensionalDownhillSimplex()
+! SimplexExtrapolate()
+! OpenSimplexOutput()
+! WriteOutSimplex()
+! SaveSimplex() 
+
+
+!>
+!! Procedure-description: 
+!!
+!! Major-Authors: Keith Evans (2014), Richard Beanland (2016)
+!!
 SUBROUTINE NDimensionalDownhillSimplex(RSimplexVariable,y,mp,np,ndim,ftol,iter,RStandardDeviation,RMean,IErr)
 
   USE MyNumbers
@@ -5,6 +52,7 @@ SUBROUTINE NDimensionalDownhillSimplex(RSimplexVariable,y,mp,np,ndim,ftol,iter,R
   USE CConst; USE IConst
   USE IPara; USE RPara
   USE IChannels
+  USE message_mod
   USE MPI
   USE MyMPI
 
@@ -16,7 +64,6 @@ SUBROUTINE NDimensionalDownhillSimplex(RSimplexVariable,y,mp,np,ndim,ftol,iter,R
   PARAMETER (NMAX=1000,ITMAX=50000)
 
   INTEGER(IKIND) :: i,ihi,ilo,inhi,j,m,n,IExitFlag
-  CHARACTER*200 :: SPrintString
   
   Rytry=ZERO!initial value, has no significance
 
@@ -48,7 +95,7 @@ SUBROUTINE NDimensionalDownhillSimplex(RSimplexVariable,y,mp,np,ndim,ftol,iter,R
         IF(i.NE.ihi) inhi=i
       END IF
     ENDDO
-	!compute the range from highest to lowest
+	  !compute the range from highest to lowest
     rtol=2.*ABS(y(ihi)-y(ilo))/(ABS(y(ihi))+ABS(y(ilo)))
 
     IF(rtol.LT.ftol) THEN !returning, put the best point in slot 1
@@ -74,50 +121,38 @@ SUBROUTINE NDimensionalDownhillSimplex(RSimplexVariable,y,mp,np,ndim,ftol,iter,R
       IErr = 1
       RSendPacket = [-10000.0_RKIND, psum, REAL(iter,RKIND)]
       CALL MPI_BCAST(RSendPacket,ndim+2,MPI_DOUBLE_PRECISION,0,MPI_COMM_WORLD,IErr)
-      WRITE(SPrintString,FMT='(A22,I3,A11)') "Simplex halted after  ",iter," iterations"
-      PRINT*,TRIM(ADJUSTL(SPrintString))
+      CALL message( LS, "Simplex halted after  iterations = ",iter )
       RETURN
     END IF
      
     !CALL SaveSimplex(RSimplexVariable,y,np,RStandardDeviation,RMean,iter,IErr)
-    PRINT*,"------------------------------------------"
-    IF (iter.EQ.1) THEN    
-      WRITE(SPrintString,FMT='(A15)') "First iteration"
-	ELSE IF (iter.LT.10) THEN
-      WRITE(SPrintString,FMT='(A10,I1,A22,F9.7)')&
-	  "Iteration ",iter,", current best fit is ",y(ilo)
-	ELSE IF (iter.LT.100) THEN
-      WRITE(SPrintString,FMT='(A10,I2,A22,F9.7)')&
-	  "Iteration ",iter,", current best fit is ",y(ilo)
-	ELSE IF (iter.LT.1000) THEN
-      WRITE(SPrintString,FMT='(A10,I3,A22,F9.7)')&
-	  "Iteration ",iter,", current best fit is ",y(ilo)
-	ELSE
-      WRITE(SPrintString,FMT='(A10,I5,A22,F9.7)')&
-	  "Iteration ",iter,", current best fit is ",y(ilo)
-	END IF
-    PRINT*,TRIM(ADJUSTL(SPrintString))
-    WRITE(SPrintString,FMT='(A14,F7.5,A14,F7.5)') "Simplex range ",rtol,", will end at ",ftol
-    PRINT*,TRIM(ADJUSTL(SPrintString))
-    PRINT*,"------------------------------------------"
+    CALL message( LM, "------------------------------------------")
+
+    CALL message( LM, "Iteration = ",iter)
+    CALL message( LM, " current best fit = ",y(ilo) )
+
+    CALL message( LM, "Simplex range ",rtol)
+    CALL message( LM, "    will end at ",ftol)
+
+    CALL message( LM, "------------------------------------------")
 	
     iter=iter+2
     !begin a new iteration, reflect the simplex from the high point
     Rytry = SimplexExtrapolate(RSimplexVariable,y,psum,mp,np,ndim,ihi,-1.0D0,iter,IErr)
-    PRINT*,"Simplex reflection:"
+    CALL message( LM, "Simplex reflection:" )
     IF (Rytry.LE.y(ilo)) THEN !the reflected point is better than the best point, extrapolate by 2 times again
       Rytry = SimplexExtrapolate(RSimplexVariable,y,psum,mp,np,ndim,ihi,2.0D0,iter,IErr)
-      PRINT*,"Extrapolation:"
+      CALL message( LM, "Extrapolation:" )
     ELSEIF (Rytry.GE.y(inhi)) THEN !the reflected point is worse than the second-highest, so look for an intermediate lower point 
       ysave=y(ihi)
       Rytry=SimplexExtrapolate(RSimplexVariable,y,psum,mp,np,ndim,ihi,0.5D0,iter,IErr)
-      PRINT*,"Interpolation:"
+      CALL message( LM, "Interpolation:" )
       IF(Rytry.GE.ysave) THEN !can't get rid of the highest point, contract about the best point
-        PRINT*,"-----------------------------------------------------"
-        PRINT*,"Entering Contraction Phase, Expect",ndim+1,"Simulations"
-        PRINT*,"-----------------------------------------------------"
+        CALL message( LM, "-----------------------------------------------------")
+        CALL message( LM, "Entering Contraction Phase, Expect number Simulations = ",ndim+1 )
+        CALL message( LM, "-----------------------------------------------------")
         DO i=1,ndim+1
-          PRINT*,"Contraction Simulation",i
+          CALL message( LM, "Contraction Simulation",i )
           IF(i.NE.ilo) THEN
             DO j=1,ndim
               psum(j)=0.5*(RSimplexVariable(i,j)+RSimplexVariable(ilo,j))
@@ -158,8 +193,15 @@ SUBROUTINE NDimensionalDownhillSimplex(RSimplexVariable,y,mp,np,ndim,ftol,iter,R
   
 END SUBROUTINE NDimensionalDownhillSimplex
 
-!!$----------------------------------------------------------------------------
+!%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
+
+
+!>
+!! Procedure-description: 
+!!
+!! Major-Authors: Keith Evans (2014), Richard Beanland (2016)
+!!
 REAL(RKIND) FUNCTION SimplexExtrapolate(RSimplexVariable,y,psum,mp,np,ndim,ihi,fac,iter,IErr)
 
   USE MyNumbers
@@ -176,7 +218,6 @@ REAL(RKIND) FUNCTION SimplexExtrapolate(RSimplexVariable,y,psum,mp,np,ndim,ihi,f
   REAL(RKIND) :: fac,RSimplexVariable(mp,np),psum(np),y(mp),RSendPacket(ndim+2)
   REAL(RKIND) :: fac1,fac2,Rytry,ptry(ndim)
   PARAMETER(NMAX=1000)
-  CHARACTER*200 :: SPrintString
   
   !extrapolates by a factor fac through the face of the simplex across from the high point, tries it, and replaces the high point if the new point is better
   fac1=(1.0-fac)/ndim
@@ -203,9 +244,15 @@ REAL(RKIND) FUNCTION SimplexExtrapolate(RSimplexVariable,y,psum,mp,np,ndim,ihi,f
   RETURN
 END FUNCTION SimplexExtrapolate
 
+!%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-!!$----------------------------------------------------------------------------
 
+
+!>
+!! Procedure-description: 
+!!
+!! Major-Authors: Keith Evans (2014), Richard Beanland (2016)
+!!
 SUBROUTINE OpenSimplexOutput(IErr)
 !ffs, 1 line of code
   USE MyNumbers
@@ -229,9 +276,15 @@ SUBROUTINE OpenSimplexOutput(IErr)
 
 END SUBROUTINE OpenSimplexOutput
 
+!%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-!!$----------------------------------------------------------------------------
 
+
+!>
+!! Procedure-description: 
+!!
+!! Major-Authors: Keith Evans (2014), Richard Beanland (2016)
+!!
 SUBROUTINE WriteOutSimplex(RSimplexVariable,RSimplexFoM,IDimensions,RStandardDeviation,RMean,IIterations,IErr)
 
   USE MyNumbers
@@ -266,10 +319,17 @@ SUBROUTINE WriteOutSimplex(RSimplexVariable,RSimplexFoM,IDimensions,RStandardDev
 
 END SUBROUTINE WriteOutSimplex
 
-!!$----------------------------------------------------------------------------
+!%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
+
+
+!>
+!! Procedure-description: 
+!!
+!! Major-Authors: Keith Evans (2014), Richard Beanland (2016)
+!!
 SUBROUTINE SaveSimplex(RSimplexVariable,RSimplexFoM,IDimensions,RStandardDeviation,RMean,IIterations,IErr)
-!what a useless subroutine, just calls two others
+  !what a useless subroutine, just calls two others
   USE MyNumbers
 
   USE IConst; USE RConst
@@ -291,6 +351,3 @@ SUBROUTINE SaveSimplex(RSimplexVariable,RSimplexFoM,IDimensions,RStandardDeviati
   CALL WriteOutSimplex(RSimplexVariable,RSimplexFoM,IDimensions,RStandardDeviation,RMean,IIterations,IErr)
 
 END SUBROUTINE SaveSimplex
-
-
-!!$----------------------------------------------------------------------------

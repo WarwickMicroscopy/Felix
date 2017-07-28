@@ -1,41 +1,50 @@
 !%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 !
-! felixsim
+! Felix
 !
-! Richard Beanland, Keith Evans, Rudolf A Roemer and Alexander Hubert
+! Richard Beanland, Keith Evans & Rudolf A Roemer
 !
-! (C) 2013/14, all rights reserved
+! (C) 2013-17, all rights reserved
 !
-! Version: $VERSION$
-! Date:    $DATE$
-! Time:    $TIME$
-! Status:  $RLSTATUS$
-! Build:   $BUILD$
-! Author:  $AUTHOR$
+! Version: :VERSION:
+! Date:    :DATE:
+! Time:    :TIME:
+! Status:  :RLSTATUS:
+! Build:   :BUILD:
+! Author:  :AUTHOR:
 ! 
 !%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 !
-!  This file is part of felixsim.
-!
-!  felixsim is free software: you can redistribute it and/or modify
+!  Felix is free software: you can redistribute it and/or modify
 !  it under the terms of the GNU General Public License as published by
 !  the Free Software Foundation, either version 3 of the License, or
 !  (at your option) any later version.
 !  
-!  felixsim is distributed in the hope that it will be useful,
+!  Felix is distributed in the hope that it will be useful,
 !  but WITHOUT ANY WARRANTY; without even the implied warranty of
 !  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 !  GNU General Public License for more details.
 !  
 !  You should have received a copy of the GNU General Public License
-!  along with felixsim.  If not, see <http://www.gnu.org/licenses/>.
+!  along with Felix.  If not, see <http://www.gnu.org/licenses/>.
 !
 !%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
+! Conatained in this file below:
+! ReciprocalLattice()
+! UniqueAtomPositions()
+
+
+!>
+!! Procedure-description: Creates reciprocal lattice vectors in Microscope
+!! reference frame. This involves transforms between the orthogonal, crystal
+!! and microscopic frame. 
+!!
+!! Major-Authors: Keith Evans (2014), Richard Beanland (2016)
+!!
 SUBROUTINE ReciprocalLattice(IErr)
-  
+   
   USE MyNumbers
-  USE WriteToScreen
   
   USE RPara; USE IPara; USE SPara
   
@@ -148,19 +157,22 @@ END SUBROUTINE ReciprocalLattice
 
 !%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
+
+
+!>
+!! Procedure-description: Calculates the FULL set of possible fractional atomic positions
+!! and then gets rid of duplicates
+!!
+!! Major-Authors: Keith Evans (2014), Richard Beanland (2016, 2017)
+!!
 SUBROUTINE UniqueAtomPositions(IErr)
-!---------------------------------------------------------------
-!Calculates the FULL set of possible fractional atomic positions
-!And then gets rid of duplicates
-!---------------------------------------------------------------
   
-  USE WriteToScreen
   USE MyNumbers
   
   USE CConst; USE IConst
   USE IPara; USE RPara; USE SPara
   USE IChannels
-  
+  USE message_mod
   USE MyMPI
   
   IMPLICIT NONE
@@ -183,7 +195,7 @@ SUBROUTINE UniqueAtomPositions(IErr)
   ALLOCATE(IAllAtomicNumber(SIZE(RSymVec,1)*SIZE(RBasisAtomPosition,1)),STAT=IErr)  
   ALLOCATE(RAllAnisoDW(SIZE(RSymVec,1)*SIZE(RBasisAtomPosition,1)),STAT=IErr)  
   IF( IErr.NE.0 ) THEN
-     PRINT*,"UniqueAtomPositions(",my_rank,")error in allocations"
+     PRINT*,"Error:UniqueAtomPositions(",my_rank,")error in allocations"
      RETURN
   END IF
  
@@ -206,7 +218,8 @@ SUBROUTINE UniqueAtomPositions(IErr)
   WHERE(ABS(RAllAtomPosition).LT.TINY) RAllAtomPosition = ZERO 
 
   !--------------------------------------------------------------------  
-  ! Now reduce to the set of unique fractional atomic positions, used to be subroutine CrystalUniqueFractionalAtomicPostitionsCalculation
+  ! Now reduce to the set of unique fractional atomic positions, used to be 
+  ! subroutine CrystalUniqueFractionalAtomicPostitionsCalculation
   
   !first atom has to be in this set
   RAtomPosition(1,:)= RAllAtomPosition(1,:)
@@ -241,19 +254,22 @@ SUBROUTINE UniqueAtomPositions(IErr)
   ENDDO
   INAtomsUnitCell= jnd-1!this is how many unique atoms there are in the unit cell
 
-  IF(IWriteFLAG.EQ.7.AND.my_rank.EQ.0) THEN!optional output
-    DO ind=1,INAtomsUnitCell
-      WRITE(SPrintString,FMT='(A4,I3,A2,A2,A3,3F7.4,A7,F5.3,A12,F7.4)')&
-      "Atom",ind,": ",SAtomName(ind),", [",RAtomPosition(ind,:),&
-      "], DWF=",RIsoDW(ind),", occupancy=",ROccupancy(ind)
-      PRINT*,TRIM(ADJUSTL(SPrintString))
-    END DO
-  END IF
+  DO ind=1,INAtomsUnitCell
+    !todo - classical print commented out below, message struggles here 
+    !WRITE(SPrintString,FMT='(A4,I3,A2,A2,A3,3F7.4,A7,F5.3,A12,F7.4)')&
+    !"Atom",ind,": ",SAtomName(ind),", [",RAtomPosition(ind,:),&
+    !"], DWF=",RIsoDW(ind),", occupancy=",ROccupancy(ind)
+    !PRINT*,TRIM(ADJUSTL(SPrintString))
+    
+    CALL message( LL, dbg7, "For Atom ",ind)
+    CALL message( LL, dbg7, SAtomName(ind)//" Atom position = ", RAtomPosition(ind,:) )
+    CALL message( LL, dbg7, "(DWF, occupacy) = ",(/ RIsoDW(ind), ROccupancy(ind) /) )
+  END DO
   
   !Finished with these variables now
   DEALLOCATE(RAllAtomPosition,SAllAtomName,RAllOccupancy,RAllIsoDW,IAllAtomicNumber,RAllAnisoDW)
   IF( IErr.NE.0 ) THEN
-     PRINT*,"UniqueAtomPositions(",my_rank,")error deallocating RAllAtomPositions etc"
+     PRINT*,"Error:UniqueAtomPositions(",my_rank,")error deallocating RAllAtomPositions etc"
      RETURN
   END IF
     

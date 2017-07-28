@@ -1,0 +1,87 @@
+ --------------------------------------------------------------
+ felixrefine: Version: multipole / BUILD / Alpha                
+              Date: 27-06-2017                                  
+              Status: multipole atom test & debug               
+     on rank=            0  of            2  in total.
+ --------------------------------------------------------------
+ D:Refining Isotropic Debye Waller Factors
+ Refining by pairwise maximum gradient
+ Refining atoms  1  2
+ 69 experimental images successfully loaded
+ MeanInnerPotential= 57.77  Volts
+ 85 unique structure factors
+ Absorption completed in   0 hrs  0 mins  6 sec
+ Bloch wave calculation...
+ Simulation completed in   0 hrs  0 mins 20 sec
+ Figure of merit 0.173748
+ Specimen thickness  850 Angstroms
+ Thickness range  100 Angstroms
+ Writing output; baseline simulation
+ Isotropic Debye-Waller factor refinement
+ Refining pairs of variables
+ Finding maximum gradient for variables  1 and  2
+ Iteration    1
+ Current Isotropic Debye Waller Factors
+ Ga1  0.690
+ As1  0.630
+ Bloch wave calculation...
+ Figure of merit 0.173955
+ Specimen thickness  850 Angstroms
+ Thickness range  100 Angstroms
+ Best fit so far = 0.173748
+ Finding maximum gradient for variables  1 and  2
+ Iteration    2
+ Current Isotropic Debye Waller Factors
+ Ga1  0.690
+ As1  0.640
+ Bloch wave calculation...
+ Figure of merit 0.173823
+ Specimen thickness  850 Angstroms
+ Thickness range  100 Angstroms
+ Best fit so far = 0.173748
+ Refinement vector = -0.843  0.539
+ Iteration    3
+ Current Isotropic Debye Waller Factors
+ Ga1  0.651
+ As1  0.648
+ Bloch wave calculation...
+ Figure of merit 0.173578
+ Specimen thickness  850 Angstroms
+ Thickness range  100 Angstroms
+ Writing output; baseline simulation
+ Best fit so far = 0.173578
+ Iteration    4
+ Current Isotropic Debye Waller Factors
+ Ga1  0.623
+ As1  0.667
+ Bloch wave calculation...
+ Figure of merit 0.173501
+ Specimen thickness  850 Angstroms
+ Thickness range  100 Angstroms
+ Best fit so far = 0.173501
+ Concave set, predict minimum at  0.6139 with fit index 0.1735
+ Iteration    5
+ Current Isotropic Debye Waller Factors
+ Ga1  0.614
+ As1  0.672
+ Bloch wave calculation...
+ Figure of merit 0.173466
+ Specimen thickness  850 Angstroms
+ Thickness range  100 Angstroms
+ Best fit so far = 0.173466
+ Isotropic Debye-Waller factor refinement
+ Refining pairs of variables
+ --------------------------------
+ Improvement in fit 0.000282, will stop at 0.010000
+ Iteration    6
+ Current Isotropic Debye Waller Factors
+ Ga1  0.614
+ As1  0.672
+ Bloch wave calculation...
+ Figure of merit 0.173466
+ Specimen thickness  850 Angstroms
+ Thickness range  100 Angstroms
+ --------------------------------
+ Calculation completed in   0 hrs  2 mins 29 sec
+ --------------------------------
+ ||||||||||||||||||||||||||||||||
