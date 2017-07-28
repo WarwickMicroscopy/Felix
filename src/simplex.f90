@@ -52,6 +52,7 @@ SUBROUTINE NDimensionalDownhillSimplex(RSimplexVariable,y,mp,np,ndim,ftol,iter,R
   USE CConst; USE IConst
   USE IPara; USE RPara
   USE IChannels
+  USE message_mod
   USE MPI
   USE MyMPI
 
@@ -63,7 +64,6 @@ SUBROUTINE NDimensionalDownhillSimplex(RSimplexVariable,y,mp,np,ndim,ftol,iter,R
   PARAMETER (NMAX=1000,ITMAX=50000)
 
   INTEGER(IKIND) :: i,ihi,ilo,inhi,j,m,n,IExitFlag
-  CHARACTER*200 :: SPrintString
   
   Rytry=ZERO!initial value, has no significance
 
@@ -121,50 +121,38 @@ SUBROUTINE NDimensionalDownhillSimplex(RSimplexVariable,y,mp,np,ndim,ftol,iter,R
       IErr = 1
       RSendPacket = [-10000.0_RKIND, psum, REAL(iter,RKIND)]
       CALL MPI_BCAST(RSendPacket,ndim+2,MPI_DOUBLE_PRECISION,0,MPI_COMM_WORLD,IErr)
-      WRITE(SPrintString,FMT='(A22,I3,A11)') "Simplex halted after  ",iter," iterations"
-      PRINT*,TRIM(ADJUSTL(SPrintString))
+      CALL message( LS, "Simplex halted after  iterations = ",iter )
       RETURN
     END IF
      
     !CALL SaveSimplex(RSimplexVariable,y,np,RStandardDeviation,RMean,iter,IErr)
-    PRINT*,"------------------------------------------"
-    IF (iter.EQ.1) THEN    
-      WRITE(SPrintString,FMT='(A15)') "First iteration"
-	ELSE IF (iter.LT.10) THEN
-      WRITE(SPrintString,FMT='(A10,I1,A22,F9.7)')&
-	  "Iteration ",iter,", current best fit is ",y(ilo)
-	ELSE IF (iter.LT.100) THEN
-      WRITE(SPrintString,FMT='(A10,I2,A22,F9.7)')&
-	  "Iteration ",iter,", current best fit is ",y(ilo)
-	ELSE IF (iter.LT.1000) THEN
-      WRITE(SPrintString,FMT='(A10,I3,A22,F9.7)')&
-	  "Iteration ",iter,", current best fit is ",y(ilo)
-	ELSE
-      WRITE(SPrintString,FMT='(A10,I5,A22,F9.7)')&
-	  "Iteration ",iter,", current best fit is ",y(ilo)
-	END IF
-    PRINT*,TRIM(ADJUSTL(SPrintString))
-    WRITE(SPrintString,FMT='(A14,F7.5,A14,F7.5)') "Simplex range ",rtol,", will end at ",ftol
-    PRINT*,TRIM(ADJUSTL(SPrintString))
-    PRINT*,"------------------------------------------"
+    CALL message( LM, "------------------------------------------")
+
+    CALL message( LM, "Iteration = ",iter)
+    CALL message( LM, " current best fit = ",y(ilo) )
+
+    CALL message( LM, "Simplex range ",rtol)
+    CALL message( LM, "    will end at ",ftol)
+
+    CALL message( LM, "------------------------------------------")
 	
     iter=iter+2
     !begin a new iteration, reflect the simplex from the high point
     Rytry = SimplexExtrapolate(RSimplexVariable,y,psum,mp,np,ndim,ihi,-1.0D0,iter,IErr)
-    PRINT*,"Simplex reflection:"
+    CALL message( LM, "Simplex reflection:" )
     IF (Rytry.LE.y(ilo)) THEN !the reflected point is better than the best point, extrapolate by 2 times again
       Rytry = SimplexExtrapolate(RSimplexVariable,y,psum,mp,np,ndim,ihi,2.0D0,iter,IErr)
-      PRINT*,"Extrapolation:"
+      CALL message( LM, "Extrapolation:" )
     ELSEIF (Rytry.GE.y(inhi)) THEN !the reflected point is worse than the second-highest, so look for an intermediate lower point 
       ysave=y(ihi)
       Rytry=SimplexExtrapolate(RSimplexVariable,y,psum,mp,np,ndim,ihi,0.5D0,iter,IErr)
-      PRINT*,"Interpolation:"
+      CALL message( LM, "Interpolation:" )
       IF(Rytry.GE.ysave) THEN !can't get rid of the highest point, contract about the best point
-        PRINT*,"-----------------------------------------------------"
-        PRINT*,"Entering Contraction Phase, Expect",ndim+1,"Simulations"
-        PRINT*,"-----------------------------------------------------"
+        CALL message( LM, "-----------------------------------------------------")
+        CALL message( LM, "Entering Contraction Phase, Expect number Simulations = ",ndim+1 )
+        CALL message( LM, "-----------------------------------------------------")
         DO i=1,ndim+1
-          PRINT*,"Contraction Simulation",i
+          CALL message( LM, "Contraction Simulation",i )
           IF(i.NE.ilo) THEN
             DO j=1,ndim
               psum(j)=0.5*(RSimplexVariable(i,j)+RSimplexVariable(ilo,j))
@@ -230,7 +218,6 @@ REAL(RKIND) FUNCTION SimplexExtrapolate(RSimplexVariable,y,psum,mp,np,ndim,ihi,f
   REAL(RKIND) :: fac,RSimplexVariable(mp,np),psum(np),y(mp),RSendPacket(ndim+2)
   REAL(RKIND) :: fac1,fac2,Rytry,ptry(ndim)
   PARAMETER(NMAX=1000)
-  CHARACTER*200 :: SPrintString
   
   !extrapolates by a factor fac through the face of the simplex across from the high point, tries it, and replaces the high point if the new point is better
   fac1=(1.0-fac)/ndim

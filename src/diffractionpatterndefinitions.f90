@@ -48,7 +48,6 @@
 SUBROUTINE SpecificReflectionDetermination (IErr)
   ! What does this do    
   USE MyNumbers
-  USE WriteToScreen
   USE IConst
   USE IPara; USE RPara
   USE MyMPI
@@ -82,7 +81,7 @@ SUBROUTINE SpecificReflectionDetermination (IErr)
         ELSE
           IF((jnd.EQ.SIZE(Rhkl,DIM=1).AND.IWriteFLAG.GE.3.AND.my_rank.EQ.0).or.&
                    (jnd.EQ.SIZE(Rhkl,DIM=1).AND.IWriteFLAG.GE.10)) THEN
-            PRINT*,"DiffractionPatternDefinitions(",my_rank,&
+            PRINT*,"Error:DiffractionPatternDefinitions(",my_rank,&
                       ") Could Not Find Requested HKL ",&
                       NINT(RInputHKLs(ind,:))," Will Ignore and Continue"
           END IF
@@ -94,7 +93,7 @@ SUBROUTINE SpecificReflectionDetermination (IErr)
      IF(IFind.LE.0) THEN
         IErr = 1
         IF( IErr.NE.0 ) THEN
-           PRINT*,"DiffractionPatternDefinitions(", my_rank, ") error ", IErr, &
+           PRINT*,"Error:DiffractionPatternDefinitions(", my_rank, ") error ", IErr, &
                 " No requested HKLs are allowed using the purposed geometry"
            RETURN
         END IF
@@ -117,7 +116,6 @@ END SUBROUTINE SpecificReflectionDetermination
 SUBROUTINE HKLCount(Ihklmax,Rhkl0Vec,INhkl,RHOLZAcceptanceAngle,IErr)
 
   USE MyNumbers
-  USE WriteToScreen
   
   USE CConst; USE IConst
   USE IPara; USE RPara; USE SPara
@@ -251,7 +249,7 @@ SUBROUTINE HKLCount(Ihklmax,Rhkl0Vec,INhkl,RHOLZAcceptanceAngle,IErr)
               END IF
 			  
            CASE DEFAULT
-              PRINT*,"HKLMake: unknown space group", SSpaceGroupName, ", aborting"
+              PRINT*,"Error:HKLMake: unknown space group", SSpaceGroupName, ", aborting"
               IErr=1
               RETURN
            END SELECT
@@ -276,7 +274,6 @@ SUBROUTINE HKLMake(Ihklmax,Rhkl0Vec,RHOLZAcceptanceAngle,IErr)
   !N.B. Rhkl is simply real versions of h,k,l 
 
   USE MyNumbers
-  USE WriteToScreen
   
   USE CConst; USE IConst
   USE IPara; USE RPara; USE SPara
@@ -417,7 +414,7 @@ SUBROUTINE HKLMake(Ihklmax,Rhkl0Vec,RHOLZAcceptanceAngle,IErr)
              END IF
 			  
            CASE DEFAULT!RB should never get here since already been through HKLcount
-             PRINT*,"HKLMake(): unknown space group", SSpaceGroupName, "--- aborting"
+             PRINT*,"Error:HKLMake(): unknown space group", SSpaceGroupName, "--- aborting"
              IErr=1
              RETURN
          END SELECT

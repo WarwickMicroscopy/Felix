@@ -45,7 +45,6 @@
 SUBROUTINE ImageSetup (IErr) 
 
   USE MyNumbers
-  USE WriteToScreen
 
   USE IPara; USE RPara
 
@@ -84,7 +83,6 @@ END SUBROUTINE ImageSetup
 SUBROUTINE ImageInitialisation( IErr )
 
   USE MyNumbers
-  USE WriteToScreen
 
   USE CConst; USE IConst
   USE IPara; USE RPara
@@ -143,7 +141,6 @@ END SUBROUTINE ImageInitialisation
 SUBROUTINE MontageInitialisation(IPixelHorizontalPosition,IPixelVerticalPosition,&
      IThicknessindex,RMontageImage,RIntensityValues,IErr)
 
-  USE WriteToScreen
   USE MyNumbers
   
   USE CConst; USE IConst
@@ -225,7 +222,6 @@ END SUBROUTINE MontageInitialisation
 SUBROUTINE ImageMaskInitialisation (IErr)
   
   USE MyNumbers
-  USE WriteToScreen
 
   USE CConst; USE IConst
   USE IPara; USE RPara

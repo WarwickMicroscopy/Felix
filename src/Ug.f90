@@ -50,14 +50,13 @@
 SUBROUTINE StructureFactorInitialisation (IErr)
 
   USE MyNumbers
-  USE WriteToScreen
 
   USE CConst; USE IConst
   USE IPara; USE RPara; USE CPara; USE SPara
   USE BlochPara; USE MyFFTW
 
   USE IChannels
-
+  USE message_mod
   USE MPI
   USE MyMPI
 
@@ -168,7 +167,7 @@ SUBROUTINE StructureFactorInitialisation (IErr)
           CFpseudo = CFpseudo*ROccupancy(lnd)
           !Debye-Waller factor - isotropic only, for now
           IF (IAnisoDebyeWallerFactorFlag.NE.0) THEN
-            IF (my_rank.EQ.0) PRINT*,"Pseudo atom - isotropic Debye-Waller factor only!"
+            CALL message( LS, "Pseudo atom - isotropic Debye-Waller factor only!")
             IErr=1
             RETURN
           END IF
@@ -187,13 +186,8 @@ SUBROUTINE StructureFactorInitialisation (IErr)
   DO ind=1,nReflections
     CUgMatNoAbs(ind,ind)=CZERO
   END DO
-  IF(IWriteFLAG.EQ.3.AND.my_rank.EQ.0) THEN
-    PRINT*,"Ug matrix, without absorption (nm^-2)"
-	DO ind =1,16
-     WRITE(SPrintString,FMT='(3(1X,I3),A1,8(1X,F7.3,F7.3))') NINT(Rhkl(ind,:)),":",100*CUgMatNoAbs(ind,1:8)
-     PRINT*,TRIM(SPrintString)
-    END DO
-  END IF
+
+  CALL message( LL, dbg3, "Ug matrix, without absorption (nm^-2)", NINT(Rhkl(1:16,:)), 100*CUgMatNoAbs(1:16,1:8) )
   
   !Calculate the mean inner potential as the sum of scattering factors at g=0 multiplied by h^2/(2pi*m0*e*CellVolume)
   RMeanInnerPotential=ZERO
@@ -202,23 +196,20 @@ SUBROUTINE StructureFactorInitialisation (IErr)
     ICurrentZ = IAtomicNumber(ind)
     IF(ICurrentZ.LT.105) THEN!It's not a pseudoatom
       CALL AtomicScatteringFactor(RScatteringFactor,IErr)
-      IF(IWriteFLAG.EQ.3.AND.my_rank.EQ.0) PRINT*,ind,"g=0",RScatteringFactor
+      CALL message( LL, dbg3, "Atom Unit Cell number = ",ind)
+      CALL message( LL, dbg3, "   g = 0 ",RScatteringFactor)
       RMeanInnerPotential = RMeanInnerPotential+RScatteringFactor
     END IF
   END DO
-  IF(my_rank.EQ.0) THEN
-    WRITE(SPrintString,FMT='(A20,F5.2,1X,A6)') "MeanInnerPotential= ",RMeanInnerPotential," Volts"
-    PRINT*,TRIM(ADJUSTL(SPrintString))
-  END IF
+
+  CALL message( LM, "MeanInnerPotential(Volts) = ",RMeanInnerPotential )
 
   ! high-energy approximation (not HOLZ compatible)
   !Wave vector in crystal
   !K^2=k^2+U0
   RBigK= SQRT(RElectronWaveVectorMagnitude**2 + REAL(CUgMatNoAbs(1,1)))
-  IF(IWriteFLAG.EQ.3.AND.my_rank.EQ.0) THEN
-    WRITE(SPrintString,FMT='(A4,F5.1,A10)') "K = ",RBigK," Angstroms"
-      PRINT*,TRIM(ADJUSTL(SPrintString))
-  END IF
+
+  CALL message ( LL, dbg3, "K (Angstroms) = ",RBigK )
 
   !--------------------------------------------------------------------
   !Count equivalent Ugs
@@ -241,23 +232,19 @@ SUBROUTINE StructureFactorInitialisation (IErr)
       END DO
     END DO
 
-    IF(my_rank.EQ.0) THEN
-      WRITE(SPrintString,FMT='(I5,A25)') Iuid," unique structure factors"
-      PRINT*,TRIM(ADJUSTL(SPrintString))
-    END IF
-    IF(IWriteFLAG.EQ.3.AND.my_rank.EQ.0) THEN
-      PRINT*,"hkl: symmetry matrix"
-      DO ind =1,16
-        WRITE(SPrintString,FMT='(3(1X,I3),A1,12(2X,I3))') NINT(Rhkl(ind,:)),":",ISymmetryRelations(ind,1:12)
-        PRINT*,TRIM(SPrintString)
-      END DO
-    END IF
+    CALL message ( LM, "number of unique structure factors = ", Iuid )
+
+    CALL message ( LL, dbg3, "hkl: symmetry matrix from 1 to 16" )
+    DO ind =1,16
+      CALL message ( LL, dbg3, "Rhkl:", NINT(Rhkl(ind,:)) )
+      CALL message ( LL, dbg3, "Isym:", ISymmetryRelations(ind,1:12) )
+    END DO
 
     !Link each key with its Ug, from 1 to the number of unique Ug's Iuid
     ALLOCATE(IEquivalentUgKey(Iuid),STAT=IErr)
     ALLOCATE(CUniqueUg(Iuid),STAT=IErr)
     IF( IErr.NE.0 ) THEN
-      PRINT*,"SetupUgsToRefine(",my_rank,")error allocating IEquivalentUgKey or CUniqueUg"
+      PRINT*,"Error:SetupUgsToRefine(",my_rank,")error allocating IEquivalentUgKey or CUniqueUg"
       RETURN
     END IF
     DO ind = 1,Iuid
@@ -271,7 +258,7 @@ SUBROUTINE StructureFactorInitialisation (IErr)
   RETURN
   
 10 IErr=1
-  IF(my_rank.EQ.0)PRINT*,"Error in saving pseudoatom image"
+  IF(my_rank.EQ.0)PRINT*,"Error:Error in saving pseudoatom image"
 
 END SUBROUTINE StructureFactorInitialisation
 
@@ -287,14 +274,13 @@ END SUBROUTINE StructureFactorInitialisation
 SUBROUTINE UpdateUgMatrix(IErr)
 
   USE MyNumbers
-  USE WriteToScreen
 
   USE CConst; USE IConst
   USE IPara; USE RPara; USE CPara; USE SPara
   USE BlochPara; USE MyFFTW
 
   USE IChannels
-
+  USE message_mod
   USE MPI
   USE MyMPI
 
@@ -348,7 +334,7 @@ SUBROUTINE UpdateUgMatrix(IErr)
         CFpseudo = CFpseudo*ROccupancy(lnd)
         !Debye-Waller factor - isotropic only, for now
         IF (IAnisoDebyeWallerFactorFlag.NE.0) THEN
-          IF (my_rank.EQ.0) PRINT*,"Pseudo atom - isotropic Debye-Waller factor only!"
+          CALL message ( LM, "Pseudo atom - isotropic Debye-Waller factor only!" )
           IErr=1
           RETURN
         END IF
@@ -371,14 +357,8 @@ SUBROUTINE UpdateUgMatrix(IErr)
   DO ind=1,nReflections!zero diagonal
      CUgMatNoAbs(ind,ind)=ZERO
   ENDDO
-  
-  IF(IWriteFLAG.EQ.3.AND.my_rank.EQ.0) THEN
-    PRINT*,"Updated Ug matrix, without absorption (nm^-2)"
-	DO ind =1,16
-     WRITE(SPrintString,FMT='(3(1X,I3),A1,8(1X,F7.3,F7.3))') NINT(Rhkl(ind,:)),":",100*CUgMatNoAbs(ind,1:8)
-     PRINT*,TRIM(SPrintString)
-    END DO
-  END IF
+
+  CALL message( LL, dbg3, "Ug matrix, without absorption (nm^-2)", NINT(Rhkl(1:16,:)), 100*CUgMatNoAbs(1:16,1:8) )
   
 END SUBROUTINE UpdateUgMatrix
 
@@ -395,7 +375,6 @@ END SUBROUTINE UpdateUgMatrix
 SUBROUTINE AtomicScatteringFactor(RScatteringFactor,IErr)  
 
   USE MyNumbers
-  USE WriteToScreen
 
   USE CConst; USE IConst
   USE IPara; USE RPara; USE CPara
@@ -458,14 +437,13 @@ END SUBROUTINE AtomicScatteringFactor
 SUBROUTINE Absorption (IErr)  
 
   USE MyNumbers
-  USE WriteToScreen
 
   USE CConst; USE IConst
   USE IPara; USE RPara; USE CPara
   USE BlochPara
 
   USE IChannels
-
+  USE message_mod
   USE MPI
   USE MyMPI
 
@@ -505,7 +483,7 @@ SUBROUTINE Absorption (IErr)
     ALLOCATE(RUgReal(IUniqueUgs),STAT=IErr)!complete U'g list [Re]
     ALLOCATE(RUgImag(IUniqueUgs),STAT=IErr)!complete U'g list [Im]
     IF( IErr.NE.0 ) THEN
-      PRINT*,"Absorption(",my_rank,") error in allocations"
+      PRINT*,"Error:Absorption(",my_rank,") error in allocations"
       RETURN
     ENDIF
     DO ind = 1,p!p is the number of cores
@@ -529,7 +507,7 @@ SUBROUTINE Absorption (IErr)
           !Uses numerical integration to calculate absorptive form factor f'
           CALL DoubleIntegrate(RfPrime,IErr)!NB uses Kirkland scattering factors
           IF(IErr.NE.0) THEN
-            PRINT*,"Absorption(",my_rank,") error in Bird&King integration"
+            PRINT*,"Error:Absorption(",my_rank,") error in Bird&King integration"
             RETURN
           END IF
         ELSE!It is a pseudoatom, proportional model 
@@ -562,7 +540,7 @@ SUBROUTINE Absorption (IErr)
                    RUgImag,Inum,Ipos,MPI_DOUBLE_PRECISION,&
                    root,MPI_COMM_WORLD,IErr)
     IF(IErr.NE.0) THEN
-      PRINT*,"Felixfunction(",my_rank,")error",IErr,"in MPI_GATHERV"
+      PRINT*,"Error:Felixfunction(",my_rank,")error",IErr,"in MPI_GATHERV"
       RETURN
     END IF
     !=====================================and send out the full list to all cores
@@ -593,16 +571,10 @@ SUBROUTINE Absorption (IErr)
 	
   END SELECT
   !The final Ug matrix with absorption
-  CUgMat=CUgMatNoAbs+CUgMatPrime
-  
-  IF(IWriteFLAG.EQ.3.AND.my_rank.EQ.0) THEN
-   PRINT*,"Ug matrix, including absorption (nm^-2)"
-	DO ind =1,16
-     WRITE(SPrintString,FMT='(3(1X,I3),A1,8(1X,F7.3,F7.3))') NINT(Rhkl(ind,:)),":",100*CUgMat(ind,1:8)
-     PRINT*,TRIM(SPrintString)
-    END DO
-  END IF	   
+  CUgMat=CUgMatNoAbs+CUgMatPrime 
 	   
+  CALL message( LL, dbg3, "Ug matrix, including absorption (nm^-2)", NINT(Rhkl(1:16,:)), 100*CUgMat(1:16,1:8) )
+
 END SUBROUTINE Absorption
 
 !!$%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -617,7 +589,6 @@ END SUBROUTINE Absorption
 SUBROUTINE DoubleIntegrate(RResult,IErr) 
 
   USE MyNumbers
-  USE WriteToScreen
 
   USE CConst; USE IConst
   USE IPara; USE RPara; USE CPara
@@ -661,7 +632,6 @@ END SUBROUTINE DoubleIntegrate
 FUNCTION IntegrateBK(Sy) 
 
   USE MyNumbers
-  USE WriteToScreen
 
   USE CConst; USE IConst
   USE IPara; USE RPara; USE CPara

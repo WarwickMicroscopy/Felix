@@ -45,7 +45,6 @@
 SUBROUTINE ReciprocalLattice(IErr)
    
   USE MyNumbers
-  USE WriteToScreen
   
   USE RPara; USE IPara; USE SPara
   
@@ -168,13 +167,12 @@ END SUBROUTINE ReciprocalLattice
 !!
 SUBROUTINE UniqueAtomPositions(IErr)
   
-  USE WriteToScreen
   USE MyNumbers
   
   USE CConst; USE IConst
   USE IPara; USE RPara; USE SPara
   USE IChannels
-  
+  USE message_mod
   USE MyMPI
   
   IMPLICIT NONE
@@ -197,7 +195,7 @@ SUBROUTINE UniqueAtomPositions(IErr)
   ALLOCATE(IAllAtomicNumber(SIZE(RSymVec,1)*SIZE(RBasisAtomPosition,1)),STAT=IErr)  
   ALLOCATE(RAllAnisoDW(SIZE(RSymVec,1)*SIZE(RBasisAtomPosition,1)),STAT=IErr)  
   IF( IErr.NE.0 ) THEN
-     PRINT*,"UniqueAtomPositions(",my_rank,")error in allocations"
+     PRINT*,"Error:UniqueAtomPositions(",my_rank,")error in allocations"
      RETURN
   END IF
  
@@ -256,19 +254,22 @@ SUBROUTINE UniqueAtomPositions(IErr)
   ENDDO
   INAtomsUnitCell= jnd-1!this is how many unique atoms there are in the unit cell
 
-  IF(IWriteFLAG.EQ.7.AND.my_rank.EQ.0) THEN!optional output
-    DO ind=1,INAtomsUnitCell
-      WRITE(SPrintString,FMT='(A4,I3,A2,A2,A3,3F7.4,A7,F5.3,A12,F7.4)')&
-      "Atom",ind,": ",SAtomName(ind),", [",RAtomPosition(ind,:),&
-      "], DWF=",RIsoDW(ind),", occupancy=",ROccupancy(ind)
-      PRINT*,TRIM(ADJUSTL(SPrintString))
-    END DO
-  END IF
+  DO ind=1,INAtomsUnitCell
+    !todo - classical print commented out below, message struggles here 
+    !WRITE(SPrintString,FMT='(A4,I3,A2,A2,A3,3F7.4,A7,F5.3,A12,F7.4)')&
+    !"Atom",ind,": ",SAtomName(ind),", [",RAtomPosition(ind,:),&
+    !"], DWF=",RIsoDW(ind),", occupancy=",ROccupancy(ind)
+    !PRINT*,TRIM(ADJUSTL(SPrintString))
+    
+    CALL message( LL, dbg7, "For Atom ",ind)
+    CALL message( LL, dbg7, SAtomName(ind)//" Atom position = ", RAtomPosition(ind,:) )
+    CALL message( LL, dbg7, "(DWF, occupacy) = ",(/ RIsoDW(ind), ROccupancy(ind) /) )
+  END DO
   
   !Finished with these variables now
   DEALLOCATE(RAllAtomPosition,SAllAtomName,RAllOccupancy,RAllIsoDW,IAllAtomicNumber,RAllAnisoDW)
   IF( IErr.NE.0 ) THEN
-     PRINT*,"UniqueAtomPositions(",my_rank,")error deallocating RAllAtomPositions etc"
+     PRINT*,"Error:UniqueAtomPositions(",my_rank,")error deallocating RAllAtomPositions etc"
      RETURN
   END IF
     

@@ -41,12 +41,11 @@
 SUBROUTINE ScatteringFactors(IScatteringMethodSwitch,IErr)
 
   USE MyNumbers
-  USE WriteToScreen
 
   USE CConst; USE IConst
   USE IPara; USE RPara
   USE IChannels
-
+  USE message_mod
   USE MPI
   USE MyMPI
 
@@ -55,7 +54,7 @@ SUBROUTINE ScatteringFactors(IScatteringMethodSwitch,IErr)
   INTEGER(IKIND):: IScatteringMethodSwitch,IScattDimension,IErr,ind
   REAL(RKIND) :: RKirkland(105,12), RPeng(105,8), RDoyleAndTurner(105,8), RLobato(105,10), RAtomicNumbers(105,1)
 
-  IF(IWriteFLAG.EQ.3.AND.my_rank.EQ.0) PRINT*,"Loading parameters for scattering factor calculation"
+  CALL message ( LL, dbg3, "Loading parameters for scattering factor calculation" )
   
   SELECT CASE(IScatteringMethodSwitch)
 
@@ -279,7 +278,7 @@ SUBROUTINE ScatteringFactors(IScatteringMethodSwitch,IErr)
 !!$Allocate Global Scattering factor array 
      ALLOCATE(RScattFactors(105,IScattDimension), STAT=IErr)
      IF( IErr.NE.0 ) THEN
-        PRINT*,"ScatteringFactors: error in memory allocation"
+        PRINT*,"Error:ScatteringFactors: error in memory allocation"
         RETURN
      ENDIF
 
@@ -502,7 +501,7 @@ SUBROUTINE ScatteringFactors(IScatteringMethodSwitch,IErr)
 !!$Allocate Global Scattering factor array 
      ALLOCATE(RScattFactors(105,IScattDimension), STAT=IErr)
      IF( IErr.NE.0 ) THEN
-        PRINT*,"ScatteringFactors: error in memory allocation"
+        PRINT*,"Error:ScatteringFactors: error in memory allocation"
         RETURN
      ENDIF
 
@@ -724,7 +723,7 @@ SUBROUTINE ScatteringFactors(IScatteringMethodSwitch,IErr)
 !!$Allocate Global Scattering factor array 
      ALLOCATE(RScattFactors(105,IScattDimension), STAT=IErr)
      IF( IErr.NE.0 ) THEN
-        PRINT*,"ScatteringFactors: error in memory allocation"
+        PRINT*,"Error:ScatteringFactors: error in memory allocation"
         RETURN
      ENDIF
 
@@ -946,7 +945,7 @@ SUBROUTINE ScatteringFactors(IScatteringMethodSwitch,IErr)
 !!$Allocate Global Scattering factor array 
      ALLOCATE(RScattFactors(105,IScattDimension), STAT=IErr)
      IF( IErr.NE.0 ) THEN
-        PRINT*,"ScatteringFactors: error in memory allocation"
+        PRINT*,"Error:ScatteringFactors: error in memory allocation"
         RETURN
      ENDIF
 
@@ -955,7 +954,7 @@ SUBROUTINE ScatteringFactors(IScatteringMethodSwitch,IErr)
 
   CASE DEFAULT
     IF (my_rank.EQ.0) THEN
-      PRINT*,"Scattering factors do not exist, check IScatteringMethodFlag"
+      PRINT*,"Error:Scattering factors do not exist, check IScatteringMethodFlag"
     END IF
      IErr=1
 

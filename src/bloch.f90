@@ -45,14 +45,14 @@
 !!
 SUBROUTINE BlochCoefficientCalculation(IYPixelIndex,IXPixelIndex,IPixelNumber,IFirstPixelToCalculate,IErr)
   
-  USE WriteToScreen
+
   USE MyNumbers
   USE CConst; USE IConst
   USE IPara; USE RPara; USE CPara
   USE SPara
   USE IChannels
   USE BlochPara
-  
+  USE message_mod
   USE MPI
   USE MyMPI
   
@@ -85,16 +85,18 @@ SUBROUTINE BlochCoefficientCalculation(IYPixelIndex,IXPixelIndex,IPixelNumber,IF
     !Sg parallel to z: Sg=-[k'z+gz-sqrt( (k'z+gz)^2-2k'.g-g^2)]
     RDevPara(knd)= -RTiltedK(3)-RgPool(knd,3)+&
 	  SQRT( (RTiltedK(3)+RgPool(knd,3))**2-2*DOT_PRODUCT(RgPool(knd,:),RTiltedK(:))-RgPoolMag(knd)**2)
+
+    !todo - remove below commented out
 	  !Keith's old version, Sg parallel to k'
     !RDevPara(knd)= -( RBigK + DOT_PRODUCT(RgPool(knd,:),RTiltedK(:)) /RBigK) + &
     !  SQRT( ( RBigK**2 + DOT_PRODUCT(RgPool(knd,:),RTiltedK(:)) )**2 /RBigK**2 - &
     !  (RgPoolMag(knd)**2 + TWO*DOT_PRODUCT(RgPool(knd,:),RTiltedK(:))) )
-    IF(IWriteFLAG.EQ.7.AND.knd.EQ.2.AND.IYPixelIndex.EQ.10.AND.IXPixelIndex.EQ.10) THEN
-      PRINT*,"RBigK",RBigK
-      PRINT*,"Rhkl(knd)",Rhkl(knd,:)
-      PRINT*,"RgPool(knd)",RgPool(knd,:)
-      PRINT*,"RTiltedK",RTiltedK
-      PRINT*,"RDevPara",RDevPara(knd)
+    IF(knd.EQ.2.AND.IYPixelIndex.EQ.10.AND.IXPixelIndex.EQ.10) THEN
+      CALL message(LL,dbg7,"RBigK ",RBigK)
+      CALL message(LL,dbg7,"Rhkl(knd) ",Rhkl(knd:knd,:))
+      CALL message(LL,dbg7,"RgPool(knd) ",RgPool(knd:knd,:))
+      CALL message(LL,dbg7,"RTiltedK ",RTiltedK)
+      CALL message(LL,dbg7,"RDevPara ",RDevPara(knd))
     END IF
   END DO
 
@@ -102,14 +104,12 @@ SUBROUTINE BlochCoefficientCalculation(IYPixelIndex,IXPixelIndex,IPixelNumber,IF
   ! reciprocal lattice, i.e. within RBSMaxDeviationPara
   CALL StrongAndWeakBeamsDetermination(IErr)
   IF( IErr.NE.0 ) THEN
-     PRINT*,"BlochCoefficientCalculation(",my_rank,") error in Determination of Strong and Weak beams"
+     PRINT*,"Error:BlochCoefficientCalculation(",my_rank,") error in Determination of Strong and Weak beams"
      RETURN
   END IF
-  IF(IWriteFLAG.EQ.7.AND.my_rank.EQ.0) THEN
-    PRINT*, nBeams,"strong beams"
-	PRINT*, nWeakBeams,"weak beams"
-    PRINT*, nReflections,"nReflections"
-  END IF
+  CALL message(LL,dbg7,"strong beams",nBeams)
+  CALL message(LL,dbg7,"weak beams",nWeakBeams)
+  CALL message(LL,dbg7,"nReflections",nReflections)
 
   !--------------------------------------------------------------------
   ! ALLOCATE memory for eigen problem
@@ -125,7 +125,7 @@ SUBROUTINE BlochCoefficientCalculation(IYPixelIndex,IXPixelIndex,IPixelNumber,IF
   ALLOCATE(CAlphaWeightingCoefficients(nBeams),STAT=IErr)
   ALLOCATE(CEigenValueDependentTerms(nBeams,nBeams),STAT=IErr)
   IF( IErr.NE.0 ) THEN
-     PRINT*,"BlochCoefficientCalculation(",my_rank,")error in allocations"
+     PRINT*,"Error:BlochCoefficientCalculation(",my_rank,")error in allocations"
      RETURN
   END IF
   
@@ -170,7 +170,8 @@ SUBROUTINE BlochCoefficientCalculation(IYPixelIndex,IXPixelIndex,IPixelNumber,IF
 		    !Zuo&Weickenmeier Ultramicroscopy 57 (1995) 375-383 eq.4
         CUgMat(IStrongBeamList(knd),IWeakBeamList(ind))*&
         CUgMat(IWeakBeamList(ind),1)/(TWO*RBigK*RDevPara(IWeakBeamList(ind)))
-!Keith's old version
+
+!todo - remove commented Keith's old version
 !        REAL(CUgMat(IStrongBeamList(knd),IWeakBeamList(ind))) * &
 !        REAL(CUgMat(IWeakBeamList(ind),1)) / &
 !        (4*RBigK*RBigK*RDevPara(IWeakBeamList(ind)))
@@ -179,7 +180,7 @@ SUBROUTINE BlochCoefficientCalculation(IYPixelIndex,IXPixelIndex,IPixelNumber,IF
         CUgMat(IStrongBeamList(knd),IWeakBeamList(ind))*&
         CUgMat(IWeakBeamList(ind),IStrongBeamList(knd))/&
         (TWO*RBigK*RDevPara(IWeakBeamList(ind)))
-!Keith's old version
+!todo - remove commented Keith's old version
 !        REAL(CUgMat(IStrongBeamList(knd),IWeakBeamList(ind))) * &
 !        REAL(CUgMat(IWeakBeamList(ind),IStrongBeamList(knd))) / &
 !        (4*RBigK*RBigK*RDevPara(IWeakBeamList(ind)))
@@ -195,21 +196,18 @@ SUBROUTINE BlochCoefficientCalculation(IYPixelIndex,IXPixelIndex,IPixelNumber,IF
 	!DON'T KNOW WHERE THE 4pi^2 COMES FROM!! 
   CUgSgMatrix = TWOPI*TWOPI*CUgSgMatrix/(TWO*RBigK)
   END IF
-  
-  IF(IWriteFLAG.EQ.3.AND.IYPixelIndex.EQ.10.AND.IXPixelIndex.EQ.10) THEN!output data from 1 pixel to show working
-   PRINT*,"Pixel [10,10] Ug/2K + {Sg} matrix (nm^-2)"
-	DO ind =1,16
-     WRITE(SPrintString,FMT='(3(1X,I3),A1,8(1X,F7.3,F7.3))') NINT(Rhkl(ind,:)),":",100*CUgSgMatrix(ind,1:6)
-     PRINT*,TRIM(SPrintString)
-    END DO
-  END IF	
+
+  IF(IYPixelIndex.EQ.10.AND.IXPixelIndex.EQ.10) THEN !output data from 1 pixel to show working
+    CALL message(LL,dbg3, "Pixel [10,10] Ug/2K + {Sg} matrix (nm^-2)")
+    CALL message(LL,dbg3, "displaying Rhkl and 100*CUgSgMatrix alongside",NINT(Rhkl(1:16,:)),100*CUgSgMatrix(1:16,1:6))
+  END IF
   
   !--------------------------------------------------------------------
   ! diagonalize the UgMatEffective
   IF (IHolzFLAG.EQ.1) THEN
     CALL EigenSpectrum(nBeams,CUgSgMatrix,CEigenValues(:), CEigenVectors(:,:),IErr)
     IF( IErr.NE.0 ) THEN
-      PRINT*,"BlochCoefficientCalculation(", my_rank, ") error in EigenSpectrum()"
+      PRINT*,"Error:BlochCoefficientCalculation(", my_rank, ") error in EigenSpectrum()"
       RETURN
     END IF
     CEigenValues = CEigenValues * RKn/RBigK    !What is this doing?
@@ -217,11 +215,12 @@ SUBROUTINE BlochCoefficientCalculation(IYPixelIndex,IXPixelIndex,IPixelNumber,IF
       CEigenVectors(knd,:) = CEigenVectors(knd,:) / &
             SQRT(1+RgDotNorm(IStrongBeamList(knd))/RKn)
     END DO
+
   ELSE
     CALL EigenSpectrum(nBeams,CUgSgMatrix,CEigenValues(:),CEigenVectors(:,:),IErr)
   END IF
   IF( IErr.NE.0 ) THEN
-    PRINT*,"BlochCoefficientCalculation(",my_rank,") error in EigenSpectrum()"
+    PRINT*,"Error:BlochCoefficientCalculation(",my_rank,") error in EigenSpectrum()"
     RETURN
   END IF
  
@@ -232,7 +231,7 @@ SUBROUTINE BlochCoefficientCalculation(IYPixelIndex,IXPixelIndex,IPixelNumber,IF
     IThickness = NINT(RThickness,IKIND)
     CALL CreateWaveFunctions(RThickness,IErr)
     IF( IErr.NE.0 ) THEN
-      PRINT*,"BlochCoefficientCalculation(", my_rank, ") error in CreateWavefunction()"
+      PRINT*,"Error:BlochCoefficientCalculation(", my_rank, ") error in CreateWavefunction()"
       RETURN
     END IF
     !Collect Intensities from all thickness for later writing
@@ -266,7 +265,7 @@ SUBROUTINE BlochCoefficientCalculation(IYPixelIndex,IXPixelIndex,IPixelNumber,IF
        CEigenValues,CEigenVectors,CEigenValueDependentTerms, &
        CBeamProjectionMatrix, CDummyBeamMatrix,STAT=IErr)
   IF( IErr.NE.0 ) THEN
-     PRINT*,"BlochCoefficientCalculation(",my_rank,") error in Deallocations"
+     PRINT*,"Error:BlochCoefficientCalculation(",my_rank,") error in Deallocations"
      RETURN
   END IF
   
@@ -284,7 +283,6 @@ END SUBROUTINE BlochCoefficientCalculation
 !!
 SUBROUTINE CreateWaveFunctions(RThickness,IErr)
 
-  USE WriteToScreen
   USE MyNumbers
   
   USE CConst; USE IConst
@@ -306,7 +304,7 @@ SUBROUTINE CreateWaveFunctions(RThickness,IErr)
   ALLOCATE(CWaveFunctions(nBeams),STAT=IErr)
   ALLOCATE(CDummyEigenVectors(nBeams,nBeams),STAT=IErr)
   IF( IErr.NE.0 ) THEN
-     PRINT*,"CreateWavefunctions(",my_rank,")error in allocations"
+     PRINT*,"Error:CreateWavefunctions(",my_rank,")error in allocations"
      RETURN
   END IF
   
@@ -347,7 +345,7 @@ SUBROUTINE CreateWaveFunctions(RThickness,IErr)
   
   DEALLOCATE(CDummyEigenVectors,RWaveIntensity,CWavefunctions,CPsi0,STAT=IErr)
   IF( IErr.NE.0 ) THEN
-     PRINT*,"CreateWavefunctions(",my_rank,")error deallocating CDummyEigenVectors"
+     PRINT*,"Error:CreateWavefunctions(",my_rank,")error deallocating CDummyEigenVectors"
      RETURN
   END IF
   
@@ -368,7 +366,7 @@ END SUBROUTINE CreateWavefunctions
 !!
 SUBROUTINE StrongAndWeakBeamsDetermination(IErr)
   
-  USE WriteToScreen
+  USE message_mod
   
   USE CConst; USE IConst
   USE IPara; USE RPara; USE CPara; USE SPara
@@ -410,22 +408,20 @@ SUBROUTINE StrongAndWeakBeamsDetermination(IErr)
   ind=1_IKIND
   DO jnd=1,nReflections
     IF (IStrong(jnd).EQ.1) THEN
-	  IStrongBeamList(ind)=jnd
+	    IStrongBeamList(ind)=jnd
       ind=ind+1
-	END IF
+	  END IF
   END DO
   !this is used to give the dimension of the Bloch wave problem
   nBeams=ind-1  
-  IF(IWriteFLAG.EQ.7.AND.my_rank.EQ.0) THEN
-    PRINT*, "Strong Beam List"
-    PRINT*, IStrongBeamList
-    PRINT*, "Sg limit for strong beams=",RMaxSg
-    PRINT*, "Smallest perturbation strength=",RMinPertStrong
-  END IF
+
+  CALL message(LXL,dbg7,"Strong Beam List",IStrongBeamList)
+  CALL message(LXL,dbg7,"Sg limit for strong beams = ",RMaxSg)
+  CALL message(LXL,dbg7,"Smallest strong perturbation strength = ",RMinPertStrong)
 
   IF(SUM(IStrong)+IMinWeakBeams.GT.nReflections) IErr = 1
   IF( IErr.NE.0 ) THEN
-    PRINT*,"StrongAndWeakBeamDetermination(", my_rank, ") error ", IErr, &
+    PRINT*,"Error:StrongAndWeakBeamDetermination(", my_rank, ") error ", IErr, &
           " Insufficient reflections to accommodate all Strong and Weak Beams"
     RETURN
   END IF
@@ -442,10 +438,10 @@ SUBROUTINE StrongAndWeakBeamsDetermination(IErr)
 	END WHERE
     RMinPertWeak=0.9*RMinPertWeak
   END DO
-  IF(IWriteFLAG.EQ.7.AND.my_rank.EQ.0) THEN
-    PRINT*, SUM(IWeak),"weak beams"
-    PRINT*, "Smallest perturbation strength=",RMinPertWeak
-  END IF
+
+  CALL message(LXL,dbg7,"weak beams",SUM(IWeak))
+  CALL message(LXL,dbg7,"Smallest weak perturbation strength = ",RMinPertWeak)
+
   !give the weak beams a number in IWeakBeamList
   IWeakBeamList=0_IKIND
   ind=1_IKIND
@@ -456,11 +452,8 @@ SUBROUTINE StrongAndWeakBeamsDetermination(IErr)
     END IF
   END DO
   nWeakBeams=ind-1
-  IF(IWriteFLAG.EQ.7.AND.my_rank.EQ.0) THEN
-    PRINT*, "Weak Beam List"
-    PRINT*, IWeakBeamList
-	PRINT*, "Smallest perturbation strength=",RMinPertWeak
-  END IF
+
+  CALL message(LXL,dbg7,"Weak Beam List",IWeakBeamList)
 
 END SUBROUTINE StrongAndWeakBeamsDetermination
 
@@ -475,7 +468,6 @@ END SUBROUTINE StrongAndWeakBeamsDetermination
 !!
 SUBROUTINE EigenSpectrum(IMatrixDimension, MatrixToBeDiagonalised, EigenValues, EigenVectors, IErr)
 
-  USE WriteToScreen
   USE MyNumbers
 
   USE IConst
@@ -499,7 +491,7 @@ SUBROUTINE EigenSpectrum(IMatrixDimension, MatrixToBeDiagonalised, EigenValues, 
   ALLOCATE(CWorkSpace(WorkSpaceDimension),STAT = IErr)
   ALLOCATE(WorkSpace(2*IMatrixDimension),STAT = IErr)
   IF( IErr.NE.0 ) THEN
-     PRINT*,"EigenSpectrum: error in ALLOCATE() for work arrays (query stage)"
+     PRINT*,"Error:EigenSpectrum: error in ALLOCATE() for work arrays (query stage)"
      RETURN
   END IF
 
@@ -509,7 +501,7 @@ SUBROUTINE EigenSpectrum(IMatrixDimension, MatrixToBeDiagonalised, EigenValues, 
        EigenValues, 0,1, EigenVectors,IMatrixDimension, &
        CWorkSpace, WorkSpaceDimension, WorkSpace, IErr )
   IF( IErr.NE.0 ) THEN
-     PRINT*,"EigenSpectrum: error in ZGEEV determining work arrays"
+     PRINT*,"Error:EigenSpectrum: error in ZGEEV determining work arrays"
      RETURN
   END IF
 
@@ -520,7 +512,7 @@ SUBROUTINE EigenSpectrum(IMatrixDimension, MatrixToBeDiagonalised, EigenValues, 
   DEALLOCATE(CWorkSpace,STAT=IErr)
   ALLOCATE(CWorkSpace(WorkSpaceDimension),STAT = IErr)
   IF( IErr.NE.0 ) THEN
-     PRINT*,"EigenSpectrum: error in ALLOCATE() for work arrays (final stage)"
+     PRINT*,"Error:EigenSpectrum: error in ALLOCATE() for work arrays (final stage)"
      RETURN
   END IF
 
@@ -530,14 +522,14 @@ SUBROUTINE EigenSpectrum(IMatrixDimension, MatrixToBeDiagonalised, EigenValues, 
        EigenValues, 0,1, EigenVectors,IMatrixDimension, &
        CWorkSpace, WorkSpaceDimension, WorkSpace, IErr )
   IF( IErr.NE.0 ) THEN
-     PRINT*,"EigenSpectrum: error ", IErr, " in ZGEEV"
+     PRINT*,"Error:EigenSpectrum: error ", IErr, " in ZGEEV"
      RETURN
   ENDIF
 
   DEALLOCATE(CWorkSpace,STAT = IErr)
   DEALLOCATE(WorkSpace,STAT = IErr)
   IF( IErr.NE.0 ) THEN
-     PRINT*,"EigenSpectrum: error in DEALLOCATE() for work arrays (final stage)"
+     PRINT*,"Error:EigenSpectrum: error in DEALLOCATE() for work arrays (final stage)"
      RETURN
   ENDIF
 
@@ -557,7 +549,7 @@ SUBROUTINE INVERT(MatrixSize,Matrix,InvertedMatrix,IErr)
 
   ! Matrix: the Matrix (Destroyed)
   ! InvertedMatrix: the Inverse
-  USE WriteToScreen
+
   USE MyNumbers
 
   USE IConst
@@ -576,30 +568,30 @@ SUBROUTINE INVERT(MatrixSize,Matrix,InvertedMatrix,IErr)
   
   ALLOCATE(IPIV(MatrixSize),STAT=IErr)
   IF( IErr.NE.0 ) THEN
-     PRINT*,"Invert(): ERR in ALLOCATE(IPIV(MatrixSize)) statement, MatrixSize=", MatrixSize
+     PRINT*,"Error:Invert(): ERR in ALLOCATE(IPIV(MatrixSize)) statement, MatrixSize=", MatrixSize
      RETURN
   ENDIF
   
   CALL ZGETRF(MatrixSize,MatrixSize,Matrix,MatrixSize,IPIV,IErr)
   LWORK = MatrixSize*MatrixSize
   IF ( IErr.NE.0 ) THEN
-     PRINT *,'Invert() : Datatype Error: IFAIL=',INFO
+     PRINT *,'Error:Invert() : Datatype Error: IFAIL=',INFO
      RETURN
   END IF
   ALLOCATE(WORK(LWORK),STAT=IErr)   
   IF( IErr.NE.0 ) THEN
-     PRINT*,"Invert(): ERR in ALLOCATE(WORK(LWORK)) statement, LWORK=", LWORK
+     PRINT*,"Error:Invert(): ERR in ALLOCATE(WORK(LWORK)) statement, LWORK=", LWORK
      RETURN
   ENDIF
   
   CALL ZGETRI(MatrixSize,Matrix,MatrixSize,IPIV,WORK,LWORK,IErr)
   IF ( IErr.NE.0 ) THEN
-     PRINT *,'Inversion Error: IFAIL=',INFO
+     PRINT *,'Error:Inversion Error: IFAIL=',INFO
      RETURN
   END IF
   DEALLOCATE(IPIV,WORK,STAT=IErr)
   IF ( IErr.NE.0 ) THEN
-     PRINT *,'Invert : Deallocation Error',INFO
+     PRINT *,'Error:Invert : Deallocation Error',INFO
      RETURN
   END IF
   InvertedMatrix = Matrix  

@@ -44,7 +44,6 @@
 SUBROUTINE WriteOutput( CAmplitudeandPhaseImages,RReflectionImages,RMontageImages,IErr)
 
   USE MyNumbers
-  USE WriteToScreen
 
   USE CPara; USE IPara; USE SPara
   USE RPara
@@ -232,7 +231,6 @@ END SUBROUTINE WriteOutput
 SUBROUTINE OpenReflectionImage(IChOutWrite, surname, IErr,IReflectWriting,IImageSizeX,ind)
 
   USE MyNumbers
-  USE WriteToScreen
 
   USE IConst
   USE RConst
@@ -342,7 +340,6 @@ END SUBROUTINE OpenReflectionImage
 SUBROUTINE WriteReflectionImage( IChOutWrite, data, IErr,IImageSizeX,IImageSizeY,knd)
   !this is now redundant
   USE MyNumbers
-  USE WriteToScreen
 
   USE IConst
   USE RConst

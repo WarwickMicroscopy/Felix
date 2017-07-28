@@ -51,7 +51,7 @@ SUBROUTINE WriteIterationOutput(Iter,IThicknessIndex,IExitFlag,IErr)
   USE BlochPara
 
   USE IChannels
-
+  USE message_mod
   USE MPI
   USE MyMPI
 
@@ -77,12 +77,11 @@ SUBROUTINE WriteIterationOutput(Iter,IThicknessIndex,IExitFlag,IErr)
 
   IF (ISimFLAG.EQ.0.AND.IExitFLAG.EQ.0) THEN !felixrefine output
     IF (IPreviousPrintedIteration.EQ.0) THEN
-      WRITE(SPrintString,FMT='(A35)') "Writing output; baseline simulation"
+      CALL message ( LS, "Writing output; baseline simulation" )
     ELSE
-      WRITE(SPrintString,FMT='(A16,I4,A35)') "Writing output; ",&
-        Iter-IPreviousPrintedIteration," iterations since the previous save"
+      CALL message ( LS, "Writing output; iterations since the previous save = ", &
+        Iter-IPreviousPrintedIteration)
     END IF
-    PRINT*,TRIM(ADJUSTL(SPrintString))
   END IF
   
   ! Write Images to disk

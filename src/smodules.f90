@@ -186,7 +186,7 @@ MODULE IPara
   INTEGER(IKIND) :: IPixelCount 
   !Crystal Settings
   INTEGER(IKIND) :: IMaxPossibleNAtomsUnitCell
-  ! Name2Atom index
+  !Name2Atom index
   INTEGER(IKIND), DIMENSION(:), ALLOCATABLE :: IBasisAtomicNumber,IAtomicNumber
   !Microscope Settings
   INTEGER(IKIND) :: IIncidentBeamDirectionX, IIncidentBeamDirectionY, &
@@ -213,7 +213,7 @@ MODULE IPara
   INTEGER(IKIND) :: IPixelCountTotal
   !LACBED Writing
   INTEGER(IKIND) :: ISeperateFolderFlag
-  ! Thickness loop Variables
+  !Thickness loop Variables
   INTEGER(IKIND) :: IThicknessCount
   INTEGER(IKIND),DIMENSION(:,:),ALLOCATABLE :: IPixelLocations
   !Refine Parameters
@@ -231,7 +231,7 @@ MODULE IPara
   !Simplex Variables
   INTEGER(IKIND) :: INoOfVariables,ILocalPixelCountMin,ILocalPixelCountMax,IUgOffset
   INTEGER(IKIND), DIMENSION(:), ALLOCATABLE :: IDisplacements,ICount
-  ! Refinement Vectors
+  !Refinement Vectors
   INTEGER(IKIND) :: IAllowedVectors
   INTEGER(IKIND),DIMENSION(:),ALLOCATABLE :: IAllowedVectorIDs
   INTEGER(IKIND) :: IFelixCount,IPreviousPrintedIteration,IStandardDeviationCalls  
@@ -337,7 +337,6 @@ MODULE RPara
   REAL(RKIND),DIMENSION(:),ALLOCATABLE :: RWeightingCoefficients
   !Gaussian blur radius in pixels
   REAL(RKIND) :: RBlurRadius
-
 END MODULE RPara
 !--------------------------------------------------------------------
 

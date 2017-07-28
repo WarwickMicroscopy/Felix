@@ -51,11 +51,9 @@ SUBROUTINE SortHKL( Rhklarray,N,IErr )
   !---------------------------------------------------------------------  
 
   USE MyNumbers
-  USE WriteToScreen
     
   USE CConst; USE IConst
   USE IPara; USE RPara
-  USE WriteToScreen
 
   USE IChannels
 

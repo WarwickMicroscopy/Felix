@@ -200,12 +200,13 @@ END SUBROUTINE ReSortUgs
 !! Major-Authors: Keith Evans (2014), Richard Beanland (2016)
 !!
 REAL(RKIND) FUNCTION ResidualSumofSquares(RImage1,RImage2,IErr)
-  
+  !todo - this is excessively small underused subroutine & the message should be on debug mode
   USE MyNumbers
   
   USE CConst; USE IConst
   USE IPara; USE RPara
   USE IChannels
+  USE message_mod
   USE MPI
   USE MyMPI
 
@@ -218,11 +219,12 @@ REAL(RKIND) FUNCTION ResidualSumofSquares(RImage1,RImage2,IErr)
 
   RImage2 =  RImage2/(2.0**16.0)
 
-  PRINT*,"Residual Sum of Squares Before",ResidualSumofSquares,MAXVAL(RImage1),MAXVAL(RImage2)
+  CALL message ( LM, "Residual Sum of Squares Before",&
+        (/ ResidualSumofSquares,MAXVAL(RImage1),MAXVAL(RImage2) /) )
 
   ResidualSumofSquares = SUM((RImage2-RImage1)**2)
 
-  PRINT*,"Residual Sum of Squares After",ResidualSumofSquares
+  CALL message ( LM, "Residual Sum of Squares After",ResidualSumofSquares )
 
 END FUNCTION ResidualSumofSquares
 
@@ -277,6 +279,7 @@ REAL(RKIND) FUNCTION MaskedCorrelation(Rimg1,Rimg2,RBinaryMask,IErr)
   USE CConst; USE IConst
   USE IPara; USE RPara
   USE IChannels
+  USE message_mod
   USE MPI
   USE MyMPI
 
@@ -290,15 +293,10 @@ REAL(RKIND) FUNCTION MaskedCorrelation(Rimg1,Rimg2,RBinaryMask,IErr)
   
   IF (SUM(RBinaryMask).GT.ZERO) THEN
     RPixelTotal = SUM(RBinaryMask)!Mask has value 1 for pixels of interest and zero elsewhere
-    IF (IWriteFLAG.EQ.6) THEN
-      WRITE(SPrintString,FMT='(A5,F7.0,A7)') "Mask ",RPixelTotal," pixels"
-      PRINT*,TRIM(ADJUSTL(SPrintString))
-    END IF
+    CALL message ( LL, dbg6, "Mask pixels = ", RPixelTotal )
   ELSE
     RPixelTotal = REAL(2*IPixelCount*2*IPixelCount,RKIND)
-    IF (IWriteFLAG.EQ.6) THEN
-      PRINT*,"Empty mask"
-    END IF
+    CALL message ( LL, dbg6, "Empty, mask" )
   END IF  
   Rimg1=Rimg1*RBinaryMask
   Rimg2=Rimg2*RBinaryMask
