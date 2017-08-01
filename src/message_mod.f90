@@ -117,7 +117,7 @@ module message_mod
 
   type priority_logicals
     logical :: state
-    character(:),allocatable :: initial_msg
+    character(30),allocatable :: initial_msg
   end type
 
   type debug_mode_logicals
@@ -213,7 +213,7 @@ contains
       else  ! scalar, so bracketless
         write(formatting,'(a,i3.3,a)') '(1x,a,a,',size(rvector),'(1x,sp,ES10.3))'
       end if
-      write(*,formatting) priority_logical%initial_msg, main_msg, rvector
+      write(*,formatting) trim(priority_logical%initial_msg)//" ", main_msg, rvector
     end if
 
   end subroutine message_rvector
@@ -229,7 +229,7 @@ contains
     ! check priority then print complex vector
     if ( my_rank==0 .and. (priority_logical%state .or. debug_mode_logical%state) ) then
       write(formatting,'(a,i3.3,a)') '(1x,a,a,',size(cvector),'(1x,"(",sp,ES8.1," ",ES8.1,"i)"))'
-      write(*,formatting) priority_logical%initial_msg, main_msg, cvector
+      write(*,formatting) trim(priority_logical%initial_msg)//" ", main_msg, cvector
     end if
 
   end subroutine message_cvector
@@ -245,7 +245,7 @@ contains
     ! check priority then print integer vector
     if ( my_rank==0 .and. (priority_logical%state .or. debug_mode_logical%state) ) then
       write(formatting,'(a,i3.3,a)') '(1x,a,a,',size(ivector),'(1x,i4.3))'
-      write(*,formatting) priority_logical%initial_msg, main_msg, ivector
+      write(*,formatting) trim(priority_logical%initial_msg)//" ", main_msg, ivector
     end if
 
   end subroutine message_ivector
@@ -258,7 +258,7 @@ contains
 
     ! check priority then print main_msg & string
     if ( my_rank==0 .and. (priority_logical%state .or. debug_mode_logical%state) ) then
-      write(*,'(1x,a,a,a)') priority_logical%initial_msg, main_msg, str_variable
+      write(*,'(1x,a,a,a)') trim(priority_logical%initial_msg)//" ", main_msg, str_variable
     end if
   
   end subroutine message_string
@@ -271,7 +271,7 @@ contains
 
     ! check priority then print main_msg
     if ( my_rank==0 .and. (priority_logical%state .or. debug_mode_logical%state) ) then
-      write(*,'(1x,a,a)') priority_logical%initial_msg, main_msg
+      write(*,'(1x,a,a)') trim(priority_logical%initial_msg)//" ", main_msg
     end if
   
   end subroutine message_only
@@ -289,7 +289,7 @@ contains
 
     ! check priority then print logical variable
     if ( my_rank==0 .and. (priority_logical%state .or. debug_mode_logical%state) ) then
-      write(*,'(1x,a,a,1x,l1)') priority_logical%initial_msg, main_msg, logical_var
+      write(*,'(1x,a,a,1x,l1)') trim(priority_logical%initial_msg)//" ", main_msg, logical_var
     end if
 
   end subroutine message_logical
@@ -313,7 +313,7 @@ contains
 
     ! check priority then print two matrices alongside
     if ( my_rank==0 .and. (priority_logical%state .or. debug_mode_logical%state) ) then
-      write(*,'(1x,a,a)') priority_logical%initial_msg, main_msg
+      write(*,'(1x,a,a)') trim(priority_logical%initial_msg)//" ", main_msg
       write(formatting,'(a,i3.3,a,i3.3,a)') '(1x,a,i3.3,a,',size(imatrix1,2),'(1x,i4.3),a,',&
             size(rmatrix2,2),'(1x,sp,ES10.3))'
       do i =1,size(imatrix1,1)
@@ -337,7 +337,7 @@ contains
 
     ! check priority then print two matrices alongside
     if ( my_rank==0 .and. (priority_logical%state .or. debug_mode_logical%state) ) then
-      write(*,'(1x,a,a)') priority_logical%initial_msg, main_msg
+      write(*,'(1x,a,a)') trim(priority_logical%initial_msg)//" ", main_msg
       write(formatting,'(a,i3.3,a,i3.3,a)') '(1x,a,i3.3,a,',size(imatrix1,2),'(1x,i4.3),a,',&
             size(cmatrix2,2),'(1x,"(",sp,ES8.1," ",ES8.1,"i)"))'
       do i =1,size(imatrix1,1)
@@ -356,7 +356,7 @@ contains
     integer(IKIND), intent(in) :: int1, int2
 
     if ( my_rank==0 .and. (priority_logical%state .or. debug_mode_logical%state) ) then
-      write(*,'(1x,a,a,i4.3,a,i4.3)') priority_logical%initial_msg, text1, int1, text2, int2
+      write(*,'(1x,a,a,i4.3,a,i4.3)') trim(priority_logical%initial_msg)//" ", text1, int1, text2, int2
     end if
   
   end subroutine message_integer_isi
