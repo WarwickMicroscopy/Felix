@@ -67,7 +67,7 @@ SUBROUTINE WriteOutput( CAmplitudeandPhaseImages,RReflectionImages,RMontageImage
 
   ALLOCATE(RImage(2*IPixelCount,2*IPixelCount),STAT=IErr)
   IF( IErr.NE.0 ) THEN
-     PRINT*,"WriteOutput(", my_rank, ") error ", IErr, &
+     PRINT*,"Error:WriteOutput(", my_rank, ") error ", IErr, &
           " in ALLOCATE() of DYNAMIC variables RImage"
      RETURN
   ENDIF
@@ -94,7 +94,7 @@ SUBROUTINE WriteOutput( CAmplitudeandPhaseImages,RReflectionImages,RMontageImage
         
         CALL OpenReflectionImage(MontageOut,surname,IErr,0,MAXVAL(IImageSizeXY),knd)
         IF( IErr.NE.0 ) THEN
-           PRINT*,"WriteOutput(", my_rank, ") error in OpenData()"
+           PRINT*,"Error:WriteOutput(", my_rank, ") error in OpenData()"
            RETURN
         ENDIF
 
@@ -120,7 +120,7 @@ SUBROUTINE WriteOutput( CAmplitudeandPhaseImages,RReflectionImages,RMontageImage
         DO ind = 1,INoOfLacbedPatterns
            CALL OpenReflectionImage(IChOutWIImage,path,IErr,ind,2*IPixelCount,knd)
            IF( IErr.NE.0 ) THEN
-              PRINT*,"WriteOutput(", my_rank, ") error in OpenReflectionImage()"
+              PRINT*,"Error:WriteOutput(", my_rank, ") error in OpenReflectionImage()"
               RETURN
            ENDIF
           
@@ -135,7 +135,7 @@ SUBROUTINE WriteOutput( CAmplitudeandPhaseImages,RReflectionImages,RMontageImage
            CALL WriteReflectionImage(IChOutWIImage,&
                 RImage,IErr,2*IPixelCount,2*IPixelCount,knd)       
            IF( IErr.NE.0 ) THEN
-              PRINT*,"WriteOutput(", my_rank, ") error in WriteReflectionImage()"
+              PRINT*,"Error:WriteOutput(", my_rank, ") error in WriteReflectionImage()"
               RETURN
            ENDIF    
            CLOSE(IChOutWIImage,IOSTAT = IErr)
@@ -166,7 +166,7 @@ SUBROUTINE WriteOutput( CAmplitudeandPhaseImages,RReflectionImages,RMontageImage
            
            CALL OpenReflectionImage(IChOutWFImagePhase,path,IErr,ind,2*IPixelCount,knd)
            IF( IErr.NE.0 ) THEN
-              PRINT*,"WriteOutput(", my_rank, ") error in OpenPhaseImage()"
+              PRINT*,"Error:WriteOutput(", my_rank, ") error in OpenPhaseImage()"
               RETURN
            ENDIF
            
@@ -184,7 +184,7 @@ SUBROUTINE WriteOutput( CAmplitudeandPhaseImages,RReflectionImages,RMontageImage
            CALL WriteReflectionImage(IChOutWFImageReal,&
                 RImage,IErr,2*IPixelCount,2*IPixelCount,knd)       
            IF( IErr.NE.0 ) THEN
-              PRINT*,"WriteOutput(", my_rank, ") error in WriteReflectionImage()"
+              PRINT*,"Error:WriteOutput(", my_rank, ") error in WriteReflectionImage()"
               RETURN
            ENDIF
            
@@ -198,7 +198,7 @@ SUBROUTINE WriteOutput( CAmplitudeandPhaseImages,RReflectionImages,RMontageImage
            CALL WriteReflectionImage(IChOutWFImagePhase,&
                 RImage,IErr,2*IPixelCount,2*IPixelCount,knd)       
            IF( IErr.NE.0 ) THEN
-              PRINT*,"WriteOutput(", my_rank, ") error in WriteReflectionImage()"
+              PRINT*,"Error:WriteOutput(", my_rank, ") error in WriteReflectionImage()"
               RETURN
            ENDIF
            
@@ -213,7 +213,7 @@ SUBROUTINE WriteOutput( CAmplitudeandPhaseImages,RReflectionImages,RMontageImage
 
   DEALLOCATE(RImage,STAT=IErr)       
   IF( IErr.NE.0 ) THEN
-     PRINT*,"WriteOutput(", my_rank, ") error in Deallocation of RImage"
+     PRINT*,"Error:WriteOutput(", my_rank, ") error in Deallocation of RImage"
      RETURN
   ENDIF
    
@@ -237,7 +237,7 @@ SUBROUTINE OpenReflectionImage(IChOutWrite, surname, IErr,IReflectWriting,IImage
   
   USE IPara
   USE RPara
-
+  USE message_mod
   USE MPI
   USE MyMPI
 
@@ -274,47 +274,37 @@ SUBROUTINE OpenReflectionImage(IChOutWrite, surname, IErr,IReflectWriting,IImage
   
   SELECT CASE(IChOutWrite)
   
-  CASE(IChOutWFImageReal)        
-     IF (IWriteFLAG.GE.10) THEN
-        PRINT*, "OpenImage: opening image for WAVE FUNCTION REAL PART (WR*.txt)"
-     END IF
-     WRITE(filename,*) TRIM(ADJUSTL(surname)),"/Real-",&
-     TRIM(ADJUSTL(h)),&
-     TRIM(ADJUSTL(k)),&
-     TRIM(ADJUSTL(l)),&
-     TRIM(ADJUSTL(fileext))
-	 
-  CASE(IChOutWFImagePhase)        
-     IF (IWriteFLAG.GE.10) THEN
-        PRINT*, "OpenImage: opening image for WAVE FUNCTION PHASE PART (WP*.txt)"
-     END IF
-     WRITE(filename,*) TRIM(ADJUSTL(surname)),"/Imag-",&
-     TRIM(ADJUSTL(h)),&
-     TRIM(ADJUSTL(k)),&
-     TRIM(ADJUSTL(l)),&
-     TRIM(ADJUSTL(fileext))
-	 
-  CASE(IChOutWIImage) 
-     IF (IWriteFLAG.GE.10) THEN
-        PRINT*, "OpenImage: opening image for INTENSITIES"
-     END IF
-     WRITE(filename,*) TRIM(ADJUSTL(surname)),"/",&
-     TRIM(ADJUSTL(h)),&
-     TRIM(ADJUSTL(k)),&
-     TRIM(ADJUSTL(l)),&
-     TRIM(ADJUSTL(fileext))
-	 
-  CASE(MontageOut)        
-     WRITE(filename,*) TRIM(ADJUSTL(surname)),"Montage_",&
-          TRIM(ADJUSTL(fileext))
-     IF (IWriteFLAG.GE.10) THEN
-        PRINT*, "OpenImage: opening image for WAVE INTENSITIES"
-     END IF
-	 
-  CASE DEFAULT
-     IF (IWriteFLAG.GE.10) THEN
-        PRINT*, "OpenImage: opening UNKNOWN channel ", IChOutWrite
-     END IF
+    CASE(IChOutWFImageReal)        
+      CALL message ( LL, "OpenImage: opening image for WAVE FUNCTION REAL PART (WR*.txt)" )
+      WRITE(filename,*) TRIM(ADJUSTL(surname)),"/Real-",&
+      TRIM(ADJUSTL(h)),&
+      TRIM(ADJUSTL(k)),&
+      TRIM(ADJUSTL(l)),&
+      TRIM(ADJUSTL(fileext))
+	   
+    CASE(IChOutWFImagePhase)        
+      CALL message ( LL, "OpenImage: opening image for WAVE FUNCTION PHASE PART (WP*.txt)")
+      WRITE(filename,*) TRIM(ADJUSTL(surname)),"/Imag-",&
+      TRIM(ADJUSTL(h)),&
+      TRIM(ADJUSTL(k)),&
+      TRIM(ADJUSTL(l)),&
+      TRIM(ADJUSTL(fileext))
+	   
+    CASE(IChOutWIImage) 
+      CALL message ( LL, "OpenImage: opening image for INTENSITIES" )
+      WRITE(filename,*) TRIM(ADJUSTL(surname)),"/",&
+      TRIM(ADJUSTL(h)),&
+      TRIM(ADJUSTL(k)),&
+      TRIM(ADJUSTL(l)),&
+      TRIM(ADJUSTL(fileext))
+	   
+    CASE(MontageOut)        
+      WRITE(filename,*) TRIM(ADJUSTL(surname)),"Montage_",&
+            TRIM(ADJUSTL(fileext))
+      CALL message ( LL, "OpenImage: opening image for WAVE INTENSITIES" )
+
+    CASE DEFAULT
+      CALL message ( LL, "OpenImage: opening UNKNOWN channel ", IChOutWrite )
 	 
   END SELECT
 
@@ -323,7 +313,7 @@ SUBROUTINE OpenReflectionImage(IChOutWrite, surname, IErr,IReflectWriting,IImage
   RETURN
    
   ! error in OPEN detected
-10 PRINT*,"OpenReflectionImage(): ERR in OPEN()",IErr
+10 PRINT*,"Error:OpenReflectionImage(): ERR in OPEN()",IErr
   IErr= 1
   RETURN
   
@@ -364,12 +354,12 @@ SUBROUTINE WriteReflectionImage( IChOutWrite, data, IErr,IImageSizeX,IImageSizeY
 
   RETURN
   ! error in WRITE detected
-20 PRINT*,"WriteReflectionImage(): ERR in WRITE()",Ierr
+20 PRINT*,"Error:WriteReflectionImage(): ERR in WRITE()",Ierr
   IErr= 1
   RETURN
 
   ! buffer too short
-30 PRINT*,"WriteImageR_MPI(): EOF in WRITE()"
+30 PRINT*,"Error:WriteImageR_MPI(): EOF in WRITE()"
   IErr= 1
   RETURN
 

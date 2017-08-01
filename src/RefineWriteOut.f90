@@ -60,7 +60,7 @@ SUBROUTINE WriteIterationOutput(Iter,IThicknessIndex,IExitFlag,IErr)
   INTEGER(IKIND) :: IErr,Iter,IThickness,ind,jnd
   INTEGER(IKIND),INTENT(IN) :: IThicknessIndex,IExitFLAG
   REAL(RKIND),DIMENSION(2*IPixelCount,2*IPixelCount) :: RImageToWrite
-  CHARACTER*200 :: path,SPrintString,filename
+  CHARACTER*200 :: path,filename
   CHARACTER*20 :: IntString
   
   IThickness = (RInitialThickness + (IThicknessIndex-1)*RDeltaThickness)/10!in nm 
@@ -101,9 +101,7 @@ SUBROUTINE WriteIterationOutput(Iter,IThicknessIndex,IExitFlag,IErr)
     END DO
     filename = TRIM(filename) // '.bin'
 
-	  IF (IWriteFLAG.EQ.6) THEN
-      PRINT*,filename
-    END IF
+    CALL message ( LL, dbg6, filename )
     RImageToWrite = RImageSimi(:,:,ind,IThicknessIndex)
 	
 
@@ -115,19 +113,19 @@ SUBROUTINE WriteIterationOutput(Iter,IThicknessIndex,IExitFlag,IErr)
     END DO
     CLOSE(IChOutWIImage,IOSTAT=IErr)       
     IF( IErr.NE.0 ) THEN
-      PRINT*,"WriteIterationOutput(0) error writing image",ind
+      PRINT*,"Error:WriteIterationOutput(0) error writing image",ind
       RETURN
     END IF
   END DO
 
   CALL WriteIterationCIF(path,IErr) 
   IF( IErr.NE.0 ) THEN
-    PRINT*,"WriteIterationOutput(0) error in WriteIterationCIF"
+    PRINT*,"Error:WriteIterationOutput(0) error in WriteIterationCIF"
     RETURN
   END IF
   CALL WriteStructureFactors(path,IErr)
   IF( IErr.NE.0 ) THEN
-    PRINT*,"WriteIterationOutput(0) error in WriteStructureFactors"
+    PRINT*,"Error:WriteIterationOutput(0) error in WriteStructureFactors"
     RETURN
   END IF
 
@@ -135,7 +133,7 @@ SUBROUTINE WriteIterationOutput(Iter,IThicknessIndex,IExitFlag,IErr)
   
   RETURN  
   ! error in OPEN detected
-10 PRINT*,"WriteIterationOutput(0) error opening",filename
+10 PRINT*,"Error:WriteIterationOutput(0) error opening",filename
   IErr= 1
   RETURN
   
@@ -167,7 +165,7 @@ SUBROUTINE WriteIterationCIF(path,IErr)
 
   INTEGER(IKIND) :: IErr,jnd
   CHARACTER*200,INTENT(IN) :: path
-  CHARACTER*200 :: SPrintString,filename,fullpath
+  CHARACTER*200 :: filename,fullpath
 
   ! Write out non symmetrically related atomic positions
 
@@ -210,15 +208,15 @@ SUBROUTINE WriteIterationCIF(path,IErr)
 
   ! Write out full atomic positions
 
-!  WRITE(filename,*) "StructureFull.txt"
-!  WRITE(fullpath,*) TRIM(ADJUSTL(path)),'/',TRIM(ADJUSTL(filename))
-!  PRINT*,"RAtomPosition,SAtomName"  
-!  OPEN(UNIT=IChOutSimplex,STATUS='UNKNOWN',&
-!        FILE=TRIM(ADJUSTL(fullpath)))
-!    DO jnd = 1,SIZE(RAtomPosition,DIM=1)
-!      WRITE(IChOutSimplex,FMT='(A2,1X,3(F9.6,1X))') SAtomName(jnd),RAtomPosition(jnd,1:3)
-!    END DO
-!  CLOSE(IChOutSimplex)
+  !WRITE(filename,*) "StructureFull.txt"
+  !WRITE(fullpath,*) TRIM(ADJUSTL(path)),'/',TRIM(ADJUSTL(filename))
+  !CALL message( LL, "RAtomPosition,SAtomName" )
+  !OPEN(UNIT=IChOutSimplex,STATUS='UNKNOWN',&
+  !      FILE=TRIM(ADJUSTL(fullpath)))
+  !  DO jnd = 1,SIZE(RAtomPosition,DIM=1)
+  !    WRITE(IChOutSimplex,FMT='(A2,1X,3(F9.6,1X))') SAtomName(jnd),RAtomPosition(jnd,1:3)
+  !  END DO
+  !CLOSE(IChOutSimplex)
 
 END SUBROUTINE WriteIterationCIF
 

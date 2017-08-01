@@ -74,7 +74,7 @@ REAL(RKIND) FUNCTION PhaseCorrelate(RImageSim,RImageExpiDummy,IErr,IXsizeIn,IYSi
   IX = IXSizeIn
   IY = IYSizein
 
-  !PRINT*,"IX, IY =",IX,IY
+  !CALL message ( "IX, IY =", (/ IX,IY /) )
 
   p1 = fftw_alloc_real(INT(IXSizeIn*IYSizeIn, C_SIZE_T))
   p2 = fftw_alloc_complex(INT(IXSizeIn*IYSizeIn, C_SIZE_T))
@@ -90,7 +90,7 @@ REAL(RKIND) FUNCTION PhaseCorrelate(RImageSim,RImageExpiDummy,IErr,IXsizeIn,IYSi
 
   RImageSimDummy = RImageSim
 
-  !PRINT*,RImageSimDummy(:2,:2)
+  ! CALL message ( "RImageSimDummy", RImageSimDummy(:2,:2) )
 
   ! Plan and Execute the fft of the Simulated Data 
   Iplan = FFTW_PLAN_DFT_r2c_2D(IX,IY,RImageSimDummy,CDummy1,FFTW_ESTIMATE)
@@ -99,7 +99,7 @@ REAL(RKIND) FUNCTION PhaseCorrelate(RImageSim,RImageExpiDummy,IErr,IXsizeIn,IYSi
 
   ! Set the dummy array to the input experimental data
   RImageSimDummy = RImageExpiDummy 
-  !PRINT*,RImageSimDummy(:2,:2)
+  ! CALL message ( "RImageSimDummy", RImageSimDummy(:2,:2) )
  
   ! Plan and Execute the fft of the Experimental Data 
   Iplan = FFTW_PLAN_DFT_R2C_2D(IX,IY,RImageSimDummy,CDummy2,FFTW_ESTIMATE)
@@ -123,7 +123,7 @@ REAL(RKIND) FUNCTION PhaseCorrelate(RImageSim,RImageExpiDummy,IErr,IXsizeIn,IYSi
   PhaseCorrelate = MAXVAL(RImageSimDummy)/(IX*IY)
   IOffset = MAXLOC(RImageSimDummy)
   
-  !PRINT*,RImageSimDummy(:2,:2)
+  ! CALL message ( "RImageSimDummy", RImageSimDummy(:2,:2) )
 
   call fftw_free(p1)
   call fftw_free(p2)
@@ -147,6 +147,7 @@ SUBROUTINE ReSortUgs( ISymmetryIntegers,CUgs, N )
   USE CConst; USE IConst
   USE IPara; USE RPara
   USE IChannels
+  USE message_mod
   USE MPI
   USE MyMPI
 
@@ -159,9 +160,7 @@ SUBROUTINE ReSortUgs( ISymmetryIntegers,CUgs, N )
   COMPLEX(CKIND) :: CUgSearch,CUgCompare,Cdummy,CUgs(N)
   PARAMETER (ALN2I=1.4426950D0, LocalTINY=1.D-5)
 
-  IF((IWriteFLAG.GE.10.AND.my_rank.EQ.0).OR.IWriteFLAG.GE.10) THEN
-     PRINT*,"Sorting Ugs"
-  END IF
+  CALL message ( LL, "Sorting Ugs" )
   
   LOGNB2=INT(LOG(REAL(N))*ALN2I+LocalTINY)
   M=N
@@ -289,8 +288,8 @@ REAL(RKIND) FUNCTION MaskedCorrelation(Rimg1,Rimg2,RBinaryMask,IErr)
   REAL(RKIND),DIMENSION(2*IPixelCount,2*IPixelCount) :: Rimg1,Rimg2,RBinaryMask
   REAL(RKIND) :: Rimg1Mean,Rimg2Mean,Rimg1StDev,Rimg2StDev,RPixelTotal,&
                  Rimg1Min,Rimg2Min,Rimg1Max,Rimg2Max
-  CHARACTER*200 :: path,SPrintString
-  
+  CHARACTER*200 :: path
+
   IF (SUM(RBinaryMask).GT.ZERO) THEN
     RPixelTotal = SUM(RBinaryMask)!Mask has value 1 for pixels of interest and zero elsewhere
     CALL message ( LL, dbg6, "Mask pixels = ", RPixelTotal )

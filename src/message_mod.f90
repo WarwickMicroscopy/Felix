@@ -40,16 +40,31 @@
 !!
 module message_mod
 
-  !A few examples below of accepted inputs
+  ! Using IWriteFLAG:
+  ! 0 prints LS priority messages - key, top-level descriptions
+  ! 2 prints LM priority messages - more specific descriptions of key information
+  ! 4 prints LL priority messages - quite specific running / variable details
+  ! 8 prints LXL priority messages - very specific running / variable details
+  ! Certain LL & LXL messages will usually be accessed specifically via a debug mode
 
-  !CALL message( priority_logical, debug_mode_logical, main_msg, int_variable )
-  !CALL message( priority_logical, main_msg, int_variable )
-  !CALL message( priority_logical, debug_mode_logical, main_msg)
-  !CALL message( main_msg )
-  !CALL message( priority_logical, debug_mode_logical, main_msg, imatrix1, rmatrix2 )
+  ! 30, 60, 70, 90 are the current avaliable debug modes
+  ! corresponding to old IWriteFLAG 3, 6, 7 and 14 respectively
+  ! 90 is currently used for the old IWriteFLAG 14
+  ! as our integer kind does not reach 140
 
-  ! a special case - if you pass two matrix variables, message assumes and prints
-  ! them alongisde one another  
+  ! You can choose general priority and a debug mode with the ten and digit value
+  ! 32 will print all LS, LM, or dbg3 tagged messages
+  ! 98 will print all LS, LM, LL, LXL, or dbg14 tagged messages
+  ! In practice, using an 8 or 9 unit will trigger LXL and print all messages
+
+  ! Generally you call message with optional priority & debug mode, then
+  ! compulsory input message text and a variable of any kind
+
+  ! A few examples below of accepted inputs:
+  ! CALL message( priority_logical, debug_mode_logical, main_msg, int_variable )
+  ! CALL message( priority_logical, main_msg, int_variable )
+  ! CALL message( priority_logical, debug_mode_logical, main_msg)
+  ! CALL message( main_msg ) 
 
   !todo - implicit none & private
   !todo - add iwriteflag initialise
@@ -80,8 +95,9 @@ module message_mod
     module procedure message_logical
 
     module procedure message_alongside_ir ! int & real matrix alongside
+    module procedure message_alongside_ir2 ! int mat & real vec alongside
     module procedure message_alongside_ic ! int & complex matrix alongside
-    module procedure message_integer_isi ! logicals, main_msg, integer, string, integer
+    module procedure message_integer_isi ! text, integer, more text, integer
 
     module procedure message_rmatrix
     module procedure message_cmatrix
@@ -117,7 +133,7 @@ module message_mod
 
   type priority_logicals
     logical :: state
-    character(:),allocatable :: initial_msg
+    character(30),allocatable :: initial_msg
   end type
 
   type debug_mode_logicals
@@ -155,7 +171,7 @@ contains
 
   end subroutine
 
-  subroutine set_message_logicals( prio )
+  subroutine set_terminal_output_mode ( prio )
     
     integer(IKIND) :: prio
 
@@ -314,14 +330,31 @@ contains
     ! check priority then print two matrices alongside
     if ( my_rank==0 .and. (priority_logical%state .or. debug_mode_logical%state) ) then
       write(*,'(1x,a,a)') priority_logical%initial_msg, main_msg
-      write(formatting,'(a,i3.3,a,i3.3,a)') '(1x,a,i3.3,a,',size(imatrix1,2),'(1x,i4.3),a,',&
+      write(formatting,'(a,i3.3,a,i3.3,a)') '(1x,a,i3.3,',size(imatrix1,2),'(1x,i4.3),a,',&
             size(rmatrix2,2),'(1x,sp,ES10.3))'
       do i =1,size(imatrix1,1)
-        write(*,formatting) "@ ",i,":", imatrix1(i,:)," |",rmatrix2(i,:)
+        write(*,formatting) priority_logical%initial_msg,i, imatrix1(i,:)," |",rmatrix2(i,:)
       end do
     end if  
   
   end subroutine message_alongside_ir
+
+  ! vertically int matrix and real vector
+  subroutine message_alongside_ir2 ( priority_logical, debug_mode_logical, &
+               main_msg, imatrix, rvector )
+
+    type (priority_logicals), intent(in) :: priority_logical
+    type (debug_mode_logicals), intent(in) :: debug_mode_logical
+    character(*), intent(in) :: main_msg
+    integer(IKIND),dimension(:,:),intent(in) :: imatrix ! 1st matrix - integer
+    real(RKIND), dimension(:), intent(in) :: rvector ! 2nd matrix - real
+    character(100) :: formatting
+    integer(IKIND) :: i
+
+    call message_alongside_ir ( priority_logical, debug_mode_logical, &
+               main_msg, imatrix, RESHAPE(rvector,[size(rvector),1]) ) 
+  
+  end subroutine message_alongside_ir2
 
   ! vertically int matrix beside complex matrix
   subroutine message_alongside_ic ( priority_logical, debug_mode_logical, &
@@ -338,10 +371,10 @@ contains
     ! check priority then print two matrices alongside
     if ( my_rank==0 .and. (priority_logical%state .or. debug_mode_logical%state) ) then
       write(*,'(1x,a,a)') priority_logical%initial_msg, main_msg
-      write(formatting,'(a,i3.3,a,i3.3,a)') '(1x,a,i3.3,a,',size(imatrix1,2),'(1x,i4.3),a,',&
+      write(formatting,'(a,i3.3,a,i3.3,a)') '(1x,a,i3.3,',size(imatrix1,2),'(1x,i4.3),a,',&
             size(cmatrix2,2),'(1x,"(",sp,ES8.1," ",ES8.1,"i)"))'
       do i =1,size(imatrix1,1)
-        write(*,formatting) "@ ",i,":", imatrix1(i,:)," |",cmatrix2(i,:)
+        write(*,formatting) priority_logical%initial_msg,i, imatrix1(i,:)," |",cmatrix2(i,:)
       end do
     end if  
   

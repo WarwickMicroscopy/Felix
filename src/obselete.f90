@@ -1,4 +1,235 @@
-! 
+
+
+
+
+
+!>
+!! Procedure-description: Convert vector movements into atomic coordinates
+!!
+!! Major-Authors: Keith Evans (2014), Richard Beanland (2016)
+!! 
+SUBROUTINE ConvertVectorMovementsIntoAtomicCoordinates(IVariableID,RIndependentVariable,IErr)
+  !RB this is now redundant, moved up to Update Variables
+  USE MyNumbers
+
+  USE CConst; USE IConst; USE RConst
+  USE IPara; USE RPara; USE SPara; USE CPara
+  USE BlochPara
+
+  USE IChannels
+
+  USE MPI
+  USE MyMPI
+
+  IMPLICIT NONE
+
+  INTEGER(IKIND) :: IErr,ind,jnd,IVariableID,IVectorID,IAtomID
+  REAL(RKIND),DIMENSION(INoOfVariables),INTENT(IN) :: RIndependentVariable
+
+!!$  Use IVariableID to determine which vector is being applied (IVectorID)
+  IVectorID = IIterativeVariableUniqueIDs(IVariableID,3)
+!!$  Use IVectorID to determine which atomic coordinate the vector is to be applied to (IAtomID)
+  IAtomID = IAllowedVectorIDs(IVectorID)
+!!$  Use IAtomID to applied the IVectodID Vector to the IAtomID atomic coordinate
+  RBasisAtomPosition(IAtomID,:) = RBasisAtomPosition(IAtomID,:) + &
+       RIndependentVariable(IVariableID)*RAllowedVectors(IVectorID,:)
+
+END SUBROUTINE ConvertVectorMovementsIntoAtomicCoordinates
+
+!------------------------------------------------------------------------
+
+
+
+
+
+
+
+!>
+!! Procedure-description: Update structure factors
+!!
+!! Major-Authors: Keith Evans (2014), Richard Beanland (2016)
+!! 
+SUBROUTINE UpdateStructureFactors(RIndependentVariable,IErr)
+
+  USE MyNumbers
+
+  USE CConst; USE IConst; USE RConst
+  USE IPara; USE RPara; USE SPara; USE CPara
+  USE BlochPara
+
+  USE IChannels
+  USE message_mod
+  USE MPI
+  USE MyMPI
+
+  IMPLICIT NONE
+
+  INTEGER(IKIND) :: IErr,ind,jnd
+  REAL(RKIND),DIMENSION(INoOfVariables),INTENT(IN) :: RIndependentVariable
+  CHARACTER*200 :: SPrintString
+
+  !NB these are Ug's without absorption
+  jnd=1
+  DO ind = 1+IUgOffset,INoofUgs+IUgOffset!=== temp changes so real part only***
+    IF ( (ABS(REAL(CUniqueUg(ind),RKIND)).GE.RTolerance).AND.&!===
+        (ABS(AIMAG(CUniqueUg(ind))).GE.RTolerance)) THEN!use both real and imag parts!===
+      CUniqueUg(ind)=CMPLX(RIndependentVariable(jnd),RIndependentVariable(jnd+1))!===
+      jnd=jnd+2!===
+    ELSEIF ( ABS(AIMAG(CUniqueUg(ind))).LT.RTolerance ) THEN!use only real part!===
+      CUniqueUg(ind)=CMPLX(RIndependentVariable(jnd),ZERO)!===
+      !===      CUniqueUg(ind)=CMPLX(RIndependentVariable(jnd),AIMAG(CUniqueUg(ind)))!===replacement line, delete to revert
+      jnd=jnd+1
+    ELSEIF ( ABS(REAL(CUniqueUg(ind),RKIND)).LT.RTolerance ) THEN!===use only imag part
+      CUniqueUg(ind)=CMPLX(ZERO,RIndependentVariable(jnd))!===
+      jnd=jnd+1!===
+    ELSE!should never happen!===
+      !todo - warning grouped with errors?
+      CALL message(LS, "Warning - zero structure factor! At element = ",ind)
+      CALL message(LS, "     CUniqueUg vector element value = ", CUniqueUg(IEquivalentUgKey(ind)))!===
+    END IF!===
+  END DO
+  RAbsorptionPercentage = RIndependentVariable(jnd)!===
+
+END SUBROUTINE UpdateStructureFactors
+
+!%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+
+
+
+
+
+
+
+
+
+
+
+
+!>
+!! Procedure-description: Sets up a pseudo random sequence and selects a number
+!!
+!! Major-Authors: Keith Evans (2014), Richard Beanland (2016)
+!!
+REAL(RKIND) FUNCTION RANDOMNUMBER(IRequestedNumber,IErr)
+
+  USE MyNumbers
+  
+  USE CConst; USE IConst; USE RConst
+  USE IPara; USE RPara; USE SPara; USE CPara
+  USE BlochPara
+
+  USE IChannels
+
+  USE MPI
+  USE MyMPI
+
+  IMPLICIT NONE
+
+  INTEGER(IKIND) :: IErr,values(1:8), k,IRequestedNumber
+  INTEGER(IKIND), DIMENSION(:), ALLOCATABLE :: seed
+  REAL(RKIND),DIMENSION(IRequestedNumber) :: RRandomNumberSequence
+  
+  CALL DATE_AND_TIME(values=values)
+  
+  IF (IRandomFLAG.EQ.0) THEN
+     CALL RANDOM_SEED(size=k)
+     allocate(seed(1:k))
+     seed(:) = values(8)
+     CALL RANDOM_SEED(put=seed)
+  ELSE
+     CALL RANDOM_SEED(size=k)
+     ALLOCATE(seed(1:k))
+     seed(:) = IFixedSeed*IRequestedNumber
+     CALL RANDOM_SEED(put=seed)
+  END IF
+   
+  CALL RANDOM_NUMBER(RRandomNumberSequence)
+  
+  RANDOMNUMBER = RRandomNumberSequence(IRequestedNumber)
+  
+END FUNCTION RANDOMNUMBER
+
+!-------------------------------------------------------------------
+
+
+
+
+
+
+
+
+
+
+
+
+!>
+!! Procedure-description: Checks that vector movement applied by the simplex
+!! initialisation does not move an atom out fo the unit cell, and if it does
+!! the atom is moved back into the unit cell on the opposite side as if the
+!! atom had moved from one unit cell into the neighbouring one
+!!
+!! Major-Authors: Keith Evans (2014), Richard Beanland (2016)
+!!
+SUBROUTINE OutofUnitCellCheck(IVariableID,RProposedMovement,RCorrectedMovement,IErr)
+
+  !?? Can't this just be done in one line with MODULO?
+  USE MyNumbers
+  
+  USE CConst; USE IConst; USE RConst
+  USE IPara; USE RPara; USE SPara; USE CPara
+  USE BlochPara
+
+  USE IChannels
+
+  USE MPI
+  USE MyMPI
+
+  IMPLICIT NONE
+  
+  INTEGER(IKIND) :: ind,IErr,IVariableID,IAtomID,IVectorID
+  REAL(RKIND),DIMENSION(ITHREE) :: RProposedAtomicCoordinate,RDummyMovement
+  REAL(RKIND),INTENT(IN) :: RProposedMovement
+  REAL(RKIND),INTENT(OUT) :: RCorrectedMovement
+  
+  IVectorID = IIterativeVariableUniqueIDs(IVariableID,3)
+  
+  IAtomID = IAllowedVectorIDs(IVectorID)
+ 
+  RProposedAtomicCoordinate(:) = RBasisAtomPosition(IAtomID,:) + &
+       RProposedMovement*RAllowedVectors(IVectorID,:)
+
+  RDummyMovement = RProposedMovement
+
+  IF(ANY(RProposedAtomicCoordinate.GT.ONE).OR.ANY(RProposedAtomicCoordinate.LT.ZERO)) THEN
+     DO ind = 1,ITHREE
+        IF (RProposedAtomicCoordinate(ind).GT.ONE) THEN
+           RDummyMovement(ind) = (ONE-RBasisAtomPosition(IAtomID,ind))/RAllowedVectors(IVectorID,ind)
+        ELSEIF(RProposedAtomicCoordinate(ind).LT.ZERO) THEN
+           RDummyMovement(ind) = (-RBasisAtomPosition(IAtomID,ind))/RAllowedVectors(IVectorID,ind)
+        ELSE
+           RDummyMovement(ind) = RProposedMovement
+        END IF
+     END DO
+  END IF
+
+  IF(RProposedMovement.LT.ZERO) THEN
+     RCorrectedMovement = MAXVAL(RDummyMovement)
+  ELSE
+     RCorrectedMovement = MINVAL(RDummyMovement)
+  END IF
+
+END SUBROUTINE OutofUnitCellCheck
+
+
+
+
+
+
+
+
+
+
 
 SUBROUTINE OpenData(IChOutWrite, prefix, surname, IErr)
 

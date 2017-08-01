@@ -43,18 +43,21 @@
 !!
 !! Major-Authors: Keith Evans (2014), Richard Beanland (2016)
 !!
-SUBROUTINE BlochCoefficientCalculation(IYPixelIndex,IXPixelIndex,IPixelNumber,IFirstPixelToCalculate,IErr)
-  
+SUBROUTINE BlochCoefficientCalculation(IYPixelIndex,IXPixelIndex,IPixelNumber,&
+                  IFirstPixelToCalculate,IErr)
 
   USE MyNumbers
-  USE CConst; USE IConst
-  USE IPara; USE RPara; USE CPara
-  USE SPara
+  
+  USE IConst; USE CConst; ! USE RConst
+  USE IPara; USE RPara; USE CPara; ! USE SPara;
+  USE BlochPara 
+
   USE IChannels
-  USE BlochPara
-  USE message_mod
+
   USE MPI
   USE MyMPI
+
+  USE message_mod 
   
   IMPLICIT NONE
   
@@ -71,22 +74,23 @@ SUBROUTINE BlochCoefficientCalculation(IYPixelIndex,IXPixelIndex,IPixelNumber,IF
   ! we are inside the mask
   IPixelComputed= IPixelComputed + 1
 
-  !--------------------------------------------------------------------
   ! TiltedK is the vector of the incoming tilted beam
   ! in units of (1/A), in the microscope ref frame(NB exp(i*k.r), physics convention)
-  RTiltedK(1)= (REAL(IYPixelIndex,RKIND)-REAL(IPixelCount,RKIND)-0.5_RKIND)*RDeltaK ! x-position in k-space
-  RTiltedK(2)= (REAL(IXPixelIndex,RKIND)-REAL(IPixelCount,RKIND)-0.5_RKIND)*RDeltaK ! y-position in k-space
+  ! x-position in k-space
+  RTiltedK(1)= (REAL(IYPixelIndex,RKIND)-REAL(IPixelCount,RKIND)-0.5_RKIND)*RDeltaK
+  ! y-position in k-space
+  RTiltedK(2)= (REAL(IXPixelIndex,RKIND)-REAL(IPixelCount,RKIND)-0.5_RKIND)*RDeltaK 
   RTiltedK(3)= SQRT(RBigK**2 - RTiltedK(1)**2 - RTiltedK(2)**2) 
   RKn = DOT_PRODUCT(RTiltedK,RNormDirM)
   
-  !Compute the deviation parameter for reflection pool
-  !NB RDevPara is in units of (1/A), in the microscope ref frame(NB exp(i*s.r), physics convention)
+  ! Compute the deviation parameter for reflection pool
+  ! NB RDevPara is in units of (1/A), in the microscope ref frame(NB exp(i*s.r), physics convention)
   DO knd=1,nReflections
-    !Sg parallel to z: Sg=-[k'z+gz-sqrt( (k'z+gz)^2-2k'.g-g^2)]
+    ! Sg parallel to z: Sg=-[k'z+gz-sqrt( (k'z+gz)^2-2k'.g-g^2)]
     RDevPara(knd)= -RTiltedK(3)-RgPool(knd,3)+&
 	  SQRT( (RTiltedK(3)+RgPool(knd,3))**2-2*DOT_PRODUCT(RgPool(knd,:),RTiltedK(:))-RgPoolMag(knd)**2)
 
-    !todo - remove below commented out
+    !??  remove below commented out
 	  !Keith's old version, Sg parallel to k'
     !RDevPara(knd)= -( RBigK + DOT_PRODUCT(RgPool(knd,:),RTiltedK(:)) /RBigK) + &
     !  SQRT( ( RBigK**2 + DOT_PRODUCT(RgPool(knd,:),RTiltedK(:)) )**2 /RBigK**2 - &
@@ -104,8 +108,9 @@ SUBROUTINE BlochCoefficientCalculation(IYPixelIndex,IXPixelIndex,IPixelNumber,IF
   ! reciprocal lattice, i.e. within RBSMaxDeviationPara
   CALL StrongAndWeakBeamsDetermination(IErr)
   IF( IErr.NE.0 ) THEN
-     PRINT*,"Error:BlochCoefficientCalculation(",my_rank,") error in Determination of Strong and Weak beams"
-     RETURN
+    PRINT*,"Error:BlochCoefficientCalculation(",my_rank,&
+          ") error in Determination of Strong and Weak beams"
+    RETURN
   END IF
   CALL message(LL,dbg7,"strong beams",nBeams)
   CALL message(LL,dbg7,"weak beams",nWeakBeams)
@@ -114,6 +119,7 @@ SUBROUTINE BlochCoefficientCalculation(IYPixelIndex,IXPixelIndex,IPixelNumber,IF
   !--------------------------------------------------------------------
   ! ALLOCATE memory for eigen problem
   !--------------------------------------------------------------------
+
   ALLOCATE(CBeamProjectionMatrix(nBeams,nReflections),STAT=IErr)
   ALLOCATE(CDummyBeamMatrix(nBeams,nReflections),STAT=IErr)
   ALLOCATE(CUgSgMatrix(nBeams,nBeams),STAT=IErr)
@@ -125,25 +131,24 @@ SUBROUTINE BlochCoefficientCalculation(IYPixelIndex,IXPixelIndex,IPixelNumber,IF
   ALLOCATE(CAlphaWeightingCoefficients(nBeams),STAT=IErr)
   ALLOCATE(CEigenValueDependentTerms(nBeams,nBeams),STAT=IErr)
   IF( IErr.NE.0 ) THEN
-     PRINT*,"Error:BlochCoefficientCalculation(",my_rank,")error in allocations"
-     RETURN
+    PRINT*,"Error:BlochCoefficientCalculation(",my_rank,")error in allocations"
+    RETURN
   END IF
   
-  !--------------------------------------------------------------------
   ! compute the effective Ug matrix by selecting only those beams
   ! for which IStrongBeamList has an entry
   CBeamProjectionMatrix= CZERO
   DO knd=1,nBeams
-     CBeamProjectionMatrix(knd,IStrongBeamList(knd))=CONE
+    CBeamProjectionMatrix(knd,IStrongBeamList(knd))=CONE
   ENDDO
 
   CUgSgMatrix = CZERO
   CBeamTranspose=TRANSPOSE(CBeamProjectionMatrix)
-  !reduce the matrix to just include strong beams using some nifty matrix multiplication
+  ! reduce the matrix to just include strong beams using some nifty matrix multiplication
   CALL ZGEMM('N','N',nReflections,nBeams,nReflections,CONE,CUgMat, &
-       nReflections,CBeamTranspose,nReflections,CZERO,CUgMatPartial,nReflections)
+            nReflections,CBeamTranspose,nReflections,CZERO,CUgMatPartial,nReflections)
   CALL ZGEMM('N','N',nBeams,nBeams,nReflections,CONE,CBeamProjectionMatrix, &
-       nBeams,CUgMatPartial,nReflections,CZERO,CUgSgMatrix,nBeams)
+            nBeams,CUgMatPartial,nReflections,CZERO,CUgSgMatrix,nBeams)
   IF (IHolzFLAG.EQ.1) THEN
     DO ind=1,nBeams
       CUgSgMatrix(ind,ind) = CUgSgMatrix(ind,ind) + TWO*RBigK*RDevPara(IStrongBeamList(ind))
@@ -151,7 +156,8 @@ SUBROUTINE BlochCoefficientCalculation(IYPixelIndex,IXPixelIndex,IPixelNumber,IF
     DO knd =1,nBeams ! Columns
       DO ind = 1,nBeams ! Rows
         CUgSgMatrix(knd,ind) = CUgSgMatrix(knd,ind) / &
-         (SQRT(1+RgDotNorm(IStrongBeamList(knd))/RKn)*SQRT(1+RgDotNorm(IStrongBeamList(ind))/RKn))
+              (SQRT(1+RgDotNorm(IStrongBeamList(knd))/RKn)*&
+              SQRT(1+RgDotNorm(IStrongBeamList(ind))/RKn))
       END DO
     END DO
     CUgSgMatrix = (TWOPI**2)*CUgSgMatrix/(TWO*RBigK)
@@ -166,43 +172,43 @@ SUBROUTINE BlochCoefficientCalculation(IYPixelIndex,IXPixelIndex,IPixelNumber,IF
       sumC=CZERO
       sumD=CZERO
       DO ind=1,nWeakBeams
+		    ! Zuo&Weickenmeier Ultramicroscopy 57 (1995) 375-383 eq.4
         sumC=sumC + &
-		    !Zuo&Weickenmeier Ultramicroscopy 57 (1995) 375-383 eq.4
         CUgMat(IStrongBeamList(knd),IWeakBeamList(ind))*&
         CUgMat(IWeakBeamList(ind),1)/(TWO*RBigK*RDevPara(IWeakBeamList(ind)))
 
-!todo - remove commented Keith's old version
-!        REAL(CUgMat(IStrongBeamList(knd),IWeakBeamList(ind))) * &
-!        REAL(CUgMat(IWeakBeamList(ind),1)) / &
-!        (4*RBigK*RBigK*RDevPara(IWeakBeamList(ind)))
+        !??  remove commented Keith's old version
+        !REAL(CUgMat(IStrongBeamList(knd),IWeakBeamList(ind))) * &
+        !REAL(CUgMat(IWeakBeamList(ind),1)) / &
+        !(4*RBigK*RBigK*RDevPara(IWeakBeamList(ind)))
         sumD = sumD + &
-		    !Zuo&Weickenmeier Ultramicroscopy 57 (1995) 375-383 eq.5
+		    ! Zuo&Weickenmeier Ultramicroscopy 57 (1995) 375-383 eq.5
         CUgMat(IStrongBeamList(knd),IWeakBeamList(ind))*&
         CUgMat(IWeakBeamList(ind),IStrongBeamList(knd))/&
         (TWO*RBigK*RDevPara(IWeakBeamList(ind)))
-!todo - remove commented Keith's old version
-!        REAL(CUgMat(IStrongBeamList(knd),IWeakBeamList(ind))) * &
-!        REAL(CUgMat(IWeakBeamList(ind),IStrongBeamList(knd))) / &
-!        (4*RBigK*RBigK*RDevPara(IWeakBeamList(ind)))
+        !?? remove commented Keith's old version
+        !REAL(CUgMat(IStrongBeamList(knd),IWeakBeamList(ind))) * &
+        !REAL(CUgMat(IWeakBeamList(ind),IStrongBeamList(knd))) / &
+        !(4*RBigK*RBigK*RDevPara(IWeakBeamList(ind)))
       ENDDO
-	  !Replace the Ug's
+	  ! Replace the Ug's
 	  WHERE (CUgSgMatrix.EQ.CUgSgMatrix(knd,1))
         CUgSgMatrix= CUgSgMatrix(knd,1) - sumC
 	  END WHERE
-	  !Replace the Sg's
+	  ! Replace the Sg's
       CUgSgMatrix(knd,knd)= CUgSgMatrix(knd,knd) - TWO*RBigK*sumD/(TWOPI*TWOPI)
     ENDDO
-	!Divide by 2K so off-diagonal elementa are Ug/2K, diagonal elements are Sg
-	!DON'T KNOW WHERE THE 4pi^2 COMES FROM!! 
+	! Divide by 2K so off-diagonal elementa are Ug/2K, diagonal elements are Sg
+	!?? DON'T KNOW WHERE THE 4pi^2 COMES FROM 
   CUgSgMatrix = TWOPI*TWOPI*CUgSgMatrix/(TWO*RBigK)
   END IF
 
-  IF(IYPixelIndex.EQ.10.AND.IXPixelIndex.EQ.10) THEN !output data from 1 pixel to show working
+  IF(IYPixelIndex.EQ.10.AND.IXPixelIndex.EQ.10) THEN ! output data from 1 pixel to show working
     CALL message(LL,dbg3, "Pixel [10,10] Ug/2K + {Sg} matrix (nm^-2)")
-    CALL message(LL,dbg3, "displaying Rhkl and 100*CUgSgMatrix alongside",NINT(Rhkl(1:16,:)),100*CUgSgMatrix(1:16,1:6))
+    CALL message(LL,dbg3, "displaying Rhkl and 100*CUgSgMatrix alongside",&
+          NINT(Rhkl(1:16,:)),100*CUgSgMatrix(1:16,1:6))
   END IF
   
-  !--------------------------------------------------------------------
   ! diagonalize the UgMatEffective
   IF (IHolzFLAG.EQ.1) THEN
     CALL EigenSpectrum(nBeams,CUgSgMatrix,CEigenValues(:), CEigenVectors(:,:),IErr)
@@ -210,7 +216,7 @@ SUBROUTINE BlochCoefficientCalculation(IYPixelIndex,IXPixelIndex,IPixelNumber,IF
       PRINT*,"Error:BlochCoefficientCalculation(", my_rank, ") error in EigenSpectrum()"
       RETURN
     END IF
-    CEigenValues = CEigenValues * RKn/RBigK    !What is this doing?
+    CEigenValues = CEigenValues * RKn/RBigK    !?? What is this doing?
     DO knd = 1,nBeams
       CEigenVectors(knd,:) = CEigenVectors(knd,:) / &
             SQRT(1+RgDotNorm(IStrongBeamList(knd))/RKn)
@@ -224,8 +230,8 @@ SUBROUTINE BlochCoefficientCalculation(IYPixelIndex,IXPixelIndex,IPixelNumber,IF
     RETURN
   END IF
  
-  !Calculate intensities for different specimen thicknesses
-  !***ADD VARIABLE PATH LENGTH HERE***
+  ! Calculate intensities for different specimen thicknesses
+  !?? ADD VARIABLE PATH LENGTH HERE
   DO IThicknessIndex=1,IThicknessCount,1
     RThickness = RInitialThickness + REAL((IThicknessIndex-1),RKIND)*RDeltaThickness 
     IThickness = NINT(RThickness,IKIND)
@@ -234,20 +240,23 @@ SUBROUTINE BlochCoefficientCalculation(IYPixelIndex,IXPixelIndex,IPixelNumber,IF
       PRINT*,"Error:BlochCoefficientCalculation(", my_rank, ") error in CreateWavefunction()"
       RETURN
     END IF
-    !Collect Intensities from all thickness for later writing
-    IF(IHKLSelectFLAG.EQ.0) THEN!we are using hkl list from felix.hkl
-      IF(IImageFLAG.LE.2) THEN!output is 0=montage, 1=individual images
-        RIndividualReflections(1:INoOfLacbedPatterns,IThicknessIndex,(IPixelNumber-IFirstPixelToCalculate)+1) = &
-             RFullWaveIntensity(1:INoOfLacbedPatterns)
-      ELSE!output is 2=amplitude+phase images
-        CAmplitudeandPhase(1:INoOfLacbedPatterns,IThicknessIndex,(IPixelNumber-IFirstPixelToCalculate)+1) = &
-             CFullWavefunctions(1:INoOfLacbedPatterns)
+    ! Collect Intensities from all thickness for later writing
+    IF(IHKLSelectFLAG.EQ.0) THEN ! we are using hkl list from felix.hkl
+      IF(IImageFLAG.LE.2) THEN ! output is 0=montage, 1=individual images
+        RIndividualReflections(1:INoOfLacbedPatterns,IThicknessIndex,&
+              (IPixelNumber-IFirstPixelToCalculate)+1) = &
+              RFullWaveIntensity(1:INoOfLacbedPatterns)
+      ELSE ! output is 2=amplitude+phase images
+        CAmplitudeandPhase(1:INoOfLacbedPatterns,IThicknessIndex,&
+              (IPixelNumber-IFirstPixelToCalculate)+1) = &
+              CFullWavefunctions(1:INoOfLacbedPatterns)
       END IF
-    ELSE!we are using hkl list from [where?]
+    ELSE ! we are using hkl list from [where?]
       IF(IImageFLAG.LE.2) THEN
         DO pnd = 1,INoOfLacbedPatterns
-          RIndividualReflections(pnd,IThicknessIndex,(IPixelNumber-IFirstPixelToCalculate)+1) = &
-               RFullWaveIntensity(IOutputReflections(pnd))
+          RIndividualReflections(pnd,IThicknessIndex,&
+                (IPixelNumber-IFirstPixelToCalculate)+1) = &
+                RFullWaveIntensity(IOutputReflections(pnd))
         END DO
       ELSE
         DO pnd = 1,INoOfLacbedPatterns
@@ -258,7 +267,6 @@ SUBROUTINE BlochCoefficientCalculation(IYPixelIndex,IXPixelIndex,IPixelNumber,IF
     END IF
   END DO
   
-  !--------------------------------------------------------------------
   ! DEALLOCATE eigen problem memory
   DEALLOCATE(CUgSgMatrix,CBeamTranspose, CUgMatPartial, &
        CInvertedEigenVectors, CAlphaWeightingCoefficients, &
@@ -275,7 +283,6 @@ END SUBROUTINE BlochCoefficientCalculation
 
 
 
-
 !>
 !! Procedure-description: Calculates diffracted intensity for a specific thickness
 !!
@@ -283,15 +290,20 @@ END SUBROUTINE BlochCoefficientCalculation
 !!
 SUBROUTINE CreateWaveFunctions(RThickness,IErr)
 
+  !?? sets: RFullWaveIntensity CFullWaveFunctions
+  !?? sets: CInvertedEigenVectors CPsi0
   USE MyNumbers
   
-  USE CConst; USE IConst
-  USE IPara; USE RPara; USE CPara; USE SPara
+  USE IConst; USE RConst; USE CConst
+  USE IPara; USE RPara; USE CPara; USE SPara;
+  USE BlochPara 
+
   USE IChannels
-  USE BlochPara
-  
+
   USE MPI
   USE MyMPI
+
+  USE message_mod 
 
   IMPLICIT NONE
   
@@ -299,7 +311,7 @@ SUBROUTINE CreateWaveFunctions(RThickness,IErr)
   REAL(RKIND) :: RThickness 
   COMPLEX(CKIND),DIMENSION(:,:),ALLOCATABLE :: CDummyEigenVectors
 
-  !Allocate global variables for eigen problem
+  ! Allocate global variables for eigen problem
   ALLOCATE(RWaveIntensity(nBeams),STAT=IErr)  
   ALLOCATE(CWaveFunctions(nBeams),STAT=IErr)
   ALLOCATE(CDummyEigenVectors(nBeams,nBeams),STAT=IErr)
@@ -308,34 +320,37 @@ SUBROUTINE CreateWaveFunctions(RThickness,IErr)
      RETURN
   END IF
   
-  !The top surface boundary conditions
+  ! The top surface boundary conditions
   ALLOCATE(CPsi0(nBeams),STAT=IErr) 
-  CPsi0 = CZERO!all diffracted beams are zero
-  CPsi0(1) = CONE! the 000 beam has unit amplitude
+  CPsi0 = CZERO ! all diffracted beams are zero
+  CPsi0(1) = CONE ! the 000 beam has unit amplitude
   
   ! Invert the EigenVector matrix
   CDummyEigenVectors = CEigenVectors
   CALL INVERT(nBeams,CDummyEigenVectors(:,:),CInvertedEigenVectors,IErr)
 
-  !put in the thickness
-  !From EQ 6.32 in Kirkland Advance Computing in EM
+  ! put in the thickness
+  ! From EQ 6.32 in Kirkland Advance Computing in EM
   CAlphaWeightingCoefficients = MATMUL(CInvertedEigenVectors(1:nBeams,1:nBeams),CPsi0) 
   CEigenValueDependentTerms= CZERO
   DO hnd=1,nBeams     ! This is a diagonal matrix
     CEigenValueDependentTerms(hnd,hnd)=EXP(CIMAGONE*CMPLX(RThickness,ZERO,CKIND)*CEigenValues(hnd)) 
   ENDDO
-  !The diffracted intensity for each beam
+  ! The diffracted intensity for each beam
   ! EQ 6.35 in Kirkland Advance Computing in EM
   ! C-1*C*alpha 
   CWaveFunctions(:)=MATMUL(MATMUL(CEigenVectors(1:nBeams,1:nBeams),CEigenValueDependentTerms), & 
        CAlphaWeightingCoefficients(:) )
-  DO hnd=1,nBeams!possible small time saving here by only calculating the (tens of)output reflections rather than all strong beams (hundreds)
+  !?? possible small time saving here by only calculating the (tens of) output
+  !?? reflections rather than all strong beams (hundreds)
+  DO hnd=1,nBeams
      RWaveIntensity(hnd)=CONJG(CWaveFunctions(hnd)) * CWaveFunctions(hnd)
   ENDDO  
   
   !--------------------------------------------------------------------
   ! rePADDing of wave function and intensities with zero's 
   !--------------------------------------------------------------------
+
   CFullWaveFunctions=CZERO
   RFullWaveIntensity=ZERO
   DO knd=1,nBeams
@@ -366,15 +381,18 @@ END SUBROUTINE CreateWavefunctions
 !!
 SUBROUTINE StrongAndWeakBeamsDetermination(IErr)
   
-  USE message_mod
+  USE MyNumbers
   
-  USE CConst; USE IConst
-  USE IPara; USE RPara; USE CPara; USE SPara
+  USE IConst; USE RConst; USE CConst
+  USE IPara; USE RPara; USE CPara; USE SPara;
+  USE BlochPara 
+
   USE IChannels
-  USE BlochPara
-  
+
   USE MPI
   USE MyMPI
+
+  USE message_mod 
   
   INTEGER(IKIND) :: ind,jnd,IErr
   INTEGER(IKIND),DIMENSION(:) :: IStrong(nReflections),IWeak(nReflections)
@@ -382,28 +400,31 @@ SUBROUTINE StrongAndWeakBeamsDetermination(IErr)
   REAL(RKIND),DIMENSION(:) :: RPertStrength(nReflections)
 
   !----------------------------------------------------------------------------
-  !STRONG BEAMS
-  !Use Sg and perturbation strength to define strong beams
-  !PerturbationStrength Eq. 8 Zuo Ultramicroscopy 57 (1995) 375, |Ug/2KSg|
-  !Here use |Ug/Sg| since 2K is a constant
-  !NB RPertStrength is an array of perturbation strengths for all reflections
-  RPertStrength = ABS(CUgMat(:,1)/(RDevPara))
-  RPertStrength(1) = 1000.0! 000 beam is NaN otherwise, always included by making it a large number
+  ! strong beams
+  !----------------------------------------------------------------------------
 
-  !NB IStrong is an array listing the strong beams (1=Strong, 0=Not strong)
+  ! Use Sg and perturbation strength to define strong beams
+  ! PerturbationStrength Eq. 8 Zuo Ultramicroscopy 57 (1995) 375, |Ug/2KSg|
+  ! Here use |Ug/Sg| since 2K is a constant
+  ! NB RPertStrength is an array of perturbation strengths for all reflections
+  RPertStrength = ABS(CUgMat(:,1)/(RDevPara))
+  ! 000 beam is NaN otherwise, always included by making it a large number
+  RPertStrength(1) = 1000.0
+
+  ! NB IStrong is an array listing the strong beams (1=Strong, 0=Not strong)
   IStrong=0_IKIND
-  !start with a small deviation parameter limit
+  ! start with a small deviation parameter limit
   RMaxSg = 0.005
-  RMinPertStrong=0.0025/RMaxSg!Gives additional beams based on perturbation strength
-  !now increase RMaxSg until we have enough strong beams
+  RMinPertStrong=0.0025/RMaxSg ! Gives additional beams based on perturbation strength
+  ! now increase RMaxSg until we have enough strong beams
   DO WHILE (SUM(IStrong).LT.IMinStrongBeams)
     WHERE (ABS(RDevPara).LT.RMaxSg.OR.RPertStrength.GE.RMinPertStrong)
 	  IStrong=1_IKIND
 	END WHERE
     RMaxSg=RMaxSg+0.005
-    !RMinPertStrong=0.0025/RMaxSg
+    ! RMinPertStrong=0.0025/RMaxSg
   END DO
-  !give the strong beams a number in IStrongBeamList
+  ! give the strong beams a number in IStrongBeamList
   IStrongBeamList=0_IKIND
   ind=1_IKIND
   DO jnd=1,nReflections
@@ -412,7 +433,7 @@ SUBROUTINE StrongAndWeakBeamsDetermination(IErr)
       ind=ind+1
 	  END IF
   END DO
-  !this is used to give the dimension of the Bloch wave problem
+  ! this is used to give the dimension of the Bloch wave problem
   nBeams=ind-1  
 
   CALL message(LXL,dbg7,"Strong Beam List",IStrongBeamList)
@@ -427,9 +448,11 @@ SUBROUTINE StrongAndWeakBeamsDetermination(IErr)
   END IF
   
   !----------------------------------------------------------------------------
-  !WEAK BEAMS
-  !Decrease perturbation strength until we have enough weak beams
-  !NB IWeak is an array listing the weak beams (1=Weak, 0=Not weak)
+  ! weak beams
+  !----------------------------------------------------------------------------
+
+  ! Decrease perturbation strength until we have enough weak beams
+  ! NB IWeak is an array listing the weak beams (1=Weak, 0=Not weak)
   IWeak=0_IKIND
   RMinPertWeak=0.9*RMinPertStrong
   DO WHILE (SUM(IWeak).LT.IMinWeakBeams)
@@ -442,7 +465,7 @@ SUBROUTINE StrongAndWeakBeamsDetermination(IErr)
   CALL message(LXL,dbg7,"weak beams",SUM(IWeak))
   CALL message(LXL,dbg7,"Smallest weak perturbation strength = ",RMinPertWeak)
 
-  !give the weak beams a number in IWeakBeamList
+  ! give the weak beams a number in IWeakBeamList
   IWeakBeamList=0_IKIND
   ind=1_IKIND
   DO jnd=1,nReflections
@@ -485,7 +508,7 @@ SUBROUTINE EigenSpectrum(IMatrixDimension, MatrixToBeDiagonalised, EigenValues, 
   REAL(RKIND), DIMENSION(:), ALLOCATABLE :: WorkSpace
   EXTERNAL ZGEEV
 
-  ! ------------------------------------------------
+
   ! find optimum size of arrays
   WorkSpaceDimension=1
   ALLOCATE(CWorkSpace(WorkSpaceDimension),STAT = IErr)
@@ -507,7 +530,6 @@ SUBROUTINE EigenSpectrum(IMatrixDimension, MatrixToBeDiagonalised, EigenValues, 
 
   WorkSpaceDimension = INT(CWorkSpace(1))
 
-  ! ------------------------------------------------
   ! REALLOCATE necessary memory
   DEALLOCATE(CWorkSpace,STAT=IErr)
   ALLOCATE(CWorkSpace(WorkSpaceDimension),STAT = IErr)
@@ -516,7 +538,6 @@ SUBROUTINE EigenSpectrum(IMatrixDimension, MatrixToBeDiagonalised, EigenValues, 
      RETURN
   END IF
 
-  ! ------------------------------------------------
   ! do the actual call to get the spectrum
   CALL ZGEEV('N','V', IMatrixDimension, MatrixToBeDiagonalised, IMatrixDimension,&
        EigenValues, 0,1, EigenVectors,IMatrixDimension, &
@@ -536,6 +557,7 @@ SUBROUTINE EigenSpectrum(IMatrixDimension, MatrixToBeDiagonalised, EigenValues, 
   RETURN
 
 END SUBROUTINE EigenSpectrum
+
 !%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 

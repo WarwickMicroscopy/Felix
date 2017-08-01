@@ -113,7 +113,7 @@ MODULE IConst
   USE MyNumbers
   INTEGER(IKIND), PARAMETER :: &
        MAXWriteFLAG= 10, &
-       ITHREE= 3, &
+       ITHREE= 3, & !?? JR purpose? 3 in IKIND, when is this necessary?
        ADD_OUT_INFO=6, &
        IParallelFLAG=0,&
        IRandomFLAG = 1, &

@@ -56,7 +56,7 @@ SUBROUTINE ImageSetup (IErr)
 
   CALL ImageInitialisation( IErr )
   IF( IErr.NE.0 ) THEN
-     PRINT*,"ImageSetup(",my_rank,")error in ImageInitialistion"
+     PRINT*,"Error:ImageSetup(",my_rank,")error in ImageInitialistion"
      RETURN
   END IF
  
@@ -64,7 +64,7 @@ SUBROUTINE ImageSetup (IErr)
   ! define image masks
   CALL ImageMaskInitialisation(IErr)
   IF( IErr.NE.0 ) THEN
-     PRINT*,"ImageSetup(",my_rank,")error in ImageMaskInitialisation"
+     PRINT*,"Error:ImageSetup(",my_rank,")error in ImageMaskInitialisation"
      RETURN
   END IF
 
@@ -237,7 +237,7 @@ SUBROUTINE ImageMaskInitialisation (IErr)
 
   ALLOCATE(RMask(2*IPixelCount,2*IPixelCount),STAT=IErr)
   IF( IErr.NE.0 ) THEN
-    PRINT*,"ImageMaskInitialisation(",my_rank,")error allocating RMask"
+    PRINT*,"Error:ImageMaskInitialisation(",my_rank,")error allocating RMask"
     RETURN
   END IF
   IPixelTotal =0
@@ -266,7 +266,7 @@ SUBROUTINE ImageMaskInitialisation (IErr)
 
   ALLOCATE(IPixelLocations(IPixelTotal,2),STAT=IErr)
   IF( IErr.NE.0 ) THEN
-     PRINT*,"ImagemaskInitialization(",my_rank,")error allocating IPixelLocations"
+     PRINT*,"Error:ImagemaskInitialization(",my_rank,")error allocating IPixelLocations"
      RETURN
   ENDIF
 
@@ -314,7 +314,7 @@ INTEGER(IKIND) FUNCTION CountPixels(IErr)
   USE CConst; USE IConst
   USE IPara; USE RPara
   USE IChannels
-
+  USE message_mod
   USE MPI
   USE MyMPI
   
@@ -323,9 +323,7 @@ INTEGER(IKIND) FUNCTION CountPixels(IErr)
   INTEGER(IKIND) :: ind,jnd, IErr
   REAL(RKIND) :: Rradius, RImageRadius
   
-  IF((IWriteFLAG.EQ.6.AND.my_rank.EQ.0).OR.IWriteFLAG.GE.10) THEN
-     PRINT*,"CountPixels (",my_rank,")"
-  END IF
+  CALL message ( LL, "Counting Pixels")
   
   CountPixels =0
 

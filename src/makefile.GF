@@ -257,14 +257,13 @@ felixrefine: $(REFINEOBJECTFILES)
 
 
 print:	
-	a2ps -E -o print.ps gmodules.f90 smodules.f90 message_mod.f90 felixrefine.f90 \
+	a2ps --pro=color -E -o print.ps gmodules.f90 smodules.f90 message_mod.f90 felixrefine.f90 \
 util.f90 scatterfactors.f90 in.f90 readcif.f90 \
 diffractionpatterndefinitions.f90 \
-crystallography.f90 bloch.f90 Ug.f90 image.f90 ciftbx.f simplex.f \
-hash_funcs.f RefineWriteOut.f90 felixfunction.f90 refineutils.f90 writeoutput.f90 errorchecks.f90 \
-dqng.f xerror.f d1mach.f \
-symmetry.f90 quadpack_double.f90 \
-makefile-CSC.GF; convert -density 150 print.ps print.pdf
+crystallography.f90 bloch.f90 Ug.f90 image.f90 simplex.f90 \
+RefineWriteOut.f90 felixfunction.f90 refineutils.f90 writeoutput.f90 errorchecks.f90 \
+symmetry.f90 \
+makefile-CSC.GF; ps2pdf print.ps
 	     	   	  
 clean:	
 	rm -f core *.mod *.o *.bin
