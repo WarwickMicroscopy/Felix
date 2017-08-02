@@ -66,8 +66,6 @@ SUBROUTINE SimulateAndFit(RIndependentVariable,Iter,IExitFLAG,IErr)
 
   IMPLICIT NONE
 
-  INTEGER(IKIND) :: IHours,IMinutes,ISeconds,IStartTime,ICurrentTime,IRate
-  REAL(RKIND) :: Duration
   INTEGER(IKIND) :: IErr,IExitFLAG,IThicknessIndex,ind,jnd
   REAL(RKIND),DIMENSION(INoOfVariables) :: RIndependentVariable
   INTEGER(IKIND),INTENT(INOUT) :: Iter
@@ -75,10 +73,6 @@ SUBROUTINE SimulateAndFit(RIndependentVariable,Iter,IExitFLAG,IErr)
   CHARACTER*200 :: SFormat,SPrintString
 
   CALL message(LM,"Iteration ",Iter)
-
-  ! timing setup
-  CALL SYSTEM_CLOCK(count_rate=IRate)
-  CALL SYSTEM_CLOCK(IStarttime)
   
   !\/----------------------------------------------------------------------
   IF (IRefineMode(1).EQ.1) THEN  ! Ug refinement; update structure factors 
@@ -213,15 +207,6 @@ SUBROUTINE SimulateAndFit(RIndependentVariable,Iter,IExitFLAG,IErr)
   CALL MPI_BCAST(RFigureofMerit,1,MPI_DOUBLE_PRECISION,0,MPI_COMM_WORLD,IErr)
   !=====================================
 
-  CALL SYSTEM_CLOCK(ICurrentTime) !?? timing subroutine
-  Duration=REAL(ICurrentTime-IStartTime)/REAL(IRate)
-  IHours = FLOOR(Duration/3600.0D0)
-  IMinutes = FLOOR(MOD(Duration,3600.0D0)/60.0D0)
-  ISeconds = INT(MOD(Duration,3600.0D0)-IMinutes*60)
-  WRITE(SPrintString,FMT='(A24,I3,A5,I2,A6,I2,A4)')&
-        "Simulation completed in ",IHours," hrs ",IMinutes," mins ",ISeconds," sec"
-  CALL Message(LM,TRIM(SPrintString))
-
 END SUBROUTINE SimulateAndFit
 
 !%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -301,7 +286,7 @@ SUBROUTINE FelixFunction(IErr)
      DO ind=1,INoOfLacbedPatterns
         DO jnd=1,IThicknessCount
            RTempImage = RImageSimi(:,:,ind,jnd)
-           CALL BlurG(RTempImage,IErr)
+           CALL BlurG(RTempImage,IPixelCount,RBlurRadius,IErr)
            RImageSimi(:,:,ind,jnd) = RTempImage 
         END DO
      END DO
@@ -663,27 +648,24 @@ END SUBROUTINE PrintVariables
 !!
 !! Major-Authors: Richard Beanland (2016)
 !! 
-SUBROUTINE BlurG(RImageToBlur,IErr)
+SUBROUTINE BlurG(RImageToBlur,IPixelsCount,RBlurringRadius,IErr)
 
   !?? called once in felix function
+  ! closed, does not use global variables
   USE MyNumbers
-  
-  USE IConst; USE RConst; USE CConst
-  USE IPara; USE RPara; USE CPara; USE SPara;
-  USE BlochPara 
-
-  USE IChannels
-
   USE MPI
-  USE MyMPI
-
   USE message_mod 
 
   IMPLICIT NONE
 
-  INTEGER(IKIND) :: IErr,ind,jnd,IKernelRadius,IKernelSize
+  REAL(RKIND),DIMENSION(2*IPixelsCount,2*IPixelsCount),INTENT(INOUT) :: RImageToBlur
+  INTEGER(IKIND),INTENT(IN) :: IPixelsCount
+  REAL(RKIND),INTENT(IN) :: RBlurringRadius
+  INTEGER(IKIND),INTENT(INOUT) :: IErr
+
+  REAL(RKIND),DIMENSION(2*IPixelsCount,2*IPixelsCount) :: RTempImage,RShiftImage
+  INTEGER(IKIND) :: ind,jnd,IKernelRadius,IKernelSize
   REAL(RKIND),DIMENSION(:), ALLOCATABLE :: RGauss1D
-  REAL(RKIND),DIMENSION(2*IPixelCount,2*IPixelCount) :: RImageToBlur,RTempImage,RShiftImage
   REAL(RKIND) :: Rind,Rsum,Rmin,Rmax
 
   ! get min and max of input image
@@ -691,12 +673,12 @@ SUBROUTINE BlurG(RImageToBlur,IErr)
   Rmax=MAXVAL(RImageToBlur)
 
   ! set up a 1D kernel of appropriate size  
-  IKernelRadius=NINT(3*RBlurRadius)
+  IKernelRadius=NINT(3*RBlurringRadius)
   ALLOCATE(RGauss1D(2*IKernelRadius+1),STAT=IErr)!ffs
   Rsum=0
   DO ind=-IKernelRadius,IKernelRadius
      Rind=REAL(ind)
-     RGauss1D(ind+IKernelRadius+1)=EXP(-(Rind**2)/((2*RBlurRadius)**2))
+     RGauss1D(ind+IKernelRadius+1)=EXP(-(Rind**2)/((2*RBlurringRadius)**2))
      Rsum=Rsum+RGauss1D(ind+IKernelRadius+1)
   END DO
   RGauss1D=RGauss1D/Rsum!normalise
@@ -705,12 +687,12 @@ SUBROUTINE BlurG(RImageToBlur,IErr)
   ! apply the kernel in direction 1
   DO ind = -IKernelRadius,IKernelRadius
      IF (ind.LT.0) THEN
-        RShiftImage(1:2*IPixelCount+ind,:)=RImageToBlur(1-ind:2*IPixelCount,:)
+        RShiftImage(1:2*IPixelsCount+ind,:)=RImageToBlur(1-ind:2*IPixelsCount,:)
         DO jnd = 1,1-ind!edge fill on right
-           RShiftImage(2*IPixelCount-jnd+1,:)=RImageToBlur(2*IPixelCount,:)
+           RShiftImage(2*IPixelsCount-jnd+1,:)=RImageToBlur(2*IPixelsCount,:)
         END DO
      ELSE
-        RShiftImage(1+ind:2*IPixelCount,:)=RImageToBlur(1:2*IPixelCount-ind,:)
+        RShiftImage(1+ind:2*IPixelsCount,:)=RImageToBlur(1:2*IPixelsCount-ind,:)
         DO jnd = 1,1+ind!edge fill on left
            RShiftImage(jnd,:)=RImageToBlur(1,:)
         END DO
@@ -725,12 +707,12 @@ SUBROUTINE BlurG(RImageToBlur,IErr)
   ! apply the kernel in direction 2  
   DO ind = -IKernelRadius,IKernelRadius
      IF (ind.LT.0) THEN
-        RShiftImage(:,1:2*IPixelCount+ind)=RImageToBlur(:,1-ind:2*IPixelCount)
+        RShiftImage(:,1:2*IPixelsCount+ind)=RImageToBlur(:,1-ind:2*IPixelsCount)
         DO jnd = 1,1-ind!edge fill on bottom
-           RShiftImage(:,2*IPixelCount-jnd+1)=RImageToBlur(:,2*IPixelCount)
+           RShiftImage(:,2*IPixelsCount-jnd+1)=RImageToBlur(:,2*IPixelsCount)
         END DO
      ELSE
-        RShiftImage(:,1+ind:2*IPixelCount)=RImageToBlur(:,1:2*IPixelCount-ind)
+        RShiftImage(:,1+ind:2*IPixelsCount)=RImageToBlur(:,1:2*IPixelsCount-ind)
         DO jnd = 1,1+ind!edge fill on top
            RShiftImage(:,jnd)=RImageToBlur(:,1)
         END DO

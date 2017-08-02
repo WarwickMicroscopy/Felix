@@ -91,7 +91,7 @@ SUBROUTINE BlochCoefficientCalculation(IYPixelIndex,IXPixelIndex,IPixelNumber,&
 	  SQRT( (RTiltedK(3)+RgPool(knd,3))**2-2*DOT_PRODUCT(RgPool(knd,:),RTiltedK(:))-RgPoolMag(knd)**2)
 
     !??  remove below commented out
-	  !Keith's old version, Sg parallel to k'
+    !Keith's old version, Sg parallel to k'
     !RDevPara(knd)= -( RBigK + DOT_PRODUCT(RgPool(knd,:),RTiltedK(:)) /RBigK) + &
     !  SQRT( ( RBigK**2 + DOT_PRODUCT(RgPool(knd,:),RTiltedK(:)) )**2 /RBigK**2 - &
     !  (RgPoolMag(knd)**2 + TWO*DOT_PRODUCT(RgPool(knd,:),RTiltedK(:))) )
@@ -106,7 +106,9 @@ SUBROUTINE BlochCoefficientCalculation(IYPixelIndex,IXPixelIndex,IPixelNumber,&
 
   ! select only those beams where the Ewald sphere is close to the
   ! reciprocal lattice, i.e. within RBSMaxDeviationPara
-  CALL StrongAndWeakBeamsDetermination(IErr)
+  CALL StrongAndWeakBeamsDetermination(nReflections,IMinWeakBeams,&
+                  IMinStrongBeams,RDevPara,CUgMat,&
+                  IStrongBeamList,IWeakBeamList,nBeams,nWeakBeams,IErr)
   IF( IErr.NE.0 ) THEN
     PRINT*,"Error:BlochCoefficientCalculation(",my_rank,&
           ") error in Determination of Strong and Weak beams"
@@ -210,7 +212,7 @@ SUBROUTINE BlochCoefficientCalculation(IYPixelIndex,IXPixelIndex,IPixelNumber,&
   END IF
   
   ! diagonalize the UgMatEffective
-  IF (IHolzFLAG.EQ.1) THEN
+  IF (IHolzFLAG.EQ.1) THEN ! limit simulation to zeroth order Laue zone
     CALL EigenSpectrum(nBeams,CUgSgMatrix,CEigenValues(:), CEigenVectors(:,:),IErr)
     IF( IErr.NE.0 ) THEN
       PRINT*,"Error:BlochCoefficientCalculation(", my_rank, ") error in EigenSpectrum()"
@@ -221,10 +223,10 @@ SUBROUTINE BlochCoefficientCalculation(IYPixelIndex,IXPixelIndex,IPixelNumber,&
       CEigenVectors(knd,:) = CEigenVectors(knd,:) / &
             SQRT(1+RgDotNorm(IStrongBeamList(knd))/RKn)
     END DO
-
-  ELSE
+  ELSE ! Use Laue zones beyond zeroth order !?? does this work?
     CALL EigenSpectrum(nBeams,CUgSgMatrix,CEigenValues(:),CEigenVectors(:,:),IErr)
   END IF
+
   IF( IErr.NE.0 ) THEN
     PRINT*,"Error:BlochCoefficientCalculation(",my_rank,") error in EigenSpectrum()"
     RETURN
@@ -379,25 +381,27 @@ END SUBROUTINE CreateWavefunctions
 !!
 !! Major-Authors: Keith Evans (2014), Richard Beanland (2016)
 !!
-SUBROUTINE StrongAndWeakBeamsDetermination(IErr)
+SUBROUTINE StrongAndWeakBeamsDetermination(nReflections0,IMinWeakBeams0,&
+                  IMinStrongBeams0,RDevPara0,CUgMat0,&
+                  IStrongBeamList0,IWeakBeamList0,nBeams0,nWeakBeams0,IErr)
   
   USE MyNumbers
-  
-  USE IConst; USE RConst; USE CConst
-  USE IPara; USE RPara; USE CPara; USE SPara;
-  USE BlochPara 
-
-  USE IChannels
-
-  USE MPI
   USE MyMPI
-
   USE message_mod 
-  
-  INTEGER(IKIND) :: ind,jnd,IErr
-  INTEGER(IKIND),DIMENSION(:) :: IStrong(nReflections),IWeak(nReflections)
+
+  INTEGER(IKIND),INTENT(IN) :: nReflections0
+  REAL(RKIND),DIMENSION(:),INTENT(IN) :: RDevPara0
+  COMPLEX(CKIND),DIMENSION(:,:),INTENT(IN) :: CUgMat0
+  INTEGER(IKIND),INTENT(IN) :: IMinWeakBeams0, IMinStrongBeams0 !?? move integers together
+  !?? needs to match global IStrongBeamList0 allocation size
+  INTEGER(IKIND),DIMENSION(:),INTENT(INOUT) :: IStrongBeamList0,IWeakBeamList0
+  INTEGER(IKIND),INTENT(INOUT) :: nBeams0,nWeakBeams0,IErr
+
+
+  INTEGER(IKIND) :: ind,jnd
+  INTEGER(IKIND),DIMENSION(:) :: IStrong(nReflections0),IWeak(nReflections0)
   REAL(RKIND) :: RMaxSg,RMinPertStrong,RMinPertWeak
-  REAL(RKIND),DIMENSION(:) :: RPertStrength(nReflections)
+  REAL(RKIND),DIMENSION(:) :: RPertStrength0(nReflections0)
 
   !----------------------------------------------------------------------------
   ! strong beams
@@ -406,41 +410,47 @@ SUBROUTINE StrongAndWeakBeamsDetermination(IErr)
   ! Use Sg and perturbation strength to define strong beams
   ! PerturbationStrength Eq. 8 Zuo Ultramicroscopy 57 (1995) 375, |Ug/2KSg|
   ! Here use |Ug/Sg| since 2K is a constant
-  ! NB RPertStrength is an array of perturbation strengths for all reflections
-  RPertStrength = ABS(CUgMat(:,1)/(RDevPara))
+  ! NB RPertStrength0 is an array of perturbation strengths for all reflections
+  RPertStrength0 = ABS(CUgMat0(:,1)/(RDevPara0))
   ! 000 beam is NaN otherwise, always included by making it a large number
-  RPertStrength(1) = 1000.0
+  RPertStrength0(1) = 1000.0
 
   ! NB IStrong is an array listing the strong beams (1=Strong, 0=Not strong)
   IStrong=0_IKIND
   ! start with a small deviation parameter limit
   RMaxSg = 0.005
   RMinPertStrong=0.0025/RMaxSg ! Gives additional beams based on perturbation strength
+
+  ! main calculation
   ! now increase RMaxSg until we have enough strong beams
-  DO WHILE (SUM(IStrong).LT.IMinStrongBeams)
-    WHERE (ABS(RDevPara).LT.RMaxSg.OR.RPertStrength.GE.RMinPertStrong)
+  DO WHILE (SUM(IStrong).LT.IMinStrongBeams0)
+    WHERE (ABS(RDevPara0).LT.RMaxSg.OR.RPertStrength0.GE.RMinPertStrong)
 	  IStrong=1_IKIND
 	END WHERE
     RMaxSg=RMaxSg+0.005
     ! RMinPertStrong=0.0025/RMaxSg
   END DO
-  ! give the strong beams a number in IStrongBeamList
-  IStrongBeamList=0_IKIND
+  !?? should this be do until loop
+
+
+  ! give the strong beams a number in IStrongBeamList0
+  IStrongBeamList0=0_IKIND
   ind=1_IKIND
-  DO jnd=1,nReflections
+  DO jnd=1,nReflections0
     IF (IStrong(jnd).EQ.1) THEN
-	    IStrongBeamList(ind)=jnd
+	    IStrongBeamList0(ind)=jnd
       ind=ind+1
 	  END IF
   END DO
-  ! this is used to give the dimension of the Bloch wave problem
-  nBeams=ind-1  
+  !?? could this be done by better array assignment
 
-  CALL message(LXL,dbg7,"Strong Beam List",IStrongBeamList)
+  ! this is used to give the dimension of the Bloch wave problem
+  nBeams0=ind-1  
+
+  CALL message(LXL,dbg7,"Strong Beam List",IStrongBeamList0)
   CALL message(LXL,dbg7,"Sg limit for strong beams = ",RMaxSg)
   CALL message(LXL,dbg7,"Smallest strong perturbation strength = ",RMinPertStrong)
-
-  IF(SUM(IStrong)+IMinWeakBeams.GT.nReflections) IErr = 1
+  IF(SUM(IStrong)+IMinWeakBeams0.GT.nReflections0) IErr = 1
   IF( IErr.NE.0 ) THEN
     PRINT*,"Error:StrongAndWeakBeamDetermination(", my_rank, ") error ", IErr, &
           " Insufficient reflections to accommodate all Strong and Weak Beams"
@@ -455,28 +465,30 @@ SUBROUTINE StrongAndWeakBeamsDetermination(IErr)
   ! NB IWeak is an array listing the weak beams (1=Weak, 0=Not weak)
   IWeak=0_IKIND
   RMinPertWeak=0.9*RMinPertStrong
-  DO WHILE (SUM(IWeak).LT.IMinWeakBeams)
-    WHERE (RPertStrength.GE.RMinPertWeak.AND.IStrong.NE.1_IKIND)
+  DO WHILE (SUM(IWeak).LT.IMinWeakBeams0)
+    WHERE (RPertStrength0.GE.RMinPertWeak.AND.IStrong.NE.1_IKIND)
 	  IWeak=1
 	END WHERE
     RMinPertWeak=0.9*RMinPertWeak
   END DO
+  !?? should this be do until loop
 
   CALL message(LXL,dbg7,"weak beams",SUM(IWeak))
   CALL message(LXL,dbg7,"Smallest weak perturbation strength = ",RMinPertWeak)
 
-  ! give the weak beams a number in IWeakBeamList
-  IWeakBeamList=0_IKIND
+  ! give the weak beams a number in IWeakBeamList0
+  IWeakBeamList0=0_IKIND
   ind=1_IKIND
-  DO jnd=1,nReflections
+  DO jnd=1,nReflections0
     IF (IWeak(jnd).EQ.1) THEN
-	  IWeakBeamList(ind)=jnd
+	  IWeakBeamList0(ind)=jnd
       ind=ind+1
     END IF
   END DO
-  nWeakBeams=ind-1
+  !?? could this be done by better array assignment
+  nWeakBeams0=ind-1
 
-  CALL message(LXL,dbg7,"Weak Beam List",IWeakBeamList)
+  CALL message(LXL,dbg7,"Weak Beam List",IWeakBeamList0)
 
 END SUBROUTINE StrongAndWeakBeamsDetermination
 
@@ -485,29 +497,32 @@ END SUBROUTINE StrongAndWeakBeamsDetermination
 
 
 !>
-!! Procedure-description: Diagonalize a Matrix considering eigenvalues
+!! Procedure-description: Returns eigenvalues and eigenvectors of matrix.
+!!
+!! Closed procedure, no access to global variables
 !!
 !! Major-Authors: Keith Evans (2014), Richard Beanland (2016)
 !!
-SUBROUTINE EigenSpectrum(IMatrixDimension, MatrixToBeDiagonalised, EigenValues, EigenVectors, IErr)
-
+SUBROUTINE EigenSpectrum(IMatrixDimension, MatrixToBeDiagonalised, EigenValues,&
+                  EigenVectors, IErr)
+  ! closed, uses no global variables
   USE MyNumbers
-
-  USE IConst
-  USE IPara
-
   USE MyMPI
 
   IMPLICIT NONE
 
-  INTEGER(IKIND) :: IMatrixDimension, IErr
-  COMPLEX(RKIND) :: MatrixToBeDiagonalised(IMatrixDimension,IMatrixDimension), &
-       EigenValues(IMatrixDimension), EigenVectors(IMatrixDimension,IMatrixDimension)
+  INTEGER(IKIND),INTENT(IN) :: IMatrixDimension
+  !?? there are no errors for intent(in) but ZGEEV should change it
+  COMPLEX(RKIND),INTENT(INOUT) :: MatrixToBeDiagonalised(IMatrixDimension,IMatrixDimension)
+  COMPLEX(RKIND),INTENT(OUT) :: EigenValues(IMatrixDimension),&
+        EigenVectors(IMatrixDimension,IMatrixDimension)
+  INTEGER(IKIND),INTENT(OUT) :: IErr
+
   INTEGER(IKIND) :: WorkSpaceDimension
-  COMPLEX(CKIND),DIMENSION(:), ALLOCATABLE :: CWorkSpace
+  ! dummy vector outputs used while finding respective eigenvectors/values
+  COMPLEX(CKIND),DIMENSION(:), ALLOCATABLE :: CWorkSpace 
   REAL(RKIND), DIMENSION(:), ALLOCATABLE :: WorkSpace
   EXTERNAL ZGEEV
-
 
   ! find optimum size of arrays
   WorkSpaceDimension=1
@@ -523,6 +538,7 @@ SUBROUTINE EigenSpectrum(IMatrixDimension, MatrixToBeDiagonalised, EigenValues, 
   CALL ZGEEV('N','V', IMatrixDimension, MatrixToBeDiagonalised, IMatrixDimension,&
        EigenValues, 0,1, EigenVectors,IMatrixDimension, &
        CWorkSpace, WorkSpaceDimension, WorkSpace, IErr )
+  !?? '0,1' constant inputs don't match documentation 
   IF( IErr.NE.0 ) THEN
      PRINT*,"Error:EigenSpectrum: error in ZGEEV determining work arrays"
      RETURN
@@ -565,28 +581,30 @@ END SUBROUTINE EigenSpectrum
 !>
 !! Procedure-description: Invert an M*M Complex Matrix
 !!
+!! Closed procedure, no access to global variables
+!!
 !! Major-Authors: Keith Evans (2014), Richard Beanland (2016)
 !!
 SUBROUTINE INVERT(MatrixSize,Matrix,InvertedMatrix,IErr)  
 
+  !?? called in one place (each iteration), in CreateWavefunctions
   ! Matrix: the Matrix (Destroyed)
   ! InvertedMatrix: the Inverse
 
   USE MyNumbers
-
-  USE IConst
-  USE IPara
-
   USE MyMPI
   
   IMPLICIT NONE
   
-  INTEGER :: MatrixSize, LWORK, INFO, I, IErr
-  COMPLEX(KIND=CKIND), DIMENSION(1:MatrixSize,1:MatrixSize) :: Matrix
-  COMPLEX(KIND=CKIND), DIMENSION(1:MatrixSize,1:MatrixSize) :: InvertedMatrix
-  
+  INTEGER(IKIND),INTENT(IN) :: MatrixSize
+  !?? does this need INOUT as changed here
+  COMPLEX(CKIND),INTENT(IN) :: Matrix(MatrixSize,MatrixSize)
+  COMPLEX(CKIND),INTENT(OUT) :: InvertedMatrix(1:MatrixSize,1:MatrixSize)
+  INTEGER(IKIND),INTENT(OUT) :: IErr
+
+  INTEGER :: LWORK, INFO, I
   INTEGER, DIMENSION(:), ALLOCATABLE :: IPIV
-  COMPLEX(KIND=CKIND), DIMENSION(:), ALLOCATABLE :: WORK
+  COMPLEX(CKIND), DIMENSION(:), ALLOCATABLE :: WORK
   
   ALLOCATE(IPIV(MatrixSize),STAT=IErr)
   IF( IErr.NE.0 ) THEN

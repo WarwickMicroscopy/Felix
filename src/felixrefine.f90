@@ -69,8 +69,8 @@ PROGRAM Felixrefine
         IBSMaxLocGVecAmp,ILaueLevel,INumTotalReflections,ITotalLaueZoneLevel,&
         INhkl,IExitFLAG,ICycle,INumInitReflections,IZerothLaueZoneLevel,&
         INumFinalReflections,IThicknessIndex,IVariableType
-  INTEGER(IKIND) :: IHours,IMinutes,ISeconds,IMilliSeconds,IStartTime,ICurrentTime,IRate
-  REAL(RKIND) :: Duration,RHOLZAcceptanceAngle,RLaueZoneGz,RMaxGMag,RPvecMag,&
+  INTEGER(IKIND) :: IStartTime, IStartTime2
+  REAL(RKIND) :: RHOLZAcceptanceAngle,RLaueZoneGz,RMaxGMag,RPvecMag,&
         RScale,RMaxUgStep,Rdx,RStandardDeviation,RMean,RGzUnitVec,RMinLaueZoneValue,&
         Rdf,RLastFit,RBestFit,RMaxLaueZoneValue,RMaxAcceptanceGVecMag,&
         RLaueZoneElectronWaveVectorMag,RvarMin,RfitMin,RFit0,Rconvex,Rtest
@@ -101,21 +101,21 @@ PROGRAM Felixrefine
   ! MPI initialization
   CALL MPI_Init(IErr)  
   IF( IErr.NE.0 ) THEN !error
-    PRINT*,"Error: Felixrefine(", my_rank, ") error in MPI_Init()"
+    PRINT*,"Error: Felixrefine (", my_rank, ") error in MPI_Init(). Aborting"
     GOTO 9999
   END IF
 
   ! get the rank of the current process
   CALL MPI_Comm_rank(MPI_COMM_WORLD,my_rank,IErr)
   IF( IErr.NE.0 ) THEN !error
-    PRINT*,"Error: Felixrefine(", my_rank, ") error in MPI_Comm_rank()"
+    PRINT*,"Error: Felixrefine (", my_rank, ") error in MPI_Comm_rank(). Aborting"
     GOTO 9999
   END IF
 
   ! get the size of the current communicator
   CALL MPI_Comm_size(MPI_COMM_WORLD,p,IErr)
   IF( IErr.NE.0 ) THEN !error
-    PRINT*,"Error: Felixrefine(", my_rank, ") error in MPI_Comm_size()"
+    PRINT*,"Error: Felixrefine (", my_rank, ") error in MPI_Comm_size(). Aborting"
     GOTO 9999
   END IF
 
@@ -126,9 +126,9 @@ PROGRAM Felixrefine
   CALL message(LS,dbg_default,"    on rank = ", my_rank, " out of the total = ", p)
   CALL message(LS,"--------------------------------------------------------------")
 
-  ! timing startup
-  CALL SYSTEM_CLOCK(count_rate=IRate)
-  CALL SYSTEM_CLOCK(IStarttime)
+  ! timing setup
+  CALL SYSTEM_CLOCK( count_rate=irate )
+  CALL start_timer( IStartTime )
 
   !--------------------------------------------------------------------
   ! input section 
@@ -137,7 +137,7 @@ PROGRAM Felixrefine
   ! felix.inp
   CALL ReadInpFile(IErr)
   IF( IErr.NE.0 ) THEN !error
-    PRINT*,"Error: felixrefine( ",my_rank,") error reading felix.inp"
+    PRINT*,"Error: felixrefine (",my_rank,") error reading felix.inp. Aborting"
     GOTO 9999
   END IF
   CALL message ( LS, "Setting teminal output mode" )
@@ -146,14 +146,14 @@ PROGRAM Felixrefine
   ! felix.cif
   CALL ReadCif(IErr) !?? branch in here depending on ISoftwareMode, needs to be taken out
   IF( IErr.NE.0 ) THEN !error
-    PRINT*,"Error: felixrefine( ",my_rank,") error reading felix.cif"
+    PRINT*,"Error: felixrefine (",my_rank,") error reading felix.cif. Aborting"
     GOTO 9999
   END IF
 
   ! felix.hkl
   CALL ReadHklFile(IErr) ! the list of hkl's to input/output
   IF( IErr.NE.0 ) THEN !error
-    PRINT*,"Error: felixrefine( ",my_rank,") error reading felix.hkl"
+    PRINT*,"Error: felixrefine (",my_rank,") error reading felix.hkl. Aborting"
     GOTO 9999
   END IF
   
@@ -161,12 +161,12 @@ PROGRAM Felixrefine
     ! read experimental images
     ALLOCATE(RImageExpi(2*IPixelCount,2*IPixelCount,INoOfLacbedPatterns),STAT=IErr)  
     IF( IErr.NE.0 ) THEN !error
-      PRINT*,"Error: felixrefine( ",my_rank,") error allocating RImageExpi"
+      PRINT*,"Error: felixrefine (",my_rank,") error allocating RImageExpi. Aborting"
       GOTO 9999
     END IF
     CALL ReadExperimentalImages(IErr)
     IF( IErr.NE.0 ) THEN !error
-      PRINT*,"Error: felixrefine(",my_rank,") error in ReadExperimentalImages"
+      PRINT*,"Error: felixrefine (",my_rank,") error in ReadExperimentalImages. Aborting"
       GOTO 9999
     END IF
   ELSE
@@ -180,7 +180,7 @@ PROGRAM Felixrefine
   ! scattering factors !?? JR elaborate
   CALL ScatteringFactors(IScatterFactorMethodFLAG,IErr) !?? JR passing global IScatter?
   IF( IErr.NE.0 ) THEN !error
-    PRINT*,"Error: felixrefine(",my_rank,") error in ScatteringFactors"
+    PRINT*,"Error: felixrefine (",my_rank,") error in ScatteringFactors. Aborting"
     GOTO 9999
   END IF
 
@@ -200,7 +200,7 @@ PROGRAM Felixrefine
   ! reciprocal lattice !?? JR elaborate
   CALL ReciprocalLattice(IErr)
   IF( IErr.NE.0 ) THEN !error
-    PRINT*,"Error: felixrefine( ",my_rank,") error in ReciprocalLattice"
+    PRINT*,"Error: felixrefine (",my_rank,") error in ReciprocalLattice. Aborting"
     GOTO 9999
   END IF
 
@@ -219,12 +219,12 @@ PROGRAM Felixrefine
   ALLOCATE(RAnisoDW(IMaxPossibleNAtomsUnitCell),STAT=IErr)  ! Anisotropic Debye-Waller factor
   
   IF( IErr.NE.0 ) THEN !error
-    PRINT*,"Error: felixrefine( ",my_rank,") error in atom position allocations"
+    PRINT*,"Error: felixrefine (",my_rank,") error in atom position allocations. Aborting"
     GOTO 9999
   END IF
   CALL UniqueAtomPositions(IErr)
   IF( IErr.NE.0 ) THEN !error
-    PRINT*,"Error: felixrefine( ",my_rank,") error in UniqueAtomPositions"
+    PRINT*,"Error: felixrefine (",my_rank,") error in UniqueAtomPositions. Aborting"
     GOTO 9999
   END IF
   !?? could re-allocate RAtomPosition,SAtomName,RIsoDW,ROccupancy,
@@ -258,14 +258,15 @@ PROGRAM Felixrefine
   !?? the highest hkl of the experimental data? 
   CALL SortHKL(Rhkl,INhkl,IErr) 
   IF( IErr.NE.0 ) THEN !error
-    PRINT*,"Error: felixrefine( ",my_rank,") error in SortHKL"
+    PRINT*,"Error: felixrefine (",my_rank,") error in SortHKL. Aborting"
     GOTO 9999
   END IF
 
   ! Assign numbers to the different reflections in IOutputReflections
   CALL SpecificReflectionDetermination (IErr)
   IF( IErr.NE.0 ) THEN !error
-    PRINT*,"Error: felixrefine( ",my_rank,") error in SpecificReflectionDetermination"
+    PRINT*,"Error: felixrefine (",my_rank,") error in "//&
+          "SpecificReflectionDetermination. Aborting"
     GOTO 9999
   END IF
 
@@ -274,7 +275,7 @@ PROGRAM Felixrefine
   ALLOCATE(RgPool(INhkl,ITHREE),STAT=IErr)
   ALLOCATE(RgDummyVecMat(INhkl,ITHREE),STAT=IErr)
   IF(IErr.NE.0) THEN !error
-    PRINT*,"Error: felixrefine( ",my_rank,") error allocating RgPool"
+    PRINT*,"Error: felixrefine (",my_rank,") error allocating RgPool. Aborting"
     GOTO 9999
   END IF
  
@@ -315,7 +316,7 @@ PROGRAM Felixrefine
   DEALLOCATE(RgDummyVecMat) ! deallocation
   ALLOCATE(RgPoolMagLaue(INhkl,ITotalLaueZoneLevel),STAT=IErr)
   IF( IErr.NE.0 ) THEN !error
-    PRINT*,"Error: felixrefine( ",my_rank,") error allocating RgPoolMagLaue"
+    PRINT*,"Error: felixrefine (",my_rank,") error allocating RgPoolMagLaue. Aborting"
     GOTO 9999
   END IF
 
@@ -353,7 +354,8 @@ PROGRAM Felixrefine
     IHOLZgPoolMag=knd  !?? use IHOLZgPoolMag instead of knd
     ALLOCATE(IOriginGVecIdentifier(IHOLZgPoolMag),STAT=IErr)
     IF( IErr.NE.0 ) THEN !error
-      PRINT*,"Error: felixrefine( ",my_rank,") error allocating IOriginGVecIdentifier"
+      PRINT*,"Error: felixrefine (",my_rank,") error allocating "//&
+            "IOriginGVecIdentifier. Aborting"
       GOTO 9999
     END IF
     IOriginGVecIdentifier=0
@@ -371,7 +373,7 @@ PROGRAM Felixrefine
   ! in reciprocal Angstrom units, in the Microscope reference frame
   ALLOCATE(RgPoolMag(INhkl),STAT=IErr)
   IF(IErr.NE.0) THEN !error
-    PRINT*,"Error: felixrefine( ",my_rank,") error allocating RgPoolMag"
+    PRINT*,"Error: felixrefine (",my_rank,") error allocating RgPoolMag. Aborting"
     GOTO 9999
   END IF
   DO ind=1,INhkl
@@ -383,7 +385,7 @@ PROGRAM Felixrefine
   ! g-vector components parallel to the surface unit normal
   ALLOCATE(RgDotNorm(INhkl),STAT=IErr)
   IF( IErr.NE.0 ) THEN !error
-    PRINT*,"Error: felixrefine(",my_rank,") error allocating RgDotNorm"
+    PRINT*,"Error: felixrefine (",my_rank,") error allocating RgDotNorm. Aborting"
     GOTO 9999
   END IF
   DO ind =1,INhkl
@@ -442,7 +444,8 @@ PROGRAM Felixrefine
   ! Matrix with numbers marking equivalent Ug's
   ALLOCATE(ISymmetryRelations(nReflections,nReflections),STAT=IErr)
   IF (IErr.NE.0) THEN !error
-    PRINT*,"Error: felixrefine(",my_rank,") error allocating CUgMat or its components"
+    PRINT*,"Error: felixrefine (",my_rank,") error allocating "//&
+          "CUgMat or its components. Aborting"
      GOTO 9999
   END IF
   
@@ -463,27 +466,23 @@ PROGRAM Felixrefine
   CALL StructureFactorInitialisation (IErr)!NB IEquivalentUgKey and CUniqueUg allocated in here
   !?? JR CUgMatNoAbs(1:nReflections,-) can this be allocated to that size?
   IF( IErr.NE.0) THEN !error
-     PRINT*,"Error: felixrefine( ",my_rank,") error in StructureFactorInitialisation"
-     GOTO 9999
+    PRINT*,"Error: felixrefine (",my_rank,") error in "//&
+          "StructureFactorInitialisation. Aborting"
+    GOTO 9999
   END IF
   
+  CALL start_timer( IStartTime2 )
   ! absorption
   CALL message(LL,dbg3,"Starting absorption calculation, number of beams = ",&
         SIZE(IEquivalentUgKey))
   CALL Absorption (IErr)
   IF( IErr.NE.0) THEN !error
-     PRINT*,"Error: felixrefine( ",my_rank,") error in Absorption"
+     PRINT*,"Error: felixrefine (",my_rank,") error in Absorption. Aborting"
      GOTO 9999
   END IF
 
-  CALL SYSTEM_CLOCK(ICurrentTime) !?? timing subroutine
-  Duration=REAL(ICurrentTime-IStartTime)/REAL(IRate)
-  IHours = FLOOR(Duration/3600.0D0)
-  IMinutes = FLOOR(MOD(Duration,3600.0D0)/60.0D0)
-  ISeconds = INT(MOD(Duration,3600.0D0)-IMinutes*60)
-  WRITE(SPrintString,FMT='(A24,I3,A5,I2,A6,I2,A4)')&
-    "Absorption completed in ",IHours," hrs ",IMinutes," mins ",ISeconds," sec"
-  CALL Message(LM,TRIM(SPrintString))
+  CALL print_end_time( LM, IStartTime2, "Absorption" )
+  CALL start_timer( IStartTime2 )
 
   !--------------------------------------------------------------------
   ! Set up Ug refinement variables
@@ -511,7 +510,8 @@ PROGRAM Felixrefine
 
     ALLOCATE(RIndependentVariable(INoOfVariables),STAT=IErr)  
     IF( IErr.NE.0 ) THEN !error
-      PRINT*,"Error: felixrefine( ",my_rank,") error allocating RIndependentVariable"
+      PRINT*,"Error: felixrefine (",my_rank,") error allocating "//&
+            "RIndependentVariable. Aborting"
       GOTO 9999
     END IF
 
@@ -540,7 +540,8 @@ PROGRAM Felixrefine
   IF(IRefineMode(2).EQ.1) THEN ! It's an atom coordinate refinement, code(B)
     CALL SetupAtomicVectorMovements(IErr)
     IF(IErr.NE.0) THEN !error
-      PRINT*,"Error: felixrefine( ",my_rank,") error in SetupAtomicVectorMovements"
+      PRINT*,"Error: felixrefine (",my_rank,") error in "//&
+            "SetupAtomicVectorMovements. Aborting"     
       GOTO 9999
     END IF
   END IF
@@ -564,8 +565,10 @@ PROGRAM Felixrefine
     IF(INoOfVariables.EQ.0) THEN 
       ! there's no refinement requested, say so and quit
       !?? could be done when reading felix.inp
-      CALL message(LS,"No refinement variables! Check IRefineModeFLAG in felix.inp")
-      CALL message(LS,"Valid refine modes are A,B,C,D,E,F,G,H,I,J,S")
+      PRINT*,"Error: felixrefine (",my_rank,")"
+      PRINT*,"No refinement variables! Check IRefineModeFLAG in felix.inp"
+      PRINT*,"Valid refine modes are A,B,C,D,E,F,G,H,I,J,S"
+      PRINT*,"Aborting"
       GOTO 9999
     END IF
 
@@ -593,7 +596,8 @@ PROGRAM Felixrefine
     ! Assign IDs - not needed for a Ug refinement
     ALLOCATE(IIterativeVariableUniqueIDs(INoOfVariables,5),STAT=IErr)
     IF( IErr.NE.0 ) THEN !error
-      PRINT*,"Error: felixrefine( ",my_rank,") error allocating IIterativeVariableUniqueIDs"
+      PRINT*,"Error: felixrefine (",my_rank,") error allocating "//&
+            "IIterativeVariableUniqueIDs. Aborting"
       GOTO 9999
     END IF
     IIterativeVariableUniqueIDs = 0
@@ -618,12 +622,12 @@ PROGRAM Felixrefine
   ! Allocate necessary output image arrays  
   ALLOCATE(RhklPositions(nReflections,2),STAT=IErr)
   IF( IErr.NE.0) THEN !error
-     PRINT*,"Error: felixrefine(",my_rank,") error allocating RhklPositions"
+     PRINT*,"Error: felixrefine (",my_rank,") error allocating RhklPositions. Aborting"
      GOTO 9999
   END IF
   CALL ImageSetup(IErr) !?? what does this do?
   IF( IErr.NE.0) THEN !error
-     PRINT*,"Error: felixrefine(",my_rank,") error in ImageSetup"
+     PRINT*,"Error: felixrefine (",my_rank,") error in ImageSetup. Aborting"
      GOTO 9999
   END IF
   ! All the individual calculations go into RSimulatedPatterns later with MPI_GATHERV
@@ -641,7 +645,7 @@ PROGRAM Felixrefine
     ALLOCATE(RImageMask(2*IPixelCount,2*IPixelCount,INoOfLacbedPatterns),STAT=IErr)
   END IF
   IF( IErr.NE.0) THEN !error
-     PRINT*,"Error: felixrefine(",my_rank,") error allocating simulated patterns"
+     PRINT*,"Error: felixrefine (",my_rank,") error allocating simulated patterns. Aborting"
      GOTO 9999
   END IF
 
@@ -654,7 +658,7 @@ PROGRAM Felixrefine
   ! position of pixels calculated by this core, IDisplacements and ICount are global variables
   ALLOCATE(IDisplacements(p),ICount(p),STAT=IErr)
   IF( IErr.NE.0) THEN !error
-     PRINT*,"Error: felixrefine( ",my_rank,") error in local allocations for MPI"
+     PRINT*,"Error: felixrefine (",my_rank,") error in local allocations for MPI. Aborting"
      GOTO 9999
   END IF
   DO ind = 1,p
@@ -690,28 +694,22 @@ PROGRAM Felixrefine
   ALLOCATE(CFullWaveFunctions(nReflections),STAT=IErr)
   ALLOCATE(RFullWaveIntensity(nReflections),STAT=IErr)
   IF (IErr.NE.0) THEN !error
-     PRINT*,"Error: felixrefine(",my_rank,") error in allocations for Bloch calculation"
+     PRINT*,"Error: felixrefine (",my_rank,") error in allocations for Bloch calculation. Aborting"
      GOTO 9999
   END IF
 
+  CALL start_timer( IStartTime2 )
   RFigureofMerit=666.666 ! Inital large value,diabolically
   Iter = 0
   ! baseline simulation
   CALL FelixFunction(IErr)
   IF (IErr.NE.0) THEN !error
-     PRINT*,"Error: felixrefine( ",my_rank,") error",IErr,"in FelixFunction"
+     PRINT*,"Error: felixrefine (",my_rank,") error",IErr,"in FelixFunction. Aborting"
      GOTO 9999
   END IF
 
   ! timing
-  CALL SYSTEM_CLOCK(ICurrentTime)     !?? JR timing subroutine
-  Duration=REAL(ICurrentTime-IStartTime)/REAL(IRate)
-  IHours = FLOOR(Duration/3600.0D0)
-  IMinutes = FLOOR(MOD(Duration,3600.0D0)/60.0D0)
-  ISeconds = INT(MOD(Duration,3600.0D0)-IMinutes*60)
-  WRITE(SPrintString,FMT='(A24,I3,A5,I2,A6,I2,A4)')&
-  "Simulation completed in ",IHours," hrs ",IMinutes," mins ",ISeconds," sec"
-  CALL message(LM,TRIM(SPrintString))     !?? JR timing since last timing?
+  CALL print_end_time( LM, IStartTime2, "Simulation" )
 
   ! Baseline output
   IExitFLAG = 0 !Do not exit
@@ -725,7 +723,7 @@ PROGRAM Felixrefine
     DO IThicknessIndex = 1,IThicknessCount
       CALL WriteIterationOutput(Iter,IThicknessIndex,IExitFLAG,IErr)
       IF( IErr.NE.0 ) THEN !error
-        PRINT*,"Error: felixrefine(0) error in WriteIterationOutput"
+        PRINT*,"Error: felixrefine(0) error in WriteIterationOutput. Aborting"
         GOTO 9999
       END IF
     END DO    
@@ -739,7 +737,8 @@ PROGRAM Felixrefine
       ! Figure of merit is passed back as a global variable
       CALL CalculateFigureofMeritandDetermineThickness(Iter,IThicknessIndex,IErr)
       IF( IErr.NE.0 ) THEN !error
-        PRINT*,"Error: felixrefine(0) error",IErr,"in CalculateFigureofMeritandDetermineThickness"
+        PRINT*,"Error: felixrefine(0) error",IErr,"in "//&
+              "CalculateFigureofMeritandDetermineThickness"
         GOTO 9999
       END IF
       ! Keep baseline simulation for masked correlation
@@ -749,7 +748,7 @@ PROGRAM Felixrefine
       END IF        
       CALL WriteIterationOutput(Iter,IThicknessIndex,IExitFLAG,IErr)
       IF( IErr.NE.0 ) THEN !error
-        PRINT*,"Error: Error in WriteIterationOutput"
+        PRINT*,"Error: Error in WriteIterationOutput. Aborting"
         GOTO 9999
       END IF
     END IF
@@ -781,7 +780,8 @@ PROGRAM Felixrefine
       ! diagonal matrix of variables as rows
 	    ALLOCATE(RVarMatrix(INoOfVariables,INoOfVariables), STAT=IErr)
       IF( IErr.NE.0 ) THEN !error
-        PRINT*,"Error: felixrefine( ",my_rank,") error allocating simplex variables"
+        PRINT*,"Error: felixrefine (",my_rank,") error allocating "//&
+              "simplex variables. Aborting"
         GOTO 9999
       END IF
 	    ROnes=ONE
@@ -804,7 +804,7 @@ PROGRAM Felixrefine
       CALL message(LS,"--------------------------------")
       CALL SimulateAndFit(RSimplexVariable(ind,:),Iter,0,IErr)!?? Working as iteration 0 ?
       IF( IErr.NE.0 ) THEN !error
-        PRINT*,"Error: SimplexInitialisation(",my_rank,") error in SimulateAndFit"
+        PRINT*,"Error: SimplexInitialisation(",my_rank,") error in SimulateAndFit. Aborting"
         GOTO 9999
       END IF
       RSimplexFoM(ind)=RFigureofMerit ! RFigureofMerit returned as global variable
@@ -860,7 +860,8 @@ PROGRAM Felixrefine
         RExitCriteria,Iter,RStandardDeviation,RMean,IErr)
     !?? RStandardDeviation, RMean have no value
     IF( IErr.NE.0 ) THEN !error
-      PRINT*,"Error: felixrefine( ",my_rank,") error in NDimensionalDownhillSimplex"
+      PRINT*,"Error: felixrefine (",my_rank,") error in "//&
+            "NDimensionalDownhillSimplex. Aborting"
       GOTO 9999
     END IF
   
@@ -878,7 +879,8 @@ PROGRAM Felixrefine
     ! the list of fit indices resulting from small changes Rdf for each variable in RPVec
     ALLOCATE(RFitVec(INoOfVariables),STAT=IErr)
     IF( IErr.NE.0 ) THEN !error
-      PRINT*,"Error: felixrefine( ",my_rank,") error allocating max gradient variables"
+      PRINT*,"Error: felixrefine (",my_rank,") error allocating "//&
+            "max gradient variables. Aborting"
       GOTO 9999
     END IF
     
@@ -1067,7 +1069,7 @@ PROGRAM Felixrefine
     ! the vector describing the current line in parameter space
     ALLOCATE(RPVec(INoOfVariables),STAT=IErr)
     IF( IErr.NE.0 ) THEN !error
-      PRINT*,"Error: felixrefine( ",my_rank,") error allocating parabola variables"
+      PRINT*,"Error: felixrefine (",my_rank,") error allocating parabola variables. Aborting"
       GOTO 9999
     END IF
 
@@ -1308,8 +1310,7 @@ PROGRAM Felixrefine
   !--------------------------------------------------------------------
   ! deallocate Memory
   !--------------------------------------------------------------------
-
-deallocating  CONTINUE ! simulation-only skips to here to finish off
+8888 CONTINUE ! simulation-only skips to here to finish off
   !?? previous deallocation is local, these are global, seemingly smodules.f90
   DEALLOCATE(CUgMat,STAT=IErr) 
   DEALLOCATE(CUgMatNoAbs,STAT=IErr)
@@ -1345,7 +1346,7 @@ deallocating  CONTINUE ! simulation-only skips to here to finish off
     DEALLOCATE(RImageExpi,STAT=IErr)  
   END IF  
   IF( IErr.NE.0 ) THEN !error
-     PRINT*,"Error: felixrefine( ",my_rank,") error in final deallocations"
+     PRINT*,"Error: felixrefine (",my_rank,") error in final deallocations. Aborting"
      GOTO 9999
   END IF
   
@@ -1355,18 +1356,8 @@ deallocating  CONTINUE ! simulation-only skips to here to finish off
 
   WRITE(my_rank_string,*) my_rank !?? what is this used for?
 
-  ! timing
-  CALL SYSTEM_CLOCK(ICurrentTime) !?? timing subroutine
-  Duration=REAL(ICurrentTime-IStartTime)/REAL(IRate)
-  IHours = FLOOR(Duration/3600.0D0)
-  IMinutes = FLOOR(MOD(Duration,3600.0D0)/60.0D0)
-  ISeconds = INT(MOD(Duration,3600.0D0)-IMinutes*60)
-  IMilliSeconds = INT((Duration-(IHours*3600+IMinutes*60+ISeconds))*1000,IKIND)
-
   CALL message( LS, "--------------------------------" )
-  WRITE(SPrintString,FMT='(A25,I3,A5,I2,A6,I2,A4)')&
-  "Calculation completed in ",IHours," hrs ",IMinutes," mins ",ISeconds," sec"
-  CALL message( LS, TRIM(SPrintString) )
+  CALL print_end_time( LS, IStartTime, "Calculation" )
   CALL message( LS, "--------------------------------")
   CALL message( LS, "||||||||||||||||||||||||||||||||")
 
@@ -1375,7 +1366,7 @@ deallocating  CONTINUE ! simulation-only skips to here to finish off
 9999 CONTINUE
   CALL MPI_Finalize(IErr)
   IF( IErr.NE.0 ) THEN !error
-     PRINT*,"Error: Felixrefine(", my_rank, ") error ", IErr, " in MPI_Finalize()"
+     PRINT*,"Error: Felixrefine (", my_rank, ") error ", IErr, " in MPI_Finalize()"
      STOP
   END IF
   
@@ -1519,7 +1510,7 @@ SUBROUTINE SetupAtomicVectorMovements(IErr)
   
   CALL ConvertSpaceGroupToNumber(ISpaceGrp,IErr)
   IF( IErr.NE.0 ) THEN !error
-     PRINT*,"Error: SetupAtomicVectorMovements( ",my_rank,") error in ConvertSpaceGroupToNumber"
+     PRINT*,"Error: SetupAtomicVectorMovements (",my_rank,") error in ConvertSpaceGroupToNumber"
      RETURN
   END IF
 
@@ -1532,7 +1523,7 @@ SUBROUTINE SetupAtomicVectorMovements(IErr)
   DO ind = 1,SIZE(SWyckoffSymbols)!NB SIZE(SWyckoffSymbols)=IAtomicSitesToRefine?
      CALL CountAllowedMovements(ISpaceGrp,SWyckoffSymbols(ind),IVectors(ind),IErr)
      IF( IErr.NE.0 ) THEN !error
-        PRINT*,"Error: SetupAtomicVectorMovements( ",my_rank,") error in CountAllowedMovements "
+        PRINT*,"Error: SetupAtomicVectorMovements (",my_rank,") error in CountAllowedMovements "
         RETURN
      END IF    
   END DO
@@ -1543,7 +1534,7 @@ SUBROUTINE SetupAtomicVectorMovements(IErr)
   ALLOCATE(RAllowedVectors(IAllowedVectors,ITHREE),STAT=IErr)
   ALLOCATE(RAllowedVectorMagnitudes(IAllowedVectors),STAT=IErr)
   IF( IErr.NE.0 ) THEN !error
-     PRINT*,"Error: SetupAtomicVectorMovements( ",my_rank,") error in allocation"
+     PRINT*,"Error: SetupAtomicVectorMovements (",my_rank,") error in allocation"
      RETURN
   END IF
   
@@ -1561,14 +1552,14 @@ SUBROUTINE SetupAtomicVectorMovements(IErr)
          RAllowedVectors(SUM(IVectors(:(ind-1)))+1:SUM(IVectors(:(ind))),:),&
          IVectors(ind),IErr)
     IF( IErr.NE.0 ) THEN !error
-      PRINT*,"Error: SetupAtomicVectorMovements( ",my_rank,") error in DetermineAllowedMovements"
+      PRINT*,"Error: SetupAtomicVectorMovements (",my_rank,") error in DetermineAllowedMovements"
       RETURN
     END IF
   END DO
   
   ALLOCATE(RInitialAtomPosition(SIZE(RBasisAtomPosition,1),ITHREE),STAT=IErr)
   IF( IErr.NE.0 ) THEN !error
-    PRINT*,"Error: SetupAtomicVectorMovements( ",my_rank,") error ALLOCATE RInitialAtomPosition "
+    PRINT*,"Error: SetupAtomicVectorMovements (",my_rank,") error ALLOCATE RInitialAtomPosition "
     RETURN
   END IF
   RInitialAtomPosition = RBasisAtomPosition
@@ -1628,6 +1619,7 @@ END SUBROUTINE BestFitCheck
 !! 
 SUBROUTINE Parabo3(Rx,Ry,Rxv,Ryv,IErr)
 
+  !?? called once in felixrefine
   USE MyNumbers
 
   IMPLICIT NONE

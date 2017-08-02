@@ -34,7 +34,7 @@
 !! Procedure-description: Printing to the terminal via this command allows
 !! different messages to be printed depeding upon the debug mode selected at 
 !! run-time. It is a generic subroutine and can handle a variety of variable
-!! types as input.
+!! types as input. It also includes a timer & print subroutine.
 !!
 !! Major-Authors: Jacob Richardson (2017)
 !!
@@ -66,23 +66,21 @@ module message_mod
   ! CALL message( priority_logical, debug_mode_logical, main_msg)
   ! CALL message( main_msg ) 
 
-  !todo - implicit none & private
-  !todo - add iwriteflag initialise
-  !todo - consider debug modes for other corresponding input variables
-  !todo - add current procedure state
-  !todo - currently using derived type to force particular priority/dbg use
-  !todo - possible standardise format...
-  !todo - error message subroutine, however problematic goto...
-  !rodo - add space after main_msg
-  !todo - consider all variables as 2 dimensional matrices...
-  !todo - consider could make dbg initialise select case more concise with array of derived
+  !?? - implicit none & private
+  !?? - add iwriteflag initialise
+  !?? - consider debug modes for other corresponding input variables
+  !?? - add current procedure state
+  !?? - currently using derived type to force particular priority/dbg use
+  !?? - possible standardise format...
+  !?? - error message subroutine, however problematic goto...
+  !?? - add space after main_msg
+  !?? - consider all variables as 2 dimensional matrices...
+  !?? - consider could make dbg initialise select case more concise with array of derived
 
-  use MyNumbers
-  use IPARA !todo - IWriteFLAG?
-  use SPARA !todo - CurrentProcedure?
-  use IChannels
-  use MPI
-  use MYMPI
+  use MyNumbers !?? IKIND, RKIND etc.
+  use IPARA     !?? using global IWriteFLAG?
+  use SPARA     !?? may use global CurrentProcedure? !?? remove Current.. currently
+  use MYMPI     !?? necesary for my_rank
 
   interface message
 
@@ -133,7 +131,7 @@ module message_mod
 
   type priority_logicals
     logical :: state
-    character(30),allocatable :: initial_msg
+    character(:),allocatable :: initial_msg
   end type
 
   type debug_mode_logicals
@@ -147,8 +145,16 @@ module message_mod
   type(debug_mode_logicals) :: dbg_default, dbg7, dbg3, dbg6, dbg14
   
   character(:), allocatable :: set_initial_msg
+  
+  ! timing variable, intialised at run-time on machine
+  integer(IKIND) :: irate
 
+  
 contains
+
+  !--------------------------------------------------------------------
+  ! setup message output subroutines
+  !--------------------------------------------------------------------
   
   ! initialising immediately before reading-in felix.inp
   subroutine init_message_logicals()   
@@ -212,8 +218,42 @@ contains
 
   end subroutine
 
+  !--------------------------------------------------------------------
+  ! timing subroutines
+  !--------------------------------------------------------------------
+
+  ! sets a local integer to start time to compare with later
+  subroutine start_timer( istart_time )
+    integer(IKIND), intent(inout) :: istart_time
+    call system_clock(istart_time)
+  end subroutine
+
+  ! compare start time to current and print time-passed
+  subroutine print_end_time( priority_logical, istart_time, completed_task_name )
+    type (priority_logicals), intent(in) :: priority_logical
+    character(*), intent(in) :: completed_task_name
+    integer(IKIND), intent(in) :: istart_time
+    integer(IKIND) :: ihours,iminutes,iseconds,icurrent_time
+    real(RKIND) :: duration
+    character(100) :: string
+
+    call system_clock(icurrent_time)
+    ! converts ticks from system clock into seconds
+    duration = real(icurrent_time-istart_time)/real(irate)
+    ihours = floor(duration/3600.0d0)
+    iminutes = floor(mod(duration,3600.0d0)/60.0d0)
+    iseconds = int(mod(duration,3600.0d0)-iminutes*60)
+    write(string,fmt='(a,a,i3,a5,i2,a6,i2,a4)') completed_task_name,&
+          "completed in ",ihours," hrs ",iminutes," mins ",iseconds," sec"
+    call message_only2(priority_logical,trim(string))
+    !?? currently message can't print the combined 3 integers and strings directly
+  end subroutine
+
   !---------------------------------------------------------------------
-  ! Key variable messaging - vectors used for single element and matrix messaging 
+  ! Main message varieties
+  !---------------------------------------------------------------------
+  ! vectors below are used for scalars and matrices via interfaces
+
   subroutine message_rvector ( priority_logical, debug_mode_logical, main_msg, rvector ) 
    
     type (priority_logicals), intent(in) :: priority_logical
@@ -294,7 +334,6 @@ contains
 
 
 
-  !---------------------------------------------------------------------
   ! For printing logicals, currently without interfaces, vectors, matrices
   subroutine message_logical ( priority_logical, debug_mode_logical, main_msg, logical_var )  
   
@@ -313,7 +352,8 @@ contains
 
 
   !---------------------------------------------------------------------
-  ! Special cases like printing matrices alongside or multiple integers amongst text
+  ! Special complex message varieties
+  !---------------------------------------------------------------------
   
   ! vertically int matrix beside real matrix
   subroutine message_alongside_ir ( priority_logical, debug_mode_logical, &
@@ -397,6 +437,8 @@ contains
 
   !---------------------------------------------------------------------
   ! Matrix messages using corresponding vector messages
+  !---------------------------------------------------------------------
+
   subroutine message_rmatrix ( priority_logical, debug_mode_logical, main_msg, rmatrix )
     
     type (priority_logicals), intent(in) :: priority_logical
@@ -454,6 +496,8 @@ contains
 
   !---------------------------------------------------------------------
   ! Variable, vector, matrix interfaces for optional logical arguments
+  !---------------------------------------------------------------------
+
   subroutine message_real ( priority_logical, debug_mode_logical, main_msg, real_variable )
     type (priority_logicals), intent(in) :: priority_logical
     type (debug_mode_logicals), intent(in) :: debug_mode_logical
@@ -618,6 +662,3 @@ contains
   end subroutine message_only3
 
 end module message_mod
-
-!CALL message(LL,dbg6,"For Pattern ",ind,", thickness ",jnd)
-!CALL message(LL,dbg6,"  the FoM = ",RImageCorrelation)
