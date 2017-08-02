@@ -78,9 +78,9 @@ module message_mod
   !?? - consider could make dbg initialise select case more concise with array of derived
 
   use MyNumbers !?? IKIND, RKIND etc.
-  use IPARA     !?? using global IWriteFLAG?
-  use SPARA     !?? may use global CurrentProcedure? !?? remove Current.. currently
-  use MYMPI     !?? necesary for my_rank
+  use IPARA, ONLY : IWriteFLAG
+  !use SPARA, ONLY : CurrentProcedure  !?? not using current at the moment
+  use MyMPI     !?? necesary for my_rank
 
   interface message
 
@@ -243,7 +243,7 @@ contains
     ihours = floor(duration/3600.0d0)
     iminutes = floor(mod(duration,3600.0d0)/60.0d0)
     iseconds = int(mod(duration,3600.0d0)-iminutes*60)
-    write(string,fmt='(a,a,i3,a5,i2,a6,i2,a4)') completed_task_name,&
+    write(string,fmt='(a,1x,a,i3,a5,i2,a6,i2,a4)') completed_task_name,&
           "completed in ",ihours," hrs ",iminutes," mins ",iseconds," sec"
     call message_only2(priority_logical,trim(string))
     !?? currently message can't print the combined 3 integers and strings directly

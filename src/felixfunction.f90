@@ -131,7 +131,9 @@ SUBROUTINE SimulateAndFit(RIndependentVariable,Iter,IExitFLAG,IErr)
     END IF
     IF (IRefineMode(8).EQ.1) THEN ! convergence angle
       ! recalculate k-vectors
-      RDeltaK = RMinimumGMag*RConvergenceAngle/REAL(IPixelCount,RKIND)
+
+      ! resolution in k space
+      RDeltaK = RMinimumGMag*RConvergenceAngle/REAL(IPixelCount,RKIND) 
       !??
       !IF (my_rank.EQ.0) THEN
       !  WRITE(SFormat,*) "(I5.1,1X,F13.9,1X,F13.9,1X)"
@@ -140,7 +142,7 @@ SUBROUTINE SimulateAndFit(RIndependentVariable,Iter,IExitFLAG,IErr)
       !  WRITE(UNIT=IChOutSimplex,FMT=SFormat) Iter,RFigureofMerit,RConvergenceAngle
       !  CLOSE(IChOutSimplex)
       !END IF
-     END IF
+    END IF
     ! recalculate unit cell
     CALL UniqueAtomPositions(IErr)
     !?? This is being called unnecessarily for some refinement modes

@@ -687,17 +687,6 @@ PROGRAM Felixrefine
   ! baseline simulation
   !--------------------------------------------------------------------
 
-  ! Allocate memory for deviation parameter and bloch calc here in main loop
-  ALLOCATE(RDevPara(nReflections),STAT=IErr)
-  ALLOCATE(IStrongBeamList(nReflections),STAT=IErr)
-  ALLOCATE(IWeakBeamList(nReflections),STAT=IErr)
-  ALLOCATE(CFullWaveFunctions(nReflections),STAT=IErr)
-  ALLOCATE(RFullWaveIntensity(nReflections),STAT=IErr)
-  IF (IErr.NE.0) THEN !error
-     PRINT*,"Error: felixrefine (",my_rank,") error in allocations for Bloch calculation. Aborting"
-     GOTO 9999
-  END IF
-
   CALL start_timer( IStartTime2 )
   RFigureofMerit=666.666 ! Inital large value,diabolically
   Iter = 0

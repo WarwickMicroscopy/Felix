@@ -46,23 +46,58 @@
 SUBROUTINE BlochCoefficientCalculation(IYPixelIndex,IXPixelIndex,IPixelNumber,&
                   IFirstPixelToCalculate,IErr)
 
-  USE MyNumbers
+  ! globals - input  
+  USE CPara, ONLY : CUgMat ! from Absorption
+  USE RPara, ONLY : &
+    RDeltaK,& ! resolution in k space, used in calculations
+    RDeltaThickness,& ! input from felix.inp
+    RInitialThickness,& ! input from felix.inp
+    RNormDirM,RgDotNorm,RgPool,RgPoolMag,&
+    Rhkl ! from HKLMake ..fill reflection pool
+  USE IPara, ONLY : &
+    IHKLSelectFLAG,&
+    IHolzFLAG,&
+    IImageFLAG,&
+    IMinStrongBeams,IMinWeakBeams,&
+    INoOfLacbedPatterns,&
+    IPixelCount,&
+    IThicknessCount,&
+    nReflections,&
+    IOutputReflections
+  USE BlochPara, ONLY : RBigK ! from StructureFactorInitialisation            
   
-  USE IConst; USE CConst; ! USE RConst
-  USE IPara; USE RPara; USE CPara; ! USE SPara;
-  USE BlochPara 
+  ! globals - output
+  USE RPara, ONLY : RIndividualReflections 
+  USE CPara, ONLY : CAmplitudeandPhase
+  ! /\ matrix of vectors, thickness, pixel, wavefunction this contributes
+  ! one pixel and some parallelises in fexlixfunction join later
+  USE IPara, ONLY : IPixelComputed
 
-  USE IChannels
-
-  USE MPI
+  USE MyNumbers
+  USE IConst, ONLY : ITHREE
   USE MyMPI
-
   USE message_mod 
   
   IMPLICIT NONE
   
-  INTEGER(IKIND) :: IYPixelIndex,IXPixelIndex,ind,knd,IPixelNumber,pnd,&
-       Ierr,IThickness,IThicknessIndex,ILowerLimit,IUpperLimit,IFirstPixelToCalculate       
+  INTEGER(IKIND),INTENT(IN) :: IYPixelIndex,IXPixelIndex,IPixelNumber,&
+        IFirstPixelToCalculate
+  INTEGER(IKIND),INTENT(OUT) :: IErr
+  
+  ! local - previously global !?? track allocations & global remnants
+  COMPLEX(CKIND),ALLOCATABLE :: CBeamProjectionMatrix(:,:),&
+        CDummyBeamMatrix(:,:),CUgSgMatrix(:,:),CEigenVectors(:,:),CEigenValues(:),&
+        CInvertedEigenVectors(:,:),CAlphaWeightingCoefficients(:),&
+        CEigenValueDependentTerms(:,:)
+  COMPLEX(CKIND) :: CFullWaveFunctions(nReflections)
+  REAL(RKIND) :: RFullWaveIntensity(nReflections),RDevPara(nReflections),&
+        RTiltedK(ITHREE)
+  INTEGER(IKIND) :: IStrongBeamList(nReflections),IWeakBeamList(nReflections),&
+        nBeams,nWeakBeams
+
+  ! local - previously local
+  INTEGER(IKIND) :: ind,knd,pnd,IThickness,IThicknessIndex,ILowerLimit,&
+        IUpperLimit       
   REAL(RKIND) :: RThickness,RKn
   COMPLEX(CKIND) sumC,sumD
   COMPLEX(CKIND), DIMENSION(:,:), ALLOCATABLE :: CGeneralSolutionMatrix, &
@@ -122,6 +157,7 @@ SUBROUTINE BlochCoefficientCalculation(IYPixelIndex,IXPixelIndex,IPixelNumber,&
   ! ALLOCATE memory for eigen problem
   !--------------------------------------------------------------------
 
+  ! now nBeams determined, allocate complex arrays
   ALLOCATE(CBeamProjectionMatrix(nBeams,nReflections),STAT=IErr)
   ALLOCATE(CDummyBeamMatrix(nBeams,nReflections),STAT=IErr)
   ALLOCATE(CUgSgMatrix(nBeams,nBeams),STAT=IErr)
@@ -151,6 +187,7 @@ SUBROUTINE BlochCoefficientCalculation(IYPixelIndex,IXPixelIndex,IPixelNumber,&
             nReflections,CBeamTranspose,nReflections,CZERO,CUgMatPartial,nReflections)
   CALL ZGEMM('N','N',nBeams,nBeams,nReflections,CONE,CBeamProjectionMatrix, &
             nBeams,CUgMatPartial,nReflections,CZERO,CUgSgMatrix,nBeams)
+
   IF (IHolzFLAG.EQ.1) THEN
     DO ind=1,nBeams
       CUgSgMatrix(ind,ind) = CUgSgMatrix(ind,ind) + TWO*RBigK*RDevPara(IStrongBeamList(ind))
@@ -193,16 +230,16 @@ SUBROUTINE BlochCoefficientCalculation(IYPixelIndex,IXPixelIndex,IPixelNumber,&
         !REAL(CUgMat(IWeakBeamList(ind),IStrongBeamList(knd))) / &
         !(4*RBigK*RBigK*RDevPara(IWeakBeamList(ind)))
       ENDDO
-	  ! Replace the Ug's
-	  WHERE (CUgSgMatrix.EQ.CUgSgMatrix(knd,1))
+	    ! Replace the Ug's
+	    WHERE (CUgSgMatrix.EQ.CUgSgMatrix(knd,1))
         CUgSgMatrix= CUgSgMatrix(knd,1) - sumC
-	  END WHERE
-	  ! Replace the Sg's
+	    END WHERE
+	    ! Replace the Sg's
       CUgSgMatrix(knd,knd)= CUgSgMatrix(knd,knd) - TWO*RBigK*sumD/(TWOPI*TWOPI)
     ENDDO
-	! Divide by 2K so off-diagonal elementa are Ug/2K, diagonal elements are Sg
-	!?? DON'T KNOW WHERE THE 4pi^2 COMES FROM 
-  CUgSgMatrix = TWOPI*TWOPI*CUgSgMatrix/(TWO*RBigK)
+    ! Divide by 2K so off-diagonal elementa are Ug/2K, diagonal elements are Sg
+    !?? DON'T KNOW WHERE THE 4pi^2 COMES FROM 
+    CUgSgMatrix = TWOPI*TWOPI*CUgSgMatrix/(TWO*RBigK)
   END IF
 
   IF(IYPixelIndex.EQ.10.AND.IXPixelIndex.EQ.10) THEN ! output data from 1 pixel to show working
@@ -295,8 +332,9 @@ END SUBROUTINE BlochCoefficientCalculation
 !!
 SUBROUTINE CreateWaveFunctions(RThickness,RFullWaveIntensity0,CFullWaveFunctions0,&
                   nReflections0,nBeams0,IStrongBeamList0,CEigenVectors0,CEigenValues0,IErr)
-
   !?? all global varibles on in/out are local to bloch excluding nReflections
+
+  !?? only called inside bloch.f90
   USE MyNumbers
   USE MyMPI
   USE message_mod 
@@ -396,6 +434,8 @@ SUBROUTINE StrongAndWeakBeamsDetermination(nReflections0,IMinWeakBeams0,&
   
   !?? inputs outside bloch nReflections,IMinWeakBeams,IMinStrongBeams
   !?? outputs outside bloch CUgMat
+
+  !?? only called inside bloch.f90
   USE MyNumbers
   USE MyMPI
   USE message_mod 
