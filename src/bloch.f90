@@ -237,7 +237,8 @@ SUBROUTINE BlochCoefficientCalculation(IYPixelIndex,IXPixelIndex,IPixelNumber,&
   DO IThicknessIndex=1,IThicknessCount,1
     RThickness = RInitialThickness + REAL((IThicknessIndex-1),RKIND)*RDeltaThickness 
     IThickness = NINT(RThickness,IKIND)
-    CALL CreateWaveFunctions(RThickness,IErr)
+    CALL CreateWaveFunctions(RThickness,RFullWaveIntensity,CFullWaveFunctions,&
+                  nReflections,nBeams,IStrongBeamList,CEigenVectors,CEigenValues,IErr)
     IF( IErr.NE.0 ) THEN
       PRINT*,"Error:BlochCoefficientCalculation(", my_rank, ") error in CreateWavefunction()"
       RETURN
@@ -288,64 +289,69 @@ END SUBROUTINE BlochCoefficientCalculation
 !>
 !! Procedure-description: Calculates diffracted intensity for a specific thickness
 !!
+!! Closed procedure, no access to global variables
+!!
 !! Major-Authors: Keith Evans (2014), Richard Beanland (2016)
 !!
-SUBROUTINE CreateWaveFunctions(RThickness,IErr)
+SUBROUTINE CreateWaveFunctions(RThickness,RFullWaveIntensity0,CFullWaveFunctions0,&
+                  nReflections0,nBeams0,IStrongBeamList0,CEigenVectors0,CEigenValues0,IErr)
 
-  !?? sets: RFullWaveIntensity CFullWaveFunctions
-  !?? sets: CInvertedEigenVectors CPsi0
+  !?? all global varibles on in/out are local to bloch excluding nReflections
   USE MyNumbers
-  
-  USE IConst; USE RConst; USE CConst
-  USE IPara; USE RPara; USE CPara; USE SPara;
-  USE BlochPara 
-
-  USE IChannels
-
-  USE MPI
   USE MyMPI
-
   USE message_mod 
 
   IMPLICIT NONE
   
-  INTEGER(IKIND) :: ind,jnd,knd,hnd,IErr, ifullind, iuniind,gnd,ichnk
-  REAL(RKIND) :: RThickness 
+  REAL(RKIND) :: RThickness ! non-global input
+  ! global inputs and outputs
+  REAL(RKIND),DIMENSION(nReflections0),INTENT(OUT) :: RFullWaveIntensity0
+  COMPLEX(CKIND),DIMENSION(nReflections0),INTENT(OUT) :: CFullWaveFunctions0  
+  INTEGER(IKIND),INTENT(IN) :: nReflections0,nBeams0,IStrongBeamList0(nReflections0)
+  COMPLEX(CKIND),INTENT(IN) :: CEigenVectors0(nBeams0,nBeams0),CEigenValues0(nBeams0)
+  INTEGER(IKIND),INTENT(OUT) :: IErr ! non-global, classic IErr  
+  !?? old globals, now used locally
+  REAL(RKIND) :: RWaveIntensity(nBeams0)
+  COMPLEX(CKIND) :: CInvertedEigenVectors(nBeams0,nBeams0),CPsi0(nBeams0),&
+        CWaveFunctions(nBeams0),CEigenValueDependentTerms(nBeams0,nBeams0),&
+        CAlphaWeightingCoefficients(nBeams0)
+  ! locals
+  INTEGER(IKIND) :: ind,jnd,knd,hnd,ifullind,iuniind,gnd,ichnk
   COMPLEX(CKIND),DIMENSION(:,:),ALLOCATABLE :: CDummyEigenVectors
 
   ! Allocate global variables for eigen problem
-  ALLOCATE(RWaveIntensity(nBeams),STAT=IErr)  
-  ALLOCATE(CWaveFunctions(nBeams),STAT=IErr)
-  ALLOCATE(CDummyEigenVectors(nBeams,nBeams),STAT=IErr)
+  !?? ALLOCATE(RWaveIntensity(nBeams0),STAT=IErr)  
+  !?? ALLOCATE(CWaveFunctions(nBeams0),STAT=IErr)
+  ALLOCATE(CDummyEigenVectors(nBeams0,nBeams0),STAT=IErr)
   IF( IErr.NE.0 ) THEN
      PRINT*,"Error:CreateWavefunctions(",my_rank,")error in allocations"
      RETURN
   END IF
   
   ! The top surface boundary conditions
-  ALLOCATE(CPsi0(nBeams),STAT=IErr) 
+  !?? ALLOCATE(CPsi0(nBeams0),STAT=IErr) 
   CPsi0 = CZERO ! all diffracted beams are zero
   CPsi0(1) = CONE ! the 000 beam has unit amplitude
   
   ! Invert the EigenVector matrix
-  CDummyEigenVectors = CEigenVectors
-  CALL INVERT(nBeams,CDummyEigenVectors(:,:),CInvertedEigenVectors,IErr)
+  CDummyEigenVectors = CEigenVectors0
+  CALL INVERT(nBeams0,CDummyEigenVectors(:,:),CInvertedEigenVectors,IErr)
 
   ! put in the thickness
   ! From EQ 6.32 in Kirkland Advance Computing in EM
-  CAlphaWeightingCoefficients = MATMUL(CInvertedEigenVectors(1:nBeams,1:nBeams),CPsi0) 
+  CAlphaWeightingCoefficients = MATMUL(CInvertedEigenVectors(1:nBeams0,1:nBeams0),CPsi0) 
   CEigenValueDependentTerms= CZERO
-  DO hnd=1,nBeams     ! This is a diagonal matrix
-    CEigenValueDependentTerms(hnd,hnd)=EXP(CIMAGONE*CMPLX(RThickness,ZERO,CKIND)*CEigenValues(hnd)) 
+  DO hnd=1,nBeams0     ! This is a diagonal matrix
+    CEigenValueDependentTerms(hnd,hnd)=EXP(CIMAGONE*CMPLX(RThickness,ZERO,CKIND)*CEigenValues0(hnd)) 
   ENDDO
   ! The diffracted intensity for each beam
   ! EQ 6.35 in Kirkland Advance Computing in EM
   ! C-1*C*alpha 
-  CWaveFunctions(:)=MATMUL(MATMUL(CEigenVectors(1:nBeams,1:nBeams),CEigenValueDependentTerms), & 
+  CWaveFunctions(:)=MATMUL(MATMUL(CEigenVectors0(1:nBeams0,1:nBeams0),CEigenValueDependentTerms), & 
        CAlphaWeightingCoefficients(:) )
   !?? possible small time saving here by only calculating the (tens of) output
   !?? reflections rather than all strong beams (hundreds)
-  DO hnd=1,nBeams
+  DO hnd=1,nBeams0
      RWaveIntensity(hnd)=CONJG(CWaveFunctions(hnd)) * CWaveFunctions(hnd)
   ENDDO  
   
@@ -353,14 +359,14 @@ SUBROUTINE CreateWaveFunctions(RThickness,IErr)
   ! rePADDing of wave function and intensities with zero's 
   !--------------------------------------------------------------------
 
-  CFullWaveFunctions=CZERO
-  RFullWaveIntensity=ZERO
-  DO knd=1,nBeams
-     CFullWaveFunctions(IStrongBeamList(knd))=CWaveFunctions(knd)
-     RFullWaveIntensity(IStrongBeamList(knd))=RWaveIntensity(knd)
+  CFullWaveFunctions0=CZERO
+  RFullWaveIntensity0=ZERO
+  DO knd=1,nBeams0
+     CFullWaveFunctions0(IStrongBeamList0(knd))=CWaveFunctions(knd)
+     RFullWaveIntensity0(IStrongBeamList0(knd))=RWaveIntensity(knd)
   ENDDO
   
-  DEALLOCATE(CDummyEigenVectors,RWaveIntensity,CWavefunctions,CPsi0,STAT=IErr)
+  DEALLOCATE(CDummyEigenVectors,STAT=IErr) !?? necessary?
   IF( IErr.NE.0 ) THEN
      PRINT*,"Error:CreateWavefunctions(",my_rank,")error deallocating CDummyEigenVectors"
      RETURN
@@ -374,10 +380,13 @@ END SUBROUTINE CreateWavefunctions
 
 
 
+
 !>
 !! Procedure-description: Determines number of weak and strong beams. Uses Sg and
 !! pertubation strengths and iterates over the number of weak and strong until
 !! there are enough.
+!!
+!! Closed procedure, no access to global variables
 !!
 !! Major-Authors: Keith Evans (2014), Richard Beanland (2016)
 !!
@@ -385,18 +394,20 @@ SUBROUTINE StrongAndWeakBeamsDetermination(nReflections0,IMinWeakBeams0,&
                   IMinStrongBeams0,RDevPara0,CUgMat0,&
                   IStrongBeamList0,IWeakBeamList0,nBeams0,nWeakBeams0,IErr)
   
+  !?? inputs outside bloch nReflections,IMinWeakBeams,IMinStrongBeams
+  !?? outputs outside bloch CUgMat
   USE MyNumbers
   USE MyMPI
   USE message_mod 
 
+  !?? variables match up to globals allocation
+  !?? make some of these local
   INTEGER(IKIND),INTENT(IN) :: nReflections0
-  REAL(RKIND),DIMENSION(:),INTENT(IN) :: RDevPara0
-  COMPLEX(CKIND),DIMENSION(:,:),INTENT(IN) :: CUgMat0
+  REAL(RKIND),DIMENSION(nReflections0),INTENT(IN) :: RDevPara0
+  COMPLEX(CKIND),DIMENSION(nReflections0,nReflections0),INTENT(IN) :: CUgMat0
   INTEGER(IKIND),INTENT(IN) :: IMinWeakBeams0, IMinStrongBeams0 !?? move integers together
-  !?? needs to match global IStrongBeamList0 allocation size
-  INTEGER(IKIND),DIMENSION(:),INTENT(INOUT) :: IStrongBeamList0,IWeakBeamList0
-  INTEGER(IKIND),INTENT(INOUT) :: nBeams0,nWeakBeams0,IErr
-
+  INTEGER(IKIND),DIMENSION(nReflections0),INTENT(OUT) :: IStrongBeamList0,IWeakBeamList0
+  INTEGER(IKIND),INTENT(OUT) :: nBeams0,nWeakBeams0,IErr
 
   INTEGER(IKIND) :: ind,jnd
   INTEGER(IKIND),DIMENSION(:) :: IStrong(nReflections0),IWeak(nReflections0)
@@ -496,6 +507,9 @@ END SUBROUTINE StrongAndWeakBeamsDetermination
 
 
 
+
+
+
 !>
 !! Procedure-description: Returns eigenvalues and eigenvectors of matrix.
 !!
@@ -505,7 +519,7 @@ END SUBROUTINE StrongAndWeakBeamsDetermination
 !!
 SUBROUTINE EigenSpectrum(IMatrixDimension, MatrixToBeDiagonalised, EigenValues,&
                   EigenVectors, IErr)
-  ! closed, uses no global variables
+
   USE MyNumbers
   USE MyMPI
 

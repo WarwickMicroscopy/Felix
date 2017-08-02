@@ -285,9 +285,7 @@ SUBROUTINE FelixFunction(IErr)
      ALLOCATE(RTempImage(2*IPixelCount,2*IPixelCount),STAT=IErr)
      DO ind=1,INoOfLacbedPatterns
         DO jnd=1,IThicknessCount
-           RTempImage = RImageSimi(:,:,ind,jnd)
-           CALL BlurG(RTempImage,IPixelCount,RBlurRadius,IErr)
-           RImageSimi(:,:,ind,jnd) = RTempImage 
+           CALL BlurG(RImageSimi(:,:,ind,jnd),IPixelCount,RBlurRadius,IErr)
         END DO
      END DO
   END IF
@@ -658,10 +656,10 @@ SUBROUTINE BlurG(RImageToBlur,IPixelsCount,RBlurringRadius,IErr)
 
   IMPLICIT NONE
 
-  REAL(RKIND),DIMENSION(2*IPixelsCount,2*IPixelsCount),INTENT(INOUT) :: RImageToBlur
+  REAL(RKIND),DIMENSION(2*IPixelsCount,2*IPixelsCount),INTENT(OUT) :: RImageToBlur
   INTEGER(IKIND),INTENT(IN) :: IPixelsCount
   REAL(RKIND),INTENT(IN) :: RBlurringRadius
-  INTEGER(IKIND),INTENT(INOUT) :: IErr
+  INTEGER(IKIND),INTENT(OUT) :: IErr
 
   REAL(RKIND),DIMENSION(2*IPixelsCount,2*IPixelsCount) :: RTempImage,RShiftImage
   INTEGER(IKIND) :: ind,jnd,IKernelRadius,IKernelSize
