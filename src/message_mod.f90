@@ -31,9 +31,37 @@
 !%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 !>
-!! Procedure-description: Printing to the terminal via this command allows
+!! Module-description: This module contains a concise alert function to be
+!! used for error handling.
+!!
+!! Major-Authors: Jacob Richardson (2017)
+!!
+MODULE alert_function_mod
+
+  CONTAINS
+
+    LOGICAL FUNCTION LAlert(IErr,SCurrentProcedure,SAlertedActivity)
+      USE MyNumbers, ONLY : IKIND
+      USE MyMPI
+    
+      CHARACTER(*),INTENT(IN) :: SCurrentProcedure,SAlertedActivity
+      INTEGER(IKIND),INTENT(INOUT) :: IErr
+      LAlert = .FALSE.
+      IF ( IErr /= 0 ) THEN
+        LAlert = .TRUE.
+        PRINT '(1x,i1,a,a,a,a)', my_rank," = rank, Error in ",SCurrentProcedure,&
+              " after attempting ",SAlertedActivity
+      END IF
+    END FUNCTION
+
+END MODULE
+
+
+!>
+!! Module-description: Contains generic message subroutine with interface.
+!! Printing to the terminal via this command allows
 !! different messages to be printed depeding upon the debug mode selected at 
-!! run-time. It is a generic subroutine and can handle a variety of variable
+!! run-time. Via the interface it can handle a variety of variable
 !! types as input. It also includes a timer & print subroutine.
 !!
 !! Major-Authors: Jacob Richardson (2017)

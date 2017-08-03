@@ -56,6 +56,7 @@ SUBROUTINE ReadInput(IErr)
 
   USE MPI
   USE MyMPI
+  USE alert_function_mod
   
   IMPLICIT NONE
 
@@ -67,11 +68,8 @@ SUBROUTINE ReadInput(IErr)
   
   !felix.inp
   CALL ReadInpFile(IErr)
-  IF( IErr.NE.0 ) THEN
-     PRINT*,"Error:ReadInput(", my_rank, ") error",IErr, &
-          " in ReadInpFile()"
-     RETURN
-  ENDIF
+  IF(LALERT(IErr,"ReadInput","ReadInpFile")) RETURN  
+
   !felix.hkl
   CALL ReadHklFile(IErr)
   IF( IErr.NE.0 ) THEN
@@ -117,6 +115,7 @@ SUBROUTINE ReadInpFile( IErr )
   USE message_mod
   USE MPI
   USE MyMPI
+  USE alert_function_mod
 
   IMPLICIT NONE
 
@@ -350,12 +349,13 @@ SUBROUTINE ReadInpFile( IErr )
   RETURN
   
   !	error in READ detected
-20 IF(my_rank.EQ.0) THEN
-     PRINT*,"Error:Input(): ERRor in READ at line", ILine
-     CALL WriteOutInputFile (IErr)
-  END IF
-  IErr=1
-  RETURN
+20 IErr=20;IF(LALERT(IErr,"ReadInpFile","READ on felix.inp")) RETURN
+!20 IF(my_rank.EQ.0) THEN
+!     PRINT*,"Error:Input(): ERRor in READ at line", ILine
+!     CALL WriteOutInputFile (IErr)
+!  END IF
+!  IErr=1
+!  RETURN
   
   !	EOF in READ occured prematurely
 30 IF(my_rank.EQ.0) THEN

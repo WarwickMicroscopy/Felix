@@ -59,6 +59,7 @@ PROGRAM Felixrefine
   USE MyMPI
 
   USE message_mod 
+  USE alert_function_mod
   !?? possible good practice to use subroutine from module
 
   ! local variable definitions
@@ -99,11 +100,9 @@ PROGRAM Felixrefine
   IInitialSimulationFLAG = 1
 
   ! MPI initialization
-  CALL MPI_Init(IErr)  
-  IF( IErr.NE.0 ) THEN !error
-    PRINT*,"Error: Felixrefine (", my_rank, ") error in MPI_Init(). Aborting"
-    GOTO 9999
-  END IF
+  CALL MPI_Init(IErr) 
+  IErr=1
+  IF(LALERT(IErr,"felixrefine","MPI_Init()")) GOTO 9999
 
   ! get the rank of the current process
   CALL MPI_Comm_rank(MPI_COMM_WORLD,my_rank,IErr)
@@ -136,19 +135,14 @@ PROGRAM Felixrefine
   
   ! felix.inp
   CALL ReadInpFile(IErr)
-  IF( IErr.NE.0 ) THEN !error
-    PRINT*,"Error: felixrefine (",my_rank,") error reading felix.inp. Aborting"
-    GOTO 9999
-  END IF
+  IF(LALERT(IErr,"felixrefine","ReadInpFile")) GOTO 9999
+
   CALL message ( LS, "Setting teminal output mode" )
   CALL set_terminal_output_mode( IWriteFLAG )
 
   ! felix.cif
   CALL ReadCif(IErr) !?? branch in here depending on ISoftwareMode, needs to be taken out
-  IF( IErr.NE.0 ) THEN !error
-    PRINT*,"Error: felixrefine (",my_rank,") error reading felix.cif. Aborting"
-    GOTO 9999
-  END IF
+  IF(LALERT(IErr,"felixrefine","ReadInpFile")) GOTO 9999
 
   ! felix.hkl
   CALL ReadHklFile(IErr) ! the list of hkl's to input/output
@@ -692,10 +686,7 @@ PROGRAM Felixrefine
   Iter = 0
   ! baseline simulation
   CALL FelixFunction(IErr)
-  IF (IErr.NE.0) THEN !error
-     PRINT*,"Error: felixrefine (",my_rank,") error",IErr,"in FelixFunction. Aborting"
-     GOTO 9999
-  END IF
+  IF(LALERT(IErr,"felixrefine","FelixFunction")) GOTO 9999
 
   ! timing
   CALL print_end_time( LM, IStartTime2, "Simulation" )
@@ -755,10 +746,101 @@ PROGRAM Felixrefine
   SELECT CASE(IMethodFLAG)
 
   CASE(1)
-    !--------------------------------------------------------------------
-    ! Simplex
-    !--------------------------------------------------------------------
+
+    CALL SimplexRefinement()
+    IF(IErr/=0) GOTO 9999
+  
+  CASE(2)
+
+    CALL MaxGradientRefinement()
+    IF(IErr/=0) GOTO 9999  
     
+  CASE(3)
+
+    CALL ParabolicRefinement()
+    IF(IErr/=0) PRINT*,my_rank,"Error in felixrefine calling ParabolicRefinement";GOTO 9999
+   
+  CASE DEFAULT ! Simulation only, should never happen
+    CALL message( LM, "No refinement, simulation only")
+     
+  END SELECT 
+
+  !--------------------------------------------------------------------
+  ! deallocate Memory
+  !--------------------------------------------------------------------
+8888 CONTINUE ! simulation-only skips to here to finish off
+  !?? previous deallocation is local, these are global, seemingly smodules.f90
+  DEALLOCATE(CUgMat,STAT=IErr) 
+  DEALLOCATE(CUgMatNoAbs,STAT=IErr)
+  DEALLOCATE(CUgMatPrime,STAT=IErr)
+  DEALLOCATE(RWeightingCoefficients,STAT=IErr)
+  DEALLOCATE(ISymmetryRelations,STAT=IErr)
+  DEALLOCATE(IEquivalentUgKey,STAT=IErr)
+  DEALLOCATE(CUniqueUg,STAT=IErr)
+  DEALLOCATE(RIndividualReflections,STAT=IErr)
+  DEALLOCATE(IDisplacements,STAT=IErr)
+  DEALLOCATE(ICount,STAT=IErr)
+  DEALLOCATE(Rhkl,STAT=IErr)
+  DEALLOCATE(RgPoolMag,STAT=IErr)
+  DEALLOCATE(RgPool,STAT=IErr)
+  DEALLOCATE(RgMatrix,STAT=IErr)
+  DEALLOCATE(RgSumMat,STAT=IErr)
+  DEALLOCATE(RSimulatedPatterns,STAT=IErr)
+  DEALLOCATE(RAtomPosition,STAT=IErr)
+  DEALLOCATE(SAtomName,STAT=IErr)
+  DEALLOCATE(RIsoDW,STAT=IErr)
+  DEALLOCATE(ROccupancy,STAT=IErr)
+  DEALLOCATE(IAtomicNumber,STAT=IErr)
+  DEALLOCATE(RAnisoDW,STAT=IErr)
+  DEALLOCATE(RAtomCoordinate,STAT=IErr)
+  DEALLOCATE(RgMatrixMagnitude,STAT=IErr)
+  DEALLOCATE(CPseudoAtom,STAT=IErr)
+  DEALLOCATE(CPseudoScatt,STAT=IErr)
+
+  IF (IRefineMode(1).EQ.0) THEN
+  	DEALLOCATE(IIterativeVariableUniqueIDs,STAT=IErr)
+  END IF
+  IF (ISimFLAG.EQ.0) THEN
+    DEALLOCATE(RImageExpi,STAT=IErr)  
+  END IF  
+  IF( IErr.NE.0 ) THEN !error
+     PRINT*,"Error: felixrefine (",my_rank,") error in final deallocations. Aborting"
+     GOTO 9999
+  END IF
+  
+  !--------------------------------------------------------------------
+  ! finish off
+  !--------------------------------------------------------------------
+
+  WRITE(my_rank_string,*) my_rank !?? what is this used for?
+
+  CALL message( LS, "--------------------------------" )
+  CALL print_end_time( LS, IStartTime, "Calculation" )
+  CALL message( LS, "--------------------------------")
+  CALL message( LS, "||||||||||||||||||||||||||||||||")
+
+
+  ! shut down MPI
+9999 CONTINUE
+
+  CALL MPI_Finalize(IErr)
+  IF( IErr.NE.0 ) THEN !error
+     PRINT*,"Error: Felixrefine (", my_rank, ") error ", IErr, " in MPI_Finalize()"
+     STOP
+  END IF
+  CALL message(LS, "Shutting down felixrefine program entirely")
+  
+  ! clean shutdown
+  STOP
+
+!%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+!%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+!%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+CONTAINS
+
+  SUBROUTINE SimplexRefinement()
+
     ! allocate variables for simplex JR
     ALLOCATE(RSimplexVariable(INoOfVariables+1,INoOfVariables), STAT=IErr)  
     ALLOCATE(RSimplexFoM(INoOfVariables+1),STAT=IErr)  
@@ -768,11 +850,11 @@ PROGRAM Felixrefine
 	    ALLOCATE(RSimp(INoOfVariables+1,INoOfVariables), STAT=IErr)
       ! diagonal matrix of variables as rows
 	    ALLOCATE(RVarMatrix(INoOfVariables,INoOfVariables), STAT=IErr)
-      IF( IErr.NE.0 ) THEN !error
-        PRINT*,"Error: felixrefine (",my_rank,") error allocating "//&
-              "simplex variables. Aborting"
-        GOTO 9999
-      END IF
+!      IF( IErr.NE.0 ) THEN !error
+!        PRINT*,"Error: felixrefine (",my_rank,") error allocating "//&
+!              "simplex variables. Aborting"
+!        GOTO 9999
+!      END IF
 	    ROnes=ONE
 	    RSimp=ONE
 	    RVarMatrix=ZERO
@@ -792,10 +874,10 @@ PROGRAM Felixrefine
       CALL message(LS,dbg_default,"Simplex ",ind, " of ", INoOfVariables+1)
       CALL message(LS,"--------------------------------")
       CALL SimulateAndFit(RSimplexVariable(ind,:),Iter,0,IErr)!?? Working as iteration 0 ?
-      IF( IErr.NE.0 ) THEN !error
-        PRINT*,"Error: SimplexInitialisation(",my_rank,") error in SimulateAndFit. Aborting"
-        GOTO 9999
-      END IF
+!      IF( IErr.NE.0 ) THEN !error
+!        PRINT*,"Error: SimplexInitialisation(",my_rank,") error in SimulateAndFit. Aborting"
+!        GOTO 9999
+!      END IF
       RSimplexFoM(ind)=RFigureofMerit ! RFigureofMerit returned as global variable
       !?? For masked correlation, add to 'average' (extreme difference from baseline)?
       IF(my_rank.EQ.0.AND.ICorrelationFLAG.EQ.3) THEN
@@ -830,8 +912,9 @@ PROGRAM Felixrefine
           WRITE(k,*)  NINT(Rhkl(IOutPutReflections(ind),2))
           WRITE(l,*)  NINT(Rhkl(IOutPutReflections(ind),3))
           WRITE(SPrintString,*) TRIM(ADJUSTL(h)),TRIM(ADJUSTL(k)),TRIM(ADJUSTL(l)),".mask"
-          OPEN(UNIT=IChOutWIImage, ERR=9999, STATUS= 'UNKNOWN', FILE=SPrintString,&!
+          OPEN(UNIT=IChOutWIImage, STATUS= 'UNKNOWN', FILE=SPrintString,&!
           FORM='UNFORMATTED',ACCESS='DIRECT',IOSTAT=IErr,RECL=2*IPixelCount*8)
+          !?? removed ERR = 9999, need error checking...
           !?? Does the 8=IByteSize?
           DO jnd = 1,2*IPixelCount
             WRITE(IChOutWIImage,rec=jnd) RTestImage(jnd,:)
@@ -848,16 +931,17 @@ PROGRAM Felixrefine
         INoOfVariables+1,INoOfVariables,INoOfVariables,&
         RExitCriteria,Iter,RStandardDeviation,RMean,IErr)
     !?? RStandardDeviation, RMean have no value
-    IF( IErr.NE.0 ) THEN !error
-      PRINT*,"Error: felixrefine (",my_rank,") error in "//&
-            "NDimensionalDownhillSimplex. Aborting"
-      GOTO 9999
-    END IF
-  
-  CASE(2)
-    !--------------------------------------------------------------------
-    ! Maximum gradient
-    !--------------------------------------------------------------------
+!    IF( IErr.NE.0 ) THEN !error
+!      PRINT*,"Error: felixrefine (",my_rank,") error in "//&
+!            "NDimensionalDownhillSimplex. Aborting"
+!      GOTO 9999
+!    END IF
+
+  END SUBROUTINE
+
+!%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+  SUBROUTINE MaxGradientRefinement()
 
     ALLOCATE(RVar0(INoOfVariables),STAT=IErr)! incoming set of variables
     ! set of variables to send out for simulations
@@ -867,11 +951,11 @@ PROGRAM Felixrefine
     ALLOCATE(RPVec(INoOfVariables),STAT=IErr)
     ! the list of fit indices resulting from small changes Rdf for each variable in RPVec
     ALLOCATE(RFitVec(INoOfVariables),STAT=IErr)
-    IF( IErr.NE.0 ) THEN !error
-      PRINT*,"Error: felixrefine (",my_rank,") error allocating "//&
-            "max gradient variables. Aborting"
-      GOTO 9999
-    END IF
+!    IF( IErr.NE.0 ) THEN !error
+!      PRINT*,"Error: felixrefine (",my_rank,") error allocating "//&
+!            "max gradient variables. Aborting"
+!      GOTO 9999
+!    END IF
     
     RBestFit=RFigureofMerit
     RLastFit=RBestFit
@@ -1044,12 +1128,13 @@ PROGRAM Felixrefine
     ! We are done, simulate and output the best fit
     IExitFLAG=1
     CALL SimulateAndFit(RIndependentVariable,Iter,IExitFLAG,IErr)
-    DEALLOCATE(RVar0,RCurrentVar,RLastVar,RPVec,RFitVec,STAT=IErr)    
-    
-  CASE(3)
-    !--------------------------------------------------------------------
-    ! parabola
-    !--------------------------------------------------------------------
+    DEALLOCATE(RVar0,RCurrentVar,RLastVar,RPVec,RFitVec,STAT=IErr)  
+
+  END SUBROUTINE
+
+!%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+  SUBROUTINE ParabolicRefinement()
 
     ALLOCATE(RVar0(INoOfVariables),STAT=IErr)! incoming set of variables
     ! set of variables to send out for simulations
@@ -1059,7 +1144,7 @@ PROGRAM Felixrefine
     ALLOCATE(RPVec(INoOfVariables),STAT=IErr)
     IF( IErr.NE.0 ) THEN !error
       PRINT*,"Error: felixrefine (",my_rank,") error allocating parabola variables. Aborting"
-      GOTO 9999
+      RETURN
     END IF
 
     RLastFit=RFigureofMerit
@@ -1149,6 +1234,7 @@ PROGRAM Felixrefine
           RCurrentVar=RVar0
           RPvecMag=RScale
           CALL SimulateAndFit(RCurrentVar,Iter,IExitFLAG,IErr)
+  
           ! update RIndependentVariable if necessary
           CALL BestFitCheck(RFigureofMerit,RBestFit,RCurrentVar,RIndependentVariable,IErr)
         END IF
@@ -1290,81 +1376,10 @@ PROGRAM Felixrefine
     IExitFLAG=1
     CALL SimulateAndFit(RIndependentVariable,Iter,IExitFLAG,IErr)
     DEALLOCATE(RVar0,RCurrentVar,RLastVar,RPVec,STAT=IErr) 
-   
-  CASE DEFAULT ! Simulation only, should never happen
-    CALL message( LM, "No refinement, simulation only")
-     
-  END SELECT 
 
-  !--------------------------------------------------------------------
-  ! deallocate Memory
-  !--------------------------------------------------------------------
-8888 CONTINUE ! simulation-only skips to here to finish off
-  !?? previous deallocation is local, these are global, seemingly smodules.f90
-  DEALLOCATE(CUgMat,STAT=IErr) 
-  DEALLOCATE(CUgMatNoAbs,STAT=IErr)
-  DEALLOCATE(CUgMatPrime,STAT=IErr)
-  DEALLOCATE(RWeightingCoefficients,STAT=IErr)
-  DEALLOCATE(ISymmetryRelations,STAT=IErr)
-  DEALLOCATE(IEquivalentUgKey,STAT=IErr)
-  DEALLOCATE(CUniqueUg,STAT=IErr)
-  DEALLOCATE(RIndividualReflections,STAT=IErr)
-  DEALLOCATE(IDisplacements,STAT=IErr)
-  DEALLOCATE(ICount,STAT=IErr)
-  DEALLOCATE(Rhkl,STAT=IErr)
-  DEALLOCATE(RgPoolMag,STAT=IErr)
-  DEALLOCATE(RgPool,STAT=IErr)
-  DEALLOCATE(RgMatrix,STAT=IErr)
-  DEALLOCATE(RgSumMat,STAT=IErr)
-  DEALLOCATE(RSimulatedPatterns,STAT=IErr)
-  DEALLOCATE(RAtomPosition,STAT=IErr)
-  DEALLOCATE(SAtomName,STAT=IErr)
-  DEALLOCATE(RIsoDW,STAT=IErr)
-  DEALLOCATE(ROccupancy,STAT=IErr)
-  DEALLOCATE(IAtomicNumber,STAT=IErr)
-  DEALLOCATE(RAnisoDW,STAT=IErr)
-  DEALLOCATE(RAtomCoordinate,STAT=IErr)
-  DEALLOCATE(RgMatrixMagnitude,STAT=IErr)
-  DEALLOCATE(CPseudoAtom,STAT=IErr)
-  DEALLOCATE(CPseudoScatt,STAT=IErr)
-
-  IF (IRefineMode(1).EQ.0) THEN
-  	DEALLOCATE(IIterativeVariableUniqueIDs,STAT=IErr)
-  END IF
-  IF (ISimFLAG.EQ.0) THEN
-    DEALLOCATE(RImageExpi,STAT=IErr)  
-  END IF  
-  IF( IErr.NE.0 ) THEN !error
-     PRINT*,"Error: felixrefine (",my_rank,") error in final deallocations. Aborting"
-     GOTO 9999
-  END IF
-  
-  !--------------------------------------------------------------------
-  ! finish off
-  !--------------------------------------------------------------------
-
-  WRITE(my_rank_string,*) my_rank !?? what is this used for?
-
-  CALL message( LS, "--------------------------------" )
-  CALL print_end_time( LS, IStartTime, "Calculation" )
-  CALL message( LS, "--------------------------------")
-  CALL message( LS, "||||||||||||||||||||||||||||||||")
-
-
-  ! shut down MPI
-9999 CONTINUE
-  CALL MPI_Finalize(IErr)
-  IF( IErr.NE.0 ) THEN !error
-     PRINT*,"Error: Felixrefine (", my_rank, ") error ", IErr, " in MPI_Finalize()"
-     STOP
-  END IF
-  
-  ! clean shutdown
-  STOP
+  END SUBROUTINE
 
 END PROGRAM Felixrefine
-
-!%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 
 !>
@@ -1626,4 +1641,3 @@ SUBROUTINE Parabo3(Rx,Ry,Rxv,Ryv,IErr)
   Ryv = Rc-Rb*Rb/(4*Ra)!y-coord
 
 END SUBROUTINE  Parabo3
-

@@ -99,6 +99,7 @@ SUBROUTINE SimulateAndFit(RIndependentVariable,Iter,IExitFLAG,IErr)
             CUniqueUg(IEquivalentUgKey(ind)))
       CALL message(LS,"element number = ",ind)
       IErr=1
+      IF(LALERT(IErr,"SimulateAndFit"," to Check Ug type")) RETURN
     END IF
 
     ! Update the Ug matrix for this Ug
@@ -234,6 +235,7 @@ SUBROUTINE FelixFunction(IErr)
   USE MyMPI
 
   USE message_mod 
+  USE alert_function_mod 
 
   IMPLICIT NONE
 
@@ -254,10 +256,7 @@ SUBROUTINE FelixFunction(IErr)
     ind = IPixelLocations(knd,2)
     !?? JR elaborate - calls bloch simulating method seperately on pixel areas
     CALL BlochCoefficientCalculation(ind,jnd,knd,ILocalPixelCountMin,IErr)
-    IF( IErr.NE.0 ) THEN
-      PRINT*,"Error:Felixfunction(",my_rank,") error in BlochCofficientCalculation"
-      RETURN
-    END IF
+    IF(LALERT(IErr,"FelixFunction","BlochCoefficientCalculation")) RETURN
   END DO
 
   !===================================== ! MPI gatherv into RSimulatedPatterns
@@ -648,13 +647,13 @@ END SUBROUTINE PrintVariables
 !!
 !! Major-Authors: Richard Beanland (2016)
 !! 
-SUBROUTINE BlurG(RImageToBlur,IPixelsCount,RBlurringRadius,IErr)
+PURE SUBROUTINE BlurG(RImageToBlur,IPixelsCount,RBlurringRadius,IErr)
 
   !?? called once in felix function
   ! closed, does not use global variables
   USE MyNumbers
   USE MPI
-  USE message_mod 
+  USE message_mod !?? can't use this or LAlert if pure
 
   IMPLICIT NONE
 
@@ -668,6 +667,8 @@ SUBROUTINE BlurG(RImageToBlur,IPixelsCount,RBlurringRadius,IErr)
   REAL(RKIND),DIMENSION(:), ALLOCATABLE :: RGauss1D
   REAL(RKIND) :: Rind,Rsum,Rmin,Rmax
 
+  
+
   ! get min and max of input image
   Rmin=MINVAL(RImageToBlur)
   Rmax=MAXVAL(RImageToBlur)
@@ -677,12 +678,13 @@ SUBROUTINE BlurG(RImageToBlur,IPixelsCount,RBlurringRadius,IErr)
   ALLOCATE(RGauss1D(2*IKernelRadius+1),STAT=IErr)!ffs
   Rsum=0
   DO ind=-IKernelRadius,IKernelRadius
-     Rind=REAL(ind)
-     RGauss1D(ind+IKernelRadius+1)=EXP(-(Rind**2)/((2*RBlurringRadius)**2))
-     Rsum=Rsum+RGauss1D(ind+IKernelRadius+1)
+    Rind=REAL(ind)
+    RGauss1D(ind+IKernelRadius+1)=EXP(-(Rind**2)/((2*RBlurringRadius)**2))
+    Rsum=Rsum+RGauss1D(ind+IKernelRadius+1)
+    IF(ind==0) IErr=78 
   END DO
   RGauss1D=RGauss1D/Rsum!normalise
-  RTempImage=RImageToBlur*0_RKIND !reset the temp image
+  RTempImage=RImageToBlur*0_RKIND !reset the temp image 
 
   ! apply the kernel in direction 1
   DO ind = -IKernelRadius,IKernelRadius
