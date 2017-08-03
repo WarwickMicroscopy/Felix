@@ -1,5 +1,64 @@
 
 
+!>
+!! Procedure-description: Calls the various functions which read in all the
+!! required data/parameters - read felix.inp, .sca, .cif, .hkl
+!!
+!! Major-Authors: Keith Evans (2014), Richard Beanland (2016)
+!!
+SUBROUTINE ReadInput(IErr)
+
+  USE MyNumbers
+  USE IConst
+  USE IPara
+
+  USE MPI
+  USE MyMPI
+  USE l_alert_mod
+  
+  IMPLICIT NONE
+
+  INTEGER(IKIND):: IErr
+
+  !Calling all functions which read felix.inp, felix.sca and felix.cif
+  !(felix.hkl too depending on user preference)
+  !ensure all input files are in working directory
+  
+  !felix.inp
+  CALL ReadInpFile(IErr)
+  IF(l_alert(IErr,"ReadInput","ReadInpFile")) RETURN  
+
+  !felix.hkl
+  CALL ReadHklFile(IErr)
+  IF( IErr.NE.0 ) THEN
+     PRINT*,"Error:ReadInput(", my_rank, ") error",IErr, &
+          "in ReadHklFile()"
+     RETURN
+  ENDIF
+
+  !felix.sca
+  CALL ScatteringFactors(IScatterFactorMethodFLAG,IErr)
+  IF( IErr.NE.0 ) THEN
+     PRINT*,"Error:ReadInput(", my_rank, ") error",IErr, &
+          " in ReadScaFile()"
+     RETURN
+  ENDIF
+
+  !felix.cif
+  CALL ReadCif(IErr)
+  IF( IErr.NE.0 ) THEN
+     PRINT*,"Error:ReadInput(", my_rank, ") error",IErr, &
+          "in ReadCif()"
+     RETURN
+  ENDIF
+
+END SUBROUTINE ReadInput
+
+!!$%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+
+
+
 
 
 

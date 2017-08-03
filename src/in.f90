@@ -40,66 +40,6 @@
 ! WriteOutInputFile( )
 ! WriteToScreenandFile( )
 
-
-
-!>
-!! Procedure-description: Calls the various functions which read in all the
-!! required data/parameters - read felix.inp, .sca, .cif, .hkl
-!!
-!! Major-Authors: Keith Evans (2014), Richard Beanland (2016)
-!!
-SUBROUTINE ReadInput(IErr)
-
-  USE MyNumbers
-  USE IConst
-  USE IPara
-
-  USE MPI
-  USE MyMPI
-  USE alert_function_mod
-  
-  IMPLICIT NONE
-
-  INTEGER(IKIND):: IErr
-
-  !Calling all functions which read felix.inp, felix.sca and felix.cif
-  !(felix.hkl too depending on user preference)
-  !ensure all input files are in working directory
-  
-  !felix.inp
-  CALL ReadInpFile(IErr)
-  IF(LALERT(IErr,"ReadInput","ReadInpFile")) RETURN  
-
-  !felix.hkl
-  CALL ReadHklFile(IErr)
-  IF( IErr.NE.0 ) THEN
-     PRINT*,"Error:ReadInput(", my_rank, ") error",IErr, &
-          "in ReadHklFile()"
-     RETURN
-  ENDIF
-
-  !felix.sca
-  CALL ScatteringFactors(IScatterFactorMethodFLAG,IErr)
-  IF( IErr.NE.0 ) THEN
-     PRINT*,"Error:ReadInput(", my_rank, ") error",IErr, &
-          " in ReadScaFile()"
-     RETURN
-  ENDIF
-
-  !felix.cif
-  CALL ReadCif(IErr)
-  IF( IErr.NE.0 ) THEN
-     PRINT*,"Error:ReadInput(", my_rank, ") error",IErr, &
-          "in ReadCif()"
-     RETURN
-  ENDIF
-
-END SUBROUTINE ReadInput
-
-!!$%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-
-
-
 !>
 !! Procedure-description:
 !!
@@ -115,7 +55,7 @@ SUBROUTINE ReadInpFile( IErr )
   USE message_mod
   USE MPI
   USE MyMPI
-  USE alert_function_mod
+  USE l_alert_mod
 
   IMPLICIT NONE
 
@@ -349,7 +289,7 @@ SUBROUTINE ReadInpFile( IErr )
   RETURN
   
   !	error in READ detected
-20 IErr=20;IF(LALERT(IErr,"ReadInpFile","READ on felix.inp")) RETURN
+20 IErr=20;IF(l_alert(IErr,"ReadInpFile","READ on felix.inp")) RETURN
 !20 IF(my_rank.EQ.0) THEN
 !     PRINT*,"Error:Input(): ERRor in READ at line", ILine
 !     CALL WriteOutInputFile (IErr)

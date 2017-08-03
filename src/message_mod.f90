@@ -36,24 +36,23 @@
 !!
 !! Major-Authors: Jacob Richardson (2017)
 !!
-MODULE alert_function_mod
-
+MODULE l_alert_mod
   CONTAINS
 
-    LOGICAL FUNCTION LAlert(IErr,SCurrentProcedure,SAlertedActivity)
+    LOGICAL FUNCTION l_alert(IErr,SCurrentProcedure,SAlertedActivity)
       USE MyNumbers, ONLY : IKIND
-      USE MyMPI
-    
+      USE MyMPI, ONLY : my_rank
       CHARACTER(*),INTENT(IN) :: SCurrentProcedure,SAlertedActivity
-      INTEGER(IKIND),INTENT(INOUT) :: IErr
-      LAlert = .FALSE.
+      INTEGER(IKIND),INTENT(IN) :: IErr
+
+      l_alert = .FALSE.
       IF ( IErr /= 0 ) THEN
-        LAlert = .TRUE.
+        l_alert = .TRUE.
         PRINT '(1x,i1,a,a,a,a)', my_rank," = rank, Error in ",SCurrentProcedure,&
               " after attempting ",SAlertedActivity
       END IF
-    END FUNCTION
 
+    END FUNCTION
 END MODULE
 
 

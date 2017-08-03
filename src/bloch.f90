@@ -77,7 +77,7 @@ SUBROUTINE BlochCoefficientCalculation(IYPixelIndex,IXPixelIndex,IPixelNumber,&
   USE IConst, ONLY : ITHREE
   USE MyMPI
   USE message_mod
-  USE alert_function_mod 
+  USE l_alert_mod 
   
   IMPLICIT NONE
   
@@ -277,7 +277,7 @@ SUBROUTINE BlochCoefficientCalculation(IYPixelIndex,IXPixelIndex,IPixelNumber,&
     IThickness = NINT(RThickness,IKIND)
     CALL CreateWaveFunctions(RThickness,RFullWaveIntensity,CFullWaveFunctions,&
                   nReflections,nBeams,IStrongBeamList,CEigenVectors,CEigenValues,IErr)
-    IF(LALERT(IErr,"BlochCoefficientCalculation","CreateWaveFunctions")) RETURN
+    IF(l_alert(IErr,"BlochCoefficientCalculation","CreateWaveFunctions")) RETURN
     ! Collect Intensities from all thickness for later writing
     IF(IHKLSelectFLAG.EQ.0) THEN ! we are using hkl list from felix.hkl
       IF(IImageFLAG.LE.2) THEN ! output is 0=montage, 1=individual images
@@ -336,7 +336,7 @@ SUBROUTINE CreateWaveFunctions(RThickness,RFullWaveIntensity0,CFullWaveFunctions
   USE MyNumbers
   USE MyMPI
   USE message_mod 
-  USE alert_function_mod
+  USE l_alert_mod
 
   IMPLICIT NONE
   

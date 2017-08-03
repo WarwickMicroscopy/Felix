@@ -62,7 +62,8 @@ SUBROUTINE SimulateAndFit(RIndependentVariable,Iter,IExitFLAG,IErr)
   USE MPI
   USE MyMPI
 
-  USE message_mod 
+  USE message_mod
+  USE l_alert_mod 
 
   IMPLICIT NONE
 
@@ -99,7 +100,7 @@ SUBROUTINE SimulateAndFit(RIndependentVariable,Iter,IExitFLAG,IErr)
             CUniqueUg(IEquivalentUgKey(ind)))
       CALL message(LS,"element number = ",ind)
       IErr=1
-      IF(LALERT(IErr,"SimulateAndFit"," to Check Ug type")) RETURN
+      IF(l_alert(IErr,"SimulateAndFit"," to Check Ug type")) RETURN
     END IF
 
     ! Update the Ug matrix for this Ug
@@ -235,7 +236,7 @@ SUBROUTINE FelixFunction(IErr)
   USE MyMPI
 
   USE message_mod 
-  USE alert_function_mod 
+  USE l_alert_mod 
 
   IMPLICIT NONE
 
@@ -256,7 +257,7 @@ SUBROUTINE FelixFunction(IErr)
     ind = IPixelLocations(knd,2)
     !?? JR elaborate - calls bloch simulating method seperately on pixel areas
     CALL BlochCoefficientCalculation(ind,jnd,knd,ILocalPixelCountMin,IErr)
-    IF(LALERT(IErr,"FelixFunction","BlochCoefficientCalculation")) RETURN
+    IF(l_alert(IErr,"FelixFunction","BlochCoefficientCalculation")) RETURN
   END DO
 
   !===================================== ! MPI gatherv into RSimulatedPatterns
@@ -653,7 +654,7 @@ PURE SUBROUTINE BlurG(RImageToBlur,IPixelsCount,RBlurringRadius,IErr)
   ! closed, does not use global variables
   USE MyNumbers
   USE MPI
-  USE message_mod !?? can't use this or LAlert if pure
+  USE message_mod !?? can't use this or l_alert if pure
 
   IMPLICIT NONE
 
