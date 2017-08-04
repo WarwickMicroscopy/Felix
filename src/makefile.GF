@@ -228,7 +228,7 @@ endif
 # LD_LIBRARY_PATH=/warwick/mathlib/nag/ifort-x86_64/lib:$LD_LIBRARY_PATH
 # in order to run the code
 
-REFINEOBJECTFILES = gmodules.o smodules.o message_mod.o felixrefine.o \
+REFINEOBJECTFILES = gmodules.o smodules.o terminal_output.o felixrefine.o \
 util.o scatteringfactors.o in.o readcif.o \
 diffractionpatterndefinitions.o \
 crystallography.o bloch.o Ug.o image.o ciftbx.o simplex.o\
@@ -257,7 +257,7 @@ felixrefine: $(REFINEOBJECTFILES)
 
 
 print:	
-	a2ps --pro=color -E -o print.ps gmodules.f90 smodules.f90 message_mod.f90 felixrefine.f90 \
+	a2ps --pro=color -E -o print.ps gmodules.f90 smodules.f90 terminal_output.f90 felixrefine.f90 \
 util.f90 scatterfactors.f90 in.f90 readcif.f90 \
 diffractionpatterndefinitions.f90 \
 crystallography.f90 bloch.f90 Ug.f90 image.f90 simplex.f90 \
