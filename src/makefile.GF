@@ -228,12 +228,12 @@ endif
 # LD_LIBRARY_PATH=/warwick/mathlib/nag/ifort-x86_64/lib:$LD_LIBRARY_PATH
 # in order to run the code
 
-REFINEOBJECTFILES = gmodules.o smodules.o terminal_output.o felixrefine.o \
+REFINEOBJECTFILES = gmodules.o smodules.o terminal_output.o bloch.o felixfunction.o felixrefine.o \
 util.o scatteringfactors.o in.o readcif.o \
 diffractionpatterndefinitions.o \
-crystallography.o bloch.o Ug.o image.o ciftbx.o simplex.o\
-hash_funcs.o RefineWriteOut.o felixfunction.o refineutils.o writeoutput.o errorchecks.o\
-symmetry.o quadpack_double.f90
+crystallography.o Ug.o image.o ciftbx.o simplex.o\
+hash_funcs.o RefineWriteOut.o refineutils.o writeoutput.o errorchecks.o\
+symmetry.o quadpack_double.o
 #dqng.o xerror.o d1mach.o 
 
 %.o: %.f90

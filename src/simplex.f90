@@ -56,6 +56,8 @@ SUBROUTINE NDimensionalDownhillSimplex(RSimplexVariable,y,mp,np,ndim,ftol,iter,R
   USE MPI
   USE MyMPI
 
+  USE felixfunction_mod
+
   IMPLICIT NONE
 
   INTEGER(IKIND) :: iter,mp,ndim,np,NMAX,ITMAX,IErr
@@ -211,6 +213,8 @@ REAL(RKIND) FUNCTION SimplexExtrapolate(RSimplexVariable,y,psum,mp,np,ndim,ihi,f
   USE IChannels
   USE MPI
   USE MyMPI
+
+  USE felixfunction_mod
 
   IMPLICIT NONE
   

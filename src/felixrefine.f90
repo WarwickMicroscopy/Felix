@@ -45,26 +45,25 @@
 !! felixrefine
 !!
 PROGRAM Felixrefine
-
-  USE MyNumbers
   
   USE IConst; USE RConst; USE CConst
   USE IPara; USE RPara; USE CPara; USE SPara;
   USE BlochPara 
-
   USE IChannels
 
+  USE MyNumbers
   USE MPI
   USE MyMPI
-
   USE message_mod 
   USE l_alert_mod
-  !?? could do use global? also discover obselete globals
+  USE timer_mod
+
+  USE felixfunction_mod
+  !?? could specifiy use global? also discover obselete globals
 
   ! local variable definitions
   IMPLICIT NONE
   
-  !?? JR I have checked usage of variables, if unused '!??' commented added in code
   INTEGER(IKIND) :: IErr,ind,jnd,knd,lnd,mnd,nnd,Iter,ICutOff,IHOLZgPoolMag,&
         IBSMaxLocGVecAmp,ILaueLevel,INumTotalReflections,ITotalLaueZoneLevel,&
         INhkl,IExitFLAG,ICycle,INumInitReflections,IZerothLaueZoneLevel,&
@@ -86,7 +85,8 @@ PROGRAM Felixrefine
   CHARACTER*40 :: my_rank_string
   CHARACTER*20 :: h,k,l
   CHARACTER*200 :: SPrintString
-
+  !?? JR I have checked usage of variables, if unused '!??' commented added in code
+  !?? assume variables used clearly in code, need to track allocations...
 
   !--------------------------------------------------------------------
   ! startup
@@ -707,7 +707,8 @@ PROGRAM Felixrefine
 
       ! Figure of merit is passed back as a global variable
       CALL CalculateFigureofMeritandDetermineThickness(Iter,IThicknessIndex,IErr)
-      IF(l_alert(IErr,"felixrefine","CalculateFigureofMeritandDetermineThickness()")) GOTO 9999 
+      IF(l_alert(IErr,"felixrefine",&
+            "CalculateFigureofMeritandDetermineThickness()")) GOTO 9999 
 
       ! Keep baseline simulation for masked correlation
       IF (ICorrelationFLAG.EQ.3) THEN
@@ -788,7 +789,7 @@ PROGRAM Felixrefine
   DEALLOCATE(RgMatrixMagnitude,STAT=IErr)
   DEALLOCATE(CPseudoAtom,STAT=IErr)
   DEALLOCATE(CPseudoScatt,STAT=IErr)
-  !?? previous deallocation is local, these are global, seemingly from smodules.f90
+  !?? previous deallocations are local, these are global, seemingly from smodules.f90
 
   IF (IRefineMode(1).EQ.0) THEN
   	DEALLOCATE(IIterativeVariableUniqueIDs,STAT=IErr)
@@ -825,13 +826,15 @@ PROGRAM Felixrefine
 !%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 CONTAINS
+  ! these internal subroutines use felixrefine's whole variable namespace
+  !?? need to cleanup some of these more...
 
-  !--------------------------------------------------------------------
-  ! refinement subroutine using simplex
-  !--------------------------------------------------------------------
-
+  !>
+  !! Procedure-description: Refinement using simplex
+  !!
+  !! Major-Authors: Keith Evans (2014), Richard Beanland (2016)
+  !!
   SUBROUTINE SimplexRefinement()
-    ! uses felixrefine's whole variable namespace
 
     !--------------------------------------------------------------------
     ! array allocations & make simplex matrix parallel
@@ -933,18 +936,15 @@ CONTAINS
     IF(l_alert(IErr,"SimplexRefinement()","NDimensionalDownhillSimplex()")) RETURN
     !?? RStandardDeviation, RMean have no value
 
-  END SUBROUTINE
+  END SUBROUTINE SimplexRefinement
 
-
-
-!%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-
-
+  !%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
   
-  !--------------------------------------------------------------------
-  ! refinement subroutine using maximum gradient
-  !--------------------------------------------------------------------
-
+  !>
+  !! Procedure-description: Refinement using the maximum gradient method
+  !!
+  !! Major-Authors: Richard Beanland (2016)
+  !!
   SUBROUTINE MaxGradientRefinement()
 
     !--------------------------------------------------------------------
@@ -1174,18 +1174,15 @@ CONTAINS
     IF(l_alert(IErr,"MaxGradientRefinement()","SimulateAndFit()")) RETURN
     DEALLOCATE(RVar0,RCurrentVar,RLastVar,RPVec,RFitVec,STAT=IErr)  
 
-  END SUBROUTINE
+  END SUBROUTINE MaxGradientRefinement
 
+  !%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-
-!%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-
-
-
-  !--------------------------------------------------------------------
-  ! refinement subroutine using the parabola method
-  !--------------------------------------------------------------------
-
+  !>
+  !! Procedure-description: Refinement using the parabola method
+  !!
+  !! Major-Authors: Richard Beanland (2016)
+  !!
   SUBROUTINE ParabolicRefinement()
 
     !--------------------------------------------------------------------
@@ -1477,274 +1474,259 @@ CONTAINS
 
     IExitFLAG=1
     CALL SimulateAndFit(RIndependentVariable,Iter,IExitFLAG,IErr)
-    DEALLOCATE(RVar0,RCurrentVar,RLastVar,RPVec,STAT=IErr) 
+    DEALLOCATE(RVar0,RCurrentVar,RLastVar,RPVec,STAT=IErr)
+ 
+  END SUBROUTINE ParabolicRefinement
 
-  END SUBROUTINE
+  !%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+  !>
+  !! Procedure-description: Assign array locations to iteration variables, similar
+  !! to IIterativeVariableUniqueIDs
+  !!
+  !! Major-Authors: Keith Evans (2014), Richard Beanland (2016)
+  !!
+  SUBROUTINE AssignArrayLocationsToIterationVariables(IIterativeVariableType,&
+                    IVariableNo,IArrayToFill,IErr)
+
+    !?? JR called once in felixrefine
+    !?? JR should we have any subroutines in felixrefine.f90, yes if top level
+    ! NB IArrayToFill here equivalent to IIterativeVariableUniqueIDs outside this subroutine
+    USE MyNumbers
+    
+    USE IConst; USE RConst; USE CConst
+    USE IPara; USE RPara; USE CPara; USE SPara;
+    USE BlochPara 
+
+    USE IChannels
+
+    USE MPI
+    USE MyMPI
+
+    USE message_mod 
+    
+    IMPLICIT NONE
+
+    INTEGER(IKIND) :: IIterativeVariableType,IVariableNo,IErr,IArrayIndex,&
+         IAnisotropicDebyeWallerFactorElementNo
+    INTEGER(IKIND),DIMENSION(INoOfVariables,5),INTENT(OUT) :: IArrayToFill  
+
+    ! Calculate How Many of Each Variable Type There are
+    ! CALL DetermineNumberofRefinementVariablesPerType(&
+          !INoofElementsForEachRefinementType,IErr)
+    
+    ! Where am I in the Array Right Now?
+    IArrayIndex = SUM(INoofElementsForEachRefinementType(:(IIterativeVariableType-1))) + &
+          IVariableNo
+
+    SELECT CASE(IIterativeVariableType)
+
+    CASE(1) ! Ugs, A
+       IArrayToFill(IArrayIndex,2) = IIterativeVariableType
+       IArrayToFill(IArrayIndex,3) = &
+            NINT(REAL(INoofUgs,RKIND)*(REAL(IVariableNo/REAL(INoofUgs,RKIND),RKIND)-&
+            CEILING(REAL(IVariableNo/REAL(INoofUgs,RKIND),RKIND)))+REAL(INoofUgs,RKIND))
+
+    CASE(2) ! Coordinates (x,y,z), B
+       IArrayToFill(IArrayIndex,2) = IIterativeVariableType
+       IArrayToFill(IArrayIndex,3) = IVariableNo
+
+    CASE(3) ! Occupancies, C
+       IArrayToFill(IArrayIndex,2) = IIterativeVariableType
+       IArrayToFill(IArrayIndex,3) = IAtomicSitesToRefine(IVariableNo)
+
+    CASE(4) ! Isotropic Debye Waller Factors , D
+       IArrayToFill(IArrayIndex,2) = IIterativeVariableType
+       IArrayToFill(IArrayIndex,3) = IAtomicSitesToRefine(IVariableNo)
+
+    CASE(5) ! Anisotropic Debye Waller Factors (a11-a33), E
+      IArrayToFill(IArrayIndex,2) = IIterativeVariableType
+      IArrayToFill(IArrayIndex,3) = &
+            IAtomicSitesToRefine(INT(CEILING(REAL(IVariableNo/6.0D0,RKIND))))
+      IAnisotropicDebyeWallerFactorElementNo = &
+            NINT(6.D0*(REAL(IVariableNo/6.0D0,RKIND) - &
+            CEILING(REAL(IVariableNo/6.0D0,RKIND)))+6.0D0)
+
+       SELECT CASE(IAnisotropicDebyeWallerFactorElementNo)
+
+          CASE(1)
+             IArrayToFill(IArrayIndex,4:5) = [1,1]
+          CASE(2)
+             IArrayToFill(IArrayIndex,4:5) = [2,1]
+          CASE(3)
+             IArrayToFill(IArrayIndex,4:5) = [2,2]
+          CASE(4)
+             IArrayToFill(IArrayIndex,4:5) = [3,1]
+          CASE(5)
+             IArrayToFill(IArrayIndex,4:5) = [3,2]
+          CASE(6)
+             IArrayToFill(IArrayIndex,4:5) = [3,3]
+
+          END SELECT
+
+    CASE(6) ! Lattice Parameters, E
+       IArrayToFill(IArrayIndex,2) = IIterativeVariableType
+       IArrayToFill(IArrayIndex,3) = &
+            NINT(3.D0*(REAL(IVariableNo/3.0D0,RKIND) - &
+            CEILING(REAL(IVariableNo/3.0D0,RKIND)))+3.0D0)
+       
+    CASE(7) ! Lattice Angles, F
+       IArrayToFill(IArrayIndex,2) = IIterativeVariableType
+       IArrayToFill(IArrayIndex,3) = &
+            NINT(3.D0*(REAL(IVariableNo/3.0D0,RKIND) - &
+            CEILING(REAL(IVariableNo/3.0D0,RKIND)))+3.0D0)
+
+    CASE(8) ! Convergence angle, H
+       IArrayToFill(IArrayIndex,2) = IIterativeVariableType
+
+    CASE(9) ! Percentage Absorption, I
+       IArrayToFill(IArrayIndex,2) = IIterativeVariableType
+
+    CASE(10) ! kV, J
+       IArrayToFill(IArrayIndex,2) = IIterativeVariableType
+
+    END SELECT
+    
+  END SUBROUTINE AssignArrayLocationsToIterationVariables
+
+  !%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+  !>
+  !! Procedure-description: Setup atomic vector movements
+  !!
+  !! Major-Authors: Richard Beanland (2016)
+  !!
+  SUBROUTINE SetupAtomicVectorMovements(IErr)
+
+    !?? called once in felixrefine
+    !?? JR should we have any subroutines in felixrefine.f90, yes if top level
+    USE MyNumbers
+    
+    USE CConst; USE IConst; USE RConst
+    USE IPara; USE RPara; USE SPara; USE CPara
+    USE BlochPara
+
+    USE IChannels
+    USE message_mod
+    USE MPI
+    USE MyMPI
+    
+    IMPLICIT NONE
+
+    INTEGER(IKIND) :: IErr,knd,jnd,ind,ISpaceGrp
+    INTEGER(IKIND),DIMENSION(:),ALLOCATABLE :: IVectors
+    
+    CALL ConvertSpaceGroupToNumber(ISpaceGrp,IErr)
+    IF(l_alert(IErr,"SetupAtomicVectorMovements()","ConvertSpaceGroupToNumber()")) RETURN  
+
+    ALLOCATE(IVectors(SIZE(SWyckoffSymbols)),STAT=IErr)
+    IF(l_alert(IErr,"SetupAtomicVectorMovements()","allocate IVectors()")) RETURN  
+    
+    DO ind = 1,SIZE(SWyckoffSymbols)!NB SIZE(SWyckoffSymbols)=IAtomicSitesToRefine?
+      CALL CountAllowedMovements(ISpaceGrp,SWyckoffSymbols(ind),IVectors(ind),IErr)
+      IF(l_alert(IErr,"SetupAtomicVectorMovements()","ConvertSpaceGroupToNumber()")) RETURN     
+    END DO
+    
+    IAllowedVectors = SUM(IVectors)
+    
+    ALLOCATE(IAllowedVectorIDs(IAllowedVectors),STAT=IErr)
+    IF(l_alert(IErr,"SetupAtomicVectorMovements()","allocate IAllowedVectorIDs()")) RETURN  
+    ALLOCATE(RAllowedVectors(IAllowedVectors,ITHREE),STAT=IErr)
+    IF(l_alert(IErr,"SetupAtomicVectorMovements()","allocate RAllowedVectors()")) RETURN  
+    ALLOCATE(RAllowedVectorMagnitudes(IAllowedVectors),STAT=IErr)
+    IF(l_alert(IErr,"SetupAtomicVectorMovements()",&
+          "allocate RAllowedVectorMagnitudes()")) RETURN  
+    
+    knd = 0
+    DO ind = 1,SIZE(SWyckoffSymbols)
+      DO jnd = 1,IVectors(ind)
+        knd = knd + 1
+        IAllowedVectorIDs(knd) = IAtomicSitesToRefine(ind)
+      END DO
+    END DO
+    
+    RAllowedVectorMagnitudes = ZERO
+    DO ind = 1,SIZE(SWyckoffSymbols)
+      CALL DetermineAllowedMovements(ISpaceGrp,SWyckoffSymbols(ind),&
+           RAllowedVectors(SUM(IVectors(:(ind-1)))+1:SUM(IVectors(:(ind))),:),&
+           IVectors(ind),IErr)
+      IF(l_alert(IErr,"SetupAtomicVectorMovements()","DetermineAllowedMovements()")) RETURN  
+    END DO
+    
+    ALLOCATE(RInitialAtomPosition(SIZE(RBasisAtomPosition,1),ITHREE),STAT=IErr)
+    IF(l_alert(IErr,"SetupAtomicVectorMovements()","allocate RInitialAtomPosition")) RETURN  
+    RInitialAtomPosition = RBasisAtomPosition
+
+  END SUBROUTINE SetupAtomicVectorMovements     
+
+  !%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+                                                                                                                                    !>
+  !! Procedure-description: Best fit check
+  !!
+  !! Major-Authors: Richard Beanland (2016)
+  !!
+  SUBROUTINE BestFitCheck(RFoM,RBest,RCurrent,RIndependentVariable,IErr)
+
+    !?? called felixrefine multiple times
+    USE MyNumbers
+    
+    USE IConst; USE RConst; USE CConst
+    USE IPara; USE RPara; USE CPara; USE SPara;
+    USE BlochPara 
+
+    USE IChannels
+
+    USE MPI
+    USE MyMPI
+
+    USE message_mod 
+    
+    IMPLICIT NONE
+    
+    REAL(RKIND) :: RFoM,RBest !current figure of merit and the best figure of merit
+    ! current and best set of variables
+    REAL(RKIND),DIMENSION(INoOfVariables) :: RCurrent,RIndependentVariable
+    INTEGER(IKIND) :: IErr
+
+    IF (RFoM.LT.RBest) THEN
+      RBest=RFoM
+      RIndependentVariable=RCurrent
+    END IF
+    CALL message( LM, "Best fit so far = ",RBest)
+
+          
+  END SUBROUTINE BestFitCheck
+
+  !%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+  !>
+  !! Procedure-description: Input is a vector Rx with three x-coordinates and 
+  !! Ry with three y-coordinates. Output is the x- and y-coordinate of the vertex
+  !! of the fitted parabola, Rxv Ryv. Using Cramer's rules to solve the system of
+  !! equations to give Ra(x^2)+Rb(x)+Rc=(y)
+  !!
+  !! Major-Authors: Richard Beanland (2016)
+  !! 
+  SUBROUTINE Parabo3(Rx,Ry,Rxv,Ryv,IErr)
+
+    !?? called once in felixrefine
+    USE MyNumbers
+
+    IMPLICIT NONE
+    
+    REAL(RKIND) :: Ra,Rb,Rc,Rd,Rxv,Ryv
+    REAL(RKIND),DIMENSION(3) :: Rx,Ry
+    INTEGER(IKIND) :: IErr
+    
+    Rd = Rx(1)*Rx(1)*(Rx(2)-Rx(3)) + Rx(2)*Rx(2)*(Rx(3)-Rx(1)) + Rx(3)*Rx(3)*(Rx(1)-Rx(2))
+    Ra =(Rx(1)*(Ry(3)-Ry(2)) + Rx(2)*(Ry(1)-Ry(3)) + Rx(3)*(Ry(2)-Ry(1)))/Rd
+    Rb =( Rx(1)*Rx(1)*(Ry(2)-Ry(3)) + Rx(2)*Rx(2)*(Ry(3)-Ry(1)) + &
+          Rx(3)*Rx(3)*(Ry(1)-Ry(2)) )/Rd
+    Rc =(Rx(1)*Rx(1)*(Rx(2)*Ry(3)-Rx(3)*Ry(2)) + Rx(2)*Rx(2)*(Rx(3)*Ry(1)-Rx(1)*Ry(3))&
+        +Rx(3)*Rx(3)*(Rx(1)*Ry(2)-Rx(2)*Ry(1)))/Rd
+    Rxv = -Rb/(2*Ra);!x-coord
+    Ryv = Rc-Rb*Rb/(4*Ra)!y-coord
+
+  END SUBROUTINE Parabo3 
 
 END PROGRAM Felixrefine
-
-!%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-
-
-!>
-!! Procedure-description: Assign array locations to iteration variables, similar
-!! to IIterativeVariableUniqueIDs
-!!
-!! Major-Authors: Keith Evans (2014), Richard Beanland (2016)
-!!
-SUBROUTINE AssignArrayLocationsToIterationVariables(IIterativeVariableType,IVariableNo,IArrayToFill,IErr)
-
-  !?? JR called once in felixrefine
-  !?? JR should we have any subroutines in felixrefine.f90, yes if top level
-  ! NB IArrayToFill here is equivalent to IIterativeVariableUniqueIDs outside this subroutine
-  USE MyNumbers
-  
-  USE IConst; USE RConst; USE CConst
-  USE IPara; USE RPara; USE CPara; USE SPara;
-  USE BlochPara 
-
-  USE IChannels
-
-  USE MPI
-  USE MyMPI
-
-  USE message_mod 
-  
-  IMPLICIT NONE
-
-  INTEGER(IKIND) :: IIterativeVariableType,IVariableNo,IErr,IArrayIndex,&
-       IAnisotropicDebyeWallerFactorElementNo
-  INTEGER(IKIND),DIMENSION(INoOfVariables,5),INTENT(OUT) :: IArrayToFill  
-
-  ! Calculate How Many of Each Variable Type There are
-  ! CALL DetermineNumberofRefinementVariablesPerType(INoofElementsForEachRefinementType,IErr)
-  
-  ! Where am I in the Array Right Now?
-  IArrayIndex = SUM(INoofElementsForEachRefinementType(:(IIterativeVariableType-1)))+IVariableNo
-
-  SELECT CASE(IIterativeVariableType)
-
-  CASE(1) ! Ugs, A
-     IArrayToFill(IArrayIndex,2) = IIterativeVariableType
-     IArrayToFill(IArrayIndex,3) = &
-          NINT(REAL(INoofUgs,RKIND)*(REAL(IVariableNo/REAL(INoofUgs,RKIND),RKIND)-&
-          CEILING(REAL(IVariableNo/REAL(INoofUgs,RKIND),RKIND)))+REAL(INoofUgs,RKIND))
-
-  CASE(2) ! Coordinates (x,y,z), B
-     IArrayToFill(IArrayIndex,2) = IIterativeVariableType
-     IArrayToFill(IArrayIndex,3) = IVariableNo
-
-  CASE(3) ! Occupancies, C
-     IArrayToFill(IArrayIndex,2) = IIterativeVariableType
-     IArrayToFill(IArrayIndex,3) = IAtomicSitesToRefine(IVariableNo)
-
-  CASE(4) ! Isotropic Debye Waller Factors , D
-     IArrayToFill(IArrayIndex,2) = IIterativeVariableType
-     IArrayToFill(IArrayIndex,3) = IAtomicSitesToRefine(IVariableNo)
-
-  CASE(5) ! Anisotropic Debye Waller Factors (a11-a33), E
-     IArrayToFill(IArrayIndex,2) = IIterativeVariableType
-     IArrayToFill(IArrayIndex,3) = IAtomicSitesToRefine(INT(CEILING(REAL(IVariableNo/6.0D0,RKIND))))
-     IAnisotropicDebyeWallerFactorElementNo = &
-          NINT(6.D0*(REAL(IVariableNo/6.0D0,RKIND)-CEILING(REAL(IVariableNo/6.0D0,RKIND)))+6.0D0)
-
-     SELECT CASE(IAnisotropicDebyeWallerFactorElementNo)
-
-        CASE(1)
-           IArrayToFill(IArrayIndex,4:5) = [1,1]
-        CASE(2)
-           IArrayToFill(IArrayIndex,4:5) = [2,1]
-        CASE(3)
-           IArrayToFill(IArrayIndex,4:5) = [2,2]
-        CASE(4)
-           IArrayToFill(IArrayIndex,4:5) = [3,1]
-        CASE(5)
-           IArrayToFill(IArrayIndex,4:5) = [3,2]
-        CASE(6)
-           IArrayToFill(IArrayIndex,4:5) = [3,3]
-
-        END SELECT
-
-  CASE(6) ! Lattice Parameters, E
-     IArrayToFill(IArrayIndex,2) = IIterativeVariableType
-     IArrayToFill(IArrayIndex,3) = &
-          NINT(3.D0*(REAL(IVariableNo/3.0D0,RKIND)-CEILING(REAL(IVariableNo/3.0D0,RKIND)))+3.0D0)
-     
-  CASE(7) ! Lattice Angles, F
-     IArrayToFill(IArrayIndex,2) = IIterativeVariableType
-     IArrayToFill(IArrayIndex,3) = &
-          NINT(3.D0*(REAL(IVariableNo/3.0D0,RKIND)-CEILING(REAL(IVariableNo/3.0D0,RKIND)))+3.0D0)
-
-  CASE(8) ! Convergence angle, H
-     IArrayToFill(IArrayIndex,2) = IIterativeVariableType
-
-  CASE(9) ! Percentage Absorption, I
-     IArrayToFill(IArrayIndex,2) = IIterativeVariableType
-
-  CASE(10) ! kV, J
-     IArrayToFill(IArrayIndex,2) = IIterativeVariableType
-
-  END SELECT
-  
-END SUBROUTINE AssignArrayLocationsToIterationVariables
-
-!%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-
-
-
-!>
-!! Procedure-description: Setup atomic vector movements
-!!
-!! Major-Authors: Richard Beanland (2016)
-!!
-SUBROUTINE SetupAtomicVectorMovements(IErr)
-
-  !?? called once in felixrefine
-  !?? JR should we have any subroutines in felixrefine.f90, yes if top level
-  USE MyNumbers
-  
-  USE CConst; USE IConst; USE RConst
-  USE IPara; USE RPara; USE SPara; USE CPara
-  USE BlochPara
-
-  USE IChannels
-  USE message_mod
-  USE MPI
-  USE MyMPI
-  
-  IMPLICIT NONE
-
-  INTEGER(IKIND) :: IErr,knd,jnd,ind,ISpaceGrp
-  INTEGER(IKIND),DIMENSION(:),ALLOCATABLE :: IVectors
-  
-  CALL ConvertSpaceGroupToNumber(ISpaceGrp,IErr)
-  IF( IErr.NE.0 ) THEN !error
-     PRINT*,"Error: SetupAtomicVectorMovements (",my_rank,") error in ConvertSpaceGroupToNumber"
-     RETURN
-  END IF
-
-  ALLOCATE(IVectors(SIZE(SWyckoffSymbols)),STAT=IErr)
-  IF( IErr.NE.0 ) THEN !error
-     PRINT*,"Error: felixrefine (", my_rank, ") error in Allocation() of IVectors"
-     RETURN
-  END IF
-  
-  DO ind = 1,SIZE(SWyckoffSymbols)!NB SIZE(SWyckoffSymbols)=IAtomicSitesToRefine?
-     CALL CountAllowedMovements(ISpaceGrp,SWyckoffSymbols(ind),IVectors(ind),IErr)
-     IF( IErr.NE.0 ) THEN !error
-        PRINT*,"Error: SetupAtomicVectorMovements (",my_rank,") error in CountAllowedMovements "
-        RETURN
-     END IF    
-  END DO
-  
-  IAllowedVectors = SUM(IVectors)
-  
-  ALLOCATE(IAllowedVectorIDs(IAllowedVectors),STAT=IErr)
-  ALLOCATE(RAllowedVectors(IAllowedVectors,ITHREE),STAT=IErr)
-  ALLOCATE(RAllowedVectorMagnitudes(IAllowedVectors),STAT=IErr)
-  IF( IErr.NE.0 ) THEN !error
-     PRINT*,"Error: SetupAtomicVectorMovements (",my_rank,") error in allocation"
-     RETURN
-  END IF
-  
-  knd = 0
-  DO ind = 1,SIZE(SWyckoffSymbols)
-    DO jnd = 1,IVectors(ind)
-      knd = knd + 1
-      IAllowedVectorIDs(knd) = IAtomicSitesToRefine(ind)
-    END DO
-  END DO
-  
-  RAllowedVectorMagnitudes = ZERO
-  DO ind = 1,SIZE(SWyckoffSymbols)
-    CALL DetermineAllowedMovements(ISpaceGrp,SWyckoffSymbols(ind),&
-         RAllowedVectors(SUM(IVectors(:(ind-1)))+1:SUM(IVectors(:(ind))),:),&
-         IVectors(ind),IErr)
-    IF( IErr.NE.0 ) THEN !error
-      PRINT*,"Error: SetupAtomicVectorMovements (",my_rank,") error in DetermineAllowedMovements"
-      RETURN
-    END IF
-  END DO
-  
-  ALLOCATE(RInitialAtomPosition(SIZE(RBasisAtomPosition,1),ITHREE),STAT=IErr)
-  IF( IErr.NE.0 ) THEN !error
-    PRINT*,"Error: SetupAtomicVectorMovements (",my_rank,") error ALLOCATE RInitialAtomPosition "
-    RETURN
-  END IF
-  RInitialAtomPosition = RBasisAtomPosition
-
-END SUBROUTINE SetupAtomicVectorMovements
-
-!%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-
-
-
-!>
-!! Procedure-description: Best fit check
-!!
-!! Major-Authors: Richard Beanland (2016)
-!!
-SUBROUTINE BestFitCheck(RFoM,RBest,RCurrent,RIndependentVariable,IErr)
-
-  !?? called felixrefine multiple times
-  !?? JR should we have any subroutines in felixrefine.f90, yes if top level
-  USE MyNumbers
-  
-  USE IConst; USE RConst; USE CConst
-  USE IPara; USE RPara; USE CPara; USE SPara;
-  USE BlochPara 
-
-  USE IChannels
-
-  USE MPI
-  USE MyMPI
-
-  USE message_mod 
-  
-  IMPLICIT NONE
-  
-  REAL(RKIND) :: RFoM,RBest !current figure of merit and the best figure of merit
-  REAL(RKIND),DIMENSION(INoOfVariables) :: RCurrent,RIndependentVariable!current and best set of variables
-  INTEGER(IKIND) :: IErr
-
-  IF (RFoM.LT.RBest) THEN
-    RBest=RFoM
-    RIndependentVariable=RCurrent
-  END IF
-  CALL message( LM, "Best fit so far = ",RBest)
-
-        
-END SUBROUTINE BestFitCheck
-
-!%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-
-
-
-!>
-!! Procedure-description: Input is a vector Rx with three x-coordinates and 
-!! Ry with three y-coordinates. Output is the x- and y-coordinate of the vertex
-!! of the fitted parabola, Rxv Ryv. Using Cramer's rules to solve the system of
-!! equations to give Ra(x^2)+Rb(x)+Rc=(y)
-!!
-!! Major-Authors: Richard Beanland (2016)
-!! 
-SUBROUTINE Parabo3(Rx,Ry,Rxv,Ryv,IErr)
-
-  !?? called once in felixrefine
-  USE MyNumbers
-
-  IMPLICIT NONE
-  
-  REAL(RKIND) :: Ra,Rb,Rc,Rd,Rxv,Ryv
-  REAL(RKIND),DIMENSION(3) :: Rx,Ry
-  INTEGER(IKIND) :: IErr
-  
-  Rd = Rx(1)*Rx(1)*(Rx(2)-Rx(3)) + Rx(2)*Rx(2)*(Rx(3)-Rx(1)) + Rx(3)*Rx(3)*(Rx(1)-Rx(2))
-  Ra =(Rx(1)*(Ry(3)-Ry(2)) + Rx(2)*(Ry(1)-Ry(3)) + Rx(3)*(Ry(2)-Ry(1)))/Rd
-  Rb =(Rx(1)*Rx(1)*(Ry(2)-Ry(3)) + Rx(2)*Rx(2)*(Ry(3)-Ry(1)) + Rx(3)*Rx(3)*(Ry(1)-Ry(2)))/Rd
-  Rc =(Rx(1)*Rx(1)*(Rx(2)*Ry(3)-Rx(3)*Ry(2)) + Rx(2)*Rx(2)*(Rx(3)*Ry(1)-Rx(1)*Ry(3))&
-      +Rx(3)*Rx(3)*(Rx(1)*Ry(2)-Rx(2)*Ry(1)))/Rd
-  Rxv = -Rb/(2*Ra);!x-coord
-  Ryv = Rc-Rb*Rb/(4*Ra)!y-coord
-
-END SUBROUTINE  Parabo3
