@@ -43,8 +43,7 @@
 
 
 !>
-!! Module-description: Holds BlochCoefficientCalculation which for a pixel
-!! calculates the wavefunction vector for each thickness
+!! Module-description: Holds StructureFactorInitialisation(), UpdateUgMatrix(), Absorption()
 !!
 MODULE Ug
   IMPLICIT NONE
@@ -389,7 +388,8 @@ MODULE Ug
   !!
   SUBROUTINE UpdateUgMatrix(IErr)
 
-    !?? very similar to 'calculate fourier components of the potential Vg for atoms and pseudoatoms'
+    !?? very similar to 'calculate fourier components of the potential Vg
+    !?? for atoms and pseudoatoms'
     !?? in StructureFactorInitialisation()
     !?? make another subroutine
     !?? called in every simulate fit, before absorption
@@ -503,10 +503,9 @@ MODULE Ug
   !!
   SUBROUTINE  AtomicScatteringFactor(RScatteringFactor,IErr)  
 
-    !?? rename GetRScatteringFactor
-
     !?? used 2 places StructureFactorInitialisation(), mean inner potential, Vg potential
     !?? once each UpdateUgMatrix()
+    !?? rename to GetRScatteringFactor
 
     USE MyNumbers
 
@@ -575,19 +574,30 @@ MODULE Ug
     !?? called once initially in felixrefine after reflection, g-vector, laue zones
     !?? once in each simulate and fit with update scattering matrix
 
-    !?? handles local Ug on core...
+    !?? CUgMatNoAbs, uses g matrix, parallelises U'g calculation -> final Ug with absorption
     USE MyNumbers
     USE terminal_output
-    USE MPI
-    USE MyMPI
+    USE MPI     !?? used for parallel 
+    USE MyMPI   !?? used for parallel
+   
+    ! global outputs
+    USE CPARA, ONLY : CUgMat, CUgMatPrime
 
-    USE CConst; USE IConst
-    USE IPara; USE RPara; USE CPara
-    USE BlochPara
+    ! global outputs - seemingly local or minor
+    USE RPARA, ONLY : RCurrentGMagnitude, RCurrentB
+    USE IPARA, ONLY : ICurrentZ
 
+    ! global inputs
+    USE CPARA, ONLY : CUgMatNoAbs
+    USE IPARA, ONLY : IAbsorbFLAG, INAtomsUnitCell, ISymmetryRelations, IEquivalentUgKey, &
+          IAtomicNumber
+    USE RPARA, ONLY : RAbsorptionPercentage, RAngstromConversion, RElectronCharge, &
+          RElectronMass, RElectronVelocity, RPlanckConstant, RRelativisticCorrection, &
+          RVolume, RgMatrixMagnitude, RIsoDW, ROccupancy, RgMatrix, Rhkl, RAtomCoordinate
 
     IMPLICIT NONE
 
+    ! local variables
     INTEGER(IKIND) :: ind,jnd,knd,lnd,IErr,IUniqueUgs,ILocalUgCountMin,ILocalUgCountMax
     INTEGER(IKIND),DIMENSION(2) :: ILoc
     REAL(RKIND) :: Rintegral,RfPrime,RScattFacToVolts,RAbsPreFactor
@@ -683,7 +693,7 @@ MODULE Ug
           ! Debye Waller factor, isotropic only 
           RfPrime=RfPrime*EXP(-RIsoDW(knd)*(RCurrentGMagnitude**2)/(4*TWOPI**2) )
           ! Absorptive Structure factor equation giving imaginary potential
-          CVgPrime=CVgPrime+CIMAGONE*Rfprime * &
+          CVgPrime = CVgPrime + CIMAGONE * Rfprime * &
                 EXP(-CIMAGONE*DOT_PRODUCT(RCurrentG,RAtomCoordinate(knd,:)) )
         END DO
 
@@ -700,18 +710,19 @@ MODULE Ug
       ! join the U'g lists of each core to CUgPrime
       !--------------------------------------------------------------------
 
-      !?? I give up trying to MPI a complex number, do it with two real ones
       RLocalUgReal=REAL(CLocalUgPrime)
       RLocalUgImag=AIMAG(CLocalUgPrime)
+      !?? RB I give up trying to MPI a complex number, do it with two real ones
       ! MPI gatherv the new U'g s into CUgPrime
       ! NB MPI_GATHERV(BufferToSend,No.of elements,datatype,ReceivingArray,No.of elements,)
       CALL MPI_GATHERV(RLocalUgReal,SIZE(RLocalUgReal),MPI_DOUBLE_PRECISION,&
                      RUgReal,Inum,Ipos,MPI_DOUBLE_PRECISION,&
                      root,MPI_COMM_WORLD,IErr)
+      IF(l_alert(IErr,"Absorption()","MPI_GATHERV(), RLocalUgReal")) RETURN
       CALL MPI_GATHERV(RLocalUgImag,SIZE(RLocalUgImag),MPI_DOUBLE_PRECISION,&
                      RUgImag,Inum,Ipos,MPI_DOUBLE_PRECISION,&
                      root,MPI_COMM_WORLD,IErr)
-      IF(l_alert(IErr,"Absorption()","MPI_GATHERV()")) RETURN
+      IF(l_alert(IErr,"Absorption()","MPI_GATHERV(), RLocalUgImag")) RETURN
       !===================================== send out the full list to all cores
       CALL MPI_BCAST(RUgReal,IUniqueUgs,MPI_DOUBLE_PRECISION,&
                      root,MPI_COMM_WORLD,IErr)
@@ -760,23 +771,17 @@ MODULE Ug
 
 
   !>
-  !! Procedure-description:
+  !! Procedure-description: Used as part of numerical integration to calculate
+  !! absorptive form factor f' for Bird & King absorption method
   !!
   !! Major-Authors: Keith Evans (2014), Richard Beanland (2016)
   !!
   SUBROUTINE DoubleIntegrate(RResult,IErr) 
 
-    !?? utility used each absorption
+    !?? used in Ug.f90
+    !?? used in each (case 2 Bird & King) absorption (indirectly)
     USE MyNumbers
-
-    USE CConst; USE IConst
-    USE IPara; USE RPara; USE CPara
-    USE BlochPara
-
-    USE IChannels
-
-    USE MPI
-    USE MyMPI
+    USE terminal_output
 
     IMPLICIT NONE
 
@@ -787,13 +792,14 @@ MODULE Ug
     REAL(RKIND) :: RAccuracy,RError,RResult,dd
     REAL(RKIND) :: work(lenw)
     
-    dd=1.0!Do I need this? what does it do?
-    RAccuracy=0.00000001D0!accuracy of integration
-    !use single integration IntegrateBK as an external function of one variable
-    !Quadpack integration 0 to infinity
+    dd=1.0 ! Do I need this? what does it do?
+    RAccuracy=0.00000001D0 ! accuracy of integration
+    ! use single integration IntegrateBK as an external function of one variable
+    ! Quadpack integration 0 to infinity
     CALL dqagi(IntegrateBK,ZERO,inf,0,RAccuracy,RResult,RError,Ieval,IErr,&
          limit, lenw, last, iwork, work )
-    !The integration required is actually -inf to inf in 2 dimensions. We used symmetry to just do 0 to inf, so multiply by 4
+    ! The integration required is actually -inf to inf in 2 dimensions
+    ! We used symmetry to just do 0 to inf, so multiply by 4
     RResult=RResult*4
     
   END SUBROUTINE DoubleIntegrate
@@ -803,39 +809,37 @@ MODULE Ug
 
 
   !>
-  !! Procedure-description:
+  !! Procedure-description: Used as part of numerical integration to calculate
+  !! absorptive form factor f' for Bird & King absorption method
   !!
   !! Major-Authors: Keith Evans (2014), Richard Beanland (2016)
   !!
   FUNCTION IntegrateBK(Sy) 
 
-    !?? used in each DoubleIntegrate (in absorption) via dqagi (via external function)
+    !?? used in Ug.f90
+    !?? used in each (case 2 Bird & King) absorption (indirectly)
+    !?? 'CALL dqagi(IntegrateBK,---)' each DoubleIntegrate
+
     USE MyNumbers
 
-    USE CConst; USE IConst
-    USE IPara; USE RPara; USE CPara
-    USE BlochPara
-
-    USE IChannels
-
-    USE MPI
-    USE MyMPI
+    USE RPARA, ONLY : RSprimeY
 
     IMPLICIT NONE
 
     INTEGER(IKIND) :: IErr,Ieval
-    INTEGER(IKIND), PARAMETER :: inf=1
-    INTEGER(IKIND), PARAMETER :: limit=500
-    INTEGER(IKIND), PARAMETER :: lenw= limit*4
-    REAL(RKIND) :: RAccuracy,RError,IntegrateBK,Sy
+    INTEGER(IKIND), PARAMETER :: inf = 1
+    INTEGER(IKIND), PARAMETER :: limit = 500
+    INTEGER(IKIND), PARAMETER :: lenw = limit*4
+    REAL(RKIND) :: RAccuracy, RError, IntegrateBK, Sy
     INTEGER(IKIND) last, iwork(limit)
     REAL(RKIND) work(lenw)
 
-    !RSprimeY is passed into BirdKing as a global variable since we can't integrate a function of 2 variables with dqagi
-    RSprimeY=Sy
-    RAccuracy=0.00000001D0!accuracy of integration
-    !use BirdKing as an external function of one variable
-    !Quadpack integration 0 to infinity
+    ! RSprimeY is passed into BirdKing as a global variable !?? more elegant & quicker way?
+    ! since we can't integrate a function of 2 variables with dqagi
+    RSprimeY = Sy
+    RAccuracy = 0.00000001D0 ! accuracy of integration
+    ! use BirdKing as an external function of one variable
+    ! Quadpack integration 0 to infinity
     CALL dqagi(BirdKing,ZERO,inf,0,RAccuracy,IntegrateBK,RError,Ieval,IErr,&
          limit, lenw, last, iwork, work )
     
@@ -846,40 +850,45 @@ MODULE Ug
 
 
   !>
-  !! Procedure-description: Defines a Bird & King integrand to calculate an
-  !! absorptive scattering factor 
+  !! Procedure-description: Used as part of numerical integration to calculate
+  !! absorptive form factor f' for Bird & King absorption method. Defines a Bird & King 
+  !! integrand to calculate an absorptive scattering factor 
   !!
   !! Major-Authors: Keith Evans (2014), Richard Beanland (2016)
   !!
   FUNCTION BirdKing(RSprimeX)
 
-    !?? used in each IntegrateBK (each absorption) via dqagi (via external function)
+    !?? used in Ug.f90
+    !?? used in each (case 2 Bird & King) absorption (indirectly)
+    !?? 'CALL dqagi(BirdKing,---)' each IntegrateBK
 
     ! From Bird and King, Acta Cryst A46, 202 (1990)
     ! ICurrentZ is atomic number, global variable
-    ! RCurrentB is Debye-Waller constant b=8*pi*<u^2>, where u is mean square thermal vibration amplitude in Angstroms, global variable
-    ! RCurrentGMagnitude is magnitude of scattering vector in 1/A (NB exp(-i*g.r), physics negative convention, global variable
+    ! RCurrentB is Debye-Waller constant b=8*pi*<u^2>, 
+    ! where u is mean square thermal vibration amplitude in Angstroms, global variable
+    ! RCurrentGMagnitude is magnitude of scattering vector in 1/A 
+    ! NB exp(-i*g.r), physics negative convention, global variable
     ! RSprime is dummy parameter for integration [s'x s'y]
     ! NB can't print from here as it is called EXTERNAL in Integrate
     USE MyNumbers
-    USE CConst; USE IConst
-    USE IPara; USE RPara; USE CPara
-    USE BlochPara
+
+    ! global inputs
+    USE RPARA, ONLY : RCurrentB, RCurrentGMagnitude, RSprimeY
     
     IMPLICIT NONE
     
     INTEGER(IKIND) :: ind
-    REAL(RKIND):: BirdKing,Rs,Rg1,Rg2,RsEff
+    REAL(RKIND):: BirdKing, Rs, Rg1, Rg2, RsEff
     REAL(RKIND), INTENT(IN) :: RSprimeX
     REAL(RKIND),DIMENSION(2) :: RGprime
     
     ! NB Kirkland scattering factors in optics convention
-    RGprime=2*TWOPI*(/RSprimeX,RSprimeY/)
+    RGprime = 2 * TWOPI * [RSprimeX,RSprimeY]
     ! Since [s'x s'y]  is a dummy parameter for integration I can assign s'x //g
-    Rg1=SQRT( (RCurrentGMagnitude/2+RGprime(1))**2 + RGprime(2)**2 )
-    Rg2=SQRT( (RCurrentGMagnitude/2-RGprime(1))**2 + RGprime(2)**2 )
-    RsEff=RSprimeX**2+RSprimeY**2-RCurrentGMagnitude**2/(16*TWOPI**2)
-    BirdKing=Kirkland(Rg1)*Kirkland(Rg2)*(1-EXP(-2*RCurrentB*RsEff ) )
+    Rg1 = SQRT( (RCurrentGMagnitude/2+RGprime(1))**2 + RGprime(2)**2 )
+    Rg2 = SQRT( (RCurrentGMagnitude/2-RGprime(1))**2 + RGprime(2)**2 )
+    RsEff = RSprimeX**2+RSprimeY**2-RCurrentGMagnitude**2/(16*TWOPI**2)
+    BirdKing = Kirkland(Rg1)*Kirkland(Rg2)*(1-EXP(-2*RCurrentB*RsEff ) )
     
   END FUNCTION BirdKing
 
@@ -894,17 +903,21 @@ MODULE Ug
   !!
   FUNCTION Kirkland(Rg)
 
-    !?? in Ug.f90
-    !?? in every BirdKing & (case 0 Kirkland) in AtomicScatteringFactor
+    !?? used in Ug.f90
+    !?? used in each (case 0 Kirkland) AtomicScatteringFactor
+    !?? used in each (case 2 Bird & King) absorption (indirectly)
+    !?? 'CALL dqagi(BirdKing,---)' in each IntegrateBK
 
     ! From Appendix C of Kirkland, "Advanced Computing in Electron Microscopy", 2nd ed.
     ! ICurrentZ is atomic number, passed as a global variable
-    ! Rg is magnitude of scattering vector in 1/A (NB exp(-i*g.r), physics negative convention), global variable
+    ! Rg is magnitude of scattering vector in 1/A
+    ! (NB exp(-i*g.r), physics negative convention), global variable
     ! Kirkland scattering factor is in Angstrom units
     USE MyNumbers
-    USE CConst; USE IConst
-    USE IPara; USE RPara; USE CPara
-    USE BlochPara
+
+    ! global inputs
+    USE IPARA, ONLY : ICurrentZ 
+    use RPARA, ONLY : RScattFactors
     
     IMPLICIT NONE
     
@@ -912,7 +925,7 @@ MODULE Ug
     REAL(RKIND) :: Kirkland,Ra,Rb,Rc,Rd,Rq,Rg
 
     ! NB Kirkland scattering factors are calculated in the optics convention exp(2*pi*i*q.r)
-    Rq=Rg/TWOPI
+    Rq = Rg / TWOPI
     Kirkland=ZERO;
     ! Equation C.15
     DO ind = 1,3
@@ -920,7 +933,7 @@ MODULE Ug
       Rb=RScattFactors(ICurrentZ,ind*2);
       Rc=RScattFactors(ICurrentZ,ind*2+5);
       Rd=RScattFactors(ICurrentZ,ind*2+6);
-      Kirkland = Kirkland + Ra/((Rq**2)+Rb)+Rc*EXP(-(Rd*Rq**2));
+      Kirkland = Kirkland + Ra/((Rq**2)+Rb) + Rc*EXP(-(Rd*Rq**2))
     END DO
     
   END FUNCTION Kirkland
@@ -943,25 +956,31 @@ MODULE Ug
 
     ! Reads a scattering factor from the kth Stewart pseudoatom in CPseudoScatt 
     ! RCurrentGMagnitude is passed as a global variable
-    ! IPsize is the size, RPscale the scale factor, of the matrix holding the scattering factor, global variable
+    ! IPsize is the size, RPscale the scale factor of:
+    ! the matrix holding the scattering factor, global variable
     ! i and j give the location of the g-vector in the appropriate matrices
     USE MyNumbers
-    USE CConst; USE IConst
-    USE IPara; USE RPara; USE CPara
-    USE BlochPara
+
+    USE RPARA, ONLY : RElectronWaveLength,RCurrentGMagnitude,RPscale,RgMatrix
+    USE IPARA, ONLY : IPsize
+    USE CPARA, ONLY : CPseudoScatt
     
     IMPLICIT NONE
     
+    COMPLEX(CKIND),INTENT(OUT) :: CFpseudo
     INTEGER(IKIND) :: i,j,k,Ix,Iy,IErr
     REAL(RKIND) :: RPMag,Rx,Ry,Rr,Rtheta
-    COMPLEX(CKIND) :: CFpseudo
 
-    IF (RElectronWaveLength*ABS(RCurrentGMagnitude)*REAL(IPsize)*RPscale/TWOPI.GE.ONE) THEN!g vector is out of range of the fft
+    IF (RElectronWaveLength*ABS(RCurrentGMagnitude)*REAL(IPsize)*RPscale/TWOPI.GE.ONE) THEN
+      ! g vector is out of range of the fft
       CFpseudo=CZERO
-    ELSE!Find the pixel corresponding to g
-      Ix=NINT(RElectronWaveLength*RgMatrix(i,j,1)*REAL(IPsize)*REAL(IPsize)*RPscale/(TWO*TWOPI))
-      Iy=NINT(RElectronWaveLength*RgMatrix(i,j,2)*REAL(IPsize)*REAL(IPsize)*RPscale/(TWO*TWOPI))
-      IF (Ix.LE.0) Ix=Ix+IPsize!fft has the origin at [0,0], negative numbers wrap around from edges
+    ELSE ! Find the pixel corresponding to g
+      Ix=NINT(RElectronWaveLength*RgMatrix(i,j,1) * &
+            REAL(IPsize)*REAL(IPsize)*RPscale/(TWO*TWOPI))
+      Iy=NINT(RElectronWaveLength*RgMatrix(i,j,2) * &
+            REAL(IPsize)*REAL(IPsize)*RPscale/(TWO*TWOPI))
+      ! fft has the origin at [0,0], negative numbers wrap around from edges
+      IF (Ix.LE.0) Ix=Ix+IPsize 
       IF (Iy.LE.0) Iy=Iy+IPsize
       CFpseudo=CPseudoScatt(Ix,Iy,k)
     END IF

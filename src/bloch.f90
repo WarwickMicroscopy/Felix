@@ -131,12 +131,13 @@ MODULE bloch
     RKn = DOT_PRODUCT(RTiltedK,RNormDirM)
     
     ! Compute the deviation parameter for reflection pool
-    ! NB RDevPara is in units of (1/A), in the microscope ref frame(NB exp(i*s.r), physics convention)
+    ! NB RDevPara is in units of (1/A)
+    ! in the microscope ref frame(NB exp(i*s.r), physics convention)
     DO knd=1,nReflections
       ! Sg parallel to z: Sg=-[k'z+gz-sqrt( (k'z+gz)^2-2k'.g-g^2)]
       RDevPara(knd)= -RTiltedK(3)-RgPool(knd,3)+&
-	    SQRT( (RTiltedK(3)+RgPool(knd,3))**2-2*DOT_PRODUCT(RgPool(knd,:),RTiltedK(:))-RgPoolMag(knd)**2)
-
+	    SQRT( (RTiltedK(3)+RgPool(knd,3))**2 - &
+            2*DOT_PRODUCT(RgPool(knd,:),RTiltedK(:)) - RgPoolMag(knd)**2 )
       !??  remove below commented out
       !Keith's old version, Sg parallel to k'
       !RDevPara(knd)= -( RBigK + DOT_PRODUCT(RgPool(knd,:),RTiltedK(:)) /RBigK) + &
@@ -156,11 +157,8 @@ MODULE bloch
     CALL StrongAndWeakBeamsDetermination(nReflections,IMinWeakBeams,&
                     IMinStrongBeams,RDevPara,CUgMat,&
                     IStrongBeamList,IWeakBeamList,nBeams,nWeakBeams,IErr)
-    IF( IErr.NE.0 ) THEN
-      PRINT*,"Error:BlochCoefficientCalculation(",my_rank,&
-            ") error in Determination of Strong and Weak beams"
-      RETURN
-    END IF
+    IF(l_alert(IErr,"BlochCoefficientCalculation()",&
+          "StrongAndWeakBeamsDetermination()")) RETURN
     CALL message(LL,dbg7,"strong beams",nBeams)
     CALL message(LL,dbg7,"weak beams",nWeakBeams)
     CALL message(LL,dbg7,"nReflections",nReflections)
@@ -170,21 +168,18 @@ MODULE bloch
     !--------------------------------------------------------------------
 
     ! now nBeams determined, allocate complex arrays
-    ALLOCATE(CBeamProjectionMatrix(nBeams,nReflections),STAT=IErr)
-    ALLOCATE(CDummyBeamMatrix(nBeams,nReflections),STAT=IErr)
-    ALLOCATE(CUgSgMatrix(nBeams,nBeams),STAT=IErr)
-    ALLOCATE(CEigenVectors(nBeams,nBeams),STAT=IErr)
-    ALLOCATE(CEigenValues(nBeams),STAT=IErr)
-    ALLOCATE(CInvertedEigenVectors(nBeams,nBeams),STAT=IErr)
-    ALLOCATE(CBeamTranspose(nReflections,nBeams),STAT=IErr)
-    ALLOCATE(CUgMatPartial(nReflections,nBeams),STAT=IErr)
-    ALLOCATE(CAlphaWeightingCoefficients(nBeams),STAT=IErr)
-    ALLOCATE(CEigenValueDependentTerms(nBeams,nBeams),STAT=IErr)
-    IF( IErr.NE.0 ) THEN
-      PRINT*,"Error:BlochCoefficientCalculation(",my_rank,")error in allocations"
-      RETURN
-    END IF
-    
+    ALLOCATE( CBeamProjectionMatrix(nBeams,nReflections),&
+              CDummyBeamMatrix(nBeams,nReflections),&
+              CUgSgMatrix(nBeams,nBeams),&
+              CEigenVectors(nBeams,nBeams),&
+              CEigenValues(nBeams),&
+              CInvertedEigenVectors(nBeams,nBeams),&
+              CBeamTranspose(nReflections,nBeams),&
+              CUgMatPartial(nReflections,nBeams),&
+              CAlphaWeightingCoefficients(nBeams),&
+              CEigenValueDependentTerms(nBeams,nBeams), STAT=IErr)
+    IF(l_alert(IErr,"BlochCoefficientCalculation()","do main allocations")) RETURN
+
     ! compute the effective Ug matrix by selecting only those beams
     ! for which IStrongBeamList has an entry
     CBeamProjectionMatrix= CZERO
@@ -258,7 +253,7 @@ MODULE bloch
       CUgSgMatrix = TWOPI*TWOPI*CUgSgMatrix/(TWO*RBigK)
     END IF
 
-    IF(IYPixelIndex.EQ.10.AND.IXPixelIndex.EQ.10) THEN ! output data from 1 pixel to show working
+    IF(IYPixelIndex.EQ.10.AND.IXPixelIndex.EQ.10) THEN ! output data from 1 pixel,show working
       CALL message(LL,dbg3, "Pixel [10,10] Ug/2K + {Sg} matrix (nm^-2)")
       CALL message(LL,dbg3, "displaying Rhkl and 100*CUgSgMatrix alongside",&
             NINT(Rhkl(1:16,:)),100*CUgSgMatrix(1:16,1:6))
@@ -270,10 +265,7 @@ MODULE bloch
 
     IF (IHolzFLAG.EQ.1) THEN ! limit simulation to zeroth order Laue zone
       CALL EigenSpectrum(nBeams,CUgSgMatrix,CEigenValues(:), CEigenVectors(:,:),IErr)
-      IF( IErr.NE.0 ) THEN
-        PRINT*,"Error:BlochCoefficientCalculation(", my_rank, ") error in EigenSpectrum()"
-        RETURN
-      END IF
+      IF(l_alert(IErr,"BlochCoefficientCalculation()","EigenSpectrum()")) RETURN
       CEigenValues = CEigenValues * RKn/RBigK    !?? What is this doing?
       DO knd = 1,nBeams
         CEigenVectors(knd,:) = CEigenVectors(knd,:) / &
@@ -281,11 +273,7 @@ MODULE bloch
       END DO
     ELSE ! Use Laue zones beyond zeroth order !?? does this work?
       CALL EigenSpectrum(nBeams,CUgSgMatrix,CEigenValues(:),CEigenVectors(:,:),IErr)
-    END IF
-
-    IF( IErr.NE.0 ) THEN
-      PRINT*,"Error:BlochCoefficientCalculation(",my_rank,") error in EigenSpectrum()"
-      RETURN
+      IF(l_alert(IErr,"BlochCoefficientCalculation()","EigenSpectrum()")) RETURN
     END IF
    
     ! Calculate intensities for different specimen thicknesses
@@ -316,7 +304,7 @@ MODULE bloch
           END DO
         ELSE
           DO pnd = 1,INoOfLacbedPatterns
-            CAmplitudeandPhase(pnd,IThicknessIndex,(IPixelNumber-IFirstPixelToCalculate)+1) = &
+            CAmplitudeandPhase(pnd,IThicknessIndex,(IPixelNumber-IFirstPixelToCalculate)+1)=&
                  CFullWavefunctions(IOutputReflections(pnd))
           END DO
         END IF
@@ -328,10 +316,7 @@ MODULE bloch
          CInvertedEigenVectors, CAlphaWeightingCoefficients, &
          CEigenValues,CEigenVectors,CEigenValueDependentTerms, &
          CBeamProjectionMatrix, CDummyBeamMatrix,STAT=IErr)
-    IF( IErr.NE.0 ) THEN
-       PRINT*,"Error:BlochCoefficientCalculation(",my_rank,") error in Deallocations"
-       RETURN
-    END IF
+    IF(l_alert(IErr,"BlochCoefficientCalculation()","deallocating arrays")) RETURN
     
   END SUBROUTINE BlochCoefficientCalculation
 
@@ -377,10 +362,7 @@ MODULE bloch
     !?? ALLOCATE(RWaveIntensity(nBeams0),STAT=IErr)  
     !?? ALLOCATE(CWaveFunctions(nBeams0),STAT=IErr)
     ALLOCATE(CDummyEigenVectors(nBeams0,nBeams0),STAT=IErr)
-    IF( IErr.NE.0 ) THEN
-       PRINT*,"Error:CreateWavefunctions(",my_rank,")error in allocations"
-       RETURN
-    END IF
+    IF(l_alert(IErr,"CreateWaveFunctions()","allocate CDummyEigenVectors")) RETURN
     
     ! The top surface boundary conditions
     !?? ALLOCATE(CPsi0(nBeams0),STAT=IErr) 
@@ -396,13 +378,15 @@ MODULE bloch
     CAlphaWeightingCoefficients = MATMUL(CInvertedEigenVectors(1:nBeams0,1:nBeams0),CPsi0) 
     CEigenValueDependentTerms= CZERO
     DO hnd=1,nBeams0     ! This is a diagonal matrix
-      CEigenValueDependentTerms(hnd,hnd)=EXP(CIMAGONE*CMPLX(RThickness,ZERO,CKIND)*CEigenValues0(hnd)) 
+      CEigenValueDependentTerms(hnd,hnd) = &
+            EXP(CIMAGONE*CMPLX(RThickness,ZERO,CKIND)*CEigenValues0(hnd)) 
     ENDDO
     ! The diffracted intensity for each beam
     ! EQ 6.35 in Kirkland Advance Computing in EM
     ! C-1*C*alpha 
-    CWaveFunctions(:)=MATMUL(MATMUL(CEigenVectors0(1:nBeams0,1:nBeams0),CEigenValueDependentTerms), & 
-         CAlphaWeightingCoefficients(:) )
+    CWaveFunctions(:) = MATMUL( &
+          MATMUL(CEigenVectors0(1:nBeams0,1:nBeams0),CEigenValueDependentTerms), & 
+          CAlphaWeightingCoefficients(:) )
     !?? possible small time saving here by only calculating the (tens of) output
     !?? reflections rather than all strong beams (hundreds)
     DO hnd=1,nBeams0
@@ -421,10 +405,7 @@ MODULE bloch
     ENDDO
     
     DEALLOCATE(CDummyEigenVectors,STAT=IErr) !?? necessary?
-    IF( IErr.NE.0 ) THEN
-       PRINT*,"Error:CreateWavefunctions(",my_rank,")error deallocating CDummyEigenVectors"
-       RETURN
-    END IF
+    IF(l_alert(IErr,"CreateWaveFunctions()","deallocate")) RETURN
     
   END SUBROUTINE CreateWavefunctions
 
@@ -515,11 +496,8 @@ MODULE bloch
     CALL message(LXL,dbg7,"Sg limit for strong beams = ",RMaxSg)
     CALL message(LXL,dbg7,"Smallest strong perturbation strength = ",RMinPertStrong)
     IF(SUM(IStrong)+IMinWeakBeams0.GT.nReflections0) IErr = 1
-    IF( IErr.NE.0 ) THEN
-      PRINT*,"Error:StrongAndWeakBeamDetermination(", my_rank, ") error ", IErr, &
-            " Insufficient reflections to accommodate all Strong and Weak Beams"
-      RETURN
-    END IF
+    IF(l_alert(IErr,"StrongAndWeakBeamsDetermination()","start. "//&
+          "Insufficient reflections to accommodate all Strong and Weak Beams")) RETURN
     
     !----------------------------------------------------------------------------
     ! weak beams
@@ -571,6 +549,7 @@ MODULE bloch
                     EigenVectors, IErr)
 
     USE MyNumbers
+    USE terminal_output
     USE MyMPI
 
     IMPLICIT NONE
@@ -591,11 +570,10 @@ MODULE bloch
     ! find optimum size of arrays
     WorkSpaceDimension=1
     ALLOCATE(CWorkSpace(WorkSpaceDimension),STAT = IErr)
+    IF(l_alert(IErr,"EigenSpectrum()","allocate CWorkSpace")) RETURN
     ALLOCATE(WorkSpace(2*IMatrixDimension),STAT = IErr)
-    IF( IErr.NE.0 ) THEN
-       PRINT*,"Error:EigenSpectrum: error in ALLOCATE() for work arrays (query stage)"
-       RETURN
-    END IF
+    IF(l_alert(IErr,"EigenSpectrum()","allocate WorkSpace")) RETURN
+
 
     WorkSpaceDimension=-1
 
@@ -603,36 +581,24 @@ MODULE bloch
          EigenValues, 0,1, EigenVectors,IMatrixDimension, &
          CWorkSpace, WorkSpaceDimension, WorkSpace, IErr )
     !?? '0,1' constant inputs don't match documentation 
-    IF( IErr.NE.0 ) THEN
-       PRINT*,"Error:EigenSpectrum: error in ZGEEV determining work arrays"
-       RETURN
-    END IF
+    IF(l_alert(IErr,"EigenSpectrum()","ZGEEV()")) RETURN
 
     WorkSpaceDimension = INT(CWorkSpace(1))
 
     ! REALLOCATE necessary memory
     DEALLOCATE(CWorkSpace,STAT=IErr)
+    IF(l_alert(IErr,"EigenSpectrum()","deallocate CWorkSpace")) RETURN
     ALLOCATE(CWorkSpace(WorkSpaceDimension),STAT = IErr)
-    IF( IErr.NE.0 ) THEN
-       PRINT*,"Error:EigenSpectrum: error in ALLOCATE() for work arrays (final stage)"
-       RETURN
-    END IF
+    IF(l_alert(IErr,"EigenSpectrum()","allocate CWorkSpace")) RETURN
 
     ! do the actual call to get the spectrum
     CALL ZGEEV('N','V', IMatrixDimension, MatrixToBeDiagonalised, IMatrixDimension,&
          EigenValues, 0,1, EigenVectors,IMatrixDimension, &
          CWorkSpace, WorkSpaceDimension, WorkSpace, IErr )
-    IF( IErr.NE.0 ) THEN
-       PRINT*,"Error:EigenSpectrum: error ", IErr, " in ZGEEV"
-       RETURN
-    ENDIF
+    IF(l_alert(IErr,"EigenSpectrum()","ZGEEV()")) RETURN
 
-    DEALLOCATE(CWorkSpace,STAT = IErr)
-    DEALLOCATE(WorkSpace,STAT = IErr)
-    IF( IErr.NE.0 ) THEN
-       PRINT*,"Error:EigenSpectrum: error in DEALLOCATE() for work arrays (final stage)"
-       RETURN
-    ENDIF
+    DEALLOCATE(CWorkSpace,WorkSpace,STAT = IErr)
+    IF(l_alert(IErr,"EigenSpectrum()","deallocate")) RETURN
 
     RETURN
 
@@ -656,6 +622,7 @@ MODULE bloch
     ! InvertedMatrix: the Inverse
 
     USE MyNumbers
+    USE terminal_output
     USE MyMPI
     
     IMPLICIT NONE
@@ -671,33 +638,21 @@ MODULE bloch
     COMPLEX(CKIND), DIMENSION(:), ALLOCATABLE :: WORK
     
     ALLOCATE(IPIV(MatrixSize),STAT=IErr)
-    IF( IErr.NE.0 ) THEN
-       PRINT*,"Error:Invert(): ERR in ALLOCATE(IPIV(MatrixSize)) statement, MatrixSize=", MatrixSize
-       RETURN
-    ENDIF
+    IF(l_alert(IErr,"EigenSpectrum()","allocate IPIV")) RETURN
     
     CALL ZGETRF(MatrixSize,MatrixSize,Matrix,MatrixSize,IPIV,IErr)
+    IF(l_alert(IErr,"EigenSpectrum()","ZGETRF()")) RETURN
+
     LWORK = MatrixSize*MatrixSize
-    IF ( IErr.NE.0 ) THEN
-       PRINT *,'Error:Invert() : Datatype Error: IFAIL=',INFO
-       RETURN
-    END IF
     ALLOCATE(WORK(LWORK),STAT=IErr)   
-    IF( IErr.NE.0 ) THEN
-       PRINT*,"Error:Invert(): ERR in ALLOCATE(WORK(LWORK)) statement, LWORK=", LWORK
-       RETURN
-    ENDIF
+    IF(l_alert(IErr,"EigenSpectrum()","WORK")) RETURN
     
     CALL ZGETRI(MatrixSize,Matrix,MatrixSize,IPIV,WORK,LWORK,IErr)
-    IF ( IErr.NE.0 ) THEN
-       PRINT *,'Error:Inversion Error: IFAIL=',INFO
-       RETURN
-    END IF
+    IF(l_alert(IErr,"EigenSpectrum()","ZGETRI()")) RETURN
+
     DEALLOCATE(IPIV,WORK,STAT=IErr)
-    IF ( IErr.NE.0 ) THEN
-       PRINT *,'Error:Invert : Deallocation Error',INFO
-       RETURN
-    END IF
+    IF(l_alert(IErr,"EigenSpectrum()","deallocate IPIV")) RETURN
+
     InvertedMatrix = Matrix  
     RETURN
 
