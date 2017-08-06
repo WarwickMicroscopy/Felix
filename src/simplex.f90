@@ -52,7 +52,7 @@ SUBROUTINE NDimensionalDownhillSimplex(RSimplexVariable,y,mp,np,ndim,ftol,iter,R
   USE CConst; USE IConst
   USE IPara; USE RPara
   USE IChannels
-  USE message_mod
+  USE terminal_output
   USE MPI
   USE MyMPI
 

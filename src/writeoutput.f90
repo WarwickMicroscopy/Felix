@@ -237,7 +237,7 @@ SUBROUTINE OpenReflectionImage(IChOutWrite, surname, IErr,IReflectWriting,IImage
   
   USE IPara
   USE RPara
-  USE message_mod
+  USE terminal_output
   USE MPI
   USE MyMPI
 

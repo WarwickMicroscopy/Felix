@@ -314,7 +314,7 @@ INTEGER(IKIND) FUNCTION CountPixels(IErr)
   USE CConst; USE IConst
   USE IPara; USE RPara
   USE IChannels
-  USE message_mod
+  USE terminal_output
   USE MPI
   USE MyMPI
   

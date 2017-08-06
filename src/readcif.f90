@@ -62,7 +62,7 @@ SUBROUTINE ReadCif(IErr)
   USE IPara; USE RPara; USE SPara
   USE CPara
   USE IChannels
-  USE message_mod
+  USE terminal_output
   USE MyMPI
   
   IMPLICIT NONE

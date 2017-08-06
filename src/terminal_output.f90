@@ -31,71 +31,6 @@
 !%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 !>
-!! Module-description: This module contains a concise alert function to be
-!! used for error handling.
-!!
-!! Major-Authors: Jacob Richardson (2017)
-!!
-module l_alert_mod
-  contains
-
-  logical function l_alert(ierr,SCurrentProcedure,SAlertedActivity)
-    use mynumbers, only : ikind
-    use mympi, only : my_rank
-    character(*),intent(in) :: SCurrentProcedure,SAlertedActivity
-    integer(ikind),intent(in) :: ierr
-
-    l_alert = .false.
-    if ( ierr /= 0 ) then
-      l_alert = .true.
-      print '(1x,i1,a,a,a,a)', my_rank," = rank, error in ",SCurrentProcedure,&
-            " after attempting to ",SAlertedActivity
-    end if
-
-  end function
-end module l_alert_mod
-
-
-module timer_mod
-
-  use MyNUMBERS, only : IKIND,RKIND
-  use message_mod, only : message_only2, priority_logicals
-  ! timing variable, intialised at run-time on machine
-  integer(IKIND) :: irate
-
-  contains
-
-  ! sets a local integer to start time to compare with later
-  subroutine start_timer( istart_time )
-    integer(IKIND), intent(inout) :: istart_time
-    call system_clock(istart_time)
-  end subroutine
-
-  ! compare start time to current and print time-passed
-  subroutine print_end_time( priority_logical, istart_time, completed_task_name )
-    type (priority_logicals), intent(in) :: priority_logical
-    character(*), intent(in) :: completed_task_name
-    integer(IKIND), intent(in) :: istart_time
-    integer(IKIND) :: ihours,iminutes,iseconds,icurrent_time
-    real(RKIND) :: duration
-    character(100) :: string
-
-    call system_clock(icurrent_time)
-    ! converts ticks from system clock into seconds
-    duration = real(icurrent_time-istart_time)/real(irate)
-    ihours = floor(duration/3600.0d0)
-    iminutes = floor(mod(duration,3600.0d0)/60.0d0)
-    iseconds = int(mod(duration,3600.0d0)-iminutes*60)
-    write(string,fmt='(a,1x,a,i3,a5,i2,a6,i2,a4)') completed_task_name,&
-          "completed in ",ihours," hrs ",iminutes," mins ",iseconds," sec"
-    call message_only2(priority_logical,trim(string))
-    !?? currently message can't print the combined 3 integers and strings directly
-  end subroutine
-
-end module timer_mod
-
-
-!>
 !! Module-description: Contains generic message subroutine with interface.
 !! Printing to the terminal via this command allows
 !! different messages to be printed depeding upon the debug mode selected at 
@@ -104,7 +39,7 @@ end module timer_mod
 !!
 !! Major-Authors: Jacob Richardson (2017)
 !!
-module message_mod
+module terminal_output
 
   ! Using IWriteFLAG:
   ! 0 prints LS priority messages - key, top-level descriptions
@@ -212,8 +147,52 @@ module message_mod
   type(debug_mode_logicals) :: dbg_default, dbg7, dbg3, dbg6, dbg14
   
   character(:), allocatable :: set_initial_msg
+  integer(IKIND) :: irate
   
 contains
+
+  ! returns false if ierr is non-zero and also prints errors using input info 
+  logical function l_alert(ierr,SCurrentProcedure,SAlertedActivity)
+    use mynumbers, only : ikind
+    use mympi, only : my_rank
+    character(*),intent(in) :: SCurrentProcedure,SAlertedActivity
+    integer(ikind),intent(in) :: ierr
+
+    l_alert = .false.
+    if ( ierr /= 0 ) then
+      l_alert = .true.
+      print '(1x,i1,a,a,a,a)', my_rank," = rank, error in ",SCurrentProcedure,&
+            " after attempting to ",SAlertedActivity
+    end if
+
+  end function
+
+  ! sets a local integer to start time to compare with later
+  subroutine start_timer( istart_time )
+    integer(IKIND), intent(inout) :: istart_time
+    call system_clock(istart_time)
+  end subroutine
+
+  ! compare start time to current and print time-passed
+  subroutine print_end_time( priority_logical, istart_time, completed_task_name )
+    type (priority_logicals), intent(in) :: priority_logical
+    character(*), intent(in) :: completed_task_name
+    integer(IKIND), intent(in) :: istart_time
+    integer(IKIND) :: ihours,iminutes,iseconds,icurrent_time
+    real(RKIND) :: duration
+    character(100) :: string
+
+    call system_clock(icurrent_time)
+    ! converts ticks from system clock into seconds
+    duration = real(icurrent_time-istart_time)/real(irate)
+    ihours = floor(duration/3600.0d0)
+    iminutes = floor(mod(duration,3600.0d0)/60.0d0)
+    iseconds = int(mod(duration,3600.0d0)-iminutes*60)
+    write(string,fmt='(a,1x,a,i3,a5,i2,a6,i2,a4)') completed_task_name,&
+          "completed in ",ihours," hrs ",iminutes," mins ",iseconds," sec"
+    call message_only2(priority_logical,trim(string))
+    !?? currently message can't print the combined 3 integers and strings directly
+  end subroutine
 
   !--------------------------------------------------------------------
   ! setup message output subroutines
@@ -693,4 +672,4 @@ contains
     call message_only ( LS, dbg_default, main_msg )  
   end subroutine message_only3
 
-end module message_mod
+end module terminal_output

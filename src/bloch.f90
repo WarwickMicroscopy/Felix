@@ -42,7 +42,7 @@
 !! Module-description: Holds BlochCoefficientCalculation which for a pixel
 !! calculates the wavefunction vector for each thickness
 !!
-MODULE bloch_mod
+MODULE bloch
   IMPLICIT NONE
   PRIVATE
   PUBLIC :: BlochCoefficientCalculation
@@ -61,8 +61,7 @@ MODULE bloch_mod
     USE MyNumbers
     USE IConst, ONLY : ITHREE
     USE MyMPI
-    USE message_mod
-    USE l_alert_mod 
+    USE terminal_output
    
     ! globals - input  
     USE CPara, ONLY : CUgMat ! from Absorption
@@ -354,8 +353,7 @@ MODULE bloch_mod
     !?? only called inside bloch.f90
     USE MyNumbers
     USE MyMPI
-    USE message_mod 
-    USE l_alert_mod
+    USE terminal_output
 
     IMPLICIT NONE
     
@@ -453,7 +451,7 @@ MODULE bloch_mod
     !?? only called inside bloch.f90
     USE MyNumbers
     USE MyMPI
-    USE message_mod 
+    USE terminal_output 
 
     !?? variables match up to globals allocation
     !?? make some of these local
@@ -705,4 +703,4 @@ MODULE bloch_mod
 
   END SUBROUTINE INVERT
 
-END MODULE bloch_mod
+END MODULE bloch

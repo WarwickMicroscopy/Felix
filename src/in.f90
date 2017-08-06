@@ -52,10 +52,10 @@ SUBROUTINE ReadInpFile( IErr )
   USE CConst; USE IConst
   USE IPara; USE RPara
   USE IChannels
-  USE message_mod
+  USE terminal_output
   USE MPI
   USE MyMPI
-  USE l_alert_mod
+
 
   IMPLICIT NONE
 
@@ -329,7 +329,7 @@ SUBROUTINE ReadHklFile(IErr)
   USE RPara
   USE CPara
   USE SPara
-  USE message_mod
+  USE terminal_output
   USE MPI
   USE MyMPI
 
@@ -410,7 +410,7 @@ SUBROUTINE DetermineRefineableAtomicSites(SAtomicSites,IErr)
   USE CConst; USE IConst
   USE IPara; USE RPara
   USE IChannels
-  USE message_mod
+  USE terminal_output
   USE MPI
   USE MyMPI
 
@@ -488,7 +488,7 @@ SUBROUTINE ReadExperimentalImages(IErr)
   USE BlochPara
 
   USE IChannels
-  USE message_mod
+  USE terminal_output
   USE MPI
   USE MyMPI
 

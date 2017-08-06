@@ -172,7 +172,7 @@ SUBROUTINE UniqueAtomPositions(IErr)
   USE CConst; USE IConst
   USE IPara; USE RPara; USE SPara
   USE IChannels
-  USE message_mod
+  USE terminal_output
   USE MyMPI
   
   IMPLICIT NONE

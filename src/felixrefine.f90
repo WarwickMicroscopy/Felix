@@ -45,6 +45,7 @@
 !! felixrefine
 !!
 PROGRAM Felixrefine
+  !?? currently refinement based routines in felixfrefine...
   
   USE IConst; USE RConst; USE CConst
   USE IPara; USE RPara; USE CPara; USE SPara;
@@ -54,11 +55,10 @@ PROGRAM Felixrefine
   USE MyNumbers
   USE MPI
   USE MyMPI
-  USE message_mod 
-  USE l_alert_mod
-  USE timer_mod
+  USE terminal_output
 
   USE felixfunction_mod
+  USE Ug
   !?? could specifiy use global? also discover obselete globals
 
   ! local variable definitions
@@ -1492,6 +1492,7 @@ CONTAINS
     !?? JR called once in felixrefine
     !?? JR should we have any subroutines in felixrefine.f90, yes if top level
     ! NB IArrayToFill here equivalent to IIterativeVariableUniqueIDs outside this subroutine
+
     USE MyNumbers
     
     USE IConst; USE RConst; USE CConst
@@ -1503,7 +1504,7 @@ CONTAINS
     USE MPI
     USE MyMPI
 
-    USE message_mod 
+    USE terminal_output 
     
     IMPLICIT NONE
 
@@ -1607,7 +1608,7 @@ CONTAINS
     USE BlochPara
 
     USE IChannels
-    USE message_mod
+    USE terminal_output
     USE MPI
     USE MyMPI
     
@@ -1679,7 +1680,7 @@ CONTAINS
     USE MPI
     USE MyMPI
 
-    USE message_mod 
+    USE terminal_output 
     
     IMPLICIT NONE
     

@@ -147,7 +147,7 @@ SUBROUTINE ReSortUgs( ISymmetryIntegers,CUgs, N )
   USE CConst; USE IConst
   USE IPara; USE RPara
   USE IChannels
-  USE message_mod
+  USE terminal_output
   USE MPI
   USE MyMPI
 
@@ -205,7 +205,7 @@ REAL(RKIND) FUNCTION ResidualSumofSquares(RImage1,RImage2,IErr)
   USE CConst; USE IConst
   USE IPara; USE RPara
   USE IChannels
-  USE message_mod
+  USE terminal_output
   USE MPI
   USE MyMPI
 
@@ -278,7 +278,7 @@ REAL(RKIND) FUNCTION MaskedCorrelation(Rimg1,Rimg2,RBinaryMask,IErr)
   USE CConst; USE IConst
   USE IPara; USE RPara
   USE IChannels
-  USE message_mod
+  USE terminal_output
   USE MPI
   USE MyMPI
 

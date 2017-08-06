@@ -14,7 +14,6 @@ SUBROUTINE ReadInput(IErr)
 
   USE MPI
   USE MyMPI
-  USE l_alert_mod
   
   IMPLICIT NONE
 
@@ -117,7 +116,7 @@ SUBROUTINE UpdateStructureFactors(RIndependentVariable,IErr)
   USE BlochPara
 
   USE IChannels
-  USE message_mod
+  USE terminal_output
   USE MPI
   USE MyMPI
 

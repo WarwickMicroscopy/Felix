@@ -62,6 +62,7 @@ MODULE felixfunction_mod
   SUBROUTINE SimulateAndFit(RIndependentVariable,Iter,IExitFLAG,IErr)
 
     USE MyNumbers
+    USE Ug
     
     USE IConst; USE RConst; USE CConst
     USE IPara; USE RPara; USE CPara; USE SPara;
@@ -72,8 +73,7 @@ MODULE felixfunction_mod
     USE MPI
     USE MyMPI
 
-    USE message_mod
-    USE l_alert_mod 
+    USE terminal_output
 
     IMPLICIT NONE
 
@@ -240,10 +240,9 @@ MODULE felixfunction_mod
     USE MyNumbers
     USE IConst, ONLY : ITHREE
     USE MyMPI
-    USE message_mod
-    USE l_alert_mod 
+    USE terminal_output
 
-    USE bloch_mod
+    USE bloch
 
     ! globals - bloch inputs  
     USE CPara, ONLY : CUgMat ! from Absorption
@@ -365,7 +364,7 @@ MODULE felixfunction_mod
     USE MPI
     USE MyMPI
 
-    USE message_mod 
+    USE terminal_output 
 
     IMPLICIT NONE
 
@@ -512,7 +511,7 @@ MODULE felixfunction_mod
     USE MPI
     USE MyMPI
 
-    USE message_mod 
+    USE terminal_output 
 
     IMPLICIT NONE
 
@@ -601,7 +600,7 @@ MODULE felixfunction_mod
     USE MPI
     USE MyMPI
 
-    USE message_mod 
+    USE terminal_output 
 
     IMPLICIT NONE
 
@@ -697,7 +696,7 @@ MODULE felixfunction_mod
     !?? called once in felix function
     USE MyNumbers
     USE MPI
-    USE message_mod !?? can't use this or l_alert if pure
+    USE terminal_output !?? can't use this or l_alert if pure
 
     IMPLICIT NONE
 
@@ -775,4 +774,4 @@ MODULE felixfunction_mod
 
   END SUBROUTINE BlurG        
 
-END MODULE felixfunction_mod      
+END MODULE felixfunction_mod    
