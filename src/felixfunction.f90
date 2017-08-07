@@ -62,25 +62,32 @@ MODULE felixfunction_mod
   SUBROUTINE SimulateAndFit(RIndependentVariable,Iter,IExitFLAG,IErr)
 
     USE MyNumbers
+    USE terminal_output
+
     USE Ug
-    
-    USE IConst; USE RConst; USE CConst
-    USE IPara; USE RPara; USE CPara; USE SPara;
-    USE BlochPara 
-
-    USE IChannels
-
-    USE MPI
     USE MyMPI
 
-    USE terminal_output
+    !?? global inputs and outputs of subroutines using global
+    ! global inputs
+    USE IPARA, ONLY : INoOfVariables, nReflections, IAbsorbFLAG, IMethodFLAG, INoofUgs, &
+          IPixelCount, IPrint, ISimFLAG, ISymmetryRelations, IUgOffset, IRefineMode, &
+          IEquivalentUgKey
+    USE RPARA, ONLY : RConvergenceAngle, RMinimumGMag, RTolerance, RRelativisticCorrection, &
+          RVolume, RgMatrix, RgMatrixMagnitude, RCurrentGMagnitude
+
+    ! gloabl outputs
+    USE IPARA, ONLY : IPreviousPrintedIteration 
+    USE CPARA, ONLY : CUgMatNoAbs, CUniqueUg
+    USE RPARA, ONLY : RAbsorptionPercentage, RDeltaK, RFigureofMerit, RSimulatedPatterns
 
     IMPLICIT NONE
 
-    INTEGER(IKIND) :: IErr,IExitFLAG,IThicknessIndex,ind,jnd
-    REAL(RKIND),DIMENSION(INoOfVariables) :: RIndependentVariable
+    REAL(RKIND),INTENT(INOUT) :: RIndependentVariable(INoOfVariables)
     INTEGER(IKIND),INTENT(INOUT) :: Iter
-    COMPLEX(CKIND),DIMENSION(nReflections,nReflections) :: CUgMatDummy
+    INTEGER(IKIND),INTENT(OUT) :: IErr
+    INTEGER(IKIND) :: ind,jnd, IExitFLAG,IThicknessIndex, ILoc(2), IUniqueUgs
+    REAL(RKIND) :: RCurrentG(3), RScatteringFactor
+    COMPLEX(CKIND) :: CUgMatDummy(nReflections,nReflections),CVgij
     CHARACTER*200 :: SFormat,SPrintString
 
     CALL message(LM,"Iteration ",Iter)
@@ -126,21 +133,15 @@ MODULE felixfunction_mod
         CUgMatNoAbs = CUgMatDummy
       END WHERE
       CALL Absorption(IErr)
-      IF( IErr.NE.0 ) THEN
-        PRINT*,"Error:SimulateAndFit(",my_rank,")error in Absorption"
-        RETURN
-      END IF
+      IF(l_alert(IErr,"SimulateAndFit()","Absorption()")) RETURN
       IF (IAbsorbFLAG.EQ.1) THEN ! proportional absorption
-       RAbsorptionPercentage = RIndependentVariable(jnd)
+        RAbsorptionPercentage = RIndependentVariable(jnd)
       END IF
 
     ELSE ! not Ug refinement JR
       ! Update variables
       CALL UpdateVariables(RIndependentVariable,IErr)
-      IF( IErr.NE.0 ) THEN
-        PRINT*,"Error:SimulateAndFit(",my_rank,")error in UpdateVariables"
-        RETURN
-      END IF
+      IF(l_alert(IErr,"SimulateAndFit()","UpdateVariables()")) RETURN
       IF (IRefineMode(8).EQ.1) THEN ! convergence angle
         ! recalculate k-vectors
 
@@ -157,62 +158,71 @@ MODULE felixfunction_mod
       END IF
       ! recalculate unit cell
       CALL UniqueAtomPositions(IErr)
+      IF(l_alert(IErr,"SimulateAndFit()","UniqueAtomPositions()")) RETURN
       !?? This is being called unnecessarily for some refinement modes
-      IF( IErr.NE.0 ) THEN
-        PRINT*,"Error:SimulateAndFit(",my_rank,")error in UniqueAtomPositions"
-        RETURN
-      END IF
+
       ! Update scattering matrix
-      CALL UpdateUgMatrix(IErr)
+
+      CUgMatNoAbs = CZERO
+      ! Work through unique Ug's
+      IUniqueUgs = SIZE(IEquivalentUgKey)
+      DO ind = 1, IUniqueUgs
+        ! number of this Ug
+        jnd = IEquivalentUgKey(ind)
+        ! find the position of this Ug in the matrix
+        ILoc = MINLOC(ABS(ISymmetryRelations-jnd))
+        RCurrentG = RgMatrix(ILoc(1),ILoc(2),:) ! g-vector, local variable
+        RCurrentGMagnitude = RgMatrixMagnitude(ILoc(1),ILoc(2)) ! g-vector magnitude
+
+        CALL GetVgContributionij(RScatteringFactor,ILoc(1),ILoc(2),CVgij,IErr)
+        IF(l_alert(IErr,"SimulateAndFit()","GetVgContributionij()")) RETURN
+
+        ! now replace the values in the Ug matrix
+        WHERE(ISymmetryRelations.EQ.jnd)
+          CUgMatNoAbs=CVgij
+        END WHERE
+        ! NB for imaginary potential U(g)=U(-g)*
+        WHERE(ISymmetryRelations.EQ.-jnd)
+          CUgMatNoAbs = CONJG(CVgij)
+        END WHERE
+      END DO
+
+      CUgMatNoAbs=CUgMatNoAbs*RRelativisticCorrection/(PI*RVolume)
+      DO ind=1,nReflections ! zero diagonal
+         CUgMatNoAbs(ind,ind)=ZERO
+      ENDDO
+
       CALL Absorption (IErr)
-      IF( IErr.NE.0 ) THEN
-        PRINT*,"Error:felixfunction(",my_rank,")error in UpdateUgMatrix"
-        RETURN
-      END IF
+      IF(l_alert(IErr,"SimulateAndFit()","Absorption()")) RETURN
     END IF
     !/\----------------------------------------------------------------------
 
     IF (my_rank.EQ.0) THEN ! send current values to screen
-       CALL PrintVariables(IErr)
-       IF( IErr.NE.0 ) THEN
-          PRINT*,"Error:SimulateAndFit(",my_rank,")error in PrintVariables"
-          RETURN
-       END IF
+      CALL PrintVariables(IErr)
+      IF(l_alert(IErr,"SimulateAndFit()","PrintVariables()")) RETURN
     END IF
 
     ! simulate
 
     RSimulatedPatterns = ZERO ! Reset simulation
     CALL FelixFunction(IErr) ! simulate 
-    IF( IErr.NE.0 ) THEN
-       PRINT*,"Error:SimulateAndFit(",my_rank,")error in FelixFunction"
-       RETURN
-    END IF
+    IF(l_alert(IErr,"SimulateAndFit()","FelixFunction()")) RETURN
     IF (IMethodFLAG.NE.1) Iter=Iter+1 ! iterate for methods other than simplex
 
     IF(my_rank.EQ.0) THEN
       ! Only calculate figure of merit if we are refining
       IF (ISimFLAG.EQ.0) THEN
         CALL CalculateFigureofMeritandDetermineThickness(Iter,IThicknessIndex,IErr)
-        IF( IErr.NE.0 ) THEN
-          PRINT*,"Error:SimulateAndFit(0) error",IErr,&
-                "in CalculateFigureofMeritandDetermineThickness"
-          RETURN
-        END IF
+        IF(l_alert(IErr,"SimulateAndFit()",&
+              "CalculateFigureofMeritandDetermineThickness()")) RETURN
       END IF
       ! Write current variable list and fit to IterationLog.txt
       CALL WriteOutVariables(Iter,IErr)
-      IF( IErr.NE.0 ) THEN
-        PRINT*,"Error:WriteIterationOutput(0) error in WriteOutVariables"
-        RETURN
-      END IF
+      IF(l_alert(IErr,"SimulateAndFit()","WriteOutVariables()")) RETURN
       ! write images to disk every IPrint iterations, or when finished
       IF(IExitFLAG.EQ.1.OR.(Iter.GE.(IPreviousPrintedIteration+IPrint))) THEN
         CALL WriteIterationOutput(Iter,IThicknessIndex,IExitFLAG,IErr)
-        IF( IErr.NE.0 ) THEN
-          PRINT*,"Error:SimulateAndFit(0) error in WriteIterationOutput"
-          RETURN
-        END IF
+        IF(l_alert(IErr,"SimulateAndFit()","WriteIterationOutput()")) RETURN
         IPreviousPrintedIteration = Iter ! reset iteration counter
       END IF
     END IF
@@ -307,10 +317,7 @@ MODULE felixfunction_mod
          RSimulatedPatterns,ICount,IDisplacements,MPI_DOUBLE_PRECISION,&
          root,MPI_COMM_WORLD,IErr)
     !=====================================
-    IF( IErr.NE.0 ) THEN
-       PRINT*,"Error:Felixfunction(",my_rank,")error",IErr,"in MPI_GATHERV"
-       RETURN
-    END IF
+    IF(l_alert(IErr,"SimulateAndFit()","MPI_GATHERV()")) RETURN
 
     ! put 1D array RSimulatedPatterns into 2D image RImageSimi
     ! remember dimensions of RSimulatedPatterns(INoOfLacbedPatterns,IThicknessCount,IPixelTotal)
@@ -344,8 +351,8 @@ MODULE felixfunction_mod
 
 
   !>
-  !! Procedure-description: Calculate figure of merit and determine Thickness, 
-  !! involving image processing and correlation type.
+  !! Procedure-description: Calculates figure of merit and determines which thickness
+  !! matches best. Iteratively 
   !!
   !! Major-Authors: Keith Evans (2014), Richard Beanland (2016)
   !!  
@@ -354,23 +361,23 @@ MODULE felixfunction_mod
     !?? called once felixfunction & once felixrefine
     !?? NB core 0 only
     USE MyNumbers
-    
-    USE IConst; USE RConst; USE CConst
-    USE IPara; USE RPara; USE CPara; USE SPara;
-    USE BlochPara 
-
-    USE IChannels
-
-    USE MPI
-    USE MyMPI
-
     USE terminal_output 
+    
+    ! global outputs
+    USE RPARA, ONLY : RFigureofMerit
+
+    ! global inputs
+    USE IPARA, ONLY : INoOfLacbedPatterns, ICorrelationFLAG, IPixelCount, IThicknessCount, &
+          IImageProcessingFLAG
+    USE RPARA, ONLY : RInitialThickness, RDeltaThickness, RImageMask, &
+          RImageSimi, &   ! a main input - simulated images
+          RImageExpi      ! a main input - experimental images to compare
 
     IMPLICIT NONE
 
+    INTEGER(IKIND),INTENT(OUT) :: IBestThicknessIndex
     INTEGER(IKIND) :: ind,jnd,knd,IErr,IThickness,hnd,Iter
     INTEGER(IKIND),DIMENSION(INoOfLacbedPatterns) :: IBestImageThicknessIndex
-    INTEGER(IKIND),INTENT(OUT) :: IBestThicknessIndex
     REAL(RKIND),DIMENSION(2*IPixelCount,2*IPixelCount) :: RSimulatedImage,RExperimentalImage
     REAL(RKIND),DIMENSION(:,:),ALLOCATABLE :: RMaskImage
     REAL(RKIND) :: RTotalCorrelation,RBestTotalCorrelation,RImageCorrelation,RBestThickness,&
@@ -386,7 +393,8 @@ MODULE felixfunction_mod
     ! The best correlation for each image will go in here, initialise at the maximum value
     RBestCorrelation = TEN
     RBestTotalCorrelation = TEN ! The best mean of all correlations
-    IBestImageThicknessIndex = 1 ! The thickness with the lowest figure of merit for each image
+    ! The thickness with the lowest figure of merit for each image
+    IBestImageThicknessIndex = 1 
 
     !\/----------------------------------------------------------------------
     DO jnd = 1,IThicknessCount
@@ -445,7 +453,8 @@ MODULE felixfunction_mod
         CALL message(LL,dbg6,"  the FoM = ",RImageCorrelation)
         
 
-        ! Update best image correlation values if we need to     
+        ! Determines which thickness matches best for each LACBED pattern
+        ! which is later used to find the range of viable thicknesses 
         IF(RImageCorrelation.LT.RBestCorrelation(ind)) THEN
           RBestCorrelation(ind) = RImageCorrelation
           IBestImageThicknessIndex(ind) = jnd
@@ -459,17 +468,21 @@ MODULE felixfunction_mod
       CALL message(LL,dbg6,"For thickness ",jnd)
       CALL message(LL,dbg6,"  the mean correlation = ",RTotalCorrelation)
 
+      ! Determines which thickness matches best
       IF(RTotalCorrelation.LT.RBestTotalCorrelation) THEN
         RBestTotalCorrelation = RTotalCorrelation
         IBestThicknessIndex = jnd
       END IF
+
     END DO
     !/\----------------------------------------------------------------------
 
     ! The figure of merit, global variable
     RFigureofMerit = RBestTotalCorrelation
 
-    !?? Alternative: assume that the best thickness is given by the mean of individual thicknesses  
+    !?? RWeightingCoefficients not used here anymore
+    !?? Alternative:
+    !?? assume that the best thickness is given by the mean of individual thicknesses  
     !IBestThicknessIndex = SUM(IBestImageThicknessIndex)/INoOfLacbedPatterns
     !RBestThickness = RInitialThickness + (IBestThicknessIndex-1)*RDeltaThickness
     !RFigureofMerit = SUM(RBestCorrelation*RWeightingCoefficients)/&
@@ -479,6 +492,7 @@ MODULE felixfunction_mod
     RBestThickness = RInitialThickness +(IBestThicknessIndex-1)*RDeltaThickness
     RThicknessRange=( MAXVAL(IBestImageThicknessIndex)-&
           MINVAL(IBestImageThicknessIndex) )*RDeltaThickness
+
     CALL message(LM,"Figure of merit ",RBestTotalCorrelation)
     CALL message(LM,"Specimen thickness (Angstroms) = ",NINT(RBestThickness))
     CALL message(LM,"Thickness range (Angstroms) = ",NINT(RThicknessRange))
@@ -501,22 +515,22 @@ MODULE felixfunction_mod
     !?? called once in felixfunction
     !?? elaborate on different cases
     USE MyNumbers
-    
-    USE IConst; USE RConst; USE CConst
-    USE IPara; USE RPara; USE CPara; USE SPara;
-    USE BlochPara 
-
-    USE IChannels
-
-    USE MPI
-    USE MyMPI
-
     USE terminal_output 
+
+    ! global inputs
+    USE IPARA, ONLY : INoOfVariables, IRefineMode, IIterativeVariableUniqueIDs, &
+          IAllowedVectorIDs 
+    USE RPARA, ONLY : RInitialAtomPosition, RAllowedVectors
+
+    ! global outputs
+    USE RPARA, ONLY :  RBasisOccupancy, RBasisIsoDW, RAnisotropicDebyeWallerFactorTensor, &
+          RLengthX, RLengthY, RLengthZ, RAlpha, RBeta, RGamma, RConvergenceAngle, &
+          RAbsorptionPercentage, RAcceleratingVoltage, RRSoSScalingFactor, RBasisAtomPosition
 
     IMPLICIT NONE
 
-    INTEGER(IKIND) :: IVariableType,IVectorID,IAtomID,IErr,ind
     REAL(RKIND),DIMENSION(INoOfVariables),INTENT(IN) :: RIndependentVariable
+    INTEGER(IKIND) :: IVariableType,IVectorID,IAtomID,IErr,ind
 
     IF(IRefineMode(2).EQ.1) THEN     
        RBasisAtomPosition = RInitialAtomPosition !RB is this redundant? 
@@ -589,18 +603,13 @@ MODULE felixfunction_mod
   SUBROUTINE PrintVariables(IErr)
 
     !?? called once in felixfunction
+    !?? uninteresting, low priority
     USE MyNumbers
+    USE terminal_output 
     
     USE IConst; USE RConst; USE CConst
     USE IPara; USE RPara; USE CPara; USE SPara;
     USE BlochPara 
-
-    USE IChannels
-
-    USE MPI
-    USE MyMPI
-
-    USE terminal_output 
 
     IMPLICIT NONE
 

@@ -47,19 +47,18 @@
 PROGRAM Felixrefine
   !?? currently refinement based routines in felixfrefine...
   
+  USE MyNumbers
+  USE terminal_output
+
+  USE MPI
+  USE MyMPI
+  USE felixfunction_mod
+  USE Ug
+
   USE IConst; USE RConst; USE CConst
   USE IPara; USE RPara; USE CPara; USE SPara;
   USE BlochPara 
   USE IChannels
-
-  USE MyNumbers
-  USE MPI
-  USE MyMPI
-  USE terminal_output
-
-  USE felixfunction_mod
-  USE Ug
-  !?? could specifiy use global? also discover obselete globals
 
   ! local variable definitions
   IMPLICIT NONE

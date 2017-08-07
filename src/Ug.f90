@@ -32,24 +32,24 @@
 
 ! All procedures conatained in this file:
 ! StructureFactorInitialisation()   
-! UpdateUgMatrix()
+! GetVgContributionij()
 ! AtomicScatteringFactor()
 ! Absorption()
 ! DoubleIntegrate()
-! IntegrateBK()                 ?
-! BirdKing()                    ?
+! IntegrateBK()                 
+! BirdKing()                    
 ! Kirkland()
 ! PseudoAtom()
 
 
 !>
-!! Module-description: Holds StructureFactorInitialisation(), UpdateUgMatrix(), Absorption()
+!! Module-description: Holds StructureFactorInitialisation(), GetVgContributionij(),
+!! Absorption()
 !!
 MODULE Ug
   IMPLICIT NONE
   PRIVATE
-  PUBLIC :: StructureFactorInitialisation,UpdateUgMatrix,Absorption
-
+  PUBLIC :: StructureFactorInitialisation, GetVgContributionij, Absorption
   CONTAINS
 
   !>
@@ -209,69 +209,13 @@ MODULE Ug
     CUgMatNoAbs = CZERO ! 
     DO ind=1,nReflections
       DO jnd=1,ind
-        ! initialise
-        CVgij=CZERO ! this is in Volts
-        ! The Fourier component of the potential Vg goes in location (i,j)
-        INumPseudAtoms=0 ! pseudoatom counter
         RCurrentGMagnitude = RgMatrixMagnitude(ind,jnd) ! g-vector magnitude, global var
 
         ! Sums CVgij contribution from each atom and pseudoatom
-        DO lnd=1,INAtomsUnitCell
-          ICurrentZ = IAtomicNumber(lnd) ! atomic number, Z
-
-          IF (ICurrentZ.LT.105) THEN ! It's not a pseudoatom
-
-            ! Get scattering factor
-            CALL AtomicScatteringFactor(RScatteringFactor,IErr)
-
-            ! modify scattering factor with occupancy
-            RScatteringFactor = RScatteringFactor*ROccupancy(lnd)
-
-            ! modify scattering factor with (an)isotropic Debye-Waller factor
-            IF (IAnisoDebyeWallerFactorFlag.EQ.0) THEN ! isotropic Debye-Waller factor
-              IF(RIsoDW(lnd).GT.10.OR.RIsoDW(lnd).LT.0) RIsoDW(lnd) = RDebyeWallerConstant
-              ! Isotropic D-W factor, see e.g. Bird&King for following:
-              ! exp(-B sin(theta)^2/lamda^2) = exp(-Bs^2) = exp(-Bg^2/16pi^2)
-              RScatteringFactor = RScatteringFactor*EXP(-RIsoDW(lnd) * &
-                    (RCurrentGMagnitude**2)/(FOUR*TWOPI**2) )
-            ELSE ! anisotropic Debye-Waller factor
-              RScatteringFactor = RScatteringFactor * &
-                    EXP( -DOT_PRODUCT( RgMatrix(ind,jnd,:), &
-                    MATMUL(RAnisotropicDebyeWallerFactorTensor(RAnisoDW(lnd),:,:),&
-                    RgMatrix(ind,jnd,:)) ) )
-              !?? this will need sorting out, may not work
-            END IF
-
-            ! The structure factor equation, complex Vg(ind,jnd)=sum(f*exp(-ig.r)) in Volts
-            CVgij = CVgij +RScatteringFactor*EXP(-CIMAGONE*DOT_PRODUCT(RgMatrix(ind,jnd,:),&
-                  RAtomCoordinate(lnd,:)) )
-
-          ELSE ! pseudoatom
-
-            INumPseudAtoms=INumPseudAtoms+1
-            CALL PseudoAtom(CFpseudo,ind,jnd,INumPseudAtoms,IErr)
-            !IF (my_rank.EQ.0) PRINT*,ind,jnd,"CFpseudo",CFpseudo
-            ! Occupancy
-            CFpseudo = CFpseudo*ROccupancy(lnd)
-            ! Error check: only isotropic Debye-Waller for pseudoatoms currently
-            IF (IAnisoDebyeWallerFactorFlag.NE.0) THEN
-              CALL message( LS, "Pseudo atom - isotropic Debye-Waller factor only!")
-              IErr=1
-              RETURN
-            END IF
-            !?? DW factor: Need to work out how to get it from the real atom at same site
-            ! assume it is the next atom in the list, for now
-            CFpseudo = CFpseudo*EXP(-RIsoDW(lnd+1)*(RCurrentGMagnitude**2)/(FOUR*TWOPI**2) )
-            
-            CVgij = CVgij + CFpseudo * &
-                  EXP(-CIMAGONE*DOT_PRODUCT(RgMatrix(ind,jnd,:), RAtomCoordinate(lnd,:)) )
-
-          END IF
-
-        ENDDO
+        CALL GetVgContributionij(RScatteringFactor,ind,jnd,CVgij,IErr)
 
         ! fill diagonal half of Ug matrix (excluding absorbtion)
-        ! with fourier components of potential Vg 
+        ! with fourier components of potential Vg (CVgij)
         CUgMatNoAbs(ind,jnd) = CVgij
       ENDDO
     ENDDO
@@ -382,120 +326,96 @@ MODULE Ug
 
 
   !>
-  !! Procedure-description:
+  !! Procedure-description: Calculate a single fourier components of the potential Vg
+  !! for atoms and pseudoatoms  
   !!
-  !! Major-Authors: Richard Beanland (2016)
+  !! Major-Authors: Keith Evans (2014), Richard Beanland (2016)
   !!
-  SUBROUTINE UpdateUgMatrix(IErr)
-
-    !?? very similar to 'calculate fourier components of the potential Vg
-    !?? for atoms and pseudoatoms'
-    !?? in StructureFactorInitialisation()
-    !?? make another subroutine
-    !?? called in every simulate fit, before absorption
-    !?? move simulate fit (felixfunction.f90)
+  SUBROUTINE GetVgContributionij(RScatteringFactor,ind,jnd,CVgij,IErr) 
 
     USE MyNumbers
     USE terminal_output
 
-    USE CConst; USE IConst
-    USE IPara; USE RPara; USE CPara; USE SPara
-    USE BlochPara;
+    ! global outputs
+    USE IPARA, ONLY : ICurrentZ
+
+    ! global inputs
+    USE IPARA, ONLY : INAtomsUnitCell, IAtomicNumber, IAnisoDebyeWallerFactorFlag, RAnisoDW
+    USE RPARA, ONLY : RIsoDW, RCurrentGMagnitude, RgMatrix, &
+          RAnisotropicDebyeWallerFactorTensor, RAtomCoordinate, ROccupancy, &
+          RDebyeWallerConstant
+    USE CPARA, ONLY : CIMAGONE
 
     IMPLICIT NONE
-    
-    INTEGER(IKIND) :: IUniqueUgs,ind,jnd,knd,lnd,INumPseudAtoms,evenindlorentz,&
-          oddindgauss,evenindgauss,IErr
-    INTEGER(IKIND),DIMENSION(2) :: ILoc  
-    REAL(RKIND) :: Lorentzian,Gaussian,RScattFacToVolts,RScatteringFactor
-    REAL(RKIND),DIMENSION(3) :: RCurrentG
-    COMPLEX(CKIND) :: CVgij,CFpseudo
-    CHARACTER*200 :: SPrintString
 
-    !?? simular code to StructureFactorInitialisation
+    REAL(RKIND),INTENT(INOUT) :: RScatteringFactor
+    INTEGER(IKIND),INTENT(IN) :: ind, jnd
+    COMPLEX(CKIND),INTENT(OUT) :: CVgij
+    INTEGER(IKIND),INTENT(OUT) :: IErr
+    COMPLEX(CKIND) :: CFpseudo
+    INTEGER(IKIND) :: knd, INumPseudAtoms=0
 
-    !CReset Ug matrix  
-    CUgMatNoAbs = CZERO
-    !RScattFacToVolts=(RPlanckConstant**2)*(RAngstromConversion**2) / &
-    !(TWOPI*RElectronMass*RElectronCharge)
-    !Work through unique Ug's
-    IUniqueUgs=SIZE(IEquivalentUgKey)
-    DO ind=1,IUniqueUgs
-      !number of this Ug
-      jnd=IEquivalentUgKey(ind)
-      !find the position of this Ug in the matrix
-      ILoc = MINLOC(ABS(ISymmetryRelations-jnd))
-      RCurrentG = RgMatrix(ILoc(1),ILoc(2),:)!g-vector, local variable
-      RCurrentGMagnitude = RgMatrixMagnitude(ILoc(1),ILoc(2))!g-vector magnitude
-      CVgij=CZERO
-      INumPseudAtoms=0!pseudoatom counter
-      DO lnd=1,INAtomsUnitCell
-        ICurrentZ = IAtomicNumber(lnd)!Atomic number, global variable
-        RCurrentB = RIsoDW(lnd)!Debye-Waller constant, global variable
-        IF (ICurrentZ.LT.105) THEN!It's not a pseudoatom 
-          CALL AtomicScatteringFactor(RScatteringFactor,IErr)
-          ! Occupancy
-          RScatteringFactor = RScatteringFactor*ROccupancy(lnd)
-          !Debye-Waller factor
-          IF (IAnisoDebyeWallerFactorFlag.EQ.0) THEN
-            IF(RCurrentB.GT.10.OR.RCurrentB.LT.0) RCurrentB = RDebyeWallerConstant
-            ! Isotropic D-W factor exp(-B sin(theta)^2/lamda^2) = exp(-Bs^2) = &
-            ! exp(-Bg^2/16pi^2), see e.g. Bird&King
-            RScatteringFactor = RScatteringFactor*EXP(-RIsoDW(lnd) * &
-                  (RCurrentGMagnitude**2)/(FOUR*TWOPI**2) )
-          ELSE!this will need sorting out, not sure if it works
-            RScatteringFactor = RScatteringFactor * &
-              EXP(-DOT_PRODUCT(RgMatrix(ILoc(1),ILoc(2),:), &
-              MATMUL( RAnisotropicDebyeWallerFactorTensor( &
-              RAnisoDW(lnd),:,:),RgMatrix(ILoc(1),ILoc(2),:))))
-          END IF
-          ! The structure factor equation, complex Vg(ILoc(1),ILoc(2)) = &
-          ! sum(f*exp(-ig.r) in Volts
-          CVgij = CVgij+RScatteringFactor * &
-                EXP(-CIMAGONE*DOT_PRODUCT(RCurrentG, RAtomCoordinate(lnd,:)) )
-        ELSE!It is a pseudoatom
-          INumPseudAtoms=INumPseudAtoms+1
-          CALL PseudoAtom(CFpseudo,ILoc(1),ILoc(2),INumPseudAtoms,IErr)
-          ! Occupancy
-          CFpseudo = CFpseudo*ROccupancy(lnd)
-          !Debye-Waller factor - isotropic only, for now
-          IF (IAnisoDebyeWallerFactorFlag.NE.0) THEN
-            CALL message ( LM, "Pseudo atom - isotropic Debye-Waller factor only!" )
-            IErr=1
-            RETURN
-          END IF
-          ! DW factor: Need to work out how to get it from the real atom at the same site!
-          CFpseudo=CFpseudo*EXP(-RIsoDW(lnd+1)*(RCurrentGMagnitude**2)/(FOUR*TWOPI**2) )
-          ! assume it is the next atom in the list, for now
-          CVgij=CVgij+CFpseudo * EXP( -CIMAGONE*DOT_PRODUCT(RgMatrix(ILoc(1),ILoc(2),:),&
-                RAtomCoordinate(lnd,:)) )
+    CVgij = CZERO
+    ! Sums CVgij contribution from each atom and pseudoatom
+    DO knd=1,INAtomsUnitCell
+      ICurrentZ = IAtomicNumber(knd) ! atomic number, Z
+
+      IF (ICurrentZ.LT.105) THEN ! It's not a pseudoatom
+
+        ! Get scattering factor
+        CALL AtomicScatteringFactor(RScatteringFactor,IErr)
+
+        ! modify scattering factor with occupancy
+        RScatteringFactor = RScatteringFactor*ROccupancy(knd)
+
+        ! modify scattering factor with (an)isotropic Debye-Waller factor
+        IF (IAnisoDebyeWallerFactorFlag.EQ.0) THEN ! isotropic Debye-Waller factor
+          IF(RIsoDW(knd).GT.10.OR.RIsoDW(knd).LT.0) RIsoDW(knd) = RDebyeWallerConstant
+          ! Isotropic D-W factor, see e.g. Bird&King for following:
+          ! exp(-B sin(theta)^2/lamda^2) = exp(-Bs^2) = exp(-Bg^2/16pi^2)
+          RScatteringFactor = RScatteringFactor*EXP(-RIsoDW(knd) * &
+                (RCurrentGMagnitude**2)/(FOUR*TWOPI**2) )
+        ELSE ! anisotropic Debye-Waller factor
+          RScatteringFactor = RScatteringFactor * &
+                EXP( -DOT_PRODUCT( RgMatrix(ind,jnd,:), &
+                MATMUL(RAnisotropicDebyeWallerFactorTensor(RAnisoDW(knd),:,:),&
+                RgMatrix(ind,jnd,:)) ) )
+          !?? this will need sorting out, may not work
         END IF
-      END DO
-      !now replace the values in the Ug matrix
-      WHERE(ISymmetryRelations.EQ.jnd)
-        CUgMatNoAbs=CVgij
-      END WHERE
-      !NB for imaginary potential U(g)=U(-g)*
-      WHERE(ISymmetryRelations.EQ.-jnd)
-        CUgMatNoAbs = CONJG(CVgij)
-      END WHERE
-    END DO
 
-    CUgMatNoAbs=CUgMatNoAbs*RRelativisticCorrection/(PI*RVolume)
-    DO ind=1,nReflections !zero diagonal
-       CUgMatNoAbs(ind,ind)=ZERO
+        ! The structure factor equation, complex Vg(ind,jnd)=sum(f*exp(-ig.r)) in Volts
+        CVgij = CVgij +RScatteringFactor*EXP(-CIMAGONE*DOT_PRODUCT(RgMatrix(ind,jnd,:),&
+              RAtomCoordinate(knd,:)) )
+
+      ELSE ! pseudoatom
+
+        INumPseudAtoms=INumPseudAtoms+1
+        CALL PseudoAtom(CFpseudo,ind,jnd,INumPseudAtoms,IErr)
+        ! Occupancy
+        CFpseudo = CFpseudo*ROccupancy(knd)
+        ! Error check: only isotropic Debye-Waller for pseudoatoms currently
+        IF (IAnisoDebyeWallerFactorFlag.NE.0) THEN
+          CALL message( LS, "Pseudo atom - isotropic Debye-Waller factor only!")
+          IErr=1
+          RETURN
+        END IF
+        !?? DW factor: Need to work out how to get it from the real atom at same site
+        ! assume it is the next atom in the list, for now
+        CFpseudo = CFpseudo*EXP(-RIsoDW(knd+1)*(RCurrentGMagnitude**2)/(FOUR*TWOPI**2) )
+        
+        CVgij = CVgij + CFpseudo * &
+              EXP(-CIMAGONE*DOT_PRODUCT(RgMatrix(ind,jnd,:), RAtomCoordinate(knd,:)) )
+
+      END IF
+
     ENDDO
 
-    CALL message( LL, dbg3, "Ug matrix, without absorption (nm^-2)",&
-          NINT(Rhkl(1:16,:)), 100*CUgMatNoAbs(1:16,1:8) )
-    
-  END SUBROUTINE UpdateUgMatrix
-
+  END SUBROUTINE GetVgContributionij
 
   !!$%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 
-
+  
   !>
   !! Procedure-description: Choose scattering factors using IScatterFactorMethodFLAG
   !!
@@ -504,7 +424,7 @@ MODULE Ug
   SUBROUTINE  AtomicScatteringFactor(RScatteringFactor,IErr)  
 
     !?? used 2 places StructureFactorInitialisation(), mean inner potential, Vg potential
-    !?? once each UpdateUgMatrix()
+    !?? once each GetVgContributionij()
     !?? rename to GetRScatteringFactor
 
     USE MyNumbers
@@ -951,7 +871,7 @@ MODULE Ug
 
     !?? returns pseudoatom scattering factor, used similar AtomicScatteringFactor
     !?? used 1 place StructureFactorInitialisation() Vg potential
-    !?? once each UpdateUgMatrix()
+    !?? once each GetVgContributionij()
     !?? not used in StructureFactorInitialisation() in mean inner potential like atomic
 
     ! Reads a scattering factor from the kth Stewart pseudoatom in CPseudoScatt 
