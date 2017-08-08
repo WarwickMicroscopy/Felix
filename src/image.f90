@@ -84,7 +84,7 @@ SUBROUTINE ImageInitialisation( IErr )
 
   USE MyNumbers
 
-  USE CConst; USE IConst
+  USE SConst; USE IConst
   USE IPara; USE RPara
   USE IChannels
 
@@ -143,7 +143,7 @@ SUBROUTINE MontageInitialisation(IPixelHorizontalPosition,IPixelVerticalPosition
 
   USE MyNumbers
   
-  USE CConst; USE IConst
+  USE SConst; USE IConst
   USE IPara; USE RPara; USE CPara; USE SPara
   USE IChannels
   USE BlochPara
@@ -223,7 +223,7 @@ SUBROUTINE ImageMaskInitialisation (IErr)
   
   USE MyNumbers
 
-  USE CConst; USE IConst
+  USE SConst; USE IConst
   USE IPara; USE RPara
   USE IChannels
 
@@ -311,7 +311,7 @@ INTEGER(IKIND) FUNCTION CountPixels(IErr)
 
   USE MyNumbers
   
-  USE CConst; USE IConst
+  USE SConst; USE IConst
   USE IPara; USE RPara
   USE IChannels
   USE terminal_output

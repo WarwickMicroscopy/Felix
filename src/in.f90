@@ -49,7 +49,7 @@ SUBROUTINE ReadInpFile( IErr )
 
   USE MyNumbers
 
-  USE CConst; USE IConst
+  USE SConst; USE IConst
   USE IPara; USE RPara
   USE IChannels
   USE terminal_output
@@ -204,14 +204,14 @@ SUBROUTINE ReadInpFile( IErr )
   ILine= ILine+1; READ(IChInp,ERR=20,END=30,FMT='(A)')
   ! -----IRefineModeFLAG-----------------------------------------------------------------
   ILine= ILine+1; READ(IChInp,FMT='(A)',ERR=20,END=30) SRefineMode
-  IF(SCAN(TRIM(ADJUSTL(SRefineMode)),TRIM(ADJUSTL(CAlphabet(19)))).NE.0) THEN
+  IF(SCAN(TRIM(ADJUSTL(SRefineMode)),TRIM(ADJUSTL(SAlphabet(19)))).NE.0) THEN
     ISimFLAG=1!Simulation only
   ELSE
     ISimFLAG=0
     SRefineMode = SRefineMode((SCAN(SRefineMode,"=")+1):)
     IRefineMode = 0
     DO ind = 1,IRefinementVariableTypes
-      IF(SCAN(TRIM(ADJUSTL(SRefineMode)),TRIM(ADJUSTL(CAlphabet(ind)))).NE.0) THEN
+      IF(SCAN(TRIM(ADJUSTL(SRefineMode)),TRIM(ADJUSTL(SAlphabet(ind)))).NE.0) THEN
         IRefineMode(ind) = 1
       END IF
     END DO
@@ -407,7 +407,7 @@ SUBROUTINE DetermineRefineableAtomicSites(SAtomicSites,IErr)
 
   USE MyNumbers
 
-  USE CConst; USE IConst
+  USE SConst; USE IConst
   USE IPara; USE RPara
   USE IChannels
   USE terminal_output
@@ -483,7 +483,7 @@ SUBROUTINE ReadExperimentalImages(IErr)
 
   USE MyNumbers
 
-  USE CConst; USE IConst; USE RConst
+  USE SConst; USE IConst; USE RConst
   USE IPara; USE RPara; USE SPara; USE CPara
   USE BlochPara
 
@@ -506,7 +506,7 @@ SUBROUTINE ReadExperimentalImages(IErr)
   IF( IErr.NE.0 ) THEN
      PRINT*,"Error:ReadExperimentalImages(",my_rank,")error allocating RImageIn"
      RETURN
-  ENDIF
+  END IF
   RImageIn=ZERO
 
   DO ind = 1,INoOfLacbedPatterns  
@@ -515,13 +515,13 @@ SUBROUTINE ReadExperimentalImages(IErr)
     WRITE(filename,*) TRIM(ADJUSTL(chemicalformula)),"_"
     DO jnd = 1,3
     WRITE(intstring,'(I3.1)')  NINT(RInputHKLs(ind,jnd))
-    IF (NINT(RInputHKLs(ind,jnd))>= 0) THEN    
+    IF (NINT(RInputHKLs(ind,jnd))>= 0) THEN
       filename = TRIM(filename) // '+'
     END IF
     filename = TRIM(filename) // TRIM(ADJUSTL(IntString))
     END DO
     filename = TRIM(filename) // '.img'
-    
+
     CALL message( LL, dbg7, "filename = ", filename)
     OPEN(UNIT= IChInImage, ERR= 10, STATUS= 'UNKNOWN', FILE=TRIM(ADJUSTL(filename)),FORM='UNFORMATTED',&
           ACCESS='DIRECT',IOSTAT=Ierr,RECL=2*IPixelCount*IByteSize)
@@ -544,7 +544,7 @@ SUBROUTINE ReadExperimentalImages(IErr)
 10 IErr=1
   PRINT*,"Error:Error Message:"
   PRINT*,"Error:ReadExperimentalImages(", my_rank, ")error reading ",TRIM(ADJUSTL(filename)),", line ",jnd
-  PRINT*,"Error:From felix.cif ChemicalFormula = '","ChemicalFormula","'"
+  PRINT*,"Error:From felix.cif ChemicalFormula = '",ChemicalFormula,"'"
   PRINT*,"Error:Expect input .img files in a format like ChemicalFormula_-2-2+0.img"
   PRINT*,"Error:e.g. GaAs_+0+0-8.img"
 
@@ -571,7 +571,7 @@ SUBROUTINE ThreeDimVectorReadIn(SUnformattedVector,SOpenBracketDummy, &
 
   USE MyNumbers
   
-  USE CConst; USE IConst; USE RConst
+  USE SConst; USE IConst; USE RConst
   USE IPara; USE RPara; USE SPara; USE CPara
   USE BlochPara
 
@@ -633,6 +633,9 @@ END SUBROUTINE ThreeDimVectorReadIn
 !! Major-Authors: Keith Evans (2014)
 !! 
 SUBROUTINE WriteOutInputFile (IErr)
+
+  !?? low priority
+  !?? need to test this
   
   USE MyNumbers
   
@@ -652,66 +655,62 @@ SUBROUTINE WriteOutInputFile (IErr)
 
   INTEGER(IKIND):: IErr
      
-     OPEN(UNIT= IChInp,FILE= "felix.inp.sample",&
-       STATUS= 'UNKNOWN')
-     !todo - look into this subroutine
-     CALL WriteToScreenandFile(ADJUSTL("# Input file for felixsim/draw/refine version :VERSION: Build :BUILD:"),IErr)
-     CALL WriteToScreenandFile(ADJUSTL("# ------------------------------------"),IErr)
-     CALL WriteToScreenandFile(ADJUSTL(""),IErr)
-     CALL WriteToScreenandFile(ADJUSTL("# ------------------------------------"),IErr)
-     CALL WriteToScreenandFile(ADJUSTL(""),IErr)
-     CALL WriteToScreenandFile(ADJUSTL("# control flags"),IErr)
-     CALL WriteToScreenandFile(ADJUSTL("IWriteFLAG                = 3"),IErr)
-     CALL WriteToScreenandFile(ADJUSTL("IImageFLAG                = 1"),IErr)
-     CALL WriteToScreenandFile(ADJUSTL("IScatterFactorMethodFLAG  = 0"),IErr)
-     CALL WriteToScreenandFile(ADJUSTL("IMaskFLAG                 = 1"),IErr)
-     CALL WriteToScreenandFile(ADJUSTL("IHolzFLAG                 = 0"),IErr)
-     CALL WriteToScreenandFile(ADJUSTL("IAbsorbFLAG               = 1"),IErr)
-     CALL WriteToScreenandFile(ADJUSTL("IAnisoDebyeWallerFlag     = 0"),IErr)
-     CALL WriteToScreenandFile(ADJUSTL(""),IErr)
-     CALL WriteToScreenandFile(ADJUSTL("# radius of the beam in pixels"),IErr)
-     CALL WriteToScreenandFile(ADJUSTL("IPixelCount               = 64"),IErr)
-     CALL WriteToScreenandFile(ADJUSTL(""),IErr)
-     CALL WriteToScreenandFile(ADJUSTL("# beam selection criteria"),IErr)
-     CALL WriteToScreenandFile(ADJUSTL("IMinReflectionPool        = 100"),IErr)
-     CALL WriteToScreenandFile(ADJUSTL("IMinStrongBeams           = 20"),IErr)
-     CALL WriteToScreenandFile(ADJUSTL("IMinWeakBeams             = 0"),IErr)
-     CALL WriteToScreenandFile(ADJUSTL(""),IErr)
-     CALL WriteToScreenandFile(ADJUSTL("# crystal settings"),IErr)
-     CALL WriteToScreenandFile(ADJUSTL("RDebyeWallerConstant      = 0.4668"),IErr)
-     CALL WriteToScreenandFile(ADJUSTL("RAbsorptionPer            = 2.9"),IErr)
-     CALL WriteToScreenandFile(ADJUSTL(""),IErr)
-     CALL WriteToScreenandFile(ADJUSTL("# microscope settings"),IErr)
-     CALL WriteToScreenandFile(ADJUSTL("ROuterConvergenceAngle    = 6.0"),IErr)
-     CALL WriteToScreenandFile(ADJUSTL("IIncidentBeamDirection    = [0,1,1]"),IErr)
-     CALL WriteToScreenandFile(ADJUSTL("IXDirection               = [1,0,0]"),IErr)
-     CALL WriteToScreenandFile(ADJUSTL("INormalDirection          = [0,1,1]"),IErr)
-     CALL WriteToScreenandFile(ADJUSTL("RAcceleratingVoltage (kV) = 200.0"),IErr)
-     CALL WriteToScreenandFile(ADJUSTL("RAcceptanceAngle          = 0.0"),IErr)
-     CALL WriteToScreenandFile(ADJUSTL(""),IErr)
-     CALL WriteToScreenandFile(ADJUSTL("# Image Output Options"),IErr)
-     CALL WriteToScreenandFile(ADJUSTL(""),IErr)
-     CALL WriteToScreenandFile(ADJUSTL("RInitialThickness        = 400.0"),IErr)
-     CALL WriteToScreenandFile(ADJUSTL("RFinalThickness          = 700.0"),IErr)
-     CALL WriteToScreenandFile(ADJUSTL("RDeltaThickness          = 10.0"),IErr)
-     CALL WriteToScreenandFile(ADJUSTL("INoOfLacbedPatterns              = 7"),IErr)
-
-     IF(ISoftwareMode.EQ.2) THEN
-        CALL WriteToScreenandFile(ADJUSTL(""),IErr)
-        CALL WriteToScreenandFile(ADJUSTL("#Refinement Specific Flags"),IErr)
-        CALL WriteToScreenandFile(ADJUSTL("IRefineModeFLAG          = B"),IErr)
-        CALL WriteToScreenandFile(ADJUSTL("IWeightingFLAG           = 0"),IErr)
-        CALL WriteToScreenandFile(ADJUSTL("IContinueFLAG            = 0"),IErr)
-        CALL WriteToScreenandFile(ADJUSTL("ICorrelationFLAG         = 0"),IErr)
-        CALL WriteToScreenandFile(ADJUSTL("IImageProcessingFLAG     = 0"),IErr)
-        CALL WriteToScreenandFile(ADJUSTL("RBlurRadius              = 1.45"),IErr)
-        CALL WriteToScreenandFile(ADJUSTL("INoofUgs                 = 10"),IErr)
-        CALL WriteToScreenandFile(ADJUSTL("IAtomicSites             = (1,2,6)"),IErr)
-        CALL WriteToScreenandFile(ADJUSTL("IPrint                   = 10"),IErr)
-        CALL WriteToScreenandFile(ADJUSTL("RSimplexLengthScale      = 5.0"),IErr)
-        CALL WriteToScreenandFile(ADJUSTL("RExitCriteria            = 0.0001"),IErr)
-     END IF
-        CLOSE(UNIT=IChInp)
+    OPEN(UNIT= IChInp,FILE= "felix.inp.sample",&
+     STATUS= 'UNKNOWN')
+    CALL WriteToScreenandFile(ADJUSTL("# Input file for felixsim/draw/refine version :VERSION: Build :BUILD:"),IErr)
+    CALL WriteToScreenandFile(ADJUSTL("# ------------------------------------"),IErr)
+    CALL WriteToScreenandFile(ADJUSTL(""),IErr)
+    CALL WriteToScreenandFile(ADJUSTL("# ------------------------------------"),IErr)
+    CALL WriteToScreenandFile(ADJUSTL(""),IErr)
+    CALL WriteToScreenandFile(ADJUSTL("# control flags"),IErr)
+    CALL WriteToScreenandFile(ADJUSTL("IWriteFLAG                = 3"),IErr)
+    CALL WriteToScreenandFile(ADJUSTL("IImageFLAG                = 1"),IErr)
+    CALL WriteToScreenandFile(ADJUSTL("IScatterFactorMethodFLAG  = 0"),IErr)
+    CALL WriteToScreenandFile(ADJUSTL("IMaskFLAG                 = 1"),IErr)
+    CALL WriteToScreenandFile(ADJUSTL("IHolzFLAG                 = 0"),IErr)
+    CALL WriteToScreenandFile(ADJUSTL("IAbsorbFLAG               = 1"),IErr)
+    CALL WriteToScreenandFile(ADJUSTL("IAnisoDebyeWallerFlag     = 0"),IErr)
+    CALL WriteToScreenandFile(ADJUSTL(""),IErr)
+    CALL WriteToScreenandFile(ADJUSTL("# radius of the beam in pixels"),IErr)
+    CALL WriteToScreenandFile(ADJUSTL("IPixelCount               = 64"),IErr)
+    CALL WriteToScreenandFile(ADJUSTL(""),IErr)
+    CALL WriteToScreenandFile(ADJUSTL("# beam selection criteria"),IErr)
+    CALL WriteToScreenandFile(ADJUSTL("IMinReflectionPool        = 100"),IErr)
+    CALL WriteToScreenandFile(ADJUSTL("IMinStrongBeams           = 20"),IErr)
+    CALL WriteToScreenandFile(ADJUSTL("IMinWeakBeams             = 0"),IErr)
+    CALL WriteToScreenandFile(ADJUSTL(""),IErr)
+    CALL WriteToScreenandFile(ADJUSTL("# crystal settings"),IErr)
+    CALL WriteToScreenandFile(ADJUSTL("RDebyeWallerConstant      = 0.4668"),IErr)
+    CALL WriteToScreenandFile(ADJUSTL("RAbsorptionPer            = 2.9"),IErr)
+    CALL WriteToScreenandFile(ADJUSTL(""),IErr)
+    CALL WriteToScreenandFile(ADJUSTL("# microscope settings"),IErr)
+    CALL WriteToScreenandFile(ADJUSTL("ROuterConvergenceAngle    = 6.0"),IErr)
+    CALL WriteToScreenandFile(ADJUSTL("IIncidentBeamDirection    = [0,1,1]"),IErr)
+    CALL WriteToScreenandFile(ADJUSTL("IXDirection               = [1,0,0]"),IErr)
+    CALL WriteToScreenandFile(ADJUSTL("INormalDirection          = [0,1,1]"),IErr)
+    CALL WriteToScreenandFile(ADJUSTL("RAcceleratingVoltage (kV) = 200.0"),IErr)
+    CALL WriteToScreenandFile(ADJUSTL("RAcceptanceAngle          = 0.0"),IErr)
+    CALL WriteToScreenandFile(ADJUSTL(""),IErr)
+    CALL WriteToScreenandFile(ADJUSTL("# Image Output Options"),IErr)
+    CALL WriteToScreenandFile(ADJUSTL(""),IErr)
+    CALL WriteToScreenandFile(ADJUSTL("RInitialThickness        = 400.0"),IErr)
+    CALL WriteToScreenandFile(ADJUSTL("RFinalThickness          = 700.0"),IErr)
+    CALL WriteToScreenandFile(ADJUSTL("RDeltaThickness          = 10.0"),IErr)
+    CALL WriteToScreenandFile(ADJUSTL("INoOfLacbedPatterns              = 7"),IErr)
+    CALL WriteToScreenandFile(ADJUSTL(""),IErr)
+    CALL WriteToScreenandFile(ADJUSTL("#Refinement Specific Flags"),IErr)
+    CALL WriteToScreenandFile(ADJUSTL("IRefineModeFLAG          = B"),IErr)
+    CALL WriteToScreenandFile(ADJUSTL("IWeightingFLAG           = 0"),IErr)
+    CALL WriteToScreenandFile(ADJUSTL("IContinueFLAG            = 0"),IErr)
+    CALL WriteToScreenandFile(ADJUSTL("ICorrelationFLAG         = 0"),IErr)
+    CALL WriteToScreenandFile(ADJUSTL("IImageProcessingFLAG     = 0"),IErr)
+    CALL WriteToScreenandFile(ADJUSTL("RBlurRadius              = 1.45"),IErr)
+    CALL WriteToScreenandFile(ADJUSTL("INoofUgs                 = 10"),IErr)
+    CALL WriteToScreenandFile(ADJUSTL("IAtomicSites             = (1,2,6)"),IErr)
+    CALL WriteToScreenandFile(ADJUSTL("IPrint                   = 10"),IErr)
+    CALL WriteToScreenandFile(ADJUSTL("RSimplexLengthScale      = 5.0"),IErr)
+    CALL WriteToScreenandFile(ADJUSTL("RExitCriteria            = 0.0001"),IErr)
+    CLOSE(UNIT=IChInp)
         
 END SUBROUTINE WriteOutInputFile
 

@@ -52,7 +52,7 @@ REAL(RKIND) FUNCTION PhaseCorrelate(RImageSim,RImageExpiDummy,IErr,IXsizeIn,IYSi
   
   USE MyNumbers
   
-  USE CConst; USE IConst
+  USE SConst; USE IConst
   USE IPara; USE RPara
   USE IChannels
   
@@ -144,7 +144,7 @@ SUBROUTINE ReSortUgs( ISymmetryIntegers,CUgs, N )
   
   USE MyNumbers
   
-  USE CConst; USE IConst
+  USE SConst; USE IConst
   USE IPara; USE RPara
   USE IChannels
   USE terminal_output
@@ -202,7 +202,7 @@ REAL(RKIND) FUNCTION ResidualSumofSquares(RImage1,RImage2,IErr)
   !todo - this is excessively small underused subroutine & the message should be on debug mode
   USE MyNumbers
   
-  USE CConst; USE IConst
+  USE SConst; USE IConst
   USE IPara; USE RPara
   USE IChannels
   USE terminal_output
@@ -239,7 +239,7 @@ REAL(RKIND) FUNCTION Normalised2DCrossCorrelation(Rimg1,Rimg2,IErr)
 
   USE MyNumbers
   
-  USE CConst; USE IConst
+  USE SConst; USE IConst
   USE IPara; USE RPara
   USE IChannels
   USE MPI
@@ -275,7 +275,7 @@ REAL(RKIND) FUNCTION MaskedCorrelation(Rimg1,Rimg2,RBinaryMask,IErr)
 
   USE MyNumbers
   
-  USE CConst; USE IConst
+  USE SConst; USE IConst
   USE IPara; USE RPara
   USE IChannels
   USE terminal_output

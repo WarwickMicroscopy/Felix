@@ -65,7 +65,6 @@ MODULE crystallography_mod
     USE IPARA, ONLY : IDiffractionFLAG,IVolumeFLAG
     USE RPARA, ONLY : RAlpha,RBeta,RGamma,RLengthX,RLengthY,RLengthZ,RNormDirC,RXDirC,&
           RZDirC
-    USE IConst, ONLY : ITHREE
     
     IMPLICIT NONE
 
@@ -198,7 +197,7 @@ MODULE crystallography_mod
 
     ! global outputs
     USE RPARA, ONLY : RAtomCoordinate,ROccupancy,RIsoDW,RAtomPosition
-    USE IPARA, ONLY : IAtomicNumber,RAnisoDW
+    USE IPARA, ONLY : IAtomicNumber,IAnisoDW
     USE SPARA, ONLY : SAtomLabel, SAtomName
 
     ! global inputs
@@ -207,7 +206,6 @@ MODULE crystallography_mod
     USE SPARA, ONLY : SBasisAtomLabel, SBasisAtomName
     USE IPARA, ONLY : IBasisAtomicNumber, IBasisAnisoDW, IMaxPossibleNAtomsUnitCell, &
           INAtomsUnitCell
-    USE IConst, ONLY : ITHREE
     
     IMPLICIT NONE
     
@@ -263,7 +261,7 @@ MODULE crystallography_mod
     RIsoDW(1) = RAllIsoDW(1)
     ROccupancy(1) = RAllOccupancy(1)
     IAtomicNumber(1) = IAllAtomicNumber(1)
-    RAnisoDW(1) = RAllAnisoDW(1)
+    IAnisoDW(1) = RAllAnisoDW(1)
     jnd=2
     ! work through all possible atom coords and check for duplicates
     DO ind=2,IMaxPossibleNAtomsUnitCell
@@ -283,7 +281,7 @@ MODULE crystallography_mod
         RIsoDW(jnd) = RAllIsoDW(ind)
         ROccupancy(jnd) = RAllOccupancy(ind)
         IAtomicNumber(jnd) = IAllAtomicNumber(ind)!
-        RAnisoDW(jnd) = RAllAnisoDW(ind)
+        IAnisoDW(jnd) = RAllAnisoDW(ind)
         jnd=jnd+1
       END IF
     END DO

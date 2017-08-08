@@ -107,7 +107,7 @@ SUBROUTINE ConvertVectorMovementsIntoAtomicCoordinates(IVariableID,RIndependentV
   !RB this is now redundant, moved up to Update Variables
   USE MyNumbers
 
-  USE CConst; USE IConst; USE RConst
+  USE SConst; USE IConst; USE RConst
   USE IPara; USE RPara; USE SPara; USE CPara
   USE BlochPara
 
@@ -148,7 +148,7 @@ SUBROUTINE UpdateStructureFactors(RIndependentVariable,IErr)
 
   USE MyNumbers
 
-  USE CConst; USE IConst; USE RConst
+  USE SConst; USE IConst; USE RConst
   USE IPara; USE RPara; USE SPara; USE CPara
   USE BlochPara
 
@@ -210,7 +210,7 @@ REAL(RKIND) FUNCTION RANDOMNUMBER(IRequestedNumber,IErr)
 
   USE MyNumbers
   
-  USE CConst; USE IConst; USE RConst
+  USE SConst; USE IConst; USE RConst
   USE IPara; USE RPara; USE SPara; USE CPara
   USE BlochPara
 
@@ -271,7 +271,7 @@ SUBROUTINE OutofUnitCellCheck(IVariableID,RProposedMovement,RCorrectedMovement,I
   !?? Can't this just be done in one line with MODULO?
   USE MyNumbers
   
-  USE CConst; USE IConst; USE RConst
+  USE SConst; USE IConst; USE RConst
   USE IPara; USE RPara; USE SPara; USE CPara
   USE BlochPara
 
@@ -585,7 +585,7 @@ SUBROUTINE MicroscopySettings( IErr )
   USE MyNumbers
   USE WriteToScreen
   
-  USE CConst; USE IConst
+  USE SConst; USE IConst
   USE IPara; USE RPara
   USE IChannels
 
@@ -633,7 +633,7 @@ SUBROUTINE ReadScaFile( IErr )
   USE MyNumbers
   USE WriteToScreen
 
-  USE CConst; USE IConst
+  USE SConst; USE IConst
   USE IPara; USE RPara
   USE IChannels
 
@@ -665,7 +665,7 @@ SUBROUTINE RecoverSavedSimplex(RSimplexVariable,RSimplexFoM,RStandardDeviation,R
 
   USE MyNumbers
   
-  USE CConst; USE IConst; USE RConst
+  USE SConst; USE IConst; USE RConst
   USE IPara; USE RPara; USE SPara; USE CPara
   USE BlochPara
 
@@ -717,7 +717,7 @@ SUBROUTINE RandomSequence(RRandomSequence,IRandomSequenceLength,ISeedModifier,IE
 
   USE MyNumbers
   
-  USE CConst; USE IConst; USE RConst
+  USE SConst; USE IConst; USE RConst
   USE IPara; USE RPara; USE SPara; USE CPara
   USE BlochPara
 
@@ -775,7 +775,7 @@ SUBROUTINE InitialiseAtomicVectorMagnitudes(IVariableID,RCorrectedMovement,IErr)
 
   USE MyNumbers
   
-  USE CConst; USE IConst; USE RConst
+  USE SConst; USE IConst; USE RConst
   USE IPara; USE RPara; USE SPara; USE CPara
   USE BlochPara
   
@@ -810,7 +810,7 @@ SUBROUTINE RefinementVariableSetup(RIndependentVariable,IErr)
 !This is redundant  
   USE MyNumbers
   
-  USE CConst; USE IConst; USE RConst
+  USE SConst; USE IConst; USE RConst
   USE IPara; USE RPara; USE SPara; USE CPara
   USE BlochPara
   
@@ -888,7 +888,7 @@ REAL(RKIND) FUNCTION RStandardError(RStandardDeviation,RMean,IErr)
 
   USE MyNumbers
 
-  USE CConst; USE IConst; USE RConst
+  USE SConst; USE IConst; USE RConst
   USE IPara; USE RPara; USE SPara; USE CPara
   USE BlochPara
 
@@ -1022,7 +1022,7 @@ SUBROUTINE NewHKLMake(Ihklmax,Rhkl0Vec,RHOLZAcceptanceAngle,IErr)
   USE MyNumbers
   USE WriteToScreen
   
-  USE CConst; USE IConst
+  USE SConst; USE IConst
   USE IPara; USE RPara; USE SPara
   USE IChannels
   
@@ -1381,7 +1381,7 @@ SUBROUTINE CrystallographyInitialisation( IErr )
   USE MyNumbers
   USE WriteToScreen
   
-  USE CConst; USE IConst
+  USE SConst; USE IConst
   USE IPara; USE RPara; USE SPara
   USE IChannels
   

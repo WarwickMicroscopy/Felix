@@ -95,9 +95,9 @@ MODULE setup_reflections_mod
             EXIT
           ELSE
             IF ( jnd == SIZE(Rhkl,DIM=1) ) THEN
-              CALL message(LM," No requested HKLs are allowed using the purposed geometry", &
+              CALL message(LM,"No requested HKLs are allowed using the purposed geometry", &
                     NINT(RInputHKLs(ind,:)) )
-              CALL message(LM," Will Ignore and Continue")
+              CALL message(LM,"Will Ignore and Continue") !?? should this print on all cores
             END IF
             CYCLE
           END IF
@@ -106,8 +106,8 @@ MODULE setup_reflections_mod
       END DO
        
       IF (IFind.LE.0) THEN
-        CALL message(" No requested HKLs are allowed using the purposed geometry")
-        IErr = 1; RETURN
+        CALL error_message("SpecificReflectionDetermination()", &
+              "No requested HKLs are allowed using the purposed geometry" ); IErr=1; RETURN
       END IF
       
       INoOfLacbedPatterns = IFind
@@ -132,7 +132,6 @@ MODULE setup_reflections_mod
     USE terminal_output
     
     ! global inputs
-    USE IConst
     USE IPARA, ONLY : IHolzFLAG
     USE RPARA, ONLY : Rhkl
     USE SPARA, ONLY : SSpaceGroupName
@@ -157,7 +156,7 @@ MODULE setup_reflections_mod
              ELSE
                 RhklDummyUnitVec = RhklDummyVec
              END IF
-             
+
              SELECT CASE(SSpaceGroupName)
                 
              CASE("F") !Face Centred
@@ -264,8 +263,9 @@ MODULE setup_reflections_mod
                 END IF
 			    
              CASE DEFAULT
-                CALL message("Error: unknown space group", SSpaceGroupName)
-                IErr=1; RETURN
+                CALL error_message("HKLCount()","unknown space group")
+                WRITE(*,*) "SSpaceGroupName = ",SSpaceGroupName; IErr=1; RETURN
+
              END SELECT
 		     
           END DO
@@ -439,9 +439,9 @@ MODULE setup_reflections_mod
                  Rhkl(lnd,:) = RhklDummyVec                 
                END IF
 			    
-             CASE DEFAULT!RB should never get here since already been through HKLcount
-               CALL message("Error: HKLMake(): unknown space group", SSpaceGroupName)
-               IErr=1; RETURN
+             CASE DEFAULT ! RB should never get here since already been through HKLcount
+               CALL error_message("HKLmake()","unknown space group")
+               WRITE(*,*) "SSpaceGroupName = ",SSpaceGroupName; IErr=1; RETURN
 
            END SELECT
 

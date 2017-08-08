@@ -271,7 +271,7 @@ MODULE Ug_mod
     USE IPARA, ONLY : ICurrentZ
 
     ! global inputs
-    USE IPARA, ONLY : INAtomsUnitCell, IAtomicNumber, IAnisoDebyeWallerFactorFlag, RAnisoDW
+    USE IPARA, ONLY : INAtomsUnitCell, IAtomicNumber, IAnisoDebyeWallerFactorFlag, IAnisoDW
     USE RPARA, ONLY : RIsoDW, RCurrentGMagnitude, RgMatrix, &
           RAnisotropicDebyeWallerFactorTensor, RAtomCoordinate, ROccupancy, &
           RDebyeWallerConstant
@@ -309,7 +309,7 @@ MODULE Ug_mod
         ELSE ! anisotropic Debye-Waller factor
           RScatteringFactor = RScatteringFactor * &
                 EXP( -DOT_PRODUCT( RgMatrix(ind,jnd,:), &
-                MATMUL(RAnisotropicDebyeWallerFactorTensor(RAnisoDW(knd),:,:),&
+                MATMUL(RAnisotropicDebyeWallerFactorTensor(IAnisoDW(knd),:,:),&
                 RgMatrix(ind,jnd,:)) ) )
           !?? this will need sorting out, may not work
         END IF
@@ -369,7 +369,7 @@ MODULE Ug_mod
     ! global inputs
     USE IPARA, ONLY : IAnisoDebyeWallerFactorFlag,IInitialSimulationFLAG,INAtomsUnitCell,&
           nReflections,IAtomicNumber,IEquivalentUgKey,&
-          RAnisoDW ! R in IPARA???
+          IAnisoDW ! R in IPARA???
     USE RPARA, ONLY : RAngstromConversion,RElectronCharge,RElectronMass,&
           RRelativisticCorrection,RVolume,RIsoDW,RgMatrixMagnitude,ROccupancy,&
           RElectronWaveVectorMagnitude,RgMatrix,RDebyeWallerConstant,RTolerance,&

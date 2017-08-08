@@ -50,7 +50,7 @@ SUBROUTINE DetermineAllowedMovements(ISpaceGrp,SWyckoffSymbol,RVector,IVector,IE
 
   USE MyNumbers
   
-  USE CConst; USE IConst; USE RConst
+  USE SConst; USE IConst; USE RConst
   USE IPara; USE RPara; USE SPara; USE CPara
   USE BlochPara
 
@@ -346,7 +346,7 @@ SUBROUTINE CountAllowedMovements(ISpaceGrp,SWyckoffSymbol,IVectors,IErr)
 
   USE MyNumbers
   
-  USE CConst; USE IConst; USE RConst
+  USE SConst; USE IConst; USE RConst
   USE IPara; USE RPara; USE SPara; USE CPara
   USE BlochPara
 
@@ -635,7 +635,7 @@ SUBROUTINE ConvertSpaceGroupToNumber(ISpaceGrp,IErr)
 
   USE MyNumbers
   
-  USE CConst; USE IConst; USE RConst
+  USE SConst; USE IConst; USE RConst
   USE IPara; USE RPara; USE SPara; USE CPara
   USE BlochPara
 
@@ -672,9 +672,9 @@ SUBROUTINE ConvertSpaceGroupToNumber(ISpaceGrp,IErr)
 
   ! Compare SSpaceGrpNoSpaces with every space group 
 
-  DO ind = 1,SIZE(CSpaceGrp)
+  DO ind = 1,SIZE(SAllSpaceGrp)
 
-     CALL StrLowCase( CSpaceGrp(ind),SSpaceGrpToCompare,IErr )
+     CALL StrLowCase( SAllSpaceGrp(ind),SSpaceGrpToCompare,IErr )
      IIndex = INDEX(TRIM(ADJUSTL(SSpaceGrpToCompare)),TRIM(ADJUSTL(SSpaceGrpNoSpaces)))
      IF (IIndex.NE.0) THEN
         ISpaceGrp = ind
@@ -703,7 +703,7 @@ SUBROUTINE StrLowCase( Input_String,Output_String,IErr )
 
   USE MyNumbers
   
-  USE CConst; USE IConst; USE RConst
+  USE SConst; USE IConst; USE RConst
   USE IPara; USE RPara; USE SPara; USE CPara
   USE BlochPara
 

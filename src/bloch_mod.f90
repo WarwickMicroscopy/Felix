@@ -66,7 +66,6 @@ MODULE bloch_mod
     !?? JR how access to ZGEMM? what other namespace can access?
 
     USE MyNumbers
-    USE IConst, ONLY : ITHREE
     USE MyMPI
     USE terminal_output
   

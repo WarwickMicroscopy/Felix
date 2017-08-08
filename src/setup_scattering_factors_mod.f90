@@ -63,7 +63,7 @@ MODULE setup_scattering_factors_mod
           RLobato(105,10), RAtomicNumbers(105,1)
 
     CALL message ( LL, dbg3, "Loading parameters for scattering factor calculation" )
-    
+
     SELECT CASE(IScatteringMethodSwitch)
 
     CASE(0)
@@ -949,9 +949,9 @@ MODULE setup_scattering_factors_mod
       RScattFactors=RLobato
 
     CASE DEFAULT
-      CALL message("Error: Scattering factors do not exist, check IScatteringMethodFlag")
-      IErr=1
-      RETURN
+      CALL error_message("setup_scattering_factors()", &
+            "Scattering factors do not exist, check IScatteringMethodFlag" )
+      IErr=1; RETURN
 
     END SELECT
 

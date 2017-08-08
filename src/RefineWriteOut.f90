@@ -46,7 +46,7 @@ SUBROUTINE WriteIterationOutput(Iter,IThicknessIndex,IExitFlag,IErr)
 !This could be improved by bringing the content of subroutines up to this level
   USE MyNumbers
   
-  USE CConst; USE IConst; USE RConst
+  USE SConst; USE IConst; USE RConst
   USE IPara; USE RPara; USE SPara; USE CPara
   USE BlochPara
 
@@ -152,7 +152,7 @@ SUBROUTINE WriteIterationCIF(path,IErr)
 
   USE MyNumbers
   
-  USE CConst; USE IConst; USE RConst
+  USE SConst; USE IConst; USE RConst
   USE IPara; USE RPara; USE SPara; USE CPara
   USE BlochPara
 
@@ -233,7 +233,7 @@ SUBROUTINE WriteOutVariables(Iter,IErr)
 
   USE MyNumbers
   
-  USE CConst; USE IConst; USE RConst
+  USE SConst; USE IConst; USE RConst
   USE IPara; USE RPara; USE SPara; USE CPara
   USE BlochPara
 
@@ -342,7 +342,7 @@ SUBROUTINE WriteStructureFactors(path,IErr)
 
   USE MyNumbers
   
-  USE CConst; USE IConst; USE RConst
+  USE SConst; USE IConst; USE RConst
   USE IPara; USE RPara; USE SPara; USE CPara
   USE BlochPara
 

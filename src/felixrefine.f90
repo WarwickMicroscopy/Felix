@@ -51,13 +51,14 @@ PROGRAM Felixrefine
   USE MPI
   USE MyMPI
 
+  USE read_felix_cif_mod
   USE setup_scattering_factors_mod
   USE setup_reflections_mod
   USE crystallography_mod
   USE Ug_mod
   USE felixfunction_mod
 
-  USE IConst; USE RConst; USE CConst
+  USE IConst; USE RConst; USE SConst
   USE IPara; USE RPara; USE CPara; USE SPara;
   USE BlochPara 
   USE IChannels
@@ -129,9 +130,8 @@ PROGRAM Felixrefine
   CALL message ( LS, "Setting teminal output mode" )
   CALL set_terminal_output_mode( IWriteFLAG )
 
-  CALL ReadCif(IErr) ! felix.cif
+  CALL read_felix_cif(IErr) ! felix.cif ! some allocations are here
   IF(l_alert(IErr,"felixrefine","ReadCif()")) GOTO 9999
-        !?? branch in here depending on ISoftwareMode, needs to be taken out
 
   CALL ReadHklFile(IErr) ! the list of hkl's to input/output
   IF(l_alert(IErr,"felixrefine","ReadHklFile()")) GOTO 9999
@@ -200,8 +200,8 @@ PROGRAM Felixrefine
   ALLOCATE(IAtomicNumber(IMaxPossibleNAtomsUnitCell),STAT=IErr)
   IF(l_alert(IErr,"felixrefine","allocate IAtomicNumber")) GOTO 9999
   ! Anisotropic Debye-Waller factor
-  ALLOCATE(RAnisoDW(IMaxPossibleNAtomsUnitCell),STAT=IErr)
-  IF(l_alert(IErr,"felixrefine","allocate RAnisoDW")) GOTO 9999
+  ALLOCATE(IAnisoDW(IMaxPossibleNAtomsUnitCell),STAT=IErr)
+  IF(l_alert(IErr,"felixrefine","allocate IAnisoDW")) GOTO 9999
 
   !--------------------------------------------------------------------
   ! set up unique atom positions, reflection pool
@@ -211,7 +211,7 @@ PROGRAM Felixrefine
   CALL UniqueAtomPositions(IErr)
   IF(l_alert(IErr,"felixrefine","UniqueAtomPositions()")) GOTO 9999
   !?? could re-allocate RAtomPosition,SAtomName,RIsoDW,ROccupancy,
-  !?? IAtomicNumber,RAnisoDW to match INAtomsUnitCell?
+  !?? IAtomicNumber,IAnisoDW to match INAtomsUnitCell?
 
   RHOLZAcceptanceAngle=TWODEG2RADIAN !?? RB seems way too low?
   IHKLMAXValue = 5 ! starting value, increments in loop below
@@ -772,7 +772,7 @@ PROGRAM Felixrefine
   DEALLOCATE(RIsoDW,STAT=IErr)
   DEALLOCATE(ROccupancy,STAT=IErr)
   DEALLOCATE(IAtomicNumber,STAT=IErr)
-  DEALLOCATE(RAnisoDW,STAT=IErr)
+  DEALLOCATE(IAnisoDW,STAT=IErr)
   DEALLOCATE(RAtomCoordinate,STAT=IErr)
   DEALLOCATE(RgMatrixMagnitude,STAT=IErr)
   DEALLOCATE(CPseudoAtom,STAT=IErr)
@@ -800,6 +800,8 @@ PROGRAM Felixrefine
 
   ! shut down MPI
 9999 CONTINUE
+
+  WRITE(*,*) "calling MPI_Finalize"
 
   CALL MPI_Finalize(IErr)
   IF(l_alert(IErr,"felixrefine","MPI_Finalize()")) GOTO 9999
@@ -1041,7 +1043,7 @@ CONTAINS
         RPvecMag=RPvecMag+RPvec(ind)**2
       END DO
       IF (RPvecMag-ONE.EQ.RPvecMag.OR.RPvecMag.NE.RPvecMag) THEN ! Infinity and NaN check
-        CALL message(LS, "Error in refinement vector ",RPvec )
+        CALL message(LS, "Error in refinement vector ",RPvec ) !?? should this error&abort
         EXIT
       END IF
       RPvec=RPvec/SQRT(RPvecMag) ! unity vector along direction of max gradient

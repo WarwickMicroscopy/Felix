@@ -52,7 +52,7 @@ SUBROUTINE SortHKL( Rhklarray,N,IErr )
 
   USE MyNumbers
     
-  USE CConst; USE IConst
+  USE SConst; USE IConst
   USE IPara; USE RPara
 
   USE IChannels

@@ -636,7 +636,7 @@ MODULE felixfunction_mod
     USE MyNumbers
     USE terminal_output 
     
-    USE IConst; USE RConst; USE CConst
+    USE IConst; USE RConst; USE SConst
     USE IPara; USE RPara; USE CPara; USE SPara;
     USE BlochPara 
 

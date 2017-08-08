@@ -81,7 +81,6 @@ module terminal_output
 
   use MyNumbers !?? IKIND, RKIND etc.
   use IPARA, ONLY : IWriteFLAG
-  !use SPARA, ONLY : CurrentProcedure  !?? not using current at the moment
   use MyMPI     !?? necesary for my_rank
 
   interface message
@@ -164,8 +163,16 @@ contains
       print '(1x,i1,a,a,a,a)', my_rank," = rank, error in ",SCurrentProcedure,&
             " after attempting to ",SAlertedActivity
     end if
-
   end function
+
+  ! error message - to be used instead of print & my_rank in code
+  subroutine error_message(SCurrentProcedure,error_msg)
+    use mympi, only : my_rank
+    character(*),intent(in) :: SCurrentProcedure,error_msg
+
+    print '(1x,i1,a,a,a,a)', my_rank," = rank, error in ", SCurrentProcedure, &
+          ": ",error_msg
+  end subroutine
 
   ! sets a local integer to start time to compare with later
   subroutine start_timer( istart_time )
