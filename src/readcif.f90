@@ -163,7 +163,7 @@ SUBROUTINE ReadCif(IErr)
   f1 = numb_('_cell_angle_alpha', cela, siga)
   f2 = numb_('_cell_angle_beta', celb, sigb)
   f3 = numb_('_cell_angle_gamma', celc, sigc)
-   IF(.NOT.(f1.AND.f2.AND.f3)) THEN
+  IF(.NOT.(f1.AND.f2.AND.f3)) THEN
     IF(my_rank.EQ.0) THEN
       PRINT*,"Error:ReadCif(", my_rank, ") Cell angle(s) missing!"
     END IF
@@ -462,8 +462,6 @@ SUBROUTINE ReadCif(IErr)
 
   ! Reset Message Counter
   IMessageCounter =0  
-  
-  RETURN
 
 CONTAINS
 
@@ -471,15 +469,15 @@ CONTAINS
   !! Procedure-description: Strips any character from string which is not simply
   !! numeric or alphabetic
   !!
-  !! Major-Authors: Keith Evans (2014), Richard Beanland (2016)
+  !! Major-Authors: Jacob Richardson (2017)
   !! 
   CHARACTER(len(string)) FUNCTION StripChars(string)
     CHARACTER(*) :: string
     INTEGER :: i, n = 0
     DO i = 1,LEN_TRIM(string) 
       IF ( VERIFY(string(i:i), &
-      "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ1234567890") &
-      == 1 ) THEN
+            "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ1234567890") &
+            == 1 ) THEN
         CYCLE
       END IF 
       n = n+1 

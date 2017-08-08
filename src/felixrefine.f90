@@ -30,12 +30,6 @@
 !
 !%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-! All procedures conatained in this file:
-! AssignArrayLocationsToIterationVariables( )   --- 
-! SetupAtomicVectorMovements( )                 ---
-! BestFitCheck( )                               ---
-! Parabo3( )                                    ---
-
 !?? asdafasdf       <--------- use for any coder comments, such as debug or needed changes
 ! akjflhlkfalsf     <--------- use for any explainatory comments
 !!    OR    !>      <--------- used for doxygen
@@ -56,9 +50,12 @@ PROGRAM Felixrefine
 
   USE MPI
   USE MyMPI
-  USE felixfunction_mod
-  USE Ug_mod
+
+  USE setup_scattering_factors_mod
+  USE setup_reflections_mod
   USE crystallography_mod
+  USE Ug_mod
+  USE felixfunction_mod
 
   USE IConst; USE RConst; USE CConst
   USE IPara; USE RPara; USE CPara; USE SPara;
@@ -153,9 +150,9 @@ PROGRAM Felixrefine
   ! set up scattering factors, relativistic electrons, reciprocal lattice
   !--------------------------------------------------------------------
 
-  ! scattering factors !?? JR elaborate
-  CALL ScatteringFactors(IScatterFactorMethodFLAG,IErr) !?? JR passing global IScatter?
-  IF(l_alert(IErr,"felixrefine","ScatteringFactors()")) GOTO 9999
+  CALL setup_scattering_factors(IScatterFactorMethodFLAG,IErr)
+  IF(l_alert(IErr,"felixrefine","setup_scattering_factors()")) GOTO 9999
+  ! returns global RScattFactors depeding upon scattering method: Kirkland, Peng, etc.
 
   ! Calculate wavevector magnitude k and relativistic mass
   ! Electron Velocity in metres per second
@@ -173,7 +170,7 @@ PROGRAM Felixrefine
   RRelativisticMass = RRelativisticCorrection*RElectronMass
   !?? clean up above k & relitivistic setup
 
-  ! reciprocal lattice !?? JR elaborate
+  ! Creates reciprocal lattice vectors in Microscope reference frame
   CALL ReciprocalLattice(IErr)
   IF(l_alert(IErr,"felixrefine","ReciprocalLattice()")) GOTO 9999
 
@@ -210,6 +207,7 @@ PROGRAM Felixrefine
   ! set up unique atom positions, reflection pool
   !--------------------------------------------------------------------
 
+  ! fills lattice unit cell from basis attributes
   CALL UniqueAtomPositions(IErr)
   IF(l_alert(IErr,"felixrefine","UniqueAtomPositions()")) GOTO 9999
   !?? could re-allocate RAtomPosition,SAtomName,RIsoDW,ROccupancy,
@@ -221,7 +219,7 @@ PROGRAM Felixrefine
   !?? Note the application of acceptance angle is incorrect since it uses hkl;
   !?? it should use the reciprocal lattice vectors as calculated in RgPool
 
-  ! Count the reflections that make up the pool of g-vectors
+  ! Count the reflections that make up the pool of g-vectors, simply returns INhkl
   CALL HKLCount(IHKLMAXValue,RZDirC,INhkl,RHOLZAcceptanceAngle,IErr)
   IF(l_alert(IErr,"felixrefine","HKLCount()")) GOTO 9999
   DO WHILE (INhkl.LT.IMinReflectionPool) 
@@ -247,8 +245,8 @@ PROGRAM Felixrefine
   !?? may result in an error when the reflection pool does not reach
   !?? the highest hkl of the experimental data? 
 
-  ! Assign numbers to the different reflections in IOutputReflections
-  CALL SpecificReflectionDetermination (IErr)
+  ! Assign numbers to different reflections -> IOutputReflections, INoOfLacbedPatterns
+  CALL SpecificReflectionDetermination(IErr)
   IF(l_alert(IErr,"felixrefine","SpecificReflectionDetermination()")) GOTO 9999
 
   !--------------------------------------------------------------------

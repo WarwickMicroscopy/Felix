@@ -29,21 +29,9 @@
 !  along with Felix.  If not, see <http://www.gnu.org/licenses/>.
 !
 !%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-
-! All procedures conatained in this file:
-! Absorption()
-! GetVgContributionij()
-! StructureFactorInitialisation()   
-! AtomicScatteringFactor()
-! PseudoAtom()
-! Kirkland()
-! DoubleIntegrateBK()
-! IntegrateBK()                 
-! BirdKing()                    
-
-
+                    
 !?? uses ReSortUgs from refineutils.f90
-!?? USE MyFFTW?, dqagi?
+!?? USE module MyFFTW?, uses external function dqagi from quadpack?
 
 !?? JR how to modularise setup Ug & update Ug
 

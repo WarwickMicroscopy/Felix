@@ -30,10 +30,8 @@
 !
 !%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-! Conatained in this file below:
-! ReciprocalLattice()
-! UniqueAtomPositions()
-
+!?? both lattice - reciprical, one physical consider all atoms and symmetry
+!?? reprical - setup, UniqueAtomPositions - update every sim
 
 !>
 !! Module-description: 
@@ -183,8 +181,6 @@ MODULE crystallography_mod
 
   !%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-
-
   !>
   !! Procedure-description: Calculates the FULL set of possible fractional atomic positions
   !! and then gets rid of duplicates
@@ -241,7 +237,7 @@ MODULE crystallography_mod
     DO ind=1, SIZE(RSymVec,1)  
       DO jnd=1, SIZE(RBasisAtomPosition,1)
         RAllAtomPosition(knd,:)= MATMUL(RSymMat(ind,:,:),RBasisAtomPosition(jnd,:)) &
-               + RSymVec(ind,:)
+              + RSymVec(ind,:)
         SAllAtomLabel(knd) = SBasisAtomLabel(jnd)
         SAllAtomName(knd) = SBasisAtomName(jnd)
         RAllOccupancy(knd) = RBasisOccupancy(jnd)
