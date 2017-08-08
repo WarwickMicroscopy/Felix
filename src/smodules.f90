@@ -363,7 +363,7 @@ END MODULE CPara
 MODULE SPara
   USE MyNumbers
   
-  CHARACTER(:), ALLOCATABLE :: ChemicalFormula
+  CHARACTER(:), ALLOCATABLE :: SChemicalFormula
   CHARACTER*1 :: SSpaceGroupName
   CHARACTER*10 :: SSpaceGrp
   CHARACTER*5, DIMENSION(:),ALLOCATABLE :: SBasisAtomLabel,SAtomLabel

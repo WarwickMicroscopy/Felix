@@ -33,11 +33,11 @@
 !>
 !! Module-description: 
 !!
-MODULE read_felix_cif_mod
+MODULE read_cif_mod
 
   IMPLICIT NONE
   PRIVATE
-  PUBLIC :: read_felix_cif 
+  PUBLIC :: read_cif 
 
   CONTAINS
 
@@ -46,7 +46,7 @@ MODULE read_felix_cif_mod
   !!
   !! Major-Authors: Keith Evans (2014), Richard Beanland (2016)
   !!
-  SUBROUTINE read_felix_cif(IErr)
+  SUBROUTINE read_cif(IErr)
 
     ! -----------------------------------------------------------------------
     ! ReadCif: Read the input file
@@ -70,7 +70,7 @@ MODULE read_felix_cif_mod
     USE terminal_output
 
     ! global outputs (or inout)
-    USE SPARA, ONLY : ChemicalFormula, SSpaceGroupName, SBasisAtomLabel, &
+    USE SPARA, ONLY : SChemicalFormula, SSpaceGroupName, SBasisAtomLabel, &
           SBasisAtomName, SWyckoffSymbols, SSpaceGrp
     USE RPARA, ONLY : RLengthX, RLengthY, RLengthZ, RAlpha, RBeta, RGamma, RVolume, &
           RAnisotropicDebyeWallerFactorTensor, RBasisAtomPosition, RBasisIsoDW, &
@@ -147,8 +147,8 @@ MODULE read_felix_cif_mod
     IF(.NOT.f1) THEN
        CALL error_message("ReadCif()","chemical formula missing"); IErr=1; RETURN
     END IF
-    ! strips spaces/brackets and sets global variable ChemicalFormula
-    CALL strip_chars(name,ChemicalFormula)
+    ! strips spaces/brackets and sets global variable SChemicalFormula
+    CALL strip_chars(name,SChemicalFormula)
 
     ! Extract some cell dimensions; test all is OK
     ! NEED TO PUT IN A CHECK FOR LENGTH UNITS
@@ -438,7 +438,7 @@ MODULE read_felix_cif_mod
     ! closes the cif file
     CALL close_
 
-  END SUBROUTINE read_felix_cif
+  END SUBROUTINE read_cif
 
   !>
   !! Procedure-description: Strips any character from string which is not simply
@@ -461,4 +461,4 @@ MODULE read_felix_cif_mod
     stripped = padded_stripped(1:n)
   END SUBROUTINE
 
-END MODULE read_felix_cif_mod
+END MODULE read_cif_mod

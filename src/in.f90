@@ -512,7 +512,7 @@ SUBROUTINE ReadExperimentalImages(IErr)
   DO ind = 1,INoOfLacbedPatterns  
     ! An image expected for each LacbedPattern
     ! Write corresponding filenames including chemical formula
-    WRITE(filename,*) TRIM(ADJUSTL(chemicalformula)),"_"
+    WRITE(filename,*) TRIM(ADJUSTL(SChemicalFormula)),"_"
     DO jnd = 1,3
     WRITE(intstring,'(I3.1)')  NINT(RInputHKLs(ind,jnd))
     IF (NINT(RInputHKLs(ind,jnd))>= 0) THEN
@@ -544,8 +544,8 @@ SUBROUTINE ReadExperimentalImages(IErr)
 10 IErr=1
   PRINT*,"Error:Error Message:"
   PRINT*,"Error:ReadExperimentalImages(", my_rank, ")error reading ",TRIM(ADJUSTL(filename)),", line ",jnd
-  PRINT*,"Error:From felix.cif ChemicalFormula = '",ChemicalFormula,"'"
-  PRINT*,"Error:Expect input .img files in a format like ChemicalFormula_-2-2+0.img"
+  PRINT*,"Error:From felix.cif SChemicalFormula = '",SChemicalFormula,"'"
+  PRINT*,"Error:Expect input .img files in a format like SChemicalFormula_-2-2+0.img"
   PRINT*,"Error:e.g. GaAs_+0+0-8.img"
 
   RETURN

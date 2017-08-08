@@ -68,7 +68,7 @@ SUBROUTINE WriteIterationOutput(Iter,IThicknessIndex,IExitFlag,IErr)
   IF (ISimFLAG.EQ.0) THEN !felixrefine output
     WRITE(path,"(A1,I4.4,A1,I3.3,A3,I3.3,A1,I3.3)") &
          "I",Iter,"_",IThickness,"nm_",2*IPixelcount,"x",2*IPixelcount
-    path = TRIM(chemicalformula) // "_" // path  ! This adds chemical to folder name
+    path = TRIM(SChemicalFormula) // "_" // path  ! This adds chemical to folder name
   ELSE !Sim Output
     WRITE(path,"(A4,I3.3,A3,I3.3,A1,I3.3)") &
           "Sim_",IThickness,"nm_",2*IPixelcount,"x",2*IPixelcount
@@ -90,7 +90,7 @@ SUBROUTINE WriteIterationOutput(Iter,IThicknessIndex,IExitFlag,IErr)
     ! Iterates over 3 vector components to make filename e.g. 'GaAs-2-2+0.bin.
     WRITE(filename,"(A1,I3.3,A3,I3.3,A1,I3.3,A1)")"_",IThickness,"nm_",&
                 2*IPixelcount,"x",2*IPixelcount,"_"
-    filename = TRIM(ADJUSTL(path))//"/"//TRIM(ADJUSTL(chemicalformula))&
+    filename = TRIM(ADJUSTL(path))//"/"//TRIM(ADJUSTL(SChemicalFormula))&
                 //TRIM(ADJUSTL(filename))    
     DO jnd = 1,3
       WRITE(IntString,*) NINT(Rhkl(IOutPutReflections(ind),jnd))

@@ -51,7 +51,7 @@ PROGRAM Felixrefine
   USE MPI
   USE MyMPI
 
-  USE read_felix_cif_mod
+  USE read_cif_mod
   USE setup_scattering_factors_mod
   USE setup_reflections_mod
   USE crystallography_mod
@@ -102,11 +102,11 @@ PROGRAM Felixrefine
 
   ! MPI initialization
   CALL MPI_Init(IErr) 
-  IF(l_alert(IErr,"felixrefine","MPI_Init()")) GOTO 9999
+  IF(l_alert(IErr,"felixrefine","MPI_Init()")) CALL abort()
   CALL MPI_Comm_rank(MPI_COMM_WORLD,my_rank,IErr) ! get rank of the current process
-  IF(l_alert(IErr,"felixrefine","MPI_Comm_rank()")) GOTO 9999
+  IF(l_alert(IErr,"felixrefine","MPI_Comm_rank()")) CALL abort()
   CALL MPI_Comm_size(MPI_COMM_WORLD,p,IErr) ! get size of the current communicator
-  IF(l_alert(IErr,"felixrefine","MPI_Comm_size()")) GOTO 9999
+  IF(l_alert(IErr,"felixrefine","MPI_Comm_size()")) CALL abort()
 
   ! startup terminal output
   CALL message(LS,"--------------------------------------------------------------")
@@ -125,23 +125,23 @@ PROGRAM Felixrefine
   !--------------------------------------------------------------------
   
   CALL ReadInpFile(IErr) ! felix.inp
-  IF(l_alert(IErr,"felixrefine","ReadInpFile()")) GOTO 9999
+  IF(l_alert(IErr,"felixrefine","ReadInpFile()")) CALL abort()
 
   CALL message ( LS, "Setting teminal output mode" )
   CALL set_terminal_output_mode( IWriteFLAG )
 
-  CALL read_felix_cif(IErr) ! felix.cif ! some allocations are here
-  IF(l_alert(IErr,"felixrefine","ReadCif()")) GOTO 9999
+  CALL read_cif(IErr) ! felix.cif ! some allocations are here
+  IF(l_alert(IErr,"felixrefine","ReadCif()")) CALL abort()
 
   CALL ReadHklFile(IErr) ! the list of hkl's to input/output
-  IF(l_alert(IErr,"felixrefine","ReadHklFile()")) GOTO 9999
+  IF(l_alert(IErr,"felixrefine","ReadHklFile()")) CALL abort()
 
   ! read experimental images (if in refinement mode)
   IF (ISimFLAG.EQ.0) THEN ! it's a refinement, so read-in experimental images
     ALLOCATE(RImageExpi(2*IPixelCount,2*IPixelCount,INoOfLacbedPatterns),STAT=IErr)  
-    IF(l_alert(IErr,"felixrefine","allocate RImageExpi")) GOTO 9999
+    IF(l_alert(IErr,"felixrefine","allocate RImageExpi")) CALL abort()
     CALL ReadExperimentalImages(IErr)
-    IF(l_alert(IErr,"felixrefine","ReadExperimentalImages()")) GOTO 9999
+    IF(l_alert(IErr,"felixrefine","ReadExperimentalImages()")) CALL abort()
   ELSE ! not refinement, simulation only
     CALL message(LS,"Simulation only")
   END IF
@@ -151,7 +151,7 @@ PROGRAM Felixrefine
   !--------------------------------------------------------------------
 
   CALL setup_scattering_factors(IScatterFactorMethodFLAG,IErr)
-  IF(l_alert(IErr,"felixrefine","setup_scattering_factors()")) GOTO 9999
+  IF(l_alert(IErr,"felixrefine","setup_scattering_factors()")) CALL abort()
   ! returns global RScattFactors depeding upon scattering method: Kirkland, Peng, etc.
 
   ! Calculate wavevector magnitude k and relativistic mass
@@ -172,7 +172,7 @@ PROGRAM Felixrefine
 
   ! Creates reciprocal lattice vectors in Microscope reference frame
   CALL ReciprocalLattice(IErr)
-  IF(l_alert(IErr,"felixrefine","ReciprocalLattice()")) GOTO 9999
+  IF(l_alert(IErr,"felixrefine","ReciprocalLattice()")) CALL abort()
 
   !--------------------------------------------------------------------
   ! allocate atom and debye-waller factor arrays
@@ -185,23 +185,23 @@ PROGRAM Felixrefine
   ! allocations using that RBasisAtomPosition, RSymVec have now been setup
   ! fractional unit cell coordinates are used for RAtomPosition, like BasisAtomPosition
   ALLOCATE(RAtomPosition(IMaxPossibleNAtomsUnitCell,ITHREE),STAT=IErr)
-  IF(l_alert(IErr,"felixrefine","allocate RAtomPosition")) GOTO 9999
+  IF(l_alert(IErr,"felixrefine","allocate RAtomPosition")) CALL abort()
   ! RAtomCoordinate is in the microscope reference frame in Angstrom units
   ALLOCATE(RAtomCoordinate(IMaxPossibleNAtomsUnitCell,ITHREE),STAT=IErr)
-  IF(l_alert(IErr,"felixrefine","allocate RAtomCoordinate")) GOTO 9999
+  IF(l_alert(IErr,"felixrefine","allocate RAtomCoordinate")) CALL abort()
   ALLOCATE(SAtomLabel(IMaxPossibleNAtomsUnitCell),STAT=IErr) ! atom label
-  IF(l_alert(IErr,"felixrefine","allocate SAtomLabel")) GOTO 9999
+  IF(l_alert(IErr,"felixrefine","allocate SAtomLabel")) CALL abort()
   ALLOCATE(SAtomName(IMaxPossibleNAtomsUnitCell),STAT=IErr) ! atom name
-  IF(l_alert(IErr,"felixrefine","allocate SAtomName")) GOTO 9999
+  IF(l_alert(IErr,"felixrefine","allocate SAtomName")) CALL abort()
   ALLOCATE(RIsoDW(IMaxPossibleNAtomsUnitCell),STAT=IErr) ! Isotropic Debye-Waller factor
-  IF(l_alert(IErr,"felixrefine","allocate RIsoDW")) GOTO 9999
+  IF(l_alert(IErr,"felixrefine","allocate RIsoDW")) CALL abort()
   ALLOCATE(ROccupancy(IMaxPossibleNAtomsUnitCell),STAT=IErr)
-  IF(l_alert(IErr,"felixrefine","allocate ROccupancy")) GOTO 9999
+  IF(l_alert(IErr,"felixrefine","allocate ROccupancy")) CALL abort()
   ALLOCATE(IAtomicNumber(IMaxPossibleNAtomsUnitCell),STAT=IErr)
-  IF(l_alert(IErr,"felixrefine","allocate IAtomicNumber")) GOTO 9999
+  IF(l_alert(IErr,"felixrefine","allocate IAtomicNumber")) CALL abort()
   ! Anisotropic Debye-Waller factor
   ALLOCATE(IAnisoDW(IMaxPossibleNAtomsUnitCell),STAT=IErr)
-  IF(l_alert(IErr,"felixrefine","allocate IAnisoDW")) GOTO 9999
+  IF(l_alert(IErr,"felixrefine","allocate IAnisoDW")) CALL abort()
 
   !--------------------------------------------------------------------
   ! set up unique atom positions, reflection pool
@@ -209,7 +209,7 @@ PROGRAM Felixrefine
 
   ! fills lattice unit cell from basis attributes
   CALL UniqueAtomPositions(IErr)
-  IF(l_alert(IErr,"felixrefine","UniqueAtomPositions()")) GOTO 9999
+  IF(l_alert(IErr,"felixrefine","UniqueAtomPositions()")) CALL abort()
   !?? could re-allocate RAtomPosition,SAtomName,RIsoDW,ROccupancy,
   !?? IAtomicNumber,IAnisoDW to match INAtomsUnitCell?
 
@@ -221,7 +221,7 @@ PROGRAM Felixrefine
 
   ! Count the reflections that make up the pool of g-vectors, simply returns INhkl
   CALL HKLCount(IHKLMAXValue,RZDirC,INhkl,RHOLZAcceptanceAngle,IErr)
-  IF(l_alert(IErr,"felixrefine","HKLCount()")) GOTO 9999
+  IF(l_alert(IErr,"felixrefine","HKLCount()")) CALL abort()
   DO WHILE (INhkl.LT.IMinReflectionPool) 
     IHKLMAXValue = IHKLMAXValue*2
     CALL HKLCount(IHKLMAXValue,RZDirC,INhkl,RHOLZAcceptanceAngle,IErr)
@@ -230,9 +230,9 @@ PROGRAM Felixrefine
   ! Fill the list of reflections Rhkl
   ! NB Rhkl are in integer form [h,k,l] but are REAL to allow dot products etc.
   ALLOCATE(Rhkl(INhkl,ITHREE),STAT=IErr)
-  IF(l_alert(IErr,"felixrefine","allocate Rhkl")) GOTO 9999
+  IF(l_alert(IErr,"felixrefine","allocate Rhkl")) CALL abort()
   CALL HKLMake(IHKLMAXValue,RZDirC,RHOLZAcceptanceAngle,IErr)
-  IF(l_alert(IErr,"felixrefine","HKLMake()")) GOTO 9999
+  IF(l_alert(IErr,"felixrefine","HKLMake()")) CALL abort()
   CALL message(LL,dbg7,"Rhkl matrix: ",NINT(Rhkl(1:INhkl,:)))
 
   !--------------------------------------------------------------------
@@ -241,13 +241,13 @@ PROGRAM Felixrefine
   
   ! sort hkl in descending order of magnitude
   CALL SortHKL(Rhkl,INhkl,IErr) 
-  IF(l_alert(IErr,"felixrefine","SortHKL()")) GOTO 9999
+  IF(l_alert(IErr,"felixrefine","SortHKL()")) CALL abort()
   !?? may result in an error when the reflection pool does not reach
   !?? the highest hkl of the experimental data? 
 
   ! Assign numbers to different reflections -> IOutputReflections, INoOfLacbedPatterns
   CALL SpecificReflectionDetermination(IErr)
-  IF(l_alert(IErr,"felixrefine","SpecificReflectionDetermination()")) GOTO 9999
+  IF(l_alert(IErr,"felixrefine","SpecificReflectionDetermination()")) CALL abort()
 
   !--------------------------------------------------------------------
   ! allocate RgPool and dummy
@@ -256,9 +256,9 @@ PROGRAM Felixrefine
   ! RgPool is a list of 2pi*g-vectors in the microscope ref frame,
   ! units of 1/A (NB exp(-i*q.r),  physics negative convention)
   ALLOCATE(RgPool(INhkl,ITHREE),STAT=IErr)
-  IF(l_alert(IErr,"felixrefine","allocate RgPool")) GOTO 9999
+  IF(l_alert(IErr,"felixrefine","allocate RgPool")) CALL abort()
   ALLOCATE(RgDummyVecMat(INhkl,ITHREE),STAT=IErr)
-  IF(l_alert(IErr,"felixrefine","allocate RgDummyVecMat")) GOTO 9999
+  IF(l_alert(IErr,"felixrefine","allocate RgDummyVecMat")) CALL abort()
  
   !--------------------------------------------------------------------
   ! calculate g vector list, consdiering zeroth order Laue zone
@@ -297,14 +297,14 @@ PROGRAM Felixrefine
   ITotalLaueZoneLevel=NINT(RMaxLaueZoneValue+ABS(RMinLaueZoneValue)+1,IKIND)
   
   DEALLOCATE(RgDummyVecMat)
-  IF(l_alert(IErr,"felixrefine","deallocate RgDummyVecMat")) GOTO 9999
+  IF(l_alert(IErr,"felixrefine","deallocate RgDummyVecMat")) CALL abort()
 
   !--------------------------------------------------------------------
   ! (optional) calculate higher order Laue zone 
   !--------------------------------------------------------------------
 
   ALLOCATE(RgPoolMagLaue(INhkl,ITotalLaueZoneLevel),STAT=IErr)
-  IF(l_alert(IErr,"felixrefine","allocate RgPoolMagLaue")) GOTO 9999
+  IF(l_alert(IErr,"felixrefine","allocate RgPoolMagLaue")) CALL abort()
 
   ! calculate higher order Laue zones
   IF(RAcceptanceAngle.NE.ZERO.AND.IHOLZFLAG.EQ.1) THEN
@@ -341,7 +341,7 @@ PROGRAM Felixrefine
     END DO
     IHOLZgPoolMag=knd  !?? use IHOLZgPoolMag instead of knd
     ALLOCATE(IOriginGVecIdentifier(IHOLZgPoolMag),STAT=IErr)
-    IF(l_alert(IErr,"felixrefine","allocate IOriginGVecIdentifier")) GOTO 9999
+    IF(l_alert(IErr,"felixrefine","allocate IOriginGVecIdentifier")) CALL abort()
     IOriginGVecIdentifier=0
     knd=1
     DO ind=1,INhkl
@@ -360,7 +360,7 @@ PROGRAM Felixrefine
   ! calculate 2pi*g vector magnitudes for the reflection pool RgPoolMag
   ! in reciprocal Angstrom units, in the Microscope reference frame
   ALLOCATE(RgPoolMag(INhkl),STAT=IErr)
-  IF(l_alert(IErr,"felixrefine","allocate RgPoolMag")) GOTO 9999
+  IF(l_alert(IErr,"felixrefine","allocate RgPoolMag")) CALL abort()
 
   DO ind=1,INhkl
      RgPoolMag(ind)= SQRT(DOT_PRODUCT(RgPool(ind,:),RgPool(ind,:)))
@@ -370,7 +370,7 @@ PROGRAM Felixrefine
   
   ! g-vector components parallel to the surface unit normal
   ALLOCATE(RgDotNorm(INhkl),STAT=IErr)
-  IF(l_alert(IErr,"felixrefine","allocate RgDotNorm")) GOTO 9999
+  IF(l_alert(IErr,"felixrefine","allocate RgDotNorm")) CALL abort()
 
   DO ind =1,INhkl
     RgDotNorm(ind) = DOT_PRODUCT(RgPool(ind,:),RNormDirM)
@@ -427,23 +427,23 @@ PROGRAM Felixrefine
 
   ! Calculate Ug matrix etc.
   ALLOCATE(CUgMatNoAbs(nReflections,nReflections),STAT=IErr)! Ug Matrix without absorption
-  IF(l_alert(IErr,"felixrefine","allocate CUgMatNoAbs")) GOTO 9999
+  IF(l_alert(IErr,"felixrefine","allocate CUgMatNoAbs")) CALL abort()
   ALLOCATE(CUgMatPrime(nReflections,nReflections),STAT=IErr)! U'g Matrix of just absorption
-  IF(l_alert(IErr,"felixrefine","allocate CUgMatPrime")) GOTO 9999  
+  IF(l_alert(IErr,"felixrefine","allocate CUgMatPrime")) CALL abort()
   ALLOCATE(CUgMat(nReflections,nReflections),STAT=IErr)! Ug+U'g Matrix, including absorption
-  IF(l_alert(IErr,"felixrefine","allocate CUgMat")) GOTO 9999
+  IF(l_alert(IErr,"felixrefine","allocate CUgMat")) CALL abort()
   ! Matrix of 2pi*g-vectors that corresponds to the CUgMatNoAbs matrix
   ALLOCATE(RgMatrix(nReflections,nReflections,ITHREE),STAT=IErr)
-  IF(l_alert(IErr,"felixrefine","allocate RgMatrix")) GOTO 9999 
+  IF(l_alert(IErr,"felixrefine","allocate RgMatrix")) CALL abort()
   ! Matrix of their magnitudes 
   ALLOCATE(RgMatrixMagnitude(nReflections,nReflections),STAT=IErr)
-  IF(l_alert(IErr,"felixrefine","allocate RgMatrixMagnitude")) GOTO 9999
+  IF(l_alert(IErr,"felixrefine","allocate RgMatrixMagnitude")) CALL abort()
   ! Matrix of sums of indices - for symmetry equivalence in the Ug matrix
   ALLOCATE(RgSumMat(nReflections,nReflections),STAT=IErr) 
-  IF(l_alert(IErr,"felixrefine","allocate RgSumMat")) GOTO 9999
+  IF(l_alert(IErr,"felixrefine","allocate RgSumMat")) CALL abort()
   ! Matrix with numbers marking equivalent Ug's
   ALLOCATE(ISymmetryRelations(nReflections,nReflections),STAT=IErr)
-  IF(l_alert(IErr,"felixrefine","allocate ISymmetryRelations")) GOTO 9999
+  IF(l_alert(IErr,"felixrefine","allocate ISymmetryRelations")) CALL abort()
   
   !--------------------------------------------------------------------
   ! calculate reflection matrix & initialise structure factors
@@ -466,7 +466,7 @@ PROGRAM Felixrefine
   ! structure factor initialisation
   ! Calculate Ug matrix for each entry in CUgMatNoAbs(1:nReflections,1:nReflections)
   CALL StructureFactorInitialisation(IErr)
-  IF(l_alert(IErr,"felixrefine","StructureFactorInitialisation()")) GOTO 9999
+  IF(l_alert(IErr,"felixrefine","StructureFactorInitialisation()")) CALL abort()
   ! NB IEquivalentUgKey and CUniqueUg allocated in here
   !?? CUniqueUg vector produced here to later fill RIndependentVariable
   
@@ -478,7 +478,7 @@ PROGRAM Felixrefine
   CALL message(LL,dbg3,"Starting absorption calculation, number of beams = ",&
         SIZE(IEquivalentUgKey))
   CALL Absorption (IErr)
-  IF(l_alert(IErr,"felixrefine","Absorption()")) GOTO 9999
+  IF(l_alert(IErr,"felixrefine","Absorption()")) CALL abort()
   CALL print_end_time( LM, IStartTime2, "Absorption" )
   CALL start_timer( IStartTime2 )
 
@@ -509,7 +509,7 @@ PROGRAM Felixrefine
     END IF
 
     ALLOCATE(RIndependentVariable(INoOfVariables),STAT=IErr)  
-    IF(l_alert(IErr,"felixrefine","allocate RIndependentVariable")) GOTO 9999
+    IF(l_alert(IErr,"felixrefine","allocate RIndependentVariable")) CALL abort()
 
     ! Fill up the IndependentVariable list with CUgMatNoAbs components
     jnd=1
@@ -539,7 +539,7 @@ PROGRAM Felixrefine
 
     IF(IRefineMode(2).EQ.1) THEN ! It's an atom coordinate refinement, code(B)
       CALL SetupAtomicVectorMovements(IErr)
-      IF(l_alert(IErr,"felixrefine","Absorption()")) GOTO 9999
+      IF(l_alert(IErr,"felixrefine","Absorption()")) CALL abort()
     END IF
 
     ! Atomic coordinates, B
@@ -563,7 +563,7 @@ PROGRAM Felixrefine
       !?? could be done when reading felix.inp
       PRINT*,"No refinement variables! Check IRefineModeFLAG in felix.inp"
       PRINT*,"Valid refine modes are A,B,C,D,E,F,G,H,I,J,S"
-      IF(l_alert(1,"felixrefine","sort out refinement variables")) GOTO 9999
+      IF(l_alert(1,"felixrefine","sort out refinement variables")) CALL abort()
     END IF
 
 	  ! Fill up the IndependentVariable list 
@@ -588,7 +588,7 @@ PROGRAM Felixrefine
 
     ! Assign IDs - not needed for a Ug refinement
     ALLOCATE(IIterativeVariableUniqueIDs(INoOfVariables,5),STAT=IErr)
-    IF(l_alert(IErr,"felixrefine","allocate IIterativeVariableUniqueIDs")) GOTO 9999
+    IF(l_alert(IErr,"felixrefine","allocate IIterativeVariableUniqueIDs")) CALL abort()
 
     IIterativeVariableUniqueIDs = 0
     knd = 0
@@ -612,33 +612,33 @@ PROGRAM Felixrefine
   
   ! Allocate necessary output image arrays  
   ALLOCATE(RhklPositions(nReflections,2),STAT=IErr)
-  IF(l_alert(IErr,"felixrefine","allocate RhklPositions")) GOTO 9999
+  IF(l_alert(IErr,"felixrefine","allocate RhklPositions")) CALL abort()
   CALL ImageSetup(IErr) !?? what does this do?
-  IF(l_alert(IErr,"felixrefine","ImageSetup()")) GOTO 9999
+  IF(l_alert(IErr,"felixrefine","ImageSetup()")) CALL abort()
 
   ! All the individual calculations go into RSimulatedPatterns later with MPI_GATHERV
 
   ! NB RSimulatedPatterns is a vector with respect to pixels, not a 2D image
   ALLOCATE(RSimulatedPatterns(INoOfLacbedPatterns,IThicknessCount,IPixelTotal),STAT=IErr)
-  IF(l_alert(IErr,"felixrefine","allocate RSimulatedPatterns")) GOTO 9999
+  IF(l_alert(IErr,"felixrefine","allocate RSimulatedPatterns")) CALL abort()
   ! Images to match RImageExpi !?? there are other variables called RImageSim, be careful
   ALLOCATE(RImageSimi(2*IPixelCount,2*IPixelCount,INoOfLacbedPatterns,IThicknessCount),&
         STAT=IErr)
-  IF(l_alert(IErr,"felixrefine","allocate RImageSimi")) GOTO 9999
+  IF(l_alert(IErr,"felixrefine","allocate RImageSimi")) CALL abort()
 
   IF (ICorrelationFLAG.EQ.3) THEN ! allocate images for the mask
     ! Baseline Images to calculate mask
     ALLOCATE(RImageBase(2*IPixelCount,2*IPixelCount,INoOfLacbedPatterns,IThicknessCount),&
           STAT=IErr)
-    IF(l_alert(IErr,"felixrefine","allocate RImageBase")) GOTO 9999
+    IF(l_alert(IErr,"felixrefine","allocate RImageBase")) CALL abort()
     ! Average Images to calculate mask
     ALLOCATE(RImageAvi(2*IPixelCount,2*IPixelCount,INoOfLacbedPatterns,IThicknessCount),&
           STAT=IErr)
-    IF(l_alert(IErr,"felixrefine","allocate RImageAvi")) GOTO 9999
+    IF(l_alert(IErr,"felixrefine","allocate RImageAvi")) CALL abort()
     RImageAvi=ZERO
     ! Mask Images
     ALLOCATE(RImageMask(2*IPixelCount,2*IPixelCount,INoOfLacbedPatterns),STAT=IErr)
-    IF(l_alert(IErr,"felixrefine","allocate RImageMask")) GOTO 9999
+    IF(l_alert(IErr,"felixrefine","allocate RImageMask")) CALL abort()
   END IF
 
   RSimulatedPatterns = ZERO
@@ -647,11 +647,11 @@ PROGRAM Felixrefine
   ILocalPixelCountMax= (IPixelTotal*(my_rank+1)/p) 
   ALLOCATE(RIndividualReflections(INoOfLacbedPatterns,IThicknessCount,&
          (ILocalPixelCountMax-ILocalPixelCountMin)+1),STAT=IErr)
-  IF(l_alert(IErr,"felixrefine","allocate RIndividualReflections")) GOTO 9999
+  IF(l_alert(IErr,"felixrefine","allocate RIndividualReflections")) CALL abort()
 
   ! position of pixels calculated by this core, IDisplacements & ICount are global variables
   ALLOCATE(IDisplacements(p),ICount(p),STAT=IErr)
-  IF(l_alert(IErr,"felixrefine","allocate RhklPositions")) GOTO 9999
+  IF(l_alert(IErr,"felixrefine","allocate RhklPositions")) CALL abort()
   DO ind = 1,p
     IDisplacements(ind) = (IPixelTotal*(ind-1)/p)*INoOfLacbedPatterns*IThicknessCount
     ICount(ind) = (((IPixelTotal*(ind)/p) - (IPixelTotal*(ind-1)/p)))* &
@@ -669,7 +669,7 @@ PROGRAM Felixrefine
   ! baseline simulation with timer
   CALL start_timer( IStartTime2 )
   CALL FelixFunction(IErr)
-  IF(l_alert(IErr,"felixrefine","FelixFunction")) GOTO 9999
+  IF(l_alert(IErr,"felixrefine","FelixFunction")) CALL abort()
   CALL print_end_time( LM, IStartTime2, "Simulation" )
 
   !--------------------------------------------------------------------
@@ -687,7 +687,7 @@ PROGRAM Felixrefine
     CALL message(LM,"Writing simulations with the number of thicknesses =", IThicknessCount)
     DO IThicknessIndex = 1,IThicknessCount
       CALL WriteIterationOutput(Iter,IThicknessIndex,IExitFLAG,IErr)
-      IF(l_alert(IErr,"felixrefine","WriteIterationOutput()")) GOTO 9999 
+      IF(l_alert(IErr,"felixrefine","WriteIterationOutput()")) CALL abort() 
     END DO   
   
   ELSE ! Refinement Mode
@@ -697,7 +697,7 @@ PROGRAM Felixrefine
       ! Figure of merit is passed back as a global variable
       CALL CalculateFigureofMeritandDetermineThickness(Iter,IThicknessIndex,IErr)
       IF(l_alert(IErr,"felixrefine",&
-            "CalculateFigureofMeritandDetermineThickness()")) GOTO 9999 
+            "CalculateFigureofMeritandDetermineThickness()")) CALL abort() 
 
       ! Keep baseline simulation for masked correlation
       IF (ICorrelationFLAG.EQ.3) THEN
@@ -706,7 +706,7 @@ PROGRAM Felixrefine
       END IF
         
       CALL WriteIterationOutput(Iter,IThicknessIndex,IExitFLAG,IErr)
-      IF(l_alert(IErr,"felixrefine","WriteIterationOutput()")) GOTO 9999 
+      IF(l_alert(IErr,"felixrefine","WriteIterationOutput()")) CALL abort() 
 
     END IF
     !===================================== ! Send the fit index to all cores
@@ -729,17 +729,17 @@ PROGRAM Felixrefine
     CASE(1)
 
       CALL SimplexRefinement()
-      IF(l_alert(IErr,"felixrefine","SimplexRefinement()")) GOTO 9999 
+      IF(l_alert(IErr,"felixrefine","SimplexRefinement()")) CALL abort() 
     
     CASE(2)
 
       CALL MaxGradientRefinement()
-      IF(l_alert(IErr,"felixrefine","MaxGradientRefinement()")) GOTO 9999 
+      IF(l_alert(IErr,"felixrefine","MaxGradientRefinement()")) CALL abort() 
       
     CASE(3)
 
       CALL ParabolicRefinement()
-      IF(l_alert(IErr,"felixrefine","ParabolicRefinement()")) GOTO 9999 
+      IF(l_alert(IErr,"felixrefine","ParabolicRefinement()")) CALL abort() 
      
     CASE DEFAULT ! Simulation only, should never happen
       CALL message( LM, "No refinement, simulation only")
@@ -796,28 +796,23 @@ PROGRAM Felixrefine
   CALL print_end_time( LS, IStartTime, "Calculation" )
   CALL message( LS, "--------------------------------")
   CALL message( LS, "||||||||||||||||||||||||||||||||")
-
-
-  ! shut down MPI
-9999 CONTINUE
-
-  WRITE(*,*) "calling MPI_Finalize"
-
-  CALL MPI_Finalize(IErr)
-  IF(l_alert(IErr,"felixrefine","MPI_Finalize()")) GOTO 9999
-
-  CALL message(LS, "Shutting down felixrefine program entirely")
   
   ! clean shutdown
+  CALL MPI_Finalize(IErr)
   STOP
-
+  
 !%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 !%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 !%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 CONTAINS
   ! these internal subroutines use felixrefine's whole variable namespace
-  !?? need to cleanup some of these more...
+
+  SUBROUTINE abort()
+    CALL error_message("felixrefine","Aborting!")
+    CALL MPI_Abort(MPI_COMM_WORLD,1,IErr)
+    STOP
+  END SUBROUTINE abort
 
   !>
   !! Procedure-description: Refinement using simplex
