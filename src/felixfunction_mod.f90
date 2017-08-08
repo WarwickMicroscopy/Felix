@@ -43,6 +43,9 @@
 ! BlurG( )                                        ---
 
 
+!?? uses UniqueAtomPositions from crystallography.f90
+!?? uses WriteOutVariables from RefineWriteOut.f90
+
 !>
 !! Module-description: Holds main top level simulating subroutines considering
 !! different thicknesses
@@ -51,6 +54,7 @@ MODULE felixfunction_mod
   IMPLICIT NONE
   PRIVATE
   PUBLIC :: SimulateAndFit, FelixFunction, CalculateFigureofMeritandDetermineThickness
+  !?? JR CalculateFigureofMeritandDetermineThickness could be made private with some tweaks
 
   CONTAINS
 
@@ -61,11 +65,25 @@ MODULE felixfunction_mod
   !!  
   SUBROUTINE SimulateAndFit(RIndependentVariable,Iter,IExitFLAG,IErr)
 
+    ! JR non-Ug case: RIndependentVariable changeble ones, UpdateVariables() updates
+    ! corresponding global variables (non changeable stay as input from .inp)
+    ! UniqueAtomPositions() - recalculate unit cell ?
+    ! CUgMat = CUgMatNoAbs + CUgMatPrime
+    ! simulate, felixfunction - CUgMat + others ---> RImageSimi
+    ! CalculateFigureofMeritandDetermineThickness() - im process, compares sim/expi images
+    ! ---> RFigureofMerit
+    ! RImageExpi(x,y,LACBED_ID), RImageSimi(x,y,LACBED_ID, thickness_ID)
+    ! MPI_BCAST(RFigureofMerit) - send to all cores ? parallel    
+
+    !?? uses UniqueAtomPositions from crystallography.f90 every (non-Ug) iteration
+    !?? uses WriteOutVariables from RefineWriteOut.f90
+
     USE MyNumbers
     USE terminal_output
 
-    USE Ug
     USE MyMPI
+    USE Ug_mod
+    USE crystallography_mod
 
     !?? global inputs and outputs of subroutines using global
     ! global inputs
@@ -138,31 +156,29 @@ MODULE felixfunction_mod
         RAbsorptionPercentage = RIndependentVariable(jnd)
       END IF
 
-    ELSE ! not Ug refinement JR
+    ELSE ! not Ug refinement
       ! Update variables
       CALL UpdateVariables(RIndependentVariable,IErr)
       IF(l_alert(IErr,"SimulateAndFit()","UpdateVariables()")) RETURN
       IF (IRefineMode(8).EQ.1) THEN ! convergence angle
-        ! recalculate k-vectors
-
+        ! recalculate k-vectors?
         ! resolution in k space
         RDeltaK = RMinimumGMag*RConvergenceAngle/REAL(IPixelCount,RKIND) 
-        !??
-        !IF (my_rank.EQ.0) THEN
-        !  WRITE(SFormat,*) "(I5.1,1X,F13.9,1X,F13.9,1X)"
-        !  OPEN(UNIT=IChOutSimplex,file='IterationLog.txt',&
-        !        form='formatted',status='unknown',position='append')
-        !  WRITE(UNIT=IChOutSimplex,FMT=SFormat) Iter,RFigureofMerit,RConvergenceAngle
-        !  CLOSE(IChOutSimplex)
-        !END IF
+        !?? in the past wrote following to iterationlog.txt
+        !?? Iter,RFigureofMerit,RConvergenceAngle
       END IF
-      ! recalculate unit cell
+
+      ! recalculate unit cell, updates every-atom arrays with new values from basis
       CALL UniqueAtomPositions(IErr)
       IF(l_alert(IErr,"SimulateAndFit()","UniqueAtomPositions()")) RETURN
       !?? This is being called unnecessarily for some refinement modes
+      !?? JR attempted to play with this, need to study further 
 
-      ! Update scattering matrix
+      !--------------------------------------------------------------------
+      ! update scattering matrix Ug
+      !--------------------------------------------------------------------
 
+      ! calculate CUgMatNoAbs
       CUgMatNoAbs = CZERO
       ! Work through unique Ug's
       IUniqueUgs = SIZE(IEquivalentUgKey)
@@ -186,14 +202,16 @@ MODULE felixfunction_mod
           CUgMatNoAbs = CONJG(CVgij)
         END WHERE
       END DO
-
-      CUgMatNoAbs=CUgMatNoAbs*RRelativisticCorrection/(PI*RVolume)
+      CUgMatNoAbs = CUgMatNoAbs*RRelativisticCorrection/(PI*RVolume)
       DO ind=1,nReflections ! zero diagonal
-         CUgMatNoAbs(ind,ind)=ZERO
+         CUgMatNoAbs(ind,ind) = ZERO
       ENDDO
 
-      CALL Absorption (IErr)
+      ! calculate CUgMat
+      ! calculate CUgMatPrime, then CUgMat = CUgMatNoAbs + CUgMatPrime
+      CALL Absorption(IErr)
       IF(l_alert(IErr,"SimulateAndFit()","Absorption()")) RETURN
+
     END IF
     !/\----------------------------------------------------------------------
 
@@ -245,14 +263,15 @@ MODULE felixfunction_mod
   !!  
   SUBROUTINE FelixFunction(IErr)
 
-    ! simulation - calls bloch wave simulation to create images JR
+    ! CUgMat and smaller inputs (using bloch pixel,thickness parallels)
+    ! ------> RImageSimi(x, y, LACBED_pattern_ID , thickness_ID )
 
     USE MyNumbers
     USE IConst, ONLY : ITHREE
     USE MyMPI
     USE terminal_output
 
-    USE bloch
+    USE bloch_mod
 
     ! globals - bloch inputs  
     USE CPara, ONLY : CUgMat ! from Absorption
@@ -282,7 +301,7 @@ MODULE felixfunction_mod
     USE IPara, ONLY : IPixelComputed
 
     !global outputs
-    USE RPara, ONLY : RImageSimi,RSimulatedPatterns
+    USE RPara, ONLY : RImageSimi,RSimulatedPatterns !?? what is the difference
     USE IPara, ONLY : IInitialSimulationFLAG
 
     !global inputs
@@ -307,7 +326,7 @@ MODULE felixfunction_mod
     DO knd = ILocalPixelCountMin,ILocalPixelCountMax,1
       jnd = IPixelLocations(knd,1)
       ind = IPixelLocations(knd,2)
-      !?? JR elaborate - calls bloch simulating method seperately on pixel areas
+      !?? fills array for each pixel number not x & y coordinates
       CALL BlochCoefficientCalculation(ind,jnd,knd,ILocalPixelCountMin,IErr)
       IF(l_alert(IErr,"FelixFunction","BlochCoefficientCalculation")) RETURN
     END DO
@@ -358,8 +377,13 @@ MODULE felixfunction_mod
   !!  
   SUBROUTINE CalculateFigureofMeritandDetermineThickness(Iter,IBestThicknessIndex,IErr)
 
-    !?? called once felixfunction & once felixrefine
+    ! ---> IBestThicknessIndex, RFigureofMerit
+
+    !?? JR called every SimulateAndFit()
+    !?? JR called once felixrefine baseline simulation
+
     !?? NB core 0 only
+
     USE MyNumbers
     USE terminal_output 
     
@@ -480,7 +504,7 @@ MODULE felixfunction_mod
     ! The figure of merit, global variable
     RFigureofMerit = RBestTotalCorrelation
 
-    !?? RWeightingCoefficients not used here anymore
+    !?? RWeightingCoefficients not used here anymore JR 
     !?? Alternative:
     !?? assume that the best thickness is given by the mean of individual thicknesses  
     !IBestThicknessIndex = SUM(IBestImageThicknessIndex)/INoOfLacbedPatterns
@@ -512,8 +536,10 @@ MODULE felixfunction_mod
   !!  
   SUBROUTINE UpdateVariables(RIndependentVariable,IErr)
 
-    !?? called once in felixfunction
-    !?? elaborate on different cases
+    !?? JR top level to this module, so keep, compare if refine needs access
+
+    !?? JR called every SimulateAndFit() (for non-Ug refinement)
+
     USE MyNumbers
     USE terminal_output 
 
@@ -602,8 +628,11 @@ MODULE felixfunction_mod
   !! 
   SUBROUTINE PrintVariables(IErr)
 
-    !?? called once in felixfunction
-    !?? uninteresting, low priority
+    !?? JR utility, however is top level to this module so maybe keep 
+    !?? JR uninteresting, low priority, check if relevant performance overhead
+
+    !?? JR called every SimulateAndFit()
+
     USE MyNumbers
     USE terminal_output 
     
@@ -702,14 +731,17 @@ MODULE felixfunction_mod
   !! 
   PURE SUBROUTINE BlurG(RImageToBlur,IPixelsCount,RBlurringRadius,IErr)
 
-    !?? called once in felix function
+    !?? JR niche utility, seemingly unimportant, could be moved
+
+    !?? JR called every SimulateAndFit() indriectly via FelixFunction
+
     USE MyNumbers
     USE MPI
     USE terminal_output !?? can't use this or l_alert if pure
 
     IMPLICIT NONE
 
-    REAL(RKIND),DIMENSION(2*IPixelsCount,2*IPixelsCount),INTENT(OUT) :: RImageToBlur
+    REAL(RKIND),DIMENSION(2*IPixelsCount,2*IPixelsCount),INTENT(INOUT) :: RImageToBlur
     INTEGER(IKIND),INTENT(IN) :: IPixelsCount
     REAL(RKIND),INTENT(IN) :: RBlurringRadius
     INTEGER(IKIND),INTENT(OUT) :: IErr

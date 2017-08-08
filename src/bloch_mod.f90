@@ -37,12 +37,15 @@
 ! EigenSpectrum()
 ! INVERT()
 
+!?? JR how access to ZGEMM? what other namespace can access?
+
+!?? JR want bloch closed module, low level, possibly even pure for performance & elegance
 
 !>
 !! Module-description: Holds BlochCoefficientCalculation which for a pixel
 !! calculates the wavefunction vector for each thickness
 !!
-MODULE bloch
+MODULE bloch_mod
   IMPLICIT NONE
   PRIVATE
   PUBLIC :: BlochCoefficientCalculation
@@ -58,11 +61,22 @@ MODULE bloch
   SUBROUTINE BlochCoefficientCalculation(IYPixelIndex,IXPixelIndex,IPixelNumber,&
                     IFirstPixelToCalculate,IErr)
 
+    ! ---> RIndividualReflections( LACBED_ID , thickness_ID, local_pixel_ID )
+
+    !?? JR how access to ZGEMM? what other namespace can access?
+
     USE MyNumbers
     USE IConst, ONLY : ITHREE
     USE MyMPI
     USE terminal_output
-   
+  
+    ! globals - output
+    USE RPara, ONLY : RIndividualReflections 
+    USE CPara, ONLY : CAmplitudeandPhase
+    ! /\ matrix of vectors, thickness, pixel, wavefunction this contributes
+    ! one pixel and some parallelises in fexlixfunction join later
+    USE IPara, ONLY : IPixelComputed
+
     ! globals - input  
     USE CPara, ONLY : CUgMat ! from Absorption
     USE RPara, ONLY : &
@@ -82,13 +96,6 @@ MODULE bloch
       nReflections,&
       IOutputReflections
     USE BlochPara, ONLY : RBigK ! from StructureFactorInitialisation            
-    
-    ! globals - output
-    USE RPara, ONLY : RIndividualReflections 
-    USE CPara, ONLY : CAmplitudeandPhase
-    ! /\ matrix of vectors, thickness, pixel, wavefunction this contributes
-    ! one pixel and some parallelises in fexlixfunction join later
-    USE IPara, ONLY : IPixelComputed
     
     IMPLICIT NONE
     
@@ -331,11 +338,15 @@ MODULE bloch
   !!
   !! Major-Authors: Keith Evans (2014), Richard Beanland (2016)
   !!
-  SUBROUTINE CreateWaveFunctions(RThickness,RFullWaveIntensity0,CFullWaveFunctions0,&
-                    nReflections0,nBeams0,IStrongBeamList0,CEigenVectors0,CEigenValues0,IErr)
+  SUBROUTINE CreateWaveFunctions(RThickness,RFullWaveIntensity,CFullWaveFunctions,&
+                    nReflections,nBeams,IStrongBeamList,CEigenVectors,CEigenValues,IErr)
+
+    ! -----> RFullWaveIntensity
+    !?? JR used to assign intensity for a pixel, a thickness, each LACBED_ID
+
+    !?? called every BlochCoefficientCalculation()
     !?? all global varibles on in/out are local to bloch excluding nReflections
 
-    !?? only called inside bloch.f90
     USE MyNumbers
     USE MyMPI
     USE terminal_output
@@ -344,52 +355,52 @@ MODULE bloch
     
     REAL(RKIND) :: RThickness ! non-global input
     ! global inputs and outputs
-    REAL(RKIND),DIMENSION(nReflections0),INTENT(OUT) :: RFullWaveIntensity0
-    COMPLEX(CKIND),DIMENSION(nReflections0),INTENT(OUT) :: CFullWaveFunctions0  
-    INTEGER(IKIND),INTENT(IN) :: nReflections0,nBeams0,IStrongBeamList0(nReflections0)
-    COMPLEX(CKIND),INTENT(IN) :: CEigenVectors0(nBeams0,nBeams0),CEigenValues0(nBeams0)
+    REAL(RKIND),INTENT(OUT) :: RFullWaveIntensity(nReflections)
+    COMPLEX(CKIND),INTENT(OUT) :: CFullWaveFunctions(nReflections) 
+    INTEGER(IKIND),INTENT(IN) :: nReflections,nBeams,IStrongBeamList(nReflections)
+    COMPLEX(CKIND),INTENT(IN) :: CEigenVectors(nBeams,nBeams),CEigenValues(nBeams)
     INTEGER(IKIND),INTENT(OUT) :: IErr ! non-global, classic IErr  
     !?? old globals, now used locally
-    REAL(RKIND) :: RWaveIntensity(nBeams0)
-    COMPLEX(CKIND) :: CInvertedEigenVectors(nBeams0,nBeams0),CPsi0(nBeams0),&
-          CWaveFunctions(nBeams0),CEigenValueDependentTerms(nBeams0,nBeams0),&
-          CAlphaWeightingCoefficients(nBeams0)
+    REAL(RKIND) :: RWaveIntensity(nBeams)
+    COMPLEX(CKIND) :: CInvertedEigenVectors(nBeams,nBeams),CPsi0(nBeams),&
+          CWaveFunctions(nBeams),CEigenValueDependentTerms(nBeams,nBeams),&
+          CAlphaWeightingCoefficients(nBeams)
     ! locals
     INTEGER(IKIND) :: ind,jnd,knd,hnd,ifullind,iuniind,gnd,ichnk
     COMPLEX(CKIND),DIMENSION(:,:),ALLOCATABLE :: CDummyEigenVectors
 
     ! Allocate global variables for eigen problem
-    !?? ALLOCATE(RWaveIntensity(nBeams0),STAT=IErr)  
-    !?? ALLOCATE(CWaveFunctions(nBeams0),STAT=IErr)
-    ALLOCATE(CDummyEigenVectors(nBeams0,nBeams0),STAT=IErr)
+    !?? ALLOCATE(RWaveIntensity(nBeams),STAT=IErr)  
+    !?? ALLOCATE(CWaveFunctions(nBeams),STAT=IErr)
+    ALLOCATE(CDummyEigenVectors(nBeams,nBeams),STAT=IErr)
     IF(l_alert(IErr,"CreateWaveFunctions()","allocate CDummyEigenVectors")) RETURN
     
     ! The top surface boundary conditions
-    !?? ALLOCATE(CPsi0(nBeams0),STAT=IErr) 
+    !?? ALLOCATE(CPsi0(nBeams),STAT=IErr) 
     CPsi0 = CZERO ! all diffracted beams are zero
     CPsi0(1) = CONE ! the 000 beam has unit amplitude
     
     ! Invert the EigenVector matrix
-    CDummyEigenVectors = CEigenVectors0
-    CALL INVERT(nBeams0,CDummyEigenVectors(:,:),CInvertedEigenVectors,IErr)
+    CDummyEigenVectors = CEigenVectors
+    CALL INVERT(nBeams,CDummyEigenVectors(:,:),CInvertedEigenVectors,IErr)
 
     ! put in the thickness
     ! From EQ 6.32 in Kirkland Advance Computing in EM
-    CAlphaWeightingCoefficients = MATMUL(CInvertedEigenVectors(1:nBeams0,1:nBeams0),CPsi0) 
+    CAlphaWeightingCoefficients = MATMUL(CInvertedEigenVectors(1:nBeams,1:nBeams),CPsi0) 
     CEigenValueDependentTerms= CZERO
-    DO hnd=1,nBeams0     ! This is a diagonal matrix
+    DO hnd=1,nBeams     ! This is a diagonal matrix
       CEigenValueDependentTerms(hnd,hnd) = &
-            EXP(CIMAGONE*CMPLX(RThickness,ZERO,CKIND)*CEigenValues0(hnd)) 
+            EXP(CIMAGONE*CMPLX(RThickness,ZERO,CKIND)*CEigenValues(hnd)) 
     ENDDO
     ! The diffracted intensity for each beam
     ! EQ 6.35 in Kirkland Advance Computing in EM
     ! C-1*C*alpha 
     CWaveFunctions(:) = MATMUL( &
-          MATMUL(CEigenVectors0(1:nBeams0,1:nBeams0),CEigenValueDependentTerms), & 
+          MATMUL(CEigenVectors(1:nBeams,1:nBeams),CEigenValueDependentTerms), & 
           CAlphaWeightingCoefficients(:) )
     !?? possible small time saving here by only calculating the (tens of) output
     !?? reflections rather than all strong beams (hundreds)
-    DO hnd=1,nBeams0
+    DO hnd=1,nBeams
        RWaveIntensity(hnd)=CONJG(CWaveFunctions(hnd)) * CWaveFunctions(hnd)
     ENDDO  
     
@@ -397,11 +408,11 @@ MODULE bloch
     ! rePADDing of wave function and intensities with zero's 
     !--------------------------------------------------------------------
 
-    CFullWaveFunctions0=CZERO
-    RFullWaveIntensity0=ZERO
-    DO knd=1,nBeams0
-       CFullWaveFunctions0(IStrongBeamList0(knd))=CWaveFunctions(knd)
-       RFullWaveIntensity0(IStrongBeamList0(knd))=RWaveIntensity(knd)
+    CFullWaveFunctions=CZERO
+    RFullWaveIntensity=ZERO
+    DO knd=1,nBeams
+       CFullWaveFunctions(IStrongBeamList(knd))=CWaveFunctions(knd)
+       RFullWaveIntensity(IStrongBeamList(knd))=RWaveIntensity(knd)
     ENDDO
     
     DEALLOCATE(CDummyEigenVectors,STAT=IErr) !?? necessary?
@@ -422,31 +433,34 @@ MODULE bloch
   !!
   !! Major-Authors: Keith Evans (2014), Richard Beanland (2016)
   !!
-  SUBROUTINE StrongAndWeakBeamsDetermination(nReflections0,IMinWeakBeams0,&
-                    IMinStrongBeams0,RDevPara0,CUgMat0,&
-                    IStrongBeamList0,IWeakBeamList0,nBeams0,nWeakBeams0,IErr)
+  SUBROUTINE StrongAndWeakBeamsDetermination(nReflections,IMinWeakBeams,&
+                    IMinStrongBeams,RDevPara,CUgMat,&
+                    IStrongBeamList,IWeakBeamList,nBeams,nWeakBeams,IErr)
     
+    !?? JR called every BlochCoefficientCalculation()
+    !?? select only those beams where the Ewald sphere is close to the
+    !?? reciprocal lattice, i.e. within RBSMaxDeviationPara
+
     !?? inputs outside bloch nReflections,IMinWeakBeams,IMinStrongBeams
     !?? outputs outside bloch CUgMat
 
-    !?? only called inside bloch.f90
     USE MyNumbers
     USE MyMPI
     USE terminal_output 
 
     !?? variables match up to globals allocation
     !?? make some of these local
-    INTEGER(IKIND),INTENT(IN) :: nReflections0
-    REAL(RKIND),DIMENSION(nReflections0),INTENT(IN) :: RDevPara0
-    COMPLEX(CKIND),DIMENSION(nReflections0,nReflections0),INTENT(IN) :: CUgMat0
-    INTEGER(IKIND),INTENT(IN) :: IMinWeakBeams0, IMinStrongBeams0 !?? move integers together
-    INTEGER(IKIND),DIMENSION(nReflections0),INTENT(OUT) :: IStrongBeamList0,IWeakBeamList0
-    INTEGER(IKIND),INTENT(OUT) :: nBeams0,nWeakBeams0,IErr
+    INTEGER(IKIND),INTENT(IN) :: nReflections
+    REAL(RKIND),DIMENSION(nReflections),INTENT(IN) :: RDevPara
+    COMPLEX(CKIND),DIMENSION(nReflections,nReflections),INTENT(IN) :: CUgMat
+    INTEGER(IKIND),INTENT(IN) :: IMinWeakBeams, IMinStrongBeams !?? move integers together
+    INTEGER(IKIND),DIMENSION(nReflections),INTENT(OUT) :: IStrongBeamList,IWeakBeamList
+    INTEGER(IKIND),INTENT(OUT) :: nBeams,nWeakBeams,IErr
 
     INTEGER(IKIND) :: ind,jnd
-    INTEGER(IKIND),DIMENSION(:) :: IStrong(nReflections0),IWeak(nReflections0)
+    INTEGER(IKIND),DIMENSION(:) :: IStrong(nReflections),IWeak(nReflections)
     REAL(RKIND) :: RMaxSg,RMinPertStrong,RMinPertWeak
-    REAL(RKIND),DIMENSION(:) :: RPertStrength0(nReflections0)
+    REAL(RKIND),DIMENSION(:) :: RPertStrength0(nReflections)
 
     !----------------------------------------------------------------------------
     ! strong beams
@@ -456,7 +470,7 @@ MODULE bloch
     ! PerturbationStrength Eq. 8 Zuo Ultramicroscopy 57 (1995) 375, |Ug/2KSg|
     ! Here use |Ug/Sg| since 2K is a constant
     ! NB RPertStrength0 is an array of perturbation strengths for all reflections
-    RPertStrength0 = ABS(CUgMat0(:,1)/(RDevPara0))
+    RPertStrength0 = ABS(CUgMat(:,1)/(RDevPara))
     ! 000 beam is NaN otherwise, always included by making it a large number
     RPertStrength0(1) = 1000.0
 
@@ -468,8 +482,8 @@ MODULE bloch
 
     ! main calculation
     ! now increase RMaxSg until we have enough strong beams
-    DO WHILE (SUM(IStrong).LT.IMinStrongBeams0)
-      WHERE (ABS(RDevPara0).LT.RMaxSg.OR.RPertStrength0.GE.RMinPertStrong)
+    DO WHILE (SUM(IStrong).LT.IMinStrongBeams)
+      WHERE (ABS(RDevPara).LT.RMaxSg.OR.RPertStrength0.GE.RMinPertStrong)
 	    IStrong=1_IKIND
 	  END WHERE
       RMaxSg=RMaxSg+0.005
@@ -478,24 +492,24 @@ MODULE bloch
     !?? should this be do until loop
 
 
-    ! give the strong beams a number in IStrongBeamList0
-    IStrongBeamList0=0_IKIND
+    ! give the strong beams a number in IStrongBeamList
+    IStrongBeamList=0_IKIND
     ind=1_IKIND
-    DO jnd=1,nReflections0
+    DO jnd=1,nReflections
       IF (IStrong(jnd).EQ.1) THEN
-	      IStrongBeamList0(ind)=jnd
+	      IStrongBeamList(ind)=jnd
         ind=ind+1
 	    END IF
     END DO
     !?? could this be done by better array assignment
 
     ! this is used to give the dimension of the Bloch wave problem
-    nBeams0=ind-1  
+    nBeams=ind-1  
 
-    CALL message(LXL,dbg7,"Strong Beam List",IStrongBeamList0)
+    CALL message(LXL,dbg7,"Strong Beam List",IStrongBeamList)
     CALL message(LXL,dbg7,"Sg limit for strong beams = ",RMaxSg)
     CALL message(LXL,dbg7,"Smallest strong perturbation strength = ",RMinPertStrong)
-    IF(SUM(IStrong)+IMinWeakBeams0.GT.nReflections0) IErr = 1
+    IF(SUM(IStrong)+IMinWeakBeams.GT.nReflections) IErr = 1
     IF(l_alert(IErr,"StrongAndWeakBeamsDetermination()","start. "//&
           "Insufficient reflections to accommodate all Strong and Weak Beams")) RETURN
     
@@ -507,7 +521,7 @@ MODULE bloch
     ! NB IWeak is an array listing the weak beams (1=Weak, 0=Not weak)
     IWeak=0_IKIND
     RMinPertWeak=0.9*RMinPertStrong
-    DO WHILE (SUM(IWeak).LT.IMinWeakBeams0)
+    DO WHILE (SUM(IWeak).LT.IMinWeakBeams)
       WHERE (RPertStrength0.GE.RMinPertWeak.AND.IStrong.NE.1_IKIND)
 	    IWeak=1
 	  END WHERE
@@ -518,19 +532,19 @@ MODULE bloch
     CALL message(LXL,dbg7,"weak beams",SUM(IWeak))
     CALL message(LXL,dbg7,"Smallest weak perturbation strength = ",RMinPertWeak)
 
-    ! give the weak beams a number in IWeakBeamList0
-    IWeakBeamList0=0_IKIND
+    ! give the weak beams a number in IWeakBeamList
+    IWeakBeamList=0_IKIND
     ind=1_IKIND
-    DO jnd=1,nReflections0
+    DO jnd=1,nReflections
       IF (IWeak(jnd).EQ.1) THEN
-	    IWeakBeamList0(ind)=jnd
+	    IWeakBeamList(ind)=jnd
         ind=ind+1
       END IF
     END DO
     !?? could this be done by better array assignment
-    nWeakBeams0=ind-1
+    nWeakBeams=ind-1
 
-    CALL message(LXL,dbg7,"Weak Beam List",IWeakBeamList0)
+    CALL message(LXL,dbg7,"Weak Beam List",IWeakBeamList)
 
   END SUBROUTINE StrongAndWeakBeamsDetermination
 
@@ -547,6 +561,8 @@ MODULE bloch
   !!
   SUBROUTINE EigenSpectrum(IMatrixDimension, MatrixToBeDiagonalised, EigenValues,&
                     EigenVectors, IErr)
+
+    !?? called every BlochCoefficientCalculation()
 
     USE MyNumbers
     USE terminal_output
@@ -617,7 +633,9 @@ MODULE bloch
   !!
   SUBROUTINE INVERT(MatrixSize,Matrix,InvertedMatrix,IErr)  
 
-    !?? called in one place (each iteration), in CreateWavefunctions
+    !?? JR how access ZGETRF?
+
+    !?? JR called in one place (each iteration), in CreateWavefunctions()
     ! Matrix: the Matrix (Destroyed)
     ! InvertedMatrix: the Inverse
 
@@ -658,4 +676,4 @@ MODULE bloch
 
   END SUBROUTINE INVERT
 
-END MODULE bloch
+END MODULE bloch_mod

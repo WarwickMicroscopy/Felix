@@ -1,3 +1,40 @@
+  
+
+
+
+
+
+
+
+
+
+
+  !--------------------------------------------------------------------
+  ! set up weighting coefficients
+  !--------------------------------------------------------------------
+
+  ! Weighting parameter
+  ALLOCATE(RWeightingCoefficients(INoOfLacbedPatterns),STAT=IErr) 
+  SELECT CASE (IWeightingFLAG)
+  CASE(0) ! uniform weighting
+     RWeightingCoefficients = ONE
+  CASE(1) ! smaller g's more important
+     DO ind = 1,INoOfLacbedPatterns
+        !?? NB untested, does RgPoolMag(ind)match output reflection (ind)?
+        RWeightingCoefficients(ind) = RgPoolMag(ind)/MAXVAL(RgPoolMag)
+     END DO
+  CASE(2) ! larger g's more important
+     DO ind = 1,INoOfLacbedPatterns
+        RWeightingCoefficients(ind) = MAXVAL(RgPoolMag)/RgPoolMag(ind)
+     END DO
+  END SELECT
+
+
+
+
+
+
+
 
 
 !>

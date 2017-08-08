@@ -173,7 +173,7 @@ SUBROUTINE ReSortUgs( ISymmetryIntegers,CUgs, N )
         L=I+M     
         CUgSearch = CUgs(L)
         CUgCompare = CUgs(I)
-        IF( (ABS(CUgSearch)).GT.(ABS(CUgCompare)) ) THEN!RB sort on modulus ABS
+        IF( (ABS(CUgSearch)).GT.(ABS(CUgCompare)) ) THEN ! RB sort on modulus ABS
               Cdummy = CUgs(I)
               CUgs(I)= CUgs(L)
               Cugs(L)= Cdummy

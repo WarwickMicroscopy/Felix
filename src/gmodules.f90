@@ -148,7 +148,3 @@ MODULE MyFFTW
   INCLUDE  'fftw3.f03'
   
 END MODULE MyFFTW
-  
-
-
-

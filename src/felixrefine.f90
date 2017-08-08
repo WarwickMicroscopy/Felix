@@ -46,6 +46,10 @@
 !!
 PROGRAM Felixrefine
   !?? currently refinement based routines in felixfrefine...
+
+  ! Ug / non-Ug refinement, iteratively simulate, by calculating CUgMat,
+  ! produce corresponding images at different thicknesses -> compare to experi, figuremerit
+  ! use this figure merit with multiple points to refine...??
   
   USE MyNumbers
   USE terminal_output
@@ -53,7 +57,8 @@ PROGRAM Felixrefine
   USE MPI
   USE MyMPI
   USE felixfunction_mod
-  USE Ug
+  USE Ug_mod
+  USE crystallography_mod
 
   USE IConst; USE RConst; USE CConst
   USE IPara; USE RPara; USE CPara; USE SPara;
@@ -465,6 +470,7 @@ PROGRAM Felixrefine
   CALL StructureFactorInitialisation(IErr)
   IF(l_alert(IErr,"felixrefine","StructureFactorInitialisation()")) GOTO 9999
   ! NB IEquivalentUgKey and CUniqueUg allocated in here
+  !?? CUniqueUg vector produced here to later fill RIndependentVariable
   
   !--------------------------------------------------------------------
   ! set up chosen absoption model
@@ -482,6 +488,8 @@ PROGRAM Felixrefine
   ! If Ug refinement, set up variables
   !--------------------------------------------------------------------
 
+  ! Ug refinement is a special calse and must be done alone
+  ! cannot do any other refinement alongisde
   IF(IRefineMode(1).EQ.1) THEN ! It's a Ug refinement, code(A)
 
     ! Count the number of Independent Variables
@@ -524,15 +532,17 @@ PROGRAM Felixrefine
   END IF
  
   !--------------------------------------------------------------------
-  ! Consider atom coordinate refinement & a non-Ug refinement
+  ! If non-Ug refinement, count and assign refinement variables
   !--------------------------------------------------------------------
 
-  IF(IRefineMode(2).EQ.1) THEN ! It's an atom coordinate refinement, code(B)
-    CALL SetupAtomicVectorMovements(IErr)
-    IF(l_alert(IErr,"felixrefine","Absorption()")) GOTO 9999
-  END IF
+  ! Excluding Ug refinement, various variables can be refined together
+  ! all refine/non-refine variables need intial values then refine allows those to change JR
+  IF(IRefineMode(1).EQ.0) THEN ! It's not a Ug refinement, so count refinement variables
 
-  IF(IRefineMode(1).EQ.0) THEN ! It's not a Ug refinement, so we need to count variables
+    IF(IRefineMode(2).EQ.1) THEN ! It's an atom coordinate refinement, code(B)
+      CALL SetupAtomicVectorMovements(IErr)
+      IF(l_alert(IErr,"felixrefine","Absorption()")) GOTO 9999
+    END IF
 
     ! Atomic coordinates, B
     INoofElementsForEachRefinementType(2)=IRefineMode(2)*IAllowedVectors
@@ -599,7 +609,7 @@ PROGRAM Felixrefine
   END IF
 
   !--------------------------------------------------------------------
-  ! Allocate & setup image arrays for later pixel parallel simulations
+  ! Allocate & setup image arrays for pixel-parallel simulations
   !--------------------------------------------------------------------
   
   ! Allocate necessary output image arrays  
@@ -651,28 +661,10 @@ PROGRAM Felixrefine
   END DO
 
   !--------------------------------------------------------------------
-  ! set up weighting coefficients
-  !--------------------------------------------------------------------
-
-  ! Weighting parameter
-  ALLOCATE(RWeightingCoefficients(INoOfLacbedPatterns),STAT=IErr) 
-  SELECT CASE (IWeightingFLAG)
-  CASE(0) ! uniform weighting
-     RWeightingCoefficients = ONE
-  CASE(1) ! smaller g's more important
-     DO ind = 1,INoOfLacbedPatterns
-        !?? NB untested, does RgPoolMag(ind)match output reflection (ind)?
-        RWeightingCoefficients(ind) = RgPoolMag(ind)/MAXVAL(RgPoolMag)
-     END DO
-  CASE(2) ! larger g's more important
-     DO ind = 1,INoOfLacbedPatterns
-        RWeightingCoefficients(ind) = MAXVAL(RgPoolMag)/RgPoolMag(ind)
-     END DO
-  END SELECT
-
-  !--------------------------------------------------------------------
   ! baseline simulation
   !--------------------------------------------------------------------
+
+  !?? consider doing split simulation/refinement baseline more elegantly
 
   RFigureofMerit=666.666 ! Inital large value,diabolically
   Iter = 0
@@ -765,7 +757,6 @@ PROGRAM Felixrefine
   DEALLOCATE(CUgMat,STAT=IErr) 
   DEALLOCATE(CUgMatNoAbs,STAT=IErr)
   DEALLOCATE(CUgMatPrime,STAT=IErr)
-  DEALLOCATE(RWeightingCoefficients,STAT=IErr)
   DEALLOCATE(ISymmetryRelations,STAT=IErr)
   DEALLOCATE(IEquivalentUgKey,STAT=IErr)
   DEALLOCATE(CUniqueUg,STAT=IErr)
@@ -955,7 +946,7 @@ CONTAINS
     ! set of variables to send out for simulations
     ALLOCATE(RCurrentVar(INoOfVariables),STAT=IErr)
     IF(l_alert(IErr,"MaxGradientRefinement()","allocate RCurrentVar")) RETURN
-    ALLOCATE(RLastVar(INoOfVariables),STAT=IErr)! set of variables updated each cycle
+    ALLOCATE(RLastVar(INoOfVariables),STAT=IErr) ! set of variables updated each cycle
     IF(l_alert(IErr,"MaxGradientRefinement()","allocate RLastVar")) RETURN
     ! the vector describing the current line in parameter space
     ALLOCATE(RPVec(INoOfVariables),STAT=IErr)
@@ -1488,24 +1479,12 @@ CONTAINS
   SUBROUTINE AssignArrayLocationsToIterationVariables(IIterativeVariableType,&
                     IVariableNo,IArrayToFill,IErr)
 
-    !?? JR called once in felixrefine
-    !?? JR should we have any subroutines in felixrefine.f90, yes if top level
+    !?? JR study further, compare RIndependentVariables array and UpdateVariables()
+    !?? JR even if top level, may move out, as part of setup not refinement 
+  
+    !?? JR called once in felixrefine, end of non-Ug refinement assign refinement variables
+
     ! NB IArrayToFill here equivalent to IIterativeVariableUniqueIDs outside this subroutine
-
-    USE MyNumbers
-    
-    USE IConst; USE RConst; USE CConst
-    USE IPara; USE RPara; USE CPara; USE SPara;
-    USE BlochPara 
-
-    USE IChannels
-
-    USE MPI
-    USE MyMPI
-
-    USE terminal_output 
-    
-    IMPLICIT NONE
 
     INTEGER(IKIND) :: IIterativeVariableType,IVariableNo,IErr,IArrayIndex,&
          IAnisotropicDebyeWallerFactorElementNo
@@ -1598,20 +1577,9 @@ CONTAINS
   !!
   SUBROUTINE SetupAtomicVectorMovements(IErr)
 
-    !?? called once in felixrefine
-    !?? JR should we have any subroutines in felixrefine.f90, yes if top level
-    USE MyNumbers
-    
-    USE CConst; USE IConst; USE RConst
-    USE IPara; USE RPara; USE SPara; USE CPara
-    USE BlochPara
+    !?? JR move out of felixrefine - even if top level, very specific
 
-    USE IChannels
-    USE terminal_output
-    USE MPI
-    USE MyMPI
-    
-    IMPLICIT NONE
+    !?? JR called once felixrefine IF(IRefineMode(2)==1) atom coordinate refinement, code(B)
 
     INTEGER(IKIND) :: IErr,knd,jnd,ind,ISpaceGrp
     INTEGER(IKIND),DIMENSION(:),ALLOCATABLE :: IVectors
@@ -1667,23 +1635,11 @@ CONTAINS
   !!
   SUBROUTINE BestFitCheck(RFoM,RBest,RCurrent,RIndependentVariable,IErr)
 
-    !?? called felixrefine multiple times
-    USE MyNumbers
-    
-    USE IConst; USE RConst; USE CConst
-    USE IPara; USE RPara; USE CPara; USE SPara;
-    USE BlochPara 
+    !?? JR small tidy up, can use same variable names
 
-    USE IChannels
-
-    USE MPI
-    USE MyMPI
-
-    USE terminal_output 
+    !?? JR called felixrefine multiple times, utility with variable refinement and FigureOfMerit
     
-    IMPLICIT NONE
-    
-    REAL(RKIND) :: RFoM,RBest !current figure of merit and the best figure of merit
+    REAL(RKIND) :: RFoM,RBest ! current figure of merit and the best figure of merit
     ! current and best set of variables
     REAL(RKIND),DIMENSION(INoOfVariables) :: RCurrent,RIndependentVariable
     INTEGER(IKIND) :: IErr
@@ -1709,10 +1665,7 @@ CONTAINS
   !! 
   SUBROUTINE Parabo3(Rx,Ry,Rxv,Ryv,IErr)
 
-    !?? called once in felixrefine
-    USE MyNumbers
-
-    IMPLICIT NONE
+    !?? JR called once/twice in felixrefine utility to MaxGradient/ParabolicRefinement()
     
     REAL(RKIND) :: Ra,Rb,Rc,Rd,Rxv,Ryv
     REAL(RKIND),DIMENSION(3) :: Rx,Ry
