@@ -51,6 +51,7 @@ PROGRAM Felixrefine
   USE MPI
   USE MyMPI
 
+  USE read_mod
   USE read_cif_mod
   USE setup_scattering_factors_mod
   USE setup_reflections_mod

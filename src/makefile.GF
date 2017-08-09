@@ -229,13 +229,13 @@ endif
 # in order to run the code
 
 REFINEOBJECTFILES = gmodules.o smodules.o terminal_output.o \
-read_cif_mod.o \
+read_cif_mod.o read_mod.o \
 setup_reflections_mod.o setup_scattering_factors_mod.o crystallography_mod.o Ug_mod.o \
 bloch_mod.o felixfunction_mod.o \
 felixrefine.o \
-util.o in.o \
+util.o \
 image.o ciftbx.o simplex.o\
-hash_funcs.o RefineWriteOut.o refineutils.o writeoutput.o errorchecks.o\
+hash_funcs.o RefineWriteOut.o refineutils.o \
 symmetry.o quadpack_double.o
 #dqng.o xerror.o d1mach.o 
 
@@ -264,7 +264,7 @@ print:
 util.f90 scatterfactors.f90 in.f90 readcif.f90 \
 diffractionpatterndefinitions.f90 \
 crystallography.f90 bloch.f90 Ug.f90 image.f90 simplex.f90 \
-RefineWriteOut.f90 felixfunction.f90 refineutils.f90 writeoutput.f90 errorchecks.f90 \
+RefineWriteOut.f90 felixfunction.f90 refineutils.f90 errorchecks.f90 \
 symmetry.f90 \
 makefile-CSC.GF; ps2pdf print.ps
 	     	   	  

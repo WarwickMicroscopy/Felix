@@ -366,16 +366,10 @@ MODULE bloch_mod
           CAlphaWeightingCoefficients(nBeams)
     ! locals
     INTEGER(IKIND) :: ind,jnd,knd,hnd,ifullind,iuniind,gnd,ichnk
-    COMPLEX(CKIND),DIMENSION(:,:),ALLOCATABLE :: CDummyEigenVectors
-
-    ! Allocate global variables for eigen problem
-    !?? ALLOCATE(RWaveIntensity(nBeams),STAT=IErr)  
-    !?? ALLOCATE(CWaveFunctions(nBeams),STAT=IErr)
-    ALLOCATE(CDummyEigenVectors(nBeams,nBeams),STAT=IErr)
-    IF(l_alert(IErr,"CreateWaveFunctions()","allocate CDummyEigenVectors")) RETURN
+    COMPLEX(CKIND) :: CDummyEigenVectors(nBeams,nBeams)
+    !?? JR I'm allocating in declaration, should I allocate directly and error check?
     
     ! The top surface boundary conditions
-    !?? ALLOCATE(CPsi0(nBeams),STAT=IErr) 
     CPsi0 = CZERO ! all diffracted beams are zero
     CPsi0(1) = CONE ! the 000 beam has unit amplitude
     
@@ -413,9 +407,6 @@ MODULE bloch_mod
        CFullWaveFunctions(IStrongBeamList(knd))=CWaveFunctions(knd)
        RFullWaveIntensity(IStrongBeamList(knd))=RWaveIntensity(knd)
     ENDDO
-    
-    DEALLOCATE(CDummyEigenVectors,STAT=IErr) !?? necessary?
-    IF(l_alert(IErr,"CreateWaveFunctions()","deallocate")) RETURN
     
   END SUBROUTINE CreateWavefunctions
 
