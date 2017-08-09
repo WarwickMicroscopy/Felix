@@ -504,8 +504,7 @@ MODULE felixfunction_mod
     ! The figure of merit, global variable
     RFigureofMerit = RBestTotalCorrelation
 
-    !?? RWeightingCoefficients not used here anymore JR 
-    !?? Alternative:
+    !?? Alternative method below, RWeightingCoefficients not used and has been removed 
     !?? assume that the best thickness is given by the mean of individual thicknesses  
     !IBestThicknessIndex = SUM(IBestImageThicknessIndex)/INoOfLacbedPatterns
     !RBestThickness = RInitialThickness + (IBestThicknessIndex-1)*RDeltaThickness

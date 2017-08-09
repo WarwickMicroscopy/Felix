@@ -1,4 +1,126 @@
+
+
+!>
+!! Procedure-description: Write out the sample input file, when none provided
+!!
+!! Major-Authors: Keith Evans (2014)
+!! 
+SUBROUTINE WriteOutInputFile (IErr)
+
+  !?? low priority
+  !?? need to test this
   
+  USE MyNumbers
+  
+  USE IConst
+  USE RConst
+  
+  USE IPara
+  USE RPara
+  USE CPara
+  USE SPara
+  USE IChannels
+
+  USE MPI
+  USE MyMPI
+  
+  IMPLICIT NONE
+
+  INTEGER(IKIND):: IErr
+     
+    OPEN(UNIT= IChInp,FILE= "felix.inp.sample",&
+     STATUS= 'UNKNOWN')
+    CALL WriteToScreenandFile(ADJUSTL("# Input file for felixsim/draw/refine version :VERSION: Build :BUILD:"),IErr)
+    CALL WriteToScreenandFile(ADJUSTL("# ------------------------------------"),IErr)
+    CALL WriteToScreenandFile(ADJUSTL(""),IErr)
+    CALL WriteToScreenandFile(ADJUSTL("# ------------------------------------"),IErr)
+    CALL WriteToScreenandFile(ADJUSTL(""),IErr)
+    CALL WriteToScreenandFile(ADJUSTL("# control flags"),IErr)
+    CALL WriteToScreenandFile(ADJUSTL("IWriteFLAG                = 3"),IErr)
+    CALL WriteToScreenandFile(ADJUSTL("IImageFLAG                = 1"),IErr)
+    CALL WriteToScreenandFile(ADJUSTL("IScatterFactorMethodFLAG  = 0"),IErr)
+    CALL WriteToScreenandFile(ADJUSTL("IMaskFLAG                 = 1"),IErr)
+    CALL WriteToScreenandFile(ADJUSTL("IHolzFLAG                 = 0"),IErr)
+    CALL WriteToScreenandFile(ADJUSTL("IAbsorbFLAG               = 1"),IErr)
+    CALL WriteToScreenandFile(ADJUSTL("IAnisoDebyeWallerFlag     = 0"),IErr)
+    CALL WriteToScreenandFile(ADJUSTL(""),IErr)
+    CALL WriteToScreenandFile(ADJUSTL("# radius of the beam in pixels"),IErr)
+    CALL WriteToScreenandFile(ADJUSTL("IPixelCount               = 64"),IErr)
+    CALL WriteToScreenandFile(ADJUSTL(""),IErr)
+    CALL WriteToScreenandFile(ADJUSTL("# beam selection criteria"),IErr)
+    CALL WriteToScreenandFile(ADJUSTL("IMinReflectionPool        = 100"),IErr)
+    CALL WriteToScreenandFile(ADJUSTL("IMinStrongBeams           = 20"),IErr)
+    CALL WriteToScreenandFile(ADJUSTL("IMinWeakBeams             = 0"),IErr)
+    CALL WriteToScreenandFile(ADJUSTL(""),IErr)
+    CALL WriteToScreenandFile(ADJUSTL("# crystal settings"),IErr)
+    CALL WriteToScreenandFile(ADJUSTL("RDebyeWallerConstant      = 0.4668"),IErr)
+    CALL WriteToScreenandFile(ADJUSTL("RAbsorptionPer            = 2.9"),IErr)
+    CALL WriteToScreenandFile(ADJUSTL(""),IErr)
+    CALL WriteToScreenandFile(ADJUSTL("# microscope settings"),IErr)
+    CALL WriteToScreenandFile(ADJUSTL("ROuterConvergenceAngle    = 6.0"),IErr)
+    CALL WriteToScreenandFile(ADJUSTL("IIncidentBeamDirection    = [0,1,1]"),IErr)
+    CALL WriteToScreenandFile(ADJUSTL("IXDirection               = [1,0,0]"),IErr)
+    CALL WriteToScreenandFile(ADJUSTL("INormalDirection          = [0,1,1]"),IErr)
+    CALL WriteToScreenandFile(ADJUSTL("RAcceleratingVoltage (kV) = 200.0"),IErr)
+    CALL WriteToScreenandFile(ADJUSTL("RAcceptanceAngle          = 0.0"),IErr)
+    CALL WriteToScreenandFile(ADJUSTL(""),IErr)
+    CALL WriteToScreenandFile(ADJUSTL("# Image Output Options"),IErr)
+    CALL WriteToScreenandFile(ADJUSTL(""),IErr)
+    CALL WriteToScreenandFile(ADJUSTL("RInitialThickness        = 400.0"),IErr)
+    CALL WriteToScreenandFile(ADJUSTL("RFinalThickness          = 700.0"),IErr)
+    CALL WriteToScreenandFile(ADJUSTL("RDeltaThickness          = 10.0"),IErr)
+    CALL WriteToScreenandFile(ADJUSTL("INoOfLacbedPatterns              = 7"),IErr)
+    CALL WriteToScreenandFile(ADJUSTL(""),IErr)
+    CALL WriteToScreenandFile(ADJUSTL("#Refinement Specific Flags"),IErr)
+    CALL WriteToScreenandFile(ADJUSTL("IRefineModeFLAG          = B"),IErr)
+    CALL WriteToScreenandFile(ADJUSTL("IWeightingFLAG           = 0"),IErr)
+    CALL WriteToScreenandFile(ADJUSTL("IContinueFLAG            = 0"),IErr)
+    CALL WriteToScreenandFile(ADJUSTL("ICorrelationFLAG         = 0"),IErr)
+    CALL WriteToScreenandFile(ADJUSTL("IImageProcessingFLAG     = 0"),IErr)
+    CALL WriteToScreenandFile(ADJUSTL("RBlurRadius              = 1.45"),IErr)
+    CALL WriteToScreenandFile(ADJUSTL("INoofUgs                 = 10"),IErr)
+    CALL WriteToScreenandFile(ADJUSTL("IAtomicSites             = (1,2,6)"),IErr)
+    CALL WriteToScreenandFile(ADJUSTL("IPrint                   = 10"),IErr)
+    CALL WriteToScreenandFile(ADJUSTL("RSimplexLengthScale      = 5.0"),IErr)
+    CALL WriteToScreenandFile(ADJUSTL("RExitCriteria            = 0.0001"),IErr)
+    CLOSE(UNIT=IChInp)
+        
+END SUBROUTINE WriteOutInputFile
+
+!%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+
+
+!>
+!! Procedure-description: Prints to screen and file
+!!
+!! Major-Authors: 
+!!  
+SUBROUTINE WriteToScreenandFile(SStringtoWrite,IErr)
+  !This is a pointless subroutine
+  USE MyNumbers
+  
+  USE IConst
+  USE RConst
+  
+  USE IPara
+  USE RPara
+  USE CPara
+  USE SPara
+  USE IChannels
+
+  USE MPI
+  USE MyMPI
+  
+  IMPLICIT NONE
+
+  INTEGER(IKIND):: IErr
+  CHARACTER(*) :: SStringtoWrite
+
+  PRINT*,TRIM(ADJUSTL(SStringtoWrite))
+  WRITE(UNIT=IChInp,FMT='(A)') TRIM(ADJUSTL(SStringtoWrite))
+
+ END SUBROUTINE WriteToScreenandFile 
 
 
 
@@ -7,27 +129,28 @@
 
 
 
+  !Weighting Coefficients for figure of merit combination
+  REAL(RKIND),DIMENSION(:),ALLOCATABLE :: RWeightingCoefficients
 
+!--------------------------------------------------------------------
+! set up weighting coefficients
+!--------------------------------------------------------------------
 
-  !--------------------------------------------------------------------
-  ! set up weighting coefficients
-  !--------------------------------------------------------------------
-
-  ! Weighting parameter
-  ALLOCATE(RWeightingCoefficients(INoOfLacbedPatterns),STAT=IErr) 
-  SELECT CASE (IWeightingFLAG)
-  CASE(0) ! uniform weighting
-     RWeightingCoefficients = ONE
-  CASE(1) ! smaller g's more important
-     DO ind = 1,INoOfLacbedPatterns
-        !?? NB untested, does RgPoolMag(ind)match output reflection (ind)?
-        RWeightingCoefficients(ind) = RgPoolMag(ind)/MAXVAL(RgPoolMag)
-     END DO
-  CASE(2) ! larger g's more important
-     DO ind = 1,INoOfLacbedPatterns
-        RWeightingCoefficients(ind) = MAXVAL(RgPoolMag)/RgPoolMag(ind)
-     END DO
-  END SELECT
+! Weighting parameter
+ALLOCATE(RWeightingCoefficients(INoOfLacbedPatterns),STAT=IErr) 
+SELECT CASE (IWeightingFLAG)
+CASE(0) ! uniform weighting
+   RWeightingCoefficients = ONE
+CASE(1) ! smaller g's more important
+   DO ind = 1,INoOfLacbedPatterns
+      !?? NB untested, does RgPoolMag(ind)match output reflection (ind)?
+      RWeightingCoefficients(ind) = RgPoolMag(ind)/MAXVAL(RgPoolMag)
+   END DO
+CASE(2) ! larger g's more important
+   DO ind = 1,INoOfLacbedPatterns
+      RWeightingCoefficients(ind) = MAXVAL(RgPoolMag)/RgPoolMag(ind)
+   END DO
+END SELECT
 
 
 

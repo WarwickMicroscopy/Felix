@@ -127,6 +127,7 @@ module terminal_output
     module procedure message_string3
     module procedure message_only2
     module procedure message_only3
+    module procedure message_integer_isi2 ! interface without dbg mode
 
   end interface message
 
@@ -332,7 +333,7 @@ contains
 
     ! check priority then print main_msg & string
     if ( my_rank==0 .and. (priority_logical%state .or. debug_mode_logical%state) ) then
-      write(*,'(1x,a,a,a)') priority_logical%initial_msg, main_msg, str_variable
+      write(*,'(1x,a,a,a,a,a)') priority_logical%initial_msg, main_msg,"'",str_variable,"'"
     end if
   
   end subroutine message_string
@@ -370,7 +371,7 @@ contains
 
 
   !---------------------------------------------------------------------
-  ! Special complex message varieties
+  ! Special message varieties
   !---------------------------------------------------------------------
   
   ! vertically int matrix beside real matrix
@@ -678,5 +679,12 @@ contains
     character(*), intent(in) :: main_msg
     call message_only ( LS, dbg_default, main_msg )  
   end subroutine message_only3
+
+  subroutine message_integer_isi2 ( priority_logical, text1, int1, text2, int2)
+    type (priority_logicals), intent(in) :: priority_logical
+    character(*), intent(in) :: text1, text2
+    integer(IKIND), intent(in) :: int1, int2
+    call message_integer_isi ( priority_logical, dbg_default, text1, int1, text2, int2)
+  end subroutine message_integer_isi2
 
 end module terminal_output

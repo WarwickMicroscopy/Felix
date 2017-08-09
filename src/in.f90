@@ -31,46 +31,55 @@
 !%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 ! All procedures conatained in this file:
-! ReadInput( )
 ! ReadInpFile( )
 ! ReadHklFile( )
 ! DetermineRefineableAtomicSites( )
 ! ReadExperimentalImages( )
 ! ThreeDimVectorReadIn( )
-! WriteOutInputFile( )
-! WriteToScreenandFile( )
 
 !>
 !! Procedure-description:
 !!
 !! Major-Authors: Keith Evans (2014), Richard Beanland (2016)
 !!
-SUBROUTINE ReadInpFile( IErr )
+SUBROUTINE ReadInpFile ( IErr )
+
+  !?? this should contain clear input information
+  !?? github and other places should referance here
 
   USE MyNumbers
-
-  USE SConst; USE IConst
-  USE IPara; USE RPara
-  USE IChannels
   USE terminal_output
-  USE MPI
-  USE MyMPI
 
+  ! global outputs, read from .inp
+  USE IPARA, ONLY : IWriteFLAG, IImageFLAG, IScatterFactorMethodFLAG, IMaskFLAG, IHolzFLAG, &
+        IAbsorbFLAG, IAnisoDebyeWallerFactorFlag, IByteSize, IMinReflectionPool, &
+        IMinStrongBeams, IMinWeakBeams, INoOfLacbedPatterns, ISimFLAG, IRefineMode, &
+        IWeightingFLAG, IMethodFLAG, ICorrelationFLAG, IImageProcessingFLAG, &
+        INoofUgs, IPrint, IPixelCount
+  USE RPARA, ONLY : RDebyeWallerConstant, RAbsorptionPercentage, RConvergenceAngle, &
+        RZDirC, RXDirC, RNormDirC, RAcceleratingVoltage, RAcceptanceAngle, &
+        RInitialThickness, RFinalThickness, RDeltaThickness, RBlurRadius, &
+        RSimplexLengthScale, RExitCriteria
+
+  ! global inputs
+  USE IChannels, ONLY : IChInp
+  USE IPARA, ONLY : IRefinementVariableTypes
+  USE SConst, ONLY : SAlphabet
 
   IMPLICIT NONE
 
 
-  INTEGER(IKIND) :: IErr, ILine,ind,IPos,IPos1,IPos2
+  INTEGER(IKIND),INTENT(OUT) :: IErr
+  INTEGER(IKIND) :: ILine, ind, IPos
   REAL(RKIND) :: ROfIter
-  CHARACTER*200 :: SImageMode,SElements,SRefineMode,SStringFromNumber,SRefineYESNO,&
-       SAtomicSites,SFormatString,SLengthofNumberString
-  CHARACTER*200 :: SDirectionX,SIncidentBeamDirection,SNormalDirectionX
+  CHARACTER(200) :: SImageMode, SElements, SRefineMode, SStringFromNumber, SRefineYESNO, &
+        SAtomicSites, SFormatString, SLengthofNumberString, &
+        SDirectionX, SIncidentBeamDirection, SNormalDirectionX
 
-  OPEN(UNIT= IChInp, ERR= 120, FILE= "felix.inp",STATUS= 'OLD')
+  OPEN(UNIT= IChInp, IOSTAT=IErr, FILE= "felix.inp",STATUS= 'OLD')
+  IF(l_alert(IErr,"ReadInpFile()","OPEN() felix.inp")) RETURN
   ILine= 1
 
-
-  ! ----------------------------------------------------------------------
   ! There are six introductory comment lines which are ignored
   ILine= ILine+1; READ(IChInp,ERR=20,END=30,FMT='(A)')
   ILine= ILine+1; READ(IChInp,ERR=20,END=30,FMT='(A)')
@@ -78,11 +87,17 @@ SUBROUTINE ReadInpFile( IErr )
   ILine= ILine+1; READ(IChInp,ERR=20,END=30,FMT='(A)') 
   ILine= ILine+1; READ(IChInp,ERR=20,END=30,FMT='(A)')
   ILine= ILine+1; READ(IChInp,ERR=20,END=30,FMT='(A)')
-  ! -----IWriteFLAG-----------------------------------------------------------------
-  ILine= ILine+1; READ(IChInp,10,ERR=20,END=30) IWriteFLAG
-  ! -----IImageFLAG-----------------------------------------------------------------
-  ILine= ILine+1
-  READ(IChInp,FMT='(A)',ERR=20,END=30) SImageMode
+
+  !--------------------------------------------------------------------
+  ! control flags
+  !--------------------------------------------------------------------
+
+  ! IWriteFLAG
+  ILine= ILine+1; READ(IChInp,'(27X,I15.1)',ERR=20,END=30) IWriteFLAG
+
+  ! IImageFLAG
+  ILine= ILine+1; READ(IChInp,FMT='(A)',ERR=20,END=30) SImageMode
+  ! IImageFLAG handling - select which type(s) of output images to be produce
   IPos = 0
   IF(SCAN(SImageMode,'0').NE.0) THEN
      IPos = IPos +1
@@ -93,7 +108,6 @@ SUBROUTINE ReadInpFile( IErr )
   IF(SCAN(SImageMode,'2').NE.0) THEN
      IPos = IPos +1
   END IF
-
   SELECT CASE (IPos)
   CASE (1)
      IF(SCAN(SImageMode,'2').NE.0) THEN
@@ -115,97 +129,126 @@ SUBROUTINE ReadInpFile( IErr )
      ELSE
         IImageFLAG = 2
      END IF
-
   CASE (3)
      IImageFlag = 6
   END SELECT
-  ! -----IScatterFactorMethodFLAG-----------------------------------------------------------------
-  ILine= ILine+1; READ(IChInp,10,ERR=20,END=30) IScatterFactorMethodFLAG
-  CALL message ( LL, dbg7, "IScatterFactorMethodFLAG=",IScatterFactorMethodFLAG )
-  ! -----IMaskFLAG-----------------------------------------------------------------
-  ILine= ILine+1; READ(IChInp,10,ERR=20,END=30) IMaskFLAG
-  CALL message ( LL, dbg3, "IMaskFLAG=",IMaskFLAG)
-  ! -----IHolzFLAG-----------------------------------------------------------------
-  ILine= ILine+1; READ(IChInp,10,ERR=20,END=30) IHolzFLAG
-  CALL message ( LL, dbg3, "IHolzFLAG=",IHolzFLAG)
-  ! -----IAbsorbFLAG-----------------------------------------------------------------
-  ILine= ILine+1; READ(IChInp,10,ERR=20,END=30) IAbsorbFLAG
-  CALL message ( LL, dbg3, "IAbsorbFLAG=",IAbsorbFLAG)
-  ! -----IAnisoDebyeWallerFactorFlag-----------------------------------------------------------------
-  ILine= ILine+1; READ(IChInp,10,ERR=20,END=30) IAnisoDebyeWallerFactorFlag
-  CALL message ( LL, dbg3, "IAnisoDebyeWallerFactorFlag=",IAnisoDebyeWallerFactorFlag)
-  ! -----IByteSize-----------------------------------------------------------------depends on system being used, 8 for csc,4 for tinis
-  ILine= ILine+1; READ(IChInp,10,ERR=20,END=30) IByteSize
-  CALL message ( LL, dbg3, "IByteSize=",IByteSize)
 
-  ! ----Two comment lines----------------------# radius of the beam in pixels
+  ! IScatterFactorMethodFLAG
+  ILine= ILine+1; READ(IChInp,'(27X,I15.1)',ERR=20,END=30) IScatterFactorMethodFLAG
+  CALL message ( LL, dbg7, "IScatterFactorMethodFLAG=",IScatterFactorMethodFLAG )
+  ! IMaskFLAG
+  ILine= ILine+1; READ(IChInp,'(27X,I15.1)',ERR=20,END=30) IMaskFLAG
+  CALL message ( LL, dbg3, "IMaskFLAG=",IMaskFLAG)
+  ! IHolzFLAG
+  ILine= ILine+1; READ(IChInp,'(27X,I15.1)',ERR=20,END=30) IHolzFLAG
+  CALL message ( LL, dbg3, "IHolzFLAG=",IHolzFLAG)
+  ! IAbsorbFLAG
+  ILine= ILine+1; READ(IChInp,'(27X,I15.1)',ERR=20,END=30) IAbsorbFLAG
+  CALL message ( LL, dbg3, "IAbsorbFLAG=",IAbsorbFLAG)
+  ! IAnisoDebyeWallerFactorFlag
+  ILine= ILine+1; READ(IChInp,'(27X,I15.1)',ERR=20,END=30) IAnisoDebyeWallerFactorFlag
+  CALL message ( LL, dbg3, "IAnisoDebyeWallerFactorFlag=",IAnisoDebyeWallerFactorFlag)
+  ! IByteSize
+  ILine= ILine+1; READ(IChInp,'(27X,I15.1)',ERR=20,END=30) IByteSize
+  CALL message ( LL, dbg3, "IByteSize=",IByteSize) !?? depends on system, 8 for csc, 4 tinis
+
+  !--------------------------------------------------------------------
+  ! radius of the beam in pixels
+  !--------------------------------------------------------------------
+
+  ! Two comment lines
   ILine= ILine+1; READ(IChInp,ERR=20,END=30,FMT='(A)')
   ILine= ILine+1; READ(IChInp,ERR=20,END=30,FMT='(A)')
-  ! -----IPixelCount-----------------------------------------------------------------
-  ILine= ILine+1; READ(IChInp,10,ERR=20,END=30) IPixelCount
+  ! IPixelCount
+  ILine= ILine+1; READ(IChInp,'(27X,I15.1)',ERR=20,END=30) IPixelCount
   CALL message ( LL, dbg3, "IPixelCount=",IPixelCount)
 
-  ! ----Two comment lines----------------------# beam selection criteria
+  !--------------------------------------------------------------------
+  ! beam selection criteria
+  !--------------------------------------------------------------------
+
+  ! Two comment lines 
   ILine= ILine+1; READ(IChInp,ERR=20,END=30,FMT='(A)')
   ILine= ILine+1; READ(IChInp,ERR=20,END=30,FMT='(A)')
-  ! -----IMinReflectionPool-----------------------------------------------------------------
-  ILine= ILine+1; READ(IChInp,10,ERR=20,END=30) IMinReflectionPool
+  ! IMinReflectionPool
+  ILine= ILine+1; READ(IChInp,'(27X,I15.1)',ERR=20,END=30) IMinReflectionPool
   CALL message ( LL, dbg3, "IMinReflectionPool=",IMinReflectionPool)
-  ! -----IMinStrongBeams-----------------------------------------------------------------
-  ILine= ILine+1; READ(IChInp,10,ERR=20,END=30) IMinStrongBeams
+  ! IMinStrongBeams
+  ILine= ILine+1; READ(IChInp,'(27X,I15.1)',ERR=20,END=30) IMinStrongBeams
   CALL message ( LL, dbg3, "IMinStrongBeams=",IMinStrongBeams)
-  ! -----IMinWeakBeams-----------------------------------------------------------------
+  ! IMinWeakBeams
   ILine= ILine+1
-  READ(IChInp,10,ERR=20,END=30) IMinWeakBeams
+  READ(IChInp,'(27X,I15.1)',ERR=20,END=30) IMinWeakBeams
   CALL message ( LL, dbg3, "IMinWeakBeams=",IMinWeakBeams)
 
-  ! ----Two comment lines----------------------# crystal settings
-  ILine= ILine+1; READ(IChInp,ERR=20,END=30,FMT='(A)')
-  ILine= ILine+1; READ(IChInp,ERR=20,END=30,FMT='(A)')
-  ! -----RDebyeWallerConstant-----------------------------------------------------------------default, if not specified in .cif
-  ILine= ILine+1; READ(IChInp,15,ERR=20,END=30) RDebyeWallerConstant
-  ! -----RAbsorptionPercentage-----------------------------------------------------------------for proportional model of absorption
-  ILine= ILine+1
-  READ(IChInp,15,ERR=20,END=30) RAbsorptionPercentage
+  !--------------------------------------------------------------------
+  ! crystal settings
+  !--------------------------------------------------------------------
 
-  ! ----Two comment lines----------------------# microscope settings
+  ! Two comment lines          
   ILine= ILine+1; READ(IChInp,ERR=20,END=30,FMT='(A)')
   ILine= ILine+1; READ(IChInp,ERR=20,END=30,FMT='(A)')
-  ! -----RConvergenceAngle-----------------------------------------------------------------
-  ILine= ILine+1; READ(IChInp,15,ERR=20,END=30) RConvergenceAngle
-   ! -----SIncidentBeamDirection-----------------------------------------------------------------IIncidentBeamDirection
+  ! RDebyeWallerConstant          !?? default, if not specified in .cif
+  ILine= ILine+1; READ(IChInp,'(27X,F18.9)',ERR=20,END=30) RDebyeWallerConstant
+  ! RAbsorptionPercentage         !?? for proportional model of absorption
+  ILine= ILine+1
+  READ(IChInp,'(27X,F18.9)',ERR=20,END=30) RAbsorptionPercentage
+
+  !--------------------------------------------------------------------
+  ! microscope settings
+  !--------------------------------------------------------------------
+
+  ! Two comment lines
+  ILine= ILine+1; READ(IChInp,ERR=20,END=30,FMT='(A)')
+  ILine= ILine+1; READ(IChInp,ERR=20,END=30,FMT='(A)')
+  ! RConvergenceAngle
+  ILine= ILine+1; READ(IChInp,'(27X,F18.9)',ERR=20,END=30) RConvergenceAngle
+
+  ! SIncidentBeamDirection -> IIncidentBeamDirection
   ILine= ILine+1; READ(IChInp,FMT='(27X,A)',END=30) SIncidentBeamDirection
   CALL ThreeDimVectorReadIn(SIncidentBeamDirection,'[',']',RZDirC)
-  ! -----SDirectionX-----------------------------------------------------------------IXDirection
+  ! SDirectionX -> IXDirection
   ILine= ILine+1; READ(IChInp,FMT='(27X,A)',END=30) SDirectionX
   CALL ThreeDimVectorReadIn(SDirectionX,'[',']',RXDirC)
-  ! -----SNormalDirectionX-----------------------------------------------------------------INormalDirection
+  ! SNormalDirectionX -> INormalDirection
   ILine= ILine+1; READ(IChInp,FMT='(27X,A)',ERR=20,END=30) SNormalDirectionX
   CALL ThreeDimVectorReadIn(SNormalDirectionX,'[',']',RNormDirC)
-  ! -----RAcceleratingVoltage-----------------------------------------------------------------
-  ILine= ILine+1; READ(IChInp,15,ERR=20,END=30) RAcceleratingVoltage
-  ! -----RAcceptanceAngle-----------------------------------------------------------------
-  ILine=ILine+1; READ(IChInp,15,ERR=20,END=30) RAcceptanceAngle
 
-  ! ----Two comment lines----------------------# specimen thickness
+  ! RAcceleratingVoltage
+  ILine= ILine+1; READ(IChInp,'(27X,F18.9)',ERR=20,END=30) RAcceleratingVoltage
+  ! RAcceptanceAngle
+  ILine=ILine+1; READ(IChInp,'(27X,F18.9)',ERR=20,END=30) RAcceptanceAngle
+
+  !--------------------------------------------------------------------
+  ! Image Output Options
+  !--------------------------------------------------------------------
+
+  !?? update input files and section here to 'specimin thickness'
+
+  ! Two comment lines
   ILine= ILine+1; READ(IChInp,ERR=20,END=30,FMT='(A)')
   ILine= ILine+1; READ(IChInp,ERR=20,END=30,FMT='(A)')
-  ! -----RInitialThickness-----------------------------------------------------------------
-  ILine= ILine+1; READ(IChInp,15,ERR=20,END=30) RInitialThickness
-  ! -----RFinalThickness-----------------------------------------------------------------
-  ILine= ILine+1; READ(IChInp,15,ERR=20,END=30) RFinalThickness
-  ! -----RDeltaThickness-----------------------------------------------------------------
-  ILine= ILine+1; READ(IChInp,15,ERR=20,END=30) RDeltaThickness
-  ! -----INoOfLacbedPatterns-----------------------------------------------------------------
-  ILine= ILine+1; READ(IChInp,10,ERR=20,END=30) INoOfLacbedPatterns
+  ! RInitialThickness
+  ILine= ILine+1; READ(IChInp,'(27X,F18.9)',ERR=20,END=30) RInitialThickness
+  ! RFinalThickness
+  ILine= ILine+1; READ(IChInp,'(27X,F18.9)',ERR=20,END=30) RFinalThickness
+  ! RDeltaThickness
+  ILine= ILine+1; READ(IChInp,'(27X,F18.9)',ERR=20,END=30) RDeltaThickness
+  ! INoOfLacbedPatterns             !?? update IReflectOut in felix.inp files
+  ILine= ILine+1; READ(IChInp,'(27X,I15.1)',ERR=20,END=30) INoOfLacbedPatterns 
 
-  ! ----Two comment lines----------------------# Refinement Specific Flags
+  !--------------------------------------------------------------------
+  ! Refinement Specific Flags
+  !--------------------------------------------------------------------
+
+  ! Two comment lines
   ILine= ILine+1; READ(IChInp,ERR=20,END=30,FMT='(A)')  
   ILine= ILine+1; READ(IChInp,ERR=20,END=30,FMT='(A)')
-  ! -----IRefineModeFLAG-----------------------------------------------------------------
+
+  ! IRefineModeFLAG
   ILine= ILine+1; READ(IChInp,FMT='(A)',ERR=20,END=30) SRefineMode
   IF(SCAN(TRIM(ADJUSTL(SRefineMode)),TRIM(ADJUSTL(SAlphabet(19)))).NE.0) THEN
-    ISimFLAG=1!Simulation only
+    ISimFLAG=1 ! Simulation only
   ELSE
     ISimFLAG=0
     SRefineMode = SRefineMode((SCAN(SRefineMode,"=")+1):)
@@ -215,95 +258,92 @@ SUBROUTINE ReadInpFile( IErr )
         IRefineMode(ind) = 1
       END IF
     END DO
-    IF(IRefineMode(1).EQ.1) CALL message( LS, "Mode A selected: Refining Structure Factors" )
-    IF(IRefineMode(2).EQ.1) CALL message( LS, "Mode B selected: Refining Atomic Coordinates" )
-    IF(IRefineMode(3).EQ.1) CALL message( LS, "Mode C selected: Refining Occupancies ")
-    IF(IRefineMode(4).EQ.1) CALL message( LS, "Mode D selected: Refining Isotropic Debye Waller Factors")
-    IF(IRefineMode(5).EQ.1) CALL message( LS, "Mode E selected: Refining Anisotropic Debye Waller Factors ")
-    IF(IRefineMode(6).EQ.1) CALL message( LS, "Mode F selected: Refining Lattice Lengths ")
-    IF(IRefineMode(7).EQ.1) CALL message( LS, "Mode G selected: Refining Lattice Angles ")
-    IF(IRefineMode(8).EQ.1) CALL message( LS, "Mode H selected: Refining Convergence Angle")
-    IF(IRefineMode(9).EQ.1) CALL message( LS, "Mode I selected: Refining Absorption")
-    IF(IRefineMode(10).EQ.1) CALL message( LS, "Mode J selected: Refining Accelerating Voltage ")
+    ! Check which refinement modes have been selected
+    IF(IRefineMode(1) .EQ.1) CALL message( LS, "Mode A selected: Refining Structure Factors")
+    IF(IRefineMode(2) .EQ.1) CALL message( LS, "Mode B selected: Refining Atomic Coordinates")
+    IF(IRefineMode(3) .EQ.1) CALL message( LS, "Mode C selected: Refining Occupancies ")
+    IF(IRefineMode(4) .EQ.1) CALL message( LS, &
+          "Mode D selected: Refining Isotropic Debye Waller Factors")
+    IF(IRefineMode(5) .EQ.1) CALL message( LS, &
+          "Mode E selected: Refining Anisotropic Debye Waller Factors ")
+    IF(IRefineMode(6) .EQ.1) CALL message( LS, "Mode F selected: Refining Lattice Lengths ")
+    IF(IRefineMode(7) .EQ.1) CALL message( LS, "Mode G selected: Refining Lattice Angles ")
+    IF(IRefineMode(8) .EQ.1) CALL message( LS, "Mode H selected: Refining Convergence Angle")
+    IF(IRefineMode(9) .EQ.1) CALL message( LS, "Mode I selected: Refining Absorption")
+    IF(IRefineMode(10).EQ.1) CALL message( LS, &
+          "Mode J selected: Refining Accelerating Voltage ")
+    !?? ISimFlag should always be zero here
     IF(ISimFlag.EQ.1) CALL message( LS, "Mode S selected: Simulation mode")
-    !Check if user has requested Ug refinement and anything else which isn't possible
-    IF((IRefineMode(1).EQ.1).AND.SUM(IRefineMode).GT.1) THEN         
-      IF(my_rank.EQ.0) THEN
-        PRINT*,"Error:Structure factors must be refined separately"
-      END IF
-      IErr = 1
+    ! Error Check - user cannot request Ug refinement and anything else
+    IF((IRefineMode(1).EQ.1).AND.SUM(IRefineMode).GT.1) THEN
+      IErr = 1;
+      IF(l_alert(IErr,"ReadInpFile()","check refinements")) CONTINUE
+      !?? l_alert usually used in other error handling situations, hence this odd format
+      CALL message(LS, "Error - Structure factors must be refined separately")
       RETURN
     END IF
   END IF
-  ! -----IWeightingFLAG-----------------------------------------------------------------
-  ILine= ILine+1; READ(IChInp,10,ERR=20,END=30) IWeightingFLAG
-  ! -----IMethodFLAG-----------------------------------------------------------------
-  ILine= ILine+1; READ(IChInp,10,ERR=20,END=30) IMethodFLAG
+
+  ! IWeightingFLAG          !?? is this still used JR
+  ILine= ILine+1; READ(IChInp,'(27X,I15.1)',ERR=20,END=30) IWeightingFLAG
+  ! IMethodFLAG
+  ILine= ILine+1; READ(IChInp,'(27X,I15.1)',ERR=20,END=30) IMethodFLAG
   IF(IMethodFLAG.EQ.1) CALL message( LS, "Mode selected: Refining by simplex")
   IF(IMethodFLAG.EQ.2) CALL message( LS, "Mode selected: Refining by maximum gradient")
   IF(IMethodFLAG.EQ.3) CALL message( LS, "Mode selected: Refining by pairwise maximum gradient")
  
-  ! -----ICorrelationFLAG: 0=phase,1=sumSq,2=NormalisedCC,3=masked
-  ILine= ILine+1; READ(IChInp,10,ERR=20,END=30) ICorrelationFLAG
-  ! -----IImageProcessingFLAG: 0=no processing,1=sqrt,2=log
-  ILine= ILine+1; READ(IChInp,10,ERR=20,END=30) IImageProcessingFLAG
-  ! -----RBlurRadius-----------------------------------------------------------------
-  ILine= ILine+1; READ(IChInp,15,ERR=20,END=30) RBlurRadius
-  ! -----INoofUgs-----------------------------------------------------------------
-  ILine= ILine+1; READ(IChInp,10,ERR=20,END=30) INoofUgs
-  ! -----SAtomicSites-----------------------------------------------------------------
+  ! ICorrelationFLAG: 0=phase,1=sumSq,2=NormalisedCC,3=masked
+  ILine= ILine+1; READ(IChInp,'(27X,I15.1)',ERR=20,END=30) ICorrelationFLAG
+  ! IImageProcessingFLAG: 0=no processing,1=sqrt,2=log
+  ILine= ILine+1; READ(IChInp,'(27X,I15.1)',ERR=20,END=30) IImageProcessingFLAG
+  ! RBlurRadius
+  ILine= ILine+1; READ(IChInp,'(27X,F18.9)',ERR=20,END=30) RBlurRadius
+  ! INoofUgs
+  ILine= ILine+1; READ(IChInp,'(27X,I15.1)',ERR=20,END=30) INoofUgs
+  ! SAtomicSites !?? what global does this later set?
   ILine=ILine+1; READ(IChInp,FMT='(A)',ERR=20,END=30) SAtomicSites
-  CALL DetermineRefineableAtomicSites(SAtomicSites,IErr)
-  IF( IErr.NE.0 ) THEN
-    PRINT*,"Error:ReadInpFile(): error in DetermineRefineableAtomicSites()"
-    RETURN
-  END IF
-  ! -----IPrint-----------------------------------------------------------------
-  ILine= ILine+1; READ(IChInp,10,ERR=20,END=30) IPrint
-  ! -----RSimplexLengthScale-----------------------------------------------------------------
-  ILine= ILine+1; READ(IChInp,15,ERR=20,END=30) RSimplexLengthScale
+  CALL DetermineRefineableAtomicSites(SAtomicSites,IErr) !?? what does this do? JR
+  IF(l_alert(IErr,"ReadInpFile()","DetermineRefineableAtomicSites")) RETURN
+  ! IPrint
+  ILine= ILine+1; READ(IChInp,'(27X,I15.1)',ERR=20,END=30) IPrint
+  ! RSimplexLengthScale
+  ILine= ILine+1; READ(IChInp,'(27X,F18.9)',ERR=20,END=30) RSimplexLengthScale
   RSimplexLengthScale = RSimplexLengthScale/100.0
-  ! -----RExitCriteria-----------------------------------------------------------------
-  ILine= ILine+1; READ(IChInp,15,ERR=20,END=30) RExitCriteria
+  ! RExitCriteria
+  ILine= ILine+1; READ(IChInp,'(27X,F18.9)',ERR=20,END=30) RExitCriteria
 
-10 FORMAT(27X,I15.1)
-15 FORMAT(27X,F18.9)
-
-  CLOSE(IChInp, ERR=130)
-
+  !--------------------------------------------------------------------
+  ! finish reading, close felix.inp
+  !--------------------------------------------------------------------
+  
+  CLOSE(IChInp, IOSTAT=IErr)
+  IF(l_alert(IErr,"ReadInpFile()","CLOSE() felix.inp")) RETURN
   RETURN
 
-  !	error in OPEN detected
-120 IF(my_rank.EQ.0) THEN
-     PRINT*,"Error:ReadInpFile(): ERR in OPEN"
-     CALL WriteOutInputFile (IErr)
-  END IF
-  IErr=1
+  !--------------------------------------------------------------------
+  ! GOTO error handling from READ()
+  !--------------------------------------------------------------------
+
+  !	error in READ() detected  
+  !?? JR tested error output, tidy but not clear or informative to user
+20 CONTINUE
+  IErr=1;
+  IF(l_alert(IErr,"ReadInpFile()","READ() felix.inp")) CONTINUE
+  CALL message(LS,"Error reading line = ",ILine) !?? prints variable on rank 0 only 
   RETURN
   
-  !	error in CLOSE detected
-130 IF(my_rank.EQ.0) THEN
-     PRINT*,"Error:Input(): ERR in CLOSE"
-  END IF
-  IErr=1
+  !	EOF in READ() occured prematurely
+  !?? JR tested error output, tidy but not clear or informative to user
+30 CONTINUE
+  IErr=1; IF(l_alert(IErr,"ReadInpFile()",&
+        "READ() felix.inp. End of file occurred prematurely")) CONTINUE
+  CALL message(LS,"Error reading line = ",ILine) !?? prints variable on rank 0 only 
   RETURN
-  
-  !	error in READ detected
-20 IErr=20;IF(l_alert(IErr,"ReadInpFile","READ on felix.inp")) RETURN
-!20 IF(my_rank.EQ.0) THEN
-!     PRINT*,"Error:Input(): ERRor in READ at line", ILine
-!     CALL WriteOutInputFile (IErr)
-!  END IF
-!  IErr=1
-!  RETURN
-  
-  !	EOF in READ occured prematurely
-30 IF(my_rank.EQ.0) THEN
-     PRINT*,"Error:Input(): EOF in READ at line", ILine
-     CALL WriteOutInputFile (IErr)
-  END IF
-  IErr=1
-  RETURN
+
+  !?? JR Old write example felix.inp to screen removed
+  !?? JR could direct to github wiki page, it currently has clear information
+  !?? JR should be able to direct user to felix.inp in sample folders
+  !?? JR here should contain clear information about inputs and github can referance/link this
 
 END SUBROUTINE ReadInpFile
 
@@ -320,6 +360,8 @@ END SUBROUTINE ReadInpFile
 SUBROUTINE ReadHklFile(IErr)
 
   USE MyNumbers
+  USE terminal_output
+
   USE IChannels
 
   USE IConst
@@ -329,67 +371,62 @@ SUBROUTINE ReadHklFile(IErr)
   USE RPara
   USE CPara
   USE SPara
-  USE terminal_output
-  USE MPI
-  USE MyMPI
 
   IMPLICIT NONE
 
-  INTEGER(IKIND) :: ILine,IErr,h,k,l,ind,IPos1,IPos2
-  CHARACTER*200 :: dummy1,dummy2,SPrintString
+  INTEGER(IKIND),INTENT(OUT) :: IErr
+  INTEGER(IKIND) :: ILine, h, k, l, ind, IPos1, IPos2
+  CHARACTER*200 :: dummy1, dummy2
 
   OPEN(Unit = IChInp,FILE="felix.hkl",STATUS='OLD',ERR=10)
   ILine = 0
   IHKLSelectFLAG=1
 
-  !count the number of lines in felix.hkl: this is the number of reflections to output, INoOfLacbedPatterns
+  ! count the number of lines in felix.hkl:
+  ! this is the number of reflections to output, INoOfLacbedPatterns
   DO
-     READ(UNIT= IChInp, END=100, FMT='(a)') dummy1
-     ILine=ILine+1
-  ENDDO
+    READ(UNIT= IChInp, END=100, FMT='(a)') dummy1
+    ILine=ILine+1
+  ENDDO  !?? JR can we change this? IOSTAT EOF should be identifiable, IF EOF -> EXIT
 100 INoOfLacbedPatterns=ILine
-
   CALL message ( LL, dbg7, "Number of experimental images to load = ", INoOfLacbedPatterns)
 
   ALLOCATE(RInputHKLs(INoOfLacbedPatterns,ITHREE),STAT=IErr)
+  IF(l_alert(IErr,"ReadHklFile()","allocate RInputHKLs")) RETURN
   ALLOCATE(IOutputReflections(INoOfLacbedPatterns),STAT=IErr)
-  IF( IErr.NE.0 ) THEN
-     PRINT*,"Error:ReadHklFile(",my_rank,")error in allocations"
-     RETURN
-  END IF
+  IF(l_alert(IErr,"ReadHklFile()","allocate IOutputReflections")) RETURN
 
-  !read in the hkls
-  REWIND(UNIT=IChInp)
+  ! read in the hkls
+  REWIND(UNIT=IChInp) ! goes to beggining of felix.hkl file
   ILine = 0 
   DO ind = 1,INoOfLacbedPatterns
-     ! READ HKL in as String
-     READ(UNIT= IChInp,FMT='(A)' ) dummy1
-     !Scan String for h
-     IPos1 = SCAN(dummy1,'[')
-     IPos2 = SCAN(dummy1,',')
-     dummy2 = dummy1((IPos1+1):(IPos2-1))
-     READ(dummy2,'(I20)') h
-     !Scan String for k   
-     IPos1 = SCAN(dummy1((IPos2+1):),',') + IPos2
-     dummy2 = dummy1((IPos2+1):(IPos1-1))
-     READ(dummy2,'(I20)') k
-     !Scan String for l     
-     IPos2 = SCAN(dummy1((IPos1+1):),']') + IPos1
-     dummy2 = dummy1((IPos1+1):(IPos2-1))
-     READ(dummy2,'(I20)') l
-     ! Convert to REALs
-     ILine=ILine+1
-     RInputHKLs(ILine,1) = REAL(h,RKIND)
-     RInputHKLs(ILine,2) = REAL(k,RKIND)
-     RInputHKLs(ILine,3) = REAL(l,RKIND)   
-
-     CALL message ( LL, dbg7, "RInputHKLs", NINT(RInputHKLs(ILine,:)) )
-
+    ! READ HKL in as String
+    READ(UNIT= IChInp,FMT='(A)' ) dummy1
+    ! Scan String for h
+    IPos1 = SCAN(dummy1,'[')
+    IPos2 = SCAN(dummy1,',')
+    dummy2 = dummy1((IPos1+1):(IPos2-1))
+    READ(dummy2,'(I20)') h
+    ! Scan String for k   
+    IPos1 = SCAN(dummy1((IPos2+1):),',') + IPos2
+    dummy2 = dummy1((IPos2+1):(IPos1-1))
+    READ(dummy2,'(I20)') k
+    ! Scan String for l     
+    IPos2 = SCAN(dummy1((IPos1+1):),']') + IPos1
+    dummy2 = dummy1((IPos1+1):(IPos2-1))
+    READ(dummy2,'(I20)') l
+    ! Convert to REALs
+    ILine=ILine+1
+    RInputHKLs(ILine,1) = REAL(h,RKIND)
+    RInputHKLs(ILine,2) = REAL(k,RKIND)
+    RInputHKLs(ILine,3) = REAL(l,RKIND)   
+    CALL message ( LL, dbg7, "RInputHKLs", NINT(RInputHKLs(ILine,:)) )
   END DO
 
   RETURN
 
-10 IHKLSelectFLAG=0
+10 CONTINUE
+  IHKLSelectFLAG=0 !?? JR what is this error handling, IErr = 1?, need to test
   RETURN
 
 END SUBROUTINE ReadHklFile
@@ -405,68 +442,71 @@ END SUBROUTINE ReadHklFile
 !!
 SUBROUTINE DetermineRefineableAtomicSites(SAtomicSites,IErr)
 
-  USE MyNumbers
+  !?? need to update error messages here JR
 
-  USE SConst; USE IConst
-  USE IPara; USE RPara
-  USE IChannels
+  USE MyNumbers
   USE terminal_output
-  USE MPI
-  USE MyMPI
+
+  ! global outputs
+  USE IPARA, ONLY : IAtomicSitesToRefine
+  
+  ! global inputs
+  USE IPARA, ONLY : IRefineMode 
 
   IMPLICIT NONE  
 
-  INTEGER(IKIND) :: IPos,IPos1,IPos2,IErr,ind
-  CHARACTER*200 :: SAtomicSites,SFormatString,SLengthofNumberString
+  CHARACTER(200), INTENT(IN) :: SAtomicSites
+  INTEGER(IKIND),INTENT(OUT) :: IErr
+  INTEGER(IKIND) :: IPos, IPos1, IPos2, ind
+  CHARACTER(200) :: SFormatString, SLengthofNumberString
 
   IPos1 = SCAN(SAtomicSites,'(')
   IPos2 = SCAN(SAtomicSites,')')
-  IF(((IPos2-IPos1).EQ.1).OR.(IPos1.EQ.0).OR.(IPos2.EQ.0)) THEN
-     IF(IRefineMode(2).EQ.1) THEN
-        IF (my_rank.EQ.0) PRINT*,"Error:You Have Not Specfied Atomic Sites to Refine" 
-        IErr = 1
-        RETURN
-     END IF
+  ! error check
+  IF(((IPos2-IPos1).EQ.1).OR.(IPos1.EQ.0).OR.(IPos2.EQ.0)) THEN 
+    IF(IRefineMode(2).EQ.1) IErr = 1
+    IF(l_alert(IErr,"DetermineRefineableAtomicSites()",&
+            "check. You Have Not Specfied Atomic Sites to Refine")) RETURN
   END IF
 
   IF ((IPos2-IPos1).GT.1.AND.SCAN(SAtomicSites,',').EQ.0) THEN
-     ALLOCATE(IAtomicSitesToRefine(1),STAT=IErr)
-     IF(IErr.NE.0.AND.(my_rank.EQ.0)) PRINT*,"Error:",&
-       "DetermineRefineableAtomicSites: error allocating IAtomicSitesToRefine"
-     CALL message (LM, "SIZE(IAtomicSitesToRefine) = ",SIZE(IAtomicSitesToRefine) )
-     WRITE(SLengthofNumberString,*) LEN(SAtomicSites((IPos1+1):(IPos2-1))) 
-     WRITE(SFormatString,*) "(I"//TRIM(ADJUSTL(SLengthofNumberString))//")"
-     READ(SAtomicSites((IPos1+1):(IPos2-1)),FMT=SFormatString) IAtomicSitesToRefine(1)
+    ALLOCATE(IAtomicSitesToRefine(1),STAT=IErr)
+    IF(l_alert(IErr,"DetermineRefineableAtomicSites()", &
+          "allocate IAtomicSitesToRefine")) RETURN
+    CALL message (LM, "SIZE(IAtomicSitesToRefine) = ",SIZE(IAtomicSitesToRefine) )
+    WRITE(SLengthofNumberString,*) LEN(SAtomicSites((IPos1+1):(IPos2-1))) 
+    WRITE(SFormatString,*) "(I"//TRIM(ADJUSTL(SLengthofNumberString))//")"
+    READ(SAtomicSites((IPos1+1):(IPos2-1)),FMT=SFormatString) IAtomicSitesToRefine(1)
   ELSE
-     IPos = 1
-     DO 
-        IF(SCAN(SAtomicSites(IPos1:IPos2),',').NE.0) THEN
-           IPos1 = IPos1 + LEN(SAtomicSites(IPos1:(IPos1+SCAN(SAtomicSites(IPos1:IPos2),','))))
-           IPos = IPos+1
-        END IF
-        IF (IPos2-IPos1.LE.1) EXIT
-     END DO
+    IPos = 1
+    DO 
+      IF(SCAN(SAtomicSites(IPos1:IPos2),',').NE.0) THEN
+        IPos1 = IPos1 + LEN(SAtomicSites(IPos1:(IPos1+SCAN(SAtomicSites(IPos1:IPos2),','))))
+        IPos = IPos+1
+      END IF
+      IF (IPos2-IPos1.LE.1) EXIT
+    END DO
 
-     ALLOCATE(IAtomicSitesToRefine(IPos),STAT=IErr)
-     IF(IErr.NE.0.AND.(my_rank.EQ.0)) PRINT*,"Error:",&
-       "DetermineRefineableAtomicSites: error allocating IAtomicSitesToRefine"
-       
-     IPos1 = SCAN(SAtomicSites,'(')
-     DO ind = 1,SIZE(IAtomicSitesToRefine,DIM=1)
-        IF(SCAN(SAtomicSites((IPos1+1):IPos2),',').NE.0) THEN
-           IPos = SCAN(SAtomicSites((IPos1+1):IPos2),',')-1
-           WRITE(SLengthofNumberString,*) LEN(SAtomicSites((IPos1+1):(IPos1+IPos))) 
-           WRITE(SFormatString,*) "(I"//TRIM(ADJUSTL(SLengthofNumberString))//")"
-           READ(SAtomicSites((IPos1+1):(IPos1+IPos)),FMT=SFormatString) IAtomicSitesToRefine(ind)
-           IPos1 = IPos1 + IPos + 1 
-        ELSE
-           WRITE(SLengthofNumberString,*) LEN(SAtomicSites((IPos1+1):(IPos2-1))) 
-           WRITE(SFormatString,*) "(I"//TRIM(ADJUSTL(SLengthofNumberString))//")"
-           READ(SAtomicSites((IPos1+1):(IPos2-1)),FMT=SFormatString) IAtomicSitesToRefine(ind)
-        END IF
-     END DO
+    ALLOCATE(IAtomicSitesToRefine(IPos),STAT=IErr)
+    IF(IErr.NE.0.AND.(my_rank.EQ.0)) PRINT*,"Error:",&
+          "DetermineRefineableAtomicSites: error allocating IAtomicSitesToRefine"
+     
+    IPos1 = SCAN(SAtomicSites,'(')
+    DO ind = 1,SIZE(IAtomicSitesToRefine,DIM=1)
+      IF(SCAN(SAtomicSites((IPos1+1):IPos2),',').NE.0) THEN
+        IPos = SCAN(SAtomicSites((IPos1+1):IPos2),',')-1
+        WRITE(SLengthofNumberString,*) LEN(SAtomicSites((IPos1+1):(IPos1+IPos))) 
+        WRITE(SFormatString,*) "(I"//TRIM(ADJUSTL(SLengthofNumberString))//")"
+        READ(SAtomicSites((IPos1+1):(IPos1+IPos)),FMT=SFormatString) IAtomicSitesToRefine(ind)
+        IPos1 = IPos1 + IPos + 1 
+      ELSE
+        WRITE(SLengthofNumberString,*) LEN(SAtomicSites((IPos1+1):(IPos2-1))) 
+        WRITE(SFormatString,*) "(I"//TRIM(ADJUSTL(SLengthofNumberString))//")"
+        READ(SAtomicSites((IPos1+1):(IPos2-1)),FMT=SFormatString) IAtomicSitesToRefine(ind)
+      END IF
+    END DO
   END IF
-  CALL message (LM, "Refining atoms ",IAtomicSitesToRefine )
+  CALL message (LM, "Refining atoms ", IAtomicSitesToRefine )
   
 END SUBROUTINE DetermineRefineableAtomicSites
 
@@ -482,34 +522,26 @@ END SUBROUTINE DetermineRefineableAtomicSites
 SUBROUTINE ReadExperimentalImages(IErr)
 
   USE MyNumbers
-
-  USE SConst; USE IConst; USE RConst
-  USE IPara; USE RPara; USE SPara; USE CPara
-  USE BlochPara
-
-  USE IChannels
   USE terminal_output
-  USE MPI
-  USE MyMPI
+
+  ! global outputs
+  USE RPARA, ONLY : RImageExpi
+
+  ! global inputs
+  USE IChannels, ONLY : IChInImage
+  USE SPARA, ONLY : SChemicalFormula
+  USE IPARA, ONLY : INoOfLacbedPatterns, IPixelCount, IByteSize
+  USE RPARA, ONLY : RInputHKLs
 
   IMPLICIT NONE
 
-  INTEGER(IKIND) :: ind,jnd,IErr
-  INTEGER(IKIND) :: INegError = 0
-  CHARACTER*34 :: filename
-  CHARACTER*200 :: SPrintString
-  CHARACTER*10 :: intstring
+  INTEGER(IKIND),INTENT(OUT) :: IErr
+  INTEGER(IKIND) :: ind, jnd, INegError = 0
+  CHARACTER :: filename*34, SPrintString*200, IntString*10
 
-  !for IByteSize: 2bytes=64-bit input file (NB tinis specifies in bytes, not bits)
-  !NB when this subroutine is working get rid of the pointless variable RImageIn
-  ALLOCATE(RImageIn(2*IPixelCount,2*IPixelCount), STAT=IErr)
-  IF( IErr.NE.0 ) THEN
-     PRINT*,"Error:ReadExperimentalImages(",my_rank,")error allocating RImageIn"
-     RETURN
-  END IF
-  RImageIn=ZERO
+  ! for IByteSize: 2bytes=64-bit input file (NB tinis specifies in bytes, not bits)
 
-  DO ind = 1,INoOfLacbedPatterns  
+  DO ind = 1,INoOfLacbedPatterns  !?? JR should standardise this filename writing throughout
     ! An image expected for each LacbedPattern
     ! Write corresponding filenames including chemical formula
     WRITE(filename,*) TRIM(ADJUSTL(SChemicalFormula)),"_"
@@ -522,31 +554,30 @@ SUBROUTINE ReadExperimentalImages(IErr)
     END DO
     filename = TRIM(filename) // '.img'
 
-    CALL message( LL, dbg7, "filename = ", filename)
-    OPEN(UNIT= IChInImage, ERR= 10, STATUS= 'UNKNOWN', FILE=TRIM(ADJUSTL(filename)),FORM='UNFORMATTED',&
-          ACCESS='DIRECT',IOSTAT=Ierr,RECL=2*IPixelCount*IByteSize)
-    DO jnd=1,2*IPixelCount
-      READ(IChInImage,rec=jnd,ERR=10) RImageIn(jnd,:)
-    END DO
-    RImageExpi(:,:,ind) = RImageIn
-    CLOSE(IChInImage,IOSTAT=IErr) 
-    IF( IErr.NE.0 ) THEN
-      PRINT*,"Error:ReadExperimentalImages (", my_rank, ") error in CLOSE()"
+    CALL message(LL, dbg7, "filename = ", filename)
+    OPEN(UNIT= IChInImage, STATUS= 'UNKNOWN', FILE=TRIM(ADJUSTL(filename)), &
+          FORM='UNFORMATTED',ACCESS='DIRECT',IOSTAT=IErr,RECL=2*IPixelCount*IByteSize)
+    IF(l_alert(IErr,"ReadExperimentalImages()","open an experimental input image")) THEN
+      CALL message(LS,"error - opening filename = ",TRIM(ADJUSTL(filename)))
+      CALL message(LS,"error - expected filename of format like 'GaAs_+0+0-8.img'."//&
+            " Chemical formula should match _chemical_formula_structural from felix.cif")
       RETURN
     END IF
+    DO jnd=1,2*IPixelCount
+      READ(IChInImage,rec=jnd,IOSTAT=IErr) RImageExpi(jnd,:,ind)
+      IF(l_alert(IErr,"ReadExperimentalImages()","read an experimental input image")) THEN
+        CALL message(LS,"error - reading filename = ",TRIM(ADJUSTL(filename)))
+        CALL message(LS,"error - line number = ",jnd)
+        CALL message(LS,"error - expected filename of format like 'GaAs_+0+0-8.img'."//&
+              " Chemical formula should match _chemical_formula_structural from felix.cif")
+        RETURN
+      END IF
+    END DO
+    CLOSE(IChInImage,IOSTAT=IErr)
+    IF(l_alert(IErr,"ReadExperimentalImages()","close an experimental input image")) RETURN
   END DO
-  DEALLOCATE(RImageIn,STAT=IErr)
 
-  CALL message ( LM, "Number of experimental images successfully loaded = ", INoOfLacbedPatterns )
-
-  RETURN
-
-10 IErr=1
-  PRINT*,"Error:Error Message:"
-  PRINT*,"Error:ReadExperimentalImages(", my_rank, ")error reading ",TRIM(ADJUSTL(filename)),", line ",jnd
-  PRINT*,"Error:From felix.cif SChemicalFormula = '",SChemicalFormula,"'"
-  PRINT*,"Error:Expect input .img files in a format like SChemicalFormula_-2-2+0.img"
-  PRINT*,"Error:e.g. GaAs_+0+0-8.img"
+  CALL message(LM,"Number of experimental images successfully loaded = ",INoOfLacbedPatterns)
 
   RETURN
 
@@ -564,40 +595,33 @@ END SUBROUTINE ReadExperimentalImages
 !! Major-Authors: Alexander Hubert (2015)
 !!
 SUBROUTINE ThreeDimVectorReadIn(SUnformattedVector,SOpenBracketDummy, &
-     SCloseBracketDummy,RFormattedVector)
+      SCloseBracketDummy,RFormattedVector)
+
+  !?? interesting exercise - look into making pure JR
 
   ! e.g. CALL ThreeDimVectorReadIn(SIncidentBeamDirection,'[',']',RZDirC)
   ! Current format has interesting bracket inputs
 
   USE MyNumbers
-  
-  USE SConst; USE IConst; USE RConst
-  USE IPara; USE RPara; USE SPara; USE CPara
-  USE BlochPara
-
-  USE IChannels
-
-  USE MPI
-  USE MyMPI 
  
   IMPLICIT NONE
 
   CHARACTER(*), INTENT(IN) :: &
-       SUnformattedVector,SOpenBracketDummy,SCloseBracketDummy
+        SUnformattedVector,SOpenBracketDummy,SCloseBracketDummy
   REAL(RKIND),INTENT(OUT),DIMENSION(3) :: &
-       RFormattedVector
+        RFormattedVector
 
   CHARACTER*1 :: &
-       SComma=',',SOpenBracket,SCloseBracket
+        SComma=',',SOpenBracket,SCloseBracket
   CHARACTER*100 :: &
-       SFormattedVectorX,SFormattedVectorY,SFormattedVectorZ
+        SFormattedVectorX,SFormattedVectorY,SFormattedVectorZ
  
   LOGICAL :: &
-       LBACK=.TRUE.
+        LBACK=.TRUE.
   
   INTEGER(IKIND) :: &
-       IOpenBracketPosition, ICloseBracketPosition, IFirstCommaPosition, &
-       ILastCommaPosition
+        IOpenBracketPosition, ICloseBracketPosition, IFirstCommaPosition, &
+        ILastCommaPosition
   
   ! Trim and adjustL bracket to ensure one character string
   SOpenBracket=TRIM(ADJUSTL(SOpenBracketDummy))
@@ -612,140 +636,16 @@ SUBROUTINE ThreeDimVectorReadIn(SUnformattedVector,SOpenBracketDummy, &
   ILastCommaPosition=INDEX(SUnformattedVector,SComma,LBACK)
 
   ! Separate the Unformatted Vector String into its three X,Y,Z components
-  SFormattedVectorX=TRIM(ADJUSTL(SUnformattedVector(IOpenBracketPosition+1:IFirstCommaPosition-1)))
-  SFormattedVectorY=TRIM(ADJUSTL(SUnformattedVector(IFirstCommaPosition+1:ILastCommaPosition-1)))
-  SFormattedVectorZ=TRIM(ADJUSTL(SUnformattedVector(ILastCommaPosition+1:ICloseBracketPosition-1)))
+  SFormattedVectorX = & 
+        TRIM(ADJUSTL(SUnformattedVector(IOpenBracketPosition+1:IFirstCommaPosition-1)))
+  SFormattedVectorY = &
+        TRIM(ADJUSTL(SUnformattedVector(IFirstCommaPosition+1:ILastCommaPosition-1)))
+  SFormattedVectorZ = &
+        TRIM(ADJUSTL(SUnformattedVector(ILastCommaPosition+1:ICloseBracketPosition-1)))
 
-  ! Read in each string component into its associated position in real variable RFormattedVector
+  ! Read each string component into its associated position in real variable RFormattedVector
   READ(SFormattedVectorX,*) RFormattedVector(1)
   READ(SFormattedVectorY,*) RFormattedVector(2)
   READ(SFormattedVectorZ,*) RFormattedVector(3)
 
 END SUBROUTINE ThreeDimVectorReadIn
-
-!%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-
-
-
-!>
-!! Procedure-description: Write out the sample input file, when none provided
-!!
-!! Major-Authors: Keith Evans (2014)
-!! 
-SUBROUTINE WriteOutInputFile (IErr)
-
-  !?? low priority
-  !?? need to test this
-  
-  USE MyNumbers
-  
-  USE IConst
-  USE RConst
-  
-  USE IPara
-  USE RPara
-  USE CPara
-  USE SPara
-  USE IChannels
-
-  USE MPI
-  USE MyMPI
-  
-  IMPLICIT NONE
-
-  INTEGER(IKIND):: IErr
-     
-    OPEN(UNIT= IChInp,FILE= "felix.inp.sample",&
-     STATUS= 'UNKNOWN')
-    CALL WriteToScreenandFile(ADJUSTL("# Input file for felixsim/draw/refine version :VERSION: Build :BUILD:"),IErr)
-    CALL WriteToScreenandFile(ADJUSTL("# ------------------------------------"),IErr)
-    CALL WriteToScreenandFile(ADJUSTL(""),IErr)
-    CALL WriteToScreenandFile(ADJUSTL("# ------------------------------------"),IErr)
-    CALL WriteToScreenandFile(ADJUSTL(""),IErr)
-    CALL WriteToScreenandFile(ADJUSTL("# control flags"),IErr)
-    CALL WriteToScreenandFile(ADJUSTL("IWriteFLAG                = 3"),IErr)
-    CALL WriteToScreenandFile(ADJUSTL("IImageFLAG                = 1"),IErr)
-    CALL WriteToScreenandFile(ADJUSTL("IScatterFactorMethodFLAG  = 0"),IErr)
-    CALL WriteToScreenandFile(ADJUSTL("IMaskFLAG                 = 1"),IErr)
-    CALL WriteToScreenandFile(ADJUSTL("IHolzFLAG                 = 0"),IErr)
-    CALL WriteToScreenandFile(ADJUSTL("IAbsorbFLAG               = 1"),IErr)
-    CALL WriteToScreenandFile(ADJUSTL("IAnisoDebyeWallerFlag     = 0"),IErr)
-    CALL WriteToScreenandFile(ADJUSTL(""),IErr)
-    CALL WriteToScreenandFile(ADJUSTL("# radius of the beam in pixels"),IErr)
-    CALL WriteToScreenandFile(ADJUSTL("IPixelCount               = 64"),IErr)
-    CALL WriteToScreenandFile(ADJUSTL(""),IErr)
-    CALL WriteToScreenandFile(ADJUSTL("# beam selection criteria"),IErr)
-    CALL WriteToScreenandFile(ADJUSTL("IMinReflectionPool        = 100"),IErr)
-    CALL WriteToScreenandFile(ADJUSTL("IMinStrongBeams           = 20"),IErr)
-    CALL WriteToScreenandFile(ADJUSTL("IMinWeakBeams             = 0"),IErr)
-    CALL WriteToScreenandFile(ADJUSTL(""),IErr)
-    CALL WriteToScreenandFile(ADJUSTL("# crystal settings"),IErr)
-    CALL WriteToScreenandFile(ADJUSTL("RDebyeWallerConstant      = 0.4668"),IErr)
-    CALL WriteToScreenandFile(ADJUSTL("RAbsorptionPer            = 2.9"),IErr)
-    CALL WriteToScreenandFile(ADJUSTL(""),IErr)
-    CALL WriteToScreenandFile(ADJUSTL("# microscope settings"),IErr)
-    CALL WriteToScreenandFile(ADJUSTL("ROuterConvergenceAngle    = 6.0"),IErr)
-    CALL WriteToScreenandFile(ADJUSTL("IIncidentBeamDirection    = [0,1,1]"),IErr)
-    CALL WriteToScreenandFile(ADJUSTL("IXDirection               = [1,0,0]"),IErr)
-    CALL WriteToScreenandFile(ADJUSTL("INormalDirection          = [0,1,1]"),IErr)
-    CALL WriteToScreenandFile(ADJUSTL("RAcceleratingVoltage (kV) = 200.0"),IErr)
-    CALL WriteToScreenandFile(ADJUSTL("RAcceptanceAngle          = 0.0"),IErr)
-    CALL WriteToScreenandFile(ADJUSTL(""),IErr)
-    CALL WriteToScreenandFile(ADJUSTL("# Image Output Options"),IErr)
-    CALL WriteToScreenandFile(ADJUSTL(""),IErr)
-    CALL WriteToScreenandFile(ADJUSTL("RInitialThickness        = 400.0"),IErr)
-    CALL WriteToScreenandFile(ADJUSTL("RFinalThickness          = 700.0"),IErr)
-    CALL WriteToScreenandFile(ADJUSTL("RDeltaThickness          = 10.0"),IErr)
-    CALL WriteToScreenandFile(ADJUSTL("INoOfLacbedPatterns              = 7"),IErr)
-    CALL WriteToScreenandFile(ADJUSTL(""),IErr)
-    CALL WriteToScreenandFile(ADJUSTL("#Refinement Specific Flags"),IErr)
-    CALL WriteToScreenandFile(ADJUSTL("IRefineModeFLAG          = B"),IErr)
-    CALL WriteToScreenandFile(ADJUSTL("IWeightingFLAG           = 0"),IErr)
-    CALL WriteToScreenandFile(ADJUSTL("IContinueFLAG            = 0"),IErr)
-    CALL WriteToScreenandFile(ADJUSTL("ICorrelationFLAG         = 0"),IErr)
-    CALL WriteToScreenandFile(ADJUSTL("IImageProcessingFLAG     = 0"),IErr)
-    CALL WriteToScreenandFile(ADJUSTL("RBlurRadius              = 1.45"),IErr)
-    CALL WriteToScreenandFile(ADJUSTL("INoofUgs                 = 10"),IErr)
-    CALL WriteToScreenandFile(ADJUSTL("IAtomicSites             = (1,2,6)"),IErr)
-    CALL WriteToScreenandFile(ADJUSTL("IPrint                   = 10"),IErr)
-    CALL WriteToScreenandFile(ADJUSTL("RSimplexLengthScale      = 5.0"),IErr)
-    CALL WriteToScreenandFile(ADJUSTL("RExitCriteria            = 0.0001"),IErr)
-    CLOSE(UNIT=IChInp)
-        
-END SUBROUTINE WriteOutInputFile
-
-!%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-
-
-
-!>
-!! Procedure-description: Prints to screen and file
-!!
-!! Major-Authors: 
-!!  
-SUBROUTINE WriteToScreenandFile(SStringtoWrite,IErr)
-  !This is a pointless subroutine
-  USE MyNumbers
-  
-  USE IConst
-  USE RConst
-  
-  USE IPara
-  USE RPara
-  USE CPara
-  USE SPara
-  USE IChannels
-
-  USE MPI
-  USE MyMPI
-  
-  IMPLICIT NONE
-
-  INTEGER(IKIND):: IErr
-  CHARACTER(*) :: SStringtoWrite
-
-  PRINT*,TRIM(ADJUSTL(SStringtoWrite))
-  WRITE(UNIT=IChInp,FMT='(A)') TRIM(ADJUSTL(SStringtoWrite))
-
- END SUBROUTINE WriteToScreenandFile
-

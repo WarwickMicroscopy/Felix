@@ -330,8 +330,6 @@ MODULE RPara
   REAL(RKIND) :: RSimplexLengthScale,RExitCriteria,RSimplexStandardDeviation,RSimplexMean,RRSoSScalingFactor
   !Refinement Initial Coordinates
   REAL(RKIND),DIMENSION(:,:),ALLOCATABLE :: RInitialAtomPosition
-  !Weighting Coefficients for figure of merit combination
-  REAL(RKIND),DIMENSION(:),ALLOCATABLE :: RWeightingCoefficients
   !Gaussian blur radius in pixels
   REAL(RKIND) :: RBlurRadius
 END MODULE RPara
