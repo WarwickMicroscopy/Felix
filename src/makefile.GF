@@ -229,13 +229,13 @@ endif
 # in order to run the code
 
 REFINEOBJECTFILES = gmodules.o smodules.o terminal_output.o \
+utilities_mod.o \
 read_cif_mod.o read_mod.o \
 setup_reflections_mod.o setup_scattering_factors_mod.o crystallography_mod.o Ug_mod.o \
 bloch_mod.o felixfunction_mod.o \
 felixrefine.o \
-util.o \
-image.o ciftbx.o simplex.o\
-hash_funcs.o RefineWriteOut.o refineutils.o \
+image.o ciftbx.o simplex.o \
+hash_funcs.o RefineWriteOut.o \
 symmetry.o quadpack_double.o
 #dqng.o xerror.o d1mach.o 
 

@@ -51,6 +51,8 @@ PROGRAM Felixrefine
   USE MPI
   USE MyMPI
 
+  USE utilities_mod, ONLY : SortHKL
+
   USE read_mod
   USE read_cif_mod
   USE setup_scattering_factors_mod

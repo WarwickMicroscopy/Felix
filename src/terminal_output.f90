@@ -1,4 +1,4 @@
-!%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+!%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 !
 ! Felix
 !
@@ -13,7 +13,7 @@
 ! Build:   :BUILD:
 ! Author:  :AUTHOR:
 ! 
-!%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+!%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 !
 !  Felix is free software: you can redistribute it and/or modify
 !  it under the terms of the GNU General Public License as published by
@@ -28,18 +28,86 @@
 !  You should have received a copy of the GNU General Public License
 !  along with Felix.  If not, see <http://www.gnu.org/licenses/>.
 !
-!%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+!%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+
 
 !>
-!! Module-description: Contains generic message subroutine with interface.
-!! Printing to the terminal via this command allows
-!! different messages to be printed depeding upon the debug mode selected at 
-!! run-time. Via the interface it can handle a variety of variable
-!! types as input. It also includes a timer & print subroutine.
+!!
+!!  MODULE: terminal_output
+!!   
+!!  this module provides these two major procedures used throughout Felix:
+!!
+!!    message(...)        - a subroutine for formatted terminal output
+!!    l_alert(IErr,...)   - an important function used for various error handling 
+!!
+!!  terminal_output is a top level module which directly contains everything for message(),
+!!  as well as granting access to two other modules:
+!! 
+!!    terminal_error_mod  - which contains l_alert(...) & simple error-handling related tools
+!!    terminal_timer_mod  - which contains simple timing related tools  
+!!
+!!%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+!!
+!!  message() is a wrapper to replace print or write as a way to output to the terminal.
+!!
+!!  IWriteFLAG in felix.inp is the run-time input used to select the output mode of Felix.
+!!  message() uses IWriteFLAG to decide whether a message should be printed.
+!!
+!!  - message() prints various different variable types with consistent formatting
+!!  - It accommodates for MPI parallel programming used in Felix by printing on one 'core'
+!!  - It prints a tiered-structure to distinguish key messages from more niche ones
+!!  - It speeds up debugging and testing, by being very quick and easy to use
+!!
+!!  It generally follows the format below:
+!!
+!!  call message( msg_priority, msg_group, text_to_print, variable_to_print )
+!!
+!!    msg_priority      - DERIVED TYPE ( msg_priority_type )
+!!    (optional)          This determines how important it is to print this message. Is it 
+!!                        stating key operations of Felix or more particular, finer details? 
+!!  
+!!    msg_group         - DERIVED TYPE ( msg_group_type )
+!!    (optional)          This allows for messages to be grouped together. At run-time you can
+!!                        select that only key messages and a certain group are printed.
+!!
+!!    text_to_print     - TYPE: string (1D character array)
+!!                        This is some text to print to the terminal.
+!!                        Any variable values will be printed after this text. 
+!!                        
+!!    variable_to_print - TYPE: complex, integer, real, logical, string 
+!!    (optional)          DIMENSION: scalar, vector or matrix
+!!                        The value of this variable will be printed to the terminal with
+!!                        a format depending upon its type and dimension. E.g. a matrix
+!!                        will printed on multiple lines in columns.       
+!!                    
+!!%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 !!
 !! Major-Authors: Jacob Richardson (2017)
 !!
 module terminal_output
+
+  !?? msg_output_group examples
+  !?? msg_priority 
+
+  !!  msg_priority      - DERIVED TYPE ( msg_priority_type ) = LS, LM, LL or LXL
+  !!  (optional)          This distinguishes whether the message is stating key operations of 
+  !!                      Felix or more particular, fine details. 
+  !!                      LS - high priority: for important statements & values
+  !!                      LL - low priority: for fines details & thorough variable output
+  !!                      LM - medium priority, LXL - extremely low priority & niche
+  !!                      This priority will be compared against the selected output mode 
+  !!                      at run-time to decide whether the message is printed. Low priority  
+  !!                      messages are indented further to the right to produce a tiered-output
+  !!                      for clarity and readability.                     
+  !!                      DEFAULT = LS 
+  !!  
+  !!
+  !! Contains generic message subroutine with interface.
+  !! Printing to the terminal via this command allows
+  !! different messages to be printed depeding upon the debug mode selected at 
+  !! run-time. Via the interface it can handle a variety of variable
+  !! types as input. It also includes a timer & print subroutine.
 
   ! Using IWriteFLAG:
   ! 0 prints LS priority messages - key, top-level descriptions
@@ -54,8 +122,8 @@ module terminal_output
   ! as our integer kind does not reach 140
 
   ! You can choose general priority and a debug mode with the ten and digit value
-  ! 32 will print all LS, LM, or dbg3 tagged messages
-  ! 98 will print all LS, LM, LL, LXL, or dbg14 tagged messages
+  ! 32 will print all LS, LM, and dbg3 tagged messages
+  ! 98 will print all LS, LM, LL, LXL, and dbg14 tagged messages
   ! In practice, using an 8 or 9 unit will trigger LXL and print all messages
 
   ! Generally you call message with optional priority & debug mode, then
@@ -79,9 +147,9 @@ module terminal_output
   !?? - consider all variables as 2 dimensional matrices...
   !?? - consider could make dbg initialise select case more concise with array of derived
 
-  use MyNumbers !?? IKIND, RKIND etc.
+  use MyNumbers     !?? IKIND, RKIND etc.
   use IPARA, ONLY : IWriteFLAG
-  use MyMPI     !?? necesary for my_rank
+  use MyMPI         !?? necesary for my_rank
 
   interface message
 

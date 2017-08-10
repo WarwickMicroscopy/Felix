@@ -386,6 +386,9 @@ MODULE felixfunction_mod
 
     USE MyNumbers
     USE terminal_output 
+
+    USE utilities_mod, ONLY : PhaseCorrelate, ResidualSumofSquares, &
+          Normalised2DCrossCorrelation, MaskedCorrelation
     
     ! global outputs
     USE RPARA, ONLY : RFigureofMerit
@@ -405,7 +408,6 @@ MODULE felixfunction_mod
     REAL(RKIND),DIMENSION(2*IPixelCount,2*IPixelCount) :: RSimulatedImage,RExperimentalImage
     REAL(RKIND),DIMENSION(:,:),ALLOCATABLE :: RMaskImage
     REAL(RKIND) :: RTotalCorrelation,RBestTotalCorrelation,RImageCorrelation,RBestThickness,&
-         PhaseCorrelate,Normalised2DCrossCorrelation,MaskedCorrelation,ResidualSumofSquares,&
          RThicknessRange,Rradius
     REAL(RKIND),DIMENSION(INoOfLacbedPatterns) :: RBestCorrelation
     CHARACTER*200 :: SPrintString

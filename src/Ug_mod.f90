@@ -358,7 +358,8 @@ MODULE Ug_mod
     USE MyNumbers
     USE terminal_output
     USE MyFFTW !?? elaborate on fftw stuff & USE , ONLY : ??
-    USE IChannels, ONLY : IChOutWIImage
+    USE utilities_mod, ONLY : Gaussian, Lorentzian, ReSortUgs
+
 
     ! global outputs
     USE CPARA, ONLY : CUgMatNoAbs,CUniqueUg,CPseudoAtom,CPseudoScatt
@@ -374,6 +375,7 @@ MODULE Ug_mod
           RRelativisticCorrection,RVolume,RIsoDW,RgMatrixMagnitude,ROccupancy,&
           RElectronWaveVectorMagnitude,RgMatrix,RDebyeWallerConstant,RTolerance,&
           RAtomCoordinate,Rhkl,RAnisotropicDebyeWallerFactorTensor
+    USE IChannels, ONLY : IChOutWIImage
 
     USE RConst, ONLY : RPlanckConstant
 
@@ -387,7 +389,7 @@ MODULE Ug_mod
           oddindgauss,evenindgauss,currentatom,IErr,Iuid,Iplan_forward,IPseudo
     INTEGER(IKIND),DIMENSION(2) :: IPos,ILoc
     COMPLEX(CKIND) :: CVgij,CFpseudo
-    REAL(RKIND) :: RMeanInnerPotentialVolts,RScatteringFactor,Lorentzian,Gaussian,&
+    REAL(RKIND) :: RMeanInnerPotentialVolts,RScatteringFactor,&
           RScattFacToVolts,RPMag,Rx,Ry,Rr,RPalpha,RTheta,Rfold
     CHARACTER*200 :: SPrintString
     
@@ -638,6 +640,7 @@ MODULE Ug_mod
     !?? rename to GetRScatteringFactor
 
     USE MyNumbers
+    USE utilities_mod, ONLY : Gaussian, Lorentzian
 
     ! global inputs
     USE IPARA, ONLY : ICurrentZ, IScatterFactorMethodFLAG
@@ -647,7 +650,6 @@ MODULE Ug_mod
 
     REAL(RKIND),INTENT(OUT) :: RScatteringFactor
     INTEGER(IKIND) :: ind,jnd,knd,IErr
-    REAL(RKIND) :: GAUSSIAN,LORENTZIAN
     
     ! select scattering factor method
     RScatteringFactor = ZERO
