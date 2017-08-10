@@ -46,7 +46,7 @@ PROGRAM Felixrefine
   ! use this figure merit with multiple points to refine...??
   
   USE MyNumbers
-  USE terminal_output
+  USE message_mod; USE alert_mod
 
   USE MPI
   USE MyMPI
@@ -72,7 +72,7 @@ PROGRAM Felixrefine
   INTEGER(IKIND) :: IErr,ind,jnd,knd,lnd,mnd,nnd,Iter,ICutOff,IHOLZgPoolMag,&
         IBSMaxLocGVecAmp,ILaueLevel,INumTotalReflections,ITotalLaueZoneLevel,&
         INhkl,IExitFLAG,ICycle,INumInitReflections,IZerothLaueZoneLevel,&
-        INumFinalReflections,IThicknessIndex,IVariableType
+        INumFinalReflections,IThicknessIndex,IVariableType,irate
   INTEGER(IKIND) :: IStartTime, IStartTime2
   REAL(RKIND) :: RHOLZAcceptanceAngle,RLaueZoneGz,RMaxGMag,RPvecMag,&
         RScale,RMaxUgStep,Rdx,RStandardDeviation,RMean,RGzUnitVec,RMinLaueZoneValue,&
@@ -129,9 +129,10 @@ PROGRAM Felixrefine
   
   CALL ReadInpFile(IErr) ! felix.inp
   IF(l_alert(IErr,"felixrefine","ReadInpFile()")) CALL abort()
-
   CALL message ( LS, "Setting teminal output mode" )
-  CALL set_terminal_output_mode( IWriteFLAG )
+  IF(my_rank==1) IWriteFLAG = 42
+  CALL set_message_mod_mode( IWriteFLAG, IErr )
+  IF(l_alert(IErr,"felixrefine","set_message_mod_mode()")) CALL abort()
 
   CALL read_cif(IErr) ! felix.cif ! some allocations are here
   IF(l_alert(IErr,"felixrefine","ReadCif()")) CALL abort()
@@ -216,6 +217,8 @@ PROGRAM Felixrefine
   !?? could re-allocate RAtomPosition,SAtomName,RIsoDW,ROccupancy,
   !?? IAtomicNumber,IAnisoDW to match INAtomsUnitCell?
 
+  if(my_rank==1) CALL allow_message_on_this_core()
+
   RHOLZAcceptanceAngle=TWODEG2RADIAN !?? RB seems way too low?
   IHKLMAXValue = 5 ! starting value, increments in loop below
 
@@ -241,7 +244,7 @@ PROGRAM Felixrefine
   !--------------------------------------------------------------------
   ! sort HKL, specific reflections
   !--------------------------------------------------------------------
-  
+
   ! sort hkl in descending order of magnitude
   CALL SortHKL(Rhkl,INhkl,IErr) 
   IF(l_alert(IErr,"felixrefine","SortHKL()")) CALL abort()
@@ -812,7 +815,7 @@ CONTAINS
   ! these internal subroutines use felixrefine's whole variable namespace
 
   SUBROUTINE abort()
-    CALL error_message("felixrefine","Aborting!")
+    CALL alert_message("felixrefine","stuff. Now Aborting!")
     CALL MPI_Abort(MPI_COMM_WORLD,1,IErr)
     STOP
   END SUBROUTINE abort
@@ -858,7 +861,7 @@ CONTAINS
 
     DO ind = 1,(INoOfVariables+1)
       CALL message(LS,"--------------------------------")
-      CALL message(LS,dbg_default,"Simplex ",ind, " of ", INoOfVariables+1)
+      CALL message(LS,no_tag,"Simplex ",ind, " of ", INoOfVariables+1)
       CALL message(LS,"--------------------------------")
       CALL SimulateAndFit(RSimplexVariable(ind,:),Iter,0,IErr)!?? Working as iteration 0 ?
       IF(l_alert(IErr,"SimplexRefinement()","do initial SimulateAndFit()")) RETURN
@@ -1000,7 +1003,7 @@ CONTAINS
             RPVec(ind)=TINY
             CYCLE
           END IF
-          CALL message(LM,dbg_default,"Finding gradient,",ind," of",INoOfVariables)
+          CALL message(LM,no_tag,"Finding gradient,",ind," of",INoOfVariables)
 
           ! Make a random number and vary the sign of dx, using system clock
           CALL SYSTEM_CLOCK(mnd)
@@ -1257,7 +1260,7 @@ CONTAINS
 
         ELSE IF (INoOfVariables.GT.1) THEN ! pair-wise maximum gradient
           IF (ind.EQ.INoOfVariables) EXIT ! skip the last variable
-          CALL message(LM,dbg_default,&
+          CALL message(LM,no_tag,&
                 "Finding maximum gradient for variables",ind," and",ind+1)
           ! NB R3fit contains the three fit indices
           R3fit(1)=RFigureofMerit ! point 1 is the incoming simulation and fit index
@@ -1270,7 +1273,7 @@ CONTAINS
           ! now look along combination of 2 parameters for third point
           RPvec(ind+1)=RScale/5.0 
           RCurrentVar=RVar0+RPvec ! Update the parameters to simulate
-          CALL message(LM,dbg_default,&
+          CALL message(LM,no_tag,&
                 "Finding maximum gradient for variables",ind," and",ind+1)
           CALL SimulateAndFit(RCurrentVar,Iter,IExitFLAG,IErr)
           IF(l_alert(IErr,"ParabolicRefinement()","SimulateAndFit()")) RETURN
@@ -1679,5 +1682,32 @@ CONTAINS
     Ryv = Rc-Rb*Rb/(4*Ra)!y-coord
 
   END SUBROUTINE Parabo3 
+
+  ! sets a local integer to start time to compare with later
+  subroutine start_timer( istart_time )
+    integer(IKIND), intent(inout) :: istart_time
+    call system_clock(istart_time)
+  end subroutine
+
+  ! compare start time to current and print time-passed
+  subroutine print_end_time( msg_priority, istart_time, completed_task_name )
+    type (msg_priorities), intent(in) :: msg_priority
+    character(*), intent(in) :: completed_task_name
+    integer(IKIND), intent(in) :: istart_time
+    integer(IKIND) :: ihours,iminutes,iseconds,icurrent_time
+    real(RKIND) :: duration
+    character(100) :: string
+
+    call system_clock(icurrent_time)
+    ! converts ticks from system clock into seconds
+    duration = real(icurrent_time-istart_time)/real(irate)
+    ihours = floor(duration/3600.0d0)
+    iminutes = floor(mod(duration,3600.0d0)/60.0d0)
+    iseconds = int(mod(duration,3600.0d0)-iminutes*60)
+    write(string,fmt='(a,1x,a,i3,a5,i2,a6,i2,a4)') completed_task_name,&
+          "completed in ",ihours," hrs ",iminutes," mins ",iseconds," sec"
+    call message_only2(msg_priority,trim(string))
+    !?? currently message can't print the combined 3 integers and strings directly
+  end subroutine
 
 END PROGRAM Felixrefine

@@ -67,7 +67,7 @@ MODULE read_cif_mod
     ! at the start of EACH routine using the CIFtbx functions.
 
     USE MyNumbers
-    USE terminal_output
+    USE message_mod; USE alert_mod
 
     ! global outputs (or inout)
     USE SPARA, ONLY : SChemicalFormula, SSpaceGroupName, SBasisAtomLabel, &
@@ -134,18 +134,18 @@ MODULE read_cif_mod
 
     name='felix.cif'
     IF(.NOT.ocif_(name)) THEN
-      CALL error_message("ReadCif()","cannot find .cif"); IErr=1; RETURN
+      CALL alert_message("ReadCif()","check. Cannot find .cif"); IErr=1; RETURN
     END IF
 
     ! Assign the data block to be accessed
     IF(.NOT.data_(' ')) THEN
-      CALL error_message("ReadCif()","No cif data_ statement found"); IErr=1; RETURN
+      CALL alert_message("ReadCif()","check. No cif data_ statement found"); IErr=1; RETURN
     END IF
    
     ! Extracts crystal forumla
     f1 = char_('_chemical_formula_structural', name)
     IF(.NOT.f1) THEN
-       CALL error_message("ReadCif()","chemical formula missing"); IErr=1; RETURN
+       CALL alert_message("ReadCif()","check. Chemical formula missing"); IErr=1; RETURN
     END IF
     ! strips spaces/brackets and sets global variable SChemicalFormula
     CALL strip_chars(name,SChemicalFormula)
@@ -160,7 +160,7 @@ MODULE read_cif_mod
     f3 = numb_('_cell_length_c', celc, sigc)
     !error call
     IF(.NOT.(f1.AND.f2.AND.f3)) THEN
-       CALL error_message("ReadCif()","Cell dimension(s) missing"); IErr=1; RETURN
+       CALL alert_message("ReadCif()","check. Cell dimension(s) missing"); IErr=1; RETURN
     END IF
     RLengthX=cela; RLengthY=celb; RLengthZ=celc
 
@@ -171,7 +171,7 @@ MODULE read_cif_mod
     f2 = numb_('_cell_angle_beta', celb, sigb)
     f3 = numb_('_cell_angle_gamma', celc, sigc)
     IF(.NOT.(f1.AND.f2.AND.f3)) THEN
-       CALL error_message("ReadCif()","Cell angle(s) missing"); IErr=1; RETURN
+       CALL alert_message("ReadCif()","check. Cell angle(s) missing"); IErr=1; RETURN
     END IF
 
     ! convert angles from degrees to radians
@@ -219,7 +219,7 @@ MODULE read_cif_mod
         IF (numb.LT.TINY) THEN
           f1 = numb_('_space_group_IT_number',numb,sx)
           IF (numb.LT.TINY) THEN
-            CALL error_message("ReadCif()","No Space Group"); IErr=1; RETURN
+            CALL alert_message("ReadCif()","check. No Space Group"); IErr=1; RETURN
           ELSE
             name = SAllSpaceGrp(NINT(numb))
           END IF
@@ -250,7 +250,7 @@ MODULE read_cif_mod
     END DO
     !check for consistency with IAtomicSitesToRefine
     IF (SIZE(IAtomicSitesToRefine,DIM=1).GT.IAtomCount) THEN
-      CALL error_message("ReadCif()", &
+      CALL alert_message("ReadCif()", &
             "Number of atomic sites to refine is larger than the number of atoms. "//&
             "Please correct in felix.inp"); IErr=1; RETURN
     END IF
@@ -295,9 +295,10 @@ MODULE read_cif_mod
         END IF
       END DO
       IF (IBasisAtomicNumber(ind).EQ.0.AND.my_rank.EQ.0) THEN
-        WRITE(SPrintString,FMT='(a,I3,a,a)')&
-        "Could not find Z for atom ",ind,", symbol ",SBasisAtomName(ind)
-        CALL error_message("ReadCif()",SPrintString); IErr=1; RETURN
+        CALL allow_message_on_this_core()
+        CALL message("Could not find Z for atom",ind)
+        CALL message("with symbol",SBasisAtomName(ind))
+        IErr=1; RETURN
       END IF
       f2 = numb_('_atom_site_fract_x', x, sx)
       RBasisAtomPosition(ind,1)= x

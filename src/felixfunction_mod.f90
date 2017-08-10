@@ -79,7 +79,7 @@ MODULE felixfunction_mod
     !?? uses WriteOutVariables from RefineWriteOut.f90
 
     USE MyNumbers
-    USE terminal_output
+    USE message_mod; USE alert_mod
 
     USE MyMPI
     USE Ug_mod
@@ -131,7 +131,7 @@ MODULE felixfunction_mod
         jnd=jnd+1
       ELSE ! should never happen
         CALL message(LS,"Warning - zero structure factor!")
-        CALL message(LS,dbg_default,"A CUniqueUg element has value = ",&
+        CALL message(LS,no_tag,"A CUniqueUg element has value = ",&
               CUniqueUg(IEquivalentUgKey(ind)))
         CALL message(LS,"element number = ",ind)
         IErr=1
@@ -269,7 +269,7 @@ MODULE felixfunction_mod
     USE MyNumbers
     USE IConst, ONLY : ITHREE
     USE MyMPI
-    USE terminal_output
+    USE message_mod; USE alert_mod
 
     USE bloch_mod
 
@@ -385,7 +385,7 @@ MODULE felixfunction_mod
     !?? NB core 0 only
 
     USE MyNumbers
-    USE terminal_output 
+    USE message_mod; USE alert_mod 
 
     USE utilities_mod, ONLY : PhaseCorrelate, ResidualSumofSquares, &
           Normalised2DCrossCorrelation, MaskedCorrelation
@@ -542,7 +542,7 @@ MODULE felixfunction_mod
     !?? JR called every SimulateAndFit() (for non-Ug refinement)
 
     USE MyNumbers
-    USE terminal_output 
+    USE message_mod; USE alert_mod 
 
     ! global inputs
     USE IPARA, ONLY : INoOfVariables, IRefineMode, IIterativeVariableUniqueIDs, &
@@ -635,7 +635,7 @@ MODULE felixfunction_mod
     !?? JR called every SimulateAndFit()
 
     USE MyNumbers
-    USE terminal_output 
+    USE message_mod; USE alert_mod 
     
     USE IConst; USE RConst; USE SConst
     USE IPara; USE RPara; USE CPara; USE SPara;
@@ -738,7 +738,7 @@ MODULE felixfunction_mod
 
     USE MyNumbers
     USE MPI
-    USE terminal_output !?? can't use this or l_alert if pure
+    USE message_mod; USE alert_mod !?? can't use this or l_alert if pure
 
     IMPLICIT NONE
 

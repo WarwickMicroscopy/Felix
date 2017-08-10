@@ -59,7 +59,7 @@ MODULE Ug_mod
     !?? CUgMatNoAbs, uses g matrix, parallelises U'g calculation -> final Ug with absorption
 
     USE MyNumbers
-    USE terminal_output
+    USE message_mod; USE alert_mod
     USE MPI     !?? used for parallel 
     USE MyMPI   !?? used for parallel
    
@@ -265,7 +265,7 @@ MODULE Ug_mod
     !?? JR used once felixrefine setup via StructureFactorInitialisation() 
 
     USE MyNumbers
-    USE terminal_output
+    USE message_mod; USE alert_mod
 
     ! global outputs
     USE IPARA, ONLY : ICurrentZ
@@ -356,7 +356,7 @@ MODULE Ug_mod
     !?? called once felixrefine, setup, after reflection pools before absorption
 
     USE MyNumbers
-    USE terminal_output
+    USE message_mod; USE alert_mod
     USE MyFFTW !?? elaborate on fftw stuff & USE , ONLY : ??
     USE utilities_mod, ONLY : Gaussian, Lorentzian, ReSortUgs
 
@@ -530,7 +530,7 @@ MODULE Ug_mod
     END DO
 
     CALL message( LL, dbg3, "Ug matrix, without absorption (nm^-2)",&
-          NINT(Rhkl(1:16,:)), 100*CUgMatNoAbs(1:16,1:8) )
+          NINT(Rhkl(1:16,:)), 100*CUgMatNoAbs(1:16,1:4) )
    
     !--------------------------------------------------------------------
     ! calculate mean inner potential and wave vector magnitude
@@ -800,7 +800,7 @@ MODULE Ug_mod
     !?? used in each (case 2 Bird & King) absorption
 
     USE MyNumbers
-    USE terminal_output
+    USE message_mod; USE alert_mod
 
     IMPLICIT NONE
 

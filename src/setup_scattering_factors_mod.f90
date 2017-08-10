@@ -51,7 +51,7 @@ MODULE setup_scattering_factors_mod
   SUBROUTINE setup_scattering_factors(IScatteringMethodSwitch,IErr)
 
     USE MyNumbers
-    USE terminal_output
+    USE message_mod; USE alert_mod
 
     ! global output (inout)
     USE RPARA, ONLY : RScattFactors 

@@ -193,7 +193,7 @@ MODULE crystallography_mod
     !?? JR updates full crystal arrays from basis atom refinement
     
     USE MyNumbers
-    USE terminal_output
+    USE message_mod; USE alert_mod
 
     ! global outputs
     USE RPARA, ONLY : RAtomCoordinate,ROccupancy,RIsoDW,RAtomPosition

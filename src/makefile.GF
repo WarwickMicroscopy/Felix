@@ -228,7 +228,7 @@ endif
 # LD_LIBRARY_PATH=/warwick/mathlib/nag/ifort-x86_64/lib:$LD_LIBRARY_PATH
 # in order to run the code
 
-REFINEOBJECTFILES = gmodules.o smodules.o terminal_output.o \
+REFINEOBJECTFILES = gmodules.o smodules.o alert_mod.o message_mod.o \
 utilities_mod.o \
 read_cif_mod.o read_mod.o \
 setup_reflections_mod.o setup_scattering_factors_mod.o crystallography_mod.o Ug_mod.o \

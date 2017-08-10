@@ -67,7 +67,7 @@ MODULE bloch_mod
 
     USE MyNumbers
     USE MyMPI
-    USE terminal_output
+    USE message_mod; USE alert_mod
   
     ! globals - output
     USE RPara, ONLY : RIndividualReflections 
@@ -348,7 +348,7 @@ MODULE bloch_mod
 
     USE MyNumbers
     USE MyMPI
-    USE terminal_output
+    USE message_mod; USE alert_mod
 
     IMPLICIT NONE
     
@@ -436,7 +436,7 @@ MODULE bloch_mod
 
     USE MyNumbers
     USE MyMPI
-    USE terminal_output 
+    USE message_mod; USE alert_mod 
 
     !?? variables match up to globals allocation
     !?? make some of these local
@@ -555,7 +555,7 @@ MODULE bloch_mod
     !?? called every BlochCoefficientCalculation()
 
     USE MyNumbers
-    USE terminal_output
+    USE message_mod; USE alert_mod
     USE MyMPI
 
     IMPLICIT NONE
@@ -630,7 +630,7 @@ MODULE bloch_mod
     ! InvertedMatrix: the Inverse
 
     USE MyNumbers
-    USE terminal_output
+    USE message_mod; USE alert_mod
     USE MyMPI
     
     IMPLICIT NONE

@@ -56,7 +56,7 @@ MODULE read_mod
     !?? github and other places should referance here
 
     USE MyNumbers
-    USE terminal_output
+    USE message_mod; USE alert_mod
 
     ! global outputs, read from .inp
     USE IPARA, ONLY : IWriteFLAG, IImageFLAG, IScatterFactorMethodFLAG, IMaskFLAG, IHolzFLAG, &
@@ -368,7 +368,7 @@ MODULE read_mod
   SUBROUTINE ReadHklFile(IErr)
 
     USE MyNumbers
-    USE terminal_output
+    USE message_mod; USE alert_mod
 
     ! global outputs
     USE RPARA, ONLY : RInputHKLs
@@ -447,7 +447,7 @@ MODULE read_mod
   SUBROUTINE ReadExperimentalImages(IErr)
 
     USE MyNumbers
-    USE terminal_output
+    USE message_mod; USE alert_mod
 
     ! global outputs
     USE RPARA, ONLY : RImageExpi
@@ -520,7 +520,7 @@ MODULE read_mod
     !?? need to update error messages here JR
 
     USE MyNumbers
-    USE terminal_output
+    USE message_mod; USE alert_mod
 
     ! global outputs
     USE IPARA, ONLY : IAtomicSitesToRefine

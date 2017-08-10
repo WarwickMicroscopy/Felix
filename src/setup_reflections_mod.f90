@@ -56,7 +56,7 @@ MODULE setup_reflections_mod
     !?? called once in felixrefine setup
 
     USE MyNumbers
-    USE terminal_output
+    USE message_mod; USE alert_mod
 
     ! global outputs (or inout)
     USE IPARA, ONLY : IOutputReflections, INoOfLacbedPatterns
@@ -129,7 +129,7 @@ MODULE setup_reflections_mod
 
     !?? called once in felixrefine setup
     USE MyNumbers
-    USE terminal_output
+    USE message_mod; USE alert_mod
     
     ! global inputs
     USE IPARA, ONLY : IHolzFLAG
@@ -288,7 +288,7 @@ MODULE setup_reflections_mod
     ! N.B. Rhkl is simply real versions of h,k,l 
 
     USE MyNumbers
-    USE terminal_output
+    USE message_mod; USE alert_mod
     
     ! global outputs (or inout)
     USE RPARA, ONLY : Rhkl
