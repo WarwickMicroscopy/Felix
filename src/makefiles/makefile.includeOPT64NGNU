@@ -30,7 +30,7 @@ CCFLAGS= -mtune=bdver2 -Ofast -m64 -mcmodel=medium -fPIC
 # SOLARIS OS:      -D__UNDERSCORE__
 # Red Hat Linux:   -D__UNDERSCORE__
 # AIX:             none
-FORTRANNAMES=-D__UNDERSCORE__
+FORTRANNAMES=
 
 
 # decide whether integer should be 32 bit or 64 bit
@@ -41,11 +41,20 @@ LONGINTEGER=
 
 # -------------------------------
 # which fortran compiler is used
+F90=mpif90
+# its flags
+F90FLAGS= -O2 -m64 -DF90 -fexternal-blas \
+	  -ffree-line-length-none -fbounds-check \
+	  -fno-range-check -fimplicit-none
+#F90LAGS=  -g
+
+
+# -------------------------------
+# which fortran compiler is used
 FF=gfortran
 # its flags
-FFFLAGS=  -mtune=bdver2 -Ofast -m64 -mcmodel=medium -fPIC
+FFFLAGS=  -fbounds-check -fno-range-check -m64 
 #FFFLAGS=  -g
-
 
 # -------------------------------
 # Preprocessor + FORTRAN Compiler
@@ -59,9 +68,9 @@ FCOMPILE=$(FF)  $(FFFLAGS)  -I$(INCDIR) $(ARITHMETIC) $(LONGINTEGER) -c -o $(PRE
 
 # -------------------------------
 # which linker do we use
-LD=$(FF)
+LD=$(F90)
 # its flags
-LDFLAGS= -fPIC
+LDFLAGS= -fPIC -L$(STARTDIR)/../lib 
 
 
 
@@ -69,7 +78,7 @@ LDFLAGS= -fPIC
 # how do we create a library
 AR=ar
 # its flags
-ARFLAGS=ru
+ARFLAGS=rus
 
 
 

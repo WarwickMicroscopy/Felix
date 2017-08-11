@@ -7,7 +7,7 @@ include ../makefiles/default.mk
 main: $(FELIX)
 
 
-$(PRECISION)*.o: ../include/fftw03.f03
-#$(PRECISION)*.o: ../include/ilupack_fortran.h
+#$(PRECISION)*.o: ../include/fftw03.f03
+#$(PRECISION)*.o: ../include/ciftbx-f90.cmn
 
 
