@@ -112,12 +112,13 @@ PROGRAM Felixrefine
   IF(l_alert(IErr,"felixrefine","MPI_Comm_size()")) CALL abort()
 
   ! startup terminal output
-  CALL message(LS,"--------------------------------------------------------------")
+  CALL message(LS,"-----------------------------------------------------------------")
   CALL message(LS,"felixrefine: ", RStr)
   CALL message(LS,"             ", DStr)
   CALL message(LS,"             ", AStr)
-  CALL message(LS,"main terminal output on rank", my_rank, " out of", p)
-  CALL message(LS,"--------------------------------------------------------------")
+  CALL message(LS,"-----------------------------------------------------------------")
+  CALL message(LS,"total number of MPI ranks is", p, ", screen messages via rank=", my_rank)
+  CALL message(LS,"-----------------------------------------------------------------")
 
   ! timing setup
   CALL SYSTEM_CLOCK( count_rate=irate )
