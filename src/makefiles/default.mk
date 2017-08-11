@@ -39,7 +39,7 @@ SAMPLES=$(MAIN).o
 #MYSTARTDIR=$(STARTDIR)
 
 # Linux
-LIBS= -lblas -llapack -lfftw3
+#LIBS= -lblas -llapack -lfftw3
 
 # HP alpha
 #LIBS=-ljadamilu -llapack -lcxml -lblas -lm -lc -lfor
