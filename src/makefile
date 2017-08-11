@@ -13,7 +13,7 @@ include makefiles/default.mk
 
 DIRCIFTBX=ciftbx/
 DIRQUADPACK=quadpack/
-DIRFELIX=felixdir/
+DIRFELIX=felix/
 
 .PHONY:  felix felixdir felixrefine ciftbx quadpack \
          clean clear exe main
@@ -64,8 +64,8 @@ $(MAIN).$(PLATFORM).$(MYPRECISION):
 
 
 clean:
-	rm -rf   */*.o
+	rm -rf   */*.o */*.mod
 
 clear:
-	rm -rf */*.o */*/*.o */D/* */Z/* */S/* */C/*;\
+	rm -rf */*.o */*.mod */*/*.o */D/* */Z/* */S/* */C/*;\
         rm -rf ../lib/$(PLATFORM)/lib*.a

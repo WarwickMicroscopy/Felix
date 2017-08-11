@@ -6,7 +6,7 @@ include ../src/makefiles/default.mk
 
 DIRCIFTBX=../src/ciftbx/
 DIRQUADPACK=../src/quadpack/
-DIRFELIX=../src/felixdir/
+DIRFELIX=../src/felix/
 
 LIBFELIX=$(MYPLATFORM)/lib$(PRECISION)felix.a
 LIBQUADPACK=$(MYPLATFORM)/lib$(PRECISION)quadpack.a
