@@ -1,3 +1,6 @@
+# CSC module load commands
+# intel/mkl/11.0 intel/15.0 ompi/2.0.1/intel/15.0
+
 # where are the libraries for the Linux platform located
 # note that the platform will be added to this path!
 PLATFORM=INT64Nifort
@@ -38,6 +41,16 @@ FORTRANNAMES=-D__UNDERSCORE__
 #LONGINTEGER=-D_LONG_INTEGER_
 LONGINTEGER=
 
+# -------------------------------
+# which PLATFORM dependent libraries to link
+LIBS= -mkl -lfftw3
+
+# -------------------------------
+# which fortran compiler is used
+F90=mpif90
+# its flags
+#F90FLAGS= -O0 -fpp -r8 -g -132 -check all -warn all -fpe0 -traceback #debug 
+F90FLAGS = -O3 -r8 -u -traceback -static-intel # -ipo release
 
 
 # -------------------------------

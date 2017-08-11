@@ -1,3 +1,19 @@
+#%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+#
+# Felix
+#
+# Richard Beanland, Keith Evans & Rudolf A Roemer
+#
+# (C) 2013-17, all rights reserved
+#
+# Version: :VERSION:
+# Date:    :DATE:
+# Time:    :TIME:
+# Status:  :RLSTATUS:
+# Build:   :BUILD:
+# Author:  :AUTHOR:
+# 
+#%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 # default EXE name
 MAIN=felix
@@ -36,7 +52,7 @@ SAMPLES=$(MAIN).o
 #MYSTARTDIR=$(STARTDIR)
 
 # Linux
-LIBS= -lblas -llapack -lfftw3
+#LIBS= -lblas -llapack -lfftw3
 
 # HP alpha
 #LIBS=-ljadamilu -llapack -lcxml -lblas -lm -lc -lfor

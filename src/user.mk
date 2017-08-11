@@ -1,11 +1,28 @@
+#%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+#
+# Felix
+#
+# Richard Beanland, Keith Evans & Rudolf A Roemer
+#
+# (C) 2013-17, all rights reserved
+#
+# Version: :VERSION:
+# Date:    :DATE:
+# Time:    :TIME:
+# Status:  :RLSTATUS:
+# Build:   :BUILD:
+# Author:  :AUTHOR:
+# 
+#%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
 # 1. step.
 # which platform do we use?
-# ILUPACK comes along with some standard settings for various compilers and
+# FELIX comes along with some standard settings for various compilers and
 # platforms. Often enough it suffices to choose one from the list below.
 # In case you do not find an acceptable configuration, you can change the
 # associated "makefile.include*" configuration in "makefiles/"
 # The supportiung libraries and some dependencies will be provided in the
-# associated sub directory of "libs/"
+# associated sub directory of "lib/"
 
 # GNU-compiler-based options
 
@@ -13,7 +30,7 @@
 # PLATFORM=INT32GNU
 
 # 64 BIT gcc/gfortran linux system on INTEL architectures
-# PLATFORM=INT64NGNU
+ PLATFORM=INT64NGNU
 
 # 64 BIT gcc/gfortran linux system with 64 bit integer on INTEL architectures
 # PLATFORM=INT64YGNU
@@ -22,7 +39,7 @@
 # PLATFORM=OPT32GNU
 
 # 64 BIT gcc/gfortran linux system on AMD architectures
- PLATFORM=OPT64NGNU
+# PLATFORM=OPT64NGNU
 
 # 64 BIT gcc/gfortran linux system with 64 bit integer on AMD architectures
 # PLATFORM=OPT64YGNU
@@ -34,7 +51,7 @@
 # PLATFORM=INT32ifort
 
 # 64 BIT gcc/gfortran linux system on INTEL architectures
-#  PLATFORM=INT64Nifort
+# PLATFORM=INT64Nifort
 
 # 64 BIT gcc/gfortran linux system with 64 bit integer on INTEL architectures
 # PLATFORM=INT64Yifort

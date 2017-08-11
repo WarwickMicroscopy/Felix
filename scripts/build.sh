@@ -7,13 +7,6 @@
 #
 # (C) 2013/14, all right reserved
 #
-# Version: :VERSION:
-# Date:    :DATE:
-# Time:    :TIME:
-# Rls:     :RLSTATUS:
-# Build:   :BUILD:
-# Author:  :AUTHOR:
-# 
 #%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 #
 #  This file is part of felixsim.
@@ -57,11 +50,11 @@ tarball=felix-${version}.tar.bz2
 
 cd ${sourcedir}
 cp -vr * ${targetdir}
-cd ${targetdir}
+cd ${targetdir} 
 
 echo "--- working on files in directory" $dir
 
-for file in `find . \( -name "*.f90" -o -name "*.inp" -o -name "makefile*.GF" -o -name "README.txt" \) -print`; do
+for file in `find . \( -name "*.f90" -o -name "*.inp" -o -name "makefile*" -o -name "*.mk" -o -name "README.txt" \) -print`; do
 
     echo $file " updating!"
     sed "s/:VERSION:/${version}/g" $file | sed "s/:DATE:/${date}/g" | sed "s/:TIME:/${time}/g" | sed "s/:RLSTATUS:/${rls}/g" | sed "s/:BUILD:/${build}/g" | sed "s/:AUTHOR:/${author}/g" > $file.tmp 
@@ -80,3 +73,4 @@ cd ..
 echo "--- creating tarball" ${tarball} "from files in" ${targetdir}
 tar -cjf ${tarball} `basename ${targetdir}`
 ls
+echo --- tarball now here: ../*.tar.bz2

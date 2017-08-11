@@ -1,3 +1,6 @@
+# CSC module load commands
+# ompi/2.0.1/gnu/4.9.2 
+
 # where are the libraries for the Linux platform located
 # note that the platform will be added to this path!
 PLATFORM=INT64NGNU
@@ -38,12 +41,26 @@ FORTRANNAMES=-D__UNDERSCORE__
 LONGINTEGER=
 
 
+# -------------------------------
+# which PLATFORM dependent libraries to link
+LIBS= -lblas -llapack -lfftw3
+
+
+# -------------------------------
+# which fortran compiler is used
+F90=mpif90
+# its flags
+F90FLAGS= -O2 -m64 -DF90 -fexternal-blas \
+	  -ffree-line-length-none -fbounds-check \
+	  -fno-range-check -fimplicit-none
+#F90LAGS=  -g
+
 
 # -------------------------------
 # which fortran compiler is used
 FF=gfortran
 # its flags
-FFFLAGS=  -O -m64  -mcmodel=medium -fPIC
+FFFLAGS=  -O -fbounds-check -fno-range-check -m64 
 #FFFLAGS=  -g
 
 
@@ -59,9 +76,9 @@ FCOMPILE=$(FF)  $(FFFLAGS)  -I$(INCDIR) $(ARITHMETIC) $(LONGINTEGER) -c -o $@ $<
 
 # -------------------------------
 # which linker do we use
-LD=$(FF)
+LD=$(F90)
 # its flags
-LDFLAGS=-O -m64  -mcmodel=medium -fPIC
+LDFLAGS=-O -m64  -mcmodel=medium -fPIC -L$(STARTDIR)/../lib 
 
 
 
@@ -80,7 +97,7 @@ RL=ranlib
 RLFLAGS=
 
 # Linux
-LIBS=-ljadamilu  -llapack -lblas -lm -lc 
+#LIBS=-ljadamilu  -llapack -lblas -lm -lc 
 
 
 # -------------------------------
