@@ -49,9 +49,9 @@
 !!
 MODULE CConst
 
-  CHARACTER*50, PARAMETER :: RStr= "Version: multipole / BUILD / Alpha"
-  CHARACTER*50, PARAMETER :: DStr= "Date: 27-06-2017"
-  CHARACTER*50, PARAMETER :: AStr= "Status: multipole atom test & debug" 
+  CHARACTER*50, PARAMETER :: RStr= "Version: :VERSION: / :BUILD: / :AUTHOR: "
+  CHARACTER*50, PARAMETER :: DStr= "Date: :DATE:"
+  CHARACTER*50, PARAMETER :: AStr= "(:RLSTATUS:) multipole atom test & debug" 
   
   CHARACTER*8 CSpaceGrp(230)
   DATA CSpaceGrp/"P1","P-1","P2","P21","C2","Pm","Pc","Cm",&
