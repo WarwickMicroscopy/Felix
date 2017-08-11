@@ -53,7 +53,7 @@ ourlibs: quadpack ciftbx
 felix: $(MAIN).$(PLATFORM).$(MYPRECISION)
 
 $(MAIN).$(PLATFORM).$(MYPRECISION):
-	@ echo --- LINKING felixrefine code
+	@ echo --- LINKING felix code
 	@ cd $(DIRFELIX);\
 	$(F90) -o ../$(MAIN).$(PLATFORM).$(MYPRECISION) *.o \
 	-L$(LIBDIR) -l$(MYPRECISION)quadpack -l$(MYPRECISION)ciftbx $(LIBS)
