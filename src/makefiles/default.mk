@@ -23,25 +23,22 @@ MAIN=felix
 FELIX=\
 $(DIRFELIX)$(PRECISION)gmodules.o \
 $(DIRFELIX)$(PRECISION)smodules.o \
+$(DIRFELIX)$(PRECISION)alert_mod.o \
 $(DIRFELIX)$(PRECISION)message_mod.o \
+$(DIRFELIX)$(PRECISION)utilities_mod.o \
+$(DIRFELIX)$(PRECISION)read_cif_mod.o \
+$(DIRFELIX)$(PRECISION)read_mod.o \
+$(DIRFELIX)$(PRECISION)setup_reflections_mod.o \
+$(DIRFELIX)$(PRECISION)setup_scattering_factors_mod.o \
+$(DIRFELIX)$(PRECISION)crystallography_mod.o \
+$(DIRFELIX)$(PRECISION)Ug_mod.o \
+$(DIRFELIX)$(PRECISION)bloch_mod.o \
+$(DIRFELIX)$(PRECISION)felixfunction_mod.o \
 $(DIRFELIX)$(PRECISION)felixrefine.o \
-$(DIRFELIX)$(PRECISION)felixfunction.o \
-$(DIRFELIX)$(PRECISION)bloch.o \
-$(DIRFELIX)$(PRECISION)refineutils.o \
-$(DIRFELIX)$(PRECISION)Ug.o \
-$(DIRFELIX)$(PRECISION)crystallography.o \
 $(DIRFELIX)$(PRECISION)image.o \
-$(DIRFELIX)$(PRECISION)RefineWriteOut.o \
-$(DIRFELIX)$(PRECISION)util.o \
-$(DIRFELIX)$(PRECISION)diffractionpatterndefinitions.o \
-$(DIRFELIX)$(PRECISION)in.o \
-$(DIRFELIX)$(PRECISION)scatteringfactors.o \
-$(DIRFELIX)$(PRECISION)writeoutput.o \
-$(DIRFELIX)$(PRECISION)errorchecks.o \
 $(DIRFELIX)$(PRECISION)simplex.o \
-$(DIRFELIX)$(PRECISION)readcif.o \
-$(DIRFELIX)$(PRECISION)symmetry.o
-#$(DIRFELIX)$(PRECISION)obselete.o
+$(DIRFELIX)$(PRECISION)RefineWriteOut.o \
+$(DIRFELIX)$(PRECISION)symmetry.o \
 
 QUADPACK= \
   $(DIRQUADPACK)$(PRECISION)quadpack_double.o
