@@ -45,8 +45,9 @@ cyg := $(shell expr substr $(unixOS) 1 6)
 
 GLOBALgfortranF90FLAGS = -ffree-line-length-none -fbounds-check -fno-range-check -fimplicit-none # debug
 GLOBALgfortranF77FLAGS = -fbounds-check -fno-range-check # debug
+GLOBALlibFLAGS = -L. -L./libciftbx -lciftbx -L ./libquadpack -lquadpack
 
-
+#%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 ifeq ($(unixOS),Linux)
 
  linux := $(shell (lsb_release -si))
@@ -78,7 +79,7 @@ ifeq ($(unixOS),Linux)
 
    INCLUDEDIR = /warwick/mathlib/gnu/x86_64/
 
-   LIBFLAGS= -llapack -lblas -lfftw3 
+   LIBFLAGS= -llapack -lblas -lfftw3 $(GLOBALlibFLAGS)
 
     ifeq ($(FOO),BAR) #ifort compiler
      F90 = mpif90
@@ -93,7 +94,8 @@ ifeq ($(unixOS),Linux)
      F77FLAGS = $(GLOBALgfortranF77FLAGS) 
     endif	     
    endif
- 
+
+#%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
  else ifeq ($(linux),Ubuntu) #Ubuntu machine
   $(info Compiling on $(linux), $(unixOS))
 
@@ -186,6 +188,7 @@ ifeq ($(unixOS),Linux)
    endif
 endif
 
+#%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 else ifeq ($(unixOS),Darwin) #MAC
  $(info Compiling on $(unixOS), OS X)
 
@@ -224,17 +227,31 @@ else #default
 
 endif
 
+#%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
 # NOTE if linking against $(NAG_SHARED) you must set the environment variable
 # LD_LIBRARY_PATH=/warwick/mathlib/nag/ifort-x86_64/lib:$LD_LIBRARY_PATH
 # in order to run the code
 
-REFINEOBJECTFILES = gmodules.o smodules.o message_mod.o felixrefine.o \
-util.o scatteringfactors.o in.o readcif.o \
+REFINE_OBJS = gmodules.o smodules.o message_mod.o felixrefine.o \
+util.o scatteringfactors.o in.o \
 diffractionpatterndefinitions.o \
-crystallography.o bloch.o Ug.o image.o ciftbx.o simplex.o\
-hash_funcs.o RefineWriteOut.o felixfunction.o refineutils.o writeoutput.o errorchecks.o\
-symmetry.o quadpack_double.f90
-#dqng.o xerror.o d1mach.o 
+crystallography.o bloch.o Ug.o image.o simplex.o\
+RefineWriteOut.o felixfunction.o refineutils.o writeoutput.o errorchecks.o\
+symmetry.o readcif.o 
+#gmodules.o smodules.o terminal_output.o felixrefine.o \
+#util.o scatteringfactors.o in.o readcif.o \
+#diffractionpatterndefinitions.o \
+#crystallography.o bloch.o Ug.o image.o simplex.o\
+#RefineWriteOut.o felixfunction.o refineutils.o writeoutput.o errorchecks.o\
+#symmetry.o
+#ciftbx.o hash_funcs.o readcif.o 
+#quadpack_double.f90
+#dqng.o xerror.o d1mach.o
+
+CIFTBX_OBJS = ciftbx.o hash_funcs.o #readcif.o
+
+QUADPACK_OBJS = quadpack_double.o
 
 %.o: %.f90
 	$(F90) $(F90FLAGS) -DF90 -c $< -I$(INCLUDEDIR) $(LIBFLAGS)
@@ -249,25 +266,35 @@ symmetry.o quadpack_double.f90
 %.o: %.F
 	$(FC) $(F77FLAGS) -DF77 -c $< -I$(INCLUDEDIR) $(LIBFLAGS)
 
-all: felixrefine
+all: libciftbx.a libquadpack.a felixrefine 
 
-felixrefine: $(REFINEOBJECTFILES)
-	$(F90) $(F90FLAGS) -o $@ $(REFINEOBJECTFILES) -I$(INCLUDEDIR) $(LIBFLAGS)
+libciftbx.a:  $(CIFTBX_OBJS)
+	ar rcs -C ./libciftbx $@ $^
+
+libquadpack.a: $(QUADPACK_OBJS) 
+	ar rcs $@ $^
+	
+felixrefine: $(REFINE_OBJS)
+	$(F90) $(F90FLAGS) -o $@ $(REFINE_OBJS) -I$(INCLUDEDIR) $(LIBFLAGS) -I. $(GLOBALlibFLAGS)
 #	$(F90) -o $@ $(REFINEOBJECTFILES) $(LIBFLAGS)
 
-
 print:	
-	a2ps -E -o print.ps gmodules.f90 smodules.f90 message_mod.f90 felixrefine.f90 \
+	a2ps --pro=color -E -o print.ps gmodules.f90 smodules.f90 terminal_output.f90 felixrefine.f90 \
 util.f90 scatterfactors.f90 in.f90 readcif.f90 \
 diffractionpatterndefinitions.f90 \
-crystallography.f90 bloch.f90 Ug.f90 image.f90 ciftbx.f simplex.f \
-hash_funcs.f RefineWriteOut.f90 felixfunction.f90 refineutils.f90 writeoutput.f90 errorchecks.f90 \
-dqng.f xerror.f d1mach.f \
-symmetry.f90 quadpack_double.f90 \
-makefile-CSC.GF; convert -density 150 print.ps print.pdf
+crystallography.f90 bloch.f90 Ug.f90 image.f90 simplex.f90 \
+RefineWriteOut.f90 felixfunction.f90 refineutils.f90 writeoutput.f90 errorchecks.f90 \
+symmetry.f90 \
+makefile-CSC.GF; ps2pdf print.ps
 	     	   	  
+.PHONY:	cleanall cleanlibs clean
+
 clean:	
 	rm -f core *.mod *.o *.bin
 
-#clean all:	
-#	rm -f core *.mod *.o *.exe
+.PHONY:	cleanlibs
+cleanlibs:	
+	rm -f core *.a
+
+cleanall: clean cleanlibs	
+	rm -f core *.mod *.o *.exe *.a
