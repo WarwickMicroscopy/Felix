@@ -1,3 +1,6 @@
+# CSC module load commands
+# ompi/2.0.1/gnu/4.9.2 
+
 # where are the libraries for the Linux platform located
 # note that the platform will be added to this path!
 PLATFORM=OPT64NGNU
@@ -37,6 +40,10 @@ FORTRANNAMES=
 #LONGINTEGER=-D_LONG_INTEGER_
 LONGINTEGER=
 
+
+# -------------------------------
+# which PLATFORM dependent libraries to link
+LIBS= -lblas -llapack -lfftw3
 
 
 # -------------------------------

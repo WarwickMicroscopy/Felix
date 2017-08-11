@@ -22,7 +22,7 @@
 # PLATFORM=OPT32GNU
 
 # 64 BIT gcc/gfortran linux system on AMD architectures
- PLATFORM=OPT64NGNU
+# PLATFORM=OPT64NGNU
 
 # 64 BIT gcc/gfortran linux system with 64 bit integer on AMD architectures
 # PLATFORM=OPT64YGNU
@@ -34,7 +34,7 @@
 # PLATFORM=INT32ifort
 
 # 64 BIT gcc/gfortran linux system on INTEL architectures
-#  PLATFORM=INT64Nifort
+ PLATFORM=INT64Nifort
 
 # 64 BIT gcc/gfortran linux system with 64 bit integer on INTEL architectures
 # PLATFORM=INT64Yifort
