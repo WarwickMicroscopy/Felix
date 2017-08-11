@@ -1,3 +1,19 @@
+#%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+#
+# Felix
+#
+# Richard Beanland, Keith Evans & Rudolf A Roemer
+#
+# (C) 2013-17, all rights reserved
+#
+# Version: :VERSION:
+# Date:    :DATE:
+# Time:    :TIME:
+# Status:  :RLSTATUS:
+# Build:   :BUILD:
+# Author:  :AUTHOR:
+# 
+#%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 # default EXE name
 MAIN=felix

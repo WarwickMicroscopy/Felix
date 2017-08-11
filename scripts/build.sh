@@ -7,13 +7,6 @@
 #
 # (C) 2013/14, all right reserved
 #
-# Version: :VERSION:
-# Date:    :DATE:
-# Time:    :TIME:
-# Rls:     :RLSTATUS:
-# Build:   :BUILD:
-# Author:  :AUTHOR:
-# 
 #%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 #
 #  This file is part of felixsim.
@@ -80,4 +73,4 @@ cd ..
 echo "--- creating tarball" ${tarball} "from files in" ${targetdir}
 tar -cjf ${tarball} `basename ${targetdir}`
 ls
-ls ../*.tar.bz2
+echo --- tarball now here: ../*.tar.bz2

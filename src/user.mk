@@ -1,11 +1,28 @@
+#%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+#
+# Felix
+#
+# Richard Beanland, Keith Evans & Rudolf A Roemer
+#
+# (C) 2013-17, all rights reserved
+#
+# Version: :VERSION:
+# Date:    :DATE:
+# Time:    :TIME:
+# Status:  :RLSTATUS:
+# Build:   :BUILD:
+# Author:  :AUTHOR:
+# 
+#%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
 # 1. step.
 # which platform do we use?
-# ILUPACK comes along with some standard settings for various compilers and
+# FELIX comes along with some standard settings for various compilers and
 # platforms. Often enough it suffices to choose one from the list below.
 # In case you do not find an acceptable configuration, you can change the
 # associated "makefile.include*" configuration in "makefiles/"
 # The supportiung libraries and some dependencies will be provided in the
-# associated sub directory of "libs/"
+# associated sub directory of "lib/"
 
 # GNU-compiler-based options
 
