@@ -50,9 +50,12 @@ ourlibs: quadpack ciftbx
         "LAPACK="
 
 # linking executable
-felix: $(MAIN).$(PLATFORM).$(MYPRECISION)
 
-$(MAIN).$(PLATFORM).$(MYPRECISION):
+FINALEXE=$(MAIN).$(PLATFORM).$(MYPRECISION)
+	
+felix: $(FINALEXE)
+
+$(FINALEXE):
 	@ echo --- LINKING felix code
 	@ cd $(DIRFELIX);\
 	$(F90) -o ../$(MAIN).$(PLATFORM).$(MYPRECISION) *.o \
@@ -60,7 +63,7 @@ $(MAIN).$(PLATFORM).$(MYPRECISION):
 #        $(MAKE) exe "MYSTARTDIR=$(STARTDIR)" "PRECISION=$(MYPRECISION)" \
 #	"MYPLATFORM=$(PLATFORM)" \
 #	"MYLIBCIFTBX=$(LIBCIFTBX)" "MYLIBQUADPACK=$(LIBQUADPACK)"
-#	@ echo sample executable program can be found in the current directory
+	@ echo executable $(FINALEXE) can be found in the current directory
 
 
 clean:
