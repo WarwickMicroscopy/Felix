@@ -1,6 +1,6 @@
 
 # default EXE name
-MAIN=felixrefine
+MAIN=felix
 
 # -----------------------------------------------------
 
@@ -39,7 +39,7 @@ SAMPLES=$(MAIN).o
 #MYSTARTDIR=$(STARTDIR)
 
 # Linux
-#LIBS=-ljadamilu  -llapack -lblas -lm -lc 
+LIBS= -lblas -llapack -lfftw3
 
 # HP alpha
 #LIBS=-ljadamilu -llapack -lcxml -lblas -lm -lc -lfor

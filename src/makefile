@@ -18,9 +18,7 @@ DIRFELIX=felixdir/
 .PHONY:  felix felixdir felixrefine ciftbx quadpack \
          clean clear exe main
 
-all: felix 
-
-felix: ciftbx quadpack felixdir ourlibs felixrefine
+all: ciftbx quadpack felixdir ourlibs felix
 
 # compiling libraries
 quadpack:
@@ -52,12 +50,16 @@ ourlibs: quadpack ciftbx
         "LAPACK="
 
 # linking executable
-felixrefine:
+felix: $(MAIN).$(PLATFORM).$(MYPRECISION)
+
+$(MAIN).$(PLATFORM).$(MYPRECISION):
 	@ echo --- LINKING felixrefine code
 	@ cd $(DIRFELIX);\
-        $(MAKE) exe "MYSTARTDIR=$(STARTDIR)" "PRECISION=$(MYPRECISION)" \
-	"MYPLATFORM=$(PLATFORM)" \
-	"MYLIBCIFTBX=$(LIBCIFTBX)" "MYLIBQUADPACK=$(LIBQUADPACK)"
+	$(F90) -o ../$(MAIN).$(PLATFORM).$(MYPRECISION) *.o \
+	-L$(LIBDIR) -l$(MYPRECISION)quadpack -l$(MYPRECISION)ciftbx $(LIBS)
+#        $(MAKE) exe "MYSTARTDIR=$(STARTDIR)" "PRECISION=$(MYPRECISION)" \
+#	"MYPLATFORM=$(PLATFORM)" \
+#	"MYLIBCIFTBX=$(LIBCIFTBX)" "MYLIBQUADPACK=$(LIBQUADPACK)"
 #	@ echo sample executable program can be found in the current directory
 
 
