@@ -1,4 +1,4 @@
-!%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+!%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 !
 ! Felix
 !
@@ -13,7 +13,7 @@
 ! Build:   :BUILD:
 ! Author:  :AUTHOR:
 ! 
-!%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+!%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 !
 !  Felix is free software: you can redistribute it and/or modify
 !  it under the terms of the GNU General Public License as published by
@@ -28,69 +28,172 @@
 !  You should have received a copy of the GNU General Public License
 !  along with Felix.  If not, see <http://www.gnu.org/licenses/>.
 !
-!%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+!%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-!>
-!! Procedure-description: Printing to the terminal via this command allows
-!! different messages to be printed depeding upon the debug mode selected at 
-!! run-time. It is a generic subroutine and can handle a variety of variable
-!! types as input.
-!!
-!! Major-Authors: Jacob Richardson (2017)
-!!
 module message_mod
+!>--------------------------------------------------------------------------------------------
+!>  major-authors: Jacob Richardson (2017)
+!>--------------------------------------------------------------------------------------------
+!>
+!>  MODULE OVERVIEW:
+!>
+!>    This module directly contains everything for message(),
+!>      which is a major subroutine used throughout felix. It replaces the FORTRAN print
+!>      statement and provides formatted output chosen at run-time.
+!>
+!>    message_mod also accesses alert_mod:
+!>
+  use alert_mod, only : l_alert, error_message
+!>    l_alert() is a simple but important function, used extensively for error handling.
+!>
+!>--------------------------------------------------------------------------------------------
+!>
+!>  message( ... ) FEATURES:
+!>
+!>    IWriteFLAG in felix.inp is the run-time input used to select the output mode of Felix.
+!>    message() uses IWriteFLAG to decide whether a message should be printed.
+!>
+!>    - message() prints various different variable types with consistent formatting
+!>    - It accommodates for MPI parallel programming used in Felix by printing on one 'core'
+!>    - It prints a tiered-structure to distinguish key messages from more niche ones
+!>    - It speeds up debugging and testing, by being very quick and easy to use
+!>                    
+!>--------------------------------------------------------------------------------------------
+!>
+!>  message( msg_priority, msg_tag, text_to_print, variable_to_print )
+!>
+!>    msg_priority     
+!>    (optional)
+!>
+!>            DERIVED TYPE ( msg_priority_type ) = LS, LM, LL or LXL
+!>
+!>            This determines how important it is to print this message. Is it 
+!>            stating key operations of Felix or more particular, finer details?              
+!>             
+!>            LS  : high priority (small level of output) for important statements & values
+!>            LM  : medium prioriity (medium level of output)
+!>            LL  : low priority (large output) for fines details & thorough variable output
+!>            LXL : extremely low priority large output) & niche details
+!>
+!>            DEFAULT = LS
+!>
+!>            At run-time this priority will be compared against the selected output mode
+!>            given by IWriteFLAG in felix.inp. This will decide whether a message is
+!>            is important enough to be printed. Additionally, Low priority  
+!>            messages are indented further to the right to produce a tiered-output
+!>            for clarity and readability.  
+!>
+!>    msg_tag       
+!>    (optional)
+!>              
+!>            DERIVED TYPE ( msg_tag_type )
+!>              
+!>            This allows for messages to be grouped together with tags. At run-time you 
+!>            can select that only key messages and messages with a certain tag are printed.
+!>
+!>    text_to_print
+!>     
+!>            TYPE: string (1D character array)
+!>
+!>            This is some text to print to the terminal.
+!>            Any variable values will be printed after this text. 
+!>                        
+!>    variable_to_print 
+!>    (optional)
+!> 
+!>            TYPE: complex, integer, real, logical, string 
+!>            DIMENSION: scalar, vector or matrix
+!>
+!>            The value of this variable will be printed to the terminal with
+!>            a format depending upon its type and dimension. E.g. a real matrix
+!>            will be printed on multiple lines in columns with scientific notation.                
+!>                       
+!>--------------------------------------------------------------------------------------------
+!>
+!>  Using IWriteFLAG to choose the terminal output mode:
+!>
+!>    In felix.inp, IWriteFLAG can be assigned different integer values to affect which 
+!>    messages are printed. 
+!>
+!>    The digit of the integer affects the minimum priority of the message printed:
+!>      
+!>        0 = LS,   2 = LM,   4 = LL,   8 = LXL   
+!>
+!>        sidenote: 8 rarely used, it prints every message and creates a very verbose output.
+!>        LXL messages are usually accessed via a msg_tag instead.
+!>
+!>    The tens component of the integer relates to the msg_tag. 
+!>        
+!>        0   - no_tag  : no specific msg_tag's are switched on, only priority is considered
+!>        30  - dbg3    : corresponds to IWriteFLAG = 3 IN THE OLD SYSTEM, many print
+!>                        statements in the code previously only printed when IWriteFLAG = 3
+!>
+!>        For the full list of msg_tag's and their corresponding IWriteFLAG ten's value,
+!>        refer to init_message_logicals() below.
+!>
+!>    IWriteFLAG examples: 
+!>        2  will print all LS, LM messages
+!>        32 will print all LS, LM, and dbg3 tagged messages
+!>        96 will print all LS, LM, LL, and dbg14 tagged messages 
+!>
+!>--------------------------------------------------------------------------------------------
+!>
+!>  message( ... ) EXAMPLES  
+!>
+!>--------------------------------------------------------------------------------------------
 
-  !A few examples below of accepted inputs
+!   TO-DO LIST (SCRUFFY):
 
-  !CALL message( priority_logical, debug_mode_logical, main_msg, int_variable )
-  !CALL message( priority_logical, main_msg, int_variable )
-  !CALL message( priority_logical, debug_mode_logical, main_msg)
-  !CALL message( main_msg )
-  !CALL message( priority_logical, debug_mode_logical, main_msg, imatrix1, rmatrix2 )
+!?? fix message matrices
+!?? implicit no_tag & private
+!?? consider current procedure state
+!?? currently using derived type to force particular priority/dbg use
+!?? standardise format top level, spaces and integers...
+!?? consider all variables as 2 dimensional matrices?
+!?? consider could make dbg initialise select case more concise with array of derived
+!?? rearrange to have terminal_error modules, msg_output_group examples, 
+!?? rename to msg_priority, update msg_priority for clarity high vs. low priority
+!?? priority for top level refinement details
+!?? adding new msg_tags
+!?? generic -> optional arguments not implimented...
 
-  ! a special case - if you pass two matrix variables, message assumes and prints
-  ! them alongisde one another  
 
-  !todo - implicit none & private
-  !todo - add iwriteflag initialise
-  !todo - consider debug modes for other corresponding input variables
-  !todo - add current procedure state
-  !todo - currently using derived type to force particular priority/dbg use
-  !todo - possible standardise format...
-  !todo - error message subroutine, however problematic goto...
-  !rodo - add space after main_msg
-  !todo - consider all variables as 2 dimensional matrices...
-  !todo - consider could make dbg initialise select case more concise with array of derived
+!---------------------------------------------------------------------------------------------
 
-  use MyNumbers
-  use IPARA !todo - IWriteFLAG?
-  use SPARA !todo - CurrentProcedure?
-  use IChannels
-  use MPI
-  use MYMPI
+  use alert_mod       ! necessary for error handling messages
+  use MyNumbers       ! necesary for IKIND, RKIND etc.
+  use MyMPI           ! necesary for my_rank - used to print on core 0 only
+
+!---------------------------------------------------------------------------------------------
+
+! HUGE INTERFACE to handle various variables types and optional arguments
 
   interface message
 
-    module procedure message_rvector
-    module procedure message_cvector
+  !-------------------------------------------------------------------------------------------
+  ! main real/complex/integer vector printing - used by matrix and scalar printing
+    module procedure message_rvector        
+    module procedure message_cvector       
     module procedure message_ivector
-    module procedure message_string
-    module procedure message_only
-
-    module procedure message_logical
-
-    module procedure message_alongside_ir ! int & real matrix alongside
-    module procedure message_alongside_ic ! int & complex matrix alongside
-    module procedure message_integer_isi ! logicals, main_msg, integer, string, integer
-
-    module procedure message_rmatrix
-    module procedure message_cmatrix
-    module procedure message_imatrix
-
-    module procedure message_real
-    module procedure message_real2
-    module procedure message_real3
-    module procedure message_rvector2
+  !-------------------------------------------------------------------------------------------                                        
+    module procedure message_string         ! text_to_print and string_variable
+    module procedure message_only           ! text_to_print only
+    module procedure message_logical        ! text_to_print and logical_variable
+  !-------------------------------------------------------------------------------------------
+  ! special versions of message
+    module procedure message_alongside_ir   ! prints int & real matrix alongside
+    module procedure message_alongside_ir2  ! prints int matrix & real vector alongside
+    module procedure message_alongside_ic   ! prints int & complex matrix alongside
+    module procedure message_integer_isi    ! prints text, integer, more text, integer 
+  !-------------------------------------------------------------------------------------------
+  ! interfaces used for scalars, matrices and optional arguments
+    module procedure message_rmatrix        
+    module procedure message_cmatrix        ! suffix :
+    module procedure message_imatrix        ! 2 = without msg_tag argument
+    module procedure message_real           ! 3 = without msg_tag & msg_priority argument  
+    module procedure message_real2          
+    module procedure message_real3          
+    module procedure message_rvector2 
     module procedure message_rvector3
     module procedure message_rmatrix2
     module procedure message_rmatrix3
@@ -112,58 +215,94 @@ module message_mod
     module procedure message_string3
     module procedure message_only2
     module procedure message_only3
+    module procedure message_integer_isi2
 
   end interface message
 
-  type priority_logicals
-    logical :: state
-    character(:),allocatable :: initial_msg
+  !--------------------------------------------------------------------
+
+  type msg_priorities
+    logical :: state            ! set to .true. or .false. at run-time by IWriteFLAG
+    character(:), allocatable :: initial_msg ! used for priority indenting - tiered structure
   end type
 
-  type debug_mode_logicals
-    logical :: state
-    integer(IKIND) :: id_number
+  type msg_tags
+    logical :: state            ! set to .true. or .false. at run-time by IWriteFLAG
+    integer(IKIND) :: id_number ! comapred with IWriteFLAG to set state to .true. or .false
   end type
 
-  ! priority logicals
-  type(priority_logicals) :: LS, LM, LL, LXL
-  ! specific debug modes logicals 
-  type(debug_mode_logicals) :: dbg_default, dbg7, dbg3, dbg6, dbg14
+  !--------------------------------------------------------------------
+
+  type(msg_priorities) :: LS, LM, LL, LXL
+
+  type(msg_tags) :: no_tag, dbg7, dbg3, dbg6, dbg14
+
+  logical,private :: l_print_this_core ! used to print on all cores, usually = .false.
   
-  character(:), allocatable :: set_initial_msg
-
+  character(:), allocatable, private :: indent_spaces, msg_logo ! used for tiered-structure 
+  
 contains
+
+  !--------------------------------------------------------------------
+  ! setup message() (on felix start-up, before IWriteFLAG read-in)
+  !--------------------------------------------------------------------
   
-  ! initialising immediately before reading-in felix.inp
-  subroutine init_message_logicals()   
-    
-    dbg_default%id_number = 0
-    dbg7%id_number = 70
-    dbg3%id_number = 30
-    dbg6%id_number = 60
-    dbg14%id_number = 90
+  subroutine init_message_logicals()  
+ 
+    !--------------------------------------------------------------------
+    ! msg_tags fixed ID numbers (to compare against IWriteFLAG)
+    !--------------------------------------------------------------------
 
+    ! to add another msg_tag, you also need to add it set_message_mod_mode() below
+    no_tag%id_number  = 0
+    dbg7%id_number    = 70
+    dbg3%id_number    = 30
+    dbg6%id_number    = 60
+    dbg14%id_number   = 90 !?? would use 140, but our integers cannot exceed 140
 
-    LS%state = .true.; LM%state = .false.; LL%state = .false.; LXL%state = .false.
-    dbg_default%state=.false.; dbg7%state = .false.; dbg3%state = .false.;
-    dbg6%state = .false.; dbg14%state = .false.   
-    set_initial_msg = "@ "  
-    LS%initial_msg  = set_initial_msg
-    LM%initial_msg  = "----"//set_initial_msg
-    LL%initial_msg  = "--------"//set_initial_msg
-    LXL%initial_msg = "-----------"//set_initial_msg
+    !--------------------------------------------------------------------
+    ! setup tiered-structure
+    !--------------------------------------------------------------------
+
+    indent_spaces   = "  @" 
+    msg_logo = " "
+
+    LS%initial_msg  = indent_spaces//msg_logo
+    LM%initial_msg  = indent_spaces//" ----"//msg_logo
+    LL%initial_msg  = indent_spaces//" --------"//msg_logo
+    LXL%initial_msg = indent_spaces//" ------------"//msg_logo
+
+    !--------------------------------------------------------------------
+    ! intially only set LS = .true. before IWriteFLAG read-in
+    !--------------------------------------------------------------------
+
+    LS%state = .true.; 
+    LM%state = .false.;   LL%state = .false.;   LXL%state = .false.
+
+    no_tag%state=.false.; dbg7%state = .false.; dbg3%state = .false.;
+    dbg6%state = .false.; dbg14%state = .false.
+
+    l_print_this_core = .false.   
 
   end subroutine
 
-  subroutine set_message_logicals( prio )
+  !--------------------------------------------------------------------
+  ! read-in IWriteFLAG and setup message()
+  !--------------------------------------------------------------------
+
+  subroutine set_message_mod_mode ( IWriteFLAG_in, ierr )
     
-    integer(IKIND) :: prio
+    integer(IKIND), intent(out):: ierr
+    integer(IKIND), intent(in) :: IWriteFLAG_in
+    integer(IKIND) :: prio                        ! acts as IWriteFLAG
+    prio = IWriteFLAG_in    
+  
+    !--------------------------------------------------------------------
+    ! Use IWriteFLAG tens component to turn-on a msg_tag
+    !--------------------------------------------------------------------
 
-    if (prio < 10) then ! normal output mode (not debug)
-      set_initial_msg = "@ "
-    else
+    if ( prio > 10 ) then
 
-      set_initial_msg = "@ msg:"
       if ( (dbg7%id_number <= prio) .and. (prio  <= dbg7%id_number+10) ) then
         dbg7%state = .true.
         prio = prio - dbg7%id_number
@@ -176,120 +315,131 @@ contains
       elseif ( (dbg14%id_number <= prio) .and. (prio  <= dbg14%id_number+10) ) then
         dbg14%state = .true.
         prio = prio - dbg14%id_number
-      else ! error (minor) - incorrect input
-        WRITE(*,*) "Error (minor) No debug mode matching that IWriteFLAG input from felix.inp"
-        prio = 0
+      else  ! error (minor) - tens component not recognised
+        ! set IWriteFLAG to 2, just switch LS & LM on
+        call alert_message( "set_message_mod_mode()",&
+              "check. IWriteFLAG tens component not recognised check felix.inp")
+        ierr = 1; return
       end if
 
     end if
-      
-    LS%state = .true.;
+    ! prio is just a single digit integer now
+
+    ! switch lower priorities on depending upon IWriteFLAG digit compoent
     if (prio >= 2) LM%state = .true.;
     if (prio >= 4) LL%state = .true.;
     if (prio >= 8) LXL%state = .true.;
-    
-    ! indent messages depending upon priority / depth-of-detail
-    LS%initial_msg  = set_initial_msg
-    LM%initial_msg  = "----"//set_initial_msg
-    LL%initial_msg  = "--------"//set_initial_msg
-    LXL%initial_msg = "-----------"//set_initial_msg
 
   end subroutine
 
+  subroutine allow_message_on_this_core()
+    l_print_this_core = .true.
+    CALL message_integer3("MESSAGE FROM THIS CORE AS WELL, rank =",my_rank)
+  end subroutine
+
   !---------------------------------------------------------------------
-  ! Key variable messaging - vectors used for single element and matrix messaging 
-  subroutine message_rvector ( priority_logical, debug_mode_logical, main_msg, rvector ) 
+  ! main real/complex/integer vector printing - used by matrix and scalar printing
+  !---------------------------------------------------------------------
+
+  subroutine message_rvector ( msg_priority, msg_tag, main_msg, rvector ) 
    
-    type (priority_logicals), intent(in) :: priority_logical
-    type (debug_mode_logicals), intent(in) :: debug_mode_logical
+    type (msg_priorities), intent(in) :: msg_priority
+    type (msg_tags), intent(in) :: msg_tag
     character(*), intent(in) :: main_msg
     real(RKIND),dimension(:),intent(in) :: rvector ! real vector
     character(50) :: formatting
     
     ! check priority then print real vector
-    if ( my_rank==0 .and. (priority_logical%state .or. debug_mode_logical%state) ) then
+    if ( ( my_rank==0 .or. l_print_this_core ) & 
+    .and. (msg_priority%state .or. msg_tag%state) ) then
       if (size(rvector) >= 2) then ! vector, so surround with brackets
-        write(formatting,'(a,i3.3,a)') '(1x,a,a,"("',size(rvector),'(1x,sp,ES10.3)")")'
+        write(formatting,'(a,i3.3,a)') '(a,a,"("',size(rvector),'(1x,sp,ES10.3)")")'
       else  ! scalar, so bracketless
-        write(formatting,'(a,i3.3,a)') '(1x,a,a,',size(rvector),'(1x,sp,ES10.3))'
+        write(formatting,'(a,i3.3,a)') '(a,a,',size(rvector),'(1x,sp,ES10.3))'
       end if
-      write(*,formatting) priority_logical%initial_msg, main_msg, rvector
+      write(*,formatting) msg_priority%initial_msg, main_msg, rvector
     end if
 
   end subroutine message_rvector
 
-  subroutine message_cvector ( priority_logical, debug_mode_logical, main_msg, cvector )    
+  subroutine message_cvector ( msg_priority, msg_tag, main_msg, cvector )    
 
-    type (priority_logicals), intent(in) :: priority_logical
-    type (debug_mode_logicals), intent(in) :: debug_mode_logical
+    type (msg_priorities), intent(in) :: msg_priority
+    type (msg_tags), intent(in) :: msg_tag
     character(*), intent(in) :: main_msg
     complex(CKIND),dimension(:),intent(in) :: cvector ! complex vector
     character(50) :: formatting
 
     ! check priority then print complex vector
-    if ( my_rank==0 .and. (priority_logical%state .or. debug_mode_logical%state) ) then
-      write(formatting,'(a,i3.3,a)') '(1x,a,a,',size(cvector),'(1x,"(",sp,ES8.1," ",ES8.1,"i)"))'
-      write(*,formatting) priority_logical%initial_msg, main_msg, cvector
+    if ( ( my_rank==0 .or. l_print_this_core ) &
+    .and. (msg_priority%state .or. msg_tag%state) ) then
+      write(formatting,'(a,i3.3,a)') '(a,a,',size(cvector),'(1x,"(",sp,ES8.1," ",ES8.1,"i)"))'
+      write(*,formatting) msg_priority%initial_msg, main_msg, cvector
     end if
 
   end subroutine message_cvector
 
-  subroutine message_ivector ( priority_logical, debug_mode_logical, main_msg, ivector )  
+  subroutine message_ivector ( msg_priority, msg_tag, main_msg, ivector )  
   
-    type (priority_logicals), intent(in) :: priority_logical
-    type (debug_mode_logicals), intent(in) :: debug_mode_logical
+    type (msg_priorities), intent(in) :: msg_priority
+    type (msg_tags), intent(in) :: msg_tag
     character(*), intent(in) :: main_msg
     integer(IKIND),dimension(:),intent(in) :: ivector ! integer vector
     character(50) :: formatting
 
     ! check priority then print integer vector
-    if ( my_rank==0 .and. (priority_logical%state .or. debug_mode_logical%state) ) then
-      write(formatting,'(a,i3.3,a)') '(1x,a,a,',size(ivector),'(1x,i4.3))'
-      write(*,formatting) priority_logical%initial_msg, main_msg, ivector
+    if ( ( my_rank==0 .or. l_print_this_core ) &
+    .and. (msg_priority%state .or. msg_tag%state) ) then
+      write(formatting,'(a,i3.3,a)') '(a,a,',size(ivector),'(1x,i4.3))'
+      write(*,formatting) msg_priority%initial_msg, main_msg, ivector
     end if
 
   end subroutine message_ivector
 
-  subroutine message_string ( priority_logical, debug_mode_logical, main_msg, str_variable )
+  !-------------------------------------------------------------------------------------------
 
-    type (priority_logicals), intent(in) :: priority_logical
-    type (debug_mode_logicals), intent(in) :: debug_mode_logical
+
+
+  subroutine message_string ( msg_priority, msg_tag, main_msg, str_variable )
+
+    type (msg_priorities), intent(in) :: msg_priority
+    type (msg_tags), intent(in) :: msg_tag
     character(*), intent(in) :: main_msg, str_variable
 
     ! check priority then print main_msg & string
-    if ( my_rank==0 .and. (priority_logical%state .or. debug_mode_logical%state) ) then
-      write(*,'(1x,a,a,a)') priority_logical%initial_msg, main_msg, str_variable
+    if ( ( my_rank==0 .or. l_print_this_core ) &
+    .and. (msg_priority%state .or. msg_tag%state) ) then
+      write(*,'(a,a,a,a,a)') msg_priority%initial_msg, main_msg,"'",str_variable,"'"
     end if
   
   end subroutine message_string
 
-  subroutine message_only ( priority_logical, debug_mode_logical, main_msg )
+  subroutine message_only ( msg_priority, msg_tag, main_msg )
 
-    type (priority_logicals), intent(in) :: priority_logical
-    type (debug_mode_logicals), intent(in) :: debug_mode_logical
+    type (msg_priorities), intent(in) :: msg_priority
+    type (msg_tags), intent(in) :: msg_tag
     character(*), intent(in) :: main_msg
 
     ! check priority then print main_msg
-    if ( my_rank==0 .and. (priority_logical%state .or. debug_mode_logical%state) ) then
-      write(*,'(1x,a,a)') priority_logical%initial_msg, main_msg
+    if ( ( my_rank==0 .or. l_print_this_core ) &
+    .and. (msg_priority%state .or. msg_tag%state) ) then
+      write(*,'(a,a)') msg_priority%initial_msg, main_msg
     end if
   
   end subroutine message_only
 
-
-
-  !---------------------------------------------------------------------
-  ! For printing logicals, currently without interfaces, vectors, matrices
-  subroutine message_logical ( priority_logical, debug_mode_logical, main_msg, logical_var )  
+  ! For printing logicals ! currently no interfaces for optional arguments, matrices, vectors
+  subroutine message_logical ( msg_priority, msg_tag, main_msg, logical_var )  
   
-    type (priority_logicals), intent(in) :: priority_logical
-    type (debug_mode_logicals), intent(in) :: debug_mode_logical
+    type (msg_priorities), intent(in) :: msg_priority
+    type (msg_tags), intent(in) :: msg_tag
     character(*), intent(in) :: main_msg
     logical, intent(in) :: logical_var ! logical variable
 
     ! check priority then print logical variable
-    if ( my_rank==0 .and. (priority_logical%state .or. debug_mode_logical%state) ) then
-      write(*,'(1x,a,a,1x,l1)') priority_logical%initial_msg, main_msg, logical_var
+    if ( ( my_rank==0 .or. l_print_this_core ) &
+    .and. (msg_priority%state .or. msg_tag%state) ) then
+      write(*,'(a,a,1x,l1)') msg_priority%initial_msg, main_msg, logical_var
     end if
 
   end subroutine message_logical
@@ -297,14 +447,15 @@ contains
 
 
   !---------------------------------------------------------------------
-  ! Special cases like printing matrices alongside or multiple integers amongst text
+  ! Special message varieties
+  !---------------------------------------------------------------------
   
   ! vertically int matrix beside real matrix
-  subroutine message_alongside_ir ( priority_logical, debug_mode_logical, &
+  subroutine message_alongside_ir ( msg_priority, msg_tag, &
                main_msg, imatrix1, rmatrix2 )
     
-    type (priority_logicals), intent(in) :: priority_logical
-    type (debug_mode_logicals), intent(in) :: debug_mode_logical
+    type (msg_priorities), intent(in) :: msg_priority
+    type (msg_tags), intent(in) :: msg_tag
     character(*), intent(in) :: main_msg
     integer(IKIND),dimension(:,:),intent(in) :: imatrix1 ! 1st matrix - integer
     real(RKIND), dimension(:,:), intent(in) :: rmatrix2 ! 2nd matrix - real
@@ -312,23 +463,41 @@ contains
     integer(IKIND) :: i
 
     ! check priority then print two matrices alongside
-    if ( my_rank==0 .and. (priority_logical%state .or. debug_mode_logical%state) ) then
-      write(*,'(1x,a,a)') priority_logical%initial_msg, main_msg
-      write(formatting,'(a,i3.3,a,i3.3,a)') '(1x,a,i3.3,a,',size(imatrix1,2),'(1x,i4.3),a,',&
+    if ( ( my_rank==0 .or. l_print_this_core ) &
+    .and. (msg_priority%state .or. msg_tag%state) ) then
+      write(*,'(a,a)') msg_priority%initial_msg, main_msg
+      write(formatting,'(a,i3.3,a,i3.3,a)') '(a,i3.3,',size(imatrix1,2),'(1x,i4.3),a,',&
             size(rmatrix2,2),'(1x,sp,ES10.3))'
       do i =1,size(imatrix1,1)
-        write(*,formatting) "@ ",i,":", imatrix1(i,:)," |",rmatrix2(i,:)
+        write(*,formatting) msg_priority%initial_msg,i, imatrix1(i,:)," |",rmatrix2(i,:)
       end do
     end if  
   
   end subroutine message_alongside_ir
 
+  ! vertically int matrix and real vector
+  subroutine message_alongside_ir2 ( msg_priority, msg_tag, &
+               main_msg, imatrix, rvector )
+
+    type (msg_priorities), intent(in) :: msg_priority
+    type (msg_tags), intent(in) :: msg_tag
+    character(*), intent(in) :: main_msg
+    integer(IKIND),dimension(:,:),intent(in) :: imatrix ! 1st matrix - integer
+    real(RKIND), dimension(:), intent(in) :: rvector ! 2nd matrix - real
+    character(100) :: formatting
+    integer(IKIND) :: i
+
+    call message_alongside_ir ( msg_priority, msg_tag, &
+               main_msg, imatrix, RESHAPE(rvector,[size(rvector),1]) ) 
+  
+  end subroutine message_alongside_ir2
+
   ! vertically int matrix beside complex matrix
-  subroutine message_alongside_ic ( priority_logical, debug_mode_logical, &
+  subroutine message_alongside_ic ( msg_priority, msg_tag, &
                main_msg, imatrix1, cmatrix2 )
     
-    type (priority_logicals), intent(in) :: priority_logical
-    type (debug_mode_logicals), intent(in) :: debug_mode_logical
+    type (msg_priorities), intent(in) :: msg_priority
+    type (msg_tags), intent(in) :: msg_tag
     character(*), intent(in) :: main_msg
     integer(IKIND), dimension(:,:),intent(in) :: imatrix1 ! 1st matrix - integer
     complex(CKIND), dimension(:,:), intent(in) :: cmatrix2 ! 2nd matrix - real
@@ -336,255 +505,272 @@ contains
     integer(IKIND) :: i
 
     ! check priority then print two matrices alongside
-    if ( my_rank==0 .and. (priority_logical%state .or. debug_mode_logical%state) ) then
-      write(*,'(1x,a,a)') priority_logical%initial_msg, main_msg
-      write(formatting,'(a,i3.3,a,i3.3,a)') '(1x,a,i3.3,a,',size(imatrix1,2),'(1x,i4.3),a,',&
+    if ( ( my_rank==0 .or. l_print_this_core ) &
+    .and. (msg_priority%state .or. msg_tag%state) ) then
+      write(*,'(a,a)') msg_priority%initial_msg, main_msg
+      write(formatting,'(a,i3.3,a,i3.3,a)') '(a,i3.3,',size(imatrix1,2),'(1x,i4.3),a,',&
             size(cmatrix2,2),'(1x,"(",sp,ES8.1," ",ES8.1,"i)"))'
       do i =1,size(imatrix1,1)
-        write(*,formatting) "@ ",i,":", imatrix1(i,:)," |",cmatrix2(i,:)
+        write(*,formatting) msg_priority%initial_msg,i, imatrix1(i,:)," |",cmatrix2(i,:)
       end do
     end if  
   
   end subroutine message_alongside_ic
 
   ! text, integer, extra-text, extra-integer
-  subroutine message_integer_isi ( priority_logical, debug_mode_logical, text1, int1, text2, int2)
+  subroutine message_integer_isi ( msg_priority, msg_tag, text1, int1, text2, int2)
 
-    type (priority_logicals), intent(in) :: priority_logical
-    type (debug_mode_logicals), intent(in) :: debug_mode_logical
+    type (msg_priorities), intent(in) :: msg_priority
+    type (msg_tags), intent(in) :: msg_tag
     character(*), intent(in) :: text1, text2
     integer(IKIND), intent(in) :: int1, int2
 
-    if ( my_rank==0 .and. (priority_logical%state .or. debug_mode_logical%state) ) then
-      write(*,'(1x,a,a,i4.3,a,i4.3)') priority_logical%initial_msg, text1, int1, text2, int2
+    if ( ( my_rank==0 .or. l_print_this_core ) &
+    .and. (msg_priority%state .or. msg_tag%state) ) then
+      write(*,'(a,a,i4.3,a,i4.3)') msg_priority%initial_msg, text1, int1, text2, int2
     end if
   
   end subroutine message_integer_isi
 
+  !---------------------------------------------------------------------
+  !---------------------------------------------------------------------
+  ! INTERFACES BELOW
+  !---------------------------------------------------------------------
+  !---------------------------------------------------------------------
 
   !---------------------------------------------------------------------
   ! Matrix messages using corresponding vector messages
-  subroutine message_rmatrix ( priority_logical, debug_mode_logical, main_msg, rmatrix )
+  !---------------------------------------------------------------------
+
+  subroutine message_rmatrix ( msg_priority, msg_tag, main_msg, rmatrix )
     
-    type (priority_logicals), intent(in) :: priority_logical
-    type (debug_mode_logicals), intent(in) :: debug_mode_logical
+    type (msg_priorities), intent(in) :: msg_priority
+    type (msg_tags), intent(in) :: msg_tag
     character(*), intent(in) :: main_msg
     real(RKIND),dimension(:,:),intent(in) :: rmatrix ! real martrix
     integer(IKIND) :: i
 
     ! check priority then print real matrix using vector print
-    if ( my_rank==0 .and. (priority_logical%state .or. debug_mode_logical%state) ) then
-      call message_only ( priority_logical, debug_mode_logical, main_msg )
+    if ( ( my_rank==0 .or. l_print_this_core ) &
+    .and. (msg_priority%state .or. msg_tag%state) ) then
+      call message_only ( msg_priority, msg_tag, main_msg )
       do i =1,size(rmatrix,1)
-        call message_rvector ( priority_logical, debug_mode_logical, "", rmatrix(i,:) ) 
+        call message_rvector ( msg_priority, msg_tag, "", rmatrix(i,:) ) 
       end do
     end if
 
   end subroutine message_rmatrix
 
-  subroutine message_cmatrix ( priority_logical, debug_mode_logical, main_msg, cmatrix )
+  subroutine message_cmatrix ( msg_priority, msg_tag, main_msg, cmatrix )
     
-    type (priority_logicals), intent(in) :: priority_logical
-    type (debug_mode_logicals), intent(in) :: debug_mode_logical
+    type (msg_priorities), intent(in) :: msg_priority
+    type (msg_tags), intent(in) :: msg_tag
     character(*), intent(in) :: main_msg
     complex(CKIND),dimension(:,:),intent(in) :: cmatrix ! complex martrix
     integer(IKIND) :: i
 
     ! check priority then print complex matrix using vector print
-    if ( my_rank==0 .and. (priority_logical%state .or. debug_mode_logical%state) ) then
-      call message_only ( priority_logical, debug_mode_logical, main_msg )
+    if ( ( my_rank==0 .or. l_print_this_core ) &
+    .and. (msg_priority%state .or. msg_tag%state) ) then
+      call message_only ( msg_priority, msg_tag, main_msg )
       do i =1,size(cmatrix,1)
-        call message_cvector ( priority_logical, debug_mode_logical, "", cmatrix(i,:) ) 
+        call message_cvector ( msg_priority, msg_tag, "", cmatrix(i,:) ) 
       end do
     end if
 
   end subroutine message_cmatrix
 
-  subroutine message_imatrix ( priority_logical, debug_mode_logical, main_msg, imatrix )
+  subroutine message_imatrix ( msg_priority, msg_tag, main_msg, imatrix )
     
-    type (priority_logicals), intent(in) :: priority_logical
-    type (debug_mode_logicals), intent(in) :: debug_mode_logical
+    type (msg_priorities), intent(in) :: msg_priority
+    type (msg_tags), intent(in) :: msg_tag
     character(*), intent(in) :: main_msg
     integer(IKIND),dimension(:,:),intent(in) :: imatrix ! integer martrix
     integer(IKIND) :: i
 
     ! check priority then print integer matrix using vector print
-    if ( my_rank==0 .and. (priority_logical%state .or. debug_mode_logical%state) ) then
-      call message_only ( priority_logical, debug_mode_logical, main_msg )
+    if ( ( my_rank==0 .or. l_print_this_core ) &
+    .and. (msg_priority%state .or. msg_tag%state) ) then
+      call message_only ( msg_priority, msg_tag, main_msg )
       do i =1,size(imatrix,1)
-        call message_ivector ( priority_logical, debug_mode_logical, "", imatrix(i,:) ) 
+        call message_ivector ( msg_priority, msg_tag, "", imatrix(i,:) ) 
       end do
     end if
 
   end subroutine message_imatrix
 
-
   !---------------------------------------------------------------------
-  ! Variable, vector, matrix interfaces for optional logical arguments
-  subroutine message_real ( priority_logical, debug_mode_logical, main_msg, real_variable )
-    type (priority_logicals), intent(in) :: priority_logical
-    type (debug_mode_logicals), intent(in) :: debug_mode_logical
+  ! Variable, vector, matrix interfaces for optional (priority and tag) arguments
+  !---------------------------------------------------------------------
+
+  subroutine message_real ( msg_priority, msg_tag, main_msg, real_variable )
+    type (msg_priorities), intent(in) :: msg_priority
+    type (msg_tags), intent(in) :: msg_tag
     character(*), intent(in) :: main_msg
     real(RKIND), intent(in) :: real_variable
-    call message_rvector ( priority_logical, debug_mode_logical, main_msg, (/ real_variable /) )  
+    call message_rvector ( msg_priority, msg_tag, main_msg, (/ real_variable /) )  
   end subroutine message_real
 
-  subroutine message_real2 ( priority_logical, main_msg, real_variable )
-    type (priority_logicals), intent(in) :: priority_logical
+  subroutine message_real2 ( msg_priority, main_msg, real_variable )
+    type (msg_priorities), intent(in) :: msg_priority
     character(*), intent(in) :: main_msg
     real(RKIND), intent(in) :: real_variable
-    call message_rvector ( priority_logical, dbg_default, main_msg, (/ real_variable /) )  
+    call message_rvector ( msg_priority, no_tag, main_msg, (/ real_variable /) )  
   end subroutine message_real2
 
   subroutine message_real3 ( main_msg, real_variable )
     character(*), intent(in) :: main_msg
     real(RKIND), intent(in) :: real_variable
-    call message_rvector ( LS, dbg_default, main_msg, (/ real_variable /) )  
+    call message_rvector ( LS, no_tag, main_msg, (/ real_variable /) )  
   end subroutine message_real3
 
-  subroutine message_rvector2 ( priority_logical, main_msg, rvector )    
-    type (priority_logicals), intent(in) :: priority_logical
+  subroutine message_rvector2 ( msg_priority, main_msg, rvector )    
+    type (msg_priorities), intent(in) :: msg_priority
     character(*), intent(in) :: main_msg
     real(RKIND),dimension(:),intent(in) :: rvector
-    call message_rvector ( priority_logical, dbg_default, main_msg, rvector )
+    call message_rvector ( msg_priority, no_tag, main_msg, rvector )
   end subroutine message_rvector2
 
   subroutine message_rvector3 ( main_msg, rvector )    
     character(*), intent(in) :: main_msg
     real(RKIND),dimension(:),intent(in) :: rvector
-    call message_rvector ( LS, dbg_default, main_msg, rvector )
+    call message_rvector ( LS, no_tag, main_msg, rvector )
   end subroutine message_rvector3
 
-  subroutine message_rmatrix2 ( priority_logical, main_msg, rmatrix )    
-    type (priority_logicals), intent(in) :: priority_logical
+  subroutine message_rmatrix2 ( msg_priority, main_msg, rmatrix )    
+    type (msg_priorities), intent(in) :: msg_priority
     character(*), intent(in) :: main_msg
     real(RKIND),dimension(:,:),intent(in) :: rmatrix
-    call message_rmatrix ( priority_logical, dbg_default, main_msg, rmatrix )
+    call message_rmatrix ( msg_priority, no_tag, main_msg, rmatrix )
   end subroutine message_rmatrix2
 
   subroutine message_rmatrix3 ( main_msg, rmatrix )    
     character(*), intent(in) :: main_msg
     real(RKIND),dimension(:,:),intent(in) :: rmatrix
-    call message_rmatrix ( LS, dbg_default, main_msg, rmatrix )
+    call message_rmatrix ( LS, no_tag, main_msg, rmatrix )
   end subroutine message_rmatrix3  
 
-  subroutine message_complex ( priority_logical, debug_mode_logical, main_msg, c_variable )    
-    type (priority_logicals), intent(in) :: priority_logical
-    type (debug_mode_logicals), intent(in) :: debug_mode_logical
+  subroutine message_complex ( msg_priority, msg_tag, main_msg, c_variable )    
+    type (msg_priorities), intent(in) :: msg_priority
+    type (msg_tags), intent(in) :: msg_tag
     character(*), intent(in) :: main_msg
     complex(CKIND),intent(in) :: c_variable
-    call message_cvector ( priority_logical, debug_mode_logical, main_msg, (/ c_variable /) )
+    call message_cvector ( msg_priority, msg_tag, main_msg, (/ c_variable /) )
   end subroutine message_complex
 
-  subroutine message_complex2 ( priority_logical, main_msg, c_variable )    
-    type (priority_logicals), intent(in) :: priority_logical
+  subroutine message_complex2 ( msg_priority, main_msg, c_variable )    
+    type (msg_priorities), intent(in) :: msg_priority
     character(*), intent(in) :: main_msg
     complex(CKIND),intent(in) :: c_variable
-    call message_cvector ( priority_logical, dbg_default, main_msg, (/ c_variable /) )
+    call message_cvector ( msg_priority, no_tag, main_msg, (/ c_variable /) )
   end subroutine message_complex2
 
   subroutine message_complex3 ( main_msg, c_variable ) 
     character(*), intent(in) :: main_msg
     complex(CKIND),intent(in) :: c_variable
-    call message_cvector ( LS, dbg_default, main_msg, (/ c_variable /) )
+    call message_cvector ( LS, no_tag, main_msg, (/ c_variable /) )
   end subroutine message_complex3
 
-  subroutine message_cvector2 ( priority_logical, main_msg, cvector )    
-    type (priority_logicals), intent(in) :: priority_logical
+  subroutine message_cvector2 ( msg_priority, main_msg, cvector )    
+    type (msg_priorities), intent(in) :: msg_priority
     character(*), intent(in) :: main_msg
     complex(CKIND), dimension(:), intent(in) :: cvector
-    call message_cvector ( priority_logical, dbg_default, main_msg, cvector )
+    call message_cvector ( msg_priority, no_tag, main_msg, cvector )
   end subroutine message_cvector2
 
   subroutine message_cvector3 ( main_msg, cvector )    
     character(*), intent(in) :: main_msg
     complex(CKIND), dimension(:), intent(in) :: cvector
-    call message_cvector( LS, dbg_default, main_msg, cvector )
+    call message_cvector( LS, no_tag, main_msg, cvector )
   end subroutine message_cvector3
 
-  subroutine message_cmatrix2 ( priority_logical, main_msg, cmatrix )    
-    type (priority_logicals), intent(in) :: priority_logical
+  subroutine message_cmatrix2 ( msg_priority, main_msg, cmatrix )    
+    type (msg_priorities), intent(in) :: msg_priority
     character(*), intent(in) :: main_msg
     complex(CKIND), dimension(:,:), intent(in) :: cmatrix
-    call message_cmatrix ( priority_logical, dbg_default, main_msg, cmatrix )
+    call message_cmatrix ( msg_priority, no_tag, main_msg, cmatrix )
   end subroutine message_cmatrix2
 
   subroutine message_cmatrix3 ( main_msg, cmatrix )    
     character(*), intent(in) :: main_msg
     complex(CKIND), dimension(:,:), intent(in) :: cmatrix
-    call message_cmatrix ( LS, dbg_default, main_msg, cmatrix )
+    call message_cmatrix ( LS, no_tag, main_msg, cmatrix )
   end subroutine message_cmatrix3
 
-  subroutine message_integer ( priority_logical, debug_mode_logical, main_msg, int_variable )
-    type (priority_logicals), intent(in) :: priority_logical
-    type (debug_mode_logicals), intent(in) :: debug_mode_logical
+  subroutine message_integer ( msg_priority, msg_tag, main_msg, int_variable )
+    type (msg_priorities), intent(in) :: msg_priority
+    type (msg_tags), intent(in) :: msg_tag
     character(*), intent(in) :: main_msg
     integer(IKIND), intent(in) :: int_variable
-    call message_ivector ( priority_logical, debug_mode_logical, main_msg, (/ int_variable /) )
+    call message_ivector ( msg_priority, msg_tag, main_msg, (/ int_variable /) )
   end subroutine message_integer
 
-  subroutine message_integer2 ( priority_logical, main_msg, int_variable )
-    type (priority_logicals), intent(in) :: priority_logical
+  subroutine message_integer2 ( msg_priority, main_msg, int_variable )
+    type (msg_priorities), intent(in) :: msg_priority
     character(*), intent(in) :: main_msg
     integer(IKIND), intent(in) :: int_variable
-    call message_ivector ( priority_logical, dbg_default, main_msg, (/ int_variable /) )  
+    call message_ivector ( msg_priority, no_tag, main_msg, (/ int_variable /) )  
   end subroutine message_integer2
 
   subroutine message_integer3 ( main_msg, int_variable )
     character(*), intent(in) :: main_msg
     integer(IKIND), intent(in) :: int_variable
-    call message_ivector ( LS, dbg_default, main_msg, (/ int_variable /) )  
+    call message_ivector ( LS, no_tag, main_msg, (/ int_variable /) )  
   end subroutine message_integer3
 
-  subroutine message_ivector2 ( priority_logical, main_msg, ivector )    
-    type (priority_logicals), intent(in) :: priority_logical
+  subroutine message_ivector2 ( msg_priority, main_msg, ivector )    
+    type (msg_priorities), intent(in) :: msg_priority
     character(*), intent(in) :: main_msg
     integer(IKIND),dimension(:),intent(in) :: ivector
-    call message_ivector ( priority_logical, dbg_default, main_msg, ivector )
+    call message_ivector ( msg_priority, no_tag, main_msg, ivector )
   end subroutine message_ivector2
 
   subroutine message_ivector3 ( main_msg, ivector )    
     character(*), intent(in) :: main_msg
     integer(IKIND),dimension(:),intent(in) :: ivector
-    call message_ivector ( LS, dbg_default, main_msg, ivector )
+    call message_ivector ( LS, no_tag, main_msg, ivector )
   end subroutine message_ivector3
 
-  subroutine message_imatrix2 ( priority_logical, main_msg, imatrix )    
-    type (priority_logicals), intent(in) :: priority_logical
+  subroutine message_imatrix2 ( msg_priority, main_msg, imatrix )    
+    type (msg_priorities), intent(in) :: msg_priority
     character(*), intent(in) :: main_msg
     integer(IKIND),dimension(:,:),intent(in) :: imatrix
-    call message_imatrix ( priority_logical, dbg_default, main_msg, imatrix )
+    call message_imatrix ( msg_priority, no_tag, main_msg, imatrix )
   end subroutine message_imatrix2
 
   subroutine message_imatrix3 ( main_msg, imatrix )    
     character(*), intent(in) :: main_msg
     integer(IKIND),dimension(:,:),intent(in) :: imatrix
-    call message_imatrix ( LS, dbg_default, main_msg, imatrix )
+    call message_imatrix ( LS, no_tag, main_msg, imatrix )
   end subroutine message_imatrix3
 
-  subroutine message_string2 ( priority_logical, main_msg, str_variable )
-    type (priority_logicals), intent(in) :: priority_logical
+  subroutine message_string2 ( msg_priority, main_msg, str_variable )
+    type (msg_priorities), intent(in) :: msg_priority
     character(*), intent(in) :: main_msg, str_variable
-    call message_string ( priority_logical, dbg_default, main_msg, str_variable )
+    call message_string ( msg_priority, no_tag, main_msg, str_variable )
   end subroutine message_string2
 
   subroutine message_string3 ( main_msg, str_variable )
     character(*), intent(in) :: main_msg, str_variable
-    call message_string ( LS, dbg_default, main_msg, str_variable )
+    call message_string ( LS, no_tag, main_msg, str_variable )
   end subroutine message_string3
 
-  subroutine message_only2 ( priority_logical, main_msg )
-    type (priority_logicals), intent(in) :: priority_logical
+  subroutine message_only2 ( msg_priority, main_msg )
+    type (msg_priorities), intent(in) :: msg_priority
     character(*), intent(in) :: main_msg
-    call message_only ( priority_logical, dbg_default, main_msg )  
+    call message_only ( msg_priority, no_tag, main_msg )  
   end subroutine message_only2
 
   subroutine message_only3 ( main_msg )
     character(*), intent(in) :: main_msg
-    call message_only ( LS, dbg_default, main_msg )  
+    call message_only ( LS, no_tag, main_msg )  
   end subroutine message_only3
 
-end module message_mod
+  subroutine message_integer_isi2 ( msg_priority, text1, int1, text2, int2)
+    type (msg_priorities), intent(in) :: msg_priority
+    character(*), intent(in) :: text1, text2
+    integer(IKIND), intent(in) :: int1, int2
+    call message_integer_isi ( msg_priority, no_tag, text1, int1, text2, int2)
+  end subroutine message_integer_isi2
 
-!CALL message(LL,dbg6,"For Pattern ",ind,", thickness ",jnd)
-!CALL message(LL,dbg6,"  the FoM = ",RImageCorrelation)
+end module message_mod

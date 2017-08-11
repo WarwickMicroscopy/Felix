@@ -31,7 +31,7 @@
 !%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 ! All modules & procedures conatained in this file:
-! CConst
+! SConst
 ! IConst
 ! RConst
 ! IPara
@@ -47,14 +47,14 @@
 !!
 !! Major-Authors: Keith Evans (2014), Richard Beanland (2016)
 !!
-MODULE CConst
+MODULE SConst
 
   CHARACTER*50, PARAMETER :: RStr= "Version: multipole / BUILD / Alpha"
   CHARACTER*50, PARAMETER :: DStr= "Date: 27-06-2017"
   CHARACTER*50, PARAMETER :: AStr= "Status: multipole atom test & debug" 
   
-  CHARACTER*8 CSpaceGrp(230)
-  DATA CSpaceGrp/"P1","P-1","P2","P21","C2","Pm","Pc","Cm",&
+  CHARACTER*8 SAllSpaceGrp(230)
+  DATA SAllSpaceGrp/"P1","P-1","P2","P21","C2","Pm","Pc","Cm",&
        "Cc","P2/m","P21/m","C2/m","P2/c","P21/c","C2/c", &
        "P222","P2221","P21212","P212121","C2221","C222","F222", &
        "I222","I212121","Pmm2","Pmc21","Pcc2","Pma2","Pca21", &
@@ -97,11 +97,11 @@ MODULE CConst
         "Pa", "U", "Np", "Pu", "Am", "Cm", "Bk", "Cf", "Es", "Fm",& 
         "Md","No","Lr","Q","Ja","Jb","Jc","Jd","Je","Jf"/!Note element 'Q', 'Ja'... etc. added to end of list
 
-  CHARACTER*8 :: CAlphabet(26)
-  DATA CAlphabet/"Aa","Bb","Cc","Dd","Ee","Ff","Gg","Hh","Ii","Jj","Kk","Ll",&
+  CHARACTER*8 :: SAlphabet(26)
+  DATA SAlphabet/"Aa","Bb","Cc","Dd","Ee","Ff","Gg","Hh","Ii","Jj","Kk","Ll",&
        "Mm","Nn","Oo","Pp","Qq","Rr","Ss","Tt","Uu","Vv","Ww","Xx","Yy","Zz"/
 
-END MODULE CConst
+END MODULE SConst
 !--------------------------------------------------------------------
 
 !>
@@ -113,7 +113,6 @@ MODULE IConst
   USE MyNumbers
   INTEGER(IKIND), PARAMETER :: &
        MAXWriteFLAG= 10, &
-       ITHREE= 3, &
        ADD_OUT_INFO=6, &
        IParallelFLAG=0,&
        IRandomFLAG = 1, &
@@ -173,7 +172,7 @@ MODULE IPara
   INTEGER(IKIND) :: IWriteFLAG,IDebugFLAG,IScatterFactorMethodFLAG, &
        IMaskFLAG, IVolumeFLAG,IHolzFLAG,IAbsorbFLAG, IAnisoDebyeWallerFactorFlag, &
        IImageFLAG,IBeamConvergenceFLAG,IDevFLAG, &
-       IRefineModeFLAG,ISoftwareMode,IHKLSelectFLAG,IPrint,IRefineSwitch,&
+       IRefineModeFLAG,IHKLSelectFLAG,IPrint,IRefineSwitch,&
        IWeightingFLAG,IMethodFLAG,ICorrelationFLAG,IImageProcessingFLAG,&
        IByteSize
   !Minimum Reflections etc
@@ -199,7 +198,7 @@ MODULE IPara
   INTEGER(IKIND) :: INoOfLacbedPatterns
   !Beams from selection criteria
   INTEGER(IKIND) :: nReflections,nStrongBeams,nWeakBeams,nBeams,IHKLMAXValue
-  INTEGER(IKIND), DIMENSION(:), ALLOCATABLE :: IBasisAnisoDW,IStrongBeamList, RAnisoDW
+  INTEGER(IKIND), DIMENSION(:), ALLOCATABLE :: IBasisAnisoDW,IStrongBeamList, IAnisoDW
   !Main
   INTEGER(IKIND) :: IPixelTotal, INAtomsUnitCell,IPixelComputed
   INTEGER, DIMENSION(2) :: IImageSizeXY
@@ -235,8 +234,6 @@ MODULE IPara
   INTEGER(IKIND) :: IAllowedVectors
   INTEGER(IKIND),DIMENSION(:),ALLOCATABLE :: IAllowedVectorIDs
   INTEGER(IKIND) :: IFelixCount,IPreviousPrintedIteration,IStandardDeviationCalls  
-  !Message Counter (Avoid subroutines printing out message more than once)
-  INTEGER(IKIND) :: IMessageCounter=0
 END MODULE IPara
 !--------------------------------------------------------------------
 
@@ -333,8 +330,6 @@ MODULE RPara
   REAL(RKIND) :: RSimplexLengthScale,RExitCriteria,RSimplexStandardDeviation,RSimplexMean,RRSoSScalingFactor
   !Refinement Initial Coordinates
   REAL(RKIND),DIMENSION(:,:),ALLOCATABLE :: RInitialAtomPosition
-  !Weighting Coefficients for figure of merit combination
-  REAL(RKIND),DIMENSION(:),ALLOCATABLE :: RWeightingCoefficients
   !Gaussian blur radius in pixels
   REAL(RKIND) :: RBlurRadius
 END MODULE RPara
@@ -366,7 +361,7 @@ END MODULE CPara
 MODULE SPara
   USE MyNumbers
   
-  CHARACTER*10 ChemicalFormula
+  CHARACTER(:), ALLOCATABLE :: SChemicalFormula
   CHARACTER*1 :: SSpaceGroupName
   CHARACTER*10 :: SSpaceGrp
   CHARACTER*5, DIMENSION(:),ALLOCATABLE :: SBasisAtomLabel,SAtomLabel

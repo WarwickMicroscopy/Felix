@@ -49,12 +49,14 @@ SUBROUTINE NDimensionalDownhillSimplex(RSimplexVariable,y,mp,np,ndim,ftol,iter,R
 
   USE MyNumbers
     
-  USE CConst; USE IConst
+  USE SConst; USE IConst
   USE IPara; USE RPara
   USE IChannels
-  USE message_mod
+  USE message_mod; USE alert_mod
   USE MPI
   USE MyMPI
+
+  USE felixfunction_mod
 
   IMPLICIT NONE
 
@@ -206,11 +208,13 @@ REAL(RKIND) FUNCTION SimplexExtrapolate(RSimplexVariable,y,psum,mp,np,ndim,ihi,f
 
   USE MyNumbers
     
-  USE CConst; USE IConst
+  USE SConst; USE IConst
   USE IPara; USE RPara
   USE IChannels
   USE MPI
   USE MyMPI
+
+  USE felixfunction_mod
 
   IMPLICIT NONE
   

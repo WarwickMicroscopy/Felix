@@ -5,27 +5,25 @@ MAIN=felix
 # -----------------------------------------------------
 
 FELIX=\
-$(DIRFELIX)$(PRECISION)gmodules.o \
-$(DIRFELIX)$(PRECISION)smodules.o \
-$(DIRFELIX)$(PRECISION)message_mod.o \
-$(DIRFELIX)$(PRECISION)felixrefine.o \
-$(DIRFELIX)$(PRECISION)felixfunction.o \
-$(DIRFELIX)$(PRECISION)bloch.o \
-$(DIRFELIX)$(PRECISION)refineutils.o \
-$(DIRFELIX)$(PRECISION)Ug.o \
-$(DIRFELIX)$(PRECISION)crystallography.o \
-$(DIRFELIX)$(PRECISION)image.o \
-$(DIRFELIX)$(PRECISION)RefineWriteOut.o \
-$(DIRFELIX)$(PRECISION)util.o \
-$(DIRFELIX)$(PRECISION)diffractionpatterndefinitions.o \
-$(DIRFELIX)$(PRECISION)in.o \
-$(DIRFELIX)$(PRECISION)scatteringfactors.o \
-$(DIRFELIX)$(PRECISION)writeoutput.o \
-$(DIRFELIX)$(PRECISION)errorchecks.o \
-$(DIRFELIX)$(PRECISION)simplex.o \
-$(DIRFELIX)$(PRECISION)readcif.o \
-$(DIRFELIX)$(PRECISION)symmetry.o
-#$(DIRFELIX)$(PRECISION)obselete.o
+$(DIRFELIX)$(PRECISION)gmodules.f90 \
+$(DIRFELIX)$(PRECISION)smodules.f90 \
+$(DIRFELIX)$(PRECISION)alert_mod.f90 \
+$(DIRFELIX)$(PRECISION)message_mod.f90 \
+$(DIRFELIX)$(PRECISION)utilities_mod.f90 \
+$(DIRFELIX)$(PRECISION)read_cif_mod.f90 \
+$(DIRFELIX)$(PRECISION)read_mod.f90 \
+$(DIRFELIX)$(PRECISION)setup_reflections_mod.f90 \
+$(DIRFELIX)$(PRECISION)setup_scattering_factors_mod.f90 \
+$(DIRFELIX)$(PRECISION)crystallography_mod.f90 \
+$(DIRFELIX)$(PRECISION)Ug_mod.f90 \
+$(DIRFELIX)$(PRECISION)bloch_mod.f90 \
+$(DIRFELIX)$(PRECISION)felixfunction_mod.f90 \
+$(DIRFELIX)$(PRECISION)felixrefine.f90 \
+$(DIRFELIX)$(PRECISION)image.f90 \
+$(DIRFELIX)$(PRECISION)simplex.f90 \
+$(DIRFELIX)$(PRECISION)RefineWriteOut.f90 \
+$(DIRFELIX)$(PRECISION)symmetry.f90 \
+
 
 QUADPACK= \
   $(DIRQUADPACK)$(PRECISION)quadpack_double.o
