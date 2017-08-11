@@ -1,0 +1,51 @@
+<map id="felixrefine" name="felixrefine">
+<area shape="rect" id="node2" href="$namespacemynumbers.html#a6c534f4b86169a7c5d8d3296e270c3f0" title="mynumbers::init_numbers" alt="" coords="171,32,343,59"/>
+<area shape="rect" id="node3" href="$namespacemessage__mod.html#a78e3db6e34ae64bc8b9d5fe3917c3cc2" title="message_mod::init_message\l_logicals" alt="" coords="161,83,353,125"/>
+<area shape="rect" id="node4" href="$in_8f90.html#ad682220f9636994bc58dcbc1969014b3" title="Procedure&#45;description: " alt="" coords="217,149,298,176"/>
+<area shape="rect" id="node8" href="$namespacemessage__mod.html#a89980d02f28fcddf3406735209e4663c" title="message_mod::set_message\l_logicals" alt="" coords="161,269,354,310"/>
+<area shape="rect" id="node9" href="$readcif_8f90.html#a851b318f1c18608adf2b40ba20d10014" title="Procedure&#45;description: Reads from felix.cif input file using toolbox. " alt="" coords="227,335,288,361"/>
+<area shape="rect" id="node18" href="$in_8f90.html#a9ae69453876c52f4da36cd8caa77b4d9" title="Procedure&#45;description: " alt="" coords="217,385,298,412"/>
+<area shape="rect" id="node19" href="$in_8f90.html#a87a95b2c1cc473f5470120055efa930f" title="Procedure&#45;description: " alt="" coords="176,436,339,463"/>
+<area shape="rect" id="node20" href="$scatteringfactors_8f90.html#a5cd7b8a4849c208eafee03ef0e3f6783" title="Procedure&#45;description: Contains all of the scattering coefficients for each of the following methods:..." alt="" coords="198,487,317,513"/>
+<area shape="rect" id="node21" href="$crystallography_8f90.html#a0860d82af13316c7aad5ad449d073490" title="Procedure&#45;description: Creates reciprocal lattice vectors in Microscope reference frame..." alt="" coords="201,537,314,564"/>
+<area shape="rect" id="node23" href="$crystallography_8f90.html#a118dc8a18775a4efb509337c9c612dc2" title="Procedure&#45;description: Calculates the FULL set of possible fractional atomic positions and then gets ..." alt="" coords="751,791,892,817"/>
+<area shape="rect" id="node24" href="$diffractionpatterndefinitions_8f90.html#ace160696341b9c3e69d18d5b32075251" title="Procedure&#45;description: Counts the number of reflections limited by Ihklmax and the acceptance angle..." alt="" coords="222,639,293,665"/>
+<area shape="rect" id="node25" href="$diffractionpatterndefinitions_8f90.html#a6f8038a3f0f6760ee59abf2e90ba1467" title="Procedure&#45;description: Fills the list of reciprocal space vectors Rhkl. " alt="" coords="222,689,293,716"/>
+<area shape="rect" id="node26" href="$util_8f90.html#a21a38bcc223902d8d5561c28c4c3f092" title="Procedure&#45;description: Sorts array into descending order. " alt="" coords="227,740,288,767"/>
+<area shape="rect" id="node27" href="$diffractionpatterndefinitions_8f90.html#a3ccb3f5891d41b40d928f04dc888d844" title="Procedure&#45;description: Assign numbers to the different reflections in IOutputReflections. " alt="" coords="158,791,357,817"/>
+<area shape="rect" id="node28" href="$Ug_8f90.html#a160aa58e5d944ecd528d77915bbae4b3" title="Procedure&#45;description: " alt="" coords="170,588,345,615"/>
+<area shape="rect" id="node32" href="$Ug_8f90.html#a5637638595593ffb09280db93d99adc1" title="Procedure&#45;description: Select case using IAbsorbFLAG. " alt="" coords="780,841,863,868"/>
+<area shape="rect" id="node34" href="$felixrefine_8f90.html#a4efcf826a274c8692db15b4011b7a1a1" title="Procedure&#45;description: Setup atomic vector movements. " alt="" coords="159,943,356,969"/>
+<area shape="rect" id="node38" href="$felixrefine_8f90.html#ad8e060ee643c1d20de6db468a168e3a1" title="Procedure&#45;description: Assign array locations to iteration variables, similar to IIterativeVariableUn..." alt="" coords="132,993,383,1020"/>
+<area shape="rect" id="node39" href="$image_8f90.html#a0b509b7e83cc03d72bb5b850c227799c" title="Procedure&#45;description: Image setup, including defining image masks. " alt="" coords="213,1044,302,1071"/>
+<area shape="rect" id="node42" href="$felixfunction_8f90.html#ae83fd801e24c7b920e1cf0ef9e358185" title="Procedure&#45;description: Felixfunction. " alt="" coords="775,1171,867,1197"/>
+<area shape="rect" id="node45" href="$RefineWriteOut_8f90.html#a892a322c60916ccd590ce29c18491b2c" title="Procedure&#45;description: " alt="" coords="755,1235,887,1261"/>
+<area shape="rect" id="node46" href="$felixfunction_8f90.html#a121661ef25e3c87dd4ba59c48cc7ca87" title="Procedure&#45;description: Calculate figure of merit and determine Thickness, involving image processing ..." alt="" coords="681,1285,961,1312"/>
+<area shape="rect" id="node47" href="$felixfunction_8f90.html#adcb9fd1a6de6119cd7591814585634cd" title="Procedure&#45;description: Simulate and fit. " alt="" coords="481,1196,583,1223"/>
+<area shape="rect" id="node48" href="$simplex_8f90.html#a51042de79e202f5b883de0d70b0815dc" title="Procedure&#45;description: " alt="" coords="162,1196,353,1223"/>
+<area shape="rect" id="node49" href="$felixrefine_8f90.html#ad5f6bb0d2c9f43343ba26449a1d92f7e" title="Procedure&#45;description: Best fit check. " alt="" coords="211,1348,304,1375"/>
+<area shape="rect" id="node50" href="$felixfunction_8f90.html#abc51414259f4231e51dee9b93f3a4300" title="Procedure&#45;description: Input is a vector Rx with three x&#45;coordinates and Ry with three y&#45;coordinates..." alt="" coords="223,1399,291,1425"/>
+<area shape="rect" id="node5" href="$in_8f90.html#a36aea91398203926e4b90bbd77a2450c" title="Procedure&#45;description: Function that reads in a 3D vector from a file, which has to have the form [I1..." alt="" coords="461,107,603,133"/>
+<area shape="rect" id="node6" href="$in_8f90.html#a5fe3176d3afaf8aacbb5daa5bf996c18" title="Procedure&#45;description: " alt="" coords="431,5,633,32"/>
+<area shape="rect" id="node7" href="$in_8f90.html#a9efc400b2c2433e8f89c9e92f2650a16" title="Procedure&#45;description: Write out the sample input file, when none provided. " alt="" coords="475,56,589,83"/>
+<area shape="rect" id="node10" href="$ciftbx_8f.html#a3ae51c94c9f58e02a2d56413d8e1ed4c" title="init_" alt="" coords="509,157,555,184"/>
+<area shape="rect" id="node11" href="$ciftbx_8f.html#a4b968cff97c84029fcb089e5754373eb" title="dict_" alt="" coords="507,208,557,235"/>
+<area shape="rect" id="node12" href="$ciftbx-wrapper_8f90.html#ae5a0dc77713fa9e013186fc5455a0b29" title="ocif_" alt="" coords="507,259,557,285"/>
+<area shape="rect" id="node13" href="$ciftbx-wrapper_8f90.html#acef84efd6e02fb3ddcab29ff8633a848" title="data_" alt="" coords="505,309,559,336"/>
+<area shape="rect" id="node14" href="$ciftbx-wrapper_8f90.html#a7055e00f1e5f857fc1ba8f23b19ceca2" title="char_" alt="" coords="505,360,559,387"/>
+<area shape="rect" id="node15" href="$readcif_8f90.html#a77bc1e77228e70be15a1fbb03b46836d" title="Procedure&#45;description: Strips any character from string which is not simply numeric or alphabetic..." alt="" coords="493,411,571,437"/>
+<area shape="rect" id="node16" href="$ciftbx-wrapper_8f90.html#a24b949277f1e8100bf6202c8990ef754" title="numb_" alt="" coords="501,461,563,488"/>
+<area shape="rect" id="node17" href="$ciftbx-wrapper_8f90.html#a5a031324d93c4e7267bf09375680dd29" title="close_" alt="" coords="502,512,562,539"/>
+<area shape="rect" id="node22" href="$namespacemynumbers.html#a089c488940881f62f9d4d072f83bd0f4" title="mynumbers::cross" alt="" coords="467,563,597,589"/>
+<area shape="rect" id="node29" href="$Ug_8f90.html#a922097e87ed8a14f8e8ccdca2071dda5" title="Procedure&#45;description: Choose scattering factors using IScatterFactorMethodFLAG. " alt="" coords="457,613,607,640"/>
+<area shape="rect" id="node30" href="$Ug_8f90.html#abaeadfb0b984da3e9c7635c9fdef9e8c" title="Procedure&#45;description: Returns a PseudoAtom scattering factor. " alt="" coords="1050,728,1143,755"/>
+<area shape="rect" id="node31" href="$refineutils_8f90.html#ad2c03a77514775092e8856015a2e82d6" title="Procedure&#45;description: " alt="" coords="494,715,570,741"/>
+<area shape="rect" id="node33" href="$Ug_8f90.html#a72eb459681c0220af8f3fbd3d64bb510" title="Procedure&#45;description: " alt="" coords="1041,841,1152,868"/>
+<area shape="rect" id="node35" href="$symmetry_8f90.html#a304fb0bf7588e5d15981b34b36eef7fb" title="Procedure&#45;description: Convert SSpacegrp to lower case and Compare SSpaceGrpNoSpaces with every space..." alt="" coords="439,993,625,1020"/>
+<area shape="rect" id="node36" href="$symmetry_8f90.html#af2255ae3d44da8d3c6db18fac79a7e8c" title="Procedure&#45;description: " alt="" coords="449,892,615,919"/>
+<area shape="rect" id="node37" href="$symmetry_8f90.html#a65a8fff419263fc7543d69199d625da9" title="Procedure&#45;description: " alt="" coords="437,943,627,969"/>
+<area shape="rect" id="node40" href="$image_8f90.html#a29d13685c06d4aea49dfdbf025196f4f" title="Procedure&#45;description: Sets the positions of the centres of the disks and calculate the size of the f..." alt="" coords="469,1044,595,1071"/>
+<area shape="rect" id="node41" href="$image_8f90.html#a2e93570806fa274cf5db8174f071782e" title="Procedure&#45;description: Creates a circular or square image mask depending on the value of IMaskFLAG an..." alt="" coords="453,1095,611,1121"/>
+<area shape="rect" id="node43" href="$bloch_8f90.html#a1702defd0ca12a6793b44c37899a4683" title="Procedure&#45;description: Simulates the electron beam and calculates Bloch coefficients, conisdering complex amplitudes and iterating over the thickness. " alt="" coords="1009,1145,1184,1172"/>
+<area shape="rect" id="node44" href="$felixfunction_8f90.html#a37ef4d9b2ef4eaacbd5fc82ebb8843d9" title="Procedure&#45;description: Performs a 2D Gaussian blur on the input image using global variable RBlurRadi..." alt="" coords="1071,1196,1122,1223"/>
+</map>
