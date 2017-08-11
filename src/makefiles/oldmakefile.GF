@@ -233,25 +233,16 @@ endif
 # LD_LIBRARY_PATH=/warwick/mathlib/nag/ifort-x86_64/lib:$LD_LIBRARY_PATH
 # in order to run the code
 
-REFINE_OBJS = gmodules.o smodules.o message_mod.o felixrefine.o \
-util.o scatteringfactors.o in.o \
-diffractionpatterndefinitions.o \
-crystallography.o bloch.o Ug.o image.o simplex.o\
-RefineWriteOut.o felixfunction.o refineutils.o writeoutput.o errorchecks.o\
-symmetry.o readcif.o 
-#gmodules.o smodules.o terminal_output.o felixrefine.o \
-#util.o scatteringfactors.o in.o readcif.o \
-#diffractionpatterndefinitions.o \
-#crystallography.o bloch.o Ug.o image.o simplex.o\
-#RefineWriteOut.o felixfunction.o refineutils.o writeoutput.o errorchecks.o\
-#symmetry.o
-#ciftbx.o hash_funcs.o readcif.o 
-#quadpack_double.f90
-#dqng.o xerror.o d1mach.o
-
-CIFTBX_OBJS = ciftbx.o hash_funcs.o #readcif.o
-
-QUADPACK_OBJS = quadpack_double.o
+REFINEOBJECTFILES = gmodules.o smodules.o alert_mod.o message_mod.o \
+utilities_mod.o \
+read_cif_mod.o read_mod.o \
+setup_reflections_mod.o setup_scattering_factors_mod.o crystallography_mod.o Ug_mod.o \
+bloch_mod.o felixfunction_mod.o \
+felixrefine.o \
+image.o ciftbx.o simplex.o \
+hash_funcs.o RefineWriteOut.o \
+symmetry.o quadpack_double.o
+#dqng.o xerror.o d1mach.o 
 
 %.o: %.f90
 	$(F90) $(F90FLAGS) -DF90 -c $< -I$(INCLUDEDIR) $(LIBFLAGS)
