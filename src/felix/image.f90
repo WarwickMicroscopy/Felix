@@ -235,9 +235,9 @@ SUBROUTINE ImageMaskInitialisation (IErr)
   INTEGER(IKIND) :: ind,jnd, ierr,InnerRadiusFLAG
   REAL(RKIND) :: Rradius, RImageRadius
 
-  ALLOCATE(RMask(2*IPixelCount,2*IPixelCount),STAT=IErr)
+  ALLOCATE(IMask(2*IPixelCount,2*IPixelCount),STAT=IErr)
   IF( IErr.NE.0 ) THEN
-    PRINT*,"Error:ImageMaskInitialisation(",my_rank,")error allocating RMask"
+    PRINT*,"Error:ImageMaskInitialisation(",my_rank,")error allocating IMask"
     RETURN
   END IF
   IPixelTotal =0
@@ -250,15 +250,15 @@ SUBROUTINE ImageMaskInitialisation (IErr)
            Rradius=SQRT(DBLE(Rradius))
            RImageRadius = IPixelCount+0.5
            IF(Rradius.LE.RImageRadius) THEN
-              RMask(jnd,ind) = 1
+              IMask(jnd,ind) = 1
              IPixelTotal= IPixelTotal + 1			  
            ELSE
-              RMask(jnd,ind) = 0
+              IMask(jnd,ind) = 0
            END IF
         ENDDO
      ENDDO
   CASE(1) ! square
-     RMask = 1
+     IMask = 1
      IPixelTotal = (2*IPixelCount)**2
   END SELECT
 
@@ -276,7 +276,7 @@ SUBROUTINE ImageMaskInitialisation (IErr)
   CASE(0) ! circle
      DO ind=1,2*IPixelCount
         DO jnd=1,2*IPixelCount
-           IF(RMask(ind,jnd).GT.ZERO) THEN
+           IF(IMask(ind,jnd).GT.ZERO) THEN
               IPixelTotal= IPixelTotal + 1
               IPixelLocations(IPixelTotal,1) = ind
               IPixelLocations(IPixelTotal,2) = jnd
@@ -287,7 +287,7 @@ SUBROUTINE ImageMaskInitialisation (IErr)
      IPixelTotal = 0
      DO ind = 1,2*IPixelCount
         DO jnd = 1,2*IPixelCount
-           IF(RMask(ind,jnd).GT.ZERO) THEN
+           IF(IMask(ind,jnd).GT.ZERO) THEN
               IPixelTotal = IPixelTotal+1
               IPixelLocations(IPixelTotal,1) = ind
               IPixelLocations(IPixelTotal,2) = jnd
