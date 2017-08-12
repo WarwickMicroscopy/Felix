@@ -207,11 +207,11 @@ MODULE IPara
   !LACBED
   INTEGER(IKIND),DIMENSION(:,:), ALLOCATABLE :: ILACBEDStrongBeamList, IPixelLocation, ISymmetryRelations
   INTEGER(IKIND),DIMENSION(:), ALLOCATABLE :: InBeams,IOutputReflections,IEquivalentUgKey
+  !LACBED mask
+  INTEGER(IKIND),DIMENSION(:,:), ALLOCATABLE :: IMask
   !inpcif
   INTEGER(IKIND) :: ISymCount
   INTEGER(IKIND) :: IPixelCountTotal
-  !LACBED Writing
-  INTEGER(IKIND) :: ISeperateFolderFlag
   !Thickness loop Variables
   INTEGER(IKIND) :: IThicknessCount
   INTEGER(IKIND),DIMENSION(:,:),ALLOCATABLE :: IPixelLocations
@@ -298,7 +298,7 @@ MODULE RPara
   REAL(RKIND),DIMENSION(:,:,:),ALLOCATABLE :: RFinalMontageImage
   !Main Program
   REAL(RKIND) :: RMeanInnerPotential
-  REAL(RKIND),DIMENSION(:,:),ALLOCATABLE :: RMask, RgMatrixMagnitude, RgSumMat!RB
+  REAL(RKIND),DIMENSION(:,:),ALLOCATABLE :: RgMatrixMagnitude, RgSumMat !RB
   REAL(RKIND),DIMENSION(:,:,:),ALLOCATABLE :: RgMatrix
   REAL(RKIND) :: ROuterIntegralLowerBound,ROuterIntegralUpperBound,&
        RInnerIntegralLowerBound,RInnerIntegralUpperBound,&

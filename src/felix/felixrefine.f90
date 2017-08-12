@@ -282,13 +282,18 @@ PROGRAM Felixrefine
     IF(ABS(RgPool(ind,3)).GT.TINY.AND.ICutOff.NE.0) THEN
       RGzUnitVec=ABS(RgPool(ind,3))
       ICutOff=0
-    END IF
+    END IF !?? JR why ICutOff.NE.0, can this occur for multiple ind values - RgPool(ind,3)
   ENDDO
 
   ! This should occur when no higher Laue zones (IHolzFLAG off)
   IF(ICutOff.EQ.1) THEN ! all g-vectors have z-component equal to zero
     RGzUnitVec=ZERO
   END IF
+
+  IF( ICutOff==1 .AND. IHolzFLAG==1 ) IErr = 1
+  IF( l_alert(IErr, "felixrefine", &
+        "fill Laue Zones. IHolzFLAG = 1 in felix.inp, however no higher order g-vectors " &
+        //"were found. Continuing with zeroth-order Laue zone only.") ) IErr = 0
   
   ! sort into Laue Zones 
   WHERE(ABS(RgPool(:,3)).GT.TINY) ! higher order Laue zones cases
@@ -300,7 +305,7 @@ PROGRAM Felixrefine
   RMinLaueZoneValue=MINVAL(RgDummyVecMat(:,3),DIM=1)
   ITotalLaueZoneLevel=NINT(RMaxLaueZoneValue+ABS(RMinLaueZoneValue)+1,IKIND)
   
-  DEALLOCATE(RgDummyVecMat)
+  DEALLOCATE(RgDummyVecMat, STAT=IErr)
   IF(l_alert(IErr,"felixrefine","deallocate RgDummyVecMat")) CALL abort()
 
   !--------------------------------------------------------------------
