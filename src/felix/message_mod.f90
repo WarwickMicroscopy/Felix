@@ -222,13 +222,13 @@ module message_mod
   !--------------------------------------------------------------------
 
   type msg_priorities
-    logical :: state            ! set to .true. or .false. at run-time by IWriteFLAG
-    character(:), allocatable :: initial_msg ! used for priority indenting - tiered structure
+    logical :: state              ! set to .true. or .false. at run-time by IWriteFLAG
+    character(50) :: initial_msg  ! used for priority indenting - tiered structure
   end type
 
   type msg_tags
-    logical :: state            ! set to .true. or .false. at run-time by IWriteFLAG
-    integer(IKIND) :: id_number ! comapred with IWriteFLAG to set state to .true. or .false
+    logical :: state              ! set to .true. or .false. at run-time by IWriteFLAG
+    integer(IKIND) :: id_number   ! comapred with IWriteFLAG to set state to .true. or .false
   end type
 
   !--------------------------------------------------------------------
@@ -239,7 +239,7 @@ module message_mod
 
   logical,private :: l_print_this_core ! used to print on all cores, usually = .false.
   
-  character(:), allocatable, private :: indent_spaces, msg_logo ! used for tiered-structure 
+  character(:), allocatable :: indent_spaces, spaces ! used for tiered-structure 
   
 contains
 
@@ -264,13 +264,17 @@ contains
     ! setup tiered-structure
     !--------------------------------------------------------------------
 
-    indent_spaces   = "  @" 
-    msg_logo = " "
+    ! e.g. write(*,formatting) trim(msg_priority%initial_msg)//spaces, main_msg, rvector
 
-    LS%initial_msg  = indent_spaces//msg_logo
-    LM%initial_msg  = indent_spaces//" ----"//msg_logo
-    LL%initial_msg  = indent_spaces//" --------"//msg_logo
-    LXL%initial_msg = indent_spaces//" ------------"//msg_logo
+    indent_spaces   = "  @" 
+
+    LS%initial_msg  = indent_spaces
+    LM%initial_msg  = indent_spaces//" ----"
+    LL%initial_msg  = indent_spaces//" --------"
+    LXL%initial_msg = indent_spaces//" ------------"
+
+    spaces = " " 
+    ! spaces are the global spaces after intial_msg
 
     !--------------------------------------------------------------------
     ! intially only set LS = .true. before IWriteFLAG read-in
@@ -357,7 +361,7 @@ contains
       else  ! scalar, so bracketless
         write(formatting,'(a,i3.3,a)') '(a,a,',size(rvector),'(1x,sp,ES10.3))'
       end if
-      write(*,formatting) msg_priority%initial_msg, main_msg, rvector
+      write(*,formatting) trim(msg_priority%initial_msg)//spaces, main_msg, rvector
     end if
 
   end subroutine message_rvector
@@ -374,7 +378,7 @@ contains
     if ( ( my_rank==0 .or. l_print_this_core ) &
     .and. (msg_priority%state .or. msg_tag%state) ) then
       write(formatting,'(a,i3.3,a)') '(a,a,',size(cvector),'(1x,"(",sp,ES8.1," ",ES8.1,"i)"))'
-      write(*,formatting) msg_priority%initial_msg, main_msg, cvector
+      write(*,formatting) trim(msg_priority%initial_msg)//spaces, main_msg, cvector
     end if
 
   end subroutine message_cvector
@@ -391,7 +395,7 @@ contains
     if ( ( my_rank==0 .or. l_print_this_core ) &
     .and. (msg_priority%state .or. msg_tag%state) ) then
       write(formatting,'(a,i3.3,a)') '(a,a,',size(ivector),'(1x,i4.3))'
-      write(*,formatting) msg_priority%initial_msg, main_msg, ivector
+      write(*,formatting) trim(msg_priority%initial_msg)//spaces, main_msg, ivector
     end if
 
   end subroutine message_ivector
@@ -409,7 +413,7 @@ contains
     ! check priority then print main_msg & string
     if ( ( my_rank==0 .or. l_print_this_core ) &
     .and. (msg_priority%state .or. msg_tag%state) ) then
-      write(*,'(a,a,a,a,a)') msg_priority%initial_msg, main_msg,"'",str_variable,"'"
+      write(*,'(a,a,a,a,a)') trim(msg_priority%initial_msg)//spaces, main_msg,"'",str_variable,"'"
     end if
   
   end subroutine message_string
@@ -423,7 +427,7 @@ contains
     ! check priority then print main_msg
     if ( ( my_rank==0 .or. l_print_this_core ) &
     .and. (msg_priority%state .or. msg_tag%state) ) then
-      write(*,'(a,a)') msg_priority%initial_msg, main_msg
+      write(*,'(a,a)') trim(msg_priority%initial_msg)//spaces, main_msg
     end if
   
   end subroutine message_only
@@ -439,7 +443,7 @@ contains
     ! check priority then print logical variable
     if ( ( my_rank==0 .or. l_print_this_core ) &
     .and. (msg_priority%state .or. msg_tag%state) ) then
-      write(*,'(a,a,1x,l1)') msg_priority%initial_msg, main_msg, logical_var
+      write(*,'(a,a,1x,l1)') trim(msg_priority%initial_msg)//spaces, main_msg, logical_var
     end if
 
   end subroutine message_logical
@@ -465,11 +469,11 @@ contains
     ! check priority then print two matrices alongside
     if ( ( my_rank==0 .or. l_print_this_core ) &
     .and. (msg_priority%state .or. msg_tag%state) ) then
-      write(*,'(a,a)') msg_priority%initial_msg, main_msg
+      write(*,'(a,a)') trim(msg_priority%initial_msg)//spaces, main_msg
       write(formatting,'(a,i3.3,a,i3.3,a)') '(a,i3.3,',size(imatrix1,2),'(1x,i4.3),a,',&
             size(rmatrix2,2),'(1x,sp,ES10.3))'
       do i =1,size(imatrix1,1)
-        write(*,formatting) msg_priority%initial_msg,i, imatrix1(i,:)," |",rmatrix2(i,:)
+        write(*,formatting) trim(msg_priority%initial_msg)//spaces,i, imatrix1(i,:)," |",rmatrix2(i,:)
       end do
     end if  
   
@@ -507,11 +511,11 @@ contains
     ! check priority then print two matrices alongside
     if ( ( my_rank==0 .or. l_print_this_core ) &
     .and. (msg_priority%state .or. msg_tag%state) ) then
-      write(*,'(a,a)') msg_priority%initial_msg, main_msg
+      write(*,'(a,a)') trim(msg_priority%initial_msg)//spaces, main_msg
       write(formatting,'(a,i3.3,a,i3.3,a)') '(a,i3.3,',size(imatrix1,2),'(1x,i4.3),a,',&
             size(cmatrix2,2),'(1x,"(",sp,ES8.1," ",ES8.1,"i)"))'
       do i =1,size(imatrix1,1)
-        write(*,formatting) msg_priority%initial_msg,i, imatrix1(i,:)," |",cmatrix2(i,:)
+        write(*,formatting) trim(msg_priority%initial_msg)//spaces,i, imatrix1(i,:)," |",cmatrix2(i,:)
       end do
     end if  
   
@@ -527,7 +531,7 @@ contains
 
     if ( ( my_rank==0 .or. l_print_this_core ) &
     .and. (msg_priority%state .or. msg_tag%state) ) then
-      write(*,'(a,a,i4.3,a,i4.3)') msg_priority%initial_msg, text1, int1, text2, int2
+      write(*,'(a,a,i4.3,a,i4.3)') trim(msg_priority%initial_msg)//spaces, text1, int1, text2, int2
     end if
   
   end subroutine message_integer_isi

@@ -269,18 +269,20 @@ MODULE bloch_mod
     ! diagonalize the UgMatEffective
     !--------------------------------------------------------------------
 
-    IF (IHolzFLAG.EQ.1) THEN ! limit simulation to zeroth order Laue zone
-      CALL EigenSpectrum(nBeams,CUgSgMatrix,CEigenValues(:), CEigenVectors(:,:),IErr)
-      IF(l_alert(IErr,"BlochCoefficientCalculation()","EigenSpectrum()")) RETURN
-      CEigenValues = CEigenValues * RKn/RBigK    !?? What is this doing?
+    CALL EigenSpectrum(nBeams,CUgSgMatrix,CEigenValues(:),CEigenVectors(:,:),IErr)
+    IF(l_alert(IErr,"BlochCoefficientCalculation()","EigenSpectrum()")) RETURN
+
+    IF (IHolzFLAG.EQ.1) THEN ! higher order laue zone included so adjust Eigen values/vectors
+      CEigenValues = CEigenValues * RKn/RBigK
       DO knd = 1,nBeams
         CEigenVectors(knd,:) = CEigenVectors(knd,:) / &
               SQRT(1+RgDotNorm(IStrongBeamList(knd))/RKn)
       END DO
-    ELSE ! Use Laue zones beyond zeroth order !?? does this work?
-      CALL EigenSpectrum(nBeams,CUgSgMatrix,CEigenValues(:),CEigenVectors(:,:),IErr)
-      IF(l_alert(IErr,"BlochCoefficientCalculation()","EigenSpectrum()")) RETURN
     END IF
+
+    !--------------------------------------------------------------------
+    ! fill RIndividualReflections( LACBED_ID , thickness_ID, local_pixel_ID ) 
+    !--------------------------------------------------------------------
    
     ! Calculate intensities for different specimen thicknesses
     !?? ADD VARIABLE PATH LENGTH HERE
