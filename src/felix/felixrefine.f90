@@ -818,7 +818,7 @@ CONTAINS
   ! these internal subroutines use felixrefine's whole variable namespace
 
   SUBROUTINE abort()
-    CALL alert_message("felixrefine","stuff. Now Aborting!")
+    CALL alert_message("felixrefine","ABORTING!")
     CALL MPI_Abort(MPI_COMM_WORLD,1,IErr)
     STOP
   END SUBROUTINE abort
@@ -844,7 +844,7 @@ CONTAINS
       IF(l_alert(IErr,"SimplexRefinement()","allocate RSimp")) RETURN 
       ! diagonal matrix of variables as rows
 	    ALLOCATE(RVarMatrix(INoOfVariables,INoOfVariables), STAT=IErr)
-      IF(l_alert(IErr,"SimplexRefinement()","allocate RVarMatrix")) RETURN 
+      IF(l_alert(IErr,"SimplexRefinement","allocate RVarMatrix")) RETURN 
 	    ROnes=ONE
 	    RSimp=ONE
 	    RVarMatrix=ZERO
