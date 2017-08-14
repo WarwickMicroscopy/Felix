@@ -57,6 +57,8 @@ PROGRAM Felixrefine
   USE read_cif_mod
   USE setup_scattering_factors_mod
   USE setup_reflections_mod
+  USE image_mod
+  USE symmetry_mod
   USE crystallography_mod
   USE Ug_mod
   USE felixfunction_mod
@@ -374,8 +376,9 @@ PROGRAM Felixrefine
   DO ind=1,INhkl
      RgPoolMag(ind)= SQRT(DOT_PRODUCT(RgPool(ind,:),RgPool(ind,:)))
   END DO
+
   CALL message(LL,dbg7,"g-vectors and magnitude (1/A), in the microscope reference frame" )
-  CALL message(LL,dbg7,"g=",NINT(Rhkl),RgPoolMag)!How does this give a nice list? Can we just have the first 16 g-vectors, for example?
+  CALL message(LL,dbg7,"g=",NINT(Rhkl(1:16,:)),RgPoolMag(1:16))
   
   ! g-vector components parallel to the surface unit normal
   ALLOCATE(RgDotNorm(INhkl),STAT=IErr)
@@ -491,11 +494,10 @@ PROGRAM Felixrefine
   CALL start_timer( IStartTime2 )
 
   !--------------------------------------------------------------------
-  ! If Ug refinement, set up variables
+  ! INoOfVariables calculated depending upon Ug and non-Ug refinement
   !--------------------------------------------------------------------
 
   ! Ug refinement is a special case and must be done alone
-  ! cannot do any other refinement alongisde
   IF(IRefineMode(1).EQ.1) THEN ! It's a Ug refinement, code(A)
 
     ! Count the number of Independent Variables
@@ -516,35 +518,10 @@ PROGRAM Felixrefine
       CALL message(LM,"number of independent variables = ",INoOfVariables)
     END IF
 
-    ALLOCATE(RIndependentVariable(INoOfVariables),STAT=IErr)  !Don't like having the same variable allocated in two places!***
-    IF(l_alert(IErr,"felixrefine","allocate RIndependentVariable")) CALL abort()
+  ELSE ! IRefineMode(1).EQ.0, It's not a Ug refinement, so count refinement variables
 
-    ! Fill up the IndependentVariable list with CUgMatNoAbs components
-    jnd=1
-    DO ind = 1+IUgOffset,INoofUgs+IUgOffset !?? comment out below, for real part only?
-      IF ( ABS(REAL(CUniqueUg(ind),RKIND)).GE.RTolerance ) THEN
-        RIndependentVariable(jnd) = REAL(CUniqueUg(ind),RKIND)
-        jnd=jnd+1
-	    END IF
-      IF ( ABS(AIMAG(CUniqueUg(ind))).GE.RTolerance ) THEN 
-        RIndependentVariable(jnd) = AIMAG(CUniqueUg(ind))
-        jnd=jnd+1
-      END IF
-    END DO
-
-    ! Proportional absorption included in structure factor refinement as last variable
-	  IF (IAbsorbFLAG.EQ.1) RIndependentVariable(jnd) = RAbsorptionPercentage
-
-  END IF
- 
-  !--------------------------------------------------------------------
-  ! If non-Ug refinement, count and assign refinement variables
-  !--------------------------------------------------------------------
-
-  ! Excluding Ug refinement, various variables can be refined together
-  ! all refine/non-refine variables need intial values then refine allows those to change JR
-  IF(IRefineMode(1).EQ.0) THEN ! It's not a Ug refinement, so count refinement variables
-
+    ! Excluding Ug refinement, various variables can be refined together
+    ! all refine/non-refine variables need intial values then refine allows those to change JR
     IF(IRefineMode(2).EQ.1) THEN ! It's an atom coordinate refinement, code(B)
       CALL SetupAtomMovements(IErr)
       IF(l_alert(IErr,"felixrefine","Absorption()")) CALL abort()
@@ -575,8 +552,37 @@ PROGRAM Felixrefine
             "Valid refine modes are A,B,C,D,E,F,G,H,I,J,S")) CALL abort()
     END IF
 
+  END IF
+
+  ALLOCATE(RIndependentVariable(INoOfVariables),STAT=IErr) 
+  IF(l_alert(IErr,"felixrefine","allocate RIndependentVariable")) CALL abort()
+
+  !--------------------------------------------------------------------
+  ! assign refinement variables depending upon Ug and non-Ug refinement
+  !--------------------------------------------------------------------
+  
+  IF(IRefineMode(1).EQ.1) THEN ! It's a Ug refinement, code(A)
+
+    ! Fill up the IndependentVariable list with CUgMatNoAbs components
+    jnd=1
+    DO ind = 1+IUgOffset,INoofUgs+IUgOffset !?? comment out below, for real part only
+      IF ( ABS(REAL(CUniqueUg(ind),RKIND)).GE.RTolerance ) THEN
+        RIndependentVariable(jnd) = REAL(CUniqueUg(ind),RKIND)
+        jnd=jnd+1
+	    END IF
+      IF ( ABS(AIMAG(CUniqueUg(ind))).GE.RTolerance ) THEN 
+        RIndependentVariable(jnd) = AIMAG(CUniqueUg(ind))
+        jnd=jnd+1
+      END IF
+    END DO
+
+    ! Proportional absorption included in structure factor refinement as last variable
+	  IF (IAbsorbFLAG.EQ.1) RIndependentVariable(jnd) = RAbsorptionPercentage
+
+  ELSE ! IRefineMode(1).EQ.0, It's not a Ug refinement 
+
 	  ! Fill up the IndependentVariable list 
-    ALLOCATE(RIndependentVariable(INoOfVariables),STAT=IErr)  !Don't like having the same variable allocated in two places!***
+    ALLOCATE(RIndependentVariable(INoOfVariables),STAT=IErr)  
     ind=1
     IF(IRefineMode(3).EQ.1) THEN ! Occupancy, code(C)
 	    DO jnd=1,SIZE(IAtomsToRefine)
@@ -616,17 +622,27 @@ PROGRAM Felixrefine
   END IF
 
   !--------------------------------------------------------------------
-  ! Allocate & setup image arrays for pixel-parallel simulations
+  ! allocate, ImageInitialisation, ImageMaskInitialisation
   !--------------------------------------------------------------------
   
-  ! Allocate output image arrays  
   ALLOCATE(RhklPositions(nReflections,2),STAT=IErr)
   IF(l_alert(IErr,"felixrefine","allocate RhklPositions")) CALL abort()
-  CALL ImageSetup(IErr) !?? what does this do?
-  IF(l_alert(IErr,"felixrefine","ImageSetup()")) CALL abort()
+  ALLOCATE(IMask(2*IPixelCount,2*IPixelCount),STAT=IErr)
+  IF(l_alert(IErr,"felixrefine","allocate RhklPositions")) CALL abort()
+
+  CALL ImageInitialisation( IErr )
+  IF(l_alert(IErr,"felixrefine","ImageInitialisation()")) CALL abort()
+
+  ! creates circular or square image mask depending upon IMaskFLAG and assign 
+  ! IPixelLocations ALLOCATED here
+  CALL ImageMaskInitialisation(IErr)
+  IF(l_alert(IErr,"felixrefine","ImageMaskInitialisation()")) CALL abort()
+
+  !--------------------------------------------------------------------
+  ! allocate & setup image arrays for pixel-parallel simulations
+  !--------------------------------------------------------------------
 
   ! All the individual calculations go into RSimulatedPatterns later with MPI_GATHERV
-
   ! NB RSimulatedPatterns is a vector with respect to pixels, not a 2D image
   ALLOCATE(RSimulatedPatterns(INoOfLacbedPatterns,IThicknessCount,IPixelTotal),STAT=IErr)
   IF(l_alert(IErr,"felixrefine","allocate RSimulatedPatterns")) CALL abort()
