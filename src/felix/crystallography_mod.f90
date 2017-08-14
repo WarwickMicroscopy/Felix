@@ -205,7 +205,7 @@ MODULE crystallography_mod
           RcVecM,RbVecM,RaVecM
     USE SPARA, ONLY : SBasisAtomLabel, SBasisAtomName
     USE IPARA, ONLY : IBasisAtomicNumber, IBasisAnisoDW, IMaxPossibleNAtomsUnitCell, &
-          INAtomsUnitCell
+         INAtomsUnitCell
     
     IMPLICIT NONE
     
@@ -295,8 +295,9 @@ MODULE crystallography_mod
     END DO
     
     ! Finished with these variables now
-    DEALLOCATE(RAllAtomPosition,SAllAtomName,RAllOccupancy,RAllIsoDW,IAllAtomicNumber,&
-          RAllAnisoDW,STAT=IErr,)
+    DEALLOCATE( &
+         RAllAtomPosition, SAllAtomName, RAllOccupancy, RAllIsoDW, &
+         IAllAtomicNumber, RAllAnisoDW, STAT=IErr)
     IF(l_alert(IErr,"UniqueAtomPositions()","deallocations")) RETURN
       
     !--------------------------------------------------------------------
