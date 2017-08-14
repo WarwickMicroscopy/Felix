@@ -318,8 +318,7 @@ MODULE felixfunction_mod
 
     ! Reset simuation   
     RIndividualReflections = ZERO
-    !IMAXCBuffer = 200000 !?? JR unused, will remove
-    IPixelComputed= 0
+    IPixelComputed= 0!RB what is this?
 
     ! Simulation (different local pixels for each core)
     CALL message(LM,"Bloch wave calculation...")
@@ -478,7 +477,6 @@ MODULE felixfunction_mod
         CALL message(LL,dbg6,"For Pattern ",ind,", thickness ",jnd)
         CALL message(LL,dbg6,"  the FoM = ",RImageCorrelation)
         
-
         ! Determines which thickness matches best for each LACBED pattern
         ! which is later used to find the range of viable thicknesses 
         IF(RImageCorrelation.LT.RBestCorrelation(ind)) THEN
@@ -491,8 +489,8 @@ MODULE felixfunction_mod
       ! The best total correlation
       RTotalCorrelation=RTotalCorrelation/REAL(INoOfLacbedPatterns,RKIND)
 
-      CALL message(LL,dbg6,"For thickness ",jnd)
-      CALL message(LL,dbg6,"  the mean correlation = ",RTotalCorrelation)
+      CALL message(LL,dbg6,"Specimen thickness (Angstroms) ",jnd)
+      CALL message(LL,dbg6,"Figure of merit ",RTotalCorrelation)
 
       ! Determines which thickness matches best
       IF(RTotalCorrelation.LT.RBestTotalCorrelation) THEN
@@ -519,8 +517,8 @@ MODULE felixfunction_mod
           MINVAL(IBestImageThicknessIndex) )*RDeltaThickness
 
     CALL message(LM,"Figure of merit ",RBestTotalCorrelation)
-    CALL message(LM,"Specimen thickness (Angstroms) = ",NINT(RBestThickness))
-    CALL message(LM,"Thickness range (Angstroms) = ",NINT(RThicknessRange))
+    CALL message(LM,"Specimen thickness (Angstroms) ",NINT(RBestThickness))
+    CALL message(LM,"Thickness range (Angstroms) ",NINT(RThicknessRange))
 
     RETURN
 
@@ -545,9 +543,8 @@ MODULE felixfunction_mod
     USE message_mod; USE alert_mod 
 
     ! global inputs
-    USE IPARA, ONLY : INoOfVariables, IRefineMode, IIterativeVariableUniqueIDs, &
-          IAllowedVectorIDs 
-    USE RPARA, ONLY : RInitialAtomPosition, RAllowedVectors
+    USE IPARA, ONLY : INoOfVariables, IRefineMode, IIterativeVariableUniqueIDs,IAtomMoveList 
+    USE RPARA, ONLY : RVector
 
     ! global outputs
     USE RPARA, ONLY :  RBasisOccupancy, RBasisIsoDW, RAnisotropicDebyeWallerFactorTensor, &
@@ -559,24 +556,19 @@ MODULE felixfunction_mod
     REAL(RKIND),DIMENSION(INoOfVariables),INTENT(IN) :: RIndependentVariable
     INTEGER(IKIND) :: IVariableType,IVectorID,IAtomID,IErr,ind
 
-    IF(IRefineMode(2).EQ.1) THEN     
-       RBasisAtomPosition = RInitialAtomPosition !RB is this redundant? 
-    END IF
-
     DO ind = 1,INoOfVariables
       IVariableType = IIterativeVariableUniqueIDs(ind,2)
       SELECT CASE (IVariableType)
       CASE(1) ! A: structure factor refinement, do in UpdateStructureFactors
         
       CASE(2)
-
         ! The vector being used
         IVectorID = IIterativeVariableUniqueIDs(ind,3)
         ! The atom being moved
-        IAtomID = IAllowedVectorIDs(IVectorID)
+        IAtomID = IAtomMoveList(IVectorID)
         ! Change in position
         RBasisAtomPosition(IAtomID,:) = RBasisAtomPosition(IAtomID,:) + &
-              RIndependentVariable(ind)*RAllowedVectors(IVectorID,:)
+              RIndependentVariable(ind)*RVector(IVectorID,:)
       CASE(3)
         RBasisOccupancy(IIterativeVariableUniqueIDs(ind,3))=RIndependentVariable(ind) 
       CASE(4)
@@ -611,8 +603,6 @@ MODULE felixfunction_mod
         RAbsorptionPercentage = RIndependentVariable(ind)
       CASE(10)
         RAcceleratingVoltage = RIndependentVariable(ind)
-      CASE(11)
-        RRSoSScalingFactor = RIndependentVariable(ind)
       END SELECT
     END DO
 

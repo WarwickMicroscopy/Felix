@@ -226,13 +226,12 @@ MODULE IPara
   INTEGER(IKIND),DIMENSION(IRefinementVariableTypes) :: INoofElementsForEachRefinementType  !zz
   INTEGER(IKIND),DIMENSION(:,:),ALLOCATABLE :: IIterativeVariableUniqueIDs
   !List of Atomic Sites for Refinement
-  INTEGER(IKIND),DIMENSION(:),ALLOCATABLE :: IAtomicSitesToRefine
+  INTEGER(IKIND),DIMENSION(:),ALLOCATABLE :: IAtomsToRefine
   !Simplex Variables
   INTEGER(IKIND) :: INoOfVariables,ILocalPixelCountMin,ILocalPixelCountMax,IUgOffset
   INTEGER(IKIND), DIMENSION(:), ALLOCATABLE :: IDisplacements,ICount
   !Refinement Vectors
-  INTEGER(IKIND) :: IAllowedVectors
-  INTEGER(IKIND),DIMENSION(:),ALLOCATABLE :: IAllowedVectorIDs
+  INTEGER(IKIND),DIMENSION(:),ALLOCATABLE :: IAtomMoveList
   INTEGER(IKIND) :: IFelixCount,IPreviousPrintedIteration,IStandardDeviationCalls  
 END MODULE IPara
 !--------------------------------------------------------------------
@@ -325,11 +324,8 @@ MODULE RPara
   !Iterative Variable Value
   REAL(RKIND) :: RValue!this is an awful name that doesn't mean anything
   !Refinement Vectors
-  REAL(RKIND),DIMENSION(:,:),ALLOCATABLE :: RAllowedVectors
-  REAL(RKIND),DIMENSION(:),ALLOCATABLE :: RAllowedVectorMagnitudes
+  REAL(RKIND),DIMENSION(:,:),ALLOCATABLE :: RVector
   REAL(RKIND) :: RSimplexLengthScale,RExitCriteria,RSimplexStandardDeviation,RSimplexMean,RRSoSScalingFactor
-  !Refinement Initial Coordinates
-  REAL(RKIND),DIMENSION(:,:),ALLOCATABLE :: RInitialAtomPosition
   !Gaussian blur radius in pixels
   REAL(RKIND) :: RBlurRadius
 END MODULE RPara
@@ -366,7 +362,7 @@ MODULE SPara
   CHARACTER*10 :: SSpaceGrp
   CHARACTER*5, DIMENSION(:),ALLOCATABLE :: SBasisAtomLabel,SAtomLabel
   CHARACTER*2, DIMENSION(:),ALLOCATABLE :: SBasisAtomName, SAtomName
-  CHARACTER*1,DIMENSION(:),ALLOCATABLE :: SWyckoffSymbols
+  CHARACTER*1,DIMENSION(:),ALLOCATABLE :: SWyckoffSymbol
   
 END MODULE SPara
 !--------------------------------------------------------------------

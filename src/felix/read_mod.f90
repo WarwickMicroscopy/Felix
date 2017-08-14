@@ -523,7 +523,7 @@ MODULE read_mod
     USE message_mod; USE alert_mod
 
     ! global outputs
-    USE IPARA, ONLY : IAtomicSitesToRefine
+    USE IPARA, ONLY : IAtomsToRefine
     
     ! global inputs
     USE IPARA, ONLY : IRefineMode 
@@ -545,13 +545,13 @@ MODULE read_mod
     END IF
 
     IF ((IPos2-IPos1).GT.1.AND.SCAN(SAtomicSites,',').EQ.0) THEN
-      ALLOCATE(IAtomicSitesToRefine(1),STAT=IErr)
+      ALLOCATE(IAtomsToRefine(1),STAT=IErr)
       IF(l_alert(IErr,"DetermineRefineableAtomicSites()", &
-            "allocate IAtomicSitesToRefine")) RETURN
-      CALL message (LM, "SIZE(IAtomicSitesToRefine) = ",SIZE(IAtomicSitesToRefine) )
+            "allocate IAtomsToRefine")) RETURN
+      CALL message (LM, "SIZE(IAtomsToRefine) = ",SIZE(IAtomsToRefine) )
       WRITE(SLengthofNumberString,*) LEN(SAtomicSites((IPos1+1):(IPos2-1))) 
       WRITE(SFormatString,*) "(I"//TRIM(ADJUSTL(SLengthofNumberString))//")"
-      READ(SAtomicSites((IPos1+1):(IPos2-1)),FMT=SFormatString) IAtomicSitesToRefine(1)
+      READ(SAtomicSites((IPos1+1):(IPos2-1)),FMT=SFormatString) IAtomsToRefine(1)
     ELSE
       IPos = 1
       DO 
@@ -562,26 +562,26 @@ MODULE read_mod
         IF (IPos2-IPos1.LE.1) EXIT
       END DO
 
-      ALLOCATE(IAtomicSitesToRefine(IPos),STAT=IErr)
+      ALLOCATE(IAtomsToRefine(IPos),STAT=IErr)
       IF(IErr.NE.0.AND.(my_rank.EQ.0)) PRINT*,"Error:",&
-            "DetermineRefineableAtomicSites: error allocating IAtomicSitesToRefine"
+            "DetermineRefineableAtomicSites: error allocating IAtomsToRefine"
        
       IPos1 = SCAN(SAtomicSites,'(')
-      DO ind = 1,SIZE(IAtomicSitesToRefine,DIM=1)
+      DO ind = 1,SIZE(IAtomsToRefine,DIM=1)
         IF(SCAN(SAtomicSites((IPos1+1):IPos2),',').NE.0) THEN
           IPos = SCAN(SAtomicSites((IPos1+1):IPos2),',')-1
           WRITE(SLengthofNumberString,*) LEN(SAtomicSites((IPos1+1):(IPos1+IPos))) 
           WRITE(SFormatString,*) "(I"//TRIM(ADJUSTL(SLengthofNumberString))//")"
-          READ(SAtomicSites((IPos1+1):(IPos1+IPos)),FMT=SFormatString) IAtomicSitesToRefine(ind)
+          READ(SAtomicSites((IPos1+1):(IPos1+IPos)),FMT=SFormatString) IAtomsToRefine(ind)
           IPos1 = IPos1 + IPos + 1 
         ELSE
           WRITE(SLengthofNumberString,*) LEN(SAtomicSites((IPos1+1):(IPos2-1))) 
           WRITE(SFormatString,*) "(I"//TRIM(ADJUSTL(SLengthofNumberString))//")"
-          READ(SAtomicSites((IPos1+1):(IPos2-1)),FMT=SFormatString) IAtomicSitesToRefine(ind)
+          READ(SAtomicSites((IPos1+1):(IPos2-1)),FMT=SFormatString) IAtomsToRefine(ind)
         END IF
       END DO
     END IF
-    CALL message (LM, "Refining atoms ", IAtomicSitesToRefine )
+    CALL message (LM, "Refining atoms ", IAtomsToRefine )
     
   END SUBROUTINE DetermineRefineableAtomicSites
 
