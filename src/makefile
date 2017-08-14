@@ -83,6 +83,8 @@ $(FINALEXE):
 #	"MYLIBCIFTBX=$(LIBCIFTBX)" "MYLIBQUADPACK=$(LIBQUADPACK)"
 	@ echo executable $(FINALEXE) can be found in the current directory
 
+print:
+	a2ps -E --pro=color --chars-per-line=100 -o - felix/*.f90 | ps2pdf - felix.pdf
 
 clean:
 	rm -rf   */*.o */*.mod
