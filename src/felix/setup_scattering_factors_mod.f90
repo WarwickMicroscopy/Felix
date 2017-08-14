@@ -51,7 +51,7 @@ MODULE setup_scattering_factors_mod
   SUBROUTINE setup_scattering_factors(IScatteringMethodSwitch,IErr)
 
     USE MyNumbers
-    USE message_mod; USE alert_mod
+    USE message_mod
 
     ! global output (inout)
     USE RPARA, ONLY : RScattFactors 
@@ -285,7 +285,7 @@ MODULE setup_scattering_factors_mod
 
       ! Allocate Global Scattering factor array 
       ALLOCATE(RScattFactors(105,IScattDimension), STAT=IErr)
-      IF(l_alert(IErr,"setup_scattering_factors()","allocate RScattFactors")) RETURN
+      IF(l_alert(IErr,"setup_scattering_factors","allocate RScattFactors")) RETURN
 
       RScattFactors = RKirkland
 
@@ -505,7 +505,7 @@ MODULE setup_scattering_factors_mod
 
       ! Allocate Global Scattering factor array 
       ALLOCATE(RScattFactors(105,IScattDimension), STAT=IErr)
-      IF(l_alert(IErr,"setup_scattering_factors()","allocate RScattFactors")) RETURN
+      IF(l_alert(IErr,"setup_scattering_factors","allocate RScattFactors")) RETURN
 
       ! Assign Global Scattering factor array with chosen scattering factors (Kirkland)
       RScattFactors = RPeng
@@ -724,7 +724,7 @@ MODULE setup_scattering_factors_mod
 
       ! Allocate Global Scattering factor array 
       ALLOCATE(RScattFactors(105,IScattDimension), STAT=IErr)
-      IF(l_alert(IErr,"setup_scattering_factors()","allocate RScattFactors")) RETURN
+      IF(l_alert(IErr,"setup_scattering_factors","allocate RScattFactors")) RETURN
 
       ! Assign Global Scattering factor array with chosen scattering factors (Doyle & Turner)
       RScattFactors=RDoyleAndTurner
@@ -943,15 +943,14 @@ MODULE setup_scattering_factors_mod
 
       ! Allocate Global Scattering factor array 
       ALLOCATE(RScattFactors(105,IScattDimension), STAT=IErr)
-      IF(l_alert(IErr,"setup_scattering_factors()","allocate RScattFactors")) RETURN
+      IF(l_alert(IErr,"setup_scattering_factors","allocate RScattFactors")) RETURN
 
       ! Assign Global Scattering factor array with chosen scattering factors (Lobato)
       RScattFactors=RLobato
 
     CASE DEFAULT
-      CALL error_message("setup_scattering_factors()", &
-            "Scattering factors do not exist, check IScatteringMethodFlag" )
-      IErr=1; RETURN
+      IErr=1; IF(l_alert(IErr,"setup_scattering_factors",&
+            "IScatteringMethodFlag from felix.inp not recognised")) RETURN
 
     END SELECT
 

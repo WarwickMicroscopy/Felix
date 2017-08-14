@@ -59,7 +59,7 @@ MODULE Ug_mod
     !?? CUgMatNoAbs, uses g matrix, parallelises U'g calculation -> final Ug with absorption
 
     USE MyNumbers
-    USE message_mod; USE alert_mod
+    USE message_mod
     USE MPI     !?? used for parallel 
     USE MyMPI   !?? used for parallel
    
@@ -119,22 +119,22 @@ MODULE Ug_mod
       ILocalUgCountMin = (IUniqueUgs*(my_rank)/p)+1
       ILocalUgCountMax = (IUniqueUgs*(my_rank+1)/p)
       ALLOCATE(Ipos(p),Inum(p),STAT=IErr)
-      IF(l_alert(IErr,"Absorption()","allocate Ipos")) RETURN
+      IF(l_alert(IErr,"Absorption","allocate Ipos")) RETURN
       ! U'g list for this core
       ALLOCATE(CLocalUgPrime(ILocalUgCountMax-ILocalUgCountMin+1),STAT=IErr)
-      IF(l_alert(IErr,"Absorption()","allocate CLocalUgPrime")) RETURN
+      IF(l_alert(IErr,"Absorption","allocate CLocalUgPrime")) RETURN
       ! U'g list for this core [Re,Im]
       ALLOCATE(RLocalUgReal(ILocalUgCountMax-ILocalUgCountMin+1),STAT=IErr)
-      IF(l_alert(IErr,"Absorption()","allocate RLocalUgReal")) RETURN
+      IF(l_alert(IErr,"Absorption","allocate RLocalUgReal")) RETURN
       ! U'g list for this core [Re,Im]
       ALLOCATE(RLocalUgImag(ILocalUgCountMax-ILocalUgCountMin+1),STAT=IErr)
-      IF(l_alert(IErr,"Absorption()","allocate RLocalUgImag")) RETURN
+      IF(l_alert(IErr,"Absorption","allocate RLocalUgImag")) RETURN
       ALLOCATE(CUgPrime(IUniqueUgs),STAT=IErr) ! complete U'g list
-      IF(l_alert(IErr,"Absorption()","allocate CUgPrime")) RETURN
+      IF(l_alert(IErr,"Absorption","allocate CUgPrime")) RETURN
       ALLOCATE(RUgReal(IUniqueUgs),STAT=IErr) ! complete U'g list [Re]
-      IF(l_alert(IErr,"Absorption()","allocate RUgReal")) RETURN
+      IF(l_alert(IErr,"Absorption","allocate RUgReal")) RETURN
       ALLOCATE(RUgImag(IUniqueUgs),STAT=IErr) ! complete U'g list [Im]
-      IF(l_alert(IErr,"Absorption()","allocate RUgImag")) RETURN
+      IF(l_alert(IErr,"Absorption","allocate RUgImag")) RETURN
 
       ! setup position and number for each core
       DO ind = 1,p ! p is the number of cores
@@ -164,7 +164,7 @@ MODULE Ug_mod
           IF (ICurrentZ.LT.105) THEN ! It's not a pseudoatom 
             ! Uses numerical integration to calculate absorptive form factor f'
             CALL DoubleIntegrateBK(RfPrime,IErr) ! NB uses Kirkland scattering factors
-            IF(l_alert(IErr,"Absorption()","allocate RUgImag")) RETURN
+            IF(l_alert(IErr,"Absorption","allocate RUgImag")) RETURN
           ELSE ! It is a pseudoatom, proportional model 
             lnd=lnd+1
             CALL PseudoAtom(CFpseudo,ILoc(1),ILoc(2),lnd,IErr)
@@ -201,11 +201,11 @@ MODULE Ug_mod
       CALL MPI_GATHERV(RLocalUgReal,SIZE(RLocalUgReal),MPI_DOUBLE_PRECISION,&
                      RUgReal,Inum,Ipos,MPI_DOUBLE_PRECISION,&
                      root,MPI_COMM_WORLD,IErr)
-      IF(l_alert(IErr,"Absorption()","MPI_GATHERV(), RLocalUgReal")) RETURN
+      IF(l_alert(IErr,"Absorption","MPI_GATHERV() RLocalUgReal")) RETURN
       CALL MPI_GATHERV(RLocalUgImag,SIZE(RLocalUgImag),MPI_DOUBLE_PRECISION,&
                      RUgImag,Inum,Ipos,MPI_DOUBLE_PRECISION,&
                      root,MPI_COMM_WORLD,IErr)
-      IF(l_alert(IErr,"Absorption()","MPI_GATHERV(), RLocalUgImag")) RETURN
+      IF(l_alert(IErr,"Absorption","MPI_GATHERV() RLocalUgImag")) RETURN
       !===================================== send out the full list to all cores
       CALL MPI_BCAST(RUgReal,IUniqueUgs,MPI_DOUBLE_PRECISION,&
                      root,MPI_COMM_WORLD,IErr)
@@ -265,7 +265,7 @@ MODULE Ug_mod
     !?? JR used once felixrefine setup via StructureFactorInitialisation() 
 
     USE MyNumbers
-    USE message_mod; USE alert_mod
+    USE message_mod
 
     ! global outputs
     USE IPARA, ONLY : ICurrentZ
@@ -356,7 +356,7 @@ MODULE Ug_mod
     !?? called once felixrefine, setup, after reflection pools before absorption
 
     USE MyNumbers
-    USE message_mod; USE alert_mod
+    USE message_mod
     USE MyFFTW !?? elaborate on fftw stuff & USE , ONLY : ??
     USE utilities_mod, ONLY : Gaussian, Lorentzian, ReSortUgs
 
@@ -464,7 +464,7 @@ MODULE Ug_mod
           WRITE(SPrintString,FMT='(A15,I1,A3)') "PseudoPotential",INumPseudAtoms,".img"
           OPEN(UNIT=IChOutWIImage, STATUS= 'UNKNOWN', FILE=SPrintString,&
                 FORM='UNFORMATTED',ACCESS='DIRECT',IOSTAT=IErr,RECL=8192)
-          IF(l_alert(IErr,"StructureFactorInitialisation()",&
+          IF(l_alert(IErr,"StructureFactorInitialisation",&
                 "write a pseudo factor.img")) RETURN
           DO jnd = 1,IPsize
             WRITE(IChOutWIImage,rec=jnd) REAL(CPseudoAtom(jnd,:,INumPseudAtoms))
@@ -486,7 +486,7 @@ MODULE Ug_mod
           WRITE(SPrintString,FMT='(A12,I1,A3)') "PseudoFactor",INumPseudAtoms,".img"
           OPEN(UNIT=IChOutWIImage, STATUS= 'UNKNOWN', FILE=SPrintString,&
                 FORM='UNFORMATTED',ACCESS='DIRECT',IOSTAT=IErr,RECL=8192)
-          IF(l_alert(IErr,"StructureFactorInitialisation()",&
+          IF(l_alert(IErr,"StructureFactorInitialisation",&
                 "write a pseudo factor.img")) RETURN
           DO jnd = 1,IPsize
             WRITE(IChOutWIImage,rec=jnd) ABS(CPseudoScatt(jnd,:,INumPseudAtoms))
@@ -800,7 +800,7 @@ MODULE Ug_mod
     !?? used in each (case 2 Bird & King) absorption
 
     USE MyNumbers
-    USE message_mod; USE alert_mod
+    USE message_mod
 
     IMPLICIT NONE
 

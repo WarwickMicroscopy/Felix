@@ -42,9 +42,7 @@ module message_mod
 !>      statement and provides formatted output chosen at run-time.
 !>
 !>    message_mod also accesses alert_mod:
-!>
-  use alert_mod, only : l_alert, error_message
-!>    l_alert() is a simple but important function, used extensively for error handling.
+!>      l_alert() is a simple but important function, used extensively for error handling.
 !>
 !>--------------------------------------------------------------------------------------------
 !>
@@ -160,7 +158,7 @@ module message_mod
 
 !---------------------------------------------------------------------------------------------
 
-  use alert_mod       ! necessary for error handling messages
+  use alert_mod       ! grants access to felix's main error handling
   use MyNumbers       ! necesary for IKIND, RKIND etc.
   use MyMPI           ! necesary for my_rank - used to print on core 0 only
 

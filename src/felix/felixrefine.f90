@@ -46,7 +46,7 @@ PROGRAM Felixrefine
   ! use this figure merit with multiple points to refine...??
   
   USE MyNumbers
-  USE message_mod; USE alert_mod
+  USE message_mod
 
   USE MPI
   USE MyMPI
@@ -570,9 +570,10 @@ PROGRAM Felixrefine
     IF(INoOfVariables.EQ.0) THEN 
       ! there's no refinement requested, say so and quit
       !?? could be done when reading felix.inp
-      PRINT*,"No refinement variables! Check IRefineModeFLAG in felix.inp"
-      PRINT*,"Valid refine modes are A,B,C,D,E,F,G,H,I,J,S"
-      IF(l_alert(1,"felixrefine","sort out refinement variables")) CALL abort()
+      IErr = 1
+      IF(l_alert(IErr,"felixrefine",&
+            "No refinement variables! Check IRefineModeFLAG in felix.inp. "// &
+            "Valid refine modes are A,B,C,D,E,F,G,H,I,J,S")) CALL abort()
     END IF
 
 	  ! Fill up the IndependentVariable list 
@@ -818,7 +819,8 @@ CONTAINS
   ! these internal subroutines use felixrefine's whole variable namespace
 
   SUBROUTINE abort()
-    CALL alert_message("felixrefine","ABORTING!")
+    IErr=1
+    IF(l_alert(IErr,"felixrefine","ABORTING")) CONTINUE 
     CALL MPI_Abort(MPI_COMM_WORLD,1,IErr)
     STOP
   END SUBROUTINE abort
@@ -838,10 +840,10 @@ CONTAINS
     ALLOCATE(RSimplexFoM(INoOfVariables+1),STAT=IErr)  
     IF(my_rank.EQ.0) THEN !?? Since simplex not random, could be calculated by all cores?
 	    ALLOCATE(ROnes(INoOfVariables+1,INoOfVariables), STAT=IErr) ! matrix of ones
-      IF(l_alert(IErr,"SimplexRefinement()","allocate ROnes")) RETURN 
+      IF(l_alert(IErr,"SimplexRefinement","allocate ROnes")) RETURN 
       ! matrix of one +/-RSimplexLengthScale
 	    ALLOCATE(RSimp(INoOfVariables+1,INoOfVariables), STAT=IErr)
-      IF(l_alert(IErr,"SimplexRefinement()","allocate RSimp")) RETURN 
+      IF(l_alert(IErr,"SimplexRefinement","allocate RSimp")) RETURN 
       ! diagonal matrix of variables as rows
 	    ALLOCATE(RVarMatrix(INoOfVariables,INoOfVariables), STAT=IErr)
       IF(l_alert(IErr,"SimplexRefinement","allocate RVarMatrix")) RETURN 
@@ -867,7 +869,7 @@ CONTAINS
       CALL message(LS,no_tag,"Simplex ",ind, " of ", INoOfVariables+1)
       CALL message(LS,"--------------------------------")
       CALL SimulateAndFit(RSimplexVariable(ind,:),Iter,0,IErr)!?? Working as iteration 0 ?
-      IF(l_alert(IErr,"SimplexRefinement()","do initial SimulateAndFit()")) RETURN
+      IF(l_alert(IErr,"SimplexRefinement","doing initial SimulateAndFit()")) RETURN
 
       RSimplexFoM(ind)=RFigureofMerit ! RFigureofMerit returned as global variable
       !?? For masked correlation, add to 'average' (extreme difference from baseline)?
@@ -906,7 +908,7 @@ CONTAINS
           WRITE(SPrintString,*) TRIM(ADJUSTL(h)),TRIM(ADJUSTL(k)),TRIM(ADJUSTL(l)),".mask"
           OPEN(UNIT=IChOutWIImage, STATUS= 'UNKNOWN', FILE=SPrintString,&
                 FORM='UNFORMATTED',ACCESS='DIRECT',IOSTAT=IErr,RECL=2*IPixelCount*8)
-          IF(l_alert(IErr,"SimplexRefinement()","write .mask file")) RETURN
+          IF(l_alert(IErr,"SimplexRefinement","writing .mask file")) RETURN
           !?? Does the 8=IByteSize?
           DO jnd = 1,2*IPixelCount
             WRITE(IChOutWIImage,rec=jnd) RTestImage(jnd,:)
@@ -927,7 +929,7 @@ CONTAINS
     CALL NDimensionalDownhillSimplex(RSimplexVariable,RSimplexFoM,&
           INoOfVariables+1,INoOfVariables,INoOfVariables,&
           RExitCriteria,Iter,RStandardDeviation,RMean,IErr)
-    IF(l_alert(IErr,"SimplexRefinement()","NDimensionalDownhillSimplex()")) RETURN
+    IF(l_alert(IErr,"SimplexRefinement","NDimensionalDownhillSimplex()")) RETURN
     !?? RStandardDeviation, RMean have no value
 
   END SUBROUTINE SimplexRefinement
@@ -946,18 +948,18 @@ CONTAINS
     !--------------------------------------------------------------------
 
     ALLOCATE(RVar0(INoOfVariables),STAT=IErr)! incoming set of variables
-    IF(l_alert(IErr,"MaxGradientRefinement()","allocate RVar0")) RETURN
+    IF(l_alert(IErr,"MaxGradientRefinement","allocate RVar0")) RETURN
     ! set of variables to send out for simulations
     ALLOCATE(RCurrentVar(INoOfVariables),STAT=IErr)
-    IF(l_alert(IErr,"MaxGradientRefinement()","allocate RCurrentVar")) RETURN
+    IF(l_alert(IErr,"MaxGradientRefinement","allocate RCurrentVar")) RETURN
     ALLOCATE(RLastVar(INoOfVariables),STAT=IErr) ! set of variables updated each cycle
-    IF(l_alert(IErr,"MaxGradientRefinement()","allocate RLastVar")) RETURN
+    IF(l_alert(IErr,"MaxGradientRefinement","allocate RLastVar")) RETURN
     ! the vector describing the current line in parameter space
     ALLOCATE(RPVec(INoOfVariables),STAT=IErr)
-    IF(l_alert(IErr,"MaxGradientRefinement()","allocate RPVec")) RETURN
+    IF(l_alert(IErr,"MaxGradientRefinement","allocate RPVec")) RETURN
     ! the list of fit indices resulting from small changes Rdf for each variable in RPVec
     ALLOCATE(RFitVec(INoOfVariables),STAT=IErr)
-    IF(l_alert(IErr,"MaxGradientRefinement()","allocate RFitVec")) RETURN
+    IF(l_alert(IErr,"MaxGradientRefinement","allocate RFitVec")) RETURN
     
     
     RBestFit=RFigureofMerit
@@ -1016,7 +1018,7 @@ CONTAINS
           RCurrentVar(ind)=RCurrentVar(ind)+Rdx
           !?? JR elaborate why simulate here
           CALL SimulateAndFit(RCurrentVar,Iter,IExitFLAG,IErr)
-          IF(l_alert(IErr,"MaxGradientRefinement()","SimulateAndFit()")) RETURN
+          IF(l_alert(IErr,"MaxGradientRefinement","SimulateAndFit()")) RETURN
           ! BestFitCheck copies RCurrentVar into RIndependentVariable
           ! and updates RBestFit if the fit is better
           CALL BestFitCheck(RFigureofMerit,RBestFit,RCurrentVar,RIndependentVariable,IErr)
@@ -1047,8 +1049,9 @@ CONTAINS
         RPvecMag=RPvecMag+RPvec(ind)**2
       END DO
       IF (RPvecMag-ONE.EQ.RPvecMag.OR.RPvecMag.NE.RPvecMag) THEN ! Infinity and NaN check
-        CALL message(LS, "Error in refinement vector ",RPvec ) !?? should this error&abort
-        EXIT
+        IErr=1; WRITE(SPrintString,*) RPvec
+        IF(l_alert(IErr,"MaxGradientRefinement",&
+              "Infinity or NaN error, refinement vector ="//TRIM(SPrintString))) RETURN
       END IF
       RPvec=RPvec/SQRT(RPvecMag) ! unity vector along direction of max gradient
       CALL message( LM, "Refinement vector = ",RPvec )
@@ -1070,7 +1073,7 @@ CONTAINS
       R3var(2)=RCurrentVar(1) 
       CALL message(LM,"Refining, point 2 of 3")
       CALL SimulateAndFit(RCurrentVar,Iter,IExitFLAG,IErr)
-      IF(l_alert(IErr,"MaxGradientRefinement()","SimulateAndFit()")) RETURN
+      IF(l_alert(IErr,"MaxGradientRefinement","SimulateAndFit()")) RETURN
       CALL BestFitCheck(RFigureofMerit,RBestFit,RCurrentVar,RIndependentVariable,IErr)
       R3fit(2)=RFigureofMerit
 
@@ -1084,7 +1087,7 @@ CONTAINS
       R3var(3)=RCurrentVar(1) ! third point
       CALL message( LM, "Refining, point 3 of 3")
       CALL SimulateAndFit(RCurrentVar,Iter,IExitFLAG,IErr)
-      IF(l_alert(IErr,"MaxGradientRefinement()","SimulateAndFit()")) RETURN
+      IF(l_alert(IErr,"MaxGradientRefinement","SimulateAndFit()")) RETURN
       CALL BestFitCheck(RFigureofMerit,RBestFit,RCurrentVar,RIndependentVariable,IErr)
       R3fit(3)=RFigureofMerit
 
@@ -1120,7 +1123,7 @@ CONTAINS
         RCurrentVar=RVar0+RPvec*RPvecMag
         R3var(lnd)=RCurrentVar(1)! next point
         CALL SimulateAndFit(RCurrentVar,Iter,IExitFLAG,IErr)
-        IF(l_alert(IErr,"MaxGradientRefinement()","SimulateAndFit()")) RETURN
+        IF(l_alert(IErr,"MaxGradientRefinement","SimulateAndFit()")) RETURN
         CALL BestFitCheck(RFigureofMerit,RBestFit,RCurrentVar,RIndependentVariable,IErr)
         R3fit(lnd)=RFigureofMerit
         jnd=MAXLOC(R3var,1) ! highest x
@@ -1141,7 +1144,7 @@ CONTAINS
       CALL message ( LM, "      with fit index ",RfitMin)
       RCurrentVar=RVar0+RPvec*(RvarMin-RVar0(1))/RPvec(1) ! Put prediction into RCurrentVar
       CALL SimulateAndFit(RCurrentVar,Iter,IExitFLAG,IErr)
-      IF(l_alert(IErr,"MaxGradientRefinement()","SimulateAndFit()")) RETURN
+      IF(l_alert(IErr,"MaxGradientRefinement","SimulateAndFit()")) RETURN
       CALL BestFitCheck(RFigureofMerit,RBestFit,RCurrentVar,RIndependentVariable,IErr)
 
       ! check where we go next and update last fit etc.
@@ -1165,7 +1168,7 @@ CONTAINS
 
     IExitFLAG=1
     CALL SimulateAndFit(RIndependentVariable,Iter,IExitFLAG,IErr)
-    IF(l_alert(IErr,"MaxGradientRefinement()","SimulateAndFit()")) RETURN
+    IF(l_alert(IErr,"MaxGradientRefinement","SimulateAndFit()")) RETURN
     DEALLOCATE(RVar0,RCurrentVar,RLastVar,RPVec,RFitVec,STAT=IErr)  
 
   END SUBROUTINE MaxGradientRefinement
@@ -1184,15 +1187,15 @@ CONTAINS
     !--------------------------------------------------------------------
 
     ALLOCATE(RVar0(INoOfVariables),STAT=IErr)! incoming set of variables
-    IF(l_alert(IErr,"ParabolicRefinement()","allocate RVar0")) RETURN
+    IF(l_alert(IErr,"ParabolicRefinement","allocate RVar0")) RETURN
     ! set of variables to send out for simulations
     ALLOCATE(RCurrentVar(INoOfVariables),STAT=IErr)
-    IF(l_alert(IErr,"ParabolicRefinement()","allocate RCurrentVar")) RETURN
+    IF(l_alert(IErr,"ParabolicRefinement","allocate RCurrentVar")) RETURN
     ALLOCATE(RLastVar(INoOfVariables),STAT=IErr)! set of variables updated each cycle
-    IF(l_alert(IErr,"ParabolicRefinement()","allocate RLastVar")) RETURN
+    IF(l_alert(IErr,"ParabolicRefinement","allocate RLastVar")) RETURN
     ! the vector describing the current line in parameter space
     ALLOCATE(RPVec(INoOfVariables),STAT=IErr)
-    IF(l_alert(IErr,"ParabolicRefinement()","allocate RPVec")) RETURN
+    IF(l_alert(IErr,"ParabolicRefinement","allocate RPVec")) RETURN
 
     RLastFit=RFigureofMerit
     RLastVar=RIndependentVariable
@@ -1270,7 +1273,7 @@ CONTAINS
           RPvec(ind)=RScale/5.0 ! small change in current variable for second point
           RCurrentVar=RVar0+RPvec ! second point
           CALL SimulateAndFit(RCurrentVar,Iter,IExitFLAG,IErr)
-          IF(l_alert(IErr,"ParabolicRefinement()","SimulateAndFit()")) RETURN
+          IF(l_alert(IErr,"ParabolicRefinement","SimulateAndFit()")) RETURN
           CALL BestFitCheck(RFigureofMerit,RBestFit,RCurrentVar,RIndependentVariable,IErr)
           R3fit(2)=RFigureofMerit
           ! now look along combination of 2 parameters for third point
@@ -1279,7 +1282,7 @@ CONTAINS
           CALL message(LM,no_tag,&
                 "Finding maximum gradient for variables",ind," and",ind+1)
           CALL SimulateAndFit(RCurrentVar,Iter,IExitFLAG,IErr)
-          IF(l_alert(IErr,"ParabolicRefinement()","SimulateAndFit()")) RETURN
+          IF(l_alert(IErr,"ParabolicRefinement","SimulateAndFit()")) RETURN
           CALL BestFitCheck(RFigureofMerit,RBestFit,RCurrentVar,RIndependentVariable,IErr)
           R3fit(3)=RFigureofMerit
           ! optimum gradient vector from the three points, magnitude unity
@@ -1305,7 +1308,7 @@ CONTAINS
           RCurrentVar=RVar0
           RPvecMag=RScale
           CALL SimulateAndFit(RCurrentVar,Iter,IExitFLAG,IErr)
-          IF(l_alert(IErr,"ParabolicRefinement()","SimulateAndFit()")) RETURN  
+          IF(l_alert(IErr,"ParabolicRefinement","SimulateAndFit()")) RETURN  
           ! update RIndependentVariable if necessary
           CALL BestFitCheck(RFigureofMerit,RBestFit,RCurrentVar,RIndependentVariable,IErr)
         END IF
@@ -1405,7 +1408,7 @@ CONTAINS
         IF (RCurrentVar(ind).LE.TINY.AND.IVariableType.EQ.4) THEN
           ! We reached zero D-W factor in convexity test, skip the prediction
           CALL SimulateAndFit(RCurrentVar,Iter,IExitFLAG,IErr)
-          IF(l_alert(IErr,"ParabolicRefinement()","SimulateAndFit()")) RETURN  
+          IF(l_alert(IErr,"ParabolicRefinement","SimulateAndFit()")) RETURN  
           CALL BestFitCheck(RFigureofMerit,RBestFit,RCurrentVar,RIndependentVariable,IErr)
           CALL message( LM, "Using zero Debye Waller factor, refining next variable" )
         ELSE
@@ -1589,25 +1592,25 @@ CONTAINS
     INTEGER(IKIND),DIMENSION(:),ALLOCATABLE :: IVectors
     
     CALL ConvertSpaceGroupToNumber(ISpaceGrp,IErr)
-    IF(l_alert(IErr,"SetupAtomicVectorMovements()","ConvertSpaceGroupToNumber()")) RETURN  
+    IF(l_alert(IErr,"SetupAtomicVectorMovements","ConvertSpaceGroupToNumber()")) RETURN  
 
     ALLOCATE(IVectors(SIZE(SWyckoffSymbols)),STAT=IErr)
-    IF(l_alert(IErr,"SetupAtomicVectorMovements()","allocate IVectors()")) RETURN  
+    IF(l_alert(IErr,"SetupAtomicVectorMovements","allocate IVectors()")) RETURN  
     
     DO ind = 1,SIZE(SWyckoffSymbols)!NB SIZE(SWyckoffSymbols)=IAtomicSitesToRefine?
       CALL CountAllowedMovements(ISpaceGrp,SWyckoffSymbols(ind),IVectors(ind),IErr)
-      IF(l_alert(IErr,"SetupAtomicVectorMovements()","ConvertSpaceGroupToNumber()")) RETURN     
+      IF(l_alert(IErr,"SetupAtomicVectorMovements","ConvertSpaceGroupToNumber()")) RETURN     
     END DO
     
     IAllowedVectors = SUM(IVectors)
     
     ALLOCATE(IAllowedVectorIDs(IAllowedVectors),STAT=IErr)
-    IF(l_alert(IErr,"SetupAtomicVectorMovements()","allocate IAllowedVectorIDs()")) RETURN  
+    IF(l_alert(IErr,"SetupAtomicVectorMovements","allocate IAllowedVectorIDs")) RETURN  
     ALLOCATE(RAllowedVectors(IAllowedVectors,ITHREE),STAT=IErr)
-    IF(l_alert(IErr,"SetupAtomicVectorMovements()","allocate RAllowedVectors()")) RETURN  
+    IF(l_alert(IErr,"SetupAtomicVectorMovements","allocate RAllowedVectors")) RETURN  
     ALLOCATE(RAllowedVectorMagnitudes(IAllowedVectors),STAT=IErr)
-    IF(l_alert(IErr,"SetupAtomicVectorMovements()",&
-          "allocate RAllowedVectorMagnitudes()")) RETURN  
+    IF(l_alert(IErr,"SetupAtomicVectorMovements",&
+          "allocate RAllowedVectorMagnitudes")) RETURN  
     
     knd = 0
     DO ind = 1,SIZE(SWyckoffSymbols)
@@ -1622,11 +1625,11 @@ CONTAINS
       CALL DetermineAllowedMovements(ISpaceGrp,SWyckoffSymbols(ind),&
            RAllowedVectors(SUM(IVectors(:(ind-1)))+1:SUM(IVectors(:(ind))),:),&
            IVectors(ind),IErr)
-      IF(l_alert(IErr,"SetupAtomicVectorMovements()","DetermineAllowedMovements()")) RETURN  
+      IF(l_alert(IErr,"SetupAtomicVectorMovements","DetermineAllowedMovements()")) RETURN  
     END DO
     
     ALLOCATE(RInitialAtomPosition(SIZE(RBasisAtomPosition,1),ITHREE),STAT=IErr)
-    IF(l_alert(IErr,"SetupAtomicVectorMovements()","allocate RInitialAtomPosition")) RETURN  
+    IF(l_alert(IErr,"SetupAtomicVectorMovements","allocate RInitialAtomPosition")) RETURN  
     RInitialAtomPosition = RBasisAtomPosition
 
   END SUBROUTINE SetupAtomicVectorMovements     

@@ -46,7 +46,7 @@
 SUBROUTINE WriteOutput( CAmplitudeandPhaseImages,RReflectionImages,RMontageImages,IErr)
 
   USE MyNumbers
-  USE message_mod; USE alert_mod
+  USE message_mod
 
   USE CPara; USE IPara; USE SPara
   USE RPara
@@ -241,7 +241,7 @@ SUBROUTINE OpenReflectionImage(IChOutWrite, surname, IErr,IReflectWriting,IImage
   
   USE IPara
   USE RPara
-  USE message_mod; USE alert_mod
+  USE message_mod
   USE MPI
   USE MyMPI
 
@@ -777,7 +777,7 @@ SUBROUTINE UpdateStructureFactors(RIndependentVariable,IErr)
   USE BlochPara
 
   USE IChannels
-  USE message_mod; USE alert_mod
+  USE message_mod
   USE MPI
   USE MyMPI
 

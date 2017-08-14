@@ -37,10 +37,6 @@
 ! EigenSpectrum()
 ! INVERT()
 
-!?? JR how access to ZGEMM? what other namespace can access?
-
-!?? JR want bloch closed module, low level, possibly even pure for performance & elegance
-
 !>
 !! Module-description: Holds BlochCoefficientCalculation which for a pixel
 !! calculates the wavefunction vector for each thickness
@@ -63,11 +59,11 @@ MODULE bloch_mod
 
     ! ---> RIndividualReflections( LACBED_ID , thickness_ID, local_pixel_ID )
 
-    !?? JR how access to ZGEMM? what other namespace can access?
+    !?? accesses to ZGEMM
 
     USE MyNumbers
     USE MyMPI
-    USE message_mod; USE alert_mod
+    USE message_mod
   
     ! globals - output
     USE RPara, ONLY : RIndividualReflections 
@@ -163,7 +159,7 @@ MODULE bloch_mod
     CALL StrongAndWeakBeamsDetermination(nReflections,IMinWeakBeams,&
                     IMinStrongBeams,RDevPara,CUgMat,&
                     IStrongBeamList,IWeakBeamList,nBeams,nWeakBeams,IErr)
-    IF(l_alert(IErr,"BlochCoefficientCalculation()",&
+    IF(l_alert(IErr,"BlochCoefficientCalculation",&
           "StrongAndWeakBeamsDetermination()")) RETURN
     CALL message(LL,dbg7,"strong beams",nBeams)
     CALL message(LL,dbg7,"weak beams",nWeakBeams)
@@ -174,17 +170,26 @@ MODULE bloch_mod
     !--------------------------------------------------------------------
 
     ! now nBeams determined, allocate complex arrays
-    ALLOCATE( CBeamProjectionMatrix(nBeams,nReflections),&
-              CDummyBeamMatrix(nBeams,nReflections),&
-              CUgSgMatrix(nBeams,nBeams),&
-              CEigenVectors(nBeams,nBeams),&
-              CEigenValues(nBeams),&
-              CInvertedEigenVectors(nBeams,nBeams),&
-              CBeamTranspose(nReflections,nBeams),&
-              CUgMatPartial(nReflections,nBeams),&
-              CAlphaWeightingCoefficients(nBeams),&
-              CEigenValueDependentTerms(nBeams,nBeams), STAT=IErr)
-    IF(l_alert(IErr,"BlochCoefficientCalculation()","do main allocations")) RETURN
+    ALLOCATE( CBeamProjectionMatrix(nBeams,nReflections), STAT=IErr )
+    IF(l_alert(IErr,"BlochCoefficientCalculation","allocate CBeamProjectionMatrix")) RETURN
+    ALLOCATE( CDummyBeamMatrix(nBeams,nReflections), STAT=IErr )
+    IF(l_alert(IErr,"BlochCoefficientCalculation","allocate CBeamProjectionMatrix")) RETURN
+    ALLOCATE( CUgSgMatrix(nBeams,nBeams), STAT=IErr )
+    IF(l_alert(IErr,"BlochCoefficientCalculation","allocate CBeamProjectionMatrix")) RETURN
+    ALLOCATE( CEigenValues(nBeams), STAT=IErr )
+    IF(l_alert(IErr,"BlochCoefficientCalculation","allocate CBeamProjectionMatrix")) RETURN
+    ALLOCATE( CEigenVectors(nBeams,nBeams), STAT=IErr )
+    IF(l_alert(IErr,"BlochCoefficientCalculation","allocate CBeamProjectionMatrix")) RETURN
+    ALLOCATE( CInvertedEigenVectors(nBeams,nBeams), STAT=IErr )
+    IF(l_alert(IErr,"BlochCoefficientCalculation","allocate CBeamProjectionMatrix")) RETURN
+    ALLOCATE( CBeamTranspose(nReflections,nBeams), STAT=IErr )
+    IF(l_alert(IErr,"BlochCoefficientCalculation","allocate CBeamProjectionMatrix")) RETURN
+    ALLOCATE( CUgMatPartial(nReflections,nBeams), STAT=IErr )
+    IF(l_alert(IErr,"BlochCoefficientCalculation","allocate CBeamProjectionMatrix")) RETURN
+    ALLOCATE( CAlphaWeightingCoefficients(nBeams), STAT=IErr )
+    IF(l_alert(IErr,"BlochCoefficientCalculation","allocate CBeamProjectionMatrix")) RETURN
+    ALLOCATE( CEigenValueDependentTerms(nBeams,nBeams), STAT=IErr )
+    IF(l_alert(IErr,"BlochCoefficientCalculation","allocate CBeamProjectionMatrix")) RETURN
 
     ! compute the effective Ug matrix by selecting only those beams
     ! for which IStrongBeamList has an entry
@@ -270,7 +275,7 @@ MODULE bloch_mod
     !--------------------------------------------------------------------
 
     CALL EigenSpectrum(nBeams,CUgSgMatrix,CEigenValues(:),CEigenVectors(:,:),IErr)
-    IF(l_alert(IErr,"BlochCoefficientCalculation()","EigenSpectrum()")) RETURN
+    IF(l_alert(IErr,"BlochCoefficientCalculation","EigenSpectrum()")) RETURN
 
     IF (IHolzFLAG.EQ.1) THEN ! higher order laue zone included so adjust Eigen values/vectors
       CEigenValues = CEigenValues * RKn/RBigK
@@ -293,7 +298,7 @@ MODULE bloch_mod
                     nReflections,nBeams,IStrongBeamList,CEigenVectors,CEigenValues,IErr)
       IF(l_alert(IErr,"BlochCoefficientCalculation","CreateWaveFunctions")) RETURN
       ! Collect Intensities from all thickness for later writing
-      IF(IHKLSelectFLAG.EQ.0) THEN ! we are using hkl list from felix.hkl
+      IF(IHKLSelectFLAG.EQ.0) THEN ! we are using hkl list from felix.hkl !?? JR is this wrong?
         IF(IImageFLAG.LE.2) THEN ! output is 0=montage, 1=individual images
           RIndividualReflections(1:INoOfLacbedPatterns,IThicknessIndex,&
                 (IPixelNumber-IFirstPixelToCalculate)+1) = &
@@ -303,7 +308,7 @@ MODULE bloch_mod
                 (IPixelNumber-IFirstPixelToCalculate)+1) = &
                 CFullWavefunctions(1:INoOfLacbedPatterns)
         END IF
-      ELSE ! we are using hkl list from [where?]
+      ELSE ! we are using hkl list from [where?] !?? JR is this from felix.hkl and above not
         IF(IImageFLAG.LE.2) THEN
           DO pnd = 1,INoOfLacbedPatterns
             RIndividualReflections(pnd,IThicknessIndex,&
@@ -324,7 +329,7 @@ MODULE bloch_mod
          CInvertedEigenVectors, CAlphaWeightingCoefficients, &
          CEigenValues,CEigenVectors,CEigenValueDependentTerms, &
          CBeamProjectionMatrix, CDummyBeamMatrix,STAT=IErr)
-    IF(l_alert(IErr,"BlochCoefficientCalculation()","deallocating arrays")) RETURN
+    IF(l_alert(IErr,"BlochCoefficientCalculation","deallocating arrays")) RETURN
     
   END SUBROUTINE BlochCoefficientCalculation
 
@@ -350,7 +355,7 @@ MODULE bloch_mod
 
     USE MyNumbers
     USE MyMPI
-    USE message_mod; USE alert_mod
+    USE message_mod
 
     IMPLICIT NONE
     
@@ -438,7 +443,7 @@ MODULE bloch_mod
 
     USE MyNumbers
     USE MyMPI
-    USE message_mod; USE alert_mod 
+    USE message_mod 
 
     !?? variables match up to globals allocation
     !?? make some of these local
@@ -502,7 +507,7 @@ MODULE bloch_mod
     CALL message(LXL,dbg7,"Sg limit for strong beams = ",RMaxSg)
     CALL message(LXL,dbg7,"Smallest strong perturbation strength = ",RMinPertStrong)
     IF(SUM(IStrong)+IMinWeakBeams.GT.nReflections) IErr = 1
-    IF(l_alert(IErr,"StrongAndWeakBeamsDetermination()","start. "//&
+    IF(l_alert(IErr,"StrongAndWeakBeamsDetermination",&
           "Insufficient reflections to accommodate all Strong and Weak Beams")) RETURN
     
     !----------------------------------------------------------------------------
@@ -557,14 +562,14 @@ MODULE bloch_mod
     !?? called every BlochCoefficientCalculation()
 
     USE MyNumbers
-    USE message_mod; USE alert_mod
+    USE message_mod
     USE MyMPI
 
     IMPLICIT NONE
 
     INTEGER(IKIND),INTENT(IN) :: IMatrixDimension
-    !?? there are no errors for intent(in) but ZGEEV should change it
-    COMPLEX(RKIND),INTENT(INOUT) :: MatrixToBeDiagonalised(IMatrixDimension,IMatrixDimension)
+    !?? JR there are no errors using intent(in) only, does ZGEEV not change it
+    COMPLEX(RKIND),INTENT(IN) :: MatrixToBeDiagonalised(IMatrixDimension,IMatrixDimension)
     COMPLEX(RKIND),INTENT(OUT) :: EigenValues(IMatrixDimension),&
           EigenVectors(IMatrixDimension,IMatrixDimension)
     INTEGER(IKIND),INTENT(OUT) :: IErr
@@ -578,9 +583,9 @@ MODULE bloch_mod
     ! find optimum size of arrays
     WorkSpaceDimension=1
     ALLOCATE(CWorkSpace(WorkSpaceDimension),STAT = IErr)
-    IF(l_alert(IErr,"EigenSpectrum()","allocate CWorkSpace")) RETURN
+    IF(l_alert(IErr,"EigenSpectrum","allocate CWorkSpace")) RETURN
     ALLOCATE(WorkSpace(2*IMatrixDimension),STAT = IErr)
-    IF(l_alert(IErr,"EigenSpectrum()","allocate WorkSpace")) RETURN
+    IF(l_alert(IErr,"EigenSpectrum","allocate WorkSpace")) RETURN
 
 
     WorkSpaceDimension=-1
@@ -589,24 +594,24 @@ MODULE bloch_mod
          EigenValues, 0,1, EigenVectors,IMatrixDimension, &
          CWorkSpace, WorkSpaceDimension, WorkSpace, IErr )
     !?? '0,1' constant inputs don't match documentation 
-    IF(l_alert(IErr,"EigenSpectrum()","ZGEEV()")) RETURN
+    IF(l_alert(IErr,"EigenSpectrum","ZGEEV()")) RETURN
 
     WorkSpaceDimension = INT(CWorkSpace(1))
 
     ! REALLOCATE necessary memory
     DEALLOCATE(CWorkSpace,STAT=IErr)
-    IF(l_alert(IErr,"EigenSpectrum()","deallocate CWorkSpace")) RETURN
+    IF(l_alert(IErr,"EigenSpectrum","deallocate CWorkSpace")) RETURN
     ALLOCATE(CWorkSpace(WorkSpaceDimension),STAT = IErr)
-    IF(l_alert(IErr,"EigenSpectrum()","allocate CWorkSpace")) RETURN
+    IF(l_alert(IErr,"EigenSpectrum","allocate CWorkSpace")) RETURN
 
     ! do the actual call to get the spectrum
     CALL ZGEEV('N','V', IMatrixDimension, MatrixToBeDiagonalised, IMatrixDimension,&
          EigenValues, 0,1, EigenVectors,IMatrixDimension, &
          CWorkSpace, WorkSpaceDimension, WorkSpace, IErr )
-    IF(l_alert(IErr,"EigenSpectrum()","ZGEEV()")) RETURN
+    IF(l_alert(IErr,"EigenSpectrum","ZGEEV()")) RETURN
 
     DEALLOCATE(CWorkSpace,WorkSpace,STAT = IErr)
-    IF(l_alert(IErr,"EigenSpectrum()","deallocate")) RETURN
+    IF(l_alert(IErr,"EigenSpectrum","deallocate")) RETURN
 
     RETURN
 
@@ -632,7 +637,7 @@ MODULE bloch_mod
     ! InvertedMatrix: the Inverse
 
     USE MyNumbers
-    USE message_mod; USE alert_mod
+    USE message_mod
     USE MyMPI
     
     IMPLICIT NONE
@@ -648,20 +653,20 @@ MODULE bloch_mod
     COMPLEX(CKIND), DIMENSION(:), ALLOCATABLE :: WORK
     
     ALLOCATE(IPIV(MatrixSize),STAT=IErr)
-    IF(l_alert(IErr,"EigenSpectrum()","allocate IPIV")) RETURN
+    IF(l_alert(IErr,"EigenSpectrum","allocate IPIV")) RETURN
     
     CALL ZGETRF(MatrixSize,MatrixSize,Matrix,MatrixSize,IPIV,IErr)
-    IF(l_alert(IErr,"EigenSpectrum()","ZGETRF()")) RETURN
+    IF(l_alert(IErr,"EigenSpectrum","ZGETRF()")) RETURN
 
     LWORK = MatrixSize*MatrixSize
     ALLOCATE(WORK(LWORK),STAT=IErr)   
-    IF(l_alert(IErr,"EigenSpectrum()","WORK")) RETURN
+    IF(l_alert(IErr,"EigenSpectrum","WORK")) RETURN
     
     CALL ZGETRI(MatrixSize,Matrix,MatrixSize,IPIV,WORK,LWORK,IErr)
-    IF(l_alert(IErr,"EigenSpectrum()","ZGETRI()")) RETURN
+    IF(l_alert(IErr,"EigenSpectrum","ZGETRI()")) RETURN
 
     DEALLOCATE(IPIV,WORK,STAT=IErr)
-    IF(l_alert(IErr,"EigenSpectrum()","deallocate IPIV")) RETURN
+    IF(l_alert(IErr,"EigenSpectrum","deallocate IPIV")) RETURN
 
     InvertedMatrix = Matrix  
     RETURN

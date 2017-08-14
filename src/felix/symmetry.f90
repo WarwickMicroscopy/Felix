@@ -55,7 +55,7 @@ SUBROUTINE DetermineAllowedMovements(ISpaceGrp,SWyckoffSymbol,RVector,IVector,IE
   USE BlochPara
 
   USE IChannels
-  USE message_mod; USE alert_mod
+  USE message_mod
   USE MPI
   USE MyMPI
 
@@ -351,7 +351,7 @@ SUBROUTINE CountAllowedMovements(ISpaceGrp,SWyckoffSymbol,IVectors,IErr)
   USE BlochPara
 
   USE IChannels
-  USE message_mod; USE alert_mod
+  USE message_mod
   USE MPI
   USE MyMPI
 
@@ -708,7 +708,7 @@ SUBROUTINE StrLowCase( Input_String,Output_String,IErr )
   USE BlochPara
 
   USE IChannels
-  USE message_mod; USE alert_mod
+  USE message_mod
   USE MPI
   USE MyMPI
 
