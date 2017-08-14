@@ -46,7 +46,7 @@
 !!
 !! Major-Authors: Keith Evans (2014), Richard Beanland (2016)
 !!
-SUBROUTINE DetermineAllowedMovements(ISpaceGrp,SWyckoffSymbol,RVector,IVector,IErr)
+SUBROUTINE DetermineAllowedMovements(ISpaceGrp,SWyckoff,RMoveMatrix,IErr)
 
   USE MyNumbers
   
@@ -61,20 +61,20 @@ SUBROUTINE DetermineAllowedMovements(ISpaceGrp,SWyckoffSymbol,RVector,IVector,IE
 
   IMPLICIT NONE
 
-  INTEGER(IKIND) :: ISpaceGrp,IErr,IVector,ind
-  CHARACTER*1 :: SWyckoffSymbol
-  REAL(RKIND),DIMENSION(IVector,ITHREE),INTENT(OUT) :: RVector
+  INTEGER(IKIND) :: ISpaceGrp,IErr,ind
+  CHARACTER*1 :: SWyckoff
+  REAL(RKIND),DIMENSION(ITHREE,ITHREE),INTENT(OUT) :: RMoveMatrix
 
   SELECT CASE(ISpaceGrp)
   CASE(1)
-    SELECT CASE (SWyckoffSymbol)
+    SELECT CASE (SWyckoff)
     CASE('x')
-      RVector(1,:) = (/ZERO, ONE, ZERO/)
-      RVector(2,:) = (/ZERO, ZERO, ONE/)
+      RMoveMatrix(1,:) = (/ZERO, ONE, ZERO/)
+      RMoveMatrix(2,:) = (/ZERO, ZERO, ONE/)
     CASE('b')
-      RVector(1,:) = (/ONE, ZERO, ZERO/)
-      RVector(2,:) = (/ZERO, ONE, ZERO/)
-      RVector(3,:) = (/ZERO, ZERO, ONE/)
+      RMoveMatrix(1,:) = (/ONE, ZERO, ZERO/)
+      RMoveMatrix(2,:) = (/ZERO, ONE, ZERO/)
+      RMoveMatrix(3,:) = (/ZERO, ZERO, ONE/)
     CASE DEFAULT
       CALL message( LM, "---------------------------------------" )
       CALL message( LM, "This Wyckoff Symbol for this space group is not yet implemented")
@@ -117,14 +117,14 @@ SUBROUTINE DetermineAllowedMovements(ISpaceGrp,SWyckoffSymbol,RVector,IVector,IE
 !!$  CASE(34)
 !!$  CASE(35)
   CASE(36)
-     SELECT CASE (SWyckoffSymbol)
+     SELECT CASE (SWyckoff)
      CASE('a')
-       RVector(1,:) = (/ZERO, ONE, ZERO/)
-       RVector(2,:) = (/ZERO, ZERO, ONE/)
+       RMoveMatrix(1,:) = (/ZERO, ONE, ZERO/)
+       RMoveMatrix(2,:) = (/ZERO, ZERO, ONE/)
      CASE('b')
-       RVector(1,:) = (/ONE, ZERO, ZERO/)
-       RVector(2,:) = (/ZERO, ONE, ZERO/)
-       RVector(3,:) = (/ZERO, ZERO, ONE/)
+       RMoveMatrix(1,:) = (/ONE, ZERO, ZERO/)
+       RMoveMatrix(2,:) = (/ZERO, ONE, ZERO/)
+       RMoveMatrix(3,:) = (/ZERO, ZERO, ONE/)
      CASE DEFAULT
         CALL message( LM, "---------------------------------------" )
         CALL message( LM, "This Wyckoff Symbol for this space group is not yet implemented")
@@ -342,7 +342,7 @@ END SUBROUTINE DetermineAllowedMovements
 !!
 !! Major-Authors: Keith Evans (2014), Richard Beanland (2016)
 !!
-SUBROUTINE CountAllowedMovements(ISpaceGrp,SWyckoffSymbol,IVectors,IErr)
+SUBROUTINE CountAllowedMovements(ISpaceGrp,SWyckoff,IVectors,IErr)
 
   USE MyNumbers
   
@@ -359,11 +359,11 @@ SUBROUTINE CountAllowedMovements(ISpaceGrp,SWyckoffSymbol,IVectors,IErr)
 
   INTEGER(IKIND),INTENT(IN) :: ISpaceGrp
   INTEGER(IKIND) :: IVectors,IErr
-  CHARACTER*1 :: SWyckoffSymbol
+  CHARACTER*1 :: SWyckoff
   
   SELECT CASE(ISpaceGrp)
   CASE(1)
-     SELECT CASE (SWyckoffSymbol)
+     SELECT CASE (SWyckoff)
      CASE('x')
         IVectors = 2_IKIND
      CASE('b')
@@ -409,11 +409,11 @@ SUBROUTINE CountAllowedMovements(ISpaceGrp,SWyckoffSymbol,IVectors,IErr)
 !!$  CASE(34)
 !!$  CASE(35)
   CASE(36)
-     SELECT CASE (SWyckoffSymbol)
+     SELECT CASE (SWyckoff)
      CASE('a')
-        IVectors = 2_IKIND
+        IVectors = 2
      CASE('b')
-        IVectors = 3_IKIND
+        IVectors = 3
      CASE DEFAULT
         CALL message( LM, "---------------------------------------" )
         CALL message( LM, "This Wyckoff Symbol for this space group is not yet implemented")

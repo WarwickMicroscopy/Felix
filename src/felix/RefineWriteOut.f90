@@ -199,7 +199,7 @@ SUBROUTINE WriteIterationCIF(path,IErr)
     WRITE(IChOutSimplex,FMT='(2(A3,1X),3(F7.4,1X),2(F5.2,1X))') &
 	 SBasisAtomLabel(jnd),SBasisAtomName(jnd),RBasisAtomPosition(jnd,:),RBasisIsoDW(jnd),RBasisOccupancy(jnd)
 !    WRITE(IChOutSimplex,FMT='(A2,1X,A1,1X,3(F9.6,1X),F5.3,1X,F5.3)') &
-!	 SBasisAtomName(jnd),SWyckoffSymbols(jnd),RBasisAtomPosition(jnd,:), &
+!	 SBasisAtomName(jnd),SWyckoffSymbol(jnd),RBasisAtomPosition(jnd,:), &
 
   END DO
   WRITE(IChOutSimplex,FMT='(A22)') "#End of refinement cif"

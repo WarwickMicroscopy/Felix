@@ -172,7 +172,7 @@ PROGRAM Felixrefine
   RElectronWaveVectorMagnitude=TWOPI/RElectronWaveLength
   RRelativisticCorrection = ONE/SQRT( ONE - (RElectronVelocity/RSpeedOfLight)**2 )
   RRelativisticMass = RRelativisticCorrection*RElectronMass
-  !?? clean up above k & relitivistic setup
+  !?? clean up above k & relativistic setup
 
   ! Creates reciprocal lattice vectors in Microscope reference frame
   CALL ReciprocalLattice(IErr)
@@ -184,7 +184,7 @@ PROGRAM Felixrefine
 
   ! total possible atoms/unit cell
   IMaxPossibleNAtomsUnitCell=SIZE(RBasisAtomPosition,1)*SIZE(RSymVec,1)
-  ! over-allocate since actual size not known before calculation of unique positions
+  ! over-allocate since actual size not known before calculation of unique positions (atoms in special positions will be duplicated)
 
   ! allocations using that RBasisAtomPosition, RSymVec have now been setup
   ! fractional unit cell coordinates are used for RAtomPosition, like BasisAtomPosition
@@ -211,10 +211,10 @@ PROGRAM Felixrefine
   ! set up unique atom positions, reflection pool
   !--------------------------------------------------------------------
 
-  ! fills lattice unit cell from basis attributes
+  ! fills unit cell from basis and symmetry, removes duplicate atoms at special positions
   CALL UniqueAtomPositions(IErr)
   IF(l_alert(IErr,"felixrefine","UniqueAtomPositions()")) CALL abort()
-  !?? could re-allocate RAtomPosition,SAtomName,RIsoDW,ROccupancy,
+  !?? could re-allocate RAtomCoordinate,SAtomName,RIsoDW,ROccupancy,
   !?? IAtomicNumber,IAnisoDW to match INAtomsUnitCell?
 
   RHOLZAcceptanceAngle=TWODEG2RADIAN !?? RB seems way too low?
@@ -374,8 +374,8 @@ PROGRAM Felixrefine
   DO ind=1,INhkl
      RgPoolMag(ind)= SQRT(DOT_PRODUCT(RgPool(ind,:),RgPool(ind,:)))
   END DO
-  CALL message(LL,dbg7,"displaying Rhkl, RgPoolMag columnwise" )
-  CALL message(LL,dbg7,"vector & magnitude(1/A) respectively",NINT(Rhkl),RgPoolMag)
+  CALL message(LL,dbg7,"g-vectors and magnitude (1/A), in the microscope reference frame" )
+  CALL message(LL,dbg7,"g=",NINT(Rhkl),RgPoolMag)!How does this give a nice list? Can we just have the first 16 g-vectors, for example?
   
   ! g-vector components parallel to the surface unit normal
   ALLOCATE(RgDotNorm(INhkl),STAT=IErr)
@@ -459,18 +459,17 @@ PROGRAM Felixrefine
   !--------------------------------------------------------------------
 
   ! Calculate Reflection Matrix
-  IThicknessCount= (RFinalThickness-RInitialThickness)/RDeltaThickness + 1
-  !?? integer = reals ???
+  IThicknessCount= NINT((RFinalThickness-RInitialThickness)/RDeltaThickness) + 1
   DO ind=1,nReflections
      DO jnd=1,nReflections
-        RgMatrix(ind,jnd,:)= RgPool(ind,:)-RgPool(jnd,:) !?? tensor?
+        RgMatrix(ind,jnd,:)= RgPool(ind,:)-RgPool(jnd,:)
         RgMatrixMagnitude(ind,jnd) = & 
               SQRT(DOT_PRODUCT(RgMatrix(ind,jnd,:),RgMatrix(ind,jnd,:)))
      ENDDO
   ENDDO
   
   CALL message(LL,dbg3,"g-vector magnitude matrix (2pi/A)", RgMatrixMagnitude(1:16,1:8)) 
-  CALL message(LL,dbg3,"first column of g-vectors", RgMatrix(1:16,1,:)) 
+  CALL message(LL,dbg3,"first 16 g-vectors", RgMatrix(1:16,1,:)) 
 
   ! structure factor initialisation
   ! Calculate Ug matrix for each entry in CUgMatNoAbs(1:nReflections,1:nReflections)
@@ -495,7 +494,7 @@ PROGRAM Felixrefine
   ! If Ug refinement, set up variables
   !--------------------------------------------------------------------
 
-  ! Ug refinement is a special calse and must be done alone
+  ! Ug refinement is a special case and must be done alone
   ! cannot do any other refinement alongisde
   IF(IRefineMode(1).EQ.1) THEN ! It's a Ug refinement, code(A)
 
@@ -512,12 +511,12 @@ PROGRAM Felixrefine
       INoOfVariables = jnd-1 
     END IF
     IF ( INoOfVariables.EQ.1 ) THEN 
-      CALL message(LM,"Only one indepedent variable")
+      CALL message(LM,"Only one independent variable")
     ELSE
-      CALL message(LM,"number of indepedent variables = ",INoOfVariables)
+      CALL message(LM,"number of independent variables = ",INoOfVariables)
     END IF
 
-    ALLOCATE(RIndependentVariable(INoOfVariables),STAT=IErr)  
+    ALLOCATE(RIndependentVariable(INoOfVariables),STAT=IErr)  !Don't like having the same variable allocated in two places!***
     IF(l_alert(IErr,"felixrefine","allocate RIndependentVariable")) CALL abort()
 
     ! Fill up the IndependentVariable list with CUgMatNoAbs components
@@ -547,18 +546,18 @@ PROGRAM Felixrefine
   IF(IRefineMode(1).EQ.0) THEN ! It's not a Ug refinement, so count refinement variables
 
     IF(IRefineMode(2).EQ.1) THEN ! It's an atom coordinate refinement, code(B)
-      CALL SetupAtomicVectorMovements(IErr)
+      CALL SetupAtomMovements(IErr)
       IF(l_alert(IErr,"felixrefine","Absorption()")) CALL abort()
     END IF
 
     ! Atomic coordinates, B
-    INoofElementsForEachRefinementType(2)=IRefineMode(2)*IAllowedVectors
+    INoofElementsForEachRefinementType(2)=IRefineMode(2)*SIZE(IAtomMoveList)
     ! Occupancy, C
-    INoofElementsForEachRefinementType(3)=IRefineMode(3)*SIZE(IAtomicSitesToRefine)
+    INoofElementsForEachRefinementType(3)=IRefineMode(3)*SIZE(IAtomsToRefine)
     ! Isotropic DW, D
-    INoofElementsForEachRefinementType(4)=IRefineMode(4)*SIZE(IAtomicSitesToRefine)
+    INoofElementsForEachRefinementType(4)=IRefineMode(4)*SIZE(IAtomsToRefine)
     ! Anisotropic DW, E
-    INoofElementsForEachRefinementType(5)=IRefineMode(5)*SIZE(IAtomicSitesToRefine)*6
+    INoofElementsForEachRefinementType(5)=IRefineMode(5)*SIZE(IAtomsToRefine)*6
     INoofElementsForEachRefinementType(6)=IRefineMode(6)*3! Unit cell dimensions, F
     INoofElementsForEachRefinementType(7)=IRefineMode(7)*3! Unit cell angles, G
     INoofElementsForEachRefinementType(8)=IRefineMode(8)! Convergence angle, H
@@ -577,17 +576,17 @@ PROGRAM Felixrefine
     END IF
 
 	  ! Fill up the IndependentVariable list 
-    ALLOCATE(RIndependentVariable(INoOfVariables),STAT=IErr)
+    ALLOCATE(RIndependentVariable(INoOfVariables),STAT=IErr)  !Don't like having the same variable allocated in two places!***
     ind=1
     IF(IRefineMode(3).EQ.1) THEN ! Occupancy, code(C)
-	    DO jnd=1,SIZE(IAtomicSitesToRefine)
-          RIndependentVariable(ind)=RBasisOccupancy(IAtomicSitesToRefine(jnd))
+	    DO jnd=1,SIZE(IAtomsToRefine)
+          RIndependentVariable(ind)=RBasisOccupancy(IAtomsToRefine(jnd))
           ind=ind+1
 	    END DO
 	  END IF
     IF(IRefineMode(4).EQ.1) THEN ! Isotropic DW, code(D)
-	    DO jnd=1,SIZE(IAtomicSitesToRefine)
-          RIndependentVariable(ind)=RIsoDW(IAtomicSitesToRefine(jnd))
+	    DO jnd=1,SIZE(IAtomsToRefine)
+          RIndependentVariable(ind)=RIsoDW(IAtomsToRefine(jnd))
           ind=ind+1
 	    END DO
 	  END IF
@@ -620,7 +619,7 @@ PROGRAM Felixrefine
   ! Allocate & setup image arrays for pixel-parallel simulations
   !--------------------------------------------------------------------
   
-  ! Allocate necessary output image arrays  
+  ! Allocate output image arrays  
   ALLOCATE(RhklPositions(nReflections,2),STAT=IErr)
   IF(l_alert(IErr,"felixrefine","allocate RhklPositions")) CALL abort()
   CALL ImageSetup(IErr) !?? what does this do?
@@ -636,7 +635,7 @@ PROGRAM Felixrefine
         STAT=IErr)
   IF(l_alert(IErr,"felixrefine","allocate RImageSimi")) CALL abort()
 
-  IF (ICorrelationFLAG.EQ.3) THEN ! allocate images for the mask
+  IF (ICorrelationFLAG.EQ.3) THEN ! allocate images for masked correlation
     ! Baseline Images to calculate mask
     ALLOCATE(RImageBase(2*IPixelCount,2*IPixelCount,INoOfLacbedPatterns,IThicknessCount),&
           STAT=IErr)
@@ -1481,7 +1480,7 @@ CONTAINS
   !! Procedure-description: Assign array locations to iteration variables, similar
   !! to IIterativeVariableUniqueIDs
   !!
-  !! Major-Authors: Keith Evans (2014), Richard Beanland (2016)
+  !! Major-Authors: Keith Evans (2014)
   !!
   SUBROUTINE AssignArrayLocationsToIterationVariables(IIterativeVariableType,&
                     IVariableNo,IArrayToFill,IErr)
@@ -1519,16 +1518,16 @@ CONTAINS
 
     CASE(3) ! Occupancies, C
        IArrayToFill(IArrayIndex,2) = IIterativeVariableType
-       IArrayToFill(IArrayIndex,3) = IAtomicSitesToRefine(IVariableNo)
+       IArrayToFill(IArrayIndex,3) = IAtomsToRefine(IVariableNo)
 
     CASE(4) ! Isotropic Debye Waller Factors , D
        IArrayToFill(IArrayIndex,2) = IIterativeVariableType
-       IArrayToFill(IArrayIndex,3) = IAtomicSitesToRefine(IVariableNo)
+       IArrayToFill(IArrayIndex,3) = IAtomsToRefine(IVariableNo)
 
     CASE(5) ! Anisotropic Debye Waller Factors (a11-a33), E
       IArrayToFill(IArrayIndex,2) = IIterativeVariableType
       IArrayToFill(IArrayIndex,3) = &
-            IAtomicSitesToRefine(INT(CEILING(REAL(IVariableNo/6.0D0,RKIND))))
+            IAtomsToRefine(INT(CEILING(REAL(IVariableNo/6.0D0,RKIND))))
       IAnisotropicDebyeWallerFactorElementNo = &
             NINT(6.D0*(REAL(IVariableNo/6.0D0,RKIND) - &
             CEILING(REAL(IVariableNo/6.0D0,RKIND)))+6.0D0)
@@ -1582,57 +1581,46 @@ CONTAINS
   !!
   !! Major-Authors: Richard Beanland (2016)
   !!
-  SUBROUTINE SetupAtomicVectorMovements(IErr)
+  SUBROUTINE SetupAtomMovements(IErr)
 
     !?? JR move out of felixrefine - even if top level, very specific
 
     !?? JR called once felixrefine IF(IRefineMode(2)==1) atom coordinate refinement, code(B)
 
     INTEGER(IKIND) :: IErr,knd,jnd,ind,ISpaceGrp
-    INTEGER(IKIND),DIMENSION(:),ALLOCATABLE :: IVectors
+    INTEGER(IKIND),DIMENSION(:),ALLOCATABLE :: IDegreesOfFreedom
+    REAL(RKIND),DIMENSION(ITHREE,ITHREE) :: RMoveMatrix
     
     CALL ConvertSpaceGroupToNumber(ISpaceGrp,IErr)
-    IF(l_alert(IErr,"SetupAtomicVectorMovements","ConvertSpaceGroupToNumber()")) RETURN  
+    IF(l_alert(IErr,"SetupAtomMovements","ConvertSpaceGroupToNumber()")) RETURN  
 
-    ALLOCATE(IVectors(SIZE(SWyckoffSymbols)),STAT=IErr)
-    IF(l_alert(IErr,"SetupAtomicVectorMovements","allocate IVectors()")) RETURN  
-    
-    DO ind = 1,SIZE(SWyckoffSymbols)!NB SIZE(SWyckoffSymbols)=IAtomicSitesToRefine?
-      CALL CountAllowedMovements(ISpaceGrp,SWyckoffSymbols(ind),IVectors(ind),IErr)
-      IF(l_alert(IErr,"SetupAtomicVectorMovements","ConvertSpaceGroupToNumber()")) RETURN     
+    ALLOCATE(IDegreesOfFreedom(SIZE(IAtomsToRefine)),STAT=IErr)
+    IF(l_alert(IErr,"SetupAtomMovements","allocate IDegreesOfFreedom()")) RETURN  
+
+    !Count the degrees of freedom of movement for each atom to be refined    
+    DO ind = 1,SIZE(IAtomsToRefine)
+      CALL CountAllowedMovements(ISpaceGrp,SWyckoffSymbol(IAtomsToRefine(ind)),IDegreesOfFreedom(ind),IErr)
+      IF(l_alert(IErr,"SetupAtomMovements","ConvertSpaceGroupToNumber()")) RETURN     
     END DO
     
-    IAllowedVectors = SUM(IVectors)
+    ALLOCATE(IAtomMoveList(SUM(IDegreesOfFreedom)),STAT=IErr)
+    IF(l_alert(IErr,"SetupAtomMovements","allocate IAtomMoveList()")) RETURN  
+    ALLOCATE(RVector(SUM(IDegreesOfFreedom),ITHREE),STAT=IErr)
+    IF(l_alert(IErr,"SetupAtomMovements","allocate RVector()")) RETURN  
     
-    ALLOCATE(IAllowedVectorIDs(IAllowedVectors),STAT=IErr)
-    IF(l_alert(IErr,"SetupAtomicVectorMovements","allocate IAllowedVectorIDs")) RETURN  
-    ALLOCATE(RAllowedVectors(IAllowedVectors,ITHREE),STAT=IErr)
-    IF(l_alert(IErr,"SetupAtomicVectorMovements","allocate RAllowedVectors")) RETURN  
-    ALLOCATE(RAllowedVectorMagnitudes(IAllowedVectors),STAT=IErr)
-    IF(l_alert(IErr,"SetupAtomicVectorMovements",&
-          "allocate RAllowedVectorMagnitudes")) RETURN  
-    
+    !make a list of vectors and the atoms they move
     knd = 0
-    DO ind = 1,SIZE(SWyckoffSymbols)
-      DO jnd = 1,IVectors(ind)
-        knd = knd + 1
-        IAllowedVectorIDs(knd) = IAtomicSitesToRefine(ind)
+    DO ind = 1,SIZE(IAtomsToRefine)
+      CALL DetermineAllowedMovements(ISpaceGrp,SWyckoffSymbol(IAtomsToRefine(ind)),RMoveMatrix,IErr)
+      IF(l_alert(IErr,"SetupAtomMovements()","DetermineAllowedMovements()")) RETURN  
+      DO jnd = 1,IDegreesOfFreedom(ind)
+        knd=knd+1
+        RVector(knd,:)=RMoveMatrix(jnd,:)!the movement
+        IAtomMoveList(knd)=IAtomsToRefine(ind)!the atom
       END DO
     END DO
-    
-    RAllowedVectorMagnitudes = ZERO
-    DO ind = 1,SIZE(SWyckoffSymbols)
-      CALL DetermineAllowedMovements(ISpaceGrp,SWyckoffSymbols(ind),&
-           RAllowedVectors(SUM(IVectors(:(ind-1)))+1:SUM(IVectors(:(ind))),:),&
-           IVectors(ind),IErr)
-      IF(l_alert(IErr,"SetupAtomicVectorMovements","DetermineAllowedMovements()")) RETURN  
-    END DO
-    
-    ALLOCATE(RInitialAtomPosition(SIZE(RBasisAtomPosition,1),ITHREE),STAT=IErr)
-    IF(l_alert(IErr,"SetupAtomicVectorMovements","allocate RInitialAtomPosition")) RETURN  
-    RInitialAtomPosition = RBasisAtomPosition
 
-  END SUBROUTINE SetupAtomicVectorMovements     
+  END SUBROUTINE SetupAtomMovements     
 
   !%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
                                                                                                                                     !>
@@ -1690,13 +1678,13 @@ CONTAINS
   END SUBROUTINE Parabo3 
 
   ! sets a local integer to start time to compare with later
-  subroutine start_timer( istart_time )
+  SUBROUTINE start_timer( istart_time )
     integer(IKIND), intent(inout) :: istart_time
     call system_clock(istart_time)
-  end subroutine
+  END SUBROUTINE start_timer
 
   ! compare start time to current and print time-passed
-  subroutine print_end_time( msg_priority, istart_time, completed_task_name )
+  SUBROUTINE print_end_time( msg_priority, istart_time, completed_task_name )
     type (msg_priorities), intent(in) :: msg_priority
     character(*), intent(in) :: completed_task_name
     integer(IKIND), intent(in) :: istart_time
@@ -1714,6 +1702,6 @@ CONTAINS
           "completed in ",ihours," hrs ",iminutes," mins ",iseconds," sec"
     call message_only2(msg_priority,trim(string))
     !?? currently message can't print the combined 3 integers and strings directly
-  end subroutine
+  END SUBROUTINE print_end_time
 
 END PROGRAM Felixrefine

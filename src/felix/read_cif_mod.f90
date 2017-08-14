@@ -71,7 +71,7 @@ MODULE read_cif_mod
 
     ! global outputs (or inout)
     USE SPARA, ONLY : SChemicalFormula, SSpaceGroupName, SBasisAtomLabel, &
-          SBasisAtomName, SWyckoffSymbols, SSpaceGrp
+          SBasisAtomName, SWyckoffSymbol, SSpaceGrp
     USE RPARA, ONLY : RLengthX, RLengthY, RLengthZ, RAlpha, RBeta, RGamma, RVolume, &
           RAnisotropicDebyeWallerFactorTensor, RBasisAtomPosition, RBasisIsoDW, &
           RBasisOccupancy, RSymMat, RSymVec
@@ -81,7 +81,7 @@ MODULE read_cif_mod
     ! global inputs
     USE SConst, ONLY : SAllSpaceGrp
     USE RPARA, ONLY : RDebyeWallerConstant
-    USE IPARA, ONLY : IAtomicSitesToRefine, IAnisoDebyeWallerFactorFlag
+    USE IPARA, ONLY : IAtomsToRefine, IAnisoDebyeWallerFactorFlag
     USE SConst, ONLY : SElementSymbolMatrix
     USE IConst
     
@@ -248,8 +248,8 @@ MODULE read_cif_mod
       IAtomCount= IAtomCount+1
       IF(loop_ .NEQV. .TRUE.) EXIT
     END DO
-    !check for consistency with IAtomicSitesToRefine
-    IF (SIZE(IAtomicSitesToRefine,DIM=1).GT.IAtomCount) THEN
+    !check for consistency with IAtomsToRefine
+    IF (SIZE(IAtomsToRefine,DIM=1).GT.IAtomCount) THEN
       IErr=1; IF(l_alert(IErr,"ReadCif",&
             "Number of atomic sites to refine is larger than the number of atoms. "//&
             "Please correct in felix.inp")) RETURN
@@ -264,6 +264,8 @@ MODULE read_cif_mod
     IF(l_alert(IErr,"ReadCif","SBasisAtomName()")) RETURN
     ALLOCATE(IBasisAtomicNumber(IAtomCount),STAT=IErr)
     IF(l_alert(IErr,"ReadCif","IBasisAtomicNumber()")) RETURN
+    ALLOCATE(SWyckoffSymbol(IAtomCount),STAT=IErr)
+    IF(l_alert(IErr,"ReadCif","allocate SWyckoffSymbol")) RETURN
     ALLOCATE(RBasisIsoDW(IAtomCount),STAT=IErr)
     IF(l_alert(IErr,"ReadCif","RBasisIsoDW()")) RETURN
     ALLOCATE(RBasisOccupancy(IAtomCount),STAT=IErr)
@@ -300,12 +302,17 @@ MODULE read_cif_mod
         CALL message("with symbol",SBasisAtomName(ind))
         IErr=1; RETURN
       END IF
+      !Wyckoff symbol
+      f1 = char_('_atom_site_Wyckoff_symbol',name)
+      SWyckoffSymbol(ind) = name
+      !coordinates
       f2 = numb_('_atom_site_fract_x', x, sx)
       RBasisAtomPosition(ind,1)= x
       f2 = numb_('_atom_site_fract_y', y, sy)
       RBasisAtomPosition(ind,2)= y
       f2 = numb_('_atom_site_fract_z', z, sz)
       RBasisAtomPosition(ind,3)= z
+      !Isotropic D-W factor
       f2 = numb_('_atom_site_B_iso_or_equiv',B,sB)
       f2 = numb_('_atom_site_U_iso_or_equiv',Uso,suso)	
       IF(ABS(B).GT.TINY) THEN
@@ -317,6 +324,7 @@ MODULE read_cif_mod
           RBasisIsoDW(ind) = RDebyeWallerConstant
         END IF
       END IF
+      !occupancy
       f2 = numb_('_atom_site_occupancy',Occ, sOcc)
       RBasisOccupancy(ind) = Occ
 
@@ -330,14 +338,7 @@ MODULE read_cif_mod
       IF(loop_ .NEQV. .TRUE.) EXIT
     END DO
 
-    ALLOCATE(SWyckoffSymbols(IAtomCount),STAT=IErr)
-    IF(l_alert(IErr,"ReadCif","allocate SWyckoffSymbols")) RETURN
-
-    DO ind=1,IAtomCount
-      f2 = char_('_atom_site_Wyckoff_symbol',name)
-    SWyckoffSymbols(ind) = name
-    END DO
-    
+    ! Anisotropic D-W factor !?? should check that it exists
     DO ind=1,IAtomCount
       f2 = numb_('_atom_site_aniso_U_11',u,su) 
       RAnisotropicDebyeWallerFactorTensor(ind,1,1) = u
@@ -358,7 +359,7 @@ MODULE read_cif_mod
       END IF
     END DO
 
-    ! counting loop
+    ! count how many symmetry elements
     ISymCount=0
     DO 
       f1 = char_('_symmetry_equiv_pos_as_xyz', name)
@@ -378,7 +379,7 @@ MODULE read_cif_mod
     RSymVec=ZERO
     RSymMat=ZERO
     
-    !data loop
+    ! Fill the symmetry matrix
     ISymCount=0
     DO 
       f1 = char_('_symmetry_equiv_pos_as_xyz', name)
