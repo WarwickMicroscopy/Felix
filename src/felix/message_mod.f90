@@ -158,9 +158,11 @@ module message_mod
 
 !---------------------------------------------------------------------------------------------
 
-  use alert_mod       ! grants access to felix's main error handling
-  use MyNumbers       ! necesary for IKIND, RKIND etc.
-  use MyMPI           ! necesary for my_rank - used to print on core 0 only
+  use alert_mod               ! grants access to felix's main error handling
+  use MyNumbers               ! necesary for IKIND, RKIND etc.
+  use MyMPI, ONLY : my_rank   ! necesary for my_rank - used to print on core 0 only
+
+  !?? JR this grants MyNumbers, USE MyNumbers throughout code is for clariry...
 
 !---------------------------------------------------------------------------------------------
 

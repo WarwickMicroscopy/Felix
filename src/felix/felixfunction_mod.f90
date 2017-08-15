@@ -34,18 +34,6 @@
 ! $Id: Felixrefine.f90,v 1.89 2014/04/28 12:26:19 phslaz Exp $
 !%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-! All procedures conatained in this file:
-! SimulateAndFit( )                               ---
-! FelixFunction( )                                ---
-! CalculateFigureofMeritandDetermineThickness( )  ---
-! UpdateVariables( )                              ---
-! PrintVariables( )                               ---
-! BlurG( )                                        ---
-
-
-!?? uses UniqueAtomPositions from crystallography.f90
-!?? uses WriteOutVariables from RefineWriteOut.f90
-
 !>
 !! Module-description: Holds main top level simulating subroutines considering
 !! different thicknesses
@@ -75,15 +63,13 @@ MODULE felixfunction_mod
     ! RImageExpi(x,y,LACBED_ID), RImageSimi(x,y,LACBED_ID, thickness_ID)
     ! MPI_BCAST(RFigureofMerit) - send to all cores ? parallel    
 
-    !?? uses UniqueAtomPositions from crystallography.f90 every (non-Ug) iteration
-    !?? uses WriteOutVariables from RefineWriteOut.f90
-
     USE MyNumbers
     USE message_mod
 
     USE MyMPI
     USE Ug_mod
     USE crystallography_mod
+    USE RefineWriteOut
 
     !?? global inputs and outputs of subroutines using global
     ! global inputs

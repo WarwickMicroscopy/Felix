@@ -57,11 +57,15 @@ PROGRAM Felixrefine
   USE read_cif_mod
   USE setup_scattering_factors_mod
   USE setup_reflections_mod
-  USE image_mod
-  USE symmetry_mod
+  USE image
+  USE symmetry
   USE crystallography_mod
   USE Ug_mod
   USE felixfunction_mod
+  USE RefineWriteOut
+  USE simplex
+
+  !?? all felix .f90 files are now modules, should we remove '_mod' from all of them
 
   USE IConst; USE RConst; USE SConst
   USE IPara; USE RPara; USE CPara; USE SPara;
@@ -186,7 +190,8 @@ PROGRAM Felixrefine
 
   ! total possible atoms/unit cell
   IMaxPossibleNAtomsUnitCell=SIZE(RBasisAtomPosition,1)*SIZE(RSymVec,1)
-  ! over-allocate since actual size not known before calculation of unique positions (atoms in special positions will be duplicated)
+  ! over-allocate since actual size not known before calculation of unique positions 
+  ! (atoms in special positions will be duplicated)
 
   ! allocations using that RBasisAtomPosition, RSymVec have now been setup
   ! fractional unit cell coordinates are used for RAtomPosition, like BasisAtomPosition
@@ -913,7 +918,7 @@ CONTAINS
         END WHERE
       END DO    
       ! debug mode output to look at the masks
-      IF (IWriteFLAG.EQ.6) THEN
+      IF (dbg6%state) THEN
         ALLOCATE(RTestImage(2*IPixelCount,2*IPixelCount),STAT=IErr)
         DO ind = 1,INoOfLacbedPatterns
           RTestImage=RImageMask(:,:,ind)
@@ -1615,7 +1620,8 @@ CONTAINS
 
     !Count the degrees of freedom of movement for each atom to be refined    
     DO ind = 1,SIZE(IAtomsToRefine)
-      CALL CountAllowedMovements(ISpaceGrp,SWyckoffSymbol(IAtomsToRefine(ind)),IDegreesOfFreedom(ind),IErr)
+      CALL CountAllowedMovements(ISpaceGrp,SWyckoffSymbol(IAtomsToRefine(ind)),&
+            IDegreesOfFreedom(ind),IErr)
       IF(l_alert(IErr,"SetupAtomMovements","ConvertSpaceGroupToNumber()")) RETURN     
     END DO
     
@@ -1627,7 +1633,8 @@ CONTAINS
     !make a list of vectors and the atoms they move
     knd = 0
     DO ind = 1,SIZE(IAtomsToRefine)
-      CALL DetermineAllowedMovements(ISpaceGrp,SWyckoffSymbol(IAtomsToRefine(ind)),RMoveMatrix,IErr)
+      CALL DetermineAllowedMovements(ISpaceGrp,SWyckoffSymbol(IAtomsToRefine(ind)),&
+            RMoveMatrix,IErr)
       IF(l_alert(IErr,"SetupAtomMovements()","DetermineAllowedMovements()")) RETURN  
       DO jnd = 1,IDegreesOfFreedom(ind)
         knd=knd+1
@@ -1639,7 +1646,8 @@ CONTAINS
   END SUBROUTINE SetupAtomMovements     
 
   !%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-                                                                                                                                    !>
+                                                                                                                                    
+  !>
   !! Procedure-description: Best fit check
   !!
   !! Major-Authors: Richard Beanland (2016)
@@ -1647,8 +1655,7 @@ CONTAINS
   SUBROUTINE BestFitCheck(RFoM,RBest,RCurrent,RIndependentVariable,IErr)
 
     !?? JR small tidy up, can use same variable names
-
-    !?? JR called felixrefine multiple times, utility with variable refinement and FigureOfMerit
+    !?? JR called felixrefine multiple times,utility with variable refinement and FigureOfMerit
     
     REAL(RKIND) :: RFoM,RBest ! current figure of merit and the best figure of merit
     ! current and best set of variables
