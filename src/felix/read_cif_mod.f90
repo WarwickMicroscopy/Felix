@@ -67,7 +67,7 @@ MODULE read_cif_mod
     ! at the start of EACH routine using the CIFtbx functions.
 
     USE MyNumbers
-    USE message_mod; USE alert_mod
+    USE message_mod
 
     ! global outputs (or inout)
     USE SPARA, ONLY : SChemicalFormula, SSpaceGroupName, SBasisAtomLabel, &
@@ -134,18 +134,18 @@ MODULE read_cif_mod
 
     name='felix.cif'
     IF(.NOT.ocif_(name)) THEN
-      CALL alert_message("ReadCif()","check. Cannot find .cif"); IErr=1; RETURN
+      IErr=1; IF(l_alert(IErr,"ReadCif","Cannot find .cif")) RETURN
     END IF
 
     ! Assign the data block to be accessed
     IF(.NOT.data_(' ')) THEN
-      CALL alert_message("ReadCif()","check. No cif data_ statement found"); IErr=1; RETURN
+      IErr=1; IF(l_alert(IErr,"ReadCif","No cif data_ statement found")) RETURN
     END IF
    
     ! Extracts crystal forumla
     f1 = char_('_chemical_formula_structural', name)
     IF(.NOT.f1) THEN
-       CALL alert_message("ReadCif()","check. Chemical formula missing"); IErr=1; RETURN
+      IErr=1; IF(l_alert(IErr,"ReadCif","Chemical formula missing")) RETURN
     END IF
     ! strips spaces/brackets and sets global variable SChemicalFormula
     CALL strip_chars(name,SChemicalFormula)
@@ -158,9 +158,9 @@ MODULE read_cif_mod
     f1 = numb_('_cell_length_a', cela, siga)
     f2 = numb_('_cell_length_b', celb, sigb)
     f3 = numb_('_cell_length_c', celc, sigc)
-    !error call
+    ! error check
     IF(.NOT.(f1.AND.f2.AND.f3)) THEN
-       CALL alert_message("ReadCif()","check. Cell dimension(s) missing"); IErr=1; RETURN
+        IErr=1; IF(l_alert(IErr,"ReadCif","Cell dimension(s) missing")) RETURN
     END IF
     RLengthX=cela; RLengthY=celb; RLengthZ=celc
 
@@ -171,7 +171,7 @@ MODULE read_cif_mod
     f2 = numb_('_cell_angle_beta', celb, sigb)
     f3 = numb_('_cell_angle_gamma', celc, sigc)
     IF(.NOT.(f1.AND.f2.AND.f3)) THEN
-       CALL alert_message("ReadCif()","check. Cell angle(s) missing"); IErr=1; RETURN
+        IErr=1; IF(l_alert(IErr,"ReadCif","Cell angles(s) missing")) RETURN
     END IF
 
     ! convert angles from degrees to radians
@@ -219,7 +219,7 @@ MODULE read_cif_mod
         IF (numb.LT.TINY) THEN
           f1 = numb_('_space_group_IT_number',numb,sx)
           IF (numb.LT.TINY) THEN
-            CALL alert_message("ReadCif()","check. No Space Group"); IErr=1; RETURN
+            IErr=1; IF(l_alert(IErr,"ReadCif","No Space Group")) RETURN
           ELSE
             name = SAllSpaceGrp(NINT(numb))
           END IF
@@ -250,30 +250,30 @@ MODULE read_cif_mod
     END DO
     !check for consistency with IAtomsToRefine
     IF (SIZE(IAtomsToRefine,DIM=1).GT.IAtomCount) THEN
-      CALL alert_message("ReadCif()", &
+      IErr=1; IF(l_alert(IErr,"ReadCif",&
             "Number of atomic sites to refine is larger than the number of atoms. "//&
-            "Please correct in felix.inp"); IErr=1; RETURN
+            "Please correct in felix.inp")) RETURN
     END IF
 
     !allocate variables
     ALLOCATE(RBasisAtomPosition(IAtomCount,ITHREE),STAT=IErr)
-    IF(l_alert(IErr,"ReadCif()","RBasisAtomPosition()")) RETURN
+    IF(l_alert(IErr,"ReadCif","RBasisAtomPosition()")) RETURN
     ALLOCATE(SBasisAtomLabel(IAtomCount),STAT=IErr)
-    IF(l_alert(IErr,"ReadCif()","SBasisAtomLabel()")) RETURN
+    IF(l_alert(IErr,"ReadCif","SBasisAtomLabel()")) RETURN
     ALLOCATE(SBasisAtomName(IAtomCount),STAT=IErr)
-    IF(l_alert(IErr,"ReadCif()","SBasisAtomName()")) RETURN
+    IF(l_alert(IErr,"ReadCif","SBasisAtomName()")) RETURN
     ALLOCATE(IBasisAtomicNumber(IAtomCount),STAT=IErr)
-    IF(l_alert(IErr,"ReadCif()","IBasisAtomicNumber()")) RETURN
+    IF(l_alert(IErr,"ReadCif","IBasisAtomicNumber()")) RETURN
     ALLOCATE(SWyckoffSymbol(IAtomCount),STAT=IErr)
-    IF(l_alert(IErr,"ReadCif()","allocate SWyckoffSymbol")) RETURN
+    IF(l_alert(IErr,"ReadCif","allocate SWyckoffSymbol")) RETURN
     ALLOCATE(RBasisIsoDW(IAtomCount),STAT=IErr)
-    IF(l_alert(IErr,"ReadCif()","RBasisIsoDW()")) RETURN
+    IF(l_alert(IErr,"ReadCif","RBasisIsoDW()")) RETURN
     ALLOCATE(RBasisOccupancy(IAtomCount),STAT=IErr)
-    IF(l_alert(IErr,"ReadCif()","RBasisOccupancy()")) RETURN
+    IF(l_alert(IErr,"ReadCif","RBasisOccupancy()")) RETURN
     ALLOCATE(RAnisotropicDebyeWallerFactorTensor(IAtomCount,ITHREE,ITHREE),STAT=IErr)
-    IF(l_alert(IErr,"ReadCif()","RAnisotropicDebyeWallerFactorTensor()")) RETURN
+    IF(l_alert(IErr,"ReadCif","RAnisotropicDebyeWallerFactorTensor()")) RETURN
     ALLOCATE(IBasisAnisoDW(IAtomCount),STAT=IErr)
-    IF(l_alert(IErr,"ReadCif()","IBasisAnisoDW()")) RETURN
+    IF(l_alert(IErr,"ReadCif","IBasisAnisoDW()")) RETURN
 
     !initialise variables
     IBasisAtomicNumber = 0
@@ -338,7 +338,7 @@ MODULE read_cif_mod
       IF(loop_ .NEQV. .TRUE.) EXIT
     END DO
 
-    !Anisotropic D-W factor, should check that it exists???
+    ! Anisotropic D-W factor !?? should check that it exists
     DO ind=1,IAtomCount
       f2 = numb_('_atom_site_aniso_U_11',u,su) 
       RAnisotropicDebyeWallerFactorTensor(ind,1,1) = u
@@ -372,14 +372,14 @@ MODULE read_cif_mod
     END DO
 
     ALLOCATE(RSymVec(ISymCount,ITHREE),STAT=IErr)
-    IF(l_alert(IErr,"ReadCif()","allocate RSymVec")) RETURN
+    IF(l_alert(IErr,"ReadCif","allocate RSymVec")) RETURN
     ALLOCATE(RSymMat(ISymCount,ITHREE,ITHREE),STAT=IErr)
-    IF(l_alert(IErr,"ReadCif()","allocate RSymMat")) RETURN
+    IF(l_alert(IErr,"ReadCif","allocate RSymMat")) RETURN
     
     RSymVec=ZERO
     RSymMat=ZERO
     
-    !Fill the symmetry matrix
+    ! Fill the symmetry matrix
     ISymCount=0
     DO 
       f1 = char_('_symmetry_equiv_pos_as_xyz', name)

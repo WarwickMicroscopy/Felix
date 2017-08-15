@@ -51,7 +51,7 @@ SUBROUTINE WriteIterationOutput(Iter,IThicknessIndex,IExitFlag,IErr)
   USE BlochPara
 
   USE IChannels
-  USE message_mod; USE alert_mod
+  USE message_mod
   USE MPI
   USE MyMPI
 

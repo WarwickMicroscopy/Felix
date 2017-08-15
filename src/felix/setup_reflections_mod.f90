@@ -56,7 +56,7 @@ MODULE setup_reflections_mod
     !?? called once in felixrefine setup
 
     USE MyNumbers
-    USE message_mod; USE alert_mod
+    USE message_mod
 
     ! global outputs (or inout)
     USE IPARA, ONLY : IOutputReflections, INoOfLacbedPatterns
@@ -106,8 +106,8 @@ MODULE setup_reflections_mod
       END DO
        
       IF (IFind.LE.0) THEN
-        CALL error_message("SpecificReflectionDetermination()", &
-              "No requested HKLs are allowed using the purposed geometry" ); IErr=1; RETURN
+        IErr=1; IF(l_alert(IErr,"SpecificReflectionDetermination",&
+              "No requested HKLs are allowed using the purposed geometry")) RETURN
       END IF
       
       INoOfLacbedPatterns = IFind
@@ -129,7 +129,7 @@ MODULE setup_reflections_mod
 
     !?? called once in felixrefine setup
     USE MyNumbers
-    USE message_mod; USE alert_mod
+    USE message_mod
     
     ! global inputs
     USE IPARA, ONLY : IHolzFLAG
@@ -263,9 +263,8 @@ MODULE setup_reflections_mod
                 END IF
 			    
              CASE DEFAULT
-                CALL error_message("HKLCount()","unknown space group")
-                WRITE(*,*) "SSpaceGroupName = ",SSpaceGroupName; IErr=1; RETURN
-
+                IErr=1; IF(l_alert(IErr,"HKLCount",&
+                      "SSpaceGroupName unrecognised")) RETURN
              END SELECT
 		     
           END DO
@@ -288,7 +287,7 @@ MODULE setup_reflections_mod
     ! N.B. Rhkl is simply real versions of h,k,l 
 
     USE MyNumbers
-    USE message_mod; USE alert_mod
+    USE message_mod
     
     ! global outputs (or inout)
     USE RPARA, ONLY : Rhkl
@@ -440,8 +439,8 @@ MODULE setup_reflections_mod
                END IF
 			    
              CASE DEFAULT ! RB should never get here since already been through HKLcount
-               CALL error_message("HKLmake()","unknown space group")
-               WRITE(*,*) "SSpaceGroupName = ",SSpaceGroupName; IErr=1; RETURN
+               IErr=1; IF(l_alert(IErr,"HKLmake",&
+                     "SSpaceGroupName unrecognised")) RETURN
 
            END SELECT
 
