@@ -76,7 +76,7 @@ felix: $(FINALEXE)
 $(FINALEXE):
 	@ echo --- LINKING felix code
 	@ cd $(DIRFELIX);\
-	$(F90) -o ../$(MAIN).$(PLATFORM).$(MYPRECISION) *.o \
+	$(F90) $(F90FLAGS) -o ../$(MAIN).$(PLATFORM).$(MYPRECISION) *.o \
 	-L$(LIBDIR) -l$(MYPRECISION)quadpack -l$(MYPRECISION)ciftbx $(LIBS)
 #        $(MAKE) exe "MYSTARTDIR=$(STARTDIR)" "PRECISION=$(MYPRECISION)" \
 #	"MYPLATFORM=$(PLATFORM)" \
