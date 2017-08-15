@@ -44,6 +44,9 @@ module message_mod
 !>    message_mod also accesses alert_mod:
 !>      l_alert() is a simple but important function, used extensively for error handling.
 !>
+!>    message_mod also conatins print_end_time() used to neatly print the time elapsed.
+!>      
+!>
 !>--------------------------------------------------------------------------------------------
 !>
 !>  message( ... ) FEATURES:
@@ -158,9 +161,11 @@ module message_mod
 
 !---------------------------------------------------------------------------------------------
 
-  use alert_mod       ! grants access to felix's main error handling
-  use MyNumbers       ! necesary for IKIND, RKIND etc.
-  use MyMPI           ! necesary for my_rank - used to print on core 0 only
+  use alert_mod               ! grants access to felix's main error handling
+  use MyNumbers               ! necesary for IKIND, RKIND etc.
+  use MyMPI, ONLY : my_rank   ! necesary for my_rank - used to print on core 0 only
+
+  !?? JR this grants MyNumbers, USE MyNumbers throughout code is for clariry...
 
 !---------------------------------------------------------------------------------------------
 
@@ -238,6 +243,8 @@ module message_mod
   logical,private :: l_print_this_core ! used to print on all cores, usually = .false.
   
   character(:), allocatable :: indent_spaces, spaces ! used for tiered-structure 
+
+  integer(IKIND) :: iclock_rate ! used with print_end_timer()
   
 contains
 
@@ -251,7 +258,7 @@ contains
     ! msg_tags fixed ID numbers (to compare against IWriteFLAG)
     !--------------------------------------------------------------------
 
-    ! to add another msg_tag, you also need to add it set_message_mod_mode() below
+    ! to add another msg_tag, declare it above and add it to set_message_mod_mode() below
     no_tag%id_number  = 0
     dbg7%id_number    = 70
     dbg3%id_number    = 30
@@ -318,10 +325,10 @@ contains
         dbg14%state = .true.
         prio = prio - dbg14%id_number
       else  ! error (minor) - tens component not recognised
-        ! set IWriteFLAG to 2, just switch LS & LM on
-        call alert_message( "set_message_mod_mode()",&
-              "check. IWriteFLAG tens component not recognised check felix.inp")
-        ierr = 1; return
+        !?? set IWriteFLAG to 2, just switch LS & LM on
+        IErr=1
+        IF(l_alert(IErr,"set_message_mod_mode",&
+              "IWriteFLAG tens component not recognised check felix.inp")) RETURN
       end if
 
     end if
@@ -337,7 +344,42 @@ contains
   subroutine allow_message_on_this_core()
     l_print_this_core = .true.
     CALL message_integer3("MESSAGE FROM THIS CORE AS WELL, rank =",my_rank)
-  end subroutine
+  end subroutine  !?? not currently used, but may be useful
+
+  !---------------------------------------------------------------------
+  ! print_end_time()
+  !---------------------------------------------------------------------  
+
+  ! compare start time to current and print time-passed
+  SUBROUTINE print_end_time( msg_priority, istart_time, completed_task_name )
+    type (msg_priorities), intent(in) :: msg_priority
+    character(*), intent(in) :: completed_task_name
+    integer(IKIND), intent(in) :: istart_time
+    integer(IKIND) :: ihours,iminutes,iseconds,icurrent_time
+    real(RKIND) :: duration
+    character(100) :: string
+
+    call system_clock(icurrent_time)
+    ! converts ticks from system clock into seconds
+    duration = real(icurrent_time-istart_time)/real(iclock_rate)
+    ihours = floor(duration/3600.0d0)
+    iminutes = floor(mod(duration,3600.0d0)/60.0d0)
+    iseconds = int(mod(duration,3600.0d0)-iminutes*60)
+    write(string,fmt='(a,1x,a,i3,a5,i2,a6,i2,a4)') completed_task_name,&
+          "completed in ",ihours," hrs ",iminutes," mins ",iseconds," sec"
+    call message_only2(msg_priority,trim(string))
+    !?? currently message can't print the combined 3 integers and strings directly
+  END SUBROUTINE print_end_time
+
+  !   EXAMPLE USAGE - use intrinisic system_clock(), 'IStartTime2' local variable 
+  !
+  !   CALL SYSTEM_CLOCK( IStartTime2 )
+  !   CALL Absorption (IErr)
+  !   IF(l_alert(IErr,"felixrefine","Absorption()")) CALL abort()
+  !   CALL print_end_time( LM, IStartTime2, "Absorption" )
+  !
+  !   EXAMPLE TERMINAL OUTPUT:
+  !   @ ---- Absorption completed in   0 hrs  0 mins  2 sec
 
   !---------------------------------------------------------------------
   ! main real/complex/integer vector printing - used by matrix and scalar printing

@@ -43,7 +43,7 @@
 !>
 !! Module-description: 
 !!
-MODULE symmetry_mod
+MODULE symmetry
 
   IMPLICIT NONE
   PRIVATE
@@ -705,4 +705,4 @@ MODULE symmetry_mod
     END DO
   END SUBROUTINE  StrLowCase
 
-END MODULE symmetry_mod
+END MODULE symmetry
