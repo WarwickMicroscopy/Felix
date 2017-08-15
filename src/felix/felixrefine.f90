@@ -65,10 +65,10 @@ PROGRAM Felixrefine
   USE RefineWriteOut
   USE simplex
 
-  !?? all felix .f90 files are now modules, should we remove '_mod' from all of them
+  !?? JR all felix .f90 files are now modules, should we remove '_mod' from all of them
 
   USE IConst; USE RConst; USE SConst
-  USE IPara; USE RPara; USE CPara; USE SPara;
+  USE IPara;  USE RPara;  USE CPara; USE SPara;
   USE BlochPara 
   USE IChannels
 
@@ -78,7 +78,7 @@ PROGRAM Felixrefine
   INTEGER(IKIND) :: IErr,ind,jnd,knd,lnd,mnd,nnd,Iter,ICutOff,IHOLZgPoolMag,&
         IBSMaxLocGVecAmp,ILaueLevel,INumTotalReflections,ITotalLaueZoneLevel,&
         INhkl,IExitFLAG,ICycle,INumInitReflections,IZerothLaueZoneLevel,&
-        INumFinalReflections,IThicknessIndex,IVariableType,irate
+        INumFinalReflections,IThicknessIndex,IVariableType
   INTEGER(IKIND) :: IStartTime, IStartTime2
   REAL(RKIND) :: RHOLZAcceptanceAngle,RLaueZoneGz,RMaxGMag,RPvecMag,&
         RScale,RMaxUgStep,Rdx,RStandardDeviation,RMean,RGzUnitVec,RMinLaueZoneValue,&
@@ -127,8 +127,8 @@ PROGRAM Felixrefine
   CALL message(LS,"-----------------------------------------------------------------")
 
   ! timing setup
-  CALL SYSTEM_CLOCK( count_rate=irate )
-  CALL start_timer( IStartTime )
+  CALL SYSTEM_CLOCK( count_rate=iclock_rate ) ! in message_mod for print_end_time() utility
+  CALL SYSTEM_CLOCK( IStartTime )
 
   !--------------------------------------------------------------------
   ! input section 
@@ -490,13 +490,12 @@ PROGRAM Felixrefine
   ! set up chosen absoption model
   !--------------------------------------------------------------------
 
-  CALL start_timer( IStartTime2 )
+  CALL SYSTEM_CLOCK( IStartTime2 )
   CALL message(LL,dbg3,"Starting absorption calculation, number of beams = ",&
         SIZE(IEquivalentUgKey))
   CALL Absorption (IErr)
   IF(l_alert(IErr,"felixrefine","Absorption()")) CALL abort()
   CALL print_end_time( LM, IStartTime2, "Absorption" )
-  CALL start_timer( IStartTime2 )
 
   !--------------------------------------------------------------------
   ! INoOfVariables calculated depending upon Ug and non-Ug refinement
@@ -697,7 +696,8 @@ PROGRAM Felixrefine
   RFigureofMerit=666.666 ! Inital large value,diabolically
   Iter = 0
   ! baseline simulation with timer
-  CALL start_timer( IStartTime2 )
+
+  CALL SYSTEM_CLOCK( IStartTime2 )
   CALL FelixFunction(IErr)
   IF(l_alert(IErr,"felixrefine","FelixFunction")) CALL abort()
   CALL print_end_time( LM, IStartTime2, "Simulation" )
@@ -937,7 +937,6 @@ CONTAINS
         END DO
         DEALLOCATE(RTestImage)
       END IF
-      !?? JR change IWriteFLAG to dbg6
       !?? JR tidy filename consider input&output
     END IF
     
@@ -1486,7 +1485,7 @@ CONTAINS
     !/\/\----------------------------------------------------------------
 
     !--------------------------------------------------------------------
-    ! We are done, finallly simulate and output the best fit
+    ! We are done, finally simulate and output the best fit
     !--------------------------------------------------------------------
 
     IExitFLAG=1
@@ -1699,32 +1698,5 @@ CONTAINS
     Ryv = Rc-Rb*Rb/(4*Ra)!y-coord
 
   END SUBROUTINE Parabo3 
-
-  ! sets a local integer to start time to compare with later
-  SUBROUTINE start_timer( istart_time )
-    integer(IKIND), intent(inout) :: istart_time
-    call system_clock(istart_time)
-  END SUBROUTINE start_timer
-
-  ! compare start time to current and print time-passed
-  SUBROUTINE print_end_time( msg_priority, istart_time, completed_task_name )
-    type (msg_priorities), intent(in) :: msg_priority
-    character(*), intent(in) :: completed_task_name
-    integer(IKIND), intent(in) :: istart_time
-    integer(IKIND) :: ihours,iminutes,iseconds,icurrent_time
-    real(RKIND) :: duration
-    character(100) :: string
-
-    call system_clock(icurrent_time)
-    ! converts ticks from system clock into seconds
-    duration = real(icurrent_time-istart_time)/real(irate)
-    ihours = floor(duration/3600.0d0)
-    iminutes = floor(mod(duration,3600.0d0)/60.0d0)
-    iseconds = int(mod(duration,3600.0d0)-iminutes*60)
-    write(string,fmt='(a,1x,a,i3,a5,i2,a6,i2,a4)') completed_task_name,&
-          "completed in ",ihours," hrs ",iminutes," mins ",iseconds," sec"
-    call message_only2(msg_priority,trim(string))
-    !?? currently message can't print the combined 3 integers and strings directly
-  END SUBROUTINE print_end_time
 
 END PROGRAM Felixrefine
