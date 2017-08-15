@@ -33,11 +33,11 @@ $(DIRFELIX)$(PRECISION)setup_scattering_factors_mod.o \
 $(DIRFELIX)$(PRECISION)crystallography_mod.o \
 $(DIRFELIX)$(PRECISION)Ug_mod.o \
 $(DIRFELIX)$(PRECISION)bloch_mod.o \
-$(DIRFELIX)$(PRECISION)felixfunction_mod.o \
 $(DIRFELIX)$(PRECISION)image.o \
-$(DIRFELIX)$(PRECISION)simplex.o \
 $(DIRFELIX)$(PRECISION)RefineWriteOut.o \
 $(DIRFELIX)$(PRECISION)symmetry.o \
+$(DIRFELIX)$(PRECISION)felixfunction_mod.o \
+$(DIRFELIX)$(PRECISION)simplex.o \
 $(DIRFELIX)$(PRECISION)felixrefine.o \
 
 QUADPACK= \
