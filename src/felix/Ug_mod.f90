@@ -271,11 +271,12 @@ MODULE Ug_mod
     USE IPARA, ONLY : ICurrentZ
 
     ! global inputs
-    USE IPARA, ONLY : INAtomsUnitCell, IAtomicNumber, IAnisoDebyeWallerFactorFlag, IAnisoDW
-    USE RPARA, ONLY : RIsoDW, RCurrentGMagnitude, RgMatrix, &
-          RAnisotropicDebyeWallerFactorTensor, RAtomCoordinate, ROccupancy, &
+    USE IPARA, ONLY : INAtomsUnitCell,IAtomicNumber,IAnisoDebyeWallerFactorFlag,IAnisoDW
+    USE RPARA, ONLY : RIsoDW,RCurrentGMagnitude,RgMatrix,RVolume, &
+          RAnisotropicDebyeWallerFactorTensor,RAtomCoordinate,ROccupancy, &
           RDebyeWallerConstant
     USE CPARA, ONLY : CIMAGONE
+    USE RConst, ONLY : RPlanckConstant,RAngstromConversion,RElectronMass,RElectronCharge
 
     IMPLICIT NONE
 
@@ -284,42 +285,37 @@ MODULE Ug_mod
     COMPLEX(CKIND),INTENT(OUT) :: CVgij
     INTEGER(IKIND),INTENT(OUT) :: IErr
     COMPLEX(CKIND) :: CFpseudo
+    REAL(RKIND) :: RScattFacToVolts
     INTEGER(IKIND) :: knd, INumPseudAtoms=0
 
-    CVgij = CZERO
+    RScattFacToVolts=(RPlanckConstant**2)*(RAngstromConversion**2)/(TWOPI*RElectronMass*RElectronCharge*RVolume)
+    CVgij = CZERO!this is in Volts
     ! Sums CVgij contribution from each atom and pseudoatom
     DO knd=1,INAtomsUnitCell
-      ICurrentZ = IAtomicNumber(knd) ! atomic number, Z
-
+      ICurrentZ = IAtomicNumber(knd) ! atomic number, Z, NB passed as a global variable for absorption
       IF (ICurrentZ.LT.105) THEN ! It's not a pseudoatom
-
         ! Get scattering factor
         CALL AtomicScatteringFactor(RScatteringFactor,IErr)
-
-        ! modify scattering factor with occupancy
+        ! Occupancy
         RScatteringFactor = RScatteringFactor*ROccupancy(knd)
-
-        ! modify scattering factor with (an)isotropic Debye-Waller factor
-        IF (IAnisoDebyeWallerFactorFlag.EQ.0) THEN ! isotropic Debye-Waller factor
-          IF(RIsoDW(knd).GT.10.OR.RIsoDW(knd).LT.0) RIsoDW(knd) = RDebyeWallerConstant
-          ! Isotropic D-W factor, see e.g. Bird&King for following:
-          ! exp(-B sin(theta)^2/lamda^2) = exp(-Bs^2) = exp(-Bg^2/16pi^2)
+        ! Isotropic Debye-Waller factor
+        IF (IAnisoDebyeWallerFactorFlag.EQ.0) THEN 
+          IF(RIsoDW(knd).GT.10.OR.RIsoDW(knd).LT.0) RIsoDW(knd) = RDebyeWallerConstant!use default in felix.inp for unrealistic values in the cif
+          ! Isotropic D-W factor
+          ! exp(-B sin(theta)^2/lamda^2) = exp(-Bs^2) = exp(-Bg^2/16pi^2), see e.g. Bird&King
           RScatteringFactor = RScatteringFactor*EXP(-RIsoDW(knd) * &
                 (RCurrentGMagnitude**2)/(FOUR*TWOPI**2) )
         ELSE ! anisotropic Debye-Waller factor
+          !?? this will need sorting out, may not work
           RScatteringFactor = RScatteringFactor * &
                 EXP( -DOT_PRODUCT( RgMatrix(ind,jnd,:), &
                 MATMUL(RAnisotropicDebyeWallerFactorTensor(IAnisoDW(knd),:,:),&
                 RgMatrix(ind,jnd,:)) ) )
-          !?? this will need sorting out, may not work
         END IF
-
         ! The structure factor equation, complex Vg(ind,jnd)=sum(f*exp(-ig.r)) in Volts
-        CVgij = CVgij +RScatteringFactor*EXP(-CIMAGONE*DOT_PRODUCT(RgMatrix(ind,jnd,:),&
+        CVgij=CVgij+RScatteringFactor*RScattFacToVolts*EXP(-CIMAGONE*DOT_PRODUCT(RgMatrix(ind,jnd,:),&
               RAtomCoordinate(knd,:)) )
-
       ELSE ! pseudoatom
-
         INumPseudAtoms=INumPseudAtoms+1
         CALL PseudoAtom(CFpseudo,ind,jnd,INumPseudAtoms,IErr)
         ! Occupancy
@@ -338,7 +334,6 @@ MODULE Ug_mod
               EXP(-CIMAGONE*DOT_PRODUCT(RgMatrix(ind,jnd,:), RAtomCoordinate(knd,:)) )
 
       END IF
-
     ENDDO
 
   END SUBROUTINE GetVgContributionij
@@ -385,7 +380,7 @@ MODULE Ug_mod
           
     IMPLICIT NONE
 
-    INTEGER(IKIND) :: ind,jnd,knd,lnd,INumPseudAtoms,oddindlorentz,evenindlorentz,&
+    INTEGER(IKIND) :: ind,jnd,knd,lnd,mnd,oddindlorentz,evenindlorentz,&
           oddindgauss,evenindgauss,currentatom,IErr,Iuid,Iplan_forward,IPseudo
     INTEGER(IKIND),DIMENSION(2) :: IPos,ILoc
     COMPLEX(CKIND) :: CVgij,CFpseudo
@@ -400,9 +395,6 @@ MODULE Ug_mod
     ! Conversion factor from scattering factors to volts.
     ! h^2/(2pi*m0*e), see e.g. Kirkland eqn. C.5
     ! NB RVolume is already in A unlike RPlanckConstant
-    RScattFacToVolts = (RPlanckConstant**2)*(RAngstromConversion**2) / &
-          (TWOPI*RElectronMass*RElectronCharge)
-    !?? unused RScattFacToVolts local
 
     ! count Pseudoatoms
     IPseudo=0
@@ -410,118 +402,96 @@ MODULE Ug_mod
       IF (IAtomicNumber(jnd).GE.105) IPseudo = IPseudo + 1
     END DO
 
-    ! allocate
-    ! size of the array used to calculate the pseudoatom FFT, global variable  
-    IPsize=1024 ! must be an EVEN number (preferably 2^n)!
-    ! matrices with Pseudoatom potentials (real space)  
-    ALLOCATE(CPseudoAtom(IPsize,IPsize,IPseudo),STAT=IErr)
-    IF(l_alert(IErr,"StructureFactorInitialisation","allocate CPseudoAtom")) RETURN
-    !?? could just have one reusable matrix to save memory
-    ! matrices with Pseudoatom scattering factor (reciprocal space)
-    ALLOCATE(CPseudoScatt(IPsize,IPsize,IPseudo),STAT=IErr)
-    IF(l_alert(IErr,"StructureFactorInitialisation","allocate CPseudoScatt")) RETURN
-
-    !--------------------------------------------------------------------
-    ! calculate pseduo potential and pseduo factor for any pseudoatoms
-    !--------------------------------------------------------------------
-
-    RPScale = 0.01 ! one picometre per pixel, working in Angstroms
-    !?? global shouldn't set here
-    ! Magnitude of pseudoatom potential, in volts
-    RPMag = 0.01815 ! set such that a Ja gives the same Ug matrix as a hydrogen atom
-    INumPseudAtoms = 0 ! 
-
-    DO lnd=1,INAtomsUnitCell 
-      IF (IAtomicNumber(lnd).GE.105) THEN ! we have a pseudoatom
-
-        ! intialise pseudoatom variables
-        INumPseudAtoms=INumPseudAtoms+1
-        ! The Debye-Waller factor is used to determine alpha for pseudoatoms
-        RPalpha=10.0*RIsoDW(lnd)
-        IF (IAtomicNumber(lnd).EQ.105) Rfold=ZERO   !Ja
-        IF (IAtomicNumber(lnd).EQ.106) Rfold=ONE    !Jb
-        IF (IAtomicNumber(lnd).EQ.107) Rfold=TWO    !Jc
-        IF (IAtomicNumber(lnd).EQ.108) Rfold=THREE  !Jd
-        IF (IAtomicNumber(lnd).EQ.109) Rfold=FOUR   !Je
-        IF (IAtomicNumber(lnd).EQ.110) Rfold=SIX    !Jf
-
-        ! potential in real space
-        DO ind=1,IPsize
-          DO jnd=1,IPsize ! x&y run from e.g. -511.5 to +511.5 picometres
-            Rx=RPScale*(REAL(ind-(IPsize/2))-HALF)
-            Ry=RPScale*(REAL(jnd-(IPsize/2))-HALF)
-            Rr=SQRT(Rx*Rx+Ry*Ry)
-            Rtheta=ACOS(Rx/Rr)
-            !?? Easier to make a complex input to fftw rather than fanny around
-            !?? with the different format needed for a real input. Lazy.
-            CPseudoAtom(ind,jnd,INumPseudAtoms)=CMPLX(RPMag*RPalpha*Rr*EXP(-RPalpha*Rr) * &
+      !--------------------------------------------------------------------
+      ! calculate pseduo potential and pseduo factor for any pseudoatoms
+      !--------------------------------------------------------------------
+    IF (IPseudo.GT.0) THEN!Calculate pseudoatom potentials
+      ! size of the array used to calculate the pseudoatom FFT, global variable  
+      IPsize=1024 ! must be an EVEN number (preferably 2^n)!
+      ! matrices with Pseudoatom potentials (real space)  
+      ALLOCATE(CPseudoAtom(IPsize,IPsize,IPseudo),STAT=IErr)
+      IF(l_alert(IErr,"StructureFactorInitialisation","allocate CPseudoAtom")) RETURN
+      ! matrices with Pseudoatom scattering factor (reciprocal space)
+      ALLOCATE(CPseudoScatt(IPsize,IPsize,IPseudo),STAT=IErr)
+      IF(l_alert(IErr,"StructureFactorInitialisation","allocate CPseudoScatt")) RETURN
+      RPScale = 0.01 ! one picometre per pixel, working in Angstroms
+      ! Magnitude of pseudoatom potential, in volts
+      RPMag = 0.01815 ! set such that a Ja gives the same Ug matrix as a hydrogen atom
+      mnd = 0 ! pseudoatom counter
+        DO lnd=1,INAtomsUnitCell 
+          IF (IAtomicNumber(lnd).GE.105) THEN ! we have a pseudoatom
+          ! intialise pseudoatom variables
+          mnd=mnd+1
+          ! The Debye-Waller factor is used to determine alpha for pseudoatoms
+          RPalpha=10.0*RIsoDW(lnd)
+          IF (IAtomicNumber(lnd).EQ.105) Rfold=ZERO   !Ja
+          IF (IAtomicNumber(lnd).EQ.106) Rfold=ONE    !Jb
+          IF (IAtomicNumber(lnd).EQ.107) Rfold=TWO    !Jc
+          IF (IAtomicNumber(lnd).EQ.108) Rfold=THREE  !Jd
+          IF (IAtomicNumber(lnd).EQ.109) Rfold=FOUR   !Je
+          IF (IAtomicNumber(lnd).EQ.110) Rfold=SIX    !Jf
+          ! potential in real space
+          DO ind=1,IPsize
+            DO jnd=1,IPsize ! x&y run from e.g. -511.5 to +511.5 picometres
+              Rx=RPScale*(REAL(ind-(IPsize/2))-HALF)
+              Ry=RPScale*(REAL(jnd-(IPsize/2))-HALF)
+              Rr=SQRT(Rx*Rx+Ry*Ry)
+              Rtheta=ACOS(Rx/Rr)
+              !?? Easier to make a complex input to fftw rather than fanny around
+              !?? with the different format needed for a real input. Lazy.
+              CPseudoAtom(ind,jnd,mnd)=CMPLX(RPMag*RPalpha*Rr*EXP(-RPalpha*Rr) * &
                   COS(Rfold*Rtheta),ZERO)        
+            END DO
           END DO
-        END DO
-
-        ! output each pseudo potential .img to check
-        IF (my_rank.EQ.0) THEN 
-          WRITE(SPrintString,FMT='(A15,I1,A3)') "PseudoPotential",INumPseudAtoms,".img"
-          OPEN(UNIT=IChOutWIImage, STATUS= 'UNKNOWN', FILE=SPrintString,&
+          ! output each pseudo potential .img to check
+          IF (my_rank.EQ.0) THEN 
+            WRITE(SPrintString,FMT='(A15,I1,A3)') "PseudoPotential",mnd,".img"
+            OPEN(UNIT=IChOutWIImage, STATUS= 'UNKNOWN', FILE=SPrintString,&
+                  FORM='UNFORMATTED',ACCESS='DIRECT',IOSTAT=IErr,RECL=8192)
+            IF(l_alert(IErr,"StructureFactorInitialisation()",&
+                  "write a pseudo factor.img")) RETURN
+            DO jnd = 1,IPsize
+              WRITE(IChOutWIImage,rec=jnd) REAL(CPseudoAtom(jnd,:,mnd))
+            END DO
+            CLOSE(IChOutWIImage,IOSTAT=IErr)
+          END IF
+          ! CPseudoScatt = a 2d fft of RPseudoAtom
+          CALL dfftw_plan_dft_2d_ ( Iplan_forward, IPsize,IPsize,& 
+                CPseudoAtom(:,:,mnd),CPseudoScatt(:,:,mnd),&
+                FFTW_FORWARD,FFTW_ESTIMATE )
+          CALL dfftw_execute_ (Iplan_forward)
+          CALL dfftw_destroy_plan_ (Iplan_forward) ! could be moved to clean up?
+          ! output each pseudo factor .img to check
+          IF (my_rank.EQ.0) THEN
+            WRITE(SPrintString,FMT='(A12,I1,A3)') "PseudoFactor",mnd,".img"
+            OPEN(UNIT=IChOutWIImage, STATUS= 'UNKNOWN', FILE=SPrintString,&
                 FORM='UNFORMATTED',ACCESS='DIRECT',IOSTAT=IErr,RECL=8192)
-          IF(l_alert(IErr,"StructureFactorInitialisation()",&
+            IF(l_alert(IErr,"StructureFactorInitialisation()",&
                 "write a pseudo factor.img")) RETURN
-          DO jnd = 1,IPsize
-            WRITE(IChOutWIImage,rec=jnd) REAL(CPseudoAtom(jnd,:,INumPseudAtoms))
-          END DO
-          CLOSE(IChOutWIImage,IOSTAT=IErr)
+            DO jnd = 1,IPsize
+              WRITE(IChOutWIImage,rec=jnd) ABS(CPseudoScatt(jnd,:,mnd))
+            END DO
+            CLOSE(IChOutWIImage,IOSTAT=IErr)
+          END IF
         END IF
-
-        ! CPseudoScatt = a 2d fft of RPseudoAtom
-        CALL dfftw_plan_dft_2d_ ( Iplan_forward, IPsize,IPsize,& 
-              CPseudoAtom(:,:,INumPseudAtoms),CPseudoScatt(:,:,INumPseudAtoms),&
-              FFTW_FORWARD,FFTW_ESTIMATE )
-        !?? Could be moved to an initialisation step if there are no other plans?
-        CALL dfftw_execute_ (Iplan_forward)
-        CALL dfftw_destroy_plan_ (Iplan_forward) ! could be moved to clean up?
-        !?? what does this all do? JR
-    
-        ! output each pseudo factor .img to check
-        IF (my_rank.EQ.0) THEN
-          WRITE(SPrintString,FMT='(A12,I1,A3)') "PseudoFactor",INumPseudAtoms,".img"
-          OPEN(UNIT=IChOutWIImage, STATUS= 'UNKNOWN', FILE=SPrintString,&
-                FORM='UNFORMATTED',ACCESS='DIRECT',IOSTAT=IErr,RECL=8192)
-          IF(l_alert(IErr,"StructureFactorInitialisation()",&
-                "write a pseudo factor.img")) RETURN
-          DO jnd = 1,IPsize
-            WRITE(IChOutWIImage,rec=jnd) ABS(CPseudoScatt(jnd,:,INumPseudAtoms))
-          END DO
-          CLOSE(IChOutWIImage,IOSTAT=IErr)
-        END IF
-
-      END IF
-    END DO
-
-    !--------------------------------------------------------------------
-    ! calculate fourier components of the potential Vg for atoms and pseudoatoms  
-    !--------------------------------------------------------------------
-
-    ! fill diagonal half of CUgMatNoAbs with fourier component of the Vg potential 
-
-    CUgMatNoAbs = CZERO ! 
-    DO ind=1,nReflections
-      DO jnd=1,ind
-        RCurrentGMagnitude = RgMatrixMagnitude(ind,jnd) ! g-vector magnitude, global var
-
-        ! Sums CVgij contribution from each atom and pseudoatom
-        CALL GetVgContributionij(RScatteringFactor,ind,jnd,CVgij,IErr)
-
-        ! fill diagonal half of Ug matrix (excluding absorbtion)
-        ! with fourier components of potential Vg (CVgij)
-        CUgMatNoAbs(ind,jnd) = CVgij
-      ENDDO
-    ENDDO
+      END DO
+    END IF
 
     !--------------------------------------------------------------------
     ! calculate Ug matrix (excluding absorption)
     !--------------------------------------------------------------------
 
-    CUgMatNoAbs=CUgMatNoAbs*RRelativisticCorrection/(PI*RVolume) !?? Why RVolume here?
+    ! fill lower diagonal of Ug matrix(excluding absorbtion)with Fourier components of the potential Vg
+    CUgMatNoAbs = CZERO ! 
+    DO ind=2,nReflections
+      DO jnd=1,ind-1
+        RCurrentGMagnitude = RgMatrixMagnitude(ind,jnd) ! g-vector magnitude, global var
+        ! Sums CVgij contribution from each atom and pseudoatom in Volts
+        CALL GetVgContributionij(RScatteringFactor,ind,jnd,CUgMatNoAbs(ind,jnd),IErr)
+      ENDDO
+    ENDDO
+    !Convert to Ug
+    CUgMatNoAbs=CUgMatNoAbs*TWO*RElectronMass*RRelativisticCorrection*RElectronCharge/((RPlanckConstant**2)*(RAngstromConversion**2))
     ! NB Only the lower half of the Vg matrix was calculated, this completes the upper half
     CUgMatNoAbs = CUgMatNoAbs + CONJG(TRANSPOSE(CUgMatNoAbs))
     ! set diagonals to zero
@@ -544,12 +514,12 @@ MODULE Ug_mod
       ICurrentZ = IAtomicNumber(ind)
       IF(ICurrentZ.LT.105) THEN ! It's not a pseudoatom
         CALL AtomicScatteringFactor(RScatteringFactor,IErr)
-        CALL message( LL, dbg3, "Atom Unit Cell number = ",ind)
-        CALL message( LL, dbg3, "   g = 0 ",RScatteringFactor)
+        CALL message( LL, dbg3, "Atom ",ind)
+        CALL message( LL, dbg3, "f(theta) at g=0 ",RScatteringFactor)
         RMeanInnerPotential = RMeanInnerPotential+RScatteringFactor
       END IF
     END DO
-    CALL message( LM, "MeanInnerPotential(Volts) = ",RMeanInnerPotential )
+    CALL message( LM, "Mean inner potential (Volts) ",RMeanInnerPotential )
 
     ! Wave vector magnitude in crystal
     ! high-energy approximation (not HOLZ compatible)

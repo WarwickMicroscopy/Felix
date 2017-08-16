@@ -184,9 +184,7 @@ MODULE read_cif_mod
     IF (celc.GT.TWOPI) THEN!assume this angle is expressed in degrees
       RGamma=celc*DEG2RADIAN;
     END IF
-    CALL message( LL, dbg14, "alpha,beta,gamma", (/ RAlpha,RBeta,RGamma /) )
-    CALL message( LL, dbg14, "siga,sigb,sigc", Real( (/ siga,sigb, sigc /) ,RKIND) )
-
+    CALL message( LL, dbg14, "Unit cel angles alpha, beta, gamma", (/ RAlpha*RADIAN2DEG,RBeta*RADIAN2DEG,RGamma*RADIAN2DEG /) )
 
     f1 = numb_('_cell_volume', cela, siga)
     !Cell volume

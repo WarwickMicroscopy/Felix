@@ -266,12 +266,12 @@ contains
 
     ! e.g. write(*,formatting) trim(msg_priority%initial_msg)//spaces, main_msg, rvector
 
-    indent_spaces   = "  @" 
+    indent_spaces   = "" 
 
     LS%initial_msg  = indent_spaces
-    LM%initial_msg  = indent_spaces//" ----"
-    LL%initial_msg  = indent_spaces//" --------"
-    LXL%initial_msg = indent_spaces//" ------------"
+    LM%initial_msg  = indent_spaces//"   "
+    LL%initial_msg  = indent_spaces//"     "
+    LXL%initial_msg = indent_spaces//"       "
 
     spaces = " " 
     ! spaces are the global spaces after intial_msg
