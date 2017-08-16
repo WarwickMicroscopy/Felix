@@ -33,7 +33,7 @@
 !>
 !! Module-description: 
 !!
-module alert_mod
+module l_alert_mod
 
   implicit none
 
@@ -53,7 +53,7 @@ module alert_mod
     end if
   end function
 
-end module alert_mod
+end module l_alert_mod
 
 
 !   Example output - (error handling on 4 cores from problem on felix.inp on line 27)
@@ -99,7 +99,7 @@ end module alert_mod
 !     IF(l_alert(IErr,"felixrefine","allocate RAtomCoordinate")) CALL abort()
 !
 !     CALL BlochCoefficientCalculation(ind,jnd,knd,ILocalPixelCountMin,IErr)
-!     IF(l_alert(IErr,"FelixFunction","BlochCoefficientCalculation")) RETURN
+!     IF(l_alert(IErr,"Simulate","BlochCoefficientCalculation")) RETURN
 !
 !
 !

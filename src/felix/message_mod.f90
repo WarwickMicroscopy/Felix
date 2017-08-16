@@ -41,7 +41,7 @@ module message_mod
 !>      which is a major subroutine used throughout felix. It replaces the FORTRAN print
 !>      statement and provides formatted output chosen at run-time.
 !>
-!>    message_mod also accesses alert_mod:
+!>    message_mod also accesses l_alert_mod:
 !>      l_alert() is a simple but important function, used extensively for error handling.
 !>
 !>    message_mod also conatins print_end_time() used to neatly print the time elapsed.
@@ -161,7 +161,7 @@ module message_mod
 
 !---------------------------------------------------------------------------------------------
 
-  use alert_mod               ! grants access to felix's main error handling
+  use l_alert_mod             ! grants access to felix's main error handling
   use MyNumbers               ! necesary for IKIND, RKIND etc.
   use MyMPI, ONLY : my_rank   ! necesary for my_rank - used to print on core 0 only
 

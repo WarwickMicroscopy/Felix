@@ -33,7 +33,7 @@
 !>
 !! Module-description: 
 !!
-MODULE RefineWriteOut
+MODULE write_output_mod
 
   IMPLICIT NONE
   PRIVATE
@@ -349,4 +349,4 @@ MODULE RefineWriteOut
 
   END SUBROUTINE WriteOutVariables
 
-END MODULE RefineWriteOut
+END MODULE write_output_mod

@@ -23,21 +23,21 @@ MAIN=felix
 FELIX=\
 $(DIRFELIX)$(PRECISION)gmodules.o \
 $(DIRFELIX)$(PRECISION)smodules.o \
-$(DIRFELIX)$(PRECISION)alert_mod.o \
+$(DIRFELIX)$(PRECISION)l_alert_mod.o \
 $(DIRFELIX)$(PRECISION)message_mod.o \
 $(DIRFELIX)$(PRECISION)utilities_mod.o \
 $(DIRFELIX)$(PRECISION)read_cif_mod.o \
-$(DIRFELIX)$(PRECISION)read_mod.o \
+$(DIRFELIX)$(PRECISION)read_files_mod.o \
 $(DIRFELIX)$(PRECISION)setup_reflections_mod.o \
-$(DIRFELIX)$(PRECISION)setup_scattering_factors_mod.o \
+$(DIRFELIX)$(PRECISION)set_scatter_factors_mod.o \
 $(DIRFELIX)$(PRECISION)crystallography_mod.o \
-$(DIRFELIX)$(PRECISION)Ug_mod.o \
+$(DIRFELIX)$(PRECISION)ug_matrix_mod.o \
 $(DIRFELIX)$(PRECISION)bloch_mod.o \
-$(DIRFELIX)$(PRECISION)image.o \
-$(DIRFELIX)$(PRECISION)RefineWriteOut.o \
-$(DIRFELIX)$(PRECISION)symmetry.o \
-$(DIRFELIX)$(PRECISION)felixfunction_mod.o \
-$(DIRFELIX)$(PRECISION)simplex.o \
+$(DIRFELIX)$(PRECISION)image_initialisation_mod.o \
+$(DIRFELIX)$(PRECISION)write_output_mod.o \
+$(DIRFELIX)$(PRECISION)setup_space_group_mod.o \
+$(DIRFELIX)$(PRECISION)refinementcontrol_mod.o \
+$(DIRFELIX)$(PRECISION)simplex_mod.o \
 $(DIRFELIX)$(PRECISION)felixrefine.o \
 
 QUADPACK= \

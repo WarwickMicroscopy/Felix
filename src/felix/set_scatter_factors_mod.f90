@@ -40,15 +40,15 @@
 !!
 !! Major-Authors: Alexander Hubert (2014), Richard Beanland (2016)
 !!
-MODULE setup_scattering_factors_mod
+MODULE set_scatter_factors_mod
 
   IMPLICIT NONE
   PRIVATE
-  PUBLIC :: setup_scattering_factors
+  PUBLIC :: GetScatteringFactors
 
   CONTAINS
 
-  SUBROUTINE setup_scattering_factors(IScatteringMethodSwitch,IErr)
+  SUBROUTINE GetScatteringFactors(IScatteringMethodSwitch,IErr)
 
     USE MyNumbers
     USE message_mod
@@ -285,7 +285,7 @@ MODULE setup_scattering_factors_mod
 
       ! Allocate Global Scattering factor array 
       ALLOCATE(RScattFactors(105,IScattDimension), STAT=IErr)
-      IF(l_alert(IErr,"setup_scattering_factors","allocate RScattFactors")) RETURN
+      IF(l_alert(IErr,"GetScatteringFactors","allocate RScattFactors")) RETURN
 
       RScattFactors = RKirkland
 
@@ -505,7 +505,7 @@ MODULE setup_scattering_factors_mod
 
       ! Allocate Global Scattering factor array 
       ALLOCATE(RScattFactors(105,IScattDimension), STAT=IErr)
-      IF(l_alert(IErr,"setup_scattering_factors","allocate RScattFactors")) RETURN
+      IF(l_alert(IErr,"GetScatteringFactors","allocate RScattFactors")) RETURN
 
       ! Assign Global Scattering factor array with chosen scattering factors (Kirkland)
       RScattFactors = RPeng
@@ -724,7 +724,7 @@ MODULE setup_scattering_factors_mod
 
       ! Allocate Global Scattering factor array 
       ALLOCATE(RScattFactors(105,IScattDimension), STAT=IErr)
-      IF(l_alert(IErr,"setup_scattering_factors","allocate RScattFactors")) RETURN
+      IF(l_alert(IErr,"GetScatteringFactors","allocate RScattFactors")) RETURN
 
       ! Assign Global Scattering factor array with chosen scattering factors (Doyle & Turner)
       RScattFactors=RDoyleAndTurner
@@ -943,17 +943,17 @@ MODULE setup_scattering_factors_mod
 
       ! Allocate Global Scattering factor array 
       ALLOCATE(RScattFactors(105,IScattDimension), STAT=IErr)
-      IF(l_alert(IErr,"setup_scattering_factors","allocate RScattFactors")) RETURN
+      IF(l_alert(IErr,"GetScatteringFactors","allocate RScattFactors")) RETURN
 
       ! Assign Global Scattering factor array with chosen scattering factors (Lobato)
       RScattFactors=RLobato
 
     CASE DEFAULT
-      IErr=1; IF(l_alert(IErr,"setup_scattering_factors",&
+      IErr=1; IF(l_alert(IErr,"GetScatteringFactors",&
             "IScatteringMethodFlag from felix.inp not recognised")) RETURN
 
     END SELECT
 
-  END SUBROUTINE setup_scattering_factors
+  END SUBROUTINE SetScatteringFactors
 
-END MODULE setup_scattering_factors_mod
+END MODULE set_scatter_factors_mod

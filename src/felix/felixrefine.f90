@@ -53,17 +53,17 @@ PROGRAM Felixrefine
 
   USE utilities_mod, ONLY : SortHKL
 
-  USE read_mod
+  USE read_files_mod
   USE read_cif_mod
-  USE setup_scattering_factors_mod
+  USE set_scatter_factors_mod
   USE setup_reflections_mod
-  USE image
-  USE symmetry
+  USE image_initialisation_mod
+  USE setup_space_group_mod
   USE crystallography_mod
-  USE Ug_mod
-  USE felixfunction_mod
-  USE RefineWriteOut
-  USE simplex
+  USE ug_matrix_mod
+  USE refinementcontrol_mod
+  USE write_output_mod
+  USE simplex_mod
 
   !?? JR all felix .f90 files are now modules, should we remove '_mod' from all of them
 
@@ -160,8 +160,8 @@ PROGRAM Felixrefine
   ! set up scattering factors, relativistic electrons, reciprocal lattice
   !--------------------------------------------------------------------
 
-  CALL setup_scattering_factors(IScatterFactorMethodFLAG,IErr)
-  IF(l_alert(IErr,"felixrefine","setup_scattering_factors()")) CALL abort()
+  CALL SetScatteringFactors(IScatterFactorMethodFLAG,IErr)
+  IF(l_alert(IErr,"felixrefine","SetScatteringFactors()")) CALL abort()
   ! returns global RScattFactors depeding upon scattering method: Kirkland, Peng, etc.
 
   ! Calculate wavevector magnitude k and relativistic mass
@@ -703,8 +703,8 @@ PROGRAM Felixrefine
   Iter = 0
   ! baseline simulation with timer
 
-  CALL FelixFunction(IErr)
-  IF(l_alert(IErr,"felixrefine","FelixFunction")) CALL abort()
+  CALL Simulate(IErr)
+  IF(l_alert(IErr,"felixrefine","Simulate")) CALL abort()
 
   !--------------------------------------------------------------------
 
@@ -1621,7 +1621,7 @@ CONTAINS
     DO ind = 1,SIZE(IAtomsToRefine)
       CALL CountAllowedMovements(ISpaceGrp,SWyckoffSymbol(IAtomsToRefine(ind)),&
             IDegreesOfFreedom(ind),IErr)
-      IF(l_alert(IErr,"SetupAtomMovements","ConvertSpaceGroupToNumber()")) RETURN     
+      IF(l_alert(IErr,"SetupAtomMovements","CountAllowedMovements()")) RETURN     
     END DO
     
     ALLOCATE(IAtomMoveList(SUM(IDegreesOfFreedom)),STAT=IErr)

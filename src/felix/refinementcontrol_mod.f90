@@ -38,10 +38,10 @@
 !! Module-description: Holds main top level simulating subroutines considering
 !! different thicknesses
 !!
-MODULE felixfunction_mod
+MODULE refinementcontrol_mod
   IMPLICIT NONE
   PRIVATE
-  PUBLIC :: SimulateAndFit, FelixFunction, CalculateFigureofMeritandDetermineThickness
+  PUBLIC :: SimulateAndFit, Simulate, CalculateFigureofMeritandDetermineThickness
   !?? JR CalculateFigureofMeritandDetermineThickness could be made private with some tweaks
 
   CONTAINS
@@ -57,7 +57,7 @@ MODULE felixfunction_mod
     ! corresponding global variables (non changeable stay as input from .inp)
     ! UniqueAtomPositions() - recalculate unit cell ?
     ! CUgMat = CUgMatNoAbs + CUgMatPrime
-    ! simulate, felixfunction - CUgMat + others ---> RImageSimi
+    ! simulate, Simulate - CUgMat + others ---> RImageSimi
     ! CalculateFigureofMeritandDetermineThickness() - im process, compares sim/expi images
     ! ---> RFigureofMerit
     ! RImageExpi(x,y,LACBED_ID), RImageSimi(x,y,LACBED_ID, thickness_ID)
@@ -67,9 +67,9 @@ MODULE felixfunction_mod
     USE message_mod
 
     USE MyMPI
-    USE Ug_mod
+    USE ug_matrix_mod
     USE crystallography_mod
-    USE RefineWriteOut
+    USE write_output_mod
 
     !?? global inputs and outputs of subroutines using global
     ! global inputs
@@ -208,8 +208,8 @@ MODULE felixfunction_mod
     ! simulate
 
     RSimulatedPatterns = ZERO ! Reset simulation
-    CALL FelixFunction(IErr) ! simulate 
-    IF(l_alert(IErr,"SimulateAndFit","FelixFunction()")) RETURN
+    CALL Simulate(IErr) ! simulate 
+    IF(l_alert(IErr,"SimulateAndFit","Simulate()")) RETURN
     IF (IMethodFLAG.NE.1) Iter=Iter+1 ! iterate for methods other than simplex
 
     IF(my_rank.EQ.0) THEN
@@ -241,12 +241,12 @@ MODULE felixfunction_mod
 
 
   !>
-  !! Procedure-description: Felixfunction simulates and produces images for each 
+  !! Procedure-description: Simulate simulates and produces images for each 
   !! thickness
   !!
   !! Major-Authors: Keith Evans (2014), Richard Beanland (2016)
   !!  
-  SUBROUTINE FelixFunction(IErr)
+  SUBROUTINE Simulate(IErr)
 
     ! CUgMat and smaller inputs (using bloch pixel,thickness parallels)
     ! ------> RImageSimi(x, y, LACBED_pattern_ID , thickness_ID )
@@ -314,7 +314,7 @@ MODULE felixfunction_mod
       ind = IPixelLocations(knd,2)
       !?? fills array for each pixel number not x & y coordinates
       CALL BlochCoefficientCalculation(ind,jnd,knd,ILocalPixelCountMin,IErr)
-      IF(l_alert(IErr,"FelixFunction","BlochCoefficientCalculation")) RETURN
+      IF(l_alert(IErr,"Simulate","BlochCoefficientCalculation")) RETURN
     END DO
 
     !===================================== ! MPI gatherv into RSimulatedPatterns
@@ -351,7 +351,7 @@ MODULE felixfunction_mod
     ! We have done at least one simulation now
     IInitialSimulationFLAG=0
 
-  END SUBROUTINE FelixFunction
+  END SUBROUTINE Simulate
 
   !%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
@@ -709,7 +709,7 @@ MODULE felixfunction_mod
   !! 
   PURE SUBROUTINE BlurG(RImageToBlur,IPixelsCount,RBlurringRadius,IErr)
 
-    !?? JR called every SimulateAndFit() indriectly via FelixFunction
+    !?? JR called every SimulateAndFit() indriectly via Simulate
 
     USE MyNumbers
     USE MPI
@@ -789,4 +789,4 @@ MODULE felixfunction_mod
 
   END SUBROUTINE BlurG        
 
-END MODULE felixfunction_mod    
+END MODULE refinementcontrol_mod    

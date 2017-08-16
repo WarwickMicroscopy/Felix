@@ -43,7 +43,7 @@
 !>
 !! Module-description: 
 !!
-MODULE symmetry
+MODULE setup_space_group_mod
 
   IMPLICIT NONE
   PRIVATE
@@ -705,4 +705,4 @@ MODULE symmetry
     END DO
   END SUBROUTINE  StrLowCase
 
-END MODULE symmetry
+END MODULE setup_space_group_mod

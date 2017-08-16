@@ -43,7 +43,7 @@
 !! Module-description: Holds main top level simulating subroutines considering
 !! different thicknesses
 !!
-MODULE simplex
+MODULE simplex_mod
   IMPLICIT NONE
   PRIVATE
   PUBLIC :: NDimensionalDownhillSimplex
@@ -62,7 +62,7 @@ MODULE simplex
     USE message_mod
 
     USE MPI
-    USE felixfunction_mod
+    USE refinementcontrol_mod
 
     ! global inputs
     USE RPARA, ONLY : RFigureofMerit
@@ -231,7 +231,7 @@ MODULE simplex
     USE message_mod
 
     USE MPI
-    USE felixfunction_mod
+    USE refinementcontrol_mod
 
     ! global inputs
     USE RPARA, ONLY : RFigureofMerit
@@ -271,4 +271,4 @@ MODULE simplex
     RETURN
   END FUNCTION SimplexExtrapolate
 
-END MODULE simplex
+END MODULE simplex_mod
