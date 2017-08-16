@@ -90,10 +90,13 @@ MODULE felixfunction_mod
     INTEGER(IKIND),INTENT(INOUT) :: Iter
     INTEGER(IKIND),INTENT(OUT) :: IErr
     INTEGER(IKIND) :: ind,jnd, IExitFLAG,IThicknessIndex, ILoc(2), IUniqueUgs
+    INTEGER(IKIND), SAVE :: IStartTime
     REAL(RKIND) :: RCurrentG(3), RScatteringFactor
     COMPLEX(CKIND) :: CUgMatDummy(nReflections,nReflections),CVgij
     CHARACTER*200 :: SFormat,SPrintString
 
+    IF ( Iter >= 2 ) CALL print_end_time( LM, IStartTime, "Last Iteration" )
+    CALL SYSTEM_CLOCK( IStartTime )
     CALL message(LM,"Iteration ",Iter)
     
     !\/----------------------------------------------------------------------
@@ -296,7 +299,7 @@ MODULE felixfunction_mod
 
     IMPLICIT NONE
 
-    INTEGER(IKIND) :: IErr,ind,jnd,knd,pnd,IIterationFLAG
+    INTEGER(IKIND) :: IErr, ind,jnd,knd,pnd, IIterationFLAG, IStartTime
     INTEGER(IKIND) :: IAbsorbTag = 0
     REAL(RKIND),DIMENSION(:,:,:),ALLOCATABLE :: RFinalMontageImageRoot
     REAL(RKIND),DIMENSION(:,:),ALLOCATABLE :: RTempImage 
@@ -304,6 +307,8 @@ MODULE felixfunction_mod
     ! Reset simuation   
     RIndividualReflections = ZERO
     IPixelComputed= 0!RB what is this?
+
+    CALL SYSTEM_CLOCK( IStartTime )
 
     ! Simulation (different local pixels for each core)
     CALL message(LM,"Bloch wave calculation...")
@@ -321,6 +326,8 @@ MODULE felixfunction_mod
          root,MPI_COMM_WORLD,IErr)
     !=====================================
     IF(l_alert(IErr,"SimulateAndFit","MPI_GATHERV()")) RETURN
+
+    CALL print_end_time( LM, IStartTime, "Bloch wave simulation" )
 
     ! put 1D array RSimulatedPatterns into 2D image RImageSimi
     ! remember dimensions of RSimulatedPatterns(INoOfLacbedPatterns,IThicknessCount,IPixelTotal)

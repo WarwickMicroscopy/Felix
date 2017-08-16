@@ -697,10 +697,8 @@ PROGRAM Felixrefine
   Iter = 0
   ! baseline simulation with timer
 
-  CALL SYSTEM_CLOCK( IStartTime2 )
   CALL FelixFunction(IErr)
   IF(l_alert(IErr,"felixrefine","FelixFunction")) CALL abort()
-  CALL print_end_time( LM, IStartTime2, "Simulation" )
 
   !--------------------------------------------------------------------
 
