@@ -588,19 +588,25 @@ PROGRAM Felixrefine
 	  ! Fill up the IndependentVariable list 
     ALLOCATE(RIndependentVariable(INoOfVariables),STAT=IErr)  
     ind=1
-    IF(IRefineMode(3).EQ.1) THEN ! Occupancy, code(C)
+    IF(IRefineMode(2).EQ.1) THEN ! Atomic coordinates, B
+	    DO jnd=1,SIZE(IAtomMoveList)
+          RIndependentVariable(ind)=DOT_PRODUCT(RBasisAtomPosition(IAtomMoveList(jnd),:),RVector(jnd,:))
+          ind=ind+1
+	    END DO
+	  END IF
+    IF(IRefineMode(3).EQ.1) THEN ! Occupancy, C
 	    DO jnd=1,SIZE(IAtomsToRefine)
           RIndependentVariable(ind)=RBasisOccupancy(IAtomsToRefine(jnd))
           ind=ind+1
 	    END DO
 	  END IF
-    IF(IRefineMode(4).EQ.1) THEN ! Isotropic DW, code(D)
+    IF(IRefineMode(4).EQ.1) THEN ! Isotropic DW, D
 	    DO jnd=1,SIZE(IAtomsToRefine)
           RIndependentVariable(ind)=RIsoDW(IAtomsToRefine(jnd))
           ind=ind+1
 	    END DO
 	  END IF
-    IF(IRefineMode(8).EQ.1) THEN ! Convergence angle, code(H)
+    IF(IRefineMode(8).EQ.1) THEN ! Convergence angle, H
       RIndependentVariable(ind)=RConvergenceAngle
       ind=ind+1
 	  END IF
@@ -719,24 +725,20 @@ PROGRAM Felixrefine
     END DO   
   
   ELSE ! Refinement Mode
-
-    IF(my_rank.EQ.0) THEN ! output using 1 core only !?? what needs this JR?
-
+    IF(my_rank.EQ.0) THEN
       ! Figure of merit is passed back as a global variable
       CALL CalculateFigureofMeritandDetermineThickness(Iter,IThicknessIndex,IErr)
       IF(l_alert(IErr,"felixrefine",&
             "CalculateFigureofMeritandDetermineThickness()")) CALL abort() 
-
       ! Keep baseline simulation for masked correlation
       IF (ICorrelationFLAG.EQ.3) THEN
         RImageBase=RImageSimi  
         RImageAvi=RImageSimi 
       END IF
-        
       CALL WriteIterationOutput(Iter,IThicknessIndex,IExitFLAG,IErr)
       IF(l_alert(IErr,"felixrefine","WriteIterationOutput()")) CALL abort() 
-
     END IF
+    
     !===================================== ! Send the fit index to all cores
     CALL MPI_BCAST(RFigureofMerit,1,MPI_DOUBLE_PRECISION,0,MPI_COMM_WORLD,IErr)
     !=====================================
@@ -805,7 +807,7 @@ PROGRAM Felixrefine
   DEALLOCATE(RgMatrixMagnitude,STAT=IErr)
   DEALLOCATE(CPseudoAtom,STAT=IErr)
   DEALLOCATE(CPseudoScatt,STAT=IErr)
-  !?? previous deallocations are local, these are global, seemingly from smodules.f90
+  !?? These are global variables, see smodules.f90
 
   IF (IRefineMode(1).EQ.0) THEN
   	DEALLOCATE(IIterativeVariableUniqueIDs,STAT=IErr)
@@ -1500,7 +1502,7 @@ CONTAINS
   !!
   !! Major-Authors: Keith Evans (2014)
   !!
-  SUBROUTINE AssignArrayLocationsToIterationVariables(IIterativeVariableType,&
+  SUBROUTINE AssignArrayLocationsToIterationVariables(IVariableType,&
                     IVariableNo,IArrayToFill,IErr)
 
     !?? JR study further, compare RIndependentVariables array and UpdateVariables()
@@ -1510,7 +1512,7 @@ CONTAINS
 
     ! NB IArrayToFill here equivalent to IIterativeVariableUniqueIDs outside this subroutine
 
-    INTEGER(IKIND) :: IIterativeVariableType,IVariableNo,IErr,IArrayIndex,&
+    INTEGER(IKIND) :: IVariableType,IVariableNo,IErr,IArrayIndex,&
          IAnisotropicDebyeWallerFactorElementNo
     INTEGER(IKIND),DIMENSION(INoOfVariables,5),INTENT(OUT) :: IArrayToFill  
 
@@ -1519,31 +1521,31 @@ CONTAINS
           !INoofElementsForEachRefinementType,IErr)
     
     ! Where am I in the Array Right Now?
-    IArrayIndex = SUM(INoofElementsForEachRefinementType(:(IIterativeVariableType-1))) + &
+    IArrayIndex = SUM(INoofElementsForEachRefinementType(:(IVariableType-1))) + &
           IVariableNo
 
-    SELECT CASE(IIterativeVariableType)
+    SELECT CASE(IVariableType)
 
     CASE(1) ! Ugs, A
-       IArrayToFill(IArrayIndex,2) = IIterativeVariableType
+       IArrayToFill(IArrayIndex,2) = IVariableType
        IArrayToFill(IArrayIndex,3) = &
             NINT(REAL(INoofUgs,RKIND)*(REAL(IVariableNo/REAL(INoofUgs,RKIND),RKIND)-&
             CEILING(REAL(IVariableNo/REAL(INoofUgs,RKIND),RKIND)))+REAL(INoofUgs,RKIND))
 
     CASE(2) ! Coordinates (x,y,z), B
-       IArrayToFill(IArrayIndex,2) = IIterativeVariableType
+       IArrayToFill(IArrayIndex,2) = IVariableType
        IArrayToFill(IArrayIndex,3) = IVariableNo
 
     CASE(3) ! Occupancies, C
-       IArrayToFill(IArrayIndex,2) = IIterativeVariableType
+       IArrayToFill(IArrayIndex,2) = IVariableType
        IArrayToFill(IArrayIndex,3) = IAtomsToRefine(IVariableNo)
 
     CASE(4) ! Isotropic Debye Waller Factors , D
-       IArrayToFill(IArrayIndex,2) = IIterativeVariableType
+       IArrayToFill(IArrayIndex,2) = IVariableType
        IArrayToFill(IArrayIndex,3) = IAtomsToRefine(IVariableNo)
 
     CASE(5) ! Anisotropic Debye Waller Factors (a11-a33), E
-      IArrayToFill(IArrayIndex,2) = IIterativeVariableType
+      IArrayToFill(IArrayIndex,2) = IVariableType
       IArrayToFill(IArrayIndex,3) = &
             IAtomsToRefine(INT(CEILING(REAL(IVariableNo/6.0D0,RKIND))))
       IAnisotropicDebyeWallerFactorElementNo = &
@@ -1568,25 +1570,25 @@ CONTAINS
           END SELECT
 
     CASE(6) ! Lattice Parameters, E
-       IArrayToFill(IArrayIndex,2) = IIterativeVariableType
+       IArrayToFill(IArrayIndex,2) = IVariableType
        IArrayToFill(IArrayIndex,3) = &
             NINT(3.D0*(REAL(IVariableNo/3.0D0,RKIND) - &
             CEILING(REAL(IVariableNo/3.0D0,RKIND)))+3.0D0)
        
     CASE(7) ! Lattice Angles, F
-       IArrayToFill(IArrayIndex,2) = IIterativeVariableType
+       IArrayToFill(IArrayIndex,2) = IVariableType
        IArrayToFill(IArrayIndex,3) = &
             NINT(3.D0*(REAL(IVariableNo/3.0D0,RKIND) - &
             CEILING(REAL(IVariableNo/3.0D0,RKIND)))+3.0D0)
 
     CASE(8) ! Convergence angle, H
-       IArrayToFill(IArrayIndex,2) = IIterativeVariableType
+       IArrayToFill(IArrayIndex,2) = IVariableType
 
     CASE(9) ! Percentage Absorption, I
-       IArrayToFill(IArrayIndex,2) = IIterativeVariableType
+       IArrayToFill(IArrayIndex,2) = IVariableType
 
     CASE(10) ! kV, J
-       IArrayToFill(IArrayIndex,2) = IIterativeVariableType
+       IArrayToFill(IArrayIndex,2) = IVariableType
 
     END SELECT
     
@@ -1635,8 +1637,8 @@ CONTAINS
       IF(l_alert(IErr,"SetupAtomMovements()","DetermineAllowedMovements()")) RETURN  
       DO jnd = 1,IDegreesOfFreedom(ind)
         knd=knd+1
-        RVector(knd,:)=RMoveMatrix(jnd,:)!the movement
-        IAtomMoveList(knd)=IAtomsToRefine(ind)!the atom
+        RVector(knd,:)=RMoveMatrix(jnd,:)!the movement, global variable
+        IAtomMoveList(knd)=IAtomsToRefine(ind)!the atom, global variable
       END DO
     END DO
 

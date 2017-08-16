@@ -149,18 +149,15 @@ MODULE felixfunction_mod
       CALL UpdateVariables(RIndependentVariable,IErr)
       IF(l_alert(IErr,"SimulateAndFit","UpdateVariables()")) RETURN
       IF (IRefineMode(8).EQ.1) THEN ! convergence angle
-        ! recalculate k-vectors?
-        ! resolution in k space
+        ! recalculate resolution in k space
         RDeltaK = RMinimumGMag*RConvergenceAngle/REAL(IPixelCount,RKIND) 
         !?? in the past wrote following to iterationlog.txt
         !?? Iter,RFigureofMerit,RConvergenceAngle
+      ELSE
+        ! basis has changed in some way, recalculate unit cell
+        CALL UniqueAtomPositions(IErr)
+        IF(l_alert(IErr,"SimulateAndFit()","UniqueAtomPositions()")) RETURN
       END IF
-
-      ! recalculate unit cell, updates every-atom arrays with new values from basis
-      CALL UniqueAtomPositions(IErr)
-      IF(l_alert(IErr,"SimulateAndFit","UniqueAtomPositions()")) RETURN
-      !?? This is being called unnecessarily for some refinement modes
-      !?? JR attempted to play with this, need to study further 
 
       !--------------------------------------------------------------------
       ! update scattering matrix Ug
@@ -517,17 +514,14 @@ MODULE felixfunction_mod
   END SUBROUTINE CalculateFigureofMeritandDetermineThickness
 
   !%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-
-
-
   !>
-  !! Procedure-description: Fill the indepedent value array with values 
+  !! Procedure-description: Fill the independent parameter array for a new simulation
   !!
   !! Major-Authors: Keith Evans (2014), Richard Beanland (2016)
   !!  
   SUBROUTINE UpdateVariables(RIndependentVariable,IErr)
 
-    !?? JR top level to this module, so keep, compare if refine needs access
+    !?? JR top level to this module, so keep, refine needs access
 
     !?? JR called every SimulateAndFit() (for non-Ug refinement)
 
@@ -554,13 +548,14 @@ MODULE felixfunction_mod
       CASE(1) ! A: structure factor refinement, do in UpdateStructureFactors
         
       CASE(2)
-        ! The vector being used
+        ! The index of the atom and vector being used
         IVectorID = IIterativeVariableUniqueIDs(ind,3)
         ! The atom being moved
         IAtomID = IAtomMoveList(IVectorID)
-        ! Change in position
-        RBasisAtomPosition(IAtomID,:) = RBasisAtomPosition(IAtomID,:) + &
-              RIndependentVariable(ind)*RVector(IVectorID,:)
+        ! Change in position r' = r - v*(r.v) +v*RIndependentVariable(ind)
+        RBasisAtomPosition(IAtomID,:) = RBasisAtomPosition(IAtomID,:) - &
+            RVector(IVectorID,:)*DOT_PRODUCT(RBasisAtomPosition(IAtomID,:),RVector(IVectorID,:)) + &
+            RVector(IVectorID,:)*RIndependentVariable(ind)
       CASE(3)
         RBasisOccupancy(IIterativeVariableUniqueIDs(ind,3))=RIndependentVariable(ind) 
       CASE(4)
