@@ -479,7 +479,7 @@ PROGRAM Felixrefine
   !?? CUniqueUg vector produced here to later fill RIndependentVariable
   
   !--------------------------------------------------------------------
-  ! set up chosen absoption model
+  ! set up chosen absorption model
   !--------------------------------------------------------------------
 
   CALL start_timer( IStartTime2 )
