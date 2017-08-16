@@ -117,7 +117,7 @@ PROGRAM Felixrefine
   CALL message(LS,"             ", DStr)
   CALL message(LS,"             ", AStr)
   CALL message(LS,"-----------------------------------------------------------------")
-  CALL message(LS,"total number of MPI ranks is", p, ", screen messages via rank=", my_rank)
+  CALL message(LS,"total number of MPI ranks ", p, ", screen messages via rank", my_rank)
   CALL message(LS,"-----------------------------------------------------------------")
 
   ! timing setup
@@ -130,7 +130,7 @@ PROGRAM Felixrefine
   
   CALL ReadInpFile(IErr) ! felix.inp
   IF(l_alert(IErr,"felixrefine","ReadInpFile()")) CALL abort()
-  CALL message ( LS, "Setting teminal output mode" )
+  !CALL message ( LS, "Setting terminal output mode" )
   CALL set_message_mod_mode( IWriteFLAG, IErr )
   IF(l_alert(IErr,"felixrefine","set_message_mod_mode()")) CALL abort()
 
@@ -385,8 +385,8 @@ PROGRAM Felixrefine
     RgDotNorm(ind) = DOT_PRODUCT(RgPool(ind,:),RNormDirM)
   END DO
   
-  CALL message(LL,dbg7,"displaying Rhkl, RgDotNorm columnwise")
-  CALL message(LL,dbg7,"g vector & g.n(1/A) respectively",NINT(Rhkl),RgDotNorm )
+  CALL message(LL,dbg7,"g vector hkl, g.n")
+  CALL message(LL,dbg7," ",NINT(Rhkl),RgDotNorm )
 
   !--------------------------------------------------------------------
   ! calculate resolution in k space
@@ -469,7 +469,7 @@ PROGRAM Felixrefine
   ENDDO
   
   CALL message(LL,dbg3,"g-vector magnitude matrix (2pi/A)", RgMatrixMagnitude(1:16,1:8)) 
-  CALL message(LL,dbg3,"first 16 g-vectors", RgMatrix(1:16,1,:)) 
+  CALL message(LXL,dbg3,"first 16 g-vectors", RgMatrix(1:16,1,:)) 
 
   ! structure factor initialisation
   ! Calculate Ug matrix for each entry in CUgMatNoAbs(1:nReflections,1:nReflections)
@@ -483,11 +483,11 @@ PROGRAM Felixrefine
   !--------------------------------------------------------------------
 
   CALL start_timer( IStartTime2 )
-  CALL message(LL,dbg3,"Starting absorption calculation, number of beams = ",&
+  CALL message(LS,dbg3,"Absorption calculation, number of beams = ",&
         SIZE(IEquivalentUgKey))
   CALL Absorption (IErr)
   IF(l_alert(IErr,"felixrefine","Absorption()")) CALL abort()
-  CALL print_end_time( LM, IStartTime2, "Absorption" )
+  CALL print_end_time( LS, IStartTime2, "Absorption" )
   CALL start_timer( IStartTime2 )
 
   !--------------------------------------------------------------------
@@ -511,9 +511,9 @@ PROGRAM Felixrefine
       INoOfVariables = jnd-1 
     END IF
     IF ( INoOfVariables.EQ.1 ) THEN 
-      CALL message(LM,"Only one independent variable")
+      CALL message(LS,"Only one independent variable")
     ELSE
-      CALL message(LM,"number of independent variables = ",INoOfVariables)
+      CALL message(LS,"number of independent variables = ",INoOfVariables)
     END IF
 
     ALLOCATE(RIndependentVariable(INoOfVariables),STAT=IErr)  !Don't like having the same variable allocated in two places!***
@@ -684,7 +684,7 @@ PROGRAM Felixrefine
   CALL start_timer( IStartTime2 )
   CALL FelixFunction(IErr)
   IF(l_alert(IErr,"felixrefine","FelixFunction")) CALL abort()
-  CALL print_end_time( LM, IStartTime2, "Simulation" )
+  CALL print_end_time( LS, IStartTime2, "Simulation" )
 
   !--------------------------------------------------------------------
 
@@ -698,7 +698,7 @@ PROGRAM Felixrefine
     !--------------------------------------------------------------------
     
     ! simulate multiple thicknesses
-    CALL message(LM,"Writing simulations with the number of thicknesses =", IThicknessCount)
+    CALL message(LS,"Writing simulations with the number of thicknesses =", IThicknessCount)
     DO IThicknessIndex = 1,IThicknessCount
       CALL WriteIterationOutput(Iter,IThicknessIndex,IExitFLAG,IErr)
       IF(l_alert(IErr,"felixrefine","WriteIterationOutput()")) CALL abort() 
@@ -752,7 +752,7 @@ PROGRAM Felixrefine
       IF(l_alert(IErr,"felixrefine","ParabolicRefinement()")) CALL abort() 
      
     CASE DEFAULT ! Simulation only, should never happen
-      CALL message( LM, "No refinement, simulation only")
+      CALL message( LS, "No refinement, simulation only")
        
     END SELECT 
 
@@ -993,21 +993,21 @@ CONTAINS
           ! print to screen
           SELECT CASE(IVariableType)
             CASE(1)
-              CALL message(LL,"Ug refinement")
+              CALL message(LS,"Ug refinement")
             CASE(2)
-              CALL message(LL,"Atomic coordinate refinement")
+              CALL message(LS,"Atomic coordinate refinement")
             CASE(3)
-              CALL message(LL,"Occupancy refinement")
+              CALL message(LS,"Occupancy refinement")
             CASE(4)
-              CALL message(LL,"Isotropic Debye-Waller factor refinement")
+              CALL message(LS,"Isotropic Debye-Waller factor refinement")
             CASE(5)
-              CALL message(LL,"Convergence angle refinement")
+              CALL message(LS,"Convergence angle refinement")
           END SELECT
           IF (RCurrentVar(ind).LE.TINY.AND.IVariableType.EQ.4) THEN ! skip zero DW factor
             RPVec(ind)=TINY
             CYCLE
           END IF
-          CALL message(LM,no_tag,"Finding gradient,",ind," of",INoOfVariables)
+          CALL message(LS,no_tag,"Finding gradient,",ind," of",INoOfVariables)
 
           ! Make a random number and vary the sign of dx, using system clock
           CALL SYSTEM_CLOCK(mnd)
@@ -1035,7 +1035,7 @@ CONTAINS
             RPVec(ind)=TEN
           END IF
         END DO
-        CALL message(LL,"Checking minimum gradient")
+        CALL message(LS,"Checking minimum gradient")
         nnd=0 ! do max gradient next time
       END IF
       
@@ -1052,7 +1052,7 @@ CONTAINS
         EXIT
       END IF
       RPvec=RPvec/SQRT(RPvecMag) ! unity vector along direction of max gradient
-      CALL message( LM, "Refinement vector = ",RPvec )
+      CALL message( LS, "Refinement vector = ",RPvec )
 
       RVar0=RIndependentVariable ! the best point of gradient calculation
       RFigureofMerit=RBestFit ! the best fit so far
@@ -1069,7 +1069,7 @@ CONTAINS
 
       ! Second point
       R3var(2)=RCurrentVar(1) 
-      CALL message(LM,"Refining, point 2 of 3")
+      CALL message(LS,"Refining, point 2 of 3")
       CALL SimulateAndFit(RCurrentVar,Iter,IExitFLAG,IErr)
       IF(l_alert(IErr,"MaxGradientRefinement()","SimulateAndFit()")) RETURN
       CALL BestFitCheck(RFigureofMerit,RBestFit,RCurrentVar,RIndependentVariable,IErr)
@@ -1083,7 +1083,7 @@ CONTAINS
       END IF
       RCurrentVar=RVar0+RPvec*RPvecMag
       R3var(3)=RCurrentVar(1) ! third point
-      CALL message( LM, "Refining, point 3 of 3")
+      CALL message( LS, "Refining, point 3 of 3")
       CALL SimulateAndFit(RCurrentVar,Iter,IExitFLAG,IErr)
       IF(l_alert(IErr,"MaxGradientRefinement()","SimulateAndFit()")) RETURN
       CALL BestFitCheck(RFigureofMerit,RBestFit,RCurrentVar,RIndependentVariable,IErr)
@@ -1106,7 +1106,7 @@ CONTAINS
       
       ! if it isn't more than 10% concave, keep going until it is sufficiently concave
       DO WHILE (Rconvex.GT.0.1*Rtest)
-        CALL message( LM, "Convex, continuing")
+        CALL message( LS, "Convex, continuing")
         jnd=MAXLOC(R3fit,1) ! worst fit
         knd=MINLOC(R3fit,1) ! best fit
         lnd=6-jnd-knd ! the mid fit
@@ -1138,8 +1138,8 @@ CONTAINS
 
       ! now make a prediction
       CALL Parabo3(R3var,R3fit,RvarMin,RfitMin,IErr)
-      CALL message ( LM, "Concave set, predict minimum at ",RvarMin)
-      CALL message ( LM, "      with fit index ",RfitMin)
+      CALL message ( LS, "Concave set, predict minimum at ",RvarMin)
+      CALL message ( LS, "      with fit index ",RfitMin)
       RCurrentVar=RVar0+RPvec*(RvarMin-RVar0(1))/RPvec(1) ! Put prediction into RCurrentVar
       CALL SimulateAndFit(RCurrentVar,Iter,IExitFLAG,IErr)
       IF(l_alert(IErr,"MaxGradientRefinement()","SimulateAndFit()")) RETURN
@@ -1264,7 +1264,7 @@ CONTAINS
 
         ELSE IF (INoOfVariables.GT.1) THEN ! pair-wise maximum gradient
           IF (ind.EQ.INoOfVariables) EXIT ! skip the last variable
-          CALL message(LM,no_tag,&
+          CALL message(LS,no_tag,&
                 "Finding maximum gradient for variables",ind," and",ind+1)
           ! NB R3fit contains the three fit indices
           R3fit(1)=RFigureofMerit ! point 1 is the incoming simulation and fit index
@@ -1277,7 +1277,7 @@ CONTAINS
           ! now look along combination of 2 parameters for third point
           RPvec(ind+1)=RScale/5.0 
           RCurrentVar=RVar0+RPvec ! Update the parameters to simulate
-          CALL message(LM,no_tag,&
+          CALL message(LS,no_tag,&
                 "Finding maximum gradient for variables",ind," and",ind+1)
           CALL SimulateAndFit(RCurrentVar,Iter,IExitFLAG,IErr)
           IF(l_alert(IErr,"ParabolicRefinement()","SimulateAndFit()")) RETURN
@@ -1289,7 +1289,7 @@ CONTAINS
           RPvec(ind)=(R3fit(1)-R3fit(2))/RPvecMag
           RPvec(ind+1)=(R3fit(2)-R3fit(3))/RPvecMag
         END IF
-        CALL message( LM, "Refinement vector = ",RPvec)
+        CALL message( LS, "Refinement vector = ",RPvec)
 
         !--------------------------------------------------------------------
         ! Infinity and NaN check and set 1st point
@@ -1301,7 +1301,7 @@ CONTAINS
         RFigureofMerit=MINVAL(R3fit) ! the best fit of the three
         ! Small DW factor (<0.1) check
         IF (IVariableType.EQ.4.AND.RVar0(ind).LE.0.1) THEN
-          CALL message( LM, "Small Debye Waller factor, resetting to 0.1")
+          CALL message( LS, "Small Debye Waller factor, resetting to 0.1")
           RVar0(ind)=0.1
           RCurrentVar=RVar0
           RPvecMag=RScale
@@ -1368,7 +1368,7 @@ CONTAINS
 
         ! if it isn't more than 10% concave, keep going until it is sufficiently concave
         DO WHILE (Rconvex.GT.0.1*Rtest)
-          CALL message( LM, "Convex, continuing")
+          CALL message( LS, "Convex, continuing")
           jnd=MAXLOC(R3fit,1) ! worst fit
           knd=MINLOC(R3fit,1) ! best fit
           lnd=6-jnd-knd ! the mid fit
@@ -1408,11 +1408,11 @@ CONTAINS
           CALL SimulateAndFit(RCurrentVar,Iter,IExitFLAG,IErr)
           IF(l_alert(IErr,"ParabolicRefinement()","SimulateAndFit()")) RETURN  
           CALL BestFitCheck(RFigureofMerit,RBestFit,RCurrentVar,RIndependentVariable,IErr)
-          CALL message( LM, "Using zero Debye Waller factor, refining next variable" )
+          CALL message( LS, "Using zero Debye Waller factor, refining next variable" )
         ELSE
           CALL Parabo3(R3var,R3fit,RvarMin,RfitMin,IErr)
-          CALL message( LM, "Concave set, predict minimum at ",RvarMin)
-          CALL message( LM, "       with fit index ",RfitMin)
+          CALL message( LS, "Concave set, predict minimum at ",RvarMin)
+          CALL message( LS, "       with fit index ",RfitMin)
           jnd=MAXLOC(R3fit,1)!worst point
           knd=MINLOC(R3fit,1)!best point
           ! replace worst point with prediction and put into RIndependentVariable
@@ -1642,7 +1642,7 @@ CONTAINS
       RBest=RFoM
       RIndependentVariable=RCurrent
     END IF
-    CALL message( LM, "Best fit so far = ",RBest)
+    CALL message( LS, "Best fit so far = ",RBest)
 
           
   END SUBROUTINE BestFitCheck

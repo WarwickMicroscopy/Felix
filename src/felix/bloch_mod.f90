@@ -150,11 +150,11 @@ MODULE bloch_mod
       !  SQRT( ( RBigK**2 + DOT_PRODUCT(RgPool(knd,:),RTiltedK(:)) )**2 /RBigK**2 - &
       !  (RgPoolMag(knd)**2 + TWO*DOT_PRODUCT(RgPool(knd,:),RTiltedK(:))) )
       IF(knd.EQ.2.AND.IYPixelIndex.EQ.10.AND.IXPixelIndex.EQ.10) THEN
-        CALL message(LL,dbg7,"RBigK ",RBigK)
-        CALL message(LL,dbg7,"Rhkl(knd) ",Rhkl(knd:knd,:))
-        CALL message(LL,dbg7,"RgPool(knd) ",RgPool(knd:knd,:))
-        CALL message(LL,dbg7,"RTiltedK ",RTiltedK)
-        CALL message(LL,dbg7,"RDevPara ",RDevPara(knd))
+        CALL message(LM,dbg7,"RBigK ",RBigK)
+        CALL message(LM,dbg7,"Rhkl(knd) ",Rhkl(knd:knd,:))
+        CALL message(LM,dbg7,"RgPool(knd) ",RgPool(knd:knd,:))
+        CALL message(LM,dbg7,"RTiltedK ",RTiltedK)
+        CALL message(LM,dbg7,"RDevPara ",RDevPara(knd))
       END IF
     END DO
 
@@ -165,9 +165,9 @@ MODULE bloch_mod
                     IStrongBeamList,IWeakBeamList,nBeams,nWeakBeams,IErr)
     IF(l_alert(IErr,"BlochCoefficientCalculation()",&
           "StrongAndWeakBeamsDetermination()")) RETURN
-    CALL message(LL,dbg7,"strong beams",nBeams)
-    CALL message(LL,dbg7,"weak beams",nWeakBeams)
-    CALL message(LL,dbg7,"nReflections",nReflections)
+    CALL message(LXL,dbg7,"strong beams",nBeams)
+    CALL message(LXL,dbg7,"weak beams",nWeakBeams)
+    CALL message(LXL,dbg7,"nReflections",nReflections)
 
     !--------------------------------------------------------------------
     ! ALLOCATE memory for eigen problem
@@ -202,10 +202,10 @@ MODULE bloch_mod
               nBeams,CUgMatPartial,nReflections,CZERO,CUgSgMatrix,nBeams)
 
     !--------------------------------------------------------------------
-    ! consider Laue zones, possibly higher order
+    ! higher order Laue zones
     !--------------------------------------------------------------------
 
-    IF (IHolzFLAG.EQ.1) THEN
+    IF (IHolzFLAG.EQ.1) THEN!We are considering higher order Laue Zones (suspect this is non-functional!!)
       DO ind=1,nBeams
         CUgSgMatrix(ind,ind) = CUgSgMatrix(ind,ind) + TWO*RBigK*RDevPara(IStrongBeamList(ind))
       ENDDO
@@ -217,7 +217,7 @@ MODULE bloch_mod
         END DO
       END DO
       CUgSgMatrix = (TWOPI**2)*CUgSgMatrix/(TWO*RBigK)
-    ELSE
+    ELSE!ZOLZ only
       ! replace the diagonal parts with strong beam deviation parameters
       DO ind=1,nBeams
         CUgSgMatrix(ind,ind) = TWO*RBigK*RDevPara(IStrongBeamList(ind))/(TWOPI*TWOPI)
@@ -254,14 +254,14 @@ MODULE bloch_mod
 	      ! Replace the Sg's
         CUgSgMatrix(knd,knd)= CUgSgMatrix(knd,knd) - TWO*RBigK*sumD/(TWOPI*TWOPI)
       ENDDO
-      ! Divide by 2K so off-diagonal elementa are Ug/2K, diagonal elements are Sg
-      !?? DON'T KNOW WHERE THE 4pi^2 COMES FROM 
+	  !The 4pi^2 is a result of using h, not hbar, in the conversion from VG(ij) to Ug(ij).  Needs to be taken out of the weak beam calculation too 
+	  !Divide by 2K so off-diagonal elementa are Ug/2K, diagonal elements are Sg, Spence's (1990) 'Structure matrix'
       CUgSgMatrix = TWOPI*TWOPI*CUgSgMatrix/(TWO*RBigK)
     END IF
 
     IF(IYPixelIndex.EQ.10.AND.IXPixelIndex.EQ.10) THEN ! output data from 1 pixel,show working
-      CALL message(LL,dbg3, "Pixel [10,10] Ug/2K + {Sg} matrix (nm^-2)")
-      CALL message(LL,dbg3, "displaying Rhkl and 100*CUgSgMatrix alongside",&
+      CALL message(LM,dbg3, "Pixel [10,10] Ug/2K + {Sg} matrix (nm^-2)")
+      CALL message(LM,dbg3, "displaying Rhkl and 100*CUgSgMatrix alongside",&
             NINT(Rhkl(1:16,:)),100*CUgSgMatrix(1:16,1:6))
     END IF
     

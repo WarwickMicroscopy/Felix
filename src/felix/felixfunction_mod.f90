@@ -108,7 +108,7 @@ MODULE felixfunction_mod
     COMPLEX(CKIND) :: CUgMatDummy(nReflections,nReflections),CVgij
     CHARACTER*200 :: SFormat,SPrintString
 
-    CALL message(LM,"Iteration ",Iter)
+    CALL message(LS,"Iteration ",Iter)
     
     !\/----------------------------------------------------------------------
     IF (IRefineMode(1).EQ.1) THEN  ! Ug refinement; update structure factors 
@@ -318,7 +318,7 @@ MODULE felixfunction_mod
     IPixelComputed= 0!RB what is this?
 
     ! Simulation (different local pixels for each core)
-    CALL message(LM,"Bloch wave calculation...")
+    CALL message(LS,"Bloch wave calculation...")
     DO knd = ILocalPixelCountMin,ILocalPixelCountMax,1
       jnd = IPixelLocations(knd,1)
       ind = IPixelLocations(knd,2)
@@ -471,8 +471,8 @@ MODULE felixfunction_mod
             END IF
         END SELECT
 
-        CALL message(LL,dbg6,"For Pattern ",ind,", thickness ",jnd)
-        CALL message(LL,dbg6,"  the FoM = ",RImageCorrelation)
+        CALL message(LXL,dbg6,"For Pattern ",ind,", thickness ",jnd)
+        CALL message(LXL,dbg6,"  the FoM = ",RImageCorrelation)
         
         ! Determines which thickness matches best for each LACBED pattern
         ! which is later used to find the range of viable thicknesses 
@@ -486,8 +486,8 @@ MODULE felixfunction_mod
       ! The best total correlation
       RTotalCorrelation=RTotalCorrelation/REAL(INoOfLacbedPatterns,RKIND)
 
-      CALL message(LL,dbg6,"Specimen thickness (Angstroms) ",jnd)
-      CALL message(LL,dbg6,"Figure of merit ",RTotalCorrelation)
+      CALL message(LM,dbg6,"Specimen thickness (Angstroms) ",jnd)
+      CALL message(LM,dbg6,"Figure of merit ",RTotalCorrelation)
 
       ! Determines which thickness matches best
       IF(RTotalCorrelation.LT.RBestTotalCorrelation) THEN
@@ -508,14 +508,13 @@ MODULE felixfunction_mod
     !RFigureofMerit = SUM(RBestCorrelation*RWeightingCoefficients)/&
     !      REAL(INoOfLacbedPatterns,RKIND)
     
-    ! Output to screen
     RBestThickness = RInitialThickness +(IBestThicknessIndex-1)*RDeltaThickness
     RThicknessRange=( MAXVAL(IBestImageThicknessIndex)-&
           MINVAL(IBestImageThicknessIndex) )*RDeltaThickness
-
-    CALL message(LM,"Figure of merit ",RBestTotalCorrelation)
-    CALL message(LM,"Specimen thickness (Angstroms) ",NINT(RBestThickness))
-    CALL message(LM,"Thickness range (Angstroms) ",NINT(RThicknessRange))
+    ! Output to screen, duplicate of felixrefine output
+    CALL message(LL,"Figure of merit ",RBestTotalCorrelation)
+    CALL message(LL,"Specimen thickness (Angstroms) ",NINT(RBestThickness))
+    CALL message(LL,"Thickness range (Angstroms) ",NINT(RThicknessRange))
 
     RETURN
 
@@ -654,47 +653,47 @@ MODULE felixfunction_mod
           END DO
 
         CASE(2)
-          CALL message(LM,"Current Atomic Coordinates")
+          CALL message(LS,"Current Atomic Coordinates")
           DO jnd = 1,SIZE(RBasisAtomPosition,DIM=1)
-            CALL message(LM,SBasisAtomLabel(jnd),RBasisAtomPosition(jnd,:))
+            CALL message(LS,SBasisAtomLabel(jnd),RBasisAtomPosition(jnd,:))
           END DO
 
         CASE(3)
-          CALL message(LM, "Current Atomic Occupancy")
+          CALL message(LS, "Current Atomic Occupancy")
           DO jnd = 1,SIZE(RBasisOccupancy,DIM=1)
-            CALL message(LM, SBasisAtomLabel(jnd),RBasisOccupancy(jnd))
+            CALL message(LS, SBasisAtomLabel(jnd),RBasisOccupancy(jnd))
           END DO
 
         CASE(4)
-          CALL message(LM, "Current Isotropic Debye Waller Factors")
+          CALL message(LS, "Current Isotropic Debye Waller Factors")
           DO jnd = 1,SIZE(RBasisIsoDW,DIM=1)
-            CALL message(LM, SBasisAtomLabel(jnd),RBasisIsoDW(jnd))
+            CALL message(LS, SBasisAtomLabel(jnd),RBasisIsoDW(jnd))
           END DO
 
         CASE(5)
-          CALL message(LM,"Current Anisotropic Debye Waller Factors")
+          CALL message(LS,"Current Anisotropic Debye Waller Factors")
           DO jnd = 1,SIZE(RAnisotropicDebyeWallerFactorTensor,DIM=1)
-            CALL message(LM, "Tensor index = ", jnd) 
-            CALL message(LM, SBasisAtomLabel(jnd),RAnisotropicDebyeWallerFactorTensor(jnd,1:3,:) )
+            CALL message(LS, "Tensor index = ", jnd) 
+            CALL message(LS, SBasisAtomLabel(jnd),RAnisotropicDebyeWallerFactorTensor(jnd,1:3,:) )
           END DO
 
         CASE(6)
-          CALL message(LM, "Current Unit Cell Parameters", (/ RLengthX,RLengthY,RLengthZ /) )
+          CALL message(LS, "Current Unit Cell Parameters", (/ RLengthX,RLengthY,RLengthZ /) )
 
         CASE(7)
-          CALL message(LM, "Current Unit Cell Angles", (/ RAlpha,RBeta,RGamma /) )
+          CALL message(LS, "Current Unit Cell Angles", (/ RAlpha,RBeta,RGamma /) )
 
         CASE(8)
-          CALL message(LM, "Current Convergence Angle: ", RConvergenceAngle )
+          CALL message(LS, "Current Convergence Angle: ", RConvergenceAngle )
 
         CASE(9)
-          CALL message(LM, "Current Absorption Percentage", RAbsorptionPercentage )
+          CALL message(LS, "Current Absorption Percentage", RAbsorptionPercentage )
 
         CASE(10)
-          CALL message(LM, "Current Accelerating Voltage", RAcceleratingVoltage )
+          CALL message(LS, "Current Accelerating Voltage", RAcceleratingVoltage )
 
         CASE(11)
-          CALL message(LM, "Current Residual Sum of Squares Scaling Factor", RRSoSScalingFactor )
+          CALL message(LS, "Current Residual Sum of Squares Scaling Factor", RRSoSScalingFactor )
 
         END SELECT
       END IF

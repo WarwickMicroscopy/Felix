@@ -184,7 +184,7 @@ MODULE read_cif_mod
     IF (celc.GT.TWOPI) THEN!assume this angle is expressed in degrees
       RGamma=celc*DEG2RADIAN;
     END IF
-    CALL message( LL, dbg14, "Unit cel angles alpha, beta, gamma", (/ RAlpha*RADIAN2DEG,RBeta*RADIAN2DEG,RGamma*RADIAN2DEG /) )
+    CALL message( LXL, dbg14, "Unit cell angles alpha, beta, gamma", (/ RAlpha*RADIAN2DEG,RBeta*RADIAN2DEG,RGamma*RADIAN2DEG /) )
 
     f1 = numb_('_cell_volume', cela, siga)
     !Cell volume
@@ -198,11 +198,11 @@ MODULE read_cif_mod
       IVolumeFLAG= 1
     END IF
 
-    CALL message ( LL, "Unit cell volume", RVolume )
+    CALL message ( LXL, dbg14, "Unit cell volume", RVolume )
 
     DO      
       f1 = char_('_atom_type_symbol', name)
-      CALL message (LL, dbg14, "_atom_type_symbol",f1 )
+      !CALL message (LXL, dbg14, "_atom_type_symbol",f1 )
       IF(loop_.NEQV. .TRUE.) EXIT
     END DO
 
@@ -235,7 +235,7 @@ MODULE read_cif_mod
        SSpaceGroupName=SAlphabetarray(SCAN(alphabet,SSpaceGroupName)-26)
     END IF
 
-    CALL message( LL, dbg14, "_symmetry_space_group_name_H-M ", SSpaceGrp)
+    CALL message( LXL, dbg14, "Space group", SSpaceGrp)
     
     ! ----------------------------------------------------------
     ! Extract atom site data
@@ -326,11 +326,11 @@ MODULE read_cif_mod
       f2 = numb_('_atom_site_occupancy',Occ, sOcc)
       RBasisOccupancy(ind) = Occ
 
-      CALL message( LL, dbg7, "For Atom ",ind)
-      CALL message( LL, dbg7, SBasisAtomLabel(ind)//SBasisAtomName(ind)//&
+      CALL message( LXL, dbg7, "For Atom ",ind)
+      CALL message( LXL, dbg7, SBasisAtomLabel(ind)//SBasisAtomName(ind)//&
             " Z=",IBasisAtomicNumber(ind) )
-      CALL message( LL, dbg7, "RBasisAtomPosition", RBasisAtomPosition(ind,:) )
-      CALL message( LL, dbg7, "(DWF, occupancy) respectively = ",&
+      CALL message( LXL, dbg7, "RBasisAtomPosition", RBasisAtomPosition(ind,:) )
+      CALL message( LXL, dbg7, "(DWF, occupancy) respectively = ",&
             (/ RBasisIsoDW(ind), RBasisOccupancy(ind) /) )
       
       IF(loop_ .NEQV. .TRUE.) EXIT

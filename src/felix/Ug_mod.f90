@@ -244,7 +244,7 @@ MODULE Ug_mod
 
     CUgMat = CUgMatNoAbs + CUgMatPrime 
 	     
-    CALL message( LL, dbg3, "Ug matrix, including absorption (nm^-2)",&
+    CALL message( LM, dbg3, "Ug matrix, including absorption (nm^-2)",&
           NINT(Rhkl(1:16,:)), 100*CUgMat(1:16,1:8) )
 
   END SUBROUTINE Absorption
@@ -499,7 +499,7 @@ MODULE Ug_mod
       CUgMatNoAbs(ind,ind)=CZERO
     END DO
 
-    CALL message( LL, dbg3, "Ug matrix, without absorption (nm^-2)",&
+    CALL message( LM, dbg3, "Ug matrix, without absorption (nm^-2)",&
           NINT(Rhkl(1:16,:)), 100*CUgMatNoAbs(1:16,1:4) )
    
     !--------------------------------------------------------------------
@@ -514,8 +514,8 @@ MODULE Ug_mod
       ICurrentZ = IAtomicNumber(ind)
       IF(ICurrentZ.LT.105) THEN ! It's not a pseudoatom
         CALL AtomicScatteringFactor(RScatteringFactor,IErr)
-        CALL message( LL, dbg3, "Atom ",ind)
-        CALL message( LL, dbg3, "f(theta) at g=0 ",RScatteringFactor)
+        CALL message( LM, dbg3, "Atom ",ind)
+        CALL message( LM, dbg3, "f(theta) at g=0 ",RScatteringFactor)
         RMeanInnerPotential = RMeanInnerPotential+RScatteringFactor
       END IF
     END DO
@@ -525,7 +525,7 @@ MODULE Ug_mod
     ! high-energy approximation (not HOLZ compatible)
     ! K^2=k^2+U0
     RBigK= SQRT(RElectronWaveVectorMagnitude**2 + REAL(CUgMatNoAbs(1,1)))
-    CALL message ( LL, dbg3, "K (Angstroms) = ",RBigK )
+    CALL message ( LM, dbg3, "K (Angstroms) = ",RBigK )
 
     !--------------------------------------------------------------------
     
@@ -561,11 +561,11 @@ MODULE Ug_mod
         END DO
       END DO
 
-      CALL message ( LM, "number of unique structure factors = ", Iuid )
-      CALL message ( LL, dbg3, "hkl: symmetry matrix from 1 to 16" )
+      CALL message ( LS, "Number of unique structure factors = ", Iuid )
+      CALL message ( LM, dbg3, "hkl: symmetry matrix from 1 to 16" )
       DO ind =1,16
-        CALL message ( LL, dbg3, "Rhkl:", NINT(Rhkl(ind,:)) )
-        CALL message ( LL, dbg3, "Isym:", ISymmetryRelations(ind,1:12) )
+        CALL message ( LM, dbg3, "Rhkl:", NINT(Rhkl(ind,:)) )
+        CALL message ( LM, dbg3, "Isym:", ISymmetryRelations(ind,1:12) )
       END DO
 
       ! link each key with its Ug, from 1 to the number of unique Ug's Iuid

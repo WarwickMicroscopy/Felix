@@ -143,22 +143,22 @@ MODULE read_mod
 
     ! IScatterFactorMethodFLAG
     ILine= ILine+1; READ(IChInp,'(27X,I15.1)',ERR=20,END=30) IScatterFactorMethodFLAG
-    CALL message ( LL, dbg7, "IScatterFactorMethodFLAG=",IScatterFactorMethodFLAG )
+    CALL message ( LXL, dbg7, "IScatterFactorMethodFLAG=",IScatterFactorMethodFLAG )
     ! IMaskFLAG
     ILine= ILine+1; READ(IChInp,'(27X,I15.1)',ERR=20,END=30) IMaskFLAG
-    CALL message ( LL, dbg3, "IMaskFLAG=",IMaskFLAG)
+    CALL message ( LXL, dbg3, "IMaskFLAG=",IMaskFLAG)
     ! IHolzFLAG
     ILine= ILine+1; READ(IChInp,'(27X,I15.1)',ERR=20,END=30) IHolzFLAG
-    CALL message ( LL, dbg3, "IHolzFLAG=",IHolzFLAG)
+    CALL message ( LXL, dbg3, "IHolzFLAG=",IHolzFLAG)
     ! IAbsorbFLAG
     ILine= ILine+1; READ(IChInp,'(27X,I15.1)',ERR=20,END=30) IAbsorbFLAG
-    CALL message ( LL, dbg3, "IAbsorbFLAG=",IAbsorbFLAG)
+    CALL message ( LXL, dbg3, "IAbsorbFLAG=",IAbsorbFLAG)
     ! IAnisoDebyeWallerFactorFlag
     ILine= ILine+1; READ(IChInp,'(27X,I15.1)',ERR=20,END=30) IAnisoDebyeWallerFactorFlag
-    CALL message ( LL, dbg3, "IAnisoDebyeWallerFactorFlag=",IAnisoDebyeWallerFactorFlag)
+    CALL message ( LXL, dbg3, "IAnisoDebyeWallerFactorFlag=",IAnisoDebyeWallerFactorFlag)
     ! IByteSize
     ILine= ILine+1; READ(IChInp,'(27X,I15.1)',ERR=20,END=30) IByteSize
-    CALL message ( LL, dbg3, "IByteSize=",IByteSize) !?? depends on system, 8 for csc, 4 tinis
+    CALL message ( LXL, dbg3, "IByteSize=",IByteSize) !?? depends on system, 8 for csc, 4 tinis
 
     !--------------------------------------------------------------------
     ! radius of the beam in pixels
@@ -169,7 +169,7 @@ MODULE read_mod
     ILine= ILine+1; READ(IChInp,ERR=20,END=30,FMT='(A)')
     ! IPixelCount
     ILine= ILine+1; READ(IChInp,'(27X,I15.1)',ERR=20,END=30) IPixelCount
-    CALL message ( LL, dbg3, "IPixelCount=",IPixelCount)
+    CALL message ( LXL, dbg3, "IPixelCount=",IPixelCount)
 
     !--------------------------------------------------------------------
     ! beam selection criteria
@@ -180,14 +180,14 @@ MODULE read_mod
     ILine= ILine+1; READ(IChInp,ERR=20,END=30,FMT='(A)')
     ! IMinReflectionPool
     ILine= ILine+1; READ(IChInp,'(27X,I15.1)',ERR=20,END=30) IMinReflectionPool
-    CALL message ( LL, dbg3, "IMinReflectionPool=",IMinReflectionPool)
+    CALL message ( LXL, dbg3, "IMinReflectionPool=",IMinReflectionPool)
     ! IMinStrongBeams
     ILine= ILine+1; READ(IChInp,'(27X,I15.1)',ERR=20,END=30) IMinStrongBeams
-    CALL message ( LL, dbg3, "IMinStrongBeams=",IMinStrongBeams)
+    CALL message ( LXL, dbg3, "IMinStrongBeams=",IMinStrongBeams)
     ! IMinWeakBeams
     ILine= ILine+1
     READ(IChInp,'(27X,I15.1)',ERR=20,END=30) IMinWeakBeams
-    CALL message ( LL, dbg3, "IMinWeakBeams=",IMinWeakBeams)
+    CALL message ( LXL, dbg3, "IMinWeakBeams=",IMinWeakBeams)
 
     !--------------------------------------------------------------------
     ! crystal settings
@@ -267,21 +267,18 @@ MODULE read_mod
         END IF
       END DO
       ! Check which refinement modes have been selected
-      IF(IRefineMode(1) .EQ.1) CALL message( LS, "Mode A selected: Refining Structure Factors")
-      IF(IRefineMode(2) .EQ.1) CALL message( LS, "Mode B selected: Refining Atomic Coordinates")
-      IF(IRefineMode(3) .EQ.1) CALL message( LS, "Mode C selected: Refining Occupancies ")
-      IF(IRefineMode(4) .EQ.1) CALL message( LS, &
-            "Mode D selected: Refining Isotropic Debye Waller Factors")
-      IF(IRefineMode(5) .EQ.1) CALL message( LS, &
-            "Mode E selected: Refining Anisotropic Debye Waller Factors ")
-      IF(IRefineMode(6) .EQ.1) CALL message( LS, "Mode F selected: Refining Lattice Lengths ")
-      IF(IRefineMode(7) .EQ.1) CALL message( LS, "Mode G selected: Refining Lattice Angles ")
-      IF(IRefineMode(8) .EQ.1) CALL message( LS, "Mode H selected: Refining Convergence Angle")
-      IF(IRefineMode(9) .EQ.1) CALL message( LS, "Mode I selected: Refining Absorption")
-      IF(IRefineMode(10).EQ.1) CALL message( LS, &
-            "Mode J selected: Refining Accelerating Voltage ")
+      IF(IRefineMode(1) .EQ.1) CALL message( LS, "Refining Structure Factors")
+      IF(IRefineMode(2) .EQ.1) CALL message( LS, "Refining Atomic Coordinates")
+      IF(IRefineMode(3) .EQ.1) CALL message( LS, "Refining Occupancies ")
+      IF(IRefineMode(4) .EQ.1) CALL message( LS, "Refining Isotropic Debye Waller Factors")
+      IF(IRefineMode(5) .EQ.1) CALL message( LS, "Refining Anisotropic Debye Waller Factors ")
+      IF(IRefineMode(6) .EQ.1) CALL message( LS, "Refining Lattice Lengths ")
+      IF(IRefineMode(7) .EQ.1) CALL message( LS, "Refining Lattice Angles ")
+      IF(IRefineMode(8) .EQ.1) CALL message( LS, "Refining Convergence Angle")
+      IF(IRefineMode(9) .EQ.1) CALL message( LS, "Refining Absorption")
+      IF(IRefineMode(10).EQ.1) CALL message( LS, "Refining Accelerating Voltage ")
       !?? ISimFlag should always be zero here
-      IF(ISimFlag.EQ.1) CALL message( LS, "Mode S selected: Simulation mode")
+      IF(ISimFlag.EQ.1) CALL message( LS, "Simulation only")
       ! Error Check - user cannot request Ug refinement and anything else
       IF((IRefineMode(1).EQ.1).AND.SUM(IRefineMode).GT.1) THEN
         IErr = 1;
@@ -296,9 +293,9 @@ MODULE read_mod
     ILine= ILine+1; READ(IChInp,'(27X,I15.1)',ERR=20,END=30) IWeightingFLAG
     ! IMethodFLAG
     ILine= ILine+1; READ(IChInp,'(27X,I15.1)',ERR=20,END=30) IMethodFLAG
-    IF(IMethodFLAG.EQ.1) CALL message( LS, "Mode selected: Refining by simplex")
-    IF(IMethodFLAG.EQ.2) CALL message( LS, "Mode selected: Refining by maximum gradient")
-    IF(IMethodFLAG.EQ.3) CALL message( LS, "Mode selected: Refining by pairwise maximum gradient")
+    IF(IMethodFLAG.EQ.1) CALL message( LS, "Refining by simplex")
+    IF(IMethodFLAG.EQ.2) CALL message( LS, "Refining by maximum gradient")
+    IF(IMethodFLAG.EQ.3) CALL message( LS, "Refining by pairwise maximum gradient")
    
     ! ICorrelationFLAG: 0=phase,1=sumSq,2=NormalisedCC,3=masked
     ILine= ILine+1; READ(IChInp,'(27X,I15.1)',ERR=20,END=30) ICorrelationFLAG
@@ -395,7 +392,7 @@ MODULE read_mod
       ILine = ILine+1
     ENDDO  !?? JR can we change this? IOSTAT EOF should be identifiable, IF EOF -> EXIT
   100 INoOfLacbedPatterns = ILine
-    CALL message ( LL, dbg7, "Number of experimental images to load = ", INoOfLacbedPatterns)
+    CALL message ( LXL, dbg7, "Number of experimental images to load = ", INoOfLacbedPatterns)
 
     ALLOCATE(RInputHKLs(INoOfLacbedPatterns,ITHREE),STAT=IErr)
     IF(l_alert(IErr,"ReadHklFile()","allocate RInputHKLs")) RETURN
@@ -426,7 +423,7 @@ MODULE read_mod
       RInputHKLs(ILine,1) = REAL(h,RKIND)
       RInputHKLs(ILine,2) = REAL(k,RKIND)
       RInputHKLs(ILine,3) = REAL(l,RKIND)   
-      CALL message ( LL, dbg7, "RInputHKLs", NINT(RInputHKLs(ILine,:)) )
+      CALL message ( LXL, dbg7, "RInputHKLs", NINT(RInputHKLs(ILine,:)) )
     END DO
 
     RETURN
