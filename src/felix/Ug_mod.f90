@@ -395,6 +395,7 @@ MODULE Ug_mod
     ! Conversion factor from scattering factors to volts.
     ! h^2/(2pi*m0*e), see e.g. Kirkland eqn. C.5
     ! NB RVolume is already in A unlike RPlanckConstant
+    RScattFacToVolts=(RPlanckConstant**2)*(RAngstromConversion**2)/(TWOPI*RElectronMass*RElectronCharge*RVolume)
 
     ! count Pseudoatoms
     IPseudo=0
@@ -519,7 +520,8 @@ MODULE Ug_mod
         RMeanInnerPotential = RMeanInnerPotential+RScatteringFactor
       END IF
     END DO
-    CALL message( LM, "Mean inner potential (Volts) ",RMeanInnerPotential )
+    RMeanInnerPotential = RMeanInnerPotential*RScattFacToVolts
+    CALL message( LS, "Mean inner potential (Volts) ",RMeanInnerPotential )
 
     ! Wave vector magnitude in crystal
     ! high-energy approximation (not HOLZ compatible)

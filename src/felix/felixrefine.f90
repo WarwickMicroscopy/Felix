@@ -1277,8 +1277,6 @@ CONTAINS
           ! now look along combination of 2 parameters for third point
           RPvec(ind+1)=RScale/5.0 
           RCurrentVar=RVar0+RPvec ! Update the parameters to simulate
-          CALL message(LS,no_tag,&
-                "Finding maximum gradient for variables",ind," and",ind+1)
           CALL SimulateAndFit(RCurrentVar,Iter,IExitFLAG,IErr)
           IF(l_alert(IErr,"ParabolicRefinement()","SimulateAndFit()")) RETURN
           CALL BestFitCheck(RFigureofMerit,RBestFit,RCurrentVar,RIndependentVariable,IErr)
@@ -1326,6 +1324,7 @@ CONTAINS
 
         ! second point
         R3var(2)=RCurrentVar(ind) 
+        CALL message( LS, "simulation 2")
         CALL SimulateAndFit(RCurrentVar,Iter,IExitFLAG,IErr)
         CALL BestFitCheck(RFigureofMerit,RBestFit,RCurrentVar,RIndependentVariable,IErr)
         R3fit(2)=RFigureofMerit
@@ -1341,6 +1340,7 @@ CONTAINS
         
         ! third point
         R3var(3)=RCurrentVar(ind)
+        CALL message( LS, "simulation 2")
         CALL SimulateAndFit(RCurrentVar,Iter,IExitFLAG,IErr)
         CALL BestFitCheck(RFigureofMerit,RBestFit,RCurrentVar,RIndependentVariable,IErr)
         R3fit(3)=RFigureofMerit
@@ -1405,10 +1405,10 @@ CONTAINS
 
         IF (RCurrentVar(ind).LE.TINY.AND.IVariableType.EQ.4) THEN
           ! We reached zero D-W factor in convexity test, skip the prediction
+          CALL message( LS, "Using zero Debye Waller factor, simulate and refine next variable" )
           CALL SimulateAndFit(RCurrentVar,Iter,IExitFLAG,IErr)
           IF(l_alert(IErr,"ParabolicRefinement()","SimulateAndFit()")) RETURN  
           CALL BestFitCheck(RFigureofMerit,RBestFit,RCurrentVar,RIndependentVariable,IErr)
-          CALL message( LS, "Using zero Debye Waller factor, refining next variable" )
         ELSE
           CALL Parabo3(R3var,R3fit,RvarMin,RfitMin,IErr)
           CALL message( LS, "Concave set, predict minimum at ",RvarMin)
