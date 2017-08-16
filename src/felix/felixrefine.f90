@@ -61,7 +61,7 @@ PROGRAM Felixrefine
   USE setup_space_group_mod
   USE crystallography_mod
   USE ug_matrix_mod
-  USE refinementcontrol_mod
+  USE refinementcontrol_mod       !?? contains Simulate() and SimulateAndFit()
   USE write_output_mod
   USE simplex_mod
 
@@ -71,6 +71,7 @@ PROGRAM Felixrefine
   USE IPara;  USE RPara;  USE CPara; USE SPara;
   USE BlochPara 
   USE IChannels
+  !?? JR can add USE [], ONLY : ... for felixrefine specific used variables
 
   ! local variable definitions
   IMPLICIT NONE
@@ -78,7 +79,8 @@ PROGRAM Felixrefine
   INTEGER(IKIND) :: IErr,ind,jnd,knd,lnd,mnd,nnd,Iter,ICutOff,IHOLZgPoolMag,&
         IBSMaxLocGVecAmp,ILaueLevel,INumTotalReflections,ITotalLaueZoneLevel,&
         INhkl,IExitFLAG,ICycle,INumInitReflections,IZerothLaueZoneLevel,&
-        INumFinalReflections,IThicknessIndex,IVariableType
+        INumFinalReflections,IThicknessIndex,IVariableType,IArrayIndex,&
+        IAnisotropicDebyeWallerFactorElementNo
   INTEGER(IKIND) :: IStartTime, IStartTime2
   REAL(RKIND) :: RHOLZAcceptanceAngle,RLaueZoneGz,RMaxGMag,RPvecMag,&
         RScale,RMaxUgStep,Rdx,RStandardDeviation,RMean,RGzUnitVec,RMinLaueZoneValue,&
@@ -612,19 +614,85 @@ PROGRAM Felixrefine
 	  END IF
 
     ! Assign IDs - not needed for a Ug refinement
-    ALLOCATE(IIterativeVariableUniqueIDs(INoOfVariables,5),STAT=IErr)
+    ALLOCATE(IIterativeVariableUniqueIDs(INoOfVariables,2),STAT=IErr)
     IF(l_alert(IErr,"felixrefine","allocate IIterativeVariableUniqueIDs")) CALL abort()
 
-    IIterativeVariableUniqueIDs = 0
-    knd = 0
+    IIterativeVariableUniqueIDs = 0 
     DO ind = 2,IRefinementVariableTypes ! Loop over iterative variables apart from Ug's
       IF(IRefineMode(ind).EQ.1) THEN
         DO jnd = 1,INoofElementsForEachRefinementType(ind)
-          knd = knd + 1
-          !?? elements (:,1) just have the number of the index in, pointless never used
-          IIterativeVariableUniqueIDs(knd,1) = knd
-          CALL AssignArrayLocationsToIterationVariables(ind,jnd,&
-                      IIterativeVariableUniqueIDs,IErr)
+
+          IArrayIndex = SUM(INoofElementsForEachRefinementType(:(ind-1))) + jnd
+          !?? JR not sure about writing it like this - tiny overhead but maybe clearer? 
+
+          SELECT CASE(ind)
+
+          CASE(1) ! Ugs, A
+            IIterativeVariableUniqueIDs(IArrayIndex,1) = ind
+            IIterativeVariableUniqueIDs(IArrayIndex,2) = &
+                  NINT(REAL(INoofUgs,RKIND)*(REAL(jnd/REAL(INoofUgs,RKIND),RKIND)-&
+                  CEILING(REAL(jnd/REAL(INoofUgs,RKIND),RKIND)))+REAL(INoofUgs,RKIND))
+
+          CASE(2) ! Coordinates (x,y,z), B
+            IIterativeVariableUniqueIDs(IArrayIndex,1) = ind
+            IIterativeVariableUniqueIDs(IArrayIndex,2) = jnd
+
+          CASE(3) ! Occupancies, C
+            IIterativeVariableUniqueIDs(IArrayIndex,1) = ind
+            IIterativeVariableUniqueIDs(IArrayIndex,2) = IAtomsToRefine(jnd)
+
+          CASE(4) ! Isotropic Debye Waller Factors , D
+            IIterativeVariableUniqueIDs(IArrayIndex,1) = ind
+            IIterativeVariableUniqueIDs(IArrayIndex,2) = IAtomsToRefine(jnd)
+
+          CASE(5) ! Anisotropic Debye Waller Factors (a11-a33), E
+            ! NOT CURRENTLY IMPLIMENTED
+            IErr=1;IF(l_alert(IErr,"felixrefine",&
+                  "Anisotropic Debye Waller Factors not implemented")) CALL abort()
+
+!            IIterativeVariableUniqueIDs(IArrayIndex,1) = ind
+!            IIterativeVariableUniqueIDs(IArrayIndex,2) = &
+!                  IAtomsToRefine(INT(CEILING(REAL(jnd/6.0D0,RKIND))))
+!            IAnisotropicDebyeWallerFactorElementNo = &
+!                  NINT(6.D0*(REAL(jnd/6.0D0,RKIND) - &
+!                  CEILING(REAL(jnd/6.0D0,RKIND)))+6.0D0)
+
+!            SELECT CASE(IAnisotropicDebyeWallerFactorElementNo)
+!            CASE(1)
+!              IIterativeVariableUniqueIDs(IArrayIndex,4:5) = [1,1]
+!            CASE(2)
+!              IIterativeVariableUniqueIDs(IArrayIndex,4:5) = [2,1]
+!            CASE(3)
+!              IIterativeVariableUniqueIDs(IArrayIndex,4:5) = [2,2]
+!            CASE(4)
+!              IIterativeVariableUniqueIDs(IArrayIndex,4:5) = [3,1]
+!            CASE(5)
+!              IIterativeVariableUniqueIDs(IArrayIndex,4:5) = [3,2]
+!            CASE(6)
+!              IIterativeVariableUniqueIDs(IArrayIndex,4:5) = [3,3]
+!            END SELECT
+
+          CASE(6) ! Lattice Parameters, E
+            IIterativeVariableUniqueIDs(IArrayIndex,1) = ind
+            IIterativeVariableUniqueIDs(IArrayIndex,2) = &
+                  NINT(3.D0*(REAL(jnd/3.0D0,RKIND) - CEILING(REAL(jnd/3.0D0,RKIND)))+3.0D0)
+             
+          CASE(7) ! Lattice Angles, F
+            IIterativeVariableUniqueIDs(IArrayIndex,1) = ind
+            IIterativeVariableUniqueIDs(IArrayIndex,2) = &
+                  NINT(3.D0*(REAL(jnd/3.0D0,RKIND) - CEILING(REAL(jnd/3.0D0,RKIND)))+3.0D0)
+
+          CASE(8) ! Convergence angle, H
+            IIterativeVariableUniqueIDs(IArrayIndex,1) = ind
+
+          CASE(9) ! Percentage Absorption, I
+            IIterativeVariableUniqueIDs(IArrayIndex,1) = ind
+
+          CASE(10) ! kV, J
+            IIterativeVariableUniqueIDs(IArrayIndex,1) = ind
+
+          END SELECT
+
         END DO
       END IF
     END DO 
@@ -753,7 +821,7 @@ PROGRAM Felixrefine
 
     ! We have INoOfVariables to refine, held in RIndependentVariable(1:INoOfVariables)
     ! For single variables, their type is held in 
-    ! IIterativeVariableUniqueIDs(1:INoOfVariables,2)
+    ! IIterativeVariableUniqueIDs(1:INoOfVariables,1)
     SELECT CASE(IMethodFLAG)
 
     CASE(1)
@@ -1007,7 +1075,7 @@ CONTAINS
       IF (nnd.EQ.0) THEN ! max gradient
         DO ind=1,INoOfVariables ! calculate individual gradients
           ! The type of variable being refined 
-          IVariableType=IIterativeVariableUniqueIDs(ind,2) 
+          IVariableType=IIterativeVariableUniqueIDs(ind,1) 
           !?? variable type as in what refinement mode/variables, 'type' used throughout
            
           ! print to screen
@@ -1245,7 +1313,7 @@ CONTAINS
         ! optional terminal output types of variables refined
         !--------------------------------------------------------------------
 
-        IVariableType=IIterativeVariableUniqueIDs(ind,2)
+        IVariableType=IIterativeVariableUniqueIDs(ind,1)
         SELECT CASE(IVariableType)
           CASE(1)
             CALL message(LS, "Ug refinement")
@@ -1493,106 +1561,6 @@ CONTAINS
     DEALLOCATE(RVar0,RCurrentVar,RLastVar,RPVec,STAT=IErr)
  
   END SUBROUTINE ParabolicRefinement
-
-  !%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-
-  !>
-  !! Procedure-description: Assign array locations to iteration variables, similar
-  !! to IIterativeVariableUniqueIDs
-  !!
-  !! Major-Authors: Keith Evans (2014)
-  !!
-  SUBROUTINE AssignArrayLocationsToIterationVariables(IVariableType,&
-                    IVariableNo,IArrayToFill,IErr)
-
-    !?? JR study further, compare RIndependentVariables array and UpdateVariables()
-    !?? JR even if top level, may move out, as part of setup not refinement 
-  
-    !?? JR called once in felixrefine, end of non-Ug refinement assign refinement variables
-
-    ! NB IArrayToFill here equivalent to IIterativeVariableUniqueIDs outside this subroutine
-
-    INTEGER(IKIND) :: IVariableType,IVariableNo,IErr,IArrayIndex,&
-         IAnisotropicDebyeWallerFactorElementNo
-    INTEGER(IKIND),DIMENSION(INoOfVariables,5),INTENT(OUT) :: IArrayToFill  
-
-    ! Calculate How Many of Each Variable Type There are
-    ! CALL DetermineNumberofRefinementVariablesPerType(&
-          !INoofElementsForEachRefinementType,IErr)
-    
-    ! Where am I in the Array Right Now?
-    IArrayIndex = SUM(INoofElementsForEachRefinementType(:(IVariableType-1))) + &
-          IVariableNo
-
-    SELECT CASE(IVariableType)
-
-    CASE(1) ! Ugs, A
-       IArrayToFill(IArrayIndex,2) = IVariableType
-       IArrayToFill(IArrayIndex,3) = &
-            NINT(REAL(INoofUgs,RKIND)*(REAL(IVariableNo/REAL(INoofUgs,RKIND),RKIND)-&
-            CEILING(REAL(IVariableNo/REAL(INoofUgs,RKIND),RKIND)))+REAL(INoofUgs,RKIND))
-
-    CASE(2) ! Coordinates (x,y,z), B
-       IArrayToFill(IArrayIndex,2) = IVariableType
-       IArrayToFill(IArrayIndex,3) = IVariableNo
-
-    CASE(3) ! Occupancies, C
-       IArrayToFill(IArrayIndex,2) = IVariableType
-       IArrayToFill(IArrayIndex,3) = IAtomsToRefine(IVariableNo)
-
-    CASE(4) ! Isotropic Debye Waller Factors , D
-       IArrayToFill(IArrayIndex,2) = IVariableType
-       IArrayToFill(IArrayIndex,3) = IAtomsToRefine(IVariableNo)
-
-    CASE(5) ! Anisotropic Debye Waller Factors (a11-a33), E
-      IArrayToFill(IArrayIndex,2) = IVariableType
-      IArrayToFill(IArrayIndex,3) = &
-            IAtomsToRefine(INT(CEILING(REAL(IVariableNo/6.0D0,RKIND))))
-      IAnisotropicDebyeWallerFactorElementNo = &
-            NINT(6.D0*(REAL(IVariableNo/6.0D0,RKIND) - &
-            CEILING(REAL(IVariableNo/6.0D0,RKIND)))+6.0D0)
-
-       SELECT CASE(IAnisotropicDebyeWallerFactorElementNo)
-
-          CASE(1)
-             IArrayToFill(IArrayIndex,4:5) = [1,1]
-          CASE(2)
-             IArrayToFill(IArrayIndex,4:5) = [2,1]
-          CASE(3)
-             IArrayToFill(IArrayIndex,4:5) = [2,2]
-          CASE(4)
-             IArrayToFill(IArrayIndex,4:5) = [3,1]
-          CASE(5)
-             IArrayToFill(IArrayIndex,4:5) = [3,2]
-          CASE(6)
-             IArrayToFill(IArrayIndex,4:5) = [3,3]
-
-          END SELECT
-
-    CASE(6) ! Lattice Parameters, E
-       IArrayToFill(IArrayIndex,2) = IVariableType
-       IArrayToFill(IArrayIndex,3) = &
-            NINT(3.D0*(REAL(IVariableNo/3.0D0,RKIND) - &
-            CEILING(REAL(IVariableNo/3.0D0,RKIND)))+3.0D0)
-       
-    CASE(7) ! Lattice Angles, F
-       IArrayToFill(IArrayIndex,2) = IVariableType
-       IArrayToFill(IArrayIndex,3) = &
-            NINT(3.D0*(REAL(IVariableNo/3.0D0,RKIND) - &
-            CEILING(REAL(IVariableNo/3.0D0,RKIND)))+3.0D0)
-
-    CASE(8) ! Convergence angle, H
-       IArrayToFill(IArrayIndex,2) = IVariableType
-
-    CASE(9) ! Percentage Absorption, I
-       IArrayToFill(IArrayIndex,2) = IVariableType
-
-    CASE(10) ! kV, J
-       IArrayToFill(IArrayIndex,2) = IVariableType
-
-    END SELECT
-    
-  END SUBROUTINE AssignArrayLocationsToIterationVariables
 
   !%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 

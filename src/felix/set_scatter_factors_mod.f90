@@ -44,11 +44,11 @@ MODULE set_scatter_factors_mod
 
   IMPLICIT NONE
   PRIVATE
-  PUBLIC :: GetScatteringFactors
+  PUBLIC :: SetScatteringFactors
 
   CONTAINS
 
-  SUBROUTINE GetScatteringFactors(IScatteringMethodSwitch,IErr)
+  SUBROUTINE SetScatteringFactors(IScatteringMethodSwitch,IErr)
 
     USE MyNumbers
     USE message_mod

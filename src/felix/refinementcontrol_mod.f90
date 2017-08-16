@@ -53,13 +53,12 @@ MODULE refinementcontrol_mod
   !!  
   SUBROUTINE SimulateAndFit(RIndependentVariable,Iter,IExitFLAG,IErr)
 
-    ! JR non-Ug case: RIndependentVariable changeble ones, UpdateVariables() updates
-    ! corresponding global variables (non changeable stay as input from .inp)
+    ! JR non-Ug case: RIndependentVariable refinement ones, UpdateVariables() updates
+    ! various global variables read from files / setup and are now constant
     ! UniqueAtomPositions() - recalculate unit cell ?
-    ! CUgMat = CUgMatNoAbs + CUgMatPrime
-    ! simulate, Simulate - CUgMat + others ---> RImageSimi
-    ! CalculateFigureofMeritandDetermineThickness() - im process, compares sim/expi images
-    ! ---> RFigureofMerit
+    ! CUgMat = CUgMatNoAbs + CUgMatPrime ( from absoption )
+    ! Simulate ( CUgMat + others ) ---> RImageSimi
+    ! CalculateFigureofMeritandDetermineThickness() - im process & ---> RFigureofMerit
     ! RImageExpi(x,y,LACBED_ID), RImageSimi(x,y,LACBED_ID, thickness_ID)
     ! MPI_BCAST(RFigureofMerit) - send to all cores ? parallel    
 
@@ -522,7 +521,6 @@ MODULE refinementcontrol_mod
   SUBROUTINE UpdateVariables(RIndependentVariable,IErr)
 
     !?? JR top level to this module, so keep, refine needs access
-
     !?? JR called every SimulateAndFit() (for non-Ug refinement)
 
     USE MyNumbers
@@ -543,13 +541,13 @@ MODULE refinementcontrol_mod
     INTEGER(IKIND) :: IVariableType,IVectorID,IAtomID,IErr,ind
 
     DO ind = 1,INoOfVariables
-      IVariableType = IIterativeVariableUniqueIDs(ind,2)
+      IVariableType = IIterativeVariableUniqueIDs(ind,1)
       SELECT CASE (IVariableType)
       CASE(1) ! A: structure factor refinement, do in UpdateStructureFactors
         
       CASE(2)
         ! The index of the atom and vector being used
-        IVectorID = IIterativeVariableUniqueIDs(ind,3)
+        IVectorID = IIterativeVariableUniqueIDs(ind,2)
         ! The atom being moved
         IAtomID = IAtomMoveList(IVectorID)
         ! Change in position r' = r - v*(r.v) +v*RIndependentVariable(ind)
@@ -557,17 +555,20 @@ MODULE refinementcontrol_mod
             RVector(IVectorID,:)*DOT_PRODUCT(RBasisAtomPosition(IAtomID,:),RVector(IVectorID,:)) + &
             RVector(IVectorID,:)*RIndependentVariable(ind)
       CASE(3)
-        RBasisOccupancy(IIterativeVariableUniqueIDs(ind,3))=RIndependentVariable(ind) 
+        RBasisOccupancy(IIterativeVariableUniqueIDs(ind,2))=RIndependentVariable(ind) 
       CASE(4)
-        RBasisIsoDW(IIterativeVariableUniqueIDs(ind,3))=RIndependentVariable(ind)
+        RBasisIsoDW(IIterativeVariableUniqueIDs(ind,2))=RIndependentVariable(ind)
       CASE(5)
-        RAnisotropicDebyeWallerFactorTensor(&
-              IIterativeVariableUniqueIDs(ind,3),&
-              IIterativeVariableUniqueIDs(ind,4),&
-              IIterativeVariableUniqueIDs(ind,5)) = & 
-              RIndependentVariable(ind)
+        ! NOT CURRENTLY IMPLIMENTED
+        IErr=1;IF(l_alert(IErr,"UpdateVariables",&
+              "Anisotropic Debye Waller Factors not implemented")) CALL abort()
+!        RAnisotropicDebyeWallerFactorTensor(&
+!              IIterativeVariableUniqueIDs(ind,2),&
+!              IIterativeVariableUniqueIDs(ind,4),&
+!              IIterativeVariableUniqueIDs(ind,5)) = & 
+!              RIndependentVariable(ind)
       CASE(6)
-        SELECT CASE(IIterativeVariableUniqueIDs(ind,3))
+        SELECT CASE(IIterativeVariableUniqueIDs(ind,2))
         CASE(1)
           RLengthX = RIndependentVariable(ind)
         CASE(2)
@@ -576,7 +577,7 @@ MODULE refinementcontrol_mod
           RLengthZ = RIndependentVariable(ind)
         END SELECT
       CASE(7)
-        SELECT CASE(IIterativeVariableUniqueIDs(ind,3))
+        SELECT CASE(IIterativeVariableUniqueIDs(ind,2))
         CASE(1)
           RAlpha = RIndependentVariable(ind)
         CASE(2)
