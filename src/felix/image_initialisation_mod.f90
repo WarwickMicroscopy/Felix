@@ -33,7 +33,7 @@
 !>
 !! Module-description: 
 !!
-MODULE image_mod
+MODULE image_initialisation_mod
 
   IMPLICIT NONE
   PRIVATE
@@ -184,4 +184,4 @@ MODULE image_mod
    
   END SUBROUTINE ImageMaskInitialisation
 
-END MODULE image_mod
+END MODULE image_initialisation_mod

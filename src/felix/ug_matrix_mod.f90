@@ -38,7 +38,7 @@
 !>
 !! Module-description: 
 !!
-MODULE Ug_mod
+MODULE ug_matrix_mod
   IMPLICIT NONE
   PRIVATE
   PUBLIC :: Absorption, GetVgContributionij, StructureFactorInitialisation 
@@ -910,4 +910,4 @@ MODULE Ug_mod
     
   END FUNCTION BirdKing
 
-END MODULE Ug_mod
+END MODULE ug_matrix_mod

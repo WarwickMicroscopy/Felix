@@ -1,3 +1,86 @@
+!>
+!! Procedure-description: 
+!!
+!! Major-Authors: Keith Evans (2014), Richard Beanland (2016)
+!!
+SUBROUTINE OpenSimplexOutput(IErr)
+!ffs, 1 line of code
+  USE MyNumbers
+
+  USE IConst; USE RConst
+  USE IPara; USE RPara
+  USE IChannels
+
+  USE MPI
+  USE MyMPI
+
+  IMPLICIT NONE
+
+  INTEGER(IKIND) :: IErr
+
+  CHARACTER*200 :: filename
+
+  WRITE(filename,*) "fr-Simplex.txt"
+
+  OPEN( UNIT=IChOutSimplex,STATUS='UNKNOWN',FILE=TRIM( ADJUSTL(filename)) )
+
+END SUBROUTINE OpenSimplexOutput
+
+!%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+
+
+!>
+!! Procedure-description: 
+!!
+!! Major-Authors: Keith Evans (2014), Richard Beanland (2016)
+!!
+SUBROUTINE WriteOutSimplex(RSimplexVariable,RSimplexFoM,IDimensions,RStandardDeviation,RMean,IIterations,IErr)
+
+  USE MyNumbers
+
+  USE IConst; USE RConst
+  USE IPara; USE RPara
+  USE IChannels
+
+  USE MPI
+  USE MyMPI
+
+  IMPLICIT NONE
+
+  INTEGER(IKIND) :: IErr,IDimensions,ind,IIterations
+  REAL(RKIND),DIMENSION(IDimensions+1,IDimensions),INTENT(IN) :: RSimplexVariable
+  REAL(RKIND),DIMENSION(IDimensions+1),INTENT(IN) :: RSimplexFoM
+  REAL(RKIND),DIMENSION(IDimensions+1) :: RData
+  REAL(RKIND) :: RStandardDeviation,RMean
+  CHARACTER*200 :: CSizeofData,SFormatString
+  
+  WRITE(CSizeofData,*) IDimensions+1
+  WRITE(SFormatString,*) "("//TRIM(ADJUSTL(CSizeofData))//"(1F6.3,1X),A1)"
+
+  DO ind = 1,(IDimensions+1)
+     RData = (/RSimplexVariable(ind,:), RSimplexFoM(ind)/)
+     WRITE(IChOutSimplex,FMT=SFormatString) RData
+  END DO
+
+  WRITE(IChOutSimplex,FMT="(2(1F6.3,1X),I5.1,I5.1,A1)") RStandardDeviation,RMean,IStandardDeviationCalls,IIterations
+
+  CLOSE(IChOutSimplex)
+
+END SUBROUTINE WriteOutSimplex
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
   !>

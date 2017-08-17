@@ -119,20 +119,6 @@ MODULE IConst
        IFixedSeed = 123456787,&
        IRefinementVariableTypes = 10
 
-  !PriorityFLAG values - to match to the WriteFLAG - will change eventually,
-  !hence why the silent & Must are both 0, no Silent option yet.
-  !IInfo is now IWriteFLAG = 1, IAllInfo is IWriteFLAG = 10
-  INTEGER(IKIND), PARAMETER :: &
-       ISilent = 0 ,&
-       IMust = 1 ,&
-       IInfo = 2 ,&
-       IMoreInfo = 3, &
-       IAllInfo = 10, &
-       IDebug = 100, &
-       IWarning = 4, &
-       IPotError = 5, &
-       ICritError = 6
-
 END MODULE IConst
 !--------------------------------------------------------------------
 

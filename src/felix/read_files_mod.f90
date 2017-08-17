@@ -37,7 +37,7 @@
 ! DetermineRefineableAtomicSites( )
 ! ThreeDimVectorReadIn( )
 
-MODULE read_mod
+MODULE read_files_mod
 
   IMPLICIT NONE
   PRIVATE
@@ -637,4 +637,4 @@ MODULE read_mod
 
   END SUBROUTINE ThreeDimVectorReadIn
 
-END MODULE read_mod
+END MODULE read_files_mod

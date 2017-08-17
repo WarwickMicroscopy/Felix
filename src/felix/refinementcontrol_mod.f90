@@ -34,26 +34,14 @@
 ! $Id: Felixrefine.f90,v 1.89 2014/04/28 12:26:19 phslaz Exp $
 !%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-! All procedures conatained in this file:
-! SimulateAndFit( )                               ---
-! FelixFunction( )                                ---
-! CalculateFigureofMeritandDetermineThickness( )  ---
-! UpdateVariables( )                              ---
-! PrintVariables( )                               ---
-! BlurG( )                                        ---
-
-
-!?? uses UniqueAtomPositions from crystallography.f90
-!?? uses WriteOutVariables from RefineWriteOut.f90
-
 !>
 !! Module-description: Holds main top level simulating subroutines considering
 !! different thicknesses
 !!
-MODULE felixfunction_mod
+MODULE refinementcontrol_mod
   IMPLICIT NONE
   PRIVATE
-  PUBLIC :: SimulateAndFit, FelixFunction, CalculateFigureofMeritandDetermineThickness
+  PUBLIC :: SimulateAndFit, Simulate, CalculateFigureofMeritandDetermineThickness
   !?? JR CalculateFigureofMeritandDetermineThickness could be made private with some tweaks
 
   CONTAINS
@@ -65,25 +53,22 @@ MODULE felixfunction_mod
   !!  
   SUBROUTINE SimulateAndFit(RIndependentVariable,Iter,IExitFLAG,IErr)
 
-    ! JR non-Ug case: RIndependentVariable changeble ones, UpdateVariables() updates
-    ! corresponding global variables (non changeable stay as input from .inp)
+    ! JR non-Ug case: RIndependentVariable refinement ones, UpdateVariables() updates
+    ! various global variables read from files / setup and are now constant
     ! UniqueAtomPositions() - recalculate unit cell ?
-    ! CUgMat = CUgMatNoAbs + CUgMatPrime
-    ! simulate, felixfunction - CUgMat + others ---> RImageSimi
-    ! CalculateFigureofMeritandDetermineThickness() - im process, compares sim/expi images
-    ! ---> RFigureofMerit
+    ! CUgMat = CUgMatNoAbs + CUgMatPrime ( from absoption )
+    ! Simulate ( CUgMat + others ) ---> RImageSimi
+    ! CalculateFigureofMeritandDetermineThickness() - im process & ---> RFigureofMerit
     ! RImageExpi(x,y,LACBED_ID), RImageSimi(x,y,LACBED_ID, thickness_ID)
     ! MPI_BCAST(RFigureofMerit) - send to all cores ? parallel    
-
-    !?? uses UniqueAtomPositions from crystallography.f90 every (non-Ug) iteration
-    !?? uses WriteOutVariables from RefineWriteOut.f90
 
     USE MyNumbers
     USE message_mod
 
     USE MyMPI
-    USE Ug_mod
+    USE ug_matrix_mod
     USE crystallography_mod
+    USE write_output_mod
 
     !?? global inputs and outputs of subroutines using global
     ! global inputs
@@ -104,10 +89,13 @@ MODULE felixfunction_mod
     INTEGER(IKIND),INTENT(INOUT) :: Iter
     INTEGER(IKIND),INTENT(OUT) :: IErr
     INTEGER(IKIND) :: ind,jnd, IExitFLAG,IThicknessIndex, ILoc(2), IUniqueUgs
+    INTEGER(IKIND), SAVE :: IStartTime
     REAL(RKIND) :: RCurrentG(3), RScatteringFactor
     COMPLEX(CKIND) :: CUgMatDummy(nReflections,nReflections),CVgij
     CHARACTER*200 :: SFormat,SPrintString
 
+    IF ( Iter >= 2 ) CALL print_end_time( LM, IStartTime, "Last Iteration" )
+    CALL SYSTEM_CLOCK( IStartTime )
     CALL message(LM,"Iteration ",Iter)
     
     !\/----------------------------------------------------------------------
@@ -160,18 +148,15 @@ MODULE felixfunction_mod
       CALL UpdateVariables(RIndependentVariable,IErr)
       IF(l_alert(IErr,"SimulateAndFit","UpdateVariables()")) RETURN
       IF (IRefineMode(8).EQ.1) THEN ! convergence angle
-        ! recalculate k-vectors?
-        ! resolution in k space
+        ! recalculate resolution in k space
         RDeltaK = RMinimumGMag*RConvergenceAngle/REAL(IPixelCount,RKIND) 
         !?? in the past wrote following to iterationlog.txt
         !?? Iter,RFigureofMerit,RConvergenceAngle
+      ELSE
+        ! basis has changed in some way, recalculate unit cell
+        CALL UniqueAtomPositions(IErr)
+        IF(l_alert(IErr,"SimulateAndFit()","UniqueAtomPositions()")) RETURN
       END IF
-
-      ! recalculate unit cell, updates every-atom arrays with new values from basis
-      CALL UniqueAtomPositions(IErr)
-      IF(l_alert(IErr,"SimulateAndFit","UniqueAtomPositions()")) RETURN
-      !?? This is being called unnecessarily for some refinement modes
-      !?? JR attempted to play with this, need to study further 
 
       !--------------------------------------------------------------------
       ! update scattering matrix Ug
@@ -222,8 +207,8 @@ MODULE felixfunction_mod
     ! simulate
 
     RSimulatedPatterns = ZERO ! Reset simulation
-    CALL FelixFunction(IErr) ! simulate 
-    IF(l_alert(IErr,"SimulateAndFit","FelixFunction()")) RETURN
+    CALL Simulate(IErr) ! simulate 
+    IF(l_alert(IErr,"SimulateAndFit","Simulate()")) RETURN
     IF (IMethodFLAG.NE.1) Iter=Iter+1 ! iterate for methods other than simplex
 
     IF(my_rank.EQ.0) THEN
@@ -255,12 +240,12 @@ MODULE felixfunction_mod
 
 
   !>
-  !! Procedure-description: Felixfunction simulates and produces images for each 
+  !! Procedure-description: Simulate simulates and produces images for each 
   !! thickness
   !!
   !! Major-Authors: Keith Evans (2014), Richard Beanland (2016)
   !!  
-  SUBROUTINE FelixFunction(IErr)
+  SUBROUTINE Simulate(IErr)
 
     ! CUgMat and smaller inputs (using bloch pixel,thickness parallels)
     ! ------> RImageSimi(x, y, LACBED_pattern_ID , thickness_ID )
@@ -310,7 +295,7 @@ MODULE felixfunction_mod
 
     IMPLICIT NONE
 
-    INTEGER(IKIND) :: IErr,ind,jnd,knd,pnd,IIterationFLAG
+    INTEGER(IKIND) :: IErr, ind,jnd,knd,pnd, IIterationFLAG, IStartTime
     INTEGER(IKIND) :: IAbsorbTag = 0
     REAL(RKIND),DIMENSION(:,:,:),ALLOCATABLE :: RFinalMontageImageRoot
     REAL(RKIND),DIMENSION(:,:),ALLOCATABLE :: RTempImage 
@@ -319,6 +304,8 @@ MODULE felixfunction_mod
     RIndividualReflections = ZERO
     IPixelComputed= 0!RB what is this?
 
+    CALL SYSTEM_CLOCK( IStartTime )
+
     ! Simulation (different local pixels for each core)
     CALL message(LM,"Bloch wave calculation...")
     DO knd = ILocalPixelCountMin,ILocalPixelCountMax,1
@@ -326,7 +313,7 @@ MODULE felixfunction_mod
       ind = IPixelLocations(knd,2)
       !?? fills array for each pixel number not x & y coordinates
       CALL BlochCoefficientCalculation(ind,jnd,knd,ILocalPixelCountMin,IErr)
-      IF(l_alert(IErr,"FelixFunction","BlochCoefficientCalculation")) RETURN
+      IF(l_alert(IErr,"Simulate","BlochCoefficientCalculation")) RETURN
     END DO
 
     !===================================== ! MPI gatherv into RSimulatedPatterns
@@ -335,6 +322,8 @@ MODULE felixfunction_mod
          root,MPI_COMM_WORLD,IErr)
     !=====================================
     IF(l_alert(IErr,"SimulateAndFit","MPI_GATHERV()")) RETURN
+
+    CALL print_end_time( LM, IStartTime, "Bloch wave simulation" )
 
     ! put 1D array RSimulatedPatterns into 2D image RImageSimi
     ! remember dimensions of RSimulatedPatterns(INoOfLacbedPatterns,IThicknessCount,IPixelTotal)
@@ -361,7 +350,7 @@ MODULE felixfunction_mod
     ! We have done at least one simulation now
     IInitialSimulationFLAG=0
 
-  END SUBROUTINE FelixFunction
+  END SUBROUTINE Simulate
 
   !%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
@@ -524,18 +513,14 @@ MODULE felixfunction_mod
   END SUBROUTINE CalculateFigureofMeritandDetermineThickness
 
   !%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-
-
-
   !>
-  !! Procedure-description: Fill the indepedent value array with values 
+  !! Procedure-description: Fill the independent parameter array for a new simulation
   !!
   !! Major-Authors: Keith Evans (2014), Richard Beanland (2016)
   !!  
   SUBROUTINE UpdateVariables(RIndependentVariable,IErr)
 
-    !?? JR top level to this module, so keep, compare if refine needs access
-
+    !?? JR top level to this module, so keep, refine needs access
     !?? JR called every SimulateAndFit() (for non-Ug refinement)
 
     USE MyNumbers
@@ -556,30 +541,34 @@ MODULE felixfunction_mod
     INTEGER(IKIND) :: IVariableType,IVectorID,IAtomID,IErr,ind
 
     DO ind = 1,INoOfVariables
-      IVariableType = IIterativeVariableUniqueIDs(ind,2)
+      IVariableType = IIterativeVariableUniqueIDs(ind,1)
       SELECT CASE (IVariableType)
       CASE(1) ! A: structure factor refinement, do in UpdateStructureFactors
         
       CASE(2)
-        ! The vector being used
-        IVectorID = IIterativeVariableUniqueIDs(ind,3)
+        ! The index of the atom and vector being used
+        IVectorID = IIterativeVariableUniqueIDs(ind,2)
         ! The atom being moved
         IAtomID = IAtomMoveList(IVectorID)
-        ! Change in position
-        RBasisAtomPosition(IAtomID,:) = RBasisAtomPosition(IAtomID,:) + &
-              RIndependentVariable(ind)*RVector(IVectorID,:)
+        ! Change in position r' = r - v*(r.v) +v*RIndependentVariable(ind)
+        RBasisAtomPosition(IAtomID,:) = RBasisAtomPosition(IAtomID,:) - &
+            RVector(IVectorID,:)*DOT_PRODUCT(RBasisAtomPosition(IAtomID,:),RVector(IVectorID,:)) + &
+            RVector(IVectorID,:)*RIndependentVariable(ind)
       CASE(3)
-        RBasisOccupancy(IIterativeVariableUniqueIDs(ind,3))=RIndependentVariable(ind) 
+        RBasisOccupancy(IIterativeVariableUniqueIDs(ind,2))=RIndependentVariable(ind) 
       CASE(4)
-        RBasisIsoDW(IIterativeVariableUniqueIDs(ind,3))=RIndependentVariable(ind)
+        RBasisIsoDW(IIterativeVariableUniqueIDs(ind,2))=RIndependentVariable(ind)
       CASE(5)
-        RAnisotropicDebyeWallerFactorTensor(&
-              IIterativeVariableUniqueIDs(ind,3),&
-              IIterativeVariableUniqueIDs(ind,4),&
-              IIterativeVariableUniqueIDs(ind,5)) = & 
-              RIndependentVariable(ind)
+        ! NOT CURRENTLY IMPLIMENTED
+        IErr=1;IF(l_alert(IErr,"UpdateVariables",&
+              "Anisotropic Debye Waller Factors not implemented")) CALL abort()
+!        RAnisotropicDebyeWallerFactorTensor(&
+!              IIterativeVariableUniqueIDs(ind,2),&
+!              IIterativeVariableUniqueIDs(ind,4),&
+!              IIterativeVariableUniqueIDs(ind,5)) = & 
+!              RIndependentVariable(ind)
       CASE(6)
-        SELECT CASE(IIterativeVariableUniqueIDs(ind,3))
+        SELECT CASE(IIterativeVariableUniqueIDs(ind,2))
         CASE(1)
           RLengthX = RIndependentVariable(ind)
         CASE(2)
@@ -588,7 +577,7 @@ MODULE felixfunction_mod
           RLengthZ = RIndependentVariable(ind)
         END SELECT
       CASE(7)
-        SELECT CASE(IIterativeVariableUniqueIDs(ind,3))
+        SELECT CASE(IIterativeVariableUniqueIDs(ind,2))
         CASE(1)
           RAlpha = RIndependentVariable(ind)
         CASE(2)
@@ -721,7 +710,7 @@ MODULE felixfunction_mod
   !! 
   PURE SUBROUTINE BlurG(RImageToBlur,IPixelsCount,RBlurringRadius,IErr)
 
-    !?? JR called every SimulateAndFit() indriectly via FelixFunction
+    !?? JR called every SimulateAndFit() indriectly via Simulate
 
     USE MyNumbers
     USE MPI
@@ -801,4 +790,4 @@ MODULE felixfunction_mod
 
   END SUBROUTINE BlurG        
 
-END MODULE felixfunction_mod    
+END MODULE refinementcontrol_mod    

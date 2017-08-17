@@ -53,20 +53,25 @@ PROGRAM Felixrefine
 
   USE utilities_mod, ONLY : SortHKL
 
-  USE read_mod
+  USE read_files_mod
   USE read_cif_mod
-  USE setup_scattering_factors_mod
+  USE set_scatter_factors_mod
   USE setup_reflections_mod
-  USE image_mod
-  USE symmetry_mod
+  USE image_initialisation_mod
+  USE setup_space_group_mod
   USE crystallography_mod
-  USE Ug_mod
-  USE felixfunction_mod
+  USE ug_matrix_mod
+  USE refinementcontrol_mod       !?? contains Simulate() and SimulateAndFit()
+  USE write_output_mod
+  USE simplex_mod
+
+  !?? JR all felix .f90 files are now modules, should we remove '_mod' from all of them
 
   USE IConst; USE RConst; USE SConst
-  USE IPara; USE RPara; USE CPara; USE SPara;
+  USE IPara;  USE RPara;  USE CPara; USE SPara;
   USE BlochPara 
   USE IChannels
+  !?? JR can add USE [], ONLY : ... for felixrefine specific used variables
 
   ! local variable definitions
   IMPLICIT NONE
@@ -74,7 +79,8 @@ PROGRAM Felixrefine
   INTEGER(IKIND) :: IErr,ind,jnd,knd,lnd,mnd,nnd,Iter,ICutOff,IHOLZgPoolMag,&
         IBSMaxLocGVecAmp,ILaueLevel,INumTotalReflections,ITotalLaueZoneLevel,&
         INhkl,IExitFLAG,ICycle,INumInitReflections,IZerothLaueZoneLevel,&
-        INumFinalReflections,IThicknessIndex,IVariableType,irate
+        INumFinalReflections,IThicknessIndex,IVariableType,IArrayIndex,&
+        IAnisotropicDebyeWallerFactorElementNo
   INTEGER(IKIND) :: IStartTime, IStartTime2
   REAL(RKIND) :: RHOLZAcceptanceAngle,RLaueZoneGz,RMaxGMag,RPvecMag,&
         RScale,RMaxUgStep,Rdx,RStandardDeviation,RMean,RGzUnitVec,RMinLaueZoneValue,&
@@ -123,8 +129,8 @@ PROGRAM Felixrefine
   CALL message(LS,"-----------------------------------------------------------------")
 
   ! timing setup
-  CALL SYSTEM_CLOCK( count_rate=irate )
-  CALL start_timer( IStartTime )
+  CALL SYSTEM_CLOCK( count_rate=iclock_rate ) ! in message_mod for print_end_time() utility
+  CALL SYSTEM_CLOCK( IStartTime )
 
   !--------------------------------------------------------------------
   ! input section 
@@ -156,8 +162,8 @@ PROGRAM Felixrefine
   ! set up scattering factors, relativistic electrons, reciprocal lattice
   !--------------------------------------------------------------------
 
-  CALL setup_scattering_factors(IScatterFactorMethodFLAG,IErr)
-  IF(l_alert(IErr,"felixrefine","setup_scattering_factors()")) CALL abort()
+  CALL SetScatteringFactors(IScatterFactorMethodFLAG,IErr)
+  IF(l_alert(IErr,"felixrefine","SetScatteringFactors()")) CALL abort()
   ! returns global RScattFactors depeding upon scattering method: Kirkland, Peng, etc.
 
   ! Calculate wavevector magnitude k and relativistic mass
@@ -186,7 +192,8 @@ PROGRAM Felixrefine
 
   ! total possible atoms/unit cell
   IMaxPossibleNAtomsUnitCell=SIZE(RBasisAtomPosition,1)*SIZE(RSymVec,1)
-  ! over-allocate since actual size not known before calculation of unique positions (atoms in special positions will be duplicated)
+  ! over-allocate since actual size not known before calculation of unique positions 
+  ! (atoms in special positions will be duplicated)
 
   ! allocations using that RBasisAtomPosition, RSymVec have now been setup
   ! fractional unit cell coordinates are used for RAtomPosition, like BasisAtomPosition
@@ -485,13 +492,12 @@ PROGRAM Felixrefine
   ! set up chosen absoption model
   !--------------------------------------------------------------------
 
-  CALL start_timer( IStartTime2 )
+  CALL SYSTEM_CLOCK( IStartTime2 )
   CALL message(LL,dbg3,"Starting absorption calculation, number of beams = ",&
         SIZE(IEquivalentUgKey))
   CALL Absorption (IErr)
   IF(l_alert(IErr,"felixrefine","Absorption()")) CALL abort()
   CALL print_end_time( LM, IStartTime2, "Absorption" )
-  CALL start_timer( IStartTime2 )
 
   !--------------------------------------------------------------------
   ! INoOfVariables calculated depending upon Ug and non-Ug refinement
@@ -584,37 +590,109 @@ PROGRAM Felixrefine
 	  ! Fill up the IndependentVariable list 
     ALLOCATE(RIndependentVariable(INoOfVariables),STAT=IErr)  
     ind=1
-    IF(IRefineMode(3).EQ.1) THEN ! Occupancy, code(C)
+    IF(IRefineMode(2).EQ.1) THEN ! Atomic coordinates, B
+	    DO jnd=1,SIZE(IAtomMoveList)
+          RIndependentVariable(ind)=DOT_PRODUCT(RBasisAtomPosition(IAtomMoveList(jnd),:),RVector(jnd,:))
+          ind=ind+1
+	    END DO
+	  END IF
+    IF(IRefineMode(3).EQ.1) THEN ! Occupancy, C
 	    DO jnd=1,SIZE(IAtomsToRefine)
           RIndependentVariable(ind)=RBasisOccupancy(IAtomsToRefine(jnd))
           ind=ind+1
 	    END DO
 	  END IF
-    IF(IRefineMode(4).EQ.1) THEN ! Isotropic DW, code(D)
+    IF(IRefineMode(4).EQ.1) THEN ! Isotropic DW, D
 	    DO jnd=1,SIZE(IAtomsToRefine)
           RIndependentVariable(ind)=RIsoDW(IAtomsToRefine(jnd))
           ind=ind+1
 	    END DO
 	  END IF
-    IF(IRefineMode(8).EQ.1) THEN ! Convergence angle, code(H)
+    IF(IRefineMode(8).EQ.1) THEN ! Convergence angle, H
       RIndependentVariable(ind)=RConvergenceAngle
       ind=ind+1
 	  END IF
 
     ! Assign IDs - not needed for a Ug refinement
-    ALLOCATE(IIterativeVariableUniqueIDs(INoOfVariables,5),STAT=IErr)
+    ALLOCATE(IIterativeVariableUniqueIDs(INoOfVariables,2),STAT=IErr)
     IF(l_alert(IErr,"felixrefine","allocate IIterativeVariableUniqueIDs")) CALL abort()
 
-    IIterativeVariableUniqueIDs = 0
-    knd = 0
+    IIterativeVariableUniqueIDs = 0 
     DO ind = 2,IRefinementVariableTypes ! Loop over iterative variables apart from Ug's
       IF(IRefineMode(ind).EQ.1) THEN
         DO jnd = 1,INoofElementsForEachRefinementType(ind)
-          knd = knd + 1
-          !?? elements (:,1) just have the number of the index in, pointless never used
-          IIterativeVariableUniqueIDs(knd,1) = knd
-          CALL AssignArrayLocationsToIterationVariables(ind,jnd,&
-                      IIterativeVariableUniqueIDs,IErr)
+
+          IArrayIndex = SUM(INoofElementsForEachRefinementType(:(ind-1))) + jnd
+          !?? JR not sure about writing it like this - tiny overhead but maybe clearer? 
+
+          SELECT CASE(ind)
+
+          CASE(1) ! Ugs, A
+            IIterativeVariableUniqueIDs(IArrayIndex,1) = ind
+            IIterativeVariableUniqueIDs(IArrayIndex,2) = &
+                  NINT(REAL(INoofUgs,RKIND)*(REAL(jnd/REAL(INoofUgs,RKIND),RKIND)-&
+                  CEILING(REAL(jnd/REAL(INoofUgs,RKIND),RKIND)))+REAL(INoofUgs,RKIND))
+
+          CASE(2) ! Coordinates (x,y,z), B
+            IIterativeVariableUniqueIDs(IArrayIndex,1) = ind
+            IIterativeVariableUniqueIDs(IArrayIndex,2) = jnd
+
+          CASE(3) ! Occupancies, C
+            IIterativeVariableUniqueIDs(IArrayIndex,1) = ind
+            IIterativeVariableUniqueIDs(IArrayIndex,2) = IAtomsToRefine(jnd)
+
+          CASE(4) ! Isotropic Debye Waller Factors , D
+            IIterativeVariableUniqueIDs(IArrayIndex,1) = ind
+            IIterativeVariableUniqueIDs(IArrayIndex,2) = IAtomsToRefine(jnd)
+
+          CASE(5) ! Anisotropic Debye Waller Factors (a11-a33), E
+            ! NOT CURRENTLY IMPLIMENTED
+            IErr=1;IF(l_alert(IErr,"felixrefine",&
+                  "Anisotropic Debye Waller Factors not implemented")) CALL abort()
+
+!            IIterativeVariableUniqueIDs(IArrayIndex,1) = ind
+!            IIterativeVariableUniqueIDs(IArrayIndex,2) = &
+!                  IAtomsToRefine(INT(CEILING(REAL(jnd/6.0D0,RKIND))))
+!            IAnisotropicDebyeWallerFactorElementNo = &
+!                  NINT(6.D0*(REAL(jnd/6.0D0,RKIND) - &
+!                  CEILING(REAL(jnd/6.0D0,RKIND)))+6.0D0)
+
+!            SELECT CASE(IAnisotropicDebyeWallerFactorElementNo)
+!            CASE(1)
+!              IIterativeVariableUniqueIDs(IArrayIndex,4:5) = [1,1]
+!            CASE(2)
+!              IIterativeVariableUniqueIDs(IArrayIndex,4:5) = [2,1]
+!            CASE(3)
+!              IIterativeVariableUniqueIDs(IArrayIndex,4:5) = [2,2]
+!            CASE(4)
+!              IIterativeVariableUniqueIDs(IArrayIndex,4:5) = [3,1]
+!            CASE(5)
+!              IIterativeVariableUniqueIDs(IArrayIndex,4:5) = [3,2]
+!            CASE(6)
+!              IIterativeVariableUniqueIDs(IArrayIndex,4:5) = [3,3]
+!            END SELECT
+
+          CASE(6) ! Lattice Parameters, E
+            IIterativeVariableUniqueIDs(IArrayIndex,1) = ind
+            IIterativeVariableUniqueIDs(IArrayIndex,2) = &
+                  NINT(3.D0*(REAL(jnd/3.0D0,RKIND) - CEILING(REAL(jnd/3.0D0,RKIND)))+3.0D0)
+             
+          CASE(7) ! Lattice Angles, F
+            IIterativeVariableUniqueIDs(IArrayIndex,1) = ind
+            IIterativeVariableUniqueIDs(IArrayIndex,2) = &
+                  NINT(3.D0*(REAL(jnd/3.0D0,RKIND) - CEILING(REAL(jnd/3.0D0,RKIND)))+3.0D0)
+
+          CASE(8) ! Convergence angle, H
+            IIterativeVariableUniqueIDs(IArrayIndex,1) = ind
+
+          CASE(9) ! Percentage Absorption, I
+            IIterativeVariableUniqueIDs(IArrayIndex,1) = ind
+
+          CASE(10) ! kV, J
+            IIterativeVariableUniqueIDs(IArrayIndex,1) = ind
+
+          END SELECT
+
         END DO
       END IF
     END DO 
@@ -692,10 +770,9 @@ PROGRAM Felixrefine
   RFigureofMerit=666.666 ! Inital large value,diabolically
   Iter = 0
   ! baseline simulation with timer
-  CALL start_timer( IStartTime2 )
-  CALL FelixFunction(IErr)
-  IF(l_alert(IErr,"felixrefine","FelixFunction")) CALL abort()
-  CALL print_end_time( LM, IStartTime2, "Simulation" )
+
+  CALL Simulate(IErr)
+  IF(l_alert(IErr,"felixrefine","Simulate")) CALL abort()
 
   !--------------------------------------------------------------------
 
@@ -716,24 +793,20 @@ PROGRAM Felixrefine
     END DO   
   
   ELSE ! Refinement Mode
-
-    IF(my_rank.EQ.0) THEN ! output using 1 core only !?? what needs this JR?
-
+    IF(my_rank.EQ.0) THEN
       ! Figure of merit is passed back as a global variable
       CALL CalculateFigureofMeritandDetermineThickness(Iter,IThicknessIndex,IErr)
       IF(l_alert(IErr,"felixrefine",&
             "CalculateFigureofMeritandDetermineThickness()")) CALL abort() 
-
       ! Keep baseline simulation for masked correlation
       IF (ICorrelationFLAG.EQ.3) THEN
         RImageBase=RImageSimi  
         RImageAvi=RImageSimi 
       END IF
-        
       CALL WriteIterationOutput(Iter,IThicknessIndex,IExitFLAG,IErr)
       IF(l_alert(IErr,"felixrefine","WriteIterationOutput()")) CALL abort() 
-
     END IF
+    
     !===================================== ! Send the fit index to all cores
     CALL MPI_BCAST(RFigureofMerit,1,MPI_DOUBLE_PRECISION,0,MPI_COMM_WORLD,IErr)
     !=====================================
@@ -748,7 +821,7 @@ PROGRAM Felixrefine
 
     ! We have INoOfVariables to refine, held in RIndependentVariable(1:INoOfVariables)
     ! For single variables, their type is held in 
-    ! IIterativeVariableUniqueIDs(1:INoOfVariables,2)
+    ! IIterativeVariableUniqueIDs(1:INoOfVariables,1)
     SELECT CASE(IMethodFLAG)
 
     CASE(1)
@@ -802,7 +875,7 @@ PROGRAM Felixrefine
   DEALLOCATE(RgMatrixMagnitude,STAT=IErr)
   DEALLOCATE(CPseudoAtom,STAT=IErr)
   DEALLOCATE(CPseudoScatt,STAT=IErr)
-  !?? previous deallocations are local, these are global, seemingly from smodules.f90
+  !?? These are global variables, see smodules.f90
 
   IF (IRefineMode(1).EQ.0) THEN
   	DEALLOCATE(IIterativeVariableUniqueIDs,STAT=IErr)
@@ -913,7 +986,7 @@ CONTAINS
         END WHERE
       END DO    
       ! debug mode output to look at the masks
-      IF (IWriteFLAG.EQ.6) THEN
+      IF (dbg6%state) THEN
         ALLOCATE(RTestImage(2*IPixelCount,2*IPixelCount),STAT=IErr)
         DO ind = 1,INoOfLacbedPatterns
           RTestImage=RImageMask(:,:,ind)
@@ -932,7 +1005,6 @@ CONTAINS
         END DO
         DEALLOCATE(RTestImage)
       END IF
-      !?? JR change IWriteFLAG to dbg6
       !?? JR tidy filename consider input&output
     END IF
     
@@ -1003,7 +1075,7 @@ CONTAINS
       IF (nnd.EQ.0) THEN ! max gradient
         DO ind=1,INoOfVariables ! calculate individual gradients
           ! The type of variable being refined 
-          IVariableType=IIterativeVariableUniqueIDs(ind,2) 
+          IVariableType=IIterativeVariableUniqueIDs(ind,1) 
           !?? variable type as in what refinement mode/variables, 'type' used throughout
            
           ! print to screen
@@ -1241,7 +1313,7 @@ CONTAINS
         ! optional terminal output types of variables refined
         !--------------------------------------------------------------------
 
-        IVariableType=IIterativeVariableUniqueIDs(ind,2)
+        IVariableType=IIterativeVariableUniqueIDs(ind,1)
         SELECT CASE(IVariableType)
           CASE(1)
             CALL message(LS, "Ug refinement")
@@ -1481,7 +1553,7 @@ CONTAINS
     !/\/\----------------------------------------------------------------
 
     !--------------------------------------------------------------------
-    ! We are done, finallly simulate and output the best fit
+    ! We are done, finally simulate and output the best fit
     !--------------------------------------------------------------------
 
     IExitFLAG=1
@@ -1489,106 +1561,6 @@ CONTAINS
     DEALLOCATE(RVar0,RCurrentVar,RLastVar,RPVec,STAT=IErr)
  
   END SUBROUTINE ParabolicRefinement
-
-  !%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-
-  !>
-  !! Procedure-description: Assign array locations to iteration variables, similar
-  !! to IIterativeVariableUniqueIDs
-  !!
-  !! Major-Authors: Keith Evans (2014)
-  !!
-  SUBROUTINE AssignArrayLocationsToIterationVariables(IIterativeVariableType,&
-                    IVariableNo,IArrayToFill,IErr)
-
-    !?? JR study further, compare RIndependentVariables array and UpdateVariables()
-    !?? JR even if top level, may move out, as part of setup not refinement 
-  
-    !?? JR called once in felixrefine, end of non-Ug refinement assign refinement variables
-
-    ! NB IArrayToFill here equivalent to IIterativeVariableUniqueIDs outside this subroutine
-
-    INTEGER(IKIND) :: IIterativeVariableType,IVariableNo,IErr,IArrayIndex,&
-         IAnisotropicDebyeWallerFactorElementNo
-    INTEGER(IKIND),DIMENSION(INoOfVariables,5),INTENT(OUT) :: IArrayToFill  
-
-    ! Calculate How Many of Each Variable Type There are
-    ! CALL DetermineNumberofRefinementVariablesPerType(&
-          !INoofElementsForEachRefinementType,IErr)
-    
-    ! Where am I in the Array Right Now?
-    IArrayIndex = SUM(INoofElementsForEachRefinementType(:(IIterativeVariableType-1))) + &
-          IVariableNo
-
-    SELECT CASE(IIterativeVariableType)
-
-    CASE(1) ! Ugs, A
-       IArrayToFill(IArrayIndex,2) = IIterativeVariableType
-       IArrayToFill(IArrayIndex,3) = &
-            NINT(REAL(INoofUgs,RKIND)*(REAL(IVariableNo/REAL(INoofUgs,RKIND),RKIND)-&
-            CEILING(REAL(IVariableNo/REAL(INoofUgs,RKIND),RKIND)))+REAL(INoofUgs,RKIND))
-
-    CASE(2) ! Coordinates (x,y,z), B
-       IArrayToFill(IArrayIndex,2) = IIterativeVariableType
-       IArrayToFill(IArrayIndex,3) = IVariableNo
-
-    CASE(3) ! Occupancies, C
-       IArrayToFill(IArrayIndex,2) = IIterativeVariableType
-       IArrayToFill(IArrayIndex,3) = IAtomsToRefine(IVariableNo)
-
-    CASE(4) ! Isotropic Debye Waller Factors , D
-       IArrayToFill(IArrayIndex,2) = IIterativeVariableType
-       IArrayToFill(IArrayIndex,3) = IAtomsToRefine(IVariableNo)
-
-    CASE(5) ! Anisotropic Debye Waller Factors (a11-a33), E
-      IArrayToFill(IArrayIndex,2) = IIterativeVariableType
-      IArrayToFill(IArrayIndex,3) = &
-            IAtomsToRefine(INT(CEILING(REAL(IVariableNo/6.0D0,RKIND))))
-      IAnisotropicDebyeWallerFactorElementNo = &
-            NINT(6.D0*(REAL(IVariableNo/6.0D0,RKIND) - &
-            CEILING(REAL(IVariableNo/6.0D0,RKIND)))+6.0D0)
-
-       SELECT CASE(IAnisotropicDebyeWallerFactorElementNo)
-
-          CASE(1)
-             IArrayToFill(IArrayIndex,4:5) = [1,1]
-          CASE(2)
-             IArrayToFill(IArrayIndex,4:5) = [2,1]
-          CASE(3)
-             IArrayToFill(IArrayIndex,4:5) = [2,2]
-          CASE(4)
-             IArrayToFill(IArrayIndex,4:5) = [3,1]
-          CASE(5)
-             IArrayToFill(IArrayIndex,4:5) = [3,2]
-          CASE(6)
-             IArrayToFill(IArrayIndex,4:5) = [3,3]
-
-          END SELECT
-
-    CASE(6) ! Lattice Parameters, E
-       IArrayToFill(IArrayIndex,2) = IIterativeVariableType
-       IArrayToFill(IArrayIndex,3) = &
-            NINT(3.D0*(REAL(IVariableNo/3.0D0,RKIND) - &
-            CEILING(REAL(IVariableNo/3.0D0,RKIND)))+3.0D0)
-       
-    CASE(7) ! Lattice Angles, F
-       IArrayToFill(IArrayIndex,2) = IIterativeVariableType
-       IArrayToFill(IArrayIndex,3) = &
-            NINT(3.D0*(REAL(IVariableNo/3.0D0,RKIND) - &
-            CEILING(REAL(IVariableNo/3.0D0,RKIND)))+3.0D0)
-
-    CASE(8) ! Convergence angle, H
-       IArrayToFill(IArrayIndex,2) = IIterativeVariableType
-
-    CASE(9) ! Percentage Absorption, I
-       IArrayToFill(IArrayIndex,2) = IIterativeVariableType
-
-    CASE(10) ! kV, J
-       IArrayToFill(IArrayIndex,2) = IIterativeVariableType
-
-    END SELECT
-    
-  END SUBROUTINE AssignArrayLocationsToIterationVariables
 
   !%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
@@ -1615,8 +1587,9 @@ CONTAINS
 
     !Count the degrees of freedom of movement for each atom to be refined    
     DO ind = 1,SIZE(IAtomsToRefine)
-      CALL CountAllowedMovements(ISpaceGrp,SWyckoffSymbol(IAtomsToRefine(ind)),IDegreesOfFreedom(ind),IErr)
-      IF(l_alert(IErr,"SetupAtomMovements","ConvertSpaceGroupToNumber()")) RETURN     
+      CALL CountAllowedMovements(ISpaceGrp,SWyckoffSymbol(IAtomsToRefine(ind)),&
+            IDegreesOfFreedom(ind),IErr)
+      IF(l_alert(IErr,"SetupAtomMovements","CountAllowedMovements()")) RETURN     
     END DO
     
     ALLOCATE(IAtomMoveList(SUM(IDegreesOfFreedom)),STAT=IErr)
@@ -1627,19 +1600,21 @@ CONTAINS
     !make a list of vectors and the atoms they move
     knd = 0
     DO ind = 1,SIZE(IAtomsToRefine)
-      CALL DetermineAllowedMovements(ISpaceGrp,SWyckoffSymbol(IAtomsToRefine(ind)),RMoveMatrix,IErr)
+      CALL DetermineAllowedMovements(ISpaceGrp,SWyckoffSymbol(IAtomsToRefine(ind)),&
+            RMoveMatrix,IErr)
       IF(l_alert(IErr,"SetupAtomMovements()","DetermineAllowedMovements()")) RETURN  
       DO jnd = 1,IDegreesOfFreedom(ind)
         knd=knd+1
-        RVector(knd,:)=RMoveMatrix(jnd,:)!the movement
-        IAtomMoveList(knd)=IAtomsToRefine(ind)!the atom
+        RVector(knd,:)=RMoveMatrix(jnd,:)!the movement, global variable
+        IAtomMoveList(knd)=IAtomsToRefine(ind)!the atom, global variable
       END DO
     END DO
 
   END SUBROUTINE SetupAtomMovements     
 
   !%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-                                                                                                                                    !>
+                                                                                                                                    
+  !>
   !! Procedure-description: Best fit check
   !!
   !! Major-Authors: Richard Beanland (2016)
@@ -1647,8 +1622,7 @@ CONTAINS
   SUBROUTINE BestFitCheck(RFoM,RBest,RCurrent,RIndependentVariable,IErr)
 
     !?? JR small tidy up, can use same variable names
-
-    !?? JR called felixrefine multiple times, utility with variable refinement and FigureOfMerit
+    !?? JR called felixrefine multiple times,utility with variable refinement and FigureOfMerit
     
     REAL(RKIND) :: RFoM,RBest ! current figure of merit and the best figure of merit
     ! current and best set of variables
@@ -1692,32 +1666,5 @@ CONTAINS
     Ryv = Rc-Rb*Rb/(4*Ra)!y-coord
 
   END SUBROUTINE Parabo3 
-
-  ! sets a local integer to start time to compare with later
-  SUBROUTINE start_timer( istart_time )
-    integer(IKIND), intent(inout) :: istart_time
-    call system_clock(istart_time)
-  END SUBROUTINE start_timer
-
-  ! compare start time to current and print time-passed
-  SUBROUTINE print_end_time( msg_priority, istart_time, completed_task_name )
-    type (msg_priorities), intent(in) :: msg_priority
-    character(*), intent(in) :: completed_task_name
-    integer(IKIND), intent(in) :: istart_time
-    integer(IKIND) :: ihours,iminutes,iseconds,icurrent_time
-    real(RKIND) :: duration
-    character(100) :: string
-
-    call system_clock(icurrent_time)
-    ! converts ticks from system clock into seconds
-    duration = real(icurrent_time-istart_time)/real(irate)
-    ihours = floor(duration/3600.0d0)
-    iminutes = floor(mod(duration,3600.0d0)/60.0d0)
-    iseconds = int(mod(duration,3600.0d0)-iminutes*60)
-    write(string,fmt='(a,1x,a,i3,a5,i2,a6,i2,a4)') completed_task_name,&
-          "completed in ",ihours," hrs ",iminutes," mins ",iseconds," sec"
-    call message_only2(msg_priority,trim(string))
-    !?? currently message can't print the combined 3 integers and strings directly
-  END SUBROUTINE print_end_time
 
 END PROGRAM Felixrefine
