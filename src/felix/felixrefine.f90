@@ -483,7 +483,7 @@ PROGRAM Felixrefine
   !--------------------------------------------------------------------
 
   CALL start_timer( IStartTime2 )
-  CALL message(LS,dbg3,"Absorption calculation, number of beams = ",&
+  CALL message(LS,dbg3,"Absorption calculation... ",&
         SIZE(IEquivalentUgKey))
   CALL Absorption (IErr)
   IF(l_alert(IErr,"felixrefine","Absorption()")) CALL abort()

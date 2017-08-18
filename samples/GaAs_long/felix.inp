@@ -17,7 +17,7 @@ IByteSize                 = 8
 IPixelCount               = 35
 
 # beam selection criteria
-IMinReflectionPool        = 500
+IMinReflectionPool        = 1500
 IMinStrongBeams           = 50
 IMinWeakBeams             = 50
 

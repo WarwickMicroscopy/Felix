@@ -164,7 +164,7 @@ MODULE Ug_mod
           IF (ICurrentZ.LT.105) THEN ! It's not a pseudoatom 
             ! Uses numerical integration to calculate absorptive form factor f'
             CALL DoubleIntegrateBK(RfPrime,IErr) ! NB uses Kirkland scattering factors
-            IF(l_alert(IErr,"Absorption()","allocate RUgImag")) RETURN
+            IF(l_alert(IErr,"Absorption()","call DoubleIntegrateBK")) RETURN
           ELSE ! It is a pseudoatom, proportional model 
             lnd=lnd+1
             CALL PseudoAtom(CFpseudo,ILoc(1),ILoc(2),lnd,IErr)
