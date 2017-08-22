@@ -356,6 +356,7 @@ CONTAINS
 
   ! compare start time to current and print time-passed
   SUBROUTINE print_end_time(Smsg_priority, Istart_time, STaskName)
+    USE IPARA, ONLY : IClockRate
     TYPE (msg_priorities), INTENT(IN) :: Smsg_priority
     CHARACTER(*), INTENT(IN) :: STaskName
     INTEGER(IKIND), INTENT(IN) :: Istart_time
@@ -368,8 +369,7 @@ CONTAINS
     Sfmt=TRIM(ADJUSTL(Sfmt))
     CALL system_clock(ICurrentTime)
     ! converts ticks from system clock into seconds
-    Rduration = REAL(ICurrentTime-Istart_time)
-    IF (my_rank.EQ.0) PRINT*,'Rduration',Rduration
+    Rduration = REAL(ICurrentTime-Istart_time)/REAL(IClockRate)
     Ihours = FLOOR(Rduration/3600.0d0)
     Iminutes = FLOOR(MOD(Rduration,3600.0d0)/60.0d0)
     Iseconds = INT(MOD(Rduration,3600.0d0)-Iminutes*60)

@@ -131,7 +131,7 @@ PROGRAM Felixrefine
 
   ! timing setup
   !CALL SYSTEM_CLOCK( count_rate=iclock_rate ) ! in message_mod for print_end_time utility
-  CALL SYSTEM_CLOCK( IStartTime )
+  CALL SYSTEM_CLOCK( IStartTime,IClockRate )
 
   !--------------------------------------------------------------------
   ! input section 
