@@ -75,8 +75,10 @@ MODULE refinementcontrol_mod
     USE IPARA, ONLY : INoOfVariables, nReflections, IAbsorbFLAG, IMethodFLAG, INoofUgs, &
           IPixelCount, IPrint, ISimFLAG, ISymmetryRelations, IUgOffset, IRefineMode, &
           IEquivalentUgKey
-    USE RPARA, ONLY : RConvergenceAngle, RMinimumGMag, RTolerance, RRelativisticCorrection, &
+    USE RPARA, ONLY : RAngstromConversion,RElectronCharge,RElectronMass,&
+          RConvergenceAngle, RMinimumGMag, RTolerance, RRelativisticCorrection, &
           RVolume, RgMatrix, RgMatrixMagnitude, RCurrentGMagnitude
+    USE RConst, ONLY : RPlanckConstant
 
     ! gloabl outputs
     USE IPARA, ONLY : IPreviousPrintedIteration 
@@ -94,7 +96,8 @@ MODULE refinementcontrol_mod
     COMPLEX(CKIND) :: CUgMatDummy(nReflections,nReflections),CVgij
     CHARACTER*200 :: SFormat,SPrintString
 
-    CALL message(LS,"Iteration ",Iter)
+    WRITE(SPrintString,FMT='(A10,I5)')'Iteration ',Iter
+    CALL message(LS,SPrintString)
     CALL SYSTEM_CLOCK( IStartTime )
 
     
@@ -186,7 +189,8 @@ MODULE refinementcontrol_mod
           CUgMatNoAbs = CONJG(CVgij)
         END WHERE
       END DO
-      CUgMatNoAbs = CUgMatNoAbs*RRelativisticCorrection/(PI*RVolume)
+      !Convert to Ug (N.B. must match line 495 in StructureFactorInitialisation)
+      CUgMatNoAbs = CUgMatNoAbs*TWO*RElectronMass*RRelativisticCorrection*RElectronCharge/((RPlanckConstant**2)*(RAngstromConversion**2))
       DO ind=1,nReflections ! zero diagonal
          CUgMatNoAbs(ind,ind) = ZERO
       ENDDO

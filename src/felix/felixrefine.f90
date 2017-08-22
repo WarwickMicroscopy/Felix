@@ -571,7 +571,7 @@ PROGRAM Felixrefine
   ! assign refinement variables depending upon Ug and non-Ug refinement
   !--------------------------------------------------------------------
   
-  IF(IRefineMode(1).EQ.1) THEN ! It's a Ug refinement, code(A)
+  IF(IRefineMode(1).EQ.1) THEN ! It's a Ug refinement, A
 
     ! Fill up the IndependentVariable list with CUgMatNoAbs components
     jnd=1
@@ -1049,7 +1049,7 @@ CONTAINS
 
     ALLOCATE(RFitVec(INoOfVariables),STAT=IErr)
     IF(l_alert(IErr,"MaxGradientRefinement","allocate RFitVec")) RETURN
-    
+
     
     RBestFit=RFigureofMerit
     RLastFit=RBestFit
@@ -1143,7 +1143,9 @@ CONTAINS
               "Infinity or NaN error, refinement vector ="//TRIM(SPrintString))) RETURN
       END IF
       RPvec=RPvec/SQRT(RPvecMag) ! unity vector along direction of max gradient
-      CALL message( LS, "Refinement vector = ",RPvec )
+      WRITE(SPrintString,*) '(A18,',SIZE(RPvec),'F7.4)'
+      WRITE(SPrintString,FMT=SPrintString)'Refinement vector ',RPvec
+      CALL message(LS,SPrintString)
 
       RVar0=RIndependentVariable ! the best point of gradient calculation
       RFigureofMerit=RBestFit ! the best fit so far

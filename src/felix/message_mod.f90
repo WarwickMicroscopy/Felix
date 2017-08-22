@@ -362,7 +362,7 @@ CONTAINS
     INTEGER(IKIND), INTENT(IN) :: Istart_time
     INTEGER(IKIND) :: Ihours,Iminutes,Iseconds,ICurrentTime,INameLength
     REAL(RKIND) :: Rduration
-    CHARACTER(100) :: String,Sfmt
+    CHARACTER(100) :: SPrintString,Sfmt
 
     INameLength=LEN(STaskName)+14
     WRITE(Sfmt,*) '(A',INameLength,',A1,I3,A5,I2,A6,I2,A4)'
@@ -373,8 +373,9 @@ CONTAINS
     Ihours = FLOOR(Rduration/3600.0d0)
     Iminutes = FLOOR(MOD(Rduration,3600.0d0)/60.0d0)
     Iseconds = INT(MOD(Rduration,3600.0d0)-Iminutes*60)
-    WRITE(String,fmt=Sfmt) STaskName," completed in ",Ihours," hrs ",Iminutes," mins ",Iseconds," sec"
-    CALL message(Smsg_priority,String)
+    WRITE(SPrintString,FMT=Sfmt) STaskName," completed in ",Ihours," hrs ",Iminutes," mins ",Iseconds," sec"
+    SPrintString=TRIM(ADJUSTL(SPrintString))
+    CALL message(Smsg_priority,SPrintString)
 
   END SUBROUTINE print_end_time
 
