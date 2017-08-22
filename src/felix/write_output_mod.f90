@@ -265,10 +265,10 @@ MODULE write_output_mod
     ELSE
       IOutputVariables(1) = IRefineMode(1)*2*INoofUgs     
     END IF
-    ! Structural Coordinates
+    ! Atom Coordinates
     IOutputVariables(2) = IRefineMode(2)*SIZE(RBasisAtomPosition,DIM=1)* &
           SIZE(RBasisAtomPosition,DIM=2)
-    ! Atomic Site Occupancies
+    ! Occupancies
     IOutputVariables(3) = IRefineMode(3)*SIZE(RBasisOccupancy,DIM=1) 
     ! Isotropic Debye Waller Factors
     IOutputVariables(4) = IRefineMode(4)*SIZE(RBasisIsoDW,DIM=1) 

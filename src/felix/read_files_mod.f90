@@ -456,7 +456,7 @@ MODULE read_files_mod
 
     INTEGER(IKIND),INTENT(OUT) :: IErr
     INTEGER(IKIND) :: ind, jnd, INegError = 0
-    CHARACTER :: filename*34, SPrintString*200, IntString*10
+    CHARACTER :: filename*34, SPrintString*100, IntString*10
 
     ! for IByteSize: 2bytes=64-bit input file (NB tinis specifies in bytes, not bits)
 
@@ -489,7 +489,9 @@ MODULE read_files_mod
       IF(l_alert(IErr,"ReadExperimentalImages","CLOSE() an experimental input image")) RETURN
     END DO
 
-    CALL message(LM,"Number of experimental images successfully loaded =",INoOfLacbedPatterns)
+    WRITE(SPrintString,*) INoOfLacbedPatterns,' experimental images successfully loaded'
+    SPrintString=TRIM(ADJUSTL(SPrintString))
+    CALL message(LS,SPrintString)
 
     RETURN
 

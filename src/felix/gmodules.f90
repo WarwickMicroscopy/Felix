@@ -95,7 +95,7 @@ CONTAINS
     ELSE IF ( (X < 0. ) .and. (Y < 0. )) THEN 
        ARG = -PI + ATAN(Y/X)
     ELSE IF ( (X == 0.0) .and. (Y == 0.)) THEN
-       PRINT*, "ARG(): both X and Y ==0, undefined --- using ARG=0"
+       PRINT*, "ARG: both X and Y ==0, undefined --- using ARG=0"
        ARG=0.0_RKIND
     ENDIF
     

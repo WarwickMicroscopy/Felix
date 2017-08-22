@@ -95,7 +95,7 @@ MODULE SConst
         "Lu", "Hf", "Ta", "W", "Re", "Os", "Ir", "Pt", "Au", "Hg", &
         "Tl", "Pb", "Bi", "Po", "At", "Rn", "Fr", "Ra", "Ac", "Th", &
         "Pa", "U", "Np", "Pu", "Am", "Cm", "Bk", "Cf", "Es", "Fm",& 
-        "Md","No","Lr","Q","Ja","Jb","Jc","Jd","Je","Jf"/!Note element 'Q', 'Ja'... etc. added to end of list
+        "Md","No","Lr","Q","Ja","Jb","Jc","Jd","Je","Jf"/!Note element 'Q', 'Ja'... etc. added to END of list
 
   CHARACTER*8 :: SAlphabet(26)
   DATA SAlphabet/"Aa","Bb","Cc","Dd","Ee","Ff","Gg","Hh","Ii","Jj","Kk","Ll",&
@@ -209,7 +209,7 @@ MODULE IPara
   INTEGER(IKIND) :: ICurrentZ,IPsize
   !Refinement   
   INTEGER(IKIND),DIMENSION(IRefinementVariableTypes) :: IRefineMode
-  INTEGER(IKIND),DIMENSION(IRefinementVariableTypes) :: INoofElementsForEachRefinementType  !zz
+  INTEGER(IKIND),DIMENSION(IRefinementVariableTypes) :: INoofParameters  !zz
   INTEGER(IKIND),DIMENSION(:,:),ALLOCATABLE :: IIterativeVariableUniqueIDs
   !List of Atomic Sites for Refinement
   INTEGER(IKIND),DIMENSION(:),ALLOCATABLE :: IAtomsToRefine

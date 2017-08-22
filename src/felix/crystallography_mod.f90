@@ -157,8 +157,8 @@ MODULE crystallography_mod
     RTMatO2M(2,:)= RYDirO(:)
     RTMatO2M(3,:)= RZDirO(:)
     
-    ! Unit normal to the specimen in real space
-    ! This is used in diffraction pattern calculation subroutine
+    ! Unit normal to the specimen in REAL space
+    ! This is used in diffraction pattern calculation SUBROUTINE
     RNormDirM = MATMUL(RTMatO2M,MatMUL(RTMatC2O,RNormDirC))
     RNormDirM = RNormDirM/SQRT(DOT_PRODUCT(RNormDirM,RNormDirM)) 
 
@@ -188,7 +188,7 @@ MODULE crystallography_mod
   !!
   SUBROUTINE UniqueAtomPositions(IErr)
 
-    !?? called each SimulateAndFit()
+    !?? called each SimulateAndFit
     !?? called in felixrefine setup
     !?? JR updates full crystal arrays from basis atom refinement
     
@@ -252,7 +252,7 @@ MODULE crystallography_mod
     ! Reduce to the set of unique fractional atomic positions
     !--------------------------------------------------------------------
 
-    ! used to be subroutine CrystalUniqueFractionalAtomicPostitionsCalculation
+    ! used to be SUBROUTINE CrystalUniqueFractionalAtomicPostitionsCalculation
     
     ! first atom has to be in this set
     RAtomPosition(1,:)= RAllAtomPosition(1,:)

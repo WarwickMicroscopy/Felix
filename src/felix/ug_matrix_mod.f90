@@ -31,7 +31,7 @@
 !%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
                     
 !?? uses ReSortUgs from refineutils.f90
-!?? USE module MyFFTW?, uses external function dqagi from quadpack?
+!?? USE MODULE MyFFTW?, uses external function dqagi from quadpack?
 
 !?? JR how to modularise setup Ug & update Ug
 
@@ -164,7 +164,7 @@ MODULE ug_matrix_mod
           IF (ICurrentZ.LT.105) THEN ! It's not a pseudoatom 
             ! Uses numerical integration to calculate absorptive form factor f'
             CALL DoubleIntegrateBK(RfPrime,IErr) ! NB uses Kirkland scattering factors
-            IF(l_alert(IErr,"Absorption()","call DoubleIntegrateBK")) RETURN
+            IF(l_alert(IErr,"Absorption","CALL DoubleIntegrateBK")) RETURN
           ELSE ! It is a pseudoatom, proportional model 
             lnd=lnd+1
             CALL PseudoAtom(CFpseudo,ILoc(1),ILoc(2),lnd,IErr)
@@ -195,17 +195,17 @@ MODULE ug_matrix_mod
 
       RLocalUgReal=REAL(CLocalUgPrime)
       RLocalUgImag=AIMAG(CLocalUgPrime)
-      !?? RB I give up trying to MPI a complex number, do it with two real ones
+      !?? RB I give up trying to MPI a complex number, do it with two REAL ones
       ! MPI gatherv the new U'g s into CUgPrime
       ! NB MPI_GATHERV(BufferToSend,No.of elements,datatype,ReceivingArray,No.of elements,)
       CALL MPI_GATHERV(RLocalUgReal,SIZE(RLocalUgReal),MPI_DOUBLE_PRECISION,&
                      RUgReal,Inum,Ipos,MPI_DOUBLE_PRECISION,&
                      root,MPI_COMM_WORLD,IErr)
-      IF(l_alert(IErr,"Absorption","MPI_GATHERV() RLocalUgReal")) RETURN
+      IF(l_alert(IErr,"Absorption","MPI_GATHERV RLocalUgReal")) RETURN
       CALL MPI_GATHERV(RLocalUgImag,SIZE(RLocalUgImag),MPI_DOUBLE_PRECISION,&
                      RUgImag,Inum,Ipos,MPI_DOUBLE_PRECISION,&
                      root,MPI_COMM_WORLD,IErr)
-      IF(l_alert(IErr,"Absorption","MPI_GATHERV() RLocalUgImag")) RETURN
+      IF(l_alert(IErr,"Absorption","MPI_GATHERV RLocalUgImag")) RETURN
       !===================================== send out the full list to all cores
       CALL MPI_BCAST(RUgReal,IUniqueUgs,MPI_DOUBLE_PRECISION,&
                      root,MPI_COMM_WORLD,IErr)
@@ -261,8 +261,8 @@ MODULE ug_matrix_mod
 
     ! ----> CVgij, used to make/update CUgMatNoAbs
 
-    !?? JR used each SimulateAndFit() update scattering matrix Ug
-    !?? JR used once felixrefine setup via StructureFactorInitialisation() 
+    !?? JR used each SimulateAndFit update scattering matrix Ug
+    !?? JR used once felixrefine setup via StructureFactorInitialisation 
 
     USE MyNumbers
     USE message_mod
@@ -326,7 +326,7 @@ MODULE ug_matrix_mod
           IErr=1
           RETURN
         END IF
-        !?? DW factor: Need to work out how to get it from the real atom at same site
+        !?? DW factor: Need to work out how to get it from the REAL atom at same site
         ! assume it is the next atom in the list, for now
         CFpseudo = CFpseudo*EXP(-RIsoDW(knd+1)*(RCurrentGMagnitude**2)/(FOUR*TWOPI**2) )
         
@@ -409,7 +409,7 @@ MODULE ug_matrix_mod
     IF (IPseudo.GT.0) THEN!Calculate pseudoatom potentials
       ! size of the array used to calculate the pseudoatom FFT, global variable  
       IPsize=1024 ! must be an EVEN number (preferably 2^n)!
-      ! matrices with Pseudoatom potentials (real space)  
+      ! matrices with Pseudoatom potentials (REAL space)  
       ALLOCATE(CPseudoAtom(IPsize,IPsize,IPseudo),STAT=IErr)
       IF(l_alert(IErr,"StructureFactorInitialisation","allocate CPseudoAtom")) RETURN
       ! matrices with Pseudoatom scattering factor (reciprocal space)
@@ -431,7 +431,7 @@ MODULE ug_matrix_mod
           IF (IAtomicNumber(lnd).EQ.108) Rfold=THREE  !Jd
           IF (IAtomicNumber(lnd).EQ.109) Rfold=FOUR   !Je
           IF (IAtomicNumber(lnd).EQ.110) Rfold=SIX    !Jf
-          ! potential in real space
+          ! potential in REAL space
           DO ind=1,IPsize
             DO jnd=1,IPsize ! x&y run from e.g. -511.5 to +511.5 picometres
               Rx=RPScale*(REAL(ind-(IPsize/2))-HALF)
@@ -439,7 +439,7 @@ MODULE ug_matrix_mod
               Rr=SQRT(Rx*Rx+Ry*Ry)
               Rtheta=ACOS(Rx/Rr)
               !?? Easier to make a complex input to fftw rather than fanny around
-              !?? with the different format needed for a real input. Lazy.
+              !?? with the different format needed for a REAL input. Lazy.
               CPseudoAtom(ind,jnd,mnd)=CMPLX(RPMag*RPalpha*Rr*EXP(-RPalpha*Rr) * &
                   COS(Rfold*Rtheta),ZERO)        
             END DO
@@ -449,8 +449,8 @@ MODULE ug_matrix_mod
             WRITE(SPrintString,FMT='(A15,I1,A3)') "PseudoPotential",mnd,".img"
             OPEN(UNIT=IChOutWIImage, STATUS= 'UNKNOWN', FILE=SPrintString,&
                   FORM='UNFORMATTED',ACCESS='DIRECT',IOSTAT=IErr,RECL=8192)
-            IF(l_alert(IErr,"StructureFactorInitialisation()",&
-                  "write a pseudo factor.img")) RETURN
+            IF(l_alert(IErr,"StructureFactorInitialisation",&
+                  "WRITE a pseudo factor.img")) RETURN
             DO jnd = 1,IPsize
               WRITE(IChOutWIImage,rec=jnd) REAL(CPseudoAtom(jnd,:,mnd))
             END DO
@@ -467,8 +467,8 @@ MODULE ug_matrix_mod
             WRITE(SPrintString,FMT='(A12,I1,A3)') "PseudoFactor",mnd,".img"
             OPEN(UNIT=IChOutWIImage, STATUS= 'UNKNOWN', FILE=SPrintString,&
                 FORM='UNFORMATTED',ACCESS='DIRECT',IOSTAT=IErr,RECL=8192)
-            IF(l_alert(IErr,"StructureFactorInitialisation()",&
-                "write a pseudo factor.img")) RETURN
+            IF(l_alert(IErr,"StructureFactorInitialisation",&
+                "WRITE a pseudo factor.img")) RETURN
             DO jnd = 1,IPsize
               WRITE(IChOutWIImage,rec=jnd) ABS(CPseudoScatt(jnd,:,mnd))
             END DO
@@ -521,7 +521,8 @@ MODULE ug_matrix_mod
       END IF
     END DO
     RMeanInnerPotential = RMeanInnerPotential*RScattFacToVolts
-    CALL message( LS, "Mean inner potential (Volts) ",RMeanInnerPotential )
+    WRITE(SPrintString,FMT='(A21,F6.2,A6)') 'Mean inner potential ',RMeanInnerPotential,' Volts'
+    CALL message(LS,SPrintString)
 
     ! Wave vector magnitude in crystal
     ! high-energy approximation (not HOLZ compatible)
@@ -563,7 +564,9 @@ MODULE ug_matrix_mod
         END DO
       END DO
 
-      CALL message ( LS, "Number of unique structure factors = ", Iuid )
+      WRITE(SPrintString,FMT='(I5,A25)') Iuid,' unique structure factors'
+      SPrintString=TRIM(ADJUSTL(SPrintString))
+      CALL message ( LS, SPrintString )
       CALL message ( LM, dbg3, "hkl: symmetry matrix from 1 to 16" )
       DO ind =1,16
         CALL message ( LM, dbg3, "Rhkl:", NINT(Rhkl(ind,:)) )
@@ -602,12 +605,12 @@ MODULE ug_matrix_mod
   SUBROUTINE  AtomicScatteringFactor(RScatteringFactor,IErr)  
 
     !?? JR used in Ug.f90 only
-    !?? JR used each SimulateAndFit() update scattering matrix Ug via GetVgContributionij()
+    !?? JR used each SimulateAndFit update scattering matrix Ug via GetVgContributionij
 
-    !?? JR used twice felixrefine setup via StructureFactorInitialisation()
-    !?? JR once via GetVgContributionij() Vg potential
+    !?? JR used twice felixrefine setup via StructureFactorInitialisation
+    !?? JR once via GetVgContributionij Vg potential
     !?? JR another directly mean inner potential
-    !?? used 2 places StructureFactorInitialisation(), mean inner potential, Vg potential
+    !?? used 2 places StructureFactorInitialisation, mean inner potential, Vg potential
 
     !?? rename to GetRScatteringFactor
 
@@ -676,10 +679,10 @@ MODULE ug_matrix_mod
     !?? JR returns pseudoatom scattering factor, used similar AtomicScatteringFactor
 
     !?? JR used in Ug.f90 only
-    !?? JR used each SimulateAndFit() via GetVgContributionij() 
-    !?? JR used 1 place StructureFactorInitialisation() Vg potential
+    !?? JR used each SimulateAndFit via GetVgContributionij 
+    !?? JR used 1 place StructureFactorInitialisation Vg potential
 
-    !?? JR not used in StructureFactorInitialisation() in mean inner potential like atomic
+    !?? JR not used in StructureFactorInitialisation in mean inner potential like atomic
 
     ! Reads a scattering factor from the kth Stewart pseudoatom in CPseudoScatt 
     ! RCurrentGMagnitude is passed as a global variable
