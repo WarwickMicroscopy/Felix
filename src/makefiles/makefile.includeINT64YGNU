@@ -34,16 +34,25 @@ FORTRANNAMES=-D__UNDERSCORE__
 
 
 # decide whether integer should be 32 bit or 64 bit
-LONGINTEGER=-D_LONG_INTEGER_
-#LONGINTEGER=
+#LONGINTEGER=-D_LONG_INTEGER_
+LONGINTEGER=
 
+
+# -------------------------------
+# which fortran compiler is used
+F90=mpif90
+# its flags
+F90FLAGS= -O2 -m64 -DF90 -fexternal-blas \
+	  -ffree-line-length-none -fbounds-check \
+	  -fno-range-check -fimplicit-none -fdefault-integer-8
+#F90LAGS=  -g
 
 
 # -------------------------------
 # which fortran compiler is used
 FF=gfortran
 # its flags
-FFFLAGS=  -O4 -m64  -mcmodel=medium -fdefault-integer-8 -fPIC
+FFFLAGS=  -O4 -m64  -mcmodel=medium -fdefault-integer-8 -fPIC 
 #FFFLAGS=  -g
 
 

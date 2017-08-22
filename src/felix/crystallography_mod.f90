@@ -193,7 +193,7 @@ MODULE crystallography_mod
     !?? JR updates full crystal arrays from basis atom refinement
     
     USE MyNumbers
-    USE message_mod; USE alert_mod
+    USE message_mod
 
     ! global outputs
     USE RPARA, ONLY : RAtomCoordinate,ROccupancy,RIsoDW,RAtomPosition
@@ -205,7 +205,7 @@ MODULE crystallography_mod
           RcVecM,RbVecM,RaVecM
     USE SPARA, ONLY : SBasisAtomLabel, SBasisAtomName
     USE IPARA, ONLY : IBasisAtomicNumber, IBasisAnisoDW, IMaxPossibleNAtomsUnitCell, &
-          INAtomsUnitCell
+         INAtomsUnitCell
     
     IMPLICIT NONE
     
@@ -224,7 +224,7 @@ MODULE crystallography_mod
               RAllIsoDW(SIZE(RSymVec,1)*SIZE(RBasisAtomPosition,1)),&
               IAllAtomicNumber(SIZE(RSymVec,1)*SIZE(RBasisAtomPosition,1)),&
               RAllAnisoDW(SIZE(RSymVec,1)*SIZE(RBasisAtomPosition,1)), STAT=IErr )
-    IF(l_alert(IErr,"UniqueAtomPositions()","allocations")) RETURN
+    IF(l_alert(IErr,"UniqueAtomPositions","allocations")) RETURN
    
 
     !--------------------------------------------------------------------  
@@ -295,9 +295,10 @@ MODULE crystallography_mod
     END DO
     
     ! Finished with these variables now
-    DEALLOCATE(RAllAtomPosition,SAllAtomName,RAllOccupancy,RAllIsoDW,IAllAtomicNumber,&
-          RAllAnisoDW,STAT=IErr,)
-    IF(l_alert(IErr,"UniqueAtomPositions()","deallocations")) RETURN
+    DEALLOCATE( &
+         RAllAtomPosition, SAllAtomName, RAllOccupancy, RAllIsoDW, &
+         IAllAtomicNumber, RAllAnisoDW, STAT=IErr)
+    IF(l_alert(IErr,"UniqueAtomPositions","deallocations")) RETURN
       
     !--------------------------------------------------------------------
     ! Calculate atomic position vectors RAtomCoordinate

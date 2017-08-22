@@ -126,10 +126,10 @@ END MODULE MyNumbers
 !!
 !! Major-Authors: Keith Evans (2014), Richard Beanland (2016)
 !!
-MODULE MyMPI
+MODULE MyMPI  !?? grants MPI, sometimes USE both modules in code JR
 
   USE MPI
-  USE MyNumbers
+  USE MyNumbers, ONLY : IKIND
 
   INTEGER(IKIND) :: my_rank, p, srce, dest
   INTEGER, PARAMETER :: root = 0

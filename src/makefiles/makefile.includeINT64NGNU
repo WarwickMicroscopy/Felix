@@ -53,6 +53,9 @@ F90=mpif90
 F90FLAGS= -O2 -m64 -DF90 -fexternal-blas \
 	  -ffree-line-length-none -fbounds-check \
 	  -fno-range-check -fimplicit-none
+#F90FLAGS= -pg -fprofile-arcs -O2 -m64 -DF90 -fexternal-blas \
+#	  -ffree-line-length-none -fbounds-check \
+#	  -fno-range-check -fimplicit-none
 #F90LAGS=  -g
 
 

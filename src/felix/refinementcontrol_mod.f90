@@ -34,26 +34,14 @@
 ! $Id: Felixrefine.f90,v 1.89 2014/04/28 12:26:19 phslaz Exp $
 !%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-! All procedures conatained in this file:
-! SimulateAndFit( )                               ---
-! FelixFunction( )                                ---
-! CalculateFigureofMeritandDetermineThickness( )  ---
-! UpdateVariables( )                              ---
-! PrintVariables( )                               ---
-! BlurG( )                                        ---
-
-
-!?? uses UniqueAtomPositions from crystallography.f90
-!?? uses WriteOutVariables from RefineWriteOut.f90
-
 !>
 !! Module-description: Holds main top level simulating subroutines considering
 !! different thicknesses
 !!
-MODULE felixfunction_mod
+MODULE refinementcontrol_mod
   IMPLICIT NONE
   PRIVATE
-  PUBLIC :: SimulateAndFit, FelixFunction, CalculateFigureofMeritandDetermineThickness
+  PUBLIC :: SimulateAndFit, Simulate, CalculateFigureofMeritandDetermineThickness
   !?? JR CalculateFigureofMeritandDetermineThickness could be made private with some tweaks
 
   CONTAINS
@@ -65,25 +53,22 @@ MODULE felixfunction_mod
   !!  
   SUBROUTINE SimulateAndFit(RIndependentVariable,Iter,IExitFLAG,IErr)
 
-    ! JR non-Ug case: RIndependentVariable changeble ones, UpdateVariables() updates
-    ! corresponding global variables (non changeable stay as input from .inp)
+    ! JR non-Ug case: RIndependentVariable refinement ones, UpdateVariables() updates
+    ! various global variables read from files / setup and are now constant
     ! UniqueAtomPositions() - recalculate unit cell ?
-    ! CUgMat = CUgMatNoAbs + CUgMatPrime
-    ! simulate, felixfunction - CUgMat + others ---> RImageSimi
-    ! CalculateFigureofMeritandDetermineThickness() - im process, compares sim/expi images
-    ! ---> RFigureofMerit
+    ! CUgMat = CUgMatNoAbs + CUgMatPrime ( from absoption )
+    ! Simulate ( CUgMat + others ) ---> RImageSimi
+    ! CalculateFigureofMeritandDetermineThickness() - im process & ---> RFigureofMerit
     ! RImageExpi(x,y,LACBED_ID), RImageSimi(x,y,LACBED_ID, thickness_ID)
     ! MPI_BCAST(RFigureofMerit) - send to all cores ? parallel    
 
-    !?? uses UniqueAtomPositions from crystallography.f90 every (non-Ug) iteration
-    !?? uses WriteOutVariables from RefineWriteOut.f90
-
     USE MyNumbers
-    USE message_mod; USE alert_mod
+    USE message_mod
 
     USE MyMPI
-    USE Ug_mod
+    USE ug_matrix_mod
     USE crystallography_mod
+    USE write_output_mod
 
     !?? global inputs and outputs of subroutines using global
     ! global inputs
@@ -104,11 +89,14 @@ MODULE felixfunction_mod
     INTEGER(IKIND),INTENT(INOUT) :: Iter
     INTEGER(IKIND),INTENT(OUT) :: IErr
     INTEGER(IKIND) :: ind,jnd, IExitFLAG,IThicknessIndex, ILoc(2), IUniqueUgs
+    INTEGER(IKIND), SAVE :: IStartTime
     REAL(RKIND) :: RCurrentG(3), RScatteringFactor
     COMPLEX(CKIND) :: CUgMatDummy(nReflections,nReflections),CVgij
     CHARACTER*200 :: SFormat,SPrintString
 
     CALL message(LS,"Iteration ",Iter)
+    CALL SYSTEM_CLOCK( IStartTime )
+
     
     !\/----------------------------------------------------------------------
     IF (IRefineMode(1).EQ.1) THEN  ! Ug refinement; update structure factors 
@@ -117,41 +105,40 @@ MODULE felixfunction_mod
       jnd=1
       ! work through the Ug's to update
       DO ind = 1+IUgOffset,INoofUgs+IUgOffset
-      ! Don't update components smaller than RTolerance:
-      ! 3 possible types of Ug, complex, real and imaginary
-      IF ( (ABS(REAL(CUniqueUg(ind),RKIND)).GE.RTolerance).AND.&
-            (ABS(AIMAG(CUniqueUg(ind))).GE.RTolerance)) THEN ! use both real and imag parts
-        CUniqueUg(ind)=CMPLX(RIndependentVariable(jnd),RIndependentVariable(jnd+1))
-        jnd=jnd+2
-      ELSEIF ( ABS(AIMAG(CUniqueUg(ind))).LT.RTolerance ) THEN ! use only real part
-        CUniqueUg(ind)=CMPLX(RIndependentVariable(jnd),ZERO)
-        jnd=jnd+1
-      ELSEIF ( ABS(REAL(CUniqueUg(ind),RKIND)).LT.RTolerance ) THEN ! use only imag part
-        CUniqueUg(ind)=CMPLX(ZERO,RIndependentVariable(jnd))
-        jnd=jnd+1
-      ELSE ! should never happen
-        CALL message(LS,"Warning - zero structure factor!")
-        CALL message(LS,no_tag,"A CUniqueUg element has value = ",&
-              CUniqueUg(IEquivalentUgKey(ind)))
-        CALL message(LS,"element number = ",ind)
-        IErr=1
-        IF(l_alert(IErr,"SimulateAndFit"," to Check Ug type")) RETURN
-      END IF
+        ! Don't update components smaller than RTolerance:
+        ! 3 possible types of Ug, complex, real and imaginary
+        IF ( (ABS(REAL(CUniqueUg(ind),RKIND)).GE.RTolerance).AND.&
+              (ABS(AIMAG(CUniqueUg(ind))).GE.RTolerance)) THEN ! use both real and imag parts
+          CUniqueUg(ind)=CMPLX(RIndependentVariable(jnd),RIndependentVariable(jnd+1))
+          jnd=jnd+2
+        ELSEIF ( ABS(AIMAG(CUniqueUg(ind))).LT.RTolerance ) THEN ! use only real part
+          CUniqueUg(ind)=CMPLX(RIndependentVariable(jnd),ZERO)
+          jnd=jnd+1
+        ELSEIF ( ABS(REAL(CUniqueUg(ind),RKIND)).LT.RTolerance ) THEN ! use only imag part
+          CUniqueUg(ind)=CMPLX(ZERO,RIndependentVariable(jnd))
+          jnd=jnd+1
+        ELSE ! should never happen
+          IErr=1; 
+          WRITE(SPrintString,*) ind
+          IF(l_alert(IErr,"SimulateAndFit",&
+                "zero structure factor, CUniqueUg element number="//TRIM(SPrintString))) RETURN
 
-      ! Update the Ug matrix for this Ug
-      WHERE(ISymmetryRelations.EQ.IEquivalentUgKey(ind))
-         CUgMatDummy = CUniqueUg(ind)
-      END WHERE
-      WHERE(ISymmetryRelations.EQ.-IEquivalentUgKey(ind))
-         CUgMatDummy = CONJG(CUniqueUg(ind))
-      END WHERE
+        END IF
+
+        ! Update the Ug matrix for this Ug
+        WHERE(ISymmetryRelations.EQ.IEquivalentUgKey(ind))
+           CUgMatDummy = CUniqueUg(ind)
+        END WHERE
+        WHERE(ISymmetryRelations.EQ.-IEquivalentUgKey(ind))
+           CUgMatDummy = CONJG(CUniqueUg(ind))
+        END WHERE
       END DO
       ! put the changes into CUgMatNoAbs
       WHERE(ABS(CUgMatDummy).GT.TINY)
         CUgMatNoAbs = CUgMatDummy
       END WHERE
       CALL Absorption(IErr)
-      IF(l_alert(IErr,"SimulateAndFit()","Absorption()")) RETURN
+      IF(l_alert(IErr,"SimulateAndFit","Absorption()")) RETURN
       IF (IAbsorbFLAG.EQ.1) THEN ! proportional absorption
         RAbsorptionPercentage = RIndependentVariable(jnd)
       END IF
@@ -159,7 +146,7 @@ MODULE felixfunction_mod
     ELSE ! not Ug refinement
       ! Update variables
       CALL UpdateVariables(RIndependentVariable,IErr)
-      IF(l_alert(IErr,"SimulateAndFit()","UpdateVariables()")) RETURN
+      IF(l_alert(IErr,"SimulateAndFit","UpdateVariables()")) RETURN
       IF (IRefineMode(8).EQ.1) THEN ! convergence angle
         ! recalculate resolution in k space
         RDeltaK = RMinimumGMag*RConvergenceAngle/REAL(IPixelCount,RKIND) 
@@ -188,7 +175,7 @@ MODULE felixfunction_mod
         RCurrentGMagnitude = RgMatrixMagnitude(ILoc(1),ILoc(2)) ! g-vector magnitude
 
         CALL GetVgContributionij(RScatteringFactor,ILoc(1),ILoc(2),CVgij,IErr)
-        IF(l_alert(IErr,"SimulateAndFit()","GetVgContributionij()")) RETURN
+        IF(l_alert(IErr,"SimulateAndFit","GetVgContributionij()")) RETURN
 
         ! now replace the values in the Ug matrix
         WHERE(ISymmetryRelations.EQ.jnd)
@@ -207,37 +194,37 @@ MODULE felixfunction_mod
       ! calculate CUgMat
       ! calculate CUgMatPrime, then CUgMat = CUgMatNoAbs + CUgMatPrime
       CALL Absorption(IErr)
-      IF(l_alert(IErr,"SimulateAndFit()","Absorption()")) RETURN
+      IF(l_alert(IErr,"SimulateAndFit","Absorption()")) RETURN
 
     END IF
     !/\----------------------------------------------------------------------
 
     IF (my_rank.EQ.0) THEN ! send current values to screen
       CALL PrintVariables(IErr)
-      IF(l_alert(IErr,"SimulateAndFit()","PrintVariables()")) RETURN
+      IF(l_alert(IErr,"SimulateAndFit","PrintVariables()")) RETURN
     END IF
 
     ! simulate
 
     RSimulatedPatterns = ZERO ! Reset simulation
-    CALL FelixFunction(IErr) ! simulate 
-    IF(l_alert(IErr,"SimulateAndFit()","FelixFunction()")) RETURN
+    CALL Simulate(IErr) ! simulate 
+    IF(l_alert(IErr,"SimulateAndFit","Simulate()")) RETURN
     IF (IMethodFLAG.NE.1) Iter=Iter+1 ! iterate for methods other than simplex
 
     IF(my_rank.EQ.0) THEN
       ! Only calculate figure of merit if we are refining
       IF (ISimFLAG.EQ.0) THEN
         CALL CalculateFigureofMeritandDetermineThickness(Iter,IThicknessIndex,IErr)
-        IF(l_alert(IErr,"SimulateAndFit()",&
+        IF(l_alert(IErr,"SimulateAndFit",&
               "CalculateFigureofMeritandDetermineThickness()")) RETURN
       END IF
       ! Write current variable list and fit to IterationLog.txt
       CALL WriteOutVariables(Iter,IErr)
-      IF(l_alert(IErr,"SimulateAndFit()","WriteOutVariables()")) RETURN
+      IF(l_alert(IErr,"SimulateAndFit","WriteOutVariables()")) RETURN
       ! write images to disk every IPrint iterations, or when finished
       IF(IExitFLAG.EQ.1.OR.(Iter.GE.(IPreviousPrintedIteration+IPrint))) THEN
         CALL WriteIterationOutput(Iter,IThicknessIndex,IExitFLAG,IErr)
-        IF(l_alert(IErr,"SimulateAndFit()","WriteIterationOutput()")) RETURN
+        IF(l_alert(IErr,"SimulateAndFit","WriteIterationOutput()")) RETURN
         IPreviousPrintedIteration = Iter ! reset iteration counter
       END IF
     END IF
@@ -253,12 +240,12 @@ MODULE felixfunction_mod
 
 
   !>
-  !! Procedure-description: Felixfunction simulates and produces images for each 
+  !! Procedure-description: Simulate simulates and produces images for each 
   !! thickness
   !!
   !! Major-Authors: Keith Evans (2014), Richard Beanland (2016)
   !!  
-  SUBROUTINE FelixFunction(IErr)
+  SUBROUTINE Simulate(IErr)
 
     ! CUgMat and smaller inputs (using bloch pixel,thickness parallels)
     ! ------> RImageSimi(x, y, LACBED_pattern_ID , thickness_ID )
@@ -266,7 +253,7 @@ MODULE felixfunction_mod
     USE MyNumbers
     USE IConst, ONLY : ITHREE
     USE MyMPI
-    USE message_mod; USE alert_mod
+    USE message_mod
 
     USE bloch_mod
 
@@ -308,7 +295,7 @@ MODULE felixfunction_mod
 
     IMPLICIT NONE
 
-    INTEGER(IKIND) :: IErr,ind,jnd,knd,pnd,IIterationFLAG
+    INTEGER(IKIND) :: IErr, ind,jnd,knd,pnd, IIterationFLAG, IStartTime
     INTEGER(IKIND) :: IAbsorbTag = 0
     REAL(RKIND),DIMENSION(:,:,:),ALLOCATABLE :: RFinalMontageImageRoot
     REAL(RKIND),DIMENSION(:,:),ALLOCATABLE :: RTempImage 
@@ -317,6 +304,8 @@ MODULE felixfunction_mod
     RIndividualReflections = ZERO
     IPixelComputed= 0!RB what is this?
 
+    CALL SYSTEM_CLOCK( IStartTime )
+
     ! Simulation (different local pixels for each core)
     CALL message(LS,"Bloch wave calculation...")
     DO knd = ILocalPixelCountMin,ILocalPixelCountMax,1
@@ -324,7 +313,7 @@ MODULE felixfunction_mod
       ind = IPixelLocations(knd,2)
       !?? fills array for each pixel number not x & y coordinates
       CALL BlochCoefficientCalculation(ind,jnd,knd,ILocalPixelCountMin,IErr)
-      IF(l_alert(IErr,"FelixFunction","BlochCoefficientCalculation")) RETURN
+      IF(l_alert(IErr,"Simulate","BlochCoefficientCalculation")) RETURN
     END DO
 
     !===================================== ! MPI gatherv into RSimulatedPatterns
@@ -332,7 +321,9 @@ MODULE felixfunction_mod
          RSimulatedPatterns,ICount,IDisplacements,MPI_DOUBLE_PRECISION,&
          root,MPI_COMM_WORLD,IErr)
     !=====================================
-    IF(l_alert(IErr,"SimulateAndFit()","MPI_GATHERV()")) RETURN
+    IF(l_alert(IErr,"SimulateAndFit","MPI_GATHERV()")) RETURN
+
+    CALL print_end_time( LM, IStartTime, "Bloch wave simulation" )
 
     ! put 1D array RSimulatedPatterns into 2D image RImageSimi
     ! remember dimensions of RSimulatedPatterns(INoOfLacbedPatterns,IThicknessCount,IPixelTotal)
@@ -359,7 +350,7 @@ MODULE felixfunction_mod
     ! We have done at least one simulation now
     IInitialSimulationFLAG=0
 
-  END SUBROUTINE FelixFunction
+  END SUBROUTINE Simulate
 
   !%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
@@ -381,7 +372,7 @@ MODULE felixfunction_mod
     !?? NB core 0 only
 
     USE MyNumbers
-    USE message_mod; USE alert_mod 
+    USE message_mod 
 
     USE utilities_mod, ONLY : PhaseCorrelate, ResidualSumofSquares, &
           Normalised2DCrossCorrelation, MaskedCorrelation
@@ -529,11 +520,10 @@ MODULE felixfunction_mod
   SUBROUTINE UpdateVariables(RIndependentVariable,IErr)
 
     !?? JR top level to this module, so keep, refine needs access
-
     !?? JR called every SimulateAndFit() (for non-Ug refinement)
 
     USE MyNumbers
-    USE message_mod; USE alert_mod 
+    USE message_mod 
 
     ! global inputs
     USE IPARA, ONLY : INoOfVariables, IRefineMode, IIterativeVariableUniqueIDs,IAtomMoveList 
@@ -550,13 +540,13 @@ MODULE felixfunction_mod
     INTEGER(IKIND) :: IVariableType,IVectorID,IAtomID,IErr,ind
 
     DO ind = 1,INoOfVariables
-      IVariableType = IIterativeVariableUniqueIDs(ind,2)
+      IVariableType = IIterativeVariableUniqueIDs(ind,1)
       SELECT CASE (IVariableType)
       CASE(1) ! A: structure factor refinement, do in UpdateStructureFactors
         
       CASE(2)
         ! The index of the atom and vector being used
-        IVectorID = IIterativeVariableUniqueIDs(ind,3)
+        IVectorID = IIterativeVariableUniqueIDs(ind,2)
         ! The atom being moved
         IAtomID = IAtomMoveList(IVectorID)
         ! Change in position r' = r - v*(r.v) +v*RIndependentVariable(ind)
@@ -564,17 +554,20 @@ MODULE felixfunction_mod
             RVector(IVectorID,:)*DOT_PRODUCT(RBasisAtomPosition(IAtomID,:),RVector(IVectorID,:)) + &
             RVector(IVectorID,:)*RIndependentVariable(ind)
       CASE(3)
-        RBasisOccupancy(IIterativeVariableUniqueIDs(ind,3))=RIndependentVariable(ind) 
+        RBasisOccupancy(IIterativeVariableUniqueIDs(ind,2))=RIndependentVariable(ind) 
       CASE(4)
-        RBasisIsoDW(IIterativeVariableUniqueIDs(ind,3))=RIndependentVariable(ind)
+        RBasisIsoDW(IIterativeVariableUniqueIDs(ind,2))=RIndependentVariable(ind)
       CASE(5)
-        RAnisotropicDebyeWallerFactorTensor(&
-              IIterativeVariableUniqueIDs(ind,3),&
-              IIterativeVariableUniqueIDs(ind,4),&
-              IIterativeVariableUniqueIDs(ind,5)) = & 
-              RIndependentVariable(ind)
+        ! NOT CURRENTLY IMPLIMENTED
+        IErr=1;IF(l_alert(IErr,"UpdateVariables",&
+              "Anisotropic Debye Waller Factors not implemented")) CALL abort()
+!        RAnisotropicDebyeWallerFactorTensor(&
+!              IIterativeVariableUniqueIDs(ind,2),&
+!              IIterativeVariableUniqueIDs(ind,4),&
+!              IIterativeVariableUniqueIDs(ind,5)) = & 
+!              RIndependentVariable(ind)
       CASE(6)
-        SELECT CASE(IIterativeVariableUniqueIDs(ind,3))
+        SELECT CASE(IIterativeVariableUniqueIDs(ind,2))
         CASE(1)
           RLengthX = RIndependentVariable(ind)
         CASE(2)
@@ -583,7 +576,7 @@ MODULE felixfunction_mod
           RLengthZ = RIndependentVariable(ind)
         END SELECT
       CASE(7)
-        SELECT CASE(IIterativeVariableUniqueIDs(ind,3))
+        SELECT CASE(IIterativeVariableUniqueIDs(ind,2))
         CASE(1)
           RAlpha = RIndependentVariable(ind)
         CASE(2)
@@ -619,7 +612,7 @@ MODULE felixfunction_mod
     !?? JR called every SimulateAndFit()
 
     USE MyNumbers
-    USE message_mod; USE alert_mod 
+    USE message_mod 
     
     USE IConst; USE RConst; USE SConst
     USE IPara; USE RPara; USE CPara; USE SPara;
@@ -716,13 +709,11 @@ MODULE felixfunction_mod
   !! 
   PURE SUBROUTINE BlurG(RImageToBlur,IPixelsCount,RBlurringRadius,IErr)
 
-    !?? JR niche utility, seemingly unimportant, could be moved
-
-    !?? JR called every SimulateAndFit() indriectly via FelixFunction
+    !?? JR called every SimulateAndFit() indriectly via Simulate
 
     USE MyNumbers
     USE MPI
-    USE message_mod; USE alert_mod !?? can't use this or l_alert if pure
+    USE message_mod !?? can't use this (including l_alert) if pure
 
     IMPLICIT NONE
 
@@ -735,8 +726,6 @@ MODULE felixfunction_mod
     INTEGER(IKIND) :: ind,jnd,IKernelRadius,IKernelSize
     REAL(RKIND),DIMENSION(:), ALLOCATABLE :: RGauss1D
     REAL(RKIND) :: Rind,Rsum,Rmin,Rmax
-
-    
 
     ! get min and max of input image
     Rmin=MINVAL(RImageToBlur)
@@ -800,4 +789,4 @@ MODULE felixfunction_mod
 
   END SUBROUTINE BlurG        
 
-END MODULE felixfunction_mod    
+END MODULE refinementcontrol_mod    

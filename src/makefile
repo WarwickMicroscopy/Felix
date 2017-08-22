@@ -76,13 +76,15 @@ felix: $(FINALEXE)
 $(FINALEXE):
 	@ echo --- LINKING felix code
 	@ cd $(DIRFELIX);\
-	$(F90) -o ../$(MAIN).$(PLATFORM).$(MYPRECISION) *.o \
+	$(F90) $(F90FLAGS) -o ../$(MAIN).$(PLATFORM).$(MYPRECISION) *.o \
 	-L$(LIBDIR) -l$(MYPRECISION)quadpack -l$(MYPRECISION)ciftbx $(LIBS)
 #        $(MAKE) exe "MYSTARTDIR=$(STARTDIR)" "PRECISION=$(MYPRECISION)" \
 #	"MYPLATFORM=$(PLATFORM)" \
 #	"MYLIBCIFTBX=$(LIBCIFTBX)" "MYLIBQUADPACK=$(LIBQUADPACK)"
 	@ echo executable $(FINALEXE) can be found in the current directory
 
+print:
+	a2ps -E --pro=color --chars-per-line=100 -o - felix/*.f90 | ps2pdf - felix.pdf
 
 clean:
 	rm -rf   */*.o */*.mod

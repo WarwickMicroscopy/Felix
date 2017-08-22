@@ -37,7 +37,7 @@
 ! DetermineRefineableAtomicSites( )
 ! ThreeDimVectorReadIn( )
 
-MODULE read_mod
+MODULE read_files_mod
 
   IMPLICIT NONE
   PRIVATE
@@ -56,7 +56,7 @@ MODULE read_mod
     !?? github and other places should referance here
 
     USE MyNumbers
-    USE message_mod; USE alert_mod
+    USE message_mod
 
     ! global outputs, read from .inp
     USE IPARA, ONLY : IWriteFLAG, IImageFLAG, IScatterFactorMethodFLAG, IMaskFLAG, IHolzFLAG, &
@@ -82,10 +82,10 @@ MODULE read_mod
     REAL(RKIND) :: ROfIter
     CHARACTER(200) :: SImageMode, SElements, SRefineMode, SStringFromNumber, SRefineYESNO, &
           SAtomicSites, SFormatString, SLengthofNumberString, &
-          SDirectionX, SIncidentBeamDirection, SNormalDirectionX
+          SDirectionX, SIncidentBeamDirection, SNormalDirectionX, SPrintString
 
     OPEN(UNIT= IChInp, IOSTAT=IErr, FILE= "felix.inp",STATUS= 'OLD')
-    IF(l_alert(IErr,"ReadInpFile()","OPEN() felix.inp")) RETURN
+    IF(l_alert(IErr,"ReadInpFile","OPEN() felix.inp")) RETURN
     ILine= 1
 
     ! There are six introductory comment lines which are ignored
@@ -281,11 +281,8 @@ MODULE read_mod
       IF(ISimFlag.EQ.1) CALL message( LS, "Simulation only")
       ! Error Check - user cannot request Ug refinement and anything else
       IF((IRefineMode(1).EQ.1).AND.SUM(IRefineMode).GT.1) THEN
-        IErr = 1;
-        IF(l_alert(IErr,"ReadInpFile()","check refinements")) CONTINUE
-        !?? l_alert usually used in other error handling situations, hence this odd format
-        CALL message(LS, "Error - Structure factors must be refined separately")
-        RETURN
+        IErr = 1; IF(l_alert(IErr,"ReadInpFile",&
+              "Structure factors must be refined separately")) RETURN
       END IF
     END IF
 
@@ -308,7 +305,7 @@ MODULE read_mod
     ! SAtomicSites !?? what global does this later set?
     ILine=ILine+1; READ(IChInp,FMT='(A)',ERR=20,END=30) SAtomicSites
     CALL DetermineRefineableAtomicSites(SAtomicSites,IErr) !?? what does this do? JR
-    IF(l_alert(IErr,"ReadInpFile()","DetermineRefineableAtomicSites")) RETURN
+    IF(l_alert(IErr,"ReadInpFile","DetermineRefineableAtomicSites()")) RETURN
     ! IPrint
     ILine= ILine+1; READ(IChInp,'(27X,I15.1)',ERR=20,END=30) IPrint
     ! RSimplexLengthScale
@@ -322,7 +319,7 @@ MODULE read_mod
     !--------------------------------------------------------------------
     
     CLOSE(IChInp, IOSTAT=IErr)
-    IF(l_alert(IErr,"ReadInpFile()","CLOSE() felix.inp")) RETURN
+    IF(l_alert(IErr,"ReadInpFile","CLOSE() felix.inp")) RETURN
     RETURN
 
     !--------------------------------------------------------------------
@@ -330,20 +327,19 @@ MODULE read_mod
     !--------------------------------------------------------------------
 
     !	error in READ() detected  
-    !?? JR tested error output, tidy but not clear or informative to user
   20 CONTINUE
-    IErr=1;
-    IF(l_alert(IErr,"ReadInpFile()","READ() felix.inp")) CONTINUE
-    CALL message(LS,"Error reading line = ",ILine) !?? prints variable on rank 0 only 
-    RETURN
+    IErr=1
+    WRITE(SPrintString,*) ILine
+    IF(l_alert(IErr,"ReadInpFile",&
+          "READ() felix.inp line number ="//TRIM(SPrintString))) RETURN
     
     !	EOF in READ() occured prematurely
-    !?? JR tested error output, tidy but not clear or informative to user
   30 CONTINUE
-    IErr=1; IF(l_alert(IErr,"ReadInpFile()",&
-          "READ() felix.inp. End of file occurred prematurely")) CONTINUE
-    CALL message(LS,"Error reading line = ",ILine) !?? prints variable on rank 0 only 
-    RETURN
+    IErr=1
+    WRITE(SPrintString,*) ILine
+    IF(l_alert( IErr,"ReadInpFile",&
+          "READ() felix.inp, premature end of file, line number =" // &
+          TRIM(SPrintString) )) RETURN
 
     !?? JR Old write example felix.inp to screen removed
     !?? JR could direct to github wiki page, it currently has clear information
@@ -365,7 +361,7 @@ MODULE read_mod
   SUBROUTINE ReadHklFile(IErr)
 
     USE MyNumbers
-    USE message_mod; USE alert_mod
+    USE message_mod
 
     ! global outputs
     USE RPARA, ONLY : RInputHKLs
@@ -395,9 +391,9 @@ MODULE read_mod
     CALL message ( LXL, dbg7, "Number of experimental images to load = ", INoOfLacbedPatterns)
 
     ALLOCATE(RInputHKLs(INoOfLacbedPatterns,ITHREE),STAT=IErr)
-    IF(l_alert(IErr,"ReadHklFile()","allocate RInputHKLs")) RETURN
+    IF(l_alert(IErr,"ReadHklFile","allocate RInputHKLs")) RETURN
     ALLOCATE(IOutputReflections(INoOfLacbedPatterns),STAT=IErr) !?? should we allocate here JR
-    IF(l_alert(IErr,"ReadHklFile()","allocate IOutputReflections")) RETURN
+    IF(l_alert(IErr,"ReadHklFile","allocate IOutputReflections")) RETURN
 
     ! read in the hkls
     REWIND(UNIT=IChInp) ! goes to beggining of felix.hkl file
@@ -429,7 +425,8 @@ MODULE read_mod
     RETURN
 
   10 CONTINUE
-    IHKLSelectFLAG=0 !?? JR what is this error handling, IErr = 1?, need to test
+    IHKLSelectFLAG=0 !?? JR hkl not found, elaborate what is used instead
+    CALL message( LL, "felix.hkl not found, continuing")
     RETURN
 
   END SUBROUTINE ReadHklFile
@@ -444,7 +441,7 @@ MODULE read_mod
   SUBROUTINE ReadExperimentalImages(IErr)
 
     USE MyNumbers
-    USE message_mod; USE alert_mod
+    USE message_mod
 
     ! global outputs
     USE RPARA, ONLY : RImageExpi
@@ -479,27 +476,20 @@ MODULE read_mod
       CALL message(LL, dbg7, "filename = ", filename)
       OPEN(UNIT= IChInImage, STATUS= 'UNKNOWN', FILE=TRIM(ADJUSTL(filename)), &
             FORM='UNFORMATTED',ACCESS='DIRECT',IOSTAT=IErr,RECL=2*IPixelCount*IByteSize)
-      IF(l_alert(IErr,"ReadExperimentalImages()","open an experimental input image")) THEN
-        CALL message(LS,"error - opening filename = ",TRIM(ADJUSTL(filename)))
-        CALL message(LS,"error - expected filename of format like 'GaAs_+0+0-8.img'."//&
-              " Chemical formula should match _chemical_formula_structural from felix.cif")
-        RETURN
-      END IF
+      IF(l_alert(IErr,"ReadExperimentalImages",&
+            "OPEN() an experimental image, filename ="//TRIM(ADJUSTL(filename)))) RETURN
+      !?? input image filenames should follow format like 'GaAs_+0+0-8.img'
+      !?? Chemical formula should match _chemical_formula_structural from felix.cif
       DO jnd=1,2*IPixelCount
         READ(IChInImage,rec=jnd,IOSTAT=IErr) RImageExpi(jnd,:,ind)
-        IF(l_alert(IErr,"ReadExperimentalImages()","read an experimental input image")) THEN
-          CALL message(LS,"error - reading filename = ",TRIM(ADJUSTL(filename)))
-          CALL message(LS,"error - line number = ",jnd)
-          CALL message(LS,"error - expected filename of format like 'GaAs_+0+0-8.img'."//&
-                " Chemical formula should match _chemical_formula_structural from felix.cif")
-          RETURN
-        END IF
+        IF(l_alert(IErr,"ReadExperimentalImages",&
+              "OPEN() an experimental image, filename ="//TRIM(ADJUSTL(filename)))) RETURN
       END DO
       CLOSE(IChInImage,IOSTAT=IErr)
-      IF(l_alert(IErr,"ReadExperimentalImages()","close an experimental input image")) RETURN
+      IF(l_alert(IErr,"ReadExperimentalImages","CLOSE() an experimental input image")) RETURN
     END DO
 
-    CALL message(LM,"Number of experimental images successfully loaded = ",INoOfLacbedPatterns)
+    CALL message(LM,"Number of experimental images successfully loaded =",INoOfLacbedPatterns)
 
     RETURN
 
@@ -514,10 +504,8 @@ MODULE read_mod
   !!
   SUBROUTINE DetermineRefineableAtomicSites(SAtomicSites,IErr)
 
-    !?? need to update error messages here JR
-
     USE MyNumbers
-    USE message_mod; USE alert_mod
+    USE message_mod
 
     ! global outputs
     USE IPARA, ONLY : IAtomsToRefine
@@ -537,14 +525,14 @@ MODULE read_mod
     ! error check
     IF(((IPos2-IPos1).EQ.1).OR.(IPos1.EQ.0).OR.(IPos2.EQ.0)) THEN 
       IF(IRefineMode(2).EQ.1) IErr = 1
-      IF(l_alert(IErr,"DetermineRefineableAtomicSites()",&
-              "check. You Have Not Specfied Atomic Sites to Refine")) RETURN
+      IF(l_alert(IErr,"DetermineRefineableAtomicSites",&
+              "You Have Not Specfied Atomic Sites to Refine")) RETURN
     END IF
 
     IF ((IPos2-IPos1).GT.1.AND.SCAN(SAtomicSites,',').EQ.0) THEN
+
       ALLOCATE(IAtomsToRefine(1),STAT=IErr)
-      IF(l_alert(IErr,"DetermineRefineableAtomicSites()", &
-            "allocate IAtomsToRefine")) RETURN
+      IF(l_alert(IErr,"DetermineRefineableAtomicSites","allocate IAtomsToRefine")) RETURN
       CALL message (LM, "SIZE(IAtomsToRefine) = ",SIZE(IAtomsToRefine) )
       WRITE(SLengthofNumberString,*) LEN(SAtomicSites((IPos1+1):(IPos2-1))) 
       WRITE(SFormatString,*) "(I"//TRIM(ADJUSTL(SLengthofNumberString))//")"
@@ -560,8 +548,7 @@ MODULE read_mod
       END DO
 
       ALLOCATE(IAtomsToRefine(IPos),STAT=IErr)
-      IF(IErr.NE.0.AND.(my_rank.EQ.0)) PRINT*,"Error:",&
-            "DetermineRefineableAtomicSites: error allocating IAtomsToRefine"
+      IF(l_alert(IErr,"DetermineRefineableAtomicSites","allocate IAtomsToRefine")) RETURN
        
       IPos1 = SCAN(SAtomicSites,'(')
       DO ind = 1,SIZE(IAtomsToRefine,DIM=1)
@@ -647,4 +634,4 @@ MODULE read_mod
 
   END SUBROUTINE ThreeDimVectorReadIn
 
-END MODULE read_mod
+END MODULE read_files_mod

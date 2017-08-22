@@ -1,3 +1,235 @@
+!>
+!! Procedure-description: 
+!!
+!! Major-Authors: Keith Evans (2014), Richard Beanland (2016)
+!!
+SUBROUTINE OpenSimplexOutput(IErr)
+!ffs, 1 line of code
+  USE MyNumbers
+
+  USE IConst; USE RConst
+  USE IPara; USE RPara
+  USE IChannels
+
+  USE MPI
+  USE MyMPI
+
+  IMPLICIT NONE
+
+  INTEGER(IKIND) :: IErr
+
+  CHARACTER*200 :: filename
+
+  WRITE(filename,*) "fr-Simplex.txt"
+
+  OPEN( UNIT=IChOutSimplex,STATUS='UNKNOWN',FILE=TRIM( ADJUSTL(filename)) )
+
+END SUBROUTINE OpenSimplexOutput
+
+!%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+
+
+!>
+!! Procedure-description: 
+!!
+!! Major-Authors: Keith Evans (2014), Richard Beanland (2016)
+!!
+SUBROUTINE WriteOutSimplex(RSimplexVariable,RSimplexFoM,IDimensions,RStandardDeviation,RMean,IIterations,IErr)
+
+  USE MyNumbers
+
+  USE IConst; USE RConst
+  USE IPara; USE RPara
+  USE IChannels
+
+  USE MPI
+  USE MyMPI
+
+  IMPLICIT NONE
+
+  INTEGER(IKIND) :: IErr,IDimensions,ind,IIterations
+  REAL(RKIND),DIMENSION(IDimensions+1,IDimensions),INTENT(IN) :: RSimplexVariable
+  REAL(RKIND),DIMENSION(IDimensions+1),INTENT(IN) :: RSimplexFoM
+  REAL(RKIND),DIMENSION(IDimensions+1) :: RData
+  REAL(RKIND) :: RStandardDeviation,RMean
+  CHARACTER*200 :: CSizeofData,SFormatString
+  
+  WRITE(CSizeofData,*) IDimensions+1
+  WRITE(SFormatString,*) "("//TRIM(ADJUSTL(CSizeofData))//"(1F6.3,1X),A1)"
+
+  DO ind = 1,(IDimensions+1)
+     RData = (/RSimplexVariable(ind,:), RSimplexFoM(ind)/)
+     WRITE(IChOutSimplex,FMT=SFormatString) RData
+  END DO
+
+  WRITE(IChOutSimplex,FMT="(2(1F6.3,1X),I5.1,I5.1,A1)") RStandardDeviation,RMean,IStandardDeviationCalls,IIterations
+
+  CLOSE(IChOutSimplex)
+
+END SUBROUTINE WriteOutSimplex
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+  !>
+  !! Procedure-description: Counts pixels in requested image for memory allocation
+  !!
+  !! Major-Authors: Keith Evans (2014), Richard Beanland (2016)
+  !!
+  INTEGER(IKIND) FUNCTION CountPixels(IErr)
+
+    USE MyNumbers
+    
+    USE SConst; USE IConst
+    USE IPara; USE RPara
+    USE IChannels
+    USE message_mod
+    USE MPI
+    USE MyMPI
+    
+    IMPLICIT NONE
+    
+    INTEGER(IKIND) :: ind,jnd, IErr
+    REAL(RKIND) :: Rradius, RImageRadius
+    
+    CALL message ( LL, "Counting Pixels")
+    
+    CountPixels =0
+
+    SELECT CASE (IMaskFLAG)
+
+    CASE(0) ! circle
+
+       DO ind=1,2*IPixelCount
+          DO jnd=1,2*IPixelCount
+             Rradius= (ind-(REAL(IPixelCount,RKIND)+0.5))**2 + &
+                  (jnd-(REAL(IPixelCount,RKIND)+0.5))**2
+             Rradius=SQRT(DBLE(Rradius))
+             RImageRadius = IPixelCount+0.5
+             IF(Rradius.LE.RImageRadius) THEN
+                CountPixels =  CountPixels + 1
+             ENDIF
+          ENDDO
+       ENDDO
+
+    CASE(1) ! square
+
+       CountPixels = (2*IPixelCount)**2
+
+    END SELECT
+
+  END FUNCTION CountPixels
+
+
+
+
+
+
+
+
+
+
+  !>
+  !! Procedure-description: Places Calculated pixels into montage 1 pixel, per reflection
+  !! per call
+  !!
+  !! Major-Authors: Keith Evans (2014), Richard Beanland (2016)
+  !!
+  SUBROUTINE MontageInitialisation(IPixelHorizontalPosition,IPixelVerticalPosition,&
+       IThicknessindex,RMontageImage,RIntensityValues,IErr)
+
+    USE MyNumbers
+    USE message_mod
+
+    ! global input
+    USE IPARA, ONLY : IImageSizeXY, IPixelCount, IThicknessCount, INoOfLacbedPatterns, &
+                      IHKLSelectFLAG, IOutputReflections
+    USE RPARA, ONLY : RConvergenceAngle, RhklPositions
+    
+    IMPLICIT NONE
+    
+    INTEGER(IKIND), INTENT(IN) :: IPixelHorizontalPosition, IPixelVerticalPosition, &
+          IThicknessindex
+    REAL(RKIND), INTENT(OUT) :: &
+          RMontageImage(MAXVAL(IImageSizeXY),MAXVAL(IImageSizeXY),IThicknessCount), &
+          RIntensityValues(INoOfLacbedPatterns)
+    INTEGER(IKIND), INTENT(OUT) :: IErr 
+    INTEGER(IKIND) :: IMontagePixelVerticalPosition, IMontagePixelHorizontalPosition, hnd
+   
+    DO hnd = 1,INoOfLacbedPatterns
+      IF(IHKLSelectFLAG.EQ.0) THEN
+        IF (RConvergenceAngle.LT.ONE) THEN
+          IMontagePixelVerticalPosition = &
+                NINT(MAXVAL(IImageSizeXY)/TWO+TWO * &
+                (IPixelCount/RConvergenceAngle)*RhklPositions(hnd,2))
+          IMontagePixelHorizontalPosition = &
+                NINT(MAXVAL(IImageSizeXY)/TWO+TWO * &
+                (IPixelCount/RConvergenceAngle)*RhklPositions(hnd,1))
+        ELSE
+          ! If the Convergence angle is > 1 causing disk overlap in experimental pattern, 
+          ! then plot as if convergence angle was 0.95 
+          ! (non-physical but makes a pretty picture)
+          IMontagePixelVerticalPosition = &
+                 NINT(MAXVAL(IImageSizeXY)/TWO+TWO*(IPixelCount/0.95D0)*RhklPositions(hnd,2))
+          IMontagePixelHorizontalPosition = &
+                NINT(MAXVAL(IImageSizeXY)/TWO+TWO*(IPixelCount/0.95D0)*RhklPositions(hnd,1))
+        END IF
+          RMontageImage( &
+                IMontagePixelVerticalPosition - IPixelCount + IPixelVerticalPosition, &
+                IMontagePixelHorizontalPosition - IPixelCount + IPixelHorizontalPosition, &
+                IThicknessIndex ) = &
+                RMontageImage( &
+                IMontagePixelVerticalPosition - IPixelCount + IPixelVerticalPosition, &
+                IMontagePixelHorizontalPosition - IPixelCount + IPixelHorizontalPosition, &
+                IThicknessIndex ) + RIntensityValues(hnd)
+        ELSE  
+          IF (RConvergenceAngle.LT.ONE) THEN
+            IMontagePixelVerticalPosition = NINT(MAXVAL(IImageSizeXY)/TWO+TWO * &
+                  (IPixelCount/RConvergenceAngle)*RhklPositions(IOutputReflections(hnd),2))
+            IMontagePixelHorizontalPosition = NINT(MAXVAL(IImageSizeXY)/TWO+TWO * &
+                  (IPixelCount/RConvergenceAngle)*RhklPositions(IOutputReflections(hnd),1))
+          ELSE
+            ! If the Convergence angle is > 1 causing disk overlap in experimental pattern, 
+            ! then plot as if convergence angle was 0.95 
+            ! (non-physical but makes a pretty picture)
+            IMontagePixelVerticalPosition = NINT(MAXVAL(IImageSizeXY)/TWO+TWO * &
+                  (IPixelCount/0.95D0)*RhklPositions(IOutputReflections(hnd),2))
+            IMontagePixelHorizontalPosition = NINT(MAXVAL(IImageSizeXY)/TWO+TWO * &
+                  (IPixelCount/0.95D0)*RhklPositions(IOutputReflections(hnd),1))
+         END IF
+          RMontageImage( &
+                IMontagePixelVerticalPosition - IPixelCount + IPixelVerticalPosition, &
+                IMontagePixelHorizontalPosition - IPixelCount + IPixelHorizontalPosition, &
+                IThicknessIndex ) = &
+                RMontageImage( &
+                IMontagePixelVerticalPosition - IPixelCount + IPixelVerticalPosition, &
+                IMontagePixelHorizontalPosition - IPixelCount + IPixelHorizontalPosition, &
+                IThicknessIndex ) + RIntensityValues(hnd)
+      END IF
+    END DO
+
+  END SUBROUTINE MontageInitialisation
+
+  !!$%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+
+
+
+
+
+
 
 
   !>
@@ -46,7 +278,7 @@
 SUBROUTINE WriteOutput( CAmplitudeandPhaseImages,RReflectionImages,RMontageImages,IErr)
 
   USE MyNumbers
-  USE message_mod; USE alert_mod
+  USE message_mod
 
   USE CPara; USE IPara; USE SPara
   USE RPara
@@ -241,7 +473,7 @@ SUBROUTINE OpenReflectionImage(IChOutWrite, surname, IErr,IReflectWriting,IImage
   
   USE IPara
   USE RPara
-  USE message_mod; USE alert_mod
+  USE message_mod
   USE MPI
   USE MyMPI
 
@@ -777,7 +1009,7 @@ SUBROUTINE UpdateStructureFactors(RIndependentVariable,IErr)
   USE BlochPara
 
   USE IChannels
-  USE message_mod; USE alert_mod
+  USE message_mod
   USE MPI
   USE MyMPI
 
