@@ -98,7 +98,7 @@ PROGRAM Felixrefine
   
   CHARACTER*40 :: my_rank_string
   CHARACTER*20 :: h,k,l
-  CHARACTER*200 :: SPrintString
+  CHARACTER*100 :: SPrintString
   !?? JR I have checked usage of variables, if unused '!??' commented added IN code
   !?? assume variables used clearly IN code, need to track allocations...
 
@@ -157,6 +157,8 @@ PROGRAM Felixrefine
   ELSE ! not refinement, simulation only
     CALL message(LS,"Simulation only")
   END IF
+
+  CALL message(LM,"rexpi",RImageExpi(1:16,1:6,1))
 
   !--------------------------------------------------------------------
   ! set up scattering factors, relativistic electrons, reciprocal lattice
@@ -987,7 +989,7 @@ CONTAINS
         END WHERE
       END DO    
       ! debug mode output to look at the masks
-      IF (dbg6%state) THEN
+      IF (dbg6%LState) THEN
         ALLOCATE(RTestImage(2*IPixelCount,2*IPixelCount),STAT=IErr)
         DO ind = 1,INoOfLacbedPatterns
           RTestImage=RImageMask(:,:,ind)

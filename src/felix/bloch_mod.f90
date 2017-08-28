@@ -118,7 +118,7 @@ MODULE bloch_mod
          CGeneralEigenSpectrumEigenVectors,CBeamTranspose,CUgMatPartial
     COMPLEX(CKIND),DIMENSION(:),ALLOCATABLE :: CGeneralEigenValues
     CHARACTER*40 surname
-    CHARACTER*200 SindString,SjndString,SPixelCount,SnBeams,SWeakBeamIndex,SPrintString
+    CHARACTER*100 SindString,SjndString,SPixelCount,SnBeams,SWeakBeamIndex,SPrintString
       
     ! we are inside the mask
     IPixelComputed= IPixelComputed + 1

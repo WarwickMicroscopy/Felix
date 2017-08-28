@@ -89,7 +89,7 @@ MODULE ug_matrix_mod
     REAL(RKIND),DIMENSION(:),ALLOCATABLE :: RLocalUgReal,RLocalUgImag,RUgReal,RUgImag
     INTEGER(IKIND),DIMENSION(:),ALLOCATABLE :: Ipos,Inum
     COMPLEX(CKIND) :: CVgPrime,CFpseudo
-    CHARACTER*200 :: SPrintString
+    CHARACTER*100 :: SPrintString
     
     RScattFacToVolts = (RPlanckConstant**2)*(RAngstromConversion**2) / &
           (TWOPI*RElectronMass*RElectronCharge*RVolume)
@@ -386,7 +386,7 @@ MODULE ug_matrix_mod
     COMPLEX(CKIND) :: CVgij,CFpseudo
     REAL(RKIND) :: RMeanInnerPotentialVolts,RScatteringFactor,&
           RScattFacToVolts,RPMag,Rx,Ry,Rr,RPalpha,RTheta,Rfold
-    CHARACTER*200 :: SPrintString
+    CHARACTER*100 :: SPrintString
     
     !--------------------------------------------------------------------
     ! count pseudoatoms & allocate pseudoatom arrays

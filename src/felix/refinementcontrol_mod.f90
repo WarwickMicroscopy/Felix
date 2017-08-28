@@ -94,7 +94,7 @@ MODULE refinementcontrol_mod
     INTEGER(IKIND), SAVE :: IStartTime
     REAL(RKIND) :: RCurrentG(3), RScatteringFactor
     COMPLEX(CKIND) :: CUgMatDummy(nReflections,nReflections),CVgij
-    CHARACTER*200 :: SFormat,SPrintString
+    CHARACTER*100 :: SFormat,SPrintString
 
     WRITE(SPrintString,FMT='(A10,I5)')'Iteration ',Iter
     CALL message(LS,SPrintString)
@@ -401,7 +401,7 @@ MODULE refinementcontrol_mod
     REAL(RKIND) :: RTotalCorrelation,RBestTotalCorrelation,RImageCorrelation,RBestThickness,&
          RThicknessRange,Rradius
     REAL(RKIND),DIMENSION(INoOfLacbedPatterns) :: RBestCorrelation
-    CHARACTER*200 :: SPrintString
+    CHARACTER*100 :: SPrintString
     CHARACTER*20 :: Snum       
 
     IF (ICorrelationFLAG.EQ.3) THEN ! allocate mask
@@ -627,7 +627,7 @@ MODULE refinementcontrol_mod
 
     INTEGER(IKIND) :: IErr,ind,IVariableType,jnd,knd
     REAL(RKIND),DIMENSION(3) :: RCrystalVector
-    CHARACTER*200 :: SPrintString
+    CHARACTER*100 :: SPrintString
 
     RCrystalVector = [RLengthX,RLengthY,RLengthZ]
 
