@@ -266,8 +266,10 @@ MODULE bloch_mod
 
     IF(IYPixelIndex.EQ.10.AND.IXPixelIndex.EQ.10) THEN ! output data from 1 pixel,show working
       CALL message(LM,dbg3, "Pixel [10,10] Ug/2K + {Sg} matrix (nm^-2)")
-      CALL message(LM,dbg3, "displaying Rhkl and 100*CUgSgMatrix alongside",&
-            NINT(Rhkl(1:16,:)),100*CUgSgMatrix(1:16,1:6))
+      DO ind = 1,16
+        CALL message( LM, dbg3, "RKL row:",NINT(Rhkl(ind,:)) )
+        CALL message( LM, dbg3, "CUg row:",100*CUgSgMatrix(ind,1:6) )
+      END DO
     END IF
     
     !--------------------------------------------------------------------

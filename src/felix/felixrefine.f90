@@ -158,7 +158,7 @@ PROGRAM Felixrefine
     CALL message(LS,"Simulation only")
   END IF
 
-  CALL message(LM,"rexpi",RImageExpi(1:16,1:6,1))
+  CALL message(LM,"Experimental Image matrix - RImageExpi(1:16,1:6,1)",RImageExpi(1:16,1:6,1))
 
   !--------------------------------------------------------------------
   ! set up scattering factors, relativistic electrons, reciprocal lattice
@@ -384,8 +384,12 @@ PROGRAM Felixrefine
   DO ind=1,INhkl
      RgPoolMag(ind)= SQRT(DOT_PRODUCT(RgPool(ind,:),RgPool(ind,:)))
   END DO
+
   CALL message(LL,dbg7,"g-vectors and magnitude (1/A), in the microscope reference frame" )
-  CALL message(LL,dbg7,"g=",NINT(Rhkl(1:16,:)),RgPoolMag(1:16))
+  DO ind = 1,SIZE(Rhkl,1)
+    CALL message(LL,dbg7,"hkl  :",NINT(Rhkl(ind,:)))
+    CALL message(LL,dbg7,"g mag:",RgPoolMag(ind))
+  END DO
 
   
   ! g-vector components parallel to the surface unit normal
@@ -397,7 +401,10 @@ PROGRAM Felixrefine
   END DO
   
   CALL message(LL,dbg7,"g vector hkl, g.n")
-  CALL message(LL,dbg7," ",NINT(Rhkl),RgDotNorm )
+  DO ind = 1,SIZE(Rhkl,1)
+    CALL message(LL,dbg7,"hkl :",NINT(Rhkl(ind,:)))
+    CALL message(LL,dbg7,"g.n :",RgDotNorm(ind))
+  END DO
 
   !--------------------------------------------------------------------
   ! calculate resolution IN k space

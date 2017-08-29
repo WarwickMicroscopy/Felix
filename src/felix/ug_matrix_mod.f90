@@ -243,9 +243,12 @@ MODULE ug_matrix_mod
     !--------------------------------------------------------------------
 
     CUgMat = CUgMatNoAbs + CUgMatPrime 
-	     
-    CALL message( LM, dbg3, "Ug matrix, including absorption (nm^-2)",&
-          NINT(Rhkl(1:16,:)), 100*CUgMat(1:16,1:8) )
+
+    CALL message( LM, dbg3, "Ug matrix, including absorption (nm^-2)" )
+    DO ind = 1,16
+      CALL message( LM, dbg3, "RKL row:",NINT(Rhkl(ind,:)) )
+      CALL message( LM, dbg3, "CUg row:",100*CUgMat(ind,1:6) )
+    END DO
 
   END SUBROUTINE Absorption
 
@@ -500,8 +503,11 @@ MODULE ug_matrix_mod
       CUgMatNoAbs(ind,ind)=CZERO
     END DO
 
-    CALL message( LM, dbg3, "Ug matrix, without absorption (nm^-2)",&
-          NINT(Rhkl(1:16,:)), 100*CUgMatNoAbs(1:16,1:4) )
+    CALL message( LM, dbg3, "Ug matrix, without absorption (nm^-2)" )
+    DO ind = 1,16
+      CALL message( LM, dbg3, "RKL row:",NINT(Rhkl(ind,:)) )
+      CALL message( LM, dbg3, "CUg row:",100*CUgMatNoAbs(ind,1:4) )
+    END DO
    
     !--------------------------------------------------------------------
     ! calculate mean inner potential and wave vector magnitude
