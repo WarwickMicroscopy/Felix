@@ -96,7 +96,7 @@ MODULE refinementcontrol_mod
     COMPLEX(CKIND) :: CUgMatDummy(nReflections,nReflections),CVgij
     CHARACTER*100 :: SFormat,SPrintString
 
-    WRITE(SPrintString,FMT='(A10,I5)')'Iteration ',Iter
+    WRITE(SPrintString,FMT='(A10,I5)')"Iteration ",Iter
     CALL message(LS,SPrintString)
     CALL SYSTEM_CLOCK( IStartTime )
 
@@ -505,11 +505,11 @@ MODULE refinementcontrol_mod
     RThicknessRange=( MAXVAL(IBestImageThicknessIndex)-&
           MINVAL(IBestImageThicknessIndex) )*RDeltaThickness
     ! Output to screen, duplicate of felixrefine output
-    WRITE(SPrintString,FMT='(A16,F7.4)') 'Figure of merit ',RBestTotalCorrelation
+    WRITE(SPrintString,FMT='(A16,F7.2,A1)') "Figure of merit ",100*RBestTotalCorrelation,"%"
     CALL message(LS,SPrintString)
-    WRITE(SPrintString,FMT='(A19,I4,A10)') 'Specimen thickness ',NINT(RBestThickness),' Angstroms'
+    WRITE(SPrintString,FMT='(A19,I4,A10)') "Specimen thickness ",NINT(RBestThickness)," Angstroms"
     CALL message(LS,SPrintString)
-    WRITE(SPrintString,FMT='(A16,I4,A10)') 'Thickness range ',NINT(RThicknessRange),' Angstroms'
+    WRITE(SPrintString,FMT='(A16,I4,A10)') "Thickness range ",NINT(RThicknessRange)," Angstroms"
     CALL message(LS,SPrintString)
 
     RETURN
@@ -653,21 +653,21 @@ MODULE refinementcontrol_mod
         CASE(2)
           CALL message(LS,"Current Atomic Coordinates")
           DO jnd = 1,SIZE(RBasisAtomPosition,DIM=1)
-            WRITE(SPrintString,FMT='(A4,3(F7.4,1X))') SBasisAtomLabel(jnd),RBasisAtomPosition(jnd,:)
+            WRITE(SPrintString,FMT='(A4,A4,3(F7.4,1X))') "    ",SBasisAtomLabel(jnd),RBasisAtomPosition(jnd,:)
             CALL message(LS,SPrintString)
           END DO
 
         CASE(3)
           CALL message(LS, "Current Atomic Occupancy")
           DO jnd = 1,SIZE(RBasisOccupancy,DIM=1)
-            WRITE(SPrintString,FMT='(A4,F7.4)') SBasisAtomLabel(jnd),RBasisOccupancy(jnd)
+            WRITE(SPrintString,FMT='(A4,A4,F7.4)') "    ",SBasisAtomLabel(jnd),RBasisOccupancy(jnd)
             CALL message(LS,SPrintString)
           END DO
 
         CASE(4)
           CALL message(LS, "Current Isotropic Debye Waller Factors")
           DO jnd = 1,SIZE(RBasisIsoDW,DIM=1)
-            WRITE(SPrintString,FMT='(A4,F7.4)') SBasisAtomLabel(jnd),RBasisIsoDW(jnd)
+            WRITE(SPrintString,FMT='(A4,A4,F7.4)') "    ",SBasisAtomLabel(jnd),RBasisIsoDW(jnd)
             CALL message(LS,SPrintString)
           END DO
 
@@ -685,7 +685,7 @@ MODULE refinementcontrol_mod
           CALL message(LS, "Current Unit Cell Angles", (/ RAlpha,RBeta,RGamma /) )
 
         CASE(8)
-          WRITE(SPrintString,FMT='(A4,F8.4)') 'Current Convergence Angle ',RConvergenceAngle
+          WRITE(SPrintString,FMT='(A4,A4,F8.4)') "Current Convergence Angle ",RConvergenceAngle
           CALL message(LS,SPrintString)
 
         CASE(9)
