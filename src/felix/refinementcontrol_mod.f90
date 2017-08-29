@@ -327,7 +327,7 @@ MODULE refinementcontrol_mod
     !=====================================
     IF(l_alert(IErr,"SimulateAndFit","MPI_GATHERV")) RETURN
 
-    CALL print_end_time( LM, IStartTime, "Bloch wave simulation" )
+    CALL PrintEndTime( LM, IStartTime, "Bloch wave simulation" )
 
     ! put 1D array RSimulatedPatterns into 2D image RImageSimi
     ! remember dimensions of RSimulatedPatterns(INoOfLacbedPatterns,IThicknessCount,IPixelTotal)

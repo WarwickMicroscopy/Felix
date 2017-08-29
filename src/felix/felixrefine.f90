@@ -108,7 +108,7 @@ PROGRAM Felixrefine
 
   ! initialise constants
   CALL Init_Numbers ! constants for calcualtions
-  CALL init_message_logicals ! constants required for formatted terminal output
+  CALL InitialiseMessage ! constants required for formatted terminal output
   IErr=0
   IInitialSimulationFLAG = 1
 
@@ -130,7 +130,7 @@ PROGRAM Felixrefine
   CALL message(LS,"-----------------------------------------------------------------")
 
   ! timing setup
-  !CALL SYSTEM_CLOCK( count_rate=iclock_rate ) ! in message_mod for print_end_time utility
+  !CALL SYSTEM_CLOCK( count_rate=iclock_rate ) ! in message_mod for PrintEndTime utility
   CALL SYSTEM_CLOCK( IStartTime,IClockRate )
 
   !--------------------------------------------------------------------
@@ -139,7 +139,7 @@ PROGRAM Felixrefine
   
   CALL ReadInpFile(IErr) ! felix.inp
   IF(l_alert(IErr,"felixrefine","ReadInpFile")) CALL abort
-  CALL set_message_mod_mode( IWriteFLAG, IErr )
+  CALL SetMessageMode( IWriteFLAG, IErr )
   IF(l_alert(IErr,"felixrefine","set_message_mod_mode")) CALL abort
 
   CALL read_cif(IErr) ! felix.cif ! some allocations are here
@@ -503,7 +503,7 @@ PROGRAM Felixrefine
   CALL message(LS,dbg3,"Starting absorption calculation... ")
   CALL Absorption (IErr)
   IF(l_alert(IErr,"felixrefine","Absorption")) CALL abort
-  CALL print_end_time(LS,IStartTime2, "Absorption" )
+  CALL PrintEndTime(LS,IStartTime2, "Absorption" )
   CALL message(LL,dbg3,"g-vector magnitude matrix (2pi/A)", RgMatrixMagnitude(1:16,1:8)) 
   CALL SYSTEM_CLOCK( IStartTime2 )
 
@@ -781,7 +781,7 @@ PROGRAM Felixrefine
   ! baseline simulation with timer
   CALL Simulate(IErr)
   IF(l_alert(IErr,"felixrefine","Simulate")) CALL abort
-  CALL print_end_time(LS,IStartTime2, "Simulation" )
+  CALL PrintEndTime(LS,IStartTime2, "Simulation" )
 
   !--------------------------------------------------------------------
 
@@ -901,7 +901,7 @@ PROGRAM Felixrefine
   WRITE(my_rank_string,*) my_rank !?? what is this used for?
 
   CALL message( LS, "--------------------------------" )
-  CALL print_end_time( LS, IStartTime, "Calculation" )
+  CALL PrintEndTime( LS, IStartTime, "Calculation" )
   CALL message( LS, "--------------------------------")
   CALL message( LS, "||||||||||||||||||||||||||||||||")
   

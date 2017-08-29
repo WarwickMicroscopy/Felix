@@ -178,21 +178,21 @@ MODULE message_mod
 
   !--------------------------------------------------------------------
   TYPE MsgPriorities
-    LOGICAL :: LState               ! set to .true. or .false. at run-time by IWriteFLAG
+    LOGICAL :: LState               ! set to .TRUE. or .FALSE. at run-time by IWriteFLAG
     CHARACTER(50) :: SInitialMsg    ! used for priority indenting - tiered structure
   END TYPE
 
   TYPE MsgTags
-    LOGICAL :: LState               ! set to .true. or .false. at run-time by IWriteFLAG
-    INTEGER(IKIND) :: INumberID     ! comapred with IWriteFLAG to set state to .true. or .false
+    LOGICAL :: LState               ! set to .TRUE. or .FALSE. at run-time by IWriteFLAG
+    INTEGER(IKIND) :: INumberID     ! comapred with IWriteFLAG to set state to .TRUE. or .FALSE
   END TYPE
   !--------------------------------------------------------------------
 
   TYPE(MsgPriorities) :: LS, LM, LL, LXL
-  TYPE(MsgTags) :: no_tag, dbg7, dbg3, dbg6, dbg14
+  TYPE(MsgTags) :: no_tag, dbg7, dbg3, dbg6, dbg14, dbg1
 
-  CHARACTER(:), ALLOCATABLE :: SIndentSpaces, SSpaces ! used for tiered-structure 
-  LOGICAL,private :: LPrintThisCore ! used to print on all cores, usually = .false.  
+  CHARACTER(:), ALLOCATABLE :: SIndentChars, SSpaces ! used for tiered-structure 
+  LOGICAL,private :: LPrintThisCore ! used to print on all cores, usually = .FALSE.  
   INTEGER(IKIND) :: IClockRate ! used with print_end_timer
   
 CONTAINS
@@ -201,56 +201,25 @@ CONTAINS
   ! setup message (on felix start-up, before IWriteFLAG read-in)
   !--------------------------------------------------------------------
   
-  SUBROUTINE init_message_logicals  
- 
-    !--------------------------------------------------------------------
-    ! MsgTags fixed ID numbers (to compare against IWriteFLAG)
-    !--------------------------------------------------------------------
+  SUBROUTINE InitialiseMessage  
+    ! initially set indetation and intial characters to be blank
+    SSpaces = "" 
+    SIndentChars   = ""
+    LS%SInitialMsg  = ""; LM%SInitialMsg  = ""; LL%SInitialMsg  = ""; LXL%SInitialMsg = ""
 
-    no_tag%INumberID  = 0
-    dbg7%INumberID    = 70
-    dbg3%INumberID    = 30
-    dbg6%INumberID    = 60
-    dbg14%INumberID   = 90 ! NB would use 140, but our integer kind(1) cannot reach 140
-
-    ! NB to add another MsgTag, declare it above, add it here and add it to set_message_mod_mode below
-
-    !--------------------------------------------------------------------
-    ! setup tiered-structure
-    !--------------------------------------------------------------------
-
-    ! e.g. WRITE(*,formatting) TRIM(MsgPriority%SInitialMsg)//SSpaces, SMainMsg, RVector
-
-    SIndentSpaces   = "" ! leading spaces for all messages
-
-    ! tiered-structure MsgPriority-specific initial message
-    LS%SInitialMsg  = SIndentSpaces               
-    LM%SInitialMsg  = SIndentSpaces//"   "
-    LL%SInitialMsg  = SIndentSpaces//"     "        
-    LXL%SInitialMsg = SIndentSpaces//"       "
-    ! NB SInitialMsg is TRIM'ed so trailing spaces are pointless 
-
-    SSpaces = " " 
-    ! SSpaces are the global SSpaces after SInitialMsg
-
-    !--------------------------------------------------------------------
-    ! intially only set LS = .true. before IWriteFLAG read-in
-    !--------------------------------------------------------------------
-
-    LS%LState = .true.; 
-
-    LM%LState = .false.;    LL%LState = .false.;   LXL%LState = .false.
-    no_tag%LState=.false.;  dbg7%LState = .false.; dbg3%LState = .false.;
-    dbg6%LState = .false.;  dbg14%LState = .false.
-    LPrintThisCore = .false.   
-
+    ! intially only set LS = .TRUE. before IWriteFLAG read-in
+    LS%LState = .TRUE.; 
+    LM%LState = .FALSE.;    LL%LState = .FALSE.;   LXL%LState = .FALSE.
+    no_tag%LState=.FALSE.;  dbg7%LState = .FALSE.; dbg3%LState = .FALSE.;
+    dbg6%LState = .FALSE.;  dbg14%LState = .FALSE.
+    LPrintThisCore = .FALSE.   
   END SUBROUTINE
 
   !--------------------------------------------------------------------
   ! read-in IWriteFLAG and setup message
   !--------------------------------------------------------------------
 
-  SUBROUTINE set_message_mod_mode ( IWriteFLAG, IErr )
+  SUBROUTINE SetMessageMode ( IWriteFLAG, IErr )
     
     INTEGER(IKIND), INTENT(out):: IErr
     INTEGER(IKIND), INTENT(IN) :: IWriteFLAG
@@ -261,51 +230,56 @@ CONTAINS
     ! Use IWriteFLAG tens component to turn-on a MsgTag
     !--------------------------------------------------------------------
 
-    IF ( IPrio > 10 ) THEN
-
-      IF ( (dbg7%INumberID <= IPrio) .and. (IPrio  <= dbg7%INumberID+9) ) THEN
-        dbg7%LState = .true.
-        IPrio = IPrio - dbg7%INumberID
-      ELSEIF ( (dbg3%INumberID <= IPrio) .and. (IPrio  <= dbg3%INumberID+9) ) THEN
-        dbg3%LState = .true.
-        IPrio = IPrio - dbg3%INumberID
-      ELSEIF ( (dbg6%INumberID <= IPrio) .and. (IPrio  <= dbg6%INumberID+9) ) THEN
-        dbg6%LState = .true.
-        IPrio = IPrio - dbg6%INumberID
-      ELSEIF ( (dbg14%INumberID <= IPrio) .and. (IPrio  <= dbg14%INumberID+9) ) THEN
-        dbg14%LState = .true.
-        IPrio = IPrio - dbg14%INumberID
-      ELSE  ! error (minor) - tens component not recognised
+    SELECT CASE (IPrio) 
+      CASE (0:9)
+        no_tag%LState=.FALSE.  
+      CASE (10:19)
+        dbg1%LState = .TRUE.
+        IPrio = IPrio - 10
+        SSpaces = " "
+        LS%SInitialMsg  = "->"; LM%SInitialMsg  = "---->"; 
+        LL%SInitialMsg  = "------->"; LXL%SInitialMsg = "---------->"
+      CASE (70:79)
+        dbg7%LState = .TRUE.
+        IPrio = IPrio - 70
+      CASE (30:39)
+        dbg3%LState = .TRUE.
+        IPrio = IPrio - 30
+      CASE (60:69)
+        dbg6%LState = .TRUE.
+        IPrio = IPrio - 60
+      CASE (90:99)
+        dbg14%LState = .TRUE.
+        IPrio = IPrio - 90
+      CASE DEFAULT  ! error (minor) - tens component not recognised
         IErr=1
         IF(l_alert(IErr,"set_message_mod_mode",&
               "IWriteFLAG tens component not recognised check felix.inp")) RETURN
-      END IF
-
-    END IF
+    END SELECT
     ! After the above, IPrio is now just a single digit INTEGER
 
     ! switch lower priorities on depending upon IWriteFLAG digit compoent
-    IF (IPrio >= 2) LM%LState = .true.;
-    IF (IPrio >= 4) LL%LState = .true.;
-    IF (IPrio >= 8) LXL%LState = .true.;
+    IF (IPrio >= 2) LM%LState = .TRUE.;
+    IF (IPrio >= 4) LL%LState = .TRUE.;
+    IF (IPrio >= 8) LXL%LState = .TRUE.;
 
   END SUBROUTINE
 
   !%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
   SUBROUTINE allow_message_on_this_core
-    LPrintThisCore = .true.
+    LPrintThisCore = .TRUE.
     CALL messageIScalar3("MESSAGE FROM THIS CORE AS WELL, rank =",my_rank)
   END SUBROUTINE  !?? not currently used, but may be useful
 
   !%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
   !---------------------------------------------------------------------
-  ! print_end_time
+  ! PrintEndTime
   !---------------------------------------------------------------------  
 
   ! compare start time to current and print time-passed
-  SUBROUTINE print_end_time(MsgPriority, IStartTime, STaskName)
+  SUBROUTINE PrintEndTime(MsgPriority, IStartTime, STaskName)
     TYPE (MsgPriorities), INTENT(IN) :: MsgPriority
     CHARACTER(*), INTENT(IN) :: STaskName
     INTEGER(IKIND), INTENT(IN) :: IStartTime
@@ -324,9 +298,9 @@ CONTAINS
     Iseconds = INT(MOD(Rduration,3600.0d0)-Iminutes*60)
     WRITE(SPrintString,FMT=Sfmt) STaskName," completed in ",Ihours," hrs ",Iminutes," mins ",Iseconds," sec"
     SPrintString=TRIM(ADJUSTL(SPrintString))
-    CALL message(MsgPriority,SPrintString)
+    CALL message1String2(MsgPriority,SPrintString)
 
-  END SUBROUTINE print_end_time
+  END SUBROUTINE PrintEndTime
 
   !   EXAMPLE USAGE - use intrinisic system_clock, 'IStartTime2' local variable 
   !
@@ -336,10 +310,10 @@ CONTAINS
   !   CALL print_end_time( LM, IStartTime2, "Absorption" )
   !
   !   EXAMPLE TERMINAL OUTPUT:
-  !   @ ---- Absorption completed in   0 hrs  0 mins  2 sec
+  !   ----> Absorption completed in   0 hrs  0 mins  2 sec
 
   !---------------------------------------------------------------------
-  ! main REAL/complex/INTEGER matrix printing - used by vector and scalar printing
+  ! Main simple message
   !---------------------------------------------------------------------
 
   SUBROUTINE message1String ( MsgPriority, MsgTag, SString )
@@ -348,13 +322,16 @@ CONTAINS
     TYPE (MsgTags), INTENT(IN) :: MsgTag
     CHARACTER(*), INTENT(IN) :: SString
 
-    ! check priority then print SMainMsg
     IF ( ( my_rank==0 .OR. LPrintThisCore ) &
     .AND. (MsgPriority%LState .OR. MsgTag%LState) ) THEN
-      WRITE(*,'(a,a)') TRIM(MsgPriority%SInitialMsg)//SSpaces, SString
+      WRITE(*,'(a,a)') TRIM(MsgPriority%SInitialMsg)//SSpaces, TRIM(SString)
     END IF
   
   END SUBROUTINE message1String
+
+  !---------------------------------------------------------------------
+  ! Main REAL/complex/INTEGER matrix printing - used by vector and scalar printing
+  !---------------------------------------------------------------------
 
   SUBROUTINE messageRMatrix ( MsgPriority, MsgTag, SMainMsg, RMatrix )
     
@@ -443,6 +420,10 @@ CONTAINS
 
   END SUBROUTINE messageIMatrix
 
+  !---------------------------------------------------------------------
+  ! Other key message types
+  !---------------------------------------------------------------------
+
   SUBROUTINE message2Strings ( MsgPriority, MsgTag, SString1, SString2 )
 
     TYPE (MsgPriorities), INTENT(IN) :: MsgPriority
@@ -456,15 +437,13 @@ CONTAINS
   
   END SUBROUTINE message2Strings
 
-  ! For printing LOGICALs ! currently no interfaces for logical optional arguments, matrices, vectors
   SUBROUTINE messageLogical ( MsgPriority, MsgTag, SMainMsg, LLogicalVariable )  
   
     TYPE (MsgPriorities), INTENT(IN) :: MsgPriority
     TYPE (MsgTags), INTENT(IN) :: MsgTag
     CHARACTER(*), INTENT(IN) :: SMainMsg
-    LOGICAL, INTENT(IN) :: LLogicalVariable ! LOGICAL variable
+    LOGICAL, INTENT(IN) :: LLogicalVariable
 
-    ! check priority then print LOGICAL variable
     IF ( ( my_rank==0 .OR. LPrintThisCore ) &
     .AND. (MsgPriority%LState .OR. MsgTag%LState) ) THEN
       WRITE(*,'(a,a,1x,l1)') TRIM(MsgPriority%SInitialMsg)//SSpaces, SMainMsg, LLogicalVariable
