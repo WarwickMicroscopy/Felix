@@ -71,7 +71,7 @@ MODULE write_output_mod
     INTEGER(IKIND) :: IThickness,ind,jnd
     REAL(RKIND),DIMENSION(2*IPixelCount,2*IPixelCount) :: RImageToWrite
     CHARACTER*200 :: path, filename, fullpath
-    CHARACTER*20 :: IntString
+    CHARACTER*20 :: SIntString
     
     IThickness = (RInitialThickness + (IThicknessIndex-1)*RDeltaThickness)/10!in nm 
 
@@ -103,11 +103,11 @@ MODULE write_output_mod
       filename = TRIM(ADJUSTL(path))//"/"//TRIM(ADJUSTL(SChemicalFormula))&
                   //TRIM(ADJUSTL(filename))    
       DO jnd = 1,3
-        WRITE(IntString,*) NINT(Rhkl(IOutPutReflections(ind),jnd))
+        WRITE(SIntString,*) NINT(Rhkl(IOutPutReflections(ind),jnd))
         IF (NINT(Rhkl(IOutPutReflections(ind),jnd)) >= 0) THEN    
           filename = TRIM(filename) // '+'
         END IF
-        filename = TRIM(filename) // TRIM(ADJUSTL(IntString))
+        filename = TRIM(filename) // TRIM(ADJUSTL(SIntString))
       END DO
       filename = TRIM(filename) // '.bin'
 
@@ -146,7 +146,73 @@ MODULE write_output_mod
 
   !%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
+  !>
+  !! Procedure-description: This scales each experimental image such that the max value
+  !! matches the corresponding final simulated image and writes it out in an equaivalent
+  !! .bin format.
+  !!
+  !! Major-Authors: Jacob Richardson (2017)
+  !!
+  SUBROUTINE NormaliseExperimentalImagesAndWriteOut(IThicknessIndex,IErr)
 
+    USE MyNumbers
+    USE message_mod
+
+    !global inputs
+    USE RPara, ONLY : RImageExpi, RImageSimi, Rhkl, RInitialThickness, RDeltaThickness
+    USE IPara, ONLY : IPixelcount, IOutPutReflections, INoOfLacbedPatterns
+    USE Spara, ONLY : SChemicalFormula
+    USE IChannels, ONLY : IChOutWIImage, IChOut
+
+    IMPLICIT NONE   
+    INTEGER(IKIND), INTENT(OUT) :: IErr
+    INTEGER(IKIND), INTENT(IN) :: IThicknessIndex
+    CHARACTER(200) :: path, filename
+    CHARACTER(20) :: SIntString
+    INTEGER(IKIND) :: IThickness, ind, jnd
+    REAL(RKIND), ALLOCATABLE :: RImageToWrite(:,:)
+
+    IThickness = (RInitialThickness + (IThicknessIndex-1)*RDeltaThickness)/10!in nm 
+
+    CALL message('printing experimental images')
+    WRITE(path,"(A6,I3.3,A3,I3.3,A1,I3.3)") &
+          "approx",IThickness,"nm_",2*IPixelcount,"x",2*IPixelcount
+    path = "experi_images_"// TRIM(SChemicalFormula) // "_" // path
+
+    CALL system('mkdir ' // path)
+    
+    ! Write Images to disk
+    DO ind = 1,INoOfLacbedPatterns
+      ! Make the path/filenames  
+      ! Iterates over 3 vector components to make filename e.g. 'GaAs-2-2+0.bin.
+      WRITE(filename,"(A1,I3.3,A3,I3.3,A1,I3.3,A1)")"_approx",IThickness,"nm_",&
+                  2*IPixelcount,"x",2*IPixelcount,"_"
+      filename = TRIM(ADJUSTL(path))//"/"//TRIM(ADJUSTL(SChemicalFormula))&
+                  //TRIM(ADJUSTL(filename))
+      DO jnd = 1,3
+        WRITE(SIntString,*) NINT(Rhkl(IOutPutReflections(ind),jnd))
+        IF (NINT(Rhkl(IOutPutReflections(ind),jnd)) >= 0) THEN    
+          filename = TRIM(filename) // '+'
+        END IF
+        filename = TRIM(filename) // TRIM(ADJUSTL(SIntString))
+      END DO
+      filename = TRIM(filename) // '.bin'
+
+      RImageToWrite = RImageExpi(:,:,ind)
+      RImageToWrite = RImageToWrite / MAXVAL(RImageToWrite) * MAXVAL(RImageSimi(:,:,ind,IThicknessIndex))
+
+      ! Writes data to output image .bin files
+      OPEN(UNIT=IChOutWIImage, STATUS= 'UNKNOWN', FILE=TRIM(ADJUSTL(filename)),&
+            FORM='UNFORMATTED',ACCESS='DIRECT',IOSTAT=IErr,RECL=2*IPixelCount*8)
+      IF(l_alert(IErr,"WriteIterationOutput","OPEN() output .bin file")) RETURN       
+      DO jnd = 1,2*IPixelCount
+        WRITE(IChOutWIImage,rec=jnd) RImageToWrite(jnd,:)
+      END DO
+      CLOSE(IChOutWIImage,IOSTAT=IErr) 
+      IF(l_alert(IErr,"WriteIterationOutput","CLOSE() output .bin file")) RETURN       
+    END DO   
+
+  END SUBROUTINE NormaliseExperimentalImagesAndWriteOut
 
   !>
   !! Procedure-description: Write out non symmetrically related atomic positions
