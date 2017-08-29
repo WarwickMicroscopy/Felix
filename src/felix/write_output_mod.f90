@@ -37,7 +37,8 @@ MODULE write_output_mod
 
   IMPLICIT NONE
   PRIVATE
-  PUBLIC :: WriteIterationOutput, WriteIterationCIF, WriteOutVariables
+  PUBLIC :: WriteIterationOutput, WriteIterationCIF, WriteOutVariables, &
+            NormaliseExperimentalImagesAndWriteOut
 
   CONTAINS
 
@@ -147,7 +148,8 @@ MODULE write_output_mod
   !%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
   !>
-  !! Procedure-description: This scales each experimental image such that the max value
+  !! Procedure-description: This can be used as a quick way to visually compare experimental 
+  !! and simulated images. This scales each experimental image such that the max value
   !! matches the corresponding final simulated image and writes it out in an equaivalent
   !! .bin format.
   !!
@@ -172,15 +174,16 @@ MODULE write_output_mod
     INTEGER(IKIND) :: IThickness, ind, jnd
     REAL(RKIND), ALLOCATABLE :: RImageToWrite(:,:)
 
+    CALL message(LS,"Normalising experimental images and writing out")
+
     IThickness = (RInitialThickness + (IThicknessIndex-1)*RDeltaThickness)/10!in nm 
 
-    CALL message('printing experimental images')
-    WRITE(path,"(A6,I3.3,A3,I3.3,A1,I3.3)") &
-          "approx",IThickness,"nm_",2*IPixelcount,"x",2*IPixelcount
-    path = "experi_images_"// TRIM(SChemicalFormula) // "_" // path
+    WRITE(path,"(I3.3,A1,I3.3)") &
+          2*IPixelcount,"x",2*IPixelcount
+    path = TRIM(SChemicalFormula) // "_experi_images_" // path
 
     CALL system('mkdir ' // path)
-    
+
     ! Write Images to disk
     DO ind = 1,INoOfLacbedPatterns
       ! Make the path/filenames  
@@ -213,6 +216,8 @@ MODULE write_output_mod
     END DO   
 
   END SUBROUTINE NormaliseExperimentalImagesAndWriteOut
+
+  !%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
   !>
   !! Procedure-description: Write out non symmetrically related atomic positions

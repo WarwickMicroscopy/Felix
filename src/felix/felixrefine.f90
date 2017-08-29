@@ -813,7 +813,13 @@ PROGRAM Felixrefine
         RImageAvi=RImageSimi 
       END IF
       CALL WriteIterationOutput(Iter,IThicknessIndex,IExitFLAG,IErr)
-      IF(l_alert(IErr,"felixrefine","WriteIterationOutput")) CALL abort 
+      IF(l_alert(IErr,"felixrefine","WriteIterationOutput")) CALL abort
+      
+      ! JR the subroutine below can be used as a quick way to 
+      ! visually compare the experimental images and initial simulated images
+      !CALL NormaliseExperimentalImagesAndWriteOut(IThicknessIndex,IErr)
+      !IF(l_alert(IErr,"felixrefine","NormaliseExperimentalImagesAndWriteOut")) CALL abort
+
     END IF
     
     !===================================== ! Send the fit index to all cores
