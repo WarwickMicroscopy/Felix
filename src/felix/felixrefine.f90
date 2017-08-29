@@ -1097,7 +1097,9 @@ CONTAINS
             RPVec(ind)=TINY
             CYCLE
           END IF
-          CALL message(LS,no_tag,"Finding gradient,",ind," of",INoOfVariables)
+          WRITE(SPrintString,FMT='(A18,I3,A4,I3)') "Finding gradient, ",ind," of ",INoOfVariables
+          SPrintString=TRIM(ADJUSTL(SPrintString))
+          CALL message(LS,SPrintString)
 
           ! Make a random number and vary the sign of dx, using system clock
           CALL SYSTEM_CLOCK(mnd)
@@ -1137,14 +1139,16 @@ CONTAINS
       DO ind=1,INoOfVariables
         RPvecMag=RPvecMag+RPvec(ind)**2
       END DO
-      IF (RPvecMag-ONE.EQ.RPvecMag.OR.RPvecMag.NE.RPvecMag) THEN ! Infinity and NaN check
-        IErr=1; WRITE(SPrintString,*) RPvec
+      IF ((RPvecMag-ONE.EQ.RPvecMag).OR.(RPvecMag.NE.RPvecMag)) THEN ! Infinity and NaN check
+        IErr=1
+        WRITE(SPrintString,*) RPvec
         IF(l_alert(IErr,"MaxGradientRefinement",&
               "Infinity or NaN error, refinement vector ="//TRIM(SPrintString))) RETURN
       END IF
       RPvec=RPvec/SQRT(RPvecMag) ! unity vector along direction of max gradient
-      WRITE(SPrintString,*) '(A18,',SIZE(RPvec),'F7.4)'
-      WRITE(SPrintString,FMT=SPrintString)'Refinement vector ',RPvec
+      WRITE(SPrintString,*) "(A18,",SIZE(RPvec),"(F7.4,1X))"
+      WRITE(SPrintString,FMT=SPrintString)"Refinement vector ",RPvec
+      SPrintString=TRIM(ADJUSTL(SPrintString))
       CALL message(LS,SPrintString)
 
       RVar0=RIndependentVariable ! the best point of gradient calculation
@@ -1232,7 +1236,8 @@ CONTAINS
       ! now make a prediction
       CALL Parabo3(R3var,R3fit,RvarMin,RfitMin,IErr)
       WRITE(SPrintString,FMT='(A32,F7.4,A16,F7.4)') &
-      'Concave set, predict minimum at ',RvarMin,' with fit index ',RfitMin
+      "Concave set, predict minimum at ",RvarMin," with fit index ",RfitMin
+      SPrintString=TRIM(ADJUSTL(SPrintString))
       CALL message ( LS, SPrintString)
       RCurrentVar=RVar0+RPvec*(RvarMin-RVar0(1))/RPvec(1) ! Put prediction into RCurrentVar
       CALL SimulateAndFit(RCurrentVar,Iter,IExitFLAG,IErr)
@@ -1639,7 +1644,8 @@ CONTAINS
       RBest=RFoM
       RIndependentVariable=RCurrent
     END IF
-    WRITE(SPrintString,FMT='(A29,F7.4)') 'Current best figure of merit ',RBest
+    WRITE(SPrintString,FMT='(A29,F7.2,A1)') "Current best figure of merit ",100*RBest,"%"
+    SPrintString=TRIM(ADJUSTL(SPrintString))
     CALL message( LS, SPrintString)
 
           

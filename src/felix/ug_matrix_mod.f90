@@ -521,7 +521,8 @@ MODULE ug_matrix_mod
       END IF
     END DO
     RMeanInnerPotential = RMeanInnerPotential*RScattFacToVolts
-    WRITE(SPrintString,FMT='(A21,F6.2,A6)') 'Mean inner potential ',RMeanInnerPotential,' Volts'
+    WRITE(SPrintString,FMT='(A21,F6.2,A6)') "Mean inner potential ",RMeanInnerPotential," Volts"
+    SPrintString=TRIM(ADJUSTL(SPrintString))
     CALL message(LS,SPrintString)
 
     ! Wave vector magnitude in crystal
@@ -564,7 +565,7 @@ MODULE ug_matrix_mod
         END DO
       END DO
 
-      WRITE(SPrintString,FMT='(I5,A25)') Iuid,' unique structure factors'
+      WRITE(SPrintString,FMT='(I5,A25)') Iuid," unique structure factors"
       SPrintString=TRIM(ADJUSTL(SPrintString))
       CALL message ( LS, SPrintString )
       CALL message ( LM, dbg3, "hkl: symmetry matrix from 1 to 16" )
