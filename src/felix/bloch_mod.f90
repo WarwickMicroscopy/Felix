@@ -30,16 +30,8 @@
 !
 !%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-! Conatained in this file below:
-! BlochCoefficientCalculation()
-! CreateWaveFunctions()
-! StrongAndWeakBeamsDetermination()
-! EigenSpectrum()
-! INVERT()
-
 !>
-!! Module-description: Holds BlochCoefficientCalculation which for a pixel
-!! calculates the wavefunction vector for each thickness
+!! Module-description: Solely for BlochCoefficientCalculation procedure
 !!
 MODULE bloch_mod
   IMPLICIT NONE
@@ -50,47 +42,32 @@ MODULE bloch_mod
 
   !>
   !! Procedure-description: Simulates the electron beam and calculates Bloch
-  !! coefficients, conisdering complex amplitudes and iterating over the thickness
+  !! coefficients for a specified pixel for each LACBED pattern and for each thickness.
+  !! This can be used in parallel such that each core calculates different pixels.
   !!
   !! Major-Authors: Keith Evans (2014), Richard Beanland (2016)
   !!
   SUBROUTINE BlochCoefficientCalculation(IYPixelIndex,IXPixelIndex,IPixelNumber,&
                     IFirstPixelToCalculate,IErr)
 
-    ! ---> RIndividualReflections( LACBED_ID , thickness_ID, local_pixel_ID )
-
-    !?? accesses to ZGEMM
-
+    ! accesses procedure ZGEMM
     USE MyNumbers
     USE MyMPI
     USE message_mod
   
     ! globals - output
-    USE RPara, ONLY : RIndividualReflections 
+    USE RPara, ONLY : RIndividualReflections ! RIndividualReflections( LACBED_ID, thickness_ID, local_pixel_ID )
     USE CPara, ONLY : CAmplitudeandPhase
-    ! /\ matrix of vectors, thickness, pixel, wavefunction this contributes
-    ! one pixel and some parallelises in fexlixfunction join later
     USE IPara, ONLY : IPixelComputed
 
     ! globals - input  
-    USE CPara, ONLY : CUgMat ! from Absorption
-    USE RPara, ONLY : &
-      RDeltaK,& ! resolution in k space, used in calculations
-      RDeltaThickness,& ! input from felix.inp
-      RInitialThickness,& ! input from felix.inp
-      RNormDirM,RgDotNorm,RgPool,RgPoolMag,&
-      Rhkl ! from HKLMake ..fill reflection pool
-    USE IPara, ONLY : &
-      IHKLSelectFLAG,&
-      IHolzFLAG,& ! higher order Laue
-      IImageFLAG,&
-      IMinStrongBeams,IMinWeakBeams,&
-      INoOfLacbedPatterns,&
-      IPixelCount,&
-      IThicknessCount,&
-      nReflections,&
-      IOutputReflections
-    USE BlochPara, ONLY : RBigK ! from StructureFactorInitialisation            
+    USE CPara, ONLY : CUgMat
+    USE RPara, ONLY : RDeltaK,RDeltaThickness,RInitialThickness,RNormDirM,RgDotNorm,RgPool,&
+                      RgPoolMag,Rhkl
+    USE IPara, ONLY : IHKLSelectFLAG,IHolzFLAG,IImageFLAG,IMinStrongBeams,IMinWeakBeams,&
+                      INoOfLacbedPatterns,IPixelCount,IThicknessCount,nReflections,&
+                      IOutputReflections
+    USE BlochPara, ONLY : RBigK            
     
     IMPLICIT NONE
     
@@ -98,7 +75,6 @@ MODULE bloch_mod
           IFirstPixelToCalculate
     INTEGER(IKIND),INTENT(OUT) :: IErr
     
-    ! local - previously global !?? track allocations & global remnants
     COMPLEX(CKIND),ALLOCATABLE :: CBeamProjectionMatrix(:,:),&
           CDummyBeamMatrix(:,:),CUgSgMatrix(:,:),CEigenVectors(:,:),CEigenValues(:),&
           CInvertedEigenVectors(:,:),CAlphaWeightingCoefficients(:),&
@@ -108,8 +84,6 @@ MODULE bloch_mod
           RTiltedK(ITHREE)
     INTEGER(IKIND) :: IStrongBeamList(nReflections),IWeakBeamList(nReflections),&
           nBeams,nWeakBeams
-
-    ! local - previously local
     INTEGER(IKIND) :: ind,knd,pnd,IThickness,IThicknessIndex,ILowerLimit,&
           IUpperLimit       
     REAL(RKIND) :: RThickness,RKn
@@ -210,7 +184,7 @@ MODULE bloch_mod
     ! higher order Laue zones
     !--------------------------------------------------------------------
 
-    IF (IHolzFLAG.EQ.1) THEN!We are considering higher order Laue Zones (suspect this is non-functional!!)
+    IF (IHolzFLAG.EQ.1) THEN!We are considering higher order Laue Zones !?? suspect this is non-functional
       DO ind=1,nBeams
         CUgSgMatrix(ind,ind) = CUgSgMatrix(ind,ind) + TWO*RBigK*RDevPara(IStrongBeamList(ind))
       ENDDO
@@ -259,8 +233,8 @@ MODULE bloch_mod
 	      ! Replace the Sg's
         CUgSgMatrix(knd,knd)= CUgSgMatrix(knd,knd) - TWO*RBigK*sumD/(TWOPI*TWOPI)
       ENDDO
-	  !The 4pi^2 is a result of using h, not hbar, in the conversion from VG(ij) to Ug(ij).  Needs to be taken out of the weak beam calculation too 
-	  !Divide by 2K so off-diagonal elementa are Ug/2K, diagonal elements are Sg, Spence's (1990) 'Structure matrix'
+	    !The 4pi^2 is a result of using h, not hbar, in the conversion from VG(ij) to Ug(ij).  Needs to be taken out of the weak beam calculation too 
+	    !Divide by 2K so off-diagonal elementa are Ug/2K, diagonal elements are Sg, Spence's (1990) 'Structure matrix'
       CUgSgMatrix = TWOPI*TWOPI*CUgSgMatrix/(TWO*RBigK)
     END IF
 
@@ -292,7 +266,7 @@ MODULE bloch_mod
     !--------------------------------------------------------------------
    
     ! Calculate intensities for different specimen thicknesses
-    !?? ADD VARIABLE PATH LENGTH HERE
+    !?? ADD VARIABLE PATH LENGTH HERE !?? what does this comment mean?
     DO IThicknessIndex=1,IThicknessCount,1
       RThickness = RInitialThickness + REAL((IThicknessIndex-1),RKIND)*RDeltaThickness 
       IThickness = NINT(RThickness,IKIND)
@@ -300,7 +274,7 @@ MODULE bloch_mod
                     nReflections,nBeams,IStrongBeamList,CEigenVectors,CEigenValues,IErr)
       IF(l_alert(IErr,"BlochCoefficientCalculation","CreateWaveFunctions")) RETURN
       ! Collect Intensities from all thickness for later writing
-      IF(IHKLSelectFLAG.EQ.0) THEN ! we are using hkl list from felix.hkl !?? JR is this wrong?
+      IF(IHKLSelectFLAG.EQ.0) THEN ! we are not using hkl list from felix.hkl
         IF(IImageFLAG.LE.2) THEN ! output is 0=montage, 1=individual images
           RIndividualReflections(1:INoOfLacbedPatterns,IThicknessIndex,&
                 (IPixelNumber-IFirstPixelToCalculate)+1) = &
@@ -310,7 +284,7 @@ MODULE bloch_mod
                 (IPixelNumber-IFirstPixelToCalculate)+1) = &
                 CFullWavefunctions(1:INoOfLacbedPatterns)
         END IF
-      ELSE ! we are using hkl list from [where?] !?? JR is this from felix.hkl and above not
+      ELSE ! we are using hkl list from felix.hkl
         IF(IImageFLAG.LE.2) THEN
           DO pnd = 1,INoOfLacbedPatterns
             RIndividualReflections(pnd,IThicknessIndex,&
@@ -337,23 +311,13 @@ MODULE bloch_mod
 
   !%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-
-
   !>
   !! Procedure-description: Calculates diffracted intensity for a specific thickness
-  !!
-  !! Closed procedure, no access to global variables
   !!
   !! Major-Authors: Keith Evans (2014), Richard Beanland (2016)
   !!
   SUBROUTINE CreateWaveFunctions(RThickness,RFullWaveIntensity,CFullWaveFunctions,&
                     nReflections,nBeams,IStrongBeamList,CEigenVectors,CEigenValues,IErr)
-
-    ! -----> RFullWaveIntensity
-    !?? JR used to assign intensity for a pixel, a thickness, each LACBED_ID
-
-    !?? called every BlochCoefficientCalculation()
-    !?? all global varibles on in/out are local to bloch excluding nReflections
 
     USE MyNumbers
     USE MyMPI
@@ -361,22 +325,18 @@ MODULE bloch_mod
 
     IMPLICIT NONE
     
-    REAL(RKIND) :: RThickness ! non-global input
-    ! global inputs and outputs
+    REAL(RKIND),INTENT(IN) :: RThickness
     REAL(RKIND),INTENT(OUT) :: RFullWaveIntensity(nReflections)
     COMPLEX(CKIND),INTENT(OUT) :: CFullWaveFunctions(nReflections) 
     INTEGER(IKIND),INTENT(IN) :: nReflections,nBeams,IStrongBeamList(nReflections)
     COMPLEX(CKIND),INTENT(IN) :: CEigenVectors(nBeams,nBeams),CEigenValues(nBeams)
-    INTEGER(IKIND),INTENT(OUT) :: IErr ! non-global, classic IErr  
-    !?? old globals, now used locally
+    INTEGER(IKIND),INTENT(OUT) :: IErr 
     REAL(RKIND) :: RWaveIntensity(nBeams)
     COMPLEX(CKIND) :: CInvertedEigenVectors(nBeams,nBeams),CPsi0(nBeams),&
           CWaveFunctions(nBeams),CEigenValueDependentTerms(nBeams,nBeams),&
           CAlphaWeightingCoefficients(nBeams)
-    ! locals
     INTEGER(IKIND) :: ind,jnd,knd,hnd,ifullind,iuniind,gnd,ichnk
     COMPLEX(CKIND) :: CDummyEigenVectors(nBeams,nBeams)
-    !?? JR I'm allocating in declaration, should I allocate directly and error check?
     
     ! The top surface boundary conditions
     CPsi0 = CZERO ! all diffracted beams are zero
@@ -405,10 +365,6 @@ MODULE bloch_mod
     DO hnd=1,nBeams
        RWaveIntensity(hnd)=CONJG(CWaveFunctions(hnd)) * CWaveFunctions(hnd)
     ENDDO  
-    
-    !--------------------------------------------------------------------
-    ! rePADDing of wave function and intensities with zero's 
-    !--------------------------------------------------------------------
 
     CFullWaveFunctions=CZERO
     RFullWaveIntensity=ZERO
@@ -428,34 +384,25 @@ MODULE bloch_mod
   !! pertubation strengths and iterates over the number of weak and strong until
   !! there are enough.
   !!
-  !! Closed procedure, no access to global variables
-  !!
   !! Major-Authors: Keith Evans (2014), Richard Beanland (2016)
   !!
   SUBROUTINE StrongAndWeakBeamsDetermination(nReflections,IMinWeakBeams,&
                     IMinStrongBeams,RDevPara,CUgMat,&
                     IStrongBeamList,IWeakBeamList,nBeams,nWeakBeams,IErr)
     
-    !?? JR called every BlochCoefficientCalculation()
-    !?? select only those beams where the Ewald sphere is close to the
-    !?? reciprocal lattice, i.e. within RBSMaxDeviationPara
-
-    !?? inputs outside bloch nReflections,IMinWeakBeams,IMinStrongBeams
-    !?? outputs outside bloch CUgMat
+    ! select only those beams where the Ewald sphere is close to the
+    ! reciprocal lattice, i.e. within RBSMaxDeviationPara
 
     USE MyNumbers
     USE MyMPI
     USE message_mod 
 
-    !?? variables match up to globals allocation
-    !?? make some of these local
     INTEGER(IKIND),INTENT(IN) :: nReflections
     REAL(RKIND),DIMENSION(nReflections),INTENT(IN) :: RDevPara
     COMPLEX(CKIND),DIMENSION(nReflections,nReflections),INTENT(IN) :: CUgMat
-    INTEGER(IKIND),INTENT(IN) :: IMinWeakBeams, IMinStrongBeams !?? move integers together
+    INTEGER(IKIND),INTENT(IN) :: IMinWeakBeams, IMinStrongBeams
     INTEGER(IKIND),DIMENSION(nReflections),INTENT(OUT) :: IStrongBeamList,IWeakBeamList
     INTEGER(IKIND),INTENT(OUT) :: nBeams,nWeakBeams,IErr
-
     INTEGER(IKIND) :: ind,jnd
     INTEGER(IKIND),DIMENSION(:) :: IStrong(nReflections),IWeak(nReflections)
     REAL(RKIND) :: RMaxSg,RMinPertStrong,RMinPertWeak
@@ -488,8 +435,6 @@ MODULE bloch_mod
       RMaxSg=RMaxSg+0.005
       ! RMinPertStrong=0.0025/RMaxSg
     END DO
-    !?? should this be do until loop
-
 
     ! give the strong beams a number in IStrongBeamList
     IStrongBeamList=0_IKIND
@@ -500,7 +445,6 @@ MODULE bloch_mod
         ind=ind+1
 	    END IF
     END DO
-    !?? could this be done by better array assignment
 
     ! this is used to give the dimension of the Bloch wave problem
     nBeams=ind-1  
@@ -526,7 +470,6 @@ MODULE bloch_mod
 	  END WHERE
       RMinPertWeak=0.9*RMinPertWeak
     END DO
-    !?? should this be do until loop
 
     CALL message(LXL,dbg7,"weak beams",SUM(IWeak))
     CALL message(LXL,dbg7,"Smallest weak perturbation strength = ",RMinPertWeak)
@@ -540,7 +483,6 @@ MODULE bloch_mod
         ind=ind+1
       END IF
     END DO
-    !?? could this be done by better array assignment
     nWeakBeams=ind-1
 
     CALL message(LXL,dbg7,"Weak Beam List",IWeakBeamList)
@@ -550,19 +492,15 @@ MODULE bloch_mod
   !%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 
-
   !>
   !! Procedure-description: Returns eigenvalues and eigenvectors of matrix.
-  !!
-  !! Closed procedure, no access to global variables
   !!
   !! Major-Authors: Keith Evans (2014), Richard Beanland (2016)
   !!
   SUBROUTINE EigenSpectrum(IMatrixDimension, MatrixToBeDiagonalised, EigenValues,&
                     EigenVectors, IErr)
 
-    !?? called every BlochCoefficientCalculation()
-
+    ! accesses procedure ZGEEV
     USE MyNumbers
     USE message_mod
     USE MyMPI
@@ -570,12 +508,10 @@ MODULE bloch_mod
     IMPLICIT NONE
 
     INTEGER(IKIND),INTENT(IN) :: IMatrixDimension
-    !?? JR there are no errors using intent(in) only, does ZGEEV not change it
     COMPLEX(RKIND),INTENT(IN) :: MatrixToBeDiagonalised(IMatrixDimension,IMatrixDimension)
     COMPLEX(RKIND),INTENT(OUT) :: EigenValues(IMatrixDimension),&
           EigenVectors(IMatrixDimension,IMatrixDimension)
     INTEGER(IKIND),INTENT(OUT) :: IErr
-
     INTEGER(IKIND) :: WorkSpaceDimension
     ! dummy vector outputs used while finding respective eigenvectors/values
     COMPLEX(CKIND),DIMENSION(:), ALLOCATABLE :: CWorkSpace 
@@ -589,13 +525,11 @@ MODULE bloch_mod
     ALLOCATE(WorkSpace(2*IMatrixDimension),STAT = IErr)
     IF(l_alert(IErr,"EigenSpectrum","allocate WorkSpace")) RETURN
 
-
     WorkSpaceDimension=-1
 
     CALL ZGEEV('N','V', IMatrixDimension, MatrixToBeDiagonalised, IMatrixDimension,&
          EigenValues, 0,1, EigenVectors,IMatrixDimension, &
          CWorkSpace, WorkSpaceDimension, WorkSpace, IErr )
-    !?? '0,1' constant inputs don't match documentation 
     IF(l_alert(IErr,"EigenSpectrum","ZGEEV()")) RETURN
 
     WorkSpaceDimension = INT(CWorkSpace(1))
@@ -626,18 +560,11 @@ MODULE bloch_mod
   !>
   !! Procedure-description: Invert an M*M Complex Matrix
   !!
-  !! Closed procedure, no access to global variables
-  !!
   !! Major-Authors: Keith Evans (2014), Richard Beanland (2016)
   !!
   SUBROUTINE INVERT(MatrixSize,Matrix,InvertedMatrix,IErr)  
 
-    !?? JR how access ZGETRF?
-
-    !?? JR called in one place (each iteration), in CreateWavefunctions()
-    ! Matrix: the Matrix (Destroyed)
-    ! InvertedMatrix: the Inverse
-
+    ! accesses procedure ZGETRF
     USE MyNumbers
     USE message_mod
     USE MyMPI
@@ -645,8 +572,7 @@ MODULE bloch_mod
     IMPLICIT NONE
     
     INTEGER(IKIND),INTENT(IN) :: MatrixSize
-    !?? does this need INOUT as changed here
-    COMPLEX(CKIND),INTENT(IN) :: Matrix(MatrixSize,MatrixSize)
+    COMPLEX(CKIND),INTENT(INOUT) :: Matrix(MatrixSize,MatrixSize) ! destroyed in process
     COMPLEX(CKIND),INTENT(OUT) :: InvertedMatrix(1:MatrixSize,1:MatrixSize)
     INTEGER(IKIND),INTENT(OUT) :: IErr
 

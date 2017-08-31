@@ -31,25 +31,23 @@
 !%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 !>
-!! Module-description: 
+!! Module-description:
 !!
 MODULE write_output_mod
 
   IMPLICIT NONE
   PRIVATE
-  PUBLIC :: WriteIterationOutput, WriteIterationCIF, WriteOutVariables, &
-            NormaliseExperimentalImagesAndWriteOut
+  PUBLIC :: WriteIterationOutput, WriteOutVariables, NormaliseExperimentalImagesAndWriteOut
 
   CONTAINS
 
   !>
-  !! Procedure-description: 
+  !! Procedure-description: Writes output for interations including simulated .bin files, 
+  !! structureFactors.txt and structure.cif 
   !!
   !! Major-Authors: 'kidwhizz' (2015), Richard Beanland (2016)
   !!
   SUBROUTINE WriteIterationOutput(Iter,IThicknessIndex,IExitFlag,IErr)
-
-    !?? called in felixrefine & SimulateAndFit
 
     USE MyNumbers
     USE message_mod
@@ -97,28 +95,19 @@ MODULE write_output_mod
     
     ! Write Images to disk
     DO ind = 1,INoOfLacbedPatterns
-      ! Make the path/filenames  
-      ! Iterates over 3 vector components to make filename e.g. 'GaAs-2-2+0.bin.
-      WRITE(filename,"(A1,I3.3,A3,I3.3,A1,I3.3,A1)")"_",IThickness,"nm_",&
-                  2*IPixelcount,"x",2*IPixelcount,"_"
-      filename = TRIM(ADJUSTL(path))//"/"//TRIM(ADJUSTL(SChemicalFormula))&
-                  //TRIM(ADJUSTL(filename))    
-      DO jnd = 1,3
-        WRITE(SIntString,*) NINT(Rhkl(IOutPutReflections(ind),jnd))
-        IF (NINT(Rhkl(IOutPutReflections(ind),jnd)) >= 0) THEN    
-          filename = TRIM(filename) // '+'
-        END IF
-        filename = TRIM(filename) // TRIM(ADJUSTL(SIntString))
-      END DO
-      filename = TRIM(filename) // '.bin'
+      ! Make the path/filenames e.g. 'GaAs-2-2+0.bin'
+      WRITE(filename,"(A,A1,I3.3,A3,I3.3,A1,I3.3,A1,SP,3(I2.1),A4)")&
+            TRIM(ADJUSTL(SChemicalFormula)),"_",IThickness,"nm_",&
+            2*IPixelcount,"x",2*IPixelcount,"_",NINT(Rhkl(IOutPutReflections(ind),1:3)),'.bin'
 
-      CALL message ( LL, dbg6, filename )
+      fullpath = TRIM(ADJUSTL(path))//"/"//TRIM(ADJUSTL(filename))
+      CALL message ( LL, dbg6, fullpath )
+
       RImageToWrite = RImageSimi(:,:,ind,IThicknessIndex)	
-
       ! Writes data to output image .bin files
-      OPEN(UNIT=IChOutWIImage, STATUS= 'UNKNOWN', FILE=TRIM(ADJUSTL(filename)),&
+      OPEN(UNIT=IChOutWIImage, STATUS= 'UNKNOWN', FILE=TRIM(ADJUSTL(fullpath)),&
 	          FORM='UNFORMATTED',ACCESS='DIRECT',IOSTAT=IErr,RECL=2*IPixelCount*8)
-      IF(l_alert(IErr,"WriteIterationOutput","OPEN() output .bin file")) RETURN       
+      IF(l_alert(IErr,"WriteIterationOutput","OPEN() output .bin file")) RETURN      
       DO jnd = 1,2*IPixelCount
         WRITE(IChOutWIImage,rec=jnd) RImageToWrite(jnd,:)
       END DO
@@ -126,9 +115,11 @@ MODULE write_output_mod
       IF(l_alert(IErr,"WriteIterationOutput","CLOSE() output .bin file")) RETURN       
     END DO
 
+    ! writes out structure.cif
     CALL WriteIterationCIF(path,IErr) 
     IF(l_alert(IErr,"WriteIterationOutput","WriteIterationCIF")) RETURN   
 
+    ! write out StructureFactors.txt
     WRITE(filename,*) "StructureFactors.txt"
     WRITE(fullpath,*) TRIM(ADJUSTL(path)),'/',TRIM(ADJUSTL(filename))
     OPEN(UNIT=IChOut,STATUS='UNKNOWN',FILE=TRIM(ADJUSTL(fullpath)))
@@ -148,85 +139,12 @@ MODULE write_output_mod
   !%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
   !>
-  !! Procedure-description: This can be used as a quick way to visually compare experimental 
-  !! and simulated images. This scales each experimental image such that the max value
-  !! matches the corresponding final simulated image and writes it out in an equaivalent
-  !! .bin format.
-  !!
-  !! Major-Authors: Jacob Richardson (2017)
-  !!
-  SUBROUTINE NormaliseExperimentalImagesAndWriteOut(IThicknessIndex,IErr)
-
-    USE MyNumbers
-    USE message_mod
-
-    !global inputs
-    USE RPara, ONLY : RImageExpi, RImageSimi, Rhkl, RInitialThickness, RDeltaThickness
-    USE IPara, ONLY : IPixelcount, IOutPutReflections, INoOfLacbedPatterns
-    USE Spara, ONLY : SChemicalFormula
-    USE IChannels, ONLY : IChOutWIImage, IChOut
-
-    IMPLICIT NONE   
-    INTEGER(IKIND), INTENT(OUT) :: IErr
-    INTEGER(IKIND), INTENT(IN) :: IThicknessIndex
-    CHARACTER(200) :: path, filename
-    CHARACTER(20) :: SIntString
-    INTEGER(IKIND) :: IThickness, ind, jnd
-    REAL(RKIND), ALLOCATABLE :: RImageToWrite(:,:)
-
-    CALL message(LS,"Normalising experimental images and writing out")
-
-    IThickness = (RInitialThickness + (IThicknessIndex-1)*RDeltaThickness)/10!in nm 
-
-    WRITE(path,"(I3.3,A1,I3.3)") &
-          2*IPixelcount,"x",2*IPixelcount
-    path = TRIM(SChemicalFormula) // "_experi_images_" // path
-
-    CALL system('mkdir ' // path)
-
-    ! Write Images to disk
-    DO ind = 1,INoOfLacbedPatterns
-      ! Make the path/filenames  
-      ! Iterates over 3 vector components to make filename e.g. 'GaAs-2-2+0.bin.
-      WRITE(filename,"(A1,I3.3,A3,I3.3,A1,I3.3,A1)")"_approx",IThickness,"nm_",&
-                  2*IPixelcount,"x",2*IPixelcount,"_"
-      filename = TRIM(ADJUSTL(path))//"/"//TRIM(ADJUSTL(SChemicalFormula))&
-                  //TRIM(ADJUSTL(filename))
-      DO jnd = 1,3
-        WRITE(SIntString,*) NINT(Rhkl(IOutPutReflections(ind),jnd))
-        IF (NINT(Rhkl(IOutPutReflections(ind),jnd)) >= 0) THEN    
-          filename = TRIM(filename) // '+'
-        END IF
-        filename = TRIM(filename) // TRIM(ADJUSTL(SIntString))
-      END DO
-      filename = TRIM(filename) // '.bin'
-
-      RImageToWrite = RImageExpi(:,:,ind)
-      RImageToWrite = RImageToWrite / MAXVAL(RImageToWrite) * MAXVAL(RImageSimi(:,:,ind,IThicknessIndex))
-
-      ! Writes data to output image .bin files
-      OPEN(UNIT=IChOutWIImage, STATUS= 'UNKNOWN', FILE=TRIM(ADJUSTL(filename)),&
-            FORM='UNFORMATTED',ACCESS='DIRECT',IOSTAT=IErr,RECL=2*IPixelCount*8)
-      IF(l_alert(IErr,"WriteIterationOutput","OPEN() output .bin file")) RETURN       
-      DO jnd = 1,2*IPixelCount
-        WRITE(IChOutWIImage,rec=jnd) RImageToWrite(jnd,:)
-      END DO
-      CLOSE(IChOutWIImage,IOSTAT=IErr) 
-      IF(l_alert(IErr,"WriteIterationOutput","CLOSE() output .bin file")) RETURN       
-    END DO   
-
-  END SUBROUTINE NormaliseExperimentalImagesAndWriteOut
-
-  !%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-
-  !>
-  !! Procedure-description: Write out non symmetrically related atomic positions
+  !! Procedure-description: Write out structure.cif containing non symmetrically relate
+  !! atomic positions.
   !!
   !! Major-Authors: 'kidwhizz' (2015), Richard Beanland (2016)
   !!
   SUBROUTINE WriteIterationCIF(path,IErr)
-
-    !?? called in felixrefine & SimulateAndFit, via WriteIterationOutput() 
 
     USE MyNumbers
     USE message_mod
@@ -295,8 +213,6 @@ MODULE write_output_mod
   END SUBROUTINE WriteIterationCIF
 
   !%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-
-
 
   !>
   !! Procedure-description: Adds the current fit and simulation parameters to IterationLog.txt
@@ -413,11 +329,73 @@ MODULE write_output_mod
     WRITE(STotalOutputVariables,*) ITotalOutputVariables
     WRITE(SFormat,*) "(I5.1,1X,F13.9,1X,"//TRIM(ADJUSTL(STotalOutputVariables))//"(F13.9,1X))"
 
-    OPEN(UNIT=IChOutSimplex,file='iteration_log.txt',form='formatted',status='unknown',&
-          position='append')
+    OPEN(UNIT=IChOutSimplex,FILE='iteration_log.txt',FORM='formatted',STATUS='unknown',&
+          POSITION='append')
     WRITE(UNIT=IChOutSimplex,FMT=SFormat) Iter-1,RFigureofMerit,RDataOut
     CLOSE(IChOutSimplex)
 
   END SUBROUTINE WriteOutVariables
+
+  !%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+  !>
+  !! Procedure-description: This can be used as a quick way to visually compare .img input 
+  !! images and simulated .bin images. This scales each experimental image such that the max value
+  !! matches the corresponding final simulated image and writes it out in an equaivalent
+  !! .bin format in the current directory.
+  !!
+  !! Major-Authors: Jacob Richardson (2017)
+  !!
+  SUBROUTINE NormaliseExperimentalImagesAndWriteOut(IThicknessIndex,IErr)
+
+    USE MyNumbers
+    USE message_mod
+
+    !global inputs
+    USE RPara, ONLY : RImageExpi, RImageSimi, Rhkl, RInitialThickness, RDeltaThickness
+    USE IPara, ONLY : IPixelcount, IOutPutReflections, INoOfLacbedPatterns
+    USE Spara, ONLY : SChemicalFormula
+    USE IChannels, ONLY : IChOutWIImage, IChOut
+
+    IMPLICIT NONE   
+    INTEGER(IKIND), INTENT(OUT) :: IErr
+    INTEGER(IKIND), INTENT(IN) :: IThicknessIndex
+    CHARACTER(200) :: path, filename, fullpath
+    CHARACTER(20) :: SIntString
+    INTEGER(IKIND) :: IThickness, ind, jnd
+    REAL(RKIND), ALLOCATABLE :: RImageToWrite(:,:)
+
+    CALL message(LS,"Writing out normalised experimental images")
+
+    IThickness = (RInitialThickness + (IThicknessIndex-1)*RDeltaThickness)/10!in nm 
+
+    WRITE(path,"(A,A,I3.3,A1,I3.3)") &
+          TRIM(SChemicalFormula),"_experi_images_",2*IPixelcount,"x",2*IPixelcount
+
+    CALL system('mkdir ' // path)
+
+    ! Write Images to disk
+    DO ind = 1,INoOfLacbedPatterns
+      ! Make the path/filenames  
+      WRITE(filename,"(A,A,I3.3,A1,I3.3,A1,SP,3(I2.1),A)")&
+            TRIM(ADJUSTL(SChemicalFormula)),"_experi_",2*IPixelcount,"x",2*IPixelcount,&
+            "_",NINT(Rhkl(IOutPutReflections(ind),1:3)),'.bin'
+      fullpath=TRIM(path)//'/'//filename
+
+      RImageToWrite = RImageExpi(:,:,ind)
+      RImageToWrite = RImageToWrite/ MAXVAL(RImageToWrite)*MAXVAL(RImageSimi(:,:,ind,IThicknessIndex))
+
+      ! Writes data to output image .bin files
+      OPEN(UNIT=IChOutWIImage, STATUS= 'UNKNOWN', FILE=TRIM(ADJUSTL(fullpath)),&
+            FORM='UNFORMATTED',ACCESS='DIRECT',IOSTAT=IErr,RECL=2*IPixelCount*8)
+      IF(l_alert(IErr,"WriteIterationOutput","OPEN() output .bin file")) RETURN       
+      DO jnd = 1,2*IPixelCount
+        WRITE(IChOutWIImage,rec=jnd) RImageToWrite(jnd,:)
+      END DO
+      CLOSE(IChOutWIImage,IOSTAT=IErr) 
+      IF(l_alert(IErr,"WriteIterationOutput","CLOSE() output .bin file")) RETURN       
+    END DO   
+
+  END SUBROUTINE NormaliseExperimentalImagesAndWriteOut
 
 END MODULE write_output_mod

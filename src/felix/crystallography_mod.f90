@@ -30,11 +30,8 @@
 !
 !%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-!?? both lattice - reciprical, one physical consider all atoms and symmetry
-!?? reprical - setup, UniqueAtomPositions - update every sim
-
 !>
-!! Module-description: 
+!! Module-description: This handle lattice vectors as well as the fractional atomic positions
 !!
 MODULE crystallography_mod
   IMPLICIT NONE
@@ -51,8 +48,6 @@ MODULE crystallography_mod
   !! Major-Authors: Keith Evans (2014), Richard Beanland (2016)
   !!
   SUBROUTINE ReciprocalLattice(IErr)
-     
-    !?? called felixrefine setup
 
     USE MyNumbers
 
@@ -181,16 +176,14 @@ MODULE crystallography_mod
   !%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
   !>
-  !! Procedure-description: Calculates the FULL set of possible fractional atomic positions
+  !! Procedure-description: Calculates the full set of possible fractional atomic positions
   !! and then gets rid of duplicates
   !!
   !! Major-Authors: Keith Evans (2014), Richard Beanland (2016, 2017)
   !!
   SUBROUTINE UniqueAtomPositions(IErr)
 
-    !?? called each SimulateAndFit
-    !?? called in felixrefine setup
-    !?? JR updates full crystal arrays from basis atom refinement
+    ! updates full crystal arrays from basis atom refinement
     
     USE MyNumbers
     USE message_mod
@@ -226,7 +219,6 @@ MODULE crystallography_mod
               RAllAnisoDW(SIZE(RSymVec,1)*SIZE(RBasisAtomPosition,1)), STAT=IErr )
     IF(l_alert(IErr,"UniqueAtomPositions","allocations")) RETURN
    
-
     !--------------------------------------------------------------------  
     ! apply symmetry elements to generate all equivalent positions 
     !--------------------------------------------------------------------  
@@ -245,14 +237,12 @@ MODULE crystallography_mod
 	    knd=knd+1
       END DO
     END DO
-    RAllAtomPosition = MODULO(RAllAtomPosition,ONE) !?? what does this do JR, all -> tiny/zero?
+    RAllAtomPosition = MODULO(RAllAtomPosition,ONE)
     WHERE(ABS(RAllAtomPosition).LT.TINY) RAllAtomPosition = ZERO 
 
     !--------------------------------------------------------------------  
     ! Reduce to the set of unique fractional atomic positions
     !--------------------------------------------------------------------
-
-    ! used to be SUBROUTINE CrystalUniqueFractionalAtomicPostitionsCalculation
     
     ! first atom has to be in this set
     RAtomPosition(1,:)= RAllAtomPosition(1,:)
@@ -277,7 +267,7 @@ MODULE crystallography_mod
       IF (Lunique .EQV. .TRUE.) THEN
         RAtomPosition(jnd,:)= RAllAtomPosition(ind,:)
         SAtomLabel(jnd)= SAllAtomLabel(ind)
-        SAtomName(jnd)= SAllAtomName(ind) !?? never used
+        SAtomName(jnd)= SAllAtomName(ind)
         RIsoDW(jnd) = RAllIsoDW(ind)
         ROccupancy(jnd) = RAllOccupancy(ind)
         IAtomicNumber(jnd) = IAllAtomicNumber(ind)!
@@ -305,7 +295,6 @@ MODULE crystallography_mod
     !--------------------------------------------------------------------
 
     ! calculate from Fractional Coordinates and Lattice Vectors
-
     ! In microscope reference frame, in Angstrom units
     DO ind=1,INAtomsUnitCell
       DO jnd=1,ITHREE

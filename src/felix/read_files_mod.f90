@@ -30,13 +30,6 @@
 !
 !%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-! All procedures conatained in this file:
-! ReadInpFile( )
-! ReadHklFile( )
-! ReadExperimentalImages( )
-! DetermineRefineableAtomicSites( )
-! ThreeDimVectorReadIn( )
-
 MODULE read_files_mod
 
   IMPLICIT NONE
@@ -52,7 +45,7 @@ MODULE read_files_mod
   !!
   SUBROUTINE ReadInpFile ( IErr )
 
-    !?? this should contain clear input information
+    !?? this should contain clear input information and be well documented
     !?? github and other places should referance here
 
     USE MyNumbers
@@ -158,7 +151,7 @@ MODULE read_files_mod
     CALL message ( LXL, dbg3, "IAnisoDebyeWallerFactorFlag=",IAnisoDebyeWallerFactorFlag)
     ! IByteSize
     ILine= ILine+1; READ(IChInp,'(27X,I15.1)',ERR=20,END=30) IByteSize
-    CALL message ( LXL, dbg3, "IByteSize=",IByteSize) !?? depends on system, 8 for csc, 4 tinis
+    CALL message ( LXL, dbg3, "IByteSize=",IByteSize) ! depends on system, 8 for csc, 4 tinis
 
     !--------------------------------------------------------------------
     ! radius of the beam in pixels
@@ -196,11 +189,10 @@ MODULE read_files_mod
     ! Two comment lines          
     ILine= ILine+1; READ(IChInp,ERR=20,END=30,FMT='(A)')
     ILine= ILine+1; READ(IChInp,ERR=20,END=30,FMT='(A)')
-    ! RDebyeWallerConstant          !?? default, if not specified in .cif
+    ! RDebyeWallerConstant          ! default, if not specified in .cif
     ILine= ILine+1; READ(IChInp,'(27X,F18.9)',ERR=20,END=30) RDebyeWallerConstant
-    ! RAbsorptionPercentage         !?? for proportional model of absorption
-    ILine= ILine+1
-    READ(IChInp,'(27X,F18.9)',ERR=20,END=30) RAbsorptionPercentage
+    ! RAbsorptionPercentage         ! for proportional model of absorption
+    ILine= ILine+1; READ(IChInp,'(27X,F18.9)',ERR=20,END=30) RAbsorptionPercentage
 
     !--------------------------------------------------------------------
     ! microscope settings
@@ -231,7 +223,7 @@ MODULE read_files_mod
     ! Image Output Options
     !--------------------------------------------------------------------
 
-    !?? update input files and section here to 'specimin thickness'
+    !?? update sample felix.inp and section here to 'specimin thickness'
 
     ! Two comment lines
     ILine= ILine+1; READ(IChInp,ERR=20,END=30,FMT='(A)')
@@ -277,8 +269,6 @@ MODULE read_files_mod
       IF(IRefineMode(8) .EQ.1) CALL message( LS, "Refining Convergence Angle")
       IF(IRefineMode(9) .EQ.1) CALL message( LS, "Refining Absorption")
       IF(IRefineMode(10).EQ.1) CALL message( LS, "Refining Accelerating Voltage ")
-      !?? ISimFlag should always be zero here
-      IF(ISimFlag.EQ.1) CALL message( LS, "Simulation only")
       ! Error Check - user cannot request Ug refinement and anything else
       IF((IRefineMode(1).EQ.1).AND.SUM(IRefineMode).GT.1) THEN
         IErr = 1; IF(l_alert(IErr,"ReadInpFile",&
@@ -286,7 +276,7 @@ MODULE read_files_mod
       END IF
     END IF
 
-    ! IWeightingFLAG          !?? is this still used JR
+    ! IWeightingFLAG         
     ILine= ILine+1; READ(IChInp,'(27X,I15.1)',ERR=20,END=30) IWeightingFLAG
     ! IMethodFLAG
     ILine= ILine+1; READ(IChInp,'(27X,I15.1)',ERR=20,END=30) IMethodFLAG
@@ -302,9 +292,9 @@ MODULE read_files_mod
     ILine= ILine+1; READ(IChInp,'(27X,F18.9)',ERR=20,END=30) RBlurRadius
     ! INoofUgs
     ILine= ILine+1; READ(IChInp,'(27X,I15.1)',ERR=20,END=30) INoofUgs
-    ! SAtomicSites !?? what global does this later set?
+    ! SAtomicSites
     ILine=ILine+1; READ(IChInp,FMT='(A)',ERR=20,END=30) SAtomicSites
-    CALL DetermineRefineableAtomicSites(SAtomicSites,IErr) !?? what does this do? JR
+    CALL DetermineRefineableAtomicSites(SAtomicSites,IErr)
     IF(l_alert(IErr,"ReadInpFile","DetermineRefineableAtomicSites()")) RETURN
     ! IPrint
     ILine= ILine+1; READ(IChInp,'(27X,I15.1)',ERR=20,END=30) IPrint
@@ -327,31 +317,23 @@ MODULE read_files_mod
     !--------------------------------------------------------------------
 
     !	error in READ() detected  
-  20 CONTINUE
+ 20 CONTINUE
     IErr=1
     WRITE(SPrintString,*) ILine
     IF(l_alert(IErr,"ReadInpFile",&
           "READ() felix.inp line number ="//TRIM(SPrintString))) RETURN
     
     !	EOF in READ() occured prematurely
-  30 CONTINUE
+ 30 CONTINUE
     IErr=1
     WRITE(SPrintString,*) ILine
     IF(l_alert( IErr,"ReadInpFile",&
           "READ() felix.inp, premature end of file, line number =" // &
           TRIM(SPrintString) )) RETURN
 
-    !?? JR Old write example felix.inp to screen removed
-    !?? JR could direct to github wiki page, it currently has clear information
-    !?? JR should be able to direct user to felix.inp in sample folders
-    !?? JR here should contain clear information about inputs and github can referance/link this
-
   END SUBROUTINE ReadInpFile
 
   !!$%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-
-
-
 
   !>
   !! Procedure-description:
@@ -366,8 +348,7 @@ MODULE read_files_mod
     ! global outputs
     USE RPARA, ONLY : RInputHKLs
     USE IPARA, ONLY : INoOfLacbedPatterns, IHKLSelectFLAG, &
-          IOutputReflections !?? allocated here
-
+          IOutputReflections ! allocated here
     ! global inputs
     USE IChannels, ONLY : IChInp
 
@@ -386,8 +367,8 @@ MODULE read_files_mod
     DO
       READ(UNIT= IChInp, END=100, FMT='(a)') dummy1
       ILine = ILine+1
-    ENDDO  !?? JR can we change this? IOSTAT EOF should be identifiable, IF EOF -> EXIT
-  100 INoOfLacbedPatterns = ILine
+    ENDDO
+100 INoOfLacbedPatterns = ILine
     CALL message ( LXL, dbg7, "Number of experimental images to load = ", INoOfLacbedPatterns)
 
     ALLOCATE(RInputHKLs(INoOfLacbedPatterns,ITHREE),STAT=IErr)
@@ -424,8 +405,8 @@ MODULE read_files_mod
 
     RETURN
 
-  10 CONTINUE
-    IHKLSelectFLAG=0 !?? JR hkl not found, elaborate what is used instead
+ 10 CONTINUE
+    IHKLSelectFLAG=0
     CALL message( LL, "felix.hkl not found, continuing")
     RETURN
 
@@ -460,26 +441,18 @@ MODULE read_files_mod
 
     ! for IByteSize: 2bytes=64-bit input file (NB tinis specifies in bytes, not bits)
 
-    DO ind = 1,INoOfLacbedPatterns  !?? JR should standardise this filename writing throughout
+    DO ind = 1,INoOfLacbedPatterns
       ! An image expected for each LacbedPattern
       ! Write corresponding filenames including chemical formula
-      WRITE(filename,*) TRIM(ADJUSTL(SChemicalFormula)),"_"
-      DO jnd = 1,3
-      WRITE(intstring,'(I3.1)')  NINT(RInputHKLs(ind,jnd))
-      IF (NINT(RInputHKLs(ind,jnd))>= 0) THEN
-        filename = TRIM(filename) // '+'
-      END IF
-      filename = TRIM(filename) // TRIM(ADJUSTL(IntString))
-      END DO
-      filename = TRIM(filename) // '.img'
+      WRITE(filename,'(A,A,SP,3(I2.1),A)') TRIM(ADJUSTL(SChemicalFormula)),"_",&
+            NINT(RInputHKLs(ind,1:3)), '.img'
 
       CALL message(LL, dbg7, "filename = ", filename)
       OPEN(UNIT= IChInImage, STATUS= 'UNKNOWN', FILE=TRIM(ADJUSTL(filename)), &
             FORM='UNFORMATTED',ACCESS='DIRECT',IOSTAT=IErr,RECL=2*IPixelCount*IByteSize)
       IF(l_alert(IErr,"ReadExperimentalImages",&
             "OPEN() an experimental image, filename ="//TRIM(ADJUSTL(filename)))) RETURN
-      !?? input image filenames should follow format like 'GaAs_+0+0-8.img'
-      !?? Chemical formula should match _chemical_formula_structural from felix.cif
+
       DO jnd=1,2*IPixelCount
         READ(IChInImage,rec=jnd,IOSTAT=IErr) RImageExpi(jnd,:,ind)
         IF(l_alert(IErr,"ReadExperimentalImages",&
@@ -508,10 +481,8 @@ MODULE read_files_mod
 
     USE MyNumbers
     USE message_mod
-
     ! global outputs
-    USE IPARA, ONLY : IAtomsToRefine
-    
+    USE IPARA, ONLY : IAtomsToRefine   
     ! global inputs
     USE IPARA, ONLY : IRefineMode 
 
@@ -583,10 +554,7 @@ MODULE read_files_mod
   SUBROUTINE ThreeDimVectorReadIn(SUnformattedVector,SOpenBracketDummy, &
         SCloseBracketDummy,RFormattedVector)
 
-    !?? interesting exercise - look into making pure JR
-
     ! e.g. CALL ThreeDimVectorReadIn(SIncidentBeamDirection,'[',']',RZDirC)
-    ! Current format has interesting bracket inputs
 
     USE MyNumbers
    
@@ -596,15 +564,9 @@ MODULE read_files_mod
           SUnformattedVector,SOpenBracketDummy,SCloseBracketDummy
     REAL(RKIND),INTENT(OUT),DIMENSION(3) :: &
           RFormattedVector
-
-    CHARACTER*1 :: &
-          SComma=',',SOpenBracket,SCloseBracket
-    CHARACTER*100 :: &
-          SFormattedVectorX,SFormattedVectorY,SFormattedVectorZ
-   
-    LOGICAL :: &
-          LBACK=.TRUE.
-    
+    CHARACTER*1 :: SComma=',',SOpenBracket,SCloseBracket
+    CHARACTER*100 :: SFormattedVectorX,SFormattedVectorY,SFormattedVectorZ   
+    LOGICAL :: LBACK=.TRUE.   
     INTEGER(IKIND) :: &
           IOpenBracketPosition, ICloseBracketPosition, IFirstCommaPosition, &
           ILastCommaPosition

@@ -58,40 +58,40 @@ MODULE message_mod
 !>
 !>  message( MsgPriority, MsgTag, text_to_print, variable_to_print )
 !>
-!>    MsgPriority   DERIVED TYPE ( msg_priority_TYPE ) = LS, LM, LL or LXL
+!>    MsgPriority         DERIVED TYPE ( msg_priority_TYPE ) = LS, LM, LL or LXL
 !>    (optional)
-!>                  This determines how important it is to print this message. Is it
-!>                  stating key operations of Felix or more particular, finer details?                       
+!>                This determines how important it is to print this message. Is it
+!>                stating key operations of Felix or more particular, finer details?                       
 !>             
-!>                  LS  : high priority (small level of output) for important statements & values
-!>                  LM  : medium prioriity (medium level of output)
-!>                  LL  : low priority (large output) for fines details & thorough variable output
-!>                  LXL : extremely low priority large output) & niche details
+!>                LS  : high priority (small level of output) for important statements & values
+!>                LM  : medium prioriity (medium level of output)
+!>                LL  : low priority (large output) for fines details & thorough variable output
+!>                LXL : extremely low priority large output) & niche details
 !>
-!>                  DEFAULT = LS
+!>                DEFAULT = LS
 !>
-!>                  At run-time this priority will be compared against the selected output mode
-!>                  given by IWriteFLAG in felix.inp. This will decide whether a message is
-!>                  is important enough to be printed. Additionally, Low priority  
-!>                  messages are indented further to the right to produce a tiered-output
-!>                  for clarity and readability.  
+!>                At run-time this priority will be compared against the selected output mode
+!>                given by IWriteFLAG in felix.inp. This will decide whether a message is
+!>                is important enough to be printed. Additionally, Low priority  
+!>                messages are indented further to the right to produce a tiered-output
+!>                for clarity and readability.  
 !>
-!>    MsgTag        DERIVED TYPE ( msg_tag_TYPE )
+!>    MsgTag              DERIVED TYPE ( msg_tag_TYPE )
 !>    (optional)         
-!>                  This allows for messages to be grouped together with tags. At run-time you 
-!>                  can select that only key messages and messages with a certain tag are printed.
+!>                This allows for messages to be grouped together with tags. At run-time you 
+!>                can select that only key messages and messages with a certain tag are printed.
 !>
-!>    SMainMsg      TYPE: String (1D CHARACTER array)
+!>    SMainMsg            TYPE: String (1D CHARACTER array)
 !>
-!>                  This is some text to print to the terminal.
-!>                  Any variable values will be printed after this text. 
+!>                This is some text to print to the terminal.
+!>                Any variable values will be printed after this text. 
 !>                        
 !>    variable_to_print   TYPE: COMPLEX, INTEGER, REAL, LOGICAL, String 
 !>    (optional)          DIMENSION: scalar, vector or matrix
 !>        
-!>                  The value of this variable will be printed to the terminal with
-!>                  a format depending upon its TYPE and DIMENSION. E.g. a REAL matrix
-!>                  will be printed on multiple lines in columns with fixed width decimal notation.                
+!>                The value of this variable will be printed to the terminal with
+!>                a format depending upon its TYPE and DIMENSION. E.g. a REAL matrix
+!>                will be printed on multiple lines in columns with fixed width decimal notation.                
 !>                       
 !>--------------------------------------------------------------------------------------------
 !>
@@ -109,12 +109,17 @@ MODULE message_mod
 !>
 !>    The tens component of the INTEGER relates to the MsgTag. 
 !>        
-!>        0   - no_tag  : no specific MsgTag's are switched on, only priority is considered
-!>        30  - dbg3    : corresponds to IWriteFLAG = 3 IN THE OLD SYSTEM, many print
-!>                        statements in the code previously only printed when IWriteFLAG = 3
+!>        0   - no_tag  : No indentation or tiered-structure and no messages have no_tag tag
+!>                        so only priority is considered.
+!>        10  - mode1   : This turns on tiered-structure and no messages have mode1 tag 
+!>                        so only priority is considered.
+!>        30  - dbg3    : Corresponds to IWriteFLAG = 3 IN THE OLD SYSTEM, many print
+!>                        statements in the code previously only printed when IWriteFLAG = 3.
+!>                        This will print all messages with dbg3 tag and priority messages
+!>                        depending upon the digit.
 !>
 !>        For the full list of MsgTag's and their corresponding IWriteFLAG ten's value,
-!>        refer to init_message_LOGICALs below.
+!>        refer to SetMessageMode() below.
 !>
 !>    IWriteFLAG examples: 
 !>        2  will print all LS, LM messages
@@ -127,7 +132,7 @@ MODULE message_mod
   USE MyNumbers               ! necesary for IKIND, RKIND etc.
   USE MyMPI, ONLY : my_rank   ! necesary for my_rank - used to print on core 0 only
 
-  !?? JR this grants MyNumbers, USE MyNumbers throughout code is for clariry...
+  !?? JR this grants MyNumbers, USE MyNumbers throughout code is for clarity not necessity 
 
   !-------------------------------------------------------------------------------------------
   ! HUGE INTERFACE to handle various variables TYPEs and optional arguments
@@ -189,7 +194,7 @@ MODULE message_mod
   !--------------------------------------------------------------------
 
   TYPE(MsgPriorities) :: LS, LM, LL, LXL
-  TYPE(MsgTags) :: no_tag, dbg7, dbg3, dbg6, dbg14, dbg1
+  TYPE(MsgTags) :: no_tag, dbg7, dbg3, dbg6, dbg14, mode1
 
   CHARACTER(:), ALLOCATABLE :: SIndentChars, SSpaces ! used for tiered-structure 
   LOGICAL,private :: LPrintThisCore ! used to print on all cores, usually = .FALSE.  
@@ -209,9 +214,9 @@ CONTAINS
 
     ! intially only set LS = .TRUE. before IWriteFLAG read-in
     LS%LState = .TRUE.; 
-    LM%LState = .FALSE.;    LL%LState = .FALSE.;   LXL%LState = .FALSE.
-    no_tag%LState=.FALSE.;  dbg7%LState = .FALSE.; dbg3%LState = .FALSE.;
-    dbg6%LState = .FALSE.;  dbg14%LState = .FALSE.
+    LM%LState = .FALSE.;    LL%LState = .FALSE.;    LXL%LState = .FALSE.
+    no_tag%LState=.FALSE.;  dbg7%LState = .FALSE.;  dbg3%LState = .FALSE.;
+    dbg6%LState = .FALSE.;  dbg14%LState = .FALSE.; mode1%LState = .FALSE.
     LPrintThisCore = .FALSE.   
   END SUBROUTINE
 
@@ -234,7 +239,7 @@ CONTAINS
       CASE (0:9)
         no_tag%LState=.FALSE.  
       CASE (10:19)
-        dbg1%LState = .TRUE.
+        mode1%LState = .TRUE.
         IPrio = IPrio - 10
         SSpaces = " "
         LS%SInitialMsg  = "->"; LM%SInitialMsg  = "---->"; 
@@ -267,7 +272,7 @@ CONTAINS
 
   !%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-  SUBROUTINE allow_message_on_this_core
+  SUBROUTINE AllowMessageOnThisCore
     LPrintThisCore = .TRUE.
     CALL messageIScalar3("MESSAGE FROM THIS CORE AS WELL, rank =",my_rank)
   END SUBROUTINE  !?? not currently used, but may be useful

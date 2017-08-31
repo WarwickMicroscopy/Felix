@@ -34,12 +34,6 @@
 ! $Id: smodules.f90,v 1.63 2014/04/28 12:26:19 phslaz Exp $
 !%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-! All procedures conatained in this file:
-! DetermineAllowedMovements()
-! CountAllowedMovements()
-! ConvertSpaceGroupToNumber()
-! StrLowCase() 
-
 !>
 !! Module-description: 
 !!
@@ -618,8 +612,7 @@ MODULE setup_space_group_mod
   !!
   SUBROUTINE ConvertSpaceGroupToNumber(ISpaceGrp,IErr)
 
-    !?? called once felixrefine setup via ConvertSpaceGroupToNumber for non-Ug refinement
-
+    ! called once felixrefine setup for non-Ug refinement
     USE MyNumbers
     USE message_mod
 
@@ -682,7 +675,7 @@ MODULE setup_space_group_mod
   !! Major-Authors: Keith Evans (2014), Richard Beanland (2016)
   !!
   SUBROUTINE StrLowCase( Input_String,Output_String,IErr )
-    !?? used twice in ConvertSpaceGroupToNumber
+    ! used twice in ConvertSpaceGroupToNumber
 
     USE MyNumbers
 

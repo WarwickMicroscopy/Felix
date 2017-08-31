@@ -49,8 +49,7 @@ MODULE image_initialisation_mod
   !!
   SUBROUTINE ImageInitialisation( IErr )
 
-    !?? called once in felixrefine setup
-
+    ! this procedure is called once in felixrefine during initial setup
     USE MyNumbers
     USE message_mod
 
@@ -113,8 +112,7 @@ MODULE image_initialisation_mod
   !!
   SUBROUTINE ImageMaskInitialisation (IErr)
     
-    !?? called once in felixrefine setup
-
+    ! this procedure is called once in felixrefine during initial setup
     USE MyNumbers
     USE message_mod
 

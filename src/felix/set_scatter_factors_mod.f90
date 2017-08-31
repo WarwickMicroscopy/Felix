@@ -30,8 +30,6 @@
 !
 !%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-!?? called once in felixrefine setup
-
 !>
 !! Module-description: Contains all of the scattering coefficients for each
 !! of the following methods: Kirkland, Peng, Doyle & Turner, Lobato.
@@ -49,7 +47,7 @@ MODULE set_scatter_factors_mod
   CONTAINS
 
   SUBROUTINE SetScatteringFactors(IScatteringMethodSwitch,IErr)
-
+    ! This procedure is called once in felixrefine setup
     USE MyNumbers
     USE message_mod
 
@@ -938,7 +936,7 @@ MODULE set_scatter_factors_mod
       DATA RLobato(103,1:10)/4.521474211983788E+00,3.202129855878044E+00,2.230287269564517E-01,2.817164538920297E-03, &
         4.064279540386205E-08,8.283099068611421E+00,7.319189581253939E-01,5.809427730186550E-02,2.561680160474449E-03,4.038165155290065E-05/
 
-      ! Lobato has 8 coefficients for each element !??
+      ! Lobato has 8 coefficients for each element
       IScattDimension=10
 
       ! Allocate Global Scattering factor array 

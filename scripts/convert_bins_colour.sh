@@ -5,7 +5,7 @@
 #
 # it reads the pixel size from the name assuming filenames formatted like the following:
 # GaAs_085nm_070x070_-2-2-4.bin
-# where the 3rd term 070x070 is the pixel siz
+# where the 3rd term 070x070 is the pixel size
 
 img_extension=.jpg
 greyscale=0

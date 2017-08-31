@@ -42,25 +42,26 @@ MODULE refinementcontrol_mod
   IMPLICIT NONE
   PRIVATE
   PUBLIC :: SimulateAndFit, Simulate, CalculateFigureofMeritandDetermineThickness
-  !?? JR CalculateFigureofMeritandDetermineThickness could be made private with some tweaks
 
   CONTAINS
 
   !>
-  !! Procedure-description: Simulate and fit
+  !! Procedure-description:
   !!
   !! Major-Authors: Richard Beanland (2016)
   !!  
   SUBROUTINE SimulateAndFit(RIndependentVariable,Iter,IExitFLAG,IErr)
 
-    ! JR non-Ug case: RIndependentVariable refinement ones, UpdateVariables updates
-    ! various global variables read from files / setup and are now constant
-    ! UniqueAtomPositions - recalculate unit cell ?
+    ! JR (very rough) overview:
+    ! RIndependentVariable holds refinement variables, UpdateVariables updates matching variable
+    ! various global variables which were read from files or setup are now constant
+    ! UniqueAtomPositions used to recalculate all atoms in lattice from basis atoms
     ! CUgMat = CUgMatNoAbs + CUgMatPrime ( from absoption )
     ! Simulate ( CUgMat + others ) ---> RImageSimi
-    ! CalculateFigureofMeritandDetermineThickness - im process & ---> RFigureofMerit
-    ! RImageExpi(x,y,LACBED_ID), RImageSimi(x,y,LACBED_ID, thickness_ID)
-    ! MPI_BCAST(RFigureofMerit) - send to all cores ? parallel    
+    ! On core 0, CalculateFigureofMeritandDetermineThickness includes image processing 
+    ! RImageExpi(x,y,LACBED_ID) are compared to RImageSimi(x,y,LACBED_ID, thickness_ID)
+    ! This calculates ---> RFigureofMerit
+    ! MPI_BCAST(RFigureofMerit) then sends RFigureofMerit to all cores    
 
     USE MyNumbers
     USE message_mod
@@ -70,7 +71,6 @@ MODULE refinementcontrol_mod
     USE crystallography_mod
     USE write_output_mod
 
-    !?? global inputs and outputs of SUBROUTINEs using global
     ! global inputs
     USE IPARA, ONLY : INoOfVariables, nReflections, IAbsorbFLAG, IMethodFLAG, INoofUgs, &
           IPixelCount, IPrint, ISimFLAG, ISymmetryRelations, IUgOffset, IRefineMode, &
@@ -153,8 +153,7 @@ MODULE refinementcontrol_mod
       IF (IRefineMode(8).EQ.1) THEN ! convergence angle
         ! recalculate resolution in k space
         RDeltaK = RMinimumGMag*RConvergenceAngle/REAL(IPixelCount,RKIND) 
-        !?? in the past wrote following to iterationlog.txt
-        !?? Iter,RFigureofMerit,RConvergenceAngle
+        !?? in the past wrote following to iterationlog.txt Iter,RFigureofMerit,RConvergenceAngle
       ELSE
         ! basis has changed in some way, recalculate unit cell
         CALL UniqueAtomPositions(IErr)
@@ -244,15 +243,11 @@ MODULE refinementcontrol_mod
 
 
   !>
-  !! Procedure-description: Simulate simulates and produces images for each 
-  !! thickness
+  !! Procedure-description: Simulates and produces images for each thickness
   !!
   !! Major-Authors: Keith Evans (2014), Richard Beanland (2016)
   !!  
   SUBROUTINE Simulate(IErr)
-
-    ! CUgMat and smaller inputs (using bloch pixel,thickness parallels)
-    ! ------> RImageSimi(x, y, LACBED_pattern_ID , thickness_ID )
 
     USE MyNumbers
     USE IConst, ONLY : ITHREE
@@ -261,41 +256,19 @@ MODULE refinementcontrol_mod
 
     USE bloch_mod
 
-    ! globals - bloch inputs  
-    USE CPara, ONLY : CUgMat ! from Absorption
-    USE RPara, ONLY : &
-      RDeltaK,& ! resolution in k space, used in calculations
-      RDeltaThickness,& ! input from felix.inp
-      RInitialThickness,& ! input from felix.inp
-      RNormDirM,RgDotNorm,RgPool,RgPoolMag,&
-      Rhkl ! from HKLMake ..fill reflection pool
-    USE IPara, ONLY : &
-      IHKLSelectFLAG,&
-      IHolzFLAG,& ! higher order Laue
-      IImageFLAG,&
-      IMinStrongBeams,IMinWeakBeams,&
-      INoOfLacbedPatterns,&
-      IPixelCount,&
-      IThicknessCount,&
-      nReflections,&
-      IOutputReflections
-    USE BlochPara, ONLY : RBigK ! from StructureFactorInitialisation            
-    
-    ! globals - bloch outputs
-    USE RPara, ONLY : RIndividualReflections 
-    USE CPara, ONLY : CAmplitudeandPhase
-    ! /\ matrix of wavefunction vectors. A vector for each thickness & pixel
-    ! one pixel and some parallelises in fexlixfunction join later
-    USE IPara, ONLY : IPixelComputed
-
     !global outputs
-    USE RPara, ONLY : RImageSimi,RSimulatedPatterns !?? what is the difference
-    USE IPara, ONLY : IInitialSimulationFLAG
+    USE RPara, ONLY : RImageSimi, &       
+                      RSimulatedPatterns
+    ! RImageSimi(x_coordinate, y_coordinate y, LACBED_pattern_ID , thickness_ID )
+    ! RSimulatedPatterns( Pixel_ID, LACBED_pattern_ID , thickness_ID )
+    ! RSimulatedPatterns has a long list of pixel instead of a 2D image matrix
+    USE RPARA, ONLY : RIndividualReflections
+    USE IPara, ONLY : IInitialSimulationFLAG, IPixelComputed
 
     !global inputs
     USE RPARA, ONLY : RBlurRadius
-    USE IPARA, ONLY : ICount,IDisplacements,ILocalPixelCountMax,&
-          ILocalPixelCountMin,IPixelLocations
+    USE IPARA, ONLY : ICount,IDisplacements,ILocalPixelCountMax,INoOfLacbedPatterns,&
+          ILocalPixelCountMin,IPixelLocations,IPixelCount,IThicknessCount
 
     IMPLICIT NONE
 
@@ -306,7 +279,7 @@ MODULE refinementcontrol_mod
 
     ! Reset simuation   
     RIndividualReflections = ZERO
-    IPixelComputed= 0!RB what is this?
+    IPixelComputed= 0!?? RB what is this?
 
     CALL SYSTEM_CLOCK( IStartTime )
 
@@ -315,7 +288,7 @@ MODULE refinementcontrol_mod
     DO knd = ILocalPixelCountMin,ILocalPixelCountMax,1
       jnd = IPixelLocations(knd,1)
       ind = IPixelLocations(knd,2)
-      !?? fills array for each pixel number not x & y coordinates
+      ! fills array for each pixel number not x & y coordinates
       CALL BlochCoefficientCalculation(ind,jnd,knd,ILocalPixelCountMin,IErr)
       IF(l_alert(IErr,"Simulate","BlochCoefficientCalculation")) RETURN
     END DO
@@ -368,13 +341,7 @@ MODULE refinementcontrol_mod
   !!  
   SUBROUTINE CalculateFigureofMeritandDetermineThickness(Iter,IBestThicknessIndex,IErr)
 
-    ! ---> IBestThicknessIndex, RFigureofMerit
-
-    !?? JR called every SimulateAndFit
-    !?? JR called once felixrefine baseline simulation
-
-    !?? NB core 0 only
-
+    !?? NB this is called on core 0 only
     USE MyNumbers
     USE message_mod 
 
@@ -517,15 +484,13 @@ MODULE refinementcontrol_mod
   END SUBROUTINE CalculateFigureofMeritandDetermineThickness
 
   !%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
   !>
   !! Procedure-description: Fill the independent parameter array for a new simulation
   !!
   !! Major-Authors: Keith Evans (2014), Richard Beanland (2016)
   !!  
   SUBROUTINE UpdateVariables(RIndependentVariable,IErr)
-
-    !?? JR top level to this MODULE, so keep, refine needs access
-    !?? JR called every SimulateAndFit (for non-Ug refinement)
 
     USE MyNumbers
     USE message_mod 
@@ -610,11 +575,6 @@ MODULE refinementcontrol_mod
   !! Major-Authors: Keith Evans (2014), Richard Beanland (2016)
   !! 
   SUBROUTINE PrintVariables(IErr)
-
-    !?? JR utility, however is top level to this MODULE so maybe keep 
-    !?? JR uninteresting, low priority, check if relevant performance overhead
-
-    !?? JR called every SimulateAndFit
 
     USE MyNumbers
     USE message_mod 
@@ -716,13 +676,11 @@ MODULE refinementcontrol_mod
   !!
   !! Major-Authors: Richard Beanland (2016)
   !! 
-  PURE SUBROUTINE BlurG(RImageToBlur,IPixelsCount,RBlurringRadius,IErr)
-
-    !?? JR called every SimulateAndFit indriectly via Simulate
+  SUBROUTINE BlurG(RImageToBlur,IPixelsCount,RBlurringRadius,IErr)
 
     USE MyNumbers
     USE MPI
-    USE message_mod !?? can't use this (including l_alert) if pure
+    USE message_mod
 
     IMPLICIT NONE
 
