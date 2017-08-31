@@ -437,18 +437,24 @@ MODULE read_files_mod
 
     INTEGER(IKIND),INTENT(OUT) :: IErr
     INTEGER(IKIND) :: ind, jnd, INegError = 0
-    CHARACTER :: filename*34, SPrintString*100, IntString*10
+    CHARACTER :: filename*50, path*50, fullpath*100, SPrintString*100
 
     ! for IByteSize: 2bytes=64-bit input file (NB tinis specifies in bytes, not bits)
+
+    ! write path to binary images folder
+    ! NB pixel size read from felix.inp and this is expected to match pixels in foldername
+    WRITE(path,'(A,I0,A,I0)') 'binary_images_',2*IPixelCount,'x',2*IPixelCount
 
     DO ind = 1,INoOfLacbedPatterns
       ! An image expected for each LacbedPattern
       ! Write corresponding filenames including chemical formula
-      WRITE(filename,'(A,A,SP,3(I2.1),A)') TRIM(ADJUSTL(SChemicalFormula)),"_",&
+      WRITE(filename,'(A,A,SP,3(I0),A)') TRIM(SChemicalFormula),"_",&
             NINT(RInputHKLs(ind,1:3)), '.img'
 
-      CALL message(LL, dbg7, "filename = ", filename)
-      OPEN(UNIT= IChInImage, STATUS= 'UNKNOWN', FILE=TRIM(ADJUSTL(filename)), &
+      fullpath = TRIM(path)//'/'//filename
+      CALL message(LL, dbg7, "filename = ", fullpath)
+
+      OPEN(UNIT= IChInImage, STATUS= 'UNKNOWN', FILE=TRIM(fullpath), &
             FORM='UNFORMATTED',ACCESS='DIRECT',IOSTAT=IErr,RECL=2*IPixelCount*IByteSize)
       IF(l_alert(IErr,"ReadExperimentalImages",&
             "OPEN() an experimental image, filename ="//TRIM(ADJUSTL(filename)))) RETURN
