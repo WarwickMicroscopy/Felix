@@ -957,7 +957,7 @@ CONTAINS
       CALL message(LS,"--------------------------------")
       CALL message(LS,no_tag,"Simplex ",ind, " of ", INoOfVariables+1)
       CALL message(LS,"--------------------------------")
-      CALL SimulateAndFit(RSimplexVariable(ind,:),Iter,0,IErr)!?? Working as iteration 0 ?
+      CALL SimulateAndFit(RSimplexVariable(ind,:),Iter,IThicknessIndex,IErr)!?? Working as iteration 0 ?
       IF(l_alert(IErr,"SimplexRefinement","doing initial SimulateAndFit")) RETURN
 
       RSimplexFoM(ind)=RFigureofMerit ! RFigureofMerit returned as global variable
@@ -1078,7 +1078,7 @@ CONTAINS
         DO ind=1,INoOfVariables ! calculate individual gradients
           ! The type of variable being refined 
           IVariableType=IIterativeVariableUniqueIDs(ind,1) 
-          !?? variable type as in what refinement mode/variables, 'type' used throughout
+          ! variable type as in what refinement mode/variables, 'type' used throughout
            
           ! print to screen
           SELECT CASE(IVariableType)
@@ -1107,9 +1107,10 @@ CONTAINS
           Rdx=0.1*Rdx*RScale/ABS(Rdx) ! small change IN current variable (RScale/10)is dx
           RCurrentVar=RVar0
           RCurrentVar(ind)=RCurrentVar(ind)+Rdx
-          !?? JR elaborate why simulate here
-          CALL SimulateAndFit(RCurrentVar,Iter,IExitFLAG,IErr)
+          CALL SimulateAndFit(RCurrentVar,Iter,IThicknessIndex,IErr)
           IF(l_alert(IErr,"MaxGradientRefinement","SimulateAndFit")) RETURN
+          ! Do not increment iteration here nor write iteration output
+
           ! BestFitCheck copies RCurrentVar into RIndependentVariable
           ! and updates RBestFit if the fit is better
           CALL BestFitCheck(RFigureofMerit,RBestFit,RCurrentVar,RIndependentVariable,IErr)
@@ -1167,8 +1168,10 @@ CONTAINS
       ! Second point
       R3var(2)=RCurrentVar(1) 
       CALL message(LS,"Refining, point 2 of 3")
-      CALL SimulateAndFit(RCurrentVar,Iter,IExitFLAG,IErr)
+      Iter=Iter+1
+      CALL SimulateAndFit(RCurrentVar,Iter,IThicknessIndex,IErr)
       IF(l_alert(IErr,"MaxGradientRefinement","SimulateAndFit")) RETURN
+      CALL WriteIterationOutputWrapper
       CALL BestFitCheck(RFigureofMerit,RBestFit,RCurrentVar,RIndependentVariable,IErr)
       R3fit(2)=RFigureofMerit
 
@@ -1181,8 +1184,10 @@ CONTAINS
       RCurrentVar=RVar0+RPvec*RPvecMag
       R3var(3)=RCurrentVar(1) ! third point
       CALL message( LS, "Refining, point 3 of 3")
-      CALL SimulateAndFit(RCurrentVar,Iter,IExitFLAG,IErr)
+      Iter=Iter+1
+      CALL SimulateAndFit(RCurrentVar,Iter,IThicknessIndex,IErr)
       IF(l_alert(IErr,"MaxGradientRefinement","SimulateAndFit")) RETURN
+      CALL WriteIterationOutputWrapper
       CALL BestFitCheck(RFigureofMerit,RBestFit,RCurrentVar,RIndependentVariable,IErr)
       R3fit(3)=RFigureofMerit
 
@@ -1217,8 +1222,10 @@ CONTAINS
         END IF
         RCurrentVar=RVar0+RPvec*RPvecMag
         R3var(lnd)=RCurrentVar(1)! next point
-        CALL SimulateAndFit(RCurrentVar,Iter,IExitFLAG,IErr)
+        Iter=Iter+1
+        CALL SimulateAndFit(RCurrentVar,Iter,IThicknessIndex,IErr)
         IF(l_alert(IErr,"MaxGradientRefinement","SimulateAndFit")) RETURN
+        CALL WriteIterationOutputWrapper
         CALL BestFitCheck(RFigureofMerit,RBestFit,RCurrentVar,RIndependentVariable,IErr)
         R3fit(lnd)=RFigureofMerit
         jnd=MAXLOC(R3var,1) ! highest x
@@ -1240,8 +1247,10 @@ CONTAINS
       SPrintString=TRIM(ADJUSTL(SPrintString))
       CALL message ( LS, SPrintString)
       RCurrentVar=RVar0+RPvec*(RvarMin-RVar0(1))/RPvec(1) ! Put prediction into RCurrentVar
-      CALL SimulateAndFit(RCurrentVar,Iter,IExitFLAG,IErr)
+      Iter=Iter+1
+      CALL SimulateAndFit(RCurrentVar,Iter,IThicknessIndex,IErr)
       IF(l_alert(IErr,"MaxGradientRefinement","SimulateAndFit")) RETURN
+      CALL WriteIterationOutputWrapper
       CALL BestFitCheck(RFigureofMerit,RBestFit,RCurrentVar,RIndependentVariable,IErr)
 
       ! check where we go next and update last fit etc.
@@ -1264,8 +1273,10 @@ CONTAINS
     !--------------------------------------------------------------------
 
     IExitFLAG=1
-    CALL SimulateAndFit(RIndependentVariable,Iter,IExitFLAG,IErr)
+    Iter=Iter+1
+    CALL SimulateAndFit(RCurrentVar,Iter,IThicknessIndex,IErr)
     IF(l_alert(IErr,"MaxGradientRefinement","SimulateAndFit")) RETURN
+    CALL WriteIterationOutputWrapper
     DEALLOCATE(RVar0,RCurrentVar,RLastVar,RPVec,RFitVec,STAT=IErr)  
 
   END SUBROUTINE MaxGradientRefinement
@@ -1299,7 +1310,7 @@ CONTAINS
     RLastVar=RIndependentVariable
     RBestFit=RFigureofMerit
     Rdf=RFigureofMerit
-    Iter=1
+    Iter=0
     ICycle=0 
     RScale=RSimplexLengthScale
     RMaxUgStep=0.005 ! maximum step IN Ug is 0.5 nm^-2, 0.005 A^-2
@@ -1370,15 +1381,19 @@ CONTAINS
           R3fit(1)=RFigureofMerit ! point 1 is the incoming simulation and fit index
           RPvec(ind)=RScale/5.0 ! small change IN current variable for second point
           RCurrentVar=RVar0+RPvec ! second point
-          CALL SimulateAndFit(RCurrentVar,Iter,IExitFLAG,IErr)
-          IF(l_alert(IErr,"ParabolicRefinement","SimulateAndFit")) RETURN
+          Iter=Iter+1
+          CALL SimulateAndFit(RCurrentVar,Iter,IThicknessIndex,IErr)
+          IF(l_alert(IErr,"MaxGradientRefinement","SimulateAndFit")) RETURN
+          CALL WriteIterationOutputWrapper
           CALL BestFitCheck(RFigureofMerit,RBestFit,RCurrentVar,RIndependentVariable,IErr)
           R3fit(2)=RFigureofMerit
           ! now look along combination of 2 parameters for third point
           RPvec(ind+1)=RScale/5.0 
           RCurrentVar=RVar0+RPvec ! Update the parameters to simulate
-          CALL SimulateAndFit(RCurrentVar,Iter,IExitFLAG,IErr)
-          IF(l_alert(IErr,"ParabolicRefinement","SimulateAndFit")) RETURN
+          Iter=Iter+1
+          CALL SimulateAndFit(RCurrentVar,Iter,IThicknessIndex,IErr)
+          IF(l_alert(IErr,"MaxGradientRefinement","SimulateAndFit")) RETURN
+          CALL WriteIterationOutputWrapper
           CALL BestFitCheck(RFigureofMerit,RBestFit,RCurrentVar,RIndependentVariable,IErr)
           R3fit(3)=RFigureofMerit
           ! optimum gradient vector from the three points, magnitude unity
@@ -1403,8 +1418,10 @@ CONTAINS
           RVar0(ind)=0.1
           RCurrentVar=RVar0
           RPvecMag=RScale
-          CALL SimulateAndFit(RCurrentVar,Iter,IExitFLAG,IErr)
-          IF(l_alert(IErr,"ParabolicRefinement","SimulateAndFit")) RETURN  
+          Iter=Iter+1
+          CALL SimulateAndFit(RCurrentVar,Iter,IThicknessIndex,IErr)
+          IF(l_alert(IErr,"MaxGradientRefinement","SimulateAndFit")) RETURN
+          CALL WriteIterationOutputWrapper
           ! update RIndependentVariable if necessary
           CALL BestFitCheck(RFigureofMerit,RBestFit,RCurrentVar,RIndependentVariable,IErr)
         END IF
@@ -1425,7 +1442,10 @@ CONTAINS
         ! second point
         R3var(2)=RCurrentVar(ind) 
         CALL message( LS, "simulation 2")
-        CALL SimulateAndFit(RCurrentVar,Iter,IExitFLAG,IErr)
+        Iter=Iter+1
+        CALL SimulateAndFit(RCurrentVar,Iter,IThicknessIndex,IErr)
+        IF(l_alert(IErr,"MaxGradientRefinement","SimulateAndFit")) RETURN
+        CALL WriteIterationOutputWrapper
         CALL BestFitCheck(RFigureofMerit,RBestFit,RCurrentVar,RIndependentVariable,IErr)
         R3fit(2)=RFigureofMerit
         !CALL message ( LM, "point 2",R3var(2) )
@@ -1440,14 +1460,17 @@ CONTAINS
         
         ! third point
         R3var(3)=RCurrentVar(ind)
-        CALL message( LS, "simulation 2")
-        CALL SimulateAndFit(RCurrentVar,Iter,IExitFLAG,IErr)
+        CALL message( LS, "simulation 2") !?? JR should this be 'simulation 3' for 3rd point (remove this comment once changed)
+        Iter=Iter+1
+        CALL SimulateAndFit(RCurrentVar,Iter,IThicknessIndex,IErr)
+        IF(l_alert(IErr,"MaxGradientRefinement","SimulateAndFit")) RETURN
+        CALL WriteIterationOutputWrapper
         CALL BestFitCheck(RFigureofMerit,RBestFit,RCurrentVar,RIndependentVariable,IErr)
         R3fit(3)=RFigureofMerit
         !CALL message ( LM, "point 3",R3var(3) )
         !CALL message ( LM, "fit",R3fit(3) )
 
-        !?? repeated code around here like maximum gradient, possibly simplex?
+        !?? repeated code around here like maximum gradient, possibly simplex? JR
 
         !--------------------------------------------------------------------
         ! iterate until 3 points concave set
@@ -1488,7 +1511,10 @@ CONTAINS
             EXIT
           END IF
 
-          CALL SimulateAndFit(RCurrentVar,Iter,IExitFLAG,IErr)
+          Iter=Iter+1
+          CALL SimulateAndFit(RCurrentVar,Iter,IThicknessIndex,IErr)
+          IF(l_alert(IErr,"MaxGradientRefinement","SimulateAndFit")) RETURN
+          CALL WriteIterationOutputWrapper
           CALL BestFitCheck(RFigureofMerit,RBestFit,RCurrentVar,RIndependentVariable,IErr)
           R3fit(lnd)=RFigureofMerit
           jnd=MAXLOC(R3var,1) ! highest x
@@ -1506,8 +1532,10 @@ CONTAINS
         IF (RCurrentVar(ind).LE.TINY.AND.IVariableType.EQ.4) THEN
           ! We reached zero D-W factor IN convexity test, skip the prediction
           CALL message( LS, "Using zero Debye Waller factor, simulate and refine next variable" )
-          CALL SimulateAndFit(RCurrentVar,Iter,IExitFLAG,IErr)
-          IF(l_alert(IErr,"ParabolicRefinement","SimulateAndFit")) RETURN  
+          Iter=Iter+1
+          CALL SimulateAndFit(RCurrentVar,Iter,IThicknessIndex,IErr)
+          IF(l_alert(IErr,"MaxGradientRefinement","SimulateAndFit")) RETURN
+          CALL WriteIterationOutputWrapper 
           CALL BestFitCheck(RFigureofMerit,RBestFit,RCurrentVar,RIndependentVariable,IErr)
         ELSE
           CALL Parabo3(R3var,R3fit,RvarMin,RfitMin,IErr)
@@ -1520,7 +1548,10 @@ CONTAINS
           IF (RvarMin.LT.ZERO.AND.IVariableType.EQ.4) RvarMin=ZERO
           RCurrentVar=RVar0+RPvec*(RvarMin-RVar0(ind))/RPvec(ind)
           !R3var(jnd)=RCurrentVar(ind)!do I need this?
-          CALL SimulateAndFit(RCurrentVar,Iter,IExitFLAG,IErr)
+          Iter=Iter+1
+          CALL SimulateAndFit(RCurrentVar,Iter,IThicknessIndex,IErr)
+          IF(l_alert(IErr,"MaxGradientRefinement","SimulateAndFit")) RETURN
+          CALL WriteIterationOutputWrapper
           CALL BestFitCheck(RFigureofMerit,RBestFit,RCurrentVar,RIndependentVariable,IErr)
         END IF
 
@@ -1568,10 +1599,26 @@ CONTAINS
     !--------------------------------------------------------------------
 
     IExitFLAG=1
-    CALL SimulateAndFit(RIndependentVariable,Iter,IExitFLAG,IErr)
+    Iter=Iter+1
+    CALL SimulateAndFit(RCurrentVar,Iter,IThicknessIndex,IErr)
+    IF(l_alert(IErr,"MaxGradientRefinement","SimulateAndFit")) RETURN
+    CALL WriteIterationOutputWrapper
     DEALLOCATE(RVar0,RCurrentVar,RLastVar,RPVec,STAT=IErr)
  
   END SUBROUTINE ParabolicRefinement
+
+  !%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+  SUBROUTINE WriteIterationOutputWrapper
+    IF(my_rank.EQ.0) THEN
+      ! use IPrint from felix.inp to specify how often to write Iteration output
+      IF(IExitFLAG.EQ.1.OR.(Iter.GE.(IPreviousPrintedIteration+IPrint))) THEN
+        CALL WriteIterationOutput(Iter,IThicknessIndex,IExitFLAG,IErr)
+        IF(l_alert(IErr,"SimulateAndFit","WriteIterationOutput")) RETURN
+        IPreviousPrintedIteration = Iter
+      END IF
+    END IF
+  END SUBROUTINE
 
   !%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
