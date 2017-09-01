@@ -86,13 +86,14 @@ MODULE write_output_mod
     CALL system('mkdir ' // path)
 
     IF (ISimFLAG.EQ.0.AND.IExitFLAG.EQ.0) THEN ! felixrefine output
-      IF (IPreviousPrintedIteration.EQ.0) THEN
+      IF (Iter.EQ.0) THEN
         CALL message ( LS, "Writing output; baseline simulation" )
       ELSE
         CALL message ( LS, "Writing output; iterations since the previous save = ", &
               Iter-IPreviousPrintedIteration)
       END IF
     END IF
+    ! NB WriteIterationOutput should only be called after Iter increment and SimulateAndFit
     
     ! Write Images to disk
     DO ind = 1,INoOfLacbedPatterns
