@@ -436,8 +436,9 @@ MODULE read_files_mod
     IMPLICIT NONE
 
     INTEGER(IKIND),INTENT(OUT) :: IErr
-    INTEGER(IKIND) :: ind, jnd, INegError = 0
-    CHARACTER :: SFilename*50, SPath*50, SFullPath*100, SPrintString*100
+    INTEGER(IKIND) :: ind, jnd, INegError = 0, IPixelArray (2)
+    INTEGER(8) :: IFileSize
+    CHARACTER :: SFilename*50, SPath*50, SFilePath *100, SPrintString*100
     LOGICAL :: LFileExist
 
     ! for IByteSize: 2bytes=64-bit input file (NB tinis specifies in bytes, not bits)
@@ -447,29 +448,29 @@ MODULE read_files_mod
       SELECT CASE(ind)
         CASE(1)
           WRITE(SPath,'(A,I0,A,I0,A)') 'LR_',2*IPixelCount,'x',2*IPixelCount,'/'
-          WRITE(SFullPath,'(A,A,A)') TRIM(SPath),TRIM(SChemicalFormula),'_+0+0+0.img'
+          WRITE(SFilePath ,'(A,A,A)') TRIM(SPath),TRIM(SChemicalFormula),'_+0+0+0.img'
           ! NB pixel size read from felix.inp and this is expected to match pixels in foldername
         CASE(2)
           SPath='HR/'
-          WRITE(SFullPath,'(A,A,A)') TRIM(SPath),TRIM(SChemicalFormula),'_+0+0+0.img'
+          WRITE(SFilePath ,'(A,A,A)') TRIM(SPath),TRIM(SChemicalFormula),'_+0+0+0.img'
         CASE(3)
           SPath='DM3/'
-          WRITE(SFullPath,'(A,A,A)') TRIM(SPath),TRIM(SChemicalFormula),'_+0+0+0.dm3'
+          WRITE(SFilePath ,'(A,A,A)') TRIM(SPath),TRIM(SChemicalFormula),'_+0+0+0.dm3'
         CASE(4) ! .img directly in sample directory, may or may not be fully processed
           SPath=''
-          WRITE(SFullPath,'(A,A)') TRIM(SChemicalFormula),'_+0+0+0.img'
-        CASE(65)
+          WRITE(SFilePath ,'(A,A)') TRIM(SChemicalFormula),'_+0+0+0.img'
+        CASE(5)
           SPath=''
-          WRITE(SFullPath,'(A,A)') TRIM(SChemicalFormula),'_+0+0+0.dm3'
+          WRITE(SFilePath ,'(A,A)') TRIM(SChemicalFormula),'_+0+0+0.dm3'
       END SELECT
 
-      ! check if _+0+0+0.img or _+0+0+0.dm3 image exists
-      INQUIRE(FILE=SFullPath,EXIST=LFileExist)
+      ! check if correspinding _+0+0+0.img or _+0+0+0.dm3 image exists
+      INQUIRE(FILE=SFilePath ,EXIST=LFileExist)
       IF(LFileExist) THEN
-        CALL message(LM, "Found initial experimental image with filepath =",SFullPath)
+        CALL message(LM, "Found initial experimental image with filepath =",SFilePath )
         EXIT
       ELSEIF(ind.LE.5) THEN
-        CALL message(LM, "Did not find initial experimental image with filepath =",SFullPath)
+        CALL message(LM, "Did not find initial experimental image with filepath =",SFilePath )
       ELSEIF(ind.EQ.6) THEN
         IErr=1;
         WRITE(SPrintString,'(A,A,A)') 'Could not find "',TRIM(SChemicalFormula),&
@@ -478,21 +479,26 @@ MODULE read_files_mod
       END IF      
     END DO
 
-    ! if file _+0+0+0.img exists in current dir, check whether processed or preprocessed binaries 
-    IF(ind.EQ.4) 
+    ! if file _+0+0+0.img exists in current dir, check whether processed or preprocessed binaries
+    IF(ind.EQ.4) THEN
+      INQUIRE(FILE=SFilePath,SIZE=IFileSize)
+      IF(IFileSize==(2*IpixelCount)**2*IByteSize) ind = 6
+      ! THEN file size matches that expected for low resolution processed images case(6)
+      ! Otherwise assume the .img is the high resolution preprocessed binary images (case 4)
+    END IF
 
     SELECT CASE(ind)
-    CASE(1,4) ! processed binary .img files in LR_NxN/ or directly in samples directory
+    CASE(1,6) ! processed low resolution binary .img files  
       DO ind = 1,INoOfLacbedPatterns
         ! An image expected for each LacbedPattern
         ! Write corresponding filenames (chemical formula in filename expected to match felix.cif)
         WRITE(SFilename,'(A,A,SP,3(I0),A)') TRIM(SChemicalFormula),"_",&
               NINT(RInputHKLs(ind,1:3)), '.img'
 
-        SFullPath = TRIM(SPath)//SFilename
-        CALL message(LL, dbg7, "SFilename = ", SFullPath)
+        SFilePath  = TRIM(SPath)//SFilename
+        CALL message(LL, dbg7, "SFilename = ", SFilePath )
 
-        OPEN(UNIT=IChInImage, STATUS= 'UNKNOWN', FILE=TRIM(SFullPath), &
+        OPEN(UNIT=IChInImage, STATUS= 'UNKNOWN', FILE=TRIM(SFilePath ), &
               FORM='UNFORMATTED',ACCESS='DIRECT',IOSTAT=IErr,RECL=2*IPixelCount*IByteSize)
         IF(l_alert(IErr,"ReadExperimentalImages",&
               "OPEN() an experimental image, SFilename ="//TRIM(ADJUSTL(SFilename)))) RETURN
@@ -505,13 +511,14 @@ MODULE read_files_mod
         CLOSE(IChInImage,IOSTAT=IErr)
         IF(l_alert(IErr,"ReadExperimentalImages","CLOSE() an experimental input image")) RETURN
       END DO
-    CASE(2,5)
-      IErr=1;
-      IF(l_alert(IErr,"ReadExperimentalImages",".bin an experimental input image")) RETURN
-    CASE(3,6)
+    CASE(2,4)
       IErr=1;
       IF(l_alert(IErr,"ReadExperimentalImages",&
-            ".dm3 files found, processing not yet implemented")) RETURN
+            ".img files found not matching IPixelCount, processing .img not yet implemented")) RETURN
+    CASE(3,5)
+      IErr=1;
+      IF(l_alert(IErr,"ReadExperimentalImages",&
+            ".dm3 files found, processing .dm3 not yet implemented")) RETURN
     END SELECT
 
     WRITE(SPrintString,*) INoOfLacbedPatterns,' experimental images successfully loaded'
