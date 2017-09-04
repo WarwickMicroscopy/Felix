@@ -417,7 +417,7 @@ MODULE read_files_mod
   !>
   !! Procedure-description:
   !!
-  !! Major-Authors: Keith Evans (2014), Richard Beanland (2016)
+  !! Major-Authors: Keith Evans (2014), Richard Beanland (2016), Jacob Richardson (2017)
   !!
   SUBROUTINE ReadExperimentalImages(IErr)
 
@@ -437,42 +437,86 @@ MODULE read_files_mod
 
     INTEGER(IKIND),INTENT(OUT) :: IErr
     INTEGER(IKIND) :: ind, jnd, INegError = 0
-    CHARACTER :: filename*50, path*50, fullpath*100, SPrintString*100
+    CHARACTER :: SFilename*50, SPath*50, SFullPath*100, SPrintString*100
+    LOGICAL :: LFileExist
 
     ! for IByteSize: 2bytes=64-bit input file (NB tinis specifies in bytes, not bits)
 
-    ! write path to binary images folder
-    ! NB pixel size read from felix.inp and this is expected to match pixels in foldername
-    WRITE(path,'(A,I0,A,I0)') 'binary_images_',2*IPixelCount,'x',2*IPixelCount
+    ! iteratively INQUIRE each possible location for +0+0+0 .bin or .dm3 image
+    DO ind=1,5
+      SELECT CASE(ind)
+        CASE(1)
+          WRITE(SPath,'(A,I0,A,I0,A)') 'LR_',2*IPixelCount,'x',2*IPixelCount,'/'
+          WRITE(SFullPath,'(A,A,A)') TRIM(SPath),TRIM(SChemicalFormula),'_+0+0+0.img'
+          ! NB pixel size read from felix.inp and this is expected to match pixels in foldername
+        CASE(2)
+          SPath='HR/'
+          WRITE(SFullPath,'(A,A,A)') TRIM(SPath),TRIM(SChemicalFormula),'_+0+0+0.img'
+        CASE(3)
+          SPath='DM3/'
+          WRITE(SFullPath,'(A,A,A)') TRIM(SPath),TRIM(SChemicalFormula),'_+0+0+0.dm3'
+        CASE(4) ! .img directly in sample directory, may or may not be fully processed
+          SPath=''
+          WRITE(SFullPath,'(A,A)') TRIM(SChemicalFormula),'_+0+0+0.img'
+        CASE(65)
+          SPath=''
+          WRITE(SFullPath,'(A,A)') TRIM(SChemicalFormula),'_+0+0+0.dm3'
+      END SELECT
 
-    DO ind = 1,INoOfLacbedPatterns
-      ! An image expected for each LacbedPattern
-      ! Write corresponding filenames including chemical formula
-      WRITE(filename,'(A,A,SP,3(I0),A)') TRIM(SChemicalFormula),"_",&
-            NINT(RInputHKLs(ind,1:3)), '.img'
-
-      fullpath = TRIM(path)//'/'//filename
-      CALL message(LL, dbg7, "filename = ", fullpath)
-
-      OPEN(UNIT= IChInImage, STATUS= 'UNKNOWN', FILE=TRIM(fullpath), &
-            FORM='UNFORMATTED',ACCESS='DIRECT',IOSTAT=IErr,RECL=2*IPixelCount*IByteSize)
-      IF(l_alert(IErr,"ReadExperimentalImages",&
-            "OPEN() an experimental image, filename ="//TRIM(ADJUSTL(filename)))) RETURN
-
-      DO jnd=1,2*IPixelCount
-        READ(IChInImage,rec=jnd,IOSTAT=IErr) RImageExpi(jnd,:,ind)
-        IF(l_alert(IErr,"ReadExperimentalImages",&
-              "OPEN() an experimental image, filename ="//TRIM(ADJUSTL(filename)))) RETURN
-      END DO
-      CLOSE(IChInImage,IOSTAT=IErr)
-      IF(l_alert(IErr,"ReadExperimentalImages","CLOSE() an experimental input image")) RETURN
+      ! check if _+0+0+0.img or _+0+0+0.dm3 image exists
+      INQUIRE(FILE=SFullPath,EXIST=LFileExist)
+      IF(LFileExist) THEN
+        CALL message(LM, "Found initial experimental image with filepath =",SFullPath)
+        EXIT
+      ELSEIF(ind.LE.5) THEN
+        CALL message(LM, "Did not find initial experimental image with filepath =",SFullPath)
+      ELSEIF(ind.EQ.6) THEN
+        IErr=1;
+        WRITE(SPrintString,'(A,A,A)') 'Could not find "',TRIM(SChemicalFormula),&
+              '_+0+0+0.img" image nor the .dm3 image)'
+        IF(l_alert(IErr,"ReadExperimentalImages",TRIM(SPrintString))) RETURN
+      END IF      
     END DO
+
+    ! if file _+0+0+0.img exists in current dir, check whether processed or preprocessed binaries 
+    IF(ind.EQ.4) 
+
+    SELECT CASE(ind)
+    CASE(1,4) ! processed binary .img files in LR_NxN/ or directly in samples directory
+      DO ind = 1,INoOfLacbedPatterns
+        ! An image expected for each LacbedPattern
+        ! Write corresponding filenames (chemical formula in filename expected to match felix.cif)
+        WRITE(SFilename,'(A,A,SP,3(I0),A)') TRIM(SChemicalFormula),"_",&
+              NINT(RInputHKLs(ind,1:3)), '.img'
+
+        SFullPath = TRIM(SPath)//SFilename
+        CALL message(LL, dbg7, "SFilename = ", SFullPath)
+
+        OPEN(UNIT=IChInImage, STATUS= 'UNKNOWN', FILE=TRIM(SFullPath), &
+              FORM='UNFORMATTED',ACCESS='DIRECT',IOSTAT=IErr,RECL=2*IPixelCount*IByteSize)
+        IF(l_alert(IErr,"ReadExperimentalImages",&
+              "OPEN() an experimental image, SFilename ="//TRIM(ADJUSTL(SFilename)))) RETURN
+
+        DO jnd=1,2*IPixelCount
+          READ(IChInImage,rec=jnd,IOSTAT=IErr) RImageExpi(jnd,:,ind)
+          IF(l_alert(IErr,"ReadExperimentalImages",&
+                "OPEN() an experimental image, SFilename ="//TRIM(ADJUSTL(SFilename)))) RETURN
+        END DO
+        CLOSE(IChInImage,IOSTAT=IErr)
+        IF(l_alert(IErr,"ReadExperimentalImages","CLOSE() an experimental input image")) RETURN
+      END DO
+    CASE(2,5)
+      IErr=1;
+      IF(l_alert(IErr,"ReadExperimentalImages",".bin an experimental input image")) RETURN
+    CASE(3,6)
+      IErr=1;
+      IF(l_alert(IErr,"ReadExperimentalImages",&
+            ".dm3 files found, processing not yet implemented")) RETURN
+    END SELECT
 
     WRITE(SPrintString,*) INoOfLacbedPatterns,' experimental images successfully loaded'
     SPrintString=TRIM(ADJUSTL(SPrintString))
     CALL message(LS,SPrintString)
-
-    RETURN
 
   END SUBROUTINE ReadExperimentalImages
 
