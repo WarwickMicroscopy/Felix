@@ -1046,22 +1046,19 @@ CONTAINS
     ALLOCATE(RPVec(INoOfVariables),STAT=IErr)
     IF(l_alert(IErr,"MaxGradientRefinement","allocate RPVec")) RETURN
     ! the list of fit indices resulting from small changes Rdf for each variable in RPVec
-
     ALLOCATE(RFitVec(INoOfVariables),STAT=IErr)
     IF(l_alert(IErr,"MaxGradientRefinement","allocate RFitVec")) RETURN
-
     
     RBestFit=RFigureofMerit
     RLastFit=RBestFit
     RLastVar=RIndependentVariable
     RCurrentVar=ONE
     Rdf=ONE
-    Iter=1
     RScale=RSimplexLengthScale
-    nnd=0 ! max/min gradient flag !?? JR elaborate
+    nnd=0 ! max/min gradient flag
 
     !--------------------------------------------------------------------
-    ! iteratively refine until improvement IN fit below exit criteria
+    ! iteratively refine until improvement in fit below exit criteria
     !--------------------------------------------------------------------
 
     !\/------------------------------------------------------------------
@@ -1072,7 +1069,7 @@ CONTAINS
 
       !--------------------------------------------------------------------
       ! change max gradient vector (RPVec) depending upon max/min gradient situation 
-      !--------------------------------------------------------------------
+      !--------------------------------------------------------------------      
       
       IF (nnd.EQ.0) THEN ! max gradient
         DO ind=1,INoOfVariables ! calculate individual gradients
@@ -1157,8 +1154,7 @@ CONTAINS
       ! First point, three points to find the miniimum
       R3var(1)=RVar0(1)! first point is current value
       R3fit(1)=RFigureofMerit! point 1 is the incoming simulation and fit index
-      ! RPvecMag is used here to give the magnitude of vector IN parameter space
-      RPvecMag=RVar0(1)*RScale 
+      RPvecMag=RVar0(1)*RScale ! RPvecMag gives the magnitude of vector in parameter space
       RCurrentVar=RVar0+RPvec*RPvecMag ! Update the parameters to simulate
       
       !--------------------------------------------------------------------
@@ -1310,7 +1306,6 @@ CONTAINS
     RLastVar=RIndependentVariable
     RBestFit=RFigureofMerit
     Rdf=RFigureofMerit
-    Iter=0
     ICycle=0 
     RScale=RSimplexLengthScale
     RMaxUgStep=0.005 ! maximum step IN Ug is 0.5 nm^-2, 0.005 A^-2
@@ -1360,9 +1355,9 @@ CONTAINS
         ! look down average refinement direction or do pair-wise maximum gradient
         !--------------------------------------------------------------------
 
-        RVar0=RIndependentVariable ! incoming point IN n-dimensional parameter space
+        RVar0=RIndependentVariable ! incoming point in n-dimensional parameter space
         RPvec=ZERO ! Vector IN n-dimensional parameter space for this refinement
-        !CALL message ( LM, "Current parameters=",RIndependentVariable )
+        CALL message ( LL, "Current parameters=",RIndependentVariable )
 
         IF (ICycle.EQ.1) THEN ! look down the average refinement direction
           RPvec=(RCurrentVar-RLastVar)/(RCurrentVar(1)-RLastVar(1))
@@ -1379,21 +1374,17 @@ CONTAINS
                 "Finding maximum gradient for variables",ind," and",ind+1)
           ! NB R3fit CONTAINS the three fit indices
           R3fit(1)=RFigureofMerit ! point 1 is the incoming simulation and fit index
-          RPvec(ind)=RScale/5.0 ! small change IN current variable for second point
+          RPvec(ind)=RScale/5.0 ! small change in current variable for second point
           RCurrentVar=RVar0+RPvec ! second point
-          Iter=Iter+1
           CALL SimulateAndFit(RCurrentVar,Iter,IThicknessIndex,IErr)
           IF(l_alert(IErr,"MaxGradientRefinement","SimulateAndFit")) RETURN
-          CALL WriteIterationOutputWrapper
           CALL BestFitCheck(RFigureofMerit,RBestFit,RCurrentVar,RIndependentVariable,IErr)
           R3fit(2)=RFigureofMerit
           ! now look along combination of 2 parameters for third point
           RPvec(ind+1)=RScale/5.0 
           RCurrentVar=RVar0+RPvec ! Update the parameters to simulate
-          Iter=Iter+1
           CALL SimulateAndFit(RCurrentVar,Iter,IThicknessIndex,IErr)
           IF(l_alert(IErr,"MaxGradientRefinement","SimulateAndFit")) RETURN
-          CALL WriteIterationOutputWrapper
           CALL BestFitCheck(RFigureofMerit,RBestFit,RCurrentVar,RIndependentVariable,IErr)
           R3fit(3)=RFigureofMerit
           ! optimum gradient vector from the three points, magnitude unity
@@ -1428,12 +1419,11 @@ CONTAINS
 
         R3var(1)=RVar0(ind) ! first point is current value
         R3fit(1)=RFigureofMerit ! with the current fit index
-        !CALL message ( LM, "point 1",R3var(1) )
-        !CALL message ( LM, "fit",R3fit(1) )
-        ! magnitude of vector IN parameter space
-        RPvecMag=RVar0(ind)*RScale
-        !CALL message ( LM, "RPvecMag=",RPvecMag )
+        RPvecMag=RVar0(ind)*RScale  ! magnitude of vector in parameter space
         RCurrentVar=RVar0+RPvec*RPvecMag ! Update the parameters to simulate
+        CALL message ( LL, "point 1",R3var(1) )
+        CALL message ( LL, "fit",R3fit(1) )
+        CALL message ( LL, "RPvecMag=",RPvecMag )
 
         !--------------------------------------------------------------------
         ! set 2nd and 3rd point
@@ -1470,7 +1460,7 @@ CONTAINS
         !CALL message ( LM, "point 3",R3var(3) )
         !CALL message ( LM, "fit",R3fit(3) )
 
-        !?? repeated code around here like maximum gradient, possibly simplex? JR
+        !?? repeated code around here like maximum gradient JR
 
         !--------------------------------------------------------------------
         ! iterate until 3 points concave set
