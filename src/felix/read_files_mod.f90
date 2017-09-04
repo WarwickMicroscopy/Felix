@@ -467,10 +467,10 @@ MODULE read_files_mod
       ! check if correspinding _+0+0+0.img or _+0+0+0.dm3 image exists
       INQUIRE(FILE=SFilePath ,EXIST=LFileExist)
       IF(LFileExist) THEN
-        CALL message(LM, "Found initial experimental image with filepath =",SFilePath )
+        CALL message(LM, "Found initial experimental image with filepath =",TRIM(SFilePath) )
         EXIT
       ELSEIF(ind.LE.5) THEN
-        CALL message(LM, "Did not find initial experimental image with filepath =",SFilePath )
+        CALL message(LM, "Did not find initial experimental image with filepath =",TRIM(SFilePath) )
       ELSEIF(ind.EQ.6) THEN
         IErr=1;
         WRITE(SPrintString,'(A,A,A)') 'Could not find "',TRIM(SChemicalFormula),&
