@@ -50,7 +50,7 @@ MODULE refinementcontrol_mod
   !!
   !! Major-Authors: Richard Beanland (2016)
   !!  
-  SUBROUTINE SimulateAndFit(RIndependentVariable,Iter,IExitFLAG,IErr)
+  SUBROUTINE SimulateAndFit(RIndependentVariable,Iter,IThicknessIndex,IErr)
 
     ! JR (very rough) overview:
     ! RIndependentVariable holds refinement variables, UpdateVariables updates matching variable
@@ -89,8 +89,10 @@ MODULE refinementcontrol_mod
 
     REAL(RKIND),INTENT(INOUT) :: RIndependentVariable(INoOfVariables)
     INTEGER(IKIND),INTENT(INOUT) :: Iter
+    INTEGER(IKIND),INTENT(OUT) :: IThicknessIndex 
+    ! NB IThicknessIndex is calculated and used on rank 0 only
     INTEGER(IKIND),INTENT(OUT) :: IErr
-    INTEGER(IKIND) :: ind,jnd, IExitFLAG,IThicknessIndex, ILoc(2), IUniqueUgs
+    INTEGER(IKIND) :: ind,jnd, ILoc(2), IUniqueUgs
     INTEGER(IKIND), SAVE :: IStartTime
     REAL(RKIND) :: RCurrentG(3), RScatteringFactor
     COMPLEX(CKIND) :: CUgMatDummy(nReflections,nReflections),CVgij
@@ -212,7 +214,6 @@ MODULE refinementcontrol_mod
     RSimulatedPatterns = ZERO ! Reset simulation
     CALL Simulate(IErr) ! simulate 
     IF(l_alert(IErr,"SimulateAndFit","Simulate")) RETURN
-    IF (IMethodFLAG.NE.1) Iter=Iter+1 ! iterate for methods other than simplex
 
     IF(my_rank.EQ.0) THEN
       ! Only calculate figure of merit if we are refining
@@ -224,12 +225,7 @@ MODULE refinementcontrol_mod
       ! Write current variable list and fit to IterationLog.txt
       CALL WriteOutVariables(Iter,IErr)
       IF(l_alert(IErr,"SimulateAndFit","WriteOutVariables")) RETURN
-      ! WRITE images to disk every IPrint iterations, or when finished
-      IF(IExitFLAG.EQ.1.OR.(Iter.GE.(IPreviousPrintedIteration+IPrint))) THEN
-        CALL WriteIterationOutput(Iter,IThicknessIndex,IExitFLAG,IErr)
-        IF(l_alert(IErr,"SimulateAndFit","WriteIterationOutput")) RETURN
-        IPreviousPrintedIteration = Iter ! reset iteration counter
-      END IF
+
     END IF
 
     !===================================== ! Send the fit index to all cores
