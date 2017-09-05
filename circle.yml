@@ -3,13 +3,13 @@ general:
   
 checkout:
   post:
-    - echo $CIRCLE_TAG $CIRCLE_BRANCH $CIRCLE_BUILD_NUM $CIRCLE_USERNAME
-    - ../scripts/build.sh $CIRCLE_TAG $CIRCLE_BRANCH $CIRCLE_BUILD_NUM $CIRCLE_USERNAME
-    - head -32 ../felix-*/src/felix/felixrefine.f90
+    - echo $CIRCLE_SHA1 $CIRCLE_BRANCH $CIRCLE_BUILD_NUM $CIRCLE_USERNAME
+    - ../scripts/build.sh $CIRCLE_SHA1 $CIRCLE_BRANCH $CIRCLE_BUILD_NUM $CIRCLE_USERNAME
+    - head -32 ../felix-$CIRCLE_SHA1/src/felix/felixrefine.f90
     
 compile:
   override:
-    - cd ../felix-*
+    - cd ../felix-$CIRCLE_SHA1/
     - make clean; make
 
 test:
