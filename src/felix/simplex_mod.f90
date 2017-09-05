@@ -129,7 +129,7 @@ MODULE simplex_mod
         RSendPacket = [-10000.0_RKIND, psum, REAL(iter,RKIND)]
         CALL MPI_BCAST(RSendPacket,ndim+2,MPI_DOUBLE_PRECISION,0,MPI_COMM_WORLD,IErr)
         !Simulate-------------------------------------------------------------
-        CALL SimulateAndFit(psum,iter,1,IErr)
+        !CALL SimulateAndFit(psum,iter,1,IErr)
         Rytry=RFigureofMerit
         RETURN
       END IF
@@ -182,7 +182,7 @@ MODULE simplex_mod
               RSendPacket = [10000.0_RKIND, psum, REAL(iter,RKIND)]
               CALL MPI_BCAST(RSendPacket,ndim+2,MPI_DOUBLE_PRECISION,0,MPI_COMM_WORLD,IErr)
               !Simulate-------------------------------------------------------------
-              CALL SimulateAndFit(psum,iter,0,IErr)
+              !CALL SimulateAndFit(psum,iter,0,IErr)
               y(i)=RFigureofMerit
             END IF
           ENDDO
@@ -207,7 +207,7 @@ MODULE simplex_mod
         !-------------------------------------------------------------------
         ! Simulate
         !-------------------------------------------------------------------
-        CALL SimulateAndFit(psum,iter,IExitFLAG,IErr)
+        !CALL SimulateAndFit(psum,iter,IExitFLAG,IErr)
         Rytry=RFigureofMerit
         IF(IExitFLAG.EQ.1) RETURN
       END DO
@@ -255,7 +255,7 @@ MODULE simplex_mod
     !-------------------------------------------------------------------
     ! Simulate
     !-------------------------------------------------------------------
-    CALL SimulateAndFit(ptry,iter,0,IErr)
+    !CALL SimulateAndFit(ptry,iter,0,IErr)
     Rytry=RFigureofMerit
         
     IF (Rytry.LT.y(ihi)) THEN
