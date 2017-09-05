@@ -58,6 +58,9 @@ PROGRAM Felixrefine
   USE BlochPara 
   USE IChannels
 
+  ! ARGUMENTS:
+  ! 1 optional argument used to specify an alternative 'felix.inp' (refer to reading inp routine)
+
   ! local variable definitions
   IMPLICIT NONE
   
