@@ -1,0 +1,6 @@
+general:
+  build_dir: src
+  
+checkout:
+  post:
+    - make
