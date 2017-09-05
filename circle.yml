@@ -1,0 +1,18 @@
+general:
+  build_dir: src
+  
+checkout:
+  post:
+    - echo $CIRCLE_SHA1 $CIRCLE_BRANCH $CIRCLE_BUILD_NUM $CIRCLE_USERNAME
+    - ../scripts/build.sh $CIRCLE_SHA1 $CIRCLE_BRANCH $CIRCLE_BUILD_NUM $CIRCLE_USERNAME
+    - head -32 ../felix-$CIRCLE_SHA1/felix/felixrefine.f90
+    
+compile:
+  override:
+    - cd ../felix-$CIRCLE_SHA1/
+    - make clean; make
+
+test:
+  post:
+    - cd ../samples/GaAs_short
+    - ./felix
