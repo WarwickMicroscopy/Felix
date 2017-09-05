@@ -47,10 +47,11 @@ LIBS= -mkl -lfftw3
 
 # -------------------------------
 # which fortran compiler is used
-F90=mpif90
+F90=mpiifort
 # its flags
+F90FLAGS= -132 -r8 -u -C -g -traceback -check noarg_temp_created #tinis
 #F90FLAGS= -O0 -fpp -r8 -g -132 -check all -warn all -fpe0 -traceback #debug 
-F90FLAGS = -O3 -r8 -u -traceback -static-intel # -ipo release
+#F90FLAGS = -O3 -r8 -u -traceback -static-intel # -ipo release
 
 
 # -------------------------------
