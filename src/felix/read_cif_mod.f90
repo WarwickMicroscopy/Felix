@@ -294,10 +294,10 @@ MODULE read_cif_mod
           IBasisAtomicNumber(ind)=jnd
         END IF
       END DO
-      IF (IBasisAtomicNumber(ind).EQ.0.AND.my_rank.EQ.0) THEN
-        CALL allow_message_on_this_core()
-        CALL message("Could not find Z for atom",ind)
-        CALL message("with symbol",SBasisAtomName(ind))
+      IF (IBasisAtomicNumber(ind).EQ.0) THEN
+        WRITE(SPrintString,'(A,I0,A,A)') &
+              "Could not find Z for atom",ind,"with symbol",SBasisAtomName(ind)
+        IF(l_alert(IErr,"ReadCif",SPrintString)) RETURN
         IErr=1; RETURN
       END IF
       !Wyckoff symbol
@@ -446,19 +446,21 @@ MODULE read_cif_mod
   !!
   !! Major-Authors: Jacob Richardson (2017)
   !! 
-  SUBROUTINE strip_chars(string,stripped)
-    CHARACTER(*), INTENT(IN) :: string
-    CHARACTER(:), ALLOCATABLE, INTENT(OUT) :: stripped
-    CHARACTER(LEN_TRIM(string)) :: padded_stripped
-    INTEGER :: i, n = 0
-    DO i = 1,LEN_TRIM(string) 
-      IF ( VERIFY(string(i:i), &
+  PURE SUBROUTINE strip_chars(SString,SStripped)
+    !?? only used once but it is a nice pure utility function
+    CHARACTER(*), INTENT(IN) :: SString
+    CHARACTER(:), ALLOCATABLE, INTENT(OUT) :: SStripped
+    CHARACTER(LEN_TRIM(SString)) :: SPaddedStripped
+    INTEGER :: i, n
+    n = 0
+    DO i = 1,LEN_TRIM(SString) 
+      IF ( VERIFY(SString(i:i), &
             "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ1234567890") == 0) THEN
         n = n + 1
-        padded_stripped(n:n) = string(i:i)
+        SPaddedStripped(n:n) = SString(i:i)
       END IF
     END DO
-    stripped = padded_stripped(1:n)
+    SStripped = SPaddedStripped(1:n)
   END SUBROUTINE
 
 END MODULE read_cif_mod

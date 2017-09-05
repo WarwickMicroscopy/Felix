@@ -26,7 +26,7 @@
 !  GNU General Public License for more details.
 !  
 !  You should have received a copy of the GNU General Public License
-!  along with Felix.  If not, see <http://www.gnu.org/licenses/>.
+!  along with Felix.  IF not, see <http://www.gnu.org/licenses/>.
 !
 !%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
@@ -34,7 +34,6 @@ MODULE message_mod
 !>--------------------------------------------------------------------------------------------
 !>  major-authors: Jacob Richardson (2017)
 !>--------------------------------------------------------------------------------------------
-!>
 !>  MODULE OVERVIEW:
 !>
 !>    This MODULE directly CONTAINS everything for message,
@@ -45,10 +44,7 @@ MODULE message_mod
 !>      l_alert is a simple but important function, used extensively for error handling.
 !>
 !>    message_mod also conatins print_end_time used to neatly print the time elapsed.
-!>      
-!>
 !>--------------------------------------------------------------------------------------------
-!>
 !>  message( ... ) FEATURES:
 !>
 !>    IWriteFLAG in felix.inp is the run-time input used to select the output mode of Felix.
@@ -57,57 +53,45 @@ MODULE message_mod
 !>    - message prints various different variable TYPEs with consistent formatting
 !>    - It accommodates for MPI parallel programming used in Felix by printing on one 'core'
 !>    - It prints a tiered-structure to distinguish key messages from more niche ones
-!>    - It speeds up debugging and testing, by being very quick and easy to use
-!>                    
+!>    - It speeds up debugging and testing, by being very quick and easy to use                   
 !>--------------------------------------------------------------------------------------------
 !>
-!>  message( Smsg_priority, msg_tag, text_to_print, variable_to_print )
+!>  message( MsgPriority, MsgTag, text_to_print, variable_to_print )
 !>
-!>    Smsg_priority     
+!>    MsgPriority         DERIVED TYPE ( msg_priority_TYPE ) = LS, LM, LL or LXL
 !>    (optional)
-!>
-!>            DERIVED TYPE ( msg_priority_TYPE ) = LS, LM, LL or LXL
-!>
-!>            This determines how important it is to print this message. Is it 
-!>            stating key operations of Felix or more particular, finer details?              
+!>                This determines how important it is to print this message. Is it
+!>                stating key operations of Felix or more particular, finer details?                       
 !>             
-!>            LS  : high priority (small level of output) for important statements & values
-!>            LM  : medium prioriity (medium level of output)
-!>            LL  : low priority (large output) for fines details & thorough variable output
-!>            LXL : extremely low priority large output) & niche details
+!>                LS  : high priority (small level of output) for important statements & values
+!>                LM  : medium prioriity (medium level of output)
+!>                LL  : low priority (large output) for fines details & thorough variable output
+!>                LXL : extremely low priority large output) & niche details
 !>
-!>            DEFAULT = LS
+!>                DEFAULT = LS
 !>
-!>            At run-time this priority will be compared against the selected output mode
-!>            given by IWriteFLAG in felix.inp. This will decide whether a message is
-!>            is important enough to be printed. Additionally, Low priority  
-!>            messages are indented further to the right to produce a tiered-output
-!>            for clarity and readability.  
+!>                At run-time this priority will be compared against the selected output mode
+!>                given by IWriteFLAG in felix.inp. This will decide whether a message is
+!>                is important enough to be printed. Additionally, Low priority  
+!>                messages are indented further to the right to produce a tiered-output
+!>                for clarity and readability.  
 !>
-!>    msg_tag       
-!>    (optional)
-!>              
-!>            DERIVED TYPE ( msg_tag_TYPE )
-!>              
-!>            This allows for messages to be grouped together with tags. At run-time you 
-!>            can select that only key messages and messages with a certain tag are printed.
+!>    MsgTag              DERIVED TYPE ( msg_tag_TYPE )
+!>    (optional)         
+!>                This allows for messages to be grouped together with tags. At run-time you 
+!>                can select that only key messages and messages with a certain tag are printed.
 !>
-!>    text_to_print
-!>     
-!>            TYPE: String (1D CHARACTER array)
+!>    SMainMsg            TYPE: String (1D CHARACTER array)
 !>
-!>            This is some text to print to the terminal.
-!>            Any variable values will be printed after this text. 
+!>                This is some text to print to the terminal.
+!>                Any variable values will be printed after this text. 
 !>                        
-!>    variable_to_print 
-!>    (optional)
-!> 
-!>            TYPE: complex, INTEGER, REAL, LOGICAL, String 
-!>            DIMENSION: scalar, vector or matrix
-!>
-!>            The value of this variable will be printed to the terminal with
-!>            a format depending upon its TYPE and dimension. E.g. a REAL matrix
-!>            will be printed on multiple lines in columns with scientific notation.                
+!>    variable_to_print   TYPE: COMPLEX, INTEGER, REAL, LOGICAL, String 
+!>    (optional)          DIMENSION: scalar, vector or matrix
+!>        
+!>                The value of this variable will be printed to the terminal with
+!>                a format depending upon its TYPE and DIMENSION. E.g. a REAL matrix
+!>                will be printed on multiple lines in columns with fixed width decimal notation.                
 !>                       
 !>--------------------------------------------------------------------------------------------
 !>
@@ -121,16 +105,21 @@ MODULE message_mod
 !>        0 = LS,   2 = LM,   4 = LL,   8 = LXL   
 !>
 !>        sidenote: 8 rarely used, it prints every message and creates a very verbose output.
-!>        LXL messages are usually accessed via a msg_tag instead.
+!>        LXL messages are usually accessed via a MsgTag instead.
 !>
-!>    The tens component of the INTEGER relates to the msg_tag. 
+!>    The tens component of the INTEGER relates to the MsgTag. 
 !>        
-!>        0   - no_tag  : no specific msg_tag's are switched on, only priority is considered
-!>        30  - dbg3    : corresponds to IWriteFLAG = 3 IN THE OLD SYSTEM, many print
-!>                        statements in the code previously only printed when IWriteFLAG = 3
+!>        0   - no_tag  : No indentation or tiered-structure and no messages have no_tag tag
+!>                        so only priority is considered.
+!>        10  - mode1   : This turns on tiered-structure and no messages have mode1 tag 
+!>                        so only priority is considered.
+!>        30  - dbg3    : Corresponds to IWriteFLAG = 3 IN THE OLD SYSTEM, many print
+!>                        statements in the code previously only printed when IWriteFLAG = 3.
+!>                        This will print all messages with dbg3 tag and priority messages
+!>                        depending upon the digit.
 !>
-!>        For the full list of msg_tag's and their corresponding IWriteFLAG ten's value,
-!>        refer to init_message_LOGICALs below.
+!>        For the full list of MsgTag's and their corresponding IWriteFLAG ten's value,
+!>        refer to SetMessageMode() below.
 !>
 !>    IWriteFLAG examples: 
 !>        2  will print all LS, LM messages
@@ -138,113 +127,78 @@ MODULE message_mod
 !>        96 will print all LS, LM, LL, and dbg14 tagged messages 
 !>
 !>--------------------------------------------------------------------------------------------
-!>
-!>  message( ... ) EXAMPLES  
-!>
-!>--------------------------------------------------------------------------------------------
 
-!   TO-DO LIST (SCRUFFY):
+  USE l_alert_mod             ! grants access to felix's main error handling
+  USE MyNumbers               ! necesary for IKIND, RKIND etc.
+  USE MyMPI, ONLY : my_rank   ! necesary for my_rank - used to print on core 0 only
 
-!?? fix message matrices
-!?? implicit no_tag & private
-!?? consider current procedure state
-!?? currently using derived TYPE to force particular priority/dbg use
-!?? standardise format top level, spaces and INTEGERs...
-!?? consider all variables as 2 dimensional matrices?
-!?? consider could make dbg initialise select case more concise with array of derived
-!?? rearrange to have terminal_error modules, msg_output_group examples, 
-!?? rename to Smsg_priority, update Smsg_priority for clarity high vs. low priority
-!?? priority for top level refinement details
-!?? adding new msg_tags
-!?? generic -> optional arguments not implimented...
-
-
-!---------------------------------------------------------------------------------------------
-
-  use l_alert_mod             ! grants access to felix's main error handling
-  use MyNumbers               ! necesary for IKIND, RKIND etc.
-  use MyMPI, ONLY : my_rank   ! necesary for my_rank - used to print on core 0 only
-
-  !?? JR this grants MyNumbers, USE MyNumbers throughout code is for clariry...
-
-!---------------------------------------------------------------------------------------------
-
-! HUGE INTERFACE to handle various variables TYPEs and optional arguments
-
-  interface message
+  !?? JR this grants MyNumbers, USE MyNumbers throughout code is for clarity not necessity 
 
   !-------------------------------------------------------------------------------------------
-  ! main REAL/complex/INTEGER vector printing - used by matrix and scalar printing
-    MODULE procedure message_rvector        
-    MODULE procedure message_cvector       
-    MODULE procedure message_ivector
-  !-------------------------------------------------------------------------------------------                                        
-    MODULE procedure message_string         ! text_to_print and string_variable
-    MODULE procedure message_only           ! text_to_print only
-    MODULE procedure message_LOGICAL        ! text_to_print and LOGICAL_variable
-  !-------------------------------------------------------------------------------------------
-  ! special versions of message
-    MODULE procedure message_alongside_ir   ! prints INT & REAL matrix alongside
-    MODULE procedure message_alongside_ir2  ! prints INT matrix & REAL vector alongside
-    MODULE procedure message_alongside_ic   ! prints INT & complex matrix alongside
-    MODULE procedure message_INTEGER_isi    ! prints text, INTEGER, more text, INTEGER 
-  !-------------------------------------------------------------------------------------------
-  ! interfaces used for scalars, matrices and optional arguments
-    MODULE procedure message_rmatrix        
-    MODULE procedure message_cmatrix        ! suffix :
-    MODULE procedure message_imatrix        ! 2 = without msg_tag argument
-    MODULE procedure message_real           ! 3 = without msg_tag & Smsg_priority argument  
-    MODULE procedure message_real2          
-    MODULE procedure message_real3          
-    MODULE procedure message_rvector2 
-    MODULE procedure message_rvector3
-    MODULE procedure message_rmatrix2
-    MODULE procedure message_rmatrix3
-    MODULE procedure message_complex
-    MODULE procedure message_complex2
-    MODULE procedure message_complex3
-    MODULE procedure message_cvector2
-    MODULE procedure message_cvector3
-    MODULE procedure message_cmatrix2
-    MODULE procedure message_cmatrix3
-    MODULE procedure message_INTEGER
-    MODULE procedure message_INTEGER2
-    MODULE procedure message_INTEGER3
-    MODULE procedure message_ivector2
-    MODULE procedure message_ivector3
-    MODULE procedure message_imatrix2
-    MODULE procedure message_imatrix3
-    MODULE procedure message_string2
-    MODULE procedure message_string3
-    MODULE procedure message_only2
-    MODULE procedure message_only3
-    MODULE procedure message_INTEGER_isi2
+  ! HUGE INTERFACE to handle various variables TYPEs and optional arguments
 
-  END interface message
+  INTERFACE message
+    MODULE PROCEDURE message1String 
+    MODULE PROCEDURE messageRMatrix        
+    MODULE PROCEDURE messageCMatrix       
+    MODULE PROCEDURE messageIMatrix
+    MODULE PROCEDURE message2Strings 
+    MODULE PROCEDURE messageLogical      
+    MODULE PROCEDURE message2Strings2Integers    ! prints text, INTEGER, more text, INTEGER 
+    ! interfaces for scalars and vector variables, which then go to matrix messages
+    MODULE PROCEDURE messageRVector        
+    MODULE PROCEDURE messageCVector         
+    MODULE PROCEDURE messageIVector         
+    MODULE PROCEDURE messageRScalar            
+    MODULE PROCEDURE messageCScalar
+    MODULE PROCEDURE messageIScalar
+    ! interfaces for optional arguments
+    MODULE PROCEDURE message1String2            ! suffix :
+    MODULE PROCEDURE message1String3            ! 2 = without MsgTag argument
+    MODULE PROCEDURE messageRMatrix2            ! 3 = without MsgTag & MsgPriority argument
+    MODULE PROCEDURE messageRMatrix3
+    MODULE PROCEDURE messageCMatrix2
+    MODULE PROCEDURE messageCMatrix3
+    MODULE PROCEDURE messageIMatrix2
+    MODULE PROCEDURE messageIMatrix3
+    MODULE PROCEDURE message2Strings2
+    MODULE PROCEDURE message2Strings3
+    MODULE PROCEDURE messageLogical2      
+    MODULE PROCEDURE messageLogical3
+    MODULE PROCEDURE message2Strings2Integers2
+    MODULE PROCEDURE message2Strings2Integers3     
+    MODULE PROCEDURE messageRVector2 
+    MODULE PROCEDURE messageRVector3 
+    MODULE PROCEDURE messageCVector2
+    MODULE PROCEDURE messageCVector3
+    MODULE PROCEDURE messageIVector2
+    MODULE PROCEDURE messageIVector3       
+    MODULE PROCEDURE messageRScalar2          
+    MODULE PROCEDURE messageRScalar3          
+    MODULE PROCEDURE messageCScalar2
+    MODULE PROCEDURE messageCScalar3
+    MODULE PROCEDURE messageIScalar2
+    MODULE PROCEDURE messageIScalar3
+  END INTERFACE message
 
   !--------------------------------------------------------------------
-
-  TYPE msg_priorities
-    LOGICAL :: state              ! set to .true. or .false. at run-time by IWriteFLAG
-    CHARACTER(50) :: initial_msg  ! used for priority indenting - tiered structure
+  TYPE MsgPriorities
+    LOGICAL :: LState               ! set to .TRUE. or .FALSE. at run-time by IWriteFLAG
+    CHARACTER(50) :: SInitialMsg    ! used for priority indenting - tiered structure
   END TYPE
 
-  TYPE msg_tags
-    LOGICAL :: state              ! set to .true. or .false. at run-time by IWriteFLAG
-    INTEGER(IKIND) :: id_number   ! comapred with IWriteFLAG to set state to .true. or .false
+  TYPE MsgTags
+    LOGICAL :: LState               ! set to .TRUE. or .FALSE. at run-time by IWriteFLAG
+    INTEGER(IKIND) :: INumberID     ! comapred with IWriteFLAG to set state to .TRUE. or .FALSE
   END TYPE
-
   !--------------------------------------------------------------------
 
-  TYPE(msg_priorities) :: LS, LM, LL, LXL
+  TYPE(MsgPriorities) :: LS, LM, LL, LXL
+  TYPE(MsgTags) :: no_tag, dbg7, dbg3, dbg6, dbg14, mode1
 
-  TYPE(msg_tags) :: no_tag, dbg7, dbg3, dbg6, dbg14
-
-  LOGICAL,private :: l_print_this_core ! used to print on all cores, usually = .false.
-  
-  CHARACTER(:), allocatable :: indent_spaces, spaces ! used for tiered-structure 
-
-  INTEGER(IKIND) :: iclock_rate ! used with print_end_timer
+  CHARACTER(:), ALLOCATABLE :: SIndentChars, SSpaces ! used for tiered-structure 
+  LOGICAL,private :: LPrintThisCore ! used to print on all cores, usually = .FALSE.  
+  INTEGER(IKIND) :: IClockRate ! used with print_end_timer
   
 CONTAINS
 
@@ -252,114 +206,88 @@ CONTAINS
   ! setup message (on felix start-up, before IWriteFLAG read-in)
   !--------------------------------------------------------------------
   
-  SUBROUTINE init_message_LOGICALs  
- 
-    !--------------------------------------------------------------------
-    ! msg_tags fixed ID numbers (to compare against IWriteFLAG)
-    !--------------------------------------------------------------------
+  SUBROUTINE InitialiseMessage  
+    ! initially set indetation and intial characters to be blank
+    SSpaces = "" 
+    SIndentChars   = ""
+    LS%SInitialMsg  = ""; LM%SInitialMsg  = ""; LL%SInitialMsg  = ""; LXL%SInitialMsg = ""
 
-    ! to add another msg_tag, declare it above and add it to set_message_mod_mode below
-    no_tag%id_number  = 0
-    dbg7%id_number    = 70
-    dbg3%id_number    = 30
-    dbg6%id_number    = 60
-    dbg14%id_number   = 90 !?? would use 140, but our INTEGERs cannot exceed 140
-
-    !--------------------------------------------------------------------
-    ! setup tiered-structure
-    !--------------------------------------------------------------------
-
-    ! e.g. WRITE(*,formatting) TRIM(Smsg_priority%initial_msg)//spaces, main_msg, rvector
-
-    indent_spaces   = "" 
-
-    LS%initial_msg  = indent_spaces
-    LM%initial_msg  = indent_spaces//"   "
-    LL%initial_msg  = indent_spaces//"     "
-    LXL%initial_msg = indent_spaces//"       "
-
-    spaces = " " 
-    ! spaces are the global spaces after intial_msg
-
-    !--------------------------------------------------------------------
-    ! intially only set LS = .true. before IWriteFLAG read-in
-    !--------------------------------------------------------------------
-
-    LS%state = .true.; 
-    LM%state = .false.;   LL%state = .false.;   LXL%state = .false.
-
-    no_tag%state=.false.; dbg7%state = .false.; dbg3%state = .false.;
-    dbg6%state = .false.; dbg14%state = .false.
-
-    l_print_this_core = .false.   
-
+    ! intially only set LS = .TRUE. before IWriteFLAG read-in
+    LS%LState = .TRUE.; 
+    LM%LState = .FALSE.;    LL%LState = .FALSE.;    LXL%LState = .FALSE.
+    no_tag%LState=.FALSE.;  dbg7%LState = .FALSE.;  dbg3%LState = .FALSE.;
+    dbg6%LState = .FALSE.;  dbg14%LState = .FALSE.; mode1%LState = .FALSE.
+    LPrintThisCore = .FALSE.   
   END SUBROUTINE
 
   !--------------------------------------------------------------------
   ! read-in IWriteFLAG and setup message
   !--------------------------------------------------------------------
 
-  SUBROUTINE set_message_mod_mode ( IWriteFLAG_in, ierr )
+  SUBROUTINE SetMessageMode ( IWriteFLAG, IErr )
     
-    INTEGER(IKIND), INTENT(out):: ierr
-    INTEGER(IKIND), INTENT(IN) :: IWriteFLAG_in
-    INTEGER(IKIND) :: prio                        ! acts as IWriteFLAG
-    prio = IWriteFLAG_in    
+    INTEGER(IKIND), INTENT(out):: IErr
+    INTEGER(IKIND), INTENT(IN) :: IWriteFLAG
+    INTEGER(IKIND) :: IPrio ! short for priority, acts as IWriteFLAG
+    IPrio = IWriteFLAG    
   
     !--------------------------------------------------------------------
-    ! Use IWriteFLAG tens component to turn-on a msg_tag
+    ! Use IWriteFLAG tens component to turn-on a MsgTag
     !--------------------------------------------------------------------
 
-    if ( prio > 10 ) then
-
-      if ( (dbg7%id_number <= prio) .and. (prio  <= dbg7%id_number+10) ) then
-        dbg7%state = .true.
-        prio = prio - dbg7%id_number
-      elseif ( (dbg3%id_number <= prio) .and. (prio  <= dbg3%id_number+10) ) then
-        dbg3%state = .true.
-        prio = prio - dbg3%id_number
-      elseif ( (dbg6%id_number <= prio) .and. (prio  <= dbg6%id_number+10) ) then
-        dbg6%state = .true.
-        prio = prio - dbg6%id_number
-      elseif ( (dbg14%id_number <= prio) .and. (prio  <= dbg14%id_number+10) ) then
-        dbg14%state = .true.
-        prio = prio - dbg14%id_number
-      else  ! error (minor) - tens component not recognised
-        !?? set IWriteFLAG to 2, just switch LS & LM on
+    SELECT CASE (IPrio) 
+      CASE (0:9)
+        no_tag%LState=.FALSE.  
+      CASE (10:19)
+        mode1%LState = .TRUE.
+        IPrio = IPrio - 10
+        SSpaces = " "
+        LS%SInitialMsg  = "->"; LM%SInitialMsg  = "---->"; 
+        LL%SInitialMsg  = "------->"; LXL%SInitialMsg = "---------->"
+      CASE (70:79)
+        dbg7%LState = .TRUE.
+        IPrio = IPrio - 70
+      CASE (30:39)
+        dbg3%LState = .TRUE.
+        IPrio = IPrio - 30
+      CASE (60:69)
+        dbg6%LState = .TRUE.
+        IPrio = IPrio - 60
+      CASE (90:99)
+        dbg14%LState = .TRUE.
+        IPrio = IPrio - 90
+      CASE DEFAULT  ! error (minor) - tens component not recognised
         IErr=1
         IF(l_alert(IErr,"set_message_mod_mode",&
               "IWriteFLAG tens component not recognised check felix.inp")) RETURN
-      END if
-
-    END if
-    ! prio is just a single digit INTEGER now
+    END SELECT
+    ! After the above, IPrio is now just a single digit INTEGER
 
     ! switch lower priorities on depending upon IWriteFLAG digit compoent
-    if (prio >= 2) LM%state = .true.;
-    if (prio >= 4) LL%state = .true.;
-    if (prio >= 8) LXL%state = .true.;
+    IF (IPrio >= 2) LM%LState = .TRUE.;
+    IF (IPrio >= 4) LL%LState = .TRUE.;
+    IF (IPrio >= 8) LXL%LState = .TRUE.;
 
   END SUBROUTINE
 
   !%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-  SUBROUTINE allow_message_on_this_core
-    l_print_this_core = .true.
-    CALL message_INTEGER3("MESSAGE FROM THIS CORE AS WELL, rank =",my_rank)
+  SUBROUTINE AllowMessageOnThisCore
+    LPrintThisCore = .TRUE.
+    CALL messageIScalar3("MESSAGE FROM THIS CORE AS WELL, rank =",my_rank)
   END SUBROUTINE  !?? not currently used, but may be useful
 
   !%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
   !---------------------------------------------------------------------
-  ! print_end_time
+  ! PrintEndTime
   !---------------------------------------------------------------------  
 
   ! compare start time to current and print time-passed
-  SUBROUTINE print_end_time(Smsg_priority, Istart_time, STaskName)
-    USE IPARA, ONLY : IClockRate
-    TYPE (msg_priorities), INTENT(IN) :: Smsg_priority
+  SUBROUTINE PrintEndTime(MsgPriority, IStartTime, STaskName)
+    TYPE (MsgPriorities), INTENT(IN) :: MsgPriority
     CHARACTER(*), INTENT(IN) :: STaskName
-    INTEGER(IKIND), INTENT(IN) :: Istart_time
+    INTEGER(IKIND), INTENT(IN) :: IStartTime
     INTEGER(IKIND) :: Ihours,Iminutes,Iseconds,ICurrentTime,INameLength
     REAL(RKIND) :: Rduration
     CHARACTER(100) :: SPrintString,Sfmt
@@ -369,15 +297,15 @@ CONTAINS
     Sfmt=TRIM(ADJUSTL(Sfmt))
     CALL system_clock(ICurrentTime)
     ! converts ticks from system clock into seconds
-    Rduration = REAL(ICurrentTime-Istart_time)/REAL(IClockRate)
+    Rduration = REAL(ICurrentTime-IStartTime)/REAL(IClockRate)
     Ihours = FLOOR(Rduration/3600.0d0)
     Iminutes = FLOOR(MOD(Rduration,3600.0d0)/60.0d0)
     Iseconds = INT(MOD(Rduration,3600.0d0)-Iminutes*60)
     WRITE(SPrintString,FMT=Sfmt) STaskName," completed in ",Ihours," hrs ",Iminutes," mins ",Iseconds," sec"
     SPrintString=TRIM(ADJUSTL(SPrintString))
-    CALL message(Smsg_priority,SPrintString)
+    CALL message1String2(MsgPriority,SPrintString)
 
-  END SUBROUTINE print_end_time
+  END SUBROUTINE PrintEndTime
 
   !   EXAMPLE USAGE - use intrinisic system_clock, 'IStartTime2' local variable 
   !
@@ -387,442 +315,387 @@ CONTAINS
   !   CALL print_end_time( LM, IStartTime2, "Absorption" )
   !
   !   EXAMPLE TERMINAL OUTPUT:
-  !   @ ---- Absorption completed in   0 hrs  0 mins  2 sec
+  !   ----> Absorption completed in   0 hrs  0 mins  2 sec
 
   !---------------------------------------------------------------------
-  ! main REAL/complex/INTEGER vector printing - used by matrix and scalar printing
+  ! Main simple message
   !---------------------------------------------------------------------
 
-  SUBROUTINE message_rvector ( Smsg_priority, msg_tag, main_msg, rvector ) 
-   
-    TYPE (msg_priorities), INTENT(IN) :: Smsg_priority
-    TYPE (msg_tags), INTENT(IN) :: msg_tag
-    CHARACTER(*), INTENT(IN) :: main_msg
-    REAL(RKIND),dimension(:),INTENT(IN) :: rvector ! REAL vector
-    CHARACTER(50) :: formatting
+  SUBROUTINE message1String ( MsgPriority, MsgTag, SString )
+
+    TYPE (MsgPriorities), INTENT(IN) :: MsgPriority
+    TYPE (MsgTags), INTENT(IN) :: MsgTag
+    CHARACTER(*), INTENT(IN) :: SString
+
+    IF ( ( my_rank==0 .OR. LPrintThisCore ) &
+    .AND. (MsgPriority%LState .OR. MsgTag%LState) ) THEN
+      WRITE(*,'(a,a)') TRIM(MsgPriority%SInitialMsg)//SSpaces, TRIM(SString)
+    END IF
+  
+  END SUBROUTINE message1String
+
+  !---------------------------------------------------------------------
+  ! Main REAL/complex/INTEGER matrix printing - used by vector and scalar printing
+  !---------------------------------------------------------------------
+
+  SUBROUTINE messageRMatrix ( MsgPriority, MsgTag, SMainMsg, RMatrix )
     
-    ! check priority then print REAL vector
-    if ( ( my_rank==0 .or. l_print_this_core ) & 
-    .and. (Smsg_priority%state .or. msg_tag%state) ) then
-      if (size(rvector) >= 2) then ! vector, so surround with brackets
-        WRITE(formatting,'(a,i3.3,a)') '(a,a,"("',size(rvector),'(1x,sp,ES10.3)")")'
-      else  ! scalar, so bracketless
-        WRITE(formatting,'(a,i3.3,a)') '(a,a,',size(rvector),'(1x,sp,ES10.3))'
-      END if
-      WRITE(*,formatting) TRIM(Smsg_priority%initial_msg)//spaces, main_msg, rvector
-    END if
+    TYPE (MsgPriorities), INTENT(IN) :: MsgPriority
+    TYPE (MsgTags), INTENT(IN) :: MsgTag
+    CHARACTER(*), INTENT(IN) :: SMainMsg
+    REAL(RKIND),DIMENSION(:,:),INTENT(IN) :: RMatrix
+    INTEGER(IKIND) :: i
+    CHARACTER(1000) :: SFormatting, SPrintString
 
-  END SUBROUTINE message_rvector
+    IF ( ( my_rank==0 .OR. LPrintThisCore ) &
+    .AND. (MsgPriority%LState .OR. MsgTag%LState) ) THEN
 
-  SUBROUTINE message_cvector ( Smsg_priority, msg_tag, main_msg, cvector )    
+      IF( SIZE(RMatrix,1).EQ.1 .AND. SIZE(RMatrix,2).LE.4 ) THEN
+        WRITE(SFormatting,'(a,i3,a)') '(',SIZE(RMatrix,2),'(1x,F6.2))'
+        WRITE(SPrintString,SFormatting) RMatrix(:,:)
+        CALL message1String ( MsgPriority, MsgTag, SMainMsg//TRIM(SPrintString) )
+      ELSE
+        WRITE(SFormatting,'(a,i3,a)') '(',SIZE(RMatrix,2),'(1x,F6.2))'
+        CALL message1String ( MsgPriority, MsgTag, SMainMsg )
+        DO i =1,SIZE(RMatrix,1)
+          WRITE(SPrintString,SFormatting) RMatrix(i,:)
+          CALL message1String ( MsgPriority, MsgTag, TRIM(SPrintString) )
+        END DO
+      END IF
 
-    TYPE (msg_priorities), INTENT(IN) :: Smsg_priority
-    TYPE (msg_tags), INTENT(IN) :: msg_tag
-    CHARACTER(*), INTENT(IN) :: main_msg
-    complex(CKIND),dimension(:),INTENT(IN) :: cvector ! complex vector
-    CHARACTER(50) :: formatting
+    END IF
 
-    ! check priority then print complex vector
-    if ( ( my_rank==0 .or. l_print_this_core ) &
-    .and. (Smsg_priority%state .or. msg_tag%state) ) then
-      WRITE(formatting,'(a,i3.3,a)') '(a,a,',size(cvector),'(1x,"(",sp,ES8.1," ",ES8.1,"i)"))'
-      WRITE(*,formatting) TRIM(Smsg_priority%initial_msg)//spaces, main_msg, cvector
-    END if
+  END SUBROUTINE messageRMatrix
 
-  END SUBROUTINE message_cvector
+  SUBROUTINE messageCMatrix ( MsgPriority, MsgTag, SMainMsg, CMatrix )
+    
+    TYPE (MsgPriorities), INTENT(IN) :: MsgPriority
+    TYPE (MsgTags), INTENT(IN) :: MsgTag
+    CHARACTER(*), INTENT(IN) :: SMainMsg
+    COMPLEX(CKIND),DIMENSION(:,:),INTENT(IN) :: CMatrix
+    INTEGER(IKIND) :: i
+    CHARACTER(1000) :: SFormatting, SPrintString
 
-  SUBROUTINE message_ivector ( Smsg_priority, msg_tag, main_msg, ivector )  
-  
-    TYPE (msg_priorities), INTENT(IN) :: Smsg_priority
-    TYPE (msg_tags), INTENT(IN) :: msg_tag
-    CHARACTER(*), INTENT(IN) :: main_msg
-    INTEGER(IKIND),dimension(:),INTENT(IN) :: ivector ! INTEGER vector
-    CHARACTER(50) :: formatting
+    IF ( ( my_rank==0 .OR. LPrintThisCore ) &
+    .AND. (MsgPriority%LState .OR. MsgTag%LState) ) THEN
 
-    ! check priority then print INTEGER vector
-    if ( ( my_rank==0 .or. l_print_this_core ) &
-    .and. (Smsg_priority%state .or. msg_tag%state) ) then
-      WRITE(formatting,'(a,i3.3,a)') '(a,a,',size(ivector),'(1x,i4.3))'
-      WRITE(*,formatting) TRIM(Smsg_priority%initial_msg)//spaces, main_msg, ivector
-    END if
+      WRITE(SFormatting,'(a,i3,a)') '(',SIZE(CMatrix,2),'(F6.2,1x,sp,F6.2,"i",4x))'
 
-  END SUBROUTINE message_ivector
+      IF( SIZE(CMatrix,1).EQ.1 .AND. SIZE(CMatrix,2).LE.6 ) THEN    
+        WRITE(SPrintString,SFormatting) CMatrix(:,:)  
+        CALL message1String ( MsgPriority, MsgTag, SMainMsg//TRIM(SPrintString) )
+      ELSE
+        CALL message1String ( MsgPriority, MsgTag, SMainMsg )
+        DO i =1,SIZE(CMatrix,1)
+          WRITE(SPrintString,SFormatting) CMatrix(i,:)
+          CALL message1String ( MsgPriority, MsgTag, TRIM(SPrintString) )
+        END DO
+      END IF
 
-  !-------------------------------------------------------------------------------------------
+    END IF
 
+  END SUBROUTINE messageCMatrix
 
+  SUBROUTINE messageIMatrix ( MsgPriority, MsgTag, SMainMsg, IMatrix )
+    
+    TYPE (MsgPriorities), INTENT(IN) :: MsgPriority
+    TYPE (MsgTags), INTENT(IN) :: MsgTag
+    CHARACTER(*), INTENT(IN) :: SMainMsg
+    INTEGER(IKIND),DIMENSION(:,:),INTENT(IN) :: IMatrix
+    INTEGER(IKIND) :: i
+    CHARACTER(1000) :: SFormatting, SPrintString
 
-  SUBROUTINE message_string ( Smsg_priority, msg_tag, main_msg, str_variable )
+    IF ( ( my_rank==0 .OR. LPrintThisCore ) &
+    .AND. (MsgPriority%LState .OR. MsgTag%LState) ) THEN
 
-    TYPE (msg_priorities), INTENT(IN) :: Smsg_priority
-    TYPE (msg_tags), INTENT(IN) :: msg_tag
-    CHARACTER(*), INTENT(IN) :: main_msg, str_variable
+      IF( SIZE(IMatrix,1).EQ.1 .AND. SIZE(IMatrix,2).LE.15 ) THEN
+        WRITE(SFormatting,'(a,i3,a)') '(',SIZE(IMatrix,2),'(1x,i4))'
+        WRITE(SPrintString,SFormatting) IMatrix(:,:)
+        CALL message1String ( MsgPriority, MsgTag, SMainMsg//TRIM(SPrintString) )
+      ELSE
+        WRITE(SFormatting,'(a,i3,a)') '(',SIZE(IMatrix,2),'(i4,1x))'
+        CALL message1String ( MsgPriority, MsgTag, SMainMsg )
+        DO i =1,SIZE(IMatrix,1)
+          WRITE(SPrintString,SFormatting) IMatrix(i,:)
+          CALL message1String ( MsgPriority, MsgTag, TRIM(SPrintString) )
+        END DO
+      END IF
 
-    ! check priority then print main_msg & String
-    if ( ( my_rank==0 .or. l_print_this_core ) &
-    .and. (Smsg_priority%state .or. msg_tag%state) ) then
-      WRITE(*,'(a,a,a,a,a)') TRIM(Smsg_priority%initial_msg)//spaces, main_msg,"'",str_variable,"'"
-    END if
-  
-  END SUBROUTINE message_string
+    END IF
 
-  SUBROUTINE message_only ( Smsg_priority, msg_tag, main_msg )
-
-    TYPE (msg_priorities), INTENT(IN) :: Smsg_priority
-    TYPE (msg_tags), INTENT(IN) :: msg_tag
-    CHARACTER(*), INTENT(IN) :: main_msg
-
-    ! check priority then print main_msg
-    if ( ( my_rank==0 .or. l_print_this_core ) &
-    .and. (Smsg_priority%state .or. msg_tag%state) ) then
-      WRITE(*,'(a,a)') TRIM(Smsg_priority%initial_msg)//spaces, main_msg
-    END if
-  
-  END SUBROUTINE message_only
-
-  ! For printing LOGICALs ! currently no interfaces for optional arguments, matrices, vectors
-  SUBROUTINE message_LOGICAL ( Smsg_priority, msg_tag, main_msg, LOGICAL_var )  
-  
-    TYPE (msg_priorities), INTENT(IN) :: Smsg_priority
-    TYPE (msg_tags), INTENT(IN) :: msg_tag
-    CHARACTER(*), INTENT(IN) :: main_msg
-    LOGICAL, INTENT(IN) :: LOGICAL_var ! LOGICAL variable
-
-    ! check priority then print LOGICAL variable
-    if ( ( my_rank==0 .or. l_print_this_core ) &
-    .and. (Smsg_priority%state .or. msg_tag%state) ) then
-      WRITE(*,'(a,a,1x,l1)') TRIM(Smsg_priority%initial_msg)//spaces, main_msg, LOGICAL_var
-    END if
-
-  END SUBROUTINE message_LOGICAL
-
-
+  END SUBROUTINE messageIMatrix
 
   !---------------------------------------------------------------------
-  ! Special message varieties
+  ! Other key message types
   !---------------------------------------------------------------------
+
+  SUBROUTINE message2Strings ( MsgPriority, MsgTag, SString1, SString2 )
+
+    TYPE (MsgPriorities), INTENT(IN) :: MsgPriority
+    TYPE (MsgTags), INTENT(IN) :: MsgTag
+    CHARACTER(*), INTENT(IN) :: SString1, SString2
+
+    IF ( ( my_rank==0 .OR. LPrintThisCore ) &
+    .AND. (MsgPriority%LState .OR. MsgTag%LState) ) THEN
+      WRITE(*,'(a,a,a,a,a)') TRIM(MsgPriority%SInitialMsg)//SSpaces, SString1,"'",SString2,"'"
+    END IF
   
-  ! vertically INT matrix beside REAL matrix
-  SUBROUTINE message_alongside_ir ( Smsg_priority, msg_tag, &
-               main_msg, imatrix1, rmatrix2 )
-    
-    TYPE (msg_priorities), INTENT(IN) :: Smsg_priority
-    TYPE (msg_tags), INTENT(IN) :: msg_tag
-    CHARACTER(*), INTENT(IN) :: main_msg
-    INTEGER(IKIND),dimension(:,:),INTENT(IN) :: imatrix1 ! 1st matrix - INTEGER
-    REAL(RKIND), dimension(:,:), INTENT(IN) :: rmatrix2 ! 2nd matrix - REAL
-    CHARACTER(100) :: formatting
-    INTEGER(IKIND) :: i
+  END SUBROUTINE message2Strings
 
-    ! check priority then print two matrices alongside
-    if ( ( my_rank==0 .or. l_print_this_core ) &
-    .and. (Smsg_priority%state .or. msg_tag%state) ) then
-      WRITE(*,'(a,a)') TRIM(Smsg_priority%initial_msg)//spaces, main_msg
-      WRITE(formatting,'(a,i3.3,a,i3.3,a)') '(a,i3.3,',size(imatrix1,2),'(1x,i4.3),a,',&
-            size(rmatrix2,2),'(1x,sp,ES10.3))'
-      do i =1,size(imatrix1,1)
-        WRITE(*,formatting) TRIM(Smsg_priority%initial_msg)//spaces,i, imatrix1(i,:)," |",rmatrix2(i,:)
-      END do
-    END if  
+  SUBROUTINE messageLogical ( MsgPriority, MsgTag, SMainMsg, LLogicalVariable )  
   
-  END SUBROUTINE message_alongside_ir
+    TYPE (MsgPriorities), INTENT(IN) :: MsgPriority
+    TYPE (MsgTags), INTENT(IN) :: MsgTag
+    CHARACTER(*), INTENT(IN) :: SMainMsg
+    LOGICAL, INTENT(IN) :: LLogicalVariable
 
-  ! vertically INT matrix and REAL vector
-  SUBROUTINE message_alongside_ir2 ( Smsg_priority, msg_tag, &
-               main_msg, imatrix, rvector )
+    IF ( ( my_rank==0 .OR. LPrintThisCore ) &
+    .AND. (MsgPriority%LState .OR. MsgTag%LState) ) THEN
+      WRITE(*,'(a,a,1x,l1)') TRIM(MsgPriority%SInitialMsg)//SSpaces, SMainMsg, LLogicalVariable
+    END IF
 
-    TYPE (msg_priorities), INTENT(IN) :: Smsg_priority
-    TYPE (msg_tags), INTENT(IN) :: msg_tag
-    CHARACTER(*), INTENT(IN) :: main_msg
-    INTEGER(IKIND),dimension(:,:),INTENT(IN) :: imatrix ! 1st matrix - INTEGER
-    REAL(RKIND), dimension(:), INTENT(IN) :: rvector ! 2nd matrix - REAL
-    CHARACTER(100) :: formatting
-    INTEGER(IKIND) :: i
+  END SUBROUTINE messageLogical
 
-    CALL message_alongside_ir ( Smsg_priority, msg_tag, &
-               main_msg, imatrix, RESHAPE(rvector,[size(rvector),1]) ) 
-  
-  END SUBROUTINE message_alongside_ir2
+  ! text, integer, extra-text, extra-integer
+  SUBROUTINE message2Strings2Integers ( MsgPriority, MsgTag, text1, int1, text2, int2)
 
-  ! vertically INT matrix beside complex matrix
-  SUBROUTINE message_alongside_ic ( Smsg_priority, msg_tag, &
-               main_msg, imatrix1, cmatrix2 )
-    
-    TYPE (msg_priorities), INTENT(IN) :: Smsg_priority
-    TYPE (msg_tags), INTENT(IN) :: msg_tag
-    CHARACTER(*), INTENT(IN) :: main_msg
-    INTEGER(IKIND), dimension(:,:),INTENT(IN) :: imatrix1 ! 1st matrix - INTEGER
-    complex(CKIND), dimension(:,:), INTENT(IN) :: cmatrix2 ! 2nd matrix - REAL
-    CHARACTER(100) :: formatting
-    INTEGER(IKIND) :: i
-
-    ! check priority then print two matrices alongside
-    if ( ( my_rank==0 .or. l_print_this_core ) &
-    .and. (Smsg_priority%state .or. msg_tag%state) ) then
-      WRITE(*,'(a,a)') TRIM(Smsg_priority%initial_msg)//spaces, main_msg
-      WRITE(formatting,'(a,i3.3,a,i3.3,a)') '(a,i3.3,',size(imatrix1,2),'(1x,i4.3),a,',&
-            size(cmatrix2,2),'(1x,"(",sp,ES8.1," ",ES8.1,"i)"))'
-      do i =1,size(imatrix1,1)
-        WRITE(*,formatting) TRIM(Smsg_priority%initial_msg)//spaces,i, imatrix1(i,:)," |",cmatrix2(i,:)
-      END do
-    END if  
-  
-  END SUBROUTINE message_alongside_ic
-
-  ! text, INTEGER, extra-text, extra-INTEGER
-  SUBROUTINE message_INTEGER_isi ( Smsg_priority, msg_tag, text1, int1, text2, int2)
-
-    TYPE (msg_priorities), INTENT(IN) :: Smsg_priority
-    TYPE (msg_tags), INTENT(IN) :: msg_tag
+    TYPE (MsgPriorities), INTENT(IN) :: MsgPriority
+    TYPE (MsgTags), INTENT(IN) :: MsgTag
     CHARACTER(*), INTENT(IN) :: text1, text2
     INTEGER(IKIND), INTENT(IN) :: int1, int2
 
-    if ( ( my_rank==0 .or. l_print_this_core ) &
-    .and. (Smsg_priority%state .or. msg_tag%state) ) then
-      WRITE(*,'(a,a,i4.3,a,i4.3)') TRIM(Smsg_priority%initial_msg)//spaces, text1, int1, text2, int2
-    END if
+    IF ( ( my_rank==0 .OR. LPrintThisCore ) &
+    .AND. (MsgPriority%LState .OR. MsgTag%LState) ) THEN
+      WRITE(*,'(a,a,i4.3,a,i4.3)') TRIM(MsgPriority%SInitialMsg)//SSpaces, text1, int1, text2, int2
+    END IF
   
-  END SUBROUTINE message_INTEGER_isi
+  END SUBROUTINE message2Strings2Integers
 
   !---------------------------------------------------------------------
   !---------------------------------------------------------------------
-  ! INTERFACES BELOW
+  ! MAIN INTERFACES BELOW
   !---------------------------------------------------------------------
   !---------------------------------------------------------------------
 
   !---------------------------------------------------------------------
-  ! Matrix messages using corresponding vector messages
+  ! vector and scalar interfaces
   !---------------------------------------------------------------------
 
-  SUBROUTINE message_rmatrix ( Smsg_priority, msg_tag, main_msg, rmatrix )
-    
-    TYPE (msg_priorities), INTENT(IN) :: Smsg_priority
-    TYPE (msg_tags), INTENT(IN) :: msg_tag
-    CHARACTER(*), INTENT(IN) :: main_msg
-    REAL(RKIND),dimension(:,:),INTENT(IN) :: rmatrix ! REAL martrix
-    INTEGER(IKIND) :: i
+  SUBROUTINE messageRVector ( MsgPriority, MsgTag, SMainMsg, RVector )    
+    TYPE (MsgPriorities), INTENT(IN) :: MsgPriority
+    TYPE (MsgTags), INTENT(IN) :: MsgTag
+    CHARACTER(*), INTENT(IN) :: SMainMsg
+    REAL(RKIND),DIMENSION(:),INTENT(IN) :: RVector
+    CALL messageRMatrix( MsgPriority, MsgTag, SMainMsg, RESHAPE(RVector,[1,SIZE(RVector,1)]) )
+  END SUBROUTINE messageRVector
 
-    ! check priority then print REAL matrix using vector print
-    if ( ( my_rank==0 .or. l_print_this_core ) &
-    .and. (Smsg_priority%state .or. msg_tag%state) ) then
-      CALL message_only ( Smsg_priority, msg_tag, main_msg )
-      do i =1,size(rmatrix,1)
-        CALL message_rvector ( Smsg_priority, msg_tag, "", rmatrix(i,:) ) 
-      END do
-    END if
+  SUBROUTINE messageCVector ( MsgPriority, MsgTag, SMainMsg, CVector )    
+    TYPE (MsgPriorities), INTENT(IN) :: MsgPriority
+    TYPE (MsgTags), INTENT(IN) :: MsgTag
+    CHARACTER(*), INTENT(IN) :: SMainMsg
+    COMPLEX(CKIND),DIMENSION(:),INTENT(IN) :: CVector
+    CALL messageCMatrix( MsgPriority, MsgTag, SMainMsg, RESHAPE(CVector,[1,SIZE(CVector,1)]) )
+  END SUBROUTINE messageCVector
 
-  END SUBROUTINE message_rmatrix
+  SUBROUTINE messageIVector ( MsgPriority, MsgTag, SMainMsg, IVector )  
+    TYPE (MsgPriorities), INTENT(IN) :: MsgPriority
+    TYPE (MsgTags), INTENT(IN) :: MsgTag
+    CHARACTER(*), INTENT(IN) :: SMainMsg
+    INTEGER(IKIND),DIMENSION(:),INTENT(IN) :: IVector
+    CALL messageIMatrix( MsgPriority, MsgTag, SMainMsg, RESHAPE(IVector,[1,SIZE(IVector,1)]) )
+  END SUBROUTINE messageIVector
 
-  SUBROUTINE message_cmatrix ( Smsg_priority, msg_tag, main_msg, cmatrix )
-    
-    TYPE (msg_priorities), INTENT(IN) :: Smsg_priority
-    TYPE (msg_tags), INTENT(IN) :: msg_tag
-    CHARACTER(*), INTENT(IN) :: main_msg
-    complex(CKIND),dimension(:,:),INTENT(IN) :: cmatrix ! complex martrix
-    INTEGER(IKIND) :: i
+  SUBROUTINE messageRScalar ( MsgPriority, MsgTag, SMainMsg, RScalar )
+    TYPE (MsgPriorities), INTENT(IN) :: MsgPriority
+    TYPE (MsgTags), INTENT(IN) :: MsgTag
+    CHARACTER(*), INTENT(IN) :: SMainMsg
+    REAL(RKIND), INTENT(IN) :: RScalar
+    CALL messageRMatrix ( MsgPriority, MsgTag, SMainMsg, RESHAPE([RScalar],[1,1]) )  
+  END SUBROUTINE messageRScalar
 
-    ! check priority then print complex matrix using vector print
-    if ( ( my_rank==0 .or. l_print_this_core ) &
-    .and. (Smsg_priority%state .or. msg_tag%state) ) then
-      CALL message_only ( Smsg_priority, msg_tag, main_msg )
-      do i =1,size(cmatrix,1)
-        CALL message_cvector ( Smsg_priority, msg_tag, "", cmatrix(i,:) ) 
-      END do
-    END if
+  SUBROUTINE messageCScalar ( MsgPriority, MsgTag, SMainMsg, CScalar )    
+    TYPE (MsgPriorities), INTENT(IN) :: MsgPriority
+    TYPE (MsgTags), INTENT(IN) :: MsgTag
+    CHARACTER(*), INTENT(IN) :: SMainMsg
+    COMPLEX(CKIND),INTENT(IN) :: CScalar
+    CALL messageCMatrix ( MsgPriority, MsgTag, SMainMsg, RESHAPE([CScalar],[1,1]) )
+  END SUBROUTINE messageCScalar
 
-  END SUBROUTINE message_cmatrix
-
-  SUBROUTINE message_imatrix ( Smsg_priority, msg_tag, main_msg, imatrix )
-    
-    TYPE (msg_priorities), INTENT(IN) :: Smsg_priority
-    TYPE (msg_tags), INTENT(IN) :: msg_tag
-    CHARACTER(*), INTENT(IN) :: main_msg
-    INTEGER(IKIND),dimension(:,:),INTENT(IN) :: imatrix ! INTEGER martrix
-    INTEGER(IKIND) :: i
-
-    ! check priority then print INTEGER matrix using vector print
-    if ( ( my_rank==0 .or. l_print_this_core ) &
-    .and. (Smsg_priority%state .or. msg_tag%state) ) then
-      CALL message_only ( Smsg_priority, msg_tag, main_msg )
-      do i =1,size(imatrix,1)
-        CALL message_ivector ( Smsg_priority, msg_tag, "", imatrix(i,:) ) 
-      END do
-    END if
-
-  END SUBROUTINE message_imatrix
+  SUBROUTINE messageIScalar ( MsgPriority, MsgTag, SMainMsg, IScalar )
+    TYPE (MsgPriorities), INTENT(IN) :: MsgPriority
+    TYPE (MsgTags), INTENT(IN) :: MsgTag
+    CHARACTER(*), INTENT(IN) :: SMainMsg
+    INTEGER(IKIND), INTENT(IN) :: IScalar
+    CALL messageIMatrix ( MsgPriority, MsgTag, SMainMsg, RESHAPE([IScalar],[1,1]) )
+  END SUBROUTINE messageIScalar
 
   !---------------------------------------------------------------------
-  ! Variable, vector, matrix interfaces for optional (priority and tag) arguments
+  ! optional argument interfaces
   !---------------------------------------------------------------------
 
-  SUBROUTINE message_real ( Smsg_priority, msg_tag, main_msg, real_variable )
-    TYPE (msg_priorities), INTENT(IN) :: Smsg_priority
-    TYPE (msg_tags), INTENT(IN) :: msg_tag
-    CHARACTER(*), INTENT(IN) :: main_msg
-    REAL(RKIND), INTENT(IN) :: real_variable
-    CALL message_rvector ( Smsg_priority, msg_tag, main_msg, (/ real_variable /) )  
-  END SUBROUTINE message_real
+  SUBROUTINE message1String2 ( MsgPriority, SMainMsg )
+    TYPE (MsgPriorities), INTENT(IN) :: MsgPriority
+    CHARACTER(*), INTENT(IN) :: SMainMsg
+    CALL message1String ( MsgPriority, no_tag, SMainMsg )  
+  END SUBROUTINE message1String2
 
-  SUBROUTINE message_real2 ( Smsg_priority, main_msg, real_variable )
-    TYPE (msg_priorities), INTENT(IN) :: Smsg_priority
-    CHARACTER(*), INTENT(IN) :: main_msg
-    REAL(RKIND), INTENT(IN) :: real_variable
-    CALL message_rvector ( Smsg_priority, no_tag, main_msg, (/ real_variable /) )  
-  END SUBROUTINE message_real2
+  SUBROUTINE message1String3 ( SMainMsg )
+    CHARACTER(*), INTENT(IN) :: SMainMsg
+    CALL message1String ( LS, no_tag, SMainMsg )  
+  END SUBROUTINE message1String3
 
-  SUBROUTINE message_real3 ( main_msg, real_variable )
-    CHARACTER(*), INTENT(IN) :: main_msg
-    REAL(RKIND), INTENT(IN) :: real_variable
-    CALL message_rvector ( LS, no_tag, main_msg, (/ real_variable /) )  
-  END SUBROUTINE message_real3
+  SUBROUTINE messageRMatrix2 ( MsgPriority, SMainMsg, RMatrix )    
+    TYPE (MsgPriorities), INTENT(IN) :: MsgPriority
+    CHARACTER(*), INTENT(IN) :: SMainMsg
+    REAL(RKIND),DIMENSION(:,:),INTENT(IN) :: RMatrix
+    CALL messageRMatrix ( MsgPriority, no_tag, SMainMsg, RMatrix )
+  END SUBROUTINE messageRMatrix2
 
-  SUBROUTINE message_rvector2 ( Smsg_priority, main_msg, rvector )    
-    TYPE (msg_priorities), INTENT(IN) :: Smsg_priority
-    CHARACTER(*), INTENT(IN) :: main_msg
-    REAL(RKIND),dimension(:),INTENT(IN) :: rvector
-    CALL message_rvector ( Smsg_priority, no_tag, main_msg, rvector )
-  END SUBROUTINE message_rvector2
+  SUBROUTINE messageRMatrix3 ( SMainMsg, RMatrix )    
+    CHARACTER(*), INTENT(IN) :: SMainMsg
+    REAL(RKIND),DIMENSION(:,:),INTENT(IN) :: RMatrix
+    CALL messageRMatrix ( LS, no_tag, SMainMsg, RMatrix )
+  END SUBROUTINE messageRMatrix3  
 
-  SUBROUTINE message_rvector3 ( main_msg, rvector )    
-    CHARACTER(*), INTENT(IN) :: main_msg
-    REAL(RKIND),dimension(:),INTENT(IN) :: rvector
-    CALL message_rvector ( LS, no_tag, main_msg, rvector )
-  END SUBROUTINE message_rvector3
+  SUBROUTINE messageCMatrix2 ( MsgPriority, SMainMsg, cmatrix )    
+    TYPE (MsgPriorities), INTENT(IN) :: MsgPriority
+    CHARACTER(*), INTENT(IN) :: SMainMsg
+    COMPLEX(CKIND), DIMENSION(:,:), INTENT(IN) :: cmatrix
+    CALL messageCMatrix ( MsgPriority, no_tag, SMainMsg, cmatrix )
+  END SUBROUTINE messageCMatrix2
 
-  SUBROUTINE message_rmatrix2 ( Smsg_priority, main_msg, rmatrix )    
-    TYPE (msg_priorities), INTENT(IN) :: Smsg_priority
-    CHARACTER(*), INTENT(IN) :: main_msg
-    REAL(RKIND),dimension(:,:),INTENT(IN) :: rmatrix
-    CALL message_rmatrix ( Smsg_priority, no_tag, main_msg, rmatrix )
-  END SUBROUTINE message_rmatrix2
+  SUBROUTINE messageCMatrix3 ( SMainMsg, cmatrix )    
+    CHARACTER(*), INTENT(IN) :: SMainMsg
+    COMPLEX(CKIND), DIMENSION(:,:), INTENT(IN) :: cmatrix
+    CALL messageCMatrix ( LS, no_tag, SMainMsg, cmatrix )
+  END SUBROUTINE messageCMatrix3
 
-  SUBROUTINE message_rmatrix3 ( main_msg, rmatrix )    
-    CHARACTER(*), INTENT(IN) :: main_msg
-    REAL(RKIND),dimension(:,:),INTENT(IN) :: rmatrix
-    CALL message_rmatrix ( LS, no_tag, main_msg, rmatrix )
-  END SUBROUTINE message_rmatrix3  
+  SUBROUTINE messageIMatrix2 ( MsgPriority, SMainMsg, imatrix )    
+    TYPE (MsgPriorities), INTENT(IN) :: MsgPriority
+    CHARACTER(*), INTENT(IN) :: SMainMsg
+    INTEGER(IKIND),DIMENSION(:,:),INTENT(IN) :: imatrix
+    CALL messageIMatrix ( MsgPriority, no_tag, SMainMsg, imatrix )
+  END SUBROUTINE messageIMatrix2
 
-  SUBROUTINE message_complex ( Smsg_priority, msg_tag, main_msg, c_variable )    
-    TYPE (msg_priorities), INTENT(IN) :: Smsg_priority
-    TYPE (msg_tags), INTENT(IN) :: msg_tag
-    CHARACTER(*), INTENT(IN) :: main_msg
-    complex(CKIND),INTENT(IN) :: c_variable
-    CALL message_cvector ( Smsg_priority, msg_tag, main_msg, (/ c_variable /) )
-  END SUBROUTINE message_complex
+  SUBROUTINE messageIMatrix3 ( SMainMsg, imatrix )    
+    CHARACTER(*), INTENT(IN) :: SMainMsg
+    INTEGER(IKIND),DIMENSION(:,:),INTENT(IN) :: imatrix
+    CALL messageIMatrix ( LS, no_tag, SMainMsg, imatrix )
+  END SUBROUTINE messageIMatrix3
 
-  SUBROUTINE message_complex2 ( Smsg_priority, main_msg, c_variable )    
-    TYPE (msg_priorities), INTENT(IN) :: Smsg_priority
-    CHARACTER(*), INTENT(IN) :: main_msg
-    complex(CKIND),INTENT(IN) :: c_variable
-    CALL message_cvector ( Smsg_priority, no_tag, main_msg, (/ c_variable /) )
-  END SUBROUTINE message_complex2
+  SUBROUTINE message2Strings2 ( MsgPriority, SString1, SString2 )
+    TYPE (MsgPriorities), INTENT(IN) :: MsgPriority
+    CHARACTER(*), INTENT(IN) :: SString1, SString2
+    CALL message2Strings ( MsgPriority, no_tag, SString1, SString2 )
+  END SUBROUTINE message2Strings2
 
-  SUBROUTINE message_complex3 ( main_msg, c_variable ) 
-    CHARACTER(*), INTENT(IN) :: main_msg
-    complex(CKIND),INTENT(IN) :: c_variable
-    CALL message_cvector ( LS, no_tag, main_msg, (/ c_variable /) )
-  END SUBROUTINE message_complex3
+  SUBROUTINE message2Strings3 ( SString1, SString2 )
+    CHARACTER(*), INTENT(IN) :: SString1, SString2
+    CALL message2Strings ( LS, no_tag, SString1, SString2 )
+  END SUBROUTINE message2Strings3
 
-  SUBROUTINE message_cvector2 ( Smsg_priority, main_msg, cvector )    
-    TYPE (msg_priorities), INTENT(IN) :: Smsg_priority
-    CHARACTER(*), INTENT(IN) :: main_msg
-    complex(CKIND), dimension(:), INTENT(IN) :: cvector
-    CALL message_cvector ( Smsg_priority, no_tag, main_msg, cvector )
-  END SUBROUTINE message_cvector2
+  SUBROUTINE messageLogical2 ( MsgPriority, SMainMsg, LLogicalVariable )   
+    TYPE (MsgPriorities), INTENT(IN) :: MsgPriority
+    CHARACTER(*), INTENT(IN) :: SMainMsg
+    LOGICAL, INTENT(IN) :: LLogicalVariable
+    CALL messageLogical ( MsgPriority, no_tag, SMainMsg, LLogicalVariable )
+  END SUBROUTINE messageLogical2
 
-  SUBROUTINE message_cvector3 ( main_msg, cvector )    
-    CHARACTER(*), INTENT(IN) :: main_msg
-    complex(CKIND), dimension(:), INTENT(IN) :: cvector
-    CALL message_cvector( LS, no_tag, main_msg, cvector )
-  END SUBROUTINE message_cvector3
+  SUBROUTINE messageLogical3 ( SMainMsg, LLogicalVariable )   
+    CHARACTER(*), INTENT(IN) :: SMainMsg
+    LOGICAL, INTENT(IN) :: LLogicalVariable
+    CALL messageLogical ( LS, no_tag, SMainMsg, LLogicalVariable )
+  END SUBROUTINE messageLogical3
 
-  SUBROUTINE message_cmatrix2 ( Smsg_priority, main_msg, cmatrix )    
-    TYPE (msg_priorities), INTENT(IN) :: Smsg_priority
-    CHARACTER(*), INTENT(IN) :: main_msg
-    complex(CKIND), dimension(:,:), INTENT(IN) :: cmatrix
-    CALL message_cmatrix ( Smsg_priority, no_tag, main_msg, cmatrix )
-  END SUBROUTINE message_cmatrix2
-
-  SUBROUTINE message_cmatrix3 ( main_msg, cmatrix )    
-    CHARACTER(*), INTENT(IN) :: main_msg
-    complex(CKIND), dimension(:,:), INTENT(IN) :: cmatrix
-    CALL message_cmatrix ( LS, no_tag, main_msg, cmatrix )
-  END SUBROUTINE message_cmatrix3
-
-  SUBROUTINE message_INTEGER ( Smsg_priority, msg_tag, main_msg, int_variable )
-    TYPE (msg_priorities), INTENT(IN) :: Smsg_priority
-    TYPE (msg_tags), INTENT(IN) :: msg_tag
-    CHARACTER(*), INTENT(IN) :: main_msg
-    INTEGER(IKIND), INTENT(IN) :: int_variable
-    CALL message_ivector ( Smsg_priority, msg_tag, main_msg, (/ int_variable /) )
-  END SUBROUTINE message_INTEGER
-
-  SUBROUTINE message_INTEGER2 ( Smsg_priority, main_msg, int_variable )
-    TYPE (msg_priorities), INTENT(IN) :: Smsg_priority
-    CHARACTER(*), INTENT(IN) :: main_msg
-    INTEGER(IKIND), INTENT(IN) :: int_variable
-    CALL message_ivector ( Smsg_priority, no_tag, main_msg, (/ int_variable /) )  
-  END SUBROUTINE message_INTEGER2
-
-  SUBROUTINE message_INTEGER3 ( main_msg, int_variable )
-    CHARACTER(*), INTENT(IN) :: main_msg
-    INTEGER(IKIND), INTENT(IN) :: int_variable
-    CALL message_ivector ( LS, no_tag, main_msg, (/ int_variable /) )  
-  END SUBROUTINE message_INTEGER3
-
-  SUBROUTINE message_ivector2 ( Smsg_priority, main_msg, ivector )    
-    TYPE (msg_priorities), INTENT(IN) :: Smsg_priority
-    CHARACTER(*), INTENT(IN) :: main_msg
-    INTEGER(IKIND),dimension(:),INTENT(IN) :: ivector
-    CALL message_ivector ( Smsg_priority, no_tag, main_msg, ivector )
-  END SUBROUTINE message_ivector2
-
-  SUBROUTINE message_ivector3 ( main_msg, ivector )    
-    CHARACTER(*), INTENT(IN) :: main_msg
-    INTEGER(IKIND),dimension(:),INTENT(IN) :: ivector
-    CALL message_ivector ( LS, no_tag, main_msg, ivector )
-  END SUBROUTINE message_ivector3
-
-  SUBROUTINE message_imatrix2 ( Smsg_priority, main_msg, imatrix )    
-    TYPE (msg_priorities), INTENT(IN) :: Smsg_priority
-    CHARACTER(*), INTENT(IN) :: main_msg
-    INTEGER(IKIND),dimension(:,:),INTENT(IN) :: imatrix
-    CALL message_imatrix ( Smsg_priority, no_tag, main_msg, imatrix )
-  END SUBROUTINE message_imatrix2
-
-  SUBROUTINE message_imatrix3 ( main_msg, imatrix )    
-    CHARACTER(*), INTENT(IN) :: main_msg
-    INTEGER(IKIND),dimension(:,:),INTENT(IN) :: imatrix
-    CALL message_imatrix ( LS, no_tag, main_msg, imatrix )
-  END SUBROUTINE message_imatrix3
-
-  SUBROUTINE message_string2 ( Smsg_priority, main_msg, str_variable )
-    TYPE (msg_priorities), INTENT(IN) :: Smsg_priority
-    CHARACTER(*), INTENT(IN) :: main_msg, str_variable
-    CALL message_string ( Smsg_priority, no_tag, main_msg, str_variable )
-  END SUBROUTINE message_string2
-
-  SUBROUTINE message_string3 ( main_msg, str_variable )
-    CHARACTER(*), INTENT(IN) :: main_msg, str_variable
-    CALL message_string ( LS, no_tag, main_msg, str_variable )
-  END SUBROUTINE message_string3
-
-  SUBROUTINE message_only2 ( Smsg_priority, main_msg )
-    TYPE (msg_priorities), INTENT(IN) :: Smsg_priority
-    CHARACTER(*), INTENT(IN) :: main_msg
-    CALL message_only ( Smsg_priority, no_tag, main_msg )  
-  END SUBROUTINE message_only2
-
-  SUBROUTINE message_only3 ( main_msg )
-    CHARACTER(*), INTENT(IN) :: main_msg
-    CALL message_only ( LS, no_tag, main_msg )  
-  END SUBROUTINE message_only3
-
-  SUBROUTINE message_INTEGER_isi2 ( Smsg_priority, text1, int1, text2, int2)
-    TYPE (msg_priorities), INTENT(IN) :: Smsg_priority
+  SUBROUTINE message2Strings2Integers2 ( MsgPriority, text1, int1, text2, int2)
+    TYPE (MsgPriorities), INTENT(IN) :: MsgPriority
     CHARACTER(*), INTENT(IN) :: text1, text2
     INTEGER(IKIND), INTENT(IN) :: int1, int2
-    CALL message_INTEGER_isi ( Smsg_priority, no_tag, text1, int1, text2, int2)
-  END SUBROUTINE message_INTEGER_isi2
+    CALL message2Strings2Integers ( MsgPriority, no_tag, text1, int1, text2, int2)
+  END SUBROUTINE message2Strings2Integers2
+
+  SUBROUTINE message2Strings2Integers3 ( text1, int1, text2, int2)
+    CHARACTER(*), INTENT(IN) :: text1, text2
+    INTEGER(IKIND), INTENT(IN) :: int1, int2
+    CALL message2Strings2Integers ( LS, no_tag, text1, int1, text2, int2)
+  END SUBROUTINE message2Strings2Integers3
+
+  SUBROUTINE messageRVector2 ( MsgPriority, SMainMsg, RVector )    
+    TYPE (MsgPriorities), INTENT(IN) :: MsgPriority
+    CHARACTER(*), INTENT(IN) :: SMainMsg
+    REAL(RKIND),DIMENSION(:),INTENT(IN) :: RVector
+    CALL messageRVector ( MsgPriority, no_tag, SMainMsg, RVector )
+  END SUBROUTINE messageRVector2
+
+  SUBROUTINE messageRVector3 ( SMainMsg, RVector )    
+    CHARACTER(*), INTENT(IN) :: SMainMsg
+    REAL(RKIND),DIMENSION(:),INTENT(IN) :: RVector
+    CALL messageRVector ( LS, no_tag, SMainMsg, RVector )
+  END SUBROUTINE messageRVector3
+
+  SUBROUTINE messageCVector2 ( MsgPriority, SMainMsg, CVector )    
+    TYPE (MsgPriorities), INTENT(IN) :: MsgPriority
+    CHARACTER(*), INTENT(IN) :: SMainMsg
+    COMPLEX(CKIND), DIMENSION(:), INTENT(IN) :: CVector
+    CALL messageCVector ( MsgPriority, no_tag, SMainMsg, CVector )
+  END SUBROUTINE messageCVector2
+
+  SUBROUTINE messageCVector3 ( SMainMsg, CVector )    
+    CHARACTER(*), INTENT(IN) :: SMainMsg
+    COMPLEX(CKIND), DIMENSION(:), INTENT(IN) :: CVector
+    CALL messageCVector( LS, no_tag, SMainMsg, CVector )
+  END SUBROUTINE messageCVector3
+
+  SUBROUTINE messageIVector2 ( MsgPriority, SMainMsg, IVector )    
+    TYPE (MsgPriorities), INTENT(IN) :: MsgPriority
+    CHARACTER(*), INTENT(IN) :: SMainMsg
+    INTEGER(IKIND),DIMENSION(:),INTENT(IN) :: IVector
+    CALL messageIVector ( MsgPriority, no_tag, SMainMsg, IVector )
+  END SUBROUTINE messageIVector2
+
+  SUBROUTINE messageIVector3 ( SMainMsg, IVector )    
+    CHARACTER(*), INTENT(IN) :: SMainMsg
+    INTEGER(IKIND),DIMENSION(:),INTENT(IN) :: IVector
+    CALL messageIVector ( LS, no_tag, SMainMsg, IVector )
+  END SUBROUTINE messageIVector3
+
+  SUBROUTINE messageRScalar2 ( MsgPriority, SMainMsg, RScalar )
+    TYPE (MsgPriorities), INTENT(IN) :: MsgPriority
+    CHARACTER(*), INTENT(IN) :: SMainMsg
+    REAL(RKIND), INTENT(IN) :: RScalar
+    CALL messageRScalar ( MsgPriority, no_tag, SMainMsg, RScalar )  
+  END SUBROUTINE messageRScalar2
+
+  SUBROUTINE messageRScalar3 ( SMainMsg, RScalar )
+    CHARACTER(*), INTENT(IN) :: SMainMsg
+    REAL(RKIND), INTENT(IN) :: RScalar
+    CALL messageRScalar ( LS, no_tag, SMainMsg, RScalar )  
+  END SUBROUTINE messageRScalar3
+
+  SUBROUTINE messageCScalar2 ( MsgPriority, SMainMsg, CScalar )    
+    TYPE (MsgPriorities), INTENT(IN) :: MsgPriority
+    CHARACTER(*), INTENT(IN) :: SMainMsg
+    COMPLEX(CKIND),INTENT(IN) :: CScalar
+    CALL messageCScalar ( MsgPriority, no_tag, SMainMsg, CScalar )
+  END SUBROUTINE messageCScalar2
+
+  SUBROUTINE messageCScalar3 ( SMainMsg, CScalar ) 
+    CHARACTER(*), INTENT(IN) :: SMainMsg
+    COMPLEX(CKIND),INTENT(IN) :: CScalar
+    CALL messageCScalar ( LS, no_tag, SMainMsg, CScalar )
+  END SUBROUTINE messageCScalar3
+
+  SUBROUTINE messageIScalar2 ( MsgPriority, SMainMsg, IScalar )
+    TYPE (MsgPriorities), INTENT(IN) :: MsgPriority
+    CHARACTER(*), INTENT(IN) :: SMainMsg
+    INTEGER(IKIND), INTENT(IN) :: IScalar
+    CALL messageIScalar ( MsgPriority, no_tag, SMainMsg, IScalar )  
+  END SUBROUTINE messageIScalar2
+
+  SUBROUTINE messageIScalar3 ( SMainMsg, IScalar )
+    CHARACTER(*), INTENT(IN) :: SMainMsg
+    INTEGER(IKIND), INTENT(IN) :: IScalar
+    CALL messageIScalar ( LS, no_tag, SMainMsg, IScalar )  
+  END SUBROUTINE messageIScalar3
 
 END MODULE message_mod

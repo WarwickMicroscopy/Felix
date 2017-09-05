@@ -30,17 +30,6 @@
 !
 !%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-! All procedures conatained in this file/module:
-! PhaseCorrelate()
-! ReSortUgs()
-! ResidualSumofSquares()
-! Normalised2DCrossCorrelation()
-! MaskedCorrelation()
-! SortHKL()
-! GreatestCommonDivisor()
-! Lorentzian()
-! Gaussian()
-
 !>
 !! Module-description: 
 !!

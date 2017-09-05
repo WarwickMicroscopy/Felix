@@ -151,9 +151,7 @@ END MODULE RConst
 MODULE IPara
   USE MyNumbers
   USE IConst 
-  
-  !Clock
-  INTEGER(IKIND) :: IClockRate    
+     
   !Write Out
   INTEGER(IKIND) :: IMAXRBuffer,  IMAXCBuffer     
   !Input Flags

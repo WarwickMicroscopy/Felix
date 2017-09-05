@@ -30,18 +30,8 @@
 !
 !%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-! A lot of these are currently out of use, but may be useful
-
-! All procedures conatained in this file:
-! NDimensionalDownhillSimplex()
-! SimplexExtrapolate()
-! OpenSimplexOutput()
-! WriteOutSimplex()
-! SaveSimplex() 
-
-
-!! Module-description: Holds main top level simulating subroutines considering
-!! different thicknesses
+!>
+!! Module-description: 
 !!
 MODULE simplex_mod
   IMPLICIT NONE
@@ -73,7 +63,7 @@ MODULE simplex_mod
     REAL(RKIND), INTENT(INOUT) :: RSimplexVariable(mp,np), y(mp)
     INTEGER(IKIND), INTENT(INOUT) :: iter
     INTEGER(IKIND), INTENT(IN) :: mp, np, ndim
-    REAL(RKIND), INTENT(IN) :: ftol, RMean !?? RMean now does nothing
+    REAL(RKIND), INTENT(IN) :: ftol, RMean
     INTEGER(IKIND) :: NMAX, ITMAX 
     REAL(RKIND) :: RSendPacket(ndim+2), RExitFlag, rtol, Rsum, &
           swap, ysave, Rytry, psum(ndim), amotry, RStandardDeviation, RStandardError, &

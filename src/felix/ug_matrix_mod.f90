@@ -28,12 +28,7 @@
 !  You should have received a copy of the GNU General Public License
 !  along with Felix.  If not, see <http://www.gnu.org/licenses/>.
 !
-!%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-                    
-!?? uses ReSortUgs from refineutils.f90
-!?? USE MODULE MyFFTW?, uses external function dqagi from quadpack?
-
-!?? JR how to modularise setup Ug & update Ug
+!%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%               
 
 !>
 !! Module-description: 
@@ -45,22 +40,16 @@ MODULE ug_matrix_mod
   CONTAINS
 
   !>
-  !! Procedure-description: Select case using IAbsorbFLAG
+  !! Procedure-description: Select case using IAbsorbFLAG and calculate U'g prime in parallel
   !!
   !! Major-Authors: Keith Evans (2014), Richard Beanland (2016)
   !!
   SUBROUTINE Absorption(IErr)
 
-    ! ----> CUgMatPrime ----> CUgMat = CUgMatNoAbs + CUgMatPrime
-
-    !?? once in each SimulateAndFit with update scattering matrix
-    !?? called once initially in felixrefine after reflection, g-vector, laue zones
-
-    !?? CUgMatNoAbs, uses g matrix, parallelises U'g calculation -> final Ug with absorption
+    ! calculate CUgMatPrime then ----> CUgMat = CUgMatNoAbs + CUgMatPrime
 
     USE MyNumbers
     USE message_mod
-    USE MPI     !?? used for parallel 
     USE MyMPI   !?? used for parallel
    
     ! global outputs
@@ -89,7 +78,7 @@ MODULE ug_matrix_mod
     REAL(RKIND),DIMENSION(:),ALLOCATABLE :: RLocalUgReal,RLocalUgImag,RUgReal,RUgImag
     INTEGER(IKIND),DIMENSION(:),ALLOCATABLE :: Ipos,Inum
     COMPLEX(CKIND) :: CVgPrime,CFpseudo
-    CHARACTER*200 :: SPrintString
+    CHARACTER*100 :: SPrintString
     
     RScattFacToVolts = (RPlanckConstant**2)*(RAngstromConversion**2) / &
           (TWOPI*RElectronMass*RElectronCharge*RVolume)
@@ -243,9 +232,12 @@ MODULE ug_matrix_mod
     !--------------------------------------------------------------------
 
     CUgMat = CUgMatNoAbs + CUgMatPrime 
-	     
-    CALL message( LM, dbg3, "Ug matrix, including absorption (nm^-2)",&
-          NINT(Rhkl(1:16,:)), 100*CUgMat(1:16,1:8) )
+
+    CALL message( LM, dbg3, "Ug matrix, including absorption (nm^-2)" )
+    DO ind = 1,16
+      CALL message( LM, dbg3, "RKL row:",NINT(Rhkl(ind,:)) )
+      CALL message( LM, dbg3, "CUg row:",100*CUgMat(ind,1:6) )
+    END DO
 
   END SUBROUTINE Absorption
 
@@ -260,9 +252,8 @@ MODULE ug_matrix_mod
   SUBROUTINE GetVgContributionij(RScatteringFactor,ind,jnd,CVgij,IErr) 
 
     ! ----> CVgij, used to make/update CUgMatNoAbs
-
-    !?? JR used each SimulateAndFit update scattering matrix Ug
-    !?? JR used once felixrefine setup via StructureFactorInitialisation 
+    ! used each SimulateAndFit update scattering matrix Ug
+    ! used once felixrefine setup via StructureFactorInitialisation 
 
     USE MyNumbers
     USE message_mod
@@ -347,14 +338,11 @@ MODULE ug_matrix_mod
   !!
   SUBROUTINE StructureFactorInitialisation(IErr)
 
-    !?? JR SETUP ONLY - pseudoatoms,CUgMatNoAbs, mean inner potential,IEquivalentUgKey  
-    !?? called once felixrefine, setup, after reflection pools before absorption
-
+    ! sets up pseudoatoms,CUgMatNoAbs, mean inner potential,IEquivalentUgKey  
     USE MyNumbers
     USE message_mod
-    USE MyFFTW !?? elaborate on fftw stuff & USE , ONLY : ??
+    USE MyFFTW
     USE utilities_mod, ONLY : Gaussian, Lorentzian, ReSortUgs
-
 
     ! global outputs
     USE CPARA, ONLY : CUgMatNoAbs,CUniqueUg,CPseudoAtom,CPseudoScatt
@@ -365,7 +353,7 @@ MODULE ug_matrix_mod
     ! global inputs
     USE IPARA, ONLY : IAnisoDebyeWallerFactorFlag,IInitialSimulationFLAG,INAtomsUnitCell,&
           nReflections,IAtomicNumber,IEquivalentUgKey,&
-          IAnisoDW ! R in IPARA???
+          IAnisoDW
     USE RPARA, ONLY : RAngstromConversion,RElectronCharge,RElectronMass,&
           RRelativisticCorrection,RVolume,RIsoDW,RgMatrixMagnitude,ROccupancy,&
           RElectronWaveVectorMagnitude,RgMatrix,RDebyeWallerConstant,RTolerance,&
@@ -386,7 +374,7 @@ MODULE ug_matrix_mod
     COMPLEX(CKIND) :: CVgij,CFpseudo
     REAL(RKIND) :: RMeanInnerPotentialVolts,RScatteringFactor,&
           RScattFacToVolts,RPMag,Rx,Ry,Rr,RPalpha,RTheta,Rfold
-    CHARACTER*200 :: SPrintString
+    CHARACTER*100 :: SPrintString
     
     !--------------------------------------------------------------------
     ! count pseudoatoms & allocate pseudoatom arrays
@@ -500,8 +488,11 @@ MODULE ug_matrix_mod
       CUgMatNoAbs(ind,ind)=CZERO
     END DO
 
-    CALL message( LM, dbg3, "Ug matrix, without absorption (nm^-2)",&
-          NINT(Rhkl(1:16,:)), 100*CUgMatNoAbs(1:16,1:4) )
+    CALL message( LM, dbg3, "Ug matrix, without absorption (nm^-2)" )
+    DO ind = 1,16
+      CALL message( LM, dbg3, "RKL row:",NINT(Rhkl(ind,:)) )
+      CALL message( LM, dbg3, "CUg row:",100*CUgMatNoAbs(ind,1:4) )
+    END DO
    
     !--------------------------------------------------------------------
     ! calculate mean inner potential and wave vector magnitude
@@ -542,8 +533,6 @@ MODULE ug_matrix_mod
       ! IEquivalentUgKey is used later in absorption case 2 Bird & king
       ! equivalent Ug's are identified by the sum of their:
       ! abs(indices) plus the sum of abs(Ug)'s with no absorption
-      !?? elaborate on below equivalent, keys etc.
-      !?? could use temporary VgFourier (e.g.) instead of CUgMatNoAbs
 
       RgSumMat = SUM(ABS(RgMatrix),3) + RgMatrixMagnitude+ABS(REAL(CUgMatNoAbs)) + &
             ABS(AIMAG(CUgMatNoAbs))
@@ -604,16 +593,6 @@ MODULE ug_matrix_mod
   !! Major-Authors: Richard Beanland (2016)
   !!
   SUBROUTINE  AtomicScatteringFactor(RScatteringFactor,IErr)  
-
-    !?? JR used in Ug.f90 only
-    !?? JR used each SimulateAndFit update scattering matrix Ug via GetVgContributionij
-
-    !?? JR used twice felixrefine setup via StructureFactorInitialisation
-    !?? JR once via GetVgContributionij Vg potential
-    !?? JR another directly mean inner potential
-    !?? used 2 places StructureFactorInitialisation, mean inner potential, Vg potential
-
-    !?? rename to GetRScatteringFactor
 
     USE MyNumbers
     USE utilities_mod, ONLY : Gaussian, Lorentzian
@@ -677,19 +656,12 @@ MODULE ug_matrix_mod
   !!
   SUBROUTINE PseudoAtom(CFpseudo,i,j,k,IErr)
 
-    !?? JR returns pseudoatom scattering factor, used similar AtomicScatteringFactor
-
-    !?? JR used in Ug.f90 only
-    !?? JR used each SimulateAndFit via GetVgContributionij 
-    !?? JR used 1 place StructureFactorInitialisation Vg potential
-
-    !?? JR not used in StructureFactorInitialisation in mean inner potential like atomic
-
     ! Reads a scattering factor from the kth Stewart pseudoatom in CPseudoScatt 
     ! RCurrentGMagnitude is passed as a global variable
     ! IPsize is the size, RPscale the scale factor of:
     ! the matrix holding the scattering factor, global variable
     ! i and j give the location of the g-vector in the appropriate matrices
+
     USE MyNumbers
 
     USE RPARA, ONLY : RElectronWaveLength,RCurrentGMagnitude,RPscale,RgMatrix
@@ -726,11 +698,8 @@ MODULE ug_matrix_mod
   !! Major-Authors: Keith Evans (2014), Richard Beanland (2016)
   !!
   FUNCTION Kirkland(Rg)
-
-    !?? JR used in Ug.f90 only
-    !?? used in each (case 0 Kirkland) AtomicScatteringFactor
-    !?? used in each (case 2 Bird & King) absorption (indirectly)
-    !?? 'CALL dqagi(BirdKing,---)' in each IntegrateBK
+    ! used in each (case 0 Kirkland) AtomicScatteringFactor
+    ! used in each (case 2 Bird & King) absorption via BirdKing
 
     ! From Appendix C of Kirkland, "Advanced Computing in Electron Microscopy", 2nd ed.
     ! ICurrentZ is atomic number, passed as a global variable
@@ -771,9 +740,7 @@ MODULE ug_matrix_mod
   !! Major-Authors: Keith Evans (2014), Richard Beanland (2016)
   !!
   SUBROUTINE DoubleIntegrateBK(RResult,IErr) 
-
-    !?? JR used in Ug.f90 only
-    !?? used in each (case 2 Bird & King) absorption
+    ! used in each (case 2 Bird & King) absorption
 
     USE MyNumbers
     USE message_mod
@@ -808,10 +775,8 @@ MODULE ug_matrix_mod
   !! Major-Authors: Keith Evans (2014), Richard Beanland (2016)
   !!
   FUNCTION IntegrateBK(Sy) 
-
-    !?? JR used in Ug.f90 only
-    !?? used in each (case 2 Bird & King) absorption (indirectly)
-    !?? 'CALL dqagi(IntegrateBK,---)' each DoubleIntegrateBK
+    ! used in each (case 2 Bird & King) absorption (indirectly)
+    ! 'CALL dqagi(IntegrateBK,---)' each DoubleIntegrateBK
 
     USE MyNumbers
 
@@ -827,8 +792,6 @@ MODULE ug_matrix_mod
     INTEGER(IKIND) last, iwork(limit)
     REAL(RKIND) work(lenw)
 
-    ! RSprimeY is passed into BirdKing as a global variable !?? more elegant & quicker way?
-    ! since we can't integrate a function of 2 variables with dqagi
     RSprimeY = Sy
     RAccuracy = 0.00000001D0 ! accuracy of integration
     ! use BirdKing as an external function of one variable
@@ -848,13 +811,8 @@ MODULE ug_matrix_mod
   !! Major-Authors: Keith Evans (2014), Richard Beanland (2016)
   !!
   FUNCTION BirdKing(RSprimeX)
-
-    !?? JR used in Ug.f90 only
-    !?? used in each (case 2 Bird & King) absorption (indirectly)
-    !?? 'CALL dqagi(BirdKing,---)' each IntegrateBK
-
-    ! RSprimeY is passed into as a global variable !?? more elegant & quicker way?
-    ! since we can't integrate a function of 2 variables with dqagi
+    ! used in each (case 2 Bird & King) absorption (indirectly)
+    ! 'CALL dqagi(BirdKing,---)' each IntegrateBK
 
     ! From Bird and King, Acta Cryst A46, 202 (1990)
     ! ICurrentZ is atomic number, global variable

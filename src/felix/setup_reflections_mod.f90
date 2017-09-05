@@ -53,8 +53,7 @@ MODULE setup_reflections_mod
   !!  
   SUBROUTINE SpecificReflectionDetermination( IErr )
 
-    !?? called once in felixrefine setup
-
+    ! This procedure is called once in felixrefine setup
     USE MyNumbers
     USE message_mod
 
@@ -97,7 +96,7 @@ MODULE setup_reflections_mod
             IF ( jnd == SIZE(Rhkl,DIM=1) ) THEN
               CALL message(LM,"No requested HKLs are allowed using the purposed geometry", &
                     NINT(RInputHKLs(ind,:)) )
-              CALL message(LM,"Will Ignore and Continue") !?? should this print on all cores
+              CALL message(LM,"Will Ignore and Continue")
             END IF
             CYCLE
           END IF
@@ -127,7 +126,7 @@ MODULE setup_reflections_mod
   !!  
   SUBROUTINE HKLCount(Ihklmax, Rhkl0Vec, INhkl, RHOLZAcceptanceAngle, IErr)
 
-    !?? called once in felixrefine setup
+    ! This procedure is called once in felixrefine setup
     USE MyNumbers
     USE message_mod
     
@@ -281,9 +280,9 @@ MODULE setup_reflections_mod
   !!
   !! Major-Authors: Richard Beanland (2016)
   !!  
-  SUBROUTINE HKLMake(Ihklmax, Rhkl0Vec, RHOLZAcceptanceAngle, IErr)
-    
-    !?? called once in felixrefine setup
+  SUBROUTINE HKLMake(Ihklmax, Rhkl0Vec, RHOLZAcceptanceAngle, IErr)   
+    ! This procedure is called once in felixrefine setup
+
     ! N.B. Rhkl is simply real versions of h,k,l 
 
     USE MyNumbers

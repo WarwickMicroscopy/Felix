@@ -33,63 +33,28 @@
 !>
 !! Module-description: 
 !!
-module l_alert_mod
+MODULE l_alert_mod
 
-  implicit none
+  IMPLICIT NONE
 
-  contains
+  CONTAINS
 
-  ! returns false if ierr is non-zero and also prints errors using input info 
-  logical function l_alert(ierr,SCurrentProcedure,SAlertedActivity)
-    use mynumbers, only : ikind
-    use MyMPI, only : my_rank
-    character(*),intent(in) :: SCurrentProcedure,SAlertedActivity
-    integer(ikind),intent(in) :: ierr
-    l_alert = .false.
-    if ( ierr /= 0 ) then
-      l_alert = .true.
-      write(*,'(2x,i1,a,a,a,a,a)') my_rank," = rank, error in ", SCurrentProcedure,&
+  ! returns true if IErr is non-zero and also prints errors using input info 
+  LOGICAL FUNCTION l_alert(IErr,SCurrentProcedure,SAlertedActivity)
+    USE MyNumbers, ONLY : IKIND
+    USE MyMPI, ONLY : my_rank
+    CHARACTER(*),INTENT(IN) :: SCurrentProcedure,SAlertedActivity
+    INTEGER(IKIND),INTENT(IN) :: IErr
+    l_alert = .FALSE.
+    IF ( ierr /= 0 ) THEN
+      l_alert = .TRUE.
+      WRITE(*,'(2x,i1,a,a,a,a,a)') my_rank," = rank, error in ", SCurrentProcedure,&
             "(", SAlertedActivity, ")"
-    end if
-  end function
+    END IF
+  END FUNCTION
 
-end module l_alert_mod
+END MODULE l_alert_mod
 
-
-!   Example output - (error handling on 4 cores from problem on felix.inp on line 27)
-!
-!   """"
-!
-!      @ -----------------------------------------------------------------
-!      1 = rank, error in ReadInpFile(READ() felix.inp line number =          27)
-!      1 = rank, error in felixrefine(ReadInpFile())
-!      1 = rank, error in felixrefine(ABORTING)
-!      @ felixrefine: 'Version: :VERSION: / :BUILD: / :AUTHOR:           '
-!      @              'Date: :DATE:                                      '
-!      @              '(:RLSTATUS:) multipole atom test & debug          '
-!      @ -----------------------------------------------------------------
-!      @ total number of MPI ranks is 004, screen messages via rank= 000
-!      @ -----------------------------------------------------------------
-!      3 = rank, error in ReadInpFile(READ() felix.inp line number =          27)
-!      3 = rank, error in felixrefine(ReadInpFile())
-!      3 = rank, error in felixrefine(ABORTING)
-!      0 = rank, error in ReadInpFile(READ() felix.inp line number =          27)
-!      0 = rank, error in felixrefine(ReadInpFile())
-!      0 = rank, error in felixrefine(ABORTING)
-!    --------------------------------------------------------------------------
-!    MPI_ABORT was invoked on rank 0 in communicator MPI_COMM_WORLD 
-!    with errorcode 1.
-
-!    NOTE: invoking MPI_ABORT causes Open MPI to kill all MPI processes.
-!    You may or may not see output from other processes, depending on
-!    exactly when Open MPI kills them.
-!    --------------------------------------------------------------------------
-!      2 = rank, error in ReadInpFile(READ() felix.inp line number =          27)
-!      2 = rank, error in felixrefine(ReadInpFile())
-!      2 = rank, error in felixrefine(ABORTING)
-!
-!   """"
-!
 !   Example usage:
 !
 !     CALL MPI_Comm_size(MPI_COMM_WORLD,p,IErr) ! get size of the current communicator
@@ -106,18 +71,53 @@ end module l_alert_mod
 !   CALL abort() used in felixrefine program
 !
 !   RETURN used in any subroutine, 
-!   expecting to be picked up by another IF(l_alert(IErr outside
+!   expecting to be picked up outside by another IF(l_alert(IErr ...
 !
 !
 !    
-!   Used following style when printing simple variables with error messages:
+!   Use following style when printing simple variables with error messages:
 !
 !     IErr=1
-!     WRITE(SPrintString,*) ILine
+!     WRITE(SPrintString,'(I0)') ILine
 !     IF(l_alert( IErr,"ReadInpFile",&
 !           "READ() felix.inp, premature end of file, line number =" // &
 !           TRIM(SPrintString) )) RETURN
 !
 !     IF(l_alert(IErr,"ReadExperimentalImages",&
 !           "OPEN() an experimental image, filename ="//TRIM(ADJUSTL(filename)))) RETURN
+!
+!
+!
+!   Example output - (error handling on 4 cores from problem on felix.inp on line 27)
+!
+!   """"
+!
+!      @ -----------------------------------------------------------------
+!      1 = rank, error in ReadInpFile(READ() felix.inp line number = 27)
+!      1 = rank, error in felixrefine(ReadInpFile())
+!      1 = rank, error in felixrefine(ABORTING)
+!      @ felixrefine: 'Version: :VERSION: / :BUILD: / :AUTHOR:           '
+!      @              'Date: :DATE:                                      '
+!      @              '(:RLSTATUS:) multipole atom test & debug          '
+!      @ -----------------------------------------------------------------
+!      @ total number of MPI ranks is 004, screen messages via rank= 000
+!      @ -----------------------------------------------------------------
+!      3 = rank, error in ReadInpFile(READ() felix.inp line number = 27)
+!      3 = rank, error in felixrefine(ReadInpFile())
+!      3 = rank, error in felixrefine(ABORTING)
+!      0 = rank, error in ReadInpFile(READ() felix.inp line number = 27)
+!      0 = rank, error in felixrefine(ReadInpFile())
+!      0 = rank, error in felixrefine(ABORTING)
+!    --------------------------------------------------------------------------
+!    MPI_ABORT was invoked on rank 0 in communicator MPI_COMM_WORLD 
+!    with errorcode 1.
 
+!    NOTE: invoking MPI_ABORT causes Open MPI to kill all MPI processes.
+!    You may or may not see output from other processes, depending on
+!    exactly when Open MPI kills them.
+!    --------------------------------------------------------------------------
+!      2 = rank, error in ReadInpFile(READ() felix.inp line number = 27)
+!      2 = rank, error in felixrefine(ReadInpFile())
+!      2 = rank, error in felixrefine(ABORTING)
+!
+!   """"

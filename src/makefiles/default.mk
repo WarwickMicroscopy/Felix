@@ -21,6 +21,7 @@ MAIN=felix
 # -----------------------------------------------------
 
 FELIX=\
+$(DIRFELIX)$(PRECISION)read_dm3_mod.o \
 $(DIRFELIX)$(PRECISION)gmodules.o \
 $(DIRFELIX)$(PRECISION)smodules.o \
 $(DIRFELIX)$(PRECISION)l_alert_mod.o \

@@ -30,11 +30,6 @@
 !
 !%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-! All modules & procedures conatained in this file:
-! MyNumbers - INIT_NUMBERS, ARG, CROSS, DOT
-! MyMPI
-! MyFFTW
-
 !>
 !! Module-description: Some numeric computational and mathematical paramter
 !! constants as well as maths functions - INIT_NUMBERS, ARG, CROSS, DOT
@@ -126,7 +121,7 @@ END MODULE MyNumbers
 !!
 !! Major-Authors: Keith Evans (2014), Richard Beanland (2016)
 !!
-MODULE MyMPI  !?? grants MPI, sometimes USE both modules in code JR
+MODULE MyMPI !?? grants MPI, so use of both in the code is unnecessary
 
   USE MPI
   USE MyNumbers, ONLY : IKIND
