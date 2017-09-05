@@ -3,9 +3,11 @@ general:
   
 checkout:
   post:
+    - ../scripts/build.sh $CIRCLE_TAG $CIRCLE_BRANCH $CIRCLE_BUILD_NUM $CIRCLE_USERNAME
 
 compile:
   override:
+    - cd ../felix-*
     - make clean; make
 
 test:
