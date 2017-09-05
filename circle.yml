@@ -4,3 +4,12 @@ general:
 checkout:
   post:
     - make
+
+compile:
+  override:
+    - make clean; make
+
+test:
+  post:
+    - cd ../samples/GaAs_short
+    - ./felix
