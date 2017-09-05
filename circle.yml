@@ -3,7 +3,6 @@ general:
   
 checkout:
   post:
-    - make
 
 compile:
   override:
