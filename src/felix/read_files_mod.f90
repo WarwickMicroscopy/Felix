@@ -74,11 +74,14 @@ MODULE read_files_mod
     INTEGER(IKIND) :: ILine, ind, IPos
     REAL(RKIND) :: ROfIter
     CHARACTER(200) :: SImageMode, SElements, SRefineMode, SStringFromNumber, SRefineYESNO, &
-          SAtomicSites, SFormatString, SLengthofNumberString, &
+          SFilename, SAtomicSites, SFormatString, SLengthofNumberString, &
           SDirectionX, SIncidentBeamDirection, SNormalDirectionX, SPrintString
 
-    OPEN(UNIT= IChInp, IOSTAT=IErr, FILE= "felix.inp",STATUS= 'OLD')
-    IF(l_alert(IErr,"ReadInpFile","OPEN() felix.inp")) RETURN
+    ! 1 optional argument can be passed to felix to specify an alternative 'felix.inp'
+    CALL GETARG(1,SFilename)
+    IF(SFilename=='') SFilename='felix.inp' 
+    OPEN(UNIT= IChInp, IOSTAT=IErr, FILE=SFilename,STATUS= 'OLD')
+    IF(l_alert(IErr,"ReadInpFile","OPEN() '"//TRIM(SFilename)//"'")) RETURN
     ILine= 1
 
     ! There are six introductory comment lines which are ignored
