@@ -53,9 +53,11 @@ MODULE simplex_mod
 
     USE MPI
     USE refinementcontrol_mod
+    USE write_output_mod
 
     ! global inputs
     USE RPARA, ONLY : RFigureofMerit
+    USE IPARA, ONLY : IPrint
 
     IMPLICIT NONE
     
@@ -69,7 +71,8 @@ MODULE simplex_mod
           swap, ysave, Rytry, psum(ndim), amotry, RStandardDeviation, RStandardError, &
           RStandardTolerance
     PARAMETER (NMAX=1000,ITMAX=50000)
-    INTEGER(IKIND) :: i, ihi, ilo, inhi, j, m, n, IExitFlag
+    INTEGER(IKIND) :: i, ihi, ilo, inhi, j, m, n, IExitFlag, IThicknessIndex, &
+          IPreviousPrintedIteration
     
     Rytry=ZERO ! initial value, has no significance
 
@@ -119,7 +122,11 @@ MODULE simplex_mod
         RSendPacket = [-10000.0_RKIND, psum, REAL(iter,RKIND)]
         CALL MPI_BCAST(RSendPacket,ndim+2,MPI_DOUBLE_PRECISION,0,MPI_COMM_WORLD,IErr)
         !Simulate-------------------------------------------------------------
-        !CALL SimulateAndFit(psum,iter,1,IErr)
+        ! should IExitFLAG=1 ? 
+        CALL SimulateAndFit(psum,Iter,IThicknessIndex,IErr)
+        IF(l_alert(IErr,"NDimensionalDownhillSimplex","SimulateAndFit")) RETURN
+        CALL WriteIterationOutputWrapper(Iter,IThicknessIndex,IExitFLAG,IErr)
+        IF(l_alert(IErr,"NDimensionalDownhillSimplex","WriteIterationOutputWrapper")) RETURN
         Rytry=RFigureofMerit
         RETURN
       END IF
@@ -147,15 +154,18 @@ MODULE simplex_mod
       iter=iter+2
       !begin a new iteration, reflect the simplex from the high point
       Rytry = SimplexExtrapolate(RSimplexVariable,y,psum,mp,np,ndim,ihi,-1.0D0,iter,IErr)
+      IF(l_alert(IErr,"NDimensionalDownhillSimplex","SimplexExtrapolate")) RETURN
       CALL message( LM, "Simplex reflection:" )
       IF (Rytry.LE.y(ilo)) THEN !t he reflected point is better than the best point
         ! so extrapolate by 2 times again
         Rytry = SimplexExtrapolate(RSimplexVariable,y,psum,mp,np,ndim,ihi,2.0D0,iter,IErr)
+        IF(l_alert(IErr,"NDimensionalDownhillSimplex","SimplexExtrapolate")) RETURN
         CALL message( LM, "Extrapolation:" )
       ELSEIF (Rytry.GE.y(inhi)) THEN ! the reflected point is worse than the second-highest
         ! so look for an intermediate lower point 
         ysave=y(ihi)
         Rytry=SimplexExtrapolate(RSimplexVariable,y,psum,mp,np,ndim,ihi,0.5D0,iter,IErr)
+        IF(l_alert(IErr,"NDimensionalDownhillSimplex","SimplexExtrapolate")) RETURN
         CALL message( LM, "Interpolation:" )
         IF(Rytry.GE.ysave) THEN ! can't get rid of the highest point
           ! so contract about the best point
@@ -172,7 +182,10 @@ MODULE simplex_mod
               RSendPacket = [10000.0_RKIND, psum, REAL(iter,RKIND)]
               CALL MPI_BCAST(RSendPacket,ndim+2,MPI_DOUBLE_PRECISION,0,MPI_COMM_WORLD,IErr)
               !Simulate-------------------------------------------------------------
-              !CALL SimulateAndFit(psum,iter,0,IErr)
+              CALL SimulateAndFit(psum,Iter,IThicknessIndex,IErr)
+              IF(l_alert(IErr,"NDimensionalDownhillSimplex","SimulateAndFit")) RETURN
+              CALL WriteIterationOutputWrapper(Iter,IThicknessIndex,IExitFLAG,IErr)
+              IF(l_alert(IErr,"NDimensionalDownhillSimplex","WriteIterationOutputWrapper")) RETURN
               y(i)=RFigureofMerit
             END IF
           ENDDO
@@ -197,7 +210,10 @@ MODULE simplex_mod
         !-------------------------------------------------------------------
         ! Simulate
         !-------------------------------------------------------------------
-        !CALL SimulateAndFit(psum,iter,IExitFLAG,IErr)
+        CALL SimulateAndFit(psum,Iter,IThicknessIndex,IErr)
+        IF(l_alert(IErr,"NDimensionalDownhillSimplex","SimulateAndFit")) RETURN
+        CALL WriteIterationOutputWrapper(Iter,IThicknessIndex,IExitFLAG,IErr)
+        IF(l_alert(IErr,"NDimensionalDownhillSimplex","WriteIterationOutputWrapper")) RETURN
         Rytry=RFigureofMerit
         IF(IExitFLAG.EQ.1) RETURN
       END DO
@@ -228,7 +244,7 @@ MODULE simplex_mod
 
     IMPLICIT NONE
     
-    INTEGER(IKIND) :: ihi,mp,ndim,np,NMAX,IErr,iter,j
+    INTEGER(IKIND) :: ihi,mp,ndim,np,NMAX,IErr,iter,j,IThicknessIndex
     REAL(RKIND) :: fac,RSimplexVariable(mp,np),psum(np),y(mp),RSendPacket(ndim+2)
     REAL(RKIND) :: fac1,fac2,Rytry,ptry(ndim)
     PARAMETER(NMAX=1000)
@@ -245,7 +261,8 @@ MODULE simplex_mod
     !-------------------------------------------------------------------
     ! Simulate
     !-------------------------------------------------------------------
-    !CALL SimulateAndFit(ptry,iter,0,IErr)
+    CALL SimulateAndFit(ptry,iter,IThicknessIndex,IErr)
+    IF(l_alert(IErr,"SimplexExtrapolate","SimulateAndFit")) RETURN
     Rytry=RFigureofMerit
         
     IF (Rytry.LT.y(ihi)) THEN

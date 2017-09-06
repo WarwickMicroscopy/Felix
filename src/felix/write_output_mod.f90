@@ -37,9 +37,29 @@ MODULE write_output_mod
 
   IMPLICIT NONE
   PRIVATE
-  PUBLIC :: WriteIterationOutput, WriteOutVariables, NormaliseExperimentalImagesAndWriteOut
+  PUBLIC :: WriteIterationOutputWrapper, WriteIterationOutput, WriteOutVariables, &
+        NormaliseExperimentalImagesAndWriteOut
 
   CONTAINS
+
+  SUBROUTINE WriteIterationOutputWrapper(Iter,IThicknessIndex,IExitFLAG,IErr)
+    USE MyNumbers
+    USE message_mod
+    USE MyMPI
+    ! global inputs
+    USE IPARA, ONLY : IPrint
+    INTEGER(IKIND), INTENT(IN) :: Iter,IThicknessIndex,IExitFLAG
+    INTEGER(IKIND), INTENT(OUT) :: IErr
+    INTEGER(IKIND) :: IPreviousPrintedIteration
+    IF(my_rank.EQ.0) THEN
+      ! use IPrint from felix.inp to specify how often to write Iteration output
+      IF(IExitFLAG.EQ.1.OR.(Iter.GE.(IPreviousPrintedIteration+IPrint))) THEN
+        CALL WriteIterationOutput(Iter,IThicknessIndex,IExitFLAG,IErr)
+        IF(l_alert(IErr,"WriteIterationOutputWrapper","WriteIterationOutput")) RETURN
+        IPreviousPrintedIteration = Iter
+      END IF
+    END IF
+  END SUBROUTINE
 
   !>
   !! Procedure-description: Writes output for interations including simulated .bin files, 
