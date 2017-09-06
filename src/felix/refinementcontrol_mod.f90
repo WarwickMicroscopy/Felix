@@ -73,7 +73,7 @@ MODULE refinementcontrol_mod
 
     ! global inputs
     USE IPARA, ONLY : INoOfVariables, nReflections, IAbsorbFLAG, IMethodFLAG, INoofUgs, &
-          IPixelCount, IPrint, ISimFLAG, ISymmetryRelations, IUgOffset, IRefineMode, &
+          IPixelCount, ISimFLAG, ISymmetryRelations, IUgOffset, IRefineMode, &
           IEquivalentUgKey
     USE RPARA, ONLY : RAngstromConversion,RElectronCharge,RElectronMass,&
           RConvergenceAngle, RMinimumGMag, RTolerance, RRelativisticCorrection, &
@@ -81,7 +81,6 @@ MODULE refinementcontrol_mod
     USE RConst, ONLY : RPlanckConstant
 
     ! gloabl outputs
-    USE IPARA, ONLY : IPreviousPrintedIteration 
     USE CPARA, ONLY : CUgMatNoAbs, CUniqueUg
     USE RPARA, ONLY : RAbsorptionPercentage, RDeltaK, RFigureofMerit, RSimulatedPatterns
 

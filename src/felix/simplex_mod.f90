@@ -71,8 +71,7 @@ MODULE simplex_mod
           swap, ysave, Rytry, psum(ndim), amotry, RStandardDeviation, RStandardError, &
           RStandardTolerance
     PARAMETER (NMAX=1000,ITMAX=50000)
-    INTEGER(IKIND) :: i, ihi, ilo, inhi, j, m, n, IExitFlag, IThicknessIndex, &
-          IPreviousPrintedIteration
+    INTEGER(IKIND) :: i, ihi, ilo, inhi, j, m, n, IExitFlag, IThicknessIndex
     
     Rytry=ZERO ! initial value, has no significance
 
