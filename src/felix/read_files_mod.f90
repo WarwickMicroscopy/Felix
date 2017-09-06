@@ -280,9 +280,11 @@ MODULE read_files_mod
     ILine= ILine+1; READ(IChInp,'(27X,I15.1)',ERR=20,END=30) IWeightingFLAG
     ! IMethodFLAG
     ILine= ILine+1; READ(IChInp,'(27X,I15.1)',ERR=20,END=30) IMethodFLAG
-    IF(IMethodFLAG.EQ.1) CALL message( LS, "Refining by simplex")
-    IF(IMethodFLAG.EQ.2) CALL message( LS, "Refining by maximum gradient")
-    IF(IMethodFLAG.EQ.3) CALL message( LS, "Refining by pairwise maximum gradient")
+    IF(ISimFLAG==0) THEN
+      IF(IMethodFLAG.EQ.1) CALL message( LS, "Refining by simplex")
+      IF(IMethodFLAG.EQ.2) CALL message( LS, "Refining by maximum gradient")
+      IF(IMethodFLAG.EQ.3) CALL message( LS, "Refining by pairwise maximum gradient")
+    END IF
    
     ! ICorrelationFLAG: 0=phase,1=sumSq,2=NormalisedCC,3=masked
     ILine= ILine+1; READ(IChInp,'(27X,I15.1)',ERR=20,END=30) ICorrelationFLAG
