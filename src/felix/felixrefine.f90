@@ -791,6 +791,7 @@ PROGRAM Felixrefine
         RImageBase=RImageSimi  
         RImageAvi=RImageSimi 
       END IF
+      CALL message ( LS, "Writing output; baseline simulation" )
       CALL WriteIterationOutput(Iter,IThicknessIndex,IExitFLAG,IErr)
       IF(l_alert(IErr,"felixrefine","WriteIterationOutput")) CALL abort
       

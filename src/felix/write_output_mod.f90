@@ -54,11 +54,22 @@ MODULE write_output_mod
     INTEGER(IKIND),INTENT(IN) :: Iter,IThicknessIndex,IExitFLAG
     INTEGER(IKIND),INTENT(OUT) :: IErr
 
+    IF(Iter.EQ.0) IErr=1
+    IF(l_alert(IErr,"WriteIterationOutputWrapper","Unexpectedly recieved Iter = 0")) RETURN
+
+
     IF(my_rank.EQ.0) THEN
       ! use IPrint from felix.inp to specify how often to write Iteration output
       IF(IExitFLAG.EQ.1.OR.(Iter.GE.(IPreviousPrintedIteration+IPrint))) THEN
+        IF(IExitFLAG.EQ.0) THEN
+          CALL message ( LS, "Writing output; iterations since the previous save = ", &
+                Iter-IPreviousPrintedIteration)
+        ELSE
+          CALL message ( LS, "Writing output; final simulation" )
+        END IF
         CALL WriteIterationOutput(Iter,IThicknessIndex,IExitFLAG,IErr)
         IF(l_alert(IErr,"WriteIterationOutputWrapper","WriteIterationOutput")) RETURN
+        IPreviousPrintedIteration = Iter 
       END IF
     END IF
 
@@ -103,15 +114,6 @@ MODULE write_output_mod
             "Sim_",IThickness,"nm_",2*IPixelcount,"x",2*IPixelcount
     END IF
     CALL system('mkdir ' // path)
-
-    IF (ISimFLAG.EQ.0.AND.IExitFLAG.EQ.0) THEN ! felixrefine output
-      IF (Iter.EQ.0) THEN
-        CALL message ( LS, "Writing output; baseline simulation" )
-      ELSE
-        CALL message ( LS, "Writing output; iterations since the previous save = ", &
-              Iter-IPreviousPrintedIteration)
-      END IF
-    END IF
     
     ! Write Images to disk
     DO ind = 1,INoOfLacbedPatterns
@@ -149,8 +151,6 @@ MODULE write_output_mod
     END DO
 
     CLOSE(IChOut)    
-
-    IPreviousPrintedIteration = Iter 
     
     RETURN  
     
