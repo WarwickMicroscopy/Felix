@@ -59,7 +59,6 @@ MODULE write_output_mod
       IF(IExitFLAG.EQ.1.OR.(Iter.GE.(IPreviousPrintedIteration+IPrint))) THEN
         CALL WriteIterationOutput(Iter,IThicknessIndex,IExitFLAG,IErr)
         IF(l_alert(IErr,"WriteIterationOutputWrapper","WriteIterationOutput")) RETURN
-        IPreviousPrintedIteration = Iter
       END IF
     END IF
 
@@ -75,9 +74,6 @@ MODULE write_output_mod
 
     USE MyNumbers
     USE message_mod
-    
-    ! global outputs
-    USE IPARA, ONLY : IPreviousPrintedIteration
     
     ! global inputs
     USE IPARA, ONLY : IPixelCount, ISimFLAG, IOutPutReflections, INoOfLacbedPatterns, &
@@ -116,7 +112,6 @@ MODULE write_output_mod
               Iter-IPreviousPrintedIteration)
       END IF
     END IF
-    ! NB WriteIterationOutput should only be called after Iter increment and SimulateAndFit
     
     ! Write Images to disk
     DO ind = 1,INoOfLacbedPatterns
