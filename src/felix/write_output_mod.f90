@@ -43,14 +43,17 @@ MODULE write_output_mod
   CONTAINS
 
   SUBROUTINE WriteIterationOutputWrapper(Iter,IThicknessIndex,IExitFLAG,IErr)
+
     USE MyNumbers
     USE message_mod
     USE MyMPI
-    ! global inputs
-    USE IPARA, ONLY : IPrint
-    INTEGER(IKIND), INTENT(IN) :: Iter,IThicknessIndex,IExitFLAG
-    INTEGER(IKIND), INTENT(OUT) :: IErr
-    INTEGER(IKIND) :: IPreviousPrintedIteration
+    ! global inputs/outputs
+    USE IPARA, ONLY : IPrint, IPreviousPrintedIteration
+
+    IMPLICIT NONE
+    INTEGER(IKIND),INTENT(IN) :: Iter,IThicknessIndex,IExitFLAG
+    INTEGER(IKIND),INTENT(OUT) :: IErr
+
     IF(my_rank.EQ.0) THEN
       ! use IPrint from felix.inp to specify how often to write Iteration output
       IF(IExitFLAG.EQ.1.OR.(Iter.GE.(IPreviousPrintedIteration+IPrint))) THEN
@@ -59,6 +62,7 @@ MODULE write_output_mod
         IPreviousPrintedIteration = Iter
       END IF
     END IF
+
   END SUBROUTINE
 
   !>

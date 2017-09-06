@@ -950,7 +950,7 @@ CONTAINS
       CALL message(LS,no_tag,"Simplex ",ind, " of ", INoOfVariables+1)
       CALL message(LS,"--------------------------------")
       CALL SimulateAndFit(RSimplexVariable(ind,:),Iter,IThicknessIndex,IErr)! Working as iteration 0?
-      IF(l_alert(IErr,"SimplexRefinement","doing initial SimulateAndFit")) RETURN
+      IF(l_alert(IErr,"SimplexRefinement","SimulateAndFit")) RETURN
 
       RSimplexFoM(ind)=RFigureofMerit ! RFigureofMerit returned as global variable
       ! For masked correlation, add to 'average' (extreme difference from baseline)?
@@ -1260,6 +1260,7 @@ CONTAINS
     CALL SimulateAndFit(RIndependentVariable,Iter,IThicknessIndex,IErr)
     IF(l_alert(IErr,"MaxGradientRefinement","SimulateAndFit")) RETURN
     CALL WriteIterationOutputWrapper(Iter,IThicknessIndex,IExitFLAG,IErr)
+    IF(l_alert(IErr,"MaxGradientRefinement","WriteIterationOutputWrapper")) RETURN
     DEALLOCATE(RVar0,RCurrentVar,RLastVar,RPVec,RFitVec,STAT=IErr)  
 
   END SUBROUTINE MaxGradientRefinement
@@ -1400,6 +1401,7 @@ CONTAINS
           CALL SimulateAndFit(RCurrentVar,Iter,IThicknessIndex,IErr)
           IF(l_alert(IErr,"ParabolicRefinement","SimulateAndFit")) RETURN
           CALL WriteIterationOutputWrapper(Iter,IThicknessIndex,IExitFLAG,IErr)
+          IF(l_alert(IErr,"ParabolicRefinement","WriteIterationOutputWrapper")) RETURN
           ! update RIndependentVariable if necessary
           CALL BestFitCheck(RFigureofMerit,RBestFit,RCurrentVar,RIndependentVariable,IErr)
         END IF
@@ -1423,6 +1425,7 @@ CONTAINS
         CALL SimulateAndFit(RCurrentVar,Iter,IThicknessIndex,IErr)
         IF(l_alert(IErr,"ParabolicRefinement","SimulateAndFit")) RETURN
         CALL WriteIterationOutputWrapper(Iter,IThicknessIndex,IExitFLAG,IErr)
+        IF(l_alert(IErr,"ParabolicRefinement","WriteIterationOutputWrapper")) RETURN
         CALL BestFitCheck(RFigureofMerit,RBestFit,RCurrentVar,RIndependentVariable,IErr)
         R3fit(2)=RFigureofMerit
         !CALL message ( LM, "point 2",R3var(2) )
@@ -1442,6 +1445,7 @@ CONTAINS
         CALL SimulateAndFit(RCurrentVar,Iter,IThicknessIndex,IErr)
         IF(l_alert(IErr,"ParabolicRefinement","SimulateAndFit")) RETURN
         CALL WriteIterationOutputWrapper(Iter,IThicknessIndex,IExitFLAG,IErr)
+        IF(l_alert(IErr,"ParabolicRefinement","WriteIterationOutputWrapper")) RETURN
         CALL BestFitCheck(RFigureofMerit,RBestFit,RCurrentVar,RIndependentVariable,IErr)
         R3fit(3)=RFigureofMerit
         !CALL message ( LM, "point 3",R3var(3) )
@@ -1492,6 +1496,7 @@ CONTAINS
           CALL SimulateAndFit(RCurrentVar,Iter,IThicknessIndex,IErr)
           IF(l_alert(IErr,"ParabolicRefinement","SimulateAndFit")) RETURN
           CALL WriteIterationOutputWrapper(Iter,IThicknessIndex,IExitFLAG,IErr)
+          IF(l_alert(IErr,"ParabolicRefinement","WriteIterationOutputWrapper")) RETURN
           CALL BestFitCheck(RFigureofMerit,RBestFit,RCurrentVar,RIndependentVariable,IErr)
           R3fit(lnd)=RFigureofMerit
           jnd=MAXLOC(R3var,1) ! highest x
@@ -1512,7 +1517,8 @@ CONTAINS
           Iter=Iter+1
           CALL SimulateAndFit(RCurrentVar,Iter,IThicknessIndex,IErr)
           IF(l_alert(IErr,"ParabolicRefinement","SimulateAndFit")) RETURN
-          CALL WriteIterationOutputWrapper(Iter,IThicknessIndex,IExitFLAG,IErr) 
+          CALL WriteIterationOutputWrapper(Iter,IThicknessIndex,IExitFLAG,IErr)
+          IF(l_alert(IErr,"ParabolicRefinement","WriteIterationOutputWrapper")) RETURN
           CALL BestFitCheck(RFigureofMerit,RBestFit,RCurrentVar,RIndependentVariable,IErr)
         ELSE
           CALL Parabo3(R3var,R3fit,RvarMin,RfitMin,IErr)
@@ -1529,6 +1535,7 @@ CONTAINS
           CALL SimulateAndFit(RCurrentVar,Iter,IThicknessIndex,IErr)
           IF(l_alert(IErr,"ParabolicRefinement","SimulateAndFit")) RETURN
           CALL WriteIterationOutputWrapper(Iter,IThicknessIndex,IExitFLAG,IErr)
+          IF(l_alert(IErr,"ParabolicRefinement","WriteIterationOutputWrapper")) RETURN
           CALL BestFitCheck(RFigureofMerit,RBestFit,RCurrentVar,RIndependentVariable,IErr)
         END IF
 
@@ -1580,6 +1587,7 @@ CONTAINS
     CALL SimulateAndFit(RIndependentVariable,Iter,IThicknessIndex,IErr)
     IF(l_alert(IErr,"ParabolicRefinement","SimulateAndFit")) RETURN
     CALL WriteIterationOutputWrapper(Iter,IThicknessIndex,IExitFLAG,IErr)
+    IF(l_alert(IErr,"ParabolicRefinement","WriteIterationOutputWrapper")) RETURN
     DEALLOCATE(RVar0,RCurrentVar,RLastVar,RPVec,STAT=IErr)
  
   END SUBROUTINE ParabolicRefinement

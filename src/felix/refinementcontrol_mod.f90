@@ -81,7 +81,6 @@ MODULE refinementcontrol_mod
     USE RConst, ONLY : RPlanckConstant
 
     ! gloabl outputs
-    USE IPARA, ONLY : IPreviousPrintedIteration 
     USE CPARA, ONLY : CUgMatNoAbs, CUniqueUg
     USE RPARA, ONLY : RAbsorptionPercentage, RDeltaK, RFigureofMerit, RSimulatedPatterns
 
