@@ -71,7 +71,7 @@ CONTAINS
 
     N = SIZE(A,1)
 
-    WRITE(*,'(a)')' -------------------------------------------------------------'  
+    !WRITE(*,'(a)')' -------------------------------------------------------------'  
 !    !PRINT A, B, lambda
 !    WRITE(*,'(a,i3,a,i3,a,(F12.7,SP,F12.7,"i"))') " n = ", nnd, "     m = ", mnd, "    lamda = ", lambda 
 !    DO ind = 1,N
@@ -112,7 +112,7 @@ CONTAINS
     DO q = 1,max_q
       CALL system_clock(time)
       timesum=0;timesum2=0;timesum3=0;timesum4=0;
-      WRITE(*,'(a,i0)') 'q = ',q
+      !WRITE(*,'(a,i0)') 'q = ',q
 
       IF(q.EQ.1) THEN
         ! simply one term in summation a_n,m * Ccoeff
@@ -185,7 +185,7 @@ CONTAINS
           l(1) = l(1) + 1
           DO ind = 2,q-1
             IF(l(ind-1).EQ.N+1) THEN
-              IF(q.GE.5.AND.ind.EQ.(q-1)) WRITE(*,*) 'S',S
+              !IF(q.GE.5.AND.ind.EQ.(q-1)) WRITE(*,*) 'S',S
               !IF(q.GE.5.AND.ind.EQ.(q-1).AND.ALL([ (l(ind).NE.l(ind+1),ind=0,q-1) ])) WRITE(*,*) 'S',S, 'sumproduct * Ccoeff', sumproduct * Ccoeff 
               l(ind-1) = 1
               l(ind) = l(ind) + 1
@@ -197,20 +197,20 @@ CONTAINS
         END DO
   ! ---------------------------------------------------------------------------------
       END IF
-      WRITE(*,'(a,(F11.5,SP,F11.5,"i"))') 'S = ',S
+      !WRITE(*,'(a,(F11.5,SP,F11.5,"i"))') 'S = ',S
       CALL system_clock(time2)
 
       IF(q.GE.5) THEN
-        WRITE(*,*) 'total Time elapsed = ',time2 - time
-        WRITE(*,*) 'approx. time elapsed doing Ccoeff = ',timesum3
-        WRITE(*,*) 'approx. time elapsed doing inside Ccoeff = ',timesum5
-        WRITE(*,*) 'approx. time elapsed doing GetUniqueSubset = ',timesum2
-        WRITE(*,*) 'approx. time elapsed doing Dcoeff = ',timesum
-        WRITE(*,*) 'approx. time elapsed doing r sum in Ccoeff = ',timesum4
+        !WRITE(*,*) 'total Time elapsed = ',time2 - time
+        !WRITE(*,*) 'approx. time elapsed doing Ccoeff = ',timesum3
+        !WRITE(*,*) 'approx. time elapsed doing inside Ccoeff = ',timesum5
+        !WRITE(*,*) 'approx. time elapsed doing GetUniqueSubset = ',timesum2
+        !WRITE(*,*) 'approx. time elapsed doing Dcoeff = ',timesum
+        !WRITE(*,*) 'approx. time elapsed doing r sum in Ccoeff = ',timesum4
       END IF  
-      WRITE(*,'(a)')' -------------------------------------------------------------'  
+      !WRITE(*,'(a)')' -------------------------------------------------------------'  
     END DO
-    WRITE(*,'(a)')' -------------------------------------------------------------'  
+    !WRITE(*,'(a)')' -------------------------------------------------------------'  
 
   END SUBROUTINE
 

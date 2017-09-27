@@ -98,9 +98,10 @@ MODULE bloch_mod
     CHARACTER*100 SindString,SjndString,SPixelCount,SnBeams,SWeakBeamIndex,SPrintString
 
     ! variables used for koch spence method development
-    COMPLEX(CKIND),ALLOCATABLE :: CDummyEigenVectors(:,:), CWaveFunctions(:,:)
-    COMPLEX(CKIND),ALLOCATABLE :: CZeroMatrix(:,:), CUgSgMatrix2(:,:)
-    COMPLEX(CKIND) :: element
+    LOGICAL,PARAMETER :: TestKochMethod = .FALSE.
+    COMPLEX(CKIND),ALLOCATABLE :: CDiagonalSgMatrix(:,:), COffDiagonalSgMatrix(:,:)
+    COMPLEX(CKIND) :: CScatteringElement
+    INTEGER(IKIND) :: ScatterMatrixRow
       
     ! we are inside the mask
     IPixelComputed= IPixelComputed + 1
@@ -174,14 +175,12 @@ MODULE bloch_mod
     IF(l_alert(IErr,"BlochCoefficientCalculation","allocate CBeamProjectionMatrix")) RETURN
 
     ! allocations used for koch spence method development
-    ALLOCATE( CDummyEigenVectors(nBeams,nBeams), STAT=IErr )
-    IF(l_alert(IErr,"BlochCoefficientCalculation","allocate CBeamProjectionMatrix")) RETURN
-    ALLOCATE( CWaveFunctions(nBeams,nBeams), STAT=IErr )
-    IF(l_alert(IErr,"BlochCoefficientCalculation","allocate CBeamProjectionMatrix")) RETURN
-    ALLOCATE( CZeroMatrix(nBeams,nBeams), STAT=IErr )
-    IF(l_alert(IErr,"BlochCoefficientCalculation","allocate CBeamProjectionMatrix")) RETURN
-    ALLOCATE( CUgSgMatrix2(nBeams,nBeams), STAT=IErr )
-    IF(l_alert(IErr,"BlochCoefficientCalculation","allocate CBeamProjectionMatrix")) RETURN
+    IF(TestKochMethod) THEN
+      ALLOCATE( CDiagonalSgMatrix(nBeams,nBeams), STAT=IErr )
+      IF(l_alert(IErr,"BlochCoefficientCalculation","allocate CDiagonalSgMatrix")) RETURN
+      ALLOCATE( COffDiagonalSgMatrix(nBeams,nBeams), STAT=IErr )
+      IF(l_alert(IErr,"BlochCoefficientCalculation","allocate COffDiagonalSgMatrix")) RETURN
+    END IF
 
     ! compute the effective Ug matrix by selecting only those beams
     ! for which IStrongBeamList has an entry
@@ -263,7 +262,16 @@ MODULE bloch_mod
     ! diagonalize the UgMatEffective
     !--------------------------------------------------------------------
 
-    CUgSgMatrix2 = CUgSgMatrix
+    ! If koch method - Split CUgSgMatrix into diagonal and off diagonal to speed convergence
+    IF(TestKochMethod) THEN
+      COffDiagonalSgMatrix = CUgSgMatrix
+      CDiagonalSgMatrix = CZERO
+      DO ind = 1,SIZE(CUgSgMatrix,2)
+        CDiagonalSgMatrix(ind,ind) = CUgSgMatrix(ind,ind)      
+        COffDiagonalSgMatrix(ind,ind) = CZERO
+      END DO
+    END IF
+
     CALL EigenSpectrum(nBeams,CUgSgMatrix,CEigenValues(:),CEigenVectors(:,:),IErr)
     IF(l_alert(IErr,"BlochCoefficientCalculation","EigenSpectrum()")) RETURN
     ! NB destroys CUgSgMatrix
@@ -287,66 +295,59 @@ MODULE bloch_mod
       RThickness = RInitialThickness + REAL((IThicknessIndex-1),RKIND)*RDeltaThickness
       IThickness = NINT(RThickness,IKIND)
 
+      ! optional - for koch development to speed convergence
+      IF(TestKochMethod) RThickness = RThickness / 1000
+
       CALL CreateWaveFunctions(RThickness,RFullWaveIntensity,CFullWaveFunctions,&
                     nReflections,nBeams,IStrongBeamList,CEigenVectors,CEigenValues,IErr)
       IF(l_alert(IErr,"BlochCoefficientCalculation","CreateWaveFunctions")) RETURN
 
-      ! Use koch spence prototype method for a single pixel and thickness
-      IF(IYPixelIndex.EQ.10.AND.IXPixelIndex.EQ.10.AND.IThicknessIndex.EQ.2) THEN 
+      !--------------------------------------------------------------------
+      ! Optional - test koch spence prototype method
+      !--------------------------------------------------------------------
 
+      IF(TestKochMethod) THEN
 
-        ! scale RThickness to help convergence issues
-        RThickness = RThickness / 1000
-        
-        ! calculate scattering matrix (without boundary coniditions using eigenvectors)
-        CDummyEigenVectors = CEigenVectors
-        CALL INVERT(nBeams,CDummyEigenVectors(:,:),CInvertedEigenVectors,IErr)
-        CEigenValueDependentTerms= CZERO
-        DO ind=1,nBeams     ! This is a diagonal matrix
-          CEigenValueDependentTerms(ind,ind) = &
-                EXP(CMPLX(ZERO,RThickness,CKIND)*CEigenValues(ind)) 
-        ENDDO
-        CWaveFunctions = MATMUL( &
-              MATMUL(CEigenVectors(1:nBeams,1:nBeams),CEigenValueDependentTerms), & 
-              CInvertedEigenVectors(1:nBeams,1:nBeams) )
-
-
-        !CALL message('CEigenVectors',CEigenVectors(1:nBeams,1:nBeams))
-        !CALL message('CEigenValues',CEigenValues(1:nBeams))
-        CALL message('CWaveFunctions',CWaveFunctions(1:4,1))
-        !CALL message ( 'thickness', RThickness )
-        !CALL message ( 'bigk', RBigK )
-        !CALL message (' nbeams ',nBeams)
-
-        ! calculate scattering matrix using koch spence method
-        ! split CUgSgMatrix into diagonal and off-diagonal
-        CZeroMatrix = CMPLX(0,0)
-        CUgSgMatrix = CZERO
-        
-        WRITE(*,*) 'CUgSgMatrix2(1,1)',CUgSgMatrix2(1,1)
-        DO ind = 1,SIZE(CUgSgMatrix2,2)
-          CUgSgMatrix(ind,ind) = CUgSgMatrix2(ind,ind)      
-          CUgSgMatrix2(ind,ind) = CZERO
+        CALL message('-----------------------------------------------------------------------')
+        CALL message('Below shows the wavefunction matrix from diagonalisation and then the koch method')
+        CALL message('The thickness has been scaled by 1/1000 to speed convergence')
+        CALL message('The matrices are also ordered differently')
+        CALL message('and in the diagonalisation method some entries are negligable and left as zero')
+        CALL message('(diagonlisation) wavefunction pixel values for this thickness and this core') 
+        DO ScatterMatrixRow = 1,nBeams
+          CALL message('',CFullWaveFunctions(ScatterMatrixRow))
+        END DO
+        CALL message('(koch series) wavefunction pixel values for this thickness and this core') 
+        DO ScatterMatrixRow = 1,nBeams
+          CALL CalculateElementS( CMPLX(ZERO,RThickness,CKIND), COffDiagonalSgMatrix, &
+                CDiagonalSgMatrix, ScatterMatrixRow, 1, 4, CScatteringElement )
+          CALL message('',CScatteringElement)
         END DO
 
-        CALL GetCombinations()
-!        CALL CalculateElementS( CMPLX(ZERO,RThickness,CKIND), CUgSgMatrix2, CUgSgMatrix, 1, 1, 4, element )
-!        CALL CalculateElementS( CMPLX(ZERO,RThickness,CKIND), CUgSgMatrix2, CUgSgMatrix, 2, 1, 4, element )
-!        CALL CalculateElementS( CMPLX(ZERO,RThickness,CKIND), CUgSgMatrix2, CUgSgMatrix, 3, 1, 4, element )
-!        CALL CalculateElementS( CMPLX(ZERO,RThickness,CKIND), CUgSgMatrix2, CUgSgMatrix, 4, 1, 4, element )
+        !test for a single pixel 
+!        IF(IYPixelIndex.EQ.10.AND.IXPixelIndex.EQ.10.AND.IThicknessIndex.EQ.2) THEN 
+!          CALL message('debug reached single pixel thickness test')
+!          ! scale RThickness to help convergence issues
+!          RThickness = RThickness / 1000
+
+!          CALL CreateWaveFunctions(RThickness,RFullWaveIntensity,CFullWaveFunctions,&
+!                        nReflections,nBeams,IStrongBeamList,CEigenVectors,CEigenValues,IErr)
+!          IF(l_alert(IErr,"BlochCoefficientCalculation","CreateWaveFunctions")) RETURN
+!          CALL message('CFullWaveFunctions',CFullWaveFunctions)
+
+!          ! calculate scattering matrix using koch spence method
+!          !CALL GetCombinations()
+!          CALL CalculateElementS( CMPLX(ZERO,RThickness,CKIND), COffDiagonalSgMatrix, CDiagonalSgMatrix, 1, 1, 4, CScatteringElement )
+
+!          ! for debugging end felix here
+!          CALL SLEEP(1)
+!          IErr = 1
+!          RETURN
+!        END IF
 
 
-        CALL message ( '%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%')
-        CALL message ( '%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%')
-        CALL message ( '%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%')
-
-        !CALL CalculateElementS2( CMPLX(ZERO,RThickness,CKIND), CUgSgMatrix2, CUgSgMatrix, 1, 1, 5, element )
-        !CALL CalculateElementS2( CMPLX(ZERO,RThickness,CKIND), CUgSgMatrix2, CUgSgMatrix, 2, 1, 5, element )
-        !CALL CalculateElementS2( CMPLX(ZERO,RThickness,CKIND), CUgSgMatrix2, CUgSgMatrix, 3, 1, 5, element )
-        !CALL CalculateElementS2( CMPLX(ZERO,RThickness,CKIND), CUgSgMatrix2, CUgSgMatrix, 4, 1, 5, element )
-
-        ! for debugging end felix here
-
+        CALL message('Testing koch series method, so terminate felix here.')
+        CALL message('-----------------------------------------------------------------------')
         CALL SLEEP(1)
         IErr = 1
         RETURN
@@ -379,6 +380,12 @@ MODULE bloch_mod
         END IF
       END IF
     END DO
+
+    ! deallocations used for koch spence method development
+    IF(TestKochMethod) THEN
+      DEALLOCATE( CDiagonalSgMatrix, COffDiagonalSgMatrix, STAT=IErr )
+      IF(l_alert(IErr,"BlochCoefficientCalculation","deallocating arrays")) RETURN
+    END IF
     
     ! DEALLOCATE eigen problem memory
     DEALLOCATE(CUgSgMatrix,CBeamTranspose, CUgMatPartial, &

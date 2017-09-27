@@ -418,8 +418,9 @@ MODULE read_files_mod
 
   !>
   !! Procedure-description: This subroutine reads in the input experimental images.
-  !! It inquires whether there are .img files in LR_NxN/, DM3/ or directly in the sample folder.
-  !! It then reads in the images files expecting them to match the necessary LACBED patterns
+  !! It inquires whether there are .img or .dm3 files in LR_NxN/, DM3/ or directly in the sample folder.
+  !! It then reads in the images files expecting them to match the necessary LACBED patterns.
+  !! With the .dm3 files, it writes out the equivalent .img files to be used next time.
   !!
   !! Major-Authors: Keith Evans (2014), Richard Beanland (2016), Jacob Richardson (2017)
   !!
