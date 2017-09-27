@@ -417,7 +417,9 @@ MODULE read_files_mod
   !%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
   !>
-  !! Procedure-description:
+  !! Procedure-description: This subroutine reads in the input experimental images.
+  !! It inquires whether there are .img files in LR_NxN/, DM3/ or directly in the sample folder.
+  !! It then reads in the images files expecting them to match the necessary LACBED patterns
   !!
   !! Major-Authors: Keith Evans (2014), Richard Beanland (2016), Jacob Richardson (2017)
   !!
@@ -493,7 +495,7 @@ MODULE read_files_mod
       IF(l_alert(IErr,"ReadExperimentalImages",TRIM(SPrintString))) RETURN
     END IF
 
-    ! NB when reading .dm3 files, if pixel size does match and error will be thrown
+    ! NB when reading .dm3 files, if pixel size does match an error will be thrown
 
     ! if .dm3 allocate raw 4-byte float image matrix
     IF(IFileTypeID.EQ.2.OR.IFileTypeID.EQ.4) THEN
