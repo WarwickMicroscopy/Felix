@@ -35,6 +35,8 @@
 !!  It is generally not felix-specific but may specify types and formatting to match that are
 !!  expected for felix code.
 !!
+!!  The following describes DM3 file format: https://imagej.nih.gov/ij/plugins/DM3Format.gj.html
+!!
 !!  Major-Authors: Jacob Richardson (2017)
 !!
 MODULE read_dm3_mod
@@ -50,27 +52,29 @@ MODULE read_dm3_mod
 
   !?? felix KIND(1.0D0) is 64bit, corresponds to 8bytes for RECORD LENGTH
 
-  !?? standardise convention here of x, y axis of image from top left corner...
-
   IMPLICIT NONE
   PRIVATE
-  PUBLIC :: ReadDM3TagsAndImage, ReadInDM3directory, WriteOutImageArrayDirectory 
+  PUBLIC :: ReadDM3TagsAndImage 
 
   CONTAINS
     
   !>
   !! Procedure-description: This reads in bytes from a .dm3 file, recognises the '%%%%' 
-  !! delimiters, reads the tag labels and then the image data. Image data is assumed to be 
-  !! 32bit float type and in the file in an array under the 2nd 'Data' tag.
+  !! delimiters, reads the TagEntry labels and then the image data. Image data is assumed to be 
+  !! 32bit float big endian and under the 2nd 'Data' tag.
   !!
   !! Major-Authors: Jacob Richardson (2017)
   !!
   SUBROUTINE ReadDM3TagsAndImage( SFilePath, IXPixels, IYPixels, IErr, RImageMatrixDM3 )
 
+    ! NB The file is read-in with big endian to match the image data format, however
+    ! the tag data is little endian format. The tag characters are read-in byte by byte and
+    ! the pixel size is read-in incorrectly and then converted to the little endian.
+
     !?? despite the pixel sizes RImageMatrixDM3 is outputted as square using max side, refer to module notes above
 
     CHARACTER(*),INTENT(IN) :: SFilePath
-    INTEGER(4), INTENT(IN) :: IXPixels, IYPixels !?? despite these RImageArray is outputted as square
+    INTEGER(4), INTENT(IN) :: IXPixels, IYPixels !?? despite these, RImageArray is outputted as square
     INTEGER(4),INTENT(OUT) :: IErr
     REAL(4),INTENT(OUT) :: RImageMatrixDM3(MAX(IXPixels,IYPixels),MAX(IXPixels,IYPixels))
     ! RImageMatrixDM3( x_pixel, y_pixel )
@@ -79,29 +83,29 @@ MODULE read_dm3_mod
     LOGICAL,PARAMETER  ::  &
       LGetImageData = .TRUE.,&
       LPrintTags = .FALSE.,&
-      LPrintingAllowed = .FALSE.       ! if false, excluding errors printing to terminal is suppressed
+      LPrintingAllowed = .FALSE.       ! if false, excluding errors, printing to terminal is suppressed
     INTEGER(1),PARAMETER :: &
-      ICorrespondingImageDataTag = 2  ! specifies which 'Data' tag corresponds to image data 
+      ICorrespondingImageDataTag = 2   ! specifies which 'Data' tag corresponds to image data 
 
     ! local variables
-    INTEGER(4) :: i,j, INoOfBytes, INoOfTags, INoOfDataTags, INoOfIgnoredBytes, Ix, Iy
+    INTEGER(4) :: i,j, INoOfBytes, INoOfTags, INoOfDataTags, INoOfPreDataBytes, Ix, Iy
     LOGICAL :: LFindingTags, LReadingImageData, LLookingForDataTags
     CHARACTER(36) :: STagLabel
-    INTEGER(1) :: IPrevious4Bytes(4), IPreviousBytes(40)
-    INTEGER(4) :: IIgnore4Bytes
-    REAL(4) :: RDataBytes ! image data is assumed to be 32bit float type
+    INTEGER(1) :: IPrevious4Bytes(4), IPreviousBytes(40), IByte
+    INTEGER(4) :: I4bytePreData, IDataLengthBigEndian
+    REAL(4) :: RDataBytes ! image data is assumed to be 32bit float type Little Endian
     ! intialise output variables
     RImageMatrixDM3=0 
     IErr=0
     ! intialise local variables
     LFindingTags=.TRUE.; LReadingImageData=.FALSE.; LLookingForDataTags=.TRUE.
-    INoOfBytes=0; INoOfTags=0; INoOfIgnoredBytes=0; INoOfDataTags=0; Ix=0; Iy=1;
-    IPrevious4Bytes=0; IPreviousBytes=0; IIgnore4Bytes=0;
+    INoOfBytes=0; INoOfTags=0; INoOfPreDataBytes=0; INoOfDataTags=0; Ix=0; Iy=1;
+    IPrevious4Bytes=0; IPreviousBytes=0; I4bytePreData=0;
     RDataBytes=0;
 
-    OPEN(UNIT=1,FILE=SFilePath,STATUS='OLD',ACCESS='STREAM',ACTION='READ',IOSTAT=IErr)
+    OPEN(UNIT=1,FILE=SFilePath,STATUS='OLD',ACCESS='STREAM',ACTION='READ',IOSTAT=IErr, CONVERT='LITTLE_ENDIAN')
     IF(IErr.NE.0) THEN
-      WRITE(*,'(A)') 'Error opening .dm3 file, file path =', SFilePath
+      WRITE(*,'(A)') 'Error in ReadDM3TagsAndImage(). Opening .dm3 file, file path =', TRIM(SFilePath)
       RETURN
     ENDIF
 
@@ -136,12 +140,12 @@ MODULE read_dm3_mod
             IF( 32.LE.IPreviousBytes(j) .AND. IPreviousBytes(j).LE.126 ) THEN
               STagLabel = CHAR(IPreviousBytes(j))//TRIM(STagLabel)
             ELSE
-              EXIT ! non ASCII character found found so no longer reading label
+              EXIT ! non ASCII character found so no longer reading label
             ENDIF
           ENDDO
           IF(LPrintTags.AND.LPrintingAllowed) WRITE(*,'(A36,2x,I5,I15)') STagLabel,INoOfTags,INoOfBytes
-          IF(LLookingForDataTags) THEN
-            IF(LGetImageData.AND.STagLabel.EQ.'Data') INoOfDataTags = INoOfDataTags + 1
+          IF(LGetImageData.AND.LLookingForDataTags) THEN
+            IF(STagLabel.EQ.'Data') INoOfDataTags = INoOfDataTags + 1
             IF(INoOfDataTags.EQ.ICorrespondingImageDataTag) THEN
               LLookingForDataTags=.FALSE.
               IF(LPrintingAllowed) WRITE(*,'(A)') 'Now reading image data'
@@ -153,19 +157,33 @@ MODULE read_dm3_mod
   
       ELSEIF ( LReadingImageData ) THEN ! read another set of bytes of image data
         
-        ! at the beggining of data array there are 12 bytes to ignore (three 4-byte integers)
-        IF(INoOfIgnoredBytes.LT.12) THEN
-          READ(1,IOSTAT=IErr) IIgnore4Bytes
+        ! There are 16 pre-data bytes including an integer of the data array length
+        ! which should match the pixel size
+        IF(INoOfPreDataBytes.LT.16) THEN         
+          READ(1,IOSTAT=IErr) I4bytePreData
           IF(IErr.NE.0) THEN ! error reading dm3
-            WRITE(*,'(A,I0)') 'Error while reading intial data bytes to-be-ignored, Byte number = ',INoOfBytes
+            WRITE(*,'(A,I0)') 'Error in ReadDM3TagsAndImage(). Reading pre data bytes, Byte number = ',INoOfBytes
             RETURN
           ENDIF
+          IF(INoOfPreDataBytes.EQ.12) THEN
+            ! Convert data length integer to big endian format
+            CALL MVBITS( I4bytePreData, 24, 8, IDataLengthBigEndian, 0  )
+            CALL MVBITS( I4bytePreData, 16, 8, IDataLengthBigEndian, 8  )
+            CALL MVBITS( I4bytePreData, 8,  8, IDataLengthBigEndian, 16 )
+            CALL MVBITS( I4bytePreData, 0,  8, IDataLengthBigEndian, 24 )
+            IF(IDataLengthBigEndian.NE.IXPixels*IYPixels) THEN ! error
+              IErr=1
+              WRITE(*,'(A,I0)') 'Error in ReadDM3TagsAndImage(). Data array length does not match inputted pixel size.'
+              WRITE(*,'(A,I0,A,I0)') 'Error in ReadDM3TagsAndImage(). Data array length = ',IDataLengthBigEndian,', IXPixels*IYPixels = ', IXPixels*IYPixels
+              RETURN
+            ENDIF 
+          ENDIF
           INoOfBytes = INoOfBytes + 4
-          INoOfIgnoredBytes = INoOfIgnoredBytes + 4
+          INoOfPreDataBytes = INoOfPreDataBytes + 4
         ELSE ! read image data bytes
           READ(1,IOSTAT=IErr) RDataBytes
           IF(IErr.NE.0) THEN ! error reading dm3
-            WRITE(*,'(A,I0)') 'Error while reading data, Byte number = ',INoOfBytes
+            WRITE(*,'(A,I0)') 'Error in ReadDM3TagsAndImage(). while reading data, Byte number = ',INoOfBytes
             RETURN
           ENDIF
           INoOfBytes = INoOfBytes + 4
@@ -183,7 +201,7 @@ MODULE read_dm3_mod
         ENDIF
 
       ELSE ! error, this should never happen
-        IErr=1; WRITE(*,'(A)') 'Error reading DM3, cannot search for tags nor read image data'; RETURN
+        IErr=1; WRITE(*,'(A)') 'Error in ReadDM3TagsAndImage(). Reading DM3, cannot search for tags nor read image data'; RETURN
 
       ENDIF
 
@@ -191,112 +209,7 @@ MODULE read_dm3_mod
     CLOSE(1)
   
   END SUBROUTINE ReadDM3TagsAndImage
-  
-  
-  !>
-  !! Procedure-description: Read all .dm3 files in a directory into an array of 2D image matrices.
-  !! Manually specify expected filenames in this subroutine. 
-  !! Importantly ImageArray becomes square using max IXPixels, IYPixels
-  !!
-  !! Major-Authors: Jacob Richardson (2017)
-  !!
-  SUBROUTINE ReadInDM3directory( SDirectoryPath, IXPixels, IYPixels, IErr, RImageArray )
-    
-    !?? despite the pixel sizes RImageArray is outputted as square using max side, refer to module notes above
-
-    CHARACTER(*),INTENT(IN) :: SDirectoryPath ! should include '/'
-    INTEGER(4),INTENT(IN) :: IXPixels,IYPixels
-    INTEGER(4),INTENT(OUT) :: IErr
-    REAL(KIND(1.0D0)),ALLOCATABLE,INTENT(OUT) :: RImageArray(:,:,:) 
-    ! RImageArray( x_pixel, y_pixel, image_number )
-
-    ! manually specify these in code
-    CHARACTER(200) :: SFilePath
-    INTEGER(4) :: INoOfImages
-    
-    INTEGER(4) :: i, ImageNumber
-    REAL(4),ALLOCATABLE :: RImageMatrixDM3(:,:) ! RImageMatrixDM3( x_pixel, y_pixel )
-    ! this real kind matches felix format
-    
-    ! manually specify how many images expected
-    INoOfImages=168
-
-    ALLOCATE(RImageMatrixDM3(MAX(IXPixels,IYPixels),MAX(IXPixels,IYPixels)))
-    ALLOCATE(RImageArray(MAX(IXPixels,IYPixels),MAX(IXPixels,IYPixels),INoOfImages))
-
-    DO i = 1,INoOfImages
-
-      ! manually specify expected .dm3 filenames inside directory
-      ImageNumber=i
-      WRITE(SFilePath,'(A,A,I3.3,A)') TRIM(SDirectoryPath),'006_D-LACBED_',ImageNumber,'.dm3'
-      !WRITE(*,'(A,A)') 'Reading .dm3 with file path = ',TRIM(SFilePath)
-
-      ! read in single image into image array   
-      CALL ReadDM3TagsAndImage(SFilePath, IXPixels, IYPixels, IErr, RImageMatrixDM3)
-      IF(IErr.NE.0) THEN
-        WRITE(*,'(A)') 'Error found in ReadDM3TagsAndImage'
-        RETURN
-      ENDIF
-      RImageArray(:,:,i) = REAL(RImageMatrixDM3,KIND(1.0D0))   
-      !WRITE(*,'(A,ES8.1,ES8.1)') 'Mix/max value respectively ',MINVAL(RImageMatrixDM3),MAXVAL(RImageMatrixDM3)
-
-    ENDDO
-
-  END SUBROUTINE ReadInDM3directory
 
 
-  !>
-  !! Procedure-description: Write out any real image array into binary .bin files in a directory.
-  !! Manually specify output image filenames in this subroutine.
-  !!
-  !! Major-Authors: Jacob Richardson (2017)
-  !!
-  SUBROUTINE WriteOutImageArrayDirectory( SDirectoryPath, RImageArray )
-    CHARACTER(*),INTENT(IN) :: SDirectoryPath ! should include '/'
-    REAL(KIND(1.0D0)),INTENT(IN),DIMENSION(:,:,:) :: RImageArray ! RImageArray( x_pixel, y_pixel, image_number )
-    REAL(KIND(1.0D0)),ALLOCATABLE,DIMENSION(:,:,:) :: RImageArrayDummy
-    ! this real kind matches felix format
-    INTEGER(4) :: i,j,ImageNumber,IXPixels,IYPixels,IErr
-    ! manually specify these in code
-    CHARACTER(200) :: SFilePath,SSystemCommand
-
-    WRITE(SSystemCommand,'(A,A)') 'mkdir ',TRIM(SDirectoryPath)
-    CALL SYSTEM(SSystemCommand)
-
-    DO i = 1,SIZE(RImageArray,3)
-      WRITE(*,'(A,ES8.1,ES8.1)') 'Mix/max value respectively ',MINVAL(RImageArray(:,:,i)),MAXVAL(RImageArray(:,:,i))
-    ENDDO
-  
-    ! process image for output
-    RImageArrayDummy=RImageArray
-    WHERE ( RImageArrayDummy > 15000 )
-      RImageArrayDummy = 15000
-    END WHERE
-    RImageArrayDummy = RImageArrayDummy/MAXVAL(RImageArrayDummy)
-
-    ! iteratively write .bin file
-    DO i = 1,SIZE(RImageArray,3)
-      ! manually specify .bin output filename
-      ImageNumber=i
-      IXPixels=SIZE(RImageArray,1)
-      IYPixels=SIZE(RImageArray,2)
-      WRITE(SFilePath,'(A,A,I3.3,A,I3.3,A,I3.3,A)')&
-            TRIM(SDirectoryPath),'006_D-LACBED_',IXPixels,'x',IYPixels,'_',ImageNumber,'.bin'
-      ! NB need pixel size in filenames in format 'bla_bla_NxN_bla.bin' for felix convert image script
-      WRITE(*,'(A,A)') 'Writing .bin with file path = ',TRIM(SFilePath)
-
-      ! write .bin file
-      OPEN(UNIT=2,STATUS='UNKNOWN',FILE=SFilePath,FORM='UNFORMATTED',ACCESS='DIRECT',RECL=672*8,IOSTAT=IErr)
-      IF(IErr.NE.0) THEN
-        WRITE(*,'(A)') 'Error in OPEN, making .bin file to write to'
-        RETURN
-      ENDIF
-      DO j = 1,SIZE(RImageArray,2)
-        WRITE(2,REC=j) RImageArrayDummy(:,j,i)
-      END DO
-      CLOSE(2) 
-    ENDDO
-
-  END SUBROUTINE WriteOutImageArrayDirectory
     
 END MODULE
