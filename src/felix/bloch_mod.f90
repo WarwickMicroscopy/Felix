@@ -54,6 +54,9 @@ MODULE bloch_mod
     USE MyNumbers
     USE MyMPI
     USE message_mod
+    
+    USE test_koch_mod
+    USE test_koch_mod2
   
     ! globals - output
     USE RPara, ONLY : RIndividualReflections ! RIndividualReflections( LACBED_ID, thickness_ID, local_pixel_ID )
@@ -93,6 +96,11 @@ MODULE bloch_mod
     COMPLEX(CKIND),DIMENSION(:),ALLOCATABLE :: CGeneralEigenValues
     CHARACTER*40 surname
     CHARACTER*100 SindString,SjndString,SPixelCount,SnBeams,SWeakBeamIndex,SPrintString
+
+    ! variables used for koch spence method development
+    COMPLEX(CKIND),ALLOCATABLE :: CDummyEigenVectors(:,:), CWaveFunctions(:,:)
+    COMPLEX(CKIND),ALLOCATABLE :: CZeroMatrix(:,:), CUgSgMatrix2(:,:)
+    COMPLEX(CKIND) :: element
       
     ! we are inside the mask
     IPixelComputed= IPixelComputed + 1
@@ -165,6 +173,16 @@ MODULE bloch_mod
     ALLOCATE( CEigenValueDependentTerms(nBeams,nBeams), STAT=IErr )
     IF(l_alert(IErr,"BlochCoefficientCalculation","allocate CBeamProjectionMatrix")) RETURN
 
+    ! allocations used for koch spence method development
+    ALLOCATE( CDummyEigenVectors(nBeams,nBeams), STAT=IErr )
+    IF(l_alert(IErr,"BlochCoefficientCalculation","allocate CBeamProjectionMatrix")) RETURN
+    ALLOCATE( CWaveFunctions(nBeams,nBeams), STAT=IErr )
+    IF(l_alert(IErr,"BlochCoefficientCalculation","allocate CBeamProjectionMatrix")) RETURN
+    ALLOCATE( CZeroMatrix(nBeams,nBeams), STAT=IErr )
+    IF(l_alert(IErr,"BlochCoefficientCalculation","allocate CBeamProjectionMatrix")) RETURN
+    ALLOCATE( CUgSgMatrix2(nBeams,nBeams), STAT=IErr )
+    IF(l_alert(IErr,"BlochCoefficientCalculation","allocate CBeamProjectionMatrix")) RETURN
+
     ! compute the effective Ug matrix by selecting only those beams
     ! for which IStrongBeamList has an entry
     CBeamProjectionMatrix= CZERO
@@ -172,11 +190,14 @@ MODULE bloch_mod
       CBeamProjectionMatrix(knd,IStrongBeamList(knd))=CONE
     ENDDO
 
+
     CUgSgMatrix = CZERO
     CBeamTranspose=TRANSPOSE(CBeamProjectionMatrix)
     ! reduce the matrix to just include strong beams using some nifty matrix multiplication
+    ! CUgMatPartial = CUgMat * CBeamTranspose
     CALL ZGEMM('N','N',nReflections,nBeams,nReflections,CONE,CUgMat, &
               nReflections,CBeamTranspose,nReflections,CZERO,CUgMatPartial,nReflections)
+    ! CUgSgMatrix = CBeamProjectionMatrix * CUgMatPartial
     CALL ZGEMM('N','N',nBeams,nBeams,nReflections,CONE,CBeamProjectionMatrix, &
               nBeams,CUgMatPartial,nReflections,CZERO,CUgSgMatrix,nBeams)
 
@@ -228,7 +249,7 @@ MODULE bloch_mod
         ENDDO
 	      ! Replace the Ug's
 	      WHERE (CUgSgMatrix.EQ.CUgSgMatrix(knd,1))
-          CUgSgMatrix= CUgSgMatrix(knd,1) - sumC
+          CUgSgMatrix = CUgSgMatrix(knd,1) - sumC
 	      END WHERE
 	      ! Replace the Sg's
         CUgSgMatrix(knd,knd)= CUgSgMatrix(knd,knd) - TWO*RBigK*sumD/(TWOPI*TWOPI)
@@ -237,21 +258,15 @@ MODULE bloch_mod
 	    !Divide by 2K so off-diagonal elementa are Ug/2K, diagonal elements are Sg, Spence's (1990) 'Structure matrix'
       CUgSgMatrix = TWOPI*TWOPI*CUgSgMatrix/(TWO*RBigK)
     END IF
-
-    IF(IYPixelIndex.EQ.10.AND.IXPixelIndex.EQ.10) THEN ! output data from 1 pixel,show working
-      CALL message(LM,dbg3, "Pixel [10,10] Ug/2K + {Sg} matrix (nm^-2)")
-      DO ind = 1,16
-        CALL message( LM, dbg3, "RKL row:",NINT(Rhkl(ind,:)) )
-        CALL message( LM, dbg3, "CUg row:",100*CUgSgMatrix(ind,1:6) )
-      END DO
-    END IF
     
     !--------------------------------------------------------------------
     ! diagonalize the UgMatEffective
     !--------------------------------------------------------------------
 
+    CUgSgMatrix2 = CUgSgMatrix
     CALL EigenSpectrum(nBeams,CUgSgMatrix,CEigenValues(:),CEigenVectors(:,:),IErr)
     IF(l_alert(IErr,"BlochCoefficientCalculation","EigenSpectrum()")) RETURN
+    ! NB destroys CUgSgMatrix
 
     IF (IHolzFLAG.EQ.1) THEN ! higher order laue zone included so adjust Eigen values/vectors
       CEigenValues = CEigenValues * RKn/RBigK
@@ -268,11 +283,76 @@ MODULE bloch_mod
     ! Calculate intensities for different specimen thicknesses
     !?? ADD VARIABLE PATH LENGTH HERE !?? what does this comment mean?
     DO IThicknessIndex=1,IThicknessCount,1
-      RThickness = RInitialThickness + REAL((IThicknessIndex-1),RKIND)*RDeltaThickness 
+
+      RThickness = RInitialThickness + REAL((IThicknessIndex-1),RKIND)*RDeltaThickness
       IThickness = NINT(RThickness,IKIND)
+
       CALL CreateWaveFunctions(RThickness,RFullWaveIntensity,CFullWaveFunctions,&
                     nReflections,nBeams,IStrongBeamList,CEigenVectors,CEigenValues,IErr)
       IF(l_alert(IErr,"BlochCoefficientCalculation","CreateWaveFunctions")) RETURN
+
+      ! Use koch spence prototype method for a single pixel and thickness
+      IF(IYPixelIndex.EQ.10.AND.IXPixelIndex.EQ.10.AND.IThicknessIndex.EQ.2) THEN 
+
+
+        ! scale RThickness to help convergence issues
+        RThickness = RThickness / 1000
+        
+        ! calculate scattering matrix (without boundary coniditions using eigenvectors)
+        CDummyEigenVectors = CEigenVectors
+        CALL INVERT(nBeams,CDummyEigenVectors(:,:),CInvertedEigenVectors,IErr)
+        CEigenValueDependentTerms= CZERO
+        DO ind=1,nBeams     ! This is a diagonal matrix
+          CEigenValueDependentTerms(ind,ind) = &
+                EXP(CMPLX(ZERO,RThickness,CKIND)*CEigenValues(ind)) 
+        ENDDO
+        CWaveFunctions = MATMUL( &
+              MATMUL(CEigenVectors(1:nBeams,1:nBeams),CEigenValueDependentTerms), & 
+              CInvertedEigenVectors(1:nBeams,1:nBeams) )
+
+
+        !CALL message('CEigenVectors',CEigenVectors(1:nBeams,1:nBeams))
+        !CALL message('CEigenValues',CEigenValues(1:nBeams))
+        CALL message('CWaveFunctions',CWaveFunctions(1:4,1))
+        !CALL message ( 'thickness', RThickness )
+        !CALL message ( 'bigk', RBigK )
+        !CALL message (' nbeams ',nBeams)
+
+        ! calculate scattering matrix using koch spence method
+        ! split CUgSgMatrix into diagonal and off-diagonal
+        CZeroMatrix = CMPLX(0,0)
+        CUgSgMatrix = CZERO
+        
+        WRITE(*,*) 'CUgSgMatrix2(1,1)',CUgSgMatrix2(1,1)
+        DO ind = 1,SIZE(CUgSgMatrix2,2)
+          CUgSgMatrix(ind,ind) = CUgSgMatrix2(ind,ind)      
+          CUgSgMatrix2(ind,ind) = CZERO
+        END DO
+
+        CALL GetCombinations()
+!        CALL CalculateElementS( CMPLX(ZERO,RThickness,CKIND), CUgSgMatrix2, CUgSgMatrix, 1, 1, 4, element )
+!        CALL CalculateElementS( CMPLX(ZERO,RThickness,CKIND), CUgSgMatrix2, CUgSgMatrix, 2, 1, 4, element )
+!        CALL CalculateElementS( CMPLX(ZERO,RThickness,CKIND), CUgSgMatrix2, CUgSgMatrix, 3, 1, 4, element )
+!        CALL CalculateElementS( CMPLX(ZERO,RThickness,CKIND), CUgSgMatrix2, CUgSgMatrix, 4, 1, 4, element )
+
+
+        CALL message ( '%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%')
+        CALL message ( '%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%')
+        CALL message ( '%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%')
+
+        !CALL CalculateElementS2( CMPLX(ZERO,RThickness,CKIND), CUgSgMatrix2, CUgSgMatrix, 1, 1, 5, element )
+        !CALL CalculateElementS2( CMPLX(ZERO,RThickness,CKIND), CUgSgMatrix2, CUgSgMatrix, 2, 1, 5, element )
+        !CALL CalculateElementS2( CMPLX(ZERO,RThickness,CKIND), CUgSgMatrix2, CUgSgMatrix, 3, 1, 5, element )
+        !CALL CalculateElementS2( CMPLX(ZERO,RThickness,CKIND), CUgSgMatrix2, CUgSgMatrix, 4, 1, 5, element )
+
+        ! for debugging end felix here
+
+        CALL SLEEP(1)
+        IErr = 1
+        RETURN
+
+      END IF
+
       ! Collect Intensities from all thickness for later writing
       IF(IHKLSelectFLAG.EQ.0) THEN ! we are not using hkl list from felix.hkl
         IF(IImageFLAG.LE.2) THEN ! output is 0=montage, 1=individual images
@@ -360,6 +440,7 @@ MODULE bloch_mod
     CWaveFunctions(:) = MATMUL( &
           MATMUL(CEigenVectors(1:nBeams,1:nBeams),CEigenValueDependentTerms), & 
           CAlphaWeightingCoefficients(:) )
+
     !?? possible small time saving here by only calculating the (tens of) output
     !?? reflections rather than all strong beams (hundreds)
     DO hnd=1,nBeams

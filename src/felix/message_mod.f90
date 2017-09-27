@@ -30,6 +30,10 @@
 !
 !%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
+
+
+!>>> JR I've updated messageCMatrix to output in a format readable by Mathematica
+    
 MODULE message_mod
 !>--------------------------------------------------------------------------------------------
 !>  major-authors: Jacob Richardson (2017)
@@ -374,12 +378,16 @@ CONTAINS
     CHARACTER(*), INTENT(IN) :: SMainMsg
     COMPLEX(CKIND),DIMENSION(:,:),INTENT(IN) :: CMatrix
     INTEGER(IKIND) :: i
-    CHARACTER(1000) :: SFormatting, SPrintString
+    CHARACTER(10000) :: SFormatting, SPrintString
 
     IF ( ( my_rank==0 .OR. LPrintThisCore ) &
     .AND. (MsgPriority%LState .OR. MsgTag%LState) ) THEN
 
-      WRITE(SFormatting,'(a,i3,a)') '(',SIZE(CMatrix,2),'(F6.2,1x,sp,F6.2,"i",4x))'
+      IF(SIZE(CMatrix,2).GE.2) THEN ! multiple columns
+        WRITE(SFormatting,'(a,i3,a)') '("{"',SIZE(CMatrix,2)-1,'(F10.4,1x,sp,F10.4,"i,",4x),(F10.4,1x,sp,F10.4,"i",4x)"},")'
+      ELSE ! one column matrix / scalar
+        WRITE(SFormatting,'(a)') '(F10.4,1x,sp,F10.4,"i",4x)'
+      END IF
 
       IF( SIZE(CMatrix,1).EQ.1 .AND. SIZE(CMatrix,2).LE.6 ) THEN    
         WRITE(SPrintString,SFormatting) CMatrix(:,:)  
