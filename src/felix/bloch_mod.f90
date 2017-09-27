@@ -313,7 +313,7 @@ MODULE bloch_mod
         CALL message('The thickness has been scaled by 1/1000 to speed convergence')
         CALL message('The matrices are also ordered differently')
         CALL message('and in the diagonalisation method some entries are negligable and left as zero')
-        CALL message('(diagonlisation) wavefunction pixel values for this thickness and this core') 
+        CALL message('(diagonlisation) wavefunction pixel values for this thickness and this core')
         DO ScatterMatrixRow = 1,nBeams
           CALL message('',CFullWaveFunctions(ScatterMatrixRow))
         END DO
@@ -333,19 +333,21 @@ MODULE bloch_mod
 !          CALL CreateWaveFunctions(RThickness,RFullWaveIntensity,CFullWaveFunctions,&
 !                        nReflections,nBeams,IStrongBeamList,CEigenVectors,CEigenValues,IErr)
 !          IF(l_alert(IErr,"BlochCoefficientCalculation","CreateWaveFunctions")) RETURN
-!          CALL message('CFullWaveFunctions',CFullWaveFunctions)
+!          CALL message('CFullWaveFunctions(1:4)',CFullWaveFunctions(1:4))
 
 !          ! calculate scattering matrix using koch spence method
 !          !CALL GetCombinations()
 !          CALL CalculateElementS( CMPLX(ZERO,RThickness,CKIND), COffDiagonalSgMatrix, CDiagonalSgMatrix, 1, 1, 4, CScatteringElement )
 
 !          ! for debugging end felix here
+!          CALL message('Testing koch series method, so terminate felix here.')
+!          CALL message('-----------------------------------------------------------------------')
 !          CALL SLEEP(1)
 !          IErr = 1
 !          RETURN
 !        END IF
 
-
+         ! Testing koch series so terminate felix here
         CALL message('Testing koch series method, so terminate felix here.')
         CALL message('-----------------------------------------------------------------------')
         CALL SLEEP(1)

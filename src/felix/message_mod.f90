@@ -30,9 +30,6 @@
 !
 !%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-
-
-!>>> JR I've updated messageCMatrix to output in a format readable by Mathematica
     
 MODULE message_mod
 !>--------------------------------------------------------------------------------------------
@@ -371,6 +368,7 @@ CONTAINS
 
   END SUBROUTINE messageRMatrix
 
+  ! This currently outputs in a form suitable for mathematica
   SUBROUTINE messageCMatrix ( MsgPriority, MsgTag, SMainMsg, CMatrix )
     
     TYPE (MsgPriorities), INTENT(IN) :: MsgPriority
@@ -384,9 +382,9 @@ CONTAINS
     .AND. (MsgPriority%LState .OR. MsgTag%LState) ) THEN
 
       IF(SIZE(CMatrix,2).GE.2) THEN ! multiple columns
-        WRITE(SFormatting,'(a,i3,a)') '("{"',SIZE(CMatrix,2)-1,'(F12.7,1x,sp,F12.7,"i,",4x),(F12.7,1x,sp,F12.7,"i",4x)"},")'
+        WRITE(SFormatting,'(a,i3,a)') '("{"',SIZE(CMatrix,2)-1,'(F10.4,1x,sp,F10.4,"i,",4x),(F10.4,1x,sp,F10.4,"i",4x)"},")'
       ELSE ! one column matrix / scalar
-        WRITE(SFormatting,'(a)') '(F12.7,1x,sp,F12.7,"i",4x)'
+        WRITE(SFormatting,'(a)') '(F10.4,1x,sp,F10.4,"i",4x)'
       END IF
 
       IF( SIZE(CMatrix,1).EQ.1 .AND. SIZE(CMatrix,2).LE.6 ) THEN    

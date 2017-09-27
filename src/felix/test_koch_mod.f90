@@ -1,4 +1,34 @@
-
+!%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+!
+! Felix
+!
+! Richard Beanland, Keith Evans & Rudolf A Roemer
+!
+! (C) 2013-17, all rights reserved
+!
+! Version: :VERSION:
+! Date:    :DATE:
+! Time:    :TIME:
+! Status:  :RLSTATUS:
+! Build:   :BUILD:
+! Author:  :AUTHOR:
+! 
+!%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+!
+!  Felix is free software: you can redistribute it and/or modify
+!  it under the terms of the GNU General Public License as published by
+!  the Free Software Foundation, either version 3 of the License, or
+!  (at your option) any later version.
+!  
+!  Felix is distributed in the hope that it will be useful,
+!  but WITHOUT ANY WARRANTY; without even the implied warranty of
+!  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+!  GNU General Public License for more details.
+!  
+!  You should have received a copy of the GNU General Public License
+!  along with Felix.  If not, see <http://www.gnu.org/licenses/>.
+!
+!%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 !>>> added simple hard-coded timing & profiling
   !certain Ccoeff loops take particularly long
@@ -29,6 +59,8 @@ MODULE test_koch_mod
 ! bprime(0:u) are the unique B(l(0:q)), and there is a degeneracy d(k) for each bprime
 ! (bprime(k) unique -> d(k) = 0)
 ! bprime(k) used instead of bprime(l(k))
+
+! for testing, for example gfortran -o test_koch_mod test.f90 test_koch_mod.f90 -fbounds-check
 
 USE MyNumbers
 
@@ -66,34 +98,12 @@ CONTAINS
           .AND.SIZE(A,1).EQ.SIZE(Bmatrix,1))) RETURN
     ! check diagonal elements of A equal zero
     IF(ANY([ (ABS(A(ind,ind)).GT.1e-40,ind=1,N) ])) RETURN
-    ! check A matrix unique
-    ! check B diagonals unique
+    ! todo - check A matrix offdiagonal unique
+    ! todo - check B diagonals unique
 
     N = SIZE(A,1)
 
     !WRITE(*,'(a)')' -------------------------------------------------------------'  
-!    !PRINT A, B, lambda
-!    WRITE(*,'(a,i3,a,i3,a,(F12.7,SP,F12.7,"i"))') " n = ", nnd, "     m = ", mnd, "    lamda = ", lambda 
-!    DO ind = 1,N
-!!      IF(ind.EQ.1) THEN
-!!        WRITE(formatting,'(a,i0,a,i0,a)') "(a,", N, "2(F12.7,1x),4x,a,", N, "2(F12.7,1x),4x,a)"
-!!        WRITE(*,formatting) " A = [ ", A(:,ind), "]    B = [ ", Bmatrix(:,ind), "]"
-!!      ELSE 
-!      WRITE(formatting,'(a,i0,a,i0,a)') '(a,', N-1, '(F12.7,SP,F12.7,"i,"),(F12.7,SP,F12.7,"i"),a)'
-!      WRITE(*,formatting) "     { ", A(:,ind), "},"
-!    END DO
-!    WRITE(*,*) '-------------------------------------------------------------'
-
-!    WRITE(*,'(a,i3,a,i3,a,(F8.3,SP,F8.3,"i"))') " n = ", nnd, "     m = ", mnd, "    lamda = ", lambda 
-!    DO ind = 1,10
-!!      IF(ind.EQ.1) THEN
-!!        WRITE(formatting,'(a,i0,a,i0,a)') "(a,", N, "2(F6.3,1x),4x,a,", N, "2(F6.3,1x),4x,a)"
-!!        WRITE(*,formatting) " A = [ ", A(:,ind), "]    B = [ ", Bmatrix(:,ind), "]"
-!!      ELSE 
-!      WRITE(formatting,'(a,i0,a,i0,a)') "(a,", 5, '(F6.3,SP,F6.3,"i, "),a,', 5, '(F6.3,SP,F6.3,"i, "),a)'
-!      WRITE(*,formatting) "     [ ", A(1:5,ind), "]        [ ", Bmatrix(1:5,ind), "]"
-!    END DO
-!    WRITE(*,*) '-------------------------------------------------------------'
 
     ! use single dim N array for B instead of N x N diagonal matrix
     DO ind = 1,N
@@ -148,11 +158,6 @@ CONTAINS
   ! ---------------------------------------------------------------------------------
         DO WHILE (l(q-1).LT.N+1)
 
-          !WRITE(*,*) l(0:q)
-          !WRITE(*,'(a)') "--------------------------------------------------"
-          !WRITE(formatting,'(a,i0,a)') "(a,", q-1, "(i4,1x))"
-          !WRITE(*,formatting) 'l(1:q+1) = ', l(1:q+1)
-
           ! multiply a_n,l1 , a_l1,l2 , a_l2,l3, ... , a_lq-1,lq , a_lq,m
           ! A(l(0),l(1)) ... A(l(q-1),l(q))
           sumproduct = CMPLX(1,0,CKIND)
@@ -162,23 +167,13 @@ CONTAINS
                 sumproduct = sumproduct * A(l(ind),l(ind+1))
             END DO
 
-            !WRITE(*,'(*(i2,1x))') l(0:q)
-            !IF(ALL([ (l(ind).NE.l(ind+1),ind=0,q-1) ]).AND.ABS(sumproduct).LT.1e-40) WRITE(*,*) sumproduct, l(0:q), (/ ( A(l(jnd),l(jnd+1)),jnd=0,q-1 ) /)
-
             CALL SYSTEM_CLOCK(time7)
             CALL CalculateCcoeff ( B, lambda, l, q, Ccoeff ) 
             CALL SYSTEM_CLOCK(time8)
             timesum3 = timesum3 + time8 - time7
             S = S + sumproduct * Ccoeff
-            !WRITE(*,*) sumproduct * Ccoeff
+
           END IF
-
-
-          !WRITE(*,*) 'sumproduct'   
-          !WRITE(*,'(F6.2)') Ccoeff
-          !IF(ABS(Ccoeff).GT.1) WRITE(*,*) 'Ccoeff', Ccoeff, ' l(0:q) = ',l(0:q)
-          !IF(q.EQ.7) WRITE(*,*) 'Ccoeff', Ccoeff,'||| q', q, ' l(0:q) = ',l(0:q)
-          !WRITE(*,*) 'S',S
 
           ! iterate l_1 by 1 and check through each summation,
           ! if a summation has reached N, reset and increment summation above
@@ -186,7 +181,6 @@ CONTAINS
           DO ind = 2,q-1
             IF(l(ind-1).EQ.N+1) THEN
               !IF(q.GE.5.AND.ind.EQ.(q-1)) WRITE(*,*) 'S',S
-              !IF(q.GE.5.AND.ind.EQ.(q-1).AND.ALL([ (l(ind).NE.l(ind+1),ind=0,q-1) ])) WRITE(*,*) 'S',S, 'sumproduct * Ccoeff', sumproduct * Ccoeff 
               l(ind-1) = 1
               l(ind) = l(ind) + 1
             ELSE
@@ -215,6 +209,8 @@ CONTAINS
   END SUBROUTINE
 
 
+  ! Not currently used. Only calculating Ccoeff once and reusing for repeats will
+  ! significantly reduce calculation times.
   ! print combinations_with_replacement('ABC', 2) --> AA AB AC BB BC CC
   ! converted into fortran from python https://docs.python.org/2/library/itertools.html
   SUBROUTINE GetCombinations ()
@@ -229,7 +225,7 @@ CONTAINS
     !pool=[1,2,3]
     n = SIZE(pool)
     indices = 0
-    CALL UseUniqueList( pool(indices(:)))
+    WRITE(*,*) pool(indices(:))
 
     DO WHILE (.TRUE.)
       DO i = r-1,0,-1
@@ -242,50 +238,11 @@ CONTAINS
       
       !WRITE(*,*) i
       indices(i:r-1) = indices(i) + 1
-      CALL UseUniqueList( pool(indices(:)) )
+      WRITE(*,*) pool(indices(:))
     END DO 
 
   END SUBROUTINE 
 
-
-  ! https://rosettacode.org/wiki/Permutations#Fortran
-  SUBROUTINE UseUniqueList( poolsubset )
-
-    implicit none
-
-    INTEGER(4),INTENT(IN) :: poolsubset(:)
- 
-    integer :: n, i
-    integer :: a(SIZE(poolsubset))
-
-    WRITE(*,*) poolsubset
-    WRITE(*,*) '--------------------------------'
-
-!    !read *, n
-!    a = poolsubset
-!    n = size(a)
-!    call perm(1)
-
-!    CONTAINS
-
-!      recursive subroutine perm(i)
-!          integer :: i, j, t
-!          if (i == n) then
-!              print *, a
-!          else
-!              do j = i, n
-!                  t = a(i)
-!                  a(i) = a(j)
-!                  a(j) = t
-!                  call perm(i + 1)
-!                  t = a(i)
-!                  a(i) = a(j)
-!                  a(j) = t
-!              end do
-!          end if
-!      end subroutine
-
-  END SUBROUTINE
 
 
   SUBROUTINE CalculateCcoeff ( B, lambda, l, q, Ccoeff )
@@ -300,26 +257,9 @@ CONTAINS
 
     CALL SYSTEM_CLOCK(time11)
     CALL SYSTEM_CLOCK(time3)
-    CALL GetUniqueSubset2 ( B, l, q, bprime, d, u )
+    CALL GetUniqueSubset ( B, l, q, bprime, d, u )
     CALL SYSTEM_CLOCK(time4)
     timesum2 = timesum2 + time4 - time3
-
-    !WRITE(*,*) 'Time elapsed GetUniqueSubset() = ',time4 - time3
-
-    !WRITE(*,'(a)') "--------------------------------------------------"
-    !WRITE(formatting,'(a,i0,a,i0,a)') "(a,", q+1, "(i4,1x)'|||'", q+1, "(F5.2,1x))"
-    !WRITE(*,formatting) 'l(0:q), ( B(l(ind)), ind=1,q+1 ) ', l(0:q), ( B(l(ind)), ind=0,q )
-    !WRITE(formatting,'(a,i0,a,i0,a)') '(a,', u+1, '(F5.2,1x)"|||",', u+1, '(i4,1x))'
-    !WRITE(*,formatting) 'bprime(0:u), d(0:u)', bprime(0:u), d(0:u)
-    !IF(q.EQ.3) THEN
-    !  IF(ALL(l(0:q).EQ.[1,3,2,2])) THEN
-    !    WRITE(formatting,'(a,i0,a,i0,a)') "(a,", q+1, "(i4,1x)'|||'", q+1, "(F5.2,1x))"
-    !    WRITE(*,formatting) 'l(0:q), ( B(l(ind)), ind=1,q+1 ) ', l(0:q), ( B(l(ind)), ind=0,q )
-    !    WRITE(formatting,'(a,i0,a,i0,a)') '(a,', u+1, '(F5.2,1x)"|||",', u+1, '(i4,1x))'
-    !    WRITE(*,formatting) 'bprime(0:u), d(0:u)', bprime(0:u), d(0:u)
-    !    WRITE(*,'(a)') '---------- SUM over k and jprime ----------------------------------- ' 
-    !  END IF
-    !END IF
 
     Ccoeff = CMPLX(0,0,CKIND)
     DO k = 0,u
@@ -332,7 +272,7 @@ CONTAINS
       CLambdaJprimeFactorial = 1/lambda
       DO jprime = 0,d(k)
 
-        IF(q.EQ.3.AND.ALL(l(0:3).EQ.[1,1,1,1])) WRITE(*,*) '1,1,1,1 q',q,'jprime',jprime,'k',k,'d(k)',d(k),'brpime',bprime(0:u)
+        !IF(q.EQ.3.AND.ALL(l(0:3).EQ.[1,1,1,1])) WRITE(*,*) '1,1,1,1 q',q,'jprime',jprime,'k',k,'d(k)',d(k),'brpime',bprime(0:u)
         CALL SYSTEM_CLOCK(time3)
 
         ! summation from r = 0 to r = q - jprime - 1
@@ -342,7 +282,7 @@ CONTAINS
           CPreviousValue = 1
           ! start product with r = 0 contribution
           CSummationR  = CMPLX(1,0,CKIND)
-        ELSE
+        ELSE ! This shouldn't happen anymore with the zero diagonals of A
           WRITE(*,*) 'q - jprime - 1.LT.0'
           WRITE(*,*) 'q',q,'jprime',jprime,'k',k,'d(k)',d(k),'brpime',bprime(0:u)
           WRITE(*,*) 'l',l(0:q)
@@ -356,17 +296,16 @@ CONTAINS
         END DO
         CALL SYSTEM_CLOCK(time10)
         timesum4 = timesum4 + time10 - time9
-        !WRITE(*,*) 'Time elapsed doing r sum in Ccoeff = ',time10 - time9, 'q - jprime - 1', q - jprime - 1, 'CLambdaBprimeValue', CLambdaBprimeValue, 'CIterationProduct',CIterationProduct
 
         CALL SYSTEM_CLOCK(time5)
         CALL CalculateDcoeff ( B, l, q, bprime, k, d, u, jprime, Dcoeff )
         CALL SYSTEM_CLOCK(time6)
         timesum = timesum + time6 - time5
-        !WRITE(*,*) 'Time elapsed doing Dcoeff = ',time6 - time5
 
         CLambdaJprimeFactorial = CLambdaJprimeFactorial * lambda / CMPLX(MAX(1,jprime),0,CKIND)
         Ccoeff = Ccoeff + ( -CSummationR + CExpLambdaBprimeValue ) * CLambdaJprimeFactorial * Dcoeff
 
+        ! test values for single l list
         !IF(q.EQ.3) THEN
         !  IF(ALL(l(0:q).EQ.[1,3,2,2])) THEN
         !    WRITE(*,*) 'jprime = ',jprime, ' k = ',k, 'factorial & lambda', &
@@ -376,27 +315,13 @@ CONTAINS
         !    WRITE(*,'(a)') "--------------------------------------------------"
         !  END IF
         !END IF
-        !WRITE(*,*) 'Dcoeff', Dcoeff, 'k = ', k, ' jprime = ',jprime
-        !WRITE(*,*) ' exp( lambda * bprime(k) )', exp( lambda * bprime(k) )
-        !WRITE(*,*) 'CIterationProduct', CIterationProduct
-        !WRITE(*,*) 'k, jprime', k, jprime
-        !WRITE(*,*) 'q - jprime - 1', q - jprime - 1
-        !IF(ABS(Dcoeff).GT.1) WRITE(*,*) 'Dcoeff ', Dcoeff
-        !IF(ABS(CIterationProduct).GT.1) WRITE(*,*) 'CIterationProduct ', CIterationProduct
 
         CALL SYSTEM_CLOCK(time4)
-        !WRITE(*,*) 'Time elapsed doing a Ccoeff loop = ',time4 - time3
-        !IF((time4 - time3).GT.100000.OR..TRUE.) WRITE(*,*) 'k', k, 'jprime', jprime
+
       END DO
 
     END DO
 
-    !WRITE(*,*) 'Ccoeff', Ccoeff
-    !IF(q.EQ.7) THEN
-    !  IF(ALL(l(0:q).EQ.[1,2,2,2,2,1,1,1])) THEN
-    !    WRITE(*,*) 'Ccoeff', Ccoeff
-    !  END IF
-    !END IF
     CALL SYSTEM_CLOCK(time12)
     timesum5 = timesum5 + time12 - time11
     
@@ -405,35 +330,6 @@ CONTAINS
 
 
   SUBROUTINE GetUniqueSubset ( B, l, q, bprime, d, u )
-
-    COMPLEX(CKIND),INTENT(IN) :: B(:)
-    COMPLEX(CKIND),INTENT(INOUT) :: bprime(0:)
-    INTEGER(4),INTENT(INOUT) :: d(0:)
-    INTEGER(4),INTENT(IN) :: l(0:), q
-    INTEGER(4) :: ind, k,&
-                  u ! number of unique elements minus 1
-    LOGICAL :: IsUnique
-
-    u = -1
-    d = 0 ! degenearacy, b(l(k)) unique -> d(k) = 0
-    DO ind = 0, q
-      IsUnique = .TRUE.
-      DO k = 0,u
-        IF(B(l(ind)).EQ.bprime(k)) THEN
-          IsUnique = .FALSE.
-          d(k) = d(k) + 1
-          EXIT
-        END IF
-      END DO
-      IF(IsUnique) THEN
-        bprime(u + 1) = B(l(ind))
-        u = u + 1
-      END IF         
-    END DO
-
-  END SUBROUTINE
-
-  SUBROUTINE GetUniqueSubset2 ( B, l, q, bprime, d, u )
 
     COMPLEX(CKIND),INTENT(IN) :: B(:)
     COMPLEX(CKIND),INTENT(INOUT) :: bprime(0:)
@@ -488,11 +384,6 @@ CONTAINS
         productdefined = .true.
         Dcoeff = Dcoeff * ( bprime(k) - bprime(r_index) ) ** (-CMPLX( d(r_index) + 1, 0, CKIND) )
 
-        !IF(q.EQ.7.AND.ALL(l(0:q).EQ.[1,2,2,2,2,1,1,1]).AND.k.EQ.0.AND.jprime.EQ.0) THEN
-        !  WRITE(*,*) 'bprime(k) = ', bprime(k), ' bprime(r_index) = ',bprime(r_index)
-        !  WRITE(*,*) 'fraction and d(r) power', ( bprime(k) - bprime(r_index) ) ** (-REAL( d(r_index) + 1, KIND(8) )) 
-        !END iF
-
       END IF
     END DO
 
@@ -521,7 +412,6 @@ CONTAINS
         !IF(ALL(l(0:q).EQ.[1,3,2,2]).AND.k.EQ.2.AND.jprime.EQ.0) THEN
           !WRITE(*,*) 'B(l(ind))', B(l(ind)), '||| bprime(k)', bprime(k)
         !END iF
-        !WRITE(*,*) 'B(l(ind)) , bprime(k)', B(l(ind)), '|||', bprime(k)
 
         IF(B(l(ind)).NE.bprime(k)) THEN
           INoOfPermittedr = INoOfPermittedr + 1
@@ -540,22 +430,9 @@ CONTAINS
         r = permitted_r_values( 1 )
         r_permitted_referance =  1
 
-        !WRITE(*,*) 'Iteration with INoOfPermittedr.GT.0'
-        !WRITE(*,*) 'q, permitted_r_values', q, '|||', permitted_r_values
-        !WRITE(*,*) 'r', r(:)
-        !WRITE(formatting,'(a,i0,a,i0,a)') "(a,", q+1, "(i4,1x)','", q+1, "(F5.2,1x))"
-        !WRITE(*,formatting) 'l(0:q), ( B(l(ind)), ind=0,q ) ', l(0:q), ( B(l(ind)), ind=0,q )
-        !WRITE(formatting,'(a,i0,a,i0,a)') '(a,', u+1, '(F5.2,1x)",",', u+1, '(i4,1x))'
-        !WRITE(*,formatting) 'bprime(0:u), d(0:u)', bprime(0:u), d(0:u)
-
         rsum = CMPLX(0,0,CKIND)
         IF((d(k) - jprime).EQ.1) THEN
           DO ind = 1,INoOfPermittedr
-
-            !IF(ALL(l(0:q).EQ.[1,3,2,2]).AND.k.EQ.2.AND.jprime.EQ.0) THEN
-              !WRITE(*,*) 'r', r, '||| all permitted ', permitted_r_values(1:INoOfPermittedr), '||| r ref ', r_permitted_referance
-            !END iF
-            !WRITE(*,*) 'r stuff', r, '|||', permitted_r_values(INoOfPermittedr), '|||', r_permitted_referance
 
             rsum(1) = rsum(1) + CMPLX(1,0,CKIND)/(bprime(k) - B(l(r(1))))
             r(1) = permitted_r_values( ind+1 )
@@ -564,12 +441,6 @@ CONTAINS
   ! --------------------------------------------------------------------------------- 
           NotFinished = .TRUE.        
           DO WHILE (NotFinished)
-
-            !IF(ALL(l(0:q).EQ.[1,3,2,2]).AND.k.EQ.2.AND.jprime.EQ.0) THEN
-            !  WRITE(*,*) 'r', r, '||| all permitted ', permitted_r_values(1:INoOfPermittedr), '||| r ref ', r_permitted_referance
-            !END iF
-            !WRITE(*,*) 'NotFinished',NotFinished
-            !WRITE(*,*) 'r stuff', r, '|||', permitted_r_values(INoOfPermittedr), '|||', r_permitted_referance
 
             rsum(d(k) - jprime) = rsum(d(k) - jprime) + CMPLX(1,0,CKIND)/(bprime(k) - B(l(r(d(k) - jprime))))
 
@@ -604,11 +475,6 @@ CONTAINS
   ! ---------------------------------------------------------------------------------        
         END IF
 
-        !IF(q.EQ.7.AND.ALL(l(0:q).EQ.[1,2,2,2,2,1,1,1]).AND.k.EQ.0.AND.jprime.EQ.0) THEN
-        !  WRITE(*,*) 'rsum(1)', rsum(1)
-        !END iF        
-        !WRITE(*,*) rsum
-
         Dcoeff = Dcoeff * rsum(1)
 
       END IF
@@ -634,23 +500,3 @@ CONTAINS
     
 
 END MODULE
-! to show in the meeting!
-! test suite for range of values
-! move inputs to function
-! COMPLEX numbers or directly intensity
-! impliment current debugging procedure
-! impliment into felix
-! HUGE PERFORMANCE IMPROVEMENTS
-! max_q dynamical error handling
-! impliment cleverer way to do permitted values using previous calculations, e.g. (q-1 - d(k)), u
-! could impliment checking B diagonal, currently ignoring non-diagonal elements
-
-! gfortran -o test_koch_mod test.f90 test_koch_mod.f90 -fbounds-check
-! doing clever permutation stuff for non-unique multiplication
-! google whether this has been programmed before
-! affect of real byte size on performance
-! internal functions have access to external scope but can overwrite
-! variable scope for clarity?
-! pure/elemental procedures
-! use pointers to referance B elements?
-! B diagonal so store as single dim array
