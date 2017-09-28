@@ -98,7 +98,7 @@ MODULE bloch_mod
     CHARACTER*100 SindString,SjndString,SPixelCount,SnBeams,SWeakBeamIndex,SPrintString
 
     ! variables used for koch spence method development
-    LOGICAL,PARAMETER :: TestKochMethod = .FALSE.
+    LOGICAL,PARAMETER :: TestKochMethod = .TRUE.
     COMPLEX(CKIND),ALLOCATABLE :: CDiagonalSgMatrix(:,:), COffDiagonalSgMatrix(:,:)
     COMPLEX(CKIND) :: CScatteringElement
     INTEGER(IKIND) :: ScatterMatrixRow
@@ -308,21 +308,27 @@ MODULE bloch_mod
 
       IF(TestKochMethod) THEN
 
-        CALL message('-----------------------------------------------------------------------')
-        CALL message('Below shows the wavefunction matrix from diagonalisation and then the koch method')
-        CALL message('The thickness has been scaled by 1/1000 to speed convergence')
-        CALL message('The matrices are also ordered differently')
-        CALL message('and in the diagonalisation method some entries are negligable and left as zero')
-        CALL message('(diagonlisation) wavefunction pixel values for this thickness and this core')
-        DO ScatterMatrixRow = 1,nBeams
-          CALL message('',CFullWaveFunctions(ScatterMatrixRow))
-        END DO
-        CALL message('(koch series) wavefunction pixel values for this thickness and this core') 
-        DO ScatterMatrixRow = 1,nBeams
-          CALL CalculateElementS( CMPLX(ZERO,RThickness,CKIND), COffDiagonalSgMatrix, &
-                CDiagonalSgMatrix, ScatterMatrixRow, 1, 4, CScatteringElement )
-          CALL message('',CScatteringElement)
-        END DO
+        CALL message('CFullWaveFunctions',CFullWaveFunctions(1:4))
+        CALL CalculateElementS( CMPLX(ZERO,RThickness,CKIND), COffDiagonalSgMatrix, CDiagonalSgMatrix, 1, 1, 4, CScatteringElement )
+        CALL CalculateElementS( CMPLX(ZERO,RThickness,CKIND), COffDiagonalSgMatrix, CDiagonalSgMatrix, 2, 1, 4, CScatteringElement )
+        CALL CalculateElementS( CMPLX(ZERO,RThickness,CKIND), COffDiagonalSgMatrix, CDiagonalSgMatrix, 3, 1, 4, CScatteringElement )
+        CALL CalculateElementS( CMPLX(ZERO,RThickness,CKIND), COffDiagonalSgMatrix, CDiagonalSgMatrix, 4, 1, 4, CScatteringElement )
+
+!        CALL message('-----------------------------------------------------------------------')
+!        CALL message('Below shows the wavefunction matrix from diagonalisation and then the koch method')
+!        CALL message('The thickness has been scaled by 1/1000 to speed convergence')
+!        CALL message('The matrices are also ordered differently')
+!        CALL message('and in the diagonalisation method some entries are negligable and left as zero')
+!        CALL message('(diagonlisation) wavefunction pixel values for this thickness and this core')
+!        DO ScatterMatrixRow = 1,nBeams
+!          CALL message('',CFullWaveFunctions(ScatterMatrixRow))
+!        END DO
+!        CALL message('(koch series) wavefunction pixel values for this thickness and this core') 
+!        DO ScatterMatrixRow = 1,nBeams
+!          CALL CalculateElementS( CMPLX(ZERO,RThickness,CKIND), COffDiagonalSgMatrix, &
+!                CDiagonalSgMatrix, ScatterMatrixRow, 1, 4, CScatteringElement )
+!          CALL message('',CScatteringElement)
+!        END DO
 
         !test for a single pixel 
 !        IF(IYPixelIndex.EQ.10.AND.IXPixelIndex.EQ.10.AND.IThicknessIndex.EQ.2) THEN 
