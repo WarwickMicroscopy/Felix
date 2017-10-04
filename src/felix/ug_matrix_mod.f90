@@ -521,6 +521,7 @@ MODULE ug_matrix_mod
     ! K^2=k^2+U0
     RBigK= SQRT(RElectronWaveVectorMagnitude**2 + REAL(CUgMatNoAbs(1,1)))
     CALL message ( LM, dbg3, "K (Angstroms) = ",RBigK )
+    !?? does this match Acta Cryst. (1998). A54, 388-398 eqaution (3)
 
     !--------------------------------------------------------------------
     

@@ -54,6 +54,9 @@ MODULE bloch_mod
     USE MyNumbers
     USE MyMPI
     USE message_mod
+    
+    USE test_koch_mod
+    USE test_koch_mod2
   
     ! globals - output
     USE RPara, ONLY : RIndividualReflections ! RIndividualReflections( LACBED_ID, thickness_ID, local_pixel_ID )
@@ -93,6 +96,12 @@ MODULE bloch_mod
     COMPLEX(CKIND),DIMENSION(:),ALLOCATABLE :: CGeneralEigenValues
     CHARACTER*40 surname
     CHARACTER*100 SindString,SjndString,SPixelCount,SnBeams,SWeakBeamIndex,SPrintString
+
+    ! variables used for koch spence method development
+    LOGICAL,PARAMETER :: TestKochMethod = .FALSE.
+    COMPLEX(CKIND),ALLOCATABLE :: CDiagonalSgMatrix(:,:), COffDiagonalSgMatrix(:,:)
+    COMPLEX(CKIND) :: CScatteringElement
+    INTEGER(IKIND) :: ScatterMatrixRow
       
     ! we are inside the mask
     IPixelComputed= IPixelComputed + 1
@@ -165,6 +174,14 @@ MODULE bloch_mod
     ALLOCATE( CEigenValueDependentTerms(nBeams,nBeams), STAT=IErr )
     IF(l_alert(IErr,"BlochCoefficientCalculation","allocate CBeamProjectionMatrix")) RETURN
 
+    ! allocations used for koch spence method development
+    IF(TestKochMethod) THEN
+      ALLOCATE( CDiagonalSgMatrix(nBeams,nBeams), STAT=IErr )
+      IF(l_alert(IErr,"BlochCoefficientCalculation","allocate CDiagonalSgMatrix")) RETURN
+      ALLOCATE( COffDiagonalSgMatrix(nBeams,nBeams), STAT=IErr )
+      IF(l_alert(IErr,"BlochCoefficientCalculation","allocate COffDiagonalSgMatrix")) RETURN
+    END IF
+
     ! compute the effective Ug matrix by selecting only those beams
     ! for which IStrongBeamList has an entry
     CBeamProjectionMatrix= CZERO
@@ -172,11 +189,14 @@ MODULE bloch_mod
       CBeamProjectionMatrix(knd,IStrongBeamList(knd))=CONE
     ENDDO
 
+
     CUgSgMatrix = CZERO
     CBeamTranspose=TRANSPOSE(CBeamProjectionMatrix)
     ! reduce the matrix to just include strong beams using some nifty matrix multiplication
+    ! CUgMatPartial = CUgMat * CBeamTranspose
     CALL ZGEMM('N','N',nReflections,nBeams,nReflections,CONE,CUgMat, &
               nReflections,CBeamTranspose,nReflections,CZERO,CUgMatPartial,nReflections)
+    ! CUgSgMatrix = CBeamProjectionMatrix * CUgMatPartial
     CALL ZGEMM('N','N',nBeams,nBeams,nReflections,CONE,CBeamProjectionMatrix, &
               nBeams,CUgMatPartial,nReflections,CZERO,CUgSgMatrix,nBeams)
 
@@ -228,7 +248,7 @@ MODULE bloch_mod
         ENDDO
 	      ! Replace the Ug's
 	      WHERE (CUgSgMatrix.EQ.CUgSgMatrix(knd,1))
-          CUgSgMatrix= CUgSgMatrix(knd,1) - sumC
+          CUgSgMatrix = CUgSgMatrix(knd,1) - sumC
 	      END WHERE
 	      ! Replace the Sg's
         CUgSgMatrix(knd,knd)= CUgSgMatrix(knd,knd) - TWO*RBigK*sumD/(TWOPI*TWOPI)
@@ -237,21 +257,24 @@ MODULE bloch_mod
 	    !Divide by 2K so off-diagonal elementa are Ug/2K, diagonal elements are Sg, Spence's (1990) 'Structure matrix'
       CUgSgMatrix = TWOPI*TWOPI*CUgSgMatrix/(TWO*RBigK)
     END IF
-
-    IF(IYPixelIndex.EQ.10.AND.IXPixelIndex.EQ.10) THEN ! output data from 1 pixel,show working
-      CALL message(LM,dbg3, "Pixel [10,10] Ug/2K + {Sg} matrix (nm^-2)")
-      DO ind = 1,16
-        CALL message( LM, dbg3, "RKL row:",NINT(Rhkl(ind,:)) )
-        CALL message( LM, dbg3, "CUg row:",100*CUgSgMatrix(ind,1:6) )
-      END DO
-    END IF
     
     !--------------------------------------------------------------------
     ! diagonalize the UgMatEffective
     !--------------------------------------------------------------------
 
+    ! If koch method - Split CUgSgMatrix into diagonal and off diagonal to speed convergence
+    IF(TestKochMethod) THEN
+      COffDiagonalSgMatrix = CUgSgMatrix
+      CDiagonalSgMatrix = CZERO
+      DO ind = 1,SIZE(CUgSgMatrix,2)
+        CDiagonalSgMatrix(ind,ind) = CUgSgMatrix(ind,ind)      
+        COffDiagonalSgMatrix(ind,ind) = CZERO
+      END DO
+    END IF
+
     CALL EigenSpectrum(nBeams,CUgSgMatrix,CEigenValues(:),CEigenVectors(:,:),IErr)
     IF(l_alert(IErr,"BlochCoefficientCalculation","EigenSpectrum()")) RETURN
+    ! NB destroys CUgSgMatrix
 
     IF (IHolzFLAG.EQ.1) THEN ! higher order laue zone included so adjust Eigen values/vectors
       CEigenValues = CEigenValues * RKn/RBigK
@@ -268,11 +291,71 @@ MODULE bloch_mod
     ! Calculate intensities for different specimen thicknesses
     !?? ADD VARIABLE PATH LENGTH HERE !?? what does this comment mean?
     DO IThicknessIndex=1,IThicknessCount,1
-      RThickness = RInitialThickness + REAL((IThicknessIndex-1),RKIND)*RDeltaThickness 
+
+      RThickness = RInitialThickness + REAL((IThicknessIndex-1),RKIND)*RDeltaThickness
       IThickness = NINT(RThickness,IKIND)
+
+      ! optional - for koch development to speed convergence
+      IF(TestKochMethod) RThickness = RThickness / 1000
+
       CALL CreateWaveFunctions(RThickness,RFullWaveIntensity,CFullWaveFunctions,&
                     nReflections,nBeams,IStrongBeamList,CEigenVectors,CEigenValues,IErr)
       IF(l_alert(IErr,"BlochCoefficientCalculation","CreateWaveFunctions")) RETURN
+
+      !--------------------------------------------------------------------
+      ! Optional - test koch spence prototype method
+      !--------------------------------------------------------------------
+
+      IF(TestKochMethod) THEN
+
+        CALL message('-----------------------------------------------------------------------')
+        CALL message('Below shows the wavefunction matrix from diagonalisation and then the koch method')
+        CALL message('The thickness has been scaled by 1/1000 to speed convergence')
+        CALL message('The matrices are also ordered differently')
+        CALL message('and in the diagonalisation method some entries are negligable and left as zero')
+        CALL message('(diagonlisation) wavefunction pixel values for this thickness and this core')
+        DO ScatterMatrixRow = 1,nBeams
+          CALL message('',CFullWaveFunctions(ScatterMatrixRow))
+        END DO
+        CALL message('(koch series) wavefunction pixel values for this thickness and this core') 
+        DO ScatterMatrixRow = 1,nBeams
+          CALL CalculateElementS( CMPLX(ZERO,RThickness,CKIND), COffDiagonalSgMatrix, &
+                CDiagonalSgMatrix, ScatterMatrixRow, 1, 4, CScatteringElement )
+          CALL message('',CScatteringElement)
+        END DO
+
+        !test for a single pixel 
+!        IF(IYPixelIndex.EQ.10.AND.IXPixelIndex.EQ.10.AND.IThicknessIndex.EQ.2) THEN 
+!          CALL message('debug reached single pixel thickness test')
+!          ! scale RThickness to help convergence issues
+!          RThickness = RThickness / 1000
+
+!          CALL CreateWaveFunctions(RThickness,RFullWaveIntensity,CFullWaveFunctions,&
+!                        nReflections,nBeams,IStrongBeamList,CEigenVectors,CEigenValues,IErr)
+!          IF(l_alert(IErr,"BlochCoefficientCalculation","CreateWaveFunctions")) RETURN
+!          CALL message('CFullWaveFunctions(1:4)',CFullWaveFunctions(1:4))
+
+!          ! calculate scattering matrix using koch spence method
+!          !CALL GetCombinations()
+!          CALL CalculateElementS( CMPLX(ZERO,RThickness,CKIND), COffDiagonalSgMatrix, CDiagonalSgMatrix, 1, 1, 4, CScatteringElement )
+
+!          ! for debugging end felix here
+!          CALL message('Testing koch series method, so terminate felix here.')
+!          CALL message('-----------------------------------------------------------------------')
+!          CALL SLEEP(1)
+!          IErr = 1
+!          RETURN
+!        END IF
+
+         ! Testing koch series so terminate felix here
+        CALL message('Testing koch series method, so terminate felix here.')
+        CALL message('-----------------------------------------------------------------------')
+        CALL SLEEP(1)
+        IErr = 1
+        RETURN
+
+      END IF
+
       ! Collect Intensities from all thickness for later writing
       IF(IHKLSelectFLAG.EQ.0) THEN ! we are not using hkl list from felix.hkl
         IF(IImageFLAG.LE.2) THEN ! output is 0=montage, 1=individual images
@@ -299,6 +382,12 @@ MODULE bloch_mod
         END IF
       END IF
     END DO
+
+    ! deallocations used for koch spence method development
+    IF(TestKochMethod) THEN
+      DEALLOCATE( CDiagonalSgMatrix, COffDiagonalSgMatrix, STAT=IErr )
+      IF(l_alert(IErr,"BlochCoefficientCalculation","deallocating arrays")) RETURN
+    END IF
     
     ! DEALLOCATE eigen problem memory
     DEALLOCATE(CUgSgMatrix,CBeamTranspose, CUgMatPartial, &
@@ -360,6 +449,7 @@ MODULE bloch_mod
     CWaveFunctions(:) = MATMUL( &
           MATMUL(CEigenVectors(1:nBeams,1:nBeams),CEigenValueDependentTerms), & 
           CAlphaWeightingCoefficients(:) )
+
     !?? possible small time saving here by only calculating the (tens of) output
     !?? reflections rather than all strong beams (hundreds)
     DO hnd=1,nBeams
