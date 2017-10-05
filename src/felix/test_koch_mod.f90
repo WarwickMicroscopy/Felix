@@ -30,23 +30,6 @@
 !
 !%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-!>>> added simple hard-coded timing & profiling
-  !certain Ccoeff loops take particularly long
-  !GetUniqueSubset seems small, with odd long but still small realtive to whole Ccoeff
-
-! These timings are used alongside a duplicate module to compare changes
-
-!>>> added new method for r summation in Ccoeff
-  ! multiples previous summation element instead of recalculating
-  ! unfortunately negligable performance boost
-
-!>>> peformance improvement, only call Ccoeff when zero diagonal element not included
-  ! seems to be converging correctly and can view it approach
-
-!>>> made new GetUniqueSubset2 assuming B values unique
-
-!>>> Made Ccoeff more recursive
-
 MODULE test_koch_mod
 
 ! equation 19
@@ -71,7 +54,8 @@ PUBLIC :: CalculateElementS, GetCombinations
 
 ! used for profiling and timing
 INTEGER(16) ::  time,time2,time3,time4,time5,time6,time7,time8,time9,time10,time11,time12,&
-                timesum,timesum2,timesum3,timesum4,timesum5
+                time13,time14,&
+                timesum,timesum2,timesum3,timesum4,timesum5,timesum6
 
 CONTAINS
 
@@ -122,7 +106,7 @@ CONTAINS
 
     DO q = 1,max_q
       CALL system_clock(time)
-      timesum=0;timesum2=0;timesum3=0;timesum4=0;
+      timesum=0;timesum2=0;timesum3=0;timesum4=0;timesum5=0;timesum6=0;
       !WRITE(*,'(a,i0)') 'q = ',q
 
       IF(q.EQ.1) THEN
@@ -198,21 +182,22 @@ CONTAINS
       CALL system_clock(time2)
 
       IF(q.GE.5) THEN
-        !WRITE(*,*) 'total Time elapsed = ',time2 - time
+        WRITE(*,'(a,i0,a,i0)') ' total Time elapsed = ',time2 - time,' for q = ',q
+        WRITE(*,*) 'approx. time elapsed getting combintions and calculating = ',timesum6
         !WRITE(*,*) 'approx. time elapsed doing Ccoeff = ',timesum3
-        !WRITE(*,*) 'approx. time elapsed doing inside Ccoeff = ',timesum5
-        !WRITE(*,*) 'approx. time elapsed doing GetUniqueSubset = ',timesum2
-        !WRITE(*,*) 'approx. time elapsed doing Dcoeff = ',timesum
-        !WRITE(*,*) 'approx. time elapsed doing r sum in Ccoeff = ',timesum4
+        WRITE(*,*) 'approx. time elapsed doing inside Ccoeff = ',timesum5
+        WRITE(*,*) 'approx. time elapsed doing r sum in Ccoeff = ',timesum4
+        WRITE(*,*) 'approx. time elapsed doing GetUniqueSubset = ',timesum2
+        WRITE(*,*) 'approx. time elapsed doing Dcoeff = ',timesum
       END IF  
       !WRITE(*,'(a)')' -------------------------------------------------------------'  
     END DO
-    WRITE(*,'(a)')' -------------------------------------------------------------'  
+    !WRITE(*,'(a)')' -------------------------------------------------------------'  
 
   END SUBROUTINE
 
 
-  ! Not currently used. Only calculating Ccoeff once and reusing for repeats will
+  ! This if for only calculating Ccoeff once and reusing for repeats, which should
   ! significantly reduce calculation times.
   ! print combinations_with_replacement('ABC', 2) --> AA AB AC BB BC CC
   ! converted into fortran from python https://docs.python.org/2/library/itertools.html
@@ -225,6 +210,9 @@ CONTAINS
     INTEGER(4) :: indices(0:q-1-1),i,n
     !INTEGER(4) :: pool(0:2)
     INTEGER(4) :: pool(0:bigN-1), l(0:q)
+
+    CALL SYSTEM_CLOCK(time13)
+
     pool = [( i,i=1,bigN )]
     l(0) = nnd
     l(q) = mnd
@@ -242,6 +230,8 @@ CONTAINS
         IF(indices(i).NE.n-1) THEN
           EXIT
         ELSEIF(i.EQ.0) THEN
+          CALL SYSTEM_CLOCK(time14)
+          timesum6 = timesum6 + time14 - time13
           RETURN
         END IF
       END DO
@@ -368,9 +358,9 @@ CONTAINS
           ! start product with r = 0 contribution
           CSummationR  = CMPLX(1,0,CKIND)
         ELSE ! This shouldn't happen anymore with the zero diagonals of A
-          WRITE(*,*) 'q - jprime - 1.LT.0'
-          WRITE(*,*) 'q',q,'jprime',jprime,'k',k,'d(k)',d(k),'brpime',bprime(0:u)
-          WRITE(*,*) 'l',l(0:q)
+          !WRITE(*,*) 'q - jprime - 1.LT.0'
+          !WRITE(*,*) 'q',q,'jprime',jprime,'k',k,'d(k)',d(k),'brpime',bprime(0:u)
+          !WRITE(*,*) 'l',l(0:q)
           CSummationR = CMPLX(0,0,CKIND)
         END IF
         DO r = 1, q - jprime - 1         

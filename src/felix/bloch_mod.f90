@@ -56,7 +56,6 @@ MODULE bloch_mod
     USE message_mod
     
     USE test_koch_mod
-    USE test_koch_mod2
   
     ! globals - output
     USE RPara, ONLY : RIndividualReflections ! RIndividualReflections( LACBED_ID, thickness_ID, local_pixel_ID )
@@ -98,7 +97,7 @@ MODULE bloch_mod
     CHARACTER*100 SindString,SjndString,SPixelCount,SnBeams,SWeakBeamIndex,SPrintString
 
     ! variables used for koch spence method development
-    LOGICAL,PARAMETER :: TestKochMethod = .TRUE.
+    LOGICAL,PARAMETER :: TestKochMethod = .FALSE.
     COMPLEX(CKIND),ALLOCATABLE :: CDiagonalSgMatrix(:,:), COffDiagonalSgMatrix(:,:)
     COMPLEX(CKIND) :: CScatteringElement
     INTEGER(IKIND) :: ScatterMatrixRow
@@ -308,11 +307,14 @@ MODULE bloch_mod
 
       IF(TestKochMethod) THEN
 
-        CALL message('CFullWaveFunctions',CFullWaveFunctions(1:4))
-        CALL CalculateElementS( CMPLX(ZERO,RThickness,CKIND), COffDiagonalSgMatrix, CDiagonalSgMatrix, 1, 1, 4, CScatteringElement )
-        CALL CalculateElementS( CMPLX(ZERO,RThickness,CKIND), COffDiagonalSgMatrix, CDiagonalSgMatrix, 2, 1, 4, CScatteringElement )
-        CALL CalculateElementS( CMPLX(ZERO,RThickness,CKIND), COffDiagonalSgMatrix, CDiagonalSgMatrix, 3, 1, 4, CScatteringElement )
-        CALL CalculateElementS( CMPLX(ZERO,RThickness,CKIND), COffDiagonalSgMatrix, CDiagonalSgMatrix, 4, 1, 4, CScatteringElement )
+        CALL message('-----------------------------------------------------------------------')
+        CALL message('-----------------------------------------------------------------------')
+        CALL message('RThickness divided by 1000 to help koch series convergence')
+        CALL message('CFullWaveFunctions(1:4)',CFullWaveFunctions(1:4))
+        CALL CalculateElementS( CMPLX(ZERO,RThickness,CKIND), COffDiagonalSgMatrix, CDiagonalSgMatrix, 1, 1, 5, CScatteringElement )
+        CALL CalculateElementS( CMPLX(ZERO,RThickness,CKIND), COffDiagonalSgMatrix, CDiagonalSgMatrix, 2, 1, 5, CScatteringElement )
+        CALL CalculateElementS( CMPLX(ZERO,RThickness,CKIND), COffDiagonalSgMatrix, CDiagonalSgMatrix, 3, 1, 5, CScatteringElement )
+        CALL CalculateElementS( CMPLX(ZERO,RThickness,CKIND), COffDiagonalSgMatrix, CDiagonalSgMatrix, 4, 1, 5, CScatteringElement )
 
 !        CALL message('-----------------------------------------------------------------------')
 !        CALL message('Below shows the wavefunction matrix from diagonalisation and then the koch method')
@@ -354,7 +356,10 @@ MODULE bloch_mod
 !        END IF
 
          ! Testing koch series so terminate felix here
+        CALL message('-----------------------------------------------------------------------')
         CALL message('Testing koch series method, so terminate felix here.')
+        CALL message('-----------------------------------------------------------------------')
+        CALL message('-----------------------------------------------------------------------')
         CALL message('-----------------------------------------------------------------------')
         CALL SLEEP(1)
         IErr = 1
