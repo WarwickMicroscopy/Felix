@@ -55,8 +55,8 @@ MODULE read_files_mod
     USE IPARA, ONLY : IWriteFLAG, IImageFLAG, IScatterFactorMethodFLAG, IMaskFLAG, IHolzFLAG, &
           IAbsorbFLAG, IAnisoDebyeWallerFactorFlag, IByteSize, IMinReflectionPool, &
           IMinStrongBeams, IMinWeakBeams, INoOfLacbedPatterns, ISimFLAG, IRefineMode, &
-          IWeightingFLAG, IMethodFLAG, ICorrelationFLAG, IImageProcessingFLAG, &
-          INoofUgs, IPrint, IPixelCount
+          IWeightingFLAG, IRefineMethodFLAG, ICorrelationFLAG, IImageProcessingFLAG, &
+          INoofUgs, IPrint, IPixelCount, IBlochMethodFLAG
     USE RPARA, ONLY : RDebyeWallerConstant, RAbsorptionPercentage, RConvergenceAngle, &
           RZDirC, RXDirC, RNormDirC, RAcceleratingVoltage, RAcceptanceAngle, &
           RInitialThickness, RFinalThickness, RDeltaThickness, RBlurRadius, &
@@ -137,6 +137,9 @@ MODULE read_files_mod
     ! IScatterFactorMethodFLAG
     ILine= ILine+1; READ(IChInp,'(27X,I15.1)',ERR=20,END=30) IScatterFactorMethodFLAG
     CALL message ( LXL, dbg7, "IScatterFactorMethodFLAG=",IScatterFactorMethodFLAG )
+    ! IBlochMethodFLAG
+    ILine= ILine+1; READ(IChInp,'(27X,I15.1)',ERR=20,END=30) IBlochMethodFLAG
+    CALL message ( LXL, dbg7, "IScatterFactorMethodFLAG=",IBlochMethodFLAG )
     ! IMaskFLAG
     ILine= ILine+1; READ(IChInp,'(27X,I15.1)',ERR=20,END=30) IMaskFLAG
     CALL message ( LXL, dbg3, "IMaskFLAG=",IMaskFLAG)
@@ -278,12 +281,12 @@ MODULE read_files_mod
 
     ! IWeightingFLAG         
     ILine= ILine+1; READ(IChInp,'(27X,I15.1)',ERR=20,END=30) IWeightingFLAG
-    ! IMethodFLAG
-    ILine= ILine+1; READ(IChInp,'(27X,I15.1)',ERR=20,END=30) IMethodFLAG
+    ! IRefineMethodFLAG
+    ILine= ILine+1; READ(IChInp,'(27X,I15.1)',ERR=20,END=30) IRefineMethodFLAG
     IF(ISimFLAG==0) THEN
-      IF(IMethodFLAG.EQ.1) CALL message( LS, "Refining by simplex")
-      IF(IMethodFLAG.EQ.2) CALL message( LS, "Refining by maximum gradient")
-      IF(IMethodFLAG.EQ.3) CALL message( LS, "Refining by pairwise maximum gradient")
+      IF(IRefineMethodFLAG.EQ.1) CALL message( LS, "Refining by simplex")
+      IF(IRefineMethodFLAG.EQ.2) CALL message( LS, "Refining by maximum gradient")
+      IF(IRefineMethodFLAG.EQ.3) CALL message( LS, "Refining by pairwise maximum gradient")
     END IF
    
     ! ICorrelationFLAG: 0=phase,1=sumSq,2=NormalisedCC,3=masked

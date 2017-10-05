@@ -56,7 +56,6 @@ MODULE bloch_mod
     USE message_mod
     
     USE test_koch_mod
-    USE test_koch_mod2
   
     ! globals - output
     USE RPara, ONLY : RIndividualReflections ! RIndividualReflections( LACBED_ID, thickness_ID, local_pixel_ID )
@@ -69,7 +68,7 @@ MODULE bloch_mod
                       RgPoolMag,Rhkl
     USE IPara, ONLY : IHKLSelectFLAG,IHolzFLAG,IImageFLAG,IMinStrongBeams,IMinWeakBeams,&
                       INoOfLacbedPatterns,IPixelCount,IThicknessCount,nReflections,&
-                      IOutputReflections
+                      IOutputReflections,IBlochMethodFLAG
     USE BlochPara, ONLY : RBigK            
     
     IMPLICIT NONE
@@ -98,7 +97,6 @@ MODULE bloch_mod
     CHARACTER*100 SindString,SjndString,SPixelCount,SnBeams,SWeakBeamIndex,SPrintString
 
     ! variables used for koch spence method development
-    LOGICAL,PARAMETER :: TestKochMethod = .FALSE.
     COMPLEX(CKIND),ALLOCATABLE :: CDiagonalSgMatrix(:,:), COffDiagonalSgMatrix(:,:)
     COMPLEX(CKIND) :: CScatteringElement
     INTEGER(IKIND) :: ScatterMatrixRow
@@ -175,7 +173,7 @@ MODULE bloch_mod
     IF(l_alert(IErr,"BlochCoefficientCalculation","allocate CBeamProjectionMatrix")) RETURN
 
     ! allocations used for koch spence method development
-    IF(TestKochMethod) THEN
+    IF(IBlochMethodFLAG.EQ.1) THEN
       ALLOCATE( CDiagonalSgMatrix(nBeams,nBeams), STAT=IErr )
       IF(l_alert(IErr,"BlochCoefficientCalculation","allocate CDiagonalSgMatrix")) RETURN
       ALLOCATE( COffDiagonalSgMatrix(nBeams,nBeams), STAT=IErr )
@@ -263,7 +261,7 @@ MODULE bloch_mod
     !--------------------------------------------------------------------
 
     ! If koch method - Split CUgSgMatrix into diagonal and off diagonal to speed convergence
-    IF(TestKochMethod) THEN
+    IF(IBlochMethodFLAG.EQ.1) THEN
       COffDiagonalSgMatrix = CUgSgMatrix
       CDiagonalSgMatrix = CZERO
       DO ind = 1,SIZE(CUgSgMatrix,2)
@@ -296,7 +294,7 @@ MODULE bloch_mod
       IThickness = NINT(RThickness,IKIND)
 
       ! optional - for koch development to speed convergence
-      IF(TestKochMethod) RThickness = RThickness / 1000
+      IF(IBlochMethodFLAG.EQ.1) RThickness = RThickness / 1000
 
       CALL CreateWaveFunctions(RThickness,RFullWaveIntensity,CFullWaveFunctions,&
                     nReflections,nBeams,IStrongBeamList,CEigenVectors,CEigenValues,IErr)
@@ -306,23 +304,32 @@ MODULE bloch_mod
       ! Optional - test koch spence prototype method
       !--------------------------------------------------------------------
 
-      IF(TestKochMethod) THEN
+      IF(IBlochMethodFLAG.EQ.1) THEN
 
         CALL message('-----------------------------------------------------------------------')
-        CALL message('Below shows the wavefunction matrix from diagonalisation and then the koch method')
-        CALL message('The thickness has been scaled by 1/1000 to speed convergence')
-        CALL message('The matrices are also ordered differently')
-        CALL message('and in the diagonalisation method some entries are negligable and left as zero')
-        CALL message('(diagonlisation) wavefunction pixel values for this thickness and this core')
-        DO ScatterMatrixRow = 1,nBeams
-          CALL message('',CFullWaveFunctions(ScatterMatrixRow))
-        END DO
-        CALL message('(koch series) wavefunction pixel values for this thickness and this core') 
-        DO ScatterMatrixRow = 1,nBeams
-          CALL CalculateElementS( CMPLX(ZERO,RThickness,CKIND), COffDiagonalSgMatrix, &
-                CDiagonalSgMatrix, ScatterMatrixRow, 1, 4, CScatteringElement )
-          CALL message('',CScatteringElement)
-        END DO
+        CALL message('-----------------------------------------------------------------------')
+        CALL message('RThickness divided by 1000 to help koch series convergence')
+        CALL message('CFullWaveFunctions(1:4)',CFullWaveFunctions(1:4))
+        CALL CalculateElementS( CMPLX(ZERO,RThickness,CKIND), COffDiagonalSgMatrix, CDiagonalSgMatrix, 1, 1, 5, CScatteringElement )
+        CALL CalculateElementS( CMPLX(ZERO,RThickness,CKIND), COffDiagonalSgMatrix, CDiagonalSgMatrix, 2, 1, 5, CScatteringElement )
+        CALL CalculateElementS( CMPLX(ZERO,RThickness,CKIND), COffDiagonalSgMatrix, CDiagonalSgMatrix, 3, 1, 5, CScatteringElement )
+        CALL CalculateElementS( CMPLX(ZERO,RThickness,CKIND), COffDiagonalSgMatrix, CDiagonalSgMatrix, 4, 1, 5, CScatteringElement )
+
+!        CALL message('-----------------------------------------------------------------------')
+!        CALL message('Below shows the wavefunction matrix from diagonalisation and then the koch method')
+!        CALL message('The thickness has been scaled by 1/1000 to speed convergence')
+!        CALL message('The matrices are also ordered differently')
+!        CALL message('and in the diagonalisation method some entries are negligable and left as zero')
+!        CALL message('(diagonlisation) wavefunction pixel values for this thickness and this core')
+!        DO ScatterMatrixRow = 1,nBeams
+!          CALL message('',CFullWaveFunctions(ScatterMatrixRow))
+!        END DO
+!        CALL message('(koch series) wavefunction pixel values for this thickness and this core') 
+!        DO ScatterMatrixRow = 1,nBeams
+!          CALL CalculateElementS( CMPLX(ZERO,RThickness,CKIND), COffDiagonalSgMatrix, &
+!                CDiagonalSgMatrix, ScatterMatrixRow, 1, 4, CScatteringElement )
+!          CALL message('',CScatteringElement)
+!        END DO
 
         !test for a single pixel 
 !        IF(IYPixelIndex.EQ.10.AND.IXPixelIndex.EQ.10.AND.IThicknessIndex.EQ.2) THEN 
@@ -348,7 +355,10 @@ MODULE bloch_mod
 !        END IF
 
          ! Testing koch series so terminate felix here
+        CALL message('-----------------------------------------------------------------------')
         CALL message('Testing koch series method, so terminate felix here.')
+        CALL message('-----------------------------------------------------------------------')
+        CALL message('-----------------------------------------------------------------------')
         CALL message('-----------------------------------------------------------------------')
         CALL SLEEP(1)
         IErr = 1
@@ -384,7 +394,7 @@ MODULE bloch_mod
     END DO
 
     ! deallocations used for koch spence method development
-    IF(TestKochMethod) THEN
+    IF(IBlochMethodFLAG.EQ.1) THEN
       DEALLOCATE( CDiagonalSgMatrix, COffDiagonalSgMatrix, STAT=IErr )
       IF(l_alert(IErr,"BlochCoefficientCalculation","deallocating arrays")) RETURN
     END IF
