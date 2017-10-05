@@ -53,7 +53,7 @@ PRIVATE
 PUBLIC :: CalculateElementS, GetCombinations
 
 ! used for profiling and timing
-INTEGER(16) ::  time,time2,time3,time4,time5,time6,time7,time8,time9,time10,time11,time12,&
+INTEGER(8) ::  time,time2,time3,time4,time5,time6,time7,time8,time9,time10,time11,time12,&
                 time13,time14,&
                 timesum,timesum2,timesum3,timesum4,timesum5,timesum6
 
@@ -183,12 +183,12 @@ CONTAINS
 
       IF(q.GE.5) THEN
         WRITE(*,'(a,i0,a,i0)') ' total Time elapsed = ',time2 - time,' for q = ',q
-        WRITE(*,*) 'approx. time elapsed getting combintions and calculating = ',timesum6
-        !WRITE(*,*) 'approx. time elapsed doing Ccoeff = ',timesum3
-        WRITE(*,*) 'approx. time elapsed doing inside Ccoeff = ',timesum5
-        WRITE(*,*) 'approx. time elapsed doing r sum in Ccoeff = ',timesum4
-        WRITE(*,*) 'approx. time elapsed doing GetUniqueSubset = ',timesum2
-        WRITE(*,*) 'approx. time elapsed doing Dcoeff = ',timesum
+        WRITE(*,'(a,i0)') 'approx. time elapsed getting combintions and calculating = ',timesum6
+        !WRITE(*,'(a,i0)') 'approx. time elapsed doing Ccoeff = ',timesum3
+        WRITE(*,'(a,i0)') 'approx. time elapsed doing inside Ccoeff = ',timesum5
+        WRITE(*,'(a,i0)') 'approx. time elapsed doing r sum in Ccoeff = ',timesum4
+        WRITE(*,'(a,i0)') 'approx. time elapsed doing GetUniqueSubset = ',timesum2
+        WRITE(*,'(a,i0)') 'approx. time elapsed doing Dcoeff = ',timesum
       END IF  
       !WRITE(*,'(a)')' -------------------------------------------------------------'  
     END DO
