@@ -124,6 +124,8 @@ PROGRAM Felixrefine
   CALL SetMessageMode( IWriteFLAG, IErr )
   IF(l_alert(IErr,"felixrefine","set_message_mod_mode")) CALL abort
 
+  CALL message('IBlochMethodFLAG =',IBlochMethodFLAG)
+
   CALL read_cif(IErr) ! felix.cif ! some allocations are here
   IF(l_alert(IErr,"felixrefine","ReadCif")) CALL abort
 
@@ -818,7 +820,7 @@ PROGRAM Felixrefine
     ! For single variables, their type is held in 
     ! IIterativeVariableUniqueIDs(1:INoOfVariables,2)
 
-    SELECT CASE(IMethodFLAG)
+    SELECT CASE(IRefineMethodFLAG)
 
     CASE(1)
 

@@ -68,7 +68,7 @@ MODULE bloch_mod
                       RgPoolMag,Rhkl
     USE IPara, ONLY : IHKLSelectFLAG,IHolzFLAG,IImageFLAG,IMinStrongBeams,IMinWeakBeams,&
                       INoOfLacbedPatterns,IPixelCount,IThicknessCount,nReflections,&
-                      IOutputReflections
+                      IOutputReflections,IBlochMethodFLAG
     USE BlochPara, ONLY : RBigK            
     
     IMPLICIT NONE
@@ -97,7 +97,6 @@ MODULE bloch_mod
     CHARACTER*100 SindString,SjndString,SPixelCount,SnBeams,SWeakBeamIndex,SPrintString
 
     ! variables used for koch spence method development
-    LOGICAL,PARAMETER :: TestKochMethod = .FALSE.
     COMPLEX(CKIND),ALLOCATABLE :: CDiagonalSgMatrix(:,:), COffDiagonalSgMatrix(:,:)
     COMPLEX(CKIND) :: CScatteringElement
     INTEGER(IKIND) :: ScatterMatrixRow
@@ -174,7 +173,7 @@ MODULE bloch_mod
     IF(l_alert(IErr,"BlochCoefficientCalculation","allocate CBeamProjectionMatrix")) RETURN
 
     ! allocations used for koch spence method development
-    IF(TestKochMethod) THEN
+    IF(IBlochMethodFLAG.EQ.1) THEN
       ALLOCATE( CDiagonalSgMatrix(nBeams,nBeams), STAT=IErr )
       IF(l_alert(IErr,"BlochCoefficientCalculation","allocate CDiagonalSgMatrix")) RETURN
       ALLOCATE( COffDiagonalSgMatrix(nBeams,nBeams), STAT=IErr )
@@ -262,7 +261,7 @@ MODULE bloch_mod
     !--------------------------------------------------------------------
 
     ! If koch method - Split CUgSgMatrix into diagonal and off diagonal to speed convergence
-    IF(TestKochMethod) THEN
+    IF(IBlochMethodFLAG.EQ.1) THEN
       COffDiagonalSgMatrix = CUgSgMatrix
       CDiagonalSgMatrix = CZERO
       DO ind = 1,SIZE(CUgSgMatrix,2)
@@ -295,7 +294,7 @@ MODULE bloch_mod
       IThickness = NINT(RThickness,IKIND)
 
       ! optional - for koch development to speed convergence
-      IF(TestKochMethod) RThickness = RThickness / 1000
+      IF(IBlochMethodFLAG.EQ.1) RThickness = RThickness / 1000
 
       CALL CreateWaveFunctions(RThickness,RFullWaveIntensity,CFullWaveFunctions,&
                     nReflections,nBeams,IStrongBeamList,CEigenVectors,CEigenValues,IErr)
@@ -305,7 +304,7 @@ MODULE bloch_mod
       ! Optional - test koch spence prototype method
       !--------------------------------------------------------------------
 
-      IF(TestKochMethod) THEN
+      IF(IBlochMethodFLAG.EQ.1) THEN
 
         CALL message('-----------------------------------------------------------------------')
         CALL message('-----------------------------------------------------------------------')
@@ -395,7 +394,7 @@ MODULE bloch_mod
     END DO
 
     ! deallocations used for koch spence method development
-    IF(TestKochMethod) THEN
+    IF(IBlochMethodFLAG.EQ.1) THEN
       DEALLOCATE( CDiagonalSgMatrix, COffDiagonalSgMatrix, STAT=IErr )
       IF(l_alert(IErr,"BlochCoefficientCalculation","deallocating arrays")) RETURN
     END IF
