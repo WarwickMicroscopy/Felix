@@ -15,7 +15,8 @@ checkout:
     
 compile:
   override:
-    - cd ../felix-${CIRCLE_SHA1}/;pwd;make clean; make; make clean; pwd; ls -al
+    - cd ../felix-${CIRCLE_SHA1}/;pwd;make clean; make
+    - make clean; pwd; ls -al
 
 test:
   pre:

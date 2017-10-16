@@ -30,23 +30,6 @@
 !
 !%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-!>>> added simple hard-coded timing & profiling
-  !certain Ccoeff loops take particularly long
-  !GetUniqueSubset seems small, with odd long but still small realtive to whole Ccoeff
-
-! These timings are used alongside a duplicate module to compare changes
-
-!>>> added new method for r summation in Ccoeff
-  ! multiples previous summation element instead of recalculating
-  ! unfortunately negligable performance boost
-
-!>>> peformance improvement, only call Ccoeff when zero diagonal element not included
-  ! seems to be converging correctly and can view it approach
-
-!>>> made new GetUniqueSubset2 assuming B values unique
-
-!>>> Made Ccoeff more recursive
-
 MODULE test_koch_mod
 
 ! equation 19
@@ -70,8 +53,9 @@ PRIVATE
 PUBLIC :: CalculateElementS, GetCombinations
 
 ! used for profiling and timing
-INTEGER(16) ::  time,time2,time3,time4,time5,time6,time7,time8,time9,time10,time11,time12,&
-                timesum,timesum2,timesum3,timesum4,timesum5
+INTEGER(8) ::  time,time2,time3,time4,time5,time6,time7,time8,time9,time10,time11,time12,&
+                time13,time14,&
+                timesum,timesum2,timesum3,timesum4,timesum5,timesum6
 
 CONTAINS
 
@@ -93,6 +77,7 @@ CONTAINS
                   q, N, l(0:max_q)
     CHARACTER(100) :: formatting ! for writing terminal output
 
+    N = SIZE(A,1)
     ! check A, B square and same size
     IF(.NOT.(SIZE(A,1).EQ.SIZE(A,2).AND.SIZE(Bmatrix,1).EQ.SIZE(Bmatrix,2)&
           .AND.SIZE(A,1).EQ.SIZE(Bmatrix,1))) RETURN
@@ -103,7 +88,7 @@ CONTAINS
 
     N = SIZE(A,1)
 
-    !WRITE(*,'(a)')' -------------------------------------------------------------'  
+    WRITE(*,'(a)')' -------------------------------------------------------------'  
 
     ! use single dim N array for B instead of N x N diagonal matrix
     DO ind = 1,N
@@ -121,7 +106,7 @@ CONTAINS
 
     DO q = 1,max_q
       CALL system_clock(time)
-      timesum=0;timesum2=0;timesum3=0;timesum4=0;
+      timesum=0;timesum2=0;timesum3=0;timesum4=0;timesum5=0;timesum6=0;
       !WRITE(*,'(a,i0)') 'q = ',q
 
       IF(q.EQ.1) THEN
@@ -156,51 +141,54 @@ CONTAINS
         ! assume that can simply sum all of the final products together
         ! incrementing low indices l(1) first and l(q-1) last
   ! ---------------------------------------------------------------------------------
-        DO WHILE (l(q-1).LT.N+1)
+!        DO WHILE (l(q-1).LT.N+1)
 
-          ! multiply a_n,l1 , a_l1,l2 , a_l2,l3, ... , a_lq-1,lq , a_lq,m
-          ! A(l(0),l(1)) ... A(l(q-1),l(q))
-          sumproduct = CMPLX(1,0,CKIND)
-          ! assume the diagonals of A are 0
-          IF(ALL([ (l(ind).NE.l(ind+1),ind=0,q-1) ])) THEN
-            DO ind = 0,q-1
-                sumproduct = sumproduct * A(l(ind),l(ind+1))
-            END DO
+!          ! multiply a_n,l1 , a_l1,l2 , a_l2,l3, ... , a_lq-1,lq , a_lq,m
+!          ! A(l(0),l(1)) ... A(l(q-1),l(q))
+!          sumproduct = CMPLX(1,0,CKIND)
+!          ! assume the diagonals of A are 0
+!          IF(ALL([ (l(ind).NE.l(ind+1),ind=0,q-1) ])) THEN
+!            DO ind = 0,q-1
+!                sumproduct = sumproduct * A(l(ind),l(ind+1))
+!            END DO
 
-            CALL SYSTEM_CLOCK(time7)
-            CALL CalculateCcoeff ( B, lambda, l, q, Ccoeff ) 
-            CALL SYSTEM_CLOCK(time8)
-            timesum3 = timesum3 + time8 - time7
-            S = S + sumproduct * Ccoeff
+!            CALL SYSTEM_CLOCK(time7)
+!            CALL CalculateCcoeff ( B, lambda, l, q, Ccoeff ) 
+!            CALL SYSTEM_CLOCK(time8)
+!            timesum3 = timesum3 + time8 - time7
+!            S = S + sumproduct * Ccoeff
 
-          END IF
+!          END IF
 
-          ! iterate l_1 by 1 and check through each summation,
-          ! if a summation has reached N, reset and increment summation above
-          l(1) = l(1) + 1
-          DO ind = 2,q-1
-            IF(l(ind-1).EQ.N+1) THEN
-              !IF(q.GE.5.AND.ind.EQ.(q-1)) WRITE(*,*) 'S',S
-              l(ind-1) = 1
-              l(ind) = l(ind) + 1
-            ELSE
-              EXIT
-            END IF
-          END DO
+!          ! iterate l_1 by 1 and check through each summation,
+!          ! if a summation has reached N, reset and increment summation above
+!          l(1) = l(1) + 1
+!          DO ind = 2,q-1
+!            IF(l(ind-1).EQ.N+1) THEN
+!              !IF(q.GE.5.AND.ind.EQ.(q-1)) WRITE(*,*) 'S',S
+!              l(ind-1) = 1
+!              l(ind) = l(ind) + 1
+!            ELSE
+!              EXIT
+!            END IF
+!          END DO
 
-        END DO
+!        END DO
   ! ---------------------------------------------------------------------------------
+        CALL GetCombinations ( N, q, nnd, mnd, A, B, lambda, S )
+
       END IF
-      !WRITE(*,'(a,(F11.5,SP,F11.5,"i"))') 'S = ',S
+      WRITE(*,'(a,(F11.5,SP,F11.5,"i"))') 'S = ',S
       CALL system_clock(time2)
 
       IF(q.GE.5) THEN
-        !WRITE(*,*) 'total Time elapsed = ',time2 - time
-        !WRITE(*,*) 'approx. time elapsed doing Ccoeff = ',timesum3
-        !WRITE(*,*) 'approx. time elapsed doing inside Ccoeff = ',timesum5
-        !WRITE(*,*) 'approx. time elapsed doing GetUniqueSubset = ',timesum2
-        !WRITE(*,*) 'approx. time elapsed doing Dcoeff = ',timesum
-        !WRITE(*,*) 'approx. time elapsed doing r sum in Ccoeff = ',timesum4
+        WRITE(*,'(a,i0,a,i0)') ' total Time elapsed = ',time2 - time,' for q = ',q
+        WRITE(*,'(a,i0)') 'approx. time elapsed getting combintions and calculating = ',timesum6
+        !WRITE(*,'(a,i0)') 'approx. time elapsed doing Ccoeff = ',timesum3
+        WRITE(*,'(a,i0)') 'approx. time elapsed doing inside Ccoeff = ',timesum5
+        WRITE(*,'(a,i0)') 'approx. time elapsed doing r sum in Ccoeff = ',timesum4
+        WRITE(*,'(a,i0)') 'approx. time elapsed doing GetUniqueSubset = ',timesum2
+        WRITE(*,'(a,i0)') 'approx. time elapsed doing Dcoeff = ',timesum
       END IF  
       !WRITE(*,'(a)')' -------------------------------------------------------------'  
     END DO
@@ -209,39 +197,126 @@ CONTAINS
   END SUBROUTINE
 
 
-  ! Not currently used. Only calculating Ccoeff once and reusing for repeats will
+  ! This if for only calculating Ccoeff once and reusing for repeats, which should
   ! significantly reduce calculation times.
   ! print combinations_with_replacement('ABC', 2) --> AA AB AC BB BC CC
   ! converted into fortran from python https://docs.python.org/2/library/itertools.html
-  SUBROUTINE GetCombinations ()
+  SUBROUTINE GetCombinations ( bigN, q, nnd, mnd, A, B, lambda, S )
 
-    INTEGER(4),PARAMETER :: bigN = 4, q = 3
-    INTEGER(4),PARAMETER :: r = q+1
-    INTEGER(4) :: indices(0:r-1),i,n
+    INTEGER(4),INTENT(IN) :: bigN, q, nnd, mnd
+    COMPLEX(CKIND),INTENT(IN) :: A(:,:), B(:), lambda ! constant inputs !?? could be global
+    COMPLEX(CKIND),INTENT(INOUT) :: S
+    INTEGER(4) :: r
+    INTEGER(4) :: indices(0:q-1-1),i,n
     !INTEGER(4) :: pool(0:2)
-    INTEGER(4) :: pool(0:bigN-1)
+    INTEGER(4) :: pool(0:bigN-1), l(0:q)
+
+    CALL SYSTEM_CLOCK(time13)
+
     pool = [( i,i=1,bigN )]
+    l(0) = nnd
+    l(q) = mnd
+
+    r = q-1
 
     !pool=[1,2,3]
     n = SIZE(pool)
     indices = 0
-    WRITE(*,*) pool(indices(:))
+    l(1:q-1) = pool(indices(:))
+    CALL UseUniqueList( l, q, mnd, nnd, A, B, lambda, S )
 
     DO WHILE (.TRUE.)
       DO i = r-1,0,-1
         IF(indices(i).NE.n-1) THEN
           EXIT
         ELSEIF(i.EQ.0) THEN
+          CALL SYSTEM_CLOCK(time14)
+          timesum6 = timesum6 + time14 - time13
           RETURN
         END IF
       END DO
       
       !WRITE(*,*) i
       indices(i:r-1) = indices(i) + 1
-      WRITE(*,*) pool(indices(:))
-    END DO 
+      l(1:q-1) = pool(indices(:))
+      CALL UseUniqueList( l, q, mnd, nnd, A, B, lambda, S )
+      !WRITE(*,*) 'S', S
+    END DO
 
   END SUBROUTINE 
+
+  ! https://rosettacode.org/wiki/Permutations#Fortran
+  SUBROUTINE UseUniqueList( l, q, mnd, nnd, A, B, lambda, S )
+
+    implicit none
+
+    INTEGER(4),INTENT(IN) :: l(0:) ! this acts as l
+    INTEGER(4),INTENT(IN) :: q, mnd, nnd
+    COMPLEX(CKIND),INTENT(IN) :: A(:,:), B(:), lambda ! constant inputs !?? could be global
+    COMPLEX(CKIND),INTENT(INOUT) :: S
+    COMPLEX(CKIND) :: Ccoeff, sumproduct
+ 
+    integer :: n, i, INoUniquePerms, IUniquePerms( SIZE(l)**SIZE(l), SIZE(l) )
+    integer :: littleA(SIZE(l))
+
+!    WRITE(*,*) '--------------------------------'
+!    WRITE(*,*) l
+!    WRITE(*,*) '--------------------------------'
+
+    CALL SYSTEM_CLOCK(time7)
+    CALL CalculateCcoeff ( B, lambda, l, q, Ccoeff ) 
+    CALL SYSTEM_CLOCK(time8)
+    timesum3 = timesum3 + time8 - time7
+
+    !read *, n
+    littleA = l
+    n = size(littleA)
+    IUniquePerms = -1
+    INoUniquePerms = 0
+    call perm(1)
+
+!    WRITE(*,*) '%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%'
+!    DO i = 1,INoUniquePerms
+!      WRITE(*,*) IUniquePerms(i,:)
+!    END DO
+!    WRITE(*,*) '%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%'
+
+    CONTAINS
+
+      recursive subroutine perm(i)
+          integer :: i, j, k, t
+          if (i == n .AND. ALL([(ANY(littleA(:).NE.IUniquePerms(k,:)),k=1,INoUniquePerms)])) then
+
+            INoUniquePerms = INoUniquePerms + 1
+            IUniquePerms(INoUniquePerms,:) = littleA(:)
+            !WRITE(*,*) littleA
+              
+            ! multiply a_n,l1 , a_l1,l2 , a_l2,l3, ... , a_lq-1,lq , a_lq,m
+            ! A(l(0),l(1)) ... A(l(q-1),l(q))
+            sumproduct = CMPLX(1,0,CKIND)
+            ! assume the diagonals of A are 0
+            IF(ALL([ (l(k).NE.l(k+1),k=0,q-1) ])) THEN
+              DO k = 0,q-1
+                  sumproduct = sumproduct * A(l(k),l(k+1))
+              END DO
+
+              S = S + sumproduct * Ccoeff
+            END IF
+
+          else
+              do j = i, n
+                  t = littleA(i)
+                  littleA(i) = littleA(j)
+                  littleA(j) = t
+                  call perm(i + 1)
+                  t = littleA(i)
+                  littleA(i) = littleA(j)
+                  littleA(j) = t
+              end do
+          end if
+      end subroutine
+
+  END SUBROUTINE
 
 
 
@@ -283,9 +358,9 @@ CONTAINS
           ! start product with r = 0 contribution
           CSummationR  = CMPLX(1,0,CKIND)
         ELSE ! This shouldn't happen anymore with the zero diagonals of A
-          WRITE(*,*) 'q - jprime - 1.LT.0'
-          WRITE(*,*) 'q',q,'jprime',jprime,'k',k,'d(k)',d(k),'brpime',bprime(0:u)
-          WRITE(*,*) 'l',l(0:q)
+          !WRITE(*,*) 'q - jprime - 1.LT.0'
+          !WRITE(*,*) 'q',q,'jprime',jprime,'k',k,'d(k)',d(k),'brpime',bprime(0:u)
+          !WRITE(*,*) 'l',l(0:q)
           CSummationR = CMPLX(0,0,CKIND)
         END IF
         DO r = 1, q - jprime - 1         
@@ -488,8 +563,9 @@ CONTAINS
 
 
 
-  RECURSIVE FUNCTION factorial ( n ) result ( f )
-    INTEGER(4) :: f, n
+  PURE RECURSIVE FUNCTION factorial ( n ) result ( f )
+    INTEGER(4),INTENT(IN) :: n
+    INTEGER(4) :: f
     IF(n.EQ.1.OR.n.EQ.0) THEN
       f = 1
     ELSE
