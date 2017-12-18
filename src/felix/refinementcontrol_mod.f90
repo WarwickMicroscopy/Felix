@@ -41,7 +41,7 @@
 MODULE refinementcontrol_mod
   IMPLICIT NONE
   PRIVATE
-  PUBLIC :: SimulateAndFit, Simulate, CalculateFigureofMeritandDetermineThickness
+  PUBLIC :: SimulateAndFit, Simulate, FigureOfMeritAndThickness
 
   CONTAINS
 
@@ -58,7 +58,7 @@ MODULE refinementcontrol_mod
     ! UniqueAtomPositions used to recalculate all atoms in lattice from basis atoms
     ! CUgMat = CUgMatNoAbs + CUgMatPrime ( from absoption )
     ! Simulate ( CUgMat + others ) ---> RImageSimi
-    ! On core 0, CalculateFigureofMeritandDetermineThickness includes image processing 
+    ! On core 0, FigureOfMeritAndThickness includes image processing 
     ! RImageExpi(x,y,LACBED_ID) are compared to RImageSimi(x,y,LACBED_ID, thickness_ID)
     ! This calculates ---> RFigureofMerit
     ! MPI_BCAST(RFigureofMerit) then sends RFigureofMerit to all cores    
@@ -217,9 +217,9 @@ MODULE refinementcontrol_mod
     IF(my_rank.EQ.0) THEN
       ! Only calculate figure of merit if we are refining
       IF (ISimFLAG.EQ.0) THEN
-        CALL CalculateFigureofMeritandDetermineThickness(Iter,IThicknessIndex,IErr)
+        CALL FigureOfMeritAndThickness(Iter,IThicknessIndex,IErr)
         IF(l_alert(IErr,"SimulateAndFit",&
-              "CalculateFigureofMeritandDetermineThickness")) RETURN
+              "FigureOfMeritAndThickness")) RETURN
       END IF
       ! Write current variable list and fit to IterationLog.txt
       CALL WriteOutVariables(Iter,IErr)
@@ -334,7 +334,7 @@ MODULE refinementcontrol_mod
   !!
   !! Major-Authors: Keith Evans (2014), Richard Beanland (2016)
   !!  
-  SUBROUTINE CalculateFigureofMeritandDetermineThickness(Iter,IBestThicknessIndex,IErr)
+  SUBROUTINE FigureOfMeritAndThickness(Iter,IBestThicknessIndex,IErr)
 
     !?? NB this is called on core 0 only
     USE MyNumbers
@@ -476,7 +476,7 @@ MODULE refinementcontrol_mod
 
     RETURN
 
-  END SUBROUTINE CalculateFigureofMeritandDetermineThickness
+  END SUBROUTINE FigureOfMeritAndThickness
 
   !%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 

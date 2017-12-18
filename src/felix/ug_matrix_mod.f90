@@ -152,9 +152,7 @@ MODULE ug_matrix_mod
           RCurrentB = RIsoDW(knd) ! Debye-Waller constant, global variable
           IF (ICurrentZ.LT.105) THEN ! It's not a pseudoatom 
             ! Uses numerical integration to calculate absorptive form factor f'
-            PRINT *, knd,"Integrating"
             CALL DoubleIntegrateBK(RfPrime,IErr) ! NB uses Kirkland scattering factors
-            PRINT *, knd,"Integrated"
             IF(l_alert(IErr,"Absorption","CALL DoubleIntegrateBK")) RETURN
           ELSE ! It is a pseudoatom, proportional model 
             lnd=lnd+1

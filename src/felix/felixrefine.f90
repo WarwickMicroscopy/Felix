@@ -784,9 +784,9 @@ PROGRAM Felixrefine
   ELSE ! Refinement Mode
     IF(my_rank.EQ.0) THEN
       ! Figure of merit is passed back as a global variable
-      CALL CalculateFigureofMeritandDetermineThickness(Iter,IThicknessIndex,IErr)
+      CALL FigureOfMeritAndThickness(Iter,IThicknessIndex,IErr)
       IF(l_alert(IErr,"felixrefine",&
-            "CalculateFigureofMeritandDetermineThickness")) CALL abort 
+            "FigureOfMeritAndThickness")) CALL abort 
       ! Keep baseline simulation for masked correlation
       IF (ICorrelationFLAG.EQ.3) THEN
         RImageBase=RImageSimi  

@@ -448,7 +448,7 @@ MODULE read_files_mod
     INTEGER(IKIND),INTENT(OUT) :: IErr
     INTEGER(IKIND) :: ind, jnd, INegError = 0, IPixelArray(2), IFileTypeID
     INTEGER(8) :: IFileSize
-    CHARACTER :: SFilename*100, SPath*100, SImageExtension*50, SFilePath *100, SPrintString*200
+    CHARACTER :: SFilename*100,SPath*100,SImageExtension*50,SFilePath*100,SPrintString*200
     LOGICAL :: LFileExist
     REAL(4),ALLOCATABLE :: RImage4ByteFloatDM3(:,:)
 
@@ -472,16 +472,20 @@ MODULE read_files_mod
           SPath=''
           WRITE(SImageExtension,'(A)') '.dm3'
       END SELECT
-
       WRITE(SFilePath ,'(A,A,A,A)') TRIM(SPath),TRIM(SChemicalFormula),'_+0+0+0',TRIM(SImageExtension)
+      !PRINT *, SChemicalFormula, "=",LEN(SChemicalFormula)
+      !PRINT *, TRIM(ADJUSTL(SChemicalFormula)), "=",LEN(TRIM(ADJUSTL(SChemicalFormula)))
+      !PRINT *, SFilePath, "3"
       ! NB SChemicalFormula read-in from felix.cif and expected to match
 
       ! check if correspinding _+0+0+0.img or _+0+0+0.dm3 image exists
-      INQUIRE(FILE=SFilePath ,EXIST=LFileExist)
+      INQUIRE(FILE=TRIM(SFilePath) ,EXIST=LFileExist)
       IF(LFileExist) THEN
+        !PRINT*,"Found experimental image with filepath =",TRIM(SFilePath)
         CALL message(LM, "Found initial experimental image with filepath =",TRIM(SFilePath) )
         EXIT
       ELSE
+        PRINT*,"Did not find experimental image with filepath =",TRIM(SFilePath)
         CALL message(LM, "Did not find initial experimental image with filepath =",TRIM(SFilePath) )
       END IF    
     END DO
@@ -489,15 +493,17 @@ MODULE read_files_mod
     ! NB once a file is found, the above do-loop is exited and the variables IFileTypeID, SFilePath and
     ! SPath will have the correct values to continue working with them.
 
+    !Commented out as not working on Joker
     ! if .img, check filesize matches expected from pixelsize
-    IF(IFileTypeID.EQ.1.OR.IFileTypeID.EQ.3) THEN
-      INQUIRE(FILE=SFilePath,RECL=IFileSize)
-      IF(.NOT.(IFileSize==(2*IpixelCount)**2*IByteSize)) IErr=1
-      WRITE(SPrintString,'(A,A,A,I0,A)') 'Image file "',TRIM(SFilePath),&
-            '" had filesize = ',IFileSize,&
-            ', which does not match (2*IpixelCount)**2*IByteSize from felix.inp values'
-      IF(l_alert(IErr,"ReadExperimentalImages",TRIM(SPrintString))) RETURN
-    END IF
+!    IF(IFileTypeID.EQ.1.OR.IFileTypeID.EQ.3) THEN
+!      INQUIRE(FILE=SFilePath,RECL=IFileSize)
+!      IF(.NOT.(IFileSize==(2*IpixelCount)**2*IByteSize)) IErr=1
+!      WRITE(SPrintString,'(A11,A,A10,I2,A)') 'Image file ',TRIM(SFilePath),&
+!            ' had size ',IFileSize,&
+!            ', which does not match (2*IpixelCount)**2*IByteSize from felix.inp values'
+!      PRINT*, SPrintString
+!      !IF(l_alert(IErr,"ReadExperimentalImages",TRIM(SPrintString))) RETURN
+!    END IF
 
     ! NB when reading .dm3 files, if pixel size does match an error will be thrown
 

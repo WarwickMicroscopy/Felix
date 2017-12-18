@@ -91,6 +91,7 @@ MODULE read_cif_mod
 
     LOGICAL       f1,f2,f3
     CHARACTER*32  name
+    CHARACTER*32  SChemForm
     CHARACTER*80  line,SPrintString
     CHARACTER*4   label(6)
     CHARACTER*1   SAlphabetarray(52)
@@ -147,18 +148,19 @@ MODULE read_cif_mod
     IF(.NOT.f1) THEN
       IErr=1; IF(l_alert(IErr,"ReadCif","Chemical formula missing")) RETURN
     END IF
+    SChemicalFormula = name
     ! strip spaces/brackets and set global variable SChemicalFormula
-    ind=0
-    DO jnd = 1,LEN(TRIM(name))
-    IF ( VERIFY(name(jnd:jnd), &
-            "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ1234567890") == 0) THEN
-        ind=ind+1
-        SChemicalFormula(ind:ind) = name(jnd:jnd)
-      END IF
-    END DO
-    SChemicalFormula = TRIM(ADJUSTL(SChemicalFormula))
+    !ind=0
+    !DO jnd = 1,LEN(TRIM(name))
+    !IF ( VERIFY(name(jnd:jnd), &
+    !        "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ1234567890") == 0) THEN
+    !    ind=ind+1
+    !    SChemForm(ind:ind) = name(jnd:jnd)
+    !  END IF
+    !END DO
+    !SChemicalFormula = TRIM(ADJUSTL(SChemForm))
     !CALL strip_chars(name,SChemicalFormula)
-
+    
     ! Extract some cell dimensions; test all is OK
     ! NEED TO PUT IN A CHECK FOR LENGTH UNITS
     siga = 0.
