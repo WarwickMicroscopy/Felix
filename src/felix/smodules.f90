@@ -343,12 +343,12 @@ END MODULE CPara
 MODULE SPara
   USE MyNumbers
   
-  CHARACTER(:), ALLOCATABLE :: SChemicalFormula
+  CHARACTER*40 :: SChemicalFormula
   CHARACTER*1 :: SSpaceGroupName
   CHARACTER*10 :: SSpaceGrp
-  CHARACTER*5, DIMENSION(:),ALLOCATABLE :: SBasisAtomLabel,SAtomLabel
-  CHARACTER*2, DIMENSION(:),ALLOCATABLE :: SBasisAtomName, SAtomName
-  CHARACTER*1,DIMENSION(:),ALLOCATABLE :: SWyckoffSymbol
+  CHARACTER*5, DIMENSION(:), ALLOCATABLE :: SBasisAtomLabel,SAtomLabel
+  CHARACTER*2, DIMENSION(:), ALLOCATABLE :: SBasisAtomName, SAtomName
+  CHARACTER*1, DIMENSION(:), ALLOCATABLE :: SWyckoffSymbol
   
 END MODULE SPara
 !--------------------------------------------------------------------

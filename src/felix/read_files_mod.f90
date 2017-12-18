@@ -491,7 +491,7 @@ MODULE read_files_mod
 
     ! if .img, check filesize matches expected from pixelsize
     IF(IFileTypeID.EQ.1.OR.IFileTypeID.EQ.3) THEN
-      INQUIRE(FILE=SFilePath,SIZE=IFileSize)
+      INQUIRE(FILE=SFilePath,RECL=IFileSize)
       IF(.NOT.(IFileSize==(2*IpixelCount)**2*IByteSize)) IErr=1
       WRITE(SPrintString,'(A,A,A,I0,A)') 'Image file "',TRIM(SFilePath),&
             '" had filesize = ',IFileSize,&

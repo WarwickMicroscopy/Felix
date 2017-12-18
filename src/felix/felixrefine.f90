@@ -39,7 +39,6 @@ PROGRAM Felixrefine
   USE message_mod
   USE MPI
   USE MyMPI
-
   USE utilities_mod, ONLY : SortHKL
   USE read_files_mod
   USE read_cif_mod
@@ -60,7 +59,7 @@ PROGRAM Felixrefine
 
   ! local variable definitions
   IMPLICIT NONE
-  
+ 
   INTEGER(IKIND) :: IErr,ind,jnd,knd,lnd,mnd,nnd,Iter,ICutOff,IHOLZgPoolMag,&
         IBSMaxLocGVecAmp,ILaueLevel,INumTotalReflections,ITotalLaueZoneLevel,&
         INhkl,IExitFLAG,ICycle,INumInitReflections,IZerothLaueZoneLevel,&
@@ -90,7 +89,7 @@ PROGRAM Felixrefine
   !--------------------------------------------------------------------
 
   ! initialise constants
-  CALL Init_Numbers ! constants for calcualtions
+  CALL Init_Numbers ! constants for calculations
   CALL InitialiseMessage ! constants required for formatted terminal output
   IErr=0
   IInitialSimulationFLAG = 1
@@ -155,7 +154,7 @@ PROGRAM Felixrefine
   RElectronVelocity = &
         RSpeedOfLight*SQRT( ONE - ((RElectronMass*RSpeedOfLight**2) / &
         (RElectronCharge*RAcceleratingVoltage*THOUSAND+RElectronMass*RSpeedOfLight**2))**2 )
-  ! Electron WaveLength IN metres per second  
+  ! Electron WaveLength in metres per second  
   RElectronWaveLength = RPlanckConstant / &
         (  SQRT(TWO*RElectronMass*RElectronCharge*RAcceleratingVoltage*THOUSAND) * &
         SQRT( ONE + (RElectronCharge*RAcceleratingVoltage*THOUSAND) / &
@@ -165,7 +164,7 @@ PROGRAM Felixrefine
   RRelativisticCorrection = ONE/SQRT( ONE - (RElectronVelocity/RSpeedOfLight)**2 )
   RRelativisticMass = RRelativisticCorrection*RElectronMass
 
-  ! Creates reciprocal lattice vectors IN Microscope reference frame
+  ! Creates reciprocal lattice vectors in Microscope reference frame
   CALL ReciprocalLattice(IErr)
   IF(l_alert(IErr,"felixrefine","ReciprocalLattice")) CALL abort
 
@@ -182,7 +181,7 @@ PROGRAM Felixrefine
   ! fractional unit cell coordinates are used for RAtomPosition, like BasisAtomPosition
   ALLOCATE(RAtomPosition(IMaxPossibleNAtomsUnitCell,ITHREE),STAT=IErr)
   IF(l_alert(IErr,"felixrefine","allocate RAtomPosition")) CALL abort
-  ! RAtomCoordinate is IN the microscope reference frame IN Angstrom units
+  ! RAtomCoordinate is in the microscope reference frame in Angstrom units
   ALLOCATE(RAtomCoordinate(IMaxPossibleNAtomsUnitCell,ITHREE),STAT=IErr)
   IF(l_alert(IErr,"felixrefine","allocate RAtomCoordinate")) CALL abort
   ALLOCATE(SAtomLabel(IMaxPossibleNAtomsUnitCell),STAT=IErr) ! atom label
@@ -210,7 +209,7 @@ PROGRAM Felixrefine
   !?? IAtomicNumber,IAnisoDW to match INAtomsUnitCell?
 
   RHOLZAcceptanceAngle=TWODEG2RADIAN !?? RB seems way too low?
-  IHKLMAXValue = 5 ! starting value, increments IN loop below
+  IHKLMAXValue = 5 ! starting value, increments in loop below
 
   !?? RB Note the application of acceptance angle is incorrect since it uses hkl;
   !?? it should use the reciprocal lattice vectors as calculated in RgPool
@@ -224,7 +223,7 @@ PROGRAM Felixrefine
   END DO
   
   ! Fill the list of reflections Rhkl
-  ! NB Rhkl are IN INTEGER form [h,k,l] but are REAL to allow dot products etc.
+  ! NB Rhkl are in INTEGER form [h,k,l] but are REAL to allow dot products etc.
   ALLOCATE(Rhkl(INhkl,ITHREE),STAT=IErr)
   IF(l_alert(IErr,"felixrefine","allocate Rhkl")) CALL abort
   CALL HKLMake(IHKLMAXValue,RZDirC,RHOLZAcceptanceAngle,IErr)
@@ -235,7 +234,7 @@ PROGRAM Felixrefine
   ! sort HKL, specific reflections
   !--------------------------------------------------------------------
 
-  ! sort hkl IN descending order of magnitude
+  ! sort hkl in descending order of magnitude
   CALL SortHKL(Rhkl,INhkl,IErr) 
   IF(l_alert(IErr,"felixrefine","SortHKL")) CALL abort
   !?? RB may result in an error when the reflection pool does not reach
@@ -249,7 +248,7 @@ PROGRAM Felixrefine
   ! allocate RgPool and dummy
   !--------------------------------------------------------------------
 
-  ! RgPool is a list of 2pi*g-vectors IN the microscope ref frame,
+  ! RgPool is a list of 2pi*g-vectors in the microscope ref frame,
   ! units of 1/A (NB exp(-i*q.r),  physics negative convention)
   ALLOCATE(RgPool(INhkl,ITHREE),STAT=IErr)
   IF(l_alert(IErr,"felixrefine","allocate RgPool")) CALL abort
@@ -260,15 +259,15 @@ PROGRAM Felixrefine
   ! calculate g vector list, consdiering zeroth order Laue zone
   !--------------------------------------------------------------------
 
-  ! Calculate the g vector list RgPool IN reciprocal angstrom units
-  ! IN the microscope reference frame
+  ! Calculate the g vector list RgPool in reciprocal angstrom units
+  ! in the microscope reference frame
   ICutOff = 1
   DO ind=1,INhkl
     DO jnd=1,ITHREE
       RgPool(ind,jnd) = Rhkl(ind,1)*RarVecM(jnd) + &
             Rhkl(ind,2)*RbrVecM(jnd) + Rhkl(ind,3)*RcrVecM(jnd)
     ENDDO
-	  ! If a g-vector has a non-zero z-component it is not IN the ZOLZ
+	  ! If a g-vector has a non-zero z-component it is not in the ZOLZ
     IF(ABS(RgPool(ind,3)).GT.TINY.AND.ICutOff.NE.0) THEN
       RGzUnitVec=ABS(RgPool(ind,3))
       ICutOff=0
@@ -282,7 +281,7 @@ PROGRAM Felixrefine
 
   IF( ICutOff.EQ.1 .AND. IHolzFLAG.EQ.1 ) IErr = 1
   IF( l_alert(IErr, "felixrefine", &
-        "fill Laue Zones. IHolzFLAG = 1 IN felix.inp, however no higher order g-vectors " &
+        "fill Laue Zones. IHolzFLAG = 1 in felix.inp, however no higher order g-vectors " &
         //"were found. Continuing with zeroth-order Laue zone only.") ) IErr = 0
   
   ! sort into Laue Zones
@@ -353,7 +352,7 @@ PROGRAM Felixrefine
   END IF
 
   !--------------------------------------------------------------------
-  ! calculate g vector magnitudes and comonents parallel to the surface
+  ! calculate g vector magnitudes and components parallel to the surface
   !--------------------------------------------------------------------
 
   ! calculate 2pi*g vector magnitudes for the reflection pool RgPoolMag
@@ -444,7 +443,7 @@ PROGRAM Felixrefine
   ! Matrix of their magnitudes 
   ALLOCATE(RgMatrixMagnitude(nReflections,nReflections),STAT=IErr)
   IF(l_alert(IErr,"felixrefine","allocate RgMatrixMagnitude")) CALL abort
-  ! Matrix of sums of indices - for symmetry equivalence IN the Ug matrix
+  ! Matrix of sums of indices - for symmetry equivalence in the Ug matrix
   ALLOCATE(RgSumMat(nReflections,nReflections),STAT=IErr) 
   IF(l_alert(IErr,"felixrefine","allocate RgSumMat")) CALL abort
   ! Matrix with numbers marking equivalent Ug's
@@ -469,10 +468,10 @@ PROGRAM Felixrefine
   CALL message(LXL,dbg3,"first 16 g-vectors", RgMatrix(1:16,1,:)) 
 
   ! structure factor initialisation
-  ! Calculate Ug matrix for each entry IN CUgMatNoAbs(1:nReflections,1:nReflections)
+  ! Calculate Ug matrix for each entry in CUgMatNoAbs(1:nReflections,1:nReflections)
   CALL StructureFactorInitialisation(IErr)
   IF(l_alert(IErr,"felixrefine","StructureFactorInitialisation")) CALL abort
-  ! NB IEquivalentUgKey and CUniqueUg allocated IN here
+  ! NB IEquivalentUgKey and CUniqueUg allocated in here
   ! CUniqueUg vector produced here to later fill RIndependentVariable
   
   !--------------------------------------------------------------------
@@ -491,7 +490,7 @@ PROGRAM Felixrefine
   !--------------------------------------------------------------------
 
   ! Ug refinement is a special case and must be done alone
-  ! cannot do any other refinement alongisde
+  ! cannot do any other refinement alongside
   IF(ISimFLAG==0) THEN
     IF(IRefineMode(1).EQ.1) THEN ! It's a Ug refinement, A
 

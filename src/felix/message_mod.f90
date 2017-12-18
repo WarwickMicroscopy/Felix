@@ -40,6 +40,9 @@ MODULE message_mod
 !>    This MODULE directly CONTAINS everything for message,
 !>      which is a major SUBROUTINE used throughout felix. It replaces the FORTRAN print
 !>      statement and provides formatted output chosen at run-time.
+!>     Although there is nothing wrong with the FORTRAN print statement
+!>     and this module just makes everything more complicated and harder to debug.
+!>     
 !>
 !>    message_mod also accesses l_alert_mod:
 !>      l_alert is a simple but important function, used extensively for error handling.
@@ -197,7 +200,7 @@ MODULE message_mod
   TYPE(MsgPriorities) :: LS, LM, LL, LXL
   TYPE(MsgTags) :: no_tag, dbg7, dbg3, dbg6, dbg14, mode1
 
-  CHARACTER(:), ALLOCATABLE :: SIndentChars, SSpaces ! used for tiered-structure 
+  CHARACTER*5 :: SIndentChars, SSpaces ! used for tiered-structure 
   LOGICAL,private :: LPrintThisCore ! used to print on all cores, usually = .FALSE.  
   INTEGER(IKIND) :: IClockRate ! used with print_end_timer
   
@@ -208,7 +211,7 @@ CONTAINS
   !--------------------------------------------------------------------
   
   SUBROUTINE InitialiseMessage  
-    ! initially set indetation and intial characters to be blank
+    ! initially set indentation and initial characters to be blank
     SSpaces = "" 
     SIndentChars   = ""
     LS%SInitialMsg  = ""; LM%SInitialMsg  = ""; LL%SInitialMsg  = ""; LXL%SInitialMsg = ""

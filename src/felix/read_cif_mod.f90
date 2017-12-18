@@ -147,8 +147,17 @@ MODULE read_cif_mod
     IF(.NOT.f1) THEN
       IErr=1; IF(l_alert(IErr,"ReadCif","Chemical formula missing")) RETURN
     END IF
-    ! strips spaces/brackets and sets global variable SChemicalFormula
-    CALL strip_chars(name,SChemicalFormula)
+    ! strip spaces/brackets and set global variable SChemicalFormula
+    ind=0
+    DO jnd = 1,LEN(TRIM(name))
+    IF ( VERIFY(name(jnd:jnd), &
+            "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ1234567890") == 0) THEN
+        ind=ind+1
+        SChemicalFormula(ind:ind) = name(jnd:jnd)
+      END IF
+    END DO
+    SChemicalFormula = TRIM(ADJUSTL(SChemicalFormula))
+    !CALL strip_chars(name,SChemicalFormula)
 
     ! Extract some cell dimensions; test all is OK
     ! NEED TO PUT IN A CHECK FOR LENGTH UNITS
@@ -446,10 +455,11 @@ MODULE read_cif_mod
   !!
   !! Major-Authors: Jacob Richardson (2017)
   !! 
-  PURE SUBROUTINE strip_chars(SString,SStripped)
+  SUBROUTINE strip_chars(SString,SStripped)
+  !now redundant
     !?? only used once but it is a nice pure utility function
     CHARACTER(*), INTENT(IN) :: SString
-    CHARACTER(:), ALLOCATABLE, INTENT(OUT) :: SStripped
+    CHARACTER, DIMENSION(:), ALLOCATABLE, INTENT(OUT) :: SStripped
     CHARACTER(LEN_TRIM(SString)) :: SPaddedStripped
     INTEGER :: i, n
     n = 0
