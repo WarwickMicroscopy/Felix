@@ -20,7 +20,7 @@
 !  the Free Software Foundation, either version 3 of the License, or
 !  (at your option) any later version.
 !  
-!  Felix is distributed IN the hope that it will be useful,
+!  Felix is distributed in the hope that it will be useful,
 !  but WITHOUT ANY WARRANTY; without even the implied warranty of
 !  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 !  GNU General Public License for more details.
@@ -123,7 +123,7 @@ PROGRAM Felixrefine
   CALL SetMessageMode( IWriteFLAG, IErr )
   IF(l_alert(IErr,"felixrefine","set_message_mod_mode")) CALL abort
 
-  CALL message('IBlochMethodFLAG =',IBlochMethodFLAG)
+  CALL message(LL,'IBlochMethodFLAG =',IBlochMethodFLAG)
 
   CALL read_cif(IErr) ! felix.cif ! some allocations are here
   IF(l_alert(IErr,"felixrefine","ReadCif")) CALL abort
@@ -131,7 +131,7 @@ PROGRAM Felixrefine
   CALL ReadHklFile(IErr) ! the list of hkl's to input/output
   IF(l_alert(IErr,"felixrefine","ReadHklFile")) CALL abort
 
-  ! read experimental images (if IN refinement mode)
+  ! read experimental images (if in refinement mode)
   IF (ISimFLAG.EQ.0) THEN ! it's a refinement, so read-IN experimental images
     ALLOCATE(RImageExpi(2*IPixelCount,2*IPixelCount,INoOfLacbedPatterns),STAT=IErr)  
     IF(l_alert(IErr,"felixrefine","allocate RImageExpi")) CALL abort
@@ -150,7 +150,7 @@ PROGRAM Felixrefine
   ! returns global RScattFactors depeding upon scattering method: Kirkland, Peng, etc.
 
   ! Calculate wavevector magnitude k and relativistic mass
-  ! Electron Velocity IN metres per second
+  ! Electron Velocity in metres per second
   RElectronVelocity = &
         RSpeedOfLight*SQRT( ONE - ((RElectronMass*RSpeedOfLight**2) / &
         (RElectronCharge*RAcceleratingVoltage*THOUSAND+RElectronMass*RSpeedOfLight**2))**2 )
@@ -1053,7 +1053,7 @@ CONTAINS
     !\/------------------------------------------------------------------
     DO WHILE (Rdf.GE.RExitCriteria)
 
-      RVar0=RIndependentVariable ! incoming point IN n-dimensional parameter space
+      RVar0=RIndependentVariable ! incoming point in n-dimensional parameter space
       RFit0=RFigureofMerit ! incoming fit
 
       !--------------------------------------------------------------------
@@ -1090,7 +1090,7 @@ CONTAINS
           ! Make a random number and vary the sign of dx, using system clock
           CALL SYSTEM_CLOCK(mnd)
           Rdx=(REAL(MOD(mnd,10))/TEN)-0.45 ! numbers 0-4 give minus, 5-9 give plus
-          Rdx=0.1*Rdx*RScale/ABS(Rdx) ! small change IN current variable (RScale/10)is dx
+          Rdx=0.1*Rdx*RScale/ABS(Rdx) ! small change in current variable (RScale/10)is dx
           RCurrentVar=RVar0
           RCurrentVar(ind)=RCurrentVar(ind)+Rdx
           CALL SimulateAndFit(RCurrentVar,Iter,IThicknessIndex,IErr)
@@ -1201,7 +1201,7 @@ CONTAINS
         !?? RB increase the step size by the golden ratio
         !?? RPvecMag=(R3var(knd)-RVar0(1))*(0.5+SQRT(5.0)/2.0)/RPvec(1)
         RPvecMag=TWO*RPvecMag ! double the step size
-        ! maximum step IN Ug is RMaxUgStep
+        ! maximum step in Ug is RMaxUgStep
         IF (ABS(RPvecMag).GT.RMaxUgStep.AND.IRefineMode(1).EQ.1) THEN
           RPvecMag=SIGN(RMaxUgStep,RPvecMag)
         END IF
@@ -1298,10 +1298,10 @@ CONTAINS
     Rdf=RFigureofMerit
     ICycle=0 
     RScale=RSimplexLengthScale
-    RMaxUgStep=0.005 ! maximum step IN Ug is 0.5 nm^-2, 0.005 A^-2
+    RMaxUgStep=0.005 ! maximum step in Ug is 0.5 nm^-2, 0.005 A^-2
 
     !--------------------------------------------------------------------
-    ! iteratively refine until improvement IN fit below exit criteria
+    ! iteratively refine until improvement in fit below exit criteria
     !--------------------------------------------------------------------   
 
     ! Each complete cycle we will look down the average refinement direction
@@ -1346,7 +1346,7 @@ CONTAINS
         !--------------------------------------------------------------------
 
         RVar0=RIndependentVariable ! incoming point in n-dimensional parameter space
-        RPvec=ZERO ! Vector IN n-dimensional parameter space for this refinement
+        RPvec=ZERO ! Vector in n-dimensional parameter space for this refinement
         CALL message ( LL, "Current parameters=",RIndependentVariable )
 
         IF (ICycle.EQ.1) THEN ! look down the average refinement direction
@@ -1481,7 +1481,7 @@ CONTAINS
           ! replace mid point with a step on from best point
           ! increase the step size by the golden ratio
           RPvecMag=(R3var(knd)-RVar0(ind))*(0.5+SQRT(5.0)/2.0)/RPvec(ind)
-          ! maximum step IN Ug is RMaxUgStep
+          ! maximum step in Ug is RMaxUgStep
           IF (ABS(RPvecMag).GT.RMaxUgStep.AND.IRefineMode(1).EQ.1) THEN
             RPvecMag=SIGN(RMaxUgStep,RPvecMag)
           END IF
@@ -1514,7 +1514,7 @@ CONTAINS
         !--------------------------------------------------------------------
 
         IF (RCurrentVar(ind).LE.TINY.AND.IVariableType.EQ.4) THEN
-          ! We reached zero D-W factor IN convexity test, skip the prediction
+          ! We reached zero D-W factor in convexity test, skip the prediction
           CALL message( LS, "Using zero Debye Waller factor, simulate and refine next variable" )
           Iter=Iter+1
           CALL SimulateAndFit(RCurrentVar,Iter,IThicknessIndex,IErr)
@@ -1561,7 +1561,7 @@ CONTAINS
           Rdf=RLastFit-RBestFit 
           RLastFit=RBestFit
           CALL message(LS, "--------------------------------")
-          CALL message(LS, "Improvement IN fit ", Rdf )
+          CALL message(LS, "Improvement in fit ", Rdf )
           CALL message(LS, "     will stop at ", RExitCriteria)          
         END IF
       ELSE ! refining just one variable
@@ -1569,7 +1569,7 @@ CONTAINS
           Rdf=RLastFit-RBestFit 
           RLastFit=RBestFit
           CALL message(LS, "--------------------------------")
-          CALL message(LS, "Improvement IN fit ", Rdf )
+          CALL message(LS, "Improvement in fit ", Rdf )
           CALL message(LS, "     will stop at ", RExitCriteria)
         END IF
       END IF

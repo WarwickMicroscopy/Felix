@@ -143,7 +143,7 @@ MODULE read_cif_mod
       IErr=1; IF(l_alert(IErr,"ReadCif","No cif data_ statement found")) RETURN
     END IF
    
-    ! Extracts crystal forumla
+    ! Extracts crystal formula
     f1 = char_('_chemical_formula_structural', name)
     IF(.NOT.f1) THEN
       IErr=1; IF(l_alert(IErr,"ReadCif","Chemical formula missing")) RETURN

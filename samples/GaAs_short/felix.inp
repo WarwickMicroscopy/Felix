@@ -18,8 +18,8 @@ IByteSize                 = 8
 IPixelCount               = 35
 
 # beam selection criteria
-IMinReflectionPool        = 5
-IMinStrongBeams           = 2
+IMinReflectionPool        = 100
+IMinStrongBeams           = 75
 IMinWeakBeams             = 0
 
 # crystal settings
