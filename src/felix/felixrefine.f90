@@ -1230,7 +1230,7 @@ CONTAINS
       WRITE(SPrintString,FMT='(A32,F7.4,A16,F7.4)') &
       "Concave set, predict minimum at ",RvarMin," with fit index ",RfitMin
       SPrintString=TRIM(ADJUSTL(SPrintString))
-      CALL message ( LS, SPrintString)
+      CALL message (LS, SPrintString)
       RCurrentVar=RVar0+RPvec*(RvarMin-RVar0(1))/RPvec(1) ! Put prediction into RCurrentVar
       Iter=Iter+1
       CALL SimulateAndFit(RCurrentVar,Iter,IThicknessIndex,IErr)
@@ -1243,8 +1243,8 @@ CONTAINS
         Rdf=RLastFit-RBestFit 
         RLastFit=RBestFit
         CALL message(LS, "--------------------------------")
-        CALL message(LS, "Improvement in fit ", Rdf )
-        CALL message(LS, "     will stop at ", RExitCriteria)
+        WRITE(SPrintString,FMT='(A19,F8.6,A15,F8.6)') "Improvement in fit ",Rdf,", will stop at ",RExitCriteria
+        CALL message (LS, SPrintString)
       END IF
       ! shrink length scale as we progress, by a smaller amount
       ! depending on the no of variables: 1->1/2; 2->3/4; 3->5/6; 4->7/8; 5->9/10;
@@ -1561,16 +1561,16 @@ CONTAINS
           Rdf=RLastFit-RBestFit 
           RLastFit=RBestFit
           CALL message(LS, "--------------------------------")
-          CALL message(LS, "Improvement in fit ", Rdf )
-          CALL message(LS, "     will stop at ", RExitCriteria)          
+          WRITE(SPrintString,FMT='(A19,F8.6,A15,F8.6)') "Improvement in fit ",Rdf,", will stop at ",RExitCriteria
+          CALL message (LS, SPrintString)
         END IF
       ELSE ! refining just one variable
         IF (RBestFit.LT.RLastFit) THEN
           Rdf=RLastFit-RBestFit 
           RLastFit=RBestFit
           CALL message(LS, "--------------------------------")
-          CALL message(LS, "Improvement in fit ", Rdf )
-          CALL message(LS, "     will stop at ", RExitCriteria)
+          WRITE(SPrintString,FMT='(A19,F8.6,A15,F8.6)') "Improvement in fit ",Rdf,", will stop at ",RExitCriteria
+          CALL message (LS, SPrintString)
         END IF
       END IF
       ! shrink length scale as we progress, by a smaller amount

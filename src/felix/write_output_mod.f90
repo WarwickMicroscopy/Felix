@@ -87,8 +87,7 @@ MODULE write_output_mod
     USE message_mod
     
     ! global inputs
-    USE IPARA, ONLY : IPixelCount, ISimFLAG, IOutPutReflections, INoOfLacbedPatterns, &
-                      nReflections
+    USE IPARA, ONLY : ILN,IPixelCount,ISimFLAG,IOutPutReflections,INoOfLacbedPatterns,nReflections
     USE CPARA, ONLY : CUgMat
     USE RPARA, ONLY : Rhkl, RImageSimi, RInitialThickness, RDeltaThickness
     USE SPARA, ONLY : SChemicalFormula
@@ -100,26 +99,26 @@ MODULE write_output_mod
     INTEGER(IKIND), INTENT(IN) :: Iter, IThicknessIndex, IExitFLAG
     INTEGER(IKIND) :: IThickness,ind,jnd
     REAL(RKIND),DIMENSION(2*IPixelCount,2*IPixelCount) :: RImageToWrite
-    CHARACTER*200 :: path, filename, fullpath
-    CHARACTER*20 :: SIntString
+    CHARACTER(200) :: path, filename, fullpath
     
     IThickness = (RInitialThickness + (IThicknessIndex-1)*RDeltaThickness)/10!in nm 
+    PRINT*,SChemicalFormula(1:ILN),"YY"
 
     IF (ISimFLAG.EQ.0) THEN !felixrefine output
       WRITE(path,"(A1,I4.4,A1,I3.3,A3,I3.3,A1,I3.3)") &
             "I",Iter,"_",IThickness,"nm_",2*IPixelcount,"x",2*IPixelcount
-      path = TRIM(SChemicalFormula) // "_" // path ! This adds chemical to folder name
+      path = SChemicalFormula(1:ILN) // "_" // path ! This adds chemical to folder name
     ELSE ! Sim Output
       WRITE(path,"(A4,I3.3,A3,I3.3,A1,I3.3)") &
             "Sim_",IThickness,"nm_",2*IPixelcount,"x",2*IPixelcount
     END IF
     CALL system('mkdir ' // path)
-    
+
     ! Write Images to disk
     DO ind = 1,INoOfLacbedPatterns
       ! Make the path/filenames e.g. 'GaAs-2-2+0.bin'
       WRITE(filename,"(A,A1,I3.3,A3,I3.3,A1,I3.3,A1,SP,3(I2.1),A4)")&
-            TRIM(ADJUSTL(SChemicalFormula)),"_",IThickness,"nm_",&
+            SChemicalFormula(1:ILN),"_",IThickness,"nm_",&
             2*IPixelcount,"x",2*IPixelcount,"_",NINT(Rhkl(IOutPutReflections(ind),1:3)),'.bin'
 
       fullpath = TRIM(ADJUSTL(path))//"/"//TRIM(ADJUSTL(filename))
@@ -177,10 +176,10 @@ MODULE write_output_mod
 
     IMPLICIT NONE
 
-    CHARACTER*200, INTENT(IN) :: path
+    CHARACTER(200), INTENT(IN) :: path
     INTEGER(IKIND), INTENT(OUT) :: IErr
     INTEGER(IKIND) :: jnd
-    CHARACTER*200 :: filename, fullpath
+    CHARACTER(200) :: filename, fullpath
 
     ! Write out non symmetrically related atomic positions
 
@@ -258,7 +257,7 @@ MODULE write_output_mod
 
     INTEGER(IKIND),INTENT(IN) :: Iter
     INTEGER(IKIND) :: IErr,ind,IStart,IEnd,jnd,ITotalOutputVariables
-    CHARACTER*200 :: SFormat, STotalOutputVariables
+    CHARACTER(200) :: SFormat, STotalOutputVariables
     INTEGER(IKIND),DIMENSION(IRefinementVariableTypes) :: IOutputVariables
     REAL(RKIND),DIMENSION(:),ALLOCATABLE :: RDataOut
 
@@ -373,7 +372,7 @@ MODULE write_output_mod
 
     !global inputs
     USE RPara, ONLY : RImageExpi, RImageSimi, Rhkl, RInitialThickness, RDeltaThickness
-    USE IPara, ONLY : IPixelcount, IOutPutReflections, INoOfLacbedPatterns
+    USE IPara, ONLY : IPixelcount, IOutPutReflections, INoOfLacbedPatterns,ILN
     USE Spara, ONLY : SChemicalFormula
     USE IChannels, ONLY : IChOutWIImage, IChOut
 
@@ -381,7 +380,6 @@ MODULE write_output_mod
     INTEGER(IKIND), INTENT(OUT) :: IErr
     INTEGER(IKIND), INTENT(IN) :: IThicknessIndex
     CHARACTER(200) :: path, filename, fullpath
-    CHARACTER(20) :: SIntString
     INTEGER(IKIND) :: IThickness, ind, jnd
     REAL(RKIND), ALLOCATABLE :: RImageToWrite(:,:)
 
@@ -389,8 +387,8 @@ MODULE write_output_mod
 
     IThickness = (RInitialThickness + (IThicknessIndex-1)*RDeltaThickness)/10!in nm 
 
-    WRITE(path,"(A,A,I3.3,A1,I3.3)") &
-          TRIM(SChemicalFormula),"_experi_images_",2*IPixelcount,"x",2*IPixelcount
+    WRITE(path,"(A,A6,I3.3,A1,I3.3)") &
+           SChemicalFormula(1:ILN),"_expt_",2*IPixelcount,"x",2*IPixelcount
 
     CALL system('mkdir ' // path)
 
@@ -398,7 +396,7 @@ MODULE write_output_mod
     DO ind = 1,INoOfLacbedPatterns
       ! Make the path/filenames  
       WRITE(filename,"(A,A,I3.3,A1,I3.3,A1,SP,3(I2.1),A)")&
-            TRIM(ADJUSTL(SChemicalFormula)),"_experi_",2*IPixelcount,"x",2*IPixelcount,&
+             SChemicalFormula(1:ILN),"_experi_",2*IPixelcount,"x",2*IPixelcount,&
             "_",NINT(Rhkl(IOutPutReflections(ind),1:3)),'.bin'
       fullpath=TRIM(path)//'/'//filename
 

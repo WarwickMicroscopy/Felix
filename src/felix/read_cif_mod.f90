@@ -81,7 +81,7 @@ MODULE read_cif_mod
     ! global inputs
     USE SConst, ONLY : SAllSpaceGrp
     USE RPARA, ONLY : RDebyeWallerConstant
-    USE IPARA, ONLY : IAtomsToRefine, IAnisoDebyeWallerFactorFlag
+    USE IPARA, ONLY : IAtomsToRefine,IAnisoDebyeWallerFactorFlag,ILN
     USE SConst, ONLY : SElementSymbolMatrix
     USE IConst
     
@@ -96,6 +96,7 @@ MODULE read_cif_mod
     CHARACTER*4   label(6)
     CHARACTER*1   SAlphabetarray(52)
     CHARACTER*52  alphabet
+    CHARACTER*62  alphabetnum
     CHARACTER*2   rs
     CHARACTER*1   slash
     REAL(RKIND),DIMENSION(:),ALLOCATABLE :: RPrint
@@ -109,6 +110,7 @@ MODULE read_cif_mod
          "f","g","h","i","j","k","l","m","n","o","p","q","r","s","t","u","v", &
          "w","x","y","z"/
     DATA alphabet /"ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz"/
+    DATA alphabetnum /"ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz1234567890"/
     DATA          cela,celb,celc,siga,sigb,sigc/6*0./
     DATA          x,y,z,u,sx,sy,sz,su/8*0./
     DATA          xf,yf,zf,uij/54*0./
@@ -148,18 +150,15 @@ MODULE read_cif_mod
     IF(.NOT.f1) THEN
       IErr=1; IF(l_alert(IErr,"ReadCif","Chemical formula missing")) RETURN
     END IF
-    SChemicalFormula = name
     ! strip spaces/brackets and set global variable SChemicalFormula
-    !ind=0
-    !DO jnd = 1,LEN(TRIM(name))
-    !IF ( VERIFY(name(jnd:jnd), &
-    !        "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ1234567890") == 0) THEN
-    !    ind=ind+1
-    !    SChemForm(ind:ind) = name(jnd:jnd)
-    !  END IF
-    !END DO
-    !SChemicalFormula = TRIM(ADJUSTL(SChemForm))
-    !CALL strip_chars(name,SChemicalFormula)
+    ILN=0!Global variable with length of chemical formula string
+    DO jnd = 1,LEN(TRIM(name))
+      IF ( SCAN(alphabetnum,name(jnd:jnd)).NE.0) THEN!it is an allowed character, put it in 
+        ILN=ILN+1
+        SChemicalFormula(ILN:ILN) = name(jnd:jnd)
+      END IF
+    END DO
+    PRINT*,SChemicalFormula(1:ILN),"XX"
     
     ! Extract some cell dimensions; test all is OK
     ! NEED TO PUT IN A CHECK FOR LENGTH UNITS
@@ -221,9 +220,9 @@ MODULE read_cif_mod
     f1 = char_('_symmetry_space_group_name_H-M', name)
 	
     !different types of space groups as well as different phrasing of Hall space groups
-    IF (SCAN(name,'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz').EQ.0) THEN
+    IF (SCAN(name,alphabet).EQ.0) THEN
       f1 = char_('_symmetry_space_group_name_Hall',name)
-      IF (SCAN(name,'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz').EQ.0) THEN
+      IF (SCAN(name,alphabet).EQ.0) THEN
         f1 = numb_('_symmetry_Int_tables_number',numb,sx)
         IF (numb.LT.TINY) THEN
           f1 = numb_('_space_group_IT_number',numb,sx)

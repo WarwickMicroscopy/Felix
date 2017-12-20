@@ -440,7 +440,7 @@ MODULE read_files_mod
     ! global inputs
     USE IChannels, ONLY : IChInImage, IChOutWIImage
     USE SPARA, ONLY : SChemicalFormula
-    USE IPARA, ONLY : INoOfLacbedPatterns, IPixelCount, IByteSize
+    USE IPARA, ONLY : INoOfLacbedPatterns, IPixelCount, IByteSize,ILN
     USE RPARA, ONLY : RInputHKLs
 
     IMPLICIT NONE
@@ -472,13 +472,9 @@ MODULE read_files_mod
           SPath=''
           WRITE(SImageExtension,'(A)') '.dm3'
       END SELECT
-      WRITE(SFilePath ,'(A,A,A,A)') TRIM(SPath),TRIM(SChemicalFormula),'_+0+0+0',TRIM(SImageExtension)
-      !PRINT *, SChemicalFormula, "=",LEN(SChemicalFormula)
-      !PRINT *, TRIM(ADJUSTL(SChemicalFormula)), "=",LEN(TRIM(ADJUSTL(SChemicalFormula)))
-      !PRINT *, SFilePath, "3"
-      ! NB SChemicalFormula read-in from felix.cif and expected to match
+      WRITE(SFilePath ,'(A,A,A,A)') TRIM(SPath),SChemicalFormula(1:ILN),'_+0+0+0',TRIM(SImageExtension)
 
-      ! check if correspinding _+0+0+0.img or _+0+0+0.dm3 image exists
+      ! check if corresponding _+0+0+0.img or _+0+0+0.dm3 image exists
       INQUIRE(FILE=TRIM(SFilePath) ,EXIST=LFileExist)
       IF(LFileExist) THEN
         !PRINT*,"Found experimental image with filepath =",TRIM(SFilePath)
@@ -516,7 +512,7 @@ MODULE read_files_mod
     ! Read in expected image for each LacbedPattern
     DO ind = 1,INoOfLacbedPatterns
 
-      WRITE(SFilename,'(A,A,SP,3(I0),A)') TRIM(SChemicalFormula),"_",&
+      WRITE(SFilename,'(A,A,SP,3(I0),A)') SChemicalFormula(1:ILN),"_",&
             NINT(RInputHKLs(ind,1:3)), TRIM(SImageExtension)
       SFilePath  = TRIM(SPath)//SFilename
       CALL message(LL, dbg7, "SFilename = ", SFilePath )
