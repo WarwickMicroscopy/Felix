@@ -181,8 +181,8 @@ MODULE write_output_mod
     INTEGER(IKIND) :: jnd
     CHARACTER(200) :: filename, fullpath
 
+    IErr=0
     ! Write out non symmetrically related atomic positions
-
     WRITE(filename,*) "structure.cif"
     WRITE(fullpath,*) TRIM(ADJUSTL(path)),'/',TRIM(ADJUSTL(filename))
 

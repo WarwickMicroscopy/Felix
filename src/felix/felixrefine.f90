@@ -80,9 +80,9 @@ PROGRAM Felixrefine
   REAL(RKIND),DIMENSION(:,:),ALLOCATABLE :: RSimplexVariable,RgDummyVecMat,&
         RgPoolMagLaue,RTestImage,ROnes,RVarMatrix,RSimp
   
-  CHARACTER*40 :: my_rank_string
-  CHARACTER*20 :: h,k,l
-  CHARACTER*100 :: SPrintString
+  CHARACTER(40) :: my_rank_string
+  CHARACTER(20) :: h,k,l
+  CHARACTER(100) :: SPrintString
 
   !--------------------------------------------------------------------
   ! startup
@@ -454,7 +454,7 @@ PROGRAM Felixrefine
   ! calculate reflection matrix & initialise structure factors
   !--------------------------------------------------------------------
 
-  ! Calculate matrix  of g-vectors that corresponds tp the Ug matrix
+  ! Calculate matrix  of g-vectors that corresponds to the Ug matrix
   IThicknessCount= NINT((RFinalThickness-RInitialThickness)/RDeltaThickness) + 1
   DO ind=1,nReflections
      DO jnd=1,nReflections

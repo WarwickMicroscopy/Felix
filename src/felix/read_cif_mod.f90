@@ -90,15 +90,15 @@ MODULE read_cif_mod
     INCLUDE       'ciftbx-f90.cmn'
 
     LOGICAL       f1,f2,f3
-    CHARACTER*32  name
-    CHARACTER*32  SChemForm
-    CHARACTER*80  line,SPrintString
-    CHARACTER*4   label(6)
-    CHARACTER*1   SAlphabetarray(52)
-    CHARACTER*52  alphabet
-    CHARACTER*62  alphabetnum
-    CHARACTER*2   rs
-    CHARACTER*1   slash
+    CHARACTER(32)  name
+    CHARACTER(32)  SChemForm
+    CHARACTER(80)  line,SPrintString
+    CHARACTER(4)   label(6)
+    CHARACTER(1)   SAlphabetarray(52)
+    CHARACTER(52)  alphabet
+    CHARACTER(62)  alphabetnum
+    CHARACTER(2)   rs
+    CHARACTER(1)   slash
     REAL(RKIND),DIMENSION(:),ALLOCATABLE :: RPrint
     REAL          cela,celb,celc,siga,sigb,sigc
     REAL          x,y,z,u,su,sx,sy,sz,B,sB,sOcc,Uso,suso,Occ
@@ -118,7 +118,7 @@ MODULE read_cif_mod
 
     INTEGER IAtomCount, ICommaPosLeft, ICommaPosRight, &
          Ipos,Idpos, IXYZminus,IFRACminus, Inum,Idenom,IAtomID
-    CHARACTER*32 Csym(ITHREE)
+    CHARACTER(32) Csym(ITHREE)
     INTEGER IErr,ind,jnd
 
     ! fudge to deal with gfortran vs. g77
@@ -133,8 +133,8 @@ MODULE read_cif_mod
       clipt_ = .TRUE.
       pclipt_ = .TRUE.
     END IF
+    
     ! Open the CIF to be accessed
-
     name='felix.cif'
     IF(.NOT.ocif_(name)) THEN
       IErr=1; IF(l_alert(IErr,"ReadCif","Cannot find .cif")) RETURN
@@ -158,7 +158,6 @@ MODULE read_cif_mod
         SChemicalFormula(ILN:ILN) = name(jnd:jnd)
       END IF
     END DO
-    PRINT*,SChemicalFormula(1:ILN),"XX"
     
     ! Extract some cell dimensions; test all is OK
     ! NEED TO PUT IN A CHECK FOR LENGTH UNITS
@@ -201,13 +200,12 @@ MODULE read_cif_mod
     IF((f1) .EQV. .FALSE.) THEN
       IVolumeFLAG= 0
       RVolume= RLengthX*RLengthY*RLengthZ* &
-            SQRT(1.0D0-COS(RAlpha)*COS(RAlpha)-COS(RBeta)*COS(RBeta)-COS(RGamma)*COS(RGamma) + &
-            2.0D0*COS(RAlpha)*COS(RBeta)*COS(RGamma))
+            SQRT(ONE-COS(RAlpha)*COS(RAlpha)-COS(RBeta)*COS(RBeta)-COS(RGamma)*COS(RGamma) + &
+            TWO*COS(RAlpha)*COS(RBeta)*COS(RGamma))
     ELSE 
       RVolume= cela
       IVolumeFLAG= 1
     END IF
-
     CALL message ( LXL, dbg14, "Unit cell volume", RVolume )
 
     DO      
@@ -293,8 +291,10 @@ MODULE read_cif_mod
       Uso = ZERO
       f1 = char_('_atom_site_label', name)
       SBasisAtomLabel(ind)=name
+      IF (my_rank.EQ.0) PRINT*, "Label", ind, SBasisAtomLabel(ind)
       f1 = char_('_atom_site_type_symbol', name)
       SBasisAtomName(ind)=name(1:2)
+      IF (my_rank.EQ.0) PRINT*, "Name", ind, SBasisAtomName(ind)
       ! remove the oxidation state numbers
       Ipos=SCAN(SBasisAtomName(ind),"1234567890")
       IF (Ipos.GT.0) WRITE(SBasisAtomName(ind),'(A1,A1)') name(1:1)," "
@@ -313,13 +313,18 @@ MODULE read_cif_mod
       !Wyckoff symbol
       f1 = char_('_atom_site_Wyckoff_symbol',name)
       SWyckoffSymbol(ind) = name
+      IF (my_rank.EQ.0) PRINT*, "Wyckoff symbol", ind, SWyckoffSymbol(ind)
       !coordinates
       f2 = numb_('_atom_site_fract_x', x, sx)
+      IF (my_rank.EQ.0) PRINT*, "_atom_site_fract_x", f2
       RBasisAtomPosition(ind,1)= x
       f2 = numb_('_atom_site_fract_y', y, sy)
+      IF (my_rank.EQ.0) PRINT*, "_atom_site_fract_y", f2
       RBasisAtomPosition(ind,2)= y
       f2 = numb_('_atom_site_fract_z', z, sz)
+      IF (my_rank.EQ.0) PRINT*, "_atom_site_fract_z", f2
       RBasisAtomPosition(ind,3)= z
+      IF (my_rank.EQ.0) PRINT*, "position", ind, RBasisAtomPosition(ind,:)
       !Isotropic D-W factor
       f2 = numb_('_atom_site_B_iso_or_equiv',B,sB)
       f2 = numb_('_atom_site_U_iso_or_equiv',Uso,suso)	
@@ -332,9 +337,11 @@ MODULE read_cif_mod
           RBasisIsoDW(ind) = RDebyeWallerConstant
         END IF
       END IF
+      IF (my_rank.EQ.0) PRINT*, "Debye-Waller", ind,  RBasisIsoDW(ind)
       !occupancy
       f2 = numb_('_atom_site_occupancy',Occ, sOcc)
       RBasisOccupancy(ind) = Occ
+      IF (my_rank.EQ.0) PRINT*, "occupancy", ind, RBasisOccupancy(ind)
 
       CALL message( LXL, dbg7, "For Atom ",ind)
       CALL message( LXL, dbg7, SBasisAtomLabel(ind)//SBasisAtomName(ind)//&

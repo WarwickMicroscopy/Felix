@@ -68,6 +68,7 @@ MODULE image_initialisation_mod
     REAL(RKIND) :: DummyConvergenceAngle
     INTEGER(IKIND) :: ind, jnd
 
+    IErr=0
     ! positions of the centres of the disks
     DO ind=1,nReflections
       RhklPositions(ind,1) = RgPool(ind,1)/RMinimumGMag

@@ -27,10 +27,10 @@
 # GNU-compiler-based options
 
 # 64 BIT gcc/gfortran linux system on INTEL architectures
- PLATFORM=INT64NGNU
+# PLATFORM=INT64NGNU
 
 # 64 BIT gcc/gfortran linux system on AMD architectures
-# PLATFORM=OPT64NGNU
+ PLATFORM=OPT64NGNU
 
 
 # Intel-compiler-based options

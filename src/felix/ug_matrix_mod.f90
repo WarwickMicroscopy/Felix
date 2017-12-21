@@ -287,6 +287,7 @@ MODULE ug_matrix_mod
       IF (ICurrentZ.LT.105) THEN ! It's not a pseudoatom
         ! Get scattering factor
         CALL AtomicScatteringFactor(RScatteringFactor,IErr)
+        !IF (my_rank.EQ.0) PRINT*, knd,RCurrentGMagnitude,RScatteringFactor
         ! Occupancy
         RScatteringFactor = RScatteringFactor*ROccupancy(knd)
         ! Isotropic Debye-Waller factor
@@ -345,7 +346,7 @@ MODULE ug_matrix_mod
     USE utilities_mod, ONLY : Gaussian, Lorentzian, ReSortUgs
 
     ! global outputs
-    USE CPARA, ONLY : CUgMatNoAbs,CUniqueUg,CPseudoAtom,CPseudoScatt
+    USE CPARA, ONLY : CUgMatNoAbs,CUgMatPrime,CUniqueUg,CPseudoAtom,CPseudoScatt
     USE IPARA, ONLY : ICurrentZ, ISymmetryRelations
     USE RPARA, ONLY : RMeanInnerPotential,RgSumMat
     USE BlochPara, ONLY : RBigK
@@ -482,7 +483,9 @@ MODULE ug_matrix_mod
     !Convert to Ug
     CUgMatNoAbs=CUgMatNoAbs*TWO*RElectronMass*RRelativisticCorrection*RElectronCharge/((RPlanckConstant**2)*(RAngstromConversion**2))
     ! NB Only the lower half of the Vg matrix was calculated, this completes the upper half
-    CUgMatNoAbs = CUgMatNoAbs + CONJG(TRANSPOSE(CUgMatNoAbs))
+    CUgMatPrime = TRANSPOSE(CUgMatNoAbs)! Prime is usually the absorptive potential, here just used as a box to avoid the bug when conj(transpose) is used
+    CUgMatNoAbs = CUgMatNoAbs + CONJG(CUgMatPrime)
+    CUgMatPrime = CZERO
     ! set diagonals to zero
     DO ind=1,nReflections
       CUgMatNoAbs(ind,ind)=CZERO
