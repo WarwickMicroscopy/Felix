@@ -52,13 +52,13 @@ F90=mpiifort
 F90FLAGS= -132 -r8 -u -C -g -traceback -check noarg_temp_created #tinis
 #F90FLAGS= -O0 -fpp -r8 -g -132 -check all -warn all -fpe0 -traceback #debug 
 #F90FLAGS = -O3 -r8 -u -traceback -static-intel # -ipo release
-
+F77FLAGS = -r8 #debug
 
 # -------------------------------
 # which fortran compiler is used
 FF=ifort
 # its flags
-FFFLAGS= -O3 -fpp
+FFFLAGS= -O3 -fpp -r8 -132
 #FFFLAGS=  -g
 
 

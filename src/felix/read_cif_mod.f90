@@ -291,10 +291,8 @@ MODULE read_cif_mod
       Uso = ZERO
       f1 = char_('_atom_site_label', name)
       SBasisAtomLabel(ind)=name
-      IF (my_rank.EQ.0) PRINT*, "Label", ind, SBasisAtomLabel(ind)
       f1 = char_('_atom_site_type_symbol', name)
       SBasisAtomName(ind)=name(1:2)
-      IF (my_rank.EQ.0) PRINT*, "Name", ind, SBasisAtomName(ind)
       ! remove the oxidation state numbers
       Ipos=SCAN(SBasisAtomName(ind),"1234567890")
       IF (Ipos.GT.0) WRITE(SBasisAtomName(ind),'(A1,A1)') name(1:1)," "
@@ -313,18 +311,13 @@ MODULE read_cif_mod
       !Wyckoff symbol
       f1 = char_('_atom_site_Wyckoff_symbol',name)
       SWyckoffSymbol(ind) = name
-      IF (my_rank.EQ.0) PRINT*, "Wyckoff symbol", ind, SWyckoffSymbol(ind)
       !coordinates
       f2 = numb_('_atom_site_fract_x', x, sx)
-      IF (my_rank.EQ.0) PRINT*, "_atom_site_fract_x", f2
       RBasisAtomPosition(ind,1)= x
       f2 = numb_('_atom_site_fract_y', y, sy)
-      IF (my_rank.EQ.0) PRINT*, "_atom_site_fract_y", f2
       RBasisAtomPosition(ind,2)= y
       f2 = numb_('_atom_site_fract_z', z, sz)
-      IF (my_rank.EQ.0) PRINT*, "_atom_site_fract_z", f2
       RBasisAtomPosition(ind,3)= z
-      IF (my_rank.EQ.0) PRINT*, "position", ind, RBasisAtomPosition(ind,:)
       !Isotropic D-W factor
       f2 = numb_('_atom_site_B_iso_or_equiv',B,sB)
       f2 = numb_('_atom_site_U_iso_or_equiv',Uso,suso)	
@@ -337,11 +330,9 @@ MODULE read_cif_mod
           RBasisIsoDW(ind) = RDebyeWallerConstant
         END IF
       END IF
-      IF (my_rank.EQ.0) PRINT*, "Debye-Waller", ind,  RBasisIsoDW(ind)
       !occupancy
       f2 = numb_('_atom_site_occupancy',Occ, sOcc)
       RBasisOccupancy(ind) = Occ
-      IF (my_rank.EQ.0) PRINT*, "occupancy", ind, RBasisOccupancy(ind)
 
       CALL message( LXL, dbg7, "For Atom ",ind)
       CALL message( LXL, dbg7, SBasisAtomLabel(ind)//SBasisAtomName(ind)//&

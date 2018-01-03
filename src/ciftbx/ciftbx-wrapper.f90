@@ -4729,6 +4729,7 @@ C
          real       numb,sdev
 
 CDBG     print *,'***>>> Entering numb_ for ', temp
+         print *,'***>>> Entering numb_ for ', temp
 
 C
          call tbxxclc(name,lname,temp,len(temp))
