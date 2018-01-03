@@ -233,6 +233,12 @@ MODULE ug_matrix_mod
 
     CUgMat = CUgMatNoAbs + CUgMatPrime 
 
+    CALL message( LM, dbg3, "U'g matrix, i.e. absorption (nm^-2)" )
+    DO ind = 1,16
+      CALL message( LM, dbg3, "RKL row:",NINT(Rhkl(ind,:)) )
+      CALL message( LM, dbg3, "CUg row:",100*CUgMatPrime(ind,1:6) )
+    END DO
+
     CALL message( LM, dbg3, "Ug matrix, including absorption (nm^-2)" )
     DO ind = 1,16
       CALL message( LM, dbg3, "RKL row:",NINT(Rhkl(ind,:)) )
@@ -393,7 +399,7 @@ MODULE ug_matrix_mod
     END DO
 
       !--------------------------------------------------------------------
-      ! calculate pseduo potential and pseduo factor for any pseudoatoms
+      ! calculate pseudo potential and pseudo factor for any pseudoatoms
       !--------------------------------------------------------------------
     IF (IPseudo.GT.0) THEN!Calculate pseudoatom potentials
       ! size of the array used to calculate the pseudoatom FFT, global variable  
@@ -471,13 +477,14 @@ MODULE ug_matrix_mod
     ! calculate Ug matrix (excluding absorption)
     !--------------------------------------------------------------------
 
-    ! fill lower diagonal of Ug matrix(excluding absorbtion)with Fourier components of the potential Vg
+    ! fill lower diagonal of Ug matrix(excluding absorption) with Fourier components of the potential Vg
     CUgMatNoAbs = CZERO ! 
     DO ind=2,nReflections
       DO jnd=1,ind-1
-        RCurrentGMagnitude = RgMatrixMagnitude(ind,jnd) ! g-vector magnitude, global var
+        RCurrentGMagnitude = RgMatrixMagnitude(ind,jnd) ! g-vector magnitude, global variable
         ! Sums CVgij contribution from each atom and pseudoatom in Volts
-        CALL GetVgContributionij(RScatteringFactor,ind,jnd,CUgMatNoAbs(ind,jnd),IErr)
+        CALL GetVgContributionij(RScatteringFactor,ind,jnd,CVgij,IErr)
+		CUgMatNoAbs(ind,jnd)=CVgij
       ENDDO
     ENDDO
     !Convert to Ug
@@ -487,9 +494,9 @@ MODULE ug_matrix_mod
     CUgMatNoAbs = CUgMatNoAbs + CONJG(CUgMatPrime)
     CUgMatPrime = CZERO
     ! set diagonals to zero
-    DO ind=1,nReflections
-      CUgMatNoAbs(ind,ind)=CZERO
-    END DO
+    !DO ind=1,nReflections
+    !  CUgMatNoAbs(ind,ind)=CZERO
+    !END DO
 
     CALL message( LM, dbg3, "Ug matrix, without absorption (nm^-2)" )
     DO ind = 1,16

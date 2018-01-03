@@ -102,7 +102,6 @@ MODULE write_output_mod
     CHARACTER(200) :: path, filename, fullpath
     
     IThickness = (RInitialThickness + (IThicknessIndex-1)*RDeltaThickness)/10!in nm 
-    PRINT*,SChemicalFormula(1:ILN),"YY"
 
     IF (ISimFLAG.EQ.0) THEN !felixrefine output
       WRITE(path,"(A1,I4.4,A1,I3.3,A3,I3.3,A1,I3.3)") &

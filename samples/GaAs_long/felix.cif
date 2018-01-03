@@ -3,7 +3,7 @@ data_107946-ICSD
 _database_code_ICSD 107946
 _audit_creation_date 2006-10-01
 _chemical_name_systematic 'Gallium arsenide'
-_chemical_formula_structural 'Ga As'
+_chemical_formula_structural ' Ga As '
 _chemical_formula_sum 'As1 Ga1'
 _chemical_name_structure_type ZnS(cF8)
 _exptl_crystal_density_diffrn 5.32

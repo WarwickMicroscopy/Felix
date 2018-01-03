@@ -4,13 +4,13 @@
 # ------------------------------------
 
 # control flags
-IWriteFLAG                = 1
+IWriteFLAG                = 31
 IImageFLAG                = 1
 IScatterFactorMethodFLAG  = 0
 IBlochMethodFLAG          = 0
 IMaskFLAG                 = 1
 IHolzFLAG                 = 0
-IAbsorbFLAG               = 2
+IAbsorbFLAG               = 0
 IAnisoDebyeWallerFlag     = 0
 IByteSize                 = 2
 
@@ -18,9 +18,9 @@ IByteSize                 = 2
 IPixelCount               = 35
 
 # beam selection criteria
-IMinReflectionPool        = 100
-IMinStrongBeams           = 75
-IMinWeakBeams             = 0
+IMinReflectionPool        = 300
+IMinStrongBeams           = 70
+IMinWeakBeams             = 100
 
 # crystal settings
 RDebyeWallerConstant      = 0.0
@@ -49,6 +49,6 @@ IImageProcessingFLAG     = 4
 RBlurRadius              = 1.45
 INoofUgs                 = 1
 IAtomicSites             = (1,2)
-IPrint                   = 4
+IPrint                   = 1
 RSimplexLengthScale      = 5.0 
 RExitCriteria            = 0.01
