@@ -158,7 +158,6 @@ MODULE read_cif_mod
         SChemicalFormula(ILN:ILN) = name(jnd:jnd)
       END IF
     END DO
-    PRINT*,SChemicalFormula(1:ILN),"XX"
     
     ! Extract some cell dimensions; test all is OK
     ! NEED TO PUT IN A CHECK FOR LENGTH UNITS
