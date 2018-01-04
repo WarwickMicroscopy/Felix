@@ -175,8 +175,7 @@ MODULE refinementcontrol_mod
         ! find the position of this Ug in the matrix
         ILoc = MINLOC(ABS(ISymmetryRelations-jnd))
         RCurrentG = RgMatrix(ILoc(1),ILoc(2),:) ! g-vector, local variable
-        RCurrentGMagnitude = RgMatrixMagnitude(ILoc(1),ILoc(2)) ! g-vector magnitude
-
+        RCurrentGMagnitude = RgMatrixMagnitude(ILoc(1),ILoc(2)) ! g-vector magnitude, global variable
         CALL GetVgContributionij(RScatteringFactor,ILoc(1),ILoc(2),CVgij,IErr)
         IF(l_alert(IErr,"SimulateAndFit","GetVgContributionij")) RETURN
 

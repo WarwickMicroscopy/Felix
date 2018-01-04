@@ -235,14 +235,15 @@ MODULE ug_matrix_mod
 
     CALL message( LM, dbg3, "U'g matrix, i.e. absorption (nm^-2)" )
     DO ind = 1,16
-      CALL message( LM, dbg3, "RKL row:",NINT(Rhkl(ind,:)) )
-      CALL message( LM, dbg3, "CUg row:",100*CUgMatPrime(ind,1:6) )
+!      CALL message( LM, dbg3, "RKL row:",NINT(Rhkl(ind,:)) )
+      WRITE(SPrintString,FMT='(4(2(F6.2,1X),2X))') 100*CUgMatPrime(ind,1:4)
+      CALL message( LM, dbg3, SPrintString )
     END DO
 
     CALL message( LM, dbg3, "Ug matrix, including absorption (nm^-2)" )
     DO ind = 1,16
-      CALL message( LM, dbg3, "RKL row:",NINT(Rhkl(ind,:)) )
-      CALL message( LM, dbg3, "CUg row:",100*CUgMat(ind,1:6) )
+      WRITE(SPrintString,FMT='(4(2(F6.2,1X),2X))') 100*CUgMat(ind,1:4)
+      CALL message( LM, dbg3, SPrintString )
     END DO
 
   END SUBROUTINE Absorption
@@ -500,14 +501,13 @@ MODULE ug_matrix_mod
 
     CALL message( LM, dbg3, "Ug matrix, without absorption (nm^-2)" )
     DO ind = 1,16
-      CALL message( LM, dbg3, "RKL row:",NINT(Rhkl(ind,:)) )
-      CALL message( LM, dbg3, "CUg row:",100*CUgMatNoAbs(ind,1:4) )
+      WRITE(SPrintString,FMT='(6(2(F6.2,1X),2X))') 100*CUgMatNoAbs(ind,1:6)
+      CALL message( LM, dbg3, SPrintString )
     END DO
    
     !--------------------------------------------------------------------
     ! calculate mean inner potential and wave vector magnitude
     !--------------------------------------------------------------------
-   
     ! calculate the mean inner potential as the sum of scattering factors
     ! at g=0 multiplied by h^2/(2pi*m0*e*CellVolume)
     RMeanInnerPotential=ZERO
@@ -531,7 +531,7 @@ MODULE ug_matrix_mod
     ! K^2=k^2+U0
     RBigK= SQRT(RElectronWaveVectorMagnitude**2 + REAL(CUgMatNoAbs(1,1)))
     CALL message ( LM, dbg3, "K (Angstroms) = ",RBigK )
-    !?? does this match Acta Cryst. (1998). A54, 388-398 eqaution (3)
+    !?? does this match Acta Cryst. (1998). A54, 388-398 equation (3)
 
     !--------------------------------------------------------------------
     
@@ -547,6 +547,13 @@ MODULE ug_matrix_mod
 
       RgSumMat = SUM(ABS(RgMatrix),3) + RgMatrixMagnitude+ABS(REAL(CUgMatNoAbs)) + &
             ABS(AIMAG(CUgMatNoAbs))
+      !RgSumMat=REAL(SIGN(1_IKIND,NINT(111111.1*AIMAG(CUgMatNoAbs))))
+      !RgSumMat=100.0*REAL(AIMAG(CUgMatNoAbs))
+      CALL message ( LM, dbg3, "hkl: RgSumMat from 1 to 12" )
+      DO ind =1,16
+        WRITE(SPrintString,FMT='(12(F6.2,2X))') RgSumMat(ind,1:12)
+        CALL message ( LM, dbg3, SPrintString )
+      END DO
 
       ISymmetryRelations = 0_IKIND 
       Iuid = 0_IKIND 
@@ -559,7 +566,7 @@ MODULE ug_matrix_mod
             ! fill the symmetry relation matrix with incrementing numbers
             ! that have the sign of the imaginary part
             WHERE (ABS(RgSumMat-ABS(RgSumMat(ind,jnd))).LE.RTolerance)
-              ISymmetryRelations = Iuid*SIGN(1_IKIND,NINT(AIMAG(CUgMatNoAbs)/(TINY**2)))
+              ISymmetryRelations = Iuid*SIGN(1_IKIND,NINT(AIMAG(CUgMatNoAbs)/TINY))
             END WHERE
           END IF
         END DO
@@ -570,8 +577,8 @@ MODULE ug_matrix_mod
       CALL message ( LS, SPrintString )
       CALL message ( LM, dbg3, "hkl: symmetry matrix from 1 to 16" )
       DO ind =1,16
-        CALL message ( LM, dbg3, "Rhkl:", NINT(Rhkl(ind,:)) )
-        CALL message ( LM, dbg3, "Isym:", ISymmetryRelations(ind,1:12) )
+        WRITE(SPrintString,FMT='(12(I3,2X))') ISymmetryRelations(ind,1:12)
+        CALL message ( LM, dbg3, SPrintString )
       END DO
 
       ! link each key with its Ug, from 1 to the number of unique Ug's Iuid

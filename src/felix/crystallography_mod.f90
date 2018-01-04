@@ -165,7 +165,7 @@ MODULE crystallography_mod
     RcVecM= MATMUL(RTMatO2M,RcVecO)
     
     ! create new set of reciprocal lattice vectors in Microscope reference frame
-    ! Note that reciprocal lattice vectors dot have two pi included,
+    ! Note that reciprocal lattice vectors do NOT have two pi included,
     ! we are using the optical convention exp(i*g.r)
     RarVecM= TWOPI*CROSS(RbVecM,RcVecM)/DOT_PRODUCT(RbVecM,CROSS(RcVecM,RaVecM))
     RbrVecM= TWOPI*CROSS(RcVecM,RaVecM)/DOT_PRODUCT(RcVecM,CROSS(RaVecM,RbVecM))
