@@ -43,7 +43,7 @@ LONGINTEGER=
 
 # -------------------------------
 # which PLATFORM dependent libraries to link
-LIBS= -mkl -lfftw3
+LIBS= -mkl=sequential -lfftw3
 
 # -------------------------------
 # which fortran compiler is used
