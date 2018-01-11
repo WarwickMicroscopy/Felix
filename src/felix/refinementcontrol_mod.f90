@@ -391,15 +391,15 @@ MODULE refinementcontrol_mod
           RSimulatedImage=SQRT(RSimulatedImage)
           RExperimentalImage=SQRT(RImageExpi(:,:,ind))
         CASE(2)! log before performing correlation
-          WHERE (RSimulatedImage.GT.TINY**2)
+          WHERE (RSimulatedImage.GT.TINY)
             RSimulatedImage=LOG(RSimulatedImage)
           ELSEWHERE
-            RSimulatedImage = TINY**2
+            RSimulatedImage = TINY
           END WHERE
-          WHERE (RExperimentalImage.GT.TINY**2)
+          WHERE (RExperimentalImage.GT.TINY)
             RExperimentalImage = LOG(RImageExpi(:,:,ind))
           ELSEWHERE
-            RExperimentalImage =  TINY**2
+            RExperimentalImage =  TINY
           END WHERE
         
         END SELECT
@@ -514,9 +514,9 @@ MODULE refinementcontrol_mod
         ! The atom being moved
         IAtomID = IAtomMoveList(IVectorID)
         ! Change in position r' = r - v*(r.v) +v*RIndependentVariable(ind)
-        RBasisAtomPosition(IAtomID,:) = RBasisAtomPosition(IAtomID,:) - &
+        RBasisAtomPosition(IAtomID,:) = MODULO((RBasisAtomPosition(IAtomID,:) - &
             RVector(IVectorID,:)*DOT_PRODUCT(RBasisAtomPosition(IAtomID,:),RVector(IVectorID,:)) + &
-            RVector(IVectorID,:)*RIndependentVariable(ind)
+            RVector(IVectorID,:)*RIndependentVariable(ind)),ONE)
       CASE(3)
         RBasisOccupancy(IIterativeVariableUniqueIDs(ind,2))=RIndependentVariable(ind) 
       CASE(4)

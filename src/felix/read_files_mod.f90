@@ -184,6 +184,8 @@ MODULE read_files_mod
     ILine= ILine+1
     READ(IChInp,'(27X,I15.1)',ERR=20,END=30) IMinWeakBeams
     CALL message ( LXL, dbg3, "IMinWeakBeams=",IMinWeakBeams)
+    WRITE(SPrintString,FMT='(A19,I4,A19,I4,A13)') "Reflection pool of ",IMinReflectionPool," with a minimum of ",IMinStrongBeams," strong beams"
+    CALL message ( LS, SPrintString)
 
     !--------------------------------------------------------------------
     ! crystal settings

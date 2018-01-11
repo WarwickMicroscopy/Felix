@@ -10,7 +10,7 @@ IScatterFactorMethodFLAG  = 0
 IBlochMethodFLAG          = 0
 IMaskFLAG                 = 1
 IHolzFLAG                 = 0
-IAbsorbFLAG               = 0
+IAbsorbFLAG               = 2
 IAnisoDebyeWallerFlag     = 0
 IByteSize                 = 2
 
@@ -19,7 +19,7 @@ IPixelCount               = 35
 
 # beam selection criteria
 IMinReflectionPool        = 100
-IMinStrongBeams           = 30
+IMinStrongBeams           = 50
 IMinWeakBeams             = 0
 
 # crystal settings
