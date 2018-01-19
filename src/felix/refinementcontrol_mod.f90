@@ -640,7 +640,7 @@ MODULE refinementcontrol_mod
           CALL message(LS, "Current Unit Cell Angles", (/ RAlpha,RBeta,RGamma /) )
 
         CASE(8)
-          WRITE(SPrintString,FMT='(A4,A4,F8.4)') "Current Convergence Angle ",RConvergenceAngle
+          WRITE(SPrintString,FMT='(A26,F8.4)') "Current Convergence Angle ",RConvergenceAngle
           CALL message(LS,SPrintString)
 
         CASE(9)

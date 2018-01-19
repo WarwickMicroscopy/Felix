@@ -653,7 +653,7 @@ MODULE ug_matrix_mod
   !>
   !! Procedure-description: Returns a PseudoAtom scattering factor 
   !!
-  !! Major-Authors: Keith Evans (2014), Richard Beanland (2016)
+  !! Major-Authors: Richard Beanland (2016)
   !!
   SUBROUTINE PseudoAtom(CFpseudo,i,j,k,IErr)
 
@@ -738,7 +738,7 @@ MODULE ug_matrix_mod
   !! Procedure-description: Used as part of numerical integration to calculate
   !! absorptive form factor f' for Bird & King absorption method
   !!
-  !! Major-Authors: Keith Evans (2014), Richard Beanland (2016)
+  !! Major-Authors: Richard Beanland (2016)
   !!
   SUBROUTINE DoubleIntegrateBK(RResult,IErr) 
     ! used in each (case 2 Bird & King) absorption
@@ -773,7 +773,7 @@ MODULE ug_matrix_mod
   !! Procedure-description: Used as part of numerical integration to calculate
   !! absorptive form factor f' for Bird & King absorption method
   !!
-  !! Major-Authors: Keith Evans (2014), Richard Beanland (2016)
+  !! Major-Authors: Richard Beanland (2016)
   !!
   FUNCTION IntegrateBK(Sy) 
     ! used in each (case 2 Bird & King) absorption (indirectly)
@@ -809,7 +809,7 @@ MODULE ug_matrix_mod
   !! absorptive form factor f' for Bird & King absorption method. Defines a Bird & King 
   !! integrand to calculate an absorptive scattering factor 
   !!
-  !! Major-Authors: Keith Evans (2014), Richard Beanland (2016)
+  !! Major-Authors: Richard Beanland (2016)
   !!
   FUNCTION BirdKing(RSprimeX)
     ! used in each (case 2 Bird & King) absorption (indirectly)

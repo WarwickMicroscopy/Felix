@@ -688,6 +688,7 @@ MODULE setup_space_group_mod
          UPPER_CASE = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ' 
     INTEGER(IKIND) :: ind, n
 
+    IErr=0
     ! Copy input string
     Output_String = Input_String
     

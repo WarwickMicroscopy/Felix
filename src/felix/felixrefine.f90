@@ -169,7 +169,7 @@ PROGRAM Felixrefine
   IF(l_alert(IErr,"felixrefine","ReciprocalLattice")) CALL abort
 
   !--------------------------------------------------------------------
-  ! allocate atom and debye-waller factor arrays
+  ! allocate atom and Debye-Waller factor arrays
   !--------------------------------------------------------------------
 
   ! total possible atoms/unit cell
