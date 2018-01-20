@@ -219,7 +219,6 @@ MODULE crystallography_mod
     !--------------------------------------------------------------------  
     ! apply symmetry elements to generate all equivalent positions 
     !--------------------------------------------------------------------  
-
     knd=1
     DO ind=1, SIZE(RSymVec,1)  
       DO jnd=1, SIZE(RBasisAtomPosition,1)
@@ -233,8 +232,8 @@ MODULE crystallography_mod
         RAllAnisoDW(knd) = IBasisAnisoDW(jnd)
 	    knd=knd+1
       END DO
-WRITE(SPrintString,'(F3.0,1X,F3.0,1X,F3.0,2X,F3.0,1X,F3.0,1X,F3.0,2X,F3.0,1X,F3.0,1X,F3.0)') RSymMat(ind,1,:),RSymMat(ind,2,:),RSymMat(ind,3,:)
-IF(my_rank.EQ.0) PRINT*, ind,"RSymMat:  ", SPrintString             
+!WRITE(SPrintString,'(F3.0,1X,F3.0,1X,F3.0,2X,F3.0,1X,F3.0,1X,F3.0,2X,F3.0,1X,F3.0,1X,F3.0)') RSymMat(ind,1,:),RSymMat(ind,2,:),RSymMat(ind,3,:)
+!IF(my_rank.EQ.0) PRINT*, ind,"RSymMat:  ", SPrintString             
     END DO
     RAllAtomPosition = MODULO(RAllAtomPosition,ONE)
     WHERE(ABS(RAllAtomPosition).LT.TINY) RAllAtomPosition = ZERO 
@@ -258,10 +257,10 @@ IF(my_rank.EQ.0) PRINT*, ind,"RSymMat:  ", SPrintString
       DO knd=1,jnd-1 ! check against the unique ones found so far
         IF (SUM(ABS(RAllAtomPosition(ind,:)-RAtomPosition(knd,:))).LE.TINY) THEN ! position same
           IF (SAllAtomLabel(ind).EQ.SAtomLabel(knd)) THEN ! Label is the same too, so not unique
-		        Lunique=.FALSE.
-		        EXIT
-		      END IF
-	      END IF
+            Lunique=.FALSE.
+            EXIT
+          END IF
+	    END IF
       END DO
       IF (Lunique .EQV. .TRUE.) THEN
         RAtomPosition(jnd,:)= RAllAtomPosition(ind,:)
@@ -278,10 +277,10 @@ IF(my_rank.EQ.0) PRINT*, ind,"RSymMat:  ", SPrintString
 
 
     DO ind=1,INAtomsUnitCell    
-      CALL message( LS, dbg7, "Atom ",ind)
+      CALL message( LM, dbg7, "Atom ",ind)
       WRITE(SPrintString,"(A18,F8.4,F8.4,F8.4)") ": Atom position = ", RAtomPosition(ind,:)
-      CALL message( LS, dbg7, SAtomName(ind)//SPrintString )
-      CALL message( LS, dbg7, "(DWF, occupancy) = ",(/ RIsoDW(ind), ROccupancy(ind) /) )
+      CALL message( LM, dbg7, SAtomName(ind)//SPrintString )
+      CALL message( LM, dbg7, "(DWF, occupancy) = ",(/ RIsoDW(ind), ROccupancy(ind) /) )
     END DO
     
     ! Finished with these variables now

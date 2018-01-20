@@ -159,47 +159,38 @@ MODULE refinementcontrol_mod
         ! basis has changed in some way, recalculate unit cell
         CALL UniqueAtomPositions(IErr)
         IF(l_alert(IErr,"SimulateAndFit","UniqueAtomPositions")) RETURN
+
+        !--------------------------------------------------------------------
+        ! update scattering matrix Ug
+        !--------------------------------------------------------------------
+        ! calculate CUgMatNoAbs
+        CUgMatNoAbs = CZERO
+        ! Work through unique Ug's
+        IUniqueUgs = SIZE(IEquivalentUgKey)
+        DO ind = 1, IUniqueUgs
+          ! number of this Ug
+          jnd = IEquivalentUgKey(ind)
+          ! find the position of this Ug in the matrix
+          ILoc = MINLOC(ABS(ISymmetryRelations-jnd))
+          RCurrentG = RgMatrix(ILoc(1),ILoc(2),:) ! g-vector, local variable
+          RCurrentGMagnitude = RgMatrixMagnitude(ILoc(1),ILoc(2)) ! g-vector magnitude
+          CALL GetVgContributionij(RScatteringFactor,ILoc(1),ILoc(2),CVgij,IErr)
+          IF(l_alert(IErr,"SimulateAndFit","GetVgContributionij")) RETURN
+          WHERE(ISymmetryRelations.EQ.jnd)!replace the values in the Ug matrix
+            CUgMatNoAbs=CVgij
+          END WHERE
+          WHERE(ISymmetryRelations.EQ.-jnd)! NB for imaginary potential U(g)=U(-g)*
+            CUgMatNoAbs = CONJG(CVgij)
+          END WHERE
+        END DO
+        !Convert to Ug (N.B. must match line 495 in StructureFactorInitialisation)
+        CUgMatNoAbs = CUgMatNoAbs*TWO*RElectronMass*RRelativisticCorrection*RElectronCharge/((RPlanckConstant**2)*(RAngstromConversion**2))
+        DO ind=1,nReflections ! zero diagonal - is this necessary???
+           CUgMatNoAbs(ind,ind) = ZERO
+        ENDDO
+        CALL Absorption(IErr)! calculates CUgMat = CUgMatNoAbs + CUgMatPrime
+        IF(l_alert(IErr,"SimulateAndFit","Absorption")) RETURN
       END IF
-
-      !--------------------------------------------------------------------
-      ! update scattering matrix Ug
-      !--------------------------------------------------------------------
-
-      ! calculate CUgMatNoAbs
-      CUgMatNoAbs = CZERO
-      ! Work through unique Ug's
-      IUniqueUgs = SIZE(IEquivalentUgKey)
-      DO ind = 1, IUniqueUgs
-        ! number of this Ug
-        jnd = IEquivalentUgKey(ind)
-        ! find the position of this Ug in the matrix
-        ILoc = MINLOC(ABS(ISymmetryRelations-jnd))
-        RCurrentG = RgMatrix(ILoc(1),ILoc(2),:) ! g-vector, local variable
-        RCurrentGMagnitude = RgMatrixMagnitude(ILoc(1),ILoc(2)) ! g-vector magnitude
-
-        CALL GetVgContributionij(RScatteringFactor,ILoc(1),ILoc(2),CVgij,IErr)
-        IF(l_alert(IErr,"SimulateAndFit","GetVgContributionij")) RETURN
-
-        ! now replace the values in the Ug matrix
-        WHERE(ISymmetryRelations.EQ.jnd)
-          CUgMatNoAbs=CVgij
-        END WHERE
-        ! NB for imaginary potential U(g)=U(-g)*
-        WHERE(ISymmetryRelations.EQ.-jnd)
-          CUgMatNoAbs = CONJG(CVgij)
-        END WHERE
-      END DO
-      !Convert to Ug (N.B. must match line 495 in StructureFactorInitialisation)
-      CUgMatNoAbs = CUgMatNoAbs*TWO*RElectronMass*RRelativisticCorrection*RElectronCharge/((RPlanckConstant**2)*(RAngstromConversion**2))
-      DO ind=1,nReflections ! zero diagonal
-         CUgMatNoAbs(ind,ind) = ZERO
-      ENDDO
-
-      ! calculate CUgMat
-      ! calculate CUgMatPrime, then CUgMat = CUgMatNoAbs + CUgMatPrime
-      CALL Absorption(IErr)
-      IF(l_alert(IErr,"SimulateAndFit","Absorption")) RETURN
-
     END IF
     !/\----------------------------------------------------------------------
 
@@ -209,7 +200,6 @@ MODULE refinementcontrol_mod
     END IF
 
     ! simulate
-
     RSimulatedPatterns = ZERO ! Reset simulation
     CALL Simulate(IErr) ! simulate 
     IF(l_alert(IErr,"SimulateAndFit","Simulate")) RETURN
@@ -218,13 +208,11 @@ MODULE refinementcontrol_mod
       ! Only calculate figure of merit if we are refining
       IF (ISimFLAG.EQ.0) THEN
         CALL FigureOfMeritAndThickness(Iter,IThicknessIndex,IErr)
-        IF(l_alert(IErr,"SimulateAndFit",&
-              "FigureOfMeritAndThickness")) RETURN
+        IF(l_alert(IErr,"SimulateAndFit","FigureOfMeritAndThickness")) RETURN
       END IF
       ! Write current variable list and fit to IterationLog.txt
       CALL WriteOutVariables(Iter,IErr)
       IF(l_alert(IErr,"SimulateAndFit","WriteOutVariables")) RETURN
-
     END IF
 
     !===================================== ! Send the fit index to all cores

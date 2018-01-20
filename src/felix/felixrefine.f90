@@ -4,7 +4,7 @@
 !
 ! Richard Beanland, Keith Evans & Rudolf A Roemer
 !
-! (C) 2013-17, all rights reserved
+! (C) 2013-18, all rights reserved
 !
 ! Version: :VERSION:
 ! Date:    :DATE:
@@ -454,7 +454,7 @@ PROGRAM Felixrefine
   ! calculate reflection matrix & initialise structure factors
   !--------------------------------------------------------------------
 
-  ! Calculate matrix  of g-vectors that corresponds tp the Ug matrix
+  ! Calculate matrix  of g-vectors that corresponds to the Ug matrix
   IThicknessCount= NINT((RFinalThickness-RInitialThickness)/RDeltaThickness) + 1
   DO ind=1,nReflections
      DO jnd=1,nReflections
@@ -491,7 +491,7 @@ PROGRAM Felixrefine
 
   ! Ug refinement is a special case and must be done alone
   ! cannot do any other refinement alongside
-  IF(ISimFLAG==0) THEN
+  IF(ISimFLAG.EQ.0) THEN
     IF(IRefineMode(1).EQ.1) THEN ! It's a Ug refinement, A
 
       ! Count the number of Independent Variables
@@ -548,16 +548,14 @@ PROGRAM Felixrefine
       END IF
 
     END IF
-  END IF
 
-  ALLOCATE(RIndependentVariable(INoOfVariables),STAT=IErr) 
-  IF(l_alert(IErr,"felixrefine","allocate RIndependentVariable")) CALL abort
+    ALLOCATE(RIndependentVariable(INoOfVariables),STAT=IErr) 
+    IF(l_alert(IErr,"felixrefine","allocate RIndependentVariable")) CALL abort
 
-  !--------------------------------------------------------------------
-  ! assign refinement variables depending upon Ug and non-Ug refinement
-  !--------------------------------------------------------------------
+    !--------------------------------------------------------------------
+    ! assign refinement variables depending upon Ug and non-Ug refinement
+    !--------------------------------------------------------------------
   
-  IF(ISimFLAG==0) THEN
     IF(IRefineMode(1).EQ.1) THEN ! It's a Ug refinement, A
 
       ! Fill up the IndependentVariable list with CUgMatNoAbs components
@@ -782,7 +780,7 @@ PROGRAM Felixrefine
     END IF 
   
   ELSE ! Refinement Mode
-    IF(my_rank.EQ.0) THEN
+    IF(my_rank.EQ.0) THEN!outputs to disc come from core 0 only
       ! Figure of merit is passed back as a global variable
       CALL FigureOfMeritAndThickness(Iter,IThicknessIndex,IErr)
       IF(l_alert(IErr,"felixrefine",&
@@ -795,12 +793,6 @@ PROGRAM Felixrefine
       CALL message ( LS, "Writing output; baseline simulation" )
       CALL WriteIterationOutput(Iter,IThicknessIndex,IExitFLAG,IErr)
       IF(l_alert(IErr,"felixrefine","WriteIterationOutput")) CALL abort
-      
-      ! JR the subroutine below can be used as a quick way to 
-      ! visually compare the experimental images and initial simulated images
-      !CALL NormaliseExperimentalImagesAndWriteOut(IThicknessIndex,IErr)
-      !IF(l_alert(IErr,"felixrefine","NormaliseExperimentalImagesAndWriteOut")) CALL abort
-
     END IF
     
     !===================================== ! Send the fit index to all cores

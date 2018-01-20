@@ -436,8 +436,8 @@ MODULE read_cif_mod
           END IF
         END DO
 !IF(my_rank.EQ.0) PRINT*, Csym
-WRITE(SPrintString,'(F3.0,1X,F3.0,1X,F3.0,2X,F3.0,1X,F3.0,1X,F3.0,2X,F3.0,1X,F3.0,1X,F3.0)') RSymMat(ISymCount,1,:),RSymMat(ISymCount,2,:),RSymMat(ISymCount,3,:)
-IF(my_rank.EQ.0) PRINT*, ISymCount,"RSymMat:  ", SPrintString             
+!WRITE(SPrintString,'(F3.0,1X,F3.0,1X,F3.0,2X,F3.0,1X,F3.0,1X,F3.0,2X,F3.0,1X,F3.0,1X,F3.0)') RSymMat(ISymCount,1,:),RSymMat(ISymCount,2,:),RSymMat(ISymCount,3,:)
+!IF(my_rank.EQ.0) PRINT*, ISymCount,"RSymMat:  ", SPrintString             
 !IF(my_rank.EQ.0) PRINT*, ISymCount,"RSymVec:", RSymVec(ISymCount,:)             
         IF(text_ .NEQV. .TRUE.) EXIT
       END DO
