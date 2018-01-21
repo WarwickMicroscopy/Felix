@@ -154,8 +154,8 @@ MODULE read_files_mod
     CALL message ( LXL, dbg3, "IAnisoDebyeWallerFactorFlag=",IAnisoDebyeWallerFactorFlag)
     ! IByteSize
     ILine= ILine+1; READ(IChInp,'(27X,I15.1)',ERR=20,END=30) IByteSize
-    CALL message ( LXL, dbg3, "IByteSize=",IByteSize) ! depends on system, 8 for csc, 4 tinis
-
+    CALL message ( LXL, dbg3, "IByteSize=",IByteSize) ! depends on system, 8 for csc, 2 tinis
+IF(my_rank.EQ.0)PRINT*,IByteSize
     !--------------------------------------------------------------------
     ! radius of the beam in pixels
     !--------------------------------------------------------------------

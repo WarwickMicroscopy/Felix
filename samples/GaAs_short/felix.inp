@@ -18,9 +18,9 @@ IByteSize                 = 2
 IPixelCount               = 35
 
 # beam selection criteria
-IMinReflectionPool        = 100
+IMinReflectionPool        = 600
 IMinStrongBeams           = 50
-IMinWeakBeams             = 0
+IMinWeakBeams             = 50
 
 # crystal settings
 RDebyeWallerConstant      = 0.0
@@ -51,4 +51,4 @@ INoofUgs                 = 1
 IAtomicSites             = (1,2)
 IPrint                   = 1
 RSimplexLengthScale      = 5.0 
-RExitCriteria            = 0.01
+RExitCriteria            = 0.0001

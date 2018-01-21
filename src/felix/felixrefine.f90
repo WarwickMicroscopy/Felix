@@ -4,7 +4,7 @@
 !
 ! Richard Beanland, Keith Evans & Rudolf A Roemer
 !
-! (C) 2013-17, all rights reserved
+! (C) 2013-18, all rights reserved
 !
 ! Version: :VERSION:
 ! Date:    :DATE:
@@ -162,13 +162,20 @@ PROGRAM Felixrefine
   RElectronWaveVectorMagnitude=TWOPI/RElectronWaveLength
   RRelativisticCorrection = ONE/SQRT( ONE - (RElectronVelocity/RSpeedOfLight)**2 )
   RRelativisticMass = RRelativisticCorrection*RElectronMass
+<<<<<<< HEAD
+  !conversion from Vg to Ug, h^2/(2pi*m0*e), see e.g. Kirkland eqn. C.5
+  RScattFacToVolts=(RPlanckConstant**2)*(RAngstromConversion**2)/&
+  (TWOPI*RElectronMass*RElectronCharge*RVolume)
+  ! Creates reciprocal lattice vectors in Microscope reference frame
+=======
 
   ! Creates reciprocal lattice vectors in reciprocal Angstroms, Microscope reference frame
+>>>>>>> master
   CALL ReciprocalLattice(IErr)
   IF(l_alert(IErr,"felixrefine","ReciprocalLattice")) CALL abort
 
   !--------------------------------------------------------------------
-  ! allocate atom and debye-waller factor arrays
+  ! allocate atom and Debye-Waller factor arrays
   !--------------------------------------------------------------------
 
   ! total possible atoms/unit cell
@@ -384,7 +391,11 @@ PROGRAM Felixrefine
   ! calculate resolution in k space
   !--------------------------------------------------------------------
 
+<<<<<<< HEAD
+  RMinimumGMag = RgPoolMag(2)!since the first one is always 000
+=======
   RMinimumGMag = RgPoolMag(2)!because RGPool(1) is 000
+>>>>>>> master
   RDeltaK = RMinimumGMag*RConvergenceAngle/REAL(IPixelCount,RKIND)
 
   !--------------------------------------------------------------------
@@ -475,6 +486,11 @@ PROGRAM Felixrefine
   CALL SYSTEM_CLOCK( IStartTime2 )
   CALL message(LS,dbg3,"Starting absorption calculation... ")
   CALL Absorption (IErr)
+  CALL message( LM, "Initial Ug matrix, with absorption (nm^-2)" )
+  DO ind = 1,16
+	WRITE(SPrintString,FMT='(3(I2,1X),A2,1X,8(F7.4,1X))') NINT(Rhkl(ind,:)),": ",100*CUgMat(ind,1:4)
+    CALL message( LM,dbg3, SPrintString)
+  END DO
   IF(l_alert(IErr,"felixrefine","Absorption")) CALL abort
   CALL PrintEndTime(LS,IStartTime2, "Absorption" )
   CALL message(LL,dbg3,"g-vector magnitude matrix (2pi/A)", RgMatrixMagnitude(1:16,1:8)) 
@@ -486,7 +502,7 @@ PROGRAM Felixrefine
 
   ! Ug refinement is a special case and must be done alone
   ! cannot do any other refinement alongside
-  IF(ISimFLAG==0) THEN
+  IF(ISimFLAG.EQ.0) THEN
     IF(IRefineMode(1).EQ.1) THEN ! It's a Ug refinement, A
 
       ! Count the number of Independent Variables
@@ -543,15 +559,21 @@ PROGRAM Felixrefine
       END IF
 
     END IF
-  END IF
 
-  ALLOCATE(RIndependentVariable(INoOfVariables),STAT=IErr) 
-  IF(l_alert(IErr,"felixrefine","allocate RIndependentVariable")) CALL abort
+    ALLOCATE(RIndependentVariable(INoOfVariables),STAT=IErr) 
+    IF(l_alert(IErr,"felixrefine","allocate RIndependentVariable")) CALL abort
 
+<<<<<<< HEAD
+    !--------------------------------------------------------------------
+    ! assign refinement variables depending upon Ug and non-Ug refinement
+    !--------------------------------------------------------------------
+  
+=======
   !--------------------------------------------------------------------
   ! assign refinement variables depending upon Ug and non-Ug refinement
   !--------------------------------------------------------------------
   IF(ISimFLAG==0) THEN
+>>>>>>> master
     IF(IRefineMode(1).EQ.1) THEN ! It's a Ug refinement, A
 
       ! Fill up the IndependentVariable list with CUgMatNoAbs components
@@ -774,7 +796,7 @@ PROGRAM Felixrefine
     END IF 
   
   ELSE ! Refinement Mode
-    IF(my_rank.EQ.0) THEN
+    IF(my_rank.EQ.0) THEN!outputs to disc come from core 0 only
       ! Figure of merit is passed back as a global variable
       CALL FigureOfMeritAndThickness(Iter,IThicknessIndex,IErr)
       IF(l_alert(IErr,"felixrefine",&
@@ -787,12 +809,6 @@ PROGRAM Felixrefine
       CALL message ( LS, "Writing output; baseline simulation" )
       CALL WriteIterationOutput(Iter,IThicknessIndex,IExitFLAG,IErr)
       IF(l_alert(IErr,"felixrefine","WriteIterationOutput")) CALL abort
-      
-      ! JR the subroutine below can be used as a quick way to 
-      ! visually compare the experimental images and initial simulated images
-      !CALL NormaliseExperimentalImagesAndWriteOut(IThicknessIndex,IErr)
-      !IF(l_alert(IErr,"felixrefine","NormaliseExperimentalImagesAndWriteOut")) CALL abort
-
     END IF
     
     !===================================== ! Send the fit index to all cores
@@ -1012,7 +1028,6 @@ CONTAINS
     !--------------------------------------------------------------------
     ! allocations & intialise refinement variables
     !--------------------------------------------------------------------
-
     ALLOCATE(RVar0(INoOfVariables),STAT=IErr)! incoming set of variables
     IF(l_alert(IErr,"MaxGradientRefinement","allocate RVar0")) RETURN
     ! set of variables to send out for simulations
@@ -1076,7 +1091,7 @@ CONTAINS
           SPrintString=TRIM(ADJUSTL(SPrintString))
           CALL message(LS,SPrintString)
 
-          ! Make a random number and vary the sign of dx, using system clock
+          ! Make a random number to vary the sign of dx, using system clock
           CALL SYSTEM_CLOCK(mnd)
           Rdx=(REAL(MOD(mnd,10))/TEN)-0.45 ! numbers 0-4 give minus, 5-9 give plus
           Rdx=0.1*Rdx*RScale/ABS(Rdx) ! small change in current variable (RScale/10)is dx
@@ -1085,7 +1100,8 @@ CONTAINS
           CALL SimulateAndFit(RCurrentVar,Iter,IThicknessIndex,IErr)
           IF(l_alert(IErr,"MaxGradientRefinement","SimulateAndFit")) RETURN
           ! Do not increment iteration here nor write iteration output
-
+          Iter=Iter+1
+          CALL WriteIterationOutputWrapper(Iter,IThicknessIndex,IExitFLAG,IErr)
           ! BestFitCheck copies RCurrentVar into RIndependentVariable
           ! and updates RBestFit if the fit is better
           CALL BestFitCheck(RFigureofMerit,RBestFit,RCurrentVar,RIndependentVariable,IErr)
@@ -1110,7 +1126,6 @@ CONTAINS
       !--------------------------------------------------------------------
       ! normalise the max gradient vector RPvec & set the first point
       !--------------------------------------------------------------------
-
       RPvecMag=ZERO
       DO ind=1,INoOfVariables
         RPvecMag=RPvecMag+RPvec(ind)**2
@@ -1138,7 +1153,6 @@ CONTAINS
       !--------------------------------------------------------------------
       ! simulate and set the 2nd and 3rd point
       !--------------------------------------------------------------------
-
       ! Second point
       R3var(2)=RCurrentVar(1) 
       CALL message(LS,"Refining, point 2 of 3")
@@ -1305,10 +1319,7 @@ CONTAINS
       !\/------------------------------------------------------------------    
       DO ind=1,INoOfVariables
 
-        !--------------------------------------------------------------------
         ! optional terminal output types of variables refined
-        !--------------------------------------------------------------------
-
         IVariableType=IIterativeVariableUniqueIDs(ind,1)
         SELECT CASE(IVariableType)
           CASE(1)
@@ -1332,9 +1343,7 @@ CONTAINS
 
         !--------------------------------------------------------------------
         ! look down average refinement direction or do pair-wise maximum gradient
-        !--------------------------------------------------------------------
-
-        RVar0=RIndependentVariable ! incoming point in n-dimensional parameter space
+         RVar0=RIndependentVariable ! incoming point in n-dimensional parameter space
         RPvec=ZERO ! Vector in n-dimensional parameter space for this refinement
         CALL message ( LL, "Current parameters=",RIndependentVariable )
 

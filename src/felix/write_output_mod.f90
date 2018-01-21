@@ -122,7 +122,6 @@ MODULE write_output_mod
 
       fullpath = TRIM(ADJUSTL(path))//"/"//TRIM(ADJUSTL(filename))
       CALL message ( LL, dbg6, fullpath )
-
       RImageToWrite = RImageSimi(:,:,ind,IThicknessIndex)	
       ! Writes data to output image .bin files
       OPEN(UNIT=IChOutWIImage, STATUS= 'UNKNOWN', FILE=TRIM(ADJUSTL(fullpath)),&
@@ -136,7 +135,7 @@ MODULE write_output_mod
     END DO
 
     ! writes out structure.cif
-    CALL WriteIterationCIF(path,IErr) 
+    CALL WriteIterationCIF(Iter,path,IErr) 
     IF(l_alert(IErr,"WriteIterationOutput","WriteIterationCIF")) RETURN   
 
     ! write out StructureFactors.txt
@@ -162,31 +161,40 @@ MODULE write_output_mod
   !!
   !! Major-Authors: 'kidwhizz' (2015), Richard Beanland (2016)
   !!
-  SUBROUTINE WriteIterationCIF(path,IErr)
+  SUBROUTINE WriteIterationCIF(Iter,path,IErr)
 
     USE MyNumbers
     USE message_mod
     
     ! global inputs
+    USE IPARA, ONLY : ILN
     USE RPARA, ONLY : RLengthX, RLengthY, RLengthZ, RAlpha, RBeta, RGamma, &
                       RBasisAtomPosition, RBasisIsoDW, RBasisOccupancy
-    USE SPARA, ONLY : SSpaceGrp, SBasisAtomLabel, SBasisAtomName
+    USE SPARA, ONLY : SSpaceGrp, SBasisAtomLabel, SBasisAtomName,SChemicalFormula
     USE IChannels, ONLY : IChOutSimplex
 
     IMPLICIT NONE
 
     CHARACTER(200), INTENT(IN) :: path
+    INTEGER(IKIND), INTENT(IN) :: Iter
     INTEGER(IKIND), INTENT(OUT) :: IErr
     INTEGER(IKIND) :: jnd
     CHARACTER(200) :: filename, fullpath
 
+<<<<<<< HEAD
+    ! Write out unique atomic positions
+
+    WRITE(filename,"(A1,I4.4,A4)") "_",Iter,".cif"
+    filename=SChemicalFormula(1:ILN) // filename!gives e.g. SrTiO3_0001.cif 
+=======
     IErr=0
     ! Write out non symmetrically related atomic positions
     WRITE(filename,*) "structure.cif"
+>>>>>>> master
     WRITE(fullpath,*) TRIM(ADJUSTL(path)),'/',TRIM(ADJUSTL(filename))
 
     OPEN(UNIT=IChOutSimplex,STATUS='UNKNOWN',FILE=TRIM(ADJUSTL(fullpath)))
-    ! RB
+ 
     WRITE(IChOutSimplex,FMT='(A16)') "data_felixrefine"
     WRITE(IChOutSimplex,FMT='(A5)') "loop_"
     WRITE(IChOutSimplex,FMT='(A14,1X,F7.4)') "_cell_length_a",RLengthX

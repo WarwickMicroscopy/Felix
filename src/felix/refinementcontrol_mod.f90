@@ -77,11 +77,11 @@ MODULE refinementcontrol_mod
           IEquivalentUgKey
     USE RPARA, ONLY : RAngstromConversion,RElectronCharge,RElectronMass,&
           RConvergenceAngle, RMinimumGMag, RTolerance, RRelativisticCorrection, &
-          RVolume, RgMatrix, RgMatrixMagnitude, RCurrentGMagnitude
+          RVolume, RgMatrix, RgMatrixMagnitude, RCurrentGMagnitude,Rhkl
     USE RConst, ONLY : RPlanckConstant
 
-    ! gloabl outputs
-    USE CPARA, ONLY : CUgMatNoAbs, CUniqueUg
+    ! global outputs
+    USE CPARA, ONLY : CUgMat,CUgMatNoAbs, CUniqueUg
     USE RPARA, ONLY : RAbsorptionPercentage, RDeltaK, RFigureofMerit, RSimulatedPatterns
 
     IMPLICIT NONE
@@ -159,6 +159,8 @@ MODULE refinementcontrol_mod
         ! basis has changed in some way, recalculate unit cell
         CALL UniqueAtomPositions(IErr)
         IF(l_alert(IErr,"SimulateAndFit","UniqueAtomPositions")) RETURN
+<<<<<<< HEAD
+=======
       END IF
 
       !--------------------------------------------------------------------
@@ -198,9 +200,46 @@ MODULE refinementcontrol_mod
       ! calculate CUgMatPrime, then CUgMat = CUgMatNoAbs + CUgMatPrime
       CALL Absorption(IErr)
       IF(l_alert(IErr,"SimulateAndFit","Absorption")) RETURN
+>>>>>>> master
 
+        !--------------------------------------------------------------------
+        ! update scattering matrix Ug
+        !--------------------------------------------------------------------
+        ! calculate CUgMatNoAbs
+        CUgMatNoAbs = CZERO
+        ! Work through unique Ug's
+        IUniqueUgs = SIZE(IEquivalentUgKey)
+        DO ind = 1, IUniqueUgs
+          ! number of this Ug
+          jnd = IEquivalentUgKey(ind)
+          ! find the position of this Ug in the matrix
+          ILoc = MINLOC(ABS(ISymmetryRelations-jnd))
+          RCurrentG = RgMatrix(ILoc(1),ILoc(2),:) ! g-vector, local variable
+          RCurrentGMagnitude = RgMatrixMagnitude(ILoc(1),ILoc(2)) ! g-vector magnitude
+          CALL GetVgContributionij(RScatteringFactor,ILoc(1),ILoc(2),CVgij,IErr)
+          IF(l_alert(IErr,"SimulateAndFit","GetVgContributionij")) RETURN
+          WHERE(ISymmetryRelations.EQ.jnd)!replace the values in the Ug matrix
+            CUgMatNoAbs=CVgij
+          END WHERE
+          WHERE(ISymmetryRelations.EQ.-jnd)! NB for imaginary potential U(g)=U(-g)*
+            CUgMatNoAbs = CONJG(CVgij)
+          END WHERE
+        END DO
+        !Convert to Ug (N.B. must match line 495 in StructureFactorInitialisation)
+        CUgMatNoAbs = CUgMatNoAbs*TWO*RElectronMass*RRelativisticCorrection*RElectronCharge/((RPlanckConstant**2)*(RAngstromConversion**2))
+        DO ind=1,nReflections ! zero diagonal - is this necessary???
+           CUgMatNoAbs(ind,ind) = ZERO
+        ENDDO
+        CALL Absorption(IErr)! calculates CUgMat = CUgMatNoAbs + CUgMatPrime
+        IF(l_alert(IErr,"SimulateAndFit","Absorption")) RETURN
+      END IF
     END IF
     !/\----------------------------------------------------------------------
+    CALL message( LM,dbg3, "recalculated Ug matrix, with absorption (nm^-2)" )
+    DO ind = 1,16
+	  WRITE(SPrintString,FMT='(3(I2,1X),A2,1X,8(F7.4,1X))') NINT(Rhkl(ind,:)),": ",100*CUgMat(ind,1:4)
+      CALL message( LM,dbg3, SPrintString)
+    END DO
 
     IF (my_rank.EQ.0) THEN ! send current values to screen
       CALL PrintVariables(IErr)
@@ -208,7 +247,6 @@ MODULE refinementcontrol_mod
     END IF
 
     ! simulate
-
     RSimulatedPatterns = ZERO ! Reset simulation
     CALL Simulate(IErr) ! simulate 
     IF(l_alert(IErr,"SimulateAndFit","Simulate")) RETURN
@@ -217,13 +255,11 @@ MODULE refinementcontrol_mod
       ! Only calculate figure of merit if we are refining
       IF (ISimFLAG.EQ.0) THEN
         CALL FigureOfMeritAndThickness(Iter,IThicknessIndex,IErr)
-        IF(l_alert(IErr,"SimulateAndFit",&
-              "FigureOfMeritAndThickness")) RETURN
+        IF(l_alert(IErr,"SimulateAndFit","FigureOfMeritAndThickness")) RETURN
       END IF
       ! Write current variable list and fit to IterationLog.txt
       CALL WriteOutVariables(Iter,IErr)
       IF(l_alert(IErr,"SimulateAndFit","WriteOutVariables")) RETURN
-
     END IF
 
     !===================================== ! Send the fit index to all cores
@@ -273,7 +309,6 @@ MODULE refinementcontrol_mod
 
     ! Reset simuation   
     RIndividualReflections = ZERO
-    IPixelComputed= 0!?? RB what is this?
 
     CALL SYSTEM_CLOCK( IStartTime )
 
@@ -326,10 +361,9 @@ MODULE refinementcontrol_mod
   !%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 
-
   !>
   !! Procedure-description: Calculates figure of merit and determines which thickness
-  !! matches best. Iteratively 
+  !! matches best.
   !!
   !! Major-Authors: Keith Evans (2014), Richard Beanland (2016)
   !!  
@@ -561,8 +595,6 @@ MODULE refinementcontrol_mod
 
   !%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-
-
   !>
   !! Procedure-description: Print variables
   !!
@@ -639,7 +671,7 @@ MODULE refinementcontrol_mod
           CALL message(LS, "Current Unit Cell Angles", (/ RAlpha,RBeta,RGamma /) )
 
         CASE(8)
-          WRITE(SPrintString,FMT='(A4,A4,F8.4)') "Current Convergence Angle ",RConvergenceAngle
+          WRITE(SPrintString,FMT='(A26,F8.4)') "Current Convergence Angle ",RConvergenceAngle
           CALL message(LS,SPrintString)
 
         CASE(9)
@@ -658,8 +690,6 @@ MODULE refinementcontrol_mod
   END SUBROUTINE PrintVariables
 
   !%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-
-
 
   !>
   !! Procedure-description: Performs a 2D Gaussian blur on the input image using 

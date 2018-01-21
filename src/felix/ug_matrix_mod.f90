@@ -65,14 +65,15 @@ MODULE ug_matrix_mod
           IAtomicNumber
     USE RPARA, ONLY : RAbsorptionPercentage, RAngstromConversion, RElectronCharge, &
           RElectronMass, RElectronVelocity, RPlanckConstant, RRelativisticCorrection, &
-          RVolume, RgMatrixMagnitude, RIsoDW, ROccupancy, RgMatrix, Rhkl, RAtomCoordinate
+          RVolume, RgMatrixMagnitude, RIsoDW, ROccupancy, RgMatrix, Rhkl, RAtomCoordinate, &
+		  RScattFacToVolts
 
     IMPLICIT NONE
 
     ! local variables
     INTEGER(IKIND) :: ind,jnd,knd,lnd,IErr,IUniqueUgs,ILocalUgCountMin,ILocalUgCountMax
     INTEGER(IKIND),DIMENSION(2) :: ILoc
-    REAL(RKIND) :: Rintegral,RfPrime,RScattFacToVolts,RAbsPreFactor
+    REAL(RKIND) :: Rintegral,RfPrime,RAbsPreFactor
     REAL(RKIND),DIMENSION(3) :: RCurrentG
     COMPLEX(CKIND),DIMENSION(:),ALLOCATABLE :: CLocalUgPrime,CUgPrime
     REAL(RKIND),DIMENSION(:),ALLOCATABLE :: RLocalUgReal,RLocalUgImag,RUgReal,RUgImag
@@ -80,8 +81,6 @@ MODULE ug_matrix_mod
     COMPLEX(CKIND) :: CVgPrime,CFpseudo
     CHARACTER*100 :: SPrintString
     
-    RScattFacToVolts = (RPlanckConstant**2)*(RAngstromConversion**2) / &
-          (TWOPI*RElectronMass*RElectronCharge*RVolume)
     RAbsPreFactor = TWO*RPlanckConstant*RAngstromConversion/(RElectronMass*RElectronVelocity)
     
     !--------------------------------------------------------------------  
@@ -90,7 +89,10 @@ MODULE ug_matrix_mod
     CUgMatPrime = CZERO
     SELECT CASE (IAbsorbFLAG)
 
-    CASE(1) ! Proportional
+    CASE(0) ! No absorption
+      CUgMatPrime = CZERO
+
+	CASE(1) ! Proportional
       CUgMatPrime = CUgMatNoAbs*EXP(CIMAGONE*PI/2)*(RAbsorptionPercentage/100_RKIND)
     
     CASE(2) 
@@ -232,6 +234,11 @@ MODULE ug_matrix_mod
     !--------------------------------------------------------------------
 
     CUgMat = CUgMatNoAbs + CUgMatPrime 
+<<<<<<< HEAD
+    CALL message( LM, dbg3, "Ug matrix, including absorption (nm^-2)" )
+    DO ind = 1,40
+	  WRITE(SPrintString,FMT='(3(I2,1X),A2,1X,8(F7.4,1X))') NINT(Rhkl(ind,:)),": ",100*CUgMat(ind,1:4)
+=======
 
     CALL message( LM, dbg3, "U'g matrix, i.e. absorption (nm^-2)" )
     DO ind = 1,16
@@ -243,6 +250,7 @@ MODULE ug_matrix_mod
     CALL message( LM, dbg3, "Ug matrix, including absorption (nm^-2)" )
     DO ind = 1,16
       WRITE(SPrintString,FMT='(4(2(F6.2,1X),2X))') 100*CUgMat(ind,1:4)
+>>>>>>> master
       CALL message( LM, dbg3, SPrintString )
     END DO
 
@@ -272,7 +280,7 @@ MODULE ug_matrix_mod
     USE IPARA, ONLY : INAtomsUnitCell,IAtomicNumber,IAnisoDebyeWallerFactorFlag,IAnisoDW
     USE RPARA, ONLY : RIsoDW,RCurrentGMagnitude,RgMatrix,RVolume, &
           RAnisotropicDebyeWallerFactorTensor,RAtomCoordinate,ROccupancy, &
-          RDebyeWallerConstant
+          RDebyeWallerConstant,RScattFacToVolts
     USE CPARA, ONLY : CIMAGONE
     USE RConst, ONLY : RPlanckConstant,RAngstromConversion,RElectronMass,RElectronCharge
 
@@ -283,10 +291,9 @@ MODULE ug_matrix_mod
     COMPLEX(CKIND),INTENT(OUT) :: CVgij
     INTEGER(IKIND),INTENT(OUT) :: IErr
     COMPLEX(CKIND) :: CFpseudo
-    REAL(RKIND) :: RScattFacToVolts
     INTEGER(IKIND) :: knd, INumPseudAtoms=0
 
-    RScattFacToVolts=(RPlanckConstant**2)*(RAngstromConversion**2)/(TWOPI*RElectronMass*RElectronCharge*RVolume)
+    
     CVgij = CZERO!this is in Volts
     ! Sums CVgij contribution from each atom and pseudoatom
     DO knd=1,INAtomsUnitCell
@@ -365,7 +372,8 @@ MODULE ug_matrix_mod
     USE RPARA, ONLY : RAngstromConversion,RElectronCharge,RElectronMass,&
           RRelativisticCorrection,RVolume,RIsoDW,RgMatrixMagnitude,ROccupancy,&
           RElectronWaveVectorMagnitude,RgMatrix,RDebyeWallerConstant,RTolerance,&
-          RAtomCoordinate,Rhkl,RAnisotropicDebyeWallerFactorTensor
+          RAtomCoordinate,Rhkl,RAnisotropicDebyeWallerFactorTensor,RScattFacToVolts,&
+          RLengthX,RLengthY,RLengthZ
     USE IChannels, ONLY : IChOutWIImage
 
     USE RConst, ONLY : RPlanckConstant
@@ -381,17 +389,12 @@ MODULE ug_matrix_mod
     INTEGER(IKIND),DIMENSION(2) :: IPos,ILoc
     COMPLEX(CKIND) :: CVgij,CFpseudo
     REAL(RKIND) :: RMeanInnerPotentialVolts,RScatteringFactor,&
-          RScattFacToVolts,RPMag,Rx,Ry,Rr,RPalpha,RTheta,Rfold
-    CHARACTER*100 :: SPrintString
+          RPMag,Rx,Ry,Rr,RPalpha,RTheta,Rfold
+    CHARACTER*200 :: SPrintString
     
     !--------------------------------------------------------------------
     ! count pseudoatoms & allocate pseudoatom arrays
     !--------------------------------------------------------------------
-
-    ! Conversion factor from scattering factors to volts.
-    ! h^2/(2pi*m0*e), see e.g. Kirkland eqn. C.5
-    ! NB RVolume is already in A unlike RPlanckConstant
-    RScattFacToVolts=(RPlanckConstant**2)*(RAngstromConversion**2)/(TWOPI*RElectronMass*RElectronCharge*RVolume)
 
     ! count Pseudoatoms
     IPseudo=0
@@ -499,10 +502,15 @@ MODULE ug_matrix_mod
     !  CUgMatNoAbs(ind,ind)=CZERO
     !END DO
 
-    CALL message( LM, dbg3, "Ug matrix, without absorption (nm^-2)" )
+    CALL message( LM,dbg3, "Ug matrix, without absorption (nm^-2)" )!LM, dbg3
     DO ind = 1,16
+<<<<<<< HEAD
+	  WRITE(SPrintString,FMT='(3(I2,1X),A2,1X,8(F7.4,1X))') NINT(Rhkl(ind,:)),": ",100*CUgMatNoAbs(ind,1:4)
+      CALL message( LM,dbg3, SPrintString)
+=======
       WRITE(SPrintString,FMT='(6(2(F6.2,1X),2X))') 100*CUgMatNoAbs(ind,1:6)
       CALL message( LM, dbg3, SPrintString )
+>>>>>>> master
     END DO
    
     !--------------------------------------------------------------------
@@ -542,6 +550,23 @@ MODULE ug_matrix_mod
       !--------------------------------------------------------------------
       
       ! IEquivalentUgKey is used later in absorption case 2 Bird & king
+<<<<<<< HEAD
+      RgSumMat = ZERO
+      ! equivalent Ug's are identified by abs(h)+abs(k)+abs(l)+a*h^2+b*k^2+c*l^2...
+      DO ind = 1,nReflections
+        DO jnd = 1,ind
+          RgSumMat(ind,jnd)=ABS(Rhkl(ind,1)-Rhkl(jnd,1))+ABS(Rhkl(ind,2)-Rhkl(jnd,2))+ABS(Rhkl(ind,3)-Rhkl(jnd,3))+ &
+            RLengthX*(Rhkl(ind,1)-Rhkl(jnd,1))**TWO+RLengthY*(Rhkl(ind,2)-Rhkl(jnd,2))**TWO+ &
+            RLengthZ*(Rhkl(ind,3)-Rhkl(jnd,3))**TWO
+        END DO
+      END DO
+      ! it's symmetric
+      RgSumMat = RgSumMat+TRANSPOSE(RgSumMat)
+      CALL message ( LM, dbg3, "hkl: g Sum matrix" )
+      DO ind =1,16
+	  	WRITE(SPrintString,FMT='(3(I2,1X),A2,1X,12(F6.1,1X))') NINT(Rhkl(ind,:)),": ",RgSumMat(ind,1:12)
+        CALL message ( LM, dbg3, SPrintString )!LM, dbg3
+=======
       ! equivalent Ug's are identified by the sum of their:
       ! abs(indices) plus the sum of abs(Ug)'s with no absorption
 
@@ -553,32 +578,42 @@ MODULE ug_matrix_mod
       DO ind =1,16
         WRITE(SPrintString,FMT='(12(F6.2,2X))') RgSumMat(ind,1:12)
         CALL message ( LM, dbg3, SPrintString )
+>>>>>>> master
       END DO
 
       ISymmetryRelations = 0_IKIND 
       Iuid = 0_IKIND 
-      DO ind = 1,nReflections
-        DO jnd = 1,ind
+      DO jnd = 1,nReflections
+        DO ind = 1,nReflections
           IF(ISymmetryRelations(ind,jnd).NE.0) THEN
             CYCLE
           ELSE
             Iuid = Iuid + 1_IKIND
             ! fill the symmetry relation matrix with incrementing numbers
             ! that have the sign of the imaginary part
+<<<<<<< HEAD
+            WHERE (ABS(RgSumMat-RgSumMat(ind,jnd)).LE.RTolerance)
+              ISymmetryRelations = Iuid*SIGN(1_IKIND,NINT(AIMAG(CUgMatNoAbs)/(TINY)))
+=======
             WHERE (ABS(RgSumMat-ABS(RgSumMat(ind,jnd))).LE.RTolerance)
               ISymmetryRelations = Iuid*SIGN(1_IKIND,NINT(AIMAG(CUgMatNoAbs)/TINY))
+>>>>>>> master
             END WHERE
           END IF
         END DO
       END DO
-
       WRITE(SPrintString,FMT='(I5,A25)') Iuid," unique structure factors"
       SPrintString=TRIM(ADJUSTL(SPrintString))
       CALL message ( LS, SPrintString )
-      CALL message ( LM, dbg3, "hkl: symmetry matrix from 1 to 16" )
+      CALL message ( LM, dbg3, "hkl: symmetry matrix" )
       DO ind =1,16
+<<<<<<< HEAD
+	  	WRITE(SPrintString,FMT='(3(I2,1X),A2,1X,16(I4,1X))') NINT(Rhkl(ind,:)),": ",ISymmetryRelations(ind,1:16)
+        CALL message ( LM,dbg3, SPrintString )!LM, dbg3
+=======
         WRITE(SPrintString,FMT='(12(I3,2X))') ISymmetryRelations(ind,1:12)
         CALL message ( LM, dbg3, SPrintString )
+>>>>>>> master
       END DO
 
       ! link each key with its Ug, from 1 to the number of unique Ug's Iuid
@@ -670,7 +705,7 @@ MODULE ug_matrix_mod
   !>
   !! Procedure-description: Returns a PseudoAtom scattering factor 
   !!
-  !! Major-Authors: Keith Evans (2014), Richard Beanland (2016)
+  !! Major-Authors: Richard Beanland (2016)
   !!
   SUBROUTINE PseudoAtom(CFpseudo,i,j,k,IErr)
 
@@ -755,7 +790,7 @@ MODULE ug_matrix_mod
   !! Procedure-description: Used as part of numerical integration to calculate
   !! absorptive form factor f' for Bird & King absorption method
   !!
-  !! Major-Authors: Keith Evans (2014), Richard Beanland (2016)
+  !! Major-Authors: Richard Beanland (2016)
   !!
   SUBROUTINE DoubleIntegrateBK(RResult,IErr) 
     ! used in each (case 2 Bird & King) absorption
@@ -790,7 +825,7 @@ MODULE ug_matrix_mod
   !! Procedure-description: Used as part of numerical integration to calculate
   !! absorptive form factor f' for Bird & King absorption method
   !!
-  !! Major-Authors: Keith Evans (2014), Richard Beanland (2016)
+  !! Major-Authors: Richard Beanland (2016)
   !!
   FUNCTION IntegrateBK(Sy) 
     ! used in each (case 2 Bird & King) absorption (indirectly)
@@ -826,7 +861,7 @@ MODULE ug_matrix_mod
   !! absorptive form factor f' for Bird & King absorption method. Defines a Bird & King 
   !! integrand to calculate an absorptive scattering factor 
   !!
-  !! Major-Authors: Keith Evans (2014), Richard Beanland (2016)
+  !! Major-Authors: Richard Beanland (2016)
   !!
   FUNCTION BirdKing(RSprimeX)
     ! used in each (case 2 Bird & King) absorption (indirectly)
