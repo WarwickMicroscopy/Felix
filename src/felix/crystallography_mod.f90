@@ -165,7 +165,7 @@ MODULE crystallography_mod
     RcVecM= MATMUL(RTMatO2M,RcVecO)
     
     ! create new set of reciprocal lattice vectors in Microscope reference frame
-    ! Note that reciprocal lattice vectors dot have two pi included,
+    ! Note that reciprocal lattice vectors do NOT have two pi included,
     ! we are using the optical convention exp(i*g.r)
     RarVecM= TWOPI*CROSS(RbVecM,RcVecM)/DOT_PRODUCT(RbVecM,CROSS(RcVecM,RaVecM))
     RbrVecM= TWOPI*CROSS(RcVecM,RaVecM)/DOT_PRODUCT(RcVecM,CROSS(RaVecM,RbVecM))
@@ -277,10 +277,16 @@ MODULE crystallography_mod
 
 
     DO ind=1,INAtomsUnitCell    
+<<<<<<< HEAD
       CALL message( LM, dbg7, "Atom ",ind)
       WRITE(SPrintString,"(A18,F8.4,F8.4,F8.4)") ": Atom position = ", RAtomPosition(ind,:)
       CALL message( LM, dbg7, SAtomName(ind)//SPrintString )
       CALL message( LM, dbg7, "(DWF, occupancy) = ",(/ RIsoDW(ind), ROccupancy(ind) /) )
+=======
+      CALL message( LL, dbg7, "For Atom ",ind)
+      CALL message( LL, dbg7, SAtomName(ind)//" Atom position = ", RAtomPosition(ind,:) )
+      CALL message( LL, dbg7, "(DWF, occupancy) = ",(/ RIsoDW(ind), ROccupancy(ind) /) )
+>>>>>>> master
     END DO
     
     ! Finished with these variables now

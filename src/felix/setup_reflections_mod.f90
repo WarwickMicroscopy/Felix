@@ -42,16 +42,17 @@ MODULE setup_reflections_mod
 
   IMPLICIT NONE
   PRIVATE
-  PUBLIC :: SpecificReflectionDetermination, HKLCount, HKLMake
+  PUBLIC :: HKLList, HKLCount, HKLMake, HKLSort
 
   CONTAINS
 
+  !!$%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
   !>
   !! Procedure-description: Assign numbers to the different reflections in IOutputReflections
   !!
   !! Major-Authors: Keith Evans (2014), Richard Beanland (2016)
   !!  
-  SUBROUTINE SpecificReflectionDetermination( IErr )
+  SUBROUTINE HKLList( IErr )
 
     ! This procedure is called once in felixrefine setup
     USE MyNumbers
@@ -105,7 +106,7 @@ MODULE setup_reflections_mod
       END DO
        
       IF (IFind.LE.0) THEN
-        IErr=1; IF(l_alert(IErr,"SpecificReflectionDetermination",&
+        IErr=1; IF(l_alert(IErr,"HKLList",&
               "No requested HKLs are allowed using the purposed geometry")) RETURN
       END IF
       
@@ -113,11 +114,9 @@ MODULE setup_reflections_mod
 
     END IF
     
-  END SUBROUTINE SpecificReflectionDetermination
-
+  END SUBROUTINE HKLList
+  
   !!$%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-
-
   !>
   !! Procedure-description: Counts the number of reflections limited by Ihklmax
   !! and the acceptance angle, returns it as INhkl
@@ -273,8 +272,6 @@ MODULE setup_reflections_mod
   END SUBROUTINE HKLCount
 
   !%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-
-
   !>
   !! Procedure-description: Fills the list of reciprocal space vectors Rhkl
   !!
@@ -449,4 +446,65 @@ MODULE setup_reflections_mod
 
   END SUBROUTINE HKLmake
 
+  !%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+  !>
+  !! Procedure-description: Sorts array into descending order
+  !!
+  !! Major-Authors: Keith Evans (2014), Richard Beanland (2016)
+  !!
+  SUBROUTINE HKLSort(LocalRhkl,N,IErr )
+
+    !--------------------------------------------------------------------
+    !	Sort: is based on ShellSort from "Numerical Recipes", routine SHELL().
+    !---------------------------------------------------------------------  
+
+    USE MyNumbers
+      
+    USE SConst; USE IConst
+    USE IPara; USE RPara
+
+    USE IChannels
+
+    USE MPI
+    USE MyMPI
+
+    IMPLICIT NONE
+
+    INTEGER (IKIND) :: IErr,NN,M,L,K,J,I,LOGNB2,ind
+    INTEGER (IKIND),INTENT(IN) :: N
+    REAL(RKIND),INTENT(INOUT) :: LocalRhkl(N,ITHREE)
+    REAL(RKIND) :: RhklSearch(ITHREE), RhklCompare(ITHREE)
+    REAL(RKIND) :: ALN2I,LocalTINY,dummy
+    PARAMETER (ALN2I=1.4426950D0, LocalTINY=1.D-5)
+
+    LOGNB2=INT(LOG(REAL(N))*ALN2I+LocalTINY)
+    M=N
+    DO NN=1,LOGNB2
+      M=M/2
+      K=N-M
+      DO J=1,K
+        I=J
+3       CONTINUE
+        L=I+M
+        RhklSearch = LocalRhkl(L,1)*RarVecO + &
+           LocalRhkl(L,2)*RbrVecO+LocalRhkl(L,3)*RcrVecO    
+        RhklCompare = LocalRhkl(I,1)*RarVecO + &
+           LocalRhkl(I,2)*RbrVecO+LocalRhkl(I,3)*RcrVecO
+        IF( DOT_PRODUCT(RhklSearch(:),RhklSearch(:)) .LT. &
+              DOT_PRODUCT(RhklCompare(:),RhklCompare(:))) THEN
+          DO ind=1,ITHREE
+            dummy=LocalRhkl(I,ind)
+            LocalRhkl(I,ind)=LocalRhkl(L,ind)
+            LocalRhkl(L,ind)=dummy
+          ENDDO
+          I=I-M
+          IF(I.GE.1) GOTO 3
+        ENDIF
+      ENDDO
+    ENDDO
+    
+    RETURN
+
+  END SUBROUTINE HKLSort
+  
 END MODULE setup_reflections_mod

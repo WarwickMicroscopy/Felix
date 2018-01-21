@@ -131,8 +131,6 @@ MODULE utilities_mod
   END FUNCTION  PhaseCorrelate
 
   !%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-
-
   !>
   !! Procedure-description: 
   !!
@@ -189,8 +187,6 @@ MODULE utilities_mod
   END SUBROUTINE ReSortUgs
 
   !%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-
-
   !>
   !! Procedure-description: 
   !!
@@ -226,8 +222,6 @@ MODULE utilities_mod
   END FUNCTION ResidualSumofSquares
 
   !%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-
-
   !>
   !! Procedure-description: 
   !!
@@ -261,7 +255,6 @@ MODULE utilities_mod
   END FUNCTION Normalised2DCrossCorrelation
 
   !%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-
   !>
   !! Procedure-description: 
   !!
@@ -304,87 +297,9 @@ MODULE utilities_mod
 
   END FUNCTION MaskedCorrelation
 
-  !>
-  !! Procedure-description: Sorts array into descending order
-  !!
-  !! Major-Authors: Keith Evans (2014), Richard Beanland (2016)
-  !!
-  SUBROUTINE SortHKL( Rhklarray,N,IErr )
 
-    !--------------------------------------------------------------------
-    !	Sort:
-    !	sort s.t. the largest comes first. RESORT()
-    !	is based on ShellSort from "Numerical Recipes", routine SHELL().
-    !---------------------------------------------------------------------  
-
-    USE MyNumbers
-      
-    USE SConst; USE IConst
-    USE IPara; USE RPara
-
-    USE IChannels
-
-    USE MPI
-    USE MyMPI
-
-    IMPLICIT NONE
-
-    INTEGER (IKIND) :: IErr,NN,M,L,K,J,I,LOGNB2,ind
-    INTEGER (IKIND),INTENT(IN) :: N
-    REAL(RKIND),INTENT(INOUT) :: Rhklarray(N,ITHREE)
-    REAL(RKIND) :: RhklarraySearch(ITHREE), RhklarrayCompare(ITHREE)
-    REAL(RKIND) :: ALN2I, LocalTINY
-    PARAMETER (ALN2I=1.4426950D0, LocalTINY=1.D-5)
-    
-    REAL(RKIND) :: dummy
-   
-    NN = 0
-    M = 0
-    L = 0
-    K = 0
-    J = 0
-    I = 0
-    LOGNB2 = 0
-    ind = 0
-    RhklarraySearch = 0.0D0
-    RhklarrayCompare = 0.0D0
-    dummy = 0.0D0
-
-    LOGNB2=INT(LOG(REAL(N))*ALN2I+LocalTINY)
-    M=N
-    DO 12 NN=1,LOGNB2
-       M=M/2
-       K=N-M
-       DO 11 J=1,K
-          I=J
-3         CONTINUE
-          L=I+M
-          RhklarraySearch = Rhklarray(L,1)*RarVecO + &
-               Rhklarray(L,2)*RbrVecO + &
-               Rhklarray(L,3)*RcrVecO    
-          RhklarrayCompare = Rhklarray(I,1)*RarVecO + &
-               Rhklarray(I,2)*RbrVecO + &
-               Rhklarray(I,3)*RcrVecO
-          IF( DOT_PRODUCT(RhklarraySearch(:),RhklarraySearch(:)) .LT. &
-              DOT_PRODUCT(RhklarrayCompare(:),RhklarrayCompare(:))) THEN
-             DO 100 ind=1,ITHREE
-                dummy        = Rhklarray(I,ind)
-                Rhklarray(I,ind)= Rhklarray(L,ind)
-                Rhklarray(L,ind)= dummy
-100          ENDDO
-             I=I-M
-             IF(I.GE.1) GOTO 3
-          ENDIF
-11     ENDDO
-12   ENDDO
-    
-    RETURN
-
-  END SUBROUTINE SortHKL
 
   !%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-
-
   !>
   !! Procedure-description: Defines a Lorentzian Distribution for any parameter input
   !!
@@ -405,8 +320,6 @@ MODULE utilities_mod
   END FUNCTION Lorentzian
 
   !%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-
-
   !>
   !! Procedure-description: Defines a Gaussian distribution for any parameter input 
   !!

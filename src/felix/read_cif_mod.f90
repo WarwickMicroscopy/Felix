@@ -90,15 +90,15 @@ MODULE read_cif_mod
     INCLUDE       'ciftbx-f90.cmn'
 
     LOGICAL       f1,f2,f3
-    CHARACTER*32  name
-    CHARACTER*32  SChemForm
-    CHARACTER*80  line,SPrintString
-    CHARACTER*4   label(6)
-    CHARACTER*1   SAlphabetarray(52)
-    CHARACTER*52  alphabet
-    CHARACTER*62  alphabetnum
-    CHARACTER*2   rs
-    CHARACTER*1   slash
+    CHARACTER(32)  name
+    CHARACTER(32)  SChemForm
+    CHARACTER(80)  line,SPrintString
+    CHARACTER(4)   label(6)
+    CHARACTER(1)   SAlphabetarray(52)
+    CHARACTER(52)  alphabet
+    CHARACTER(62)  alphabetnum
+    CHARACTER(2)   rs
+    CHARACTER(1)   slash
     REAL(RKIND),DIMENSION(:),ALLOCATABLE :: RPrint
     REAL          cela,celb,celc,siga,sigb,sigc
     REAL          x,y,z,u,su,sx,sy,sz,B,sB,sOcc,Uso,suso,Occ
@@ -117,8 +117,13 @@ MODULE read_cif_mod
     DATA          rs/'\\'/
 
     INTEGER IAtomCount, ICommaPosLeft, ICommaPosRight, &
+<<<<<<< HEAD
          Ipos,Idpos, IoneI,IFRACminus, Inum,Idenom,IAtomID
     CHARACTER*32 Csym(ITHREE)
+=======
+         Ipos,Idpos, IXYZminus,IFRACminus, Inum,Idenom,IAtomID
+    CHARACTER(32) Csym(ITHREE)
+>>>>>>> master
     INTEGER IErr,ind,jnd
 
     ! fudge to deal with gfortran vs. g77
@@ -133,8 +138,8 @@ MODULE read_cif_mod
       clipt_ = .TRUE.
       pclipt_ = .TRUE.
     END IF
+    
     ! Open the CIF to be accessed
-
     name='felix.cif'
     IF(.NOT.ocif_(name)) THEN
       IErr=1; IF(l_alert(IErr,"ReadCif","Cannot find .cif")) RETURN
@@ -200,13 +205,12 @@ MODULE read_cif_mod
     IF((f1) .EQV. .FALSE.) THEN
       IVolumeFLAG= 0
       RVolume= RLengthX*RLengthY*RLengthZ* &
-            SQRT(1.0D0-COS(RAlpha)*COS(RAlpha)-COS(RBeta)*COS(RBeta)-COS(RGamma)*COS(RGamma) + &
-            2.0D0*COS(RAlpha)*COS(RBeta)*COS(RGamma))
+            SQRT(ONE-COS(RAlpha)*COS(RAlpha)-COS(RBeta)*COS(RBeta)-COS(RGamma)*COS(RGamma) + &
+            TWO*COS(RAlpha)*COS(RBeta)*COS(RGamma))
     ELSE 
       RVolume= cela
       IVolumeFLAG= 1
     END IF
-
     CALL message ( LXL, dbg14, "Unit cell volume", RVolume )
 
     DO      

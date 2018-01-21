@@ -39,7 +39,6 @@ PROGRAM Felixrefine
   USE message_mod
   USE MPI
   USE MyMPI
-  USE utilities_mod, ONLY : SortHKL
   USE read_files_mod
   USE read_cif_mod
   USE set_scatter_factors_mod
@@ -80,9 +79,9 @@ PROGRAM Felixrefine
   REAL(RKIND),DIMENSION(:,:),ALLOCATABLE :: RSimplexVariable,RgDummyVecMat,&
         RgPoolMagLaue,RTestImage,ROnes,RVarMatrix,RSimp
   
-  CHARACTER*40 :: my_rank_string
-  CHARACTER*20 :: h,k,l
-  CHARACTER*100 :: SPrintString
+  CHARACTER(40) :: my_rank_string
+  CHARACTER(20) :: h,k,l
+  CHARACTER(100) :: SPrintString
 
   !--------------------------------------------------------------------
   ! startup
@@ -154,7 +153,7 @@ PROGRAM Felixrefine
   RElectronVelocity = &
         RSpeedOfLight*SQRT( ONE - ((RElectronMass*RSpeedOfLight**2) / &
         (RElectronCharge*RAcceleratingVoltage*THOUSAND+RElectronMass*RSpeedOfLight**2))**2 )
-  ! Electron WaveLength in metres per second  
+  ! Electron WaveLength in metres
   RElectronWaveLength = RPlanckConstant / &
         (  SQRT(TWO*RElectronMass*RElectronCharge*RAcceleratingVoltage*THOUSAND) * &
         SQRT( ONE + (RElectronCharge*RAcceleratingVoltage*THOUSAND) / &
@@ -163,10 +162,15 @@ PROGRAM Felixrefine
   RElectronWaveVectorMagnitude=TWOPI/RElectronWaveLength
   RRelativisticCorrection = ONE/SQRT( ONE - (RElectronVelocity/RSpeedOfLight)**2 )
   RRelativisticMass = RRelativisticCorrection*RElectronMass
+<<<<<<< HEAD
   !conversion from Vg to Ug, h^2/(2pi*m0*e), see e.g. Kirkland eqn. C.5
   RScattFacToVolts=(RPlanckConstant**2)*(RAngstromConversion**2)/&
   (TWOPI*RElectronMass*RElectronCharge*RVolume)
   ! Creates reciprocal lattice vectors in Microscope reference frame
+=======
+
+  ! Creates reciprocal lattice vectors in reciprocal Angstroms, Microscope reference frame
+>>>>>>> master
   CALL ReciprocalLattice(IErr)
   IF(l_alert(IErr,"felixrefine","ReciprocalLattice")) CALL abort
 
@@ -220,7 +224,7 @@ PROGRAM Felixrefine
   CALL HKLCount(IHKLMAXValue,RZDirC,INhkl,RHOLZAcceptanceAngle,IErr)
   IF(l_alert(IErr,"felixrefine","HKLCount")) CALL abort
   DO WHILE (INhkl.LT.IMinReflectionPool) 
-    IHKLMAXValue = IHKLMAXValue*2
+    IHKLMAXValue = IHKLMAXValue+1
     CALL HKLCount(IHKLMAXValue,RZDirC,INhkl,RHOLZAcceptanceAngle,IErr)
   END DO
   
@@ -237,20 +241,20 @@ PROGRAM Felixrefine
   !--------------------------------------------------------------------
 
   ! sort hkl in descending order of magnitude
-  CALL SortHKL(Rhkl,INhkl,IErr) 
+  CALL HKLSort(Rhkl,INhkl,IErr) 
   IF(l_alert(IErr,"felixrefine","SortHKL")) CALL abort
   !?? RB may result in an error when the reflection pool does not reach
   !?? the highest hkl of the experimental data? 
 
   ! Assign numbers to different reflections -> IOutputReflections, INoOfLacbedPatterns
-  CALL SpecificReflectionDetermination(IErr)
+  CALL HKLList(IErr)
   IF(l_alert(IErr,"felixrefine","SpecificReflectionDetermination")) CALL abort
 
   !--------------------------------------------------------------------
   ! allocate RgPool and dummy
   !--------------------------------------------------------------------
 
-  ! RgPool is a list of 2pi*g-vectors in the microscope ref frame,
+  ! RgPool is a list of g-vectors in the microscope ref frame,
   ! units of 1/A (NB exp(-i*q.r),  physics negative convention)
   ALLOCATE(RgPool(INhkl,ITHREE),STAT=IErr)
   IF(l_alert(IErr,"felixrefine","allocate RgPool")) CALL abort
@@ -357,15 +361,13 @@ PROGRAM Felixrefine
   ! calculate g vector magnitudes and components parallel to the surface
   !--------------------------------------------------------------------
 
-  ! calculate 2pi*g vector magnitudes for the reflection pool RgPoolMag
+  ! calculate g-vector magnitudes for the reflection pool RgPoolMag
   ! in reciprocal Angstrom units, in the Microscope reference frame
   ALLOCATE(RgPoolMag(INhkl),STAT=IErr)
   IF(l_alert(IErr,"felixrefine","allocate RgPoolMag")) CALL abort
-
   DO ind=1,INhkl
      RgPoolMag(ind)= SQRT(DOT_PRODUCT(RgPool(ind,:),RgPool(ind,:)))
   END DO
-
   CALL message(LL,dbg7,"g-vectors and magnitude (1/A), in the microscope reference frame" )
   DO ind = 1,SIZE(Rhkl,1)
     CALL message(LL,dbg7,"hkl  :",NINT(Rhkl(ind,:)))
@@ -379,8 +381,7 @@ PROGRAM Felixrefine
   DO ind =1,INhkl
     RgDotNorm(ind) = DOT_PRODUCT(RgPool(ind,:),RNormDirM)
   END DO
-  
-  CALL message(LL,dbg7,"g vector hkl, g.n")
+  CALL message(LL,dbg7,"g.n list")
   DO ind = 1,SIZE(Rhkl,1)
     CALL message(LL,dbg7,"hkl :",NINT(Rhkl(ind,:)))
     CALL message(LL,dbg7,"g.n :",RgDotNorm(ind))
@@ -390,7 +391,11 @@ PROGRAM Felixrefine
   ! calculate resolution in k space
   !--------------------------------------------------------------------
 
+<<<<<<< HEAD
   RMinimumGMag = RgPoolMag(2)!since the first one is always 000
+=======
+  RMinimumGMag = RgPoolMag(2)!because RGPool(1) is 000
+>>>>>>> master
   RDeltaK = RMinimumGMag*RConvergenceAngle/REAL(IPixelCount,RKIND)
 
   !--------------------------------------------------------------------
@@ -459,17 +464,16 @@ PROGRAM Felixrefine
   ! Calculate matrix  of g-vectors that corresponds to the Ug matrix
   IThicknessCount= NINT((RFinalThickness-RInitialThickness)/RDeltaThickness) + 1
   DO ind=1,nReflections
-     DO jnd=1,nReflections
-        RgMatrix(ind,jnd,:)= RgPool(ind,:)-RgPool(jnd,:)
-        RgMatrixMagnitude(ind,jnd) = & 
-              SQRT(DOT_PRODUCT(RgMatrix(ind,jnd,:),RgMatrix(ind,jnd,:)))
-     ENDDO
+    DO jnd=1,nReflections
+      RgMatrix(ind,jnd,:)= RgPool(ind,:)-RgPool(jnd,:)
+      RgMatrixMagnitude(ind,jnd) = & 
+           SQRT(DOT_PRODUCT(RgMatrix(ind,jnd,:),RgMatrix(ind,jnd,:)))
+    ENDDO
   ENDDO
-  
   CALL message(LL,dbg3,"g-vector magnitude matrix (2pi/A)", RgMatrixMagnitude(1:16,1:8)) 
   CALL message(LXL,dbg3,"first 16 g-vectors", RgMatrix(1:16,1,:)) 
 
-  ! structure factor initialisation
+  ! structure factor initialization
   ! Calculate Ug matrix for each entry in CUgMatNoAbs(1:nReflections,1:nReflections)
   CALL StructureFactorInitialisation(IErr)
   IF(l_alert(IErr,"felixrefine","StructureFactorInitialisation")) CALL abort
@@ -559,10 +563,17 @@ PROGRAM Felixrefine
     ALLOCATE(RIndependentVariable(INoOfVariables),STAT=IErr) 
     IF(l_alert(IErr,"felixrefine","allocate RIndependentVariable")) CALL abort
 
+<<<<<<< HEAD
     !--------------------------------------------------------------------
     ! assign refinement variables depending upon Ug and non-Ug refinement
     !--------------------------------------------------------------------
   
+=======
+  !--------------------------------------------------------------------
+  ! assign refinement variables depending upon Ug and non-Ug refinement
+  !--------------------------------------------------------------------
+  IF(ISimFLAG==0) THEN
+>>>>>>> master
     IF(IRefineMode(1).EQ.1) THEN ! It's a Ug refinement, A
 
       ! Fill up the IndependentVariable list with CUgMatNoAbs components
@@ -696,7 +707,6 @@ PROGRAM Felixrefine
   !--------------------------------------------------------------------
   ! allocate, ImageInitialisation, ImageMaskInitialisation
   !--------------------------------------------------------------------
-  
   ALLOCATE(RhklPositions(nReflections,2),STAT=IErr)
   IF(l_alert(IErr,"felixrefine","allocate RhklPositions")) CALL abort
   ALLOCATE(IMask(2*IPixelCount,2*IPixelCount),STAT=IErr)
@@ -713,7 +723,6 @@ PROGRAM Felixrefine
   !--------------------------------------------------------------------
   ! allocate & setup image arrays for pixel-parallel simulations
   !--------------------------------------------------------------------
-
   ! All the individual calculations go into RSimulatedPatterns later with MPI_GATHERV
   ! NB RSimulatedPatterns is a vector with respect to pixels, not a 2D image
   ALLOCATE(RSimulatedPatterns(INoOfLacbedPatterns,IThicknessCount,IPixelTotal),STAT=IErr)
@@ -759,7 +768,7 @@ PROGRAM Felixrefine
   ! baseline simulation
   !--------------------------------------------------------------------
 
-  RFigureofMerit=666.666 ! Inital large value, diabolically
+  RFigureofMerit=666.666 ! Initial large value, diabolically
   Iter = 0
   ! baseline simulation with timer
   CALL Simulate(IErr)
@@ -821,17 +830,14 @@ PROGRAM Felixrefine
     SELECT CASE(IRefineMethodFLAG)
 
     CASE(1)
-
       CALL SimplexRefinement
       IF(l_alert(IErr,"felixrefine","SimplexRefinement")) CALL abort 
     
     CASE(2)
-
       CALL MaxGradientRefinement
       IF(l_alert(IErr,"felixrefine","MaxGradientRefinement")) CALL abort 
       
     CASE(3)
-
       CALL ParabolicRefinement
       IF(l_alert(IErr,"felixrefine","ParabolicRefinement")) CALL abort 
      

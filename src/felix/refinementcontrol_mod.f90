@@ -159,6 +159,48 @@ MODULE refinementcontrol_mod
         ! basis has changed in some way, recalculate unit cell
         CALL UniqueAtomPositions(IErr)
         IF(l_alert(IErr,"SimulateAndFit","UniqueAtomPositions")) RETURN
+<<<<<<< HEAD
+=======
+      END IF
+
+      !--------------------------------------------------------------------
+      ! update scattering matrix Ug
+      !--------------------------------------------------------------------
+
+      ! calculate CUgMatNoAbs
+      CUgMatNoAbs = CZERO
+      ! Work through unique Ug's
+      IUniqueUgs = SIZE(IEquivalentUgKey)
+      DO ind = 1, IUniqueUgs
+        ! number of this Ug
+        jnd = IEquivalentUgKey(ind)
+        ! find the position of this Ug in the matrix
+        ILoc = MINLOC(ABS(ISymmetryRelations-jnd))
+        RCurrentG = RgMatrix(ILoc(1),ILoc(2),:) ! g-vector, local variable
+        RCurrentGMagnitude = RgMatrixMagnitude(ILoc(1),ILoc(2)) ! g-vector magnitude, global variable
+        CALL GetVgContributionij(RScatteringFactor,ILoc(1),ILoc(2),CVgij,IErr)
+        IF(l_alert(IErr,"SimulateAndFit","GetVgContributionij")) RETURN
+
+        ! now replace the values in the Ug matrix
+        WHERE(ISymmetryRelations.EQ.jnd)
+          CUgMatNoAbs=CVgij
+        END WHERE
+        ! NB for imaginary potential U(g)=U(-g)*
+        WHERE(ISymmetryRelations.EQ.-jnd)
+          CUgMatNoAbs = CONJG(CVgij)
+        END WHERE
+      END DO
+      !Convert to Ug (N.B. must match line 495 in StructureFactorInitialisation)
+      CUgMatNoAbs = CUgMatNoAbs*TWO*RElectronMass*RRelativisticCorrection*RElectronCharge/((RPlanckConstant**2)*(RAngstromConversion**2))
+      DO ind=1,nReflections ! zero diagonal
+         CUgMatNoAbs(ind,ind) = ZERO
+      ENDDO
+
+      ! calculate CUgMat
+      ! calculate CUgMatPrime, then CUgMat = CUgMatNoAbs + CUgMatPrime
+      CALL Absorption(IErr)
+      IF(l_alert(IErr,"SimulateAndFit","Absorption")) RETURN
+>>>>>>> master
 
         !--------------------------------------------------------------------
         ! update scattering matrix Ug
@@ -383,15 +425,15 @@ MODULE refinementcontrol_mod
           RSimulatedImage=SQRT(RSimulatedImage)
           RExperimentalImage=SQRT(RImageExpi(:,:,ind))
         CASE(2)! log before performing correlation
-          WHERE (RSimulatedImage.GT.TINY**2)
+          WHERE (RSimulatedImage.GT.TINY)
             RSimulatedImage=LOG(RSimulatedImage)
           ELSEWHERE
-            RSimulatedImage = TINY**2
+            RSimulatedImage = TINY
           END WHERE
-          WHERE (RExperimentalImage.GT.TINY**2)
+          WHERE (RExperimentalImage.GT.TINY)
             RExperimentalImage = LOG(RImageExpi(:,:,ind))
           ELSEWHERE
-            RExperimentalImage =  TINY**2
+            RExperimentalImage =  TINY
           END WHERE
         
         END SELECT
@@ -506,9 +548,9 @@ MODULE refinementcontrol_mod
         ! The atom being moved
         IAtomID = IAtomMoveList(IVectorID)
         ! Change in position r' = r - v*(r.v) +v*RIndependentVariable(ind)
-        RBasisAtomPosition(IAtomID,:) = RBasisAtomPosition(IAtomID,:) - &
+        RBasisAtomPosition(IAtomID,:) = MODULO((RBasisAtomPosition(IAtomID,:) - &
             RVector(IVectorID,:)*DOT_PRODUCT(RBasisAtomPosition(IAtomID,:),RVector(IVectorID,:)) + &
-            RVector(IVectorID,:)*RIndependentVariable(ind)
+            RVector(IVectorID,:)*RIndependentVariable(ind)),ONE)
       CASE(3)
         RBasisOccupancy(IIterativeVariableUniqueIDs(ind,2))=RIndependentVariable(ind) 
       CASE(4)

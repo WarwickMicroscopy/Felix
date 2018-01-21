@@ -246,8 +246,8 @@ CONTAINS
         mode1%LState = .TRUE.
         IPrio = IPrio - 10
         SSpaces = " "
-        LS%SInitialMsg  = "->"; LM%SInitialMsg  = "---->"; 
-        LL%SInitialMsg  = "------->"; LXL%SInitialMsg = "---------->"
+        LS%SInitialMsg  = "  "; LM%SInitialMsg  = "     "; 
+        LL%SInitialMsg  = "        "; LXL%SInitialMsg = "            "
       CASE (70:79)
         dbg7%LState = .TRUE.
         IPrio = IPrio - 70

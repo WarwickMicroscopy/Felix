@@ -345,6 +345,7 @@ MODULE setup_space_group_mod
     CHARACTER*1, INTENT(IN) :: SWyckoff
     INTEGER(IKIND), INTENT(OUT) :: IVectors, IErr
     
+    IErr=0
     SELECT CASE(ISpaceGrp)
     CASE(1)
       SELECT CASE (SWyckoff)

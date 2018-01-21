@@ -234,9 +234,23 @@ MODULE ug_matrix_mod
     !--------------------------------------------------------------------
 
     CUgMat = CUgMatNoAbs + CUgMatPrime 
+<<<<<<< HEAD
     CALL message( LM, dbg3, "Ug matrix, including absorption (nm^-2)" )
     DO ind = 1,40
 	  WRITE(SPrintString,FMT='(3(I2,1X),A2,1X,8(F7.4,1X))') NINT(Rhkl(ind,:)),": ",100*CUgMat(ind,1:4)
+=======
+
+    CALL message( LM, dbg3, "U'g matrix, i.e. absorption (nm^-2)" )
+    DO ind = 1,16
+!      CALL message( LM, dbg3, "RKL row:",NINT(Rhkl(ind,:)) )
+      WRITE(SPrintString,FMT='(4(2(F6.2,1X),2X))') 100*CUgMatPrime(ind,1:4)
+      CALL message( LM, dbg3, SPrintString )
+    END DO
+
+    CALL message( LM, dbg3, "Ug matrix, including absorption (nm^-2)" )
+    DO ind = 1,16
+      WRITE(SPrintString,FMT='(4(2(F6.2,1X),2X))') 100*CUgMat(ind,1:4)
+>>>>>>> master
       CALL message( LM, dbg3, SPrintString )
     END DO
 
@@ -287,6 +301,7 @@ MODULE ug_matrix_mod
       IF (ICurrentZ.LT.105) THEN ! It's not a pseudoatom
         ! Get scattering factor
         CALL AtomicScatteringFactor(RScatteringFactor,IErr)
+        !IF (my_rank.EQ.0) PRINT*, knd,RCurrentGMagnitude,RScatteringFactor
         ! Occupancy
         RScatteringFactor = RScatteringFactor*ROccupancy(knd)
         ! Isotropic Debye-Waller factor
@@ -345,7 +360,7 @@ MODULE ug_matrix_mod
     USE utilities_mod, ONLY : Gaussian, Lorentzian, ReSortUgs
 
     ! global outputs
-    USE CPARA, ONLY : CUgMatNoAbs,CUniqueUg,CPseudoAtom,CPseudoScatt
+    USE CPARA, ONLY : CUgMatNoAbs,CUgMatPrime,CUniqueUg,CPseudoAtom,CPseudoScatt
     USE IPARA, ONLY : ICurrentZ, ISymmetryRelations
     USE RPARA, ONLY : RMeanInnerPotential,RgSumMat
     USE BlochPara, ONLY : RBigK
@@ -388,7 +403,7 @@ MODULE ug_matrix_mod
     END DO
 
       !--------------------------------------------------------------------
-      ! calculate pseduo potential and pseduo factor for any pseudoatoms
+      ! calculate pseudo potential and pseudo factor for any pseudoatoms
       !--------------------------------------------------------------------
     IF (IPseudo.GT.0) THEN!Calculate pseudoatom potentials
       ! size of the array used to calculate the pseudoatom FFT, global variable  
@@ -466,34 +481,41 @@ MODULE ug_matrix_mod
     ! calculate Ug matrix (excluding absorption)
     !--------------------------------------------------------------------
 
-    ! fill lower diagonal of Ug matrix(excluding absorbtion)with Fourier components of the potential Vg
+    ! fill lower diagonal of Ug matrix(excluding absorption) with Fourier components of the potential Vg
     CUgMatNoAbs = CZERO ! 
     DO ind=2,nReflections
       DO jnd=1,ind-1
-        RCurrentGMagnitude = RgMatrixMagnitude(ind,jnd) ! g-vector magnitude, global var
+        RCurrentGMagnitude = RgMatrixMagnitude(ind,jnd) ! g-vector magnitude, global variable
         ! Sums CVgij contribution from each atom and pseudoatom in Volts
-        CALL GetVgContributionij(RScatteringFactor,ind,jnd,CUgMatNoAbs(ind,jnd),IErr)
+        CALL GetVgContributionij(RScatteringFactor,ind,jnd,CVgij,IErr)
+		CUgMatNoAbs(ind,jnd)=CVgij
       ENDDO
     ENDDO
     !Convert to Ug
     CUgMatNoAbs=CUgMatNoAbs*TWO*RElectronMass*RRelativisticCorrection*RElectronCharge/((RPlanckConstant**2)*(RAngstromConversion**2))
     ! NB Only the lower half of the Vg matrix was calculated, this completes the upper half
-    CUgMatNoAbs = CUgMatNoAbs + CONJG(TRANSPOSE(CUgMatNoAbs))
+    CUgMatPrime = TRANSPOSE(CUgMatNoAbs)! Prime is usually the absorptive potential, here just used as a box to avoid the bug when conj(transpose) is used
+    CUgMatNoAbs = CUgMatNoAbs + CONJG(CUgMatPrime)
+    CUgMatPrime = CZERO
     ! set diagonals to zero
-    DO ind=1,nReflections
-      CUgMatNoAbs(ind,ind)=CZERO
-    END DO
+    !DO ind=1,nReflections
+    !  CUgMatNoAbs(ind,ind)=CZERO
+    !END DO
 
     CALL message( LM,dbg3, "Ug matrix, without absorption (nm^-2)" )!LM, dbg3
     DO ind = 1,16
+<<<<<<< HEAD
 	  WRITE(SPrintString,FMT='(3(I2,1X),A2,1X,8(F7.4,1X))') NINT(Rhkl(ind,:)),": ",100*CUgMatNoAbs(ind,1:4)
       CALL message( LM,dbg3, SPrintString)
+=======
+      WRITE(SPrintString,FMT='(6(2(F6.2,1X),2X))') 100*CUgMatNoAbs(ind,1:6)
+      CALL message( LM, dbg3, SPrintString )
+>>>>>>> master
     END DO
    
     !--------------------------------------------------------------------
     ! calculate mean inner potential and wave vector magnitude
     !--------------------------------------------------------------------
-   
     ! calculate the mean inner potential as the sum of scattering factors
     ! at g=0 multiplied by h^2/(2pi*m0*e*CellVolume)
     RMeanInnerPotential=ZERO
@@ -517,7 +539,7 @@ MODULE ug_matrix_mod
     ! K^2=k^2+U0
     RBigK= SQRT(RElectronWaveVectorMagnitude**2 + REAL(CUgMatNoAbs(1,1)))
     CALL message ( LM, dbg3, "K (Angstroms) = ",RBigK )
-    !?? does this match Acta Cryst. (1998). A54, 388-398 eqaution (3)
+    !?? does this match Acta Cryst. (1998). A54, 388-398 equation (3)
 
     !--------------------------------------------------------------------
     
@@ -528,6 +550,7 @@ MODULE ug_matrix_mod
       !--------------------------------------------------------------------
       
       ! IEquivalentUgKey is used later in absorption case 2 Bird & king
+<<<<<<< HEAD
       RgSumMat = ZERO
       ! equivalent Ug's are identified by abs(h)+abs(k)+abs(l)+a*h^2+b*k^2+c*l^2...
       DO ind = 1,nReflections
@@ -543,6 +566,19 @@ MODULE ug_matrix_mod
       DO ind =1,16
 	  	WRITE(SPrintString,FMT='(3(I2,1X),A2,1X,12(F6.1,1X))') NINT(Rhkl(ind,:)),": ",RgSumMat(ind,1:12)
         CALL message ( LM, dbg3, SPrintString )!LM, dbg3
+=======
+      ! equivalent Ug's are identified by the sum of their:
+      ! abs(indices) plus the sum of abs(Ug)'s with no absorption
+
+      RgSumMat = SUM(ABS(RgMatrix),3) + RgMatrixMagnitude+ABS(REAL(CUgMatNoAbs)) + &
+            ABS(AIMAG(CUgMatNoAbs))
+      !RgSumMat=REAL(SIGN(1_IKIND,NINT(111111.1*AIMAG(CUgMatNoAbs))))
+      !RgSumMat=100.0*REAL(AIMAG(CUgMatNoAbs))
+      CALL message ( LM, dbg3, "hkl: RgSumMat from 1 to 12" )
+      DO ind =1,16
+        WRITE(SPrintString,FMT='(12(F6.2,2X))') RgSumMat(ind,1:12)
+        CALL message ( LM, dbg3, SPrintString )
+>>>>>>> master
       END DO
 
       ISymmetryRelations = 0_IKIND 
@@ -555,8 +591,13 @@ MODULE ug_matrix_mod
             Iuid = Iuid + 1_IKIND
             ! fill the symmetry relation matrix with incrementing numbers
             ! that have the sign of the imaginary part
+<<<<<<< HEAD
             WHERE (ABS(RgSumMat-RgSumMat(ind,jnd)).LE.RTolerance)
               ISymmetryRelations = Iuid*SIGN(1_IKIND,NINT(AIMAG(CUgMatNoAbs)/(TINY)))
+=======
+            WHERE (ABS(RgSumMat-ABS(RgSumMat(ind,jnd))).LE.RTolerance)
+              ISymmetryRelations = Iuid*SIGN(1_IKIND,NINT(AIMAG(CUgMatNoAbs)/TINY))
+>>>>>>> master
             END WHERE
           END IF
         END DO
@@ -566,8 +607,13 @@ MODULE ug_matrix_mod
       CALL message ( LS, SPrintString )
       CALL message ( LM, dbg3, "hkl: symmetry matrix" )
       DO ind =1,16
+<<<<<<< HEAD
 	  	WRITE(SPrintString,FMT='(3(I2,1X),A2,1X,16(I4,1X))') NINT(Rhkl(ind,:)),": ",ISymmetryRelations(ind,1:16)
         CALL message ( LM,dbg3, SPrintString )!LM, dbg3
+=======
+        WRITE(SPrintString,FMT='(12(I3,2X))') ISymmetryRelations(ind,1:12)
+        CALL message ( LM, dbg3, SPrintString )
+>>>>>>> master
       END DO
 
       ! link each key with its Ug, from 1 to the number of unique Ug's Iuid
