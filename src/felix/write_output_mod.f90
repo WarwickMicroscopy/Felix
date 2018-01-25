@@ -181,16 +181,10 @@ MODULE write_output_mod
     INTEGER(IKIND) :: jnd
     CHARACTER(200) :: filename, fullpath
 
-<<<<<<< HEAD
-    ! Write out unique atomic positions
 
+    ! Write out unique atomic positions
     WRITE(filename,"(A1,I4.4,A4)") "_",Iter,".cif"
     filename=SChemicalFormula(1:ILN) // filename!gives e.g. SrTiO3_0001.cif 
-=======
-    IErr=0
-    ! Write out non symmetrically related atomic positions
-    WRITE(filename,*) "structure.cif"
->>>>>>> master
     WRITE(fullpath,*) TRIM(ADJUSTL(path)),'/',TRIM(ADJUSTL(filename))
 
     OPEN(UNIT=IChOutSimplex,STATUS='UNKNOWN',FILE=TRIM(ADJUSTL(fullpath)))

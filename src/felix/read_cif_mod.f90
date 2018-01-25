@@ -117,13 +117,8 @@ MODULE read_cif_mod
     DATA          rs/'\\'/
 
     INTEGER IAtomCount, ICommaPosLeft, ICommaPosRight, &
-<<<<<<< HEAD
          Ipos,Idpos, IoneI,IFRACminus, Inum,Idenom,IAtomID
     CHARACTER*32 Csym(ITHREE)
-=======
-         Ipos,Idpos, IXYZminus,IFRACminus, Inum,Idenom,IAtomID
-    CHARACTER(32) Csym(ITHREE)
->>>>>>> master
     INTEGER IErr,ind,jnd
 
     ! fudge to deal with gfortran vs. g77
