@@ -277,16 +277,10 @@ MODULE crystallography_mod
 
 
     DO ind=1,INAtomsUnitCell    
-<<<<<<< HEAD
       CALL message( LM, dbg7, "Atom ",ind)
       WRITE(SPrintString,"(A18,F8.4,F8.4,F8.4)") ": Atom position = ", RAtomPosition(ind,:)
       CALL message( LM, dbg7, SAtomName(ind)//SPrintString )
       CALL message( LM, dbg7, "(DWF, occupancy) = ",(/ RIsoDW(ind), ROccupancy(ind) /) )
-=======
-      CALL message( LL, dbg7, "For Atom ",ind)
-      CALL message( LL, dbg7, SAtomName(ind)//" Atom position = ", RAtomPosition(ind,:) )
-      CALL message( LL, dbg7, "(DWF, occupancy) = ",(/ RIsoDW(ind), ROccupancy(ind) /) )
->>>>>>> master
     END DO
     
     ! Finished with these variables now

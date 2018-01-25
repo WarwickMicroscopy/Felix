@@ -159,77 +159,28 @@ MODULE refinementcontrol_mod
         ! basis has changed in some way, recalculate unit cell
         CALL UniqueAtomPositions(IErr)
         IF(l_alert(IErr,"SimulateAndFit","UniqueAtomPositions")) RETURN
-<<<<<<< HEAD
-=======
-      END IF
-
-      !--------------------------------------------------------------------
-      ! update scattering matrix Ug
-      !--------------------------------------------------------------------
-
-      ! calculate CUgMatNoAbs
-      CUgMatNoAbs = CZERO
-      ! Work through unique Ug's
-      IUniqueUgs = SIZE(IEquivalentUgKey)
-      DO ind = 1, IUniqueUgs
-        ! number of this Ug
-        jnd = IEquivalentUgKey(ind)
-        ! find the position of this Ug in the matrix
-        ILoc = MINLOC(ABS(ISymmetryRelations-jnd))
-        RCurrentG = RgMatrix(ILoc(1),ILoc(2),:) ! g-vector, local variable
-        RCurrentGMagnitude = RgMatrixMagnitude(ILoc(1),ILoc(2)) ! g-vector magnitude, global variable
-        CALL GetVgContributionij(RScatteringFactor,ILoc(1),ILoc(2),CVgij,IErr)
-        IF(l_alert(IErr,"SimulateAndFit","GetVgContributionij")) RETURN
-
-        ! now replace the values in the Ug matrix
-        WHERE(ISymmetryRelations.EQ.jnd)
-          CUgMatNoAbs=CVgij
-        END WHERE
-        ! NB for imaginary potential U(g)=U(-g)*
-        WHERE(ISymmetryRelations.EQ.-jnd)
-          CUgMatNoAbs = CONJG(CVgij)
-        END WHERE
-      END DO
-      !Convert to Ug (N.B. must match line 495 in StructureFactorInitialisation)
-      CUgMatNoAbs = CUgMatNoAbs*TWO*RElectronMass*RRelativisticCorrection*RElectronCharge/((RPlanckConstant**2)*(RAngstromConversion**2))
-      DO ind=1,nReflections ! zero diagonal
-         CUgMatNoAbs(ind,ind) = ZERO
-      ENDDO
-
-      ! calculate CUgMat
-      ! calculate CUgMatPrime, then CUgMat = CUgMatNoAbs + CUgMatPrime
-      CALL Absorption(IErr)
-      IF(l_alert(IErr,"SimulateAndFit","Absorption")) RETURN
->>>>>>> master
 
         !--------------------------------------------------------------------
         ! update scattering matrix Ug
         !--------------------------------------------------------------------
         ! calculate CUgMatNoAbs
         CUgMatNoAbs = CZERO
-        ! Work through unique Ug's
-        IUniqueUgs = SIZE(IEquivalentUgKey)
-        DO ind = 1, IUniqueUgs
-          ! number of this Ug
-          jnd = IEquivalentUgKey(ind)
-          ! find the position of this Ug in the matrix
-          ILoc = MINLOC(ABS(ISymmetryRelations-jnd))
-          RCurrentG = RgMatrix(ILoc(1),ILoc(2),:) ! g-vector, local variable
-          RCurrentGMagnitude = RgMatrixMagnitude(ILoc(1),ILoc(2)) ! g-vector magnitude
-          CALL GetVgContributionij(RScatteringFactor,ILoc(1),ILoc(2),CVgij,IErr)
-          IF(l_alert(IErr,"SimulateAndFit","GetVgContributionij")) RETURN
-          WHERE(ISymmetryRelations.EQ.jnd)!replace the values in the Ug matrix
-            CUgMatNoAbs=CVgij
-          END WHERE
-          WHERE(ISymmetryRelations.EQ.-jnd)! NB for imaginary potential U(g)=U(-g)*
-            CUgMatNoAbs = CONJG(CVgij)
-          END WHERE
-        END DO
-        !Convert to Ug (N.B. must match line 495 in StructureFactorInitialisation)
-        CUgMatNoAbs = CUgMatNoAbs*TWO*RElectronMass*RRelativisticCorrection*RElectronCharge/((RPlanckConstant**2)*(RAngstromConversion**2))
-        DO ind=1,nReflections ! zero diagonal - is this necessary???
-           CUgMatNoAbs(ind,ind) = ZERO
-        ENDDO
+        !/////RB
+        !duplicated from Ug matrix initialisation.  Ug refinement will no longer work! Should be put into a single subroutine.
+    DO ind=2,nReflections
+      DO jnd=1,ind-1
+        RCurrentGMagnitude = RgMatrixMagnitude(ind,jnd) ! g-vector magnitude, global variable
+        ! Sums CVgij contribution from each atom and pseudoatom in Volts
+        CALL GetVgContributionij(RScatteringFactor,ind,jnd,CVgij,IErr)
+		CUgMatNoAbs(ind,jnd)=CVgij
+      ENDDO
+    ENDDO
+    !Convert to Ug
+    CUgMatNoAbs=CUgMatNoAbs*TWO*RElectronMass*RRelativisticCorrection*RElectronCharge/((RPlanckConstant**2)*(RAngstromConversion**2))
+    ! NB Only the lower half of the Vg matrix was calculated, this completes the upper half
+    CUgMatDummy = TRANSPOSE(CUgMatNoAbs)! Dummy just used as a box to avoid the bug when conj(transpose) is used on orac
+    CUgMatNoAbs = CUgMatNoAbs + CONJG(CUgMatDummy)
+        !/////RB
         CALL Absorption(IErr)! calculates CUgMat = CUgMatNoAbs + CUgMatPrime
         IF(l_alert(IErr,"SimulateAndFit","Absorption")) RETURN
       END IF

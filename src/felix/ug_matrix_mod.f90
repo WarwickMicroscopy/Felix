@@ -234,23 +234,9 @@ MODULE ug_matrix_mod
     !--------------------------------------------------------------------
 
     CUgMat = CUgMatNoAbs + CUgMatPrime 
-<<<<<<< HEAD
     CALL message( LM, dbg3, "Ug matrix, including absorption (nm^-2)" )
     DO ind = 1,40
 	  WRITE(SPrintString,FMT='(3(I2,1X),A2,1X,8(F7.4,1X))') NINT(Rhkl(ind,:)),": ",100*CUgMat(ind,1:4)
-=======
-
-    CALL message( LM, dbg3, "U'g matrix, i.e. absorption (nm^-2)" )
-    DO ind = 1,16
-!      CALL message( LM, dbg3, "RKL row:",NINT(Rhkl(ind,:)) )
-      WRITE(SPrintString,FMT='(4(2(F6.2,1X),2X))') 100*CUgMatPrime(ind,1:4)
-      CALL message( LM, dbg3, SPrintString )
-    END DO
-
-    CALL message( LM, dbg3, "Ug matrix, including absorption (nm^-2)" )
-    DO ind = 1,16
-      WRITE(SPrintString,FMT='(4(2(F6.2,1X),2X))') 100*CUgMat(ind,1:4)
->>>>>>> master
       CALL message( LM, dbg3, SPrintString )
     END DO
 
@@ -504,13 +490,8 @@ MODULE ug_matrix_mod
 
     CALL message( LM,dbg3, "Ug matrix, without absorption (nm^-2)" )!LM, dbg3
     DO ind = 1,16
-<<<<<<< HEAD
 	  WRITE(SPrintString,FMT='(3(I2,1X),A2,1X,8(F7.4,1X))') NINT(Rhkl(ind,:)),": ",100*CUgMatNoAbs(ind,1:4)
       CALL message( LM,dbg3, SPrintString)
-=======
-      WRITE(SPrintString,FMT='(6(2(F6.2,1X),2X))') 100*CUgMatNoAbs(ind,1:6)
-      CALL message( LM, dbg3, SPrintString )
->>>>>>> master
     END DO
    
     !--------------------------------------------------------------------
@@ -550,7 +531,6 @@ MODULE ug_matrix_mod
       !--------------------------------------------------------------------
       
       ! IEquivalentUgKey is used later in absorption case 2 Bird & king
-<<<<<<< HEAD
       RgSumMat = ZERO
       ! equivalent Ug's are identified by abs(h)+abs(k)+abs(l)+a*h^2+b*k^2+c*l^2...
       DO ind = 1,nReflections
@@ -566,19 +546,6 @@ MODULE ug_matrix_mod
       DO ind =1,16
 	  	WRITE(SPrintString,FMT='(3(I2,1X),A2,1X,12(F6.1,1X))') NINT(Rhkl(ind,:)),": ",RgSumMat(ind,1:12)
         CALL message ( LM, dbg3, SPrintString )!LM, dbg3
-=======
-      ! equivalent Ug's are identified by the sum of their:
-      ! abs(indices) plus the sum of abs(Ug)'s with no absorption
-
-      RgSumMat = SUM(ABS(RgMatrix),3) + RgMatrixMagnitude+ABS(REAL(CUgMatNoAbs)) + &
-            ABS(AIMAG(CUgMatNoAbs))
-      !RgSumMat=REAL(SIGN(1_IKIND,NINT(111111.1*AIMAG(CUgMatNoAbs))))
-      !RgSumMat=100.0*REAL(AIMAG(CUgMatNoAbs))
-      CALL message ( LM, dbg3, "hkl: RgSumMat from 1 to 12" )
-      DO ind =1,16
-        WRITE(SPrintString,FMT='(12(F6.2,2X))') RgSumMat(ind,1:12)
-        CALL message ( LM, dbg3, SPrintString )
->>>>>>> master
       END DO
 
       ISymmetryRelations = 0_IKIND 
@@ -591,13 +558,8 @@ MODULE ug_matrix_mod
             Iuid = Iuid + 1_IKIND
             ! fill the symmetry relation matrix with incrementing numbers
             ! that have the sign of the imaginary part
-<<<<<<< HEAD
             WHERE (ABS(RgSumMat-RgSumMat(ind,jnd)).LE.RTolerance)
               ISymmetryRelations = Iuid*SIGN(1_IKIND,NINT(AIMAG(CUgMatNoAbs)/(TINY)))
-=======
-            WHERE (ABS(RgSumMat-ABS(RgSumMat(ind,jnd))).LE.RTolerance)
-              ISymmetryRelations = Iuid*SIGN(1_IKIND,NINT(AIMAG(CUgMatNoAbs)/TINY))
->>>>>>> master
             END WHERE
           END IF
         END DO
@@ -607,13 +569,8 @@ MODULE ug_matrix_mod
       CALL message ( LS, SPrintString )
       CALL message ( LM, dbg3, "hkl: symmetry matrix" )
       DO ind =1,16
-<<<<<<< HEAD
 	  	WRITE(SPrintString,FMT='(3(I2,1X),A2,1X,16(I4,1X))') NINT(Rhkl(ind,:)),": ",ISymmetryRelations(ind,1:16)
-        CALL message ( LM,dbg3, SPrintString )!LM, dbg3
-=======
-        WRITE(SPrintString,FMT='(12(I3,2X))') ISymmetryRelations(ind,1:12)
-        CALL message ( LM, dbg3, SPrintString )
->>>>>>> master
+        CALL message ( LM,dbg3, SPrintString )
       END DO
 
       ! link each key with its Ug, from 1 to the number of unique Ug's Iuid

@@ -162,15 +162,10 @@ PROGRAM Felixrefine
   RElectronWaveVectorMagnitude=TWOPI/RElectronWaveLength
   RRelativisticCorrection = ONE/SQRT( ONE - (RElectronVelocity/RSpeedOfLight)**2 )
   RRelativisticMass = RRelativisticCorrection*RElectronMass
-<<<<<<< HEAD
   !conversion from Vg to Ug, h^2/(2pi*m0*e), see e.g. Kirkland eqn. C.5
   RScattFacToVolts=(RPlanckConstant**2)*(RAngstromConversion**2)/&
   (TWOPI*RElectronMass*RElectronCharge*RVolume)
   ! Creates reciprocal lattice vectors in Microscope reference frame
-=======
-
-  ! Creates reciprocal lattice vectors in reciprocal Angstroms, Microscope reference frame
->>>>>>> master
   CALL ReciprocalLattice(IErr)
   IF(l_alert(IErr,"felixrefine","ReciprocalLattice")) CALL abort
 
@@ -390,12 +385,7 @@ PROGRAM Felixrefine
   !--------------------------------------------------------------------
   ! calculate resolution in k space
   !--------------------------------------------------------------------
-
-<<<<<<< HEAD
   RMinimumGMag = RgPoolMag(2)!since the first one is always 000
-=======
-  RMinimumGMag = RgPoolMag(2)!because RGPool(1) is 000
->>>>>>> master
   RDeltaK = RMinimumGMag*RConvergenceAngle/REAL(IPixelCount,RKIND)
 
   !--------------------------------------------------------------------
@@ -526,7 +516,6 @@ PROGRAM Felixrefine
     ELSE ! It's not a Ug refinement, so count refinement variables
       ! Excluding Ug refinement, various variables can be refined together
       INoOfVariablesForRefinementType(1)=0
-      
       ! Atom coordinate refinement, B
       IF(IRefineMode(2).EQ.1) THEN
         CALL SetupAtomMovements(IErr)
@@ -535,7 +524,6 @@ PROGRAM Felixrefine
       ELSE
         INoOfVariablesForRefinementType(2)=0
       END IF
-
       ! Occupancy, C
       INoOfVariablesForRefinementType(3)=IRefineMode(3)*SIZE(IAtomsToRefine)
       ! Isotropic DW, D
@@ -549,7 +537,6 @@ PROGRAM Felixrefine
       INoOfVariablesForRefinementType(10)=IRefineMode(10)! kV, J
       ! Total number of independent variables
       INoOfVariables = SUM(INoOfVariablesForRefinementType)
-
       IF(INoOfVariables.EQ.0) THEN 
         ! there's no refinement requested, say so and quit
         IErr = 1
@@ -557,25 +544,14 @@ PROGRAM Felixrefine
               "No refinement variables! Check IRefineModeFLAG in felix.inp. "// &
               "Valid refine modes are A,B,C,D,E,F,G,H,I,J,S")) CALL abort
       END IF
-
     END IF
-
     ALLOCATE(RIndependentVariable(INoOfVariables),STAT=IErr) 
     IF(l_alert(IErr,"felixrefine","allocate RIndependentVariable")) CALL abort
 
-<<<<<<< HEAD
     !--------------------------------------------------------------------
     ! assign refinement variables depending upon Ug and non-Ug refinement
     !--------------------------------------------------------------------
-  
-=======
-  !--------------------------------------------------------------------
-  ! assign refinement variables depending upon Ug and non-Ug refinement
-  !--------------------------------------------------------------------
-  IF(ISimFLAG==0) THEN
->>>>>>> master
     IF(IRefineMode(1).EQ.1) THEN ! It's a Ug refinement, A
-
       ! Fill up the IndependentVariable list with CUgMatNoAbs components
       jnd=1
       DO ind = 1+IUgOffset,INoofUgs+IUgOffset
@@ -588,12 +564,10 @@ PROGRAM Felixrefine
           jnd=jnd+1
         END IF
       END DO
-
       ! Proportional absorption included in structure factor refinement as last variable
 	    IF (IAbsorbFLAG.EQ.1) RIndependentVariable(jnd) = RAbsorptionPercentage
-
     ELSE ! It's not a Ug refinement 
-	    ! Fill up the IndependentVariable list 
+	  ! Fill up the IndependentVariable list 
       ALLOCATE(RIndependentVariable(INoOfVariables),STAT=IErr)  
       ind=1
       IF(IRefineMode(2).EQ.1) THEN ! Atomic coordinates, B
@@ -618,11 +592,9 @@ PROGRAM Felixrefine
         RIndependentVariable(ind)=RConvergenceAngle
         ind=ind+1
 	    END IF
-
       ! Assign IDs - not needed for a Ug refinement
       ALLOCATE(IIterativeVariableUniqueIDs(INoOfVariables,2),STAT=IErr)
       IF(l_alert(IErr,"felixrefine","allocate IIterativeVariableUniqueIDs")) CALL abort
-
       IIterativeVariableUniqueIDs = 0 
       DO ind = 2,IRefinementVariableTypes ! Loop over iterative variables apart from Ug's
         IF(IRefineMode(ind).EQ.1) THEN
