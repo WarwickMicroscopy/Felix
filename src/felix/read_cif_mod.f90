@@ -412,14 +412,18 @@ MODULE read_cif_mod
           Ipos= SCAN(name, "yY")
           IF(Ipos.GT.0) THEN ! there is a Y
             IoneI=1
-            IF(Ipos.GT.1.AND.name(Ipos-1:Ipos-1).EQ."-") IoneI=-1
+            IF(Ipos.GT.1)THEN
+              IF(name(Ipos-1:Ipos-1).EQ."-") IoneI=-1
+            END IF
             RSymMat(ISymCount, ind,2)=IoneI
           END IF
              
           Ipos= SCAN(name, "zZ")
           IF(Ipos.GT.0) THEN ! there is a Z
             IoneI=1
-            IF(Ipos.GT.1.AND.name(Ipos-1:Ipos-1).EQ."-") IoneI=-1
+            IF(Ipos.GT.1) THEN
+              IF(name(Ipos-1:Ipos-1).EQ."-") IoneI=-1
+            END IF
             RSymMat(ISymCount, ind,3)=IoneI
           END IF
           Ipos= SCAN(name, "/")

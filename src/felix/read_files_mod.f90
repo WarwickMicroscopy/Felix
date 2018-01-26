@@ -456,7 +456,6 @@ IF(my_rank.EQ.0)PRINT*,IByteSize
 
     ! for IByteSize: 2bytes=64-bit input file (NB tinis specifies in bytes, not bits)
     !?? JR Is it 8bytes=64-bit and not 2bytes=64-bit?
-
     ! iteratively INQUIRE each possible location for +0+0+0 .bin or .dm3 image
     DO IFileTypeID=1,4
       SELECT CASE(IFileTypeID)
@@ -479,11 +478,11 @@ IF(my_rank.EQ.0)PRINT*,IByteSize
       ! check if corresponding _+0+0+0.img or _+0+0+0.dm3 image exists
       INQUIRE(FILE=TRIM(SFilePath) ,EXIST=LFileExist)
       IF(LFileExist) THEN
-        !PRINT*,"Found experimental image with filepath =",TRIM(SFilePath)
+        !IF (my_rank.EQ.0) PRINT*,"Found experimental image with filepath =",TRIM(SFilePath)
         CALL message(LM, "Found initial experimental image with filepath =",TRIM(SFilePath) )
         EXIT
       ELSE
-        PRINT*,"Did not find experimental image with filepath =",TRIM(SFilePath)
+        !IF (my_rank.EQ.0) PRINT*,"Did not find experimental image with filepath =",TRIM(SFilePath)
         CALL message(LM, "Did not find initial experimental image with filepath =",TRIM(SFilePath) )
       END IF    
     END DO
@@ -509,6 +508,10 @@ IF(my_rank.EQ.0)PRINT*,IByteSize
     IF(IFileTypeID.EQ.2.OR.IFileTypeID.EQ.4) THEN
       ALLOCATE(RImage4ByteFloatDM3(2*IPixelCount,2*IPixelCount),STAT=IErr)
       IF(l_alert(IErr,"ReadExperimentalImages","allocate RImage4ByteFloatDM3")) RETURN
+      WRITE(SFilePath,'(A3,I3.3,A1,I3.3,A1)') "LR_",2*IPixelCount,"x",2*IPixelCount
+      IF(my_rank.EQ.0) THEN
+        CALL system('mkdir ' // SFilePath)
+      END IF
     END IF
 
     ! Read in expected image for each LacbedPattern
@@ -546,8 +549,11 @@ IF(my_rank.EQ.0)PRINT*,IByteSize
 
           ! write out .dm3 as binary .img in LR_NxN/ folder
           IF(my_rank.EQ.0) THEN
-            WRITE(SFilePath,'(A,I0,A,I0,A,A)') 'LR_',2*IPixelCount,'x',2*IPixelCount,'/',SFilename
-            CALL message(LS,'From.dm3 file writing out "'//TRIM(SFilePath)//'"')
+            WRITE(SFilename,'(A,A,SP,3(I0),A4)') SChemicalFormula(1:ILN),"_",&
+              NINT(RInputHKLs(ind,1:3)), ".img"
+            WRITE(SFilePath,'(A3,I3.3,A1,I3.3,A1)') "LR_",2*IPixelCount,"x",2*IPixelCount
+            SFilePath=TRIM(SFilePath)//'/'//Sfilename
+            CALL message(LM,'From.dm3 file writing out "'//TRIM(SFilePath)//'"')
             OPEN(UNIT=IChOutWIImage, STATUS= 'UNKNOWN', FILE=TRIM(ADJUSTL(SFilePath)),&
 	                FORM='UNFORMATTED',ACCESS='DIRECT',IOSTAT=IErr,RECL=2*IPixelCount*8)
             IF(l_alert(IErr,"ReadExperimentalImages","OPEN() .img file, while writing out data from .dm3")) RETURN      
