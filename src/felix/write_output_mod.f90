@@ -87,7 +87,7 @@ MODULE write_output_mod
     USE message_mod
     
     ! global inputs
-    USE IPARA, ONLY : ILN,IPixelCount,ISimFLAG,IOutPutReflections,INoOfLacbedPatterns,nReflections
+    USE IPARA, ONLY : ILN,IPixelCount,ISimFLAG,IOutPutReflections,INoOfLacbedPatterns,nReflections,IByteSize
     USE CPARA, ONLY : CUgMat
     USE RPARA, ONLY : Rhkl, RImageSimi, RInitialThickness, RDeltaThickness
     USE SPARA, ONLY : SChemicalFormula
@@ -125,7 +125,7 @@ MODULE write_output_mod
       RImageToWrite = RImageSimi(:,:,ind,IThicknessIndex)	
       ! Writes data to output image .bin files
       OPEN(UNIT=IChOutWIImage, STATUS= 'UNKNOWN', FILE=TRIM(ADJUSTL(fullpath)),&
-	          FORM='UNFORMATTED',ACCESS='DIRECT',IOSTAT=IErr,RECL=2*IPixelCount*8)
+	          FORM='UNFORMATTED',ACCESS='DIRECT',IOSTAT=IErr,RECL=2*IPixelCount*IByteSize)
       IF(l_alert(IErr,"WriteIterationOutput","OPEN() output .bin file")) RETURN      
       DO jnd = 1,2*IPixelCount
         WRITE(IChOutWIImage,rec=jnd) RImageToWrite(jnd,:)
@@ -135,9 +135,9 @@ MODULE write_output_mod
     END DO
 
     ! writes out structure.cif
-    CALL WriteIterationCIF(Iter,path,IErr) 
+    CALL WriteIterationCIF(Iter,path,IErr)
     IF(l_alert(IErr,"WriteIterationOutput","WriteIterationCIF")) RETURN   
-
+    IErr=0
     ! write out StructureFactors.txt
     WRITE(filename,*) "StructureFactors.txt"
     WRITE(fullpath,*) TRIM(ADJUSTL(path)),'/',TRIM(ADJUSTL(filename))

@@ -155,7 +155,7 @@ MODULE read_files_mod
     ! IByteSize
     ILine= ILine+1; READ(IChInp,'(27X,I15.1)',ERR=20,END=30) IByteSize
     CALL message ( LXL, dbg3, "IByteSize=",IByteSize) ! depends on system, 8 for csc, 2 tinis
-IF(my_rank.EQ.0)PRINT*,IByteSize
+
     !--------------------------------------------------------------------
     ! radius of the beam in pixels
     !--------------------------------------------------------------------
@@ -442,7 +442,7 @@ IF(my_rank.EQ.0)PRINT*,IByteSize
     ! global inputs
     USE IChannels, ONLY : IChInImage, IChOutWIImage
     USE SPARA, ONLY : SChemicalFormula
-    USE IPARA, ONLY : INoOfLacbedPatterns, IPixelCount, IByteSize,ILN
+    USE IPARA, ONLY : INoOfLacbedPatterns,IPixelCount,IByteSize,ILN
     USE RPARA, ONLY : RInputHKLs
 
     IMPLICIT NONE
