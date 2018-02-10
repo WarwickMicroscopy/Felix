@@ -679,7 +679,7 @@ MODULE refinementcontrol_mod
     Rsum=0
     DO ind=-IKernelRadius,IKernelRadius
       Rind=REAL(ind)
-      RGauss1D(ind+IKernelRadius+1)=EXP(-(Rind**2)/((2*RBlurringRadius)**2))
+      RGauss1D(ind+IKernelRadius+1)=EXP(-(Rind**2)/(2*(RBlurringRadius**2)))
       Rsum=Rsum+RGauss1D(ind+IKernelRadius+1)
       IF(ind==0) IErr=78 
     END DO
