@@ -671,10 +671,8 @@ MODULE read_files_mod
    
     IMPLICIT NONE
 
-    CHARACTER(*), INTENT(IN) :: &
-          SUnformattedVector,SOpenBracketDummy,SCloseBracketDummy
-    REAL(RKIND),INTENT(OUT),DIMENSION(3) :: &
-          RFormattedVector
+    CHARACTER(*), INTENT(IN) :: SUnformattedVector,SOpenBracketDummy,SCloseBracketDummy
+    REAL(RKIND),INTENT(OUT),DIMENSION(3) :: RFormattedVector
     CHARACTER*1 :: SComma=',',SOpenBracket,SCloseBracket
     CHARACTER*100 :: SFormattedVectorX,SFormattedVectorY,SFormattedVectorZ   
     LOGICAL :: LBACK=.TRUE.   

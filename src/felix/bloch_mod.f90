@@ -126,11 +126,11 @@ MODULE bloch_mod
       !  SQRT( ( RBigK**2 + DOT_PRODUCT(RgPool(knd,:),RTiltedK(:)) )**2 /RBigK**2 - &
       !  (RgPoolMag(knd)**2 + TWO*DOT_PRODUCT(RgPool(knd,:),RTiltedK(:))) )
       IF(knd.EQ.1.AND.IYPixelIndex.EQ.10.AND.IXPixelIndex.EQ.10) THEN
-        CALL message(LS,"RBigK ",RBigK)!LM,dbg7
-        CALL message(LS,"Rhkl(knd) ",Rhkl(knd:knd,:))
-        CALL message(LS,"RgPool(knd) ",RgPool(knd:knd,:))
-        CALL message(LS,"RTiltedK ",RTiltedK)
-        CALL message(LS,"RDevPara ",RDevPara(knd))
+        CALL message(LM,"RBigK ",RBigK)!LM,dbg7
+        CALL message(LM,"Rhkl(knd) ",Rhkl(knd:knd,:))
+        CALL message(LM,"RgPool(knd) ",RgPool(knd:knd,:))
+        CALL message(LM,"RTiltedK ",RTiltedK)
+        CALL message(LM,"RDevPara ",RDevPara(knd))
       END IF
     END DO
 
