@@ -87,7 +87,7 @@ MODULE write_output_mod
     USE message_mod
     
     ! global inputs
-    USE IPARA, ONLY : ILN,IPixelCount,ISimFLAG,IOutPutReflections,INoOfLacbedPatterns,nReflections
+    USE IPARA, ONLY : ILN,IPixelCount,ISimFLAG,IOutPutReflections,INoOfLacbedPatterns,nReflections,IByteSize
     USE CPARA, ONLY : CUgMat
     USE RPARA, ONLY : Rhkl, RImageSimi, RInitialThickness, RDeltaThickness
     USE SPARA, ONLY : SChemicalFormula
@@ -115,18 +115,20 @@ MODULE write_output_mod
 
     ! Write Images to disk
     DO ind = 1,INoOfLacbedPatterns
-      ! Make the path/filenames e.g. 'GaAs-2-2+0.bin'
-      WRITE(filename,"(A,A1,I3.3,A3,I3.3,A1,I3.3,A1,SP,3(I2.1),A4)")&
-            SChemicalFormula(1:ILN),"_",IThickness,"nm_",&
-            2*IPixelcount,"x",2*IPixelcount,"_",NINT(Rhkl(IOutPutReflections(ind),1:3)),'.bin'
+      ! Make the path/filenames e.g. 'GaAs_-2-2+0.bin'
+      WRITE(filename,"(A,A1,3(I2.1),A4)")&
+            SChemicalFormula(1:ILN),"_",NINT(Rhkl(IOutPutReflections(ind),1:3)),'.bin'
+   !version with thickness and dimensions in name - unwieldy!         
+      !WRITE(filename,"(A,A1,I3.3,A3,I3.3,A1,I3.3,A1,SP,3(I2.1),A4)")&
+      !      SChemicalFormula(1:ILN),"_",IThickness,"nm_",&
+      !      2*IPixelcount,"x",2*IPixelcount,"_",NINT(Rhkl(IOutPutReflections(ind),1:3)),'.bin'
 
       fullpath = TRIM(ADJUSTL(path))//"/"//TRIM(ADJUSTL(filename))
       CALL message ( LL, dbg6, fullpath )
-
       RImageToWrite = RImageSimi(:,:,ind,IThicknessIndex)	
       ! Writes data to output image .bin files
       OPEN(UNIT=IChOutWIImage, STATUS= 'UNKNOWN', FILE=TRIM(ADJUSTL(fullpath)),&
-	          FORM='UNFORMATTED',ACCESS='DIRECT',IOSTAT=IErr,RECL=2*IPixelCount*8)
+	          FORM='UNFORMATTED',ACCESS='DIRECT',IOSTAT=IErr,RECL=2*IPixelCount*IByteSize)
       IF(l_alert(IErr,"WriteIterationOutput","OPEN() output .bin file")) RETURN      
       DO jnd = 1,2*IPixelCount
         WRITE(IChOutWIImage,rec=jnd) RImageToWrite(jnd,:)
@@ -136,9 +138,9 @@ MODULE write_output_mod
     END DO
 
     ! writes out structure.cif
-    CALL WriteIterationCIF(path,IErr) 
+    CALL WriteIterationCIF(Iter,path,IErr)
     IF(l_alert(IErr,"WriteIterationOutput","WriteIterationCIF")) RETURN   
-
+    IErr=0
     ! write out StructureFactors.txt
     WRITE(filename,*) "StructureFactors.txt"
     WRITE(fullpath,*) TRIM(ADJUSTL(path)),'/',TRIM(ADJUSTL(filename))
@@ -162,31 +164,34 @@ MODULE write_output_mod
   !!
   !! Major-Authors: 'kidwhizz' (2015), Richard Beanland (2016)
   !!
-  SUBROUTINE WriteIterationCIF(path,IErr)
+  SUBROUTINE WriteIterationCIF(Iter,path,IErr)
 
     USE MyNumbers
     USE message_mod
     
     ! global inputs
+    USE IPARA, ONLY : ILN
     USE RPARA, ONLY : RLengthX, RLengthY, RLengthZ, RAlpha, RBeta, RGamma, &
                       RBasisAtomPosition, RBasisIsoDW, RBasisOccupancy
-    USE SPARA, ONLY : SSpaceGrp, SBasisAtomLabel, SBasisAtomName
+    USE SPARA, ONLY : SSpaceGrp, SBasisAtomLabel, SBasisAtomName,SChemicalFormula
     USE IChannels, ONLY : IChOutSimplex
 
     IMPLICIT NONE
 
     CHARACTER(200), INTENT(IN) :: path
+    INTEGER(IKIND), INTENT(IN) :: Iter
     INTEGER(IKIND), INTENT(OUT) :: IErr
     INTEGER(IKIND) :: jnd
     CHARACTER(200) :: filename, fullpath
 
-    IErr=0
-    ! Write out non symmetrically related atomic positions
-    WRITE(filename,*) "structure.cif"
+
+    ! Write out unique atomic positions
+    WRITE(filename,"(A1,I4.4,A4)") "_",Iter,".cif"
+    filename=SChemicalFormula(1:ILN) // filename!gives e.g. SrTiO3_0001.cif 
     WRITE(fullpath,*) TRIM(ADJUSTL(path)),'/',TRIM(ADJUSTL(filename))
 
     OPEN(UNIT=IChOutSimplex,STATUS='UNKNOWN',FILE=TRIM(ADJUSTL(fullpath)))
-    ! RB
+ 
     WRITE(IChOutSimplex,FMT='(A16)') "data_felixrefine"
     WRITE(IChOutSimplex,FMT='(A5)') "loop_"
     WRITE(IChOutSimplex,FMT='(A14,1X,F7.4)') "_cell_length_a",RLengthX

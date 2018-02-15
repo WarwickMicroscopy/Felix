@@ -117,8 +117,8 @@ MODULE read_cif_mod
     DATA          rs/'\\'/
 
     INTEGER IAtomCount, ICommaPosLeft, ICommaPosRight, &
-         Ipos,Idpos, IXYZminus,IFRACminus, Inum,Idenom,IAtomID
-    CHARACTER(32) Csym(ITHREE)
+         Ipos,Idpos, IoneI,IFRACminus, Inum,Idenom,IAtomID
+    CHARACTER*32 Csym(ITHREE)
     INTEGER IErr,ind,jnd
 
     ! fudge to deal with gfortran vs. g77
@@ -398,45 +398,50 @@ MODULE read_cif_mod
         Csym(2)= name(ICommaPosLeft+1:ICommaPosRight-1)
         Csym(3)= name(ICommaPosRight+1:LEN_TRIM(name))
         DO ind=1,ITHREE
-          IXYZminus=1
           IFRACminus=1
           name= Csym(ind)
           Ipos= SCAN(name, "xX")
-          IF(Ipos > 0) THEN ! there is an X
-            IF(Ipos>1) THEN
-              IF(name(Ipos-1:Ipos-1)=="-") IXYZminus=-1
+          IF(Ipos.GT.0) THEN ! there is an X
+            IoneI=1
+            IF(Ipos.GT.1) THEN
+              IF(name(Ipos-1:Ipos-1).EQ."-") IoneI=-1
             END IF
-            RSymMat(ISymCount,ind,1)=IXYZminus
+            RSymMat(ISymCount,ind,1)=IoneI
           END IF
              
           Ipos= SCAN(name, "yY")
-          IF(Ipos > 0) THEN ! there is a Y
-            IF(Ipos>1) THEN
-              IF(name(Ipos-1:Ipos-1)=="-") IXYZminus=-1
+          IF(Ipos.GT.0) THEN ! there is a Y
+            IoneI=1
+            IF(Ipos.GT.1)THEN
+              IF(name(Ipos-1:Ipos-1).EQ."-") IoneI=-1
             END IF
-            RSymMat(ISymCount, ind,2)=IXYZminus
+            RSymMat(ISymCount, ind,2)=IoneI
           END IF
              
           Ipos= SCAN(name, "zZ")
-          IF(Ipos > 0) THEN ! there is a Z
-            IF(Ipos>1) THEN
-              IF(name(Ipos-1:Ipos-1)=="-") IXYZminus=-1
+          IF(Ipos.GT.0) THEN ! there is a Z
+            IoneI=1
+            IF(Ipos.GT.1) THEN
+              IF(name(Ipos-1:Ipos-1).EQ."-") IoneI=-1
             END IF
-            RSymMat(ISymCount, ind,3)=IXYZminus
+            RSymMat(ISymCount, ind,3)=IoneI
           END IF
-             
           Ipos= SCAN(name, "/")
-          IF(Ipos > 1) THEN
+          IF(Ipos.GT.1) THEN
             IF(Ipos < LEN_TRIM(NAME) ) THEN ! there is an /
               Inum  = IACHAR(name(Ipos-1:Ipos-1))-48
               Idenom= IACHAR(name(Ipos+1:Ipos+1))-48
-              IF(Ipos>2) THEN
+              IF(Ipos.GT.2) THEN
                 IF(name(Ipos-2:Ipos-2)=="-") IFRACminus=-1
               END IF
             END IF
             RSymVec(ISymCount,ind)=IFRACminus*REAL(Inum)/REAL(Idenom)
           END IF
         END DO
+!IF(my_rank.EQ.0) PRINT*, Csym
+!WRITE(SPrintString,'(F3.0,1X,F3.0,1X,F3.0,2X,F3.0,1X,F3.0,1X,F3.0,2X,F3.0,1X,F3.0,1X,F3.0)') RSymMat(ISymCount,1,:),RSymMat(ISymCount,2,:),RSymMat(ISymCount,3,:)
+!IF(my_rank.EQ.0) PRINT*, ISymCount,"RSymMat:  ", SPrintString             
+!IF(my_rank.EQ.0) PRINT*, ISymCount,"RSymVec:", RSymVec(ISymCount,:)             
         IF(text_ .NEQV. .TRUE.) EXIT
       END DO
 

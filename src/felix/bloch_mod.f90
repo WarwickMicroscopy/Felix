@@ -121,17 +121,16 @@ MODULE bloch_mod
       RDevPara(knd)= -RTiltedK(3)-RgPool(knd,3)+&
 	    SQRT( (RTiltedK(3)+RgPool(knd,3))**2 - &
             2*DOT_PRODUCT(RgPool(knd,:),RTiltedK(:)) - RgPoolMag(knd)**2 )
-      !??  remove below commented out
       !Keith's old version, Sg parallel to k'
       !RDevPara(knd)= -( RBigK + DOT_PRODUCT(RgPool(knd,:),RTiltedK(:)) /RBigK) + &
       !  SQRT( ( RBigK**2 + DOT_PRODUCT(RgPool(knd,:),RTiltedK(:)) )**2 /RBigK**2 - &
       !  (RgPoolMag(knd)**2 + TWO*DOT_PRODUCT(RgPool(knd,:),RTiltedK(:))) )
-      IF(knd.EQ.2.AND.IYPixelIndex.EQ.10.AND.IXPixelIndex.EQ.10) THEN
-        CALL message(LM,dbg7,"RBigK ",RBigK)
-        CALL message(LM,dbg7,"Rhkl(knd) ",Rhkl(knd:knd,:))
-        CALL message(LM,dbg7,"RgPool(knd) ",RgPool(knd:knd,:))
-        CALL message(LM,dbg7,"RTiltedK ",RTiltedK)
-        CALL message(LM,dbg7,"RDevPara ",RDevPara(knd))
+      IF(knd.EQ.1.AND.IYPixelIndex.EQ.10.AND.IXPixelIndex.EQ.10) THEN
+        CALL message(LS,"RBigK ",RBigK)!LM,dbg7
+        CALL message(LS,"Rhkl(knd) ",Rhkl(knd:knd,:))
+        CALL message(LS,"RgPool(knd) ",RgPool(knd:knd,:))
+        CALL message(LS,"RTiltedK ",RTiltedK)
+        CALL message(LS,"RDevPara ",RDevPara(knd))
       END IF
     END DO
 
@@ -478,10 +477,9 @@ MODULE bloch_mod
   !%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 
-
   !>
   !! Procedure-description: Determines number of weak and strong beams. Uses Sg and
-  !! pertubation strengths and iterates over the number of weak and strong until
+  !! perturbation strengths and iterates over the number of weak and strong until
   !! there are enough.
   !!
   !! Major-Authors: Keith Evans (2014), Richard Beanland (2016)
@@ -545,8 +543,7 @@ MODULE bloch_mod
         ind=ind+1
 	    END IF
     END DO
-
-    ! this is used to give the dimension of the Bloch wave problem
+    !The no. of strong beams gives the dimension of the Bloch wave problem
     nBeams=ind-1  
 
     CALL message(LXL,dbg7,"Strong Beam List",IStrongBeamList)
@@ -591,11 +588,10 @@ MODULE bloch_mod
 
   !%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-
   !>
   !! Procedure-description: Returns eigenvalues and eigenvectors of matrix.
   !!
-  !! Major-Authors: Keith Evans (2014), Richard Beanland (2016)
+  !! Major-Authors: Rudo Roemer (2014), Richard Beanland (2016)
   !!
   SUBROUTINE EigenSpectrum(IMatrixDimension, MatrixToBeDiagonalised, EigenValues,&
                     EigenVectors, IErr)
@@ -655,12 +651,10 @@ MODULE bloch_mod
 
   !%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-
-
   !>
   !! Procedure-description: Invert an M*M Complex Matrix
   !!
-  !! Major-Authors: Keith Evans (2014), Richard Beanland (2016)
+  !! Major-Authors: Rudo Roemer (2014), Richard Beanland (2016)
   !!
   SUBROUTINE INVERT(MatrixSize,Matrix,InvertedMatrix,IErr)  
 

@@ -65,7 +65,7 @@ MODULE read_dm3_mod
   !!
   !! Major-Authors: Jacob Richardson (2017)
   !!
-  SUBROUTINE ReadDM3TagsAndImage( SFilePath, IXPixels, IYPixels, IErr, RImageMatrixDM3 )
+  SUBROUTINE ReadDM3TagsAndImage( SFilePath, IYPixels, IXPixels, IErr, RImageMatrixDM3 )
 
     ! NB The file is read-in with big endian to match the image data format, however
     ! the tag data is little endian format. The tag characters are read-in byte by byte and
@@ -74,9 +74,9 @@ MODULE read_dm3_mod
     !?? despite the pixel sizes RImageMatrixDM3 is outputted as square using max side, refer to module notes above
 
     CHARACTER(*),INTENT(IN) :: SFilePath
-    INTEGER(4), INTENT(IN) :: IXPixels, IYPixels !?? despite these, RImageArray is outputted as square
+    INTEGER(4), INTENT(IN) :: IYPixels, IXPixels !?? despite these, RImageArray is outputted as square
     INTEGER(4),INTENT(OUT) :: IErr
-    REAL(4),INTENT(OUT) :: RImageMatrixDM3(MAX(IXPixels,IYPixels),MAX(IXPixels,IYPixels))
+    REAL(4),INTENT(OUT) :: RImageMatrixDM3(MAX(IYPixels,IXPixels),MAX(IYPixels,IXPixels))
     ! RImageMatrixDM3( x_pixel, y_pixel )
 
     ! parameters (some of these could be inputs but currently unncessary)
@@ -88,7 +88,7 @@ MODULE read_dm3_mod
       ICorrespondingImageDataTag = 2   ! specifies which 'Data' tag corresponds to image data 
 
     ! local variables
-    INTEGER(4) :: i,j, INoOfBytes, INoOfTags, INoOfDataTags, INoOfPreDataBytes, Ix, Iy
+    INTEGER(4) :: i,j, INoOfBytes, INoOfTags, INoOfDataTags, INoOfPreDataBytes, Iy, Ix
     LOGICAL :: LFindingTags, LReadingImageData, LLookingForDataTags
     CHARACTER(36) :: STagLabel
     INTEGER(1) :: IPrevious4Bytes(4), IPreviousBytes(40), IByte
@@ -99,9 +99,9 @@ MODULE read_dm3_mod
     IErr=0
     ! intialise local variables
     LFindingTags=.TRUE.; LReadingImageData=.FALSE.; LLookingForDataTags=.TRUE.
-    INoOfBytes=0; INoOfTags=0; INoOfPreDataBytes=0; INoOfDataTags=0; Ix=0; Iy=1;
+    INoOfBytes=0; INoOfTags=0; INoOfPreDataBytes=0; INoOfDataTags=0; Iy=0; Ix=1;
     IPrevious4Bytes=0; IPreviousBytes=0; I4bytePreData=0;
-    RDataBytes=0;
+    RDataBytes=0; IDataLengthBigEndian=0;
 
     OPEN(UNIT=1,FILE=SFilePath,STATUS='OLD',ACCESS='STREAM',ACTION='READ',IOSTAT=IErr, CONVERT='LITTLE_ENDIAN')
     IF(IErr.NE.0) THEN
@@ -171,10 +171,10 @@ MODULE read_dm3_mod
             CALL MVBITS( I4bytePreData, 16, 8, IDataLengthBigEndian, 8  )
             CALL MVBITS( I4bytePreData, 8,  8, IDataLengthBigEndian, 16 )
             CALL MVBITS( I4bytePreData, 0,  8, IDataLengthBigEndian, 24 )
-            IF(IDataLengthBigEndian.NE.IXPixels*IYPixels) THEN ! error
+            IF(IDataLengthBigEndian.NE.IYPixels*IXPixels) THEN ! error
               IErr=1
               WRITE(*,'(A,I0)') 'Error in ReadDM3TagsAndImage(). Data array length does not match inputted pixel size.'
-              WRITE(*,'(A,I0,A,I0)') 'Error in ReadDM3TagsAndImage(). Data array length = ',IDataLengthBigEndian,', IXPixels*IYPixels = ', IXPixels*IYPixels
+              WRITE(*,'(A,I0,A,I0)') 'Error in ReadDM3TagsAndImage(). Data array length = ',IDataLengthBigEndian,', IYPixels*IXPixels = ', IYPixels*IXPixels
               RETURN
             ENDIF 
           ENDIF
@@ -187,12 +187,12 @@ MODULE read_dm3_mod
             RETURN
           ENDIF
           INoOfBytes = INoOfBytes + 4
-          Ix = Ix + 1
-          IF(Ix .EQ. IXPixels + 1) THEN
-            Ix = 1
-            Iy = Iy + 1
+          Iy = Iy + 1
+          IF(Iy .EQ. IYPixels + 1) THEN
+            Iy = 1
+            Ix = Ix + 1
           ENDIF
-          IF(Iy .LT. IYPixels + 1) THEN
+          IF(Ix .LT. IXPixels + 1) THEN
             RImageMatrixDM3(Ix,Iy) = RDataBytes
           ELSE ! reached end of image data
             LFindingTags = .TRUE.
