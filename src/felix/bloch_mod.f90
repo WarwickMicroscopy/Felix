@@ -119,8 +119,8 @@ MODULE bloch_mod
     DO knd=1,nReflections
       ! Sg parallel to z: Sg=-[k'z+gz-sqrt( (k'z+gz)^2-2k'.g-g^2)]
       RDevPara(knd)= -RTiltedK(3)-RgPool(knd,3)+&
-	    SQRT( (RTiltedK(3)+RgPool(knd,3))**2 - &
-            2*DOT_PRODUCT(RgPool(knd,:),RTiltedK(:)) - RgPoolMag(knd)**2 )
+        SQRT( (RTiltedK(3)+RgPool(knd,3))**2 - &
+        2*DOT_PRODUCT(RgPool(knd,:),RTiltedK(:)) - RgPoolMag(knd)**2 )
       !Keith's old version, Sg parallel to k'
       !RDevPara(knd)= -( RBigK + DOT_PRODUCT(RgPool(knd,:),RTiltedK(:)) /RBigK) + &
       !  SQRT( ( RBigK**2 + DOT_PRODUCT(RgPool(knd,:),RTiltedK(:)) )**2 /RBigK**2 - &
@@ -224,7 +224,7 @@ MODULE bloch_mod
         sumC=CZERO
         sumD=CZERO
         DO ind=1,nWeakBeams
-		      ! Zuo&Weickenmeier Ultramicroscopy 57 (1995) 375-383 eq.4
+          ! Zuo&Weickenmeier Ultramicroscopy 57 (1995) 375-383 eq.4
           sumC=sumC + &
           CUgMat(IStrongBeamList(knd),IWeakBeamList(ind))*&
           CUgMat(IWeakBeamList(ind),1)/(TWO*RBigK*RDevPara(IWeakBeamList(ind)))
@@ -234,7 +234,7 @@ MODULE bloch_mod
           !REAL(CUgMat(IWeakBeamList(ind),1)) / &
           !(4*RBigK*RBigK*RDevPara(IWeakBeamList(ind)))
           sumD = sumD + &
-		      ! Zuo&Weickenmeier Ultramicroscopy 57 (1995) 375-383 eq.5
+          ! Zuo&Weickenmeier Ultramicroscopy 57 (1995) 375-383 eq.5
           CUgMat(IStrongBeamList(knd),IWeakBeamList(ind))*&
           CUgMat(IWeakBeamList(ind),IStrongBeamList(knd))/&
           (TWO*RBigK*RDevPara(IWeakBeamList(ind)))
@@ -243,15 +243,15 @@ MODULE bloch_mod
           !REAL(CUgMat(IWeakBeamList(ind),IStrongBeamList(knd))) / &
           !(4*RBigK*RBigK*RDevPara(IWeakBeamList(ind)))
         ENDDO
-	      ! Replace the Ug's
-	      WHERE (CUgSgMatrix.EQ.CUgSgMatrix(knd,1))
+        ! Replace the Ug's
+        WHERE (CUgSgMatrix.EQ.CUgSgMatrix(knd,1))
           CUgSgMatrix = CUgSgMatrix(knd,1) - sumC
-	      END WHERE
-	      ! Replace the Sg's
+        END WHERE
+        ! Replace the Sg's
         CUgSgMatrix(knd,knd)= CUgSgMatrix(knd,knd) - TWO*RBigK*sumD/(TWOPI*TWOPI)
       ENDDO
-	    !The 4pi^2 is a result of using h, not hbar, in the conversion from VG(ij) to Ug(ij).  Needs to be taken out of the weak beam calculation too 
-	    !Divide by 2K so off-diagonal elementa are Ug/2K, diagonal elements are Sg, Spence's (1990) 'Structure matrix'
+      !The 4pi^2 is a result of using h, not hbar, in the conversion from VG(ij) to Ug(ij).  Needs to be taken out of the weak beam calculation too 
+      !Divide by 2K so off-diagonal elementa are Ug/2K, diagonal elements are Sg, Spence's (1990) 'Structure matrix'
       CUgSgMatrix = TWOPI*TWOPI*CUgSgMatrix/(TWO*RBigK)
     END IF
     
@@ -528,8 +528,8 @@ MODULE bloch_mod
     ! now increase RMaxSg until we have enough strong beams
     DO WHILE (SUM(IStrong).LT.IMinStrongBeams)
       WHERE (ABS(RDevPara).LT.RMaxSg.OR.RPertStrength0.GE.RMinPertStrong)
-	    IStrong=1_IKIND
-	  END WHERE
+        IStrong=1_IKIND
+      END WHERE
       RMaxSg=RMaxSg+0.005
       ! RMinPertStrong=0.0025/RMaxSg
     END DO
@@ -539,9 +539,9 @@ MODULE bloch_mod
     ind=1_IKIND
     DO jnd=1,nReflections
       IF (IStrong(jnd).EQ.1) THEN
-	      IStrongBeamList(ind)=jnd
+        IStrongBeamList(ind)=jnd
         ind=ind+1
-	    END IF
+      END IF
     END DO
     !The no. of strong beams gives the dimension of the Bloch wave problem
     nBeams=ind-1  
@@ -563,8 +563,8 @@ MODULE bloch_mod
     RMinPertWeak=0.9*RMinPertStrong
     DO WHILE (SUM(IWeak).LT.IMinWeakBeams)
       WHERE (RPertStrength0.GE.RMinPertWeak.AND.IStrong.NE.1_IKIND)
-	    IWeak=1
-	  END WHERE
+        IWeak=1
+      END WHERE
       RMinPertWeak=0.9*RMinPertWeak
     END DO
 
@@ -576,7 +576,7 @@ MODULE bloch_mod
     ind=1_IKIND
     DO jnd=1,nReflections
       IF (IWeak(jnd).EQ.1) THEN
-	    IWeakBeamList(ind)=jnd
+        IWeakBeamList(ind)=jnd
         ind=ind+1
       END IF
     END DO

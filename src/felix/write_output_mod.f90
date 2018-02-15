@@ -125,10 +125,10 @@ MODULE write_output_mod
 
       fullpath = TRIM(ADJUSTL(path))//"/"//TRIM(ADJUSTL(filename))
       CALL message ( LL, dbg6, fullpath )
-      RImageToWrite = RImageSimi(:,:,ind,IThicknessIndex)	
+      RImageToWrite = RImageSimi(:,:,ind,IThicknessIndex)
       ! Writes data to output image .bin files
       OPEN(UNIT=IChOutWIImage, STATUS= 'UNKNOWN', FILE=TRIM(ADJUSTL(fullpath)),&
-	          FORM='UNFORMATTED',ACCESS='DIRECT',IOSTAT=IErr,RECL=2*IPixelCount*IByteSize)
+          FORM='UNFORMATTED',ACCESS='DIRECT',IOSTAT=IErr,RECL=2*IPixelCount*IByteSize)
       IF(l_alert(IErr,"WriteIterationOutput","OPEN() output .bin file")) RETURN      
       DO jnd = 1,2*IPixelCount
         WRITE(IChOutWIImage,rec=jnd) RImageToWrite(jnd,:)
@@ -215,7 +215,7 @@ MODULE write_output_mod
 
     DO jnd = 1,SIZE(RBasisAtomPosition,DIM=1)!RB only gives refined atoms, needs work
       WRITE(IChOutSimplex,FMT='(2(A3,1X),3(F7.4,1X),2(F5.2,1X))') &
-	          SBasisAtomLabel(jnd), SBasisAtomName(jnd), RBasisAtomPosition(jnd,:), &
+          SBasisAtomLabel(jnd), SBasisAtomName(jnd), RBasisAtomPosition(jnd,:), &
             RBasisIsoDW(jnd),RBasisOccupancy(jnd)
     END DO
     WRITE(IChOutSimplex,FMT='(A22)') "#End of refinement cif"
@@ -343,7 +343,7 @@ MODULE write_output_mod
                   [REAL(CUniqueUg(ind+IUgOffset)), REAL(AIMAG(CUniqueUg(ind+IUgOffset)),RKIND)]
           END DO
           IF (IAbsorbFLAG.EQ.1) THEN
-		        RDataOut(IEnd+1) = RAbsorptionPercentage 
+            RDataOut(IEnd+1) = RAbsorptionPercentage 
             ! RB last variable is proportional absorption
           END IF
       END SELECT
