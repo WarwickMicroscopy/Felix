@@ -103,64 +103,66 @@ MODULE refinementcontrol_mod
 
     
     !\/----------------------------------------------------------------------
-    IF (my_rank.EQ.0) THEN!There is a bug when individual cores calculate UgMat, make it the responsibility of core 0 and broadcast it
-      IF (IRefineMode(1).EQ.1) THEN  ! Ug refinement; update structure factors 
-        ! Dummy Matrix to contain new iterative values
-        CUgMatDummy = CZERO    ! NB these are Ug's without absorption
-        jnd=1
-        ! work through the Ug's to update
-        DO ind = 1+IUgOffset,INoofUgs+IUgOffset
-          ! Don't update components smaller than RTolerance:
-          ! 3 possible types of Ug, complex, REAL and imaginary
-          IF ( (ABS(REAL(CUniqueUg(ind),RKIND)).GE.RTolerance).AND.&
-              (ABS(AIMAG(CUniqueUg(ind))).GE.RTolerance)) THEN ! use both REAL and imag parts
-            CUniqueUg(ind)=CMPLX(RIndependentVariable(jnd),RIndependentVariable(jnd+1))
-            jnd=jnd+2
-          ELSEIF ( ABS(AIMAG(CUniqueUg(ind))).LT.RTolerance ) THEN ! use only REAL part
-            CUniqueUg(ind)=CMPLX(RIndependentVariable(jnd),ZERO)
-            jnd=jnd+1
-          ELSEIF ( ABS(REAL(CUniqueUg(ind),RKIND)).LT.RTolerance ) THEN ! use only imag part
-            CUniqueUg(ind)=CMPLX(ZERO,RIndependentVariable(jnd))
-            jnd=jnd+1
-          ELSE ! should never happen
-            IErr=1; 
-            WRITE(SPrintString,*) ind
-            IF(l_alert(IErr,"SimulateAndFit",&
-                "zero structure factor, CUniqueUg element number="//TRIM(SPrintString))) RETURN
-          END IF
-          ! Update the Ug matrix for this Ug
-          WHERE(ISymmetryRelations.EQ.IEquivalentUgKey(ind))
-            CUgMatDummy = CUniqueUg(ind)
-          END WHERE
-          WHERE(ISymmetryRelations.EQ.-IEquivalentUgKey(ind))
-            CUgMatDummy = CONJG(CUniqueUg(ind))
-          END WHERE
-        END DO
-        ! put the changes into CUgMatNoAbs
-        WHERE(ABS(CUgMatDummy).GT.TINY)
-          CUgMatNoAbs = CUgMatDummy
-        END WHERE
-        CALL Absorption(IErr)
-        IF(l_alert(IErr,"SimulateAndFit","Absorption")) RETURN
-        IF (IAbsorbFLAG.EQ.1) THEN ! proportional absorption
-          RAbsorptionPercentage = RIndependentVariable(jnd)
+    IF (IRefineMode(1).EQ.1) THEN  ! Ug refinement; update structure factors 
+      ! Dummy Matrix to contain new iterative values
+      CUgMatDummy = CZERO    ! NB these are Ug's without absorption
+      jnd=1
+      ! work through the Ug's to update
+      DO ind = 1+IUgOffset,INoofUgs+IUgOffset
+        ! Don't update components smaller than RTolerance:
+        ! 3 possible types of Ug, complex, REAL and imaginary
+        IF ( (ABS(REAL(CUniqueUg(ind),RKIND)).GE.RTolerance).AND.&
+            (ABS(AIMAG(CUniqueUg(ind))).GE.RTolerance)) THEN ! use both REAL and imag parts
+          CUniqueUg(ind)=CMPLX(RIndependentVariable(jnd),RIndependentVariable(jnd+1))
+          jnd=jnd+2
+        ELSEIF ( ABS(AIMAG(CUniqueUg(ind))).LT.RTolerance ) THEN ! use only REAL part
+          CUniqueUg(ind)=CMPLX(RIndependentVariable(jnd),ZERO)
+          jnd=jnd+1
+        ELSEIF ( ABS(REAL(CUniqueUg(ind),RKIND)).LT.RTolerance ) THEN ! use only imag part
+          CUniqueUg(ind)=CMPLX(ZERO,RIndependentVariable(jnd))
+          jnd=jnd+1
+        ELSE ! should never happen
+          IErr=1; 
+          WRITE(SPrintString,*) ind
+          IF(l_alert(IErr,"SimulateAndFit",&
+              "zero structure factor, CUniqueUg element number="//TRIM(SPrintString))) RETURN
         END IF
-      ELSE ! not Ug refinement
-        ! Update variables
-        CALL UpdateVariables(RIndependentVariable,IErr)
-        IF(l_alert(IErr,"SimulateAndFit","UpdateVariables")) RETURN
-        IF (IRefineMode(8).EQ.1) THEN ! convergence angle
-          ! recalculate resolution in k space
-          RDeltaK = RMinimumGMag*RConvergenceAngle/REAL(IPixelCount,RKIND) 
-        ELSE
-          ! basis has changed in some way, recalculate unit cell
-          CALL UniqueAtomPositions(IErr)
-          IF(l_alert(IErr,"SimulateAndFit","UniqueAtomPositions")) RETURN
-          !--------------------------------------------------------------------
-          ! update scattering matrix Ug
-          !--------------------------------------------------------------------
+        ! Update the Ug matrix for this Ug
+        WHERE(ISymmetryRelations.EQ.IEquivalentUgKey(ind))
+          CUgMatDummy = CUniqueUg(ind)
+        END WHERE
+        WHERE(ISymmetryRelations.EQ.-IEquivalentUgKey(ind))
+          CUgMatDummy = CONJG(CUniqueUg(ind))
+        END WHERE
+      END DO
+      ! put the changes into CUgMatNoAbs
+      WHERE(ABS(CUgMatDummy).GT.TINY)
+        CUgMatNoAbs = CUgMatDummy
+      END WHERE
+      CALL Absorption(IErr)
+      IF(l_alert(IErr,"SimulateAndFit","Absorption")) RETURN
+      IF (IAbsorbFLAG.EQ.1) THEN ! proportional absorption
+        RAbsorptionPercentage = RIndependentVariable(jnd)
+      END IF
+    ELSE ! not Ug refinement
+      ! Update variables
+      CALL UpdateVariables(RIndependentVariable,IErr)
+      IF(l_alert(IErr,"SimulateAndFit","UpdateVariables")) RETURN
+      IF (IRefineMode(8).EQ.1) THEN ! convergence angle
+        ! recalculate resolution in k space
+        RDeltaK = RMinimumGMag*RConvergenceAngle/REAL(IPixelCount,RKIND) 
+      ELSE
+        ! basis has changed in some way, recalculate unit cell
+      PRINT*,"About to UniqueAtomPositions"
+        CALL UniqueAtomPositions(IErr)
+        IF(l_alert(IErr,"SimulateAndFit","UniqueAtomPositions")) RETURN
+        !--------------------------------------------------------------------
+        ! update scattering matrix Ug
+        !--------------------------------------------------------------------
+        IF (my_rank.EQ.0) THEN!There is a bug when individual cores calculate UgMat, make it the responsibility of core 0 and broadcast it
           ! calculate CUgMatNoAbs
           CUgMatNoAbs = CZERO
+      PRINT*,"About to CUgMatNoAbs"
           !duplicated from Ug matrix initialisation.  Ug refinement will no longer work! Should be put into a single subroutine.
           DO ind=2,nReflections
             DO jnd=1,ind-1
@@ -175,23 +177,24 @@ MODULE refinementcontrol_mod
           ! NB Only the lower half of the Vg matrix was calculated, this completes the upper half
           CUgMatDummy = TRANSPOSE(CUgMatNoAbs)! Dummy just used as a box to avoid the bug when conj(transpose) is used on orac
           CUgMatNoAbs = CUgMatNoAbs + CONJG(CUgMatDummy)
-          CALL Absorption(IErr)! calculates CUgMat = CUgMatNoAbs + CUgMatPrime
-          IF(l_alert(IErr,"SimulateAndFit","Absorption")) RETURN
         END IF
+        ind=nReflections*nReflections
+      PRINT*,"About to BCast"
+        !===================================== ! Send UgMat to all cores
+        CALL MPI_BCAST(CUgMat,ind,MPI_DOUBLE_PRECISION,0,MPI_COMM_WORLD,IErr)
+        !=====================================
+      PRINT*,"About to Absorption"
+        CALL Absorption(IErr)! calculates CUgMat = CUgMatNoAbs + CUgMatPrime
+        IF(l_alert(IErr,"SimulateAndFit","Absorption")) RETURN
       END IF
+    END IF
       !/\----------------------------------------------------------------------
       CALL message( LM,dbg3, "recalculated Ug matrix, with absorption (nm^-2)" )
       DO ind = 1,16
 	    WRITE(SPrintString,FMT='(3(I2,1X),A2,1X,8(F7.4,1X))') NINT(Rhkl(ind,:)),": ",100*CUgMat(ind,1:4)
         CALL message( LM,dbg3, SPrintString)
       END DO
-      PRINT*,"About to BCast"
-    END IF
     
-    ind=nReflections*nReflections
-    !===================================== ! Send UgMat to all cores
-    CALL MPI_BCAST(CUgMat,ind,MPI_DOUBLE_PRECISION,0,MPI_COMM_WORLD,IErr)
-    !=====================================
 
     IF (my_rank.EQ.0) THEN ! send current values to screen
       CALL PrintVariables(IErr)

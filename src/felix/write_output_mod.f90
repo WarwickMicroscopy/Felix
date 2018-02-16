@@ -101,6 +101,7 @@ MODULE write_output_mod
     REAL(RKIND),DIMENSION(2*IPixelCount,2*IPixelCount) :: RImageToWrite
     CHARACTER(200) :: path, filename, fullpath
     
+    IErr=0
     IThickness = (RInitialThickness + (IThicknessIndex-1)*RDeltaThickness)/10!in nm 
 
     IF (ISimFLAG.EQ.0) THEN !felixrefine output
@@ -184,7 +185,7 @@ MODULE write_output_mod
     INTEGER(IKIND) :: jnd
     CHARACTER(200) :: filename, fullpath
 
-
+    IErr=0
     ! Write out unique atomic positions
     WRITE(filename,"(A1,I4.4,A4)") "_",Iter,".cif"
     filename=SChemicalFormula(1:ILN) // filename!gives e.g. SrTiO3_0001.cif 
