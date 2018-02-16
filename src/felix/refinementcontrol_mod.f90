@@ -185,6 +185,7 @@ MODULE refinementcontrol_mod
 	    WRITE(SPrintString,FMT='(3(I2,1X),A2,1X,8(F7.4,1X))') NINT(Rhkl(ind,:)),": ",100*CUgMat(ind,1:4)
         CALL message( LM,dbg3, SPrintString)
       END DO
+      PRINT*,"About to BCast"
     END IF
     
     ind=nReflections*nReflections
