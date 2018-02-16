@@ -100,7 +100,7 @@ MODULE bloch_mod
     COMPLEX(CKIND),ALLOCATABLE :: CDiagonalSgMatrix(:,:), COffDiagonalSgMatrix(:,:)
     COMPLEX(CKIND) :: CScatteringElement
     INTEGER(IKIND) :: ScatterMatrixRow
-      
+PRINT*,my_rank,":"CUgMat(2,4)      
     ! we are inside the mask
     IPixelComputed= IPixelComputed + 1
 

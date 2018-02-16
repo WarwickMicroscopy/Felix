@@ -150,7 +150,8 @@ MODULE refinementcontrol_mod
       IF(l_alert(IErr,"SimulateAndFit","UpdateVariables")) RETURN
       IF (IRefineMode(8).EQ.1) THEN ! convergence angle
         ! recalculate resolution in k space
-        RDeltaK = RMinimumGMag*RConvergenceAngle/REAL(IPixelCount,RKIND) 
+        IF (my_rank.EQ.0) RDeltaK = RMinimumGMag*RConvergenceAngle/REAL(IPixelCount,RKIND)
+        CALL MPI_BCAST(RDeltaK,1,MPI_DOUBLE_PRECISION,0,MPI_COMM_WORLD,IErr)        
       ELSE
         ! basis has changed in some way, recalculate unit cell
       PRINT*,"About to UniqueAtomPositions"
@@ -179,11 +180,9 @@ MODULE refinementcontrol_mod
           CUgMatNoAbs = CUgMatNoAbs + CONJG(CUgMatDummy)
         END IF
         ind=nReflections*nReflections
-      PRINT*,"About to BCast"
         !===================================== ! Send UgMat to all cores
         CALL MPI_BCAST(CUgMat,ind,MPI_DOUBLE_PRECISION,0,MPI_COMM_WORLD,IErr)
         !=====================================
-      PRINT*,"About to Absorption"
         CALL Absorption(IErr)! calculates CUgMat = CUgMatNoAbs + CUgMatPrime
         IF(l_alert(IErr,"SimulateAndFit","Absorption")) RETURN
       END IF
@@ -511,7 +510,7 @@ MODULE refinementcontrol_mod
       CASE(4)
         RBasisIsoDW(IIterativeVariableUniqueIDs(ind,2))=RIndependentVariable(ind)
       CASE(5)
-        ! NOT CURRENTLY IMPLIMENTED
+        ! NOT CURRENTLY IMPLEMENTED
         IErr=1;IF(l_alert(IErr,"UpdateVariables",&
               "Anisotropic Debye Waller Factors not implemented")) CALL abort
 !        RAnisotropicDebyeWallerFactorTensor(&
