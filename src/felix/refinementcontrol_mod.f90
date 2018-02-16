@@ -184,11 +184,12 @@ MODULE refinementcontrol_mod
       DO ind = 1,16
 	    WRITE(SPrintString,FMT='(3(I2,1X),A2,1X,8(F7.4,1X))') NINT(Rhkl(ind,:)),": ",100*CUgMat(ind,1:4)
         CALL message( LM,dbg3, SPrintString)
-    END DO
+      END DO
     END IF
     
+    ind=nReflections*nReflections
     !===================================== ! Send UgMat to all cores
-    CALL MPI_BCAST(CUgMat,1,MPI_DOUBLE_PRECISION,0,MPI_COMM_WORLD,IErr)
+    CALL MPI_BCAST(CUgMat,ind,MPI_DOUBLE_PRECISION,0,MPI_COMM_WORLD,IErr)
     !=====================================
 
     IF (my_rank.EQ.0) THEN ! send current values to screen
