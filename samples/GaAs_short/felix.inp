@@ -12,14 +12,14 @@ IMaskFLAG                 = 1
 IHolzFLAG                 = 0
 IAbsorbFLAG               = 2
 IAnisoDebyeWallerFlag     = 0
-IByteSize                 = 2
+IByteSize                 = 8
 
 # radius of the beam in pixels
-IPixelCount               = 35
+IPixelCount               = 40
 
 # beam selection criteria
 IMinReflectionPool        = 600
-IMinStrongBeams           = 50
+IMinStrongBeams           = 100
 IMinWeakBeams             = 50
 
 # crystal settings

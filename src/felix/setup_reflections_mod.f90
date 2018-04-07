@@ -72,10 +72,8 @@ MODULE setup_reflections_mod
     IFind = 0
 
     IF(IHKLSelectFLAG.EQ.1) THEN
-
       DO ind = 1,SIZE(RInputHKLs,DIM=1)
         DO jnd = 1,SIZE(Rhkl,DIM=1)
-
           IF(ABS(Rhkl(jnd,1)-RInputHKLs(ind,1)).LE.RTolerance.AND.&
              ABS(Rhkl(jnd,2)-RInputHKLs(ind,2)).LE.RTolerance.AND.&
              ABS(Rhkl(jnd,3)-RInputHKLs(ind,3)).LE.RTolerance) THEN
@@ -94,9 +92,8 @@ MODULE setup_reflections_mod
             END IF
             EXIT
           ELSE
-            IF ( jnd == SIZE(Rhkl,DIM=1) ) THEN
-              CALL message(LM,"No requested HKLs are allowed using the purposed geometry", &
-                    NINT(RInputHKLs(ind,:)) )
+            IF ( jnd.EQ.SIZE(Rhkl,DIM=1) ) THEN
+              CALL message(LM,"No requested HKLs found",NINT(RInputHKLs(ind,:)) )
               CALL message(LM,"Will Ignore and Continue")
             END IF
             CYCLE
@@ -106,8 +103,7 @@ MODULE setup_reflections_mod
       END DO
        
       IF (IFind.LE.0) THEN
-        IErr=1; IF(l_alert(IErr,"HKLList",&
-              "No requested HKLs are allowed using the purposed geometry")) RETURN
+        IErr=1; IF(l_alert(IErr,"HKLList","No requested HKLs found")) RETURN
       END IF
       
       INoOfLacbedPatterns = IFind

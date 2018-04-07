@@ -154,7 +154,7 @@ MODULE refinementcontrol_mod
         CALL MPI_BCAST(RDeltaK,1,MPI_DOUBLE_PRECISION,0,MPI_COMM_WORLD,IErr)        
       ELSE
         ! basis has changed in some way, recalculate unit cell
-      PRINT*,"About to UniqueAtomPositions"
+      !PRINT*,"About to UniqueAtomPositions"
         CALL UniqueAtomPositions(IErr)
         IF(l_alert(IErr,"SimulateAndFit","UniqueAtomPositions")) RETURN
         !--------------------------------------------------------------------
@@ -163,7 +163,7 @@ MODULE refinementcontrol_mod
         IF (my_rank.EQ.0) THEN!There is a bug when individual cores calculate UgMat, make it the responsibility of core 0 and broadcast it
           ! calculate CUgMatNoAbs
           CUgMatNoAbs = CZERO
-      PRINT*,"About to CUgMatNoAbs"
+      !PRINT*,"About to CUgMatNoAbs"
           !duplicated from Ug matrix initialisation.  Ug refinement will no longer work! Should be put into a single subroutine.
           DO ind=2,nReflections
             DO jnd=1,ind-1

@@ -96,10 +96,11 @@ MODULE write_output_mod
     IMPLICIT NONE
 
     INTEGER(IKIND), INTENT(OUT) :: IErr
-    INTEGER(IKIND), INTENT(IN) :: Iter, IThicknessIndex, IExitFLAG
+    INTEGER(IKIND), INTENT(IN) :: Iter,IThicknessIndex,IExitFLAG
     INTEGER(IKIND) :: IThickness,ind,jnd
     REAL(RKIND),DIMENSION(2*IPixelCount,2*IPixelCount) :: RImageToWrite
-    CHARACTER(200) :: path, filename, fullpath
+    CHARACTER(10) :: hString,kString,lString
+    CHARACTER(200) :: path,filename,fullpath
     
     IErr=0
     IThickness = (RInitialThickness + (IThicknessIndex-1)*RDeltaThickness)/10!in nm 
@@ -116,14 +117,33 @@ MODULE write_output_mod
 
     ! Write Images to disk
     DO ind = 1,INoOfLacbedPatterns
+      ! Make the hkl string e.g. -2-2+10
+      jnd=NINT(Rhkl(IOutPutReflections(ind),1))
+      IF (ABS(jnd).LT.10) THEN
+        WRITE(hString,"(SP,I2.1)") jnd
+      ELSEIF (ABS(jnd).LT.100) THEN
+        WRITE(hString,"(SP,I3.1)") jnd
+      ELSE
+        WRITE(hString,"(SP,I4.1)") jnd
+      ENDIF
+      jnd=NINT(Rhkl(IOutPutReflections(ind),2))
+      IF (ABS(jnd).LT.10) THEN
+        WRITE(kString,"(SP,I2.1)") jnd
+      ELSEIF (ABS(jnd).LT.100) THEN
+        WRITE(kString,"(SP,I3.1)") jnd
+      ELSE
+        WRITE(kString,"(SP,I4.1)") jnd
+      ENDIF
+      jnd=NINT(Rhkl(IOutPutReflections(ind),3))
+      IF (ABS(jnd).LT.10) THEN
+        WRITE(lString,"(SP,I2.1)") jnd
+      ELSEIF (ABS(jnd).LT.100) THEN
+        WRITE(lString,"(SP,I3.1)") jnd
+      ELSE
+        WRITE(lString,"(SP,I4.1)") jnd
+      ENDIF
       ! Make the path/filenames e.g. 'GaAs_-2-2+0.bin'
-      WRITE(filename,"(A,A1,SP,3(I2.1),A4)")&
-        SChemicalFormula(1:ILN),"_",NINT(Rhkl(IOutPutReflections(ind),1:3)),'.bin'
-   !version with thickness and dimensions in name - unwieldy!         
-      !WRITE(filename,"(A,A1,I3.3,A3,I3.3,A1,I3.3,A1,SP,3(I2.1),A4)")&
-      !      SChemicalFormula(1:ILN),"_",IThickness,"nm_",&
-      !      2*IPixelcount,"x",2*IPixelcount,"_",NINT(Rhkl(IOutPutReflections(ind),1:3)),'.bin'
-
+      filename = SChemicalFormula(1:ILN) // "_" // TRIM(ADJUSTL(hString)) // TRIM(ADJUSTL(kString)) // TRIM(ADJUSTL(lString)) // '.bin'
       fullpath = TRIM(ADJUSTL(path))//"/"//TRIM(ADJUSTL(filename))
       CALL message ( LL, dbg6, fullpath )
       RImageToWrite = RImageSimi(:,:,ind,IThicknessIndex)
