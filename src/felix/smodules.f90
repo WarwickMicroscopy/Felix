@@ -166,7 +166,7 @@ MODULE IPara
   !OtherFLAGS
   INTEGER(IKIND) :: IDiffractionFLAG=0
   INTEGER(IKIND) :: IInitialSimulationFLAG
-  INTEGER(IKIND) :: ISimFLAG
+  INTEGER(IKIND) :: ISimFLAG, IPatternConvergeFLAG
   !Disk Radius
   INTEGER(IKIND) :: IPixelCount 
   !Crystal Settings
@@ -231,7 +231,7 @@ END MODULE IPara
 MODULE RPara
   USE MyNumbers
   USE RConst
-  USE IConst
+  USE IConst> on a message text in the *compilation* buffer to go to the line whose number is mentioned in that me
 
   !INPUT Section 
   !Crystallography

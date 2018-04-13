@@ -1,0 +1,7 @@
+<map id="ug_matrix_mod::getvgcontributionij" name="ug_matrix_mod::getvgcontributionij">
+<area shape="rect" id="node2" href="$namespaceug__matrix__mod.html#ab4c81d3ea03906bd1c3870d569ef8424" title="Procedure&#45;description: Choose scattering factors using IScatterFactorMethodFLAG. " alt="" coords="277,56,525,83"/>
+<area shape="rect" id="node6" href="$namespaceug__matrix__mod.html#adbada2b45121e0cc2db9f126d4da6f17" title="Procedure&#45;description: Returns a PseudoAtom scattering factor. " alt="" coords="306,107,497,133"/>
+<area shape="rect" id="node3" href="$namespaceutilities__mod.html#a83141a0af6980a17e7c19d75bd978311" title="Procedure&#45;description: Defines a Gaussian distribution for any parameter input. " alt="" coords="578,5,733,32"/>
+<area shape="rect" id="node4" href="$namespaceutilities__mod.html#a641423e4d5641b454aa83d103960153e" title="Procedure&#45;description: Defines a Lorentzian Distribution for any parameter input. ..." alt="" coords="576,56,735,83"/>
+<area shape="rect" id="node5" href="$namespaceug__matrix__mod.html#abdf96d7501ffb06eb806d0b0c78a3f49" title="Procedure&#45;description: Returns a Kirkland scattering factor. " alt="" coords="573,107,737,133"/>
+</map>

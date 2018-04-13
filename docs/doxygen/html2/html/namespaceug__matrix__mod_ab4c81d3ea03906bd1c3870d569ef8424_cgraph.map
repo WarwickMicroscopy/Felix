@@ -1,0 +1,5 @@
+<map id="ug_matrix_mod::atomicscatteringfactor" name="ug_matrix_mod::atomicscatteringfactor">
+<area shape="rect" id="node2" href="$namespaceutilities__mod.html#a83141a0af6980a17e7c19d75bd978311" title="Procedure&#45;description: Defines a Gaussian distribution for any parameter input. " alt="" coords="306,5,461,32"/>
+<area shape="rect" id="node3" href="$namespaceutilities__mod.html#a641423e4d5641b454aa83d103960153e" title="Procedure&#45;description: Defines a Lorentzian Distribution for any parameter input. ..." alt="" coords="304,56,463,83"/>
+<area shape="rect" id="node4" href="$namespaceug__matrix__mod.html#abdf96d7501ffb06eb806d0b0c78a3f49" title="Procedure&#45;description: Returns a Kirkland scattering factor. " alt="" coords="301,107,465,133"/>
+</map>

@@ -1,0 +1,51 @@
+<map id="felixrefine" name="felixrefine">
+<area shape="rect" id="node2" href="$namespacemynumbers.html#a6c534f4b86169a7c5d8d3296e270c3f0" title="mynumbers::init_numbers" alt="" coords="181,31,353,57"/>
+<area shape="rect" id="node3" href="$namespacemessage__mod.html#ad65131f38bb57632c5079934b5b9bb0e" title="message_mod::initialisemessage" alt="" coords="160,81,375,108"/>
+<area shape="rect" id="node4" href="$felixrefine_8f90.html#ad19a33e2e66fd82be71a87ebed368c8d" title="abort" alt="" coords="242,132,293,159"/>
+<area shape="rect" id="node5" href="$namespaceread__files__mod.html#a54c266f7664ec67ee2668b302f21b857" title="Procedure&#45;description: " alt="" coords="179,183,356,209"/>
+<area shape="rect" id="node8" href="$namespacemessage__mod.html#a329f2b63cff4fd55c1d08da7d826ebcc" title="message_mod::setmessagemode" alt="" coords="158,233,377,260"/>
+<area shape="rect" id="node10" href="$namespaceread__cif__mod.html#a6e43e371f6f9c1aa08a172d0fc6ef061" title="Procedure&#45;description: Reads from felix.cif input file using toolbox. " alt="" coords="190,284,345,311"/>
+<area shape="rect" id="node18" href="$namespaceread__files__mod.html#ab3053752748a330bd9bdfbbe9b5bb90e" title="Procedure&#45;description: " alt="" coords="179,335,356,361"/>
+<area shape="rect" id="node19" href="$namespaceread__files__mod.html#afc88192b25e5a8c1d0ac2b88d8e2e29a" title="Procedure&#45;description: This subroutine reads in the input experimental images. It inquires whether th..." alt="" coords="138,385,397,412"/>
+<area shape="rect" id="node21" href="$namespaceset__scatter__factors__mod.html#afa6ecf739cd73eb7ab07728f42ccb4d5" title="set_scatter_factors\l_mod::setscatteringfactors" alt="" coords="179,437,356,478"/>
+<area shape="rect" id="node22" href="$namespacecrystallography__mod.html#a8bcf725498414cb7ac7ce808ba2051be" title="Procedure&#45;description: Creates reciprocal lattice vectors in Microscope reference frame..." alt="" coords="196,502,339,543"/>
+<area shape="rect" id="node24" href="$namespacecrystallography__mod.html#a2ee814f536b5ab881409758b980dcd10" title="Procedure&#45;description: Calculates the full set of possible fractional atomic positions and then gets ..." alt="" coords="193,567,342,609"/>
+<area shape="rect" id="node25" href="$namespacesetup__reflections__mod.html#aacc9940f2b54fd9de9c07819b6c63fc9" title="Procedure&#45;description: Counts the number of reflections limited by Ihklmax and the acceptance angle..." alt="" coords="191,633,344,674"/>
+<area shape="rect" id="node26" href="$namespacesetup__reflections__mod.html#a74fc591a7e77c30486b2b93a0640caa9" title="Procedure&#45;description: Fills the list of reciprocal space vectors Rhkl. " alt="" coords="191,698,344,739"/>
+<area shape="rect" id="node27" href="$namespacesetup__reflections__mod.html#a27b6c4289cce9c86414ea90509990d30" title="Procedure&#45;description: Sorts array into descending order. " alt="" coords="191,763,344,805"/>
+<area shape="rect" id="node28" href="$namespacesetup__reflections__mod.html#a698f914dd9471567b485f41c6b7c8f2f" title="Procedure&#45;description: Assign numbers to the different reflections in IOutputReflections. " alt="" coords="191,829,344,870"/>
+<area shape="rect" id="node29" href="$namespaceug__matrix__mod.html#aefbfaa87735de589ffff68e6d7faaa86" title="Procedure&#45;description: " alt="" coords="132,895,403,921"/>
+<area shape="rect" id="node36" href="$namespaceug__matrix__mod.html#add186c4b63f545bc1cec1d65317fd4fa" title="Procedure&#45;description: Select case using IAbsorbFLAG and calculate U&#39;g prime in parallel. " alt="" coords="178,945,357,972"/>
+<area shape="rect" id="node38" href="$namespacemessage__mod.html#a984a91f7533b6975ca99ebe57ed9f770" title="message_mod::printendtime" alt="" coords="507,1055,693,1081"/>
+<area shape="rect" id="node40" href="$felixrefine_8f90.html#ae90b8276ac3740e84da8bc67eef4e477" title="Procedure&#45;description: Setup atomic vector movements. " alt="" coords="192,1113,343,1140"/>
+<area shape="rect" id="node43" href="$namespaceimage__initialisation__mod.html#a57132a9ff98ab1f59b056f268f0cd446" title="Procedure&#45;description: Sets the positions of the centres of the disks and calculate the size of the f..." alt="" coords="185,1165,350,1206"/>
+<area shape="rect" id="node44" href="$namespaceimage__initialisation__mod.html#aeef829221538e73b32c971174e409878" title="Procedure&#45;description: Creates a circular or square image mask depending on the value of IMaskFLAG an..." alt="" coords="169,1230,366,1271"/>
+<area shape="rect" id="node45" href="$namespacerefinementcontrol__mod.html#a399ecac264d4f6480f5ee698c94d2fce" title="Procedure&#45;description: Simulates and produces images for each thickness. " alt="" coords="190,997,345,1038"/>
+<area shape="rect" id="node46" href="$namespacewrite__output__mod.html#ace6e8de1fd70ac8abeca26778da0cf5b" title="Procedure&#45;description: Writes output for interations including simulated .bin files, structureFactors.txt and structure.cif. " alt="" coords="146,1296,389,1323"/>
+<area shape="rect" id="node47" href="$namespacerefinementcontrol__mod.html#a47e9366f180d69b9cf263fdb1510d349" title="Procedure&#45;description: Calculates figure of merit and determines which thickness matches best..." alt="" coords="178,1347,357,1389"/>
+<area shape="rect" id="node48" href="$felixrefine_8f90.html#a320beee495d927712cf38ff1119d0eef" title="Procedure&#45;description: Refinement using the simplex method. " alt="" coords="203,1413,331,1440"/>
+<area shape="rect" id="node49" href="$felixrefine_8f90.html#a8b553926c9c6f1855ce2f6873c4204b8" title="Procedure&#45;description: Refinement using the maximum gradient method. " alt="" coords="190,1464,345,1491"/>
+<area shape="rect" id="node50" href="$felixrefine_8f90.html#aa3ac25cfee1d00cf8de55756f300626e" title="Procedure&#45;description: Refinement using the parabola method. " alt="" coords="200,1515,335,1541"/>
+<area shape="rect" id="node6" href="$namespaceread__files__mod.html#ab1cc757d98b3ba43b8a1f826ed492e9d" title="Procedure&#45;description: Function that reads in a 3D vector from a file, which has to have the form [I1..." alt="" coords="481,5,719,32"/>
+<area shape="rect" id="node7" href="$namespaceread__files__mod.html#a46b89e9b39db694d2b9fb8e1a29f14e7" title="Procedure&#45;description: " alt="" coords="451,56,749,83"/>
+<area shape="rect" id="node9" href="$namespacel__alert__mod.html#ac9655874d8880f897ca22d07230d3230" title="l_alert_mod::l_alert" alt="" coords="534,107,666,133"/>
+<area shape="rect" id="node11" href="$ciftbx_8f.html#a3ae51c94c9f58e02a2d56413d8e1ed4c" title="init_" alt="" coords="577,309,623,336"/>
+<area shape="rect" id="node12" href="$ciftbx_8f.html#a4b968cff97c84029fcb089e5754373eb" title="dict_" alt="" coords="575,360,625,387"/>
+<area shape="rect" id="node13" href="$ciftbx-wrapper_8f90.html#ae5a0dc77713fa9e013186fc5455a0b29" title="ocif_" alt="" coords="575,411,625,437"/>
+<area shape="rect" id="node14" href="$ciftbx-wrapper_8f90.html#acef84efd6e02fb3ddcab29ff8633a848" title="data_" alt="" coords="573,461,627,488"/>
+<area shape="rect" id="node15" href="$ciftbx-wrapper_8f90.html#a7055e00f1e5f857fc1ba8f23b19ceca2" title="char_" alt="" coords="573,157,627,184"/>
+<area shape="rect" id="node16" href="$ciftbx-wrapper_8f90.html#a24b949277f1e8100bf6202c8990ef754" title="numb_" alt="" coords="569,208,631,235"/>
+<area shape="rect" id="node17" href="$ciftbx-wrapper_8f90.html#a5a031324d93c4e7267bf09375680dd29" title="close_" alt="" coords="570,259,630,285"/>
+<area shape="rect" id="node20" href="$namespaceread__dm3__mod.html#a6cd80af2ee7c1955afa37b7f59a5824e" title="Procedure&#45;description: This reads in bytes from a .dm3 file, recognises the &#39;%%%&#39; delimiters..." alt="" coords="475,512,725,539"/>
+<area shape="rect" id="node23" href="$namespacemynumbers.html#a089c488940881f62f9d4d072f83bd0f4" title="mynumbers::cross" alt="" coords="535,563,665,589"/>
+<area shape="rect" id="node30" href="$namespaceutilities__mod.html#a83141a0af6980a17e7c19d75bd978311" title="Procedure&#45;description: Defines a Gaussian distribution for any parameter input. " alt="" coords="1095,815,1250,841"/>
+<area shape="rect" id="node31" href="$namespaceutilities__mod.html#a641423e4d5641b454aa83d103960153e" title="Procedure&#45;description: Defines a Lorentzian Distribution for any parameter input. ..." alt="" coords="1093,891,1252,917"/>
+<area shape="rect" id="node32" href="$namespaceutilities__mod.html#a8f7f53cf13182ea6a9d69bc979850808" title="Procedure&#45;description: " alt="" coords="521,700,679,727"/>
+<area shape="rect" id="node33" href="$namespaceug__matrix__mod.html#a474715ded1528587b5e199891234a860" title="Procedure&#45;description: Calculate a single fourier components of the potential Vg for atoms and pseudo..." alt="" coords="488,852,712,879"/>
+<area shape="rect" id="node34" href="$namespaceug__matrix__mod.html#ab4c81d3ea03906bd1c3870d569ef8424" title="Procedure&#45;description: Choose scattering factors using IScatterFactorMethodFLAG. " alt="" coords="797,815,1045,841"/>
+<area shape="rect" id="node35" href="$namespaceug__matrix__mod.html#adbada2b45121e0cc2db9f126d4da6f17" title="Procedure&#45;description: Returns a PseudoAtom scattering factor. " alt="" coords="826,953,1017,980"/>
+<area shape="rect" id="node37" href="$namespaceug__matrix__mod.html#a5177d1f0166d49e5e8049a2b497f2a12" title="Procedure&#45;description: Used as part of numerical integration to calculate absorptive form factor f&#39; f..." alt="" coords="489,1004,711,1031"/>
+<area shape="rect" id="node39" href="$namespacemessage__mod.html#af5ec23d847e74619835ffcb5fac69b10" title="message_mod::message1string2" alt="" coords="814,1055,1029,1081"/>
+<area shape="rect" id="node41" href="$namespacesetup__space__group__mod.html#a7aba60fcce3086e6ef45d5946181259d" title="Procedure&#45;description: Convert SSpacegrp to lower case and Compare SSpaceGrpNoSpaces with every space..." alt="" coords="503,1106,697,1147"/>
+<area shape="rect" id="node42" href="$namespacesetup__space__group__mod.html#ab89d78c4ee07b71696f8d9bf10d11ff3" title="Procedure&#45;description: " alt="" coords="513,1171,687,1213"/>
+</map>

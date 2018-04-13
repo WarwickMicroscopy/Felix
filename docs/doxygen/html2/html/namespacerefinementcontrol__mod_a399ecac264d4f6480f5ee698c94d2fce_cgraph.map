@@ -1,0 +1,13 @@
+<map id="refinementcontrol_mod::simulate" name="refinementcontrol_mod::simulate">
+<area shape="rect" id="node2" href="$namespacebloch__mod.html#a9acae498f5bca24db7cc028e367a0355" title="Procedure&#45;description: Simulates the electron beam and calculates Bloch coefficients for a specified ..." alt="" coords="208,107,455,133"/>
+<area shape="rect" id="node9" href="$namespacemessage__mod.html#a984a91f7533b6975ca99ebe57ed9f770" title="message_mod::printendtime" alt="" coords="238,183,425,209"/>
+<area shape="rect" id="node12" href="$namespacerefinementcontrol__mod.html#ac5218f51e9f8358488acff03d30052e7" title="Procedure&#45;description: Performs a 2D Gaussian blur on the input image using global variable RBlurRadi..." alt="" coords="254,234,409,275"/>
+<area shape="rect" id="node3" href="$namespacebloch__mod.html#a256a878a1cb8e7d859b038089a5c22e3" title="Procedure&#45;description: Determines number of weak and strong beams. Uses Sg and perturbation strengths..." alt="" coords="503,5,801,32"/>
+<area shape="rect" id="node4" href="$namespacebloch__mod.html#a7ad5069463bb0b3df7cb94c6a4c7cc51" title="Procedure&#45;description: Returns eigenvalues and eigenvectors of matrix. " alt="" coords="563,56,741,83"/>
+<area shape="rect" id="node5" href="$namespacebloch__mod.html#adc5613a01dce8dbba9d25111dfa4c80d" title="Procedure&#45;description: Calculates diffracted intensity for a specific thickness. " alt="" coords="545,107,759,133"/>
+<area shape="rect" id="node7" href="$namespacetest__koch__mod.html#a65970813c504534f0110cc3d4b4d7500" title="test_koch_mod::calculateelements" alt="" coords="540,157,764,184"/>
+<area shape="rect" id="node6" href="$namespacebloch__mod.html#aea74428efb98b08593296de391cab90b" title="Procedure&#45;description: Invert an M*M Complex Matrix. " alt="" coords="894,107,1019,133"/>
+<area shape="rect" id="node8" href="$namespacetest__koch__mod.html#ac1b35b90a669d505f3993b945e795bda" title="test_koch_mod::getcombinations" alt="" coords="849,157,1064,184"/>
+<area shape="rect" id="node10" href="$namespacemessage__mod.html#af5ec23d847e74619835ffcb5fac69b10" title="message_mod::message1string2" alt="" coords="545,208,759,235"/>
+<area shape="rect" id="node11" href="$namespacemessage__mod.html#a96ab7d23e77d173a78be84d46cca3722" title="message_mod::message1string" alt="" coords="853,208,1060,235"/>
+</map>

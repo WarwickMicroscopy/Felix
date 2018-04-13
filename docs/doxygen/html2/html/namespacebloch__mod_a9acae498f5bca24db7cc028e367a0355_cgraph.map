@@ -1,0 +1,8 @@
+<map id="bloch_mod::blochcoefficientcalculation" name="bloch_mod::blochcoefficientcalculation">
+<area shape="rect" id="node2" href="$namespacebloch__mod.html#a256a878a1cb8e7d859b038089a5c22e3" title="Procedure&#45;description: Determines number of weak and strong beams. Uses Sg and perturbation strengths..." alt="" coords="300,5,599,32"/>
+<area shape="rect" id="node3" href="$namespacebloch__mod.html#a7ad5069463bb0b3df7cb94c6a4c7cc51" title="Procedure&#45;description: Returns eigenvalues and eigenvectors of matrix. " alt="" coords="360,56,539,83"/>
+<area shape="rect" id="node4" href="$namespacebloch__mod.html#adc5613a01dce8dbba9d25111dfa4c80d" title="Procedure&#45;description: Calculates diffracted intensity for a specific thickness. " alt="" coords="343,107,556,133"/>
+<area shape="rect" id="node6" href="$namespacetest__koch__mod.html#a65970813c504534f0110cc3d4b4d7500" title="test_koch_mod::calculateelements" alt="" coords="337,157,561,184"/>
+<area shape="rect" id="node5" href="$namespacebloch__mod.html#aea74428efb98b08593296de391cab90b" title="Procedure&#45;description: Invert an M*M Complex Matrix. " alt="" coords="691,107,817,133"/>
+<area shape="rect" id="node7" href="$namespacetest__koch__mod.html#ac1b35b90a669d505f3993b945e795bda" title="test_koch_mod::getcombinations" alt="" coords="647,157,861,184"/>
+</map>
