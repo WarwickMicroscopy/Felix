@@ -253,13 +253,9 @@ MODULE read_files_mod
     ! IRefineModeFLAG
     ILine= ILine+1; READ(IChInp,FMT='(A)',ERR=20,END=30) SRefineMode
     IF(SCAN(TRIM(ADJUSTL(SRefineMode)),TRIM(ADJUSTL(SAlphabet(19)))).NE.0) THEN
-       ISimFLAG=1 ! Simulation only
-       IF(SCAN(TRIM(ADJUSTL(SRefineMode)),TRIM(ADJUSTL(SAlphabet(19))) // &
-            TRIM(ADJUSTL(SAlphabet(3))) ).NE.0)
-       IPatternConvergeFLAG=1 ! BlochWaveConvergenceMode
+      ISimFLAG=1 ! Simulation only
     ELSE
-       ISimFLAG=0
-       IPatternConvergeFLAG=1
+      ISimFLAG=0
       SRefineMode = SRefineMode((SCAN(SRefineMode,"=")+1):)
       IRefineMode = 0
       DO ind = 1,IRefinementVariableTypes
