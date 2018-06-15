@@ -42,7 +42,7 @@ jobs:
     #   This would typically go in either a build or a build-and-test job when using workflows
     # This is based on your 1.0 configuration file or project settings
     - run: echo $CIRCLE_SHA1 $CIRCLE_BRANCH $CIRCLE_BUILD_NUM $CIRCLE_USERNAME
-    - run: pwd; ll ../scripts/; source ../scripts/build.sh $CIRCLE_SHA1 $CIRCLE_BRANCH $CIRCLE_BUILD_NUM $CIRCLE_USERNAME
+    - run: pwd; ls -al ../scripts/; source ../scripts/build.sh $CIRCLE_SHA1 $CIRCLE_BRANCH $CIRCLE_BUILD_NUM $CIRCLE_USERNAME
     - run: head -32 ../felix-$CIRCLE_SHA1/felix/felixrefine.f90
     # Dependencies
     #   This would typically go in either a build or a build-and-test job when using workflows
