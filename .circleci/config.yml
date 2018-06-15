@@ -9,7 +9,7 @@
 version: 2
 jobs:
   build:
-    working_directory: ~/RudoRoemer/Felix/src
+    working_directory: ~/RudoRoemer/Felix
     parallelism: 1
     shell: /bin/bash --login
     # CircleCI 2.0 does not support environment variables that refer to each other the same way as 1.0 did.
@@ -42,8 +42,8 @@ jobs:
     #   This would typically go in either a build or a build-and-test job when using workflows
     # This is based on your 1.0 configuration file or project settings
     - run: echo $CIRCLE_SHA1 $CIRCLE_BRANCH $CIRCLE_BUILD_NUM $CIRCLE_USERNAME
-    - run: pwd; ll ../scripts/; source ../scripts/build.sh $CIRCLE_SHA1 $CIRCLE_BRANCH $CIRCLE_BUILD_NUM $CIRCLE_USERNAME
-    - run: head -32 ../felix-$CIRCLE_SHA1/felix/felixrefine.f90
+    - run: pwd; ls -al; cd src; ../scripts/build.sh $CIRCLE_SHA1 $CIRCLE_BRANCH $CIRCLE_BUILD_NUM $CIRCLE_USERNAME
+    - run: head -32 ./felix-$CIRCLE_SHA1/felix/felixrefine.f90
     # Dependencies
     #   This would typically go in either a build or a build-and-test job when using workflows
     # Restore the dependency cache
@@ -76,17 +76,17 @@ jobs:
     # Compile
     #   This would typically go in either a build or a build-and-test job when using workflows
     # This is based on your 1.0 configuration file or project settings
-    - run: cd ../felix-${CIRCLE_SHA1}/;pwd;make clean; make
-    - run: make clean; pwd; ls -al
+    - run: cd ./felix-${CIRCLE_SHA1}/;pwd;make clean; make
+    - run: cd src; make clean; pwd; ls -al
     # Test
     #   This would typically be a build job when using workflows, possibly combined with build
     # This is based on your 1.0 configuration file or project settings
-    - run: cd ../samples/GaAs_short; ../../felix-$CIRCLE_SHA1/felix.INT64NGNU.d | tee terminal_log.txt
-    - run: cd ../samples/SrTiO3_short; ../../felix-$CIRCLE_SHA1/felix.INT64NGNU.d | tee terminal_log.txt
+    - run: cd ./samples/GaAs_short; ../../felix-$CIRCLE_SHA1/felix.INT64NGNU.d | tee terminal_log.txt
+    - run: cd ./samples/SrTiO3_short; ../../felix-$CIRCLE_SHA1/felix.INT64NGNU.d | tee terminal_log.txt
     # This is based on your 1.0 configuration file or project settings
-    - run: diff -W132 -s ../samples/GaAs_short/GaAs_I0000_085nm_070x070/GaAs_085nm_070x070_+0+0+0.bin ../samples/GaAs_short/sample_outputs/GaAs_I0000_085nm_070x070/GaAs_085nm_070x070_+0+0+0.bin || true
-    - run: diff -W132 -y -s ../samples/GaAs_short/iteration_log.txt ../samples/GaAs_short/sample_outputs/iteration_log.txt || true
-    - run: diff -W132 -y -s ../samples/GaAs_short/terminal_log.txt ../samples/GaAs_short/sample_outputs/terminal_log.txt  || true
+    - run: diff -W132 -s ./samples/GaAs_short/GaAs_I0000_085nm_070x070/GaAs_085nm_070x070_+0+0+0.bin ./samples/GaAs_short/sample_outputs/GaAs_I0000_085nm_070x070/GaAs_085nm_070x070_+0+0+0.bin || true
+    - run: diff -W132 -y -s ./samples/GaAs_short/iteration_log.txt ./samples/GaAs_short/sample_outputs/iteration_log.txt || true
+    - run: diff -W132 -y -s ./samples/GaAs_short/terminal_log.txt ./samples/GaAs_short/sample_outputs/terminal_log.txt  || true
     # Teardown
     #   If you break your build into multiple jobs with workflows, you will probably want to do the parts of this that are relevant in each
     # Save test results
