@@ -90,9 +90,7 @@ MODULE bloch_mod
           IUpperLimit       
     REAL(RKIND) :: RThickness,RKn
     COMPLEX(CKIND) sumC,sumD
-    COMPLEX(CKIND), DIMENSION(:,:), ALLOCATABLE :: CGeneralSolutionMatrix, &
-         CGeneralEigenSpectrumEigenVectors,CBeamTranspose,CUgMatPartial
-    COMPLEX(CKIND),DIMENSION(:),ALLOCATABLE :: CGeneralEigenValues
+    COMPLEX(CKIND), DIMENSION(:,:), ALLOCATABLE :: CBeamTranspose,CUgMatPartial,CDummyEigenVectors
     CHARACTER*40 surname
     CHARACTER*100 SindString,SjndString,SPixelCount,SnBeams,SWeakBeamIndex,SPrintString
 
@@ -151,25 +149,17 @@ MODULE bloch_mod
 
     ! now nBeams determined, allocate complex arrays
     ALLOCATE( CBeamProjectionMatrix(nBeams,nReflections), STAT=IErr )
-    IF(l_alert(IErr,"BlochCoefficientCalculation","allocate CBeamProjectionMatrix")) RETURN
     ALLOCATE( CDummyBeamMatrix(nBeams,nReflections), STAT=IErr )
-    IF(l_alert(IErr,"BlochCoefficientCalculation","allocate CBeamProjectionMatrix")) RETURN
     ALLOCATE( CUgSgMatrix(nBeams,nBeams), STAT=IErr )
-    IF(l_alert(IErr,"BlochCoefficientCalculation","allocate CBeamProjectionMatrix")) RETURN
     ALLOCATE( CEigenValues(nBeams), STAT=IErr )
-    IF(l_alert(IErr,"BlochCoefficientCalculation","allocate CBeamProjectionMatrix")) RETURN
     ALLOCATE( CEigenVectors(nBeams,nBeams), STAT=IErr )
-    IF(l_alert(IErr,"BlochCoefficientCalculation","allocate CBeamProjectionMatrix")) RETURN
+    ALLOCATE( CDummyEigenVectors(nBeams,nBeams), STAT=IErr )
     ALLOCATE( CInvertedEigenVectors(nBeams,nBeams), STAT=IErr )
-    IF(l_alert(IErr,"BlochCoefficientCalculation","allocate CBeamProjectionMatrix")) RETURN
     ALLOCATE( CBeamTranspose(nReflections,nBeams), STAT=IErr )
-    IF(l_alert(IErr,"BlochCoefficientCalculation","allocate CBeamProjectionMatrix")) RETURN
     ALLOCATE( CUgMatPartial(nReflections,nBeams), STAT=IErr )
-    IF(l_alert(IErr,"BlochCoefficientCalculation","allocate CBeamProjectionMatrix")) RETURN
     ALLOCATE( CAlphaWeightingCoefficients(nBeams), STAT=IErr )
-    IF(l_alert(IErr,"BlochCoefficientCalculation","allocate CBeamProjectionMatrix")) RETURN
     ALLOCATE( CEigenValueDependentTerms(nBeams,nBeams), STAT=IErr )
-    IF(l_alert(IErr,"BlochCoefficientCalculation","allocate CBeamProjectionMatrix")) RETURN
+    IF(l_alert(IErr,"BlochCoefficientCalculation","allocations")) RETURN
 
     ! allocations used for koch spence method development
     IF(IBlochMethodFLAG.EQ.1) THEN
@@ -198,7 +188,7 @@ MODULE bloch_mod
               nBeams,CUgMatPartial,nReflections,CZERO,CUgSgMatrix,nBeams)
 
     !--------------------------------------------------------------------
-    ! higher order Laue zones
+    ! higher order Laue zones and weak beams
     !--------------------------------------------------------------------
 
     IF (IHolzFLAG.EQ.1) THEN!We are considering higher order Laue Zones !?? suspect this is non-functional
@@ -281,30 +271,30 @@ MODULE bloch_mod
       END DO
     END IF
 
+	! Invert the EigenVector matrix
+    CDummyEigenVectors = CEigenVectors
+    CALL INVERT(nBeams,CDummyEigenVectors(:,:),CInvertedEigenVectors,IErr)
+	
     !--------------------------------------------------------------------
     ! fill RIndividualReflections( LACBED_ID , thickness_ID, local_pixel_ID ) 
     !--------------------------------------------------------------------
    
     ! Calculate intensities for different specimen thicknesses
-    !?? ADD VARIABLE PATH LENGTH HERE !?? what does this comment mean?
+    !?? Do different g-vectors have different effective thicknesses??
     DO IThicknessIndex=1,IThicknessCount,1
 
       RThickness = RInitialThickness + REAL((IThicknessIndex-1),RKIND)*RDeltaThickness
       IThickness = NINT(RThickness,IKIND)
 
-      ! optional - for koch development to speed convergence
-      IF(IBlochMethodFLAG.EQ.1) RThickness = RThickness / 1000
-
       CALL CreateWaveFunctions(RThickness,RFullWaveIntensity,CFullWaveFunctions,&
-                    nReflections,nBeams,IStrongBeamList,CEigenVectors,CEigenValues,IErr)
+                    nReflections,nBeams,IStrongBeamList,CEigenVectors,CInvertedEigenVectors,CEigenValues,IErr)
       IF(l_alert(IErr,"BlochCoefficientCalculation","CreateWaveFunctions")) RETURN
 
       !--------------------------------------------------------------------
       ! Optional - test koch spence prototype method
       !--------------------------------------------------------------------
-
       IF(IBlochMethodFLAG.EQ.1) THEN
-
+        RThickness = RThickness / 1000! for koch development to speed convergence
         CALL message('-----------------------------------------------------------------------')
         CALL message('-----------------------------------------------------------------------')
         CALL message('RThickness divided by 1000 to help koch series convergence')
@@ -415,7 +405,7 @@ MODULE bloch_mod
   !! Major-Authors: Keith Evans (2014), Richard Beanland (2016)
   !!
   SUBROUTINE CreateWaveFunctions(RThickness,RFullWaveIntensity,CFullWaveFunctions,&
-                    nReflections,nBeams,IStrongBeamList,CEigenVectors,CEigenValues,IErr)
+                    nReflections,nBeams,IStrongBeamList,CEigenVectors,CInvertedEigenVectors,CEigenValues,IErr)
 
     USE MyNumbers
     USE MyMPI
@@ -427,22 +417,16 @@ MODULE bloch_mod
     REAL(RKIND),INTENT(OUT) :: RFullWaveIntensity(nReflections)
     COMPLEX(CKIND),INTENT(OUT) :: CFullWaveFunctions(nReflections) 
     INTEGER(IKIND),INTENT(IN) :: nReflections,nBeams,IStrongBeamList(nReflections)
-    COMPLEX(CKIND),INTENT(IN) :: CEigenVectors(nBeams,nBeams),CEigenValues(nBeams)
+    COMPLEX(CKIND),INTENT(IN) :: CEigenVectors(nBeams,nBeams),CInvertedEigenVectors(nBeams,nBeams),CEigenValues(nBeams)
     INTEGER(IKIND),INTENT(OUT) :: IErr 
     REAL(RKIND) :: RWaveIntensity(nBeams)
-    COMPLEX(CKIND) :: CInvertedEigenVectors(nBeams,nBeams),CPsi0(nBeams),&
-          CWaveFunctions(nBeams),CEigenValueDependentTerms(nBeams,nBeams),&
-          CAlphaWeightingCoefficients(nBeams)
+    COMPLEX(CKIND) :: CPsi0(nBeams),CAlphaWeightingCoefficients(nBeams),&
+          CWaveFunctions(nBeams),CEigenValueDependentTerms(nBeams,nBeams)
     INTEGER(IKIND) :: ind,jnd,knd,hnd,ifullind,iuniind,gnd,ichnk
-    COMPLEX(CKIND) :: CDummyEigenVectors(nBeams,nBeams)
     
     ! The top surface boundary conditions
     CPsi0 = CZERO ! all diffracted beams are zero
     CPsi0(1) = CONE ! the 000 beam has unit amplitude
-    
-    ! Invert the EigenVector matrix
-    CDummyEigenVectors = CEigenVectors
-    CALL INVERT(nBeams,CDummyEigenVectors(:,:),CInvertedEigenVectors,IErr)
 
     ! put in the thickness
     ! From EQ 6.32 in Kirkland Advance Computing in EM

@@ -389,9 +389,8 @@ PROGRAM Felixrefine
   RDeltaK = RMinimumGMag*RConvergenceAngle/REAL(IPixelCount,RKIND)
 
   !--------------------------------------------------------------------
-  ! calculate RMaxGMag using acceptance angle, count number reflections
+  ! calculate RMaxGMag using acceptance angle, count reflections
   !--------------------------------------------------------------------
-
   ! acceptance angle
   IF(RAcceptanceAngle.NE.ZERO.AND.IHOLZFLAG.EQ.0) THEN
     RMaxAcceptanceGVecMag=(RElectronWaveVectorMagnitude*TAN(RAcceptanceAngle*DEG2RADIAN))
@@ -426,8 +425,7 @@ PROGRAM Felixrefine
   !--------------------------------------------------------------------
   ! allocate Ug arrays
   !--------------------------------------------------------------------
-
-  ! Calculate Ug matrix etc.
+  ! Ug matrix etc.
   ALLOCATE(CUgMatNoAbs(nReflections,nReflections),STAT=IErr)! Ug Matrix without absorption
   IF(l_alert(IErr,"felixrefine","allocate CUgMatNoAbs")) CALL abort
   ALLOCATE(CUgMatPrime(nReflections,nReflections),STAT=IErr)! U'g Matrix of just absorption
@@ -450,7 +448,6 @@ PROGRAM Felixrefine
   !--------------------------------------------------------------------
   ! calculate reflection matrix & initialise structure factors
   !--------------------------------------------------------------------
-
   ! Calculate matrix  of g-vectors that corresponds to the Ug matrix
   IThicknessCount= NINT((RFinalThickness-RInitialThickness)/RDeltaThickness) + 1
   DO ind=1,nReflections
@@ -489,7 +486,6 @@ PROGRAM Felixrefine
   !--------------------------------------------------------------------
   ! INoOfVariables calculated depending upon Ug and non-Ug refinement
   !--------------------------------------------------------------------
-
   ! Ug refinement is a special case and must be done alone
   ! cannot do any other refinement alongside
   IF(ISimFLAG.EQ.0) THEN
@@ -739,17 +735,12 @@ PROGRAM Felixrefine
   !--------------------------------------------------------------------
   ! baseline simulation
   !--------------------------------------------------------------------
-
   RFigureofMerit=666.666 ! Initial large value, diabolically
   Iter = 0
   ! baseline simulation with timer
   CALL Simulate(IErr)
   IF(l_alert(IErr,"felixrefine","Simulate")) CALL abort
   CALL PrintEndTime(LS,IStartTime2, "Simulation" )
-
-  !--------------------------------------------------------------------
-
-  ! baseline simulation
   IExitFLAG = 0 ! Do not exit
   IPreviousPrintedIteration = 0  ! ensures baseline simulation is printed
   IF (ISimFLAG.EQ.1) THEN ! Simulation only mode   
