@@ -334,11 +334,12 @@ MODULE refinementcontrol_mod
     USE RPARA, ONLY : RFigureofMerit
 
     ! global inputs
-    USE IPARA, ONLY : INoOfLacbedPatterns, ICorrelationFLAG, IPixelCount, IThicknessCount, &
-          IImageProcessingFLAG
-    USE RPARA, ONLY : RInitialThickness, RDeltaThickness, RImageMask, &
+    USE IPARA, ONLY : INoOfLacbedPatterns,ICorrelationFLAG,IPixelCount,IThicknessCount, &
+          IImageProcessingFLAG,IOutPutReflections
+    USE RPARA, ONLY : RInitialThickness,RDeltaThickness,RImageMask,Rhkl, &
           RImageSimi, &   ! a main input - simulated images
           RImageExpi      ! a main input - experimental images to compare
+    USE IChannels, ONLY : IChOut
 
     IMPLICIT NONE
 
@@ -362,13 +363,17 @@ MODULE refinementcontrol_mod
     ! The thickness with the lowest figure of merit for each image
     IBestImageThicknessIndex = 1 
 
+    ! write out PatternFits.txt
+	OPEN(UNIT=IChOut,FILE='PatternFits.txt',FORM='formatted',STATUS='unknown',POSITION='append')
+	WRITE(IChOut,FMT='(A10,I4)') "Iteration ",Iter
     !\/----------------------------------------------------------------------
     DO jnd = 1,IThicknessCount
+	  WRITE(IChOut,FMT='(A10,I4)') "Thickness ",NINT(RInitialThickness+(jnd-1)*RDeltaThickness)
       RTotalCorrelation = ZERO ! The sum of all individual correlations, initialise at 0
       DO ind = 1,INoOfLacbedPatterns
         RSimulatedImage = RImageSimi(:,:,ind,jnd)
         RExperimentalImage = RImageExpi(:,:,ind)
-        IF (ICorrelationFLAG.EQ.3) THEN ! masked correltion, update mask
+        IF (ICorrelationFLAG.EQ.3) THEN ! masked correlation, update mask
           RMaskImage=RImageMask(:,:,ind)
         END IF
         
@@ -417,8 +422,9 @@ MODULE refinementcontrol_mod
 
         CALL message(LXL,dbg6,"For Pattern ",ind,", thickness ",jnd)
         CALL message(LXL,dbg6,"  the FoM = ",RImageCorrelation)
-        
-        ! Determines which thickness matches best for each LACBED pattern
+		WRITE(IChOut,FMT='(3I5.1,F13.9)') NINT(Rhkl(IOutPutReflections(ind),:)),RImageCorrelation
+		
+        ! Determine which thickness matches best for each LACBED pattern
         ! which is later used to find the range of viable thicknesses 
         IF(RImageCorrelation.LT.RBestCorrelation(ind)) THEN
           RBestCorrelation(ind) = RImageCorrelation
@@ -427,7 +433,7 @@ MODULE refinementcontrol_mod
         RTotalCorrelation = RTotalCorrelation + RImageCorrelation
       END DO
       RTotalCorrelation=RTotalCorrelation/REAL(INoOfLacbedPatterns,RKIND)
-
+        
       ! Determines which thickness matches best
       IF(RTotalCorrelation.LT.RBestTotalCorrelation) THEN
         RBestTotalCorrelation = RTotalCorrelation
@@ -438,12 +444,13 @@ MODULE refinementcontrol_mod
       CALL message(LM,dbg6,"Figure of merit ",RTotalCorrelation)
 
     END DO
-    !/\----------------------------------------------------------------------
+    CLOSE(IChOut)
 
+    !/\----------------------------------------------------------------------
     ! The figure of merit, global variable
     RFigureofMerit = RBestTotalCorrelation
 
-    !?? Alternative method below, RWeightingCoefficients not used and has been removed 
+    !?? Alternative method below, RWeightingCoefficients not used and have been removed 
     !?? assume that the best thickness is given by the mean of individual thicknesses  
     !IBestThicknessIndex = SUM(IBestImageThicknessIndex)/INoOfLacbedPatterns
     !RBestThickness = RInitialThickness + (IBestThicknessIndex-1)*RDeltaThickness
