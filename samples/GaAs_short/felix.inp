@@ -27,7 +27,7 @@ RDebyeWallerConstant      = 0.0
 RAbsorptionPer            = 7.8
 
 # microscope settings
-ROuterConvergenceAngle    = 4.0
+ROuterConvergenceAngle    = 3.03
 IIncidentBeamDirection    = [-1,1,0]
 IXDirection               = [1,1,0]
 INormalDirection          = [-1,1,0]
