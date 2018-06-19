@@ -27,7 +27,7 @@ RDebyeWallerConstant      = 0.0
 RAbsorptionPer            = 7.8
 
 # microscope settings
-ROuterConvergenceAngle    = 2.4545
+ROuterConvergenceAngle    = 3.0
 IIncidentBeamDirection    = [-1,1,0]
 IXDirection               = [-1,-1,0]
 INormalDirection          = [-1,1,0]
@@ -41,7 +41,7 @@ RDeltaThickness          = 10.0
 IReflectOut              = 10
 
 #Refinement Specific Flags
-IRefineModeFLAG          = D
+IRefineModeFLAG          = H
 IWeightingFLAG           = 0
 IRefineMethodFLAG        = 3
 ICorrelationFLAG         = 2
