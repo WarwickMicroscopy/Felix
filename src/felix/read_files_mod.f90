@@ -486,37 +486,15 @@ MODULE read_files_mod
         CALL message(LM, "Did not find initial experimental image with filepath =",TRIM(SFilePath) )
       END IF    
     END DO
-
     ! NB once a file is found, the above do-loop is exited and the variables IFileTypeID, SFilePath and
     ! SPath will have the correct values to continue working with them.
 
-    !Commented out as not working on Joker
-    ! if .img, check filesize matches expected from pixelsize
-!    IF(IFileTypeID.EQ.1.OR.IFileTypeID.EQ.3) THEN
-!      INQUIRE(FILE=SFilePath,RECL=IFileSize)
-!      IF(.NOT.(IFileSize==(2*IpixelCount)**2*IByteSize)) IErr=1
-!      WRITE(SPrintString,'(A11,A,A10,I2,A)') 'Image file ',TRIM(SFilePath),&
-!            ' had size ',IFileSize,&
-!            ', which does not match (2*IpixelCount)**2*IByteSize from felix.inp values'
-!      PRINT*, SPrintString
-!      !IF(l_alert(IErr,"ReadExperimentalImages",TRIM(SPrintString))) RETURN
-!    END IF
-
-    ! NB when reading .dm3 files, if pixel size does match an error will be thrown
-
     ! if .dm3 allocate raw 4-byte float image matrix
-    IF(IFileTypeID.EQ.2.OR.IFileTypeID.EQ.4) THEN
-      ALLOCATE(RImage4ByteFloatDM3(2*IPixelCount,2*IPixelCount),STAT=IErr)
-      IF(l_alert(IErr,"ReadExperimentalImages","allocate RImage4ByteFloatDM3")) RETURN
-      WRITE(SFilePath,'(A3,I3.3,A1,I3.3,A1)') "LR_",2*IPixelCount,"x",2*IPixelCount
-      IF(my_rank.EQ.0) THEN
-        CALL system('mkdir ' // SFilePath)
-      END IF
-    END IF
+    IF(IFileTypeID.EQ.2.OR.IFileTypeID.EQ.4) ALLOCATE(RImage4ByteFloatDM3(2*IPixelCount,2*IPixelCount),STAT=IErr)
+    IF(l_alert(IErr,"ReadExperimentalImages","allocate RImage4ByteFloatDM3")) RETURN
 
     ! Read in expected image for each LacbedPattern
     DO ind = 1,INoOfLacbedPatterns
-
       WRITE(SFilename,'(A,A,SP,3(I0),A)') SChemicalFormula(1:ILN),"_",&
             NINT(RInputHKLs(ind,1:3)), TRIM(SImageExtension)
       SFilePath  = TRIM(SPath)//SFilename
@@ -546,26 +524,7 @@ MODULE read_files_mod
           IF(l_alert(IErr,"ReadExperimentalImages",&
                 "ReadDM3TagsAndImage() where SFilePath="//TRIM(SFilePath))) RETURN
           RImageExpi(:,:,ind) = REAL( RImage4ByteFloatDM3, RKIND )
-
-          ! write out .dm3 as binary .img in LR_NxN/ folder
-          IF(my_rank.EQ.0) THEN
-            WRITE(SFilename,'(A,A,SP,3(I0),A4)') SChemicalFormula(1:ILN),"_",&
-              NINT(RInputHKLs(ind,1:3)), ".img"
-            WRITE(SFilePath,'(A3,I3.3,A1,I3.3,A1)') "LR_",2*IPixelCount,"x",2*IPixelCount
-            SFilePath=TRIM(SFilePath)//'/'//Sfilename
-            CALL message(LM,'From.dm3 file writing out "'//TRIM(SFilePath)//'"')
-            OPEN(UNIT=IChOutWIImage, STATUS= 'UNKNOWN', FILE=TRIM(ADJUSTL(SFilePath)),&
-	                FORM='UNFORMATTED',ACCESS='DIRECT',IOSTAT=IErr,RECL=2*IPixelCount*8)
-            IF(l_alert(IErr,"ReadExperimentalImages","OPEN() .img file, while writing out data from .dm3")) RETURN      
-            DO jnd = 1,2*IPixelCount
-              WRITE(IChOutWIImage,rec=jnd) RImageExpi(jnd,:,ind)
-            END DO
-            CLOSE(IChOutWIImage,IOSTAT=IErr) 
-            IF(l_alert(IErr,"ReadExperimentalImages","CLOSE() .img file, while writing out data from .dm3")) RETURN
-          END IF
-        
       END SELECT
-
     END DO
 
     ! if .dm3 deallocate raw 4-byte float image matrix
