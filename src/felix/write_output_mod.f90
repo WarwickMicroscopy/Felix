@@ -144,6 +144,7 @@ MODULE write_output_mod
       ENDIF
       ! Make the path/filenames e.g. 'GaAs_-2-2+0.bin'
       filename = SChemicalFormula(1:ILN) // "_" // TRIM(ADJUSTL(hString)) // TRIM(ADJUSTL(kString)) // TRIM(ADJUSTL(lString)) // '.bin'
+!DBG	  IF(my_rank.EQ.0) PRINT*, NINT(Rhkl(IOutPutReflections(ind),:)),filename
       fullpath = TRIM(ADJUSTL(path))//"/"//TRIM(ADJUSTL(filename))
       CALL message ( LL, dbg6, fullpath )
       RImageToWrite = RImageSimi(:,:,ind,IThicknessIndex)
