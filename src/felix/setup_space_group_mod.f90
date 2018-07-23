@@ -256,7 +256,27 @@ MODULE setup_space_group_mod
 !!$  CASE(164)
 !!$  CASE(165)
 !!$  CASE(166)
-!!$  CASE(167)
+   CASE(167)
+      SELECT CASE (SWyckoff)
+      CASE('a')
+         !All positions fixed
+      CASE('b')
+         !All positions fixed
+      CASE('c')
+         RMoveMatrix(1,:) = (/ZERO, ZERO, ONE/)
+      CASE('d')
+         !All positions fixed
+      CASE('e')
+         RMoveMatrix(1,:) = (/ONE, ZERO, ZERO/)
+      CASE('f')   
+        RMoveMatrix(1,:) = (/ONE, ZERO, ZERO/)
+        RMoveMatrix(2,:) = (/ZERO, ONE, ZERO/)
+        RMoveMatrix(3,:) = (/ZERO, ZERO, ONE/)
+      CASE DEFAULT
+        IErr = 1
+        IF(l_alert(IErr,"DetermineAllowedMovements",&
+              "Wyckoff Symbol for this space group not recognised")) RETURN 	
+      END SELECT
 !!$  CASE(168)
 !!$  CASE(169)
 !!$  CASE(170)
@@ -334,7 +354,7 @@ MODULE setup_space_group_mod
   !!
   !! Major-Authors: Keith Evans (2014), Richard Beanland (2016)
   !!
-  SUBROUTINE CountAllowedMovements(ISpaceGrp,SWyckoff,IVectors,IErr)
+  SUBROUTINE CountAllowedMovements(ind,ISpaceGrp,SWyckoff,IVectors,IErr)
 
     USE MyNumbers
     USE message_mod
@@ -533,7 +553,42 @@ MODULE setup_space_group_mod
 !!$  CASE(164)
 !!$  CASE(165)
 !!$  CASE(166)
-!!$  CASE(167)
+  CASE(167)
+     SELECT CASE(SWyckoff)
+         CASE('a')
+        !all Atomic Positions fixed
+      CASE('b')
+         !All atomic Positions fixed
+      CASE('c')
+         IVectors = 1
+         IF(RAtomPosition(IAtomsToRefine(ind),2).EQ.0.
+      CASE('d')
+         !All atomic positions fixed
+      CASE('e')
+         IVectors = 1
+         
+         IF(ABS(RBasisAtomPosition(IAtomsToRefine(ind),1)-ZERO.LE.TINY))THEN
+            IBasisChangeFLAG=1
+            IF (ABS(RBasisAtomPosition(IAtomsToRefine(ind),3)-REAL(0.25D1,RKIND)).LE.TINY) THEN
+               RBasisAtomPosition(IAtomsToRefine(ind),1)=RBasisAtomPosition(IAtomsToRefine(ind),2)
+            ELSE
+               RBasisAtomPosition(IAtomsToRefine(ind),1)=ONE-RBasisAtomPosition(IAtomsToRefine(ind),2) !Is this 1-RBasisAtomPosition(IAtomsToRefine(ind),2)???
+            END IF
+            RBasisAtomPosition(IAtomsToRefine(ind),2)=ZERO
+            RBasisAtomPosition(IAtomsToRefine(ind),3)=REAL(0.25D1,RKIND)
+         END IF
+          
+         
+               
+      CASE('f')
+         IVectors = 3
+      CASE DEFAULT
+        IErr = 1
+        IF(l_alert(IErr,"DetermineAllowedMovements",&
+              "Wyckoff Symbol for this space group not recognised")) RETURN      
+      END SELECT
+
+      
 !!$  CASE(168)
 !!$  CASE(169)
 !!$  CASE(170)

@@ -1569,6 +1569,7 @@ CONTAINS
     INTEGER(IKIND) :: IErr,knd,jnd,ind,ISpaceGrp
     INTEGER(IKIND),DIMENSION(:),ALLOCATABLE :: IDegreesOfFreedom
     REAL(RKIND),DIMENSION(ITHREE,ITHREE) :: RMoveMatrix
+
     
     CALL ConvertSpaceGroupToNumber(ISpaceGrp,IErr)
     IF(l_alert(IErr,"SetupAtomMovements","ConvertSpaceGroupToNumber")) RETURN  
@@ -1578,7 +1579,7 @@ CONTAINS
 
     !Count the degrees of freedom of movement for each atom to be refined    
     DO ind = 1,SIZE(IAtomsToRefine)
-      CALL CountAllowedMovements(ISpaceGrp,SWyckoffSymbol(IAtomsToRefine(ind)),&
+      CALL CountAllowedMovementsAndChangeBasis(ind,ISpaceGrp,SWyckoffSymbol(IAtomsToRefine(ind)),&
             IDegreesOfFreedom(ind),IErr)
       IF(l_alert(IErr,"SetupAtomMovements","CountAllowedMovements")) RETURN     
     END DO
@@ -1658,4 +1659,3 @@ CONTAINS
   END SUBROUTINE Parabo3 
 
 END PROGRAM Felixrefine
-                                                                                                                        

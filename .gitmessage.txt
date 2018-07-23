@@ -1,0 +1,14 @@
+#Summary
+
+
+Why:
+
+
+Implementation:
+
+
+TODO:
+
+
+
+#NB to set template: 'git config --global commit.template ./.gitmessage.txt'
