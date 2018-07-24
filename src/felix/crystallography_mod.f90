@@ -191,12 +191,12 @@ MODULE crystallography_mod
     ! global outputs
     USE RPARA, ONLY : RAtomCoordinate,ROccupancy,RIsoDW,RAtomPosition
     USE IPARA, ONLY : IAtomicNumber,IAnisoDW
-    USE SPARA, ONLY : SAtomLabel, SAtomName
+    USE SPARA, ONLY : SAtomLabel, SAtomName, SWyckoffSymbol
 
     ! global inputs
     USE RPARA, ONLY : RBasisOccupancy,RBasisIsoDW,RSymVec,RBasisAtomPosition,RSymMat, &
           RcVecM,RbVecM,RaVecM
-    USE SPARA, ONLY : SBasisAtomLabel, SBasisAtomName
+    USE SPARA, ONLY : SBasisAtomLabel, SBasisAtomName, SBasisWyckoffSymbol
     USE IPARA, ONLY : IBasisAtomicNumber, IBasisAnisoDW, IMaxPossibleNAtomsUnitCell, &
          INAtomsUnitCell
     
@@ -230,6 +230,7 @@ MODULE crystallography_mod
         RAllIsoDW(knd) = RBasisIsoDW(jnd)
         IAllAtomicNumber(knd) = IBasisAtomicNumber(jnd)
         RAllAnisoDW(knd) = IBasisAnisoDW(jnd)
+        SAllWyckoffSymbol(knd)=SBasisWyckoffSymbol(jnd)
 	    knd=knd+1
       END DO
 !WRITE(SPrintString,'(F3.0,1X,F3.0,1X,F3.0,2X,F3.0,1X,F3.0,1X,F3.0,2X,F3.0,1X,F3.0,1X,F3.0)') RSymMat(ind,1,:),RSymMat(ind,2,:),RSymMat(ind,3,:)
@@ -270,6 +271,7 @@ MODULE crystallography_mod
         ROccupancy(jnd) = RAllOccupancy(ind)
         IAtomicNumber(jnd) = IAllAtomicNumber(ind)!
         IAnisoDW(jnd) = RAllAnisoDW(ind)
+        SWyckoffPosition(jnd) = SAllWyckoffPosition(ind)
         jnd=jnd+1
       END IF
     END DO
@@ -281,12 +283,13 @@ MODULE crystallography_mod
       WRITE(SPrintString,"(A18,F8.4,F8.4,F8.4)") ": Atom position = ", RAtomPosition(ind,:)
       CALL message( LM, dbg7, SAtomName(ind)//SPrintString )
       CALL message( LM, dbg7, "(DWF, occupancy) = ",(/ RIsoDW(ind), ROccupancy(ind) /) )
+      CALL message( LM, dbg7, "Wyckoff Symbol = ", SWyckoffSymbol(ind) )
     END DO
     
     ! Finished with these variables now
     DEALLOCATE( &
          RAllAtomPosition, SAllAtomName, RAllOccupancy, RAllIsoDW, &
-         IAllAtomicNumber, RAllAnisoDW, STAT=IErr)
+         IAllAtomicNumber, RAllAnisoDW, SAllWyckoffSymbol, STAT=IErr)
     IF(l_alert(IErr,"UniqueAtomPositions","deallocations")) RETURN
       
     !--------------------------------------------------------------------

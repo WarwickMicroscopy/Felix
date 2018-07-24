@@ -349,7 +349,7 @@ MODULE SPara
   CHARACTER*10 :: SSpaceGrp
   CHARACTER*5, DIMENSION(:), ALLOCATABLE :: SBasisAtomLabel,SAtomLabel
   CHARACTER*2, DIMENSION(:), ALLOCATABLE :: SBasisAtomName, SAtomName
-  CHARACTER*1, DIMENSION(:), ALLOCATABLE :: SWyckoffSymbol
+  CHARACTER*1, DIMENSION(:), ALLOCATABLE :: SBasisWyckoffSymbol, SWyckoffSymbol
   
 END MODULE SPara
 !--------------------------------------------------------------------
