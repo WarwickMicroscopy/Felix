@@ -45,10 +45,14 @@ MODULE setup_space_group_mod
 
   CONTAINS
 
+
+  !%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+    
   !>
   !! Procedure-description: 
   !!
-  !! Major-Authors: Keith Evans (2014), Richard Beanland (2016)
+  !! Major-Authors: Keith Evans (2014), Richard Beanland (2016), Alex Hubert (2018)
   !!
   SUBROUTINE DetermineAllowedMovements(ISpaceGrp,SWyckoff,RMoveMatrix,IErr)
 
@@ -359,25 +363,30 @@ MODULE setup_space_group_mod
     USE MyNumbers
     USE message_mod
 
+    USE RPARA, ONLY : RBasisAtomPosition, RAtomPosition
+    USE IPARA, ONLY : INAtomsUnitCell
+    USE SPARA, ONLY : SAtomLabel, SBasisAtomLabel
     IMPLICIT NONE
 
-    INTEGER(IKIND),INTENT(IN) :: ISpaceGrp
+    INTEGER(IKIND),INTENT(IN) :: ISpaceGrp, ind
     CHARACTER*1, INTENT(IN) :: SWyckoff
     INTEGER(IKIND), INTENT(OUT) :: IVectors, IErr
-    
+
+    INTEGER(IKIND) :: IBasisChangeFLAG, jnd
+
     IErr=0
     SELECT CASE(ISpaceGrp)
     CASE(1)
-      SELECT CASE (SWyckoff)
-      CASE('x')
-        IVectors = 2_IKIND
-      CASE('b')
-        IVectors = 3_IKIND
-      CASE DEFAULT
-        IErr = 1
-        IF(l_alert(IErr,"DetermineAllowedMovements",&
-              "Wyckoff Symbol for this space group not recognised")) RETURN     
-      END SELECT
+       SELECT CASE (SWyckoff)
+       CASE('x')
+          IVectors = 2_IKIND
+       CASE('b')
+          IVectors = 3_IKIND
+       CASE DEFAULT
+          IErr = 1
+          IF(l_alert(IErr,"DetermineAllowedMovements",&
+               "Wyckoff Symbol for this space group not recognised")) RETURN     
+       END SELECT
 !!$  CASE(2)
 !!$  CASE(3)
 !!$  CASE(4)
@@ -413,16 +422,16 @@ MODULE setup_space_group_mod
 !!$  CASE(34)
 !!$  CASE(35)
     CASE(36)
-      SELECT CASE (SWyckoff)
-      CASE('a')
-        IVectors = 2
-      CASE('b')
-        IVectors = 3
-      CASE DEFAULT
-        IErr = 1
-        IF(l_alert(IErr,"DetermineAllowedMovements",&
-              "Wyckoff Symbol for this space group not recognised")) RETURN      
-      END SELECT
+       SELECT CASE (SWyckoff)
+       CASE('a')
+          IVectors = 2
+       CASE('b')
+          IVectors = 3
+       CASE DEFAULT
+          IErr = 1
+          IF(l_alert(IErr,"DetermineAllowedMovements",&
+               "Wyckoff Symbol for this space group not recognised")) RETURN      
+       END SELECT
 !!$  CASE(37)
 !!$  CASE(38)
 !!$  CASE(39)
@@ -553,42 +562,54 @@ MODULE setup_space_group_mod
 !!$  CASE(164)
 !!$  CASE(165)
 !!$  CASE(166)
-  CASE(167)
-     SELECT CASE(SWyckoff)
-         CASE('a')
-        !all Atomic Positions fixed
-      CASE('b')
-         !All atomic Positions fixed
-      CASE('c')
-         IVectors = 1
-         IF(RAtomPosition(IAtomsToRefine(ind),2).EQ.0.
-      CASE('d')
-         !All atomic positions fixed
-      CASE('e')
-         IVectors = 1
-         
-         IF(ABS(RBasisAtomPosition(IAtomsToRefine(ind),1)-ZERO.LE.TINY))THEN
-            IBasisChangeFLAG=1
-            IF (ABS(RBasisAtomPosition(IAtomsToRefine(ind),3)-REAL(0.25D1,RKIND)).LE.TINY) THEN
-               RBasisAtomPosition(IAtomsToRefine(ind),1)=RBasisAtomPosition(IAtomsToRefine(ind),2)
-            ELSE
-               RBasisAtomPosition(IAtomsToRefine(ind),1)=ONE-RBasisAtomPosition(IAtomsToRefine(ind),2) !Is this 1-RBasisAtomPosition(IAtomsToRefine(ind),2)???
-            END IF
-            RBasisAtomPosition(IAtomsToRefine(ind),2)=ZERO
-            RBasisAtomPosition(IAtomsToRefine(ind),3)=REAL(0.25D1,RKIND)
-         END IF
+    CASE(167)
+       SELECT CASE(SWyckoff)
+       CASE('a')          
+          IErr=1 !All special positions fixed by symmetry
+          IF(l_alert(IErr,"DetermineAllowedMovements",&
+               "Wyckoff Symbol implies atomic x,y,z are fixed. &
+               &Therefore atomic refinement not possible")) RETURN
           
-         
-               
-      CASE('f')
-         IVectors = 3
-      CASE DEFAULT
-        IErr = 1
-        IF(l_alert(IErr,"DetermineAllowedMovements",&
-              "Wyckoff Symbol for this space group not recognised")) RETURN      
-      END SELECT
+       CASE('b')
+          IErr=1 !All special positions fixed by symmetry        
+          IF(l_alert(IErr,"DetermineAllowedMovements",&
+               "Wyckoff Symbol implies atomic x,y,z coords are fixed.&
+          & Therefore atomic refinement not possible")) RETURN
+          
+       CASE('c') 
+          IVectors = 1 !All special positions only free in z, no basis change needed
 
-      
+       CASE('d') 
+          IErr=1 !All special positions fixed by symmetry
+          IF(l_alert(IErr,"DetermineAllowedMovements",&
+               "Wyckoff Symbol implies atomic x,y,z coords are fixed. &
+         &Therefore atomic refinement not possible")) RETURN
+
+       CASE('e')
+          IVectors = 1
+          IF((ABS(RBasisAtomPosition((ind),2)-ZERO).LE.TINY).AND. &
+               (ABS(RAtomPosition((ind),3)-REAL(0.25,RKIND)).LE.TINY))THEN
+             !We have the correct basis for Atomic Refinement
+          ELSE
+             IBasisChangeFLAG=1
+             DO jnd = 1,INAtomsUnitCell
+                IF((SWyckoffSymbol(jnd).EQV.'e').AND.(SBasisAtomLabel(ind).EQV.SAtomLabel(jnd))) THEN
+                   RBasisAtomPosition(ind,1) = RAtomPosition(jnd,1)
+                   RBasisAtomPosition(ind,2) = RAtomPosition(jnd,2)
+                   RBasisAtomPosition(ind,3) = RAtomPosition(jnd,3)
+                END IF
+             END DO
+          END IF
+          
+       CASE('f') 
+          IVectors = 3 !All special positions only free in x,y,z
+  
+       CASE DEFAULT
+          IErr = 1
+          IF(l_alert(IErr,"DetermineAllowedMovements",&
+               "Wyckoff Symbol for this space group not recognised")) RETURN      
+       END SELECT
+
 !!$  CASE(168)
 !!$  CASE(169)
 !!$  CASE(170)
@@ -653,8 +674,8 @@ MODULE setup_space_group_mod
 !!$  CASE(229)
 !!$  CASE(230)
     CASE DEFAULT     
-      IErr = 1
-      IF(l_alert(IErr,"DetermineAllowedMovements","space group not recognised")) RETURN   
+       IErr = 1
+       IF(l_alert(IErr,"DetermineAllowedMovements","space group not recognised")) RETURN   
     END SELECT
   END SUBROUTINE CountAllowedMovements
 

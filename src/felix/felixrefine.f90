@@ -1570,46 +1570,43 @@ CONTAINS
     INTEGER(IKIND),DIMENSION(:),ALLOCATABLE :: IDegreesOfFreedom
     REAL(RKIND),DIMENSION(ITHREE,ITHREE) :: RMoveMatrix
 
-    
+
     CALL ConvertSpaceGroupToNumber(ISpaceGrp,IErr)
     IF(l_alert(IErr,"SetupAtomMovements","ConvertSpaceGroupToNumber")) RETURN
-
-    !Change the basis so that we are certain of moving atoms so that the symmetry won't be broken   
-    DO ind = 1,SIZE(IAtomsToRefine)
-      CALL ChangeBasis(ind,ISpaceGrp,SWyckoffSymbol(IAtomsToRefine(ind)),&
-            IDegreesOfFreedom(ind),IErr)
-      IF(l_alert(IErr,"SetupAtomMovements","ChangeBasis")) RETURN     
-    END DO
 
     ALLOCATE(IDegreesOfFreedom(SIZE(IAtomsToRefine)),STAT=IErr)
     IF(l_alert(IErr,"SetupAtomMovements","allocate IDegreesOfFreedom")) RETURN  
 
-    !Count the degrees of freedom of movement for each atom to be refined    
+    !Count the degrees of freedom of movement for each atom to be refined
+    !If required, change the basis so that we are certain of moving atoms so that the symmetry won't be broken
     DO ind = 1,SIZE(IAtomsToRefine)
-      CALL CountAllowedMovements(ind,ISpaceGrp,SBasisWyckoffSymbol(IAtomsToRefine(ind)),&
+       CALL CountAllowedMovements(ind,ISpaceGrp,SBasisWyckoffSymbol(IAtomsToRefine(ind)),&
             IDegreesOfFreedom(ind),IErr)
-      IF(l_alert(IErr,"SetupAtomMovements","CountAllowedMovements")) RETURN     
+       IF(l_alert(IErr,"SetupAtomMovements","CountAllowedMovements")) RETURN     
     END DO
-    
+
     ALLOCATE(IAtomMoveList(SUM(IDegreesOfFreedom)),STAT=IErr)
     IF(l_alert(IErr,"SetupAtomMovements","allocate IAtomMoveList")) RETURN  
     ALLOCATE(RVector(SUM(IDegreesOfFreedom),ITHREE),STAT=IErr)
     IF(l_alert(IErr,"SetupAtomMovements","allocate RVector")) RETURN  
-    
+
     !make a list of vectors and the atoms they move
     knd = 0
     DO ind = 1,SIZE(IAtomsToRefine)
-      CALL DetermineAllowedMovements(ISpaceGrp,SBasisWyckoffSymbol(IAtomsToRefine(ind)),&
+       CALL DetermineAllowedMovements(ISpaceGrp,SBasisWyckoffSymbol(IAtomsToRefine(ind)),&
             RMoveMatrix,IErr)
-      IF(l_alert(IErr,"SetupAtomMovements","DetermineAllowedMovements")) RETURN  
-      DO jnd = 1,IDegreesOfFreedom(ind)
-        knd=knd+1
-        RVector(knd,:)=RMoveMatrix(jnd,:)!the movement, global variable
-        IAtomMoveList(knd)=IAtomsToRefine(ind)!the atom, global variable
-      END DO
+       IF(l_alert(IErr,"SetupAtomMovements","DetermineAllowedMovements")) RETURN  
+       DO jnd = 1,IDegreesOfFreedom(ind)
+          knd=knd+1
+          RVector(knd,:)=RMoveMatrix(jnd,:)!the movement, global variable
+          IAtomMoveList(knd)=IAtomsToRefine(ind)!the atom, global variable
+       END DO
     END DO
 
-  END SUBROUTINE SetupAtomMovements     
+    PRINT*, "Debug Break Exit"
+    CALL EXIT(0)
+
+  END SUBROUTINE SetupAtomMovements
 
   !%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
                                                                                                                                     
