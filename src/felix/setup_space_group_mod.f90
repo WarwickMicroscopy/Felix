@@ -365,7 +365,7 @@ MODULE setup_space_group_mod
 
     USE RPARA, ONLY : RBasisAtomPosition, RAtomPosition
     USE IPARA, ONLY : INAtomsUnitCell
-    USE SPARA, ONLY : SAtomLabel, SBasisAtomLabel
+    USE SPARA, ONLY : SAtomLabel, SBasisAtomLabel, SWyckoffSymbol
     IMPLICIT NONE
 
     INTEGER(IKIND),INTENT(IN) :: ISpaceGrp, ind
@@ -593,7 +593,7 @@ MODULE setup_space_group_mod
           ELSE
              IBasisChangeFLAG=1
              DO jnd = 1,INAtomsUnitCell
-                IF((SWyckoffSymbol(jnd).EQV.'e').AND.(SBasisAtomLabel(ind).EQV.SAtomLabel(jnd))) THEN
+                IF((SWyckoffSymbol(jnd).EQ.'e').AND.(SBasisAtomLabel(ind).EQ.SAtomLabel(jnd))) THEN
                    RBasisAtomPosition(ind,1) = RAtomPosition(jnd,1)
                    RBasisAtomPosition(ind,2) = RAtomPosition(jnd,2)
                    RBasisAtomPosition(ind,3) = RAtomPosition(jnd,3)
