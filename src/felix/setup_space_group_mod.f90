@@ -358,7 +358,7 @@ MODULE setup_space_group_mod
   !!
   !! Major-Authors: Keith Evans (2014), Richard Beanland (2016)
   !!
-  SUBROUTINE CountAllowedMovements(ind,ISpaceGrp,SWyckoff,IVectors,IErr)
+  SUBROUTINE CountAllowedMovements(ind,ISpaceGrp,SWyckoff,IVectors,IBasisChangeFLAG,IErr)
 
     USE MyNumbers
     USE message_mod
@@ -370,9 +370,9 @@ MODULE setup_space_group_mod
 
     INTEGER(IKIND),INTENT(IN) :: ISpaceGrp, ind
     CHARACTER*1, INTENT(IN) :: SWyckoff
-    INTEGER(IKIND), INTENT(OUT) :: IVectors, IErr
+    INTEGER(IKIND), INTENT(OUT) :: IVectors, IErr, IBasisChangeFLAG
 
-    INTEGER(IKIND) :: IBasisChangeFLAG, jnd
+    INTEGER(IKIND) :: jnd
 
     IErr=0
     SELECT CASE(ISpaceGrp)
@@ -587,18 +587,28 @@ MODULE setup_space_group_mod
 
        CASE('e')
           IVectors = 1
+          PRINT*," Before_BasisAtomPos(x,y,z) = ",RBasisAtomPosition(ind,1),RBasisAtomPosition(ind,2),&
+                        RBasisAtomPosition(ind,3)
           IF((ABS(RBasisAtomPosition((ind),2)-ZERO).LE.TINY).AND. &
                (ABS(RAtomPosition((ind),3)-REAL(0.25,RKIND)).LE.TINY))THEN
              !We have the correct basis for Atomic Refinement
           ELSE
              IBasisChangeFLAG=1
              DO jnd = 1,INAtomsUnitCell
-                IF((SWyckoffSymbol(jnd).EQ.'e').AND.(SBasisAtomLabel(ind).EQ.SAtomLabel(jnd))) THEN
+                IF((SWyckoffSymbol(jnd).EQ.'e').AND.(SBasisAtomLabel(ind).EQ.SAtomLabel(jnd)).AND. &
+                     (ABS(RAtomPosition((jnd),2)-ZERO).LE.TINY).AND. &
+               (ABS(RAtomPosition((jnd),3)-REAL(0.25,RKIND)).LE.TINY)) THEN
                    RBasisAtomPosition(ind,1) = RAtomPosition(jnd,1)
                    RBasisAtomPosition(ind,2) = RAtomPosition(jnd,2)
                    RBasisAtomPosition(ind,3) = RAtomPosition(jnd,3)
+                   PRINT*,"SWyckoffSymbol = ",SWyckoffSymbol(jnd), ":: SBasisAtomLabel = ",SBasisAtomLabel(ind), &
+                        "  SAtomLabel = ",SAtomLabel(jnd)
+                   PRINT*," During_BasisAtomPos(x,y,z) = ",RBasisAtomPosition(ind,1),RBasisAtomPosition(ind,2),&
+                        RBasisAtomPosition(ind,3)
                 END IF
              END DO
+             PRINT*," After_BasisAtomPos(x,y,z) = ",RBasisAtomPosition(ind,1),RBasisAtomPosition(ind,2),&
+                        RBasisAtomPosition(ind,3)
           END IF
           
        CASE('f') 

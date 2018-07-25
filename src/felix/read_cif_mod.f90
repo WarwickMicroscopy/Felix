@@ -71,7 +71,7 @@ MODULE read_cif_mod
 
     ! global outputs (or inout)
     USE SPARA, ONLY : SChemicalFormula, SSpaceGroupName, SBasisAtomLabel, &
-          SBasisAtomName, SWyckoffSymbol, SSpaceGrp
+          SBasisAtomName, SWyckoffSymbol, SBasisWyckoffSymbol, SSpaceGrp
     USE RPARA, ONLY : RLengthX, RLengthY, RLengthZ, RAlpha, RBeta, RGamma, RVolume, &
           RAnisotropicDebyeWallerFactorTensor, RBasisAtomPosition, RBasisIsoDW, &
           RBasisOccupancy, RSymMat, RSymVec
@@ -270,8 +270,8 @@ MODULE read_cif_mod
     IF(l_alert(IErr,"ReadCif","SBasisAtomName()")) RETURN
     ALLOCATE(IBasisAtomicNumber(IAtomCount),STAT=IErr)
     IF(l_alert(IErr,"ReadCif","IBasisAtomicNumber()")) RETURN
-    ALLOCATE(SWyckoffSymbol(IAtomCount),STAT=IErr)
-    IF(l_alert(IErr,"ReadCif","allocate SWyckoffSymbol")) RETURN
+    ALLOCATE(SBasisWyckoffSymbol(IAtomCount),STAT=IErr)
+    IF(l_alert(IErr,"ReadCif","allocate SBasisWyckoffSymbol")) RETURN
     ALLOCATE(RBasisIsoDW(IAtomCount),STAT=IErr)
     IF(l_alert(IErr,"ReadCif","RBasisIsoDW()")) RETURN
     ALLOCATE(RBasisOccupancy(IAtomCount),STAT=IErr)
@@ -310,7 +310,7 @@ MODULE read_cif_mod
       END IF
       !Wyckoff symbol
       f1 = char_('_atom_site_Wyckoff_symbol',name)
-      SWyckoffSymbol(ind) = name
+      SBasisWyckoffSymbol(ind) = name
       !coordinates
       f2 = numb_('_atom_site_fract_x', x, sx)
       RBasisAtomPosition(ind,1)= x

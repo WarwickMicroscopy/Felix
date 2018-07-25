@@ -189,6 +189,8 @@ PROGRAM Felixrefine
   IF(l_alert(IErr,"felixrefine","allocate SAtomLabel")) CALL abort
   ALLOCATE(SAtomName(IMaxPossibleNAtomsUnitCell),STAT=IErr) ! atom name
   IF(l_alert(IErr,"felixrefine","allocate SAtomName")) CALL abort
+  ALLOCATE(SWyckoffSymbol(IMaxPossibleNAtomsUnitCell),STAT=IErr) ! atom name
+  IF(l_alert(IErr,"felixrefine","allocate SWyckoffSymbol")) CALL abort
   ALLOCATE(RIsoDW(IMaxPossibleNAtomsUnitCell),STAT=IErr) ! Isotropic Debye-Waller factor
   IF(l_alert(IErr,"felixrefine","allocate RIsoDW")) CALL abort
   ALLOCATE(ROccupancy(IMaxPossibleNAtomsUnitCell),STAT=IErr)
@@ -1566,7 +1568,7 @@ CONTAINS
 
     ! called once in felixrefine IF(IRefineMode(2)==1) atom coordinate refinement, B
 
-    INTEGER(IKIND) :: IErr,knd,jnd,ind,ISpaceGrp
+    INTEGER(IKIND) :: IErr,knd,jnd,ind,ISpaceGrp,IBasisChangeFLAG
     INTEGER(IKIND),DIMENSION(:),ALLOCATABLE :: IDegreesOfFreedom
     REAL(RKIND),DIMENSION(ITHREE,ITHREE) :: RMoveMatrix
 
@@ -1578,12 +1580,17 @@ CONTAINS
     IF(l_alert(IErr,"SetupAtomMovements","allocate IDegreesOfFreedom")) RETURN  
 
     !Count the degrees of freedom of movement for each atom to be refined
-    !If required, change the basis so that we are certain of moving atoms so that the symmetry won't be broken
+    !If required, change the atomic position basis so that the crystal symmetry won't be broken in atomic refinement
     DO ind = 1,SIZE(IAtomsToRefine)
        CALL CountAllowedMovements(ind,ISpaceGrp,SBasisWyckoffSymbol(IAtomsToRefine(ind)),&
-            IDegreesOfFreedom(ind),IErr)
+            IDegreesOfFreedom(ind),IBasisChangeFLAG,IErr)
        IF(l_alert(IErr,"SetupAtomMovements","CountAllowedMovements")) RETURN     
     END DO
+    
+    IF(IBasisChangeFLAG.EQ.1) THEN
+       CALL UniqueAtomPositions(IErr)
+       IF(l_alert(IErr,"felixrefine","UniqueAtomPositions")) CALL abort
+    END IF
 
     ALLOCATE(IAtomMoveList(SUM(IDegreesOfFreedom)),STAT=IErr)
     IF(l_alert(IErr,"SetupAtomMovements","allocate IAtomMoveList")) RETURN  
