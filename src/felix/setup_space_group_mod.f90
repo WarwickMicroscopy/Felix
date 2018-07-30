@@ -370,9 +370,9 @@ MODULE setup_space_group_mod
 
     INTEGER(IKIND),INTENT(IN) :: ISpaceGrp, ind
     CHARACTER*1, INTENT(IN) :: SWyckoff
-    INTEGER(IKIND), INTENT(OUT) :: IVectors, IErr, IBasisChangeFLAG
+    INTEGER(IKIND), INTENT(OUT) :: IVectors, IErr
 
-    INTEGER(IKIND) :: jnd
+    INTEGER(IKIND) :: jnd, IBasisChangeFLAG
 
     IErr=0
     SELECT CASE(ISpaceGrp)
