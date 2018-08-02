@@ -364,7 +364,7 @@ MODULE setup_space_group_mod
     USE message_mod
 
     USE RPARA, ONLY : RBasisAtomPosition, RAtomPosition
-    USE IPARA, ONLY : INAtomsUnitCell
+    USE IPARA, ONLY : INAtomsUnitCell, IAtomsToRefine
     USE SPARA, ONLY : SAtomLabel, SBasisAtomLabel, SWyckoffSymbol
     IMPLICIT NONE
 
@@ -569,13 +569,13 @@ MODULE setup_space_group_mod
           IF(l_alert(IErr,"DetermineAllowedMovements",&
                "Wyckoff Symbol implies atomic x,y,z are fixed. &
                &Therefore atomic refinement not possible")) RETURN
-          
+
        CASE('b')
           IErr=1 !All special positions fixed by symmetry        
           IF(l_alert(IErr,"DetermineAllowedMovements",&
                "Wyckoff Symbol implies atomic x,y,z coords are fixed.&
-          & Therefore atomic refinement not possible")) RETURN
-          
+               & Therefore atomic refinement not possible")) RETURN
+
        CASE('c') 
           IVectors = 1 !All special positions only free in z, no basis change needed
 
@@ -583,37 +583,46 @@ MODULE setup_space_group_mod
           IErr=1 !All special positions fixed by symmetry
           IF(l_alert(IErr,"DetermineAllowedMovements",&
                "Wyckoff Symbol implies atomic x,y,z coords are fixed. &
-         &Therefore atomic refinement not possible")) RETURN
+               &Therefore atomic refinement not possible")) RETURN
 
        CASE('e')
           IVectors = 1
-          PRINT*," Before_BasisAtomPos(x,y,z) = ",RBasisAtomPosition(ind,1),RBasisAtomPosition(ind,2),&
-                        RBasisAtomPosition(ind,3)
+          IF(my_rank.EQ.0) THEN
+             PRINT*," Before_BasisAtomPos(x,y,z) = ",RBasisAtomPosition(IAtomsToRefine(ind),1), &
+                  RBasisAtomPosition(IAtomsToRefine(ind),2),&
+                  RBasisAtomPosition(IAtomsToRefine(ind),3)
+          END IF
           IF((ABS(RBasisAtomPosition((ind),2)-ZERO).LE.TINY).AND. &
                (ABS(RAtomPosition((ind),3)-REAL(0.25,RKIND)).LE.TINY))THEN
              !We have the correct basis for Atomic Refinement
           ELSE
              IBasisChangeFLAG=1
              DO jnd = 1,INAtomsUnitCell
-                IF((SWyckoffSymbol(jnd).EQ.'e').AND.(SBasisAtomLabel(ind).EQ.SAtomLabel(jnd)).AND. &
+                IF((SWyckoffSymbol(jnd).EQ.'e').AND.(SBasisAtomLabel(IAtomsToRefine(ind)).EQ.SAtomLabel(jnd)).AND. &
                      (ABS(RAtomPosition((jnd),2)-ZERO).LE.TINY).AND. &
-               (ABS(RAtomPosition((jnd),3)-REAL(0.25,RKIND)).LE.TINY)) THEN
-                   RBasisAtomPosition(ind,1) = RAtomPosition(jnd,1)
-                   RBasisAtomPosition(ind,2) = RAtomPosition(jnd,2)
-                   RBasisAtomPosition(ind,3) = RAtomPosition(jnd,3)
-                   PRINT*,"SWyckoffSymbol = ",SWyckoffSymbol(jnd), ":: SBasisAtomLabel = ",SBasisAtomLabel(ind), &
-                        "  SAtomLabel = ",SAtomLabel(jnd)
-                   PRINT*," During_BasisAtomPos(x,y,z) = ",RBasisAtomPosition(ind,1),RBasisAtomPosition(ind,2),&
-                        RBasisAtomPosition(ind,3)
+                     (ABS(RAtomPosition((jnd),3)-REAL(0.25,RKIND)).LE.TINY)) THEN
+                   RBasisAtomPosition(IAtomsToRefine(ind),1) = RAtomPosition(jnd,1)
+                   RBasisAtomPosition(IAtomsToRefine(ind),2) = RAtomPosition(jnd,2)
+                   RBasisAtomPosition(IAtomsToREfine(ind),3) = RAtomPosition(jnd,3)
+                   IF(my_rank.EQ.0) THEN
+                      PRINT*,"SWyckoffSymbol = ",SWyckoffSymbol(jnd), ":: SBasisAtomLabel = ", &
+                           SBasisAtomLabel(IAtomsToRefine(ind)),  "  SAtomLabel = ",SAtomLabel(jnd)
+                      PRINT*," During_BasisAtomPos(x,y,z) = ",RBasisAtomPosition(IAtomsToRefine(ind),1), &
+                           RBasisAtomPosition(IAtomsToRefine(ind),2),&
+                           RBasisAtomPosition(IAtomsToRefine(ind),3)
+                   END IF
                 END IF
              END DO
-             PRINT*," After_BasisAtomPos(x,y,z) = ",RBasisAtomPosition(ind,1),RBasisAtomPosition(ind,2),&
-                        RBasisAtomPosition(ind,3)
+             IF(my_rank.EQ.0) THEN
+                PRINT*," After_BasisAtomPos(x,y,z) = ",RBasisAtomPosition(IAtomsToRefine(ind),1), &
+                     RBasisAtomPosition(IAtomsToRefine(ind),2),&
+                     RBasisAtomPosition(IAtomsToRefine(ind),3)
+             END IF
           END IF
-          
+
        CASE('f') 
           IVectors = 3 !All special positions only free in x,y,z
-  
+
        CASE DEFAULT
           IErr = 1
           IF(l_alert(IErr,"DetermineAllowedMovements",&

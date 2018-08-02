@@ -211,6 +211,11 @@ PROGRAM Felixrefine
   !?? RB could re-allocate RAtomCoordinate,SAtomName,RIsoDW,ROccupancy,
   !?? IAtomicNumber,IAnisoDW to match INAtomsUnitCell?
 
+  IF(IRefineMode(2).EQ.1) THEN
+     CALL SetupAtomMovements(IErr)
+     IF(l_alert(IErr,"felixrefine","SetupAtomMovements")) CALL abort
+  END IF
+
   RHOLZAcceptanceAngle=TWODEG2RADIAN !?? RB seems way too low?
   IHKLMAXValue = 5 ! starting value, increments in loop below
 
@@ -516,8 +521,6 @@ PROGRAM Felixrefine
         INoOfVariablesForRefinementType(1)=0
         ! Atom coordinate refinement, B
         IF(IRefineMode(2).EQ.1) THEN
-           CALL SetupAtomMovements(IErr)
-           IF(l_alert(IErr,"felixrefine","SetupAtomMovements")) CALL abort
            INoOfVariablesForRefinementType(2)=IRefineMode(2)*SIZE(IAtomMoveList)
         ELSE
            INoOfVariablesForRefinementType(2)=0
@@ -1592,7 +1595,7 @@ CONTAINS
     IF(my_rank.EQ.0) THEN
        PRINT*, "IBasisFLAG = ", IBasisChangeFLAG
     END IF
- 
+
     IF(IBasisChangeFLAG.EQ.1) THEN
        CALL UniqueAtomPositions(IErr)
        IF(l_alert(IErr,"felixrefine","UniqueAtomPositions")) CALL abort
