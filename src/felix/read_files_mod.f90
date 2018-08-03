@@ -597,7 +597,7 @@ MODULE read_files_mod
           READ(SAtomicSites((IPos3+1):(IPos2-1)),FMT=SFormatString) ISizeofSimGrid(1)
 
        ELSE
-           IPos = 1
+          IPos = 1
           DO 
              IF(SCAN(SAtomicSites(IPos1:IPos2),',').NE.0) THEN
                 IPos1 = IPos1 + LEN(SAtomicSites(IPos1:(IPos1+SCAN(SAtomicSites(IPos1:IPos2),','))))
@@ -608,7 +608,7 @@ MODULE read_files_mod
 
           ALLOCATE(IAtomsToRefine(IPos),STAT=IErr)
           IF(l_alert(IErr,"DetermineRefineableAtomicSites","allocate IAtomsToRefine")) RETURN
-          ALLOCATE(ISizeofSimGrid(1),STAT=IErr)
+          ALLOCATE(ISizeofSimGrid(IPos),STAT=IErr)
           IF(l_alert(IErr,"DetermineRefineableAtomicSites","allocate ISizeofGrid")) RETURN
 
           IPos1 = SCAN(SAtomicSites,'(')
@@ -618,14 +618,21 @@ MODULE read_files_mod
                 WRITE(SLengthofNumberString,*) LEN(SAtomicSites((IPos1+1):(IPos1+IPos))) 
                 WRITE(SFormatString,*) "(I"//TRIM(ADJUSTL(SLengthofNumberString))//")"
                 READ(SAtomicSites((IPos1+1):(IPos1+IPos)),FMT=SFormatString) IAtomsToRefine(ind)
-                IPos1 = IPos1 + IPos + 1 
-             ELSE
-                WRITE(SLengthofNumberString,*) LEN(SAtomicSites((IPos1+1):(IPos2-1))) 
-                WRITE(SFormatString,*) "(I"//TRIM(ADJUSTL(SLengthofNumberString))//")"
-                READ(SAtomicSites((IPos1+1):(IPos2-1)),FMT=SFormatString) IAtomsToRefine(ind)
+                IPos1 = IPos1 + IPos + 1
+                IF(SCAN(SAtomicSites((IPos1+1):IPos2),',').NE.0) THEN
+                   IPos = SCAN(SAtomicSites((IPos1+1):IPos2),',')-1
+                   WRITE(SLengthofNumberString,*) LEN(SAtomicSites((IPos1+1):(IPos1+IPos))) 
+                   WRITE(SFormatString,*) "(I"//TRIM(ADJUSTL(SLengthofNumberString))//")"
+                   READ(SAtomicSites((IPos1+1):(IPos1+IPos)),FMT=SFormatString) ISizeofGrid(ind)
+                   IPos1 = IPos1 + IPos + 1
+                ELSE
+                   WRITE(SLengthofNumberString,*) LEN(SAtomicSites((IPos1+1):(IPos2-1))) 
+                   WRITE(SFormatString,*) "(I"//TRIM(ADJUSTL(SLengthofNumberString))//")"
+                   READ(SAtomicSites((IPos1+1):(IPos2-1)),FMT=SFormatString) IAtomsToRefine(ind)
+                END IF
              END IF
           END DO
-          
+
        END IF
     ELSE
 
@@ -665,6 +672,7 @@ MODULE read_files_mod
              END IF
           END DO
        END IF
+    END IF
        CALL message (LM, "Refining atoms ", IAtomsToRefine )
 
      END SUBROUTINE DetermineRefineableAtomicSites
