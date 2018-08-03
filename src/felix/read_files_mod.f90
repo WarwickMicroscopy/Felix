@@ -605,13 +605,11 @@ MODULE read_files_mod
        ELSE
           
           IPos = 1
-          CALL message (LS, "Here 2" )
           
           DO 
              IF(SCAN(SAtomicSites(IPos1:IPos2),',').NE.0) THEN
                 IPos1 = IPos1 + LEN(SAtomicSites(IPos1:(IPos1+SCAN(SAtomicSites(IPos1:IPos2),','))))
                 IPos = IPos+1
-                CALL message (LS, "Here 3****" )
              END IF
              IF(SCAN(SAtomicSites(IPos1:IPos2),',').EQ.0) EXIT
           END DO
@@ -629,7 +627,7 @@ MODULE read_files_mod
                 
                 CALL message (LS, "ind = ", ind, "   IPos = ", IPos )
                 CALL message (LS, "ind = ", ind, "   IPos1 first = ", IPos1) 
-                WRITE(SLengthofNumberString,*) LEN(SAtomicSites((IPos1+1):(IPos1+IPos))) 
+                WRITE(SLengthofNumberString,*) LEN(SAtomicSites((IPos1+1):(IPos1+IPos)))
                 WRITE(SFormatString,*) "(I"//TRIM(ADJUSTL(SLengthofNumberString))//")"
                 READ(SAtomicSites((IPos1+1):(IPos1+IPos)),FMT=SFormatString) IAtomsToRefine(ind)
                 IPos1 = IPos1 + IPos + 1
@@ -645,7 +643,7 @@ MODULE read_files_mod
                 ELSE
                    WRITE(SLengthofNumberString,*) LEN(SAtomicSites((IPos1+1):(IPos2-1))) 
                    WRITE(SFormatString,*) "(I"//TRIM(ADJUSTL(SLengthofNumberString))//")"
-                   READ(SAtomicSites((IPos1+1):(IPos2-1)),FMT=SFormatString) IAtomsToRefine(ind)
+                   READ(SAtomicSites((IPos1+1):(IPos2-1)),FMT=SFormatString) ISizeofGrid(ind)
                 END IF
              END IF
           END DO
