@@ -213,7 +213,7 @@ MODULE IPara
   INTEGER(IKIND),DIMENSION(IRefinementVariableTypes) :: INoofParameters  !zz
   INTEGER(IKIND),DIMENSION(:,:),ALLOCATABLE :: IIterativeVariableUniqueIDs
   !List of Atomic Sites for Refinement
-  INTEGER(IKIND),DIMENSION(:),ALLOCATABLE :: IAtomsToRefine
+  INTEGER(IKIND),DIMENSION(:),ALLOCATABLE :: IAtomsToRefine, ISizeofGrid
   !Simplex Variables
   INTEGER(IKIND) :: INoOfVariables,ILocalPixelCountMin,ILocalPixelCountMax,IUgOffset
   INTEGER(IKIND), DIMENSION(:), ALLOCATABLE :: IDisplacements,ICount

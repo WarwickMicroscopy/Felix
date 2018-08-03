@@ -254,8 +254,10 @@ MODULE read_files_mod
       ILine= ILine+1; READ(IChInp,FMT='(A)',ERR=20,END=30) SRefineMode
       IF(SCAN(TRIM(ADJUSTL(SRefineMode)),TRIM(ADJUSTL(SAlphabet(19)))).NE.0) THEN
          ISimFLAG=1 ! Simulation only
+         CALL message( LS, "Simulation Only")
       ELSE IF(SCAN(TRIM(ADJUSTL(SRefineMode)),TRIM(ADJUSTL(SAlphabet(20)))).NE.0) THEN
          ISimFLAG=2 ! Grid Refinement mode
+         CALL message( LS, "Simulation Only - Grid Option Selected")
       ELSE
          ISimFLAG=0
          SRefineMode = SRefineMode((SCAN(SRefineMode,"=")+1):)
@@ -549,31 +551,35 @@ MODULE read_files_mod
   !!
   !! Major-Authors: Keith Evans (2014), Richard Beanland (2016), Alex Hubert(2018)
   !!
-  SUBROUTINE DetermineRefineableAtomicSites(SAtomicSites,IErr)
+  SUBROUTINE DetermineRefineableAtomicSites(SFullAtomicSites,IErr)
 
     USE MyNumbers
     USE message_mod
     ! global outputs
-    USE IPARA, ONLY : IAtomsToRefine, ISizeOfSimGrid   
+    USE IPARA, ONLY : IAtomsToRefine, ISizeofGrid, ISimFLAG   
     ! global inputs
     USE IPARA, ONLY : IRefineMode 
 
     IMPLICIT NONE  
 
-    CHARACTER(200), INTENT(IN) :: SAtomicSites
+    CHARACTER(200), INTENT(IN) :: SFullAtomicSites
+    CHARACTER(200) :: SAtomicSites
     INTEGER(IKIND),INTENT(OUT) :: IErr
-    INTEGER(IKIND) :: IPos, IPos1, IPos2, ind
+    INTEGER(IKIND) :: IPos, IPos1, IPos2, IPos3, ind
     CHARACTER(200) :: SFormatString, SLengthofNumberString
 
-    IPos1 = SCAN(SAtomicSites,'(')
-    IPos2 = SCAN(SAtomicSites,')')
+    IPos1 = SCAN(SFullAtomicSites,'(')
+    IPos2 = SCAN(SFullAtomicSites,')')
     ! error check
     IF(((IPos2-IPos1).EQ.1).OR.(IPos1.EQ.0).OR.(IPos2.EQ.0)) THEN 
        IF(IRefineMode(2).EQ.1) IErr = 1
        IF(l_alert(IErr,"DetermineRefineableAtomicSites",&
             "You Have Not Specfied Atomic Sites to Refine")) RETURN
     END IF
-
+    SAtomicSites=TRIM(ADJUSTL(SFullAtomicSites(IPos1:IPos2)))
+    IPos1 = SCAN(SAtomicSites,'(')
+    IPos2 = SCAN(SAtomicSites,')')
+    CALL message (LS, "SAtomicSites = ", SAtomicSites)
     !Format of Grid Simulation for one atom is IAtomicSites = (1:2)
     IF (ISimFLAG.EQ.2) THEN
        IPos3 = SCAN(SAtomicSites,':')
@@ -583,48 +589,59 @@ MODULE read_files_mod
        IF ((IPos3-IPos1).GT.1.AND.SCAN(SAtomicSites,',').EQ.0) THEN
           ALLOCATE(IAtomsToRefine(1),STAT=IErr)
           IF(l_alert(IErr,"DetermineRefineableAtomicSites","allocate IAtomsToRefine")) RETURN
-          CALL message (LM, "SIZE(IAtomsToRefine) = ",SIZE(IAtomsToRefine) )
+          CALL message (LS, "SIZE(IAtomsToRefine) = ",SIZE(IAtomsToRefine) )
           WRITE(SLengthofNumberString,*) LEN(SAtomicSites((IPos1+1):(IPos3-1))) 
           WRITE(SFormatString,*) "(I"//TRIM(ADJUSTL(SLengthofNumberString))//")"
           READ(SAtomicSites((IPos1+1):(IPos3-1)),FMT=SFormatString) IAtomsToRefine(1)
 
-          SLengthofNnumberString=""
+          SLengthofNumberString=""
           SFormatString=""
-          ALLOCATE(ISizeofSimGrid(1),STAT=IErr)
+          ALLOCATE(ISizeofGrid(1),STAT=IErr)
           IF(l_alert(IErr,"DetermineRefineableAtomicSites","allocate ISizeofGrid")) RETURN
           WRITE(SLengthofNumberString,*) LEN(SAtomicSites((IPos3+1):(IPos2-1)))
           WRITE(SFormatString,*) "(I"//TRIM(ADJUSTL(SLengthofNumberString))//")"
-          READ(SAtomicSites((IPos3+1):(IPos2-1)),FMT=SFormatString) ISizeofSimGrid(1)
+          READ(SAtomicSites((IPos3+1):(IPos2-1)),FMT=SFormatString) ISizeofGrid(1)
 
        ELSE
+          
           IPos = 1
+          CALL message (LS, "Here 2" )
+          
           DO 
              IF(SCAN(SAtomicSites(IPos1:IPos2),',').NE.0) THEN
                 IPos1 = IPos1 + LEN(SAtomicSites(IPos1:(IPos1+SCAN(SAtomicSites(IPos1:IPos2),','))))
                 IPos = IPos+1
+                CALL message (LS, "Here 3****" )
              END IF
-             IF (IPos2-IPos1.LE.1) EXIT
+             IF(SCAN(SAtomicSites(IPos1:IPos2),',').EQ.0) EXIT
           END DO
 
           ALLOCATE(IAtomsToRefine(IPos),STAT=IErr)
           IF(l_alert(IErr,"DetermineRefineableAtomicSites","allocate IAtomsToRefine")) RETURN
-          ALLOCATE(ISizeofSimGrid(IPos),STAT=IErr)
+          ALLOCATE(ISizeofGrid(IPos),STAT=IErr)
           IF(l_alert(IErr,"DetermineRefineableAtomicSites","allocate ISizeofGrid")) RETURN
 
           IPos1 = SCAN(SAtomicSites,'(')
+          CALL message (LS,  "SAtomicSites = ", SAtomicSites )
           DO ind = 1,SIZE(IAtomsToRefine,DIM=1)
              IF(SCAN(SAtomicSites((IPos1+1):IPos2),':').NE.0) THEN
                 IPos = SCAN(SAtomicSites((IPos1+1):IPos2),':')-1
+                
+                CALL message (LS, "ind = ", ind, "   IPos = ", IPos )
+                CALL message (LS, "ind = ", ind, "   IPos1 first = ", IPos1) 
                 WRITE(SLengthofNumberString,*) LEN(SAtomicSites((IPos1+1):(IPos1+IPos))) 
                 WRITE(SFormatString,*) "(I"//TRIM(ADJUSTL(SLengthofNumberString))//")"
                 READ(SAtomicSites((IPos1+1):(IPos1+IPos)),FMT=SFormatString) IAtomsToRefine(ind)
                 IPos1 = IPos1 + IPos + 1
+                CALL message (LS, "ind = ", ind, "   IPos1 = ", IPos1 )
                 IF(SCAN(SAtomicSites((IPos1+1):IPos2),',').NE.0) THEN
                    IPos = SCAN(SAtomicSites((IPos1+1):IPos2),',')-1
+                   CALL message (LS, "ind = ", ind, "   IPos = ", IPos )
                    WRITE(SLengthofNumberString,*) LEN(SAtomicSites((IPos1+1):(IPos1+IPos))) 
                    WRITE(SFormatString,*) "(I"//TRIM(ADJUSTL(SLengthofNumberString))//")"
                    READ(SAtomicSites((IPos1+1):(IPos1+IPos)),FMT=SFormatString) ISizeofGrid(ind)
                    IPos1 = IPos1 + IPos + 1
+                    CALL message (LS, "ind = ", ind, "IPos1 = ", IPos1 )
                 ELSE
                    WRITE(SLengthofNumberString,*) LEN(SAtomicSites((IPos1+1):(IPos2-1))) 
                    WRITE(SFormatString,*) "(I"//TRIM(ADJUSTL(SLengthofNumberString))//")"
@@ -640,7 +657,7 @@ MODULE read_files_mod
 
           ALLOCATE(IAtomsToRefine(1),STAT=IErr)
           IF(l_alert(IErr,"DetermineRefineableAtomicSites","allocate IAtomsToRefine")) RETURN
-          CALL message (LM, "SIZE(IAtomsToRefine) = ",SIZE(IAtomsToRefine) )
+          CALL message (LS, "SIZE(IAtomsToRefine) = ",SIZE(IAtomsToRefine) )
           WRITE(SLengthofNumberString,*) LEN(SAtomicSites((IPos1+1):(IPos2-1))) 
           WRITE(SFormatString,*) "(I"//TRIM(ADJUSTL(SLengthofNumberString))//")"
           READ(SAtomicSites((IPos1+1):(IPos2-1)),FMT=SFormatString) IAtomsToRefine(1)
@@ -673,8 +690,10 @@ MODULE read_files_mod
           END DO
        END IF
     END IF
-       CALL message (LM, "Refining atoms ", IAtomsToRefine )
+    CALL message (LS, "Refining atoms ", IAtomsToRefine )
+    IF (ISimFLAG.EQ.2) CALL message (LS, "Grid densities ", ISizeofGrid )
 
+    STOP 'Debugging Break'
      END SUBROUTINE DetermineRefineableAtomicSites
 
   !%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
