@@ -738,22 +738,22 @@ PROGRAM Felixrefine
   END DO
 
   !--------------------------------------------------------------------
-  ! baseline simulation
+  ! baseline simulation - we don't do this with GridSimulation
   !--------------------------------------------------------------------
   RFigureofMerit=666.666 ! Initial large value, diabolically
   Iter = 0
-  ! baseline simulation with timer
-  CALL Simulate(IErr)
-  IF(l_alert(IErr,"felixrefine","Simulate")) CALL abort
-  CALL PrintEndTime(LS,IStartTime2, "Simulation" )
-  IExitFLAG = 0 ! Do not exit
-  IPreviousPrintedIteration = 0  ! ensures baseline simulation is printed
+  IF(ISimFLAG.NE.2) THEN
+     ! baseline simulation with timer
+     CALL Simulate(IErr)
+     IF(l_alert(IErr,"felixrefine","Simulate")) CALL abort
+     CALL PrintEndTime(LS,IStartTime2, "Simulation" )
+     IExitFLAG = 0 ! Do not exit
+     IPreviousPrintedIteration = 0  ! ensures baseline simulation is printed
+  END IF
   IF (ISimFLAG.EQ.1) THEN ! Simulation only mode   
-
      !--------------------------------------------------------------------
      ! simulation only mode
      !--------------------------------------------------------------------
-
      ! simulate multiple thicknesses
      IF(my_rank.EQ.0) THEN
         CALL message(LS,"Writing simulations with the number of thicknesses =", IThicknessCount)
@@ -762,8 +762,17 @@ PROGRAM Felixrefine
            IF(l_alert(IErr,"felixrefine","WriteIterationOutput")) CALL abort 
         END DO
      END IF
+     
+  ELSE IF (ISimFLAG.EQ.2) THEN
+     !--------------------------------------------------------------------
+     ! Grid Simulation mode
+     !--------------------------------------------------------------------
+     CALL SimulateWithGrid(IErr)
 
-  ELSE ! Refinement Mode
+  ELSE 
+     !--------------------------------------------------------------------
+     ! Refinement Mode
+     !--------------------------------------------------------------------
      IF(my_rank.EQ.0) THEN!outputs to disc come from core 0 only
         ! Figure of merit is passed back as a global variable
         CALL FigureOfMeritAndThickness(Iter,IThicknessIndex,IErr)

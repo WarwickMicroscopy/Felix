@@ -255,7 +255,7 @@ MODULE read_files_mod
       IF(SCAN(TRIM(ADJUSTL(SRefineMode)),TRIM(ADJUSTL(SAlphabet(19)))).NE.0) THEN
          ISimFLAG=1 ! Simulation only
          CALL message( LS, "Simulation Only")
-      ELSE IF(SCAN(TRIM(ADJUSTL(SRefineMode)),TRIM(ADJUSTL(SAlphabet(20)))).NE.0) THEN
+      ELSE IF(SCAN(TRIM(ADJUSTL(SRefineMode)),TRIM(ADJUSTL(SAlphabet(7)))).NE.0) THEN
          ISimFLAG=2 ! Grid Refinement mode
          CALL message( LS, "Simulation Only - Grid Option Selected")
       ELSE
