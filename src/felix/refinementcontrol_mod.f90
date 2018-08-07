@@ -224,6 +224,160 @@ MODULE refinementcontrol_mod
 
   !%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
+  SUBROUTINE SimulateWithGrid(IErr)
+
+
+    IMPLICIT NONE
+
+    REAL (RKIND),DIMENSION(:,:), ALLOCATABLE, :: RGridValues 
+
+    !1D Grid refinement
+    IF(SIZE(IAtomMoveList).EQ.1)THEN
+
+       ALLOCATE(RGridValues(1,ISizeofGrid+2),STAT=IErr)
+
+       RGridValues(1,1)=REAL(0.001,RKIND)
+       RGridValues(1,ISizeofGrid+2)=REAL(0.999,RKIND)
+
+       DO ind=2,ISizeOfGrid+1
+          RGridValues(1,ind)=REAL(ind,RKIND)*(ONE/REAL(ISizeofGrid,RKIND)
+          WHERE (RVector.NE.0)
+             RBasisAtomPosition=RGridValues(1,ind)
+          END WHERE
+          CALL UniqueAtomPositons(IErr)
+
+          !--------------------------------------------------------------------
+          ! update scattering matrix Ug
+          !--------------------------------------------------------------------
+          IF (my_rank.EQ.0) THEN!There is a bug when individual cores calculate UgMat, make it the responsibility of core 0 and broadcast it
+             ! calculate CUgMatNoAbs
+             CUgMatNoAbs = CZERO
+             !PRINT*,"About to CUgMatNoAbs"
+             !duplicated from Ug matrix initialisation.  Ug refinement will no longer work! Should be put into a single subroutine.
+             DO ind=2,nReflections
+                DO jnd=1,ind-1
+                   RCurrentGMagnitude = RgMatrixMagnitude(ind,jnd) ! g-vector magnitude, global variable
+                   ! Sums CVgij contribution from each atom and pseudoatom in Volts
+                   CALL GetVgContributionij(RScatteringFactor,ind,jnd,CVgij,IErr)
+                   CUgMatNoAbs(ind,jnd)=CVgij
+                ENDDO
+             ENDDO
+             !Convert to Ug
+             CUgMatNoAbs=CUgMatNoAbs*TWO*RElectronMass*RRelativisticCorrection*RElectronCharge/((RPlanckConstant**2)*(RAngstromConversion**2))
+             ! NB Only the lower half of the Vg matrix was calculated, this completes the upper half
+             CUgMatDummy = TRANSPOSE(CUgMatNoAbs)! Dummy just used as a box to avoid the bug when conj(transpose) is used on orac
+             CUgMatNoAbs = CUgMatNoAbs + CONJG(CUgMatDummy)
+          END IF
+          ind=nReflections*nReflections
+          !===================================== ! Send UgMat to all cores
+          CALL MPI_BCAST(CUgMat,ind,MPI_DOUBLE_PRECISION,0,MPI_COMM_WORLD,IErr)
+          !=====================================
+          CALL Absorption(IErr)! calculates CUgMat = CUgMatNoAbs + CUgMatPrime
+          IF(l_alert(IErr,"SimulateAndFit","Absorption")) RETURN
+
+
+          !/\----------------------------------------------------------------------
+          CALL message( LM,dbg3, "recalculated Ug matrix, with absorption (nm^-2)" )
+          DO ind = 1,16
+             WRITE(SPrintString,FMT='(3(I2,1X),A2,1X,8(F7.4,1X))') NINT(Rhkl(ind,:)),": ",100*CUgMat(ind,1:4)
+             CALL message( LM,dbg3, SPrintString)
+          END DO
+
+
+          IF (my_rank.EQ.0) THEN ! send current values to screen
+             CALL PrintVariables(IErr)
+             IF(l_alert(IErr,"SimulateAndFit","PrintVariables")) RETURN
+          END IF
+
+          ! simulate
+          RSimulatedPatterns = ZERO ! Reset simulation
+          CALL Simulate(IErr) ! simulate 
+          IF(l_alert(IErr,"SimulateAndFit","Simulate")) RETURN
+
+
+       END DO
+
+       !2D grid
+    ELSE IF(SIZE(IAtomMoveList).EQ.2) THEN
+
+       ALLOCATE(RGridValues(PRODUCT(ISizeofGrid(1)+2,ISizeofGrid(2)+2),2),STAT=IErr)
+
+       knd=1
+       DO ind=1,ISizeofGrid(1)
+          DO jnd=1,ISizeofGrid(2)
+             IF(ind.EQ.1) RGridValues(knd,1)=REAL(0.001,RKIND)
+             IF(jnd.EQ.1) RGridValues(knd,2)=REAL(0.001,RKIND)
+             IF(ind.EQ.ISizeofGrid(1))RGridValues(knd,1)=REAL(0.999,RKIND)
+             IF(jnd.EQ.ISizeofGrid(2))RGridValues(knd,1)=REAL(0.999,RKIND)
+             RGridValues(knd,1)=REAL(ind,RKIND)*(ONE/REAL(ISizeofGrid(1),RKIND)
+             RGridValues(knd,2)=REAL(jnd,RKIND)*(ONE/REAL(ISizeofGrid(1),RKIND)
+             knd=knd+1
+          END DO
+       END DO
+
+       DO knd=1,SIZE(RGridValues)
+          
+
+          WHERE (RVector.NE.0)
+             RBasisAtomPosition=RGridValues(,ind)
+          END WHERE
+          CALL UniqueAtomPositons(IErr)
+
+          !--------------------------------------------------------------------
+          ! update scattering matrix Ug
+          !--------------------------------------------------------------------
+          IF (my_rank.EQ.0) THEN!There is a bug when individual cores calculate UgMat, make it the responsibility of core 0 and broadcast it
+             ! calculate CUgMatNoAbs
+             CUgMatNoAbs = CZERO
+             !PRINT*,"About to CUgMatNoAbs"
+             !duplicated from Ug matrix initialisation.  Ug refinement will no longer work! Should be put into a single subroutine.
+             DO ind=2,nReflections
+                DO jnd=1,ind-1
+                   RCurrentGMagnitude = RgMatrixMagnitude(ind,jnd) ! g-vector magnitude, global variable
+                   ! Sums CVgij contribution from each atom and pseudoatom in Volts
+                   CALL GetVgContributionij(RScatteringFactor,ind,jnd,CVgij,IErr)
+                   CUgMatNoAbs(ind,jnd)=CVgij
+                ENDDO
+             ENDDO
+             !Convert to Ug
+             CUgMatNoAbs=CUgMatNoAbs*TWO*RElectronMass*RRelativisticCorrection*RElectronCharge/((RPlanckConstant**2)*(RAngstromConversion**2))
+             ! NB Only the lower half of the Vg matrix was calculated, this completes the upper half
+             CUgMatDummy = TRANSPOSE(CUgMatNoAbs)! Dummy just used as a box to avoid the bug when conj(transpose) is used on orac
+             CUgMatNoAbs = CUgMatNoAbs + CONJG(CUgMatDummy)
+          END IF
+          ind=nReflections*nReflections
+          !===================================== ! Send UgMat to all cores
+          CALL MPI_BCAST(CUgMat,ind,MPI_DOUBLE_PRECISION,0,MPI_COMM_WORLD,IErr)
+          !=====================================
+          CALL Absorption(IErr)! calculates CUgMat = CUgMatNoAbs + CUgMatPrime
+          IF(l_alert(IErr,"SimulateAndFit","Absorption")) RETURN
+
+
+          !/\----------------------------------------------------------------------
+          CALL message( LM,dbg3, "recalculated Ug matrix, with absorption (nm^-2)" )
+          DO ind = 1,16
+             WRITE(SPrintString,FMT='(3(I2,1X),A2,1X,8(F7.4,1X))') NINT(Rhkl(ind,:)),": ",100*CUgMat(ind,1:4)
+             CALL message( LM,dbg3, SPrintString)
+          END DO
+
+
+          IF (my_rank.EQ.0) THEN ! send current values to screen
+             CALL PrintVariables(IErr)
+             IF(l_alert(IErr,"SimulateAndFit","PrintVariables")) RETURN
+          END IF
+
+          ! simulate
+          RSimulatedPatterns = ZERO ! Reset simulation
+          CALL Simulate(IErr) ! simulate 
+          IF(l_alert(IErr,"SimulateAndFit","Simulate")) RETURN
+
+
+       END DO
+
+    END IF
+
+
+  END SUBROUTINE SimulateWithGrid
 
 
   !>
