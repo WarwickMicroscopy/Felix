@@ -63,7 +63,7 @@ PROGRAM Felixrefine
        IBSMaxLocGVecAmp,ILaueLevel,INumTotalReflections,ITotalLaueZoneLevel,&
        INhkl,IExitFLAG,ICycle,INumInitReflections,IZerothLaueZoneLevel,&
        INumFinalReflections,IThicknessIndex,IVariableType,IArrayIndex,&
-       IAnisotropicDebyeWallerFactorElementNo
+       IAnisotropicDebyeWallerFactorElementNo,IGridLength
   INTEGER(IKIND) :: IStartTime,IStartTime2
   REAL(RKIND) :: RHOLZAcceptanceAngle,RLaueZoneGz,RMaxGMag,RPvecMag,&
        RScale,RMaxUgStep,Rdx,RStandardDeviation,RMean,RGzUnitVec,RMinLaueZoneValue,&
@@ -75,9 +75,9 @@ PROGRAM Felixrefine
   ! allocatable arrays
   INTEGER(IKIND),DIMENSION(:),ALLOCATABLE :: IOriginGVecIdentifier
   REAL(RKIND),DIMENSION(:),ALLOCATABLE :: RSimplexFoM,RIndependentVariable,&
-       RCurrentVar,RVar0,RLastVar,RPvec,RFitVec
+       RCurrentVar,RVar0,RLastVar,RPvec,RFitVec,RIndependentVariableDummy
   REAL(RKIND),DIMENSION(:,:),ALLOCATABLE :: RSimplexVariable,RgDummyVecMat,&
-       RgPoolMagLaue,RTestImage,ROnes,RVarMatrix,RSimp
+       RgPoolMagLaue,RTestImage,ROnes,RVarMatrix,RSimp,RGridValues
 
   CHARACTER(40) :: my_rank_string
   CHARACTER(20) :: h,k,l
@@ -762,12 +762,49 @@ PROGRAM Felixrefine
            IF(l_alert(IErr,"felixrefine","WriteIterationOutput")) CALL abort 
         END DO
      END IF
-     
+
   ELSE IF (ISimFLAG.EQ.2) THEN
      !--------------------------------------------------------------------
-     ! Grid Simulation mode
+     ! Grid Simulation mode -
      !--------------------------------------------------------------------
-     CALL SimulateWithGrid(IErr)
+     !Make grid defined in input file, add on 0 and 1
+     !Loop over the BasisAtomPosition and simululate
+     IGridLength=(ISizeofGrid(1)+2)*(ISizeofGrid(2)+2)
+     ALLOCATE(RGridValues(IGridLength,2),STAT=IErr)
+
+     knd=1
+     DO ind=1,ISizeofGrid(1)
+        DO jnd=1,ISizeofGrid(2)
+           IF(ind.EQ.1) RGridValues(knd,1)=REAL(0.001,RKIND)
+           IF(jnd.EQ.1) RGridValues(knd,2)=REAL(0.001,RKIND)
+           IF(ind.EQ.ISizeofGrid(1))RGridValues(knd,1)=REAL(0.999,RKIND)
+           IF(jnd.EQ.ISizeofGrid(2))RGridValues(knd,1)=REAL(0.999,RKIND)
+           RGridValues(knd,1)=REAL(ind,RKIND)*(ONE/REAL(ISizeofGrid(1),RKIND))
+           RGridValues(knd,2)=REAL(jnd,RKIND)*(ONE/REAL(ISizeofGrid(1),RKIND))
+           knd=knd+1
+        END DO
+     END DO
+     Iter=0
+     !Keeping fixed for Sapphire Currently - will generalise in future - should
+     !Probably transpose RGridValues to make more understandable
+     DO ind=1,SIZE(RGridValues(:,1))
+        DO jnd=1,SIZE(IAtomsToRefine)
+           IF (IAtomsToRefine(jnd).EQ.1) THEN
+              RBasisAtomPosition(IAtomsToRefine(jnd),1)=RGridValues(ind,1)
+           ELSE
+              RBasisAtomPosition(IAtomsToRefine(jnd),3)=RGridValues(ind,2)
+           END IF
+        END DO
+        ALLOCATE(RIndependentVariableDummy(1),STAT=IErr)
+        RIndependentVariableDummy(1)=REAL(0.001,RKIND)
+        CALL SimulateAndFit(RIndependentVariableDummy,Iter,IThicknessIndex,IErr)
+        Iter=Iter+1
+        CALL message ( LS, "Writing output; Grid Simulation number: ",Iter)
+        IExitFLAG=0 !We do not exit in a grid Simulation
+        CALL WriteIterationOutput(Iter,IThicknessIndex,IExitFLAG,IErr)
+        IF(l_alert(IErr,"felixrefine","WriteIterationOutput")) CALL abort
+
+     END DO
 
   ELSE 
      !--------------------------------------------------------------------
