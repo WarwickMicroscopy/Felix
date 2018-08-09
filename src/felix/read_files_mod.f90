@@ -255,9 +255,10 @@ MODULE read_files_mod
       IF(SCAN(TRIM(ADJUSTL(SRefineMode)),TRIM(ADJUSTL(SAlphabet(19)))).NE.0) THEN
          ISimFLAG=1 ! Simulation only
          CALL message( LS, "Simulation Only")
-      ELSE IF(SCAN(TRIM(ADJUSTL(SRefineMode)),TRIM(ADJUSTL(SAlphabet(7)))).NE.0) THEN
-         ISimFLAG=2 ! Grid Refinement mode
-         CALL message( LS, "Simulation Only - Grid Option Selected")
+         IF(SCAN(TRIM(ADJUSTL(SRefineMode)),TRIM(ADJUSTL(SAlphabet(7)))).NE.0) THEN
+            ISimFLAG=2 ! Grid Refinement mode
+            CALL message( LS, "Simulation Only - Grid Option Selected")
+         END IF
       ELSE
          ISimFLAG=0
          SRefineMode = SRefineMode((SCAN(SRefineMode,"=")+1):)
@@ -691,7 +692,7 @@ MODULE read_files_mod
     CALL message (LS, "Refining atoms ", IAtomsToRefine )
     IF (ISimFLAG.EQ.2) CALL message (LS, "Grid densities ", ISizeofGrid )
 
-    STOP 'Debugging Break'
+
      END SUBROUTINE DetermineRefineableAtomicSites
 
   !%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
