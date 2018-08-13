@@ -767,20 +767,43 @@ PROGRAM Felixrefine
      !--------------------------------------------------------------------
      ! Grid Simulation mode -
      !--------------------------------------------------------------------
+     IF(my_rank.EQ.0) THEN
+        CALL message(LS,"Entering Grid Simulation Mode")
+        CALL message(LS,"HERE")
+     END IF
      !Make grid defined in input file, add on 0 and 1
      !Loop over the BasisAtomPosition and simululate
      IGridLength=(ISizeofGrid(1)+2)*(ISizeofGrid(2)+2)
      ALLOCATE(RGridValues(IGridLength,2),STAT=IErr)
 
+     IF(my_rank.EQ.0) THEN
+        CALL message(LS,"IGridLength = ", IGridLength)
+        CALL message(LS,"IsizeOfGrid(1) = ", ISizeOfGrid(1))
+        CALL message(LS,"IsizeOfGrid(2) = ", ISizeOfGrid(2))
+     END IF
+
      knd=1
-     DO ind=1,ISizeofGrid(1)
-        DO jnd=1,ISizeofGrid(2)
+     DO ind=1,ISizeofGrid(1)+1
+        DO jnd=1,ISizeofGrid(2)+1
            IF(ind.EQ.1) RGridValues(knd,1)=REAL(0.001,RKIND)
            IF(jnd.EQ.1) RGridValues(knd,2)=REAL(0.001,RKIND)
            IF(ind.EQ.ISizeofGrid(1))RGridValues(knd,1)=REAL(0.999,RKIND)
-           IF(jnd.EQ.ISizeofGrid(2))RGridValues(knd,1)=REAL(0.999,RKIND)
-           RGridValues(knd,1)=REAL(ind,RKIND)*(ONE/REAL(ISizeofGrid(1),RKIND))
-           RGridValues(knd,2)=REAL(jnd,RKIND)*(ONE/REAL(ISizeofGrid(1),RKIND))
+           IF(jnd.EQ.ISizeofGrid(2))RGridValues(knd,2)=REAL(0.999,RKIND)
+           IF((ind.GE.2.OR.jnd.GE.2).AND.(ind.LT.ISizeofGrid(1).OR.jnd.LT.ISizeOfGrid(2))) THEN
+              RGridValues(knd,1)=REAL(ind,RKIND)*(ONE/REAL(ISizeofGrid(1),RKIND))
+              RGridValues(knd,2)=REAL(jnd,RKIND)*(ONE/REAL(ISizeofGrid(2),RKIND))
+           END IF
+           
+           IF(my_rank.EQ.0) THEN
+              CALL message(LS,"--------------------------------" )
+              CALL message(LS,"IND = ",ind )
+              CALL message(LS,"JND = ",jnd )
+              CALL message(LS,"KND = ",knd )
+              
+              CALL message(LS,"RGridValues(knd,1) = ",RGridValues(knd,1) )
+              CALL message(LS,"RGridValues(knd,2) = ",RGridValues(knd,2) )
+              CALL message(LS,"--------------------------------" )
+           END IF
            knd=knd+1
         END DO
      END DO

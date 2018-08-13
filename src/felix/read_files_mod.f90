@@ -255,6 +255,7 @@ MODULE read_files_mod
       IF(SCAN(TRIM(ADJUSTL(SRefineMode)),TRIM(ADJUSTL(SAlphabet(19)))).NE.0) THEN
          ISimFLAG=1 ! Simulation only
          CALL message( LS, "Simulation Only")
+         CALL message( LS, "SAlphabet7",SAlphabet(7))
          IF(SCAN(TRIM(ADJUSTL(SRefineMode)),TRIM(ADJUSTL(SAlphabet(7)))).NE.0) THEN
             ISimFLAG=2 ! Grid Refinement mode
             CALL message( LS, "Simulation Only - Grid Option Selected")
@@ -622,6 +623,7 @@ MODULE read_files_mod
 
           IPos1 = SCAN(SAtomicSites,'(')
           CALL message (LS,  "SAtomicSites = ", SAtomicSites )
+          CALL message (LS,  "IAtomsToRefine = ", IAtomsToRefine )
           DO ind = 1,SIZE(IAtomsToRefine,DIM=1)
              IF(SCAN(SAtomicSites((IPos1+1):IPos2),':').NE.0) THEN
                 IPos = SCAN(SAtomicSites((IPos1+1):IPos2),':')-1
