@@ -63,7 +63,7 @@ PROGRAM Felixrefine
        IBSMaxLocGVecAmp,ILaueLevel,INumTotalReflections,ITotalLaueZoneLevel,&
        INhkl,IExitFLAG,ICycle,INumInitReflections,IZerothLaueZoneLevel,&
        INumFinalReflections,IThicknessIndex,IVariableType,IArrayIndex,&
-       IAnisotropicDebyeWallerFactorElementNo,IGridLength
+       IAnisotropicDebyeWallerFactorElementNo,IGridLength, IScaleFactorInd, IScaleFactorJnd
   INTEGER(IKIND) :: IStartTime,IStartTime2
   REAL(RKIND) :: RHOLZAcceptanceAngle,RLaueZoneGz,RMaxGMag,RPvecMag,&
        RScale,RMaxUgStep,Rdx,RStandardDeviation,RMean,RGzUnitVec,RMinLaueZoneValue,&
@@ -71,6 +71,7 @@ PROGRAM Felixrefine
        RLaueZoneElectronWaveVectorMag,RvarMin,RfitMin,RFit0,Rconvex,Rtest
   REAL(RKIND),DIMENSION(ITHREE) :: R3var,R3fit
   INTEGER(IKIND),DIMENSION(10) :: INoOfVariablesForRefinementType
+  INTEGER(IKIND),DIMENSION(2) :: IFullGrid, IPartialGrid
 
   ! allocatable arrays
   INTEGER(IKIND),DIMENSION(:),ALLOCATABLE :: IOriginGVecIdentifier
@@ -131,7 +132,7 @@ PROGRAM Felixrefine
   IF(l_alert(IErr,"felixrefine","ReadHklFile")) CALL abort
 
   ! read experimental images (if in refinement mode)
-  IF (ISimFLAG.EQ.0) THEN ! it's a refinement, so read-IN experimental images
+  IF ((ISimFLAG.EQ.0).OR.(ISimFLAG.EQ.2)) THEN ! it's a refinement, so read-IN experimental images
      ALLOCATE(RImageExpi(2*IPixelCount,2*IPixelCount,INoOfLacbedPatterns),STAT=IErr)  
      IF(l_alert(IErr,"felixrefine","allocate RImageExpi")) CALL abort
      CALL ReadExperimentalImages(IErr)
@@ -211,7 +212,7 @@ PROGRAM Felixrefine
   !?? RB could re-allocate RAtomCoordinate,SAtomName,RIsoDW,ROccupancy,
   !?? IAtomicNumber,IAnisoDW to match INAtomsUnitCell?
 
-  IF(IRefineMode(2).EQ.1) THEN
+  IF((IRefineMode(2).EQ.1).OR.(ISimFLAG.EQ.2)) THEN
      CALL SetupAtomMovements(IErr)
      IF(l_alert(IErr,"felixrefine","SetupAtomMovements")) CALL abort
   END IF
@@ -782,24 +783,31 @@ PROGRAM Felixrefine
         CALL message(LS,"IsizeOfGrid(2) = ", ISizeOfGrid(2))
      END IF
 
+     IFullGrid(1)=ISizeOfGrid(1)+2
+     IFullGrid(2)=IsizeOfGrid(2)+2
+     IPartialGrid(1)=ISizeOfGrid(1)+1
+     IPartialGrid(2)=ISizeOfGrid(2)+1
+
      knd=1
-     DO ind=1,ISizeofGrid(1)+1
-        DO jnd=1,ISizeofGrid(2)+1
-           IF(ind.EQ.1) RGridValues(knd,1)=REAL(0.001,RKIND)
-           IF(jnd.EQ.1) RGridValues(knd,2)=REAL(0.001,RKIND)
-           IF(ind.EQ.ISizeofGrid(1))RGridValues(knd,1)=REAL(0.999,RKIND)
-           IF(jnd.EQ.ISizeofGrid(2))RGridValues(knd,2)=REAL(0.999,RKIND)
-           IF((ind.GE.2.OR.jnd.GE.2).AND.(ind.LT.ISizeofGrid(1).OR.jnd.LT.ISizeOfGrid(2))) THEN
-              RGridValues(knd,1)=REAL(ind,RKIND)*(ONE/REAL(ISizeofGrid(1),RKIND))
-              RGridValues(knd,2)=REAL(jnd,RKIND)*(ONE/REAL(ISizeofGrid(2),RKIND))
-           END IF
-           
+     DO ind=1,IFullGrid(1)
+        DO jnd=1,IFullGrid(2)
+           IF(ind.EQ.1) RGridValues(knd,1)=REAL(0.1,RKIND)
+           IF(jnd.EQ.1) RGridValues(knd,2)=REAL(0.1,RKIND)
+
+           IF(ind.EQ.IFullGrid(1)) RGridValues(knd,1)=REAL(0.9,RKIND)
+           IF(jnd.EQ.IFullGrid(2)) RGridValues(knd,2)=REAL(0.9,RKIND)
+
+           IScaleFactorInd=ind-1
+           IScaleFactorJnd=jnd-1
+           IF((ind.GE.2).AND.(ind.LT.IFullGrid(1))) RGridValues(knd,1)=REAL(IScaleFactorInd,RKIND)*(ONE/REAL(IPartialGrid(1),RKIND))
+           IF((jnd.GE.2).AND.(jnd.LT.IFullGrid(2))) RGridValues(knd,2)=REAL(IScaleFactorJnd,RKIND)*(ONE/REAL(IPartialGrid(2),RKIND))
+
            IF(my_rank.EQ.0) THEN
               CALL message(LS,"--------------------------------" )
               CALL message(LS,"IND = ",ind )
               CALL message(LS,"JND = ",jnd )
               CALL message(LS,"KND = ",knd )
-              
+
               CALL message(LS,"RGridValues(knd,1) = ",RGridValues(knd,1) )
               CALL message(LS,"RGridValues(knd,2) = ",RGridValues(knd,2) )
               CALL message(LS,"--------------------------------" )
@@ -812,21 +820,30 @@ PROGRAM Felixrefine
      !Probably transpose RGridValues to make more understandable
      DO ind=1,SIZE(RGridValues(:,1))
         DO jnd=1,SIZE(IAtomsToRefine)
+           CALL message(LS,"--------------------------------" )
+           CALL message(LS,"IND = ",ind )
+           CALL message(LS,"JND = ",jnd )
+           CALL message(LS,"--------------------------------" )
            IF (IAtomsToRefine(jnd).EQ.1) THEN
-              RBasisAtomPosition(IAtomsToRefine(jnd),1)=RGridValues(ind,1)
+              RBasisAtomPosition(IAtomsToRefine(jnd),3)=RGridValues(ind,1)
+              CALL message(LS,"RGridValues(ind,1) = ",RGridValues(ind,1) )
+              CALL message(LS,"RBasisAtomPosition(jnd,3) = ",RBasisAtomPosition(IAtomsToRefine(jnd),3) )
            ELSE
-              RBasisAtomPosition(IAtomsToRefine(jnd),3)=RGridValues(ind,2)
+              RBasisAtomPosition(IAtomsToRefine(jnd),1)=RGridValues(ind,2)
+              CALL message(LS,"RGridValues(ind,2) = ",RGridValues(ind,2) )
+              CALL message(LS,"RBasisAtomPosition(jnd,1) = ",RBasisAtomPosition(IAtomsToRefine(jnd),1) )
            END IF
         END DO
         ALLOCATE(RIndependentVariableDummy(1),STAT=IErr)
         RIndependentVariableDummy(1)=REAL(0.001,RKIND)
         CALL SimulateAndFit(RIndependentVariableDummy,Iter,IThicknessIndex,IErr)
-        Iter=Iter+1
-        CALL message ( LS, "Writing output; Grid Simulation number: ",Iter)
-        IExitFLAG=0 !We do not exit in a grid Simulation
-        CALL WriteIterationOutput(Iter,IThicknessIndex,IExitFLAG,IErr)
-        IF(l_alert(IErr,"felixrefine","WriteIterationOutput")) CALL abort
-
+        IF (my_rank.EQ.0) THEN
+           Iter=Iter+1
+           CALL message ( LS, "Writing output; Grid Simulation number: ",Iter)
+           IExitFLAG=0 !We do not exit in a grid Simulation
+           CALL WriteIterationOutput(Iter,IThicknessIndex,IExitFLAG,IErr)
+           IF(l_alert(IErr,"felixrefine","WriteIterationOutput")) CALL abort
+        END IF
      END DO
 
   ELSE 
