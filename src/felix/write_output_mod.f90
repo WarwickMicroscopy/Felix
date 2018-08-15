@@ -66,7 +66,7 @@ MODULE write_output_mod
                 Iter-IPreviousPrintedIteration)
         ELSE
           CALL message ( LS, "Writing output; final simulation" )
-        END IF
+         END IF
         CALL WriteIterationOutput(Iter,IThicknessIndex,IExitFLAG,IErr)
         IF(l_alert(IErr,"WriteIterationOutputWrapper","WriteIterationOutput")) RETURN
         IPreviousPrintedIteration = Iter 
@@ -79,17 +79,17 @@ MODULE write_output_mod
   !! Procedure-description: Writes output for interations including simulated .bin files, 
   !! structureFactors.txt and structure.cif 
   !!
-  !! Major-Authors: 'kidwhizz' (2015), Richard Beanland (2016)
+  !! Major-Authors: Keith Evans (2015), Richard Beanland (2016), Alex Hubert (2018)
   !!
   SUBROUTINE WriteIterationOutput(Iter,IThicknessIndex,IExitFlag,IErr)
 
     USE MyNumbers
     USE message_mod
-    
+
     ! global inputs
     USE IPARA, ONLY : ILN,IPixelCount,ISimFLAG,IOutPutReflections,INoOfLacbedPatterns,nReflections,IByteSize
     USE CPARA, ONLY : CUgMat
-    USE RPARA, ONLY : Rhkl, RImageSimi, RInitialThickness, RDeltaThickness
+    USE RPARA, ONLY : Rhkl, RImageSimi, RInitialThickness, RDeltaThickness, RBasisAtomPosition
     USE SPARA, ONLY : SChemicalFormula
     USE IChannels, ONLY : IChOutWIImage, IChOut
 
@@ -100,63 +100,73 @@ MODULE write_output_mod
     INTEGER(IKIND) :: IThickness,ind,jnd
     REAL(RKIND),DIMENSION(2*IPixelCount,2*IPixelCount) :: RImageToWrite
     CHARACTER(10) :: hString,kString,lString
-    CHARACTER(200) :: path,filename,fullpath
-    
+    CHARACTER(200) :: path,filename,fullpath,SBasisOne,SBasisTwo
+
     IErr=0
     IThickness = (RInitialThickness + (IThicknessIndex-1)*RDeltaThickness)/10!in nm 
 
     IF (ISimFLAG.EQ.0) THEN !felixrefine output
-      WRITE(path,"(A1,I4.4,A1,I3.3,A3,I3.3,A1,I3.3)") &
+       WRITE(path,"(A1,I4.4,A1,I3.3,A3,I3.3,A1,I3.3)") &
             "I",Iter,"_",IThickness,"nm_",2*IPixelcount,"x",2*IPixelcount
-      path = SChemicalFormula(1:ILN) // "_" // path ! This adds chemical to folder name
+       path = SChemicalFormula(1:ILN) // "_" // path ! This adds chemical to folder name
+    ELSE IF (ISimFLAG.EQ.2) THEN !SimulationGridOutput
+       PRINT*,RBasisAtomPosition(1,3)
+       WRITE(SBasisOne,*)RBasisAtomPosition(1,3)
+       CALL message(LS,SBasisone)
+       CALL message(LS,SBasisTWo)
+       WRITE(SBasisTwo,*)RBasisAtomPosition(2,1)
+       WRITE(path,"(A8,I3.3,A12,A4,A12,A4,A1,I3.3,A3,I3.3,A1,I3.3)") &
+            "GridSim_",Iter,"_GridValue1-",TRIM(ADJUSTL(SBasisOne)),"_GridValue2-",TRIM(ADJUSTL(SBasisTwo)),&
+            "_",IThickness,"nm_",2*IPixelcount,"x",2*IPixelcount
     ELSE ! Sim Output
-      WRITE(path,"(A4,I3.3,A3,I3.3,A1,I3.3)") &
+       WRITE(path,"(A4,I3.3,A3,I3.3,A1,I3.3)") &
             "Sim_",IThickness,"nm_",2*IPixelcount,"x",2*IPixelcount
     END IF
+    CALL message(LS,path)
     CALL system('mkdir ' // path)
 
     ! Write Images to disk
     DO ind = 1,INoOfLacbedPatterns
-      ! Make the hkl string e.g. -2-2+10
-      jnd=NINT(Rhkl(IOutPutReflections(ind),1))
-      IF (ABS(jnd).LT.10) THEN
-        WRITE(hString,"(SP,I2.1)") jnd
-      ELSEIF (ABS(jnd).LT.100) THEN
-        WRITE(hString,"(SP,I3.1)") jnd
-      ELSE
-        WRITE(hString,"(SP,I4.1)") jnd
-      ENDIF
-      jnd=NINT(Rhkl(IOutPutReflections(ind),2))
-      IF (ABS(jnd).LT.10) THEN
-        WRITE(kString,"(SP,I2.1)") jnd
-      ELSEIF (ABS(jnd).LT.100) THEN
-        WRITE(kString,"(SP,I3.1)") jnd
-      ELSE
-        WRITE(kString,"(SP,I4.1)") jnd
-      ENDIF
-      jnd=NINT(Rhkl(IOutPutReflections(ind),3))
-      IF (ABS(jnd).LT.10) THEN
-        WRITE(lString,"(SP,I2.1)") jnd
-      ELSEIF (ABS(jnd).LT.100) THEN
-        WRITE(lString,"(SP,I3.1)") jnd
-      ELSE
-        WRITE(lString,"(SP,I4.1)") jnd
-      ENDIF
-      ! Make the path/filenames e.g. 'GaAs_-2-2+0.bin'
-      filename = SChemicalFormula(1:ILN) // "_" // TRIM(ADJUSTL(hString)) // TRIM(ADJUSTL(kString)) // TRIM(ADJUSTL(lString)) // '.bin'
-!DBG	  IF(my_rank.EQ.0) PRINT*, NINT(Rhkl(IOutPutReflections(ind),:)),filename
-      fullpath = TRIM(ADJUSTL(path))//"/"//TRIM(ADJUSTL(filename))
-      CALL message ( LL, dbg6, fullpath )
-      RImageToWrite = RImageSimi(:,:,ind,IThicknessIndex)
-      ! Writes data to output image .bin files
-      OPEN(UNIT=IChOutWIImage, STATUS= 'UNKNOWN', FILE=TRIM(ADJUSTL(fullpath)),&
-          FORM='UNFORMATTED',ACCESS='DIRECT',IOSTAT=IErr,RECL=2*IPixelCount*IByteSize)
-      IF(l_alert(IErr,"WriteIterationOutput","OPEN() output .bin file")) RETURN      
-      DO jnd = 1,2*IPixelCount
-        WRITE(IChOutWIImage,rec=jnd) RImageToWrite(jnd,:)
-      END DO
-      CLOSE(IChOutWIImage,IOSTAT=IErr) 
-      IF(l_alert(IErr,"WriteIterationOutput","CLOSE() output .bin file")) RETURN       
+       ! Make the hkl string e.g. -2-2+10
+       jnd=NINT(Rhkl(IOutPutReflections(ind),1))
+       IF (ABS(jnd).LT.10) THEN
+          WRITE(hString,"(SP,I2.1)") jnd
+       ELSEIF (ABS(jnd).LT.100) THEN
+          WRITE(hString,"(SP,I3.1)") jnd
+       ELSE
+          WRITE(hString,"(SP,I4.1)") jnd
+       ENDIF
+       jnd=NINT(Rhkl(IOutPutReflections(ind),2))
+       IF (ABS(jnd).LT.10) THEN
+          WRITE(kString,"(SP,I2.1)") jnd
+       ELSEIF (ABS(jnd).LT.100) THEN
+          WRITE(kString,"(SP,I3.1)") jnd
+       ELSE
+          WRITE(kString,"(SP,I4.1)") jnd
+       ENDIF
+       jnd=NINT(Rhkl(IOutPutReflections(ind),3))
+       IF (ABS(jnd).LT.10) THEN
+          WRITE(lString,"(SP,I2.1)") jnd
+       ELSEIF (ABS(jnd).LT.100) THEN
+          WRITE(lString,"(SP,I3.1)") jnd
+       ELSE
+          WRITE(lString,"(SP,I4.1)") jnd
+       ENDIF
+       ! Make the path/filenames e.g. 'GaAs_-2-2+0.bin'
+       filename = SChemicalFormula(1:ILN) // "_" // TRIM(ADJUSTL(hString)) // TRIM(ADJUSTL(kString)) // TRIM(ADJUSTL(lString)) // '.bin'
+       !DBG	  IF(my_rank.EQ.0) PRINT*, NINT(Rhkl(IOutPutReflections(ind),:)),filename
+       fullpath = TRIM(ADJUSTL(path))//"/"//TRIM(ADJUSTL(filename))
+       CALL message ( LL, dbg6, fullpath )
+       RImageToWrite = RImageSimi(:,:,ind,IThicknessIndex)
+       ! Writes data to output image .bin files
+       OPEN(UNIT=IChOutWIImage, STATUS= 'UNKNOWN', FILE=TRIM(ADJUSTL(fullpath)),&
+            FORM='UNFORMATTED',ACCESS='DIRECT',IOSTAT=IErr,RECL=2*IPixelCount*IByteSize)
+       IF(l_alert(IErr,"WriteIterationOutput","OPEN() output .bin file")) RETURN      
+       DO jnd = 1,2*IPixelCount
+          WRITE(IChOutWIImage,rec=jnd) RImageToWrite(jnd,:)
+       END DO
+       CLOSE(IChOutWIImage,IOSTAT=IErr) 
+       IF(l_alert(IErr,"WriteIterationOutput","CLOSE() output .bin file")) RETURN       
     END DO
 
     ! writes out structure.cif
@@ -173,9 +183,9 @@ MODULE write_output_mod
     END DO
 
     CLOSE(IChOut)    
-    
+
     RETURN  
-    
+
   END SUBROUTINE WriteIterationOutput
 
   !%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -184,7 +194,7 @@ MODULE write_output_mod
   !! Procedure-description: Write out structure.cif containing non symmetrically relate
   !! atomic positions.
   !!
-  !! Major-Authors: 'kidwhizz' (2015), Richard Beanland (2016)
+  !! Major-Authors: Keith Evans (2015), Richard Beanland (2016)
   !!
   SUBROUTINE WriteIterationCIF(Iter,path,IErr)
 
@@ -262,7 +272,7 @@ MODULE write_output_mod
   !>
   !! Procedure-description: Adds the current fit and simulation parameters to IterationLog.txt
   !!
-  !! Major-Authors: 'kidwhizz' (2015), Richard Beanland (2016)
+  !! Major-Authors: Keith Evans (2015), Richard Beanland (2016), Alex Hubert (2018)
   !!
   SUBROUTINE WriteOutVariables(Iter,IErr)
 
@@ -271,11 +281,11 @@ MODULE write_output_mod
 
     ! global inputs
     USE IPARA, ONLY : IAbsorbFLAG, IRefineMode, INoofUgs, IUgOffset, &
-                      IRefinementVariableTypes
+         IRefinementVariableTypes,ISimFLAG
     USE RPARA, ONLY : RBasisAtomPosition, RBasisOccupancy, RBasisIsoDW, &
-                      RAnisotropicDebyeWallerFactorTensor, RFigureofMerit, &
-                      RAbsorptionPercentage, RLengthX, RLengthY, RLengthZ, RAlpha, RBeta, &
-                      RGamma, RConvergenceAngle, RAcceleratingVoltage, RRSoSScalingFactor                    
+         RAnisotropicDebyeWallerFactorTensor, RFigureofMerit, &
+         RAbsorptionPercentage, RLengthX, RLengthY, RLengthZ, RAlpha, RBeta, &
+         RGamma, RConvergenceAngle, RAcceleratingVoltage, RRSoSScalingFactor                    
     USE CPARA, ONLY : CUniqueUg
     USE IChannels, ONLY : IChOutSimplex     
 
@@ -287,19 +297,20 @@ MODULE write_output_mod
     INTEGER(IKIND),DIMENSION(IRefinementVariableTypes) :: IOutputVariables
     REAL(RKIND),DIMENSION(:),ALLOCATABLE :: RDataOut
 
+
     ! Need to Determine total no. of variables to be written out
     ! this is different from the no. of refinement variables
-    
+
     IF (IAbsorbFLAG.EQ.2) THEN ! Structure Factors are complex 
-      ! so require two output variables each
-      IOutputVariables(1) = IRefineMode(1)*2*INoofUgs+1 
-      ! plus one for proportional absorption     
+       ! so require two output variables each
+       IOutputVariables(1) = IRefineMode(1)*2*INoofUgs+1 
+       ! plus one for proportional absorption     
     ELSE
-      IOutputVariables(1) = IRefineMode(1)*2*INoofUgs     
+       IOutputVariables(1) = IRefineMode(1)*2*INoofUgs     
     END IF
     ! Atom Coordinates
     IOutputVariables(2) = IRefineMode(2)*SIZE(RBasisAtomPosition,DIM=1)* &
-          SIZE(RBasisAtomPosition,DIM=2)
+         SIZE(RBasisAtomPosition,DIM=2)
     ! Occupancies
     IOutputVariables(3) = IRefineMode(3)*SIZE(RBasisOccupancy,DIM=1) 
     ! Isotropic Debye Waller Factors
@@ -315,49 +326,49 @@ MODULE write_output_mod
 
     ALLOCATE(RDataOut(ITotalOutputVariables),STAT=IErr)
     DO jnd = 1,IRefinementVariableTypes
-      IF(IRefineMode(jnd).EQ.0) THEN
-        CYCLE ! The refinement variable type is not being refined, skip
-      END IF
-      IF(jnd.EQ.1) THEN ! It's an atom coordinate refinement
-        IStart = 1
-      ELSE
-        IStart = SUM(IOutputVariables(1:(jnd-1)))+1 
-        !?? RB there is probably a better way of doing this
-      END IF
-      IEND = SUM(IOutputVariables(1:jnd))
+       IF(IRefineMode(jnd).EQ.0) THEN
+          CYCLE ! The refinement variable type is not being refined, skip
+       END IF
+       IF(jnd.EQ.1) THEN ! It's an atom coordinate refinement
+          IStart = 1
+       ELSE
+          IStart = SUM(IOutputVariables(1:(jnd-1)))+1 
+          !?? RB there is probably a better way of doing this
+       END IF
+       IEND = SUM(IOutputVariables(1:jnd))
 
-      SELECT CASE(jnd)
-      CASE(1)
-        DO ind = 1,INoofUgs
-           IStart = (ind*2)-1
-           IEnd = ind*2
-           RDataOut(IStart:IEnd) = [REAL(CUniqueUg(ind+IUgOffset)), &
+       SELECT CASE(jnd)
+       CASE(1)
+          DO ind = 1,INoofUgs
+             IStart = (ind*2)-1
+             IEnd = ind*2
+             RDataOut(IStart:IEnd) = [REAL(CUniqueUg(ind+IUgOffset)), &
                   REAL(AIMAG(CUniqueUg(ind+IUgOffset)),RKIND)]
-        END DO
-        RDataOut(IEnd+1) = RAbsorptionPercentage!RB last variable is absorption
-      CASE(2)
-        RDataOut(IStart:IEnd) = &
-              RESHAPE(TRANSPOSE(RBasisAtomPosition),SHAPE(RDataOut(IStart:IEnd)))
-      CASE(3)
-        RDataOut(IStart:IEnd) = RBasisOccupancy
-      CASE(4)
-        RDataOut(IStart:IEnd) = RBasisIsoDW
-      CASE(5)
-        RDataOut(IStart:IEnd) = &
-              RESHAPE(RAnisotropicDebyeWallerFactorTensor,SHAPE(RDataOut(IStart:IEnd)))
-      CASE(6)
-        RDataOut(IStart:IEnd) = [RLengthX, RLengthY, RLengthZ]
-      CASE(7)
-        RDataOut(IStart:IEnd) = [RAlpha, RBeta, RGamma]
-      CASE(8)
-        RDataOut(IStart:IEnd) = RConvergenceAngle
-      CASE(9)
-        RDataOut(IStart:IEnd) = RAbsorptionPercentage
-      CASE(10)
-        RDataOut(IStart:IEnd) = RAcceleratingVoltage
-      CASE(11)
-        RDataOut(IStart:IEnd) = RRSoSScalingFactor
-      CASE(12)
+          END DO
+          RDataOut(IEnd+1) = RAbsorptionPercentage!RB last variable is absorption
+       CASE(2)
+          RDataOut(IStart:IEnd) = &
+               RESHAPE(TRANSPOSE(RBasisAtomPosition),SHAPE(RDataOut(IStart:IEnd)))
+       CASE(3)
+          RDataOut(IStart:IEnd) = RBasisOccupancy
+       CASE(4)
+          RDataOut(IStart:IEnd) = RBasisIsoDW
+       CASE(5)
+          RDataOut(IStart:IEnd) = &
+               RESHAPE(RAnisotropicDebyeWallerFactorTensor,SHAPE(RDataOut(IStart:IEnd)))
+       CASE(6)
+          RDataOut(IStart:IEnd) = [RLengthX, RLengthY, RLengthZ]
+       CASE(7)
+          RDataOut(IStart:IEnd) = [RAlpha, RBeta, RGamma]
+       CASE(8)
+          RDataOut(IStart:IEnd) = RConvergenceAngle
+       CASE(9)
+          RDataOut(IStart:IEnd) = RAbsorptionPercentage
+       CASE(10)
+          RDataOut(IStart:IEnd) = RAcceleratingVoltage
+       CASE(11)
+          RDataOut(IStart:IEnd) = RRSoSScalingFactor
+       CASE(12)
           DO ind = 1,INoofUgs
              IStart = (ind*2)-1
              IEnd = ind*2
@@ -365,17 +376,26 @@ MODULE write_output_mod
                   [REAL(CUniqueUg(ind+IUgOffset)), REAL(AIMAG(CUniqueUg(ind+IUgOffset)),RKIND)]
           END DO
           IF (IAbsorbFLAG.EQ.1) THEN
-            RDataOut(IEnd+1) = RAbsorptionPercentage 
-            ! RB last variable is proportional absorption
+             RDataOut(IEnd+1) = RAbsorptionPercentage 
+             ! RB last variable is proportional absorption
           END IF
-      END SELECT
+       END SELECT
     END DO
 
-    WRITE(STotalOutputVariables,*) ITotalOutputVariables
-    WRITE(SFormat,*) "(I5.1,1X,F13.9,1X,"//TRIM(ADJUSTL(STotalOutputVariables))//"(F13.9,1X))"
+    !For Grid Refinement we want to print out the basis for each element
+    IF (ISimFLAG.EQ.2) THEN
+       IStart = 1
+       IEND = IOutputVariables(2)
+       ITotalOutputVariables=INT(2,IKIND)
+       RDataOut(IStart:IEnd) = &
+            RESHAPE(TRANSPOSE(RBasisAtomPosition),SHAPE(RDataOut(IStart:IEnd)))
+    END IF
 
+    WRITE(STotalOutputVariables,*) ITotalOutputVariables
+    WRITE(SFormat,*) "(I5.1,1X,"//TRIM(ADJUSTL(STotalOutputVariables))//"(F13.9,1X))"
+    
     OPEN(UNIT=IChOutSimplex,FILE='iteration_log.txt',FORM='formatted',STATUS='unknown',&
-          POSITION='append')
+         POSITION='append')
     WRITE(UNIT=IChOutSimplex,FMT=SFormat) Iter-1,RFigureofMerit,RDataOut
     CLOSE(IChOutSimplex)
 

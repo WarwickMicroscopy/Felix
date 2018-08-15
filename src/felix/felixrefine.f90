@@ -815,7 +815,7 @@ PROGRAM Felixrefine
            knd=knd+1
         END DO
      END DO
-     Iter=0
+
      !Keeping fixed for Sapphire Currently - will generalise in future - should
      !Probably transpose RGridValues to make more understandable
      DO ind=1,SIZE(RGridValues(:,1))
@@ -838,10 +838,9 @@ PROGRAM Felixrefine
         RIndependentVariableDummy(1)=REAL(0.001,RKIND)
         CALL SimulateAndFit(RIndependentVariableDummy,Iter,IThicknessIndex,IErr)
         IF (my_rank.EQ.0) THEN
-           Iter=Iter+1
-           CALL message ( LS, "Writing output; Grid Simulation number: ",Iter)
-           IExitFLAG=0 !We do not exit in a grid Simulation
-           CALL WriteIterationOutput(Iter,IThicknessIndex,IExitFLAG,IErr)
+           CALL message ( LS, "Writing output; Grid Simulation number: ",ind)         
+           IExitFLAG=0 !We do not quit a Grid Simulation
+           CALL WriteIterationOutput(ind,IThicknessIndex,IExitFLAG,IErr)
            IF(l_alert(IErr,"felixrefine","WriteIterationOutput")) CALL abort
         END IF
      END DO
