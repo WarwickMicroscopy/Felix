@@ -12,7 +12,7 @@ CPPFLAGS=-E
 # which C-compiler do we use
 CC=icc
 # C compiler options
-CCFLAGS= -openmp -msse4.2 -O3
+CCFLAGS= -qopenmp -msse4.2 -O3
 #-msse4.2 -fast
 #CCFLAGS= -g
 
@@ -45,7 +45,7 @@ LONGINTEGER=
 # which fortran compiler is used
 FF=ifort
 # its flags
-FFFLAGS= -openmp -msse4.2 -O3 -fpp
+FFFLAGS= -qopenmp -msse4.2 -O3 -fpp
 #FFFLAGS=  -g
 
 
