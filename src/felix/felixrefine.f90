@@ -815,10 +815,11 @@ PROGRAM Felixrefine
            knd=knd+1
         END DO
      END DO
-
+     Iter=0
      !Keeping fixed for Sapphire Currently - will generalise in future - should
      !Probably transpose RGridValues to make more understandable
      DO ind=1,SIZE(RGridValues(:,1))
+        Iter=Iter+1
         DO jnd=1,SIZE(IAtomsToRefine)
            CALL message(LS,"--------------------------------" )
            CALL message(LS,"IND = ",ind )

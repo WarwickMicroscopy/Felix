@@ -324,7 +324,7 @@ MODULE write_output_mod
     IOutputVariables(10) = IRefineMode(10) ! Accelerating Voltage
     ITotalOutputVariables = SUM(IOutputVariables) ! Total Output
 
-    ALLOCATE(RDataOut(ITotalOutputVariables),STAT=IErr)
+    IF(ISimFLAG.NE.2) ALLOCATE(RDataOut(ITotalOutputVariables),STAT=IErr)
     DO jnd = 1,IRefinementVariableTypes
        IF(IRefineMode(jnd).EQ.0) THEN
           CYCLE ! The refinement variable type is not being refined, skip
@@ -384,15 +384,19 @@ MODULE write_output_mod
 
     !For Grid Refinement we want to print out the basis for each element
     IF (ISimFLAG.EQ.2) THEN
+       IOutputVariables(2) = SIZE(RBasisAtomPosition,DIM=1)* &
+            SIZE(RBasisAtomPosition,DIM=2)
+       ITotalOutputVariables = IOutputVariables(2) ! Total Output
+       CALL message( LS, "ITotalOutputVariables = ", ITotalOutputVariables)
+       ALLOCATE(RDataOut(ITotalOutputVariables),STAT=IErr)
        IStart = 1
-       IEND = IOutputVariables(2)
-       ITotalOutputVariables=INT(2,IKIND)
+       IEND = IOutputVariables(2)    
        RDataOut(IStart:IEnd) = &
             RESHAPE(TRANSPOSE(RBasisAtomPosition),SHAPE(RDataOut(IStart:IEnd)))
     END IF
 
     WRITE(STotalOutputVariables,*) ITotalOutputVariables
-    WRITE(SFormat,*) "(I5.1,1X,"//TRIM(ADJUSTL(STotalOutputVariables))//"(F13.9,1X))"
+    WRITE(SFormat,*) "(I5.1,1X,F13.9,1X"//TRIM(ADJUSTL(STotalOutputVariables))//"(F13.9,1X))"
     
     OPEN(UNIT=IChOutSimplex,FILE='iteration_log.txt',FORM='formatted',STATUS='unknown',&
          POSITION='append')
