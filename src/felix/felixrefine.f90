@@ -1055,9 +1055,14 @@ CONTAINS
           CALL message(LS,SPrintString)
 
           ! Make a random number to vary the sign of dx, using system clock
-          CALL SYSTEM_CLOCK(mnd)
-          Rdx=(REAL(MOD(mnd,10))/TEN)-0.45 ! numbers 0-4 give minus, 5-9 give plus
-          Rdx=0.1*Rdx*RScale/ABS(Rdx) ! small change in current variable (RScale/10)is dx
+          IF (my_rank.EQ.0) THEN
+            CALL SYSTEM_CLOCK(mnd)
+            Rdx=(REAL(MOD(mnd,10))/TEN)-0.45 ! numbers 0-4 give minus, 5-9 give plus
+            Rdx=0.1*Rdx*RScale/ABS(Rdx) ! small change in current variable (RScale/10)is dx
+          END IF
+          !=====================================! send Rdx OUT to all cores
+          CALL MPI_BCAST(Rdx,1,MPI_DOUBLE_PRECISION,0,MPI_COMM_WORLD,IErr)
+          !=====================================
           RCurrentVar=RVar0
           RCurrentVar(ind)=RCurrentVar(ind)+Rdx
           CALL SimulateAndFit(RCurrentVar,Iter,IThicknessIndex,IErr)
