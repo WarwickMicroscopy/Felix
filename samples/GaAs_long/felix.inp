@@ -18,8 +18,8 @@ IByteSize                 = 2
 IPixelCount               = 160
 
 # beam selection criteria
-IMinReflectionPool        = 100
-IMinStrongBeams           = 50
+IMinReflectionPool        = 600
+IMinStrongBeams           = 200
 IMinWeakBeams             = 0
 
 # crystal settings
@@ -35,8 +35,8 @@ RAcceleratingVoltage (kV) = 200.0
 RAcceptanceAngle          = 0.0
 
 # Image Output Options
-RInitialThickness        = 900.0
-RFinalThickness          = 960.0
+RInitialThickness        = 930.0
+RFinalThickness          = 930.0
 RDeltaThickness          = 10.0
 IReflectOut              = 43
 

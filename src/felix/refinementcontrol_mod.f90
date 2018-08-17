@@ -364,11 +364,11 @@ MODULE refinementcontrol_mod
     IBestImageThicknessIndex = 1 
 
     ! write out PatternFits.txt
-	OPEN(UNIT=IChOut,FILE='PatternFits.txt',FORM='formatted',STATUS='unknown',POSITION='append')
-	WRITE(IChOut,FMT='(A10,I4)') "Iteration ",Iter
+!    OPEN(UNIT=IChOut,FILE='PatternFits.txt',FORM='formatted',STATUS='unknown',POSITION='append')
+!    WRITE(IChOut,FMT='(A10,I4)') "Iteration ",Iter
     !\/----------------------------------------------------------------------
     DO jnd = 1,IThicknessCount
-	  WRITE(IChOut,FMT='(A10,I4)') "Thickness ",NINT(RInitialThickness+(jnd-1)*RDeltaThickness)
+!      WRITE(IChOut,FMT='(A10,I4)') "Thickness ",NINT(RInitialThickness+(jnd-1)*RDeltaThickness)
       RTotalCorrelation = ZERO ! The sum of all individual correlations, initialise at 0
       DO ind = 1,INoOfLacbedPatterns
         RSimulatedImage = RImageSimi(:,:,ind,jnd)
@@ -422,8 +422,8 @@ MODULE refinementcontrol_mod
 
         CALL message(LXL,dbg6,"For Pattern ",ind,", thickness ",jnd)
         CALL message(LXL,dbg6,"  the FoM = ",RImageCorrelation)
-		WRITE(IChOut,FMT='(3I5.1,F13.9)') NINT(Rhkl(IOutPutReflections(ind),:)),RImageCorrelation
-		
+!        WRITE(IChOut,FMT='(3I5.1,F13.9)') NINT(Rhkl(IOutPutReflections(ind),:)),RImageCorrelation
+
         ! Determine which thickness matches best for each LACBED pattern
         ! which is later used to find the range of viable thicknesses 
         IF(RImageCorrelation.LT.RBestCorrelation(ind)) THEN
@@ -444,7 +444,7 @@ MODULE refinementcontrol_mod
       CALL message(LM,dbg6,"Figure of merit ",RTotalCorrelation)
 
     END DO
-    CLOSE(IChOut)
+!    CLOSE(IChOut)
 
     !/\----------------------------------------------------------------------
     ! The figure of merit, global variable
