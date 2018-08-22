@@ -353,13 +353,13 @@ MODULE ug_matrix_mod
 
     ! global inputs
     USE IPARA, ONLY : IAnisoDebyeWallerFactorFlag,IInitialSimulationFLAG,INAtomsUnitCell,&
-          nReflections,IAtomicNumber,IEquivalentUgKey,&
-          IAnisoDW
+         nReflections,IAtomicNumber,IEquivalentUgKey,&
+         IAnisoDW
     USE RPARA, ONLY : RAngstromConversion,RElectronCharge,RElectronMass,&
-          RRelativisticCorrection,RVolume,RIsoDW,RgMatrixMagnitude,ROccupancy,&
-          RElectronWaveVectorMagnitude,RgMatrix,RDebyeWallerConstant,RTolerance,&
-          RAtomCoordinate,Rhkl,RAnisotropicDebyeWallerFactorTensor,RScattFacToVolts,&
-          RLengthX,RLengthY,RLengthZ
+         RRelativisticCorrection,RVolume,RIsoDW,RgMatrixMagnitude,ROccupancy,&
+         RElectronWaveVectorMagnitude,RgMatrix,RDebyeWallerConstant,RTolerance,&
+         RAtomCoordinate,Rhkl,RAnisotropicDebyeWallerFactorTensor,RScattFacToVolts,&
+         RLengthX,RLengthY,RLengthZ
     USE IChannels, ONLY : IChOutWIImage
 
     USE RConst, ONLY : RPlanckConstant
@@ -367,17 +367,17 @@ MODULE ug_matrix_mod
     ! global should be local to Ug.f90
     USE IPARA, ONLY : IPsize
     USE RPARA, ONLY : RCurrentGMagnitude,RPScale
-          
+
     IMPLICIT NONE
 
     INTEGER(IKIND) :: ind,jnd,knd,lnd,mnd,oddindlorentz,evenindlorentz,&
-          oddindgauss,evenindgauss,currentatom,IErr,Iuid,Iplan_forward,IPseudo
+         oddindgauss,evenindgauss,currentatom,IErr,Iuid,Iplan_forward,IPseudo
     INTEGER(IKIND),DIMENSION(2) :: IPos,ILoc
     COMPLEX(CKIND) :: CVgij,CFpseudo
     REAL(RKIND) :: RMeanInnerPotentialVolts,RScatteringFactor,&
-          RPMag,Rx,Ry,Rr,RPalpha,RTheta,Rfold
+         RPMag,Rx,Ry,Rr,RPalpha,RTheta,Rfold
     CHARACTER*200 :: SPrintString
-    
+
     !--------------------------------------------------------------------
     ! count pseudoatoms & allocate pseudoatom arrays
     !--------------------------------------------------------------------
@@ -385,82 +385,82 @@ MODULE ug_matrix_mod
     ! count Pseudoatoms
     IPseudo=0
     DO jnd=1,INAtomsUnitCell
-      IF (IAtomicNumber(jnd).GE.105) IPseudo = IPseudo + 1
+       IF (IAtomicNumber(jnd).GE.105) IPseudo = IPseudo + 1
     END DO
 
-      !--------------------------------------------------------------------
-      ! calculate pseudo potential and pseudo factor for any pseudoatoms
-      !--------------------------------------------------------------------
+    !--------------------------------------------------------------------
+    ! calculate pseudo potential and pseudo factor for any pseudoatoms
+    !--------------------------------------------------------------------
     IF (IPseudo.GT.0) THEN!Calculate pseudoatom potentials
-      ! size of the array used to calculate the pseudoatom FFT, global variable  
-      IPsize=1024 ! must be an EVEN number (preferably 2^n)!
-      ! matrices with Pseudoatom potentials (REAL space)  
-      ALLOCATE(CPseudoAtom(IPsize,IPsize,IPseudo),STAT=IErr)
-      IF(l_alert(IErr,"StructureFactorInitialisation","allocate CPseudoAtom")) RETURN
-      ! matrices with Pseudoatom scattering factor (reciprocal space)
-      ALLOCATE(CPseudoScatt(IPsize,IPsize,IPseudo),STAT=IErr)
-      IF(l_alert(IErr,"StructureFactorInitialisation","allocate CPseudoScatt")) RETURN
-      RPScale = 0.01 ! one picometre per pixel, working in Angstroms
-      ! Magnitude of pseudoatom potential, in volts
-      RPMag = 0.01815 ! set such that a Ja gives the same Ug matrix as a hydrogen atom
-      mnd = 0 ! pseudoatom counter
-        DO lnd=1,INAtomsUnitCell 
+       ! size of the array used to calculate the pseudoatom FFT, global variable  
+       IPsize=1024 ! must be an EVEN number (preferably 2^n)!
+       ! matrices with Pseudoatom potentials (REAL space)  
+       ALLOCATE(CPseudoAtom(IPsize,IPsize,IPseudo),STAT=IErr)
+       IF(l_alert(IErr,"StructureFactorInitialisation","allocate CPseudoAtom")) RETURN
+       ! matrices with Pseudoatom scattering factor (reciprocal space)
+       ALLOCATE(CPseudoScatt(IPsize,IPsize,IPseudo),STAT=IErr)
+       IF(l_alert(IErr,"StructureFactorInitialisation","allocate CPseudoScatt")) RETURN
+       RPScale = 0.01 ! one picometre per pixel, working in Angstroms
+       ! Magnitude of pseudoatom potential, in volts
+       RPMag = 0.01815 ! set such that a Ja gives the same Ug matrix as a hydrogen atom
+       mnd = 0 ! pseudoatom counter
+       DO lnd=1,INAtomsUnitCell 
           IF (IAtomicNumber(lnd).GE.105) THEN ! we have a pseudoatom
-          ! intialise pseudoatom variables
-          mnd=mnd+1
-          ! The Debye-Waller factor is used to determine alpha for pseudoatoms
-          RPalpha=10.0*RIsoDW(lnd)
-          IF (IAtomicNumber(lnd).EQ.105) Rfold=ZERO   !Ja
-          IF (IAtomicNumber(lnd).EQ.106) Rfold=ONE    !Jb
-          IF (IAtomicNumber(lnd).EQ.107) Rfold=TWO    !Jc
-          IF (IAtomicNumber(lnd).EQ.108) Rfold=THREE  !Jd
-          IF (IAtomicNumber(lnd).EQ.109) Rfold=FOUR   !Je
-          IF (IAtomicNumber(lnd).EQ.110) Rfold=SIX    !Jf
-          ! potential in REAL space
-          DO ind=1,IPsize
-            DO jnd=1,IPsize ! x&y run from e.g. -511.5 to +511.5 picometres
-              Rx=RPScale*(REAL(ind-(IPsize/2))-HALF)
-              Ry=RPScale*(REAL(jnd-(IPsize/2))-HALF)
-              Rr=SQRT(Rx*Rx+Ry*Ry)
-              Rtheta=ACOS(Rx/Rr)
-              !?? Easier to make a complex input to fftw rather than fanny around
-              !?? with the different format needed for a REAL input. Lazy.
-              CPseudoAtom(ind,jnd,mnd)=CMPLX(RPMag*RPalpha*Rr*EXP(-RPalpha*Rr) * &
-                  COS(Rfold*Rtheta),ZERO)        
-            END DO
-          END DO
-          ! output each pseudo potential .img to check
-          IF (my_rank.EQ.0) THEN 
-            WRITE(SPrintString,FMT='(A15,I1,A3)') "PseudoPotential",mnd,".img"
-            OPEN(UNIT=IChOutWIImage, STATUS= 'UNKNOWN', FILE=SPrintString,&
-                  FORM='UNFORMATTED',ACCESS='DIRECT',IOSTAT=IErr,RECL=8192)
-            IF(l_alert(IErr,"StructureFactorInitialisation",&
-                  "WRITE a pseudo factor.img")) RETURN
-            DO jnd = 1,IPsize
-              WRITE(IChOutWIImage,rec=jnd) REAL(CPseudoAtom(jnd,:,mnd))
-            END DO
-            CLOSE(IChOutWIImage,IOSTAT=IErr)
+             ! intialise pseudoatom variables
+             mnd=mnd+1
+             ! The Debye-Waller factor is used to determine alpha for pseudoatoms
+             RPalpha=10.0*RIsoDW(lnd)
+             IF (IAtomicNumber(lnd).EQ.105) Rfold=ZERO   !Ja
+             IF (IAtomicNumber(lnd).EQ.106) Rfold=ONE    !Jb
+             IF (IAtomicNumber(lnd).EQ.107) Rfold=TWO    !Jc
+             IF (IAtomicNumber(lnd).EQ.108) Rfold=THREE  !Jd
+             IF (IAtomicNumber(lnd).EQ.109) Rfold=FOUR   !Je
+             IF (IAtomicNumber(lnd).EQ.110) Rfold=SIX    !Jf
+             ! potential in REAL space
+             DO ind=1,IPsize
+                DO jnd=1,IPsize ! x&y run from e.g. -511.5 to +511.5 picometres
+                   Rx=RPScale*(REAL(ind-(IPsize/2))-HALF)
+                   Ry=RPScale*(REAL(jnd-(IPsize/2))-HALF)
+                   Rr=SQRT(Rx*Rx+Ry*Ry)
+                   Rtheta=ACOS(Rx/Rr)
+                   !?? Easier to make a complex input to fftw rather than fanny around
+                   !?? with the different format needed for a REAL input. Lazy.
+                   CPseudoAtom(ind,jnd,mnd)=CMPLX(RPMag*RPalpha*Rr*EXP(-RPalpha*Rr) * &
+                        COS(Rfold*Rtheta),ZERO)        
+                END DO
+             END DO
+             ! output each pseudo potential .img to check
+             IF (my_rank.EQ.0) THEN 
+                WRITE(SPrintString,FMT='(A15,I1,A3)') "PseudoPotential",mnd,".img"
+                OPEN(UNIT=IChOutWIImage, STATUS= 'UNKNOWN', FILE=SPrintString,&
+                     FORM='UNFORMATTED',ACCESS='DIRECT',IOSTAT=IErr,RECL=8192)
+                IF(l_alert(IErr,"StructureFactorInitialisation",&
+                     "WRITE a pseudo factor.img")) RETURN
+                DO jnd = 1,IPsize
+                   WRITE(IChOutWIImage,rec=jnd) REAL(CPseudoAtom(jnd,:,mnd))
+                END DO
+                CLOSE(IChOutWIImage,IOSTAT=IErr)
+             END IF
+             ! CPseudoScatt = a 2d fft of RPseudoAtom
+             CALL dfftw_plan_dft_2d_ ( Iplan_forward, IPsize,IPsize,& 
+                  CPseudoAtom(:,:,mnd),CPseudoScatt(:,:,mnd),&
+                  FFTW_FORWARD,FFTW_ESTIMATE )
+             CALL dfftw_execute_ (Iplan_forward)
+             CALL dfftw_destroy_plan_ (Iplan_forward) ! could be moved to clean up?
+             ! output each pseudo factor .img to check
+             IF (my_rank.EQ.0) THEN
+                WRITE(SPrintString,FMT='(A12,I1,A3)') "PseudoFactor",mnd,".img"
+                OPEN(UNIT=IChOutWIImage, STATUS= 'UNKNOWN', FILE=SPrintString,&
+                     FORM='UNFORMATTED',ACCESS='DIRECT',IOSTAT=IErr,RECL=8192)
+                IF(l_alert(IErr,"StructureFactorInitialisation",&
+                     "WRITE a pseudo factor.img")) RETURN
+                DO jnd = 1,IPsize
+                   WRITE(IChOutWIImage,rec=jnd) ABS(CPseudoScatt(jnd,:,mnd))
+                END DO
+                CLOSE(IChOutWIImage,IOSTAT=IErr)
+             END IF
           END IF
-          ! CPseudoScatt = a 2d fft of RPseudoAtom
-          CALL dfftw_plan_dft_2d_ ( Iplan_forward, IPsize,IPsize,& 
-                CPseudoAtom(:,:,mnd),CPseudoScatt(:,:,mnd),&
-                FFTW_FORWARD,FFTW_ESTIMATE )
-          CALL dfftw_execute_ (Iplan_forward)
-          CALL dfftw_destroy_plan_ (Iplan_forward) ! could be moved to clean up?
-          ! output each pseudo factor .img to check
-          IF (my_rank.EQ.0) THEN
-            WRITE(SPrintString,FMT='(A12,I1,A3)') "PseudoFactor",mnd,".img"
-            OPEN(UNIT=IChOutWIImage, STATUS= 'UNKNOWN', FILE=SPrintString,&
-                FORM='UNFORMATTED',ACCESS='DIRECT',IOSTAT=IErr,RECL=8192)
-            IF(l_alert(IErr,"StructureFactorInitialisation",&
-                "WRITE a pseudo factor.img")) RETURN
-            DO jnd = 1,IPsize
-              WRITE(IChOutWIImage,rec=jnd) ABS(CPseudoScatt(jnd,:,mnd))
-            END DO
-            CLOSE(IChOutWIImage,IOSTAT=IErr)
-          END IF
-        END IF
-      END DO
+       END DO
     END IF
 
     !--------------------------------------------------------------------
@@ -470,19 +470,38 @@ MODULE ug_matrix_mod
     ! fill lower diagonal of Ug matrix(excluding absorption) with Fourier components of the potential Vg
     CUgMatNoAbs = CZERO ! 
     DO ind=2,nReflections
-      DO jnd=1,ind-1
-        RCurrentGMagnitude = RgMatrixMagnitude(ind,jnd) ! g-vector magnitude, global variable
-        ! Sums CVgij contribution from each atom and pseudoatom in Volts
-        CALL GetVgContributionij(RScatteringFactor,ind,jnd,CVgij,IErr)
-		CUgMatNoAbs(ind,jnd)=CVgij
-      ENDDO
+       DO jnd=1,ind-1
+          RCurrentGMagnitude = RgMatrixMagnitude(ind,jnd) ! g-vector magnitude, global variable
+          ! Sums CVgij contribution from each atom and pseudoatom in Volts
+          CALL GetVgContributionij(RScatteringFactor,ind,jnd,CVgij,IErr)
+          CUgMatNoAbs(ind,jnd)=CVgij
+       ENDDO
     ENDDO
+
+    CALL message( LM,dbg3, "Ug matrix, without absorption (nm^-2)" )!LM, dbg3
+    DO ind = 1,16
+       WRITE(SPrintString,FMT='(3(I2,1X),A2,1X,8(F20.14,1X))') NINT(Rhkl(ind,:)),": ",100*CUgMatNoAbs(ind,1:4)
+       CALL message( LM,dbg3, SPrintString)
+    END DO
+
     !Convert to Ug
     CUgMatNoAbs=CUgMatNoAbs*TWO*RElectronMass*RRelativisticCorrection*RElectronCharge/((RPlanckConstant**2)*(RAngstromConversion**2))
+
+    CALL message( LM,dbg3, "Ug matrix, without absorption 2 (nm^-2)" )!LM, dbg3
+    DO ind = 1,16
+       WRITE(SPrintString,FMT='(3(I2,1X),A2,1X,8(F20.14,1X))') NINT(Rhkl(ind,:)),": ",100*CUgMatNoAbs(ind,1:4)
+       CALL message( LM,dbg3, SPrintString)
+    END DO
     ! NB Only the lower half of the Vg matrix was calculated, this completes the upper half
     CUgMatPrime = TRANSPOSE(CUgMatNoAbs)! Prime is usually the absorptive potential, here just used as a box to avoid the bug when conj(transpose) is used
+
     CUgMatNoAbs = CUgMatNoAbs + CONJG(CUgMatPrime)
     CUgMatPrime = CZERO
+    CALL message( LM,dbg3, "Ug matrix, without absorption 3 (nm^-2)" )!LM, dbg3
+    DO ind = 1,16
+       WRITE(SPrintString,FMT='(3(I2,1X),A2,1X,8(F20.14,1X))') NINT(Rhkl(ind,:)),": ",100*CUgMatNoAbs(ind,1:4)
+       CALL message( LM,dbg3, SPrintString)
+    END DO
     ! set diagonals to zero
     !DO ind=1,nReflections
     !  CUgMatNoAbs(ind,ind)=CZERO
@@ -490,10 +509,10 @@ MODULE ug_matrix_mod
 
     CALL message( LM,dbg3, "Ug matrix, without absorption (nm^-2)" )!LM, dbg3
     DO ind = 1,16
-	  WRITE(SPrintString,FMT='(3(I2,1X),A2,1X,8(F7.4,1X))') NINT(Rhkl(ind,:)),": ",100*CUgMatNoAbs(ind,1:4)
-      CALL message( LM,dbg3, SPrintString)
+       WRITE(SPrintString,FMT='(3(I2,1X),A2,1X,8(F7.4,1X))') NINT(Rhkl(ind,:)),": ",100*CUgMatNoAbs(ind,1:4)
+       CALL message( LM,dbg3, SPrintString)
     END DO
-   
+
     !--------------------------------------------------------------------
     ! calculate mean inner potential and wave vector magnitude
     !--------------------------------------------------------------------
@@ -502,13 +521,13 @@ MODULE ug_matrix_mod
     RMeanInnerPotential=ZERO
     RCurrentGMagnitude=ZERO
     DO ind=1,INAtomsUnitCell
-      ICurrentZ = IAtomicNumber(ind)
-      IF(ICurrentZ.LT.105) THEN ! It's not a pseudoatom
-        CALL AtomicScatteringFactor(RScatteringFactor,IErr)
-        CALL message( LM, dbg3, "Atom ",ind)
-        CALL message( LM, dbg3, "f(theta) at g=0 ",RScatteringFactor)
-        RMeanInnerPotential = RMeanInnerPotential+RScatteringFactor
-      END IF
+       ICurrentZ = IAtomicNumber(ind)
+       IF(ICurrentZ.LT.105) THEN ! It's not a pseudoatom
+          CALL AtomicScatteringFactor(RScatteringFactor,IErr)
+          CALL message( LM, dbg3, "Atom ",ind)
+          CALL message( LM, dbg3, "f(theta) at g=0 ",RScatteringFactor)
+          RMeanInnerPotential = RMeanInnerPotential+RScatteringFactor
+       END IF
     END DO
     RMeanInnerPotential = RMeanInnerPotential*RScattFacToVolts
     WRITE(SPrintString,FMT='(A21,F6.2,A6)') "Mean inner potential ",RMeanInnerPotential," Volts"
@@ -523,72 +542,72 @@ MODULE ug_matrix_mod
     !?? does this match Acta Cryst. (1998). A54, 388-398 equation (3)
 
     !--------------------------------------------------------------------
-    
+
     IF (IInitialSimulationFLAG.EQ.1) THEN
 
-      !--------------------------------------------------------------------
-      ! count equivalent Ugs
-      !--------------------------------------------------------------------
-      
-      ! IEquivalentUgKey is used later in absorption case 2 Bird & king
-      RgSumMat = ZERO
-      ! equivalent Ug's are identified by abs(h)+abs(k)+abs(l)+a*h^2+b*k^2+c*l^2...
-      DO ind = 1,nReflections
-        DO jnd = 1,ind
-          RgSumMat(ind,jnd)=ABS(Rhkl(ind,1)-Rhkl(jnd,1))+ABS(Rhkl(ind,2)-Rhkl(jnd,2))+ABS(Rhkl(ind,3)-Rhkl(jnd,3))+ &
-            RLengthX*(Rhkl(ind,1)-Rhkl(jnd,1))**TWO+RLengthY*(Rhkl(ind,2)-Rhkl(jnd,2))**TWO+ &
-            RLengthZ*(Rhkl(ind,3)-Rhkl(jnd,3))**TWO
-        END DO
-      END DO
-      ! it's symmetric
-      RgSumMat = RgSumMat+TRANSPOSE(RgSumMat)
-      CALL message ( LM, dbg3, "hkl: g Sum matrix" )
-      DO ind =1,16
-	  	WRITE(SPrintString,FMT='(3(I2,1X),A2,1X,12(F6.1,1X))') NINT(Rhkl(ind,:)),": ",RgSumMat(ind,1:12)
-        CALL message ( LM, dbg3, SPrintString )!LM, dbg3
-      END DO
+       !--------------------------------------------------------------------
+       ! count equivalent Ugs
+       !--------------------------------------------------------------------
 
-      ISymmetryRelations = 0_IKIND 
-      Iuid = 0_IKIND 
-      DO jnd = 1,nReflections
-        DO ind = 1,nReflections
-          IF(ISymmetryRelations(ind,jnd).NE.0) THEN
-            CYCLE
-          ELSE
-            Iuid = Iuid + 1_IKIND
-            ! fill the symmetry relation matrix with incrementing numbers
-            ! that have the sign of the imaginary part
-            WHERE (ABS(RgSumMat-RgSumMat(ind,jnd)).LE.RTolerance)
-              ISymmetryRelations = Iuid*SIGN(1_IKIND,NINT(AIMAG(CUgMatNoAbs)/(TINY)))
-            END WHERE
-          END IF
-        END DO
-      END DO
-      WRITE(SPrintString,FMT='(I5,A25)') Iuid," unique structure factors"
-      SPrintString=TRIM(ADJUSTL(SPrintString))
-      CALL message ( LS, SPrintString )
-      CALL message ( LM, dbg3, "hkl: symmetry matrix" )
-      DO ind =1,16
-	  	WRITE(SPrintString,FMT='(3(I2,1X),A2,1X,16(I4,1X))') NINT(Rhkl(ind,:)),": ",ISymmetryRelations(ind,1:16)
-        CALL message ( LM,dbg3, SPrintString )
-      END DO
+       ! IEquivalentUgKey is used later in absorption case 2 Bird & king
+       RgSumMat = ZERO
+       ! equivalent Ug's are identified by abs(h)+abs(k)+abs(l)+a*h^2+b*k^2+c*l^2...
+       DO ind = 1,nReflections
+          DO jnd = 1,ind
+             RgSumMat(ind,jnd)=ABS(Rhkl(ind,1)-Rhkl(jnd,1))+ABS(Rhkl(ind,2)-Rhkl(jnd,2))+ABS(Rhkl(ind,3)-Rhkl(jnd,3))+ &
+                  RLengthX*(Rhkl(ind,1)-Rhkl(jnd,1))**TWO+RLengthY*(Rhkl(ind,2)-Rhkl(jnd,2))**TWO+ &
+                  RLengthZ*(Rhkl(ind,3)-Rhkl(jnd,3))**TWO
+          END DO
+       END DO
+       ! it's symmetric
+       RgSumMat = RgSumMat+TRANSPOSE(RgSumMat)
+       CALL message ( LM, dbg3, "hkl: g Sum matrix" )
+       DO ind =1,16
+          WRITE(SPrintString,FMT='(3(I2,1X),A2,1X,12(F6.1,1X))') NINT(Rhkl(ind,:)),": ",RgSumMat(ind,1:12)
+          CALL message ( LM, dbg3, SPrintString )!LM, dbg3
+       END DO
 
-      ! link each key with its Ug, from 1 to the number of unique Ug's Iuid
-      ALLOCATE(IEquivalentUgKey(Iuid),STAT=IErr)
-      IF(l_alert(IErr,"StructureFactorInitialisation","allocate IEquivalentUgKey")) RETURN
-      ALLOCATE(CUniqueUg(Iuid),STAT=IErr)
-      IF(l_alert(IErr,"StructureFactorInitialisation","allocate CUniqueUg")) RETURN
+       ISymmetryRelations = 0_IKIND 
+       Iuid = 0_IKIND 
+       DO jnd = 1,nReflections
+          DO ind = 1,nReflections
+             IF(ISymmetryRelations(ind,jnd).NE.0) THEN
+                CYCLE
+             ELSE
+                Iuid = Iuid + 1_IKIND
+                ! fill the symmetry relation matrix with incrementing numbers
+                ! that have the sign of the imaginary part
+                WHERE (ABS(RgSumMat-RgSumMat(ind,jnd)).LE.RTolerance)
+                   ISymmetryRelations = Iuid*SIGN(1_IKIND,NINT(AIMAG(CUgMatNoAbs)/(TINY)))
+                END WHERE
+             END IF
+          END DO
+       END DO
+       WRITE(SPrintString,FMT='(I5,A25)') Iuid," unique structure factors"
+       SPrintString=TRIM(ADJUSTL(SPrintString))
+       CALL message ( LS, SPrintString )
+       CALL message ( LM, dbg3, "hkl: symmetry matrix" )
+       DO ind =1,16
+          WRITE(SPrintString,FMT='(3(I2,1X),A2,1X,16(I4,1X))') NINT(Rhkl(ind,:)),": ",ISymmetryRelations(ind,1:16)
+          CALL message ( LM,dbg3, SPrintString )
+       END DO
 
-      DO ind = 1,Iuid
-        ILoc = MINLOC(ABS(ISymmetryRelations-ind))
-        IEquivalentUgKey(ind) = ind
-        CUniqueUg(ind) = CUgMatNoAbs(ILoc(1),ILoc(2))
-      END DO
+       ! link each key with its Ug, from 1 to the number of unique Ug's Iuid
+       ALLOCATE(IEquivalentUgKey(Iuid),STAT=IErr)
+       IF(l_alert(IErr,"StructureFactorInitialisation","allocate IEquivalentUgKey")) RETURN
+       ALLOCATE(CUniqueUg(Iuid),STAT=IErr)
+       IF(l_alert(IErr,"StructureFactorInitialisation","allocate CUniqueUg")) RETURN
 
-      ! put them in descending order of magnitude
-      ! IEquivalentUgKey is used later in absorption case 2 Bird & king  
-      CALL ReSortUgs(IEquivalentUgKey,CUniqueUg,Iuid) ! modifies those arrays
-    
+       DO ind = 1,Iuid
+          ILoc = MINLOC(ABS(ISymmetryRelations-ind))
+          IEquivalentUgKey(ind) = ind
+          CUniqueUg(ind) = CUgMatNoAbs(ILoc(1),ILoc(2))
+       END DO
+
+       ! put them in descending order of magnitude
+       ! IEquivalentUgKey is used later in absorption case 2 Bird & king  
+       CALL ReSortUgs(IEquivalentUgKey,CUniqueUg,Iuid) ! modifies those arrays
+
     END IF
 
     RETURN

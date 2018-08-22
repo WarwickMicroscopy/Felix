@@ -75,7 +75,8 @@ MODULE read_files_mod
       REAL(RKIND) :: ROfIter
       CHARACTER(200) :: SImageMode, SElements, SRefineMode, SStringFromNumber, SRefineYESNO, &
            SAtomicSites, SFormatString, SLengthofNumberString, &
-           SDirectionX, SIncidentBeamDirection, SNormalDirectionX, SPrintString
+           SDirectionX, SIncidentBeamDirection, SNormalDirectionX, SPrintString, &
+           SRefineModeDummy
 
       OPEN(UNIT= IChInp, IOSTAT=IErr, FILE= "felix.inp",STATUS= 'OLD')
       IF(l_alert(IErr,"ReadInpFile","OPEN() felix.inp")) RETURN
@@ -251,11 +252,12 @@ MODULE read_files_mod
       ILine= ILine+1; READ(IChInp,ERR=20,END=30,FMT='(A)')
 
       ! IRefineModeFLAG
-      ILine= ILine+1; READ(IChInp,FMT='(A)',ERR=20,END=30) SRefineMode
+      ILine= ILine+1; READ(IChInp,FMT='(A)',ERR=20,END=30) SRefineModeDummy
+      SRefineMode=SrefineModeDummy(SCAN(SRefineModeDummy,'='):)
       IF(SCAN(TRIM(ADJUSTL(SRefineMode)),TRIM(ADJUSTL(SAlphabet(19)))).NE.0) THEN
          ISimFLAG=1 ! Simulation only
          CALL message( LS, "Simulation Only")
-         CALL message( LS, "SAlphabet7",SAlphabet(7))
+         CALL message( LS, "SRefineMode",SRefineMode)
          IF(SCAN(TRIM(ADJUSTL(SRefineMode)),TRIM(ADJUSTL(SAlphabet(7)))).NE.0) THEN
             ISimFLAG=2 ! Grid Refinement mode
             CALL message( LS, "Simulation Only - Grid Option Selected")

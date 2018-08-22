@@ -123,8 +123,15 @@ PROGRAM Felixrefine
   CALL SetMessageMode( IWriteFLAG, IErr )
   IF(l_alert(IErr,"felixrefine","set_message_mod_mode")) CALL abort
 
-  CALL message(LL,'IBlochMethodFLAG =',IBlochMethodFLAG)
+  IF(my_rank.EQ.0)THEN
 
+     PRINT*,'PlancksConstant =',RPlanckConstant
+     PRINT*,'RAngstromConversion =',RAngstromConversion
+     PRINT*,'RElectronMass =',RElectronMass
+     PRINT*,'RElectronCharge =',RElectronCharge
+
+
+  END IF
   CALL read_cif(IErr) ! felix.cif ! some allocations are here
   IF(l_alert(IErr,"felixrefine","ReadCif")) CALL abort
 
@@ -166,6 +173,10 @@ PROGRAM Felixrefine
   !conversion from Vg to Ug, h^2/(2pi*m0*e), see e.g. Kirkland eqn. C.5
   RScattFacToVolts=(RPlanckConstant**2)*(RAngstromConversion**2)/&
        (TWOPI*RElectronMass*RElectronCharge*RVolume)
+  IF(my_rank.EQ.0) THEN
+     PRINT*,'RScattFacToVolts =',RScattFacToVolts
+     PRINT*,'RVolume =',RVolume
+  END IF
   ! Creates reciprocal lattice vectors in Microscope reference frame
   CALL ReciprocalLattice(IErr)
   IF(l_alert(IErr,"felixrefine","ReciprocalLattice")) CALL abort
