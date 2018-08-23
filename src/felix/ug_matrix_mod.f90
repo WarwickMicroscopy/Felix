@@ -327,6 +327,7 @@ MODULE ug_matrix_mod
           IF(my_rank.EQ.0) THEN
              PRINT*,"Rgmatrix(ind,jnd,:) = ", RgMatrix(ind,jnd,:)
              PRINT*,"RAtomCoordinate(knd,:) = ", RAtomCoordinate(knd,:)
+             PRINT*, "CVgij = ",CVgij
           END IF
        ELSE ! pseudoatom
           INumPseudAtoms=INumPseudAtoms+1
