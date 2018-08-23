@@ -268,7 +268,7 @@ PROGRAM Felixrefine
       RgPool(ind,jnd) = Rhkl(ind,1)*RarVecM(jnd) + &
             Rhkl(ind,2)*RbrVecM(jnd) + Rhkl(ind,3)*RcrVecM(jnd)
     ENDDO
-	  ! If a g-vector has a non-zero z-component it is not in the ZOLZ
+    ! If a g-vector has a non-zero z-component it is not in the ZOLZ
     IF(ABS(RgPool(ind,3)).GT.TINY.AND.ICutOff.NE.0) THEN
       RGzUnitVec=ABS(RgPool(ind,3))
       ICutOff=0
@@ -475,7 +475,7 @@ PROGRAM Felixrefine
   CALL Absorption (IErr)
   CALL message( LM, "Initial Ug matrix, with absorption (nm^-2)" )
   DO ind = 1,16
-	WRITE(SPrintString,FMT='(3(I2,1X),A2,1X,8(F7.4,1X))') NINT(Rhkl(ind,:)),": ",100*CUgMat(ind,1:4)
+    WRITE(SPrintString,FMT='(3(I2,1X),A2,1X,8(F7.4,1X))') NINT(Rhkl(ind,:)),": ",100*CUgMat(ind,1:4)
     CALL message( LM,dbg3, SPrintString)
   END DO
   IF(l_alert(IErr,"felixrefine","Absorption")) CALL abort
@@ -492,7 +492,7 @@ PROGRAM Felixrefine
     IF(IRefineMode(1).EQ.1) THEN ! It's a Ug refinement, A
 
       ! Count the number of Independent Variables
-	    IUgOffset=1  ! can skip Ug's in refinement using offset, 1 is inner potential
+      IUgOffset=1  ! can skip Ug's in refinement using offset, 1 is inner potential
       jnd=1
       DO ind = 1+IUgOffset,INoofUgs+IUgOffset
         IF ( ABS(REAL(CUniqueUg(ind),RKIND)).GE.RTolerance ) jnd=jnd+1
@@ -500,7 +500,7 @@ PROGRAM Felixrefine
       END DO
       IF (IAbsorbFLAG.EQ.1) THEN ! proportional absorption
         INoOfVariables = jnd ! the last variable is for absorption, so included
-	    ELSE
+      ELSE
         INoOfVariables = jnd-1 
       END IF
       IF ( INoOfVariables.EQ.1 ) THEN 
@@ -554,40 +554,40 @@ PROGRAM Felixrefine
         IF ( ABS(REAL(CUniqueUg(ind),RKIND)).GE.RTolerance ) THEN
           RIndependentVariable(jnd) = REAL(CUniqueUg(ind),RKIND)
           jnd=jnd+1
-	      END IF
+        END IF
         IF ( ABS(AIMAG(CUniqueUg(ind))).GE.RTolerance ) THEN 
           RIndependentVariable(jnd) = AIMAG(CUniqueUg(ind))
           jnd=jnd+1
         END IF
       END DO
       ! Proportional absorption included in structure factor refinement as last variable
-	    IF (IAbsorbFLAG.EQ.1) RIndependentVariable(jnd) = RAbsorptionPercentage
+      IF (IAbsorbFLAG.EQ.1) RIndependentVariable(jnd) = RAbsorptionPercentage
     ELSE ! It's not a Ug refinement 
-	  ! Fill up the IndependentVariable list 
+      ! Fill up the IndependentVariable list 
       ALLOCATE(RIndependentVariable(INoOfVariables),STAT=IErr)  
       ind=1
       IF(IRefineMode(2).EQ.1) THEN ! Atomic coordinates, B
-	      DO jnd=1,SIZE(IAtomMoveList)
+        DO jnd=1,SIZE(IAtomMoveList)
             RIndependentVariable(ind)=DOT_PRODUCT(RBasisAtomPosition(IAtomMoveList(jnd),:),RVector(jnd,:))
             ind=ind+1
-	      END DO
-	    END IF
+        END DO
+      END IF
       IF(IRefineMode(3).EQ.1) THEN ! Occupancy, C
-	      DO jnd=1,SIZE(IAtomsToRefine)
+        DO jnd=1,SIZE(IAtomsToRefine)
             RIndependentVariable(ind)=RBasisOccupancy(IAtomsToRefine(jnd))
             ind=ind+1
-	      END DO
-	    END IF
+        END DO
+      END IF
       IF(IRefineMode(4).EQ.1) THEN ! Isotropic DW, D
-	      DO jnd=1,SIZE(IAtomsToRefine)
-            RIndependentVariable(ind)=RIsoDW(IAtomsToRefine(jnd))
+        DO jnd=1,SIZE(IAtomsToRefine)
+            RIndependentVariable(ind)=RBasisIsoDW(IAtomsToRefine(jnd))
             ind=ind+1
-	      END DO
-	    END IF
+        END DO
+      END IF
       IF(IRefineMode(8).EQ.1) THEN ! Convergence angle, H
         RIndependentVariable(ind)=RConvergenceAngle
         ind=ind+1
-	    END IF
+      END IF
       ! Assign IDs - not needed for a Ug refinement
       ALLOCATE(IIterativeVariableUniqueIDs(INoOfVariables,2),STAT=IErr)
       IF(l_alert(IErr,"felixrefine","allocate IIterativeVariableUniqueIDs")) CALL abort
@@ -843,7 +843,7 @@ PROGRAM Felixrefine
   ! These are global variables, see smodules.f90
 
   IF (IRefineMode(1).EQ.0) THEN
-  	DEALLOCATE(IIterativeVariableUniqueIDs,STAT=IErr)
+    DEALLOCATE(IIterativeVariableUniqueIDs,STAT=IErr)
   END IF
   IF (ISimFLAG.EQ.0) THEN
     DEALLOCATE(RImageExpi,STAT=IErr)  
@@ -890,21 +890,21 @@ CONTAINS
     ALLOCATE(RSimplexVariable(INoOfVariables+1,INoOfVariables), STAT=IErr)  
     ALLOCATE(RSimplexFoM(INoOfVariables+1),STAT=IErr)  
     IF(my_rank.EQ.0) THEN !?? Since simplex not random, could be calculated by all cores
-	    ALLOCATE(ROnes(INoOfVariables+1,INoOfVariables), STAT=IErr) ! matrix of ones
+      ALLOCATE(ROnes(INoOfVariables+1,INoOfVariables), STAT=IErr) ! matrix of ones
       IF(l_alert(IErr,"SimplexRefinement","allocate ROnes")) RETURN 
       ! matrix of one +/-RSimplexLengthScale
-	    ALLOCATE(RSimp(INoOfVariables+1,INoOfVariables), STAT=IErr)
+      ALLOCATE(RSimp(INoOfVariables+1,INoOfVariables), STAT=IErr)
       IF(l_alert(IErr,"SimplexRefinement","allocate RSimp")) RETURN 
       ! diagonal matrix of variables as rows
-	    ALLOCATE(RVarMatrix(INoOfVariables,INoOfVariables), STAT=IErr)
+      ALLOCATE(RVarMatrix(INoOfVariables,INoOfVariables), STAT=IErr)
       IF(l_alert(IErr,"SimplexRefinement","allocate RVarMatrix")) RETURN 
-	    ROnes=ONE
-	    RSimp=ONE
-	    RVarMatrix=ZERO
-	    FORALL(ind = 1:INoOfVariables) RSimp(ind,ind) = -1.0
-	    RSimp=RSimp*RSimplexLengthScale + ROnes
-	    FORALL(ind = 1:INoOfVariables) RVarMatrix(ind,ind) = RIndependentVariable(ind)
-	    RSimplexVariable=MATMUL(RSimp,RVarMatrix)
+      ROnes=ONE
+      RSimp=ONE
+      RVarMatrix=ZERO
+      FORALL(ind = 1:INoOfVariables) RSimp(ind,ind) = -1.0
+      RSimp=RSimp*RSimplexLengthScale + ROnes
+      FORALL(ind = 1:INoOfVariables) RVarMatrix(ind,ind) = RIndependentVariable(ind)
+      RSimplexVariable=MATMUL(RSimp,RVarMatrix)
     END IF
     !===================================== ! send RSimplexVariable OUT to all cores
     CALL MPI_BCAST(RSimplexVariable,(INoOfVariables+1)*(INoOfVariables),&
@@ -1663,4 +1663,3 @@ CONTAINS
   END SUBROUTINE Parabo3 
 
 END PROGRAM Felixrefine
-                                                                                                                        
