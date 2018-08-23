@@ -265,8 +265,8 @@ MODULE ug_matrix_mod
     ! global inputs
     USE IPARA, ONLY : INAtomsUnitCell,IAtomicNumber,IAnisoDebyeWallerFactorFlag,IAnisoDW
     USE RPARA, ONLY : RIsoDW,RCurrentGMagnitude,RgMatrix,RVolume, &
-          RAnisotropicDebyeWallerFactorTensor,RAtomCoordinate,ROccupancy, &
-          RDebyeWallerConstant,RScattFacToVolts
+         RAnisotropicDebyeWallerFactorTensor,RAtomCoordinate,ROccupancy, &
+         RDebyeWallerConstant,RScattFacToVolts
     USE CPARA, ONLY : CIMAGONE
     USE RConst, ONLY : RPlanckConstant,RAngstromConversion,RElectronMass,RElectronCharge
 
@@ -279,53 +279,74 @@ MODULE ug_matrix_mod
     COMPLEX(CKIND) :: CFpseudo
     INTEGER(IKIND) :: knd, INumPseudAtoms=0
 
-    
+
     CVgij = CZERO!this is in Volts
     ! Sums CVgij contribution from each atom and pseudoatom
     DO knd=1,INAtomsUnitCell
-      ICurrentZ = IAtomicNumber(knd) ! atomic number, Z, NB passed as a global variable for absorption
-      IF (ICurrentZ.LT.105) THEN ! It's not a pseudoatom
-        ! Get scattering factor
-        CALL AtomicScatteringFactor(RScatteringFactor,IErr)
-        !IF (my_rank.EQ.0) PRINT*, knd,RCurrentGMagnitude,RScatteringFactor
-        ! Occupancy
-        RScatteringFactor = RScatteringFactor*ROccupancy(knd)
-        ! Isotropic Debye-Waller factor
-        IF (IAnisoDebyeWallerFactorFlag.EQ.0) THEN 
-          IF(RIsoDW(knd).GT.10.OR.RIsoDW(knd).LT.0) RIsoDW(knd) = RDebyeWallerConstant!use default in felix.inp for unrealistic values in the cif
-          ! Isotropic D-W factor
-          ! exp(-B sin(theta)^2/lamda^2) = exp(-Bs^2) = exp(-Bg^2/16pi^2), see e.g. Bird&King
-          RScatteringFactor = RScatteringFactor*EXP(-RIsoDW(knd) * &
-                (RCurrentGMagnitude**2)/(FOUR*TWOPI**2) )
-        ELSE ! anisotropic Debye-Waller factor
-          !?? this will need sorting out, may not work
-          RScatteringFactor = RScatteringFactor * &
-                EXP( -DOT_PRODUCT( RgMatrix(ind,jnd,:), &
-                MATMUL(RAnisotropicDebyeWallerFactorTensor(IAnisoDW(knd),:,:),&
-                RgMatrix(ind,jnd,:)) ) )
-        END IF
-        ! The structure factor equation, complex Vg(ind,jnd)=sum(f*exp(-ig.r)) in Volts
-        CVgij=CVgij+RScatteringFactor*RScattFacToVolts*EXP(-CIMAGONE*DOT_PRODUCT(RgMatrix(ind,jnd,:),&
-              RAtomCoordinate(knd,:)) )
-      ELSE ! pseudoatom
-        INumPseudAtoms=INumPseudAtoms+1
-        CALL PseudoAtom(CFpseudo,ind,jnd,INumPseudAtoms,IErr)
-        ! Occupancy
-        CFpseudo = CFpseudo*ROccupancy(knd)
-        ! Error check: only isotropic Debye-Waller for pseudoatoms currently
-        IF (IAnisoDebyeWallerFactorFlag.NE.0) THEN
-          CALL message( LS, "Pseudo atom - isotropic Debye-Waller factor only!")
-          IErr=1
-          RETURN
-        END IF
-        !?? DW factor: Need to work out how to get it from the REAL atom at same site
-        ! assume it is the next atom in the list, for now
-        CFpseudo = CFpseudo*EXP(-RIsoDW(knd+1)*(RCurrentGMagnitude**2)/(FOUR*TWOPI**2) )
-        
-        CVgij = CVgij + CFpseudo * &
-              EXP(-CIMAGONE*DOT_PRODUCT(RgMatrix(ind,jnd,:), RAtomCoordinate(knd,:)) )
+       ICurrentZ = IAtomicNumber(knd) ! atomic number, Z, NB passed as a global variable for absorption
+       IF (ICurrentZ.LT.105) THEN ! It's not a pseudoatom
+          ! Get scattering factor
+          CALL AtomicScatteringFactor(RScatteringFactor,IErr)
+          !IF (my_rank.EQ.0) PRINT*, knd,RCurrentGMagnitude,RScatteringFactor
 
-      END IF
+          IF(my_rank.EQ.0) THEN
+             PRINT*,"-------------------------------------------------------------"
+             PRINT*,"ind = ",ind, "jnd = ",jnd," knd= ",knd
+             PRINT*, "RCurrentGMagnitude",RCurrentGMagnitude
+             PRINT*,"RScatteringFactor1 = ", RScatteringFactor
+          END IF
+
+          ! Occupancy
+          RScatteringFactor = RScatteringFactor*ROccupancy(knd)
+
+          IF(my_rank.EQ.0) THEN
+             PRINT*,"RScatteringFactor2 = ", RScatteringFactor
+          END IF
+
+          ! Isotropic Debye-Waller factor
+          IF (IAnisoDebyeWallerFactorFlag.EQ.0) THEN 
+             IF(RIsoDW(knd).GT.10.OR.RIsoDW(knd).LT.0) RIsoDW(knd) = RDebyeWallerConstant!use default in felix.inp for unrealistic values in the cif
+             ! Isotropic D-W factor
+             ! exp(-B sin(theta)^2/lamda^2) = exp(-Bs^2) = exp(-Bg^2/16pi^2), see e.g. Bird&King
+
+             RScatteringFactor = RScatteringFactor*EXP(-RIsoDW(knd) * &
+                  (RCurrentGMagnitude**2)/(FOUR*TWOPI**2) )
+             IF(my_rank.EQ.0) THEN
+                PRINT*,"RScatteringFactor3 = ", RScatteringFactor
+             END IF
+          ELSE ! anisotropic Debye-Waller factor
+             !?? this will need sorting out, may not work
+             RScatteringFactor = RScatteringFactor * &
+                  EXP( -DOT_PRODUCT( RgMatrix(ind,jnd,:), &
+                  MATMUL(RAnisotropicDebyeWallerFactorTensor(IAnisoDW(knd),:,:),&
+                  RgMatrix(ind,jnd,:)) ) )
+          END IF
+          ! The structure factor equation, complex Vg(ind,jnd)=sum(f*exp(-ig.r)) in Volts
+          CVgij=CVgij+RScatteringFactor*RScattFacToVolts*EXP(-CIMAGONE*DOT_PRODUCT(RgMatrix(ind,jnd,:),&
+               RAtomCoordinate(knd,:)) )
+          IF(my_rank.EQ.0) THEN
+             PRINT*,"Rgmatrix(ind,jnd,:) = ", RgMatrix(ind,jnd,:)
+             PRINT*,"RAtomCoordinate(knd,:) = ", RAtomCoordinate(knd,:)
+          END IF
+       ELSE ! pseudoatom
+          INumPseudAtoms=INumPseudAtoms+1
+          CALL PseudoAtom(CFpseudo,ind,jnd,INumPseudAtoms,IErr)
+          ! Occupancy
+          CFpseudo = CFpseudo*ROccupancy(knd)
+          ! Error check: only isotropic Debye-Waller for pseudoatoms currently
+          IF (IAnisoDebyeWallerFactorFlag.NE.0) THEN
+             CALL message( LS, "Pseudo atom - isotropic Debye-Waller factor only!")
+             IErr=1
+             RETURN
+          END IF
+          !?? DW factor: Need to work out how to get it from the REAL atom at same site
+          ! assume it is the next atom in the list, for now
+          CFpseudo = CFpseudo*EXP(-RIsoDW(knd+1)*(RCurrentGMagnitude**2)/(FOUR*TWOPI**2) )
+
+          CVgij = CVgij + CFpseudo * &
+               EXP(-CIMAGONE*DOT_PRODUCT(RgMatrix(ind,jnd,:), RAtomCoordinate(knd,:)) )
+
+       END IF
     ENDDO
 
   END SUBROUTINE GetVgContributionij
