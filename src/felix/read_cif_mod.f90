@@ -90,7 +90,7 @@ MODULE read_cif_mod
       INCLUDE       'ciftbx-f90.cmn'
 
       LOGICAL       f1,f2,f3
-      CHARACTER(32)  name, SVolume
+      CHARACTER(32)  name, SVolume,SInputA,SInputB,SInputC
       CHARACTER(32)  SChemForm
       CHARACTER(80)  line,SPrintString
       CHARACTER(4)   label(6)
@@ -100,10 +100,10 @@ MODULE read_cif_mod
       CHARACTER(2)   rs
       CHARACTER(1)   slash
       REAL(RKIND),DIMENSION(:),ALLOCATABLE :: RPrint
-      REAL(4)          cela,celb,celc,siga,sigb,sigc
-      REAL(4)          x,y,z,u,su,sx,sy,sz,B,sB,sOcc,Uso,suso,Occ
-      REAL(4)          numb,sdev,dum
-      REAL(4)          xf(6),yf(6),zf(6),uij(6,6)
+      REAL          cela,celb,celc,siga,sigb,sigc
+      REAL          x,y,z,u,su,sx,sy,sz,B,sB,sOcc,Uso,suso,Occ
+      REAL          numb,sdev,dum
+      REAL          xf(6),yf(6),zf(6),uij(6,6)
       INTEGER       i,j,nsite, iset, imark
       DATA SAlphabetarray /"A","B","C","D","E","F","G","H","I","J","K","L","M","N", &
            "O","P","Q","R","S","T","U","V","W","X","Y","Z","a","b","c","d","e", &
@@ -120,6 +120,7 @@ MODULE read_cif_mod
            Ipos,Idpos, IoneI,IFRACminus, Inum,Idenom,IAtomID
       CHARACTER*32 Csym(ITHREE)
       INTEGER IErr,ind,jnd
+      REAL(RKIND) :: RUso
 
       ! fudge to deal with gfortran vs. g77
       slash = rs(1:1)
@@ -161,65 +162,82 @@ MODULE read_cif_mod
 
       ! Extract some cell dimensions; test all is OK
       ! NEED TO PUT IN A CHECK FOR LENGTH UNITS
-      siga = 0.
-      sigb = 0.
-      sigc = 0.
-      f1 = numb_('_cell_length_a', cela, siga)
-      f2 = numb_('_cell_length_b', celb, sigb)
-      f3 = numb_('_cell_length_c', celc, sigc)
+      f1 = char_('_cell_length_a', SInputA)
+      f2 = char_('_cell_length_b', SInputB)
+      f3 = char_('_cell_length_c', SInputC)
+
+      CALL RemoveBrackets(SInputA);CALL RemoveBrackets(SInputB);CALL RemoveBrackets(SInputC)
       ! error check
-      IF(.NOT.(f1.AND.f2.AND.f3)) THEN
+      IF((SInputA.EQ."").AND.(SInputB.EQ."").AND.(SInputC.EQ."")) THEN
          IErr=1; IF(l_alert(IErr,"ReadCif","Cell dimension(s) missing")) RETURN
       END IF
-      RLengthX=cela; RLengthY=celb; RLengthZ=celc
+      READ(SInputA,*) RLengthX; READ(SInputB,*) RLengthY; READ(SInputC,*) RLengthZ
 
-      siga = 0.
-      sigb = 0.
-      sigc = 0.
-      f1 = numb_('_cell_angle_alpha', cela, siga)
-      f2 = numb_('_cell_angle_beta', celb, sigb)
-      f3 = numb_('_cell_angle_gamma', celc, sigc)
-      IF(.NOT.(f1.AND.f2.AND.f3)) THEN
+      IF(my_rank.EQ.0) THEN
+         PRINT*,'SLengthX =',SInputA
+         PRINT*,'RLengthX =',RLengthX
+      END IF
+
+      f1 = char_('_cell_angle_alpha', SInputA)
+      f2 = char_('_cell_angle_beta', SInputB)
+      f3 = char_('_cell_angle_gamma', SInputC)
+      IF(my_rank.EQ.0) THEN
+         PRINT*,'SAlpha =',SInputA
+         PRINT*,'SBeta =',SInputB
+         PRINT*,'SGamma =',SInputC
+      END IF
+      CALL RemoveBrackets(SInputA);CALL RemoveBrackets(SInputB);CALL RemoveBrackets(SInputC)
+      IF((SInputA.EQ."").AND.(SInputB.EQ."").AND.(SInputC.EQ."")) THEN
          IErr=1; IF(l_alert(IErr,"ReadCif","Cell angles(s) missing")) RETURN
       END IF
+      READ(SInputA,*) RAlpha; READ(SInputB,*) RBeta; READ(SInputC,*) RGamma
 
       ! convert angles from degrees to radians
-      IF (cela.GT.TWOPI) THEN!assume this angle is expressed in degrees
-         RAlpha=cela*DEG2RADIAN;
+      IF (RAlpha.GT.TWOPI) THEN!assume this angle is expressed in degrees
+         RAlpha=RAlpha*DEG2RADIAN;
       END IF
-      IF (celb.GT.TWOPI) THEN!assume this angle is expressed in degrees
-         RBeta=celb*DEG2RADIAN;
+      IF (RBeta.GT.TWOPI) THEN!assume this angle is expressed in degrees
+         RBeta=RBeta*DEG2RADIAN;
       END IF
-      IF (celc.GT.TWOPI) THEN!assume this angle is expressed in degrees
-         RGamma=celc*DEG2RADIAN;
+      IF (RGamma.GT.TWOPI) THEN!assume this angle is expressed in degrees
+         RGamma=RGamma*DEG2RADIAN;
       END IF
-      CALL message( LXL, dbg14, "Unit cell angles alpha, beta, gamma", (/ RAlpha*RADIAN2DEG,RBeta*RADIAN2DEG,RGamma*RADIAN2DEG /) )
+      CALL message( LS, "Unit cell angles alpha, beta, gamma", (/ RAlpha*RADIAN2DEG,RBeta*RADIAN2DEG,RGamma*RADIAN2DEG /) )
 
-      f1 = numb_('_cell_volume', cela, siga)
+      f1 = char_('_cell_volume', name)
+
       !Cell volume
-      IF((f1) .EQV. .FALSE.) THEN
+      !IF((f1) .EQV. .FALSE.) THEN
+      !  IVolumeFLAG= 0
+      !  RVolume= RLengthX*RLengthY*RLengthZ* &
+      !       SQRT(ONE-COS(RAlpha)*COS(RAlpha)-COS(RBeta)*COS(RBeta)-COS(RGamma)*COS(RGamma) + &
+      !       TWO*COS(RAlpha)*COS(RBeta)*COS(RGamma))
+      !ELSE
+
+
+      IF(my_rank.EQ.0) THEN
+         PRINT*, "f1= ", f1
+         PRINT*,'nAme =',name
+      END IF
+
+      CALL RemoveBrackets(name)
+      IF(name.EQ."") THEN !Volume not included
          IVolumeFLAG= 0
          RVolume= RLengthX*RLengthY*RLengthZ* &
               SQRT(ONE-COS(RAlpha)*COS(RAlpha)-COS(RBeta)*COS(RBeta)-COS(RGamma)*COS(RGamma) + &
               TWO*COS(RAlpha)*COS(RBeta)*COS(RGamma))
       ELSE
-         WRITE(SVolume,*) cela
-         IF(my_rank.EQ.0) THEN
-            PRINT*,'SVolume =',SVolume
-         END IF
-         SVolume=TRIM(ADJUSTL(SVolume))
-         SVolume=SVolume(1:8)
-         IF(my_rank.EQ.0) THEN
-            PRINT*,'SVolume =',SVolume
-         END IF
-         READ(SVolume,*) RVolume
-         IVolumeFLAG= 1
+         READ(name,*) RVolume
       END IF
 
       IF(my_rank.EQ.0) THEN
-         PRINT*,'cela =',cela
+         PRINT*,'cela =',name
          PRINT*,'RVolume =',RVolume
       END IF
+
+      IVolumeFLAG= 1
+      !END IF
+
       CALL message ( LS, "Unit cell volume", RVolume )
 
       DO      
@@ -325,34 +343,49 @@ MODULE read_cif_mod
          !Wyckoff symbol
          f1 = char_('_atom_site_Wyckoff_symbol',name)
          SBasisWyckoffSymbol(ind) = name
+
          !coordinates
-         f2 = numb_('_atom_site_fract_x', x, sx)
-         RBasisAtomPosition(ind,1)= x
-         f2 = numb_('_atom_site_fract_y', y, sy)
-         RBasisAtomPosition(ind,2)= y
-         f2 = numb_('_atom_site_fract_z', z, sz)
-         RBasisAtomPosition(ind,3)= z
+         f1 = char_('_atom_site_fract_x', SInputA)  
+         f2 = char_('_atom_site_fract_y', SInputB)     
+         f3 = char_('_atom_site_fract_z', SInputC)
+         CALL RemoveBrackets(SInputA);CALL RemoveBrackets(SInputB);CALL RemoveBrackets(SInputC)
+         READ(SInputA,*) RBasisAtomPosition(ind,1); READ(SInputB,*)RBasisAtomPosition(ind,2)
+         READ(SInputC,*) RBasisAtomPosition(ind,3)
+
+         IF(my_rank.EQ.0) THEN
+            PRINT*,"Atom  ",ind, "Position x= ",RBasisAtomPosition(ind,1)
+            PRINT*,"Atom  ",ind, "Position y= ",RBasisAtomPosition(ind,2)
+            PRINT*,"Atom  ",ind, "Position z= ",RBasisAtomPosition(ind,3)
+         END IF
+
          !Isotropic D-W factor
-         f2 = numb_('_atom_site_B_iso_or_equiv',B,sB)
-         f2 = numb_('_atom_site_U_iso_or_equiv',Uso,suso)	
-         IF(ABS(B).GT.TINY) THEN
-            RBasisIsoDW(ind) = B
+         f1 = char_('_atom_site_B_iso_or_equiv',SInputA)
+         f2 = char_('_atom_site_U_iso_or_equiv',SInputB)
+         IF(my_rank.EQ.0) THEN
+            PRINT*,'BIso =',SInputA
+            PRINT*,'UIso =',SInputB
+         END IF
+         CALL RemoveBrackets(SInputA);CALL RemoveBrackets(SInputB)
+         IF(SInputA.NE."") THEN
+            READ(SInputA,*) RBasisIsoDW(ind)
          ELSE
-	    IF(ABS(Uso).GT.TINY) THEN
-               RBasisIsoDW(ind) = Uso*(8*PI**2)
+            IF(SInputB.NE."") THEN
+               READ(SInputB,*) RUso
+               RBasisIsoDW(ind) = RUso*(8*PI**2)
             ELSE
                RBasisIsoDW(ind) = RDebyeWallerConstant
             END IF
          END IF
+
          !occupancy
          f2 = numb_('_atom_site_occupancy',Occ, sOcc)
          RBasisOccupancy(ind) = Occ
 
-         CALL message( LXL, dbg7, "For Atom ",ind)
-         CALL message( LXL, dbg7, SBasisAtomLabel(ind)//SBasisAtomName(ind)//&
+         CALL message( LS, "For Atom ",ind)
+         CALL message( LS, SBasisAtomLabel(ind)//SBasisAtomName(ind)//&
               " Z=",IBasisAtomicNumber(ind) )
-         CALL message( LXL, dbg7, "RBasisAtomPosition", RBasisAtomPosition(ind,:) )
-         CALL message( LXL, dbg7, "(DWF, occupancy) respectively = ",&
+         CALL message( LS, "RBasisAtomPosition", RBasisAtomPosition(ind,:) )
+         CALL message( LS, "(DWF, occupancy) respectively = ",&
               (/ RBasisIsoDW(ind), RBasisOccupancy(ind) /) )
 
          IF(loop_ .NEQV. .TRUE.) EXIT
@@ -489,6 +522,29 @@ MODULE read_cif_mod
       END IF
     END DO
     SStripped = SPaddedStripped(1:n)
-  END SUBROUTINE
+  END SUBROUTINE strip_chars
+!>
+  !! Procedure-description: Strips the error number from a string
+  !! ie. 6.3434(3) --> 6.3434  
+  !!
+  !! Major-Authors: Alex Hubert (2018)
+  !! 
+  SUBROUTINE RemoveBrackets(SString)
+    USE MyNumbers
+
+    IMPLICIT NONE
+    
+    CHARACTER(*), INTENT(INOUT) :: SString
+    INTEGER(IKIND) :: IBracketOne,IBracketTwo
+
+    SString=TRIM(ADJUSTL(SString))
+    
+    IF(SCAN(SString,'(').NE.0) THEN
+       IBracketOne=SCAN(SString,'(')
+       IBracketTwo=SCAN(SString,')')
+       SString(IBracketOne:IBracketTwo)="0"
+    END IF
+
+  END SUBROUTINE RemoveBrackets
 
 END MODULE read_cif_mod
