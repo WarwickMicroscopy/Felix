@@ -289,19 +289,19 @@ MODULE ug_matrix_mod
           CALL AtomicScatteringFactor(RScatteringFactor,IErr)
           !IF (my_rank.EQ.0) PRINT*, knd,RCurrentGMagnitude,RScatteringFactor
 
-          IF(my_rank.EQ.0) THEN
-             PRINT*,"-------------------------------------------------------------"
-             PRINT*,"ind = ",ind, "jnd = ",jnd," knd= ",knd
-             PRINT*, "RCurrentGMagnitude",RCurrentGMagnitude
-             PRINT*,"RScatteringFactor1 = ", RScatteringFactor
-          END IF
+         ! IF(my_rank.EQ.0) THEN
+          !   PRINT*,"-------------------------------------------------------------"
+           !  PRINT*,"ind = ",ind, "jnd = ",jnd," knd= ",knd
+           !  PRINT*, "RCurrentGMagnitude",RCurrentGMagnitude
+           !  PRINT*,"RScatteringFactor1 = ", RScatteringFactor
+          !END IF
 
           ! Occupancy
           RScatteringFactor = RScatteringFactor*ROccupancy(knd)
 
-          IF(my_rank.EQ.0) THEN
-             PRINT*,"RScatteringFactor2 = ", RScatteringFactor
-          END IF
+         ! IF(my_rank.EQ.0) THEN
+         !    PRINT*,"RScatteringFactor2 = ", RScatteringFactor
+         ! END IF
 
           ! Isotropic Debye-Waller factor
           IF (IAnisoDebyeWallerFactorFlag.EQ.0) THEN 
@@ -311,9 +311,9 @@ MODULE ug_matrix_mod
 
              RScatteringFactor = RScatteringFactor*EXP(-RIsoDW(knd) * &
                   (RCurrentGMagnitude**2)/(FOUR*TWOPI**2) )
-             IF(my_rank.EQ.0) THEN
-                PRINT*,"RScatteringFactor3 = ", RScatteringFactor
-             END IF
+            ! IF(my_rank.EQ.0) THEN
+             !   PRINT*,"RScatteringFactor3 = ", RScatteringFactor
+            ! END IF
           ELSE ! anisotropic Debye-Waller factor
              !?? this will need sorting out, may not work
              RScatteringFactor = RScatteringFactor * &
@@ -324,11 +324,11 @@ MODULE ug_matrix_mod
           ! The structure factor equation, complex Vg(ind,jnd)=sum(f*exp(-ig.r)) in Volts
           CVgij=CVgij+RScatteringFactor*RScattFacToVolts*EXP(-CIMAGONE*DOT_PRODUCT(RgMatrix(ind,jnd,:),&
                RAtomCoordinate(knd,:)) )
-          IF(my_rank.EQ.0) THEN
-             PRINT*,"Rgmatrix(ind,jnd,:) = ", RgMatrix(ind,jnd,:)
-             PRINT*,"RAtomCoordinate(knd,:) = ", RAtomCoordinate(knd,:)
-             PRINT*, "CVgij = ",CVgij
-          END IF
+          !IF(my_rank.EQ.0) THEN
+           !  PRINT*,"Rgmatrix(ind,jnd,:) = ", RgMatrix(ind,jnd,:)
+           !  PRINT*,"RAtomCoordinate(knd,:) = ", RAtomCoordinate(knd,:)
+          !   PRINT*, "CVgij = ",CVgij
+         ! END IF
        ELSE ! pseudoatom
           INumPseudAtoms=INumPseudAtoms+1
           CALL PseudoAtom(CFpseudo,ind,jnd,INumPseudAtoms,IErr)

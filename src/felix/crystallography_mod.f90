@@ -205,6 +205,7 @@ MODULE crystallography_mod
     INTEGER(IKIND) :: IErr,ind,jnd,knd
     INTEGER(IKIND), DIMENSION(:), ALLOCATABLE :: IAllAtomicNumber, RAllAnisoDW
     REAL(RKIND),ALLOCATABLE :: RAllAtomPosition(:,:), RAllOccupancy(:), RAllIsoDW(:)
+    REAL(RKIND), PARAMETER :: TINYLocal=1.0E-5_RKIND 
     LOGICAL :: Lunique
     CHARACTER*1, DIMENSION(:), ALLOCATABLE :: SAllWyckoffSymbol
     CHARACTER*2, DIMENSION(:), ALLOCATABLE :: SAllAtomName
@@ -234,8 +235,8 @@ MODULE crystallography_mod
         SAllWyckoffSymbol(knd)=SBasisWyckoffSymbol(jnd)
 	    knd=knd+1
       END DO
-!WRITE(SPrintString,'(F3.0,1X,F3.0,1X,F3.0,2X,F3.0,1X,F3.0,1X,F3.0,2X,F3.0,1X,F3.0,1X,F3.0)') RSymMat(ind,1,:),RSymMat(ind,2,:),RSymMat(ind,3,:)
-!IF(my_rank.EQ.0) PRINT*, ind,"RSymMat:  ", SPrintString             
+WRITE(SPrintString,'(F3.0,1X,F3.0,1X,F3.0,2X,F3.0,1X,F3.0,1X,F3.0,2X,F3.0,1X,F3.0,1X,F3.0)') RSymMat(ind,1,:),RSymMat(ind,2,:),RSymMat(ind,3,:)
+IF(my_rank.EQ.0) PRINT*, ind,"RSymMat:  ", SPrintString             
     END DO
     RAllAtomPosition = MODULO(RAllAtomPosition,ONE)
     WHERE(ABS(RAllAtomPosition).LT.TINY) RAllAtomPosition = ZERO 
@@ -259,7 +260,7 @@ MODULE crystallography_mod
     DO ind=2,IMaxPossibleNAtomsUnitCell
       Lunique=.TRUE.
       DO knd=1,jnd-1 ! check against the unique ones found so far
-        IF (SUM(ABS(RAllAtomPosition(ind,:)-RAtomPosition(knd,:))).LE.TINY) THEN ! position same
+        IF (SUM(ABS(RAllAtomPosition(ind,:)-RAtomPosition(knd,:))).LE.TINYLocal) THEN ! position same
           IF (SAllAtomLabel(ind).EQ.SAtomLabel(knd)) THEN ! Label is the same too, so not unique
             Lunique=.FALSE.
             EXIT
