@@ -515,7 +515,6 @@ PROGRAM Felixrefine
         ELSE
            CALL message(LS,"number of independent variables = ",INoOfVariables)
         END IF
-
      ELSE ! It's not a Ug refinement, so count refinement variables
         ! Excluding Ug refinement, various variables can be refined together
         INoOfVariablesForRefinementType(1)=0
@@ -894,7 +893,7 @@ CONTAINS
 
     ALLOCATE(RSimplexVariable(INoOfVariables+1,INoOfVariables), STAT=IErr)  
     ALLOCATE(RSimplexFoM(INoOfVariables+1),STAT=IErr)  
-    IF(my_rank.EQ.0) THEN !?? Since simplex not random, could be calculated by all cores
+    IF(my_rank.EQ.0) THEN !?? Since simplex not random, could be calculated by all cores     
        ALLOCATE(ROnes(INoOfVariables+1,INoOfVariables), STAT=IErr) ! matrix of ones
        IF(l_alert(IErr,"SimplexRefinement","allocate ROnes")) RETURN 
        ! matrix of one +/-RSimplexLengthScale
@@ -1182,9 +1181,22 @@ CONTAINS
           IF (ABS(RPvecMag).GT.RMaxUgStep.AND.IRefineMode(1).EQ.1) THEN
              RPvecMag=SIGN(RMaxUgStep,RPvecMag)
           END IF
-          RCurrentVar=RVar0+RPvec*RPvecMag
-          R3var(lnd)=RCurrentVar(1)! next point
-          Iter=Iter+1
+          WRITE(SPrintString,FMT='(A18,I3,A4,I3)') "Finding gradient, ",ind," of ",INoOfVariables
+          SPrintString=TRIM(ADJUSTL(SPrintString))
+          CALL message(LS,SPrintString)
+
+          ! Make a random number to vary the sign of dx, using system clock
+          IF (my_rank.EQ.0) THEN
+             CALL SYSTEM_CLOCK(mnd)
+             Rdx=(REAL(MOD(mnd,10))/TEN)-0.45 ! numbers 0-4 give minus, 5-9 give plus
+             Rdx=0.1*Rdx*RScale/ABS(Rdx) ! small change in current variable (RScale/10)is dx
+          END IF
+          !=====================================! send Rdx OUT to all cores
+          CALL MPI_BCAST(Rdx,1,MPI_DOUBLE_PRECISION,0,MPI_COMM_WORLD,IErr)
+          !=====================================
+          RCurrentVar=RVar0
+          RCurrentVar(ind)=RCurrentVar(ind)+Rdx
+      
           CALL SimulateAndFit(RCurrentVar,Iter,IThicknessIndex,IErr)
           IF(l_alert(IErr,"MaxGradientRefinement","SimulateAndFit")) RETURN
           CALL WriteIterationOutputWrapper(Iter,IThicknessIndex,IExitFLAG,IErr)

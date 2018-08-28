@@ -128,6 +128,6 @@ _atom_site_fract_y
 _atom_site_fract_z
 _atom_site_B_iso_or_equiv
 _atom_site_occupancy
-Ga1 Ga 4 a  0.00  0.00  0.00  0.68  1.0
-As1 As 4 c  0.25  0.25  0.25  0.63  1.0
+Ga1 Ga 4 a  0.00  0.00  0.00  0.5  1.0
+As1 As 4 c  0.25  0.25  0.25  0.5  1.0
 #End of TTdata_107946-ICSD

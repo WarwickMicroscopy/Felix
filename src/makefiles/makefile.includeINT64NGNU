@@ -43,7 +43,7 @@ LONGINTEGER=
 
 # -------------------------------
 # which PLATFORM dependent libraries to link
-LIBS= -lblas -llapack -lfftw3
+LIBS= -lopenblas -lfftw3
 
 
 # -------------------------------
