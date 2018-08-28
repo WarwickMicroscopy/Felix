@@ -1069,7 +1069,7 @@ CONTAINS
              CALL MPI_BCAST(Rdx,1,MPI_DOUBLE_PRECISION,0,MPI_COMM_WORLD,IErr)
              !=====================================
              RCurrentVar=RVar0
-             RCurrentVar(ind)=RCurrentVar(ind)*(1+Rdx)
+             RCurrentVar(ind)=RCurrentVar(ind)*Rdx
              CALL SimulateAndFit(RCurrentVar,Iter,IThicknessIndex,IErr)
              IF(l_alert(IErr,"MaxGradientRefinement","SimulateAndFit")) RETURN
              ! Do not increment iteration here nor write iteration output
