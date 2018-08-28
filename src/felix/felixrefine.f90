@@ -1185,18 +1185,9 @@ CONTAINS
           SPrintString=TRIM(ADJUSTL(SPrintString))
           CALL message(LS,SPrintString)
 
-          ! Make a random number to vary the sign of dx, using system clock
-          IF (my_rank.EQ.0) THEN
-             CALL SYSTEM_CLOCK(mnd)
-             Rdx=(REAL(MOD(mnd,10))/TEN)-0.45 ! numbers 0-4 give minus, 5-9 give plus
-             Rdx=0.1*Rdx*RScale/ABS(Rdx) ! small change in current variable (RScale/10)is dx
-          END IF
-          !=====================================! send Rdx OUT to all cores
-          CALL MPI_BCAST(Rdx,1,MPI_DOUBLE_PRECISION,0,MPI_COMM_WORLD,IErr)
-          !=====================================
-          RCurrentVar=RVar0
-          RCurrentVar(ind)=RCurrentVar(ind)+Rdx
-      
+          RCurrentVar=RVar0+RPvec*RPvecMag	
+          R3var(lnd)=RCurrentVar(1)! next point
+          Iter=Iter+1
           CALL SimulateAndFit(RCurrentVar,Iter,IThicknessIndex,IErr)
           IF(l_alert(IErr,"MaxGradientRefinement","SimulateAndFit")) RETURN
           CALL WriteIterationOutputWrapper(Iter,IThicknessIndex,IExitFLAG,IErr)
