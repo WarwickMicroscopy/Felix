@@ -163,6 +163,12 @@ MODULE write_output_mod
     CALL WriteIterationCIF(Iter,path,IErr)
     IF(l_alert(IErr,"WriteIterationOutput","WriteIterationCIF")) RETURN   
     IErr=0
+
+    !writes out structure.ug
+    CALL WriteIterationUg(Iter,path,IErr)
+    IF(l_alert(IErr,"WriteIterationOutput","WriteIterationCIF")) RETURN   
+    IErr=0
+    
     ! write out StructureFactors.txt
     WRITE(filename,*) "StructureFactors.txt"
     WRITE(fullpath,*) TRIM(ADJUSTL(path)),'/',TRIM(ADJUSTL(filename))
@@ -256,6 +262,60 @@ MODULE write_output_mod
 !    CLOSE(IChOutSimplex)
 
   END SUBROUTINE WriteIterationCIF
+
+  !%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+  !>
+  !! Procedure-description: Write out structure.Ug containing the absorptive or non
+  !! absorptive Ug matrix
+  !!
+  !! Major-Authors: Alex Hubert (2018)
+  !!
+  SUBROUTINE WriteIterationUg(Iter,path,IErr)
+
+    USE MyNumbers
+    USE message_mod
+
+    ! global inputs
+    USE IPARA, ONLY : ILN
+    USE SPARA, ONLY : SChemicalFormula
+    USE IChannels, ONLY : IChOutSimplex
+    USE RPARA, ONLY : Rhkl
+    USE CPARA, ONLY : CUgMat, CUgMatNoAbs
+
+    IMPLICIT NONE
+
+    CHARACTER(200), INTENT(IN) :: path
+    INTEGER(IKIND), INTENT(IN) :: Iter
+    INTEGER(IKIND), INTENT(OUT) :: IErr
+    INTEGER(IKIND) :: ind
+    CHARACTER(200) :: filename, fullpath
+
+    IErr=0
+    ! Write out unique atomic positions
+    WRITE(filename,"(A1,I4.4,A4)") "_",Iter,".Ug"
+    filename=SChemicalFormula(1:ILN) // filename!gives e.g. SrTiO3_0001.cif 
+    WRITE(fullpath,*) TRIM(ADJUSTL(path)),'/',TRIM(ADJUSTL(filename))
+
+    OPEN(UNIT=IChOutSimplex,STATUS='UNKNOWN',POSITION='APPEND',FILE=TRIM(ADJUSTL(fullpath)))
+    WRITE(IChOutSimplex,FMT='(A37)') "*************************************" 
+    WRITE(IChOutSimplex,FMT='(A37)') "Ug matrix, without absorption (nm^-2)" 
+    WRITE(IChOutSimplex,FMT='(A37)') "*************************************" 
+    DO ind = 1,16
+       WRITE(IChOutSimplex,FMT='(3(I2,1X),A2,1X,8(F7.4,1X))') NINT(Rhkl(ind,:)),": ",100*CUgMatNoAbs(ind,1:4)
+    END DO
+
+    WRITE(IChOutSimplex,FMT='(A37)') "-------------------------------------" 
+    WRITE(IChOutSimplex,FMT='(A39)') "Ug matrix, including absorption (nm^-2)" 
+    WRITE(IChOutSimplex,FMT='(A37)') "-------------------------------------" 
+    DO ind = 1,40
+       WRITE(IChOutSimplex,FMT='(3(I3,1X),A2,1X,8(F7.4,1X))') NINT(Rhkl(ind,:)),": ",100*CUgMat(ind,1:4)
+    END DO
+    WRITE(IChOutSimplex,FMT='(A22)') "#End of refinement.Ug#"
+
+    CLOSE(IChOutSimplex)
+
+  END SUBROUTINE WriteIterationUg
 
   !%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
@@ -442,4 +502,7 @@ MODULE write_output_mod
 
   END SUBROUTINE NormaliseExperimentalImagesAndWriteOut
 
-END MODULE write_output_mod
+  
+
+
+  END MODULE write_output_mod

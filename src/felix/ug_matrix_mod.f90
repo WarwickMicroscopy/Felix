@@ -236,7 +236,7 @@ MODULE ug_matrix_mod
     CUgMat = CUgMatNoAbs + CUgMatPrime 
     CALL message( LM, dbg3, "Ug matrix, including absorption (nm^-2)" )
     DO ind = 1,40
-	  WRITE(SPrintString,FMT='(3(I2,1X),A2,1X,8(F7.4,1X))') NINT(Rhkl(ind,:)),": ",100*CUgMat(ind,1:4)
+	  WRITE(SPrintString,FMT='(3(I3,1X),A2,1X,8(F7.4,1X))') NINT(Rhkl(ind,:)),": ",100*CUgMat(ind,1:4)
       CALL message( LM, dbg3, SPrintString )
     END DO
 
@@ -490,7 +490,7 @@ MODULE ug_matrix_mod
 
     CALL message( LM,dbg3, "Ug matrix, without absorption (nm^-2)" )!LM, dbg3
     DO ind = 1,16
-	  WRITE(SPrintString,FMT='(3(I2,1X),A2,1X,8(F7.4,1X))') NINT(Rhkl(ind,:)),": ",100*CUgMatNoAbs(ind,1:4)
+	  WRITE(SPrintString,FMT='(3(I3,1X),A2,1X,8(F7.4,1X))') NINT(Rhkl(ind,:)),": ",100*CUgMatNoAbs(ind,1:4)
       CALL message( LM,dbg3, SPrintString)
     END DO
    
@@ -544,7 +544,7 @@ MODULE ug_matrix_mod
       RgSumMat = RgSumMat+TRANSPOSE(RgSumMat)
       CALL message ( LM, dbg3, "hkl: g Sum matrix" )
       DO ind =1,16
-	  	WRITE(SPrintString,FMT='(3(I2,1X),A2,1X,12(F6.1,1X))') NINT(Rhkl(ind,:)),": ",RgSumMat(ind,1:12)
+	  	WRITE(SPrintString,FMT='(3(I3,1X),A2,1X,12(F6.1,1X))') NINT(Rhkl(ind,:)),": ",RgSumMat(ind,1:12)
         CALL message ( LM, dbg3, SPrintString )!LM, dbg3
       END DO
 
@@ -569,7 +569,7 @@ MODULE ug_matrix_mod
       CALL message ( LS, SPrintString )
       CALL message ( LM, dbg3, "hkl: symmetry matrix" )
       DO ind =1,16
-	  	WRITE(SPrintString,FMT='(3(I2,1X),A2,1X,16(I4,1X))') NINT(Rhkl(ind,:)),": ",ISymmetryRelations(ind,1:16)
+	  	WRITE(SPrintString,FMT='(3(I3,1X),A2,1X,16(I4,1X))') NINT(Rhkl(ind,:)),": ",ISymmetryRelations(ind,1:16)
         CALL message ( LM,dbg3, SPrintString )
       END DO
 
