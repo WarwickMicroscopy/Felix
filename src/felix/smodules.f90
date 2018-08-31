@@ -131,14 +131,14 @@ END MODULE IConst
 MODULE RConst
   USE MyNumbers
   
-  REAL(RKIND), PARAMETER :: &
-       RSpeedOfLight=REAL(2.99762458D+8,RKIND), &! in m/s
-       RElectronMass=REAL(9.10938291D-31,RKIND), &!in kg
-       RElectronMassMeV=REAL(0.510998928,RKIND), &!don't think we ever use this
-       RPlanckConstant=REAL(6.62606957D-34,RKIND), &! in kg m^2 /s
-       RElectronCharge=REAL(1.602176565D-19,RKIND), &!in C
-       RAngstromConversion=REAL(1.D10,RKIND)! So [1A (in m)] * RAngstromConversion = 1
-  REAL(RKIND), PARAMETER :: RTolerance =REAL(1E-7,RKIND)
+  REAL(RQKIND), PARAMETER :: &
+       RSpeedOfLight=2.99762458E+8_RQKIND, &! in m/s
+       RElectronMass=9.10938291E-31_RQKIND, &!in kg
+       RElectronMassMeV=0.510998928_RQKIND, &!don't think we ever use this
+       RPlanckConstant=6.62606957E-34_RQKIND, &! in kg m^2 /s
+       RElectronCharge=1.602176565E-19_RQKIND, &!in C
+       RAngstromConversion=1.E10_RQKIND! So [1A (in m)] * RAngstromConversion = 1
+  REAL(RQKIND), PARAMETER :: RTolerance =1E-7_RQKIND
     
 END MODULE RConst
 !--------------------------------------------------------------------
@@ -213,7 +213,7 @@ MODULE IPara
   INTEGER(IKIND),DIMENSION(IRefinementVariableTypes) :: INoofParameters  !zz
   INTEGER(IKIND),DIMENSION(:,:),ALLOCATABLE :: IIterativeVariableUniqueIDs
   !List of Atomic Sites for Refinement
-  INTEGER(IKIND),DIMENSION(:),ALLOCATABLE :: IAtomsToRefine
+  INTEGER(IKIND),DIMENSION(:),ALLOCATABLE :: IAtomsToRefine, ISizeofGrid
   !Simplex Variables
   INTEGER(IKIND) :: INoOfVariables,ILocalPixelCountMin,ILocalPixelCountMax,IUgOffset
   INTEGER(IKIND), DIMENSION(:), ALLOCATABLE :: IDisplacements,ICount

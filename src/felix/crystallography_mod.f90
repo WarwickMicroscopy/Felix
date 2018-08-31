@@ -235,8 +235,8 @@ MODULE crystallography_mod
         SAllWyckoffSymbol(knd)=SBasisWyckoffSymbol(jnd)
 	    knd=knd+1
       END DO
-!WRITE(SPrintString,'(F3.0,1X,F3.0,1X,F3.0,2X,F3.0,1X,F3.0,1X,F3.0,2X,F3.0,1X,F3.0,1X,F3.0)') RSymMat(ind,1,:),RSymMat(ind,2,:),RSymMat(ind,3,:)
-!IF(my_rank.EQ.0) PRINT*, ind,"RSymMat:  ", SPrintString             
+WRITE(SPrintString,'(F3.0,1X,F3.0,1X,F3.0,2X,F3.0,1X,F3.0,1X,F3.0,2X,F3.0,1X,F3.0,1X,F3.0)') RSymMat(ind,1,:),RSymMat(ind,2,:),RSymMat(ind,3,:)
+IF(my_rank.EQ.0) PRINT*, ind,"RSymMat:  ", SPrintString             
     END DO
     RAllAtomPosition = MODULO(RAllAtomPosition,ONE)
     WHERE(ABS(RAllAtomPosition).LT.TINY) RAllAtomPosition = ZERO 

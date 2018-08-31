@@ -154,7 +154,7 @@ MODULE utilities_mod
     REAL(RKIND) :: RhklarraySearch(ITHREE),RhklarrayCompare(ITHREE)
     REAL(RKIND) :: ALN2I,LocalTINY
     COMPLEX(CKIND) :: CUgSearch,CUgCompare,Cdummy,CUgs(N)
-    PARAMETER (ALN2I=1.4426950D0, LocalTINY=1.D-5)
+    PARAMETER (ALN2I=1.4426950E0_RKIND, LocalTINY=1.E-5_RKIND)
 
     CALL message ( LL, "Sorting Ugs" )
     
