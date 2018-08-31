@@ -76,9 +76,10 @@ PROGRAM Felixrefine
   ! allocatable arrays
   INTEGER(IKIND),DIMENSION(:),ALLOCATABLE :: IOriginGVecIdentifier
   REAL(RKIND),DIMENSION(:),ALLOCATABLE :: RSimplexFoM,RIndependentVariable,&
-       RCurrentVar,RVar0,RLastVar,RPvec,RFitVec,RIndependentVariableDummy
+       RCurrentVar,RVar0,RLastVar,RPvec,RFitVec,RIndependentVariableDummy,&
+       RGridRangeDifference,RGridRangeLowerBound,RGridRangeStep
   REAL(RKIND),DIMENSION(:,:),ALLOCATABLE :: RSimplexVariable,RgDummyVecMat,&
-       RgPoolMagLaue,RTestImage,ROnes,RVarMatrix,RSimp,RGridValues
+       RgPoolMagLaue,RTestImage,ROnes,RVarMatrix,RSimp,RGridValues,ROriginalBasisAtomPosition
 
   CHARACTER(40) :: my_rank_string
   CHARACTER(20) :: h,k,l
@@ -786,6 +787,16 @@ PROGRAM Felixrefine
      !Loop over the BasisAtomPosition and simululate
      IGridLength=(ISizeofGrid(1)+2)*(ISizeofGrid(2)+2)
      ALLOCATE(RGridValues(IGridLength,2),STAT=IErr)
+     IF(l_alert(IErr,"felixrefine","allocate RGridValues")) RETURN
+     ALLOCATE(RGridRangeStep(SIZE(IAtomsToRefine)),STAT=IErr)
+     IF(l_alert(IErr,"felixrefine","allocate RGridRangeStep")) RETURN
+     ALLOCATE(RGridRangeLowerBound(SIZE(IAtomsToRefine)),STAT=IErr)
+     IF(l_alert(IErr,"felixrefine","allocate RGridRangeLowerBound")) RETURN
+     ALLOCATE(RGridRangeDifference(SIZE(IAtomsToRefine)),STAT=IErr)
+     IF(l_alert(IErr,"felixrefine","allocate RGridRangeDifference")) RETURN
+     ALLOCATE(ROriginalBasisAtomPosition(SIZE(IAtomsToRefine),ITHREE),STAT=IErr)
+     IF(l_alert(IErr,"felixrefine","allocate RGridRangeDifference")) RETURN
+
 
      IF(my_rank.EQ.0) THEN
         CALL message(LS,"IGridLength = ", IGridLength)
@@ -826,8 +837,30 @@ PROGRAM Felixrefine
         END DO
      END DO
      Iter=0
-     !Keeping fixed for Sapphire Currently - will generalise in future - should
+     !Keeping fixed for Sapphire Currently as a hack for IMC - will generalise in future - should
+     !Need to split this up depending on whether the user has specified a grid
      !Probably transpose RGridValues to make more understandable
+     ROriginalBasisAtomPosition=RBasisAtomPosition
+     DO jnd=1,SIZE(IAtomsToRefine)
+        IF (IAtomsToRefine(jnd).EQ.1) THEN
+           RGridRangeDifference(IAtomsToRefine(jnd))=RGridDecimal(IAtomsToRefine(jnd))*&
+                ROriginalBasisAtomPosition(IAtomsToRefine(jnd),3)*TWO
+           RGridRangeLowerBound(IAtomsToRefine(jnd))=ROriginalBasisAtomPosition(IAtomsToRefine(jnd),3)-&
+                (RGridRangeDifference(IAtomsToRefine(jnd))/TWO)
+           IF (my_rank.EQ.0) PRINT*,"jnd = ",jnd
+           IF (my_rank.EQ.0) PRINT*,"RGridRangeDifference(jnd) = ",RGridRangeDifference(IAtomsToRefine(jnd))
+           IF (my_rank.EQ.0) PRINT*,"RGridRangeLowerBound(jnd) = ",RGridRangeLowerBound(IAtomsToRefine(jnd))
+        ELSE
+           RGridRangeDifference(IAtomsToRefine(jnd))=RGridDecimal(IAtomsToRefine(jnd))*&
+                ROriginalBasisAtomPosition(IAtomsToRefine(jnd),1)*TWO
+           RGridRangeLowerBound(IAtomsToRefine(jnd))=ROriginalBasisAtomPosition(IAtomsToRefine(jnd),1)-&
+                (RGridRangeDifference(IAtomsToRefine(jnd))/TWO)
+           IF (my_rank.EQ.0) PRINT*,"jnd = ",jnd
+           IF (my_rank.EQ.0) PRINT*,"RGridRangeDifference(jnd) = ",RGridRangeDifference(IAtomsToRefine(jnd))
+           IF (my_rank.EQ.0) PRINT*,"RGridRangeLowerBound(jnd) = ",RGridRangeLowerBound(IAtomsToRefine(jnd))
+        END IF
+     END DO
+
      DO ind=1,SIZE(RGridValues(:,1))
         Iter=Iter+1
         DO jnd=1,SIZE(IAtomsToRefine)
@@ -836,13 +869,19 @@ PROGRAM Felixrefine
            CALL message(LS,"JND = ",jnd )
            CALL message(LS,"--------------------------------" )
            IF (IAtomsToRefine(jnd).EQ.1) THEN
-              RBasisAtomPosition(IAtomsToRefine(jnd),3)=RGridValues(ind,1)
+              RGridRangeStep(IAtomsToRefine(jnd))=RGridRangeDifference(IAtomsToRefine(jnd))*RGridValues(ind,1)
+              RBasisAtomPosition(IAtomsToRefine(jnd),3)=RGridRangeLowerBound(IAtomsToRefine(jnd))&
+                   +RGridRangeStep(IAtomsToRefine(jnd))
               CALL message(LS,"RGridValues(ind,1) = ",RGridValues(ind,1) )
-              CALL message(LS,"RBasisAtomPosition(jnd,3) = ",RBasisAtomPosition(IAtomsToRefine(jnd),3) )
+              IF (my_rank.EQ.0) PRINT*,"RGridRangeStep(jnd) = ",RGridRangeStep(IAtomsToRefine(jnd))
+              IF (my_rank.EQ.0) PRINT*,"RBasisAtomPosition(jnd,3) = ",RBasisAtomPosition(IAtomsToRefine(jnd),3)
            ELSE
-              RBasisAtomPosition(IAtomsToRefine(jnd),1)=RGridValues(ind,2)
+              RGridRangeStep(IAtomsToRefine(jnd))=RGridRangeDifference(IAtomsToRefine(jnd))*RGridValues(ind,2)
+              RBasisAtomPosition(IAtomsToRefine(jnd),1)=RGridRangeLowerBound(IAtomsToRefine(jnd))+&
+                   RGridRangeStep(IAtomsToRefine(jnd))
               CALL message(LS,"RGridValues(ind,2) = ",RGridValues(ind,2) )
-              CALL message(LS,"RBasisAtomPosition(jnd,1) = ",RBasisAtomPosition(IAtomsToRefine(jnd),1) )
+              IF (my_rank.EQ.0) PRINT*,"RGridRangeStep(jnd) = ",RGridRangeStep(IAtomsToRefine(jnd))
+              IF (my_rank.EQ.0) PRINT*,"RBasisAtomPosition(jnd,3) = ",RBasisAtomPosition(IAtomsToRefine(jnd),1)
            END IF
         END DO
         ALLOCATE(RIndependentVariableDummy(1),STAT=IErr)

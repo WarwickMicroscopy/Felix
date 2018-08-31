@@ -213,7 +213,7 @@ MODULE IPara
   INTEGER(IKIND),DIMENSION(IRefinementVariableTypes) :: INoofParameters  !zz
   INTEGER(IKIND),DIMENSION(:,:),ALLOCATABLE :: IIterativeVariableUniqueIDs
   !List of Atomic Sites for Refinement
-  INTEGER(IKIND),DIMENSION(:),ALLOCATABLE :: IAtomsToRefine, ISizeofGrid
+  INTEGER(IKIND),DIMENSION(:),ALLOCATABLE :: IAtomsToRefine, ISizeofGrid, IGridPercentage
   !Simplex Variables
   INTEGER(IKIND) :: INoOfVariables,ILocalPixelCountMin,ILocalPixelCountMax,IUgOffset
   INTEGER(IKIND), DIMENSION(:), ALLOCATABLE :: IDisplacements,ICount
@@ -237,7 +237,7 @@ MODULE RPara
   !Crystallography
   REAL(RKIND) :: RLengthX,RLengthY,RLengthZ,RVolume,RAlpha,RBeta,RGamma, &
        RDebyeWallerConstant,RAbsorptionPercentage
-  REAL(RKIND), DIMENSION(:), ALLOCATABLE :: RBasisIsoDW, RBasisOccupancy, RIsoDW, ROccupancy
+  REAL(RKIND), DIMENSION(:), ALLOCATABLE :: RBasisIsoDW, RBasisOccupancy, RIsoDW, ROccupancy, RGridDecimal
   REAL(RKIND), DIMENSION(:,:), ALLOCATABLE :: RSymVec,RBasisAtomPosition, &
        RAtomPosition,RUniqueKey
   REAL(RKIND), DIMENSION(:,:,:), ALLOCATABLE :: RSymMat

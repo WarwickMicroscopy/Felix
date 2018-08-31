@@ -560,16 +560,17 @@ MODULE read_files_mod
     USE MyNumbers
     USE message_mod
     ! global outputs
-    USE IPARA, ONLY : IAtomsToRefine, ISizeofGrid, ISimFLAG   
+    USE IPARA, ONLY : IAtomsToRefine, ISizeofGrid, IGridPercentage, ISimFLAG
+    USE RPARA, ONLY : RGridDecimal
     ! global inputs
     USE IPARA, ONLY : IRefineMode 
-
+    
     IMPLICIT NONE  
 
     CHARACTER(200), INTENT(IN) :: SFullAtomicSites
     CHARACTER(200) :: SAtomicSites
     INTEGER(IKIND),INTENT(OUT) :: IErr
-    INTEGER(IKIND) :: IPos, IPos1, IPos2, IPos3, ind
+    INTEGER(IKIND) :: IPos, IPos1, IPos2, IPos3, IPos4, ind, IPercentageRangeFLAG
     CHARACTER(200) :: SFormatString, SLengthofNumberString
 
     IPos1 = SCAN(SFullAtomicSites,'(')
@@ -584,12 +585,22 @@ MODULE read_files_mod
     IPos1 = SCAN(SAtomicSites,'(')
     IPos2 = SCAN(SAtomicSites,')')
     CALL message (LS, "SAtomicSites = ", SAtomicSites)
-    !Format of Grid Simulation for one atom is IAtomicSites = (1:2)
+    !Format of Grid Simulation for one atom is IAtomicSites = (1:2;5)
+    !2 specifies 2 points in between 0 and 1 (4 points total)
+    !5 specifies the percentage +- the basis given in the cif for that atom
     IF (ISimFLAG.EQ.2) THEN
        IPos3 = SCAN(SAtomicSites,':')
        IF (IPos3.EQ.0) IErr = 1
        IF(l_alert(IErr,"DetermineRefineableAtomicSites",&
             "You Have Not Specfied a Simulation Grid")) RETURN
+       IPos4 = SCAN(SAtomicSites,'-')
+       IPercentageRangeFLAG=1
+       IF (IPos4.EQ.0) THEN
+          IPos4=IPos2
+          IPercentageRangeFLAG=0
+          CALL message (LS, "Percentage range not given, continuing" )
+       END IF
+
        IF ((IPos3-IPos1).GT.1.AND.SCAN(SAtomicSites,',').EQ.0) THEN
           ALLOCATE(IAtomsToRefine(1),STAT=IErr)
           IF(l_alert(IErr,"DetermineRefineableAtomicSites","allocate IAtomsToRefine")) RETURN
@@ -602,14 +613,28 @@ MODULE read_files_mod
           SFormatString=""
           ALLOCATE(ISizeofGrid(1),STAT=IErr)
           IF(l_alert(IErr,"DetermineRefineableAtomicSites","allocate ISizeofGrid")) RETURN
-          WRITE(SLengthofNumberString,*) LEN(SAtomicSites((IPos3+1):(IPos2-1)))
+          WRITE(SLengthofNumberString,*) LEN(SAtomicSites((IPos3+1):(IPos4-1)))
           WRITE(SFormatString,*) "(I"//TRIM(ADJUSTL(SLengthofNumberString))//")"
-          READ(SAtomicSites((IPos3+1):(IPos2-1)),FMT=SFormatString) ISizeofGrid(1)
+          READ(SAtomicSites((IPos3+1):(IPos4-1)),FMT=SFormatString) ISizeofGrid(1)
+
+          IF(IPercentageRangeFLAG.EQ.1) THEN
+
+             SLengthofNumberString=""
+             SFormatString=""
+             ALLOCATE(IGridPercentage(1),STAT=IErr)
+             IF(l_alert(IErr,"DetermineRefineableAtomicSites","allocate IGridPercentage")) RETURN
+             ALLOCATE(RGridDecimal(1),STAT=IErr)
+             IF(l_alert(IErr,"DetermineRefineableAtomicSites","allocate RGridDecimal")) RETURN
+             WRITE(SLengthofNumberString,*) LEN(SAtomicSites((IPos4+1):(IPos2-1)))
+             WRITE(SFormatString,*) "(I"//TRIM(ADJUSTL(SLengthofNumberString))//")"
+             READ(SAtomicSites((IPos4+1):(IPos2-1)),FMT=SFormatString) IGridPercentage(1)
+             RGridDecimal(1)=REAL(IGridPercentage(1),RKIND)*REAL(0.01,RKIND)
+          END IF
 
        ELSE
-          
+
           IPos = 1
-          
+
           DO 
              IF(SCAN(SAtomicSites(IPos1:IPos2),',').NE.0) THEN
                 IPos1 = IPos1 + LEN(SAtomicSites(IPos1:(IPos1+SCAN(SAtomicSites(IPos1:IPos2),','))))
@@ -622,14 +647,19 @@ MODULE read_files_mod
           IF(l_alert(IErr,"DetermineRefineableAtomicSites","allocate IAtomsToRefine")) RETURN
           ALLOCATE(ISizeofGrid(IPos),STAT=IErr)
           IF(l_alert(IErr,"DetermineRefineableAtomicSites","allocate ISizeofGrid")) RETURN
-
+          ALLOCATE(IGridPercentage(IPos),STAT=IErr)
+          IF(l_alert(IErr,"DetermineRefineableAtomicSites","allocate IGridPercentage")) RETURN
+          ALLOCATE(RGridDecimal(IPos),STAT=IErr)
+          IF(l_alert(IErr,"DetermineRefineableAtomicSites","allocate RGridDecimal")) RETURN
+          
           IPos1 = SCAN(SAtomicSites,'(')
+
           CALL message (LS,  "SAtomicSites = ", SAtomicSites )
           CALL message (LS,  "IAtomsToRefine = ", IAtomsToRefine )
           DO ind = 1,SIZE(IAtomsToRefine,DIM=1)
              IF(SCAN(SAtomicSites((IPos1+1):IPos2),':').NE.0) THEN
                 IPos = SCAN(SAtomicSites((IPos1+1):IPos2),':')-1
-                
+
                 CALL message (LS, "ind = ", ind, "   IPos = ", IPos )
                 CALL message (LS, "ind = ", ind, "   IPos1 first = ", IPos1) 
                 WRITE(SLengthofNumberString,*) LEN(SAtomicSites((IPos1+1):(IPos1+IPos)))
@@ -637,20 +667,34 @@ MODULE read_files_mod
                 READ(SAtomicSites((IPos1+1):(IPos1+IPos)),FMT=SFormatString) IAtomsToRefine(ind)
                 IPos1 = IPos1 + IPos + 1
                 CALL message (LS, "ind = ", ind, "   IPos1 = ", IPos1 )
-                IF(SCAN(SAtomicSites((IPos1+1):IPos2),',').NE.0) THEN
-                   IPos = SCAN(SAtomicSites((IPos1+1):IPos2),',')-1
+                IF(SCAN(SAtomicSites((IPos1+1):IPos2),'-').NE.0) THEN
+                   IPos = SCAN(SAtomicSites((IPos1+1):IPos2),'-')-1
                    CALL message (LS, "ind = ", ind, "   IPos = ", IPos )
                    WRITE(SLengthofNumberString,*) LEN(SAtomicSites((IPos1+1):(IPos1+IPos))) 
                    WRITE(SFormatString,*) "(I"//TRIM(ADJUSTL(SLengthofNumberString))//")"
                    READ(SAtomicSites((IPos1+1):(IPos1+IPos)),FMT=SFormatString) ISizeofGrid(ind)
                    IPos1 = IPos1 + IPos + 1
-                    CALL message (LS, "ind = ", ind, "IPos1 = ", IPos1 )
-                ELSE
-                   WRITE(SLengthofNumberString,*) LEN(SAtomicSites((IPos1+1):(IPos2-1))) 
-                   WRITE(SFormatString,*) "(I"//TRIM(ADJUSTL(SLengthofNumberString))//")"
-                   READ(SAtomicSites((IPos1+1):(IPos2-1)),FMT=SFormatString) ISizeofGrid(ind)
+                   CALL message (LS, "ind = ", ind, "IPos1 = ", IPos1 )
+                   IF(SCAN(SAtomicSites((IPos1+1):IPos2),',').NE.0) THEN
+                      IPos = SCAN(SAtomicSites((IPos1+1):IPos2),',')-1
+                      CALL message (LS, "ind = ", ind, "   IPos = ", IPos )
+                      WRITE(SLengthofNumberString,*) LEN(SAtomicSites((IPos1+1):(IPos1+IPos))) 
+                      WRITE(SFormatString,*) "(I"//TRIM(ADJUSTL(SLengthofNumberString))//")"
+                      READ(SAtomicSites((IPos1+1):(IPos1+IPos)),FMT=SFormatString) IGridPercentage(ind)
+                      IPos1 = IPos1 + IPos + 1
+                      CALL message (LS, "ind = ", ind, "IPos1 = ", IPos1 )
+                   ELSE IF (IPercentageRangeFLAG.EQ.1) THEN
+                      WRITE(SLengthofNumberString,*) LEN(SAtomicSites((IPos1+1):(IPos2-1))) 
+                      WRITE(SFormatString,*) "(I"//TRIM(ADJUSTL(SLengthofNumberString))//")"
+                      READ(SAtomicSites((IPos1+1):(IPos2-1)),FMT=SFormatString) IGridPercentage(ind)
+                   ELSE
+                      WRITE(SLengthofNumberString,*) LEN(SAtomicSites((IPos1+1):(IPos2-1))) 
+                      WRITE(SFormatString,*) "(I"//TRIM(ADJUSTL(SLengthofNumberString))//")"
+                      READ(SAtomicSites((IPos1+1):(IPos2-1)),FMT=SFormatString) ISizeofGrid(ind)
+                   END IF
                 END IF
              END IF
+             IF(IPercentageRangeFLAG.EQ.1) RGridDecimal(ind)=REAL(IGridPercentage(ind),RKIND)*REAL(0.01,RKIND)
           END DO
 
        END IF
@@ -695,9 +739,9 @@ MODULE read_files_mod
     END IF
     CALL message (LS, "Refining atoms ", IAtomsToRefine )
     IF (ISimFLAG.EQ.2) CALL message (LS, "Grid densities ", ISizeofGrid )
+    IF (IPercentageRangeFLAG.EQ.1) CALL message (LS, "Percentage Ranges", IGridPercentage )
 
-
-     END SUBROUTINE DetermineRefineableAtomicSites
+  END SUBROUTINE DetermineRefineableAtomicSites
 
   !%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
