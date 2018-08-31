@@ -296,8 +296,8 @@ CONTAINS
     REAL(RKIND) :: Rduration
     CHARACTER(100) :: SPrintString,Sfmt
 
-    INameLength=LEN(STaskName)+14
-    WRITE(Sfmt,*) '(A',INameLength,',A1,I3,A5,I2,A6,I2,A4)'
+    INameLength=LEN(STaskName)
+    WRITE(Sfmt,*) '(A',INameLength,',A14,I3,A5,I3,A6,I3,A4)'
     Sfmt=TRIM(ADJUSTL(Sfmt))
     CALL system_clock(ICurrentTime)
     ! converts ticks from system clock into seconds
