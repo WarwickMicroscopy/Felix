@@ -6,11 +6,11 @@
 # control flags
 IWriteFLAG                = 1
 IImageFLAG                = 1
-IScatterFactorMethodFLAG  = 0
+IScatterFactorMethodFLAG  = 2
 IBlochMethodFLAG          = 0
 IMaskFLAG                 = 1
 IHolzFLAG                 = 0
-IAbsorbFLAG               = 2
+IAbsorbFLAG               = 0
 IAnisoDebyeWallerFlag     = 0
 IByteSize                 = 2
 
@@ -18,8 +18,8 @@ IByteSize                 = 2
 IPixelCount               = 160
 
 # beam selection criteria
-IMinReflectionPool        = 600
-IMinStrongBeams           = 200
+IMinReflectionPool        = 200
+IMinStrongBeams           = 50
 IMinWeakBeams             = 0
 
 # crystal settings
@@ -41,12 +41,12 @@ RDeltaThickness          = 10.0
 IReflectOut              = 43
 
 #Refinement Specific Flags
-IRefineModeFLAG          = H
+IRefineModeFLAG          = S
 IWeightingFLAG           = 0
 IRefineMethodFLAG        = 2
 ICorrelationFLAG         = 2
 IImageProcessingFLAG     = 4
-RBlurRadius              = 2.2
+RBlurRadius              = 0.0
 INoofUgs                 = 1
 IAtomicSites             = (1,2)
 IPrint                   = 4

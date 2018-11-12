@@ -81,7 +81,7 @@ PROGRAM Felixrefine
   
   CHARACTER(40) :: my_rank_string
   CHARACTER(20) :: h,k,l
-  CHARACTER(100) :: SPrintString
+  CHARACTER(200) :: SPrintString
 
   !--------------------------------------------------------------------
   ! startup
@@ -1105,14 +1105,16 @@ CONTAINS
               "Infinity or NaN error, refinement vector ="//TRIM(SPrintString))) RETURN
       END IF
       RPvec=RPvec/SQRT(RPvecMag) ! unity vector along direction of max gradient
-      WRITE(SPrintString,*) "(A18,",SIZE(RPvec),"(F7.4,1X))"
-      WRITE(SPrintString,FMT=SPrintString)"Refinement vector ",RPvec
-      SPrintString=TRIM(ADJUSTL(SPrintString))
-      CALL message(LS,SPrintString)
+      IF(my_rank.EQ.0) THEN
+        WRITE(SPrintString,*) "(A18,",SIZE(RPvec),"(F7.4,1X))"
+        WRITE(SPrintString,FMT=SPrintString)"Refinement vector ",RPvec
+        SPrintString=TRIM(ADJUSTL(SPrintString))
+        CALL message(LS,SPrintString)
+      END IF
 
       RVar0=RIndependentVariable ! the best point of gradient calculation
       RFigureofMerit=RBestFit ! the best fit so far
-      ! First point, three points to find the miniimum
+      ! First point, three points to find the minimum
       R3var(1)=RVar0(1)! first point is current value
       R3fit(1)=RFigureofMerit! point 1 is the incoming simulation and fit index
       RPvecMag=RVar0(1)*RScale ! RPvecMag gives the magnitude of vector in parameter space

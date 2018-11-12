@@ -4,7 +4,7 @@ _database_code_ICSD 80871
 _audit_creation_date 1997-05-13
 _audit_update_record 2006-04-01
 _chemical_name_systematic 'Strontium titanate'
-_chemical_formula_structural 'Sr Ti O3'
+_chemical_formula_structural 'Sr (Ti O3)'
 _chemical_formula_sum 'O3 Sr1 Ti1'
 _chemical_name_structure_type Perovskite-CaTiO3
 _exptl_crystal_density_diffrn 5.14
@@ -105,7 +105,7 @@ _atom_site_fract_y
 _atom_site_fract_z
 _atom_site_B_iso_or_equiv
 _atom_site_occupancy
-Sr1 Sr2+ 1 a 0.0 0.0 0.0 0.4153 1.0
-Ti1 Ti4+ 1 b 0.5 0.5 0.5 1.1035 1.0
-O1  O2-  3 c 0.0 0.5 0.5 0.8888 1.0
-#Sr0.4153 Ti1.1035 O0.8888
+Sr1 Sr2+ 1 a 0.0 0.0 0.0 0.6824 1.0
+Ti1 Ti4+ 1 b 0.5 0.5 0.5 0.6145 1.0
+O1  O2-  3 c 0.0 0.5 0.5 0.5795 1.0
+#[021]

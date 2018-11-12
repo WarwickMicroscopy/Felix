@@ -99,6 +99,7 @@ MODULE bloch_mod
     COMPLEX(CKIND) :: CScatteringElement
     INTEGER(IKIND) :: ScatterMatrixRow
      
+    IErr=0
     ! we are inside the mask
     IPixelComputed= IPixelComputed + 1
 
@@ -424,6 +425,7 @@ MODULE bloch_mod
           CWaveFunctions(nBeams),CEigenValueDependentTerms(nBeams,nBeams)
     INTEGER(IKIND) :: ind,jnd,knd,hnd,ifullind,iuniind,gnd,ichnk
     
+    IErr=0
     ! The top surface boundary conditions
     CPsi0 = CZERO ! all diffracted beams are zero
     CPsi0(1) = CONE ! the 000 beam has unit amplitude
