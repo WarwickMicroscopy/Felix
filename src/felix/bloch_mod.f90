@@ -116,10 +116,15 @@ MODULE bloch_mod
     ! NB RDevPara is in units of (1/A)
     ! in the microscope ref frame(NB exp(i*s.r), physics convention)
     DO knd=1,nReflections
-      ! Sg parallel to z: Sg=-[k'z+gz-sqrt( (k'z+gz)^2-2k'.g-g^2)]
-      RDevPara(knd)= -RTiltedK(3)-RgPool(knd,3)+&
-        SQRT( (RTiltedK(3)+RgPool(knd,3))**2 - &
-        2*DOT_PRODUCT(RgPool(knd,:),RTiltedK(:)) - RgPoolMag(knd)**2 )
+      ! Version without small angle approximation
+      ! Sg=g*(2-2cosPhi)^0.5, where Phi is the angle between Bragg k and k'
+      ! cosPhi is obtained from k.k'
+      RDevPara(knd)=RgPoolMag(knd)*SQRT(2-RgPoolMag(knd)*(SQRT(4*(RBigK/RgPoolMag(knd))**2-1)*&
+                   RTiltedK(3)-SQRT(RTiltedK(1)**2+RTiltedK(2)**2))/(RBigK**2))
+      ! Old version, Sg parallel to z: Sg=-[k'z+gz-sqrt( (k'z+gz)^2-2k'.g-g^2)]
+      !RDevPara(knd)= -RTiltedK(3)-RgPool(knd,3)+&
+      !  SQRT( (RTiltedK(3)+RgPool(knd,3))**2 - &
+      !  2*DOT_PRODUCT(RgPool(knd,:),RTiltedK(:)) - RgPoolMag(knd)**2 )
       !Keith's old version, Sg parallel to k'
       !RDevPara(knd)= -( RBigK + DOT_PRODUCT(RgPool(knd,:),RTiltedK(:)) /RBigK) + &
       !  SQRT( ( RBigK**2 + DOT_PRODUCT(RgPool(knd,:),RTiltedK(:)) )**2 /RBigK**2 - &
@@ -272,10 +277,10 @@ MODULE bloch_mod
       END DO
     END IF
 
-	! Invert the EigenVector matrix
+    ! Invert the EigenVector matrix
     CDummyEigenVectors = CEigenVectors
     CALL INVERT(nBeams,CDummyEigenVectors(:,:),CInvertedEigenVectors,IErr)
-	
+
     !--------------------------------------------------------------------
     ! fill RIndividualReflections( LACBED_ID , thickness_ID, local_pixel_ID ) 
     !--------------------------------------------------------------------
