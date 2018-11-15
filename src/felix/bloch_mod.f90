@@ -119,12 +119,14 @@ MODULE bloch_mod
       ! Version without small angle approximation
       ! Sg=g*(2-2cosPhi)^0.5, where Phi is the angle between Bragg k and k'
       ! cosPhi is obtained from k.k'
-      RDevPara(knd)=RgPoolMag(knd)*SQRT(2-RgPoolMag(knd)*(SQRT(4*(RBigK/RgPoolMag(knd))**2-1)*&
-                   RTiltedK(3)-SQRT(RTiltedK(1)**2+RTiltedK(2)**2))/(RBigK**2))
+      !RDevPara(knd)=RgPoolMag(knd)*SQRT(2.0-(SQRT(4*RBigK**2-RgPoolMag(knd)**2)*&
+      !             RTiltedK(3)-RgPoolMag(knd)*SQRT(RTiltedK(1)**2+RTiltedK(2)**2))/(RBigK**2))
+      !IF(my_rank.EQ.0) PRINT*, "new", knd, RDevPara(knd)
       ! Old version, Sg parallel to z: Sg=-[k'z+gz-sqrt( (k'z+gz)^2-2k'.g-g^2)]
-      !RDevPara(knd)= -RTiltedK(3)-RgPool(knd,3)+&
-      !  SQRT( (RTiltedK(3)+RgPool(knd,3))**2 - &
-      !  2*DOT_PRODUCT(RgPool(knd,:),RTiltedK(:)) - RgPoolMag(knd)**2 )
+      RDevPara(knd)= -RTiltedK(3)-RgPool(knd,3)+&
+        SQRT( (RTiltedK(3)+RgPool(knd,3))**2 - &
+        2*DOT_PRODUCT(RgPool(knd,:),RTiltedK(:)) - RgPoolMag(knd)**2 )
+      !IF(my_rank.EQ.0) PRINT*, "old", knd, RDevPara(knd)
       !Keith's old version, Sg parallel to k'
       !RDevPara(knd)= -( RBigK + DOT_PRODUCT(RgPool(knd,:),RTiltedK(:)) /RBigK) + &
       !  SQRT( ( RBigK**2 + DOT_PRODUCT(RgPool(knd,:),RTiltedK(:)) )**2 /RBigK**2 - &
