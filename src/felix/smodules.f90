@@ -85,7 +85,7 @@ MODULE SConst
        "Fd-3c","Im-3m","Ia-3d"/
 
   CHARACTER*2 :: SElementSymbolMatrix(110)!N.B. Number must equal INElements
-  DATA SElementSymbolMatrix/"H", "He", "Li", "Be", " B", " C", " N", "O", "F", "Ne", &
+  DATA SElementSymbolMatrix/"H", "He", "Li", "Be", "B", "C", "N", "O", "F", "Ne", &
        "Na", "Mg", "Al", "Si", "P", "S", "Cl", "Ar", "K", "Ca", &
        "Sc", "Ti", "V", "Cr", "Mn", "Fe", "Co", "Ni", "Cu", "Zn", &
         "Ga", "Ge", "As", "Se", "Br", "Kr", "Rb", "Sr", "Y", "Zr", &
