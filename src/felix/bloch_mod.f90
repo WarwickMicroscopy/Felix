@@ -88,7 +88,7 @@ MODULE bloch_mod
           nBeams,nWeakBeams
     INTEGER(IKIND) :: ind,knd,pnd,IThickness,IThicknessIndex,ILowerLimit,&
           IUpperLimit       
-    REAL(RKIND) :: RThickness,RKn,Rn(3),Ra,Rb,Rc,Rp(3)
+    REAL(RKIND) :: RThickness,RKn,Rn(3),Rp(3)
     COMPLEX(CKIND) sumC,sumD
     COMPLEX(CKIND), DIMENSION(:,:), ALLOCATABLE :: CBeamTranspose,CUgMatPartial,CDummyEigenVectors
     CHARACTER*40 surname
@@ -111,38 +111,35 @@ MODULE bloch_mod
     RTiltedK(2)= (REAL(IXPixelIndex,RKIND)-REAL(IPixelCount,RKIND)-0.5_RKIND)*RDeltaK 
     RTiltedK(3)= SQRT(RBigK**2 - RTiltedK(1)**2 - RTiltedK(2)**2) 
     RKn = DOT_PRODUCT(RTiltedK,RNormDirM)
-    Rn = ZERO
 
     ! Compute the deviation parameter for reflection pool
     ! NB RDevPara is in units of (1/A)
     ! in the microscope ref frame(NB exp(i*s.r), physics convention)
-    DO knd=2,nReflections!start at 2 because first g is 000
+    DO knd=1,nReflections! first g is 000
+      Rn = ZERO
+      Rp = ZERO
       ! Version without small angle approximation
       ! First transform g and k to a reference frame giving g'=[g,0,0]
-      ! and RkP = k'= [k'x,0,k'z] where k'x = (k.g)/|g|
-      Rn(1)=DOT_PRODUCT(RTiltedK,RgPool(knd,:))/RgPoolMag(knd)
-      Rn(3)=SQRT(RBigK**2-Rn(1)**2)
-      !a,b,c for the quadratic formula
-      !Ra=RBigK**2
-      !Rb=RkP(3)*RgPoolMag(knd)
-      !Rc=(0.25-RkP(1)**2)*RgPoolMag(knd)**2
-      !The vector p is coplanar with
-      !g and k and has magnitude g (Sg=g-p)
-      IF (Rn(1).LT.ZERO) THEN!k'.g<0
-        Rp(3)=RgPoolMag(knd)*(Rn(3)-SQRT(Rn(3)**2-(1-4*Rn(1)**2)*RBigK**2))/(2*RBigK**2)
-      ELSEIF (Rn(1).GT.ZERO) THEN
-        Rp(3)=RgPoolMag(knd)*(Rn(3)+SQRT(Rn(3)**2-(1-4*Rn(1)**2)*RBigK**2))/(2*RBigK**2)
+      ! and Rn = k'= [k'x,0,k'z] where k'x = (k.g)/|g|
+      IF (ABS(RgPoolMag(knd)).LE.0.0000001) THEN
+        RDevPara(knd)=ZERO!by definition for 000
+      ELSE
+        Rn(1)=DOT_PRODUCT(RTiltedK,RgPool(knd,:))/RgPoolMag(knd)
+        Rn(3)=SQRT(RBigK**2-Rn(1)**2)
+        !The vector p is coplanar with
+        !g and k and has magnitude g
+        !p3=g(k'3+k'1*sqrt(4*k^2-1))/(2k^2)
+        Rp(3)=RgPoolMag(knd)*(Rn(3)+Rn(1)*sqrt(4*RBigK**2-1))/(2*RBigK**2)
+        Rp(1)=SQRT(RgPoolMag(knd)**2-Rp(3)**2)
+        RDevPara(knd)=-SQRT( (RgPoolMag(knd)-Rp(1))**2 + Rp(3)**2 )*SIGN(1.0,Rp(3))
       END IF
-      IF (ABS(Rn(1)).LT.0.0000001) Rp(3)=RgPoolMag(knd)/(2*RBigK)! avoiding unpleasantness that comes with SQRT(ZERO)
-      Rp(1)=SQRT(RgPoolMag(knd)**2-Rp(3)**2)
-      RDevPara(knd)=SQRT( (RgPoolMag(knd)-Rp(1))**2 + Rp(3)**2 )*SIGN(1.0,Rp(3))
       !RDevPara(knd)=SQRT(2*RgPoolMag(knd)*(RgPoolMag(knd)-Rp(1)))*SIGN(1.0,Rp(3))
-      !IF(my_rank.EQ.0) PRINT*, knd,Rn(1),RDevPara(knd)
+      IF(my_rank.EQ.0) PRINT*, knd,RDevPara(knd)
       ! Old version, Sg parallel to z: Sg=-[k'z+gz-sqrt( (k'z+gz)^2-2k'.g-g^2)]
       RDevPara(knd)= -RTiltedK(3)-RgPool(knd,3)+& 
         SQRT( (RTiltedK(3)+RgPool(knd,3))**2 - &
         2*DOT_PRODUCT(RgPool(knd,:),RTiltedK(:)) - RgPoolMag(knd)**2 )
-      !IF(my_rank.EQ.0) PRINT*, knd,Rp(3),RDevPara(knd)
+      IF(my_rank.EQ.0) PRINT*, knd,RDevPara(knd)
       !Keith's old version, Sg parallel to k'
       !RDevPara(knd)= -( RBigK + DOT_PRODUCT(RgPool(knd,:),RTiltedK(:)) /RBigK) + &
       !  SQRT( ( RBigK**2 + DOT_PRODUCT(RgPool(knd,:),RTiltedK(:)) )**2 /RBigK**2 - &
