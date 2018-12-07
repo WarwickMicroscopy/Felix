@@ -6,11 +6,11 @@
 # control flags
 IWriteFLAG                = 1
 IImageFLAG                = 1
-IScatterFactorMethodFLAG  = 2
+IScatterFactorMethodFLAG  = 0
 IBlochMethodFLAG          = 0
 IMaskFLAG                 = 1
 IHolzFLAG                 = 0
-IAbsorbFLAG               = 0
+IAbsorbFLAG               = 2
 IAnisoDebyeWallerFlag     = 0
 IByteSize                 = 2
 
@@ -18,7 +18,7 @@ IByteSize                 = 2
 IPixelCount               = 160
 
 # beam selection criteria
-IMinReflectionPool        = 300
+IMinReflectionPool        = 100
 IMinStrongBeams           = 50
 IMinWeakBeams             = 0
 
@@ -46,7 +46,7 @@ IWeightingFLAG           = 0
 IRefineMethodFLAG        = 2
 ICorrelationFLAG         = 2
 IImageProcessingFLAG     = 4
-RBlurRadius              = 0.0
+RBlurRadius              = 2.2
 INoofUgs                 = 1
 IAtomicSites             = (1,2)
 IPrint                   = 4

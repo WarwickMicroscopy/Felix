@@ -88,7 +88,7 @@ MODULE bloch_mod
           nBeams,nWeakBeams
     INTEGER(IKIND) :: ind,knd,pnd,IThickness,IThicknessIndex,ILowerLimit,&
           IUpperLimit       
-    REAL(RKIND) :: RThickness,RKn
+    REAL(RKIND) :: RThickness,RKn,Rk0(3),RkPrime(3)
     COMPLEX(CKIND) sumC,sumD
     COMPLEX(CKIND), DIMENSION(:,:), ALLOCATABLE :: CBeamTranspose,CUgMatPartial,CDummyEigenVectors
     CHARACTER*40 surname
@@ -111,26 +111,33 @@ MODULE bloch_mod
     RTiltedK(2)= (REAL(IXPixelIndex,RKIND)-REAL(IPixelCount,RKIND)-0.5_RKIND)*RDeltaK 
     RTiltedK(3)= SQRT(RBigK**2 - RTiltedK(1)**2 - RTiltedK(2)**2) 
     RKn = DOT_PRODUCT(RTiltedK,RNormDirM)
-    
+    Rk0 = ZERO
+    RkPrime=ZERO
+    !IF(my_rank.EQ.0) PRINT*,RTiltedK
     ! Compute the deviation parameter for reflection pool
     ! NB RDevPara is in units of (1/A)
     ! in the microscope ref frame(NB exp(i*s.r), physics convention)
     DO knd=1,nReflections
       ! Version without small angle approximation
-      ! Sg=g*(2-2cosPhi)^0.5, where Phi is the angle between Bragg k and k'
-      ! cosPhi is obtained from k.k'
-      !RDevPara(knd)=RgPoolMag(knd)*SQRT(2.0-(SQRT(4*RBigK**2-RgPoolMag(knd)**2)*&
-      !             RTiltedK(3)-RgPoolMag(knd)*SQRT(RTiltedK(1)**2+RTiltedK(2)**2))/(RBigK**2))
-      !IF(my_rank.EQ.0) PRINT*, "new", knd, RDevPara(knd)
+      ! Sg=(g/k)*[2(k^2-k0.k')]^0.5
+      ! k0 is defined by the Bragg condition
+      Rk0(1) = -RgPoolMag(knd)/2
+      Rk0(3) = SQRT(RBigK**2-Rk0(1)**2)
+      ! k' is from RTiltedK
+      RkPrime(1)=DOT_PRODUCT(RTiltedK,RgPool(knd,:))/RgPoolMag(knd)!Gives NaN for 000
+      RkPrime(3) = SQRT(RBigK**2-RkPrime(1)**2)
+      RDevPara(knd)=-SIGN(ONE,(2*DOT_PRODUCT(RgPool(knd,:),RTiltedK)+RgPoolMag(knd)**2))*&
+                    RgPoolMag(knd)*SQRT(2*(RBigK**2-DOT_PRODUCT(Rk0,RkPrime)))/RBigK
+      IF (RgPoolMag(knd).EQ.ZERO) RDevPara(knd)=ZERO!Avoid NaN for 000
+      !IF(my_rank.EQ.0) PRINT*, knd,RgPool(knd,1),RgPool(knd,2)
+      !IF(my_rank.EQ.0) PRINT*, "new",RDevPara(knd),&
+      !      SIGN(ONE,(2*DOT_PRODUCT(RgPool(knd,:),RTiltedK)-RgPoolMag(knd)**2))
       ! Old version, Sg parallel to z: Sg=-[k'z+gz-sqrt( (k'z+gz)^2-2k'.g-g^2)]
-      RDevPara(knd)= -RTiltedK(3)-RgPool(knd,3)+&
-        SQRT( (RTiltedK(3)+RgPool(knd,3))**2 - &
-        2*DOT_PRODUCT(RgPool(knd,:),RTiltedK(:)) - RgPoolMag(knd)**2 )
-      !IF(my_rank.EQ.0) PRINT*, "old", knd, RDevPara(knd)
-      !Keith's old version, Sg parallel to k'
-      !RDevPara(knd)= -( RBigK + DOT_PRODUCT(RgPool(knd,:),RTiltedK(:)) /RBigK) + &
-      !  SQRT( ( RBigK**2 + DOT_PRODUCT(RgPool(knd,:),RTiltedK(:)) )**2 /RBigK**2 - &
-      !  (RgPoolMag(knd)**2 + TWO*DOT_PRODUCT(RgPool(knd,:),RTiltedK(:))) )
+      !RDevPara(knd)= -RTiltedK(3)-RgPool(knd,3)+&
+      !  SQRT( (RTiltedK(3)+RgPool(knd,3))**2 - &
+      !  2*DOT_PRODUCT(RgPool(knd,:),RTiltedK) - RgPoolMag(knd)**2 )
+      !IF(my_rank.EQ.0) PRINT*, "old", RDevPara(knd)
+      ! Debugging output
       IF(knd.EQ.1.AND.IYPixelIndex.EQ.10.AND.IXPixelIndex.EQ.10) THEN
         CALL message(LM,"RBigK ",RBigK)!LM,dbg7
         CALL message(LM,"Rhkl(knd) ",Rhkl(knd:knd,:))

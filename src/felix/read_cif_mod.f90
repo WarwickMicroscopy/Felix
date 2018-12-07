@@ -254,7 +254,7 @@ MODULE read_cif_mod
       IAtomCount= IAtomCount+1
       IF(loop_ .NEQV. .TRUE.) EXIT
     END DO
-    !check for consistency with IAtomsToRefine
+    IF (my_rank.EQ.0) PRINT*, IAtomCount
     IF (SIZE(IAtomsToRefine,DIM=1).GT.IAtomCount) THEN
       IErr=1; IF(l_alert(IErr,"ReadCif",&
             "Number of atomic sites to refine is larger than the number of atoms. "//&
@@ -293,6 +293,7 @@ MODULE read_cif_mod
       SBasisAtomLabel(ind)=name
       f1 = char_('_atom_site_type_symbol', name)
       SBasisAtomName(ind)=name(1:2)
+      IF (my_rank.EQ.0) PRINT*, ind, SBasisAtomName(ind)
       ! remove the oxidation state numbers
       Ipos=SCAN(SBasisAtomName(ind),"1234567890")
       IF (Ipos.GT.0) WRITE(SBasisAtomName(ind),'(A1,A1)') name(1:1)," "
