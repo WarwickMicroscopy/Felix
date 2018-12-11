@@ -12,14 +12,14 @@ IMaskFLAG                 = 1
 IHolzFLAG                 = 0
 IAbsorbFLAG               = 2
 IAnisoDebyeWallerFlag     = 0
-IByteSize                 = 8
+IByteSize                 = 2
 
 # radius of the beam in pixels
-IPixelCount               = 38
+IPixelCount               = 64
 
 # beam selection criteria
 IMinReflectionPool        = 1200
-IMinStrongBeams           = 260
+IMinStrongBeams           = 400
 IMinWeakBeams             = 260
 
 # crystal settings
@@ -27,28 +27,28 @@ RDebyeWallerConstant      = 0.0
 RAbsorptionPer            = 7.8
 
 # microscope settings
-ROuterConvergenceAngle    = 5.256
+ROuterConvergenceAngle    = 5.273
 IIncidentBeamDirection    = [0,1,1]
-IXDirection               = [1,0,0]
+IXDirection               = [0,-1,1]
 INormalDirection          = [0,1,1]
 RAcceleratingVoltage (kV) = 200.0
 RAcceptanceAngle          = 0.0
 
 # Image Output Options
-RInitialThickness        = 400.0
-RFinalThickness          = 600.0
+RInitialThickness        = 570.0
+RFinalThickness          = 570.0
 RDeltaThickness          = 10.0
 IReflectOut              = 1
 
 #Refinement Specific Flags
-IRefineModeFLAG          = D
+IRefineModeFLAG          = B
 IWeightingFLAG           = 0
 IRefineMethodFLAG        = 2
 ICorrelationFLAG         = 2
 IImageProcessingFLAG     = 4
-RBlurRadius              = 1.45
+RBlurRadius              = 2.0
 INoofUgs                 = 40
-IAtomicSites             = (1)
+IAtomicSites             = (4,5,6,7)
 IPrint                   = 10
-RSimplexLengthScale      = 5.0
+RSimplexLengthScale      = 1.0
 RExitCriteria            = 0.00001

@@ -191,7 +191,6 @@ MODULE read_cif_mod
          IErr=1; IF(l_alert(IErr,"ReadCif","Cell angles(s) missing")) RETURN
       END IF
       READ(SInputA,*) RAlpha; READ(SInputB,*) RBeta; READ(SInputC,*) RGamma
-
       ! convert angles from degrees to radians
       IF (RAlpha.GT.TWOPI) THEN!assume this angle is expressed in degrees
          RAlpha=RAlpha*DEG2RADIAN;
@@ -203,6 +202,22 @@ MODULE read_cif_mod
          RGamma=RGamma*DEG2RADIAN;
       END IF
       CALL message( LS, "Unit cell angles alpha, beta, gamma", (/ RAlpha*RADIAN2DEG,RBeta*RADIAN2DEG,RGamma*RADIAN2DEG /) )
+    CALL message( LXL, dbg14, "Space group", SSpaceGrp)
+    
+    ! ----------------------------------------------------------
+    ! Extract atom site data
+    ! count how many atoms
+    IAtomCount=0
+    DO 
+      f1 = char_('_atom_site_label', name)
+      IAtomCount= IAtomCount+1
+      IF(loop_ .NEQV. .TRUE.) EXIT
+    END DO
+    IF (SIZE(IAtomsToRefine,DIM=1).GT.IAtomCount) THEN
+      IErr=1; IF(l_alert(IErr,"ReadCif",&
+            "Number of atomic sites to refine is larger than the number of atoms. "//&
+            "Please correct in felix.inp")) RETURN
+    END IF
 
       f1 = char_('_cell_volume', name)
 

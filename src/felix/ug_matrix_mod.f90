@@ -676,14 +676,9 @@ MODULE ug_matrix_mod
       END DO
     
     CASE(2) ! 8 Parameter Method with Scattering Parameters from Doyle and Turner Method (1968)
-      DO ind = 1,4
-        jnd = ind*2
-        knd = ind*2 -1
-        ! Doyle &Turner uses summation of 4 Gaussians
-        RScatteringFactor = RScatteringFactor + &
-          GAUSSIAN(RScattFactors(ICurrentZ,knd),RCurrentGMagnitude,ZERO, & 
-          SQRT(2/RScattFactors(ICurrentZ,jnd)),ZERO)
-      END DO
+      ! NB DoyleTurner scattering factor is in Angstrom units
+      ! NB atomic number and g-vector passed as global variables
+      RScatteringFactor = DoyleTurner(RCurrentGMagnitude)
         
     CASE(3) ! 10 Parameter method with Scattering Parameters from Lobato et al. 2014
       !?? update github wiki
@@ -745,9 +740,45 @@ MODULE ug_matrix_mod
   !!$%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
   !>
+  !! Procedure-description: Returns a Doyle-Turner scattering factor 
+  !!
+  !! Major-Authors: Richard Beanland (2016)
+  !!
+  FUNCTION DoyleTurner(Rg)
+    ! used in each (case 2 DoyleTurner) AtomicScatteringFactor
+    ! P.A. Doyle and P.S. Turner Acta Cryst A24,390 (1968)
+    ! ICurrentZ is atomic number, passed as a global variable
+    ! Rg is magnitude of scattering vector in 1/A
+    ! (NB exp(-i*g.r), physics negative convention), global variable
+    ! DoyleTurner scattering factor is in Angstrom units
+    USE MyNumbers
+
+    ! global inputs
+    USE IPARA, ONLY : ICurrentZ 
+    USE RPARA, ONLY : RScattFactors
+    
+    IMPLICIT NONE
+    
+    INTEGER(IKIND) :: ind,IErr
+    REAL(RKIND) :: DoyleTurner,Ra,Rb,Rs,Rg
+
+    ! NB DoyleTurner scattering factors are calculated using s = sin(theta)/lambda = (d*)/2 = g/4pi
+    Rs = Rg / FOURPI
+    DoyleTurner=ZERO;
+    
+    DO ind = 1,4
+      Ra=RScattFactors(ICurrentZ,ind*2-1);
+      Rb=RScattFactors(ICurrentZ,ind*2);
+      DoyleTurner = DoyleTurner + Ra*EXP(-(Rb*Rs**2))
+    END DO
+    
+  END FUNCTION DoyleTurner
+  !!$%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+  !>
   !! Procedure-description: Returns a Kirkland scattering factor 
   !!
-  !! Major-Authors: Keith Evans (2014), Richard Beanland (2016)
+  !! Major-Authors: Richard Beanland (2016)
   !!
   FUNCTION Kirkland(Rg)
     ! used in each (case 0 Kirkland) AtomicScatteringFactor
