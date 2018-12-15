@@ -124,7 +124,7 @@ PROGRAM Felixrefine
 
   CALL message(LL,'IBlochMethodFLAG =',IBlochMethodFLAG)
 
-  CALL read_cif(IErr) ! felix.cif ! some allocations are here
+  CALL read_cif(IErr) ! felix.cif ! some allocations are in here
   IF(l_alert(IErr,"felixrefine","ReadCif")) CALL abort
 
   CALL ReadHklFile(IErr) ! the list of hkl's to input/output
@@ -141,38 +141,10 @@ PROGRAM Felixrefine
   END IF
 
   !--------------------------------------------------------------------
-  ! set up scattering factors, relativistic electrons, reciprocal lattice
-  !--------------------------------------------------------------------
-
-  CALL SetScatteringFactors(IScatterFactorMethodFLAG,IErr)
-  IF(l_alert(IErr,"felixrefine","SetScatteringFactors")) CALL abort
-  ! returns global RScattFactors depeding upon scattering method: Kirkland, Peng, etc.
-
-  ! Calculate wavevector magnitude k and relativistic mass
-  ! Electron Velocity in metres per second
-  RElectronVelocity = &
-        RSpeedOfLight*SQRT( ONE - ((RElectronMass*RSpeedOfLight**2) / &
-        (RElectronCharge*RAcceleratingVoltage*THOUSAND+RElectronMass*RSpeedOfLight**2))**2 )
-  ! Electron WaveLength in metres
-  RElectronWaveLength = RPlanckConstant / &
-        (  SQRT(TWO*RElectronMass*RElectronCharge*RAcceleratingVoltage*THOUSAND) * &
-        SQRT( ONE + (RElectronCharge*RAcceleratingVoltage*THOUSAND) / &
-        (TWO*RElectronMass*RSpeedOfLight**2) )  ) * RAngstromConversion
-  ! NB --- k=2pi/lambda and exp(i*k.r), physics convention
-  RElectronWaveVectorMagnitude=TWOPI/RElectronWaveLength
-  RRelativisticCorrection = ONE/SQRT( ONE - (RElectronVelocity/RSpeedOfLight)**2 )
-  RRelativisticMass = RRelativisticCorrection*RElectronMass
-  !conversion from Vg to Ug, h^2/(2pi*m0*e), see e.g. Kirkland eqn. C.5
-  RScattFacToVolts=(RPlanckConstant**2)*(RAngstromConversion**2)/&
-  (TWOPI*RElectronMass*RElectronCharge*RVolume)
-  ! Creates reciprocal lattice vectors in Microscope reference frame
-  CALL ReciprocalLattice(IErr)
-  IF(l_alert(IErr,"felixrefine","ReciprocalLattice")) CALL abort
-
-  !--------------------------------------------------------------------
   ! allocate atom and Debye-Waller factor arrays
   !--------------------------------------------------------------------
-
+  ! Reset the basis so that atomic coordinate refinement is possible 
+  CALL PreferredBasis(IErr)!A crystallography subroutine
   ! total possible atoms/unit cell
   IMaxPossibleNAtomsUnitCell=SIZE(RBasisAtomPosition,1)*SIZE(RSymVec,1)
   ! over-allocate since actual size not known before calculation of unique positions 
@@ -202,12 +174,39 @@ PROGRAM Felixrefine
   !--------------------------------------------------------------------
   ! set up unique atom positions, reflection pool
   !--------------------------------------------------------------------
-
   ! fills unit cell from basis and symmetry, removes duplicate atoms at special positions
-  CALL UniqueAtomPositions(IErr)
+  CALL UniqueAtomPositions(IErr)!A crystallography subroutine
   IF(l_alert(IErr,"felixrefine","UniqueAtomPositions")) CALL abort
   !?? RB could re-allocate RAtomCoordinate,SAtomName,RIsoDW,ROccupancy,
   !?? IAtomicNumber,IAnisoDW to match INAtomsUnitCell?
+  
+  !--------------------------------------------------------------------
+  ! set up scattering factors, relativistic electrons, reciprocal lattice
+  !--------------------------------------------------------------------
+  CALL SetScatteringFactors(IScatterFactorMethodFLAG,IErr)
+  IF(l_alert(IErr,"felixrefine","SetScatteringFactors")) CALL abort
+  ! returns global RScattFactors depeding upon scattering method: Kirkland, Peng, etc.
+
+  ! Calculate wavevector magnitude k and relativistic mass
+  ! Electron Velocity in metres per second
+  RElectronVelocity = &
+        RSpeedOfLight*SQRT( ONE - ((RElectronMass*RSpeedOfLight**2) / &
+        (RElectronCharge*RAcceleratingVoltage*THOUSAND+RElectronMass*RSpeedOfLight**2))**2 )
+  ! Electron WaveLength in metres
+  RElectronWaveLength = RPlanckConstant / &
+        (  SQRT(TWO*RElectronMass*RElectronCharge*RAcceleratingVoltage*THOUSAND) * &
+        SQRT( ONE + (RElectronCharge*RAcceleratingVoltage*THOUSAND) / &
+        (TWO*RElectronMass*RSpeedOfLight**2) )  ) * RAngstromConversion
+  ! NB --- k=2pi/lambda and exp(i*k.r), physics convention
+  RElectronWaveVectorMagnitude=TWOPI/RElectronWaveLength
+  RRelativisticCorrection = ONE/SQRT( ONE - (RElectronVelocity/RSpeedOfLight)**2 )
+  RRelativisticMass = RRelativisticCorrection*RElectronMass
+  !conversion from Vg to Ug, h^2/(2pi*m0*e), see e.g. Kirkland eqn. C.5
+  RScattFacToVolts=(RPlanckConstant**2)*(RAngstromConversion**2)/&
+  (TWOPI*RElectronMass*RElectronCharge*RVolume)
+  ! Creates reciprocal lattice vectors in Microscope reference frame
+  CALL ReciprocalLattice(IErr)
+  IF(l_alert(IErr,"felixrefine","ReciprocalLattice")) CALL abort
 
   RHOLZAcceptanceAngle=TWODEG2RADIAN !?? RB seems way too low?
   IHKLMAXValue = 5 ! starting value, increments in loop below
@@ -1571,7 +1570,7 @@ CONTAINS
   !!
   SUBROUTINE SetupAtomMovements(IErr)
 
-    ! called once in felixrefine IF(IRefineMode(2)==1) atom coordinate refinement, B
+    ! called in felixrefine IF(IRefineMode(2)==1) atom coordinate refinement, B
 
     INTEGER(IKIND) :: IErr,knd,jnd,ind,ISpaceGrp
     INTEGER(IKIND),DIMENSION(:),ALLOCATABLE :: IDegreesOfFreedom
@@ -1589,6 +1588,12 @@ CONTAINS
             IDegreesOfFreedom(ind),IErr)
       IF(l_alert(IErr,"SetupAtomMovements","CountAllowedMovements")) RETURN     
     END DO
+    !If there's nothing to do, exit
+    IF (SUM(IDegreesOfFreedom).EQ.0) THEN
+      IErr=1
+      CALL message(LS,"No allowed coordinate refinements detected!")
+      RETURN
+    END IF
     
     ALLOCATE(IAtomMoveList(SUM(IDegreesOfFreedom)),STAT=IErr)
     IF(l_alert(IErr,"SetupAtomMovements","allocate IAtomMoveList")) RETURN  
