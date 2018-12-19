@@ -110,7 +110,7 @@ MODULE write_output_mod
             "I",Iter,"_",IThickness,"nm_",2*IPixelcount,"x",2*IPixelcount
     ELSE ! Sim Output
       WRITE(path,"(A4,I3.3,A3,I3.3,A1,I3.3)") &
-            "_Sim_",IThickness,"nm_",2*IPixelcount,"x",2*IPixelcount
+            "Sim_",IThickness,"nm_",2*IPixelcount,"x",2*IPixelcount
     END IF
     path = SChemicalFormula(1:ILN) // "_" // path ! This adds chemical to folder name
     CALL system('mkdir ' // path)

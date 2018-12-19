@@ -120,6 +120,7 @@ PROGRAM Felixrefine
   CALL read_cif(IErr) ! felix.cif ! some allocations are here
   IF(l_alert(IErr,"felixrefine","ReadCif")) CALL abort
 
+  CALL ReadInpFile(IErr) ! felix.inp
   IF(l_alert(IErr,"felixrefine","ReadInpFile")) CALL abort
   CALL SetMessageMode( IWriteFLAG, IErr )
   IF(l_alert(IErr,"felixrefine","set_message_mod_mode")) CALL abort
