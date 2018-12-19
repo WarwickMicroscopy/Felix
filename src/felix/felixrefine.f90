@@ -171,7 +171,8 @@ PROGRAM Felixrefine
   !--------------------------------------------------------------------
   ! allocate atom and Debye-Waller factor arrays
   !--------------------------------------------------------------------
-
+  ! Reset the basis so that atomic coordinate refinement is possible 
+  !CALL PreferredBasis(IErr)!A crystallography subroutine
   ! total possible atoms/unit cell
   IMaxPossibleNAtomsUnitCell=SIZE(RBasisAtomPosition,1)*SIZE(RSymVec,1)
   ! over-allocate since actual size not known before calculation of unique positions 
