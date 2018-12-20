@@ -216,6 +216,7 @@ MODULE read_cif_mod
 
     ! Extract space group notation (expected char string)
     f1 = char_('_symmetry_space_group_name_H-M', name)
+	
     !different types of space groups as well as different phrasing of Hall space groups
     IF (SCAN(name,alphabet).EQ.0) THEN
       f1 = char_('_symmetry_space_group_name_Hall',name)
@@ -242,8 +243,7 @@ MODULE read_cif_mod
        SSpaceGroupName=SAlphabetarray(SCAN(alphabet,SSpaceGroupName)-26)
     END IF
 
-    WRITE(SPrintString,FMT='(A10,A,A2,A)'),"Material: ",SChemicalFormula(1:ILN),", ",SSpaceGrp
-    CALL message( LS, dbg3, SPrintString)
+    CALL message( LXL, dbg14, "Space group", SSpaceGrp)
     
     ! ----------------------------------------------------------
     ! Extract atom site data

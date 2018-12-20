@@ -117,15 +117,15 @@ PROGRAM Felixrefine
   ! input section 
   !--------------------------------------------------------------------
   
-  CALL read_cif(IErr) ! felix.cif ! some allocations are here
-  IF(l_alert(IErr,"felixrefine","ReadCif")) CALL abort
-
   CALL ReadInpFile(IErr) ! felix.inp
   IF(l_alert(IErr,"felixrefine","ReadInpFile")) CALL abort
   CALL SetMessageMode( IWriteFLAG, IErr )
   IF(l_alert(IErr,"felixrefine","set_message_mod_mode")) CALL abort
 
   CALL message(LL,'IBlochMethodFLAG =',IBlochMethodFLAG)
+
+  CALL read_cif(IErr) ! felix.cif ! some allocations are here
+  IF(l_alert(IErr,"felixrefine","ReadCif")) CALL abort
 
   CALL ReadHklFile(IErr) ! the list of hkl's to input/output
   IF(l_alert(IErr,"felixrefine","ReadHklFile")) CALL abort
@@ -172,8 +172,7 @@ PROGRAM Felixrefine
   !--------------------------------------------------------------------
   ! allocate atom and Debye-Waller factor arrays
   !--------------------------------------------------------------------
-  ! Reset the basis so that atomic coordinate refinement is possible 
-  !CALL PreferredBasis(IErr)!A crystallography subroutine
+
   ! total possible atoms/unit cell
   IMaxPossibleNAtomsUnitCell=SIZE(RBasisAtomPosition,1)*SIZE(RSymVec,1)
   ! over-allocate since actual size not known before calculation of unique positions 

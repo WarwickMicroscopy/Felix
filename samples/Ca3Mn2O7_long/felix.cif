@@ -1,89 +1,35 @@
-#(C) 2018 by FIZ Karlsruhe
-data_55667-ICSD
-_database_code_ICSD 55667
-_audit_creation_date 2005-10-01
-_chemical_name_systematic 'Tricalcium dimanganate(IV)'
-_chemical_formula_structural 'Ca3 (Mn2 O7)'
-_chemical_formula_sum 'Ca3 Mn2 O7'
-_chemical_name_structure_type Sr3Ti2O7
-_exptl_crystal_density_diffrn 4.25
-_publ_section_title
+data_Felix.cif.15-08-2016
+_chemical_name_systematic 'Tricalcium dimanganate(IV)' 
+_chemical_formula_structural 'Ca3 (Mn2 O7)' 
+_chemical_formula_sum 'Ca3 Mn2 O7' 
 
+_publ_section_comment
 ;
-Crystal and magnetic structure of the Ca3 Mn2 O7 Ruddlesden-Popper phase:
-neutron and synchrotron X-ray diffraction study
+R Beanland 8 September 2015 
+Based on Lobanov structure 
 ;
-loop_
-_citation_id
-_citation_journal_full
-_citation_year
-_citation_journal_volume
-_citation_page_first
-_citation_page_last
-_citation_journal_id_ASTM
-primary 'Journal of Physics: Condensed Matter' 2004 16 5339 5348 JCOMEL
-loop_
-_publ_author_name
-'Lobanov, M.V.'
-'Greenblatt, M.'
-'Caspi, E.N.'
-'Jorgensen, J.D.'
-'Sheptyakov, D.V.'
-'Toby, B.H.'
-'Botez, C.E.'
-'Stephens, P.W.'
-_cell_length_a 3.69185(5)
-_cell_length_b 3.69185(5)
-_cell_length_c 19.6254(5)
+_cell_length_a 19.4462
+_cell_length_b 5.2453
+_cell_length_c 5.2399
 _cell_angle_alpha 90.
 _cell_angle_beta 90.
 _cell_angle_gamma 90.
-_cell_volume 267.49
-_cell_formula_units_Z 2
-_symmetry_space_group_name_H-M 'I 4/m m m'
-_symmetry_Int_Tables_number 139
-_refine_ls_R_factor_all 0.1166
+_cell_formula_units_Z 4
+_symmetry_space_group_name_H-M 'C m c 21' 
+_symmetry_Int_Tables_number 36
+
 loop_
 _symmetry_equiv_pos_site_id
 _symmetry_equiv_pos_as_xyz
-1 'y, x, -z'
-2 '-y, -x, -z'
-3 '-y, x, -z'
-4 'y, -x, -z'
-5 '-x, y, -z'
-6 'x, -y, -z'
-7 'x, y, -z'
-8 '-x, -y, -z'
-9 '-y, -x, z'
-10 'y, x, z'
-11 'y, -x, z'
-12 '-y, x, z'
-13 'x, -y, z'
-14 '-x, y, z'
-15 '-x, -y, z'
-16 'x, y, z'
-17 'y+1/2, x+1/2, -z+1/2'
-18 '-y+1/2, -x+1/2, -z+1/2'
-19 '-y+1/2, x+1/2, -z+1/2'
-20 'y+1/2, -x+1/2, -z+1/2'
-21 '-x+1/2, y+1/2, -z+1/2'
-22 'x+1/2, -y+1/2, -z+1/2'
-23 'x+1/2, y+1/2, -z+1/2'
-24 '-x+1/2, -y+1/2, -z+1/2'
-25 '-y+1/2, -x+1/2, z+1/2'
-26 'y+1/2, x+1/2, z+1/2'
-27 'y+1/2, -x+1/2, z+1/2'
-28 '-y+1/2, x+1/2, z+1/2'
-29 'x+1/2, -y+1/2, z+1/2'
-30 '-x+1/2, y+1/2, z+1/2'
-31 '-x+1/2, -y+1/2, z+1/2'
-32 'x+1/2, y+1/2, z+1/2'
-loop_
-_atom_type_symbol
-_atom_type_oxidation_number
-Ca2+ 2
-Mn4+ 4
-O2- -2
+1 x,-y,z+1/2
+2 -x,-y,z+1/2
+3 -x,y,z
+4 x,y,z
+5 x+1/2,-y+1/2,z+1/2
+6 -x+1/2,-y+1/2,z+1/2
+7 -x+1/2,y+1/2,z
+8 x+1/2,y+1/2,z
+
 loop_
 _atom_site_label
 _atom_site_type_symbol
@@ -94,11 +40,11 @@ _atom_site_fract_y
 _atom_site_fract_z
 _atom_site_B_iso_or_equiv
 _atom_site_occupancy
-_atom_site_attached_hydrogens
-Ca1 Ca2+ 2 b 0 0 0.5 0.7(2) 1. 0
-Ca2 Ca2+ 4 e 0 0 0.3148 0.5(2) 1. 0
-Mn1 Mn4+ 4 e 0 0 0.0973 0.5(1) 1. 0
-O1 O2- 2 a 0 0 0 2.2(2) 1. 0
-O2 O2- 4 e 0 0 0.1969 2.2(2) 1. 0
-O3 O2- 8 g 0 0.5 0.0963 2.2(2) 1. 0
-#End of TTdata_55667-ICSD
+Ca1 Ca2+  6  a  0.0000  0.2500  0.7500  1.0  1.0
+Ca2 Ca2+  6  b  0.1865  0.2500  0.7500  1.0  1.0
+Mn1 Mn4+  8  b  0.0979  0.2500  0.2500  0.45  1.0
+O1 O2-  4  a  0.0000  0.2500  0.2500  1.7  1.0
+O2 O2-  8  b  0.0966  0.5000  0.0000  1.7  1.0
+O3 O2-  8  b  0.0960  0.0000  0.0000  1.7  1.0
+O4 O2-  8  b  0.1970  0.2500  0.2500  1.7  1.0
+#End of Felix.cif.24-10-2018

@@ -4,14 +4,14 @@
 !
 ! Richard Beanland, Keith Evans & Rudolf A Roemer
 !
-! (C) 2013-19, all rights reserved
+! (C) 2013-17, all rights reserved
 !
-! Version: master
-! Date:    17-Dec-2018
+! Version: :VERSION:
+! Date:    :DATE:
 ! Time:    :TIME:
-! Status:  
-! Build:   
-! Author:  r.beanland@warwick.ac.uk
+! Status:  :RLSTATUS:
+! Build:   :BUILD:
+! Author:  :AUTHOR:
 ! 
 !%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 !
@@ -49,9 +49,9 @@
 !!
 MODULE SConst
 
-  CHARACTER*50, PARAMETER :: RStr= "Version: master / 1.0 / r.beanland"
-  CHARACTER*50, PARAMETER :: DStr= "Date: 17-Dec-2018"
-  CHARACTER*50, PARAMETER :: AStr= "Refinements B,C,D,H and S working, no HOLZ" 
+  CHARACTER*50, PARAMETER :: RStr= "Version: :VERSION: / :BUILD: / :AUTHOR: "
+  CHARACTER*50, PARAMETER :: DStr= "Date: :DATE:"
+  CHARACTER*50, PARAMETER :: AStr= "(:RLSTATUS:) multipole atom test & debug" 
   
   CHARACTER*8 SAllSpaceGrp(230)
   DATA SAllSpaceGrp/"P1","P-1","P2","P21","C2","Pm","Pc","Cm",&
