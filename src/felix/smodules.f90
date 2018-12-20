@@ -49,9 +49,9 @@
 !!
 MODULE SConst
 
-  CHARACTER*50, PARAMETER :: RStr= "Version: :VERSION: / :BUILD: / :AUTHOR: "
-  CHARACTER*50, PARAMETER :: DStr= "Date: :DATE:"
-  CHARACTER*50, PARAMETER :: AStr= "(:RLSTATUS:) multipole atom test & debug" 
+  CHARACTER*50, PARAMETER :: RStr= "Version: RB_coord / 1.0 / r.beanland "
+  CHARACTER*50, PARAMETER :: DStr= "Date: 20-12-2018"
+  CHARACTER*50, PARAMETER :: AStr= "Mode B: Atom coordinate refinement test" 
   
   CHARACTER*8 SAllSpaceGrp(230)
   DATA SAllSpaceGrp/"P1","P-1","P2","P21","C2","Pm","Pc","Cm",&
