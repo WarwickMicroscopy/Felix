@@ -4,14 +4,14 @@
 !
 ! Richard Beanland, Keith Evans & Rudolf A Roemer
 !
-! (C) 2013-17, all rights reserved
+! (C) 2013-19, all rights reserved
 !
-! Version: :VERSION:
-! Date:    :DATE:
+! Version: master
+! Date:    17-Dec-2018
 ! Time:    :TIME:
-! Status:  :RLSTATUS:
-! Build:   :BUILD:
-! Author:  :AUTHOR:
+! Status:  
+! Build:   
+! Author:  r.beanland@warwick.ac.uk
 ! 
 !%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 !

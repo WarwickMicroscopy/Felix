@@ -18,7 +18,7 @@ IByteSize                 = 2
 IPixelCount               = 64
 
 # beam selection criteria
-IMinReflectionPool        = 200
+IMinReflectionPool        = 400
 IMinStrongBeams           = 100
 IMinWeakBeams             = 0
 
@@ -27,16 +27,16 @@ RDebyeWallerConstant      = 0.0
 RAbsorptionPer            = 7.8
 
 # microscope settings
-ROuterConvergenceAngle    = 5.293
-IIncidentBeamDirection    = [0,1,1]
-IXDirection               = [0,-1,1]
-INormalDirection          = [0,1,1]
+ROuterConvergenceAngle    = 5.273
+IIncidentBeamDirection    = [0,1,0]
+IXDirection               = [-1,0,0]
+INormalDirection          = [0,1,0]
 RAcceleratingVoltage (kV) = 200.0
 RAcceptanceAngle          = 0.0
 
 # Image Output Options
-RInitialThickness        = 530.0
-RFinalThickness          = 530.0
+RInitialThickness        = 560.0
+RFinalThickness          = 560.0
 RDeltaThickness          = 10.0
 IReflectOut              = 1
 
@@ -48,7 +48,7 @@ ICorrelationFLAG         = 2
 IImageProcessingFLAG     = 4
 RBlurRadius              = 2.0
 INoofUgs                 = 40
-IAtomicSites             = (4)
+IAtomicSites             = (1,2,3,4,5,6)
 IPrint                   = 10
 RSimplexLengthScale      = 1.0
 RExitCriteria            = 0.00001
