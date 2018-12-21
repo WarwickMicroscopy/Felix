@@ -84,7 +84,7 @@ MODULE setup_space_group_mod
         CASE DEFAULT
           IErr = 1
           IF(l_alert(IErr,"PreferredBasis",&
-              "Wyckoff Symbol for space group 1, P1, not recognised")) RETURN 	
+              "Wyckoff Symbol for space group 1, P1, not recognised")) RETURN
         END SELECT
 !!$  CASE(2)
 !!$  CASE(3)
