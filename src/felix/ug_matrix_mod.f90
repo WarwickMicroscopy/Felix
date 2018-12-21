@@ -66,7 +66,7 @@ MODULE ug_matrix_mod
     USE RPARA, ONLY : RAbsorptionPercentage, RAngstromConversion, RElectronCharge, &
           RElectronMass, RElectronVelocity, RPlanckConstant, RRelativisticCorrection, &
           RVolume, RgMatrixMagnitude, RIsoDW, ROccupancy, RgMatrix, Rhkl, RAtomCoordinate, &
-		  RScattFacToVolts
+          RScattFacToVolts
 
     IMPLICIT NONE
 
@@ -92,7 +92,7 @@ MODULE ug_matrix_mod
     CASE(0) ! No absorption
       CUgMatPrime = CZERO
 
-	CASE(1) ! Proportional
+    CASE(1) ! Proportional
       CUgMatPrime = CUgMatNoAbs*EXP(CIMAGONE*PI/2)*(RAbsorptionPercentage/100_RKIND)
     
     CASE(2) 
@@ -224,9 +224,9 @@ MODULE ug_matrix_mod
           CUgMatPrime = -CONJG(CUgPrime(ind))
         END WHERE
       END DO
-	
+
     CASE Default ! Default case is no absorption
-	
+
     END SELECT
 
     !--------------------------------------------------------------------  
@@ -236,7 +236,7 @@ MODULE ug_matrix_mod
     CUgMat = CUgMatNoAbs + CUgMatPrime 
     CALL message( LM, dbg3, "Ug matrix, including absorption (nm^-2)" )
     DO ind = 1,40
-	  WRITE(SPrintString,FMT='(3(I3,1X),A2,1X,8(F7.4,1X))') NINT(Rhkl(ind,:)),": ",100*CUgMat(ind,1:4)
+      WRITE(SPrintString,FMT='(3(I3,1X),A2,1X,8(F7.4,1X))') NINT(Rhkl(ind,:)),": ",100*CUgMat(ind,1:4)
       CALL message( LM, dbg3, SPrintString )
     END DO
 
@@ -474,7 +474,7 @@ MODULE ug_matrix_mod
         RCurrentGMagnitude = RgMatrixMagnitude(ind,jnd) ! g-vector magnitude, global variable
         ! Sums CVgij contribution from each atom and pseudoatom in Volts
         CALL GetVgContributionij(RScatteringFactor,ind,jnd,CVgij,IErr)
-		CUgMatNoAbs(ind,jnd)=CVgij
+        CUgMatNoAbs(ind,jnd)=CVgij
       ENDDO
     ENDDO
     !Convert to Ug
@@ -490,7 +490,7 @@ MODULE ug_matrix_mod
 
     CALL message( LM,dbg3, "Ug matrix, without absorption (nm^-2)" )!LM, dbg3
     DO ind = 1,16
-	  WRITE(SPrintString,FMT='(3(I2,1X),A2,1X,8(F7.4,1X))') NINT(Rhkl(ind,:)),": ",100*CUgMatNoAbs(ind,1:4)
+      WRITE(SPrintString,FMT='(3(I2,1X),A2,1X,8(F7.4,1X))') NINT(Rhkl(ind,:)),": ",100*CUgMatNoAbs(ind,1:4)
       CALL message( LM,dbg3, SPrintString)
     END DO
    
