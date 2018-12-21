@@ -376,6 +376,7 @@ MODULE ug_matrix_mod
     COMPLEX(CKIND) :: CVgij,CFpseudo
     REAL(RKIND) :: RMeanInnerPotentialVolts,RScatteringFactor,&
           RPMag,Rx,Ry,Rr,RPalpha,RTheta,Rfold
+    COMPLEX(CKIND),DIMENSION(:,:),ALLOCATABLE :: CTempMat!to avoid problems with transpose
     CHARACTER*200 :: SPrintString
     
     !--------------------------------------------------------------------
@@ -474,14 +475,16 @@ MODULE ug_matrix_mod
         RCurrentGMagnitude = RgMatrixMagnitude(ind,jnd) ! g-vector magnitude, global variable
         ! Sums CVgij contribution from each atom and pseudoatom in Volts
         CALL GetVgContributionij(RScatteringFactor,ind,jnd,CVgij,IErr)
-		CUgMatNoAbs(ind,jnd)=CVgij
+        CUgMatNoAbs(ind,jnd)=CVgij
       ENDDO
     ENDDO
     !Convert to Ug
     CUgMatNoAbs=CUgMatNoAbs*TWO*RElectronMass*RRelativisticCorrection*RElectronCharge/((RPlanckConstant**2)*(RAngstromConversion**2))
     ! NB Only the lower half of the Vg matrix was calculated, this completes the upper half
-    CUgMatPrime = TRANSPOSE(CUgMatNoAbs)! Prime is usually the absorptive potential, here just used as a box to avoid the bug when conj(transpose) is used
-    CUgMatNoAbs = CUgMatNoAbs + CONJG(CUgMatPrime)
+    ALLOCATE (CTempMat(nReflections,nReflections),STAT=IErr)
+    IF(l_alert(IErr,"Structure factor initialise","allocate CTempMat")) RETURN
+    CTempMat = TRANSPOSE(CUgMatNoAbs)! To avoid the bug when conj(transpose) is used
+    CUgMatNoAbs = CUgMatNoAbs + CONJG(CTempMat)
     CUgMatPrime = CZERO
     ! set diagonals to zero
     !DO ind=1,nReflections
@@ -490,7 +493,7 @@ MODULE ug_matrix_mod
 
     CALL message( LM,dbg3, "Ug matrix, without absorption (nm^-2)" )!LM, dbg3
     DO ind = 1,16
-	  WRITE(SPrintString,FMT='(3(I2,1X),A2,1X,8(F7.4,1X))') NINT(Rhkl(ind,:)),": ",100*CUgMatNoAbs(ind,1:4)
+      WRITE(SPrintString,FMT='(3(I2,1X),A2,1X,8(F7.4,1X))') NINT(Rhkl(ind,:)),": ",100*CUgMatNoAbs(ind,1:4)
       CALL message( LM,dbg3, SPrintString)
     END DO
    
@@ -544,7 +547,7 @@ MODULE ug_matrix_mod
       RgSumMat = RgSumMat+TRANSPOSE(RgSumMat)
       CALL message ( LM, dbg3, "hkl: g Sum matrix" )
       DO ind =1,16
-	  	WRITE(SPrintString,FMT='(3(I2,1X),A2,1X,12(F6.1,1X))') NINT(Rhkl(ind,:)),": ",RgSumMat(ind,1:12)
+        WRITE(SPrintString,FMT='(3(I2,1X),A2,1X,12(F6.1,1X))') NINT(Rhkl(ind,:)),": ",RgSumMat(ind,1:12)
         CALL message ( LM, dbg3, SPrintString )!LM, dbg3
       END DO
 
