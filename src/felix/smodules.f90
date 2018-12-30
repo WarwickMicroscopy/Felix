@@ -62,7 +62,7 @@ MODULE SConst
        "Amm2","Aem2","Ama2","Aea2","Fmm2","Fdd2","Imm2","Iba2", &
        "Ima2","Pmmm","Pnnn","Pccm","Pban","Pmma","Pnna","Pmna","Pcca", &
        "Pbam","Pccn","Pbcm","Pnnm","Pmmn","Pbcn","Pbca","Pnma","Cmcm", &
-       "Cmce","Cmmm","Cccm","Cmme","Ccce","Fmmm","Fddd","Immm","Ibam", &
+       "Cmca","Cmmm","Cccm","Cmme","Ccce","Fmmm","Fddd","Immm","Ibam", &
        "Ibca","Imma","P4","P41","P42","P43","I4","I41","P-4","I-4", &
        "P4/m","P42/m","P4/n","P42/n","I4/m","I41/a","P422","P4212", &
        "P4122","P41212","P4222","P42212","P4322","P43212","I422", &

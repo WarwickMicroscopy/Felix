@@ -124,7 +124,7 @@ PROGRAM Felixrefine
   IF(l_alert(IErr,"felixrefine","ReadInpFile")) CALL abort
   CALL SetMessageMode( IWriteFLAG, IErr )
   IF(l_alert(IErr,"felixrefine","set_message_mod_mode")) CALL abort
-
+ 
   CALL message(LL,'IBlochMethodFLAG =',IBlochMethodFLAG)
 
   CALL ReadHklFile(IErr) ! the list of hkl's to input/output
@@ -1586,6 +1586,7 @@ CONTAINS
 
     ALLOCATE(IDegreesOfFreedom(SIZE(IAtomsToRefine)),STAT=IErr)
     IF(l_alert(IErr,"SetupAtomMovements","allocate IDegreesOfFreedom")) RETURN  
+    IDegreesOfFreedom=0
 
     !Count the degrees of freedom of movement for each atom to be refined    
     DO ind = 1,SIZE(IAtomsToRefine)
@@ -1593,7 +1594,7 @@ CONTAINS
             IDegreesOfFreedom(ind),IErr)
       IF(l_alert(IErr,"SetupAtomMovements","CountAllowedMovements")) RETURN     
     END DO
-    
+
     ALLOCATE(IAtomMoveList(SUM(IDegreesOfFreedom)),STAT=IErr)
     IF(l_alert(IErr,"SetupAtomMovements","allocate IAtomMoveList")) RETURN  
     ALLOCATE(RVector(SUM(IDegreesOfFreedom),ITHREE),STAT=IErr)

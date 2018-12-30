@@ -516,6 +516,7 @@ MODULE setup_space_group_mod
 
       CASE('d')!point symmetry 2(x), coordinate [x,0,0] & eq
         IVectors = 1
+!IF (my_rank.EQ.0) PRINT*,"Wyckoff d",IVectors
       CASE('e')!point symmetry 2(y), coordinate [1/4,y,1/4] & eq
         IVectors = 1
       CASE('f')!point symmetry m(x), coordinate [0,y,z] & eq
@@ -1147,6 +1148,7 @@ MODULE setup_space_group_mod
        END IF
     END DO
 
+!DBG IF (my_rank.EQ.0) PRINT*, ISpaceGrp
     IF(ISpaceGrp.EQ.0) THEN
       IErr = 1
       IF(l_alert(IErr,"ConvertSpaceGroupToNumber",&
