@@ -173,7 +173,7 @@ PROGRAM Felixrefine
   ! allocate atom and Debye-Waller factor arrays
   !--------------------------------------------------------------------
   ! Reset the basis so that atomic coordinate refinement is possible 
-  CALL PreferredBasis(IErr)!A crystallography subroutine
+  IF(IRefineMode(2).EQ.1) CALL PreferredBasis(IErr)!A crystallography subroutine
   ! total possible atoms/unit cell
 !  DO ind=1,SIZE(RBasisAtomPosition,1)
 !    IF (my_rank.EQ.0) PRINT*,SBasisAtomLabel(ind),RBasisAtomPosition(ind,:)
