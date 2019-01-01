@@ -129,7 +129,7 @@ MODULE setup_space_group_mod
         CASE DEFAULT
           IErr = 1
           IF(l_alert(IErr,"PreferredBasis",&
-              "Wyckoff Symbol for space group 36, C m c 21, not recognised")) RETURN 	
+              "Wyckoff Symbol for space group 36, C m c 21, not recognised")) RETURN
         END SELECT
 !!$  CASE(37)
 !!$  CASE(38)
@@ -157,8 +157,30 @@ MODULE setup_space_group_mod
 !!$  CASE(60)
 !!$  CASE(61)
 !!$  CASE(62)
-!!$  CASE(63)
-!!$  CASE(64)
+     CASE(63)
+      SELECT CASE (SWyckoff)
+      CASE('a')!point symmetry 2/m, coordinate [0,0,0] & eq, no reassignment
+
+      CASE('b')!point symmetry 2/m, coordinate [0,1/2,0] & eq, no reassignment
+
+      CASE('c')!point symmetry mm2, coordinate [0,y,1/4] & eq, no reassignment
+
+      CASE('d')!point symmetry -1, coordinate [1/4,1/4,0] & eq, no reassignment
+
+      CASE('e')!point symmetry 2(x), coordinate [x,0,0] & eq, no reassignment
+
+      CASE('f')!point symmetry m(x), coordinate [0,y,z] & eq, no reassignment
+
+      CASE('g')!point symmetry m(z), coordinate [x,y,1/4] & eq, no reassignment
+
+      CASE('h')!point symmetry 1, coordinate [x,y,z] & eq, no reassignment
+
+      CASE DEFAULT
+        IErr = 1
+        IF(l_alert(IErr,"PreferredBasis",&
+              "Wyckoff Symbol for space group 63, C m c m, not recognised")) RETURN
+      END SELECT
+
      CASE(64)!Cmca.  No equivalent positios swap axes so no reassignments in fact
       SELECT CASE (SWyckoff)
       CASE('a')!point symmetry 2/m, coordinate [0,0,0] & eq, no reassignment
@@ -431,7 +453,7 @@ MODULE setup_space_group_mod
       CASE DEFAULT
         IErr = 1
         IF(l_alert(IErr,"DetermineAllowedMovements",&
-              "Wyckoff Symbol for space group 1, P1, not recognised")) RETURN 	    
+              "Wyckoff Symbol for space group 1, P1, not recognised")) RETURN    
       END SELECT
 !!$  CASE(2)
 !!$  CASE(3)
@@ -504,8 +526,30 @@ MODULE setup_space_group_mod
 !!$  CASE(60)
 !!$  CASE(61)
 !!$  CASE(62)
-!!$  CASE(63)
-!!$  CASE(64)
+    CASE(63)!Cmcm
+      SELECT CASE (SWyckoff)
+      CASE('a')!point symmetry 2/m, coordinate [0,0,0] & eq, no movement
+
+      CASE('b')!point symmetry 2/m, coordinate [0,1/2,0] & eq, no movement
+
+      CASE('c')!point symmetry mm2, coordinate [0,y,1/4] & eq
+        IVectors = 1
+      CASE('d')!point symmetry -1, coordinate [1/4,1/4,0] & eq, no movement
+
+      CASE('e')!point symmetry 2(x), coordinate [x,0,0] & eq
+        IVectors = 1
+      CASE('f')!point symmetry m(x), coordinate [0,y,z] & eq
+        IVectors = 2
+      CASE('g')!point symmetry m(z), coordinate [x,y,1/4] & eq
+        IVectors = 2
+      CASE('h')!point symmetry 1, coordinate [x,y,z] & eq
+        IVectors = 3
+      CASE DEFAULT
+        IErr = 1
+        IF(l_alert(IErr,"CountAllowedMovements",&
+              "Wyckoff Symbol for space group 63, C m c m, not recognised")) RETURN
+      END SELECT
+
     CASE(64)!Cmca
       SELECT CASE (SWyckoff)
       CASE('a')!point symmetry 2/m, coordinate [0,0,0] & eq, no movement
@@ -516,7 +560,6 @@ MODULE setup_space_group_mod
 
       CASE('d')!point symmetry 2(x), coordinate [x,0,0] & eq
         IVectors = 1
-!IF (my_rank.EQ.0) PRINT*,"Wyckoff d",IVectors
       CASE('e')!point symmetry 2(y), coordinate [1/4,y,1/4] & eq
         IVectors = 1
       CASE('f')!point symmetry m(x), coordinate [0,y,z] & eq
@@ -757,6 +800,10 @@ MODULE setup_space_group_mod
     REAL(RKIND), INTENT(OUT) :: RMoveMatrix(ITHREE,ITHREE)
     INTEGER(IKIND) ::  ind
 
+    !Initialisation of RMoveMatrix should not be needed, this is just to catch
+    !any sloppy coding where the move count has not been done properly
+    RMoveMatrix=ZERO
+
     SELECT CASE(ISpaceGrp)
     CASE(1)!P1
       SELECT CASE (SWyckoff)
@@ -847,9 +894,40 @@ MODULE setup_space_group_mod
 !!$  CASE(60)
 !!$  CASE(61)
 !!$  CASE(62)
-!!$  CASE(63)
-!!$  CASE(64)
-    CASE(64)!Cmca.
+    CASE(63)!Cmcm
+      SELECT CASE (SWyckoff)
+      CASE('a')!point symmetry 2/m, coordinate [0,0,0] & eq, no movement
+
+      CASE('b')!point symmetry 2/m, coordinate [0,1/2,0] & eq, no movement
+
+      CASE('c')!point symmetry mm2, coordinate [0,y,1/4] & eq
+        RMoveMatrix(1,:) = (/ZERO, ONE, ZERO/)
+
+      CASE('d')!point symmetry -1, coordinate [1/4,1/4,0] & eq, no movement
+
+      CASE('e')!point symmetry 2(x), coordinate [x,0,0] & eq
+        RMoveMatrix(1,:) = (/ONE, ZERO, ZERO/)
+
+      CASE('f')!point symmetry m(x), coordinate [0,y,z] & eq
+        RMoveMatrix(1,:) = (/ZERO, ONE, ZERO/)
+        RMoveMatrix(2,:) = (/ZERO, ZERO, ONE/)
+
+      CASE('g')!point symmetry m(z), coordinate [x,y,1/4] & eq
+        RMoveMatrix(1,:) = (/ONE, ZERO, ZERO/)
+        RMoveMatrix(2,:) = (/ZERO, ONE, ZERO/)
+
+      CASE('h')!point symmetry 1, coordinate [x,y,z] & eq
+        RMoveMatrix(1,:) = (/ONE, ZERO, ZERO/)
+        RMoveMatrix(2,:) = (/ZERO, ONE, ZERO/)
+        RMoveMatrix(3,:) = (/ZERO, ZERO, ONE/)
+
+      CASE DEFAULT
+          IErr = 1
+          IF(l_alert(IErr,"DetermineAllowedMovements",&
+              "Wyckoff Symbol for space group 63, C m c m, not recognised")) RETURN
+      END SELECT
+
+    CASE(64)!Cmca
       SELECT CASE (SWyckoff)
       CASE('a')!point symmetry 2/m, coordinate [0,0,0] & eq, no movement
 

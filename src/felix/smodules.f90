@@ -49,9 +49,9 @@
 !!
 MODULE SConst
 
-  CHARACTER*50, PARAMETER :: RStr= "Version: RB_coord / 1.1 / r.beanland "
-  CHARACTER*50, PARAMETER :: DStr= "Date: 20-12-2018"
-  CHARACTER*50, PARAMETER :: AStr= "Mode B: G-vector calculation test" 
+  CHARACTER*50, PARAMETER :: RStr= "Version: RB_coord / 1.12 / r.beanland "
+  CHARACTER*50, PARAMETER :: DStr= "Date: 31-12-2018"
+  CHARACTER*50, PARAMETER :: AStr= "Mode B: Cmcm test" 
   
   CHARACTER*8 SAllSpaceGrp(230)
   DATA SAllSpaceGrp/"P1","P-1","P2","P21","C2","Pm","Pc","Cm",&
