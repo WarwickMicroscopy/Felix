@@ -269,7 +269,7 @@ MODULE read_files_mod
       IF(IRefineMode(3) .EQ.1) CALL message( LS, "Refining Occupancies ")
       IF(IRefineMode(4) .EQ.1) CALL message( LS, "Refining Isotropic Debye Waller Factors")
       IF(IRefineMode(5) .EQ.1) CALL message( LS, "Refining Anisotropic Debye Waller Factors ")
-      IF(IRefineMode(6) .EQ.1) CALL message( LS, "Refining Lattice Lengths ")
+      IF(IRefineMode(6) .EQ.1) CALL message( LS, "Refining Lattice Parameters a,b,c ")
       IF(IRefineMode(7) .EQ.1) CALL message( LS, "Refining Lattice Angles ")
       IF(IRefineMode(8) .EQ.1) CALL message( LS, "Refining Convergence Angle")
       IF(IRefineMode(9) .EQ.1) CALL message( LS, "Refining Absorption")

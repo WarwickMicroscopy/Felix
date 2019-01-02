@@ -588,6 +588,12 @@ PROGRAM Felixrefine
             ind=ind+1
         END DO
       END IF
+      IF(IRefineMode(6).EQ.1) THEN ! Lattice parameters, F
+        RIndependentVariable(ind)=RLengthX
+        RIndependentVariable(ind+1)=RLengthY
+        RIndependentVariable(ind+2)=RLengthZ
+        ind=ind+3
+      END IF
       IF(IRefineMode(8).EQ.1) THEN ! Convergence angle, H
         RIndependentVariable(ind)=RConvergenceAngle
         ind=ind+1
@@ -623,7 +629,8 @@ PROGRAM Felixrefine
 
             CASE(5) ! Anisotropic Debye Waller Factors (a11-a33), E
               !?? not currently implemented
-              IErr=1;IF(l_alert(IErr,"felixrefine",&
+              IErr=1
+              IF(l_alert(IErr,"felixrefine",&
                     "Anisotropic Debye Waller Factors not implemented")) CALL abort
 
   !            IIterativeVariableUniqueIDs(IArrayIndex,1) = ind
@@ -648,15 +655,13 @@ PROGRAM Felixrefine
   !              IIterativeVariableUniqueIDs(IArrayIndex,4:5) = [3,3]
   !            END SELECT
 
-            CASE(6) ! Lattice Parameters, E
+            CASE(6) ! Lattice Parameters, F
               IIterativeVariableUniqueIDs(IArrayIndex,1) = ind
-              IIterativeVariableUniqueIDs(IArrayIndex,2) = &
-                    NINT(3.D0*(REAL(jnd/3.0D0,RKIND) - CEILING(REAL(jnd/3.0D0,RKIND)))+3.0D0)
+              IIterativeVariableUniqueIDs(IArrayIndex,2) = jnd!this will not work with any other refinement
                
-            CASE(7) ! Lattice Angles, F
+            CASE(7) ! Lattice Angles, G
               IIterativeVariableUniqueIDs(IArrayIndex,1) = ind
-              IIterativeVariableUniqueIDs(IArrayIndex,2) = &
-                    NINT(3.D0*(REAL(jnd/3.0D0,RKIND) - CEILING(REAL(jnd/3.0D0,RKIND)))+3.0D0)
+              IIterativeVariableUniqueIDs(IArrayIndex,2) = 3
 
             CASE(8) ! Convergence angle, H
               IIterativeVariableUniqueIDs(IArrayIndex,1) = ind
@@ -1040,16 +1045,20 @@ CONTAINS
           ! print to screen
           SELECT CASE(IVariableType)
             CASE(1)
-              CALL message(LS,"Ug refinement")
+              CALL message(LS,"Ug refinement, A")
             CASE(2)
-              CALL message(LS,"Atomic coordinate refinement")
+              CALL message(LS,"Atomic coordinate refinement, B")
             CASE(3)
-              CALL message(LS,"Occupancy refinement")
+              CALL message(LS,"Occupancy refinement, C")
             CASE(4)
-              CALL message(LS,"Isotropic Debye-Waller factor refinement")
+              CALL message(LS,"Isotropic Debye-Waller factor refinement, D")
             CASE(5)
-              CALL message(LS,"Convergence angle refinement")
-          END SELECT
+              CALL message(LS,"Anisotropic Debye-Waller factor refinement, E")
+            CASE(6)
+              CALL message(LS,"Lattice parameter refinement, F")
+            CASE(8)
+              CALL message(LS,"Convergence angle refinement, G")
+           END SELECT
           IF (RCurrentVar(ind).LE.TINY.AND.IVariableType.EQ.4) THEN ! skip zero DW factor
             RPVec(ind)=TINY
             CYCLE

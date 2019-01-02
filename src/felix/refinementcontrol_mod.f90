@@ -483,6 +483,7 @@ MODULE refinementcontrol_mod
 
     USE MyNumbers
     USE message_mod 
+    USE crystallography_mod
 
     ! global inputs
     USE IPARA, ONLY : INoOfVariables, IRefineMode, IIterativeVariableUniqueIDs,IAtomMoveList 
@@ -534,6 +535,7 @@ MODULE refinementcontrol_mod
         CASE(3)
           RLengthZ = RIndependentVariable(ind)
         END SELECT
+        CALL ReciprocalLattice(IErr)
       CASE(7)
         SELECT CASE(IIterativeVariableUniqueIDs(ind,2))
         CASE(1)
@@ -543,7 +545,8 @@ MODULE refinementcontrol_mod
         CASE(3)
           RGamma = RIndependentVariable(ind)
         END SELECT
-      CASE(8)
+        CALL ReciprocalLattice(IErr)
+       CASE(8)
         RConvergenceAngle = RIndependentVariable(ind)
       CASE(9)
         RAbsorptionPercentage = RIndependentVariable(ind)
@@ -626,7 +629,8 @@ MODULE refinementcontrol_mod
           END DO
 
         CASE(6)
-          CALL message(LS, "Current Unit Cell Parameters", (/ RLengthX,RLengthY,RLengthZ /) )
+          WRITE(SPrintString,FMT='(A31,3F8.4)') "Current Unit Cell Parameters ",RLengthX,RLengthY,RLengthZ
+          CALL message(LS,SPrintString)
 
         CASE(7)
           CALL message(LS, "Current Unit Cell Angles", (/ RAlpha,RBeta,RGamma /) )
