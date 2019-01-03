@@ -63,7 +63,7 @@ PROGRAM Felixrefine
         IBSMaxLocGVecAmp,ILaueLevel,INumTotalReflections,ITotalLaueZoneLevel,&
         INhkl,IExitFLAG,ICycle,INumInitReflections,IZerothLaueZoneLevel,&
         INumFinalReflections,IThicknessIndex,IVariableType,IArrayIndex,&
-        IAnisotropicDebyeWallerFactorElementNo
+        IAnisotropicDebyeWallerFactorElementNo,ISpaceGrp
   INTEGER(IKIND) :: IStartTime,IStartTime2
   REAL(RKIND) :: RHOLZAcceptanceAngle,RLaueZoneGz,RMaxGMag,RPvecMag,&
         RScale,RMaxUgStep,Rdx,RStandardDeviation,RMean,RGzUnitVec,RMinLaueZoneValue,&
@@ -530,7 +530,8 @@ PROGRAM Felixrefine
       INoOfVariablesForRefinementType(4)=IRefineMode(4)*SIZE(IAtomsToRefine)
       ! Anisotropic DW, E
       INoOfVariablesForRefinementType(5)=IRefineMode(5)*SIZE(IAtomsToRefine)*6
-      INoOfVariablesForRefinementType(6)=IRefineMode(6)*3! Unit cell dimensions, F
+      !Lattice variables defined later on
+      !INoOfVariablesForRefinementType(6)=IRefineMode(6)*3! Unit cell dimensions, F
       INoOfVariablesForRefinementType(7)=IRefineMode(7)*3! Unit cell angles, G
       INoOfVariablesForRefinementType(8)=IRefineMode(8)! Convergence angle, H
       INoOfVariablesForRefinementType(9)=IRefineMode(9)! Percentage Absorption, I
@@ -589,10 +590,28 @@ PROGRAM Felixrefine
         END DO
       END IF
       IF(IRefineMode(6).EQ.1) THEN ! Lattice parameters, F
-        RIndependentVariable(ind)=RLengthX
-        RIndependentVariable(ind+1)=RLengthY
-        RIndependentVariable(ind+2)=RLengthZ
-        ind=ind+3
+        CALL ConvertSpaceGroupToNumber(ISpaceGrp,IErr)
+        IF(l_alert(IErr,"felixrefine","ConvertSpaceGroupToNumber")) CALL abort
+        IF(ind.NE.1) IErr=1!throw an error if this is attempted with other refinements
+        IF(l_alert(IErr,"felixrefine",&
+                    "Unit cell refinement with other parameters not implemented")) CALL abort
+        !This section needs work to include rhombohedral cells and non-standard
+        !settings!!!
+        RIndependentVariable(ind)=RLengthX!This is a free parameter for all lattice types
+        ind=ind+1
+        IF (ISpaceGrp.LT.75) THEN!triclinic,monoclinic,orthorhombic
+          RIndependentVariable(ind)=RLengthY
+          RIndependentVariable(ind+1)=RLengthZ
+          ind=ind+2
+        ELSE IF (ISpaceGrp.GT.142.AND.ISpaceGrp.LT.168) THEN!rhombohedral
+          IErr=1!need to work out R- vs H- settings!!!
+          PRINT*,"Rhombohedral R- and H- cells not yet implemented for unit cell refinement"
+        ELSE IF ((ISpaceGrp.GT.167.AND.ISpaceGrp.LT.195).OR.&!Hexagonal
+                   (ISpaceGrp.GT.74.AND.ISpaceGrp.LT.143)) THEN!Tetragonal
+          RIndependentVariable(ind)=RLengthZ
+          ind=ind+1
+        END IF
+        INoOfVariablesForRefinementType(6)=ind-1
       END IF
       IF(IRefineMode(8).EQ.1) THEN ! Convergence angle, H
         RIndependentVariable(ind)=RConvergenceAngle
@@ -661,7 +680,7 @@ PROGRAM Felixrefine
                
             CASE(7) ! Lattice Angles, G
               IIterativeVariableUniqueIDs(IArrayIndex,1) = ind
-              IIterativeVariableUniqueIDs(IArrayIndex,2) = 3
+              IIterativeVariableUniqueIDs(IArrayIndex,2) = jnd
 
             CASE(8) ! Convergence angle, H
               IIterativeVariableUniqueIDs(IArrayIndex,1) = ind

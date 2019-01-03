@@ -376,6 +376,7 @@ MODULE ug_matrix_mod
     COMPLEX(CKIND) :: CVgij,CFpseudo
     REAL(RKIND) :: RMeanInnerPotentialVolts,RScatteringFactor,&
           RPMag,Rx,Ry,Rr,RPalpha,RTheta,Rfold
+    REAL(RKIND),DIMENSION(:,:),ALLOCATABLE :: RTempMat!to avoid problems with transpose ffs
     COMPLEX(CKIND),DIMENSION(:,:),ALLOCATABLE :: CTempMat!to avoid problems with transpose
     CHARACTER*200 :: SPrintString
     
@@ -544,7 +545,9 @@ MODULE ug_matrix_mod
         END DO
       END DO
       ! it's symmetric
-      RgSumMat = RgSumMat+TRANSPOSE(RgSumMat)
+      ALLOCATE (RTempMat(nReflections,nReflections),STAT=IErr)
+      RTempMat = TRANSPOSE(RgSumMat)
+      RgSumMat = RgSumMat+RTempMat
       CALL message ( LM, dbg3, "hkl: g Sum matrix" )
       DO ind =1,16
         WRITE(SPrintString,FMT='(3(I2,1X),A2,1X,12(F6.1,1X))') NINT(Rhkl(ind,:)),": ",RgSumMat(ind,1:12)
