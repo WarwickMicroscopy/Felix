@@ -91,16 +91,15 @@ MODULE refinementcontrol_mod
     INTEGER(IKIND),INTENT(OUT) :: IThicknessIndex 
     ! NB IThicknessIndex is calculated and used on rank 0 only
     INTEGER(IKIND),INTENT(OUT) :: IErr
-    INTEGER(IKIND) :: ind,jnd, ILoc(2), IUniqueUgs
-    INTEGER(IKIND), SAVE :: IStartTime
+    INTEGER(IKIND) :: ind,jnd, ILoc(2), IUniqueUgs,IStartTime
     REAL(RKIND) :: RCurrentG(3), RScatteringFactor
     COMPLEX(CKIND) :: CUgMatDummy(nReflections,nReflections),CVgij
     CHARACTER*100 :: SFormat,SPrintString
 
-    WRITE(SPrintString,FMT='(A10,I5)')"Iteration ",Iter
-    CALL message(LS,SPrintString)
     CALL SYSTEM_CLOCK( IStartTime )
 
+    WRITE(SPrintString,FMT='(A,I5)')"Iteration ",Iter
+    CALL message(LS,SPrintString)
     
     !\/----------------------------------------------------------------------
     IF (IRefineMode(1).EQ.1) THEN  ! Ug refinement; update structure factors 
@@ -461,7 +460,7 @@ MODULE refinementcontrol_mod
     RThicknessRange=( MAXVAL(IBestImageThicknessIndex)-&
           MINVAL(IBestImageThicknessIndex) )*RDeltaThickness
     ! Output to screen, duplicate of felixrefine output
-    WRITE(SPrintString,FMT='(A16,F7.2,A1)') "Figure of merit ",100*RBestTotalCorrelation,"%"
+    WRITE(SPrintString,FMT='(A16,F9.4,A1)') "Figure of merit ",100*RBestTotalCorrelation,"%"
     CALL message(LS,SPrintString)
     WRITE(SPrintString,FMT='(A19,I4,A10)') "Specimen thickness ",NINT(RBestThickness)," Angstroms"
     CALL message(LS,SPrintString)
@@ -530,8 +529,12 @@ MODULE refinementcontrol_mod
         SELECT CASE(IIterativeVariableUniqueIDs(ind,2))
         CASE(1)
           RLengthX = RIndependentVariable(ind)
-        CASE(2)
-          RLengthY = RIndependentVariable(ind)
+        CASE(2)!can be either y or z depending on the number of free parameters
+           IF (SUM(IIterativeVariableUniqueIDs(ind,:)).EQ.6) THEN
+            RLengthY = RIndependentVariable(ind)
+          ELSE
+            RLengthZ = RIndependentVariable(ind)
+          END IF
         CASE(3)
           RLengthZ = RIndependentVariable(ind)
         END SELECT

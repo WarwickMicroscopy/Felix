@@ -41,7 +41,7 @@ RDeltaThickness          = 10.0
 IReflectOut              = 43
 
 #Refinement Specific Flags
-IRefineModeFLAG          = S
+IRefineModeFLAG          = D
 IWeightingFLAG           = 0
 IRefineMethodFLAG        = 2
 ICorrelationFLAG         = 2
