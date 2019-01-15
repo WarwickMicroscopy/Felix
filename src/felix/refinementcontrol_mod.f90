@@ -4,14 +4,14 @@
 !
 ! Richard Beanland, Keith Evans & Rudolf A Roemer
 !
-! (C) 2013-17, all rights reserved
+! (C) 2013-19, all rights reserved
 !
-! Version: :VERSION:
-! Date:    :DATE:
+! Version: :VERSION: RB_coord / 1.14 /
+! Date:    :DATE: 15-01-2019
 ! Time:    :TIME:
 ! Status:  :RLSTATUS:
-! Build:   :BUILD:
-! Author:  :AUTHOR:
+! Build:   :BUILD: Mode F: test different lattice types" 
+! Author:  :AUTHOR: r.beanland
 ! 
 !%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 !
@@ -72,7 +72,7 @@ MODULE refinementcontrol_mod
     USE write_output_mod
 
     ! global inputs
-    USE IPARA, ONLY : INoOfVariables, nReflections, IAbsorbFLAG, INoofUgs, &
+    USE IPARA, ONLY : INoOfVariables, INhkl, IAbsorbFLAG, INoofUgs, &
           IPixelCount, ISimFLAG, ISymmetryRelations, IUgOffset, IRefineMode, &
           IEquivalentUgKey
     USE RPARA, ONLY : RAngstromConversion,RElectronCharge,RElectronMass,&
@@ -93,7 +93,7 @@ MODULE refinementcontrol_mod
     INTEGER(IKIND),INTENT(OUT) :: IErr
     INTEGER(IKIND) :: ind,jnd, ILoc(2), IUniqueUgs,IStartTime
     REAL(RKIND) :: RCurrentG(3), RScatteringFactor
-    COMPLEX(CKIND) :: CUgMatDummy(nReflections,nReflections),CVgij
+    COMPLEX(CKIND) :: CUgMatDummy(INhkl,INhkl),CVgij
     CHARACTER*100 :: SFormat,SPrintString
 
     CALL SYSTEM_CLOCK( IStartTime )
@@ -164,7 +164,7 @@ MODULE refinementcontrol_mod
           CUgMatNoAbs = CZERO
       !PRINT*,"About to CUgMatNoAbs"
           !duplicated from Ug matrix initialisation.  Ug refinement will no longer work! Should be put into a single subroutine.
-          DO ind=2,nReflections
+          DO ind=2,INhkl
             DO jnd=1,ind-1
               RCurrentGMagnitude = RgMatrixMagnitude(ind,jnd) ! g-vector magnitude, global variable
               ! Sums CVgij contribution from each atom and pseudoatom in Volts
@@ -178,7 +178,7 @@ MODULE refinementcontrol_mod
           CUgMatDummy = TRANSPOSE(CUgMatNoAbs)! Dummy just used as a box to avoid the bug when conj(transpose) is used on orac
           CUgMatNoAbs = CUgMatNoAbs + CONJG(CUgMatDummy)
         END IF
-        ind=nReflections*nReflections
+        ind=INhkl*INhkl
         !===================================== ! Send UgMat to all cores
         CALL MPI_BCAST(CUgMatNoAbs,ind,MPI_DOUBLE_PRECISION,0,MPI_COMM_WORLD,IErr)
         !=====================================
@@ -485,7 +485,7 @@ MODULE refinementcontrol_mod
     USE crystallography_mod
 
     ! global inputs
-    USE IPARA, ONLY : INoOfVariables, IRefineMode, IIterativeVariableUniqueIDs,IAtomMoveList 
+    USE IPARA, ONLY : INoOfVariables, IRefineMode,IAtomMoveList,IIndependentVariableType,IAtomsToRefine! IIterativeVariableUniqueIDs
     USE RPARA, ONLY : RVector
 
     ! global outputs
@@ -496,27 +496,41 @@ MODULE refinementcontrol_mod
     IMPLICIT NONE
 
     REAL(RKIND),DIMENSION(INoOfVariables),INTENT(IN) :: RIndependentVariable
-    INTEGER(IKIND) :: IVariableType,IVectorID,IAtomID,IErr,ind
+    INTEGER(IKIND) :: IVariableType,IVectorID,IAtomID,IErr,ind,jnd,knd,lnd
 
+    jnd=1!counting indices for each refinement type
+    knd=1
+    lnd=1
     DO ind = 1,INoOfVariables
-      IVariableType = IIterativeVariableUniqueIDs(ind,1)
-      SELECT CASE (IVariableType)
-      CASE(1) ! A: structure factor refinement, do in UpdateStructureFactors
+!      IVariableType = IIterativeVariableUniqueIDs(ind,1)
+      IVariableType = IIndependentVariableType(ind)
+      SELECT CASE (MOD(IIndependentVariableType(ind),10))
+        CASE(1) ! A: structure factor refinement, do in UpdateStructureFactors
         
-      CASE(2)
-        ! The index of the atom and vector being used
-        IVectorID = IIterativeVariableUniqueIDs(ind,2)
-        ! The atom being moved
-        IAtomID = IAtomMoveList(IVectorID)
-        ! Change in position r' = r - v*(r.v) +v*RIndependentVariable(ind)
-        RBasisAtomPosition(IAtomID,:) = MODULO((RBasisAtomPosition(IAtomID,:) - &
-            RVector(IVectorID,:)*DOT_PRODUCT(RBasisAtomPosition(IAtomID,:),RVector(IVectorID,:)) + &
-            RVector(IVectorID,:)*RIndependentVariable(ind)),ONE)
-      CASE(3)
-        RBasisOccupancy(IIterativeVariableUniqueIDs(ind,2))=RIndependentVariable(ind) 
-      CASE(4)
-        RBasisIsoDW(IIterativeVariableUniqueIDs(ind,2))=RIndependentVariable(ind)
-      CASE(5)
+        CASE(2) ! B: atomic coordinates
+          ! The index of the atom and vector being used
+!          IVectorID = IIterativeVariableUniqueIDs(ind,2)
+          ! The atom being moved
+!          IAtomID = IAtomMoveList(IVectorID)
+          IAtomID = IAtomMoveList(jnd)
+          ! Change in position r' = r - v*(r.v) +v*RIndependentVariable(ind)
+          RBasisAtomPosition(IAtomID,:) = MODULO((RBasisAtomPosition(IAtomID,:) - &
+!            RVector(IVectorID,:)*DOT_PRODUCT(RBasisAtomPosition(IAtomID,:),RVector(IVectorID,:)) + &
+!            RVector(IVectorID,:)*RIndependentVariable(ind)),ONE)
+            RVector(jnd,:)*DOT_PRODUCT(RBasisAtomPosition(IAtomID,:),RVector(jnd,:)) + &
+            RVector(jnd,:)*RIndependentVariable(ind)),ONE)
+          jnd=jnd+1
+            
+        CASE(3) ! C: occupancy
+!          RBasisOccupancy(IIterativeVariableUniqueIDs(ind,2))=RIndependentVariable(ind) 
+          RBasisOccupancy(IAtomsToRefine(knd))=RIndependentVariable(ind)
+          knd=knd+1
+        
+      CASE(4) ! D: iso DWF
+        RBasisIsoDW(IAtomsToRefine(lnd))=RIndependentVariable(ind)
+        lnd=lnd+1
+        
+      CASE(5) ! E: aniso DWF
         ! NOT CURRENTLY IMPLEMENTED
         IErr=1;IF(l_alert(IErr,"UpdateVariables",&
               "Anisotropic Debye Waller Factors not implemented")) CALL abort
@@ -525,22 +539,24 @@ MODULE refinementcontrol_mod
 !              IIterativeVariableUniqueIDs(ind,4),&
 !              IIterativeVariableUniqueIDs(ind,5)) = & 
 !              RIndependentVariable(ind)
-      CASE(6)
-        SELECT CASE(IIterativeVariableUniqueIDs(ind,2))
-        CASE(1)
-          RLengthX = RIndependentVariable(ind)
-        CASE(2)!can be either y or z depending on the number of free parameters
-           IF (SUM(IIterativeVariableUniqueIDs(ind,:)).EQ.6) THEN
+
+      CASE(6) ! F: lattice parameters a,b,c
+        SELECT CASE(IIndependentVariableType(ind))
+          CASE(6)!x
+            RLengthX = RIndependentVariable(ind)!first variable is always x
+            RLengthY = RIndependentVariable(ind)!if there's only one variable
+            RLengthZ = RIndependentVariable(ind)!it is cubic so make y and z the same
+          CASE(16)!y
             RLengthY = RIndependentVariable(ind)
-          ELSE
+          CASE(26)!z
             RLengthZ = RIndependentVariable(ind)
-          END IF
-        CASE(3)
-          RLengthZ = RIndependentVariable(ind)
         END SELECT
         CALL ReciprocalLattice(IErr)
-      CASE(7)
-        SELECT CASE(IIterativeVariableUniqueIDs(ind,2))
+        CALL gVectors(IErr)
+        IF(l_alert(IErr,"felixrefine","gVectors")) CALL abort
+
+      CASE(7) ! F: lattice angles alpha, beta,gamma
+        SELECT CASE(jnd)
         CASE(1)
           RAlpha = RIndependentVariable(ind)
         CASE(2)
@@ -549,12 +565,18 @@ MODULE refinementcontrol_mod
           RGamma = RIndependentVariable(ind)
         END SELECT
         CALL ReciprocalLattice(IErr)
+        CALL gVectors(IErr)
+        IF(l_alert(IErr,"felixrefine","gVectors")) CALL abort
+        
        CASE(8)
         RConvergenceAngle = RIndependentVariable(ind)
+        
       CASE(9)
         RAbsorptionPercentage = RIndependentVariable(ind)
+        
       CASE(10)
         RAcceleratingVoltage = RIndependentVariable(ind)
+        
       END SELECT
     END DO
 

@@ -4,14 +4,14 @@
 !
 ! Richard Beanland, Keith Evans & Rudolf A Roemer
 !
-! (C) 2013-17, all rights reserved
+! (C) 2013-19, all rights reserved
 !
-! Version: :VERSION:
-! Date:    :DATE:
+! Version: :VERSION: RB_coord / 1.14 /
+! Date:    :DATE: 15-01-2019
 ! Time:    :TIME:
 ! Status:  :RLSTATUS:
-! Build:   :BUILD:
-! Author:  :AUTHOR:
+! Build:   :BUILD: Mode F: test different lattice types" 
+! Author:  :AUTHOR: r.beanland
 ! 
 !%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 !
@@ -49,8 +49,8 @@
 !!
 MODULE SConst
 
-  CHARACTER*50, PARAMETER :: RStr= "Version: RB_coord / 1.13 / r.beanland "
-  CHARACTER*50, PARAMETER :: DStr= "Date: 03-01-2019"
+  CHARACTER*50, PARAMETER :: RStr= "Version: RB_coord / 1.14 / r.beanland "
+  CHARACTER*50, PARAMETER :: DStr= "Date: 15-01-2019"
   CHARACTER*50, PARAMETER :: AStr= "Mode F: test different lattice types" 
   
   CHARACTER*8 SAllSpaceGrp(230)
@@ -183,7 +183,7 @@ MODULE IPara
   !LACBED Input
   INTEGER(IKIND) :: INoOfLacbedPatterns
   !Beams from selection criteria
-  INTEGER(IKIND) :: nReflections,nStrongBeams,nWeakBeams,nBeams,IHKLMAXValue
+  INTEGER(IKIND) :: INhkl,nStrongBeams,nWeakBeams,nBeams,IHKLMAXValue
   INTEGER(IKIND), DIMENSION(:), ALLOCATABLE :: IBasisAnisoDW,IStrongBeamList, IAnisoDW
   !Main
   INTEGER(IKIND) :: IPixelTotal, INAtomsUnitCell,IPixelComputed
@@ -212,6 +212,7 @@ MODULE IPara
   INTEGER(IKIND),DIMENSION(IRefinementVariableTypes) :: IRefineMode
   INTEGER(IKIND),DIMENSION(IRefinementVariableTypes) :: INoofParameters  !zz
   INTEGER(IKIND),DIMENSION(:,:),ALLOCATABLE :: IIterativeVariableUniqueIDs
+  INTEGER(IKIND),DIMENSION(:),ALLOCATABLE :: IIndependentVariableType
   !List of Atomic Sites for Refinement
   INTEGER(IKIND),DIMENSION(:),ALLOCATABLE :: IAtomsToRefine
   !Simplex Variables

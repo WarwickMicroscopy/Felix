@@ -67,7 +67,7 @@ MODULE bloch_mod
     USE RPara, ONLY : RDeltaK,RDeltaThickness,RInitialThickness,RNormDirM,RgDotNorm,RgPool,&
                       RgPoolMag,Rhkl
     USE IPara, ONLY : IHKLSelectFLAG,IHolzFLAG,IImageFLAG,IMinStrongBeams,IMinWeakBeams,&
-                      INoOfLacbedPatterns,IPixelCount,IThicknessCount,nReflections,&
+                      INoOfLacbedPatterns,IPixelCount,IThicknessCount,INhkl,&
                       IOutputReflections,IBlochMethodFLAG
     USE BlochPara, ONLY : RBigK            
     
@@ -81,10 +81,10 @@ MODULE bloch_mod
           CDummyBeamMatrix(:,:),CUgSgMatrix(:,:),CEigenVectors(:,:),CEigenValues(:),&
           CInvertedEigenVectors(:,:),CAlphaWeightingCoefficients(:),&
           CEigenValueDependentTerms(:,:)
-    COMPLEX(CKIND) :: CFullWaveFunctions(nReflections)
-    REAL(RKIND) :: RFullWaveIntensity(nReflections),RDevPara(nReflections),&
+    COMPLEX(CKIND) :: CFullWaveFunctions(INhkl)
+    REAL(RKIND) :: RFullWaveIntensity(INhkl),RDevPara(INhkl),&
           RTiltedK(ITHREE)
-    INTEGER(IKIND) :: IStrongBeamList(nReflections),IWeakBeamList(nReflections),&
+    INTEGER(IKIND) :: IStrongBeamList(INhkl),IWeakBeamList(INhkl),&
           nBeams,nWeakBeams
     INTEGER(IKIND) :: ind,knd,pnd,IThickness,IThicknessIndex,ILowerLimit,&
           IUpperLimit       
@@ -117,7 +117,7 @@ MODULE bloch_mod
     ! Compute the deviation parameter for reflection pool
     ! NB RDevPara is in units of (1/A)
     ! in the microscope ref frame(NB exp(i*s.r), physics convention)
-    DO knd=1,nReflections
+    DO knd=1,INhkl
       ! Version without small angle approximation
       ! Sg=(g/k)*[2(k^2-k0.k')]^0.5
       ! k0 is defined by the Bragg condition
@@ -149,29 +149,29 @@ MODULE bloch_mod
 
     ! select only those beams where the Ewald sphere is close to the
     ! reciprocal lattice, i.e. within RBSMaxDeviationPara
-    CALL StrongAndWeakBeamsDetermination(nReflections,IMinWeakBeams,&
+    CALL StrongAndWeakBeamsDetermination(INhkl,IMinWeakBeams,&
                     IMinStrongBeams,RDevPara,CUgMat,&
                     IStrongBeamList,IWeakBeamList,nBeams,nWeakBeams,IErr)
     IF(l_alert(IErr,"BlochCoefficientCalculation",&
           "StrongAndWeakBeamsDetermination()")) RETURN
     CALL message(LXL,dbg7,"strong beams",nBeams)
     CALL message(LXL,dbg7,"weak beams",nWeakBeams)
-    CALL message(LXL,dbg7,"nReflections",nReflections)
+    CALL message(LXL,dbg7,"INhkl",INhkl)
 
     !--------------------------------------------------------------------
     ! ALLOCATE memory for eigen problem
     !--------------------------------------------------------------------
 
     ! now nBeams determined, allocate complex arrays
-    ALLOCATE( CBeamProjectionMatrix(nBeams,nReflections), STAT=IErr )
-    ALLOCATE( CDummyBeamMatrix(nBeams,nReflections), STAT=IErr )
+    ALLOCATE( CBeamProjectionMatrix(nBeams,INhkl), STAT=IErr )
+    ALLOCATE( CDummyBeamMatrix(nBeams,INhkl), STAT=IErr )
     ALLOCATE( CUgSgMatrix(nBeams,nBeams), STAT=IErr )
     ALLOCATE( CEigenValues(nBeams), STAT=IErr )
     ALLOCATE( CEigenVectors(nBeams,nBeams), STAT=IErr )
     ALLOCATE( CDummyEigenVectors(nBeams,nBeams), STAT=IErr )
     ALLOCATE( CInvertedEigenVectors(nBeams,nBeams), STAT=IErr )
-    ALLOCATE( CBeamTranspose(nReflections,nBeams), STAT=IErr )
-    ALLOCATE( CUgMatPartial(nReflections,nBeams), STAT=IErr )
+    ALLOCATE( CBeamTranspose(INhkl,nBeams), STAT=IErr )
+    ALLOCATE( CUgMatPartial(INhkl,nBeams), STAT=IErr )
     ALLOCATE( CAlphaWeightingCoefficients(nBeams), STAT=IErr )
     ALLOCATE( CEigenValueDependentTerms(nBeams,nBeams), STAT=IErr )
     IF(l_alert(IErr,"BlochCoefficientCalculation","allocations")) RETURN
@@ -196,11 +196,11 @@ MODULE bloch_mod
     CBeamTranspose=TRANSPOSE(CBeamProjectionMatrix)
     ! reduce the matrix to just include strong beams using some nifty matrix multiplication
     ! CUgMatPartial = CUgMat * CBeamTranspose
-    CALL ZGEMM('N','N',nReflections,nBeams,nReflections,CONE,CUgMat, &
-              nReflections,CBeamTranspose,nReflections,CZERO,CUgMatPartial,nReflections)
+    CALL ZGEMM('N','N',INhkl,nBeams,INhkl,CONE,CUgMat, &
+              INhkl,CBeamTranspose,INhkl,CZERO,CUgMatPartial,INhkl)
     ! CUgSgMatrix = CBeamProjectionMatrix * CUgMatPartial
-    CALL ZGEMM('N','N',nBeams,nBeams,nReflections,CONE,CBeamProjectionMatrix, &
-              nBeams,CUgMatPartial,nReflections,CZERO,CUgSgMatrix,nBeams)
+    CALL ZGEMM('N','N',nBeams,nBeams,INhkl,CONE,CBeamProjectionMatrix, &
+              nBeams,CUgMatPartial,INhkl,CZERO,CUgSgMatrix,nBeams)
 
     !--------------------------------------------------------------------
     ! higher order Laue zones and weak beams
@@ -302,7 +302,7 @@ MODULE bloch_mod
       IThickness = NINT(RThickness,IKIND)
 
       CALL CreateWaveFunctions(RThickness,RFullWaveIntensity,CFullWaveFunctions,&
-                    nReflections,nBeams,IStrongBeamList,CEigenVectors,CInvertedEigenVectors,CEigenValues,IErr)
+                    INhkl,nBeams,IStrongBeamList,CEigenVectors,CInvertedEigenVectors,CEigenValues,IErr)
       IF(l_alert(IErr,"BlochCoefficientCalculation","CreateWaveFunctions")) RETURN
 
       !--------------------------------------------------------------------
@@ -342,7 +342,7 @@ MODULE bloch_mod
 !          RThickness = RThickness / 1000
 
 !          CALL CreateWaveFunctions(RThickness,RFullWaveIntensity,CFullWaveFunctions,&
-!                        nReflections,nBeams,IStrongBeamList,CEigenVectors,CEigenValues,IErr)
+!                        INhkl,nBeams,IStrongBeamList,CEigenVectors,CEigenValues,IErr)
 !          IF(l_alert(IErr,"BlochCoefficientCalculation","CreateWaveFunctions")) RETURN
 !          CALL message('CFullWaveFunctions(1:4)',CFullWaveFunctions(1:4))
 
@@ -420,7 +420,7 @@ MODULE bloch_mod
   !! Major-Authors: Keith Evans (2014), Richard Beanland (2016)
   !!
   SUBROUTINE CreateWaveFunctions(RThickness,RFullWaveIntensity,CFullWaveFunctions,&
-                    nReflections,nBeams,IStrongBeamList,CEigenVectors,CInvertedEigenVectors,CEigenValues,IErr)
+                    INhkl,nBeams,IStrongBeamList,CEigenVectors,CInvertedEigenVectors,CEigenValues,IErr)
 
     USE MyNumbers
     USE MyMPI
@@ -429,9 +429,9 @@ MODULE bloch_mod
     IMPLICIT NONE
     
     REAL(RKIND),INTENT(IN) :: RThickness
-    REAL(RKIND),INTENT(OUT) :: RFullWaveIntensity(nReflections)
-    COMPLEX(CKIND),INTENT(OUT) :: CFullWaveFunctions(nReflections) 
-    INTEGER(IKIND),INTENT(IN) :: nReflections,nBeams,IStrongBeamList(nReflections)
+    REAL(RKIND),INTENT(OUT) :: RFullWaveIntensity(INhkl)
+    COMPLEX(CKIND),INTENT(OUT) :: CFullWaveFunctions(INhkl) 
+    INTEGER(IKIND),INTENT(IN) :: INhkl,nBeams,IStrongBeamList(INhkl)
     COMPLEX(CKIND),INTENT(IN) :: CEigenVectors(nBeams,nBeams),CInvertedEigenVectors(nBeams,nBeams),CEigenValues(nBeams)
     INTEGER(IKIND),INTENT(OUT) :: IErr 
     REAL(RKIND) :: RWaveIntensity(nBeams)
@@ -484,7 +484,7 @@ MODULE bloch_mod
   !!
   !! Major-Authors: Keith Evans (2014), Richard Beanland (2016)
   !!
-  SUBROUTINE StrongAndWeakBeamsDetermination(nReflections,IMinWeakBeams,&
+  SUBROUTINE StrongAndWeakBeamsDetermination(INhkl,IMinWeakBeams,&
                     IMinStrongBeams,RDevPara,CUgMat,&
                     IStrongBeamList,IWeakBeamList,nBeams,nWeakBeams,IErr)
     
@@ -495,16 +495,16 @@ MODULE bloch_mod
     USE MyMPI
     USE message_mod 
 
-    INTEGER(IKIND),INTENT(IN) :: nReflections
-    REAL(RKIND),DIMENSION(nReflections),INTENT(IN) :: RDevPara
-    COMPLEX(CKIND),DIMENSION(nReflections,nReflections),INTENT(IN) :: CUgMat
+    INTEGER(IKIND),INTENT(IN) :: INhkl
+    REAL(RKIND),DIMENSION(INhkl),INTENT(IN) :: RDevPara
+    COMPLEX(CKIND),DIMENSION(INhkl,INhkl),INTENT(IN) :: CUgMat
     INTEGER(IKIND),INTENT(IN) :: IMinWeakBeams, IMinStrongBeams
-    INTEGER(IKIND),DIMENSION(nReflections),INTENT(OUT) :: IStrongBeamList,IWeakBeamList
+    INTEGER(IKIND),DIMENSION(INhkl),INTENT(OUT) :: IStrongBeamList,IWeakBeamList
     INTEGER(IKIND),INTENT(OUT) :: nBeams,nWeakBeams,IErr
     INTEGER(IKIND) :: ind,jnd
-    INTEGER(IKIND),DIMENSION(:) :: IStrong(nReflections),IWeak(nReflections)
+    INTEGER(IKIND),DIMENSION(:) :: IStrong(INhkl),IWeak(INhkl)
     REAL(RKIND) :: RMaxSg,RMinPertStrong,RMinPertWeak
-    REAL(RKIND),DIMENSION(:) :: RPertStrength0(nReflections)
+    REAL(RKIND),DIMENSION(:) :: RPertStrength0(INhkl)
 
     !----------------------------------------------------------------------------
     ! strong beams
@@ -537,7 +537,7 @@ MODULE bloch_mod
     ! give the strong beams a number in IStrongBeamList
     IStrongBeamList=0_IKIND
     ind=1_IKIND
-    DO jnd=1,nReflections
+    DO jnd=1,INhkl
       IF (IStrong(jnd).EQ.1) THEN
         IStrongBeamList(ind)=jnd
         ind=ind+1
@@ -549,7 +549,7 @@ MODULE bloch_mod
     CALL message(LXL,dbg7,"Strong Beam List",IStrongBeamList)
     CALL message(LXL,dbg7,"Sg limit for strong beams = ",RMaxSg)
     CALL message(LXL,dbg7,"Smallest strong perturbation strength = ",RMinPertStrong)
-    IF(SUM(IStrong)+IMinWeakBeams.GT.nReflections) IErr = 1
+    IF(SUM(IStrong)+IMinWeakBeams.GT.INhkl) IErr = 1
     IF(l_alert(IErr,"StrongAndWeakBeamsDetermination",&
           "Insufficient reflections to accommodate all Strong and Weak Beams")) RETURN
     
@@ -574,7 +574,7 @@ MODULE bloch_mod
     ! give the weak beams a number in IWeakBeamList
     IWeakBeamList=0_IKIND
     ind=1_IKIND
-    DO jnd=1,nReflections
+    DO jnd=1,INhkl
       IF (IWeak(jnd).EQ.1) THEN
         IWeakBeamList(ind)=jnd
         ind=ind+1

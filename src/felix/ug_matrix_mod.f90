@@ -4,14 +4,14 @@
 !
 ! Richard Beanland, Keith Evans & Rudolf A Roemer
 !
-! (C) 2013-17, all rights reserved
+! (C) 2013-19, all rights reserved
 !
-! Version: :VERSION:
-! Date:    :DATE:
+! Version: :VERSION: RB_coord / 1.14 /
+! Date:    :DATE: 15-01-2019
 ! Time:    :TIME:
 ! Status:  :RLSTATUS:
-! Build:   :BUILD:
-! Author:  :AUTHOR:
+! Build:   :BUILD: Mode F: test different lattice types" 
+! Author:  :AUTHOR: r.beanland
 ! 
 !%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 !
@@ -353,7 +353,7 @@ MODULE ug_matrix_mod
 
     ! global inputs
     USE IPARA, ONLY : IAnisoDebyeWallerFactorFlag,IInitialSimulationFLAG,INAtomsUnitCell,&
-          nReflections,IAtomicNumber,IEquivalentUgKey,&
+          INhkl,IAtomicNumber,IEquivalentUgKey,&
           IAnisoDW
     USE RPARA, ONLY : RAngstromConversion,RElectronCharge,RElectronMass,&
           RRelativisticCorrection,RVolume,RIsoDW,RgMatrixMagnitude,ROccupancy,&
@@ -471,7 +471,7 @@ MODULE ug_matrix_mod
 
     ! fill lower diagonal of Ug matrix(excluding absorption) with Fourier components of the potential Vg
     CUgMatNoAbs = CZERO ! 
-    DO ind=2,nReflections
+    DO ind=2,INhkl
       DO jnd=1,ind-1
         RCurrentGMagnitude = RgMatrixMagnitude(ind,jnd) ! g-vector magnitude, global variable
         ! Sums CVgij contribution from each atom and pseudoatom in Volts
@@ -482,13 +482,13 @@ MODULE ug_matrix_mod
     !Convert to Ug
     CUgMatNoAbs=CUgMatNoAbs*TWO*RElectronMass*RRelativisticCorrection*RElectronCharge/((RPlanckConstant**2)*(RAngstromConversion**2))
     ! NB Only the lower half of the Vg matrix was calculated, this completes the upper half
-    ALLOCATE (CTempMat(nReflections,nReflections),STAT=IErr)
+    ALLOCATE (CTempMat(INhkl,INhkl),STAT=IErr)
     IF(l_alert(IErr,"Structure factor initialise","allocate CTempMat")) RETURN
     CTempMat = TRANSPOSE(CUgMatNoAbs)! To avoid the bug when conj(transpose) is used
     CUgMatNoAbs = CUgMatNoAbs + CONJG(CTempMat)
     CUgMatPrime = CZERO
     ! set diagonals to zero
-    !DO ind=1,nReflections
+    !DO ind=1,INhkl
     !  CUgMatNoAbs(ind,ind)=CZERO
     !END DO
 
@@ -537,7 +537,7 @@ MODULE ug_matrix_mod
       ! IEquivalentUgKey is used later in absorption case 2 Bird & king
       RgSumMat = ZERO
       ! equivalent Ug's are identified by abs(h)+abs(k)+abs(l)+a*h^2+b*k^2+c*l^2...
-      DO ind = 1,nReflections
+      DO ind = 1,INhkl
         DO jnd = 1,ind
           RgSumMat(ind,jnd)=ABS(Rhkl(ind,1)-Rhkl(jnd,1))+ABS(Rhkl(ind,2)-Rhkl(jnd,2))+ABS(Rhkl(ind,3)-Rhkl(jnd,3))+ &
             RLengthX*(Rhkl(ind,1)-Rhkl(jnd,1))**TWO+RLengthY*(Rhkl(ind,2)-Rhkl(jnd,2))**TWO+ &
@@ -545,7 +545,7 @@ MODULE ug_matrix_mod
         END DO
       END DO
       ! it's symmetric
-      ALLOCATE (RTempMat(nReflections,nReflections),STAT=IErr)
+      ALLOCATE (RTempMat(INhkl,INhkl),STAT=IErr)
       RTempMat = TRANSPOSE(RgSumMat)
       RgSumMat = RgSumMat+RTempMat
       CALL message ( LM, dbg3, "hkl: g Sum matrix" )
@@ -556,8 +556,8 @@ MODULE ug_matrix_mod
 
       ISymmetryRelations = 0_IKIND 
       Iuid = 0_IKIND 
-      DO jnd = 1,nReflections
-        DO ind = 1,nReflections
+      DO jnd = 1,INhkl
+        DO ind = 1,INhkl
           IF(ISymmetryRelations(ind,jnd).NE.0) THEN
             CYCLE
           ELSE

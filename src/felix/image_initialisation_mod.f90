@@ -4,14 +4,14 @@
 !
 ! Richard Beanland, Keith Evans & Rudolf A Roemer
 !
-! (C) 2013-17, all rights reserved
+! (C) 2013-19, all rights reserved
 !
-! Version: :VERSION:
-! Date:    :DATE:
+! Version: :VERSION: RB_coord / 1.14 /
+! Date:    :DATE: 15-01-2019
 ! Time:    :TIME:
 ! Status:  :RLSTATUS:
-! Build:   :BUILD:
-! Author:  :AUTHOR:
+! Build:   :BUILD: Mode F: test different lattice types" 
+! Author:  :AUTHOR: r.beanland
 ! 
 !%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 !
@@ -59,7 +59,7 @@ MODULE image_initialisation_mod
     
     ! global inputs
     USE RPARA, ONLY : RgPool, RMinimumGMag, RConvergenceAngle
-    USE IPARA, ONLY : IPixelCount, INoOfLacbedPatterns, nReflections, IHKLSelectFLAG, &
+    USE IPARA, ONLY : IPixelCount, INoOfLacbedPatterns, INhkl, IHKLSelectFLAG, &
                       IOutputReflections
     
     IMPLICIT NONE
@@ -70,7 +70,7 @@ MODULE image_initialisation_mod
 
     IErr=0
     ! positions of the centres of the disks
-    DO ind=1,nReflections
+    DO ind=1,INhkl
       RhklPositions(ind,1) = RgPool(ind,1)/RMinimumGMag
       RhklPositions(ind,2) = RgPool(ind,2)/RMinimumGMag
     ENDDO
@@ -81,13 +81,15 @@ MODULE image_initialisation_mod
     ELSE
       DummyConvergenceAngle=0.95_RKIND
     END IF
-    IF(IHKLSelectFLAG.EQ.0) THEN
+    
+    !RB As far as I can tell IImageSizeXY is never used!  
+    IF(IHKLSelectFLAG.EQ.0) THEN!no felix.hkl, make something up
       DO ind=1,2
         IImageSizeXY(ind)= CEILING(&
              FOUR*REAL(IPixelCount,RKIND)/DummyConvergenceAngle * &
             (MAXVAL(ABS(RhklPositions(1:INoOfLacbedPatterns,ind)))+ONE) )
       ENDDO
-    ELSE
+    ELSE!felix.hkl 
       DO ind=1,2
         DO jnd = 1,INoOfLacbedPatterns
           IImageSizeXY(ind)= CEILING(&

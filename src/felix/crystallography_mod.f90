@@ -4,14 +4,14 @@
 !
 ! Richard Beanland, Keith Evans & Rudolf A Roemer
 !
-! (C) 2013-17, all rights reserved
+! (C) 2013-19, all rights reserved
 !
-! Version: :VERSION:
-! Date:    :DATE:
+! Version: :VERSION: RB_coord / 1.14 /
+! Date:    :DATE: 15-01-2019
 ! Time:    :TIME:
 ! Status:  :RLSTATUS:
-! Build:   :BUILD:
-! Author:  :AUTHOR:
+! Build:   :BUILD: Mode F: test different lattice types" 
+! Author:  :AUTHOR: r.beanland
 ! 
 !%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 !
@@ -31,15 +31,78 @@
 !%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 !>
-!! Module-description: This handle lattice vectors as well as the fractional atomic positions
+!! Module-description: This defines lattice vectors as well as the fractional atomic coordinates
 !!
 MODULE crystallography_mod
   IMPLICIT NONE
   PRIVATE
-  PUBLIC :: ReciprocalLattice, UniqueAtomPositions
+  PUBLIC :: ReciprocalLattice, UniqueAtomPositions, gVectors
 
   CONTAINS
 
+  !>
+  !! Procedure-description: Calculates g-vector matrices, global variables
+  !!
+  !! Author: Richard Beanland (2019)
+  !!
+  SUBROUTINE gVectors(IErr)
+
+    USE MyNumbers
+    USE message_mod
+  
+    ! global inputs
+    USE RPARA, ONLY : RarVecM,RbrVecM,RcrVecM,RNormDirM,Rhkl,RConvergenceAngle
+    USE IPARA, ONLY : INhkl,IPixelCount
+    
+    ! global outputs
+    USE RPARA, ONLY : RgPool,RgPoolMag,RgDotNorm,RMinimumGMag,RDeltaK,RgMatrix,RgMatrixMagnitude
+    
+    IMPLICIT NONE
+    
+    INTEGER(IKIND) :: IErr,ind,jnd
+    
+    IErr=0!No route to throw an error here in fact
+    
+    !calculate g-vector pool, the magnitudes and component parallel to specimen surface
+    DO ind=1,INhkl
+      DO jnd=1,ITHREE
+        RgPool(ind,jnd) = Rhkl(ind,1)*RarVecM(jnd) + &
+            Rhkl(ind,2)*RbrVecM(jnd) + Rhkl(ind,3)*RcrVecM(jnd)
+      END DO
+      RgPoolMag(ind)= SQRT(DOT_PRODUCT(RgPool(ind,:),RgPool(ind,:)))
+      RgDotNorm(ind) = DOT_PRODUCT(RgPool(ind,:),RNormDirM)
+    END DO
+    !resolution in k-space
+    RMinimumGMag = RgPoolMag(2)!since the first one is always 000
+    RDeltaK = RMinimumGMag*RConvergenceAngle/REAL(IPixelCount,RKIND)
+    
+    ! Calculate matrix  of g-vectors that corresponds to the Ug matrix
+    DO ind=1,INhkl
+      DO jnd=1,INhkl
+        RgMatrix(ind,jnd,:)= RgPool(ind,:)-RgPool(jnd,:)
+        RgMatrixMagnitude(ind,jnd) = & 
+           SQRT(DOT_PRODUCT(RgMatrix(ind,jnd,:),RgMatrix(ind,jnd,:)))
+      END DO
+    END DO
+  
+    !outputs if requested    
+    CALL message(LL,dbg3,"first 16 g-vectors", RgMatrix(1:16,1,:)) 
+    CALL message(LL,dbg3,"g-vector magnitude matrix (2pi/A)", RgMatrixMagnitude(1:16,1:8)) 
+    CALL message(LL,dbg7,"g-vectors and magnitude (1/A), in the microscope reference frame" )
+    DO ind = 1,INhkl
+      CALL message(LL,dbg7,"hkl  :",NINT(Rhkl(ind,:)))
+      CALL message(LL,dbg7,"g mag:",RgPoolMag(ind))
+    END DO
+    CALL message(LL,dbg7,"g.n list")
+    DO ind = 1,INhkl
+      CALL message(LL,dbg7,"hkl :",NINT(Rhkl(ind,:)))
+      CALL message(LL,dbg7,"g.n :",RgDotNorm(ind))
+    END DO
+    
+    END SUBROUTINE gVectors
+
+  !%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+  
   !>
   !! Procedure-description: Creates reciprocal lattice vectors in Microscope
   !! reference frame. This involves transforms between the orthogonal, crystal

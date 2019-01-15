@@ -4,14 +4,14 @@
 !
 ! Richard Beanland, Keith Evans & Rudolf A Roemer
 !
-! (C) 2013-17, all rights reserved
+! (C) 2013-19, all rights reserved
 !
-! Version: :VERSION:
-! Date:    :DATE:
+! Version: :VERSION: RB_coord / 1.14 /
+! Date:    :DATE: 15-01-2019
 ! Time:    :TIME:
 ! Status:  :RLSTATUS:
-! Build:   :BUILD:
-! Author:  :AUTHOR:
+! Build:   :BUILD: Mode F: test different lattice types" 
+! Author:  :AUTHOR: r.beanland
 ! 
 !%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 !
@@ -228,7 +228,7 @@ MODULE read_files_mod
     ! Image Output Options
     !--------------------------------------------------------------------
 
-    !?? update sample felix.inp and section here to 'specimin thickness'
+    !?? update sample felix.inp and section here to 'specimen thickness'
 
     ! Two comment lines
     ILine= ILine+1; READ(IChInp,ERR=20,END=30,FMT='(A)')
