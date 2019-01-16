@@ -6,8 +6,8 @@
 !
 ! (C) 2013-19, all rights reserved
 !
-! Version: :VERSION: RB_coord / 1.14 /
-! Date:    :DATE: 15-01-2019
+! Version: :VERSION: RB_coord / 1.15 /
+! Date:    :DATE: 16-01-2019
 ! Time:    :TIME:
 ! Status:  :RLSTATUS:
 ! Build:   :BUILD: Mode F: test different lattice types" 
@@ -49,8 +49,8 @@
 !!
 MODULE SConst
 
-  CHARACTER*50, PARAMETER :: RStr= "Version: RB_coord / 1.14 / r.beanland "
-  CHARACTER*50, PARAMETER :: DStr= "Date: 15-01-2019"
+  CHARACTER*50, PARAMETER :: RStr= "Version: RB_coord / 1.15 / r.beanland "
+  CHARACTER*50, PARAMETER :: DStr= "Date: 16-01-2019"
   CHARACTER*50, PARAMETER :: AStr= "Mode F: test different lattice types" 
   
   CHARACTER*8 SAllSpaceGrp(230)

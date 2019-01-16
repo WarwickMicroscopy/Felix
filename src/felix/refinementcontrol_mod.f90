@@ -6,8 +6,8 @@
 !
 ! (C) 2013-19, all rights reserved
 !
-! Version: :VERSION: RB_coord / 1.14 /
-! Date:    :DATE: 15-01-2019
+! Version: :VERSION: RB_coord / 1.15 /
+! Date:    :DATE: 16-01-2019
 ! Time:    :TIME:
 ! Status:  :RLSTATUS:
 ! Build:   :BUILD: Mode F: test different lattice types" 
@@ -28,10 +28,6 @@
 !  You should have received a copy of the GNU General Public License
 !  along with Felix.  If not, see <http://www.gnu.org/licenses/>.
 !
-!%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-
-!%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-! $Id: Felixrefine.f90,v 1.89 2014/04/28 12:26:19 phslaz Exp $
 !%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 !>
@@ -508,21 +504,15 @@ MODULE refinementcontrol_mod
         CASE(1) ! A: structure factor refinement, do in UpdateStructureFactors
         
         CASE(2) ! B: atomic coordinates
-          ! The index of the atom and vector being used
-!          IVectorID = IIterativeVariableUniqueIDs(ind,2)
           ! The atom being moved
-!          IAtomID = IAtomMoveList(IVectorID)
           IAtomID = IAtomMoveList(jnd)
           ! Change in position r' = r - v*(r.v) +v*RIndependentVariable(ind)
           RBasisAtomPosition(IAtomID,:) = MODULO((RBasisAtomPosition(IAtomID,:) - &
-!            RVector(IVectorID,:)*DOT_PRODUCT(RBasisAtomPosition(IAtomID,:),RVector(IVectorID,:)) + &
-!            RVector(IVectorID,:)*RIndependentVariable(ind)),ONE)
             RVector(jnd,:)*DOT_PRODUCT(RBasisAtomPosition(IAtomID,:),RVector(jnd,:)) + &
             RVector(jnd,:)*RIndependentVariable(ind)),ONE)
           jnd=jnd+1
             
         CASE(3) ! C: occupancy
-!          RBasisOccupancy(IIterativeVariableUniqueIDs(ind,2))=RIndependentVariable(ind) 
           RBasisOccupancy(IAtomsToRefine(knd))=RIndependentVariable(ind)
           knd=knd+1
         
@@ -534,11 +524,6 @@ MODULE refinementcontrol_mod
         ! NOT CURRENTLY IMPLEMENTED
         IErr=1;IF(l_alert(IErr,"UpdateVariables",&
               "Anisotropic Debye Waller Factors not implemented")) CALL abort
-!        RAnisotropicDebyeWallerFactorTensor(&
-!              IIterativeVariableUniqueIDs(ind,2),&
-!              IIterativeVariableUniqueIDs(ind,4),&
-!              IIterativeVariableUniqueIDs(ind,5)) = & 
-!              RIndependentVariable(ind)
 
       CASE(6) ! F: lattice parameters a,b,c
         SELECT CASE(IIndependentVariableType(ind))

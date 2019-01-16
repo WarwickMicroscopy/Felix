@@ -6,8 +6,8 @@
 !
 ! (C) 2013-19, all rights reserved
 !
-! Version: :VERSION: RB_coord / 1.14 /
-! Date:    :DATE: 15-01-2019
+! Version: :VERSION: RB_coord / 1.15 /
+! Date:    :DATE: 16-01-2019
 ! Time:    :TIME:
 ! Status:  :RLSTATUS:
 ! Build:   :BUILD: Mode F: test different lattice types" 
@@ -61,7 +61,7 @@ PROGRAM Felixrefine
  
   INTEGER(IKIND) :: IErr,ind,jnd,knd,lnd,mnd,nnd,Iter,ICutOff,IHOLZgPoolMag,&
         IBSMaxLocGVecAmp,ILaueLevel,INumTotalReflections,ITotalLaueZoneLevel,&
-        IExitFLAG,ICycle,INumInitReflections,IZerothLaueZoneLevel,&
+        IPrintFLAG,ICycle,INumInitReflections,IZerothLaueZoneLevel,xnd,&
         INumFinalReflections,IThicknessIndex,IVariableType,IArrayIndex,&
         IAnisotropicDebyeWallerFactorElementNo,ISpaceGrp
   INTEGER(IKIND) :: IStartTime,IStartTime2
@@ -140,7 +140,6 @@ PROGRAM Felixrefine
   ELSE ! not refinement, simulation only
     CALL message(LS,"Simulation only")
   END IF
-
   !--------------------------------------------------------------------
   ! set up scattering factors, relativistic electrons, reciprocal lattice
   !--------------------------------------------------------------------
@@ -205,8 +204,6 @@ PROGRAM Felixrefine
 
   !--------------------------------------------------------------------
   ! set up unique atom positions, reflection pool
-  !--------------------------------------------------------------------
-
   ! fills unit cell from basis and symmetry, removes duplicate atoms at special positions
   CALL UniqueAtomPositions(IErr)
   IF(l_alert(IErr,"felixrefine","UniqueAtomPositions")) CALL abort
@@ -274,7 +271,6 @@ PROGRAM Felixrefine
 
   !--------------------------------------------------------------------
   ! sort into Laue Zones
-  !--------------------------------------------------------------------
   !Dummy matrix, used in HOLZ calculation (not working)
   ALLOCATE(RgDummyVecMat(INhkl,ITHREE),STAT=IErr)
   IF(l_alert(IErr,"felixrefine","allocate RgDummyVecMat")) CALL abort
@@ -312,8 +308,6 @@ PROGRAM Felixrefine
 
   !--------------------------------------------------------------------
   ! (optional) calculate higher order Laue zone 
-  !--------------------------------------------------------------------
-
   ALLOCATE(RgPoolMagLaue(INhkl,ITotalLaueZoneLevel),STAT=IErr)
   IF(l_alert(IErr,"felixrefine","allocate RgPoolMagLaue")) CALL abort
 
@@ -362,9 +356,6 @@ PROGRAM Felixrefine
     END DO
 
   END IF
-
-  
-  
 
   !--------------------------------------------------------------------
   ! reduce number of reflections for finite acceptance angle 
@@ -555,15 +546,7 @@ PROGRAM Felixrefine
 !        INoOfVariablesForRefinementType(8)=1
       END IF
 
-      IF (IRefineMode(9).EQ.1) THEN ! Percentage Absorption, I
-        jnd=jnd+1
-        IErr=1!not yet implemented!!!
-        IF(l_alert(IErr,"felixrefine",&
-            "Percentage Absorption refinement not yet implemented, sorry")) CALL abort
-!        INoOfVariablesForRefinementType(9)=1
-      END IF
-
-      IF (IRefineMode(10).EQ.1) THEN ! kV, J
+      IF (IRefineMode(9).EQ.1) THEN ! kV, I
         jnd=jnd+1
         IErr=1!not yet implemented!!!
         IF(l_alert(IErr,"felixrefine",&
@@ -579,12 +562,12 @@ PROGRAM Felixrefine
       IErr = 1
       IF(l_alert(IErr,"felixrefine",&
             "No refinement variables! Check IRefineModeFLAG in felix.inp. "// &
-            "Valid refine modes are A,B,C,D,E,F,G,H,I,J,S")) CALL abort
+            "Valid refine modes are A,B,C,D,E,F,G,H,I,S")) CALL abort
     END IF
     IF (INoOfVariables.EQ.1 ) THEN 
       CALL message(LS,"Only one independent variable")
     ELSE
-      CALL message(LS,"number of independent variables = ",INoOfVariables)
+      CALL message(LS,"Number of independent variables = ",INoOfVariables)
     END IF
     ALLOCATE(RIndependentVariable(INoOfVariables),STAT=IErr) 
     ALLOCATE(IIndependentVariableType(INoOfVariables),STAT=IErr)
@@ -592,155 +575,6 @@ PROGRAM Felixrefine
     RIndependentVariable=Rtemp(1:INoOfVariables)
     IIndependentVariableType=Itemp(1:INoOfVariables)
     
-    !--------------------------------------------------------------------
-    ! assign refinement variables depending upon Ug and non-Ug refinement
-    !--------------------------------------------------------------------
-!    IF(IRefineMode(1).EQ.1) THEN ! It's a Ug refinement, A
-      ! Fill up the IndependentVariable list with CUgMatNoAbs components
-!      jnd=1
-!      DO ind = 1+IUgOffset,INoofUgs+IUgOffset
-!        IF ( ABS(REAL(CUniqueUg(ind),RKIND)).GE.RTolerance ) THEN
-!          RIndependentVariable(jnd) = REAL(CUniqueUg(ind),RKIND)
-!          jnd=jnd+1
-!        END IF
-!        IF ( ABS(AIMAG(CUniqueUg(ind))).GE.RTolerance ) THEN 
-!          RIndependentVariable(jnd) = AIMAG(CUniqueUg(ind))
-!          jnd=jnd+1
-!        END IF
-!      END DO
-      ! Proportional absorption included in structure factor refinement as last variable
-!      IF (IAbsorbFLAG.EQ.1) RIndependentVariable(jnd) = RAbsorptionPercentage
-!    ELSE ! It's not a Ug refinement 
-      ! Fill up the IndependentVariable list 
-!!!      ALLOCATE(RIndependentVariable(INoOfVariables),STAT=IErr)  
-!      ind=1
-!      IF(IRefineMode(2).EQ.1) THEN ! Atomic coordinates, B
-!        DO jnd=1,SIZE(IAtomMoveList)
-!            RIndependentVariable(ind)=DOT_PRODUCT(RBasisAtomPosition(IAtomMoveList(jnd),:),RVector(jnd,:))
-!            ind=ind+1
-!        END DO
-!      END IF
-!      IF(IRefineMode(3).EQ.1) THEN ! Occupancy, C
-!        DO jnd=1,SIZE(IAtomsToRefine)
-!            RIndependentVariable(ind)=RBasisOccupancy(IAtomsToRefine(jnd))
-!            ind=ind+1
-!        END DO
-!      END IF
-!      IF(IRefineMode(4).EQ.1) THEN ! Isotropic DW, D
-!        DO jnd=1,SIZE(IAtomsToRefine)
-!            RIndependentVariable(ind)=RBasisIsoDW(IAtomsToRefine(jnd))
-!            ind=ind+1
-!        END DO
-!      END IF
-!      IF(IRefineMode(6).EQ.1) THEN ! Lattice parameters, F
-!        CALL ConvertSpaceGroupToNumber(ISpaceGrp,IErr)
-!        IF(l_alert(IErr,"felixrefine","ConvertSpaceGroupToNumber")) CALL abort
-!        IF(ind.NE.1) IErr=1!throw an error if this is attempted with other refinements
-!        IF(l_alert(IErr,"felixrefine",&
-!                    "Unit cell refinement with other parameters not implemented")) CALL abort
-!        !This section needs work to include rhombohedral cells and non-standard
-!        !settings!!!
-!        RIndependentVariable(ind)=RLengthX!This is a free parameter for all lattice types
-!        ind=ind+1
-!        IF (ISpaceGrp.LT.75) THEN!triclinic,monoclinic,orthorhombic
-!          RIndependentVariable(ind)=RLengthY
-!          RIndependentVariable(ind+1)=RLengthZ
-!          ind=ind+2
-!        ELSE IF (ISpaceGrp.GT.142.AND.ISpaceGrp.LT.168) THEN!rhombohedral
-!          IErr=1!need to work out R- vs H- settings!!!
-!          PRINT*,"Rhombohedral R- and H- cells not yet implemented for unit cell refinement"
-!        ELSE IF ((ISpaceGrp.GT.167.AND.ISpaceGrp.LT.195).OR.&!Hexagonal
-!                   (ISpaceGrp.GT.74.AND.ISpaceGrp.LT.143)) THEN!Tetragonal
-!          RIndependentVariable(ind)=RLengthZ
-!          ind=ind+1
-!        END IF
-!        INoOfVariablesForRefinementType(6)=ind-1
-!      END IF
-!      IF(IRefineMode(8).EQ.1) THEN ! Convergence angle, H
-!        RIndependentVariable(ind)=RConvergenceAngle
-!        ind=ind+1
-!      END IF
-      ! Assign IDs - not needed for a Ug refinement
-!      ALLOCATE(IIterativeVariableUniqueIDs(INoOfVariables,2),STAT=IErr)
-!      IF(l_alert(IErr,"felixrefine","allocate IIterativeVariableUniqueIDs")) CALL abort
-!      IIterativeVariableUniqueIDs = 0 
-!      DO ind = 2,IRefinementVariableTypes ! Loop over iterative variables apart from Ug's
-!        IF(IRefineMode(ind).EQ.1) THEN
-!          DO jnd = 1,INoOfVariablesForRefinementType(ind)
-!            IArrayIndex = SUM(INoOfVariablesForRefinementType(:(ind-1))) + jnd
-
-!            SELECT CASE(ind)
-
-!            CASE(1) ! Ugs, A
-!              IIterativeVariableUniqueIDs(IArrayIndex,1) = ind
- !             IIterativeVariableUniqueIDs(IArrayIndex,2) = &
-!                    NINT(REAL(INoofUgs,RKIND)*(REAL(jnd/REAL(INoofUgs,RKIND),RKIND)-&
-!                    CEILING(REAL(jnd/REAL(INoofUgs,RKIND),RKIND)))+REAL(INoofUgs,RKIND))!wtf is this?
-
-!            CASE(2) ! Coordinates (x,y,z), B
-!              IIterativeVariableUniqueIDs(IArrayIndex,1) = ind
-!              IIterativeVariableUniqueIDs(IArrayIndex,2) = jnd
-
-!            CASE(3) ! Occupancies, C
-!              IIterativeVariableUniqueIDs(IArrayIndex,1) = ind
-!              IIterativeVariableUniqueIDs(IArrayIndex,2) = IAtomsToRefine(jnd)
-
-!            CASE(4) ! Isotropic Debye Waller Factors , D
-!              IIterativeVariableUniqueIDs(IArrayIndex,1) = ind
-!              IIterativeVariableUniqueIDs(IArrayIndex,2) = IAtomsToRefine(jnd)
-
-!            CASE(5) ! Anisotropic Debye Waller Factors (a11-a33), E
-              !?? not currently implemented
-!              IErr=1
-!              IF(l_alert(IErr,"felixrefine",&
-!                    "Anisotropic Debye Waller Factors not implemented")) CALL abort
-
-  !            IIterativeVariableUniqueIDs(IArrayIndex,1) = ind
-  !            IIterativeVariableUniqueIDs(IArrayIndex,2) = &
-  !                  IAtomsToRefine(INT(CEILING(REAL(jnd/6.0D0,RKIND))))
-  !            IAnisotropicDebyeWallerFactorElementNo = &
-  !                  NINT(6.D0*(REAL(jnd/6.0D0,RKIND) - &
-  !                  CEILING(REAL(jnd/6.0D0,RKIND)))+6.0D0)
-
-  !            SELECT CASE(IAnisotropicDebyeWallerFactorElementNo)
-  !            CASE(1)
-  !              IIterativeVariableUniqueIDs(IArrayIndex,4:5) = [1,1]
-  !            CASE(2)
-  !              IIterativeVariableUniqueIDs(IArrayIndex,4:5) = [2,1]
-  !            CASE(3)
-  !              IIterativeVariableUniqueIDs(IArrayIndex,4:5) = [2,2]
-  !            CASE(4)
-  !              IIterativeVariableUniqueIDs(IArrayIndex,4:5) = [3,1]
-  !            CASE(5)
-  !              IIterativeVariableUniqueIDs(IArrayIndex,4:5) = [3,2]
-  !            CASE(6)
-  !              IIterativeVariableUniqueIDs(IArrayIndex,4:5) = [3,3]
-  !            END SELECT
-
-!            CASE(6) ! Lattice Parameters, F
-!              IIterativeVariableUniqueIDs(IArrayIndex,1) = ind
-!              IIterativeVariableUniqueIDs(IArrayIndex,2) = jnd
-               
-!            CASE(7) ! Lattice Angles, G
-!              IIterativeVariableUniqueIDs(IArrayIndex,1) = ind
-!              IIterativeVariableUniqueIDs(IArrayIndex,2) = jnd
-
-!            CASE(8) ! Convergence angle, H
-!              IIterativeVariableUniqueIDs(IArrayIndex,1) = ind
-
- !           CASE(9) ! Percentage Absorption, I
-!              IIterativeVariableUniqueIDs(IArrayIndex,1) = ind
-
-!            CASE(10) ! kV, J
-!              IIterativeVariableUniqueIDs(IArrayIndex,1) = ind
-
-!            END SELECT
-
-!          END DO
-!        END IF
-!      END DO 
-
-!    END IF
   END IF
 
   !--------------------------------------------------------------------
@@ -813,24 +647,17 @@ PROGRAM Felixrefine
   CALL Simulate(IErr)
   IF(l_alert(IErr,"felixrefine","Simulate")) CALL abort
   CALL PrintEndTime(LS,IStartTime2, "Simulation" )
-  IExitFLAG = 0 ! Do not exit
-  IPreviousPrintedIteration = 0  ! ensures baseline simulation is printed
+
   IF (ISimFLAG.EQ.1) THEN ! Simulation only mode   
-  
-    !--------------------------------------------------------------------
-    ! simulation only mode
-    !--------------------------------------------------------------------
-    
     ! simulate multiple thicknesses
     IF(my_rank.EQ.0) THEN
       CALL message(LS,"Writing simulations with the number of thicknesses =", IThicknessCount)
       DO IThicknessIndex = 1,IThicknessCount
-        CALL WriteIterationOutput(Iter,IThicknessIndex,IExitFLAG,IErr)
+        CALL WriteIterationOutput(Iter,IThicknessIndex,IErr)
         IF(l_alert(IErr,"felixrefine","WriteIterationOutput")) CALL abort 
       END DO  
     END IF 
-  
-  ELSE ! Refinement Mode
+   ELSE ! Refinement Mode
     IF(my_rank.EQ.0) THEN!outputs come from core 0 only
       ! Figure of merit is passed back as a global variable
       CALL FigureOfMeritAndThickness(Iter,IThicknessIndex,IErr)
@@ -842,7 +669,7 @@ PROGRAM Felixrefine
         RImageAvi=RImageSimi 
       END IF
       CALL message ( LS, "Writing output; baseline simulation" )
-      CALL WriteIterationOutput(Iter,IThicknessIndex,IExitFLAG,IErr)
+      CALL WriteIterationOutput(Iter,IThicknessIndex,IErr)
       IF(l_alert(IErr,"felixrefine","WriteIterationOutput")) CALL abort
     END IF
     
@@ -857,10 +684,8 @@ PROGRAM Felixrefine
     !--------------------------------------------------------------------
     ! Branch depending upon refinement method
     !--------------------------------------------------------------------
-
     ! We have INoOfVariables to refine, held in RIndependentVariable(1:INoOfVariables)
-    ! For single variables, their type is held in 
-    ! IIterativeVariableUniqueIDs(1:INoOfVariables,2)
+    ! Their type is held in IIndependentVariableType(1:INoOfVariables)
 
     SELECT CASE(IRefineMethodFLAG)
 
@@ -873,8 +698,8 @@ PROGRAM Felixrefine
       IF(l_alert(IErr,"felixrefine","MaxGradientRefinement")) CALL abort 
       
     CASE(3)
-      CALL ParabolicRefinement
-      IF(l_alert(IErr,"felixrefine","ParabolicRefinement")) CALL abort 
+      CALL PairwiseRefinement
+      IF(l_alert(IErr,"felixrefine","PairwiseRefinement")) CALL abort 
      
     CASE DEFAULT ! Simulation only, should never happen
       CALL message( LS, "No refinement, simulation only")
@@ -1094,33 +919,35 @@ CONTAINS
 
       RVar0=RIndependentVariable ! incoming point in n-dimensional parameter space
       RFit0=RFigureofMerit ! incoming fit
+      !See WriteIterationOutputWrapper for what IPrintFLAG does    
+      IPrintFLAG=0
 
       !--------------------------------------------------------------------
       ! change max gradient vector (RPVec) depending upon max/min gradient situation 
       !--------------------------------------------------------------------      
       
-      IF (nnd.EQ.0) THEN ! max gradient
+      IF (nnd.EQ.0) THEN ! find the gradient
         DO ind=1,INoOfVariables ! calculate individual gradients
+          Iter=Iter+1
+          
           ! The type of variable being refined 
-!          IVariableType=IIterativeVariableUniqueIDs(ind,1) 
           IVariableType=MOD(IIndependentVariableType(ind),10) 
-           
           ! print to screen
           SELECT CASE(IVariableType)
             CASE(1)
-              CALL message(LS,"Ug refinement, A")
+              CALL message(LS,"Changing Ug")
             CASE(2)
-              CALL message(LS,"Atomic coordinate refinement, B")
+              CALL message(LS,"Changing atomic coordinate")
             CASE(3)
-              CALL message(LS,"Occupancy refinement, C")
+              CALL message(LS,"Changing occupancy")
             CASE(4)
-              CALL message(LS,"Isotropic Debye-Waller factor refinement, D")
+              CALL message(LS,"Changing isotropic Debye-Waller factor")
             CASE(5)
-              CALL message(LS,"Anisotropic Debye-Waller factor refinement, E")
+              CALL message(LS,"Changing anisotropic Debye-Waller factor")
             CASE(6)
-              CALL message(LS,"Lattice parameter refinement, F")
+              CALL message(LS,"Changing lattice parameter")
             CASE(8)
-              CALL message(LS,"Convergence angle refinement, G")
+              CALL message(LS,"Changing convergence angle")
            END SELECT
           IF (RCurrentVar(ind).LE.TINY.AND.IVariableType.EQ.4) THEN ! skip zero DW factor
             RPVec(ind)=TINY
@@ -1143,9 +970,11 @@ CONTAINS
           RCurrentVar(ind)=RCurrentVar(ind)+Rdx
           CALL SimulateAndFit(RCurrentVar,Iter,IThicknessIndex,IErr)
           IF(l_alert(IErr,"MaxGradientRefinement","SimulateAndFit")) RETURN
-          ! Do not increment iteration here nor write iteration output
-          Iter=Iter+1
-          CALL WriteIterationOutputWrapper(Iter,IThicknessIndex,IExitFLAG,IErr)
+          IF (IImageFLAG.EQ.1) THEN
+            CALL message ( LS, "Writing output; difference images" )
+            IF (my_rank.EQ.0) CALL WriteDifferenceImages(Iter,IThicknessIndex,ind,RCurrentVar(ind),Rdx,IErr)
+          END IF
+          CALL WriteIterationOutputWrapper(Iter,IThicknessIndex,IPrintFLAG,IErr)
           ! BestFitCheck copies RCurrentVar into RIndependentVariable
           ! and updates RBestFit if the fit is better
           CALL BestFitCheck(RFigureofMerit,RBestFit,RCurrentVar,RIndependentVariable,IErr)
@@ -1159,8 +988,8 @@ CONTAINS
           ! invert gradient
           IF (ABS(RPVec(ind)).GT.TINY) THEN ! don't invert zeros
             RPVec(ind)=1/RPVec(ind)
-          ELSE ! just make them quite big
-            RPVec(ind)=TEN
+          ELSE ! keep them as zero
+            RPVec(ind)=ZERO
           END IF
         END DO
         CALL message(LS,"Checking minimum gradient")
@@ -1171,7 +1000,7 @@ CONTAINS
       ! normalise the max gradient vector RPvec & set the first point
       !--------------------------------------------------------------------
       RPvecMag=ZERO
-      DO ind=1,INoOfVariables
+      DO ind=1,INoOfVariables!
         RPvecMag=RPvecMag+RPvec(ind)**2
       END DO
       IF ((RPvecMag-ONE.EQ.RPvecMag).OR.(RPvecMag.NE.RPvecMag)) THEN ! Infinity and NaN check
@@ -1190,22 +1019,33 @@ CONTAINS
 
       RVar0=RIndependentVariable ! the best point of gradient calculation
       RFigureofMerit=RBestFit ! the best fit so far
+      !avoid variables that give zero change in fit
+      xnd=1!index for the variable to use
+      DO WHILE (ABS(RPvec(xnd)).LT.TINY)
+        xnd=xnd+1
+        IF (xnd.GT.INoOfVariables) THEN
+          IErr=1
+          WRITE(SPrintString,*) RPvec
+          IF(l_alert(IErr,"MaxGradientRefinement",&
+              "Chosen variables have no effect! Refinement vector ="//TRIM(SPrintString))) RETURN          
+          END IF
+      END DO!really need to take these variables out of the refinement, but how?
       ! First point, three points to find the minimum
-      R3var(1)=RVar0(1)! first point is current value
+      R3var(1)=RVar0(xnd)! first point is current value
       R3fit(1)=RFigureofMerit! point 1 is the incoming simulation and fit index
-      RPvecMag=RVar0(1)*RScale ! RPvecMag gives the magnitude of vector in parameter space
+      RPvecMag=RVar0(xnd)*RScale ! RPvecMag gives the magnitude of vector in parameter space
       RCurrentVar=RVar0+RPvec*RPvecMag ! Update the parameters to simulate
       
       !--------------------------------------------------------------------
       ! simulate and set the 2nd and 3rd point
       !--------------------------------------------------------------------
       ! Second point
-      R3var(2)=RCurrentVar(1) 
+      R3var(2)=RCurrentVar(xnd) 
       CALL message(LS,"Refining, point 2 of 3")
       Iter=Iter+1
       CALL SimulateAndFit(RCurrentVar,Iter,IThicknessIndex,IErr)
       IF(l_alert(IErr,"MaxGradientRefinement","SimulateAndFit")) RETURN
-      CALL WriteIterationOutputWrapper(Iter,IThicknessIndex,IExitFLAG,IErr)
+      CALL WriteIterationOutputWrapper(Iter,IThicknessIndex,IPrintFLAG,IErr)
       CALL BestFitCheck(RFigureofMerit,RBestFit,RCurrentVar,RIndependentVariable,IErr)
       R3fit(2)=RFigureofMerit
 
@@ -1216,12 +1056,12 @@ CONTAINS
         RVar0=RCurrentVar
       END IF
       RCurrentVar=RVar0+RPvec*RPvecMag
-      R3var(3)=RCurrentVar(1) ! third point
+      R3var(3)=RCurrentVar(xnd) ! third point
       CALL message( LS, "Refining, point 3 of 3")
       Iter=Iter+1
       CALL SimulateAndFit(RCurrentVar,Iter,IThicknessIndex,IErr)
       IF(l_alert(IErr,"MaxGradientRefinement","SimulateAndFit")) RETURN
-      CALL WriteIterationOutputWrapper(Iter,IThicknessIndex,IExitFLAG,IErr)
+      CALL WriteIterationOutputWrapper(Iter,IThicknessIndex,IPrintFLAG,IErr)
       CALL BestFitCheck(RFigureofMerit,RBestFit,RCurrentVar,RIndependentVariable,IErr)
       R3fit(3)=RFigureofMerit
 
@@ -1236,10 +1076,10 @@ CONTAINS
       ! Rtest=0.0 would be a straight line, >0=convex, <0=concave
       Rtest=-ABS(R3fit(jnd)-R3fit(knd))
       ! Rconvex is the calculated fit index at the mid x,
-      ! if ithere was a straight line between lowest and highest x
+      ! if there was a straight line between lowest and highest x
       Rconvex=R3fit(lnd)-(R3fit(knd)+(R3var(lnd)-R3var(knd))*&
-            (R3fit(jnd)-R3fit(knd))/(R3var(jnd)-R3var(knd)))
-      
+        (R3fit(jnd)-R3fit(knd))/(R3var(jnd)-R3var(knd)))
+
       ! if it isn't more than 10% concave, keep going until it is sufficiently concave
       DO WHILE (Rconvex.GT.0.1*Rtest)
         CALL message( LS, "Convex, continuing")
@@ -1255,11 +1095,11 @@ CONTAINS
           RPvecMag=SIGN(RMaxUgStep,RPvecMag)
         END IF
         RCurrentVar=RVar0+RPvec*RPvecMag
-        R3var(lnd)=RCurrentVar(1)! next point
+        R3var(lnd)=RCurrentVar(xnd)! next point
         Iter=Iter+1
         CALL SimulateAndFit(RCurrentVar,Iter,IThicknessIndex,IErr)
         IF(l_alert(IErr,"MaxGradientRefinement","SimulateAndFit")) RETURN
-        CALL WriteIterationOutputWrapper(Iter,IThicknessIndex,IExitFLAG,IErr)
+        CALL WriteIterationOutputWrapper(Iter,IThicknessIndex,IPrintFLAG,IErr)
         CALL BestFitCheck(RFigureofMerit,RBestFit,RCurrentVar,RIndependentVariable,IErr)
         R3fit(lnd)=RFigureofMerit
         jnd=MAXLOC(R3var,1) ! highest x
@@ -1280,11 +1120,12 @@ CONTAINS
       "Concave set, predict minimum at ",RvarMin," with fit index ",RfitMin
       SPrintString=TRIM(ADJUSTL(SPrintString))
       CALL message (LS, SPrintString)
-      RCurrentVar=RVar0+RPvec*(RvarMin-RVar0(1))/RPvec(1) ! Put prediction into RCurrentVar
+      RCurrentVar=RVar0+RPvec*(RvarMin-RVar0(xnd))/RPvec(xnd) ! Put prediction into RCurrentVar
       Iter=Iter+1
       CALL SimulateAndFit(RCurrentVar,Iter,IThicknessIndex,IErr)
       IF(l_alert(IErr,"MaxGradientRefinement","SimulateAndFit")) RETURN
-      CALL WriteIterationOutputWrapper(Iter,IThicknessIndex,IExitFLAG,IErr)
+      IPrintFLAG=1!Save this simulation
+      CALL WriteIterationOutputWrapper(Iter,IThicknessIndex,IPrintFLAG,IErr)
       CALL BestFitCheck(RFigureofMerit,RBestFit,RCurrentVar,RIndependentVariable,IErr)
 
       ! check where we go next and update last fit etc.
@@ -1306,11 +1147,11 @@ CONTAINS
     ! We are done, simulate and output the best fit
     !--------------------------------------------------------------------
 
-    IExitFLAG=1
     Iter=Iter+1
     CALL SimulateAndFit(RIndependentVariable,Iter,IThicknessIndex,IErr)
     IF(l_alert(IErr,"MaxGradientRefinement","SimulateAndFit")) RETURN
-    CALL WriteIterationOutputWrapper(Iter,IThicknessIndex,IExitFLAG,IErr)
+    IPrintFLAG=2
+    CALL WriteIterationOutputWrapper(Iter,IThicknessIndex,IPrintFLAG,IErr)
     IF(l_alert(IErr,"MaxGradientRefinement","WriteIterationOutputWrapper")) RETURN
     DEALLOCATE(RVar0,RCurrentVar,RLastVar,RPVec,RFitVec,STAT=IErr)  
 
@@ -1323,23 +1164,23 @@ CONTAINS
   !!
   !! Major-Authors: Richard Beanland (2016)
   !!
-  SUBROUTINE ParabolicRefinement
+  SUBROUTINE PairwiseRefinement
 
     !--------------------------------------------------------------------
     ! allocate & intilise refinement variables
     !--------------------------------------------------------------------
 
     ALLOCATE(RVar0(INoOfVariables),STAT=IErr)! incoming set of variables
-    IF(l_alert(IErr,"ParabolicRefinement","allocate RVar0")) RETURN
+    IF(l_alert(IErr,"PairwiseRefinement","allocate RVar0")) RETURN
     ! set of variables to send out for simulations
     ALLOCATE(RCurrentVar(INoOfVariables),STAT=IErr)
-    IF(l_alert(IErr,"ParabolicRefinement","allocate RCurrentVar")) RETURN
+    IF(l_alert(IErr,"PairwiseRefinement","allocate RCurrentVar")) RETURN
     ALLOCATE(RLastVar(INoOfVariables),STAT=IErr)! set of variables updated each cycle
-    IF(l_alert(IErr,"ParabolicRefinement","allocate RLastVar")) RETURN
+    IF(l_alert(IErr,"PairwiseRefinement","allocate RLastVar")) RETURN
     ! the vector describing the current line in parameter space
 
     ALLOCATE(RPVec(INoOfVariables),STAT=IErr)
-    IF(l_alert(IErr,"ParabolicRefinement","allocate RPVec")) RETURN
+    IF(l_alert(IErr,"PairwiseRefinement","allocate RPVec")) RETURN
 
     RLastFit=RFigureofMerit
     RLastVar=RIndependentVariable
@@ -1357,6 +1198,7 @@ CONTAINS
 
     !\/\/------------------------------------------------------------------
     DO WHILE (Rdf.GE.RExitCriteria)
+      IPrintFLAG=0
       
       !--------------------------------------------------------------------
       ! iterate over each variable to refine
@@ -1412,14 +1254,14 @@ CONTAINS
           RPvec(ind)=RScale/5.0 ! small change in current variable for second point
           RCurrentVar=RVar0+RPvec ! second point
           CALL SimulateAndFit(RCurrentVar,Iter,IThicknessIndex,IErr)
-          IF(l_alert(IErr,"ParabolicRefinement","SimulateAndFit")) RETURN
+          IF(l_alert(IErr,"PairwiseRefinement","SimulateAndFit")) RETURN
           CALL BestFitCheck(RFigureofMerit,RBestFit,RCurrentVar,RIndependentVariable,IErr)
           R3fit(2)=RFigureofMerit
           ! now look along combination of 2 parameters for third point
           RPvec(ind+1)=RScale/5.0 
           RCurrentVar=RVar0+RPvec ! Update the parameters to simulate
           CALL SimulateAndFit(RCurrentVar,Iter,IThicknessIndex,IErr)
-          IF(l_alert(IErr,"ParabolicRefinement","SimulateAndFit")) RETURN
+          IF(l_alert(IErr,"PairwiseRefinement","SimulateAndFit")) RETURN
           CALL BestFitCheck(RFigureofMerit,RBestFit,RCurrentVar,RIndependentVariable,IErr)
           R3fit(3)=RFigureofMerit
           ! optimum gradient vector from the three points, magnitude unity
@@ -1446,9 +1288,9 @@ CONTAINS
           RPvecMag=RScale
           Iter=Iter+1
           CALL SimulateAndFit(RCurrentVar,Iter,IThicknessIndex,IErr)
-          IF(l_alert(IErr,"ParabolicRefinement","SimulateAndFit")) RETURN
-          CALL WriteIterationOutputWrapper(Iter,IThicknessIndex,IExitFLAG,IErr)
-          IF(l_alert(IErr,"ParabolicRefinement","WriteIterationOutputWrapper")) RETURN
+          IF(l_alert(IErr,"PairwiseRefinement","SimulateAndFit")) RETURN
+          CALL WriteIterationOutputWrapper(Iter,IThicknessIndex,IPrintFLAG,IErr)
+          IF(l_alert(IErr,"PairwiseRefinement","WriteIterationOutputWrapper")) RETURN
           ! update RIndependentVariable if necessary
           CALL BestFitCheck(RFigureofMerit,RBestFit,RCurrentVar,RIndependentVariable,IErr)
         END IF
@@ -1470,9 +1312,9 @@ CONTAINS
         CALL message( LS, "simulation 2")
         Iter=Iter+1
         CALL SimulateAndFit(RCurrentVar,Iter,IThicknessIndex,IErr)
-        IF(l_alert(IErr,"ParabolicRefinement","SimulateAndFit")) RETURN
-        CALL WriteIterationOutputWrapper(Iter,IThicknessIndex,IExitFLAG,IErr)
-        IF(l_alert(IErr,"ParabolicRefinement","WriteIterationOutputWrapper")) RETURN
+        IF(l_alert(IErr,"PairwiseRefinement","SimulateAndFit")) RETURN
+        CALL WriteIterationOutputWrapper(Iter,IThicknessIndex,IPrintFLAG,IErr)
+        IF(l_alert(IErr,"PairwiseRefinement","WriteIterationOutputWrapper")) RETURN
         CALL BestFitCheck(RFigureofMerit,RBestFit,RCurrentVar,RIndependentVariable,IErr)
         R3fit(2)=RFigureofMerit
         !CALL message ( LM, "point 2",R3var(2) )
@@ -1490,9 +1332,9 @@ CONTAINS
         CALL message( LS, "simulation 2") !?? JR should this be 'simulation 3' for 3rd point (remove this comment once changed)
         Iter=Iter+1
         CALL SimulateAndFit(RCurrentVar,Iter,IThicknessIndex,IErr)
-        IF(l_alert(IErr,"ParabolicRefinement","SimulateAndFit")) RETURN
-        CALL WriteIterationOutputWrapper(Iter,IThicknessIndex,IExitFLAG,IErr)
-        IF(l_alert(IErr,"ParabolicRefinement","WriteIterationOutputWrapper")) RETURN
+        IF(l_alert(IErr,"PairwiseRefinement","SimulateAndFit")) RETURN
+        CALL WriteIterationOutputWrapper(Iter,IThicknessIndex,IPrintFLAG,IErr)
+        IF(l_alert(IErr,"PairwiseRefinement","WriteIterationOutputWrapper")) RETURN
         CALL BestFitCheck(RFigureofMerit,RBestFit,RCurrentVar,RIndependentVariable,IErr)
         R3fit(3)=RFigureofMerit
         !CALL message ( LM, "point 3",R3var(3) )
@@ -1541,9 +1383,9 @@ CONTAINS
 
           Iter=Iter+1
           CALL SimulateAndFit(RCurrentVar,Iter,IThicknessIndex,IErr)
-          IF(l_alert(IErr,"ParabolicRefinement","SimulateAndFit")) RETURN
-          CALL WriteIterationOutputWrapper(Iter,IThicknessIndex,IExitFLAG,IErr)
-          IF(l_alert(IErr,"ParabolicRefinement","WriteIterationOutputWrapper")) RETURN
+          IF(l_alert(IErr,"PairwiseRefinement","SimulateAndFit")) RETURN
+          CALL WriteIterationOutputWrapper(Iter,IThicknessIndex,IPrintFLAG,IErr)
+          IF(l_alert(IErr,"PairwiseRefinement","WriteIterationOutputWrapper")) RETURN
           CALL BestFitCheck(RFigureofMerit,RBestFit,RCurrentVar,RIndependentVariable,IErr)
           R3fit(lnd)=RFigureofMerit
           jnd=MAXLOC(R3var,1) ! highest x
@@ -1557,15 +1399,15 @@ CONTAINS
         !--------------------------------------------------------------------
         ! make prediction and finish with this variable
         !--------------------------------------------------------------------
-
+        IPrintFLAG=1
         IF (RCurrentVar(ind).LE.TINY.AND.IVariableType.EQ.4) THEN
           ! We reached zero D-W factor in convexity test, skip the prediction
           CALL message( LS, "Using zero Debye Waller factor, simulate and refine next variable" )
           Iter=Iter+1
           CALL SimulateAndFit(RCurrentVar,Iter,IThicknessIndex,IErr)
-          IF(l_alert(IErr,"ParabolicRefinement","SimulateAndFit")) RETURN
-          CALL WriteIterationOutputWrapper(Iter,IThicknessIndex,IExitFLAG,IErr)
-          IF(l_alert(IErr,"ParabolicRefinement","WriteIterationOutputWrapper")) RETURN
+          IF(l_alert(IErr,"PairwiseRefinement","SimulateAndFit")) RETURN
+          CALL WriteIterationOutputWrapper(Iter,IThicknessIndex,IPrintFLAG,IErr)
+          IF(l_alert(IErr,"PairwiseRefinement","WriteIterationOutputWrapper")) RETURN
           CALL BestFitCheck(RFigureofMerit,RBestFit,RCurrentVar,RIndependentVariable,IErr)
         ELSE
           CALL Parabo3(R3var,R3fit,RvarMin,RfitMin,IErr)
@@ -1580,9 +1422,9 @@ CONTAINS
           !R3var(jnd)=RCurrentVar(ind)!do I need this?
           Iter=Iter+1
           CALL SimulateAndFit(RCurrentVar,Iter,IThicknessIndex,IErr)
-          IF(l_alert(IErr,"ParabolicRefinement","SimulateAndFit")) RETURN
-          CALL WriteIterationOutputWrapper(Iter,IThicknessIndex,IExitFLAG,IErr)
-          IF(l_alert(IErr,"ParabolicRefinement","WriteIterationOutputWrapper")) RETURN
+          IF(l_alert(IErr,"PairwiseRefinement","SimulateAndFit")) RETURN
+          CALL WriteIterationOutputWrapper(Iter,IThicknessIndex,IPrintFLAG,IErr)
+          IF(l_alert(IErr,"PairwiseRefinement","WriteIterationOutputWrapper")) RETURN
           CALL BestFitCheck(RFigureofMerit,RBestFit,RCurrentVar,RIndependentVariable,IErr)
         END IF
 
@@ -1629,15 +1471,15 @@ CONTAINS
     ! We are done, finally simulate and output the best fit
     !--------------------------------------------------------------------
 
-    IExitFLAG=1
+    IPrintFLAG=2
     Iter=Iter+1
     CALL SimulateAndFit(RIndependentVariable,Iter,IThicknessIndex,IErr)
-    IF(l_alert(IErr,"ParabolicRefinement","SimulateAndFit")) RETURN
-    CALL WriteIterationOutputWrapper(Iter,IThicknessIndex,IExitFLAG,IErr)
-    IF(l_alert(IErr,"ParabolicRefinement","WriteIterationOutputWrapper")) RETURN
+    IF(l_alert(IErr,"PairwiseRefinement","SimulateAndFit")) RETURN
+    CALL WriteIterationOutputWrapper(Iter,IThicknessIndex,IPrintFLAG,IErr)
+    IF(l_alert(IErr,"PairwiseRefinement","WriteIterationOutputWrapper")) RETURN
     DEALLOCATE(RVar0,RCurrentVar,RLastVar,RPVec,STAT=IErr)
  
-  END SUBROUTINE ParabolicRefinement
+  END SUBROUTINE PairwiseRefinement
 
   !%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
@@ -1725,7 +1567,7 @@ CONTAINS
   !! Major-Authors: Richard Beanland (2016)
   !! 
   SUBROUTINE Parabo3(Rx,Ry,Rxv,Ryv,IErr)
-    ! called twice in felixrefine, utility for MaxGradient/ParabolicRefinement
+    ! called twice in felixrefine, utility for MaxGradient/PairwiseRefinement
     
     REAL(RKIND) :: Ra,Rb,Rc,Rd,Rxv,Ryv
     REAL(RKIND),DIMENSION(3) :: Rx,Ry

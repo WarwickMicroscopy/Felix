@@ -4,14 +4,14 @@
 !
 ! Richard Beanland, Keith Evans & Rudolf A Roemer
 !
-! (C) 2013-17, all rights reserved
+! (C) 2013-19, all rights reserved
 !
-! Version: :VERSION:
-! Date:    :DATE:
+! Version: :VERSION: RB_coord / 1.15 /
+! Date:    :DATE: 16-01-2019
 ! Time:    :TIME:
 ! Status:  :RLSTATUS:
-! Build:   :BUILD:
-! Author:  :AUTHOR:
+! Build:   :BUILD: Mode F: test different lattice types" 
+! Author:  :AUTHOR: r.beanland
 ! 
 !%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 !
@@ -66,7 +66,7 @@ MODULE bloch_mod
     USE CPara, ONLY : CUgMat
     USE RPara, ONLY : RDeltaK,RDeltaThickness,RInitialThickness,RNormDirM,RgDotNorm,RgPool,&
                       RgPoolMag,Rhkl
-    USE IPara, ONLY : IHKLSelectFLAG,IHolzFLAG,IImageFLAG,IMinStrongBeams,IMinWeakBeams,&
+    USE IPara, ONLY : IHKLSelectFLAG,IHolzFLAG,IMinStrongBeams,IMinWeakBeams,&
                       INoOfLacbedPatterns,IPixelCount,IThicknessCount,INhkl,&
                       IOutputReflections,IBlochMethodFLAG
     USE BlochPara, ONLY : RBigK            
@@ -233,20 +233,11 @@ MODULE bloch_mod
           sumC=sumC + &
           CUgMat(IStrongBeamList(knd),IWeakBeamList(ind))*&
           CUgMat(IWeakBeamList(ind),1)/(TWO*RBigK*RDevPara(IWeakBeamList(ind)))
-
-          !??  remove commented Keith's old version
-          !REAL(CUgMat(IStrongBeamList(knd),IWeakBeamList(ind))) * &
-          !REAL(CUgMat(IWeakBeamList(ind),1)) / &
-          !(4*RBigK*RBigK*RDevPara(IWeakBeamList(ind)))
-          sumD = sumD + &
           ! Zuo&Weickenmeier Ultramicroscopy 57 (1995) 375-383 eq.5
+          sumD = sumD + &
           CUgMat(IStrongBeamList(knd),IWeakBeamList(ind))*&
           CUgMat(IWeakBeamList(ind),IStrongBeamList(knd))/&
           (TWO*RBigK*RDevPara(IWeakBeamList(ind)))
-          !?? remove commented Keith's old version
-          !REAL(CUgMat(IStrongBeamList(knd),IWeakBeamList(ind))) * &
-          !REAL(CUgMat(IWeakBeamList(ind),IStrongBeamList(knd))) / &
-          !(4*RBigK*RBigK*RDevPara(IWeakBeamList(ind)))
         ENDDO
         ! Replace the Ug's
         WHERE (CUgSgMatrix.EQ.CUgSgMatrix(knd,1))
@@ -358,51 +349,36 @@ MODULE bloch_mod
 !          RETURN
 !        END IF
 
-         ! Testing koch series so terminate felix here
-        CALL message('-----------------------------------------------------------------------')
-        CALL message('Testing koch series method, so terminate felix here.')
-        CALL message('-----------------------------------------------------------------------')
-        CALL message('-----------------------------------------------------------------------')
-        CALL message('-----------------------------------------------------------------------')
-        CALL SLEEP(1)
-        IErr = 1
-        RETURN
+    ! deallocations used for koch spence method development
+      DEALLOCATE( CDiagonalSgMatrix, COffDiagonalSgMatrix, STAT=IErr )
+      IF(l_alert(IErr,"BlochCoefficientCalculation","deallocating arrays")) RETURN
 
-      END IF
+      ! Testing koch series so terminate felix here
+      CALL message('-----------------------------------------------------------------------')
+      CALL message('Testing koch series method, so terminate felix here.')
+      CALL message('-----------------------------------------------------------------------')
+      CALL message('-----------------------------------------------------------------------')
+      CALL message('-----------------------------------------------------------------------')
+      CALL SLEEP(1)
+      IErr = 1
+      RETURN
+    END IF
 
       ! Collect Intensities from all thickness for later writing
       IF(IHKLSelectFLAG.EQ.0) THEN ! we are not using hkl list from felix.hkl
-        IF(IImageFLAG.LE.2) THEN ! output is 0=montage, 1=individual images
-          RIndividualReflections(1:INoOfLacbedPatterns,IThicknessIndex,&
+        RIndividualReflections(1:INoOfLacbedPatterns,IThicknessIndex,&
                 (IPixelNumber-IFirstPixelToCalculate)+1) = &
                 RFullWaveIntensity(1:INoOfLacbedPatterns)
-        ELSE ! output is 2=amplitude+phase images
-          CAmplitudeandPhase(1:INoOfLacbedPatterns,IThicknessIndex,&
-                (IPixelNumber-IFirstPixelToCalculate)+1) = &
-                CFullWavefunctions(1:INoOfLacbedPatterns)
-        END IF
       ELSE ! we are using hkl list from felix.hkl
-        IF(IImageFLAG.LE.2) THEN
-          DO pnd = 1,INoOfLacbedPatterns
-            RIndividualReflections(pnd,IThicknessIndex,&
+        DO ind = 1,INoOfLacbedPatterns
+          RIndividualReflections(ind,IThicknessIndex,&
                   (IPixelNumber-IFirstPixelToCalculate)+1) = &
-                  RFullWaveIntensity(IOutputReflections(pnd))
-          END DO
-        ELSE
-          DO pnd = 1,INoOfLacbedPatterns
-            CAmplitudeandPhase(pnd,IThicknessIndex,(IPixelNumber-IFirstPixelToCalculate)+1)=&
-                 CFullWavefunctions(IOutputReflections(pnd))
-          END DO
-        END IF
+                  RFullWaveIntensity(IOutputReflections(ind))
+        END DO
       END IF
     END DO
 
-    ! deallocations used for koch spence method development
-    IF(IBlochMethodFLAG.EQ.1) THEN
-      DEALLOCATE( CDiagonalSgMatrix, COffDiagonalSgMatrix, STAT=IErr )
-      IF(l_alert(IErr,"BlochCoefficientCalculation","deallocating arrays")) RETURN
-    END IF
-    
+
     ! DEALLOCATE eigen problem memory
     DEALLOCATE(CUgSgMatrix,CBeamTranspose, CUgMatPartial, &
          CInvertedEigenVectors, CAlphaWeightingCoefficients, &
