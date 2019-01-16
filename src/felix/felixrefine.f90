@@ -1003,11 +1003,17 @@ CONTAINS
       DO ind=1,INoOfVariables!
         RPvecMag=RPvecMag+RPvec(ind)**2
       END DO
+      IF (ABS(RPvecMag).LT.TINY) THEN ! Zero check
+        IErr=1
+        WRITE(SPrintString,*) RPvec
+        IF(l_alert(IErr,"MaxGradientRefinement",&
+              "Chosen variables have no effect! Refinement vector ="//TRIM(SPrintString))) RETURN
+      END IF
       IF ((RPvecMag-ONE.EQ.RPvecMag).OR.(RPvecMag.NE.RPvecMag)) THEN ! Infinity and NaN check
         IErr=1
         WRITE(SPrintString,*) RPvec
         IF(l_alert(IErr,"MaxGradientRefinement",&
-              "Infinity or NaN error, refinement vector ="//TRIM(SPrintString))) RETURN
+              "Infinite or NaN gradient! Refinement vector ="//TRIM(SPrintString))) RETURN
       END IF
       RPvec=RPvec/SQRT(RPvecMag) ! unity vector along direction of max gradient
       IF(my_rank.EQ.0) THEN
@@ -1020,15 +1026,9 @@ CONTAINS
       RVar0=RIndependentVariable ! the best point of gradient calculation
       RFigureofMerit=RBestFit ! the best fit so far
       !avoid variables that give zero change in fit
-      xnd=1!index for the variable to use
+      xnd=1!index for the variable to use - we know there is one, otherwise it would have been picked up earlier
       DO WHILE (ABS(RPvec(xnd)).LT.TINY)
         xnd=xnd+1
-        IF (xnd.GT.INoOfVariables) THEN
-          IErr=1
-          WRITE(SPrintString,*) RPvec
-          IF(l_alert(IErr,"MaxGradientRefinement",&
-              "Chosen variables have no effect! Refinement vector ="//TRIM(SPrintString))) RETURN          
-          END IF
       END DO!really need to take these variables out of the refinement, but how?
       ! First point, three points to find the minimum
       R3var(1)=RVar0(xnd)! first point is current value
