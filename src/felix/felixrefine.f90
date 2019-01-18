@@ -65,7 +65,7 @@ PROGRAM Felixrefine
         INumFinalReflections,IThicknessIndex,IVariableType,IArrayIndex,&
         IAnisotropicDebyeWallerFactorElementNo,ISpaceGrp
   INTEGER(IKIND) :: IStartTime,IStartTime2
-  REAL(RKIND) :: RHOLZAcceptanceAngle,RLaueZoneGz,RMaxGMag,RPvecMag,&
+  REAL(RKIND) :: REmphasis,RHOLZAcceptanceAngle,RLaueZoneGz,RMaxGMag,RPvecMag,&
         RScale,RMaxUgStep,Rdx,RStandardDeviation,RMean,RGzUnitVec,RMinLaueZoneValue,&
         Rdf,RLastFit,RBestFit,RMaxLaueZoneValue,RMaxAcceptanceGVecMag,&
         RLaueZoneElectronWaveVectorMag,RvarMin,RfitMin,RFit0,Rconvex,Rtest
@@ -971,14 +971,20 @@ CONTAINS
           CALL SimulateAndFit(RCurrentVar,Iter,IThicknessIndex,IErr)
           IF(l_alert(IErr,"MaxGradientRefinement","SimulateAndFit")) RETURN
           IF (IImageFLAG.EQ.1) THEN
-            CALL message ( LS, "Writing output; difference images" )
+            CALL message ( LS, ".  Writing output; difference images" )
             IF (my_rank.EQ.0) CALL WriteDifferenceImages(Iter,IThicknessIndex,ind,RCurrentVar(ind),Rdx,IErr)
+          END IF
+          !If the fit is better, emphasise that parameter *2
+          IF (RFigureofMerit.LT.RBestFit) THEN
+            REmphasis=TWO
+          ELSE
+            REmphasis=ONE
           END IF
           CALL WriteIterationOutputWrapper(Iter,IThicknessIndex,IPrintFLAG,IErr)
           ! BestFitCheck copies RCurrentVar into RIndependentVariable
           ! and updates RBestFit if the fit is better
           CALL BestFitCheck(RFigureofMerit,RBestFit,RCurrentVar,RIndependentVariable,IErr)
-          RFitVec(ind)=RFigureofMerit
+          RFitVec(ind)=RFigureofMerit*REmphasis
           RPVec(ind)=(RFit0-RFigureofMerit)/Rdx ! -df/dx: need the dx to keep track of sign
         END DO
         nnd=1 ! do min gradient next time

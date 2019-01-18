@@ -65,7 +65,7 @@ MODULE write_output_mod
       
         CASE(0)!We print a simulation only if IPrint<>0 and it's been a while
           IF(IPrint.NE.0.AND.(Iter.GE.(IPreviousPrintedIteration+IPrint))) THEN
-            WRITE(SPrintString,FMT='(A16,I2,A35)') "Writing output; ",&
+            WRITE(SPrintString,FMT='(A16,I2,A35)') ".  Writing output; ",&
               Iter-IPreviousPrintedIteration," iterations since the previous save"
             CALL message (LS,SPrintString)
             CALL WriteIterationOutput(Iter,IThicknessIndex,IErr)
@@ -73,11 +73,11 @@ MODULE write_output_mod
           END IF
           
         CASE(1)!We print a simulation after a refinement cycle has completed
-            CALL message (LS,"Writing output; end of this refinement cycle")
+            CALL message (LS,".  Writing output; end of this refinement cycle")
             CALL WriteIterationOutput(Iter,IThicknessIndex,IErr)
           
         CASE(2)!We print the final simulation
-          CALL message ( LS, "Writing output; final simulation" )
+          CALL message ( LS, ".  Writing output; final simulation" )
           CALL WriteIterationOutput(Iter,IThicknessIndex,IErr)
           
       END SELECT
