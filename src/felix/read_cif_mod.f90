@@ -81,7 +81,7 @@ MODULE read_cif_mod
     ! global inputs
     USE SConst, ONLY : SAllSpaceGrp
     USE RPARA, ONLY : RDebyeWallerConstant
-    USE IPARA, ONLY : IAtomsToRefine,IAnisoDebyeWallerFactorFlag,ILN
+    USE IPARA, ONLY : IAtomsToRefine,IAnisoDebyeWallerFactorFlag,ISimFLAG,ILN
     USE SConst, ONLY : SElementSymbolMatrix
     USE IConst
     
@@ -148,7 +148,10 @@ MODULE read_cif_mod
     ! Extracts crystal formula
     f1 = char_('_chemical_formula_structural', name)
     IF(.NOT.f1) THEN
-      IErr=1; IF(l_alert(IErr,"ReadCif","Chemical formula missing")) RETURN
+      f1 = char_('_chemical_formula_iupac', name)
+      IF(.NOT.f1) THEN
+        IErr=1; IF(l_alert(IErr,"ReadCif","Chemical formula missing")) RETURN
+      END IF
     END IF
     ! strip spaces/brackets and set global variable SChemicalFormula
     ILN=0!Global variable with length of chemical formula string
@@ -254,7 +257,7 @@ MODULE read_cif_mod
       IAtomCount= IAtomCount+1
       IF(loop_ .NEQV. .TRUE.) EXIT
     END DO
-    IF (SIZE(IAtomsToRefine,DIM=1).GT.IAtomCount) THEN
+    IF (ISimFLAG.EQ.0.AND.SIZE(IAtomsToRefine,DIM=1).GT.IAtomCount) THEN
       IErr=1; IF(l_alert(IErr,"ReadCif",&
             "Number of atomic sites to refine is larger than the number of atoms. "//&
             "Please correct in felix.inp")) RETURN
