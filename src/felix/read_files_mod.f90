@@ -82,6 +82,9 @@ MODULE read_files_mod
     ILine= 1
 
     ! There are six introductory comment lines which are ignored
+    ! ***Jeffrey's felix.inp files only*** !
+!    ILine= ILine+1; READ(IChInp,ERR=20,END=30,FMT='(A)')
+!
     ILine= ILine+1; READ(IChInp,ERR=20,END=30,FMT='(A)')
     ILine= ILine+1; READ(IChInp,ERR=20,END=30,FMT='(A)')
     ILine= ILine+1; READ(IChInp,ERR=20,END=30,FMT='(A)')

@@ -144,15 +144,18 @@ MODULE read_cif_mod
     IF(.NOT.data_(' ')) THEN
       IErr=1; IF(l_alert(IErr,"ReadCif","No cif data_ statement found")) RETURN
     END IF
-   
     ! Extracts crystal formula
     f1 = char_('_chemical_formula_structural', name)
     IF(.NOT.f1) THEN
       f1 = char_('_chemical_formula_iupac', name)
       IF(.NOT.f1) THEN
-        IErr=1; IF(l_alert(IErr,"ReadCif","Chemical formula missing")) RETURN
+        f1 = char_('_chemical_formula_sum', name)
+        IF(.NOT.f1) THEN
+          IErr=1; IF(l_alert(IErr,"ReadCif","Chemical formula missing")) RETURN
+        END IF
       END IF
     END IF
+
     ! strip spaces/brackets and set global variable SChemicalFormula
     ILN=0!Global variable with length of chemical formula string
     DO jnd = 1,LEN(TRIM(name))
@@ -161,7 +164,7 @@ MODULE read_cif_mod
         SChemicalFormula(ILN:ILN) = name(jnd:jnd)
       END IF
     END DO
-    
+
     ! Extract some cell dimensions; test all is OK
     ! NEED TO PUT IN A CHECK FOR LENGTH UNITS
     siga = 0.
@@ -211,12 +214,6 @@ MODULE read_cif_mod
     END IF
     CALL message ( LXL, dbg14, "Unit cell volume", RVolume )
 
-    DO      
-      f1 = char_('_atom_type_symbol', name)
-      !CALL message (LXL, dbg14, "_atom_type_symbol",f1 )
-      IF(loop_.NEQV. .TRUE.) EXIT
-    END DO
-
     ! Extract space group notation (expected char string)
     f1 = char_('_symmetry_space_group_name_H-M', name)
     !different types of space groups as well as different phrasing of Hall space groups
@@ -239,7 +236,7 @@ MODULE read_cif_mod
 
     SSpaceGroupName=TRIM(name(1:1))
     SSpaceGrp = TRIM(ADJUSTL(name))
-    
+
     !sometimes space group is input in lowercase letters - below changes the first letter to uppercase
     IF (SCAN(alphabet,SSpaceGroupName).GT.26) THEN
        SSpaceGroupName=SAlphabetarray(SCAN(alphabet,SSpaceGroupName)-26)
@@ -296,7 +293,7 @@ MODULE read_cif_mod
       f1 = char_('_atom_site_type_symbol', name)
       SBasisAtomName(ind)=name(1:2)
       ! remove the oxidation state numbers
-      Ipos=SCAN(SBasisAtomName(ind),"1234567890")
+      Ipos=SCAN(SBasisAtomName(ind),"1234567890+-")
       IF (Ipos.GT.0) WRITE(SBasisAtomName(ind),'(A1,A1)') name(1:1)," "
       !get atomic number
       DO jnd=1,INElements!NB must match SElementSymbolMatrix defined in smodules line 73
@@ -322,11 +319,11 @@ MODULE read_cif_mod
       RBasisAtomPosition(ind,3)= z
       !Isotropic D-W factor
       f2 = numb_('_atom_site_B_iso_or_equiv',B,sB)
-      f2 = numb_('_atom_site_U_iso_or_equiv',Uso,suso)	
+      f2 = numb_('_atom_site_U_iso_or_equiv',Uso,suso)
       IF(ABS(B).GT.TINY) THEN
         RBasisIsoDW(ind) = B
       ELSE
-	    IF(ABS(Uso).GT.TINY) THEN
+        IF(ABS(Uso).GT.TINY) THEN
           RBasisIsoDW(ind) = Uso*(8*PI**2)
         ELSE
           RBasisIsoDW(ind) = RDebyeWallerConstant
