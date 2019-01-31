@@ -415,6 +415,13 @@ MODULE refinementcontrol_mod
             END IF
         END SELECT
 
+        !NaN check
+        IF(RImageCorrelation.NE.RImageCorrelation) THEN
+          IErr=1
+          WRITE(SPrintString,FMT='(A,I3,A,I3)') "NaN Image correlation for pattern",&
+            ind,", thickness ",jnd
+          IF (l_alert(IErr,"FoM&Thickness",SPrintString)) RETURN
+        END IF
         CALL message(LXL,dbg6,"For Pattern ",ind,", thickness ",jnd)
         CALL message(LXL,dbg6,"  the FoM = ",RImageCorrelation)
 !        WRITE(IChOut,FMT='(3I5.1,F13.9)') NINT(Rhkl(IOutPutReflections(ind),:)),RImageCorrelation
