@@ -211,15 +211,16 @@ MODULE write_output_mod
     CHARACTER(10) :: hString,kString,lString
     CHARACTER(200) :: path,filename,fullpath
     
-    IErr=0
-    IThickness = (RInitialThickness + (IThicknessIndex-1)*RDeltaThickness)/10!in nm 
+    IErr=0 
 
     IF (ISimFLAG.EQ.0) THEN !felixrefine output
+      IThickness = NINT((RInitialThickness +(IThicknessIndex-1)*RDeltaThickness)/TEN)!in nm 
       WRITE(path,"(A1,I4.4,A1,I3.3,A3,I3.3,A1,I3.3)") &
             "I",Iter,"_",IThickness,"nm_",2*IPixelcount,"x",2*IPixelcount
     ELSE ! Sim Output
-      WRITE(path,"(A4,I3.3,A3,I3.3,A1,I3.3)") &
-            "Sim_",IThickness,"nm_",2*IPixelcount,"x",2*IPixelcount
+    IThickness = NINT(RInitialThickness +(IThicknessIndex-1)*RDeltaThickness)!in A 
+      WRITE(path,"(A4,I4.4,A2,I3.3,A1,I3.3)") &
+            "Sim_",IThickness,"A_",2*IPixelcount,"x",2*IPixelcount
     END IF
     path = SChemicalFormula(1:ILN) // "_" // path ! This adds chemical to folder name
     CALL system('mkdir ' // path)

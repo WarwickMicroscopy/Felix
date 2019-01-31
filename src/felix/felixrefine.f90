@@ -651,9 +651,11 @@ PROGRAM Felixrefine
   IF (ISimFLAG.EQ.1) THEN ! Simulation only mode   
     ! simulate multiple thicknesses
     IF(my_rank.EQ.0) THEN
-      CALL message(LS,"Writing simulations with the number of thicknesses =", IThicknessCount)
-      DO IThicknessIndex = 1,IThicknessCount
-        CALL WriteIterationOutput(Iter,IThicknessIndex,IErr)
+      WRITE(SPrintString,FMT='(A24,I3,A12)') &
+        "Writing simulations for ", IThicknessCount," thicknesses"
+      CALL message(LS,SPrintString)
+      DO ind = 1,IThicknessCount
+        CALL WriteIterationOutput(Iter,ind,IErr)
         IF(l_alert(IErr,"felixrefine","WriteIterationOutput")) CALL abort 
       END DO  
     END IF 
