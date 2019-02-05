@@ -49,8 +49,8 @@
 !!
 MODULE SConst
 
-  CHARACTER*50, PARAMETER :: RStr= "Version: RB_coord / 1.15 / r.beanland "
-  CHARACTER*50, PARAMETER :: DStr= "Date: 16-01-2019"
+  CHARACTER*50, PARAMETER :: RStr= "Version: RB_coord / 1.16 / r.beanland "
+  CHARACTER*50, PARAMETER :: DStr= "Date: 05-02-2019"
   CHARACTER*50, PARAMETER :: AStr= "Mode F: test different lattice types" 
   
   CHARACTER*8 SAllSpaceGrp(230)
