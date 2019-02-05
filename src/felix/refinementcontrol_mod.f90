@@ -143,19 +143,11 @@ MODULE refinementcontrol_mod
       ! Update variables
       CALL UpdateVariables(RIndependentVariable,IErr)
       IF(l_alert(IErr,"SimulateAndFit","UpdateVariables")) RETURN
-      IF (IRefineMode(8).EQ.1) THEN ! convergence angle
-        ! recalculate resolution in k space
-        IF (my_rank.EQ.0) RDeltaK = RMinimumGMag*RConvergenceAngle/REAL(IPixelCount,RKIND)
-        CALL MPI_BCAST(RDeltaK,1,MPI_DOUBLE_PRECISION,0,MPI_COMM_WORLD,IErr)        
-      ELSE
-        ! basis has changed in some way, recalculate unit cell
-        CALL UniqueAtomPositions(IErr)
-        IF(l_alert(IErr,"SimulateAndFit","UniqueAtomPositions")) RETURN
-        CALL UgMatrix(IErr)
-        IF(l_alert(IErr,"SimulateAndFit","UgMatrix")) RETURN
-        CALL Absorption(IErr)! calculates CUgMat = CUgMatNoAbs + CUgMatPrime
-        IF(l_alert(IErr,"SimulateAndFit","Absorption")) RETURN
-      END IF
+      !recalculate Ug matrix
+      CALL UgMatrix(IErr)
+      IF(l_alert(IErr,"SimulateAndFit","UgMatrix")) RETURN
+      CALL Absorption(IErr)! calculates CUgMat = CUgMatNoAbs + CUgMatPrime
+      IF(l_alert(IErr,"SimulateAndFit","Absorption")) RETURN
     END IF
       !/\----------------------------------------------------------------------
     CALL message( LM,dbg3, "Ug matrix3, with absorption (nm^-2)" )!LM, dbg3
@@ -452,7 +444,8 @@ MODULE refinementcontrol_mod
   !%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
   !>
-  !! Procedure-description: Fill the independent parameter array for a new simulation
+  !! Procedure-description: Bring the independent parameter array back into the appropriate
+  !! variables for a new simulation, and recalculate dependent parts
   !!
   !! Major-Authors: Keith Evans (2014), Richard Beanland (2016)
   !!  
@@ -461,10 +454,11 @@ MODULE refinementcontrol_mod
     USE MyNumbers
     USE message_mod 
     USE crystallography_mod
-
+    USE MyMPI
+    
     ! global inputs
-    USE IPARA, ONLY : INoOfVariables, IRefineMode,IAtomMoveList,IIndependentVariableType,IAtomsToRefine! IIterativeVariableUniqueIDs
-    USE RPARA, ONLY : RVector
+    USE IPARA, ONLY : INoOfVariables, IRefineMode,IAtomMoveList,IIndependentVariableType,IAtomsToRefine,IPixelCount
+    USE RPARA, ONLY : RVector,RDeltaK,RConvergenceAngle,RMinimumGMag
 
     ! global outputs
     USE RPARA, ONLY :  RBasisOccupancy, RBasisIsoDW, RAnisotropicDebyeWallerFactorTensor, &
@@ -474,40 +468,52 @@ MODULE refinementcontrol_mod
     IMPLICIT NONE
 
     REAL(RKIND),DIMENSION(INoOfVariables),INTENT(IN) :: RIndependentVariable
-    INTEGER(IKIND) :: IVariableType,IVectorID,IAtomID,IErr,ind,jnd,knd,lnd
+    INTEGER(IKIND),DIMENSION(10) :: IVariableCheck
+    INTEGER(IKIND) :: IVectorID,IAtomID,IErr,ind,jnd,knd,lnd
 
+
+    !--------------------------------------------------------------------  
+    ! first put independent variables back into the parameters 
+    !--------------------------------------------------------------------  
+    IVariableCheck=0
     jnd=1!counting indices for each refinement type
     knd=1
     lnd=1
-    DO ind = 1,INoOfVariables
-!      IVariableType = IIterativeVariableUniqueIDs(ind,1)
-      IVariableType = IIndependentVariableType(ind)
+    DO ind = 1,INoOfVariables!loop over variables
+
       SELECT CASE (MOD(IIndependentVariableType(ind),10))
-        CASE(1) ! A: structure factor refinement, do in UpdateStructureFactors
+
+      CASE(1) ! A: structure factor refinement, do in UpdateStructureFactors
+        IVariableCheck(1)=1
         
-        CASE(2) ! B: atomic coordinates
-          ! The atom being moved
-          IAtomID = IAtomMoveList(jnd)
-          ! Change in position r' = r - v*(r.v) +v*RIndependentVariable(ind)
-          RBasisAtomPosition(IAtomID,:) = MODULO((RBasisAtomPosition(IAtomID,:) - &
-            RVector(jnd,:)*DOT_PRODUCT(RBasisAtomPosition(IAtomID,:),RVector(jnd,:)) + &
-            RVector(jnd,:)*RIndependentVariable(ind)),ONE)
-          jnd=jnd+1
+      CASE(2) ! B: atomic coordinates
+        IVariableCheck(2)=1
+        ! The atom being moved
+        IAtomID = IAtomMoveList(jnd)
+        ! Change in position r' = r - v*(r.v) +v*RIndependentVariable(ind)
+        RBasisAtomPosition(IAtomID,:) = MODULO((RBasisAtomPosition(IAtomID,:) - &
+          RVector(jnd,:)*DOT_PRODUCT(RBasisAtomPosition(IAtomID,:),RVector(jnd,:)) + &
+          RVector(jnd,:)*RIndependentVariable(ind)),ONE)
+        jnd=jnd+1
             
-        CASE(3) ! C: occupancy
-          RBasisOccupancy(IAtomsToRefine(knd))=RIndependentVariable(ind)
-          knd=knd+1
+      CASE(3) ! C: occupancy
+        IVariableCheck(3)=1
+        RBasisOccupancy(IAtomsToRefine(knd))=RIndependentVariable(ind)
+        knd=knd+1
         
       CASE(4) ! D: iso DWF
+        IVariableCheck(4)=1
         RBasisIsoDW(IAtomsToRefine(lnd))=RIndependentVariable(ind)
         lnd=lnd+1
         
       CASE(5) ! E: aniso DWF
+        IVariableCheck(5)=1
         ! NOT CURRENTLY IMPLEMENTED
         IErr=1;IF(l_alert(IErr,"UpdateVariables",&
               "Anisotropic Debye Waller Factors not implemented")) CALL abort
 
       CASE(6) ! F: lattice parameters a,b,c
+        IVariableCheck(6)=1
         SELECT CASE(IIndependentVariableType(ind))
           CASE(6)!x
             RLengthX = RIndependentVariable(ind)!first variable is always x
@@ -518,11 +524,9 @@ MODULE refinementcontrol_mod
           CASE(26)!z
             RLengthZ = RIndependentVariable(ind)
         END SELECT
-        CALL ReciprocalLattice(IErr)
-        CALL gVectors(IErr)
-        IF(l_alert(IErr,"felixrefine","gVectors")) CALL abort
 
       CASE(7) ! F: lattice angles alpha, beta,gamma
+        IVariableCheck(8)=1
         SELECT CASE(jnd)
         CASE(1)
           RAlpha = RIndependentVariable(ind)
@@ -531,22 +535,71 @@ MODULE refinementcontrol_mod
         CASE(3)
           RGamma = RIndependentVariable(ind)
         END SELECT
-        CALL ReciprocalLattice(IErr)
-        CALL gVectors(IErr)
-        IF(l_alert(IErr,"felixrefine","gVectors")) CALL abort
         
-       CASE(8)
+      CASE(8)
+        IVariableCheck(8)=1
         RConvergenceAngle = RIndependentVariable(ind)
         
       CASE(9)
+        IVariableCheck(9)=1
         RAbsorptionPercentage = RIndependentVariable(ind)
         
       CASE(10)
+        IVariableCheck(10)=1
         RAcceleratingVoltage = RIndependentVariable(ind)
         
       END SELECT
     END DO
+    
+    !--------------------------------------------------------------------  
+    ! now do appropriate recalculations 
+    !--------------------------------------------------------------------  
+    DO ind = 1,10!loop over the ten refinement types
+      IF (IVariableCheck(ind).EQ.1) THEN
+      SELECT CASE (ind)
+        CASE(1) ! A: structure factor refinement, currently in UpdateStructureFactors but should come here
+      
+        CASE(2) ! B: atomic coordinates
+          !basis has changed in some way, recalculate unit cell
+          CALL UniqueAtomPositions(IErr)
+          IF(l_alert(IErr,"UpdateVariables","UniqueAtomPositions")) RETURN
 
+        CASE(3) ! C: occupancy
+          !nothing to do, it will come into recalculation of Ug matrix
+
+        CASE(4) ! D: iso DWF
+          !nothing to do, it will come into recalculation of Ug matrix
+
+        CASE(5) ! E: aniso DWF
+         !nothing to do, it will come into recalculation of Ug matrix
+
+        CASE(6) ! F: lattice parameters a,b,c
+          !recalculate reciprocal lattice and g vectors
+          CALL ReciprocalLattice(IErr)
+          IF(l_alert(IErr,"UpdateVariables","ReciprocalLattice")) RETURN
+          CALL gVectors(IErr)
+          IF(l_alert(IErr,"UpdateVariables","gVectors")) RETURN
+          CALL UniqueAtomPositions(IErr)
+          IF(l_alert(IErr,"UpdateVariables","UniqueAtomPositions")) RETURN
+
+        CASE(7) ! F: lattice angles alpha, beta,gamma
+          !recalculate reciprocal lattice and g vectors
+          CALL ReciprocalLattice(IErr)
+          IF(l_alert(IErr,"UpdateVariables","ReciprocalLattice")) RETURN
+          CALL gVectors(IErr)
+          IF(l_alert(IErr,"UpdateVariables","gVectors")) RETURN
+          CALL UniqueAtomPositions(IErr)
+          IF(l_alert(IErr,"UpdateVariables","UniqueAtomPositions")) RETURN
+        
+        CASE(8) ! G: convergence angle
+          ! recalculate resolution in k space
+          IF (my_rank.EQ.0) RDeltaK = RMinimumGMag*RConvergenceAngle/REAL(IPixelCount,RKIND)
+          CALL MPI_BCAST(RDeltaK,1,MPI_DOUBLE_PRECISION,0,MPI_COMM_WORLD,IErr)        
+
+        END SELECT
+      END IF
+    END DO
+    
   END SUBROUTINE UpdateVariables
 
   !%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%

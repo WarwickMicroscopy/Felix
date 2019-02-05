@@ -53,16 +53,16 @@ MODULE ug_matrix_mod
 
   ! global inputs
   USE RPARA, ONLY : RCurrentGMagnitude,RgMatrixMagnitude,RElectronMass,RAngstromConversion,&
-    RRelativisticCorrection,RElectronCharge,RPlanckConstant,Rhkl
+    RRelativisticCorrection,RElectronCharge,RPlanckConstant,Rhkl,ROccupancy,RAtomCoordinate,RgMatrix
   USE CPARA, ONLY : CUgMatNoAbs,CUgMatPrime
-  USE IPARA, ONLY : INhkl
+  USE IPARA, ONLY : INhkl,IAtomicNumber,INAtomsUnitCell,ICurrentZ
   ! global outputs
   USE CPARA, ONLY : CUgMat
 
   IMPLICIT NONE
     
-  INTEGER(IKIND) :: ind,jnd,IErr
-  REAL(RKIND) :: RScatteringFactor
+  INTEGER(IKIND) :: ind,jnd,knd,IErr
+  REAL(RKIND) :: RScatteringFactor,RPrintFactor
   COMPLEX(CKIND) :: CVgij
   COMPLEX(CKIND),DIMENSION(:,:),ALLOCATABLE :: CTempMat!to avoid problems with transpose
   CHARACTER(200) :: SPrintString
@@ -73,10 +73,10 @@ MODULE ug_matrix_mod
     ! fill lower diagonal of Ug matrix(excluding absorption) with Fourier components of the potential Vg
     DO ind=2,INhkl
       DO jnd=1,ind-1
-        RCurrentGMagnitude = RgMatrixMagnitude(ind,jnd) ! ij swap***
+        RCurrentGMagnitude = RgMatrixMagnitude(ind,jnd)
         ! Sums CVgij contribution from each atom and pseudoatom in Volts
         CALL GetVgContributionij(RScatteringFactor,ind,jnd,CVgij,IErr)
-        CUgMatNoAbs(ind,jnd)=CVgij!ij swap ***
+        CUgMatNoAbs(ind,jnd)=CVgij
       ENDDO
     ENDDO
     !Convert to Ug
@@ -92,6 +92,18 @@ MODULE ug_matrix_mod
   CALL MPI_BCAST(CUgMatNoAbs,ind,MPI_DOUBLE_PRECISION,0,MPI_COMM_WORLD,IErr)
   !=====================================
 
+!debugging output, can be deleted
+!  DO ind = 1,6
+!    RCurrentGMagnitude = RgMatrixMagnitude(ind,1)
+!    DO knd=1,INAtomsUnitCell
+!      ICurrentZ = IAtomicNumber(knd)
+!      CALL AtomicScatteringFactor(RScatteringFactor,IErr)
+!      RPrintFactor=RScatteringFactor*ROccupancy(knd)*EXP(-CIMAGONE*DOT_PRODUCT(RgMatrix(ind,1,:),RAtomCoordinate(knd,:)) )
+!      WRITE(SPrintString,FMT='(3(I2,1X),A2,1X,F7.4,1X,F7.4)') NINT(Rhkl(ind,:)),": ",RPrintFactor,RScatteringFactor
+!      CALL message( LS,dbg3, SPrintString)
+!    END DO
+!  END DO
+  
   CALL message( LM,dbg3, "Ug matrix, without absorption (nm^-2)" )!LM, dbg3
   DO ind = 1,6
     WRITE(SPrintString,FMT='(3(I2,1X),A2,1X,6(F7.4,1X,F7.4,2X))') NINT(Rhkl(ind,:)),": ",100*CUgMatNoAbs(ind,1:6)

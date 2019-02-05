@@ -62,7 +62,6 @@ MODULE crystallography_mod
     
     INTEGER(IKIND) :: IErr,ind,jnd
     CHARACTER(200) :: SPrintString
-    REAL(RKIND) :: Rtemp
 
     IErr=0!No route to throw an error here in fact
     
@@ -88,13 +87,15 @@ MODULE crystallography_mod
       END DO
     END DO
 
-
-DO ind = 1,6
-    !Rtemp=RgPoolMag(ind)
-    WRITE(SPrintString,FMT='(A,3(I2,1X),2X,3(F7.4,1X),3A,F7.4)') &
-    "hkl: ",NINT(Rhkl(ind,:)),RgMatrix(ind,1,:)," : "!,Rtemp
-  IF(my_rank.EQ.0)PRINT*,TRIM(ADJUSTL(SPrintString))
-END DO
+!debugging output, can be deleted
+!DO ind = 1,6
+!  WRITE(SPrintString,FMT='(A,3(I2,1X),2X,3(F7.4,1X))') &
+!    "hkl: ",NINT(Rhkl(ind,:)),RgMatrix(ind,1,:)
+!  IF(my_rank.EQ.0)PRINT*,TRIM(ADJUSTL(SPrintString))
+!  WRITE(SPrintString,FMT='(A,3(I2,1X),2X,F7.4)') &
+!    "hkl: ",NINT(Rhkl(ind,:)),RgMatrixMagnitude(ind,1)
+!  IF(my_rank.EQ.0)PRINT*,TRIM(ADJUSTL(SPrintString))
+!END DO
 
 
     !outputs if requested    
@@ -245,12 +246,13 @@ END DO
     RarVecM= TWOPI*CROSS(RbVecM,RcVecM)/DOT_PRODUCT(RbVecM,CROSS(RcVecM,RaVecM))
     RbrVecM= TWOPI*CROSS(RcVecM,RaVecM)/DOT_PRODUCT(RcVecM,CROSS(RaVecM,RbVecM))
     RcrVecM= TWOPI*CROSS(RaVecM,RbVecM)/DOT_PRODUCT(RaVecM,CROSS(RbVecM,RcVecM))
-WRITE(SPrintString,FMT='(3(F7.4,1X))') RarVecM
-IF(my_rank.EQ.0)PRINT*,TRIM(ADJUSTL(SPrintString))
-WRITE(SPrintString,FMT='(3(F7.4,1X))') RbrVecM
-IF(my_rank.EQ.0)PRINT*,TRIM(ADJUSTL(SPrintString))
-WRITE(SPrintString,FMT='(3(F7.4,1X))') RcrVecM
-IF(my_rank.EQ.0)PRINT*,TRIM(ADJUSTL(SPrintString))
+!debugging output, can be deleted
+!WRITE(SPrintString,FMT='(A4,3(F7.4,1X))') "a*: ",RarVecM
+!IF(my_rank.EQ.0)PRINT*,TRIM(ADJUSTL(SPrintString))
+!WRITE(SPrintString,FMT='(A4,3(F7.4,1X))') "b*: ",RbrVecM
+!IF(my_rank.EQ.0)PRINT*,TRIM(ADJUSTL(SPrintString))
+!WRITE(SPrintString,FMT='(A4,3(F7.4,1X))') "b*: ",RcrVecM
+!IF(my_rank.EQ.0)PRINT*,TRIM(ADJUSTL(SPrintString))
     
   END SUBROUTINE ReciprocalLattice
 
