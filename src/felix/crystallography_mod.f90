@@ -49,7 +49,8 @@ MODULE crystallography_mod
 
     USE MyNumbers
     USE message_mod
-  
+    USE MyMPI 
+ 
     ! global inputs
     USE RPARA, ONLY : RarVecM,RbrVecM,RcrVecM,RNormDirM,Rhkl,RConvergenceAngle
     USE IPARA, ONLY : INhkl,IPixelCount
@@ -60,7 +61,9 @@ MODULE crystallography_mod
     IMPLICIT NONE
     
     INTEGER(IKIND) :: IErr,ind,jnd
-    
+    CHARACTER(200) :: SPrintString
+    REAL(RKIND) :: Rtemp
+
     IErr=0!No route to throw an error here in fact
     
     !calculate g-vector pool, the magnitudes and component parallel to specimen surface
@@ -84,7 +87,16 @@ MODULE crystallography_mod
            SQRT(DOT_PRODUCT(RgMatrix(ind,jnd,:),RgMatrix(ind,jnd,:)))
       END DO
     END DO
-  
+
+
+DO ind = 1,6
+    !Rtemp=RgPoolMag(ind)
+    WRITE(SPrintString,FMT='(A,3(I2,1X),2X,3(F7.4,1X),3A,F7.4)') &
+    "hkl: ",NINT(Rhkl(ind,:)),RgMatrix(ind,1,:)," : "!,Rtemp
+  IF(my_rank.EQ.0)PRINT*,TRIM(ADJUSTL(SPrintString))
+END DO
+
+
     !outputs if requested    
     CALL message(LL,dbg3,"first 16 g-vectors", RgMatrix(1:16,1,:)) 
     CALL message(LL,dbg3,"g-vector magnitude matrix (2pi/A)", RgMatrixMagnitude(1:16,1:8)) 
@@ -113,8 +125,8 @@ MODULE crystallography_mod
   SUBROUTINE ReciprocalLattice(IErr)
 
     USE MyNumbers
+    USE MyMPI
 
-    ! global outputs
     USE RPARA, ONLY : RarVecM,RbrVecM,RcrVecM,RaVecM,RbVecM,RcVecM,RNormDirM,RaVecO,RbVecO,&
           RcVecO,RVolume,RarVecO,RbrVecO,RcrVecO
     USE SPARA, ONLY : SSpaceGroupName
@@ -130,10 +142,10 @@ MODULE crystallography_mod
     REAL(RKIND) :: RTTest
     REAL(RKIND), DIMENSION(ITHREE) :: RXDirO, RYDirO, RZDirO, RYDirC
     REAL(RKIND), DIMENSION(ITHREE,ITHREE) :: RTMatC2O,RTMatO2M
-    CHARACTER*50 indString
-    CHARACTER*400  RTMatString
+    CHARACTER(50) :: indString
+    CHARACTER(400) :: RTMatString
+    CHARACTER(200) :: SPrintString
 
-    ! Crystal Lattice Vectors: orthogonal reference frame in Angstrom units
     RaVecO(1)= RLengthX
     RaVecO(2)= ZERO
     RaVecO(3)= ZERO
@@ -233,6 +245,12 @@ MODULE crystallography_mod
     RarVecM= TWOPI*CROSS(RbVecM,RcVecM)/DOT_PRODUCT(RbVecM,CROSS(RcVecM,RaVecM))
     RbrVecM= TWOPI*CROSS(RcVecM,RaVecM)/DOT_PRODUCT(RcVecM,CROSS(RaVecM,RbVecM))
     RcrVecM= TWOPI*CROSS(RaVecM,RbVecM)/DOT_PRODUCT(RaVecM,CROSS(RbVecM,RcVecM))
+WRITE(SPrintString,FMT='(3(F7.4,1X))') RarVecM
+IF(my_rank.EQ.0)PRINT*,TRIM(ADJUSTL(SPrintString))
+WRITE(SPrintString,FMT='(3(F7.4,1X))') RbrVecM
+IF(my_rank.EQ.0)PRINT*,TRIM(ADJUSTL(SPrintString))
+WRITE(SPrintString,FMT='(3(F7.4,1X))') RcrVecM
+IF(my_rank.EQ.0)PRINT*,TRIM(ADJUSTL(SPrintString))
     
   END SUBROUTINE ReciprocalLattice
 

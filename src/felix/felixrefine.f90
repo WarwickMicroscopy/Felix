@@ -426,8 +426,8 @@ PROGRAM Felixrefine
   CALL message(LS,dbg3,"Starting absorption calculation... ")
   CALL Absorption (IErr)
   CALL message( LM, "Initial Ug matrix, with absorption (nm^-2)" )
-  DO ind = 1,16
-    WRITE(SPrintString,FMT='(3(I2,1X),A2,1X,8(F7.4,1X))') NINT(Rhkl(ind,:)),": ",100*CUgMat(ind,1:4)
+  DO ind = 1,6
+      WRITE(SPrintString,FMT='(3(I2,1X),A2,1X,6(F7.4,1X,F7.4,2X))') NINT(Rhkl(ind,:)),": ",100*CUgMat(ind,1:6)
     CALL message( LM,dbg3, SPrintString)
   END DO
   IF(l_alert(IErr,"felixrefine","Absorption")) CALL abort

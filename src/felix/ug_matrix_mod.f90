@@ -36,9 +36,71 @@
 MODULE ug_matrix_mod
   IMPLICIT NONE
   PRIVATE
-  PUBLIC :: Absorption, GetVgContributionij, StructureFactorInitialisation 
+  PUBLIC :: UgMatrix, Absorption, GetVgContributionij, StructureFactorInitialisation
   CONTAINS
 
+  !>
+  !! Procedure-description: Calculate complex Ug matrix with absorption
+  !!
+  !! Major-Authors: Richard Beanland (2019)
+  !!
+  SUBROUTINE UgMatrix(IErr)
+
+  USE MyNumbers
+  USE message_mod
+
+  USE MyMPI
+
+  ! global inputs
+  USE RPARA, ONLY : RCurrentGMagnitude,RgMatrixMagnitude,RElectronMass,RAngstromConversion,&
+    RRelativisticCorrection,RElectronCharge,RPlanckConstant,Rhkl
+  USE CPARA, ONLY : CUgMatNoAbs,CUgMatPrime
+  USE IPARA, ONLY : INhkl
+  ! global outputs
+  USE CPARA, ONLY : CUgMat
+
+  IMPLICIT NONE
+    
+  INTEGER(IKIND) :: ind,jnd,IErr
+  REAL(RKIND) :: RScatteringFactor
+  COMPLEX(CKIND) :: CVgij
+  COMPLEX(CKIND),DIMENSION(:,:),ALLOCATABLE :: CTempMat!to avoid problems with transpose
+  CHARACTER(200) :: SPrintString
+    
+  IF (my_rank.EQ.0) THEN!There is a bug when individual cores calculate UgMat, make it the responsibility of core 0 and broadcast it
+    
+    CUgMatNoAbs = CZERO
+    ! fill lower diagonal of Ug matrix(excluding absorption) with Fourier components of the potential Vg
+    DO ind=2,INhkl
+      DO jnd=1,ind-1
+        RCurrentGMagnitude = RgMatrixMagnitude(ind,jnd) ! ij swap***
+        ! Sums CVgij contribution from each atom and pseudoatom in Volts
+        CALL GetVgContributionij(RScatteringFactor,ind,jnd,CVgij,IErr)
+        CUgMatNoAbs(ind,jnd)=CVgij!ij swap ***
+      ENDDO
+    ENDDO
+    !Convert to Ug
+    CUgMatNoAbs=CUgMatNoAbs*TWO*RElectronMass*RRelativisticCorrection*RElectronCharge/((RPlanckConstant**2)*(RAngstromConversion**2))    
+    ! Only the lower half of the Vg matrix was calculated, this completes the upper half
+    ALLOCATE (CTempMat(INhkl,INhkl),STAT=IErr)
+    IF(l_alert(IErr,"UgMatrix","allocate CTempMat")) RETURN
+    CTempMat = TRANSPOSE(CUgMatNoAbs)! To avoid the bug when conj(transpose) is used
+    CUgMatNoAbs = CUgMatNoAbs + CONJG(CTempMat)
+  END IF
+  ind=INhkl*INhkl
+  !===================================== ! Send UgMat to all cores
+  CALL MPI_BCAST(CUgMatNoAbs,ind,MPI_DOUBLE_PRECISION,0,MPI_COMM_WORLD,IErr)
+  !=====================================
+
+  CALL message( LM,dbg3, "Ug matrix, without absorption (nm^-2)" )!LM, dbg3
+  DO ind = 1,6
+    WRITE(SPrintString,FMT='(3(I2,1X),A2,1X,6(F7.4,1X,F7.4,2X))') NINT(Rhkl(ind,:)),": ",100*CUgMatNoAbs(ind,1:6)
+    CALL message( LM,dbg3, SPrintString)
+  END DO
+
+  END SUBROUTINE UgMatrix
+
+  !!$%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
   !>
   !! Procedure-description: Select case using IAbsorbFLAG and calculate U'g prime in parallel
   !!
@@ -184,9 +246,9 @@ MODULE ug_matrix_mod
       ! join the U'g lists of each core to CUgPrime
       !--------------------------------------------------------------------
 
+      !?? RB I give up trying to MPI a complex number, do it with two REAL ones
       RLocalUgReal=REAL(CLocalUgPrime)
       RLocalUgImag=AIMAG(CLocalUgPrime)
-      !?? RB I give up trying to MPI a complex number, do it with two REAL ones
       ! MPI gatherv the new U'g s into CUgPrime
       ! NB MPI_GATHERV(BufferToSend,No.of elements,datatype,ReceivingArray,No.of elements,)
       CALL MPI_GATHERV(RLocalUgReal,SIZE(RLocalUgReal),MPI_DOUBLE_PRECISION,&
@@ -225,7 +287,8 @@ MODULE ug_matrix_mod
         END WHERE
       END DO
 	
-    CASE Default ! Default case is no absorption
+    CASE DEFAULT ! Default case is no absorption, do nothing
+      CALL message( LS,dbg3, "No absorption correction" )
 	
     END SELECT
 
@@ -467,36 +530,8 @@ MODULE ug_matrix_mod
 
     !--------------------------------------------------------------------
     ! calculate Ug matrix (excluding absorption)
-    !--------------------------------------------------------------------
-
-    ! fill lower diagonal of Ug matrix(excluding absorption) with Fourier components of the potential Vg
-    CUgMatNoAbs = CZERO ! 
-    DO ind=2,INhkl
-      DO jnd=1,ind-1
-        RCurrentGMagnitude = RgMatrixMagnitude(ind,jnd) ! g-vector magnitude, global variable
-        ! Sums CVgij contribution from each atom and pseudoatom in Volts
-        CALL GetVgContributionij(RScatteringFactor,ind,jnd,CVgij,IErr)
-        CUgMatNoAbs(ind,jnd)=CVgij
-      ENDDO
-    ENDDO
-    !Convert to Ug
-    CUgMatNoAbs=CUgMatNoAbs*TWO*RElectronMass*RRelativisticCorrection*RElectronCharge/((RPlanckConstant**2)*(RAngstromConversion**2))
-    ! NB Only the lower half of the Vg matrix was calculated, this completes the upper half
-    ALLOCATE (CTempMat(INhkl,INhkl),STAT=IErr)
-    IF(l_alert(IErr,"Structure factor initialise","allocate CTempMat")) RETURN
-    CTempMat = TRANSPOSE(CUgMatNoAbs)! To avoid the bug when conj(transpose) is used
-    CUgMatNoAbs = CUgMatNoAbs + CONJG(CTempMat)
-    CUgMatPrime = CZERO
-    ! set diagonals to zero
-    !DO ind=1,INhkl
-    !  CUgMatNoAbs(ind,ind)=CZERO
-    !END DO
-
-    CALL message( LM,dbg3, "Ug matrix, without absorption (nm^-2)" )!LM, dbg3
-    DO ind = 1,16
-      WRITE(SPrintString,FMT='(3(I2,1X),A2,1X,8(F7.4,1X))') NINT(Rhkl(ind,:)),": ",100*CUgMatNoAbs(ind,1:4)
-      CALL message( LM,dbg3, SPrintString)
-    END DO
+    CALL UgMatrix(IErr)
+    IF(l_alert(IErr,"Structure factor initialise","UgMatrix")) RETURN
    
     !--------------------------------------------------------------------
     ! calculate mean inner potential and wave vector magnitude
