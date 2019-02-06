@@ -560,18 +560,24 @@ MODULE refinementcontrol_mod
         CASE(1) ! A: structure factor refinement, currently in UpdateStructureFactors but should come here
       
         CASE(2) ! B: atomic coordinates
-          !basis has changed in some way, recalculate unit cell
+          !basis has changed, recalculate unit cell
           CALL UniqueAtomPositions(IErr)
           IF(l_alert(IErr,"UpdateVariables","UniqueAtomPositions")) RETURN
 
         CASE(3) ! C: occupancy
-          !nothing to do, it will come into recalculation of Ug matrix
+          !basis has changed, recalculate unit cell
+          CALL UniqueAtomPositions(IErr)
+          IF(l_alert(IErr,"UpdateVariables","UniqueAtomPositions")) RETURN
 
         CASE(4) ! D: iso DWF
-          !nothing to do, it will come into recalculation of Ug matrix
+          !basis has changed, recalculate unit cell
+          CALL UniqueAtomPositions(IErr)
+          IF(l_alert(IErr,"UpdateVariables","UniqueAtomPositions")) RETURN
 
         CASE(5) ! E: aniso DWF
-         !nothing to do, it will come into recalculation of Ug matrix
+          !basis has changed, recalculate unit cell
+          CALL UniqueAtomPositions(IErr)
+          IF(l_alert(IErr,"UpdateVariables","UniqueAtomPositions")) RETURN
 
         CASE(6) ! F: lattice parameters a,b,c
           !recalculate reciprocal lattice and g vectors
