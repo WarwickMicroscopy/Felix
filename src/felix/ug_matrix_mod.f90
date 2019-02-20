@@ -147,15 +147,13 @@ MODULE ug_matrix_mod
     ! local variables
     INTEGER(IKIND) :: ind,jnd,knd,lnd,IErr,IUniqueUgs,ILocalUgCountMin,ILocalUgCountMax
     INTEGER(IKIND),DIMENSION(2) :: ILoc
-    REAL(RKIND) :: Rintegral,RfPrime,RAbsPreFactor
+    REAL(RKIND) :: Rintegral,RfPrime
     REAL(RKIND),DIMENSION(3) :: RCurrentG
     COMPLEX(CKIND),DIMENSION(:),ALLOCATABLE :: CLocalUgPrime,CUgPrime
     REAL(RKIND),DIMENSION(:),ALLOCATABLE :: RLocalUgReal,RLocalUgImag,RUgReal,RUgImag
     INTEGER(IKIND),DIMENSION(:),ALLOCATABLE :: Ipos,Inum
     COMPLEX(CKIND) :: CVgPrime,CFpseudo
     CHARACTER*100 :: SPrintString
-    
-    RAbsPreFactor = TWO*RPlanckConstant*RAngstromConversion/(RElectronMass*RElectronVelocity)
     
     !--------------------------------------------------------------------  
     !  select absorption model
@@ -164,7 +162,7 @@ MODULE ug_matrix_mod
     SELECT CASE (IAbsorbFLAG)
 
     CASE(0) ! No absorption
-      CUgMatPrime = CZERO
+      !nothing to do, CUgMatPrime is already 0
 
 	CASE(1) ! Proportional
       CUgMatPrime = CUgMatNoAbs*EXP(CIMAGONE*PI/2)*(RAbsorptionPercentage/100_RKIND)
@@ -185,13 +183,13 @@ MODULE ug_matrix_mod
       ILocalUgCountMax = (IUniqueUgs*(my_rank+1)/p)
       ALLOCATE(Ipos(p),Inum(p),STAT=IErr)
       IF(l_alert(IErr,"Absorption","allocate Ipos")) RETURN
-      ! U'g list for this core
+      ! U'g list for this core [Re,Im]
       ALLOCATE(CLocalUgPrime(ILocalUgCountMax-ILocalUgCountMin+1),STAT=IErr)
       IF(l_alert(IErr,"Absorption","allocate CLocalUgPrime")) RETURN
-      ! U'g list for this core [Re,Im]
+      ! U'g list for this core [Re]
       ALLOCATE(RLocalUgReal(ILocalUgCountMax-ILocalUgCountMin+1),STAT=IErr)
       IF(l_alert(IErr,"Absorption","allocate RLocalUgReal")) RETURN
-      ! U'g list for this core [Re,Im]
+      ! U'g list for this core [Im]
       ALLOCATE(RLocalUgImag(ILocalUgCountMax-ILocalUgCountMin+1),STAT=IErr)
       IF(l_alert(IErr,"Absorption","allocate RLocalUgImag")) RETURN
       ALLOCATE(CUgPrime(IUniqueUgs),STAT=IErr) ! complete U'g list
@@ -227,9 +225,9 @@ MODULE ug_matrix_mod
           ICurrentZ = IAtomicNumber(knd) ! Atomic number, global variable
           RCurrentB = RIsoDW(knd) ! Debye-Waller constant, global variable
           IF (ICurrentZ.LT.105) THEN ! It's not a pseudoatom 
-            ! Uses numerical integration to calculate absorptive form factor f'
-            CALL DoubleIntegrateBK(RfPrime,IErr) ! NB uses Kirkland scattering factors
-            IF(l_alert(IErr,"Absorption","CALL DoubleIntegrateBK")) RETURN
+            ! Get absorptive form factor f'
+            CALL AbsorptiveScatteringFactor(RfPrime,IErr) ! NB uses Kirkland scattering factors
+            IF(l_alert(IErr,"Absorption","CALL AbsorptiveScatteringFactor")) RETURN
           ELSE ! It is a pseudoatom, proportional model 
             lnd=lnd+1
             CALL PseudoAtom(CFpseudo,ILoc(1),ILoc(2),lnd,IErr)
@@ -246,7 +244,7 @@ MODULE ug_matrix_mod
         END DO
 
         ! V'g in volts
-        CVgPrime=CVgPrime*RAbsPreFactor*RScattFacToVolts
+        CVgPrime=CVgPrime*RScattFacToVolts
         ! Convert to U'g=V'g*(2*m*e/h^2)	  
         CLocalUgPrime(ind-ILocalUgCountMin+1) = CVgPrime*TWO*RElectronMass * &
               RRelativisticCorrection*RElectronCharge / &
@@ -431,13 +429,11 @@ MODULE ug_matrix_mod
           INhkl,IAtomicNumber,IEquivalentUgKey,&
           IAnisoDW
     USE RPARA, ONLY : RAngstromConversion,RElectronCharge,RElectronMass,&
-          RRelativisticCorrection,RVolume,RIsoDW,RgMatrixMagnitude,ROccupancy,&
+          RVolume,RIsoDW,RgMatrixMagnitude,ROccupancy,&
           RElectronWaveVectorMagnitude,RgMatrix,RDebyeWallerConstant,RTolerance,&
           RAtomCoordinate,Rhkl,RAnisotropicDebyeWallerFactorTensor,RScattFacToVolts,&
           RLengthX,RLengthY,RLengthZ
     USE IChannels, ONLY : IChOutWIImage
-
-    USE RConst, ONLY : RPlanckConstant
 
     ! global should be local to Ug.f90
     USE IPARA, ONLY : IPsize
@@ -453,7 +449,7 @@ MODULE ug_matrix_mod
           RPMag,Rx,Ry,Rr,RPalpha,RTheta,Rfold
     REAL(RKIND),DIMENSION(:,:),ALLOCATABLE :: RTempMat!to avoid problems with transpose ffs
     COMPLEX(CKIND),DIMENSION(:,:),ALLOCATABLE :: CTempMat!to avoid problems with transpose
-    CHARACTER*200 :: SPrintString
+    CHARACTER(200) :: SPrintString
     
     !--------------------------------------------------------------------
     ! count pseudoatoms & allocate pseudoatom arrays
@@ -708,6 +704,44 @@ MODULE ug_matrix_mod
   !!$%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
   !>
+  !! Procedure-description: Returns the absorptive form factor f'
+  !! evaluated for RCurrentG, RCurrentB and ICurrentZ using the Bird & King method
+  !! this is a integration over k-space called 
+  !!
+  !! Major-Authors: Richard Beanland (2016)
+  !!
+  SUBROUTINE AbsorptiveScatteringFactor(RfPrime,IErr) 
+    ! used in each (case 2 Bird & King) absorption
+
+    USE MyNumbers
+    USE message_mod
+    USE RPARA, ONLY : RPlanckConstant,RAngstromConversion,RElectronMass,RElectronVelocity
+
+    IMPLICIT NONE
+
+    INTEGER(IKIND), PARAMETER :: inf=1
+    INTEGER(IKIND), PARAMETER :: limit=500
+    INTEGER(IKIND), PARAMETER :: lenw= limit*4
+    INTEGER(IKIND) :: IErr,Ieval,last, iwork(limit)
+    REAL(RKIND) :: RAccuracy,RError,RfPrime,RAbsPreFactor
+    REAL(RKIND) :: work(lenw)
+    
+    RAbsPreFactor = TWO*RPlanckConstant*RAngstromConversion/(RElectronMass*RElectronVelocity)
+    RAccuracy=0.00000001D0 ! accuracy of integration
+    ! use single integration IntegrateBK as an external function of one variable
+    ! Quadpack integration 0 to infinity
+    CALL dqagi(IntegrateBK,ZERO,inf,0,RAccuracy,RfPrime,RError,Ieval,IErr,&
+         limit, lenw, last, iwork, work )
+    ! The integration required is actually -inf to inf in 2 dimensions
+    ! We used symmetry to just do 0 to inf, so multiply by 4
+    RfPrime=RfPrime*4*RAbsPreFactor
+    
+  END SUBROUTINE AbsorptiveScatteringFactor
+
+  !!$%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+
+  !>
   !! Procedure-description: Returns a PseudoAtom scattering factor 
   !!
   !! Major-Authors: Richard Beanland (2016)
@@ -824,41 +858,6 @@ MODULE ug_matrix_mod
     END DO
     
   END FUNCTION Kirkland
-
-  !!$%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-
-  !>
-  !! Procedure-description: Used as part of numerical integration to calculate
-  !! absorptive form factor f' for Bird & King absorption method
-  !!
-  !! Major-Authors: Richard Beanland (2016)
-  !!
-  SUBROUTINE DoubleIntegrateBK(RResult,IErr) 
-    ! used in each (case 2 Bird & King) absorption
-
-    USE MyNumbers
-    USE message_mod
-
-    IMPLICIT NONE
-
-    INTEGER(IKIND), PARAMETER :: inf=1
-    INTEGER(IKIND), PARAMETER :: limit=500
-    INTEGER(IKIND), PARAMETER :: lenw= limit*4
-    INTEGER(IKIND) :: IErr,Ieval,last, iwork(limit)
-    REAL(RKIND) :: RAccuracy,RError,RResult,dd
-    REAL(RKIND) :: work(lenw)
-    
-    dd=1.0 ! Do I need this? what does it do?
-    RAccuracy=0.00000001D0 ! accuracy of integration
-    ! use single integration IntegrateBK as an external function of one variable
-    ! Quadpack integration 0 to infinity
-    CALL dqagi(IntegrateBK,ZERO,inf,0,RAccuracy,RResult,RError,Ieval,IErr,&
-         limit, lenw, last, iwork, work )
-    ! The integration required is actually -inf to inf in 2 dimensions
-    ! We used symmetry to just do 0 to inf, so multiply by 4
-    RResult=RResult*4
-    
-  END SUBROUTINE DoubleIntegrateBK
 
   !!$%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
