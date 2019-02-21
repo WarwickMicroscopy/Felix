@@ -119,11 +119,10 @@ MODULE ug_matrix_mod
   !=====================================
   
   CALL message( LM,dbg3, "Ug matrix, without absorption (nm^-2)" )!LM, dbg3
-  DO ind = 1,6
+  DO ind = 1,40
     WRITE(SPrintString,FMT='(3(I2,1X),A2,1X,6(F7.4,1X,F7.4,2X))') NINT(Rhkl(ind,:)),": ",100*CUgMatNoAbs(ind,1:6)
     CALL message( LM,dbg3, SPrintString)
   END DO
-  CALL message( LM,dbg3, "Ug matrix, without absorption (nm^-2)" )!LM, dbg3
 
   END SUBROUTINE UgMatrix
 
@@ -638,7 +637,7 @@ MODULE ug_matrix_mod
       SPrintString=TRIM(ADJUSTL(SPrintString))
       CALL message ( LS, SPrintString )
       CALL message ( LM, dbg3, "hkl: symmetry matrix" )
-      DO ind =1,16
+      DO ind =1,40
 	  	WRITE(SPrintString,FMT='(3(I2,1X),A2,1X,16(I4,1X))') NINT(Rhkl(ind,:)),": ",ISymmetryRelations(ind,1:16)
         CALL message ( LM,dbg3, SPrintString )
       END DO

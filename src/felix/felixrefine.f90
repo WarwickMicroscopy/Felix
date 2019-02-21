@@ -425,11 +425,11 @@ PROGRAM Felixrefine
   CALL SYSTEM_CLOCK( IStartTime2 )
   CALL message(LS,dbg3,"Starting absorption calculation... ")
   CALL Absorption (IErr)
-  CALL message( LM, "Initial Ug matrix, with absorption (nm^-2)" )
-  DO ind = 1,6
-      WRITE(SPrintString,FMT='(3(I2,1X),A2,1X,6(F7.4,1X,F7.4,2X))') NINT(Rhkl(ind,:)),": ",100*CUgMat(ind,1:6)
-    CALL message( LM,dbg3, SPrintString)
-  END DO
+!  CALL message( LM, "Initial Ug matrix, with absorption (nm^-2)" )
+!  DO ind = 1,6
+!      WRITE(SPrintString,FMT='(3(I2,1X),A2,1X,6(F7.4,1X,F7.4,2X))') NINT(Rhkl(ind,:)),": ",100*CUgMat(ind,1:6)
+!    CALL message( LM,dbg3, SPrintString)
+!  END DO
   IF(l_alert(IErr,"felixrefine","Absorption")) CALL abort
   CALL PrintEndTime(LS,IStartTime2, "Absorption" )
   CALL message(LL,dbg3,"g-vector magnitude matrix (2pi/A)", RgMatrixMagnitude(1:16,1:8)) 
@@ -438,10 +438,12 @@ PROGRAM Felixrefine
   !--------------------------------------------------------------------
   ! INoOfVariables calculated depending upon Ug and non-Ug refinement
   !--------------------------------------------------------------------
-  ! Ug refinement is a special case and must be done alone
-  ! cannot do any other refinement alongside
-  ! Count the number of Independent Variables and put into Rtemp
-!  INoOfVariablesForRefinementType=0
+  ! Ug refinement is a special case, cannot do any other refinement alongside
+  ! Count the number of Independent Variables:
+  ! Put the variable into Rtemp and put a flag into Itemp, increment jnd.
+  ! Max number of refinement variables is 100!
+  ! Once counting is done jnd is used to define the size of 'proper' refinement variables
+  ! RIndependentVariable and IIndependentVariableType.  Itemp,Rtemp are then copied over
   IF(ISimFLAG.EQ.0) THEN
     jnd=1
     IF(IRefineMode(1).EQ.1) THEN ! It's a Ug refinement, A
@@ -476,7 +478,6 @@ PROGRAM Felixrefine
             Itemp(jnd)=2
             jnd=jnd+1
         END DO
-!        INoOfVariablesForRefinementType(2)=SIZE(IAtomMoveList)
       END IF
 
       IF (IRefineMode(3).EQ.1) THEN ! Occupancy, C
@@ -485,7 +486,6 @@ PROGRAM Felixrefine
             Itemp(jnd)=3
             jnd=jnd+1
         END DO
-!        INoOfVariablesForRefinementType(3)=SIZE(IAtomsToRefine)
       END IF
 
       IF (IRefineMode(4).EQ.1) THEN ! Isotropic DW, D
@@ -494,14 +494,12 @@ PROGRAM Felixrefine
             Itemp(jnd)=4
             jnd=jnd+1
         END DO
-!        INoOfVariablesForRefinementType(4)=SIZE(IAtomsToRefine)
       END IF
       
       IF (IRefineMode(5).EQ.1) THEN  ! Anisotropic DW, E
         IErr=1!not yet implemented!!!
         IF(l_alert(IErr,"felixrefine",&
             "Anisotropic Debye-Waller factor refinement not yet implemented, sorry")) CALL abort
-!        INoOfVariablesForRefinementType(5)=SIZE(IAtomsToRefine)*6
       END IF
       
       IF (IRefineMode(6).EQ.1) THEN ! Lattice parameters, F
@@ -528,7 +526,6 @@ PROGRAM Felixrefine
           Itemp(jnd)=26
           jnd=jnd+1
         END IF
-!        INoOfVariablesForRefinementType(6)=jnd-1!only correct if no refinement B-E
       END IF
 
       IF (IRefineMode(7).EQ.1) THEN ! Unit cell angles, G
@@ -536,14 +533,12 @@ PROGRAM Felixrefine
         IF(l_alert(IErr,"felixrefine",&
             "Unit cell angle refinement not yet implemented, sorry")) CALL abort
         jnd=jnd+3
-!        INoOfVariablesForRefinementType(7)=3
       END IF
       
       IF (IRefineMode(8).EQ.1) THEN ! Convergence angle, H
         Rtemp(jnd)=RConvergenceAngle
         Itemp(jnd)=8
         jnd=jnd+1
-!        INoOfVariablesForRefinementType(8)=1
       END IF
 
       IF (IRefineMode(9).EQ.1) THEN ! kV, I
@@ -551,7 +546,6 @@ PROGRAM Felixrefine
         IErr=1!not yet implemented!!!
         IF(l_alert(IErr,"felixrefine",&
             "kV refinement not yet implemented, sorry")) CALL abort
-!        INoOfVariablesForRefinementType(7)=1
       END IF
 
     END IF
@@ -969,6 +963,8 @@ CONTAINS
           CALL MPI_BCAST(Rdx,1,MPI_DOUBLE_PRECISION,0,MPI_COMM_WORLD,IErr)
           !=====================================
           RCurrentVar=RVar0
+          !if dx is tiny in comparison with the variable being altered make it bigger
+          IF(Rdx<ABS(0.1*RScale*RCurrentVar(ind))) Rdx=Rdx*ABS(0.1*RScale*RCurrentVar(ind))/ABS(Rdx)
           RCurrentVar(ind)=RCurrentVar(ind)+Rdx
           CALL SimulateAndFit(RCurrentVar,Iter,IThicknessIndex,IErr)
           IF(l_alert(IErr,"MaxGradientRefinement","SimulateAndFit")) RETURN

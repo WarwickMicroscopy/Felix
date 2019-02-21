@@ -138,7 +138,7 @@ MODULE bloch_mod
       !  2*DOT_PRODUCT(RgPool(knd,:),RTiltedK) - RgPoolMag(knd)**2 )
       !IF(my_rank.EQ.0) PRINT*, "old", RDevPara(knd)
       ! Debugging output
-      IF(knd.EQ.1.AND.IYPixelIndex.EQ.10.AND.IXPixelIndex.EQ.10) THEN
+      IF(knd.EQ.2.AND.IYPixelIndex.EQ.10.AND.IXPixelIndex.EQ.10) THEN
         CALL message(LM,"RBigK ",RBigK)!LM,dbg7
         CALL message(LM,"Rhkl(knd) ",Rhkl(knd:knd,:))
         CALL message(LM,"RgPool(knd) ",RgPool(knd:knd,:))

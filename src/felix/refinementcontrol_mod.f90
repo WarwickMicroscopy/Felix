@@ -481,6 +481,8 @@ MODULE refinementcontrol_mod
     lnd=1
     DO ind = 1,INoOfVariables!loop over variables
 
+      !the type of variable is specified by the last digit of IIndependentVariableType
+      !other digits are used for options or extra information      
       SELECT CASE (MOD(IIndependentVariableType(ind),10))
 
       CASE(1) ! A: structure factor refinement, do in UpdateStructureFactors
@@ -513,12 +515,17 @@ MODULE refinementcontrol_mod
               "Anisotropic Debye Waller Factors not implemented")) CALL abort
 
       CASE(6) ! F: lattice parameters a,b,c
+        !x,y and z are labelled by the first digit
+        !no first digit is x&y&z and always comes first
+        !first digit=1 is y (overwrites the above)
+        !first digit=2 is z (overwrites the above)
         IVariableCheck(6)=1
         SELECT CASE(IIndependentVariableType(ind))
-          CASE(6)!x
+          !this should always come first & is the default 
+          CASE(6)!cubic: y and z are the same as x (rhombohedral should go here too)
             RLengthX = RIndependentVariable(ind)!first variable is always x
-            RLengthY = RIndependentVariable(ind)!if there's only one variable
-            RLengthZ = RIndependentVariable(ind)!it is cubic so make y and z the same
+            RLengthY = RIndependentVariable(ind)
+            RLengthZ = RIndependentVariable(ind)!
           CASE(16)!y
             RLengthY = RIndependentVariable(ind)
           CASE(26)!z
