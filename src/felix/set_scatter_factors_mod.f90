@@ -4,14 +4,14 @@
 !
 ! Richard Beanland, Keith Evans & Rudolf A Roemer
 !
-! (C) 2013-17, all rights reserved
+! (C) 2013-19, all rights reserved
 !
-! Version: :VERSION:
-! Date:    :DATE:
+! Version: :VERSION: RB_coord / 1.14 /
+! Date:    :DATE: 15-01-2019
 ! Time:    :TIME:
 ! Status:  :RLSTATUS:
-! Build:   :BUILD:
-! Author:  :AUTHOR:
+! Build:   :BUILD: Mode F: test different lattice types" 
+! Author:  :AUTHOR: r.beanland
 ! 
 !%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 !
@@ -46,7 +46,7 @@ MODULE set_scatter_factors_mod
 
   CONTAINS
 
-  SUBROUTINE SetScatteringFactors(IScatteringMethodSwitch,IErr)
+  SUBROUTINE SetScatteringFactors(IScatFactFLAG,IErr)
     ! This procedure is called once in felixrefine setup
     USE MyNumbers
     USE message_mod
@@ -56,17 +56,16 @@ MODULE set_scatter_factors_mod
 
     IMPLICIT NONE
 
-    INTEGER(IKIND):: IScatteringMethodSwitch, IScattDimension, IErr, ind
+    INTEGER(IKIND):: IScatFactFLAG, IScattDimension, IErr, ind
     REAL(RKIND) :: RKirkland(105,12), RPeng(105,8), RDoyleAndTurner(105,8), &
           RLobato(105,10), RAtomicNumbers(105,1)
 
     CALL message ( LL, dbg3, "Loading parameters for scattering factor calculation" )
 
-    SELECT CASE(IScatteringMethodSwitch)
+    SELECT CASE(IScatFactFLAG)
 
-    CASE(0)
+    CASE(0)! E.J.Kirkland, Advanced Computing in Electron Microscopy
 
-      ! Kirkland Tables
       ! in the format a1 b1 a2 b2 a3 b3 c1 d1 c2 d2 c3 d3
       DATA RKirkland(1,1:12)/4.202983240E-03,2.253508880E-01,6.277625050E-02,2.253669500E-01,3.009073470E-02,2.253317560E-01, &
           6.777566950E-02,4.388540010E+00,3.566092370E-03,4.038848230E-01,2.761358150E-02,1.444901660E+00/
@@ -288,7 +287,7 @@ MODULE set_scatter_factors_mod
       RScattFactors = RKirkland
 
 
-    CASE(1) ! Peng Scattering Factors (must include reference here - in wiki)
+    CASE(1) ! Peng Scattering Factors (include reference here)
 
       ! Peng Tables
       DATA RPeng(1,1:8)/3.670000000E-02,1.269000000E-01,2.360000000E-01,1.290000000E-01,5.608000000E-01,3.791300000E+00, &
@@ -508,7 +507,7 @@ MODULE set_scatter_factors_mod
       ! Assign Global Scattering factor array with chosen scattering factors (Kirkland)
       RScattFactors = RPeng
 
-    CASE(2) ! Doyle & Turner scattering factors (must include reference here - in wiki)
+    CASE(2) ! Doyle & Turner scattering factors (include reference here)
       ! Doyle & Turner Tables
       DATA RDoyleAndTurner(1,1:8)/0.000000000E+00,0.000000000E+00,0.000000000E+00,0.000000000E+00,0.000000000E+00, &
           0.000000000E+00,0.000000000E+00,0.000000000E+00/

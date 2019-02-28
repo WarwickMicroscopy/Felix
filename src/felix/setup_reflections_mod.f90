@@ -127,7 +127,7 @@ MODULE setup_reflections_mod
     
     ! global inputs
     USE IPARA, ONLY : IHolzFLAG
-    USE RPARA, ONLY : Rhkl
+    USE RPARA, ONLY : Rhkl,RarVecM,RbrVecM,RcrVecM
     USE SPARA, ONLY : SSpaceGroupName
     
     IMPLICIT NONE
@@ -135,14 +135,28 @@ MODULE setup_reflections_mod
     INTEGER(IKIND),INTENT(IN) :: Ihklmax
     REAL(RKIND),INTENT(IN) :: Rhkl0Vec(ITHREE), RHOLZAcceptanceAngle
     INTEGER(IKIND) :: ind, jnd, knd
-    REAL(RKIND),DIMENSION(ITHREE) :: RhklDummyUnitVec, RhklDummyVec, Rhkl0UnitVec
+    REAL(RKIND),DIMENSION(ITHREE) :: RhklDummyUnitVec,RhklDummyVec,Rhkl0UnitVec,RrMag
+    INTEGER(IKIND),DIMENSION(ITHREE) :: IrMag
+
+    RrMag(1)=SQRT(DOT_PRODUCT(RarVecM,RarVecM))!magnitude of a*
+    RrMag(2)=SQRT(DOT_PRODUCT(RbrVecM,RbrVecM))!magnitude of b*
+    RrMag(3)=SQRT(DOT_PRODUCT(RcrVecM,RcrVecM))!magnitude of c*
+    !We will use Ihklmax for the biggest reciprocal lattice vector and have
+    !bigger numbers for smaller vectors
+    IrMag=0
+    DO ind=1,3
+      IF (RrMag(ind).EQ.MAXVAL(RrMag)) IrMag(ind)=Ihklmax
+    END DO
+    DO ind=1,3
+      IF (IrMag(ind).EQ.0) IrMag(ind)=Ihklmax*NINT(MAXVAL(RrMag)/RrMag(ind))
+    END DO
 
     INhkl = 0
-    Rhkl0UnitVec= Rhkl0Vec/SQRT(DOT_PRODUCT(REAL(Rhkl0Vec,RKIND),REAL(Rhkl0Vec,RKIND)))
+    Rhkl0UnitVec= Rhkl0Vec/SQRT(DOT_PRODUCT(Rhkl0Vec,Rhkl0Vec))
 
-    DO ind=-Ihklmax,Ihklmax,1
-       DO jnd=-Ihklmax,Ihklmax,1
-          DO knd=-Ihklmax,Ihklmax,1          
+    DO ind=-IrMag(1),IrMag(1)
+       DO jnd=-IrMag(2),IrMag(2)
+          DO knd=-IrMag(3),IrMag(3)          
              RhklDummyVec= REAL((/ ind,jnd,knd /),RKIND)          
              IF( (ind.NE.0).OR.(jnd.NE.0).OR.(knd.NE.0) ) THEN
                 RhklDummyUnitVec= RhklDummyVec / &
@@ -172,7 +186,7 @@ MODULE setup_reflections_mod
                       INhkl = INhkl +1       
                    END IF
                 END IF
-			    
+
              CASE("I")! Body Centred
                 IF(ABS(MOD(RhklDummyVec(1)+RhklDummyVec(2)+RhklDummyVec(3),TWO)).LE.TINY) THEN
                    IF(IHolzFLAG.EQ.0) THEN
@@ -184,7 +198,7 @@ MODULE setup_reflections_mod
                       INhkl = INhkl +1       
                    END IF
                 END IF
-			    
+ 
              CASE("A")! A-Face Centred
                 IF(ABS(MOD(RhklDummyVec(2)+RhklDummyVec(3),TWO)).LE.TINY) THEN
                    IF(IHolzFLAG.EQ.0) THEN
@@ -196,7 +210,7 @@ MODULE setup_reflections_mod
                       INhkl = INhkl +1       
                    END IF
                 END IF
-			    
+    
              CASE("B")! B-Face Centred
                 IF(ABS(MOD(RhklDummyVec(1)+RhklDummyVec(3),TWO)).LE.TINY) THEN
                    IF(IHolzFLAG.EQ.0) THEN
@@ -208,7 +222,7 @@ MODULE setup_reflections_mod
                       INhkl = INhkl +1
                    END IF
                 END IF
-			    
+    
              CASE("C")! C-Face Centred
                 IF(ABS(MOD(RhklDummyVec(1)+RhklDummyVec(2),TWO)).LE.TINY) THEN
                    IF(IHolzFLAG.EQ.0) THEN
@@ -220,7 +234,7 @@ MODULE setup_reflections_mod
                       INhkl = INhkl +1       
                    END IF
                 END IF
-			    
+    
              CASE("R")! Rhombohedral Reverse
                 IF(ABS(MOD(RhklDummyVec(1)-RhklDummyVec(2)+RhklDummyVec(3),THREE)).LE.TINY) THEN
                    IF(IHolzFLAG.EQ.0) THEN
@@ -232,7 +246,7 @@ MODULE setup_reflections_mod
                       INhkl = INhkl +1       
                    END IF
                 END IF
-			    
+    
              CASE("V")! Rhombohedral Obverse
                 IF( ABS(MOD(-RhklDummyVec(1)+RhklDummyVec(2)+RhklDummyVec(3),THREE)) &
                 .LE.TINY) THEN
@@ -245,7 +259,7 @@ MODULE setup_reflections_mod
                       INhkl = INhkl +1       
                    END IF
                 END IF
-			    
+    
              CASE("P")! Primitive
                 IF(IHolzFLAG.EQ.0) THEN
                    IF( ABS(DOT_PRODUCT(RhklDummyUnitVec,Rhkl0UnitVec)) .LE. TINY ) THEN
@@ -255,12 +269,12 @@ MODULE setup_reflections_mod
                      .LE.SIN(RHOLZAcceptanceAngle)) THEN
                    INhkl = INhkl +1       
                 END IF
-			    
+    
              CASE DEFAULT
                 IErr=1; IF(l_alert(IErr,"HKLCount",&
                       "SSpaceGroupName unrecognised")) RETURN
              END SELECT
-		     
+     
           END DO
        END DO
     END DO
@@ -282,7 +296,7 @@ MODULE setup_reflections_mod
     USE message_mod
     
     ! global outputs (or inout)
-    USE RPARA, ONLY : Rhkl
+    USE RPARA, ONLY : Rhkl,RarVecM,RbrVecM,RcrVecM
       
     ! global inputs
     USE SPARA, ONLY : SSpaceGroupName
@@ -293,14 +307,28 @@ MODULE setup_reflections_mod
     
     INTEGER(IKIND) :: IErr, Ihklmax, ind, jnd, knd, lnd
     REAL(RKIND) :: RHOLZAcceptanceAngle
-    REAL(RKIND),DIMENSION(ITHREE) :: Rhkl0Vec, RhklDummyUnitVec, RhklDummyVec, Rhkl0UnitVec
+    REAL(RKIND),DIMENSION(ITHREE) :: Rhkl0Vec,RhklDummyUnitVec,RhklDummyVec,Rhkl0UnitVec,RrMag
+    INTEGER(IKIND),DIMENSION(ITHREE) :: IrMag
+
+    RrMag(1)=SQRT(DOT_PRODUCT(RarVecM,RarVecM))!magnitude of a*
+    RrMag(2)=SQRT(DOT_PRODUCT(RbrVecM,RbrVecM))!magnitude of b*
+    RrMag(3)=SQRT(DOT_PRODUCT(RcrVecM,RcrVecM))!magnitude of c*
+    !We will use Ihklmax for the biggest reciprocal lattice vector and have
+    !bigger numbers for smaller vectors
+    IrMag=0
+    DO ind=1,3
+      IF (RrMag(ind).EQ.MAXVAL(RrMag)) IrMag(ind)=Ihklmax
+    END DO
+    DO ind=1,3
+      IF (IrMag(ind).EQ.0) IrMag(ind)=Ihklmax*NINT(MAXVAL(RrMag)/RrMag(ind))
+    END DO
 
     lnd = 0
     Rhkl0UnitVec = Rhkl0Vec / SQRT(DOT_PRODUCT(Rhkl0Vec,Rhkl0Vec))
 
-    DO ind=-Ihklmax,Ihklmax,1
-      DO jnd=-Ihklmax,Ihklmax,1
-        DO knd=-Ihklmax,Ihklmax,1
+    DO ind=-IrMag(1),IrMag(1)
+       DO jnd=-IrMag(2),IrMag(2)
+          DO knd=-IrMag(3),IrMag(3)
           RhklDummyVec= REAL((/ ind,jnd,knd /),RKIND)
           IF(ind.NE.0.AND.jnd.NE.0.AND.knd.NE.0) THEN
             RhklDummyUnitVec = RhklDummyVec / &
@@ -331,7 +359,7 @@ MODULE setup_reflections_mod
                   Rhkl(lnd,:)=RhklDummyVec                 
                 END IF
               END IF
-			    
+
             CASE("I") ! Body Centred
               IF(ABS(MOD(RhklDummyVec(1)+RhklDummyVec(2)+RhklDummyVec(3),TWO)).LE.TINY) THEN
                 IF(IHolzFLAG.EQ.0) THEN
@@ -345,7 +373,7 @@ MODULE setup_reflections_mod
                   Rhkl(lnd,:) = RhklDummyVec                 
                 END IF
               END IF
-			    
+    
             CASE("A") ! A-Face Centred
               IF(ABS(MOD(RhklDummyVec(2)+RhklDummyVec(3),TWO)).LE.TINY) THEN
                 IF(IHolzFLAG.EQ.0) THEN
@@ -359,7 +387,7 @@ MODULE setup_reflections_mod
                   Rhkl(lnd,:) = RhklDummyVec                 
                 END IF
               END IF
-			    
+    
             CASE("B") ! B-Face Centred
               IF(ABS(MOD(RhklDummyVec(1)+RhklDummyVec(3),TWO)).LE.TINY) THEN
                 IF(IHolzFLAG.EQ.0) THEN
@@ -373,7 +401,7 @@ MODULE setup_reflections_mod
                   Rhkl(lnd,:) = RhklDummyVec                 
                 END IF
               END IF
-			    
+    
             CASE("C") ! C-Face Centred
               IF(ABS(MOD(RhklDummyVec(1)+RhklDummyVec(2),TWO)).LE.TINY) THEN
                 IF(IHolzFLAG.EQ.0) THEN
@@ -387,7 +415,7 @@ MODULE setup_reflections_mod
                   Rhkl(lnd,:) = RhklDummyVec                 
                 END IF
               END IF
-			    
+    
              CASE("R") ! Rhombohedral Reverse
                IF(ABS(MOD(RhklDummyVec(1)-RhklDummyVec(2)+RhklDummyVec(3),THREE)) &
                     .LE.TINY) THEN
@@ -402,7 +430,7 @@ MODULE setup_reflections_mod
                    Rhkl(lnd,:) = RhklDummyVec                 
                  END IF
                END IF
-			    
+    
              CASE("V") ! Rhombohedral Obverse
                IF(ABS(MOD(-RhklDummyVec(1)+RhklDummyVec(2)+RhklDummyVec(3),THREE)) &
                     .LE.TINY) THEN
@@ -417,7 +445,7 @@ MODULE setup_reflections_mod
                    Rhkl(lnd,:) = RhklDummyVec                 
                  END IF
                END IF
-			    
+    
              CASE("P") ! Primitive
                IF(IHolzFLAG.EQ.0) THEN
                  IF( ABS(DOT_PRODUCT(RhklDummyUnitVec,Rhkl0UnitVec)) .LE. TINY ) THEN
@@ -429,7 +457,7 @@ MODULE setup_reflections_mod
                  lnd =  lnd + 1
                  Rhkl(lnd,:) = RhklDummyVec                 
                END IF
-			    
+    
              CASE DEFAULT ! RB should never get here since already been through HKLcount
                IErr=1; IF(l_alert(IErr,"HKLmake",&
                      "SSpaceGroupName unrecognised")) RETURN

@@ -1,4 +1,4 @@
-# Input file for Felix version :VERSION: Build :BUILD:
+# Input file for Felix version :RB_coord: Build :4Feb2019:
 # ------------------------------------
 
 # ------------------------------------
@@ -12,7 +12,7 @@ IMaskFLAG                 = 1
 IHolzFLAG                 = 0
 IAbsorbFLAG               = 2
 IAnisoDebyeWallerFlag     = 0
-IByteSize                 = 8
+IByteSize                 = 2
 
 # radius of the beam in pixels
 IPixelCount               = 40
@@ -35,20 +35,20 @@ RAcceleratingVoltage (kV) = 200.0
 RAcceptanceAngle          = 0.0
 
 # Image Output Options
-RInitialThickness        = 800.0
-RFinalThickness          = 900.0
+RInitialThickness        = 930.0
+RFinalThickness          = 930.0
 RDeltaThickness          = 10.0
-IReflectOut              = 10
+IReflectOut              = 1
 
 #Refinement Specific Flags
-IRefineModeFLAG          = H
+IRefineModeFLAG          = F
 IWeightingFLAG           = 0
 IRefineMethodFLAG        = 2
 ICorrelationFLAG         = 2
 IImageProcessingFLAG     = 4
 RBlurRadius              = 0.0
-INoofUgs                 = 1
+INoofUgs                 = 40
 IAtomicSites             = (1,2)
-IPrint                   = 10
-RSimplexLengthScale      = 5.0 
+IPrint                   = 0
+RSimplexLengthScale      = 0.1
 RExitCriteria            = 0.0001

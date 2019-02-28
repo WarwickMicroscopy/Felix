@@ -4,14 +4,14 @@
 !
 ! Richard Beanland, Keith Evans & Rudolf A Roemer
 !
-! (C) 2013-17, all rights reserved
+! (C) 2013-19, all rights reserved
 !
-! Version: :VERSION:
-! Date:    :DATE:
+! Version: :VERSION: RB_coord / 1.15 /
+! Date:    :DATE: 16-01-2019
 ! Time:    :TIME:
 ! Status:  :RLSTATUS:
-! Build:   :BUILD:
-! Author:  :AUTHOR:
+! Build:   :BUILD: Mode F: test different lattice types" 
+! Author:  :AUTHOR: r.beanland
 ! 
 !%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 !
@@ -28,10 +28,6 @@
 !  You should have received a copy of the GNU General Public License
 !  along with Felix.  If not, see <http://www.gnu.org/licenses/>.
 !
-!%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-
-!%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-! $Id: Felixrefine.f90,v 1.89 2014/04/28 12:26:19 phslaz Exp $
 !%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 !>
@@ -72,7 +68,7 @@ MODULE refinementcontrol_mod
     USE write_output_mod
 
     ! global inputs
-    USE IPARA, ONLY : INoOfVariables, nReflections, IAbsorbFLAG, INoofUgs, &
+    USE IPARA, ONLY : INoOfVariables, INhkl, IAbsorbFLAG, INoofUgs, &
           IPixelCount, ISimFLAG, ISymmetryRelations, IUgOffset, IRefineMode, &
           IEquivalentUgKey
     USE RPARA, ONLY : RAngstromConversion,RElectronCharge,RElectronMass,&
@@ -91,16 +87,15 @@ MODULE refinementcontrol_mod
     INTEGER(IKIND),INTENT(OUT) :: IThicknessIndex 
     ! NB IThicknessIndex is calculated and used on rank 0 only
     INTEGER(IKIND),INTENT(OUT) :: IErr
-    INTEGER(IKIND) :: ind,jnd, ILoc(2), IUniqueUgs
-    INTEGER(IKIND), SAVE :: IStartTime
+    INTEGER(IKIND) :: ind,jnd, ILoc(2), IUniqueUgs,IStartTime
     REAL(RKIND) :: RCurrentG(3), RScatteringFactor
-    COMPLEX(CKIND) :: CUgMatDummy(nReflections,nReflections),CVgij
-    CHARACTER*100 :: SFormat,SPrintString
+    COMPLEX(CKIND) :: CUgMatDummy(INhkl,INhkl),CVgij
+    CHARACTER(200) :: SFormat,SPrintString
 
-    WRITE(SPrintString,FMT='(A10,I5)')"Iteration ",Iter
-    CALL message(LS,SPrintString)
     CALL SYSTEM_CLOCK( IStartTime )
 
+    WRITE(SPrintString,FMT='(A,I5)')"Iteration ",Iter
+    CALL message(LS,SPrintString)
     
     !\/----------------------------------------------------------------------
     IF (IRefineMode(1).EQ.1) THEN  ! Ug refinement; update structure factors 
@@ -148,51 +143,18 @@ MODULE refinementcontrol_mod
       ! Update variables
       CALL UpdateVariables(RIndependentVariable,IErr)
       IF(l_alert(IErr,"SimulateAndFit","UpdateVariables")) RETURN
-      IF (IRefineMode(8).EQ.1) THEN ! convergence angle
-        ! recalculate resolution in k space
-        IF (my_rank.EQ.0) RDeltaK = RMinimumGMag*RConvergenceAngle/REAL(IPixelCount,RKIND)
-        CALL MPI_BCAST(RDeltaK,1,MPI_DOUBLE_PRECISION,0,MPI_COMM_WORLD,IErr)        
-      ELSE
-        ! basis has changed in some way, recalculate unit cell
-      !PRINT*,"About to UniqueAtomPositions"
-        CALL UniqueAtomPositions(IErr)
-        IF(l_alert(IErr,"SimulateAndFit","UniqueAtomPositions")) RETURN
-        !--------------------------------------------------------------------
-        ! update scattering matrix Ug
-        !--------------------------------------------------------------------
-        IF (my_rank.EQ.0) THEN!There is a bug when individual cores calculate UgMat, make it the responsibility of core 0 and broadcast it
-          ! calculate CUgMatNoAbs
-          CUgMatNoAbs = CZERO
-      !PRINT*,"About to CUgMatNoAbs"
-          !duplicated from Ug matrix initialisation.  Ug refinement will no longer work! Should be put into a single subroutine.
-          DO ind=2,nReflections
-            DO jnd=1,ind-1
-              RCurrentGMagnitude = RgMatrixMagnitude(ind,jnd) ! g-vector magnitude, global variable
-              ! Sums CVgij contribution from each atom and pseudoatom in Volts
-              CALL GetVgContributionij(RScatteringFactor,ind,jnd,CVgij,IErr)
-              CUgMatNoAbs(ind,jnd)=CVgij
-            ENDDO
-          ENDDO
-          !Convert to Ug
-          CUgMatNoAbs=CUgMatNoAbs*TWO*RElectronMass*RRelativisticCorrection*RElectronCharge/((RPlanckConstant**2)*(RAngstromConversion**2))
-          ! NB Only the lower half of the Vg matrix was calculated, this completes the upper half
-          CUgMatDummy = TRANSPOSE(CUgMatNoAbs)! Dummy just used as a box to avoid the bug when conj(transpose) is used on orac
-          CUgMatNoAbs = CUgMatNoAbs + CONJG(CUgMatDummy)
-        END IF
-        ind=nReflections*nReflections
-        !===================================== ! Send UgMat to all cores
-        CALL MPI_BCAST(CUgMatNoAbs,ind,MPI_DOUBLE_PRECISION,0,MPI_COMM_WORLD,IErr)
-        !=====================================
-        CALL Absorption(IErr)! calculates CUgMat = CUgMatNoAbs + CUgMatPrime
-        IF(l_alert(IErr,"SimulateAndFit","Absorption")) RETURN
-      END IF
+      !recalculate Ug matrix
+      CALL UgMatrix(IErr)
+      IF(l_alert(IErr,"SimulateAndFit","UgMatrix")) RETURN
+      CALL Absorption(IErr)! calculates CUgMat = CUgMatNoAbs + CUgMatPrime
+      IF(l_alert(IErr,"SimulateAndFit","Absorption")) RETURN
     END IF
       !/\----------------------------------------------------------------------
-      CALL message( LM,dbg3, "recalculated Ug matrix, with absorption (nm^-2)" )
-      DO ind = 1,16
-        WRITE(SPrintString,FMT='(3(I2,1X),A2,1X,8(F7.4,1X))') NINT(Rhkl(ind,:)),": ",100*CUgMat(ind,1:4)
-        CALL message( LM,dbg3, SPrintString)
-      END DO
+    CALL message( LM,dbg3, "Ug matrix3, with absorption (nm^-2)" )!LM, dbg3
+    DO ind = 1,6
+      WRITE(SPrintString,FMT='(3(I2,1X),A2,1X,6(F7.4,1X,F7.4,2X))') NINT(Rhkl(ind,:)),": ",100*CUgMat(ind,1:6)
+      CALL message( LM,dbg3, SPrintString)
+    END DO
     
 
     IF (my_rank.EQ.0) THEN ! send current values to screen
@@ -420,6 +382,13 @@ MODULE refinementcontrol_mod
             END IF
         END SELECT
 
+        !NaN check
+        IF(RImageCorrelation.NE.RImageCorrelation) THEN
+          IErr=1
+          WRITE(SPrintString,FMT='(A,I3,A,I3)') "NaN Image correlation for pattern",&
+            ind,", thickness ",jnd
+          IF (l_alert(IErr,"FoM&Thickness",SPrintString)) RETURN
+        END IF
         CALL message(LXL,dbg6,"For Pattern ",ind,", thickness ",jnd)
         CALL message(LXL,dbg6,"  the FoM = ",RImageCorrelation)
 !        WRITE(IChOut,FMT='(3I5.1,F13.9)') NINT(Rhkl(IOutPutReflections(ind),:)),RImageCorrelation
@@ -461,7 +430,7 @@ MODULE refinementcontrol_mod
     RThicknessRange=( MAXVAL(IBestImageThicknessIndex)-&
           MINVAL(IBestImageThicknessIndex) )*RDeltaThickness
     ! Output to screen, duplicate of felixrefine output
-    WRITE(SPrintString,FMT='(A16,F7.2,A1)') "Figure of merit ",100*RBestTotalCorrelation,"%"
+    WRITE(SPrintString,FMT='(A16,F9.4,A1)') "Figure of merit ",100*RBestTotalCorrelation,"%"
     CALL message(LS,SPrintString)
     WRITE(SPrintString,FMT='(A19,I4,A10)') "Specimen thickness ",NINT(RBestThickness)," Angstroms"
     CALL message(LS,SPrintString)
@@ -475,7 +444,8 @@ MODULE refinementcontrol_mod
   !%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
   !>
-  !! Procedure-description: Fill the independent parameter array for a new simulation
+  !! Procedure-description: Bring the independent parameter array back into the appropriate
+  !! variables for a new simulation, and recalculate dependent parts
   !!
   !! Major-Authors: Keith Evans (2014), Richard Beanland (2016)
   !!  
@@ -483,10 +453,12 @@ MODULE refinementcontrol_mod
 
     USE MyNumbers
     USE message_mod 
-
+    USE crystallography_mod
+    USE MyMPI
+    
     ! global inputs
-    USE IPARA, ONLY : INoOfVariables, IRefineMode, IIterativeVariableUniqueIDs,IAtomMoveList 
-    USE RPARA, ONLY : RVector
+    USE IPARA, ONLY : INoOfVariables, IRefineMode,IAtomMoveList,IIndependentVariableType,IAtomsToRefine,IPixelCount
+    USE RPARA, ONLY : RVector,RDeltaK,RConvergenceAngle,RMinimumGMag
 
     ! global outputs
     USE RPARA, ONLY :  RBasisOccupancy, RBasisIsoDW, RAnisotropicDebyeWallerFactorTensor, &
@@ -496,46 +468,73 @@ MODULE refinementcontrol_mod
     IMPLICIT NONE
 
     REAL(RKIND),DIMENSION(INoOfVariables),INTENT(IN) :: RIndependentVariable
-    INTEGER(IKIND) :: IVariableType,IVectorID,IAtomID,IErr,ind
+    INTEGER(IKIND),DIMENSION(10) :: IVariableCheck
+    INTEGER(IKIND) :: IVectorID,IAtomID,IErr,ind,jnd,knd,lnd
 
-    DO ind = 1,INoOfVariables
-      IVariableType = IIterativeVariableUniqueIDs(ind,1)
-      SELECT CASE (IVariableType)
+
+    !--------------------------------------------------------------------  
+    ! first put independent variables back into the parameters 
+    !--------------------------------------------------------------------  
+    IVariableCheck=0
+    jnd=1!counting indices for each refinement type
+    knd=1
+    lnd=1
+    DO ind = 1,INoOfVariables!loop over variables
+
+      !the type of variable is specified by the last digit of IIndependentVariableType
+      !other digits are used for options or extra information      
+      SELECT CASE (MOD(IIndependentVariableType(ind),10))
+
       CASE(1) ! A: structure factor refinement, do in UpdateStructureFactors
+        IVariableCheck(1)=1
         
-      CASE(2)
-        ! The index of the atom and vector being used
-        IVectorID = IIterativeVariableUniqueIDs(ind,2)
+      CASE(2) ! B: atomic coordinates
+        IVariableCheck(2)=1
         ! The atom being moved
-        IAtomID = IAtomMoveList(IVectorID)
+        IAtomID = IAtomMoveList(jnd)
         ! Change in position r' = r - v*(r.v) +v*RIndependentVariable(ind)
         RBasisAtomPosition(IAtomID,:) = MODULO((RBasisAtomPosition(IAtomID,:) - &
-            RVector(IVectorID,:)*DOT_PRODUCT(RBasisAtomPosition(IAtomID,:),RVector(IVectorID,:)) + &
-            RVector(IVectorID,:)*RIndependentVariable(ind)),ONE)
-      CASE(3)
-        RBasisOccupancy(IIterativeVariableUniqueIDs(ind,2))=RIndependentVariable(ind) 
-      CASE(4)
-        RBasisIsoDW(IIterativeVariableUniqueIDs(ind,2))=RIndependentVariable(ind)
-      CASE(5)
+          RVector(jnd,:)*DOT_PRODUCT(RBasisAtomPosition(IAtomID,:),RVector(jnd,:)) + &
+          RVector(jnd,:)*RIndependentVariable(ind)),ONE)
+        jnd=jnd+1
+            
+      CASE(3) ! C: occupancy
+        IVariableCheck(3)=1
+        RBasisOccupancy(IAtomsToRefine(knd))=RIndependentVariable(ind)
+        knd=knd+1
+        
+      CASE(4) ! D: iso DWF
+        IVariableCheck(4)=1
+        RBasisIsoDW(IAtomsToRefine(lnd))=RIndependentVariable(ind)
+        lnd=lnd+1
+        
+      CASE(5) ! E: aniso DWF
+        IVariableCheck(5)=1
         ! NOT CURRENTLY IMPLEMENTED
         IErr=1;IF(l_alert(IErr,"UpdateVariables",&
               "Anisotropic Debye Waller Factors not implemented")) CALL abort
-!        RAnisotropicDebyeWallerFactorTensor(&
-!              IIterativeVariableUniqueIDs(ind,2),&
-!              IIterativeVariableUniqueIDs(ind,4),&
-!              IIterativeVariableUniqueIDs(ind,5)) = & 
-!              RIndependentVariable(ind)
-      CASE(6)
-        SELECT CASE(IIterativeVariableUniqueIDs(ind,2))
-        CASE(1)
-          RLengthX = RIndependentVariable(ind)
-        CASE(2)
-          RLengthY = RIndependentVariable(ind)
-        CASE(3)
-          RLengthZ = RIndependentVariable(ind)
+
+      CASE(6) ! F: lattice parameters a,b,c
+        !x,y and z are labelled by the first digit
+        !no first digit is x&y&z and always comes first
+        !first digit=1 is y (overwrites the above)
+        !first digit=2 is z (overwrites the above)
+        IVariableCheck(6)=1
+        SELECT CASE(IIndependentVariableType(ind))
+          !this should always come first & is the default 
+          CASE(6)!cubic: y and z are the same as x (rhombohedral should go here too)
+            RLengthX = RIndependentVariable(ind)!first variable is always x
+            RLengthY = RIndependentVariable(ind)
+            RLengthZ = RIndependentVariable(ind)!
+          CASE(16)!y
+            RLengthY = RIndependentVariable(ind)
+          CASE(26)!z
+            RLengthZ = RIndependentVariable(ind)
         END SELECT
-      CASE(7)
-        SELECT CASE(IIterativeVariableUniqueIDs(ind,2))
+
+      CASE(7) ! F: lattice angles alpha, beta,gamma
+        IVariableCheck(8)=1
+        SELECT CASE(jnd)
         CASE(1)
           RAlpha = RIndependentVariable(ind)
         CASE(2)
@@ -543,15 +542,77 @@ MODULE refinementcontrol_mod
         CASE(3)
           RGamma = RIndependentVariable(ind)
         END SELECT
+        
       CASE(8)
+        IVariableCheck(8)=1
         RConvergenceAngle = RIndependentVariable(ind)
+        
       CASE(9)
+        IVariableCheck(9)=1
         RAbsorptionPercentage = RIndependentVariable(ind)
+        
       CASE(10)
+        IVariableCheck(10)=1
         RAcceleratingVoltage = RIndependentVariable(ind)
+        
       END SELECT
     END DO
+    
+    !--------------------------------------------------------------------  
+    ! now do appropriate recalculations 
+    !--------------------------------------------------------------------  
+    DO ind = 1,10!loop over the ten refinement types
+      IF (IVariableCheck(ind).EQ.1) THEN
+      SELECT CASE (ind)
+        CASE(1) ! A: structure factor refinement, currently in UpdateStructureFactors but should come here
+      
+        CASE(2) ! B: atomic coordinates
+          !basis has changed, recalculate unit cell
+          CALL UniqueAtomPositions(IErr)
+          IF(l_alert(IErr,"UpdateVariables","UniqueAtomPositions")) RETURN
 
+        CASE(3) ! C: occupancy
+          !basis has changed, recalculate unit cell
+          CALL UniqueAtomPositions(IErr)
+          IF(l_alert(IErr,"UpdateVariables","UniqueAtomPositions")) RETURN
+
+        CASE(4) ! D: iso DWF
+          !basis has changed, recalculate unit cell
+          CALL UniqueAtomPositions(IErr)
+          IF(l_alert(IErr,"UpdateVariables","UniqueAtomPositions")) RETURN
+
+        CASE(5) ! E: aniso DWF
+          !basis has changed, recalculate unit cell
+          CALL UniqueAtomPositions(IErr)
+          IF(l_alert(IErr,"UpdateVariables","UniqueAtomPositions")) RETURN
+
+        CASE(6) ! F: lattice parameters a,b,c
+          !recalculate reciprocal lattice and g vectors
+          CALL ReciprocalLattice(IErr)
+          IF(l_alert(IErr,"UpdateVariables","ReciprocalLattice")) RETURN
+          CALL gVectors(IErr)
+          IF(l_alert(IErr,"UpdateVariables","gVectors")) RETURN
+          CALL UniqueAtomPositions(IErr)
+          IF(l_alert(IErr,"UpdateVariables","UniqueAtomPositions")) RETURN
+
+        CASE(7) ! F: lattice angles alpha, beta,gamma
+          !recalculate reciprocal lattice and g vectors
+          CALL ReciprocalLattice(IErr)
+          IF(l_alert(IErr,"UpdateVariables","ReciprocalLattice")) RETURN
+          CALL gVectors(IErr)
+          IF(l_alert(IErr,"UpdateVariables","gVectors")) RETURN
+          CALL UniqueAtomPositions(IErr)
+          IF(l_alert(IErr,"UpdateVariables","UniqueAtomPositions")) RETURN
+        
+        CASE(8) ! G: convergence angle
+          ! recalculate resolution in k space
+          IF (my_rank.EQ.0) RDeltaK = RMinimumGMag*RConvergenceAngle/REAL(IPixelCount,RKIND)
+          CALL MPI_BCAST(RDeltaK,1,MPI_DOUBLE_PRECISION,0,MPI_COMM_WORLD,IErr)        
+
+        END SELECT
+      END IF
+    END DO
+    
   END SUBROUTINE UpdateVariables
 
   !%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -626,7 +687,8 @@ MODULE refinementcontrol_mod
           END DO
 
         CASE(6)
-          CALL message(LS, "Current Unit Cell Parameters", (/ RLengthX,RLengthY,RLengthZ /) )
+          WRITE(SPrintString,FMT='(A31,3F8.4)') "Current Unit Cell Parameters ",RLengthX,RLengthY,RLengthZ
+          CALL message(LS,SPrintString)
 
         CASE(7)
           CALL message(LS, "Current Unit Cell Angles", (/ RAlpha,RBeta,RGamma /) )

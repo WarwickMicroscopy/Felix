@@ -4,14 +4,14 @@
 !
 ! Richard Beanland, Keith Evans & Rudolf A Roemer
 !
-! (C) 2013-17, all rights reserved
+! (C) 2013-19, all rights reserved
 !
-! Version: :VERSION:
-! Date:    :DATE:
+! Version: :VERSION: RB_coord / 1.14 /
+! Date:    :DATE: 15-01-2019
 ! Time:    :TIME:
 ! Status:  :RLSTATUS:
-! Build:   :BUILD:
-! Author:  :AUTHOR:
+! Build:   :BUILD: Mode F: test different lattice types" 
+! Author:  :AUTHOR: r.beanland
 ! 
 !%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 !
@@ -36,9 +36,97 @@
 MODULE ug_matrix_mod
   IMPLICIT NONE
   PRIVATE
-  PUBLIC :: Absorption, GetVgContributionij, StructureFactorInitialisation 
+  PUBLIC :: UgMatrix, Absorption, GetVgContributionij, StructureFactorInitialisation
   CONTAINS
 
+  !>
+  !! Procedure-description: Calculate complex Ug matrix with absorption
+  !!
+  !! Major-Authors: Richard Beanland (2019)
+  !!
+  SUBROUTINE UgMatrix(IErr)
+
+  USE MyNumbers
+  USE message_mod
+
+  USE MyMPI
+
+  ! global inputs
+  USE IPARA, ONLY : INhkl,IAtomicNumber,INAtomsUnitCell,ICurrentZ,IAnisoDebyeWallerFactorFlag,IAnisoDW
+  USE RPARA, ONLY : RCurrentGMagnitude,RgMatrixMagnitude,RIsoDW,RDebyeWallerConstant,RVolume,&
+    RRelativisticCorrection,Rhkl,ROccupancy,RAtomCoordinate,RgMatrix,RAnisotropicDebyeWallerFactorTensor
+    !,RElectronMass,RAngstromConversion,RScattFacToVolts,RElectronCharge,RPlanckConstant
+  USE CPARA, ONLY : CUgMatNoAbs,CUgMatPrime
+  ! global outputs
+  USE CPARA, ONLY : CUgMat
+
+  IMPLICIT NONE
+    
+  INTEGER(IKIND) :: ind,jnd,knd,IErr
+  REAL(RKIND) :: RScatteringFactor,RPreFactor
+!  COMPLEX(CKIND) :: CVgij
+  COMPLEX(CKIND),DIMENSION(:,:),ALLOCATABLE :: CTempMat!to avoid problems with transpose
+  CHARACTER(200) :: SPrintString
+    
+  IF (my_rank.EQ.0) THEN!There may be a bug when individual cores calculate UgMat, make it the responsibility of core 0 and broadcast it
+    !conversion factor from f to Ug  
+    RPreFactor=RRelativisticCorrection/(PI*RVolume)
+    CUgMatNoAbs = CZERO
+    ! fill lower diagonal of Ug matrix(excluding absorption) with Fourier components of the potential Vg
+    DO ind=2,INhkl
+      DO jnd=1,ind-1
+        RCurrentGMagnitude = RgMatrixMagnitude(ind,jnd)
+        ! Old version, CVgij contribution from each atom and pseudoatom in Volts
+        !CALL GetVgContributionij(RScatteringFactor,ind,jnd,CVgij,IErr) version with pseudoatoms
+        DO knd=1,INAtomsUnitCell
+          ICurrentZ = IAtomicNumber(knd) ! atomic number, Z, NB passed as a global variable for absorption
+          ! Get scattering factor
+          CALL AtomicScatteringFactor(RScatteringFactor,IErr)        
+          ! Occupancy
+          RScatteringFactor = RScatteringFactor*ROccupancy(knd)
+          ! Debye-Waller factor
+          IF (IAnisoDebyeWallerFactorFlag.EQ.0) THEN 
+            IF(RIsoDW(knd).GT.10.OR.RIsoDW(knd).LT.0) RIsoDW(knd) = RDebyeWallerConstant!use default in felix.inp for unrealistic values in the cif
+            ! Isotropic D-W factor
+            ! exp(-B sin(theta)^2/lamda^2) = exp(-Bs^2) = exp(-Bg^2/16pi^2), see e.g. Bird&King
+            RScatteringFactor = RScatteringFactor*EXP(-RIsoDW(knd)*(RCurrentGMagnitude**2)/(FOUR*TWOPI**2) )
+          ELSE ! anisotropic Debye-Waller factor
+            !?? this will need sorting out, may not work
+            RScatteringFactor = RScatteringFactor * &
+                EXP( -DOT_PRODUCT( RgMatrix(ind,jnd,:), &
+                MATMUL(RAnisotropicDebyeWallerFactorTensor(IAnisoDW(knd),:,:),&
+                RgMatrix(ind,jnd,:)) ) )
+          END IF
+          ! Here we go directly to Ug's, missing out the Fourier components of the potential Vg
+          ! (formerly calculated as CVgij).  If the Vg's are desired they can be obtained from 
+          ! multiplying RScatteringFactor by RScattFacToVolts,
+          ! or by multiplying Ug's by (RScattFacToVolts/RPreFactor)
+          ! The structure factor equation, complex Ug(ind,jnd)=sum(f*exp(-ig.r)) in Volts
+          CUgMatNoAbs(ind,jnd)=CUgMatNoAbs(ind,jnd)+RPreFactor*RScatteringFactor*&
+              EXP(-CIMAGONE*DOT_PRODUCT(RgMatrix(ind,jnd,:),RAtomCoordinate(knd,:)) )
+        END DO
+      END DO
+    END DO
+    ! Only the lower half of the Ug matrix was calculated, this completes the upper half
+    ALLOCATE (CTempMat(INhkl,INhkl),STAT=IErr)
+    IF(l_alert(IErr,"UgMatrix","allocate CTempMat")) RETURN
+    CTempMat = TRANSPOSE(CUgMatNoAbs)! To avoid the bug when conj(transpose) is used
+    CUgMatNoAbs = CUgMatNoAbs + CONJG(CTempMat)
+  END IF
+  ind=INhkl*INhkl
+  !===================================== ! Send UgMat to all cores
+  CALL MPI_BCAST(CUgMatNoAbs,ind,MPI_DOUBLE_PRECISION,0,MPI_COMM_WORLD,IErr)
+  !=====================================
+  
+  CALL message( LM,dbg3, "Ug matrix, without absorption (nm^-2)" )!LM, dbg3
+  DO ind = 1,40
+    WRITE(SPrintString,FMT='(3(I3,1X),A2,1X,6(F7.4,1X,F7.4,2X))') NINT(Rhkl(ind,:)),": ",100*CUgMatNoAbs(ind,1:6)
+    CALL message( LM,dbg3, SPrintString)
+  END DO
+
+  END SUBROUTINE UgMatrix
+
+  !!$%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
   !>
   !! Procedure-description: Select case using IAbsorbFLAG and calculate U'g prime in parallel
   !!
@@ -71,17 +159,14 @@ MODULE ug_matrix_mod
     IMPLICIT NONE
 
     ! local variables
-    INTEGER(IKIND) :: ind,jnd,knd,lnd,IErr,IUniqueUgs,ILocalUgCountMin,ILocalUgCountMax
+    INTEGER(IKIND) :: ind,jnd,knd,lnd,IErr,IUniqueUgs,ILocalMin,ILocalMax
     INTEGER(IKIND),DIMENSION(2) :: ILoc
-    REAL(RKIND) :: Rintegral,RfPrime,RAbsPreFactor
+    REAL(RKIND) :: Rintegral,RfPrime,RPreFactor
     REAL(RKIND),DIMENSION(3) :: RCurrentG
     COMPLEX(CKIND),DIMENSION(:),ALLOCATABLE :: CLocalUgPrime,CUgPrime
     REAL(RKIND),DIMENSION(:),ALLOCATABLE :: RLocalUgReal,RLocalUgImag,RUgReal,RUgImag
     INTEGER(IKIND),DIMENSION(:),ALLOCATABLE :: Ipos,Inum
-    COMPLEX(CKIND) :: CVgPrime,CFpseudo
-    CHARACTER*100 :: SPrintString
-    
-    RAbsPreFactor = TWO*RPlanckConstant*RAngstromConversion/(RElectronMass*RElectronVelocity)
+    CHARACTER(100) :: SPrintString
     
     !--------------------------------------------------------------------  
     !  select absorption model
@@ -90,7 +175,7 @@ MODULE ug_matrix_mod
     SELECT CASE (IAbsorbFLAG)
 
     CASE(0) ! No absorption
-      CUgMatPrime = CZERO
+      !nothing to do, CUgMatPrime is already 0
 
     CASE(1) ! Proportional
       CUgMatPrime = CUgMatNoAbs*EXP(CIMAGONE*PI/2)*(RAbsorptionPercentage/100_RKIND)
@@ -100,6 +185,9 @@ MODULE ug_matrix_mod
     !  Bird & King absorption
     !--------------------------------------------------------------------
 
+      !conversion factor from f to Ug  
+      RPreFactor=RRelativisticCorrection/(PI*RVolume)
+    
       !--------------------------------------------------------------------  
       ! allocate U'g calculated by this core and setup cores for absorption
       !--------------------------------------------------------------------
@@ -107,18 +195,18 @@ MODULE ug_matrix_mod
       ! work through unique Ug's
       IUniqueUgs = SIZE(IEquivalentUgKey)
       ! allocations for the U'g to be calculated by this core  
-      ILocalUgCountMin = (IUniqueUgs*(my_rank)/p)+1
-      ILocalUgCountMax = (IUniqueUgs*(my_rank+1)/p)
+      ILocalMin = (IUniqueUgs*(my_rank)/p)+1
+      ILocalMax = (IUniqueUgs*(my_rank+1)/p)
       ALLOCATE(Ipos(p),Inum(p),STAT=IErr)
       IF(l_alert(IErr,"Absorption","allocate Ipos")) RETURN
-      ! U'g list for this core
-      ALLOCATE(CLocalUgPrime(ILocalUgCountMax-ILocalUgCountMin+1),STAT=IErr)
+      ! U'g list for this core [Re,Im]
+      ALLOCATE(CLocalUgPrime(ILocalMax-ILocalMin+1),STAT=IErr)
       IF(l_alert(IErr,"Absorption","allocate CLocalUgPrime")) RETURN
-      ! U'g list for this core [Re,Im]
-      ALLOCATE(RLocalUgReal(ILocalUgCountMax-ILocalUgCountMin+1),STAT=IErr)
+      ! U'g list for this core [Re]
+      ALLOCATE(RLocalUgReal(ILocalMax-ILocalMin+1),STAT=IErr)
       IF(l_alert(IErr,"Absorption","allocate RLocalUgReal")) RETURN
-      ! U'g list for this core [Re,Im]
-      ALLOCATE(RLocalUgImag(ILocalUgCountMax-ILocalUgCountMin+1),STAT=IErr)
+      ! U'g list for this core [Im]
+      ALLOCATE(RLocalUgImag(ILocalMax-ILocalMin+1),STAT=IErr)
       IF(l_alert(IErr,"Absorption","allocate RLocalUgImag")) RETURN
       ALLOCATE(CUgPrime(IUniqueUgs),STAT=IErr) ! complete U'g list
       IF(l_alert(IErr,"Absorption","allocate CUgPrime")) RETURN
@@ -137,9 +225,9 @@ MODULE ug_matrix_mod
       ! fill each core's U'g list 
       !--------------------------------------------------------------------
 
-      DO ind=ILocalUgCountMin,ILocalUgCountMax ! Different U'g s for each core
+      DO ind=ILocalMin,ILocalMax ! Different U'g s for each core
 
-        CVgPrime = CZERO
+        CLocalUgPrime(ind-ILocalMin+1)=CZERO
         ! number of this Ug
         jnd=IEquivalentUgKey(ind)
         ! find the position of this Ug in the matrix
@@ -152,31 +240,36 @@ MODULE ug_matrix_mod
         DO knd=1,INAtomsUnitCell
           ICurrentZ = IAtomicNumber(knd) ! Atomic number, global variable
           RCurrentB = RIsoDW(knd) ! Debye-Waller constant, global variable
-          IF (ICurrentZ.LT.105) THEN ! It's not a pseudoatom 
-            ! Uses numerical integration to calculate absorptive form factor f'
-            CALL DoubleIntegrateBK(RfPrime,IErr) ! NB uses Kirkland scattering factors
-            IF(l_alert(IErr,"Absorption","CALL DoubleIntegrateBK")) RETURN
-          ELSE ! It is a pseudoatom, proportional model 
-            lnd=lnd+1
-            CALL PseudoAtom(CFpseudo,ILoc(1),ILoc(2),lnd,IErr)
-            RfPrime=CFpseudo*EXP(CIMAGONE*PI/2)*(RAbsorptionPercentage/HUNDRED)
-            ! RfPrime=ZERO
-          END IF
+!          IF (ICurrentZ.LT.105) THEN ! It's not a pseudoatom 
+          ! Get absorptive form factor f'
+          CALL AbsorptiveScatteringFactor(RfPrime,IErr) ! NB uses Kirkland scattering factors
+          IF(l_alert(IErr,"Absorption","CALL AbsorptiveScatteringFactor")) RETURN
+!          ELSE ! It is a pseudoatom, proportional model 
+!            lnd=lnd+1
+!            CALL PseudoAtom(CFpseudo,ILoc(1),ILoc(2),lnd,IErr)
+!            RfPrime=CFpseudo*EXP(CIMAGONE*PI/2)*(RAbsorptionPercentage/HUNDRED)
+!            ! RfPrime=ZERO
+!          END IF
           ! Occupancy
           RfPrime=RfPrime*ROccupancy(knd)
           ! Debye Waller factor, isotropic only 
           RfPrime=RfPrime*EXP(-RIsoDW(knd)*(RCurrentGMagnitude**2)/(4*TWOPI**2) )
+          ! Here we go directly to Ug's, missing out the Fourier components of the potential Vg
+          ! (formerly calculated as CVgPrime).  If the Vg's are desired they can be obtained from 
+          ! multiplying the scattering factor RfPrime by RScattFacToVolts,
+          ! or by multiplying U'g's by (RScattFacToVolts/RPreFactor)
           ! Absorptive Structure factor equation giving imaginary potential
-          CVgPrime = CVgPrime + CIMAGONE * Rfprime * &
+          CLocalUgPrime(ind-ILocalMin+1)=CLocalUgPrime(ind-ILocalMin+1)+CIMAGONE*RPreFactor*Rfprime * &
                 EXP(-CIMAGONE*DOT_PRODUCT(RCurrentG,RAtomCoordinate(knd,:)) )
         END DO
-
-        ! V'g in volts
-        CVgPrime=CVgPrime*RAbsPreFactor*RScattFacToVolts
-        ! Convert to U'g=V'g*(2*m*e/h^2)	  
-        CLocalUgPrime(ind-ILocalUgCountMin+1) = CVgPrime*TWO*RElectronMass * &
-              RRelativisticCorrection*RElectronCharge / &
-              ((RPlanckConstant*RAngstromConversion)**2)
+        
+!old code, to be deleted        
+!        ! V'g in volts
+!        CVgPrime=CVgPrime*RScattFacToVolts
+!        ! Convert to U'g=V'g*(2*m*e/h^2)	  
+!        CLocalUgPrime(ind-ILocalMin+1) = CVgPrime*TWO*RElectronMass * &
+!              RRelativisticCorrection*RElectronCharge / &
+!              ((RPlanckConstant*RAngstromConversion)**2)
 
       END DO
 
@@ -184,9 +277,9 @@ MODULE ug_matrix_mod
       ! join the U'g lists of each core to CUgPrime
       !--------------------------------------------------------------------
 
+      !?? RB I give up trying to MPI a complex number, do it with two REAL ones
       RLocalUgReal=REAL(CLocalUgPrime)
       RLocalUgImag=AIMAG(CLocalUgPrime)
-      !?? RB I give up trying to MPI a complex number, do it with two REAL ones
       ! MPI gatherv the new U'g s into CUgPrime
       ! NB MPI_GATHERV(BufferToSend,No.of elements,datatype,ReceivingArray,No.of elements,)
       CALL MPI_GATHERV(RLocalUgReal,SIZE(RLocalUgReal),MPI_DOUBLE_PRECISION,&
@@ -224,8 +317,9 @@ MODULE ug_matrix_mod
           CUgMatPrime = -CONJG(CUgPrime(ind))
         END WHERE
       END DO
-
-    CASE Default ! Default case is no absorption
+	
+    CASE DEFAULT ! Default case is no absorption, do nothing
+      CALL message( LS,dbg3, "No absorption correction" )
 
     END SELECT
 
@@ -245,8 +339,8 @@ MODULE ug_matrix_mod
   !!$%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
   !>
-  !! Procedure-description: Calculate a single fourier components of the potential Vg
-  !! for atoms and pseudoatoms  
+  !! Procedure-description: Calculate a Fourier component of the potential Vg
+  !! for atoms and pseudoatoms, NOW REDUNDANT
   !!
   !! Major-Authors: Keith Evans (2014), Richard Beanland (2016)
   !!
@@ -353,16 +447,14 @@ MODULE ug_matrix_mod
 
     ! global inputs
     USE IPARA, ONLY : IAnisoDebyeWallerFactorFlag,IInitialSimulationFLAG,INAtomsUnitCell,&
-          nReflections,IAtomicNumber,IEquivalentUgKey,&
+          INhkl,IAtomicNumber,IEquivalentUgKey,&
           IAnisoDW
     USE RPARA, ONLY : RAngstromConversion,RElectronCharge,RElectronMass,&
-          RRelativisticCorrection,RVolume,RIsoDW,RgMatrixMagnitude,ROccupancy,&
+          RVolume,RIsoDW,RgMatrixMagnitude,ROccupancy,&
           RElectronWaveVectorMagnitude,RgMatrix,RDebyeWallerConstant,RTolerance,&
           RAtomCoordinate,Rhkl,RAnisotropicDebyeWallerFactorTensor,RScattFacToVolts,&
           RLengthX,RLengthY,RLengthZ
     USE IChannels, ONLY : IChOutWIImage
-
-    USE RConst, ONLY : RPlanckConstant
 
     ! global should be local to Ug.f90
     USE IPARA, ONLY : IPsize
@@ -376,7 +468,9 @@ MODULE ug_matrix_mod
     COMPLEX(CKIND) :: CVgij,CFpseudo
     REAL(RKIND) :: RMeanInnerPotentialVolts,RScatteringFactor,&
           RPMag,Rx,Ry,Rr,RPalpha,RTheta,Rfold
-    CHARACTER*200 :: SPrintString
+    REAL(RKIND),DIMENSION(:,:),ALLOCATABLE :: RTempMat!to avoid problems with transpose ffs
+    COMPLEX(CKIND),DIMENSION(:,:),ALLOCATABLE :: CTempMat!to avoid problems with transpose
+    CHARACTER(200) :: SPrintString
     
     !--------------------------------------------------------------------
     ! count pseudoatoms & allocate pseudoatom arrays
@@ -465,34 +559,8 @@ MODULE ug_matrix_mod
 
     !--------------------------------------------------------------------
     ! calculate Ug matrix (excluding absorption)
-    !--------------------------------------------------------------------
-
-    ! fill lower diagonal of Ug matrix(excluding absorption) with Fourier components of the potential Vg
-    CUgMatNoAbs = CZERO ! 
-    DO ind=2,nReflections
-      DO jnd=1,ind-1
-        RCurrentGMagnitude = RgMatrixMagnitude(ind,jnd) ! g-vector magnitude, global variable
-        ! Sums CVgij contribution from each atom and pseudoatom in Volts
-        CALL GetVgContributionij(RScatteringFactor,ind,jnd,CVgij,IErr)
-        CUgMatNoAbs(ind,jnd)=CVgij
-      ENDDO
-    ENDDO
-    !Convert to Ug
-    CUgMatNoAbs=CUgMatNoAbs*TWO*RElectronMass*RRelativisticCorrection*RElectronCharge/((RPlanckConstant**2)*(RAngstromConversion**2))
-    ! NB Only the lower half of the Vg matrix was calculated, this completes the upper half
-    CUgMatPrime = TRANSPOSE(CUgMatNoAbs)! Prime is usually the absorptive potential, here just used as a box to avoid the bug when conj(transpose) is used
-    CUgMatNoAbs = CUgMatNoAbs + CONJG(CUgMatPrime)
-    CUgMatPrime = CZERO
-    ! set diagonals to zero
-    !DO ind=1,nReflections
-    !  CUgMatNoAbs(ind,ind)=CZERO
-    !END DO
-
-    CALL message( LM,dbg3, "Ug matrix, without absorption (nm^-2)" )!LM, dbg3
-    DO ind = 1,16
-      WRITE(SPrintString,FMT='(3(I2,1X),A2,1X,8(F7.4,1X))') NINT(Rhkl(ind,:)),": ",100*CUgMatNoAbs(ind,1:4)
-      CALL message( LM,dbg3, SPrintString)
-    END DO
+    CALL UgMatrix(IErr)
+    IF(l_alert(IErr,"Structure factor initialise","UgMatrix")) RETURN
    
     !--------------------------------------------------------------------
     ! calculate mean inner potential and wave vector magnitude
@@ -505,8 +573,8 @@ MODULE ug_matrix_mod
       ICurrentZ = IAtomicNumber(ind)
       IF(ICurrentZ.LT.105) THEN ! It's not a pseudoatom
         CALL AtomicScatteringFactor(RScatteringFactor,IErr)
-        CALL message( LM, dbg3, "Atom ",ind)
-        CALL message( LM, dbg3, "f(theta) at g=0 ",RScatteringFactor)
+        CALL message( LL, dbg3, "Atom ",ind)
+        CALL message( LL, dbg3, "f(theta) at g=0 ",RScatteringFactor)
         RMeanInnerPotential = RMeanInnerPotential+RScatteringFactor
       END IF
     END DO
@@ -518,9 +586,8 @@ MODULE ug_matrix_mod
     ! Wave vector magnitude in crystal
     ! high-energy approximation (not HOLZ compatible)
     ! K^2=k^2+U0
-    RBigK= SQRT(RElectronWaveVectorMagnitude**2 + REAL(CUgMatNoAbs(1,1)))
+    RBigK= SQRT(RElectronWaveVectorMagnitude**2)!-RMeanInnerPotential)
     CALL message ( LM, dbg3, "K (Angstroms) = ",RBigK )
-    !?? does this match Acta Cryst. (1998). A54, 388-398 equation (3)
 
     !--------------------------------------------------------------------
     
@@ -533,7 +600,7 @@ MODULE ug_matrix_mod
       ! IEquivalentUgKey is used later in absorption case 2 Bird & king
       RgSumMat = ZERO
       ! equivalent Ug's are identified by abs(h)+abs(k)+abs(l)+a*h^2+b*k^2+c*l^2...
-      DO ind = 1,nReflections
+      DO ind = 1,INhkl
         DO jnd = 1,ind
           RgSumMat(ind,jnd)=ABS(Rhkl(ind,1)-Rhkl(jnd,1))+ABS(Rhkl(ind,2)-Rhkl(jnd,2))+ABS(Rhkl(ind,3)-Rhkl(jnd,3))+ &
             RLengthX*(Rhkl(ind,1)-Rhkl(jnd,1))**TWO+RLengthY*(Rhkl(ind,2)-Rhkl(jnd,2))**TWO+ &
@@ -541,17 +608,19 @@ MODULE ug_matrix_mod
         END DO
       END DO
       ! it's symmetric
-      RgSumMat = RgSumMat+TRANSPOSE(RgSumMat)
-      CALL message ( LM, dbg3, "hkl: g Sum matrix" )
+      ALLOCATE (RTempMat(INhkl,INhkl),STAT=IErr)
+      RTempMat = TRANSPOSE(RgSumMat)
+      RgSumMat = RgSumMat+RTempMat
+      CALL message ( LL, dbg3, "hkl: g Sum matrix" )
       DO ind =1,16
-	  	WRITE(SPrintString,FMT='(3(I2,1X),A2,1X,12(F6.1,1X))') NINT(Rhkl(ind,:)),": ",RgSumMat(ind,1:12)
-        CALL message ( LM, dbg3, SPrintString )!LM, dbg3
+        WRITE(SPrintString,FMT='(3(I2,1X),A2,1X,12(F6.1,1X))') NINT(Rhkl(ind,:)),": ",RgSumMat(ind,1:12)
+        CALL message ( LL, dbg3, SPrintString )!LM, dbg3
       END DO
 
       ISymmetryRelations = 0_IKIND 
       Iuid = 0_IKIND 
-      DO jnd = 1,nReflections
-        DO ind = 1,nReflections
+      DO jnd = 1,INhkl
+        DO ind = 1,INhkl
           IF(ISymmetryRelations(ind,jnd).NE.0) THEN
             CYCLE
           ELSE
@@ -568,8 +637,8 @@ MODULE ug_matrix_mod
       SPrintString=TRIM(ADJUSTL(SPrintString))
       CALL message ( LS, SPrintString )
       CALL message ( LM, dbg3, "hkl: symmetry matrix" )
-      DO ind =1,16
-	  	WRITE(SPrintString,FMT='(3(I2,1X),A2,1X,16(I4,1X))') NINT(Rhkl(ind,:)),": ",ISymmetryRelations(ind,1:16)
+      DO ind =1,40
+        WRITE(SPrintString,FMT='(3(I3,1X),A2,1X,16(I4,1X))') NINT(Rhkl(ind,:)),": ",ISymmetryRelations(ind,1:16)
         CALL message ( LM,dbg3, SPrintString )
       END DO
 
@@ -653,6 +722,44 @@ MODULE ug_matrix_mod
   END SUBROUTINE AtomicScatteringFactor
 
   !!$%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+  !>
+  !! Procedure-description: Returns the absorptive form factor f'
+  !! evaluated for RCurrentG, RCurrentB and ICurrentZ using the Bird & King method
+  !! this is a integration over k-space called 
+  !!
+  !! Major-Authors: Richard Beanland (2016)
+  !!
+  SUBROUTINE AbsorptiveScatteringFactor(RfPrime,IErr) 
+    ! used in each (case 2 Bird & King) absorption
+
+    USE MyNumbers
+    USE message_mod
+    USE RPARA, ONLY : RPlanckConstant,RAngstromConversion,RElectronMass,RElectronVelocity
+
+    IMPLICIT NONE
+
+    INTEGER(IKIND), PARAMETER :: inf=1
+    INTEGER(IKIND), PARAMETER :: limit=500
+    INTEGER(IKIND), PARAMETER :: lenw= limit*4
+    INTEGER(IKIND) :: IErr,Ieval,last, iwork(limit)
+    REAL(RKIND) :: RAccuracy,RError,RfPrime,RAbsPreFactor
+    REAL(RKIND) :: work(lenw)
+    
+    RAbsPreFactor = TWO*RPlanckConstant*RAngstromConversion/(RElectronMass*RElectronVelocity)
+    RAccuracy=0.00000001D0 ! accuracy of integration
+    ! use single integration IntegrateBK as an external function of one variable
+    ! Quadpack integration 0 to infinity
+    CALL dqagi(IntegrateBK,ZERO,inf,0,RAccuracy,RfPrime,RError,Ieval,IErr,&
+         limit, lenw, last, iwork, work )
+    ! The integration required is actually -inf to inf in 2 dimensions
+    ! We used symmetry to just do 0 to inf, so multiply by 4
+    RfPrime=RfPrime*4*RAbsPreFactor
+    
+  END SUBROUTINE AbsorptiveScatteringFactor
+
+  !!$%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
 
   !>
   !! Procedure-description: Returns a PseudoAtom scattering factor 
@@ -771,41 +878,6 @@ MODULE ug_matrix_mod
     END DO
     
   END FUNCTION Kirkland
-
-  !!$%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-
-  !>
-  !! Procedure-description: Used as part of numerical integration to calculate
-  !! absorptive form factor f' for Bird & King absorption method
-  !!
-  !! Major-Authors: Richard Beanland (2016)
-  !!
-  SUBROUTINE DoubleIntegrateBK(RResult,IErr) 
-    ! used in each (case 2 Bird & King) absorption
-
-    USE MyNumbers
-    USE message_mod
-
-    IMPLICIT NONE
-
-    INTEGER(IKIND), PARAMETER :: inf=1
-    INTEGER(IKIND), PARAMETER :: limit=500
-    INTEGER(IKIND), PARAMETER :: lenw= limit*4
-    INTEGER(IKIND) :: IErr,Ieval,last, iwork(limit)
-    REAL(RKIND) :: RAccuracy,RError,RResult,dd
-    REAL(RKIND) :: work(lenw)
-    
-    dd=1.0 ! Do I need this? what does it do?
-    RAccuracy=0.00000001D0 ! accuracy of integration
-    ! use single integration IntegrateBK as an external function of one variable
-    ! Quadpack integration 0 to infinity
-    CALL dqagi(IntegrateBK,ZERO,inf,0,RAccuracy,RResult,RError,Ieval,IErr,&
-         limit, lenw, last, iwork, work )
-    ! The integration required is actually -inf to inf in 2 dimensions
-    ! We used symmetry to just do 0 to inf, so multiply by 4
-    RResult=RResult*4
-    
-  END SUBROUTINE DoubleIntegrateBK
 
   !!$%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 

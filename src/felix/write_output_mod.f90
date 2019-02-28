@@ -4,14 +4,14 @@
 !
 ! Richard Beanland, Keith Evans & Rudolf A Roemer
 !
-! (C) 2013-17, all rights reserved
+! (C) 2013-19, all rights reserved
 !
-! Version: :VERSION:
-! Date:    :DATE:
+! Version: :VERSION: RB_coord / 1.15 /
+! Date:    :DATE: 16-01-2019
 ! Time:    :TIME:
 ! Status:  :RLSTATUS:
-! Build:   :BUILD:
-! Author:  :AUTHOR:
+! Build:   :BUILD: Mode F: test different lattice types" 
+! Author:  :AUTHOR: r.beanland
 ! 
 !%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 !
@@ -38,11 +38,11 @@ MODULE write_output_mod
   IMPLICIT NONE
   PRIVATE
   PUBLIC :: WriteIterationOutputWrapper, WriteIterationOutput, WriteOutVariables, &
-        NormaliseExperimentalImagesAndWriteOut
+        NormaliseExperimentalImagesAndWriteOut,WriteDifferenceImages
 
   CONTAINS
 
-  SUBROUTINE WriteIterationOutputWrapper(Iter,IThicknessIndex,IExitFLAG,IErr)
+  SUBROUTINE WriteIterationOutputWrapper(Iter,IThicknessIndex,IPrintFLAG,IErr)
 
     USE MyNumbers
     USE message_mod
@@ -51,29 +51,138 @@ MODULE write_output_mod
     USE IPARA, ONLY : IPrint, IPreviousPrintedIteration
 
     IMPLICIT NONE
-    INTEGER(IKIND),INTENT(IN) :: Iter,IThicknessIndex,IExitFLAG
+    INTEGER(IKIND),INTENT(IN) :: Iter,IThicknessIndex,IPrintFLAG
     INTEGER(IKIND),INTENT(OUT) :: IErr
+    CHARACTER(200) :: SPrintString
 
     IF(Iter.EQ.0) IErr=1
     IF(l_alert(IErr,"WriteIterationOutputWrapper","Unexpectedly recieved Iter = 0")) RETURN
 
 
     IF(my_rank.EQ.0) THEN
-      ! use IPrint from felix.inp to specify how often to write Iteration output
-      IF(IExitFLAG.EQ.1.OR.(Iter.GE.(IPreviousPrintedIteration+IPrint))) THEN
-        IF(IExitFLAG.EQ.0) THEN
-          CALL message ( LS, "Writing output; iterations since the previous save = ", &
-                Iter-IPreviousPrintedIteration)
-        ELSE
-          CALL message ( LS, "Writing output; final simulation" )
-        END IF
-        CALL WriteIterationOutput(Iter,IThicknessIndex,IExitFLAG,IErr)
-        IF(l_alert(IErr,"WriteIterationOutputWrapper","WriteIterationOutput")) RETURN
-        IPreviousPrintedIteration = Iter 
+      ! use IPrint and IPrintFLAG to specify how often to write Iteration output
+      SELECT CASE(IPrintFLAG)
+      
+        CASE(0)!We print a simulation only if IPrint<>0 and it's been a while
+          IF(IPrint.NE.0.AND.(Iter.GE.(IPreviousPrintedIteration+IPrint))) THEN
+            WRITE(SPrintString,FMT='(A16,I2,A35)') ".  Writing output; ",&
+              Iter-IPreviousPrintedIteration," iterations since the previous save"
+            CALL message (LS,SPrintString)
+            CALL WriteIterationOutput(Iter,IThicknessIndex,IErr)
+            IPreviousPrintedIteration = Iter 
+          END IF
+          
+        CASE(1)!We print a simulation after a refinement cycle has completed
+            CALL message (LS,".  Writing output; end of this refinement cycle")
+            CALL WriteIterationOutput(Iter,IThicknessIndex,IErr)
+          
+        CASE(2)!We print the final simulation
+          CALL message ( LS, ".  Writing output; final simulation" )
+          CALL WriteIterationOutput(Iter,IThicknessIndex,IErr)
+          
+      END SELECT
+      IF(l_alert(IErr,"WriteIterationOutputWrapper","WriteIterationOutput")) RETURN
+
       END IF
-    END IF
 
   END SUBROUTINE
+
+!%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+  !>
+  !! Procedure-description: Writes difference images during gradient determination if IImageFLAG=1 
+  !!
+  !! Major-Authors: Richard Beanland (2019)
+  !!
+  SUBROUTINE WriteDifferenceImages(Iter,IThicknessIndex,IVar,Rx,Rdx,IErr)
+  
+    USE MyNumbers
+    USE message_mod
+    
+    ! global inputs
+    USE IPARA, ONLY : ILN,IPixelCount,ISimFLAG,IOutPutReflections,INoOfLacbedPatterns,INhkl,IByteSize
+    USE SPARA, ONLY : SChemicalFormula
+    USE RPARA, ONLY : Rhkl,RInitialThickness,RDeltaThickness,   RImageSimi
+    USE IChannels, ONLY : IChOutWIImage, IChOut
+    
+    IMPLICIT NONE
+
+    INTEGER(IKIND), INTENT(OUT) :: IErr
+    INTEGER(IKIND), INTENT(IN) :: Iter,IThicknessIndex,IVar
+    INTEGER(IKIND) :: IThickness,ind,jnd
+    REAL(RKIND) :: Rx,Rdx,Rdelta!The parameter being changed and the amount of change
+    REAL(RKIND),DIMENSION(2*IPixelCount,2*IPixelCount) :: RImageToWrite
+    CHARACTER(4) :: dString
+    CHARACTER(10) :: hString,kString,lString
+    CHARACTER(200) :: path,filename,fullpath
+
+    IErr=0
+    IThickness = (RInitialThickness + (IThicknessIndex-1)*RDeltaThickness)/10!in nm 
+
+    !Directory for difference image
+    IF (IVar.LT.10) THEN
+      WRITE(dString,"(A2,I1)") "_D",IVar
+    ELSE
+      WRITE(dString,"(A2,I2)") "_D",IVar
+    END IF
+    WRITE(path,"(A1,I4.4,A3,A1,I3.3,A3,I3.3,A1,I3.3)") &
+            "I",Iter,dString,"_",IThickness,"nm_",2*IPixelcount,"x",2*IPixelcount
+    path = SChemicalFormula(1:ILN) // "_" // path ! This adds chemical to folder name
+    CALL system('mkdir ' // path)
+
+    ! Write Images to disk
+    DO ind = 1,INoOfLacbedPatterns
+      ! Make the hkl string e.g. -2-2+10
+      jnd=NINT(Rhkl(IOutPutReflections(ind),1))
+      IF (ABS(jnd).LT.10) THEN
+        WRITE(hString,"(SP,I2.1)") jnd
+      ELSEIF (ABS(jnd).LT.100) THEN
+        WRITE(hString,"(SP,I3.1)") jnd
+      ELSE
+        WRITE(hString,"(SP,I4.1)") jnd
+      ENDIF
+      jnd=NINT(Rhkl(IOutPutReflections(ind),2))
+      IF (ABS(jnd).LT.10) THEN
+        WRITE(kString,"(SP,I2.1)") jnd
+      ELSEIF (ABS(jnd).LT.100) THEN
+        WRITE(kString,"(SP,I3.1)") jnd
+      ELSE
+        WRITE(kString,"(SP,I4.1)") jnd
+      ENDIF
+      jnd=NINT(Rhkl(IOutPutReflections(ind),3))
+      IF (ABS(jnd).LT.10) THEN
+        WRITE(lString,"(SP,I2.1)") jnd
+      ELSEIF (ABS(jnd).LT.100) THEN
+        WRITE(lString,"(SP,I3.1)") jnd
+      ELSE
+        WRITE(lString,"(SP,I4.1)") jnd
+      ENDIF
+      ! Make the path/filenames e.g. 'GaAs_-2-2+0.bin'
+      filename = SChemicalFormula(1:ILN) // TRIM(ADJUSTL(dString)) // "_" // &
+        TRIM(ADJUSTL(hString)) // TRIM(ADJUSTL(kString)) // TRIM(ADJUSTL(lString)) // ".bin"
+      fullpath = TRIM(ADJUSTL(path))//"/"//TRIM(ADJUSTL(filename))
+      CALL message ( LL, dbg6, fullpath )
+      RImageToWrite = RImageSimi(:,:,ind,IThicknessIndex)
+      ! Writes data to output image .bin files
+      OPEN(UNIT=IChOutWIImage, STATUS= 'UNKNOWN', FILE=TRIM(ADJUSTL(fullpath)),&
+          FORM='UNFORMATTED',ACCESS='DIRECT',IOSTAT=IErr,RECL=2*IPixelCount*IByteSize)
+      IF(l_alert(IErr,"WriteIterationOutput","OPEN() output .bin file")) RETURN      
+      DO jnd = 1,2*IPixelCount
+        WRITE(IChOutWIImage,rec=jnd) RImageToWrite(jnd,:)
+      END DO
+      CLOSE(IChOutWIImage,IOSTAT=IErr) 
+      IF(l_alert(IErr,"WriteIterationOutput","CLOSE() output .bin file")) RETURN       
+    END DO
+
+    Rdelta=Rdx/(Rx-Rdx)!Fractional change in the parameter
+    OPEN(UNIT=IChOut,FILE='differences.txt',FORM='formatted',STATUS='unknown',&
+          POSITION='append')
+    WRITE(UNIT=IChOut,FMT='(I4,1X,F12.9)') Iter,Rdelta
+    CLOSE(IChOut)
+    
+  END SUBROUTINE WriteDifferenceImages
+
+!%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
   !>
   !! Procedure-description: Writes output for interations including simulated .bin files, 
@@ -81,13 +190,13 @@ MODULE write_output_mod
   !!
   !! Major-Authors: 'kidwhizz' (2015), Richard Beanland (2016)
   !!
-  SUBROUTINE WriteIterationOutput(Iter,IThicknessIndex,IExitFlag,IErr)
+  SUBROUTINE WriteIterationOutput(Iter,IThicknessIndex,IErr)
 
     USE MyNumbers
     USE message_mod
     
     ! global inputs
-    USE IPARA, ONLY : ILN,IPixelCount,ISimFLAG,IOutPutReflections,INoOfLacbedPatterns,nReflections,IByteSize
+    USE IPARA, ONLY : ILN,IPixelCount,ISimFLAG,IOutPutReflections,INoOfLacbedPatterns,INhkl,IByteSize
     USE CPARA, ONLY : CUgMat
     USE RPARA, ONLY : Rhkl, RImageSimi, RInitialThickness, RDeltaThickness
     USE SPARA, ONLY : SChemicalFormula
@@ -96,21 +205,22 @@ MODULE write_output_mod
     IMPLICIT NONE
 
     INTEGER(IKIND), INTENT(OUT) :: IErr
-    INTEGER(IKIND), INTENT(IN) :: Iter,IThicknessIndex,IExitFLAG
+    INTEGER(IKIND), INTENT(IN) :: Iter,IThicknessIndex
     INTEGER(IKIND) :: IThickness,ind,jnd
     REAL(RKIND),DIMENSION(2*IPixelCount,2*IPixelCount) :: RImageToWrite
     CHARACTER(10) :: hString,kString,lString
     CHARACTER(200) :: path,filename,fullpath
     
-    IErr=0
-    IThickness = (RInitialThickness + (IThicknessIndex-1)*RDeltaThickness)/10!in nm 
+    IErr=0 
 
     IF (ISimFLAG.EQ.0) THEN !felixrefine output
+      IThickness = NINT((RInitialThickness +(IThicknessIndex-1)*RDeltaThickness)/TEN)!in nm 
       WRITE(path,"(A1,I4.4,A1,I3.3,A3,I3.3,A1,I3.3)") &
             "I",Iter,"_",IThickness,"nm_",2*IPixelcount,"x",2*IPixelcount
     ELSE ! Sim Output
-      WRITE(path,"(A4,I3.3,A3,I3.3,A1,I3.3)") &
-            "Sim_",IThickness,"nm_",2*IPixelcount,"x",2*IPixelcount
+    IThickness = NINT(RInitialThickness +(IThicknessIndex-1)*RDeltaThickness)!in A 
+      WRITE(path,"(A4,I4.4,A2,I3.3,A1,I3.3)") &
+            "Sim_",IThickness,"A_",2*IPixelcount,"x",2*IPixelcount
     END IF
     path = SChemicalFormula(1:ILN) // "_" // path ! This adds chemical to folder name
     CALL system('mkdir ' // path)
@@ -143,8 +253,7 @@ MODULE write_output_mod
         WRITE(lString,"(SP,I4.1)") jnd
       ENDIF
       ! Make the path/filenames e.g. 'GaAs_-2-2+0.bin'
-      filename = SChemicalFormula(1:ILN) // "_" // TRIM(ADJUSTL(hString)) // TRIM(ADJUSTL(kString)) // TRIM(ADJUSTL(lString)) // '.bin'
-!DBG	  IF(my_rank.EQ.0) PRINT*, NINT(Rhkl(IOutPutReflections(ind),:)),filename
+      filename = SChemicalFormula(1:ILN) // "_" // TRIM(ADJUSTL(hString)) // TRIM(ADJUSTL(kString)) // TRIM(ADJUSTL(lString)) // ".bin"
       fullpath = TRIM(ADJUSTL(path))//"/"//TRIM(ADJUSTL(filename))
       CALL message ( LL, dbg6, fullpath )
       RImageToWrite = RImageSimi(:,:,ind,IThicknessIndex)
@@ -168,7 +277,7 @@ MODULE write_output_mod
     WRITE(fullpath,*) TRIM(ADJUSTL(path)),'/',TRIM(ADJUSTL(filename))
     OPEN(UNIT=IChOut,STATUS='UNKNOWN',FILE=TRIM(ADJUSTL(fullpath)))
 
-    DO ind = 1,nReflections
+    DO ind = 1,INhkl
        WRITE(IChOut,FMT='(3I5.1,2F13.9)') NINT(Rhkl(ind,:)),CUgMat(ind,1)
     END DO
 
@@ -376,7 +485,7 @@ MODULE write_output_mod
 
     OPEN(UNIT=IChOutSimplex,FILE='iteration_log.txt',FORM='formatted',STATUS='unknown',&
           POSITION='append')
-    WRITE(UNIT=IChOutSimplex,FMT=SFormat) Iter-1,RFigureofMerit,RDataOut
+    WRITE(UNIT=IChOutSimplex,FMT=SFormat) Iter,RFigureofMerit,RDataOut
     CLOSE(IChOutSimplex)
 
   END SUBROUTINE WriteOutVariables

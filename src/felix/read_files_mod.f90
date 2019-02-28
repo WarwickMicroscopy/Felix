@@ -4,14 +4,14 @@
 !
 ! Richard Beanland, Keith Evans & Rudolf A Roemer
 !
-! (C) 2013-17, all rights reserved
+! (C) 2013-19, all rights reserved
 !
-! Version: :VERSION:
-! Date:    :DATE:
+! Version: :VERSION: RB_coord / 1.15 /
+! Date:    :DATE: 16-01-2019
 ! Time:    :TIME:
 ! Status:  :RLSTATUS:
-! Build:   :BUILD:
-! Author:  :AUTHOR:
+! Build:   :BUILD: Mode F: test different lattice types" 
+! Author:  :AUTHOR: r.beanland
 ! 
 !%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 !
@@ -82,6 +82,9 @@ MODULE read_files_mod
     ILine= 1
 
     ! There are six introductory comment lines which are ignored
+    ! ***Jeffrey's felix.inp files only*** !
+!    ILine= ILine+1; READ(IChInp,ERR=20,END=30,FMT='(A)')
+!
     ILine= ILine+1; READ(IChInp,ERR=20,END=30,FMT='(A)')
     ILine= ILine+1; READ(IChInp,ERR=20,END=30,FMT='(A)')
     ILine= ILine+1; READ(IChInp,ERR=20,END=30,FMT='(A)')
@@ -95,45 +98,8 @@ MODULE read_files_mod
 
     ! IWriteFLAG
     ILine= ILine+1; READ(IChInp,'(27X,I15.1)',ERR=20,END=30) IWriteFLAG
-
-    ! IImageFLAG
-    ILine= ILine+1; READ(IChInp,FMT='(A)',ERR=20,END=30) SImageMode
-    ! IImageFLAG handling - select which type(s) of output images to be produce
-    IPos = 0
-    IF(SCAN(SImageMode,'0').NE.0) THEN
-       IPos = IPos +1
-    END IF
-    IF(SCAN(SImageMode,'1').NE.0) THEN
-       IPos = IPos +1
-    END IF
-    IF(SCAN(SImageMode,'2').NE.0) THEN
-       IPos = IPos +1
-    END IF
-    SELECT CASE (IPos)
-    CASE (1)
-       IF(SCAN(SImageMode,'2').NE.0) THEN
-          IImageFLAG = 3
-       ELSE
-          IF(SCAN(SImageMode,'1').NE.0) THEN
-             IImageFLAG = 1
-          ELSE
-             IImageFlag = 0
-          END IF
-       END IF
-    CASE (2)     
-       IF(SCAN(SImageMode,'2').NE.0) THEN
-          IF(SCAN(SImageMode,'1').NE.0) THEN
-             IImageFLAG = 5
-          ELSE
-             IImageFLAG = 4
-          END IF
-       ELSE
-          IImageFLAG = 2
-       END IF
-    CASE (3)
-       IImageFlag = 6
-    END SELECT
-
+    ! IImageFLAG - select which type(s) of images to output 
+    ILine= ILine+1; READ(IChInp,'(27X,I15.1)',ERR=20,END=30) IImageFLAG
     ! IScatterFactorMethodFLAG
     ILine= ILine+1; READ(IChInp,'(27X,I15.1)',ERR=20,END=30) IScatterFactorMethodFLAG
     CALL message ( LXL, dbg7, "IScatterFactorMethodFLAG=",IScatterFactorMethodFLAG )
@@ -228,7 +194,7 @@ MODULE read_files_mod
     ! Image Output Options
     !--------------------------------------------------------------------
 
-    !?? update sample felix.inp and section here to 'specimin thickness'
+    !?? update sample felix.inp and section here to 'specimen thickness'
 
     ! Two comment lines
     ILine= ILine+1; READ(IChInp,ERR=20,END=30,FMT='(A)')
@@ -264,16 +230,15 @@ MODULE read_files_mod
         END IF
       END DO
       ! Check which refinement modes have been selected
-      IF(IRefineMode(1) .EQ.1) CALL message( LS, "Refining Structure Factors")
-      IF(IRefineMode(2) .EQ.1) CALL message( LS, "Refining Atomic Coordinates")
-      IF(IRefineMode(3) .EQ.1) CALL message( LS, "Refining Occupancies ")
-      IF(IRefineMode(4) .EQ.1) CALL message( LS, "Refining Isotropic Debye Waller Factors")
-      IF(IRefineMode(5) .EQ.1) CALL message( LS, "Refining Anisotropic Debye Waller Factors ")
-      IF(IRefineMode(6) .EQ.1) CALL message( LS, "Refining Lattice Lengths ")
-      IF(IRefineMode(7) .EQ.1) CALL message( LS, "Refining Lattice Angles ")
-      IF(IRefineMode(8) .EQ.1) CALL message( LS, "Refining Convergence Angle")
-      IF(IRefineMode(9) .EQ.1) CALL message( LS, "Refining Absorption")
-      IF(IRefineMode(10).EQ.1) CALL message( LS, "Refining Accelerating Voltage ")
+      IF(IRefineMode(1) .EQ.1) CALL message( LS, "Refining Structure Factors, A")
+      IF(IRefineMode(2) .EQ.1) CALL message( LS, "Refining Atomic Coordinates, B")
+      IF(IRefineMode(3) .EQ.1) CALL message( LS, "Refining Occupancies, C")
+      IF(IRefineMode(4) .EQ.1) CALL message( LS, "Refining Isotropic Debye Waller Factors, D")
+      IF(IRefineMode(5) .EQ.1) CALL message( LS, "Refining Anisotropic Debye Waller Factors, E")
+      IF(IRefineMode(6) .EQ.1) CALL message( LS, "Refining Lattice Parameters, F")
+      IF(IRefineMode(7) .EQ.1) CALL message( LS, "Refining Lattice Angles, G")
+      IF(IRefineMode(8) .EQ.1) CALL message( LS, "Refining Convergence Angle, H")
+      IF(IRefineMode(9) .EQ.1) CALL message( LS, "Refining Accelerating Voltage, I")
       ! Error Check - user cannot request Ug refinement and anything else
       IF((IRefineMode(1).EQ.1).AND.SUM(IRefineMode).GT.1) THEN
         IErr = 1; IF(l_alert(IErr,"ReadInpFile",&

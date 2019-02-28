@@ -4,14 +4,14 @@
 !
 ! Richard Beanland, Keith Evans & Rudolf A Roemer
 !
-! (C) 2013-17, all rights reserved
+! (C) 2013-19, all rights reserved
 !
-! Version: :VERSION:
-! Date:    :DATE:
+! Version: :VERSION: RB_coord / 1.14 /
+! Date:    :DATE: 15-01-2019
 ! Time:    :TIME:
 ! Status:  :RLSTATUS:
-! Build:   :BUILD:
-! Author:  :AUTHOR:
+! Build:   :BUILD: Mode F: test different lattice types" 
+! Author:  :AUTHOR: r.beanland
 ! 
 !%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 !
@@ -31,15 +31,91 @@
 !%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 !>
-!! Module-description: This handle lattice vectors as well as the fractional atomic positions
+!! Module-description: This defines lattice vectors as well as the fractional atomic coordinates
 !!
 MODULE crystallography_mod
   IMPLICIT NONE
   PRIVATE
-  PUBLIC :: ReciprocalLattice, UniqueAtomPositions
+  PUBLIC :: ReciprocalLattice, UniqueAtomPositions, gVectors
 
   CONTAINS
 
+  !>
+  !! Procedure-description: Calculates g-vector matrices, global variables
+  !!
+  !! Author: Richard Beanland (2019)
+  !!
+  SUBROUTINE gVectors(IErr)
+
+    USE MyNumbers
+    USE message_mod
+    USE MyMPI 
+ 
+    ! global inputs
+    USE RPARA, ONLY : RarVecM,RbrVecM,RcrVecM,RNormDirM,Rhkl,RConvergenceAngle
+    USE IPARA, ONLY : INhkl,IPixelCount
+    
+    ! global outputs
+    USE RPARA, ONLY : RgPool,RgPoolMag,RgDotNorm,RMinimumGMag,RDeltaK,RgMatrix,RgMatrixMagnitude
+    
+    IMPLICIT NONE
+    
+    INTEGER(IKIND) :: IErr,ind,jnd
+    CHARACTER(200) :: SPrintString
+
+    IErr=0!No route to throw an error here in fact
+    
+    !calculate g-vector pool, the magnitudes and component parallel to specimen surface
+    DO ind=1,INhkl
+      DO jnd=1,ITHREE
+        RgPool(ind,jnd) = Rhkl(ind,1)*RarVecM(jnd) + &
+            Rhkl(ind,2)*RbrVecM(jnd) + Rhkl(ind,3)*RcrVecM(jnd)
+      END DO
+      RgPoolMag(ind)= SQRT(DOT_PRODUCT(RgPool(ind,:),RgPool(ind,:)))
+      RgDotNorm(ind) = DOT_PRODUCT(RgPool(ind,:),RNormDirM)
+    END DO
+    !resolution in k-space
+    RMinimumGMag = RgPoolMag(2)!since the first one is always 000
+    RDeltaK = RMinimumGMag*RConvergenceAngle/REAL(IPixelCount,RKIND)
+    
+    ! Calculate matrix  of g-vectors that corresponds to the Ug matrix
+    DO ind=1,INhkl
+      DO jnd=1,INhkl
+        RgMatrix(ind,jnd,:)= RgPool(ind,:)-RgPool(jnd,:)
+        RgMatrixMagnitude(ind,jnd) = & 
+           SQRT(DOT_PRODUCT(RgMatrix(ind,jnd,:),RgMatrix(ind,jnd,:)))
+      END DO
+    END DO
+
+!debugging output, can be deleted
+!DO ind = 1,6
+!  WRITE(SPrintString,FMT='(A,3(I2,1X),2X,3(F7.4,1X))') &
+!    "hkl: ",NINT(Rhkl(ind,:)),RgMatrix(ind,1,:)
+!  IF(my_rank.EQ.0)PRINT*,TRIM(ADJUSTL(SPrintString))
+!  WRITE(SPrintString,FMT='(A,3(I2,1X),2X,F7.4)') &
+!    "hkl: ",NINT(Rhkl(ind,:)),RgMatrixMagnitude(ind,1)
+!  IF(my_rank.EQ.0)PRINT*,TRIM(ADJUSTL(SPrintString))
+!END DO
+
+
+    !outputs if requested    
+    CALL message(LL,dbg3,"first 16 g-vectors", RgMatrix(1:16,1,:)) 
+    CALL message(LL,dbg3,"g-vector magnitude matrix (2pi/A)", RgMatrixMagnitude(1:16,1:8)) 
+    CALL message(LL,dbg7,"g-vectors and magnitude (1/A), in the microscope reference frame" )
+    DO ind = 1,INhkl
+      CALL message(LL,dbg7,"hkl  :",NINT(Rhkl(ind,:)))
+      CALL message(LL,dbg7,"g mag:",RgPoolMag(ind))
+    END DO
+    CALL message(LL,dbg7,"g.n list")
+    DO ind = 1,INhkl
+      CALL message(LL,dbg7,"hkl :",NINT(Rhkl(ind,:)))
+      CALL message(LL,dbg7,"g.n :",RgDotNorm(ind))
+    END DO
+    
+    END SUBROUTINE gVectors
+
+  !%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+  
   !>
   !! Procedure-description: Creates reciprocal lattice vectors in Microscope
   !! reference frame. This involves transforms between the orthogonal, crystal
@@ -50,8 +126,8 @@ MODULE crystallography_mod
   SUBROUTINE ReciprocalLattice(IErr)
 
     USE MyNumbers
+    USE MyMPI
 
-    ! global outputs
     USE RPARA, ONLY : RarVecM,RbrVecM,RcrVecM,RaVecM,RbVecM,RcVecM,RNormDirM,RaVecO,RbVecO,&
           RcVecO,RVolume,RarVecO,RbrVecO,RcrVecO
     USE SPARA, ONLY : SSpaceGroupName
@@ -67,10 +143,10 @@ MODULE crystallography_mod
     REAL(RKIND) :: RTTest
     REAL(RKIND), DIMENSION(ITHREE) :: RXDirO, RYDirO, RZDirO, RYDirC
     REAL(RKIND), DIMENSION(ITHREE,ITHREE) :: RTMatC2O,RTMatO2M
-    CHARACTER*50 indString
-    CHARACTER*400  RTMatString
+    CHARACTER(50) :: indString
+    CHARACTER(400) :: RTMatString
+    CHARACTER(200) :: SPrintString
 
-    ! Crystal Lattice Vectors: orthogonal reference frame in Angstrom units
     RaVecO(1)= RLengthX
     RaVecO(2)= ZERO
     RaVecO(3)= ZERO
@@ -170,6 +246,13 @@ MODULE crystallography_mod
     RarVecM= TWOPI*CROSS(RbVecM,RcVecM)/DOT_PRODUCT(RbVecM,CROSS(RcVecM,RaVecM))
     RbrVecM= TWOPI*CROSS(RcVecM,RaVecM)/DOT_PRODUCT(RcVecM,CROSS(RaVecM,RbVecM))
     RcrVecM= TWOPI*CROSS(RaVecM,RbVecM)/DOT_PRODUCT(RaVecM,CROSS(RbVecM,RcVecM))
+!debugging output, can be deleted
+!WRITE(SPrintString,FMT='(A4,3(F7.4,1X))') "a*: ",RarVecM
+!IF(my_rank.EQ.0)PRINT*,TRIM(ADJUSTL(SPrintString))
+!WRITE(SPrintString,FMT='(A4,3(F7.4,1X))') "b*: ",RbrVecM
+!IF(my_rank.EQ.0)PRINT*,TRIM(ADJUSTL(SPrintString))
+!WRITE(SPrintString,FMT='(A4,3(F7.4,1X))') "b*: ",RcrVecM
+!IF(my_rank.EQ.0)PRINT*,TRIM(ADJUSTL(SPrintString))
     
   END SUBROUTINE ReciprocalLattice
 
@@ -277,10 +360,10 @@ MODULE crystallography_mod
 
 
     DO ind=1,INAtomsUnitCell    
-      CALL message( LM, dbg7, "Atom ",ind)
+      CALL message( LL, dbg7, "Atom ",ind)
       WRITE(SPrintString,"(A18,F8.4,F8.4,F8.4)") ": Atom position = ", RAtomPosition(ind,:)
-      CALL message( LM, dbg7, SAtomName(ind)//SPrintString )
-      CALL message( LM, dbg7, "(DWF, occupancy) = ",(/ RIsoDW(ind), ROccupancy(ind) /) )
+      CALL message( LL, dbg7, SAtomName(ind)//SPrintString )
+      CALL message( LL, dbg7, "(DWF, occupancy) = ",(/ RIsoDW(ind), ROccupancy(ind) /) )
     END DO
     
     ! Finished with these variables now

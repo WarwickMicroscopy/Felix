@@ -18,8 +18,8 @@ IByteSize                 = 2
 IPixelCount               = 160
 
 # beam selection criteria
-IMinReflectionPool        = 100
-IMinStrongBeams           = 50
+IMinReflectionPool        = 600
+IMinStrongBeams           = 200
 IMinWeakBeams             = 0
 
 # crystal settings
@@ -41,7 +41,7 @@ RDeltaThickness          = 10.0
 IReflectOut              = 43
 
 #Refinement Specific Flags
-IRefineModeFLAG          = S
+IRefineModeFLAG          = F
 IWeightingFLAG           = 0
 IRefineMethodFLAG        = 2
 ICorrelationFLAG         = 2
@@ -49,6 +49,6 @@ IImageProcessingFLAG     = 4
 RBlurRadius              = 2.2
 INoofUgs                 = 1
 IAtomicSites             = (1,2)
-IPrint                   = 4
-RSimplexLengthScale      = 1.0 
+IPrint                   = 0
+RSimplexLengthScale      = 0.2 
 RExitCriteria            = 0.00001

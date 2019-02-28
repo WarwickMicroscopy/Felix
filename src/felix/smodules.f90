@@ -7,7 +7,7 @@
 ! (C) 2013-19, all rights reserved
 !
 ! Version: master
-! Date:    17-Dec-2018
+! Date:    28-Feb-2018
 ! Time:    :TIME:
 ! Status:  
 ! Build:   
@@ -53,6 +53,7 @@ MODULE SConst
   CHARACTER(50), PARAMETER :: DStr= "Date: 28-Feb-2019"
   CHARACTER(50), PARAMETER :: AStr= "Refinements B,C,D,H,F and S working, no HOLZ" 
   CHARACTER(8) SAllSpaceGrp(230)
+
   DATA SAllSpaceGrp/"P1","P-1","P2","P21","C2","Pm","Pc","Cm",&
        "Cc","P2/m","P21/m","C2/m","P2/c","P21/c","C2/c", &
        "P222","P2221","P21212","P212121","C2221","C222","F222", &
@@ -61,7 +62,7 @@ MODULE SConst
        "Amm2","Aem2","Ama2","Aea2","Fmm2","Fdd2","Imm2","Iba2", &
        "Ima2","Pmmm","Pnnn","Pccm","Pban","Pmma","Pnna","Pmna","Pcca", &
        "Pbam","Pccn","Pbcm","Pnnm","Pmmn","Pbcn","Pbca","Pnma","Cmcm", &
-       "Cmce","Cmmm","Cccm","Cmme","Ccce","Fmmm","Fddd","Immm","Ibam", &
+       "Cmca","Cmmm","Cccm","Cmme","Ccce","Fmmm","Fddd","Immm","Ibam", &
        "Ibca","Imma","P4","P41","P42","P43","I4","I41","P-4","I-4", &
        "P4/m","P42/m","P4/n","P42/n","I4/m","I41/a","P422","P4212", &
        "P4122","P41212","P4222","P42212","P4322","P43212","I422", &
@@ -182,7 +183,7 @@ MODULE IPara
   !LACBED Input
   INTEGER(IKIND) :: INoOfLacbedPatterns
   !Beams from selection criteria
-  INTEGER(IKIND) :: nReflections,nStrongBeams,nWeakBeams,nBeams,IHKLMAXValue
+  INTEGER(IKIND) :: INhkl,nStrongBeams,nWeakBeams,nBeams,IHKLMAXValue
   INTEGER(IKIND), DIMENSION(:), ALLOCATABLE :: IBasisAnisoDW,IStrongBeamList, IAnisoDW
   !Main
   INTEGER(IKIND) :: IPixelTotal, INAtomsUnitCell,IPixelComputed
@@ -211,6 +212,7 @@ MODULE IPara
   INTEGER(IKIND),DIMENSION(IRefinementVariableTypes) :: IRefineMode
   INTEGER(IKIND),DIMENSION(IRefinementVariableTypes) :: INoofParameters  !zz
   INTEGER(IKIND),DIMENSION(:,:),ALLOCATABLE :: IIterativeVariableUniqueIDs
+  INTEGER(IKIND),DIMENSION(:),ALLOCATABLE :: IIndependentVariableType
   !List of Atomic Sites for Refinement
   INTEGER(IKIND),DIMENSION(:),ALLOCATABLE :: IAtomsToRefine
   !Simplex Variables
@@ -343,12 +345,12 @@ END MODULE CPara
 MODULE SPara
   USE MyNumbers
   
-  CHARACTER*40 :: SChemicalFormula
-  CHARACTER*1 :: SSpaceGroupName
-  CHARACTER*10 :: SSpaceGrp
-  CHARACTER*5, DIMENSION(:), ALLOCATABLE :: SBasisAtomLabel,SAtomLabel
-  CHARACTER*2, DIMENSION(:), ALLOCATABLE :: SBasisAtomName, SAtomName
-  CHARACTER*1, DIMENSION(:), ALLOCATABLE :: SWyckoffSymbol
+  CHARACTER(40) :: SChemicalFormula
+  CHARACTER(1) :: SSpaceGroupName
+  CHARACTER(10) :: SSpaceGrp
+  CHARACTER(5), DIMENSION(:), ALLOCATABLE :: SBasisAtomLabel,SAtomLabel
+  CHARACTER(2), DIMENSION(:), ALLOCATABLE :: SBasisAtomName, SAtomName
+  CHARACTER(1), DIMENSION(:), ALLOCATABLE :: SWyckoffSymbol
   
 END MODULE SPara
 !--------------------------------------------------------------------
