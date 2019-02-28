@@ -49,10 +49,10 @@
 !!
 MODULE SConst
 
-  CHARACTER*50, PARAMETER :: RStr= "Version: master / 1.01 / r.beanland"
-  CHARACTER*50, PARAMETER :: DStr= "Date: 21-Dec-2018"
-  CHARACTER*50, PARAMETER :: AStr= "Refinements B,C,D,H and S working, no HOLZ" 
-  CHARACTER*8 SAllSpaceGrp(230)
+  CHARACTER(50), PARAMETER :: RStr= "Version: master / 1.02 / r.beanland"
+  CHARACTER(50), PARAMETER :: DStr= "Date: 28-Feb-2019"
+  CHARACTER(50), PARAMETER :: AStr= "Refinements B,C,D,H,F and S working, no HOLZ" 
+  CHARACTER(8) SAllSpaceGrp(230)
   DATA SAllSpaceGrp/"P1","P-1","P2","P21","C2","Pm","Pc","Cm",&
        "Cc","P2/m","P21/m","C2/m","P2/c","P21/c","C2/c", &
        "P222","P2221","P21212","P212121","C2221","C222","F222", &
@@ -83,7 +83,7 @@ MODULE SConst
        "I-43d","Pm-3m","Pn-3n","Pm-3n","Pn-3m","Fm-3m","Fm-3c","Fd-3m", &
        "Fd-3c","Im-3m","Ia-3d"/
 
-  CHARACTER*2 :: SElementSymbolMatrix(110)!N.B. Number must equal INElements
+  CHARACTER(2) :: SElementSymbolMatrix(110)!N.B. Number must equal INElements
   DATA SElementSymbolMatrix/"H", "He", "Li", "Be", "B", "C", "N", "O", "F", "Ne", &
        "Na", "Mg", "Al", "Si", "P", "S", "Cl", "Ar", "K", "Ca", &
        "Sc", "Ti", "V", "Cr", "Mn", "Fe", "Co", "Ni", "Cu", "Zn", &
@@ -96,7 +96,7 @@ MODULE SConst
         "Pa", "U", "Np", "Pu", "Am", "Cm", "Bk", "Cf", "Es", "Fm",& 
         "Md","No","Lr","Q","Ja","Jb","Jc","Jd","Je","Jf"/!Note element 'Q', 'Ja'... etc. added to END of list
 
-  CHARACTER*8 :: SAlphabet(26)
+  CHARACTER(8) :: SAlphabet(26)
   DATA SAlphabet/"Aa","Bb","Cc","Dd","Ee","Ff","Gg","Hh","Ii","Jj","Kk","Ll",&
        "Mm","Nn","Oo","Pp","Qq","Rr","Ss","Tt","Uu","Vv","Ww","Xx","Yy","Zz"/
 
