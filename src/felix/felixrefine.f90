@@ -973,6 +973,9 @@ CONTAINS
             IF (my_rank.EQ.0) CALL WriteDifferenceImages(Iter,IThicknessIndex,ind,RCurrentVar(ind),Rdx,IErr)
           END IF
           !If the fit is better, emphasise that parameter *2
+          !This gives more importance to parameters that are not stuck in a
+          !valley at the expense of not using the maximum gradient when no
+          !parameters are in valleys
           IF (RFigureofMerit.LT.RBestFit) THEN
             REmphasis=TWO
           ELSE
@@ -1131,7 +1134,6 @@ CONTAINS
       IPrintFLAG=1!Save this simulation
       CALL WriteIterationOutputWrapper(Iter,IThicknessIndex,IPrintFLAG,IErr)
       CALL BestFitCheck(RFigureofMerit,RBestFit,RCurrentVar,RIndependentVariable,IErr)
-
       ! check where we go next and update last fit etc.
       IF (nnd.EQ.0) THEN ! only update LastFit after a max gradient refinement
         Rdf=RLastFit-RBestFit 

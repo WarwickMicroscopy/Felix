@@ -120,7 +120,7 @@ MODULE ug_matrix_mod
   
   CALL message( LM,dbg3, "Ug matrix, without absorption (nm^-2)" )!LM, dbg3
   DO ind = 1,40
-    WRITE(SPrintString,FMT='(3(I2,1X),A2,1X,6(F7.4,1X,F7.4,2X))') NINT(Rhkl(ind,:)),": ",100*CUgMatNoAbs(ind,1:6)
+    WRITE(SPrintString,FMT='(3(I3,1X),A2,1X,6(F7.4,1X,F7.4,2X))') NINT(Rhkl(ind,:)),": ",100*CUgMatNoAbs(ind,1:6)
     CALL message( LM,dbg3, SPrintString)
   END DO
 
@@ -154,7 +154,7 @@ MODULE ug_matrix_mod
     USE RPARA, ONLY : RAbsorptionPercentage, RAngstromConversion, RElectronCharge, &
           RElectronMass, RElectronVelocity, RPlanckConstant, RRelativisticCorrection, &
           RVolume, RgMatrixMagnitude, RIsoDW, ROccupancy, RgMatrix, Rhkl, RAtomCoordinate, &
-		  RScattFacToVolts
+          RScattFacToVolts
 
     IMPLICIT NONE
 
@@ -166,7 +166,7 @@ MODULE ug_matrix_mod
     COMPLEX(CKIND),DIMENSION(:),ALLOCATABLE :: CLocalUgPrime,CUgPrime
     REAL(RKIND),DIMENSION(:),ALLOCATABLE :: RLocalUgReal,RLocalUgImag,RUgReal,RUgImag
     INTEGER(IKIND),DIMENSION(:),ALLOCATABLE :: Ipos,Inum
-    CHARACTER*100 :: SPrintString
+    CHARACTER(100) :: SPrintString
     
     !--------------------------------------------------------------------  
     !  select absorption model
@@ -177,7 +177,7 @@ MODULE ug_matrix_mod
     CASE(0) ! No absorption
       !nothing to do, CUgMatPrime is already 0
 
-	CASE(1) ! Proportional
+    CASE(1) ! Proportional
       CUgMatPrime = CUgMatNoAbs*EXP(CIMAGONE*PI/2)*(RAbsorptionPercentage/100_RKIND)
     
     CASE(2) 
@@ -638,7 +638,7 @@ MODULE ug_matrix_mod
       CALL message ( LS, SPrintString )
       CALL message ( LM, dbg3, "hkl: symmetry matrix" )
       DO ind =1,40
-	  	WRITE(SPrintString,FMT='(3(I2,1X),A2,1X,16(I4,1X))') NINT(Rhkl(ind,:)),": ",ISymmetryRelations(ind,1:16)
+        WRITE(SPrintString,FMT='(3(I3,1X),A2,1X,16(I4,1X))') NINT(Rhkl(ind,:)),": ",ISymmetryRelations(ind,1:16)
         CALL message ( LM,dbg3, SPrintString )
       END DO
 
