@@ -57,6 +57,7 @@ MODULE ug_matrix_mod
     RRelativisticCorrection,Rhkl,ROccupancy,RAtomCoordinate,RgMatrix,RAnisotropicDebyeWallerFactorTensor
     !,RElectronMass,RAngstromConversion,RScattFacToVolts,RElectronCharge,RPlanckConstant
   USE CPARA, ONLY : CUgMatNoAbs,CUgMatPrime
+  USE SPARA, ONLY : SPrintString
   ! global outputs
   USE CPARA, ONLY : CUgMat
 
@@ -64,9 +65,8 @@ MODULE ug_matrix_mod
     
   INTEGER(IKIND) :: ind,jnd,knd,IErr
   REAL(RKIND) :: RScatteringFactor,RPreFactor
-!  COMPLEX(CKIND) :: CVgij
   COMPLEX(CKIND),DIMENSION(:,:),ALLOCATABLE :: CTempMat!to avoid problems with transpose
-  CHARACTER(200) :: SPrintString
+
     
   IF (my_rank.EQ.0) THEN!There may be a bug when individual cores calculate UgMat, make it the responsibility of core 0 and broadcast it
     !conversion factor from f to Ug  
@@ -149,6 +149,7 @@ MODULE ug_matrix_mod
 
     ! global inputs
     USE CPARA, ONLY : CUgMatNoAbs
+    USE SPARA, ONLY : SPrintString
     USE IPARA, ONLY : IAbsorbFLAG, INAtomsUnitCell, ISymmetryRelations, IEquivalentUgKey, &
           IAtomicNumber
     USE RPARA, ONLY : RAbsorptionPercentage, RAngstromConversion, RElectronCharge, &
@@ -166,7 +167,6 @@ MODULE ug_matrix_mod
     COMPLEX(CKIND),DIMENSION(:),ALLOCATABLE :: CLocalUgPrime,CUgPrime
     REAL(RKIND),DIMENSION(:),ALLOCATABLE :: RLocalUgReal,RLocalUgImag,RUgReal,RUgImag
     INTEGER(IKIND),DIMENSION(:),ALLOCATABLE :: Ipos,Inum
-    CHARACTER(100) :: SPrintString
     
     !--------------------------------------------------------------------  
     !  select absorption model
@@ -443,6 +443,7 @@ MODULE ug_matrix_mod
     USE CPARA, ONLY : CUgMatNoAbs,CUgMatPrime,CUniqueUg,CPseudoAtom,CPseudoScatt
     USE IPARA, ONLY : ICurrentZ, ISymmetryRelations
     USE RPARA, ONLY : RMeanInnerPotential,RgSumMat
+    USE SPARA, ONLY : SPrintString
     USE BlochPara, ONLY : RBigK
 
     ! global inputs
@@ -470,7 +471,6 @@ MODULE ug_matrix_mod
           RPMag,Rx,Ry,Rr,RPalpha,RTheta,Rfold
     REAL(RKIND),DIMENSION(:,:),ALLOCATABLE :: RTempMat!to avoid problems with transpose ffs
     COMPLEX(CKIND),DIMENSION(:,:),ALLOCATABLE :: CTempMat!to avoid problems with transpose
-    CHARACTER(200) :: SPrintString
     
     !--------------------------------------------------------------------
     ! count pseudoatoms & allocate pseudoatom arrays

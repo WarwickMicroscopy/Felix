@@ -289,12 +289,13 @@ CONTAINS
 
   ! compare start time to current and print time-passed
   SUBROUTINE PrintEndTime(MsgPriority, IStartTime, STaskName)
+    USE SPARA, ONLY : SPrintString
     TYPE (MsgPriorities), INTENT(IN) :: MsgPriority
     CHARACTER(*), INTENT(IN) :: STaskName
     INTEGER(IKIND), INTENT(IN) :: IStartTime
     INTEGER(IKIND) :: Ihours,Iminutes,Iseconds,ICurrentTime,INameLength
     REAL(RKIND) :: Rduration
-    CHARACTER(100) :: SPrintString,Sfmt
+    CHARACTER(100) :: Sfmt
 
     INameLength=LEN(STaskName)+14
     WRITE(Sfmt,*) '(A',INameLength,',A1,I4,A5,I3,A6,I3,A4)'
@@ -344,12 +345,13 @@ CONTAINS
 
   SUBROUTINE messageRMatrix ( MsgPriority, MsgTag, SMainMsg, RMatrix )
     
+    USE SPARA, ONLY : SPrintString
     TYPE (MsgPriorities), INTENT(IN) :: MsgPriority
     TYPE (MsgTags), INTENT(IN) :: MsgTag
     CHARACTER(*), INTENT(IN) :: SMainMsg
     REAL(RKIND),DIMENSION(:,:),INTENT(IN) :: RMatrix
     INTEGER(IKIND) :: i
-    CHARACTER(1000) :: SFormatting, SPrintString
+    CHARACTER(1000) :: SFormatting
 
     IF ( ( my_rank==0 .OR. LPrintThisCore ) &
     .AND. (MsgPriority%LState .OR. MsgTag%LState) ) THEN
@@ -374,12 +376,13 @@ CONTAINS
   ! This currently outputs in a form suitable for mathematica
   SUBROUTINE messageCMatrix ( MsgPriority, MsgTag, SMainMsg, CMatrix )
     
+    USE SPARA, ONLY : SPrintString
     TYPE (MsgPriorities), INTENT(IN) :: MsgPriority
     TYPE (MsgTags), INTENT(IN) :: MsgTag
     CHARACTER(*), INTENT(IN) :: SMainMsg
     COMPLEX(CKIND),DIMENSION(:,:),INTENT(IN) :: CMatrix
     INTEGER(IKIND) :: i
-    CHARACTER(10000) :: SFormatting, SPrintString
+    CHARACTER(10000) :: SFormatting
 
     IF ( ( my_rank==0 .OR. LPrintThisCore ) &
     .AND. (MsgPriority%LState .OR. MsgTag%LState) ) THEN
@@ -407,12 +410,13 @@ CONTAINS
 
   SUBROUTINE messageIMatrix ( MsgPriority, MsgTag, SMainMsg, IMatrix )
     
+    USE SPARA, ONLY : SPrintString
     TYPE (MsgPriorities), INTENT(IN) :: MsgPriority
     TYPE (MsgTags), INTENT(IN) :: MsgTag
     CHARACTER(*), INTENT(IN) :: SMainMsg
     INTEGER(IKIND),DIMENSION(:,:),INTENT(IN) :: IMatrix
     INTEGER(IKIND) :: i
-    CHARACTER(1000) :: SFormatting, SPrintString
+    CHARACTER(1000) :: SFormatting
 
     IF ( ( my_rank==0 .OR. LPrintThisCore ) &
     .AND. (MsgPriority%LState .OR. MsgTag%LState) ) THEN

@@ -77,27 +77,22 @@ MODULE refinementcontrol_mod
     USE RConst, ONLY : RPlanckConstant
 
     ! global outputs
+    USE SPARA, ONLY : SPrintString
     USE CPARA, ONLY : CUgMat,CUgMatNoAbs, CUniqueUg
     USE RPARA, ONLY : RAbsorptionPercentage, RDeltaK, RFigureofMerit, RSimulatedPatterns
 
     IMPLICIT NONE
 
+    CHARACTER(200) :: SFormat
     REAL(RKIND),INTENT(INOUT) :: RIndependentVariable(INoOfVariables)
     INTEGER(IKIND),INTENT(INOUT) :: Iter
     INTEGER(IKIND),INTENT(OUT) :: IThicknessIndex 
     ! NB IThicknessIndex is calculated and used on rank 0 only
     INTEGER(IKIND),INTENT(OUT) :: IErr
-    INTEGER(IKIND) :: ind,jnd, ILoc(2), IUniqueUgs,IStartTime
+    INTEGER(IKIND) :: ind,jnd, ILoc(2), IUniqueUgs
     REAL(RKIND) :: RCurrentG(3), RScatteringFactor
-    COMPLEX(CKIND) :: CUgMatDummy(INhkl,INhkl),CVgij
-    CHARACTER(200) :: SFormat,SPrintString
+    COMPLEX(CKIND) :: CUgMatDummy(INhkl,INhkl)
 
-    CALL SYSTEM_CLOCK( IStartTime )
-
-    WRITE(SPrintString,FMT='(A,I5)')"Iteration ",Iter
-    CALL message(LS,SPrintString)
-    
-    !\/----------------------------------------------------------------------
     IF (IRefineMode(1).EQ.1) THEN  ! Ug refinement; update structure factors 
       ! Dummy Matrix to contain new iterative values
       CUgMatDummy = CZERO    ! NB these are Ug's without absorption
@@ -149,7 +144,9 @@ MODULE refinementcontrol_mod
       CALL Absorption(IErr)! calculates CUgMat = CUgMatNoAbs + CUgMatPrime
       IF(l_alert(IErr,"SimulateAndFit","Absorption")) RETURN
     END IF
-      !/\----------------------------------------------------------------------
+    
+    WRITE(SPrintString,FMT='(A,I5)')"Iteration ",Iter
+    CALL message(LS,SPrintString)
     CALL message( LM,dbg3, "Ug matrix3, with absorption (nm^-2)" )!LM, dbg3
     DO ind = 1,6
       WRITE(SPrintString,FMT='(3(I2,1X),A2,1X,6(F7.4,1X,F7.4,2X))') NINT(Rhkl(ind,:)),": ",100*CUgMat(ind,1:6)
@@ -210,7 +207,7 @@ MODULE refinementcontrol_mod
     ! RSimulatedPatterns has a long list of pixel instead of a 2D image matrix
     USE RPARA, ONLY : RIndividualReflections
     USE IPara, ONLY : IInitialSimulationFLAG, IPixelComputed
-
+    
     !global inputs
     USE RPARA, ONLY : RBlurRadius
     USE IPARA, ONLY : ICount,IDisplacements,ILocalPixelCountMax,INoOfLacbedPatterns,&
@@ -218,15 +215,11 @@ MODULE refinementcontrol_mod
 
     IMPLICIT NONE
 
-    INTEGER(IKIND) :: IErr, ind,jnd,knd,pnd, IIterationFLAG, IStartTime
-    INTEGER(IKIND) :: IAbsorbTag = 0
-    REAL(RKIND),DIMENSION(:,:,:),ALLOCATABLE :: RFinalMontageImageRoot
-    REAL(RKIND),DIMENSION(:,:),ALLOCATABLE :: RTempImage 
+    INTEGER(IKIND) :: IErr, ind,jnd,knd,pnd,IIterationFLAG
+!    REAL(RKIND),DIMENSION(:,:),ALLOCATABLE :: RTempImage 
 
     ! Reset simuation   
     RIndividualReflections = ZERO
-
-    CALL SYSTEM_CLOCK( IStartTime )
 
     ! Simulation (different local pixels for each core)
     CALL message(LS,"Bloch wave calculation...")
@@ -245,8 +238,6 @@ MODULE refinementcontrol_mod
     !=====================================
     IF(l_alert(IErr,"SimulateAndFit","MPI_GATHERV")) RETURN
 
-    CALL PrintEndTime( LM, IStartTime, "Bloch wave simulation" )
-
     ! put 1D array RSimulatedPatterns into 2D image RImageSimi
     ! remember dimensions of RSimulatedPatterns(INoOfLacbedPatterns,IThicknessCount,IPixelTotal)
     ! and RImageSimi(width, height,INoOfLacbedPatterns,IThicknessCount )
@@ -261,7 +252,7 @@ MODULE refinementcontrol_mod
 
     ! Gaussian blur to match experiment using global variable RBlurRadius
     IF (RBlurRadius.GT.TINY) THEN
-       ALLOCATE(RTempImage(2*IPixelCount,2*IPixelCount),STAT=IErr)
+!       ALLOCATE(RTempImage(2*IPixelCount,2*IPixelCount),STAT=IErr)
        DO ind=1,INoOfLacbedPatterns
           DO jnd=1,IThicknessCount
              CALL BlurG(RImageSimi(:,:,ind,jnd),IPixelCount,RBlurRadius,IErr)
@@ -294,7 +285,8 @@ MODULE refinementcontrol_mod
     
     ! global outputs
     USE RPARA, ONLY : RFigureofMerit
-
+    USE SPARA, ONLY : SPrintString
+    
     ! global inputs
     USE IPARA, ONLY : INoOfLacbedPatterns,ICorrelationFLAG,IPixelCount,IThicknessCount, &
           IImageProcessingFLAG,IOutPutReflections
@@ -313,8 +305,7 @@ MODULE refinementcontrol_mod
     REAL(RKIND) :: RTotalCorrelation,RBestTotalCorrelation,RImageCorrelation,RBestThickness,&
          RThicknessRange,Rradius
     REAL(RKIND),DIMENSION(INoOfLacbedPatterns) :: RBestCorrelation
-    CHARACTER*100 :: SPrintString
-    CHARACTER*20 :: Snum       
+    CHARACTER(20) :: Snum       
 
     IF (ICorrelationFLAG.EQ.3) THEN ! allocate mask
       ALLOCATE(RMaskImage(2*IPixelCount,2*IPixelCount),STAT=IErr)
@@ -626,7 +617,7 @@ MODULE refinementcontrol_mod
 
     USE MyNumbers
     USE message_mod 
-    
+    !should be cut down to variables actually used
     USE IConst; USE RConst; USE SConst
     USE IPara; USE RPara; USE CPara; USE SPara;
     USE BlochPara 
@@ -635,7 +626,6 @@ MODULE refinementcontrol_mod
 
     INTEGER(IKIND) :: IErr,ind,IVariableType,jnd,knd
     REAL(RKIND),DIMENSION(3) :: RCrystalVector
-    CHARACTER*100 :: SPrintString
 
     RCrystalVector = [RLengthX,RLengthY,RLengthZ]
 

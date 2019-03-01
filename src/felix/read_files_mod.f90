@@ -61,7 +61,7 @@ MODULE read_files_mod
           RZDirC, RXDirC, RNormDirC, RAcceleratingVoltage, RAcceptanceAngle, &
           RInitialThickness, RFinalThickness, RDeltaThickness, RBlurRadius, &
           RSimplexLengthScale, RExitCriteria
-
+    USE SPARA, ONLY : SPrintString
     ! global inputs
     USE IChannels, ONLY : IChInp
     USE IPARA, ONLY : IRefinementVariableTypes
@@ -75,7 +75,7 @@ MODULE read_files_mod
     REAL(RKIND) :: ROfIter
     CHARACTER(200) :: SImageMode, SElements, SRefineMode, SStringFromNumber, SRefineYESNO, &
           SAtomicSites, SFormatString, SLengthofNumberString, &
-          SDirectionX, SIncidentBeamDirection, SNormalDirectionX, SPrintString
+          SDirectionX, SIncidentBeamDirection, SNormalDirectionX
 
     OPEN(UNIT= IChInp, IOSTAT=IErr, FILE= "felix.inp",STATUS= 'OLD')
     IF(l_alert(IErr,"ReadInpFile","OPEN() felix.inp")) RETURN
@@ -409,13 +409,14 @@ MODULE read_files_mod
     USE SPARA, ONLY : SChemicalFormula
     USE IPARA, ONLY : INoOfLacbedPatterns,IPixelCount,IByteSize,ILN
     USE RPARA, ONLY : RInputHKLs
-
+    USE SPARA, ONLY : SPrintString
+    
     IMPLICIT NONE
 
     INTEGER(IKIND),INTENT(OUT) :: IErr
     INTEGER(IKIND) :: ind, jnd, INegError = 0, IPixelArray(2), IFileTypeID
     INTEGER(8) :: IFileSize
-    CHARACTER :: SFilename*100,SPath*100,SImageExtension*50,SFilePath*100,SPrintString*200
+    CHARACTER(100) :: SFilename,SPath,SImageExtension,SFilePath
     LOGICAL :: LFileExist
     REAL(4),ALLOCATABLE :: RImage4ByteFloatDM3(:,:)
 

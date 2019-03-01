@@ -83,7 +83,6 @@ PROGRAM Felixrefine
   
   CHARACTER(40) :: my_rank_string
   CHARACTER(20) :: h,k,l
-  CHARACTER(200) :: SPrintString
 
   !--------------------------------------------------------------------
   ! startup

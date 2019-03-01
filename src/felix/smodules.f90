@@ -51,7 +51,7 @@ MODULE SConst
 
   CHARACTER(50), PARAMETER :: RStr= "Version: master / 1.02 / r.beanland"
   CHARACTER(50), PARAMETER :: DStr= "Date: 28-Feb-2019"
-  CHARACTER(50), PARAMETER :: AStr= "Refinements B,C,D,H,F and S working, no HOLZ" 
+  CHARACTER(50), PARAMETER :: AStr= "Refinements B,C,D,F,H and S working, no HOLZ" 
   CHARACTER(8) SAllSpaceGrp(230)
 
   DATA SAllSpaceGrp/"P1","P-1","P2","P21","C2","Pm","Pc","Cm",&
@@ -345,6 +345,7 @@ END MODULE CPara
 MODULE SPara
   USE MyNumbers
   
+  CHARACTER(200) :: SPrintString
   CHARACTER(40) :: SChemicalFormula
   CHARACTER(1) :: SSpaceGroupName
   CHARACTER(10) :: SSpaceGrp

@@ -82,6 +82,7 @@ MODULE read_cif_mod
     USE SConst, ONLY : SAllSpaceGrp
     USE RPARA, ONLY : RDebyeWallerConstant
     USE IPARA, ONLY : IAtomsToRefine,IAnisoDebyeWallerFactorFlag,ISimFLAG,ILN
+    USE SPARA, ONLY : SPrintString
     USE SConst, ONLY : SElementSymbolMatrix
     USE IConst
     
@@ -92,7 +93,7 @@ MODULE read_cif_mod
     LOGICAL       f1,f2,f3
     CHARACTER(32)  name
     CHARACTER(32)  SChemForm
-    CHARACTER(80)  line,SPrintString
+    CHARACTER(80)  line
     CHARACTER(4)   label(6)
     CHARACTER(1)   SAlphabetarray(52)
     CHARACTER(52)  alphabet

@@ -49,11 +49,11 @@ MODULE write_output_mod
     USE MyMPI
     ! global inputs/outputs
     USE IPARA, ONLY : IPrint, IPreviousPrintedIteration
-
+    USE SPARA, ONLY : SPrintString
+    
     IMPLICIT NONE
     INTEGER(IKIND),INTENT(IN) :: Iter,IThicknessIndex,IPrintFLAG
     INTEGER(IKIND),INTENT(OUT) :: IErr
-    CHARACTER(200) :: SPrintString
 
     IF(Iter.EQ.0) IErr=1
     IF(l_alert(IErr,"WriteIterationOutputWrapper","Unexpectedly recieved Iter = 0")) RETURN

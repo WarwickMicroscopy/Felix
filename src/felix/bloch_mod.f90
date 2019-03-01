@@ -70,6 +70,7 @@ MODULE bloch_mod
                       INoOfLacbedPatterns,IPixelCount,IThicknessCount,INhkl,&
                       IOutputReflections,IBlochMethodFLAG
     USE BlochPara, ONLY : RBigK            
+    USE SPARA, ONLY : SPrintString
     
     IMPLICIT NONE
     
@@ -92,7 +93,7 @@ MODULE bloch_mod
     COMPLEX(CKIND) sumC,sumD
     COMPLEX(CKIND), DIMENSION(:,:), ALLOCATABLE :: CBeamTranspose,CUgMatPartial,CDummyEigenVectors
     CHARACTER*40 surname
-    CHARACTER*100 SindString,SjndString,SPixelCount,SnBeams,SWeakBeamIndex,SPrintString
+    CHARACTER*100 SindString,SjndString,SPixelCount,SnBeams,SWeakBeamIndex
 
     ! variables used for koch spence method development
     COMPLEX(CKIND),ALLOCATABLE :: CDiagonalSgMatrix(:,:), COffDiagonalSgMatrix(:,:)
