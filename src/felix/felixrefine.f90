@@ -260,8 +260,8 @@ PROGRAM Felixrefine
   ALLOCATE(RgMatrix(INhkl,INhkl,ITHREE),STAT=IErr)
   IF(l_alert(IErr,"felixrefine","allocate RgMatrix")) CALL abort
   ! Matrix of their magnitudes 
-  ALLOCATE(RgMatrixMagnitude(INhkl,INhkl),STAT=IErr)
-  IF(l_alert(IErr,"felixrefine","allocate RgMatrixMagnitude")) CALL abort
+!  ALLOCATE(RgMatrixMagnitude(INhkl,INhkl),STAT=IErr)
+!  IF(l_alert(IErr,"felixrefine","allocate RgMatrixMagnitude")) CALL abort
  
   !--------------------------------------------------------------------
   ! calculate g vector list, magnitudes and components parallel to the surface
@@ -401,9 +401,6 @@ PROGRAM Felixrefine
   IF(l_alert(IErr,"felixrefine","allocate CUgMatPrime")) CALL abort
   ALLOCATE(CUgMat(INhkl,INhkl),STAT=IErr)! Ug+U'g Matrix, including absorption
   IF(l_alert(IErr,"felixrefine","allocate CUgMat")) CALL abort
-  ! Matrix of sums of indices - for symmetry equivalence in the Ug matrix
-  ALLOCATE(RgSumMat(INhkl,INhkl),STAT=IErr) 
-  IF(l_alert(IErr,"felixrefine","allocate RgSumMat")) CALL abort
   ! Matrix with numbers marking equivalent Ug's
   ALLOCATE(ISymmetryRelations(INhkl,INhkl),STAT=IErr)
   IF(l_alert(IErr,"felixrefine","allocate ISymmetryRelations")) CALL abort
@@ -431,7 +428,6 @@ PROGRAM Felixrefine
 !  END DO
   IF(l_alert(IErr,"felixrefine","Absorption")) CALL abort
   CALL PrintEndTime(LS,IStartTime2, "Absorption" )
-  CALL message(LL,dbg3,"g-vector magnitude matrix (2pi/A)", RgMatrixMagnitude(1:16,1:8)) 
   CALL SYSTEM_CLOCK( IStartTime2 )
 
   !--------------------------------------------------------------------
@@ -720,7 +716,7 @@ PROGRAM Felixrefine
   DEALLOCATE(RgPoolMag,STAT=IErr)
   DEALLOCATE(RgPool,STAT=IErr)
   DEALLOCATE(RgMatrix,STAT=IErr)
-  DEALLOCATE(RgSumMat,STAT=IErr)
+!  DEALLOCATE(RgSumMat,STAT=IErr)
   DEALLOCATE(RSimulatedPatterns,STAT=IErr)
   DEALLOCATE(RAtomPosition,STAT=IErr)
   DEALLOCATE(SAtomName,STAT=IErr)
@@ -729,7 +725,7 @@ PROGRAM Felixrefine
   DEALLOCATE(IAtomicNumber,STAT=IErr)
   DEALLOCATE(IAnisoDW,STAT=IErr)
   DEALLOCATE(RAtomCoordinate,STAT=IErr)
-  DEALLOCATE(RgMatrixMagnitude,STAT=IErr)
+!  DEALLOCATE(RgMatrixMagnitude,STAT=IErr)
   DEALLOCATE(CPseudoAtom,STAT=IErr)
   DEALLOCATE(CPseudoScatt,STAT=IErr)
   ! These are global variables, see smodules.f90

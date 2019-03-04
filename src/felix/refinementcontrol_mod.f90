@@ -72,8 +72,8 @@ MODULE refinementcontrol_mod
           IPixelCount, ISimFLAG, ISymmetryRelations, IUgOffset, IRefineMode, &
           IEquivalentUgKey
     USE RPARA, ONLY : RAngstromConversion,RElectronCharge,RElectronMass,&
-          RConvergenceAngle, RMinimumGMag, RTolerance, RRelativisticCorrection, &
-          RVolume, RgMatrix, RgMatrixMagnitude, RCurrentGMagnitude,Rhkl
+          RConvergenceAngle,RMinimumGMag,RTolerance,RRelativisticCorrection, &
+          RVolume,RgMatrix,RCurrentGMagnitude,Rhkl!, RgMatrixMagnitude
     USE RConst, ONLY : RPlanckConstant
 
     ! global outputs
@@ -91,11 +91,13 @@ MODULE refinementcontrol_mod
     INTEGER(IKIND),INTENT(OUT) :: IErr
     INTEGER(IKIND) :: ind,jnd, ILoc(2), IUniqueUgs
     REAL(RKIND) :: RCurrentG(3), RScatteringFactor
-    COMPLEX(CKIND) :: CUgMatDummy(INhkl,INhkl)
+    COMPLEX(CKIND),DIMENSION(:,:),ALLOCATABLE :: CTempMat
 
     IF (IRefineMode(1).EQ.1) THEN  ! Ug refinement; update structure factors 
+      ALLOCATE (CTempMat(INhkl,INhkl),STAT=IErr)
+      IF(l_alert(IErr,"SimulateAndFit","allocate CTempMat")) RETURN
       ! Dummy Matrix to contain new iterative values
-      CUgMatDummy = CZERO    ! NB these are Ug's without absorption
+      CTempMat = CZERO    ! NB these are Ug's without absorption
       jnd=1
       ! work through the Ug's to update
       DO ind = 1+IUgOffset,INoofUgs+IUgOffset
@@ -119,16 +121,17 @@ MODULE refinementcontrol_mod
         END IF
         ! Update the Ug matrix for this Ug
         WHERE(ISymmetryRelations.EQ.IEquivalentUgKey(ind))
-          CUgMatDummy = CUniqueUg(ind)
+          CTempMat = CUniqueUg(ind)
         END WHERE
         WHERE(ISymmetryRelations.EQ.-IEquivalentUgKey(ind))
-          CUgMatDummy = CONJG(CUniqueUg(ind))
+          CTempMat = CONJG(CUniqueUg(ind))
         END WHERE
       END DO
       ! put the changes into CUgMatNoAbs
-      WHERE(ABS(CUgMatDummy).GT.TINY)
-        CUgMatNoAbs = CUgMatDummy
+      WHERE(ABS(CTempMat).GT.TINY)
+        CUgMatNoAbs = CTempMat
       END WHERE
+      DEALLOCATE(CTempMat)
       CALL Absorption(IErr)
       IF(l_alert(IErr,"SimulateAndFit","Absorption")) RETURN
       IF (IAbsorbFLAG.EQ.1) THEN ! proportional absorption

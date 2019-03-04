@@ -56,7 +56,7 @@ MODULE crystallography_mod
     USE IPARA, ONLY : INhkl,IPixelCount
     USE SPARA, ONLY : SPrintString    
     ! global outputs
-    USE RPARA, ONLY : RgPool,RgPoolMag,RgDotNorm,RMinimumGMag,RDeltaK,RgMatrix,RgMatrixMagnitude
+    USE RPARA, ONLY : RgPool,RgPoolMag,RgDotNorm,RMinimumGMag,RDeltaK,RgMatrix!,RgMatrixMagnitude
     
     IMPLICIT NONE
     
@@ -81,25 +81,13 @@ MODULE crystallography_mod
     DO ind=1,INhkl
       DO jnd=1,INhkl
         RgMatrix(ind,jnd,:)= RgPool(ind,:)-RgPool(jnd,:)
-        RgMatrixMagnitude(ind,jnd) = & 
-           SQRT(DOT_PRODUCT(RgMatrix(ind,jnd,:),RgMatrix(ind,jnd,:)))
+!        RgMatrixMagnitude(ind,jnd) = & 
+ !          SQRT(DOT_PRODUCT(RgMatrix(ind,jnd,:),RgMatrix(ind,jnd,:)))
       END DO
     END DO
 
-!debugging output, can be deleted
-!DO ind = 1,6
-!  WRITE(SPrintString,FMT='(A,3(I2,1X),2X,3(F7.4,1X))') &
-!    "hkl: ",NINT(Rhkl(ind,:)),RgMatrix(ind,1,:)
-!  IF(my_rank.EQ.0)PRINT*,TRIM(ADJUSTL(SPrintString))
-!  WRITE(SPrintString,FMT='(A,3(I2,1X),2X,F7.4)') &
-!    "hkl: ",NINT(Rhkl(ind,:)),RgMatrixMagnitude(ind,1)
-!  IF(my_rank.EQ.0)PRINT*,TRIM(ADJUSTL(SPrintString))
-!END DO
-
-
     !outputs if requested    
     CALL message(LL,dbg3,"first 16 g-vectors", RgMatrix(1:16,1,:)) 
-    CALL message(LL,dbg3,"g-vector magnitude matrix (2pi/A)", RgMatrixMagnitude(1:16,1:8)) 
     CALL message(LL,dbg7,"g-vectors and magnitude (1/A), in the microscope reference frame" )
     DO ind = 1,INhkl
       CALL message(LL,dbg7,"hkl  :",NINT(Rhkl(ind,:)))

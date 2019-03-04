@@ -53,9 +53,9 @@ MODULE ug_matrix_mod
 
   ! global inputs
   USE IPARA, ONLY : INhkl,IAtomicNumber,INAtomsUnitCell,ICurrentZ,IAnisoDebyeWallerFactorFlag,IAnisoDW
-  USE RPARA, ONLY : RCurrentGMagnitude,RgMatrixMagnitude,RIsoDW,RDebyeWallerConstant,RVolume,&
+  USE RPARA, ONLY : RCurrentGMagnitude,RIsoDW,RDebyeWallerConstant,RVolume,&
     RRelativisticCorrection,Rhkl,ROccupancy,RAtomCoordinate,RgMatrix,RAnisotropicDebyeWallerFactorTensor
-    !,RElectronMass,RAngstromConversion,RScattFacToVolts,RElectronCharge,RPlanckConstant
+    !,RElectronMass,RAngstromConversion,RScattFacToVolts,RElectronCharge,RPlanckConstant,RgMatrixMagnitude
   USE CPARA, ONLY : CUgMatNoAbs,CUgMatPrime
   USE SPARA, ONLY : SPrintString
   ! global outputs
@@ -75,7 +75,7 @@ MODULE ug_matrix_mod
     ! fill lower diagonal of Ug matrix(excluding absorption) with Fourier components of the potential Vg
     DO ind=2,INhkl
       DO jnd=1,ind-1
-        RCurrentGMagnitude = RgMatrixMagnitude(ind,jnd)
+        RCurrentGMagnitude = SQRT(DOT_PRODUCT(RgMatrix(ind,jnd,:),RgMatrix(ind,jnd,:)))!RgMatrixMagnitude(ind,jnd)
         ! Old version, CVgij contribution from each atom and pseudoatom in Volts
         !CALL GetVgContributionij(RScatteringFactor,ind,jnd,CVgij,IErr) version with pseudoatoms
         DO knd=1,INAtomsUnitCell
@@ -113,6 +113,7 @@ MODULE ug_matrix_mod
     CTempMat = TRANSPOSE(CUgMatNoAbs)! To avoid the bug when conj(transpose) is used
     CUgMatNoAbs = CUgMatNoAbs + CONJG(CTempMat)
   END IF
+  DEALLOCATE(CTempMat)
   ind=INhkl*INhkl
   !===================================== ! Send UgMat to all cores
   CALL MPI_BCAST(CUgMatNoAbs,ind,MPI_DOUBLE_PRECISION,0,MPI_COMM_WORLD,IErr)
@@ -154,8 +155,8 @@ MODULE ug_matrix_mod
           IAtomicNumber
     USE RPARA, ONLY : RAbsorptionPercentage, RAngstromConversion, RElectronCharge, &
           RElectronMass, RElectronVelocity, RPlanckConstant, RRelativisticCorrection, &
-          RVolume, RgMatrixMagnitude, RIsoDW, ROccupancy, RgMatrix, Rhkl, RAtomCoordinate, &
-          RScattFacToVolts
+          RVolume,RIsoDW,ROccupancy,RgMatrix,Rhkl,RAtomCoordinate,RScattFacToVolts !&
+          !, RgMatrixMagnitude
 
     IMPLICIT NONE
 
@@ -233,7 +234,7 @@ MODULE ug_matrix_mod
         ! find the position of this Ug in the matrix
         ILoc = MINLOC(ABS(ISymmetryRelations-jnd))
         RCurrentG = RgMatrix(ILoc(1),ILoc(2),:) ! g-vector, local variable
-        RCurrentGMagnitude = RgMatrixMagnitude(ILoc(1),ILoc(2)) ! g-vector magnitude
+        RCurrentGMagnitude = SQRT(DOT_PRODUCT(RgMatrix(ILoc(1),ILoc(2),:),RgMatrix(ILoc(1),ILoc(2),:)))!RgMatrixMagnitude(ILoc(1),ILoc(2)) ! g-vector magnitude
         lnd=0 ! pseudoatom counter
 
         ! Structure factor calculation for absorptive form factors
@@ -451,7 +452,7 @@ MODULE ug_matrix_mod
           INhkl,IAtomicNumber,IEquivalentUgKey,&
           IAnisoDW
     USE RPARA, ONLY : RAngstromConversion,RElectronCharge,RElectronMass,&
-          RVolume,RIsoDW,RgMatrixMagnitude,ROccupancy,&
+          RVolume,RIsoDW,ROccupancy,&
           RElectronWaveVectorMagnitude,RgMatrix,RDebyeWallerConstant,RTolerance,&
           RAtomCoordinate,Rhkl,RAnisotropicDebyeWallerFactorTensor,RScattFacToVolts,&
           RLengthX,RLengthY,RLengthZ
@@ -470,7 +471,6 @@ MODULE ug_matrix_mod
     REAL(RKIND) :: RMeanInnerPotentialVolts,RScatteringFactor,&
           RPMag,Rx,Ry,Rr,RPalpha,RTheta,Rfold
     REAL(RKIND),DIMENSION(:,:),ALLOCATABLE :: RTempMat!to avoid problems with transpose ffs
-    COMPLEX(CKIND),DIMENSION(:,:),ALLOCATABLE :: CTempMat!to avoid problems with transpose
     
     !--------------------------------------------------------------------
     ! count pseudoatoms & allocate pseudoatom arrays
@@ -596,7 +596,9 @@ MODULE ug_matrix_mod
       !--------------------------------------------------------------------
       ! count equivalent Ugs
       !--------------------------------------------------------------------
-      
+      ! Matrix of sums of indices - for symmetry equivalence in the Ug matrix
+      ALLOCATE(RgSumMat(INhkl,INhkl),STAT=IErr) 
+      IF(l_alert(IErr,"felixrefine","allocate RgSumMat")) RETURN      
       ! IEquivalentUgKey is used later in absorption case 2 Bird & king
       RgSumMat = ZERO
       ! equivalent Ug's are identified by abs(h)+abs(k)+abs(l)+a*h^2+b*k^2+c*l^2...
@@ -611,6 +613,7 @@ MODULE ug_matrix_mod
       ALLOCATE (RTempMat(INhkl,INhkl),STAT=IErr)
       RTempMat = TRANSPOSE(RgSumMat)
       RgSumMat = RgSumMat+RTempMat
+      DEALLOCATE (RTempMat)
       CALL message ( LL, dbg3, "hkl: g Sum matrix" )
       DO ind =1,16
         WRITE(SPrintString,FMT='(3(I2,1X),A2,1X,12(F6.1,1X))') NINT(Rhkl(ind,:)),": ",RgSumMat(ind,1:12)
@@ -633,6 +636,7 @@ MODULE ug_matrix_mod
           END IF
         END DO
       END DO
+      DEALLOCATE (RgSumMat)
       WRITE(SPrintString,FMT='(I5,A25)') Iuid," unique structure factors"
       SPrintString=TRIM(ADJUSTL(SPrintString))
       CALL message ( LS, SPrintString )
