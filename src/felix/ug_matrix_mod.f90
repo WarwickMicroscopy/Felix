@@ -112,8 +112,8 @@ MODULE ug_matrix_mod
     IF(l_alert(IErr,"UgMatrix","allocate CTempMat")) RETURN
     CTempMat = TRANSPOSE(CUgMatNoAbs)! To avoid the bug when conj(transpose) is used
     CUgMatNoAbs = CUgMatNoAbs + CONJG(CTempMat)
+    DEALLOCATE(CTempMat)
   END IF
-  DEALLOCATE(CTempMat)
   ind=INhkl*INhkl
   !===================================== ! Send UgMat to all cores
   CALL MPI_BCAST(CUgMatNoAbs,ind,MPI_DOUBLE_PRECISION,0,MPI_COMM_WORLD,IErr)

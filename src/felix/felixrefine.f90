@@ -967,15 +967,15 @@ CONTAINS
             CALL message ( LS, ".  Writing output; difference images" )
             IF (my_rank.EQ.0) CALL WriteDifferenceImages(Iter,IThicknessIndex,ind,RCurrentVar(ind),Rdx,IErr)
           END IF
-          !If the fit is better, emphasise that parameter *2
+          !If the fit is better, emphasise that parameter *5
           !This gives more importance to parameters that are not stuck in a
-          !valley at the expense of not using the maximum gradient when no
-          !parameters are in valleys
-          IF (RFigureofMerit.LT.RBestFit) THEN
-            REmphasis=TWO
-          ELSE
+          !valley (at the expense of not using the maximum gradient when no
+          !parameters are in valleys)
+!          IF (RFigureofMerit.LT.RBestFit) THEN
+!            REmphasis=TEN/TWO
+!          ELSE
             REmphasis=ONE
-          END IF
+!          END IF
           CALL WriteIterationOutputWrapper(Iter,IThicknessIndex,IPrintFLAG,IErr)
           ! BestFitCheck copies RCurrentVar into RIndependentVariable
           ! and updates RBestFit if the fit is better
@@ -987,11 +987,18 @@ CONTAINS
 
       ELSE ! min gradient - to explore along a valley
         DO ind=1,INoOfVariables
-          ! invert gradient
-          IF (ABS(RPVec(ind)).GT.TINY) THEN ! don't invert zeros
-            RPVec(ind)=1/RPVec(ind)
-          ELSE ! keep them as zero
-            RPVec(ind)=ZERO
+!          ! invert gradient
+!          IF (ABS(RPVec(ind)).GT.TINY) THEN ! don't invert zeros
+!            RPVec(ind)=1/RPVec(ind)
+!          ELSE ! keep them as zero
+!            RPVec(ind)=ZERO
+!          END IF
+          !swap components pairwise to give a zero dot product for even numbers
+          !of variables
+          IF (MOD(ind,2).EQ.0) THEN!it's an even number
+            RPVec(ind)=-RLastVar(ind-1)
+          ELSEIF (ind.NE.INoOfVariables) THEN
+            RPVec(ind)=RLastVar(ind+1)
           END IF
         END DO
         CALL message(LS,"Checking minimum gradient")
@@ -1130,6 +1137,7 @@ CONTAINS
       CALL WriteIterationOutputWrapper(Iter,IThicknessIndex,IPrintFLAG,IErr)
       CALL BestFitCheck(RFigureofMerit,RBestFit,RCurrentVar,RIndependentVariable,IErr)
       ! check where we go next and update last fit etc.
+      RLastVar=RPVec
       IF (nnd.EQ.0) THEN ! only update LastFit after a max gradient refinement
         Rdf=RLastFit-RBestFit 
         RLastFit=RBestFit
