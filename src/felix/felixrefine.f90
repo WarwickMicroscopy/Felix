@@ -67,7 +67,7 @@ PROGRAM Felixrefine
   INTEGER(IKIND) :: IStartTime,IStartTime2
   REAL(RKIND) :: REmphasis,RHOLZAcceptanceAngle,RLaueZoneGz,RMaxGMag,RPvecMag,&
         RScale,RMaxUgStep,Rdx,RStandardDeviation,RMean,RGzUnitVec,RMinLaueZoneValue,&
-        Rdf,RLastFit,RBestFit,RMaxLaueZoneValue,RMaxAcceptanceGVecMag,&
+        Rdf,RLastFit,RBestFit,RMaxLaueZoneValue,RMaxAcceptanceGVecMag,RandomSign,&
         RLaueZoneElectronWaveVectorMag,RvarMin,RfitMin,RFit0,Rconvex,Rtest
   REAL(RKIND),DIMENSION(100) :: RTemp!temporary holder for refinement variables
   INTEGER(IKIND),DIMENSION(100) :: ITemp!temporary holder for refinement type
@@ -917,7 +917,7 @@ CONTAINS
       ! change max gradient vector (RPVec) depending upon max/min gradient situation 
       !--------------------------------------------------------------------      
       
-      IF (nnd.EQ.0) THEN ! find the gradient
+      IF (MOD(nnd,2).EQ.0) THEN ! even number, find the gradient
         DO ind=1,INoOfVariables ! calculate individual gradients
           Iter=Iter+1
           
@@ -948,18 +948,19 @@ CONTAINS
           SPrintString=TRIM(ADJUSTL(SPrintString))
           CALL message(LS,SPrintString)
 
-          ! Make a random number to vary the sign of dx, using system clock
+          ! Rdx is a small change in the current variable determined by RScale
+          ! which is either RScale/10 for atomic coordinates and
+          ! RScale*variable/10 for everything else 
           IF (my_rank.EQ.0) THEN
             CALL SYSTEM_CLOCK(mnd)
-            Rdx=(REAL(MOD(mnd,10))/TEN)-0.45 ! numbers 0-4 give minus, 5-9 give plus
-            Rdx=0.1*Rdx*RScale/ABS(Rdx) ! small change in current variable (RScale/10)is dx
+            RandomSign=SIGN(ONE,(REAL(MOD(mnd,10))/TEN)-0.45) ! gives random +/-1
+            Rdx=0.1*RandomSign*RScale*RCurrentVar(ind)
+            IF(IVariableType.EQ.2) Rdx=0.1*RandomSign*RScale
           END IF
           !=====================================! send Rdx OUT to all cores
           CALL MPI_BCAST(Rdx,1,MPI_DOUBLE_PRECISION,0,MPI_COMM_WORLD,IErr)
           !=====================================
           RCurrentVar=RVar0
-          !if dx is tiny in comparison with the variable being altered make it bigger
-          IF(Rdx<ABS(0.1*RScale*RCurrentVar(ind))) Rdx=Rdx*ABS(0.1*RScale*RCurrentVar(ind))/ABS(Rdx)
           RCurrentVar(ind)=RCurrentVar(ind)+Rdx
           CALL SimulateAndFit(RCurrentVar,Iter,IThicknessIndex,IErr)
           IF(l_alert(IErr,"MaxGradientRefinement","SimulateAndFit")) RETURN
@@ -983,9 +984,9 @@ CONTAINS
           RFitVec(ind)=RFigureofMerit*REmphasis
           RPVec(ind)=(RFit0-RFigureofMerit)/Rdx ! -df/dx: need the dx to keep track of sign
         END DO
-        nnd=1 ! do min gradient next time
+        nnd=nnd+1 ! do min gradient next time
 
-      ELSE ! min gradient - to explore along a valley
+      ELSE ! odd number: min gradient - to explore along a valley
         DO ind=1,INoOfVariables
 !          ! invert gradient
 !          IF (ABS(RPVec(ind)).GT.TINY) THEN ! don't invert zeros
@@ -993,12 +994,15 @@ CONTAINS
 !          ELSE ! keep them as zero
 !            RPVec(ind)=ZERO
 !          END IF
-          !swap components pairwise to give a zero dot product for even numbers
-          !of variables
-          IF (MOD(ind,2).EQ.0) THEN!it's an even number
-            RPVec(ind)=-RLastVar(ind-1)
+          !nnd has values 1,3,5.. here. MOD(x,4)-1 gives altenating +1,-1,+1..
+          !for x=0,2,4,6... 
+          RandomSign=MOD(INT(nnd)+ONE,FOUR)-ONE
+IF(my_rank.EQ.0)PRINT*,ind, RandomSign
+          !swap components pairwise to give a zero dot product for even numbers of variables
+          IF (MOD(ind,2).EQ.0) THEN!it's an even number, use negative of preceeding variable
+            RPVec(ind)=-RLastVar(ind-1)*RandomSign
           ELSEIF (ind.NE.INoOfVariables) THEN
-            RPVec(ind)=RLastVar(ind+1)
+            RPVec(ind)=RLastVar(ind+1)*RandomSign
           END IF
         END DO
         CALL message(LS,"Checking minimum gradient")
