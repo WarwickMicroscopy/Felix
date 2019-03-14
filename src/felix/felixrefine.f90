@@ -987,8 +987,7 @@ CONTAINS
       ELSE ! odd number: min gradient - to explore along a valley
         !nnd has values 1,3,5.. here. MOD(x,4)-1 gives altenating +1,-1,+1..
         !for x=0,2,4,6... 
-        RandomSign=MOD(INT(nnd)+ONE,FOUR)-ONE
-IF(my_rank.EQ.0)PRINT*,nnd, RandomSign
+        RandomSign=MOD(INT(nnd)+ONE,FOUR)-ONE!NB this is not random, don't be confused by the name!
         DO ind=1,INoOfVariables
 !          ! invert gradient
 !          IF (ABS(RPVec(ind)).GT.TINY) THEN ! don't invert zeros

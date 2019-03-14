@@ -49,8 +49,8 @@
 !!
 MODULE SConst
 
-  CHARACTER(50), PARAMETER :: RStr= "Version: master / 1.02 / r.beanland"
-  CHARACTER(50), PARAMETER :: DStr= "Date: 28-Feb-2019"
+  CHARACTER(50), PARAMETER :: RStr= "Version: master / 1.03 / r.beanland"
+  CHARACTER(50), PARAMETER :: DStr= "Date: 14-Mar-2019"
   CHARACTER(50), PARAMETER :: AStr= "Refinements B,C,D,F,H and S working, no HOLZ" 
   CHARACTER(8) SAllSpaceGrp(230)
 
