@@ -984,20 +984,18 @@ CONTAINS
           RFitVec(ind)=RFigureofMerit*REmphasis
           RPVec(ind)=(RFit0-RFigureofMerit)/Rdx ! -df/dx: need the dx to keep track of sign
         END DO
-        nnd=nnd+1 ! do min gradient next time
-
       ELSE ! odd number: min gradient - to explore along a valley
+        !nnd has values 1,3,5.. here. MOD(x,4)-1 gives altenating +1,-1,+1..
+        !for x=0,2,4,6... 
+        RandomSign=MOD(INT(nnd)+ONE,FOUR)-ONE
+IF(my_rank.EQ.0)PRINT*,nnd, RandomSign
         DO ind=1,INoOfVariables
 !          ! invert gradient
 !          IF (ABS(RPVec(ind)).GT.TINY) THEN ! don't invert zeros
 !            RPVec(ind)=1/RPVec(ind)
 !          ELSE ! keep them as zero
 !            RPVec(ind)=ZERO
-!          END IF
-          !nnd has values 1,3,5.. here. MOD(x,4)-1 gives altenating +1,-1,+1..
-          !for x=0,2,4,6... 
-          RandomSign=MOD(INT(nnd)+ONE,FOUR)-ONE
-IF(my_rank.EQ.0)PRINT*,ind, RandomSign
+!          END IF 
           !swap components pairwise to give a zero dot product for even numbers of variables
           IF (MOD(ind,2).EQ.0) THEN!it's an even number, use negative of preceeding variable
             RPVec(ind)=-RLastVar(ind-1)*RandomSign
@@ -1006,9 +1004,8 @@ IF(my_rank.EQ.0)PRINT*,ind, RandomSign
           END IF
         END DO
         CALL message(LS,"Checking minimum gradient")
-        nnd=0 ! do max gradient next time
       END IF
-      
+      nnd=nnd+1 ! do different gradient next time
       !--------------------------------------------------------------------
       ! normalise the max gradient vector RPvec & set the first point
       !--------------------------------------------------------------------
