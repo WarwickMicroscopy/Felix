@@ -63,7 +63,7 @@ MODULE setup_space_group_mod
 
     IMPLICIT NONE
 
-    CHARACTER*1 :: SWyckoff
+    CHARACTER(1) :: SWyckoff
     INTEGER(IKIND), INTENT(OUT) :: IErr
     INTEGER(IKIND) ::  ind,jnd,knd,ISpaceGrp,IBasisAtoms
 
@@ -157,7 +157,7 @@ MODULE setup_space_group_mod
 !!$  CASE(60)
 !!$  CASE(61)
 !!$  CASE(62)
-     CASE(63)
+     CASE(63)!C m c m.  No equivalent positions swap axes so no reassignments
       SELECT CASE (SWyckoff)
       CASE('a')!point symmetry 2/m, coordinate [0,0,0] & eq, no reassignment
 
@@ -181,7 +181,7 @@ MODULE setup_space_group_mod
               "Wyckoff Symbol for space group 63, C m c m, not recognised")) RETURN
       END SELECT
 
-     CASE(64)!Cmca.  No equivalent positios swap axes so no reassignments in fact
+     CASE(64)!C m c a.  No equivalent positions swap axes so no reassignments
       SELECT CASE (SWyckoff)
       CASE('a')!point symmetry 2/m, coordinate [0,0,0] & eq, no reassignment
 
@@ -206,7 +206,33 @@ MODULE setup_space_group_mod
 !!$  CASE(65)
 !!$  CASE(66)
 !!$  CASE(67)
-!!$  CASE(68)
+     CASE(68)!C c c a.  No equivalent positions swap axes so no reassignments
+      !N.B. multiple origin choices allowed, here origin at 222, -1 at[1/4,0,1/4]
+      SELECT CASE (SWyckoff)
+      CASE('a')!point symmetry 222, coordinate [0,0,0] & eq, no reassignment
+
+      CASE('b')!point symmetry 222, coordinate [0,0,1/2] & eq, no reassignment
+
+      CASE('c')!point symmetry -1, coordinate [1/4,0,1/4] & eq, no reassignment
+
+      CASE('d')!point symmetry -1, coordinate [0,1/4,1/4] & eq, no reassignment
+
+      CASE('e')!point symmetry 2(x), coordinate [x,0,0] & eq, no reassignment
+
+      CASE('f')!point symmetry 2(y), coordinate [0,y,0] & eq, no reassignment
+
+      CASE('g')!point symmetry 2(z), coordinate [0,0,z] & eq, no reassignment
+
+      CASE('h')!point symmetry 2(z), coordinate [1/4,1/4,z] & eq, no reassignment
+
+      CASE('i')!point symmetry 1, coordinate [x,y,z] & eq, no reassignment
+
+      CASE DEFAULT
+        IErr = 1
+        IF(l_alert(IErr,"PreferredBasis",&
+              "Wyckoff Symbol for space group 68, C c c a, not recognised")) RETURN
+      END SELECT
+
 !!$  CASE(69)
 !!$  CASE(70)
 !!$  CASE(71)
@@ -533,7 +559,7 @@ MODULE setup_space_group_mod
     IMPLICIT NONE
 
     INTEGER(IKIND),INTENT(IN) :: ISpaceGrp
-    CHARACTER*1, INTENT(IN) :: SWyckoff
+    CHARACTER(1), INTENT(IN) :: SWyckoff
     INTEGER(IKIND), INTENT(OUT) :: IVectors, IErr
     
     IErr=0
@@ -666,7 +692,33 @@ MODULE setup_space_group_mod
 !!$  CASE(65)
 !!$  CASE(66)
 !!$  CASE(67)
-!!$  CASE(68)
+     CASE(68)!Ccca
+      !N.B. multiple origin choices allowed, here origin at 222, -1 at [1/4,0,1/4]
+      SELECT CASE (SWyckoff)
+      CASE('a')!point symmetry 222, coordinate [0,0,0] & eq, no movement
+
+      CASE('b')!point symmetry 222, coordinate [0,0,1/2] & eq, no movement
+
+      CASE('c')!point symmetry -1, coordinate [1/4,0,1/4] & eq, no movement
+
+      CASE('d')!point symmetry -1, coordinate [0,1/4,1/4] & eq, no movement
+
+      CASE('e')!point symmetry 2(x), coordinate [x,0,0] & eq
+        IVectors = 1
+      CASE('f')!point symmetry 2(y), coordinate [0,y,0] & eq
+        IVectors = 1
+      CASE('g')!point symmetry 2(z), coordinate [0,0,z] & eq
+        IVectors = 1
+      CASE('h')!point symmetry 2(z), coordinate [1/4,1/4,z] & eq
+        IVectors = 1
+      CASE('i')!point symmetry 1, coordinate [x,y,z] & eq
+        IVectors = 3
+      CASE DEFAULT
+        IErr = 1
+        IF(l_alert(IErr,"PreferredBasis",&
+              "Wyckoff Symbol for space group 68, C c c a, not recognised")) RETURN
+      END SELECT
+
 !!$  CASE(69)
 !!$  CASE(70)
 !!$  CASE(71)
@@ -906,7 +958,7 @@ MODULE setup_space_group_mod
 
     IMPLICIT NONE
 
-    CHARACTER*1, INTENT(IN) :: SWyckoff
+    CHARACTER(1), INTENT(IN) :: SWyckoff
     INTEGER(IKIND), INTENT(IN) :: ISpaceGrp
     INTEGER(IKIND), INTENT(OUT) :: IErr
     REAL(RKIND), INTENT(OUT) :: RMoveMatrix(ITHREE,ITHREE)
@@ -1014,25 +1066,20 @@ MODULE setup_space_group_mod
 
       CASE('c')!point symmetry mm2, coordinate [0,y,1/4] & eq
         RMoveMatrix(1,:) = (/ZERO, ONE, ZERO/)
-
       CASE('d')!point symmetry -1, coordinate [1/4,1/4,0] & eq, no movement
 
       CASE('e')!point symmetry 2(x), coordinate [x,0,0] & eq
         RMoveMatrix(1,:) = (/ONE, ZERO, ZERO/)
-
       CASE('f')!point symmetry m(x), coordinate [0,y,z] & eq
         RMoveMatrix(1,:) = (/ZERO, ONE, ZERO/)
         RMoveMatrix(2,:) = (/ZERO, ZERO, ONE/)
-
       CASE('g')!point symmetry m(z), coordinate [x,y,1/4] & eq
         RMoveMatrix(1,:) = (/ONE, ZERO, ZERO/)
         RMoveMatrix(2,:) = (/ZERO, ONE, ZERO/)
-
       CASE('h')!point symmetry 1, coordinate [x,y,z] & eq
         RMoveMatrix(1,:) = (/ONE, ZERO, ZERO/)
         RMoveMatrix(2,:) = (/ZERO, ONE, ZERO/)
         RMoveMatrix(3,:) = (/ZERO, ZERO, ONE/)
-
       CASE DEFAULT
           IErr = 1
           IF(l_alert(IErr,"DetermineAllowedMovements",&
@@ -1049,19 +1096,15 @@ MODULE setup_space_group_mod
 
       CASE('d')!point symmetry 2(x), coordinate [x,0,0] & eq
         RMoveMatrix(1,:) = (/ONE, ZERO, ZERO/)
-
       CASE('e')!point symmetry 2(y), coordinate [1/4,y,1/4] & eq
         RMoveMatrix(1,:) = (/ZERO, ONE, ZERO/)
-
       CASE('f')!point symmetry m(x), coordinate [0,y,z] & eq
         RMoveMatrix(1,:) = (/ZERO, ONE, ZERO/)
         RMoveMatrix(2,:) = (/ZERO, ZERO, ONE/)
-
       CASE('g')!point symmetry 1, coordinate [x,y,z] & eq
         RMoveMatrix(1,:) = (/ONE, ZERO, ZERO/)
         RMoveMatrix(2,:) = (/ZERO, ONE, ZERO/)
         RMoveMatrix(3,:) = (/ZERO, ZERO, ONE/)
-
       CASE DEFAULT
           IErr = 1
           IF(l_alert(IErr,"DetermineAllowedMovements",&
@@ -1071,7 +1114,36 @@ MODULE setup_space_group_mod
 !!$  CASE(65)
 !!$  CASE(66)
 !!$  CASE(67)
-!!$  CASE(68)
+     CASE(68)!Ccca
+      !N.B. multiple origin choices allowed, here origin at 222, -1 at
+      ![1/4,0,1/4]
+      SELECT CASE (SWyckoff)
+      CASE('a')!point symmetry 222, coordinate [0,0,0] & eq, no movement
+
+      CASE('b')!point symmetry 222, coordinate [0,0,1/2] & eq, no movement
+
+      CASE('c')!point symmetry -1, coordinate [1/4,0,1/4] & eq, no movement
+
+      CASE('d')!point symmetry -1, coordinate [0,1/4,1/4] & eq, no movement
+
+      CASE('e')!point symmetry 2(x), coordinate [x,0,0] & eq
+        RMoveMatrix(1,:) = (/ONE, ZERO, ZERO/)
+      CASE('f')!point symmetry 2(y), coordinate [0,y,0] & eq
+        RMoveMatrix(1,:) = (/ZERO, ONE, ZERO/)
+      CASE('g')!point symmetry 2(z), coordinate [0,0,z] & eq
+        RMoveMatrix(1,:) = (/ZERO, ZERO, ONE/)
+      CASE('h')!point symmetry 2(z), coordinate [1/4,1/4,z] & eq
+        RMoveMatrix(1,:) = (/ZERO, ZERO, ONE/)
+      CASE('i')!point symmetry 1, coordinate [x,y,z] & eq
+        RMoveMatrix(1,:) = (/ONE, ZERO, ZERO/)
+        RMoveMatrix(2,:) = (/ZERO, ONE, ZERO/)
+        RMoveMatrix(3,:) = (/ZERO, ZERO, ONE/)
+      CASE DEFAULT
+        IErr = 1
+        IF(l_alert(IErr,"PreferredBasis",&
+          "Wyckoff Symbol for space group 68, C c c a, not recognised")) RETURN
+      END SELECT
+
 !!$  CASE(69)
 !!$  CASE(70)
 !!$  CASE(71)
@@ -1183,7 +1255,7 @@ MODULE setup_space_group_mod
       CASE DEFAULT
         IErr = 1
         IF(l_alert(IErr,"DetermineAllowedMovements",&
-              "Wyckoff Symbol for space group I4/m m m not recognised")) RETURN 	
+          "Wyckoff Symbol for space group I4/m m m not recognised")) RETURN
       END SELECT
 !!$  CASE(140)
 !!$  CASE(141)
@@ -1284,7 +1356,12 @@ MODULE setup_space_group_mod
         RMoveMatrix(1,:) = (/ONE, ZERO, ZERO/)
         RMoveMatrix(2,:) = (/ZERO, ONE, ZERO/)
         RMoveMatrix(3,:) = (/ZERO, ZERO, ONE/)
+      CASE DEFAULT
+        IErr = 1
+        IF(l_alert(IErr,"DetermineAllowedMovements",&
+          "Wyckoff Symbol for space group I4/m m m not recognised")) RETURN
       END SELECT
+
 !!$  CASE(217)
 !!$  CASE(218)
 !!$  CASE(219)
