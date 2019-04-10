@@ -76,13 +76,13 @@ jobs:
     # Compile
     #   This would typically go in either a build or a build-and-test job when using workflows
     # This is based on your 1.0 configuration file or project settings
-    - run: cd ./felix-${CIRCLE_SHA1}/;pwd;sed "s/ PLATFORM=INT64Nifort/# PLATFORM=INT64Nifort/g" user.mk | sed "s/# PLATFORM=INT64NGNU/ PLATFORM=INT64NGNU/g" >newuser.mk; cp newuser.mk user.mk; make clean; make
+    - run: cd ./felix-${CIRCLE_SHA1}/;pwd;sed "s/ PLATFORM=INT64Nifort/# PLATFORM=INT64Nifort/g" user.mk | sed "s/# PLATFORM=OPT64NGNU/ PLATFORM=OPT64NGNU/g" >newuser.mk; cp newuser.mk user.mk; make clean; make
     - run: cd src; make clean; pwd; ls -al
     # Test
     #   This would typically be a build job when using workflows, possibly combined with build
     # This is based on your 1.0 configuration file or project settings
-    - run: cd ./samples/GaAs_short; ../../felix-$CIRCLE_SHA1/felix.INT64NGNU.d | tee terminal_log.txt
-    - run: cd ./samples/SrTiO3_short; ../../felix-$CIRCLE_SHA1/felix.INT64NGNU.d | tee terminal_log.txt
+    - run: cd ./samples/GaAs_short; ../../felix-$CIRCLE_SHA1/felix.OPT64NGNU.d | tee terminal_log.txt
+    - run: cd ./samples/SrTiO3_short; ../../felix-$CIRCLE_SHA1/felix.OPT64NGNU.d | tee terminal_log.txt
     # This is based on your 1.0 configuration file or project settings
     - run: diff -W132 -s ./samples/GaAs_short/GaAs_I0000_085nm_070x070/GaAs_085nm_070x070_+0+0+0.bin ./samples/GaAs_short/sample_outputs/GaAs_I0000_085nm_070x070/GaAs_085nm_070x070_+0+0+0.bin || true
     - run: diff -W132 -y -s ./samples/GaAs_short/iteration_log.txt ./samples/GaAs_short/sample_outputs/iteration_log.txt || true
