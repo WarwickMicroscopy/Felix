@@ -76,7 +76,7 @@ jobs:
     # Compile
     #   This would typically go in either a build or a build-and-test job when using workflows
     # This is based on your 1.0 configuration file or project settings
-    - run: cd ./felix-${CIRCLE_SHA1}/;pwd;make clean; make
+    - run: cd ./felix-${CIRCLE_SHA1}/;pwd;sed "s/ PLATFORM=INT64Nifort/# PLATFORM=INT64Nifort/g" user.mk | sed "s/# PLATFORM=INT64NGNU/ PLATFORM=INT64NGNU/g" >user.mk; make clean; make
     - run: cd src; make clean; pwd; ls -al
     # Test
     #   This would typically be a build job when using workflows, possibly combined with build
