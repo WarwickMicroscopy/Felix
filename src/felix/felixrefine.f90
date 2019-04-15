@@ -985,8 +985,6 @@ CONTAINS
           RPVec(ind)=(RFit0-RFigureofMerit)/Rdx ! -df/dx: need the dx to keep track of sign
         END DO
       ELSE ! odd number: min gradient - to explore along a valley
-        !nnd has values 1,3,5.. here. MOD(x,4)-1 gives altenating +1,-1,+1..
-        !for x=0,2,4,6... 
         RandomSign=MOD(INT(nnd)+ONE,FOUR)-ONE!ok, it is not random this time!
         DO ind=1,INoOfVariables
 !          ! invert gradient
@@ -1004,14 +1002,14 @@ CONTAINS
         END DO
         CALL message(LS,"Checking minimum gradient")
       END IF
-      nnd=nnd+1 ! do different gradient next time
       !--------------------------------------------------------------------
-      ! normalise the max gradient vector RPvec & set the first point
+      ! normalise the max/min gradient vector RPvec & set the first point
       !--------------------------------------------------------------------
       RPvecMag=ZERO
       DO ind=1,INoOfVariables!
         RPvecMag=RPvecMag+RPvec(ind)**2
       END DO
+      RPvecMag=SQRT(RPvecMag)
       IF (ABS(RPvecMag).LT.TINY) THEN ! Zero check
         IErr=1
         WRITE(SPrintString,*) RPvec
@@ -1024,7 +1022,7 @@ CONTAINS
         IF(l_alert(IErr,"MaxGradientRefinement",&
               "Infinite or NaN gradient! Refinement vector ="//TRIM(SPrintString))) RETURN
       END IF
-      RPvec=RPvec/SQRT(RPvecMag) ! unity vector along direction of max gradient
+      RPvec=RPvec/RPvecMag ! unity vector along direction of max/min gradient
       IF(my_rank.EQ.0) THEN
         WRITE(SPrintString,*) "(A18,",SIZE(RPvec),"(F7.4,1X))"
         WRITE(SPrintString,FMT=SPrintString)"Refinement vector ",RPvec
@@ -1125,7 +1123,7 @@ CONTAINS
 
       ! now make a prediction
       CALL Parabo3(R3var,R3fit,RvarMin,RfitMin,IErr)
-      WRITE(SPrintString,FMT='(A32,F7.4,A16,F7.4)') &
+      IF (my_rank.EQ.0) WRITE(SPrintString,FMT='(A32,F9.4,A16,F10.5)') &
       "Concave set, predict minimum at ",RvarMin," with fit index ",RfitMin
       SPrintString=TRIM(ADJUSTL(SPrintString))
       CALL message (LS, SPrintString)
@@ -1138,7 +1136,7 @@ CONTAINS
       CALL BestFitCheck(RFigureofMerit,RBestFit,RCurrentVar,RIndependentVariable,IErr)
       ! check where we go next and update last fit etc.
       RLastVar=RPVec
-      IF (nnd.EQ.0) THEN ! only update LastFit after a max gradient refinement
+      IF (MOD(nnd,2).EQ.1) THEN ! only update LastFit after a min gradient refinement
         Rdf=RLastFit-RBestFit 
         RLastFit=RBestFit
         CALL message(LS, "--------------------------------")
@@ -1148,7 +1146,7 @@ CONTAINS
       ! shrink length scale as we progress, by a smaller amount
       ! depending on the no of variables: 1->1/2; 2->3/4; 3->5/6; 4->7/8; 5->9/10;
       RScale=RScale*(ONE-ONE/(TWO*REAL(INoOfVariables)))
-
+      nnd=nnd+1 ! do different gradient next time
     END DO
     !/\------------------------------------------------------------------
   

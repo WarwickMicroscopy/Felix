@@ -52,7 +52,7 @@ MODULE ug_matrix_mod
   USE MyMPI
 
   ! global inputs
-  USE IPARA, ONLY : INhkl,IAtomicNumber,INAtomsUnitCell,ICurrentZ,IAnisoDebyeWallerFactorFlag,IAnisoDW
+  USE IPARA, ONLY : INhkl,IAtomicNumber,INAtomsUnitCell,ICurrentZ,IAnisoDebyeWallerFactorFlag,IAnisoDW,IWriteFLAG
   USE RPARA, ONLY : RCurrentGMagnitude,RIsoDW,RDebyeWallerConstant,RVolume,&
     RRelativisticCorrection,Rhkl,ROccupancy,RAtomCoordinate,RgMatrix,RAnisotropicDebyeWallerFactorTensor
     !,RElectronMass,RAngstromConversion,RScattFacToVolts,RElectronCharge,RPlanckConstant,RgMatrixMagnitude
@@ -121,7 +121,7 @@ MODULE ug_matrix_mod
   
   CALL message( LM,dbg3, "Ug matrix, without absorption (nm^-2)" )!LM, dbg3
   DO ind = 1,40
-    WRITE(SPrintString,FMT='(3(I3,1X),A2,1X,6(F7.4,1X,F7.4,2X))') NINT(Rhkl(ind,:)),": ",100*CUgMatNoAbs(ind,1:6)
+    IF(IWriteFLAG.GE.2) WRITE(SPrintString,FMT='(3(I3,1X),A2,1X,6(F7.4,1X,F7.4,2X))') NINT(Rhkl(ind,:)),": ",100*CUgMatNoAbs(ind,1:6)
     CALL message( LM,dbg3, SPrintString)
   END DO
 
@@ -318,7 +318,7 @@ MODULE ug_matrix_mod
           CUgMatPrime = -CONJG(CUgPrime(ind))
         END WHERE
       END DO
-	
+
     CASE DEFAULT ! Default case is no absorption, do nothing
       CALL message( LS,dbg3, "No absorption correction" )
 
@@ -329,11 +329,13 @@ MODULE ug_matrix_mod
     !--------------------------------------------------------------------
 
     CUgMat = CUgMatNoAbs + CUgMatPrime 
-    CALL message( LM, dbg3, "Ug matrix, including absorption (nm^-2)" )
-    DO ind = 1,40
-      WRITE(SPrintString,FMT='(3(I3,1X),A2,1X,8(F7.4,1X))') NINT(Rhkl(ind,:)),": ",100*CUgMat(ind,1:4)
-      CALL message( LM, dbg3, SPrintString )
-    END DO
+    IF(my_rank.EQ.0) THEN
+      CALL message( LM, dbg3, "Ug matrix, including absorption (nm^-2)" )
+      DO ind = 1,40
+        WRITE(SPrintString,FMT='(3(I5,1X),A2,1X,8(F9.4,1X))') NINT(Rhkl(ind,:)),": ",100*CUgMat(ind,1:4)
+        CALL message( LM, dbg3, SPrintString )
+      END DO
+    END IF
 
   END SUBROUTINE Absorption
 
@@ -449,8 +451,7 @@ MODULE ug_matrix_mod
 
     ! global inputs
     USE IPARA, ONLY : IAnisoDebyeWallerFactorFlag,IInitialSimulationFLAG,INAtomsUnitCell,&
-          INhkl,IAtomicNumber,IEquivalentUgKey,&
-          IAnisoDW
+          INhkl,IAtomicNumber,IEquivalentUgKey,IWriteFLAG,IAnisoDW
     USE RPARA, ONLY : RAngstromConversion,RElectronCharge,RElectronMass,&
           RVolume,RIsoDW,ROccupancy,&
           RElectronWaveVectorMagnitude,RgMatrix,RDebyeWallerConstant,RTolerance,&
@@ -616,7 +617,7 @@ MODULE ug_matrix_mod
       DEALLOCATE (RTempMat)
       CALL message ( LL, dbg3, "hkl: g Sum matrix" )
       DO ind =1,16
-        WRITE(SPrintString,FMT='(3(I2,1X),A2,1X,12(F6.1,1X))') NINT(Rhkl(ind,:)),": ",RgSumMat(ind,1:12)
+        IF(IWriteFLAG.GE.4) WRITE(SPrintString,FMT='(3(I2,1X),A2,1X,12(F6.1,1X))') NINT(Rhkl(ind,:)),": ",RgSumMat(ind,1:12)
         CALL message ( LL, dbg3, SPrintString )!LM, dbg3
       END DO
 

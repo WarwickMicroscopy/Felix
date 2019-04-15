@@ -2880,8 +2880,8 @@ C
          nrecd=nrecd+1
          irecd=nrecd
          klen = lastnb(buffer(1:MAXBUF))
-         if (klen.gt.line_)
-     *     call tbxxwarn(' Input line length exceeds line_')
+C         if (klen.gt.line_)
+C     *     call tbxxwarn(' Input line length exceeds line_')
          call tbxxrle(buffer(1:klen),scrbuf,mlen)
          if (mp+mlen-1 .gt. NUMCPP) then
            if (mp.lt.NUMCPP) pagebuf(kp)(mp:NUMCPP) = ' '
