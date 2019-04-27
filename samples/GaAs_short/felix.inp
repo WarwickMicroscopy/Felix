@@ -50,5 +50,5 @@ RBlurRadius              = 0.0
 INoofUgs                 = 40
 IAtomicSites             = (1,2)
 IPrint                   = 0
-RSimplexLengthScale      = 5.0
-RExitCriteria            = 0.0001
+RSimplexLengthScale      = 20.0
+RExitCriteria            = 0.00001

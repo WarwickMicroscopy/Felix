@@ -1265,11 +1265,14 @@ CONTAINS
         CALL BestFitCheck(RFigureofMerit,RBestFit,RCurrentVar,RIndependentVariable,IErr)
         Rminus=RFigureofMerit
         !If the three points contain a minimum, predict its position using Kramer's rule
-        IF (MIN(RVar0,Rplus,Rminus).EQ.RVar0) THEN
+!IF(my_rank.EQ.0)PRINT*,RFit0,Rplus,Rminus
+!IF(my_rank.EQ.0)PRINT*,MIN(RFit0,Rplus,Rminus)
+        IF (MIN(RFit0,Rplus,Rminus).EQ.RFit0) THEN
           R3var=(/ (RVar0(ind)-Rdx),RVar0(ind),(RVar0(ind)+Rdx) /)
           R3fit=(/ Rminus,RFit0,Rplus /)
           CALL Parabo3(R3var,R3fit,RvarMin,RfitMin,IErr)
-          RIndependentVariable(ind)=RvarMin! ***should this be RCurrentVar???
+          RVar0(ind)=RvarMin!There should be a better way of doing this
+          RIndependentVariable(ind)=RvarMin
           RPVec(ind)=ZERO !don't include this variable in the max gradient refinement
           IF (my_rank.EQ.0) WRITE(SPrintString,FMT='(A18,F9.4,A16,F10.5)') &
           "Expect minimum at ",RvarMin," with fit index ",RfitMin
