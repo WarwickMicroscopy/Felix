@@ -68,7 +68,7 @@ PROGRAM Felixrefine
   REAL(RKIND) :: REmphasis,RHOLZAcceptanceAngle,RLaueZoneGz,RMaxGMag,RPvecMag,&
         RScale,RMaxUgStep,Rdx,RStandardDeviation,RMean,RGzUnitVec,RMinLaueZoneValue,&
         Rdf,RLastFit,RBestFit,RMaxLaueZoneValue,RMaxAcceptanceGVecMag,RandomSign,&
-        RLaueZoneElectronWaveVectorMag,RvarMin,RfitMin,RFit0,Rconvex,Rtest
+        RLaueZoneElectronWaveVectorMag,RvarMin,RfitMin,RFit0,Rconvex,Rtest,Rplus,Rminus
   REAL(RKIND),DIMENSION(100) :: RTemp!temporary holder for refinement variables
   INTEGER(IKIND),DIMENSION(100) :: ITemp!temporary holder for refinement type
   REAL(RKIND),DIMENSION(ITHREE) :: R3var,R3fit
@@ -685,10 +685,14 @@ PROGRAM Felixrefine
       IF(l_alert(IErr,"felixrefine","SimplexRefinement")) CALL abort 
     
     CASE(2)
+      CALL DownhillRefinement
+      IF(l_alert(IErr,"felixrefine","DownhillRefinement")) CALL abort 
+      
+    CASE(3)
       CALL MaxGradientRefinement
       IF(l_alert(IErr,"felixrefine","MaxGradientRefinement")) CALL abort 
       
-    CASE(3)
+    CASE(4)
       CALL PairwiseRefinement
       IF(l_alert(IErr,"felixrefine","PairwiseRefinement")) CALL abort 
      
@@ -870,28 +874,28 @@ CONTAINS
   !%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
   
   !>
-  !! Procedure-description: Refinement using the maximum gradient method
+  !! Procedure-description: Refinement using a maximum gradient method
   !!
   !! Major-Authors: Richard Beanland (2016)
   !!
-  SUBROUTINE MaxGradientRefinement
+  SUBROUTINE DownhillRefinement
 
     !--------------------------------------------------------------------
     ! allocations & intialise refinement variables
     !--------------------------------------------------------------------
     ALLOCATE(RVar0(INoOfVariables),STAT=IErr)! incoming set of variables
-    IF(l_alert(IErr,"MaxGradientRefinement","allocate RVar0")) RETURN
+    IF(l_alert(IErr,"DownhillRefinement","allocate RVar0")) RETURN
     ! set of variables to send out for simulations
     ALLOCATE(RCurrentVar(INoOfVariables),STAT=IErr)
-    IF(l_alert(IErr,"MaxGradientRefinement","allocate RCurrentVar")) RETURN
+    IF(l_alert(IErr,"DownhillRefinement","allocate RCurrentVar")) RETURN
     ALLOCATE(RLastVar(INoOfVariables),STAT=IErr) ! set of variables updated each cycle
-    IF(l_alert(IErr,"MaxGradientRefinement","allocate RLastVar")) RETURN
+    IF(l_alert(IErr,"DownhillRefinement","allocate RLastVar")) RETURN
     ! the vector describing the current line in parameter space
     ALLOCATE(RPVec(INoOfVariables),STAT=IErr)
-    IF(l_alert(IErr,"MaxGradientRefinement","allocate RPVec")) RETURN
+    IF(l_alert(IErr,"DownhillRefinement","allocate RPVec")) RETURN
     ! the list of fit indices resulting from small changes Rdf for each variable in RPVec
     ALLOCATE(RFitVec(INoOfVariables),STAT=IErr)
-    IF(l_alert(IErr,"MaxGradientRefinement","allocate RFitVec")) RETURN
+    IF(l_alert(IErr,"DownhillRefinement","allocate RFitVec")) RETURN
     
     RBestFit=RFigureofMerit
     RLastFit=RBestFit
@@ -963,7 +967,7 @@ CONTAINS
           RCurrentVar=RVar0
           RCurrentVar(ind)=RCurrentVar(ind)+Rdx
           CALL SimulateAndFit(RCurrentVar,Iter,IThicknessIndex,IErr)
-          IF(l_alert(IErr,"MaxGradientRefinement","SimulateAndFit")) RETURN
+          IF(l_alert(IErr,"DownhillRefinement","SimulateAndFit")) RETURN
           IF (IImageFLAG.EQ.1) THEN
             CALL message ( LS, ".  Writing output; difference images" )
             IF (my_rank.EQ.0) CALL WriteDifferenceImages(Iter,IThicknessIndex,ind,RCurrentVar(ind),Rdx,IErr)
@@ -1002,6 +1006,265 @@ CONTAINS
         END DO
         CALL message(LS,"Checking minimum gradient")
       END IF
+      !--------------------------------------------------------------------
+      ! normalise the max/min gradient vector RPvec & set the first point
+      !--------------------------------------------------------------------
+      RPvecMag=ZERO
+      DO ind=1,INoOfVariables!
+        RPvecMag=RPvecMag+RPvec(ind)**2
+      END DO
+      RPvecMag=SQRT(RPvecMag)
+      IF (ABS(RPvecMag).LT.TINY) THEN ! Zero check
+        IErr=1
+        WRITE(SPrintString,*) RPvec
+        IF(l_alert(IErr,"DownhillRefinement",&
+              "Chosen variables have no effect! Refinement vector ="//TRIM(SPrintString))) RETURN
+      END IF
+      IF ((RPvecMag-ONE.EQ.RPvecMag).OR.(RPvecMag.NE.RPvecMag)) THEN ! Infinity and NaN check
+        IErr=1
+        WRITE(SPrintString,*) RPvec
+        IF(l_alert(IErr,"DownhillRefinement",&
+              "Infinite or NaN gradient! Refinement vector ="//TRIM(SPrintString))) RETURN
+      END IF
+      RPvec=RPvec/RPvecMag ! unity vector along direction of max/min gradient
+      IF(my_rank.EQ.0) THEN
+        WRITE(SPrintString,*) "(A18,",SIZE(RPvec),"(F7.4,1X))"
+        WRITE(SPrintString,FMT=SPrintString)"Refinement vector ",RPvec
+        SPrintString=TRIM(ADJUSTL(SPrintString))
+        CALL message(LS,SPrintString)
+      END IF
+
+      RVar0=RIndependentVariable ! the best point of gradient calculation
+      RFigureofMerit=RBestFit ! the best fit so far
+      !avoid variables that give zero change in fit
+      xnd=1!index for the variable to use - we know there is one, otherwise it would have been picked up earlier
+      DO WHILE (ABS(RPvec(xnd)).LT.TINY)
+        xnd=xnd+1
+      END DO!really need to take these variables out of the refinement, but how?
+      ! First point, three points to find the minimum
+      R3var(1)=RVar0(xnd)! first point is current value
+      R3fit(1)=RFigureofMerit! point 1 is the incoming simulation and fit index
+      RPvecMag=RVar0(xnd)*RScale ! RPvecMag gives the magnitude of vector in parameter space
+      RCurrentVar=RVar0+RPvec*RPvecMag ! Update the parameters to simulate
+      
+      !--------------------------------------------------------------------
+      ! simulate and set the 2nd and 3rd point
+      !--------------------------------------------------------------------
+      ! Second point
+      R3var(2)=RCurrentVar(xnd) 
+      CALL message(LS,"Refining, point 2 of 3")
+      Iter=Iter+1
+      CALL SimulateAndFit(RCurrentVar,Iter,IThicknessIndex,IErr)
+      IF(l_alert(IErr,"DownhillRefinement","SimulateAndFit")) RETURN
+      CALL WriteIterationOutputWrapper(Iter,IThicknessIndex,IPrintFLAG,IErr)
+      CALL BestFitCheck(RFigureofMerit,RBestFit,RCurrentVar,RIndependentVariable,IErr)
+      R3fit(2)=RFigureofMerit
+
+      ! Third point
+      IF (R3fit(2).GT.R3fit(1)) THEN ! new 2 is not better than 1, go the other way
+        RPvecMag=-RPvecMag
+      ELSE ! it is better, so keep going
+        RVar0=RCurrentVar
+      END IF
+      RCurrentVar=RVar0+RPvec*RPvecMag
+      R3var(3)=RCurrentVar(xnd) ! third point
+      CALL message( LS, "Refining, point 3 of 3")
+      Iter=Iter+1
+      CALL SimulateAndFit(RCurrentVar,Iter,IThicknessIndex,IErr)
+      IF(l_alert(IErr,"DownhillRefinement","SimulateAndFit")) RETURN
+      CALL WriteIterationOutputWrapper(Iter,IThicknessIndex,IPrintFLAG,IErr)
+      CALL BestFitCheck(RFigureofMerit,RBestFit,RCurrentVar,RIndependentVariable,IErr)
+      R3fit(3)=RFigureofMerit
+
+      !--------------------------------------------------------------------
+      ! iterate until 3 points concave set
+      !--------------------------------------------------------------------
+
+      ! check the three points make a concave set
+      jnd=MAXLOC(R3var,1) ! highest x
+      knd=MINLOC(R3var,1) ! lowest x
+      lnd=6-jnd-knd ! the mid x
+      ! Rtest=0.0 would be a straight line, >0=convex, <0=concave
+      Rtest=-ABS(R3fit(jnd)-R3fit(knd))
+      ! Rconvex is the calculated fit index at the mid x,
+      ! if there was a straight line between lowest and highest x
+      Rconvex=R3fit(lnd)-(R3fit(knd)+(R3var(lnd)-R3var(knd))*&
+        (R3fit(jnd)-R3fit(knd))/(R3var(jnd)-R3var(knd)))
+
+      ! if it isn't more than 10% concave, keep going until it is sufficiently concave
+      DO WHILE (Rconvex.GT.0.1*Rtest)
+        CALL message( LS, "Convex, continuing")
+        jnd=MAXLOC(R3fit,1) ! worst fit
+        knd=MINLOC(R3fit,1) ! best fit
+        lnd=6-jnd-knd ! the mid fit
+        ! replace mid point with a step on from best point
+        !?? RB increase the step size by the golden ratio
+        !?? RPvecMag=(R3var(knd)-RVar0(1))*(0.5+SQRT(5.0)/2.0)/RPvec(1)
+        RPvecMag=TWO*RPvecMag ! double the step size
+        ! maximum step in Ug is RMaxUgStep
+        IF (ABS(RPvecMag).GT.RMaxUgStep.AND.IRefineMode(1).EQ.1) THEN
+          RPvecMag=SIGN(RMaxUgStep,RPvecMag)
+        END IF
+        RCurrentVar=RVar0+RPvec*RPvecMag
+        R3var(lnd)=RCurrentVar(xnd)! next point
+        Iter=Iter+1
+        CALL SimulateAndFit(RCurrentVar,Iter,IThicknessIndex,IErr)
+        IF(l_alert(IErr,"DownhillRefinement","SimulateAndFit")) RETURN
+        CALL WriteIterationOutputWrapper(Iter,IThicknessIndex,IPrintFLAG,IErr)
+        CALL BestFitCheck(RFigureofMerit,RBestFit,RCurrentVar,RIndependentVariable,IErr)
+        R3fit(lnd)=RFigureofMerit
+        jnd=MAXLOC(R3var,1) ! highest x
+        knd=MINLOC(R3var,1) ! lowest x
+        lnd=6-jnd-knd ! the mid x
+        Rconvex=R3fit(lnd)-(R3fit(knd)+(R3var(lnd)-R3var(knd))*&
+              (R3fit(jnd)-R3fit(knd))/(R3var(jnd)-R3var(knd)))
+        Rtest=-ABS(R3fit(jnd)-R3fit(knd))
+      END DO
+
+      !--------------------------------------------------------------------
+      ! make prediction and update last fit
+      !--------------------------------------------------------------------
+
+      ! now make a prediction
+      CALL Parabo3(R3var,R3fit,RvarMin,RfitMin,IErr)
+      IF (my_rank.EQ.0) WRITE(SPrintString,FMT='(A32,F9.4,A16,F10.5)') &
+      "Concave set, predict minimum at ",RvarMin," with fit index ",RfitMin
+      SPrintString=TRIM(ADJUSTL(SPrintString))
+      CALL message (LS, SPrintString)
+      RCurrentVar=RVar0+RPvec*(RvarMin-RVar0(xnd))/RPvec(xnd) ! Put prediction into RCurrentVar
+      Iter=Iter+1
+      CALL SimulateAndFit(RCurrentVar,Iter,IThicknessIndex,IErr)
+      IF(l_alert(IErr,"DownhillRefinement","SimulateAndFit")) RETURN
+      IPrintFLAG=1!Save this simulation
+      CALL WriteIterationOutputWrapper(Iter,IThicknessIndex,IPrintFLAG,IErr)
+      CALL BestFitCheck(RFigureofMerit,RBestFit,RCurrentVar,RIndependentVariable,IErr)
+      ! check where we go next and update last fit etc.
+      RLastVar=RPVec
+      IF (MOD(nnd,2).EQ.1) THEN ! only update LastFit after a min gradient refinement
+        Rdf=RLastFit-RBestFit 
+        RLastFit=RBestFit
+        CALL message(LS, "--------------------------------")
+        WRITE(SPrintString,FMT='(A19,F8.6,A15,F8.6)') "Improvement in fit ",Rdf,", will stop at ",RExitCriteria
+        CALL message (LS, SPrintString)
+      END IF
+      ! shrink length scale as we progress, by a smaller amount
+      ! depending on the no of variables: 1->1/2; 2->3/4; 3->5/6; 4->7/8; 5->9/10;
+      RScale=RScale*(ONE-ONE/(TWO*REAL(INoOfVariables)))
+      nnd=nnd+1 ! do different gradient next time
+    END DO
+    !/\------------------------------------------------------------------
+  
+    !--------------------------------------------------------------------
+    ! We are done, simulate and output the best fit
+    !--------------------------------------------------------------------
+
+    Iter=Iter+1
+    CALL SimulateAndFit(RIndependentVariable,Iter,IThicknessIndex,IErr)
+    IF(l_alert(IErr,"DownhillRefinement","SimulateAndFit")) RETURN
+    IPrintFLAG=2
+    CALL WriteIterationOutputWrapper(Iter,IThicknessIndex,IPrintFLAG,IErr)
+    IF(l_alert(IErr,"DownhillRefinement","WriteIterationOutputWrapper")) RETURN
+    DEALLOCATE(RVar0,RCurrentVar,RLastVar,RPVec,RFitVec,STAT=IErr)  
+
+  END SUBROUTINE DownhillRefinement
+
+  !%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%  
+  !>
+  !! Procedure-description: Refinement using a maximum gradient method
+  !!
+  !! Major-Authors: Richard Beanland (2016)
+  !!
+  SUBROUTINE MaxGradientRefinement
+
+    !--------------------------------------------------------------------
+    ! allocations & intialise refinement variables
+    !--------------------------------------------------------------------
+    ALLOCATE(RVar0(INoOfVariables),STAT=IErr)! incoming set of variables
+    IF(l_alert(IErr,"MaxGradientRefinement","allocate RVar0")) RETURN
+    ! set of variables to send out for simulations
+    ALLOCATE(RCurrentVar(INoOfVariables),STAT=IErr)
+    IF(l_alert(IErr,"MaxGradientRefinement","allocate RCurrentVar")) RETURN
+    ALLOCATE(RLastVar(INoOfVariables),STAT=IErr) ! set of variables updated each cycle
+    IF(l_alert(IErr,"MaxGradientRefinement","allocate RLastVar")) RETURN
+    ! the vector describing the current line in parameter space
+    ALLOCATE(RPVec(INoOfVariables),STAT=IErr)
+    IF(l_alert(IErr,"MaxGradientRefinement","allocate RPVec")) RETURN
+    ! the list of fit indices resulting from small changes Rdf for each variable in RPVec
+    
+    RBestFit=RFigureofMerit
+    RLastFit=RBestFit
+    RLastVar=RIndependentVariable
+    RCurrentVar=ONE
+    Rdf=ONE
+    RScale=RSimplexLengthScale
+    nnd=0 ! max/min gradient flag
+
+    !--------------------------------------------------------------------
+    ! iteratively refine until improvement in fit below exit criteria
+    !--------------------------------------------------------------------
+
+    !\/------------------------------------------------------------------
+    DO WHILE (Rdf.GE.RExitCriteria)
+
+      RVar0=RIndependentVariable ! incoming point in n-dimensional parameter space
+      RFit0=RFigureofMerit ! incoming fit
+      !See WriteIterationOutputWrapper for what IPrintFLAG does    
+      IPrintFLAG=0
+      DO ind=1,INoOfVariables ! calculate individual gradients
+        Iter=Iter+1
+        ! The type of variable being refined 
+        IVariableType=MOD(IIndependentVariableType(ind),10) 
+        ! print to screen
+        SELECT CASE(IVariableType)
+          CASE(1)
+            CALL message(LS,"Changing Ug")
+          CASE(2)
+            CALL message(LS,"Changing atomic coordinate")
+          CASE(3)
+            CALL message(LS,"Changing occupancy")
+          CASE(4)
+            CALL message(LS,"Changing isotropic Debye-Waller factor")
+          CASE(5)
+            CALL message(LS,"Changing anisotropic Debye-Waller factor")
+          CASE(6)
+            CALL message(LS,"Changing lattice parameter")
+          CASE(8)
+            CALL message(LS,"Changing convergence angle")
+        END SELECT
+        IF (RCurrentVar(ind).LE.TINY.AND.IVariableType.EQ.4) THEN ! skip zero DW factor
+          RPVec(ind)=TINY
+          CYCLE
+        END IF
+        WRITE(SPrintString,FMT='(A18,I3,A4,I3)') "Finding gradient, ",ind," of ",INoOfVariables
+        SPrintString=TRIM(ADJUSTL(SPrintString))
+        CALL message(LS,SPrintString)
+
+        ! Rdx is a small change in the current variable determined by RScale
+        ! which is either RScale/10 for atomic coordinates and
+        ! RScale*variable/10 for everything else
+        Rdx=0.1*RScale*RCurrentVar(ind)
+        IF(IVariableType.EQ.2) Rdx=0.1*RScale
+        ! three point gradient measurement, + first
+        RCurrentVar=RVar0
+        RCurrentVar(ind)=RVar0(ind)+Rdx
+        CALL SimulateAndFit(RCurrentVar,Iter,IThicknessIndex,IErr)
+        IF(l_alert(IErr,"MaxGradientRefinement","SimulateAndFit")) RETURN
+        IF (IImageFLAG.EQ.1) THEN
+          CALL message ( LS, ".  Writing output; difference images" )
+          IF (my_rank.EQ.0) CALL WriteDifferenceImages(Iter,IThicknessIndex,ind,RCurrentVar(ind),Rdx,IErr)
+        END IF
+        CALL WriteIterationOutputWrapper(Iter,IThicknessIndex,IPrintFLAG,IErr)
+        ! BestFitCheck copies RCurrentVar into RIndependentVariable
+        ! and updates RBestFit if the fit is better
+        CALL BestFitCheck(Rplus,RBestFit,RCurrentVar,RIndependentVariable,IErr)
+        ! Now -
+        RCurrentVar(ind)=RVar0(ind)-Rdx
+        CALL SimulateAndFit(RCurrentVar,Iter,IThicknessIndex,IErr)
+        IF(l_alert(IErr,"MaxGradientRefinement","SimulateAndFit")) RETURN
+        CALL BestFitCheck(Rminus,RBestFit,RCurrentVar,RIndependentVariable,IErr)
+        RPVec(ind)=(Rplus-Rminus)/(2*Rdx) ! -df/dx: need the dx to keep track of sign
+      END DO
+
       !--------------------------------------------------------------------
       ! normalise the max/min gradient vector RPvec & set the first point
       !--------------------------------------------------------------------
@@ -1160,7 +1423,7 @@ CONTAINS
     IPrintFLAG=2
     CALL WriteIterationOutputWrapper(Iter,IThicknessIndex,IPrintFLAG,IErr)
     IF(l_alert(IErr,"MaxGradientRefinement","WriteIterationOutputWrapper")) RETURN
-    DEALLOCATE(RVar0,RCurrentVar,RLastVar,RPVec,RFitVec,STAT=IErr)  
+    DEALLOCATE(RVar0,RCurrentVar,RLastVar,RPVec,STAT=IErr)  
 
   END SUBROUTINE MaxGradientRefinement
 
