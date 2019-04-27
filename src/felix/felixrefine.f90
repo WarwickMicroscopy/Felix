@@ -1256,12 +1256,14 @@ CONTAINS
         CALL WriteIterationOutputWrapper(Iter,IThicknessIndex,IPrintFLAG,IErr)
         ! BestFitCheck copies RCurrentVar into RIndependentVariable
         ! and updates RBestFit if the fit is better
-        CALL BestFitCheck(Rplus,RBestFit,RCurrentVar,RIndependentVariable,IErr)
+        CALL BestFitCheck(RFigureofMerit,RBestFit,RCurrentVar,RIndependentVariable,IErr)
+        RPlus=RFigureofMerit
         ! Now -
         RCurrentVar(ind)=RVar0(ind)-Rdx
         CALL SimulateAndFit(RCurrentVar,Iter,IThicknessIndex,IErr)
         IF(l_alert(IErr,"MaxGradientRefinement","SimulateAndFit")) RETURN
-        CALL BestFitCheck(Rminus,RBestFit,RCurrentVar,RIndependentVariable,IErr)
+        CALL BestFitCheck(RFigureofMerit,RBestFit,RCurrentVar,RIndependentVariable,IErr)
+        Rminus=RFigureofMerit
         RPVec(ind)=(Rplus-Rminus)/(2*Rdx) ! -df/dx: need the dx to keep track of sign
       END DO
 
