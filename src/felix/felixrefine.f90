@@ -1265,14 +1265,16 @@ CONTAINS
         CALL BestFitCheck(RFigureofMerit,RBestFit,RCurrentVar,RIndependentVariable,IErr)
         Rminus=RFigureofMerit
         !If the three points contain a minimum, predict its position using Kramer's rule
-!IF(my_rank.EQ.0)PRINT*,RFit0,Rplus,Rminus
-!IF(my_rank.EQ.0)PRINT*,MIN(RFit0,Rplus,Rminus)
+IF(my_rank.EQ.0)PRINT*,RFit0,Rplus,Rminus
+IF(my_rank.EQ.0)PRINT*,MIN(RFit0,Rplus,Rminus)
         IF (MIN(RFit0,Rplus,Rminus).EQ.RFit0) THEN
           R3var=(/ (RVar0(ind)-Rdx),RVar0(ind),(RVar0(ind)+Rdx) /)
           R3fit=(/ Rminus,RFit0,Rplus /)
           CALL Parabo3(R3var,R3fit,RvarMin,RfitMin,IErr)
-          RVar0(ind)=RvarMin!There should be a better way of doing this
-          RIndependentVariable(ind)=RvarMin
+          !We update RVar0 with the best points as we go along
+          !But keep RCurrentVar the same so that the measurements of gradient
+          !are accurate.  
+          RVar0(ind)=RvarMin
           RPVec(ind)=ZERO !don't include this variable in the max gradient refinement
           IF (my_rank.EQ.0) WRITE(SPrintString,FMT='(A18,F9.4,A16,F10.5)') &
           "Expect minimum at ",RvarMin," with fit index ",RfitMin
@@ -1282,6 +1284,14 @@ CONTAINS
           RPVec(ind)=(Rplus-Rminus)/(2*Rdx) ! -df/dx: need the dx to keep track of sign
         END IF
       END DO
+      !If we have set one or more variables to a predicted minimum run a new
+      !simulation for the predicted best point
+      IF (ABS(MINVAL(RPVec)).LT.TINY) THEN
+        CALL SimulateAndFit(RVar0,Iter,IThicknessIndex,IErr)
+        IF(l_alert(IErr,"MaxGradientRefinement","SimulateAndFit")) RETURN
+        CALL BestFitCheck(RFigureofMerit,RBestFit,RCurrentVar,RIndependentVariable,IErr)
+      END IF
+      RFigureofMerit=RBestFit ! the best fit so far
 
       !--------------------------------------------------------------------
       ! normalise the max/min gradient vector RPvec & set the first point
@@ -1306,8 +1316,8 @@ CONTAINS
           CALL message(LS,SPrintString)
         END IF
 
-        RVar0=RIndependentVariable ! the best point of gradient calculation
-        RFigureofMerit=RBestFit ! the best fit so far
+!        RVar0=RIndependentVariable ! the best point of gradient calculation
+!        RFigureofMerit=RBestFit ! the best fit so far
         !avoid variables that give zero change in fit
         xnd=1!index for the variable to use - we know there is one, otherwise it would have been picked up earlier
         DO WHILE (ABS(RPvec(xnd)).LT.TINY)
