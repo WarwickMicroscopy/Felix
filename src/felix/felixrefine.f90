@@ -1205,8 +1205,10 @@ CONTAINS
 
     !\/------------------------------------------------------------------
     DO WHILE (Rdf.GE.RExitCriteria)
-
-      RVar0=RIndependentVariable ! incoming point in n-dimensional parameter space
+      !put current best point in n-dimensional parameter space into workspace
+      RCurrentVar=RIndependentVariable
+      !running best fit during this refinement cycle goes in RVar0
+      RVar0=RIndependentVariable
       RFit0=RFigureofMerit ! incoming fit
       !See WriteIterationOutputWrapper for what IPrintFLAG does    
       IPrintFLAG=0
@@ -1238,14 +1240,12 @@ CONTAINS
         WRITE(SPrintString,FMT='(A18,I3,A4,I3)') "Finding gradient, ",ind," of ",INoOfVariables
         SPrintString=TRIM(ADJUSTL(SPrintString))
         CALL message(LS,SPrintString)
-
         ! Rdx is a small change in the current variable determined by RScale
         ! which is either RScale/10 for atomic coordinates and
         ! RScale*variable/10 for everything else
         Rdx=0.1*RScale*RCurrentVar(ind)
         IF(IVariableType.EQ.2) Rdx=0.1*RScale
         ! three point gradient measurement, + first
-        RCurrentVar=RVar0
         RCurrentVar(ind)=RVar0(ind)+Rdx
         CALL SimulateAndFit(RCurrentVar,Iter,IThicknessIndex,IErr)
         IF(l_alert(IErr,"MaxGradientRefinement","SimulateAndFit")) RETURN
@@ -1258,15 +1258,16 @@ CONTAINS
         ! and updates RBestFit if the fit is better
         CALL BestFitCheck(RFigureofMerit,RBestFit,RCurrentVar,RIndependentVariable,IErr)
         RPlus=RFigureofMerit
-        ! Now -
+        ! Now minus dx
         RCurrentVar(ind)=RVar0(ind)-Rdx
         CALL SimulateAndFit(RCurrentVar,Iter,IThicknessIndex,IErr)
         IF(l_alert(IErr,"MaxGradientRefinement","SimulateAndFit")) RETURN
         CALL BestFitCheck(RFigureofMerit,RBestFit,RCurrentVar,RIndependentVariable,IErr)
         Rminus=RFigureofMerit
+        !Reset current point so it's correct for any further  calculation
+        RCurrentVar(ind)=RVar0(ind)
+IF(my_rank.EQ.0)PRINT*,Rminus,RFit0,Rplus
         !If the three points contain a minimum, predict its position using Kramer's rule
-IF(my_rank.EQ.0)PRINT*,RFit0,Rplus,Rminus
-IF(my_rank.EQ.0)PRINT*,MIN(RFit0,Rplus,Rminus)
         IF (MIN(RFit0,Rplus,Rminus).EQ.RFit0) THEN
           R3var=(/ (RVar0(ind)-Rdx),RVar0(ind),(RVar0(ind)+Rdx) /)
           R3fit=(/ Rminus,RFit0,Rplus /)
@@ -1291,8 +1292,10 @@ IF(my_rank.EQ.0)PRINT*,MIN(RFit0,Rplus,Rminus)
         IF(l_alert(IErr,"MaxGradientRefinement","SimulateAndFit")) RETURN
         CALL BestFitCheck(RFigureofMerit,RBestFit,RCurrentVar,RIndependentVariable,IErr)
       END IF
-      RFigureofMerit=RBestFit ! the best fit so far
-
+      RFit0=RFigureofMerit ! should be the best fit so far
+      RCurrentVar=RVar0!reset RCurrentVar to be the best point
+IF(my_rank.EQ.0)PRINT*,RVar0
+IF(my_rank.EQ.0)PRINT*,RFit0
       !--------------------------------------------------------------------
       ! normalise the max/min gradient vector RPvec & set the first point
       !--------------------------------------------------------------------
@@ -1315,11 +1318,10 @@ IF(my_rank.EQ.0)PRINT*,MIN(RFit0,Rplus,Rminus)
           SPrintString=TRIM(ADJUSTL(SPrintString))
           CALL message(LS,SPrintString)
         END IF
-
-!        RVar0=RIndependentVariable ! the best point of gradient calculation
-!        RFigureofMerit=RBestFit ! the best fit so far
         !avoid variables that give zero change in fit
-        xnd=1!index for the variable to use - we know there is one, otherwise it would have been picked up earlier
+        !index for the variable to use - we know there is one,
+        ! otherwise it would have been picked up earlier
+        xnd=1
         DO WHILE (ABS(RPvec(xnd)).LT.TINY)
           xnd=xnd+1
         END DO!really need to take these variables out of the refinement, but how?
