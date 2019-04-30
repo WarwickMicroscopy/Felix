@@ -65,10 +65,11 @@ PROGRAM Felixrefine
         INumFinalReflections,IThicknessIndex,IVariableType,IArrayIndex,&
         IAnisotropicDebyeWallerFactorElementNo,ISpaceGrp
   INTEGER(IKIND) :: IStartTime,IStartTime2
-  REAL(RKIND) :: REmphasis,RHOLZAcceptanceAngle,RLaueZoneGz,RMaxGMag,RPvecMag,&
-        RScale,RMaxUgStep,Rdx,RStandardDeviation,RMean,RGzUnitVec,RMinLaueZoneValue,&
-        Rdf,RLastFit,RBestFit,RMaxLaueZoneValue,RMaxAcceptanceGVecMag,RandomSign,&
-        RLaueZoneElectronWaveVectorMag,RvarMin,RfitMin,RFit0,Rconvex,Rtest,Rplus,Rminus
+  REAL(RKIND) :: REmphasis,RHOLZAcceptanceAngle,RLaueZoneGz,RMaxGMag,&
+        RPvecMag,RScale,RMaxUgStep,Rdx,RStandardDeviation,RMean,RGzUnitVec,&
+        RMinLaueZoneValue,Rdf,RLastFit,RBestFit,RMaxLaueZoneValue,&
+        RMaxAcceptanceGVecMag,RandomSign,RLaueZoneElectronWaveVectorMag,&
+        RvarMin,RfitMin,RFit0,Rconvex,Rtest,Rplus,Rminus
   REAL(RKIND),DIMENSION(100) :: RTemp!temporary holder for refinement variables
   INTEGER(IKIND),DIMENSION(100) :: ITemp!temporary holder for refinement type
   REAL(RKIND),DIMENSION(ITHREE) :: R3var,R3fit
@@ -77,7 +78,7 @@ PROGRAM Felixrefine
   ! allocatable arrays
   INTEGER(IKIND),DIMENSION(:),ALLOCATABLE :: IOriginGVecIdentifier
   REAL(RKIND),DIMENSION(:),ALLOCATABLE :: RSimplexFoM,RIndependentVariable,&
-        RCurrentVar,RVar0,RLastVar,RPvec,RFitVec
+        RCurrentVar,RVar0,RLastVar,RPvec,RFitVec,RLastVec
   REAL(RKIND),DIMENSION(:,:),ALLOCATABLE :: RSimplexVariable,RgDummyVecMat,&
         RgPoolMagLaue,RTestImage,ROnes,RVarMatrix,RSimp
   
@@ -1184,7 +1185,7 @@ CONTAINS
     ! set of variables to send out for simulations
     ALLOCATE(RCurrentVar(INoOfVariables),STAT=IErr)
     IF(l_alert(IErr,"MaxGradientRefinement","allocate RCurrentVar")) RETURN
-    ALLOCATE(RLastVar(INoOfVariables),STAT=IErr) ! set of variables updated each cycle
+    ALLOCATE(RLastVec(INoOfVariables),STAT=IErr) ! set of variables updated each cycle
     IF(l_alert(IErr,"MaxGradientRefinement","allocate RLastVar")) RETURN
     ! the vector describing the current line in parameter space
     ALLOCATE(RPVec(INoOfVariables),STAT=IErr)
@@ -1193,7 +1194,7 @@ CONTAINS
     
     RBestFit=RFigureofMerit
     RLastFit=RBestFit
-    RLastVar=RIndependentVariable
+    RLastVec=ONE
     RCurrentVar=ONE
     Rdf=ONE
     RScale=RSimplexLengthScale
@@ -1212,7 +1213,14 @@ CONTAINS
       RFit0=RFigureofMerit ! incoming fit
       !See WriteIterationOutputWrapper for what IPrintFLAG does    
       IPrintFLAG=0
+      !if all parameters have been refined, reset and restart
+      IF (SUM(ABS(RLastVec)).LT.TINY) RLastVec=ONE
       DO ind=1,INoOfVariables ! calculate individual gradients
+        !skip variables that previous refinements already optimised
+        IF (ABS(RLastVec(ind)).LT.TINY) THEN
+          RPVec(ind)=ZERO
+          CYCLE
+        END IF
         Iter=Iter+1
         ! The type of variable being refined 
         IVariableType=MOD(IIndependentVariableType(ind),10) 
@@ -1427,7 +1435,7 @@ CONTAINS
       CALL WriteIterationOutputWrapper(Iter,IThicknessIndex,IPrintFLAG,IErr)
       CALL BestFitCheck(RFigureofMerit,RBestFit,RCurrentVar,RIndependentVariable,IErr)
       ! check where we go next and update last fit etc.
-      RLastVar=RPVec
+      RLastVec=RPVec
       Rdf=RLastFit-RBestFit 
       RLastFit=RBestFit
       CALL message(LS, "--------------------------------")
