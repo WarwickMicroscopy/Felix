@@ -252,8 +252,9 @@ MODULE read_files_mod
     ILine= ILine+1; READ(IChInp,'(27X,I15.1)',ERR=20,END=30) IRefineMethodFLAG
     IF(ISimFLAG==0) THEN
       IF(IRefineMethodFLAG.EQ.1) CALL message( LS, "Refining by simplex")
-      IF(IRefineMethodFLAG.EQ.2) CALL message( LS, "Refining by maximum gradient")
-      IF(IRefineMethodFLAG.EQ.3) CALL message( LS, "Refining by pairwise maximum gradient")
+      IF(IRefineMethodFLAG.EQ.2) CALL message( LS, "Refining by downhill gradient")
+      IF(IRefineMethodFLAG.EQ.3) CALL message( LS, "Refining by maximum gradient")
+      IF(IRefineMethodFLAG.EQ.4) CALL message( LS, "Refining by pairwise maximum gradient")
     END IF
    
     ! ICorrelationFLAG: 0=phase,1=sumSq,2=NormalisedCC,3=masked
