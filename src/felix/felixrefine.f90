@@ -1266,7 +1266,7 @@ CONTAINS
         Rminus=RFigureofMerit
         !Reset current point so it's correct for any further  calculation
         RCurrentVar(ind)=RVar0(ind)
-IF(my_rank.EQ.0)PRINT*,Rminus,RFit0,Rplus
+!IF(my_rank.EQ.0)PRINT*,Rminus,RFit0,Rplus
         !If the three points contain a minimum, predict its position using Kramer's rule
         IF (MIN(RFit0,Rplus,Rminus).EQ.RFit0) THEN
           R3var=(/ (RVar0(ind)-Rdx),RVar0(ind),(RVar0(ind)+Rdx) /)
@@ -1282,20 +1282,21 @@ IF(my_rank.EQ.0)PRINT*,Rminus,RFit0,Rplus
           SPrintString=TRIM(ADJUSTL(SPrintString))
           CALL message (LS, SPrintString)
         ELSE!this is a valid gradient descent direction
-          RPVec(ind)=(Rplus-Rminus)/(2*Rdx) ! -df/dx: need the dx to keep track of sign
+          RPVec(ind)=-(Rplus-Rminus)/(2*Rdx) ! -df/dx: need the dx to keep track of sign
         END IF
       END DO
       !If we have set one or more variables to a predicted minimum run a new
       !simulation for the predicted best point
       IF (ABS(MINVAL(RPVec)).LT.TINY) THEN
+        Iter=Iter+1
         CALL SimulateAndFit(RVar0,Iter,IThicknessIndex,IErr)
         IF(l_alert(IErr,"MaxGradientRefinement","SimulateAndFit")) RETURN
         CALL BestFitCheck(RFigureofMerit,RBestFit,RCurrentVar,RIndependentVariable,IErr)
       END IF
       RFit0=RFigureofMerit ! should be the best fit so far
       RCurrentVar=RVar0!reset RCurrentVar to be the best point
-IF(my_rank.EQ.0)PRINT*,RVar0
-IF(my_rank.EQ.0)PRINT*,RFit0
+!IF(my_rank.EQ.0)PRINT*,RVar0
+!IF(my_rank.EQ.0)PRINT*,RFit0
       !--------------------------------------------------------------------
       ! normalise the max/min gradient vector RPvec & set the first point
       !--------------------------------------------------------------------
@@ -1427,17 +1428,14 @@ IF(my_rank.EQ.0)PRINT*,RFit0
       CALL BestFitCheck(RFigureofMerit,RBestFit,RCurrentVar,RIndependentVariable,IErr)
       ! check where we go next and update last fit etc.
       RLastVar=RPVec
-      IF (MOD(nnd,2).EQ.1) THEN ! only update LastFit after a min gradient refinement
-        Rdf=RLastFit-RBestFit 
-        RLastFit=RBestFit
-        CALL message(LS, "--------------------------------")
-        WRITE(SPrintString,FMT='(A19,F8.6,A15,F8.6)') "Improvement in fit ",Rdf,", will stop at ",RExitCriteria
-        CALL message (LS, SPrintString)
-      END IF
+      Rdf=RLastFit-RBestFit 
+      RLastFit=RBestFit
+      CALL message(LS, "--------------------------------")
+      WRITE(SPrintString,FMT='(A19,F8.6,A15,F8.6)') "Improvement in fit ",Rdf,", will stop at ",RExitCriteria
+      CALL message (LS, SPrintString)
       ! shrink length scale as we progress, by a smaller amount
       ! depending on the no of variables: 1->1/2; 2->3/4; 3->5/6; 4->7/8; 5->9/10;
       RScale=RScale*(ONE-ONE/(TWO*REAL(INoOfVariables)))
-      nnd=nnd+1 ! do different gradient next time
     END DO
     !/\------------------------------------------------------------------
   
