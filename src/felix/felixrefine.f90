@@ -1356,7 +1356,7 @@ CONTAINS
         ! Third point
         IF (R3fit(2).GT.R3fit(1)) THEN ! new 2 is not better than 1, go the other way
           RPvecMag=-RPvecMag
-        ELSE ! it is better, so keep going
+        ELSE ! it is better, so keep going; move the running best fit point
           RVar0=RCurrentVar
         END IF
         RCurrentVar=RVar0+RPvec*RPvecMag
@@ -1426,7 +1426,7 @@ CONTAINS
         CALL message (LS, SPrintString)
         RCurrentVar=RVar0+RPvec*(RvarMin-RVar0(xnd))/RPvec(xnd) ! Put prediction into RCurrentVar
       ELSE
-        RCurrentVar=RIndependentVariable
+        RCurrentVar=RVar0
       END IF
       Iter=Iter+1
       CALL SimulateAndFit(RCurrentVar,Iter,IThicknessIndex,IErr)
@@ -1443,7 +1443,7 @@ CONTAINS
       CALL message (LS, SPrintString)
       ! shrink length scale as we progress, by a smaller amount
       ! depending on the no of variables: 1->1/2; 2->3/4; 3->5/6; 4->7/8; 5->9/10;
-      RScale=RScale*(ONE-ONE/(TWO*REAL(INoOfVariables)))
+!      RScale=RScale*(ONE-ONE/(TWO*REAL(INoOfVariables)))
     END DO
     !/\------------------------------------------------------------------
   
