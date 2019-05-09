@@ -1173,7 +1173,7 @@ CONTAINS
   !>
   !! Procedure-description: Refinement using a maximum gradient method
   !!
-  !! Major-Authors: Richard Beanland (2016)
+  !! Major-Authors: Richard Beanland (2019)
   !!
   SUBROUTINE MaxGradientRefinement
 
@@ -1249,10 +1249,10 @@ CONTAINS
         SPrintString=TRIM(ADJUSTL(SPrintString))
         CALL message(LS,SPrintString)
         ! Rdx is a small change in the current variable determined by RScale
-        ! which is either RScale/10 for atomic coordinates and
-        ! RScale*variable/10 for everything else
-        Rdx=0.1*RScale*RCurrentVar(ind)
-        IF(IVariableType.EQ.2) Rdx=0.1*RScale
+        ! which is either RScale for atomic coordinates and
+        ! RScale*variable for everything else
+        Rdx=RScale*RCurrentVar(ind)
+        IF(IVariableType.EQ.2) Rdx=RScale
         ! three point gradient measurement, + first
         RCurrentVar(ind)=RVar0(ind)+Rdx
         CALL SimulateAndFit(RCurrentVar,Iter,IThicknessIndex,IErr)

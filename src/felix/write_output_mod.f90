@@ -125,7 +125,7 @@ MODULE write_output_mod
       WRITE(path,"(A1,I4.4,A3,A1,I3.3,A3,I3.3,A1,I3.3)") &
             "I",Iter,dString,"_",IThickness,"nm_",2*IPixelcount,"x",2*IPixelcount
     ELSE
-      WRITE(dString,"(A2,I2)") "_D",IVar
+      WRITE(dString,"(A2,I2.2)") "_D",IVar
       WRITE(path,"(A1,I4.4,A4,A1,I3.3,A3,I3.3,A1,I3.3)") &
             "I",Iter,dString,"_",IThickness,"nm_",2*IPixelcount,"x",2*IPixelcount
     END IF
