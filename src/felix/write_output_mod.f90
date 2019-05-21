@@ -121,16 +121,12 @@ MODULE write_output_mod
 
     !Directory for difference image
     IF (IVar.LT.10) THEN
-      WRITE(dString,"(A2,I1)") "_D",IVar
-      WRITE(path,"(A1,I4.4,A3,A1,I3.3,A3,I3.3,A1,I3.3)") &
-            "I",Iter,dString,"_",IThickness,"nm_",2*IPixelcount,"x",2*IPixelcount
+      WRITE(path,"(A1,I4.4,A2,I1,A1,I3.3,A3,I3.3,A1,I3.3)") &
+            "I",Iter,"_D",IVar,"_",IThickness,"nm_",2*IPixelcount,"x",2*IPixelcount
     ELSE
-      WRITE(dString,"(A2,I2.2)") "_D",IVar
-      WRITE(path,"(A1,I4.4,A4,A1,I3.3,A3,I3.3,A1,I3.3)") &
-            "I",Iter,dString,"_",IThickness,"nm_",2*IPixelcount,"x",2*IPixelcount
+      WRITE(path,"(A1,I4.4,A2,I2.2,A1,I3.3,A3,I3.3,A1,I3.3)") &
+            "I",Iter,"_D",IVar,"_",IThickness,"nm_",2*IPixelcount,"x",2*IPixelcount
     END IF
-    WRITE(path,"(A1,I4.4,A3,A1,I3.3,A3,I3.3,A1,I3.3)") &
-            "I",Iter,dString,"_",IThickness,"nm_",2*IPixelcount,"x",2*IPixelcount
     path = SChemicalFormula(1:ILN) // "_" // path ! This adds chemical to folder name
     CALL system('mkdir ' // path)
 
@@ -162,7 +158,7 @@ MODULE write_output_mod
         WRITE(lString,"(SP,I4.1)") jnd
       ENDIF
       ! Make the path/filenames e.g. 'GaAs_-2-2+0.bin'
-      filename = SChemicalFormula(1:ILN) // TRIM(ADJUSTL(dString)) // "_" // &
+      filename = SChemicalFormula(1:ILN) // "_" // &
         TRIM(ADJUSTL(hString)) // TRIM(ADJUSTL(kString)) // TRIM(ADJUSTL(lString)) // ".bin"
       fullpath = TRIM(ADJUSTL(path))//"/"//TRIM(ADJUSTL(filename))
       CALL message ( LL, dbg6, fullpath )

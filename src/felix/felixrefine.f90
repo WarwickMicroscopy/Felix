@@ -1251,8 +1251,8 @@ CONTAINS
         ! Rdx is a small change in the current variable determined by RScale
         ! which is either RScale for atomic coordinates and
         ! RScale*variable for everything else
-        Rdx=RScale*RCurrentVar(ind)
-        IF(IVariableType.EQ.2) Rdx=RScale
+        Rdx=ABS(RScale*RCurrentVar(ind))
+        IF(IVariableType.EQ.2) Rdx=ABS(RScale)
         ! three point gradient measurement, + first
         RCurrentVar(ind)=RVar0(ind)+Rdx
         CALL SimulateAndFit(RCurrentVar,Iter,IThicknessIndex,IErr)
@@ -1272,9 +1272,8 @@ CONTAINS
         IF(l_alert(IErr,"MaxGradientRefinement","SimulateAndFit")) RETURN
         CALL BestFitCheck(RFigureofMerit,RBestFit,RCurrentVar,RIndependentVariable,IErr)
         Rminus=RFigureofMerit
-        !Reset current point so it's correct for any further  calculation
+        !Reset current point so it's correct for the next calculation
         RCurrentVar(ind)=RVar0(ind)
-!IF(my_rank.EQ.0)PRINT*,Rminus,RFit0,Rplus
         !If the three points contain a minimum, predict its position using Kramer's rule
         IF (MIN(RFit0,Rplus,Rminus).EQ.RFit0) THEN
           R3var=(/ (RVar0(ind)-Rdx),RVar0(ind),(RVar0(ind)+Rdx) /)
@@ -1290,21 +1289,25 @@ CONTAINS
           SPrintString=TRIM(ADJUSTL(SPrintString))
           CALL message (LS, SPrintString)
         ELSE!this is a valid gradient descent direction
-          RPVec(ind)=-(Rplus-Rminus)/(2*Rdx) ! -df/dx: need the dx to keep track of sign
+          RPVec(ind)=-(Rplus-Rminus)/(2*Rdx) ! -df/dx
+          IF (MIN(RFit0,Rplus,Rminus).EQ.RPlus) RVar0(ind)=RVar0(ind)+Rdx
+          IF (MIN(RFit0,Rplus,Rminus).EQ.Rminus) RVar0(ind)=RVar0(ind)-Rdx
         END IF
       END DO
-      !If we have set one or more variables to a predicted minimum run a new
-      !simulation for the predicted best point
-      IF (ABS(MINVAL(RPVec)).LT.TINY) THEN
-        Iter=Iter+1
-        CALL SimulateAndFit(RVar0,Iter,IThicknessIndex,IErr)
-        IF(l_alert(IErr,"MaxGradientRefinement","SimulateAndFit")) RETURN
-        CALL BestFitCheck(RFigureofMerit,RBestFit,RCurrentVar,RIndependentVariable,IErr)
+      !We have not run any simulation for the predicted best point so do it now
+      RCurrentVar=RVar0!
+      Iter=Iter+1
+      IF (my_rank.EQ.0) THEN
+        WRITE(SPrintString,*) "(A15,",SIZE(RPvec),"(F7.4,1X),A27)"
+        WRITE(SPrintString,FMT=SPrintString) &
+        "First point at ",Rvar0," should have best fit index"
+        SPrintString=TRIM(ADJUSTL(SPrintString))
+        CALL message (LS, SPrintString)
       END IF
+      CALL SimulateAndFit(RCurrentVar,Iter,IThicknessIndex,IErr)
+      IF(l_alert(IErr,"MaxGradientRefinement","SimulateAndFit")) RETURN
+      CALL BestFitCheck(RFigureofMerit,RBestFit,RCurrentVar,RIndependentVariable,IErr)
       RFit0=RFigureofMerit ! should be the best fit so far
-      RCurrentVar=RVar0!reset RCurrentVar to be the best point
-!IF(my_rank.EQ.0)PRINT*,RVar0
-!IF(my_rank.EQ.0)PRINT*,RFit0
       !--------------------------------------------------------------------
       ! normalise the max/min gradient vector RPvec & set the first point
       !--------------------------------------------------------------------
@@ -1328,18 +1331,18 @@ CONTAINS
           CALL message(LS,SPrintString)
         END IF
         !avoid variables that give zero change in fit
-        !index for the variable to use - we know there is one,
-        ! otherwise it would have been picked up earlier
+        !xnd=index for the variable to use (we know there is one,
+        ! otherwise it would have been picked up earlier)
         xnd=1
         DO WHILE (ABS(RPvec(xnd)).LT.TINY)
           xnd=xnd+1
-        END DO!really need to take these variables out of the refinement, but how?
+        END DO
         ! First point, three points to find the minimum
         R3var(1)=RVar0(xnd)! first point is current value
         R3fit(1)=RFigureofMerit! point 1 is the incoming simulation and fit index
         RPvecMag=RVar0(xnd)*RScale ! RPvecMag gives the magnitude of vector in parameter space
         RCurrentVar=RVar0+RPvec*RPvecMag ! Update the parameters to simulate
-      
+
         !--------------------------------------------------------------------
         ! simulate and set the 2nd and 3rd point
         !--------------------------------------------------------------------
