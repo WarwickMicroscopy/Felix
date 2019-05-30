@@ -1199,7 +1199,6 @@ CONTAINS
     RCurrentVar=ONE
     Rdf=ONE
     RScale=RSimplexLengthScale
-    RDeltaY=0.000005 ! Change in ZNCC for error estimate
 
     !--------------------------------------------------------------------
     ! iteratively refine until improvement in fit below exit criteria
@@ -1280,8 +1279,8 @@ CONTAINS
           R3var=(/ (RVar0(ind)-Rdx),RVar0(ind),(RVar0(ind)+Rdx) /)
           R3fit=(/ Rminus,RFit0,Rplus /)
           CALL Parabo3(R3var,R3fit,RvarMin,RfitMin,IErr)
-          !error estimate
-          CALL DeltaX(R3var,R3fit,RdeltaX,RdeltaY,IErr)
+          !error estimate, uses RPrecision from felix.inp
+          CALL DeltaX(R3var,R3fit,RdeltaX,RPrecision,IErr)
           !make a string for output
           CALL UncertBrak(RvarMin,RdeltaX,Sest,IErr)
           IF(l_alert(IErr,"UncertBrak","SimulateAndFit")) RETURN
@@ -1290,8 +1289,8 @@ CONTAINS
           !are accurate.  
           RVar0(ind)=RvarMin
           RPVec(ind)=ZERO !don't include this variable in the max gradient refinement
-          IF (my_rank.EQ.0) WRITE(SPrintString,FMT='(A18,A,A15,F8.3)') &
-          "Expect minimum at ",TRIM(ADJUSTL(Sest))," with fit index",(HUNDRED*RfitMin)
+          IF (my_rank.EQ.0) WRITE(SPrintString,FMT='(A18,A,A15,F7.3,A1)') &
+          "Expect minimum at ",TRIM(ADJUSTL(Sest))," with fit index",(HUNDRED*RfitMin),"%"
           SPrintString=TRIM(ADJUSTL(SPrintString))
           CALL message (LS, SPrintString)
         ELSE!this is a valid gradient descent direction
@@ -1460,13 +1459,13 @@ CONTAINS
     ! We are done, simulate and output the best fit
     !--------------------------------------------------------------------
 
-    Iter=Iter+1
-    CALL SimulateAndFit(RIndependentVariable,Iter,IThicknessIndex,IErr)
-    IF(l_alert(IErr,"MaxGradientRefinement","SimulateAndFit")) RETURN
+!    Iter=Iter+1
+!    CALL SimulateAndFit(RIndependentVariable,Iter,IThicknessIndex,IErr)
+!    IF(l_alert(IErr,"MaxGradientRefinement","SimulateAndFit")) RETURN
     IPrintFLAG=2
     CALL WriteIterationOutputWrapper(Iter,IThicknessIndex,IPrintFLAG,IErr)
     IF(l_alert(IErr,"MaxGradientRefinement","WriteIterationOutputWrapper")) RETURN
-    DEALLOCATE(RVar0,RCurrentVar,RLastVar,RPVec,STAT=IErr)  
+ !   DEALLOCATE(RVar0,RCurrentVar,RLastVar,RPVec,STAT=IErr)  
 
   END SUBROUTINE MaxGradientRefinement
 

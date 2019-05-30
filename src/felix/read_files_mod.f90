@@ -54,13 +54,13 @@ MODULE read_files_mod
     ! global outputs, read from .inp
     USE IPARA, ONLY : IWriteFLAG, IImageFLAG, IScatterFactorMethodFLAG, IMaskFLAG, IHolzFLAG, &
           IAbsorbFLAG, IAnisoDebyeWallerFactorFlag, IByteSize, IMinReflectionPool, &
-          IMinStrongBeams, IMinWeakBeams, INoOfLacbedPatterns, ISimFLAG, IRefineMode, &
+          IMinStrongBeams, IMinWeakBeams, ISimFLAG, IRefineMode, &
           IWeightingFLAG, IRefineMethodFLAG, ICorrelationFLAG, IImageProcessingFLAG, &
           INoofUgs, IPrint, IPixelCount, IBlochMethodFLAG
     USE RPARA, ONLY : RDebyeWallerConstant, RAbsorptionPercentage, RConvergenceAngle, &
           RZDirC, RXDirC, RNormDirC, RAcceleratingVoltage, RAcceptanceAngle, &
           RInitialThickness, RFinalThickness, RDeltaThickness, RBlurRadius, &
-          RSimplexLengthScale, RExitCriteria
+          RSimplexLengthScale, RExitCriteria,RPrecision
     USE SPARA, ONLY : SPrintString
     ! global inputs
     USE IChannels, ONLY : IChInp
@@ -82,9 +82,6 @@ MODULE read_files_mod
     ILine= 1
 
     ! There are six introductory comment lines which are ignored
-    ! ***Jeffrey's felix.inp files only*** !
-!    ILine= ILine+1; READ(IChInp,ERR=20,END=30,FMT='(A)')
-!
     ILine= ILine+1; READ(IChInp,ERR=20,END=30,FMT='(A)')
     ILine= ILine+1; READ(IChInp,ERR=20,END=30,FMT='(A)')
     ILine= ILine+1; READ(IChInp,ERR=20,END=30,FMT='(A)')
@@ -193,9 +190,6 @@ MODULE read_files_mod
     !--------------------------------------------------------------------
     ! Image Output Options
     !--------------------------------------------------------------------
-
-    !?? update sample felix.inp and section here to 'specimen thickness'
-
     ! Two comment lines
     ILine= ILine+1; READ(IChInp,ERR=20,END=30,FMT='(A)')
     ILine= ILine+1; READ(IChInp,ERR=20,END=30,FMT='(A)')
@@ -205,13 +199,12 @@ MODULE read_files_mod
     ILine= ILine+1; READ(IChInp,'(27X,F18.9)',ERR=20,END=30) RFinalThickness
     ! RDeltaThickness
     ILine= ILine+1; READ(IChInp,'(27X,F18.9)',ERR=20,END=30) RDeltaThickness
-    ! INoOfLacbedPatterns             !?? update IReflectOut in felix.inp files
-    ILine= ILine+1; READ(IChInp,'(27X,I15.1)',ERR=20,END=30) INoOfLacbedPatterns 
+    ! RPrecision - used for error calculations
+    ILine= ILine+1; READ(IChInp,'(27X,F18.9)',ERR=20,END=30) RPrecision 
 
     !--------------------------------------------------------------------
     ! Refinement Specific Flags
     !--------------------------------------------------------------------
-
     ! Two comment lines
     ILine= ILine+1; READ(IChInp,ERR=20,END=30,FMT='(A)')  
     ILine= ILine+1; READ(IChInp,ERR=20,END=30,FMT='(A)')
@@ -329,7 +322,7 @@ MODULE read_files_mod
 
     INTEGER(IKIND),INTENT(OUT) :: IErr
     INTEGER(IKIND) :: ILine, h, k, l, ind, IPos1, IPos2
-    CHARACTER*200 :: dummy1, dummy2
+    CHARACTER(200) :: dummy1, dummy2
 
     OPEN(Unit = IChInp,FILE="felix.hkl",STATUS='OLD',ERR=10)
     ILine = 0
@@ -338,10 +331,10 @@ MODULE read_files_mod
     ! count the number of lines in felix.hkl:
     ! this is the number of reflections to output, INoOfLacbedPatterns
     DO
-      READ(UNIT= IChInp, END=100, FMT='(a)') dummy1
+      READ(UNIT= IChInp, END=5, FMT='(a)') dummy1
       ILine = ILine+1
     ENDDO
-100 INoOfLacbedPatterns = ILine
+5   INoOfLacbedPatterns = ILine
     CALL message ( LXL, dbg7, "Number of experimental images to load = ", INoOfLacbedPatterns)
 
     ALLOCATE(RInputHKLs(INoOfLacbedPatterns,ITHREE),STAT=IErr)
@@ -350,7 +343,7 @@ MODULE read_files_mod
     IF(l_alert(IErr,"ReadHklFile","allocate IOutputReflections")) RETURN
 
     ! read in the hkls
-    REWIND(UNIT=IChInp) ! goes to beggining of felix.hkl file
+    REWIND(UNIT=IChInp) ! goes to beginning of felix.hkl file
     ILine = 0 
     DO ind = 1,INoOfLacbedPatterns
       ! READ HKL in as String
@@ -599,8 +592,8 @@ MODULE read_files_mod
 
     CHARACTER(*), INTENT(IN) :: SUnformattedVector,SOpenBracketDummy,SCloseBracketDummy
     REAL(RKIND),INTENT(OUT),DIMENSION(3) :: RFormattedVector
-    CHARACTER*1 :: SComma=',',SOpenBracket,SCloseBracket
-    CHARACTER*100 :: SFormattedVectorX,SFormattedVectorY,SFormattedVectorZ   
+    CHARACTER(1) :: SComma=',',SOpenBracket,SCloseBracket
+    CHARACTER(100) :: SFormattedVectorX,SFormattedVectorY,SFormattedVectorZ   
     LOGICAL :: LBACK=.TRUE.   
     INTEGER(IKIND) :: &
           IOpenBracketPosition, ICloseBracketPosition, IFirstCommaPosition, &
