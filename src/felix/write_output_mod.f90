@@ -38,7 +38,7 @@ MODULE write_output_mod
   IMPLICIT NONE
   PRIVATE
   PUBLIC :: WriteIterationOutputWrapper, WriteIterationOutput, WriteOutVariables, &
-        NormaliseExperimentalImagesAndWriteOut,WriteDifferenceImages
+        NormaliseExperimentalImagesAndWriteOut,WriteDifferenceImages,UncertBrak
 
   CONTAINS
 
@@ -550,5 +550,83 @@ MODULE write_output_mod
     END DO   
 
   END SUBROUTINE NormaliseExperimentalImagesAndWriteOut
+
+  
+  !%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+  !>
+  !! Procedure-description: Takes a value e.g. V.VVVV and its uncertainty e.g.
+  !0.00EE as
+  !! real numbers and returns a 12 character string with errors in bracket form
+  !V.VVV(E)
+  !! e.g. -12.3456(12).
+  !! We expect an absolute value less than 100 and an error greater than 0.00001
+  !!
+  !! Major-Authors: Richard Beanland (2019)
+  !!
+  SUBROUTINE UncertBrak(Rval,Rerr,Sout,IErr)
+
+    USE MyNumbers
+    USE MyMPI
+ 
+
+    IMPLICIT NONE   
+    INTEGER(IKIND), INTENT(OUT) :: IErr
+    INTEGER(IKIND) :: Iord
+    REAL(RKIND), INTENT(INOUT) :: Rval,Rerr
+    REAL(RKIND) :: Rmag,RtruncErr,RtruncVal
+    CHARACTER(12), INTENT(OUT) :: Sout
+    CHARACTER(12) :: Sval,Serr,Sformat
+    
+    !infinity and NaN check
+    IF (ABS(Rval)-1.GT.ABS(Rval).OR.ABS(Rval).NE.ABS(Rval)) THEN
+      IErr=1
+      RETURN
+    END IF
+    IF (ABS(Rerr)-1.GT.ABS(Rerr).OR.ABS(Rerr).NE.ABS(Rerr)) THEN
+      IErr=1
+      RETURN
+    END IF
+      
+    !Make error positive if it isn't already
+    IF (Rerr.LT.ZERO) Rerr=-Rerr
+    !Check error is in expected limits
+    IF (Rerr.GE.HUNDRED.OR.(Rerr*10000.0).LT.ONE) THEN
+      IErr=1
+      RETURN
+    END IF
+    
+    !Find order of magnitude for error, Iord
+    Rmag=TEN
+    Iord=1
+    DO WHILE (Rerr.LT.Rmag.AND.Iord.GT.-5)
+      Rmag=Rmag/TEN
+      Iord=Iord-1
+    END DO
+IF(my_rank.EQ.0)PRINT*,Rerr,Rmag,Iord
+    ! make Rerr between 1 and 10
+    Rerr=Rerr/Rmag
+
+    !Make the error string, use a 2-digit error for values below 1.5
+    IF (Rerr.LE.1.5) THEN
+      WRITE(Serr,FMT='(A1,I2,A1)')  "(",INT(Rerr*TEN),")"
+    ELSE
+      WRITE(Serr,FMT='(A1,I1,A1)')  "(",INT(Rerr),")"
+    END IF
+    Serr=TRIM(ADJUSTL(Serr))
+IF(my_rank.EQ.0)PRINT*,Serr
+
+    !Trim the value to the correct number of decimals
+    IF (Iord.LT.0) THEN
+      WRITE(Sformat,*) "(F8.",(1-Iord),")"
+    ELSE
+      WRITE(Sformat,*) "(F8.0)"
+    END IF
+    WRITE(Sval,FMT=Sformat) Rval
+    Sval=TRIM(ADJUSTL(Sval))
+    Sout=Sval // Serr
+IF(my_rank.EQ.0)PRINT*,Sformat,Sval,Sout
+  
+  END SUBROUTINE UncertBrak
 
 END MODULE write_output_mod
