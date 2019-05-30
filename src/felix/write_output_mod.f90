@@ -551,4 +551,92 @@ MODULE write_output_mod
 
   END SUBROUTINE NormaliseExperimentalImagesAndWriteOut
 
+  !%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+  !>
+  !! Procedure-description: Takes a value e.g. V.VVVV and its uncertainty e.g.
+  !0.00EE as
+  !! real numbers and returns a 12 character string with errors in bracket form
+  !V.VVV(E)
+  !! e.g. -12.3456(12).
+  !! We expect an absolute value less than 100 and an error greater than 0.00001
+  !!
+  !! Major-Authors: Richard Beanland (2019)
+  !!
+  SUBROUTINE UncertBrak(Rval,Rerr,Sout,IErr)
+
+    USE MyNumbers
+    USE MyMPI
+ 
+
+    IMPLICIT NONE   
+    INTEGER(IKIND), INTENT(OUT) :: IErr
+    INTEGER(IKIND) :: Iord
+    REAL(RKIND), INTENT(INOUT) :: Rval,Rerr
+    REAL(RKIND) :: Rmag,RtruncErr,RtruncVal
+    CHARACTER(12), INTENT(OUT) :: Sout
+    CHARACTER(12) :: Sval,Serr,Sformat
+    
+    !infinity and NaN check
+    IF (ABS(Rval)-1.GT.ABS(Rval).OR.ABS(Rval).NE.ABS(Rval)) THEN
+      IErr=1
+      RETURN
+    END IF
+    IF (ABS(Rerr)-1.GT.ABS(Rerr).OR.ABS(Rerr).NE.ABS(Rerr)) THEN
+      IErr=1
+      RETURN
+    END IF
+      
+    !Make error positive if it isn't already
+    IF (Rerr.LT.ZERO) Rerr=-Rerr
+    !Check error is in expected limits
+    IF (Rerr.GE.HUNDRED.OR.CEILING(Rerr*10000.0).LT.ONE) THEN
+      IErr=1
+      RETURN
+    END IF
+    
+    !Find order of magnitude for error, Iord
+    Rmag=TEN
+    Iord=1
+    DO WHILE (Rerr.LT.Rmag)
+      Rmag=Rmag/TEN
+      Iord=Iord-1
+    END DO
+
+    ! make Rerr between 1 and 10 if it's a decimal
+    IF (Iord.LT.0) THEN
+      Rerr=Rerr/Rmag
+    ELSEIF (Rerr.GT.15.0) THEN!round to 1 s.f.
+      Rerr=TEN*(NINT(Rerr/TEN))
+    END IF
+
+    !Make the error string, use a 2-digit error for values below 1.5
+    !Trim the value to the correct number of decimals using Sformat
+    IF (Iord.LT.0) THEN!subdecimal
+      IF (Rerr.GE.1.05.AND.Rerr.LE.1.5) THEN
+        WRITE(Serr,FMT='(A1,I2,A1)')  "(",NINT(Rerr*TEN),")"
+        Iord=Iord-1
+      ELSE
+        WRITE(Serr,FMT='(A1,I1,A1)')  "(",NINT(Rerr),")"
+      END IF
+      WRITE(Sformat,FMT='(A4,I1,A1)') "(F8." , -Iord , ")"
+    ELSE!1 to 99
+      IF(Rerr.GE.1.05.AND.Rerr.LE.1.5) THEN!include a decimal
+        WRITE(Serr,FMT='(A1,F3.1,A1)')  "(",Rerr,")"
+        WRITE(Sformat,*) "(F8.1)"
+      ELSE
+        IF (Rerr.GE.TEN) THEN!double digit with a . to show it's >0
+          WRITE(Serr,FMT='(A1,I2,A2)')  "(",NINT(Rerr),".)"
+        ELSE!single digit with a . to show it's >0
+          WRITE(Serr,FMT='(A1,I1,A2)')  "(",NINT(Rerr),".)"
+        END IF
+        WRITE(Sformat,*) "(F8.0)"
+      END IF
+    END IF
+    WRITE(Sval,FMT=Sformat) Rval
+    Sout=TRIM(ADJUSTL(Sval)) // TRIM(ADJUSTL(Serr))
+  
+  END SUBROUTINE UncertBrak
+
+
 END MODULE write_output_mod
