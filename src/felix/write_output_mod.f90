@@ -551,7 +551,6 @@ MODULE write_output_mod
 
   END SUBROUTINE NormaliseExperimentalImagesAndWriteOut
 
-  
   !%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
   !>
@@ -591,7 +590,7 @@ MODULE write_output_mod
     !Make error positive if it isn't already
     IF (Rerr.LT.ZERO) Rerr=-Rerr
     !Check error is in expected limits
-    IF (Rerr.GE.HUNDRED.OR.(Rerr*10000.0).LT.ONE) THEN
+    IF (Rerr.GE.HUNDRED.OR.CEILING(Rerr*10000.0).LT.ONE) THEN
       IErr=1
       RETURN
     END IF
@@ -599,33 +598,43 @@ MODULE write_output_mod
     !Find order of magnitude for error, Iord
     Rmag=TEN
     Iord=1
-    DO WHILE (Rerr.LT.Rmag.AND.Iord.GT.-5)
+    DO WHILE (Rerr.LT.Rmag)
       Rmag=Rmag/TEN
       Iord=Iord-1
     END DO
-IF(my_rank.EQ.0)PRINT*,Rerr,Rmag,Iord
-    ! make Rerr between 1 and 10
-    Rerr=Rerr/Rmag
+
+    ! make Rerr between 1 and 10 if it's a decimal
+    IF (Iord.LT.0) THEN
+      Rerr=Rerr/Rmag
+    ELSEIF (Rerr.GT.15.0) THEN!round to 1 s.f.
+      Rerr=TEN*(NINT(Rerr/TEN))
+    END IF
 
     !Make the error string, use a 2-digit error for values below 1.5
-    IF (Rerr.LE.1.5) THEN
-      WRITE(Serr,FMT='(A1,I2,A1)')  "(",INT(Rerr*TEN),")"
-    ELSE
-      WRITE(Serr,FMT='(A1,I1,A1)')  "(",INT(Rerr),")"
-    END IF
-    Serr=TRIM(ADJUSTL(Serr))
-IF(my_rank.EQ.0)PRINT*,Serr
-
-    !Trim the value to the correct number of decimals
-    IF (Iord.LT.0) THEN
-      WRITE(Sformat,*) "(F8.",(1-Iord),")"
-    ELSE
-      WRITE(Sformat,*) "(F8.0)"
+    !Trim the value to the correct number of decimals using Sformat
+    IF (Iord.LT.0) THEN!subdecimal
+      IF (Rerr.GE.1.05.AND.Rerr.LE.1.5) THEN
+        WRITE(Serr,FMT='(A1,I2,A1)')  "(",NINT(Rerr*TEN),")"
+        Iord=Iord-1
+      ELSE
+        WRITE(Serr,FMT='(A1,I1,A1)')  "(",NINT(Rerr),")"
+      END IF
+      WRITE(Sformat,FMT='(A4,I1,A1)') "(F8." , -Iord , ")"
+    ELSE!1 to 99
+      IF(Rerr.GE.1.05.AND.Rerr.LE.1.5) THEN!include a decimal
+        WRITE(Serr,FMT='(A1,F3.1,A1)')  "(",Rerr,")"
+        WRITE(Sformat,*) "(F8.1)"
+      ELSE
+        IF (Rerr.GE.TEN) THEN!double digit with a . to show it's >0
+          WRITE(Serr,FMT='(A1,I2,A2)')  "(",NINT(Rerr),".)"
+        ELSE!single digit with a . to show it's >0
+          WRITE(Serr,FMT='(A1,I1,A2)')  "(",NINT(Rerr),".)"
+        END IF
+        WRITE(Sformat,*) "(F8.0)"
+      END IF
     END IF
     WRITE(Sval,FMT=Sformat) Rval
-    Sval=TRIM(ADJUSTL(Sval))
-    Sout=Sval // Serr
-IF(my_rank.EQ.0)PRINT*,Sformat,Sval,Sout
+    Sout=TRIM(ADJUSTL(Sval)) // TRIM(ADJUSTL(Serr))
   
   END SUBROUTINE UncertBrak
 
