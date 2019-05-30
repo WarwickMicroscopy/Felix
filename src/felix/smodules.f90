@@ -288,9 +288,9 @@ MODULE RPara
   REAL(RKIND),DIMENSION(:,:,:),ALLOCATABLE :: RFinalMontageImage
   !Main Program
   REAL(RKIND) :: RMeanInnerPotential,RScattFacToVolts
-  REAL(RKIND),DIMENSION(:,:),ALLOCATABLE :: RgMatrixMagnitude, RgSumMat !RB
+  REAL(RKIND),DIMENSION(:,:),ALLOCATABLE :: RgMatrixMagnitude, RgSumMat
   REAL(RKIND),DIMENSION(:,:,:),ALLOCATABLE :: RgMatrix
-  REAL(RKIND) :: ROuterIntegralLowerBound,ROuterIntegralUpperBound,&
+  REAL(RKIND) :: ROuterIntegralLowerBound,ROuterIntegralUpperBound,&!RB not used?
        RInnerIntegralLowerBound,RInnerIntegralUpperBound,&
        RInnerIntegrationParameterGMagPrime,&
        ROuterIntegrationParameterGMagPrime
@@ -299,9 +299,7 @@ MODULE RPara
   REAL(RKIND), DIMENSION(:,:,:), ALLOCATABLE :: RIndividualReflections
   !Refinement Variables
   REAL(RKIND), DIMENSION(:,:),ALLOCATABLE :: RImageIn
-  REAL(RKIND) :: RFigureofMerit,RDeltaUgChange,RlowerBoundUgChange,RUpperBoundUgChange
-  !Ug' Unique Values
-  REAL(RKIND),DIMENSION(:),ALLOCATABLE :: RUniqueUgPrimeValues!RB not used?
+  REAL(RKIND) :: RFigureofMerit
   ! Experimental Images (width,height, no.of patterns)
   REAL(RKIND),DIMENSION(:,:,:),ALLOCATABLE :: RImageExpi  
   ! Simulated Images as a 1D array (no. of patterns, no of thicknesses, totalpixels)
@@ -316,6 +314,8 @@ MODULE RPara
   REAL(RKIND) :: RValue!this is an awful name that doesn't mean anything
   !Refinement Vectors
   REAL(RKIND),DIMENSION(:,:),ALLOCATABLE :: RVector
+  !Uncertainties in refined parameters
+  REAL(RKIND),DIMENSION(:),ALLOCATABLE :: RIndependentDelta
   REAL(RKIND) :: RSimplexLengthScale,RExitCriteria,RSimplexStandardDeviation,RSimplexMean,RRSoSScalingFactor
   !Gaussian blur radius in pixels
   REAL(RKIND) :: RBlurRadius
@@ -355,6 +355,9 @@ MODULE SPara
   CHARACTER(5), DIMENSION(:), ALLOCATABLE :: SBasisAtomLabel,SAtomLabel
   CHARACTER(2), DIMENSION(:), ALLOCATABLE :: SBasisAtomName, SAtomName
   CHARACTER(1), DIMENSION(:), ALLOCATABLE :: SWyckoffSymbol
+  !strings (including uncertainty) for output
+  CHARACTER(12), DIMENSION(:), ALLOCATABLE :: SIndependentVariable
+  CHARACTER(12), DIMENSION(:,:), ALLOCATABLE :: SBasisAtomPosition
   
 END MODULE SPara
 !--------------------------------------------------------------------

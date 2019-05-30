@@ -451,20 +451,29 @@ MODULE refinementcontrol_mod
     USE MyMPI
     
     ! global inputs
-    USE IPARA, ONLY : INoOfVariables, IRefineMode,IAtomMoveList,IIndependentVariableType,IAtomsToRefine,IPixelCount
-    USE RPARA, ONLY : RVector,RDeltaK,RConvergenceAngle,RMinimumGMag
+    USE IPARA, ONLY : INoOfVariables, IRefineMode,IAtomMoveList,IIndependentVariableType,&
+          IAtomsToRefine,IPixelCount
+    USE RPARA, ONLY : RVector,RDeltaK,RConvergenceAngle,RMinimumGMag,RIndependentDelta
 
     ! global outputs
     USE RPARA, ONLY :  RBasisOccupancy, RBasisIsoDW, RAnisotropicDebyeWallerFactorTensor, &
           RLengthX, RLengthY, RLengthZ, RAlpha, RBeta, RGamma, RConvergenceAngle, &
           RAbsorptionPercentage, RAcceleratingVoltage, RRSoSScalingFactor, RBasisAtomPosition
+    USE SPARA, ONLY : SBasisAtomPosition
 
     IMPLICIT NONE
 
     REAL(RKIND),DIMENSION(INoOfVariables),INTENT(IN) :: RIndependentVariable
     INTEGER(IKIND),DIMENSION(10) :: IVariableCheck
-    INTEGER(IKIND) :: IVectorID,IAtomID,IErr,ind,jnd,knd,lnd
+    INTEGER(IKIND) :: IVectorID,IAtomID,IErr,ind,jnd,knd,lnd,mnd
+    REAL(RKIND),DIMENSION(3) :: RdeltaR!uncertainty in atom coords
+    CHARACTER(12) :: Sout
 
+    Sout="0.9876(12)"
+    SBasisAtomPosition(1,1)=Sout
+    Sout="0.1289(1)"
+    SBasisAtomPosition(1,2)=Sout
+IF(my_rank.EQ.0)PRINT*,"The problem ",SBasisAtomPosition
 
     !--------------------------------------------------------------------  
     ! first put independent variables back into the parameters 
@@ -490,6 +499,20 @@ MODULE refinementcontrol_mod
         RBasisAtomPosition(IAtomID,:) = MODULO((RBasisAtomPosition(IAtomID,:) - &
           RVector(jnd,:)*DOT_PRODUCT(RBasisAtomPosition(IAtomID,:),RVector(jnd,:)) + &
           RVector(jnd,:)*RIndependentVariable(ind)),ONE)
+        !if we have an uncertainty, write the string with an error
+        IF (RIndependentDelta(ind).GT.TINY) THEN
+          !Errors are v*RIndependentDelta(ind)
+          RdeltaR=RVector(jnd,:)*RIndependentDelta(ind)
+IF(my_rank.EQ.0)PRINT*,"Deltas=",RVector(jnd,:),RIndependentDelta(ind)
+          !make the string for output SBasisAtomPosition
+          DO mnd=1,3
+IF(my_rank.EQ.0)PRINT*,"Should UncertBrak here!",ind,mnd
+!            CALL UncertBrak(RBasisAtomPosition(IAtomID,mnd),RdeltaR(mnd),SBasisAtomPosition(IAtomID,mnd),IErr)
+          END DO
+        ELSE
+          WRITE(Sout,FMT='(F8.4)') RBasisAtomPosition(IAtomID,mnd)
+          SBasisAtomPosition(IAtomID,mnd)=Sout
+        END IF
         jnd=jnd+1
             
       CASE(3) ! C: occupancy
@@ -655,6 +678,12 @@ MODULE refinementcontrol_mod
           CALL message(LS,"Current Atomic Coordinates")
           DO jnd = 1,SIZE(RBasisAtomPosition,DIM=1)
             WRITE(SPrintString,FMT='(A4,A4,3(F7.4,1X))') "    ",SBasisAtomLabel(jnd),RBasisAtomPosition(jnd,:)
+            CALL message(LS,SPrintString)
+          END DO
+        CALL message(LS,"Atomic Coordinates with errors")
+          DO jnd = 1,SIZE(RBasisAtomPosition,DIM=1)
+            WRITE(SPrintString,FMT='(A4,A4,3(A12,1X))') "    ",&
+              SBasisAtomLabel(jnd),SBasisAtomPosition(jnd,:)
             CALL message(LS,SPrintString)
           END DO
 

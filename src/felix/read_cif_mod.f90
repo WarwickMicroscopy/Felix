@@ -82,7 +82,7 @@ MODULE read_cif_mod
     USE SConst, ONLY : SAllSpaceGrp
     USE RPARA, ONLY : RDebyeWallerConstant
     USE IPARA, ONLY : IAtomsToRefine,IAnisoDebyeWallerFactorFlag,ISimFLAG,ILN
-    USE SPARA, ONLY : SPrintString
+    USE SPARA, ONLY : SPrintString,SBasisAtomPosition
     USE SConst, ONLY : SElementSymbolMatrix
     USE IConst
     
@@ -119,7 +119,7 @@ MODULE read_cif_mod
 
     INTEGER IAtomCount, ICommaPosLeft, ICommaPosRight, &
          Ipos,Idpos, IoneI,IFRACminus, Inum,Idenom,IAtomID
-    CHARACTER*32 Csym(ITHREE)
+    CHARACTER(32) Csym(ITHREE)
     INTEGER IErr,ind,jnd
 
     ! fudge to deal with gfortran vs. g77
@@ -262,7 +262,10 @@ MODULE read_cif_mod
     END IF
 
     !allocate variables
+    !coordinates of the basis
     ALLOCATE(RBasisAtomPosition(IAtomCount,ITHREE),STAT=IErr)
+    !string for output, including uncertainties
+    ALLOCATE(SBasisAtomPosition(IAtomCount,ITHREE),STAT=IErr)
     IF(l_alert(IErr,"ReadCif","RBasisAtomPosition()")) RETURN
     ALLOCATE(SBasisAtomLabel(IAtomCount),STAT=IErr)
     IF(l_alert(IErr,"ReadCif","SBasisAtomLabel()")) RETURN
@@ -273,8 +276,10 @@ MODULE read_cif_mod
     ALLOCATE(SWyckoffSymbol(IAtomCount),STAT=IErr)
     IF(l_alert(IErr,"ReadCif","allocate SWyckoffSymbol")) RETURN
     ALLOCATE(RBasisIsoDW(IAtomCount),STAT=IErr)
+!   ALLOCATE(SBasisIsoDW(IAtomCount),STAT=IErr)
     IF(l_alert(IErr,"ReadCif","RBasisIsoDW()")) RETURN
     ALLOCATE(RBasisOccupancy(IAtomCount),STAT=IErr)
+!    ALLOCATE(SBasisOccupancy(IAtomCount),STAT=IErr)
     IF(l_alert(IErr,"ReadCif","RBasisOccupancy()")) RETURN
     ALLOCATE(RAnisotropicDebyeWallerFactorTensor(IAtomCount,ITHREE,ITHREE),STAT=IErr)
     IF(l_alert(IErr,"ReadCif","RAnisotropicDebyeWallerFactorTensor()")) RETURN

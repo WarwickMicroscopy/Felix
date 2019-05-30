@@ -561,11 +561,16 @@ PROGRAM Felixrefine
       CALL message(LS,"Number of independent variables = ",INoOfVariables)
     END IF
     ALLOCATE(RIndependentVariable(INoOfVariables),STAT=IErr) 
+    ALLOCATE(RIndependentDelta(INoOfVariables),STAT=IErr)
     ALLOCATE(IIndependentVariableType(INoOfVariables),STAT=IErr)
-    IF(l_alert(IErr,"felixrefine","allocate RIndependentVariable")) CALL abort
+    ALLOCATE(SIndependentVariable(INoOfVariables),STAT=IErr)
+    IF(l_alert(IErr,"felixrefine","allocate IndependentVariable")) CALL abort
     RIndependentVariable=Rtemp(1:INoOfVariables)
     IIndependentVariableType=Itemp(1:INoOfVariables)
-    
+    DO ind=1,INoOfVariables
+      WRITE(SPrintString,FMT='(F12.4)') RIndependentVariable(ind)
+      SIndependentVariable(ind)=TRIM(ADJUSTL(SPrintString))
+    END DO
   END IF
 
   !--------------------------------------------------------------------
@@ -1281,9 +1286,12 @@ CONTAINS
           CALL Parabo3(R3var,R3fit,RvarMin,RfitMin,IErr)
           !error estimate, uses RPrecision from felix.inp
           CALL DeltaX(R3var,R3fit,RdeltaX,RPrecision,IErr)
+          RIndependentDelta(ind)=RdeltaX
+IF(my_rank.EQ.0)PRINT*,RIndependentDelta
           !make a string for output
           CALL UncertBrak(RvarMin,RdeltaX,Sest,IErr)
           IF(l_alert(IErr,"UncertBrak","SimulateAndFit")) RETURN
+          SIndependentVariable(ind)=Sest
           !We update RVar0 with the best points as we go along
           !But keep RCurrentVar the same so that the measurements of gradient
           !are accurate.  
