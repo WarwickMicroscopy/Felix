@@ -69,7 +69,7 @@ PROGRAM Felixrefine
         RPvecMag,RScale,RMaxUgStep,Rdx,RStandardDeviation,RMean,RGzUnitVec,&
         RMinLaueZoneValue,Rdf,RLastFit,RBestFit,RMaxLaueZoneValue,&
         RMaxAcceptanceGVecMag,RandomSign,RLaueZoneElectronWaveVectorMag,&
-        RvarMin,RfitMin,RFit0,Rconvex,Rtest,Rplus,Rminus
+        RvarMin,RfitMin,RFit0,Rconvex,Rtest,Rplus,Rminus,RdeltaX,RdeltaY
   REAL(RKIND),DIMENSION(100) :: RTemp!temporary holder for refinement variables
   INTEGER(IKIND),DIMENSION(100) :: ITemp!temporary holder for refinement type
   REAL(RKIND),DIMENSION(ITHREE) :: R3var,R3fit
@@ -84,6 +84,7 @@ PROGRAM Felixrefine
   
   CHARACTER(40) :: my_rank_string
   CHARACTER(20) :: h,k,l
+  CHARACTER(12) :: Sest
 
   !--------------------------------------------------------------------
   ! startup
@@ -1198,7 +1199,7 @@ CONTAINS
     RCurrentVar=ONE
     Rdf=ONE
     RScale=RSimplexLengthScale
-    nnd=0 ! max/min gradient flag
+    RDeltaY=0.000005 ! Change in ZNCC for error estimate
 
     !--------------------------------------------------------------------
     ! iteratively refine until improvement in fit below exit criteria
@@ -1279,13 +1280,18 @@ CONTAINS
           R3var=(/ (RVar0(ind)-Rdx),RVar0(ind),(RVar0(ind)+Rdx) /)
           R3fit=(/ Rminus,RFit0,Rplus /)
           CALL Parabo3(R3var,R3fit,RvarMin,RfitMin,IErr)
+          !error estimate
+          CALL DeltaX(R3var,R3fit,RdeltaX,RdeltaY,IErr)
+          !make a string for output
+          CALL UncertBrak(RvarMin,RdeltaX,Sest,IErr)
+          IF(l_alert(IErr,"UncertBrak","SimulateAndFit")) RETURN
           !We update RVar0 with the best points as we go along
           !But keep RCurrentVar the same so that the measurements of gradient
           !are accurate.  
           RVar0(ind)=RvarMin
           RPVec(ind)=ZERO !don't include this variable in the max gradient refinement
-          IF (my_rank.EQ.0) WRITE(SPrintString,FMT='(A18,F9.4,A16,F10.5)') &
-          "Expect minimum at ",RvarMin," with fit index ",RfitMin
+          IF (my_rank.EQ.0) WRITE(SPrintString,FMT='(A18,A,A15,F8.3)') &
+          "Expect minimum at ",TRIM(ADJUSTL(Sest))," with fit index",(HUNDRED*RfitMin)
           SPrintString=TRIM(ADJUSTL(SPrintString))
           CALL message (LS, SPrintString)
         ELSE!this is a valid gradient descent direction
@@ -1879,7 +1885,8 @@ CONTAINS
     REAL(RKIND) :: Ra,Rb,Rc,Rd,Rxv,Ryv
     REAL(RKIND),DIMENSION(3) :: Rx,Ry
     INTEGER(IKIND) :: IErr
-    
+
+    !y=a*x^2+b*x+c a=Ra, b=Rb, c=Rc    
     Rd = Rx(1)*Rx(1)*(Rx(2)-Rx(3)) + Rx(2)*Rx(2)*(Rx(3)-Rx(1)) + Rx(3)*Rx(3)*(Rx(1)-Rx(2))
     Ra =(Rx(1)*(Ry(3)-Ry(2)) + Rx(2)*(Ry(1)-Ry(3)) + Rx(3)*(Ry(2)-Ry(1)))/Rd
     Rb =( Rx(1)*Rx(1)*(Ry(2)-Ry(3)) + Rx(2)*Rx(2)*(Ry(3)-Ry(1)) + &
@@ -1890,5 +1897,26 @@ CONTAINS
     Ryv = Rc-Rb*Rb/(4*Ra)!y-coord
 
   END SUBROUTINE Parabo3 
+
+  !>
+  !! Procedure-description: Inputs Rx, Ry and an error estimate Rdy.
+  !! Output is the corresponding error Rdx using Cramer's rules to
+  !!  give Ra(x^2)+Rb(x)+Rc=(y)
+  !!
+  !! Major-Authors: Richard Beanland (2019)
+  !! 
+  SUBROUTINE DeltaX(Rx,Ry,Rdx,Rdy,IErr)
+
+    REAL(RKIND) :: Ra,Rd,Rdx,Rdy
+    REAL(RKIND),DIMENSION(3) :: Rx,Ry
+    INTEGER(IKIND) :: IErr
+
+    !y=a*x^2+b*x+c a=Ra, b=Rb, c=Rc    
+    Rd = Rx(1)*Rx(1)*(Rx(2)-Rx(3)) + Rx(2)*Rx(2)*(Rx(3)-Rx(1)) + Rx(3)*Rx(3)*(Rx(1)-Rx(2))
+    Ra =(Rx(1)*(Ry(3)-Ry(2)) + Rx(2)*(Ry(1)-Ry(3)) + Rx(3)*(Ry(2)-Ry(1)))/Rd
+    Rdx = SQRT(Rdy/Ra)
+
+  END SUBROUTINE DeltaX
+
 
 END PROGRAM Felixrefine
