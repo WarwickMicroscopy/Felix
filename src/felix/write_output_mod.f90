@@ -60,7 +60,7 @@ MODULE write_output_mod
     INTEGER(IKIND), INTENT(OUT) :: IErr
     INTEGER(IKIND) :: Iord
     REAL(RKIND), INTENT(INOUT) :: Rval,Rerr
-    REAL(RKIND) :: Rmag,RtruncErr,RtruncVal
+    REAL(RKIND) :: Rmag,RtruncErr,RtruncVal,RerrI
     CHARACTER(12), INTENT(OUT) :: Sout
     CHARACTER(12) :: Sval,Serr,Sformat
 
@@ -74,54 +74,70 @@ MODULE write_output_mod
       RETURN
     END IF
 
-    !Make error positive if it isn't already
-    IF (Rerr.LT.ZERO) Rerr=-Rerr
-    !Check error is in expected limits
-    IF (Rerr.GE.HUNDRED.OR.CEILING(Rerr*10000.0).LT.ONE) THEN
-      IErr=1
-      RETURN
-    END IF
+    !Zero check
+    IF (ABS(Rerr).GT.TINY) THEN
+      !Make error positive if it isn't already
+      IF (Rerr.LT.ZERO) Rerr=-Rerr
+      !Check error is in expected limits
+      IF (Rerr.GE.HUNDRED.OR.CEILING(Rerr*10000.0).LT.ONE) THEN
+        IErr=1
+        RETURN
+      END IF
 
-    !Find order of magnitude for error, Iord
-    Rmag=TEN
-    Iord=1
-    DO WHILE (Rerr.LT.Rmag)
-      Rmag=Rmag/TEN
-      Iord=Iord-1
-    END DO
-
-    ! make Rerr between 1 and 10 if it's a decimal
-    IF (Iord.LT.0) THEN
-      Rerr=Rerr/Rmag
-    ELSEIF (Rerr.GT.15.0) THEN!round to 1 s.f.
-      Rerr=TEN*(NINT(Rerr/TEN))
-    END IF
-
-    !Make the error string, use a 2-digit error for values below 1.5
-    !Trim the value to the correct number of decimals using Sformat
-    IF (Iord.LT.0) THEN!subdecimal
-      IF (Rerr.GE.1.05.AND.Rerr.LE.1.5) THEN
-        WRITE(Serr,FMT='(A1,I2,A1)')  "(",NINT(Rerr*TEN),")"
+      !Find order of magnitude for error, Iord
+      Rmag=TEN
+      Iord=1
+      DO WHILE (Rerr.LT.Rmag)
+        Rmag=Rmag/TEN
         Iord=Iord-1
+      END DO
+
+      ! make an number RerrI corresponding to Rerr between 1 and 10 if it's a decimal
+      IF (Iord.LT.0) THEN
+        RerrI=Rerr/Rmag
+      !if it is already an integer then no change
       ELSE
-        WRITE(Serr,FMT='(A1,I1,A1)')  "(",NINT(Rerr),")"
+        RerrI=Rerr
+        !round to 1 s.f. if needed
+        IF (Rerr.GT.15.0) RerrI=TEN*(NINT(Rerr/TEN))
       END IF
-      WRITE(Sformat,FMT='(A4,I1,A1)') "(F8." , -Iord , ")"
-    ELSE!1 to 99
-      IF(Rerr.GE.1.05.AND.Rerr.LE.1.5) THEN!include a decimal
-        WRITE(Serr,FMT='(A1,F3.1,A1)')  "(",Rerr,")"
-        WRITE(Sformat,*) "(F8.1)"
-      ELSE
-        IF (Rerr.GE.TEN) THEN!double digit with a . to show it's >0
-          WRITE(Serr,FMT='(A1,I2,A2)')  "(",NINT(Rerr),".)"
-        ELSE!single digit with a . to show it's >0
-          WRITE(Serr,FMT='(A1,I1,A2)')  "(",NINT(Rerr),".)"
+
+      !Make the error string, use a 2-digit error for values below 1.5
+      !Trim the value to the correct number of decimals using Sformat
+      IF (Iord.LT.0) THEN!subdecimal error
+        !make the error string and the format for the value string
+        IF (RerrI.GE.9.5) THEN!we round up to 1
+          Serr="(1)"
+          Iord=Iord+1
+        ELSEIF (RerrI.GE.1.05.AND.RerrI.LE.1.5) THEN!we need 2 digits
+          WRITE(Serr,FMT='(A1,I2,A1)')  "(",NINT(RerrI*TEN),")"
+          Iord=Iord-1
+        ELSE
+          WRITE(Serr,FMT='(A1,I1,A1)')  "(",NINT(RerrI),")"
         END IF
-        WRITE(Sformat,*) "(F8.0)"
+        WRITE(Sformat,FMT='(A4,I1,A1)') "(F8." , -Iord , ")"
+      ELSE!1 to 99
+        IF (RerrI.GE.95) THEN!we round up to 100
+          Serr="(100.)"
+        ELSEIF(Rerr.GE.1.05.AND.Rerr.LE.1.5) THEN!include a decimal
+          WRITE(Serr,FMT='(A1,F3.1,A1)')  "(",RerrI,")"
+          WRITE(Sformat,*) "(F8.1)"
+        ELSE
+          IF (Rerr.GE.TEN) THEN!double digit with a . to show it's >0
+            WRITE(Serr,FMT='(A1,I2,A2)')  "(",NINT(RerrI),".)"
+          ELSE!single digit with a . to show it's >0
+            WRITE(Serr,FMT='(A1,I1,A2)')  "(",NINT(RerrI),".)"
+          END IF
+          WRITE(Sformat,*) "(F8.0)"
+        END IF
       END IF
+     !make the value string
+      WRITE(Sval,FMT=Sformat) Rval
+      !concatenate to produce the output
+      Sout=TRIM(ADJUSTL(Sval)) // TRIM(ADJUSTL(Serr))
+    ELSE!Error was zero, just output the value without an uncertainty
+      WRITE(Sout,FMT='(F8.4)') Rval
     END IF
-    WRITE(Sval,FMT=Sformat) Rval
-    Sout=TRIM(ADJUSTL(Sval)) // TRIM(ADJUSTL(Serr))
 
   END SUBROUTINE UncertBrak
 
@@ -389,11 +405,11 @@ MODULE write_output_mod
 
     USE MyNumbers
     USE message_mod
-    
+ 
     ! global inputs
-    USE IPARA, ONLY : ILN
+    USE IPARA, ONLY : ISpaceGrp,ILN
     USE RPARA, ONLY : RLengthX, RLengthY, RLengthZ, RAlpha, RBeta, RGamma, &
-                      RBasisAtomPosition, RBasisIsoDW, RBasisOccupancy
+                      RBasisAtomPosition, RBasisIsoDW, RBasisOccupancy, RVolume
     USE SPARA, ONLY : SSpaceGrp, SBasisAtomLabel, SBasisAtomName,SChemicalFormula
     USE IChannels, ONLY : IChOutSimplex
 
@@ -413,7 +429,16 @@ MODULE write_output_mod
 
     OPEN(UNIT=IChOutSimplex,STATUS='UNKNOWN',FILE=TRIM(ADJUSTL(fullpath)))
  
+    !Introductory lines
+    WRITE(IChOutSimplex,FMT='(A31)') "#(C) 2019 University of Warwick"
     WRITE(IChOutSimplex,FMT='(A16)') "data_felixrefine"
+    WRITE(IChOutSimplex,FMT='(A31)') "_audit_creation_date 2019-06-06"!need to find out how to get a date!
+
+    WRITE(IChOutSimplex,FMT='(A31,1X,A100)') "_chemical_formula_sum",SChemicalFormula
+ 
+! Citation data would go here
+
+    !unit cell
     WRITE(IChOutSimplex,FMT='(A5)') "loop_"
     WRITE(IChOutSimplex,FMT='(A14,1X,F7.4)') "_cell_length_a",RLengthX
     WRITE(IChOutSimplex,FMT='(A14,1X,F7.4)') "_cell_length_b",RLengthY
@@ -421,8 +446,14 @@ MODULE write_output_mod
     WRITE(IChOutSimplex,FMT='(A17,1X,F7.2)') "_cell_angle_alpha",RAlpha*180/PI
     WRITE(IChOutSimplex,FMT='(A16,1X,F7.2)') "_cell_angle_beta",RBeta*180/PI
     WRITE(IChOutSimplex,FMT='(A17,1X,F7.2)') "_cell_angle_gamma",RGamma*180/PI
+    WRITE(IChOutSimplex,FMT='(A12,1X,F7.2)') "_cell_volume",RVolume
+    !symmetry
     WRITE(IChOutSimplex,FMT='(A32,A10,A1)') "_symmetry_space_group_name_H-M '",SSpaceGrp,"'"
-    WRITE(IChOutSimplex,FMT='(A5)') " "
+    WRITE(IChOutSimplex,FMT='(A27,1X,I3)') "_symmetry_Int_Tables_number",ISpaceGrp
+    WRITE(IChOutSimplex,FMT='(A5)') "loop_"
+
+
+    !atom coordinates etc
     WRITE(IChOutSimplex,FMT='(A5)') "loop_"
     WRITE(IChOutSimplex,FMT='(A22)') "_atom_site_label"
     WRITE(IChOutSimplex,FMT='(A22)') "_atom_site_type_symbol"

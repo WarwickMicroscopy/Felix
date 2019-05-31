@@ -197,8 +197,7 @@ MODULE IPara
   !LACBED mask
   INTEGER(IKIND),DIMENSION(:,:), ALLOCATABLE :: IMask
   !inpcif
-  INTEGER(IKIND) :: ISymCount
-  INTEGER(IKIND) :: ILN
+  INTEGER(IKIND) :: ISpaceGrp, ISymCount, ILN
   INTEGER(IKIND) :: IPixelCountTotal
   !Thickness loop Variables
   INTEGER(IKIND) :: IThicknessCount
@@ -240,7 +239,7 @@ MODULE RPara
   REAL(RKIND) :: RLengthX,RLengthY,RLengthZ,RVolume,RAlpha,RBeta,RGamma, &
        RDebyeWallerConstant,RAbsorptionPercentage
   REAL(RKIND), DIMENSION(:), ALLOCATABLE :: RBasisIsoDW, RBasisOccupancy, RIsoDW, ROccupancy
-  REAL(RKIND), DIMENSION(:,:), ALLOCATABLE :: RSymVec,RBasisAtomPosition, &
+  REAL(RKIND), DIMENSION(:,:), ALLOCATABLE :: RSymVec,RBasisAtomPosition, RBasisAtomDelta,&
        RAtomPosition,RUniqueKey
   REAL(RKIND), DIMENSION(:,:,:), ALLOCATABLE :: RSymMat
   !Precision and errors
@@ -357,7 +356,6 @@ MODULE SPara
   CHARACTER(1), DIMENSION(:), ALLOCATABLE :: SWyckoffSymbol
   !strings (including uncertainty) for output
   CHARACTER(12), DIMENSION(:), ALLOCATABLE :: SIndependentVariable
-  CHARACTER(12), DIMENSION(:,:), ALLOCATABLE :: SBasisAtomPosition
   
 END MODULE SPara
 !--------------------------------------------------------------------

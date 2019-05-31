@@ -63,7 +63,7 @@ PROGRAM Felixrefine
         IBSMaxLocGVecAmp,ILaueLevel,INumTotalReflections,ITotalLaueZoneLevel,&
         IPrintFLAG,ICycle,INumInitReflections,IZerothLaueZoneLevel,xnd,&
         INumFinalReflections,IThicknessIndex,IVariableType,IArrayIndex,&
-        IAnisotropicDebyeWallerFactorElementNo,ISpaceGrp
+        IAnisotropicDebyeWallerFactorElementNo
   INTEGER(IKIND) :: IStartTime,IStartTime2
   REAL(RKIND) :: REmphasis,RHOLZAcceptanceAngle,RLaueZoneGz,RMaxGMag,&
         RPvecMag,RScale,RMaxUgStep,Rdx,RStandardDeviation,RMean,RGzUnitVec,&
@@ -1204,6 +1204,7 @@ CONTAINS
     RCurrentVar=ONE
     Rdf=ONE
     RScale=RSimplexLengthScale
+    RIndependentDelta = ZERO
 
     !--------------------------------------------------------------------
     ! iteratively refine until improvement in fit below exit criteria
@@ -1287,7 +1288,6 @@ CONTAINS
           !error estimate, uses RPrecision from felix.inp
           CALL DeltaX(R3var,R3fit,RdeltaX,RPrecision,IErr)
           RIndependentDelta(ind)=RdeltaX
-IF(my_rank.EQ.0)PRINT*,RIndependentDelta
           !make a string for output
           CALL UncertBrak(RvarMin,RdeltaX,Sest,IErr)
           IF(l_alert(IErr,"UncertBrak","SimulateAndFit")) RETURN

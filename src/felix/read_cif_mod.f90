@@ -74,7 +74,7 @@ MODULE read_cif_mod
           SBasisAtomName, SWyckoffSymbol, SSpaceGrp
     USE RPARA, ONLY : RLengthX, RLengthY, RLengthZ, RAlpha, RBeta, RGamma, RVolume, &
           RAnisotropicDebyeWallerFactorTensor, RBasisAtomPosition, RBasisIsoDW, &
-          RBasisOccupancy, RSymMat, RSymVec
+          RBasisOccupancy, RSymMat, RSymVec, RBasisAtomDelta
     USE IPARA, ONLY : IVolumeFLAG, IBasisAtomicNumber, IMaxPossibleNAtomsUnitCell, &
           ISymCount, IBasisAnisoDW
 
@@ -82,7 +82,7 @@ MODULE read_cif_mod
     USE SConst, ONLY : SAllSpaceGrp
     USE RPARA, ONLY : RDebyeWallerConstant
     USE IPARA, ONLY : IAtomsToRefine,IAnisoDebyeWallerFactorFlag,ISimFLAG,ILN
-    USE SPARA, ONLY : SPrintString,SBasisAtomPosition
+    USE SPARA, ONLY : SPrintString
     USE SConst, ONLY : SElementSymbolMatrix
     USE IConst
     
@@ -264,8 +264,7 @@ MODULE read_cif_mod
     !allocate variables
     !coordinates of the basis
     ALLOCATE(RBasisAtomPosition(IAtomCount,ITHREE),STAT=IErr)
-    !string for output, including uncertainties
-    ALLOCATE(SBasisAtomPosition(IAtomCount,ITHREE),STAT=IErr)
+    ALLOCATE(RBasisAtomDelta(IAtomCount,ITHREE),STAT=IErr)
     IF(l_alert(IErr,"ReadCif","RBasisAtomPosition()")) RETURN
     ALLOCATE(SBasisAtomLabel(IAtomCount),STAT=IErr)
     IF(l_alert(IErr,"ReadCif","SBasisAtomLabel()")) RETURN
@@ -290,6 +289,7 @@ MODULE read_cif_mod
     IBasisAtomicNumber = 0
     RAnisotropicDebyeWallerFactorTensor = ZERO
     IMaxPossibleNAtomsUnitCell = 0
+    RBasisAtomDelta = ZERO
     ! input data loop
     DO ind=1,IAtomCount
       B = ZERO

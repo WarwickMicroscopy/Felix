@@ -458,8 +458,8 @@ MODULE refinementcontrol_mod
     ! global outputs
     USE RPARA, ONLY :  RBasisOccupancy, RBasisIsoDW, RAnisotropicDebyeWallerFactorTensor, &
           RLengthX, RLengthY, RLengthZ, RAlpha, RBeta, RGamma, RConvergenceAngle, &
-          RAbsorptionPercentage, RAcceleratingVoltage, RRSoSScalingFactor, RBasisAtomPosition
-    USE SPARA, ONLY : SBasisAtomPosition
+          RAbsorptionPercentage, RAcceleratingVoltage, RRSoSScalingFactor, &
+          RBasisAtomPosition,RBasisAtomDelta
 
     IMPLICIT NONE
 
@@ -467,13 +467,6 @@ MODULE refinementcontrol_mod
     INTEGER(IKIND),DIMENSION(10) :: IVariableCheck
     INTEGER(IKIND) :: IVectorID,IAtomID,IErr,ind,jnd,knd,lnd,mnd
     REAL(RKIND),DIMENSION(3) :: RdeltaR!uncertainty in atom coords
-    CHARACTER(12) :: Sout
-
-    Sout="0.9876(12)"
-    SBasisAtomPosition(1,1)=Sout
-    Sout="0.1289(1)"
-    SBasisAtomPosition(1,2)=Sout
-IF(my_rank.EQ.0)PRINT*,"The problem ",SBasisAtomPosition
 
     !--------------------------------------------------------------------  
     ! first put independent variables back into the parameters 
@@ -482,6 +475,8 @@ IF(my_rank.EQ.0)PRINT*,"The problem ",SBasisAtomPosition
     jnd=1!counting indices for each refinement type
     knd=1
     lnd=1
+    !reset atom coordinate uncertainties
+    RBasisAtomDelta=ZERO
     DO ind = 1,INoOfVariables!loop over variables
 
       !the type of variable is specified by the last digit of IIndependentVariableType
@@ -499,19 +494,11 @@ IF(my_rank.EQ.0)PRINT*,"The problem ",SBasisAtomPosition
         RBasisAtomPosition(IAtomID,:) = MODULO((RBasisAtomPosition(IAtomID,:) - &
           RVector(jnd,:)*DOT_PRODUCT(RBasisAtomPosition(IAtomID,:),RVector(jnd,:)) + &
           RVector(jnd,:)*RIndependentVariable(ind)),ONE)
-        !if we have an uncertainty, write the string with an error
-        IF (RIndependentDelta(ind).GT.TINY) THEN
+        !if we have an uncertainty, calculate the error
+        IF (ABS(RIndependentDelta(ind)).GT.TINY) THEN
           !Errors are v*RIndependentDelta(ind)
-          RdeltaR=RVector(jnd,:)*RIndependentDelta(ind)
-IF(my_rank.EQ.0)PRINT*,"Deltas=",RVector(jnd,:),RIndependentDelta(ind)
-          !make the string for output SBasisAtomPosition
-          DO mnd=1,3
-IF(my_rank.EQ.0)PRINT*,"Should UncertBrak here!",ind,mnd
-!            CALL UncertBrak(RBasisAtomPosition(IAtomID,mnd),RdeltaR(mnd),SBasisAtomPosition(IAtomID,mnd),IErr)
-          END DO
-        ELSE
-          WRITE(Sout,FMT='(F8.4)') RBasisAtomPosition(IAtomID,mnd)
-          SBasisAtomPosition(IAtomID,mnd)=Sout
+          RBasisAtomDelta(IAtomID,:) = RBasisAtomDelta(IAtomID,:)+RVector(jnd,:)*RIndependentDelta(ind)
+!IF(my_rank.EQ.0)PRINT*,"Deltas=",RBasisAtomDelta(IAtomID,:)
         END IF
         jnd=jnd+1
             
@@ -643,7 +630,8 @@ IF(my_rank.EQ.0)PRINT*,"Should UncertBrak here!",ind,mnd
 
     USE MyNumbers
     USE message_mod 
-    !should be cut down to variables actually used
+    USE write_output_mod
+    !The following should be cut down to variables actually used
     USE IConst; USE RConst; USE SConst
     USE IPara; USE RPara; USE CPara; USE SPara;
     USE BlochPara 
@@ -652,6 +640,7 @@ IF(my_rank.EQ.0)PRINT*,"Should UncertBrak here!",ind,mnd
 
     INTEGER(IKIND) :: IErr,ind,IVariableType,jnd,knd
     REAL(RKIND),DIMENSION(3) :: RCrystalVector
+    CHARACTER(12) :: Sout
 
     RCrystalVector = [RLengthX,RLengthY,RLengthZ]
 
@@ -676,14 +665,12 @@ IF(my_rank.EQ.0)PRINT*,"Should UncertBrak here!",ind,mnd
 
         CASE(2)
           CALL message(LS,"Current Atomic Coordinates")
-          DO jnd = 1,SIZE(RBasisAtomPosition,DIM=1)
-            WRITE(SPrintString,FMT='(A4,A4,3(F7.4,1X))') "    ",SBasisAtomLabel(jnd),RBasisAtomPosition(jnd,:)
-            CALL message(LS,SPrintString)
-          END DO
-        CALL message(LS,"Atomic Coordinates with errors")
-          DO jnd = 1,SIZE(RBasisAtomPosition,DIM=1)
-            WRITE(SPrintString,FMT='(A4,A4,3(A12,1X))') "    ",&
-              SBasisAtomLabel(jnd),SBasisAtomPosition(jnd,:)
+           DO jnd = 1,SIZE(RBasisAtomPosition,DIM=1)
+             WRITE(SPrintString,FMT='(A4)') SBasisAtomLabel(jnd)
+             DO knd = 1,3
+               CALL UncertBrak(RBasisAtomPosition(jnd,knd),RBasisAtomDelta(jnd,knd),Sout,IErr)
+               SPrintString = "    " // TRIM(ADJUSTL(SPrintString)) // " " // TRIM(ADJUSTL(Sout))
+             END DO
             CALL message(LS,SPrintString)
           END DO
 
