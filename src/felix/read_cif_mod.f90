@@ -71,7 +71,7 @@ MODULE read_cif_mod
 
     ! global outputs (or inout)
     USE SPARA, ONLY : SChemicalFormula, SSpaceGroupName, SBasisAtomLabel, &
-          SBasisAtomName, SWyckoffSymbol, SSpaceGrp
+          SBasisAtomName, SWyckoffSymbol, SSpaceGrp, SSymString
     USE RPARA, ONLY : RLengthX, RLengthY, RLengthZ, RAlpha, RBeta, RGamma, RVolume, &
           RAnisotropicDebyeWallerFactorTensor, RBasisAtomPosition, RBasisIsoDW, &
           RBasisOccupancy, RSymMat, RSymVec, RBasisAtomDelta
@@ -79,11 +79,10 @@ MODULE read_cif_mod
           ISymCount, IBasisAnisoDW
 
     ! global inputs
-    USE SConst, ONLY : SAllSpaceGrp
+    USE SConst, ONLY : SAllSpaceGrp,SElementSymbolMatrix
     USE RPARA, ONLY : RDebyeWallerConstant
     USE IPARA, ONLY : IAtomsToRefine,IAnisoDebyeWallerFactorFlag,ISimFLAG,ILN
     USE SPARA, ONLY : SPrintString
-    USE SConst, ONLY : SElementSymbolMatrix
     USE IConst
     
     IMPLICIT NONE
@@ -383,7 +382,7 @@ MODULE read_cif_mod
     END DO
 
     ALLOCATE(RSymVec(ISymCount,ITHREE),STAT=IErr)
-    IF(l_alert(IErr,"ReadCif","allocate RSymVec")) RETURN
+    ALLOCATE(SSymString(ISymCount),STAT=IErr)
     ALLOCATE(RSymMat(ISymCount,ITHREE,ITHREE),STAT=IErr)
     IF(l_alert(IErr,"ReadCif","allocate RSymMat")) RETURN
     
@@ -394,9 +393,10 @@ MODULE read_cif_mod
     ISymCount=0
     DO 
       f1 = char_('_symmetry_equiv_pos_as_xyz', name)
-      DO 
-        f2 = char_(name, line)
+      DO
         ISymCount=ISymCount+1
+        f2 = char_(name, line)
+        SSymString(ISymCount)=TRIM(ADJUSTL(name))
         ICommaPosLeft = SCAN(name, ",")
         ICommaPosRight= SCAN(name, ",",.TRUE.)
         Csym(1)= name(1:ICommaPosLeft-1)

@@ -63,7 +63,7 @@ PROGRAM Felixrefine
         IBSMaxLocGVecAmp,ILaueLevel,INumTotalReflections,ITotalLaueZoneLevel,&
         IPrintFLAG,ICycle,INumInitReflections,IZerothLaueZoneLevel,xnd,&
         INumFinalReflections,IThicknessIndex,IVariableType,IArrayIndex,&
-        IAnisotropicDebyeWallerFactorElementNo
+        IAnisotropicDebyeWallerFactorElementNo,ISpaceGrp
   INTEGER(IKIND) :: IStartTime,IStartTime2
   REAL(RKIND) :: REmphasis,RHOLZAcceptanceAngle,RLaueZoneGz,RMaxGMag,&
         RPvecMag,RScale,RMaxUgStep,Rdx,RStandardDeviation,RMean,RGzUnitVec,&
@@ -84,7 +84,7 @@ PROGRAM Felixrefine
   
   CHARACTER(40) :: my_rank_string
   CHARACTER(20) :: h,k,l
-  CHARACTER(12) :: Sest
+  CHARACTER(14) :: Sest
 
   !--------------------------------------------------------------------
   ! startup
@@ -175,9 +175,6 @@ PROGRAM Felixrefine
   ! Reset the basis so that atomic coordinate refinement is possible 
   IF(IRefineMode(2).EQ.1) CALL PreferredBasis(IErr)!A crystallography subroutine
   ! total possible atoms/unit cell
-!  DO ind=1,SIZE(RBasisAtomPosition,1)
-!    IF (my_rank.EQ.0) PRINT*,SBasisAtomLabel(ind),RBasisAtomPosition(ind,:)
-!  END DO
   IMaxPossibleNAtomsUnitCell=SIZE(RBasisAtomPosition,1)*SIZE(RSymVec,1)
   ! over-allocate since actual size not known before calculation of unique positions 
   ! (atoms in special positions will be duplicated)

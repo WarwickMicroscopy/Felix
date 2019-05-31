@@ -1405,7 +1405,7 @@ MODULE setup_space_group_mod
     INTEGER(IKIND),INTENT(OUT) :: ISpaceGrp, IErr
     INTEGER(IKIND) :: jnd, IIndex, ind
     CHARACTER(LEN(SSpaceGrp)) :: SSpaceGrpNoSpaces
-    CHARACTER*20 :: SSpaceGrpToCompare
+    CHARACTER(20) :: SSpaceGrpToCompare
 
     ! Push Spaces In SSpaceGrp to the end of the String
     

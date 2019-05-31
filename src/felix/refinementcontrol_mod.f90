@@ -640,7 +640,7 @@ MODULE refinementcontrol_mod
 
     INTEGER(IKIND) :: IErr,ind,IVariableType,jnd,knd
     REAL(RKIND),DIMENSION(3) :: RCrystalVector
-    CHARACTER(12) :: Sout
+    CHARACTER(14) :: Sout
 
     RCrystalVector = [RLengthX,RLengthY,RLengthZ]
 

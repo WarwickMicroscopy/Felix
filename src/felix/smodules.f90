@@ -197,7 +197,7 @@ MODULE IPara
   !LACBED mask
   INTEGER(IKIND),DIMENSION(:,:), ALLOCATABLE :: IMask
   !inpcif
-  INTEGER(IKIND) :: ISpaceGrp, ISymCount, ILN
+  INTEGER(IKIND) :: ISymCount, ILN
   INTEGER(IKIND) :: IPixelCountTotal
   !Thickness loop Variables
   INTEGER(IKIND) :: IThicknessCount
@@ -351,11 +351,12 @@ MODULE SPara
   CHARACTER(40) :: SChemicalFormula
   CHARACTER(1) :: SSpaceGroupName
   CHARACTER(10) :: SSpaceGrp
+  CHARACTER(30), DIMENSION(:), ALLOCATABLE :: SSymString
   CHARACTER(5), DIMENSION(:), ALLOCATABLE :: SBasisAtomLabel,SAtomLabel
   CHARACTER(2), DIMENSION(:), ALLOCATABLE :: SBasisAtomName, SAtomName
   CHARACTER(1), DIMENSION(:), ALLOCATABLE :: SWyckoffSymbol
   !strings (including uncertainty) for output
-  CHARACTER(12), DIMENSION(:), ALLOCATABLE :: SIndependentVariable
+  CHARACTER(14), DIMENSION(:), ALLOCATABLE :: SIndependentVariable
   
 END MODULE SPara
 !--------------------------------------------------------------------

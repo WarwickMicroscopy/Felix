@@ -61,8 +61,8 @@ MODULE write_output_mod
     INTEGER(IKIND) :: Iord
     REAL(RKIND), INTENT(INOUT) :: Rval,Rerr
     REAL(RKIND) :: Rmag,RtruncErr,RtruncVal,RerrI
-    CHARACTER(12), INTENT(OUT) :: Sout
-    CHARACTER(12) :: Sval,Serr,Sformat
+    CHARACTER(14), INTENT(OUT) :: Sout
+    CHARACTER(10) :: Sval,Serr,Sformat
 
     !infinity and NaN check
     IF (ABS(Rval)-1.GT.ABS(Rval).OR.ABS(Rval).NE.ABS(Rval)) THEN
@@ -164,7 +164,6 @@ MODULE write_output_mod
     IF(Iter.EQ.0) IErr=1
     IF(l_alert(IErr,"WriteIterationOutputWrapper","Unexpectedly recieved Iter = 0")) RETURN
 
-
     IF(my_rank.EQ.0) THEN
       ! use IPrint and IPrintFLAG to specify how often to write Iteration output
       SELECT CASE(IPrintFLAG)
@@ -189,7 +188,7 @@ MODULE write_output_mod
       END SELECT
       IF(l_alert(IErr,"WriteIterationOutputWrapper","WriteIterationOutput")) RETURN
 
-      END IF
+    END IF
 
   END SUBROUTINE
 
@@ -405,12 +404,14 @@ MODULE write_output_mod
 
     USE MyNumbers
     USE message_mod
+    USE setup_space_group_mod
  
     ! global inputs
-    USE IPARA, ONLY : ISpaceGrp,ILN
+    USE IPARA, ONLY : ILN
     USE RPARA, ONLY : RLengthX, RLengthY, RLengthZ, RAlpha, RBeta, RGamma, &
-                      RBasisAtomPosition, RBasisIsoDW, RBasisOccupancy, RVolume
-    USE SPARA, ONLY : SSpaceGrp, SBasisAtomLabel, SBasisAtomName,SChemicalFormula
+          RBasisAtomPosition, RBasisAtomDelta, RBasisIsoDW, RBasisOccupancy, RVolume
+    USE SPARA, ONLY : SSpaceGrp, SBasisAtomLabel, SBasisAtomName,SChemicalFormula,&
+          SSymString
     USE IChannels, ONLY : IChOutSimplex
 
     IMPLICIT NONE
@@ -418,8 +419,10 @@ MODULE write_output_mod
     CHARACTER(200), INTENT(IN) :: path
     INTEGER(IKIND), INTENT(IN) :: Iter
     INTEGER(IKIND), INTENT(OUT) :: IErr
-    INTEGER(IKIND) :: jnd
+    INTEGER(IKIND) :: ind,jnd,ISpaceGrp
     CHARACTER(200) :: filename, fullpath
+    CHARACTER(100) :: String
+    CHARACTER(14) :: Sout
 
     IErr=0
     ! Write out unique atomic positions
@@ -433,9 +436,10 @@ MODULE write_output_mod
     WRITE(IChOutSimplex,FMT='(A31)') "#(C) 2019 University of Warwick"
     WRITE(IChOutSimplex,FMT='(A16)') "data_felixrefine"
     WRITE(IChOutSimplex,FMT='(A31)') "_audit_creation_date 2019-06-06"!need to find out how to get a date!
+!    WRITE(Sformat,FMT='(A6,I2,A1)') "(A21,A",LEN_TRIM(SChemicalFormula),")"
 
-    WRITE(IChOutSimplex,FMT='(A31,1X,A100)') "_chemical_formula_sum",SChemicalFormula
- 
+    WRITE(IChOutSimplex,FMT='(A,A)') "_chemical_formula_sum ",TRIM(ADJUSTL(SChemicalFormula))
+
 ! Citation data would go here
 
     !unit cell
@@ -444,18 +448,22 @@ MODULE write_output_mod
     WRITE(IChOutSimplex,FMT='(A14,1X,F7.4)') "_cell_length_b",RLengthY
     WRITE(IChOutSimplex,FMT='(A14,1X,F7.4)') "_cell_length_c",RLengthZ
     WRITE(IChOutSimplex,FMT='(A17,1X,F7.2)') "_cell_angle_alpha",RAlpha*180/PI
-    WRITE(IChOutSimplex,FMT='(A16,1X,F7.2)') "_cell_angle_beta",RBeta*180/PI
+    WRITE(IChOutSimplex,FMT='(A17,1X,F7.2)') "_cell_angle_beta ",RBeta*180/PI
     WRITE(IChOutSimplex,FMT='(A17,1X,F7.2)') "_cell_angle_gamma",RGamma*180/PI
     WRITE(IChOutSimplex,FMT='(A12,1X,F7.2)') "_cell_volume",RVolume
     !symmetry
-    WRITE(IChOutSimplex,FMT='(A32,A10,A1)') "_symmetry_space_group_name_H-M '",SSpaceGrp,"'"
+    WRITE(IChOutSimplex,FMT='(A,A,A)') "_symmetry_space_group_name_H-M  '",TRIM(ADJUSTL(SSpaceGrp)),"'"
+    CALL ConvertSpaceGroupToNumber(ISpaceGrp,IErr)
     WRITE(IChOutSimplex,FMT='(A27,1X,I3)') "_symmetry_Int_Tables_number",ISpaceGrp
     WRITE(IChOutSimplex,FMT='(A5)') "loop_"
-
-
+    WRITE(IChOutSimplex,FMT='(A27)') "_symmetry_equiv_pos_site_id"
+    WRITE(IChOutSimplex,FMT='(A26)') "_symmetry_equiv_pos_as_xyz"
+    DO jnd = 1,SIZE(SSymString,DIM=1)!
+      WRITE(IChOutSimplex,FMT='(I2,1X,A30)') jnd,SSymString(jnd)
+    END DO
     !atom coordinates etc
     WRITE(IChOutSimplex,FMT='(A5)') "loop_"
-    WRITE(IChOutSimplex,FMT='(A22)') "_atom_site_label"
+    WRITE(IChOutSimplex,FMT='(A16)') "_atom_site_label"
     WRITE(IChOutSimplex,FMT='(A22)') "_atom_site_type_symbol"
 !    WRITE(IChOutSimplex,FMT='(A25)') "_atom_site_symmetry_multiplicity"
 !    WRITE(IChOutSimplex,FMT='(A25)') "_atom_site_Wyckoff_symbol"
@@ -466,9 +474,16 @@ MODULE write_output_mod
     WRITE(IChOutSimplex,FMT='(A20)') "_atom_site_occupancy"
 
     DO jnd = 1,SIZE(RBasisAtomPosition,DIM=1)!RB only gives refined atoms, needs work
-      WRITE(IChOutSimplex,FMT='(2(A3,1X),3(F7.4,1X),2(F5.2,1X))') &
-          SBasisAtomLabel(jnd), SBasisAtomName(jnd), RBasisAtomPosition(jnd,:), &
-            RBasisIsoDW(jnd),RBasisOccupancy(jnd)
+      WRITE(String,FMT='(A3,1X,A3,1X)')SBasisAtomLabel(jnd), SBasisAtomName(jnd)
+      DO ind = 1,3
+        CALL UncertBrak(RBasisAtomPosition(jnd,ind),RBasisAtomDelta(jnd,ind),Sout,IErr)
+        String = TRIM(ADJUSTL(String)) // "  " // TRIM(ADJUSTL(Sout))
+      END DO
+      WRITE(Sout,FMT='(F5.2,1X)') RBasisIsoDW(jnd)
+      String = TRIM(ADJUSTL(String)) // "  " // TRIM(ADJUSTL(Sout))
+      WRITE(Sout,FMT='(F5.2)') RBasisOccupancy(jnd)
+      String = TRIM(ADJUSTL(String)) // "  " // TRIM(ADJUSTL(Sout))
+      WRITE(IChOutSimplex,FMT='(A)') String
     END DO
     WRITE(IChOutSimplex,FMT='(A22)') "#End of refinement cif"
     
