@@ -458,7 +458,7 @@ MODULE refinementcontrol_mod
     ! global outputs
     USE RPARA, ONLY :  RBasisOccupancy, RBasisIsoDW, RAnisotropicDebyeWallerFactorTensor, &
           RLengthX, RLengthY, RLengthZ, RAlpha, RBeta, RGamma, RConvergenceAngle, &
-          RAbsorptionPercentage, RAcceleratingVoltage, RRSoSScalingFactor, &
+          RAbsorptionPercentage, RAcceleratingVoltage, &
           RBasisAtomPosition,RBasisAtomDelta
 
     IMPLICIT NONE
@@ -639,10 +639,7 @@ MODULE refinementcontrol_mod
     IMPLICIT NONE
 
     INTEGER(IKIND) :: IErr,ind,IVariableType,jnd,knd
-    REAL(RKIND),DIMENSION(3) :: RCrystalVector
     CHARACTER(14) :: Sout
-
-    RCrystalVector = [RLengthX,RLengthY,RLengthZ]
 
     DO ind = 1,IRefinementVariableTypes
       IF (IRefineMode(ind).EQ.1) THEN
@@ -677,14 +674,32 @@ MODULE refinementcontrol_mod
         CASE(3)
           CALL message(LS, "Current Atomic Occupancy")
           DO jnd = 1,SIZE(RBasisOccupancy,DIM=1)
-            WRITE(SPrintString,FMT='(A4,A4,F7.4)') "    ",SBasisAtomLabel(jnd),RBasisOccupancy(jnd)
+            !set up output assuming it is not being refined
+            WRITE(SPrintString,FMT='(4X,A4,F7.4)') SBasisAtomLabel(jnd),RBasisOccupancy(jnd)
+            !if it is being refined, change the output accordingly
+            DO knd = 1,SIZE(IIndependentVariableAtom)
+              IF(IIndependentVariableType(knd).EQ.3.AND.jnd.EQ.IIndependentVariableAtom(knd))THEN!this atom is being refined
+                CALL UncertBrak(RBasisOccupancy(jnd),RIndependentDelta(knd),Sout,IErr)
+                WRITE(SPrintString,FMT='(4X,A4,1X,A)') SBasisAtomLabel(jnd),TRIM(ADJUSTL(Sout))
+!IF(my_rank.EQ.0)PRINT*,jnd,knd,RIndependentDelta(knd)
+              END IF
+            END DO
             CALL message(LS,SPrintString)
           END DO
 
         CASE(4)
           CALL message(LS, "Current Isotropic Debye Waller Factors")
           DO jnd = 1,SIZE(RBasisIsoDW,DIM=1)
+            !set up output assuming it is not being refined
             WRITE(SPrintString,FMT='(A4,A4,F7.4)') "    ",SBasisAtomLabel(jnd),RBasisIsoDW(jnd)
+            !if it is being refined, change the output accordingly
+            DO knd = 1,SIZE(IIndependentVariableAtom)
+              IF(IIndependentVariableType(knd).EQ.4.AND.jnd.EQ.IIndependentVariableAtom(knd))THEN!this atom is being refined
+                CALL UncertBrak(RBasisIsoDW(jnd),RIndependentDelta(knd),Sout,IErr)
+                WRITE(SPrintString,FMT='(4X,A4,1X,A)') SBasisAtomLabel(jnd),TRIM(ADJUSTL(Sout))
+!IF(my_rank.EQ.0)PRINT*,jnd,knd,RIndependentDelta(knd)
+              END IF
+            END DO
             CALL message(LS,SPrintString)
           END DO
 
@@ -707,13 +722,7 @@ MODULE refinementcontrol_mod
           CALL message(LS,SPrintString)
 
         CASE(9)
-          CALL message(LS, "Current Absorption Percentage", RAbsorptionPercentage )
-
-        CASE(10)
           CALL message(LS, "Current Accelerating Voltage", RAcceleratingVoltage )
-
-        CASE(11)
-          CALL message(LS, "Current Residual Sum of Squares Scaling Factor", RRSoSScalingFactor )
 
         END SELECT
       END IF

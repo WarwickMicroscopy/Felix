@@ -71,7 +71,7 @@ PROGRAM Felixrefine
         RMaxAcceptanceGVecMag,RandomSign,RLaueZoneElectronWaveVectorMag,&
         RvarMin,RfitMin,RFit0,Rconvex,Rtest,Rplus,Rminus,RdeltaX,RdeltaY
   REAL(RKIND),DIMENSION(100) :: RTemp!temporary holder for refinement variables
-  INTEGER(IKIND),DIMENSION(100) :: ITemp!temporary holder for refinement type
+  INTEGER(IKIND),DIMENSION(100) :: ITemp,Itemp2!temporary holder for refinement type and atom
   REAL(RKIND),DIMENSION(ITHREE) :: R3var,R3fit
   INTEGER(IKIND),DIMENSION(10) :: INoOfVariablesForRefinementType
 
@@ -433,11 +433,14 @@ PROGRAM Felixrefine
   ! INoOfVariables calculated depending upon Ug and non-Ug refinement
   !--------------------------------------------------------------------
   ! Ug refinement is a special case, cannot do any other refinement alongside
-  ! Count the number of Independent Variables:
-  ! Put the variable into Rtemp and put a flag into Itemp, increment jnd.
-  ! Max number of refinement variables is 100!
-  ! Once counting is done jnd is used to define the size of 'proper' refinement variables
+  ! To count the number of Independent Variables:
+  ! Put the variable into Rtemp, the variable type into Itemp, the atom into
+  ! Ttemp2.  Increment jnd.  Max number of refinement variables is 100!
+  ! Once counting is done, jnd is used to allocate the size of 'proper' refinement variables
   ! RIndependentVariable and IIndependentVariableType.  Itemp,Rtemp are then copied over
+  !Itemp2=0 means the atom is not being refined (or the refinement isn't for an
+  !atom), initialise at zero
+  ITemp2=0
   IF(ISimFLAG.EQ.0) THEN
     jnd=1
     IF(IRefineMode(1).EQ.1) THEN ! It's a Ug refinement, A
@@ -470,6 +473,7 @@ PROGRAM Felixrefine
         DO ind=1,SIZE(IAtomMoveList)
             Rtemp(jnd)=DOT_PRODUCT(RBasisAtomPosition(IAtomMoveList(ind),:),RVector(ind,:))
             Itemp(jnd)=2
+            Itemp2(jnd)=IAtomMoveList(ind)!don't actually need this, just for completeness at present
             jnd=jnd+1
         END DO
       END IF
@@ -478,6 +482,7 @@ PROGRAM Felixrefine
         DO ind=1,SIZE(IAtomsToRefine)
             Rtemp(jnd)=RBasisOccupancy(IAtomsToRefine(ind))
             Itemp(jnd)=3
+            Itemp2(jnd)=IAtomsToRefine(ind)
             jnd=jnd+1
         END DO
       END IF
@@ -486,6 +491,7 @@ PROGRAM Felixrefine
         DO ind=1,SIZE(IAtomsToRefine)
             Rtemp(jnd)=RBasisIsoDW(IAtomsToRefine(ind))
             Itemp(jnd)=4
+            Itemp2(jnd)=IAtomsToRefine(ind)
             jnd=jnd+1
         END DO
       END IF
@@ -560,14 +566,11 @@ PROGRAM Felixrefine
     ALLOCATE(RIndependentVariable(INoOfVariables),STAT=IErr) 
     ALLOCATE(RIndependentDelta(INoOfVariables),STAT=IErr)
     ALLOCATE(IIndependentVariableType(INoOfVariables),STAT=IErr)
-    ALLOCATE(SIndependentVariable(INoOfVariables),STAT=IErr)
+    ALLOCATE(IIndependentVariableAtom(INoOfVariables),STAT=IErr)
     IF(l_alert(IErr,"felixrefine","allocate IndependentVariable")) CALL abort
     RIndependentVariable=Rtemp(1:INoOfVariables)
     IIndependentVariableType=Itemp(1:INoOfVariables)
-    DO ind=1,INoOfVariables
-      WRITE(SPrintString,FMT='(F12.4)') RIndependentVariable(ind)
-      SIndependentVariable(ind)=TRIM(ADJUSTL(SPrintString))
-    END DO
+    IIndependentVariableAtom=Itemp2(1:INoOfVariables)
   END IF
 
   !--------------------------------------------------------------------
@@ -724,7 +727,6 @@ PROGRAM Felixrefine
   DEALLOCATE(RgPoolMag,STAT=IErr)
   DEALLOCATE(RgPool,STAT=IErr)
   DEALLOCATE(RgMatrix,STAT=IErr)
-!  DEALLOCATE(RgSumMat,STAT=IErr)
   DEALLOCATE(RSimulatedPatterns,STAT=IErr)
   DEALLOCATE(RAtomPosition,STAT=IErr)
   DEALLOCATE(SAtomName,STAT=IErr)
@@ -733,14 +735,10 @@ PROGRAM Felixrefine
   DEALLOCATE(IAtomicNumber,STAT=IErr)
   DEALLOCATE(IAnisoDW,STAT=IErr)
   DEALLOCATE(RAtomCoordinate,STAT=IErr)
-!  DEALLOCATE(RgMatrixMagnitude,STAT=IErr)
   DEALLOCATE(CPseudoAtom,STAT=IErr)
   DEALLOCATE(CPseudoScatt,STAT=IErr)
   ! These are global variables, see smodules.f90
 
-  IF (IRefineMode(1).EQ.0) THEN
-    DEALLOCATE(IIterativeVariableUniqueIDs,STAT=IErr)
-  END IF
   IF (ISimFLAG.EQ.0) THEN
     DEALLOCATE(RImageExpi,STAT=IErr)  
   END IF  
@@ -1288,7 +1286,6 @@ CONTAINS
           !make a string for output
           CALL UncertBrak(RvarMin,RdeltaX,Sest,IErr)
           IF(l_alert(IErr,"UncertBrak","SimulateAndFit")) RETURN
-          SIndependentVariable(ind)=Sest
           !We update RVar0 with the best points as we go along
           !But keep RCurrentVar the same so that the measurements of gradient
           !are accurate.  
@@ -1525,7 +1522,6 @@ CONTAINS
       DO ind=1,INoOfVariables
 
         ! optional terminal output types of variables refined
-!        IVariableType=IIterativeVariableUniqueIDs(ind,1)
         IVariableType=MOD(IIndependentVariableType(ind),10)
         SELECT CASE(IVariableType)
           CASE(1)

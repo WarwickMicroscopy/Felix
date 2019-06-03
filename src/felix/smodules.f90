@@ -212,7 +212,7 @@ MODULE IPara
   INTEGER(IKIND),DIMENSION(IRefinementVariableTypes) :: IRefineMode
   INTEGER(IKIND),DIMENSION(IRefinementVariableTypes) :: INoofParameters  !zz
   INTEGER(IKIND),DIMENSION(:,:),ALLOCATABLE :: IIterativeVariableUniqueIDs
-  INTEGER(IKIND),DIMENSION(:),ALLOCATABLE :: IIndependentVariableType
+  INTEGER(IKIND),DIMENSION(:),ALLOCATABLE :: IIndependentVariableType,IIndependentVariableAtom
   !List of Atomic Sites for Refinement
   INTEGER(IKIND),DIMENSION(:),ALLOCATABLE :: IAtomsToRefine
   !Simplex Variables
@@ -315,7 +315,7 @@ MODULE RPara
   REAL(RKIND),DIMENSION(:,:),ALLOCATABLE :: RVector
   !Uncertainties in refined parameters
   REAL(RKIND),DIMENSION(:),ALLOCATABLE :: RIndependentDelta
-  REAL(RKIND) :: RSimplexLengthScale,RExitCriteria,RSimplexStandardDeviation,RSimplexMean,RRSoSScalingFactor
+  REAL(RKIND) :: RSimplexLengthScale,RExitCriteria,RSimplexStandardDeviation,RSimplexMean
   !Gaussian blur radius in pixels
   REAL(RKIND) :: RBlurRadius
 END MODULE RPara
@@ -355,8 +355,6 @@ MODULE SPara
   CHARACTER(5), DIMENSION(:), ALLOCATABLE :: SBasisAtomLabel,SAtomLabel
   CHARACTER(2), DIMENSION(:), ALLOCATABLE :: SBasisAtomName, SAtomName
   CHARACTER(1), DIMENSION(:), ALLOCATABLE :: SWyckoffSymbol
-  !strings (including uncertainty) for output
-  CHARACTER(14), DIMENSION(:), ALLOCATABLE :: SIndependentVariable
   
 END MODULE SPara
 !--------------------------------------------------------------------
@@ -396,19 +394,3 @@ MODULE BlochPara
   REAL(8), DIMENSION(:), ALLOCATABLE :: RROutArray, RIOutArray
   COMPLEX(CKIND),DIMENSION(:,:), ALLOCATABLE :: CEigenSaveTemp
 END MODULE BlochPara
-!--------------------------------------------------------------------
-
-!>
-!! Module-description: Refinement
-!!
-!! Major-Authors: Keith Evans (2014), Richard Beanland (2016)
-!!
-MODULE Refinement
-
-USE MyNumbers
-
-REAL(RKIND),PARAMETER :: &
-     RExitCondition = -10000.0_RKIND,&
-     RStayCondition = 10000.0_RKIND
-
-END MODULE 

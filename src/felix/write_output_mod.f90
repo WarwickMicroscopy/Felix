@@ -404,12 +404,12 @@ MODULE write_output_mod
 
     USE MyNumbers
     USE message_mod
-    USE setup_space_group_mod
+    USE setup_space_group_mod!required for the subroutine ConvertSpaceGroupToNumber
  
     ! global inputs
-    USE IPARA, ONLY : ILN
+    USE IPARA, ONLY : ILN,IIndependentVariableAtom,IIndependentVariableType
     USE RPARA, ONLY : RLengthX, RLengthY, RLengthZ, RAlpha, RBeta, RGamma, &
-          RBasisAtomPosition, RBasisAtomDelta, RBasisIsoDW, RBasisOccupancy, RVolume
+          RBasisAtomPosition, RBasisAtomDelta, RIndependentDelta, RBasisIsoDW, RBasisOccupancy, RVolume
     USE SPARA, ONLY : SSpaceGrp, SBasisAtomLabel, SBasisAtomName,SChemicalFormula,&
           SSymString
     USE IChannels, ONLY : IChOutSimplex
@@ -473,19 +473,35 @@ MODULE write_output_mod
     WRITE(IChOutSimplex,FMT='(A25)') "_atom_site_B_iso_or_equiv"
     WRITE(IChOutSimplex,FMT='(A20)') "_atom_site_occupancy"
 
-    DO jnd = 1,SIZE(RBasisAtomPosition,DIM=1)!RB only gives refined atoms, needs work
+    !Make output string by appending each part
+    DO jnd = 1,SIZE(RBasisAtomPosition,DIM=1)
+      !Label and name
       WRITE(String,FMT='(A3,1X,A3,1X)')SBasisAtomLabel(jnd), SBasisAtomName(jnd)
+      !Atom coords using the uncertainties in RBasisAtomDelta
       DO ind = 1,3
         CALL UncertBrak(RBasisAtomPosition(jnd,ind),RBasisAtomDelta(jnd,ind),Sout,IErr)
-        String = TRIM(ADJUSTL(String)) // "  " // TRIM(ADJUSTL(Sout))
+        String = TRIM(ADJUSTL(String)) // "  " // TRIM(ADJUSTL(Sout))!append onto String
       END DO
-      WRITE(Sout,FMT='(F5.2,1X)') RBasisIsoDW(jnd)
-      String = TRIM(ADJUSTL(String)) // "  " // TRIM(ADJUSTL(Sout))
-      WRITE(Sout,FMT='(F5.2)') RBasisOccupancy(jnd)
-      String = TRIM(ADJUSTL(String)) // "  " // TRIM(ADJUSTL(Sout))
+      !Isotropic DWF
+      WRITE(Sout,FMT='(F7.4)') RBasisIsoDW(jnd)
+      !replace Sout if it is being refined
+      DO ind = 1,SIZE(IIndependentVariableAtom)
+        IF(IIndependentVariableType(ind).EQ.4.AND.jnd.EQ.IIndependentVariableAtom(ind))THEN
+          CALL UncertBrak(RBasisIsoDW(jnd),RIndependentDelta(ind),Sout,IErr)
+        END IF
+      END DO
+      String = TRIM(ADJUSTL(String)) // "  " // TRIM(ADJUSTL(Sout))!append onto String
+      !Occupancy
+      WRITE(Sout,FMT='(F7.4)') RBasisOccupancy(jnd)
+      DO ind = 1,SIZE(IIndependentVariableAtom)
+        IF(IIndependentVariableType(ind).EQ.3.AND.jnd.EQ.IIndependentVariableAtom(ind))THEN
+          CALL UncertBrak(RBasisOccupancy(jnd),RIndependentDelta(ind),Sout,IErr)
+        END IF
+      END DO
+       String = TRIM(ADJUSTL(String)) // "  " // TRIM(ADJUSTL(Sout))
       WRITE(IChOutSimplex,FMT='(A)') String
     END DO
-    WRITE(IChOutSimplex,FMT='(A22)') "#End of refinement cif"
+    WRITE(IChOutSimplex,FMT='(A)') "#End of felixrefine cif"
     
     CLOSE(IChOutSimplex)
 
@@ -520,7 +536,7 @@ MODULE write_output_mod
     USE RPARA, ONLY : RBasisAtomPosition, RBasisOccupancy, RBasisIsoDW, &
                       RAnisotropicDebyeWallerFactorTensor, RFigureofMerit, &
                       RAbsorptionPercentage, RLengthX, RLengthY, RLengthZ, RAlpha, RBeta, &
-                      RGamma, RConvergenceAngle, RAcceleratingVoltage, RRSoSScalingFactor                    
+                      RGamma, RConvergenceAngle, RAcceleratingVoltage                    
     USE CPARA, ONLY : CUniqueUg
     USE IChannels, ONLY : IChOutSimplex     
 
@@ -572,7 +588,7 @@ MODULE write_output_mod
       IEND = SUM(IOutputVariables(1:jnd))
 
       SELECT CASE(jnd)
-      CASE(1)
+      CASE(1)!A, Ug's
         DO ind = 1,INoofUgs
            IStart = (ind*2)-1
            IEnd = ind*2
@@ -580,39 +596,24 @@ MODULE write_output_mod
                   REAL(AIMAG(CUniqueUg(ind+IUgOffset)),RKIND)]
         END DO
         RDataOut(IEnd+1) = RAbsorptionPercentage!RB last variable is absorption
-      CASE(2)
+      CASE(2)!B, Atom coords
         RDataOut(IStart:IEnd) = &
               RESHAPE(TRANSPOSE(RBasisAtomPosition),SHAPE(RDataOut(IStart:IEnd)))
-      CASE(3)
+      CASE(3)!C, Occupancy
         RDataOut(IStart:IEnd) = RBasisOccupancy
-      CASE(4)
+      CASE(4)!D, Isotropic DWFs
         RDataOut(IStart:IEnd) = RBasisIsoDW
-      CASE(5)
+      CASE(5)!E, Anisotropic DWFs
         RDataOut(IStart:IEnd) = &
               RESHAPE(RAnisotropicDebyeWallerFactorTensor,SHAPE(RDataOut(IStart:IEnd)))
-      CASE(6)
+      CASE(6)!F, Lattice parameter
         RDataOut(IStart:IEnd) = [RLengthX, RLengthY, RLengthZ]
-      CASE(7)
+      CASE(7)!G, Unit cell angles
         RDataOut(IStart:IEnd) = [RAlpha, RBeta, RGamma]
-      CASE(8)
+      CASE(8)!H, convergence angle
         RDataOut(IStart:IEnd) = RConvergenceAngle
-      CASE(9)
-        RDataOut(IStart:IEnd) = RAbsorptionPercentage
-      CASE(10)
+      CASE(9)!I, kV
         RDataOut(IStart:IEnd) = RAcceleratingVoltage
-      CASE(11)
-        RDataOut(IStart:IEnd) = RRSoSScalingFactor
-      CASE(12)
-          DO ind = 1,INoofUgs
-             IStart = (ind*2)-1
-             IEnd = ind*2
-             RDataOut(IStart:IEnd) = &
-                  [REAL(CUniqueUg(ind+IUgOffset)), REAL(AIMAG(CUniqueUg(ind+IUgOffset)),RKIND)]
-          END DO
-          IF (IAbsorbFLAG.EQ.1) THEN
-            RDataOut(IEnd+1) = RAbsorptionPercentage 
-            ! RB last variable is proportional absorption
-          END IF
       END SELECT
     END DO
 
