@@ -631,14 +631,15 @@ MODULE refinementcontrol_mod
     USE MyNumbers
     USE message_mod 
     USE write_output_mod
-    !The following should be cut down to variables actually used
+    USE setup_space_group_mod!required for the subroutine ConvertSpaceGroupToNumber
+    !These need restricting to variables used ONLY
     USE IConst; USE RConst; USE SConst
     USE IPara; USE RPara; USE CPara; USE SPara;
     USE BlochPara 
 
     IMPLICIT NONE
 
-    INTEGER(IKIND) :: IErr,ind,IVariableType,jnd,knd
+    INTEGER(IKIND) :: IErr,ind,IVariableType,ISpacegrp,jnd,knd
     CHARACTER(14) :: Sout
 
     DO ind = 1,IRefinementVariableTypes
@@ -681,7 +682,6 @@ MODULE refinementcontrol_mod
               IF(IIndependentVariableType(knd).EQ.3.AND.jnd.EQ.IIndependentVariableAtom(knd))THEN!this atom is being refined
                 CALL UncertBrak(RBasisOccupancy(jnd),RIndependentDelta(knd),Sout,IErr)
                 WRITE(SPrintString,FMT='(4X,A4,1X,A)') SBasisAtomLabel(jnd),TRIM(ADJUSTL(Sout))
-!IF(my_rank.EQ.0)PRINT*,jnd,knd,RIndependentDelta(knd)
               END IF
             END DO
             CALL message(LS,SPrintString)
@@ -697,7 +697,6 @@ MODULE refinementcontrol_mod
               IF(IIndependentVariableType(knd).EQ.4.AND.jnd.EQ.IIndependentVariableAtom(knd))THEN!this atom is being refined
                 CALL UncertBrak(RBasisIsoDW(jnd),RIndependentDelta(knd),Sout,IErr)
                 WRITE(SPrintString,FMT='(4X,A4,1X,A)') SBasisAtomLabel(jnd),TRIM(ADJUSTL(Sout))
-!IF(my_rank.EQ.0)PRINT*,jnd,knd,RIndependentDelta(knd)
               END IF
             END DO
             CALL message(LS,SPrintString)
@@ -711,13 +710,32 @@ MODULE refinementcontrol_mod
           END DO
 
         CASE(6)
-          WRITE(SPrintString,FMT='(A31,3F8.4)') "Current Unit Cell Parameters ",RLengthX,RLengthY,RLengthZ
+          CALL ConvertSpaceGroupToNumber(ISpaceGrp,IErr)
+          CALL message(LS,"Current Lattice parameters")
+          !assume here that lattice parameters are NOT being refined at the same time as anything else!
+          CALL UncertBrak(RLengthX,RIndependentDelta(1),Sout,IErr)
+          WRITE(SPrintString,FMT='(4X,A4,A)') "a = ",TRIM(ADJUSTL(Sout))
           CALL message(LS,SPrintString)
+          IF (ISpaceGrp.LT.75) THEN!triclinic,monoclinic,orthorhombic
+            CALL UncertBrak(RLengthY,RIndependentDelta(2),Sout,IErr)
+            WRITE(SPrintString,FMT='(4X,A4,A)') "b = ",TRIM(ADJUSTL(Sout))
+            CALL UncertBrak(RLengthZ,RIndependentDelta(3),Sout,IErr)
+            WRITE(SPrintString,FMT='(4X,A4,A)') "c = ",TRIM(ADJUSTL(Sout))
+          ELSE IF (ISpaceGrp.GT.142.AND.ISpaceGrp.LT.168) THEN!rhombohedral
+            IErr=1!need to work out R- vs H- settings!!!
+            PRINT*,"Rhombohedral R- and H- cells not yet implemented for unit cell refinement"
+          ELSE IF ((ISpaceGrp.GT.167.AND.ISpaceGrp.LT.195).OR.&!Hexagonal
+                   (ISpaceGrp.GT.74.AND.ISpaceGrp.LT.143)) THEN!Tetragonal
+            CALL UncertBrak(RLengthZ,RIndependentDelta(2),Sout,IErr)
+            WRITE(SPrintString,FMT='(4X,A4,A)') "c = ",TRIM(ADJUSTL(Sout))
+          END IF
 
         CASE(7)
           CALL message(LS, "Current Unit Cell Angles", (/ RAlpha,RBeta,RGamma /) )
 
         CASE(8)
+          !assume here that convergence angle is NOT being refined at the same time as anything else!
+          CALL UncertBrak(RConvergenceAngle,RIndependentDelta(1),Sout,IErr)
           WRITE(SPrintString,FMT='(A26,F8.4)') "Current Convergence Angle ",RConvergenceAngle
           CALL message(LS,SPrintString)
 
@@ -730,7 +748,6 @@ MODULE refinementcontrol_mod
 
   END SUBROUTINE PrintVariables
 
-  !%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
   !>
   !! Procedure-description: Performs a 2D Gaussian blur on the input image using 
