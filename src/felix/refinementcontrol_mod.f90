@@ -719,8 +719,10 @@ MODULE refinementcontrol_mod
           IF (ISpaceGrp.LT.75) THEN!triclinic,monoclinic,orthorhombic
             CALL UncertBrak(RLengthY,RIndependentDelta(2),Sout,IErr)
             WRITE(SPrintString,FMT='(4X,A4,A)') "b = ",TRIM(ADJUSTL(Sout))
+            CALL message(LS,SPrintString)
             CALL UncertBrak(RLengthZ,RIndependentDelta(3),Sout,IErr)
             WRITE(SPrintString,FMT='(4X,A4,A)') "c = ",TRIM(ADJUSTL(Sout))
+            CALL message(LS,SPrintString)
           ELSE IF (ISpaceGrp.GT.142.AND.ISpaceGrp.LT.168) THEN!rhombohedral
             IErr=1!need to work out R- vs H- settings!!!
             PRINT*,"Rhombohedral R- and H- cells not yet implemented for unit cell refinement"
@@ -728,6 +730,7 @@ MODULE refinementcontrol_mod
                    (ISpaceGrp.GT.74.AND.ISpaceGrp.LT.143)) THEN!Tetragonal
             CALL UncertBrak(RLengthZ,RIndependentDelta(2),Sout,IErr)
             WRITE(SPrintString,FMT='(4X,A4,A)') "c = ",TRIM(ADJUSTL(Sout))
+            CALL message(LS,SPrintString)
           END IF
 
         CASE(7)
