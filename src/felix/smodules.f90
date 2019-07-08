@@ -347,7 +347,7 @@ END MODULE CPara
 MODULE SPara
   USE MyNumbers
   
-  CHARACTER(200) :: SPrintString
+  CHARACTER(500) :: SPrintString
   CHARACTER(40) :: SChemicalFormula
   CHARACTER(1) :: SSpaceGroupName
   CHARACTER(10) :: SSpaceGrp

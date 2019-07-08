@@ -436,9 +436,8 @@ MODULE write_output_mod
     WRITE(IChOutSimplex,FMT='(A31)') "#(C) 2019 University of Warwick"
     WRITE(IChOutSimplex,FMT='(A16)') "data_felixrefine"
     WRITE(IChOutSimplex,FMT='(A31)') "_audit_creation_date 2019-06-06"!need to find out how to get a date!
-!    WRITE(Sformat,FMT='(A6,I2,A1)') "(A21,A",LEN_TRIM(SChemicalFormula),")"
-
-    WRITE(IChOutSimplex,FMT='(A,A)') "_chemical_formula_sum ",TRIM(ADJUSTL(SChemicalFormula))
+!IF(my_rank.EQ.0)PRINT*,SChemicalFormula,LEN_TRIM(SChemicalFormula)
+    WRITE(IChOutSimplex,FMT='(A21,A)') "_chemical_formula_sum ",TRIM(ADJUSTL(SChemicalFormula))
 
 ! Citation data would go here
 

@@ -1304,13 +1304,13 @@ CONTAINS
       !We have not run any simulation for the predicted best point so do it now
       RCurrentVar=RVar0!
       Iter=Iter+1
-      IF (my_rank.EQ.0) THEN
-        WRITE(SPrintString,*) "(A15,",SIZE(RPvec),"(F7.4,1X),A27)"
-        WRITE(SPrintString,FMT=SPrintString) &
-        "First point at ",Rvar0," should have best fit index"
-        SPrintString=TRIM(ADJUSTL(SPrintString))
-        CALL message (LS, SPrintString)
-      END IF
+!      IF (my_rank.EQ.0) THEN
+!        WRITE(SPrintString,*) "(A15,",SIZE(RPvec),"(F7.4,1X),A27)"
+!        WRITE(SPrintString,FMT=SPrintString) &
+!        "First point at ",Rvar0," should have best fit index"
+!        SPrintString=TRIM(ADJUSTL(SPrintString))
+!        CALL message (LS, SPrintString)
+!      END IF
       CALL SimulateAndFit(RCurrentVar,Iter,IThicknessIndex,IErr)
       IF(l_alert(IErr,"MaxGradientRefinement","SimulateAndFit")) RETURN
       CALL BestFitCheck(RFigureofMerit,RBestFit,RCurrentVar,RIndependentVariable,IErr)

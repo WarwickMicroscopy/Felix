@@ -971,17 +971,14 @@ MODULE setup_space_group_mod
     SELECT CASE(ISpaceGrp)
     CASE(1)!P1
       SELECT CASE (SWyckoff)
-      CASE('x')
-        RMoveMatrix(1,:) = (/ZERO, ONE, ZERO/)
-        RMoveMatrix(2,:) = (/ZERO, ZERO, ONE/)
-      CASE('b')
+      CASE('a')
         RMoveMatrix(1,:) = (/ONE, ZERO, ZERO/)
         RMoveMatrix(2,:) = (/ZERO, ONE, ZERO/)
         RMoveMatrix(3,:) = (/ZERO, ZERO, ONE/)
       CASE DEFAULT
         IErr = 1
         IF(l_alert(IErr,"DetermineAllowedMovements",&
-              "Wyckoff Symbol for this space group not recognised")) RETURN 	
+              "Wyckoff Symbol for this space group not recognised")) RETURN
       END SELECT
 !!$  CASE(2)
 !!$  CASE(3)
