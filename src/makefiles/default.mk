@@ -36,8 +36,8 @@ $(DIRFELIX)$(PRECISION)crystallography_mod.o \
 $(DIRFELIX)$(PRECISION)ug_matrix_mod.o \
 $(DIRFELIX)$(PRECISION)bloch_mod.o \
 $(DIRFELIX)$(PRECISION)image_initialisation_mod.o \
-$(DIRFELIX)$(PRECISION)write_output_mod.o \
 $(DIRFELIX)$(PRECISION)setup_space_group_mod.o \
+$(DIRFELIX)$(PRECISION)write_output_mod.o \
 $(DIRFELIX)$(PRECISION)refinementcontrol_mod.o \
 $(DIRFELIX)$(PRECISION)simplex_mod.o \
 $(DIRFELIX)$(PRECISION)felixrefine.o \
