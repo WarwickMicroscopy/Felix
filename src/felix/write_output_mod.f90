@@ -64,14 +64,12 @@ MODULE write_output_mod
     CHARACTER(14), INTENT(OUT) :: Sout
     CHARACTER(10) :: Sval,Serr,Sformat
 
-    !infinity and NaN check
+    !infinity and NaN check - treat as zero
     IF (ABS(Rval)-1.GT.ABS(Rval).OR.ABS(Rval).NE.ABS(Rval)) THEN
-      IErr=1
-      RETURN
+      Rval=ZERO
     END IF
     IF (ABS(Rerr)-1.GT.ABS(Rerr).OR.ABS(Rerr).NE.ABS(Rerr)) THEN
-      IErr=1
-      RETURN
+      Rerr=ZERO
     END IF
 
     !Zero check
