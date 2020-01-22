@@ -41,7 +41,7 @@ MODULE setup_space_group_mod
 
   IMPLICIT NONE
   PRIVATE
-  PUBLIC :: PreferredBasis, DetermineAllowedMovements, CountAllowedMovements, ConvertSpaceGroupToNumber
+  PUBLIC :: PreferredBasis, DetermineAllowedMovements, CountAllowedMovements
 
   CONTAINS
   
@@ -60,17 +60,18 @@ MODULE setup_space_group_mod
     ! global inputs
     USE SPARA, ONLY : SSpaceGrp, SWyckoffSymbol
     USE RPARA, ONLY : RBasisAtomPosition
+    USE IPARA, ONLY : ISpaceGrp
 
     IMPLICIT NONE
 
     CHARACTER(1) :: SWyckoff
     INTEGER(IKIND), INTENT(OUT) :: IErr
-    INTEGER(IKIND) ::  ind,jnd,knd,ISpaceGrp,IBasisAtoms
+    INTEGER(IKIND) ::  ind,jnd,knd,IBasisAtoms
 
     IErr=0
 
-    CALL ConvertSpaceGroupToNumber(ISpaceGrp,IErr)!Uses global variable SSpaceGrp
-    IF(l_alert(IErr,"PreferredBasis","ConvertSpaceGroupToNumber")) RETURN
+!    CALL ConvertSpaceGroupToNumber(ISpaceGrp,IErr)!Uses global variable SSpaceGrp
+!    IF(l_alert(IErr,"PreferredBasis","ConvertSpaceGroupToNumber")) RETURN
     
     IBasisAtoms=SIZE(RBasisAtomPosition,1)
     DO ind=1,IBasisAtoms
@@ -1380,101 +1381,5 @@ MODULE setup_space_group_mod
   END SUBROUTINE DetermineAllowedMovements
 
   !%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-
-  !>
-  !! Procedure-description: Convert SSpacegrp to lower case and Compare
-  !! SSpaceGrpNoSpaces with every space group
-  !!
-  !! Major-Authors: Keith Evans (2014), Richard Beanland (2016)
-  !!
-  SUBROUTINE ConvertSpaceGroupToNumber(ISpaceGrp,IErr)
-
-    ! called from 1) PreferredBasis and 2) felixrefine to setup coordinate refinement
-    USE MyNumbers
-    USE message_mod
-
-    ! global inputs
-    USE SPARA, ONLY : SSpaceGrp
-    USE SConst, ONLY : SAllSpaceGrp
-
-    IMPLICIT NONE
-
-    INTEGER(IKIND),INTENT(OUT) :: ISpaceGrp, IErr
-    INTEGER(IKIND) :: jnd, IIndex, ind
-    CHARACTER(LEN(SSpaceGrp)) :: SSpaceGrpNoSpaces
-    CHARACTER(20) :: SSpaceGrpToCompare
-
-    ! Push Spaces In SSpaceGrp to the end of the String
-    
-    jnd = 0
-    ISpaceGrp = 0
-    SSpaceGrpNoSpaces = ' '
-    SSpaceGrpToCompare = ' '
-    
-    DO ind = 1,LEN(SSpaceGrp)
-       IF(INDEX(STRING='abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ01234567879-/',&
-            SUBSTRING=SSpaceGrp(ind:ind)).NE.0) THEN
-          jnd = jnd + 1
-          SSpaceGrpNoSpaces(jnd:jnd) = SSpaceGrp(ind:ind)
-       END IF
-    END DO
-    
-    ! Convert SSpacegrp to lower case 
-
-    CALL StrLowCase( SSpaceGrpNoSpaces,SSpaceGrpNoSpaces,IErr )
-
-    ! Compare SSpaceGrpNoSpaces with every space group 
-
-    DO ind = 1,SIZE(SAllSpaceGrp)
-
-       CALL StrLowCase( SAllSpaceGrp(ind),SSpaceGrpToCompare,IErr )
-       IIndex = INDEX(TRIM(ADJUSTL(SSpaceGrpToCompare)),TRIM(ADJUSTL(SSpaceGrpNoSpaces)))
-       IF (IIndex.NE.0) THEN
-          ISpaceGrp = ind
-          EXIT
-       END IF
-    END DO
-
-!DBG IF (my_rank.EQ.0) PRINT*, ISpaceGrp
-    IF(ISpaceGrp.EQ.0) THEN
-      IErr = 1
-      IF(l_alert(IErr,"ConvertSpaceGroupToNumber",&
-            "Space Group was not found. Check .cif file")) RETURN
-    END IF
-    
-  END SUBROUTINE ConvertSpaceGroupToNumber
-
-  !%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-
-
-  !>
-  !! Procedure-description: 
-  !!
-  !! Major-Authors: Keith Evans (2014), Richard Beanland (2016)
-  !!
-  SUBROUTINE StrLowCase( Input_String,Output_String,IErr )
-    ! used twice in ConvertSpaceGroupToNumber
-
-    USE MyNumbers
-
-    IMPLICIT NONE
-
-    CHARACTER(*), INTENT(IN) :: Input_String
-    CHARACTER(LEN(Input_String)), INTENT(OUT) :: Output_String
-    INTEGER(IKIND), INTENT(OUT) :: IErr
-    CHARACTER(*), PARAMETER :: LOWER_CASE = 'abcdefghijklmnopqrstuvwxyz',&
-         UPPER_CASE = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ' 
-    INTEGER(IKIND) :: ind, n
-
-    IErr=0
-    ! Copy input string
-    Output_String = Input_String
-    
-    ! Convert case character by character
-    DO ind = 1, LEN(Output_String,KIND=IKIND)
-       n = INDEX(UPPER_CASE, Output_String(ind:ind))
-       IF ( n.NE.0 ) Output_String(ind:ind) = LOWER_CASE(n:n)
-    END DO
-  END SUBROUTINE  StrLowCase
 
 END MODULE setup_space_group_mod

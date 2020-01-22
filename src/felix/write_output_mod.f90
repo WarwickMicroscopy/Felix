@@ -64,12 +64,14 @@ MODULE write_output_mod
     CHARACTER(14), INTENT(OUT) :: Sout
     CHARACTER(10) :: Sval,Serr,Sformat
 
-    !infinity and NaN check - treat as zero
+    !infinity and NaN check
     IF (ABS(Rval)-1.GT.ABS(Rval).OR.ABS(Rval).NE.ABS(Rval)) THEN
-      Rval=ZERO
+      IErr=1
+      RETURN
     END IF
     IF (ABS(Rerr)-1.GT.ABS(Rerr).OR.ABS(Rerr).NE.ABS(Rerr)) THEN
-      Rerr=ZERO
+      IErr=1
+      RETURN
     END IF
 
     !Zero check
@@ -360,6 +362,7 @@ MODULE write_output_mod
       fullpath = TRIM(ADJUSTL(path))//"/"//TRIM(ADJUSTL(filename))
       CALL message ( LL, dbg6, fullpath )
       RImageToWrite = RImageSimi(:,:,ind,IThicknessIndex)
+!IF(my_rank.EQ.0)PRINT*,RImageSimi(:,:,1,1)!DEBUG
       ! Writes data to output image .bin files
       OPEN(UNIT=IChOutWIImage, STATUS= 'UNKNOWN', FILE=TRIM(ADJUSTL(fullpath)),&
           FORM='UNFORMATTED',ACCESS='DIRECT',IOSTAT=IErr,RECL=2*IPixelCount*IByteSize)
@@ -405,7 +408,7 @@ MODULE write_output_mod
     USE setup_space_group_mod!required for the subroutine ConvertSpaceGroupToNumber
  
     ! global inputs
-    USE IPARA, ONLY : ILN,IIndependentVariableAtom,IIndependentVariableType
+    USE IPARA, ONLY : ISpaceGrp,ILN,IIndependentVariableAtom,IIndependentVariableType
     USE RPARA, ONLY : RLengthX, RLengthY, RLengthZ, RAlpha, RBeta, RGamma, &
           RBasisAtomPosition, RBasisAtomDelta, RIndependentDelta, RBasisIsoDW, RBasisOccupancy, RVolume
     USE SPARA, ONLY : SSpaceGrp, SBasisAtomLabel, SBasisAtomName,SChemicalFormula,&
@@ -417,7 +420,7 @@ MODULE write_output_mod
     CHARACTER(200), INTENT(IN) :: path
     INTEGER(IKIND), INTENT(IN) :: Iter
     INTEGER(IKIND), INTENT(OUT) :: IErr
-    INTEGER(IKIND) :: ind,jnd,ISpaceGrp
+    INTEGER(IKIND) :: ind,jnd
     CHARACTER(200) :: filename, fullpath
     CHARACTER(100) :: String
     CHARACTER(14) :: Sout
@@ -433,9 +436,8 @@ MODULE write_output_mod
     !Introductory lines
     WRITE(IChOutSimplex,FMT='(A31)') "#(C) 2019 University of Warwick"
     WRITE(IChOutSimplex,FMT='(A16)') "data_felixrefine"
-    WRITE(IChOutSimplex,FMT='(A31)') "_audit_creation_date 2019-06-06"!need to find out how to get a date!
-!IF(my_rank.EQ.0)PRINT*,SChemicalFormula,LEN_TRIM(SChemicalFormula)
-    WRITE(IChOutSimplex,FMT='(A21,A)') "_chemical_formula_sum ",TRIM(ADJUSTL(SChemicalFormula))
+    WRITE(IChOutSimplex,FMT='(A31)') "_audit_creation_date 2019-08-06"!need to find out how to get a date!
+    WRITE(IChOutSimplex,FMT='(A22,A)') "_chemical_formula_sum ",TRIM(ADJUSTL(SChemicalFormula))
 
 ! Citation data would go here
 
@@ -450,13 +452,12 @@ MODULE write_output_mod
     WRITE(IChOutSimplex,FMT='(A12,1X,F7.2)') "_cell_volume",RVolume
     !symmetry
     WRITE(IChOutSimplex,FMT='(A,A,A)') "_symmetry_space_group_name_H-M  '",TRIM(ADJUSTL(SSpaceGrp)),"'"
-    CALL ConvertSpaceGroupToNumber(ISpaceGrp,IErr)
     WRITE(IChOutSimplex,FMT='(A27,1X,I3)') "_symmetry_Int_Tables_number",ISpaceGrp
     WRITE(IChOutSimplex,FMT='(A5)') "loop_"
     WRITE(IChOutSimplex,FMT='(A27)') "_symmetry_equiv_pos_site_id"
     WRITE(IChOutSimplex,FMT='(A26)') "_symmetry_equiv_pos_as_xyz"
     DO jnd = 1,SIZE(SSymString,DIM=1)!
-      WRITE(IChOutSimplex,FMT='(I2,1X,A30)') jnd,SSymString(jnd)
+      WRITE(IChOutSimplex,FMT='(I3,1X,A30)') jnd,SSymString(jnd)
     END DO
     !atom coordinates etc
     WRITE(IChOutSimplex,FMT='(A5)') "loop_"

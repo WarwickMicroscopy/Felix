@@ -197,7 +197,7 @@ MODULE IPara
   !LACBED mask
   INTEGER(IKIND),DIMENSION(:,:), ALLOCATABLE :: IMask
   !inpcif
-  INTEGER(IKIND) :: ISymCount, ILN
+  INTEGER(IKIND) :: ISymCount,ISpaceGrp,ILN
   INTEGER(IKIND) :: IPixelCountTotal
   !Thickness loop Variables
   INTEGER(IKIND) :: IThicknessCount

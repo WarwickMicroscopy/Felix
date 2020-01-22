@@ -219,6 +219,7 @@ MODULE refinementcontrol_mod
     IMPLICIT NONE
 
     INTEGER(IKIND) :: IErr, ind,jnd,knd,pnd,IIterationFLAG
+!    REAL(RKIND),DIMENSION(:,:),ALLOCATABLE :: RTempImage 
 
     ! Reset simuation   
     RIndividualReflections = ZERO
@@ -246,19 +247,18 @@ MODULE refinementcontrol_mod
     RImageSimi = ZERO
     ind = 0
     DO jnd = 1,2*IPixelCount
-       DO knd = 1,2*IPixelCount
-          ind = ind+1
-          RImageSimi(jnd,knd,:,:) = RSimulatedPatterns(:,:,ind)
-       END DO
+      DO knd = 1,2*IPixelCount
+        ind = ind+1
+        RImageSimi(jnd,knd,:,:) = RSimulatedPatterns(:,:,ind)
+      END DO
     END DO
-
     ! Gaussian blur to match experiment using global variable RBlurRadius
     IF (RBlurRadius.GT.TINY) THEN
-       DO ind=1,INoOfLacbedPatterns
-          DO jnd=1,IThicknessCount
-             CALL BlurG(RImageSimi(:,:,ind,jnd),IPixelCount,RBlurRadius,IErr)
-          END DO
-       END DO
+      DO ind=1,INoOfLacbedPatterns
+        DO jnd=1,IThicknessCount
+          CALL BlurG(RImageSimi(:,:,ind,jnd),IPixelCount,RBlurRadius,IErr)
+        END DO
+      END DO
     END IF
 
     ! We have done at least one simulation now
@@ -637,7 +637,7 @@ MODULE refinementcontrol_mod
 
     IMPLICIT NONE
 
-    INTEGER(IKIND) :: IErr,ind,IVariableType,ISpacegrp,jnd,knd
+    INTEGER(IKIND) :: IErr,ind,IVariableType,jnd,knd
     CHARACTER(14) :: Sout
 
     DO ind = 1,IRefinementVariableTypes
@@ -708,7 +708,7 @@ MODULE refinementcontrol_mod
           END DO
 
         CASE(6)
-          CALL ConvertSpaceGroupToNumber(ISpaceGrp,IErr)
+!          CALL ConvertSpaceGroupToNumber(ISpaceGrp,IErr)
           CALL message(LS,"Current Lattice parameters")
           !assume here that lattice parameters are NOT being refined at the same time as anything else!
           CALL UncertBrak(RLengthX,RIndependentDelta(1),Sout,IErr)
