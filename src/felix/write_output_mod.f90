@@ -303,7 +303,7 @@ MODULE write_output_mod
     ! global inputs
     USE IPARA, ONLY : ILN,IPixelCount,ISimFLAG,IOutPutReflections,INoOfLacbedPatterns,INhkl,IByteSize
     USE CPARA, ONLY : CUgMat
-    USE RPARA, ONLY : Rhkl, RImageSimi, RInitialThickness, RDeltaThickness
+    USE RPARA, ONLY : Rhkl,RgPool, RImageSimi, RInitialThickness, RDeltaThickness
     USE SPARA, ONLY : SChemicalFormula
     USE IChannels, ONLY : IChOutWIImage, IChOut
 
@@ -384,7 +384,8 @@ MODULE write_output_mod
     OPEN(UNIT=IChOut,STATUS='UNKNOWN',FILE=TRIM(ADJUSTL(fullpath)))
 
     DO ind = 1,INhkl
-       WRITE(IChOut,FMT='(3I5.1,2F13.9)') NINT(Rhkl(ind,:)),CUgMat(ind,1)
+      WRITE(IChOut,FMT='(3I5.1,2(1X,F13.9),2(1X,E14.6))') NINT(Rhkl(ind,:)),&
+              RgPool(ind,1),RgPool(ind,2),CUgMat(ind,1)
     END DO
 
     CLOSE(IChOut)    

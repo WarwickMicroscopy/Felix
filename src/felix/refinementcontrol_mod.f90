@@ -373,7 +373,7 @@ MODULE refinementcontrol_mod
                     MaskedCorrelation(RSimulatedImage,RExperimentalImage,RMaskImage,IErr)
             END IF
         END SELECT
-
+!IF(my_rank.EQ.0)PRINT*,ind,jnd,MAXVAL(RExperimentalImage)
         !NaN check
         IF(RImageCorrelation.NE.RImageCorrelation) THEN
           IErr=1
