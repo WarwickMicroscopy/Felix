@@ -2732,9 +2732,9 @@ MODULE setup_space_group_mod
     CASE(99)!P 4 m m 
       SELECT CASE (SWyckoff)
       CASE('a')!point symmetry 4mm
-        IVectors = 0
+        IVectors = 1
       CASE('b')!point symmetry 4mm
-        IVectors = 0
+        IVectors = 1
       CASE('c')!point symmetry mm
         IVectors = 1
       CASE('d')!point symmetry m

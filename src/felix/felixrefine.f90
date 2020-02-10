@@ -1452,7 +1452,7 @@ CONTAINS
       CALL message (LS, SPrintString)
       ! shrink length scale as we progress, by a smaller amount
       ! depending on the no of variables: 1->1/2; 2->3/4; 3->5/6; 4->7/8; 5->9/10;
-!      RScale=RScale*(ONE-ONE/(TWO*REAL(INoOfVariables)))
+      RScale=RScale*(ONE-ONE/(TWO*REAL(INoOfVariables)))
     END DO
     !/\------------------------------------------------------------------
   
@@ -1751,7 +1751,7 @@ CONTAINS
       !--------------------------------------------------------------------
 
       ! We have refined all variables, check where we go next and update last fit etc.
-      IF (INoOfVariables.GT.2) THEN ! refining multiple variables
+      IF (INoOfVariables.GT.1) THEN ! refining multiple variables
         IF (ICycle.EQ.0) THEN ! we haven't done an average direction refinement, set the flag
           ICycle=1
         ELSE ! we just did an average direction refinement
