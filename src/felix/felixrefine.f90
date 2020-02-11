@@ -168,6 +168,9 @@ PROGRAM Felixrefine
   ! Creates reciprocal lattice vectors in Microscope reference frame
   CALL ReciprocalLattice(IErr)
   IF(l_alert(IErr,"felixrefine","ReciprocalLattice")) CALL abort
+  !resolution in k-space
+  RDeltaK = RConvergenceAngle/REAL(IPixelCount,RKIND)
+IF(my_rank.EQ.0)PRINT*, "Delta K", RDeltaK  
 
   !--------------------------------------------------------------------
   ! allocate atom and Debye-Waller factor arrays
@@ -579,10 +582,6 @@ PROGRAM Felixrefine
   IF(l_alert(IErr,"felixrefine","allocate RhklPositions")) CALL abort
   ALLOCATE(IMask(2*IPixelCount,2*IPixelCount),STAT=IErr)
   IF(l_alert(IErr,"felixrefine","allocate RhklPositions")) CALL abort
-
-  !RB I suspect this does nothing useful!
-!  CALL ImageInitialisation( IErr )
-!  IF(l_alert(IErr,"felixrefine","ImageInitialisation")) CALL abort
 
   ! creates circular or square image mask depending upon IMaskFLAG and assign 
   ! IPixelLocations ALLOCATED here

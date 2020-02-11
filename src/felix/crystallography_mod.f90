@@ -56,7 +56,7 @@ MODULE crystallography_mod
     USE IPARA, ONLY : INhkl,IPixelCount
     USE SPARA, ONLY : SPrintString    
     ! global outputs
-    USE RPARA, ONLY : RgPool,RgPoolMag,RgDotNorm,RMinimumGMag,RDeltaK,RgMatrix!,RgMatrixMagnitude
+    USE RPARA, ONLY : RgPool,RgPoolMag,RgDotNorm,RDeltaK,RgMatrix
     
     IMPLICIT NONE
     
@@ -73,16 +73,13 @@ MODULE crystallography_mod
       RgPoolMag(ind)= SQRT(DOT_PRODUCT(RgPool(ind,:),RgPool(ind,:)))
       RgDotNorm(ind) = DOT_PRODUCT(RgPool(ind,:),RNormDirM)
     END DO
-    !resolution in k-space
-    RMinimumGMag = RgPoolMag(2)!since the first one is always 000
-    RDeltaK = RMinimumGMag*RConvergenceAngle/REAL(IPixelCount,RKIND)
+!    !resolution in k-space
+!    RDeltaK = RConvergenceAngle/REAL(IPixelCount,RKIND)
     
     ! Calculate matrix  of g-vectors that corresponds to the Ug matrix
     DO ind=1,INhkl
       DO jnd=1,INhkl
         RgMatrix(ind,jnd,:)= RgPool(ind,:)-RgPool(jnd,:)
-!        RgMatrixMagnitude(ind,jnd) = & 
- !          SQRT(DOT_PRODUCT(RgMatrix(ind,jnd,:),RgMatrix(ind,jnd,:)))
       END DO
     END DO
 
@@ -134,6 +131,7 @@ MODULE crystallography_mod
     CHARACTER(50) :: indString
     CHARACTER(400) :: RTMatString
 
+    !direct lattice vectors in an orthogonal reference frame, Angstrom units 
     RaVecO(1)= RLengthX
     RaVecO(2)= ZERO
     RaVecO(3)= ZERO
@@ -147,6 +145,7 @@ MODULE crystallography_mod
     RcVecO(3)= RLengthZ*(SQRT(1.D0-COS(RAlpha)*COS(RAlpha)-COS(RBeta)*COS(RBeta)&
       -COS(RGamma)*COS(RGamma)+TWO*COS(RAlpha)*COS(RBeta)*COS(RGamma)) / SIN(RGamma))
 
+    !calculate cell volume if required
     IF(IVolumeFLAG .EQ. 0) THEN
        RVolume= RLengthX*RLengthY*RLengthZ* &
             SQRT(1.0D0 - &
@@ -154,6 +153,7 @@ MODULE crystallography_mod
             TWO*COS(RAlpha)*COS(RBeta)*COS(RGamma))
     END IF
 
+    !Some checks for rhombohedral cells?
     IF(IDiffractionFLAG.EQ.0) THEN  
       RTTest = &
             DOT_PRODUCT(RaVecO/DOT_PRODUCT(RaVecO,RaVecO),RbVecO/DOT_PRODUCT(RbVecO,RbVecO))*&
@@ -172,6 +172,7 @@ MODULE crystallography_mod
           END IF
        END IF
     END IF
+
     ! Set up Reciprocal Lattice Vectors: orthogonal reference frame in 1/Angstrom units
     ! RarDirO,RbrDirO,RcrDirO vectors are reciprocal lattice vectors 
     ! 2pi/a, 2pi/b, 2pi/c in an orthogonal frame
@@ -182,13 +183,13 @@ MODULE crystallography_mod
     RcrVecO= TWOPI*CROSS(RaVecO,RbVecO)/DOT_PRODUCT(RaVecO,CROSS(RbVecO,RcVecO))
 
     DO ind=1,ITHREE
-       IF (abs(RarVecO(ind)).lt.TINY) THEN
+       IF (abs(RarVecO(ind)).LT.TINY) THEN
           RarVecO(ind) = ZERO
        END IF
-       IF (abs(RbrVecO(ind)).lt.TINY) THEN
+       IF (abs(RbrVecO(ind)).LT.TINY) THEN
           RbrVecO(ind) = ZERO
        END IF
-       IF (abs(RcrVecO(ind)).lt.TINY) THEN
+       IF (abs(RcrVecO(ind)).LT.TINY) THEN
           RcrVecO(ind) = ZERO
        END IF
     ENDDO
@@ -199,9 +200,10 @@ MODULE crystallography_mod
     RTMatC2O(:,2)= RbVecO(:)
     RTMatC2O(:,3)= RcVecO(:)
     
-    ! RXDirC,RYDirC,RZDirC vectors are the reciprocal lattice vectors 
-    ! that define the x-axis of the
-    ! diffraction pattern and the beam direction, they are given in felix.inp
+    ! RXDirC is the reciprocal lattice vector that defines the x-axis of the
+    ! diffraction pattern and RZDirC the beam direction, coming from felix.inp
+    ! No check has been made to ensure that they are perpendicular, it is
+    ! assumed
     ! RXDirO,RYDirO,RZDirO vectors are UNIT reciprocal lattice vectors parallel 
     ! to the above in an orthogonal frame
     RXDirO= RXDirC(1)*RarVecO + RXDirC(2)*RbrVecO + RXDirC(3)*RcrVecO
@@ -216,8 +218,8 @@ MODULE crystallography_mod
     RTMatO2M(3,:)= RZDirO(:)
     
     ! Unit normal to the specimen in REAL space
-    ! This is used in diffraction pattern calculation SUBROUTINE
-    RNormDirM = MATMUL(RTMatO2M,MatMUL(RTMatC2O,RNormDirC))
+    ! This is used in diffraction pattern calculation
+    RNormDirM = MATMUL(RTMatO2M,MATMUL(RTMatC2O,RNormDirC))
     RNormDirM = RNormDirM/SQRT(DOT_PRODUCT(RNormDirM,RNormDirM)) 
 
     ! now transform from crystal reference frame to orthogonal and then to microscope frame
@@ -228,7 +230,7 @@ MODULE crystallography_mod
     RcVecM= MATMUL(RTMatO2M,RcVecO)
     
     ! create new set of reciprocal lattice vectors in Microscope reference frame
-    ! Note that reciprocal lattice vectors do NOT have two pi included,
+    ! Note that reciprocal lattice vectors have two pi included,
     ! we are using the optical convention exp(i*g.r)
     RarVecM= TWOPI*CROSS(RbVecM,RcVecM)/DOT_PRODUCT(RbVecM,CROSS(RcVecM,RaVecM))
     RbrVecM= TWOPI*CROSS(RcVecM,RaVecM)/DOT_PRODUCT(RcVecM,CROSS(RaVecM,RbVecM))
@@ -238,7 +240,7 @@ MODULE crystallography_mod
 !IF(my_rank.EQ.0)PRINT*,TRIM(ADJUSTL(SPrintString))
 !WRITE(SPrintString,FMT='(A4,3(F7.4,1X))') "b*: ",RbrVecM
 !IF(my_rank.EQ.0)PRINT*,TRIM(ADJUSTL(SPrintString))
-!WRITE(SPrintString,FMT='(A4,3(F7.4,1X))') "b*: ",RcrVecM
+!WRITE(SPrintString,FMT='(A4,3(F7.4,1X))') "c*: ",RcrVecM
 !IF(my_rank.EQ.0)PRINT*,TRIM(ADJUSTL(SPrintString))
     
   END SUBROUTINE ReciprocalLattice
@@ -300,7 +302,7 @@ MODULE crystallography_mod
         RAllIsoDW(knd) = RBasisIsoDW(jnd)
         IAllAtomicNumber(knd) = IBasisAtomicNumber(jnd)
         RAllAnisoDW(knd) = IBasisAnisoDW(jnd)
-	    knd=knd+1
+        knd=knd+1
       END DO
 !WRITE(SPrintString,'(F3.0,1X,F3.0,1X,F3.0,2X,F3.0,1X,F3.0,1X,F3.0,2X,F3.0,1X,F3.0,1X,F3.0)') RSymMat(ind,1,:),RSymMat(ind,2,:),RSymMat(ind,3,:)
 !IF(my_rank.EQ.0) PRINT*, ind,"RSymMat:  ", SPrintString             
@@ -330,7 +332,7 @@ MODULE crystallography_mod
             Lunique=.FALSE.
             EXIT
           END IF
-	    END IF
+        END IF
       END DO
       IF (Lunique .EQV. .TRUE.) THEN
         RAtomPosition(jnd,:)= RAllAtomPosition(ind,:)

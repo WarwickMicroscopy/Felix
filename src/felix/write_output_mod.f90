@@ -279,11 +279,13 @@ MODULE write_output_mod
       IF(l_alert(IErr,"WriteIterationOutput","CLOSE() output .bin file")) RETURN       
     END DO
 
-    Rdelta=Rdx/(Rx-Rdx)!Fractional change in the parameter
-    OPEN(UNIT=IChOut,FILE='differences.txt',FORM='formatted',STATUS='unknown',&
-          POSITION='append')
-    WRITE(UNIT=IChOut,FMT='(I4,1X,F12.9)') Iter,Rdelta
-    CLOSE(IChOut)
+    !Output of delta values - not necessary since it is already captured in
+    !iteration_log.txt
+!    Rdelta=Rdx/(Rx-Rdx)!Fractional change in the parameter
+!    OPEN(UNIT=IChOut,FILE='differences.txt',FORM='formatted',STATUS='unknown',&
+!          POSITION='append')
+!    WRITE(UNIT=IChOut,FMT='(I4,1X,F12.9)') Iter,Rdelta
+!    CLOSE(IChOut)
     
   END SUBROUTINE WriteDifferenceImages
 

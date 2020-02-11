@@ -522,13 +522,15 @@ MODULE refinementcontrol_mod
         !first digit=1 is y (overwrites the above)
         !first digit=2 is z (overwrites the above)
         IVariableCheck(6)=1
+        !this should always come first & is the default 
+        !Default: y and z are the same as x
+        !IF (my_rank.EQ.0) PRINT*, ind, "Variable type", IIndependentVariableType(ind)
         SELECT CASE(IIndependentVariableType(ind))
-          !this should always come first & is the default 
-          CASE(6)!cubic: y and z are the same as x (rhombohedral should go here too)
+          CASE(6)
             RLengthX = RIndependentVariable(ind)!first variable is always x
             RLengthY = RIndependentVariable(ind)
             RLengthZ = RIndependentVariable(ind)!
-          CASE(16)!y
+          CASE(16)
             RLengthY = RIndependentVariable(ind)
           CASE(26)!z
             RLengthZ = RIndependentVariable(ind)

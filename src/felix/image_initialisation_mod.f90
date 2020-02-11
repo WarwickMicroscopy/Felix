@@ -37,74 +37,9 @@ MODULE image_initialisation_mod
 
   IMPLICIT NONE
   PRIVATE
-  PUBLIC :: ImageInitialisation, ImageMaskInitialisation
+  PUBLIC :: ImageMaskInitialisation
 
   CONTAINS
-
-  !>
-  !! Procedure-description: Sets the positions of the centres of the disks
-  !! and calculate the size of the final image
-  !!
-  !! Major-Authors: Keith Evans (2014), Richard Beanland (2016)
-  !!
-  SUBROUTINE ImageInitialisation( IErr )
-
-    ! this procedure is called once in felixrefine during initial setup
-    USE MyNumbers
-    USE message_mod
-
-    ! global outputs
-    USE RPARA, ONLY : RhklPositions
-    USE IPARA, ONLY : IImageSizeXY
-    
-    ! global inputs
-    USE RPARA, ONLY : RgPool, RMinimumGMag, RConvergenceAngle
-    USE IPARA, ONLY : IPixelCount, INoOfLacbedPatterns, INhkl, IHKLSelectFLAG, &
-                      IOutputReflections
-    
-    IMPLICIT NONE
-
-    INTEGER(IKIND), INTENT(OUT) :: IErr
-    REAL(RKIND) :: DummyConvergenceAngle
-    INTEGER(IKIND) :: ind, jnd
-
-    IErr=0
-    ! positions of the centres of the disks
-    DO ind=1,INhkl
-      RhklPositions(ind,1) = RgPool(ind,1)/RMinimumGMag
-      RhklPositions(ind,2) = RgPool(ind,2)/RMinimumGMag
-    ENDDO
-
-    ! size of final image
-    IF(RConvergenceAngle .LT. ONE) THEN
-      DummyConvergenceAngle=RConvergenceAngle
-    ELSE
-      DummyConvergenceAngle=0.95_RKIND
-    END IF
-    
-    !RB As far as I can tell IImageSizeXY is never used!  
-    IF(IHKLSelectFLAG.EQ.0) THEN!no felix.hkl, make something up
-      DO ind=1,2
-        IImageSizeXY(ind)= CEILING(&
-             FOUR*REAL(IPixelCount,RKIND)/DummyConvergenceAngle * &
-            (MAXVAL(ABS(RhklPositions(1:INoOfLacbedPatterns,ind)))+ONE) )
-      ENDDO
-    ELSE!felix.hkl 
-      DO ind=1,2
-        DO jnd = 1,INoOfLacbedPatterns
-          IImageSizeXY(ind)= CEILING(&
-             FOUR*REAL(IPixelCount,RKIND)/DummyConvergenceAngle * &
-            (MAXVAL(ABS(RhklPositions(IOutputReflections(1:INoOfLacbedPatterns),ind)))+ONE) )
-        END DO
-      ENDDO
-    END IF
-    
-    RETURN
-
-  END SUBROUTINE ImageInitialisation
-
-  !!$%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-
 
   !>
   !! Procedure-description: Creates a circular or square image mask depending on
