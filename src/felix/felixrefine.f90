@@ -169,8 +169,8 @@ PROGRAM Felixrefine
   CALL ReciprocalLattice(IErr)
   IF(l_alert(IErr,"felixrefine","ReciprocalLattice")) CALL abort
   !resolution in k-space
-  RDeltaK = RConvergenceAngle/REAL(IPixelCount,RKIND)
-IF(my_rank.EQ.0)PRINT*, "Delta K", RDeltaK  
+  RDeltaK = TWOPI*RConvergenceAngle/REAL(IPixelCount,RKIND)
+!IF(my_rank.EQ.0)PRINT*, "Delta K", RDeltaK  
 
   !--------------------------------------------------------------------
   ! allocate atom and Debye-Waller factor arrays
