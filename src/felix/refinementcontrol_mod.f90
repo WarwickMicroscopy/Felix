@@ -610,7 +610,7 @@ MODULE refinementcontrol_mod
         
         CASE(8) ! G: convergence angle
           ! recalculate resolution in k space
-          IF (my_rank.EQ.0) RDeltaK = RMinimumGMag*RConvergenceAngle/REAL(IPixelCount,RKIND)
+          IF (my_rank.EQ.0) RDeltaK = TWOPI*RConvergenceAngle/REAL(IPixelCount,RKIND)
           CALL MPI_BCAST(RDeltaK,1,MPI_DOUBLE_PRECISION,0,MPI_COMM_WORLD,IErr)        
 
         END SELECT
