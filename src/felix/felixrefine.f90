@@ -1909,7 +1909,7 @@ CONTAINS
     !y=a*x^2+b*x+c a=Ra, b=Rb, c=Rc    
     Rd = Rx(1)*Rx(1)*(Rx(2)-Rx(3)) + Rx(2)*Rx(2)*(Rx(3)-Rx(1)) + Rx(3)*Rx(3)*(Rx(1)-Rx(2))
     Ra =(Rx(1)*(Ry(3)-Ry(2)) + Rx(2)*(Ry(1)-Ry(3)) + Rx(3)*(Ry(2)-Ry(1)))/Rd
-    Rdx = SQRT(Rdy/Ra)
+    Rdx = 0.5*SQRT(Rdy/Ra)
 
   END SUBROUTINE DeltaX
 
