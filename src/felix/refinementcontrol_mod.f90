@@ -496,7 +496,7 @@ MODULE refinementcontrol_mod
         IF (ABS(RIndependentDelta(ind)).GT.TINY) THEN
           !Errors are v*RIndependentDelta(ind)
           RBasisAtomDelta(IAtomID,:) = RBasisAtomDelta(IAtomID,:)+RVector(jnd,:)*RIndependentDelta(ind)
-!IF(my_rank.EQ.0)PRINT*,"Deltas=",RBasisAtomDelta(IAtomID,:)
+IF(my_rank.EQ.0)PRINT*,"Deltas=",RBasisAtomDelta(IAtomID,:)
         END IF
         jnd=jnd+1
             
@@ -561,6 +561,17 @@ MODULE refinementcontrol_mod
         
       END SELECT
     END DO
+
+    !Hack to fix z-components and O3 & O4 from O1 & O2 in the case of Cmc21 Ca3Mn2O7
+    RBasisAtomPosition(1,3)=0.75
+    RBasisAtomPosition(2,3)=0.75
+    RBasisAtomPosition(3,3)=0.25
+    RBasisAtomPosition(4,3)=0.25
+    RBasisAtomPosition(7,3)=0.25
+    RBasisAtomPosition(6,1)=RBasisAtomPosition(5,1)
+    RBasisAtomPosition(6,2)=RBasisAtomPosition(5,2)-0.5
+    RBasisAtomPosition(6,3)=1.0-RBasisAtomPosition(5,3)
+    RBasisAtomPosition = MODULO(RBasisAtomPosition,ONE)
     
     !--------------------------------------------------------------------  
     ! now do appropriate recalculations 
