@@ -46,7 +46,7 @@ MODULE write_output_mod
   CONTAINS
 
   !>
-  !!Procedure-description: gives an uncertainty, in brackets
+  !!Procedure-description: gives an uncertainty in brackets
   !!
   !! Author: Richard Beanland (2019)
   !!
@@ -54,7 +54,7 @@ MODULE write_output_mod
 
     USE MyNumbers
     USE MyMPI
-    USE message_mod
+
 
     IMPLICIT NONE
     INTEGER(IKIND), INTENT(OUT) :: IErr
@@ -66,13 +66,11 @@ MODULE write_output_mod
 
     !infinity and NaN check
     IF (ABS(Rval)-1.GT.ABS(Rval).OR.ABS(Rval).NE.ABS(Rval)) THEN
-      CALL message(LS,"Infinite or NaN value in UncertBrak")
       IErr=1
       RETURN
     END IF
     IF (ABS(Rerr)-1.GT.ABS(Rerr).OR.ABS(Rerr).NE.ABS(Rerr)) THEN
       IErr=1
-      CALL message(LS,"Infinite or NaN error in UncertBrak")
       RETURN
     END IF
 
