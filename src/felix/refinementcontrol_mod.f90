@@ -839,6 +839,7 @@ MODULE refinementcontrol_mod
     ! return the blurred image
     RImageToBlur=RTempImage;
 
-  END SUBROUTINE BlurG        
+  END SUBROUTINE BlurG
 
-END MODULE refinementcontrol_mod    
+END MODULE refinementcontrol_mod
+
