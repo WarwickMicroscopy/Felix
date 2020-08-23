@@ -561,9 +561,6 @@ MODULE refinementcontrol_mod
         
       END SELECT
     END DO
-    !Atom movement constraints to preserve mirror symmetry in [110] patterns: O2x=O3x; O2z=-O3z
-    RBasisAtomPosition(6,1)=RBasisAtomPosition(5,1)
-    RBasisAtomPosition(6,3)=1.0-RBasisAtomPosition(5,3)
     
     !--------------------------------------------------------------------  
     ! now do appropriate recalculations 
