@@ -5978,8 +5978,8 @@ MODULE setup_space_group_mod
       !NEED TO CODE ALTERNATIVE ORIENTATIONS Ccm21,Bb21m,Bm21b,A21ma,A21am
       SELECT CASE (SWyckoff)
       CASE('a')!point symmetry 1, coordinate [x,y,z],
-        RMoveMatrix(1,:) = (/ONE, ZERO, ZERO/)
-        RMoveMatrix(2,:) = (/ZERO, ONE, ZERO/)
+        RMoveMatrix(1,:) = (/ZERO, ONE, ZERO/)
+        RMoveMatrix(2,:) = (/ZERO, ZERO, ONE/)
       CASE('b')!point symmetry 1, coordinate [x,y,z],
         RMoveMatrix(1,:) = (/ONE, ZERO, ZERO/)
         RMoveMatrix(2,:) = (/ZERO, ONE, ZERO/)
