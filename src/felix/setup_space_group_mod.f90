@@ -6456,4 +6456,10 @@ MODULE setup_space_group_mod
     Output_String = Input_String
     
     ! Convert case character by character
-    DO ind = 1, LEN(Output_String,
+    DO ind = 1, LEN(Output_String,KIND=IKIND)
+       n = INDEX(UPPER_CASE, Output_String(ind:ind))
+       IF ( n.NE.0 ) Output_String(ind:ind) = LOWER_CASE(n:n)
+    END DO
+  END SUBROUTINE  StrLowCase
+
+END MODULE setup_space_group_mod

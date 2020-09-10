@@ -837,4 +837,11 @@ MODULE refinementcontrol_mod
     DEALLOCATE(RGauss1D,STAT=IErr)
 
     ! set intensity range of outpt image to match that of the input image
-    RTempImage=RTempImage-MINVAL(
+    RTempImage=RTempImage-MINVAL(RTempImage)
+    RTempImage=RTempImage*(Rmax-Rmin)/MAXVAL(RTempImage)+Rmin
+    ! return the blurred image
+    RImageToBlur=RTempImage;
+
+  END SUBROUTINE BlurG        
+
+END MODULE refinementcontrol_mod
