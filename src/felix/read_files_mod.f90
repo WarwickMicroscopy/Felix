@@ -438,11 +438,11 @@ MODULE read_files_mod
       ! check if corresponding _+0+0+0.img or _+0+0+0.dm3 image exists
       INQUIRE(FILE=TRIM(SFilePath) ,EXIST=LFileExist)
       IF(LFileExist) THEN
-        !IF (my_rank.EQ.0) PRINT*,"Found experimental image with filepath =",TRIM(SFilePath)
+        IF (my_rank.EQ.0) PRINT*,"Found experimental image with filepath =",TRIM(SFilePath)
         CALL message(LM, "Found initial experimental image with filepath =",TRIM(SFilePath) )
         EXIT
       ELSE
-        !IF (my_rank.EQ.0) PRINT*,"Did not find experimental image with filepath =",TRIM(SFilePath)
+        IF (my_rank.EQ.0) PRINT*,"Did not find experimental image with filepath =",TRIM(SFilePath)
         CALL message(LM, "Did not find initial experimental image with filepath =",TRIM(SFilePath) )
       END IF    
     END DO
