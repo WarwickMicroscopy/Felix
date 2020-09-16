@@ -408,7 +408,7 @@ MODULE read_files_mod
     IMPLICIT NONE
 
     INTEGER(IKIND),INTENT(OUT) :: IErr
-    INTEGER(IKIND) :: ind, jnd, INegError = 0, IPixelArray(2), IFileTypeID
+    INTEGER(IKIND) :: ind, jnd, INegError = 0, IPixelArray(2), IFileTypeID, IFound
     INTEGER(8) :: IFileSize
     CHARACTER(100) :: SFilename,SPath,SImageExtension,SFilePath
     LOGICAL :: LFileExist
@@ -417,6 +417,7 @@ MODULE read_files_mod
     ! for IByteSize: 2bytes=64-bit input file (NB tinis specifies in bytes, not bits)
     !?? JR Is it 8bytes=64-bit and not 2bytes=64-bit?
     ! iteratively INQUIRE each possible location for +0+0+0 .bin or .dm3 image
+    IFound=0!flag to say if we found a readable a file
     DO IFileTypeID=1,4
       SELECT CASE(IFileTypeID)
         CASE(1) ! .img in LR_NxN/
@@ -438,16 +439,23 @@ MODULE read_files_mod
       ! check if corresponding _+0+0+0.img or _+0+0+0.dm3 image exists
       INQUIRE(FILE=TRIM(SFilePath) ,EXIST=LFileExist)
       IF(LFileExist) THEN
-        IF (my_rank.EQ.0) PRINT*,"Found experimental image with filepath =",TRIM(SFilePath)
+        IFound=1
+        !IF (my_rank.EQ.0) PRINT*,"Found experimental image with filepath =",TRIM(SFilePath)
         CALL message(LM, "Found initial experimental image with filepath =",TRIM(SFilePath) )
         EXIT
       ELSE
-        IF (my_rank.EQ.0) PRINT*,"Did not find experimental image with filepath =",TRIM(SFilePath)
+        !IF (my_rank.EQ.0) PRINT*,"Did not find experimental image with filepath =",TRIM(SFilePath)
         CALL message(LM, "Did not find initial experimental image with filepath =",TRIM(SFilePath) )
       END IF    
     END DO
     ! NB once a file is found, the above do-loop is exited and the variables IFileTypeID, SFilePath and
     ! SPath will have the correct values to continue working with them.
+
+    IF (IFound.EQ.0) THEN
+      CALL message(LS, "Did not find experimental image at ",TRIM(SFilePath) )
+      IErr = 1
+      RETURN
+    END IF
 
     ! if .dm3 allocate raw 4-byte float image matrix
     IF(IFileTypeID.EQ.2.OR.IFileTypeID.EQ.4) ALLOCATE(RImage4ByteFloatDM3(2*IPixelCount,2*IPixelCount),STAT=IErr)
