@@ -80,6 +80,9 @@ MODULE setup_space_group_mod
     IF(l_alert(IErr,"PreferredBasis","ConvertSpaceGroupToNumber")) RETURN
     
     IBasisAtoms=SIZE(RBasisAtomPosition,1)
+    CALL ChangeOrigin(ISpaceGrp,IErr)!#only implemented for #142
+    IF(l_alert(IErr,"PreferredBasis","ChangeOrigin")) RETURN
+    
     DO ind=1,IBasisAtoms
       SWyckoff=SWyckoffSymbol(ind)
     
@@ -403,7 +406,51 @@ MODULE setup_space_group_mod
        END SELECT
 !!$  CASE(140)
 !!$  CASE(141)
-!!$  CASE(142)
+     CASE(142)!I41/acd
+       SELECT CASE (SWyckoff)
+
+       CASE('a')!point symmetry -4, coordinate [0,1/4,3/8], no reassignment
+     
+       CASE('b')!point symmetry 222, coordinate [0,1/4,1/8], no reassignment
+     
+       CASE('c')!point symmetry -1, coordinate [0,0,0], no reassignment
+
+       CASE('d')!point symmetry 2, coordinate [0,1/4,z], no reassignment
+
+       CASE('e')!point symmetry 2, coordinate [x,0,1/4], & eq
+         IF (ABS(RBasisAtomPosition(ind,3)).LT.TINY) THEN
+           !change equivalent coordinate [1/4,1/4-x,0] & [1/4,3/4-x,0]
+           IF (ABS(RBasisAtomPosition(ind,1)-0.25).LT.TINY) THEN
+             RBasisAtomPosition(ind,1)=0.25-RBasisAtomPosition(ind,2)
+             RBasisAtomPosition(ind,2)=ZERO
+             RBasisAtomPosition(ind,2)=0.25
+           END IF
+           !change equivalent coordinate [3/4,3/4+x,0] & [3/4,1/4+x,0]
+           IF (ABS(RBasisAtomPosition(ind,1)-0.75).LT.TINY) THEN
+             RBasisAtomPosition(ind,1)=RBasisAtomPosition(ind,2)-0.25
+             RBasisAtomPosition(ind,2)=ZERO
+             RBasisAtomPosition(ind,2)=0.25
+           END IF
+         END IF
+ 
+       CASE('f')!point symmetry 2, coordinate [x,x+1/4,1/8], & eq
+         !atoms at height 3/8,5/8 have a 2-fold about [x,-x,.] and need to be changed
+         IF (ABS(RBasisAtomPosition(ind,3)-0.375).LT.TINY) THEN
+           RBasisAtomPosition(ind,2)=RBasisAtomPosition(ind,1)+0.25
+           RBasisAtomPosition(ind,3)=0.125
+         END IF
+         IF (ABS(RBasisAtomPosition(ind,3)-0.625).LT.TINY) THEN
+           RBasisAtomPosition(ind,2)=RBasisAtomPosition(ind,1)+0.25
+           RBasisAtomPosition(ind,2)=0.125
+         END IF
+
+       CASE('g')!point symmetry 1, coordinate [x,y,z], no reassignment
+
+       CASE DEFAULT
+         IErr = 1
+         IF(l_alert(IErr,"PreferredBasis",&
+             "Wyckoff Symbol for space group 142, I41/a c d, not recognised")) RETURN
+      END SELECT
 !!$  CASE(143)
 !!$  CASE(144)
 !!$  CASE(145)
@@ -6241,7 +6288,29 @@ MODULE setup_space_group_mod
       END SELECT
 !!$  CASE(140)
 !!$  CASE(141)
-!!$  CASE(142)
+     CASE(142)!I41/acd
+      SELECT CASE (SWyckoff)
+      CASE('a')!point symmetry -4, no allowed movements
+
+      CASE('b')!point symmetry 222, no allowed movements
+
+      CASE('c')!point symmetry -1, no allowed movements
+
+      CASE('d')!point symmetry 2, allowed movement along z
+        RMoveMatrix(1,:) = (/ZERO, ZERO, ONE/)
+      CASE('e')!point symmetry 2, allowed movement along x
+        RMoveMatrix(1,:) = (/ONE, ZERO, ZERO/)
+      CASE('f')!point symmetry 2, allowed movement along [x,x,0]
+        RMoveMatrix(1,:) = (/ONE, ONE, ZERO/)
+      CASE('g')!point symmetry 1
+        RMoveMatrix(1,:) = (/ONE, ZERO, ZERO/)
+        RMoveMatrix(2,:) = (/ZERO, ONE, ZERO/)
+        RMoveMatrix(3,:) = (/ZERO, ZERO, ONE/)
+      CASE DEFAULT
+         IErr = 1
+         IF(l_alert(IErr,"DetermineAllowedMovements",&
+              "Wyckoff Symbol for space group 142, I 41/a 2/c 2/d, not recognised")) RETURN
+      END SELECT
 !!$  CASE(143)
 !!$  CASE(144)
 !!$  CASE(145)
@@ -6365,7 +6434,55 @@ MODULE setup_space_group_mod
   END SUBROUTINE DetermineAllowedMovements
 
   !%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+  !>
+  !! Procedure-description: Convert SSpacegrp to lower case and Compare
+  !! SSpaceGrpNoSpaces with every space group
+  !!
+  !! Major-Authors: Keith Evans (2014), Richard Beanland (2016)
+  !!
+  SUBROUTINE ChangeOrigin(ISpaceGrp,IErr)
 
+    ! called from PreferredBasis to change to the preferred origin
+    USE MyNumbers
+    USE message_mod
+
+    ! global inputs
+    USE RPARA, ONLY : RBasisAtomPosition
+    USE SPARA, ONLY : SWyckoffSymbol
+
+    IMPLICIT NONE
+
+    INTEGER(IKIND),INTENT(OUT) :: IErr
+    INTEGER(IKIND) :: ind,ISpaceGrp,IBasisAtoms,IChangeFLAG
+
+    IBasisAtoms=SIZE(RBasisAtomPosition,1)
+    SELECT CASE(ISpaceGrp)
+      CASE(142)!I41/acd
+        !Change from choice 1 (origin -4 at [0,0,0]) to choice 2 (origin -1 at [0,0,0])
+        IChangeFLAG = 0
+        IErr = 1!Set the error flag in the case we don't get an 'a' site
+        
+        !Go through the atoms and look for an 'a' site incompatible with choice 2
+        DO ind = 1,IBasisAtoms
+          !Wyckoff 'a' is -4 at [000],[0,1/2,1/2],[0,1/2,1/4],[1/2,0,1/4] in 1
+          ! and [0,1/4,3/8], [0,3/4,5/8], [1/2,1/4,5/8], [1/2,3/4,5/8] in 2
+          IF (SWyckoffSymbol(ind).EQ.'a') THEN
+            IErr = 0!We have an 'a' site
+            !check for origin 1 by multiplying by 4 and checking it is an integer
+            IF(MODULO(FOUR*RBasisAtomPosition(ind,3),1.0).LT.TINY) IChangeFLAG = 1
+          END IF
+        END DO
+        IF (IChangeFLAG.EQ.1) THEN!add[[0,1/4,3/8]
+          DO ind = 1,IBasisAtoms
+            RBasisAtomPosition(ind,2)=MODULO((RBasisAtomPosition(ind,2)+0.25),1.0)
+            RBasisAtomPosition(ind,3)=MODULO((RBasisAtomPosition(ind,2)+0.375),1.0)
+          END DO
+        END IF
+    END SELECT
+    
+  END SUBROUTINE ChangeOrigin
+
+  !%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
   !>
   !! Procedure-description: Convert SSpacegrp to lower case and Compare
   !! SSpaceGrpNoSpaces with every space group
@@ -6430,8 +6547,6 @@ MODULE setup_space_group_mod
   END SUBROUTINE ConvertSpaceGroupToNumber
 
   !%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-
-
   !>
   !! Procedure-description: 
   !!

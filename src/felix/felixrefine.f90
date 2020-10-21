@@ -1384,43 +1384,47 @@ CONTAINS
         ! check the three points make a concave set
         jnd=MAXLOC(R3var,1) ! highest x
         knd=MINLOC(R3var,1) ! lowest x
-        lnd=6-jnd-knd ! the mid x
-        ! Rtest=0.0 would be a straight line, >0=convex, <0=concave
-        Rtest=-ABS(R3fit(jnd)-R3fit(knd))
-        ! Rconvex is the calculated fit index at the mid x,
-        ! if there was a straight line between lowest and highest x
-        Rconvex=R3fit(lnd)-(R3fit(knd)+(R3var(lnd)-R3var(knd))*&
-          (R3fit(jnd)-R3fit(knd))/(R3var(jnd)-R3var(knd)))
-
-        ! if it isn't more than 10% concave, keep going until it is sufficiently concave
-        DO WHILE (Rconvex.GT.0.1*Rtest)
-          CALL message( LS, "Convex, continuing")
-          jnd=MAXLOC(R3fit,1) ! worst fit
-          knd=MINLOC(R3fit,1) ! best fit
-          lnd=6-jnd-knd ! the mid fit
-          ! replace mid point with a step on from best point
-          !?? RB increase the step size by the golden ratio
-          !?? RPvecMag=(R3var(knd)-RVar0(1))*(0.5+SQRT(5.0)/2.0)/RPvec(1)
-          RPvecMag=TWO*RPvecMag ! double the step size
-          ! maximum step in Ug is RMaxUgStep
-          IF (ABS(RPvecMag).GT.RMaxUgStep.AND.IRefineMode(1).EQ.1) THEN
-            RPvecMag=SIGN(RMaxUgStep,RPvecMag)
-          END IF
-          RCurrentVar=RVar0+RPvec*RPvecMag
-          R3var(lnd)=RCurrentVar(xnd)! next point
-          Iter=Iter+1
-          CALL SimulateAndFit(RCurrentVar,Iter,IThicknessIndex,IErr)
-          IF(l_alert(IErr,"MaxGradientRefinement","SimulateAndFit")) RETURN
-          CALL WriteIterationOutputWrapper(Iter,IThicknessIndex,IPrintFLAG,IErr)
-          CALL BestFitCheck(RFigureofMerit,RBestFit,RCurrentVar,RIndependentVariable,IErr)
-          R3fit(lnd)=RFigureofMerit
-          jnd=MAXLOC(R3var,1) ! highest x
-          knd=MINLOC(R3var,1) ! lowest x
+        IF (jnd.NE.knd) THEN!if j=k there is no effect on fit, so skip to end
           lnd=6-jnd-knd ! the mid x
-          Rconvex=R3fit(lnd)-(R3fit(knd)+(R3var(lnd)-R3var(knd))*&
-                (R3fit(jnd)-R3fit(knd))/(R3var(jnd)-R3var(knd)))
+          ! Rtest=0.0 would be a straight line, >0=convex, <0=concave
           Rtest=-ABS(R3fit(jnd)-R3fit(knd))
-        END DO
+          ! Rconvex is the calculated fit index at the mid x,
+          ! if there was a straight line between lowest and highest x
+          Rconvex=R3fit(lnd)-(R3fit(knd)+(R3var(lnd)-R3var(knd))*&
+           (R3fit(jnd)-R3fit(knd))/(R3var(jnd)-R3var(knd)))
+
+          ! if it isn't more than 10% concave, keep going until it is sufficiently concave
+          DO WHILE (Rconvex.GT.0.1*Rtest)
+            CALL message( LS, "Convex, continuing")
+            jnd=MAXLOC(R3fit,1) ! worst fit
+            knd=MINLOC(R3fit,1) ! best fit
+            IF (jnd.NE.knd) THEN
+              lnd=6-jnd-knd ! the mid fit
+              ! replace mid point with a step on from best point
+              RPvecMag=TWO*RPvecMag ! double the step size
+              ! maximum step in Ug is RMaxUgStep
+              IF (ABS(RPvecMag).GT.RMaxUgStep.AND.IRefineMode(1).EQ.1) THEN
+                RPvecMag=SIGN(RMaxUgStep,RPvecMag)
+              END IF
+              RCurrentVar=RVar0+RPvec*RPvecMag
+              R3var(lnd)=RCurrentVar(xnd)! next point
+              Iter=Iter+1
+              CALL SimulateAndFit(RCurrentVar,Iter,IThicknessIndex,IErr)
+              IF(l_alert(IErr,"MaxGradientRefinement","SimulateAndFit")) RETURN
+              CALL WriteIterationOutputWrapper(Iter,IThicknessIndex,IPrintFLAG,IErr)
+              CALL BestFitCheck(RFigureofMerit,RBestFit,RCurrentVar,RIndependentVariable,IErr)
+              R3fit(lnd)=RFigureofMerit
+              jnd=MAXLOC(R3var,1) ! highest x
+              knd=MINLOC(R3var,1) ! lowest x
+              IF (jnd.NE.knd) THEN
+                lnd=6-jnd-knd ! the mid x
+                Rconvex=R3fit(lnd)-(R3fit(knd)+(R3var(lnd)-R3var(knd))*&
+                  (R3fit(jnd)-R3fit(knd))/(R3var(jnd)-R3var(knd)))
+                Rtest=-ABS(R3fit(jnd)-R3fit(knd))
+              END IF
+            END IF
+          END DO
+        END IF
 
         !--------------------------------------------------------------------
         ! make prediction and update last fit
