@@ -3,7 +3,7 @@
 
 Richard Beanland, Keith Evans & Rudolf A Roemer
 
-(C) 2013-19, all rights reserved
+(C) 2013-21, all rights reserved
 
 *Felix* is free software: you can redistribute it and/or modify
 it under the terms of the GNU General Public License as published by
