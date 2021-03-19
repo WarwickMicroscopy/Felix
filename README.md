@@ -24,4 +24,4 @@ After download/cloning, go to directory 'felix/src/', edit the file 'user.mk' fo
 
 Sample input and output files are provided to test the code in 'felix/samples/'
 
-*Felix* takes it name in honour of Felix Bloch, one of the fathers of modern electron scattering methods, see https://en.wikipedia.org/wiki/Felix_Bloch.
+*Felix* takes its name in honour of Felix Bloch, one of the fathers of modern electron scattering methods, see https://en.wikipedia.org/wiki/Felix_Bloch.
