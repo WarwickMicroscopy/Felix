@@ -313,8 +313,7 @@ MODULE read_files_mod
 
     ! global outputs
     USE RPARA, ONLY : RInputHKLs
-    USE IPARA, ONLY : INoOfLacbedPatterns, IHKLSelectFLAG, &
-          IOutputReflections ! allocated here
+    USE IPARA, ONLY : INoOfLacbedPatterns,IOutputReflections ! allocated here
     ! global inputs
     USE IChannels, ONLY : IChInp
 
@@ -326,7 +325,6 @@ MODULE read_files_mod
 
     OPEN(Unit = IChInp,FILE="felix.hkl",STATUS='OLD',ERR=10)
     ILine = 0
-    IHKLSelectFLAG=1
 
     ! count the number of lines in felix.hkl:
     ! this is the number of reflections to output, INoOfLacbedPatterns
@@ -372,8 +370,8 @@ MODULE read_files_mod
     RETURN
 
  10 CONTINUE
-    IHKLSelectFLAG=0
-    CALL message( LL, "felix.hkl not found, continuing")
+    IErr=1
+    CALL message( LL, "felix.hkl not found")
     RETURN
 
   END SUBROUTINE ReadHklFile

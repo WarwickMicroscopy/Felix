@@ -62,7 +62,6 @@ MODULE setup_reflections_mod
     USE IPARA, ONLY : IOutputReflections, INoOfLacbedPatterns
 
     ! global inputs
-    USE IPARA, ONLY : IHKLSelectFLAG
     USE RPARA, ONLY : RInputHKLs, RTolerance, Rhkl
 
     IMPLICIT NONE
@@ -71,44 +70,40 @@ MODULE setup_reflections_mod
       
     IFind = 0
 
-    IF(IHKLSelectFLAG.EQ.1) THEN
-      DO ind = 1,SIZE(RInputHKLs,DIM=1)
-        DO jnd = 1,SIZE(Rhkl,DIM=1)
-          IF(ABS(Rhkl(jnd,1)-RInputHKLs(ind,1)).LE.RTolerance.AND.&
-             ABS(Rhkl(jnd,2)-RInputHKLs(ind,2)).LE.RTolerance.AND.&
-             ABS(Rhkl(jnd,3)-RInputHKLs(ind,3)).LE.RTolerance) THEN
-            IFound = 0
-            DO knd = 1,IFind
-              IF(ABS(Rhkl(IOutputReflections(knd),1)-RInputHKLs(ind,1)).LE.RTolerance.AND.&
-                 ABS(Rhkl(IOutputReflections(knd),2)-RInputHKLs(ind,2)).LE.RTolerance.AND.&
-                 ABS(Rhkl(IOutputReflections(knd),3)-RInputHKLs(ind,3)).LE.RTolerance) THEN
-                IFound = 1
-                EXIT
-              END IF
-            END DO
-            IF (IFound.EQ.0) THEN
-              IFind = IFind +1
-              IOutputReflections(IFind) = jnd
+    DO ind = 1,SIZE(RInputHKLs,DIM=1)
+      DO jnd = 1,SIZE(Rhkl,DIM=1)
+        IF(ABS(Rhkl(jnd,1)-RInputHKLs(ind,1)).LE.RTolerance.AND.&
+           ABS(Rhkl(jnd,2)-RInputHKLs(ind,2)).LE.RTolerance.AND.&
+           ABS(Rhkl(jnd,3)-RInputHKLs(ind,3)).LE.RTolerance) THEN
+          IFound = 0
+          DO knd = 1,IFind
+            IF(ABS(Rhkl(IOutputReflections(knd),1)-RInputHKLs(ind,1)).LE.RTolerance.AND.&
+               ABS(Rhkl(IOutputReflections(knd),2)-RInputHKLs(ind,2)).LE.RTolerance.AND.&
+               ABS(Rhkl(IOutputReflections(knd),3)-RInputHKLs(ind,3)).LE.RTolerance) THEN
+              IFound = 1
+              EXIT
             END IF
-            EXIT
-          ELSE
-            IF ( jnd.EQ.SIZE(Rhkl,DIM=1) ) THEN
-              CALL message(LM,"No requested HKLs found",NINT(RInputHKLs(ind,:)) )
-              CALL message(LM,"Will Ignore and Continue")
-            END IF
-            CYCLE
+          END DO
+          IF (IFound.EQ.0) THEN
+            IFind = IFind +1
+            IOutputReflections(IFind) = jnd
           END IF
-
-        END DO
+          EXIT
+        ELSE
+          IF ( jnd.EQ.SIZE(Rhkl,DIM=1) ) THEN
+            CALL message(LM,"No requested HKLs found",NINT(RInputHKLs(ind,:)) )
+            CALL message(LM,"Will Ignore and Continue")
+          END IF
+          CYCLE
+        END IF
       END DO
+    END DO
        
-      IF (IFind.LE.0) THEN
-        IErr=1; IF(l_alert(IErr,"HKLList","No requested HKLs found")) RETURN
-      END IF
-      
-      INoOfLacbedPatterns = IFind
-
+    IF (IFind.LE.0) THEN
+      IErr=1; IF(l_alert(IErr,"HKLList","No requested HKLs found")) RETURN
     END IF
+      
+    INoOfLacbedPatterns = IFind
     
   END SUBROUTINE HKLList
   
@@ -206,12 +201,12 @@ MODULE setup_reflections_mod
     !If the g-vectors we are counting are bigger than this there is something wrong
     !probably the tolerance for proximity to the Ewald sphere needs increasing
     !could be an input in felix.inp
-    RGlimit = 10.0  ! reciprocal Angstroms
+    RGlimit = 10.0*TWOPI  ! reciprocal Angstroms * 2pi
     
     !the k-vector for the incident beam
     !we are working in the microscope reference frame so k is along z
     Rk=(/ 0.0,0.0,RElectronWaveVectorMagnitude /)
-
+    
     !get the size of the reciprocal lattice basis vectors
     RarMag=SQRT(DOT_PRODUCT(RarVecM,RarVecM))!magnitude of a*
     RbrMag=SQRT(DOT_PRODUCT(RbrVecM,RbrVecM))!magnitude of b*
@@ -232,9 +227,9 @@ MODULE setup_reflections_mod
     jnda=0
     jndb=0
     jndc=0
-    DO WHILE (knd.LE.INhkl.AND.RGtestMag.LE.RGlimit)
+    DO WHILE (knd.LT.INhkl.AND.RGtestMag.LE.RGlimit)
       lnd=lnd+1
-      IF(my_rank.EQ.0)PRINT*,lnd
+IF(my_rank.EQ.0)PRINT*,lnd
       DO Ih=-inda,inda
          DO Ik=-indb,indb
             DO Il=-indc,indc
@@ -256,7 +251,7 @@ MODULE setup_reflections_mod
                   IF (ISel.EQ.1 .AND. knd.LT.INhkl) THEN
                     knd=knd+1
                     Rhkl(knd,:)=REAL((/ Ih,Ik,Il /),RKIND)
-                    IF(my_rank.EQ.0)PRINT*,knd,Rhkl(knd,:),RGtestMag
+IF(my_rank.EQ.0)PRINT*,Ih,Ik,Il,RGpluskMag-RElectronWaveVectorMagnitude,RGtestMag
                   END IF
                 END IF
               END IF
@@ -273,6 +268,7 @@ MODULE setup_reflections_mod
       indb=NINT(REAL(lnd)*RbrMag/RShell)
       indc=NINT(REAL(lnd)*RcrMag/RShell)
     END DO
+IF(my_rank.EQ.0)PRINT*,"total ",knd,"reflections"
 
   END SUBROUTINE HKLmake
 

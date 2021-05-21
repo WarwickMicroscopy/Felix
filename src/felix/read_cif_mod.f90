@@ -177,7 +177,7 @@ MODULE read_cif_mod
         IErr=1; IF(l_alert(IErr,"ReadCif","Cell dimension(s) missing")) RETURN
     END IF
     RLengthX=cela; RLengthY=celb; RLengthZ=celc !global variables
-    
+ 
     siga = 0.
     sigb = 0.
     sigc = 0.
