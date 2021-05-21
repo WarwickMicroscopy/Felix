@@ -211,7 +211,7 @@ PROGRAM Felixrefine
   !?? RB could re-allocate RAtomCoordinate,SAtomName,RIsoDW,ROccupancy,
   !?? IAtomicNumber,IAnisoDW to match INAtomsUnitCell?
 
-  RTol=0.3 
+  RTol=1.25 
   
   ! Fill the list of reflections Rhkl (global variable)
   ! NB Rhkl are in INTEGER form [h,k,l] but are REAL to allow dot products etc.

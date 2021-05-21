@@ -201,7 +201,7 @@ MODULE setup_reflections_mod
     !If the g-vectors we are counting are bigger than this there is something wrong
     !probably the tolerance for proximity to the Ewald sphere needs increasing
     !could be an input in felix.inp
-    RGlimit = 10.0*TWOPI  ! reciprocal Angstroms * 2pi
+    RGlimit = 20.0*TWOPI  ! reciprocal Angstroms * 2pi
     
     !the k-vector for the incident beam
     !we are working in the microscope reference frame so k is along z
