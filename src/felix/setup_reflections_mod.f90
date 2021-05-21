@@ -215,7 +215,8 @@ MODULE setup_reflections_mod
     RShell=MINVAL( (/ RarMag,RbrMag,RcrMag /) )
 
     !we work our way out from the origin in shells
-    knd=0!current number of reflections in the pool 
+    Rhkl(1,:)=(/ 0.0,0.0,0.0 /)
+    knd=1!current number of reflections in the pool 
     lnd=0!current number of times we've expanded the search 
     ! first shell
     RGtestMag=0.0!we check this against RGlimit
@@ -229,7 +230,7 @@ MODULE setup_reflections_mod
     jndc=0
     DO WHILE (knd.LT.INhkl.AND.RGtestMag.LE.RGlimit)
       lnd=lnd+1
-IF(my_rank.EQ.0)PRINT*,lnd
+!dbg IF(my_rank.EQ.0)PRINT*,lnd
       DO Ih=-inda,inda
          DO Ik=-indb,indb
             DO Il=-indc,indc
@@ -251,7 +252,7 @@ IF(my_rank.EQ.0)PRINT*,lnd
                   IF (ISel.EQ.1 .AND. knd.LT.INhkl) THEN
                     knd=knd+1
                     Rhkl(knd,:)=REAL((/ Ih,Ik,Il /),RKIND)
-IF(my_rank.EQ.0)PRINT*,Ih,Ik,Il,RGpluskMag-RElectronWaveVectorMagnitude,RGtestMag
+!dbg IF(my_rank.EQ.0)PRINT*,Ih,Ik,Il,RGpluskMag-RElectronWaveVectorMagnitude,RGtestMag
                   END IF
                 END IF
               END IF
@@ -268,7 +269,7 @@ IF(my_rank.EQ.0)PRINT*,Ih,Ik,Il,RGpluskMag-RElectronWaveVectorMagnitude,RGtestMa
       indb=NINT(REAL(lnd)*RbrMag/RShell)
       indc=NINT(REAL(lnd)*RcrMag/RShell)
     END DO
-IF(my_rank.EQ.0)PRINT*,"total ",knd,"reflections"
+IF(my_rank.EQ.0)PRINT*,"total ",knd,"reflections in the pool"
 
   END SUBROUTINE HKLmake
 

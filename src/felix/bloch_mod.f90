@@ -66,7 +66,7 @@ MODULE bloch_mod
     USE CPara, ONLY : CUgMat
     USE RPara, ONLY : RDeltaK,RDeltaThickness,RInitialThickness,RNormDirM,RgDotNorm,RgPool,&
                       RgPoolMag,Rhkl
-    USE IPara, ONLY : IHKLSelectFLAG,IHolzFLAG,IMinStrongBeams,IMinWeakBeams,&
+    USE IPara, ONLY : IHolzFLAG,IMinStrongBeams,IMinWeakBeams,&
                       INoOfLacbedPatterns,IPixelCount,IThicknessCount,INhkl,&
                       IOutputReflections,IBlochMethodFLAG
     USE BlochPara, ONLY : RBigK            
@@ -366,17 +366,18 @@ MODULE bloch_mod
     END IF
 
       ! Collect Intensities from all thickness for later writing
-      IF(IHKLSelectFLAG.EQ.0) THEN ! we are not using hkl list from felix.hkl
-        RIndividualReflections(1:INoOfLacbedPatterns,IThicknessIndex,&
-                (IPixelNumber-IFirstPixelToCalculate)+1) = &
-                RFullWaveIntensity(1:INoOfLacbedPatterns)
-      ELSE ! we are using hkl list from felix.hkl
+      ! Output without felix.hkl input disabled
+      !IF(IHKLSelectFLAG.EQ.0) THEN ! we are not using hkl list from felix.hkl
+      !  RIndividualReflections(1:INoOfLacbedPatterns,IThicknessIndex,&
+      !          (IPixelNumber-IFirstPixelToCalculate)+1) = &
+      !          RFullWaveIntensity(1:INoOfLacbedPatterns)
+      !ELSE ! we are using hkl list from felix.hkl
         DO ind = 1,INoOfLacbedPatterns
           RIndividualReflections(ind,IThicknessIndex,&
                   (IPixelNumber-IFirstPixelToCalculate)+1) = &
                   RFullWaveIntensity(IOutputReflections(ind))
         END DO
-      END IF
+      !END IF
     END DO
 
 
