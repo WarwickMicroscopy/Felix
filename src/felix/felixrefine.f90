@@ -212,25 +212,12 @@ PROGRAM Felixrefine
   !?? IAtomicNumber,IAnisoDW to match INAtomsUnitCell?
 
   RHOLZAcceptanceAngle=TWODEG2RADIAN !?? RB seems way too low?
-  IHKLMAXValue = 5 ! starting value, increments in loop below
-
-  !?? RB Note the application of acceptance angle is incorrect since it uses hkl;
-  !?? it should use the reciprocal lattice vectors as calculated in RgPool
-
-  ! Count the no. of reflections INhkl that make up the pool of g-vectors
-  ! counted according to their magnitudes and including symmetry equivalents 
-  CALL HKLCount(IHKLMAXValue,RZDirC,INhkl,RHOLZAcceptanceAngle,IErr)
-  IF(l_alert(IErr,"felixrefine","HKLCount")) CALL abort
-  DO WHILE (INhkl.LT.IMinReflectionPool) 
-    IHKLMAXValue = IHKLMAXValue+1
-    CALL HKLCount(IHKLMAXValue,RZDirC,INhkl,RHOLZAcceptanceAngle,IErr)
-  END DO
   
   ! Fill the list of reflections Rhkl (global variable)
   ! NB Rhkl are in INTEGER form [h,k,l] but are REAL to allow dot products etc.
   ALLOCATE(Rhkl(INhkl,ITHREE),STAT=IErr)
   IF(l_alert(IErr,"felixrefine","allocate Rhkl")) CALL abort
-  CALL HKLMake(IHKLMAXValue,RZDirC,RHOLZAcceptanceAngle,IErr)
+  CALL HKLMake(RHOLZAcceptanceAngle,IErr)
   IF(l_alert(IErr,"felixrefine","HKLMake")) CALL abort
   CALL message(LL,dbg7,"Rhkl matrix: ",NINT(Rhkl(1:INhkl,:)))
 
@@ -365,12 +352,12 @@ PROGRAM Felixrefine
   IF(RAcceptanceAngle.NE.ZERO) THEN!if acceptance angle is small, g-vectors will be limited
     IF (IHOLZFLAG.EQ.0) THEN!ZOLZ only
       RMaxAcceptanceGVecMag=(RElectronWaveVectorMagnitude*TAN(RAcceptanceAngle*DEG2RADIAN))
-      IF(RgPoolMag(IMinReflectionPool).GT.RMaxAcceptanceGVecMag) RMaxGMag = RMaxAcceptanceGVecMag 
+      IF(RgPoolMag(INhkl).GT.RMaxAcceptanceGVecMag) RMaxGMag = RMaxAcceptanceGVecMag 
     ELSE!HOLZ too(not working?)
       IBSMaxLocGVecAmp=MAXVAL(IOriginGVecIdentifier)
       RMaxGMag=RgPoolMag(IBSMaxLocGVecAmp)
-      IF(RgPoolMag(IBSMaxLocGVecAmp).GE.RgPoolMag(IMinreflectionPool)) &
-        RMaxGMag = RgPoolMag(IMinReflectionPool)
+      IF(RgPoolMag(IBSMaxLocGVecAmp).GE.RgPoolMag(INhkl)) &
+        RMaxGMag = RgPoolMag(INhkl)
     END IF
     ! count reflections up to cutoff magnitude
     jnd=INhkl

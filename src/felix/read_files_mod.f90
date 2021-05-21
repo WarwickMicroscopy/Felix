@@ -53,7 +53,7 @@ MODULE read_files_mod
 
     ! global outputs, read from .inp
     USE IPARA, ONLY : IWriteFLAG, IImageFLAG, IScatterFactorMethodFLAG, IMaskFLAG, IHolzFLAG, &
-          IAbsorbFLAG, IAnisoDebyeWallerFactorFlag, IByteSize, IMinReflectionPool, &
+          IAbsorbFLAG, IAnisoDebyeWallerFactorFlag, IByteSize, INhkl, &
           IMinStrongBeams, IMinWeakBeams, ISimFLAG, IRefineMode, &
           IWeightingFLAG, IRefineMethodFLAG, ICorrelationFLAG, IImageProcessingFLAG, &
           INoofUgs, IPrint, IPixelCount, IBlochMethodFLAG
@@ -137,9 +137,9 @@ MODULE read_files_mod
     ! Two comment lines 
     ILine= ILine+1; READ(IChInp,ERR=20,END=30,FMT='(A)')
     ILine= ILine+1; READ(IChInp,ERR=20,END=30,FMT='(A)')
-    ! IMinReflectionPool
-    ILine= ILine+1; READ(IChInp,'(27X,I15.1)',ERR=20,END=30) IMinReflectionPool
-    CALL message ( LXL, dbg3, "IMinReflectionPool=",IMinReflectionPool)
+    ! INhkl
+    ILine= ILine+1; READ(IChInp,'(27X,I15.1)',ERR=20,END=30) INhkl
+    CALL message ( LXL, dbg3, "INhkl=",INhkl)
     ! IMinStrongBeams
     ILine= ILine+1; READ(IChInp,'(27X,I15.1)',ERR=20,END=30) IMinStrongBeams
     CALL message ( LXL, dbg3, "IMinStrongBeams=",IMinStrongBeams)
@@ -147,7 +147,7 @@ MODULE read_files_mod
     ILine= ILine+1
     READ(IChInp,'(27X,I15.1)',ERR=20,END=30) IMinWeakBeams
     CALL message ( LXL, dbg3, "IMinWeakBeams=",IMinWeakBeams)
-    WRITE(SPrintString,FMT='(A19,I4,A19,I4,A13)') "Reflection pool of ",IMinReflectionPool," with a minimum of ",IMinStrongBeams," strong beams"
+    WRITE(SPrintString,FMT='(A19,I4,A19,I4,A13)') "Reflection pool of ",INhkl," with a minimum of ",IMinStrongBeams," strong beams"
     CALL message ( LS, SPrintString)
 
     !--------------------------------------------------------------------

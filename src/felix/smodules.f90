@@ -163,7 +163,7 @@ MODULE IPara
        IWeightingFLAG,IRefineMethodFLAG,ICorrelationFLAG,IImageProcessingFLAG,&
        IByteSize
   !Minimum Reflections etc
-  INTEGER(IKIND) :: IMinReflectionPool,IMinStrongBeams,IMinWeakBeams
+  INTEGER(IKIND) :: IMinStrongBeams,IMinWeakBeams
   !OtherFLAGS
   INTEGER(IKIND) :: IDiffractionFLAG=0
   INTEGER(IKIND) :: IInitialSimulationFLAG
@@ -264,7 +264,7 @@ MODULE RPara
   REAL(RKIND), DIMENSION(:,:), ALLOCATABLE :: RScattFactors!,RPseudoAtom
   ! Crystallography 
   ! Real Space and Reciprocal Lattice Vectors in Orthogonal and Microscope
-  ! reference framce
+  ! reference frames
   REAL(RKIND), DIMENSION(ITHREE) :: RXDirM,RYDirM,RZDirM,& 
        RaVecO, RbVecO, RcVecO, &
        RaVecM, RbVecM, RcVecM, &
