@@ -269,7 +269,7 @@ MODULE setup_reflections_mod
       indb=NINT(REAL(lnd)*RbrMag/RShell)
       indc=NINT(REAL(lnd)*RcrMag/RShell)
     END DO
-IF(my_rank.EQ.0)PRINT*,"total ",knd,"reflections in the pool"
+!dbg IF(my_rank.EQ.0)PRINT*,"total ",knd,"reflections in the pool"
 
   END SUBROUTINE HKLmake
 
