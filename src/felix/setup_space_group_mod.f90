@@ -496,6 +496,36 @@ MODULE setup_space_group_mod
 !!$  CASE(165)
 !!$  CASE(166)
 !!$  CASE(167)
+     CASE(167)!R -3 c
+       SELECT CASE (SWyckoff)
+
+       CASE('a')!point symmetry 32, coordinate [0,0,1/4], no reassignment
+
+       CASE('b')!point symmetry -3, coordinate [0,0,0], no reassignment
+
+       CASE('c')!point symmetry 3, coordinate [0,0,z], no reassignment
+
+       CASE('d')!point symmetry -1, coordinate [1/2,0,0], no reassignment
+
+       CASE('e')!point symmetry 2, coordinate [x,0,1/4], & eq
+         !change equivalent coordinate [0,x,1/4] & [0,-x,3/4]
+         IF (ABS(RBasisAtomPosition(ind,1)).LT.TINY) THEN
+           RBasisAtomPosition(ind,1)=RBasisAtomPosition(ind,2)
+           RBasisAtomPosition(ind,2)=ZERO
+         END IF
+         !change equivalent coordinate [x,x,3/4] & [-x,-x,1/4]
+         IF (ABS(RBasisAtomPosition(ind,1)-RBasisAtomPosition(ind,2)).LT.TINY) THEN
+           RBasisAtomPosition(ind,2)=ZERO
+           RBasisAtomPosition(ind,3)=RBasisAtomPosition(ind,3)-HALF
+         END IF
+
+       CASE('f')!point symmetry 1, coordinate [x,y,z], no reassignment
+
+       CASE DEFAULT
+         IErr = 1
+         IF(l_alert(IErr,"PreferredBasis",&
+             "Wyckoff Symbol for space group 167, R -3 c, not recognised")) RETURN
+      END SELECT
 !!$  CASE(168)
 !!$  CASE(169)
 !!$  CASE(170)
@@ -6377,6 +6407,27 @@ MODULE setup_space_group_mod
 !!$  CASE(165)
 !!$  CASE(166)
 !!$  CASE(167)
+     CASE(167)!R-3 c
+      SELECT CASE (SWyckoff)
+      CASE('a')!point symmetry 32, no allowed movements
+
+      CASE('b')!point symmetry -3, no allowed movements
+
+      CASE('c')!point symmetry 3, allowed movement along z
+        RMoveMatrix(1,:) = (/ZERO, ZERO, ONE/)
+      CASE('d')!point symmetry -1, allowed movement along x
+
+      CASE('e')!point symmetry 2, allowed movement along [x,0,0]
+        RMoveMatrix(1,:) = (/ONE, ZERO, ZERO/)
+      CASE('f')!point symmetry 1
+        RMoveMatrix(1,:) = (/ONE, ZERO, ZERO/)
+        RMoveMatrix(2,:) = (/ZERO, ONE, ZERO/)
+        RMoveMatrix(3,:) = (/ZERO, ZERO, ONE/)
+      CASE DEFAULT
+         IErr = 1
+         IF(l_alert(IErr,"DetermineAllowedMovements",&
+              "Wyckoff Symbol for space group 142, R -3 c, not recognised")) RETURN
+      END SELECT
 !!$  CASE(168)
 !!$  CASE(169)
 !!$  CASE(170)
