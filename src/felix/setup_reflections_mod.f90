@@ -253,7 +253,7 @@ MODULE setup_reflections_mod
          END DO
       END DO
     END DO
-IF(my_rank.EQ.0)PRINT*,"total ",knd,"reflections in the pool"
+!DBG    IF(my_rank.EQ.0)PRINT*,"total ",knd,"reflections in the pool"
 
   END SUBROUTINE HKLmake
 
