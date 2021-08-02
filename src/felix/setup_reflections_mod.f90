@@ -173,17 +173,16 @@ MODULE setup_reflections_mod
   !!
   !! Major-Authors: Richard Beanland (2021)
   !!  
-  SUBROUTINE HKLMake(RTol, IErr)   
+  SUBROUTINE HKLMake(RGlimit, IErr)   
     ! This procedure is called once in felixrefine setup
     ! working out from the origin in reciprocal space it fills in Rhkl using reflections
-    ! that are closer to the Ewald sphere than the tolerance
-    ! RTol in reciprocal Angstroms
+    ! that are perpendicular to the z-direction (i.e. in the HOLZ) 
 
     USE MyNumbers
     USE message_mod
     
     ! global output Rhkl, input reciprocal lattice vectors & wave vector
-    USE RPARA, ONLY : Rhkl,RarVecM,RbrVecM,RcrVecM,RElectronWaveVectorMagnitude
+    USE RPARA, ONLY : RzDirC,Rhkl,RarVecM,RbrVecM,RcrVecM,RElectronWaveVectorMagnitude
       
     ! global inputs
     USE SPARA, ONLY : SSpaceGroupName
@@ -192,20 +191,20 @@ MODULE setup_reflections_mod
     
     IMPLICIT NONE
 
-    REAL(RKIND),INTENT(IN) :: RTol   
+    REAL(RKIND),INTENT(IN) :: RGlimit!RTol   
     INTEGER(IKIND) :: IErr, ISel, Ih, Ik, Il, inda,indb,indc, jnda,jndb,jndc, knd,lnd
-    REAL(RKIND) :: RarMag, RbrMag, RcrMag, RGtestMag, RGpluskMag, RGlimit, RShell
-    REAL(RKIND),DIMENSION(ITHREE) :: RGtest, RGplusk, Rk
+    REAL(RKIND) :: RarMag, RbrMag, RcrMag, RGtestMag, RGpluskMag, RShell
+    REAL(RKIND),DIMENSION(ITHREE) :: RGtest!, RGplusk, Rk
     
     !The upper limit for g-vector magnitudes
     !If the g-vectors we are counting are bigger than this there is something wrong
     !probably the tolerance for proximity to the Ewald sphere needs increasing
     !could be an input in felix.inp
-    RGlimit = 20.0*TWOPI  ! reciprocal Angstroms * 2pi
+!    RGlimit = 20.0*TWOPI  ! reciprocal Angstroms * 2pi
     
     !the k-vector for the incident beam
     !we are working in the microscope reference frame so k is along z
-    Rk=(/ 0.0,0.0,RElectronWaveVectorMagnitude /)
+!    Rk=(/ 0.0,0.0,RElectronWaveVectorMagnitude /)
     
     !get the size of the reciprocal lattice basis vectors
     RarMag=SQRT(DOT_PRODUCT(RarVecM,RarVecM))!magnitude of a*
@@ -236,14 +235,17 @@ MODULE setup_reflections_mod
             DO Il=-indc,indc
               !skip if we've already looked at this g
               IF (abs(Ih).GT.jnda .OR. abs(Ik).GT.jndb .OR. abs(Il).GT.jndc) THEN
-                !Make a g-vector hkl and add it to k
-                RGtest=REAL(Ih)*RarVecM+REAL(Ik)*RbrVecM+REAL(Il)*RcrVecM
-                RGtestMag=SQRT(DOT_PRODUCT(RGtest,RGtest))
-                RGplusk=RGtest+Rk
-                !does it satisfy the Laue condition |k+g|=|k| within tolerance?
-                RGpluskMag=SQRT(DOT_PRODUCT(RGplusk,RGplusk))
-                IF (ABS(RGpluskMag-RElectronWaveVectorMagnitude).LT.RTol) THEN
-                  !check that it's allowed by selection rules
+                !Make a g-vector hkl
+                RGtest = (/ REAL(Ih), REAL(Ik), REAL(Il) /)         
+ !               !Make a g-vector hkl and add it to k
+ !               RGtest=REAL(Ih)*RarVecM+REAL(Ik)*RbrVecM+REAL(Il)*RcrVecM
+ !               RGtestMag=SQRT(DOT_PRODUCT(RGtest,RGtest))
+ !               RGplusk=RGtest+Rk
+ !               !does it satisfy the Laue condition |k+g|=|k| within tolerance?
+ !               RGpluskMag=SQRT(DOT_PRODUCT(RGplusk,RGplusk))
+ !               IF (ABS(RGpluskMag-RElectronWaveVectorMagnitude).LT.RTol) THEN
+                 IF (ABS(DOT_PRODUCT(RGtest,RzDirC)).LT.TINY) THEN !it' in the ZOLZ 
+                 !check that it's allowed by selection rules
                   ISel=0
                   CALL SelectionRules(Ih, Ik, Il, ISel, IErr)
                   !add it to the pool and increment the counter

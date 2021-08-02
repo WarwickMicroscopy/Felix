@@ -65,7 +65,7 @@ PROGRAM Felixrefine
         INumFinalReflections,IThicknessIndex,IVariableType,IArrayIndex,&
         IAnisotropicDebyeWallerFactorElementNo,IStartTime,IStartTime2
   INTEGER(4) :: IErr4
-  REAL(RKIND) :: REmphasis,RTol,RLaueZoneGz,RMaxGMag,&
+  REAL(RKIND) :: REmphasis,RGlimit,RLaueZoneGz,RMaxGMag,&
         RPvecMag,RScale,RMaxUgStep,Rdx,RStandardDeviation,RMean,RGzUnitVec,&
         RMinLaueZoneValue,Rdf,RLastFit,RBestFit,RMaxLaueZoneValue,&
         RMaxAcceptanceGVecMag,RandomSign,RLaueZoneElectronWaveVectorMag,&
@@ -211,13 +211,12 @@ PROGRAM Felixrefine
   !?? RB could re-allocate RAtomCoordinate,SAtomName,RIsoDW,ROccupancy,
   !?? IAtomicNumber,IAnisoDW to match INAtomsUnitCell?
 
-  RTol=1.25 
-  
   ! Fill the list of reflections Rhkl (global variable)
   ! NB Rhkl are in INTEGER form [h,k,l] but are REAL to allow dot products etc.
   ALLOCATE(Rhkl(INhkl,ITHREE),STAT=IErr)
   IF(l_alert(IErr,"felixrefine","allocate Rhkl")) CALL abort
-  CALL HKLMake(RTol,IErr)
+  RGlimit = 20.0*TWOPI    
+  CALL HKLMake(RGlimit,IErr)
   IF(l_alert(IErr,"felixrefine","HKLMake")) CALL abort
   CALL message(LL,dbg7,"Rhkl matrix: ",NINT(Rhkl(1:INhkl,:)))
 
