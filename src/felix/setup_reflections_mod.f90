@@ -132,30 +132,30 @@ MODULE setup_reflections_mod
     SELECT CASE(SSpaceGroupName)
 
       CASE("F") !Face Centred, all odd or all even
-      IF( (MOD(Ih+Ik,2).EQ.0).AND.&
+        IF( (MOD(Ih+Ik,2).EQ.0).AND.&
           (MOD(Ik+Il,2).EQ.0).AND.&
           (MOD(Il+Ih,2).EQ.0) ) ISel=1
 
       CASE("I")! Body Centred
-      IF(MOD(Ih+Ik+Il,2).EQ.0) ISel=1
+        IF(MOD(Ih+Ik+Il,2).EQ.0) ISel=1
 
       CASE("A")! A-Face Centred
-      IF(MOD(Ik+Il,2).EQ.0) ISel=1
+        IF(MOD(Ik+Il,2).EQ.0) ISel=1
 
       CASE("B")! B-Face Centred
-      IF(MOD(Ih+Il,2).EQ.0) ISel=1
+        IF(MOD(Ih+Il,2).EQ.0) ISel=1
 
       CASE("C")! C-Face Centred
-      IF(MOD(Ih+Ik,2).EQ.0) ISel=1
+        IF(MOD(Ih+Ik,2).EQ.0) ISel=1
 
       CASE("R")! Rhombohedral Reverse
-      IF(MOD(Ih-Ik+Il,3).EQ.0) ISel=1
+        IF(MOD(Ih-Ik+Il,3).EQ.0) ISel=1
 
       CASE("V")! Rhombohedral Obverse
-      IF(MOD(-Ih+Ik+Il,3).EQ.0) ISel=1
+        IF(MOD(-Ih+Ik+Il,3).EQ.0) ISel=1
 
       CASE("P")! Primitive
-      ISel=1
+        ISel=1
 
       CASE DEFAULT
       IErr=1
@@ -175,8 +175,6 @@ MODULE setup_reflections_mod
   !!  
   SUBROUTINE HKLMake(RGlimit, IErr)   
     ! This procedure is called once in felixrefine setup
-    ! working out from the origin in reciprocal space it fills in Rhkl using reflections
-    ! that are perpendicular to the z-direction (i.e. in the HOLZ) 
 
     USE MyNumbers
     USE message_mod
@@ -194,8 +192,8 @@ MODULE setup_reflections_mod
     REAL(RKIND),INTENT(IN) :: RGlimit!RTol   
     INTEGER(IKIND) :: IErr, ISel, Ih, Ik, Il, inda,indb,indc, jnda,jndb,jndc, knd,lnd
     REAL(RKIND) :: RarMag, RbrMag, RcrMag, RGtestMag, RGpluskMag, RShell
-    REAL(RKIND),DIMENSION(ITHREE) :: RGtest!, RGplusk, Rk
-    
+    REAL(RKIND),DIMENSION(ITHREE) :: RGtestM, RGtest 
+   
     !The upper limit for g-vector magnitudes
     !If the g-vectors we are counting are bigger than this there is something wrong
     !probably the tolerance for proximity to the Ewald sphere needs increasing
@@ -214,37 +212,30 @@ MODULE setup_reflections_mod
     RShell=MINVAL( (/ RarMag,RbrMag,RcrMag /) )
 
     !we work our way out from the origin in shells
-    Rhkl(1,:)=(/ 0.0,0.0,0.0 /)
+    Rhkl(1,:)=(/ 0.0,0.0,0.0 /)! first g is always 000
     knd=1!current number of reflections in the pool 
     lnd=0!current number of times we've expanded the search 
     ! first shell
-    RGtestMag=0.0!we check this against RGlimit
-    !current a*,b*,c* limits
-    inda=1
-    indb=1
-    indc=1
-    !previous a*,b*,c* limits
-    jnda=0
-    jndb=0
-    jndc=0
-    DO WHILE (knd.LT.INhkl.AND.RGtestMag.LE.RGlimit)
+    RGtestMag=0.0
+    !maximum a*,b*,c* limit is determined by the G magnitude limit
+    inda=NINT(RGlimit/RarMag)
+    indb=NINT(RGlimit/RbrMag)
+    indc=NINT(RGlimit/RcrMag)
+    DO WHILE (knd.LT.INhkl .AND. REAL(lnd)*RShell.LT.RGlimit)
       lnd=lnd+1
-!dbg IF(my_rank.EQ.0)PRINT*,lnd
+!DBG    IF(my_rank.EQ.0)PRINT*,REAL(lnd-1)*RShell,"to",REAL(lnd)*RShell
       DO Ih=-inda,inda
          DO Ik=-indb,indb
             DO Il=-indc,indc
-              !skip if we've already looked at this g
-              IF (abs(Ih).GT.jnda .OR. abs(Ik).GT.jndb .OR. abs(Il).GT.jndc) THEN
-                !Make a g-vector hkl
-                RGtest = (/ REAL(Ih), REAL(Ik), REAL(Il) /)         
- !               !Make a g-vector hkl and add it to k
- !               RGtest=REAL(Ih)*RarVecM+REAL(Ik)*RbrVecM+REAL(Il)*RcrVecM
- !               RGtestMag=SQRT(DOT_PRODUCT(RGtest,RGtest))
- !               RGplusk=RGtest+Rk
- !               !does it satisfy the Laue condition |k+g|=|k| within tolerance?
- !               RGpluskMag=SQRT(DOT_PRODUCT(RGplusk,RGplusk))
- !               IF (ABS(RGpluskMag-RElectronWaveVectorMagnitude).LT.RTol) THEN
-                 IF (ABS(DOT_PRODUCT(RGtest,RzDirC)).LT.TINY) THEN !it' in the ZOLZ 
+              !Make a g-vector hkl
+              RGtest=REAL( (/ Ih,Ik,Il /),RKIND )
+              RGtestM=REAL(Ih)*RarVecM+REAL(Ik)*RbrVecM+REAL(Il)*RcrVecM
+              RGtestMag=SQRT(DOT_PRODUCT(RGtestM,RGtestM))
+              !is it in the shell
+              IF (RGtestMag.GT.REAL(lnd-1)*RShell.AND.RGtestMag.LE.REAL(lnd)*RShell) THEN
+!DBG    IF(my_rank.EQ.0)PRINT*,NINT(RGtest),RGtestMag
+!DBG    IF(my_rank.EQ.0)PRINT*,"in shell",lnd
+                IF (ABS(DOT_PRODUCT(RGtest,RzDirC)).LT.TINY) THEN !it's in the ZOLZ 
                  !check that it's allowed by selection rules
                   ISel=0
                   CALL SelectionRules(Ih, Ik, Il, ISel, IErr)
@@ -253,25 +244,16 @@ MODULE setup_reflections_mod
                   !kick in until we finish the do loops
                   IF (ISel.EQ.1 .AND. knd.LT.INhkl) THEN
                     knd=knd+1
-                    Rhkl(knd,:)=REAL((/ Ih,Ik,Il /),RKIND)
-!dbg IF(my_rank.EQ.0)PRINT*,Ih,Ik,Il,RGpluskMag-RElectronWaveVectorMagnitude,RGtestMag
+                    Rhkl(knd,:)=RGtest
+!DBG    IF(my_rank.EQ.0)PRINT*,NINT(Rhkl(knd,:)),-Ih+Ik+Il
                   END IF
                 END IF
               END IF
             END DO
          END DO
       END DO
-      !expand the range for the next shell
-      !update the limits of the previous shell
-      jnda=inda
-      jndb=indb
-      jndc=indc
-      !limits for the next shell
-      inda=NINT(REAL(lnd)*RarMag/RShell)
-      indb=NINT(REAL(lnd)*RbrMag/RShell)
-      indc=NINT(REAL(lnd)*RcrMag/RShell)
     END DO
-!dbg IF(my_rank.EQ.0)PRINT*,"total ",knd,"reflections in the pool"
+IF(my_rank.EQ.0)PRINT*,"total ",knd,"reflections in the pool"
 
   END SUBROUTINE HKLmake
 

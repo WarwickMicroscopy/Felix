@@ -215,7 +215,7 @@ PROGRAM Felixrefine
   ! NB Rhkl are in INTEGER form [h,k,l] but are REAL to allow dot products etc.
   ALLOCATE(Rhkl(INhkl,ITHREE),STAT=IErr)
   IF(l_alert(IErr,"felixrefine","allocate Rhkl")) CALL abort
-  RGlimit = 20.0*TWOPI    
+  RGlimit = 10.0*TWOPI    
   CALL HKLMake(RGlimit,IErr)
   IF(l_alert(IErr,"felixrefine","HKLMake")) CALL abort
   CALL message(LL,dbg7,"Rhkl matrix: ",NINT(Rhkl(1:INhkl,:)))

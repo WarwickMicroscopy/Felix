@@ -438,12 +438,12 @@ MODULE read_files_mod
       INQUIRE(FILE=TRIM(SFilePath) ,EXIST=LFileExist)
       IF(LFileExist) THEN
         IFound=1
-        !IF (my_rank.EQ.0) PRINT*,"Found experimental image with filepath =",TRIM(SFilePath)
-        CALL message(LM, "Found initial experimental image with filepath =",TRIM(SFilePath) )
+        !IF (my_rank.EQ.0) PRINT*,"Found experimental image with filepath ",TRIM(SFilePath)
+        CALL message(LM, "Found initial experimental image with filepath ",TRIM(SFilePath) )
         EXIT
       ELSE
-        !IF (my_rank.EQ.0) PRINT*,"Did not find experimental image with filepath =",TRIM(SFilePath)
-        CALL message(LM, "Did not find initial experimental image with filepath =",TRIM(SFilePath) )
+        !IF (my_rank.EQ.0) PRINT*,"Did not find experimental image with filepath ",TRIM(SFilePath)
+        CALL message(LM, "Did not find initial experimental image with filepath ",TRIM(SFilePath) )
       END IF    
     END DO
     ! NB once a file is found, the above do-loop is exited and the variables IFileTypeID, SFilePath and
@@ -486,6 +486,7 @@ MODULE read_files_mod
 
         CASE(2,4) ! .dm3
           ! read in .dm3
+          !IF (my_rank.EQ.0) PRINT*,"Reading ",TRIM(SFilePath)
           CALL ReadDM3TagsAndImage( SFilePath, 2*IPixelCount, 2*IPixelCount, IErr, RImage4ByteFloatDM3 )
           IF(l_alert(IErr,"ReadExperimentalImages",&
                 "ReadDM3TagsAndImage() where SFilePath="//TRIM(SFilePath))) RETURN
