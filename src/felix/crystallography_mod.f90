@@ -351,7 +351,7 @@ MODULE crystallography_mod
     DO ind=1,INAtomsUnitCell    
       CALL message( LL, dbg7, "Atom ",ind)
       WRITE(SPrintString,"(A18,F8.4,F8.4,F8.4)") ": Atom position = ", RAtomPosition(ind,:)
-      !IF (my_rank.EQ.0) PRINT*, SAtomName(ind)//SPrintString
+!DBG      IF (my_rank.EQ.0) PRINT*, SAtomName(ind)//SPrintString
       CALL message( LL, dbg7, SAtomName(ind)//SPrintString )
       CALL message( LL, dbg7, "(DWF, occupancy) = ",(/ RIsoDW(ind), ROccupancy(ind) /) )
     END DO

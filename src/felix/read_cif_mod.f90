@@ -100,6 +100,7 @@ MODULE read_cif_mod
     CHARACTER(2)   rs
     CHARACTER(1)   slash
     CHARACTER(1)   SAtomChar2
+    CHARACTER(40)  Stext
     REAL(RKIND),DIMENSION(:),ALLOCATABLE :: RPrint
     REAL          cela,celb,celc,siga,sigb,sigc
     REAL          x,y,z,u,su,sx,sy,sz,B,sB,sOcc,Uso,suso,Occ
@@ -394,15 +395,29 @@ MODULE read_cif_mod
 
     ! count how many symmetry elements
     ISymCount=0
+    Stext = '_symmetry_equiv_pos_as_xyz'
     DO 
-      f1 = char_('_symmetry_equiv_pos_as_xyz', name)
+      f1 = char_(Stext, name)
       DO 
         f2 = char_(name, line)
-        ISymCount=ISymCount+1
         IF(text_ .NEQV. .TRUE.) EXIT
+        ISymCount=ISymCount+1
       END DO
       IF(loop_ .NEQV. .TRUE.) EXIT
     END DO
+    ! alternative text
+    IF (ISymCount.EQ.0) THEN
+      Stext = '_space_group_symop_operation_xyz'
+      DO
+        f1 = char_(Stext, name)
+        DO
+          f2 = char_(name, line)
+          ISymCount=ISymCount+1
+          IF(text_ .NEQV. .TRUE.) EXIT
+        END DO
+        IF(loop_ .NEQV. .TRUE.) EXIT
+      END DO
+    END IF
 
     ALLOCATE(SSymString(ISymCount),STAT=IErr)
     ALLOCATE(RSymMat(ISymCount,ITHREE,ITHREE),STAT=IErr)
@@ -415,7 +430,7 @@ MODULE read_cif_mod
     ! Fill the symmetry matrix
     ISymCount=0
     DO 
-      f1 = char_('_symmetry_equiv_pos_as_xyz', name)
+      f1 = char_(Stext, name)
       DO
         ISymCount=ISymCount+1
         f2 = char_(name, line)
