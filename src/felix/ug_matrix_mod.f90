@@ -638,12 +638,12 @@ MODULE ug_matrix_mod
         END DO
       END DO
       DEALLOCATE (RgSumMat)
-      WRITE(SPrintString,FMT='(I5,A25)') Iuid," unique structure factors"
+      WRITE(SPrintString,FMT='(I6,A25)') Iuid," unique structure factors"
       SPrintString=TRIM(ADJUSTL(SPrintString))
       CALL message ( LS, SPrintString )
       CALL message ( LM, dbg3, "hkl: symmetry matrix" )
       DO ind =1,40
-        WRITE(SPrintString,FMT='(3(I3,1X),A2,1X,16(I4,1X))') NINT(Rhkl(ind,:)),": ",ISymmetryRelations(ind,1:16)
+        WRITE(SPrintString,FMT='(3(I4,1X),A2,1X,16(I4,1X))') NINT(Rhkl(ind,:)),": ",ISymmetryRelations(ind,1:16)
         CALL message ( LM,dbg3, SPrintString )
       END DO
 
