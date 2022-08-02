@@ -15,7 +15,7 @@ IAnisoDebyeWallerFlag     = 0
 IByteSize                 = 2
 
 # radius of the beam in pixels
-IPixelCount               = 58
+IPixelCount               = 64
 
 # beam selection criteria
 IMinReflectionPool        = 1200
