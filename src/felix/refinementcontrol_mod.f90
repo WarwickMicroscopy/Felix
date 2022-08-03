@@ -233,7 +233,6 @@ MODULE refinementcontrol_mod
       CALL BlochCoefficientCalculation(ind,jnd,knd,ILocalPixelCountMin,IErr)
       IF(l_alert(IErr,"Simulate","BlochCoefficientCalculation")) RETURN
     END DO
-
     !===================================== ! MPI gatherv into RSimulatedPatterns
     CALL MPI_GATHERV(RIndividualReflections,SIZE(RIndividualReflections),MPI_DOUBLE_PRECISION,&
          RSimulatedPatterns,ICount,IDisplacements,MPI_DOUBLE_PRECISION,&
