@@ -221,6 +221,8 @@ MODULE refinementcontrol_mod
     INTEGER(IKIND) :: IErr, ind,jnd,knd,pnd,IIterationFLAG
 !    REAL(RKIND),DIMENSION(:,:),ALLOCATABLE :: RTempImage 
 
+	REAL, ALLOCATABLE :: RIntensityVector(:)
+
     ! Reset simuation   
     RIndividualReflections = ZERO
 
@@ -233,6 +235,9 @@ MODULE refinementcontrol_mod
       CALL BlochCoefficientCalculation(ind,jnd,knd,ILocalPixelCountMin,IErr)
       IF(l_alert(IErr,"Simulate","BlochCoefficientCalculation")) RETURN
     END DO
+	
+	CALL AngleCorrection(IErr, RIntensityVector)
+	
     !===================================== ! MPI gatherv into RSimulatedPatterns
     CALL MPI_GATHERV(RIndividualReflections,SIZE(RIndividualReflections),MPI_DOUBLE_PRECISION,&
          RSimulatedPatterns,ICount,IDisplacements,MPI_DOUBLE_PRECISION,&

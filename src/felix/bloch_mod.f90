@@ -36,7 +36,7 @@
 MODULE bloch_mod
   IMPLICIT NONE
   PRIVATE
-  PUBLIC :: BlochCoefficientCalculation
+  PUBLIC :: BlochCoefficientCalculation, AngleCorrection
 
   CONTAINS
 
@@ -672,6 +672,221 @@ MODULE bloch_mod
     RETURN
 
   END SUBROUTINE INVERT
+  
+  SUBROUTINE AngleCorrection(IErr, RIntensity_vector)
+
+	!! Subroutine-Description:
+	!! Accounts for the possibility that the incident electron beam is not parallel to the surface normal of the specimen.
+	!! Proceeds to calculate the resulting wavefunction and the diffracted intensities from the beam
+
+	!! Finds the structure matrix that accounts for absorption and the angle of the beam
+	!! Finds the eigenvalues and eigenvectors of structure matrix
+	!! Forms the scattering matrix
+	!! Finds diffracted intensities from scattering matrix.
+	!! Based off "Structure refinement using precession electron diffraction tomography
+	!! and dynamical diffraction: theory and implementation" By Lukas Palatinus(2015)
+
+
+
+	! Import modules and global variables
+	
+	USE MyNumbers
+	USE MyMPI
+	USE message_mod
+	USE BlochPara, ONLY : RTiltedK
+	USE RPara, ONLY : RNormDirM, RgDotNorm, RMeanInnerPotential, RgMatrix
+	USE IPara, ONLY : nBeams ! nBeams after strong and weak beam determination
+	USE CPara, ONLY : CUgMat ! This gives Ug matrix with absorption
+	!USE MyFFTW ! Not required as dealing with diffracted intensities
+	
+	IMPLICIT NONE
+	
+	! Imports external functions
+
+	! Define local variables
+	
+	REAL :: RKn, RThickness, RElement(nBeams), &
+			RMmatrix(nBeams, nBeams)
+			
+	REAL, INTENT(OUT) :: RIntensity_vector(nBeams)
+	
+	!REAL, INTENT(OUT) :: RIntensity_vector_alt(nBeams)
+	
+	COMPLEX :: CStructureMatrix(nBeams, nBeams), CDiagonal_element(nBeams), &
+			   CElement_off(nBeams), CEigenvector_matrix(nBeams, nBeams), &
+			   CInitial_wavefunction(nBeams), CInverted_vectors(nBeams, nBeams), &
+			   CWeighting_Coefficients(nBeams), CScatter_matrix(nBeams, nBeams), &
+			   CAlt_scatter_matrix(nBeams, nBeams), CFinal_wavefunction_z(nBeams), &
+			   CFinal_wavefunction(nBeams), CDummy_eigenvector(nBeams, nBeams), &
+			   CInverted_M(nBeams, nBeams), CDummy_Mmatrix(nBeams, nBeams), &
+			   CEigenvalues(nBeams), CEigenvalue_matrix(nBeams, nBeams), &
+			   CFinal_wavefunction_alt(nBeams)
+	
+	COMPLEX :: CK, CKg
+
+	INTEGER :: ind, jnd, IErr
+	
+	! Calculates components of g vectors and K vector along surface normal vector
+	
+	! First K vector
+	RKn = DOT_PRODUCT(RTiltedK, RNormDirM)
+	IF(l_alert(IErr,"angle_correction","components, K component")) CALL abort
+	
+	! gVectors dotted with normal vector are contained in RgDotNorm, as array
+	
+	
+	
+	! Next calculate the new structure matrix from Ug matrix, accounting for absorption
+	! Finding off and on diagonal elements of structure matrix
+	! First loop iterates over row
+	! Second loop over columns
+	CK = (DOT_PRODUCT(RTiltedK, RTiltedK) + RMeanInnerPotential)**0.5 ! This is mod of K, in sample, RMeanInnerPotential is U0
+	DO ind = 1, nBeams
+		DO jnd = 1, nBeams
+			CKg = (DOT_PRODUCT(CK + RgMatrix(3, ind, :), CK + RgMatrix(3, ind, :)))**0.5 ! This is mod of K + g
+			IF (ind == jnd) THEN
+				! On diagonal elements
+				CDiagonal_element(ind) = (CK**2 - CKg**2)/(1 + RgDotNorm(ind)/RKn)**0.5
+				CStructureMatrix(ind, ind) = CDiagonal_element(ind)
+			ELSE
+				! Off diagonal elements
+				CElement_off(ind) = (CUgMat(ind, jnd))/(((1 + (RgDotNorm(ind))/(RKn))**0.5) * ((1 + (RgDotNorm(jnd))/(RKn))**0.5)) ! Perhaps should be CElement_off(jnd)?
+				CStructureMatrix(ind, jnd) = CElement_off(ind)
+			END IF
+		END DO
+	END DO
+	
+	IF(l_alert(IErr,"angle_correction","structure_matrix")) CALL abort
+	
+	
+	! Now find eigenvalues and eigenvectors of new structure matrix, so as to create scatter matrices
+	! Matrices are hermitian, so eigenvalues are real
+	! All matrices are square
+	
+	CALL EigenSpectrum(nBeams, CStructureMatrix, CEigenvalues, CEigenvector_matrix, IErr)
+	IF(l_alert(IErr,"angle_correction","eigen_structure_matrix, eigenvectors/values")) CALL abort
+	
+	! Form matrix of eigenvalues, with exponent, thickness, K component, along diagonal
+	DO ind = 1, nBeams
+		CEigenvalue_matrix(ind, ind) = EXP((((TWOPI * CIMAGONE * RThickness)/ (2 * RKn))) * CEigenvalues(ind))
+	END DO
+	
+	
+	! Next form the M matrix for calculating the scattering matrix
+	! This diagonal matrix takes into account the orientation of incident beam compared to surface normal
+	! See equation (5) in Palatinus
+	! Becomes identity matrix if g vectors are parallel to surface of crystal(dot product goes to 0)
+	! Scattering matrix then becomes same as Kirkland
+	
+	
+	! Calculates each element on diagonal and inputs to matrix
+	DO ind = 1, nBeams
+		RElement(ind) = 1/((1 + (RgDotNorm(ind)/RKn))**0.5)
+		RMmatrix(ind, ind) = RElement(ind)
+	END DO
+	
+	IF(l_alert(IErr,"angle_correction","M_matrix_formation, form matrix")) CALL abort
+	
+	
+	! Determining weighting coefficients for bloch waves
+	! Takes eigenvectors matrix
+	! Inverts it
+	! Weighting coefficients can then be found from
+	! Product of matrix and initial conditions on wavefunction
+	
+	
+	! Boundary conditions on surface of sample
+	! These particular conditions are only valid for singular incident plane wave
+	CInitial_wavefunction = CZERO ! All diffracted beams are zero
+	CInitial_wavefunction(1) = CONE ! 000 beam has unit amplitude
+	
+	! Invert matrix of eignvectors
+	CDummy_eigenvector = CEigenvector_matrix
+	CALL INVERT(nBeams, CDummy_eigenvector, CInverted_vectors, IErr)
+	IF(l_alert(IErr,"angle_correction","weighting_coefficients, inverted_vectors")) CALL abort
+	
+	! Finds weighting coefficients
+	CWeighting_Coefficients = MATMUL(CInverted_vectors, CInitial_wavefunction)
+	IF(l_alert(IErr,"angle_correction","weighting_coefficients, alpha")) CALL abort
+	
+	
+	
+	! Compute scattering matrix from the eigenvalue, eignvector and M matrix
+	
+	! Eigenvector and M matrix need to be inverted for scattering matrix
+	
+	! First eigenvector matrix
+	CDummy_eigenvector = CEigenvector_matrix
+	CALL INVERT(nBeams, CDummy_eigenvector, CInverted_vectors, IErr)
+	IF(l_alert(IErr,"angle_correction","scattering_matrix, inverted_eigenvectors")) CALL abort
+	
+	! Now M matrix
+	CDummy_Mmatrix = RMmatrix
+	CALL INVERT(nBeams, CDummy_Mmatrix, CInverted_M, IErr)
+	IF(l_alert(IErr,"angle_correction","scattering_matrix, inverted_M")) CALL abort
+	
+	!Calculating scattering matrix
+	CScatter_matrix = MATMUL(MATMUL(MATMUL(RMmatrix, CEigenvector_matrix), &
+					  CEigenvalue_matrix), MATMUL(CInverted_vectors, CInverted_M))
+	IF(l_alert(IErr,"angle_correction","scattering_matrix, scattering")) CALL abort
+	
+	!!!! Alternative Scattering matrix that operates on weighting coefficients instead of boundary conditions
+	
+	! Forming alternative scatter matrix
+	CAlt_scatter_matrix = MATMUL(RMmatrix, MATMUL(CEigenvector_matrix, &
+									MATMUL(CEigenvalue_matrix, &
+									MATMUL(MATMUL(CInverted_vectors, CInverted_M), &
+									CEigenvector_matrix))))
+	IF(l_alert(IErr,"angle_correction","scattering_matrix, alt_scattering")) CALL abort
+	
+	
+	! Now find the diffracted intensities from scattering matrices
+	
+	! 2 Methods can be used here
+	! Calculates wavefunction column vector from
+	! Product of scattering matrix and wavefunction on surface(boundary condition)
+	! Take column vector of wavefunction
+	! Inverse fourier transform of wavefunction to get in terms of all space
+	! Get intensity from modulus squared of each element
+	! Or use the weighting coefficients for bloch waves
+	
+	! Boundary conditions on surface of sample
+	! These particular conditions are only valid for single incident plane wave
+	CInitial_wavefunction = CZERO ! All diffracted beams are zero
+	CInitial_wavefunction(1) = CONE ! 000 beam has amplitude of unity
+	
+	! First find wavefunction at any thickness in specimen, psi(z).
+	CFinal_wavefunction_z = MATMUL(CScatter_matrix, CInitial_wavefunction)
+	IF(l_alert(IErr,"angle_correction","diffracted_intensities, final_wavefunction_z")) CALL abort
+	
+	! Now need to find total wavefunction as a function of all space
+	! Do inverse fourier transform on CFinal_wavefunction_z
+	!CALL fftw_plan_dft_c2r_1d(2, CFinal_wavefunction_z, CFinal_wavefunction, |)
+	IF(l_alert(IErr,"angle_correction","diffracted_intensities, final_wavefunction")) CALL abort
+	
+	! Modulus squared of each element of final wavefunction for intensity
+	RIntensity_vector = CFinal_wavefunction_z * CONJG(CFinal_wavefunction_z)
+	
+	IF(l_alert(IErr,"angle_correction","diffracted_intensities, RIntensity_vector")) CALL abort
+	
+	!!!! Alternative way to find wavefunction, using alternate scatter matrix
+	!!!! can be used to check values.
+	!!!! Will need to be checked
+	
+	! ! Wavefunction at any thickness, psi(z)
+	! CFinal_wavefunction_z = MATMUL(CAlt_scatter_matrix, CWeighting_Coefficients)
+	
+	! ! Total wavefunction is then found from inverse fourier transform
+	! CALL fftw_plan_dft_c2r_1d(2, CFinal_wavefunction_z, CFinal_wavefunction_alt, |)
+	! IF(l_alert(IErr,"angle_correction","diffracted_intensities, alt_final_wavefunction")) CALL abort
+	
+	! ! Modulus squared of each element of final wavefunction for intensity
+	! RIntensity_vector_alt = CFinal_wavefunction_alt * CONJG(CFinal_wavefunction_alt)
+	
+	RETURN
+
+  END SUBROUTINE AngleCorrection
+  
 
 END MODULE bloch_mod
                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                     
