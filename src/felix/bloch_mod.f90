@@ -691,17 +691,15 @@ MODULE bloch_mod
 	! Import modules and global variables
 	
 	USE MyNumbers
-	USE MyMPI
 	USE message_mod
+	USE MyMPI
+
 	USE BlochPara, ONLY : RTiltedK
 	USE RPara, ONLY : RNormDirM, RgDotNorm, RMeanInnerPotential, RgMatrix
 	USE IPara, ONLY : nBeams ! nBeams after strong and weak beam determination
 	USE CPara, ONLY : CUgMat ! This gives Ug matrix with absorption
-	!USE MyFFTW ! Not required as dealing with diffracted intensities
 	
 	IMPLICIT NONE
-	
-	! Imports external functions
 
 	! Define local variables
 	
@@ -733,8 +731,6 @@ MODULE bloch_mod
 	IF(l_alert(IErr,"angle_correction","components, K component")) CALL abort
 	
 	! gVectors dotted with normal vector are contained in RgDotNorm, as array
-	
-	
 	
 	! Next calculate the new structure matrix from Ug matrix, accounting for absorption
 	! Finding off and on diagonal elements of structure matrix
@@ -886,7 +882,6 @@ MODULE bloch_mod
 	RETURN
 
   END SUBROUTINE AngleCorrection
-  
 
 END MODULE bloch_mod
                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                     

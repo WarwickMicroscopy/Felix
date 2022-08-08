@@ -40,7 +40,8 @@ MODULE refinementcontrol_mod
   PUBLIC :: SimulateAndFit, Simulate, FigureOfMeritAndThickness
 
   CONTAINS
-
+  
+  
   !>
   !! Procedure-description:
   !!
@@ -214,15 +215,15 @@ MODULE refinementcontrol_mod
     !global inputs
     USE RPARA, ONLY : RBlurRadius
     USE IPARA, ONLY : ICount,IDisplacements,ILocalPixelCountMax,INoOfLacbedPatterns,&
-          ILocalPixelCountMin,IPixelLocations,IPixelCount,IThicknessCount
+          ILocalPixelCountMin,IPixelLocations,IPixelCount,IThicknessCount, InBeams
 
     IMPLICIT NONE
 
     INTEGER(IKIND) :: IErr, ind,jnd,knd,pnd,IIterationFLAG
 !    REAL(RKIND),DIMENSION(:,:),ALLOCATABLE :: RTempImage 
 
-	REAL, ALLOCATABLE :: RIntensityVector(:)
-
+	REAL, ALLOCATABLE :: RIntensityVector(:) ! Output from AngleCorrection()
+	
     ! Reset simuation   
     RIndividualReflections = ZERO
 
@@ -235,6 +236,8 @@ MODULE refinementcontrol_mod
       CALL BlochCoefficientCalculation(ind,jnd,knd,ILocalPixelCountMin,IErr)
       IF(l_alert(IErr,"Simulate","BlochCoefficientCalculation")) RETURN
     END DO
+	
+	! ALLOCATE(RIntensityVector(InBeams), STAT = IErr)
 	
 	CALL AngleCorrection(IErr, RIntensityVector)
 	
