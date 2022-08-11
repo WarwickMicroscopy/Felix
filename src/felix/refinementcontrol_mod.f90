@@ -215,14 +215,13 @@ MODULE refinementcontrol_mod
     !global inputs
     USE RPARA, ONLY : RBlurRadius
     USE IPARA, ONLY : ICount,IDisplacements,ILocalPixelCountMax,INoOfLacbedPatterns,&
-          ILocalPixelCountMin,IPixelLocations,IPixelCount,IThicknessCount, InBeams
+          ILocalPixelCountMin,IPixelLocations,IPixelCount,IThicknessCount, nBeams
 
     IMPLICIT NONE
 
     INTEGER(IKIND) :: IErr, ind,jnd,knd,pnd,IIterationFLAG
 !    REAL(RKIND),DIMENSION(:,:),ALLOCATABLE :: RTempImage 
-
-	REAL, ALLOCATABLE :: RIntensityVector(:) ! Output from AngleCorrection()
+	REAL(RKIND) :: RKn,RThickness
 	
     ! Reset simuation   
     RIndividualReflections = ZERO
@@ -233,13 +232,9 @@ MODULE refinementcontrol_mod
       jnd = IPixelLocations(knd,1)
       ind = IPixelLocations(knd,2)
       ! fills array for each pixel number not x & y coordinates
-      CALL BlochCoefficientCalculation(ind,jnd,knd,ILocalPixelCountMin,IErr)
+      CALL BlochCoefficientCalculation(ind,jnd,knd,ILocalPixelCountMin, nBeams, RThickness,RKn, IErr)
       IF(l_alert(IErr,"Simulate","BlochCoefficientCalculation")) RETURN
     END DO
-	
-	! ALLOCATE(RIntensityVector(InBeams), STAT = IErr)
-	
-	CALL AngleCorrection(IErr, RIntensityVector)
 	
     !===================================== ! MPI gatherv into RSimulatedPatterns
     CALL MPI_GATHERV(RIndividualReflections,SIZE(RIndividualReflections),MPI_DOUBLE_PRECISION,&
