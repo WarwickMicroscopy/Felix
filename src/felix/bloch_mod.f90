@@ -66,7 +66,7 @@ MODULE bloch_mod
                       RgPoolMag,Rhkl
     USE IPara, ONLY : IHolzFLAG,IMinStrongBeams,IMinWeakBeams,&
                       INoOfLacbedPatterns,IPixelCount,IThicknessCount,INhkl,&
-                      IOutputReflections,IBlochMethodFLAG
+                      IOutputReflections
     USE BlochPara, ONLY : RBigK            
     USE SPARA, ONLY : SPrintString
     
