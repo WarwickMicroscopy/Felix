@@ -56,7 +56,7 @@ MODULE read_files_mod
           IAbsorbFLAG, IAnisoDebyeWallerFactorFlag, IByteSize, INhkl, &
           IMinStrongBeams, IMinWeakBeams, ISimFLAG, IRefineMode, &
           IWeightingFLAG, IRefineMethodFLAG, ICorrelationFLAG, IImageProcessingFLAG, &
-          INoofUgs, IPrint, IPixelCount, IBlochMethodFLAG
+          INoofUgs, IPrint, IPixelCount
     USE RPARA, ONLY : RDebyeWallerConstant, RAbsorptionPercentage, RConvergenceAngle, &
           RZDirC, RXDirC, RNormDirC, RAcceleratingVoltage, RAcceptanceAngle, &
           RInitialThickness, RFinalThickness, RDeltaThickness, RBlurRadius, &
@@ -100,9 +100,6 @@ MODULE read_files_mod
     ! IScatterFactorMethodFLAG
     ILine= ILine+1; READ(IChInp,'(27X,I15.1)',ERR=20,END=30) IScatterFactorMethodFLAG
     CALL message ( LXL, dbg7, "IScatterFactorMethodFLAG=",IScatterFactorMethodFLAG )
-    ! IBlochMethodFLAG
-    ILine= ILine+1; READ(IChInp,'(27X,I15.1)',ERR=20,END=30) IBlochMethodFLAG
-    CALL message ( LXL, dbg7, "IScatterFactorMethodFLAG=",IBlochMethodFLAG )
     ! IMaskFLAG
     ILine= ILine+1; READ(IChInp,'(27X,I15.1)',ERR=20,END=30) IMaskFLAG
     CALL message ( LXL, dbg3, "IMaskFLAG=",IMaskFLAG)

@@ -7,7 +7,6 @@
 IWriteFLAG                = 1
 IImageFLAG                = 1
 IScatterFactorMethodFLAG  = 0
-IBlochMethodFLAG          = 0
 IMaskFLAG                 = 1
 IHolzFLAG                 = 0
 IAbsorbFLAG               = 2
