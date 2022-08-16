@@ -55,7 +55,7 @@ MODULE bloch_mod
     USE MyMPI
     USE message_mod
     
-    USE test_koch_mod
+
   
     ! globals - output
     USE RPara, ONLY : RIndividualReflections ! RIndividualReflections( LACBED_ID, thickness_ID, local_pixel_ID )
@@ -68,7 +68,7 @@ MODULE bloch_mod
                       RgPoolMag,Rhkl,RgMatrix,RMeanInnerPotential
     USE IPara, ONLY : IHolzFLAG,IMinStrongBeams,IMinWeakBeams,&
                       INoOfLacbedPatterns,IPixelCount,IThicknessCount,INhkl,&
-                      IOutputReflections,IBlochMethodFLAG
+                      IOutputReflections
     USE BlochPara, ONLY : RBigK            
     USE SPARA, ONLY : SPrintString
 	USE RPARA, ONLY : RgDotNorm ! Required for strucutre matrix
