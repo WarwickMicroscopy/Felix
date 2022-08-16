@@ -327,7 +327,7 @@ MODULE read_cif_mod
       IF(IBasisAtomicNumber(ind).EQ.104) IBasisAtomicNumber(ind)=1
       IF (IBasisAtomicNumber(ind).EQ.0) THEN
         WRITE(SPrintString,'(A,I0,A,A)') &
-              "Could not find Z for atom",ind,"with symbol",SBasisAtomName(ind)
+              "Could not find Z for atom", ind ,"with symbol", SBasisAtomName(ind)
         IErr=1
         IF(l_alert(IErr,"ReadCif",SPrintString)) RETURN
       END IF
@@ -394,30 +394,21 @@ MODULE read_cif_mod
 !    END DO
 
     ! count how many symmetry elements
-    ISymCount=0
+    ISymCount=1 ! we assume that ONE of the below will work
     Stext = '_symmetry_equiv_pos_as_xyz'
+	f1 = char_(Stext, name)
+    IF (name.EQ."") THEN
+      Stext = '_space_group_symop_operation_xyz'        
+    END IF
     DO 
       f1 = char_(Stext, name)
       DO 
         f2 = char_(name, line)
+        IF(text_ .NEQV. .TRUE.) EXIT
         ISymCount=ISymCount+1
-		IF(text_ .NEQV. .TRUE.) EXIT
       END DO
       IF(loop_ .NEQV. .TRUE.) EXIT
     END DO
-    ! alternative text
-    IF (ISymCount.EQ.0) THEN
-      Stext = '_space_group_symop_operation_xyz'
-      DO
-        f1 = char_(Stext, name)
-        DO
-          f2 = char_(name, line)
-          ISymCount=ISymCount+1
-          IF(text_ .NEQV. .TRUE.) EXIT
-        END DO
-        IF(loop_ .NEQV. .TRUE.) EXIT
-      END DO
-    END IF
 
     ALLOCATE(SSymString(ISymCount),STAT=IErr)
     ALLOCATE(RSymMat(ISymCount,ITHREE,ITHREE),STAT=IErr)
