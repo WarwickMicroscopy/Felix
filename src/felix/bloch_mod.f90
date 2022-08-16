@@ -54,8 +54,6 @@ MODULE bloch_mod
     USE MyNumbers
     USE MyMPI
     USE message_mod
-    
-
   
     ! globals - output
     USE RPara, ONLY : RIndividualReflections ! RIndividualReflections( LACBED_ID, thickness_ID, local_pixel_ID )
@@ -99,13 +97,7 @@ MODULE bloch_mod
 	COMPLEX(CKIND), DIMENSION(:,:), ALLOCATABLE :: CStructureMatrix
     CHARACTER*40 surname
     CHARACTER*100 SindString,SjndString,SPixelCount,SnBeams,SWeakBeamIndex
-     
-	 
-	 
-	 
-	 
-	 
-	 
+    
     IErr=0
     ! we are inside the mask
     IPixelComputed= IPixelComputed + 1
@@ -186,21 +178,12 @@ MODULE bloch_mod
 	ALLOCATE( CStructureMatrix(nBeams, nBeams), STAT = IErr)
     IF(l_alert(IErr,"BlochCoefficientCalculation","allocations")) RETURN
 
-
-
-
-
-
-
-
-
     ! compute the effective Ug matrix by selecting only those beams
     ! for which IStrongBeamList has an entry
     CBeamProjectionMatrix= CZERO
     DO knd=1,nBeams
       CBeamProjectionMatrix(knd,IStrongBeamList(knd))=CONE
     ENDDO
-
 
     CUgSgMatrix = CZERO
     CBeamTranspose=TRANSPOSE(CBeamProjectionMatrix)
@@ -275,16 +258,6 @@ MODULE bloch_mod
     ! diagonalize the UgMatEffective
     !--------------------------------------------------------------------
 
-
-
-
-
-
-
-
-
-
-
     CALL EigenSpectrum(nBeams,CStructureMatrix,CEigenValues(:),CEigenVectors(:,:),IErr)
     IF(l_alert(IErr,"BlochCoefficientCalculation","EigenSpectrum()")) RETURN
     ! NB destroys CUgSgMatrix
@@ -320,74 +293,6 @@ MODULE bloch_mod
                     INhkl,nBeams,IStrongBeamList,CEigenVectors,CInvertedEigenVectors,CEigenValues,IErr)
       IF(l_alert(IErr,"BlochCoefficientCalculation","CreateWaveFunctions")) RETURN
 
-      
-	  
-	  
-	  
-	  
-	  
-	  
-	  
-	  
-	  
-	  
-	  
-	  
-	  
-	  
-	  
-	  
-	  
-	  
-	  
-	  
-	  
-	  
-	  
-	  
-	  
-	  
-	  
-	  
-	  
-	  
-	  
-	  
-	  
-	  
-	  
-	  
-	  
-	  
-	  
-	  
-	  
-	  
-	  
-	  
-	  
-	  
-	  
-	  
-	  
-	  
-	  
-	  
-	  
-	  
-	  
-	  
-	  
-	  
-	  
-	  
-	  
-	  
-	  
-	  
-	  
-	  
-
       ! Collect Intensities from all thickness for later writing
       ! Output without felix.hkl input disabled
       !IF(IHKLSelectFLAG.EQ.0) THEN ! we are not using hkl list from felix.hkl
@@ -402,7 +307,6 @@ MODULE bloch_mod
         END DO
       !END IF
     END DO
-
 
     ! DEALLOCATE eigen problem memory
     DEALLOCATE(CUgSgMatrix,CBeamTranspose, CUgMatPartial, &
