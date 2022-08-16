@@ -19,7 +19,7 @@ IPixelCount               = 64
 
 # beam selection criteria
 IMinReflectionPool        = 1200
-IMinStrongBeams           = 400
+IMinStrongBeams           = 300
 IMinWeakBeams             = 0
 
 # crystal settings
@@ -41,7 +41,7 @@ RDeltaThickness          = 10.0
 IReflectOut              = 1
 
 #Refinement Specific Flags
-IRefineModeFLAG          = D
+IRefineModeFLAG          = S
 IWeightingFLAG           = 0
 IMethodFLAG              = 2
 ICorrelationFLAG         = 2
