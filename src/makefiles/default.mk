@@ -24,7 +24,6 @@ FELIX=\
 $(DIRFELIX)$(PRECISION)read_dm3_mod.o \
 $(DIRFELIX)$(PRECISION)gmodules.o \
 $(DIRFELIX)$(PRECISION)smodules.o \
-$(DIRFELIX)$(PRECISION)test_koch_mod.o \
 $(DIRFELIX)$(PRECISION)l_alert_mod.o \
 $(DIRFELIX)$(PRECISION)message_mod.o \
 $(DIRFELIX)$(PRECISION)utilities_mod.o \
