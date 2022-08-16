@@ -54,6 +54,8 @@ MODULE bloch_mod
     USE MyNumbers
     USE MyMPI
     USE message_mod
+	
+	
   
     ! globals - output
     USE RPara, ONLY : RIndividualReflections ! RIndividualReflections( LACBED_ID, thickness_ID, local_pixel_ID )
@@ -69,12 +71,14 @@ MODULE bloch_mod
                       IOutputReflections
     USE BlochPara, ONLY : RBigK            
     USE SPARA, ONLY : SPrintString
+	
     
     IMPLICIT NONE
     
     INTEGER(IKIND),INTENT(IN) :: IYPixelIndex,IXPixelIndex,IPixelNumber,&
           IFirstPixelToCalculate
     INTEGER(IKIND),INTENT(OUT) :: IErr
+	
     
     COMPLEX(CKIND),ALLOCATABLE :: CBeamProjectionMatrix(:,:),&
           CDummyBeamMatrix(:,:),CUgSgMatrix(:,:),CEigenVectors(:,:),CEigenValues(:),&
@@ -88,10 +92,19 @@ MODULE bloch_mod
     INTEGER(IKIND) :: ind,knd,pnd,IThickness,IThicknessIndex,ILowerLimit,&
           IUpperLimit       
     REAL(RKIND) :: RThickness,RKn,Rk0(3),RkPrime(3)
+	
+	
     COMPLEX(CKIND) sumC,sumD
     COMPLEX(CKIND), DIMENSION(:,:), ALLOCATABLE :: CBeamTranspose,CUgMatPartial,CDummyEigenVectors
+	
     CHARACTER*40 surname
     CHARACTER*100 SindString,SjndString,SPixelCount,SnBeams,SWeakBeamIndex
+	
+	
+	
+	
+	
+	
      
     IErr=0
     ! we are inside the mask
@@ -168,7 +181,18 @@ MODULE bloch_mod
     ALLOCATE( CUgMatPartial(INhkl,nBeams), STAT=IErr )
     ALLOCATE( CAlphaWeightingCoefficients(nBeams), STAT=IErr )
     ALLOCATE( CEigenValueDependentTerms(nBeams,nBeams), STAT=IErr )
+	
+	
+	
     IF(l_alert(IErr,"BlochCoefficientCalculation","allocations")) RETURN
+
+
+
+
+
+
+
+
 
     ! compute the effective Ug matrix by selecting only those beams
     ! for which IStrongBeamList has an entry
@@ -236,14 +260,37 @@ MODULE bloch_mod
       !Divide by 2K so off-diagonal elementa are Ug/2K, diagonal elements are Sg, Spence's (1990) 'Structure matrix'
       CUgSgMatrix = TWOPI*TWOPI*CUgSgMatrix/(TWO*RBigK)
     END IF
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
     
     !--------------------------------------------------------------------
     ! diagonalize the UgMatEffective
     !--------------------------------------------------------------------
 
+
+
+
+
+
+
+
+
+
+
     CALL EigenSpectrum(nBeams,CUgSgMatrix,CEigenValues(:),CEigenVectors(:,:),IErr)
     IF(l_alert(IErr,"BlochCoefficientCalculation","EigenSpectrum()")) RETURN
     ! NB destroys CUgSgMatrix
+	
+	
+	
 
     IF (IHolzFLAG.EQ.1) THEN ! higher order laue zone included so adjust Eigen values/vectors
       CEigenValues = CEigenValues * RKn/RBigK
@@ -256,6 +303,7 @@ MODULE bloch_mod
     ! Invert the EigenVector matrix
     CDummyEigenVectors = CEigenVectors
     CALL INVERT(nBeams,CDummyEigenVectors(:,:),CInvertedEigenVectors,IErr)
+	
 
     !--------------------------------------------------------------------
     ! fill RIndividualReflections( LACBED_ID , thickness_ID, local_pixel_ID ) 
@@ -271,6 +319,74 @@ MODULE bloch_mod
       CALL CreateWaveFunctions(RThickness,RFullWaveIntensity,CFullWaveFunctions,&
                     INhkl,nBeams,IStrongBeamList,CEigenVectors,CInvertedEigenVectors,CEigenValues,IErr)
       IF(l_alert(IErr,"BlochCoefficientCalculation","CreateWaveFunctions")) RETURN
+	  
+	  
+	  
+	  
+	  
+	  
+	  
+	  
+	  
+	  
+	  
+	  
+	  
+	  
+	  
+	  
+	  
+	  
+	  
+	  
+	  
+	  
+	  
+	  
+	  
+	  
+	  
+	  
+	  
+	  
+	  
+	  
+	  
+	  
+	  
+	  
+	  
+	  
+	  
+	  
+	  
+	  
+	  
+	  
+	  
+	  
+	  
+	  
+	  
+	  
+	  
+	  
+	  
+	  
+	  
+	  
+	  
+	  
+	  
+	  
+	  
+	  
+	  
+	  
+	  
+	  
+	  
+	  
 
       ! Collect Intensities from all thickness for later writing
       ! Output without felix.hkl input disabled
@@ -293,6 +409,7 @@ MODULE bloch_mod
          CInvertedEigenVectors, CAlphaWeightingCoefficients, &
          CEigenValues,CEigenVectors,CEigenValueDependentTerms, &
          CBeamProjectionMatrix, CDummyBeamMatrix,STAT=IErr)
+		 
     IF(l_alert(IErr,"BlochCoefficientCalculation","deallocating arrays")) RETURN
     
   END SUBROUTINE BlochCoefficientCalculation
@@ -310,6 +427,8 @@ MODULE bloch_mod
     USE MyNumbers
     USE MyMPI
     USE message_mod
+	
+	
 
     IMPLICIT NONE
     
@@ -322,6 +441,7 @@ MODULE bloch_mod
     REAL(RKIND) :: RWaveIntensity(nBeams)
     COMPLEX(CKIND) :: CPsi0(nBeams),CAlphaWeightingCoefficients(nBeams),&
           CWaveFunctions(nBeams),CEigenValueDependentTerms(nBeams,nBeams)
+		  
     INTEGER(IKIND) :: ind,jnd,knd,hnd,ifullind,iuniind,gnd,ichnk
     
     IErr=0
@@ -329,26 +449,38 @@ MODULE bloch_mod
     CPsi0 = CZERO ! all diffracted beams are zero
     CPsi0(1) = CONE ! the 000 beam has unit amplitude
 
-    ! put in the thickness
-    ! From EQ 6.32 in Kirkland Advance Computing in EM
     CAlphaWeightingCoefficients = MATMUL(CInvertedEigenVectors(1:nBeams,1:nBeams),CPsi0) 
     CEigenValueDependentTerms= CZERO
     DO hnd=1,nBeams     ! This is a diagonal matrix
       CEigenValueDependentTerms(hnd,hnd) = &
             EXP(CIMAGONE*CMPLX(RThickness,ZERO,CKIND)*CEigenValues(hnd)) 
     ENDDO
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
     ! The diffracted intensity for each beam
     ! EQ 6.35 in Kirkland Advance Computing in EM
     ! C-1*C*alpha 
     CWaveFunctions(:) = MATMUL( &
           MATMUL(CEigenVectors(1:nBeams,1:nBeams),CEigenValueDependentTerms), & 
           CAlphaWeightingCoefficients(:) )
-
     !?? possible small time saving here by only calculating the (tens of) output
     !?? reflections rather than all strong beams (hundreds)
     DO hnd=1,nBeams
        RWaveIntensity(hnd)=CONJG(CWaveFunctions(hnd)) * CWaveFunctions(hnd)
     ENDDO  
+
 
     CFullWaveFunctions=CZERO
     RFullWaveIntensity=ZERO
