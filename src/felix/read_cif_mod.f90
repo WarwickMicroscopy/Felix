@@ -394,22 +394,30 @@ MODULE read_cif_mod
 !    END DO
 
     ! count how many symmetry elements
-    ISymCount=1 ! we assume that ONE of the below will work
+    ISymCount=0 ! we assume that ONE of the below will work
     Stext = '_symmetry_equiv_pos_as_xyz'
-    f1 = char_(Stext, name)
-    IF (name.EQ."") THEN
-      Stext = '_space_group_symop_operation_xyz'        
-    END IF
-    DO 
+    DO
       f1 = char_(Stext, name)
-      DO 
+      IF(name.EQ."") EXIT
+      DO
         f2 = char_(name, line)
         ISymCount=ISymCount+1
         IF(text_ .NEQV. .TRUE.) EXIT
-      END DO
+       END DO
       IF(loop_ .NEQV. .TRUE.) EXIT
     END DO
-
+    IF (ISymCount.EQ.0) THEN
+      Stext = '_space_group_symop_operation_xyz'
+      DO 
+        f1 = char_(Stext, name)
+        DO 
+          f2 = char_(name, line)
+          ISymCount=ISymCount+1
+          IF(text_ .NEQV. .TRUE.) EXIT
+         END DO
+        IF(loop_ .NEQV. .TRUE.) EXIT
+      END DO
+    END IF
     ALLOCATE(SSymString(ISymCount),STAT=IErr)
     ALLOCATE(RSymMat(ISymCount,ITHREE,ITHREE),STAT=IErr)
     ALLOCATE(RSymVec(ISymcount,ITHREE),STAT=IErr)
@@ -419,28 +427,28 @@ MODULE read_cif_mod
     RSymMat=ZERO
     
     ! Fill the symmetry matrix
-    ISymCount=0
+    ind=0
     DO 
       f1 = char_(Stext, name)
       DO
-        ISymCount=ISymCount+1
+        ind=ind+1
         f2 = char_(name, line)
-        SSymString(ISymCount)=TRIM(ADJUSTL(name))
+        SSymString(ind)=TRIM(ADJUSTL(name))
         ICommaPosLeft = SCAN(name, ",")
         ICommaPosRight= SCAN(name, ",",.TRUE.)
         Csym(1)= name(1:ICommaPosLeft-1)
         Csym(2)= name(ICommaPosLeft+1:ICommaPosRight-1)
         Csym(3)= name(ICommaPosRight+1:LEN_TRIM(name))
-        DO ind=1,ITHREE
+        DO jnd=1,ITHREE
           IFRACminus=1
-          name= Csym(ind)
+          name= Csym(jnd)
           Ipos= SCAN(name, "xX")
           IF(Ipos.GT.0) THEN ! there is an X
             IoneI=1
             IF(Ipos.GT.1) THEN
               IF(name(Ipos-1:Ipos-1).EQ."-") IoneI=-1
             END IF
-            RSymMat(ISymCount,ind,1)=IoneI
+            RSymMat(ind,jnd,1)=IoneI
           END IF
              
           Ipos= SCAN(name, "yY")
@@ -449,7 +457,7 @@ MODULE read_cif_mod
             IF(Ipos.GT.1)THEN
               IF(name(Ipos-1:Ipos-1).EQ."-") IoneI=-1
             END IF
-            RSymMat(ISymCount, ind,2)=IoneI
+            RSymMat(ind,jnd,2)=IoneI
           END IF
              
           Ipos= SCAN(name, "zZ")
@@ -458,7 +466,7 @@ MODULE read_cif_mod
             IF(Ipos.GT.1) THEN
               IF(name(Ipos-1:Ipos-1).EQ."-") IoneI=-1
             END IF
-            RSymMat(ISymCount, ind,3)=IoneI
+            RSymMat(ind,jnd,3)=IoneI
           END IF
           Ipos= SCAN(name, "/")
           IF(Ipos.GT.1) THEN
@@ -469,13 +477,17 @@ MODULE read_cif_mod
                 IF(name(Ipos-2:Ipos-2)=="-") IFRACminus=-1
               END IF
             END IF
-            RSymVec(ISymCount,ind)=IFRACminus*REAL(Inum)/REAL(Idenom)
+            RSymVec(ind,jnd)=IFRACminus*REAL(Inum)/REAL(Idenom)
+!WRITE(SPrintString,'(I4, A11, F5.2,1X,F5.2,1X,F5.2)') ind,": RSymVec: ", RSymVec(ind,:)
+!IF(my_rank.EQ.0) PRINT*, TRIM(ADJUSTL(SPrintString))
           END IF
+!WRITE(SPrintString,'(A8,1X,A8,1X,A8)') Csym(:)
+!IF(my_rank.EQ.0) PRINT*, TRIM(ADJUSTL(SPrintString))
+!WRITE(SPrintString,'(I4,A9,F3.0,1X,F3.0,1X,F3.0,2X,F3.0,1X,F3.0,1X,F3.0,2X,F3.0,1X,F3.0,1X,F3.0)') ind,"RSymMat: ",RSymMat(ind,1,:),RSymMat(ind,2,:),RSymMat(ind,3,:)
+!IF(my_rank.EQ.0) PRINT*, TRIM(ADJUSTL(SPrintString))
+!WRITE(SPrintString,'(I4, A11, F3.0,1X,F3.0,1X,F3.0)') ind,": RSymVec: ", RSymVec(ind,:)
+!IF(my_rank.EQ.0) PRINT*, TRIM(ADJUSTL(SPrintString))
         END DO
-!IF(my_rank.EQ.0) PRINT*, Csym
-!WRITE(SPrintString,'(F3.0,1X,F3.0,1X,F3.0,2X,F3.0,1X,F3.0,1X,F3.0,2X,F3.0,1X,F3.0,1X,F3.0)') RSymMat(ISymCount,1,:),RSymMat(ISymCount,2,:),RSymMat(ISymCount,3,:)
-!IF(my_rank.EQ.0) PRINT*, ISymCount,"RSymMat:  ", SPrintString             
-!IF(my_rank.EQ.0) PRINT*, ISymCount,"RSymVec:", RSymVec(ISymCount,:)             
         IF(text_ .NEQV. .TRUE.) EXIT
       END DO
 
