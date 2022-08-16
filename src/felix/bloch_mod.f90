@@ -99,13 +99,13 @@ MODULE bloch_mod
 	COMPLEX(CKIND), DIMENSION(:,:), ALLOCATABLE :: CStructureMatrix
     CHARACTER*40 surname
     CHARACTER*100 SindString,SjndString,SPixelCount,SnBeams,SWeakBeamIndex
-
-    ! variables used for koch spence method development
-    COMPLEX(CKIND),ALLOCATABLE :: CDiagonalSgMatrix(:,:), COffDiagonalSgMatrix(:,:)
-    COMPLEX(CKIND) :: CScatteringElement
-    INTEGER(IKIND) :: ScatterMatrixRow
-	
      
+	 
+	 
+	 
+	 
+	 
+	 
     IErr=0
     ! we are inside the mask
     IPixelComputed= IPixelComputed + 1
@@ -186,13 +186,13 @@ MODULE bloch_mod
 	ALLOCATE( CStructureMatrix(nBeams, nBeams), STAT = IErr)
     IF(l_alert(IErr,"BlochCoefficientCalculation","allocations")) RETURN
 
-    ! allocations used for koch spence method development
-    IF(IBlochMethodFLAG.EQ.1) THEN
-      ALLOCATE( CDiagonalSgMatrix(nBeams,nBeams), STAT=IErr )
-      IF(l_alert(IErr,"BlochCoefficientCalculation","allocate CDiagonalSgMatrix")) RETURN
-      ALLOCATE( COffDiagonalSgMatrix(nBeams,nBeams), STAT=IErr )
-      IF(l_alert(IErr,"BlochCoefficientCalculation","allocate COffDiagonalSgMatrix")) RETURN
-    END IF
+
+
+
+
+
+
+
 
     ! compute the effective Ug matrix by selecting only those beams
     ! for which IStrongBeamList has an entry
@@ -275,15 +275,15 @@ MODULE bloch_mod
     ! diagonalize the UgMatEffective
     !--------------------------------------------------------------------
 
-    ! If koch method - Split CUgSgMatrix into diagonal and off diagonal to speed convergence
-    IF(IBlochMethodFLAG.EQ.1) THEN
-      COffDiagonalSgMatrix = CUgSgMatrix
-      CDiagonalSgMatrix = CZERO
-      DO ind = 1,SIZE(CUgSgMatrix,2)
-        CDiagonalSgMatrix(ind,ind) = CUgSgMatrix(ind,ind)      
-        COffDiagonalSgMatrix(ind,ind) = CZERO
-      END DO
-    END IF
+
+
+
+
+
+
+
+
+
 
     CALL EigenSpectrum(nBeams,CStructureMatrix,CEigenValues(:),CEigenVectors(:,:),IErr)
     IF(l_alert(IErr,"BlochCoefficientCalculation","EigenSpectrum()")) RETURN
@@ -320,73 +320,73 @@ MODULE bloch_mod
                     INhkl,nBeams,IStrongBeamList,CEigenVectors,CInvertedEigenVectors,CEigenValues,IErr)
       IF(l_alert(IErr,"BlochCoefficientCalculation","CreateWaveFunctions")) RETURN
 
-      !--------------------------------------------------------------------
-      ! Optional - test koch spence prototype method
-      !--------------------------------------------------------------------
-      IF(IBlochMethodFLAG.EQ.1) THEN
-        RThickness = RThickness / 1000! for koch development to speed convergence
-        CALL message('-----------------------------------------------------------------------')
-        CALL message('-----------------------------------------------------------------------')
-        CALL message('RThickness divided by 1000 to help koch series convergence')
-        CALL message('CFullWaveFunctions(1:4)',CFullWaveFunctions(1:4))
-        CALL CalculateElementS( CMPLX(ZERO,RThickness,CKIND), COffDiagonalSgMatrix, CDiagonalSgMatrix, 1, 1, 5, CScatteringElement )
-        CALL CalculateElementS( CMPLX(ZERO,RThickness,CKIND), COffDiagonalSgMatrix, CDiagonalSgMatrix, 2, 1, 5, CScatteringElement )
-        CALL CalculateElementS( CMPLX(ZERO,RThickness,CKIND), COffDiagonalSgMatrix, CDiagonalSgMatrix, 3, 1, 5, CScatteringElement )
-        CALL CalculateElementS( CMPLX(ZERO,RThickness,CKIND), COffDiagonalSgMatrix, CDiagonalSgMatrix, 4, 1, 5, CScatteringElement )
-
-!        CALL message('-----------------------------------------------------------------------')
-!        CALL message('Below shows the wavefunction matrix from diagonalisation and then the koch method')
-!        CALL message('The thickness has been scaled by 1/1000 to speed convergence')
-!        CALL message('The matrices are also ordered differently')
-!        CALL message('and in the diagonalisation method some entries are negligable and left as zero')
-!        CALL message('(diagonlisation) wavefunction pixel values for this thickness and this core')
-!        DO ScatterMatrixRow = 1,nBeams
-!          CALL message('',CFullWaveFunctions(ScatterMatrixRow))
-!        END DO
-!        CALL message('(koch series) wavefunction pixel values for this thickness and this core') 
-!        DO ScatterMatrixRow = 1,nBeams
-!          CALL CalculateElementS( CMPLX(ZERO,RThickness,CKIND), COffDiagonalSgMatrix, &
-!                CDiagonalSgMatrix, ScatterMatrixRow, 1, 4, CScatteringElement )
-!          CALL message('',CScatteringElement)
-!        END DO
-
-        !test for a single pixel 
-!        IF(IYPixelIndex.EQ.10.AND.IXPixelIndex.EQ.10.AND.IThicknessIndex.EQ.2) THEN 
-!          CALL message('debug reached single pixel thickness test')
-!          ! scale RThickness to help convergence issues
-!          RThickness = RThickness / 1000
-
-!          CALL CreateWaveFunctions(RThickness,RFullWaveIntensity,CFullWaveFunctions,&
-!                        INhkl,nBeams,IStrongBeamList,CEigenVectors,CEigenValues,IErr)
-!          IF(l_alert(IErr,"BlochCoefficientCalculation","CreateWaveFunctions")) RETURN
-!          CALL message('CFullWaveFunctions(1:4)',CFullWaveFunctions(1:4))
-
-!          ! calculate scattering matrix using koch spence method
-!          !CALL GetCombinations()
-!          CALL CalculateElementS( CMPLX(ZERO,RThickness,CKIND), COffDiagonalSgMatrix, CDiagonalSgMatrix, 1, 1, 4, CScatteringElement )
-
-!          ! for debugging end felix here
-!          CALL message('Testing koch series method, so terminate felix here.')
-!          CALL message('-----------------------------------------------------------------------')
-!          CALL SLEEP(1)
-!          IErr = 1
-!          RETURN
-!        END IF
-
-    ! deallocations used for koch spence method development
-      DEALLOCATE( CDiagonalSgMatrix, COffDiagonalSgMatrix, STAT=IErr )
-      IF(l_alert(IErr,"BlochCoefficientCalculation","deallocating arrays")) RETURN
-
-      ! Testing koch series so terminate felix here
-      CALL message('-----------------------------------------------------------------------')
-      CALL message('Testing koch series method, so terminate felix here.')
-      CALL message('-----------------------------------------------------------------------')
-      CALL message('-----------------------------------------------------------------------')
-      CALL message('-----------------------------------------------------------------------')
-      CALL SLEEP(1)
-      IErr = 1
-      RETURN
-    END IF
+      
+	  
+	  
+	  
+	  
+	  
+	  
+	  
+	  
+	  
+	  
+	  
+	  
+	  
+	  
+	  
+	  
+	  
+	  
+	  
+	  
+	  
+	  
+	  
+	  
+	  
+	  
+	  
+	  
+	  
+	  
+	  
+	  
+	  
+	  
+	  
+	  
+	  
+	  
+	  
+	  
+	  
+	  
+	  
+	  
+	  
+	  
+	  
+	  
+	  
+	  
+	  
+	  
+	  
+	  
+	  
+	  
+	  
+	  
+	  
+	  
+	  
+	  
+	  
+	  
+	  
+	  
 
       ! Collect Intensities from all thickness for later writing
       ! Output without felix.hkl input disabled
