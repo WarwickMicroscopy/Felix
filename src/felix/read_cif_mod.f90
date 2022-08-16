@@ -404,8 +404,8 @@ MODULE read_cif_mod
       f1 = char_(Stext, name)
       DO 
         f2 = char_(name, line)
-        IF(text_ .NEQV. .TRUE.) EXIT
         ISymCount=ISymCount+1
+		IF(text_ .NEQV. .TRUE.) EXIT
       END DO
       IF(loop_ .NEQV. .TRUE.) EXIT
     END DO

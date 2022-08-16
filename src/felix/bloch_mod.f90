@@ -261,22 +261,13 @@ MODULE bloch_mod
       CUgSgMatrix = TWOPI*TWOPI*CUgSgMatrix/(TWO*RBigK)
     END IF	
 	
-	! Form new structure matrix from CUgSgMatrix for eigen problem
-	! From Palatinus, Structure refinement, 2015
-	RK = SQRT(DOT_PRODUCT(RTiltedK, RTiltedK) + RMeanInnerPotential) ! mod of K, in sample, RMeanInnerPotential is U0
+	! Implementation of change to structure matrix for non parallel incident beam
+	! From Palatinus 2015
+	! Takes UgSg matrix calculated previously
 	DO ind = 1, nBeams
-		RKg = SQRT(DOT_PRODUCT(RK + RgMatrix(3, ind, :), RK + RgMatrix(3, ind, :))) ! mod of K + g
 		DO jnd = 1, nBeams
-			IF (ind == jnd) THEN
-				! On diagonal elements
-				RDiagonalElement(ind) = (RK**2 - RKg**2)/(SQRT(1+RgDotNorm(IStrongBeamList(ind))/RKn))
-				CStructureMatrix(ind, ind) = RDiagonalElement(ind)
-			ELSE
-				! Off diagonal elements
-				CElementOff(ind) = (CUgSgMatrix(ind, jnd))/ &
+				CStructureMatrix(ind, jnd) = (CUgSgMatrix(ind, jnd))/ &
 				((SQRT(1+RgDotNorm(IStrongBeamList(ind))/RKn)) * (SQRT(1+RgDotNorm(IStrongBeamList(jnd))/RKn)))
-				CStructureMatrix(ind, jnd) = CElementOff(ind)
-			END IF
 		END DO
 	END DO
 	
@@ -297,6 +288,9 @@ MODULE bloch_mod
     CALL EigenSpectrum(nBeams,CStructureMatrix,CEigenValues(:),CEigenVectors(:,:),IErr)
     IF(l_alert(IErr,"BlochCoefficientCalculation","EigenSpectrum()")) RETURN
     ! NB destroys CUgSgMatrix
+	! PRINT*, CEigenVectors
+	! PRINT*, CEigenValues
+	
 
     IF (IHolzFLAG.EQ.1) THEN ! higher order laue zone included so adjust Eigen values/vectors
       CEigenValues = CEigenValues * RKn/RBigK
@@ -309,6 +303,7 @@ MODULE bloch_mod
     ! Invert the EigenVector matrix
     CDummyEigenVectors = CEigenVectors
     CALL INVERT(nBeams,CDummyEigenVectors(:,:),CInvertedEigenVectors,IErr)
+	! PRINT*, CInvertedEigenVectors
 
     !--------------------------------------------------------------------
     ! fill RIndividualReflections( LACBED_ID , thickness_ID, local_pixel_ID ) 
@@ -454,14 +449,15 @@ MODULE bloch_mod
     CPsi0 = CZERO ! All diffracted beams are zero
     CPsi0(1) = CONE ! The 000 beam has unit amplitude
 	
-	! Form eigenvalue diagonal matrix, from Palatinus.
+	! Form eigenvalue diagonal matrix
     CEigenValueDependentTerms= CZERO
 	DO hnd=1,nBeams
-			CEigenValueDependentTerms(hnd,hnd) = &
-				EXP((CIMAGONE*CMPLX(RThickness,ZERO,CKIND)*CEigenValues(hnd))/ 2 * RKn)
+		CEigenValueDependentTerms(hnd,hnd) = &
+			EXP((CIMAGONE*CMPLX(RThickness,ZERO,CKIND)*CEigenValues(hnd)))
 	END DO
 
-	! M matrix and its inverse are part of Palatinus scatter matrix
+	! M matrix and its inverse are part of new Palatinus scatter matrix
+	
 	! Form M matrix
 	CMmatrix = CZERO
 	DO hnd = 1, nBeams
@@ -469,14 +465,16 @@ MODULE bloch_mod
 		CMmatrix(hnd, hnd) = RElement(hnd)
 	END DO
 	
-	! Form inverted M matrix
-	CDummyMmatrix = CMmatrix
-	CALL INVERT(nBeams, CDummyMmatrix, CInvertedM, IErr)
+	! Form inverted M matrix, note that M is a diagonal matrix, so no need to CALL INVERT
+	CInvertedM = CZERO
+	DO ind = 1, nBeams
+		CInvertedM(ind, ind) = 1/CMmatrix(ind, ind)
+	END DO
 	
 	! Palatinus scatter matrix operating on initial wavefunction at boundary
 	CWaveFunctions(:) = MATMUL(CMmatrix, MATMUL(CEigenVectors, MATMUL(CEigenValueDependentTerms, &
 						MATMUL(CInvertedEigenVectors, MATMUL(CInvertedM, CPsi0)))))
-
+	
     !?? possible small time saving here by only calculating the (tens of) output
     !?? reflections rather than all strong beams (hundreds)
     DO hnd=1,nBeams
