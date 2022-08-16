@@ -48,14 +48,14 @@ MODULE bloch_mod
   !! Major-Authors: Keith Evans (2014), Richard Beanland (2016)
   !!
   SUBROUTINE BlochCoefficientCalculation(IYPixelIndex,IXPixelIndex,IPixelNumber,&
-                    IFirstPixelToCalculate,IErr)
+                    IFirstPixelToCalculate,nBeams, RThickness, RKn, IErr)
 
     ! accesses procedure ZGEMM
     USE MyNumbers
     USE MyMPI
     USE message_mod
-	
-	
+    
+
   
     ! globals - output
     USE RPara, ONLY : RIndividualReflections ! RIndividualReflections( LACBED_ID, thickness_ID, local_pixel_ID )
@@ -65,20 +65,20 @@ MODULE bloch_mod
     ! globals - input  
     USE CPara, ONLY : CUgMat
     USE RPara, ONLY : RDeltaK,RDeltaThickness,RInitialThickness,RNormDirM,RgDotNorm,RgPool,&
-                      RgPoolMag,Rhkl
+                      RgPoolMag,Rhkl,RgMatrix,RMeanInnerPotential
     USE IPara, ONLY : IHolzFLAG,IMinStrongBeams,IMinWeakBeams,&
                       INoOfLacbedPatterns,IPixelCount,IThicknessCount,INhkl,&
                       IOutputReflections
     USE BlochPara, ONLY : RBigK            
     USE SPARA, ONLY : SPrintString
-	
+	USE RPARA, ONLY : RgDotNorm ! Required for strucutre matrix
     
     IMPLICIT NONE
     
     INTEGER(IKIND),INTENT(IN) :: IYPixelIndex,IXPixelIndex,IPixelNumber,&
           IFirstPixelToCalculate
-    INTEGER(IKIND),INTENT(OUT) :: IErr
-	
+    INTEGER(IKIND),INTENT(OUT) :: nBeams, IErr
+	REAL, INTENT(OUT) :: RThickness, RKn ! Added RKn here so as to be able to use it in CreateWaveFunctions()
     
     COMPLEX(CKIND),ALLOCATABLE :: CBeamProjectionMatrix(:,:),&
           CDummyBeamMatrix(:,:),CUgSgMatrix(:,:),CEigenVectors(:,:),CEigenValues(:),&
@@ -88,24 +88,24 @@ MODULE bloch_mod
     REAL(RKIND) :: RFullWaveIntensity(INhkl),RDevPara(INhkl),&
           RTiltedK(ITHREE)
     INTEGER(IKIND) :: IStrongBeamList(INhkl),IWeakBeamList(INhkl),&
-          nBeams,nWeakBeams
-    INTEGER(IKIND) :: ind,knd,pnd,IThickness,IThicknessIndex,ILowerLimit,&
+          nWeakBeams
+    INTEGER(IKIND) :: ind,jnd,knd,pnd,IThickness,IThicknessIndex,ILowerLimit,&    ! jnd added here
           IUpperLimit       
-    REAL(RKIND) :: RThickness,RKn,Rk0(3),RkPrime(3)
-	
-	
+    REAL(RKIND) :: Rk0(3),RkPrime(3),RK,RKg ! Removed RKn from here
+	REAL(RKIND), ALLOCATABLE :: RDiagonalElement(:)
+	COMPLEX(CKIND), ALLOCATABLE :: CElementOff(:)
     COMPLEX(CKIND) sumC,sumD
     COMPLEX(CKIND), DIMENSION(:,:), ALLOCATABLE :: CBeamTranspose,CUgMatPartial,CDummyEigenVectors
-	
+	COMPLEX(CKIND), DIMENSION(:,:), ALLOCATABLE :: CStructureMatrix
     CHARACTER*40 surname
     CHARACTER*100 SindString,SjndString,SPixelCount,SnBeams,SWeakBeamIndex
-	
-	
-	
-	
-	
-	
      
+	 
+	 
+	 
+	 
+	 
+	 
     IErr=0
     ! we are inside the mask
     IPixelComputed= IPixelComputed + 1
@@ -181,9 +181,9 @@ MODULE bloch_mod
     ALLOCATE( CUgMatPartial(INhkl,nBeams), STAT=IErr )
     ALLOCATE( CAlphaWeightingCoefficients(nBeams), STAT=IErr )
     ALLOCATE( CEigenValueDependentTerms(nBeams,nBeams), STAT=IErr )
-	
-	
-	
+	ALLOCATE( RDiagonalElement(nBeams), STAT = IErr)
+	ALLOCATE( CElementOff(nBeams), STAT = IErr)
+	ALLOCATE( CStructureMatrix(nBeams, nBeams), STAT = IErr)
     IF(l_alert(IErr,"BlochCoefficientCalculation","allocations")) RETURN
 
 
@@ -259,18 +259,18 @@ MODULE bloch_mod
       !The 4pi^2 is a result of using h, not hbar, in the conversion from VG(ij) to Ug(ij).  Needs to be taken out of the weak beam calculation too 
       !Divide by 2K so off-diagonal elementa are Ug/2K, diagonal elements are Sg, Spence's (1990) 'Structure matrix'
       CUgSgMatrix = TWOPI*TWOPI*CUgSgMatrix/(TWO*RBigK)
-    END IF
+    END IF	
 	
+	! Implementation of change to structure matrix for non parallel incident beam
+	! From Palatinus 2015
+	! Takes UgSg matrix calculated previously
+	DO ind = 1, nBeams
+		DO jnd = 1, nBeams
+				CStructureMatrix(ind, jnd) = (CUgSgMatrix(ind, jnd))/ &
+				((SQRT(1+RgDotNorm(IStrongBeamList(ind))/RKn)) * (SQRT(1+RgDotNorm(IStrongBeamList(jnd))/RKn)))
+		END DO
+	END DO
 	
-	
-	
-	
-	
-	
-	
-	
-	
-    
     !--------------------------------------------------------------------
     ! diagonalize the UgMatEffective
     !--------------------------------------------------------------------
@@ -285,11 +285,11 @@ MODULE bloch_mod
 
 
 
-    CALL EigenSpectrum(nBeams,CUgSgMatrix,CEigenValues(:),CEigenVectors(:,:),IErr)
+    CALL EigenSpectrum(nBeams,CStructureMatrix,CEigenValues(:),CEigenVectors(:,:),IErr)
     IF(l_alert(IErr,"BlochCoefficientCalculation","EigenSpectrum()")) RETURN
     ! NB destroys CUgSgMatrix
-	
-	
+	! PRINT*, CEigenVectors
+	! PRINT*, CEigenValues
 	
 
     IF (IHolzFLAG.EQ.1) THEN ! higher order laue zone included so adjust Eigen values/vectors
@@ -303,7 +303,7 @@ MODULE bloch_mod
     ! Invert the EigenVector matrix
     CDummyEigenVectors = CEigenVectors
     CALL INVERT(nBeams,CDummyEigenVectors(:,:),CInvertedEigenVectors,IErr)
-	
+	! PRINT*, CInvertedEigenVectors
 
     !--------------------------------------------------------------------
     ! fill RIndividualReflections( LACBED_ID , thickness_ID, local_pixel_ID ) 
@@ -316,11 +316,11 @@ MODULE bloch_mod
       RThickness = RInitialThickness + REAL((IThicknessIndex-1),RKIND)*RDeltaThickness
       IThickness = NINT(RThickness,IKIND)
 
-      CALL CreateWaveFunctions(RThickness,RFullWaveIntensity,CFullWaveFunctions,&
+      CALL CreateWaveFunctions(RThickness,RKn,RFullWaveIntensity,CFullWaveFunctions,&
                     INhkl,nBeams,IStrongBeamList,CEigenVectors,CInvertedEigenVectors,CEigenValues,IErr)
       IF(l_alert(IErr,"BlochCoefficientCalculation","CreateWaveFunctions")) RETURN
-	  
-	  
+
+      
 	  
 	  
 	  
@@ -408,8 +408,8 @@ MODULE bloch_mod
     DEALLOCATE(CUgSgMatrix,CBeamTranspose, CUgMatPartial, &
          CInvertedEigenVectors, CAlphaWeightingCoefficients, &
          CEigenValues,CEigenVectors,CEigenValueDependentTerms, &
-         CBeamProjectionMatrix, CDummyBeamMatrix,STAT=IErr)
-		 
+         CBeamProjectionMatrix, CDummyBeamMatrix, RDiagonalElement, &
+		 CElementOff, STAT=IErr)
     IF(l_alert(IErr,"BlochCoefficientCalculation","deallocating arrays")) RETURN
     
   END SUBROUTINE BlochCoefficientCalculation
@@ -417,78 +417,78 @@ MODULE bloch_mod
   !%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
   !>
-  !! Procedure-description: Calculates diffracted intensity for a specific thickness
+  !! Procedure-description: Calculates diffracted intensity for a specific thickness, accounts for non-parallel incident electron beam
   !!
   !! Major-Authors: Keith Evans (2014), Richard Beanland (2016)
   !!
-  SUBROUTINE CreateWaveFunctions(RThickness,RFullWaveIntensity,CFullWaveFunctions,&
+  SUBROUTINE CreateWaveFunctions(RThickness,RKn,RFullWaveIntensity,CFullWaveFunctions,&
                     INhkl,nBeams,IStrongBeamList,CEigenVectors,CInvertedEigenVectors,CEigenValues,IErr)
 
     USE MyNumbers
     USE MyMPI
     USE message_mod
 	
-	
+	USE RPARA, ONLY : RgDotNorm
 
     IMPLICIT NONE
     
-    REAL(RKIND),INTENT(IN) :: RThickness
+    REAL(RKIND),INTENT(IN) :: RThickness, RKn
     REAL(RKIND),INTENT(OUT) :: RFullWaveIntensity(INhkl)
     COMPLEX(CKIND),INTENT(OUT) :: CFullWaveFunctions(INhkl) 
     INTEGER(IKIND),INTENT(IN) :: INhkl,nBeams,IStrongBeamList(INhkl)
     COMPLEX(CKIND),INTENT(IN) :: CEigenVectors(nBeams,nBeams),CInvertedEigenVectors(nBeams,nBeams),CEigenValues(nBeams)
     INTEGER(IKIND),INTENT(OUT) :: IErr 
-    REAL(RKIND) :: RWaveIntensity(nBeams)
+    REAL(RKIND) :: RWaveIntensity(nBeams), RElement(nBeams)
     COMPLEX(CKIND) :: CPsi0(nBeams),CAlphaWeightingCoefficients(nBeams),&
-          CWaveFunctions(nBeams),CEigenValueDependentTerms(nBeams,nBeams)
-		  
+          CWaveFunctions(nBeams),CEigenValueDependentTerms(nBeams,nBeams), &
+		  CMmatrix(nBeams, nBeams), CDummyMmatrix(nBeams, nBeams), CInvertedM(nBeams, nBeams)
     INTEGER(IKIND) :: ind,jnd,knd,hnd,ifullind,iuniind,gnd,ichnk
     
     IErr=0
-    ! The top surface boundary conditions
-    CPsi0 = CZERO ! all diffracted beams are zero
-    CPsi0(1) = CONE ! the 000 beam has unit amplitude
-
-    CAlphaWeightingCoefficients = MATMUL(CInvertedEigenVectors(1:nBeams,1:nBeams),CPsi0) 
+    ! The top surface boundary conditions, only valid for singular incident electron beam
+    CPsi0 = CZERO ! All diffracted beams are zero
+    CPsi0(1) = CONE ! The 000 beam has unit amplitude
+	
+	! Form eigenvalue diagonal matrix
     CEigenValueDependentTerms= CZERO
-    DO hnd=1,nBeams     ! This is a diagonal matrix
-      CEigenValueDependentTerms(hnd,hnd) = &
-            EXP(CIMAGONE*CMPLX(RThickness,ZERO,CKIND)*CEigenValues(hnd)) 
-    ENDDO
+	DO hnd=1,nBeams
+		CEigenValueDependentTerms(hnd,hnd) = &
+			EXP((CIMAGONE*CMPLX(RThickness,ZERO,CKIND)*CEigenValues(hnd)))
+	END DO
+
+	! M matrix and its inverse are part of new Palatinus scatter matrix
 	
+	! Form M matrix
+	CMmatrix = CZERO
+	DO hnd = 1, nBeams
+		RElement(hnd) = 1/SQRT(1+RgDotNorm(IStrongBeamList(hnd))/RKn)
+		CMmatrix(hnd, hnd) = RElement(hnd)
+	END DO
 	
+	! Form inverted M matrix, note that M is a diagonal matrix, so no need to CALL INVERT
+	CInvertedM = CZERO
+	DO ind = 1, nBeams
+		CInvertedM(ind, ind) = 1/CMmatrix(ind, ind)
+	END DO
 	
+	! Palatinus scatter matrix operating on initial wavefunction at boundary
+	CWaveFunctions(:) = MATMUL(CMmatrix, MATMUL(CEigenVectors, MATMUL(CEigenValueDependentTerms, &
+						MATMUL(CInvertedEigenVectors, MATMUL(CInvertedM, CPsi0)))))
 	
-	
-	
-	
-	
-	
-	
-	
-	
-	
-	
-    ! The diffracted intensity for each beam
-    ! EQ 6.35 in Kirkland Advance Computing in EM
-    ! C-1*C*alpha 
-    CWaveFunctions(:) = MATMUL( &
-          MATMUL(CEigenVectors(1:nBeams,1:nBeams),CEigenValueDependentTerms), & 
-          CAlphaWeightingCoefficients(:) )
     !?? possible small time saving here by only calculating the (tens of) output
     !?? reflections rather than all strong beams (hundreds)
     DO hnd=1,nBeams
        RWaveIntensity(hnd)=CONJG(CWaveFunctions(hnd)) * CWaveFunctions(hnd)
     ENDDO  
-
-
+	
+	! Link diffracted intensities to their g vectors
     CFullWaveFunctions=CZERO
     RFullWaveIntensity=ZERO
     DO knd=1,nBeams
        CFullWaveFunctions(IStrongBeamList(knd))=CWaveFunctions(knd)
        RFullWaveIntensity(IStrongBeamList(knd))=RWaveIntensity(knd)
     ENDDO
-    
+	
   END SUBROUTINE CreateWavefunctions
 
   !%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
