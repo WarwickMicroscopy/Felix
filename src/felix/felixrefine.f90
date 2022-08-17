@@ -565,8 +565,6 @@ PROGRAM Felixrefine
   !--------------------------------------------------------------------
   ALLOCATE(RhklPositions(INhkl,2),STAT=IErr)
   IF(l_alert(IErr,"felixrefine","allocate RhklPositions")) CALL abort
-  ALLOCATE(IMask(2*IPixelCount,2*IPixelCount),STAT=IErr)
-  IF(l_alert(IErr,"felixrefine","allocate RhklPositions")) CALL abort
 
   ! creates circular or square image mask depending upon IMaskFLAG and assign 
   ! IPixelLocations ALLOCATED here

@@ -55,32 +55,27 @@ MODULE image_initialisation_mod
     USE message_mod
 
     ! global output
-    USE IPARA, ONLY : IMask, IPixelTotal, IPixelLocations
+    USE IPARA, ONLY : IPixelTotal, IPixelLocations
 
     ! global input
-    USE IPARA, ONLY : IPixelCount, IMaskFLAG
+    USE IPARA, ONLY : IPixelCount
     
     IMPLICIT NONE
     
     INTEGER(IKIND), INTENT(OUT) :: IErr
     INTEGER(IKIND) :: ind, jnd, InnerRadiusFLAG
     REAL(RKIND) :: Rradius, RImageRadius
-
+	
+	
+	! Need to check which case we pick here now that IMaskFLAG is gone, assuming the square?
+	
+	
     IPixelTotal =0
     SELECT CASE (IMaskFLAG)
     CASE(0) ! circle
       DO ind=1,2*IPixelCount
         DO jnd=1,2*IPixelCount
-          Rradius= (ind-(REAL(IPixelCount,RKIND)+0.5))**2 + &
-                (jnd-(REAL(IPixelCount,RKIND)+0.5))**2
-          Rradius=SQRT(DBLE(Rradius))
-          RImageRadius = IPixelCount+0.5
-          IF(Rradius.LE.RImageRadius) THEN
-            IMask(jnd,ind) = 1
             IPixelTotal= IPixelTotal + 1			  
-          ELSE
-            IMask(jnd,ind) = 0
-          END IF
         ENDDO
       ENDDO
     CASE(1) ! square
@@ -99,21 +94,17 @@ MODULE image_initialisation_mod
     CASE(0) ! circle
       DO ind=1,2*IPixelCount
         DO jnd=1,2*IPixelCount
-          IF(IMask(ind,jnd).GT.ZERO) THEN
             IPixelTotal= IPixelTotal + 1
             IPixelLocations(IPixelTotal,1) = ind
             IPixelLocations(IPixelTotal,2) = jnd
-          ENDIF
         ENDDO
       ENDDO
     CASE(1) ! square
       DO ind = 1,2*IPixelCount
         DO jnd = 1,2*IPixelCount
-          IF(IMask(ind,jnd).GT.ZERO) THEN
             IPixelTotal = IPixelTotal+1
             IPixelLocations(IPixelTotal,1) = ind
             IPixelLocations(IPixelTotal,2) = jnd
-          END IF
         END DO
       END DO
     END SELECT
