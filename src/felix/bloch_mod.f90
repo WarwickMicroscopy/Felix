@@ -69,14 +69,14 @@ MODULE bloch_mod
                       IOutputReflections
     USE BlochPara, ONLY : RBigK            
     USE SPARA, ONLY : SPrintString
-	USE RPARA, ONLY : RgDotNorm ! Required for strucutre matrix
-    
+	USE RPARA, ONLY : RgDotNorm
+
     IMPLICIT NONE
-    
+
     INTEGER(IKIND),INTENT(IN) :: IYPixelIndex,IXPixelIndex,IPixelNumber,&
           IFirstPixelToCalculate
     INTEGER(IKIND),INTENT(OUT) :: nBeams, IErr
-	REAL, INTENT(OUT) :: RThickness, RKn ! Added RKn here so as to be able to use it in CreateWaveFunctions()
+	REAL, INTENT(OUT) :: RThickness, RKn
     
     COMPLEX(CKIND),ALLOCATABLE :: CBeamProjectionMatrix(:,:),&
           CDummyBeamMatrix(:,:),CUgSgMatrix(:,:),CEigenVectors(:,:),CEigenValues(:),&
@@ -87,9 +87,9 @@ MODULE bloch_mod
           RTiltedK(ITHREE)
     INTEGER(IKIND) :: IStrongBeamList(INhkl),IWeakBeamList(INhkl),&
           nWeakBeams
-    INTEGER(IKIND) :: ind,jnd,knd,pnd,IThickness,IThicknessIndex,ILowerLimit,&    ! jnd added here
+    INTEGER(IKIND) :: ind,jnd,knd,pnd,IThickness,IThicknessIndex,ILowerLimit,&
           IUpperLimit       
-    REAL(RKIND) :: Rk0(3),RkPrime(3),RK,RKg ! Removed RKn from here
+    REAL(RKIND) :: Rk0(3),RkPrime(3),RK,RKg
 	REAL(RKIND), ALLOCATABLE :: RDiagonalElement(:)
 	COMPLEX(CKIND), ALLOCATABLE :: CElementOff(:)
     COMPLEX(CKIND) sumC,sumD
@@ -244,7 +244,7 @@ MODULE bloch_mod
       CUgSgMatrix = TWOPI*TWOPI*CUgSgMatrix/(TWO*RBigK)
     END IF	
 	
-	! Implementation of change to structure matrix for non parallel incident beam
+	! Recalculation of structure matrix for non parallel incident beam
 	! From Palatinus 2015
 	! Takes UgSg matrix calculated previously
 	DO ind = 1, nBeams
@@ -261,9 +261,6 @@ MODULE bloch_mod
     CALL EigenSpectrum(nBeams,CStructureMatrix,CEigenValues(:),CEigenVectors(:,:),IErr)
     IF(l_alert(IErr,"BlochCoefficientCalculation","EigenSpectrum()")) RETURN
     ! NB destroys CUgSgMatrix
-	! PRINT*, CEigenVectors
-	! PRINT*, CEigenValues
-	
 
     IF (IHolzFLAG.EQ.1) THEN ! higher order laue zone included so adjust Eigen values/vectors
       CEigenValues = CEigenValues * RKn/RBigK
@@ -276,7 +273,6 @@ MODULE bloch_mod
     ! Invert the EigenVector matrix
     CDummyEigenVectors = CEigenVectors
     CALL INVERT(nBeams,CDummyEigenVectors(:,:),CInvertedEigenVectors,IErr)
-	! PRINT*, CInvertedEigenVectors
 
     !--------------------------------------------------------------------
     ! fill RIndividualReflections( LACBED_ID , thickness_ID, local_pixel_ID ) 
@@ -360,7 +356,7 @@ MODULE bloch_mod
 			EXP((CIMAGONE*CMPLX(RThickness,ZERO,CKIND)*CEigenValues(hnd)))
 	END DO
 
-	! M matrix and its inverse are part of new Palatinus scatter matrix
+	! The M matrix and its inverse are part of new Palatinus scatter matrix
 	
 	! Form M matrix
 	CMmatrix = CZERO
