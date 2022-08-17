@@ -157,7 +157,7 @@ MODULE IPara
   INTEGER(IKIND) :: IMAXRBuffer,  IMAXCBuffer     
   !Input Flags
   INTEGER(IKIND) :: IWriteFLAG,IDebugFLAG,IScatterFactorMethodFLAG, &
-       IMaskFLAG, IVolumeFLAG,IHolzFLAG,IAbsorbFLAG, IAnisoDebyeWallerFactorFlag, &
+       IMaskFLAG, IVolumeFLAG,IHolzFLAG,IAbsorbFLAG, &
        IImageFLAG,IBeamConvergenceFLAG,IDevFLAG, &
        IRefineModeFLAG,IPrint,IRefineSwitch,&
        IWeightingFLAG,IRefineMethodFLAG,ICorrelationFLAG,IImageProcessingFLAG,&

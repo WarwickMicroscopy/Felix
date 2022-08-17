@@ -53,7 +53,7 @@ MODULE read_files_mod
 
     ! global outputs, read from .inp
     USE IPARA, ONLY : IWriteFLAG, IImageFLAG, IScatterFactorMethodFLAG, IMaskFLAG, IHolzFLAG, &
-          IAbsorbFLAG, IAnisoDebyeWallerFactorFlag, IByteSize, INhkl, &
+          IAbsorbFLAG, IByteSize, INhkl, &
           IMinStrongBeams, IMinWeakBeams, ISimFLAG, IRefineMode, &
           IWeightingFLAG, IRefineMethodFLAG, ICorrelationFLAG, IImageProcessingFLAG, &
           INoofUgs, IPrint, IPixelCount
@@ -109,9 +109,6 @@ MODULE read_files_mod
     ! IAbsorbFLAG
     ILine= ILine+1; READ(IChInp,'(27X,I15.1)',ERR=20,END=30) IAbsorbFLAG
     CALL message ( LXL, dbg3, "IAbsorbFLAG=",IAbsorbFLAG)
-    ! IAnisoDebyeWallerFactorFlag
-    ILine= ILine+1; READ(IChInp,'(27X,I15.1)',ERR=20,END=30) IAnisoDebyeWallerFactorFlag
-    CALL message ( LXL, dbg3, "IAnisoDebyeWallerFactorFlag=",IAnisoDebyeWallerFactorFlag)
     ! IByteSize
     ILine= ILine+1; READ(IChInp,'(27X,I15.1)',ERR=20,END=30) IByteSize
     CALL message ( LXL, dbg3, "IByteSize=",IByteSize) ! depends on system, 8 for csc, 2 tinis
