@@ -52,7 +52,7 @@ MODULE ug_matrix_mod
   USE MyMPI
 
   ! global inputs
-  USE IPARA, ONLY : INhkl,IAtomicNumber,INAtomsUnitCell,ICurrentZ,IAnisoDebyeWallerFactorFlag,IAnisoDW,IWriteFLAG
+  USE IPARA, ONLY : INhkl,IAtomicNumber,INAtomsUnitCell,ICurrentZ,IAnisoDW,IWriteFLAG
   USE RPARA, ONLY : RCurrentGMagnitude,RIsoDW,RDebyeWallerConstant,RVolume,&
     RRelativisticCorrection,Rhkl,ROccupancy,RAtomCoordinate,RgMatrix,RAnisotropicDebyeWallerFactorTensor
     !,RElectronMass,RAngstromConversion,RScattFacToVolts,RElectronCharge,RPlanckConstant,RgMatrixMagnitude
@@ -85,18 +85,10 @@ MODULE ug_matrix_mod
           ! Occupancy
           RScatteringFactor = RScatteringFactor*ROccupancy(knd)
           ! Debye-Waller factor
-          IF (IAnisoDebyeWallerFactorFlag.EQ.0) THEN 
-            IF(RIsoDW(knd).GT.10.OR.RIsoDW(knd).LT.0) RIsoDW(knd) = RDebyeWallerConstant!use default in felix.inp for unrealistic values in the cif
-            ! Isotropic D-W factor
-            ! exp(-B sin(theta)^2/lamda^2) = exp(-Bs^2) = exp(-Bg^2/16pi^2), see e.g. Bird&King
-            RScatteringFactor = RScatteringFactor*EXP(-RIsoDW(knd)*(RCurrentGMagnitude**2)/(FOUR*TWOPI**2) )
-          ELSE ! anisotropic Debye-Waller factor
-            !?? this will need sorting out, may not work
-            RScatteringFactor = RScatteringFactor * &
-                EXP( -DOT_PRODUCT( RgMatrix(ind,jnd,:), &
-                MATMUL(RAnisotropicDebyeWallerFactorTensor(IAnisoDW(knd),:,:),&
-                RgMatrix(ind,jnd,:)) ) )
-          END IF
+          IF(RIsoDW(knd).GT.10.OR.RIsoDW(knd).LT.0) RIsoDW(knd) = RDebyeWallerConstant!use default in felix.inp for unrealistic values in the cif
+          ! Isotropic D-W factor
+          ! exp(-B sin(theta)^2/lamda^2) = exp(-Bs^2) = exp(-Bg^2/16pi^2), see e.g. Bird&King
+          RScatteringFactor = RScatteringFactor*EXP(-RIsoDW(knd)*(RCurrentGMagnitude**2)/(FOUR*TWOPI**2) )
           ! Here we go directly to Ug's, missing out the Fourier components of the potential Vg
           ! (formerly calculated as CVgij).  If the Vg's are desired they can be obtained from 
           ! multiplying RScatteringFactor by RScattFacToVolts,
@@ -360,7 +352,7 @@ MODULE ug_matrix_mod
     USE IPARA, ONLY : ICurrentZ
 
     ! global inputs
-    USE IPARA, ONLY : INAtomsUnitCell,IAtomicNumber,IAnisoDebyeWallerFactorFlag,IAnisoDW
+    USE IPARA, ONLY : INAtomsUnitCell,IAtomicNumber,IAnisoDW
     USE RPARA, ONLY : RIsoDW,RCurrentGMagnitude,RgMatrix,RVolume, &
           RAnisotropicDebyeWallerFactorTensor,RAtomCoordinate,ROccupancy, &
           RDebyeWallerConstant,RScattFacToVolts
@@ -388,19 +380,11 @@ MODULE ug_matrix_mod
         ! Occupancy
         RScatteringFactor = RScatteringFactor*ROccupancy(knd)
         ! Isotropic Debye-Waller factor
-        IF (IAnisoDebyeWallerFactorFlag.EQ.0) THEN 
-          IF(RIsoDW(knd).GT.10.OR.RIsoDW(knd).LT.0) RIsoDW(knd) = RDebyeWallerConstant!use default in felix.inp for unrealistic values in the cif
-          ! Isotropic D-W factor
-          ! exp(-B sin(theta)^2/lamda^2) = exp(-Bs^2) = exp(-Bg^2/16pi^2), see e.g. Bird&King
-          RScatteringFactor = RScatteringFactor*EXP(-RIsoDW(knd) * &
-                (RCurrentGMagnitude**2)/(FOUR*TWOPI**2) )
-        ELSE ! anisotropic Debye-Waller factor
-          !?? this will need sorting out, may not work
-          RScatteringFactor = RScatteringFactor * &
-                EXP( -DOT_PRODUCT( RgMatrix(ind,jnd,:), &
-                MATMUL(RAnisotropicDebyeWallerFactorTensor(IAnisoDW(knd),:,:),&
-                RgMatrix(ind,jnd,:)) ) )
-        END IF
+        IF(RIsoDW(knd).GT.10.OR.RIsoDW(knd).LT.0) RIsoDW(knd) = RDebyeWallerConstant!use default in felix.inp for unrealistic values in the cif
+        ! Isotropic D-W factor
+        ! exp(-B sin(theta)^2/lamda^2) = exp(-Bs^2) = exp(-Bg^2/16pi^2), see e.g. Bird&King
+        RScatteringFactor = RScatteringFactor*EXP(-RIsoDW(knd) * &
+              (RCurrentGMagnitude**2)/(FOUR*TWOPI**2) )
         ! The structure factor equation, complex Vg(ind,jnd)=sum(f*exp(-ig.r)) in Volts
         CVgij=CVgij+RScatteringFactor*RScattFacToVolts*EXP(-CIMAGONE*DOT_PRODUCT(RgMatrix(ind,jnd,:),&
               RAtomCoordinate(knd,:)) )
@@ -410,11 +394,6 @@ MODULE ug_matrix_mod
         ! Occupancy
         CFpseudo = CFpseudo*ROccupancy(knd)
         ! Error check: only isotropic Debye-Waller for pseudoatoms currently
-        IF (IAnisoDebyeWallerFactorFlag.NE.0) THEN
-          CALL message( LS, "Pseudo atom - isotropic Debye-Waller factor only!")
-          IErr=1
-          RETURN
-        END IF
         !?? DW factor: Need to work out how to get it from the REAL atom at same site
         ! assume it is the next atom in the list, for now
         CFpseudo = CFpseudo*EXP(-RIsoDW(knd+1)*(RCurrentGMagnitude**2)/(FOUR*TWOPI**2) )
@@ -450,7 +429,7 @@ MODULE ug_matrix_mod
     USE BlochPara, ONLY : RBigK
 
     ! global inputs
-    USE IPARA, ONLY : IAnisoDebyeWallerFactorFlag,IInitialSimulationFLAG,INAtomsUnitCell,&
+    USE IPARA, ONLY : IInitialSimulationFLAG,INAtomsUnitCell,&
           INhkl,IAtomicNumber,IEquivalentUgKey,IWriteFLAG,IAnisoDW
     USE RPARA, ONLY : RAngstromConversion,RElectronCharge,RElectronMass,&
           RVolume,RIsoDW,ROccupancy,&

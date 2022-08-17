@@ -81,7 +81,7 @@ MODULE read_cif_mod
     ! global inputs
     USE SConst, ONLY : SAllSpaceGrp,SElementSymbolMatrix
     USE RPARA, ONLY : RDebyeWallerConstant
-    USE IPARA, ONLY : IAtomsToRefine,IAnisoDebyeWallerFactorFlag,ISimFLAG,ILN
+    USE IPARA, ONLY : IAtomsToRefine,ISimFLAG,ILN
     USE SPARA, ONLY : SPrintString
     USE IConst
     
@@ -387,10 +387,6 @@ MODULE read_cif_mod
 !      f2 = numb_('_atom_site_aniso_U_13',u,su) 
 !      RAnisotropicDebyeWallerFactorTensor(ind,1,3) = u
 !      IBasisAnisoDW(ind) = ind
-!      IF(IAnisoDebyeWallerFactorFlag.EQ.1) THEN
-!        CALL message( LM,"RAnisotropicDebyeWallerFactorTensor, index = ",ind)
-!        CALL message( LM, "..",RAnisotropicDebyeWallerFactorTensor(ind,:,:) )
-!      END IF
 !    END DO
 
     ! count how many symmetry elements
