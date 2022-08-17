@@ -157,7 +157,7 @@ MODULE IPara
   INTEGER(IKIND) :: IMAXRBuffer,  IMAXCBuffer     
   !Input Flags
   INTEGER(IKIND) :: IWriteFLAG,IDebugFLAG,IScatterFactorMethodFLAG, &
-       IMaskFLAG, IVolumeFLAG,IHolzFLAG,IAbsorbFLAG, &
+       IVolumeFLAG,IHolzFLAG,IAbsorbFLAG, IAnisoDebyeWallerFactorFlag, &
        IImageFLAG,IBeamConvergenceFLAG,IDevFLAG, &
        IRefineModeFLAG,IPrint,IRefineSwitch,&
        IWeightingFLAG,IRefineMethodFLAG,ICorrelationFLAG,IImageProcessingFLAG,&
@@ -194,8 +194,6 @@ MODULE IPara
   !LACBED
   INTEGER(IKIND),DIMENSION(:,:), ALLOCATABLE :: ILACBEDStrongBeamList, IPixelLocation, ISymmetryRelations
   INTEGER(IKIND),DIMENSION(:), ALLOCATABLE :: InBeams,IOutputReflections,IEquivalentUgKey
-  !LACBED mask
-  INTEGER(IKIND),DIMENSION(:,:), ALLOCATABLE :: IMask
   !inpcif
   INTEGER(IKIND) :: ISymCount,ISpaceGrp,ILN
   INTEGER(IKIND) :: IPixelCountTotal

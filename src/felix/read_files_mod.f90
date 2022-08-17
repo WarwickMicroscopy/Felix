@@ -52,8 +52,8 @@ MODULE read_files_mod
     USE message_mod
 
     ! global outputs, read from .inp
-    USE IPARA, ONLY : IWriteFLAG, IImageFLAG, IScatterFactorMethodFLAG, IMaskFLAG, IHolzFLAG, &
-          IAbsorbFLAG, IByteSize, INhkl, &
+    USE IPARA, ONLY : IWriteFLAG, IImageFLAG, IScatterFactorMethodFLAG, IHolzFLAG, &
+          IAbsorbFLAG, IAnisoDebyeWallerFactorFlag, IByteSize, INhkl, &
           IMinStrongBeams, IMinWeakBeams, ISimFLAG, IRefineMode, &
           IWeightingFLAG, IRefineMethodFLAG, ICorrelationFLAG, IImageProcessingFLAG, &
           INoofUgs, IPrint, IPixelCount
@@ -100,15 +100,15 @@ MODULE read_files_mod
     ! IScatterFactorMethodFLAG
     ILine= ILine+1; READ(IChInp,'(27X,I15.1)',ERR=20,END=30) IScatterFactorMethodFLAG
     CALL message ( LXL, dbg7, "IScatterFactorMethodFLAG=",IScatterFactorMethodFLAG )
-    ! IMaskFLAG
-    ILine= ILine+1; READ(IChInp,'(27X,I15.1)',ERR=20,END=30) IMaskFLAG
-    CALL message ( LXL, dbg3, "IMaskFLAG=",IMaskFLAG)
     ! IHolzFLAG
     ILine= ILine+1; READ(IChInp,'(27X,I15.1)',ERR=20,END=30) IHolzFLAG
     CALL message ( LXL, dbg3, "IHolzFLAG=",IHolzFLAG)
     ! IAbsorbFLAG
     ILine= ILine+1; READ(IChInp,'(27X,I15.1)',ERR=20,END=30) IAbsorbFLAG
     CALL message ( LXL, dbg3, "IAbsorbFLAG=",IAbsorbFLAG)
+    ! IAnisoDebyeWallerFactorFlag
+    ILine= ILine+1; READ(IChInp,'(27X,I15.1)',ERR=20,END=30) IAnisoDebyeWallerFactorFlag
+    CALL message ( LXL, dbg3, "IAnisoDebyeWallerFactorFlag=",IAnisoDebyeWallerFactorFlag)
     ! IByteSize
     ILine= ILine+1; READ(IChInp,'(27X,I15.1)',ERR=20,END=30) IByteSize
     CALL message ( LXL, dbg3, "IByteSize=",IByteSize) ! depends on system, 8 for csc, 2 tinis
