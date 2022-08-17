@@ -10,7 +10,6 @@ IScatterFactorMethodFLAG  = 0
 IMaskFLAG                 = 1
 IHolzFLAG                 = 0
 IAbsorbFLAG               = 2
-IAnisoDebyeWallerFlag     = 0
 IByteSize                 = 2
 
 # radius of the beam in pixels
