@@ -158,7 +158,7 @@ MODULE IPara
   !Input Flags
   INTEGER(IKIND) :: IWriteFLAG,IDebugFLAG,IScatterFactorMethodFLAG, &
        IVolumeFLAG,IHolzFLAG,IAbsorbFLAG, &
-       IImageFLAG,IBeamConvergenceFLAG,IDevFLAG, &
+       IBeamConvergenceFLAG,IDevFLAG, &
        IRefineModeFLAG,IPrint,IRefineSwitch,&
        IWeightingFLAG,IRefineMethodFLAG,ICorrelationFLAG,IImageProcessingFLAG,&
        IByteSize
