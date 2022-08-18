@@ -952,10 +952,8 @@ CONTAINS
           RCurrentVar(ind)=RCurrentVar(ind)+Rdx
           CALL SimulateAndFit(RCurrentVar,Iter,IThicknessIndex,IErr)
           IF(l_alert(IErr,"DownhillRefinement","SimulateAndFit")) RETURN
-          IF (IImageFLAG.EQ.1) THEN
-            CALL message ( LS, ".  Writing output; difference images" )
-            IF (my_rank.EQ.0) CALL WriteDifferenceImages(Iter,IThicknessIndex,ind,RCurrentVar(ind),Rdx,IErr)
-          END IF
+          CALL message ( LS, ".  Writing output; difference images" )
+          IF (my_rank.EQ.0) CALL WriteDifferenceImages(Iter,IThicknessIndex,ind,RCurrentVar(ind),Rdx,IErr)
           !If the fit is better, emphasise that parameter *5
           !This gives more importance to parameters that are not stuck in a
           !valley (at the expense of not using the maximum gradient when no
@@ -1240,10 +1238,8 @@ CONTAINS
         RCurrentVar(ind)=RVar0(ind)+Rdx
         CALL SimulateAndFit(RCurrentVar,Iter,IThicknessIndex,IErr)
         IF(l_alert(IErr,"MaxGradientRefinement","SimulateAndFit")) RETURN
-        IF (IImageFLAG.EQ.1) THEN
-          CALL message ( LS, ".  Writing output; difference images" )
-          IF (my_rank.EQ.0) CALL WriteDifferenceImages(Iter,IThicknessIndex,ind,RCurrentVar(ind),Rdx,IErr)
-        END IF
+        CALL message ( LS, ".  Writing output; difference images" )
+        IF (my_rank.EQ.0) CALL WriteDifferenceImages(Iter,IThicknessIndex,ind,RCurrentVar(ind),Rdx,IErr)
         CALL WriteIterationOutputWrapper(Iter,IThicknessIndex,IPrintFLAG,IErr)
         ! BestFitCheck copies RCurrentVar into RIndependentVariable
         ! and updates RBestFit if the fit is better

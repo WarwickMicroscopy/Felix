@@ -52,7 +52,7 @@ MODULE read_files_mod
     USE message_mod
 
     ! global outputs, read from .inp
-    USE IPARA, ONLY : IWriteFLAG, IImageFLAG, IScatterFactorMethodFLAG, IHolzFLAG, &
+    USE IPARA, ONLY : IWriteFLAG, IScatterFactorMethodFLAG, IHolzFLAG, &
           IAbsorbFLAG, IByteSize, INhkl, &
           IMinStrongBeams, IMinWeakBeams, ISimFLAG, IRefineMode, &
           IWeightingFLAG, IRefineMethodFLAG, ICorrelationFLAG, IImageProcessingFLAG, &
@@ -95,8 +95,6 @@ MODULE read_files_mod
 
     ! IWriteFLAG
     ILine= ILine+1; READ(IChInp,'(27X,I15.1)',ERR=20,END=30) IWriteFLAG
-    ! IImageFLAG - select which type(s) of images to output 
-    ILine= ILine+1; READ(IChInp,'(27X,I15.1)',ERR=20,END=30) IImageFLAG
     ! IScatterFactorMethodFLAG
     ILine= ILine+1; READ(IChInp,'(27X,I15.1)',ERR=20,END=30) IScatterFactorMethodFLAG
     CALL message ( LXL, dbg7, "IScatterFactorMethodFLAG=",IScatterFactorMethodFLAG )

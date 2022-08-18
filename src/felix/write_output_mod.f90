@@ -197,7 +197,7 @@ MODULE write_output_mod
 !%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
   !>
-  !! Procedure-description: Writes difference images during gradient determination if IImageFLAG=1 
+  !! Procedure-description: Writes difference images during gradient determination
   !!
   !! Major-Authors: Richard Beanland (2019)
   !!
