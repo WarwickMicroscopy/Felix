@@ -65,23 +65,19 @@ MODULE image_initialisation_mod
     INTEGER(IKIND), INTENT(OUT) :: IErr
     INTEGER(IKIND) :: ind, jnd, InnerRadiusFLAG
     REAL(RKIND) :: Rradius, RImageRadius
-	
-	
-	! Need to check which case we pick here now that IMaskFLAG is gone, assuming the square?
-	
-	
+
     IPixelTotal =0
-    SELECT CASE (IMaskFLAG)
-    CASE(0) ! circle
-      DO ind=1,2*IPixelCount
-        DO jnd=1,2*IPixelCount
-            IPixelTotal= IPixelTotal + 1			  
-        ENDDO
-      ENDDO
-    CASE(1) ! square
-      IMask = 1
+    ! SELECT CASE (IMaskFLAG)
+    ! CASE(0) ! circle
+      ! DO ind=1,2*IPixelCount
+        ! DO jnd=1,2*IPixelCount
+            ! ! IMask(jnd,ind) = 1
+            ! IPixelTotal= IPixelTotal + 1			  
+        ! ENDDO
+      ! ENDDO
+    ! CASE(1) ! square
+      ! IMask = 1
       IPixelTotal = (2*IPixelCount)**2
-    END SELECT
 
     ! Removed InnerConvergenceAngle here
 
@@ -90,16 +86,16 @@ MODULE image_initialisation_mod
 
     IPixelTotal = 0
 
-    SELECT CASE (IMaskFLAG)
-    CASE(0) ! circle
-      DO ind=1,2*IPixelCount
-        DO jnd=1,2*IPixelCount
-            IPixelTotal= IPixelTotal + 1
-            IPixelLocations(IPixelTotal,1) = ind
-            IPixelLocations(IPixelTotal,2) = jnd
-        ENDDO
-      ENDDO
-    CASE(1) ! square
+    ! SELECT CASE (IMaskFLAG)
+    ! CASE(0) ! circle
+      ! DO ind=1,2*IPixelCount
+        ! DO jnd=1,2*IPixelCount
+            ! IPixelTotal= IPixelTotal + 1
+            ! IPixelLocations(IPixelTotal,1) = ind
+            ! IPixelLocations(IPixelTotal,2) = jnd
+        ! ENDDO
+      ! ENDDO
+    ! CASE(1) ! square
       DO ind = 1,2*IPixelCount
         DO jnd = 1,2*IPixelCount
             IPixelTotal = IPixelTotal+1
@@ -107,7 +103,6 @@ MODULE image_initialisation_mod
             IPixelLocations(IPixelTotal,2) = jnd
         END DO
       END DO
-    END SELECT
    
   END SUBROUTINE ImageMaskInitialisation
 

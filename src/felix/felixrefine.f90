@@ -568,6 +568,7 @@ PROGRAM Felixrefine
 
   ! creates circular or square image mask depending upon IMaskFLAG and assign 
   ! IPixelLocations ALLOCATED here
+  ! Have removed IMaskFLAG
   CALL ImageMaskInitialisation(IErr)
   IF(l_alert(IErr,"felixrefine","ImageMaskInitialisation")) CALL abort
 
