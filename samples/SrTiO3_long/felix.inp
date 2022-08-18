@@ -5,7 +5,6 @@
 
 # control flags
 IWriteFLAG                = 1
-IImageFLAG                = 1
 IScatterFactorMethodFLAG  = 0
 IHolzFLAG                 = 0
 IAbsorbFLAG               = 2
