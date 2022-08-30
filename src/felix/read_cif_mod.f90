@@ -6,12 +6,12 @@
 !
 ! (C) 2013-19, all rights reserved
 !
-! Version: :VERSION: RB_coord / 1.14 /
-! Date:    :DATE: 15-01-2019
+! Version: 1.2
+! Date: 30-08-2022
 ! Time:    :TIME:
 ! Status:  :RLSTATUS:
-! Build:   :BUILD: Mode F: test different lattice types" 
-! Author:  :AUTHOR: r.beanland
+! Build: Surface normal correction 
+! Author:  r.beanland@warwick.ac.uk
 ! 
 !%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 !
@@ -58,7 +58,7 @@ MODULE read_cif_mod
     ! 
     !                     CIF Tool Box Application 'tbx_ex.f'
     !                     ------------------------
-    !                     Version: June 1998
+    !                     Version June 1998
     !
     ! ----------------------------------------------------------------------
     

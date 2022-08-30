@@ -6,12 +6,12 @@
 !
 ! (C) 2013-19, all rights reserved
 !
-! Version: :VERSION: RB_coord / 1.15 /
-! Date:    :DATE: 16-01-2019
+! Version: 1.2
+! Date: 30-08-2022
 ! Time:    :TIME:
 ! Status:  :RLSTATUS:
-! Build:   :BUILD: Mode F: test different lattice types" 
-! Author:  :AUTHOR: r.beanland
+! Build: Surface normal correction 
+! Author:  r.beanland@warwick.ac.uk
 ! 
 !%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 !
@@ -48,7 +48,7 @@ MODULE write_output_mod
   !>
   !!Procedure-description: gives an uncertainty in brackets
   !!
-  !! Author: Richard Beanland (2019)
+  !! Author:  r.beanland@warwick.ac.uk
   !!
   SUBROUTINE UncertBrak(Rval,Rerr,Sout,IErr)
 

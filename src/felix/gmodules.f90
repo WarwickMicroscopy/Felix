@@ -6,11 +6,11 @@
 !
 ! (C) 2013-19, all rights reserved
 !
-! Version: master
-! Date:    17-Dec-2018
-! Time:    :TIME:
+! Version: 1.2
+! Date: 30-08-2022
+! Time:
 ! Status:  
-! Build:   
+! Build: Surface normal correction   
 ! Author:  r.beanland@warwick.ac.uk
 ! 
 !%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%

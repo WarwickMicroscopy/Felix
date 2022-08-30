@@ -6,11 +6,11 @@
 !
 ! (C) 2013-19, all rights reserved
 !
-! Version: master
-! Date:    28-Feb-2018
-! Time:    :TIME:
+! Version: 1.2
+! Date: 30-08-2022
+! Time:
 ! Status:  
-! Build:   
+! Build: Surface normal correction   
 ! Author:  r.beanland@warwick.ac.uk
 ! 
 !%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -49,8 +49,8 @@
 !!
 MODULE SConst
 
-  CHARACTER(50), PARAMETER :: RStr= "Version: master / 1.0 / r.beanland"
-  CHARACTER(50), PARAMETER :: DStr= "Date: 25-Oct-2021"
+  CHARACTER(50), PARAMETER :: RStr= "Version: 1.2"
+  CHARACTER(50), PARAMETER :: DStr= "Date: 30-08-2022"
   CHARACTER(50), PARAMETER :: AStr= "Refinements B,C,D,F,H and S working, no HOLZ" 
   CHARACTER(8) SAllSpaceGrp(230)
 !NB needs more work here, does not have non-standard settings or modern versions
