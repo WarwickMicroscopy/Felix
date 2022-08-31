@@ -67,7 +67,7 @@ MODULE refinementcontrol_mod
     !global inputs
     USE RPARA, ONLY : RBlurRadius
     USE IPARA, ONLY : ICount,IDisplacements,ILocalPixelCountMax,INoOfLacbedPatterns,&
-          ILocalPixelCountMin,IPixelLocations,IPixelCount,IThicknessCount, nBeams
+          ILocalPixelCountMin,IPixelLocations,IPixelX,IPixelY,IThicknessCount, nBeams
 
     IMPLICIT NONE
 
@@ -100,8 +100,8 @@ MODULE refinementcontrol_mod
     ! and RImageSimi(width, height,INoOfLacbedPatterns,IThicknessCount )
     RImageSimi = ZERO
     ind = 0
-    DO jnd = 1,2*IPixelCount
-      DO knd = 1,2*IPixelCount
+    DO jnd = 1,IPixelX
+      DO knd = 1,IPixelY
         ind = ind+1
         RImageSimi(jnd,knd,:,:) = RSimulatedPatterns(:,:,ind)
       END DO
@@ -110,7 +110,7 @@ MODULE refinementcontrol_mod
     IF (RBlurRadius.GT.TINY) THEN
       DO ind=1,INoOfLacbedPatterns
         DO jnd=1,IThicknessCount
-          CALL BlurG(RImageSimi(:,:,ind,jnd),IPixelCount,RBlurRadius,IErr)
+          CALL BlurG(RImageSimi(:,:,ind,jnd),IPixelX,IPixelY,RBlurRadius,IErr)
         END DO
       END DO
     END IF
@@ -130,7 +130,7 @@ MODULE refinementcontrol_mod
   !!
   !! Major-Authors: Richard Beanland (2016)
   !! 
-  SUBROUTINE BlurG(RImageToBlur,IPixelsCount,RBlurringRadius,IErr)
+  SUBROUTINE BlurG(RImageToBlur,IPixX,IPixY,RBlurringRadius,IErr)
 
     USE MyNumbers
     USE MPI
@@ -138,12 +138,12 @@ MODULE refinementcontrol_mod
 
     IMPLICIT NONE
 
-    REAL(RKIND),DIMENSION(2*IPixelsCount,2*IPixelsCount),INTENT(INOUT) :: RImageToBlur
-    INTEGER(IKIND),INTENT(IN) :: IPixelsCount
+    REAL(RKIND),DIMENSION(IPixX,IPixY),INTENT(INOUT) :: RImageToBlur
+    INTEGER(IKIND),INTENT(IN) :: IPixX,IPixY
     REAL(RKIND),INTENT(IN) :: RBlurringRadius
     INTEGER(IKIND),INTENT(OUT) :: IErr
 
-    REAL(RKIND),DIMENSION(2*IPixelsCount,2*IPixelsCount) :: RTempImage,RShiftImage
+    REAL(RKIND),DIMENSION(IPixX,IPixY) :: RTempImage,RShiftImage
     INTEGER(IKIND) :: ind,jnd,IKernelRadius,IKernelSize
     REAL(RKIND),DIMENSION(:), ALLOCATABLE :: RGauss1D
     REAL(RKIND) :: Rind,Rsum,Rmin,Rmax
@@ -168,12 +168,12 @@ MODULE refinementcontrol_mod
     ! apply the kernel in direction 1
     DO ind = -IKernelRadius,IKernelRadius
        IF (ind.LT.0) THEN
-          RShiftImage(1:2*IPixelsCount+ind,:)=RImageToBlur(1-ind:2*IPixelsCount,:)
+          RShiftImage(1:IPixX+ind,:)=RImageToBlur(1-ind:IPixX,:)
           DO jnd = 1,1-ind!edge fill on right
-             RShiftImage(2*IPixelsCount-jnd+1,:)=RImageToBlur(2*IPixelsCount,:)
+             RShiftImage(IPixX-jnd+1,:)=RImageToBlur(IPixX,:)
           END DO
        ELSE
-          RShiftImage(1+ind:2*IPixelsCount,:)=RImageToBlur(1:2*IPixelsCount-ind,:)
+          RShiftImage(1+ind:IPixX,:)=RImageToBlur(1:IPixX-ind,:)
           DO jnd = 1,1+ind!edge fill on left
              RShiftImage(jnd,:)=RImageToBlur(1,:)
           END DO
@@ -188,12 +188,12 @@ MODULE refinementcontrol_mod
     ! apply the kernel in direction 2  
     DO ind = -IKernelRadius,IKernelRadius
        IF (ind.LT.0) THEN
-          RShiftImage(:,1:2*IPixelsCount+ind)=RImageToBlur(:,1-ind:2*IPixelsCount)
+          RShiftImage(:,1:IPixY+ind)=RImageToBlur(:,1-ind:IPixY)
           DO jnd = 1,1-ind!edge fill on bottom
-             RShiftImage(:,2*IPixelsCount-jnd+1)=RImageToBlur(:,2*IPixelsCount)
+             RShiftImage(:,IPixY-jnd+1)=RImageToBlur(:,IPixY)
           END DO
        ELSE
-          RShiftImage(:,1+ind:2*IPixelsCount)=RImageToBlur(:,1:2*IPixelsCount-ind)
+          RShiftImage(:,1+ind:IPixY)=RImageToBlur(:,1:IPixY-ind)
           DO jnd = 1,1+ind!edge fill on top
              RShiftImage(:,jnd)=RImageToBlur(:,1)
           END DO

@@ -65,11 +65,11 @@ MODULE bloch_mod
     USE RPara, ONLY : RDeltaK,RDeltaThickness,RInitialThickness,RNormDirM,RgDotNorm,RgPool,&
                       RgPoolMag,Rhkl,RgMatrix,RMeanInnerPotential
     USE IPara, ONLY : IHolzFLAG,IMinStrongBeams,IMinWeakBeams,&
-                      INoOfLacbedPatterns,IPixelCount,IThicknessCount,INhkl,&
+                      INoOfLacbedPatterns,IPixelX,IPixelY,IThicknessCount,INhkl,&
                       IOutputReflections
     USE BlochPara, ONLY : RBigK            
     USE SPARA, ONLY : SPrintString
-	USE RPARA, ONLY : RgDotNorm
+    USE RPARA, ONLY : RgDotNorm
 
     IMPLICIT NONE
 
@@ -90,11 +90,11 @@ MODULE bloch_mod
     INTEGER(IKIND) :: ind,jnd,knd,pnd,IThickness,IThicknessIndex,ILowerLimit,&
           IUpperLimit       
     REAL(RKIND) :: Rk0(3),RkPrime(3),RK,RKg
-	REAL(RKIND), ALLOCATABLE :: RDiagonalElement(:)
-	COMPLEX(CKIND), ALLOCATABLE :: CElementOff(:)
+    REAL(RKIND), ALLOCATABLE :: RDiagonalElement(:)
+    COMPLEX(CKIND), ALLOCATABLE :: CElementOff(:)
     COMPLEX(CKIND) sumC,sumD
     COMPLEX(CKIND), DIMENSION(:,:), ALLOCATABLE :: CBeamTranspose,CUgMatPartial,CDummyEigenVectors
-	COMPLEX(CKIND), DIMENSION(:,:), ALLOCATABLE :: CStructureMatrix
+    COMPLEX(CKIND), DIMENSION(:,:), ALLOCATABLE :: CStructureMatrix
     CHARACTER*40 surname
     CHARACTER*100 SindString,SjndString,SPixelCount,SnBeams,SWeakBeamIndex
     
@@ -104,10 +104,10 @@ MODULE bloch_mod
 
     ! TiltedK is the vector of the incoming tilted beam
     ! in units of (1/A), in the microscope ref frame(NB exp(i*k.r), physics convention)
-    ! x-position in k-space
-    RTiltedK(1)= (REAL(IYPixelIndex,RKIND)-REAL(IPixelCount,RKIND)-0.5_RKIND)*RDeltaK
+    ! y-position in k-space NB Fortran arrays are [row,col]=[y,x]
+    RTiltedK(1)= (REAL(IYPixelIndex,RKIND)-0.5_RKIND*REAL(IPixelY,RKIND)-0.5_RKIND)*RDeltaK
     ! y-position in k-space
-    RTiltedK(2)= (REAL(IXPixelIndex,RKIND)-REAL(IPixelCount,RKIND)-0.5_RKIND)*RDeltaK 
+    RTiltedK(2)= (REAL(IXPixelIndex,RKIND)-0.5_RKIND*REAL(IPixelX,RKIND)-0.5_RKIND)*RDeltaK 
     RTiltedK(3)= SQRT(RBigK**2 - RTiltedK(1)**2 - RTiltedK(2)**2) 
     RKn = DOT_PRODUCT(RTiltedK,RNormDirM)
     Rk0 = ZERO

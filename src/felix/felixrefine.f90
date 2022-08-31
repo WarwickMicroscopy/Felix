@@ -157,8 +157,8 @@ PROGRAM Felixrefine
   ! Creates reciprocal lattice vectors in Microscope reference frame
   CALL ReciprocalLattice(IErr)
   IF(l_alert(IErr,"felixrefine","ReciprocalLattice")) CALL abort
-  !resolution in k-space
-  RDeltaK = TWOPI*RConvergenceAngle/REAL(IPixelCount,RKIND)
+  !resolution in k-space N.B. in cRED we define convergence angle as half the y-size
+  RDeltaK = FOURPI*RConvergenceAngle/REAL(IPixelY,RKIND)
 !IF(my_rank.EQ.0)PRINT*, "Delta K", RDeltaK  
 
   !--------------------------------------------------------------------
@@ -413,12 +413,12 @@ PROGRAM Felixrefine
   ALLOCATE(RhklPositions(INhkl,2),STAT=IErr)
   IF(l_alert(IErr,"felixrefine","allocate RhklPositions")) CALL abort
 
-  IPixelTotal = (2*IPixelCount)**2
+  IPixelTotal = IPixelX*IPixelY
   ALLOCATE(IPixelLocations(IPixelTotal,2),STAT=IErr)
   IF(l_alert(IErr,"felixrefine","allocate IPixelLocations")) CALL abort
   knd=0
-  DO ind = 1,2*IPixelCount
-    DO jnd = 1,2*IPixelCount
+  DO ind = 1,IPixelX
+    DO jnd = 1,IPixelY
       knd = knd+1
       IPixelLocations(knd,1) = ind
       IPixelLocations(knd,2) = jnd
@@ -433,8 +433,8 @@ PROGRAM Felixrefine
   ! NB RSimulatedPatterns is a vector with respect to pixels, not a 2D image
   ALLOCATE(RSimulatedPatterns(INoOfLacbedPatterns,IThicknessCount,IPixelTotal),STAT=IErr)
   IF(l_alert(IErr,"felixrefine","allocate RSimulatedPatterns")) CALL abort
-  ! Images to match RImageExpi
-  ALLOCATE(RImageSimi(2*IPixelCount,2*IPixelCount,INoOfLacbedPatterns,IThicknessCount),&
+  ! Images, NB Fortan arrays are [row,column]=[y,x]
+  ALLOCATE(RImageSimi(IPixelY,IPixelX,INoOfLacbedPatterns,IThicknessCount),&
         STAT=IErr)
   IF(l_alert(IErr,"felixrefine","allocate RImageSimi")) CALL abort
 
@@ -458,8 +458,6 @@ PROGRAM Felixrefine
   !--------------------------------------------------------------------
   ! baseline simulation
   !--------------------------------------------------------------------
-  RFigureofMerit=666.666 ! Initial large value, diabolically
-  Iter = 0
   ! baseline simulation with timer
   CALL Simulate(IErr)
   IF(l_alert(IErr,"felixrefine","Simulate")) CALL abort
@@ -527,7 +525,6 @@ PROGRAM Felixrefine
 !%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
   CONTAINS
-  ! these internal SUBROUTINEs use felixrefine's whole variable namespace
 
   SUBROUTINE abort
     IErr=1
@@ -537,3 +534,4 @@ PROGRAM Felixrefine
   END SUBROUTINE abort
 
 END PROGRAM Felixrefine
+

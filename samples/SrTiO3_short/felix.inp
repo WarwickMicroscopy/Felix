@@ -11,8 +11,8 @@ IAbsorbFLAG               = 2
 IByteSize                 = 2
 
 # dimensions of the simulation in pixels
-IPixelX                   = 64
-IPixelY                   = 64
+IPixelX                   = 128
+IPixelY                   = 128
 
 # beam selection criteria
 IMinReflectionPool        = 200
@@ -43,7 +43,7 @@ IWeightingFLAG           = 0
 IRefineMethodFLAG        = 2
 ICorrelationFLAG         = 2
 IImageProcessingFLAG     = 4
-RBlurRadius              = 0.1
+RBlurRadius              = 0.0
 INoofUgs                 = 40
 IAtomicSites             = (3)
 IPrint                   = 1

@@ -56,7 +56,7 @@ MODULE read_files_mod
           IAbsorbFLAG, IByteSize, INhkl, &
           IMinStrongBeams, IMinWeakBeams, ISimFLAG, IRefineMode, &
           IWeightingFLAG, IRefineMethodFLAG, ICorrelationFLAG, IImageProcessingFLAG, &
-          INoofUgs, IPrint, IPixelX, IPixelY, IPixelCount
+          INoofUgs, IPrint, IPixelX, IPixelY
     USE RPARA, ONLY : RDebyeWallerConstant, RAbsorptionPercentage, RConvergenceAngle, &
           RZDirC, RXDirC, RNormDirC, RAcceleratingVoltage, RAcceptanceAngle, &
           RInitialThickness, RFinalThickness, RDeltaThickness, RBlurRadius, &
@@ -116,7 +116,7 @@ MODULE read_files_mod
     ILine= ILine+1; READ(IChInp,ERR=20,END=30,FMT='(A)')
     ILine= ILine+1; READ(IChInp,ERR=20,END=30,FMT='(A)')
     ! IPixelX
-    ILine= ILine+1; READ(IChInp,'(27X,I15.1)',ERR=20,END=30) IPixelCount!X
+    ILine= ILine+1; READ(IChInp,'(27X,I15.1)',ERR=20,END=30) IPixelX
     CALL message ( LXL, dbg3, "IPixelX=",IPixelX)
     ! IPixelY
     ILine= ILine+1; READ(IChInp,'(27X,I15.1)',ERR=20,END=30) IPixelY

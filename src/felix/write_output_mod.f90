@@ -207,7 +207,7 @@ MODULE write_output_mod
     USE message_mod
     
     ! global inputs
-    USE IPARA, ONLY : ILN,IPixelCount,ISimFLAG,IOutPutReflections,INoOfLacbedPatterns,INhkl,IByteSize
+    USE IPARA, ONLY : ILN,IPixelX,IPixelY,ISimFLAG,IOutPutReflections,INoOfLacbedPatterns,INhkl,IByteSize
     USE SPARA, ONLY : SChemicalFormula
     USE RPARA, ONLY : Rhkl,RInitialThickness,RDeltaThickness,   RImageSimi
     USE IChannels, ONLY : IChOutWIImage, IChOut
@@ -218,7 +218,7 @@ MODULE write_output_mod
     INTEGER(IKIND), INTENT(IN) :: Iter,IThicknessIndex,IVar
     INTEGER(IKIND) :: IThickness,ind,jnd
     REAL(RKIND) :: Rx,Rdx,Rdelta!The parameter being changed and the amount of change
-    REAL(RKIND),DIMENSION(2*IPixelCount,2*IPixelCount) :: RImageToWrite
+    REAL(RKIND),DIMENSION(IPixelX,IPixelY) :: RImageToWrite
     CHARACTER(4) :: dString
     CHARACTER(10) :: hString,kString,lString
     CHARACTER(200) :: path,filename,fullpath
@@ -229,10 +229,10 @@ MODULE write_output_mod
     !Directory for difference image
     IF (IVar.LT.10) THEN
       WRITE(path,"(A1,I4.4,A2,I1,A1,I3.3,A3,I3.3,A1,I3.3)") &
-            "I",Iter,"_D",IVar,"_",IThickness,"nm_",2*IPixelcount,"x",2*IPixelcount
+            "I",Iter,"_D",IVar,"_",IThickness,"nm_",IPixelX,"x",IPixelY
     ELSE
       WRITE(path,"(A1,I4.4,A2,I2.2,A1,I3.3,A3,I3.3,A1,I3.3)") &
-            "I",Iter,"_D",IVar,"_",IThickness,"nm_",2*IPixelcount,"x",2*IPixelcount
+            "I",Iter,"_D",IVar,"_",IThickness,"nm_",IPixelX,"x",IPixelY
     END IF
     path = SChemicalFormula(1:ILN) // "_" // path ! This adds chemical to folder name
     CALL system('mkdir ' // path)
@@ -272,9 +272,9 @@ MODULE write_output_mod
       RImageToWrite = RImageSimi(:,:,ind,IThicknessIndex)
       ! Writes data to output image .bin files
       OPEN(UNIT=IChOutWIImage, STATUS= 'UNKNOWN', FILE=TRIM(ADJUSTL(fullpath)),&
-          FORM='UNFORMATTED',ACCESS='DIRECT',IOSTAT=IErr,RECL=2*IPixelCount*IByteSize)
+          FORM='UNFORMATTED',ACCESS='DIRECT',IOSTAT=IErr,RECL=IPixelX*IByteSize)
       IF(l_alert(IErr,"WriteIterationOutput","OPEN() output .bin file")) RETURN      
-      DO jnd = 1,2*IPixelCount
+      DO jnd = 1,IPixelY
         WRITE(IChOutWIImage,rec=jnd) RImageToWrite(jnd,:)
       END DO
       CLOSE(IChOutWIImage,IOSTAT=IErr) 
@@ -305,7 +305,7 @@ MODULE write_output_mod
     USE message_mod
     
     ! global inputs
-    USE IPARA, ONLY : ILN,IPixelCount,ISimFLAG,IOutPutReflections,INoOfLacbedPatterns,INhkl,IByteSize
+    USE IPARA, ONLY : ILN,IPixelX,IPixelY,ISimFLAG,IOutPutReflections,INoOfLacbedPatterns,INhkl,IByteSize
     USE CPARA, ONLY : CUgMat
     USE RPARA, ONLY : Rhkl,RgPool, RImageSimi, RInitialThickness, RDeltaThickness
     USE SPARA, ONLY : SChemicalFormula
@@ -316,7 +316,7 @@ MODULE write_output_mod
     INTEGER(IKIND), INTENT(OUT) :: IErr
     INTEGER(IKIND), INTENT(IN) :: Iter,IThicknessIndex
     INTEGER(IKIND) :: IThickness,ind,jnd
-    REAL(RKIND),DIMENSION(2*IPixelCount,2*IPixelCount) :: RImageToWrite
+    REAL(RKIND),DIMENSION(IPixelY,IPixelX) :: RImageToWrite
     CHARACTER(10) :: hString,kString,lString
     CHARACTER(200) :: path,filename,fullpath
     
@@ -325,11 +325,11 @@ MODULE write_output_mod
     IF (ISimFLAG.EQ.0) THEN !felixrefine output
       IThickness = NINT((RInitialThickness +(IThicknessIndex-1)*RDeltaThickness)/TEN)!in nm 
       WRITE(path,"(A1,I4.4,A1,I3.3,A3,I3.3,A1,I3.3)") &
-            "I",Iter,"_",IThickness,"nm_",2*IPixelcount,"x",2*IPixelcount
+            "I",Iter,"_",IThickness,"nm_",IPixelX,"x",IPixelY
     ELSE ! Sim Output
     IThickness = NINT(RInitialThickness +(IThicknessIndex-1)*RDeltaThickness)!in A 
       WRITE(path,"(A4,I4.4,A2,I3.3,A1,I3.3)") &
-            "Sim_",IThickness,"A_",2*IPixelcount,"x",2*IPixelcount
+            "Sim_",IThickness,"A_",IPixelX,"x",IPixelY
     END IF
     path = SChemicalFormula(1:ILN) // "_" // path ! This adds chemical to folder name
     CALL system('mkdir ' // path)
@@ -369,31 +369,15 @@ MODULE write_output_mod
 !DBG    IF(my_rank.EQ.0)PRINT*,TRIM(ADJUSTL(fullpath))!DEBUG
       ! Writes data to output image .bin files
       OPEN(UNIT=IChOutWIImage, STATUS= 'UNKNOWN', FILE=TRIM(ADJUSTL(fullpath)),&
-          FORM='UNFORMATTED',ACCESS='DIRECT',IOSTAT=IErr,RECL=2*IPixelCount*IByteSize)
+          FORM='UNFORMATTED',ACCESS='DIRECT',IOSTAT=IErr,RECL=IPixelX*IByteSize)
       IF(l_alert(IErr,"WriteIterationOutput","OPEN() output .bin file")) RETURN      
-      DO jnd = 1,2*IPixelCount
+      DO jnd = 1,IPixelY
         WRITE(IChOutWIImage,rec=jnd) RImageToWrite(jnd,:)
       END DO
       CLOSE(IChOutWIImage,IOSTAT=IErr) 
       IF(l_alert(IErr,"WriteIterationOutput","CLOSE() output .bin file")) RETURN       
     END DO
 
-    ! writes out structure.cif
-    CALL WriteIterationCIF(Iter,path,IErr)
-    IF(l_alert(IErr,"WriteIterationOutput","WriteIterationCIF")) RETURN   
-    IErr=0
-    ! write out StructureFactors.txt
-    WRITE(filename,*) "StructureFactors.txt"
-    WRITE(fullpath,*) TRIM(ADJUSTL(path)),'/',TRIM(ADJUSTL(filename))
-    OPEN(UNIT=IChOut,STATUS='UNKNOWN',FILE=TRIM(ADJUSTL(fullpath)))
-
-    DO ind = 1,INhkl
-      WRITE(IChOut,FMT='(3I5.1,2(1X,F13.9),2(1X,E14.6))') NINT(Rhkl(ind,:)),&
-              RgPool(ind,1),RgPool(ind,2),CUgMat(ind,1)
-    END DO
-
-    CLOSE(IChOut)    
-    
     RETURN  
     
   END SUBROUTINE WriteIterationOutput
