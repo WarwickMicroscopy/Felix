@@ -73,8 +73,6 @@ MODULE crystallography_mod
       RgPoolMag(ind)= SQRT(DOT_PRODUCT(RgPool(ind,:),RgPool(ind,:)))
       RgDotNorm(ind) = DOT_PRODUCT(RgPool(ind,:),RNormDirM)
     END DO
-!    !resolution in k-space
-!    RDeltaK = RConvergenceAngle/REAL(IPixelCount,RKIND)
     
     ! Calculate matrix  of g-vectors that corresponds to the Ug matrix
     DO ind=1,INhkl

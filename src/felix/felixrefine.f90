@@ -43,13 +43,13 @@ PROGRAM Felixrefine
   USE read_cif_mod
   USE set_scatter_factors_mod
   USE setup_reflections_mod
-  USE image_initialisation_mod
+!  USE image_initialisation_mod
   USE setup_space_group_mod
   USE crystallography_mod
   USE ug_matrix_mod
   USE refinementcontrol_mod       ! CONTAINS Simulate and SimulateAndFit
   USE write_output_mod
-  USE simplex_mod
+!  USE simplex_mod
 
   USE IConst; USE RConst; USE SConst
   USE IPara;  USE RPara;  USE CPara; USE SPara;
@@ -624,66 +624,16 @@ PROGRAM Felixrefine
   IF(l_alert(IErr,"felixrefine","Simulate")) CALL abort
   CALL PrintEndTime(LS,IStartTime2, "Simulation" )
 
-  IF (ISimFLAG.EQ.1) THEN ! Simulation only mode   
-    ! simulate multiple thicknesses
-    IF(my_rank.EQ.0) THEN
-      WRITE(SPrintString,FMT='(A24,I3,A12)') &
-        "Writing simulations for ", IThicknessCount," thicknesses"
-      CALL message(LS,SPrintString)
-      DO ind = 1,IThicknessCount
-        CALL WriteIterationOutput(Iter,ind,IErr)
-        IF(l_alert(IErr,"felixrefine","WriteIterationOutput")) CALL abort 
-      END DO  
-    END IF 
-   ELSE ! Refinement Mode
-    IF(my_rank.EQ.0) THEN!outputs come from core 0 only
-      ! Figure of merit is passed back as a global variable
-      CALL FigureOfMeritAndThickness(Iter,IThicknessIndex,IErr)
-      IF(l_alert(IErr,"felixrefine",&
-            "FigureOfMeritAndThickness")) CALL abort 
-      CALL message ( LS, "Writing output; baseline simulation" )
-      CALL WriteIterationOutput(Iter,IThicknessIndex,IErr)
-      IF(l_alert(IErr,"felixrefine","WriteIterationOutput")) CALL abort
-    END IF
-    
-    !===================================== ! Send the fit index to all cores
-    CALL MPI_BCAST(RFigureofMerit,1,MPI_DOUBLE_PRECISION,0,MPI_COMM_WORLD,IErr)
-    !=====================================
-  
-    !--------------------------------------------------------------------
-    ! Iterations and refinement begin
-    !--------------------------------------------------------------------
-
-    !--------------------------------------------------------------------
-    ! Branch depending upon refinement method
-    !--------------------------------------------------------------------
-    ! We have INoOfVariables to refine, held in RIndependentVariable(1:INoOfVariables)
-    ! Their type is held in IIndependentVariableType(1:INoOfVariables)
-
-    SELECT CASE(IRefineMethodFLAG)
-
-    CASE(1)
-      CALL SimplexRefinement
-      IF(l_alert(IErr,"felixrefine","SimplexRefinement")) CALL abort 
-    
-    CASE(2)
-      CALL DownhillRefinement
-      IF(l_alert(IErr,"felixrefine","DownhillRefinement")) CALL abort 
-      
-    CASE(3)
-      CALL MaxGradientRefinement
-      IF(l_alert(IErr,"felixrefine","MaxGradientRefinement")) CALL abort 
-      
-    CASE(4)
-      CALL PairwiseRefinement
-      IF(l_alert(IErr,"felixrefine","PairwiseRefinement")) CALL abort 
-     
-    CASE DEFAULT ! Simulation only, should never happen
-      CALL message( LS, "No refinement, simulation only")
-       
-    END SELECT 
-
-  END IF
+  ! simulate multiple thicknesses
+  IF(my_rank.EQ.0) THEN
+    WRITE(SPrintString,FMT='(A24,I3,A12)') &
+      "Writing simulations for ", IThicknessCount," thicknesses"
+    CALL message(LS,SPrintString)
+    DO ind = 1,IThicknessCount
+      CALL WriteIterationOutput(Iter,ind,IErr)
+      IF(l_alert(IErr,"felixrefine","WriteIterationOutput")) CALL abort 
+    END DO  
+  END IF 
 
   !--------------------------------------------------------------------
   ! deallocate Memory
@@ -788,7 +738,7 @@ CONTAINS
       CALL message(LS,"--------------------------------")
       CALL message(LS,no_tag,"Simplex ",ind, " of ", INoOfVariables+1)
       CALL message(LS,"--------------------------------")
-      CALL SimulateAndFit(RSimplexVariable(ind,:),Iter,IThicknessIndex,IErr)! Working as iteration 0?
+!      CALL SimulateAndFit(RSimplexVariable(ind,:),Iter,IThicknessIndex,IErr)! Working as iteration 0?
       IF(l_alert(IErr,"SimplexRefinement","SimulateAndFit")) RETURN
 
       RSimplexFoM(ind)=RFigureofMerit ! RFigureofMerit returned as global variable
@@ -799,10 +749,10 @@ CONTAINS
     !--------------------------------------------------------------------
 
     Iter = 1  
-    CALL NDimensionalDownhillSimplex(RSimplexVariable,RSimplexFoM,&
-          INoOfVariables+1,INoOfVariables,INoOfVariables,&
-          RExitCriteria,Iter,RStandardDeviation,RMean,IErr)
-    IF(l_alert(IErr,"SimplexRefinement","NDimensionalDownhillSimplex")) RETURN
+!    CALL NDimensionalDownhillSimplex(RSimplexVariable,RSimplexFoM,&
+!          INoOfVariables+1,INoOfVariables,INoOfVariables,&
+!          RExitCriteria,Iter,RStandardDeviation,RMean,IErr)
+!    IF(l_alert(IErr,"SimplexRefinement","NDimensionalDownhillSimplex")) RETURN
 
   END SUBROUTINE SimplexRefinement
 
@@ -901,7 +851,7 @@ CONTAINS
           !=====================================
           RCurrentVar=RVar0
           RCurrentVar(ind)=RCurrentVar(ind)+Rdx
-          CALL SimulateAndFit(RCurrentVar,Iter,IThicknessIndex,IErr)
+!          CALL SimulateAndFit(RCurrentVar,Iter,IThicknessIndex,IErr)
           IF(l_alert(IErr,"DownhillRefinement","SimulateAndFit")) RETURN
           CALL message ( LS, ".  Writing output; difference images" )
           IF (my_rank.EQ.0) CALL WriteDifferenceImages(Iter,IThicknessIndex,ind,RCurrentVar(ind),Rdx,IErr)
@@ -987,7 +937,7 @@ CONTAINS
       R3var(2)=RCurrentVar(xnd) 
       CALL message(LS,"Refining, point 2 of 3")
       Iter=Iter+1
-      CALL SimulateAndFit(RCurrentVar,Iter,IThicknessIndex,IErr)
+!      CALL SimulateAndFit(RCurrentVar,Iter,IThicknessIndex,IErr)
       IF(l_alert(IErr,"DownhillRefinement","SimulateAndFit")) RETURN
       CALL WriteIterationOutputWrapper(Iter,IThicknessIndex,IPrintFLAG,IErr)
       CALL BestFitCheck(RFigureofMerit,RBestFit,RCurrentVar,RIndependentVariable,IErr)
@@ -1003,7 +953,7 @@ CONTAINS
       R3var(3)=RCurrentVar(xnd) ! third point
       CALL message( LS, "Refining, point 3 of 3")
       Iter=Iter+1
-      CALL SimulateAndFit(RCurrentVar,Iter,IThicknessIndex,IErr)
+!      CALL SimulateAndFit(RCurrentVar,Iter,IThicknessIndex,IErr)
       IF(l_alert(IErr,"DownhillRefinement","SimulateAndFit")) RETURN
       CALL WriteIterationOutputWrapper(Iter,IThicknessIndex,IPrintFLAG,IErr)
       CALL BestFitCheck(RFigureofMerit,RBestFit,RCurrentVar,RIndependentVariable,IErr)
@@ -1041,7 +991,7 @@ CONTAINS
         RCurrentVar=RVar0+RPvec*RPvecMag
         R3var(lnd)=RCurrentVar(xnd)! next point
         Iter=Iter+1
-        CALL SimulateAndFit(RCurrentVar,Iter,IThicknessIndex,IErr)
+!        CALL SimulateAndFit(RCurrentVar,Iter,IThicknessIndex,IErr)
         IF(l_alert(IErr,"DownhillRefinement","SimulateAndFit")) RETURN
         CALL WriteIterationOutputWrapper(Iter,IThicknessIndex,IPrintFLAG,IErr)
         CALL BestFitCheck(RFigureofMerit,RBestFit,RCurrentVar,RIndependentVariable,IErr)
@@ -1066,7 +1016,7 @@ CONTAINS
       CALL message (LS, SPrintString)
       RCurrentVar=RVar0+RPvec*(RvarMin-RVar0(xnd))/RPvec(xnd) ! Put prediction into RCurrentVar
       Iter=Iter+1
-      CALL SimulateAndFit(RCurrentVar,Iter,IThicknessIndex,IErr)
+!      CALL SimulateAndFit(RCurrentVar,Iter,IThicknessIndex,IErr)
       IF(l_alert(IErr,"DownhillRefinement","SimulateAndFit")) RETURN
       IPrintFLAG=1!Save this simulation
       CALL WriteIterationOutputWrapper(Iter,IThicknessIndex,IPrintFLAG,IErr)
@@ -1092,7 +1042,7 @@ CONTAINS
     !--------------------------------------------------------------------
 
     Iter=Iter+1
-    CALL SimulateAndFit(RIndependentVariable,Iter,IThicknessIndex,IErr)
+!    CALL SimulateAndFit(RIndependentVariable,Iter,IThicknessIndex,IErr)
     IF(l_alert(IErr,"DownhillRefinement","SimulateAndFit")) RETURN
     IPrintFLAG=2
     CALL WriteIterationOutputWrapper(Iter,IThicknessIndex,IPrintFLAG,IErr)
@@ -1187,7 +1137,7 @@ CONTAINS
         IF(IVariableType.EQ.2) Rdx=ABS(RScale)
         ! three point gradient measurement, + first
         RCurrentVar(ind)=RVar0(ind)+Rdx
-        CALL SimulateAndFit(RCurrentVar,Iter,IThicknessIndex,IErr)
+!        CALL SimulateAndFit(RCurrentVar,Iter,IThicknessIndex,IErr)
         IF(l_alert(IErr,"MaxGradientRefinement","SimulateAndFit")) RETURN
         CALL message ( LS, ".  Writing output; difference images" )
         IF (my_rank.EQ.0) CALL WriteDifferenceImages(Iter,IThicknessIndex,ind,RCurrentVar(ind),Rdx,IErr)
@@ -1198,7 +1148,7 @@ CONTAINS
         RPlus=RFigureofMerit
         ! Now minus dx
         RCurrentVar(ind)=RVar0(ind)-Rdx
-        CALL SimulateAndFit(RCurrentVar,Iter,IThicknessIndex,IErr)
+ !       CALL SimulateAndFit(RCurrentVar,Iter,IThicknessIndex,IErr)
         IF(l_alert(IErr,"MaxGradientRefinement","SimulateAndFit")) RETURN
         CALL BestFitCheck(RFigureofMerit,RBestFit,RCurrentVar,RIndependentVariable,IErr)
         Rminus=RFigureofMerit
@@ -1240,7 +1190,7 @@ CONTAINS
 !        SPrintString=TRIM(ADJUSTL(SPrintString))
 !        CALL message (LS, SPrintString)
 !      END IF
-      CALL SimulateAndFit(RCurrentVar,Iter,IThicknessIndex,IErr)
+!      CALL SimulateAndFit(RCurrentVar,Iter,IThicknessIndex,IErr)
       IF(l_alert(IErr,"MaxGradientRefinement","SimulateAndFit")) RETURN
       CALL BestFitCheck(RFigureofMerit,RBestFit,RCurrentVar,RIndependentVariable,IErr)
       RFit0=RFigureofMerit ! should be the best fit so far
@@ -1286,7 +1236,7 @@ CONTAINS
         R3var(2)=RCurrentVar(xnd) 
         CALL message(LS,"Refining, point 2 of 3")
         Iter=Iter+1
-        CALL SimulateAndFit(RCurrentVar,Iter,IThicknessIndex,IErr)
+!        CALL SimulateAndFit(RCurrentVar,Iter,IThicknessIndex,IErr)
         IF(l_alert(IErr,"MaxGradientRefinement","SimulateAndFit")) RETURN
         CALL WriteIterationOutputWrapper(Iter,IThicknessIndex,IPrintFLAG,IErr)
         CALL BestFitCheck(RFigureofMerit,RBestFit,RCurrentVar,RIndependentVariable,IErr)
@@ -1302,7 +1252,7 @@ CONTAINS
         R3var(3)=RCurrentVar(xnd) ! third point
         CALL message( LS, "Refining, point 3 of 3")
         Iter=Iter+1
-        CALL SimulateAndFit(RCurrentVar,Iter,IThicknessIndex,IErr)
+!        CALL SimulateAndFit(RCurrentVar,Iter,IThicknessIndex,IErr)
         IF(l_alert(IErr,"MaxGradientRefinement","SimulateAndFit")) RETURN
         CALL WriteIterationOutputWrapper(Iter,IThicknessIndex,IPrintFLAG,IErr)
         CALL BestFitCheck(RFigureofMerit,RBestFit,RCurrentVar,RIndependentVariable,IErr)
@@ -1340,7 +1290,7 @@ CONTAINS
               RCurrentVar=RVar0+RPvec*RPvecMag
               R3var(lnd)=RCurrentVar(xnd)! next point
               Iter=Iter+1
-              CALL SimulateAndFit(RCurrentVar,Iter,IThicknessIndex,IErr)
+!              CALL SimulateAndFit(RCurrentVar,Iter,IThicknessIndex,IErr)
               IF(l_alert(IErr,"MaxGradientRefinement","SimulateAndFit")) RETURN
               CALL WriteIterationOutputWrapper(Iter,IThicknessIndex,IPrintFLAG,IErr)
               CALL BestFitCheck(RFigureofMerit,RBestFit,RCurrentVar,RIndependentVariable,IErr)
@@ -1372,7 +1322,7 @@ CONTAINS
         RCurrentVar=RVar0
       END IF
       Iter=Iter+1
-      CALL SimulateAndFit(RCurrentVar,Iter,IThicknessIndex,IErr)
+!      CALL SimulateAndFit(RCurrentVar,Iter,IThicknessIndex,IErr)
       IF(l_alert(IErr,"MaxGradientRefinement","SimulateAndFit")) RETURN
       IPrintFLAG=1!Save this simulation
       CALL WriteIterationOutputWrapper(Iter,IThicknessIndex,IPrintFLAG,IErr)
@@ -1499,14 +1449,14 @@ CONTAINS
           R3fit(1)=RFigureofMerit ! point 1 is the incoming simulation and fit index
           RPvec(ind)=RScale/5.0 ! small change in current variable for second point
           RCurrentVar=RVar0+RPvec ! second point
-          CALL SimulateAndFit(RCurrentVar,Iter,IThicknessIndex,IErr)
+!          CALL SimulateAndFit(RCurrentVar,Iter,IThicknessIndex,IErr)
           IF(l_alert(IErr,"PairwiseRefinement","SimulateAndFit")) RETURN
           CALL BestFitCheck(RFigureofMerit,RBestFit,RCurrentVar,RIndependentVariable,IErr)
           R3fit(2)=RFigureofMerit
           ! now look along combination of 2 parameters for third point
           RPvec(ind+1)=RScale/5.0 
           RCurrentVar=RVar0+RPvec ! Update the parameters to simulate
-          CALL SimulateAndFit(RCurrentVar,Iter,IThicknessIndex,IErr)
+!          CALL SimulateAndFit(RCurrentVar,Iter,IThicknessIndex,IErr)
           IF(l_alert(IErr,"PairwiseRefinement","SimulateAndFit")) RETURN
           CALL BestFitCheck(RFigureofMerit,RBestFit,RCurrentVar,RIndependentVariable,IErr)
           R3fit(3)=RFigureofMerit
@@ -1533,7 +1483,7 @@ CONTAINS
           RCurrentVar=RVar0
           RPvecMag=RScale
           Iter=Iter+1
-          CALL SimulateAndFit(RCurrentVar,Iter,IThicknessIndex,IErr)
+!          CALL SimulateAndFit(RCurrentVar,Iter,IThicknessIndex,IErr)
           IF(l_alert(IErr,"PairwiseRefinement","SimulateAndFit")) RETURN
           CALL WriteIterationOutputWrapper(Iter,IThicknessIndex,IPrintFLAG,IErr)
           IF(l_alert(IErr,"PairwiseRefinement","WriteIterationOutputWrapper")) RETURN
@@ -1557,7 +1507,7 @@ CONTAINS
         R3var(2)=RCurrentVar(ind) 
         CALL message( LS, "simulation 2")
         Iter=Iter+1
-        CALL SimulateAndFit(RCurrentVar,Iter,IThicknessIndex,IErr)
+!        CALL SimulateAndFit(RCurrentVar,Iter,IThicknessIndex,IErr)
         IF(l_alert(IErr,"PairwiseRefinement","SimulateAndFit")) RETURN
         CALL WriteIterationOutputWrapper(Iter,IThicknessIndex,IPrintFLAG,IErr)
         IF(l_alert(IErr,"PairwiseRefinement","WriteIterationOutputWrapper")) RETURN
@@ -1577,7 +1527,7 @@ CONTAINS
         R3var(3)=RCurrentVar(ind)
         CALL message( LS, "simulation 2") !?? JR should this be 'simulation 3' for 3rd point (remove this comment once changed)
         Iter=Iter+1
-        CALL SimulateAndFit(RCurrentVar,Iter,IThicknessIndex,IErr)
+!        CALL SimulateAndFit(RCurrentVar,Iter,IThicknessIndex,IErr)
         IF(l_alert(IErr,"PairwiseRefinement","SimulateAndFit")) RETURN
         CALL WriteIterationOutputWrapper(Iter,IThicknessIndex,IPrintFLAG,IErr)
         IF(l_alert(IErr,"PairwiseRefinement","WriteIterationOutputWrapper")) RETURN
@@ -1628,7 +1578,7 @@ CONTAINS
           END IF
 
           Iter=Iter+1
-          CALL SimulateAndFit(RCurrentVar,Iter,IThicknessIndex,IErr)
+!          CALL SimulateAndFit(RCurrentVar,Iter,IThicknessIndex,IErr)
           IF(l_alert(IErr,"PairwiseRefinement","SimulateAndFit")) RETURN
           CALL WriteIterationOutputWrapper(Iter,IThicknessIndex,IPrintFLAG,IErr)
           IF(l_alert(IErr,"PairwiseRefinement","WriteIterationOutputWrapper")) RETURN
@@ -1650,7 +1600,7 @@ CONTAINS
           ! We reached zero D-W factor in convexity test, skip the prediction
           CALL message( LS, "Using zero Debye Waller factor, simulate and refine next variable" )
           Iter=Iter+1
-          CALL SimulateAndFit(RCurrentVar,Iter,IThicknessIndex,IErr)
+!          CALL SimulateAndFit(RCurrentVar,Iter,IThicknessIndex,IErr)
           IF(l_alert(IErr,"PairwiseRefinement","SimulateAndFit")) RETURN
           CALL WriteIterationOutputWrapper(Iter,IThicknessIndex,IPrintFLAG,IErr)
           IF(l_alert(IErr,"PairwiseRefinement","WriteIterationOutputWrapper")) RETURN
@@ -1667,7 +1617,7 @@ CONTAINS
           RCurrentVar=RVar0+RPvec*(RvarMin-RVar0(ind))/RPvec(ind)
           !R3var(jnd)=RCurrentVar(ind)!do I need this?
           Iter=Iter+1
-          CALL SimulateAndFit(RCurrentVar,Iter,IThicknessIndex,IErr)
+!          CALL SimulateAndFit(RCurrentVar,Iter,IThicknessIndex,IErr)
           IF(l_alert(IErr,"PairwiseRefinement","SimulateAndFit")) RETURN
           CALL WriteIterationOutputWrapper(Iter,IThicknessIndex,IPrintFLAG,IErr)
           IF(l_alert(IErr,"PairwiseRefinement","WriteIterationOutputWrapper")) RETURN
@@ -1719,7 +1669,7 @@ CONTAINS
 
     IPrintFLAG=2
     Iter=Iter+1
-    CALL SimulateAndFit(RIndependentVariable,Iter,IThicknessIndex,IErr)
+!    CALL SimulateAndFit(RIndependentVariable,Iter,IThicknessIndex,IErr)
     IF(l_alert(IErr,"PairwiseRefinement","SimulateAndFit")) RETURN
     CALL WriteIterationOutputWrapper(Iter,IThicknessIndex,IPrintFLAG,IErr)
     IF(l_alert(IErr,"PairwiseRefinement","WriteIterationOutputWrapper")) RETURN

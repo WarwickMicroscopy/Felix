@@ -1,4 +1,4 @@
-# Input file for Felix version :RB_parabola: Build :09Feb2017:
+# Input file for Felix version :cRED: Build :31-08-2022:
 # ------------------------------------
 
 # ------------------------------------
@@ -10,11 +10,12 @@ IHolzFLAG                 = 0
 IAbsorbFLAG               = 2
 IByteSize                 = 2
 
-# radius of the beam in pixels
-IPixelCount               = 64
+# dimensions of the simulation in pixels
+IPixelX                   = 64
+IPixelY                   = 64
 
 # beam selection criteria
-IMinReflectionPool        = 100
+IMinReflectionPool        = 200
 IMinStrongBeams           = 50
 IMinWeakBeams             = 0
 

@@ -56,7 +56,7 @@ MODULE read_files_mod
           IAbsorbFLAG, IByteSize, INhkl, &
           IMinStrongBeams, IMinWeakBeams, ISimFLAG, IRefineMode, &
           IWeightingFLAG, IRefineMethodFLAG, ICorrelationFLAG, IImageProcessingFLAG, &
-          INoofUgs, IPrint, IPixelCount
+          INoofUgs, IPrint, IPixelX, IPixelY, IPixelCount
     USE RPARA, ONLY : RDebyeWallerConstant, RAbsorptionPercentage, RConvergenceAngle, &
           RZDirC, RXDirC, RNormDirC, RAcceleratingVoltage, RAcceptanceAngle, &
           RInitialThickness, RFinalThickness, RDeltaThickness, RBlurRadius, &
@@ -109,15 +109,17 @@ MODULE read_files_mod
     CALL message ( LXL, dbg3, "IByteSize=",IByteSize) ! depends on system, 8 for csc, 2 tinis
 
     !--------------------------------------------------------------------
-    ! radius of the beam in pixels
+    ! x and y dimensions of the simulation in pixels
     !--------------------------------------------------------------------
 
     ! Two comment lines
     ILine= ILine+1; READ(IChInp,ERR=20,END=30,FMT='(A)')
     ILine= ILine+1; READ(IChInp,ERR=20,END=30,FMT='(A)')
-    ! IPixelCount
+    ! IPixelX
     ILine= ILine+1; READ(IChInp,'(27X,I15.1)',ERR=20,END=30) IPixelCount
     CALL message ( LXL, dbg3, "IPixelCount=",IPixelCount)
+    ! IPixelY
+    ILine= ILine+1; READ(IChInp,'(27X,I15.1)',ERR=20,END=30) IPixelY
 
     !--------------------------------------------------------------------
     ! beam selection criteria
