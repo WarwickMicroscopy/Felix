@@ -569,8 +569,21 @@ PROGRAM Felixrefine
   ! creates circular or square image mask depending upon IMaskFLAG and assign 
   ! IPixelLocations ALLOCATED here
   ! Have removed IMaskFLAG
-  CALL ImageMaskInitialisation(IErr)
-  IF(l_alert(IErr,"felixrefine","ImageMaskInitialisation")) CALL abort
+!  CALL ImageMaskInitialisation(IErr)
+!  IF(l_alert(IErr,"felixrefine","ImageMaskInitialisation")) CALL abort
+
+  IPixelTotal = (2*IPixelCount)**2
+  ALLOCATE(IPixelLocations(IPixelTotal,2),STAT=IErr)
+  IF(l_alert(IErr,"felixrefine","allocate IPixelLocations")) CALL abort
+  knd=0
+  DO ind = 1,2*IPixelCount
+    DO jnd = 1,2*IPixelCount
+      knd = knd+1
+      IPixelLocations(knd,1) = ind
+      IPixelLocations(knd,2) = jnd
+    END DO
+  END DO
+
 
   !--------------------------------------------------------------------
   ! allocate & setup image arrays for pixel-parallel simulations
