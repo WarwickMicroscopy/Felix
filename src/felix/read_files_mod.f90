@@ -34,7 +34,7 @@ MODULE read_files_mod
 
   IMPLICIT NONE
   PRIVATE
-  PUBLIC :: ReadInpFile, ReadHklFile, ReadExperimentalImages
+  PUBLIC :: ReadInpFile, ReadHklFile
 
   CONTAINS
 
@@ -116,8 +116,8 @@ MODULE read_files_mod
     ILine= ILine+1; READ(IChInp,ERR=20,END=30,FMT='(A)')
     ILine= ILine+1; READ(IChInp,ERR=20,END=30,FMT='(A)')
     ! IPixelX
-    ILine= ILine+1; READ(IChInp,'(27X,I15.1)',ERR=20,END=30) IPixelCount
-    CALL message ( LXL, dbg3, "IPixelCount=",IPixelCount)
+    ILine= ILine+1; READ(IChInp,'(27X,I15.1)',ERR=20,END=30) IPixelCount!X
+    CALL message ( LXL, dbg3, "IPixelX=",IPixelX)
     ! IPixelY
     ILine= ILine+1; READ(IChInp,'(27X,I15.1)',ERR=20,END=30) IPixelY
 
@@ -251,8 +251,6 @@ MODULE read_files_mod
     ILine= ILine+1; READ(IChInp,'(27X,I15.1)',ERR=20,END=30) INoofUgs
     ! SAtomicSites
     ILine=ILine+1; READ(IChInp,FMT='(A)',ERR=20,END=30) SAtomicSites
-    CALL DetermineRefineableAtomicSites(SAtomicSites,IErr)
-    IF(l_alert(IErr,"ReadInpFile","DetermineRefineableAtomicSites()")) RETURN
     ! IPrint
     ILine= ILine+1; READ(IChInp,'(27X,I15.1)',ERR=20,END=30) IPrint
     ! RSimplexLengthScale
@@ -367,208 +365,6 @@ MODULE read_files_mod
 
   END SUBROUTINE ReadHklFile
 
-  !%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-
-  !>
-  !! Procedure-description: This subroutine reads in the input experimental images.
-  !! It inquires whether there are .img or .dm3 files in LR_NxN/, DM3/ or directly in the sample folder.
-  !! It then reads in the images files expecting them to match the necessary LACBED patterns.
-  !! With the .dm3 files, it writes out the equivalent .img files to be used next time.
-  !!
-  !! Major-Authors: Keith Evans (2014), Richard Beanland (2016), Jacob Richardson (2017)
-  !!
-  SUBROUTINE ReadExperimentalImages(IErr)
-
-    USE MyNumbers
-    USE message_mod
-
-    USE read_dm3_mod
-
-    ! global outputs
-    USE RPARA, ONLY : RImageExpi
-
-    ! global inputs
-    USE IChannels, ONLY : IChInImage, IChOutWIImage
-    USE SPARA, ONLY : SChemicalFormula
-    USE IPARA, ONLY : INoOfLacbedPatterns,IPixelCount,IByteSize,ILN
-    USE RPARA, ONLY : RInputHKLs
-    USE SPARA, ONLY : SPrintString
-    
-    IMPLICIT NONE
-
-    INTEGER(IKIND),INTENT(OUT) :: IErr
-    INTEGER(IKIND) :: ind, jnd, INegError = 0, IPixelArray(2), IFileTypeID, IFound
-    INTEGER(8) :: IFileSize
-    CHARACTER(100) :: SFilename,SPath,SImageExtension,SFilePath
-    LOGICAL :: LFileExist
-    REAL(4),ALLOCATABLE :: RImage4ByteFloatDM3(:,:)
-
-    ! for IByteSize: 2bytes=64-bit input file (NB tinis specifies in bytes, not bits)
-    !?? JR Is it 8bytes=64-bit and not 2bytes=64-bit?
-    ! iteratively INQUIRE each possible location for +0+0+0 .bin or .dm3 image
-    IFound=0!flag to say if we found a readable a file
-    DO IFileTypeID=1,4
-      SELECT CASE(IFileTypeID)
-        CASE(1) ! .img in LR_NxN/
-          WRITE(SPath,'(A,I0,A,I0,A)') 'LR_',2*IPixelCount,'x',2*IPixelCount,'/'
-          WRITE(SImageExtension,'(A)') '.img'
-          ! NB pixel size read from felix.inp and this is expected to match pixels in foldername
-        CASE(2) ! .dm3 in DM3/
-          SPath='DM3/'
-          WRITE(SImageExtension,'(A)') '.dm3'
-        CASE(3) ! .img directly in sample directory
-          SPath=''
-          WRITE(SImageExtension,'(A)') '.img'
-        CASE(4) ! .dm3 directly in sample directory
-          SPath=''
-          WRITE(SImageExtension,'(A)') '.dm3'
-      END SELECT
-      WRITE(SFilePath ,'(A,A,A,A)') TRIM(SPath),SChemicalFormula(1:ILN),'_+0+0+0',TRIM(SImageExtension)
-
-      ! check if corresponding _+0+0+0.img or _+0+0+0.dm3 image exists
-      INQUIRE(FILE=TRIM(SFilePath) ,EXIST=LFileExist)
-      IF(LFileExist) THEN
-        IFound=1
-        !IF (my_rank.EQ.0) PRINT*,"Found experimental image with filepath ",TRIM(SFilePath)
-        CALL message(LM, "Found initial experimental image with filepath ",TRIM(SFilePath) )
-        EXIT
-      ELSE
-        !IF (my_rank.EQ.0) PRINT*,"Did not find experimental image with filepath ",TRIM(SFilePath)
-        CALL message(LM, "Did not find initial experimental image with filepath ",TRIM(SFilePath) )
-      END IF    
-    END DO
-    ! NB once a file is found, the above do-loop is exited and the variables IFileTypeID, SFilePath and
-    ! SPath will have the correct values to continue working with them.
-
-    IF (IFound.EQ.0) THEN
-      CALL message(LS, "Did not find experimental image at ",TRIM(SFilePath) )
-      IErr = 1
-      RETURN
-    END IF
-
-    ! if .dm3 allocate raw 4-byte float image matrix
-    IF(IFileTypeID.EQ.2.OR.IFileTypeID.EQ.4) ALLOCATE(RImage4ByteFloatDM3(2*IPixelCount,2*IPixelCount),STAT=IErr)
-    IF(l_alert(IErr,"ReadExperimentalImages","allocate RImage4ByteFloatDM3")) RETURN
-
-    ! Read in expected image for each LacbedPattern
-    DO ind = 1,INoOfLacbedPatterns
-      WRITE(SFilename,'(A,A,SP,3(I0),A)') SChemicalFormula(1:ILN),"_",&
-            NINT(RInputHKLs(ind,1:3)), TRIM(SImageExtension)
-      SFilePath  = TRIM(SPath)//SFilename
-      CALL message(LL, dbg7, "SFilename = ", SFilePath )
-
-      ! do corresponding read-in process for .img or .dm3
-      SELECT CASE(IFileTypeID)
-        CASE(1,3) ! .img
-          OPEN(UNIT=IChInImage, STATUS= 'UNKNOWN', FILE=TRIM(SFilePath), &
-                FORM='UNFORMATTED',ACCESS='DIRECT',IOSTAT=IErr,RECL=2*IPixelCount*IByteSize)
-          IF(l_alert(IErr,"ReadExperimentalImages",&
-                "OPEN() an experimental image, SFilePath="//TRIM(SFilePath)//&
-                ', check input HKLs in felix.hkl')) RETURN
-          DO jnd=1,2*IPixelCount
-            READ(IChInImage,rec=jnd,IOSTAT=IErr) RImageExpi(jnd,:,ind)
-            IF(l_alert(IErr,"ReadExperimentalImages",&
-                  "READ() an experimental image, SFilePath="//TRIM(SFilePath)//&
-                  ', check input HKLs in felix.hkl')) RETURN
-          END DO
-          CLOSE(IChInImage,IOSTAT=IErr)
-          IF(l_alert(IErr,"ReadExperimentalImages",&
-                "CLOSE() an experimental image, SFilePath="//TRIM(SFilePath))) RETURN
-
-        CASE(2,4) ! .dm3
-          ! read in .dm3
-          !IF (my_rank.EQ.0) PRINT*,"Reading ",TRIM(SFilePath)
-          CALL ReadDM3TagsAndImage( SFilePath, 2*IPixelCount, 2*IPixelCount, IErr, RImage4ByteFloatDM3 )
-          IF(l_alert(IErr,"ReadExperimentalImages",&
-                "ReadDM3TagsAndImage() where SFilePath="//TRIM(SFilePath))) RETURN
-          RImageExpi(:,:,ind) = REAL( RImage4ByteFloatDM3, RKIND )
-      END SELECT
-    END DO
-
-    ! if .dm3 deallocate raw 4-byte float image matrix
-    IF(IFileTypeID.EQ.2.OR.IFileTypeID.EQ.4) THEN
-      DEALLOCATE(RImage4ByteFloatDM3,STAT=IErr)
-      IF(l_alert(IErr,"ReadExperimentalImages","deallocate RImage4ByteFloatDM3")) RETURN
-    END IF
-
-    ! If this is reached, subroutine has not exited early with error and hence
-    ! images have been read-in correctly
-    WRITE(SPrintString,'(I0,A)') INoOfLacbedPatterns,' experimental images successfully loaded'
-    CALL message(LS,TRIM(ADJUSTL(SPrintString)))
-
-  END SUBROUTINE ReadExperimentalImages
-
-  !%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-
-  !>
-  !! Procedure-description:
-  !!
-  !! Major-Authors: Keith Evans (2014), Richard Beanland (2016)
-  !!
-  SUBROUTINE DetermineRefineableAtomicSites(SAtomicSites,IErr)
-
-    USE MyNumbers
-    USE message_mod
-    ! global outputs
-    USE IPARA, ONLY : IAtomsToRefine   
-    ! global inputs
-    USE IPARA, ONLY : IRefineMode 
-
-    IMPLICIT NONE  
-
-    CHARACTER(200), INTENT(IN) :: SAtomicSites
-    INTEGER(IKIND),INTENT(OUT) :: IErr
-    INTEGER(IKIND) :: IPos, IPos1, IPos2, ind
-    CHARACTER(200) :: SFormatString, SLengthofNumberString
-
-    IPos1 = SCAN(SAtomicSites,'(')
-    IPos2 = SCAN(SAtomicSites,')')
-    ! error check
-    IF(((IPos2-IPos1).EQ.1).OR.(IPos1.EQ.0).OR.(IPos2.EQ.0)) THEN 
-      IF(IRefineMode(2).EQ.1) IErr = 1
-      IF(l_alert(IErr,"DetermineRefineableAtomicSites",&
-              "You Have Not Specfied Atomic Sites to Refine")) RETURN
-    END IF
-
-    IF ((IPos2-IPos1).GT.1.AND.SCAN(SAtomicSites,',').EQ.0) THEN
-
-      ALLOCATE(IAtomsToRefine(1),STAT=IErr)
-      IF(l_alert(IErr,"DetermineRefineableAtomicSites","allocate IAtomsToRefine")) RETURN
-      CALL message (LM, "SIZE(IAtomsToRefine) = ",SIZE(IAtomsToRefine) )
-      WRITE(SLengthofNumberString,*) LEN(SAtomicSites((IPos1+1):(IPos2-1))) 
-      WRITE(SFormatString,*) "(I"//TRIM(ADJUSTL(SLengthofNumberString))//")"
-      READ(SAtomicSites((IPos1+1):(IPos2-1)),FMT=SFormatString) IAtomsToRefine(1)
-    ELSE
-      IPos = 1
-      DO 
-        IF(SCAN(SAtomicSites(IPos1:IPos2),',').NE.0) THEN
-          IPos1 = IPos1 + LEN(SAtomicSites(IPos1:(IPos1+SCAN(SAtomicSites(IPos1:IPos2),','))))
-          IPos = IPos+1
-        END IF
-        IF (IPos2-IPos1.LE.1) EXIT
-      END DO
-
-      ALLOCATE(IAtomsToRefine(IPos),STAT=IErr)
-      IF(l_alert(IErr,"DetermineRefineableAtomicSites","allocate IAtomsToRefine")) RETURN
-       
-      IPos1 = SCAN(SAtomicSites,'(')
-      DO ind = 1,SIZE(IAtomsToRefine,DIM=1)
-        IF(SCAN(SAtomicSites((IPos1+1):IPos2),',').NE.0) THEN
-          IPos = SCAN(SAtomicSites((IPos1+1):IPos2),',')-1
-          WRITE(SLengthofNumberString,*) LEN(SAtomicSites((IPos1+1):(IPos1+IPos))) 
-          WRITE(SFormatString,*) "(I"//TRIM(ADJUSTL(SLengthofNumberString))//")"
-          READ(SAtomicSites((IPos1+1):(IPos1+IPos)),FMT=SFormatString) IAtomsToRefine(ind)
-          IPos1 = IPos1 + IPos + 1 
-        ELSE
-          WRITE(SLengthofNumberString,*) LEN(SAtomicSites((IPos1+1):(IPos2-1))) 
-          WRITE(SFormatString,*) "(I"//TRIM(ADJUSTL(SLengthofNumberString))//")"
-          READ(SAtomicSites((IPos1+1):(IPos2-1)),FMT=SFormatString) IAtomsToRefine(ind)
-        END IF
-      END DO
-    END IF
-    CALL message (LM, "Refining atoms ", IAtomsToRefine )
-    
-  END SUBROUTINE DetermineRefineableAtomicSites
 
   !%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
@@ -625,3 +421,4 @@ MODULE read_files_mod
   END SUBROUTINE ThreeDimVectorReadIn
 
 END MODULE read_files_mod
+

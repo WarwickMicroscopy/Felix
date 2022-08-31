@@ -129,15 +129,7 @@ PROGRAM Felixrefine
   CALL ReadHklFile(IErr) ! the list of hkl's to input/output
   IF(l_alert(IErr,"felixrefine","ReadHklFile")) CALL abort
 
-  ! read experimental images (if in refinement mode)
-  IF (ISimFLAG.EQ.0) THEN ! it's a refinement, so read experimental images
-    ALLOCATE(RImageExpi(2*IPixelCount,2*IPixelCount,INoOfLacbedPatterns),STAT=IErr)  
-    IF(l_alert(IErr,"felixrefine","allocate RImageExpi")) CALL abort
-    CALL ReadExperimentalImages(IErr)
-    IF(l_alert(IErr,"felixrefine","ReadExperimentalImages")) CALL abort
-  ELSE ! not refinement, simulation only
-    CALL message(LS,"Simulation only")
-  END IF
+  CALL message(LS,"Simulation only")
   !--------------------------------------------------------------------
   ! set up scattering factors, relativistic electrons, reciprocal lattice
   !--------------------------------------------------------------------
