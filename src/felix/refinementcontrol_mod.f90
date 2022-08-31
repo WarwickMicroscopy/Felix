@@ -293,7 +293,7 @@ MODULE refinementcontrol_mod
     ! global inputs
     USE IPARA, ONLY : INoOfLacbedPatterns,ICorrelationFLAG,IPixelCount,IThicknessCount, &
           IImageProcessingFLAG,IOutPutReflections
-    USE RPARA, ONLY : RInitialThickness,RDeltaThickness,RImageMask,Rhkl, &
+    USE RPARA, ONLY : RInitialThickness,RDeltaThickness,Rhkl, &
           RImageSimi, &   ! a main input - simulated images
           RImageExpi      ! a main input - experimental images to compare
     USE IChannels, ONLY : IChOut
@@ -304,24 +304,17 @@ MODULE refinementcontrol_mod
     INTEGER(IKIND) :: ind,jnd,knd,IErr,IThickness,hnd,Iter
     INTEGER(IKIND),DIMENSION(INoOfLacbedPatterns) :: IBestImageThicknessIndex
     REAL(RKIND),DIMENSION(2*IPixelCount,2*IPixelCount) :: RSimulatedImage,RExperimentalImage
-    REAL(RKIND),DIMENSION(:,:),ALLOCATABLE :: RMaskImage
     REAL(RKIND) :: RTotalCorrelation,RBestTotalCorrelation,RImageCorrelation,RBestThickness,&
          RThicknessRange,Rradius
     REAL(RKIND),DIMENSION(INoOfLacbedPatterns) :: RBestCorrelation
     CHARACTER(20) :: Snum       
 
-    IF (ICorrelationFLAG.EQ.3) THEN ! allocate mask
-      ALLOCATE(RMaskImage(2*IPixelCount,2*IPixelCount),STAT=IErr)
-    END IF
     ! The best correlation for each image will go in here, initialise at the maximum value
     RBestCorrelation = TEN
     RBestTotalCorrelation = TEN ! The best mean of all correlations
     ! The thickness with the lowest figure of merit for each image
     IBestImageThicknessIndex = 1 
 
-    ! write out PatternFits.txt
-!    OPEN(UNIT=IChOut,FILE='PatternFits.txt',FORM='formatted',STATUS='unknown',POSITION='append')
-!    WRITE(IChOut,FMT='(A10,I4)') "Iteration ",Iter
     !\/----------------------------------------------------------------------
     DO jnd = 1,IThicknessCount
 !      WRITE(IChOut,FMT='(A10,I4)') "Thickness ",NINT(RInitialThickness+(jnd-1)*RDeltaThickness)
@@ -329,9 +322,6 @@ MODULE refinementcontrol_mod
       DO ind = 1,INoOfLacbedPatterns
         RSimulatedImage = RImageSimi(:,:,ind,jnd)
         RExperimentalImage = RImageExpi(:,:,ind)
-        IF (ICorrelationFLAG.EQ.3) THEN ! masked correlation, update mask
-          RMaskImage=RImageMask(:,:,ind)
-        END IF
         
         ! image processing
         SELECT CASE (IImageProcessingFLAG)
@@ -365,17 +355,7 @@ MODULE refinementcontrol_mod
           CASE(2) ! Normalised Cross Correlation
             RImageCorrelation = ONE-& ! NB Perfect Correlation = 0 not 1
                   Normalised2DCrossCorrelation(RSimulatedImage,RExperimentalImage,IErr)
-          CASE(3) ! Masked Cross Correlation
-            IF (Iter.LE.0) THEN
-            ! we are in baseline sim or simplex initialisation: do a normalised2D CC
-              RImageCorrelation = ONE-&
-                    Normalised2DCrossCorrelation(RSimulatedImage,RExperimentalImage,IErr)   
-            ELSE ! we are refining: do a masked CC
-              RImageCorrelation = ONE-& ! NB Perfect Correlation = 0 not 1
-                    MaskedCorrelation(RSimulatedImage,RExperimentalImage,RMaskImage,IErr)
-            END IF
         END SELECT
-!IF(my_rank.EQ.0)PRINT*,ind,jnd,MAXVAL(RExperimentalImage)
         !NaN check
         IF(RImageCorrelation.NE.RImageCorrelation) THEN
           IErr=1

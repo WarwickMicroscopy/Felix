@@ -239,7 +239,7 @@ MODULE read_files_mod
       IF(IRefineMethodFLAG.EQ.4) CALL message( LS, "Refining by pairwise (2x2-point) gradient")
     END IF
    
-    ! ICorrelationFLAG: 0=phase,1=sumSq,2=NormalisedCC,3=masked
+    ! ICorrelationFLAG: 0=phase,1=sumSq,2=NormalisedCC
     ILine= ILine+1; READ(IChInp,'(27X,I15.1)',ERR=20,END=30) ICorrelationFLAG
     ! IImageProcessingFLAG: 0=no processing,1=sqrt,2=log
     ILine= ILine+1; READ(IChInp,'(27X,I15.1)',ERR=20,END=30) IImageProcessingFLAG

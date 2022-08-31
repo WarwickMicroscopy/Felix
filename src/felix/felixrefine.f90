@@ -584,21 +584,6 @@ PROGRAM Felixrefine
         STAT=IErr)
   IF(l_alert(IErr,"felixrefine","allocate RImageSimi")) CALL abort
 
-  IF (ICorrelationFLAG.EQ.3) THEN ! allocate images for masked correlation
-    ! Baseline Images to calculate mask
-    ALLOCATE(RImageBase(2*IPixelCount,2*IPixelCount,INoOfLacbedPatterns,IThicknessCount),&
-          STAT=IErr)
-    IF(l_alert(IErr,"felixrefine","allocate RImageBase")) CALL abort
-    ! Average Images to calculate mask
-    ALLOCATE(RImageAvi(2*IPixelCount,2*IPixelCount,INoOfLacbedPatterns,IThicknessCount),&
-          STAT=IErr)
-    IF(l_alert(IErr,"felixrefine","allocate RImageAvi")) CALL abort
-    RImageAvi=ZERO
-    ! Mask Images
-    ALLOCATE(RImageMask(2*IPixelCount,2*IPixelCount,INoOfLacbedPatterns),STAT=IErr)
-    IF(l_alert(IErr,"felixrefine","allocate RImageMask")) CALL abort
-  END IF
-
   RSimulatedPatterns = ZERO
   ! The pixels to be calculated by this core  
   ILocalPixelCountMin= (IPixelTotal*(my_rank)/p)+1
@@ -643,11 +628,6 @@ PROGRAM Felixrefine
       CALL FigureOfMeritAndThickness(Iter,IThicknessIndex,IErr)
       IF(l_alert(IErr,"felixrefine",&
             "FigureOfMeritAndThickness")) CALL abort 
-      ! Keep baseline simulation for masked correlation
-      IF (ICorrelationFLAG.EQ.3) THEN
-        RImageBase=RImageSimi  
-        RImageAvi=RImageSimi 
-      END IF
       CALL message ( LS, "Writing output; baseline simulation" )
       CALL WriteIterationOutput(Iter,IThicknessIndex,IErr)
       IF(l_alert(IErr,"felixrefine","WriteIterationOutput")) CALL abort
@@ -799,49 +779,7 @@ CONTAINS
       IF(l_alert(IErr,"SimplexRefinement","SimulateAndFit")) RETURN
 
       RSimplexFoM(ind)=RFigureofMerit ! RFigureofMerit returned as global variable
-      ! For masked correlation, add to 'average' (extreme difference from baseline)?
-      IF(my_rank.EQ.0.AND.ICorrelationFLAG.EQ.3) THEN
-        ! replace pixels that are the most different from baseline
-        WHERE (ABS(RImageSimi-RImageBase).GT.ABS(RImageAvi-RImageBase))
-          RImageAvi=RImageSimi
-        END WHERE
-      END IF
     END DO
-
-    !--------------------------------------------------------------------
-    ! set up masked fitting using the simplex setup
-    !--------------------------------------------------------------------
-
-    IF (my_rank.EQ.0.AND.ICorrelationFLAG.EQ.3) THEN
-      ! Simple start, just take thickness 1 
-      RImageMask=RImageAvi(:,:,:,1)-RImageBase(:,:,:,1)
-      DO ind = 1,INoOfLacbedPatterns ! mask each pattern individually
-        WHERE (ABS(RImageMask(:,:,ind)).GT.0.1*MAXVAL(ABS(RImageMask(:,:,ind))))
-          RImageMask(:,:,ind)=ONE
-        ELSEWHERE
-          RImageMask(:,:,ind)=ZERO
-        END WHERE
-      END DO    
-      ! debug mode output to look at the masks
-      IF (dbg6%LState) THEN
-        ALLOCATE(RTestImage(2*IPixelCount,2*IPixelCount),STAT=IErr)
-        DO ind = 1,INoOfLacbedPatterns
-          RTestImage=RImageMask(:,:,ind)
-          WRITE(h,*)  NINT(Rhkl(IOutPutReflections(ind),1))
-          WRITE(k,*)  NINT(Rhkl(IOutPutReflections(ind),2))
-          WRITE(l,*)  NINT(Rhkl(IOutPutReflections(ind),3))
-          WRITE(SPrintString,*) TRIM(ADJUSTL(h)),TRIM(ADJUSTL(k)),TRIM(ADJUSTL(l)),".mask"
-          OPEN(UNIT=IChOutWIImage, STATUS= 'UNKNOWN', FILE=SPrintString,&
-                FORM='UNFORMATTED',ACCESS='DIRECT',IOSTAT=IErr,RECL=2*IPixelCount*8)
-          IF(l_alert(IErr,"SimplexRefinement","writing .mask file")) RETURN
-          DO jnd = 1,2*IPixelCount
-            WRITE(IChOutWIImage,rec=jnd) RTestImage(jnd,:)
-          END DO
-          CLOSE(IChOutWIImage,IOSTAT=IErr)
-        END DO
-        DEALLOCATE(RTestImage)
-      END IF
-    END IF
     
     !--------------------------------------------------------------------
     ! Apply Simplex Method and iterate

@@ -303,10 +303,6 @@ MODULE RPara
   REAL(RKIND),DIMENSION(:,:,:),ALLOCATABLE :: RSimulatedPatterns
   ! Simulated Images as images (width,height, no.of patterns, no of thicknesses)
   REAL(RKIND),DIMENSION(:,:,:,:),ALLOCATABLE :: RImageSimi
-  ! Average simulated Images (width,height, no.of patterns, no of thicknesses)
-  REAL(RKIND),DIMENSION(:,:,:,:),ALLOCATABLE :: RImageAvi,RImageBase
-  ! Image masks (width,height, no.of patterns)
-  REAL(RKIND),DIMENSION(:,:,:),ALLOCATABLE :: RImageMask
   !Iterative Variable Value
   REAL(RKIND) :: RValue!this is an awful name that doesn't mean anything
   !Refinement Vectors

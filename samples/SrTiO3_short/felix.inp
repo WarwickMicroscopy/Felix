@@ -14,16 +14,16 @@ IByteSize                 = 2
 IPixelCount               = 64
 
 # beam selection criteria
-IMinReflectionPool        = 600
+IMinReflectionPool        = 100
 IMinStrongBeams           = 50
-IMinWeakBeams             = 50
+IMinWeakBeams             = 0
 
 # crystal settings
 RDebyeWallerConstant      = 0.0
 RAbsorptionPer            = 7.8
 
 # microscope settings
-ROuterConvergenceAngle    = 3.4435
+ROuterConvergenceAngle    = 1.19
 IIncidentBeamDirection    = [0,0,1]
 IXDirection               = [1,0,0]
 INormalDirection          = [0,0,1]
