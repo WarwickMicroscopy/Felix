@@ -6,11 +6,11 @@
 !
 ! (C) 2013-19, all rights reserved
 !
-! Version: 1.2
-! Date: 30-08-2022
+! Version: 2.0
+! Date: 31-08-2022
 ! Time:
 ! Status:  
-! Build: Surface normal correction   
+! Build: cRED   
 ! Author:  r.beanland@warwick.ac.uk
 ! 
 !%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -96,8 +96,8 @@ END MODULE l_alert_mod
 !      1 = rank, error in ReadInpFile(READ() felix.inp line number = 27)
 !      1 = rank, error in felixrefine(ReadInpFile())
 !      1 = rank, error in felixrefine(ABORTING)
-!      @ felixrefine: 'Version: 1.2 / :BUILD: / :AUTHOR:           '
-!      @              'Date: 30-08-2022 :DATE:                                      '
+!      @ felixrefine: 'Version: 2.0 / :BUILD: / :AUTHOR:           '
+!      @              'Date: 31-08-2022 :DATE:                                      '
 !      @              '(:RLSTATUS:) multipole atom test & debug          '
 !      @ -----------------------------------------------------------------
 !      @ total number of MPI ranks is 004, screen messages via rank= 000

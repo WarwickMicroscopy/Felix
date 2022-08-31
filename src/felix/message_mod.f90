@@ -6,11 +6,11 @@
 !
 ! (C) 2013-17, all rights reserved
 !
-! Version: 1.2
-! Date: 30-08-2022
+! Version: 2.0
+! Date: 31-08-2022
 ! Time:    :TIME:
 ! Status:  :RLSTATUS:
-! Build: Surface normal correction
+! Build: cRED
 ! Author:  r.beanland@warwick.ac.uk
 ! 
 !%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%

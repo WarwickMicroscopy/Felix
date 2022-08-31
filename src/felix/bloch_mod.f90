@@ -6,11 +6,11 @@
 !
 ! (C) 2013-19, all rights reserved
 !
-! Version: 1.2/ 1.15 /
-! Date: 30-08-2022 16-01-2019
+! Version: 2.0/ 1.15 /
+! Date: 31-08-2022 16-01-2019
 ! Time:    :TIME:
 ! Status:  :RLSTATUS:
-! Build: Surface normal correction Mode F: test different lattice types" 
+! Build: cRED Mode F: test different lattice types" 
 ! Author:  r.beanland@warwick.ac.uk
 ! 
 !%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
