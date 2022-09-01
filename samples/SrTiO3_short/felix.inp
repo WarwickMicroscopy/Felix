@@ -11,7 +11,7 @@ IAbsorbFLAG               = 2
 IByteSize                 = 2
 
 # dimensions of the simulation in pixels
-IPixelX                   = 124
+IPixelX                   = 1024
 IPixelY                   = 114
 
 # beam selection criteria

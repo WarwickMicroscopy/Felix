@@ -273,10 +273,6 @@ MODULE write_output_mod
       fullpath = TRIM(ADJUSTL(path))//"/"//TRIM(ADJUSTL(filename))
       CALL message ( LL, dbg6, fullpath )
       RImageToWrite = RImageSimi(:,:,ind,IThicknessIndex)
-      RImageToWrite(1,1) = 1
-      RImageToWrite(1,ISizeX) = 2
-      RImageToWrite(ISizeY,1) = 3
-      RImageToWrite(ISizeY,ISizeX) = 4
 
 !DBG    IF(my_rank.EQ.0)PRINT*,TRIM(ADJUSTL(fullpath))!DEBUG
       ! Writes data to output image .bin files

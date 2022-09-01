@@ -161,7 +161,7 @@ PROGRAM Felixrefine
   IF(l_alert(IErr,"felixrefine","ReciprocalLattice")) CALL abort
   !resolution in k-space N.B. in cRED we define convergence angle as half the y-size
   RDeltaK = FOURPI*RConvergenceAngle/REAL(ISizeY,RKIND)
-IF(my_rank.EQ.0)PRINT*, "Delta K", RDeltaK  
+!DBG   IF(my_rank.EQ.0)PRINT*, "Delta K", RDeltaK  
 
   !--------------------------------------------------------------------
   ! allocate atom and Debye-Waller factor arrays
@@ -421,8 +421,8 @@ IF(my_rank.EQ.0)PRINT*, "Delta K", RDeltaK
   ! we keep track of where a calculation goes in the image using two
   ! 1D IPixelLocations arrays.  Remember fortran indexing is [row,col]=[y,x]
   knd=0
-  DO IXPixelIndex = 1,ISizeX
-    DO IYPixelIndex = 1,ISizeY
+  DO IYPixelIndex = 1,ISizeY
+    DO IXPixelIndex = 1,ISizeX
       knd = knd+1
       IPixelLocations(knd,1) = IYPixelIndex
       IPixelLocations(knd,2) = IXPixelIndex
