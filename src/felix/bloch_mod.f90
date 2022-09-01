@@ -242,18 +242,18 @@ MODULE bloch_mod
       !The 4pi^2 is a result of using h, not hbar, in the conversion from VG(ij) to Ug(ij).  Needs to be taken out of the weak beam calculation too 
       !Divide by 2K so off-diagonal elementa are Ug/2K, diagonal elements are Sg, Spence's (1990) 'Structure matrix'
       CUgSgMatrix = TWOPI*TWOPI*CUgSgMatrix/(TWO*RBigK)
-    END IF	
-	
-	! Recalculation of structure matrix for non parallel incident beam
-	! From Palatinus 2015
-	! Takes UgSg matrix calculated previously
-	DO ind = 1, nBeams
-		DO jnd = 1, nBeams
-				CStructureMatrix(ind, jnd) = (CUgSgMatrix(ind, jnd))/ &
-				((SQRT(1+RgDotNorm(IStrongBeamList(ind))/RKn)) * (SQRT(1+RgDotNorm(IStrongBeamList(jnd))/RKn)))
-		END DO
-	END DO
-	
+    END IF
+
+    ! Recalculation of structure matrix for non parallel incident beam
+    ! From Palatinus 2015
+    ! Takes UgSg matrix calculated previously
+    DO ind = 1, nBeams
+      DO jnd = 1, nBeams
+        CStructureMatrix(ind, jnd) = (CUgSgMatrix(ind, jnd))/ &
+        ((SQRT(1+RgDotNorm(IStrongBeamList(ind))/RKn)) * (SQRT(1+RgDotNorm(IStrongBeamList(jnd))/RKn)))
+      END DO
+    END DO
+
     !--------------------------------------------------------------------
     ! diagonalize the UgMatEffective
     !--------------------------------------------------------------------
@@ -341,54 +341,54 @@ MODULE bloch_mod
     REAL(RKIND) :: RWaveIntensity(nBeams), RElement(nBeams)
     COMPLEX(CKIND) :: CPsi0(nBeams),CAlphaWeightingCoefficients(nBeams),&
           CWaveFunctions(nBeams),CEigenValueDependentTerms(nBeams,nBeams), &
-		  CMmatrix(nBeams, nBeams), CDummyMmatrix(nBeams, nBeams), CInvertedM(nBeams, nBeams)
+          CMmatrix(nBeams, nBeams), CDummyMmatrix(nBeams, nBeams), CInvertedM(nBeams, nBeams)
     INTEGER(IKIND) :: ind,jnd,knd,hnd,ifullind,iuniind,gnd,ichnk
     
     IErr=0
     ! The top surface boundary conditions, only valid for singular incident electron beam
     CPsi0 = CZERO ! All diffracted beams are zero
     CPsi0(1) = CONE ! The 000 beam has unit amplitude
-	
-	! Form eigenvalue diagonal matrix
-    CEigenValueDependentTerms= CZERO
-	DO hnd=1,nBeams
-		CEigenValueDependentTerms(hnd,hnd) = &
-			EXP((CIMAGONE*CMPLX(RThickness,ZERO,CKIND)*CEigenValues(hnd)))
-	END DO
 
-	! The M matrix and its inverse are part of new Palatinus scatter matrix
-	
-	! Form M matrix
-	CMmatrix = CZERO
-	DO hnd = 1, nBeams
-		RElement(hnd) = 1/SQRT(1+RgDotNorm(IStrongBeamList(hnd))/RKn)
-		CMmatrix(hnd, hnd) = RElement(hnd)
-	END DO
-	
-	! Form inverted M matrix, note that M is a diagonal matrix, so no need to CALL INVERT
-	CInvertedM = CZERO
-	DO ind = 1, nBeams
-		CInvertedM(ind, ind) = 1/CMmatrix(ind, ind)
-	END DO
-	
-	! Palatinus scatter matrix operating on initial wavefunction at boundary
-	CWaveFunctions(:) = MATMUL(CMmatrix, MATMUL(CEigenVectors, MATMUL(CEigenValueDependentTerms, &
-						MATMUL(CInvertedEigenVectors, MATMUL(CInvertedM, CPsi0)))))
-	
-    !?? possible small time saving here by only calculating the (tens of) output
+    ! Form eigenvalue diagonal matrix
+    CEigenValueDependentTerms= CZERO
+    DO hnd=1,nBeams
+      CEigenValueDependentTerms(hnd,hnd) = &
+           EXP((CIMAGONE*CMPLX(RThickness,ZERO,CKIND)*CEigenValues(hnd)))
+    END DO
+
+    ! The M matrix and its inverse are part of new Palatinus scatter matrix
+
+    ! Form M matrix
+    CMmatrix = CZERO
+    DO hnd = 1, nBeams
+      RElement(hnd) = 1/SQRT(1+RgDotNorm(IStrongBeamList(hnd))/RKn)
+      CMmatrix(hnd, hnd) = RElement(hnd)
+    END DO
+
+    ! Form inverted M matrix, note that M is a diagonal matrix, so no need to CALL INVERT
+    CInvertedM = CZERO
+    DO ind = 1, nBeams
+      CInvertedM(ind, ind) = 1/CMmatrix(ind, ind)
+    END DO
+
+    ! Palatinus scatter matrix operating on initial wavefunction at boundary
+    CWaveFunctions(:) = MATMUL(CMmatrix, MATMUL(CEigenVectors, MATMUL(CEigenValueDependentTerms, &
+    MATMUL(CInvertedEigenVectors, MATMUL(CInvertedM, CPsi0)))))
+
+                                        !?? possible small time saving here by only calculating the (tens of) output
     !?? reflections rather than all strong beams (hundreds)
     DO hnd=1,nBeams
        RWaveIntensity(hnd)=CONJG(CWaveFunctions(hnd)) * CWaveFunctions(hnd)
     ENDDO  
-	
-	! Link diffracted intensities to their g vectors
+
+    ! Link diffracted intensities to their g vectors
     CFullWaveFunctions=CZERO
     RFullWaveIntensity=ZERO
     DO knd=1,nBeams
        CFullWaveFunctions(IStrongBeamList(knd))=CWaveFunctions(knd)
        RFullWaveIntensity(IStrongBeamList(knd))=RWaveIntensity(knd)
     ENDDO
-	
+
   END SUBROUTINE CreateWavefunctions
 
   !%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -613,4 +613,3 @@ MODULE bloch_mod
   END SUBROUTINE INVERT
 
 END MODULE bloch_mod
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                    

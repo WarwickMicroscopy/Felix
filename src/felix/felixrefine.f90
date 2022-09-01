@@ -64,7 +64,7 @@ PROGRAM Felixrefine
         IAnisotropicDebyeWallerFactorElementNo,IStartTime,IStartTime2,&
         IXPixelIndex,IYPixelIndex
   INTEGER(4) :: IErr4
-  REAL(RKIND) :: REmphasis,RGlimit,RLaueZoneGz,RMaxGMag,&
+  REAL(RKIND) :: REmphasis,RGlimit,RLaueZoneGz,RMaxGMag,RKn,RThickness,&
         RPvecMag,RScale,RMaxUgStep,Rdx,RStandardDeviation,RMean,RGzUnitVec,&
         RMinLaueZoneValue,Rdf,RLastFit,RBestFit,RMaxLaueZoneValue,&
         RMaxAcceptanceGVecMag,RandomSign,RLaueZoneElectronWaveVectorMag,&
@@ -130,7 +130,7 @@ PROGRAM Felixrefine
   CALL ReadHklFile(IErr) ! the list of hkl's to input/output
   IF(l_alert(IErr,"felixrefine","ReadHklFile")) CALL abort
 
-  WRITE(SPrintString, FMT='(A11,I6,1x,A1,I6)') "Simulation ",ISizeX,"x",ISizeY 
+  WRITE(SPrintString, FMT='(A11,I6,1x,A1,I3,A7)') "Simulation ",ISizeX,"x",ISizeY," pixels" 
   CALL message(LS,SPrintString)
   !--------------------------------------------------------------------
   ! set up scattering factors, relativistic electrons, reciprocal lattice
@@ -462,7 +462,6 @@ PROGRAM Felixrefine
   !--------------------------------------------------------------------
   ! baseline simulation
   !--------------------------------------------------------------------
-  ! baseline simulation with timer
   CALL Simulate(IErr)
   IF(l_alert(IErr,"felixrefine","Simulate")) CALL abort
   CALL PrintEndTime(LS,IStartTime2, "Simulation" )
