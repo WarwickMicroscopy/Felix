@@ -67,13 +67,12 @@ MODULE refinementcontrol_mod
     !global inputs
     USE RPARA, ONLY : RBlurRadius
     USE IPARA, ONLY : ICount,IDisplacements,ILocalPixelCountMax,INoOfLacbedPatterns,&
-          ILocalPixelCountMin,IPixelLocations,IPixelX,IPixelY,IThicknessCount, nBeams
+          ILocalPixelCountMin,IPixelLocations,ISizeX,ISizeY,IThicknessCount, nBeams
 
     IMPLICIT NONE
 
-    INTEGER(IKIND) :: IErr, ind,jnd,knd,pnd,IIterationFLAG
-!    REAL(RKIND),DIMENSION(:,:),ALLOCATABLE :: RTempImage 
-	REAL(RKIND) :: RKn,RThickness
+    INTEGER(IKIND) :: IErr, ind,jnd,knd,pnd,IIterationFLAG,IYPixelIndex,IXPixelIndex
+    REAL(RKIND) :: RKn,RThickness
 
     ! Reset simuation   
     RIndividualReflections = ZERO
@@ -81,10 +80,11 @@ MODULE refinementcontrol_mod
     ! Simulation (different local pixels for each core)
     CALL message(LS,"Bloch wave calculation...")
     DO knd = ILocalPixelCountMin,ILocalPixelCountMax,1
-      jnd = IPixelLocations(knd,1)
-      ind = IPixelLocations(knd,2)
-      ! fills array for each pixel number not x & y coordinates
-      CALL BlochCoefficientCalculation(ind,jnd,knd,ILocalPixelCountMin, nBeams, RThickness,RKn, IErr)
+      IYPixelIndex = IPixelLocations(knd,1)
+      IXPixelIndex = IPixelLocations(knd,2)
+      ! fills array for each pixel number knd (x & y coordinates are IXPixelIndex & IYPixelIndex)
+      CALL BlochCoefficientCalculation(IYPixelIndex,IXPixelIndex,knd, &
+              ILocalPixelCountMin, nBeams, RThickness,RKn, IErr)
       IF(l_alert(IErr,"Simulate","BlochCoefficientCalculation")) RETURN
     END DO
 
@@ -97,26 +97,23 @@ MODULE refinementcontrol_mod
 
     ! put 1D array RSimulatedPatterns into 2D image RImageSimi
     ! remember dimensions of RSimulatedPatterns(INoOfLacbedPatterns,IThicknessCount,IPixelTotal)
-    ! and RImageSimi(width, height,INoOfLacbedPatterns,IThicknessCount )
+    ! and RImageSimi(height, width, INoOfLacbedPatterns,IThicknessCount )
     RImageSimi = ZERO
     ind = 0
-    DO jnd = 1,IPixelX
-      DO knd = 1,IPixelY
+    DO IYPixelIndex = 1,ISizeY
+      DO IXPixelIndex = 1,ISizeX
         ind = ind+1
-        RImageSimi(jnd,knd,:,:) = RSimulatedPatterns(:,:,ind)
+        RImageSimi(IYPixelIndex,IXPixelIndex,:,:) = RSimulatedPatterns(:,:,ind)
       END DO
     END DO
     ! Gaussian blur to match experiment using global variable RBlurRadius
     IF (RBlurRadius.GT.TINY) THEN
       DO ind=1,INoOfLacbedPatterns
         DO jnd=1,IThicknessCount
-          CALL BlurG(RImageSimi(:,:,ind,jnd),IPixelX,IPixelY,RBlurRadius,IErr)
+          CALL BlurG(RImageSimi(:,:,ind,jnd),ISizeX,ISizeY,RBlurRadius,IErr)
         END DO
       END DO
     END IF
-
-    ! We have done at least one simulation now
-    IInitialSimulationFLAG=0
 
   END SUBROUTINE Simulate
 

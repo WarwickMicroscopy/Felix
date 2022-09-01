@@ -171,8 +171,8 @@ MODULE IPara
   !Disk Radius
   INTEGER(IKIND) :: IPixelCount 
   !Simulation size
-  INTEGER(IKIND) :: IPixelX
-  INTEGER(IKIND) :: IPixelY
+  INTEGER(IKIND) :: ISizeX
+  INTEGER(IKIND) :: ISizeY
   !Crystal Settings
   INTEGER(IKIND) :: IMaxPossibleNAtomsUnitCell
   !Name2Atom index

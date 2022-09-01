@@ -61,7 +61,8 @@ PROGRAM Felixrefine
         IBSMaxLocGVecAmp,ILaueLevel,INumTotalReflections,ITotalLaueZoneLevel,&
         IPrintFLAG,ICycle,INumInitReflections,IZerothLaueZoneLevel,xnd,&
         INumFinalReflections,IThicknessIndex,IVariableType,IArrayIndex,&
-        IAnisotropicDebyeWallerFactorElementNo,IStartTime,IStartTime2
+        IAnisotropicDebyeWallerFactorElementNo,IStartTime,IStartTime2,&
+        IXPixelIndex,IYPixelIndex
   INTEGER(4) :: IErr4
   REAL(RKIND) :: REmphasis,RGlimit,RLaueZoneGz,RMaxGMag,&
         RPvecMag,RScale,RMaxUgStep,Rdx,RStandardDeviation,RMean,RGzUnitVec,&
@@ -129,7 +130,8 @@ PROGRAM Felixrefine
   CALL ReadHklFile(IErr) ! the list of hkl's to input/output
   IF(l_alert(IErr,"felixrefine","ReadHklFile")) CALL abort
 
-  CALL message(LS,"Simulation only")
+  WRITE(SPrintString, FMT='(A11,I6,1x,A1,I6)') "Simulation ",ISizeX,"x",ISizeY 
+  CALL message(LS,SPrintString)
   !--------------------------------------------------------------------
   ! set up scattering factors, relativistic electrons, reciprocal lattice
   !--------------------------------------------------------------------
@@ -158,8 +160,8 @@ PROGRAM Felixrefine
   CALL ReciprocalLattice(IErr)
   IF(l_alert(IErr,"felixrefine","ReciprocalLattice")) CALL abort
   !resolution in k-space N.B. in cRED we define convergence angle as half the y-size
-  RDeltaK = FOURPI*RConvergenceAngle/REAL(IPixelY,RKIND)
-!IF(my_rank.EQ.0)PRINT*, "Delta K", RDeltaK  
+  RDeltaK = FOURPI*RConvergenceAngle/REAL(ISizeY,RKIND)
+IF(my_rank.EQ.0)PRINT*, "Delta K", RDeltaK  
 
   !--------------------------------------------------------------------
   ! allocate atom and Debye-Waller factor arrays
@@ -413,15 +415,17 @@ PROGRAM Felixrefine
   ALLOCATE(RhklPositions(INhkl,2),STAT=IErr)
   IF(l_alert(IErr,"felixrefine","allocate RhklPositions")) CALL abort
 
-  IPixelTotal = IPixelX*IPixelY
+  IPixelTotal = ISizeX*ISizeY
   ALLOCATE(IPixelLocations(IPixelTotal,2),STAT=IErr)
   IF(l_alert(IErr,"felixrefine","allocate IPixelLocations")) CALL abort
+  ! we keep track of where a calculation goes in the image using two
+  ! 1D IPixelLocations arrays.  Remember fortran indexing is [row,col]=[y,x]
   knd=0
-  DO ind = 1,IPixelX
-    DO jnd = 1,IPixelY
+  DO IXPixelIndex = 1,ISizeX
+    DO IYPixelIndex = 1,ISizeY
       knd = knd+1
-      IPixelLocations(knd,1) = ind
-      IPixelLocations(knd,2) = jnd
+      IPixelLocations(knd,1) = IYPixelIndex
+      IPixelLocations(knd,2) = IXPixelIndex
     END DO
   END DO
 
@@ -434,7 +438,7 @@ PROGRAM Felixrefine
   ALLOCATE(RSimulatedPatterns(INoOfLacbedPatterns,IThicknessCount,IPixelTotal),STAT=IErr)
   IF(l_alert(IErr,"felixrefine","allocate RSimulatedPatterns")) CALL abort
   ! Images, NB Fortan arrays are [row,column]=[y,x]
-  ALLOCATE(RImageSimi(IPixelY,IPixelX,INoOfLacbedPatterns,IThicknessCount),&
+  ALLOCATE(RImageSimi(ISizeY,ISizeX,INoOfLacbedPatterns,IThicknessCount),&
         STAT=IErr)
   IF(l_alert(IErr,"felixrefine","allocate RImageSimi")) CALL abort
 

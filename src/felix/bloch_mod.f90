@@ -65,7 +65,7 @@ MODULE bloch_mod
     USE RPara, ONLY : RDeltaK,RDeltaThickness,RInitialThickness,RNormDirM,RgDotNorm,RgPool,&
                       RgPoolMag,Rhkl,RgMatrix,RMeanInnerPotential
     USE IPara, ONLY : IHolzFLAG,IMinStrongBeams,IMinWeakBeams,&
-                      INoOfLacbedPatterns,IPixelX,IPixelY,IThicknessCount,INhkl,&
+                      INoOfLacbedPatterns,ISizeX,ISizeY,IThicknessCount,INhkl,&
                       IOutputReflections
     USE BlochPara, ONLY : RBigK            
     USE SPARA, ONLY : SPrintString
@@ -105,9 +105,9 @@ MODULE bloch_mod
     ! TiltedK is the vector of the incoming tilted beam
     ! in units of (1/A), in the microscope ref frame(NB exp(i*k.r), physics convention)
     ! y-position in k-space NB Fortran arrays are [row,col]=[y,x]
-    RTiltedK(1)= (REAL(IYPixelIndex,RKIND)-0.5_RKIND*REAL(IPixelY,RKIND)-0.5_RKIND)*RDeltaK
+    RTiltedK(1)= (REAL(IYPixelIndex,RKIND)-0.5_RKIND*REAL(ISizeY,RKIND)-0.5_RKIND)*RDeltaK
     ! y-position in k-space
-    RTiltedK(2)= (REAL(IXPixelIndex,RKIND)-0.5_RKIND*REAL(IPixelX,RKIND)-0.5_RKIND)*RDeltaK 
+    RTiltedK(2)= (REAL(IXPixelIndex,RKIND)-0.5_RKIND*REAL(ISizeX,RKIND)-0.5_RKIND)*RDeltaK 
     RTiltedK(3)= SQRT(RBigK**2 - RTiltedK(1)**2 - RTiltedK(2)**2) 
     RKn = DOT_PRODUCT(RTiltedK,RNormDirM)
     Rk0 = ZERO
