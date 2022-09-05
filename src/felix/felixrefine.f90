@@ -290,7 +290,7 @@ PROGRAM Felixrefine
   IF(l_alert(IErr,"felixrefine","allocate RgPoolMagLaue")) CALL abort
 
   ! calculate higher order Laue zones
-  IF(RAcceptanceAngle.NE.ZERO.AND.IHOLZFLAG.EQ.1) THEN
+  IF(IHOLZFLAG.EQ.1) THEN
     !?? currently not working, unused variables here, lots needs to be checked
     INumtotalReflections=0
     DO ind=1,ITotalLaueZoneLevel
@@ -307,7 +307,7 @@ PROGRAM Felixrefine
       INumInitReflections = COUNT(RgPoolMagLaue(:,ind).NE.NEGHUGE)
       RLaueZoneElectronWaveVectorMag = RElectronWaveVectorMagnitude-ABS(RLaueZoneGz)           
       RMaxAcceptanceGVecMag = (RLaueZoneElectronWaveVectorMag * &
-            TAN(RAcceptanceAngle*DEG2RADIAN))
+            TAN(10.0*DEG2RADIAN))
       WHERE(ABS(RgPoolMagLaue(:,ind)).GT.RMaxAcceptanceGVecMag)
         RgPoolMagLaue(:,ind)=NEGHUGE
       END WHERE
@@ -335,38 +335,9 @@ PROGRAM Felixrefine
 
   END IF
 
-  !--------------------------------------------------------------------
-  ! reduce number of reflections for finite acceptance angle 
-  !--------------------------------------------------------------------
-  ! acceptance angle (NB input of ZERO actually means unlimited)
-  IF(RAcceptanceAngle.NE.ZERO) THEN!if acceptance angle is small, g-vectors will be limited
-    IF (IHOLZFLAG.EQ.0) THEN!ZOLZ only
-      RMaxAcceptanceGVecMag=(RElectronWaveVectorMagnitude*TAN(RAcceptanceAngle*DEG2RADIAN))
-      IF(RgPoolMag(INhkl).GT.RMaxAcceptanceGVecMag) RMaxGMag = RMaxAcceptanceGVecMag 
-    ELSE!HOLZ too(not working?)
-      IBSMaxLocGVecAmp=MAXVAL(IOriginGVecIdentifier)
-      RMaxGMag=RgPoolMag(IBSMaxLocGVecAmp)
-      IF(RgPoolMag(IBSMaxLocGVecAmp).GE.RgPoolMag(INhkl)) &
-        RMaxGMag = RgPoolMag(INhkl)
-    END IF
-    ! count reflections up to cutoff magnitude
-    jnd=INhkl
-    INhkl=0
-    DO ind=1,jnd
-      IF (ABS(RgPoolMag(ind)).LE.RMaxGMag) INhkl=INhkl+1
-    END DO
-    !check the acceptance angle is big enough to produce the LACBED patterns
-    IF (INhkl.LT.INoOfLacbedPatterns) THEN
-      IErr=1
-      IF(l_alert(IErr,"felixrefine","Acceptance angle is too small! Please increase it or set to 0.0")) CALL abort
-    END IF
-    
-  END IF
-  
-  
   ! deallocation
   DEALLOCATE(RgPoolMagLaue)!
-  IF (RAcceptanceAngle.NE.ZERO.AND.IHOLZFLAG.EQ.1) THEN
+  IF (IHOLZFLAG.EQ.1) THEN
     DEALLOCATE(IOriginGVecIdentifier)
   END IF
 
@@ -410,11 +381,8 @@ PROGRAM Felixrefine
   CALL SYSTEM_CLOCK( IStartTime2 )
 
   !--------------------------------------------------------------------
-  ! allocate, ImageInitialisation, ImageMaskInitialisation
+  ! ImageInitialisation
   !--------------------------------------------------------------------
-  ALLOCATE(RhklPositions(INhkl,2),STAT=IErr)
-  IF(l_alert(IErr,"felixrefine","allocate RhklPositions")) CALL abort
-
   IPixelTotal = ISizeX*ISizeY
   ALLOCATE(IPixelLocations(IPixelTotal,2),STAT=IErr)
   IF(l_alert(IErr,"felixrefine","allocate IPixelLocations")) CALL abort

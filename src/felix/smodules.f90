@@ -249,7 +249,7 @@ MODULE RPara
   REAL(RKIND) :: RConvergenceAngle,RAcceleratingVoltage
   REAL(RKIND) :: RElectronVelocity,RElectronWaveLength, &
        RElectronWaveVectorMagnitude,RRelativisticCorrection, &
-       RRelativisticMass,RBraggCentral,RAcceptanceAngle
+       RRelativisticMass,RBraggCentral,RFrameAngle
   !LACBED
   REAL(RKIND) :: RInitialThickness,RFinalThickness,RDeltaThickness, &
        RInitialDebyeWallerFactor,RFinalDebyeWallerFactor,&

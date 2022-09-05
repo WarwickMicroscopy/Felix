@@ -54,13 +54,11 @@ MODULE read_files_mod
     ! global outputs, read from .inp
     USE IPARA, ONLY : IWriteFLAG, IScatterFactorMethodFLAG, IHolzFLAG, &
           IAbsorbFLAG, IByteSize, INhkl, &
-          IMinStrongBeams, IMinWeakBeams, ISimFLAG, IRefineMode, &
-          IWeightingFLAG, IRefineMethodFLAG, ICorrelationFLAG, IImageProcessingFLAG, &
+          IMinStrongBeams, IMinWeakBeams, IImageProcessingFLAG, &
           INoofUgs, IPrint, ISizeX, ISizeY
     USE RPARA, ONLY : RDebyeWallerConstant, RAbsorptionPercentage, RConvergenceAngle, &
-          RZDirC, RXDirC, RNormDirC, RAcceleratingVoltage, RAcceptanceAngle, &
-          RInitialThickness, RFinalThickness, RDeltaThickness, RBlurRadius, &
-          RSimplexLengthScale, RExitCriteria,RPrecision
+          RZDirC, RXDirC, RNormDirC, RAcceleratingVoltage, RFrameAngle, &
+          RInitialThickness, RFinalThickness, RDeltaThickness, RBlurRadius
     USE SPARA, ONLY : SPrintString
     ! global inputs
     USE IChannels, ONLY : IChInp
@@ -169,14 +167,14 @@ MODULE read_files_mod
     ! SDirectionX -> IXDirection
     ILine= ILine+1; READ(IChInp,FMT='(27X,A)',END=30) SDirectionX
     CALL ThreeDimVectorReadIn(SDirectionX,'[',']',RXDirC)
+    ! RFrameAngle
+    ILine= ILine+1; READ(IChInp,'(27X,F18.9)',ERR=20,END=30) RFrameAngle
     ! SNormalDirectionX -> INormalDirection
     ILine= ILine+1; READ(IChInp,FMT='(27X,A)',ERR=20,END=30) SNormalDirectionX
     CALL ThreeDimVectorReadIn(SNormalDirectionX,'[',']',RNormDirC)
 
     ! RAcceleratingVoltage
     ILine= ILine+1; READ(IChInp,'(27X,F18.9)',ERR=20,END=30) RAcceleratingVoltage
-    ! RAcceptanceAngle
-    ILine=ILine+1; READ(IChInp,'(27X,F18.9)',ERR=20,END=30) RAcceptanceAngle
 
     !--------------------------------------------------------------------
     ! Image Output Options
@@ -190,74 +188,8 @@ MODULE read_files_mod
     ILine= ILine+1; READ(IChInp,'(27X,F18.9)',ERR=20,END=30) RFinalThickness
     ! RDeltaThickness
     ILine= ILine+1; READ(IChInp,'(27X,F18.9)',ERR=20,END=30) RDeltaThickness
-    ! RPrecision - used for error calculations
-    ILine= ILine+1; READ(IChInp,'(27X,F18.9)',ERR=20,END=30) RPrecision 
-
-    !--------------------------------------------------------------------
-    ! Refinement Specific Flags
-    !--------------------------------------------------------------------
-    ! Two comment lines
-    ILine= ILine+1; READ(IChInp,ERR=20,END=30,FMT='(A)')  
-    ILine= ILine+1; READ(IChInp,ERR=20,END=30,FMT='(A)')
-
-    ! IRefineModeFLAG
-    ILine= ILine+1; READ(IChInp,FMT='(A)',ERR=20,END=30) SRefineMode
-    IF(SCAN(TRIM(ADJUSTL(SRefineMode)),TRIM(ADJUSTL(SAlphabet(19)))).NE.0) THEN
-      ISimFLAG=1 ! Simulation only
-    ELSE
-      ISimFLAG=0
-      SRefineMode = SRefineMode((SCAN(SRefineMode,"=")+1):)
-      IRefineMode = 0
-      DO ind = 1,IRefinementVariableTypes
-        IF(SCAN(TRIM(ADJUSTL(SRefineMode)),TRIM(ADJUSTL(SAlphabet(ind)))).NE.0) THEN
-          IRefineMode(ind) = 1
-        END IF
-      END DO
-      ! Check which refinement modes have been selected
-      IF(IRefineMode(1) .EQ.1) CALL message( LS, "Refining Structure Factors, A")
-      IF(IRefineMode(2) .EQ.1) CALL message( LS, "Refining Atomic Coordinates, B")
-      IF(IRefineMode(3) .EQ.1) CALL message( LS, "Refining Occupancies, C")
-      IF(IRefineMode(4) .EQ.1) CALL message( LS, "Refining Isotropic Debye Waller Factors, D")
-      IF(IRefineMode(5) .EQ.1) CALL message( LS, "Refining Anisotropic Debye Waller Factors, E")
-      IF(IRefineMode(6) .EQ.1) CALL message( LS, "Refining Lattice Parameters, F")
-      IF(IRefineMode(7) .EQ.1) CALL message( LS, "Refining Lattice Angles, G")
-      IF(IRefineMode(8) .EQ.1) CALL message( LS, "Refining Convergence Angle, H")
-      IF(IRefineMode(9) .EQ.1) CALL message( LS, "Refining Accelerating Voltage, I")
-      ! Error Check - user cannot request Ug refinement and anything else
-      IF((IRefineMode(1).EQ.1).AND.SUM(IRefineMode).GT.1) THEN
-        IErr = 1; IF(l_alert(IErr,"ReadInpFile",&
-              "Structure factors must be refined separately")) RETURN
-      END IF
-    END IF
-
-    ! IWeightingFLAG         
-    ILine= ILine+1; READ(IChInp,'(27X,I15.1)',ERR=20,END=30) IWeightingFLAG
-    ! IRefineMethodFLAG
-    ILine= ILine+1; READ(IChInp,'(27X,I15.1)',ERR=20,END=30) IRefineMethodFLAG
-    IF(ISimFLAG==0) THEN
-      IF(IRefineMethodFLAG.EQ.1) CALL message( LS, "Refining by simplex")
-      IF(IRefineMethodFLAG.EQ.2) CALL message( LS, "Refining by downhill (2-point) gradient")
-      IF(IRefineMethodFLAG.EQ.3) CALL message( LS, "Refining by maximum (3-point) gradient")
-      IF(IRefineMethodFLAG.EQ.4) CALL message( LS, "Refining by pairwise (2x2-point) gradient")
-    END IF
-   
-    ! ICorrelationFLAG: 0=phase,1=sumSq,2=NormalisedCC
-    ILine= ILine+1; READ(IChInp,'(27X,I15.1)',ERR=20,END=30) ICorrelationFLAG
-    ! IImageProcessingFLAG: 0=no processing,1=sqrt,2=log
-    ILine= ILine+1; READ(IChInp,'(27X,I15.1)',ERR=20,END=30) IImageProcessingFLAG
     ! RBlurRadius
     ILine= ILine+1; READ(IChInp,'(27X,F18.9)',ERR=20,END=30) RBlurRadius
-    ! INoofUgs
-    ILine= ILine+1; READ(IChInp,'(27X,I15.1)',ERR=20,END=30) INoofUgs
-    ! SAtomicSites
-    ILine=ILine+1; READ(IChInp,FMT='(A)',ERR=20,END=30) SAtomicSites
-    ! IPrint
-    ILine= ILine+1; READ(IChInp,'(27X,I15.1)',ERR=20,END=30) IPrint
-    ! RSimplexLengthScale
-    ILine= ILine+1; READ(IChInp,'(27X,F18.9)',ERR=20,END=30) RSimplexLengthScale
-    RSimplexLengthScale = RSimplexLengthScale/100.0
-    ! RExitCriteria
-    ILine= ILine+1; READ(IChInp,'(27X,F18.9)',ERR=20,END=30) RExitCriteria
 
     !--------------------------------------------------------------------
     ! finish reading, close felix.inp

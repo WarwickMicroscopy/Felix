@@ -196,57 +196,43 @@ MODULE bloch_mod
               nBeams,CUgMatPartial,INhkl,CZERO,CUgSgMatrix,nBeams)
 
     !--------------------------------------------------------------------
-    ! higher order Laue zones and weak beams
+    ! Constructing the UgSg matrix
     !--------------------------------------------------------------------
+    ! replace the diagonal parts with strong beam deviation parameters
+    !The 4pi^2 is a result of using h, not hbar, in the conversion from VG(ij) to Ug(ij)
+    DO ind=1,nBeams
+      CUgSgMatrix(ind,ind) = TWO*RBigK*RDevPara(IStrongBeamList(ind))/(TWOPI*TWOPI)
+    ENDDO
 
-    IF (IHolzFLAG.EQ.1) THEN!We are considering higher order Laue Zones !?? suspect this is non-functional
-      DO ind=1,nBeams
-        CUgSgMatrix(ind,ind) = CUgSgMatrix(ind,ind) + TWO*RBigK*RDevPara(IStrongBeamList(ind))
+    ! Weak beams: add perturbatively for the 1st column (sumC) and
+    ! the diagonal elements (sumD)
+    DO knd=2,nBeams
+      sumC=CZERO
+      sumD=CZERO
+      DO ind=1,nWeakBeams
+        ! Zuo&Weickenmeier Ultramicroscopy 57 (1995) 375-383 eq.4
+        sumC=sumC + &
+        CUgMat(IStrongBeamList(knd),IWeakBeamList(ind))*&
+        CUgMat(IWeakBeamList(ind),1)/(TWO*RBigK*RDevPara(IWeakBeamList(ind)))
+        ! Zuo&Weickenmeier Ultramicroscopy 57 (1995) 375-383 eq.5
+        sumD = sumD + &
+        CUgMat(IStrongBeamList(knd),IWeakBeamList(ind))*&
+        CUgMat(IWeakBeamList(ind),IStrongBeamList(knd))/&
+        (TWO*RBigK*RDevPara(IWeakBeamList(ind)))
       ENDDO
-      DO knd =1,nBeams ! Columns
-        DO ind = 1,nBeams ! Rows
-          CUgSgMatrix(knd,ind) = CUgSgMatrix(knd,ind) / &
-                (SQRT(1+RgDotNorm(IStrongBeamList(knd))/RKn)*&
-                SQRT(1+RgDotNorm(IStrongBeamList(ind))/RKn))
-        END DO
-      END DO
-      CUgSgMatrix = (TWOPI**2)*CUgSgMatrix/(TWO*RBigK)
-    ELSE!ZOLZ only
-      ! replace the diagonal parts with strong beam deviation parameters
-      DO ind=1,nBeams
-        CUgSgMatrix(ind,ind) = TWO*RBigK*RDevPara(IStrongBeamList(ind))/(TWOPI*TWOPI)
-      ENDDO
-      ! add the weak beams perturbatively for the 1st column (sumC) and
-      ! the diagonal elements (sumD)
-      DO knd=2,nBeams
-        sumC=CZERO
-        sumD=CZERO
-        DO ind=1,nWeakBeams
-          ! Zuo&Weickenmeier Ultramicroscopy 57 (1995) 375-383 eq.4
-          sumC=sumC + &
-          CUgMat(IStrongBeamList(knd),IWeakBeamList(ind))*&
-          CUgMat(IWeakBeamList(ind),1)/(TWO*RBigK*RDevPara(IWeakBeamList(ind)))
-          ! Zuo&Weickenmeier Ultramicroscopy 57 (1995) 375-383 eq.5
-          sumD = sumD + &
-          CUgMat(IStrongBeamList(knd),IWeakBeamList(ind))*&
-          CUgMat(IWeakBeamList(ind),IStrongBeamList(knd))/&
-          (TWO*RBigK*RDevPara(IWeakBeamList(ind)))
-        ENDDO
-        ! Replace the Ug's
-        WHERE (CUgSgMatrix.EQ.CUgSgMatrix(knd,1))
-          CUgSgMatrix = CUgSgMatrix(knd,1) - sumC
-        END WHERE
-        ! Replace the Sg's
-        CUgSgMatrix(knd,knd)= CUgSgMatrix(knd,knd) - TWO*RBigK*sumD/(TWOPI*TWOPI)
-      ENDDO
-      !The 4pi^2 is a result of using h, not hbar, in the conversion from VG(ij) to Ug(ij).  Needs to be taken out of the weak beam calculation too 
-      !Divide by 2K so off-diagonal elementa are Ug/2K, diagonal elements are Sg, Spence's (1990) 'Structure matrix'
-      CUgSgMatrix = TWOPI*TWOPI*CUgSgMatrix/(TWO*RBigK)
-    END IF
+      ! Replace the Ug's
+      WHERE (CUgSgMatrix.EQ.CUgSgMatrix(knd,1))
+        CUgSgMatrix = CUgSgMatrix(knd,1) - sumC
+      END WHERE
+      ! Replace the Sg's
+      CUgSgMatrix(knd,knd)= CUgSgMatrix(knd,knd) - TWO*RBigK*sumD/(TWOPI*TWOPI)
+    ENDDO
+    !The 4pi^2 needs to be taken out of the weak beam sumC calculation too?
 
-    ! Recalculation of structure matrix for non parallel incident beam
-    ! From Palatinus 2015
-    ! Takes UgSg matrix calculated previously
+    !Divide by 2K so off-diagonal elementa are Ug/2K, diagonal elements are Sg, Spence's (1990) 'Structure matrix'
+    CUgSgMatrix = TWOPI*TWOPI*CUgSgMatrix/(TWO*RBigK)
+
+    ! Recalculation of UgSg matrix for tilted foil
     DO ind = 1, nBeams
       DO jnd = 1, nBeams
         CStructureMatrix(ind, jnd) = (CUgSgMatrix(ind, jnd))/ &
