@@ -62,7 +62,6 @@ MODULE refinementcontrol_mod
     ! RSimulatedPatterns( Pixel_ID, LACBED_pattern_ID , thickness_ID )
     ! RSimulatedPatterns has a long list of pixel instead of a 2D image matrix
     USE RPARA, ONLY : RIndividualReflections
-    USE IPara, ONLY : IInitialSimulationFLAG, IPixelComputed
     
     !global inputs
     USE RPARA, ONLY : RBlurRadius

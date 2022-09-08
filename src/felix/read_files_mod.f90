@@ -107,6 +107,31 @@ MODULE read_files_mod
     CALL message ( LXL, dbg3, "IByteSize=",IByteSize) ! depends on system, 8 for csc, 2 tinis
 
     !--------------------------------------------------------------------
+    ! experimental settings
+    !--------------------------------------------------------------------
+
+    ! Two comment lines
+    ILine= ILine+1; READ(IChInp,ERR=20,END=30,FMT='(A)')
+    ILine= ILine+1; READ(IChInp,ERR=20,END=30,FMT='(A)')
+
+    ! SNormalDirectionX -> INormalDirection
+    ILine= ILine+1; READ(IChInp,FMT='(27X,A)',ERR=20,END=30) SNormalDirectionX
+    ! SIncidentBeamDirection -> IIncidentBeamDirection
+    ILine= ILine+1; READ(IChInp,FMT='(27X,A)',END=30) SIncidentBeamDirection
+    CALL ThreeDimVectorReadIn(SIncidentBeamDirection,'[',']',RZDirC)
+    ! SDirectionX -> IXDirection
+    ILine= ILine+1; READ(IChInp,FMT='(27X,A)',END=30) SDirectionX
+    CALL ThreeDimVectorReadIn(SDirectionX,'[',']',RXDirC)
+    ! RFrameAngle
+    ILine= ILine+1; READ(IChInp,'(27X,F18.9)',ERR=20,END=30) RFrameAngle
+    ! RConvergenceAngle
+    ILine= ILine+1; READ(IChInp,'(27X,F18.9)',ERR=20,END=30) RConvergenceAngle
+    CALL ThreeDimVectorReadIn(SNormalDirectionX,'[',']',RNormDirC)
+
+    ! RAcceleratingVoltage
+    ILine= ILine+1; READ(IChInp,'(27X,F18.9)',ERR=20,END=30) RAcceleratingVoltage
+
+    !--------------------------------------------------------------------
     ! x and y dimensions of the simulation in pixels
     !--------------------------------------------------------------------
 
@@ -117,7 +142,7 @@ MODULE read_files_mod
     ILine= ILine+1; READ(IChInp,'(27X,I15.1)',ERR=20,END=30) ISizeX
     CALL message ( LXL, dbg3, "ISizeX=",ISizeX)
     ! ISizeY
-    ILine= ILine+1; READ(IChInp,'(27X,I15.1)',ERR=20,END=30) ISizeY
+!    ILine= ILine+1; READ(IChInp,'(27X,I15.1)',ERR=20,END=30) ISizeY
 
     !--------------------------------------------------------------------
     ! beam selection criteria
@@ -150,31 +175,6 @@ MODULE read_files_mod
     ILine= ILine+1; READ(IChInp,'(27X,F18.9)',ERR=20,END=30) RDebyeWallerConstant
     ! RAbsorptionPercentage         ! for proportional model of absorption
     ILine= ILine+1; READ(IChInp,'(27X,F18.9)',ERR=20,END=30) RAbsorptionPercentage
-
-    !--------------------------------------------------------------------
-    ! microscope settings
-    !--------------------------------------------------------------------
-
-    ! Two comment lines
-    ILine= ILine+1; READ(IChInp,ERR=20,END=30,FMT='(A)')
-    ILine= ILine+1; READ(IChInp,ERR=20,END=30,FMT='(A)')
-    ! RConvergenceAngle
-    ILine= ILine+1; READ(IChInp,'(27X,F18.9)',ERR=20,END=30) RConvergenceAngle
-
-    ! SIncidentBeamDirection -> IIncidentBeamDirection
-    ILine= ILine+1; READ(IChInp,FMT='(27X,A)',END=30) SIncidentBeamDirection
-    CALL ThreeDimVectorReadIn(SIncidentBeamDirection,'[',']',RZDirC)
-    ! SDirectionX -> IXDirection
-    ILine= ILine+1; READ(IChInp,FMT='(27X,A)',END=30) SDirectionX
-    CALL ThreeDimVectorReadIn(SDirectionX,'[',']',RXDirC)
-    ! RFrameAngle
-    ILine= ILine+1; READ(IChInp,'(27X,F18.9)',ERR=20,END=30) RFrameAngle
-    ! SNormalDirectionX -> INormalDirection
-    ILine= ILine+1; READ(IChInp,FMT='(27X,A)',ERR=20,END=30) SNormalDirectionX
-    CALL ThreeDimVectorReadIn(SNormalDirectionX,'[',']',RNormDirC)
-
-    ! RAcceleratingVoltage
-    ILine= ILine+1; READ(IChInp,'(27X,F18.9)',ERR=20,END=30) RAcceleratingVoltage
 
     !--------------------------------------------------------------------
     ! Image Output Options
@@ -353,4 +353,3 @@ MODULE read_files_mod
   END SUBROUTINE ThreeDimVectorReadIn
 
 END MODULE read_files_mod
-

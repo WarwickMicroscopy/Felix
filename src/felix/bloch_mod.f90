@@ -58,7 +58,6 @@ MODULE bloch_mod
     ! globals - output
     USE RPara, ONLY : RIndividualReflections ! RIndividualReflections( LACBED_ID, thickness_ID, local_pixel_ID )
     USE CPara, ONLY : CAmplitudeandPhase
-    USE IPara, ONLY : IPixelComputed
 
     ! globals - input  
     USE CPara, ONLY : CUgMat
@@ -90,8 +89,6 @@ MODULE bloch_mod
     INTEGER(IKIND) :: ind,jnd,knd,pnd,IThickness,IThicknessIndex,ILowerLimit,&
           IUpperLimit       
     REAL(RKIND) :: Rk0(3),RkPrime(3),RK,RKg
-    REAL(RKIND), ALLOCATABLE :: RDiagonalElement(:)
-    COMPLEX(CKIND), ALLOCATABLE :: CElementOff(:)
     COMPLEX(CKIND) sumC,sumD
     COMPLEX(CKIND), DIMENSION(:,:), ALLOCATABLE :: CBeamTranspose,CUgMatPartial,CDummyEigenVectors
     COMPLEX(CKIND), DIMENSION(:,:), ALLOCATABLE :: CStructureMatrix
@@ -99,15 +96,13 @@ MODULE bloch_mod
     CHARACTER*100 SindString,SjndString,SPixelCount,SnBeams,SWeakBeamIndex
     
     IErr=0
-    ! we are inside the mask
-    IPixelComputed= IPixelComputed + 1
 
     ! TiltedK is the vector of the incoming tilted beam
     ! in units of (1/A), in the microscope ref frame(NB exp(i*k.r), physics convention)
-    ! y-position in k-space NB Fortran arrays are [row,col]=[y,x]
-    RTiltedK(1)= (REAL(IYPixelIndex,RKIND)-0.5_RKIND*REAL(ISizeY,RKIND)-0.5_RKIND)*RDeltaK
+    ! x-position in k-space
+    RTiltedK(1)= (REAL(IXPixelIndex,RKIND)-0.5_RKIND*REAL(ISizeX,RKIND)-0.5_RKIND)*RDeltaK
     ! y-position in k-space
-    RTiltedK(2)= (REAL(IXPixelIndex,RKIND)-0.5_RKIND*REAL(ISizeX,RKIND)-0.5_RKIND)*RDeltaK 
+    RTiltedK(2)= (REAL(IYPixelIndex,RKIND)-0.5_RKIND*REAL(ISizeY,RKIND)-0.5_RKIND)*RDeltaK 
     RTiltedK(3)= SQRT(RBigK**2 - RTiltedK(1)**2 - RTiltedK(2)**2) 
     RKn = DOT_PRODUCT(RTiltedK,RNormDirM)
     Rk0 = ZERO
@@ -173,9 +168,7 @@ MODULE bloch_mod
     ALLOCATE( CUgMatPartial(INhkl,nBeams), STAT=IErr )
     ALLOCATE( CAlphaWeightingCoefficients(nBeams), STAT=IErr )
     ALLOCATE( CEigenValueDependentTerms(nBeams,nBeams), STAT=IErr )
-	ALLOCATE( RDiagonalElement(nBeams), STAT = IErr)
-	ALLOCATE( CElementOff(nBeams), STAT = IErr)
-	ALLOCATE( CStructureMatrix(nBeams, nBeams), STAT = IErr)
+    ALLOCATE( CStructureMatrix(nBeams, nBeams), STAT = IErr)
     IF(l_alert(IErr,"BlochCoefficientCalculation","allocations")) RETURN
 
     ! compute the effective Ug matrix by selecting only those beams
@@ -294,8 +287,7 @@ MODULE bloch_mod
     DEALLOCATE(CUgSgMatrix,CBeamTranspose, CUgMatPartial, &
          CInvertedEigenVectors, CAlphaWeightingCoefficients, &
          CEigenValues,CEigenVectors,CEigenValueDependentTerms, &
-         CBeamProjectionMatrix, CDummyBeamMatrix, RDiagonalElement, &
-		 CElementOff, STAT=IErr)
+         CBeamProjectionMatrix, CDummyBeamMatrix, CStructureMatrix, STAT=IErr)
     IF(l_alert(IErr,"BlochCoefficientCalculation","deallocating arrays")) RETURN
     
   END SUBROUTINE BlochCoefficientCalculation

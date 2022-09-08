@@ -166,8 +166,6 @@ MODULE IPara
   INTEGER(IKIND) :: IMinStrongBeams,IMinWeakBeams
   !OtherFLAGS
   INTEGER(IKIND) :: IDiffractionFLAG=0
-  INTEGER(IKIND) :: IInitialSimulationFLAG
-  INTEGER(IKIND) :: ISimFLAG
   !Disk Radius
   INTEGER(IKIND) :: IPixelCount 
   !Simulation size
@@ -190,7 +188,7 @@ MODULE IPara
   INTEGER(IKIND) :: INhkl,nStrongBeams,nWeakBeams,nBeams,IHKLMAXValue
   INTEGER(IKIND), DIMENSION(:), ALLOCATABLE :: IBasisAnisoDW,IStrongBeamList, IAnisoDW
   !Main
-  INTEGER(IKIND) :: IPixelTotal, INAtomsUnitCell,IPixelComputed
+  INTEGER(IKIND) :: IPixelTotal, INAtomsUnitCell
   INTEGER, DIMENSION(2) :: IImageSizeXY
   !Refinement FLAGS
   INTEGER(IKIND) :: IImageOutputFLAG

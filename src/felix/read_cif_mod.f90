@@ -81,7 +81,7 @@ MODULE read_cif_mod
     ! global inputs
     USE SConst, ONLY : SAllSpaceGrp,SElementSymbolMatrix
     USE RPARA, ONLY : RDebyeWallerConstant
-    USE IPARA, ONLY : IAtomsToRefine,ISimFLAG,ILN
+    USE IPARA, ONLY : IAtomsToRefine,ILN
     USE SPARA, ONLY : SPrintString
     USE IConst
     
@@ -250,7 +250,7 @@ MODULE read_cif_mod
       IAtomCount= IAtomCount+1
       IF(loop_ .NEQV. .TRUE.) EXIT
     END DO
-    IF (ISimFLAG.EQ.0.AND.SIZE(IAtomsToRefine,DIM=1).GT.IAtomCount) THEN
+    IF (SIZE(IAtomsToRefine,DIM=1).GT.IAtomCount) THEN
       IErr=1; IF(l_alert(IErr,"ReadCif",&
             "Number of atomic sites to refine is larger than the number of atoms. "//&
             "Please correct in felix.inp")) RETURN

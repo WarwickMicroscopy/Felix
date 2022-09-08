@@ -10,9 +10,16 @@ IHolzFLAG                 = 0
 IAbsorbFLAG               = 2
 IByteSize                 = 2
 
+# experimental settings
+INormalDirection          = [0,1,1]
+IIncidentBeamDirection    = [0,0,1]
+IXDirection               = [1,0,0]
+RFrameAngle               = 0.1
+RConvergenceAngle         = 4.0
+RAcceleratingVoltage (kV) = 200.0
+
 # dimensions of the simulation in pixels
 IPixelX                   = 10
-IPixelY                   = 124
 
 # beam selection criteria
 IMinReflectionPool        = 300
@@ -22,14 +29,6 @@ IMinWeakBeams             = 0
 # crystal settings
 RDebyeWallerConstant      = 0.0
 RAbsorptionPer            = 7.8
-
-# microscope settings
-RConvergenceAngle         = 1.19
-IIncidentBeamDirection    = [0,0,1]
-IXDirection               = [1,0,0]
-RFrameAngle               = 0.1
-INormalDirection          = [0,1,1]
-RAcceleratingVoltage (kV) = 200.0
 
 # Image Output Options
 RInitialThickness        = 630.0

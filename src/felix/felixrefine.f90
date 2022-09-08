@@ -93,7 +93,6 @@ PROGRAM Felixrefine
   CALL Init_Numbers ! constants for calculations
   CALL InitialiseMessage ! constants required for formatted terminal output
   IErr=0
-  IInitialSimulationFLAG = 1
 
   ! MPI initialization
   CALL MPI_Init(IErr4) 
@@ -130,8 +129,6 @@ PROGRAM Felixrefine
   CALL ReadHklFile(IErr) ! the list of hkl's to input/output
   IF(l_alert(IErr,"felixrefine","ReadHklFile")) CALL abort
 
-  WRITE(SPrintString, FMT='(A11,I6,1x,A1,I3,A7)') "Simulation ",ISizeX,"x",ISizeY," pixels" 
-  CALL message(LS,SPrintString)
   !--------------------------------------------------------------------
   ! set up scattering factors, relativistic electrons, reciprocal lattice
   !--------------------------------------------------------------------
@@ -144,24 +141,27 @@ PROGRAM Felixrefine
   RElectronVelocity = &
         RSpeedOfLight*SQRT( ONE - ((RElectronMass*RSpeedOfLight**2) / &
         (RElectronCharge*RAcceleratingVoltage*THOUSAND+RElectronMass*RSpeedOfLight**2))**2 )
-  ! Electron WaveLength in metres
+  ! Electron WaveLength in Angstroms
   RElectronWaveLength = RPlanckConstant / &
         (  SQRT(TWO*RElectronMass*RElectronCharge*RAcceleratingVoltage*THOUSAND) * &
         SQRT( ONE + (RElectronCharge*RAcceleratingVoltage*THOUSAND) / &
         (TWO*RElectronMass*RSpeedOfLight**2) )  ) * RAngstromConversion
-  ! NB --- k=2pi/lambda and exp(i*k.r), physics convention
-  RElectronWaveVectorMagnitude=TWOPI/RElectronWaveLength
+  ! NB --- k=2pi/lambda and exp(i*k.r), physics convention, in reciprocal Angstroms
+  RElectronWaveVectorMagnitude = TWOPI/RElectronWaveLength
+  !resolution in k-space N.B. in cRED we define convergence angle as half the y-size
+  RDeltaK = TWOPI*DEG2RADIAN*RFrameAngle/(RElectronWaveLength*REAL(ISizeX,RKIND))
+  ! y-dimension of simulation, taking the input RConvergenceAngle as half-convergence angle
+  ISizeY = NINT(TWOPI*TWO*RConvergenceAngle/RDeltaK)
+  WRITE(SPrintString, FMT='(A11,I3,1x,A1,I3,A7)') "Simulation ",ISizeX,"x",ISizeY," pixels"
+  CALL message(LS,SPrintString)
   RRelativisticCorrection = ONE/SQRT( ONE - (RElectronVelocity/RSpeedOfLight)**2 )
   RRelativisticMass = RRelativisticCorrection*RElectronMass
   !conversion from Vg to Ug, h^2/(2pi*m0*e), see e.g. Kirkland eqn. C.5
-  RScattFacToVolts=(RPlanckConstant**2)*(RAngstromConversion**2)/&
+  RScattFacToVolts = (RPlanckConstant**2)*(RAngstromConversion**2)/&
   (TWOPI*RElectronMass*RElectronCharge*RVolume)
   ! Creates reciprocal lattice vectors in Microscope reference frame
   CALL ReciprocalLattice(IErr)
   IF(l_alert(IErr,"felixrefine","ReciprocalLattice")) CALL abort
-  !resolution in k-space N.B. in cRED we define convergence angle as half the y-size
-  RDeltaK = FOURPI*RConvergenceAngle/REAL(ISizeY,RKIND)
-!DBG   IF(my_rank.EQ.0)PRINT*, "Delta K", RDeltaK  
 
   !--------------------------------------------------------------------
   ! allocate atom and Debye-Waller factor arrays
@@ -474,10 +474,6 @@ PROGRAM Felixrefine
   DEALLOCATE(CPseudoScatt,STAT=IErr)
   ! These are global variables, see smodules.f90
 
-  IF (ISimFLAG.EQ.0) THEN
-    DEALLOCATE(RImageExpi,STAT=IErr)  
-  END IF  
-  
   !--------------------------------------------------------------------
   ! finish off
   !--------------------------------------------------------------------
@@ -505,4 +501,3 @@ PROGRAM Felixrefine
   END SUBROUTINE abort
 
 END PROGRAM Felixrefine
-

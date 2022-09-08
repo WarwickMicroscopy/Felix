@@ -429,7 +429,7 @@ MODULE ug_matrix_mod
     USE BlochPara, ONLY : RBigK
 
     ! global inputs
-    USE IPARA, ONLY : IInitialSimulationFLAG,INAtomsUnitCell,&
+    USE IPARA, ONLY : INAtomsUnitCell,&
           INhkl,IAtomicNumber,IEquivalentUgKey,IWriteFLAG,IAnisoDW
     USE RPARA, ONLY : RAngstromConversion,RElectronCharge,RElectronMass,&
           RVolume,RIsoDW,ROccupancy,&
@@ -485,80 +485,72 @@ MODULE ug_matrix_mod
     CALL message ( LM, dbg3, "K (Angstroms) = ",RBigK )
 
     !--------------------------------------------------------------------
-    
-    IF (IInitialSimulationFLAG.EQ.1) THEN
-
-      !--------------------------------------------------------------------
-      ! count equivalent Ugs
-      !--------------------------------------------------------------------
-      ! Matrix of sums of indices - for symmetry equivalence in the Ug matrix
-      ALLOCATE(RgSumMat(INhkl,INhkl),STAT=IErr) 
-      IF(l_alert(IErr,"felixrefine","allocate RgSumMat")) RETURN      
-      ! IEquivalentUgKey is used later in absorption case 2 Bird & king
-      RgSumMat = ZERO
-      ! equivalent Ug's are identified by abs(h)+abs(k)+abs(l)+a*h^2+b*k^2+c*l^2...
+    ! count equivalent Ugs
+    !--------------------------------------------------------------------
+    ! Matrix of sums of indices - for symmetry equivalence in the Ug matrix
+    ALLOCATE(RgSumMat(INhkl,INhkl),STAT=IErr) 
+    IF(l_alert(IErr,"felixrefine","allocate RgSumMat")) RETURN      
+    ! IEquivalentUgKey is used later in absorption case 2 Bird & king
+    RgSumMat = ZERO
+    ! equivalent Ug's are identified by abs(h)+abs(k)+abs(l)+a*h^2+b*k^2+c*l^2...
+    DO ind = 1,INhkl
+      DO jnd = 1,ind
+        RgSumMat(ind,jnd)=ABS(Rhkl(ind,1)-Rhkl(jnd,1))+ABS(Rhkl(ind,2)-Rhkl(jnd,2))+ABS(Rhkl(ind,3)-Rhkl(jnd,3))+ &
+          RLengthX*(Rhkl(ind,1)-Rhkl(jnd,1))**TWO+RLengthY*(Rhkl(ind,2)-Rhkl(jnd,2))**TWO+ &
+          RLengthZ*(Rhkl(ind,3)-Rhkl(jnd,3))**TWO
+      END DO
+    END DO
+    ! it's symmetric
+    ALLOCATE (RTempMat(INhkl,INhkl),STAT=IErr)
+    RTempMat = TRANSPOSE(RgSumMat)
+    RgSumMat = RgSumMat+RTempMat
+    DEALLOCATE (RTempMat)
+    CALL message ( LL, dbg3, "hkl: g Sum matrix" )
+    DO ind =1,16
+      IF(IWriteFLAG.GE.4) WRITE(SPrintString,FMT='(3(I2,1X),A2,1X,12(F6.1,1X))') NINT(Rhkl(ind,:)),": ",RgSumMat(ind,1:12)
+      CALL message ( LL, dbg3, SPrintString )!LM, dbg3
+    END DO
+    ISymmetryRelations = 0_IKIND 
+    Iuid = 0_IKIND 
+    DO jnd = 1,INhkl
       DO ind = 1,INhkl
-        DO jnd = 1,ind
-          RgSumMat(ind,jnd)=ABS(Rhkl(ind,1)-Rhkl(jnd,1))+ABS(Rhkl(ind,2)-Rhkl(jnd,2))+ABS(Rhkl(ind,3)-Rhkl(jnd,3))+ &
-            RLengthX*(Rhkl(ind,1)-Rhkl(jnd,1))**TWO+RLengthY*(Rhkl(ind,2)-Rhkl(jnd,2))**TWO+ &
-            RLengthZ*(Rhkl(ind,3)-Rhkl(jnd,3))**TWO
-        END DO
+        IF(ISymmetryRelations(ind,jnd).NE.0) THEN
+          CYCLE
+        ELSE
+          Iuid = Iuid + 1_IKIND
+          ! fill the symmetry relation matrix with incrementing numbers
+          ! that have the sign of the imaginary part
+          WHERE (ABS(RgSumMat-RgSumMat(ind,jnd)).LE.RTolerance)
+            ISymmetryRelations = Iuid*SIGN(1_IKIND,NINT(AIMAG(CUgMatNoAbs)/(TINY)))
+          END WHERE
+        END IF
       END DO
-      ! it's symmetric
-      ALLOCATE (RTempMat(INhkl,INhkl),STAT=IErr)
-      RTempMat = TRANSPOSE(RgSumMat)
-      RgSumMat = RgSumMat+RTempMat
-      DEALLOCATE (RTempMat)
-      CALL message ( LL, dbg3, "hkl: g Sum matrix" )
-      DO ind =1,16
-        IF(IWriteFLAG.GE.4) WRITE(SPrintString,FMT='(3(I2,1X),A2,1X,12(F6.1,1X))') NINT(Rhkl(ind,:)),": ",RgSumMat(ind,1:12)
-        CALL message ( LL, dbg3, SPrintString )!LM, dbg3
-      END DO
+    END DO
+    DEALLOCATE (RgSumMat)
+    WRITE(SPrintString,FMT='(I6,A25)') Iuid," unique structure factors"
+    SPrintString=TRIM(ADJUSTL(SPrintString))
+    CALL message ( LS, SPrintString )
+    CALL message ( LM, dbg3, "hkl: symmetry matrix" )
+    DO ind =1,40
+      WRITE(SPrintString,FMT='(3(I4,1X),A2,1X,16(I4,1X))') NINT(Rhkl(ind,:)),": ",ISymmetryRelations(ind,1:16)
+      CALL message ( LM,dbg3, SPrintString )
+    END DO
 
-      ISymmetryRelations = 0_IKIND 
-      Iuid = 0_IKIND 
-      DO jnd = 1,INhkl
-        DO ind = 1,INhkl
-          IF(ISymmetryRelations(ind,jnd).NE.0) THEN
-            CYCLE
-          ELSE
-            Iuid = Iuid + 1_IKIND
-            ! fill the symmetry relation matrix with incrementing numbers
-            ! that have the sign of the imaginary part
-            WHERE (ABS(RgSumMat-RgSumMat(ind,jnd)).LE.RTolerance)
-              ISymmetryRelations = Iuid*SIGN(1_IKIND,NINT(AIMAG(CUgMatNoAbs)/(TINY)))
-            END WHERE
-          END IF
-        END DO
-      END DO
-      DEALLOCATE (RgSumMat)
-      WRITE(SPrintString,FMT='(I6,A25)') Iuid," unique structure factors"
-      SPrintString=TRIM(ADJUSTL(SPrintString))
-      CALL message ( LS, SPrintString )
-      CALL message ( LM, dbg3, "hkl: symmetry matrix" )
-      DO ind =1,40
-        WRITE(SPrintString,FMT='(3(I4,1X),A2,1X,16(I4,1X))') NINT(Rhkl(ind,:)),": ",ISymmetryRelations(ind,1:16)
-        CALL message ( LM,dbg3, SPrintString )
-      END DO
+    ! link each key with its Ug, from 1 to the number of unique Ug's Iuid
+    ALLOCATE(IEquivalentUgKey(Iuid),STAT=IErr)
+    IF(l_alert(IErr,"StructureFactorInitialisation","allocate IEquivalentUgKey")) RETURN
+    ALLOCATE(CUniqueUg(Iuid),STAT=IErr)
+    IF(l_alert(IErr,"StructureFactorInitialisation","allocate CUniqueUg")) RETURN
 
-      ! link each key with its Ug, from 1 to the number of unique Ug's Iuid
-      ALLOCATE(IEquivalentUgKey(Iuid),STAT=IErr)
-      IF(l_alert(IErr,"StructureFactorInitialisation","allocate IEquivalentUgKey")) RETURN
-      ALLOCATE(CUniqueUg(Iuid),STAT=IErr)
-      IF(l_alert(IErr,"StructureFactorInitialisation","allocate CUniqueUg")) RETURN
-
-      DO ind = 1,Iuid
-        ILoc = MINLOC(ABS(ISymmetryRelations-ind))
-        IEquivalentUgKey(ind) = ind
-        CUniqueUg(ind) = CUgMatNoAbs(ILoc(1),ILoc(2))
-      END DO
-
-      ! put them in descending order of magnitude
-      ! IEquivalentUgKey is used later in absorption case 2 Bird & king  
-      CALL ReSortUgs(IEquivalentUgKey,CUniqueUg,Iuid) ! modifies those arrays
+    DO ind = 1,Iuid
+      ILoc = MINLOC(ABS(ISymmetryRelations-ind))
+      IEquivalentUgKey(ind) = ind
+      CUniqueUg(ind) = CUgMatNoAbs(ILoc(1),ILoc(2))
+    END DO
+    ! put them in descending order of magnitude
+    ! IEquivalentUgKey is used later in absorption case 2 Bird & king  
+    CALL ReSortUgs(IEquivalentUgKey,CUniqueUg,Iuid) ! modifies those arrays
     
-    END IF
-
     RETURN
 
   END SUBROUTINE StructureFactorInitialisation
