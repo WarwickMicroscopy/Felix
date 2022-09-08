@@ -41,620 +41,11 @@ MODULE setup_space_group_mod
 
   IMPLICIT NONE
   PRIVATE
-  PUBLIC :: PreferredBasis, DetermineAllowedMovements, CountAllowedMovements, ConvertSpaceGroupToNumber
+  PUBLIC :: DetermineAllowedMovements, CountAllowedMovements, ConvertSpaceGroupToNumber
 
   CONTAINS
   
   
-  !>
-  !! Procedure-description: 
-  !!
-  !! Major-Authors: Richard Beanland (2018)
-  !!
-  SUBROUTINE PreferredBasis(IErr)
-  !Called from felixrefine ~line 175
-  !Changes the basis so that atomic coordinate refinement is possible
-  !This has to be done for cases where there are several symmetrically equivalent
-  !coordinates, and the atoms on the different sites move in different directions.
-  !The dimension of movement is given in CountAllowedMovements.
-  !The direction of movement is given in DetermineAllowedMovements.
-  !Here we have to change the atomic coordinate to be the appropriate one
-  !for the movements listed in those two subroutines.
-
-    USE MyNumbers
-    USE message_mod
-    
-    ! global inputs
-    USE SPARA, ONLY : SSpaceGrp, SWyckoffSymbol
-    USE RPARA, ONLY : RBasisAtomPosition
-
-    IMPLICIT NONE
-
-    CHARACTER(1) :: SWyckoff
-    INTEGER(IKIND), INTENT(OUT) :: IErr
-    INTEGER(IKIND) ::  ind,jnd,knd,ISpaceGrp,IBasisAtoms
-
-    IErr=0
-
-    CALL ConvertSpaceGroupToNumber(ISpaceGrp,IErr)!Uses global variable SSpaceGrp
-    IF(l_alert(IErr,"PreferredBasis","ConvertSpaceGroupToNumber")) RETURN
-    
-    IBasisAtoms=SIZE(RBasisAtomPosition,1)
-    CALL ChangeOrigin(ISpaceGrp,IErr)!#only implemented for #142
-    IF(l_alert(IErr,"PreferredBasis","ChangeOrigin")) RETURN
-    
-    DO ind=1,IBasisAtoms
-      SWyckoff=SWyckoffSymbol(ind)
-    
-      SELECT CASE(ISpaceGrp)
-      CASE(1)!P1
-        SELECT CASE (SWyckoff)
-        CASE('a')!point symmetry 1, coordinate [x,y,z], no reassignment
-        
-        CASE DEFAULT
-          IErr = 1
-          IF(l_alert(IErr,"PreferredBasis",&
-              "Wyckoff Symbol for space group 1, P1, not recognised")) RETURN
-        END SELECT
-!!$  CASE(2)
-!!$  CASE(3)
-!!$  CASE(4)
-!!$  CASE(5)
-!!$  CASE(6)
-!!$  CASE(7)
-!!$  CASE(8)
-!!$  CASE(9)
-!!$  CASE(10)
-!!$  CASE(11)
-!!$  CASE(12)
-!!$  CASE(13)
-!!$  CASE(14)
-!!$  CASE(15)
-      CASE(15)!C2/c
-        SELECT CASE (SWyckoff)
-        CASE('a')!point symmetry -1, coordinate [0,0,0], no reassignment
-
-        CASE('b')!point symmetry -1, coordinate [0,1/2,0], no reassignment
-
-        CASE('c')!point symmetry -1, coordinate [1/4,1/4,0], no reassignment
-
-        CASE('d')!point symmetry -1, coordinate [1/4,1/4,1/2], no reassignment
-
-        CASE('e')!point symmetry 2, coordinate [0,y,1/4], no reassignment
-
-        CASE('f')!point symmetry 1, coordinate [x,y,z], no reassignment
-
-        CASE DEFAULT
-          IErr = 1
-          IF(l_alert(IErr,"PreferredBasis",&
-              "Wyckoff Symbol for space group 15, C 2/c, not recognised")) RETURN
-        END SELECT
-
-!!$  CASE(16)
-!!$  CASE(17)
-!!$  CASE(18)
-!!$  CASE(19)
-!!$  CASE(20)
-!!$  CASE(21)
-!!$  CASE(22)
-!!$  CASE(23)
-!!$  CASE(24)
-!!$  CASE(25)
-!!$  CASE(26)
-!!$  CASE(27)
-!!$  CASE(28)
-!!$  CASE(29)
-!!$  CASE(30)
-!!$  CASE(31)
-!!$  CASE(32)
-!!$  CASE(33)
-!!$  CASE(34)
-!!$  CASE(35)
-      CASE(36)!C m c 21
-        SELECT CASE (SWyckoff)
-        CASE('a')!point symmetry m, coordinate [0,y,z], no reassignment
- 
-        CASE('b')!point symmetry 1, coordinate [x,y,z], no reassignment
-
-        CASE DEFAULT
-          IErr = 1
-          IF(l_alert(IErr,"PreferredBasis",&
-              "Wyckoff Symbol for space group 36, C m c 21, not recognised")) RETURN
-        END SELECT
-!!$  CASE(37)
-!!$  CASE(38)
-!!$  CASE(39)
-!!$  CASE(40)
-!!$  CASE(41)
-!!$  CASE(42)
-!!$  CASE(43)
-!!$  CASE(44)
-!!$  CASE(45)
-!!$  CASE(46)
-!!$  CASE(47)
-!!$  CASE(48)
-!!$  CASE(49)
-!!$  CASE(50)
-!!$  CASE(51)
-!!$  CASE(52)
-!!$  CASE(53)
-!!$  CASE(54)
-!!$  CASE(55)
-!!$  CASE(56)
-!!$  CASE(57)
-!!$  CASE(58)
-!!$  CASE(59)
-!!$  CASE(60)
-!!$  CASE(61)
-!!$  CASE(62)
-     CASE(63)!C m c m.  No equivalent positions swap axes so no reassignments
-      SELECT CASE (SWyckoff)
-      CASE('a')!point symmetry 2/m, coordinate [0,0,0] & eq, no reassignment
-
-      CASE('b')!point symmetry 2/m, coordinate [0,1/2,0] & eq, no reassignment
-
-      CASE('c')!point symmetry mm2, coordinate [0,y,1/4] & eq, no reassignment
-
-      CASE('d')!point symmetry -1, coordinate [1/4,1/4,0] & eq, no reassignment
-
-      CASE('e')!point symmetry 2(x), coordinate [x,0,0] & eq, no reassignment
-
-      CASE('f')!point symmetry m(x), coordinate [0,y,z] & eq, no reassignment
-
-      CASE('g')!point symmetry m(z), coordinate [x,y,1/4] & eq, no reassignment
-
-      CASE('h')!point symmetry 1, coordinate [x,y,z] & eq, no reassignment
-
-      CASE DEFAULT
-        IErr = 1
-        IF(l_alert(IErr,"PreferredBasis",&
-              "Wyckoff Symbol for space group 63, C m c m, not recognised")) RETURN
-      END SELECT
-
-     CASE(64)!C m c a.  No equivalent positions swap axes so no reassignments
-      SELECT CASE (SWyckoff)
-      CASE('a')!point symmetry 2/m, coordinate [0,0,0] & eq, no reassignment
-
-      CASE('b')!point symmetry 2/m, coordinate [1/2,0,0] & eq, no reassignment
-
-      CASE('c')!point symmetry -1, coordinate [1/4,1/4,0] & eq, no reassignment
-
-      CASE('d')!point symmetry 2(x), coordinate [x,0,0] & eq, no reassignment
-
-      CASE('e')!point symmetry 2(y), coordinate [1/4,y,1/4] & eq, no reassignment
-
-      CASE('f')!point symmetry m(x), coordinate [0,y,z] & eq, no reassignment
-
-      CASE('g')!point symmetry 1, coordinate [x,y,z] & eq, no reassignment
-
-      CASE DEFAULT
-        IErr = 1
-        IF(l_alert(IErr,"PreferredBasis",&
-              "Wyckoff Symbol for space group 64, C m c a, not recognised")) RETURN    
-      END SELECT
-
-!!$  CASE(65)
-!!$  CASE(66)
-!!$  CASE(67)
-     CASE(68)!C c c a.  No equivalent positions swap axes so no reassignments
-      !N.B. multiple origin choices allowed, here origin at 222, -1 at[1/4,0,1/4]
-      SELECT CASE (SWyckoff)
-      CASE('a')!point symmetry 222, coordinate [0,0,0] & eq, no reassignment
-
-      CASE('b')!point symmetry 222, coordinate [0,0,1/2] & eq, no reassignment
-
-      CASE('c')!point symmetry -1, coordinate [1/4,0,1/4] & eq, no reassignment
-
-      CASE('d')!point symmetry -1, coordinate [0,1/4,1/4] & eq, no reassignment
-
-      CASE('e')!point symmetry 2(x), coordinate [x,0,0] & eq, no reassignment
-
-      CASE('f')!point symmetry 2(y), coordinate [0,y,0] & eq, no reassignment
-
-      CASE('g')!point symmetry 2(z), coordinate [0,0,z] & eq, no reassignment
-
-      CASE('h')!point symmetry 2(z), coordinate [1/4,1/4,z] & eq, no reassignment
-
-      CASE('i')!point symmetry 1, coordinate [x,y,z] & eq, no reassignment
-
-      CASE DEFAULT
-        IErr = 1
-        IF(l_alert(IErr,"PreferredBasis",&
-              "Wyckoff Symbol for space group 68, C c c a, not recognised")) RETURN
-      END SELECT
-
-!!$  CASE(69)
-!!$  CASE(70)
-!!$  CASE(71)
-!!$  CASE(72)
-!!$  CASE(73)
-!!$  CASE(74)
-!!$  CASE(75)
-!!$  CASE(76)
-!!$  CASE(77)
-!!$  CASE(78)
-!!$  CASE(79)
-!!$  CASE(80)
-!!$  CASE(81)
-!!$  CASE(82)
-!!$  CASE(83)
-!!$  CASE(84)
-!!$  CASE(85)
-!!$  CASE(86)
-!!$  CASE(87)
-!!$  CASE(88)
-!!$  CASE(89)
-!!$  CASE(90)
-!!$  CASE(91)
-!!$  CASE(92)
-!!$  CASE(93)
-!!$  CASE(94)
-!!$  CASE(95)
-!!$  CASE(96)
-!!$  CASE(97)
-!!$  CASE(98)
-     CASE(99)!P 4 m m
-       SELECT CASE (SWyckoff)
-       CASE('a')!point symmetry 4mm, coordinate [0,0,z], no reassignment
-
-       CASE('b')!point symmetry 4mm, coordinate [1/2,1/2,z], no reassignment
-
-       CASE('c')!point symmetry mm, coordinate [1/2,0,z] & eq, no reassignment
-
-       CASE('d')!point symmetry m, coordinate [x,x,z] & eq
-         !Change equivalent coordinate [x,-x,z] to [x,x,z]
-         RBasisAtomPosition(ind,2)=RBasisAtomPosition(ind,1)
-
-       CASE('e')!point symmetry m, coordinate [x,0,z] & eq
-         !Change equivalent coordinate [0,x,z] to [x,0,z]
-         IF (ABS(RBasisAtomPosition(ind,1)).LT.TINY) THEN
-           RBasisAtomPosition(ind,1)=RBasisAtomPosition(ind,2)
-           RBasisAtomPosition(ind,2)=ZERO
-         END IF
-
-       CASE('f')!point symmetry m, coordinate [x,1/2,z] & eq
-         !Change equivalent coordinate [1/2,x,z] to [x,1/2,z]
-         IF (ABS(RBasisAtomPosition(ind,1)-HALF).LT.TINY) THEN
-           RBasisAtomPosition(ind,1)=RBasisAtomPosition(ind,2)
-           RBasisAtomPosition(ind,2)=HALF
-         END IF
-
-       CASE('g')!point symmetry 1, coordinate [x,y,z] & eq, no reassignment
-
-       CASE DEFAULT
-         IErr = 1
-         IF(l_alert(IErr,"PreferredBasis",&
-              "Wyckoff Symbol for space group 99, P 4 m m, not recognised")) RETURN
-              
-       END SELECT
-     
-!!$  CASE(100)
-!!$  CASE(101)
-!!$  CASE(102)
-!!$  CASE(103)
-!!$  CASE(104)
-!!$  CASE(105)
-!!$  CASE(106)
-!!$  CASE(107)
-!!$  CASE(108)
-!!$  CASE(109)
-!!$  CASE(110)
-!!$  CASE(111)
-!!$  CASE(112)
-!!$  CASE(113)
-!!$  CASE(114)
-!!$  CASE(115)
-!!$  CASE(116)
-!!$  CASE(117)
-!!$  CASE(118)
-!!$  CASE(119)
-!!$  CASE(120)
-!!$  CASE(121)
-!!$  CASE(122)
-!!$  CASE(123)
-!!$  CASE(124)
-!!$  CASE(125)
-!!$  CASE(126)
-!!$  CASE(127)
-!!$  CASE(128)
-!!$  CASE(129)
-!!$  CASE(130)
-!!$  CASE(131)
-!!$  CASE(132)
-!!$  CASE(133)
-!!$  CASE(134)
-!!$  CASE(135)
-!!$  CASE(136)
-!!$  CASE(137)
-!!$  CASE(138)
-     CASE(139)!I4/m m m
-       SELECT CASE (SWyckoff)
-       CASE('a')!point symmetry 4/mmm, coordinate [0,0,0], no reassignment
-      
-       CASE('b')!point symmetry 4/mmm, coordinate [0,0,1/2], no reassignment
-      
-       CASE('c')!point symmetry mmm, coordinate [0,1/2,0] or [1/2,0,0], no reassignment
-      
-       CASE('d')!point symmetry -4m2, coordinate [0,1/2,1/4] or [1/2,0,1/4], no reassignment
-      
-       CASE('e')!point symmetry 4mm, coordinate [0,0,z], no reassignment
-
-       CASE('f')!point symmetry 2/m, coordinate [1/4,1/4,1/4] & eq, no reassignment
-        
-       CASE('g')!point symmetry mm, coordinate [0,1/2,z] & eq, no reassignment
-
-       CASE('h')!point symmetry mm, coordinate [x,x,0]
-         !Change to [x,x,0]
-         RBasisAtomPosition(ind,2)=RBasisAtomPosition(ind,1)
-         
-       CASE('i')!point symmetry mm, coordinate [x,0,0] & eq
-         !Change equivalent coordinate [0,y,0]
-         IF (ABS(RBasisAtomPosition(ind,1)).LT.TINY) THEN
-           RBasisAtomPosition(ind,1)=RBasisAtomPosition(ind,2)
-           RBasisAtomPosition(ind,2)=ZERO
-         END IF
-         
-       CASE('j')!point symmetry mm, coordinate [x,1/2,0] & eq
-         !Change equivalent coordinate [1/2,y,0]
-         IF (ABS(RBasisAtomPosition(ind,1)-HALF).LT.TINY) THEN
-           RBasisAtomPosition(ind,1)=RBasisAtomPosition(ind,2)
-           RBasisAtomPosition(ind,2)=HALF
-         END IF
-         
-       CASE('k')!point symmetry 2, coordinate [x,1/2+x,1/4] & eq
-         !Change to [x,1/2+x,1/4]
-         RBasisAtomPosition(ind,2)=RBasisAtomPosition(ind,1)+HALF
-       CASE('l')!point symmetry m, coordinate [x,y,0] & eq - no change
-
-       CASE('m')!point symmetry m, coordinate [x,x,z] & eq
-         !Change to [x,x,z]
-         RBasisAtomPosition(ind,2)=RBasisAtomPosition(ind,1)
-         
-       CASE('n')!point symmetry m, coordinate [x,0,z] & eq
-         !Change equivalent coordinate [0,y,z]
-         IF (ABS(RBasisAtomPosition(ind,1)).LT.TINY) THEN
-           RBasisAtomPosition(ind,1)=RBasisAtomPosition(ind,2)
-           RBasisAtomPosition(ind,2)=ZERO
-         END IF
-         
-       CASE('o')!point symmetry 1, coordinate [x,y,z] & eq, no reassignment
-
-       CASE DEFAULT
-         IErr = 1
-         IF(l_alert(IErr,"PreferredBasis",&
-             "Wyckoff Symbol for space group 139, I4/m m m, not recognised")) RETURN   
-       END SELECT
-!!$  CASE(140)
-!!$  CASE(141)
-     CASE(142)!I41/acd
-       SELECT CASE (SWyckoff)
-
-       CASE('a')!point symmetry -4, coordinate [0,1/4,3/8], no reassignment
-     
-       CASE('b')!point symmetry 222, coordinate [0,1/4,1/8], no reassignment
-     
-       CASE('c')!point symmetry -1, coordinate [0,0,0], no reassignment
-
-       CASE('d')!point symmetry 2, coordinate [0,1/4,z], no reassignment
-
-       CASE('e')!point symmetry 2, coordinate [x,0,1/4], & eq
-         IF (ABS(RBasisAtomPosition(ind,3)).LT.TINY) THEN
-           !change equivalent coordinate [1/4,1/4-x,0] & [1/4,3/4-x,0]
-           IF (ABS(RBasisAtomPosition(ind,1)-0.25).LT.TINY) THEN
-             RBasisAtomPosition(ind,1)=0.25-RBasisAtomPosition(ind,2)
-             RBasisAtomPosition(ind,2)=ZERO
-             RBasisAtomPosition(ind,2)=0.25
-           END IF
-           !change equivalent coordinate [3/4,3/4+x,0] & [3/4,1/4+x,0]
-           IF (ABS(RBasisAtomPosition(ind,1)-0.75).LT.TINY) THEN
-             RBasisAtomPosition(ind,1)=RBasisAtomPosition(ind,2)-0.25
-             RBasisAtomPosition(ind,2)=ZERO
-             RBasisAtomPosition(ind,2)=0.25
-           END IF
-         END IF
- 
-       CASE('f')!point symmetry 2, coordinate [x,x+1/4,1/8], & eq
-         !atoms at height 3/8,5/8 have a 2-fold about [x,-x,.] and need to be changed
-         IF (ABS(RBasisAtomPosition(ind,3)-0.375).LT.TINY) THEN
-           RBasisAtomPosition(ind,2)=RBasisAtomPosition(ind,1)+0.25
-           RBasisAtomPosition(ind,3)=0.125
-         END IF
-         IF (ABS(RBasisAtomPosition(ind,3)-0.625).LT.TINY) THEN
-           RBasisAtomPosition(ind,2)=RBasisAtomPosition(ind,1)+0.25
-           RBasisAtomPosition(ind,2)=0.125
-         END IF
-
-       CASE('g')!point symmetry 1, coordinate [x,y,z], no reassignment
-
-       CASE DEFAULT
-         IErr = 1
-         IF(l_alert(IErr,"PreferredBasis",&
-             "Wyckoff Symbol for space group 142, I41/a c d, not recognised")) RETURN
-      END SELECT
-!!$  CASE(143)
-!!$  CASE(144)
-!!$  CASE(145)
-!!$  CASE(146)
-!!$  CASE(147)
-!!$  CASE(148)
-!!$  CASE(149)
-!!$  CASE(150)
-!!$  CASE(151)
-!!$  CASE(152)
-!!$  CASE(153)
-!!$  CASE(154)
-!!$  CASE(155)
-!!$  CASE(156)
-!!$  CASE(157)
-!!$  CASE(158)
-!!$  CASE(159)
-!!$  CASE(160)
-!!$  CASE(161)
-!!$  CASE(162)
-!!$  CASE(163)
-!!$  CASE(164)
-!!$  CASE(165)
-!!$  CASE(166)
-!!$  CASE(167)
-     CASE(167)!R -3 c
-       SELECT CASE (SWyckoff)
-
-       CASE('a')!point symmetry 32, coordinate [0,0,1/4], no reassignment
-
-       CASE('b')!point symmetry -3, coordinate [0,0,0], no reassignment
-
-       CASE('c')!point symmetry 3, coordinate [0,0,z], no reassignment
-
-       CASE('d')!point symmetry -1, coordinate [1/2,0,0], no reassignment
-
-       CASE('e')!point symmetry 2, coordinate [x,0,1/4], & eq
-         !change equivalent coordinate [0,x,1/4] & [0,-x,3/4]
-         IF (ABS(RBasisAtomPosition(ind,1)).LT.TINY) THEN
-           RBasisAtomPosition(ind,1)=RBasisAtomPosition(ind,2)
-           RBasisAtomPosition(ind,2)=ZERO
-         END IF
-         !change equivalent coordinate [x,x,3/4] & [-x,-x,1/4]
-         IF (ABS(RBasisAtomPosition(ind,1)-RBasisAtomPosition(ind,2)).LT.TINY) THEN
-           RBasisAtomPosition(ind,2)=ZERO
-           RBasisAtomPosition(ind,3)=RBasisAtomPosition(ind,3)-HALF
-         END IF
-
-       CASE('f')!point symmetry 1, coordinate [x,y,z], no reassignment
-
-       CASE DEFAULT
-         IErr = 1
-         IF(l_alert(IErr,"PreferredBasis",&
-             "Wyckoff Symbol for space group 167, R -3 c, not recognised")) RETURN
-      END SELECT
-!!$  CASE(168)
-!!$  CASE(169)
-!!$  CASE(170)
-!!$  CASE(171)
-!!$  CASE(172)
-!!$  CASE(173)
-!!$  CASE(174)
-!!$  CASE(175)
-!!$  CASE(176)
-!!$  CASE(177)
-!!$  CASE(178)
-!!$  CASE(179)
-!!$  CASE(180)
-!!$  CASE(181)
-!!$  CASE(182)
-!!$  CASE(183)
-!!$  CASE(184)
-!!$  CASE(185)
-!!$  CASE(186)
-!!$  CASE(187)
-!!$  CASE(188)
-!!$  CASE(189)
-!!$  CASE(190)
-!!$  CASE(191)
-!!$  CASE(192)
-!!$  CASE(193)
-!!$  CASE(194)
-!!$  CASE(195)
-!!$  CASE(196)
-!!$  CASE(197)
-!!$  CASE(198)
-!!$  CASE(199)
-!!$  CASE(200)
-!!$  CASE(201)
-!!$  CASE(202)
-!!$  CASE(203)
-!!$  CASE(204)
-!!$  CASE(205)
-!!$  CASE(206)
-!!$  CASE(207)
-!!$  CASE(208)
-!!$  CASE(209)
-!!$  CASE(210)
-!!$  CASE(211)
-!!$  CASE(212)
-!!$  CASE(213)
-!!$  CASE(214)
-!!$  CASE(215)
-    CASE(216)!F-43m
-        CALL Flattice(RBasisAtomPosition(ind,:),IErr)!puts the basis next to the origin
-        SELECT CASE (SWyckoff)
-        CASE('a')!point symmetry -43m, coordinate [0,0,0], no reassignment
-
-        CASE('b')!point symmetry -43m, coordinate [1/2,1/2,1/2], no reassignment
-
-        CASE('c')!point symmetry -43m, coordinate [1/4,1/4,1/4], no reassignment
-
-        CASE('d')!point symmetry -43m, coordinate [3/4,3/4,3/4], no reassignment
-
-        CASE('e')!point symmetry 3m, coordinate [x,x,x] & eq
-          RBasisAtomPosition(ind,2)=RBasisAtomPosition(ind,1)
-          RBasisAtomPosition(ind,3)=RBasisAtomPosition(ind,1)
-
-        CASE('f')!point symmetry mm, coordinate [x,0,0] & eq
-          !convert to [x,0,0]
-          IF (ABS(RBasisAtomPosition(ind,1)).LE.TINY) THEN
-            IF (ABS(RBasisAtomPosition(ind,2)).GT.TINY) &!it's[0,y,0]
-              RBasisAtomPosition(ind,1)=RBasisAtomPosition(ind,2)
-            IF (ABS(RBasisAtomPosition(ind,3)).GT.TINY) &!it's [0,0,z]
-              RBasisAtomPosition(ind,1)=RBasisAtomPosition(ind,3)
-            RBasisAtomPosition(ind,2)=ZERO
-            RBasisAtomPosition(ind,3)=ZERO
-          END IF
-
-        CASE('g')!point symmetry mm, coordinate [x,1/4,1/4] & eq
-          !move non-fixed coordinate to x by changing cyclically
-          DO jnd=1,3!find the coord that isn't 1/4 or 3/4
-            IF (ABS(MOD(4*RBasisAtomPosition(ind,jnd),1.0)).GT.TINY) knd=jnd
-          END DO
-          !cyclically move the coords
-          RBasisAtomPosition(ind,1)=RBasisAtomPosition(ind,knd)
-          RBasisAtomPosition(ind,2)=RBasisAtomPosition(ind,MOD(knd+1,3))
-          RBasisAtomPosition(ind,3)=RBasisAtomPosition(ind,MOD(knd+2,3))
-
-        CASE('h')!point symmetry m, coordinate [x,x,z] & eq
-          IF(ABS(RBasisAtomPosition(ind,2))-ABS(RBasisAtomPosition(ind,3)).GT.TINY) THEN!it's zxx or -zx-x
-            IF(ABS(RBasisAtomPosition(ind,2)-RBasisAtomPosition(ind,3)).GT.TINY) THEN!zxx
-              RBasisAtomPosition(ind,3)=RBasisAtomPosition(ind,1)
-              RBasisAtomPosition(ind,1)=RBasisAtomPosition(ind,2)!now it's xxz
-            ELSE!-zx-x
-              RBasisAtomPosition(ind,3)=-RBasisAtomPosition(ind,1)
-              RBasisAtomPosition(ind,1)=RBasisAtomPosition(ind,2)!now it's xxz
-            END IF
-          END IF
-          IF(ABS(RBasisAtomPosition(ind,1))-ABS(RBasisAtomPosition(ind,3)).GT.TINY) THEN!it's xzx or x-z-x
-            IF(ABS(RBasisAtomPosition(ind,1)-RBasisAtomPosition(ind,3)).GT.TINY) THEN!xzx
-              RBasisAtomPosition(ind,3)=RBasisAtomPosition(ind,2)
-              RBasisAtomPosition(ind,2)=RBasisAtomPosition(ind,1)!now it's xxz
-            ELSE!x-z-x
-              RBasisAtomPosition(ind,3)=-RBasisAtomPosition(ind,2)
-              RBasisAtomPosition(ind,2)=RBasisAtomPosition(ind,1)!now it's xxz
-            END IF
-          END IF
-
-        CASE('i')!point symmetry 1, coordinate [x,y,z], no reassignment
-
-
-        END SELECT
-!!$  CASE(217)
-!!$  CASE(218)
-!!$  CASE(219)
-!!$  CASE(220)
-!!$  CASE(221)
-!!$  CASE(222)
-!!$  CASE(223)
-!!$  CASE(224)
-!!$  CASE(225)
-!!$  CASE(226)
-!!$  CASE(227)
-!!$  CASE(228)
-!!$  CASE(229)
-!!$  CASE(230)
-      CASE DEFAULT
-        IErr = 1
-        IF(l_alert(IErr,"PreferredBasis","space group not recognised")) RETURN 
-      END SELECT
-    END DO
-  END SUBROUTINE PreferredBasis
-
   !%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
   !>Put coordinates next to the origin in a face-centred lattice
   SUBROUTINE Flattice(Rcoord,IErr)
@@ -740,7 +131,7 @@ MODULE setup_space_group_mod
           IVectors = 3
         CASE DEFAULT
           IErr = 1
-          IF(l_alert(IErr,"PreferredBasis",&
+          IF(l_alert(IErr,"DetermineAllowedMovements",&
                 "Wyckoff Symbol for space group 2, P -1, not recognised")) RETURN
         END SELECT
 !!$  CASE(3)
@@ -758,7 +149,7 @@ MODULE setup_space_group_mod
           IVectors = 3
         CASE DEFAULT
           IErr = 1
-          IF(l_alert(IErr,"PreferredBasis",&
+          IF(l_alert(IErr,"DetermineAllowedMovements",&
                 "Wyckoff Symbol for space group 3, P 1 1 2, not recognised")) RETURN
         END SELECT
 !!$  CASE(4)
@@ -768,7 +159,7 @@ MODULE setup_space_group_mod
           IVectors = 3
         CASE DEFAULT
           IErr = 1
-          IF(l_alert(IErr,"PreferredBasis",&
+          IF(l_alert(IErr,"DetermineAllowedMovements",&
                 "Wyckoff Symbol for space group 4, P 1 1 21, not recognised")) RETURN
         END SELECT
 !!$  CASE(5)
@@ -782,7 +173,7 @@ MODULE setup_space_group_mod
           IVectors = 3
         CASE DEFAULT
           IErr = 1
-          IF(l_alert(IErr,"PreferredBasis",&
+          IF(l_alert(IErr,"DetermineAllowedMovements",&
                 "Wyckoff Symbol for space group 5, B 1 1 2, not recognised")) RETURN
         END SELECT
 !!$  CASE(6)
@@ -796,7 +187,7 @@ MODULE setup_space_group_mod
         IVectors = 3
       CASE DEFAULT
         IErr = 1
-        IF(l_alert(IErr,"PreferredBasis",&
+        IF(l_alert(IErr,"DetermineAllowedMovements",&
                 "Wyckoff Symbol for space group 6, P 1 1 m, not recognised")) RETURN
       END SELECT
 !!$  CASE(7)
@@ -806,7 +197,7 @@ MODULE setup_space_group_mod
         IVectors = 3
       CASE DEFAULT
         IErr = 1
-        IF(l_alert(IErr,"PreferredBasis",&
+        IF(l_alert(IErr,"DetermineAllowedMovements",&
               "Wyckoff Symbol for space group 7, P 1 1 b, not recognised")) RETURN
       END SELECT
 !!$  CASE(8)
@@ -6215,7 +5606,7 @@ MODULE setup_space_group_mod
         RMoveMatrix(3,:) = (/ZERO, ZERO, ONE/)
       CASE DEFAULT
         IErr = 1
-        IF(l_alert(IErr,"PreferredBasis",&
+        IF(l_alert(IErr,"DetermineAllowedMovements",&
           "Wyckoff Symbol for space group 68, C c c a, not recognised")) RETURN
       END SELECT
 
@@ -6272,7 +5663,7 @@ MODULE setup_space_group_mod
         RMoveMatrix(3,:) = (/ZERO, ZERO, ONE/)
       CASE DEFAULT
         IErr = 1
-        IF(l_alert(IErr,"PreferredBasis",&
+        IF(l_alert(IErr,"DetermineAllowedMovements",&
           "Wyckoff Symbol for space group 68, C c c a, not recognised")) RETURN
       END SELECT
 
@@ -6525,54 +5916,6 @@ MODULE setup_space_group_mod
     END SELECT
   END SUBROUTINE DetermineAllowedMovements
 
-  !%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-  !>
-  !! Procedure-description: Convert SSpacegrp to lower case and Compare
-  !! SSpaceGrpNoSpaces with every space group
-  !!
-  !! Major-Authors: Keith Evans (2014), Richard Beanland (2016)
-  !!
-  SUBROUTINE ChangeOrigin(ISpaceGrp,IErr)
-
-    ! called from PreferredBasis to change to the preferred origin
-    USE MyNumbers
-    USE message_mod
-
-    ! global inputs
-    USE RPARA, ONLY : RBasisAtomPosition
-    USE SPARA, ONLY : SWyckoffSymbol
-
-    IMPLICIT NONE
-
-    INTEGER(IKIND),INTENT(OUT) :: IErr
-    INTEGER(IKIND) :: ind,ISpaceGrp,IBasisAtoms,IChangeFLAG
-
-    IBasisAtoms=SIZE(RBasisAtomPosition,1)
-    SELECT CASE(ISpaceGrp)
-      CASE(142)!I41/acd
-        !Change from choice 1 (origin -4 at [0,0,0]) to choice 2 (origin -1 at [0,0,0])
-        IChangeFLAG = 0
-        IErr = 1!Set the error flag in the case we don't get an 'a' site
-        
-        !Go through the atoms and look for an 'a' site incompatible with choice 2
-        DO ind = 1,IBasisAtoms
-          !Wyckoff 'a' is -4 at [000],[0,1/2,1/2],[0,1/2,1/4],[1/2,0,1/4] in 1
-          ! and [0,1/4,3/8], [0,3/4,5/8], [1/2,1/4,5/8], [1/2,3/4,5/8] in 2
-          IF (SWyckoffSymbol(ind).EQ.'a') THEN
-            IErr = 0!We have an 'a' site
-            !check for origin 1 by multiplying by 4 and checking it is an integer
-            IF(MODULO(FOUR*RBasisAtomPosition(ind,3),1.0).LT.TINY) IChangeFLAG = 1
-          END IF
-        END DO
-        IF (IChangeFLAG.EQ.1) THEN!add[[0,1/4,3/8]
-          DO ind = 1,IBasisAtoms
-            RBasisAtomPosition(ind,2)=MODULO((RBasisAtomPosition(ind,2)+0.25),1.0)
-            RBasisAtomPosition(ind,3)=MODULO((RBasisAtomPosition(ind,2)+0.375),1.0)
-          END DO
-        END IF
-    END SELECT
-    
-  END SUBROUTINE ChangeOrigin
 
   !%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
   !>
@@ -6583,7 +5926,7 @@ MODULE setup_space_group_mod
   !!
   SUBROUTINE ConvertSpaceGroupToNumber(ISpaceGrp,IErr)
 
-    ! called from 1) PreferredBasis and 2) felixrefine to setup coordinate refinement
+    ! called from felixrefine to setup coordinate refinement
     USE MyNumbers
     USE message_mod
 
@@ -6670,3 +6013,4 @@ MODULE setup_space_group_mod
   END SUBROUTINE  StrLowCase
 
 END MODULE setup_space_group_mod
+

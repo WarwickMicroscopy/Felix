@@ -81,7 +81,7 @@ MODULE read_cif_mod
     ! global inputs
     USE SConst, ONLY : SAllSpaceGrp,SElementSymbolMatrix
     USE RPARA, ONLY : RDebyeWallerConstant
-    USE IPARA, ONLY : IAtomsToRefine,ILN
+    USE IPARA, ONLY : ILN
     USE SPARA, ONLY : SPrintString
     USE IConst
     
@@ -250,11 +250,6 @@ MODULE read_cif_mod
       IAtomCount= IAtomCount+1
       IF(loop_ .NEQV. .TRUE.) EXIT
     END DO
-    IF (SIZE(IAtomsToRefine,DIM=1).GT.IAtomCount) THEN
-      IErr=1; IF(l_alert(IErr,"ReadCif",&
-            "Number of atomic sites to refine is larger than the number of atoms. "//&
-            "Please correct in felix.inp")) RETURN
-    END IF
     !allocate variables
     !coordinates of the basis
     ALLOCATE(RBasisAtomPosition(IAtomCount,ITHREE),STAT=IErr)
@@ -339,7 +334,7 @@ MODULE read_cif_mod
       ELSE
         SWyckoffSymbol(ind) = "x"
       END IF
-      !coordinates
+      !coordinates, fractional Miller indices
       f2 = numb_('_atom_site_fract_x', x, sx)
       RBasisAtomPosition(ind,1)= x
       f2 = numb_('_atom_site_fract_y', y, sy)

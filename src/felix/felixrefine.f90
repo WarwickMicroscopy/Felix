@@ -128,6 +128,9 @@ PROGRAM Felixrefine
 
   CALL ReadHklFile(IErr) ! the list of hkl's to input/output
   IF(l_alert(IErr,"felixrefine","ReadHklFile")) CALL abort
+  ! NB Rhkl are in INTEGER form [h,k,l] but are REAL to allow dot products etc.
+  ALLOCATE(Rhkl(INhkl,ITHREE),STAT=IErr)
+  IF(l_alert(IErr,"felixrefine","allocate Rhkl")) CALL abort
 
   !--------------------------------------------------------------------
   ! set up scattering factors, relativistic electrons, reciprocal lattice
@@ -166,8 +169,6 @@ PROGRAM Felixrefine
   !--------------------------------------------------------------------
   ! allocate atom and Debye-Waller factor arrays
   !--------------------------------------------------------------------
-  ! Reset the basis so that atomic coordinate refinement is possible 
-  IF(IRefineMode(2).EQ.1) CALL PreferredBasis(IErr)!A crystallography subroutine
   ! total possible atoms/unit cell
   IMaxPossibleNAtomsUnitCell=SIZE(RBasisAtomPosition,1)*SIZE(RSymVec,1)
   ! over-allocate since actual size not known before calculation of unique positions 
@@ -177,9 +178,6 @@ PROGRAM Felixrefine
   ! fractional unit cell coordinates are used for RAtomPosition, like BasisAtomPosition
   ALLOCATE(RAtomPosition(IMaxPossibleNAtomsUnitCell,ITHREE),STAT=IErr)
   IF(l_alert(IErr,"felixrefine","allocate RAtomPosition")) CALL abort
-  ! RAtomCoordinate is in the microscope reference frame in Angstrom units
-  ALLOCATE(RAtomCoordinate(IMaxPossibleNAtomsUnitCell,ITHREE),STAT=IErr)
-  IF(l_alert(IErr,"felixrefine","allocate RAtomCoordinate")) CALL abort
   ALLOCATE(SAtomLabel(IMaxPossibleNAtomsUnitCell),STAT=IErr) ! atom label
   IF(l_alert(IErr,"felixrefine","allocate SAtomLabel")) CALL abort
   ALLOCATE(SAtomName(IMaxPossibleNAtomsUnitCell),STAT=IErr) ! atom name
@@ -202,10 +200,18 @@ PROGRAM Felixrefine
   !?? RB could re-allocate RAtomCoordinate,SAtomName,RIsoDW,ROccupancy,
   !?? IAtomicNumber,IAnisoDW to match INAtomsUnitCell?
 
+  !--------------------------------------------------------------------
+  ! Calculate atomic position vectors RAtomCoordinate
+  ! In microscope reference frame, in Angstrom units
+  ALLOCATE(RAtomCoordinate(IMaxPossibleNAtomsUnitCell,ITHREE),STAT=IErr)
+  IF(l_alert(IErr,"felixrefine","allocate RAtomCoordinate")) CALL abort
+  DO ind=1,INAtomsUnitCell
+    DO jnd=1,ITHREE
+      RAtomCoordinate(ind,jnd)= RAtomPosition(ind,1)*RaVecM(jnd) + &
+            RAtomPosition(ind,2)*RbVecM(jnd)+RAtomPosition(ind,3)*RcVecM(jnd)
+    END DO
+  END DO
   ! Fill the list of reflections Rhkl (global variable)
-  ! NB Rhkl are in INTEGER form [h,k,l] but are REAL to allow dot products etc.
-  ALLOCATE(Rhkl(INhkl,ITHREE),STAT=IErr)
-  IF(l_alert(IErr,"felixrefine","allocate Rhkl")) CALL abort
   RGlimit = 10.0*TWOPI    
   CALL HKLMake(RGlimit,IErr)
   IF(l_alert(IErr,"felixrefine","HKLMake")) CALL abort

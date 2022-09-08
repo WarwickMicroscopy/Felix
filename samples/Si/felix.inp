@@ -15,11 +15,12 @@ INormalDirection          = [0,1,-1]
 IIncidentBeamDirection    = [-24452,100000,44316]
 IXDirection               = [3983,41294,-90984]
 RFrameAngle               = 1.035
-RConvergenceAngle         = 1.4324208456520102
+INFrames                  = 5
+RConvergenceAngle         = 1.4324
 RAcceleratingVoltage (kV) = 200.0
 
 # dimensions of the simulation in pixels
-IPixelX                   = 100
+IPixelX                   = 20
 
 # beam selection criteria
 IMinReflectionPool        = 400

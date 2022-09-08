@@ -53,7 +53,7 @@ MODULE read_files_mod
 
     ! global outputs, read from .inp
     USE IPARA, ONLY : IWriteFLAG, IScatterFactorMethodFLAG, IHolzFLAG, &
-          IAbsorbFLAG, IByteSize, INhkl, &
+          IAbsorbFLAG, IByteSize, INhkl, INFrames, &
           IMinStrongBeams, IMinWeakBeams, IImageProcessingFLAG, &
           INoofUgs, IPrint, ISizeX, ISizeY
     USE RPARA, ONLY : RDebyeWallerConstant, RAbsorptionPercentage, RConvergenceAngle, &
@@ -62,7 +62,6 @@ MODULE read_files_mod
     USE SPARA, ONLY : SPrintString
     ! global inputs
     USE IChannels, ONLY : IChInp
-    USE IPARA, ONLY : IRefinementVariableTypes
     USE SConst, ONLY : SAlphabet
 
     IMPLICIT NONE
@@ -122,9 +121,12 @@ MODULE read_files_mod
     ! SDirectionX -> IXDirection
     ILine= ILine+1; READ(IChInp,FMT='(27X,A)',END=30) SDirectionX
     CALL ThreeDimVectorReadIn(SDirectionX,'[',']',RXDirC)
-    ! RFrameAngle
+    ! RFrameAngle - the angular range of each frame, in degrees
     ILine= ILine+1; READ(IChInp,'(27X,F18.9)',ERR=20,END=30) RFrameAngle
-    ! RConvergenceAngle
+    ! INFrames - the total number of frames
+    ILine= ILine+1; READ(IChInp,'(27X,I15.1)',ERR=20,END=30) INFrames
+    CALL message ( LXL, dbg3, "No. of frames =",INFrames)
+    ! RConvergenceAngle - the half-convergence angle, in reciprocal Angstroms
     ILine= ILine+1; READ(IChInp,'(27X,F18.9)',ERR=20,END=30) RConvergenceAngle
     CALL ThreeDimVectorReadIn(SNormalDirectionX,'[',']',RNormDirC)
 
@@ -141,8 +143,6 @@ MODULE read_files_mod
     ! ISizeX
     ILine= ILine+1; READ(IChInp,'(27X,I15.1)',ERR=20,END=30) ISizeX
     CALL message ( LXL, dbg3, "ISizeX=",ISizeX)
-    ! ISizeY
-!    ILine= ILine+1; READ(IChInp,'(27X,I15.1)',ERR=20,END=30) ISizeY
 
     !--------------------------------------------------------------------
     ! beam selection criteria

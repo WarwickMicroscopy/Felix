@@ -115,7 +115,7 @@ MODULE crystallography_mod
     USE SPARA, ONLY : SSpaceGroupName
     
     ! global inputs
-    USE IPARA, ONLY : IDiffractionFLAG,IVolumeFLAG
+    USE IPARA, ONLY : IVolumeFLAG
     USE RPARA, ONLY : RAlpha,RBeta,RGamma,RLengthX,RLengthY,RLengthZ,RNormDirC,RXDirC,&
           RZDirC
     USE SPARA, ONLY : SPrintString
@@ -152,23 +152,21 @@ MODULE crystallography_mod
     END IF
 
     !Some checks for rhombohedral cells?
-    IF(IDiffractionFLAG.EQ.0) THEN  
-      RTTest = &
-            DOT_PRODUCT(RaVecO/DOT_PRODUCT(RaVecO,RaVecO),RbVecO/DOT_PRODUCT(RbVecO,RbVecO))*&
-            DOT_PRODUCT(RbVecO/DOT_PRODUCT(RbVecO,RbVecO),RcVecO/DOT_PRODUCT(RcVecO,RcVecO))*&
-            DOT_PRODUCT(RcVecO/DOT_PRODUCT(RcVecO,RcVecO),RaVecO/DOT_PRODUCT(RaVecO,RaVecO))
+    RTTest = &
+          DOT_PRODUCT(RaVecO/DOT_PRODUCT(RaVecO,RaVecO),RbVecO/DOT_PRODUCT(RbVecO,RbVecO))*&
+          DOT_PRODUCT(RbVecO/DOT_PRODUCT(RbVecO,RbVecO),RcVecO/DOT_PRODUCT(RcVecO,RcVecO))*&
+          DOT_PRODUCT(RcVecO/DOT_PRODUCT(RcVecO,RcVecO),RaVecO/DOT_PRODUCT(RaVecO,RaVecO))
        
-       IF(SCAN(SSpaceGroupName,'rR').NE.0) THEN
-          IF(ABS(RTTest).LT.TINY) THEN
-             SSpaceGroupName = TRIM(ADJUSTL("V"))
-             ! Crystal is either Obverse or Reverse
-             ! Selection Rules are not in place to determine the difference, 
-             ! assume the crystal is Obverse")
-          ELSE
-             SSpaceGroupName=TRIM(ADJUSTL('P'))
-             ! Primitive setting (Rhombohedral axes)
-          END IF
-       END IF
+    IF(SCAN(SSpaceGroupName,'rR').NE.0) THEN
+       IF(ABS(RTTest).LT.TINY) THEN
+        SSpaceGroupName = TRIM(ADJUSTL("V"))
+        ! Crystal is either Obverse or Reverse
+        ! Selection Rules are not in place to determine the difference, 
+        ! assume the crystal is Obverse")
+      ELSE
+        SSpaceGroupName=TRIM(ADJUSTL('P'))
+        ! Primitive setting (Rhombohedral axes)
+      END IF
     END IF
 
     ! Set up Reciprocal Lattice Vectors: orthogonal reference frame in 1/Angstrom units
@@ -359,19 +357,6 @@ MODULE crystallography_mod
          RAllAtomPosition, SAllAtomName, RAllOccupancy, RAllIsoDW, &
          IAllAtomicNumber, RAllAnisoDW, STAT=IErr)
     IF(l_alert(IErr,"UniqueAtomPositions","deallocations")) RETURN
-      
-    !--------------------------------------------------------------------
-    ! Calculate atomic position vectors RAtomCoordinate
-    !--------------------------------------------------------------------
-
-    ! calculate from Fractional Coordinates and Lattice Vectors
-    ! In microscope reference frame, in Angstrom units
-    DO ind=1,INAtomsUnitCell
-      DO jnd=1,ITHREE
-        RAtomCoordinate(ind,jnd)= RAtomPosition(ind,1)*RaVecM(jnd) + &
-              RAtomPosition(ind,2)*RbVecM(jnd)+RAtomPosition(ind,3)*RcVecM(jnd)
-      END DO
-    END DO
 
   END SUBROUTINE UniqueAtomPositions
 

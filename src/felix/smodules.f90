@@ -117,8 +117,7 @@ MODULE IConst
        ADD_OUT_INFO=6, &
        IParallelFLAG=0,&
        IRandomFLAG = 1, &
-       IFixedSeed = 123456787,&
-       IRefinementVariableTypes = 10
+       IFixedSeed = 123456787
 
 END MODULE IConst
 !--------------------------------------------------------------------
@@ -164,13 +163,8 @@ MODULE IPara
        IByteSize
   !Minimum Reflections etc
   INTEGER(IKIND) :: IMinStrongBeams,IMinWeakBeams
-  !OtherFLAGS
-  INTEGER(IKIND) :: IDiffractionFLAG=0
-  !Disk Radius
-  INTEGER(IKIND) :: IPixelCount 
   !Simulation size
-  INTEGER(IKIND) :: ISizeX
-  INTEGER(IKIND) :: ISizeY
+  INTEGER(IKIND) :: ISizeX, ISizeY, IPixelCount, INFrames
   !Crystal Settings
   INTEGER(IKIND) :: IMaxPossibleNAtomsUnitCell
   !Name2Atom index
@@ -208,12 +202,8 @@ MODULE IPara
   !Ug Calculation
   INTEGER(IKIND) :: ICurrentZ,IPsize
   !Refinement   
-  INTEGER(IKIND),DIMENSION(IRefinementVariableTypes) :: IRefineMode
-  INTEGER(IKIND),DIMENSION(IRefinementVariableTypes) :: INoofParameters  !zz
   INTEGER(IKIND),DIMENSION(:,:),ALLOCATABLE :: IIterativeVariableUniqueIDs
   INTEGER(IKIND),DIMENSION(:),ALLOCATABLE :: IIndependentVariableType,IIndependentVariableAtom
-  !List of Atomic Sites for Refinement
-  INTEGER(IKIND),DIMENSION(:),ALLOCATABLE :: IAtomsToRefine
   !Simplex Variables
   INTEGER(IKIND) :: INoOfVariables,ILocalPixelCountMin,ILocalPixelCountMax,IUgOffset
   INTEGER(IKIND), DIMENSION(:), ALLOCATABLE :: IDisplacements,ICount
