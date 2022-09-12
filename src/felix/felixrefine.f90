@@ -69,7 +69,6 @@ PROGRAM Felixrefine
         RMinLaueZoneValue,Rdf,RLastFit,RBestFit,RMaxLaueZoneValue,&
         RMaxAcceptanceGVecMag,RandomSign,RLaueZoneElectronWaveVectorMag,&
         RvarMin,RfitMin,RFit0,Rconvex,Rtest,Rplus,Rminus,RdeltaX,RdeltaY
-  INTEGER(IKIND),DIMENSION(100) :: ITemp,Itemp2!temporary holder for refinement type and atom
   REAL(RKIND),DIMENSION(ITHREE) :: RXDirOn,RZDirOn
   INTEGER(IKIND),DIMENSION(10) :: INoOfVariablesForRefinementType
 
@@ -218,11 +217,17 @@ PROGRAM Felixrefine
   RZDirO = RZDirO/SQRT(DOT_PRODUCT(RZDirO,RZDirO))
   RYDirO = CROSS(RZDirO,RXDirO)
 
+  ! frame counter
+  knd = 0
+  DO WHILE(knd.LT.INFrames)
+
   ! Increment frame angle
-  RXDirOn = RXDirO-RZDirO*TAN(DEG2RADIAN*RFrameAngle)
-  RZDirOn = RZDirO+RXDirO*TAN(DEG2RADIAN*RFrameAngle)
-  RXDirO = RXDirOn/SQRT(DOT_PRODUCT(RXDirOn,RXDirOn))
-  RZDirO = RZDirOn/SQRT(DOT_PRODUCT(RZDirOn,RZDirOn))
+  IF(knd.NE.0) THEN
+    RXDirOn = RXDirO-RZDirO*TAN(DEG2RADIAN*RFrameAngle)
+    RZDirOn = RZDirO+RXDirO*TAN(DEG2RADIAN*RFrameAngle)
+    RXDirO = RXDirOn/SQRT(DOT_PRODUCT(RXDirOn,RXDirOn))
+    RZDirO = RZDirOn/SQRT(DOT_PRODUCT(RZDirOn,RZDirOn))
+  END IF
 
   ! Create reciprocal lattice vectors in Microscope reference frame
   CALL CrystalOrientation(IErr)
@@ -337,21 +342,21 @@ PROGRAM Felixrefine
       INumTotalReflections=INumTotalReflections+INumInitReflections
     END DO
 
-    knd=0
-    DO ind=1,INhkl
+    jnd = 0
+    DO ind = 1,INhkl
       IF(SUM(RgPoolMagLaue(ind,:))/REAL(ITotalLaueZoneLevel,RKIND).GT.NEGHUGE) THEN
-        knd=knd+1
+        jnd = jnd+1
       END IF
     END DO
-    IHOLZgPoolMag=knd
+    IHOLZgPoolMag = jnd
     ALLOCATE(IOriginGVecIdentifier(IHOLZgPoolMag),STAT=IErr)
     IF(l_alert(IErr,"felixrefine","allocate IOriginGVecIdentifier")) CALL abort
-    IOriginGVecIdentifier=0
-    knd=1
-    DO ind=1,INhkl
+    IOriginGVecIdentifier = 0
+    jnd = 1
+    DO ind = 1,INhkl
       IF((SUM(RgPoolMagLaue(ind,:))/REAL(ITotalLaueZoneLevel,RKIND)).GT.NEGHUGE) THEN
-        IOriginGVecIdentifier(knd)=ind
-        knd=knd+1
+        IOriginGVecIdentifier(jnd) = ind
+        jnd = jnd+1
       END IF
     END DO
 
@@ -410,12 +415,12 @@ PROGRAM Felixrefine
   IF(l_alert(IErr,"felixrefine","allocate IPixelLocations")) CALL abort
   ! we keep track of where a calculation goes in the image using two
   ! 1D IPixelLocations arrays.  Remember fortran indexing is [row,col]=[y,x]
-  knd=0
+  jnd = 0
   DO IYPixelIndex = 1,ISizeY
     DO IXPixelIndex = 1,ISizeX
-      knd = knd+1
-      IPixelLocations(knd,1) = IYPixelIndex
-      IPixelLocations(knd,2) = IXPixelIndex
+      jnd = jnd + 1
+      IPixelLocations(jnd,1) = IYPixelIndex
+      IPixelLocations(jnd,2) = IXPixelIndex
     END DO
   END DO
 
@@ -497,7 +502,8 @@ PROGRAM Felixrefine
 
   !--------------------------------------------------------------------
   ! frame loop
-
+  knd = knd + 1
+  END DO
 
   !--------------------------------------------------------------------
   ! finish off
