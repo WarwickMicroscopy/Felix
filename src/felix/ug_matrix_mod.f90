@@ -435,7 +435,7 @@ MODULE ug_matrix_mod
           RVolume,RIsoDW,ROccupancy,&
           RElectronWaveVectorMagnitude,RgMatrix,RDebyeWallerConstant,RTolerance,&
           RAtomCoordinate,Rhkl,RAnisotropicDebyeWallerFactorTensor,RScattFacToVolts,&
-          RLengthX,RLengthY,RLengthZ
+          RCellA,RCellB,RCellC
     USE IChannels, ONLY : IChOutWIImage
 
     ! global should be local to Ug.f90
@@ -496,8 +496,8 @@ MODULE ug_matrix_mod
     DO ind = 1,INhkl
       DO jnd = 1,ind
         RgSumMat(ind,jnd)=ABS(Rhkl(ind,1)-Rhkl(jnd,1))+ABS(Rhkl(ind,2)-Rhkl(jnd,2))+ABS(Rhkl(ind,3)-Rhkl(jnd,3))+ &
-          RLengthX*(Rhkl(ind,1)-Rhkl(jnd,1))**TWO+RLengthY*(Rhkl(ind,2)-Rhkl(jnd,2))**TWO+ &
-          RLengthZ*(Rhkl(ind,3)-Rhkl(jnd,3))**TWO
+          RCellA*(Rhkl(ind,1)-Rhkl(jnd,1))**TWO+RCellB*(Rhkl(ind,2)-Rhkl(jnd,2))**TWO+ &
+          RCellC*(Rhkl(ind,3)-Rhkl(jnd,3))**TWO
       END DO
     END DO
     ! it's symmetric

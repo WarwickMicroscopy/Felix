@@ -36,7 +36,7 @@
 MODULE crystallography_mod
   IMPLICIT NONE
   PRIVATE
-  PUBLIC :: ReciprocalLattice, UniqueAtomPositions, gVectors
+  PUBLIC :: ReciprocalLattice, CrystalOrientation, UniqueAtomPositions, gVectors
 
   CONTAINS
 
@@ -110,14 +110,14 @@ MODULE crystallography_mod
     USE MyNumbers
     USE MyMPI
 
-    USE RPARA, ONLY : RarVecM,RbrVecM,RcrVecM,RaVecM,RbVecM,RcVecM,RNormDirM,RaVecO,RbVecO,&
-          RcVecO,RVolume,RarVecO,RbrVecO,RcrVecO
-    USE SPARA, ONLY : SSpaceGroupName
-    
     ! global inputs
     USE IPARA, ONLY : IVolumeFLAG
-    USE RPARA, ONLY : RAlpha,RBeta,RGamma,RLengthX,RLengthY,RLengthZ,RNormDirC,RXDirC,&
+    USE RPARA, ONLY : RAlpha,RBeta,RGamma,RCellA,RCellB,RCellC,RNormDirC,RXDirC,&
           RZDirC
+    USE SPARA, ONLY : SSpaceGroupName
+    ! global outputs
+    USE RPARA, ONLY : RaVecO,RbVecO,RcVecO,RVolume,RarVecO,RbrVecO,RcrVecO
+
     USE SPARA, ONLY : SPrintString
     
     IMPLICIT NONE
@@ -130,22 +130,28 @@ MODULE crystallography_mod
     CHARACTER(400) :: RTMatString
 
     !direct lattice vectors in an orthogonal reference frame, Angstrom units 
-    RaVecO(1)= RLengthX
+    RaVecO(1)= RCellA
     RaVecO(2)= ZERO
     RaVecO(3)= ZERO
 
-    RbVecO(1)= RLengthY*COS(RGamma)
-    RbVecO(2)= RLengthY*SIN(RGamma)
+    RbVecO(1)= RCellB*COS(RGamma)
+    RbVecO(2)= RCellB*SIN(RGamma)
     RbVecO(3)= ZERO
 
-    RcVecO(1)= RLengthZ*COS(RBeta)
-    RcVecO(2)= RLengthZ*(COS(RAlpha)-COS(RBeta)*COS(RGamma))/SIN(RGamma)
-    RcVecO(3)= RLengthZ*(SQRT(1.D0-COS(RAlpha)*COS(RAlpha)-COS(RBeta)*COS(RBeta)&
+    RcVecO(1)= RCellC*COS(RBeta)
+    RcVecO(2)= RCellC*(COS(RAlpha)-COS(RBeta)*COS(RGamma))/SIN(RGamma)
+    RcVecO(3)= RCellC*(SQRT(1.D0-COS(RAlpha)*COS(RAlpha)-COS(RBeta)*COS(RBeta)&
       -COS(RGamma)*COS(RGamma)+TWO*COS(RAlpha)*COS(RBeta)*COS(RGamma)) / SIN(RGamma))
+
+    ! RTmat transforms from crystal (implicit units) 
+    ! to orthogonal reference frame (Angstrom units)
+    RTMatC2O(:,1)= RaVecO(:)
+    RTMatC2O(:,2)= RbVecO(:)
+    RTMatC2O(:,3)= RcVecO(:)
 
     !calculate cell volume if required
     IF(IVolumeFLAG .EQ. 0) THEN
-       RVolume= RLengthX*RLengthY*RLengthZ* &
+       RVolume= RCellA*RCellB*RCellC* &
             SQRT(1.0D0 - &
             COS(RAlpha)*COS(RAlpha)-COS(RBeta)*COS(RBeta)-COS(RGamma)*COS(RGamma) + &
             TWO*COS(RAlpha)*COS(RBeta)*COS(RGamma))
@@ -190,12 +196,33 @@ MODULE crystallography_mod
        END IF
     ENDDO
 
-    ! RTmat transforms from crystal (implicit units) 
-    ! to orthogonal reference frame (Angstrom units)
-    RTMatC2O(:,1)= RaVecO(:)
-    RTMatC2O(:,2)= RbVecO(:)
-    RTMatC2O(:,3)= RcVecO(:)
-    
+  END SUBROUTINE ReciprocalLattice
+
+  !%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+  SUBROUTINE CrystalOrientation(IErr)
+    USE MyNumbers
+    USE MyMPI
+
+    USE RPARA, ONLY : RarVecM,RbrVecM,RcrVecM,RaVecM,RbVecM,RcVecM,RNormDirM,RaVecO,RbVecO,&
+          RcVecO,RVolume,RarVecO,RbrVecO,RcrVecO
+    USE SPARA, ONLY : SSpaceGroupName
+
+    ! global inputs
+    USE IPARA, ONLY : IVolumeFLAG
+    USE RPARA, ONLY : RAlpha,RBeta,RGamma,RCellA,RCellB,RCellC,RNormDirC,RXDirC,&
+          RZDirC
+    USE SPARA, ONLY : SPrintString
+
+    IMPLICIT NONE
+
+    INTEGER(IKIND) :: IErr,ind
+    REAL(RKIND) :: RTTest
+    REAL(RKIND), DIMENSION(ITHREE) :: RXDirO, RYDirO, RZDirO, RYDirC
+    REAL(RKIND), DIMENSION(ITHREE,ITHREE) :: RTMatC2O,RTMatO2M
+    CHARACTER(50) :: indString
+    CHARACTER(400) :: RTMatString
+
     ! RXDirC is the reciprocal lattice vector that defines the x-axis of the
     ! diffraction pattern and RZDirC the beam direction, coming from felix.inp
     ! No check has been made to ensure that they are perpendicular, it is
@@ -239,7 +266,7 @@ MODULE crystallography_mod
 !WRITE(SPrintString,FMT='(A4,3(F7.4,1X))') "c*: ",RcrVecM
 !IF(my_rank.EQ.0)PRINT*,TRIM(ADJUSTL(SPrintString))
     
-  END SUBROUTINE ReciprocalLattice
+  END SUBROUTINE CrystalOrientation
 
   !%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 

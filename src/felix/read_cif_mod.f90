@@ -72,7 +72,7 @@ MODULE read_cif_mod
     ! global outputs (or inout)
     USE SPARA, ONLY : SChemicalFormula, SSpaceGroupName, SBasisAtomLabel, &
           SBasisAtomName, SWyckoffSymbol, SSpaceGrp, SSymString
-    USE RPARA, ONLY : RLengthX, RLengthY, RLengthZ, RAlpha, RBeta, RGamma, RVolume, &
+    USE RPARA, ONLY : RCellA, RCellB, RCellC, RAlpha, RBeta, RGamma, RVolume, &
           RAnisotropicDebyeWallerFactorTensor, RBasisAtomPosition, RBasisIsoDW, &
           RBasisOccupancy, RSymMat, RSymVec, RBasisAtomDelta
     USE IPARA, ONLY : IVolumeFLAG, IBasisAtomicNumber, IMaxPossibleNAtomsUnitCell, &
@@ -177,7 +177,7 @@ MODULE read_cif_mod
     IF(.NOT.(f1.AND.f2.AND.f3)) THEN
         IErr=1; IF(l_alert(IErr,"ReadCif","Cell dimension(s) missing")) RETURN
     END IF
-    RLengthX=cela; RLengthY=celb; RLengthZ=celc !global variables
+    RCellA=cela; RCellB=celb; RCellC=celc !global variables
  
     siga = 0.
     sigb = 0.
@@ -204,7 +204,7 @@ MODULE read_cif_mod
     !Cell volume
     IF((f1) .EQV. .FALSE.) THEN
       IVolumeFLAG= 0
-      RVolume= RLengthX*RLengthY*RLengthZ* &
+      RVolume= RCellA*RCellB*RCellC* &
             SQRT(ONE-COS(RAlpha)*COS(RAlpha)-COS(RBeta)*COS(RBeta)-COS(RGamma)*COS(RGamma) + &
             TWO*COS(RAlpha)*COS(RBeta)*COS(RGamma))
     ELSE 

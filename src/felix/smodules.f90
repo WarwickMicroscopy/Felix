@@ -225,7 +225,7 @@ MODULE RPara
 
   !INPUT Section 
   !Crystallography
-  REAL(RKIND) :: RLengthX,RLengthY,RLengthZ,RVolume,RAlpha,RBeta,RGamma, &
+  REAL(RKIND) :: RCellA,RCellB,RCellC,RVolume,RAlpha,RBeta,RGamma, &
        RDebyeWallerConstant,RAbsorptionPercentage
   REAL(RKIND), DIMENSION(:), ALLOCATABLE :: RBasisIsoDW, RBasisOccupancy, RIsoDW, ROccupancy
   REAL(RKIND), DIMENSION(:,:), ALLOCATABLE :: RSymVec,RBasisAtomPosition, RBasisAtomDelta,&
@@ -256,10 +256,11 @@ MODULE RPara
   ! reference frames
   REAL(RKIND), DIMENSION(ITHREE) :: RXDirM,RYDirM,RZDirM,& 
        RaVecO, RbVecO, RcVecO, &
+       RaVec_0, RbVec_0, RcVec_0, &
        RaVecM, RbVecM, RcVecM, &
        RarVecO, RbrVecO, RcrVecO, &
        RarVecM, RbrVecM, RcrVecM, &
-       RXDirC, RZDirC, RNormDirC,RNormDirM
+       RXDirC_0, RZDirC_0, RXDirC, RZDirC, RNormDirC,RNormDirM
   REAL(RKIND), DIMENSION(:,:), ALLOCATABLE :: RAtomCoordinate
   REAL(RKIND) :: RBaseVec(ITHREE,ITHREE), &
        RInvBaseVec(ITHREE,ITHREE)

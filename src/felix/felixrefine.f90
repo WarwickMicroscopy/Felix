@@ -133,7 +133,7 @@ PROGRAM Felixrefine
   IF(l_alert(IErr,"felixrefine","allocate Rhkl")) CALL abort
 
   !--------------------------------------------------------------------
-  ! set up scattering factors, relativistic electrons, reciprocal lattice
+  ! set up scattering factors, k-space resolution
   !--------------------------------------------------------------------
   CALL SetScatteringFactors(IScatterFactorMethodFLAG,IErr)
   IF(l_alert(IErr,"felixrefine","SetScatteringFactors")) CALL abort
@@ -155,29 +155,26 @@ PROGRAM Felixrefine
   RDeltaK = TWOPI*DEG2RADIAN*RFrameAngle/(RElectronWaveLength*REAL(ISizeX,RKIND))
   ! y-dimension of simulation, taking the input RConvergenceAngle as half-convergence angle
   ISizeY = NINT(TWOPI*TWO*RConvergenceAngle/RDeltaK)
-  WRITE(SPrintString, FMT='(A11,I3,1x,A1,I3,A7)') "Simulation ",ISizeX,"x",ISizeY," pixels"
+  WRITE(SPrintString, FMT='(A11,I3,1x,A2,I3,A7)') "Simulation ",ISizeX,"x ",ISizeY," pixels"
   CALL message(LS,SPrintString)
   RRelativisticCorrection = ONE/SQRT( ONE - (RElectronVelocity/RSpeedOfLight)**2 )
   RRelativisticMass = RRelativisticCorrection*RElectronMass
   !conversion from Vg to Ug, h^2/(2pi*m0*e), see e.g. Kirkland eqn. C.5
   RScattFacToVolts = (RPlanckConstant**2)*(RAngstromConversion**2)/&
   (TWOPI*RElectronMass*RElectronCharge*RVolume)
-  ! Creates reciprocal lattice vectors in Microscope reference frame
-  CALL ReciprocalLattice(IErr)
-  IF(l_alert(IErr,"felixrefine","ReciprocalLattice")) CALL abort
 
   !--------------------------------------------------------------------
-  ! allocate atom and Debye-Waller factor arrays
-  !--------------------------------------------------------------------
-  ! total possible atoms/unit cell
+  ! set up unit cell 
+  ! total possible number of atoms/unit cell
   IMaxPossibleNAtomsUnitCell=SIZE(RBasisAtomPosition,1)*SIZE(RSymVec,1)
-  ! over-allocate since actual size not known before calculation of unique positions 
+  ! over-allocate since actual size not known before calculation 
   ! (atoms in special positions will be duplicated)
-
-  ! allocations using that RBasisAtomPosition, RSymVec have now been setup
-  ! fractional unit cell coordinates are used for RAtomPosition, like BasisAtomPosition
+  ! atoms, fractional unit cell
   ALLOCATE(RAtomPosition(IMaxPossibleNAtomsUnitCell,ITHREE),STAT=IErr)
   IF(l_alert(IErr,"felixrefine","allocate RAtomPosition")) CALL abort
+  ! atoms,in microscope reference frame, in Angstrom units
+  ALLOCATE(RAtomCoordinate(IMaxPossibleNAtomsUnitCell,ITHREE),STAT=IErr)
+  IF(l_alert(IErr,"felixrefine","allocate RAtomCoordinate")) CALL abort
   ALLOCATE(SAtomLabel(IMaxPossibleNAtomsUnitCell),STAT=IErr) ! atom label
   IF(l_alert(IErr,"felixrefine","allocate SAtomLabel")) CALL abort
   ALLOCATE(SAtomName(IMaxPossibleNAtomsUnitCell),STAT=IErr) ! atom name
@@ -188,29 +185,49 @@ PROGRAM Felixrefine
   IF(l_alert(IErr,"felixrefine","allocate ROccupancy")) CALL abort
   ALLOCATE(IAtomicNumber(IMaxPossibleNAtomsUnitCell),STAT=IErr)
   IF(l_alert(IErr,"felixrefine","allocate IAtomicNumber")) CALL abort
-  ! Anisotropic Debye-Waller factor
+  ! Anisotropic Debye-Waller factor, not yet functioning
   ALLOCATE(IAnisoDW(IMaxPossibleNAtomsUnitCell),STAT=IErr)
   IF(l_alert(IErr,"felixrefine","allocate IAnisoDW")) CALL abort
-
   !--------------------------------------------------------------------
-  ! set up unique atom positions, reflection pool
-  ! fills unit cell from basis and symmetry, removes duplicate atoms at special positions
+  ! fill unit cell from basis and symmetry, then remove duplicates at special positions
   CALL UniqueAtomPositions(IErr)
   IF(l_alert(IErr,"felixrefine","UniqueAtomPositions")) CALL abort
   !?? RB could re-allocate RAtomCoordinate,SAtomName,RIsoDW,ROccupancy,
   !?? IAtomicNumber,IAnisoDW to match INAtomsUnitCell?
 
+  ! From the unit cell we produce RaVecO, RbVecO, RcVecO in an orthogonal reference frame O
+  ! with Xo // a and Zo perpendicular to the ab plane
+  ! and reciprocal lattice vectors RarVecO, RbrVecO, RcrVecO in the same reference frame
+  CALL ReciprocalLattice(IErr)
+  IF(l_alert(IErr,"felixrefine","ReciprocalLattice")) CALL abort
+
   !--------------------------------------------------------------------
+  ! Start of simulation-specific calculations, depending on crystal orientation
+  !--------------------------------------------------------------------
+
+  ! X, Y and Z are orthogonal vectors that defines the simulation
+  ! Also referred to as the microscope reference frame M.
+  ! The electron beam propagates along +Zm.
+  ! The alpha rotation axis is along Ym.  Positive alpha rotation moves the field
+  ! of view of the simulation along +Xm.
+  ! In the crystal reference frame we read in reciprocal vectors RXDirC and RZDirC
+  ! RXDirO,RYDirO,RZDirO are UNIT reciprocal lattice vectors parallel to X,Y,Z
+  RXDirC = RXDirC_0
+  RZDirC = RZDirC_0
+IF(my_rank.EQ.0)PRINT*, "x=",RXDirC
+IF(my_rank.EQ.0)PRINT*, "z=",RZDirC
+  ! Create reciprocal lattice vectors in Microscope reference frame
+  CALL CrystalOrientation(IErr)
+
   ! Calculate atomic position vectors RAtomCoordinate
   ! In microscope reference frame, in Angstrom units
-  ALLOCATE(RAtomCoordinate(IMaxPossibleNAtomsUnitCell,ITHREE),STAT=IErr)
-  IF(l_alert(IErr,"felixrefine","allocate RAtomCoordinate")) CALL abort
   DO ind=1,INAtomsUnitCell
     DO jnd=1,ITHREE
       RAtomCoordinate(ind,jnd)= RAtomPosition(ind,1)*RaVecM(jnd) + &
             RAtomPosition(ind,2)*RbVecM(jnd)+RAtomPosition(ind,3)*RcVecM(jnd)
     END DO
   END DO
+  !--------------------------------------------------------------------
   ! Fill the list of reflections Rhkl (global variable)
   RGlimit = 10.0*TWOPI    
   CALL HKLMake(RGlimit,IErr)

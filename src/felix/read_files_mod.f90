@@ -57,7 +57,7 @@ MODULE read_files_mod
           IMinStrongBeams, IMinWeakBeams, IImageProcessingFLAG, &
           INoofUgs, IPrint, ISizeX, ISizeY
     USE RPARA, ONLY : RDebyeWallerConstant, RAbsorptionPercentage, RConvergenceAngle, &
-          RZDirC, RXDirC, RNormDirC, RAcceleratingVoltage, RFrameAngle, &
+          RZDirC_0, RXDirC_0, RNormDirC, RAcceleratingVoltage, RFrameAngle, &
           RInitialThickness, RFinalThickness, RDeltaThickness, RBlurRadius
     USE SPARA, ONLY : SPrintString
     ! global inputs
@@ -117,10 +117,10 @@ MODULE read_files_mod
     ILine= ILine+1; READ(IChInp,FMT='(27X,A)',ERR=20,END=30) SNormalDirectionX
     ! SIncidentBeamDirection -> IIncidentBeamDirection
     ILine= ILine+1; READ(IChInp,FMT='(27X,A)',END=30) SIncidentBeamDirection
-    CALL ThreeDimVectorReadIn(SIncidentBeamDirection,'[',']',RZDirC)
+    CALL ThreeDimVectorReadIn(SIncidentBeamDirection,'[',']',RZDirC_0)
     ! SDirectionX -> IXDirection
     ILine= ILine+1; READ(IChInp,FMT='(27X,A)',END=30) SDirectionX
-    CALL ThreeDimVectorReadIn(SDirectionX,'[',']',RXDirC)
+    CALL ThreeDimVectorReadIn(SDirectionX,'[',']',RXDirC_0)
     ! RFrameAngle - the angular range of each frame, in degrees
     ILine= ILine+1; READ(IChInp,'(27X,F18.9)',ERR=20,END=30) RFrameAngle
     ! INFrames - the total number of frames
