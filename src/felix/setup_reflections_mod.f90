@@ -159,8 +159,8 @@ MODULE setup_reflections_mod
 
       CASE DEFAULT
       IErr=1
-      IF(l_alert(IErr,"HKLCount",&
-          "SSpaceGroupName unrecognised")) RETURN
+      IF(l_alert(IErr,"SelectionRules",&
+          "Space Group Name unrecognised")) RETURN
           
     END SELECT
      

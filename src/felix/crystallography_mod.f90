@@ -195,19 +195,19 @@ MODULE crystallography_mod
     USE MyMPI
 
     USE RPARA, ONLY : RarVecM,RbrVecM,RcrVecM,RaVecM,RbVecM,RcVecM,RNormDirM,RaVecO,RbVecO,&
-          RcVecO,RVolume,RarVecO,RbrVecO,RcrVecO
+          RcVecO,RVolume,RarVecO,RbrVecO,RcrVecO, RXDirO, RYDirO, RZDirO
     USE SPARA, ONLY : SSpaceGroupName
 
     ! global inputs
-    USE IPARA, ONLY : IVolumeFLAG
+    USE IPARA, ONLY : IVolumeFLAG,INAtomsUnitCell
     USE RPARA, ONLY : RAlpha,RBeta,RGamma,RCellA,RCellB,RCellC,RNormDirC,RXDirC,&
-          RZDirC
+          RZDirC,RAtomCoordinate,RAtomPosition
     USE SPARA, ONLY : SPrintString
 
     IMPLICIT NONE
 
-    INTEGER(IKIND) :: IErr,ind
-    REAL(RKIND), DIMENSION(ITHREE) :: RXDirO, RYDirO, RZDirO, RYDirC
+    INTEGER(IKIND) :: IErr,ind,jnd
+!    REAL(RKIND), DIMENSION(ITHREE) :: RXDirO, RYDirO, RZDirO
     REAL(RKIND), DIMENSION(ITHREE,ITHREE) :: RTMatC2O,RTMatO2M
 
     ! RTmatC2O transforms from crystal (implicit units) 
@@ -222,11 +222,11 @@ MODULE crystallography_mod
     ! assumed
     ! RXDirO,RYDirO,RZDirO vectors are UNIT reciprocal lattice vectors parallel 
     ! to the above in an orthogonal frame
-    RXDirO= RXDirC(1)*RarVecO + RXDirC(2)*RbrVecO + RXDirC(3)*RcrVecO
-    RXDirO= RXDirO/SQRT(DOT_PRODUCT(RXDirO,RXDirO))
-    RZDirO= RZDirC(1)*RaVecO + RZDirC(2)*RbVecO + RZDirC(3)*RcVecO
-    RZDirO= RZDirO/SQRT(DOT_PRODUCT(RZDirO,RZDirO))
-    RYDirO= CROSS(RZDirO,RXDirO)
+!    RXDirO= RXDirC(1)*RarVecO + RXDirC(2)*RbrVecO + RXDirC(3)*RcrVecO
+!    RXDirO= RXDirO/SQRT(DOT_PRODUCT(RXDirO,RXDirO))
+!    RZDirO= RZDirC(1)*RaVecO + RZDirC(2)*RbVecO + RZDirC(3)*RcVecO
+!    RZDirO= RZDirO/SQRT(DOT_PRODUCT(RZDirO,RZDirO))
+!    RYDirO= CROSS(RZDirO,RXDirO)
 
     ! RTmatO2M transforms from orthogonal to microscope reference frame
     RTMatO2M(1,:)= RXDirO(:)
@@ -251,14 +251,15 @@ MODULE crystallography_mod
     RarVecM= TWOPI*CROSS(RbVecM,RcVecM)/DOT_PRODUCT(RbVecM,CROSS(RcVecM,RaVecM))
     RbrVecM= TWOPI*CROSS(RcVecM,RaVecM)/DOT_PRODUCT(RcVecM,CROSS(RaVecM,RbVecM))
     RcrVecM= TWOPI*CROSS(RaVecM,RbVecM)/DOT_PRODUCT(RaVecM,CROSS(RbVecM,RcVecM))
-!debugging output, can be deleted
-!WRITE(SPrintString,FMT='(A4,3(F7.4,1X))') "a*: ",RarVecM
-!IF(my_rank.EQ.0)PRINT*,TRIM(ADJUSTL(SPrintString))
-!WRITE(SPrintString,FMT='(A4,3(F7.4,1X))') "b*: ",RbrVecM
-!IF(my_rank.EQ.0)PRINT*,TRIM(ADJUSTL(SPrintString))
-!WRITE(SPrintString,FMT='(A4,3(F7.4,1X))') "c*: ",RcrVecM
-!IF(my_rank.EQ.0)PRINT*,TRIM(ADJUSTL(SPrintString))
-    
+
+    ! Calculate atomic position vectors RAtomCoordinate
+    ! In microscope reference frame, in Angstrom units
+    DO ind=1,INAtomsUnitCell
+      DO jnd=1,ITHREE
+        RAtomCoordinate(ind,jnd)= RAtomPosition(ind,1)*RaVecM(jnd) + &
+              RAtomPosition(ind,2)*RbVecM(jnd)+RAtomPosition(ind,3)*RcVecM(jnd)
+      END DO
+    END DO
   END SUBROUTINE CrystalOrientation
 
   !%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%

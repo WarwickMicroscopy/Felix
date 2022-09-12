@@ -260,7 +260,8 @@ MODULE RPara
        RaVecM, RbVecM, RcVecM, &
        RarVecO, RbrVecO, RcrVecO, &
        RarVecM, RbrVecM, RcrVecM, &
-       RXDirC_0, RZDirC_0, RXDirC, RZDirC, RNormDirC,RNormDirM
+       RXDirC_0, RZDirC_0, RXDirC, RZDirC, &
+       RXDirO, RYDirO, RZDirO, RNormDirC,RNormDirM
   REAL(RKIND), DIMENSION(:,:), ALLOCATABLE :: RAtomCoordinate
   REAL(RKIND) :: RBaseVec(ITHREE,ITHREE), &
        RInvBaseVec(ITHREE,ITHREE)

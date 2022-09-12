@@ -69,9 +69,8 @@ PROGRAM Felixrefine
         RMinLaueZoneValue,Rdf,RLastFit,RBestFit,RMaxLaueZoneValue,&
         RMaxAcceptanceGVecMag,RandomSign,RLaueZoneElectronWaveVectorMag,&
         RvarMin,RfitMin,RFit0,Rconvex,Rtest,Rplus,Rminus,RdeltaX,RdeltaY
-  REAL(RKIND),DIMENSION(100) :: RTemp!temporary holder for refinement variables
   INTEGER(IKIND),DIMENSION(100) :: ITemp,Itemp2!temporary holder for refinement type and atom
-  REAL(RKIND),DIMENSION(ITHREE) :: R3var,R3fit
+  REAL(RKIND),DIMENSION(ITHREE) :: RXDirOn,RZDirOn
   INTEGER(IKIND),DIMENSION(10) :: INoOfVariablesForRefinementType
 
   ! allocatable arrays
@@ -196,7 +195,7 @@ PROGRAM Felixrefine
   !?? IAtomicNumber,IAnisoDW to match INAtomsUnitCell?
 
   ! From the unit cell we produce RaVecO, RbVecO, RcVecO in an orthogonal reference frame O
-  ! with Xo // a and Zo perpendicular to the ab plane
+  ! with Xo // a and Zo perpendicular to the ab plane, in Angstrom units
   ! and reciprocal lattice vectors RarVecO, RbrVecO, RcrVecO in the same reference frame
   CALL ReciprocalLattice(IErr)
   IF(l_alert(IErr,"felixrefine","ReciprocalLattice")) CALL abort
@@ -211,20 +210,22 @@ PROGRAM Felixrefine
   ! The alpha rotation axis is along Ym.  Positive alpha rotation moves the field
   ! of view of the simulation along +Xm.
   ! In the crystal reference frame we read in reciprocal vectors RXDirC and RZDirC
+  ! NB No check has been made to ensure that they are perpendicular
   ! RXDirO,RYDirO,RZDirO are UNIT reciprocal lattice vectors parallel to X,Y,Z
-  RXDirC = RXDirC_0
-  RZDirC = RZDirC_0
+  RXDirO = RXDirC_0(1)*RarVecO + RXDirC_0(2)*RbrVecO + RXDirC_0(3)*RcrVecO
+  RXDirO = RXDirO/SQRT(DOT_PRODUCT(RXDirO,RXDirO))
+  RZDirO = RZDirC_0(1)*RaVecO + RZDirC_0(2)*RbVecO + RZDirC_0(3)*RcVecO
+  RZDirO = RZDirO/SQRT(DOT_PRODUCT(RZDirO,RZDirO))
+  RYDirO = CROSS(RZDirO,RXDirO)
+
+  ! Increment frame angle
+  RXDirOn = RXDirO-RZDirO*TAN(DEG2RADIAN*RFrameAngle)
+  RZDirOn = RZDirO+RXDirO*TAN(DEG2RADIAN*RFrameAngle)
+  RXDirO = RXDirOn/SQRT(DOT_PRODUCT(RXDirOn,RXDirOn))
+  RZDirO = RZDirOn/SQRT(DOT_PRODUCT(RZDirOn,RZDirOn))
 
   ! Create reciprocal lattice vectors in Microscope reference frame
   CALL CrystalOrientation(IErr)
-  ! Calculate atomic position vectors RAtomCoordinate
-  ! In microscope reference frame, in Angstrom units
-  DO ind=1,INAtomsUnitCell
-    DO jnd=1,ITHREE
-      RAtomCoordinate(ind,jnd)= RAtomPosition(ind,1)*RaVecM(jnd) + &
-            RAtomPosition(ind,2)*RbVecM(jnd)+RAtomPosition(ind,3)*RcVecM(jnd)
-    END DO
-  END DO
   !--------------------------------------------------------------------
   ! Fill the list of reflections Rhkl (global variable)
   RGlimit = 10.0*TWOPI    
@@ -493,7 +494,10 @@ PROGRAM Felixrefine
   DEALLOCATE(RAtomCoordinate,STAT=IErr)
   DEALLOCATE(CPseudoAtom,STAT=IErr)
   DEALLOCATE(CPseudoScatt,STAT=IErr)
-  ! These are global variables, see smodules.f90
+
+  !--------------------------------------------------------------------
+  ! frame loop
+
 
   !--------------------------------------------------------------------
   ! finish off
