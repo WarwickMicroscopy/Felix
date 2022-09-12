@@ -115,6 +115,7 @@ MODULE read_files_mod
 
     ! SNormalDirectionX -> INormalDirection
     ILine= ILine+1; READ(IChInp,FMT='(27X,A)',ERR=20,END=30) SNormalDirectionX
+    CALL ThreeDimVectorReadIn(SNormalDirectionX,'[',']',RNormDirC)
     ! SIncidentBeamDirection -> IIncidentBeamDirection
     ILine= ILine+1; READ(IChInp,FMT='(27X,A)',END=30) SIncidentBeamDirection
     CALL ThreeDimVectorReadIn(SIncidentBeamDirection,'[',']',RZDirC_0)
@@ -128,7 +129,6 @@ MODULE read_files_mod
     CALL message ( LXL, dbg3, "No. of frames =",INFrames)
     ! RConvergenceAngle - the half-convergence angle, in reciprocal Angstroms
     ILine= ILine+1; READ(IChInp,'(27X,F18.9)',ERR=20,END=30) RConvergenceAngle
-    CALL ThreeDimVectorReadIn(SNormalDirectionX,'[',']',RNormDirC)
 
     ! RAcceleratingVoltage
     ILine= ILine+1; READ(IChInp,'(27X,F18.9)',ERR=20,END=30) RAcceleratingVoltage

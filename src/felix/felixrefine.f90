@@ -214,11 +214,9 @@ PROGRAM Felixrefine
   ! RXDirO,RYDirO,RZDirO are UNIT reciprocal lattice vectors parallel to X,Y,Z
   RXDirC = RXDirC_0
   RZDirC = RZDirC_0
-IF(my_rank.EQ.0)PRINT*, "x=",RXDirC
-IF(my_rank.EQ.0)PRINT*, "z=",RZDirC
+
   ! Create reciprocal lattice vectors in Microscope reference frame
   CALL CrystalOrientation(IErr)
-
   ! Calculate atomic position vectors RAtomCoordinate
   ! In microscope reference frame, in Angstrom units
   DO ind=1,INAtomsUnitCell

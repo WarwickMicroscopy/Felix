@@ -124,10 +124,6 @@ MODULE crystallography_mod
 
     INTEGER(IKIND) :: IErr,ind
     REAL(RKIND) :: RTTest
-    REAL(RKIND), DIMENSION(ITHREE) :: RXDirO, RYDirO, RZDirO, RYDirC
-    REAL(RKIND), DIMENSION(ITHREE,ITHREE) :: RTMatC2O,RTMatO2M
-    CHARACTER(50) :: indString
-    CHARACTER(400) :: RTMatString
 
     !direct lattice vectors in an orthogonal reference frame, Angstrom units 
     RaVecO(1)= RCellA
@@ -142,12 +138,6 @@ MODULE crystallography_mod
     RcVecO(2)= RCellC*(COS(RAlpha)-COS(RBeta)*COS(RGamma))/SIN(RGamma)
     RcVecO(3)= RCellC*(SQRT(1.D0-COS(RAlpha)*COS(RAlpha)-COS(RBeta)*COS(RBeta)&
       -COS(RGamma)*COS(RGamma)+TWO*COS(RAlpha)*COS(RBeta)*COS(RGamma)) / SIN(RGamma))
-
-    ! RTmat transforms from crystal (implicit units) 
-    ! to orthogonal reference frame (Angstrom units)
-    RTMatC2O(:,1)= RaVecO(:)
-    RTMatC2O(:,2)= RbVecO(:)
-    RTMatC2O(:,3)= RcVecO(:)
 
     !calculate cell volume if required
     IF(IVolumeFLAG .EQ. 0) THEN
@@ -217,11 +207,14 @@ MODULE crystallography_mod
     IMPLICIT NONE
 
     INTEGER(IKIND) :: IErr,ind
-    REAL(RKIND) :: RTTest
     REAL(RKIND), DIMENSION(ITHREE) :: RXDirO, RYDirO, RZDirO, RYDirC
     REAL(RKIND), DIMENSION(ITHREE,ITHREE) :: RTMatC2O,RTMatO2M
-    CHARACTER(50) :: indString
-    CHARACTER(400) :: RTMatString
+
+    ! RTmatC2O transforms from crystal (implicit units) 
+    ! to orthogonal reference frame (Angstrom units)
+    RTMatC2O(:,1)= RaVecO(:)
+    RTMatC2O(:,2)= RbVecO(:)
+    RTMatC2O(:,3)= RcVecO(:)
 
     ! RXDirC is the reciprocal lattice vector that defines the x-axis of the
     ! diffraction pattern and RZDirC the beam direction, coming from felix.inp
