@@ -220,276 +220,283 @@ PROGRAM Felixrefine
   ! frame counter
   knd = 0
   DO WHILE(knd.LT.INFrames)
-
-  ! Increment frame angle
-  IF(knd.NE.0) THEN
-    RXDirOn = RXDirO-RZDirO*TAN(DEG2RADIAN*RFrameAngle)
-    RZDirOn = RZDirO+RXDirO*TAN(DEG2RADIAN*RFrameAngle)
-    RXDirO = RXDirOn/SQRT(DOT_PRODUCT(RXDirOn,RXDirOn))
-    RZDirO = RZDirOn/SQRT(DOT_PRODUCT(RZDirOn,RZDirOn))
-  END IF
-
-  ! Create reciprocal lattice vectors in Microscope reference frame
-  CALL CrystalOrientation(IErr)
-  !--------------------------------------------------------------------
-  ! Fill the list of reflections Rhkl (global variable)
-  RGlimit = 10.0*TWOPI    
-  CALL HKLMake(RGlimit,IErr)
-  IF(l_alert(IErr,"felixrefine","HKLMake")) CALL abort
-  CALL message(LL,dbg7,"Rhkl matrix: ",NINT(Rhkl(1:INhkl,:)))
-
-  !--------------------------------------------------------------------
-  ! sort hkl in descending order of magnitude
-  CALL HKLSort(Rhkl,INhkl,IErr) 
-  IF(l_alert(IErr,"felixrefine","SortHKL")) CALL abort
-  !?? RB may result in an error when the reflection pool does not reach
-  !?? the highest hkl of the experimental data? 
-
-  ! Assign numbers to different reflections -> IOutputReflections, INoOfLacbedPatterns
-  CALL HKLList(IErr)
-  IF(l_alert(IErr,"felixrefine","SpecificReflectionDetermination")) CALL abort
-
-  !--------------------------------------------------------------------
-  ! allocations
-  ! RgPool is a list of g-vectors in the microscope ref frame,
-  ! units of 1/A (NB exp(-i*q.r),  physics negative convention)
-  ALLOCATE(RgPool(INhkl,ITHREE),STAT=IErr)
-  IF(l_alert(IErr,"felixrefine","allocate RgPool")) CALL abort
-  ! g-vector magnitudes
-  ! in reciprocal Angstrom units, in the Microscope reference frame
-  ALLOCATE(RgPoolMag(INhkl),STAT=IErr)
-  IF(l_alert(IErr,"felixrefine","allocate RgPoolMag")) CALL abort
-  ! g-vector components parallel to the surface unit normal
-  ALLOCATE(RgDotNorm(INhkl),STAT=IErr)
-  IF(l_alert(IErr,"felixrefine","allocate RgDotNorm")) CALL abort
-  ! Matrix of 2pi*g-vectors that corresponds to the Ug matrix
-  ALLOCATE(RgMatrix(INhkl,INhkl,ITHREE),STAT=IErr)
-  IF(l_alert(IErr,"felixrefine","allocate RgMatrix")) CALL abort
-  ! Matrix of their magnitudes 
-!  ALLOCATE(RgMatrixMagnitude(INhkl,INhkl),STAT=IErr)
-!  IF(l_alert(IErr,"felixrefine","allocate RgMatrixMagnitude")) CALL abort
- 
-  !--------------------------------------------------------------------
-  ! calculate g vector list, magnitudes and components parallel to the surface
-  CALL gVectors(IErr)
-  IF(l_alert(IErr,"felixrefine","gVectors")) CALL abort
-
-  !--------------------------------------------------------------------
-  ! sort into Laue Zones
-  !Dummy matrix, used in HOLZ calculation (not working)
-  ALLOCATE(RgDummyVecMat(INhkl,ITHREE),STAT=IErr)
-  IF(l_alert(IErr,"felixrefine","allocate RgDummyVecMat")) CALL abort
-  ICutOff = 1
-  DO ind=1,INhkl
-    ! If a g-vector has a non-zero z-component it is not in the ZOLZ
-    IF(ABS(RgPool(ind,3)).GT.TINY.AND.ICutOff.NE.0) THEN
-      RGzUnitVec=ABS(RgPool(ind,3))
-      ICutOff=0
+IF(my_rank.EQ.0)PRINT*,"Frame",knd
+    ! Increment frame angle
+    IF(knd.NE.0) THEN
+      RXDirOn = RXDirO-RZDirO*TAN(DEG2RADIAN*RFrameAngle)
+      RZDirOn = RZDirO+RXDirO*TAN(DEG2RADIAN*RFrameAngle)
+      RXDirO = RXDirOn/SQRT(DOT_PRODUCT(RXDirOn,RXDirOn))
+      RZDirO = RZDirOn/SQRT(DOT_PRODUCT(RZDirOn,RZDirOn))
     END IF
-  ENDDO
-  
-  ! This should occur when no higher Laue zones (IHolzFLAG off)
-  IF(ICutOff.EQ.1) THEN ! all g-vectors have z-component equal to zero
-    RGzUnitVec=ZERO
-  END IF
 
-  IF( ICutOff.EQ.1 .AND. IHolzFLAG.EQ.1 ) IErr = 1
-  IF( l_alert(IErr, "felixrefine", &
-        "fill Laue Zones. IHolzFLAG = 1 in felix.inp, however no higher order g-vectors " &
-        //"were found. Continuing with zeroth-order Laue zone only.") ) IErr = 0
-  
-  RgDummyVecMat=RgPool
-  WHERE(ABS(RgPool(:,3)).GT.TINY) ! higher order Laue zones cases
-    RgDummyVecMat(:,3)=RgDummyVecMat(:,3)/RGzUnitVec 
-  END WHERE ! divide zero is not a concern as condition matches above
+    ! Create reciprocal lattice vectors in Microscope reference frame
+    CALL CrystalOrientation(IErr)
+    !--------------------------------------------------------------------
+    ! Fill the list of reflections Rhkl (global variable)
+    Rhkl = ZERO
+    RGlimit = 10.0*TWOPI    
+    CALL HKLMake(RGlimit,IErr)
+    IF(l_alert(IErr,"felixrefine","HKLMake")) CALL abort
+    CALL message(LL,dbg7,"Rhkl matrix: ",NINT(Rhkl(1:INhkl,:)))
 
-  ! min & max Laue Zones 
-  RMaxLaueZoneValue=MAXVAL(RgDummyVecMat(:,3),DIM=1)
-  RMinLaueZoneValue=MINVAL(RgDummyVecMat(:,3),DIM=1)
-  ITotalLaueZoneLevel=NINT(RMaxLaueZoneValue+ABS(RMinLaueZoneValue)+1,IKIND)
-  
-  DEALLOCATE(RgDummyVecMat, STAT=IErr)
-  IF(l_alert(IErr,"felixrefine","deallocate RgDummyVecMat")) CALL abort
+    !--------------------------------------------------------------------
+    ! sort hkl in descending order of magnitude
+    CALL HKLSort(Rhkl,INhkl,IErr) 
+    IF(l_alert(IErr,"felixrefine","SortHKL")) CALL abort
+    !?? RB may result in an error when the reflection pool does not reach
+    !?? the highest hkl of the experimental data? 
+    ! Assign numbers to different reflections -> IOutputReflections, INoOfLacbedPatterns
+    CALL HKLList(IErr)
+    IF(l_alert(IErr,"felixrefine","SpecificReflectionDetermination")) CALL abort
 
-  !--------------------------------------------------------------------
-  ! (optional) calculate higher order Laue zone 
-  ALLOCATE(RgPoolMagLaue(INhkl,ITotalLaueZoneLevel),STAT=IErr)
-  IF(l_alert(IErr,"felixrefine","allocate RgPoolMagLaue")) CALL abort
+    !--------------------------------------------------------------------
+    ! allocations
+    ! RgPool is a list of g-vectors in the microscope ref frame,
+    ! units of 1/A (NB exp(-i*q.r),  physics negative convention)
+    ALLOCATE(RgPool(INhkl,ITHREE),STAT=IErr)
+    IF(l_alert(IErr,"felixrefine","allocate RgPool")) CALL abort
+    ! g-vector magnitudes
+    ! in reciprocal Angstrom units, in the Microscope reference frame
+    ALLOCATE(RgPoolMag(INhkl),STAT=IErr)
+    IF(l_alert(IErr,"felixrefine","allocate RgPoolMag")) CALL abort
+    ! g-vector components parallel to the surface unit normal
+    ALLOCATE(RgDotNorm(INhkl),STAT=IErr)
+    IF(l_alert(IErr,"felixrefine","allocate RgDotNorm")) CALL abort
+    ! Matrix of 2pi*g-vectors that corresponds to the Ug matrix
+    ALLOCATE(RgMatrix(INhkl,INhkl,ITHREE),STAT=IErr)
+    IF(l_alert(IErr,"felixrefine","allocate RgMatrix")) CALL abort
+    ! Matrix of their magnitudes 
+    !  ALLOCATE(RgMatrixMagnitude(INhkl,INhkl),STAT=IErr)
+    !  IF(l_alert(IErr,"felixrefine","allocate RgMatrixMagnitude")) CALL abort
+     
+    !--------------------------------------------------------------------
+    ! calculate g vector list, magnitudes and components parallel to the surface
+    CALL gVectors(IErr)
+    IF(l_alert(IErr,"felixrefine","gVectors")) CALL abort
 
-  ! calculate higher order Laue zones
-  IF(IHOLZFLAG.EQ.1) THEN
-    !?? currently not working, unused variables here, lots needs to be checked
-    INumtotalReflections=0
-    DO ind=1,ITotalLaueZoneLevel
-      ILaueLevel=ind-IZerothLaueZoneLevel
-      RLaueZoneGz=RGzUnitVec*ILaueLevel
-      DO jnd=1,INhkl
-        IF(RgPool(jnd,3).GE.(RLaueZoneGz-TINY).AND. &
-             RgPool(jnd,3).LE.(RLaueZoneGz+TINY)) THEN
-          RgPoolMagLaue(jnd,ind)=SQRT((RgPool(jnd,1)**2)+(RgPool(jnd,2)**2))              
-        ELSE
-          RgPoolMagLaue(jnd,ind)=NEGHUGE
+    !--------------------------------------------------------------------
+    ! sort into Laue Zones
+    !Dummy matrix, used in HOLZ calculation (not working)
+    ALLOCATE(RgDummyVecMat(INhkl,ITHREE),STAT=IErr)
+    IF(l_alert(IErr,"felixrefine","allocate RgDummyVecMat")) CALL abort
+    ICutOff = 1
+    DO ind=1,INhkl
+      ! If a g-vector has a non-zero z-component it is not in the ZOLZ
+      IF(ABS(RgPool(ind,3)).GT.TINY.AND.ICutOff.NE.0) THEN
+        RGzUnitVec=ABS(RgPool(ind,3))
+        ICutOff=0
+      END IF
+    ENDDO
+      
+    ! This should occur when no higher Laue zones (IHolzFLAG off)
+    IF(ICutOff.EQ.1) THEN ! all g-vectors have z-component equal to zero
+      RGzUnitVec=ZERO
+    END IF
+
+    IF( ICutOff.EQ.1 .AND. IHolzFLAG.EQ.1 ) IErr = 1
+    IF( l_alert(IErr, "felixrefine", &
+          "fill Laue Zones. IHolzFLAG = 1 in felix.inp, however no higher order g-vectors " &
+          //"were found. Continuing with zeroth-order Laue zone only.") ) IErr = 0
+      
+    RgDummyVecMat=RgPool
+    WHERE(ABS(RgPool(:,3)).GT.TINY) ! higher order Laue zones cases
+      RgDummyVecMat(:,3)=RgDummyVecMat(:,3)/RGzUnitVec 
+    END WHERE ! divide zero is not a concern as condition matches above
+
+    ! min & max Laue Zones 
+    RMaxLaueZoneValue=MAXVAL(RgDummyVecMat(:,3),DIM=1)
+    RMinLaueZoneValue=MINVAL(RgDummyVecMat(:,3),DIM=1)
+    ITotalLaueZoneLevel=NINT(RMaxLaueZoneValue+ABS(RMinLaueZoneValue)+1,IKIND)
+      
+    DEALLOCATE(RgDummyVecMat, STAT=IErr)
+    IF(l_alert(IErr,"felixrefine","deallocate RgDummyVecMat")) CALL abort
+
+    !--------------------------------------------------------------------
+    ! (optional) calculate higher order Laue zone 
+    ALLOCATE(RgPoolMagLaue(INhkl,ITotalLaueZoneLevel),STAT=IErr)
+    IF(l_alert(IErr,"felixrefine","allocate RgPoolMagLaue")) CALL abort
+
+    ! calculate higher order Laue zones
+    IF(IHOLZFLAG.EQ.1) THEN
+      !?? currently not working, unused variables here, lots needs to be checked
+      INumtotalReflections=0
+      DO ind=1,ITotalLaueZoneLevel
+        ILaueLevel=ind-IZerothLaueZoneLevel
+        RLaueZoneGz=RGzUnitVec*ILaueLevel
+        DO jnd=1,INhkl
+          IF(RgPool(jnd,3).GE.(RLaueZoneGz-TINY).AND. &
+               RgPool(jnd,3).LE.(RLaueZoneGz+TINY)) THEN
+            RgPoolMagLaue(jnd,ind)=SQRT((RgPool(jnd,1)**2)+(RgPool(jnd,2)**2))              
+          ELSE
+            RgPoolMagLaue(jnd,ind)=NEGHUGE
+          END IF
+        END DO
+        INumInitReflections = COUNT(RgPoolMagLaue(:,ind).NE.NEGHUGE)
+        RLaueZoneElectronWaveVectorMag = RElectronWaveVectorMagnitude-ABS(RLaueZoneGz)           
+        RMaxAcceptanceGVecMag = (RLaueZoneElectronWaveVectorMag * &
+              TAN(10.0*DEG2RADIAN))
+        WHERE(ABS(RgPoolMagLaue(:,ind)).GT.RMaxAcceptanceGVecMag)
+          RgPoolMagLaue(:,ind)=NEGHUGE
+        END WHERE
+        INumFinalReflections=COUNT(RgPoolMagLaue(:,ind).NE.NEGHUGE)
+        INumTotalReflections=INumTotalReflections+INumInitReflections
+      END DO
+
+      jnd = 0
+      DO ind = 1,INhkl
+        IF(SUM(RgPoolMagLaue(ind,:))/REAL(ITotalLaueZoneLevel,RKIND).GT.NEGHUGE) THEN
+          jnd = jnd+1
         END IF
       END DO
-      INumInitReflections = COUNT(RgPoolMagLaue(:,ind).NE.NEGHUGE)
-      RLaueZoneElectronWaveVectorMag = RElectronWaveVectorMagnitude-ABS(RLaueZoneGz)           
-      RMaxAcceptanceGVecMag = (RLaueZoneElectronWaveVectorMag * &
-            TAN(10.0*DEG2RADIAN))
-      WHERE(ABS(RgPoolMagLaue(:,ind)).GT.RMaxAcceptanceGVecMag)
-        RgPoolMagLaue(:,ind)=NEGHUGE
-      END WHERE
-      INumFinalReflections=COUNT(RgPoolMagLaue(:,ind).NE.NEGHUGE)
-      INumTotalReflections=INumTotalReflections+INumInitReflections
-    END DO
+      IHOLZgPoolMag = jnd
+      ALLOCATE(IOriginGVecIdentifier(IHOLZgPoolMag),STAT=IErr)
+      IF(l_alert(IErr,"felixrefine","allocate IOriginGVecIdentifier")) CALL abort
+      IOriginGVecIdentifier = 0
+      jnd = 1
+      DO ind = 1,INhkl
+        IF((SUM(RgPoolMagLaue(ind,:))/REAL(ITotalLaueZoneLevel,RKIND)).GT.NEGHUGE) THEN
+          IOriginGVecIdentifier(jnd) = ind
+          jnd = jnd+1
+        END IF
+      END DO
+    END IF
 
+    ! deallocation
+    DEALLOCATE(RgPoolMagLaue)!
+    IF (IHOLZFLAG.EQ.1) THEN
+      DEALLOCATE(IOriginGVecIdentifier)
+    END IF
+
+    !--------------------------------------------------------------------
+    ! allocate Ug arrays
+    !--------------------------------------------------------------------
+    ! Ug matrix etc.
+    ALLOCATE(CUgMatNoAbs(INhkl,INhkl),STAT=IErr)! Ug Matrix without absorption
+    IF(l_alert(IErr,"felixrefine","allocate CUgMatNoAbs")) CALL abort
+    ALLOCATE(CUgMatPrime(INhkl,INhkl),STAT=IErr)! U'g Matrix of just absorption
+    IF(l_alert(IErr,"felixrefine","allocate CUgMatPrime")) CALL abort
+    ALLOCATE(CUgMat(INhkl,INhkl),STAT=IErr)! Ug+U'g Matrix, including absorption
+    IF(l_alert(IErr,"felixrefine","allocate CUgMat")) CALL abort
+    ! Matrix with numbers marking equivalent Ug's
+    ALLOCATE(ISymmetryRelations(INhkl,INhkl),STAT=IErr)
+    IF(l_alert(IErr,"felixrefine","allocate ISymmetryRelations")) CALL abort
+      
+    IThicknessCount= NINT((RFinalThickness-RInitialThickness)/RDeltaThickness) + 1
+
+    !--------------------------------------------------------------------
+    ! structure factor initialization
+    ! Calculate Ug matrix for each entry in CUgMatNoAbs(1:INhkl,1:INhkl)
+    CALL StructureFactorInitialisation(IErr)
+    IF(l_alert(IErr,"felixrefine","StructureFactorInitialisation")) CALL abort
+    ! NB IEquivalentUgKey and CUniqueUg allocated in here
+    ! CUniqueUg vector produced here to later fill RIndependentVariable
+      
+    !--------------------------------------------------------------------
+    ! calculate absorptive scattering factors
+    !--------------------------------------------------------------------
+    CALL SYSTEM_CLOCK( IStartTime2 )
+    CALL message(LS,dbg3,"Starting absorption calculation... ")
+    CALL Absorption (IErr)
+    !  CALL message( LM, "Initial Ug matrix, with absorption (nm^-2)" )
+    !  DO ind = 1,6
+    !      WRITE(SPrintString,FMT='(3(I2,1X),A2,1X,6(F7.4,1X,F7.4,2X))') NINT(Rhkl(ind,:)),": ",100*CUgMat(ind,1:6)
+    !    CALL message( LM,dbg3, SPrintString)
+    !  END DO
+    IF(l_alert(IErr,"felixrefine","Absorption")) CALL abort
+    CALL PrintEndTime(LS,IStartTime2, "Absorption" )
+    CALL SYSTEM_CLOCK( IStartTime2 )
+
+    !--------------------------------------------------------------------
+    ! ImageInitialisation
+    !--------------------------------------------------------------------
+    IPixelTotal = ISizeX*ISizeY
+    ALLOCATE(IPixelLocations(IPixelTotal,2),STAT=IErr)
+    IF(l_alert(IErr,"felixrefine","allocate IPixelLocations")) CALL abort
+    ! we keep track of where a calculation goes in the image using two
+    ! 1D IPixelLocations arrays.  Remember fortran indexing is [row,col]=[y,x]
     jnd = 0
-    DO ind = 1,INhkl
-      IF(SUM(RgPoolMagLaue(ind,:))/REAL(ITotalLaueZoneLevel,RKIND).GT.NEGHUGE) THEN
-        jnd = jnd+1
-      END IF
-    END DO
-    IHOLZgPoolMag = jnd
-    ALLOCATE(IOriginGVecIdentifier(IHOLZgPoolMag),STAT=IErr)
-    IF(l_alert(IErr,"felixrefine","allocate IOriginGVecIdentifier")) CALL abort
-    IOriginGVecIdentifier = 0
-    jnd = 1
-    DO ind = 1,INhkl
-      IF((SUM(RgPoolMagLaue(ind,:))/REAL(ITotalLaueZoneLevel,RKIND)).GT.NEGHUGE) THEN
-        IOriginGVecIdentifier(jnd) = ind
-        jnd = jnd+1
-      END IF
+    DO IYPixelIndex = 1,ISizeY
+      DO IXPixelIndex = 1,ISizeX
+        jnd = jnd + 1
+        IPixelLocations(jnd,1) = IYPixelIndex
+        IPixelLocations(jnd,2) = IXPixelIndex
+      END DO
     END DO
 
-  END IF
+    !--------------------------------------------------------------------
+    ! allocate & setup image arrays for pixel-parallel simulations
+    !--------------------------------------------------------------------
+    ! All the individual calculations go into RSimulatedPatterns later with MPI_GATHERV
+    ! NB RSimulatedPatterns is a vector with respect to pixels, not a 2D image
+    ALLOCATE(RSimulatedPatterns(INoOfLacbedPatterns,IThicknessCount,IPixelTotal),STAT=IErr)
+    IF(l_alert(IErr,"felixrefine","allocate RSimulatedPatterns")) CALL abort
+    ! Images, NB Fortan arrays are [row,column]=[y,x]
+    ALLOCATE(RImageSimi(ISizeY,ISizeX,INoOfLacbedPatterns,IThicknessCount),&
+          STAT=IErr)
+    IF(l_alert(IErr,"felixrefine","allocate RImageSimi")) CALL abort
+    RSimulatedPatterns = ZERO
+    ! The pixels to be calculated by this core  
+    ILocalPixelCountMin= (IPixelTotal*(my_rank)/p)+1
+    ILocalPixelCountMax= (IPixelTotal*(my_rank+1)/p) 
+    ALLOCATE(RIndividualReflections(INoOfLacbedPatterns,IThicknessCount,&
+           (ILocalPixelCountMax-ILocalPixelCountMin)+1),STAT=IErr)
+    IF(l_alert(IErr,"felixrefine","allocate RIndividualReflections")) CALL abort
 
-  ! deallocation
-  DEALLOCATE(RgPoolMagLaue)!
-  IF (IHOLZFLAG.EQ.1) THEN
-    DEALLOCATE(IOriginGVecIdentifier)
-  END IF
-
-  !--------------------------------------------------------------------
-  ! allocate Ug arrays
-  !--------------------------------------------------------------------
-  ! Ug matrix etc.
-  ALLOCATE(CUgMatNoAbs(INhkl,INhkl),STAT=IErr)! Ug Matrix without absorption
-  IF(l_alert(IErr,"felixrefine","allocate CUgMatNoAbs")) CALL abort
-  ALLOCATE(CUgMatPrime(INhkl,INhkl),STAT=IErr)! U'g Matrix of just absorption
-  IF(l_alert(IErr,"felixrefine","allocate CUgMatPrime")) CALL abort
-  ALLOCATE(CUgMat(INhkl,INhkl),STAT=IErr)! Ug+U'g Matrix, including absorption
-  IF(l_alert(IErr,"felixrefine","allocate CUgMat")) CALL abort
-  ! Matrix with numbers marking equivalent Ug's
-  ALLOCATE(ISymmetryRelations(INhkl,INhkl),STAT=IErr)
-  IF(l_alert(IErr,"felixrefine","allocate ISymmetryRelations")) CALL abort
-  
-  IThicknessCount= NINT((RFinalThickness-RInitialThickness)/RDeltaThickness) + 1
-
-  !--------------------------------------------------------------------
-  ! structure factor initialization
-  ! Calculate Ug matrix for each entry in CUgMatNoAbs(1:INhkl,1:INhkl)
-  CALL StructureFactorInitialisation(IErr)
-  IF(l_alert(IErr,"felixrefine","StructureFactorInitialisation")) CALL abort
-  ! NB IEquivalentUgKey and CUniqueUg allocated in here
-  ! CUniqueUg vector produced here to later fill RIndependentVariable
-  
-  !--------------------------------------------------------------------
-  ! calculate absorptive scattering factors
-  !--------------------------------------------------------------------
-  CALL SYSTEM_CLOCK( IStartTime2 )
-  CALL message(LS,dbg3,"Starting absorption calculation... ")
-  CALL Absorption (IErr)
-!  CALL message( LM, "Initial Ug matrix, with absorption (nm^-2)" )
-!  DO ind = 1,6
-!      WRITE(SPrintString,FMT='(3(I2,1X),A2,1X,6(F7.4,1X,F7.4,2X))') NINT(Rhkl(ind,:)),": ",100*CUgMat(ind,1:6)
-!    CALL message( LM,dbg3, SPrintString)
-!  END DO
-  IF(l_alert(IErr,"felixrefine","Absorption")) CALL abort
-  CALL PrintEndTime(LS,IStartTime2, "Absorption" )
-  CALL SYSTEM_CLOCK( IStartTime2 )
-
-  !--------------------------------------------------------------------
-  ! ImageInitialisation
-  !--------------------------------------------------------------------
-  IPixelTotal = ISizeX*ISizeY
-  ALLOCATE(IPixelLocations(IPixelTotal,2),STAT=IErr)
-  IF(l_alert(IErr,"felixrefine","allocate IPixelLocations")) CALL abort
-  ! we keep track of where a calculation goes in the image using two
-  ! 1D IPixelLocations arrays.  Remember fortran indexing is [row,col]=[y,x]
-  jnd = 0
-  DO IYPixelIndex = 1,ISizeY
-    DO IXPixelIndex = 1,ISizeX
-      jnd = jnd + 1
-      IPixelLocations(jnd,1) = IYPixelIndex
-      IPixelLocations(jnd,2) = IXPixelIndex
+    ! position of pixels calculated by this core, IDisplacements & ICount are global variables
+    ALLOCATE(IDisplacements(p),ICount(p),STAT=IErr)
+    IF(l_alert(IErr,"felixrefine","allocate IDisplacements")) CALL abort
+    DO ind = 1,p
+      IDisplacements(ind) = (IPixelTotal*(ind-1)/p)*INoOfLacbedPatterns*IThicknessCount
+      ICount(ind) = (((IPixelTotal*(ind)/p) - (IPixelTotal*(ind-1)/p)))* &
+            INoOfLacbedPatterns*IThicknessCount    
     END DO
-  END DO
 
+    !--------------------------------------------------------------------
+    ! baseline simulation
+    !--------------------------------------------------------------------
+    CALL Simulate(IErr)
+    IF(l_alert(IErr,"felixrefine","Simulate")) CALL abort
+    CALL PrintEndTime(LS,IStartTime2, "Simulation" )
+    ! simulate multiple thicknesses
+    IF(my_rank.EQ.0) THEN
+      WRITE(SPrintString,FMT='(A24,I3,A12)') &
+        "Writing simulations for ", IThicknessCount," thicknesses"
+      CALL message(LS,SPrintString)
+      DO ind = 1,IThicknessCount
+        CALL WriteIterationOutput(Iter,ind,IErr)
+        IF(l_alert(IErr,"felixrefine","WriteIterationOutput")) CALL abort 
+      END DO  
+    END IF 
 
-  !--------------------------------------------------------------------
-  ! allocate & setup image arrays for pixel-parallel simulations
-  !--------------------------------------------------------------------
-  ! All the individual calculations go into RSimulatedPatterns later with MPI_GATHERV
-  ! NB RSimulatedPatterns is a vector with respect to pixels, not a 2D image
-  ALLOCATE(RSimulatedPatterns(INoOfLacbedPatterns,IThicknessCount,IPixelTotal),STAT=IErr)
-  IF(l_alert(IErr,"felixrefine","allocate RSimulatedPatterns")) CALL abort
-  ! Images, NB Fortan arrays are [row,column]=[y,x]
-  ALLOCATE(RImageSimi(ISizeY,ISizeX,INoOfLacbedPatterns,IThicknessCount),&
-        STAT=IErr)
-  IF(l_alert(IErr,"felixrefine","allocate RImageSimi")) CALL abort
+    !--------------------------------------------------------------------
+    ! deallocate Memory
+    !--------------------------------------------------------------------
 
-  RSimulatedPatterns = ZERO
-  ! The pixels to be calculated by this core  
-  ILocalPixelCountMin= (IPixelTotal*(my_rank)/p)+1
-  ILocalPixelCountMax= (IPixelTotal*(my_rank+1)/p) 
-  ALLOCATE(RIndividualReflections(INoOfLacbedPatterns,IThicknessCount,&
-         (ILocalPixelCountMax-ILocalPixelCountMin)+1),STAT=IErr)
-  IF(l_alert(IErr,"felixrefine","allocate RIndividualReflections")) CALL abort
+    DEALLOCATE(CUgMat,STAT=IErr) 
+    DEALLOCATE(CUgMatNoAbs,STAT=IErr)
+    DEALLOCATE(CUgMatPrime,STAT=IErr)
+    DEALLOCATE(ISymmetryRelations,STAT=IErr)
+    DEALLOCATE(IEquivalentUgKey,STAT=IErr)
+    DEALLOCATE(CUniqueUg,STAT=IErr)
+    DEALLOCATE(RIndividualReflections,STAT=IErr)
+    DEALLOCATE(IDisplacements,STAT=IErr)
+    DEALLOCATE(ICount,STAT=IErr)
+    DEALLOCATE(RgPoolMag,STAT=IErr)
+    DEALLOCATE(RgPool,STAT=IErr)
+    DEALLOCATE(RgMatrix,STAT=IErr)
+    DEALLOCATE(RSimulatedPatterns,STAT=IErr)
+    DEALLOCATE(CPseudoAtom,STAT=IErr)
+    DEALLOCATE(CPseudoScatt,STAT=IErr)
 
-  ! position of pixels calculated by this core, IDisplacements & ICount are global variables
-  ALLOCATE(IDisplacements(p),ICount(p),STAT=IErr)
-  IF(l_alert(IErr,"felixrefine","allocate IDisplacements")) CALL abort
-  DO ind = 1,p
-    IDisplacements(ind) = (IPixelTotal*(ind-1)/p)*INoOfLacbedPatterns*IThicknessCount
-    ICount(ind) = (((IPixelTotal*(ind)/p) - (IPixelTotal*(ind-1)/p)))* &
-          INoOfLacbedPatterns*IThicknessCount    
+    !--------------------------------------------------------------------
+    ! frame loop
+    knd = knd + 1
   END DO
 
   !--------------------------------------------------------------------
-  ! baseline simulation
+  ! finish off
   !--------------------------------------------------------------------
-  CALL Simulate(IErr)
-  IF(l_alert(IErr,"felixrefine","Simulate")) CALL abort
-  CALL PrintEndTime(LS,IStartTime2, "Simulation" )
-
-  ! simulate multiple thicknesses
-  IF(my_rank.EQ.0) THEN
-    WRITE(SPrintString,FMT='(A24,I3,A12)') &
-      "Writing simulations for ", IThicknessCount," thicknesses"
-    CALL message(LS,SPrintString)
-    DO ind = 1,IThicknessCount
-      CALL WriteIterationOutput(Iter,ind,IErr)
-      IF(l_alert(IErr,"felixrefine","WriteIterationOutput")) CALL abort 
-    END DO  
-  END IF 
-
-  !--------------------------------------------------------------------
-  ! deallocate Memory
-  !--------------------------------------------------------------------
-
-  DEALLOCATE(CUgMat,STAT=IErr) 
-  DEALLOCATE(CUgMatNoAbs,STAT=IErr)
-  DEALLOCATE(CUgMatPrime,STAT=IErr)
-  DEALLOCATE(ISymmetryRelations,STAT=IErr)
-  DEALLOCATE(IEquivalentUgKey,STAT=IErr)
-  DEALLOCATE(CUniqueUg,STAT=IErr)
-  DEALLOCATE(RIndividualReflections,STAT=IErr)
-  DEALLOCATE(IDisplacements,STAT=IErr)
-  DEALLOCATE(ICount,STAT=IErr)
   DEALLOCATE(Rhkl,STAT=IErr)
-  DEALLOCATE(RgPoolMag,STAT=IErr)
-  DEALLOCATE(RgPool,STAT=IErr)
-  DEALLOCATE(RgMatrix,STAT=IErr)
-  DEALLOCATE(RSimulatedPatterns,STAT=IErr)
   DEALLOCATE(RAtomPosition,STAT=IErr)
   DEALLOCATE(SAtomName,STAT=IErr)
   DEALLOCATE(RIsoDW,STAT=IErr)
@@ -497,17 +504,6 @@ PROGRAM Felixrefine
   DEALLOCATE(IAtomicNumber,STAT=IErr)
   DEALLOCATE(IAnisoDW,STAT=IErr)
   DEALLOCATE(RAtomCoordinate,STAT=IErr)
-  DEALLOCATE(CPseudoAtom,STAT=IErr)
-  DEALLOCATE(CPseudoScatt,STAT=IErr)
-
-  !--------------------------------------------------------------------
-  ! frame loop
-  knd = knd + 1
-  END DO
-
-  !--------------------------------------------------------------------
-  ! finish off
-  !--------------------------------------------------------------------
 
   CALL message( LS, "--------------------------------" )
   CALL PrintEndTime( LS, IStartTime, "Calculation" )
@@ -532,3 +528,4 @@ PROGRAM Felixrefine
   END SUBROUTINE abort
 
 END PROGRAM Felixrefine
+
