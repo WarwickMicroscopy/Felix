@@ -126,9 +126,38 @@ PROGRAM Felixrefine
 
   CALL ReadHklFile(IErr) ! the list of hkl's to input/output
   IF(l_alert(IErr,"felixrefine","ReadHklFile")) CALL abort
+  !--------------------------------------------------------------------
+  ! allocations
+  ! RgPool is a list of g-vectors in the microscope ref frame,
+  ! units of 1/A (NB exp(-i*q.r),  physics negative convention)
+  ALLOCATE(RgPool(INhkl,ITHREE),STAT=IErr)
+  IF(l_alert(IErr,"felixrefine","allocate RgPool")) CALL abort
+  ! g-vector magnitudes
+  ! in reciprocal Angstrom units, in the Microscope reference frame
+  ALLOCATE(RgPoolMag(INhkl),STAT=IErr)
+  IF(l_alert(IErr,"felixrefine","allocate RgPoolMag")) CALL abort
+  ! g-vector components parallel to the surface unit normal
+  ALLOCATE(RgDotNorm(INhkl),STAT=IErr)
+  IF(l_alert(IErr,"felixrefine","allocate RgDotNorm")) CALL abort
+  ! Matrix of 2pi*g-vectors that corresponds to the Ug matrix
+  ALLOCATE(RgMatrix(INhkl,INhkl,ITHREE),STAT=IErr)
+  IF(l_alert(IErr,"felixrefine","allocate RgMatrix")) CALL abort
   ! NB Rhkl are in INTEGER form [h,k,l] but are REAL to allow dot products etc.
   ALLOCATE(Rhkl(INhkl,ITHREE),STAT=IErr)
   IF(l_alert(IErr,"felixrefine","allocate Rhkl")) CALL abort
+  !--------------------------------------------------------------------
+  ! allocate Ug arrays
+  ALLOCATE(CUgMatNoAbs(INhkl,INhkl),STAT=IErr)! Ug Matrix without absorption
+  IF(l_alert(IErr,"felixrefine","allocate CUgMatNoAbs")) CALL abort
+  ALLOCATE(CUgMatPrime(INhkl,INhkl),STAT=IErr)! U'g Matrix of just absorption
+  IF(l_alert(IErr,"felixrefine","allocate CUgMatPrime")) CALL abort
+  ALLOCATE(CUgMat(INhkl,INhkl),STAT=IErr)! Ug+U'g Matrix, including absorption
+  IF(l_alert(IErr,"felixrefine","allocate CUgMat")) CALL abort
+  ! Matrix with numbers marking equivalent Ug's
+  ALLOCATE(ISymmetryRelations(INhkl,INhkl),STAT=IErr)
+  IF(l_alert(IErr,"felixrefine","allocate ISymmetryRelations")) CALL abort
+
+  IThicknessCount= NINT((RFinalThickness-RInitialThickness)/RDeltaThickness) + 1
 
   !--------------------------------------------------------------------
   ! set up scattering factors, k-space resolution
@@ -160,6 +189,34 @@ PROGRAM Felixrefine
   !conversion from Vg to Ug, h^2/(2pi*m0*e), see e.g. Kirkland eqn. C.5
   RScattFacToVolts = (RPlanckConstant**2)*(RAngstromConversion**2)/&
   (TWOPI*RElectronMass*RElectronCharge*RVolume)
+
+  !--------------------------------------------------------------------
+  ! ImageInitialisation
+  !--------------------------------------------------------------------
+  IPixelTotal = ISizeX*ISizeY
+  ALLOCATE(IPixelLocations(IPixelTotal,2),STAT=IErr)
+  IF(l_alert(IErr,"felixrefine","allocate IPixelLocations")) CALL abort
+  ! we keep track of where a calculation goes in the image using two
+  ! 1D IPixelLocations arrays.  Remember fortran indexing is [row,col]=[y,x]
+  jnd = 0
+  DO IYPixelIndex = 1,ISizeY
+    DO IXPixelIndex = 1,ISizeX
+      jnd = jnd + 1
+      IPixelLocations(jnd,1) = IYPixelIndex
+      IPixelLocations(jnd,2) = IXPixelIndex
+    END DO
+  END DO
+  !--------------------------------------------------------------------
+  ! allocate image arrays for pixel-parallel simulations
+  !--------------------------------------------------------------------
+  ! All the individual calculations go into RSimulatedPatterns later with MPI_GATHERV
+  ! NB RSimulatedPatterns is a vector with respect to pixels, not a 2D image
+  ALLOCATE(RSimulatedPatterns(INoOfLacbedPatterns,IThicknessCount,IPixelTotal),STAT=IErr)
+  IF(l_alert(IErr,"felixrefine","allocate RSimulatedPatterns")) CALL abort
+  ! Images, NB Fortan arrays are [row,column]=[y,x]
+  ALLOCATE(RImageSimi(ISizeY,ISizeX,INoOfLacbedPatterns,IThicknessCount),&
+        STAT=IErr)
+  IF(l_alert(IErr,"felixrefine","allocate RImageSimi")) CALL abort
 
   !--------------------------------------------------------------------
   ! set up unit cell 
@@ -198,7 +255,6 @@ PROGRAM Felixrefine
   ! and reciprocal lattice vectors RarVecO, RbrVecO, RcrVecO in the same reference frame
   CALL ReciprocalLattice(IErr)
   IF(l_alert(IErr,"felixrefine","ReciprocalLattice")) CALL abort
-
   !--------------------------------------------------------------------
   ! Start of simulation-specific calculations, depending on crystal orientation
   !--------------------------------------------------------------------
@@ -231,6 +287,7 @@ IF(my_rank.EQ.0)PRINT*,"Frame",knd
 
     ! Create reciprocal lattice vectors in Microscope reference frame
     CALL CrystalOrientation(IErr)
+    IF(l_alert(IErr,"felixrefine","CrystalOrientation")) CALL abort
     !--------------------------------------------------------------------
     ! Fill the list of reflections Rhkl (global variable)
     Rhkl = ZERO
@@ -249,26 +306,6 @@ IF(my_rank.EQ.0)PRINT*,"Frame",knd
     CALL HKLList(IErr)
     IF(l_alert(IErr,"felixrefine","SpecificReflectionDetermination")) CALL abort
 
-    !--------------------------------------------------------------------
-    ! allocations
-    ! RgPool is a list of g-vectors in the microscope ref frame,
-    ! units of 1/A (NB exp(-i*q.r),  physics negative convention)
-    ALLOCATE(RgPool(INhkl,ITHREE),STAT=IErr)
-    IF(l_alert(IErr,"felixrefine","allocate RgPool")) CALL abort
-    ! g-vector magnitudes
-    ! in reciprocal Angstrom units, in the Microscope reference frame
-    ALLOCATE(RgPoolMag(INhkl),STAT=IErr)
-    IF(l_alert(IErr,"felixrefine","allocate RgPoolMag")) CALL abort
-    ! g-vector components parallel to the surface unit normal
-    ALLOCATE(RgDotNorm(INhkl),STAT=IErr)
-    IF(l_alert(IErr,"felixrefine","allocate RgDotNorm")) CALL abort
-    ! Matrix of 2pi*g-vectors that corresponds to the Ug matrix
-    ALLOCATE(RgMatrix(INhkl,INhkl,ITHREE),STAT=IErr)
-    IF(l_alert(IErr,"felixrefine","allocate RgMatrix")) CALL abort
-    ! Matrix of their magnitudes 
-    !  ALLOCATE(RgMatrixMagnitude(INhkl,INhkl),STAT=IErr)
-    !  IF(l_alert(IErr,"felixrefine","allocate RgMatrixMagnitude")) CALL abort
-     
     !--------------------------------------------------------------------
     ! calculate g vector list, magnitudes and components parallel to the surface
     CALL gVectors(IErr)
@@ -368,22 +405,6 @@ IF(my_rank.EQ.0)PRINT*,"Frame",knd
     END IF
 
     !--------------------------------------------------------------------
-    ! allocate Ug arrays
-    !--------------------------------------------------------------------
-    ! Ug matrix etc.
-    ALLOCATE(CUgMatNoAbs(INhkl,INhkl),STAT=IErr)! Ug Matrix without absorption
-    IF(l_alert(IErr,"felixrefine","allocate CUgMatNoAbs")) CALL abort
-    ALLOCATE(CUgMatPrime(INhkl,INhkl),STAT=IErr)! U'g Matrix of just absorption
-    IF(l_alert(IErr,"felixrefine","allocate CUgMatPrime")) CALL abort
-    ALLOCATE(CUgMat(INhkl,INhkl),STAT=IErr)! Ug+U'g Matrix, including absorption
-    IF(l_alert(IErr,"felixrefine","allocate CUgMat")) CALL abort
-    ! Matrix with numbers marking equivalent Ug's
-    ALLOCATE(ISymmetryRelations(INhkl,INhkl),STAT=IErr)
-    IF(l_alert(IErr,"felixrefine","allocate ISymmetryRelations")) CALL abort
-      
-    IThicknessCount= NINT((RFinalThickness-RInitialThickness)/RDeltaThickness) + 1
-
-    !--------------------------------------------------------------------
     ! structure factor initialization
     ! Calculate Ug matrix for each entry in CUgMatNoAbs(1:INhkl,1:INhkl)
     CALL StructureFactorInitialisation(IErr)
@@ -407,33 +428,8 @@ IF(my_rank.EQ.0)PRINT*,"Frame",knd
     CALL SYSTEM_CLOCK( IStartTime2 )
 
     !--------------------------------------------------------------------
-    ! ImageInitialisation
+    ! setup image arrays for pixel-parallel simulations
     !--------------------------------------------------------------------
-    IPixelTotal = ISizeX*ISizeY
-    ALLOCATE(IPixelLocations(IPixelTotal,2),STAT=IErr)
-    IF(l_alert(IErr,"felixrefine","allocate IPixelLocations")) CALL abort
-    ! we keep track of where a calculation goes in the image using two
-    ! 1D IPixelLocations arrays.  Remember fortran indexing is [row,col]=[y,x]
-    jnd = 0
-    DO IYPixelIndex = 1,ISizeY
-      DO IXPixelIndex = 1,ISizeX
-        jnd = jnd + 1
-        IPixelLocations(jnd,1) = IYPixelIndex
-        IPixelLocations(jnd,2) = IXPixelIndex
-      END DO
-    END DO
-
-    !--------------------------------------------------------------------
-    ! allocate & setup image arrays for pixel-parallel simulations
-    !--------------------------------------------------------------------
-    ! All the individual calculations go into RSimulatedPatterns later with MPI_GATHERV
-    ! NB RSimulatedPatterns is a vector with respect to pixels, not a 2D image
-    ALLOCATE(RSimulatedPatterns(INoOfLacbedPatterns,IThicknessCount,IPixelTotal),STAT=IErr)
-    IF(l_alert(IErr,"felixrefine","allocate RSimulatedPatterns")) CALL abort
-    ! Images, NB Fortan arrays are [row,column]=[y,x]
-    ALLOCATE(RImageSimi(ISizeY,ISizeX,INoOfLacbedPatterns,IThicknessCount),&
-          STAT=IErr)
-    IF(l_alert(IErr,"felixrefine","allocate RImageSimi")) CALL abort
     RSimulatedPatterns = ZERO
     ! The pixels to be calculated by this core  
     ILocalPixelCountMin= (IPixelTotal*(my_rank)/p)+1
@@ -469,34 +465,30 @@ IF(my_rank.EQ.0)PRINT*,"Frame",knd
     END IF 
 
     !--------------------------------------------------------------------
-    ! deallocate Memory
+    ! deallocate memory used in each frame
     !--------------------------------------------------------------------
-
-    DEALLOCATE(CUgMat,STAT=IErr) 
-    DEALLOCATE(CUgMatNoAbs,STAT=IErr)
-    DEALLOCATE(CUgMatPrime,STAT=IErr)
-    DEALLOCATE(ISymmetryRelations,STAT=IErr)
     DEALLOCATE(IEquivalentUgKey,STAT=IErr)
     DEALLOCATE(CUniqueUg,STAT=IErr)
     DEALLOCATE(RIndividualReflections,STAT=IErr)
     DEALLOCATE(IDisplacements,STAT=IErr)
     DEALLOCATE(ICount,STAT=IErr)
-    DEALLOCATE(RgPoolMag,STAT=IErr)
-    DEALLOCATE(RgPool,STAT=IErr)
-    DEALLOCATE(RgMatrix,STAT=IErr)
-    DEALLOCATE(RSimulatedPatterns,STAT=IErr)
-    DEALLOCATE(CPseudoAtom,STAT=IErr)
-    DEALLOCATE(CPseudoScatt,STAT=IErr)
-
     !--------------------------------------------------------------------
     ! frame loop
     knd = knd + 1
   END DO
 
   !--------------------------------------------------------------------
-  ! finish off
+  ! finish off: deallocations for variables used in all frames
   !--------------------------------------------------------------------
+  DEALLOCATE(RgPoolMag,STAT=IErr)
+  DEALLOCATE(RgPool,STAT=IErr)
+  DEALLOCATE(RgMatrix,STAT=IErr)
+  DEALLOCATE(RgDotNorm,STAT=IErr)
   DEALLOCATE(Rhkl,STAT=IErr)
+  DEALLOCATE(CUgMat,STAT=IErr)
+  DEALLOCATE(CUgMatNoAbs,STAT=IErr)
+  DEALLOCATE(CUgMatPrime,STAT=IErr)
+  DEALLOCATE(ISymmetryRelations,STAT=IErr)
   DEALLOCATE(RAtomPosition,STAT=IErr)
   DEALLOCATE(SAtomName,STAT=IErr)
   DEALLOCATE(RIsoDW,STAT=IErr)
@@ -504,6 +496,9 @@ IF(my_rank.EQ.0)PRINT*,"Frame",knd
   DEALLOCATE(IAtomicNumber,STAT=IErr)
   DEALLOCATE(IAnisoDW,STAT=IErr)
   DEALLOCATE(RAtomCoordinate,STAT=IErr)
+  DEALLOCATE(RSimulatedPatterns,STAT=IErr)
+  DEALLOCATE(RImageSimi,STAT=IErr)
+  DEALLOCATE(IPixelLocations,STAT=IErr)
 
   CALL message( LS, "--------------------------------" )
   CALL PrintEndTime( LS, IStartTime, "Calculation" )

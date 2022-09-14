@@ -199,8 +199,7 @@ MODULE setup_reflections_mod
     !If the g-vectors we are counting are bigger than this there is something wrong
     !probably the tolerance for proximity to the Ewald sphere needs increasing
     !could be an input in felix.inp
-!    RGlimit = 20.0*TWOPI  ! reciprocal Angstroms * 2pi
-    
+
     !the k-vector for the incident beam
     !we are working in the microscope reference frame so k is along z
     Rk=(/ 0.0,0.0,RElectronWaveVectorMagnitude /)
@@ -220,11 +219,12 @@ MODULE setup_reflections_mod
     inda=NINT(RGlimit/RarMag)
     indb=NINT(RGlimit/RbrMag)
     indc=NINT(RGlimit/RcrMag)
+
     !fill the Rhkl with beams near the Bragg condition
-    DO WHILE (knd.LT.INhkl .AND. REAL(lnd)*RShell.LT.RGlimit)
+    DO WHILE (REAL(lnd)*RShell.LT.RGlimit)
       !increment the shell
       lnd = lnd+1
-!DBG    IF(my_rank.EQ.0)PRINT*,REAL(lnd-1)*RShell,"to",REAL(lnd)*RShell
+!DBG  IF(my_rank.EQ.0)PRINT*,REAL(lnd-1)*RShell,"to",REAL(lnd)*RShell
       !Make a hkl
       DO Ih = -inda,inda
          DO Ik = -indb,indb
@@ -232,8 +232,7 @@ MODULE setup_reflections_mod
               !check that it's allowed by selection rules
               ISel=0
               CALL SelectionRules(Ih, Ik, Il, ISel, IErr)
-              !NB still need to check that we have space in Rhkl because the
-              !while doesn't kick in until we finish the do loops
+              !and check that we have space in Rhkl
               IF (ISel.EQ.1 .AND. knd.LT.INhkl) THEN
                 !Make a g-vector
                 RGtest = REAL( (/ Ih,Ik,Il /),RKIND )!Miller indices
@@ -247,14 +246,11 @@ MODULE setup_reflections_mod
                   RDev=ABS(RElectronWaveVectorMagnitude-SQRT(DOT_PRODUCT(RGplusk,RGplusk)))/RGtestMag
                   ! Tolerance of 0.08 here is rather arbitrary, might need
                   ! revisiting
-!DBG    IF(my_rank.EQ.0)PRINT*,(/ Ih,Ik,Il /),RDev
+!DBG              IF(my_rank.EQ.0)PRINT*,(/ Ih,Ik,Il /),RDev
                   IF ((RDev-0.08).LT.TINY) THEN !it's near the ZOLZ 
                     !add it to the pool and increment the counter
-                    !need to check that we have space in Rhkl because the while doesn't
-                    !kick in until we finish the do loops
                     knd=knd+1
                     Rhkl(knd,:)=RGtest
-!DBG    IF(my_rank.EQ.0)PRINT*,NINT(Rhkl(knd,:)),knd
                   END IF
                 END IF
               END IF
@@ -262,27 +258,29 @@ MODULE setup_reflections_mod
          END DO
       END DO
     END DO
-!DBG    IF(my_rank.EQ.0)PRINT*,"total ",knd,"reflections in the pool"
+    ! it is possible that we reach RGlimit before filling up the pool, in which case 
     ! fill up any remaining beam pool places with an enormous g-vector, diabolically
     ! the idea being that this g-vector will never be near any possible Ewald sphere
-    RGtest = REAL( (/ 666,666,666 /),RKIND )
-    DO jnd = knd+1, INhkl
-      Rhkl(jnd,:)=RGtest
-    END DO
-
+    IF (knd.LT.INhkl) THEN
+      RGtest = REAL( (/ 666,666,666 /),RKIND )
+      DO jnd = knd+1, INhkl
+        Rhkl(jnd,:)=RGtest
+      END DO
+    END IF
     !now check that the required output hkl's are in this hkl list
     DO jnd = 1,INoOfLacbedPatterns
       lnd = 0!using this as a flag now
       DO knd = 1, INhkl
         IF (RInputHKLs(jnd,1)-Rhkl(knd,1).LT.TINY .AND. &
             RInputHKLs(jnd,2)-Rhkl(knd,2).LT.TINY .AND. &
-            RInputHKLs(jnd,3)-Rhkl(knd,3).LT.TINY) lnd = 1
+            RInputHKLs(jnd,3)-Rhkl(knd,3).LT.TINY) THEN
+          lnd = 1
+        END IF
       END DO
       IF (lnd.EQ.0) THEN
         CALL message( LS, "Input hkl not found: ", NINT(RInputHKLs(jnd,:)))
       END IF
     END DO
-
   END SUBROUTINE HKLmake
 
   !%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%

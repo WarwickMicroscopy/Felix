@@ -23,8 +23,8 @@ RAcceleratingVoltage (kV) = 200.0
 IPixelX                   = 20
 
 # beam selection criteria
-IMinReflectionPool        = 400
-IMinStrongBeams           = 200
+IMinReflectionPool        = 100
+IMinStrongBeams           = 50
 IMinWeakBeams             = 0
 
 # crystal settings

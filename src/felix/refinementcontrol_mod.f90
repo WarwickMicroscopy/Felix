@@ -70,12 +70,11 @@ MODULE refinementcontrol_mod
 
     IMPLICIT NONE
 
-    INTEGER(IKIND) :: IErr, ind,jnd,knd,pnd,IIterationFLAG,IYPixelIndex,IXPixelIndex
+    INTEGER(IKIND) :: IErr, ind,jnd,knd,IIterationFLAG,IYPixelIndex,IXPixelIndex
     REAL(RKIND) :: RKn,RThickness
 
     ! Reset simuation   
     RIndividualReflections = ZERO
-
     ! Simulation (different local pixels for each core)
     CALL message(LS,"Bloch wave calculation...")
     DO knd = ILocalPixelCountMin,ILocalPixelCountMax,1
@@ -86,14 +85,14 @@ MODULE refinementcontrol_mod
               ILocalPixelCountMin, nBeams, RThickness,RKn, IErr)
       IF(l_alert(IErr,"Simulate","BlochCoefficientCalculation")) RETURN
     END DO
-
     !===================================== ! MPI gatherv into RSimulatedPatterns
     CALL MPI_GATHERV(RIndividualReflections,SIZE(RIndividualReflections),MPI_DOUBLE_PRECISION,&
          RSimulatedPatterns,ICount,IDisplacements,MPI_DOUBLE_PRECISION,&
          root,MPI_COMM_WORLD,IErr)
+    CALL MPI_BCAST(RIndividualReflections,SIZE(RIndividualReflections),MPI_DOUBLE_PRECISION,&
+         root,MPI_COMM_WORLD,IErr)
     !=====================================
     IF(l_alert(IErr,"SimulateAndFit","MPI_GATHERV")) RETURN
-
     ! put 1D array RSimulatedPatterns into 2D image RImageSimi
     ! remember dimensions of RSimulatedPatterns(INoOfLacbedPatterns,IThicknessCount,IPixelTotal)
     ! and RImageSimi(height, width, INoOfLacbedPatterns,IThicknessCount )
