@@ -65,8 +65,8 @@ MODULE refinementcontrol_mod
     
     !global inputs
     USE RPARA, ONLY : RBlurRadius
-    USE IPARA, ONLY : ICount,IDisplacements,ILocalPixelCountMax,INoOfLacbedPatterns,&
-          ILocalPixelCountMin,IPixelLocations,ISizeX,ISizeY,IThicknessCount, nBeams
+    USE IPARA, ONLY : ILocalNPix,ILocalPixelOffset,ILocalPixelCountMax,INoOfLacbedPatterns,&
+          ILocalPixelCountMin,IPixelLocation,ISizeX,ISizeY,IThicknessCount, nBeams
 
     IMPLICIT NONE
 
@@ -78,8 +78,8 @@ MODULE refinementcontrol_mod
     ! Simulation (different local pixels for each core)
     CALL message(LS,"Bloch wave calculation...")
     DO knd = ILocalPixelCountMin,ILocalPixelCountMax,1
-      IYPixelIndex = IPixelLocations(knd,1)
-      IXPixelIndex = IPixelLocations(knd,2)
+      IYPixelIndex = IPixelLocation(knd,1)
+      IXPixelIndex = IPixelLocation(knd,2)
       ! fills array for each pixel number knd (x & y coordinates are IXPixelIndex & IYPixelIndex)
       CALL BlochCoefficientCalculation(IYPixelIndex,IXPixelIndex,knd, &
               ILocalPixelCountMin, nBeams, RThickness,RKn, IErr)
@@ -87,7 +87,7 @@ MODULE refinementcontrol_mod
     END DO
     !===================================== ! MPI gatherv into RSimulatedPatterns
     CALL MPI_GATHERV(RIndividualReflections,SIZE(RIndividualReflections),MPI_DOUBLE_PRECISION,&
-         RSimulatedPatterns,ICount,IDisplacements,MPI_DOUBLE_PRECISION,&
+         RSimulatedPatterns,ILocalNPix,ILocalPixelOffset,MPI_DOUBLE_PRECISION,&
          root,MPI_COMM_WORLD,IErr)
     CALL MPI_BCAST(RIndividualReflections,SIZE(RIndividualReflections),MPI_DOUBLE_PRECISION,&
          root,MPI_COMM_WORLD,IErr)

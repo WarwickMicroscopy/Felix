@@ -194,7 +194,6 @@ MODULE IPara
   INTEGER(IKIND) :: IPixelCountTotal
   !Thickness loop Variables
   INTEGER(IKIND) :: IThicknessCount
-  INTEGER(IKIND),DIMENSION(:,:),ALLOCATABLE :: IPixelLocations
   !Refine Parameters
   INTEGER(IKIND) :: IFluxIterationSteps
   INTEGER(IKIND), DIMENSION(2) :: IOffset
@@ -206,7 +205,7 @@ MODULE IPara
   INTEGER(IKIND),DIMENSION(:),ALLOCATABLE :: IIndependentVariableType,IIndependentVariableAtom
   !Simplex Variables
   INTEGER(IKIND) :: INoOfVariables,ILocalPixelCountMin,ILocalPixelCountMax,IUgOffset
-  INTEGER(IKIND), DIMENSION(:), ALLOCATABLE :: IDisplacements,ICount
+  INTEGER(IKIND), DIMENSION(:), ALLOCATABLE :: ILocalPixelOffset,ILocalNPix
   !Refinement Vectors
   INTEGER(IKIND),DIMENSION(:),ALLOCATABLE :: IAtomMoveList
   INTEGER(IKIND) :: IFelixCount,IPreviousPrintedIteration,IStandardDeviationCalls  

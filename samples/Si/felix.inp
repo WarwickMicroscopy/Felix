@@ -15,7 +15,7 @@ INormalDirection          = [0,1,-1]
 IIncidentBeamDirection    = [-24452,100000,44316]
 IXDirection               = [3983,41294,-90984]
 RFrameAngle               = 0.207
-INFrames                  = 5
+INFrames                  = 2
 RConvergenceAngle         = 1.4324
 RAcceleratingVoltage (kV) = 200.0
 
@@ -23,8 +23,8 @@ RAcceleratingVoltage (kV) = 200.0
 IPixelX                   = 20
 
 # beam selection criteria
-IMinReflectionPool        = 100
-IMinStrongBeams           = 50
+IMinReflectionPool        = 400
+IMinStrongBeams           = 200
 IMinWeakBeams             = 0
 
 # crystal settings

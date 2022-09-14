@@ -46,7 +46,8 @@ PROGRAM Felixrefine
   USE setup_space_group_mod
   USE crystallography_mod
   USE ug_matrix_mod
-  USE refinementcontrol_mod       ! CONTAINS Simulate
+  USE bloch_mod
+!  USE refinementcontrol_mod       ! CONTAINS Simulate
   USE write_output_mod
 
   USE IConst; USE RConst; USE SConst
@@ -62,7 +63,7 @@ PROGRAM Felixrefine
         IPrintFLAG,ICycle,INumInitReflections,IZerothLaueZoneLevel,xnd,&
         INumFinalReflections,IThicknessIndex,IVariableType,IArrayIndex,&
         IAnisotropicDebyeWallerFactorElementNo,IStartTime,IStartTime2,&
-        IXPixelIndex,IYPixelIndex
+        IFrame
   INTEGER(4) :: IErr4
   REAL(RKIND) :: REmphasis,RGlimit,RLaueZoneGz,RMaxGMag,RKn,RThickness,&
         RPvecMag,RScale,RMaxUgStep,Rdx,RStandardDeviation,RMean,RGzUnitVec,&
@@ -194,16 +195,16 @@ PROGRAM Felixrefine
   ! ImageInitialisation
   !--------------------------------------------------------------------
   IPixelTotal = ISizeX*ISizeY
-  ALLOCATE(IPixelLocations(IPixelTotal,2),STAT=IErr)
-  IF(l_alert(IErr,"felixrefine","allocate IPixelLocations")) CALL abort
-  ! we keep track of where a calculation goes in the image using two
-  ! 1D IPixelLocations arrays.  Remember fortran indexing is [row,col]=[y,x]
-  jnd = 0
-  DO IYPixelIndex = 1,ISizeY
-    DO IXPixelIndex = 1,ISizeX
-      jnd = jnd + 1
-      IPixelLocations(jnd,1) = IYPixelIndex
-      IPixelLocations(jnd,2) = IXPixelIndex
+  ALLOCATE(IPixelLocation(IPixelTotal,2),STAT=IErr)
+  IF(l_alert(IErr,"felixrefine","allocate IPixelLocation")) CALL abort
+  ! we keep track of where a calculation goes in the image using the
+  ! IPixelLocation array.  Remember fortran indexing is [row,col]=[y,x]
+  lnd = 0
+  DO ind = 1,ISizeY
+    DO jnd = 1,ISizeX
+      lnd = lnd + 1
+      IPixelLocation(lnd,1) = ind
+      IPixelLocation(lnd,2) = jnd
     END DO
   END DO
   !--------------------------------------------------------------------
@@ -274,11 +275,12 @@ PROGRAM Felixrefine
   RYDirO = CROSS(RZDirO,RXDirO)
 
   ! frame counter
-  knd = 0
-  DO WHILE(knd.LT.INFrames)
-IF(my_rank.EQ.0)PRINT*,"Frame",knd
-    ! Increment frame angle
-    IF(knd.NE.0) THEN
+  IFrame = 1
+  DO WHILE(IFrame.LE.INFrames)
+  WRITE(SPrintString, FMT='(A6,I3)') "Frame ",IFrame
+    CALL message(LS,dbg3,SPrintString)
+    ! Increment frame angle, if it's not the first 
+    IF(IFrame.GT.1) THEN
       RXDirOn = RXDirO-RZDirO*TAN(DEG2RADIAN*RFrameAngle)
       RZDirOn = RZDirO+RXDirO*TAN(DEG2RADIAN*RFrameAngle)
       RXDirO = RXDirOn/SQRT(DOT_PRODUCT(RXDirOn,RXDirOn))
@@ -310,100 +312,6 @@ IF(my_rank.EQ.0)PRINT*,"Frame",knd
     ! calculate g vector list, magnitudes and components parallel to the surface
     CALL gVectors(IErr)
     IF(l_alert(IErr,"felixrefine","gVectors")) CALL abort
-
-    !--------------------------------------------------------------------
-    ! sort into Laue Zones
-    !Dummy matrix, used in HOLZ calculation (not working)
-    ALLOCATE(RgDummyVecMat(INhkl,ITHREE),STAT=IErr)
-    IF(l_alert(IErr,"felixrefine","allocate RgDummyVecMat")) CALL abort
-    ICutOff = 1
-    DO ind=1,INhkl
-      ! If a g-vector has a non-zero z-component it is not in the ZOLZ
-      IF(ABS(RgPool(ind,3)).GT.TINY.AND.ICutOff.NE.0) THEN
-        RGzUnitVec=ABS(RgPool(ind,3))
-        ICutOff=0
-      END IF
-    ENDDO
-      
-    ! This should occur when no higher Laue zones (IHolzFLAG off)
-    IF(ICutOff.EQ.1) THEN ! all g-vectors have z-component equal to zero
-      RGzUnitVec=ZERO
-    END IF
-
-    IF( ICutOff.EQ.1 .AND. IHolzFLAG.EQ.1 ) IErr = 1
-    IF( l_alert(IErr, "felixrefine", &
-          "fill Laue Zones. IHolzFLAG = 1 in felix.inp, however no higher order g-vectors " &
-          //"were found. Continuing with zeroth-order Laue zone only.") ) IErr = 0
-      
-    RgDummyVecMat=RgPool
-    WHERE(ABS(RgPool(:,3)).GT.TINY) ! higher order Laue zones cases
-      RgDummyVecMat(:,3)=RgDummyVecMat(:,3)/RGzUnitVec 
-    END WHERE ! divide zero is not a concern as condition matches above
-
-    ! min & max Laue Zones 
-    RMaxLaueZoneValue=MAXVAL(RgDummyVecMat(:,3),DIM=1)
-    RMinLaueZoneValue=MINVAL(RgDummyVecMat(:,3),DIM=1)
-    ITotalLaueZoneLevel=NINT(RMaxLaueZoneValue+ABS(RMinLaueZoneValue)+1,IKIND)
-      
-    DEALLOCATE(RgDummyVecMat, STAT=IErr)
-    IF(l_alert(IErr,"felixrefine","deallocate RgDummyVecMat")) CALL abort
-
-    !--------------------------------------------------------------------
-    ! (optional) calculate higher order Laue zone 
-    ALLOCATE(RgPoolMagLaue(INhkl,ITotalLaueZoneLevel),STAT=IErr)
-    IF(l_alert(IErr,"felixrefine","allocate RgPoolMagLaue")) CALL abort
-
-    ! calculate higher order Laue zones
-    IF(IHOLZFLAG.EQ.1) THEN
-      !?? currently not working, unused variables here, lots needs to be checked
-      INumtotalReflections=0
-      DO ind=1,ITotalLaueZoneLevel
-        ILaueLevel=ind-IZerothLaueZoneLevel
-        RLaueZoneGz=RGzUnitVec*ILaueLevel
-        DO jnd=1,INhkl
-          IF(RgPool(jnd,3).GE.(RLaueZoneGz-TINY).AND. &
-               RgPool(jnd,3).LE.(RLaueZoneGz+TINY)) THEN
-            RgPoolMagLaue(jnd,ind)=SQRT((RgPool(jnd,1)**2)+(RgPool(jnd,2)**2))              
-          ELSE
-            RgPoolMagLaue(jnd,ind)=NEGHUGE
-          END IF
-        END DO
-        INumInitReflections = COUNT(RgPoolMagLaue(:,ind).NE.NEGHUGE)
-        RLaueZoneElectronWaveVectorMag = RElectronWaveVectorMagnitude-ABS(RLaueZoneGz)           
-        RMaxAcceptanceGVecMag = (RLaueZoneElectronWaveVectorMag * &
-              TAN(10.0*DEG2RADIAN))
-        WHERE(ABS(RgPoolMagLaue(:,ind)).GT.RMaxAcceptanceGVecMag)
-          RgPoolMagLaue(:,ind)=NEGHUGE
-        END WHERE
-        INumFinalReflections=COUNT(RgPoolMagLaue(:,ind).NE.NEGHUGE)
-        INumTotalReflections=INumTotalReflections+INumInitReflections
-      END DO
-
-      jnd = 0
-      DO ind = 1,INhkl
-        IF(SUM(RgPoolMagLaue(ind,:))/REAL(ITotalLaueZoneLevel,RKIND).GT.NEGHUGE) THEN
-          jnd = jnd+1
-        END IF
-      END DO
-      IHOLZgPoolMag = jnd
-      ALLOCATE(IOriginGVecIdentifier(IHOLZgPoolMag),STAT=IErr)
-      IF(l_alert(IErr,"felixrefine","allocate IOriginGVecIdentifier")) CALL abort
-      IOriginGVecIdentifier = 0
-      jnd = 1
-      DO ind = 1,INhkl
-        IF((SUM(RgPoolMagLaue(ind,:))/REAL(ITotalLaueZoneLevel,RKIND)).GT.NEGHUGE) THEN
-          IOriginGVecIdentifier(jnd) = ind
-          jnd = jnd+1
-        END IF
-      END DO
-    END IF
-
-    ! deallocation
-    DEALLOCATE(RgPoolMagLaue)!
-    IF (IHOLZFLAG.EQ.1) THEN
-      DEALLOCATE(IOriginGVecIdentifier)
-    END IF
-
     !--------------------------------------------------------------------
     ! structure factor initialization
     ! Calculate Ug matrix for each entry in CUgMatNoAbs(1:INhkl,1:INhkl)
@@ -438,19 +346,55 @@ IF(my_rank.EQ.0)PRINT*,"Frame",knd
            (ILocalPixelCountMax-ILocalPixelCountMin)+1),STAT=IErr)
     IF(l_alert(IErr,"felixrefine","allocate RIndividualReflections")) CALL abort
 
-    ! position of pixels calculated by this core, IDisplacements & ICount are global variables
-    ALLOCATE(IDisplacements(p),ICount(p),STAT=IErr)
-    IF(l_alert(IErr,"felixrefine","allocate IDisplacements")) CALL abort
+    ! position of pixels calculated by this core, ILocalPixelOffset & ILocalNPix are global variables
+    ALLOCATE(ILocalPixelOffset(p),ILocalNPix(p),STAT=IErr)
+    IF(l_alert(IErr,"felixrefine","allocate ILocalPixelOffset")) CALL abort
     DO ind = 1,p
-      IDisplacements(ind) = (IPixelTotal*(ind-1)/p)*INoOfLacbedPatterns*IThicknessCount
-      ICount(ind) = (((IPixelTotal*(ind)/p) - (IPixelTotal*(ind-1)/p)))* &
+      ILocalPixelOffset(ind) = (IPixelTotal*(ind-1)/p)*INoOfLacbedPatterns*IThicknessCount
+      ILocalNPix(ind) = (((IPixelTotal*(ind)/p) - (IPixelTotal*(ind-1)/p)))* &
             INoOfLacbedPatterns*IThicknessCount    
     END DO
 
     !--------------------------------------------------------------------
-    ! baseline simulation
+    ! simulation (different local pixels for each core)
     !--------------------------------------------------------------------
-    CALL Simulate(IErr)
+    CALL message(LS,"Bloch wave calculation...")    
+    ! Reset simulation   
+    RIndividualReflections = ZERO
+    DO knd = ILocalPixelCountMin,ILocalPixelCountMax,1
+      ! fills array for each pixel number knd (y & x coordinates are in IPixelLocation)
+      CALL BlochCoefficientCalculation(IPixelLocation(knd,1),IPixelLocation(knd,2),knd, &
+              ILocalPixelCountMin, nBeams, RThickness,RKn, IErr)
+      IF(l_alert(IErr,"Simulate","BlochCoefficientCalculation")) CALL abort
+    END DO
+    !===================================== ! MPI gatherv into RSimulatedPatterns
+    CALL MPI_GATHERV(RIndividualReflections,SIZE(RIndividualReflections),MPI_DOUBLE_PRECISION,&
+         RSimulatedPatterns,ILocalNPix,ILocalPixelOffset,MPI_DOUBLE_PRECISION,&
+         root,MPI_COMM_WORLD,IErr)
+    CALL MPI_BCAST(RIndividualReflections,SIZE(RIndividualReflections),MPI_DOUBLE_PRECISION,&
+         root,MPI_COMM_WORLD,IErr)
+    !=====================================
+    IF(l_alert(IErr,"SimulateAndFit","MPI_GATHERV")) CALL abort
+    ! put 1D array RSimulatedPatterns into 2D image RImageSimi
+    ! remember dimensions of RSimulatedPatterns(INoOfLacbedPatterns,IThicknessCount,IPixelTotal)
+    ! and RImageSimi(height, width, INoOfLacbedPatterns,IThicknessCount )
+    RImageSimi = ZERO
+    lnd = 0
+    DO ind = 1,ISizeY
+      DO jnd = 1,ISizeX
+        lnd = lnd+1
+        RImageSimi(ind,jnd,:,:) = RSimulatedPatterns(:,:,lnd)
+      END DO
+    END DO
+    ! Gaussian blur to match experiment using global variable RBlurRadius
+    IF (RBlurRadius.GT.TINY) THEN
+      DO ind=1,INoOfLacbedPatterns
+        DO jnd=1,IThicknessCount
+          CALL BlurG(RImageSimi(:,:,ind,jnd),ISizeX,ISizeY,RBlurRadius,IErr)
+        END DO
+      END DO
+    END IF
+
     IF(l_alert(IErr,"felixrefine","Simulate")) CALL abort
     CALL PrintEndTime(LS,IStartTime2, "Simulation" )
     ! simulate multiple thicknesses
@@ -470,11 +414,11 @@ IF(my_rank.EQ.0)PRINT*,"Frame",knd
     DEALLOCATE(IEquivalentUgKey,STAT=IErr)
     DEALLOCATE(CUniqueUg,STAT=IErr)
     DEALLOCATE(RIndividualReflections,STAT=IErr)
-    DEALLOCATE(IDisplacements,STAT=IErr)
-    DEALLOCATE(ICount,STAT=IErr)
+    DEALLOCATE(ILocalPixelOffset,STAT=IErr)
+    DEALLOCATE(ILocalNPix,STAT=IErr)
     !--------------------------------------------------------------------
     ! frame loop
-    knd = knd + 1
+    IFrame = IFrame + 1
   END DO
 
   !--------------------------------------------------------------------
@@ -498,7 +442,7 @@ IF(my_rank.EQ.0)PRINT*,"Frame",knd
   DEALLOCATE(RAtomCoordinate,STAT=IErr)
   DEALLOCATE(RSimulatedPatterns,STAT=IErr)
   DEALLOCATE(RImageSimi,STAT=IErr)
-  DEALLOCATE(IPixelLocations,STAT=IErr)
+  DEALLOCATE(IPixelLocation,STAT=IErr)
 
   CALL message( LS, "--------------------------------" )
   CALL PrintEndTime( LS, IStartTime, "Calculation" )
@@ -521,6 +465,87 @@ IF(my_rank.EQ.0)PRINT*,"Frame",knd
     CALL MPI_Abort(MPI_COMM_WORLD,1,IErr)
     STOP
   END SUBROUTINE abort
+
+
+  SUBROUTINE BlurG(RImageToBlur,IPixX,IPixY,RBlurringRadius,IErr)
+
+    USE MyNumbers
+    USE MPI
+    USE message_mod
+
+    IMPLICIT NONE
+
+    REAL(RKIND),DIMENSION(IPixX,IPixY),INTENT(INOUT) :: RImageToBlur
+    INTEGER(IKIND),INTENT(IN) :: IPixX,IPixY
+    REAL(RKIND),INTENT(IN) :: RBlurringRadius
+    INTEGER(IKIND),INTENT(OUT) :: IErr
+
+    REAL(RKIND),DIMENSION(IPixX,IPixY) :: RTempImage,RShiftImage
+    INTEGER(IKIND) :: ind,jnd,IKernelRadius,IKernelSize
+    REAL(RKIND),DIMENSION(:), ALLOCATABLE :: RGauss1D
+    REAL(RKIND) :: Rind,Rsum,Rmin,Rmax
+
+    ! get min and max of input image
+    Rmin=MINVAL(RImageToBlur)
+    Rmax=MAXVAL(RImageToBlur)
+
+    ! set up a 1D kernel of appropriate size  
+    IKernelRadius=NINT(3*RBlurringRadius)
+    ALLOCATE(RGauss1D(2*IKernelRadius+1),STAT=IErr)!ffs
+    Rsum=0
+    DO ind=-IKernelRadius,IKernelRadius
+      Rind=REAL(ind)
+      RGauss1D(ind+IKernelRadius+1)=EXP(-(Rind**2)/(2*(RBlurringRadius**2)))
+      Rsum=Rsum+RGauss1D(ind+IKernelRadius+1)
+      IF(ind==0) IErr=78 
+    END DO
+    RGauss1D=RGauss1D/Rsum!normalise
+    RTempImage=RImageToBlur*0_RKIND !reset the temp image 
+
+    ! apply the kernel in direction 1
+    DO ind = -IKernelRadius,IKernelRadius
+       IF (ind.LT.0) THEN
+          RShiftImage(1:IPixX+ind,:)=RImageToBlur(1-ind:IPixX,:)
+          DO jnd = 1,1-ind!edge fill on right
+             RShiftImage(IPixX-jnd+1,:)=RImageToBlur(IPixX,:)
+          END DO
+       ELSE
+          RShiftImage(1+ind:IPixX,:)=RImageToBlur(1:IPixX-ind,:)
+          DO jnd = 1,1+ind!edge fill on left
+             RShiftImage(jnd,:)=RImageToBlur(1,:)
+          END DO
+       END IF
+       RTempImage=RTempImage+RShiftImage*RGauss1D(ind+IKernelRadius+1)
+    END DO
+
+    ! make the 1D blurred image the input for the next direction
+    RImageToBlur=RTempImage
+    RTempImage=RImageToBlur*0_RKIND ! reset the temp image
+
+    ! apply the kernel in direction 2  
+    DO ind = -IKernelRadius,IKernelRadius
+       IF (ind.LT.0) THEN
+          RShiftImage(:,1:IPixY+ind)=RImageToBlur(:,1-ind:IPixY)
+          DO jnd = 1,1-ind!edge fill on bottom
+             RShiftImage(:,IPixY-jnd+1)=RImageToBlur(:,IPixY)
+          END DO
+       ELSE
+          RShiftImage(:,1+ind:IPixY)=RImageToBlur(:,1:IPixY-ind)
+          DO jnd = 1,1+ind!edge fill on top
+             RShiftImage(:,jnd)=RImageToBlur(:,1)
+          END DO
+       END IF
+       RTempImage=RTempImage+RShiftImage*RGauss1D(ind+IKernelRadius+1)
+    END DO
+    DEALLOCATE(RGauss1D,STAT=IErr)
+
+    ! set intensity range of output image to match that of the input image
+    RTempImage=RTempImage-MINVAL(RTempImage)
+    RTempImage=RTempImage*(Rmax-Rmin)/MAXVAL(RTempImage)+Rmin
+    ! return the blurred image
+    RImageToBlur=RTempImage;
+
+  END SUBROUTINE BlurG    
 
 END PROGRAM Felixrefine
 
