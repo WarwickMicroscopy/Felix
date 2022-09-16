@@ -47,7 +47,6 @@ PROGRAM Felixrefine
   USE crystallography_mod
   USE ug_matrix_mod
   USE bloch_mod
-!  USE refinementcontrol_mod       ! CONTAINS Simulate
   USE write_output_mod
 
   USE IConst; USE RConst; USE SConst
@@ -62,8 +61,7 @@ PROGRAM Felixrefine
         IBSMaxLocGVecAmp,ILaueLevel,INumTotalReflections,ITotalLaueZoneLevel,&
         IPrintFLAG,ICycle,INumInitReflections,IZerothLaueZoneLevel,xnd,&
         INumFinalReflections,IThicknessIndex,IVariableType,IArrayIndex,&
-        IAnisotropicDebyeWallerFactorElementNo,IStartTime,IStartTime2,&
-        IFrame
+        IAnisotropicDebyeWallerFactorElementNo,IStartTime,IStartTime2
   INTEGER(4) :: IErr4
   REAL(RKIND) :: REmphasis,RGlimit,RLaueZoneGz,RMaxGMag,RKn,RThickness,&
         RPvecMag,RScale,RMaxUgStep,Rdx,RStandardDeviation,RMean,RGzUnitVec,&
@@ -71,10 +69,8 @@ PROGRAM Felixrefine
         RMaxAcceptanceGVecMag,RandomSign,RLaueZoneElectronWaveVectorMag,&
         RvarMin,RfitMin,RFit0,Rconvex,Rtest,Rplus,Rminus,RdeltaX,RdeltaY
   REAL(RKIND),DIMENSION(ITHREE) :: RXDirOn,RZDirOn
-  INTEGER(IKIND),DIMENSION(10) :: INoOfVariablesForRefinementType
 
   ! allocatable arrays
-  INTEGER(IKIND),DIMENSION(:),ALLOCATABLE :: IOriginGVecIdentifier
   REAL(RKIND),DIMENSION(:),ALLOCATABLE :: RSimplexFoM,RIndependentVariable,&
         RCurrentVar,RVar0,RLastVar,RPvec,RFitVec,RLastVec
   REAL(RKIND),DIMENSION(:,:),ALLOCATABLE :: RSimplexVariable,RgDummyVecMat,&
@@ -116,11 +112,6 @@ PROGRAM Felixrefine
   !--------------------------------------------------------------------
   ! input section 
   !--------------------------------------------------------------------
-  
-  CALL ReadInpFile(IErr) ! felix.inp
-  IF(l_alert(IErr,"felixrefine","ReadInpFile")) CALL abort
-  CALL SetMessageMode( IWriteFLAG, IErr )
-  IF(l_alert(IErr,"felixrefine","set_message_mod_mode")) CALL abort
 
   CALL read_cif(IErr) ! felix.cif ! some allocations are here
   IF(l_alert(IErr,"felixrefine","ReadCif")) CALL abort
@@ -128,7 +119,19 @@ PROGRAM Felixrefine
   CALL ReadHklFile(IErr) ! the list of hkl's to input/output
   IF(l_alert(IErr,"felixrefine","ReadHklFile")) CALL abort
   !--------------------------------------------------------------------
-  ! allocations
+  ! allocations for arrays to track frame simulations
+  ALLOCATE(IhklsFrame(INoOfHKLsAll),STAT=IErr) ! Legacy list
+  IF(l_alert(IErr,"felixrefine","allocate IhklsFrame")) CALL abort
+  ALLOCATE(IhklsAll(INoOfHKLsAll),STAT=IErr)! List for full sim
+  IF(l_alert(IErr,"felixrefine","allocate IhklsAll")) CALL abort
+
+  CALL ReadInpFile(IErr) ! felix.inp
+  IF(l_alert(IErr,"felixrefine","ReadInpFile")) CALL abort
+  CALL SetMessageMode( IWriteFLAG, IErr )
+  IF(l_alert(IErr,"felixrefine","set_message_mod_mode")) CALL abort
+
+  !--------------------------------------------------------------------
+  ! allocations, now we know the size of the beam pool
   ! RgPool is a list of g-vectors in the microscope ref frame,
   ! units of 1/A (NB exp(-i*q.r),  physics negative convention)
   ALLOCATE(RgPool(INhkl,ITHREE),STAT=IErr)
@@ -146,7 +149,6 @@ PROGRAM Felixrefine
   ! NB Rhkl are in INTEGER form [h,k,l] but are REAL to allow dot products etc.
   ALLOCATE(Rhkl(INhkl,ITHREE),STAT=IErr)
   IF(l_alert(IErr,"felixrefine","allocate Rhkl")) CALL abort
-  !--------------------------------------------------------------------
   ! allocate Ug arrays
   ALLOCATE(CUgMatNoAbs(INhkl,INhkl),STAT=IErr)! Ug Matrix without absorption
   IF(l_alert(IErr,"felixrefine","allocate CUgMatNoAbs")) CALL abort
@@ -207,17 +209,6 @@ PROGRAM Felixrefine
       IPixelLocation(lnd,2) = jnd
     END DO
   END DO
-  !--------------------------------------------------------------------
-  ! allocate image arrays for pixel-parallel simulations
-  !--------------------------------------------------------------------
-  ! All the individual calculations go into RSimulatedPatterns later with MPI_GATHERV
-  ! NB RSimulatedPatterns is a vector with respect to pixels, not a 2D image
-  ALLOCATE(RSimulatedPatterns(INoOfLacbedPatterns,IThicknessCount,IPixelTotal),STAT=IErr)
-  IF(l_alert(IErr,"felixrefine","allocate RSimulatedPatterns")) CALL abort
-  ! Images, NB Fortan arrays are [row,column]=[y,x]
-  ALLOCATE(RImageSimi(ISizeY,ISizeX,INoOfLacbedPatterns,IThicknessCount),&
-        STAT=IErr)
-  IF(l_alert(IErr,"felixrefine","allocate RImageSimi")) CALL abort
 
   !--------------------------------------------------------------------
   ! set up unit cell 
@@ -256,10 +247,10 @@ PROGRAM Felixrefine
   ! and reciprocal lattice vectors RarVecO, RbrVecO, RcrVecO in the same reference frame
   CALL ReciprocalLattice(IErr)
   IF(l_alert(IErr,"felixrefine","ReciprocalLattice")) CALL abort
+
   !--------------------------------------------------------------------
   ! Start of simulation-specific calculations, depending on crystal orientation
   !--------------------------------------------------------------------
-
   ! X, Y and Z are orthogonal vectors that defines the simulation
   ! Also referred to as the microscope reference frame M.
   ! The electron beam propagates along +Zm.
@@ -277,7 +268,7 @@ PROGRAM Felixrefine
   ! frame counter
   IFrame = 1
   DO WHILE(IFrame.LE.INFrames)
-  WRITE(SPrintString, FMT='(A6,I3)') "Frame ",IFrame
+    WRITE(SPrintString, FMT='(A6,I3)') "Frame ",IFrame
     CALL message(LS,dbg3,SPrintString)
     ! Increment frame angle, if it's not the first 
     IF(IFrame.GT.1) THEN
@@ -291,7 +282,7 @@ PROGRAM Felixrefine
     CALL CrystalOrientation(IErr)
     IF(l_alert(IErr,"felixrefine","CrystalOrientation")) CALL abort
     !--------------------------------------------------------------------
-    ! Fill the list of reflections Rhkl (global variable)
+    ! Fill the list of reflections Rhkl
     Rhkl = ZERO
     RGlimit = 10.0*TWOPI    
     CALL HKLMake(RGlimit,IErr)
@@ -302,11 +293,20 @@ PROGRAM Felixrefine
     ! sort hkl in descending order of magnitude
     CALL HKLSort(Rhkl,INhkl,IErr) 
     IF(l_alert(IErr,"felixrefine","SortHKL")) CALL abort
-    !?? RB may result in an error when the reflection pool does not reach
-    !?? the highest hkl of the experimental data? 
-    ! Assign numbers to different reflections -> IOutputReflections, INoOfLacbedPatterns
+    ! Assign numbers to different reflections -> IhklsFrame, INoOfHKLsFrame
     CALL HKLList(IErr)
     IF(l_alert(IErr,"felixrefine","SpecificReflectionDetermination")) CALL abort
+    !--------------------------------------------------------------------
+    ! Now we know which reflections are in this frame
+    ! allocate image arrays for pixel-parallel simulations
+    ! All the individual calculations go into RSimulatedPatterns later with MPI_GATHERV
+    ! NB RSimulatedPatterns is a vector with respect to pixels, not a 2D image
+    ALLOCATE(RSimulatedPatterns(INoOfHKLsFrame,IThicknessCount,IPixelTotal),STAT=IErr)
+    IF(l_alert(IErr,"felixrefine","allocate RSimulatedPatterns")) CALL abort
+    ! Images, NB Fortan arrays are [row,column]=[y,x]
+    ALLOCATE(RImageSimi(ISizeY,ISizeX,INoOfHKLsFrame,IThicknessCount),STAT=IErr)
+    IF(l_alert(IErr,"felixrefine","allocate RImageSimi")) CALL abort
+
 
     !--------------------------------------------------------------------
     ! calculate g vector list, magnitudes and components parallel to the surface
@@ -342,7 +342,7 @@ PROGRAM Felixrefine
     ! The pixels to be calculated by this core  
     ILocalPixelCountMin= (IPixelTotal*(my_rank)/p)+1
     ILocalPixelCountMax= (IPixelTotal*(my_rank+1)/p) 
-    ALLOCATE(RIndividualReflections(INoOfLacbedPatterns,IThicknessCount,&
+    ALLOCATE(RIndividualReflections(INoOfHKLsFrame,IThicknessCount,&
            (ILocalPixelCountMax-ILocalPixelCountMin)+1),STAT=IErr)
     IF(l_alert(IErr,"felixrefine","allocate RIndividualReflections")) CALL abort
 
@@ -350,9 +350,9 @@ PROGRAM Felixrefine
     ALLOCATE(ILocalPixelOffset(p),ILocalNPix(p),STAT=IErr)
     IF(l_alert(IErr,"felixrefine","allocate ILocalPixelOffset")) CALL abort
     DO ind = 1,p
-      ILocalPixelOffset(ind) = (IPixelTotal*(ind-1)/p)*INoOfLacbedPatterns*IThicknessCount
+      ILocalPixelOffset(ind) = (IPixelTotal*(ind-1)/p)*INoOfHKLsFrame*IThicknessCount
       ILocalNPix(ind) = (((IPixelTotal*(ind)/p) - (IPixelTotal*(ind-1)/p)))* &
-            INoOfLacbedPatterns*IThicknessCount    
+            INoOfHKLsFrame*IThicknessCount    
     END DO
 
     !--------------------------------------------------------------------
@@ -371,13 +371,14 @@ PROGRAM Felixrefine
     CALL MPI_GATHERV(RIndividualReflections,SIZE(RIndividualReflections),MPI_DOUBLE_PRECISION,&
          RSimulatedPatterns,ILocalNPix,ILocalPixelOffset,MPI_DOUBLE_PRECISION,&
          root,MPI_COMM_WORLD,IErr)
+    !This brodcast is not strictly necessary but keeps all cores synchronised
     CALL MPI_BCAST(RIndividualReflections,SIZE(RIndividualReflections),MPI_DOUBLE_PRECISION,&
          root,MPI_COMM_WORLD,IErr)
     !=====================================
     IF(l_alert(IErr,"SimulateAndFit","MPI_GATHERV")) CALL abort
     ! put 1D array RSimulatedPatterns into 2D image RImageSimi
-    ! remember dimensions of RSimulatedPatterns(INoOfLacbedPatterns,IThicknessCount,IPixelTotal)
-    ! and RImageSimi(height, width, INoOfLacbedPatterns,IThicknessCount )
+    ! NB dimensions of RSimulatedPatterns(INoOfHKLsFrame,IThicknessCount,IPixelTotal)
+    ! and RImageSimi(height, width, INoOfHKLsFrame,IThicknessCount )
     RImageSimi = ZERO
     lnd = 0
     DO ind = 1,ISizeY
@@ -386,9 +387,16 @@ PROGRAM Felixrefine
         RImageSimi(ind,jnd,:,:) = RSimulatedPatterns(:,:,lnd)
       END DO
     END DO
+
+
+
+
+
+
+
     ! Gaussian blur to match experiment using global variable RBlurRadius
     IF (RBlurRadius.GT.TINY) THEN
-      DO ind=1,INoOfLacbedPatterns
+      DO ind=1,INoOfHKLsFrame
         DO jnd=1,IThicknessCount
           CALL BlurG(RImageSimi(:,:,ind,jnd),ISizeX,ISizeY,RBlurRadius,IErr)
         END DO
@@ -397,13 +405,14 @@ PROGRAM Felixrefine
 
     IF(l_alert(IErr,"felixrefine","Simulate")) CALL abort
     CALL PrintEndTime(LS,IStartTime2, "Simulation" )
-    ! simulate multiple thicknesses
+
+    ! output, multiple thicknesses
     IF(my_rank.EQ.0) THEN
       WRITE(SPrintString,FMT='(A24,I3,A12)') &
         "Writing simulations for ", IThicknessCount," thicknesses"
       CALL message(LS,SPrintString)
       DO ind = 1,IThicknessCount
-        CALL WriteIterationOutput(Iter,ind,IErr)
+        CALL WriteIterationOutput(ind,IErr)
         IF(l_alert(IErr,"felixrefine","WriteIterationOutput")) CALL abort 
       END DO  
     END IF 
@@ -411,6 +420,8 @@ PROGRAM Felixrefine
     !--------------------------------------------------------------------
     ! deallocate memory used in each frame
     !--------------------------------------------------------------------
+    DEALLOCATE(RSimulatedPatterns,STAT=IErr)
+    DEALLOCATE(RImageSimi,STAT=IErr)
     DEALLOCATE(IEquivalentUgKey,STAT=IErr)
     DEALLOCATE(CUniqueUg,STAT=IErr)
     DEALLOCATE(RIndividualReflections,STAT=IErr)
@@ -440,8 +451,6 @@ PROGRAM Felixrefine
   DEALLOCATE(IAtomicNumber,STAT=IErr)
   DEALLOCATE(IAnisoDW,STAT=IErr)
   DEALLOCATE(RAtomCoordinate,STAT=IErr)
-  DEALLOCATE(RSimulatedPatterns,STAT=IErr)
-  DEALLOCATE(RImageSimi,STAT=IErr)
   DEALLOCATE(IPixelLocation,STAT=IErr)
 
   CALL message( LS, "--------------------------------" )

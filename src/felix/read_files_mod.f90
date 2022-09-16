@@ -233,8 +233,8 @@ MODULE read_files_mod
     USE message_mod
 
     ! global outputs
-    USE RPARA, ONLY : RInputHKLs
-    USE IPARA, ONLY : INoOfLacbedPatterns,IOutputReflections ! allocated here
+    USE RPARA, ONLY : RInputHKLs! allocated here
+    USE IPARA, ONLY : INoOfHKLsAll ! fixed here
     ! global inputs
     USE IChannels, ONLY : IChInp
 
@@ -248,23 +248,21 @@ MODULE read_files_mod
     ILine = 0
 
     ! count the number of lines in felix.hkl:
-    ! this is the number of reflections to output, INoOfLacbedPatterns
+    ! this is the total number of reflections to simulate, INoOfHKLsAll
     DO
       READ(UNIT= IChInp, END=5, FMT='(a)') dummy1
       ILine = ILine+1
     ENDDO
-5   INoOfLacbedPatterns = ILine
-    CALL message ( LXL, dbg7, "Number of experimental images to load = ", INoOfLacbedPatterns)
+5   INoOfHKLsAll = ILine
+    CALL message (LS, dbg3, "Number of reflections = ", INoOfHKLsAll)
 
-    ALLOCATE(RInputHKLs(INoOfLacbedPatterns,ITHREE),STAT=IErr)
+    ALLOCATE(RInputHKLs(INoOfHKLsAll,ITHREE),STAT=IErr)
     IF(l_alert(IErr,"ReadHklFile","allocate RInputHKLs")) RETURN
-    ALLOCATE(IOutputReflections(INoOfLacbedPatterns),STAT=IErr) !?? should we allocate here JR
-    IF(l_alert(IErr,"ReadHklFile","allocate IOutputReflections")) RETURN
 
     ! read in the hkls
     REWIND(UNIT=IChInp) ! goes to beginning of felix.hkl file
     ILine = 0 
-    DO ind = 1,INoOfLacbedPatterns
+    DO ind = 1,INoOfHKLsAll
       ! READ HKL in as String
       READ(UNIT= IChInp,FMT='(A)' ) dummy1
       ! Scan String for h

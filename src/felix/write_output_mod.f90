@@ -52,22 +52,21 @@ MODULE write_output_mod
   !!
   !! Major-Authors: 'kidwhizz' (2015), Richard Beanland (2016)
   !!
-  SUBROUTINE WriteIterationOutput(Iter,IThicknessIndex,IErr)
+  SUBROUTINE WriteIterationOutput(IThicknessIndex,IErr)
 
     USE MyNumbers
     USE message_mod
     
     ! global inputs
-    USE IPARA, ONLY : ILN,ISizeX,ISizeY,IOutPutReflections,INoOfLacbedPatterns,INhkl,IByteSize
-    USE CPARA, ONLY : CUgMat
-    USE RPARA, ONLY : Rhkl,RgPool, RImageSimi, RInitialThickness, RDeltaThickness
+    USE IPARA, ONLY : ILN,ISizeX,ISizeY,IhklsFrame,INoOfHKLsFrame,IByteSize
+    USE RPARA, ONLY : Rhkl, RImageSimi, RInitialThickness, RDeltaThickness
     USE SPARA, ONLY : SChemicalFormula
-    USE IChannels, ONLY : IChOutWIImage, IChOut
+    USE IChannels, ONLY : IChOutWIImage
 
     IMPLICIT NONE
 
     INTEGER(IKIND), INTENT(OUT) :: IErr
-    INTEGER(IKIND), INTENT(IN) :: Iter,IThicknessIndex
+    INTEGER(IKIND), INTENT(IN) :: IThicknessIndex
     INTEGER(IKIND) :: IThickness,ind,jnd
     REAL(RKIND),DIMENSION(ISizeY,ISizeX) :: RImageToWrite
     CHARACTER(10) :: hString,kString,lString
@@ -91,9 +90,9 @@ MODULE write_output_mod
     CALL system('mkdir ' // path)
 
     ! Write Images to disk
-    DO ind = 1,INoOfLacbedPatterns
+    DO ind = 1,INoOfHKLsFrame
       ! Make the hkl string e.g. -2-2+10
-      jnd=NINT(Rhkl(IOutPutReflections(ind),1))
+      jnd=NINT(Rhkl(IhklsFrame(ind),1))
       IF (ABS(jnd).LT.10) THEN
         WRITE(hString,"(SP,I2.1)") jnd
       ELSEIF (ABS(jnd).LT.100) THEN
@@ -101,7 +100,7 @@ MODULE write_output_mod
       ELSE
         WRITE(hString,"(SP,I4.1)") jnd
       ENDIF
-      jnd=NINT(Rhkl(IOutPutReflections(ind),2))
+      jnd=NINT(Rhkl(IhklsFrame(ind),2))
       IF (ABS(jnd).LT.10) THEN
         WRITE(kString,"(SP,I2.1)") jnd
       ELSEIF (ABS(jnd).LT.100) THEN
@@ -109,7 +108,7 @@ MODULE write_output_mod
       ELSE
         WRITE(kString,"(SP,I4.1)") jnd
       ENDIF
-      jnd=NINT(Rhkl(IOutPutReflections(ind),3))
+      jnd=NINT(Rhkl(IhklsFrame(ind),3))
       IF (ABS(jnd).LT.10) THEN
         WRITE(lString,"(SP,I2.1)") jnd
       ELSEIF (ABS(jnd).LT.100) THEN

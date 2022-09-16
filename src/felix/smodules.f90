@@ -177,7 +177,7 @@ MODULE IPara
   !Iterative Ug
   INTEGER(IKIND) :: INoofUgs
   !LACBED Input
-  INTEGER(IKIND) :: INoOfLacbedPatterns
+  INTEGER(IKIND) :: INoOfHKLsAll, INoOfHKLsFrame
   !Beams from selection criteria
   INTEGER(IKIND) :: INhkl,nStrongBeams,nWeakBeams,nBeams,IHKLMAXValue
   INTEGER(IKIND), DIMENSION(:), ALLOCATABLE :: IBasisAnisoDW,IStrongBeamList, IAnisoDW
@@ -188,23 +188,22 @@ MODULE IPara
   INTEGER(IKIND) :: IImageOutputFLAG
   !LACBED
   INTEGER(IKIND),DIMENSION(:,:), ALLOCATABLE :: ILACBEDStrongBeamList, IPixelLocation, ISymmetryRelations
-  INTEGER(IKIND),DIMENSION(:), ALLOCATABLE :: InBeams,IOutputReflections,IEquivalentUgKey
+  INTEGER(IKIND),DIMENSION(:), ALLOCATABLE :: InBeams,IEquivalentUgKey
   !inpcif
   INTEGER(IKIND) :: ISymCount,ISpaceGrp,ILN
   INTEGER(IKIND) :: IPixelCountTotal
   !Thickness loop Variables
-  INTEGER(IKIND) :: IThicknessCount
-  !Refine Parameters
-  INTEGER(IKIND) :: IFluxIterationSteps
-  INTEGER(IKIND), DIMENSION(2) :: IOffset
+  INTEGER(IKIND) :: IFrame,IThicknessCount
+  !Tracking reflections
+  INTEGER(IKIND), DIMENSION(:), ALLOCATABLE :: IhklsAll,IhklsFrame
   INTEGER(IKIND), DIMENSION(:),ALLOCATABLE :: IElementList
   !Ug Calculation
   INTEGER(IKIND) :: ICurrentZ,IPsize
   !Refinement   
   INTEGER(IKIND),DIMENSION(:,:),ALLOCATABLE :: IIterativeVariableUniqueIDs
   INTEGER(IKIND),DIMENSION(:),ALLOCATABLE :: IIndependentVariableType,IIndependentVariableAtom
-  !Simplex Variables
-  INTEGER(IKIND) :: INoOfVariables,ILocalPixelCountMin,ILocalPixelCountMax,IUgOffset
+  !MPI pixel tracking
+  INTEGER(IKIND) :: ILocalPixelCountMin,ILocalPixelCountMax
   INTEGER(IKIND), DIMENSION(:), ALLOCATABLE :: ILocalPixelOffset,ILocalNPix
   !Refinement Vectors
   INTEGER(IKIND),DIMENSION(:),ALLOCATABLE :: IAtomMoveList

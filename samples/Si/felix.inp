@@ -14,8 +14,8 @@ IByteSize                 = 2
 INormalDirection          = [0,1,-1]
 IIncidentBeamDirection    = [-24452,100000,44316]
 IXDirection               = [3983,41294,-90984]
-RFrameAngle               = 0.207
-INFrames                  = 2
+RFrameAngle               = 1.035
+INFrames                  = 5
 RConvergenceAngle         = 1.4324
 RAcceleratingVoltage (kV) = 200.0
 

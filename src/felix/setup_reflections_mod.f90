@@ -48,7 +48,7 @@ MODULE setup_reflections_mod
 
   !!$%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
   !>
-  !! Procedure-description: Assign numbers to the different reflections in IOutputReflections
+  !! Procedure-description: Assign numbers to the different reflections in IhklsFrame
   !!
   !! Major-Authors: Keith Evans (2014), Richard Beanland (2016)
   !!  
@@ -59,34 +59,40 @@ MODULE setup_reflections_mod
     USE message_mod
 
     ! global outputs (or inout)
-    USE IPARA, ONLY : IOutputReflections, INoOfLacbedPatterns
+    USE IPARA, ONLY : IFrame, IhklsFrame, INoOfHKLsAll, INoOfHKLsFrame
+    USE SPARA, ONLY : SPrintString
 
     ! global inputs
-    USE RPARA, ONLY : RInputHKLs, RTolerance, Rhkl
+    USE RPARA, ONLY : RInputHKLs, Rhkl
 
     IMPLICIT NONE
 
-    INTEGER(IKIND) :: IFind,IFound,ind,jnd,knd,IErr
-      
-    IFind = 0
+    INTEGER(IKIND) :: IFind,IDuplicate,ind,jnd,knd,IErr
 
-    DO ind = 1,SIZE(RInputHKLs,DIM=1)
-      DO jnd = 1,SIZE(Rhkl,DIM=1)
-        IF(ABS(Rhkl(jnd,1)-RInputHKLs(ind,1)).LE.RTolerance.AND.&
-           ABS(Rhkl(jnd,2)-RInputHKLs(ind,2)).LE.RTolerance.AND.&
-           ABS(Rhkl(jnd,3)-RInputHKLs(ind,3)).LE.RTolerance) THEN
-          IFound = 0
-          DO knd = 1,IFind
-            IF(ABS(Rhkl(IOutputReflections(knd),1)-RInputHKLs(ind,1)).LE.RTolerance.AND.&
-               ABS(Rhkl(IOutputReflections(knd),2)-RInputHKLs(ind,2)).LE.RTolerance.AND.&
-               ABS(Rhkl(IOutputReflections(knd),3)-RInputHKLs(ind,3)).LE.RTolerance) THEN
-              IFound = 1
+    !--------------------------------------------------------------------
+    ! IhklsFrame links the list in felix.hkl with the beam pool for the current frame
+    ! It has length INoOfHKLsAll but only has entries up to the number of reflections
+    ! found, INoOfHKLsFrame.  We ignore any duplicates in felix.hkl 
+    IhklsFrame = 0
+    IFind = 0
+    DO ind = 1,INoOfHKLsAll! the reflections in felix.hkl
+      DO jnd = 1,SIZE(Rhkl,DIM=1)! the beam pool
+        IF(ABS(Rhkl(jnd,1)-RInputHKLs(ind,1)).LE.TINY.AND.&
+           ABS(Rhkl(jnd,2)-RInputHKLs(ind,2)).LE.TINY.AND.&
+           ABS(Rhkl(jnd,3)-RInputHKLs(ind,3)).LE.TINY) THEN
+          ! this reflection is in both lists
+          IDuplicate = 0! start from the assumption that it is not a duplicate
+          DO knd = 1,IFind!check the list to see if we already have it
+            IF(ABS(Rhkl(IhklsFrame(knd),1)-RInputHKLs(ind,1)).LE.TINY.AND.&
+               ABS(Rhkl(IhklsFrame(knd),2)-RInputHKLs(ind,2)).LE.TINY.AND.&
+               ABS(Rhkl(IhklsFrame(knd),3)-RInputHKLs(ind,3)).LE.TINY) THEN
+              IDuplicate = 1!yes we do
               EXIT
             END IF
           END DO
-          IF (IFound.EQ.0) THEN
+          IF (IDuplicate.EQ.0) THEN! not a duplicate, we append it to the list
             IFind = IFind +1
-            IOutputReflections(IFind) = jnd
+            IhklsFrame(IFind) = jnd!the index of the reflection in the beam pool
           END IF
           EXIT
         ELSE
@@ -103,8 +109,10 @@ MODULE setup_reflections_mod
       IErr=1; IF(l_alert(IErr,"HKLList","No requested HKLs found")) RETURN
     END IF
       
-    INoOfLacbedPatterns = IFind
-    
+    INoOfHKLsFrame = IFind
+    WRITE(SPrintString,'(A6,I3,A22,I5)') "Found ",INoOfHKLsFrame," reflections in Frame ",IFrame
+    CALL message(LS,SPrintString)
+ 
   END SUBROUTINE HKLList
   
   !!$%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -184,8 +192,8 @@ MODULE setup_reflections_mod
         RElectronWaveVectorMagnitude
       
     ! global inputs
-    USE SPARA, ONLY : SSpaceGroupName
-    USE IPARA, ONLY : INhkl,INoOfLacbedPatterns
+    USE SPARA, ONLY : SPrintString
+    USE IPARA, ONLY : INhkl, IFrame, INoOfHKLsAll
     USE Iconst
     
     IMPLICIT NONE
@@ -258,6 +266,7 @@ MODULE setup_reflections_mod
          END DO
       END DO
     END DO
+
     ! it is possible that we reach RGlimit before filling up the pool, in which case 
     ! fill up any remaining beam pool places with an enormous g-vector, diabolically
     ! the idea being that this g-vector will never be near any possible Ewald sphere
@@ -267,18 +276,22 @@ MODULE setup_reflections_mod
         Rhkl(jnd,:)=RGtest
       END DO
     END IF
-    !now check that the required output hkl's are in this hkl list
-    DO jnd = 1,INoOfLacbedPatterns
+
+    !output which required output hkl's are in this frame
+    CALL message(LS, "Reflection list:")
+    DO jnd = 1, INoOfHKLsAll
       lnd = 0!using this as a flag now
       DO knd = 1, INhkl
-        IF (RInputHKLs(jnd,1)-Rhkl(knd,1).LT.TINY .AND. &
-            RInputHKLs(jnd,2)-Rhkl(knd,2).LT.TINY .AND. &
-            RInputHKLs(jnd,3)-Rhkl(knd,3).LT.TINY) THEN
+        IF (ABS(RInputHKLs(jnd,1)-Rhkl(knd,1)).LT.TINY .AND. &
+            ABS(RInputHKLs(jnd,2)-Rhkl(knd,2)).LT.TINY .AND. &
+            ABS(RInputHKLs(jnd,3)-Rhkl(knd,3)).LT.TINY) THEN
           lnd = 1
+          EXIT
         END IF
       END DO
-      IF (lnd.EQ.0) THEN
-        CALL message( LS, "Input hkl not found: ", NINT(RInputHKLs(jnd,:)))
+      IF (lnd.EQ.1) THEN
+        WRITE(SPrintString,'(I3,1X,I3,1X,I3)') NINT(RInputHKLs(jnd,:))
+        CALL message(LS, SPrintString)
       END IF
     END DO
   END SUBROUTINE HKLmake
