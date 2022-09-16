@@ -110,8 +110,18 @@ MODULE setup_reflections_mod
     END IF
       
     INoOfHKLsFrame = IFind
-    WRITE(SPrintString,'(A6,I3,A22,I5)') "Found ",INoOfHKLsFrame," reflections in Frame ",IFrame
-    CALL message(LS,SPrintString)
+    IF(IFrame.GT.9999)THEN
+      WRITE(SPrintString,'(A6,I3,A22,I5)') "Found ",INoOfHKLsFrame," reflections in Frame ",IFrame
+    ELSEIF(IFrame.GT.999)THEN
+      WRITE(SPrintString,'(A6,I3,A22,I4)') "Found ",INoOfHKLsFrame," reflections in Frame ",IFrame
+    ELSEIF(IFrame.GT.99)THEN
+      WRITE(SPrintString,'(A6,I3,A22,I3)') "Found ",INoOfHKLsFrame," reflections in Frame ",IFrame
+    ELSEIF(IFrame.GT.9)THEN
+      WRITE(SPrintString,'(A6,I3,A22,I2)') "Found ",INoOfHKLsFrame," reflections in Frame ",IFrame
+    ELSE
+      WRITE(SPrintString,'(A6,I3,A22,I1)') "Found ",INoOfHKLsFrame," reflections in Frame ",IFrame
+    END IF
+    CALL message(LM,SPrintString)
  
   END SUBROUTINE HKLList
   
@@ -278,7 +288,7 @@ MODULE setup_reflections_mod
     END IF
 
     !output which required output hkl's are in this frame
-    CALL message(LS, "Reflection list:")
+    CALL message(LM, "Reflection list:")
     DO jnd = 1, INoOfHKLsAll
       lnd = 0!using this as a flag now
       DO knd = 1, INhkl
@@ -291,7 +301,7 @@ MODULE setup_reflections_mod
       END DO
       IF (lnd.EQ.1) THEN
         WRITE(SPrintString,'(I3,1X,I3,1X,I3)') NINT(RInputHKLs(jnd,:))
-        CALL message(LS, SPrintString)
+        CALL message(LM, SPrintString)
       END IF
     END DO
   END SUBROUTINE HKLmake

@@ -63,19 +63,13 @@ PROGRAM Felixrefine
         INumFinalReflections,IThicknessIndex,IVariableType,IArrayIndex,&
         IAnisotropicDebyeWallerFactorElementNo,IStartTime,IStartTime2
   INTEGER(4) :: IErr4
-  REAL(RKIND) :: REmphasis,RGlimit,RLaueZoneGz,RMaxGMag,RKn,RThickness,&
-        RPvecMag,RScale,RMaxUgStep,Rdx,RStandardDeviation,RMean,RGzUnitVec,&
+  REAL(RKIND) :: RGlimit,RLaueZoneGz,RMaxGMag,RKn,RThickness,&
+        RScale,RMaxUgStep,Rdx,RStandardDeviation,RMean,RGzUnitVec,&
         RMinLaueZoneValue,Rdf,RLastFit,RBestFit,RMaxLaueZoneValue,&
         RMaxAcceptanceGVecMag,RandomSign,RLaueZoneElectronWaveVectorMag,&
         RvarMin,RfitMin,RFit0,Rconvex,Rtest,Rplus,Rminus,RdeltaX,RdeltaY
   REAL(RKIND),DIMENSION(ITHREE) :: RXDirOn,RZDirOn
 
-  ! allocatable arrays
-  REAL(RKIND),DIMENSION(:),ALLOCATABLE :: RSimplexFoM,RIndependentVariable,&
-        RCurrentVar,RVar0,RLastVar,RPvec,RFitVec,RLastVec
-  REAL(RKIND),DIMENSION(:,:),ALLOCATABLE :: RSimplexVariable,RgDummyVecMat,&
-        RgPoolMagLaue,RTestImage,ROnes,RVarMatrix,RSimp
-  
   CHARACTER(40) :: my_rank_string
   CHARACTER(20) :: h,k,l
   CHARACTER(14) :: Sest
@@ -376,7 +370,7 @@ PROGRAM Felixrefine
          root,MPI_COMM_WORLD,IErr)
     !=====================================
     IF(l_alert(IErr,"SimulateAndFit","MPI_GATHERV")) CALL abort
-    ! put 1D array RSimulatedPatterns into 2D image RImageSimi
+    ! put 1D array RSimulatedPatterns into 2D image RImageSimi (should be done with RESHAPE?)
     ! NB dimensions of RSimulatedPatterns(INoOfHKLsFrame,IThicknessCount,IPixelTotal)
     ! and RImageSimi(height, width, INoOfHKLsFrame,IThicknessCount )
     RImageSimi = ZERO
@@ -388,8 +382,22 @@ PROGRAM Felixrefine
       END DO
     END DO
 
-
-
+    !--------------------------------------------------------------------
+    ! make compound 000 image
+    IF(IFrame.EQ.1)THEN!first frame, set up the image
+      ALLOCATE(RBrightField(ISizeY,ISizeX), STAT=IErr)
+      IF(l_alert(IErr,"felixrefine","allocate RBrightField")) CALL abort
+      RBrightField = RImageSimi(:,:,1,1)
+    ELSE! subsequent frame, append the image
+      ALLOCATE(RTempImage (ISizeY,ISizeX+SIZE(RBrightField,DIM=2)), STAT=IErr)
+      IF(l_alert(IErr,"felixrefine","allocate RBrightField")) CALL abort
+      RTempImage(:,1:SIZE(RBrightField,DIM=2)) = RBrightField
+      RTempImage(:,SIZE(RBrightField,DIM=2)+1:) = RImageSimi(:,:,1,1)
+      DEALLOCATE(RBrightField, STAT=IErr)
+      ALLOCATE(RBrightField (ISizeY,SIZE(RTempImage,DIM=2)), STAT=IErr)
+      RBrightField = RTempImage
+      DEALLOCATE(RTempImage, STAT=IErr)
+    END IF
 
 
 

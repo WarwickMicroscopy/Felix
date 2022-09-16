@@ -199,15 +199,9 @@ MODULE IPara
   INTEGER(IKIND), DIMENSION(:),ALLOCATABLE :: IElementList
   !Ug Calculation
   INTEGER(IKIND) :: ICurrentZ,IPsize
-  !Refinement   
-  INTEGER(IKIND),DIMENSION(:,:),ALLOCATABLE :: IIterativeVariableUniqueIDs
-  INTEGER(IKIND),DIMENSION(:),ALLOCATABLE :: IIndependentVariableType,IIndependentVariableAtom
   !MPI pixel tracking
   INTEGER(IKIND) :: ILocalPixelCountMin,ILocalPixelCountMax
   INTEGER(IKIND), DIMENSION(:), ALLOCATABLE :: ILocalPixelOffset,ILocalNPix
-  !Refinement Vectors
-  INTEGER(IKIND),DIMENSION(:),ALLOCATABLE :: IAtomMoveList
-  INTEGER(IKIND) :: IFelixCount,IPreviousPrintedIteration,IStandardDeviationCalls  
 END MODULE IPara
 !--------------------------------------------------------------------
 
@@ -266,7 +260,7 @@ MODULE RPara
   REAL(RKIND), DIMENSION(:,:,:), ALLOCATABLE :: RAnisotropicDebyeWallerFactorTensor
   !Diffraction Pattern Definitions
   REAL(RKIND), DIMENSION(:), ALLOCATABLE :: RgPoolMag, RSg
-  REAL(RKIND), DIMENSION(:,:), ALLOCATABLE :: RgPool, RgPoolMagLaueZone
+  REAL(RKIND), DIMENSION(:,:), ALLOCATABLE :: RgPool
   REAL(RKIND), DIMENSION(ITHREE,ITHREE) :: RTMat
   REAL(RKIND) :: RDeltaK, RMinimumGMag,RGVectorMagnitude
   REAL(RKIND),DIMENSION(ITHREE) :: RGVector
@@ -286,21 +280,14 @@ MODULE RPara
   REAL(RKIND),DIMENSION(:),ALLOCATABLE :: RWaveIntensity,RFullWaveIntensity,RSumIntensity
   REAL(RKIND), DIMENSION(:,:,:), ALLOCATABLE :: RIndividualReflections
   !Refinement Variables
-  REAL(RKIND), DIMENSION(:,:),ALLOCATABLE :: RImageIn
-  REAL(RKIND) :: RFigureofMerit
-  ! Experimental Images (width,height, no.of patterns)
-  REAL(RKIND),DIMENSION(:,:,:),ALLOCATABLE :: RImageExpi  
   ! Simulated Images as a 1D array (no. of patterns, no of thicknesses, totalpixels)
   REAL(RKIND),DIMENSION(:,:,:),ALLOCATABLE :: RSimulatedPatterns
   ! Simulated Images as images (width,height, no.of patterns, no of thicknesses)
   REAL(RKIND),DIMENSION(:,:,:,:),ALLOCATABLE :: RImageSimi
+  ! Bright field image and temp to allow appending
+  REAL(RKIND),DIMENSION(:,:),ALLOCATABLE :: RBrightField,RTempImage
   !Iterative Variable Value
   REAL(RKIND) :: RValue!this is an awful name that doesn't mean anything
-  !Refinement Vectors
-  REAL(RKIND),DIMENSION(:,:),ALLOCATABLE :: RVector
-  !Uncertainties in refined parameters
-  REAL(RKIND),DIMENSION(:),ALLOCATABLE :: RIndependentDelta
-  REAL(RKIND) :: RSimplexLengthScale,RExitCriteria,RSimplexStandardDeviation,RSimplexMean
   !Gaussian blur radius in pixels
   REAL(RKIND) :: RBlurRadius
 END MODULE RPara

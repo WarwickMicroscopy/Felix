@@ -20,7 +20,7 @@ RConvergenceAngle         = 1.4324
 RAcceleratingVoltage (kV) = 200.0
 
 # dimensions of the simulation in pixels
-IPixelX                   = 20
+IPixelX                   = 100
 
 # beam selection criteria
 IMinReflectionPool        = 400

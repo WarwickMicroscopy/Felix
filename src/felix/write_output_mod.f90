@@ -58,8 +58,8 @@ MODULE write_output_mod
     USE message_mod
     
     ! global inputs
-    USE IPARA, ONLY : ILN,ISizeX,ISizeY,IhklsFrame,INoOfHKLsFrame,IByteSize
-    USE RPARA, ONLY : Rhkl, RImageSimi, RInitialThickness, RDeltaThickness
+    USE IPARA, ONLY : ILN,ISizeX,ISizeY,IhklsFrame,INoOfHKLsFrame,IFrame,IByteSize
+    USE RPARA, ONLY : Rhkl, RImageSimi, RInitialThickness, RDeltaThickness, RBrightField, RTempImage
     USE SPARA, ONLY : SChemicalFormula
     USE IChannels, ONLY : IChOutWIImage
 
@@ -67,9 +67,11 @@ MODULE write_output_mod
 
     INTEGER(IKIND), INTENT(OUT) :: IErr
     INTEGER(IKIND), INTENT(IN) :: IThicknessIndex
-    INTEGER(IKIND) :: IThickness,ind,jnd
+    INTEGER(IKIND) :: IThickness,ind,jnd,knd
     REAL(RKIND),DIMENSION(ISizeY,ISizeX) :: RImageToWrite
     CHARACTER(10) :: hString,kString,lString
+    CHARACTER(4) :: fString
+    CHARACTER(40) :: SPrintString
     CHARACTER(200) :: path,filename,fullpath
     
     IErr=0 
@@ -89,51 +91,88 @@ MODULE write_output_mod
     path = SChemicalFormula(1:ILN) // "_" // path ! This adds chemical to folder name
     CALL system('mkdir ' // path)
 
+    knd = 0
     ! Write Images to disk
     DO ind = 1,INoOfHKLsFrame
-      ! Make the hkl string e.g. -2-2+10
-      jnd=NINT(Rhkl(IhklsFrame(ind),1))
-      IF (ABS(jnd).LT.10) THEN
-        WRITE(hString,"(SP,I2.1)") jnd
-      ELSEIF (ABS(jnd).LT.100) THEN
-        WRITE(hString,"(SP,I3.1)") jnd
-      ELSE
-        WRITE(hString,"(SP,I4.1)") jnd
-      ENDIF
-      jnd=NINT(Rhkl(IhklsFrame(ind),2))
-      IF (ABS(jnd).LT.10) THEN
-        WRITE(kString,"(SP,I2.1)") jnd
-      ELSEIF (ABS(jnd).LT.100) THEN
-        WRITE(kString,"(SP,I3.1)") jnd
-      ELSE
-        WRITE(kString,"(SP,I4.1)") jnd
-      ENDIF
-      jnd=NINT(Rhkl(IhklsFrame(ind),3))
-      IF (ABS(jnd).LT.10) THEN
-        WRITE(lString,"(SP,I2.1)") jnd
-      ELSEIF (ABS(jnd).LT.100) THEN
-        WRITE(lString,"(SP,I3.1)") jnd
-      ELSE
-        WRITE(lString,"(SP,I4.1)") jnd
-      ENDIF
-      ! Make the path/filenames e.g. 'GaAs_-2-2+0.bin'
-      filename = SChemicalFormula(1:ILN) // "_" // TRIM(ADJUSTL(hString)) // TRIM(ADJUSTL(kString)) // TRIM(ADJUSTL(lString)) // ".bin"
-      fullpath = TRIM(ADJUSTL(path))//"/"//TRIM(ADJUSTL(filename))
-      CALL message ( LL, dbg6, fullpath )
       RImageToWrite = RImageSimi(:,:,ind,IThicknessIndex)
+      ! only output an image if it has signifcant intensity (>0.001, 0.1% of incident beam)
+      IF(MAXVAL(RImageToWrite).GT.0.001D0) THEN
+        knd = knd + 1
+        ! Make the hkl string e.g. -2-2+10
+        jnd=NINT(Rhkl(IhklsFrame(ind),1))
+        IF (ABS(jnd).LT.10) THEN
+          WRITE(hString,"(SP,I2.1)") jnd
+        ELSEIF (ABS(jnd).LT.100) THEN
+          WRITE(hString,"(SP,I3.1)") jnd
+        ELSE
+          WRITE(hString,"(SP,I4.1)") jnd
+        ENDIF
+        jnd=NINT(Rhkl(IhklsFrame(ind),2))
+        IF (ABS(jnd).LT.10) THEN
+          WRITE(kString,"(SP,I2.1)") jnd
+        ELSEIF (ABS(jnd).LT.100) THEN
+          WRITE(kString,"(SP,I3.1)") jnd
+        ELSE
+          WRITE(kString,"(SP,I4.1)") jnd
+        ENDIF
+        jnd=NINT(Rhkl(IhklsFrame(ind),3))
+        IF (ABS(jnd).LT.10) THEN
+          WRITE(lString,"(SP,I2.1)") jnd
+        ELSEIF (ABS(jnd).LT.100) THEN
+          WRITE(lString,"(SP,I3.1)") jnd
+        ELSE
+          WRITE(lString,"(SP,I4.1)") jnd
+        ENDIF
+        ! Make the path/filenames e.g. 'GaAs_-2-2+0.bin'
+        WRITE(fString,"(I4.4)") IFrame
+        filename = fString // "_" // SChemicalFormula(1:ILN) // "_" // &
+          TRIM(ADJUSTL(hString)) // TRIM(ADJUSTL(kString)) // TRIM(ADJUSTL(lString)) // ".bin"
+        fullpath = TRIM(ADJUSTL(path))//"/"//TRIM(ADJUSTL(filename))
+        CALL message ( LL, dbg6, fullpath )
 
-!DBG    IF(my_rank.EQ.0)PRINT*,TRIM(ADJUSTL(fullpath))!DEBUG
-      ! Writes data to output image .bin files
-      OPEN(UNIT=IChOutWIImage, STATUS= 'UNKNOWN', FILE=TRIM(ADJUSTL(fullpath)),&
+        ! Writes data to output image .bin files
+        OPEN(UNIT=IChOutWIImage, STATUS= 'UNKNOWN', FILE=TRIM(ADJUSTL(fullpath)),&
           FORM='UNFORMATTED',ACCESS='DIRECT',IOSTAT=IErr,RECL=ISizeX*IByteSize)
-      IF(l_alert(IErr,"WriteIterationOutput","OPEN() output .bin file")) RETURN
-      ! we write each X-line, remembering indexing is [row,col]=[y,x]
-      DO jnd = 1,ISizeY
-        WRITE(IChOutWIImage,rec=jnd) RImageToWrite(jnd,:)
-      END DO
-      CLOSE(IChOutWIImage,IOSTAT=IErr) 
-      IF(l_alert(IErr,"WriteIterationOutput","CLOSE() output .bin file")) RETURN       
+        IF(l_alert(IErr,"WriteIterationOutput","OPEN() output .bin file")) RETURN
+        ! we write each X-line, remembering indexing is [row,col]=[y,x]
+        DO jnd = 1,ISizeY
+          WRITE(IChOutWIImage,rec=jnd) RImageToWrite(jnd,:)
+        END DO
+        CLOSE(IChOutWIImage,IOSTAT=IErr) 
+        IF(l_alert(IErr,"WriteIterationOutput","CLOSE() output .bin file")) RETURN       
+      END IF
     END DO
+
+    !--------------------------------------------------------------------
+    ! output how many useful reflections have been calculated
+    IF(IFrame.GT.9999)THEN
+      WRITE(SPrintString,'(A6,I3,A22,I5)') "Found ",knd," reflections in Frame ",IFrame
+    ELSEIF(IFrame.GT.999)THEN
+      WRITE(SPrintString,'(A6,I3,A22,I4)') "Found ",knd," reflections in Frame ",IFrame
+    ELSEIF(IFrame.GT.99)THEN
+      WRITE(SPrintString,'(A6,I3,A22,I3)') "Found ",knd," reflections in Frame ",IFrame
+    ELSEIF(IFrame.GT.9)THEN
+      WRITE(SPrintString,'(A6,I3,A22,I2)') "Found ",knd," reflections in Frame ",IFrame
+    ELSE
+      WRITE(SPrintString,'(A6,I3,A22,I1)') "Found ",knd," reflections in Frame ",IFrame
+    END IF
+    CALL message(LS,SPrintString)
+
+    !--------------------------------------------------------------------
+    ! write bright field image
+    filename = fString // "_000.bin" 
+    fullpath = TRIM(ADJUSTL(path))//"/"//TRIM(ADJUSTL(filename))
+    OPEN(UNIT=IChOutWIImage, STATUS= 'UNKNOWN', FILE=TRIM(ADJUSTL(fullpath)),&
+      FORM='UNFORMATTED',ACCESS='DIRECT',IOSTAT=IErr,RECL=SIZE(RBrightField,DIM=2)*IByteSize)
+    IF(l_alert(IErr,"WriteIterationOutput","OPEN() output 000.bin file")) RETURN
+    ! we write each X-line, remembering indexing is [row,col]=[y,x]
+    DO jnd = 1,ISizeY
+      WRITE(IChOutWIImage,rec=jnd) RBrightField(jnd,:)
+    END DO
+    CLOSE(IChOutWIImage,IOSTAT=IErr)
+    IF(l_alert(IErr,"WriteIterationOutput","CLOSE() output .bin file")) RETURN
+
+
 
     RETURN  
     
