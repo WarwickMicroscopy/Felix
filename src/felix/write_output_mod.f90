@@ -76,7 +76,7 @@ MODULE write_output_mod
     INTEGER(IKIND) :: IThickness,ind,jnd,knd,Iflag
     REAL(RKIND),DIMENSION(ISizeY,ISizeX) :: RImageToWrite
     CHARACTER(10) :: hString,kString,lString
-    CHARACTER(4) :: fString
+    CHARACTER(40) :: fString
     CHARACTER(40) :: SPrintString
     CHARACTER(200) :: path,filename,fullpath
     
@@ -84,15 +84,7 @@ MODULE write_output_mod
 
     ! folder names, NB if numbers are too big we get a output conversion error here
     IThickness = NINT(RInitialThickness +(IThicknessIndex-1)*RDeltaThickness)/10.0!in nm 
-    IF(ISizeX.GT.99999)THEN
-      WRITE(path,"(I3.3,A3,I6,A1,I3.3)") IThickness,"nm_",ISizeX,"x",ISizeY
-    ELSEIF(ISizeX.GT.9999)THEN
-      WRITE(path,"(I3.3,A3,I5,A1,I3.3)") IThickness,"nm_",ISizeX,"x",ISizeY
-    ELSEIF(ISizeX.GT.999)THEN
-      WRITE(path,"(I3.3,A3,I4,A1,I3.3)") IThickness,"nm_",ISizeX,"x",ISizeY
-    ELSE
-      WRITE(path,"(I3.3,A3,I3.3,A1,I3.3)") IThickness,"nm_",ISizeX,"x",ISizeY
-    ENDIF
+    WRITE(path,"(I3.3,A2)") IThickness,"nm"
 
     path = SChemicalFormula(1:ILN) // "_" // path ! This adds chemical formula to folder name
     IF (IFrame.EQ.1) CALL system('mkdir ' // path)
@@ -127,12 +119,12 @@ MODULE write_output_mod
           ILiveList(IhklsAll(ind)) = ILiveList(IhklsAll(ind))-1! increment the counter
           WRITE(SPrintString,'(I2,A16,I2,A3,I3,1X,I3,1X,I3)') ILiveList(IhklsAll(ind)),&
                   " frames(*) for #",IhklsAll(ind)," : ",NINT(Rhkl(IhklsFrame(ind),:))
-          IF(my_rank.EQ.0)PRINT*,SPrintString
+          CALL message(LL, SPrintString)
         ELSEIF (ILiveList(IhklsAll(ind)).EQ.666666) THEN! This is the second time round, start counting negatively
           ILiveList(IhklsAll(ind)) = -1
           WRITE(SPrintString,'(A18,I3,A3,I3,1X,I3,1X,I3)') " second time for #",IhklsAll(ind),&
                   " : ",NINT(Rhkl(IhklsFrame(ind),:))
-          IF(my_rank.EQ.0)PRINT*,SPrintString
+          CALL message(LL, SPrintString)
         
         ELSE! ILiveList>0, so increment
 
@@ -153,7 +145,7 @@ MODULE write_output_mod
           
           WRITE(SPrintString,'(I2,A13,I2,A3,I3,1X,I3,1X,I3,A1,I2)') ILiveList(IhklsAll(ind)),&
                   " frames for #",IhklsAll(ind)," : ",NINT(Rhkl(IhklsFrame(ind),:)),"|",ILACBEDList(IhklsAll(ind))
-          IF(my_rank.EQ.0)PRINT*,SPrintString
+          CALL message(LL, SPrintString)
         END IF
        ELSE! |Sg| is too large, check if we need to finish off this reflection 
         IF (ILiveList(IhklsAll(ind)).EQ.0) THEN
@@ -161,11 +153,11 @@ MODULE write_output_mod
         ELSEIF (ABS(ILiveList(IhklsAll(ind))).NE.666666) THEN! time to finish this reflection
 
           ! This subroutine puts the finished LACBED into RTempImage
-          CALL WhichContainer(ILACBEDList(IhklsAll(ind)),IErr)
+          CALL CloseContainer(ILACBEDList(IhklsAll(ind)),IErr)
       
           WRITE(SPrintString,'(A10,I3,A1,I3,1X,I3,1X,I3,A1,I3,A7)') "finished #",IhklsAll(ind),":",&
                 NINT(Rhkl(IhklsFrame(ind),:)),",",ILiveList(IhklsAll(ind))," frames"
-          IF(my_rank.EQ.0)PRINT*,SPrintString
+          CALL message(LL, SPrintString)
 
           ! Make the hkl string e.g. -2-2+10
           jnd=NINT(Rhkl(IhklsFrame(ind),1))
@@ -193,9 +185,9 @@ MODULE write_output_mod
             WRITE(lString,"(SP,I4.1)") jnd
           ENDIF
           ! Make the path/filenames e.g. 'GaAs_-2-2+0.bin'
-          WRITE(fString,"(I4.4)") IFrame
-          filename = fString // "_" // SChemicalFormula(1:ILN) // "_" // &
-            TRIM(ADJUSTL(hString)) // TRIM(ADJUSTL(kString)) // TRIM(ADJUSTL(lString)) // ".bin"
+          WRITE(fString,"(I3,A1,I2)") SIZE(RTempImage,DIM=2),"x",ISizeY
+          filename = SChemicalFormula(1:ILN) // "_" // TRIM(ADJUSTL(hString)) // &
+                  TRIM(ADJUSTL(kString)) // TRIM(ADJUSTL(lString)) // "_" // TRIM(ADJUSTL(fString)) // ".bin"
           fullpath = TRIM(ADJUSTL(path))//"/"//TRIM(ADJUSTL(filename))
           CALL message ( LL, dbg6, fullpath )
 
@@ -217,10 +209,12 @@ MODULE write_output_mod
           IhklsAll(ind) = -IhklsAll(ind)!negative value is a flag to close the output
         END IF
       END IF
-      IF(my_rank.EQ.0)PRINT*,"Sqoink",IErr
     END DO
 
-!IF(my_rank.EQ.0)PRINT*,ILACBEDFlag
+    !--------------------------------------------------------------------
+    ! output the direct beam every so often?
+
+
 
     !--------------------------------------------------------------------
     ! output how many useful reflections have been calculated
@@ -238,7 +232,6 @@ MODULE write_output_mod
     CALL message(LS,SPrintString)
     CALL message(LS,"//////////")
 
-IF(my_rank.EQ.0)PRINT*,"SPoink",IErr
     RETURN  
     
   END SUBROUTINE WriteIterationOutput
@@ -549,7 +542,7 @@ IF(my_rank.EQ.0)PRINT*,"SPoink",IErr
   !!
   !! Major-Authors: Richard Beanland (2022)
   !!
-  SUBROUTINE WhichContainer(jnd,IErr)
+  SUBROUTINE CloseContainer(jnd,IErr)
 
     USE MyNumbers
     USE message_mod
@@ -571,69 +564,87 @@ IF(my_rank.EQ.0)PRINT*,"SPoink",IErr
     CASE(1)
       ALLOCATE(RTempImage(ISizeY,SIZE(RLACBED_1,DIM=2)), STAT=IErr)
       RTempImage = RLACBED_1
+      DEALLOCATE(RLACBED_1)
     CASE(2)
       ALLOCATE(RTempImage(ISizeY,SIZE(RLACBED_2,DIM=2)), STAT=IErr)
       RTempImage = RLACBED_2
+      DEALLOCATE(RLACBED_2)
     CASE(3)
       ALLOCATE(RTempImage(ISizeY,SIZE(RLACBED_3,DIM=2)), STAT=IErr)
       RTempImage = RLACBED_3
+      DEALLOCATE(RLACBED_3)
     CASE(4)
       ALLOCATE(RTempImage(ISizeY,SIZE(RLACBED_4,DIM=2)), STAT=IErr)
       RTempImage = RLACBED_4
+      DEALLOCATE(RLACBED_4)
     CASE(5)
       ALLOCATE(RTempImage(ISizeY,SIZE(RLACBED_5,DIM=2)), STAT=IErr)
       RTempImage = RLACBED_5
+      DEALLOCATE(RLACBED_5)
     CASE(6)
       ALLOCATE(RTempImage(ISizeY,SIZE(RLACBED_6,DIM=2)), STAT=IErr)
       RTempImage = RLACBED_6
+      DEALLOCATE(RLACBED_6)
     CASE(7)
       ALLOCATE(RTempImage(ISizeY,SIZE(RLACBED_7,DIM=2)), STAT=IErr)
       RTempImage = RLACBED_7
+      DEALLOCATE(RLACBED_7)
     CASE(8)
       ALLOCATE(RTempImage(ISizeY,SIZE(RLACBED_8,DIM=2)), STAT=IErr)
       RTempImage = RLACBED_8
+      DEALLOCATE(RLACBED_8)
     CASE(9)
       ALLOCATE(RTempImage(ISizeY,SIZE(RLACBED_9,DIM=2)), STAT=IErr)
       RTempImage = RLACBED_9
+      DEALLOCATE(RLACBED_9)
     CASE(10)
       ALLOCATE(RTempImage(ISizeY,SIZE(RLACBED_10,DIM=2)), STAT=IErr)
       RTempImage = RLACBED_10
+      DEALLOCATE(RLACBED_10)
     CASE(11)
       ALLOCATE(RTempImage(ISizeY,SIZE(RLACBED_11,DIM=2)), STAT=IErr)
       RTempImage = RLACBED_11
+      DEALLOCATE(RLACBED_11)
     CASE(12)
       ALLOCATE(RTempImage(ISizeY,SIZE(RLACBED_12,DIM=2)), STAT=IErr)
       RTempImage = RLACBED_12
+      DEALLOCATE(RLACBED_12)
     CASE(13)
       ALLOCATE(RTempImage(ISizeY,SIZE(RLACBED_13,DIM=2)), STAT=IErr)
       RTempImage = RLACBED_13
+      DEALLOCATE(RLACBED_13)
     CASE(14)
       ALLOCATE(RTempImage(ISizeY,SIZE(RLACBED_14,DIM=2)), STAT=IErr)
       RTempImage = RLACBED_14
+      DEALLOCATE(RLACBED_14)
     CASE(15)
       ALLOCATE(RTempImage(ISizeY,SIZE(RLACBED_15,DIM=2)), STAT=IErr)
       RTempImage = RLACBED_15
+      DEALLOCATE(RLACBED_15)
     CASE(16)
       ALLOCATE(RTempImage(ISizeY,SIZE(RLACBED_16,DIM=2)), STAT=IErr)
       RTempImage = RLACBED_16
+      DEALLOCATE(RLACBED_16)
     CASE(17)
       ALLOCATE(RTempImage(ISizeY,SIZE(RLACBED_17,DIM=2)), STAT=IErr)
       RTempImage = RLACBED_17
+      DEALLOCATE(RLACBED_17)
     CASE(18)
       ALLOCATE(RTempImage(ISizeY,SIZE(RLACBED_18,DIM=2)), STAT=IErr)
       RTempImage = RLACBED_18
+      DEALLOCATE(RLACBED_18)
     CASE(19)
       ALLOCATE(RTempImage(ISizeY,SIZE(RLACBED_19,DIM=2)), STAT=IErr)
       RTempImage = RLACBED_19
+      DEALLOCATE(RLACBED_19)
     CASE(20)
       ALLOCATE(RTempImage(ISizeY,SIZE(RLACBED_20,DIM=2)), STAT=IErr)
       RTempImage = RLACBED_20
+      DEALLOCATE(RLACBED_20)
     END SELECT
 
     RETURN
 
-  END SUBROUTINE WhichContainer
+  END SUBROUTINE CloseContainer
 
 END MODULE write_output_mod
-
-
