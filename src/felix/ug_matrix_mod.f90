@@ -408,9 +408,8 @@ MODULE ug_matrix_mod
     ! global outputs
     USE CPARA, ONLY : CUgMatNoAbs,CUgMatPrime,CUniqueUg,CPseudoAtom,CPseudoScatt
     USE IPARA, ONLY : ICurrentZ, ISymmetryRelations
-    USE RPARA, ONLY : RMeanInnerPotential,RgSumMat
+    USE RPARA, ONLY : RMeanInnerPotential,RgSumMat,RBigK
     USE SPARA, ONLY : SPrintString
-    USE BlochPara, ONLY : RBigK
 
     ! global inputs
     USE IPARA, ONLY : INAtomsUnitCell,IFrame,&

@@ -259,12 +259,14 @@ MODULE RPara
        RInvBaseVec(ITHREE,ITHREE)
   REAL(RKIND), DIMENSION(:,:,:), ALLOCATABLE :: RAnisotropicDebyeWallerFactorTensor
   !Diffraction Pattern Definitions
+  REAL(RKIND) RBigK
   REAL(RKIND), DIMENSION(:), ALLOCATABLE :: RgPoolMag, RSg
   REAL(RKIND), DIMENSION(:,:), ALLOCATABLE :: RgPool
   REAL(RKIND), DIMENSION(ITHREE,ITHREE) :: RTMat
   REAL(RKIND) :: RDeltaK, RMinimumGMag,RGVectorMagnitude
   REAL(RKIND),DIMENSION(ITHREE) :: RGVector
   REAL(RKIND),DIMENSION(:),ALLOCATABLE :: RgDotNorm
+  REAL(RKIND),DIMENSION(:), ALLOCATABLE :: RDevPara
   !Main Program
   REAL(RKIND) :: RMeanInnerPotential,RScattFacToVolts
   REAL(RKIND),DIMENSION(:,:),ALLOCATABLE :: RgMatrixMagnitude, RgSumMat
@@ -359,22 +361,3 @@ MODULE IChannels
        IChOutWIImage= 49, MontageOut = 50,IChOutSimplex = 52
 END MODULE IChannels
 !--------------------------------------------------------------------
-
-!>
-!! Module-description: Eigen problem variables
-!!
-!! Major-Authors: Keith Evans (2014), Richard Beanland (2016)
-!!
-MODULE BlochPara 
-  USE MyNumbers
-  USE IConst
-  USE MPI
-  USE MyMPI
-
-  INTEGER(IKIND),DIMENSION(:), ALLOCATABLE :: IWeakBeamList
-  REAL(RKIND) RBigK
-  REAL(RKIND),DIMENSION(:), ALLOCATABLE :: RDevPara
-  REAL(RKIND), DIMENSION(ITHREE) :: RTiltedK
-  REAL(8), DIMENSION(:), ALLOCATABLE :: RROutArray, RIOutArray
-  COMPLEX(CKIND),DIMENSION(:,:), ALLOCATABLE :: CEigenSaveTemp
-END MODULE BlochPara

@@ -61,7 +61,7 @@ MODULE write_output_mod
     USE IPARA, ONLY : ILN,ISizeX,ISizeY,IhklsFrame,INoOfHKLsFrame,IFrame,&
             IhklsAll,ILiveList,IByteSize
     USE RPARA, ONLY : RInputHKLs,Rhkl, RImageSimi, RInitialThickness, RDeltaThickness,&
-            RBrightField, RTempImage,RDarkField_1,RDarkField_2,RDarkField_3,&
+            RBrightField, RTempImage,RDevPara,RDarkField_1,RDarkField_2,RDarkField_3,&
             RDarkField_4,RDarkField_5,RDarkField_6,RDarkField_7,RDarkField_8,&
             RDarkField_9,RDarkField_10,RDarkField_11,RDarkField_12,RDarkField_13,&
             RDarkField_14,RDarkField_15,RDarkField_16,RDarkField_17,RDarkField_18,&
@@ -112,8 +112,8 @@ MODULE write_output_mod
       ! ILiveList = -n it is current, second time now, this is the nth frame
       ! ILiveList = -666666, it's been simulated twice, shouldn't be appearing again!
 
-      ! only output an image if it has signifcant intensity (>0.001, 0.1% of incident beam)
-      IF(MAXVAL(RImageToWrite).GT.0.001D0) THEN
+      ! only output an image if it has a deviation parameter |Sg|<0.05 [arbitrary? to test]
+      IF(ABS(RDevPara(IhklsFrame(ind))).LT.0.05D0) THEN
         knd = knd + 1
 
         IF (ILiveList(IhklsAll(ind)).EQ.-666666) THEN! Shouldn't happen [to test!]

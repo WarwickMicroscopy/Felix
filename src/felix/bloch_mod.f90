@@ -62,11 +62,10 @@ MODULE bloch_mod
     ! globals - input  
     USE CPara, ONLY : CUgMat
     USE RPara, ONLY : RDeltaK,RDeltaThickness,RInitialThickness,RNormDirM,RgDotNorm,RgPool,&
-                      RgPoolMag,Rhkl,RgMatrix,RMeanInnerPotential
+                      RgPoolMag,Rhkl,RgMatrix,RMeanInnerPotential,RDevPara,RBigK
     USE IPara, ONLY : IHolzFLAG,IMinStrongBeams,IMinWeakBeams,&
                       INoOfHKLsFrame,ISizeX,ISizeY,IThicknessCount,INhkl,&
                       IhklsFrame
-    USE BlochPara, ONLY : RBigK            
     USE SPARA, ONLY : SPrintString
     USE RPARA, ONLY : RgDotNorm
 
@@ -82,8 +81,7 @@ MODULE bloch_mod
           CInvertedEigenVectors(:,:),CAlphaWeightingCoefficients(:),&
           CEigenValueDependentTerms(:,:)
     COMPLEX(CKIND) :: CFullWaveFunctions(INhkl)
-    REAL(RKIND) :: RFullWaveIntensity(INhkl),RDevPara(INhkl),&
-          RTiltedK(ITHREE)
+    REAL(RKIND) :: RFullWaveIntensity(INhkl),RTiltedK(ITHREE)
     INTEGER(IKIND) :: IStrongBeamList(INhkl),IWeakBeamList(INhkl),&
           nWeakBeams
     INTEGER(IKIND) :: ind,jnd,knd,pnd,IThickness,IThicknessIndex,ILowerLimit,&
@@ -144,7 +142,7 @@ MODULE bloch_mod
     ! select only those beams where the Ewald sphere is close to the
     ! reciprocal lattice, i.e. within RBSMaxDeviationPara
     CALL StrongAndWeakBeamsDetermination(INhkl,IMinWeakBeams,&
-                    IMinStrongBeams,RDevPara,CUgMat,&
+                    IMinStrongBeams,CUgMat,&
                     IStrongBeamList,IWeakBeamList,nBeams,nWeakBeams,IErr)
     IF(l_alert(IErr,"BlochCoefficientCalculation",&
           "StrongAndWeakBeamsDetermination()")) RETURN
@@ -362,7 +360,7 @@ MODULE bloch_mod
   !! Major-Authors: Keith Evans (2014), Richard Beanland (2016)
   !!
   SUBROUTINE StrongAndWeakBeamsDetermination(INhkl,IMinWeakBeams,&
-                    IMinStrongBeams,RDevPara,CUgMat,&
+                    IMinStrongBeams,CUgMat,&
                     IStrongBeamList,IWeakBeamList,nBeams,nWeakBeams,IErr)
     
     ! select only those beams where the Ewald sphere is close to the
@@ -370,10 +368,11 @@ MODULE bloch_mod
 
     USE MyNumbers
     USE MyMPI
-    USE message_mod 
+    USE message_mod
+
+    USE RPara, ONLY : RDevPara
 
     INTEGER(IKIND),INTENT(IN) :: INhkl
-    REAL(RKIND),DIMENSION(INhkl),INTENT(IN) :: RDevPara
     COMPLEX(CKIND),DIMENSION(INhkl,INhkl),INTENT(IN) :: CUgMat
     INTEGER(IKIND),INTENT(IN) :: IMinWeakBeams, IMinStrongBeams
     INTEGER(IKIND),DIMENSION(INhkl),INTENT(OUT) :: IStrongBeamList,IWeakBeamList

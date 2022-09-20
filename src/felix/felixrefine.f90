@@ -51,7 +51,7 @@ PROGRAM Felixrefine
 
   USE IConst; USE RConst; USE SConst
   USE IPara;  USE RPara;  USE CPara; USE SPara;
-  USE BlochPara 
+!  USE BlochPara 
   USE IChannels
 
   ! local variable definitions
@@ -145,6 +145,9 @@ PROGRAM Felixrefine
   IF(l_alert(IErr,"felixrefine","allocate RgMatrix")) CALL abort
   ! NB Rhkl are in INTEGER form [h,k,l] but are REAL to allow dot products etc.
   ALLOCATE(Rhkl(INhkl,ITHREE),STAT=IErr)
+  IF(l_alert(IErr,"felixrefine","allocate Rhkl")) CALL abort
+  ! Deviation parameter
+  ALLOCATE(RDevPara(INhkl),STAT=IErr)
   IF(l_alert(IErr,"felixrefine","allocate Rhkl")) CALL abort
   ! allocate Ug arrays
   ALLOCATE(CUgMatNoAbs(INhkl,INhkl),STAT=IErr)! Ug Matrix without absorption
