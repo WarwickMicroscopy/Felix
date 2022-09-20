@@ -50,7 +50,7 @@ MODULE write_output_mod
   !! Procedure-description: Writes output for interations including simulated .bin files, 
   !! structureFactors.txt and structure.cif 
   !!
-  !! Major-Authors: 'kidwhizz' (2015), Richard Beanland (2016)
+  !! Major-Authors: 'kidwhizz' (2015), Richard Beanland (2016-22)
   !!
   SUBROUTINE WriteIterationOutput(IThicknessIndex,IErr)
 
@@ -59,13 +59,13 @@ MODULE write_output_mod
     
     ! global inputs
     USE IPARA, ONLY : ILN,ISizeX,ISizeY,IhklsFrame,INoOfHKLsFrame,IFrame,&
-            IhklsAll,ILiveList,IByteSize
+            IhklsAll,ILiveList,ILACBEDList,IByteSize
     USE RPARA, ONLY : RInputHKLs,Rhkl, RImageSimi, RInitialThickness, RDeltaThickness,&
-            RBrightField, RTempImage,RDevPara,RDarkField_1,RDarkField_2,RDarkField_3,&
-            RDarkField_4,RDarkField_5,RDarkField_6,RDarkField_7,RDarkField_8,&
-            RDarkField_9,RDarkField_10,RDarkField_11,RDarkField_12,RDarkField_13,&
-            RDarkField_14,RDarkField_15,RDarkField_16,RDarkField_17,RDarkField_18,&
-            RDarkField_19,RDarkField_20
+            RBrightField, RTempImage,RDevPara,RLACBED_1,RLACBED_2,RLACBED_3,&
+            RLACBED_4,RLACBED_5,RLACBED_6,RLACBED_7,RLACBED_8,&
+            RLACBED_9,RLACBED_10,RLACBED_11,RLACBED_12,RLACBED_13,&
+            RLACBED_14,RLACBED_15,RLACBED_16,RLACBED_17,RLACBED_18,&
+            RLACBED_19,RLACBED_20
     USE SPARA, ONLY : SChemicalFormula
     USE IChannels, ONLY : IChOutWIImage
 
@@ -111,6 +111,7 @@ MODULE write_output_mod
       ! ILiveList = 666666, it's been simulated once and finished
       ! ILiveList = -n it is current, second time now, this is the nth frame
       ! ILiveList = -666666, it's been simulated twice, shouldn't be appearing again!
+      ! because a small circle (Bragg condition) can only cross a great circle (beam path) twice
 
       ! only output an image if it has a deviation parameter |Sg|<0.05 [arbitrary? to test]
       IF(ABS(RDevPara(IhklsFrame(ind))).LT.0.05D0) THEN
@@ -137,57 +138,311 @@ MODULE write_output_mod
           WRITE(SPrintString,'(I2,A13,I2,A3,I3,1X,I3,1X,I3)') ILiveList(IhklsAll(ind)),&
                   " frames for #",IhklsAll(ind)," : ",NINT(Rhkl(IhklsFrame(ind),:))
           IF(my_rank.EQ.0)PRINT*,SPrintString
+          ! add the simulation into its output image
+          IF(ILiveList(IhklsAll(ind)).EQ.1) THEN! new reflection, start up the output image
+            DO jnd=1,20)! find an empty container RLACBED_(n)
+              IF (ILACBEDFlag(jnd).EQ.0) THEN
+                ILACBEDFlag(jnd) = 1! this container is taken 
+                ILACBEDList(IhklsAll(ind)) = jnd! links reflection and container
+                SELECT CASE(jnd)
+                CASE(1)
+                  ALLOCATE(RLACBED_1(ISizeY,ISizeX), STAT=IErr)
+                  RLACBED_1 = RImageToWrite
+                CASE(2)
+                  ALLOCATE(RLACBED_2(ISizeY,ISizeX), STAT=IErr)
+                  RLACBED_2 = RImageToWrite
+                CASE(3)
+                  ALLOCATE(RLACBED_3(ISizeY,ISizeX), STAT=IErr)
+                  RLACBED_3 = RImageToWrite
+                CASE(4)
+                  ALLOCATE(RLACBED_4(ISizeY,ISizeX), STAT=IErr)
+                  RLACBED_4 = RImageToWrite
+                CASE(5)
+                  ALLOCATE(RLACBED_5(ISizeY,ISizeX), STAT=IErr)
+                  RLACBED_5 = RImageToWrite
+                CASE(6)
+                  ALLOCATE(RLACBED_6(ISizeY,ISizeX), STAT=IErr)
+                  RLACBED_6 = RImageToWrite
+                CASE(7)
+                  ALLOCATE(RLACBED_7(ISizeY,ISizeX), STAT=IErr)
+                  RLACBED_7 = RImageToWrite
+                CASE(8)
+                  ALLOCATE(RLACBED_8(ISizeY,ISizeX), STAT=IErr)
+                  RLACBED_8 = RImageToWrite
+                CASE(9)
+                  ALLOCATE(RLACBED_9(ISizeY,ISizeX), STAT=IErr)
+                  RLACBED_9 = RImageToWrite
+                CASE(10)
+                  ALLOCATE(RLACBED_10(ISizeY,ISizeX), STAT=IErr)
+                  RLACBED_10 = RImageToWrite
+                CASE(11)
+                  ALLOCATE(RLACBED_11(ISizeY,ISizeX), STAT=IErr)
+                  RLACBED_11 = RImageToWrite
+                CASE(12)
+                  ALLOCATE(RLACBED_12(ISizeY,ISizeX), STAT=IErr)
+                  RLACBED_12 = RImageToWrite
+                CASE(13)
+                  ALLOCATE(RLACBED_13(ISizeY,ISizeX), STAT=IErr)
+                  RLACBED_13 = RImageToWrite
+                CASE(14)
+                  ALLOCATE(RLACBED_14(ISizeY,ISizeX), STAT=IErr)
+                  RLACBED_14 = RImageToWrite
+                CASE(15)
+                  ALLOCATE(RLACBED_15(ISizeY,ISizeX), STAT=IErr)
+                  RLACBED_15 = RImageToWrite
+                CASE(16)
+                  ALLOCATE(RLACBED_16(ISizeY,ISizeX), STAT=IErr)
+                  RLACBED_16 = RImageToWrite
+                CASE(17)
+                  ALLOCATE(RLACBED_17(ISizeY,ISizeX), STAT=IErr)
+                  RLACBED_17 = RImageToWrite
+                CASE(18)
+                  ALLOCATE(RLACBED_18(ISizeY,ISizeX), STAT=IErr)
+                  RLACBED_18 = RImageToWrite
+                CASE(19)
+                  ALLOCATE(RLACBED_19(ISizeY,ISizeX), STAT=IErr)
+                  RLACBED_19 = RImageToWrite
+                CASE(20)
+                  ALLOCATE(RLACBED_20(ISizeY,ISizeX), STAT=IErr)
+                  RLACBED_20 = RImageToWrite
+                EXIT
+              END IF
+            END DO
+          ELSE!its a continuation, find which container we're using and append the image
+            SELECT CASE(ILACBEDList(IhklsAll(ind)))
+            CASE(1)
+              ALLOCATE(RTempImage(ISizeY,ISizeX*ILiveList(IhklsAll(ind))), STAT=IErr)
+              IF(l_alert(IErr,"write_output","allocate RTempImage")) RETURN
+              RTempImage(:,1:SIZE(RLACBED_1,DIM=2)) = RLACBED_1
+              RTempImage(:,SIZE(RLACBED_1,DIM=2)+1:) = RImageToWrite
+              DEALLOCATE(RLACBED_1)
+              ALLOCATE(RLACBED_1(ISizeY,ISizeX*ILiveList(IhklsAll(ind))), STAT=IErr)
+              RLACBED_1 = RTempImage
+              DEALLOCATE(RTempImage)
+            CASE(2)
+              ALLOCATE(RTempImage(ISizeY,ISizeX*ILiveList(IhklsAll(ind))), STAT=IErr)
+              IF(l_alert(IErr,"write_output","allocate RTempImage")) RETURN
+              RTempImage(:,1:SIZE(RLACBED_2,DIM=2)) = RLACBED_2
+              RTempImage(:,SIZE(RLACBED_2,DIM=2)+1:) = RImageToWrite
+              DEALLOCATE(RLACBED_2)
+              ALLOCATE(RLACBED_2(ISizeY,ISizeX*ILiveList(IhklsAll(ind))), STAT=IErr)
+              RLACBED_2 = RTempImage
+              DEALLOCATE(RTempImage)
+            CASE(3)
+              ALLOCATE(RTempImage(ISizeY,ISizeX*ILiveList(IhklsAll(ind))), STAT=IErr)
+              IF(l_alert(IErr,"write_output","allocate RTempImage")) RETURN
+              RTempImage(:,1:SIZE(RLACBED_3,DIM=2)) = RLACBED_3
+              RTempImage(:,SIZE(RLACBED_3,DIM=2)+1:) = RImageToWrite
+              DEALLOCATE(RLACBED_3)
+              ALLOCATE(RLACBED_3(ISizeY,ISizeX*ILiveList(IhklsAll(ind))), STAT=IErr)
+              RLACBED_3 = RTempImage
+              DEALLOCATE(RTempImage)
+            CASE(4)
+              ALLOCATE(RTempImage(ISizeY,ISizeX*ILiveList(IhklsAll(ind))), STAT=IErr)
+              IF(l_alert(IErr,"write_output","allocate RTempImage")) RETURN
+              RTempImage(:,1:SIZE(RLACBED_4,DIM=2)) = RLACBED_4
+              RTempImage(:,SIZE(RLACBED_4,DIM=2)+1:) = RImageToWrite
+              DEALLOCATE(RLACBED_4)
+              ALLOCATE(RLACBED_4(ISizeY,ISizeX*ILiveList(IhklsAll(ind))), STAT=IErr)
+              RLACBED_4 = RTempImage
+              DEALLOCATE(RTempImage)
+            CASE(5)
+              ALLOCATE(RTempImage(ISizeY,ISizeX*ILiveList(IhklsAll(ind))), STAT=IErr)
+              IF(l_alert(IErr,"write_output","allocate RTempImage")) RETURN
+              RTempImage(:,1:SIZE(RLACBED_5,DIM=2)) = RLACBED_5
+              RTempImage(:,SIZE(RLACBED_5,DIM=2)+1:) = RImageToWrite
+              DEALLOCATE(RLACBED_5)
+              ALLOCATE(RLACBED_5(ISizeY,ISizeX*ILiveList(IhklsAll(ind))), STAT=IErr)
+              RLACBED_5 = RTempImage
+              DEALLOCATE(RTempImage)
+            CASE(6)
+              ALLOCATE(RTempImage(ISizeY,ISizeX*ILiveList(IhklsAll(ind))), STAT=IErr)
+              IF(l_alert(IErr,"write_output","allocate RTempImage")) RETURN
+              RTempImage(:,1:SIZE(RLACBED_6,DIM=2)) = RLACBED_6
+              RTempImage(:,SIZE(RLACBED_6,DIM=2)+1:) = RImageToWrite
+              DEALLOCATE(RLACBED_6)
+              ALLOCATE(RLACBED_6(ISizeY,ISizeX*ILiveList(IhklsAll(ind))), STAT=IErr)
+              RLACBED_6 = RTempImage
+              DEALLOCATE(RTempImage)
+            CASE(7)
+              ALLOCATE(RTempImage(ISizeY,ISizeX*ILiveList(IhklsAll(ind))), STAT=IErr)
+              IF(l_alert(IErr,"write_output","allocate RTempImage")) RETURN
+              RTempImage(:,1:SIZE(RLACBED_7,DIM=2)) = RLACBED_7
+              RTempImage(:,SIZE(RLACBED_7,DIM=2)+1:) = RImageToWrite
+              DEALLOCATE(RLACBED_7)
+              ALLOCATE(RLACBED_7(ISizeY,ISizeX*ILiveList(IhklsAll(ind))), STAT=IErr)
+              RLACBED_7 = RTempImage
+              DEALLOCATE(RTempImage)
+            CASE(8)
+              ALLOCATE(RTempImage(ISizeY,ISizeX*ILiveList(IhklsAll(ind))), STAT=IErr)
+              IF(l_alert(IErr,"write_output","allocate RTempImage")) RETURN
+              RTempImage(:,1:SIZE(RLACBED_8,DIM=2)) = RLACBED_8
+              RTempImage(:,SIZE(RLACBED_8,DIM=2)+1:) = RImageToWrite
+              DEALLOCATE(RLACBED_8)
+              ALLOCATE(RLACBED_8(ISizeY,ISizeX*ILiveList(IhklsAll(ind))), STAT=IErr)
+              RLACBED_8 = RTempImage
+              DEALLOCATE(RTempImage)
+            CASE(9)
+              ALLOCATE(RTempImage(ISizeY,ISizeX*ILiveList(IhklsAll(ind))), STAT=IErr)
+              IF(l_alert(IErr,"write_output","allocate RTempImage")) RETURN
+              RTempImage(:,1:SIZE(RLACBED_9,DIM=2)) = RLACBED_9
+              RTempImage(:,SIZE(RLACBED_9,DIM=2)+1:) = RImageToWrite
+              DEALLOCATE(RLACBED_9)
+              ALLOCATE(RLACBED_9(ISizeY,ISizeX*ILiveList(IhklsAll(ind))), STAT=IErr)
+              RLACBED_9 = RTempImage
+              DEALLOCATE(RTempImage)
+            CASE(10)
+              ALLOCATE(RTempImage(ISizeY,ISizeX*ILiveList(IhklsAll(ind))), STAT=IErr)
+              IF(l_alert(IErr,"write_output","allocate RTempImage")) RETURN
+              RTempImage(:,1:SIZE(RLACBED_10,DIM=2)) = RLACBED_10
+              RTempImage(:,SIZE(RLACBED_10,DIM=2)+1:) = RImageToWrite
+              DEALLOCATE(RLACBED_10)
+              ALLOCATE(RLACBED_10(ISizeY,ISizeX*ILiveList(IhklsAll(ind))), STAT=IErr)
+              RLACBED_10 = RTempImage
+              DEALLOCATE(RTempImage)
+            CASE(11)
+              ALLOCATE(RTempImage(ISizeY,ISizeX*ILiveList(IhklsAll(ind))), STAT=IErr)
+              IF(l_alert(IErr,"write_output","allocate RTempImage")) RETURN
+              RTempImage(:,1:SIZE(RLACBED_11,DIM=2)) = RLACBED_11
+              RTempImage(:,SIZE(RLACBED_11,DIM=2)+1:) = RImageToWrite
+              DEALLOCATE(RLACBED_11)
+              ALLOCATE(RLACBED_11(ISizeY,ISizeX*ILiveList(IhklsAll(ind))), STAT=IErr)
+              RLACBED_11 = RTempImage
+              DEALLOCATE(RTempImage)
+            CASE(12)
+              ALLOCATE(RTempImage(ISizeY,ISizeX*ILiveList(IhklsAll(ind))), STAT=IErr)
+              IF(l_alert(IErr,"write_output","allocate RTempImage")) RETURN
+              RTempImage(:,1:SIZE(RLACBED_12,DIM=2)) = RLACBED_12
+              RTempImage(:,SIZE(RLACBED_12,DIM=2)+1:) = RImageToWrite
+              DEALLOCATE(RLACBED_12)
+              ALLOCATE(RLACBED_12(ISizeY,ISizeX*ILiveList(IhklsAll(ind))), STAT=IErr)
+              RLACBED_12 = RTempImage
+              DEALLOCATE(RTempImage)
+            CASE(13)
+              ALLOCATE(RTempImage(ISizeY,ISizeX*ILiveList(IhklsAll(ind))), STAT=IErr)
+              IF(l_alert(IErr,"write_output","allocate RTempImage")) RETURN
+              RTempImage(:,1:SIZE(RLACBED_13,DIM=2)) = RLACBED_13
+              RTempImage(:,SIZE(RLACBED_13,DIM=2)+1:) = RImageToWrite
+              DEALLOCATE(RLACBED_13)
+              ALLOCATE(RLACBED_13(ISizeY,ISizeX*ILiveList(IhklsAll(ind))), STAT=IErr)
+              RLACBED_13 = RTempImage
+              DEALLOCATE(RTempImage)
+            CASE(14)
+              ALLOCATE(RTempImage(ISizeY,ISizeX*ILiveList(IhklsAll(ind))), STAT=IErr)
+              IF(l_alert(IErr,"write_output","allocate RTempImage")) RETURN
+              RTempImage(:,1:SIZE(RLACBED_14,DIM=2)) = RLACBED_14
+              RTempImage(:,SIZE(RLACBED_14,DIM=2)+1:) = RImageToWrite
+              DEALLOCATE(RLACBED_14)
+              ALLOCATE(RLACBED_14(ISizeY,ISizeX*ILiveList(IhklsAll(ind))), STAT=IErr)
+              RLACBED_14 = RTempImage
+              DEALLOCATE(RTempImage)
+            CASE(15)
+              ALLOCATE(RTempImage(ISizeY,ISizeX*ILiveList(IhklsAll(ind))), STAT=IErr)
+              IF(l_alert(IErr,"write_output","allocate RTempImage")) RETURN
+              RTempImage(:,1:SIZE(RLACBED_15,DIM=2)) = RLACBED_15
+              RTempImage(:,SIZE(RLACBED_15,DIM=2)+1:) = RImageToWrite
+              DEALLOCATE(RLACBED_15)
+              ALLOCATE(RLACBED_15(ISizeY,ISizeX*ILiveList(IhklsAll(ind))), STAT=IErr)
+              RLACBED_15 = RTempImage
+              DEALLOCATE(RTempImage)
+            CASE(16)
+              ALLOCATE(RTempImage(ISizeY,ISizeX*ILiveList(IhklsAll(ind))), STAT=IErr)
+              IF(l_alert(IErr,"write_output","allocate RTempImage")) RETURN
+              RTempImage(:,1:SIZE(RLACBED_16,DIM=2)) = RLACBED_16
+              RTempImage(:,SIZE(RLACBED_16,DIM=2)+1:) = RImageToWrite
+              DEALLOCATE(RLACBED_16)
+              ALLOCATE(RLACBED_16(ISizeY,ISizeX*ILiveList(IhklsAll(ind))), STAT=IErr)
+              RLACBED_16 = RTempImage
+              DEALLOCATE(RTempImage)
+            CASE(17)
+              ALLOCATE(RTempImage(ISizeY,ISizeX*ILiveList(IhklsAll(ind))), STAT=IErr)
+              IF(l_alert(IErr,"write_output","allocate RTempImage")) RETURN
+              RTempImage(:,1:SIZE(RLACBED_17,DIM=2)) = RLACBED_17
+              RTempImage(:,SIZE(RLACBED_17,DIM=2)+1:) = RImageToWrite
+              DEALLOCATE(RLACBED_17)
+              ALLOCATE(RLACBED_17(ISizeY,ISizeX*ILiveList(IhklsAll(ind))), STAT=IErr)
+              RLACBED_17 = RTempImage
+              DEALLOCATE(RTempImage)
+            CASE(18)
+              ALLOCATE(RTempImage(ISizeY,ISizeX*ILiveList(IhklsAll(ind))), STAT=IErr)
+              IF(l_alert(IErr,"write_output","allocate RTempImage")) RETURN
+              RTempImage(:,1:SIZE(RLACBED_18,DIM=2)) = RLACBED_18
+              RTempImage(:,SIZE(RLACBED_18,DIM=2)+1:) = RImageToWrite
+              DEALLOCATE(RLACBED_18)
+              ALLOCATE(RLACBED_18(ISizeY,ISizeX*ILiveList(IhklsAll(ind))), STAT=IErr)
+              RLACBED_18 = RTempImage
+              DEALLOCATE(RTempImage)
+            CASE(19)
+              ALLOCATE(RTempImage(ISizeY,ISizeX*ILiveList(IhklsAll(ind))), STAT=IErr)
+              IF(l_alert(IErr,"write_output","allocate RTempImage")) RETURN
+              RTempImage(:,1:SIZE(RLACBED_19,DIM=2)) = RLACBED_19
+              RTempImage(:,SIZE(RLACBED_19,DIM=2)+1:) = RImageToWrite
+              DEALLOCATE(RLACBED_19)
+              ALLOCATE(RLACBED_19(ISizeY,ISizeX*ILiveList(IhklsAll(ind))), STAT=IErr)
+              RLACBED_19 = RTempImage
+              DEALLOCATE(RTempImage)
+            CASE(20)
+              ALLOCATE(RTempImage(ISizeY,ISizeX*ILiveList(IhklsAll(ind))), STAT=IErr)
+              IF(l_alert(IErr,"write_output","allocate RTempImage")) RETURN
+              RTempImage(:,1:SIZE(RLACBED_20,DIM=2)) = RLACBED_20
+              RTempImage(:,SIZE(RLACBED_20,DIM=2)+1:) = RImageToWrite
+              DEALLOCATE(RLACBED_20)
+              ALLOCATE(RLACBED_20(ISizeY,ISizeX*ILiveList(IhklsAll(ind))), STAT=IErr)
+              RLACBED_20 = RTempImage
+              DEALLOCATE(RTempImage)
+          END IF  
         END IF
-        
-        ! Make the hkl string e.g. -2-2+10
-        jnd=NINT(Rhkl(IhklsFrame(ind),1))
-        IF (ABS(jnd).LT.10) THEN
-          WRITE(hString,"(SP,I2.1)") jnd
-        ELSEIF (ABS(jnd).LT.100) THEN
-          WRITE(hString,"(SP,I3.1)") jnd
-        ELSE
-          WRITE(hString,"(SP,I4.1)") jnd
-        ENDIF
-        jnd=NINT(Rhkl(IhklsFrame(ind),2))
-        IF (ABS(jnd).LT.10) THEN
-          WRITE(kString,"(SP,I2.1)") jnd
-        ELSEIF (ABS(jnd).LT.100) THEN
-          WRITE(kString,"(SP,I3.1)") jnd
-        ELSE
-          WRITE(kString,"(SP,I4.1)") jnd
-        ENDIF
-        jnd=NINT(Rhkl(IhklsFrame(ind),3))
-        IF (ABS(jnd).LT.10) THEN
-          WRITE(lString,"(SP,I2.1)") jnd
-        ELSEIF (ABS(jnd).LT.100) THEN
-          WRITE(lString,"(SP,I3.1)") jnd
-        ELSE
-          WRITE(lString,"(SP,I4.1)") jnd
-        ENDIF
-        ! Make the path/filenames e.g. 'GaAs_-2-2+0.bin'
-        WRITE(fString,"(I4.4)") IFrame
-        filename = fString // "_" // SChemicalFormula(1:ILN) // "_" // &
-          TRIM(ADJUSTL(hString)) // TRIM(ADJUSTL(kString)) // TRIM(ADJUSTL(lString)) // ".bin"
-        fullpath = TRIM(ADJUSTL(path))//"/"//TRIM(ADJUSTL(filename))
-        CALL message ( LL, dbg6, fullpath )
-
-        ! Writes data to output image .bin files
-!        OPEN(UNIT=IChOutWIImage, STATUS= 'UNKNOWN', FILE=TRIM(ADJUSTL(fullpath)),&
-!          FORM='UNFORMATTED',ACCESS='DIRECT',IOSTAT=IErr,RECL=ISizeX*IByteSize)
-!        IF(l_alert(IErr,"WriteIterationOutput","OPEN() output .bin file")) RETURN
-!        ! we write each X-line, remembering indexing is [row,col]=[y,x]
-!        DO jnd = 1,ISizeY
-!          WRITE(IChOutWIImage,rec=jnd) RImageToWrite(jnd,:)
-!        END DO
-!        CLOSE(IChOutWIImage,IOSTAT=IErr) 
-!        IF(l_alert(IErr,"WriteIterationOutput","CLOSE() output .bin file")) RETURN       
-      ELSE!not strong enough to give an output, check if we need to finish off this reflection 
+       ELSE!not strong enough to give an output, check if we need to finish off this reflection 
         IF (ILiveList(IhklsAll(ind)).EQ.0) THEN
           CYCLE! it has not been in any frame, ignore it
-        ELSEIF (ABS(ILiveList(IhklsAll(ind))).NE.666666) THEN
+        ELSEIF (ABS(ILiveList(IhklsAll(ind))).NE.666666) THEN! time to finish this reflection
           WRITE(SPrintString,'(A10,I3,A1,I3,1X,I3,1X,I3,A1,I3,A7)') "finished #",IhklsAll(ind),":",&
                 NINT(Rhkl(IhklsFrame(ind),:)),",",ILiveList(IhklsAll(ind))," frames"
           IF(my_rank.EQ.0)PRINT*,SPrintString
+
+          ! Make the hkl string e.g. -2-2+10
+          jnd=NINT(Rhkl(IhklsFrame(ind),1))
+          IF (ABS(jnd).LT.10) THEN
+            WRITE(hString,"(SP,I2.1)") jnd
+          ELSEIF (ABS(jnd).LT.100) THEN
+            WRITE(hString,"(SP,I3.1)") jnd
+          ELSE
+            WRITE(hString,"(SP,I4.1)") jnd
+          ENDIF
+          jnd=NINT(Rhkl(IhklsFrame(ind),2))
+          IF (ABS(jnd).LT.10) THEN
+            WRITE(kString,"(SP,I2.1)") jnd
+          ELSEIF (ABS(jnd).LT.100) THEN
+            WRITE(kString,"(SP,I3.1)") jnd
+          ELSE
+            WRITE(kString,"(SP,I4.1)") jnd
+          ENDIF
+          jnd=NINT(Rhkl(IhklsFrame(ind),3))
+          IF (ABS(jnd).LT.10) THEN
+            WRITE(lString,"(SP,I2.1)") jnd
+          ELSEIF (ABS(jnd).LT.100) THEN
+            WRITE(lString,"(SP,I3.1)") jnd
+          ELSE
+            WRITE(lString,"(SP,I4.1)") jnd
+          ENDIF
+          ! Make the path/filenames e.g. 'GaAs_-2-2+0.bin'
+          WRITE(fString,"(I4.4)") IFrame
+          filename = fString // "_" // SChemicalFormula(1:ILN) // "_" // &
+            TRIM(ADJUSTL(hString)) // TRIM(ADJUSTL(kString)) // TRIM(ADJUSTL(lString)) // ".bin"
+          fullpath = TRIM(ADJUSTL(path))//"/"//TRIM(ADJUSTL(filename))
+          CALL message ( LL, dbg6, fullpath )
+
+          ! Writes data to output image .bin files
+!          OPEN(UNIT=IChOutWIImage, STATUS= 'UNKNOWN', FILE=TRIM(ADJUSTL(fullpath)),&
+!            FORM='UNFORMATTED',ACCESS='DIRECT',IOSTAT=IErr,RECL=ISizeX*IByteSize)
+!          IF(l_alert(IErr,"WriteIterationOutput","OPEN() output .bin file")) RETURN
+!          ! we write each X-line, remembering indexing is [row,col]=[y,x]
+!          DO jnd = 1,ISizeY
+!            WRITE(IChOutWIImage,rec=jnd) RImageToWrite(jnd,:)
+!          END DO
+!          CLOSE(IChOutWIImage,IOSTAT=IErr) 
+!          IF(l_alert(IErr,"WriteIterationOutput","CLOSE() output .bin file")) RETURN       
+
           ILiveList(IhklsAll(ind)) = SIGN(666666,ILiveList(IhklsAll(ind)))!set the flag complete
           IhklsAll(ind) = -IhklsAll(ind)!negative value is a flag to close the output
         END IF
@@ -223,8 +478,6 @@ MODULE write_output_mod
     END DO
     CLOSE(IChOutWIImage,IOSTAT=IErr)
     IF(l_alert(IErr,"WriteIterationOutput","CLOSE() output .bin file")) RETURN
-
-
 
     RETURN  
     

@@ -118,9 +118,14 @@ PROGRAM Felixrefine
   IF(l_alert(IErr,"felixrefine","allocate IhklsFrame")) CALL abort
   ALLOCATE(IhklsAll(INoOfHKLsAll),STAT=IErr)! List for full sim
   IF(l_alert(IErr,"felixrefine","allocate IhklsAll")) CALL abort
-  ALLOCATE(ILiveList(INoOfHKLsAll),STAT=IErr)! List of current outputs
-  IF(l_alert(IErr,"felixrefine","allocate IhklsAll")) CALL abort
-  ILiveList = 0 !see write_outputs for all meanings of this flag
+  ALLOCATE(ILiveList(INoOfHKLsAll),STAT=IErr)! List of current output reflections
+  IF(l_alert(IErr,"felixrefine","allocate ILiveList")) CALL abort
+  ALLOCATE(ILACBEDList(INoOfHKLsAll),STAT=IErr)! List of current output containers
+  IF(l_alert(IErr,"felixrefine","allocate ILACBEDList")) CALL abort
+  !output tracking flags
+  ILiveList = 0 ! links reflections, see write_outputs for all meanings of this flag
+  ILACBEDList = 0! links a simulation to its output container
+  ILACBEDFlag = 0! indicated whether a container is available (0) or used (1)
 
   CALL ReadInpFile(IErr) ! felix.inp
   IF(l_alert(IErr,"felixrefine","ReadInpFile")) CALL abort
