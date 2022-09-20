@@ -59,7 +59,7 @@ MODULE write_output_mod
     
     ! global inputs
     USE IPARA, ONLY : ILN,ISizeX,ISizeY,IhklsFrame,INoOfHKLsFrame,IFrame,&
-            IhklsAll,ILiveList,ILACBEDList,IByteSize
+            IhklsAll,ILiveList,ILACBEDList,ILACBEDFlag,IByteSize
     USE RPARA, ONLY : RInputHKLs,Rhkl, RImageSimi, RInitialThickness, RDeltaThickness,&
             RBrightField, RTempImage,RDevPara,RLACBED_1,RLACBED_2,RLACBED_3,&
             RLACBED_4,RLACBED_5,RLACBED_6,RLACBED_7,RLACBED_8,&
@@ -100,7 +100,7 @@ MODULE write_output_mod
     knd = 0
     ! Compose images and write to disk
     DO ind = 1,INoOfHKLsFrame!the number of reflections in both felix.hkl and the beam pool
-      ! this reflection is number in in RImageSimi
+      ! this reflection is number ind in RImageSimi
       RImageToWrite = RImageSimi(:,:,ind,IThicknessIndex)
       ! its index in the beam pool is IhklsFrame(ind), its g-vector is Rhkl(IhklsFrame(ind))
       ! its index in the felix.hkl list is IhklsAll(ind), its g-vector is RInputHKLs(IhklsAll(ind))
@@ -133,269 +133,36 @@ MODULE write_output_mod
           WRITE(SPrintString,'(A18,I3,A3,I3,1X,I3,1X,I3)') " second time for #",IhklsAll(ind),&
                   " : ",NINT(Rhkl(IhklsFrame(ind),:))
           IF(my_rank.EQ.0)PRINT*,SPrintString
+        
         ELSE! ILiveList>0, so increment
+
           ILiveList(IhklsAll(ind)) = ILiveList(IhklsAll(ind))+1! increment the counter
-          WRITE(SPrintString,'(I2,A13,I2,A3,I3,1X,I3,1X,I3)') ILiveList(IhklsAll(ind)),&
-                  " frames for #",IhklsAll(ind)," : ",NINT(Rhkl(IhklsFrame(ind),:))
-          IF(my_rank.EQ.0)PRINT*,SPrintString
           ! add the simulation into its output image
           IF(ILiveList(IhklsAll(ind)).EQ.1) THEN! new reflection, start up the output image
-            DO jnd=1,20)! find an empty container RLACBED_(n)
+            DO jnd=1,20! find an empty container RLACBED_(n)
               IF (ILACBEDFlag(jnd).EQ.0) THEN
                 ILACBEDFlag(jnd) = 1! this container is taken 
                 ILACBEDList(IhklsAll(ind)) = jnd! links reflection and container
-                SELECT CASE(jnd)
-                CASE(1)
-                  ALLOCATE(RLACBED_1(ISizeY,ISizeX), STAT=IErr)
-                  RLACBED_1 = RImageToWrite
-                CASE(2)
-                  ALLOCATE(RLACBED_2(ISizeY,ISizeX), STAT=IErr)
-                  RLACBED_2 = RImageToWrite
-                CASE(3)
-                  ALLOCATE(RLACBED_3(ISizeY,ISizeX), STAT=IErr)
-                  RLACBED_3 = RImageToWrite
-                CASE(4)
-                  ALLOCATE(RLACBED_4(ISizeY,ISizeX), STAT=IErr)
-                  RLACBED_4 = RImageToWrite
-                CASE(5)
-                  ALLOCATE(RLACBED_5(ISizeY,ISizeX), STAT=IErr)
-                  RLACBED_5 = RImageToWrite
-                CASE(6)
-                  ALLOCATE(RLACBED_6(ISizeY,ISizeX), STAT=IErr)
-                  RLACBED_6 = RImageToWrite
-                CASE(7)
-                  ALLOCATE(RLACBED_7(ISizeY,ISizeX), STAT=IErr)
-                  RLACBED_7 = RImageToWrite
-                CASE(8)
-                  ALLOCATE(RLACBED_8(ISizeY,ISizeX), STAT=IErr)
-                  RLACBED_8 = RImageToWrite
-                CASE(9)
-                  ALLOCATE(RLACBED_9(ISizeY,ISizeX), STAT=IErr)
-                  RLACBED_9 = RImageToWrite
-                CASE(10)
-                  ALLOCATE(RLACBED_10(ISizeY,ISizeX), STAT=IErr)
-                  RLACBED_10 = RImageToWrite
-                CASE(11)
-                  ALLOCATE(RLACBED_11(ISizeY,ISizeX), STAT=IErr)
-                  RLACBED_11 = RImageToWrite
-                CASE(12)
-                  ALLOCATE(RLACBED_12(ISizeY,ISizeX), STAT=IErr)
-                  RLACBED_12 = RImageToWrite
-                CASE(13)
-                  ALLOCATE(RLACBED_13(ISizeY,ISizeX), STAT=IErr)
-                  RLACBED_13 = RImageToWrite
-                CASE(14)
-                  ALLOCATE(RLACBED_14(ISizeY,ISizeX), STAT=IErr)
-                  RLACBED_14 = RImageToWrite
-                CASE(15)
-                  ALLOCATE(RLACBED_15(ISizeY,ISizeX), STAT=IErr)
-                  RLACBED_15 = RImageToWrite
-                CASE(16)
-                  ALLOCATE(RLACBED_16(ISizeY,ISizeX), STAT=IErr)
-                  RLACBED_16 = RImageToWrite
-                CASE(17)
-                  ALLOCATE(RLACBED_17(ISizeY,ISizeX), STAT=IErr)
-                  RLACBED_17 = RImageToWrite
-                CASE(18)
-                  ALLOCATE(RLACBED_18(ISizeY,ISizeX), STAT=IErr)
-                  RLACBED_18 = RImageToWrite
-                CASE(19)
-                  ALLOCATE(RLACBED_19(ISizeY,ISizeX), STAT=IErr)
-                  RLACBED_19 = RImageToWrite
-                CASE(20)
-                  ALLOCATE(RLACBED_20(ISizeY,ISizeX), STAT=IErr)
-                  RLACBED_20 = RImageToWrite
+                CALL SetupContainer(jnd,RImageToWrite,IErr)
                 EXIT
               END IF
             END DO
           ELSE!its a continuation, find which container we're using and append the image
-            SELECT CASE(ILACBEDList(IhklsAll(ind)))
-            CASE(1)
-              ALLOCATE(RTempImage(ISizeY,ISizeX*ILiveList(IhklsAll(ind))), STAT=IErr)
-              IF(l_alert(IErr,"write_output","allocate RTempImage")) RETURN
-              RTempImage(:,1:SIZE(RLACBED_1,DIM=2)) = RLACBED_1
-              RTempImage(:,SIZE(RLACBED_1,DIM=2)+1:) = RImageToWrite
-              DEALLOCATE(RLACBED_1)
-              ALLOCATE(RLACBED_1(ISizeY,ISizeX*ILiveList(IhklsAll(ind))), STAT=IErr)
-              RLACBED_1 = RTempImage
-              DEALLOCATE(RTempImage)
-            CASE(2)
-              ALLOCATE(RTempImage(ISizeY,ISizeX*ILiveList(IhklsAll(ind))), STAT=IErr)
-              IF(l_alert(IErr,"write_output","allocate RTempImage")) RETURN
-              RTempImage(:,1:SIZE(RLACBED_2,DIM=2)) = RLACBED_2
-              RTempImage(:,SIZE(RLACBED_2,DIM=2)+1:) = RImageToWrite
-              DEALLOCATE(RLACBED_2)
-              ALLOCATE(RLACBED_2(ISizeY,ISizeX*ILiveList(IhklsAll(ind))), STAT=IErr)
-              RLACBED_2 = RTempImage
-              DEALLOCATE(RTempImage)
-            CASE(3)
-              ALLOCATE(RTempImage(ISizeY,ISizeX*ILiveList(IhklsAll(ind))), STAT=IErr)
-              IF(l_alert(IErr,"write_output","allocate RTempImage")) RETURN
-              RTempImage(:,1:SIZE(RLACBED_3,DIM=2)) = RLACBED_3
-              RTempImage(:,SIZE(RLACBED_3,DIM=2)+1:) = RImageToWrite
-              DEALLOCATE(RLACBED_3)
-              ALLOCATE(RLACBED_3(ISizeY,ISizeX*ILiveList(IhklsAll(ind))), STAT=IErr)
-              RLACBED_3 = RTempImage
-              DEALLOCATE(RTempImage)
-            CASE(4)
-              ALLOCATE(RTempImage(ISizeY,ISizeX*ILiveList(IhklsAll(ind))), STAT=IErr)
-              IF(l_alert(IErr,"write_output","allocate RTempImage")) RETURN
-              RTempImage(:,1:SIZE(RLACBED_4,DIM=2)) = RLACBED_4
-              RTempImage(:,SIZE(RLACBED_4,DIM=2)+1:) = RImageToWrite
-              DEALLOCATE(RLACBED_4)
-              ALLOCATE(RLACBED_4(ISizeY,ISizeX*ILiveList(IhklsAll(ind))), STAT=IErr)
-              RLACBED_4 = RTempImage
-              DEALLOCATE(RTempImage)
-            CASE(5)
-              ALLOCATE(RTempImage(ISizeY,ISizeX*ILiveList(IhklsAll(ind))), STAT=IErr)
-              IF(l_alert(IErr,"write_output","allocate RTempImage")) RETURN
-              RTempImage(:,1:SIZE(RLACBED_5,DIM=2)) = RLACBED_5
-              RTempImage(:,SIZE(RLACBED_5,DIM=2)+1:) = RImageToWrite
-              DEALLOCATE(RLACBED_5)
-              ALLOCATE(RLACBED_5(ISizeY,ISizeX*ILiveList(IhklsAll(ind))), STAT=IErr)
-              RLACBED_5 = RTempImage
-              DEALLOCATE(RTempImage)
-            CASE(6)
-              ALLOCATE(RTempImage(ISizeY,ISizeX*ILiveList(IhklsAll(ind))), STAT=IErr)
-              IF(l_alert(IErr,"write_output","allocate RTempImage")) RETURN
-              RTempImage(:,1:SIZE(RLACBED_6,DIM=2)) = RLACBED_6
-              RTempImage(:,SIZE(RLACBED_6,DIM=2)+1:) = RImageToWrite
-              DEALLOCATE(RLACBED_6)
-              ALLOCATE(RLACBED_6(ISizeY,ISizeX*ILiveList(IhklsAll(ind))), STAT=IErr)
-              RLACBED_6 = RTempImage
-              DEALLOCATE(RTempImage)
-            CASE(7)
-              ALLOCATE(RTempImage(ISizeY,ISizeX*ILiveList(IhklsAll(ind))), STAT=IErr)
-              IF(l_alert(IErr,"write_output","allocate RTempImage")) RETURN
-              RTempImage(:,1:SIZE(RLACBED_7,DIM=2)) = RLACBED_7
-              RTempImage(:,SIZE(RLACBED_7,DIM=2)+1:) = RImageToWrite
-              DEALLOCATE(RLACBED_7)
-              ALLOCATE(RLACBED_7(ISizeY,ISizeX*ILiveList(IhklsAll(ind))), STAT=IErr)
-              RLACBED_7 = RTempImage
-              DEALLOCATE(RTempImage)
-            CASE(8)
-              ALLOCATE(RTempImage(ISizeY,ISizeX*ILiveList(IhklsAll(ind))), STAT=IErr)
-              IF(l_alert(IErr,"write_output","allocate RTempImage")) RETURN
-              RTempImage(:,1:SIZE(RLACBED_8,DIM=2)) = RLACBED_8
-              RTempImage(:,SIZE(RLACBED_8,DIM=2)+1:) = RImageToWrite
-              DEALLOCATE(RLACBED_8)
-              ALLOCATE(RLACBED_8(ISizeY,ISizeX*ILiveList(IhklsAll(ind))), STAT=IErr)
-              RLACBED_8 = RTempImage
-              DEALLOCATE(RTempImage)
-            CASE(9)
-              ALLOCATE(RTempImage(ISizeY,ISizeX*ILiveList(IhklsAll(ind))), STAT=IErr)
-              IF(l_alert(IErr,"write_output","allocate RTempImage")) RETURN
-              RTempImage(:,1:SIZE(RLACBED_9,DIM=2)) = RLACBED_9
-              RTempImage(:,SIZE(RLACBED_9,DIM=2)+1:) = RImageToWrite
-              DEALLOCATE(RLACBED_9)
-              ALLOCATE(RLACBED_9(ISizeY,ISizeX*ILiveList(IhklsAll(ind))), STAT=IErr)
-              RLACBED_9 = RTempImage
-              DEALLOCATE(RTempImage)
-            CASE(10)
-              ALLOCATE(RTempImage(ISizeY,ISizeX*ILiveList(IhklsAll(ind))), STAT=IErr)
-              IF(l_alert(IErr,"write_output","allocate RTempImage")) RETURN
-              RTempImage(:,1:SIZE(RLACBED_10,DIM=2)) = RLACBED_10
-              RTempImage(:,SIZE(RLACBED_10,DIM=2)+1:) = RImageToWrite
-              DEALLOCATE(RLACBED_10)
-              ALLOCATE(RLACBED_10(ISizeY,ISizeX*ILiveList(IhklsAll(ind))), STAT=IErr)
-              RLACBED_10 = RTempImage
-              DEALLOCATE(RTempImage)
-            CASE(11)
-              ALLOCATE(RTempImage(ISizeY,ISizeX*ILiveList(IhklsAll(ind))), STAT=IErr)
-              IF(l_alert(IErr,"write_output","allocate RTempImage")) RETURN
-              RTempImage(:,1:SIZE(RLACBED_11,DIM=2)) = RLACBED_11
-              RTempImage(:,SIZE(RLACBED_11,DIM=2)+1:) = RImageToWrite
-              DEALLOCATE(RLACBED_11)
-              ALLOCATE(RLACBED_11(ISizeY,ISizeX*ILiveList(IhklsAll(ind))), STAT=IErr)
-              RLACBED_11 = RTempImage
-              DEALLOCATE(RTempImage)
-            CASE(12)
-              ALLOCATE(RTempImage(ISizeY,ISizeX*ILiveList(IhklsAll(ind))), STAT=IErr)
-              IF(l_alert(IErr,"write_output","allocate RTempImage")) RETURN
-              RTempImage(:,1:SIZE(RLACBED_12,DIM=2)) = RLACBED_12
-              RTempImage(:,SIZE(RLACBED_12,DIM=2)+1:) = RImageToWrite
-              DEALLOCATE(RLACBED_12)
-              ALLOCATE(RLACBED_12(ISizeY,ISizeX*ILiveList(IhklsAll(ind))), STAT=IErr)
-              RLACBED_12 = RTempImage
-              DEALLOCATE(RTempImage)
-            CASE(13)
-              ALLOCATE(RTempImage(ISizeY,ISizeX*ILiveList(IhklsAll(ind))), STAT=IErr)
-              IF(l_alert(IErr,"write_output","allocate RTempImage")) RETURN
-              RTempImage(:,1:SIZE(RLACBED_13,DIM=2)) = RLACBED_13
-              RTempImage(:,SIZE(RLACBED_13,DIM=2)+1:) = RImageToWrite
-              DEALLOCATE(RLACBED_13)
-              ALLOCATE(RLACBED_13(ISizeY,ISizeX*ILiveList(IhklsAll(ind))), STAT=IErr)
-              RLACBED_13 = RTempImage
-              DEALLOCATE(RTempImage)
-            CASE(14)
-              ALLOCATE(RTempImage(ISizeY,ISizeX*ILiveList(IhklsAll(ind))), STAT=IErr)
-              IF(l_alert(IErr,"write_output","allocate RTempImage")) RETURN
-              RTempImage(:,1:SIZE(RLACBED_14,DIM=2)) = RLACBED_14
-              RTempImage(:,SIZE(RLACBED_14,DIM=2)+1:) = RImageToWrite
-              DEALLOCATE(RLACBED_14)
-              ALLOCATE(RLACBED_14(ISizeY,ISizeX*ILiveList(IhklsAll(ind))), STAT=IErr)
-              RLACBED_14 = RTempImage
-              DEALLOCATE(RTempImage)
-            CASE(15)
-              ALLOCATE(RTempImage(ISizeY,ISizeX*ILiveList(IhklsAll(ind))), STAT=IErr)
-              IF(l_alert(IErr,"write_output","allocate RTempImage")) RETURN
-              RTempImage(:,1:SIZE(RLACBED_15,DIM=2)) = RLACBED_15
-              RTempImage(:,SIZE(RLACBED_15,DIM=2)+1:) = RImageToWrite
-              DEALLOCATE(RLACBED_15)
-              ALLOCATE(RLACBED_15(ISizeY,ISizeX*ILiveList(IhklsAll(ind))), STAT=IErr)
-              RLACBED_15 = RTempImage
-              DEALLOCATE(RTempImage)
-            CASE(16)
-              ALLOCATE(RTempImage(ISizeY,ISizeX*ILiveList(IhklsAll(ind))), STAT=IErr)
-              IF(l_alert(IErr,"write_output","allocate RTempImage")) RETURN
-              RTempImage(:,1:SIZE(RLACBED_16,DIM=2)) = RLACBED_16
-              RTempImage(:,SIZE(RLACBED_16,DIM=2)+1:) = RImageToWrite
-              DEALLOCATE(RLACBED_16)
-              ALLOCATE(RLACBED_16(ISizeY,ISizeX*ILiveList(IhklsAll(ind))), STAT=IErr)
-              RLACBED_16 = RTempImage
-              DEALLOCATE(RTempImage)
-            CASE(17)
-              ALLOCATE(RTempImage(ISizeY,ISizeX*ILiveList(IhklsAll(ind))), STAT=IErr)
-              IF(l_alert(IErr,"write_output","allocate RTempImage")) RETURN
-              RTempImage(:,1:SIZE(RLACBED_17,DIM=2)) = RLACBED_17
-              RTempImage(:,SIZE(RLACBED_17,DIM=2)+1:) = RImageToWrite
-              DEALLOCATE(RLACBED_17)
-              ALLOCATE(RLACBED_17(ISizeY,ISizeX*ILiveList(IhklsAll(ind))), STAT=IErr)
-              RLACBED_17 = RTempImage
-              DEALLOCATE(RTempImage)
-            CASE(18)
-              ALLOCATE(RTempImage(ISizeY,ISizeX*ILiveList(IhklsAll(ind))), STAT=IErr)
-              IF(l_alert(IErr,"write_output","allocate RTempImage")) RETURN
-              RTempImage(:,1:SIZE(RLACBED_18,DIM=2)) = RLACBED_18
-              RTempImage(:,SIZE(RLACBED_18,DIM=2)+1:) = RImageToWrite
-              DEALLOCATE(RLACBED_18)
-              ALLOCATE(RLACBED_18(ISizeY,ISizeX*ILiveList(IhklsAll(ind))), STAT=IErr)
-              RLACBED_18 = RTempImage
-              DEALLOCATE(RTempImage)
-            CASE(19)
-              ALLOCATE(RTempImage(ISizeY,ISizeX*ILiveList(IhklsAll(ind))), STAT=IErr)
-              IF(l_alert(IErr,"write_output","allocate RTempImage")) RETURN
-              RTempImage(:,1:SIZE(RLACBED_19,DIM=2)) = RLACBED_19
-              RTempImage(:,SIZE(RLACBED_19,DIM=2)+1:) = RImageToWrite
-              DEALLOCATE(RLACBED_19)
-              ALLOCATE(RLACBED_19(ISizeY,ISizeX*ILiveList(IhklsAll(ind))), STAT=IErr)
-              RLACBED_19 = RTempImage
-              DEALLOCATE(RTempImage)
-            CASE(20)
-              ALLOCATE(RTempImage(ISizeY,ISizeX*ILiveList(IhklsAll(ind))), STAT=IErr)
-              IF(l_alert(IErr,"write_output","allocate RTempImage")) RETURN
-              RTempImage(:,1:SIZE(RLACBED_20,DIM=2)) = RLACBED_20
-              RTempImage(:,SIZE(RLACBED_20,DIM=2)+1:) = RImageToWrite
-              DEALLOCATE(RLACBED_20)
-              ALLOCATE(RLACBED_20(ISizeY,ISizeX*ILiveList(IhklsAll(ind))), STAT=IErr)
-              RLACBED_20 = RTempImage
-              DEALLOCATE(RTempImage)
+            CALL AppendContainer(ILACBEDList(IhklsAll(ind)),RImageToWrite,IErr)
           END IF  
+          
+          WRITE(SPrintString,'(I2,A13,I2,A3,I3,1X,I3,1X,I3,A1,I2)') ILiveList(IhklsAll(ind)),&
+                  " frames for #",IhklsAll(ind)," : ",NINT(Rhkl(IhklsFrame(ind),:)),"|",ILACBEDList(IhklsAll(ind))
+          IF(my_rank.EQ.0)PRINT*,SPrintString
         END IF
-       ELSE!not strong enough to give an output, check if we need to finish off this reflection 
+       ELSE! |Sg| is too large, check if we need to finish off this reflection 
         IF (ILiveList(IhklsAll(ind)).EQ.0) THEN
           CYCLE! it has not been in any frame, ignore it
         ELSEIF (ABS(ILiveList(IhklsAll(ind))).NE.666666) THEN! time to finish this reflection
+
+          ! This subroutine puts the finished LACBED into RTempImage
+          CALL WhichContainer(ILACBEDList(IhklsAll(ind)),IErr)
+      
           WRITE(SPrintString,'(A10,I3,A1,I3,1X,I3,1X,I3,A1,I3,A7)') "finished #",IhklsAll(ind),":",&
                 NINT(Rhkl(IhklsFrame(ind),:)),",",ILiveList(IhklsAll(ind))," frames"
           IF(my_rank.EQ.0)PRINT*,SPrintString
@@ -433,21 +200,27 @@ MODULE write_output_mod
           CALL message ( LL, dbg6, fullpath )
 
           ! Writes data to output image .bin files
-!          OPEN(UNIT=IChOutWIImage, STATUS= 'UNKNOWN', FILE=TRIM(ADJUSTL(fullpath)),&
-!            FORM='UNFORMATTED',ACCESS='DIRECT',IOSTAT=IErr,RECL=ISizeX*IByteSize)
-!          IF(l_alert(IErr,"WriteIterationOutput","OPEN() output .bin file")) RETURN
-!          ! we write each X-line, remembering indexing is [row,col]=[y,x]
-!          DO jnd = 1,ISizeY
-!            WRITE(IChOutWIImage,rec=jnd) RImageToWrite(jnd,:)
-!          END DO
-!          CLOSE(IChOutWIImage,IOSTAT=IErr) 
-!          IF(l_alert(IErr,"WriteIterationOutput","CLOSE() output .bin file")) RETURN       
+          OPEN(UNIT=IChOutWIImage, STATUS= 'UNKNOWN', FILE=TRIM(ADJUSTL(fullpath)),&
+            FORM='UNFORMATTED',ACCESS='DIRECT',IOSTAT=IErr,RECL=SIZE(RTempImage,DIM=2)*IByteSize)
+          IF(l_alert(IErr,"WriteIterationOutput","OPEN() output .bin file")) RETURN
+          ! we write each X-line, remembering indexing is [row,col]=[y,x]
+          DO jnd = 1,ISizeY
+            WRITE(IChOutWIImage,rec=jnd) RTempImage(jnd,:)
+          END DO
+          CLOSE(IChOutWIImage,IOSTAT=IErr) 
+          IF(l_alert(IErr,"WriteIterationOutput","CLOSE() output .bin file")) RETURN       
 
+          !Tidy up and reset flags
+          DEALLOCATE(RTempImage)
+          ILACBEDFlag(ILACBEDList(IhklsAll(ind))) = 0
           ILiveList(IhklsAll(ind)) = SIGN(666666,ILiveList(IhklsAll(ind)))!set the flag complete
           IhklsAll(ind) = -IhklsAll(ind)!negative value is a flag to close the output
         END IF
       END IF
+      IF(my_rank.EQ.0)PRINT*,"Sqoink",IErr
     END DO
+
+!IF(my_rank.EQ.0)PRINT*,ILACBEDFlag
 
     !--------------------------------------------------------------------
     ! output how many useful reflections have been calculated
@@ -465,24 +238,402 @@ MODULE write_output_mod
     CALL message(LS,SPrintString)
     CALL message(LS,"//////////")
 
-    !--------------------------------------------------------------------
-    ! write bright field image
-    filename = fString // "_000.bin" 
-    fullpath = TRIM(ADJUSTL(path))//"/"//TRIM(ADJUSTL(filename))
-    OPEN(UNIT=IChOutWIImage, STATUS= 'UNKNOWN', FILE=TRIM(ADJUSTL(fullpath)),&
-      FORM='UNFORMATTED',ACCESS='DIRECT',IOSTAT=IErr,RECL=SIZE(RBrightField,DIM=2)*IByteSize)
-    IF(l_alert(IErr,"WriteIterationOutput","OPEN() output 000.bin file")) RETURN
-    ! we write each X-line, remembering indexing is [row,col]=[y,x]
-    DO jnd = 1,ISizeY
-      WRITE(IChOutWIImage,rec=jnd) RBrightField(jnd,:)
-    END DO
-    CLOSE(IChOutWIImage,IOSTAT=IErr)
-    IF(l_alert(IErr,"WriteIterationOutput","CLOSE() output .bin file")) RETURN
-
+IF(my_rank.EQ.0)PRINT*,"SPoink",IErr
     RETURN  
     
   END SUBROUTINE WriteIterationOutput
 
+  !%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+  !>
+  !! Procedure-description: allocates a first-time container for a LACBED output 
+  !!
+  !! Major-Authors: Richard Beanland (2022)
+  !!
+  SUBROUTINE SetupContainer(jnd,RImageToWrite,IErr)
+
+    USE MyNumbers
+    USE message_mod
+    
+    ! global inputs
+    USE IPARA, ONLY : ISizeX,ISizeY
+    USE RPARA, ONLY : RLACBED_1,RLACBED_2,RLACBED_3,&
+            RLACBED_4,RLACBED_5,RLACBED_6,RLACBED_7,RLACBED_8,&
+            RLACBED_9,RLACBED_10,RLACBED_11,RLACBED_12,RLACBED_13,&
+            RLACBED_14,RLACBED_15,RLACBED_16,RLACBED_17,RLACBED_18,&
+            RLACBED_19,RLACBED_20
+            
+   IMPLICIT NONE
+            
+   REAL(RKIND),DIMENSION(ISizeY,ISizeX) :: RImageToWrite
+   INTEGER(IKIND) :: jnd,IErr
+
+    SELECT CASE(jnd)
+    CASE(1)
+      ALLOCATE(RLACBED_1(ISizeY,ISizeX), STAT=IErr)
+      RLACBED_1 = RImageToWrite
+    CASE(2)
+      ALLOCATE(RLACBED_2(ISizeY,ISizeX), STAT=IErr)
+      RLACBED_2 = RImageToWrite
+    CASE(3)
+      ALLOCATE(RLACBED_3(ISizeY,ISizeX), STAT=IErr)
+      RLACBED_3 = RImageToWrite
+    CASE(4)
+      ALLOCATE(RLACBED_4(ISizeY,ISizeX), STAT=IErr)
+      RLACBED_4 = RImageToWrite
+    CASE(5)
+      ALLOCATE(RLACBED_5(ISizeY,ISizeX), STAT=IErr)
+      RLACBED_5 = RImageToWrite
+    CASE(6)
+      ALLOCATE(RLACBED_6(ISizeY,ISizeX), STAT=IErr)
+      RLACBED_6 = RImageToWrite
+    CASE(7)
+      ALLOCATE(RLACBED_7(ISizeY,ISizeX), STAT=IErr)
+      RLACBED_7 = RImageToWrite
+    CASE(8)
+      ALLOCATE(RLACBED_8(ISizeY,ISizeX), STAT=IErr)
+      RLACBED_8 = RImageToWrite
+    CASE(9)
+      ALLOCATE(RLACBED_9(ISizeY,ISizeX), STAT=IErr)
+      RLACBED_9 = RImageToWrite
+    CASE(10)
+      ALLOCATE(RLACBED_10(ISizeY,ISizeX), STAT=IErr)
+      RLACBED_10 = RImageToWrite
+    CASE(11)
+      ALLOCATE(RLACBED_11(ISizeY,ISizeX), STAT=IErr)
+      RLACBED_11 = RImageToWrite
+    CASE(12)
+      ALLOCATE(RLACBED_12(ISizeY,ISizeX), STAT=IErr)
+      RLACBED_12 = RImageToWrite
+    CASE(13)
+      ALLOCATE(RLACBED_13(ISizeY,ISizeX), STAT=IErr)
+      RLACBED_13 = RImageToWrite
+    CASE(14)
+      ALLOCATE(RLACBED_14(ISizeY,ISizeX), STAT=IErr)
+      RLACBED_14 = RImageToWrite
+    CASE(15)
+      ALLOCATE(RLACBED_15(ISizeY,ISizeX), STAT=IErr)
+      RLACBED_15 = RImageToWrite
+    CASE(16)
+      ALLOCATE(RLACBED_16(ISizeY,ISizeX), STAT=IErr)
+      RLACBED_16 = RImageToWrite
+    CASE(17)
+      ALLOCATE(RLACBED_17(ISizeY,ISizeX), STAT=IErr)
+      RLACBED_17 = RImageToWrite
+    CASE(18)
+      ALLOCATE(RLACBED_18(ISizeY,ISizeX), STAT=IErr)
+      RLACBED_18 = RImageToWrite
+    CASE(19)
+      ALLOCATE(RLACBED_19(ISizeY,ISizeX), STAT=IErr)
+      RLACBED_19 = RImageToWrite
+    CASE(20)
+      ALLOCATE(RLACBED_20(ISizeY,ISizeX), STAT=IErr)
+      RLACBED_20 = RImageToWrite
+    END SELECT
+
+    RETURN   
+  END SUBROUTINE SetupContainer
+
+  !%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+  !>
+  !! Procedure-description: appends image onto an existing LACBED container 
+  !!
+  !! Major-Authors: Richard Beanland (2022)
+  !!
+  SUBROUTINE AppendContainer(jnd,RImageToWrite,IErr)
+
+    USE MyNumbers
+    USE message_mod
+    
+    ! global inputs
+    USE IPARA, ONLY : ISizeX,ISizeY
+    USE RPARA, ONLY : RTempImage, RLACBED_1,RLACBED_2,RLACBED_3,&
+            RLACBED_4,RLACBED_5,RLACBED_6,RLACBED_7,RLACBED_8,&
+            RLACBED_9,RLACBED_10,RLACBED_11,RLACBED_12,RLACBED_13,&
+            RLACBED_14,RLACBED_15,RLACBED_16,RLACBED_17,RLACBED_18,&
+            RLACBED_19,RLACBED_20
+            
+    IMPLICIT NONE
+            
+    REAL(RKIND),DIMENSION(ISizeY,ISizeX) :: RImageToWrite
+    INTEGER(IKIND) :: jnd,IErr
+   
+    SELECT CASE(jnd)
+    CASE(1)
+      ALLOCATE(RTempImage(ISizeY,ISizeX+SIZE(RLACBED_1,DIM=2)), STAT=IErr)
+      IF(l_alert(IErr,"write_output","allocate RTempImage")) RETURN
+      RTempImage(:,1:SIZE(RLACBED_1,DIM=2)) = RLACBED_1
+      RTempImage(:,SIZE(RLACBED_1,DIM=2)+1:) = RImageToWrite
+      DEALLOCATE(RLACBED_1)
+      ALLOCATE(RLACBED_1(ISizeY,SIZE(RTempImage,DIM=2)), STAT=IErr)
+      RLACBED_1 = RTempImage
+      DEALLOCATE(RTempImage)
+    CASE(2)
+      ALLOCATE(RTempImage(ISizeY,ISizeX+SIZE(RLACBED_2,DIM=2)), STAT=IErr)
+      IF(l_alert(IErr,"write_output","allocate RTempImage")) RETURN
+      RTempImage(:,1:SIZE(RLACBED_2,DIM=2)) = RLACBED_2
+      RTempImage(:,SIZE(RLACBED_2,DIM=2)+1:) = RImageToWrite
+      DEALLOCATE(RLACBED_2)
+      ALLOCATE(RLACBED_2(ISizeY,SIZE(RTempImage,DIM=2)), STAT=IErr)
+      RLACBED_2 = RTempImage
+      DEALLOCATE(RTempImage)
+    CASE(3)
+      ALLOCATE(RTempImage(ISizeY,ISizeX+SIZE(RLACBED_3,DIM=2)), STAT=IErr)
+      IF(l_alert(IErr,"write_output","allocate RTempImage")) RETURN
+      RTempImage(:,1:SIZE(RLACBED_3,DIM=2)) = RLACBED_3
+      RTempImage(:,SIZE(RLACBED_3,DIM=2)+1:) = RImageToWrite
+      DEALLOCATE(RLACBED_3)
+      ALLOCATE(RLACBED_3(ISizeY,SIZE(RTempImage,DIM=2)), STAT=IErr)
+      RLACBED_3 = RTempImage
+      DEALLOCATE(RTempImage)
+    CASE(4)
+      ALLOCATE(RTempImage(ISizeY,ISizeX+SIZE(RLACBED_4,DIM=2)), STAT=IErr)
+      IF(l_alert(IErr,"write_output","allocate RTempImage")) RETURN
+      RTempImage(:,1:SIZE(RLACBED_4,DIM=2)) = RLACBED_4
+      RTempImage(:,SIZE(RLACBED_4,DIM=2)+1:) = RImageToWrite
+      DEALLOCATE(RLACBED_4)
+      ALLOCATE(RLACBED_4(ISizeY,SIZE(RTempImage,DIM=2)), STAT=IErr)
+      RLACBED_4 = RTempImage
+      DEALLOCATE(RTempImage)
+    CASE(5)
+      ALLOCATE(RTempImage(ISizeY,ISizeX+SIZE(RLACBED_5,DIM=2)), STAT=IErr)
+      IF(l_alert(IErr,"write_output","allocate RTempImage")) RETURN
+      RTempImage(:,1:SIZE(RLACBED_5,DIM=2)) = RLACBED_5
+      RTempImage(:,SIZE(RLACBED_5,DIM=2)+1:) = RImageToWrite
+      DEALLOCATE(RLACBED_5)
+      ALLOCATE(RLACBED_5(ISizeY,SIZE(RTempImage,DIM=2)), STAT=IErr)
+      RLACBED_5 = RTempImage
+      DEALLOCATE(RTempImage)
+    CASE(6)
+      ALLOCATE(RTempImage(ISizeY,ISizeX+SIZE(RLACBED_6,DIM=2)), STAT=IErr)
+      IF(l_alert(IErr,"write_output","allocate RTempImage")) RETURN
+      RTempImage(:,1:SIZE(RLACBED_6,DIM=2)) = RLACBED_6
+      RTempImage(:,SIZE(RLACBED_6,DIM=2)+1:) = RImageToWrite
+      DEALLOCATE(RLACBED_6)
+      ALLOCATE(RLACBED_6(ISizeY,SIZE(RTempImage,DIM=2)), STAT=IErr)
+      RLACBED_6 = RTempImage
+      DEALLOCATE(RTempImage)
+    CASE(7)
+      ALLOCATE(RTempImage(ISizeY,ISizeX+SIZE(RLACBED_7,DIM=2)), STAT=IErr)
+      IF(l_alert(IErr,"write_output","allocate RTempImage")) RETURN
+      RTempImage(:,1:SIZE(RLACBED_7,DIM=2)) = RLACBED_7
+      RTempImage(:,SIZE(RLACBED_7,DIM=2)+1:) = RImageToWrite
+      DEALLOCATE(RLACBED_7)
+      ALLOCATE(RLACBED_7(ISizeY,SIZE(RTempImage,DIM=2)), STAT=IErr)
+      RLACBED_7 = RTempImage
+      DEALLOCATE(RTempImage)
+    CASE(8)
+      ALLOCATE(RTempImage(ISizeY,ISizeX+SIZE(RLACBED_8,DIM=2)), STAT=IErr)
+      IF(l_alert(IErr,"write_output","allocate RTempImage")) RETURN
+      RTempImage(:,1:SIZE(RLACBED_8,DIM=2)) = RLACBED_8
+      RTempImage(:,SIZE(RLACBED_8,DIM=2)+1:) = RImageToWrite
+      DEALLOCATE(RLACBED_8)
+      ALLOCATE(RLACBED_8(ISizeY,SIZE(RTempImage,DIM=2)), STAT=IErr)
+      RLACBED_8 = RTempImage
+      DEALLOCATE(RTempImage)
+    CASE(9)
+      ALLOCATE(RTempImage(ISizeY,ISizeX+SIZE(RLACBED_9,DIM=2)), STAT=IErr)
+      IF(l_alert(IErr,"write_output","allocate RTempImage")) RETURN
+      RTempImage(:,1:SIZE(RLACBED_9,DIM=2)) = RLACBED_9
+      RTempImage(:,SIZE(RLACBED_9,DIM=2)+1:) = RImageToWrite
+      DEALLOCATE(RLACBED_9)
+      ALLOCATE(RLACBED_9(ISizeY,SIZE(RTempImage,DIM=2)), STAT=IErr)
+      RLACBED_9 = RTempImage
+      DEALLOCATE(RTempImage)
+    CASE(10)
+      ALLOCATE(RTempImage(ISizeY,ISizeX+SIZE(RLACBED_10,DIM=2)), STAT=IErr)
+      IF(l_alert(IErr,"write_output","allocate RTempImage")) RETURN
+      RTempImage(:,1:SIZE(RLACBED_10,DIM=2)) = RLACBED_10
+      RTempImage(:,SIZE(RLACBED_10,DIM=2)+1:) = RImageToWrite
+      DEALLOCATE(RLACBED_10)
+      ALLOCATE(RLACBED_10(ISizeY,SIZE(RTempImage,DIM=2)), STAT=IErr)
+      RLACBED_10 = RTempImage
+      DEALLOCATE(RTempImage)
+    CASE(11)
+      ALLOCATE(RTempImage(ISizeY,ISizeX+SIZE(RLACBED_11,DIM=2)), STAT=IErr)
+      IF(l_alert(IErr,"write_output","allocate RTempImage")) RETURN
+      RTempImage(:,1:SIZE(RLACBED_11,DIM=2)) = RLACBED_11
+      RTempImage(:,SIZE(RLACBED_11,DIM=2)+1:) = RImageToWrite
+      DEALLOCATE(RLACBED_11)
+      ALLOCATE(RLACBED_11(ISizeY,SIZE(RTempImage,DIM=2)), STAT=IErr)
+      RLACBED_11 = RTempImage
+      DEALLOCATE(RTempImage)
+    CASE(12)
+      ALLOCATE(RTempImage(ISizeY,ISizeX+SIZE(RLACBED_12,DIM=2)), STAT=IErr)
+      IF(l_alert(IErr,"write_output","allocate RTempImage")) RETURN
+      RTempImage(:,1:SIZE(RLACBED_12,DIM=2)) = RLACBED_12
+      RTempImage(:,SIZE(RLACBED_12,DIM=2)+1:) = RImageToWrite
+      DEALLOCATE(RLACBED_12)
+      ALLOCATE(RLACBED_12(ISizeY,SIZE(RTempImage,DIM=2)), STAT=IErr)
+      RLACBED_12 = RTempImage
+      DEALLOCATE(RTempImage)
+    CASE(13)
+      ALLOCATE(RTempImage(ISizeY,ISizeX+SIZE(RLACBED_13,DIM=2)), STAT=IErr)
+      IF(l_alert(IErr,"write_output","allocate RTempImage")) RETURN
+      RTempImage(:,1:SIZE(RLACBED_13,DIM=2)) = RLACBED_13
+      RTempImage(:,SIZE(RLACBED_13,DIM=2)+1:) = RImageToWrite
+      DEALLOCATE(RLACBED_13)
+      ALLOCATE(RLACBED_13(ISizeY,SIZE(RTempImage,DIM=2)), STAT=IErr)
+      RLACBED_13 = RTempImage
+      DEALLOCATE(RTempImage)
+    CASE(14)
+      ALLOCATE(RTempImage(ISizeY,ISizeX+SIZE(RLACBED_14,DIM=2)), STAT=IErr)
+      IF(l_alert(IErr,"write_output","allocate RTempImage")) RETURN
+      RTempImage(:,1:SIZE(RLACBED_14,DIM=2)) = RLACBED_14
+      RTempImage(:,SIZE(RLACBED_14,DIM=2)+1:) = RImageToWrite
+      DEALLOCATE(RLACBED_14)
+      ALLOCATE(RLACBED_14(ISizeY,SIZE(RTempImage,DIM=2)), STAT=IErr)
+      RLACBED_14 = RTempImage
+      DEALLOCATE(RTempImage)
+    CASE(15)
+      ALLOCATE(RTempImage(ISizeY,ISizeX+SIZE(RLACBED_15,DIM=2)), STAT=IErr)
+      IF(l_alert(IErr,"write_output","allocate RTempImage")) RETURN
+      RTempImage(:,1:SIZE(RLACBED_15,DIM=2)) = RLACBED_15
+      RTempImage(:,SIZE(RLACBED_15,DIM=2)+1:) = RImageToWrite
+      DEALLOCATE(RLACBED_15)
+      ALLOCATE(RLACBED_15(ISizeY,SIZE(RTempImage,DIM=2)), STAT=IErr)
+      RLACBED_15 = RTempImage
+      DEALLOCATE(RTempImage)
+    CASE(16)
+      ALLOCATE(RTempImage(ISizeY,ISizeX+SIZE(RLACBED_16,DIM=2)), STAT=IErr)
+      IF(l_alert(IErr,"write_output","allocate RTempImage")) RETURN
+      RTempImage(:,1:SIZE(RLACBED_16,DIM=2)) = RLACBED_16
+      RTempImage(:,SIZE(RLACBED_16,DIM=2)+1:) = RImageToWrite
+      DEALLOCATE(RLACBED_16)
+      ALLOCATE(RLACBED_16(ISizeY,SIZE(RTempImage,DIM=2)), STAT=IErr)
+      RLACBED_16 = RTempImage
+      DEALLOCATE(RTempImage)
+    CASE(17)
+      ALLOCATE(RTempImage(ISizeY,ISizeX+SIZE(RLACBED_17,DIM=2)), STAT=IErr)
+      IF(l_alert(IErr,"write_output","allocate RTempImage")) RETURN
+      RTempImage(:,1:SIZE(RLACBED_17,DIM=2)) = RLACBED_17
+      RTempImage(:,SIZE(RLACBED_17,DIM=2)+1:) = RImageToWrite
+      DEALLOCATE(RLACBED_17)
+      ALLOCATE(RLACBED_17(ISizeY,SIZE(RTempImage,DIM=2)), STAT=IErr)
+      RLACBED_17 = RTempImage
+      DEALLOCATE(RTempImage)
+    CASE(18)
+      ALLOCATE(RTempImage(ISizeY,ISizeX+SIZE(RLACBED_18,DIM=2)), STAT=IErr)
+      IF(l_alert(IErr,"write_output","allocate RTempImage")) RETURN
+      RTempImage(:,1:SIZE(RLACBED_18,DIM=2)) = RLACBED_18
+      RTempImage(:,SIZE(RLACBED_18,DIM=2)+1:) = RImageToWrite
+      DEALLOCATE(RLACBED_18)
+      ALLOCATE(RLACBED_18(ISizeY,SIZE(RTempImage,DIM=2)), STAT=IErr)
+      RLACBED_18 = RTempImage
+      DEALLOCATE(RTempImage)
+    CASE(19)
+      ALLOCATE(RTempImage(ISizeY,ISizeX+SIZE(RLACBED_19,DIM=2)), STAT=IErr)
+      IF(l_alert(IErr,"write_output","allocate RTempImage")) RETURN
+      RTempImage(:,1:SIZE(RLACBED_19,DIM=2)) = RLACBED_19
+      RTempImage(:,SIZE(RLACBED_19,DIM=2)+1:) = RImageToWrite
+      DEALLOCATE(RLACBED_19)
+      ALLOCATE(RLACBED_19(ISizeY,SIZE(RTempImage,DIM=2)), STAT=IErr)
+      RLACBED_19 = RTempImage
+      DEALLOCATE(RTempImage)
+    CASE(20)
+      ALLOCATE(RTempImage(ISizeY,ISizeX+SIZE(RLACBED_20,DIM=2)), STAT=IErr)
+      IF(l_alert(IErr,"write_output","allocate RTempImage")) RETURN
+      RTempImage(:,1:SIZE(RLACBED_20,DIM=2)) = RLACBED_20
+      RTempImage(:,SIZE(RLACBED_20,DIM=2)+1:) = RImageToWrite
+      DEALLOCATE(RLACBED_20)
+      ALLOCATE(RLACBED_20(ISizeY,SIZE(RTempImage,DIM=2)), STAT=IErr)
+      RLACBED_20 = RTempImage
+      DEALLOCATE(RTempImage)
+    END SELECT
+
+    RETURN
+  END SUBROUTINE AppendContainer
+
+  !%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+  !>
+  !! Procedure-description: appends image onto an existing LACBED container 
+  !!
+  !! Major-Authors: Richard Beanland (2022)
+  !!
+  SUBROUTINE WhichContainer(jnd,IErr)
+
+    USE MyNumbers
+    USE message_mod
+
+    ! global inputs
+    USE IPARA, ONLY : ISizeY
+    USE RPARA, ONLY : RTempImage,RLACBED_1,RLACBED_2,RLACBED_3,&
+            RLACBED_4,RLACBED_5,RLACBED_6,RLACBED_7,RLACBED_8,&
+            RLACBED_9,RLACBED_10,RLACBED_11,RLACBED_12,RLACBED_13,&
+            RLACBED_14,RLACBED_15,RLACBED_16,RLACBED_17,RLACBED_18,&
+            RLACBED_19,RLACBED_20
+
+    IMPLICIT NONE
+
+    INTEGER(IKIND) :: jnd,IErr
+
+    SELECT CASE(jnd)
+
+    CASE(1)
+      ALLOCATE(RTempImage(ISizeY,SIZE(RLACBED_1,DIM=2)), STAT=IErr)
+      RTempImage = RLACBED_1
+    CASE(2)
+      ALLOCATE(RTempImage(ISizeY,SIZE(RLACBED_2,DIM=2)), STAT=IErr)
+      RTempImage = RLACBED_2
+    CASE(3)
+      ALLOCATE(RTempImage(ISizeY,SIZE(RLACBED_3,DIM=2)), STAT=IErr)
+      RTempImage = RLACBED_3
+    CASE(4)
+      ALLOCATE(RTempImage(ISizeY,SIZE(RLACBED_4,DIM=2)), STAT=IErr)
+      RTempImage = RLACBED_4
+    CASE(5)
+      ALLOCATE(RTempImage(ISizeY,SIZE(RLACBED_5,DIM=2)), STAT=IErr)
+      RTempImage = RLACBED_5
+    CASE(6)
+      ALLOCATE(RTempImage(ISizeY,SIZE(RLACBED_6,DIM=2)), STAT=IErr)
+      RTempImage = RLACBED_6
+    CASE(7)
+      ALLOCATE(RTempImage(ISizeY,SIZE(RLACBED_7,DIM=2)), STAT=IErr)
+      RTempImage = RLACBED_7
+    CASE(8)
+      ALLOCATE(RTempImage(ISizeY,SIZE(RLACBED_8,DIM=2)), STAT=IErr)
+      RTempImage = RLACBED_8
+    CASE(9)
+      ALLOCATE(RTempImage(ISizeY,SIZE(RLACBED_9,DIM=2)), STAT=IErr)
+      RTempImage = RLACBED_9
+    CASE(10)
+      ALLOCATE(RTempImage(ISizeY,SIZE(RLACBED_10,DIM=2)), STAT=IErr)
+      RTempImage = RLACBED_10
+    CASE(11)
+      ALLOCATE(RTempImage(ISizeY,SIZE(RLACBED_11,DIM=2)), STAT=IErr)
+      RTempImage = RLACBED_11
+    CASE(12)
+      ALLOCATE(RTempImage(ISizeY,SIZE(RLACBED_12,DIM=2)), STAT=IErr)
+      RTempImage = RLACBED_12
+    CASE(13)
+      ALLOCATE(RTempImage(ISizeY,SIZE(RLACBED_13,DIM=2)), STAT=IErr)
+      RTempImage = RLACBED_13
+    CASE(14)
+      ALLOCATE(RTempImage(ISizeY,SIZE(RLACBED_14,DIM=2)), STAT=IErr)
+      RTempImage = RLACBED_14
+    CASE(15)
+      ALLOCATE(RTempImage(ISizeY,SIZE(RLACBED_15,DIM=2)), STAT=IErr)
+      RTempImage = RLACBED_15
+    CASE(16)
+      ALLOCATE(RTempImage(ISizeY,SIZE(RLACBED_16,DIM=2)), STAT=IErr)
+      RTempImage = RLACBED_16
+    CASE(17)
+      ALLOCATE(RTempImage(ISizeY,SIZE(RLACBED_17,DIM=2)), STAT=IErr)
+      RTempImage = RLACBED_17
+    CASE(18)
+      ALLOCATE(RTempImage(ISizeY,SIZE(RLACBED_18,DIM=2)), STAT=IErr)
+      RTempImage = RLACBED_18
+    CASE(19)
+      ALLOCATE(RTempImage(ISizeY,SIZE(RLACBED_19,DIM=2)), STAT=IErr)
+      RTempImage = RLACBED_19
+    CASE(20)
+      ALLOCATE(RTempImage(ISizeY,SIZE(RLACBED_20,DIM=2)), STAT=IErr)
+      RTempImage = RLACBED_20
+    END SELECT
+
+    RETURN
+
+  END SUBROUTINE WhichContainer
 
 END MODULE write_output_mod
+
 
