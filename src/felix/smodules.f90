@@ -195,7 +195,7 @@ MODULE IPara
   !Thickness loop Variables
   INTEGER(IKIND) :: IFrame,IThicknessCount
   !Tracking reflections
-  INTEGER(IKIND), DIMENSION(:), ALLOCATABLE :: IhklsAll,IhklsFrame
+  INTEGER(IKIND), DIMENSION(:), ALLOCATABLE :: IhklsAll,IhklsFrame,ILiveList
   INTEGER(IKIND), DIMENSION(:),ALLOCATABLE :: IElementList
   !Ug Calculation
   INTEGER(IKIND) :: ICurrentZ,IPsize
@@ -265,17 +265,10 @@ MODULE RPara
   REAL(RKIND) :: RDeltaK, RMinimumGMag,RGVectorMagnitude
   REAL(RKIND),DIMENSION(ITHREE) :: RGVector
   REAL(RKIND),DIMENSION(:),ALLOCATABLE :: RgDotNorm
-  !Image Initialisation
-  REAL(RKIND),DIMENSION(:,:),ALLOCATABLE :: RhklPositions
-  REAL(RKIND),DIMENSION(:,:,:),ALLOCATABLE :: RFinalMontageImage
   !Main Program
   REAL(RKIND) :: RMeanInnerPotential,RScattFacToVolts
   REAL(RKIND),DIMENSION(:,:),ALLOCATABLE :: RgMatrixMagnitude, RgSumMat
   REAL(RKIND),DIMENSION(:,:,:),ALLOCATABLE :: RgMatrix
-  REAL(RKIND) :: ROuterIntegralLowerBound,ROuterIntegralUpperBound,&!RB not used?
-       RInnerIntegralLowerBound,RInnerIntegralUpperBound,&
-       RInnerIntegrationParameterGMagPrime,&
-       ROuterIntegrationParameterGMagPrime
   !WaveFunction Arrays
   REAL(RKIND),DIMENSION(:),ALLOCATABLE :: RWaveIntensity,RFullWaveIntensity,RSumIntensity
   REAL(RKIND), DIMENSION(:,:,:), ALLOCATABLE :: RIndividualReflections
@@ -286,8 +279,27 @@ MODULE RPara
   REAL(RKIND),DIMENSION(:,:,:,:),ALLOCATABLE :: RImageSimi
   ! Bright field image and temp to allow appending
   REAL(RKIND),DIMENSION(:,:),ALLOCATABLE :: RBrightField,RTempImage
-  !Iterative Variable Value
-  REAL(RKIND) :: RValue!this is an awful name that doesn't mean anything
+  ! Output images - up to 20 per frame (may need increasing in the future!)
+  REAL(RKIND),DIMENSION(:,:),ALLOCATABLE :: RDarkField_1
+  REAL(RKIND),DIMENSION(:,:),ALLOCATABLE :: RDarkField_2
+  REAL(RKIND),DIMENSION(:,:),ALLOCATABLE :: RDarkField_3
+  REAL(RKIND),DIMENSION(:,:),ALLOCATABLE :: RDarkField_4
+  REAL(RKIND),DIMENSION(:,:),ALLOCATABLE :: RDarkField_5
+  REAL(RKIND),DIMENSION(:,:),ALLOCATABLE :: RDarkField_6
+  REAL(RKIND),DIMENSION(:,:),ALLOCATABLE :: RDarkField_7
+  REAL(RKIND),DIMENSION(:,:),ALLOCATABLE :: RDarkField_8
+  REAL(RKIND),DIMENSION(:,:),ALLOCATABLE :: RDarkField_9
+  REAL(RKIND),DIMENSION(:,:),ALLOCATABLE :: RDarkField_10
+  REAL(RKIND),DIMENSION(:,:),ALLOCATABLE :: RDarkField_11
+  REAL(RKIND),DIMENSION(:,:),ALLOCATABLE :: RDarkField_12
+  REAL(RKIND),DIMENSION(:,:),ALLOCATABLE :: RDarkField_13
+  REAL(RKIND),DIMENSION(:,:),ALLOCATABLE :: RDarkField_14
+  REAL(RKIND),DIMENSION(:,:),ALLOCATABLE :: RDarkField_15
+  REAL(RKIND),DIMENSION(:,:),ALLOCATABLE :: RDarkField_16
+  REAL(RKIND),DIMENSION(:,:),ALLOCATABLE :: RDarkField_17
+  REAL(RKIND),DIMENSION(:,:),ALLOCATABLE :: RDarkField_18
+  REAL(RKIND),DIMENSION(:,:),ALLOCATABLE :: RDarkField_19
+  REAL(RKIND),DIMENSION(:,:),ALLOCATABLE :: RDarkField_20
   !Gaussian blur radius in pixels
   REAL(RKIND) :: RBlurRadius
 END MODULE RPara

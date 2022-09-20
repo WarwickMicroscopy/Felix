@@ -14,17 +14,17 @@ IByteSize                 = 2
 INormalDirection          = [0,1,-1]
 IIncidentBeamDirection    = [-24452,100000,44316]
 IXDirection               = [3983,41294,-90984]
-RFrameAngle               = 1.035
-INFrames                  = 5
-RConvergenceAngle         = 1.4324
+RFrameAngle               = 0.1035
+INFrames                  = 500
+RConvergenceAngle         = 0.14324
 RAcceleratingVoltage (kV) = 200.0
 
 # dimensions of the simulation in pixels
-IPixelX                   = 100
+IPixelX                   = 10
 
 # beam selection criteria
-IMinReflectionPool        = 400
-IMinStrongBeams           = 200
+IMinReflectionPool        = 300
+IMinStrongBeams           = 100
 IMinWeakBeams             = 0
 
 # crystal settings

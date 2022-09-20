@@ -233,16 +233,8 @@ MODULE ug_matrix_mod
         DO knd=1,INAtomsUnitCell
           ICurrentZ = IAtomicNumber(knd) ! Atomic number, global variable
           RCurrentB = RIsoDW(knd) ! Debye-Waller constant, global variable
-!          IF (ICurrentZ.LT.105) THEN ! It's not a pseudoatom 
-          ! Get absorptive form factor f'
           CALL AbsorptiveScatteringFactor(RfPrime,IErr) ! NB uses Kirkland scattering factors
           IF(l_alert(IErr,"Absorption","CALL AbsorptiveScatteringFactor")) RETURN
-!          ELSE ! It is a pseudoatom, proportional model 
-!            lnd=lnd+1
-!            CALL PseudoAtom(CFpseudo,ILoc(1),ILoc(2),lnd,IErr)
-!            RfPrime=CFpseudo*EXP(CIMAGONE*PI/2)*(RAbsorptionPercentage/HUNDRED)
-!            ! RfPrime=ZERO
-!          END IF
           ! Occupancy
           RfPrime=RfPrime*ROccupancy(knd)
           ! Debye Waller factor, isotropic only 
@@ -256,14 +248,6 @@ MODULE ug_matrix_mod
                 EXP(-CIMAGONE*DOT_PRODUCT(RCurrentG,RAtomCoordinate(knd,:)) )
         END DO
         
-!old code, to be deleted        
-!        ! V'g in volts
-!        CVgPrime=CVgPrime*RScattFacToVolts
-!        ! Convert to U'g=V'g*(2*m*e/h^2)	  
-!        CLocalUgPrime(ind-ILocalMin+1) = CVgPrime*TWO*RElectronMass * &
-!              RRelativisticCorrection*RElectronCharge / &
-!              ((RPlanckConstant*RAngstromConversion)**2)
-
       END DO
 
       !--------------------------------------------------------------------  
@@ -429,7 +413,7 @@ MODULE ug_matrix_mod
     USE BlochPara, ONLY : RBigK
 
     ! global inputs
-    USE IPARA, ONLY : INAtomsUnitCell,&
+    USE IPARA, ONLY : INAtomsUnitCell,IFrame,&
           INhkl,IAtomicNumber,IEquivalentUgKey,IWriteFLAG,IAnisoDW
     USE RPARA, ONLY : RAngstromConversion,RElectronCharge,RElectronMass,&
           RVolume,RIsoDW,ROccupancy,&
@@ -474,9 +458,11 @@ MODULE ug_matrix_mod
       END IF
     END DO
     RMeanInnerPotential = RMeanInnerPotential*RScattFacToVolts
-    WRITE(SPrintString,FMT='(A21,F6.2,A6)') "Mean inner potential ",RMeanInnerPotential," Volts"
-    SPrintString=TRIM(ADJUSTL(SPrintString))
-    CALL message(LS,SPrintString)
+    IF(IFrame.EQ.1) THEN
+      WRITE(SPrintString,FMT='(A21,F6.2,A6)') "Mean inner potential ",RMeanInnerPotential," Volts"
+      SPrintString=TRIM(ADJUSTL(SPrintString))
+      CALL message(LS,SPrintString)
+    END IF
 
     ! Wave vector magnitude in crystal
     ! high-energy approximation (not HOLZ compatible)

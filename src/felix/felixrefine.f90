@@ -118,6 +118,9 @@ PROGRAM Felixrefine
   IF(l_alert(IErr,"felixrefine","allocate IhklsFrame")) CALL abort
   ALLOCATE(IhklsAll(INoOfHKLsAll),STAT=IErr)! List for full sim
   IF(l_alert(IErr,"felixrefine","allocate IhklsAll")) CALL abort
+  ALLOCATE(ILiveList(INoOfHKLsAll),STAT=IErr)! List of current outputs
+  IF(l_alert(IErr,"felixrefine","allocate IhklsAll")) CALL abort
+  ILiveList = 0 !see write_outputs for all meanings of this flag
 
   CALL ReadInpFile(IErr) ! felix.inp
   IF(l_alert(IErr,"felixrefine","ReadInpFile")) CALL abort
@@ -262,7 +265,7 @@ PROGRAM Felixrefine
   ! frame counter
   IFrame = 1
   DO WHILE(IFrame.LE.INFrames)
-    WRITE(SPrintString, FMT='(A6,I3)') "Frame ",IFrame
+    WRITE(SPrintString, FMT='(A6,I3,A3)') "Frame ",IFrame,"..."
     CALL message(LS,dbg3,SPrintString)
     ! Increment frame angle, if it's not the first 
     IF(IFrame.GT.1) THEN
@@ -284,10 +287,10 @@ PROGRAM Felixrefine
     CALL message(LL,dbg7,"Rhkl matrix: ",NINT(Rhkl(1:INhkl,:)))
 
     !--------------------------------------------------------------------
-    ! sort hkl in descending order of magnitude
+    ! sort hkl in descending order of magnitude (not sure this is needed, really)
     CALL HKLSort(Rhkl,INhkl,IErr) 
     IF(l_alert(IErr,"felixrefine","SortHKL")) CALL abort
-    ! Assign numbers to different reflections -> IhklsFrame, INoOfHKLsFrame
+    ! Assign numbers to different reflections -> IhklsFrame, IhklsAll, INoOfHKLsFrame
     CALL HKLList(IErr)
     IF(l_alert(IErr,"felixrefine","SpecificReflectionDetermination")) CALL abort
     !--------------------------------------------------------------------
@@ -301,9 +304,8 @@ PROGRAM Felixrefine
     ALLOCATE(RImageSimi(ISizeY,ISizeX,INoOfHKLsFrame,IThicknessCount),STAT=IErr)
     IF(l_alert(IErr,"felixrefine","allocate RImageSimi")) CALL abort
 
-
     !--------------------------------------------------------------------
-    ! calculate g vector list, magnitudes and components parallel to the surface
+    ! calculate g vector magnitudes and components parallel to the surface
     CALL gVectors(IErr)
     IF(l_alert(IErr,"felixrefine","gVectors")) CALL abort
     !--------------------------------------------------------------------
@@ -318,19 +320,21 @@ PROGRAM Felixrefine
     ! calculate absorptive scattering factors
     !--------------------------------------------------------------------
     CALL SYSTEM_CLOCK( IStartTime2 )
-    CALL message(LS,dbg3,"Starting absorption calculation... ")
+    IF(IFrame.EQ.1) CALL message(LS,dbg3,"Starting absorption calculation... ")
     CALL Absorption (IErr)
-    !  CALL message( LM, "Initial Ug matrix, with absorption (nm^-2)" )
-    !  DO ind = 1,6
-    !      WRITE(SPrintString,FMT='(3(I2,1X),A2,1X,6(F7.4,1X,F7.4,2X))') NINT(Rhkl(ind,:)),": ",100*CUgMat(ind,1:6)
-    !    CALL message( LM,dbg3, SPrintString)
-    !  END DO
+    CALL message( LM, "Initial Ug matrix, with absorption (nm^-2)" )
+    DO ind = 1,6
+      WRITE(SPrintString,FMT='(3(I2,1X),A2,1X,6(F7.4,1X,F7.4,2X))') NINT(Rhkl(ind,:)),": ",100*CUgMat(ind,1:6)
+      CALL message( LM,dbg3, SPrintString)
+    END DO
     IF(l_alert(IErr,"felixrefine","Absorption")) CALL abort
-    CALL PrintEndTime(LS,IStartTime2, "Absorption" )
-    CALL SYSTEM_CLOCK( IStartTime2 )
+    IF(IFrame.EQ.1) THEN 
+      CALL PrintEndTime(LS,IStartTime2, "Absorption" )
+      CALL SYSTEM_CLOCK( IStartTime2 )
+    END IF
 
     !--------------------------------------------------------------------
-    ! setup image arrays for pixel-parallel simulations
+    ! set up arrays for pixel-parallel simulations
     !--------------------------------------------------------------------
     RSimulatedPatterns = ZERO
     ! The pixels to be calculated by this core  
@@ -352,7 +356,7 @@ PROGRAM Felixrefine
     !--------------------------------------------------------------------
     ! simulation (different local pixels for each core)
     !--------------------------------------------------------------------
-    CALL message(LS,"Bloch wave calculation...")    
+    IF(IFrame.EQ.1) CALL message(LS,"Bloch wave calculation...")    
     ! Reset simulation   
     RIndividualReflections = ZERO
     DO knd = ILocalPixelCountMin,ILocalPixelCountMax,1
@@ -412,7 +416,7 @@ PROGRAM Felixrefine
     END IF
 
     IF(l_alert(IErr,"felixrefine","Simulate")) CALL abort
-    CALL PrintEndTime(LS,IStartTime2, "Simulation" )
+    IF(IFrame.EQ.1) CALL PrintEndTime(LS,IStartTime2, "Simulation" )
 
     ! output, multiple thicknesses
     IF(my_rank.EQ.0) THEN

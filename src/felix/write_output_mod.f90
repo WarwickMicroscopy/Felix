@@ -58,8 +58,14 @@ MODULE write_output_mod
     USE message_mod
     
     ! global inputs
-    USE IPARA, ONLY : ILN,ISizeX,ISizeY,IhklsFrame,INoOfHKLsFrame,IFrame,IByteSize
-    USE RPARA, ONLY : Rhkl, RImageSimi, RInitialThickness, RDeltaThickness, RBrightField, RTempImage
+    USE IPARA, ONLY : ILN,ISizeX,ISizeY,IhklsFrame,INoOfHKLsFrame,IFrame,&
+            IhklsAll,ILiveList,IByteSize
+    USE RPARA, ONLY : RInputHKLs,Rhkl, RImageSimi, RInitialThickness, RDeltaThickness,&
+            RBrightField, RTempImage,RDarkField_1,RDarkField_2,RDarkField_3,&
+            RDarkField_4,RDarkField_5,RDarkField_6,RDarkField_7,RDarkField_8,&
+            RDarkField_9,RDarkField_10,RDarkField_11,RDarkField_12,RDarkField_13,&
+            RDarkField_14,RDarkField_15,RDarkField_16,RDarkField_17,RDarkField_18,&
+            RDarkField_19,RDarkField_20
     USE SPARA, ONLY : SChemicalFormula
     USE IChannels, ONLY : IChOutWIImage
 
@@ -67,7 +73,7 @@ MODULE write_output_mod
 
     INTEGER(IKIND), INTENT(OUT) :: IErr
     INTEGER(IKIND), INTENT(IN) :: IThicknessIndex
-    INTEGER(IKIND) :: IThickness,ind,jnd,knd
+    INTEGER(IKIND) :: IThickness,ind,jnd,knd,Iflag
     REAL(RKIND),DIMENSION(ISizeY,ISizeX) :: RImageToWrite
     CHARACTER(10) :: hString,kString,lString
     CHARACTER(4) :: fString
@@ -86,18 +92,53 @@ MODULE write_output_mod
       WRITE(path,"(I3.3,A3,I4,A1,I3.3)") IThickness,"nm_",ISizeX,"x",ISizeY
     ELSE
       WRITE(path,"(I3.3,A3,I3.3,A1,I3.3)") IThickness,"nm_",ISizeX,"x",ISizeY
-
     ENDIF
-    path = SChemicalFormula(1:ILN) // "_" // path ! This adds chemical to folder name
-    CALL system('mkdir ' // path)
+
+    path = SChemicalFormula(1:ILN) // "_" // path ! This adds chemical formula to folder name
+    IF (IFrame.EQ.1) CALL system('mkdir ' // path)
 
     knd = 0
-    ! Write Images to disk
-    DO ind = 1,INoOfHKLsFrame
+    ! Compose images and write to disk
+    DO ind = 1,INoOfHKLsFrame!the number of reflections in both felix.hkl and the beam pool
+      ! this reflection is number in in RImageSimi
       RImageToWrite = RImageSimi(:,:,ind,IThicknessIndex)
+      ! its index in the beam pool is IhklsFrame(ind), its g-vector is Rhkl(IhklsFrame(ind))
+      ! its index in the felix.hkl list is IhklsAll(ind), its g-vector is RInputHKLs(IhklsAll(ind))
+      ! we track all requested reflections using ILiveList,
+      ! this reflection is ILiveList(IhklsAll(ind)
+      ! ILiveList = 0 never been simulated
+      ! ILiveList = n it is current, this is the nth frame it has been found
+      ! ILiveList = 666666, it's been simulated once and finished
+      ! ILiveList = -n it is current, second time now, this is the nth frame
+      ! ILiveList = -666666, it's been simulated twice, shouldn't be appearing again!
+
       ! only output an image if it has signifcant intensity (>0.001, 0.1% of incident beam)
       IF(MAXVAL(RImageToWrite).GT.0.001D0) THEN
         knd = knd + 1
+
+        IF (ILiveList(IhklsAll(ind)).EQ.-666666) THEN! Shouldn't happen [to test!]
+          WRITE(SPrintString,'(A22,I4,A3,I3,1X,I3,1X,I3)') "oops! third time for #",IhklsAll(ind)," : ",&
+                       NINT(Rhkl(IhklsFrame(ind),:))
+          CALL message(LS, SPrintString)
+          CYCLE!at the moment just continue, but if it's a genuine error it will be IErr=1
+        END IF
+        IF(ILiveList(IhklsAll(ind)).LT.0) THEN!it's still live, second time
+          ILiveList(IhklsAll(ind)) = ILiveList(IhklsAll(ind))-1! increment the counter
+          WRITE(SPrintString,'(I2,A16,I2,A3,I3,1X,I3,1X,I3)') ILiveList(IhklsAll(ind)),&
+                  " frames(*) for #",IhklsAll(ind)," : ",NINT(Rhkl(IhklsFrame(ind),:))
+          IF(my_rank.EQ.0)PRINT*,SPrintString
+        ELSEIF (ILiveList(IhklsAll(ind)).EQ.666666) THEN! This is the second time round, start counting negatively
+          ILiveList(IhklsAll(ind)) = -1
+          WRITE(SPrintString,'(A18,I3,A3,I3,1X,I3,1X,I3)') " second time for #",IhklsAll(ind),&
+                  " : ",NINT(Rhkl(IhklsFrame(ind),:))
+          IF(my_rank.EQ.0)PRINT*,SPrintString
+        ELSE! ILiveList>0, so increment
+          ILiveList(IhklsAll(ind)) = ILiveList(IhklsAll(ind))+1! increment the counter
+          WRITE(SPrintString,'(I2,A13,I2,A3,I3,1X,I3,1X,I3)') ILiveList(IhklsAll(ind)),&
+                  " frames for #",IhklsAll(ind)," : ",NINT(Rhkl(IhklsFrame(ind),:))
+          IF(my_rank.EQ.0)PRINT*,SPrintString
+        END IF
+        
         ! Make the hkl string e.g. -2-2+10
         jnd=NINT(Rhkl(IhklsFrame(ind),1))
         IF (ABS(jnd).LT.10) THEN
@@ -131,15 +172,25 @@ MODULE write_output_mod
         CALL message ( LL, dbg6, fullpath )
 
         ! Writes data to output image .bin files
-        OPEN(UNIT=IChOutWIImage, STATUS= 'UNKNOWN', FILE=TRIM(ADJUSTL(fullpath)),&
-          FORM='UNFORMATTED',ACCESS='DIRECT',IOSTAT=IErr,RECL=ISizeX*IByteSize)
-        IF(l_alert(IErr,"WriteIterationOutput","OPEN() output .bin file")) RETURN
-        ! we write each X-line, remembering indexing is [row,col]=[y,x]
-        DO jnd = 1,ISizeY
-          WRITE(IChOutWIImage,rec=jnd) RImageToWrite(jnd,:)
-        END DO
-        CLOSE(IChOutWIImage,IOSTAT=IErr) 
-        IF(l_alert(IErr,"WriteIterationOutput","CLOSE() output .bin file")) RETURN       
+!        OPEN(UNIT=IChOutWIImage, STATUS= 'UNKNOWN', FILE=TRIM(ADJUSTL(fullpath)),&
+!          FORM='UNFORMATTED',ACCESS='DIRECT',IOSTAT=IErr,RECL=ISizeX*IByteSize)
+!        IF(l_alert(IErr,"WriteIterationOutput","OPEN() output .bin file")) RETURN
+!        ! we write each X-line, remembering indexing is [row,col]=[y,x]
+!        DO jnd = 1,ISizeY
+!          WRITE(IChOutWIImage,rec=jnd) RImageToWrite(jnd,:)
+!        END DO
+!        CLOSE(IChOutWIImage,IOSTAT=IErr) 
+!        IF(l_alert(IErr,"WriteIterationOutput","CLOSE() output .bin file")) RETURN       
+      ELSE!not strong enough to give an output, check if we need to finish off this reflection 
+        IF (ILiveList(IhklsAll(ind)).EQ.0) THEN
+          CYCLE! it has not been in any frame, ignore it
+        ELSEIF (ABS(ILiveList(IhklsAll(ind))).NE.666666) THEN
+          WRITE(SPrintString,'(A10,I3,A1,I3,1X,I3,1X,I3,A1,I3,A7)') "finished #",IhklsAll(ind),":",&
+                NINT(Rhkl(IhklsFrame(ind),:)),",",ILiveList(IhklsAll(ind))," frames"
+          IF(my_rank.EQ.0)PRINT*,SPrintString
+          ILiveList(IhklsAll(ind)) = SIGN(666666,ILiveList(IhklsAll(ind)))!set the flag complete
+          IhklsAll(ind) = -IhklsAll(ind)!negative value is a flag to close the output
+        END IF
       END IF
     END DO
 
@@ -157,6 +208,7 @@ MODULE write_output_mod
       WRITE(SPrintString,'(A6,I3,A22,I1)') "Found ",knd," reflections in Frame ",IFrame
     END IF
     CALL message(LS,SPrintString)
+    CALL message(LS,"//////////")
 
     !--------------------------------------------------------------------
     ! write bright field image

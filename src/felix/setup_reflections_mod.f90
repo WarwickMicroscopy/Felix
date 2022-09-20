@@ -30,11 +30,6 @@
 !
 !%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-!%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-! $Id: diffractionpatterndefinitions.f90,v 1.11 2014/03/25 15:37:30 phsht Exp $
-! $Id: diffractionpatterndefinitions.f90,v 2 2016/02/12 R.Beanland
-!%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-
 !>
 !! Module-description: 
 !!
@@ -58,8 +53,9 @@ MODULE setup_reflections_mod
     USE MyNumbers
     USE message_mod
 
-    ! global outputs (or inout)
-    USE IPARA, ONLY : IFrame, IhklsFrame, INoOfHKLsAll, INoOfHKLsFrame
+    ! global parameters
+    USE IPARA, ONLY : IFrame, IhklsFrame, INoOfHKLsAll, IhklsAll, INoOfHKLsFrame,&
+            ILiveList
     USE SPARA, ONLY : SPrintString
 
     ! global inputs
@@ -73,7 +69,8 @@ MODULE setup_reflections_mod
     ! IhklsFrame links the list in felix.hkl with the beam pool for the current frame
     ! It has length INoOfHKLsAll but only has entries up to the number of reflections
     ! found, INoOfHKLsFrame.  We ignore any duplicates in felix.hkl 
-    IhklsFrame = 0
+    IhklsFrame = 0! reset flag for the frame
+    IhklsAll = 0!reset global flag
     IFind = 0
     DO ind = 1,INoOfHKLsAll! the reflections in felix.hkl
       DO jnd = 1,SIZE(Rhkl,DIM=1)! the beam pool
@@ -83,30 +80,27 @@ MODULE setup_reflections_mod
           ! this reflection is in both lists
           IDuplicate = 0! start from the assumption that it is not a duplicate
           DO knd = 1,IFind!check the list to see if we already have it
-            IF(ABS(Rhkl(IhklsFrame(knd),1)-RInputHKLs(ind,1)).LE.TINY.AND.&
-               ABS(Rhkl(IhklsFrame(knd),2)-RInputHKLs(ind,2)).LE.TINY.AND.&
-               ABS(Rhkl(IhklsFrame(knd),3)-RInputHKLs(ind,3)).LE.TINY) THEN
+            IF (ABS(Rhkl(IhklsFrame(knd),1)-RInputHKLs(ind,1)).LE.TINY.AND.&
+                ABS(Rhkl(IhklsFrame(knd),2)-RInputHKLs(ind,2)).LE.TINY.AND.&
+                ABS(Rhkl(IhklsFrame(knd),3)-RInputHKLs(ind,3)).LE.TINY) THEN
               IDuplicate = 1!yes we do
+              IF (IFrame.EQ.1) CALL message(LS,"Duplicate HKL found, ignoring: ",NINT(RInputHKLs(ind,:)) )
               EXIT
             END IF
           END DO
           IF (IDuplicate.EQ.0) THEN! not a duplicate, we append it to the list
             IFind = IFind +1
-            IhklsFrame(IFind) = jnd!the index of the reflection in the beam pool
+            IhklsFrame(IFind) = jnd! for this frame: the index of the reflection in the beam pool
+            IhklsAll(IFind) = ind! so we can find it in the felix.hkl list
           END IF
           EXIT
-        ELSE
-          IF ( jnd.EQ.SIZE(Rhkl,DIM=1) ) THEN
-            CALL message(LM,"No requested HKLs found",NINT(RInputHKLs(ind,:)) )
-            CALL message(LM,"Will Ignore and Continue")
-          END IF
-          CYCLE
         END IF
       END DO
     END DO
-       
+
     IF (IFind.LE.0) THEN
-      IErr=1; IF(l_alert(IErr,"HKLList","No requested HKLs found")) RETURN
+      IErr=1
+      IF(l_alert(IErr,"HKLList","No requested HKLs found")) RETURN
     END IF
       
     INoOfHKLsFrame = IFind
@@ -187,17 +181,17 @@ MODULE setup_reflections_mod
   
   !%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
   !>
-  !! Procedure-description: Fills the list of reciprocal space vectors Rhkl
+  !! Procedure-description: Fills the beam pool of reciprocal space vectors Rhkl
   !!
   !! Major-Authors: Richard Beanland (2021)
   !!  
   SUBROUTINE HKLMake(RGlimit, IErr)   
-    ! This procedure is called once in felixrefine setup
+    ! This procedure is called in every frame
 
     USE MyNumbers
     USE message_mod
     
-    ! global output Rhkl, input reciprocal lattice vectors & wave vector
+    ! global parameters Rhkl, input reciprocal lattice vectors & wave vector
     USE RPARA, ONLY : RzDirC, Rhkl, RarVecM, RbrVecM, RcrVecM, RInputHKLs,&
         RElectronWaveVectorMagnitude
       
@@ -213,20 +207,20 @@ MODULE setup_reflections_mod
     REAL(RKIND) :: RarMag, RbrMag, RcrMag, RShell, RGtestMag, RDev
     REAL(RKIND),DIMENSION(ITHREE) :: Rk, RGtest, RGtestM, RGplusk 
    
-    !The upper limit for g-vector magnitudes
-    !If the g-vectors we are counting are bigger than this there is something wrong
-    !probably the tolerance for proximity to the Ewald sphere needs increasing
-    !could be an input in felix.inp
+    ! RGlimit is the upper limit for g-vector magnitudes
+    ! If the g-vectors we are counting are bigger than this there is something wrong
+    ! probably the tolerance for proximity to the Ewald sphere needs increasing
+    ! could be an input in felix.inp
 
-    !the k-vector for the incident beam
-    !we are working in the microscope reference frame so k is along z
+    ! Rk is the k-vector for the incident beam
+    ! we are working in the microscope reference frame so k is along z
     Rk=(/ 0.0,0.0,RElectronWaveVectorMagnitude /)
-    !get the size of the reciprocal lattice basis vectors
+    ! get the size of the reciprocal lattice basis vectors
     RarMag=SQRT(DOT_PRODUCT(RarVecM,RarVecM))!magnitude of a*
     RbrMag=SQRT(DOT_PRODUCT(RbrVecM,RbrVecM))!magnitude of b*
     RcrMag=SQRT(DOT_PRODUCT(RcrVecM,RcrVecM))!magnitude of c*
-    !we work our way out from the origin in shells
-    !the shell increment is the smallest basis vector
+    ! we work our way out from the origin in shells
+    ! the shell increment is the smallest basis vector
     RShell=MINVAL( (/ RarMag,RbrMag,RcrMag /) )
 
     !first g is always 000
