@@ -419,7 +419,6 @@ MODULE ug_matrix_mod
           RElectronWaveVectorMagnitude,RgMatrix,RDebyeWallerConstant,RTolerance,&
           RAtomCoordinate,Rhkl,RAnisotropicDebyeWallerFactorTensor,RScattFacToVolts,&
           RCellA,RCellB,RCellC
-    USE IChannels, ONLY : IChOutWIImage
 
     ! global should be local to Ug.f90
     USE IPARA, ONLY : IPsize

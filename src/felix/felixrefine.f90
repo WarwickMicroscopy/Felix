@@ -51,7 +51,6 @@ PROGRAM Felixrefine
 
   USE IConst; USE RConst; USE SConst
   USE IPara;  USE RPara;  USE CPara; USE SPara;
-!  USE BlochPara 
   USE IChannels
 
   ! local variable definitions
@@ -72,7 +71,7 @@ PROGRAM Felixrefine
 
   CHARACTER(40) :: my_rank_string
   CHARACTER(20) :: h,k,l
-  CHARACTER(14) :: Sest
+  CHARACTER(200) :: path,fullpath
 
   !--------------------------------------------------------------------
   ! startup
@@ -254,8 +253,7 @@ PROGRAM Felixrefine
   IF(l_alert(IErr,"felixrefine","ReciprocalLattice")) CALL abort
 
   !--------------------------------------------------------------------
-  ! Start of simulation-specific calculations, depending on crystal orientation
-  !--------------------------------------------------------------------
+  ! Orthogonal reference frame
   ! X, Y and Z are orthogonal vectors that defines the simulation
   ! Also referred to as the microscope reference frame M.
   ! The electron beam propagates along +Zm.
@@ -270,6 +268,31 @@ PROGRAM Felixrefine
   RZDirO = RZDirO/SQRT(DOT_PRODUCT(RZDirO,RZDirO))
   RYDirO = CROSS(RZDirO,RXDirO)
 
+  !--------------------------------------------------------------------
+  ! Set up output
+  ! make output folders for LACBED patterns
+  IF (my_rank.EQ.0) THEN
+    DO ind = 1,IThicknessCount
+      jnd = NINT(RInitialThickness +(ind-1)*RDeltaThickness)/10.0!in nm
+      WRITE(path, FMT='(I3.3,A2)') jnd, "nm"
+      path = SChemicalFormula(1:ILN) // "_" // path
+      CALL system('mkdir ' // path)
+    END DO
+    ! make output folder for rocking curves and integrated intensities
+    path = SChemicalFormula(1:ILN) // "_intensities"
+    CALL system('mkdir ' // path)
+    ! open rocking curve text file
+    fullpath = TRIM(ADJUSTL(path)) // "/RockingCurves.txt"
+    OPEN(UNIT=IChOutRC, STATUS= 'UNKNOWN', FILE=TRIM(ADJUSTL(fullpath)),IOSTAT=IErr)
+    IF(l_alert(IErr,"Felixrefine","OPEN() RockingCurves.txt")) CALL abort
+    ! open integrated intensities text file
+    fullpath = TRIM(ADJUSTL(path)) // "/IntegratedIntensities.txt"
+    OPEN(UNIT=IChOutIhkl, STATUS= 'UNKNOWN', FILE=TRIM(ADJUSTL(fullpath)),IOSTAT=IErr)
+  END IF
+
+  !--------------------------------------------------------------------
+  ! Start of simulation-specific calculations, depending on crystal orientation
+  !--------------------------------------------------------------------
   ! frame counter
   IFrame = 1
   DO WHILE(IFrame.LE.INFrames)
@@ -394,26 +417,6 @@ PROGRAM Felixrefine
       END DO
     END DO
 
-    !--------------------------------------------------------------------
-    ! make compound 000 image
-    IF(IFrame.EQ.1)THEN!first frame, set up the image
-      ALLOCATE(RBrightField(ISizeY,ISizeX), STAT=IErr)
-      IF(l_alert(IErr,"felixrefine","allocate RBrightField")) CALL abort
-      RBrightField = RImageSimi(:,:,1,1)
-    ELSE! subsequent frame, append the image
-      ALLOCATE(RTempImage (ISizeY,ISizeX+SIZE(RBrightField,DIM=2)), STAT=IErr)
-      IF(l_alert(IErr,"felixrefine","allocate RBrightField")) CALL abort
-      RTempImage(:,1:SIZE(RBrightField,DIM=2)) = RBrightField
-      RTempImage(:,SIZE(RBrightField,DIM=2)+1:) = RImageSimi(:,:,1,1)
-      DEALLOCATE(RBrightField, STAT=IErr)
-      ALLOCATE(RBrightField (ISizeY,SIZE(RTempImage,DIM=2)), STAT=IErr)
-      RBrightField = RTempImage
-      DEALLOCATE(RTempImage, STAT=IErr)
-    END IF
-
-
-
-
     ! Gaussian blur to match experiment using global variable RBlurRadius
     IF (RBlurRadius.GT.TINY) THEN
       DO ind=1,INoOfHKLsFrame
@@ -430,7 +433,7 @@ PROGRAM Felixrefine
     IF(my_rank.EQ.0) THEN
       WRITE(SPrintString,FMT='(A24,I3,A12)') &
         "Writing simulations for ", IThicknessCount," thicknesses"
-      CALL message(LS,SPrintString)
+      CALL message(LL,SPrintString)
       DO ind = 1,IThicknessCount
         CALL WriteIterationOutput(ind,IErr)
         IF(l_alert(IErr,"felixrefine","WriteIterationOutput")) CALL abort 
@@ -472,6 +475,8 @@ PROGRAM Felixrefine
   DEALLOCATE(IAnisoDW,STAT=IErr)
   DEALLOCATE(RAtomCoordinate,STAT=IErr)
   DEALLOCATE(IPixelLocation,STAT=IErr)
+  CLOSE(IChOutRC,IOSTAT=IErr)
+  CLOSE(IChOutIhkl,IOSTAT=IErr)
 
   CALL message( LS, "--------------------------------" )
   CALL PrintEndTime( LS, IStartTime, "Calculation" )

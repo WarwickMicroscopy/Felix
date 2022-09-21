@@ -351,13 +351,7 @@ END MODULE SPara
 !! Major-Authors: Keith Evans (2014), Richard Beanland (2016)
 !!
 MODULE IChannels
-  INTEGER, PARAMETER :: IChInp= 40, &
-       IChOutWF= 41, IChOutWI= 42, &
-       IChOutEV= 43, IChOutEX= 44, &
-       IChOutUM= 45, IChOut=46, &
-       IChInImage = 51
-  INTEGER :: IChOutWF_MPI,IChOutWI_MPI,IChOutES_MPI,IChOutUM_MPI,IChOut_MPI 
-  INTEGER, PARAMETER :: IChOutWFImageReal= 47, IChOutWFImagePhase= 48, &
-       IChOutWIImage= 49, MontageOut = 50,IChOutSimplex = 52
+  INTEGER, PARAMETER :: IChInp = 40, &
+       IChOutIM = 41, IChOutRC = 42, IChOutIhkl = 43
 END MODULE IChannels
 !--------------------------------------------------------------------

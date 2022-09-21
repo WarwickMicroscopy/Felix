@@ -33,7 +33,7 @@
 !>
 !! Module-description:
 !!
-!! Writes output files for each iteration
+!! Writes output files, NB runs on core 0 only
 
 
 MODULE write_output_mod
@@ -67,19 +67,21 @@ MODULE write_output_mod
             RLACBED_14,RLACBED_15,RLACBED_16,RLACBED_17,RLACBED_18,&
             RLACBED_19,RLACBED_20
     USE SPARA, ONLY : SChemicalFormula
-    USE IChannels, ONLY : IChOutWIImage
+    USE IChannels, ONLY : IChOutIM,IChOutRC,IChOutIhkl
 
     IMPLICIT NONE
 
     INTEGER(IKIND), INTENT(OUT) :: IErr
     INTEGER(IKIND), INTENT(IN) :: IThicknessIndex
-    INTEGER(IKIND) :: IThickness,ind,jnd,knd,Iflag
+    INTEGER(IKIND) :: IThickness,ind,jnd,knd,Iflag,Irow
     REAL(RKIND),DIMENSION(ISizeY,ISizeX) :: RImageToWrite
+    REAL(RKIND) :: RStartFrame,RIntegratedIntensity
     CHARACTER(10) :: hString,kString,lString
-    CHARACTER(40) :: fString
+    CHARACTER(40) :: fString,SMiller
     CHARACTER(40) :: SPrintString
     CHARACTER(200) :: path,filename,fullpath
-    
+    CHARACTER(:), ALLOCATABLE :: OutputString
+
     IErr=0 
 
     ! folder names, NB if numbers are too big we get a output conversion error here
@@ -87,7 +89,6 @@ MODULE write_output_mod
     WRITE(path,"(I3.3,A2)") IThickness,"nm"
 
     path = SChemicalFormula(1:ILN) // "_" // path ! This adds chemical formula to folder name
-    IF (IFrame.EQ.1) CALL system('mkdir ' // path)
 
     knd = 0
     DO ind = 1,INoOfHKLsFrame!the number of reflections in both felix.hkl and the beam pool
@@ -100,7 +101,7 @@ MODULE write_output_mod
       ! ILiveList = 0 not active
       ! ILiveList = n it is current, this is the nth frame it has been found
 
-      !For the final frame force saving of any active reflections 
+      !For the final frame: force saving of any active reflections 
       IF (IFrame.EQ.INFrames .AND. ABS(ILiveList(IhklsAll(ind))).NE.0) THEN
         RDevPara(IhklsFrame(ind)) = 10.0D0! artificially set deviation parameter to a big number
       END IF
@@ -134,6 +135,7 @@ MODULE write_output_mod
               NINT(Rhkl(IhklsFrame(ind),:)),",",ILiveList(IhklsAll(ind))," frames"
         CALL message(LL, SPrintString)
 
+        !--------------------------------------------------------------------
         ! Make the hkl string e.g. -2-2+10
         jnd=NINT(Rhkl(IhklsFrame(ind),1))
         IF (ABS(jnd).LT.10) THEN
@@ -159,22 +161,47 @@ MODULE write_output_mod
         ELSE
           WRITE(lString,"(SP,I4.1)") jnd
         ENDIF
+        SMiller = TRIM(ADJUSTL(hString)) // TRIM(ADJUSTL(kString)) // TRIM(ADJUSTL(lString))
+
+        !--------------------------------------------------------------------
+        ! write rocking curve and integrated intensity
+        WRITE(IChOutRC,*) TRIM(ADJUSTL(SMiller))
+        RStartFrame = REAL(IFrame - SIZE(RTempImage,DIM=2)/ISizeX)
+        OutputString = ""
+        DO jnd=1,SIZE(RTempImage,DIM=2)
+          WRITE(fString,"(F8.2)") RStartFrame+REAL(jnd)/REAL(ISizeX)
+          OutputString = OutputString // TRIM(ADJUSTL(fString)) // ", "
+        END DO
+        WRITE(IChOutRC,*) TRIM(ADJUSTL(OutputString))
+        OutputString = ""
+        RIntegratedIntensity = 0.0D0
+        Irow = NINT(HALF*REAL(ISizeY))
+        DO jnd=1,SIZE(RTempImage,DIM=2)
+          WRITE(fString,"(F8.5)") RTempImage(Irow,jnd)
+          OutputString = OutputString // TRIM(ADJUSTL(fString)) // ", "
+          RIntegratedIntensity = RIntegratedIntensity + RTempImage(Irow,jnd)
+        END DO
+        WRITE(IChOutRC,*) TRIM(ADJUSTL(OutputString))
+        WRITE(fString,"(F9.5)") RIntegratedIntensity
+        WRITE(IChOutIhkl,*) TRIM(ADJUSTL(SMiller)) // ":  " // TRIM(ADJUSTL(fString))
+
+        !--------------------------------------------------------------------
         ! Make the path/filename e.g. 'GaAs_-2-2+0_10x100.bin'
         WRITE(fString,"(I3,A1,I2)") SIZE(RTempImage,DIM=2),"x",ISizeY
-        filename = SChemicalFormula(1:ILN) // "_" // TRIM(ADJUSTL(hString)) // &
-                TRIM(ADJUSTL(kString)) // TRIM(ADJUSTL(lString)) // "_" // TRIM(ADJUSTL(fString)) // ".bin"
+        filename = SChemicalFormula(1:ILN) // "_" // TRIM(ADJUSTL(SMiller)) // "_" &
+                   // TRIM(ADJUSTL(fString)) // ".bin"
         fullpath = TRIM(ADJUSTL(path))//"/"//TRIM(ADJUSTL(filename))
         CALL message ( LL, dbg6, fullpath )
 
-        ! Write data to .bin file
-        OPEN(UNIT=IChOutWIImage, STATUS= 'UNKNOWN', FILE=TRIM(ADJUSTL(fullpath)),&
+        ! Write LACBED pattern to .bin file
+        OPEN(UNIT=IChOutIM, STATUS= 'UNKNOWN', FILE=TRIM(ADJUSTL(fullpath)),&
             FORM='UNFORMATTED',ACCESS='DIRECT',IOSTAT=IErr,RECL=SIZE(RTempImage,DIM=2)*IByteSize)
         IF(l_alert(IErr,"WriteIterationOutput","OPEN() output .bin file")) RETURN
         ! we write each X-line, remembering indexing is [row,col]=[y,x]
         DO jnd = 1,ISizeY
-          WRITE(IChOutWIImage,rec=jnd) RTempImage(jnd,:)
+          WRITE(IChOutIM,rec=jnd) RTempImage(jnd,:)
         END DO
-        CLOSE(IChOutWIImage,IOSTAT=IErr) 
+        CLOSE(IChOutIM,IOSTAT=IErr) 
         IF(l_alert(IErr,"WriteIterationOutput","CLOSE() output .bin file")) RETURN       
 
         !Tidy up and reset flags
