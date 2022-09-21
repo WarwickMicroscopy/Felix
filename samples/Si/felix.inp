@@ -15,7 +15,7 @@ INormalDirection          = [0,1,-1]
 IIncidentBeamDirection    = [-24452,100000,44316]
 IXDirection               = [3983,41294,-90984]
 RFrameAngle               = 0.1035
-INFrames                  = 50
+INFrames                  = 12
 RConvergenceAngle         = 0.14324
 RAcceleratingVoltage (kV) = 200.0
 

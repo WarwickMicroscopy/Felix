@@ -59,7 +59,7 @@ MODULE write_output_mod
     
     ! global inputs
     USE IPARA, ONLY : ILN,ISizeX,ISizeY,IhklsFrame,INoOfHKLsFrame,IFrame,&
-            IhklsAll,ILiveList,ILACBEDList,ILACBEDFlag,IByteSize
+            IhklsAll,ILiveList,ILACBEDList,ILACBEDFlag,IByteSize,INFrames
     USE RPARA, ONLY : RInputHKLs,Rhkl, RImageSimi, RInitialThickness, RDeltaThickness,&
             RBrightField, RTempImage,RDevPara,RLACBED_1,RLACBED_2,RLACBED_3,&
             RLACBED_4,RLACBED_5,RLACBED_6,RLACBED_7,RLACBED_8,&
@@ -90,131 +90,99 @@ MODULE write_output_mod
     IF (IFrame.EQ.1) CALL system('mkdir ' // path)
 
     knd = 0
-    ! Compose images and write to disk
     DO ind = 1,INoOfHKLsFrame!the number of reflections in both felix.hkl and the beam pool
       ! this reflection is number ind in RImageSimi
       RImageToWrite = RImageSimi(:,:,ind,IThicknessIndex)
       ! its index in the beam pool is IhklsFrame(ind), its g-vector is Rhkl(IhklsFrame(ind))
       ! its index in the felix.hkl list is IhklsAll(ind), its g-vector is RInputHKLs(IhklsAll(ind))
       ! we track all requested reflections using ILiveList,
-      ! this reflection is ILiveList(IhklsAll(ind)
-      ! ILiveList = 0 never been simulated
+      ! this reflection is ILiveList(IhklsAll(ind))
+      ! ILiveList = 0 not active
       ! ILiveList = n it is current, this is the nth frame it has been found
-      ! ILiveList = 666666, it's been simulated once and finished
-      ! ILiveList = -n it is current, second time now, this is the nth frame
-      ! ILiveList = -666666, it's been simulated twice, shouldn't be appearing again!
-      ! because a small circle (Bragg condition) can only cross a great circle (beam path) twice
+
+      !For the final frame force saving of any active reflections 
+      IF (IFrame.EQ.INFrames .AND. ABS(ILiveList(IhklsAll(ind))).NE.0) THEN
+        RDevPara(IhklsFrame(ind)) = 10.0D0! artificially set deviation parameter to a big number
+      END IF
 
       ! only output an image if it has a deviation parameter |Sg|<0.05 [arbitrary? to test]
       IF(ABS(RDevPara(IhklsFrame(ind))).LT.0.05D0) THEN
-        knd = knd + 1
-
-        IF (ILiveList(IhklsAll(ind)).EQ.-666666) THEN! Shouldn't happen [to test!]
-          WRITE(SPrintString,'(A22,I4,A3,I3,1X,I3,1X,I3)') "oops! third time for #",IhklsAll(ind)," : ",&
-                       NINT(Rhkl(IhklsFrame(ind),:))
-          CALL message(LS, SPrintString)
-          CYCLE!at the moment just continue, but if it's a genuine error it will be IErr=1
-        END IF
-        IF(ILiveList(IhklsAll(ind)).LT.0) THEN!it's still live, second time
-          ILiveList(IhklsAll(ind)) = ILiveList(IhklsAll(ind))-1! increment the counter
-          WRITE(SPrintString,'(I2,A16,I2,A3,I3,1X,I3,1X,I3)') ILiveList(IhklsAll(ind)),&
-                  " frames(*) for #",IhklsAll(ind)," : ",NINT(Rhkl(IhklsFrame(ind),:))
-          CALL message(LL, SPrintString)
-        ELSEIF (ILiveList(IhklsAll(ind)).EQ.666666) THEN! This is the second time round, start counting negatively
-          ILiveList(IhklsAll(ind)) = -1
-          WRITE(SPrintString,'(A18,I3,A3,I3,1X,I3,1X,I3)') " second time for #",IhklsAll(ind),&
-                  " : ",NINT(Rhkl(IhklsFrame(ind),:))
-          CALL message(LL, SPrintString)
-        
-        ELSE! ILiveList>0, so increment
-
-          ILiveList(IhklsAll(ind)) = ILiveList(IhklsAll(ind))+1! increment the counter
-          ! add the simulation into its output image
-          IF(ILiveList(IhklsAll(ind)).EQ.1) THEN! new reflection, start up the output image
-            DO jnd=1,20! find an empty container RLACBED_(n)
-              IF (ILACBEDFlag(jnd).EQ.0) THEN
-                ILACBEDFlag(jnd) = 1! this container is taken 
-                ILACBEDList(IhklsAll(ind)) = jnd! links reflection and container
-                CALL SetupContainer(jnd,RImageToWrite,IErr)
-                EXIT
-              END IF
-            END DO
-          ELSE!its a continuation, find which container we're using and append the image
-            CALL AppendContainer(ILACBEDList(IhklsAll(ind)),RImageToWrite,IErr)
-          END IF  
-          
-          WRITE(SPrintString,'(I2,A13,I2,A3,I3,1X,I3,1X,I3,A1,I2)') ILiveList(IhklsAll(ind)),&
-                  " frames for #",IhklsAll(ind)," : ",NINT(Rhkl(IhklsFrame(ind),:)),"|",ILACBEDList(IhklsAll(ind))
-          CALL message(LL, SPrintString)
-        END IF
-       ELSE! |Sg| is too large, check if we need to finish off this reflection 
-        IF (ILiveList(IhklsAll(ind)).EQ.0) THEN
-          CYCLE! it has not been in any frame, ignore it
-        ELSEIF (ABS(ILiveList(IhklsAll(ind))).NE.666666) THEN! time to finish this reflection
-
-          ! This subroutine puts the finished LACBED into RTempImage
-          CALL CloseContainer(ILACBEDList(IhklsAll(ind)),IErr)
-      
-          WRITE(SPrintString,'(A10,I3,A1,I3,1X,I3,1X,I3,A1,I3,A7)') "finished #",IhklsAll(ind),":",&
-                NINT(Rhkl(IhklsFrame(ind),:)),",",ILiveList(IhklsAll(ind))," frames"
-          CALL message(LL, SPrintString)
-
-          ! Make the hkl string e.g. -2-2+10
-          jnd=NINT(Rhkl(IhklsFrame(ind),1))
-          IF (ABS(jnd).LT.10) THEN
-            WRITE(hString,"(SP,I2.1)") jnd
-          ELSEIF (ABS(jnd).LT.100) THEN
-            WRITE(hString,"(SP,I3.1)") jnd
-          ELSE
-            WRITE(hString,"(SP,I4.1)") jnd
-          ENDIF
-          jnd=NINT(Rhkl(IhklsFrame(ind),2))
-          IF (ABS(jnd).LT.10) THEN
-            WRITE(kString,"(SP,I2.1)") jnd
-          ELSEIF (ABS(jnd).LT.100) THEN
-            WRITE(kString,"(SP,I3.1)") jnd
-          ELSE
-            WRITE(kString,"(SP,I4.1)") jnd
-          ENDIF
-          jnd=NINT(Rhkl(IhklsFrame(ind),3))
-          IF (ABS(jnd).LT.10) THEN
-            WRITE(lString,"(SP,I2.1)") jnd
-          ELSEIF (ABS(jnd).LT.100) THEN
-            WRITE(lString,"(SP,I3.1)") jnd
-          ELSE
-            WRITE(lString,"(SP,I4.1)") jnd
-          ENDIF
-          ! Make the path/filenames e.g. 'GaAs_-2-2+0.bin'
-          WRITE(fString,"(I3,A1,I2)") SIZE(RTempImage,DIM=2),"x",ISizeY
-          filename = SChemicalFormula(1:ILN) // "_" // TRIM(ADJUSTL(hString)) // &
-                  TRIM(ADJUSTL(kString)) // TRIM(ADJUSTL(lString)) // "_" // TRIM(ADJUSTL(fString)) // ".bin"
-          fullpath = TRIM(ADJUSTL(path))//"/"//TRIM(ADJUSTL(filename))
-          CALL message ( LL, dbg6, fullpath )
-
-          ! Writes data to output image .bin files
-          OPEN(UNIT=IChOutWIImage, STATUS= 'UNKNOWN', FILE=TRIM(ADJUSTL(fullpath)),&
-            FORM='UNFORMATTED',ACCESS='DIRECT',IOSTAT=IErr,RECL=SIZE(RTempImage,DIM=2)*IByteSize)
-          IF(l_alert(IErr,"WriteIterationOutput","OPEN() output .bin file")) RETURN
-          ! we write each X-line, remembering indexing is [row,col]=[y,x]
-          DO jnd = 1,ISizeY
-            WRITE(IChOutWIImage,rec=jnd) RTempImage(jnd,:)
+        knd = knd + 1 ! counter for number of reflections found in this frame
+        ILiveList(IhklsAll(ind)) = ILiveList(IhklsAll(ind))+1! increment counter for this reflection
+        ! add the simulation into its output image
+        IF(ILiveList(IhklsAll(ind)).EQ.1) THEN! new reflection, start up the output image
+          DO jnd=1,20! find an empty container RLACBED_(n)
+            IF (ILACBEDFlag(jnd).EQ.0) THEN
+              ILACBEDFlag(jnd) = 1! this container is now taken 
+              ILACBEDList(IhklsAll(ind)) = jnd! links reflection and container
+              CALL SetupContainer(jnd,RImageToWrite,IErr)
+              EXIT
+            END IF
           END DO
-          CLOSE(IChOutWIImage,IOSTAT=IErr) 
-          IF(l_alert(IErr,"WriteIterationOutput","CLOSE() output .bin file")) RETURN       
+        ELSE!its a continuation, find which container we're using and append the image
+          CALL AppendContainer(ILACBEDList(IhklsAll(ind)),RImageToWrite,IErr)
+        END IF  
+        WRITE(SPrintString,'(I2,A13,I2,A3,I3,1X,I3,1X,I3,A1,I2)') ILiveList(IhklsAll(ind)),&
+             " frames for #",IhklsAll(ind)," : ",NINT(Rhkl(IhklsFrame(ind),:)),&
+             "|",ILACBEDList(IhklsAll(ind))
+        CALL message(LL, SPrintString)
+      ELSE! |Sg| is large, check if we need to finish off this reflection 
+        IF (ILiveList(IhklsAll(ind)).EQ.0) CYCLE! it is not active, ignore it
+        ! Put the finished LACBED into RTempImage
+        CALL CloseContainer(ILACBEDList(IhklsAll(ind)),IErr)
+        WRITE(SPrintString,'(A10,I3,A1,I3,1X,I3,1X,I3,A1,I7,A7)') "finished #",IhklsAll(ind),":",&
+              NINT(Rhkl(IhklsFrame(ind),:)),",",ILiveList(IhklsAll(ind))," frames"
+        CALL message(LL, SPrintString)
 
-          !Tidy up and reset flags
-          DEALLOCATE(RTempImage)
-          ILACBEDFlag(ILACBEDList(IhklsAll(ind))) = 0
-          ILiveList(IhklsAll(ind)) = SIGN(666666,ILiveList(IhklsAll(ind)))!set the flag complete
-          IhklsAll(ind) = -IhklsAll(ind)!negative value is a flag to close the output
-        END IF
+        ! Make the hkl string e.g. -2-2+10
+        jnd=NINT(Rhkl(IhklsFrame(ind),1))
+        IF (ABS(jnd).LT.10) THEN
+          WRITE(hString,"(SP,I2.1)") jnd
+        ELSEIF (ABS(jnd).LT.100) THEN
+          WRITE(hString,"(SP,I3.1)") jnd
+        ELSE
+          WRITE(hString,"(SP,I4.1)") jnd
+        ENDIF
+        jnd=NINT(Rhkl(IhklsFrame(ind),2))
+        IF (ABS(jnd).LT.10) THEN
+          WRITE(kString,"(SP,I2.1)") jnd
+        ELSEIF (ABS(jnd).LT.100) THEN
+          WRITE(kString,"(SP,I3.1)") jnd
+        ELSE
+          WRITE(kString,"(SP,I4.1)") jnd
+        ENDIF
+        jnd=NINT(Rhkl(IhklsFrame(ind),3))
+        IF (ABS(jnd).LT.10) THEN
+          WRITE(lString,"(SP,I2.1)") jnd
+        ELSEIF (ABS(jnd).LT.100) THEN
+          WRITE(lString,"(SP,I3.1)") jnd
+        ELSE
+          WRITE(lString,"(SP,I4.1)") jnd
+        ENDIF
+        ! Make the path/filename e.g. 'GaAs_-2-2+0_10x100.bin'
+        WRITE(fString,"(I3,A1,I2)") SIZE(RTempImage,DIM=2),"x",ISizeY
+        filename = SChemicalFormula(1:ILN) // "_" // TRIM(ADJUSTL(hString)) // &
+                TRIM(ADJUSTL(kString)) // TRIM(ADJUSTL(lString)) // "_" // TRIM(ADJUSTL(fString)) // ".bin"
+        fullpath = TRIM(ADJUSTL(path))//"/"//TRIM(ADJUSTL(filename))
+        CALL message ( LL, dbg6, fullpath )
+
+        ! Write data to .bin file
+        OPEN(UNIT=IChOutWIImage, STATUS= 'UNKNOWN', FILE=TRIM(ADJUSTL(fullpath)),&
+            FORM='UNFORMATTED',ACCESS='DIRECT',IOSTAT=IErr,RECL=SIZE(RTempImage,DIM=2)*IByteSize)
+        IF(l_alert(IErr,"WriteIterationOutput","OPEN() output .bin file")) RETURN
+        ! we write each X-line, remembering indexing is [row,col]=[y,x]
+        DO jnd = 1,ISizeY
+          WRITE(IChOutWIImage,rec=jnd) RTempImage(jnd,:)
+        END DO
+        CLOSE(IChOutWIImage,IOSTAT=IErr) 
+        IF(l_alert(IErr,"WriteIterationOutput","CLOSE() output .bin file")) RETURN       
+
+        !Tidy up and reset flags
+        DEALLOCATE(RTempImage)
+        ILACBEDFlag(ILACBEDList(IhklsAll(ind))) = 0! container is available again
+        ILiveList(IhklsAll(ind)) = 0! the reflection is no longer active
       END IF
     END DO
-
-    !--------------------------------------------------------------------
-    ! output the direct beam every so often?
-
-
 
     !--------------------------------------------------------------------
     ! output how many useful reflections have been calculated
