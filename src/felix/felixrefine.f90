@@ -124,7 +124,7 @@ PROGRAM Felixrefine
   !output tracking flags
   ILiveList = 0 ! links reflections, see write_outputs for all meanings of this flag
   ILACBEDList = 0! links a simulation to its output container
-  ILACBEDFlag = 0! indicated whether a container is available (0) or used (1)
+  ILACBEDFlag = 0! indicated whether a container is available (0) or in use (1)
 
   CALL ReadInpFile(IErr) ! felix.inp
   IF(l_alert(IErr,"felixrefine","ReadInpFile")) CALL abort
@@ -278,8 +278,8 @@ PROGRAM Felixrefine
       path = SChemicalFormula(1:ILN) // "_" // path
       CALL system('mkdir ' // path)
       ! make output subfolder for rocking curves and integrated intensities
-      path = TRIM(ADJUSTL(path)) // "/" // SChemicalFormula(1:ILN) // "_intensities"
-      CALL system('mkdir ' // path)
+      ! path = TRIM(ADJUSTL(path)) // "/" // SChemicalFormula(1:ILN) // "_intensities"
+      ! CALL system('mkdir ' // path)
     END DO
   END IF
 
@@ -427,10 +427,8 @@ PROGRAM Felixrefine
       WRITE(SPrintString,FMT='(A24,I3,A12)') &
         "Writing simulations for ", IThicknessCount," thicknesses"
       CALL message(LL,SPrintString)
-      DO ind = 1,IThicknessCount
-        CALL WriteIterationOutput(ind,IErr)
-        IF(l_alert(IErr,"felixrefine","WriteIterationOutput")) CALL abort 
-      END DO  
+      CALL WriteIterationOutput(IErr)
+      IF(l_alert(IErr,"felixrefine","WriteIterationOutput")) CALL abort 
     END IF 
 
     !--------------------------------------------------------------------
