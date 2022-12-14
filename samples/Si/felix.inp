@@ -11,11 +11,11 @@ IAbsorbFLAG               = 2
 IByteSize                 = 2
 
 # experimental settings
-INormalDirection          = [0,1,-1]
+INormalDirection          = [-1,0,1]
 IIncidentBeamDirection    = [-24452,100000,44316]
 IXDirection               = [3983,41294,-90984]
 RFrameAngle               = 0.1035
-INFrames                  = 12
+INFrames                  = 100
 RConvergenceAngle         = 0.14324
 RAcceleratingVoltage (kV) = 200.0
 
@@ -32,7 +32,7 @@ RDebyeWallerConstant      = 0.0
 RAbsorptionPer            = 7.8
 
 # Image Output Options
-RInitialThickness        = 1850.0
-RFinalThickness          = 1850.0
+RInitialThickness        = 1750.0
+RFinalThickness          = 1770.0
 RDeltaThickness          = 10.0
 RBlurRadius              = 0.0

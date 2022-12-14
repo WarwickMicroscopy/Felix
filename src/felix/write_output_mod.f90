@@ -73,7 +73,7 @@ MODULE write_output_mod
 
     INTEGER(IKIND), INTENT(OUT) :: IErr
     INTEGER(IKIND), INTENT(IN) :: IThicknessIndex
-    INTEGER(IKIND) :: IThickness,ind,jnd,knd,Iflag,Irow
+    INTEGER(IKIND) :: IThickness,ind,jnd,knd,Iflag,Irow,IhklFrames
     REAL(RKIND),DIMENSION(ISizeY,ISizeX) :: RImageToWrite
     REAL(RKIND) :: RStartFrame,RIntegratedIntensity
     CHARACTER(10) :: hString,kString,lString
@@ -84,11 +84,19 @@ MODULE write_output_mod
 
     IErr=0 
 
-    ! folder names, NB if numbers are too big we get a output conversion error here
+    ! Get the folder name for this thickness
     IThickness = NINT(RInitialThickness +(IThicknessIndex-1)*RDeltaThickness)/10.0!in nm 
-    WRITE(path,"(I3.3,A2)") IThickness,"nm"
-
+    WRITE(path,"(I4.4,A2)") IThickness,"nm"
     path = SChemicalFormula(1:ILN) // "_" // path ! This adds chemical formula to folder name
+    IF(my_rank.EQ.0)PRINT*,"writing to",TRIM(ADJUSTL(path)
+    
+    ! open rocking curve text file to append
+    fullpath = TRIM(ADJUSTL(path)) // "/RockingCurves.txt"
+    OPEN(UNIT=IChOutRC, STATUS= 'UNKNOWN', FILE=TRIM(ADJUSTL(fullpath)),IOSTAT=IErr)
+    IF(l_alert(IErr,"Felixrefine","OPEN() RockingCurves.txt")) CALL abort
+    ! open integrated intensities text file
+    fullpath = TRIM(ADJUSTL(path)) // "/IntegratedIntensities.txt"
+    OPEN(UNIT=IChOutIhkl, STATUS= 'UNKNOWN', FILE=TRIM(ADJUSTL(fullpath)),IOSTAT=IErr)
 
     knd = 0
     DO ind = 1,INoOfHKLsFrame!the number of reflections in both felix.hkl and the beam pool
@@ -123,13 +131,13 @@ MODULE write_output_mod
         ELSE!its a continuation, find which container we're using and append the image
           CALL AppendContainer(ILACBEDList(IhklsAll(ind)),RImageToWrite,IErr)
         END IF  
-        WRITE(SPrintString,'(I2,A13,I2,A3,I3,1X,I3,1X,I3,A1,I2)') ILiveList(IhklsAll(ind)),&
+        WRITE(SPrintString,'(I4,A13,I4,A3,I3,1X,I3,1X,I3,A1,I4)') ILiveList(IhklsAll(ind)),&
              " frames for #",IhklsAll(ind)," : ",NINT(Rhkl(IhklsFrame(ind),:)),&
              "|",ILACBEDList(IhklsAll(ind))
         CALL message(LL, SPrintString)
       ELSE! |Sg| is large, check if we need to finish off this reflection 
         IF (ILiveList(IhklsAll(ind)).EQ.0) CYCLE! it is not active, ignore it
-        ! Put the finished LACBED into RTempImage
+        ! It is active, put the finished LACBED into RTempImage, extract rocking curve and save
         CALL CloseContainer(ILACBEDList(IhklsAll(ind)),IErr)
         WRITE(SPrintString,'(A10,I3,A1,I3,1X,I3,1X,I3,A1,I7,A7)') "finished #",IhklsAll(ind),":",&
               NINT(Rhkl(IhklsFrame(ind),:)),",",ILiveList(IhklsAll(ind))," frames"
@@ -165,29 +173,31 @@ MODULE write_output_mod
 
         !--------------------------------------------------------------------
         ! write rocking curve and integrated intensity
+        ! Each frame in RTempImage adds ISizeX pixels, so its width in frames is
+        IhklFrames = NINT(SIZE(RTempImage,DIM=2)/REAL(ISizeX))
+        RStartFrame = IFrame - IhklFrames
+        ! The central row
+        Irow = NINT(HALF*REAL(ISizeY))        
+        RIntegratedIntensity = 0.0D0
+        ! Rocking curve
         WRITE(IChOutRC,*) TRIM(ADJUSTL(SMiller))
-        RStartFrame = REAL(IFrame - SIZE(RTempImage,DIM=2)/ISizeX)
-        OutputString = ""
         DO jnd=1,SIZE(RTempImage,DIM=2)
           WRITE(fString,"(F8.2)") RStartFrame+REAL(jnd)/REAL(ISizeX)
-          OutputString = OutputString // TRIM(ADJUSTL(fString)) // ", "
-        END DO
-        WRITE(IChOutRC,*) TRIM(ADJUSTL(OutputString))
-        OutputString = ""
-        RIntegratedIntensity = 0.0D0
-        Irow = NINT(HALF*REAL(ISizeY))
-        DO jnd=1,SIZE(RTempImage,DIM=2)
+          OutputString = TRIM(ADJUSTL(fString)) // ", "
           WRITE(fString,"(F8.5)") RTempImage(Irow,jnd)
-          OutputString = OutputString // TRIM(ADJUSTL(fString)) // ", "
+          OutputString = OutputString // TRIM(ADJUSTL(fString))
+          WRITE(IChOutRC,*) TRIM(ADJUSTL(OutputString))
           RIntegratedIntensity = RIntegratedIntensity + RTempImage(Irow,jnd)
         END DO
-        WRITE(IChOutRC,*) TRIM(ADJUSTL(OutputString))
+        WRITE(IChOutRC,*)!blank line to separate reflections
+        ! Integrated intensity
         WRITE(fString,"(F9.5)") RIntegratedIntensity
         WRITE(IChOutIhkl,*) TRIM(ADJUSTL(SMiller)) // ":  " // TRIM(ADJUSTL(fString))
 
         !--------------------------------------------------------------------
+        ! Write LACBED pattern to .bin file
         ! Make the path/filename e.g. 'GaAs_-2-2+0_10x100.bin'
-        WRITE(fString,"(I3,A1,I2)") SIZE(RTempImage,DIM=2),"x",ISizeY
+        WRITE(fString,"(I4,A1,I2)") SIZE(RTempImage,DIM=2),"x",ISizeY
         filename = SChemicalFormula(1:ILN) // "_" // TRIM(ADJUSTL(SMiller)) // "_" &
                    // TRIM(ADJUSTL(fString)) // ".bin"
         fullpath = TRIM(ADJUSTL(path))//"/"//TRIM(ADJUSTL(filename))
@@ -213,16 +223,8 @@ MODULE write_output_mod
 
     !--------------------------------------------------------------------
     ! output how many useful reflections have been calculated
-    IF(IFrame.GT.9999)THEN
+    IF(IThicknessIndex.EQ.1)THEN
       WRITE(SPrintString,'(A6,I3,A22,I5)') "Found ",knd," reflections in Frame ",IFrame
-    ELSEIF(IFrame.GT.999)THEN
-      WRITE(SPrintString,'(A6,I3,A22,I4)') "Found ",knd," reflections in Frame ",IFrame
-    ELSEIF(IFrame.GT.99)THEN
-      WRITE(SPrintString,'(A6,I3,A22,I3)') "Found ",knd," reflections in Frame ",IFrame
-    ELSEIF(IFrame.GT.9)THEN
-      WRITE(SPrintString,'(A6,I3,A22,I2)') "Found ",knd," reflections in Frame ",IFrame
-    ELSE
-      WRITE(SPrintString,'(A6,I3,A22,I1)') "Found ",knd," reflections in Frame ",IFrame
     END IF
     CALL message(LS,SPrintString)
     CALL message(LS,"//////////")

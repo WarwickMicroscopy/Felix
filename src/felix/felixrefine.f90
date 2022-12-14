@@ -274,20 +274,13 @@ PROGRAM Felixrefine
   IF (my_rank.EQ.0) THEN
     DO ind = 1,IThicknessCount
       jnd = NINT(RInitialThickness +(ind-1)*RDeltaThickness)/10.0!in nm
-      WRITE(path, FMT='(I3.3,A2)') jnd, "nm"
+      WRITE(path, FMT='(I4.4,A2)') jnd, "nm"
       path = SChemicalFormula(1:ILN) // "_" // path
       CALL system('mkdir ' // path)
+      ! make output subfolder for rocking curves and integrated intensities
+      path = TRIM(ADJUSTL(path)) // "/" // SChemicalFormula(1:ILN) // "_intensities"
+      CALL system('mkdir ' // path)
     END DO
-    ! make output folder for rocking curves and integrated intensities
-    path = SChemicalFormula(1:ILN) // "_intensities"
-    CALL system('mkdir ' // path)
-    ! open rocking curve text file
-    fullpath = TRIM(ADJUSTL(path)) // "/RockingCurves.txt"
-    OPEN(UNIT=IChOutRC, STATUS= 'UNKNOWN', FILE=TRIM(ADJUSTL(fullpath)),IOSTAT=IErr)
-    IF(l_alert(IErr,"Felixrefine","OPEN() RockingCurves.txt")) CALL abort
-    ! open integrated intensities text file
-    fullpath = TRIM(ADJUSTL(path)) // "/IntegratedIntensities.txt"
-    OPEN(UNIT=IChOutIhkl, STATUS= 'UNKNOWN', FILE=TRIM(ADJUSTL(fullpath)),IOSTAT=IErr)
   END IF
 
   !--------------------------------------------------------------------
