@@ -193,6 +193,7 @@ MODULE crystallography_mod
   SUBROUTINE CrystalOrientation(IErr)
     USE MyNumbers
     USE MyMPI
+    USE message_mod
 
     USE RPARA, ONLY : RarVecM,RbrVecM,RcrVecM,RaVecM,RbVecM,RcVecM,RNormDirM,RaVecO,RbVecO,&
           RcVecO,RVolume,RarVecO,RbrVecO,RcrVecO, RXDirO, RYDirO, RZDirO
@@ -207,8 +208,8 @@ MODULE crystallography_mod
     IMPLICIT NONE
 
     INTEGER(IKIND) :: IErr,ind,jnd
-!    REAL(RKIND), DIMENSION(ITHREE) :: RXDirO, RYDirO, RZDirO
     REAL(RKIND), DIMENSION(ITHREE,ITHREE) :: RTMatC2O,RTMatO2M
+    REAL(RKIND) :: RNormAngle
 
     ! RTmatC2O transforms from crystal (implicit units) 
     ! to orthogonal reference frame (Angstrom units)
@@ -221,7 +222,7 @@ MODULE crystallography_mod
     ! No check has been made to ensure that they are perpendicular, it is
     ! assumed
     ! RXDirO,RYDirO,RZDirO vectors are UNIT reciprocal lattice vectors parallel 
-    ! to the above in an orthogonal frame
+    ! to the above in an orthogonal frame - now calculated in the frame loop
 !    RXDirO= RXDirC(1)*RarVecO + RXDirC(2)*RbrVecO + RXDirC(3)*RcrVecO
 !    RXDirO= RXDirO/SQRT(DOT_PRODUCT(RXDirO,RXDirO))
 !    RZDirO= RZDirC(1)*RaVecO + RZDirC(2)*RbVecO + RZDirC(3)*RcVecO
@@ -234,9 +235,17 @@ MODULE crystallography_mod
     RTMatO2M(3,:)= RZDirO(:)
     
     ! Unit normal to the specimen in REAL space
-    ! This is used in diffraction pattern calculation
+    ! This is used for all g-vectors as a boundary condition
     RNormDirM = MATMUL(RTMatO2M,MATMUL(RTMatC2O,RNormDirC))
     RNormDirM = RNormDirM/SQRT(DOT_PRODUCT(RNormDirM,RNormDirM)) 
+
+    ! Check to see if the normal is close to perpendicular to the incident beam
+    ! remember in the microscope frame z = [001] so n.z is just n(3)
+    IF(RNormDirM(3).LT.0.1736D0 .AND. my_rank.EQ.0) THEN
+      RNormAngle = 180.0D0*RNormDirM(3)/PI
+      WRITE(SPrintString,"(A30,F5.1,A8)") "Warning: surface normal is at ",RNormAngle," degrees"
+      CALL message(LS,SPrintString) 
+    END IF
 
     ! now transform from crystal reference frame to orthogonal and then to microscope frame
 

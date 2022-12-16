@@ -289,8 +289,8 @@ PROGRAM Felixrefine
   ! frame counter
   IFrame = 1
   DO WHILE(IFrame.LE.INFrames)
-    WRITE(SPrintString, FMT='(A6,I3,A3)') "Frame ",IFrame,"..."
-    CALL message(LS,dbg3,SPrintString)
+!    WRITE(SPrintString, FMT='(A6,I3,A3)') "Frame ",IFrame,"..."
+!    CALL message(LS,dbg3,SPrintString)
     ! Increment frame angle, if it's not the first 
     IF(IFrame.GT.1) THEN
       RXDirOn = RXDirO-RZDirO*TAN(DEG2RADIAN*RFrameAngle)
@@ -298,7 +298,6 @@ PROGRAM Felixrefine
       RXDirO = RXDirOn/SQRT(DOT_PRODUCT(RXDirOn,RXDirOn))
       RZDirO = RZDirOn/SQRT(DOT_PRODUCT(RZDirOn,RZDirOn))
     END IF
-
     ! Create reciprocal lattice vectors in Microscope reference frame
     CALL CrystalOrientation(IErr)
     IF(l_alert(IErr,"felixrefine","CrystalOrientation")) CALL abort

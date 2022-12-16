@@ -86,7 +86,7 @@ MODULE bloch_mod
           nWeakBeams
     INTEGER(IKIND) :: ind,jnd,knd,pnd,IThickness,IThicknessIndex,ILowerLimit,&
           IUpperLimit       
-    REAL(RKIND) :: Rk0(3),RkPrime(3),RK,RKg
+    REAL(RKIND) :: Rk0(3),RkPrime(3),RK,RKg,Rd1,Rd2
     COMPLEX(CKIND) sumC,sumD
     COMPLEX(CKIND), DIMENSION(:,:), ALLOCATABLE :: CBeamTranspose,CUgMatPartial,CDummyEigenVectors
     COMPLEX(CKIND), DIMENSION(:,:), ALLOCATABLE :: CStructureMatrix
@@ -223,20 +223,22 @@ MODULE bloch_mod
 
     ! Recalculation of UgSg matrix for tilted foil
     DO ind = 1, nBeams
+      Rd1 = SQRT(1+RgDotNorm(IStrongBeamList(ind))/RKn)
       DO jnd = 1, nBeams
-        CStructureMatrix(ind, jnd) = (CUgSgMatrix(ind, jnd))/ &
-        ((SQRT(1+RgDotNorm(IStrongBeamList(ind))/RKn)) * (SQRT(1+RgDotNorm(IStrongBeamList(jnd))/RKn)))
+        Rd2 = SQRT(1+RgDotNorm(IStrongBeamList(jnd))/RKn)
+IF(CStructureMatrix(ind,jnd).NE.CStructureMatrix(ind,jnd))PRINT*,my_rank,"NaN!!! i,j= ",ind,jnd
+        CStructureMatrix(ind,jnd) = CUgSgMatrix(ind,jnd)/(Rd1*Rd2)
       END DO
     END DO
 
     !--------------------------------------------------------------------
     ! diagonalize the UgMatEffective
     !--------------------------------------------------------------------
-
     CALL EigenSpectrum(nBeams,CStructureMatrix,CEigenValues(:),CEigenVectors(:,:),IErr)
     IF(l_alert(IErr,"BlochCoefficientCalculation","EigenSpectrum()")) RETURN
     ! NB destroys CUgSgMatrix
 
+    !THIS MAY BE REDUNDANT?
     IF (IHolzFLAG.EQ.1) THEN ! higher order laue zone included so adjust Eigen values/vectors
       CEigenValues = CEigenValues * RKn/RBigK
       DO knd = 1,nBeams
@@ -421,7 +423,7 @@ MODULE bloch_mod
     END DO
     !The no. of strong beams gives the dimension of the Bloch wave problem
     nBeams=ind-1  
-
+    
     CALL message(LXL,dbg7,"Strong Beam List",IStrongBeamList)
     CALL message(LXL,dbg7,"Sg limit for strong beams = ",RMaxSg)
     CALL message(LXL,dbg7,"Smallest strong perturbation strength = ",RMinPertStrong)

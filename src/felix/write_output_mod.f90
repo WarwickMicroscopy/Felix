@@ -163,7 +163,7 @@ MODULE write_output_mod
           IThickness = NINT(RInitialThickness +(lnd-1)*RDeltaThickness)/10.0!in nm 
           WRITE(path,"(I4.4,A2)") IThickness,"nm"
           path = SChemicalFormula(1:ILN) // "_" // path ! This adds chemical formula to folder name
-          IF(my_rank.EQ.0)PRINT*,"writing ",Smiller," to ",TRIM(ADJUSTL(path))
+!DBG          IF(my_rank.EQ.0)PRINT*,"writing ",Smiller," to ",TRIM(ADJUSTL(path))
           ! open rocking curve text file to append
           fullpath = TRIM(ADJUSTL(path)) // "/RockingCurves.txt"
           OPEN(UNIT=IChOutRC, ACTION='WRITE', POSITION='APPEND', STATUS='UNKNOWN', &
@@ -196,7 +196,8 @@ MODULE write_output_mod
           CLOSE(IChOutRC,IOSTAT=IErr)
           ! Integrated intensity
           WRITE(fString,"(F9.5)") RIntegratedIntensity
-          WRITE(IChOutIhkl,*) TRIM(ADJUSTL(SMiller)) // ":  " // TRIM(ADJUSTL(fString))
+          WRITE(IChOutIhkl,*) TRIM(ADJUSTL(hString)) //","// TRIM(ADJUSTL(kString)) //","// TRIM(ADJUSTL(lString)) &
+                  //","// TRIM(ADJUSTL(fString))
           CLOSE(IChOutIhkl,IOSTAT=IErr)
 
           !--------------------------------------------------------------------
@@ -227,9 +228,19 @@ MODULE write_output_mod
 
     !--------------------------------------------------------------------
     ! output how many useful reflections have been calculated
-    WRITE(SPrintString,'(A6,I3,A22,I5)') "Found ",knd," reflections in Frame ",IFrame
+    IF(IFrame.GT.9999)THEN
+      WRITE(SPrintString,'(I3,A22,I5.5)') knd," reflections in Frame ",IFrame
+    ELSEIF(IFrame.GT.999)THEN
+      WRITE(SPrintString,'(I3,A22,I4.4)') knd," reflections in Frame ",IFrame
+    ELSEIF(IFrame.GT.99)THEN
+      WRITE(SPrintString,'(I3,A22,I3.3)') knd," reflections in Frame ",IFrame
+    ELSEIF(IFrame.GT.9)THEN
+      WRITE(SPrintString,'(I3,A22,I2.2)') knd," reflections in Frame ",IFrame
+    ELSE
+      WRITE(SPrintString,'(I3,A22,I1.1)') knd," reflections in Frame ",IFrame
+    END IF
     CALL message(LS,SPrintString)
-    CALL message(LS,"//////////")
+!    CALL message(LS,"//////////")
 
     RETURN  
     

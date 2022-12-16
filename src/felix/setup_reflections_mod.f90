@@ -286,17 +286,17 @@ MODULE setup_reflections_mod
       
     INoOfHKLsFrame = IFind
     IF(IFrame.GT.9999)THEN
-      WRITE(SPrintString,'(A6,I3,A22,I5)') "Found ",INoOfHKLsFrame," reflections in Frame ",IFrame
+      WRITE(SPrintString,'(I3,A22,I5.5)') INoOfHKLsFrame," reflections in Frame ",IFrame
     ELSEIF(IFrame.GT.999)THEN
-      WRITE(SPrintString,'(A6,I3,A22,I4)') "Found ",INoOfHKLsFrame," reflections in Frame ",IFrame
+      WRITE(SPrintString,'(I3,A22,I4.4)') INoOfHKLsFrame," reflections in Frame ",IFrame
     ELSEIF(IFrame.GT.99)THEN
-      WRITE(SPrintString,'(A6,I3,A22,I3)') "Found ",INoOfHKLsFrame," reflections in Frame ",IFrame
+      WRITE(SPrintString,'(I3,A22,I3.3)') INoOfHKLsFrame," reflections in Frame ",IFrame
     ELSEIF(IFrame.GT.9)THEN
-      WRITE(SPrintString,'(A6,I3,A22,I2)') "Found ",INoOfHKLsFrame," reflections in Frame ",IFrame
+      WRITE(SPrintString,'(I3,A22,I2.2)') INoOfHKLsFrame," reflections in Frame ",IFrame
     ELSE
-      WRITE(SPrintString,'(A6,I3,A22,I1)') "Found ",INoOfHKLsFrame," reflections in Frame ",IFrame
+      WRITE(SPrintString,'(I3,A22,I1.1)') INoOfHKLsFrame," reflections in Frame ",IFrame
     END IF
-    CALL message(LM,SPrintString)
+    CALL message(LM,TRIM(ADJUSTL(SPrintString)))
  
   END SUBROUTINE HKLList
   

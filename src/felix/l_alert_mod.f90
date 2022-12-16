@@ -48,7 +48,7 @@ MODULE l_alert_mod
     l_alert = .FALSE.
     IF ( ierr /= 0 ) THEN
       l_alert = .TRUE.
-      WRITE(*,'(2x,i1,a,a,a,a,a)') my_rank," = rank, error in ", SCurrentProcedure,&
+      WRITE(*,'(2x,i3,a,a,a,a,a)') my_rank," = rank, error in ", SCurrentProcedure,&
             "(", SAlertedActivity, ")"
     END IF
   END FUNCTION

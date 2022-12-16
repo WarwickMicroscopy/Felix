@@ -415,28 +415,29 @@ CONTAINS
     TYPE (MsgTags), INTENT(IN) :: MsgTag
     CHARACTER(*), INTENT(IN) :: SMainMsg
     INTEGER(IKIND),DIMENSION(:,:),INTENT(IN) :: IMatrix
-    INTEGER(IKIND) :: i
-    CHARACTER(1000) :: SFormatting
+    INTEGER(IKIND) :: i,IDim1,IDim2
+    CHARACTER(2000) :: SFormatting
 
     IF ( ( my_rank==0 .OR. LPrintThisCore ) &
-    .AND. (MsgPriority%LState .OR. MsgTag%LState) ) THEN
-
-      IF( SIZE(IMatrix,1).EQ.1 .AND. SIZE(IMatrix,2).LE.15 ) THEN
-        WRITE(SFormatting,'(a,i3,a)') '(',SIZE(IMatrix,2),'(1x,i4))'
-        WRITE(SPrintString,SFormatting) IMatrix(:,:)
+        .AND. (MsgPriority%LState .OR. MsgTag%LState) ) THEN
+      IDim1 = SIZE(IMatrix,1)
+      IDim2 = SIZE(IMatrix,2)
+      IF (IDim2.GT.15) IDim2 = 15
+      WRITE(SFormatting,'(a,i3,a)') '(',IDim2,'(1x,i4))'
+      IF (IDim1.EQ.1) THEN
+        WRITE(SPrintString,SFormatting) IMatrix(:,1:IDim2)
         CALL message1String ( MsgPriority, MsgTag, SMainMsg//TRIM(SPrintString) )
       ELSE
-        WRITE(SFormatting,'(a,i3,a)') '(',SIZE(IMatrix,2),'(i4,1x))'
         CALL message1String ( MsgPriority, MsgTag, SMainMsg )
-        DO i =1,SIZE(IMatrix,1)
-          WRITE(SPrintString,SFormatting) IMatrix(i,:)
+        DO i = 1,IDim1
+          WRITE(SPrintString,SFormatting) IMatrix(i,1:IDim2)
           CALL message1String ( MsgPriority, MsgTag, TRIM(SPrintString) )
         END DO
       END IF
-
     END IF
 
   END SUBROUTINE messageIMatrix
+
 
   !---------------------------------------------------------------------
   ! Other key message types
