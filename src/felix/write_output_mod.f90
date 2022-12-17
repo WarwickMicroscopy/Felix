@@ -61,11 +61,7 @@ MODULE write_output_mod
     USE IPARA, ONLY : ILN,ISizeX,ISizeY,IhklsFrame,INoOfHKLsFrame,IFrame,&
             IhklsAll,ILiveList,ILACBEDList,ILACBEDFlag,IByteSize,INFrames,IThicknessCount
     USE RPARA, ONLY : RInputHKLs,Rhkl, RImageSimi, RInitialThickness, RDeltaThickness,&
-            RTempImage,RDevPara,RLACBED_1,RLACBED_2,RLACBED_3,&
-            RLACBED_4,RLACBED_5,RLACBED_6,RLACBED_7,RLACBED_8,&
-            RLACBED_9,RLACBED_10,RLACBED_11,RLACBED_12,RLACBED_13,&
-            RLACBED_14,RLACBED_15,RLACBED_16,RLACBED_17,RLACBED_18,&
-            RLACBED_19,RLACBED_20
+            RTempImage,RDevPara
     USE SPARA, ONLY : SChemicalFormula
     USE IChannels, ONLY : IChOutIM,IChOutRC,IChOutIhkl
 
@@ -100,6 +96,7 @@ MODULE write_output_mod
       END IF
 
       ! only output an image if it has a deviation parameter |Sg|<0.05 [arbitrary? to test]
+      ! NEEDS an error catching mechanism when all containers are full
       IF(ABS(RDevPara(IhklsFrame(ind))).LT.0.05D0) THEN
         knd = knd + 1 ! counter for number of reflections found in this frame
         ILiveList(IhklsAll(ind)) = ILiveList(IhklsAll(ind))+1! increment counter for this reflection
@@ -263,7 +260,13 @@ MODULE write_output_mod
             RLACBED_4,RLACBED_5,RLACBED_6,RLACBED_7,RLACBED_8,&
             RLACBED_9,RLACBED_10,RLACBED_11,RLACBED_12,RLACBED_13,&
             RLACBED_14,RLACBED_15,RLACBED_16,RLACBED_17,RLACBED_18,&
-            RLACBED_19,RLACBED_20
+            RLACBED_19,RLACBED_20,RLACBED_21,RLACBED_22,RLACBED_23,&
+            RLACBED_24,RLACBED_25,RLACBED_26,RLACBED_27,RLACBED_28,&
+            RLACBED_29,RLACBED_30,RLACBED_31,RLACBED_32,RLACBED_33,&
+            RLACBED_34,RLACBED_35,RLACBED_36,RLACBED_37,RLACBED_38,&
+            RLACBED_39,RLACBED_40,RLACBED_41,RLACBED_42,RLACBED_43,&
+            RLACBED_44,RLACBED_45,RLACBED_46,RLACBED_47,RLACBED_48,&
+            RLACBED_49,RLACBED_50
             
    IMPLICIT NONE
             
@@ -331,6 +334,97 @@ MODULE write_output_mod
     CASE(20)
       ALLOCATE(RLACBED_20(ISizeY,ISizeX,IThicknessCount), STAT=IErr)
       RLACBED_20 = RImageToWrite
+    CASE(21)
+      ALLOCATE(RLACBED_21(ISizeY,ISizeX,IThicknessCount), STAT=IErr)
+      RLACBED_21 = RImageToWrite
+    CASE(22)
+      ALLOCATE(RLACBED_22(ISizeY,ISizeX,IThicknessCount), STAT=IErr)
+      RLACBED_22 = RImageToWrite
+    CASE(23)
+      ALLOCATE(RLACBED_23(ISizeY,ISizeX,IThicknessCount), STAT=IErr)
+      RLACBED_23 = RImageToWrite
+    CASE(24)
+      ALLOCATE(RLACBED_24(ISizeY,ISizeX,IThicknessCount), STAT=IErr)
+      RLACBED_24 = RImageToWrite
+    CASE(25)
+      ALLOCATE(RLACBED_25(ISizeY,ISizeX,IThicknessCount), STAT=IErr)
+      RLACBED_25 = RImageToWrite
+    CASE(26)
+      ALLOCATE(RLACBED_26(ISizeY,ISizeX,IThicknessCount), STAT=IErr)
+      RLACBED_26 = RImageToWrite
+    CASE(27)
+      ALLOCATE(RLACBED_27(ISizeY,ISizeX,IThicknessCount), STAT=IErr)
+      RLACBED_27 = RImageToWrite
+    CASE(28)
+      ALLOCATE(RLACBED_28(ISizeY,ISizeX,IThicknessCount), STAT=IErr)
+      RLACBED_28 = RImageToWrite
+    CASE(29)
+      ALLOCATE(RLACBED_29(ISizeY,ISizeX,IThicknessCount), STAT=IErr)
+      RLACBED_29 = RImageToWrite
+    CASE(30)
+      ALLOCATE(RLACBED_20(ISizeY,ISizeX,IThicknessCount), STAT=IErr)
+      RLACBED_30 = RImageToWrite
+    CASE(31)
+      ALLOCATE(RLACBED_31(ISizeY,ISizeX,IThicknessCount), STAT=IErr)
+      RLACBED_31 = RImageToWrite
+    CASE(32)
+      ALLOCATE(RLACBED_32(ISizeY,ISizeX,IThicknessCount), STAT=IErr)
+      RLACBED_32 = RImageToWrite
+    CASE(33)
+      ALLOCATE(RLACBED_33(ISizeY,ISizeX,IThicknessCount), STAT=IErr)
+      RLACBED_33 = RImageToWrite
+    CASE(34)
+      ALLOCATE(RLACBED_34(ISizeY,ISizeX,IThicknessCount), STAT=IErr)
+      RLACBED_34 = RImageToWrite
+    CASE(35)
+      ALLOCATE(RLACBED_35(ISizeY,ISizeX,IThicknessCount), STAT=IErr)
+      RLACBED_35 = RImageToWrite
+    CASE(36)
+      ALLOCATE(RLACBED_36(ISizeY,ISizeX,IThicknessCount), STAT=IErr)
+      RLACBED_36 = RImageToWrite
+    CASE(37)
+      ALLOCATE(RLACBED_37(ISizeY,ISizeX,IThicknessCount), STAT=IErr)
+      RLACBED_37 = RImageToWrite
+    CASE(38)
+      ALLOCATE(RLACBED_38(ISizeY,ISizeX,IThicknessCount), STAT=IErr)
+      RLACBED_38 = RImageToWrite
+    CASE(39)
+      ALLOCATE(RLACBED_39(ISizeY,ISizeX,IThicknessCount), STAT=IErr)
+      RLACBED_39 = RImageToWrite
+    CASE(40)
+      ALLOCATE(RLACBED_20(ISizeY,ISizeX,IThicknessCount), STAT=IErr)
+      RLACBED_40 = RImageToWrite
+    CASE(41)
+      ALLOCATE(RLACBED_41(ISizeY,ISizeX,IThicknessCount), STAT=IErr)
+      RLACBED_41 = RImageToWrite
+    CASE(42)
+      ALLOCATE(RLACBED_42(ISizeY,ISizeX,IThicknessCount), STAT=IErr)
+      RLACBED_42 = RImageToWrite
+    CASE(43)
+      ALLOCATE(RLACBED_43(ISizeY,ISizeX,IThicknessCount), STAT=IErr)
+      RLACBED_43 = RImageToWrite
+    CASE(44)
+      ALLOCATE(RLACBED_44(ISizeY,ISizeX,IThicknessCount), STAT=IErr)
+      RLACBED_44 = RImageToWrite
+    CASE(45)
+      ALLOCATE(RLACBED_45(ISizeY,ISizeX,IThicknessCount), STAT=IErr)
+      RLACBED_45 = RImageToWrite
+    CASE(46)
+      ALLOCATE(RLACBED_46(ISizeY,ISizeX,IThicknessCount), STAT=IErr)
+      RLACBED_46 = RImageToWrite
+    CASE(47)
+      ALLOCATE(RLACBED_47(ISizeY,ISizeX,IThicknessCount), STAT=IErr)
+      RLACBED_47 = RImageToWrite
+    CASE(48)
+      ALLOCATE(RLACBED_48(ISizeY,ISizeX,IThicknessCount), STAT=IErr)
+      RLACBED_48 = RImageToWrite
+    CASE(49)
+      ALLOCATE(RLACBED_49(ISizeY,ISizeX,IThicknessCount), STAT=IErr)
+      RLACBED_49 = RImageToWrite
+    CASE(50)
+      ALLOCATE(RLACBED_20(ISizeY,ISizeX,IThicknessCount), STAT=IErr)
+      RLACBED_50 = RImageToWrite
+
     END SELECT
 
     RETURN   
@@ -349,11 +443,17 @@ MODULE write_output_mod
     
     ! global inputs
     USE IPARA, ONLY : ISizeX,ISizeY,IThicknessCount
-    USE RPARA, ONLY : RTempImage, RLACBED_1,RLACBED_2,RLACBED_3,&
+    USE RPARA, ONLY : RLACBED_1,RLACBED_2,RLACBED_3,&
             RLACBED_4,RLACBED_5,RLACBED_6,RLACBED_7,RLACBED_8,&
             RLACBED_9,RLACBED_10,RLACBED_11,RLACBED_12,RLACBED_13,&
             RLACBED_14,RLACBED_15,RLACBED_16,RLACBED_17,RLACBED_18,&
-            RLACBED_19,RLACBED_20
+            RLACBED_19,RLACBED_20,RLACBED_21,RLACBED_22,RLACBED_23,&
+            RLACBED_24,RLACBED_25,RLACBED_26,RLACBED_27,RLACBED_28,&
+            RLACBED_29,RLACBED_30,RLACBED_31,RLACBED_32,RLACBED_33,&
+            RLACBED_34,RLACBED_35,RLACBED_36,RLACBED_37,RLACBED_38,&
+            RLACBED_39,RLACBED_40,RLACBED_41,RLACBED_42,RLACBED_43,&
+            RLACBED_44,RLACBED_45,RLACBED_46,RLACBED_47,RLACBED_48,&
+            RLACBED_49,RLACBED_50,RTempImage
             
     IMPLICIT NONE
             
@@ -541,6 +641,276 @@ MODULE write_output_mod
       ALLOCATE(RLACBED_20(ISizeY,SIZE(RTempImage,DIM=2),IThicknessCount), STAT=IErr)
       RLACBED_20 = RTempImage
       DEALLOCATE(RTempImage)
+    CASE(21)
+      ALLOCATE(RTempImage(ISizeY,ISizeX+SIZE(RLACBED_21,DIM=2),IThicknessCount), STAT=IErr)
+      IF(l_alert(IErr,"write_output","allocate RTempImage")) RETURN
+      RTempImage(:,1:SIZE(RLACBED_21,DIM=2),:) = RLACBED_21
+      RTempImage(:,SIZE(RLACBED_21,DIM=2)+1:,:) = RImageToWrite
+      DEALLOCATE(RLACBED_21)
+      ALLOCATE(RLACBED_21(ISizeY,SIZE(RTempImage,DIM=2),IThicknessCount), STAT=IErr)
+      RLACBED_21 = RTempImage
+      DEALLOCATE(RTempImage)
+    CASE(22)
+      ALLOCATE(RTempImage(ISizeY,ISizeX+SIZE(RLACBED_22,DIM=2),IThicknessCount), STAT=IErr)
+      IF(l_alert(IErr,"write_output","allocate RTempImage")) RETURN
+      RTempImage(:,1:SIZE(RLACBED_22,DIM=2),:) = RLACBED_22
+      RTempImage(:,SIZE(RLACBED_22,DIM=2)+1:,:) = RImageToWrite
+      DEALLOCATE(RLACBED_22)
+      ALLOCATE(RLACBED_22(ISizeY,SIZE(RTempImage,DIM=2),IThicknessCount), STAT=IErr)
+      RLACBED_22 = RTempImage
+      DEALLOCATE(RTempImage)
+    CASE(23)
+      ALLOCATE(RTempImage(ISizeY,ISizeX+SIZE(RLACBED_23,DIM=2),IThicknessCount), STAT=IErr)
+      IF(l_alert(IErr,"write_output","allocate RTempImage")) RETURN
+      RTempImage(:,1:SIZE(RLACBED_23,DIM=2),:) = RLACBED_23
+      RTempImage(:,SIZE(RLACBED_23,DIM=2)+1:,:) = RImageToWrite
+      DEALLOCATE(RLACBED_23)
+      ALLOCATE(RLACBED_23(ISizeY,SIZE(RTempImage,DIM=2),IThicknessCount), STAT=IErr)
+      RLACBED_23 = RTempImage
+      DEALLOCATE(RTempImage)
+    CASE(24)
+      ALLOCATE(RTempImage(ISizeY,ISizeX+SIZE(RLACBED_24,DIM=2),IThicknessCount), STAT=IErr)
+      IF(l_alert(IErr,"write_output","allocate RTempImage")) RETURN
+      RTempImage(:,1:SIZE(RLACBED_24,DIM=2),:) = RLACBED_24
+      RTempImage(:,SIZE(RLACBED_24,DIM=2)+1:,:) = RImageToWrite
+      DEALLOCATE(RLACBED_24)
+      ALLOCATE(RLACBED_24(ISizeY,SIZE(RTempImage,DIM=2),IThicknessCount), STAT=IErr)
+      RLACBED_24 = RTempImage
+      DEALLOCATE(RTempImage)
+    CASE(25)
+      ALLOCATE(RTempImage(ISizeY,ISizeX+SIZE(RLACBED_25,DIM=2),IThicknessCount), STAT=IErr)
+      IF(l_alert(IErr,"write_output","allocate RTempImage")) RETURN
+      RTempImage(:,1:SIZE(RLACBED_25,DIM=2),:) = RLACBED_25
+      RTempImage(:,SIZE(RLACBED_25,DIM=2)+1:,:) = RImageToWrite
+      DEALLOCATE(RLACBED_25)
+      ALLOCATE(RLACBED_25(ISizeY,SIZE(RTempImage,DIM=2),IThicknessCount), STAT=IErr)
+      RLACBED_25 = RTempImage
+      DEALLOCATE(RTempImage)
+    CASE(26)
+      ALLOCATE(RTempImage(ISizeY,ISizeX+SIZE(RLACBED_26,DIM=2),IThicknessCount), STAT=IErr)
+      IF(l_alert(IErr,"write_output","allocate RTempImage")) RETURN
+      RTempImage(:,1:SIZE(RLACBED_26,DIM=2),:) = RLACBED_26
+      RTempImage(:,SIZE(RLACBED_26,DIM=2)+1:,:) = RImageToWrite
+      DEALLOCATE(RLACBED_26)
+      ALLOCATE(RLACBED_26(ISizeY,SIZE(RTempImage,DIM=2),IThicknessCount), STAT=IErr)
+      RLACBED_26 = RTempImage
+      DEALLOCATE(RTempImage)
+    CASE(27)
+      ALLOCATE(RTempImage(ISizeY,ISizeX+SIZE(RLACBED_27,DIM=2),IThicknessCount), STAT=IErr)
+      IF(l_alert(IErr,"write_output","allocate RTempImage")) RETURN
+      RTempImage(:,1:SIZE(RLACBED_27,DIM=2),:) = RLACBED_27
+      RTempImage(:,SIZE(RLACBED_27,DIM=2)+1:,:) = RImageToWrite
+      DEALLOCATE(RLACBED_27)
+      ALLOCATE(RLACBED_27(ISizeY,SIZE(RTempImage,DIM=2),IThicknessCount), STAT=IErr)
+      RLACBED_27 = RTempImage
+      DEALLOCATE(RTempImage)
+    CASE(28)
+      ALLOCATE(RTempImage(ISizeY,ISizeX+SIZE(RLACBED_28,DIM=2),IThicknessCount), STAT=IErr)
+      IF(l_alert(IErr,"write_output","allocate RTempImage")) RETURN
+      RTempImage(:,1:SIZE(RLACBED_28,DIM=2),:) = RLACBED_28
+      RTempImage(:,SIZE(RLACBED_28,DIM=2)+1:,:) = RImageToWrite
+      DEALLOCATE(RLACBED_28)
+      ALLOCATE(RLACBED_28(ISizeY,SIZE(RTempImage,DIM=2),IThicknessCount), STAT=IErr)
+      RLACBED_28 = RTempImage
+      DEALLOCATE(RTempImage)
+    CASE(29)
+      ALLOCATE(RTempImage(ISizeY,ISizeX+SIZE(RLACBED_29,DIM=2),IThicknessCount), STAT=IErr)
+      IF(l_alert(IErr,"write_output","allocate RTempImage")) RETURN
+      RTempImage(:,1:SIZE(RLACBED_29,DIM=2),:) = RLACBED_29
+      RTempImage(:,SIZE(RLACBED_29,DIM=2)+1:,:) = RImageToWrite
+      DEALLOCATE(RLACBED_29)
+      ALLOCATE(RLACBED_29(ISizeY,SIZE(RTempImage,DIM=2),IThicknessCount), STAT=IErr)
+      RLACBED_29 = RTempImage
+      DEALLOCATE(RTempImage)
+    CASE(30)
+      ALLOCATE(RTempImage(ISizeY,ISizeX+SIZE(RLACBED_30,DIM=2),IThicknessCount), STAT=IErr)
+      IF(l_alert(IErr,"write_output","allocate RTempImage")) RETURN
+      RTempImage(:,1:SIZE(RLACBED_30,DIM=2),:) = RLACBED_30
+      RTempImage(:,SIZE(RLACBED_30,DIM=2)+1:,:) = RImageToWrite
+      DEALLOCATE(RLACBED_30)
+      ALLOCATE(RLACBED_30(ISizeY,SIZE(RTempImage,DIM=2),IThicknessCount), STAT=IErr)
+      RLACBED_30 = RTempImage
+      DEALLOCATE(RTempImage)
+    CASE(31)
+      ALLOCATE(RTempImage(ISizeY,ISizeX+SIZE(RLACBED_31,DIM=2),IThicknessCount), STAT=IErr)
+      IF(l_alert(IErr,"write_output","allocate RTempImage")) RETURN
+      RTempImage(:,1:SIZE(RLACBED_31,DIM=2),:) = RLACBED_31
+      RTempImage(:,SIZE(RLACBED_31,DIM=2)+1:,:) = RImageToWrite
+      DEALLOCATE(RLACBED_31)
+      ALLOCATE(RLACBED_31(ISizeY,SIZE(RTempImage,DIM=2),IThicknessCount), STAT=IErr)
+      RLACBED_31 = RTempImage
+      DEALLOCATE(RTempImage)
+    CASE(32)
+      ALLOCATE(RTempImage(ISizeY,ISizeX+SIZE(RLACBED_32,DIM=2),IThicknessCount), STAT=IErr)
+      IF(l_alert(IErr,"write_output","allocate RTempImage")) RETURN
+      RTempImage(:,1:SIZE(RLACBED_32,DIM=2),:) = RLACBED_32
+      RTempImage(:,SIZE(RLACBED_32,DIM=2)+1:,:) = RImageToWrite
+      DEALLOCATE(RLACBED_32)
+      ALLOCATE(RLACBED_32(ISizeY,SIZE(RTempImage,DIM=2),IThicknessCount), STAT=IErr)
+      RLACBED_32 = RTempImage
+      DEALLOCATE(RTempImage)
+    CASE(33)
+      ALLOCATE(RTempImage(ISizeY,ISizeX+SIZE(RLACBED_33,DIM=2),IThicknessCount), STAT=IErr)
+      IF(l_alert(IErr,"write_output","allocate RTempImage")) RETURN
+      RTempImage(:,1:SIZE(RLACBED_33,DIM=2),:) = RLACBED_33
+      RTempImage(:,SIZE(RLACBED_33,DIM=2)+1:,:) = RImageToWrite
+      DEALLOCATE(RLACBED_33)
+      ALLOCATE(RLACBED_33(ISizeY,SIZE(RTempImage,DIM=2),IThicknessCount), STAT=IErr)
+      RLACBED_33 = RTempImage
+      DEALLOCATE(RTempImage)
+    CASE(34)
+      ALLOCATE(RTempImage(ISizeY,ISizeX+SIZE(RLACBED_34,DIM=2),IThicknessCount), STAT=IErr)
+      IF(l_alert(IErr,"write_output","allocate RTempImage")) RETURN
+      RTempImage(:,1:SIZE(RLACBED_34,DIM=2),:) = RLACBED_34
+      RTempImage(:,SIZE(RLACBED_34,DIM=2)+1:,:) = RImageToWrite
+      DEALLOCATE(RLACBED_34)
+      ALLOCATE(RLACBED_34(ISizeY,SIZE(RTempImage,DIM=2),IThicknessCount), STAT=IErr)
+      RLACBED_34 = RTempImage
+      DEALLOCATE(RTempImage)
+    CASE(35)
+      ALLOCATE(RTempImage(ISizeY,ISizeX+SIZE(RLACBED_35,DIM=2),IThicknessCount), STAT=IErr)
+      IF(l_alert(IErr,"write_output","allocate RTempImage")) RETURN
+      RTempImage(:,1:SIZE(RLACBED_35,DIM=2),:) = RLACBED_35
+      RTempImage(:,SIZE(RLACBED_35,DIM=2)+1:,:) = RImageToWrite
+      DEALLOCATE(RLACBED_35)
+      ALLOCATE(RLACBED_35(ISizeY,SIZE(RTempImage,DIM=2),IThicknessCount), STAT=IErr)
+      RLACBED_35 = RTempImage
+      DEALLOCATE(RTempImage)
+    CASE(36)
+      ALLOCATE(RTempImage(ISizeY,ISizeX+SIZE(RLACBED_36,DIM=2),IThicknessCount), STAT=IErr)
+      IF(l_alert(IErr,"write_output","allocate RTempImage")) RETURN
+      RTempImage(:,1:SIZE(RLACBED_36,DIM=2),:) = RLACBED_36
+      RTempImage(:,SIZE(RLACBED_36,DIM=2)+1:,:) = RImageToWrite
+      DEALLOCATE(RLACBED_36)
+      ALLOCATE(RLACBED_36(ISizeY,SIZE(RTempImage,DIM=2),IThicknessCount), STAT=IErr)
+      RLACBED_36 = RTempImage
+      DEALLOCATE(RTempImage)
+    CASE(37)
+      ALLOCATE(RTempImage(ISizeY,ISizeX+SIZE(RLACBED_37,DIM=2),IThicknessCount), STAT=IErr)
+      IF(l_alert(IErr,"write_output","allocate RTempImage")) RETURN
+      RTempImage(:,1:SIZE(RLACBED_37,DIM=2),:) = RLACBED_37
+      RTempImage(:,SIZE(RLACBED_37,DIM=2)+1:,:) = RImageToWrite
+      DEALLOCATE(RLACBED_37)
+      ALLOCATE(RLACBED_37(ISizeY,SIZE(RTempImage,DIM=2),IThicknessCount), STAT=IErr)
+      RLACBED_37 = RTempImage
+      DEALLOCATE(RTempImage)
+    CASE(38)
+      ALLOCATE(RTempImage(ISizeY,ISizeX+SIZE(RLACBED_38,DIM=2),IThicknessCount), STAT=IErr)
+      IF(l_alert(IErr,"write_output","allocate RTempImage")) RETURN
+      RTempImage(:,1:SIZE(RLACBED_38,DIM=2),:) = RLACBED_38
+      RTempImage(:,SIZE(RLACBED_38,DIM=2)+1:,:) = RImageToWrite
+      DEALLOCATE(RLACBED_38)
+      ALLOCATE(RLACBED_38(ISizeY,SIZE(RTempImage,DIM=2),IThicknessCount), STAT=IErr)
+      RLACBED_38 = RTempImage
+      DEALLOCATE(RTempImage)
+    CASE(39)
+      ALLOCATE(RTempImage(ISizeY,ISizeX+SIZE(RLACBED_39,DIM=2),IThicknessCount), STAT=IErr)
+      IF(l_alert(IErr,"write_output","allocate RTempImage")) RETURN
+      RTempImage(:,1:SIZE(RLACBED_39,DIM=2),:) = RLACBED_39
+      RTempImage(:,SIZE(RLACBED_39,DIM=2)+1:,:) = RImageToWrite
+      DEALLOCATE(RLACBED_39)
+      ALLOCATE(RLACBED_39(ISizeY,SIZE(RTempImage,DIM=2),IThicknessCount), STAT=IErr)
+      RLACBED_39 = RTempImage
+      DEALLOCATE(RTempImage)
+    CASE(40)
+      ALLOCATE(RTempImage(ISizeY,ISizeX+SIZE(RLACBED_40,DIM=2),IThicknessCount), STAT=IErr)
+      IF(l_alert(IErr,"write_output","allocate RTempImage")) RETURN
+      RTempImage(:,1:SIZE(RLACBED_40,DIM=2),:) = RLACBED_40
+      RTempImage(:,SIZE(RLACBED_40,DIM=2)+1:,:) = RImageToWrite
+      DEALLOCATE(RLACBED_40)
+      ALLOCATE(RLACBED_40(ISizeY,SIZE(RTempImage,DIM=2),IThicknessCount), STAT=IErr)
+      RLACBED_40 = RTempImage
+      DEALLOCATE(RTempImage)
+    CASE(41)
+      ALLOCATE(RTempImage(ISizeY,ISizeX+SIZE(RLACBED_41,DIM=2),IThicknessCount), STAT=IErr)
+      IF(l_alert(IErr,"write_output","allocate RTempImage")) RETURN
+      RTempImage(:,1:SIZE(RLACBED_41,DIM=2),:) = RLACBED_41
+      RTempImage(:,SIZE(RLACBED_41,DIM=2)+1:,:) = RImageToWrite
+      DEALLOCATE(RLACBED_41)
+      ALLOCATE(RLACBED_41(ISizeY,SIZE(RTempImage,DIM=2),IThicknessCount), STAT=IErr)
+      RLACBED_41 = RTempImage
+      DEALLOCATE(RTempImage)
+    CASE(42)
+      ALLOCATE(RTempImage(ISizeY,ISizeX+SIZE(RLACBED_42,DIM=2),IThicknessCount), STAT=IErr)
+      IF(l_alert(IErr,"write_output","allocate RTempImage")) RETURN
+      RTempImage(:,1:SIZE(RLACBED_42,DIM=2),:) = RLACBED_42
+      RTempImage(:,SIZE(RLACBED_42,DIM=2)+1:,:) = RImageToWrite
+      DEALLOCATE(RLACBED_42)
+      ALLOCATE(RLACBED_42(ISizeY,SIZE(RTempImage,DIM=2),IThicknessCount), STAT=IErr)
+      RLACBED_42 = RTempImage
+      DEALLOCATE(RTempImage)
+    CASE(43)
+      ALLOCATE(RTempImage(ISizeY,ISizeX+SIZE(RLACBED_43,DIM=2),IThicknessCount), STAT=IErr)
+      IF(l_alert(IErr,"write_output","allocate RTempImage")) RETURN
+      RTempImage(:,1:SIZE(RLACBED_43,DIM=2),:) = RLACBED_43
+      RTempImage(:,SIZE(RLACBED_43,DIM=2)+1:,:) = RImageToWrite
+      DEALLOCATE(RLACBED_43)
+      ALLOCATE(RLACBED_43(ISizeY,SIZE(RTempImage,DIM=2),IThicknessCount), STAT=IErr)
+      RLACBED_43 = RTempImage
+      DEALLOCATE(RTempImage)
+    CASE(44)
+      ALLOCATE(RTempImage(ISizeY,ISizeX+SIZE(RLACBED_44,DIM=2),IThicknessCount), STAT=IErr)
+      IF(l_alert(IErr,"write_output","allocate RTempImage")) RETURN
+      RTempImage(:,1:SIZE(RLACBED_44,DIM=2),:) = RLACBED_44
+      RTempImage(:,SIZE(RLACBED_44,DIM=2)+1:,:) = RImageToWrite
+      DEALLOCATE(RLACBED_44)
+      ALLOCATE(RLACBED_44(ISizeY,SIZE(RTempImage,DIM=2),IThicknessCount), STAT=IErr)
+      RLACBED_44 = RTempImage
+      DEALLOCATE(RTempImage)
+    CASE(45)
+      ALLOCATE(RTempImage(ISizeY,ISizeX+SIZE(RLACBED_45,DIM=2),IThicknessCount), STAT=IErr)
+      IF(l_alert(IErr,"write_output","allocate RTempImage")) RETURN
+      RTempImage(:,1:SIZE(RLACBED_45,DIM=2),:) = RLACBED_45
+      RTempImage(:,SIZE(RLACBED_45,DIM=2)+1:,:) = RImageToWrite
+      DEALLOCATE(RLACBED_45)
+      ALLOCATE(RLACBED_45(ISizeY,SIZE(RTempImage,DIM=2),IThicknessCount), STAT=IErr)
+      RLACBED_45 = RTempImage
+      DEALLOCATE(RTempImage)
+    CASE(46)
+      ALLOCATE(RTempImage(ISizeY,ISizeX+SIZE(RLACBED_46,DIM=2),IThicknessCount), STAT=IErr)
+      IF(l_alert(IErr,"write_output","allocate RTempImage")) RETURN
+      RTempImage(:,1:SIZE(RLACBED_46,DIM=2),:) = RLACBED_46
+      RTempImage(:,SIZE(RLACBED_46,DIM=2)+1:,:) = RImageToWrite
+      DEALLOCATE(RLACBED_46)
+      ALLOCATE(RLACBED_46(ISizeY,SIZE(RTempImage,DIM=2),IThicknessCount), STAT=IErr)
+      RLACBED_46 = RTempImage
+      DEALLOCATE(RTempImage)
+    CASE(47)
+      ALLOCATE(RTempImage(ISizeY,ISizeX+SIZE(RLACBED_47,DIM=2),IThicknessCount), STAT=IErr)
+      IF(l_alert(IErr,"write_output","allocate RTempImage")) RETURN
+      RTempImage(:,1:SIZE(RLACBED_47,DIM=2),:) = RLACBED_47
+      RTempImage(:,SIZE(RLACBED_47,DIM=2)+1:,:) = RImageToWrite
+      DEALLOCATE(RLACBED_47)
+      ALLOCATE(RLACBED_47(ISizeY,SIZE(RTempImage,DIM=2),IThicknessCount), STAT=IErr)
+      RLACBED_47 = RTempImage
+      DEALLOCATE(RTempImage)
+    CASE(48)
+      ALLOCATE(RTempImage(ISizeY,ISizeX+SIZE(RLACBED_48,DIM=2),IThicknessCount), STAT=IErr)
+      IF(l_alert(IErr,"write_output","allocate RTempImage")) RETURN
+      RTempImage(:,1:SIZE(RLACBED_48,DIM=2),:) = RLACBED_48
+      RTempImage(:,SIZE(RLACBED_48,DIM=2)+1:,:) = RImageToWrite
+      DEALLOCATE(RLACBED_48)
+      ALLOCATE(RLACBED_48(ISizeY,SIZE(RTempImage,DIM=2),IThicknessCount), STAT=IErr)
+      RLACBED_48 = RTempImage
+      DEALLOCATE(RTempImage)
+    CASE(49)
+      ALLOCATE(RTempImage(ISizeY,ISizeX+SIZE(RLACBED_49,DIM=2),IThicknessCount), STAT=IErr)
+      IF(l_alert(IErr,"write_output","allocate RTempImage")) RETURN
+      RTempImage(:,1:SIZE(RLACBED_49,DIM=2),:) = RLACBED_49
+      RTempImage(:,SIZE(RLACBED_49,DIM=2)+1:,:) = RImageToWrite
+      DEALLOCATE(RLACBED_49)
+      ALLOCATE(RLACBED_49(ISizeY,SIZE(RTempImage,DIM=2),IThicknessCount), STAT=IErr)
+      RLACBED_49 = RTempImage
+      DEALLOCATE(RTempImage)
+    CASE(50)
+      ALLOCATE(RTempImage(ISizeY,ISizeX+SIZE(RLACBED_50,DIM=2),IThicknessCount), STAT=IErr)
+      IF(l_alert(IErr,"write_output","allocate RTempImage")) RETURN
+      RTempImage(:,1:SIZE(RLACBED_50,DIM=2),:) = RLACBED_50
+      RTempImage(:,SIZE(RLACBED_50,DIM=2)+1:,:) = RImageToWrite
+      DEALLOCATE(RLACBED_50)
+      ALLOCATE(RLACBED_50(ISizeY,SIZE(RTempImage,DIM=2),IThicknessCount), STAT=IErr)
+      RLACBED_50 = RTempImage
+      DEALLOCATE(RTempImage)
     END SELECT
 
     RETURN
@@ -559,11 +929,17 @@ MODULE write_output_mod
 
     ! global inputs
     USE IPARA, ONLY : ISizeY,IThicknessCount
-    USE RPARA, ONLY : RTempImage,RLACBED_1,RLACBED_2,RLACBED_3,&
+    USE RPARA, ONLY : RLACBED_1,RLACBED_2,RLACBED_3,&
             RLACBED_4,RLACBED_5,RLACBED_6,RLACBED_7,RLACBED_8,&
             RLACBED_9,RLACBED_10,RLACBED_11,RLACBED_12,RLACBED_13,&
             RLACBED_14,RLACBED_15,RLACBED_16,RLACBED_17,RLACBED_18,&
-            RLACBED_19,RLACBED_20
+            RLACBED_19,RLACBED_20,RLACBED_21,RLACBED_22,RLACBED_23,&
+            RLACBED_24,RLACBED_25,RLACBED_26,RLACBED_27,RLACBED_28,&
+            RLACBED_29,RLACBED_30,RLACBED_31,RLACBED_32,RLACBED_33,&
+            RLACBED_34,RLACBED_35,RLACBED_36,RLACBED_37,RLACBED_38,&
+            RLACBED_39,RLACBED_40,RLACBED_41,RLACBED_42,RLACBED_43,&
+            RLACBED_44,RLACBED_45,RLACBED_46,RLACBED_47,RLACBED_48,&
+            RLACBED_49,RLACBED_50,RTempImage
 
     IMPLICIT NONE
 
@@ -651,6 +1027,126 @@ MODULE write_output_mod
       ALLOCATE(RTempImage(ISizeY,SIZE(RLACBED_20,DIM=2),IThicknessCount), STAT=IErr)
       RTempImage = RLACBED_20
       DEALLOCATE(RLACBED_20)
+    CASE(21)
+      ALLOCATE(RTempImage(ISizeY,SIZE(RLACBED_21,DIM=2),IThicknessCount), STAT=IErr)
+      RTempImage = RLACBED_21
+      DEALLOCATE(RLACBED_21)
+    CASE(22)
+      ALLOCATE(RTempImage(ISizeY,SIZE(RLACBED_22,DIM=2),IThicknessCount), STAT=IErr)
+      RTempImage = RLACBED_22
+      DEALLOCATE(RLACBED_22)
+    CASE(23)
+      ALLOCATE(RTempImage(ISizeY,SIZE(RLACBED_23,DIM=2),IThicknessCount), STAT=IErr)
+      RTempImage = RLACBED_23
+      DEALLOCATE(RLACBED_23)
+    CASE(24)
+      ALLOCATE(RTempImage(ISizeY,SIZE(RLACBED_24,DIM=2),IThicknessCount), STAT=IErr)
+      RTempImage = RLACBED_24
+      DEALLOCATE(RLACBED_24)
+    CASE(25)
+      ALLOCATE(RTempImage(ISizeY,SIZE(RLACBED_25,DIM=2),IThicknessCount), STAT=IErr)
+      RTempImage = RLACBED_25
+      DEALLOCATE(RLACBED_25)
+    CASE(26)
+      ALLOCATE(RTempImage(ISizeY,SIZE(RLACBED_26,DIM=2),IThicknessCount), STAT=IErr)
+      RTempImage = RLACBED_26
+      DEALLOCATE(RLACBED_26)
+    CASE(27)
+      ALLOCATE(RTempImage(ISizeY,SIZE(RLACBED_27,DIM=2),IThicknessCount), STAT=IErr)
+      RTempImage = RLACBED_27
+      DEALLOCATE(RLACBED_27)
+    CASE(28)
+      ALLOCATE(RTempImage(ISizeY,SIZE(RLACBED_28,DIM=2),IThicknessCount), STAT=IErr)
+      RTempImage = RLACBED_28
+      DEALLOCATE(RLACBED_28)
+    CASE(29)
+      ALLOCATE(RTempImage(ISizeY,SIZE(RLACBED_29,DIM=2),IThicknessCount), STAT=IErr)
+      RTempImage = RLACBED_29
+      DEALLOCATE(RLACBED_29)
+    CASE(30)
+      ALLOCATE(RTempImage(ISizeY,SIZE(RLACBED_30,DIM=2),IThicknessCount), STAT=IErr)
+      RTempImage = RLACBED_30
+      DEALLOCATE(RLACBED_30)
+    CASE(31)
+      ALLOCATE(RTempImage(ISizeY,SIZE(RLACBED_31,DIM=2),IThicknessCount), STAT=IErr)
+      RTempImage = RLACBED_31
+      DEALLOCATE(RLACBED_31)
+    CASE(32)
+      ALLOCATE(RTempImage(ISizeY,SIZE(RLACBED_32,DIM=2),IThicknessCount), STAT=IErr)
+      RTempImage = RLACBED_32
+      DEALLOCATE(RLACBED_32)
+    CASE(33)
+      ALLOCATE(RTempImage(ISizeY,SIZE(RLACBED_33,DIM=2),IThicknessCount), STAT=IErr)
+      RTempImage = RLACBED_33
+      DEALLOCATE(RLACBED_33)
+    CASE(34)
+      ALLOCATE(RTempImage(ISizeY,SIZE(RLACBED_34,DIM=2),IThicknessCount), STAT=IErr)
+      RTempImage = RLACBED_34
+      DEALLOCATE(RLACBED_34)
+    CASE(35)
+      ALLOCATE(RTempImage(ISizeY,SIZE(RLACBED_35,DIM=2),IThicknessCount), STAT=IErr)
+      RTempImage = RLACBED_35
+      DEALLOCATE(RLACBED_35)
+    CASE(36)
+      ALLOCATE(RTempImage(ISizeY,SIZE(RLACBED_36,DIM=2),IThicknessCount), STAT=IErr)
+      RTempImage = RLACBED_36
+      DEALLOCATE(RLACBED_36)
+    CASE(37)
+      ALLOCATE(RTempImage(ISizeY,SIZE(RLACBED_37,DIM=2),IThicknessCount), STAT=IErr)
+      RTempImage = RLACBED_37
+      DEALLOCATE(RLACBED_37)
+    CASE(38)
+      ALLOCATE(RTempImage(ISizeY,SIZE(RLACBED_38,DIM=2),IThicknessCount), STAT=IErr)
+      RTempImage = RLACBED_38
+      DEALLOCATE(RLACBED_38)
+    CASE(39)
+      ALLOCATE(RTempImage(ISizeY,SIZE(RLACBED_39,DIM=2),IThicknessCount), STAT=IErr)
+      RTempImage = RLACBED_39
+      DEALLOCATE(RLACBED_39)
+    CASE(40)
+      ALLOCATE(RTempImage(ISizeY,SIZE(RLACBED_40,DIM=2),IThicknessCount), STAT=IErr)
+      RTempImage = RLACBED_40
+      DEALLOCATE(RLACBED_40)
+    CASE(41)
+      ALLOCATE(RTempImage(ISizeY,SIZE(RLACBED_41,DIM=2),IThicknessCount), STAT=IErr)
+      RTempImage = RLACBED_41
+      DEALLOCATE(RLACBED_41)
+    CASE(42)
+      ALLOCATE(RTempImage(ISizeY,SIZE(RLACBED_42,DIM=2),IThicknessCount), STAT=IErr)
+      RTempImage = RLACBED_42
+      DEALLOCATE(RLACBED_42)
+    CASE(43)
+      ALLOCATE(RTempImage(ISizeY,SIZE(RLACBED_43,DIM=2),IThicknessCount), STAT=IErr)
+      RTempImage = RLACBED_43
+      DEALLOCATE(RLACBED_43)
+    CASE(44)
+      ALLOCATE(RTempImage(ISizeY,SIZE(RLACBED_44,DIM=2),IThicknessCount), STAT=IErr)
+      RTempImage = RLACBED_44
+      DEALLOCATE(RLACBED_44)
+    CASE(45)
+      ALLOCATE(RTempImage(ISizeY,SIZE(RLACBED_45,DIM=2),IThicknessCount), STAT=IErr)
+      RTempImage = RLACBED_45
+      DEALLOCATE(RLACBED_45)
+    CASE(46)
+      ALLOCATE(RTempImage(ISizeY,SIZE(RLACBED_46,DIM=2),IThicknessCount), STAT=IErr)
+      RTempImage = RLACBED_46
+      DEALLOCATE(RLACBED_46)
+    CASE(47)
+      ALLOCATE(RTempImage(ISizeY,SIZE(RLACBED_47,DIM=2),IThicknessCount), STAT=IErr)
+      RTempImage = RLACBED_47
+      DEALLOCATE(RLACBED_47)
+    CASE(48)
+      ALLOCATE(RTempImage(ISizeY,SIZE(RLACBED_48,DIM=2),IThicknessCount), STAT=IErr)
+      RTempImage = RLACBED_48
+      DEALLOCATE(RLACBED_48)
+    CASE(49)
+      ALLOCATE(RTempImage(ISizeY,SIZE(RLACBED_49,DIM=2),IThicknessCount), STAT=IErr)
+      RTempImage = RLACBED_49
+      DEALLOCATE(RLACBED_49)
+    CASE(50)
+      ALLOCATE(RTempImage(ISizeY,SIZE(RLACBED_50,DIM=2),IThicknessCount), STAT=IErr)
+      RTempImage = RLACBED_50
+      DEALLOCATE(RLACBED_50)
     END SELECT
 
     RETURN
@@ -658,4 +1154,5 @@ MODULE write_output_mod
   END SUBROUTINE CloseContainer
 
 END MODULE write_output_mod
+
 

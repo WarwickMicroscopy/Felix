@@ -505,7 +505,8 @@ MODULE ug_matrix_mod
           ! fill the symmetry relation matrix with incrementing numbers
           ! that have the sign of the imaginary part
           WHERE (ABS(RgSumMat-RgSumMat(ind,jnd)).LE.RTolerance)
-            ISymmetryRelations = Iuid*SIGN(1_IKIND,NINT(AIMAG(CUgMatNoAbs)/(TINY)))
+!DBG - is there an error where CUgMatNoAbs<TINY?
+            ISymmetryRelations = Iuid*SIGN(1_IKIND,NINT(AIMAG(CUgMatNoAbs*1000000000.0D0)/(TINY)))
           END WHERE
         END IF
       END DO
