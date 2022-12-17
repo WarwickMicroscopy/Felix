@@ -102,7 +102,7 @@ MODULE write_output_mod
         ILiveList(IhklsAll(ind)) = ILiveList(IhklsAll(ind))+1! increment counter for this reflection
         ! add the simulation into its output image
         IF(ILiveList(IhklsAll(ind)).EQ.1) THEN! new reflection, start up the output image
-          DO jnd=1,20! find an empty container RLACBED_(n)
+          DO jnd=1,50! find an empty container RLACBED_(n)
             IF (ILACBEDFlag(jnd).EQ.0) THEN
               ILACBEDFlag(jnd) = 1! this container is now taken 
               ILACBEDList(IhklsAll(ind)) = jnd! links reflection and container

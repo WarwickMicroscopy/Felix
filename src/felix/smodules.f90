@@ -196,7 +196,7 @@ MODULE IPara
   INTEGER(IKIND) :: IFrame,IThicknessCount
   !Tracking reflections
   INTEGER(IKIND), DIMENSION(:), ALLOCATABLE :: IhklsAll,IhklsFrame,ILiveList,ILACBEDList
-  INTEGER(IKIND), DIMENSION(20) :: ILACBEDFlag
+  INTEGER(IKIND), DIMENSION(50) :: ILACBEDFlag
   !Ug Calculation
   INTEGER(IKIND) :: ICurrentZ,IPsize
   !MPI pixel tracking
