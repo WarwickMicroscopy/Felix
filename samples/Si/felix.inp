@@ -32,7 +32,7 @@ RDebyeWallerConstant      = 0.0
 RAbsorptionPer            = 7.8
 
 # Image Output Options
-RInitialThickness        = 1500.0
-RFinalThickness          = 2100.0
+RInitialThickness        = 10.0
+RFinalThickness          = 10.0
 RDeltaThickness          = 100.0
 RBlurRadius              = 0.0

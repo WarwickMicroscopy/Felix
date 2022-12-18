@@ -47,10 +47,10 @@ MODULE write_output_mod
   !%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
   !>
-  !! Procedure-description: Writes output for interations including simulated .bin files, 
-  !! structureFactors.txt and structure.cif 
+  !! Procedure-description: Writes output for iterations including simulated .bin files
+  !! RockingCurves.txt and IntegratedIntensities.txt 
   !!
-  !! Major-Authors: 'kidwhizz' (2015), Richard Beanland (2016-22)
+  !! Major-Authors: Richard Beanland (2022)
   !!
   SUBROUTINE WriteIterationOutput(IErr)
 
@@ -61,7 +61,7 @@ MODULE write_output_mod
     USE IPARA, ONLY : ILN,ISizeX,ISizeY,IhklsFrame,INoOfHKLsFrame,IFrame,&
             IhklsAll,ILiveList,ILACBEDList,ILACBEDFlag,IByteSize,INFrames,IThicknessCount
     USE RPARA, ONLY : RInputHKLs,Rhkl, RImageSimi, RInitialThickness, RDeltaThickness,&
-            RTempImage,RDevPara
+            RTempImage,RDevPara,RarVecM,RbrVecM,RcrVecM
     USE SPARA, ONLY : SChemicalFormula
     USE IChannels, ONLY : IChOutIM,IChOutRC,IChOutIhkl
 
@@ -70,7 +70,8 @@ MODULE write_output_mod
     INTEGER(IKIND), INTENT(OUT) :: IErr
     INTEGER(IKIND) :: IThickness,ind,jnd,knd,lnd,Iflag,Irow,IhklFrames
     REAL(RKIND),DIMENSION(ISizeY,ISizeX,IThicknessCount) :: RImageToWrite
-    REAL(RKIND) :: RStartFrame,RIntegratedIntensity
+    REAL(RKIND),DIMENSION(3) :: RGvecM
+    REAL(RKIND) :: RStartFrame,RIntegratedIntensity,RLorAngle
     CHARACTER(10) :: hString,kString,lString
     CHARACTER(40) :: fString,SMiller
     CHARACTER(40) :: SPrintString
@@ -152,10 +153,14 @@ MODULE write_output_mod
           WRITE(lString,"(SP,I4.1)") jnd
         ENDIF
         SMiller = TRIM(ADJUSTL(hString)) // TRIM(ADJUSTL(kString)) // TRIM(ADJUSTL(lString))
+        ! Lorentz factor
+        ! x-direction in the microscope frame is [100] so g.x is just the x-component of g in the microscope frame
+        RGvecM = Rhkl(IhklsFrame(ind),1)*RarVecM+Rhkl(IhklsFrame(ind),2)*RbrVecM+Rhkl(IhklsFrame(ind),3)*RcrVecM
+        RLorAngle = ACOS(RGvecM(1))
 
         !--------------------------------------------------------------------
         ! loop over thicknesses for output
-        DO lnd=1,IThicknessCount
+        DO lnd = 1,IThicknessCount
           ! Get the folder name for this thickness
           IThickness = NINT(RInitialThickness +(lnd-1)*RDeltaThickness)/10.0!in nm 
           WRITE(path,"(I4.4,A2)") IThickness,"nm"
@@ -166,7 +171,7 @@ MODULE write_output_mod
           OPEN(UNIT=IChOutRC, ACTION='WRITE', POSITION='APPEND', STATUS='UNKNOWN', &
                   FILE=TRIM(ADJUSTL(fullpath)),IOSTAT=IErr)
           IF(l_alert(IErr,"Felixrefine","OPEN() RockingCurves.txt")) CALL abort
-          ! open integrated intensities text file
+          ! open integrated intensities text file to append
           fullpath = TRIM(ADJUSTL(path)) // "/IntegratedIntensities.txt"
           OPEN(UNIT=IChOutIhkl, ACTION='WRITE', POSITION='APPEND', STATUS= 'UNKNOWN', &
                   FILE=TRIM(ADJUSTL(fullpath)),IOSTAT=IErr)
@@ -180,7 +185,9 @@ MODULE write_output_mod
           Irow = NINT(HALF*REAL(ISizeY))        
           RIntegratedIntensity = 0.0D0
           ! Rocking curve
-          WRITE(IChOutRC,*) TRIM(ADJUSTL(SMiller))
+          WRITE(IChOutRC,*) TRIM(ADJUSTL(SMiller))!hkl
+          WRITE(OutputString,"(F8.5)") RLorAngle!angle for Lorentz factor
+          WRITE(IChOutRC,*) TRIM(ADJUSTL(OutputString))
           DO jnd=1,SIZE(RTempImage,DIM=2)
             WRITE(fString,"(F8.2)") RStartFrame+REAL(jnd)/REAL(ISizeX)
             OutputString = TRIM(ADJUSTL(fString)) // ", "
@@ -193,14 +200,15 @@ MODULE write_output_mod
           CLOSE(IChOutRC,IOSTAT=IErr)
           ! Integrated intensity
           WRITE(fString,"(F9.5)") RIntegratedIntensity
+          WRITE(OutputString,"(F8.5)") RLorAngle!angle for Lorentz factor
           WRITE(IChOutIhkl,*) TRIM(ADJUSTL(hString)) //","// TRIM(ADJUSTL(kString)) //","// TRIM(ADJUSTL(lString)) &
-                  //","// TRIM(ADJUSTL(fString))
+                  //","// TRIM(ADJUSTL(fString)) // TRIM(ADJUSTL(OutputString))
           CLOSE(IChOutIhkl,IOSTAT=IErr)
 
           !--------------------------------------------------------------------
           ! Write LACBED pattern to .bin file
           ! Make the path/filename e.g. 'GaAs_-2-2+0_10x100.bin'
-          WRITE(fString,"(I4,A1,I2)") SIZE(RTempImage,DIM=2),"x",ISizeY
+          WRITE(fString,"(I,A1,I)") SIZE(RTempImage,DIM=2),"x",ISizeY
           filename = SChemicalFormula(1:ILN) // "_" // TRIM(ADJUSTL(SMiller)) // "_" &
                     // TRIM(ADJUSTL(fString)) // ".bin"
           fullpath = TRIM(ADJUSTL(path))//"/"//TRIM(ADJUSTL(filename))
@@ -1154,5 +1162,3 @@ MODULE write_output_mod
   END SUBROUTINE CloseContainer
 
 END MODULE write_output_mod
-
-
