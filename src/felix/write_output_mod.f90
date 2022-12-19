@@ -209,7 +209,7 @@ MODULE write_output_mod
           WRITE(OutputString,"(F8.2)") RLorAngle!angle for Lorentz factor
           WRITE(IChOutRC,*) TRIM(ADJUSTL(OutputString))
           DO jnd=1,SIZE(RTempImage,DIM=2)
-            WRITE(OutputString,"(F8.2,A2,E9.2)") RStartFrame+REAL(jnd)/REAL(ISizeX),", ", &
+            WRITE(OutputString,"(F8.2,A2,E11.4)") RStartFrame+REAL(jnd)/REAL(ISizeX),", ", &
                   RTempImage(Irow,jnd,lnd)
             WRITE(IChOutRC,*) TRIM(ADJUSTL(OutputString))
             RIntegratedIntensity = RIntegratedIntensity + RTempImage(Irow,jnd,lnd)
@@ -217,7 +217,7 @@ MODULE write_output_mod
           WRITE(IChOutRC,*)!blank line to separate reflections
           CLOSE(IChOutRC,IOSTAT=IErr)
           ! Integrated intensity
-          WRITE(fString,"(E9.2,A2,F8.2)") RIntegratedIntensity,", ",RLorAngle
+          WRITE(fString,"(E11.4,A2,F8.2)") RIntegratedIntensity,", ",RLorAngle
           WRITE(IChOutIhkl,*) TRIM(ADJUSTL(Shkl))//", "// TRIM(ADJUSTL(fString))
           CLOSE(IChOutIhkl,IOSTAT=IErr)
         END DO
