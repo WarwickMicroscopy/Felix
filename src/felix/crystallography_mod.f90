@@ -7,7 +7,7 @@
 ! (C) 2013-19, all rights reserved
 !
 ! Version: 2.0
-! Date: 31-08-2022
+! Date: 19-12-2022
 ! Time:    :TIME:
 ! Status:  :RLSTATUS:
 ! Build: cRED 
@@ -202,7 +202,7 @@ MODULE crystallography_mod
     ! global inputs
     USE IPARA, ONLY : IVolumeFLAG,INAtomsUnitCell
     USE RPARA, ONLY : RAlpha,RBeta,RGamma,RCellA,RCellB,RCellC,RNormDirC,RXDirC,&
-          RZDirC,RAtomCoordinate,RAtomPosition
+          RZDirC,RXDirM,RAtomCoordinate,RAtomPosition
     USE SPARA, ONLY : SPrintString
 
     IMPLICIT NONE
@@ -213,9 +213,9 @@ MODULE crystallography_mod
 
     ! RTmatC2O transforms from crystal (implicit units) 
     ! to orthogonal reference frame (Angstrom units)
-    RTMatC2O(:,1)= RaVecO(:)
-    RTMatC2O(:,2)= RbVecO(:)
-    RTMatC2O(:,3)= RcVecO(:)
+    RTMatC2O(:,1) = RaVecO(:)
+    RTMatC2O(:,2) = RbVecO(:)
+    RTMatC2O(:,3) = RcVecO(:)
 
     ! RXDirC is the reciprocal lattice vector that defines the x-axis of the
     ! diffraction pattern and RZDirC the beam direction, coming from felix.inp
@@ -223,16 +223,16 @@ MODULE crystallography_mod
     ! assumed
     ! RXDirO,RYDirO,RZDirO vectors are UNIT reciprocal lattice vectors parallel 
     ! to the above in an orthogonal frame - now calculated in the frame loop
-!    RXDirO= RXDirC(1)*RarVecO + RXDirC(2)*RbrVecO + RXDirC(3)*RcrVecO
-!    RXDirO= RXDirO/SQRT(DOT_PRODUCT(RXDirO,RXDirO))
-!    RZDirO= RZDirC(1)*RaVecO + RZDirC(2)*RbVecO + RZDirC(3)*RcVecO
-!    RZDirO= RZDirO/SQRT(DOT_PRODUCT(RZDirO,RZDirO))
-!    RYDirO= CROSS(RZDirO,RXDirO)
+!    RXDirO = RXDirC(1)*RarVecO + RXDirC(2)*RbrVecO + RXDirC(3)*RcrVecO
+!    RXDirO = RXDirO/SQRT(DOT_PRODUCT(RXDirO,RXDirO))
+!    RZDirO = RZDirC(1)*RaVecO + RZDirC(2)*RbVecO + RZDirC(3)*RcVecO
+!    RZDirO = RZDirO/SQRT(DOT_PRODUCT(RZDirO,RZDirO))
+!    RYDirO = CROSS(RZDirO,RXDirO)
 
     ! RTmatO2M transforms from orthogonal to microscope reference frame
-    RTMatO2M(1,:)= RXDirO(:)
-    RTMatO2M(2,:)= RYDirO(:)
-    RTMatO2M(3,:)= RZDirO(:)
+    RTMatO2M(1,:) = RXDirO(:)
+    RTMatO2M(2,:) = RYDirO(:)
+    RTMatO2M(3,:) = RZDirO(:)
     
     ! Unit normal to the specimen in REAL space
     ! This is used for all g-vectors as a boundary condition
@@ -241,8 +241,8 @@ MODULE crystallography_mod
 
     ! Check to see if the normal is close to perpendicular to the incident beam
     ! remember in the microscope frame z = [001] so n.z is just n(3)
-    IF(RNormDirM(3).LT.0.1736D0 .AND. my_rank.EQ.0) THEN
-      RNormAngle = 180.0D0*RNormDirM(3)/PI
+    RNormAngle = ABS(180.0D0*ACOS(RNormDirM(3))/PI)
+    IF(RNormAngle.GT.75.0D0 .AND. my_rank.EQ.0) THEN
       WRITE(SPrintString,"(A30,F5.1,A8)") "Warning: surface normal is at ",RNormAngle," degrees"
       CALL message(LS,SPrintString) 
     END IF
@@ -254,7 +254,7 @@ MODULE crystallography_mod
     RbVecM= MATMUL(RTMatO2M,RbVecO)
     RcVecM= MATMUL(RTMatO2M,RcVecO)
     
-    ! create new set of reciprocal lattice vectors in Microscope reference frame
+    ! create reciprocal lattice vectors in Microscope reference frame
     ! Note that reciprocal lattice vectors have two pi included,
     ! we are using the optical convention exp(i*g.r)
     RarVecM= TWOPI*CROSS(RbVecM,RcVecM)/DOT_PRODUCT(RbVecM,CROSS(RcVecM,RaVecM))

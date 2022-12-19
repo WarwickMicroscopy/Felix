@@ -7,7 +7,7 @@
 ! (C) 2013-19, all rights reserved
 !
 ! Version: 2.0
-! Date: 31-08-2022
+! Date: 19-12-2022
 ! Time:    :TIME:
 ! Status:  :RLSTATUS:
 ! Build: cRED 
@@ -62,7 +62,7 @@ PROGRAM Felixrefine
         INumFinalReflections,IThicknessIndex,IVariableType,IArrayIndex,&
         IAnisotropicDebyeWallerFactorElementNo,IStartTime,IStartTime2
   INTEGER(4) :: IErr4
-  REAL(RKIND) :: RGlimit,RLaueZoneGz,RMaxGMag,RKn,RThickness,&
+  REAL(RKIND) :: RGlimit,RLaueZoneGz,RMaxGMag,RKn,RThickness,RxAngle,&
         RScale,RMaxUgStep,Rdx,RStandardDeviation,RMean,RGzUnitVec,&
         RMinLaueZoneValue,Rdf,RLastFit,RBestFit,RMaxLaueZoneValue,&
         RMaxAcceptanceGVecMag,RandomSign,RLaueZoneElectronWaveVectorMag,&
@@ -266,6 +266,18 @@ PROGRAM Felixrefine
   RXDirO = RXDirO/SQRT(DOT_PRODUCT(RXDirO,RXDirO))
   RZDirO = RZDirC_0(1)*RaVecO + RZDirC_0(2)*RbVecO + RZDirC_0(3)*RcVecO
   RZDirO = RZDirO/SQRT(DOT_PRODUCT(RZDirO,RZDirO))
+  ! Check that x-direction is perpendicular to z
+  RxAngle = ABS(180.0D0*ACOS(DOT_PRODUCT(RXDirO,RZDirO))/PI)
+  IF(ABS(RxAngle-90.0D0).GT.0.1)THEN! with a tolerance of 0.1 degrees
+    WRITE(SPrintString,"(A15,F5.1,A27)") "Error: X is at ",RxAngle," degrees to Z, should be 90"
+    CALL message(LS,SPrintString)
+    IErr = 1
+    CALL abort
+  ELSE!fine correction of x
+    ! take off any component parallel to z & renormalise
+    RXDirO = RXDirO - DOT_PRODUCT(RXDirO,RZDirO)*RZDirO
+    RXDirO = RXDirO/SQRT(DOT_PRODUCT(RXDirO,RXDirO))
+  END IF
   RYDirO = CROSS(RZDirO,RXDirO)
 
   !--------------------------------------------------------------------

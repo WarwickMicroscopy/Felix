@@ -7,7 +7,7 @@
 ! (C) 2013-19, all rights reserved
 !
 ! Version: 2.0
-! Date: 31-08-2022
+! Date: 19-12-2022
 ! Time:
 ! Status:  
 ! Build: cRED   
@@ -50,8 +50,8 @@
 MODULE SConst
 
   CHARACTER(50), PARAMETER :: RStr= "Version: 2.0"
-  CHARACTER(50), PARAMETER :: DStr= "Date: 31-08-2022"
-  CHARACTER(50), PARAMETER :: AStr= "Simulation only" 
+  CHARACTER(50), PARAMETER :: DStr= "Date: 19-12-2022"
+  CHARACTER(50), PARAMETER :: AStr= "cRED simulation" 
   CHARACTER(8) SAllSpaceGrp(230)
 !NB needs more work here, does not have non-standard settings or modern versions
 !with the letter e

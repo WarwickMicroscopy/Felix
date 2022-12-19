@@ -7,7 +7,7 @@
 ! (C) 2013-19, all rights reserved
 !
 ! Version: 2.0
-! Date: 31-08-2022
+! Date: 19-12-2022
 ! Time:    :TIME:
 ! Status:  :RLSTATUS:
 ! Build: cRED 
@@ -71,12 +71,10 @@ MODULE write_output_mod
     INTEGER(IKIND) :: IThickness,ind,jnd,knd,lnd,Iflag,Irow,IhklFrames
     REAL(RKIND),DIMENSION(ISizeY,ISizeX,IThicknessCount) :: RImageToWrite
     REAL(RKIND),DIMENSION(3) :: RGvecM
-    REAL(RKIND) :: RStartFrame,RIntegratedIntensity,RLorAngle
+    REAL(RKIND) :: RStartFrame,RIntegratedIntensity,RLorAngle,RgMag
     CHARACTER(10) :: hString,kString,lString
-    CHARACTER(40) :: fString,SMiller
-    CHARACTER(40) :: SPrintString
-    CHARACTER(200) :: path,filename,fullpath
-    CHARACTER(:), ALLOCATABLE :: OutputString
+    CHARACTER(40) :: fString,SMiller,Shkl,SPrintString
+    CHARACTER(200) :: path,filename,fullpath,OutputString
 
     IErr=0 
 
@@ -152,11 +150,14 @@ MODULE write_output_mod
         ELSE
           WRITE(lString,"(SP,I4.1)") jnd
         ENDIF
+        Shkl = TRIM(ADJUSTL(hString)) //","// TRIM(ADJUSTL(kString)) //","// TRIM(ADJUSTL(lString))
         SMiller = TRIM(ADJUSTL(hString)) // TRIM(ADJUSTL(kString)) // TRIM(ADJUSTL(lString))
+
         ! Lorentz factor
         ! x-direction in the microscope frame is [100] so g.x is just the x-component of g in the microscope frame
         RGvecM = Rhkl(IhklsFrame(ind),1)*RarVecM+Rhkl(IhklsFrame(ind),2)*RbrVecM+Rhkl(IhklsFrame(ind),3)*RcrVecM
-        RLorAngle = ACOS(RGvecM(1))
+        RgMag = SQRT(DOT_PRODUCT(RGvecM,RGvecM))
+        RLorAngle = ACOS(RGvecM(1)/RgMag)*180.0D0/PI
 
         !--------------------------------------------------------------------
         ! loop over thicknesses for output
@@ -177,38 +178,10 @@ MODULE write_output_mod
                   FILE=TRIM(ADJUSTL(fullpath)),IOSTAT=IErr)
 
           !--------------------------------------------------------------------
-          ! write rocking curve and integrated intensity
-          ! Each frame in RTempImage adds ISizeX pixels, so its width in frames is
-          IhklFrames = NINT(SIZE(RTempImage,DIM=2)/REAL(ISizeX))
-          RStartFrame = IFrame - IhklFrames
-          ! The central row
-          Irow = NINT(HALF*REAL(ISizeY))        
-          RIntegratedIntensity = 0.0D0
-          ! Rocking curve
-          WRITE(IChOutRC,*) TRIM(ADJUSTL(SMiller))!hkl
-          WRITE(OutputString,"(F8.5)") RLorAngle!angle for Lorentz factor
-          WRITE(IChOutRC,*) TRIM(ADJUSTL(OutputString))
-          DO jnd=1,SIZE(RTempImage,DIM=2)
-            WRITE(fString,"(F8.2)") RStartFrame+REAL(jnd)/REAL(ISizeX)
-            OutputString = TRIM(ADJUSTL(fString)) // ", "
-            WRITE(fString,"(F8.5)") RTempImage(Irow,jnd,lnd)
-            OutputString = OutputString // TRIM(ADJUSTL(fString))
-            WRITE(IChOutRC,*) TRIM(ADJUSTL(OutputString))
-            RIntegratedIntensity = RIntegratedIntensity + RTempImage(Irow,jnd,lnd)
-          END DO
-          WRITE(IChOutRC,*)!blank line to separate reflections
-          CLOSE(IChOutRC,IOSTAT=IErr)
-          ! Integrated intensity
-          WRITE(fString,"(F9.5)") RIntegratedIntensity
-          WRITE(OutputString,"(F8.5)") RLorAngle!angle for Lorentz factor
-          WRITE(IChOutIhkl,*) TRIM(ADJUSTL(hString)) //","// TRIM(ADJUSTL(kString)) //","// TRIM(ADJUSTL(lString)) &
-                  //","// TRIM(ADJUSTL(fString)) // TRIM(ADJUSTL(OutputString))
-          CLOSE(IChOutIhkl,IOSTAT=IErr)
-
-          !--------------------------------------------------------------------
           ! Write LACBED pattern to .bin file
           ! Make the path/filename e.g. 'GaAs_-2-2+0_10x100.bin'
-          WRITE(fString,"(I,A1,I)") SIZE(RTempImage,DIM=2),"x",ISizeY
+          ! NEEDS to take account of image dimensions
+          WRITE(fString,"(I,A1,I2)") SIZE(RTempImage,DIM=2),"x",ISizeY
           filename = SChemicalFormula(1:ILN) // "_" // TRIM(ADJUSTL(SMiller)) // "_" &
                     // TRIM(ADJUSTL(fString)) // ".bin"
           fullpath = TRIM(ADJUSTL(path))//"/"//TRIM(ADJUSTL(filename))
@@ -220,8 +193,33 @@ MODULE write_output_mod
           DO jnd = 1,ISizeY
             WRITE(IChOutIM,rec=jnd) RTempImage(jnd,:,lnd)
           END DO
-          CLOSE(IChOutIM,IOSTAT=IErr) 
-          IF(l_alert(IErr,"WriteIterationOutput","CLOSE() output .bin file")) RETURN       
+          CLOSE(IChOutIM,IOSTAT=IErr)
+          IF(l_alert(IErr,"WriteIterationOutput","CLOSE() output .bin file")) RETURN
+
+          !--------------------------------------------------------------------
+          ! write rocking curve and integrated intensity
+          ! Each frame in RTempImage adds ISizeX pixels, so its width in frames is
+          IhklFrames = NINT(SIZE(RTempImage,DIM=2)/REAL(ISizeX))
+          RStartFrame = IFrame - IhklFrames
+          ! The central row
+          Irow = NINT(HALF*REAL(ISizeY))        
+          RIntegratedIntensity = 0.0D0
+          ! Rocking curve
+          WRITE(IChOutRC,*) TRIM(ADJUSTL(Shkl))!hkl
+          WRITE(OutputString,"(F8.2)") RLorAngle!angle for Lorentz factor
+          WRITE(IChOutRC,*) TRIM(ADJUSTL(OutputString))
+          DO jnd=1,SIZE(RTempImage,DIM=2)
+            WRITE(OutputString,"(F8.2,A2,E9.2)") RStartFrame+REAL(jnd)/REAL(ISizeX),", ", &
+                  RTempImage(Irow,jnd,lnd)
+            WRITE(IChOutRC,*) TRIM(ADJUSTL(OutputString))
+            RIntegratedIntensity = RIntegratedIntensity + RTempImage(Irow,jnd,lnd)
+          END DO
+          WRITE(IChOutRC,*)!blank line to separate reflections
+          CLOSE(IChOutRC,IOSTAT=IErr)
+          ! Integrated intensity
+          WRITE(fString,"(E9.2,A2,F8.2)") RIntegratedIntensity,", ",RLorAngle
+          WRITE(IChOutIhkl,*) TRIM(ADJUSTL(Shkl))//", "// TRIM(ADJUSTL(fString))
+          CLOSE(IChOutIhkl,IOSTAT=IErr)
         END DO
 
         !Tidy up and reset flags

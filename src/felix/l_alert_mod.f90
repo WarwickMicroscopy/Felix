@@ -7,7 +7,7 @@
 ! (C) 2013-19, all rights reserved
 !
 ! Version: 2.0
-! Date: 31-08-2022
+! Date: 19-12-2022
 ! Time:
 ! Status:  
 ! Build: cRED   
@@ -97,7 +97,7 @@ END MODULE l_alert_mod
 !      1 = rank, error in felixrefine(ReadInpFile())
 !      1 = rank, error in felixrefine(ABORTING)
 !      @ felixrefine: 'Version: 2.0 / :BUILD: / :AUTHOR:           '
-!      @              'Date: 31-08-2022 :DATE:                                      '
+!      @              'Date: 19-12-2022 :DATE:                                      '
 !      @              '(:RLSTATUS:) multipole atom test & debug          '
 !      @ -----------------------------------------------------------------
 !      @ total number of MPI ranks is 004, screen messages via rank= 000
