@@ -36,7 +36,15 @@ DIRFELIX=felix/
 .PHONY:  felix felixdir felixrefine ciftbx quadpack \
          clean clear exe main
 
-all: ciftbx quadpack felixdir ourlibs felix
+all: gitversion ciftbx quadpack felixdir ourlibs felix
+
+# setting version
+gitversion: 
+	@ echo --- GETTING GIT VERSION INFORMATION
+	@ cd $(DIRFELIX);\
+	sed "s/GITVERSION/`git describe --tags --long`/g" version_template.txt | \
+	sed "s/GITBRANCH/`git branch --show-current`/g" | \
+	sed "s/COMPILED/`date`/g" >version.txt
 
 # compiling libraries
 quadpack:

@@ -49,9 +49,10 @@
 !!
 MODULE SConst
 
-  CHARACTER(50), PARAMETER :: RStr= "Version: 1.2"
-  CHARACTER(50), PARAMETER :: DStr= "Date: 30-08-2022"
-  CHARACTER(50), PARAMETER :: AStr= "Refinements B,C,D,F,H and S working, no HOLZ" 
+! the following three lines are now automatically generated via git tags
+!  CHARACTER(50), PARAMETER :: RStr= "Version: 1.2"
+!  CHARACTER(50), PARAMETER :: DStr= "Date: 30-08-2022"
+!  CHARACTER(50), PARAMETER :: AStr= "Refinements B,C,D,F,H and S working, no HOLZ" 
   CHARACTER(8) SAllSpaceGrp(230)
 !NB needs more work here, does not have non-standard settings or modern versions
 !with the letter e
