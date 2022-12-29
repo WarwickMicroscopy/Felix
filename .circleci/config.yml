@@ -15,11 +15,10 @@ jobs:
     steps:
       - checkout
       - run: |
-          echo "Hello world!"
-          sudo apt-get update
-          sudo apt-get install libblas-dev liblapack-dev
-          sudo apt-get install mpich mpich-doc #libcr-dev
-          sudo apt-get install libfftw3-dev libfftw3-doc
+          echo "--- update"; sudo apt-get update
+          echo "--- BLAS/LAPACK"; sudo apt-get install libblas-dev liblapack-dev
+          echo "--- MPI"; sudo apt-get install mpich mpich-doc #libcr-dev
+          echo "--- FFTW3"; sudo apt-get install libfftw3-dev libfftw3-doc
           
           ls
 
