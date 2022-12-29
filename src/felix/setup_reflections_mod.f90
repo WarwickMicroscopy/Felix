@@ -203,7 +203,7 @@ MODULE setup_reflections_mod
     
     !the k-vector for the incident beam
     !we are working in the microscope reference frame so k is along z
-    Rk=(/ 0.0,0.0,RElectronWaveVectorMagnitude /)
+    Rk=(/ 0.0D0,0.0D0,RElectronWaveVectorMagnitude /)
     !get the size of the reciprocal lattice basis vectors
     RarMag=SQRT(DOT_PRODUCT(RarVecM,RarVecM))!magnitude of a*
     RbrMag=SQRT(DOT_PRODUCT(RbrVecM,RbrVecM))!magnitude of b*
@@ -213,7 +213,7 @@ MODULE setup_reflections_mod
     RShell=MINVAL( (/ RarMag,RbrMag,RcrMag /) )
 
     !first g is always 000
-    Rhkl(1,:)=(/ 0.0,0.0,0.0 /)
+    Rhkl(1,:)=(/ 0.0D0,0.0D0,0.0D0 /)
     knd=1!number of reflections in the pool 
     lnd=0!number of the shell 
     !maximum a*,b*,c* limit is determined by the G magnitude limit
@@ -248,7 +248,7 @@ MODULE setup_reflections_mod
                   ! Tolerance of 0.08 here is rather arbitrary, might need
                   ! revisiting
 !DBG    IF(my_rank.EQ.0)PRINT*,(/ Ih,Ik,Il /),RDev
-                  IF ((RDev-0.08).LT.TINY) THEN !it's near the ZOLZ 
+                  IF ((RDev-0.08D0).LT.TINY) THEN !it's near the ZOLZ 
                     !add it to the pool and increment the counter
                     !need to check that we have space in Rhkl because the while doesn't
                     !kick in until we finish the do loops
@@ -265,7 +265,7 @@ MODULE setup_reflections_mod
 !DBG    IF(my_rank.EQ.0)PRINT*,"total ",knd,"reflections in the pool"
     ! fill up any remaining beam pool places with an enormous g-vector, diabolically
     ! the idea being that this g-vector will never be near any possible Ewald sphere
-    RGtest = REAL( (/ 666,666,666 /),RKIND )
+    RGtest = REAL( (/ 666D0,666D0,666D0 /),RKIND )
     DO jnd = knd+1, INhkl
       Rhkl(jnd,:)=RGtest
     END DO

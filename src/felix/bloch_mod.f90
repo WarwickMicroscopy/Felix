@@ -76,7 +76,7 @@ MODULE bloch_mod
     INTEGER(IKIND),INTENT(IN) :: IYPixelIndex,IXPixelIndex,IPixelNumber,&
           IFirstPixelToCalculate
     INTEGER(IKIND),INTENT(OUT) :: nBeams, IErr
-	REAL, INTENT(OUT) :: RThickness, RKn
+    REAL(RKIND), INTENT(OUT) :: RThickness, RKn
     
     COMPLEX(CKIND),ALLOCATABLE :: CBeamProjectionMatrix(:,:),&
           CDummyBeamMatrix(:,:),CUgSgMatrix(:,:),CEigenVectors(:,:),CEigenValues(:),&
@@ -90,11 +90,11 @@ MODULE bloch_mod
     INTEGER(IKIND) :: ind,jnd,knd,pnd,IThickness,IThicknessIndex,ILowerLimit,&
           IUpperLimit       
     REAL(RKIND) :: Rk0(3),RkPrime(3),RK,RKg
-	REAL(RKIND), ALLOCATABLE :: RDiagonalElement(:)
-	COMPLEX(CKIND), ALLOCATABLE :: CElementOff(:)
+    REAL(RKIND), ALLOCATABLE :: RDiagonalElement(:)
+    COMPLEX(CKIND), ALLOCATABLE :: CElementOff(:)
     COMPLEX(CKIND) sumC,sumD
     COMPLEX(CKIND), DIMENSION(:,:), ALLOCATABLE :: CBeamTranspose,CUgMatPartial,CDummyEigenVectors
-	COMPLEX(CKIND), DIMENSION(:,:), ALLOCATABLE :: CStructureMatrix
+    COMPLEX(CKIND), DIMENSION(:,:), ALLOCATABLE :: CStructureMatrix
     CHARACTER*40 surname
     CHARACTER*100 SindString,SjndString,SPixelCount,SnBeams,SWeakBeamIndex
     
@@ -173,9 +173,9 @@ MODULE bloch_mod
     ALLOCATE( CUgMatPartial(INhkl,nBeams), STAT=IErr )
     ALLOCATE( CAlphaWeightingCoefficients(nBeams), STAT=IErr )
     ALLOCATE( CEigenValueDependentTerms(nBeams,nBeams), STAT=IErr )
-	ALLOCATE( RDiagonalElement(nBeams), STAT = IErr)
-	ALLOCATE( CElementOff(nBeams), STAT = IErr)
-	ALLOCATE( CStructureMatrix(nBeams, nBeams), STAT = IErr)
+    ALLOCATE( RDiagonalElement(nBeams), STAT = IErr)
+    ALLOCATE( CElementOff(nBeams), STAT = IErr)
+    ALLOCATE( CStructureMatrix(nBeams, nBeams), STAT = IErr)
     IF(l_alert(IErr,"BlochCoefficientCalculation","allocations")) RETURN
 
     ! compute the effective Ug matrix by selecting only those beams
