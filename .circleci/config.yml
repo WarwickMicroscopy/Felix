@@ -2,7 +2,7 @@ version: 2.1
 executors:
   my-custom-executor:
     docker:
-      - image: circleci/base
+      - image: cimg/node:17.2.0
 #        auth:
           # ensure you have first added these secrets
           # visit app.circleci.com/settings/project/github/WarwickMicroscopy/Felix/environment-variables
@@ -15,6 +15,7 @@ jobs:
     steps:
       - checkout
       - run: |
+          echo "Hello world!"
           sudo apt-get update
           sudo apt-get install libcr-dev mpich2 mpich2-doc
           sudo apt-get install libfftw3-dev libfftw3-doc
