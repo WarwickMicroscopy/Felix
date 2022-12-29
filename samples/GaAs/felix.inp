@@ -1,0 +1,50 @@
+# Input file for Felix version :RB_coord: Build :4Feb2019:
+# ------------------------------------
+
+# ------------------------------------
+
+# control flags
+IWriteFLAG                = 1
+IScatterFactorMethodFLAG  = 0
+IHolzFLAG                 = 0
+IAbsorbFLAG               = 2
+IByteSize                 = 2
+
+# radius of the beam in pixels
+IPixelCount               = 40
+
+# beam selection criteria
+IMinReflectionPool        = 200
+IMinStrongBeams           = 50
+IMinWeakBeams             = 0
+
+# crystal settings
+RDebyeWallerConstant      = 0.0
+RAbsorptionPer            = 7.8
+
+# microscope settings
+ROuterConvergenceAngle    = 3.03
+IIncidentBeamDirection    = [-1,1,0]
+IXDirection               = [1,1,0]
+INormalDirection          = [-1,1,0]
+RAcceleratingVoltage (kV) = 200.0
+RAcceptanceAngle          = 0.0
+
+# Image Output Options
+RInitialThickness        = 930.0
+RFinalThickness          = 930.0
+RDeltaThickness          = 10.0
+IReflectOut              = 1
+
+#Refinement Specific Flags
+IRefineModeFLAG          = S
+IWeightingFLAG           = 0
+IRefineMethodFLAG        = 3
+ICorrelationFLAG         = 2
+IImageProcessingFLAG     = 4
+RBlurRadius              = 0.0
+INoofUgs                 = 40
+IAtomicSites             = (1,2)
+IPrint                   = 0
+RSimplexLengthScale      = 20.0
+RExitCriteria            = 0.00001

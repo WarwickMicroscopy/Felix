@@ -1,0 +1,50 @@
+# Input file for Felix version :RB_parabola: Build :09Feb2017:
+# ------------------------------------
+
+# ------------------------------------
+
+# control flags
+IWriteFLAG                = 1
+IScatterFactorMethodFLAG  = 0
+IHolzFLAG                 = 0
+IAbsorbFLAG               = 2
+IByteSize                 = 2
+
+# radius of the beam in pixels
+IPixelCount               = 64
+
+# beam selection criteria
+IMinReflectionPool        = 100
+IMinStrongBeams           = 50
+IMinWeakBeams             = 0
+
+# crystal settings
+RDebyeWallerConstant      = 0.0
+RAbsorptionPer            = 7.8
+
+# microscope settings
+ROuterConvergenceAngle    = 1.19
+IIncidentBeamDirection    = [0,0,1]
+IXDirection               = [1,0,0]
+INormalDirection          = [0,0,1]
+RAcceleratingVoltage (kV) = 200.0
+RAcceptanceAngle          = 0.0
+
+# Image Output Options
+RInitialThickness        = 630.0
+RFinalThickness          = 630.0
+RDeltaThickness          = 10.0
+IReflectOut              = 1
+
+#Refinement Specific Flags
+IRefineModeFLAG          = S
+IWeightingFLAG           = 0
+IRefineMethodFLAG        = 2
+ICorrelationFLAG         = 2
+IImageProcessingFLAG     = 4
+RBlurRadius              = 0.1
+INoofUgs                 = 40
+IAtomicSites             = (3)
+IPrint                   = 1
+RSimplexLengthScale      = 10.0
+RExitCriteria            = 0.01
