@@ -13,7 +13,7 @@ jobs:
 
     executor: my-custom-executor
     steps:
-      - checkout
+#      - checkout
       - run: |
           echo "Hello world!"
           sudo apt-get update
