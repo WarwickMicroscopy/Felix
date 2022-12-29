@@ -3,13 +3,13 @@ executors:
   my-custom-executor:
     docker:
       - image: cimg/deploy
-        auth:
+#        auth:
           # ensure you have first added these secrets
           # visit app.circleci.com/settings/project/github/WarwickMicroscopy/Felix/environment-variables
-          username: $DOCKER_HUB_USER
-          password: $DOCKER_HUB_PASSWORD
+#          username: $DOCKER_HUB_USER
+#          password: $DOCKER_HUB_PASSWORD
 jobs:
-  my-job-name:
+  felix-GaAs-test:
 
     executor: my-custom-executor
     steps:
@@ -28,6 +28,6 @@ jobs:
           diff -W132 -s ./samples/GaAs/GaAs_Sim_0930A_080x080/GaAs_+0+0+0.bin ./samples/GaAs_short/sample_outputs/GaAs_+0+0+0.bin || true
 
 workflows:
-  my-custom-workflow:
+  my-felix-workflow:
     jobs:
-      - my-job-name
+      - felix-GaAs-test
