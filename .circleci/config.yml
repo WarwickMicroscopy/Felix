@@ -2,7 +2,7 @@ version: 2.1
 executors:
   my-custom-executor:
     docker:
-      - image: cimg/base-current
+      - image: cimg/base
 #        auth:
           # ensure you have first added these secrets
           # visit app.circleci.com/settings/project/github/WarwickMicroscopy/Felix/environment-variables
