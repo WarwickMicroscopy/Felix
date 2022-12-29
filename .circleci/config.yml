@@ -22,7 +22,7 @@ jobs:
           
           ls
 
-          cd ./felix/;pwd;sed "s/ PLATFORM=INT64Nifort/# PLATFORM=INT64Nifort/g" user.mk | sed "s/# PLATFORM=OPT64NGNU/ PLATFORM=OPT64NGNU/g" >newuser.mk; cp newuser.mk user.mk; make clean; make
+          cd ./src/felix/;pwd;sed "s/ PLATFORM=INT64Nifort/# PLATFORM=INT64Nifort/g" user.mk | sed "s/# PLATFORM=OPT64NGNU/ PLATFORM=OPT64NGNU/g" >newuser.mk; cp newuser.mk user.mk; make clean; make
           
           cd src; make clean; pwd; ls -al
           
