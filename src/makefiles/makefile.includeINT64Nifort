@@ -1,5 +1,5 @@
 # CSC module load commands
-# intel/mkl/11.0 intel/15.0 ompi/2.0.1/intel/15.0
+# module load intel imkl impi
 
 # where are the libraries for the Linux platform located
 # note that the platform will be added to this path!

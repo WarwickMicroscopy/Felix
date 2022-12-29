@@ -1,0 +1,3 @@
+  CALL message(LS,"felixrefine: ", TRIM("2.2.0-74-g9ea4e7c"))
+  CALL message(LS,"             ", TRIM("gitversion"))
+  CALL message(LS,"             ", TRIM("Thu 29 Dec 15:41:55 GMT 2022"))

@@ -92,9 +92,14 @@ PROGRAM Felixrefine
 
   ! startup terminal output
   CALL message(LS,"-----------------------------------------------------------------")
-  CALL message(LS,"felixrefine: ", RStr)
-  CALL message(LS,"             ", DStr)
-  CALL message(LS,"             ", AStr)
+  INCLUDE "version.txt"
+!!$#ifdef git
+!!$  CALL message(LS,"felixrefine: ", TRIM("GITVERSION"))
+!!$  CALL message(LS,"             ", TRIM("GITBRANCH"))
+!!$  CALL message(LS,"             ", TRIM("COMPILED"))
+!!$#else
+!!$  CALL message(LS,"felixrefine: ", "see https://github.com/WarwickMicroscopy/Felix for version")
+!!$#endif
   CALL message(LS,"-----------------------------------------------------------------")
   CALL message(LS,"total number of MPI ranks ", p, ", screen messages via rank", my_rank)
   CALL message(LS,"-----------------------------------------------------------------")

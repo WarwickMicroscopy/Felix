@@ -1,0 +1,3 @@
+  CALL message(LS,"felixrefine: ", TRIM("GITVERSION"))
+  CALL message(LS,"             ", TRIM("GITBRANCH"))
+  CALL message(LS,"             ", TRIM("COMPILED"))
