@@ -21,12 +21,14 @@ jobs:
           echo "--- FFTW3"; sudo apt-get install libfftw3-dev libfftw3-doc
           
           ls
+          startdir=`pwd`
+          echo "working in" $startdir
 
-          cd ~/src;pwd;sed "s/ PLATFORM=INT64Nifort/# PLATFORM=INT64Nifort/g" user.mk | sed "s/# PLATFORM=OPT64NGNU/ PLATFORM=OPT64NGNU/g" >newuser.mk; cp newuser.mk user.mk; make clean; make; cd ..
+          cd $startdir/src;pwd;sed "s/ PLATFORM=INT64Nifort/# PLATFORM=INT64Nifort/g" user.mk | sed "s/# PLATFORM=OPT64NGNU/ PLATFORM=OPT64NGNU/g" >newuser.mk; cp newuser.mk user.mk; make clean; make; cd ..
           
-          cd ~/src; make clean; pwd; ls -al; cd ..
+          cd $startdir/src; make clean; pwd; ls -al; cd ..
           
-          cd ~/samples/GaAs; ../../felix/felix.OPT64NGNU.d #| tee terminal_log.txt
+          cd $startdir/samples/GaAs; ../../felix/felix.OPT64NGNU.d #| tee terminal_log.txt
           
           diff -W132 -s ./samples/GaAs/GaAs_Sim_0930A_080x080/GaAs_+0+0+0.bin ./samples/GaAs_short/sample_outputs/GaAs_+0+0+0.bin || true
 
