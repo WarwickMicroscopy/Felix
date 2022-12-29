@@ -17,6 +17,7 @@ jobs:
       - run: |
           echo "Hello world!"
           sudo apt-get update
+          sudo apt-get install libblas-dev liblapack-dev
           sudo apt-get install mpich mpich-doc #libcr-dev
           sudo apt-get install libfftw3-dev libfftw3-doc
           
