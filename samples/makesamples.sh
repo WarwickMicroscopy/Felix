@@ -9,6 +9,7 @@ do
     pwd
     ../../src/$EXE
     rm -rf sample_outputs/*
+    mkdir -p sample_outputs
     mv $dir_Sim_*/* sample_outputs
     rmdir $dir_Sim_*
     popd
