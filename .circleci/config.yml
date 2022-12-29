@@ -20,7 +20,9 @@ jobs:
           sudo apt-get install mpich mpich-doc #libcr-dev
           sudo apt-get install libfftw3-dev libfftw3-doc
           
-          cd ./felix-${CIRCLE_SHA1}/;pwd;sed "s/ PLATFORM=INT64Nifort/# PLATFORM=INT64Nifort/g" user.mk | sed "s/# PLATFORM=OPT64NGNU/ PLATFORM=OPT64NGNU/g" >newuser.mk; cp newuser.mk user.mk; make clean; make
+          ls
+
+          cd ./felix/;pwd;sed "s/ PLATFORM=INT64Nifort/# PLATFORM=INT64Nifort/g" user.mk | sed "s/# PLATFORM=OPT64NGNU/ PLATFORM=OPT64NGNU/g" >newuser.mk; cp newuser.mk user.mk; make clean; make
           
           cd src; make clean; pwd; ls -al
           
