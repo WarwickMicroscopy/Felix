@@ -1,6 +1,7 @@
 #!/bin/bash
 
-EXE=felix.INT64Nifort.d
+#EXE=felix.INT64Nifort.d
+EXE=felix.OPT64NGNU.d
 
 for dir in GaAs SrTiO3
 do 
