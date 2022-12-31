@@ -220,6 +220,7 @@ MODULE write_output_mod
             ! Each frame in RTempImage adds ISizeX pixels, so its width in frames is
             IhklFrames = NINT(SIZE(RTempImage,DIM=2)/REAL(ISizeX))
             RStartFrame = IFrame - IhklFrames
+            WRITE(IChOutRC,*)"#"!# to separate reflections
             WRITE(IChOutRC,*) TRIM(ADJUSTL(Shkl))!hkl
             WRITE(OutputString,"(F8.2)") RLorAngle!angle for Lorentz factor
             WRITE(IChOutRC,*) TRIM(ADJUSTL(OutputString))
@@ -229,7 +230,7 @@ MODULE write_output_mod
               WRITE(IChOutRC,*) TRIM(ADJUSTL(OutputString))
             RIntegratedIntensity = RIntegratedIntensity + RTempImage(Irow,jnd,lnd)
             END DO
-            WRITE(IChOutRC,*)!blank line to separate reflections
+            WRITE(IChOutRC,*)
             CLOSE(IChOutRC,IOSTAT=IErr)
           END IF
         END DO

@@ -192,6 +192,14 @@ MODULE read_files_mod
     ILine= ILine+1; READ(IChInp,'(27X,F18.9)',ERR=20,END=30) RBlurRadius
     ! IOutputFLAG: 0=integrated intensities, 1=0+rocking curves, 2=1+images
     ILine= ILine+1; READ(IChInp,'(27X,I15.1)',ERR=20,END=30) IOutputFLAG
+    IF(IOutputFLAG.EQ.0) THEN
+      WRITE(SPrintString, FMT='(A)') "Output Iint only"
+    ELSEIF(IOutputFLAG.EQ.1) THEN
+      WRITE(SPrintString, FMT='(A)') "Output Iint + rocking curves"
+    ELSEIF(IOutputFLAG.EQ.2) THEN
+      WRITE(SPrintString, FMT='(A)') "Output Iint + rocking curves + LACBED patterns"
+    END IF
+    CALL message(LS,SPrintString)
 
     !--------------------------------------------------------------------
     ! finish reading, close felix.inp

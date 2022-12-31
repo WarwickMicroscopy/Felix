@@ -36,4 +36,4 @@ RInitialThickness        = 1000.0
 RFinalThickness          = 1000.0
 RDeltaThickness          = 100.0
 RBlurRadius              = 0.0
-IOutputFLAG              = 0
+IOutputFLAG              = 2
