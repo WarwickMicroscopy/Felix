@@ -160,7 +160,7 @@ MODULE IPara
   INTEGER(IKIND) :: IWriteFLAG,IDebugFLAG,IScatterFactorMethodFLAG, &
        IVolumeFLAG,IHolzFLAG,IAbsorbFLAG, &
        IBeamConvergenceFLAG,IDevFLAG, &
-       IRefineModeFLAG,IPrint,IRefineSwitch,&
+       IRefineModeFLAG,IOutputFLAG,IPrint,&
        IWeightingFLAG,IRefineMethodFLAG,ICorrelationFLAG,IImageProcessingFLAG,&
        IByteSize
   !Minimum Reflections etc

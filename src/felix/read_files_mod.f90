@@ -53,7 +53,7 @@ MODULE read_files_mod
 
     ! global outputs, read from .inp
     USE IPARA, ONLY : IWriteFLAG, IScatterFactorMethodFLAG, IHolzFLAG, &
-          IAbsorbFLAG, IByteSize, INhkl, INFrames, &
+          IAbsorbFLAG, IOutputFLAG, IByteSize, INhkl, INFrames, &
           IMinStrongBeams, IMinWeakBeams, IImageProcessingFLAG, &
           INoofUgs, IPrint, ISizeX, ISizeY
     USE RPARA, ONLY : RDebyeWallerConstant, RAbsorptionPercentage, RConvergenceAngle, &
@@ -190,6 +190,8 @@ MODULE read_files_mod
     ILine= ILine+1; READ(IChInp,'(27X,F18.9)',ERR=20,END=30) RDeltaThickness
     ! RBlurRadius
     ILine= ILine+1; READ(IChInp,'(27X,F18.9)',ERR=20,END=30) RBlurRadius
+    ! IOutputFLAG: 0=integrated intensities, 1=0+rocking curves, 2=1+images
+    ILine= ILine+1; READ(IChInp,'(27X,I15.1)',ERR=20,END=30) IOutputFLAG
 
     !--------------------------------------------------------------------
     ! finish reading, close felix.inp

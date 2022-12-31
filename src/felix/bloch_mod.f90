@@ -74,7 +74,7 @@ MODULE bloch_mod
     INTEGER(IKIND),INTENT(IN) :: IYPixelIndex,IXPixelIndex,IPixelNumber,&
           IFirstPixelToCalculate
     INTEGER(IKIND),INTENT(OUT) :: nBeams, IErr
-	REAL, INTENT(OUT) :: RThickness, RKn
+    REAL(RKIND), INTENT(OUT) :: RThickness, RKn
     
     COMPLEX(CKIND),ALLOCATABLE :: CBeamProjectionMatrix(:,:),&
           CDummyBeamMatrix(:,:),CUgSgMatrix(:,:),CEigenVectors(:,:),CEigenValues(:),&

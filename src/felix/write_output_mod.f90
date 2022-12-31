@@ -58,7 +58,7 @@ MODULE write_output_mod
     USE message_mod
     
     ! global inputs
-    USE IPARA, ONLY : ILN,ISizeX,ISizeY,IhklsFrame,INoOfHKLsFrame,IFrame,&
+    USE IPARA, ONLY : ILN,ISizeX,ISizeY,IhklsFrame,INoOfHKLsFrame,IFrame,IOutputFLAG,&
             IhklsAll,ILiveList,ILACBEDList,ILACBEDFlag,IByteSize,INFrames,IThicknessCount
     USE RPARA, ONLY : RInputHKLs,Rhkl, RImageSimi, RInitialThickness, RDeltaThickness,&
             RTempImage,RDevPara,RarVecM,RbrVecM,RcrVecM
@@ -127,9 +127,9 @@ MODULE write_output_mod
         IF (ILiveList(IhklsAll(ind)).EQ.0) CYCLE! it is not active, ignore it
         ! It is active, put the finished LACBED into RTempImage, extract rocking curve and save
         CALL CloseContainer(ILACBEDList(IhklsAll(ind)),IErr)
-        WRITE(SPrintString,'(A10,I3,A1,I3,1X,I3,1X,I3,A1,I7,A7)') "finished #",IhklsAll(ind),":",&
-              NINT(Rhkl(IhklsFrame(ind),:)),",",ILiveList(IhklsAll(ind))," frames"
-        CALL message(LL, SPrintString)
+        !WRITE(SPrintString,'(A10,I3,A1,I3,1X,I3,1X,I3,A1,I7,A7)') "finished #",IhklsAll(ind),":",&
+        !      NINT(Rhkl(IhklsFrame(ind),:)),",",ILiveList(IhklsAll(ind))," frames"
+        !CALL message(LL, SPrintString)
 
         !--------------------------------------------------------------------
         ! Make the hkl string e.g. -2-2+10
@@ -174,59 +174,64 @@ MODULE write_output_mod
           WRITE(path,"(I4.4,A2)") IThickness,"nm"
           path = SChemicalFormula(1:ILN) // "_" // path ! This adds chemical formula to folder name
 !DBG          IF(my_rank.EQ.0)PRINT*,"writing ",Smiller," to ",TRIM(ADJUSTL(path))
-          ! open rocking curve text file to append
-          fullpath = TRIM(ADJUSTL(path)) // "/RockingCurves.txt"
-          OPEN(UNIT=IChOutRC, ACTION='WRITE', POSITION='APPEND', STATUS='UNKNOWN', &
-                  FILE=TRIM(ADJUSTL(fullpath)),IOSTAT=IErr)
-          IF(l_alert(IErr,"Felixrefine","OPEN() RockingCurves.txt")) CALL abort
-          ! open integrated intensities text file to append
-          fullpath = TRIM(ADJUSTL(path)) // "/IntegratedIntensities.txt"
-          OPEN(UNIT=IChOutIhkl, ACTION='WRITE', POSITION='APPEND', STATUS= 'UNKNOWN', &
-                  FILE=TRIM(ADJUSTL(fullpath)),IOSTAT=IErr)
 
           !--------------------------------------------------------------------
           ! Write LACBED pattern to .bin file
           ! Make the path/filename e.g. 'GaAs_-2-2+0_10x100.bin'
-          ! NEEDS to take account of image dimensions
-          WRITE(fString,"(I,A1,I2)") SIZE(RTempImage,DIM=2),"x",ISizeY
-          filename = SChemicalFormula(1:ILN) // "_" // TRIM(ADJUSTL(SMiller)) // "_" &
-                    // TRIM(ADJUSTL(fString)) // ".bin"
-          fullpath = TRIM(ADJUSTL(path))//"/"//TRIM(ADJUSTL(filename))
-          CALL message ( LL, dbg6, fullpath )
-          OPEN(UNIT=IChOutIM, STATUS= 'UNKNOWN', FILE=TRIM(ADJUSTL(fullpath)),&
-              FORM='UNFORMATTED',ACCESS='DIRECT',IOSTAT=IErr,RECL=SIZE(RTempImage,DIM=2)*IByteSize)
-          IF(l_alert(IErr,"WriteIterationOutput","OPEN() output .bin file")) RETURN
-          ! we write each X-line, remembering indexing is [row,col]=[y,x]
-          DO jnd = 1,ISizeY
-            WRITE(IChOutIM,rec=jnd) RTempImage(jnd,:,lnd)
-          END DO
-          CLOSE(IChOutIM,IOSTAT=IErr)
-          IF(l_alert(IErr,"WriteIterationOutput","CLOSE() output .bin file")) RETURN
+          ! only happens if IOutputFLAG>1
+          IF(IOutputFLAG.GE.2) THEN
+            WRITE(fString,"(I,A1,I2)") SIZE(RTempImage,DIM=2),"x",ISizeY
+            filename = SChemicalFormula(1:ILN) // "_" // TRIM(ADJUSTL(SMiller)) // "_" &
+                       // TRIM(ADJUSTL(fString)) // ".bin"
+            fullpath = TRIM(ADJUSTL(path))//"/"//TRIM(ADJUSTL(filename))
+            CALL message ( LL, dbg6, fullpath )
+            OPEN(UNIT=IChOutIM, STATUS= 'UNKNOWN', FILE=TRIM(ADJUSTL(fullpath)),&
+                 FORM='UNFORMATTED',ACCESS='DIRECT',IOSTAT=IErr,RECL=SIZE(RTempImage,DIM=2)*IByteSize)
+            IF(l_alert(IErr,"WriteIterationOutput","OPEN() output .bin file")) RETURN
+            ! we write each X-line, remembering indexing is [row,col]=[y,x]
+            DO jnd = 1,ISizeY
+              WRITE(IChOutIM,rec=jnd) RTempImage(jnd,:,lnd)
+            END DO
+            CLOSE(IChOutIM,IOSTAT=IErr)
+            IF(l_alert(IErr,"WriteIterationOutput","CLOSE() output .bin file")) RETURN
+          END IF
 
           !--------------------------------------------------------------------
           ! write rocking curve and integrated intensity
-          ! Each frame in RTempImage adds ISizeX pixels, so its width in frames is
-          IhklFrames = NINT(SIZE(RTempImage,DIM=2)/REAL(ISizeX))
-          RStartFrame = IFrame - IhklFrames
-          ! The central row
-          Irow = NINT(HALF*REAL(ISizeY))        
+          ! Integrated intensity - always done
+          fullpath = TRIM(ADJUSTL(path)) // "/IntegratedIntensities.txt"
+          OPEN(UNIT=IChOutIhkl, ACTION='WRITE', POSITION='APPEND', STATUS= 'UNKNOWN', &
+                  FILE=TRIM(ADJUSTL(fullpath)),IOSTAT=IErr)
           RIntegratedIntensity = 0.0D0
-          ! Rocking curve
-          WRITE(IChOutRC,*) TRIM(ADJUSTL(Shkl))!hkl
-          WRITE(OutputString,"(F8.2)") RLorAngle!angle for Lorentz factor
-          WRITE(IChOutRC,*) TRIM(ADJUSTL(OutputString))
+          Irow = NINT(HALF*REAL(ISizeY))! The central row        
           DO jnd=1,SIZE(RTempImage,DIM=2)
-            WRITE(OutputString,"(F8.2,A2,E9.2)") RStartFrame+REAL(jnd)/REAL(ISizeX),", ", &
-                  RTempImage(Irow,jnd,lnd)
-            WRITE(IChOutRC,*) TRIM(ADJUSTL(OutputString))
             RIntegratedIntensity = RIntegratedIntensity + RTempImage(Irow,jnd,lnd)
           END DO
-          WRITE(IChOutRC,*)!blank line to separate reflections
-          CLOSE(IChOutRC,IOSTAT=IErr)
-          ! Integrated intensity
           WRITE(fString,"(E9.2,A2,F8.2)") RIntegratedIntensity,", ",RLorAngle
           WRITE(IChOutIhkl,*) TRIM(ADJUSTL(Shkl))//", "// TRIM(ADJUSTL(fString))
           CLOSE(IChOutIhkl,IOSTAT=IErr)
+          !Rocking curve - only for IOutputFLAG>0
+          IF(IOutputFLAG.GE.1) THEN
+            ! open rocking curve text file to append
+            fullpath = TRIM(ADJUSTL(path)) // "/RockingCurves.txt"
+            OPEN(UNIT=IChOutRC, ACTION='WRITE', POSITION='APPEND', STATUS='UNKNOWN', &
+                 FILE=TRIM(ADJUSTL(fullpath)),IOSTAT=IErr)
+            IF(l_alert(IErr,"Felixrefine","OPEN() RockingCurves.txt")) CALL abort
+            ! Each frame in RTempImage adds ISizeX pixels, so its width in frames is
+            IhklFrames = NINT(SIZE(RTempImage,DIM=2)/REAL(ISizeX))
+            RStartFrame = IFrame - IhklFrames
+            WRITE(IChOutRC,*) TRIM(ADJUSTL(Shkl))!hkl
+            WRITE(OutputString,"(F8.2)") RLorAngle!angle for Lorentz factor
+            WRITE(IChOutRC,*) TRIM(ADJUSTL(OutputString))
+            DO jnd=1,SIZE(RTempImage,DIM=2)
+              WRITE(OutputString,"(F8.2,A2,E9.2)") RStartFrame+REAL(jnd)/REAL(ISizeX),", ", &
+                    RTempImage(Irow,jnd,lnd)
+              WRITE(IChOutRC,*) TRIM(ADJUSTL(OutputString))
+            RIntegratedIntensity = RIntegratedIntensity + RTempImage(Irow,jnd,lnd)
+            END DO
+            WRITE(IChOutRC,*)!blank line to separate reflections
+            CLOSE(IChOutRC,IOSTAT=IErr)
+          END IF
         END DO
 
         !Tidy up and reset flags

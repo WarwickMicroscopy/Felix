@@ -23,8 +23,8 @@ RAcceleratingVoltage (kV) = 200.0
 IPixelX                   = 10
 
 # beam selection criteria
-IMinReflectionPool        = 400
-IMinStrongBeams           = 100
+IMinReflectionPool        = 100
+IMinStrongBeams           = 50
 IMinWeakBeams             = 0
 
 # crystal settings
@@ -32,7 +32,8 @@ RDebyeWallerConstant      = 0.0
 RAbsorptionPer            = 7.8
 
 # Image Output Options
-RInitialThickness        = 10.0
-RFinalThickness          = 10.0
+RInitialThickness        = 1000.0
+RFinalThickness          = 1000.0
 RDeltaThickness          = 100.0
 RBlurRadius              = 0.0
+IOutputFLAG              = 0
