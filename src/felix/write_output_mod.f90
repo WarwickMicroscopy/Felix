@@ -374,7 +374,15 @@ MODULE write_output_mod
       DO jnd = 1,2*IPixelCount
          WRITE(IChOutWIImage,rec=jnd,IOSTAT=IErr) RImageToWrite(jnd,:)
          IF(l_alert(IErr,"WriteIterationOutput","WRITE() output .bin file")) THEN
-            PRINT*,jnd
+            PRINT*,"---------------------------------------------------------------"
+            PRINT*,"WriteIterationsOutput: this is likely to be an error fixable"
+            PRINT*,"   by compatible choice of IByteSize in the input file due to"
+            PRINT*,"   your specific compiler/architecture. We have found that"
+            PRINT*,"   IByteSize=2 works on 64-bit machines with Intel ifort,"
+            PRINT*,"   while IByteSize=8 works with the GNU compilers on also"
+            PRINT*,"   64-bit machines."
+            PRINT*,"   Your choice was ByeSize=", IByteSize
+            PRINT*,"---------------------------------------------------------------"
             RETURN
          ENDIF
       END DO
