@@ -235,7 +235,7 @@ MODULE write_output_mod
             "I",Iter,"_D",IVar,"_",IThickness,"nm_",2*IPixelcount,"x",2*IPixelcount
     END IF
     path = SChemicalFormula(1:ILN) // "_" // path ! This adds chemical to folder name
-    CALL system('mkdir ' // path)
+    CALL system('mkdir -p ' // path)
 
     ! Write Images to disk
     DO ind = 1,INoOfLacbedPatterns
@@ -332,7 +332,7 @@ MODULE write_output_mod
             "Sim_",IThickness,"A_",2*IPixelcount,"x",2*IPixelcount
     END IF
     path = SChemicalFormula(1:ILN) // "_" // path ! This adds chemical to folder name
-    CALL system('mkdir ' // path)
+    CALL system('mkdir -p ' // path)
 
     ! Write Images to disk
     DO ind = 1,INoOfLacbedPatterns
@@ -372,7 +372,11 @@ MODULE write_output_mod
           FORM='UNFORMATTED',ACCESS='DIRECT',IOSTAT=IErr,RECL=2*IPixelCount*IByteSize)
       IF(l_alert(IErr,"WriteIterationOutput","OPEN() output .bin file")) RETURN      
       DO jnd = 1,2*IPixelCount
-        WRITE(IChOutWIImage,rec=jnd) RImageToWrite(jnd,:)
+         WRITE(IChOutWIImage,rec=jnd,IOSTAT=IErr) RImageToWrite(jnd,:)
+         IF(l_alert(IErr,"WriteIterationOutput","WRITE() output .bin file")) THEN
+            PRINT*,jnd
+            RETURN
+         ENDIF
       END DO
       CLOSE(IChOutWIImage,IOSTAT=IErr) 
       IF(l_alert(IErr,"WriteIterationOutput","CLOSE() output .bin file")) RETURN       
@@ -665,7 +669,7 @@ MODULE write_output_mod
     WRITE(path,"(A,A6,I3.3,A1,I3.3)") &
            SChemicalFormula(1:ILN),"_expt_",2*IPixelcount,"x",2*IPixelcount
 
-    CALL system('mkdir ' // path)
+    CALL system('mkdir -p ' // path)
 
     ! Write Images to disk
     DO ind = 1,INoOfLacbedPatterns
