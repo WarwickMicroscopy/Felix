@@ -8,7 +8,7 @@ IWriteFLAG                = 1
 IScatterFactorMethodFLAG  = 0
 IHolzFLAG                 = 0
 IAbsorbFLAG               = 2
-IByteSize                 = 2
+IByteSize                 = 8
 
 # radius of the beam in pixels
 IPixelCount               = 40
