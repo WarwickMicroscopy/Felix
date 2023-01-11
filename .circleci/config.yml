@@ -32,6 +32,29 @@ jobs:
           
           diff -W132 -s $startdir/samples/GaAs/GaAs_Sim_0930A_080x080/GaAs_+0+0+0.bin $startdir/samples/GaAs/sample_outputs/GaAs_+0+0+0.bin || true
 
+  felix-SrTiO3-test:
+
+    executor: my-custom-executor
+    steps:
+      - checkout
+      - run: |
+          echo "--- update"; sudo apt-get update
+          echo "--- BLAS/LAPACK"; sudo apt-get install libblas-dev liblapack-dev
+          echo "--- MPI"; sudo apt-get install mpich mpich-doc #libcr-dev
+          echo "--- FFTW3"; sudo apt-get install libfftw3-dev libfftw3-doc
+          
+          ls
+          startdir=`pwd`
+          echo "working in" $startdir
+
+          cd $startdir/src;pwd;sed "s/ PLATFORM=INT64Nifort/# PLATFORM=INT64Nifort/g" user.mk | sed "s/# PLATFORM=OPT64NGNU/ PLATFORM=OPT64NGNU/g" >newuser.mk; cp newuser.mk user.mk; make clean; make; cd ..
+          
+          cd $startdir/src; make clean; pwd; ls -al; cd ..
+          
+          cd $startdir/samples/SrTiO3; $startdir/src/felix.OPT64NGNU.d #| tee terminal_log.txt
+          
+          diff -W132 -s $startdir/samples/SrTiO3/SrTiO3_Sim_0630A_128x128/SrTiO3_+0+0+0.bin $startdir/samples/SrTiO3/sample_outputs/SrTiO3_+0+0+0.bin || true
+
 workflows:
   my-felix-workflow:
     jobs:
