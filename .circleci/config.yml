@@ -59,3 +59,4 @@ workflows:
   my-felix-workflow:
     jobs:
       - felix-GaAs-test
+      - felix-SrTiO3-test
