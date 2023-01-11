@@ -28,7 +28,7 @@ jobs:
           
           cd $startdir/src; make clean; pwd; ls -al; cd ..
           
-          cd $startdir/samples/GaAs; $startdir/src/felix.INT64NGNU.d #| tee terminal_log.txt
+          cd $startdir/samples/GaAs; $startdir/src/felix.OPT64NGNU.d #| tee terminal_log.txt
           
           diff -W132 -s ./samples/GaAs/GaAs_Sim_0930A_080x080/GaAs_+0+0+0.bin ./samples/GaAs/sample_outputs/GaAs_+0+0+0.bin || true
 
