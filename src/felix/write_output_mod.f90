@@ -506,11 +506,10 @@ MODULE write_output_mod
 !!$      PRINT*,"DBG: before loop", ind, jnd
 !!$      PRINT*,"DBG: before loop", IIndependentVariableType(ind),IIndependentVariableAtom(ind)
       DO ind = 1,SIZE(IIndependentVariableAtom)
-         PRINT*,"DBG", ind, jnd, IIndependentVariableType(ind),IIndependentVariableAtom(ind)
-
-        IF(IIndependentVariableType(ind).EQ.4.AND.jnd.EQ.IIndependentVariableAtom(ind))THEN
-          CALL UncertBrak(RBasisIsoDW(jnd),RIndependentDelta(ind),Sout,IErr)
-        END IF
+!!$         PRINT*,"DBG", ind, jnd, IIndependentVariableType(ind),IIndependentVariableAtom(ind)
+         IF(IIndependentVariableType(ind).EQ.4.AND.jnd.EQ.IIndependentVariableAtom(ind))THEN
+            CALL UncertBrak(RBasisIsoDW(jnd),RIndependentDelta(ind),Sout,IErr)
+         END IF
       END DO
       String = TRIM(ADJUSTL(String)) // "  " // TRIM(ADJUSTL(Sout))!append onto String
       !Occupancy
