@@ -390,10 +390,12 @@ MODULE write_output_mod
       IF(l_alert(IErr,"WriteIterationOutput","CLOSE() output .bin file")) RETURN       
     END DO
 
-    ! writes out structure.cif
-    CALL WriteIterationCIF(Iter,path,IErr)
-    IF(l_alert(IErr,"WriteIterationOutput","WriteIterationCIF")) RETURN   
-    IErr=0
+    IF (ISimFLAG.EQ.0) THEN !felixrefine output
+       ! writes out structure.cif
+       CALL WriteIterationCIF(Iter,path,IErr)
+       IF(l_alert(IErr,"WriteIterationOutput","WriteIterationCIF")) RETURN   
+       IErr=0
+    ENDIF
     ! write out StructureFactors.txt
     WRITE(filename,*) "StructureFactors.txt"
     WRITE(fullpath,*) TRIM(ADJUSTL(path)),'/',TRIM(ADJUSTL(filename))
@@ -500,7 +502,12 @@ MODULE write_output_mod
       !Isotropic DWF
       WRITE(Sout,FMT='(F7.4)') RBasisIsoDW(jnd)
       !replace Sout if it is being refined
+!!$      PRINT*,"DBG: before loop,", SIZE(IIndependentVariableAtom), SIZE(IIndependentVariableType)
+!!$      PRINT*,"DBG: before loop", ind, jnd
+!!$      PRINT*,"DBG: before loop", IIndependentVariableType(ind),IIndependentVariableAtom(ind)
       DO ind = 1,SIZE(IIndependentVariableAtom)
+         PRINT*,"DBG", ind, jnd, IIndependentVariableType(ind),IIndependentVariableAtom(ind)
+
         IF(IIndependentVariableType(ind).EQ.4.AND.jnd.EQ.IIndependentVariableAtom(ind))THEN
           CALL UncertBrak(RBasisIsoDW(jnd),RIndependentDelta(ind),Sout,IErr)
         END IF
