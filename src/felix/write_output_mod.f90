@@ -207,7 +207,7 @@ MODULE write_output_mod
           DO jnd=1,SIZE(RTempImage,DIM=2)
             RIntegratedIntensity = RIntegratedIntensity + RTempImage(Irow,jnd,lnd)
           END DO
-          WRITE(fString,"(E9.2,A2,F8.2)") RIntegratedIntensity,", ",RLorAngle
+          WRITE(fString,"(E12.5,A2,F8.5)") RIntegratedIntensity,", ",RLorAngle
           WRITE(IChOutIhkl,*) TRIM(ADJUSTL(Shkl))//", "// TRIM(ADJUSTL(fString))
           CLOSE(IChOutIhkl,IOSTAT=IErr)
           !Rocking curve - only for IOutputFLAG>0
