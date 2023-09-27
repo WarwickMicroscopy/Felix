@@ -62,7 +62,7 @@ PROGRAM Felixrefine
         INumFinalReflections,IThicknessIndex,IVariableType,IArrayIndex,&
         IAnisotropicDebyeWallerFactorElementNo,IStartTime,IStartTime2, IFrame
   INTEGER(4) :: IErr4
-  REAL(RKIND) :: RGlimit,RLaueZoneGz,RMaxGMag,RKn,RThickness,RxAngle,&
+  REAL(RKIND) :: RGOutLimit,RLaueZoneGz,RMaxGMag,RKn,RThickness,RxAngle,&
         RScale,RMaxUgStep,Rdx,RStandardDeviation,RMean,RGzUnitVec,&
         RMinLaueZoneValue,Rdf,RLastFit,RBestFit,RMaxLaueZoneValue,&
         RMaxAcceptanceGVecMag,RandomSign,RLaueZoneElectronWaveVectorMag,&
