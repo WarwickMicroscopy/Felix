@@ -140,7 +140,7 @@ MODULE setup_reflections_mod
     IF (knd.LT.INhkl) THEN
       RGtest = REAL( (/ 666,666,666 /),RKIND )
       DO jnd = knd+1, INhkl
-        Rhkl(jnd,:)=RGtest
+        RgPoolList(IFrame, jnd, :)=RGtest
       END DO
     END IF
     
