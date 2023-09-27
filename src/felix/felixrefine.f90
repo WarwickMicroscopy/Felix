@@ -239,8 +239,8 @@ PROGRAM Felixrefine
   ! frame counter
   IFrame = 1
   DO WHILE(IFrame.LE.INFrames)
-!    WRITE(SPrintString, FMT='(A6,I3,A3)') "Frame ",IFrame,"..."
-!    CALL message(LS,dbg3,SPrintString)
+    WRITE(SPrintString, FMT='(A6,I3,A3)') "Frame ",IFrame,"..."
+    CALL message(LS,dbg3,SPrintString)
     ! Increment frame angle, if it's not the first 
     IF(IFrame.GT.1) THEN
       RXDirOn = RXDirO-RZDirO*TAN(DEG2RADIAN*RFrameAngle)
@@ -249,6 +249,7 @@ PROGRAM Felixrefine
       RZDirO = RZDirOn/SQRT(DOT_PRODUCT(RZDirOn,RZDirOn))
     END IF
     ! Create reciprocal lattice vectors in Microscope reference frame
+    ! returns transformation matrices and RAtomCoordinate
     CALL CrystalOrientation(IErr)
     IF(l_alert(IErr,"felixrefine","CrystalOrientation")) CALL abort
     !--------------------------------------------------------------------
@@ -257,7 +258,7 @@ PROGRAM Felixrefine
     RGlimit = 10.0*TWOPI    
     CALL HKLMake(RGlimit,IErr)
     IF(l_alert(IErr,"felixrefine","HKLMake")) CALL abort
-    CALL message(LL,dbg7,"Rhkl matrix: ",NINT(Rhkl(1:INhkl,:)))
+    CALL message(LS,dbg7,"Rhkl matrix: ",NINT(Rhkl(1:INhkl,:)))
 
     !--------------------------------------------------------------------
     ! sort hkl in descending order of magnitude (not sure this is needed, really)

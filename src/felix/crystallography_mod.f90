@@ -262,7 +262,7 @@ MODULE crystallography_mod
     RcrVecM= TWOPI*CROSS(RaVecM,RbVecM)/DOT_PRODUCT(RaVecM,CROSS(RbVecM,RcVecM))
 
     ! Calculate atomic position vectors RAtomCoordinate
-    ! In microscope reference frame, in Angstrom units
+    ! In microscope reference frame, in Angstrom units (NB RAtomPosition=crystal frame, in .cif)
     DO ind=1,INAtomsUnitCell
       DO jnd=1,ITHREE
         RAtomCoordinate(ind,jnd)= RAtomPosition(ind,1)*RaVecM(jnd) + &
