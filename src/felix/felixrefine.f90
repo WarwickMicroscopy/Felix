@@ -285,9 +285,7 @@ PROGRAM Felixrefine
   !--------------------------------------------------------------------
   ! ***These parameters will probably end up in a modified .inp file***
   ! Limit on distance from Ewald sphere to count a reflection as active
-  RDevLimit = 0.05  ! in reciprocal Angstroms
-  ! Limit on g-vector magnitude to be included in the beam pool
-  RGPoolLimit = 10.0*TWOPI    
+  RDevLimit = 0.05  ! in reciprocal Angstroms  
   ! Limit on g-vector magnitude to be included in the output
   RGOutLimit = 1.0*TWOPI  ! reciprocal Angstroms, multiplied by 2pi
   
@@ -310,7 +308,7 @@ PROGRAM Felixrefine
     IF(l_alert(IErr,"felixrefine","CrystalOrientation")) CALL abort
     !--------------------------------------------------------------------
     ! Fill the list of reflections RgPoolList
-    CALL HKLMake(ind, RGPoolLimit,RGOutLimit,IErr)
+    CALL HKLMake(ind, RDevLimit, RGOutLimit, IErr)
     IF(l_alert(IErr,"felixrefine","HKLMake")) CALL abort
     CALL message(LS,dbg7,"Rhkl matrix: ",NINT(RgPoolList(ind,1:INhkl,:)))
 

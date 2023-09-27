@@ -48,7 +48,7 @@ MODULE setup_reflections_mod
   !!
   !! Major-Authors: Richard Beanland (2021)
   !!  
-  SUBROUTINE HKLMake(IFrame, RGPoolLimit, RGOutLimit, IErr)   
+  SUBROUTINE HKLMake(IFrame, RDevLimit, RGOutLimit, IErr)   
     ! This setup procedure fills up RgPoolList and IgOutList for each frame
 
     USE MyNumbers
@@ -56,26 +56,27 @@ MODULE setup_reflections_mod
     
     ! global parameters Rhkl, input reciprocal lattice vectors & wave vector
     USE RPARA, ONLY : RzDirC, RgPoolList, RarVecM, RbrVecM, RcrVecM, RInputHKLs,&
-        RElectronWaveVectorMagnitude, IgOutList
+        RElectronWaveVectorMagnitude
       
     ! global inputs
     USE SPARA, ONLY : SPrintString
-    USE IPARA, ONLY : INhkl, INoOfHKLsAll
+    USE IPARA, ONLY : INhkl, INoOfHKLsAll, IgOutList
     USE Iconst
     
     IMPLICIT NONE
 
     INTEGER(IKIND),INTENT(IN) :: IFrame
-    REAL(RKIND),INTENT(IN) :: RGPoolLimit, RGOutLimit
+    REAL(RKIND),INTENT(IN) :: RDevLimit, RGOutLimit
     INTEGER(IKIND) :: IErr, ISel, Ih, Ik, Il, inda,indb,indc, jnd, knd,lnd
-    REAL(RKIND) :: RarMag, RbrMag, RcrMag, RShell, RGtestMag, RDev
+    REAL(RKIND) :: RarMag, RbrMag, RcrMag, RShell, RGtestMag, RDev, RGPoolLimit
     REAL(RKIND),DIMENSION(ITHREE) :: Rk, RGtest, RGtestM, RGplusk 
    
     ! RGPoolLimit is the upper limit for g-vector magnitudes
     ! If the g-vectors we are counting are bigger than this there is something wrong
     ! probably the tolerance for proximity to the Ewald sphere needs increasing
     ! could be an input in felix.inp
-
+    RGPoolLimit = 10.0*TWOPI
+    
     ! Rk is the k-vector for the incident beam
     ! we are working in the microscope reference frame so k is along z
     Rk=(/ 0.0,0.0,RElectronWaveVectorMagnitude /)
