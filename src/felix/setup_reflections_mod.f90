@@ -56,7 +56,7 @@ MODULE setup_reflections_mod
     
     ! global parameters Rhkl, input reciprocal lattice vectors & wave vector
     USE RPARA, ONLY : RzDirC, RgPoolList, RarVecM, RbrVecM, RcrVecM, RInputHKLs,&
-        RElectronWaveVectorMagnitude
+        RElectronWaveVectorMagnitude,RarMag,RbrMag,RcrMag
       
     ! global inputs
     USE SPARA, ONLY : SPrintString
