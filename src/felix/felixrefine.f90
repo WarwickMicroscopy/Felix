@@ -137,6 +137,37 @@ PROGRAM Felixrefine
   IF(l_alert(IErr,"felixrefine","set_message_mod_mode")) CALL abort
 
   !--------------------------------------------------------------------
+  ! set up scattering factors, k-space resolution
+  !--------------------------------------------------------------------
+  CALL SetScatteringFactors(IScatterFactorMethodFLAG,IErr)
+  IF(l_alert(IErr,"felixrefine","SetScatteringFactors")) CALL abort
+  ! returns global RScattFactors depeding upon scattering method: Kirkland, Peng, etc.
+
+  ! Calculate wavevector magnitude k and relativistic mass
+  ! Electron Velocity in metres per second
+  RElectronVelocity = &
+        RSpeedOfLight*SQRT( ONE - ((RElectronMass*RSpeedOfLight**2) / &
+        (RElectronCharge*RAcceleratingVoltage*THOUSAND+RElectronMass*RSpeedOfLight**2))**2 )
+  ! Electron WaveLength in Angstroms
+  RElectronWaveLength = RPlanckConstant / &
+        (  SQRT(TWO*RElectronMass*RElectronCharge*RAcceleratingVoltage*THOUSAND) * &
+        SQRT( ONE + (RElectronCharge*RAcceleratingVoltage*THOUSAND) / &
+        (TWO*RElectronMass*RSpeedOfLight**2) )  ) * RAngstromConversion
+  ! NB --- k=2pi/lambda and exp(i*k.r), physics convention, in reciprocal Angstroms
+  RElectronWaveVectorMagnitude = TWOPI/RElectronWaveLength
+  !resolution in k-space N.B. in cRED we define convergence angle as half the y-size
+  RDeltaK = TWOPI*DEG2RADIAN*RFrameAngle/(RElectronWaveLength*REAL(ISizeX,RKIND))
+  ! y-dimension of simulation, taking the input RConvergenceAngle as half-convergence angle
+  ISizeY = NINT(TWOPI*TWO*RConvergenceAngle/RDeltaK)
+  WRITE(SPrintString, FMT='(A11,I3,1x,A2,I3,A7)') "Simulation ",ISizeX,"x ",ISizeY," pixels"
+  CALL message(LS,SPrintString)
+  RRelativisticCorrection = ONE/SQRT( ONE - (RElectronVelocity/RSpeedOfLight)**2 )
+  RRelativisticMass = RRelativisticCorrection*RElectronMass
+  !conversion from Vg to Ug, h^2/(2pi*m0*e), see e.g. Kirkland eqn. C.5
+  RScattFacToVolts = (RPlanckConstant**2)*(RAngstromConversion**2)/&
+  (TWOPI*RElectronMass*RElectronCharge*RVolume)
+  
+  !--------------------------------------------------------------------
   ! allocations, now we know the size of the beam pool
   ! RgPool is a list of g-vectors in the microscope ref frame,
   ! units of 1/A (NB exp(-i*q.r),  physics negative convention)
@@ -172,36 +203,6 @@ PROGRAM Felixrefine
 
   IThicknessCount= NINT((RFinalThickness-RInitialThickness)/RDeltaThickness) + 1
 
-  !--------------------------------------------------------------------
-  ! set up scattering factors, k-space resolution
-  !--------------------------------------------------------------------
-  CALL SetScatteringFactors(IScatterFactorMethodFLAG,IErr)
-  IF(l_alert(IErr,"felixrefine","SetScatteringFactors")) CALL abort
-  ! returns global RScattFactors depeding upon scattering method: Kirkland, Peng, etc.
-
-  ! Calculate wavevector magnitude k and relativistic mass
-  ! Electron Velocity in metres per second
-  RElectronVelocity = &
-        RSpeedOfLight*SQRT( ONE - ((RElectronMass*RSpeedOfLight**2) / &
-        (RElectronCharge*RAcceleratingVoltage*THOUSAND+RElectronMass*RSpeedOfLight**2))**2 )
-  ! Electron WaveLength in Angstroms
-  RElectronWaveLength = RPlanckConstant / &
-        (  SQRT(TWO*RElectronMass*RElectronCharge*RAcceleratingVoltage*THOUSAND) * &
-        SQRT( ONE + (RElectronCharge*RAcceleratingVoltage*THOUSAND) / &
-        (TWO*RElectronMass*RSpeedOfLight**2) )  ) * RAngstromConversion
-  ! NB --- k=2pi/lambda and exp(i*k.r), physics convention, in reciprocal Angstroms
-  RElectronWaveVectorMagnitude = TWOPI/RElectronWaveLength
-  !resolution in k-space N.B. in cRED we define convergence angle as half the y-size
-  RDeltaK = TWOPI*DEG2RADIAN*RFrameAngle/(RElectronWaveLength*REAL(ISizeX,RKIND))
-  ! y-dimension of simulation, taking the input RConvergenceAngle as half-convergence angle
-  ISizeY = NINT(TWOPI*TWO*RConvergenceAngle/RDeltaK)
-  WRITE(SPrintString, FMT='(A11,I3,1x,A2,I3,A7)') "Simulation ",ISizeX,"x ",ISizeY," pixels"
-  CALL message(LS,SPrintString)
-  RRelativisticCorrection = ONE/SQRT( ONE - (RElectronVelocity/RSpeedOfLight)**2 )
-  RRelativisticMass = RRelativisticCorrection*RElectronMass
-  !conversion from Vg to Ug, h^2/(2pi*m0*e), see e.g. Kirkland eqn. C.5
-  RScattFacToVolts = (RPlanckConstant**2)*(RAngstromConversion**2)/&
-  (TWOPI*RElectronMass*RElectronCharge*RVolume)
 
   !--------------------------------------------------------------------
   ! ImageInitialisation
