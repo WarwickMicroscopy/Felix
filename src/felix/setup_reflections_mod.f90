@@ -94,7 +94,7 @@ MODULE setup_reflections_mod
     indc=NINT(RGPoolLimit/RcrMag)
 
     !fill the RgPoolList with beams near the Bragg condition
-    DO WHILE (REAL(lnd)*RShell.LT.RGPoolLimit)
+    DO WHILE (knd.LT.INhkl)
       !increment the shell
       lnd = lnd+1
 !DBG  IF(my_rank.EQ.0)PRINT*,REAL(lnd-1)*RShell,"to",REAL(lnd)*RShell

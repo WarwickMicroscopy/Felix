@@ -310,7 +310,8 @@ PROGRAM Felixrefine
     ! Fill the list of reflections RgPoolList
     CALL HKLMake(ind, RDevLimit, RGOutLimit, IErr)
     IF(l_alert(IErr,"felixrefine","HKLMake")) CALL abort
-    CALL message(LS,dbg7,"Rhkl matrix: ",NINT(RgPoolList(ind,1:INhkl,:)))
+    CALL PrintEndTime( LS, IStartTime, "Frame" )
+    !CALL message(LS,dbg7,"Rhkl matrix: ",NINT(RgPoolList(ind,1:INhkl,:)))
 
     !--------------------------------------------------------------------
     ! sort hkl in descending order of magnitude (not sure this is needed, really)
