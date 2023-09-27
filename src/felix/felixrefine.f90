@@ -141,7 +141,7 @@ PROGRAM Felixrefine
   !--------------------------------------------------------------------
   CALL SetScatteringFactors(IScatterFactorMethodFLAG,IErr)
   IF(l_alert(IErr,"felixrefine","SetScatteringFactors")) CALL abort
-  ! returns global RScattFactors depeding upon scattering method: Kirkland, Peng, etc.
+  ! returns global RScattFactors depending upon scattering method: Kirkland, Peng, etc.
 
   ! Calculate wavevector magnitude k and relativistic mass
   ! Electron Velocity in metres per second
@@ -166,60 +166,6 @@ PROGRAM Felixrefine
   !conversion from Vg to Ug, h^2/(2pi*m0*e), see e.g. Kirkland eqn. C.5
   RScattFacToVolts = (RPlanckConstant**2)*(RAngstromConversion**2)/&
   (TWOPI*RElectronMass*RElectronCharge*RVolume)
-  
-  !--------------------------------------------------------------------
-  ! allocations, now we know the size of the beam pool
-  ! RgPool is a list of g-vectors in the microscope ref frame,
-  ! units of 1/A (NB exp(-i*q.r),  physics negative convention)
-  ALLOCATE(RgPool(INhkl,ITHREE),STAT=IErr)
-  IF(l_alert(IErr,"felixrefine","allocate RgPool")) CALL abort
-  ! g-vector magnitudes
-  ! in reciprocal Angstrom units, in the Microscope reference frame
-  ALLOCATE(RgPoolMag(INhkl),STAT=IErr)
-  IF(l_alert(IErr,"felixrefine","allocate RgPoolMag")) CALL abort
-  ! g-vector components parallel to the surface unit normal
-  ALLOCATE(RgDotNorm(INhkl),STAT=IErr)
-  IF(l_alert(IErr,"felixrefine","allocate RgDotNorm")) CALL abort
-  ! Matrix of 2pi*g-vectors that corresponds to the Ug matrix
-  ALLOCATE(RgMatrix(INhkl,INhkl,ITHREE),STAT=IErr)
-  IF(l_alert(IErr,"felixrefine","allocate RgMatrix")) CALL abort
-  ! NB Rhkl are in INTEGER form [h,k,l] but are REAL to allow dot products etc.
-  ALLOCATE(Rhkl(INhkl,ITHREE),STAT=IErr)
-  IF(l_alert(IErr,"felixrefine","allocate Rhkl")) CALL abort
-  ! Deviation parameter
-  ALLOCATE(RDevPara(INhkl),STAT=IErr)
-  ALLOCATE(RDevC(INhkl),STAT=IErr)
-  IF(l_alert(IErr,"felixrefine","allocate Rhkl")) CALL abort
-  ! allocate Ug arrays
-  ALLOCATE(CUgMatNoAbs(INhkl,INhkl),STAT=IErr)! Ug Matrix without absorption
-  IF(l_alert(IErr,"felixrefine","allocate CUgMatNoAbs")) CALL abort
-  ALLOCATE(CUgMatPrime(INhkl,INhkl),STAT=IErr)! U'g Matrix of just absorption
-  IF(l_alert(IErr,"felixrefine","allocate CUgMatPrime")) CALL abort
-  ALLOCATE(CUgMat(INhkl,INhkl),STAT=IErr)! Ug+U'g Matrix, including absorption
-  IF(l_alert(IErr,"felixrefine","allocate CUgMat")) CALL abort
-  ! Matrix with numbers marking equivalent Ug's
-  ALLOCATE(ISymmetryRelations(INhkl,INhkl),STAT=IErr)
-  IF(l_alert(IErr,"felixrefine","allocate ISymmetryRelations")) CALL abort
-
-  IThicknessCount= NINT((RFinalThickness-RInitialThickness)/RDeltaThickness) + 1
-
-
-  !--------------------------------------------------------------------
-  ! ImageInitialisation
-  !--------------------------------------------------------------------
-  IPixelTotal = ISizeX*ISizeY
-  ALLOCATE(IPixelLocation(IPixelTotal,2),STAT=IErr)
-  IF(l_alert(IErr,"felixrefine","allocate IPixelLocation")) CALL abort
-  ! we keep track of where a calculation goes in the image using the
-  ! IPixelLocation array.  Remember fortran indexing is [row,col]=[y,x]
-  lnd = 0
-  DO ind = 1,ISizeY
-    DO jnd = 1,ISizeX
-      lnd = lnd + 1
-      IPixelLocation(lnd,1) = ind
-      IPixelLocation(lnd,2) = jnd
-    END DO
-  END DO
 
   !--------------------------------------------------------------------
   ! set up unit cell 
@@ -287,6 +233,95 @@ PROGRAM Felixrefine
   END IF
   RYDirO = CROSS(RZDirO,RXDirO)
 
+  !--------------------------------------------------------------------
+  ! calculate reflection list based on the track through reciprocal space
+  !--------------------------------------------------------------------
+  ! frame counter
+  IFrame = 1
+  DO WHILE(IFrame.LE.INFrames)
+!    WRITE(SPrintString, FMT='(A6,I3,A3)') "Frame ",IFrame,"..."
+!    CALL message(LS,dbg3,SPrintString)
+    ! Increment frame angle, if it's not the first 
+    IF(IFrame.GT.1) THEN
+      RXDirOn = RXDirO-RZDirO*TAN(DEG2RADIAN*RFrameAngle)
+      RZDirOn = RZDirO+RXDirO*TAN(DEG2RADIAN*RFrameAngle)
+      RXDirO = RXDirOn/SQRT(DOT_PRODUCT(RXDirOn,RXDirOn))
+      RZDirO = RZDirOn/SQRT(DOT_PRODUCT(RZDirOn,RZDirOn))
+    END IF
+    ! Create reciprocal lattice vectors in Microscope reference frame
+    CALL CrystalOrientation(IErr)
+    IF(l_alert(IErr,"felixrefine","CrystalOrientation")) CALL abort
+    !--------------------------------------------------------------------
+    ! Fill the list of reflections Rhkl
+    Rhkl = ZERO
+    RGlimit = 10.0*TWOPI    
+    CALL HKLMake(RGlimit,IErr)
+    IF(l_alert(IErr,"felixrefine","HKLMake")) CALL abort
+    CALL message(LL,dbg7,"Rhkl matrix: ",NINT(Rhkl(1:INhkl,:)))
+
+    !--------------------------------------------------------------------
+    ! sort hkl in descending order of magnitude (not sure this is needed, really)
+    CALL HKLSort(Rhkl,INhkl,IErr) 
+    IF(l_alert(IErr,"felixrefine","SortHKL")) CALL abort
+    ! Assign numbers to different reflections -> IhklsFrame, IhklsAll, INoOfHKLsFrame
+    CALL HKLList(IErr)
+    IF(l_alert(IErr,"felixrefine","SpecificReflectionDetermination")) CALL abort
+  END DO
+  
+  
+  !--------------------------------------------------------------------
+  ! allocations, now we know the size of the beam pool
+  !--------------------------------------------------------------------
+  ! RgPool is a list of g-vectors in the microscope ref frame,
+  ! units of 1/A (NB exp(-i*q.r),  physics negative convention)
+  ALLOCATE(RgPool(INhkl,ITHREE),STAT=IErr)
+  IF(l_alert(IErr,"felixrefine","allocate RgPool")) CALL abort
+  ! g-vector magnitudes
+  ! in reciprocal Angstrom units, in the Microscope reference frame
+  ALLOCATE(RgPoolMag(INhkl),STAT=IErr)
+  IF(l_alert(IErr,"felixrefine","allocate RgPoolMag")) CALL abort
+  ! g-vector components parallel to the surface unit normal
+  ALLOCATE(RgDotNorm(INhkl),STAT=IErr)
+  IF(l_alert(IErr,"felixrefine","allocate RgDotNorm")) CALL abort
+  ! Matrix of 2pi*g-vectors that corresponds to the Ug matrix
+  ALLOCATE(RgMatrix(INhkl,INhkl,ITHREE),STAT=IErr)
+  IF(l_alert(IErr,"felixrefine","allocate RgMatrix")) CALL abort
+  ! NB Rhkl are in INTEGER form [h,k,l] but are REAL to allow dot products etc.
+  ALLOCATE(Rhkl(INhkl,ITHREE),STAT=IErr)
+  IF(l_alert(IErr,"felixrefine","allocate Rhkl")) CALL abort
+  ! Deviation parameter
+  ALLOCATE(RDevPara(INhkl),STAT=IErr)
+  ALLOCATE(RDevC(INhkl),STAT=IErr)
+  IF(l_alert(IErr,"felixrefine","allocate Rhkl")) CALL abort
+  ! allocate Ug arrays
+  ALLOCATE(CUgMatNoAbs(INhkl,INhkl),STAT=IErr)! Ug Matrix without absorption
+  IF(l_alert(IErr,"felixrefine","allocate CUgMatNoAbs")) CALL abort
+  ALLOCATE(CUgMatPrime(INhkl,INhkl),STAT=IErr)! U'g Matrix of just absorption
+  IF(l_alert(IErr,"felixrefine","allocate CUgMatPrime")) CALL abort
+  ALLOCATE(CUgMat(INhkl,INhkl),STAT=IErr)! Ug+U'g Matrix, including absorption
+  IF(l_alert(IErr,"felixrefine","allocate CUgMat")) CALL abort
+  ! Matrix with numbers marking equivalent Ug's
+  ALLOCATE(ISymmetryRelations(INhkl,INhkl),STAT=IErr)
+  IF(l_alert(IErr,"felixrefine","allocate ISymmetryRelations")) CALL abort
+
+  IThicknessCount= NINT((RFinalThickness-RInitialThickness)/RDeltaThickness) + 1
+
+  !--------------------------------------------------------------------
+  ! ImageInitialisation
+  !--------------------------------------------------------------------
+  IPixelTotal = ISizeX*ISizeY
+  ALLOCATE(IPixelLocation(IPixelTotal,2),STAT=IErr)
+  IF(l_alert(IErr,"felixrefine","allocate IPixelLocation")) CALL abort
+  ! we keep track of where a calculation goes in the image using the
+  ! IPixelLocation array.  Remember fortran indexing is [row,col]=[y,x]
+  lnd = 0
+  DO ind = 1,ISizeY
+    DO jnd = 1,ISizeX
+      lnd = lnd + 1
+      IPixelLocation(lnd,1) = ind
+      IPixelLocation(lnd,2) = jnd
+    END DO
+  END DO
   !--------------------------------------------------------------------
   ! Set up output
   ! make output folders for LACBED patterns
