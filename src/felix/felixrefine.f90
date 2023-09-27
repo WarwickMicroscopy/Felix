@@ -157,6 +157,7 @@ PROGRAM Felixrefine
   IF(l_alert(IErr,"felixrefine","allocate Rhkl")) CALL abort
   ! Deviation parameter
   ALLOCATE(RDevPara(INhkl),STAT=IErr)
+  ALLOCATE(RDevC(INhkl),STAT=IErr)
   IF(l_alert(IErr,"felixrefine","allocate Rhkl")) CALL abort
   ! allocate Ug arrays
   ALLOCATE(CUgMatNoAbs(INhkl,INhkl),STAT=IErr)! Ug Matrix without absorption

@@ -268,7 +268,8 @@ MODULE RPara
   REAL(RKIND) :: RDeltaK, RMinimumGMag,RGVectorMagnitude
   REAL(RKIND),DIMENSION(ITHREE) :: RGVector
   REAL(RKIND),DIMENSION(:),ALLOCATABLE :: RgDotNorm
-  REAL(RKIND),DIMENSION(:), ALLOCATABLE :: RDevPara
+  REAL(RKIND),DIMENSION(:), ALLOCATABLE :: RDevPara  ! deviation parameter for each g, for a given pixel
+  REAL(RKIND),DIMENSION(:), ALLOCATABLE :: RDevC  ! deviation parameter for each g at the image centre
   !Main Program
   REAL(RKIND) :: RMeanInnerPotential,RScattFacToVolts
   REAL(RKIND),DIMENSION(:,:),ALLOCATABLE :: RgMatrixMagnitude, RgSumMat

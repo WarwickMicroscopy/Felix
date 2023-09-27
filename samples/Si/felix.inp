@@ -7,7 +7,7 @@
 IWriteFLAG                = 1
 IScatterFactorMethodFLAG  = 0
 IHolzFLAG                 = 0
-IAbsorbFLAG               = 2
+IAbsorbFLAG               = 0
 IByteSize                 = 2
 
 # experimental settings
@@ -23,7 +23,7 @@ RAcceleratingVoltage (kV) = 200.0
 IPixelX                   = 10
 
 # beam selection criteria
-IMinReflectionPool        = 100
+IMinReflectionPool        = 200
 IMinStrongBeams           = 50
 IMinWeakBeams             = 0
 
@@ -32,8 +32,8 @@ RDebyeWallerConstant      = 0.0
 RAbsorptionPer            = 7.8
 
 # Image Output Options
-RInitialThickness        = 1000.0
-RFinalThickness          = 1000.0
-RDeltaThickness          = 100.0
+RInitialThickness        = 100.0
+RFinalThickness          = 100.0
+RDeltaThickness          = 200.0
 RBlurRadius              = 0.0
 IOutputFLAG              = 2

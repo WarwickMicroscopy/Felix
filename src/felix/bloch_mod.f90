@@ -62,7 +62,7 @@ MODULE bloch_mod
     ! globals - input  
     USE CPara, ONLY : CUgMat
     USE RPara, ONLY : RDeltaK,RDeltaThickness,RInitialThickness,RNormDirM,RgDotNorm,RgPool,&
-                      RgPoolMag,Rhkl,RgMatrix,RMeanInnerPotential,RDevPara,RBigK
+                      RgPoolMag,Rhkl,RgMatrix,RMeanInnerPotential,RDevPara,RDevC,RBigK
     USE IPara, ONLY : IHolzFLAG,IMinStrongBeams,IMinWeakBeams,&
                       INoOfHKLsFrame,ISizeX,ISizeY,IThicknessCount,INhkl,&
                       IhklsFrame
@@ -81,12 +81,12 @@ MODULE bloch_mod
           CInvertedEigenVectors(:,:),CAlphaWeightingCoefficients(:),&
           CEigenValueDependentTerms(:,:)
     COMPLEX(CKIND) :: CFullWaveFunctions(INhkl)
-    REAL(RKIND) :: RFullWaveIntensity(INhkl),RTiltedK(ITHREE)
+    REAL(RKIND) :: RFullWaveIntensity(INhkl),RTiltedK(ITHREE),RCentreK(ITHREE)
     INTEGER(IKIND) :: IStrongBeamList(INhkl),IWeakBeamList(INhkl),&
           nWeakBeams
     INTEGER(IKIND) :: ind,jnd,knd,pnd,IThickness,IThicknessIndex,ILowerLimit,&
           IUpperLimit       
-    REAL(RKIND) :: Rk0(3),RkPrime(3),RK,RKg,Rd1,Rd2
+    REAL(RKIND) :: Rk0(ITHREE),RkPrime(ITHREE),RCkPrime(ITHREE),RK,RKg,Rd1,Rd2
     COMPLEX(CKIND) sumC,sumD
     COMPLEX(CKIND), DIMENSION(:,:), ALLOCATABLE :: CBeamTranspose,CUgMatPartial,CDummyEigenVectors
     COMPLEX(CKIND), DIMENSION(:,:), ALLOCATABLE :: CStructureMatrix
@@ -97,11 +97,16 @@ MODULE bloch_mod
 
     ! TiltedK is the vector of the incoming tilted beam
     ! in units of (1/A), in the microscope ref frame(NB exp(i*k.r), physics convention)
-    ! x-position in k-space
-    RTiltedK(1)= (REAL(IXPixelIndex,RKIND)-0.5_RKIND*REAL(ISizeX,RKIND)-0.5_RKIND)*RDeltaK
-    ! y-position in k-space
+    ! x-position in k-space for this pixel
+    RTiltedK(1) = (REAL(IXPixelIndex,RKIND)-0.5_RKIND*REAL(ISizeX,RKIND)-0.5_RKIND)*RDeltaK
+    ! y-position in k-space for this pixel
     RTiltedK(2)= (REAL(IYPixelIndex,RKIND)-0.5_RKIND*REAL(ISizeY,RKIND)-0.5_RKIND)*RDeltaK 
-    RTiltedK(3)= SQRT(RBigK**2 - RTiltedK(1)**2 - RTiltedK(2)**2) 
+    RTiltedK(3) = SQRT(RBigK**2 - RTiltedK(1)**2 - RTiltedK(2)**2)
+    ! centre pixel k-vector for this frame
+    RCentreK(1) = 0.5_RKIND*REAL(ISizeX,RKIND)-0.5_RKIND
+    RCentreK(2) = 0.5_RKIND*REAL(ISizeX,RKIND)-0.5_RKIND
+    RCentreK(3) = SQRT(RBigK**2 - RCentreK(1)**2 - RCentreK(2)**2)
+
     RKn = DOT_PRODUCT(RTiltedK,RNormDirM)
     Rk0 = ZERO
     RkPrime=ZERO
@@ -116,20 +121,15 @@ MODULE bloch_mod
       Rk0(1) = -RgPoolMag(knd)/2
       Rk0(3) = SQRT(RBigK**2-Rk0(1)**2)
       ! k' is from RTiltedK
-      RkPrime(1)=DOT_PRODUCT(RTiltedK,RgPool(knd,:))/RgPoolMag(knd)!Gives NaN for 000
+      RkPrime(1)=DOT_PRODUCT(RTiltedK,RgPool(knd,:))/RgPoolMag(knd)  ! Gives NaN for 000
       RkPrime(3) = SQRT(RBigK**2-RkPrime(1)**2)
+      RCkPrime(1)=DOT_PRODUCT(RCentreK,RgPool(knd,:))/RgPoolMag(knd)
+      RCkPrime(3) = SQRT(RBigK**2-RCkPrime(1)**2)
       RDevPara(knd)=-SIGN(ONE,(2*DOT_PRODUCT(RgPool(knd,:),RTiltedK)+RgPoolMag(knd)**2))*&
                     RgPoolMag(knd)*SQRT(2*(RBigK**2-DOT_PRODUCT(Rk0,RkPrime)))/RBigK
-      IF (RgPoolMag(knd).EQ.ZERO) RDevPara(knd)=ZERO!Avoid NaN for 000
-      !IF(my_rank.EQ.0) PRINT*, knd,RgPool(knd,1),RgPool(knd,2)
-      !IF(my_rank.EQ.0) PRINT*, "new",RDevPara(knd),&
-      !      SIGN(ONE,(2*DOT_PRODUCT(RgPool(knd,:),RTiltedK)-RgPoolMag(knd)**2))
-      ! Old version, Sg parallel to z: Sg=-[k'z+gz-sqrt( (k'z+gz)^2-2k'.g-g^2)]
-      !RDevPara(knd)= -RTiltedK(3)-RgPool(knd,3)+&
-      !  SQRT( (RTiltedK(3)+RgPool(knd,3))**2 - &
-      !  2*DOT_PRODUCT(RgPool(knd,:),RTiltedK) - RgPoolMag(knd)**2 )
-      !IF(my_rank.EQ.0) PRINT*, "old", RDevPara(knd)
-      ! Debugging output
+      RDevC(knd) = -SIGN(ONE,(2*DOT_PRODUCT(RgPool(knd,:),RCentreK)+RgPoolMag(knd)**2))*&
+                    RgPoolMag(knd)*SQRT(2*(RBigK**2-DOT_PRODUCT(Rk0,RCkPrime)))/RBigK
+       IF (RgPoolMag(knd).EQ.ZERO) RDevPara(knd)=ZERO!Avoid NaN for 000
       IF(knd.EQ.2.AND.IYPixelIndex.EQ.10.AND.IXPixelIndex.EQ.10) THEN
         CALL message(LM,"RBigK ",RBigK)!LM,dbg7
         CALL message(LM,"Rhkl(knd) ",Rhkl(knd:knd,:))

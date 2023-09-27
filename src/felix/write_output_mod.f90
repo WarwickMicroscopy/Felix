@@ -61,7 +61,7 @@ MODULE write_output_mod
     USE IPARA, ONLY : ILN,ISizeX,ISizeY,IhklsFrame,INoOfHKLsFrame,IFrame,IOutputFLAG,&
             IhklsAll,ILiveList,ILACBEDList,ILACBEDFlag,IByteSize,INFrames,IThicknessCount
     USE RPARA, ONLY : RInputHKLs,Rhkl, RImageSimi, RInitialThickness, RDeltaThickness,&
-            RTempImage,RDevPara,RarVecM,RbrVecM,RcrVecM
+            RTempImage,RDevC,RarVecM,RbrVecM,RcrVecM
     USE SPARA, ONLY : SChemicalFormula
     USE IChannels, ONLY : IChOutIM,IChOutRC,IChOutIhkl
 
@@ -70,7 +70,7 @@ MODULE write_output_mod
     INTEGER(IKIND), INTENT(OUT) :: IErr
     INTEGER(IKIND) :: IThickness,ind,jnd,knd,lnd,Iflag,Irow,IhklFrames
     REAL(RKIND),DIMENSION(ISizeY,ISizeX,IThicknessCount) :: RImageToWrite
-    REAL(RKIND),DIMENSION(3) :: RGvecM
+    REAL(RKIND),DIMENSION(ITHREE) :: RGvecM
     REAL(RKIND) :: RStartFrame,RIntegratedIntensity,RLorAngle,RgMag
     CHARACTER(10) :: hString,kString,lString
     CHARACTER(40) :: fString,SMiller,Shkl,SPrintString
@@ -91,12 +91,12 @@ MODULE write_output_mod
 
       !For the final frame: force saving of any active reflections 
       IF (IFrame.EQ.INFrames .AND. ABS(ILiveList(IhklsAll(ind))).NE.0) THEN
-        RDevPara(IhklsFrame(ind)) = 10.0D0! artificially set deviation parameter to a big number
+        RDevC(IhklsFrame(ind)) = 10.0D0! artificially set deviation parameter to a big number
       END IF
 
       ! only output an image if it has a deviation parameter |Sg|<0.05 [arbitrary? to test]
       ! NEEDS an error catching mechanism when all containers are full
-      IF(ABS(RDevPara(IhklsFrame(ind))).LT.0.05D0) THEN
+      IF(ABS(RDevC(IhklsFrame(ind))).LT.0.05D0) THEN
         knd = knd + 1 ! counter for number of reflections found in this frame
         ILiveList(IhklsAll(ind)) = ILiveList(IhklsAll(ind))+1! increment counter for this reflection
         ! add the simulation into its output image
