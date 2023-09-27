@@ -68,7 +68,7 @@ MODULE setup_reflections_mod
     INTEGER(IKIND),INTENT(IN) :: IFrame
     REAL(RKIND),INTENT(IN) :: RDevLimit, RGOutLimit
     INTEGER(IKIND) :: IErr, ISel, Ih, Ik, Il, inda,indb,indc, jnd, knd,lnd
-    REAL(RKIND) :: RarMag, RbrMag, RcrMag, RShell, RGtestMag, RDev, RGPoolLimit
+    REAL(RKIND) :: RShell, RGtestMag, RDev, RGPoolLimit
     REAL(RKIND),DIMENSION(ITHREE) :: Rk, RGtest, RGtestM, RGplusk 
    
     ! RGPoolLimit is the upper limit for g-vector magnitudes
