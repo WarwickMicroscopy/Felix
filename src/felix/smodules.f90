@@ -136,7 +136,6 @@ MODULE RConst
   REAL(RKIND), PARAMETER :: &
        RSpeedOfLight=REAL(2.99762458D+8,RKIND), &! in m/s
        RElectronMass=REAL(9.10938291D-31,RKIND), &!in kg
-       RElectronMassMeV=REAL(0.510998928,RKIND), &!don't think we ever use this
        RPlanckConstant=REAL(6.62606957D-34,RKIND), &! in kg m^2 /s
        RElectronCharge=REAL(1.602176565D-19,RKIND), &!in C
        RAngstromConversion=REAL(1.D10,RKIND)! So [1A (in m)] * RAngstromConversion = 1
@@ -189,13 +188,13 @@ MODULE IPara
   !Refinement FLAGS
   INTEGER(IKIND) :: IImageOutputFLAG
   !LACBED
-  INTEGER(IKIND),DIMENSION(:,:), ALLOCATABLE :: IPixelLocation, ISymmetryRelations
+  INTEGER(IKIND),DIMENSION(:,:), ALLOCATABLE :: IPixelLocation, ISymmetryRelations, IgOutList
   INTEGER(IKIND),DIMENSION(:), ALLOCATABLE :: InBeams,IEquivalentUgKey
   !inpcif
   INTEGER(IKIND) :: ISymCount,ISpaceGrp,ILN
   INTEGER(IKIND) :: IPixelCountTotal
   !Thickness loop Variables
-  INTEGER(IKIND) :: IFrame,IThicknessCount
+  INTEGER(IKIND) :: IThicknessCount
   !Tracking reflections
   INTEGER(IKIND), DIMENSION(:), ALLOCATABLE :: IhklsAll,IhklsFrame,ILiveList,ILACBEDList
   INTEGER(IKIND), DIMENSION(50) :: ILACBEDFlag
@@ -225,8 +224,6 @@ MODULE RPara
   REAL(RKIND), DIMENSION(:,:), ALLOCATABLE :: RSymVec,RBasisAtomPosition, RBasisAtomDelta,&
        RAtomPosition,RUniqueKey
   REAL(RKIND), DIMENSION(:,:,:), ALLOCATABLE :: RSymMat
-  !Precision and errors
-  REAL(RKIND) :: RPrecision
   !Microscope Parameters
   REAL(RKIND) :: RConvergenceAngle,RAcceleratingVoltage
   REAL(RKIND) :: RElectronVelocity,RElectronWaveLength, &
@@ -254,6 +251,7 @@ MODULE RPara
        RaVecM, RbVecM, RcVecM, &
        RarVecO, RbrVecO, RcrVecO, &
        RarVecM, RbrVecM, RcrVecM, &
+       RarMag, RbrMag, RcrMag, &
        RXDirC_0, RZDirC_0, RXDirC, RZDirC, &
        RXDirO, RYDirO, RZDirO, RNormDirC,RNormDirM
   REAL(RKIND), DIMENSION(:,:), ALLOCATABLE :: RAtomCoordinate
@@ -261,19 +259,16 @@ MODULE RPara
        RInvBaseVec(ITHREE,ITHREE)
   REAL(RKIND), DIMENSION(:,:,:), ALLOCATABLE :: RAnisotropicDebyeWallerFactorTensor
   !Diffraction Pattern Definitions
-  REAL(RKIND) RBigK
-  REAL(RKIND), DIMENSION(:), ALLOCATABLE :: RgPoolMag, RSg
+  REAL(RKIND) RBigK, RDevLimit, RMeanInnerPotential, RScattFacToVolts, RDeltaK, RMinimumGMag, RGVectorMagnitude
+  REAL(RKIND), DIMENSION(:), ALLOCATABLE :: RgPoolMag
   REAL(RKIND), DIMENSION(:,:), ALLOCATABLE :: RgPool
   REAL(RKIND), DIMENSION(ITHREE,ITHREE) :: RTMat
-  REAL(RKIND) :: RDeltaK, RMinimumGMag,RGVectorMagnitude
   REAL(RKIND),DIMENSION(ITHREE) :: RGVector
   REAL(RKIND),DIMENSION(:),ALLOCATABLE :: RgDotNorm
   REAL(RKIND),DIMENSION(:), ALLOCATABLE :: RDevPara  ! deviation parameter for each g, for a given pixel
   REAL(RKIND),DIMENSION(:), ALLOCATABLE :: RDevC  ! deviation parameter for each g at the image centre
-  !Main Program
-  REAL(RKIND) :: RMeanInnerPotential,RScattFacToVolts
   REAL(RKIND),DIMENSION(:,:),ALLOCATABLE :: RgMatrixMagnitude, RgSumMat
-  REAL(RKIND),DIMENSION(:,:,:),ALLOCATABLE :: RgMatrix
+  REAL(RKIND),DIMENSION(:,:,:),ALLOCATABLE :: RgMatrix, RgPoolList
   !WaveFunction Arrays
   REAL(RKIND),DIMENSION(:),ALLOCATABLE :: RWaveIntensity,RFullWaveIntensity,RSumIntensity
   REAL(RKIND), DIMENSION(:,:,:), ALLOCATABLE :: RIndividualReflections

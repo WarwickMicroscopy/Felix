@@ -43,33 +43,35 @@ MODULE setup_reflections_mod
   
   !%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
   !>
-  !! Procedure-description: Fills the beam pool of reciprocal space vectors Rhkl
+  !! Procedure-description: Fills the beam pool list RgPoolList for the current frame
+  !! and the list of output reflections IgOutList (global variables)
   !!
   !! Major-Authors: Richard Beanland (2021)
   !!  
-  SUBROUTINE HKLMake(RGlimit, IErr)   
-    ! This procedure is called in every frame
+  SUBROUTINE HKLMake(IFrame, RGPoolLimit, RGOutLimit, IErr)   
+    ! This setup procedure fills up RgPoolList and IgOutList for each frame
 
     USE MyNumbers
     USE message_mod
     
     ! global parameters Rhkl, input reciprocal lattice vectors & wave vector
-    USE RPARA, ONLY : RzDirC, Rhkl, RarVecM, RbrVecM, RcrVecM, RInputHKLs,&
-        RElectronWaveVectorMagnitude
+    USE RPARA, ONLY : RzDirC, RgPoolList, RarVecM, RbrVecM, RcrVecM, RInputHKLs,&
+        RElectronWaveVectorMagnitude, IgOutList
       
     ! global inputs
     USE SPARA, ONLY : SPrintString
-    USE IPARA, ONLY : INhkl, IFrame, INoOfHKLsAll
+    USE IPARA, ONLY : INhkl, INoOfHKLsAll
     USE Iconst
     
     IMPLICIT NONE
 
-    REAL(RKIND),INTENT(IN) :: RGlimit   
+    INTEGER(IKIND),INTENT(IN) :: IFrame
+    REAL(RKIND),INTENT(IN) :: RGPoolLimit, RGOutLimit
     INTEGER(IKIND) :: IErr, ISel, Ih, Ik, Il, inda,indb,indc, jnd, knd,lnd
     REAL(RKIND) :: RarMag, RbrMag, RcrMag, RShell, RGtestMag, RDev
     REAL(RKIND),DIMENSION(ITHREE) :: Rk, RGtest, RGtestM, RGplusk 
    
-    ! RGlimit is the upper limit for g-vector magnitudes
+    ! RGPoolLimit is the upper limit for g-vector magnitudes
     ! If the g-vectors we are counting are bigger than this there is something wrong
     ! probably the tolerance for proximity to the Ewald sphere needs increasing
     ! could be an input in felix.inp
@@ -77,25 +79,21 @@ MODULE setup_reflections_mod
     ! Rk is the k-vector for the incident beam
     ! we are working in the microscope reference frame so k is along z
     Rk=(/ 0.0,0.0,RElectronWaveVectorMagnitude /)
-    ! get the size of the reciprocal lattice basis vectors
-    RarMag=SQRT(DOT_PRODUCT(RarVecM,RarVecM))!magnitude of a*
-    RbrMag=SQRT(DOT_PRODUCT(RbrVecM,RbrVecM))!magnitude of b*
-    RcrMag=SQRT(DOT_PRODUCT(RcrVecM,RcrVecM))!magnitude of c*
     ! we work our way out from the origin in shells
     ! the shell increment is the smallest basis vector
     RShell=MINVAL( (/ RarMag,RbrMag,RcrMag /) )
 
     !first g is always 000
-    Rhkl(1,:)=(/ 0.0,0.0,0.0 /)
+    RgPoolList(IFrame,1,:)=(/ 0.0,0.0,0.0 /)
     knd=1!number of reflections in the pool 
     lnd=0!number of the shell 
     !maximum a*,b*,c* limit is determined by the G magnitude limit
-    inda=NINT(RGlimit/RarMag)
-    indb=NINT(RGlimit/RbrMag)
-    indc=NINT(RGlimit/RcrMag)
+    inda=NINT(RGPoolLimit/RarMag)
+    indb=NINT(RGPoolLimit/RbrMag)
+    indc=NINT(RGPoolLimit/RcrMag)
 
-    !fill the Rhkl with beams near the Bragg condition
-    DO WHILE (REAL(lnd)*RShell.LT.RGlimit)
+    !fill the RgPoolList with beams near the Bragg condition
+    DO WHILE (REAL(lnd)*RShell.LT.RGPoolLimit)
       !increment the shell
       lnd = lnd+1
 !DBG  IF(my_rank.EQ.0)PRINT*,REAL(lnd-1)*RShell,"to",REAL(lnd)*RShell
@@ -106,7 +104,7 @@ MODULE setup_reflections_mod
               !check that it's allowed by selection rules
               ISel=0
               CALL SelectionRules(Ih, Ik, Il, ISel, IErr)
-              !and check that we have space in Rhkl
+              !and check that we have space 
               IF (ISel.EQ.1 .AND. knd.LT.INhkl) THEN
                 !Make a g-vector
                 RGtest = REAL( (/ Ih,Ik,Il /),RKIND )!Miller indices
@@ -118,13 +116,15 @@ MODULE setup_reflections_mod
                   RGplusk=RGtestM+Rk
                   !divide by |g| to get a measure independent of incident beam tilt
                   RDev=ABS(RElectronWaveVectorMagnitude-SQRT(DOT_PRODUCT(RGplusk,RGplusk)))/RGtestMag
-                  ! Tolerance of 0.08 here is rather arbitrary, might need
-                  ! revisiting
+                  ! Using global variable RDevLimit to include or not
 !DBG              IF(my_rank.EQ.0)PRINT*,(/ Ih,Ik,Il /),RDev
-                  IF ((RDev-0.08).LT.TINY) THEN !it's near the ZOLZ 
+                  IF ((RDev-RDevLimit).LT.TINY) THEN !it's near the ZOLZ 
                     !add it to the pool and increment the counter
                     knd=knd+1
-                    Rhkl(knd,:)=RGtest
+                    RgPoolList(IFrame,knd,:)=RGtest
+                    IF (RGtestMag.LT.RGOutLimit) THEN
+                      IgOutList(IFrame,knd)=1
+                    END IF
                   END IF
                 END IF
               END IF
@@ -133,7 +133,7 @@ MODULE setup_reflections_mod
       END DO
     END DO
 
-    ! it is possible that we reach RGlimit before filling up the pool, in which case 
+    ! it is possible that we reach RGPoolLimit before filling up the pool, in which case 
     ! fill up any remaining beam pool places with an enormous g-vector, diabolically
     ! the idea being that this g-vector will never be near any possible Ewald sphere
     IF (knd.LT.INhkl) THEN
@@ -142,24 +142,10 @@ MODULE setup_reflections_mod
         Rhkl(jnd,:)=RGtest
       END DO
     END IF
-
-!dbg
-    DO knd = 1, INhkl
-      IF(my_rank.EQ.0)PRINT*, Rhkl(knd,:)
-    END DO
     
     !output which required output hkl's are in this frame
     CALL message(LM, "Reflection list:")
-    DO jnd = 1, INoOfHKLsAll
-      lnd = 0!using this as a flag now
-      DO knd = 1, INhkl
-        IF (ABS(RInputHKLs(jnd,1)-Rhkl(knd,1)).LT.TINY .AND. &
-            ABS(RInputHKLs(jnd,2)-Rhkl(knd,2)).LT.TINY .AND. &
-            ABS(RInputHKLs(jnd,3)-Rhkl(knd,3)).LT.TINY) THEN
-          lnd = 1
-          EXIT
-        END IF
-      END DO
+    DO knd = 1, INhkl
       IF (lnd.EQ.1) THEN
         WRITE(SPrintString,'(I3,1X,I3,1X,I3)') NINT(RInputHKLs(jnd,:))
         CALL message(LM, SPrintString)
@@ -233,14 +219,14 @@ MODULE setup_reflections_mod
   !!
   !! Major-Authors: Keith Evans (2014), Richard Beanland (2016)
   !!  
-  SUBROUTINE HKLList( IErr )
+  SUBROUTINE HKLList(IFrame, IErr )
 
     ! This procedure is called once in felixrefine setup
     USE MyNumbers
     USE message_mod
 
     ! global parameters
-    USE IPARA, ONLY : IFrame, IhklsFrame, INoOfHKLsAll, IhklsAll, INoOfHKLsFrame,&
+    USE IPARA, ONLY : IhklsFrame, INoOfHKLsAll, IhklsAll, INoOfHKLsFrame,&
             ILiveList
     USE SPARA, ONLY : SPrintString
 
@@ -249,6 +235,7 @@ MODULE setup_reflections_mod
 
     IMPLICIT NONE
 
+    INTEGER(IKIND),INTENT(IN) :: IFrame
     INTEGER(IKIND) :: IFind,IDuplicate,ind,jnd,knd,IErr
 
     !--------------------------------------------------------------------

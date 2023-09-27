@@ -52,13 +52,13 @@ MODULE write_output_mod
   !!
   !! Major-Authors: Richard Beanland (2022)
   !!
-  SUBROUTINE WriteIterationOutput(IErr)
+  SUBROUTINE WriteIterationOutput(IFrame, IErr)
 
     USE MyNumbers
     USE message_mod
     
     ! global inputs
-    USE IPARA, ONLY : ILN,ISizeX,ISizeY,IhklsFrame,INoOfHKLsFrame,IFrame,IOutputFLAG,&
+    USE IPARA, ONLY : ILN,ISizeX,ISizeY,IhklsFrame,INoOfHKLsFrame,IOutputFLAG,&
             IhklsAll,ILiveList,ILACBEDList,ILACBEDFlag,IByteSize,INFrames,IThicknessCount
     USE RPARA, ONLY : RInputHKLs,Rhkl, RImageSimi, RInitialThickness, RDeltaThickness,&
             RTempImage,RDevC,RarVecM,RbrVecM,RcrVecM
@@ -67,6 +67,7 @@ MODULE write_output_mod
 
     IMPLICIT NONE
 
+    INTEGER(IKIND),INTENT(IN) :: IFrame
     INTEGER(IKIND), INTENT(OUT) :: IErr
     INTEGER(IKIND) :: IThickness,ind,jnd,knd,lnd,Iflag,Irow,IhklFrames
     REAL(RKIND),DIMENSION(ISizeY,ISizeX,IThicknessCount) :: RImageToWrite

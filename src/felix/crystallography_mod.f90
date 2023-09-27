@@ -257,9 +257,13 @@ MODULE crystallography_mod
     ! create reciprocal lattice vectors in Microscope reference frame
     ! Note that reciprocal lattice vectors have two pi included,
     ! we are using the optical convention exp(i*g.r)
-    RarVecM= TWOPI*CROSS(RbVecM,RcVecM)/DOT_PRODUCT(RbVecM,CROSS(RcVecM,RaVecM))
-    RbrVecM= TWOPI*CROSS(RcVecM,RaVecM)/DOT_PRODUCT(RcVecM,CROSS(RaVecM,RbVecM))
-    RcrVecM= TWOPI*CROSS(RaVecM,RbVecM)/DOT_PRODUCT(RaVecM,CROSS(RbVecM,RcVecM))
+    RarVecM= TWOPI*CROSS(RbVecM,RcVecM)/DOT_PRODUCT(RbVecM,CROSS(RcVecM,RaVecM))  ! a*
+    RbrVecM= TWOPI*CROSS(RcVecM,RaVecM)/DOT_PRODUCT(RcVecM,CROSS(RaVecM,RbVecM))  ! b*
+    RcrVecM= TWOPI*CROSS(RaVecM,RbVecM)/DOT_PRODUCT(RaVecM,CROSS(RbVecM,RcVecM))  ! c*
+    ! their magnitudes
+    RarMag=SQRT(DOT_PRODUCT(RarVecM,RarVecM))!magnitude of a*
+    RbrMag=SQRT(DOT_PRODUCT(RbrVecM,RbrVecM))!magnitude of b*
+    RcrMag=SQRT(DOT_PRODUCT(RcrVecM,RcrVecM))!magnitude of c*
 
     ! Calculate atomic position vectors RAtomCoordinate
     ! In microscope reference frame, in Angstrom units (NB RAtomPosition=crystal frame, in .cif)

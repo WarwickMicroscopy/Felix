@@ -412,8 +412,8 @@ MODULE ug_matrix_mod
     USE SPARA, ONLY : SPrintString
 
     ! global inputs
-    USE IPARA, ONLY : INAtomsUnitCell,IFrame,&
-          INhkl,IAtomicNumber,IEquivalentUgKey,IWriteFLAG,IAnisoDW
+    USE IPARA, ONLY : INAtomsUnitCell,INhkl,IAtomicNumber,IEquivalentUgKey,&
+          IWriteFLAG,IAnisoDW
     USE RPARA, ONLY : RAngstromConversion,RElectronCharge,RElectronMass,&
           RVolume,RIsoDW,ROccupancy,&
           RElectronWaveVectorMagnitude,RgMatrix,RDebyeWallerConstant,RTolerance,&
@@ -456,11 +456,12 @@ MODULE ug_matrix_mod
       END IF
     END DO
     RMeanInnerPotential = RMeanInnerPotential*RScattFacToVolts
-    IF(IFrame.EQ.1) THEN
-      WRITE(SPrintString,FMT='(A21,F6.2,A6)') "Mean inner potential ",RMeanInnerPotential," Volts"
-      SPrintString=TRIM(ADJUSTL(SPrintString))
-      CALL message(LS,SPrintString)
-    END IF
+    !*** to be moved into main code?*** 
+!    IF(IFrame.EQ.1) THEN
+!      WRITE(SPrintString,FMT='(A21,F6.2,A6)') "Mean inner potential ",RMeanInnerPotential," Volts"
+!      SPrintString=TRIM(ADJUSTL(SPrintString))
+!      CALL message(LS,SPrintString)
+!    END IF
 
     ! Wave vector magnitude in crystal
     ! high-energy approximation (not HOLZ compatible)
