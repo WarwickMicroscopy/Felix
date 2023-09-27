@@ -251,9 +251,9 @@ MODULE RPara
        RaVecM, RbVecM, RcVecM, &
        RarVecO, RbrVecO, RcrVecO, &
        RarVecM, RbrVecM, RcrVecM, &
-       RarMag, RbrMag, RcrMag, &
        RXDirC_0, RZDirC_0, RXDirC, RZDirC, &
        RXDirO, RYDirO, RZDirO, RNormDirC,RNormDirM
+  REAL(RKIND) :: RarMag, RbrMag, RcrMag
   REAL(RKIND), DIMENSION(:,:), ALLOCATABLE :: RAtomCoordinate
   REAL(RKIND) :: RBaseVec(ITHREE,ITHREE), &
        RInvBaseVec(ITHREE,ITHREE)
