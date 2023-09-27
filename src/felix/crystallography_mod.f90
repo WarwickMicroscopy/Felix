@@ -196,7 +196,7 @@ MODULE crystallography_mod
     USE message_mod
 
     USE RPARA, ONLY : RarVecM,RbrVecM,RcrVecM,RaVecM,RbVecM,RcVecM,RNormDirM,RaVecO,RbVecO,&
-          RcVecO,RVolume,RarVecO,RbrVecO,RcrVecO, RXDirO, RYDirO, RZDirO
+          RcVecO,RVolume,RarVecO,RbrVecO,RcrVecO,RXDirO,RYDirO,RZDirO,RarMag,RbrMag,RcrMag
     USE SPARA, ONLY : SSpaceGroupName
 
     ! global inputs
