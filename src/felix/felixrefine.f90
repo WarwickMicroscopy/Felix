@@ -258,7 +258,7 @@ PROGRAM Felixrefine
     RGlimit = 10.0*TWOPI    
     CALL HKLMake(RGlimit,IErr)
     IF(l_alert(IErr,"felixrefine","HKLMake")) CALL abort
-    CALL message(LS,dbg7,"Rhkl matrix: ",NINT(Rhkl(1:INhkl,:)))
+!    CALL message(LS,dbg7,"Rhkl matrix: ",NINT(Rhkl(1:INhkl,:)))
 
     !--------------------------------------------------------------------
     ! sort hkl in descending order of magnitude (not sure this is needed, really)

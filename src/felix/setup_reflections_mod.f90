@@ -143,6 +143,11 @@ MODULE setup_reflections_mod
       END DO
     END IF
 
+!dbg
+    DO knd = 1, INhkl
+      IF(my_rank.EQ.0)PRINT*, Rhkl(knd,:)
+    END DO
+    
     !output which required output hkl's are in this frame
     CALL message(LM, "Reflection list:")
     DO jnd = 1, INoOfHKLsAll
