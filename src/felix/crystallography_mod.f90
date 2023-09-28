@@ -105,7 +105,7 @@ MODULE crystallography_mod
   !!
   !! Major-Authors: Keith Evans (2014), Richard Beanland (2016)
   !!
-  SUBROUTINE ReciprocalLattice(IErr)
+  SUBROUTINE ReciprocalLattice(RGPoolLimit, IErr)
 
     USE MyNumbers
     USE MyMPI
@@ -124,6 +124,8 @@ MODULE crystallography_mod
 
     INTEGER(IKIND) :: IErr,ind
     REAL(RKIND) :: RTTest
+    REAL(RKIND),INTENT(IN) :: RGPoolLimit
+    REAL(RKIND), DIMENSION(:,:,:), ALLOCATABLE :: RhklPool
 
     !direct lattice vectors in an orthogonal reference frame, Angstrom units 
     RaVecO(1)= RCellA
@@ -173,7 +175,6 @@ MODULE crystallography_mod
     RarVecO= TWOPI*CROSS(RbVecO,RcVecO)/DOT_PRODUCT(RbVecO,CROSS(RcVecO,RaVecO))
     RbrVecO= TWOPI*CROSS(RcVecO,RaVecO)/DOT_PRODUCT(RcVecO,CROSS(RaVecO,RbVecO))
     RcrVecO= TWOPI*CROSS(RaVecO,RbVecO)/DOT_PRODUCT(RaVecO,CROSS(RbVecO,RcVecO))
-
     DO ind=1,ITHREE
        IF (abs(RarVecO(ind)).LT.TINY) THEN
           RarVecO(ind) = ZERO
@@ -186,6 +187,17 @@ MODULE crystallography_mod
        END IF
     ENDDO
 
+    ! Now build the reciprocal lattice from which we will take slices for each beam pool
+    ! RhklPool is the 3D lattice with each point given Miller indices
+    ! RgPool is the 3D lattice with each point given coordinates in reciprocal space
+    !maximum a*,b*,c* limit is determined by the G magnitude limit
+    inda=NINT(RGPoolLimit/RarMag)
+    indb=NINT(RGPoolLimit/RbrMag)
+    indc=NINT(RGPoolLimit/RcrMag)
+    ALLOCATE(RhklPool(2*inda+1,2*indb+1,2*indc+1),STAT=IErr)
+    RhklPool = DIMENSION(-inda:inda, -indb:indb, -indc:indc)
+    IF(my_rank.EQ.0)PRINT*, RhklPool
+    
   END SUBROUTINE ReciprocalLattice
 
   !%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%

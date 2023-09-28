@@ -292,6 +292,9 @@ PROGRAM Felixrefine
   ! Initialize lists
   RgPoolList = ZERO
   IgOutList = 0
+  !*** make a list of g-vectors up to some limit and rank them in magnitude **
+  !*** replace the list generator in HKLmake with it ***
+  
   DO ind = 1, INFrames
     WRITE(SPrintString, FMT='(A30,I3,A3)') "Counting reflections in frame ",ind,"..."
     CALL message(LS,dbg3,SPrintString)
