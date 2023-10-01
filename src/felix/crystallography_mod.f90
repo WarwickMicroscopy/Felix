@@ -112,7 +112,7 @@ MODULE crystallography_mod
     ! global inputs
     USE IPARA, ONLY : IVolumeFLAG,IhklLattice
     USE RPARA, ONLY : RAlpha,RBeta,RGamma,RCellA,RCellB,RCellC,RarMag,RbrMag,RcrMag,&
-            RgLattice
+            RgLattice,RLatMag
     USE SPARA, ONLY : SSpaceGroupName
     USE SPARA, ONLY : SPrintString
 
@@ -121,11 +121,11 @@ MODULE crystallography_mod
 
     IMPLICIT NONE
 
-    INTEGER(IKIND) :: IErr,ind,jnd,knd,lnd,inda,indb,indc
-    REAL(RKIND) :: RTTest
-    REAL(RKIND),DIMENSION(ITHREE) :: Rg
+    INTEGER(IKIND) :: IErr,ind,jnd,knd,lnd,mnd,nnd,ngs,inda,indb,indc,IlogNB2,Id3(ITHREE)
+    REAL(RKIND) :: Rt,ALN2I,LocalTINY,RhklSearch(ITHREE),Rg(ITHREE),RhklCompare(ITHREE)
     REAL(RKIND),INTENT(IN) :: RLatticeLimit
-
+    PARAMETER (ALN2I=1.4426950D0, LocalTINY=1.D-5)
+    
     !direct lattice vectors in an orthogonal reference frame, Angstrom units 
     ! a is parallel to [100]
     RaVecO(1)= RCellA
@@ -150,13 +150,12 @@ MODULE crystallography_mod
     END IF
 
     !Some checks for rhombohedral cells?
-    RTTest = &
-          DOT_PRODUCT(RaVecO/DOT_PRODUCT(RaVecO,RaVecO),RbVecO/DOT_PRODUCT(RbVecO,RbVecO))*&
-          DOT_PRODUCT(RbVecO/DOT_PRODUCT(RbVecO,RbVecO),RcVecO/DOT_PRODUCT(RcVecO,RcVecO))*&
-          DOT_PRODUCT(RcVecO/DOT_PRODUCT(RcVecO,RcVecO),RaVecO/DOT_PRODUCT(RaVecO,RaVecO))
+    Rt = DOT_PRODUCT(RaVecO/DOT_PRODUCT(RaVecO,RaVecO),RbVecO/DOT_PRODUCT(RbVecO,RbVecO))*&
+         DOT_PRODUCT(RbVecO/DOT_PRODUCT(RbVecO,RbVecO),RcVecO/DOT_PRODUCT(RcVecO,RcVecO))*&
+         DOT_PRODUCT(RcVecO/DOT_PRODUCT(RcVecO,RcVecO),RaVecO/DOT_PRODUCT(RaVecO,RaVecO))
        
     IF(SCAN(SSpaceGroupName,'rR').NE.0) THEN
-       IF(ABS(RTTest).LT.TINY) THEN
+       IF(ABS(Rt).LT.TINY) THEN
         SSpaceGroupName = TRIM(ADJUSTL("V"))
         ! Crystal is either Obverse or Reverse
         ! Selection Rules are not in place to determine the difference, 
@@ -198,20 +197,50 @@ MODULE crystallography_mod
     inda=NINT(RLatticeLimit/RarMag)
     indb=NINT(RLatticeLimit/RbrMag)
     indc=NINT(RLatticeLimit/RcrMag)
-    ALLOCATE(IhklLattice((2*inda+1)*(2*indb+1)*(2*indc+1), ITHREE), STAT=IErr)
-    ! populate the list of Miller indices IhklLattice and the g-vectors RgLattice
+    ngs = (2*inda+1)*(2*indb+1)*(2*indc+1)
+    ALLOCATE(IhklLattice(ngs, ITHREE), STAT=IErr)
+    ALLOCATE(RgLattice(ngs, ITHREE), STAT=IErr)
+    ALLOCATE(RLatMag(ngs), STAT=IErr)
+    ! populate the lists
     lnd = 0
     DO ind = -inda,inda
       DO jnd = -indb,indb
         DO knd = -indc,indc
           lnd = lnd + 1
-          IhklLattice(lnd,:) = (/ ind, jnd, knd /)
-          Rg = ind*RarVecO + jnd*RbrVecO + knd*RcrVecO
+          IhklLattice(lnd,:) = (/ ind, jnd, knd /) !Miller indices
+          Rg = ind*RarVecO + jnd*RbrVecO + knd*RcrVecO !g-vector
           RgLattice(lnd,:) = Rg
+          RLatMag(lnd) = SQRT(DOT_PRODUCT(Rg,Rg)) !g-magnitude
           END DO
       END DO
     END DO
-    IF(my_rank.EQ.0)PRINT*, "reciprocal lattice", inda,indb,indc,"cells"
+    
+    ! Sort them in ascending order of magnitude (re-purposed HKLSort routine)
+    ! Based on ShellSort from "Numerical Recipes", routine SHELL()
+    IlogNB2=INT(LOG(REAL(ngs))*ALN2I+LocalTINY)
+    mnd = ngs
+    DO nnd=1,IlogNB2
+      mnd=mnd/2
+      knd=ngs-mnd
+      DO jnd=1,knd
+        ind=jnd
+3       CONTINUE
+        lnd=ind+mnd
+        IF( RLatMag(lnd) .GT. RLatMag(ind)) THEN
+          dummy3 = IhklLattice(ind,:) ! swap indices
+          IhklLattice(ind,:) = IhklLattice(lnd,:)
+          IhklLattice(lnd,:) = dummy3
+          Rg = RgLattice(ind,:) ! swap g-vectors
+          RgLattice(ind,:) = RgLattice(lnd,:)
+          RgLattice(lnd,:) = Rg
+          Rt = RLatMag(ind,:) ! swap magnitudes
+          RLatMag(ind) = RLatMag(lnd)
+          RLatMag(lnd) = Rt
+          ind=ind-mnd
+          IF(ind.GE.1) GOTO 3
+        ENDIF
+      ENDDO
+    ENDDO
     
   END SUBROUTINE ReciprocalLattice
 
