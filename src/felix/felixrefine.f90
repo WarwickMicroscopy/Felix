@@ -67,7 +67,7 @@ PROGRAM Felixrefine
         RMinLaueZoneValue,Rdf,RLastFit,RBestFit,RMaxLaueZoneValue,&
         RMaxAcceptanceGVecMag,RandomSign,RLaueZoneElectronWaveVectorMag,&
         RvarMin,RfitMin,RFit0,Rconvex,Rtest,Rplus,Rminus,RdeltaX,RdeltaY,&
-        RgPoolLimit
+        RgPoolLimit,RAngle
   REAL(RKIND),DIMENSION(ITHREE) :: RXDirOn,RZDirOn
 
   CHARACTER(40) :: my_rank_string
@@ -169,6 +169,51 @@ PROGRAM Felixrefine
   (TWOPI*RElectronMass*RElectronCharge*RVolume)
 
   !--------------------------------------------------------------------
+  ! allocations using the size of the beam pool specified in felix.inp, INhkl
+  !--------------------------------------------------------------------
+  ! List of g-vectors in the beam pool for each frame
+  ALLOCATE(IgPoolList(INFrames,INhkl),STAT=IErr)
+  IF(l_alert(IErr,"felixrefine","allocate IgPoolList")) CALL abort
+  ! Indices of g-vectors in IgPoolList to be output in each frame,
+  ! decided by RGOutLimit
+  ALLOCATE(IgOutList(INFrames,INhkl),STAT=IErr)
+  IF(l_alert(IErr,"felixrefine","allocate IgOutList")) CALL abort
+  ! RgPool is a list of g-vectors in the microscope ref frame,
+  ! units of 1/A (NB exp(-i*q.r),  physics negative convention)
+  ALLOCATE(RgPool(INhkl,ITHREE),STAT=IErr)
+  IF(l_alert(IErr,"felixrefine","allocate RgPool")) CALL abort
+  ! g-vector magnitudes
+  ! in reciprocal Angstrom units, in the Microscope reference frame
+  ALLOCATE(RgPoolMag(INhkl),STAT=IErr)
+  IF(l_alert(IErr,"felixrefine","allocate RgPoolMag")) CALL abort
+  ! g-vector components parallel to the surface unit normal
+  ALLOCATE(RgDotNorm(INhkl),STAT=IErr)
+  IF(l_alert(IErr,"felixrefine","allocate RgDotNorm")) CALL abort
+  ! Matrix of 2pi*g-vectors that corresponds to the Ug matrix
+  ALLOCATE(RgMatrix(INhkl,INhkl,ITHREE),STAT=IErr)
+  IF(l_alert(IErr,"felixrefine","allocate RgMatrix")) CALL abort
+  ! NB Rhkl are in INTEGER form [h,k,l] but are REAL to allow dot products etc.
+  ALLOCATE(Rhkl(INhkl,ITHREE),STAT=IErr)
+  IF(l_alert(IErr,"felixrefine","allocate Rhkl")) CALL abort
+  ! Deviation parameter for each hkl
+  ALLOCATE(RDevPara(INhkl),STAT=IErr)
+  ! what's this deviation parameter for?
+  ALLOCATE(RDevC(INhkl),STAT=IErr)
+  IF(l_alert(IErr,"felixrefine","allocate RDevC")) CALL abort
+  ! allocate Ug arrays
+  ALLOCATE(CUgMatNoAbs(INhkl,INhkl),STAT=IErr)! Ug Matrix without absorption
+  IF(l_alert(IErr,"felixrefine","allocate CUgMatNoAbs")) CALL abort
+  ALLOCATE(CUgMatPrime(INhkl,INhkl),STAT=IErr)! U'g Matrix of just absorption
+  IF(l_alert(IErr,"felixrefine","allocate CUgMatPrime")) CALL abort
+  ALLOCATE(CUgMat(INhkl,INhkl),STAT=IErr)! Ug+U'g Matrix, including absorption
+  IF(l_alert(IErr,"felixrefine","allocate CUgMat")) CALL abort
+  ! Matrix with numbers marking equivalent Ug's
+  ALLOCATE(ISymmetryRelations(INhkl,INhkl),STAT=IErr)
+  IF(l_alert(IErr,"felixrefine","allocate ISymmetryRelations")) CALL abort
+
+  IThicknessCount= NINT((RFinalThickness-RInitialThickness)/RDeltaThickness) + 1
+
+  !--------------------------------------------------------------------
   ! set up unit cell 
   ! total possible number of atoms/unit cell
   IMaxPossibleNAtomsUnitCell=SIZE(RBasisAtomPosition,1)*SIZE(RSymVec,1)
@@ -203,15 +248,13 @@ PROGRAM Felixrefine
   ! From the unit cell we produce RaVecO, RbVecO, RcVecO in an orthogonal reference frame O
   ! with Xo // a and Zo perpendicular to the ab plane, in Angstrom units
   ! and reciprocal lattice vectors RarVecO, RbrVecO, RcrVecO in the same reference frame
-
-  ! ***These parameters will probably end up in a modified .inp file***
-  ! Outer limit of g pool
+  ! Outer limit of g pool  ***This parameter will probably end up in a modified .inp file***
   RgPoolLimit = 2.0*TWOPI  ! reciprocal Angstroms, multiplied by 2pi
   CALL ReciprocalLattice(RgPoolLimit, IErr)
   IF(l_alert(IErr,"felixrefine","ReciprocalLattice")) CALL abort
 
   !--------------------------------------------------------------------
-  ! Set up microscope reference frame
+  ! Set up initial microscope reference frame
   ! X, Y and Z are orthogonal vectors that defines the simulation
   ! Also referred to as the microscope reference frame M.
   ! The electron beam propagates along +Zm.
@@ -236,84 +279,51 @@ PROGRAM Felixrefine
     RXDirO = RXDirO - DOT_PRODUCT(RXDirO,RZDirO)*RZDirO
     RXDirO = RXDirO/SQRT(DOT_PRODUCT(RXDirO,RXDirO))
   END IF
-  RYDirO = CROSS(RZDirO,RXDirO)
-  
-  
-  !--------------------------------------------------------------------
-  ! allocations using the size of the beam pool specified in felix.inp, INhkl
-  !--------------------------------------------------------------------
-  ! List of g-vectors making the beam pool in each frame
-  ALLOCATE(RgPoolList(INFrames,INhkl,ITHREE),STAT=IErr)
-  IF(l_alert(IErr,"felixrefine","allocate RgPoolList")) CALL abort
-  ! Indices of g-vectors in RgPoolList to be output in each frame,
-  ! decided by RGOutLimit
-  ALLOCATE(IgOutList(INFrames,INhkl),STAT=IErr)
-  IF(l_alert(IErr,"felixrefine","allocate IgOutList")) CALL abort
-  ! RgPool is a list of g-vectors in the microscope ref frame,
-  ! units of 1/A (NB exp(-i*q.r),  physics negative convention)
-  ALLOCATE(RgPool(INhkl,ITHREE),STAT=IErr)
-  IF(l_alert(IErr,"felixrefine","allocate RgPool")) CALL abort
-  ! g-vector magnitudes
-  ! in reciprocal Angstrom units, in the Microscope reference frame
-  ALLOCATE(RgPoolMag(INhkl),STAT=IErr)
-  IF(l_alert(IErr,"felixrefine","allocate RgPoolMag")) CALL abort
-  ! g-vector components parallel to the surface unit normal
-  ALLOCATE(RgDotNorm(INhkl),STAT=IErr)
-  IF(l_alert(IErr,"felixrefine","allocate RgDotNorm")) CALL abort
-  ! Matrix of 2pi*g-vectors that corresponds to the Ug matrix
-  ALLOCATE(RgMatrix(INhkl,INhkl,ITHREE),STAT=IErr)
-  IF(l_alert(IErr,"felixrefine","allocate RgMatrix")) CALL abort
-  ! NB Rhkl are in INTEGER form [h,k,l] but are REAL to allow dot products etc.
-  ALLOCATE(Rhkl(INhkl,ITHREE),STAT=IErr)
-  IF(l_alert(IErr,"felixrefine","allocate Rhkl")) CALL abort
-  ! Deviation parameter for each hkl
-  ALLOCATE(RDevPara(INhkl),STAT=IErr)
-  ! what's this deviation parameter for?
-  ALLOCATE(RDevC(INhkl),STAT=IErr)
-  IF(l_alert(IErr,"felixrefine","allocate Rhkl")) CALL abort
-  ! allocate Ug arrays
-  ALLOCATE(CUgMatNoAbs(INhkl,INhkl),STAT=IErr)! Ug Matrix without absorption
-  IF(l_alert(IErr,"felixrefine","allocate CUgMatNoAbs")) CALL abort
-  ALLOCATE(CUgMatPrime(INhkl,INhkl),STAT=IErr)! U'g Matrix of just absorption
-  IF(l_alert(IErr,"felixrefine","allocate CUgMatPrime")) CALL abort
-  ALLOCATE(CUgMat(INhkl,INhkl),STAT=IErr)! Ug+U'g Matrix, including absorption
-  IF(l_alert(IErr,"felixrefine","allocate CUgMat")) CALL abort
-  ! Matrix with numbers marking equivalent Ug's
-  ALLOCATE(ISymmetryRelations(INhkl,INhkl),STAT=IErr)
-  IF(l_alert(IErr,"felixrefine","allocate ISymmetryRelations")) CALL abort
-
-  IThicknessCount= NINT((RFinalThickness-RInitialThickness)/RDeltaThickness) + 1
-
+  RYDirO = CROSS(RZDirO,RXDirO)  ! the rotation axis
 
   !--------------------------------------------------------------------
-  ! calculate reflection list based on the track through reciprocal space
+  ! calculate reflection list frame by frame
   !--------------------------------------------------------------------
-  ! Initialize lists
-  RgPoolList = ZERO
+  ! We have all reciprocal lattice vectors in ascending order of magnitude RLatMag
+  ! with indices of IhklLattice and vector RgLatticeO in the orthogonal ref frame
+  ! IgPoolList says which reflections are close to the Ewald sphere
+  IgPoolList = 0
   IgOutList = 0
-  !*** make a list of g-vectors up to some limit and rank them in magnitude **
-  !*** replace the list generator in HKLmake with it ***
-
-  DO ind = 1, INFrames
+  DO ind = 1,INFrames
     WRITE(SPrintString, FMT='(A30,I3,A3)') "Counting reflections in frame ",ind,"..."
     CALL message(LS,dbg3,SPrintString)
-    ! Increment frame angle, if it's not the first 
-    IF(ind.GT.1) THEN
-      RXDirOn = RXDirO-RZDirO*TAN(DEG2RADIAN*RFrameAngle)
-      RZDirOn = RZDirO+RXDirO*TAN(DEG2RADIAN*RFrameAngle)
-      RXDirO = RXDirOn/SQRT(DOT_PRODUCT(RXDirOn,RXDirOn))
-      RZDirO = RZDirOn/SQRT(DOT_PRODUCT(RZDirOn,RZDirOn))
-    END IF
+    RAngle = REAL(ind-1)*DEG2RADIAN*RFrameAngle
+    ! Rk is the k-vector for the incident beam, which we write here in the orthogonal frame O
+    Rk = RElectronWaveVectorMagnitude*(RZDirO*COS(RAngle)-RXDirO*SIN(RAngle))
+    ! Fill the list of reflections IgPoolList until we have filled the beam pool
+    knd = 1
+    DO WHILE (knd.LE.INhkl)  ! while the beam pool isn't full
+      DO jnd = 1,InLattice  ! work through reflections in ascending order
+        !is this reflection near a Laue condition |k+g|=|k|
+        RGplusk = RgLatticeO(ind,:) + Rk
+        IF (ABS(SQRT(DOT_PRODUCT(RGplusk,RGplusk))-RElectronWaveVectorMagnitude.LT.RDevLimit) THEN
+          IgPoolList(ind,knd) = jnd  ! add it to the list
+          ! Is this reflection small enough to be in the output list
+          IF (RLatMag(jnd).LT.RGOutLimit) THEN
+            IgOutList(ind,knd) = jnd
+          END IF
+          knd = knd + 1
+        END IF
+      END DO
+    END DO
+  END DO
+    
+    
     ! Create reciprocal lattice vectors in Microscope reference frame
     ! returns transformation matrices and RAtomCoordinate
-!    CALL CrystalOrientation(IErr)
-    IF(l_alert(IErr,"felixrefine","CrystalOrientation")) CALL abort
+ !   CALL CrystalOrientation(IErr)
+ !   IF(l_alert(IErr,"felixrefine","CrystalOrientation")) CALL abort
     !--------------------------------------------------------------------
-    ! Fill the list of reflections RgPoolList
+    
 !    CALL HKLMake(ind, RDevLimit, RGOutLimit, IErr)
-    IF(l_alert(IErr,"felixrefine","HKLMake")) CALL abort
+  !  IF(l_alert(IErr,"felixrefine","HKLMake")) CALL abort
     CALL PrintEndTime( LS, IStartTime, "Frame" )
-    !CALL message(LS,dbg7,"Rhkl matrix: ",NINT(RgPoolList(ind,1:INhkl,:)))
+    !CALL message(LS,dbg7,"Rhkl matrix: ",NINT(IgPoolList(ind,1:INhkl,:)))
 
     !--------------------------------------------------------------------
     ! sort hkl in descending order of magnitude (not sure this is needed, really)

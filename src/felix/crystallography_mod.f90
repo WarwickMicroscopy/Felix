@@ -97,10 +97,9 @@ MODULE crystallography_mod
     END SUBROUTINE gVectors
 
   !%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-  
   !>
-  !! Procedure-description: Creates reciprocal lattice vectors in an orthogonal
-  !! reference frame and sorts them in magnitude.  
+  !! Procedure-description: Creates list of reciprocal lattice vectors covering a 3D
+  !! volume in an orthogonal reference frame and sorts them in magnitude.  
   !!
   !! Major-Authors: Richard Beanland (2023)
   !!
@@ -110,19 +109,19 @@ MODULE crystallography_mod
     USE MyMPI
 
     ! global inputs
-    USE IPARA, ONLY : IVolumeFLAG,IhklLattice
-    USE RPARA, ONLY : RAlpha,RBeta,RGamma,RCellA,RCellB,RCellC,RarMag,RbrMag,RcrMag,&
-            RgLattice,RLatMag
+    USE IPARA, ONLY : IVolumeFLAG
+    USE RPARA, ONLY : RAlpha,RBeta,RGamma,RCellA,RCellB,RCellC,RarMag,RbrMag,RcrMag
     USE SPARA, ONLY : SSpaceGroupName
     USE SPARA, ONLY : SPrintString
 
     ! global outputs
-    USE RPARA, ONLY : RaVecO,RbVecO,RcVecO,RVolume,RarVecO,RbrVecO,RcrVecO
+    USE RPARA, ONLY : RaVecO,RbVecO,RcVecO,RVolume,RarVecO,RbrVecO,RcrVecO,RgLatticeO,RLatMag
+    USE IPARA, ONLY : IhklLattice,InLattice
 
     IMPLICIT NONE
 
-    INTEGER(IKIND) :: IErr,ind,jnd,knd,lnd,mnd,nnd,ngs,inda,indb,indc,IlogNB2,Id3(ITHREE)
-    REAL(RKIND) :: Rt,ALN2I,LocalTINY,RhklSearch(ITHREE),Rg(ITHREE),RhklCompare(ITHREE)
+    INTEGER(IKIND) :: IErr,ind,jnd,knd,lnd,mnd,nnd,inda,indb,indc,IlogNB2,Id3(ITHREE)
+    REAL(RKIND) :: Rt,ALN2I,LocalTINY,Rg(ITHREE)
     REAL(RKIND),INTENT(IN) :: RLatticeLimit
     PARAMETER (ALN2I=1.4426950D0, LocalTINY=1.D-5)
     
@@ -192,15 +191,15 @@ MODULE crystallography_mod
 
     ! Now build the reciprocal lattice from which we will take slices for each beam pool
     ! IhklLattice is the list of Miller indices for the 3D lattice
-    ! RgLattice is the corresponding list of coordinates in reciprocal space
+    ! RgLatticeO is the corresponding list of coordinates in reciprocal space
     ! maximum a*,b*,c* limit is determined by the G magnitude limit
     inda=NINT(RLatticeLimit/RarMag)
     indb=NINT(RLatticeLimit/RbrMag)
     indc=NINT(RLatticeLimit/RcrMag)
-    ngs = (2*inda+1)*(2*indb+1)*(2*indc+1)
-    ALLOCATE(IhklLattice(ngs, ITHREE), STAT=IErr)
-    ALLOCATE(RgLattice(ngs, ITHREE), STAT=IErr)
-    ALLOCATE(RLatMag(ngs), STAT=IErr)
+    InLattice = (2*inda+1)*(2*indb+1)*(2*indc+1)
+    ALLOCATE(IhklLattice(InLattice, ITHREE), STAT=IErr)
+    ALLOCATE(RgLatticeO(InLattice, ITHREE), STAT=IErr)
+    ALLOCATE(RLatMag(InLattice), STAT=IErr)
     ! populate the lists
     lnd = 0
     DO ind = -inda,inda
@@ -209,7 +208,7 @@ MODULE crystallography_mod
           lnd = lnd + 1
           IhklLattice(lnd,:) = (/ ind, jnd, knd /) !Miller indices
           Rg = ind*RarVecO + jnd*RbrVecO + knd*RcrVecO !g-vector
-          RgLattice(lnd,:) = Rg
+          RgLatticeO(lnd,:) = Rg
           RLatMag(lnd) = SQRT(DOT_PRODUCT(Rg,Rg)) !g-magnitude
           END DO
       END DO
@@ -217,11 +216,11 @@ MODULE crystallography_mod
     
     ! Sort them in ascending order of magnitude (re-purposed HKLSort routine)
     ! Based on ShellSort from "Numerical Recipes", routine SHELL()
-    IlogNB2=INT(LOG(REAL(ngs))*ALN2I+LocalTINY)
-    mnd = ngs
+    IlogNB2=INT(LOG(REAL(InLattice))*ALN2I+LocalTINY)
+    mnd = InLattice
     DO nnd=1,IlogNB2
       mnd=mnd/2
-      knd=ngs-mnd
+      knd=InLattice-mnd
       DO jnd=1,knd
         ind=jnd
 3       CONTINUE
@@ -230,9 +229,9 @@ MODULE crystallography_mod
           Id3 = IhklLattice(ind,:) ! swap indices
           IhklLattice(ind,:) = IhklLattice(lnd,:)
           IhklLattice(lnd,:) = Id3
-          Rg = RgLattice(ind,:) ! swap g-vectors
-          RgLattice(ind,:) = RgLattice(lnd,:)
-          RgLattice(lnd,:) = Rg
+          Rg = RgLatticeO(ind,:) ! swap g-vectors
+          RgLatticeO(ind,:) = RgLatticeO(lnd,:)
+          RgLatticeO(lnd,:) = Rg
           Rt = RLatMag(ind) ! swap magnitudes
           RLatMag(ind) = RLatMag(lnd)
           RLatMag(lnd) = Rt
@@ -252,7 +251,7 @@ MODULE crystallography_mod
     USE message_mod
 
     USE RPARA, ONLY : RarVecM,RbrVecM,RcrVecM,RaVecM,RbVecM,RcVecM,RNormDirM,RaVecO,RbVecO,&
-          RcVecO,RVolume,RarVecO,RbrVecO,RcrVecO,RXDirO,RYDirO,RZDirO,RarMag,RbrMag,RcrMag
+          RcVecO,RarVecO,RbrVecO,RcrVecO,RXDirO,RYDirO,RZDirO,RarMag,RbrMag,RcrMag
     USE SPARA, ONLY : SSpaceGroupName
 
     ! global inputs
@@ -273,23 +272,11 @@ MODULE crystallography_mod
     RTMatC2O(:,2) = RbVecO(:)
     RTMatC2O(:,3) = RcVecO(:)
 
-    ! RXDirC is the reciprocal lattice vector that defines the x-axis of the
-    ! diffraction pattern and RZDirC the beam direction, coming from felix.inp
-    ! No check has been made to ensure that they are perpendicular, it is
-    ! assumed
-    ! RXDirO,RYDirO,RZDirO vectors are UNIT reciprocal lattice vectors parallel 
-    ! to the above in an orthogonal frame - now calculated in the frame loop
-!    RXDirO = RXDirC(1)*RarVecO + RXDirC(2)*RbrVecO + RXDirC(3)*RcrVecO
-!    RXDirO = RXDirO/SQRT(DOT_PRODUCT(RXDirO,RXDirO))
-!    RZDirO = RZDirC(1)*RaVecO + RZDirC(2)*RbVecO + RZDirC(3)*RcVecO
-!    RZDirO = RZDirO/SQRT(DOT_PRODUCT(RZDirO,RZDirO))
-!    RYDirO = CROSS(RZDirO,RXDirO)
-
     ! RTmatO2M transforms from orthogonal to microscope reference frame
     RTMatO2M(1,:) = RXDirO(:)
     RTMatO2M(2,:) = RYDirO(:)
     RTMatO2M(3,:) = RZDirO(:)
-    
+
     ! Unit normal to the specimen in REAL space
     ! This is used for all g-vectors as a boundary condition
     RNormDirM = MATMUL(RTMatO2M,MATMUL(RTMatC2O,RNormDirC))
@@ -303,12 +290,19 @@ MODULE crystallography_mod
       CALL message(LS,SPrintString) 
     END IF
 
-    ! now transform from crystal reference frame to orthogonal and then to microscope frame
-
+    ! Transform atomic coordinates to microscope frame to give RAtomCoordinate
     ! RaVecM, RbVecM, RbVecM unit cell vectors in Angstrom units in the microscope frame
     RaVecM= MATMUL(RTMatO2M,RaVecO)
     RbVecM= MATMUL(RTMatO2M,RbVecO)
     RcVecM= MATMUL(RTMatO2M,RcVecO)
+    ! Calculate atomic position vectors RAtomCoordinate
+    ! In microscope reference frame, in Angstrom units (NB RAtomPosition=crystal frame, in .cif)
+    DO ind=1,INAtomsUnitCell
+      DO jnd=1,ITHREE
+        RAtomCoordinate(ind,jnd)= RAtomPosition(ind,1)*RaVecM(jnd) + &
+              RAtomPosition(ind,2)*RbVecM(jnd)+RAtomPosition(ind,3)*RcVecM(jnd)
+      END DO
+    END DO
     
     ! create reciprocal lattice vectors in Microscope reference frame
     ! Note that reciprocal lattice vectors have two pi included,
@@ -321,14 +315,6 @@ MODULE crystallography_mod
     RbrMag=SQRT(DOT_PRODUCT(RbrVecM,RbrVecM))!magnitude of b*
     RcrMag=SQRT(DOT_PRODUCT(RcrVecM,RcrVecM))!magnitude of c*
 
-    ! Calculate atomic position vectors RAtomCoordinate
-    ! In microscope reference frame, in Angstrom units (NB RAtomPosition=crystal frame, in .cif)
-    DO ind=1,INAtomsUnitCell
-      DO jnd=1,ITHREE
-        RAtomCoordinate(ind,jnd)= RAtomPosition(ind,1)*RaVecM(jnd) + &
-              RAtomPosition(ind,2)*RbVecM(jnd)+RAtomPosition(ind,3)*RcVecM(jnd)
-      END DO
-    END DO
   END SUBROUTINE CrystalOrientation
 
   !%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%

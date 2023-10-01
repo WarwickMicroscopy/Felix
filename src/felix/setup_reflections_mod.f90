@@ -216,9 +216,9 @@ MODULE setup_reflections_mod
   END SUBROUTINE HKLSort
   !!$%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
   !>
-  !! Procedure-description: Assign numbers to the different reflections
+  !! Procedure-description: List the reflections in each frame that form the beam pool and output
   !!
-  !! Major-Authors: Keith Evans (2014), Richard Beanland (2016)
+  !! Major-Authors: Richard Beanland (2023)
   !!  
   SUBROUTINE HKLList(IFrame, IErr )
 
@@ -240,6 +240,26 @@ MODULE setup_reflections_mod
     INTEGER(IKIND) :: IFind,IDuplicate,ind,jnd,knd,IErr
 
     !--------------------------------------------------------------------
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
     ! IhklsFrame links the list in felix.hkl with the beam pool for the current frame
     ! It has length INoOfHKLsAll but only has entries up to the number of reflections
     ! found, INoOfHKLsFrame.  We ignore any duplicates in felix.hkl 

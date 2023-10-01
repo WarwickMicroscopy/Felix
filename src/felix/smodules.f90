@@ -167,8 +167,8 @@ MODULE IPara
   !Simulation size
   INTEGER(IKIND) :: ISizeX, ISizeY, IPixelCount, INFrames
   !Crystal Settings
-  INTEGER(IKIND) :: IMaxPossibleNAtomsUnitCell
-  INTEGER(IKIND),DIMENSION(:,:), ALLOCATABLE :: IhklLattice
+  INTEGER(IKIND) :: IMaxPossibleNAtomsUnitCell, InLattice !no. of g-vectors in the reciprocal lattice
+  INTEGER(IKIND),DIMENSION(:,:), ALLOCATABLE :: IhklLattice, IgPoolList
   !Name2Atom index
   INTEGER(IKIND), DIMENSION(:), ALLOCATABLE :: IBasisAtomicNumber,IAtomicNumber
   !Microscope Settings
@@ -224,7 +224,7 @@ MODULE RPara
   REAL(RKIND), DIMENSION(:), ALLOCATABLE :: RBasisIsoDW, RBasisOccupancy, RIsoDW,&
          ROccupancy,RLatMag
   REAL(RKIND), DIMENSION(:,:), ALLOCATABLE :: RSymVec,RBasisAtomPosition, RBasisAtomDelta,&
-       RAtomPosition,RUniqueKey,RgLattice
+       RAtomPosition,RUniqueKey,RgLatticeO
   REAL(RKIND), DIMENSION(:,:,:), ALLOCATABLE :: RSymMat
   !Microscope Parameters
   REAL(RKIND) :: RConvergenceAngle,RAcceleratingVoltage
@@ -270,7 +270,7 @@ MODULE RPara
   REAL(RKIND),DIMENSION(:), ALLOCATABLE :: RDevPara  ! deviation parameter for each g, for a given pixel
   REAL(RKIND),DIMENSION(:), ALLOCATABLE :: RDevC  ! deviation parameter for each g at the image centre
   REAL(RKIND),DIMENSION(:,:),ALLOCATABLE :: RgMatrixMagnitude, RgSumMat
-  REAL(RKIND),DIMENSION(:,:,:),ALLOCATABLE :: RgMatrix, RgPoolList
+  REAL(RKIND),DIMENSION(:,:,:),ALLOCATABLE :: RgMatrix
   !WaveFunction Arrays
   REAL(RKIND),DIMENSION(:),ALLOCATABLE :: RWaveIntensity,RFullWaveIntensity,RSumIntensity
   REAL(RKIND), DIMENSION(:,:,:), ALLOCATABLE :: RIndividualReflections
