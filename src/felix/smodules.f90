@@ -168,6 +168,7 @@ MODULE IPara
   INTEGER(IKIND) :: ISizeX, ISizeY, IPixelCount, INFrames
   !Crystal Settings
   INTEGER(IKIND) :: IMaxPossibleNAtomsUnitCell
+  INTEGER(IKIND),DIMENSION(:,:), ALLOCATABLE :: IhklLattice
   !Name2Atom index
   INTEGER(IKIND), DIMENSION(:), ALLOCATABLE :: IBasisAtomicNumber,IAtomicNumber
   !Microscope Settings
@@ -220,9 +221,10 @@ MODULE RPara
   !Crystallography
   REAL(RKIND) :: RCellA,RCellB,RCellC,RVolume,RAlpha,RBeta,RGamma, &
        RDebyeWallerConstant,RAbsorptionPercentage
-  REAL(RKIND), DIMENSION(:), ALLOCATABLE :: RBasisIsoDW, RBasisOccupancy, RIsoDW, ROccupancy
+  REAL(RKIND), DIMENSION(:), ALLOCATABLE :: RBasisIsoDW, RBasisOccupancy, RIsoDW,&
+         ROccupancy,RgLatMag
   REAL(RKIND), DIMENSION(:,:), ALLOCATABLE :: RSymVec,RBasisAtomPosition, RBasisAtomDelta,&
-       RAtomPosition,RUniqueKey
+       RAtomPosition,RUniqueKey,RgLattice
   REAL(RKIND), DIMENSION(:,:,:), ALLOCATABLE :: RSymMat
   !Microscope Parameters
   REAL(RKIND) :: RConvergenceAngle,RAcceleratingVoltage

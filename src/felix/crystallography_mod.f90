@@ -99,43 +99,43 @@ MODULE crystallography_mod
   !%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
   
   !>
-  !! Procedure-description: Creates reciprocal lattice vectors in Microscope
-  !! reference frame. This involves transforms between the orthogonal, crystal
-  !! and microscopic frame. 
+  !! Procedure-description: Creates reciprocal lattice vectors in an orthogonal
+  !! reference frame and sorts them in magnitude.  
   !!
-  !! Major-Authors: Keith Evans (2014), Richard Beanland (2016)
+  !! Major-Authors: Richard Beanland (2023)
   !!
-  SUBROUTINE ReciprocalLattice(RGPoolLimit, IErr)
+  SUBROUTINE ReciprocalLattice(RLatticeLimit, IErr)
 
     USE MyNumbers
     USE MyMPI
 
     ! global inputs
-    USE IPARA, ONLY : IVolumeFLAG
-    USE RPARA, ONLY : RAlpha,RBeta,RGamma,RCellA,RCellB,RCellC,RNormDirC,RXDirC,&
-          RZDirC
+    USE IPARA, ONLY : IVolumeFLAG,IhklLattice
+    USE RPARA, ONLY : RAlpha,RBeta,RGamma,RCellA,RCellB,RCellC,RarMag,RbrMag,RcrMag,&
+            RgLattice
     USE SPARA, ONLY : SSpaceGroupName
+    USE SPARA, ONLY : SPrintString
+
     ! global outputs
     USE RPARA, ONLY : RaVecO,RbVecO,RcVecO,RVolume,RarVecO,RbrVecO,RcrVecO
 
-    USE SPARA, ONLY : SPrintString
-    
     IMPLICIT NONE
 
-    INTEGER(IKIND) :: IErr,ind
+    INTEGER(IKIND) :: IErr,ind,jnd,knd,lnd,inda,indb,indc
     REAL(RKIND) :: RTTest
-    REAL(RKIND),INTENT(IN) :: RGPoolLimit
-    REAL(RKIND), DIMENSION(:,:,:), ALLOCATABLE :: RhklPool
+    REAL(RKIND),DIMENSION(ITHREE) :: Rg
+    REAL(RKIND),INTENT(IN) :: RLatticeLimit
 
     !direct lattice vectors in an orthogonal reference frame, Angstrom units 
+    ! a is parallel to [100]
     RaVecO(1)= RCellA
     RaVecO(2)= ZERO
     RaVecO(3)= ZERO
-
+    ! b lies in the x-y plane 
     RbVecO(1)= RCellB*COS(RGamma)
     RbVecO(2)= RCellB*SIN(RGamma)
     RbVecO(3)= ZERO
-
+    ! c lies... wherever
     RcVecO(1)= RCellC*COS(RBeta)
     RcVecO(2)= RCellC*(COS(RAlpha)-COS(RBeta)*COS(RGamma))/SIN(RGamma)
     RcVecO(3)= RCellC*(SQRT(1.D0-COS(RAlpha)*COS(RAlpha)-COS(RBeta)*COS(RBeta)&
@@ -186,17 +186,32 @@ MODULE crystallography_mod
           RcrVecO(ind) = ZERO
        END IF
     ENDDO
+    ! their magnitudes
+    RarMag=SQRT(DOT_PRODUCT(RarVecO,RarVecO))!magnitude of a*
+    RbrMag=SQRT(DOT_PRODUCT(RbrVecO,RbrVecO))!magnitude of b*
+    RcrMag=SQRT(DOT_PRODUCT(RcrVecO,RcrVecO))!magnitude of c*
 
     ! Now build the reciprocal lattice from which we will take slices for each beam pool
-    ! RhklPool is the 3D lattice with each point given Miller indices
-    ! RgPool is the 3D lattice with each point given coordinates in reciprocal space
-    !maximum a*,b*,c* limit is determined by the G magnitude limit
-    inda=NINT(RGPoolLimit/RarMag)
-    indb=NINT(RGPoolLimit/RbrMag)
-    indc=NINT(RGPoolLimit/RcrMag)
-    ALLOCATE(RhklPool(2*inda+1,2*indb+1,2*indc+1),STAT=IErr)
-    RhklPool = DIMENSION(-inda:inda, -indb:indb, -indc:indc)
-    IF(my_rank.EQ.0)PRINT*, RhklPool
+    ! IhklLattice is the list of Miller indices for the 3D lattice
+    ! RgLattice is the corresponding list of coordinates in reciprocal space
+    ! maximum a*,b*,c* limit is determined by the G magnitude limit
+    inda=NINT(RLatticeLimit/RarMag)
+    indb=NINT(RLatticeLimit/RbrMag)
+    indc=NINT(RLatticeLimit/RcrMag)
+    ALLOCATE(IhklLattice((2*inda+1)*(2*indb+1)*(2*indc+1), ITHREE), STAT=IErr)
+    ! populate the list of Miller indices IhklLattice and the g-vectors RgLattice
+    lnd = 0
+    DO ind = -inda,inda
+      DO jnd = -indb,indb
+        DO knd = -indc,indc
+          lnd = lnd + 1
+          IhklLattice(lnd,:) = (/ ind, jnd, knd /)
+          Rg = ind*RarVecO + jnd*RbrVecO + knd*RcrVecO
+          RgLattice(lnd,:) = Rg
+          END DO
+      END DO
+    END DO
+    IF(my_rank.EQ.0)PRINT*, "reciprocal lattice", inda,indb,indc,"cells"
     
   END SUBROUTINE ReciprocalLattice
 

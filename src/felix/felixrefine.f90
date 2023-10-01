@@ -66,7 +66,8 @@ PROGRAM Felixrefine
         RScale,RMaxUgStep,Rdx,RStandardDeviation,RMean,RGzUnitVec,&
         RMinLaueZoneValue,Rdf,RLastFit,RBestFit,RMaxLaueZoneValue,&
         RMaxAcceptanceGVecMag,RandomSign,RLaueZoneElectronWaveVectorMag,&
-        RvarMin,RfitMin,RFit0,Rconvex,Rtest,Rplus,Rminus,RdeltaX,RdeltaY
+        RvarMin,RfitMin,RFit0,Rconvex,Rtest,Rplus,Rminus,RdeltaX,RdeltaY,&
+        RgPoolLimit
   REAL(RKIND),DIMENSION(ITHREE) :: RXDirOn,RZDirOn
 
   CHARACTER(40) :: my_rank_string
@@ -202,24 +203,28 @@ PROGRAM Felixrefine
   ! From the unit cell we produce RaVecO, RbVecO, RcVecO in an orthogonal reference frame O
   ! with Xo // a and Zo perpendicular to the ab plane, in Angstrom units
   ! and reciprocal lattice vectors RarVecO, RbrVecO, RcrVecO in the same reference frame
-  CALL ReciprocalLattice(IErr)
+
+  ! ***These parameters will probably end up in a modified .inp file***
+  ! Outer limit of g pool
+  RgPoolLimit = 2.0*TWOPI  ! reciprocal Angstroms, multiplied by 2pi
+  CALL ReciprocalLattice(RgPoolLimit, IErr)
   IF(l_alert(IErr,"felixrefine","ReciprocalLattice")) CALL abort
 
   !--------------------------------------------------------------------
-  ! Orthogonal reference frame
+  ! Set up microscope reference frame
   ! X, Y and Z are orthogonal vectors that defines the simulation
   ! Also referred to as the microscope reference frame M.
   ! The electron beam propagates along +Zm.
   ! The alpha rotation axis is along Ym.  Positive alpha rotation moves the field
   ! of view of the simulation along +Xm.
-  ! In the crystal reference frame we read in reciprocal vectors RXDirC and RZDirC
-  ! NB No check has been made to ensure that they are perpendicular
+  ! In the crystal reference frame we read in reciprocal vectors RXDirC_0 and RZDirC_0
+  ! These define Xm & Zm in the inital reference frame
   ! RXDirO,RYDirO,RZDirO are UNIT reciprocal lattice vectors parallel to X,Y,Z
   RXDirO = RXDirC_0(1)*RarVecO + RXDirC_0(2)*RbrVecO + RXDirC_0(3)*RcrVecO
   RXDirO = RXDirO/SQRT(DOT_PRODUCT(RXDirO,RXDirO))
   RZDirO = RZDirC_0(1)*RaVecO + RZDirC_0(2)*RbVecO + RZDirC_0(3)*RcVecO
   RZDirO = RZDirO/SQRT(DOT_PRODUCT(RZDirO,RZDirO))
-  ! Check that x-direction is perpendicular to z
+  ! Check the input is sensible, i.e. Xm is perpendicular to Zm
   RxAngle = ABS(180.0D0*ACOS(DOT_PRODUCT(RXDirO,RZDirO))/PI)
   IF(ABS(RxAngle-90.0D0).GT.0.1)THEN! with a tolerance of 0.1 degrees
     WRITE(SPrintString,"(A15,F5.1,A27)") "Error: X is at ",RxAngle," degrees to Z, should be 90"
@@ -235,7 +240,7 @@ PROGRAM Felixrefine
   
   
   !--------------------------------------------------------------------
-  ! allocations, now we know the size of the beam pool
+  ! allocations using the size of the beam pool specified in felix.inp, INhkl
   !--------------------------------------------------------------------
   ! List of g-vectors making the beam pool in each frame
   ALLOCATE(RgPoolList(INFrames,INhkl,ITHREE),STAT=IErr)
@@ -283,18 +288,12 @@ PROGRAM Felixrefine
   !--------------------------------------------------------------------
   ! calculate reflection list based on the track through reciprocal space
   !--------------------------------------------------------------------
-  ! ***These parameters will probably end up in a modified .inp file***
-  ! Limit on distance from Ewald sphere to count a reflection as active
-  RDevLimit = 0.05  ! in reciprocal Angstroms  
-  ! Limit on g-vector magnitude to be included in the output
-  RGOutLimit = 1.0*TWOPI  ! reciprocal Angstroms, multiplied by 2pi
-  
   ! Initialize lists
   RgPoolList = ZERO
   IgOutList = 0
   !*** make a list of g-vectors up to some limit and rank them in magnitude **
   !*** replace the list generator in HKLmake with it ***
-  
+
   DO ind = 1, INFrames
     WRITE(SPrintString, FMT='(A30,I3,A3)') "Counting reflections in frame ",ind,"..."
     CALL message(LS,dbg3,SPrintString)
@@ -307,11 +306,11 @@ PROGRAM Felixrefine
     END IF
     ! Create reciprocal lattice vectors in Microscope reference frame
     ! returns transformation matrices and RAtomCoordinate
-    CALL CrystalOrientation(IErr)
+!    CALL CrystalOrientation(IErr)
     IF(l_alert(IErr,"felixrefine","CrystalOrientation")) CALL abort
     !--------------------------------------------------------------------
     ! Fill the list of reflections RgPoolList
-    CALL HKLMake(ind, RDevLimit, RGOutLimit, IErr)
+!    CALL HKLMake(ind, RDevLimit, RGOutLimit, IErr)
     IF(l_alert(IErr,"felixrefine","HKLMake")) CALL abort
     CALL PrintEndTime( LS, IStartTime, "Frame" )
     !CALL message(LS,dbg7,"Rhkl matrix: ",NINT(RgPoolList(ind,1:INhkl,:)))
