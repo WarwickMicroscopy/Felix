@@ -55,9 +55,10 @@ MODULE setup_reflections_mod
     USE message_mod
     
     ! global parameters Rhkl, input reciprocal lattice vectors & wave vector
-    USE RPARA, ONLY : RzDirC, RgPoolList, RarVecM, RbrVecM, RcrVecM, RInputHKLs,&
+    USE RPARA, ONLY : RzDirC, RarVecM, RbrVecM, RcrVecM, RInputHKLs,&
         RElectronWaveVectorMagnitude,RarMag,RbrMag,RcrMag
-      
+    USE IPARA, ONLY : IgPoolList
+
     ! global inputs
     USE SPARA, ONLY : SPrintString
     USE IPARA, ONLY : INhkl, INoOfHKLsAll, IgOutList
@@ -85,7 +86,6 @@ MODULE setup_reflections_mod
     RShell=MINVAL( (/ RarMag,RbrMag,RcrMag /) )
 
     !first g is always 000
-    RgPoolList(IFrame,1,:)=(/ 0.0,0.0,0.0 /)
     knd=1!number of reflections in the pool 
     lnd=0!number of the shell 
     !maximum a*,b*,c* limit is determined by the G magnitude limit
@@ -122,7 +122,6 @@ MODULE setup_reflections_mod
                   IF ((RDev-RDevLimit).LT.TINY) THEN !it's near the ZOLZ 
                     !add it to the pool and increment the counter
                     knd=knd+1
-                    RgPoolList(IFrame,knd,:)=RGtest
                     IF (RGtestMag.LT.RGOutLimit) THEN
                       IgOutList(IFrame,knd)=1
                     END IF
@@ -140,7 +139,6 @@ MODULE setup_reflections_mod
     IF (knd.LT.INhkl) THEN
       RGtest = REAL( (/ 666,666,666 /),RKIND )
       DO jnd = knd+1, INhkl
-        RgPoolList(IFrame, jnd, :)=RGtest
       END DO
     END IF
     

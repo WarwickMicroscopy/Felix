@@ -68,7 +68,7 @@ PROGRAM Felixrefine
         RMaxAcceptanceGVecMag,RandomSign,RLaueZoneElectronWaveVectorMag,&
         RvarMin,RfitMin,RFit0,Rconvex,Rtest,Rplus,Rminus,RdeltaX,RdeltaY,&
         RgPoolLimit,RAngle
-  REAL(RKIND),DIMENSION(ITHREE) :: RXDirOn,RZDirOn
+  REAL(RKIND),DIMENSION(ITHREE) :: RXDirOn,RZDirOn,Rk,RGplusK
 
   CHARACTER(40) :: my_rank_string
   CHARACTER(20) :: h,k,l
@@ -289,31 +289,33 @@ PROGRAM Felixrefine
   ! IgPoolList says which reflections are close to the Ewald sphere
   IgPoolList = 0
   IgOutList = 0
-  DO ind = 1,INFrames
+  DO ind = 1,2!INFrames
     WRITE(SPrintString, FMT='(A30,I3,A3)') "Counting reflections in frame ",ind,"..."
     CALL message(LS,dbg3,SPrintString)
     RAngle = REAL(ind-1)*DEG2RADIAN*RFrameAngle
     ! Rk is the k-vector for the incident beam, which we write here in the orthogonal frame O
     Rk = RElectronWaveVectorMagnitude*(RZDirO*COS(RAngle)-RXDirO*SIN(RAngle))
+IF(my_rank.EQ.0)PRINT*,Rk
     ! Fill the list of reflections IgPoolList until we have filled the beam pool
     knd = 1
-    DO WHILE (knd.LE.INhkl)  ! while the beam pool isn't full
+1   IF (knd.LE.INhkl) THEN ! while the beam pool isn't full
       DO jnd = 1,InLattice  ! work through reflections in ascending order
         !is this reflection near a Laue condition |k+g|=|k|
         RGplusk = RgLatticeO(ind,:) + Rk
-        IF (ABS(SQRT(DOT_PRODUCT(RGplusk,RGplusk))-RElectronWaveVectorMagnitude.LT.RDevLimit) THEN
+        IF(my_rank.EQ.0)PRINT*,jnd,"g=",RgLatticeO(ind,1),RgLatticeO(ind,2),RgLatticeO(ind,3)
+        IF (ABS(SQRT(DOT_PRODUCT(RGplusk,RGplusk))-RElectronWaveVectorMagnitude).LT.RDevLimit) THEN
           IgPoolList(ind,knd) = jnd  ! add it to the list
+          IF(my_rank.EQ.0)PRINT*,jnd
           ! Is this reflection small enough to be in the output list
           IF (RLatMag(jnd).LT.RGOutLimit) THEN
             IgOutList(ind,knd) = jnd
           END IF
           knd = knd + 1
+          GOTO 1
         END IF
       END DO
-    END DO
-  END DO
-    
-    
+    END IF
+    IF(my_rank.EQ.0)PRINT*,"Found",jnd,"reflections"
     ! Create reciprocal lattice vectors in Microscope reference frame
     ! returns transformation matrices and RAtomCoordinate
  !   CALL CrystalOrientation(IErr)
