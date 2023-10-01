@@ -284,6 +284,10 @@ PROGRAM Felixrefine
   END IF
   RYDirO = CROSS(RZDirO,RXDirO)  ! the rotation axis
 
+
+  ! *** move this to a subroutine ***
+  ! and write as output files if desired
+
   !--------------------------------------------------------------------
   ! calculate reflection list frame by frame
   !--------------------------------------------------------------------
