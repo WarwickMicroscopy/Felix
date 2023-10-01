@@ -240,7 +240,7 @@ MODULE crystallography_mod
         ENDIF
       ENDDO
     ENDDO
-  
+
   END SUBROUTINE ReciprocalLattice
 
   !%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
