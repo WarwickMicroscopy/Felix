@@ -226,14 +226,14 @@ MODULE crystallography_mod
         ind=jnd
 3       CONTINUE
         lnd=ind+mnd
-        IF( RLatMag(lnd) .GT. RLatMag(ind)) THEN
-          dummy3 = IhklLattice(ind,:) ! swap indices
+        IF( RLatMag(lnd) .LT. RLatMag(ind)) THEN
+          Id3 = IhklLattice(ind,:) ! swap indices
           IhklLattice(ind,:) = IhklLattice(lnd,:)
-          IhklLattice(lnd,:) = dummy3
+          IhklLattice(lnd,:) = Id3
           Rg = RgLattice(ind,:) ! swap g-vectors
           RgLattice(ind,:) = RgLattice(lnd,:)
           RgLattice(lnd,:) = Rg
-          Rt = RLatMag(ind,:) ! swap magnitudes
+          Rt = RLatMag(ind) ! swap magnitudes
           RLatMag(ind) = RLatMag(lnd)
           RLatMag(lnd) = Rt
           ind=ind-mnd
@@ -241,7 +241,7 @@ MODULE crystallography_mod
         ENDIF
       ENDDO
     ENDDO
-    
+  
   END SUBROUTINE ReciprocalLattice
 
   !%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%

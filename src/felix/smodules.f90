@@ -222,7 +222,7 @@ MODULE RPara
   REAL(RKIND) :: RCellA,RCellB,RCellC,RVolume,RAlpha,RBeta,RGamma, &
        RDebyeWallerConstant,RAbsorptionPercentage
   REAL(RKIND), DIMENSION(:), ALLOCATABLE :: RBasisIsoDW, RBasisOccupancy, RIsoDW,&
-         ROccupancy,RgLatMag
+         ROccupancy,RLatMag
   REAL(RKIND), DIMENSION(:,:), ALLOCATABLE :: RSymVec,RBasisAtomPosition, RBasisAtomDelta,&
        RAtomPosition,RUniqueKey,RgLattice
   REAL(RKIND), DIMENSION(:,:,:), ALLOCATABLE :: RSymMat
