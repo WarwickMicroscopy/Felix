@@ -37,6 +37,7 @@ MODULE ug_matrix_mod
   IMPLICIT NONE
   PRIVATE
   PUBLIC :: UgMatrix, Absorption, GetVgContributionij, StructureFactorInitialisation
+  PUBLIC :: AtomicScatteringFactor
   CONTAINS
 
   !>
@@ -439,36 +440,6 @@ MODULE ug_matrix_mod
     CALL UgMatrix(IErr)
     IF(l_alert(IErr,"Structure factor initialise","UgMatrix")) RETURN
    
-    !--------------------------------------------------------------------
-    ! calculate mean inner potential and wave vector magnitude
-    !--------------------------------------------------------------------
-    ! calculate the mean inner potential as the sum of scattering factors
-    ! at g=0 multiplied by h^2/(2pi*m0*e*CellVolume)
-    RMeanInnerPotential=ZERO
-    RCurrentGMagnitude=ZERO
-    DO ind=1,INAtomsUnitCell
-      ICurrentZ = IAtomicNumber(ind)
-      IF(ICurrentZ.LT.105) THEN ! It's not a pseudoatom
-        CALL AtomicScatteringFactor(RScatteringFactor,IErr)
-        CALL message( LL, dbg3, "Atom ",ind)
-        CALL message( LL, dbg3, "f(theta) at g=0 ",RScatteringFactor)
-        RMeanInnerPotential = RMeanInnerPotential+RScatteringFactor
-      END IF
-    END DO
-    RMeanInnerPotential = RMeanInnerPotential*RScattFacToVolts
-    !*** to be moved into main code?*** 
-!    IF(IFrame.EQ.1) THEN
-!      WRITE(SPrintString,FMT='(A21,F6.2,A6)') "Mean inner potential ",RMeanInnerPotential," Volts"
-!      SPrintString=TRIM(ADJUSTL(SPrintString))
-!      CALL message(LS,SPrintString)
-!    END IF
-
-    ! Wave vector magnitude in crystal
-    ! high-energy approximation (not HOLZ compatible)
-    ! K^2=k^2+U0
-    RBigK= SQRT(RElectronWaveVectorMagnitude**2)!-RMeanInnerPotential)
-    CALL message ( LM, dbg3, "K (Angstroms) = ",RBigK )
-
     !--------------------------------------------------------------------
     ! count equivalent Ugs
     !--------------------------------------------------------------------

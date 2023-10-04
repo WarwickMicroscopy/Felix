@@ -265,13 +265,14 @@ PROGRAM Felixrefine
   IF(l_alert(IErr,"felixrefine","allocate IAnisoDW")) CALL abort
   !--------------------------------------------------------------------
   ! fill unit cell from basis and symmetry, then remove duplicates at special positions
-  CALL UniqueAtomPositions(IErr)
+  ! Mean inner potential & wavevector inside the crystal RBigK are also calculated here
+  CALL UniqueAtomPositions(IErr)  ! in crystallography.f90
   IF(l_alert(IErr,"felixrefine","UniqueAtomPositions")) CALL abort
   !?? RB could re-allocate RAtomCoordinate,SAtomName,RIsoDW,ROccupancy,
   !?? IAtomicNumber,IAnisoDW to match INAtomsUnitCell?
 
   ! From the unit cell we produce RaVecO, RbVecO, RcVecO in an orthogonal reference frame O
-  ! with Xo // a and Zo perpendicular to the ab plane, in Angstrom units
+  ! with xO // a and zO perpendicular to the ab plane, in Angstrom units
   ! and reciprocal lattice vectors RarVecO, RbrVecO, RcrVecO in the same reference frame
   ! Outer limit of g pool  ***This parameter will probably end up in a modified .inp file***
   RgPoolLimit = 2.0*TWOPI  ! reciprocal Angstroms, multiplied by 2pi
@@ -280,10 +281,10 @@ PROGRAM Felixrefine
   ! Output limit
   RGOutLimit = 1.0*TWOPI  ! reciprocal Angstroms, multiplied by 2pi
   ! Make the reciprocal lattice
-  CALL ReciprocalLattice(RgPoolLimit, IErr)  !in crystallography.f90
+  CALL ReciprocalLattice(RgPoolLimit, IErr)  ! in crystallography.f90
   IF(l_alert(IErr,"felixrefine","ReciprocalLattice")) CALL abort
   ! List the hkl's in each frame
-  CALL HKLMake(RDevLimit, RGOutLimit, IErr)
+  CALL HKLMake(RDevLimit, RGOutLimit, IErr)  ! in setup_reflections.f90
   IF(l_alert(IErr,"felixrefine","HKLMake")) CALL abort
     ! Create reciprocal lattice vectors in Microscope reference frame
     ! returns transformation matrices and RAtomCoordinate

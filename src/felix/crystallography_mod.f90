@@ -34,7 +34,10 @@
 !! Module-description: This defines lattice vectors as well as the fractional atomic coordinates
 !!
 MODULE crystallography_mod
+  USE ug_matrix_mod
+  
   IMPLICIT NONE
+  
   PRIVATE
   PUBLIC :: ReciprocalLattice, CrystalOrientation, UniqueAtomPositions, gVectors
 
@@ -367,16 +370,16 @@ MODULE crystallography_mod
     USE message_mod
 
     ! global outputs
-    USE RPARA, ONLY : RAtomCoordinate,ROccupancy,RIsoDW,RAtomPosition
+    USE RPARA, ONLY : RAtomCoordinate,ROccupancy,RIsoDW,RAtomPosition,RMeanInnerPotential,RBigK
     USE IPARA, ONLY : IAtomicNumber,IAnisoDW
     USE SPARA, ONLY : SAtomLabel, SAtomName
 
     ! global inputs
     USE RPARA, ONLY : RBasisOccupancy,RBasisIsoDW,RSymVec,RBasisAtomPosition,RSymMat, &
-          RcVecM,RbVecM,RaVecM
+          RcVecM,RbVecM,RaVecM,RCurrentGMagnitude,RScattFacToVolts,RElectronWaveVectorMagnitude
     USE SPARA, ONLY : SBasisAtomLabel, SBasisAtomName
     USE IPARA, ONLY : IBasisAtomicNumber, IBasisAnisoDW, IMaxPossibleNAtomsUnitCell, &
-         INAtomsUnitCell
+         INAtomsUnitCell,ICurrentZ
     USE SPARA, ONLY : SPrintString
     
     IMPLICIT NONE
@@ -384,6 +387,7 @@ MODULE crystallography_mod
     INTEGER(IKIND) :: IErr,ind,jnd,knd
     INTEGER(IKIND), DIMENSION(:), ALLOCATABLE :: IAllAtomicNumber, RAllAnisoDW
     REAL(RKIND),ALLOCATABLE :: RAllAtomPosition(:,:), RAllOccupancy(:), RAllIsoDW(:)
+    REAL(RKIND) :: RScatteringFactor
     LOGICAL :: Lunique
     CHARACTER(2), DIMENSION(:), ALLOCATABLE :: SAllAtomName
     CHARACTER(5), DIMENSION(:), ALLOCATABLE :: SAllAtomLabel
@@ -453,15 +457,38 @@ MODULE crystallography_mod
     END DO
     INAtomsUnitCell = jnd-1 ! this is how many unique atoms there are in the unit cell
 
-
     DO ind=1,INAtomsUnitCell    
       CALL message( LL, dbg7, "Atom ",ind)
       WRITE(SPrintString,"(A18,F8.4,F8.4,F8.4)") ": Atom position = ", RAtomPosition(ind,:)
-!DBG      IF (my_rank.EQ.0) PRINT*, SAtomName(ind)//SPrintString
       CALL message( LL, dbg7, SAtomName(ind)//SPrintString )
       CALL message( LL, dbg7, "(DWF, occupancy) = ",(/ RIsoDW(ind), ROccupancy(ind) /) )
     END DO
-    
+
+    !--------------------------------------------------------------------
+    ! calculate mean inner potential and wave vector magnitude
+    !--------------------------------------------------------------------
+    ! calculate the mean inner potential as the sum of scattering factors
+    ! at g=0 multiplied by h^2/(2pi*m0*e*CellVolume)
+    RMeanInnerPotential=ZERO
+    RCurrentGMagnitude=ZERO  ! this is a global variable, sets g=0
+    DO ind=1,INAtomsUnitCell
+      ICurrentZ = IAtomicNumber(ind)
+      CALL AtomicScatteringFactor(RScatteringFactor,IErr)
+      CALL message( LL, dbg3, "Atom ",ind)
+      CALL message( LL, dbg3, "f(theta) at g=0 ",RScatteringFactor)
+      RMeanInnerPotential = RMeanInnerPotential+RScatteringFactor
+    END DO
+    RMeanInnerPotential = RMeanInnerPotential*RScattFacToVolts
+    WRITE(SPrintString,FMT='(A21,F6.2,A6)') "Mean inner potential ",RMeanInnerPotential," Volts"
+    SPrintString=TRIM(ADJUSTL(SPrintString))
+    CALL message(LS,SPrintString)
+
+    ! Wave vector magnitude in crystal
+    ! high-energy approximation (not HOLZ compatible)
+    ! K^2=k^2+U0
+    RBigK= SQRT(RElectronWaveVectorMagnitude**2)!-RMeanInnerPotential)
+    CALL message ( LM, dbg3, "K (Angstroms) = ",RBigK )
+
     ! Finished with these variables now
     DEALLOCATE( &
          RAllAtomPosition, SAllAtomName, RAllOccupancy, RAllIsoDW, &

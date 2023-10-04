@@ -57,7 +57,7 @@ MODULE setup_reflections_mod
     USE SPARA, ONLY : SPrintString,SChemicalFormula
     USE IPARA, ONLY : INhkl,IgOutList,IgPoolList,IhklLattice,INFrames,InLattice,ILN
     USE RPARA, ONLY : RXDirO,RYDirO,RZDirO,RcrVecM,RLatMag,RFrameAngle,&
-        RElectronWaveVectorMagnitude,RgLatticeO
+        RBigK,RgLatticeO
     USE Iconst
     USE IChannels, ONLY : IChOutIhkl
     
@@ -65,7 +65,7 @@ MODULE setup_reflections_mod
 
     REAL(RKIND),INTENT(IN) :: RDevLimit, RGOutLimit
     INTEGER(IKIND) :: IErr, ind, jnd, knd, lnd
-    REAL(RKIND) :: RAngle,Rk(ITHREE),RGplusk(ITHREE),RGplusKmag
+    REAL(RKIND) :: RAngle,Rk(ITHREE),Rk0(ITHREE),RkPrime(ITHREE),RSg,Rx
     CHARACTER(200) :: path
     CHARACTER(40) :: fString
    
@@ -77,23 +77,33 @@ MODULE setup_reflections_mod
     ! with indices of IhklLattice and vector RgLatticeO in the orthogonal ref frame
     ! IgPoolList says which reflections are close to the Ewald sphere
     IgPoolList = 0  ! Initialise lists to zero
-    IgOutList = 0   
+    IgOutList = 0
+    Rk0 = ZERO
     DO ind = 1,INFrames
       WRITE(SPrintString, FMT='(A30,I3,A3)') "Counting reflections in frame ",ind,"..."
       CALL message(LS,dbg3,SPrintString)
       RAngle = REAL(ind-1)*DEG2RADIAN*RFrameAngle
-      IF(my_rank.EQ.0)PRINT*,ind, RAngle*360/3.142
+      IF(my_rank.EQ.0)PRINT*,ind, RAngle*180/3.14159
       ! Rk is the k-vector for the incident beam, which we write here in the orthogonal frame O
-      Rk = RElectronWaveVectorMagnitude*(RZDirO*COS(RAngle)-RXDirO*SIN(RAngle))
+      Rk = RBigK*(RZDirO*COS(RAngle)-RXDirO*SIN(RAngle))
       ! Fill the list of reflections IgPoolList until we have filled the beam pool
       knd = 1
       DO jnd = 1,InLattice  ! work through reflections in ascending order
-        !is this reflection near a Laue condition |k+g|=|k|
-        RGplusk = RgLatticeO(jnd,:) + Rk
-        RGplusKmag = SQRT(DOT_PRODUCT(RGplusk,RGplusk))
-        IF (ABS(RGplusKmag-RElectronWaveVectorMagnitude).LT.RDevLimit) THEN
+        ! calculate Sg, in an x-z reference frame containing g and K
+        ! Sg=(g/k)*[2(k^2-k0.k')]^0.5
+        ! k0 is defined by the Bragg condition
+        Rk0(1) = -RLatMag(jnd)/2
+        Rk0(3) = SQRT(RBigK**2-Rk0(1)**2)
+        ! k' is from the incident beam Rk
+        RkPrime(1)=DOT_PRODUCT(Rk,RgLatticeO(jnd,:))/RLatMag(jnd)  ! Gives NaN for 000
+        RkPrime(3) = SQRT(RBigK**2-RkPrime(1)**2)
+        RSg=-SIGN(ONE,(2*DOT_PRODUCT(RgLatticeO(jnd,:),Rk)+RLatMag(jnd)**2))*&
+                    RLatMag(jnd)*SQRT(2*(RBigK**2-DOT_PRODUCT(Rk0,RkPrime)))/RBigK
+!        IF(my_rank.EQ.0)PRINT*,Rk0,RkPrime,RSg
+        IF (ABS(RSg).LT.RDevLimit) THEN
           IF (knd.LE.INhkl) THEN ! while the beam pool isn't full
             IgPoolList(ind,knd) = jnd  ! add it to the list
+            IF(my_rank.EQ.0)PRINT*,jnd,IhklLattice(jnd,:),RSg
             ! Is this reflection small enough to be in the output list
             IF (RLatMag(jnd).LT.RGOutLimit) THEN
               IgOutList(ind,knd) = jnd
@@ -124,7 +134,11 @@ MODULE setup_reflections_mod
         WRITE(IChOutIhkl,"(A6,I4)") "Frame ",ind
         DO knd = 1, INhkl
           IF (IgPoolList(ind,knd).NE.0) THEN
-            WRITE(fString,"(I4, A2, I3,1X,I3,1X,I3)") knd, ", ", IhklLattice(IgPoolList(ind,knd),:)
+            lnd = IgPoolList(ind,knd)
+            Rx = ACOS(DOT_PRODUCT(RgLatticeO(lnd,:),Rk) / (RLatMag(lnd)* &
+               RBigK))*180/3.141593
+            WRITE(fString,"(I4,A2,I3,1X,I3,1X,I3,2X,F8.4)") knd, ", ", IhklLattice(lnd,:),Rx
+            WRITE(IChOutIhkl,*) fString
           END IF
         END DO
       END DO
