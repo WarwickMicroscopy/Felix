@@ -43,106 +43,83 @@ MODULE setup_reflections_mod
   
   !%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
   !>
-  !! Procedure-description: Fills the beam pool list RgPoolList for the current frame
+  !! Procedure-description: Fills the beam pool list RgPoolList for each frame
   !! and the list of output reflections IgOutList (global variables)
   !!
-  !! Major-Authors: Richard Beanland (2021)
+  !! Major-Authors: Richard Beanland (2023)
   !!  
-  SUBROUTINE HKLMake(IFrame, RDevLimit, RGOutLimit, IErr)   
-    ! This setup procedure fills up RgPoolList and IgOutList for each frame
+  SUBROUTINE HKLMake(RDevLimit, RGOutLimit, IErr)   
 
     USE MyNumbers
     USE message_mod
-    
-    ! global parameters Rhkl, input reciprocal lattice vectors & wave vector
-    USE RPARA, ONLY : RzDirC, RarVecM, RbrVecM, RcrVecM, RInputHKLs,&
-        RElectronWaveVectorMagnitude,RarMag,RbrMag,RcrMag
-    USE IPARA, ONLY : IgPoolList
 
-    ! global inputs
-    USE SPARA, ONLY : SPrintString
-    USE IPARA, ONLY : INhkl, INoOfHKLsAll, IgOutList
+    ! global inputs/outputs
+    USE SPARA, ONLY : SPrintString,SChemicalFormula
+    USE IPARA, ONLY : INhkl,IgOutList,IgPoolList,IhklLattice,INFrames,InLattice,ILN
+    USE RPARA, ONLY : RXDirO,RYDirO,RZDirO,RcrVecM,RLatMag,RFrameAngle,&
+        RElectronWaveVectorMagnitude,RgLatticeO
     USE Iconst
+    USE IChannels, ONLY : ChOutIhkl
     
     IMPLICIT NONE
 
-    INTEGER(IKIND),INTENT(IN) :: IFrame
     REAL(RKIND),INTENT(IN) :: RDevLimit, RGOutLimit
-    INTEGER(IKIND) :: IErr, ISel, Ih, Ik, Il, inda,indb,indc, jnd, knd,lnd
-    REAL(RKIND) :: RShell, RGtestMag, RDev, RGPoolLimit
-    REAL(RKIND),DIMENSION(ITHREE) :: Rk, RGtest, RGtestM, RGplusk 
+    INTEGER(IKIND) :: IErr, ind, jnd, knd, lnd
+    REAL(RKIND) :: RAngle,Rk,RGplusk,RGplusKmag
+    CHARACTER(200) :: path
+    CHARACTER(40) :: fString
    
-    ! RGPoolLimit is the upper limit for g-vector magnitudes
-    ! If the g-vectors we are counting are bigger than this there is something wrong
-    ! probably the tolerance for proximity to the Ewald sphere needs increasing
-    ! could be an input in felix.inp
-    RGPoolLimit = 10.0*TWOPI
+  !--------------------------------------------------------------------
+  ! calculate reflection list frame by frame
+  !--------------------------------------------------------------------
+  ! In the subroutine ReciprocalLattice we generated all reciprocal lattice vectors
+  ! and put them in ascending order of magnitude RLatMag
+  ! with indices of IhklLattice and vector RgLatticeO in the orthogonal ref frame
+  ! IgPoolList says which reflections are close to the Ewald sphere
+  IgPoolList = 0  ! Initialise lists to zero
+  IgOutList = 0   
+  DO ind = 1,INFrames
+    WRITE(SPrintString, FMT='(A30,I3,A3)') "Counting reflections in frame ",ind,"..."
+    CALL message(LS,dbg3,SPrintString)
+    RAngle = REAL(ind-1)*DEG2RADIAN*RFrameAngle
+    IF(my_rank.EQ.0)PRINT*,ind, RAngle*360/3.142
+    ! Rk is the k-vector for the incident beam, which we write here in the orthogonal frame O
+    Rk = RElectronWaveVectorMagnitude*(RZDirO*COS(RAngle)-RXDirO*SIN(RAngle))
+    ! Fill the list of reflections IgPoolList until we have filled the beam pool
+    knd = 1
+    DO jnd = 1,InLattice  ! work through reflections in ascending order
+      !is this reflection near a Laue condition |k+g|=|k|
+      RGplusk = RgLatticeO(jnd,:) + Rk
+      RGplusKmag = SQRT(DOT_PRODUCT(RGplusk,RGplusk))
+      IF (ABS(RGplusKmag-RElectronWaveVectorMagnitude).LT.RDevLimit) THEN
+        IF (knd.LE.INhkl) THEN ! while the beam pool isn't full
+          IgPoolList(ind,knd) = jnd  ! add it to the list
+          ! Is this reflection small enough to be in the output list
+          IF (RLatMag(jnd).LT.RGOutLimit) THEN
+            IgOutList(ind,knd) = jnd
+            IF(my_rank.EQ.0)PRINT*,jnd,IhklLattice(jnd,:)
+          END IF
+          knd = knd + 1
+        END IF
+      END IF
+    END DO
+    IF(my_rank.EQ.0)PRINT*,"Found",knd-1,"reflections"
     
-    ! Rk is the k-vector for the incident beam
-    ! we are working in the microscope reference frame so k is along z
-    Rk=(/ 0.0,0.0,RElectronWaveVectorMagnitude /)
-    ! we work our way out from the origin in shells
-    ! the shell increment is the smallest basis vector
-    RShell=MINVAL( (/ RarMag,RbrMag,RcrMag /) )
-
-    !first g is always 000
-    knd=1!number of reflections in the pool 
-    lnd=0!number of the shell 
-    !maximum a*,b*,c* limit is determined by the G magnitude limit
-    inda=NINT(RGPoolLimit/RarMag)
-    indb=NINT(RGPoolLimit/RbrMag)
-    indc=NINT(RGPoolLimit/RcrMag)
-
-    !fill the RgPoolList with beams near the Bragg condition
-    DO WHILE (knd.LT.INhkl)
-      !increment the shell
-      lnd = lnd+1
-!DBG  IF(my_rank.EQ.0)PRINT*,REAL(lnd-1)*RShell,"to",REAL(lnd)*RShell
-      !Make a hkl
-      DO Ih = -inda,inda
-         DO Ik = -indb,indb
-            DO Il = -indc,indc
-              !check that it's allowed by selection rules
-              ISel=0
-              CALL SelectionRules(Ih, Ik, Il, ISel, IErr)
-              !and check that we have space 
-              IF (ISel.EQ.1 .AND. knd.LT.INhkl) THEN
-                !Make a g-vector
-                RGtest = REAL( (/ Ih,Ik,Il /),RKIND )!Miller indices
-                RGtestM = REAL(Ih)*RarVecM+REAL(Ik)*RbrVecM+REAL(Il)*RcrVecM!in microscope frame
-                RGtestMag = SQRT(DOT_PRODUCT(RGtestM,RGtestM))
-                !is it in the shell
-                IF (RGtestMag.GT.REAL(lnd-1)*RShell.AND.RGtestMag.LE.REAL(lnd)*RShell) THEN
-                  !is it near a Laue condition |k+g|=|k|
-                  RGplusk=RGtestM+Rk
-                  !divide by |g| to get a measure independent of incident beam tilt
-                  RDev=ABS(RElectronWaveVectorMagnitude-SQRT(DOT_PRODUCT(RGplusk,RGplusk)))/RGtestMag
-                  ! Using global variable RDevLimit to include or not
-!DBG              IF(my_rank.EQ.0)PRINT*,(/ Ih,Ik,Il /),RDev
-                  IF ((RDev-RDevLimit).LT.TINY) THEN !it's near the ZOLZ 
-                    !add it to the pool and increment the counter
-                    knd=knd+1
-                    IF (RGtestMag.LT.RGOutLimit) THEN
-                      IgOutList(IFrame,knd)=1
-                    END IF
-                  END IF
-                END IF
-              END IF
-            END DO
-         END DO
+    !output the hkl lists for the frames as a text file
+    path = SChemicalFormula(1:ILN) // "/hkl_list.txt"
+    OPEN(UNIT=IChOutIhkl, ACTION='WRITE', POSITION='APPEND', STATUS= 'UNKNOWN', &
+        FILE=TRIM(ADJUSTL(path)),IOSTAT=IErr)
+    WRITE(IChOutIhkl,*) "List of hkl in each frame"
+    DO ind = 1,INFrames
+      WRITE(IChOutIhkl,*) "Frame " // ind
+      DO knd = 1, INhkl
+        IF (IgPoolList(ind,knd).NE.0)
+          WRITE(fString,"(I4, A2, 3I3)") knd, ", ", IhklLattice(IgPoolList(ind,knd),:)
+        END IF
       END DO
     END DO
-
-    ! it is possible that we reach RGPoolLimit before filling up the pool, in which case 
-    ! fill up any remaining beam pool places with an enormous g-vector, diabolically
-    ! the idea being that this g-vector will never be near any possible Ewald sphere
-    IF (knd.LT.INhkl) THEN
-      RGtest = REAL( (/ 666,666,666 /),RKIND )
-      DO jnd = knd+1, INhkl
-      END DO
-    END IF
+    CLOSE(IChOutIhkl,IOSTAT=IErr)
     
-    !output which required output hkl's are in this frame
     CALL message(LM, "Reflection list:")
     DO knd = 1, INhkl
       IF (lnd.EQ.1) THEN
@@ -251,6 +228,16 @@ MODULE setup_reflections_mod
     
     
     
+    ! it is possible that we reach RGPoolLimit before filling up the pool, in which case 
+    ! fill up any remaining beam pool places with an enormous g-vector, diabolically
+    ! the idea being that this g-vector will never be near any possible Ewald sphere
+!    IF (knd.LE.INhkl) THEN
+!      DO jnd = knd+1, INhkl
+!        IhklLattice(jnd,:) = (/ 666,666,666 /)
+!        RgLatticeO(jnd,:) = REAL( (/ 666,666,666 /),RKIND )
+!        RLatMag(jnd) = 666666.666
+!      END DO
+!    END IF    
     
     
     

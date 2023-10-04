@@ -72,7 +72,7 @@ PROGRAM Felixrefine
 
   CHARACTER(40) :: my_rank_string
   CHARACTER(20) :: h,k,l
-  CHARACTER(200) :: path,fullpath
+  CHARACTER(200) :: path,subpath,subsubpath
 
   !--------------------------------------------------------------------
   ! startup
@@ -136,7 +136,25 @@ PROGRAM Felixrefine
   IF(l_alert(IErr,"felixrefine","ReadInpFile")) CALL abort
   CALL SetMessageMode( IWriteFLAG, IErr )
   IF(l_alert(IErr,"felixrefine","set_message_mod_mode")) CALL abort
-
+  
+  !--------------------------------------------------------------------
+  ! Set up output folders: frames, then thicknesses
+  !--------------------------------------------------------------------
+  IF (my_rank.EQ.0) THEN
+    path = SChemicalFormula(1:ILN)  ! main folder has chemical formula as name
+    CALL system('mkdir ' // TRIM(ADJUSTL(path))
+    DO knd = 1,INFrames
+      subpath = TRIM(ADJUSTL(path)) // "/Frame_" // knd ! next level down is frame
+      CALL system('mkdir ' // TRIM(ADJUSTL(subpath))
+      DO ind = 1,IThicknessCount
+        jnd = NINT(RInitialThickness +(ind-1)*RDeltaThickness)/10.0!in nm
+        subsubpath = TRIM(ADJUSTL(subpath)) // "/" // jnd // "nm"
+        !WRITE(path, FMT='(I4.4,A2)') 
+        CALL system('mkdir ' // TRIM(ADJUSTL(subsubpath))
+      END DO
+    END DO
+  END IF
+  
   !--------------------------------------------------------------------
   ! set up scattering factors, k-space resolution
   !--------------------------------------------------------------------
@@ -254,74 +272,15 @@ PROGRAM Felixrefine
   RDevLimit = 0.01*TWOPI  ! reciprocal Angstroms, multiplied by 2pi
   ! Output limit
   RGOutLimit = 1.0*TWOPI  ! reciprocal Angstroms, multiplied by 2pi
-  CALL ReciprocalLattice(RgPoolLimit, IErr)
+  CALL ReciprocalLattice(RgPoolLimit, IErr)  !in crystallography.f90
   IF(l_alert(IErr,"felixrefine","ReciprocalLattice")) CALL abort
 
-  ! Set up initial microscope reference frame
-  ! X, Y and Z are orthogonal vectors that defines the simulation
-  ! Also referred to as the microscope reference frame M.
-  ! The electron beam propagates along +Zm.
-  ! The alpha rotation axis is along Ym.  Positive alpha rotation moves the field
-  ! of view of the simulation along +Xm.
-  ! In the crystal reference frame we read in reciprocal vectors RXDirC_0 and RZDirC_0
-  ! These define Xm & Zm in the inital reference frame
-  ! RXDirO,RYDirO,RZDirO are UNIT reciprocal lattice vectors parallel to X,Y,Z
-  RXDirO = RXDirC_0(1)*RarVecO + RXDirC_0(2)*RbrVecO + RXDirC_0(3)*RcrVecO
-  RXDirO = RXDirO/SQRT(DOT_PRODUCT(RXDirO,RXDirO))
-  RZDirO = RZDirC_0(1)*RaVecO + RZDirC_0(2)*RbVecO + RZDirC_0(3)*RcVecO
-  RZDirO = RZDirO/SQRT(DOT_PRODUCT(RZDirO,RZDirO))
-  ! Check the input is sensible, i.e. Xm is perpendicular to Zm
-  RxAngle = ABS(180.0D0*ACOS(DOT_PRODUCT(RXDirO,RZDirO))/PI)
-  IF(ABS(RxAngle-90.0D0).GT.0.1)THEN! with a tolerance of 0.1 degrees
-    WRITE(SPrintString,"(A15,F5.1,A27)") "Error: X is at ",RxAngle," degrees to Z, should be 90"
-    CALL message(LS,SPrintString)
-    IErr = 1
-    CALL abort
-  ELSE!fine correction of x
-    ! take off any component parallel to z & renormalise
-    RXDirO = RXDirO - DOT_PRODUCT(RXDirO,RZDirO)*RZDirO
-    RXDirO = RXDirO/SQRT(DOT_PRODUCT(RXDirO,RXDirO))
-  END IF
-  RYDirO = CROSS(RZDirO,RXDirO)  ! the rotation axis
 
 
   ! *** move this to a subroutine ***
   ! and write as output files if desired
 
-  !--------------------------------------------------------------------
-  ! calculate reflection list frame by frame
-  !--------------------------------------------------------------------
-  ! We have all reciprocal lattice vectors in ascending order of magnitude RLatMag
-  ! with indices of IhklLattice and vector RgLatticeO in the orthogonal ref frame
-  ! IgPoolList says which reflections are close to the Ewald sphere
-  IgPoolList = 0
-  IgOutList = 0
-  DO ind = 1,INFrames
-    WRITE(SPrintString, FMT='(A30,I3,A3)') "Counting reflections in frame ",ind,"..."
-    CALL message(LS,dbg3,SPrintString)
-    RAngle = REAL(ind-1)*DEG2RADIAN*RFrameAngle
-    IF(my_rank.EQ.0)PRINT*,ind, RAngle*360/3.142
-    ! Rk is the k-vector for the incident beam, which we write here in the orthogonal frame O
-    Rk = RElectronWaveVectorMagnitude*(RZDirO*COS(RAngle)-RXDirO*SIN(RAngle))
-    ! Fill the list of reflections IgPoolList until we have filled the beam pool
-    knd = 1
-    DO jnd = 1,InLattice  ! work through reflections in ascending order
-      !is this reflection near a Laue condition |k+g|=|k|
-      RGplusk = RgLatticeO(jnd,:) + Rk
-      RGplusKmag = SQRT(DOT_PRODUCT(RGplusk,RGplusk))
-      IF (ABS(RGplusKmag-RElectronWaveVectorMagnitude).LT.RDevLimit) THEN
-        IF (knd.LE.INhkl) THEN ! while the beam pool isn't full
-          IgPoolList(ind,knd) = jnd  ! add it to the list
-          ! Is this reflection small enough to be in the output list
-          IF (RLatMag(jnd).LT.RGOutLimit) THEN
-            IgOutList(ind,knd) = jnd
-            IF(my_rank.EQ.0)PRINT*,jnd,IhklLattice(jnd,:)
-          END IF
-          knd = knd + 1
-        END IF
-      END IF
-    END DO
-    IF(my_rank.EQ.0)PRINT*,"Found",knd-1,"reflections"
+
     ! Create reciprocal lattice vectors in Microscope reference frame
     ! returns transformation matrices and RAtomCoordinate
  !   CALL CrystalOrientation(IErr)
@@ -359,20 +318,7 @@ PROGRAM Felixrefine
       IPixelLocation(lnd,2) = jnd
     END DO
   END DO
-  !--------------------------------------------------------------------
-  ! Set up output
-  ! make output folders for LACBED patterns
-  IF (my_rank.EQ.0) THEN
-    DO ind = 1,IThicknessCount
-      jnd = NINT(RInitialThickness +(ind-1)*RDeltaThickness)/10.0!in nm
-      WRITE(path, FMT='(I4.4,A2)') jnd, "nm"
-      path = SChemicalFormula(1:ILN) // "_" // path
-      CALL system('mkdir ' // path)
-      ! make output subfolder for rocking curves and integrated intensities
-      ! path = TRIM(ADJUSTL(path)) // "/" // SChemicalFormula(1:ILN) // "_intensities"
-      ! CALL system('mkdir ' // path)
-    END DO
-  END IF
+
 
 
   !--------------------------------------------------------------------

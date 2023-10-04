@@ -189,7 +189,8 @@ MODULE crystallography_mod
     RbrMag=SQRT(DOT_PRODUCT(RbrVecO,RbrVecO))!magnitude of b*
     RcrMag=SQRT(DOT_PRODUCT(RcrVecO,RcrVecO))!magnitude of c*
 
-    ! Now build the reciprocal lattice from which we will take slices for each beam pool
+    ! Now build the reciprocal lattice, from which we will take slices for
+    ! each beam pool using HKLMake
     ! IhklLattice is the list of Miller indices for the 3D lattice
     ! RgLatticeO is the corresponding list of coordinates in reciprocal space
     ! maximum a*,b*,c* limit is determined by the G magnitude limit
@@ -240,6 +241,37 @@ MODULE crystallography_mod
         ENDIF
       ENDDO
     ENDDO
+
+    ! Make the final g-vector something big, to fill up incomplete matrices later
+!    IhklLattice(InLattice,:) = (/ 666,666,666 /)
+!    RgLatticeO(InLattice,:) = REAL( (/ 666,666,666 /),RKIND )
+!    RLatMag(InLattice) = 666666.666
+
+    ! Set up initial microscope reference frame
+    ! X, Y and Z are orthogonal vectors that defines the simulation
+    ! Also referred to as the microscope reference frame M.
+    ! The electron beam propagates along +Zm.
+    ! The alpha rotation axis is along Ym.  Positive alpha rotation moves the field
+    ! of view of the simulation along +Xm.
+    ! In the crystal reference frame we read in reciprocal vectors RXDirC_0 and RZDirC_0
+    ! These define Xm & Zm in the inital reference frame
+    ! RXDirO,RYDirO,RZDirO are UNIT reciprocal lattice vectors parallel to X,Y,Z
+    RXDirO = RXDirC_0(1)*RarVecO + RXDirC_0(2)*RbrVecO + RXDirC_0(3)*RcrVecO
+    RXDirO = RXDirO/SQRT(DOT_PRODUCT(RXDirO,RXDirO))
+    RZDirO = RZDirC_0(1)*RaVecO + RZDirC_0(2)*RbVecO + RZDirC_0(3)*RcVecO
+    RZDirO = RZDirO/SQRT(DOT_PRODUCT(RZDirO,RZDirO))
+    ! Check the input is sensible, i.e. Xm is perpendicular to Zm
+    RxAngle = ABS(180.0D0*ACOS(DOT_PRODUCT(RXDirO,RZDirO))/PI)
+    IF(ABS(RxAngle-90.0D0).GT.0.1)THEN! with a tolerance of 0.1 degrees
+      WRITE(SPrintString,"(A15,F5.1,A27)") "Error: X is at ",RxAngle," degrees to Z, should be 90"
+      CALL message(LS,SPrintString)
+      IErr = 1
+    ELSE!fine correction of x
+      ! take off any component parallel to z & renormalise
+      RXDirO = RXDirO - DOT_PRODUCT(RXDirO,RZDirO)*RZDirO
+      RXDirO = RXDirO/SQRT(DOT_PRODUCT(RXDirO,RXDirO))
+    END IF
+    RYDirO = CROSS(RZDirO,RXDirO)  ! the rotation axis
 
   END SUBROUTINE ReciprocalLattice
 
