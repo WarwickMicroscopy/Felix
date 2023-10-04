@@ -56,22 +56,11 @@ PROGRAM Felixrefine
   ! local variable definitions
   IMPLICIT NONE
  
-  INTEGER(IKIND) :: IErr,ind,jnd,knd,lnd,mnd,nnd,Iter,ICutOff,IHOLZgPoolMag,&
-        IBSMaxLocGVecAmp,ILaueLevel,INumTotalReflections,ITotalLaueZoneLevel,&
-        IPrintFLAG,ICycle,INumInitReflections,IZerothLaueZoneLevel,xnd,&
-        INumFinalReflections,IThicknessIndex,IVariableType,IArrayIndex,&
-        IAnisotropicDebyeWallerFactorElementNo,IStartTime,IStartTime2, IFrame
+  INTEGER(IKIND) :: IErr,ind,jnd,knd,lnd,mnd,IStartTime
   INTEGER(4) :: IErr4
-  REAL(RKIND) :: RGOutLimit,RLaueZoneGz,RMaxGMag,RKn,RThickness,RxAngle,&
-        RScale,RMaxUgStep,Rdx,RStandardDeviation,RMean,RGzUnitVec,&
-        RMinLaueZoneValue,Rdf,RLastFit,RBestFit,RMaxLaueZoneValue,&
-        RMaxAcceptanceGVecMag,RandomSign,RLaueZoneElectronWaveVectorMag,&
-        RvarMin,RfitMin,RFit0,Rconvex,Rtest,Rplus,Rminus,RdeltaX,RdeltaY,&
-        RgPoolLimit,RAngle,RGplusKmag
-  REAL(RKIND),DIMENSION(ITHREE) :: RXDirOn,RZDirOn,Rk,RGplusK
+  REAL(RKIND) :: RGOutLimit,RgPoolLimit
 
   CHARACTER(40) :: my_rank_string
-  CHARACTER(20) :: h,k,l
   CHARACTER(200) :: path,subpath,subsubpath
 
   !--------------------------------------------------------------------
@@ -198,6 +187,9 @@ PROGRAM Felixrefine
   !--------------------------------------------------------------------
   ! List of g-vectors in the beam pool for each frame
   ALLOCATE(IgPoolList(INFrames,INhkl),STAT=IErr)
+  IF(l_alert(IErr,"felixrefine","allocate IgPoolList")) CALL abort
+  ! List of Sg for each g in the beam pool for each frame
+  ALLOCATE(RgPoolSg(INFrames,INhkl),STAT=IErr)
   IF(l_alert(IErr,"felixrefine","allocate IgPoolList")) CALL abort
   ! Indices of g-vectors in IgPoolList to be output in each frame,
   ! decided by RGOutLimit

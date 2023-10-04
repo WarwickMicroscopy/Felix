@@ -57,7 +57,7 @@ MODULE setup_reflections_mod
     USE SPARA, ONLY : SPrintString,SChemicalFormula
     USE IPARA, ONLY : INhkl,IgOutList,IgPoolList,IhklLattice,INFrames,InLattice,ILN
     USE RPARA, ONLY : RXDirO,RYDirO,RZDirO,RcrVecM,RLatMag,RFrameAngle,&
-        RBigK,RgLatticeO
+        RBigK,RgLatticeO,RgPoolSg
     USE Iconst
     USE IChannels, ONLY : IChOutIhkl
     
@@ -78,6 +78,7 @@ MODULE setup_reflections_mod
     ! IgPoolList says which reflections are close to the Ewald sphere
     IgPoolList = 0  ! Initialise lists to zero
     IgOutList = 0
+    RgPoolSg = ZERO
     Rk0 = ZERO
     DO ind = 1,INFrames
       WRITE(SPrintString, FMT='(A30,I3,A3)') "Counting reflections in frame ",ind,"..."
@@ -99,15 +100,14 @@ MODULE setup_reflections_mod
         RkPrime(3) = SQRT(RBigK**2-RkPrime(1)**2)
         RSg=-SIGN(ONE,(2*DOT_PRODUCT(RgLatticeO(jnd,:),Rk)+RLatMag(jnd)**2))*&
                     RLatMag(jnd)*SQRT(2*(RBigK**2-DOT_PRODUCT(Rk0,RkPrime)))/RBigK
-!        IF(my_rank.EQ.0)PRINT*,Rk0,RkPrime,RSg
         IF (ABS(RSg).LT.RDevLimit) THEN
           IF (knd.LE.INhkl) THEN ! while the beam pool isn't full
             IgPoolList(ind,knd) = jnd  ! add it to the list
-            IF(my_rank.EQ.0)PRINT*,jnd,IhklLattice(jnd,:),RSg
+            RgPoolSg(ind,knd) = RSg  ! put Sg in its list also
             ! Is this reflection small enough to be in the output list
             IF (RLatMag(jnd).LT.RGOutLimit) THEN
               IgOutList(ind,knd) = jnd
-              IF(my_rank.EQ.0)PRINT*,jnd,IhklLattice(jnd,:)
+              !IF(my_rank.EQ.0)PRINT*,jnd,IhklLattice(jnd,:)
             END IF
             knd = knd + 1
           END IF
@@ -137,7 +137,8 @@ MODULE setup_reflections_mod
             lnd = IgPoolList(ind,knd)
             Rx = ACOS(DOT_PRODUCT(RgLatticeO(lnd,:),Rk) / (RLatMag(lnd)* &
                RBigK))*180/3.141593
-            WRITE(fString,"(I4,A2,I3,1X,I3,1X,I3,2X,F8.4)") knd, ", ", IhklLattice(lnd,:),Rx
+            RSg = RgPoolSg(ind,knd)
+            WRITE(fString,"(I4,A2,I3,1X,I3,1X,I3,2X,F8.4,2X,F8.4)") knd, ", ", IhklLattice(lnd,:),Rx,RSg
             WRITE(IChOutIhkl,*) fString
           END IF
         END DO
