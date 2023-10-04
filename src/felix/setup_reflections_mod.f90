@@ -59,74 +59,78 @@ MODULE setup_reflections_mod
     USE RPARA, ONLY : RXDirO,RYDirO,RZDirO,RcrVecM,RLatMag,RFrameAngle,&
         RElectronWaveVectorMagnitude,RgLatticeO
     USE Iconst
-    USE IChannels, ONLY : ChOutIhkl
+    USE IChannels, ONLY : IChOutIhkl
     
     IMPLICIT NONE
 
     REAL(RKIND),INTENT(IN) :: RDevLimit, RGOutLimit
     INTEGER(IKIND) :: IErr, ind, jnd, knd, lnd
-    REAL(RKIND) :: RAngle,Rk,RGplusk,RGplusKmag
+    REAL(RKIND) :: RAngle,Rk(ITHREE),RGplusk(ITHREE),RGplusKmag
     CHARACTER(200) :: path
     CHARACTER(40) :: fString
    
-  !--------------------------------------------------------------------
-  ! calculate reflection list frame by frame
-  !--------------------------------------------------------------------
-  ! In the subroutine ReciprocalLattice we generated all reciprocal lattice vectors
-  ! and put them in ascending order of magnitude RLatMag
-  ! with indices of IhklLattice and vector RgLatticeO in the orthogonal ref frame
-  ! IgPoolList says which reflections are close to the Ewald sphere
-  IgPoolList = 0  ! Initialise lists to zero
-  IgOutList = 0   
-  DO ind = 1,INFrames
-    WRITE(SPrintString, FMT='(A30,I3,A3)') "Counting reflections in frame ",ind,"..."
-    CALL message(LS,dbg3,SPrintString)
-    RAngle = REAL(ind-1)*DEG2RADIAN*RFrameAngle
-    IF(my_rank.EQ.0)PRINT*,ind, RAngle*360/3.142
-    ! Rk is the k-vector for the incident beam, which we write here in the orthogonal frame O
-    Rk = RElectronWaveVectorMagnitude*(RZDirO*COS(RAngle)-RXDirO*SIN(RAngle))
-    ! Fill the list of reflections IgPoolList until we have filled the beam pool
-    knd = 1
-    DO jnd = 1,InLattice  ! work through reflections in ascending order
-      !is this reflection near a Laue condition |k+g|=|k|
-      RGplusk = RgLatticeO(jnd,:) + Rk
-      RGplusKmag = SQRT(DOT_PRODUCT(RGplusk,RGplusk))
-      IF (ABS(RGplusKmag-RElectronWaveVectorMagnitude).LT.RDevLimit) THEN
-        IF (knd.LE.INhkl) THEN ! while the beam pool isn't full
-          IgPoolList(ind,knd) = jnd  ! add it to the list
-          ! Is this reflection small enough to be in the output list
-          IF (RLatMag(jnd).LT.RGOutLimit) THEN
-            IgOutList(ind,knd) = jnd
-            IF(my_rank.EQ.0)PRINT*,jnd,IhklLattice(jnd,:)
-          END IF
-          knd = knd + 1
-        END IF
-      END IF
-    END DO
-    IF(my_rank.EQ.0)PRINT*,"Found",knd-1,"reflections"
-    
-    !output the hkl lists for the frames as a text file
-    path = SChemicalFormula(1:ILN) // "/hkl_list.txt"
-    OPEN(UNIT=IChOutIhkl, ACTION='WRITE', POSITION='APPEND', STATUS= 'UNKNOWN', &
-        FILE=TRIM(ADJUSTL(path)),IOSTAT=IErr)
-    WRITE(IChOutIhkl,*) "List of hkl in each frame"
+    !--------------------------------------------------------------------
+    ! calculate reflection list frame by frame
+    !--------------------------------------------------------------------
+    ! In the subroutine ReciprocalLattice we generated all reciprocal lattice vectors
+    ! and put them in ascending order of magnitude RLatMag
+    ! with indices of IhklLattice and vector RgLatticeO in the orthogonal ref frame
+    ! IgPoolList says which reflections are close to the Ewald sphere
+    IgPoolList = 0  ! Initialise lists to zero
+    IgOutList = 0   
     DO ind = 1,INFrames
-      WRITE(IChOutIhkl,*) "Frame " // ind
+      WRITE(SPrintString, FMT='(A30,I3,A3)') "Counting reflections in frame ",ind,"..."
+      CALL message(LS,dbg3,SPrintString)
+      RAngle = REAL(ind-1)*DEG2RADIAN*RFrameAngle
+      IF(my_rank.EQ.0)PRINT*,ind, RAngle*360/3.142
+      ! Rk is the k-vector for the incident beam, which we write here in the orthogonal frame O
+      Rk = RElectronWaveVectorMagnitude*(RZDirO*COS(RAngle)-RXDirO*SIN(RAngle))
+      ! Fill the list of reflections IgPoolList until we have filled the beam pool
+      knd = 1
+      DO jnd = 1,InLattice  ! work through reflections in ascending order
+        !is this reflection near a Laue condition |k+g|=|k|
+        RGplusk = RgLatticeO(jnd,:) + Rk
+        RGplusKmag = SQRT(DOT_PRODUCT(RGplusk,RGplusk))
+        IF (ABS(RGplusKmag-RElectronWaveVectorMagnitude).LT.RDevLimit) THEN
+          IF (knd.LE.INhkl) THEN ! while the beam pool isn't full
+            IgPoolList(ind,knd) = jnd  ! add it to the list
+            ! Is this reflection small enough to be in the output list
+            IF (RLatMag(jnd).LT.RGOutLimit) THEN
+              IgOutList(ind,knd) = jnd
+              IF(my_rank.EQ.0)PRINT*,jnd,IhklLattice(jnd,:)
+            END IF
+            knd = knd + 1
+          END IF
+        END IF
+      END DO
+      IF(my_rank.EQ.0)PRINT*,"Found",knd-1,"reflections"
+
+      CALL message(LM, "Reflection list:")
       DO knd = 1, INhkl
-        IF (IgPoolList(ind,knd).NE.0)
-          WRITE(fString,"(I4, A2, 3I3)") knd, ", ", IhklLattice(IgPoolList(ind,knd),:)
+        IF (IgPoolList(ind,knd).NE.0) THEN
+          WRITE(SPrintString,'(I3,1X,I3,1X,I3)') IhklLattice(IgPoolList(ind,knd),:)
+          CALL message(LM, SPrintString)
         END IF
       END DO
     END DO
-    CLOSE(IChOutIhkl,IOSTAT=IErr)
-    
-    CALL message(LM, "Reflection list:")
-    DO knd = 1, INhkl
-      IF (lnd.EQ.1) THEN
-        WRITE(SPrintString,'(I3,1X,I3,1X,I3)') NINT(RInputHKLs(jnd,:))
-        CALL message(LM, SPrintString)
-      END IF
-    END DO
+
+    !output the hkl lists for the frames as a text file
+    IF(my_rank.EQ.0) THEN
+      path = SChemicalFormula(1:ILN) // "/hkl_list.txt"
+      OPEN(UNIT=IChOutIhkl, ACTION='WRITE', POSITION='APPEND', STATUS= 'UNKNOWN', &
+          FILE=TRIM(ADJUSTL(path)),IOSTAT=IErr)
+      WRITE(IChOutIhkl,*) "List of hkl in each frame"
+      DO ind = 1,INFrames
+        WRITE(IChOutIhkl,"(A6,I4)") "Frame ",ind
+        DO knd = 1, INhkl
+          IF (IgPoolList(ind,knd).NE.0) THEN
+            WRITE(fString,"(I4, A2, I3,1X,I3,1X,I3)") knd, ", ", IhklLattice(IgPoolList(ind,knd),:)
+          END IF
+        END DO
+      END DO
+      CLOSE(IChOutIhkl,IOSTAT=IErr)
+    END IF
+
   END SUBROUTINE HKLmake
 
   !%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%

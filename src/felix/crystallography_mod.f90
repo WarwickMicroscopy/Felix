@@ -107,21 +107,23 @@ MODULE crystallography_mod
 
     USE MyNumbers
     USE MyMPI
+    USE message_mod
 
     ! global inputs
     USE IPARA, ONLY : IVolumeFLAG
-    USE RPARA, ONLY : RAlpha,RBeta,RGamma,RCellA,RCellB,RCellC,RarMag,RbrMag,RcrMag
+    USE RPARA, ONLY : RAlpha,RBeta,RGamma,RCellA,RCellB,RCellC,RXDirC_0,RZDirC_0
     USE SPARA, ONLY : SSpaceGroupName
     USE SPARA, ONLY : SPrintString
 
     ! global outputs
-    USE RPARA, ONLY : RaVecO,RbVecO,RcVecO,RVolume,RarVecO,RbrVecO,RcrVecO,RgLatticeO,RLatMag
+    USE RPARA, ONLY : RaVecO,RbVecO,RcVecO,RVolume,RarVecO,RbrVecO,RcrVecO,&
+            RXDirO,RYDirO,RZDirO,RarMag,RbrMag,RcrMag,RgLatticeO,RLatMag
     USE IPARA, ONLY : IhklLattice,InLattice
 
     IMPLICIT NONE
 
     INTEGER(IKIND) :: IErr,ind,jnd,knd,lnd,mnd,nnd,inda,indb,indc,IlogNB2,Id3(ITHREE)
-    REAL(RKIND) :: Rt,ALN2I,LocalTINY,Rg(ITHREE)
+    REAL(RKIND) :: Rt,ALN2I,LocalTINY,Rg(ITHREE),RxAngle
     REAL(RKIND),INTENT(IN) :: RLatticeLimit
     PARAMETER (ALN2I=1.4426950D0, LocalTINY=1.D-5)
     

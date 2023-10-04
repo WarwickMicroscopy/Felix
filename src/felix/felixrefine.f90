@@ -142,15 +142,22 @@ PROGRAM Felixrefine
   !--------------------------------------------------------------------
   IF (my_rank.EQ.0) THEN
     path = SChemicalFormula(1:ILN)  ! main folder has chemical formula as name
-    CALL system('mkdir ' // TRIM(ADJUSTL(path))
+    CALL system('mkdir ' // TRIM(ADJUSTL(path)))
     DO knd = 1,INFrames
-      subpath = TRIM(ADJUSTL(path)) // "/Frame_" // knd ! next level down is frame
-      CALL system('mkdir ' // TRIM(ADJUSTL(subpath))
+      IF (knd.LT.10) THEN
+        WRITE(subpath, FMT="(A,A7,I1)") TRIM(ADJUSTL(path)), "/Frame_", knd
+      ELSEIF(knd.LT.100) THEN
+        WRITE(subpath, FMT="(A,A7,I2)") TRIM(ADJUSTL(path)), "/Frame_", knd
+      ELSEIF(knd.LT.1000) THEN
+        WRITE(subpath, FMT="(A,A7,I3)") TRIM(ADJUSTL(path)), "/Frame_", knd
+      ELSE
+        WRITE(subpath, FMT="(A,A7,I4)") TRIM(ADJUSTL(path)), "/Frame_", knd
+      END IF
+      CALL system('mkdir ' // TRIM(ADJUSTL(subpath)))
       DO ind = 1,IThicknessCount
         jnd = NINT(RInitialThickness +(ind-1)*RDeltaThickness)/10.0!in nm
-        subsubpath = TRIM(ADJUSTL(subpath)) // "/" // jnd // "nm"
-        !WRITE(path, FMT='(I4.4,A2)') 
-        CALL system('mkdir ' // TRIM(ADJUSTL(subsubpath))
+        WRITE(subsubpath, FMT="(A,A,I4,A2)") TRIM(ADJUSTL(subpath)), "/", jnd, "nm"
+        CALL system('mkdir ' // TRIM(ADJUSTL(subsubpath)))
       END DO
     END DO
   END IF
@@ -272,15 +279,12 @@ PROGRAM Felixrefine
   RDevLimit = 0.01*TWOPI  ! reciprocal Angstroms, multiplied by 2pi
   ! Output limit
   RGOutLimit = 1.0*TWOPI  ! reciprocal Angstroms, multiplied by 2pi
+  ! Make the reciprocal lattice
   CALL ReciprocalLattice(RgPoolLimit, IErr)  !in crystallography.f90
   IF(l_alert(IErr,"felixrefine","ReciprocalLattice")) CALL abort
-
-
-
-  ! *** move this to a subroutine ***
-  ! and write as output files if desired
-
-
+  ! List the hkl's in each frame
+  CALL HKLMake(RDevLimit, RGOutLimit, IErr)
+  IF(l_alert(IErr,"felixrefine","HKLMake")) CALL abort
     ! Create reciprocal lattice vectors in Microscope reference frame
     ! returns transformation matrices and RAtomCoordinate
  !   CALL CrystalOrientation(IErr)
@@ -299,8 +303,6 @@ PROGRAM Felixrefine
     ! Assign numbers to different reflections -> IhklsFrame, IhklsAll, INoOfHKLsFrame
 !    CALL HKLList(ind, IErr)
 !    IF(l_alert(IErr,"felixrefine","SpecificReflectionDetermination")) CALL abort
-  END DO
-
 
   !--------------------------------------------------------------------
   ! ImageInitialisation
