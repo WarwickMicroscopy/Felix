@@ -125,7 +125,7 @@ MODULE crystallography_mod
 
     IMPLICIT NONE
 
-    INTEGER(IKIND) :: IErr,ind,jnd,knd,lnd,mnd,nnd,inda,indb,indc,IlogNB2,Id3(ITHREE)
+    INTEGER(IKIND) :: IErr,ind,jnd,knd,lnd,mnd,nnd,inda,indb,indc,IlogNB2,Id3(ITHREE),ISel
     REAL(RKIND) :: Rt,ALN2I,LocalTINY,Rg(ITHREE),RxAngle
     REAL(RKIND),INTENT(IN) :: RLatticeLimit
     PARAMETER (ALN2I=1.4426950D0, LocalTINY=1.D-5)
@@ -212,10 +212,13 @@ MODULE crystallography_mod
       DO jnd = -indb,indb
         DO knd = -indc,indc
           lnd = lnd + 1
-          IhklLattice(lnd,:) = (/ ind, jnd, knd /) !Miller indices
-          Rg = ind*RarVecO + jnd*RbrVecO + knd*RcrVecO !g-vector
-          RgLatticeO(lnd,:) = Rg
-          RLatMag(lnd) = SQRT(DOT_PRODUCT(Rg,Rg)) !g-magnitude
+          CALL SelectionRules(ind, jnd, knd, ISel, IErr)
+          IF (ISel.EQ.1) THEN
+            IhklLattice(lnd,:) = (/ ind, jnd, knd /) !Miller indices
+            Rg = ind*RarVecO + jnd*RbrVecO + knd*RcrVecO !g-vector
+            RgLatticeO(lnd,:) = Rg  ! in the O reference frame
+            RLatMag(lnd) = SQRT(DOT_PRODUCT(Rg,Rg)) !g-magnitude
+          END IF
           END DO
       END DO
     END DO
@@ -357,8 +360,8 @@ MODULE crystallography_mod
   !%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
   !>
-  !! Procedure-description: Calculates the full set of possible fractional atomic positions
-  !! and then gets rid of duplicates
+  !! Procedure-description: Calculates the full set of possible fractional atomic positions,
+  !! the mean inner potential and wavevector in the material K
   !!
   !! Major-Authors: Keith Evans (2014), Richard Beanland (2016, 2017)
   !!
@@ -497,4 +500,63 @@ MODULE crystallography_mod
 
   END SUBROUTINE UniqueAtomPositions
 
+  !!$%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+  !>
+  !! Procedure-description: Checks a g-vector Ih,Ik,Il
+  !! against the selection rules for the global variable SSpaceGroupName
+  !! IFlag comes in as zero and goes out as 1 if it is an allowed reflection
+  !!
+  !! Major-Authors: Richard Beanland (2021)
+  !!  
+  SUBROUTINE SelectionRules(Ih, Ik, Il, ISel, IErr)
+
+    ! This procedure is called from ReciprocalLattice
+    USE MyNumbers
+    USE message_mod
+    
+    ! global inputs
+    USE SPARA, ONLY : SSpaceGroupName
+    
+    IMPLICIT NONE
+
+    INTEGER (IKIND),INTENT(IN) :: Ih, Ik, Il
+    INTEGER (IKIND),INTENT(INOUT) :: ISel, IErr
+
+    SELECT CASE(SSpaceGroupName)
+
+      CASE("F") !Face Centred, all odd or all even
+        IF( (MOD(Ih+Ik,2).EQ.0).AND.&
+          (MOD(Ik+Il,2).EQ.0).AND.&
+          (MOD(Il+Ih,2).EQ.0) ) ISel=1
+
+      CASE("I")! Body Centred
+        IF(MOD(Ih+Ik+Il,2).EQ.0) ISel=1
+
+      CASE("A")! A-Face Centred
+        IF(MOD(Ik+Il,2).EQ.0) ISel=1
+
+      CASE("B")! B-Face Centred
+        IF(MOD(Ih+Il,2).EQ.0) ISel=1
+
+      CASE("C")! C-Face Centred
+        IF(MOD(Ih+Ik,2).EQ.0) ISel=1
+
+      CASE("R")! Rhombohedral Reverse
+        IF(MOD(Ih-Ik+Il,3).EQ.0) ISel=1
+
+      CASE("V")! Rhombohedral Obverse
+        IF(MOD(-Ih+Ik+Il,3).EQ.0) ISel=1
+
+      CASE("P")! Primitive
+        ISel=1
+
+      CASE DEFAULT
+      IErr=1
+      IF(l_alert(IErr,"SelectionRules",&
+          "Space Group Name unrecognised")) RETURN
+          
+    END SELECT
+     
+  END SUBROUTINE SelectionRules
+  
 END MODULE crystallography_mod

@@ -37,7 +37,7 @@ MODULE setup_reflections_mod
 
   IMPLICIT NONE
   PRIVATE
-  PUBLIC :: HKLList, SelectionRules, HKLMake, HKLSort
+  PUBLIC :: HKLMake
 
   CONTAINS
   
@@ -59,13 +59,14 @@ MODULE setup_reflections_mod
     USE RPARA, ONLY : RXDirO,RYDirO,RZDirO,RcrVecM,RLatMag,RFrameAngle,&
         RBigK,RgLatticeO,RgPoolSg
     USE Iconst
-    USE IChannels, ONLY : IChOutIhkl
+    USE IChannels, ONLY : IChOutIhkl,IChOutIM
     
     IMPLICIT NONE
 
     REAL(RKIND),INTENT(IN) :: RDevLimit, RGOutLimit
-    INTEGER(IKIND) :: IErr, ind, jnd, knd, lnd
-    REAL(RKIND) :: RAngle,Rk(ITHREE),Rk0(ITHREE),Rp(ITHREE),RSg,Rphi,Rx
+    INTEGER(IKIND) :: IErr,ind,jnd,knd,lnd,ISim,Ix,Iy
+    REAL(RKIND) :: RAngle,Rk(ITHREE),Rk0(ITHREE),Rp(ITHREE),RSg,Rphi,Rg
+    REAL(RKIND), DIMENSION(:,:), ALLOCATABLE :: RSim
     CHARACTER(200) :: path
     CHARACTER(40) :: fString
    
@@ -108,7 +109,6 @@ MODULE setup_reflections_mod
             ! Is this reflection small enough to be in the output list
             IF (RLatMag(jnd).LT.RGOutLimit) THEN
               IgOutList(ind,knd) = jnd
-              !IF(my_rank.EQ.0)PRINT*,jnd,IhklLattice(jnd,:)
             END IF
             knd = knd + 1
           END IF
@@ -125,8 +125,10 @@ MODULE setup_reflections_mod
       END DO
     END DO
 
-    !output the hkl lists for the frames as a text file
+    !output the hkl lists for the frames as a text file and an image
     IF(my_rank.EQ.0) THEN
+    
+      ! text file
       path = SChemicalFormula(1:ILN) // "/hkl_list.txt"
       OPEN(UNIT=IChOutIhkl, ACTION='WRITE', POSITION='APPEND', STATUS= 'UNKNOWN', &
           FILE=TRIM(ADJUSTL(path)),IOSTAT=IErr)
@@ -157,6 +159,35 @@ MODULE setup_reflections_mod
         END DO
       END DO
       CLOSE(IChOutIhkl,IOSTAT=IErr)
+      
+      ! image
+      ISim = 256_IKIND  ! NB HALF the output image size = output |g| limit
+      ALLOCATE(RSim(2*ISim,2*ISim),STAT=IErr)
+      IF(l_alert(IErr,"HKLmake","allocate RSim")) RETURN
+      DO ind = 1,INFrames
+        RSim = ZERO
+        ! Direct beam
+        RSim(ISim-1:ISim+1,ISim-1:ISim+1) = 1
+        ! output g's
+        DO knd = 1, INhkl
+          IF (IgOutList(ind,knd).NE.0) THEN
+            Rg = RgLatticeO(IgPoolList(ind,knd),:)
+            Ix = NINT(DOT_PRODUCT(Rg,RXDirO)*REAL(ISim)/RGOutLimit)
+            Iy = NINT(DOT_PRODUCT(Rg,RYDirO)*REAL(ISim)/RGOutLimit)
+            RSim(ISim+Ix-1:ISim+Ix+1,ISim+Iy-1:ISim+Iy+1) = 1
+          END IF
+        END DO
+        ! write to disk
+        WRITE(path, FMT="(A,A,I4)") TRIM(ADJUSTL(SChemicalFormula(1:ILN))), "/Simulations/", ind
+        OPEN(UNIT=IChOutIM, STATUS= 'UNKNOWN', FILE=TRIM(ADJUSTL(path)),&
+          FORM='UNFORMATTED',ACCESS='DIRECT',IOSTAT=IErr,RECL=2*ISim*IByteSize)
+        IF(l_alert(IErr,"WriteIterationOutput","OPEN() output .bin file")) RETURN      
+        DO jnd = 1,2*ISim
+          WRITE(IChOutIM,rec=jnd) RSim(jnd,:)
+        END DO
+        CLOSE(IChOutIM,IOSTAT=IErr) 
+        IF(l_alert(IErr,"WriteIterationOutput","CLOSE() output .bin file")) RETURN
+      END DO      
     END IF
 
   END SUBROUTINE HKLmake
@@ -330,64 +361,6 @@ MODULE setup_reflections_mod
  
   END SUBROUTINE HKLList
   
-  !!$%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-  !>
-  !! Procedure-description: Checks a g-vector Ih,Ik,Il
-  !! against the selection rules for the global variable SSpaceGroupName
-  !! IFlag comes in as zero and goes out as 1 if it is an allowed reflection
-  !!
-  !! Major-Authors: Richard Beanland (2021)
-  !!  
-  SUBROUTINE SelectionRules(Ih, Ik, Il, ISel, IErr)
-
-    ! This procedure is called from HKLMake
-    USE MyNumbers
-    USE message_mod
-    
-    ! global inputs
-    USE SPARA, ONLY : SSpaceGroupName
-    
-    IMPLICIT NONE
-
-    INTEGER (IKIND),INTENT(IN) :: Ih, Ik, Il
-    INTEGER (IKIND),INTENT(INOUT) :: ISel, IErr
-
-    SELECT CASE(SSpaceGroupName)
-
-      CASE("F") !Face Centred, all odd or all even
-        IF( (MOD(Ih+Ik,2).EQ.0).AND.&
-          (MOD(Ik+Il,2).EQ.0).AND.&
-          (MOD(Il+Ih,2).EQ.0) ) ISel=1
-
-      CASE("I")! Body Centred
-        IF(MOD(Ih+Ik+Il,2).EQ.0) ISel=1
-
-      CASE("A")! A-Face Centred
-        IF(MOD(Ik+Il,2).EQ.0) ISel=1
-
-      CASE("B")! B-Face Centred
-        IF(MOD(Ih+Il,2).EQ.0) ISel=1
-
-      CASE("C")! C-Face Centred
-        IF(MOD(Ih+Ik,2).EQ.0) ISel=1
-
-      CASE("R")! Rhombohedral Reverse
-        IF(MOD(Ih-Ik+Il,3).EQ.0) ISel=1
-
-      CASE("V")! Rhombohedral Obverse
-        IF(MOD(-Ih+Ik+Il,3).EQ.0) ISel=1
-
-      CASE("P")! Primitive
-        ISel=1
-
-      CASE DEFAULT
-      IErr=1
-      IF(l_alert(IErr,"SelectionRules",&
-          "Space Group Name unrecognised")) RETURN
-          
-    END SELECT
-     
-  END SUBROUTINE SelectionRules
   
 END MODULE setup_reflections_mod
 
