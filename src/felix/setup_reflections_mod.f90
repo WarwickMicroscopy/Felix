@@ -65,7 +65,7 @@ MODULE setup_reflections_mod
 
     REAL(RKIND),INTENT(IN) :: RDevLimit, RGOutLimit
     INTEGER(IKIND) :: IErr, ind, jnd, knd, lnd
-    REAL(RKIND) :: RAngle,Rk(ITHREE),Rk0(ITHREE),RkPrime(ITHREE),RSg,Rx
+    REAL(RKIND) :: RAngle,Rk(ITHREE),Rk0(ITHREE),Rp(ITHREE),RSg,Rphi,Rx
     CHARACTER(200) :: path
     CHARACTER(40) :: fString
    
@@ -90,16 +90,18 @@ MODULE setup_reflections_mod
       ! Fill the list of reflections IgPoolList until we have filled the beam pool
       knd = 1
       DO jnd = 1,InLattice  ! work through reflections in ascending order
-        ! calculate Sg, in an x-z reference frame containing g and K
-        ! Sg=(g/k)*[2(k^2-k0.k')]^0.5
-        ! k0 is defined by the Bragg condition
-        Rk0(1) = -RLatMag(jnd)/2
-        Rk0(3) = SQRT(RBigK**2-Rk0(1)**2)
-        ! k' is from the incident beam Rk
-        RkPrime(1)=DOT_PRODUCT(Rk,RgLatticeO(jnd,:))/RLatMag(jnd)  ! Gives NaN for 000
-        RkPrime(3) = SQRT(RBigK**2-RkPrime(1)**2)
-        RSg=-SIGN(ONE,(2*DOT_PRODUCT(RgLatticeO(jnd,:),Rk)+RLatMag(jnd)**2))*&
-                    RLatMag(jnd)*SQRT(2*(RBigK**2-DOT_PRODUCT(Rk0,RkPrime)))/RBigK
+        ! Calculate Sg by getting the vector k0, which is coplanar with k and g and
+        ! corresponds to an incident beam at the Bragg condition
+        ! First we need the vector component of k perpendicular to g, which we call p 
+        Rp = Rk - DOT_PRODUCT(Rk,RgLatticeO(jnd,:))*RgLatticeO(jnd,:)/(RLatMag(jnd)**2)
+        ! and now make k0 by adding vectors parallel to g and p
+        ! i.e. k0 = (p/|p|)*(k^2-g^2/4)^0.5 - g/2
+        Rk0 = SQRT(BigK**2-QUARTER*RLatMag(jnd)**2)*Rp/SQRT(DOT_PRODUCT(Rp,Rp)) - &
+              HALF*RgLatticeO(jnd,:)
+        ! The angle phi between k and k0 is how far we are from the Bragg condition
+        Rphi = ACOS(DOT_PRODUCT(Rk,Rk0)/(BigK**2))
+        ! and now Sg is 2g sin(phi/2)
+        RSg = TWO*RLatMag(jnd)*SIN(HALF*Rphi)
         IF (ABS(RSg).LT.RDevLimit) THEN
           IF (knd.LE.INhkl) THEN ! while the beam pool isn't full
             IgPoolList(ind,knd) = jnd  ! add it to the list
