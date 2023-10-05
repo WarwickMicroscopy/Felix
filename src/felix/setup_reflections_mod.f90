@@ -84,7 +84,6 @@ MODULE setup_reflections_mod
       WRITE(SPrintString, FMT='(A30,I3,A3)') "Counting reflections in frame ",ind,"..."
       CALL message(LS,dbg3,SPrintString)
       RAngle = REAL(ind-1)*DEG2RADIAN*RFrameAngle
-      IF(my_rank.EQ.0)PRINT*,ind, RAngle*180/3.14159
       ! Rk is the k-vector for the incident beam, which we write here in the orthogonal frame O
       Rk = RBigK*(RZDirO*COS(RAngle)-RXDirO*SIN(RAngle))
       ! Fill the list of reflections IgPoolList until we have filled the beam pool
@@ -96,10 +95,10 @@ MODULE setup_reflections_mod
         Rp = Rk - DOT_PRODUCT(Rk,RgLatticeO(jnd,:))*RgLatticeO(jnd,:)/(RLatMag(jnd)**2)
         ! and now make k0 by adding vectors parallel to g and p
         ! i.e. k0 = (p/|p|)*(k^2-g^2/4)^0.5 - g/2
-        Rk0 = SQRT(BigK**2-QUARTER*RLatMag(jnd)**2)*Rp/SQRT(DOT_PRODUCT(Rp,Rp)) - &
+        Rk0 = SQRT(RBigK**2-QUARTER*RLatMag(jnd)**2)*Rp/SQRT(DOT_PRODUCT(Rp,Rp)) - &
               HALF*RgLatticeO(jnd,:)
         ! The angle phi between k and k0 is how far we are from the Bragg condition
-        Rphi = ACOS(DOT_PRODUCT(Rk,Rk0)/(BigK**2))
+        Rphi = ACOS(DOT_PRODUCT(Rk,Rk0)/(RBigK**2))
         ! and now Sg is 2g sin(phi/2)
         RSg = TWO*RLatMag(jnd)*SIN(HALF*Rphi)
         IF (ABS(RSg).LT.RDevLimit) THEN
@@ -132,17 +131,29 @@ MODULE setup_reflections_mod
       OPEN(UNIT=IChOutIhkl, ACTION='WRITE', POSITION='APPEND', STATUS= 'UNKNOWN', &
           FILE=TRIM(ADJUSTL(path)),IOSTAT=IErr)
       WRITE(IChOutIhkl,*) "List of hkl in each frame"
+      WRITE(IChOutIhkl,*) "No: h k l |g| Sg"
       DO ind = 1,INFrames
         WRITE(IChOutIhkl,"(A6,I4)") "Frame ",ind
         DO knd = 1, INhkl
-          IF (IgPoolList(ind,knd).NE.0) THEN
+          ! version writing output g's only
+          IF (IgOutList(ind,knd).NE.0) THEN
             lnd = IgPoolList(ind,knd)
-            Rx = ACOS(DOT_PRODUCT(RgLatticeO(lnd,:),Rk) / (RLatMag(lnd)* &
-               RBigK))*180/3.141593
             RSg = RgPoolSg(ind,knd)
-            WRITE(fString,"(I4,A2,I3,1X,I3,1X,I3,2X,F8.4,2X,F8.4)") knd, ", ", IhklLattice(lnd,:),Rx,RSg
-            WRITE(IChOutIhkl,*) fString
+            WRITE(fString,"(I4,A2,I3,1X,I3,1X,I3,2X,F8.4,2X,F8.4,2X,F8.2)") &
+                    lnd,": ",IhklLattice(lnd,:),RLatMag(lnd)/TWOPI,RSg
           END IF
+          ! version writing the full beam pool
+          !IF (IgPoolList(ind,knd).NE.0) THEN
+          !  lnd = IgPoolList(ind,knd)
+          !  RSg = RgPoolSg(ind,knd)
+          !  IF (IgOutList(ind,knd).NE.0) THEN  ! output g's are indicated by a *
+          !    WRITE(fString,"(I4,A2,I3,1X,I3,1X,I3,2X,F8.4,2X,F8.4,2X,F8.2)") &
+          !          lnd,"* ",IhklLattice(lnd,:),RLatMag(lnd)/TWOPI,RSg
+          !  ELSE
+          !    WRITE(fString,"(I4,A2,I3,1X,I3,1X,I3,2X,F8.4,2X,F8.4)") lnd, ": ", IhklLattice(lnd,:),RSg
+          !  END IF
+          !  WRITE(IChOutIhkl,*) TRIM(ADJUSTL(fString))
+          !END IF
         END DO
       END DO
       CLOSE(IChOutIhkl,IOSTAT=IErr)

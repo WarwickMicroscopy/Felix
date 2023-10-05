@@ -271,7 +271,7 @@ PROGRAM Felixrefine
   ! Deviation parameter limit
   RDevLimit = 0.01*TWOPI  ! reciprocal Angstroms, multiplied by 2pi
   ! Output limit
-  RGOutLimit = 1.0*TWOPI  ! reciprocal Angstroms, multiplied by 2pi
+  RGOutLimit = 0.5*TWOPI  ! reciprocal Angstroms, multiplied by 2pi
   ! Make the reciprocal lattice
   CALL ReciprocalLattice(RgPoolLimit, IErr)  ! in crystallography.f90
   IF(l_alert(IErr,"felixrefine","ReciprocalLattice")) CALL abort
