@@ -34,7 +34,6 @@
 !! Module-description: This defines lattice vectors as well as the fractional atomic coordinates
 !!
 MODULE crystallography_mod
-  USE ug_matrix_mod
   
   IMPLICIT NONE
   
@@ -371,6 +370,7 @@ MODULE crystallography_mod
     
     USE MyNumbers
     USE message_mod
+    USE ug_matrix_mod
 
     ! global outputs
     USE RPARA, ONLY : RAtomCoordinate,ROccupancy,RIsoDW,RAtomPosition,RMeanInnerPotential,RBigK

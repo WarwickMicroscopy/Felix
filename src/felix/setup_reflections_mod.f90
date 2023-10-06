@@ -55,7 +55,7 @@ MODULE setup_reflections_mod
 
     ! global inputs/outputs
     USE SPARA, ONLY : SPrintString,SChemicalFormula
-    USE IPARA, ONLY : INhkl,IgOutList,IgPoolList,IhklLattice,INFrames,InLattice,ILN
+    USE IPARA, ONLY : INhkl,IgOutList,IgPoolList,IhklLattice,INFrames,InLattice,ILN,IByteSize
     USE RPARA, ONLY : RXDirO,RYDirO,RZDirO,RcrVecM,RLatMag,RFrameAngle,&
         RBigK,RgLatticeO,RgPoolSg
     USE Iconst
@@ -65,7 +65,7 @@ MODULE setup_reflections_mod
 
     REAL(RKIND),INTENT(IN) :: RDevLimit, RGOutLimit
     INTEGER(IKIND) :: IErr,ind,jnd,knd,lnd,ISim,Ix,Iy
-    REAL(RKIND) :: RAngle,Rk(ITHREE),Rk0(ITHREE),Rp(ITHREE),RSg,Rphi,Rg
+    REAL(RKIND) :: RAngle,Rk(ITHREE),Rk0(ITHREE),Rp(ITHREE),RSg,Rphi,Rg(ITHREE),Rmos
     REAL(RKIND), DIMENSION(:,:), ALLOCATABLE :: RSim
     CHARACTER(200) :: path
     CHARACTER(40) :: fString
@@ -86,7 +86,7 @@ MODULE setup_reflections_mod
       CALL message(LS,dbg3,SPrintString)
       RAngle = REAL(ind-1)*DEG2RADIAN*RFrameAngle
       ! Rk is the k-vector for the incident beam, which we write here in the orthogonal frame O
-      Rk = RBigK*(RZDirO*COS(RAngle)-RXDirO*SIN(RAngle))
+      Rk = RBigK*(RZDirO*COS(RAngle)+RXDirO*SIN(RAngle))
       ! Fill the list of reflections IgPoolList until we have filled the beam pool
       knd = 1
       DO jnd = 1,InLattice  ! work through reflections in ascending order
@@ -164,6 +164,8 @@ MODULE setup_reflections_mod
       ISim = 256_IKIND  ! NB HALF the output image size = output |g| limit
       ALLOCATE(RSim(2*ISim,2*ISim),STAT=IErr)
       IF(l_alert(IErr,"HKLmake","allocate RSim")) RETURN
+      ! Mosaicity - sets the FWHM  of a kinematic rocking curve
+      Rmos = 800.0
       DO ind = 1,INFrames
         RSim = ZERO
         ! Direct beam
@@ -172,13 +174,27 @@ MODULE setup_reflections_mod
         DO knd = 1, INhkl
           IF (IgOutList(ind,knd).NE.0) THEN
             Rg = RgLatticeO(IgPoolList(ind,knd),:)
-            Ix = NINT(DOT_PRODUCT(Rg,RXDirO)*REAL(ISim)/RGOutLimit)
-            Iy = NINT(DOT_PRODUCT(Rg,RYDirO)*REAL(ISim)/RGOutLimit)
-            RSim(ISim+Ix-1:ISim+Ix+1,ISim+Iy-1:ISim+Iy+1) = 1
+            RSg = RgPoolSg(ind,knd)
+            ! x- and y-coords in the image are swapped 
+            Iy = NINT(DOT_PRODUCT(Rg,RXDirO)*REAL(ISim)/RGOutLimit)  
+            Ix = -NINT(DOT_PRODUCT(Rg,RYDirO)*REAL(ISim)/RGOutLimit)
+            RSim(ISim+Ix-1:ISim+Ix+1,ISim+Iy-1:ISim+Iy+1) = EXP(-RMos*RSg*RSg)
           END IF
         END DO
         ! write to disk
-        WRITE(path, FMT="(A,A,I4)") TRIM(ADJUSTL(SChemicalFormula(1:ILN))), "/Simulations/", ind
+        IF (ind.LT.10) THEN
+          WRITE(path, FMT="(A,A15,I1,A4)") TRIM(ADJUSTL(SChemicalFormula(1:ILN))),&
+                  "/Simulations/S_",ind,".bin"
+        ELSE IF (ind.LT.100) THEN
+          WRITE(path, FMT="(A,A15,I2,A4)") TRIM(ADJUSTL(SChemicalFormula(1:ILN))),&
+                  "/Simulations/S_",ind,".bin"
+        ELSE IF (ind.LT.1000) THEN
+          WRITE(path, FMT="(A,A15,I3,A4)") TRIM(ADJUSTL(SChemicalFormula(1:ILN))),&
+                  "/Simulations/S_",ind,".bin"
+        ELSE
+          WRITE(path, FMT="(A,A15,I4,A4)") TRIM(ADJUSTL(SChemicalFormula(1:ILN))),&
+                  "/Simulations/S_",ind,".bin"
+        END IF
         OPEN(UNIT=IChOutIM, STATUS= 'UNKNOWN', FILE=TRIM(ADJUSTL(path)),&
           FORM='UNFORMATTED',ACCESS='DIRECT',IOSTAT=IErr,RECL=2*ISim*IByteSize)
         IF(l_alert(IErr,"WriteIterationOutput","OPEN() output .bin file")) RETURN      

@@ -129,25 +129,27 @@ PROGRAM Felixrefine
   !--------------------------------------------------------------------
   ! Set up output folders: frames, then thicknesses
   !--------------------------------------------------------------------
+  IThicknessCount= NINT((RFinalThickness-RInitialThickness)/RDeltaThickness) + 1
   IF (my_rank.EQ.0) THEN
     path = SChemicalFormula(1:ILN)  ! main folder has chemical formula as name
     CALL system('mkdir ' // TRIM(ADJUSTL(path)))
     ! Simulated frames
-     WRITE(subpath, FMT="(A12)") TRIM(ADJUSTL(path)), "/Simulations"
-     CALL system('mkdir ' // TRIM(ADJUSTL(subpath)))
+    WRITE(subpath, FMT="(A,A12)") TRIM(ADJUSTL(path)), "/Simulations"
+    CALL system('mkdir ' // TRIM(ADJUSTL(subpath)))
+    subpath = ""  !not sure if I need this, but getting some odd behaviour
     ! Folders per frame
     DO knd = 1,INFrames
       IF (knd.LT.10) THEN
-        WRITE(subpath, FMT="(A,A7,I1)") TRIM(ADJUSTL(path)), "/Frame_", knd
-      ELSEIF(knd.LT.100) THEN
-        WRITE(subpath, FMT="(A,A7,I2)") TRIM(ADJUSTL(path)), "/Frame_", knd
-      ELSEIF(knd.LT.1000) THEN
-        WRITE(subpath, FMT="(A,A7,I3)") TRIM(ADJUSTL(path)), "/Frame_", knd
+        WRITE(subpath, FMT="(A,A3,I1)") TRIM(ADJUSTL(path)), "/F_", knd
+      ELSE IF(knd.LT.100) THEN
+        WRITE(subpath, FMT="(A,A3,I2)") TRIM(ADJUSTL(path)), "/F_", knd
+      ELSE IF(knd.LT.1000) THEN
+        WRITE(subpath, FMT="(A,A3,I3)") TRIM(ADJUSTL(path)), "/F_", knd
       ELSE
-        WRITE(subpath, FMT="(A,A7,I4)") TRIM(ADJUSTL(path)), "/Frame_", knd
+        WRITE(subpath, FMT="(A,A3,I4)") TRIM(ADJUSTL(path)), "/F_", knd
       END IF
+      PRINT*,knd,subpath
       CALL system('mkdir ' // TRIM(ADJUSTL(subpath)))
-      IF(my_rank.EQ.0)PRINT*,IThicknessCount,"thicknesses"
       DO ind = 1,IThicknessCount
         jnd = NINT(RInitialThickness +(ind-1)*RDeltaThickness)/10.0!in nm
         WRITE(subsubpath, FMT="(A,A,I4,A2)") TRIM(ADJUSTL(subpath)), "/", jnd, "nm"
@@ -233,8 +235,6 @@ PROGRAM Felixrefine
   ALLOCATE(ISymmetryRelations(INhkl,INhkl),STAT=IErr)
   IF(l_alert(IErr,"felixrefine","allocate ISymmetryRelations")) CALL abort
 
-  IThicknessCount= NINT((RFinalThickness-RInitialThickness)/RDeltaThickness) + 1
-
   !--------------------------------------------------------------------
   ! set up unit cell 
   ! total possible number of atoms/unit cell
@@ -272,11 +272,11 @@ PROGRAM Felixrefine
   ! with xO // a and zO perpendicular to the ab plane, in Angstrom units
   ! and reciprocal lattice vectors RarVecO, RbrVecO, RcrVecO in the same reference frame
   ! Outer limit of g pool  ***This parameter will probably end up in a modified .inp file***
-  RgPoolLimit = 2.0*TWOPI  ! reciprocal Angstroms, multiplied by 2pi
-  ! Deviation parameter limit
+  RgPoolLimit = TWO*TWOPI  ! reciprocal Angstroms, multiplied by 2pi
+  ! Deviation parameter limit, a reflection closer to Ewald than this is in the beam pool
   RDevLimit = 0.01*TWOPI  ! reciprocal Angstroms, multiplied by 2pi
   ! Output limit
-  RGOutLimit = 0.5*TWOPI  ! reciprocal Angstroms, multiplied by 2pi
+  RGOutLimit = ONE*TWOPI  ! reciprocal Angstroms, multiplied by 2pi
   ! Make the reciprocal lattice
   CALL ReciprocalLattice(RgPoolLimit, IErr)  ! in crystallography.f90
   IF(l_alert(IErr,"felixrefine","ReciprocalLattice")) CALL abort
