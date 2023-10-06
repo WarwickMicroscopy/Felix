@@ -148,13 +148,13 @@ PROGRAM Felixrefine
       ELSE
         WRITE(subpath, FMT="(A,A3,I4)") TRIM(ADJUSTL(path)), "/F_", knd
       END IF
-      PRINT*,knd,subpath
+!      PRINT*,knd,subpath
       CALL system('mkdir ' // TRIM(ADJUSTL(subpath)))
-      DO ind = 1,IThicknessCount
-        jnd = NINT(RInitialThickness +(ind-1)*RDeltaThickness)/10.0!in nm
-        WRITE(subsubpath, FMT="(A,A,I4,A2)") TRIM(ADJUSTL(subpath)), "/", jnd, "nm"
-        CALL system('mkdir ' // TRIM(ADJUSTL(subsubpath)))
-      END DO
+!      DO ind = 1,IThicknessCount
+!        jnd = NINT(RInitialThickness +(ind-1)*RDeltaThickness)/10.0!in nm
+!        WRITE(subsubpath, FMT="(A,A,I4,A2)") TRIM(ADJUSTL(subpath)), "/", jnd, "nm"
+!        CALL system('mkdir ' // TRIM(ADJUSTL(subsubpath)))
+!      END DO
     END DO
   END IF
   

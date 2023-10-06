@@ -82,7 +82,7 @@ MODULE setup_reflections_mod
     RgPoolSg = ZERO
     Rk0 = ZERO
     DO ind = 1,INFrames
-      WRITE(SPrintString, FMT='(A30,I3,A3)') "Counting reflections in frame ",ind,"..."
+      WRITE(SPrintString, FMT='(A30,I4,A3)') "Counting reflections in frame ",ind,"..."
       CALL message(LS,dbg3,SPrintString)
       RAngle = REAL(ind-1)*DEG2RADIAN*RFrameAngle
       ! Rk is the k-vector for the incident beam, which we write here in the orthogonal frame O
@@ -114,7 +114,8 @@ MODULE setup_reflections_mod
           END IF
         END IF
       END DO
-      IF(my_rank.EQ.0)PRINT*,"Found",knd-1,"reflections"
+      WRITE(SPrintString, FMT='(A6,I4,A12)') "Found ",knd-1," reflections"
+      CALL message(LS,dbg3,SPrintString)
 
       CALL message(LM, "Reflection list:")
       DO knd = 1, INhkl
@@ -127,7 +128,8 @@ MODULE setup_reflections_mod
 
     !output the hkl lists for the frames as a text file and an image
     IF(my_rank.EQ.0) THEN
-    
+      CALL message(LS,dbg3,"Writing to hkl list and images")
+
       ! text file
       path = SChemicalFormula(1:ILN) // "/hkl_list.txt"
       OPEN(UNIT=IChOutIhkl, ACTION='WRITE', POSITION='APPEND', STATUS= 'UNKNOWN', &
@@ -143,6 +145,7 @@ MODULE setup_reflections_mod
             RSg = RgPoolSg(ind,knd)
             WRITE(fString,"(I4,A2,I3,1X,I3,1X,I3,2X,F8.4,2X,F8.4,2X,F8.2)") &
                     lnd,": ",IhklLattice(lnd,:),RLatMag(lnd)/TWOPI,RSg
+            WRITE(IChOutIhkl,*) TRIM(ADJUSTL(fString))
           END IF
           ! version writing the full beam pool
           !IF (IgPoolList(ind,knd).NE.0) THEN
@@ -161,24 +164,28 @@ MODULE setup_reflections_mod
       CLOSE(IChOutIhkl,IOSTAT=IErr)
       
       ! image
-      ISim = 256_IKIND  ! NB HALF the output image size = output |g| limit
+      ISim = 256_IKIND  ! NB HALF the output image size = 1.05*output |g| limit
       ALLOCATE(RSim(2*ISim,2*ISim),STAT=IErr)
       IF(l_alert(IErr,"HKLmake","allocate RSim")) RETURN
       ! Mosaicity - sets the FWHM  of a kinematic rocking curve
       Rmos = 800.0
       DO ind = 1,INFrames
+        RAngle = REAL(ind-1)*DEG2RADIAN*RFrameAngle
         RSim = ZERO
         ! Direct beam
         RSim(ISim-1:ISim+1,ISim-1:ISim+1) = 1
         ! output g's
         DO knd = 1, INhkl
           IF (IgOutList(ind,knd).NE.0) THEN
-            Rg = RgLatticeO(IgPoolList(ind,knd),:)
+            lnd = IgPoolList(ind,knd)
+            Rg = RgLatticeO(lnd,:)
             RSg = RgPoolSg(ind,knd)
-            ! x- and y-coords in the image are swapped 
-            Iy = NINT(DOT_PRODUCT(Rg,RXDirO)*REAL(ISim)/RGOutLimit)  
-            Ix = -NINT(DOT_PRODUCT(Rg,RYDirO)*REAL(ISim)/RGOutLimit)
-            RSim(ISim+Ix-1:ISim+Ix+1,ISim+Iy-1:ISim+Iy+1) = EXP(-RMos*RSg*RSg)
+            ! x- and y-coords (NB swapped in the image!)
+            Rp = RXDirO*COS(RAngle)-RZDirO*SIN(RAngle)  ! unit vector horizontal in the image
+            ! position of the spot, 2% leeway to avoid going over the edge of the image
+            Ix = ISim-0.98*NINT(DOT_PRODUCT(Rg,Rp)*REAL(ISim)/RGOutLimit)  
+            Iy = ISim+0.98*NINT(DOT_PRODUCT(Rg,RYDirO)*REAL(ISim)/RGOutLimit)
+            RSim(Iy-1:Iy+1,Ix-1:Ix+1) = EXP(-RMos*RSg*RSg)
           END IF
         END DO
         ! write to disk
