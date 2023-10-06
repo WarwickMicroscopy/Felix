@@ -112,8 +112,8 @@ MODULE crystallography_mod
     USE message_mod
 
     ! global inputs
-    USE IPARA, ONLY : IVolumeFLAG
-    USE RPARA, ONLY : RAlpha,RBeta,RGamma,RCellA,RCellB,RCellC,RXDirC_0,RZDirC_0
+    USE IPARA, ONLY : IVolumeFLAG,INAtomsUnitCell
+    USE RPARA, ONLY : RAlpha,RBeta,RGamma,RCellA,RCellB,RCellC,RXDirC_0,RZDirC_0,RScatteringFactor
     USE SPARA, ONLY : SSpaceGroupName,SPrintString
     USE CPARA, ONLY : CFg
 
@@ -220,9 +220,9 @@ MODULE crystallography_mod
             RgLatticeO(lnd,:) = Rg  ! in the O reference frame
             RLatMag(lnd) = SQRT(DOT_PRODUCT(Rg,Rg)) !g-magnitude
             ! Calculate structure factor
-            DO knd=1,INAtomsUnitCell
+            DO mnd=1,INAtomsUnitCell
               CALL AtomicScatteringFactor(RScatteringFactor,IErr)
-              CFg(lnd) = RScatteringFactor*EXP(-CIMAGONE*DOT_PRODUCT(Rg,RAtomCoordinate(knd,:)) )
+              CFg(lnd) = RScatteringFactor*EXP(-CIMAGONE*DOT_PRODUCT(Rg,RAtomCoordinate(mnd,:)) )
             END DO
           END IF
           END DO
