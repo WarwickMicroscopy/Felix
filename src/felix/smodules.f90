@@ -394,7 +394,7 @@ MODULE CPara
   USE MyNumbers
 
   COMPLEX(CKIND),DIMENSION(:),ALLOCATABLE :: CAlphaWeightingCoefficients, CPsi0,CUniqueUg,CEigenValues,&
-                CGammaValues, CWaveFunctions,CFullWaveFunctions
+                CGammaValues, CWaveFunctions,CFullWaveFunctions, CFg
   COMPLEX(CKIND), DIMENSION(:,:), ALLOCATABLE :: CUgMatNoAbs,CUgMatPrime,CUgMat,CUgSgMatrix,CEigenValuesChunk,&
                 CEigenVectors,CEigenValueDependentTerms,CInvertedEigenVectors,CBeamProjectionMatrix,&
                 CDummyBeamMatrix

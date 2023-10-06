@@ -114,8 +114,8 @@ MODULE crystallography_mod
     ! global inputs
     USE IPARA, ONLY : IVolumeFLAG
     USE RPARA, ONLY : RAlpha,RBeta,RGamma,RCellA,RCellB,RCellC,RXDirC_0,RZDirC_0
-    USE SPARA, ONLY : SSpaceGroupName
-    USE SPARA, ONLY : SPrintString
+    USE SPARA, ONLY : SSpaceGroupName,SPrintString
+    USE CPARA, ONLY : CFg
 
     ! global outputs
     USE RPARA, ONLY : RaVecO,RbVecO,RcVecO,RVolume,RarVecO,RbrVecO,RcrVecO,&
@@ -202,21 +202,28 @@ MODULE crystallography_mod
     indb=NINT(RLatticeLimit/RbrMag)
     indc=NINT(RLatticeLimit/RcrMag)
     InLattice = (2*inda+1)*(2*indb+1)*(2*indc+1)
-    ALLOCATE(IhklLattice(InLattice, ITHREE), STAT=IErr)
-    ALLOCATE(RgLatticeO(InLattice, ITHREE), STAT=IErr)
-    ALLOCATE(RLatMag(InLattice), STAT=IErr)
+    ALLOCATE(IhklLattice(InLattice, ITHREE), STAT=IErr)! Miller indices
+    ALLOCATE(RgLatticeO(InLattice, ITHREE), STAT=IErr)! g-vector
+    ALLOCATE(RLatMag(InLattice), STAT=IErr)! magnitude
+    ALLOCATE(CFg(InLattice), STAT=IErr)! Structure factors
+    
     ! populate the lists
     lnd = 0
     DO ind = -inda,inda
       DO jnd = -indb,indb
         DO knd = -indc,indc
           lnd = lnd + 1
-          CALL SelectionRules(ind, jnd, knd, ISel, IErr)
+          CALL SelectionRules(ind, jnd, knd, ISel, IErr)! Systematic absences - lattice
           IF (ISel.EQ.1) THEN
             IhklLattice(lnd,:) = (/ ind, jnd, knd /) !Miller indices
             Rg = ind*RarVecO + jnd*RbrVecO + knd*RcrVecO !g-vector
             RgLatticeO(lnd,:) = Rg  ! in the O reference frame
             RLatMag(lnd) = SQRT(DOT_PRODUCT(Rg,Rg)) !g-magnitude
+            ! Calculate structure factor
+            DO knd=1,INAtomsUnitCell
+              CALL AtomicScatteringFactor(RScatteringFactor,IErr)
+              CFg(lnd) = RScatteringFactor*EXP(-CIMAGONE*DOT_PRODUCT(Rg,RAtomCoordinate(knd,:)) )
+            END DO
           END IF
           END DO
       END DO
