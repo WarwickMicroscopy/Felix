@@ -56,7 +56,7 @@ MODULE setup_reflections_mod
 
     ! global inputs/outputs
     USE SPARA, ONLY : SPrintString,SChemicalFormula
-    USE IPARA, ONLY : INhkl,IgOutList,IgPoolList,IhklLattice,INFrames,InLattice,ILN,IByteSize
+    USE IPARA, ONLY : INhkl,IgOutList,IgPoolList,IhklLattice,INFrames,InLattice,ILN,IByteSize,ISort
     USE RPARA, ONLY : RXDirO,RYDirO,RZDirO,RcrVecM,RLatMag,RFrameAngle,&
         RBigK,RgLatticeO,RgPoolSg
     USE CPARA, ONLY : CFg
@@ -66,7 +66,7 @@ MODULE setup_reflections_mod
     IMPLICIT NONE
 
     REAL(RKIND),INTENT(IN) :: RDevLimit, RGOutLimit
-    INTEGER(IKIND) :: IErr,ind,jnd,knd,lnd,ISim,Ix,Iy,ILocalFrameMin,ILocalFrameMax
+    INTEGER(IKIND) :: IErr,ind,jnd,knd,lnd,mnd,ISim,Ix,Iy,ILocalFrameMin,ILocalFrameMax
     REAL(RKIND) :: RAngle,Rk(ITHREE),Rk0(ITHREE),Rp(ITHREE),RSg,Rphi,Rg(ITHREE),Rmos,RIkin,&
                    RKplusg(ITHREE)
     REAL(RKIND), DIMENSION(:,:), ALLOCATABLE :: RSim
@@ -100,7 +100,8 @@ MODULE setup_reflections_mod
       ! Fill the list of reflections IgPoolList until we have filled the beam pool
       knd = 1  ! size of beam pool for this frame
       lnd = 1  ! size of output beam list for this frame
-      DO jnd = 1,InLattice  ! work through reflections in ascending order
+      DO mnd = 1,InLattice
+        jnd = ISort(mnd)  ! work through reflections in ascending order
         ! Calculate Sg by getting the vector k0, which is coplanar with k and g and
         ! corresponds to an incident beam at the Bragg condition
         ! First we need the vector component of k perpendicular to g, which we call p 
