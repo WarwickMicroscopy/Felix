@@ -113,7 +113,7 @@ MODULE crystallography_mod
     USE ug_matrix_mod
 
     ! global inputs
-    USE IPARA, ONLY : IVolumeFLAG,INAtomsUnitCell,IAtomicNumber,ICurrentZ
+    USE IPARA, ONLY : IVolumeFLAG,INAtomsUnitCell,IAtomicNumber,ICurrentZ,ISort
     USE RPARA, ONLY : RAlpha,RBeta,RGamma,RCellA,RCellB,RCellC,RXDirC_0,RZDirC_0,RAtomCoordinate,&
             RCurrentGMagnitude,RAtomXYZ
     USE SPARA, ONLY : SSpaceGroupName,SPrintString
@@ -126,10 +126,10 @@ MODULE crystallography_mod
 
     IMPLICIT NONE
 
-    INTEGER(IKIND) :: IErr,ind,jnd,knd,lnd,mnd,nnd,inda,indb,indc,IlogNB2,Id3(ITHREE),ISel
+    INTEGER(IKIND) :: IErr,ind,jnd,knd,lnd,mnd,nnd,inda,indb,indc,IlogNB2,Iswap
     REAL(RKIND) :: Rt,ALN2I,LocalTINY,Rg(ITHREE),RxAngle,Rfq
     REAL(RKIND), DIMENSION(ITHREE,ITHREE) :: RTMatC2O
-    REAL(RKIND),INTENT(IN) :: RLatticeLimit
+    REAL(RKIND), INTENT(IN) :: RLatticeLimit
     COMPLEX(CKIND) :: Ct
     PARAMETER (ALN2I=1.4426950D0, LocalTINY=1.D-5)
     
@@ -217,32 +217,40 @@ MODULE crystallography_mod
     indb=NINT(RLatticeLimit/RbrMag)
     indc=NINT(RLatticeLimit/RcrMag)
     InLattice = (2*inda+1)*(2*indb+1)*(2*indc+1)
+    ALLOCATE(Isort(InLattice), STAT=IErr)! Sorted index
     ALLOCATE(IhklLattice(InLattice, ITHREE), STAT=IErr)! Miller indices
     ALLOCATE(RgLatticeO(InLattice, ITHREE), STAT=IErr)! g-vector
     ALLOCATE(RLatMag(InLattice), STAT=IErr)! magnitude
     ALLOCATE(CFg(InLattice), STAT=IErr)! Structure factors
     
-    ! Miller indices and g-vector magnitudes
+    ! Fill the lists
     CFg = CZERO
     lnd = 0
     DO ind = -inda,inda
       DO jnd = -indb,indb
         DO knd = -indc,indc
           lnd = lnd + 1
+          ISort(lnd) = lnd  ! we will sort this and use it as a dummy index
           ! We include forbidden reflections here because they may appear through multiple scattering
-          !CALL SelectionRules(ind, jnd, knd, ISel, IErr)! Systematic absences - lattice
-          !IF (ISel.EQ.1) THEN
           IhklLattice(lnd,:) = (/ ind, jnd, knd /) !Miller indices
-          Rg = ind*RarVecO + jnd*RbrVecO + knd*RcrVecO !g-vector
-          RLatMag(lnd) = SQRT(DOT_PRODUCT(Rg,Rg))  ! global variable, goes into scatt fac calc
+          Rg = ind*RarVecO + jnd*RbrVecO + knd*RcrVecO  ! g-vector
+          RgLatticeO(lnd,:) = Rg
+          RCurrentGMagnitude = SQRT(DOT_PRODUCT(Rg,Rg))  ! global variable, goes into scatt fac calc 
+          RLatMag(lnd) = RCurrentGMagnitude
+          ! Calculate structure factor
+          DO mnd=1,INAtomsUnitCell
+            ICurrentZ = IAtomicNumber(mnd)
+            CALL AtomicScatteringFactor(Rfq,IErr)
+            CFg(lnd) = CFg(ind)+Rfq*EXP(-CIMAGONE*DOT_PRODUCT(Rg,RAtomCoordinate(mnd,:)) )
+          END DO
         END DO
       END DO
     END DO
     
-    ! Sort them in ascending order of magnitude (re-purposed HKLSort routine)
+    ! Get ISort in ascending order of |g| (re-purposed HKLSort routine)
     ! Based on ShellSort from "Numerical Recipes", routine SHELL()
-    ! (we have a choice here - make all the variables first and then sort them;
-    ! or sort |g| first and then make the variables. Hoping the latter is more efficient
+    ! This allows reflections to be accessed in ascending order of |g|
+    ! e.g. using CFg(ISort(i)) instead of CFg(i)
     IlogNB2=INT(LOG(REAL(InLattice))*ALN2I+LocalTINY)
     mnd = InLattice
     DO nnd=1,IlogNB2
@@ -252,33 +260,15 @@ MODULE crystallography_mod
         ind=jnd
 3       CONTINUE
         lnd=ind+mnd
-        IF( RLatMag(lnd) .LT. RLatMag(ind)) THEN
-          Id3 = IhklLattice(ind,:) ! swap indices
-          IhklLattice(ind,:) = IhklLattice(lnd,:)
-          IhklLattice(lnd,:) = Id3
-          Rt = RLatMag(ind) ! swap magnitudes
-          RLatMag(ind) = RLatMag(lnd)
-          RLatMag(lnd) = Rt
+        IF( RLatMag(ISort(lnd)) .LT. RLatMag(ISort(ind))) THEN
+          Iswap = ISort(ind) ! swap index
+          ISort(ind) = ISort(lnd)
+          ISort(lnd) = Iswap
           ind=ind-mnd
           IF(ind.GE.1) GOTO 3
         ENDIF
       ENDDO
     ENDDO
-
-    ! Make the g-vector and structure factor lists to match hkl and |g|
-    CFg = CZERO
-    DO ind=1,INLattice
-      ! g-vector in the orthogonal frame
-      RgLatticeO(ind,:) = IhklLattice(ind,1)*RarVecO + IhklLattice(ind,2)*RbrVecO +&
-              IhklLattice(ind,3)*RcrVecO
-      RCurrentGMagnitude = RLatMag(ind)  ! global variable, goes into scatt fac calc
-      ! Calculate structure factor
-      DO jnd=1,INAtomsUnitCell
-        ICurrentZ = IAtomicNumber(jnd)
-        CALL AtomicScatteringFactor(Rfq,IErr)
-        CFg(ind) = CFg(ind)+Rfq*EXP(-CIMAGONE*DOT_PRODUCT(RgLatticeO(ind,:),RAtomCoordinate(jnd,:)) )
-      END DO
-    END DO
 
     ! Set up initial microscope reference frame
     ! X, Y and Z are orthogonal vectors that defines the simulation

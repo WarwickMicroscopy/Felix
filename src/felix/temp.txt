@@ -1,8 +1,8 @@
     !--------------------------------------------------------------------
     ! set up frame-parallel calculations
     ! The frames to be calculated by this core  
-    ILocalFrameMin= (INFrames*(my_rank)/p)+1
-    ILocalFrameMax= (INFrames*(my_rank+1)/p)
+    ILocalFrameMin = (INFrames*(my_rank)/p)+1
+    ILocalFrameMax = (INFrames*(my_rank+1)/p)
 
 
 

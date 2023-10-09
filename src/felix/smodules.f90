@@ -197,7 +197,7 @@ MODULE IPara
   !Thickness loop Variables
   INTEGER(IKIND) :: IThicknessCount
   !Tracking reflections
-  INTEGER(IKIND), DIMENSION(:), ALLOCATABLE :: IhklsAll,IhklsFrame,ILiveList,ILACBEDList
+  INTEGER(IKIND), DIMENSION(:), ALLOCATABLE :: IhklsAll,IhklsFrame,ILiveList,ILACBEDList,ISort
   INTEGER(IKIND), DIMENSION(50) :: ILACBEDFlag
   !Ug Calculation
   INTEGER(IKIND) :: ICurrentZ,IPsize

@@ -65,9 +65,9 @@ MODULE setup_reflections_mod
     IMPLICIT NONE
 
     REAL(RKIND),INTENT(IN) :: RDevLimit, RGOutLimit
-    INTEGER(IKIND) :: IErr,ind,jnd,knd,lnd,ISim,Ix,Iy
+    INTEGER(IKIND) :: IErr,ind,jnd,knd,lnd,ISim,Ix,Iy,ILocalFrameMin,ILocalFrameMax
     REAL(RKIND) :: RAngle,Rk(ITHREE),Rk0(ITHREE),Rp(ITHREE),RSg,Rphi,Rg(ITHREE),Rmos,RIkin,&
-                   RKplusg
+                   RKplusg(ITHREE)
     REAL(RKIND), DIMENSION(:,:), ALLOCATABLE :: RSim
     CHARACTER(200) :: path
     CHARACTER(100) :: fString
@@ -83,6 +83,13 @@ MODULE setup_reflections_mod
     IgOutList = 0
     RgPoolSg = ZERO
     Rk0 = ZERO
+    !--------------------------------------------------------------------
+    ! set up frame-parallel calculations
+    ! The frames to be calculated by this core  
+    ILocalFrameMin = (INFrames*(my_rank)/p)+1
+    ILocalFrameMax = (INFrames*(my_rank+1)/p)
+    PRINT*,"Rank",my_rank,ILocalFrameMin,"to",ILocalFrameMax
+    !ALLOCATE(RLocalFrames(
     DO ind = 1,INFrames
       !WRITE(SPrintString, FMT='(A30,I4,A3)') "Counting reflections in frame ",ind,"..."
       !CALL message(LS,dbg3,SPrintString)
