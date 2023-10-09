@@ -110,10 +110,12 @@ MODULE crystallography_mod
     USE MyNumbers
     USE MyMPI
     USE message_mod
+    USE ug_matrix_mod
 
     ! global inputs
-    USE IPARA, ONLY : IVolumeFLAG,INAtomsUnitCell
-    USE RPARA, ONLY : RAlpha,RBeta,RGamma,RCellA,RCellB,RCellC,RXDirC_0,RZDirC_0,RScatteringFactor
+    USE IPARA, ONLY : IVolumeFLAG,INAtomsUnitCell,IAtomicNumber,ICurrentZ
+    USE RPARA, ONLY : RAlpha,RBeta,RGamma,RCellA,RCellB,RCellC,RXDirC_0,RZDirC_0,RAtomCoordinate,&
+            RCurrentGMagnitude
     USE SPARA, ONLY : SSpaceGroupName,SPrintString
     USE CPARA, ONLY : CFg
 
@@ -125,7 +127,7 @@ MODULE crystallography_mod
     IMPLICIT NONE
 
     INTEGER(IKIND) :: IErr,ind,jnd,knd,lnd,mnd,nnd,inda,indb,indc,IlogNB2,Id3(ITHREE),ISel
-    REAL(RKIND) :: Rt,ALN2I,LocalTINY,Rg(ITHREE),RxAngle
+    REAL(RKIND) :: Rt,ALN2I,LocalTINY,Rg(ITHREE),RxAngle,RScatteringFactor
     REAL(RKIND),INTENT(IN) :: RLatticeLimit
     PARAMETER (ALN2I=1.4426950D0, LocalTINY=1.D-5)
     
@@ -221,6 +223,8 @@ MODULE crystallography_mod
             RLatMag(lnd) = SQRT(DOT_PRODUCT(Rg,Rg)) !g-magnitude
             ! Calculate structure factor
             DO mnd=1,INAtomsUnitCell
+              ICurrentZ = IAtomicNumber(mnd)
+              RCurrentGMagnitude = RLatMag(lnd)
               CALL AtomicScatteringFactor(RScatteringFactor,IErr)
               CFg(lnd) = RScatteringFactor*EXP(-CIMAGONE*DOT_PRODUCT(Rg,RAtomCoordinate(mnd,:)) )
             END DO

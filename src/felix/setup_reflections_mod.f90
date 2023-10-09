@@ -58,6 +58,7 @@ MODULE setup_reflections_mod
     USE IPARA, ONLY : INhkl,IgOutList,IgPoolList,IhklLattice,INFrames,InLattice,ILN,IByteSize
     USE RPARA, ONLY : RXDirO,RYDirO,RZDirO,RcrVecM,RLatMag,RFrameAngle,&
         RBigK,RgLatticeO,RgPoolSg
+    USE CPARA, ONLY : CFg
     USE Iconst
     USE IChannels, ONLY : IChOutIhkl,IChOutIM
     
@@ -65,7 +66,7 @@ MODULE setup_reflections_mod
 
     REAL(RKIND),INTENT(IN) :: RDevLimit, RGOutLimit
     INTEGER(IKIND) :: IErr,ind,jnd,knd,lnd,ISim,Ix,Iy
-    REAL(RKIND) :: RAngle,Rk(ITHREE),Rk0(ITHREE),Rp(ITHREE),RSg,Rphi,Rg(ITHREE),Rmos
+    REAL(RKIND) :: RAngle,Rk(ITHREE),Rk0(ITHREE),Rp(ITHREE),RSg,Rphi,Rg(ITHREE),Rmos,RIkin
     REAL(RKIND), DIMENSION(:,:), ALLOCATABLE :: RSim
     CHARACTER(200) :: path
     CHARACTER(40) :: fString
@@ -82,13 +83,14 @@ MODULE setup_reflections_mod
     RgPoolSg = ZERO
     Rk0 = ZERO
     DO ind = 1,INFrames
-      WRITE(SPrintString, FMT='(A30,I4,A3)') "Counting reflections in frame ",ind,"..."
-      CALL message(LS,dbg3,SPrintString)
+      !WRITE(SPrintString, FMT='(A30,I4,A3)') "Counting reflections in frame ",ind,"..."
+      !CALL message(LS,dbg3,SPrintString)
       RAngle = REAL(ind-1)*DEG2RADIAN*RFrameAngle
       ! Rk is the k-vector for the incident beam, which we write here in the orthogonal frame O
       Rk = RBigK*(RZDirO*COS(RAngle)+RXDirO*SIN(RAngle))
       ! Fill the list of reflections IgPoolList until we have filled the beam pool
-      knd = 1
+      knd = 1  ! size of beam pool for this frame
+      lnd = 1  ! size of output beam list for this frame
       DO jnd = 1,InLattice  ! work through reflections in ascending order
         ! Calculate Sg by getting the vector k0, which is coplanar with k and g and
         ! corresponds to an incident beam at the Bragg condition
@@ -109,12 +111,13 @@ MODULE setup_reflections_mod
             ! Is this reflection small enough to be in the output list
             IF (RLatMag(jnd).LT.RGOutLimit) THEN
               IgOutList(ind,knd) = jnd
+              lnd = lnd + 1
             END IF
             knd = knd + 1
           END IF
         END IF
       END DO
-      WRITE(SPrintString, FMT='(A6,I4,A12)') "Found ",knd-1," reflections"
+      WRITE(SPrintString, FMT='(I4,A22,I4)') lnd-1," reflections in frame ",ind
       CALL message(LS,dbg3,SPrintString)
 
       CALL message(LM, "Reflection list:")
@@ -126,7 +129,7 @@ MODULE setup_reflections_mod
       END DO
     END DO
 
-    !output the hkl lists for the frames as a text file and an image
+    ! output the hkl lists for the frames as a text file and a frame series
     IF(my_rank.EQ.0) THEN
       CALL message(LS,dbg3,"Writing to hkl list and images")
 
@@ -135,7 +138,7 @@ MODULE setup_reflections_mod
       OPEN(UNIT=IChOutIhkl, ACTION='WRITE', POSITION='APPEND', STATUS= 'UNKNOWN', &
           FILE=TRIM(ADJUSTL(path)),IOSTAT=IErr)
       WRITE(IChOutIhkl,*) "List of hkl in each frame"
-      WRITE(IChOutIhkl,*) "No: h k l |g| Sg"
+      WRITE(IChOutIhkl,*) "No: h k l  Fg  |g|  Sg"
       DO ind = 1,INFrames
         WRITE(IChOutIhkl,"(A6,I4)") "Frame ",ind
         DO knd = 1, INhkl
@@ -143,8 +146,9 @@ MODULE setup_reflections_mod
           IF (IgOutList(ind,knd).NE.0) THEN
             lnd = IgPoolList(ind,knd)
             RSg = RgPoolSg(ind,knd)
-            WRITE(fString,"(I4,A2,I3,1X,I3,1X,I3,2X,F8.4,2X,F8.4,2X,F8.2)") &
-                    lnd,": ",IhklLattice(lnd,:),RLatMag(lnd)/TWOPI,RSg
+            WRITE(fString,"(I4,A2,3(I3,1X),2X,F8.4,A3,F8.4,2X,F8.4,2X,F8.2)") &
+                    lnd,": ",IhklLattice(lnd,:),REAL(CFg(lnd))," +i",AIMAG(CFg(lnd)),&
+                    RLatMag(lnd)/TWOPI,RSg
             WRITE(IChOutIhkl,*) TRIM(ADJUSTL(fString))
           END IF
           ! version writing the full beam pool
@@ -164,11 +168,11 @@ MODULE setup_reflections_mod
       CLOSE(IChOutIhkl,IOSTAT=IErr)
       
       ! image
-      ISim = 256_IKIND  ! NB HALF the output image size = 1.05*output |g| limit
+      ISim = 256_IKIND  ! NB HALF the output image size = output |g| limit/0.98
       ALLOCATE(RSim(2*ISim,2*ISim),STAT=IErr)
       IF(l_alert(IErr,"HKLmake","allocate RSim")) RETURN
       ! Mosaicity - sets the FWHM  of a kinematic rocking curve
-      Rmos = 800.0
+      Rmos = 1200.0
       DO ind = 1,INFrames
         RAngle = REAL(ind-1)*DEG2RADIAN*RFrameAngle
         RSim = ZERO
@@ -177,15 +181,16 @@ MODULE setup_reflections_mod
         ! output g's
         DO knd = 1, INhkl
           IF (IgOutList(ind,knd).NE.0) THEN
-            lnd = IgPoolList(ind,knd)
-            Rg = RgLatticeO(lnd,:)
-            RSg = RgPoolSg(ind,knd)
+            lnd = IgPoolList(ind,knd)  ! index of reflection in the reciprocal lattice
+            Rg = RgLatticeO(lnd,:)  ! g-vector
+            RIkin = CFg(lnd)*CONJG(CFg(lnd))  ! simple kinematic intensity
+            RSg = RgPoolSg(ind,knd)  !Sg
             ! x- and y-coords (NB swapped in the image!)
             Rp = RXDirO*COS(RAngle)-RZDirO*SIN(RAngle)  ! unit vector horizontal in the image
             ! position of the spot, 2% leeway to avoid going over the edge of the image
             Ix = ISim-0.98*NINT(DOT_PRODUCT(Rg,Rp)*REAL(ISim)/RGOutLimit)  
             Iy = ISim+0.98*NINT(DOT_PRODUCT(Rg,RYDirO)*REAL(ISim)/RGOutLimit)
-            RSim(Iy-1:Iy+1,Ix-1:Ix+1) = EXP(-RMos*RSg*RSg)
+            RSim(Iy-1:Iy+1,Ix-1:Ix+1) = EXP(-RMos*RSg*RSg)*RIkin
           END IF
         END DO
         ! write to disk
