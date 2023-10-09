@@ -67,6 +67,7 @@ MODULE setup_reflections_mod
 
     REAL(RKIND),INTENT(IN) :: RDevLimit, RGOutLimit
     INTEGER(IKIND) :: IErr,ind,jnd,knd,lnd,mnd,ISim,Ix,Iy,ILocalFrameMin,ILocalFrameMax
+    INTEGER(IKIND), DIMENSION(:,:), ALLOCATABLE :: ILocalgPoolList
     REAL(RKIND) :: RAngle,Rk(ITHREE),Rk0(ITHREE),Rp(ITHREE),RSg,Rphi,Rg(ITHREE),Rmos,RIkin,&
                    RKplusg(ITHREE)
     REAL(RKIND), DIMENSION(:,:), ALLOCATABLE :: RSim
@@ -80,17 +81,18 @@ MODULE setup_reflections_mod
     ! and put them in ascending order of magnitude RLatMag
     ! with indices of IhklLattice and vector RgLatticeO in the orthogonal ref frame
     ! IgPoolList says which reflections are close to the Ewald sphere
+    ! IgOutList says which reflections are to be saved (|g|<RGOutLimit)
     IgPoolList = 0  ! Initialise lists to zero
-    IgOutList = 0
     RgPoolSg = ZERO
     Rk0 = ZERO
     !--------------------------------------------------------------------
     ! set up frame-parallel calculations
-    ! The frames to be calculated by this core  
+    ! The frames to be calculated by this core
     ILocalFrameMin = (INFrames*(my_rank)/p)+1
     ILocalFrameMax = (INFrames*(my_rank+1)/p)
     PRINT*,"Rank",my_rank,ILocalFrameMin,"to",ILocalFrameMax
-    !ALLOCATE(RLocalFrames(
+    ALLOCATE(ILocalgPoolList(INhkl,(ILocalFrameMax-ILocalFrameMin)+1),STAT=IErr)
+    IF(l_alert(IErr,"HKLmake","allocate ILocalgPoolList")) RETURN
     DO ind = 1,INFrames
       !WRITE(SPrintString, FMT='(A30,I4,A3)') "Counting reflections in frame ",ind,"..."
       !CALL message(LS,dbg3,SPrintString)
@@ -128,9 +130,21 @@ MODULE setup_reflections_mod
           END IF
         END IF
       END DO
-      !WRITE(SPrintString, FMT='(I4,A22,I4)') lnd-1," reflections in frame ",ind
-      !CALL message(LS,dbg3,SPrintString)
+    END DO
 
+    ! fill IgOutList & output as a text file and a frame series
+    IF(my_rank.EQ.0) THEN
+      CALL message(LS,dbg3,"Writing hkl list and images")
+      path = SChemicalFormula(1:ILN) // "/hkl_list.txt"
+      OPEN(UNIT=IChOutIhkl, ACTION='WRITE', POSITION='APPEND', STATUS= 'UNKNOWN', &
+          FILE=TRIM(ADJUSTL(path)),IOSTAT=IErr)
+      WRITE(IChOutIhkl,*) "List of hkl in each frame"
+      WRITE(IChOutIhkl,*) "No: h k l  Fg  |g|  Sg"
+    END IF
+    
+    IgOutList = 0
+    DO ind = 1,INFrames
+      ! output to slurm if requested
       CALL message(LM, "Reflection list:")
       DO knd = 1, INhkl
         IF (IgPoolList(ind,knd).NE.0) THEN
@@ -138,46 +152,25 @@ MODULE setup_reflections_mod
           CALL message(LM, SPrintString)
         END IF
       END DO
-    END DO
-
-    ! output the hkl lists for the frames as a text file and a frame series
-    IF(my_rank.EQ.0) THEN
-      CALL message(LS,dbg3,"Writing to hkl list and images")
-
-      ! text file
-      path = SChemicalFormula(1:ILN) // "/hkl_list.txt"
-      OPEN(UNIT=IChOutIhkl, ACTION='WRITE', POSITION='APPEND', STATUS= 'UNKNOWN', &
-          FILE=TRIM(ADJUSTL(path)),IOSTAT=IErr)
-      WRITE(IChOutIhkl,*) "List of hkl in each frame"
-      WRITE(IChOutIhkl,*) "No: h k l  Fg  |g|  Sg"
-      DO ind = 1,INFrames
-        WRITE(IChOutIhkl,"(A6,I4)") "Frame ",ind
-        DO knd = 1, INhkl
-          ! version writing output g's only
-          IF (IgOutList(ind,knd).NE.0) THEN
-            lnd = IgPoolList(ind,knd)
-            RSg = RgPoolSg(ind,knd)
-            WRITE(fString,"(I4,A2, 3(I3,1X),2X, F8.4,A1,F8.4,A3, F6.2,2X, F8.4)") &
-                    lnd,": ",IhklLattice(lnd,:), REAL(CFg(lnd)),"+",AIMAG(CFg(lnd)),"i  ",&
-                    RLatMag(lnd)/TWOPI, RSg
-            WRITE(IChOutIhkl,*) TRIM(ADJUSTL(fString))
+      IF (my_rank.EQ.0) WRITE(IChOutIhkl,"(A6,I4)") "Frame ",ind
+      DO knd = 1, INhkl
+        IF (IgPoolList(ind,knd).NE.0) THEN
+          ! Is this reflection small enough to be in the output list
+          IF (RLatMag(IgPoolList(ind,knd)).LT.RGOutLimit) THEN
+            IgOutList(ind,knd) = IgPoolList(ind,knd)
           END IF
-          ! version writing the full beam pool
-          !IF (IgPoolList(ind,knd).NE.0) THEN
-          !  lnd = IgPoolList(ind,knd)
-          !  RSg = RgPoolSg(ind,knd)
-          !  IF (IgOutList(ind,knd).NE.0) THEN  ! output g's are indicated by a *
-          !    WRITE(fString,"(I4,A2,I3,1X,I3,1X,I3,2X,F8.4,2X,F8.4,2X,F8.2)") &
-          !          lnd,"* ",IhklLattice(lnd,:),RLatMag(lnd)/TWOPI,RSg
-          !  ELSE
-          !    WRITE(fString,"(I4,A2,I3,1X,I3,1X,I3,2X,F8.4,2X,F8.4)") lnd, ": ", IhklLattice(lnd,:),RSg
-          !  END IF
-          !  WRITE(IChOutIhkl,*) TRIM(ADJUSTL(fString))
-          !END IF
-        END DO
+          lnd = IgPoolList(ind,knd)
+          RSg = RgPoolSg(ind,knd)
+          WRITE(fString,"(I6,A2, 3(I3,1X),2X, F8.4,A1,F8.4,A3, F6.2,2X, F8.4)") &
+                  lnd,": ",IhklLattice(lnd,:), REAL(CFg(lnd)),"+",AIMAG(CFg(lnd)),"i  ",&
+                  RLatMag(lnd)/TWOPI, RSg
+          IF (my_rank.EQ.0) WRITE(IChOutIhkl,*) TRIM(ADJUSTL(fString))
+        END IF
       END DO
-      CLOSE(IChOutIhkl,IOSTAT=IErr)
-      
+    END DO
+    IF (my_rank.EQ.0) CLOSE(IChOutIhkl,IOSTAT=IErr)
+
+    IF(my_rank.EQ.0) THEN
       ! image
       ISim = 256_IKIND  ! NB HALF the output image size = output |g| limit/0.98
       ALLOCATE(RSim(2*ISim,2*ISim),STAT=IErr)
