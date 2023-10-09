@@ -115,7 +115,7 @@ MODULE crystallography_mod
     ! global inputs
     USE IPARA, ONLY : IVolumeFLAG,INAtomsUnitCell,IAtomicNumber,ICurrentZ
     USE RPARA, ONLY : RAlpha,RBeta,RGamma,RCellA,RCellB,RCellC,RXDirC_0,RZDirC_0,RAtomCoordinate,&
-            RCurrentGMagnitude
+            RCurrentGMagnitude,RAtomXYZ
     USE SPARA, ONLY : SSpaceGroupName,SPrintString
     USE CPARA, ONLY : CFg
 
@@ -127,8 +127,10 @@ MODULE crystallography_mod
     IMPLICIT NONE
 
     INTEGER(IKIND) :: IErr,ind,jnd,knd,lnd,mnd,nnd,inda,indb,indc,IlogNB2,Id3(ITHREE),ISel
-    REAL(RKIND) :: Rt,ALN2I,LocalTINY,Rg(ITHREE),RxAngle,RScatteringFactor
+    REAL(RKIND) :: Rt,ALN2I,LocalTINY,Rg(ITHREE),RxAngle,Rfq
+    REAL(RKIND), DIMENSION(ITHREE,ITHREE) :: RTMatC2O
     REAL(RKIND),INTENT(IN) :: RLatticeLimit
+    COMPLEX(CKIND) :: Ct
     PARAMETER (ALN2I=1.4426950D0, LocalTINY=1.D-5)
     
     !direct lattice vectors in an orthogonal reference frame, Angstrom units 
@@ -145,6 +147,17 @@ MODULE crystallography_mod
     RcVecO(2)= RCellC*(COS(RAlpha)-COS(RBeta)*COS(RGamma))/SIN(RGamma)
     RcVecO(3)= RCellC*(SQRT(1.D0-COS(RAlpha)*COS(RAlpha)-COS(RBeta)*COS(RBeta)&
       -COS(RGamma)*COS(RGamma)+TWO*COS(RAlpha)*COS(RBeta)*COS(RGamma)) / SIN(RGamma))
+
+    ! RTmatC2O transforms from crystal (implicit units) 
+    ! to orthogonal O reference frame (Angstrom units)
+    RTMatC2O(:,1) = RaVecO(:)
+    RTMatC2O(:,2) = RbVecO(:)
+    RTMatC2O(:,3) = RcVecO(:)
+
+    ! Atom coordinates in the orthogonal reference frame
+    DO ind=1,INAtomsUnitCell
+      RAtomCoordinate(ind,:) = MATMUL(RTMatC2O,RAtomXYZ(ind,:))
+    END DO
 
     !calculate cell volume if required
     IF(IVolumeFLAG .EQ. 0) THEN
@@ -209,32 +222,27 @@ MODULE crystallography_mod
     ALLOCATE(RLatMag(InLattice), STAT=IErr)! magnitude
     ALLOCATE(CFg(InLattice), STAT=IErr)! Structure factors
     
-    ! populate the lists
+    ! Miller indices and g-vector magnitudes
+    CFg = CZERO
     lnd = 0
     DO ind = -inda,inda
       DO jnd = -indb,indb
         DO knd = -indc,indc
           lnd = lnd + 1
-          CALL SelectionRules(ind, jnd, knd, ISel, IErr)! Systematic absences - lattice
-          IF (ISel.EQ.1) THEN
-            IhklLattice(lnd,:) = (/ ind, jnd, knd /) !Miller indices
-            Rg = ind*RarVecO + jnd*RbrVecO + knd*RcrVecO !g-vector
-            RgLatticeO(lnd,:) = Rg  ! in the O reference frame
-            RLatMag(lnd) = SQRT(DOT_PRODUCT(Rg,Rg)) !g-magnitude
-            ! Calculate structure factor
-            DO mnd=1,INAtomsUnitCell
-              ICurrentZ = IAtomicNumber(mnd)
-              RCurrentGMagnitude = RLatMag(lnd)
-              CALL AtomicScatteringFactor(RScatteringFactor,IErr)
-              CFg(lnd) = RScatteringFactor*EXP(-CIMAGONE*DOT_PRODUCT(Rg,RAtomCoordinate(mnd,:)) )
-            END DO
-          END IF
-          END DO
+          ! We include forbidden reflections here because they may appear through multiple scattering
+          !CALL SelectionRules(ind, jnd, knd, ISel, IErr)! Systematic absences - lattice
+          !IF (ISel.EQ.1) THEN
+          IhklLattice(lnd,:) = (/ ind, jnd, knd /) !Miller indices
+          Rg = ind*RarVecO + jnd*RbrVecO + knd*RcrVecO !g-vector
+          RLatMag(lnd) = SQRT(DOT_PRODUCT(Rg,Rg))  ! global variable, goes into scatt fac calc
+        END DO
       END DO
     END DO
     
     ! Sort them in ascending order of magnitude (re-purposed HKLSort routine)
     ! Based on ShellSort from "Numerical Recipes", routine SHELL()
+    ! (we have a choice here - make all the variables first and then sort them;
+    ! or sort |g| first and then make the variables. Hoping the latter is more efficient
     IlogNB2=INT(LOG(REAL(InLattice))*ALN2I+LocalTINY)
     mnd = InLattice
     DO nnd=1,IlogNB2
@@ -248,9 +256,6 @@ MODULE crystallography_mod
           Id3 = IhklLattice(ind,:) ! swap indices
           IhklLattice(ind,:) = IhklLattice(lnd,:)
           IhklLattice(lnd,:) = Id3
-          Rg = RgLatticeO(ind,:) ! swap g-vectors
-          RgLatticeO(ind,:) = RgLatticeO(lnd,:)
-          RgLatticeO(lnd,:) = Rg
           Rt = RLatMag(ind) ! swap magnitudes
           RLatMag(ind) = RLatMag(lnd)
           RLatMag(lnd) = Rt
@@ -260,10 +265,20 @@ MODULE crystallography_mod
       ENDDO
     ENDDO
 
-    ! Make the final g-vector something big, to fill up incomplete matrices later
-!    IhklLattice(InLattice,:) = (/ 666,666,666 /)
-!    RgLatticeO(InLattice,:) = REAL( (/ 666,666,666 /),RKIND )
-!    RLatMag(InLattice) = 666666.666
+    ! Make the g-vector and structure factor lists to match hkl and |g|
+    CFg = CZERO
+    DO ind=1,INLattice
+      ! g-vector in the orthogonal frame
+      RgLatticeO(ind,:) = IhklLattice(ind,1)*RarVecO + IhklLattice(ind,2)*RbrVecO +&
+              IhklLattice(ind,3)*RcrVecO
+      RCurrentGMagnitude = RLatMag(ind)  ! global variable, goes into scatt fac calc
+      ! Calculate structure factor
+      DO jnd=1,INAtomsUnitCell
+        ICurrentZ = IAtomicNumber(jnd)
+        CALL AtomicScatteringFactor(Rfq,IErr)
+        CFg(ind) = CFg(ind)+Rfq*EXP(-CIMAGONE*DOT_PRODUCT(RgLatticeO(ind,:),RAtomCoordinate(jnd,:)) )
+      END DO
+    END DO
 
     ! Set up initial microscope reference frame
     ! X, Y and Z are orthogonal vectors that defines the simulation
@@ -307,7 +322,7 @@ MODULE crystallography_mod
     ! global inputs
     USE IPARA, ONLY : IVolumeFLAG,INAtomsUnitCell
     USE RPARA, ONLY : RAlpha,RBeta,RGamma,RCellA,RCellB,RCellC,RNormDirC,RXDirC,&
-          RZDirC,RXDirM,RAtomCoordinate,RAtomPosition
+          RZDirC,RXDirM,RAtomCoordinate,RAtomXYZ
     USE SPARA, ONLY : SPrintString
 
     IMPLICIT NONE
@@ -346,11 +361,11 @@ MODULE crystallography_mod
     RbVecM= MATMUL(RTMatO2M,RbVecO)
     RcVecM= MATMUL(RTMatO2M,RcVecO)
     ! Calculate atomic position vectors RAtomCoordinate
-    ! In microscope reference frame, in Angstrom units (NB RAtomPosition=crystal frame, in .cif)
+    ! In microscope reference frame, in Angstrom units (NB RAtomXYZ=crystal frame, in .cif)
     DO ind=1,INAtomsUnitCell
       DO jnd=1,ITHREE
-        RAtomCoordinate(ind,jnd)= RAtomPosition(ind,1)*RaVecM(jnd) + &
-              RAtomPosition(ind,2)*RbVecM(jnd)+RAtomPosition(ind,3)*RcVecM(jnd)
+        RAtomCoordinate(ind,jnd)= RAtomXYZ(ind,1)*RaVecM(jnd) + &
+              RAtomXYZ(ind,2)*RbVecM(jnd)+RAtomXYZ(ind,3)*RcVecM(jnd)
       END DO
     END DO
     
@@ -384,7 +399,7 @@ MODULE crystallography_mod
     USE ug_matrix_mod
 
     ! global outputs
-    USE RPARA, ONLY : RAtomCoordinate,ROccupancy,RIsoDW,RAtomPosition,RMeanInnerPotential,RBigK
+    USE RPARA, ONLY : RAtomCoordinate,ROccupancy,RIsoDW,RAtomXYZ,RMeanInnerPotential,RBigK
     USE IPARA, ONLY : IAtomicNumber,IAnisoDW
     USE SPARA, ONLY : SAtomLabel, SAtomName
 
@@ -428,18 +443,16 @@ MODULE crystallography_mod
         RAllAnisoDW(knd) = IBasisAnisoDW(jnd)
         knd=knd+1
       END DO
-!WRITE(SPrintString,'(F3.0,1X,F3.0,1X,F3.0,2X,F3.0,1X,F3.0,1X,F3.0,2X,F3.0,1X,F3.0,1X,F3.0)') RSymMat(ind,1,:),RSymMat(ind,2,:),RSymMat(ind,3,:)
-!IF(my_rank.EQ.0) PRINT*, ind,"RSymMat:  ", SPrintString             
     END DO
     RAllAtomPosition = MODULO(RAllAtomPosition,ONE)
-    WHERE(ABS(RAllAtomPosition).LT.TINY) RAllAtomPosition = ZERO 
+    WHERE(ABS(RAllAtomPosition).LT.TINY) RAllAtomPosition = ZERO
 
     !--------------------------------------------------------------------  
     ! Reduce to the set of unique fractional atomic positions
     !--------------------------------------------------------------------
     
     ! first atom has to be in this set
-    RAtomPosition(1,:)= RAllAtomPosition(1,:)
+    RAtomXYZ(1,:)= RAllAtomPosition(1,:)
     SAtomLabel(1)= SAllAtomLabel(1)
     SAtomName(1)= SAllAtomName(1)
     RIsoDW(1) = RAllIsoDW(1)
@@ -451,7 +464,7 @@ MODULE crystallography_mod
     DO ind=2,IMaxPossibleNAtomsUnitCell
       Lunique=.TRUE.
       DO knd=1,jnd-1 ! check against the unique ones found so far
-        IF (SUM(ABS(RAllAtomPosition(ind,:)-RAtomPosition(knd,:))).LE.TINY) THEN ! position same
+        IF (SUM(ABS(RAllAtomPosition(ind,:)-RAtomXYZ(knd,:))).LE.TINY) THEN ! position same
           IF (SAllAtomLabel(ind).EQ.SAtomLabel(knd)) THEN ! Label is the same too, so not unique
             Lunique=.FALSE.
             EXIT
@@ -459,7 +472,7 @@ MODULE crystallography_mod
         END IF
       END DO
       IF (Lunique .EQV. .TRUE.) THEN
-        RAtomPosition(jnd,:)= RAllAtomPosition(ind,:)
+        RAtomXYZ(jnd,:)= RAllAtomPosition(ind,:)
         SAtomLabel(jnd)= SAllAtomLabel(ind)
         SAtomName(jnd)= SAllAtomName(ind)
         RIsoDW(jnd) = RAllIsoDW(ind)
@@ -470,10 +483,12 @@ MODULE crystallography_mod
       END IF
     END DO
     INAtomsUnitCell = jnd-1 ! this is how many unique atoms there are in the unit cell
+    WRITE(SPrintString,"(A23,I4,A6)") "The unit cell contains ",INAtomsUnitCell," atoms"
+    CALL message(LS,SPrintString)
 
     DO ind=1,INAtomsUnitCell    
       CALL message( LL, dbg7, "Atom ",ind)
-      WRITE(SPrintString,"(A18,F8.4,F8.4,F8.4)") ": Atom position = ", RAtomPosition(ind,:)
+      WRITE(SPrintString,"(A18,F8.4,F8.4,F8.4)") ": Atom position = ", RAtomXYZ(ind,:)
       CALL message( LL, dbg7, SAtomName(ind)//SPrintString )
       CALL message( LL, dbg7, "(DWF, occupancy) = ",(/ RIsoDW(ind), ROccupancy(ind) /) )
     END DO
@@ -521,7 +536,9 @@ MODULE crystallography_mod
   !!  
   SUBROUTINE SelectionRules(Ih, Ik, Il, ISel, IErr)
 
-    ! This procedure is called from ReciprocalLattice
+    ! Systematic absences from the lattice type
+    ! returns 1 if the reflection is allowed
+    ! returns 0 if it is forbidden
     USE MyNumbers
     USE message_mod
     
@@ -532,6 +549,8 @@ MODULE crystallography_mod
 
     INTEGER (IKIND),INTENT(IN) :: Ih, Ik, Il
     INTEGER (IKIND),INTENT(INOUT) :: ISel, IErr
+
+    ISel = 0
 
     SELECT CASE(SSpaceGroupName)
 

@@ -103,7 +103,7 @@ MODULE setup_reflections_mod
         ! The angle phi between k and k0 is how far we are from the Bragg condition
         Rphi = ACOS(DOT_PRODUCT(Rk,Rk0)/(RBigK**2))
         ! and now Sg is 2g sin(phi/2)
-        RSg = TWO*RLatMag(jnd)*SIN(HALF*Rphi)
+        RSg = TWO*RLatMag(jnd)*SIN(HALF*Rphi)  ! *** needs sign adding in
         IF (ABS(RSg).LT.RDevLimit) THEN
           IF (knd.LE.INhkl) THEN ! while the beam pool isn't full
             IgPoolList(ind,knd) = jnd  ! add it to the list
@@ -117,8 +117,8 @@ MODULE setup_reflections_mod
           END IF
         END IF
       END DO
-      WRITE(SPrintString, FMT='(I4,A22,I4)') lnd-1," reflections in frame ",ind
-      CALL message(LS,dbg3,SPrintString)
+      !WRITE(SPrintString, FMT='(I4,A22,I4)') lnd-1," reflections in frame ",ind
+      !CALL message(LS,dbg3,SPrintString)
 
       CALL message(LM, "Reflection list:")
       DO knd = 1, INhkl
@@ -146,7 +146,7 @@ MODULE setup_reflections_mod
           IF (IgOutList(ind,knd).NE.0) THEN
             lnd = IgPoolList(ind,knd)
             RSg = RgPoolSg(ind,knd)
-            WRITE(fString,"(I4,A2, 3(I3,1X),2X, F7.4,A1,F7.4,A3, F8.4,2X, F8.2)") &
+            WRITE(fString,"(I4,A2, 3(I3,1X),2X, F8.4,A1,F8.4,A3, F6.2,2X, F8.4)") &
                     lnd,": ",IhklLattice(lnd,:), REAL(CFg(lnd)),"+",AIMAG(CFg(lnd)),"i  ",&
                     RLatMag(lnd)/TWOPI, RSg
             WRITE(IChOutIhkl,*) TRIM(ADJUSTL(fString))
@@ -172,7 +172,7 @@ MODULE setup_reflections_mod
       ALLOCATE(RSim(2*ISim,2*ISim),STAT=IErr)
       IF(l_alert(IErr,"HKLmake","allocate RSim")) RETURN
       ! Mosaicity - sets the FWHM  of a kinematic rocking curve
-      Rmos = 2000.0
+      Rmos = 3000.0
       DO ind = 1,INFrames
         RAngle = REAL(ind-1)*DEG2RADIAN*RFrameAngle
         RSim = ZERO

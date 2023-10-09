@@ -242,8 +242,8 @@ PROGRAM Felixrefine
   ! over-allocate since actual size not known before calculation 
   ! (atoms in special positions will be duplicated)
   ! atoms, fractional unit cell
-  ALLOCATE(RAtomPosition(IMaxPossibleNAtomsUnitCell,ITHREE),STAT=IErr)
-  IF(l_alert(IErr,"felixrefine","allocate RAtomPosition")) CALL abort
+  ALLOCATE(RAtomXYZ(IMaxPossibleNAtomsUnitCell,ITHREE),STAT=IErr)
+  IF(l_alert(IErr,"felixrefine","allocate RAtomXYZ")) CALL abort
   ! atoms,in microscope reference frame, in Angstrom units
   ALLOCATE(RAtomCoordinate(IMaxPossibleNAtomsUnitCell,ITHREE),STAT=IErr)
   IF(l_alert(IErr,"felixrefine","allocate RAtomCoordinate")) CALL abort
@@ -333,7 +333,7 @@ PROGRAM Felixrefine
   DEALLOCATE(CUgMatNoAbs,STAT=IErr)
   DEALLOCATE(CUgMatPrime,STAT=IErr)
   DEALLOCATE(ISymmetryRelations,STAT=IErr)
-  DEALLOCATE(RAtomPosition,STAT=IErr)
+  DEALLOCATE(RAtomXYZ,STAT=IErr)
   DEALLOCATE(SAtomName,STAT=IErr)
   DEALLOCATE(RIsoDW,STAT=IErr)
   DEALLOCATE(ROccupancy,STAT=IErr)

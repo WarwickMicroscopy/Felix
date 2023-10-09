@@ -224,7 +224,7 @@ MODULE RPara
   REAL(RKIND), DIMENSION(:), ALLOCATABLE :: RBasisIsoDW, RBasisOccupancy, RIsoDW,&
          ROccupancy,RLatMag
   REAL(RKIND), DIMENSION(:,:), ALLOCATABLE :: RSymVec,RBasisAtomPosition, RBasisAtomDelta,&
-       RAtomPosition,RUniqueKey,RgLatticeO,RgPoolSg
+       RAtomXYZ,RUniqueKey,RgLatticeO,RgPoolSg
   REAL(RKIND), DIMENSION(:,:,:), ALLOCATABLE :: RSymMat
   !Microscope Parameters
   REAL(RKIND) :: RConvergenceAngle,RAcceleratingVoltage
