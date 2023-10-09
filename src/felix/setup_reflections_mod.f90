@@ -66,7 +66,8 @@ MODULE setup_reflections_mod
 
     REAL(RKIND),INTENT(IN) :: RDevLimit, RGOutLimit
     INTEGER(IKIND) :: IErr,ind,jnd,knd,lnd,ISim,Ix,Iy
-    REAL(RKIND) :: RAngle,Rk(ITHREE),Rk0(ITHREE),Rp(ITHREE),RSg,Rphi,Rg(ITHREE),Rmos,RIkin
+    REAL(RKIND) :: RAngle,Rk(ITHREE),Rk0(ITHREE),Rp(ITHREE),RSg,Rphi,Rg(ITHREE),Rmos,RIkin,&
+                   RKplusg
     REAL(RKIND), DIMENSION(:,:), ALLOCATABLE :: RSim
     CHARACTER(200) :: path
     CHARACTER(100) :: fString
@@ -102,8 +103,9 @@ MODULE setup_reflections_mod
               HALF*RgLatticeO(jnd,:)
         ! The angle phi between k and k0 is how far we are from the Bragg condition
         Rphi = ACOS(DOT_PRODUCT(Rk,Rk0)/(RBigK**2))
-        ! and now Sg is 2g sin(phi/2)
-        RSg = TWO*RLatMag(jnd)*SIN(HALF*Rphi)  ! *** needs sign adding in
+        ! and now Sg is 2g sin(phi/2), with the sign of K-|K+g|
+        RKplusg = Rk + RgLatticeO(jnd,:)
+        RSg = TWO*RLatMag(jnd)*SIN(HALF*Rphi)*SIGN(ONE,RBigK-SQRT(DOT_PRODUCT(RKplusg,RKplusg)))
         IF (ABS(RSg).LT.RDevLimit) THEN
           IF (knd.LE.INhkl) THEN ! while the beam pool isn't full
             IgPoolList(ind,knd) = jnd  ! add it to the list
