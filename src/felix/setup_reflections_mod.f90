@@ -69,7 +69,7 @@ MODULE setup_reflections_mod
     REAL(RKIND) :: RAngle,Rk(ITHREE),Rk0(ITHREE),Rp(ITHREE),RSg,Rphi,Rg(ITHREE),Rmos,RIkin
     REAL(RKIND), DIMENSION(:,:), ALLOCATABLE :: RSim
     CHARACTER(200) :: path
-    CHARACTER(40) :: fString
+    CHARACTER(100) :: fString
    
     !--------------------------------------------------------------------
     ! calculate reflection list frame by frame
@@ -146,9 +146,9 @@ MODULE setup_reflections_mod
           IF (IgOutList(ind,knd).NE.0) THEN
             lnd = IgPoolList(ind,knd)
             RSg = RgPoolSg(ind,knd)
-            WRITE(fString,"(I4,A2,3(I3,1X),2X,F8.4,A3,F8.4,2X,F8.4,2X,F8.2)") &
-                    lnd,": ",IhklLattice(lnd,:),REAL(CFg(lnd))," +i",AIMAG(CFg(lnd)),&
-                    RLatMag(lnd)/TWOPI,RSg
+            WRITE(fString,"(I4,A2, 3(I3,1X),2X, F7.4,A1,F7.4,A3, F8.4,2X, F8.2)") &
+                    lnd,": ",IhklLattice(lnd,:), REAL(CFg(lnd)),"+",AIMAG(CFg(lnd)),"i  ",&
+                    RLatMag(lnd)/TWOPI, RSg
             WRITE(IChOutIhkl,*) TRIM(ADJUSTL(fString))
           END IF
           ! version writing the full beam pool
@@ -172,7 +172,7 @@ MODULE setup_reflections_mod
       ALLOCATE(RSim(2*ISim,2*ISim),STAT=IErr)
       IF(l_alert(IErr,"HKLmake","allocate RSim")) RETURN
       ! Mosaicity - sets the FWHM  of a kinematic rocking curve
-      Rmos = 1200.0
+      Rmos = 2000.0
       DO ind = 1,INFrames
         RAngle = REAL(ind-1)*DEG2RADIAN*RFrameAngle
         RSim = ZERO
