@@ -66,7 +66,9 @@ MODULE setup_reflections_mod
     IMPLICIT NONE
 
     REAL(RKIND),INTENT(IN) :: RDevLimit, RGOutLimit
-    INTEGER(IKIND) :: IErr,ind,jnd,knd,lnd,mnd,ISim,Ix,Iy,ILocalFrameMin,ILocalFrameMax
+    INTEGER(IKIND) :: IErr,ind,jnd,knd,lnd,mnd,ISim,Ix,Iy,ILocalFrameMin,ILocalFrameMax,&
+                      ILocalNFrames
+    INTEGER(IKIND), DIMENSION(:), ALLOCATABLE :: ILocalNhkl,ILocalhklOffset
     INTEGER(IKIND), DIMENSION(:,:), ALLOCATABLE :: ILocalgPoolList
     REAL(RKIND) :: RAngle,Rk(ITHREE),Rk0(ITHREE),Rp(ITHREE),RSg,Rphi,Rg(ITHREE),Rmos,RIkin,&
                    RKplusg(ITHREE)
@@ -90,18 +92,22 @@ MODULE setup_reflections_mod
     ! The frames to be calculated by this core
     ILocalFrameMin = (INFrames*(my_rank)/p)+1
     ILocalFrameMax = (INFrames*(my_rank+1)/p)
-    PRINT*,"Rank",my_rank,ILocalFrameMin,"to",ILocalFrameMax
-    ALLOCATE(ILocalgPoolList(INhkl,(ILocalFrameMax-ILocalFrameMin)+1),STAT=IErr)
+    ILocalNFrames = ILocalFrameMax-ILocalFrameMin+1  ! not sure about the +1
+    PRINT*,"Core",p,"from",ILocalFrameMin,"to",ILocalFrameMax,"is",ILocalNFrames,"frames"
+    ALLOCATE(ILocalgPoolList(INhkl,ILocalNFrames),STAT=IErr)
     IF(l_alert(IErr,"HKLmake","allocate ILocalgPoolList")) RETURN
-    DO ind = 1,INFrames
-      !WRITE(SPrintString, FMT='(A30,I4,A3)') "Counting reflections in frame ",ind,"..."
-      !CALL message(LS,dbg3,SPrintString)
-      RAngle = REAL(ind-1)*DEG2RADIAN*RFrameAngle
+    ALLOCATE(ILocalNhkl(p),ILocalhklOffset(p),STAT=IErr)
+    IF(l_alert(IErr,"HKLMake","allocate ILocalNhkl")) RETURN
+    DO ind = 1,p
+      ILocalhklOffset(ind) = (ILocalFrameMin-1)*INhkl
+      ILocalNhkl(ind) = ILocalNFrames*INhkl
+    END DO
+    DO ind = 1,(ILocalFrameMax-ILocalFrameMin)+1
+      RAngle = REAL(ILocalFrameMin+ind-2)*DEG2RADIAN*RFrameAngle
       ! Rk is the k-vector for the incident beam, which we write here in the orthogonal frame O
       Rk = RBigK*(RZDirO*COS(RAngle)+RXDirO*SIN(RAngle))
-      ! Fill the list of reflections IgPoolList until we have filled the beam pool
+      ! Fill the list of reflections ILocalgPoolList until we have filled the beam pool
       knd = 1  ! size of beam pool for this frame
-      lnd = 1  ! size of output beam list for this frame
       DO mnd = 1,InLattice
         jnd = ISort(mnd)  ! work through reflections in ascending order
         ! Calculate Sg by getting the vector k0, which is coplanar with k and g and
@@ -119,18 +125,17 @@ MODULE setup_reflections_mod
         RSg = TWO*RLatMag(jnd)*SIN(HALF*Rphi)*SIGN(ONE,RBigK-SQRT(DOT_PRODUCT(RKplusg,RKplusg)))
         IF (ABS(RSg).LT.RDevLimit) THEN
           IF (knd.LE.INhkl) THEN ! while the beam pool isn't full
-            IgPoolList(ind,knd) = jnd  ! add it to the list
+            ILocalgPoolList(ind,knd) = jnd  ! add it to the list
+            !*** need to gather this too ***
             RgPoolSg(ind,knd) = RSg  ! put Sg in its list also
-            ! Is this reflection small enough to be in the output list
-            IF (RLatMag(jnd).LT.RGOutLimit) THEN
-              IgOutList(ind,knd) = jnd
-              lnd = lnd + 1
-            END IF
             knd = knd + 1
           END IF
         END IF
       END DO
     END DO
+    !===================================== ! MPI gatherv into IgPoolList
+    CALL MPI_GATHERV(ILocalgPoolList,SIZE(ILocalgPoolList),MPI_INTEGER,IgPoolList,&
+            ILocalNhkl,ILocalhklOffset,MPI_INTEGER,root,MPI_COMM_WORLD,IErr)
 
     ! fill IgOutList & output as a text file and a frame series
     IF(my_rank.EQ.0) THEN
