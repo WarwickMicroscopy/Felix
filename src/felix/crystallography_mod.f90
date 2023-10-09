@@ -241,7 +241,7 @@ MODULE crystallography_mod
           DO mnd=1,INAtomsUnitCell
             ICurrentZ = IAtomicNumber(mnd)
             CALL AtomicScatteringFactor(Rfq,IErr)
-            CFg(lnd) = CFg(ind)+Rfq*EXP(-CIMAGONE*DOT_PRODUCT(Rg,RAtomCoordinate(mnd,:)) )
+            CFg(lnd) = CFg(lnd)+Rfq*EXP(-CIMAGONE*DOT_PRODUCT(Rg,RAtomCoordinate(mnd,:)) )
           END DO
         END DO
       END DO

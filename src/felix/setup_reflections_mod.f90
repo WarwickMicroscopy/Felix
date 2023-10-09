@@ -52,6 +52,7 @@ MODULE setup_reflections_mod
 
     USE MyNumbers
     USE message_mod
+    USE myMPI
 
     ! global inputs/outputs
     USE SPARA, ONLY : SPrintString,SChemicalFormula
