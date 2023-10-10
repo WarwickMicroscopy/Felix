@@ -68,8 +68,7 @@ MODULE setup_reflections_mod
     REAL(RKIND),INTENT(IN) :: RDevLimit, RGOutLimit
     INTEGER(IKIND) :: IErr,ind,jnd,knd,lnd,mnd,ISim,Ix,Iy,ILocalFrameMin,ILocalFrameMax,&
                       ILocalNFrames
-    INTEGER(IKIND), DIMENSION(:), ALLOCATABLE :: ILocalNhkl,ILocalhklOffset
-    INTEGER(IKIND), DIMENSION(:,:), ALLOCATABLE :: ILocalgPoolList
+    INTEGER(IKIND), DIMENSION(:), ALLOCATABLE :: Inum,Ipos,ILocalgPool,ITotalgPool
     REAL(RKIND) :: RAngle,Rk(ITHREE),Rk0(ITHREE),Rp(ITHREE),RSg,Rphi,Rg(ITHREE),Rmos,RIkin,&
                    RKplusg(ITHREE)
     REAL(RKIND), DIMENSION(:,:), ALLOCATABLE :: RSim
@@ -92,17 +91,18 @@ MODULE setup_reflections_mod
     ! The frames to be calculated by this core
     ILocalFrameMin = (INFrames*(my_rank)/p)+1
     ILocalFrameMax = (INFrames*(my_rank+1)/p)
-    ILocalNFrames = ILocalFrameMax-ILocalFrameMin+1  ! not sure about the +1
-    PRINT*,"Core",p,"from",ILocalFrameMin,"to",ILocalFrameMax,"is",ILocalNFrames,"frames"
-    ALLOCATE(ILocalgPoolList(INhkl,ILocalNFrames),STAT=IErr)
-    IF(l_alert(IErr,"HKLmake","allocate ILocalgPoolList")) RETURN
-    ALLOCATE(ILocalNhkl(p),ILocalhklOffset(p),STAT=IErr)
+    ILocalNFrames = ILocalFrameMax-ILocalFrameMin+1
+    ALLOCATE(ILocalgPool(ILocalNFrames*INhkl),STAT=IErr)  ! pools are 1D arrays that are reshaped later
+    IF(l_alert(IErr,"HKLmake","allocate ILocalgPool")) RETURN
+    ALLOCATE(ITotalgPool(INFrames*INhkl),STAT=IErr)
+    IF(l_alert(IErr,"HKLmake","allocate ITotalgPool")) RETURN
+    ALLOCATE(Inum(p),Ipos(p),STAT=IErr)
     IF(l_alert(IErr,"HKLMake","allocate ILocalNhkl")) RETURN
     DO ind = 1,p
-      ILocalhklOffset(ind) = (ILocalFrameMin-1)*INhkl
-      ILocalNhkl(ind) = ILocalNFrames*INhkl
+      Ipos(ind) = (ILocalFrameMin-1)*INhkl+1
+      Inum(ind) = ILocalNFrames*INhkl
     END DO
-    DO ind = 1,(ILocalFrameMax-ILocalFrameMin)+1
+    DO ind = 1,ILocalNFrames
       RAngle = REAL(ILocalFrameMin+ind-2)*DEG2RADIAN*RFrameAngle
       ! Rk is the k-vector for the incident beam, which we write here in the orthogonal frame O
       Rk = RBigK*(RZDirO*COS(RAngle)+RXDirO*SIN(RAngle))
@@ -125,7 +125,7 @@ MODULE setup_reflections_mod
         RSg = TWO*RLatMag(jnd)*SIN(HALF*Rphi)*SIGN(ONE,RBigK-SQRT(DOT_PRODUCT(RKplusg,RKplusg)))
         IF (ABS(RSg).LT.RDevLimit) THEN
           IF (knd.LE.INhkl) THEN ! while the beam pool isn't full
-            ILocalgPoolList(ind,knd) = jnd  ! add it to the list
+            ILocalgPool((ind-1)*INhkl+knd) = jnd  ! add it to the list
             !*** need to gather this too ***
             RgPoolSg(ind,knd) = RSg  ! put Sg in its list also
             knd = knd + 1
@@ -133,9 +133,11 @@ MODULE setup_reflections_mod
         END IF
       END DO
     END DO
+    PRINT*,my_rank,":",Inum(my_rank+1),Ipos(my_rank+1),SIZE(ILocalgPool)
     !===================================== ! MPI gatherv into IgPoolList
-    CALL MPI_GATHERV(ILocalgPoolList,SIZE(ILocalgPoolList),MPI_INTEGER,IgPoolList,&
-            ILocalNhkl,ILocalhklOffset,MPI_INTEGER,root,MPI_COMM_WORLD,IErr)
+    CALL MPI_GATHERV(ILocalgPool,SIZE(ILocalgPool),MPI_INTEGER,ITotalgPool,&
+            Inum,Ipos,MPI_INTEGER,root,MPI_COMM_WORLD,IErr)
+    IgPoolList = RESHAPE(ITotalgPool, (/INFrames,INhkl/) )
 
     ! fill IgOutList & output as a text file and a frame series
     IF(my_rank.EQ.0) THEN
