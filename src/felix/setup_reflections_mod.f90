@@ -72,6 +72,7 @@ MODULE setup_reflections_mod
     REAL(RKIND) :: RAngle,Rk(ITHREE),Rk0(ITHREE),Rp(ITHREE),RSg,Rphi,Rg(ITHREE),Rmos,RIkin,&
                    RKplusg(ITHREE)
     REAL(RKIND), DIMENSION(:,:), ALLOCATABLE :: RSim
+    REAL(RKIND), DIMENSION(:), ALLOCATABLE :: RLocalSgPool,RTotalSgPool
     CHARACTER(200) :: path
     CHARACTER(100) :: fString
    
@@ -92,15 +93,20 @@ MODULE setup_reflections_mod
     ILocalFrameMin = (INFrames*(my_rank)/p)+1
     ILocalFrameMax = (INFrames*(my_rank+1)/p)
     ILocalNFrames = ILocalFrameMax-ILocalFrameMin+1
-    ALLOCATE(ILocalgPool(ILocalNFrames*INhkl),STAT=IErr)  ! pools are 1D arrays that are reshaped later
+    ! Calculations are done in 1D arrays that are reshaped later
+    ALLOCATE(ILocalgPool(INhkl*ILocalNFrames),STAT=IErr)
     IF(l_alert(IErr,"HKLmake","allocate ILocalgPool")) RETURN
-    ALLOCATE(ITotalgPool(INFrames*INhkl),STAT=IErr)
+    ALLOCATE(ITotalgPool(INhkl*INFrames),STAT=IErr)
+    IF(l_alert(IErr,"HKLmake","allocate ITotalgPool")) RETURN
+    ALLOCATE(RLocalSgPool(INhkl*ILocalNFrames),STAT=IErr)
+    IF(l_alert(IErr,"HKLmake","allocate ILocalgPool")) RETURN
+    ALLOCATE(RTotalSgPool(INhkl*INFrames),STAT=IErr)
     IF(l_alert(IErr,"HKLmake","allocate ITotalgPool")) RETURN
     ALLOCATE(Inum(p),Ipos(p),STAT=IErr)
     IF(l_alert(IErr,"HKLMake","allocate ILocalNhkl")) RETURN
     DO ind = 1,p
-      Ipos(ind) = (ILocalFrameMin-1)*INhkl+1
-      Inum(ind) = ILocalNFrames*INhkl
+      Ipos(ind) = INhkl*INFrames*(ind-1)/p
+      Inum(ind) = INhkl*(INFrames*ind/p - INFrames*(ind-1)/p)
     END DO
     DO ind = 1,ILocalNFrames
       RAngle = REAL(ILocalFrameMin+ind-2)*DEG2RADIAN*RFrameAngle
@@ -125,19 +131,21 @@ MODULE setup_reflections_mod
         RSg = TWO*RLatMag(jnd)*SIN(HALF*Rphi)*SIGN(ONE,RBigK-SQRT(DOT_PRODUCT(RKplusg,RKplusg)))
         IF (ABS(RSg).LT.RDevLimit) THEN
           IF (knd.LE.INhkl) THEN ! while the beam pool isn't full
-            ILocalgPool((ind-1)*INhkl+knd) = jnd  ! add it to the list
-            !*** need to gather this too ***
-            RgPoolSg(ind,knd) = RSg  ! put Sg in its list also
+            ILocalgPool((ind-1)*INhkl+knd) = jnd  ! add the reflection to the list
+            RLocalSgPool((ind-1)*INhkl+knd) = RSg  ! put Sg in its list also
             knd = knd + 1
           END IF
         END IF
       END DO
     END DO
-    PRINT*,my_rank,":",Inum(my_rank+1),Ipos(my_rank+1),SIZE(ILocalgPool)
-    !===================================== ! MPI gatherv into IgPoolList
+
+    !==================== ! MPI gatherv into 1D arrays ========================
     CALL MPI_GATHERV(ILocalgPool,SIZE(ILocalgPool),MPI_INTEGER,ITotalgPool,&
             Inum,Ipos,MPI_INTEGER,root,MPI_COMM_WORLD,IErr)
+    CALL MPI_GATHERV(RLocalSgPool,SIZE(RLocalSgPool),MPI_DOUBLE_PRECISION,RTotalSgPool,&
+            Inum,Ipos,MPI_DOUBLE_PRECISION,root,MPI_COMM_WORLD,IErr)
     IgPoolList = RESHAPE(ITotalgPool, (/INFrames,INhkl/) )
+    RGPoolSg = RESHAPE(RTotalSgPool, (/INFrames,INhkl/) )
 
     ! fill IgOutList & output as a text file and a frame series
     IF(my_rank.EQ.0) THEN
@@ -228,6 +236,9 @@ MODULE setup_reflections_mod
         IF(l_alert(IErr,"WriteIterationOutput","CLOSE() output .bin file")) RETURN
       END DO      
     END IF
+
+    ! Clean up
+    DEALLOCATE(ILocalgPool,ITotalgPool,Rsim,RLocalSgPool,RTotalSgPool)
 
   END SUBROUTINE HKLmake
 
