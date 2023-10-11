@@ -193,14 +193,14 @@ PROGRAM Felixrefine
   ! allocations using the size of the beam pool specified in felix.inp, INhkl
   !--------------------------------------------------------------------
   ! List of g-vectors in the beam pool for each frame
-  ALLOCATE(IgPoolList(INFrames,INhkl),STAT=IErr)
+  ALLOCATE(IgPoolList(INhkl,INFrames),STAT=IErr)
   IF(l_alert(IErr,"felixrefine","allocate IgPoolList")) CALL abort
   ! List of Sg for each g in the beam pool for each frame
-  ALLOCATE(RgPoolSg(INFrames,INhkl),STAT=IErr)
+  ALLOCATE(RgPoolSg(INhkl,INFrames),STAT=IErr)
   IF(l_alert(IErr,"felixrefine","allocate IgPoolList")) CALL abort
   ! Indices of g-vectors in IgPoolList to be output in each frame,
   ! decided by RGOutLimit
-  ALLOCATE(IgOutList(INFrames,INhkl),STAT=IErr)
+  ALLOCATE(IgOutList(INhkl,INFrames),STAT=IErr)
   IF(l_alert(IErr,"felixrefine","allocate IgOutList")) CALL abort
   ! RgPool is a list of g-vectors in the microscope ref frame,
   ! units of 1/A (NB exp(-i*q.r),  physics negative convention)
@@ -319,11 +319,12 @@ PROGRAM Felixrefine
     END DO
   END DO
 
-
-
   !--------------------------------------------------------------------
   ! finish off: deallocations for variables used in all frames
   !--------------------------------------------------------------------
+  DEALLOCATE(IgPoolList,STAT=IErr)
+  DEALLOCATE(RgPoolSg,STAT=IErr)
+  DEALLOCATE(IgOutList,STAT=IErr)
   DEALLOCATE(RgPoolMag,STAT=IErr)
   DEALLOCATE(RgPool,STAT=IErr)
   DEALLOCATE(RgMatrix,STAT=IErr)
@@ -335,6 +336,7 @@ PROGRAM Felixrefine
   DEALLOCATE(ISymmetryRelations,STAT=IErr)
   DEALLOCATE(RAtomXYZ,STAT=IErr)
   DEALLOCATE(SAtomName,STAT=IErr)
+  DEALLOCATE(SAtomLabel,STAT=IErr)
   DEALLOCATE(RIsoDW,STAT=IErr)
   DEALLOCATE(ROccupancy,STAT=IErr)
   DEALLOCATE(IAtomicNumber,STAT=IErr)

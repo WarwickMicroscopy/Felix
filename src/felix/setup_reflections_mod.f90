@@ -144,8 +144,8 @@ MODULE setup_reflections_mod
             Inum,Ipos,MPI_INTEGER,root,MPI_COMM_WORLD,IErr)
     CALL MPI_GATHERV(RLocalSgPool,SIZE(RLocalSgPool),MPI_DOUBLE_PRECISION,RTotalSgPool,&
             Inum,Ipos,MPI_DOUBLE_PRECISION,root,MPI_COMM_WORLD,IErr)
-    IgPoolList = RESHAPE(ITotalgPool, (/INFrames,INhkl/) )
-    RGPoolSg = RESHAPE(RTotalSgPool, (/INFrames,INhkl/) )
+    IgPoolList = RESHAPE(ITotalgPool, (/INhkl,INFrames/) )
+    RGPoolSg = RESHAPE(RTotalSgPool, (/INhkl,INFrames/) )
 
     ! fill IgOutList & output as a text file and a frame series
     IF(my_rank.EQ.0) THEN
@@ -162,22 +162,22 @@ MODULE setup_reflections_mod
       ! output to slurm if requested
       CALL message(LM, "Reflection list:")
       DO knd = 1, INhkl
-        IF (IgPoolList(ind,knd).NE.0) THEN
-          WRITE(SPrintString,'(I3,1X,I3,1X,I3)') IhklLattice(IgPoolList(ind,knd),:)
+        IF (IgPoolList(knd,ind).NE.0) THEN
+          WRITE(SPrintString,'(I3,1X,I3,1X,I3)') IhklLattice(IgPoolList(knd,ind),:)
           CALL message(LM, SPrintString)
         END IF
       END DO
       IF (my_rank.EQ.0) WRITE(IChOutIhkl,"(A6,I4)") "Frame ",ind
       DO knd = 1, INhkl
-        IF (IgPoolList(ind,knd).NE.0) THEN
+        IF (IgPoolList(knd,ind).NE.0) THEN
           ! Is this reflection small enough to be in the output list
-          IF (RLatMag(IgPoolList(ind,knd)).LT.RGOutLimit) THEN
-            IgOutList(ind,knd) = IgPoolList(ind,knd)
+          IF (RLatMag(IgPoolList(knd,ind)).LT.RGOutLimit) THEN
+            IgOutList(knd,ind) = IgPoolList(knd,ind)
           END IF
-          lnd = IgPoolList(ind,knd)
-          RSg = RgPoolSg(ind,knd)
-          WRITE(fString,"(I6,A2, 3(I3,1X),2X, F8.4,A1,F8.4,A3, F6.2,2X, F8.4)") &
-                  lnd,": ",IhklLattice(lnd,:), REAL(CFg(lnd)),"+",AIMAG(CFg(lnd)),"i  ",&
+          lnd = IgPoolList(knd,ind)
+          RSg = RgPoolSg(knd,ind)
+          WRITE(fString,"(3(I3,1X),2X, F8.4,A1,F8.4,A3, F6.2,2X, F8.4)") &
+                  IhklLattice(lnd,:), REAL(CFg(lnd)),"+",AIMAG(CFg(lnd)),"i  ",&
                   RLatMag(lnd)/TWOPI, RSg
           IF (my_rank.EQ.0) WRITE(IChOutIhkl,*) TRIM(ADJUSTL(fString))
         END IF
@@ -199,11 +199,11 @@ MODULE setup_reflections_mod
         RSim(ISim-1:ISim+1,ISim-1:ISim+1) = 1
         ! output g's
         DO knd = 1, INhkl
-          IF (IgOutList(ind,knd).NE.0) THEN
-            lnd = IgPoolList(ind,knd)  ! index of reflection in the reciprocal lattice
+          IF (IgOutList(knd,ind).NE.0) THEN
+            lnd = IgPoolList(knd,ind)  ! index of reflection in the reciprocal lattice
             Rg = RgLatticeO(lnd,:)  ! g-vector
             RIkin = CFg(lnd)*CONJG(CFg(lnd))  ! simple kinematic intensity
-            RSg = RgPoolSg(ind,knd)  !Sg
+            RSg = RgPoolSg(knd,ind)  !Sg
             ! x- and y-coords (NB swapped in the image!)
             Rp = RXDirO*COS(RAngle)-RZDirO*SIN(RAngle)  ! unit vector horizontal in the image
             ! position of the spot, 2% leeway to avoid going over the edge of the image
@@ -234,11 +234,12 @@ MODULE setup_reflections_mod
         END DO
         CLOSE(IChOutIM,IOSTAT=IErr) 
         IF(l_alert(IErr,"WriteIterationOutput","CLOSE() output .bin file")) RETURN
-      END DO      
+      END DO
+      DEALLOCATE(RSim)
     END IF
 
     ! Clean up
-    DEALLOCATE(ILocalgPool,ITotalgPool,Rsim,RLocalSgPool,RTotalSgPool)
+    DEALLOCATE(ILocalgPool,ITotalgPool,RLocalSgPool,RTotalSgPool,Inum,Ipos)
 
   END SUBROUTINE HKLmake
 
