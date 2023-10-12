@@ -200,3 +200,56 @@
     ! frame loop
     IFrame = IFrame + 1
   END DO
+
+
+    !--------------------------------------------------------------------
+    ! IhklsFrame links the list in felix.hkl with the beam pool for the current frame
+    ! It has length INoOfHKLsAll but only has entries up to the number of reflections
+    ! found, INoOfHKLsFrame.  We ignore any duplicates in felix.hkl 
+    IhklsFrame = 0! reset flag for the frame
+    IhklsAll = 0!reset global flag
+    IFind = 0
+    DO ind = 1,INoOfHKLsAll! the reflections in felix.hkl
+      DO jnd = 1,SIZE(Rhkl,DIM=1)! the beam pool
+        IF(ABS(Rhkl(jnd,1)-RInputHKLs(ind,1)).LE.TINY.AND.&
+           ABS(Rhkl(jnd,2)-RInputHKLs(ind,2)).LE.TINY.AND.&
+           ABS(Rhkl(jnd,3)-RInputHKLs(ind,3)).LE.TINY) THEN
+          ! this reflection is in both lists
+          IDuplicate = 0! start from the assumption that it is not a duplicate
+          DO knd = 1,IFind!check the list to see if we already have it
+            IF (ABS(Rhkl(IhklsFrame(knd),1)-RInputHKLs(ind,1)).LE.TINY.AND.&
+                ABS(Rhkl(IhklsFrame(knd),2)-RInputHKLs(ind,2)).LE.TINY.AND.&
+                ABS(Rhkl(IhklsFrame(knd),3)-RInputHKLs(ind,3)).LE.TINY) THEN
+              IDuplicate = 1!yes we do
+              IF (IFrame.EQ.1) CALL message(LS,"Duplicate HKL found, ignoring: ",NINT(RInputHKLs(ind,:)) )
+              EXIT
+            END IF
+          END DO
+          IF (IDuplicate.EQ.0) THEN! not a duplicate, we append it to the list
+            IFind = IFind +1
+            IhklsFrame(IFind) = jnd! for this frame: the index of the reflection in the beam pool
+            IhklsAll(IFind) = ind! so we can find it in the felix.hkl list
+          END IF
+          EXIT
+        END IF
+      END DO
+    END DO
+
+    IF (IFind.LE.0) THEN
+      IErr=1
+      IF(l_alert(IErr,"HKLList","No requested HKLs found")) RETURN
+    END IF
+      
+    INoOfHKLsFrame = IFind
+    IF(IFrame.GT.9999)THEN
+      WRITE(SPrintString,'(I3,A22,I5.5)') INoOfHKLsFrame," reflections in Frame ",IFrame
+    ELSEIF(IFrame.GT.999)THEN
+      WRITE(SPrintString,'(I3,A22,I4.4)') INoOfHKLsFrame," reflections in Frame ",IFrame
+    ELSEIF(IFrame.GT.99)THEN
+      WRITE(SPrintString,'(I3,A22,I3.3)') INoOfHKLsFrame," reflections in Frame ",IFrame
+    ELSEIF(IFrame.GT.9)THEN
+      WRITE(SPrintString,'(I3,A22,I2.2)') INoOfHKLsFrame," reflections in Frame ",IFrame
+    ELSE
+      WRITE(SPrintString,'(I3,A22,I1.1)') INoOfHKLsFrame," reflections in Frame ",IFrame
+    END IF
+    CALL message(LM,TRIM(ADJUSTL(SPrintString)))

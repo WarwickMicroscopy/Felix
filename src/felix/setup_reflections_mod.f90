@@ -41,10 +41,12 @@ MODULE setup_reflections_mod
 
   CONTAINS
   
-  !%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+  !!$%%HKLMake%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
   !>
-  !! Procedure-description: Fills the beam pool list RgPoolList for each frame
-  !! and the list of output reflections IgOutList (global variables)
+  !! Procedure-description:
+  !! 1) Fills the beam pool list RgPoolList for each frame (global variable)
+  !! 2) Fills the list of output reflections IgOutList & writes to hkl_list.txt
+  !! 3) Makes a set of simple kinematic frames
   !!
   !! Major-Authors: Richard Beanland (2023)
   !!  
@@ -76,7 +78,7 @@ MODULE setup_reflections_mod
     CHARACTER(200) :: path
     CHARACTER(100) :: fString
    
-    !--------------------------------------------------------------------
+    !-1------------------------------------------------------------------
     ! calculate reflection list frame by frame
     !--------------------------------------------------------------------
     ! In the subroutine ReciprocalLattice we generated all reciprocal lattice vectors
@@ -138,7 +140,6 @@ MODULE setup_reflections_mod
         END IF
       END DO
     END DO
-
     !==================== ! MPI gatherv into 1D arrays ========================
     CALL MPI_GATHERV(ILocalgPool,SIZE(ILocalgPool),MPI_INTEGER,ITotalgPool,&
             Inum,Ipos,MPI_INTEGER,root,MPI_COMM_WORLD,IErr)
@@ -147,7 +148,9 @@ MODULE setup_reflections_mod
     IgPoolList = RESHAPE(ITotalgPool, (/INhkl,INFrames/) )
     RGPoolSg = RESHAPE(RTotalSgPool, (/INhkl,INFrames/) )
 
-    ! fill IgOutList & output as a text file and a frame series
+
+    !-2------------------------------------------------------------------
+    ! Fill IgOutList & output as a text file
     IF(my_rank.EQ.0) THEN
       CALL message(LS,dbg3,"Writing hkl list and images")
       path = SChemicalFormula(1:ILN) // "/hkl_list.txt"
@@ -156,7 +159,6 @@ MODULE setup_reflections_mod
       WRITE(IChOutIhkl,*) "List of hkl in each frame"
       WRITE(IChOutIhkl,*) "No: h k l  Fg  |g|  Sg"
     END IF
-    
     IgOutList = 0
     DO ind = 1,INFrames
       ! output to slurm if requested
@@ -185,6 +187,9 @@ MODULE setup_reflections_mod
     END DO
     IF (my_rank.EQ.0) CLOSE(IChOutIhkl,IOSTAT=IErr)
 
+
+    !-3------------------------------------------------------------------
+    ! Write a set of kinematic simulation frames
     IF(my_rank.EQ.0) THEN
       ! image
       ISim = 256_IKIND  ! NB HALF the output image size = output |g| limit/0.98
@@ -243,6 +248,59 @@ MODULE setup_reflections_mod
 
   END SUBROUTINE HKLmake
 
+  !!$%%HKLList%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+  !>
+  !! Procedure-description: List the frames for each reflection
+  !!
+  !! Major-Authors: Richard Beanland (2023)
+  !!  
+  SUBROUTINE HKLList( IErr )
+
+    ! This procedure is called once in felixrefine setup
+    USE MyNumbers
+    USE message_mod
+
+    ! global parameters
+    USE IPARA, ONLY : INFrames,INhkl
+    USE SPARA, ONLY : SPrintString
+
+    ! global inputs
+    USE RPARA, ONLY : 
+
+    IMPLICIT NONE
+
+    INTEGER(IKIND),INTENT(IN) :: 
+    INTEGER(IKIND) :: ind,jnd,knd,IErr,Imin,Imax
+    INTEGER(IKIND), DIMENSION(:), ALLOCATABLE :: IFullgList,IReducedgList,IUniquegList
+
+    !--------------------------------------------------------------------
+    ! first get a list of all output reflections
+    ALLOCATE(IFullgList, INFrames*INhkl), STAT=IErr)
+    IF(l_alert(IErr,"HKLlist","allocate IFullgList")) RETURN
+    ALLOCATE(IReducedgList, INFrames*INhkl), STAT=IErr)
+    IF(l_alert(IErr,"HKLlist","allocate IReducedgList")) RETURN
+    IFullgList = IgOutList(:)
+    !now the list of unique reflections
+    Imin = MINVAL(IFullgList)-1
+    Imax = MAXVAL(IFullgList)
+    ind = 0
+    DO WHILE (Imin.LT.Imax)
+        ind = ind+1
+        Imin = MINVAL(IFullgList, MASK=IFullgList.GT.Imin)
+        IReducedgList(ind) = Imin
+    END DO
+    ALLOCATE(IUniquegList(IReducedgList(1:ind)), STAT=IErr)
+    IF(l_alert(IErr,"HKLlist","allocate IUniquegList")) RETURN
+    
+    knd = 0
+    DO ind = 1,INFrames
+      DO jnd = 1, INhkl
+        
+      END DO
+    END DO
+ 
+  END SUBROUTINE HKLList
+  
   !%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
   !>
   !! Procedure-description: Sorts Rhkl array into descending order
@@ -303,115 +361,6 @@ MODULE setup_reflections_mod
     RETURN
 
   END SUBROUTINE HKLSort
-  !!$%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-  !>
-  !! Procedure-description: List the reflections in each frame that form the beam pool and output
-  !!
-  !! Major-Authors: Richard Beanland (2023)
-  !!  
-  SUBROUTINE HKLList(IFrame, IErr )
-
-    ! This procedure is called once in felixrefine setup
-    USE MyNumbers
-    USE message_mod
-
-    ! global parameters
-    USE IPARA, ONLY : IhklsFrame, INoOfHKLsAll, IhklsAll, INoOfHKLsFrame,&
-            ILiveList
-    USE SPARA, ONLY : SPrintString
-
-    ! global inputs
-    USE RPARA, ONLY : RInputHKLs, Rhkl
-
-    IMPLICIT NONE
-
-    INTEGER(IKIND),INTENT(IN) :: IFrame
-    INTEGER(IKIND) :: IFind,IDuplicate,ind,jnd,knd,IErr
-
-    !--------------------------------------------------------------------
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    ! it is possible that we reach RGPoolLimit before filling up the pool, in which case 
-    ! fill up any remaining beam pool places with an enormous g-vector, diabolically
-    ! the idea being that this g-vector will never be near any possible Ewald sphere
-!    IF (knd.LE.INhkl) THEN
-!      DO jnd = knd+1, INhkl
-!        IhklLattice(jnd,:) = (/ 666,666,666 /)
-!        RgLatticeO(jnd,:) = REAL( (/ 666,666,666 /),RKIND )
-!        RLatMag(jnd) = 666666.666
-!      END DO
-!    END IF    
-    
-    
-    
-    
-    
-    
-    
-    ! IhklsFrame links the list in felix.hkl with the beam pool for the current frame
-    ! It has length INoOfHKLsAll but only has entries up to the number of reflections
-    ! found, INoOfHKLsFrame.  We ignore any duplicates in felix.hkl 
-    IhklsFrame = 0! reset flag for the frame
-    IhklsAll = 0!reset global flag
-    IFind = 0
-    DO ind = 1,INoOfHKLsAll! the reflections in felix.hkl
-      DO jnd = 1,SIZE(Rhkl,DIM=1)! the beam pool
-        IF(ABS(Rhkl(jnd,1)-RInputHKLs(ind,1)).LE.TINY.AND.&
-           ABS(Rhkl(jnd,2)-RInputHKLs(ind,2)).LE.TINY.AND.&
-           ABS(Rhkl(jnd,3)-RInputHKLs(ind,3)).LE.TINY) THEN
-          ! this reflection is in both lists
-          IDuplicate = 0! start from the assumption that it is not a duplicate
-          DO knd = 1,IFind!check the list to see if we already have it
-            IF (ABS(Rhkl(IhklsFrame(knd),1)-RInputHKLs(ind,1)).LE.TINY.AND.&
-                ABS(Rhkl(IhklsFrame(knd),2)-RInputHKLs(ind,2)).LE.TINY.AND.&
-                ABS(Rhkl(IhklsFrame(knd),3)-RInputHKLs(ind,3)).LE.TINY) THEN
-              IDuplicate = 1!yes we do
-              IF (IFrame.EQ.1) CALL message(LS,"Duplicate HKL found, ignoring: ",NINT(RInputHKLs(ind,:)) )
-              EXIT
-            END IF
-          END DO
-          IF (IDuplicate.EQ.0) THEN! not a duplicate, we append it to the list
-            IFind = IFind +1
-            IhklsFrame(IFind) = jnd! for this frame: the index of the reflection in the beam pool
-            IhklsAll(IFind) = ind! so we can find it in the felix.hkl list
-          END IF
-          EXIT
-        END IF
-      END DO
-    END DO
-
-    IF (IFind.LE.0) THEN
-      IErr=1
-      IF(l_alert(IErr,"HKLList","No requested HKLs found")) RETURN
-    END IF
-      
-    INoOfHKLsFrame = IFind
-    IF(IFrame.GT.9999)THEN
-      WRITE(SPrintString,'(I3,A22,I5.5)') INoOfHKLsFrame," reflections in Frame ",IFrame
-    ELSEIF(IFrame.GT.999)THEN
-      WRITE(SPrintString,'(I3,A22,I4.4)') INoOfHKLsFrame," reflections in Frame ",IFrame
-    ELSEIF(IFrame.GT.99)THEN
-      WRITE(SPrintString,'(I3,A22,I3.3)') INoOfHKLsFrame," reflections in Frame ",IFrame
-    ELSEIF(IFrame.GT.9)THEN
-      WRITE(SPrintString,'(I3,A22,I2.2)') INoOfHKLsFrame," reflections in Frame ",IFrame
-    ELSE
-      WRITE(SPrintString,'(I3,A22,I1.1)') INoOfHKLsFrame," reflections in Frame ",IFrame
-    END IF
-    CALL message(LM,TRIM(ADJUSTL(SPrintString)))
- 
-  END SUBROUTINE HKLList
-  
   
 END MODULE setup_reflections_mod
 
