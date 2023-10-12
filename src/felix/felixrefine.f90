@@ -125,7 +125,7 @@ PROGRAM Felixrefine
   IF(l_alert(IErr,"felixrefine","ReadInpFile")) CALL abort
   CALL SetMessageMode( IWriteFLAG, IErr )
   IF(l_alert(IErr,"felixrefine","set_message_mod_mode")) CALL abort
-  
+
   !--------------------------------------------------------------------
   ! Set up output folders: frames, then thicknesses
   !--------------------------------------------------------------------
@@ -157,7 +157,7 @@ PROGRAM Felixrefine
 !      END DO
     END DO
   END IF
-  
+
   !--------------------------------------------------------------------
   ! set up scattering factors, k-space resolution
   !--------------------------------------------------------------------
@@ -268,6 +268,7 @@ PROGRAM Felixrefine
   !?? RB could re-allocate RAtomCoordinate,SAtomName,RIsoDW,ROccupancy,
   !?? IAtomicNumber,IAnisoDW to match INAtomsUnitCell?
 
+  !--------------------------------------------------------------------
   ! From the unit cell we produce RaVecO, RbVecO, RcVecO in an orthogonal reference frame O
   ! with xO // a and zO perpendicular to the ab plane, in Angstrom units
   ! and reciprocal lattice vectors RarVecO, RbrVecO, RcrVecO in the same reference frame
@@ -278,19 +279,19 @@ PROGRAM Felixrefine
   ! Output limit
   RGOutLimit = ONE*TWOPI  ! reciprocal Angstroms, multiplied by 2pi
   ! Make the reciprocal lattice
+  WRITE(SPrintString, FMT='(A33,F8.4,A5)') "Reciprocal lattice defined up to ",&
+          RgPoolLimit/TWOPI," A^-1"
+  CALL message(LS,SPrintString)
   CALL ReciprocalLattice(RgPoolLimit, IErr)  ! in crystallography.f90
   IF(l_alert(IErr,"felixrefine","ReciprocalLattice")) CALL abort
+  WRITE(SPrintString, FMT='(A24,F8.4,A5)') "Experimental resolution ",&
+          RgOutLimit/TWOPI," A^-1"
+  CALL message(LS,SPrintString)
   ! List the hkl's in each frame
   CALL HKLMake(RDevLimit, RGOutLimit, IErr)  ! in setup_reflections.f90
   IF(l_alert(IErr,"felixrefine","HKLMake")) CALL abort
-    ! Create reciprocal lattice vectors in Microscope reference frame
-    ! returns transformation matrices and RAtomCoordinate
- !   CALL CrystalOrientation(IErr)
- !   IF(l_alert(IErr,"felixrefine","CrystalOrientation")) CALL abort
     !--------------------------------------------------------------------
     
-!    CALL HKLMake(ind, RDevLimit, RGOutLimit, IErr)
-  !  IF(l_alert(IErr,"felixrefine","HKLMake")) CALL abort
     CALL PrintEndTime( LS, IStartTime, "Frame" )
     !CALL message(LS,dbg7,"Rhkl matrix: ",NINT(IgPoolList(ind,1:INhkl,:)))
 
