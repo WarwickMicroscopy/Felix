@@ -279,12 +279,12 @@ PROGRAM Felixrefine
   ! Output limit
   RGOutLimit = ONE*TWOPI  ! reciprocal Angstroms, multiplied by 2pi
   ! Make the reciprocal lattice
-  WRITE(SPrintString, FMT='(A33,F8.4,A5)') "Reciprocal lattice defined up to ",&
+  WRITE(SPrintString, FMT='(A33,F5.2,A5)') "Reciprocal lattice defined up to ",&
           RgPoolLimit/TWOPI," A^-1"
   CALL message(LS,SPrintString)
   CALL ReciprocalLattice(RgPoolLimit, IErr)  ! in crystallography.f90
   IF(l_alert(IErr,"felixrefine","ReciprocalLattice")) CALL abort
-  WRITE(SPrintString, FMT='(A24,F8.4,A5)') "Experimental resolution ",&
+  WRITE(SPrintString, FMT='(A24,F5.2,A5)') "Experimental resolution ",&
           RgOutLimit/TWOPI," A^-1"
   CALL message(LS,SPrintString)
   ! List the hkl's in each frame

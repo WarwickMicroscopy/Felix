@@ -31,8 +31,8 @@ $(DIRFELIX)$(PRECISION)read_cif_mod.o \
 $(DIRFELIX)$(PRECISION)read_files_mod.o \
 $(DIRFELIX)$(PRECISION)setup_reflections_mod.o \
 $(DIRFELIX)$(PRECISION)set_scatter_factors_mod.o \
-$(DIRFELIX)$(PRECISION)crystallography_mod.o \
 $(DIRFELIX)$(PRECISION)ug_matrix_mod.o \
+$(DIRFELIX)$(PRECISION)crystallography_mod.o \
 $(DIRFELIX)$(PRECISION)bloch_mod.o \
 $(DIRFELIX)$(PRECISION)image_initialisation_mod.o \
 $(DIRFELIX)$(PRECISION)setup_space_group_mod.o \

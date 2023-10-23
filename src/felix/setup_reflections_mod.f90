@@ -37,7 +37,7 @@ MODULE setup_reflections_mod
 
   IMPLICIT NONE
   PRIVATE
-  PUBLIC :: HKLMake
+  PUBLIC :: HKLMake,HKLList
 
   CONTAINS
   
@@ -145,6 +145,9 @@ MODULE setup_reflections_mod
             Inum,Ipos,MPI_INTEGER,root,MPI_COMM_WORLD,IErr)
     CALL MPI_GATHERV(RLocalSgPool,SIZE(RLocalSgPool),MPI_DOUBLE_PRECISION,RTotalSgPool,&
             Inum,Ipos,MPI_DOUBLE_PRECISION,root,MPI_COMM_WORLD,IErr)
+    !This brodcast is not strictly necessary but keeps all cores synchronised
+    CALL MPI_BCAST(ITotalgPool,SIZE(ITotalgPool),MPI_INTEGER,root,MPI_COMM_WORLD,IErr)
+    CALL MPI_BCAST(RTotalSgPool,SIZE(RTotalSgPool),MPI_DOUBLE_PRECISION,root,MPI_COMM_WORLD,IErr)
     IgPoolList = RESHAPE(ITotalgPool, (/INhkl,INFrames/) )
     RGPoolSg = RESHAPE(RTotalSgPool, (/INhkl,INFrames/) )
 
@@ -190,6 +193,8 @@ MODULE setup_reflections_mod
           END IF  !## remove comment to give output reflections, complements ** 
         END IF
       END DO
+      WRITE(fString,"(A6,I3,A19)") "Total ",jnd," output reflections"
+      IF (my_rank.EQ.0) WRITE(IChOutIhkl,*) TRIM(ADJUSTL(fString))
       IF (jnd.GT.IMaxNg) IMaxNg = jnd  ! update max number of outputs if necessary
     END DO
     IF (my_rank.EQ.0) CLOSE(IChOutIhkl,IOSTAT=IErr)
@@ -268,7 +273,7 @@ MODULE setup_reflections_mod
     USE message_mod
 
     ! global parameters
-    USE IPARA, ONLY : INFrames,INhkl
+    USE IPARA, ONLY : INFrames,INhkl,IgOutList
     USE SPARA, ONLY : SPrintString
 
     ! global inputs
@@ -276,17 +281,18 @@ MODULE setup_reflections_mod
 
     IMPLICIT NONE
 
-    INTEGER(IKIND),INTENT(IN) :: 
+    !INTEGER(IKIND),INTENT(IN) :: 
     INTEGER(IKIND) :: ind,jnd,knd,IErr,Imin,Imax
     INTEGER(IKIND), DIMENSION(:), ALLOCATABLE :: IFullgList,IReducedgList,IUniquegList
 
     !--------------------------------------------------------------------
     ! first get a list of all output reflections
-    ALLOCATE(IFullgList, INFrames*INhkl), STAT=IErr)  ! everything
+    ind = INFrames*INhkl
+    ALLOCATE(IFullgList(ind), STAT=IErr)  ! everything
     IF(l_alert(IErr,"HKLlist","allocate IFullgList")) RETURN
-    ALLOCATE(IReducedgList, INFrames*INhkl), STAT=IErr)  ! unique reflections in an oversize matrix
+    ALLOCATE(IReducedgList(ind), STAT=IErr)  ! unique reflections in an oversize matrix
     IF(l_alert(IErr,"HKLlist","allocate IReducedgList")) RETURN
-    IFullgList = IgOutList(:)
+    IFullgList = RESHAPE(IgOutList,[ind])
     !now the list of unique reflections
     Imin = MINVAL(IFullgList)-1
     Imax = MAXVAL(IFullgList)
@@ -296,7 +302,8 @@ MODULE setup_reflections_mod
         Imin = MINVAL(IFullgList, MASK=IFullgList.GT.Imin)
         IReducedgList(ind) = Imin
     END DO
-    ALLOCATE(IUniquegList(IReducedgList(1:ind)), STAT=IErr)
+    ALLOCATE(IUniquegList(ind), STAT=IErr)
+    IUniquegList = IReducedgList(1:ind)
     IF(l_alert(IErr,"HKLlist","allocate IUniquegList")) RETURN
     WRITE(SPrintString, FMT='(I5,A19)') ind, " output reflections"
     CALL message(LS,SPrintString)
