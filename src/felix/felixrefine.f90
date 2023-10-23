@@ -290,7 +290,10 @@ PROGRAM Felixrefine
   ! List the hkl's in each frame
   CALL HKLMake(RDevLimit, RGOutLimit, IErr)  ! in setup_reflections.f90
   IF(l_alert(IErr,"felixrefine","HKLMake")) CALL abort
-    !--------------------------------------------------------------------
+  CALL HKLList(IErr)
+  IF(l_alert(IErr,"felixrefine","HKLList")) CALL abort
+  
+  !--------------------------------------------------------------------
     
     CALL PrintEndTime( LS, IStartTime, "Frame" )
     !CALL message(LS,dbg7,"Rhkl matrix: ",NINT(IgPoolList(ind,1:INhkl,:)))

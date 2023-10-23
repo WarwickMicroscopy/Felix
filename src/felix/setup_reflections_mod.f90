@@ -69,7 +69,7 @@ MODULE setup_reflections_mod
 
     REAL(RKIND),INTENT(IN) :: RDevLimit, RGOutLimit
     INTEGER(IKIND) :: IErr,ind,jnd,knd,lnd,mnd,ISim,Ix,Iy,ILocalFrameMin,ILocalFrameMax,&
-                      ILocalNFrames
+                      ILocalNFrames,IMaxNg
     INTEGER(IKIND), DIMENSION(:), ALLOCATABLE :: Inum,Ipos,ILocalgPool,ITotalgPool
     REAL(RKIND) :: RAngle,Rk(ITHREE),Rk0(ITHREE),Rp(ITHREE),RSg,Rphi,Rg(ITHREE),Rmos,RIkin,&
                    RKplusg(ITHREE)
@@ -160,6 +160,7 @@ MODULE setup_reflections_mod
       WRITE(IChOutIhkl,*) "No: h k l  Fg  |g|  Sg"
     END IF
     IgOutList = 0
+    IMaxNg = 0  ! maximum number of outputs in a frame
     DO ind = 1,INFrames
       ! output to slurm if requested
       CALL message(LM, "Reflection list:")
@@ -169,21 +170,27 @@ MODULE setup_reflections_mod
           CALL message(LM, SPrintString)
         END IF
       END DO
+      ! write reflections in each frame
+      ! h k l Fg(Re Im) |g| Sg
       IF (my_rank.EQ.0) WRITE(IChOutIhkl,"(A6,I4)") "Frame ",ind
+      jnd = 0  ! to count reflections per frame
       DO knd = 1, INhkl
         IF (IgPoolList(knd,ind).NE.0) THEN
-          ! Is this reflection small enough to be in the output list
-          IF (RLatMag(IgPoolList(knd,ind)).LT.RGOutLimit) THEN
-            IgOutList(knd,ind) = IgPoolList(knd,ind)
-          END IF
           lnd = IgPoolList(knd,ind)
           RSg = RgPoolSg(knd,ind)
-          WRITE(fString,"(3(I3,1X),2X, F8.4,A1,F8.4,A3, F6.2,2X, F8.4)") &
+          ! Is this reflection small enough to be in the output list
+          IF (RLatMag(IgPoolList(knd,ind)).LT.RGOutLimit) THEN
+          jnd = jnd + 1
+            IgOutList(knd,ind) = IgPoolList(knd,ind)
+          !END IF  !** remove comment to give all reflections, complements ##
+            WRITE(fString,"(3(I3,1X),2X, F8.4,A1,F8.4,A3, F6.2,2X, F8.4)") &
                   IhklLattice(lnd,:), REAL(CFg(lnd)),"+",AIMAG(CFg(lnd)),"i  ",&
                   RLatMag(lnd)/TWOPI, RSg
-          IF (my_rank.EQ.0) WRITE(IChOutIhkl,*) TRIM(ADJUSTL(fString))
+            IF (my_rank.EQ.0) WRITE(IChOutIhkl,*) TRIM(ADJUSTL(fString))
+          END IF  !## remove comment to give output reflections, complements ** 
         END IF
       END DO
+      IF (jnd.GT.IMaxNg) IMaxNg = jnd  ! update max number of outputs if necessary
     END DO
     IF (my_rank.EQ.0) CLOSE(IChOutIhkl,IOSTAT=IErr)
 
@@ -275,9 +282,9 @@ MODULE setup_reflections_mod
 
     !--------------------------------------------------------------------
     ! first get a list of all output reflections
-    ALLOCATE(IFullgList, INFrames*INhkl), STAT=IErr)
+    ALLOCATE(IFullgList, INFrames*INhkl), STAT=IErr)  ! everything
     IF(l_alert(IErr,"HKLlist","allocate IFullgList")) RETURN
-    ALLOCATE(IReducedgList, INFrames*INhkl), STAT=IErr)
+    ALLOCATE(IReducedgList, INFrames*INhkl), STAT=IErr)  ! unique reflections in an oversize matrix
     IF(l_alert(IErr,"HKLlist","allocate IReducedgList")) RETURN
     IFullgList = IgOutList(:)
     !now the list of unique reflections
@@ -291,7 +298,10 @@ MODULE setup_reflections_mod
     END DO
     ALLOCATE(IUniquegList(IReducedgList(1:ind)), STAT=IErr)
     IF(l_alert(IErr,"HKLlist","allocate IUniquegList")) RETURN
-    
+    WRITE(SPrintString, FMT='(I5,A19)') ind, " output reflections"
+    CALL message(LS,SPrintString)
+ 
+    ! now the maximum number of output reflections  
     knd = 0
     DO ind = 1,INFrames
       DO jnd = 1, INhkl
