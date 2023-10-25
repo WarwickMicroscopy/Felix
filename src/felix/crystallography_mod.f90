@@ -126,7 +126,7 @@ MODULE crystallography_mod
 
     IMPLICIT NONE
 
-    INTEGER(IKIND) :: IErr,ind,jnd,knd,lnd,mnd,nnd,inda,indb,indc,IlogNB2,Iswap
+    INTEGER(IKIND) :: IErr,ind,jnd,knd,lnd,mnd,nnd,inda,indb,indc,ISel,IlogNB2,Iswap
     REAL(RKIND) :: Rt,ALN2I,LocalTINY,Rg(ITHREE),RxAngle,Rfq
     REAL(RKIND), DIMENSION(ITHREE,ITHREE) :: RTMatC2O
     REAL(RKIND), INTENT(IN) :: RLatticeLimit
@@ -229,9 +229,13 @@ MODULE crystallography_mod
     DO ind = -inda,inda
       DO jnd = -indb,indb
         DO knd = -indc,indc
+          ! take out systematic absences from the lattice
+          ! but keep forbidden reflections because they may appear through multiple scattering
+          ISel = 0
+          CALL SelectionRules(ind, jnd, knd, ISel, IErr)
+          IF (ISel.EQ.0) CYCLE
           lnd = lnd + 1
           ISort(lnd) = lnd  ! we will sort this and use it as a dummy index
-          ! We include forbidden reflections here because they may appear through multiple scattering
           IhklLattice(lnd,:) = (/ ind, jnd, knd /) !Miller indices
           Rg = ind*RarVecO + jnd*RbrVecO + knd*RcrVecO  ! g-vector
           RgLatticeO(lnd,:) = Rg
