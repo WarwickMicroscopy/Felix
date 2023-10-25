@@ -273,16 +273,19 @@ MODULE setup_reflections_mod
     USE message_mod
 
     ! global parameters
-    USE IPARA, ONLY : INFrames,ISort,INhkl,IgPoolList,IgOutList,Ihkl,IhklLattice,INoOfHKLsAll
-    USE SPARA, ONLY : SPrintString
-    USE RPARA, ONLY : RgO,RgMag,RgLatticeO,RgMagLattice
+    USE IPARA, ONLY : ILN,INFrames,ISort,INhkl,IgPoolList,IgOutList,Ihkl,IhklLattice,INoOfHKLsAll
+    USE SPARA, ONLY : SPrintString,SChemicalFormula
+    USE RPARA, ONLY : RgO,RgMag,RgLatticeO,RgMagLattice,RgPoolSg
     USE CPARA, ONLY : CFg,CFgLattice
+    USE IChannels, ONLY : IChOutIhkl
 
     IMPLICIT NONE
 
-    !INTEGER(IKIND),INTENT(IN) :: 
-    INTEGER(IKIND) :: ind,jnd,knd,lnd,IErr,Imin,Imax
+    REAL(RKIND) :: Rmos,RIkin
+    INTEGER(IKIND) :: ind,jnd,knd,lnd,Iy,IErr,Imin,Imax
     INTEGER(IKIND), DIMENSION(:), ALLOCATABLE :: IFullgList,IReducedgList,IUniquegList
+    CHARACTER(200) :: path
+    CHARACTER(100) :: fString
 
     !-1------------------------------------------------------------------
     ! first get a list of pool reflections without duplicates, IUniquegList
@@ -323,15 +326,22 @@ MODULE setup_reflections_mod
       RgMag(jnd) = RgMagLattice(IUniquegList(jnd))
       CFg(jnd) = CFgLattice(IUniquegList(jnd))
     END DO
-    ! change the indices for IgPoolList and IgOutList
-    lnd = 0!counter for output reflections
+    ! Change the indices for IgPoolList and IgOutList
+    ! For a frame [j] and a given reflection in the beam pool [i,j],
+    ! we find hkl, g, |g| and Fg at the index given in IgPoolList[i,j].
+    ! IgOutList[i,j] gives the number of the output reflection.
+    lnd = 0  ! counter for output reflections
     DO ind = 1,INoOfHKLsAll
-      DO jnd = 1, INFrames
-        DO knd = 1, INhkl
+      Iy = 1  ! flag for counting
+      DO jnd = 1, INhkl
+        DO knd = 1, INFrames
           IF (IgPoolList(jnd,knd).EQ.IUniquegList(ind)) IgPoolList(jnd,knd) = ind
           IF (IgOutList(jnd,knd).EQ.IUniquegList(ind)) THEN
-            IgOutList(jnd,knd) = ind
-            lnd = lnd + 1
+            IF (Iy.EQ.1) THEN  ! we only count the first appearance
+              lnd = lnd + 1
+              Iy = 0
+            END IF
+            IgOutList(jnd,knd) = lnd
           END IF
         END DO
       END DO
@@ -343,11 +353,33 @@ MODULE setup_reflections_mod
 
     !-3------------------------------------------------------------------
     ! kinematic rocking curves  
-    DO ind = 1,INoOfHKLsAll
-      DO jnd = 1,INFrames
-        
+    RMos = 3000.0
+    IF(my_rank.EQ.0) THEN
+      CALL message(LS,dbg3,"Writing kinematic rocking curves")
+      path = SChemicalFormula(1:ILN) // "/hkl_rocks.txt"
+      OPEN(UNIT=IChOutIhkl, ACTION='WRITE', POSITION='APPEND', STATUS= 'UNKNOWN', &
+          FILE=TRIM(ADJUSTL(path)),IOSTAT=IErr)
+      WRITE(IChOutIhkl,*) "List of kinematic rocking curves"
+      DO ind = 1,lnd
+        Iy = 1
+        DO knd = 1,INFrames
+          DO jnd = 1,INhkl
+            IF (IgOutList(jnd,knd).EQ.ind) THEN
+              IF (Iy.EQ.1) THEN
+                WRITE(fString,"(3(I3,1X))") Ihkl(IgPoolList(jnd,knd),:)
+                WRITE(IChOutIhkl,*) TRIM(ADJUSTL(fString))
+                Iy = 0
+              END IF
+              RIkin = CFg(IgPoolList(jnd,knd))*CONJG(CFg(IgPoolList(jnd,knd))) * &
+                  EXP(-RMos*RgPoolSg(jnd,knd)*RgPoolSg(jnd,knd))
+              WRITE(fString,"(I4,A3,F7.3)") knd," : ",RIkin
+              WRITE(IChOutIhkl,*) TRIM(ADJUSTL(fString))
+            END IF
+          END DO
+        END DO    
       END DO
-    END DO
+      CLOSE(IChOutIhkl,IOSTAT=IErr)
+    END IF
     
  
   END SUBROUTINE HKLList
