@@ -239,69 +239,6 @@ MODULE read_files_mod
   !!
   SUBROUTINE ReadHklFile(IErr)
 
-    USE MyNumbers
-    USE message_mod
-
-    ! global outputs
-    USE RPARA, ONLY : RInputHKLs! allocated here
-    USE IPARA, ONLY : INoOfHKLsAll ! fixed here
-    ! global inputs
-    USE IChannels, ONLY : IChInp
-
-    IMPLICIT NONE
-
-    INTEGER(IKIND),INTENT(OUT) :: IErr
-    INTEGER(IKIND) :: ILine, h, k, l, ind, IPos1, IPos2
-    CHARACTER(200) :: dummy1, dummy2
-
-    OPEN(Unit = IChInp,FILE="felix.hkl",STATUS='OLD',ERR=10)
-    ILine = 0
-
-    ! count the number of lines in felix.hkl:
-    ! this is the total number of reflections to simulate, INoOfHKLsAll
-    DO
-      READ(UNIT= IChInp, END=5, FMT='(a)') dummy1
-      ILine = ILine+1
-    ENDDO
-5   INoOfHKLsAll = ILine
-    CALL message (LS, dbg3, "Number of reflections = ", INoOfHKLsAll)
-
-    ALLOCATE(RInputHKLs(INoOfHKLsAll,ITHREE),STAT=IErr)
-    IF(l_alert(IErr,"ReadHklFile","allocate RInputHKLs")) RETURN
-
-    ! read in the hkls
-    REWIND(UNIT=IChInp) ! goes to beginning of felix.hkl file
-    ILine = 0 
-    DO ind = 1,INoOfHKLsAll
-      ! READ HKL in as String
-      READ(UNIT= IChInp,FMT='(A)' ) dummy1
-      ! Scan String for h
-      IPos1 = SCAN(dummy1,'[')
-      IPos2 = SCAN(dummy1,',')
-      dummy2 = dummy1((IPos1+1):(IPos2-1))
-      READ(dummy2,'(I20)') h
-      ! Scan String for k   
-      IPos1 = SCAN(dummy1((IPos2+1):),',') + IPos2
-      dummy2 = dummy1((IPos2+1):(IPos1-1))
-      READ(dummy2,'(I20)') k
-      ! Scan String for l     
-      IPos2 = SCAN(dummy1((IPos1+1):),']') + IPos1
-      dummy2 = dummy1((IPos1+1):(IPos2-1))
-      READ(dummy2,'(I20)') l
-      ! Convert to REALs
-      ILine=ILine+1
-      RInputHKLs(ILine,1) = REAL(h,RKIND)
-      RInputHKLs(ILine,2) = REAL(k,RKIND)
-      RInputHKLs(ILine,3) = REAL(l,RKIND)   
-      CALL message ( LXL, dbg7, "RInputHKLs", NINT(RInputHKLs(ILine,:)) )
-    END DO
-
-    RETURN
-
- 10 CONTINUE
-    IErr=1
-    CALL message( LL, "felix.hkl not found")
-    RETURN
 
   END SUBROUTINE ReadHklFile
 

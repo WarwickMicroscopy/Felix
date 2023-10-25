@@ -266,7 +266,7 @@ MODULE setup_reflections_mod
   SUBROUTINE HKLList( IErr )
 
     ! This procedure is called once in felixrefine setup
-    ! 1) get unique g's
+    ! 1) get unique g's in all pools
     ! 2) make a new list of unique g's and associated parameters
     
     USE MyNumbers
@@ -281,16 +281,16 @@ MODULE setup_reflections_mod
     IMPLICIT NONE
 
     !INTEGER(IKIND),INTENT(IN) :: 
-    INTEGER(IKIND) :: ind,jnd,knd,IErr,Imin,Imax
+    INTEGER(IKIND) :: ind,jnd,knd,lnd,IErr,Imin,Imax
     INTEGER(IKIND), DIMENSION(:), ALLOCATABLE :: IFullgList,IReducedgList,IUniquegList
 
-    !1-------------------------------------------------------------------
-    ! first get a list of output reflections without duplicates, IUniquegList
+    !-1------------------------------------------------------------------
+    ! first get a list of pool reflections without duplicates, IUniquegList
     ind = INFrames*INhkl
     ALLOCATE(IFullgList(ind), STAT=IErr)  ! everything
     ALLOCATE(IReducedgList(ind), STAT=IErr)  ! unique reflections in an oversize matrix
     IF(l_alert(IErr,"HKLlist","allocations 1")) RETURN
-    IFullgList = RESHAPE(IgOutList,[ind])
+    IFullgList = RESHAPE(IgPoolList,[ind])
     !now the list of unique reflections
     Imin = 0
     Imax = MAXVAL(IFullgList)
@@ -306,29 +306,45 @@ MODULE setup_reflections_mod
     IF(l_alert(IErr,"HKLlist","allocate IUniquegList")) RETURN
     ! Tidy up
     DEALLOCATE(IFullgList,IReducedgList)
-    WRITE(SPrintString, FMT='(I5,A19)') ind, " output reflections"
+    INoOfHKLsAll = ind
+    WRITE(SPrintString, FMT='(I5,A19)') ind, " pool reflections"
     CALL message(LS,SPrintString)
 
-    !-2a------------------------------------------------------------------
+    !-2------------------------------------------------------------------
     ! Make reduced lists of hkl, g-vector, |g| and Fg so we can deallocate the reciprocal lattice
-    ALLOCATE(Ihkl(ind,ITHREE), STAT=IErr)  ! Miller indices
-    ALLOCATE(RgO(ind,ITHREE), STAT=IErr)  ! g-vector, orthogonal frame
-    ALLOCATE(RgMag(ind), STAT=IErr)  ! |g|
-    ALLOCATE(CFg(ind), STAT=IErr)  ! Fg
+    ALLOCATE(Ihkl(INoOfHKLsAll,ITHREE), STAT=IErr)  ! Miller indices
+    ALLOCATE(RgO(INoOfHKLsAll,ITHREE), STAT=IErr)  ! g-vector, orthogonal frame
+    ALLOCATE(RgMag(INoOfHKLsAll), STAT=IErr)  ! |g|
+    ALLOCATE(CFg(INoOfHKLsAll), STAT=IErr)  ! Fg
     IF(l_alert(IErr,"HKLlist","allocations 3")) RETURN
-    DO jnd = 1,ind
+    DO jnd = 1,INoOfHKLsAll
       Ihkl(jnd,:) = IhklLattice(IUniquegList(jnd),:)
       RgO(jnd,:) = RgLatticeO(IUniquegList(jnd),:)
       RgMag(jnd) = RgMagLattice(IUniquegList(jnd))
       CFg(jnd) = CFgLattice(IUniquegList(jnd))
     END DO
+    ! change the indices for IgPoolList and IgOutList
+    lnd = 0!counter for output reflections
+    DO ind = 1,INoOfHKLsAll
+      DO jnd = 1, INFrames
+        DO knd = 1, INhkl
+          IF (IgPoolList(jnd,knd).EQ.IUniquegList(ind)) IgPoolList(jnd,knd) = ind
+          IF (IgOutList(jnd,knd).EQ.IUniquegList(ind)) THEN
+            IgOutList(jnd,knd) = ind
+            lnd = lnd + 1
+          END IF
+        END DO
+      END DO
+    END DO
+    WRITE(SPrintString, FMT='(I5,A19)') lnd, " output reflections"
+    CALL message(LS,SPrintString)
     ! Delete the reciprocal lattice
     DEALLOCATE(Isort,RgLatticeO,RgMagLattice,CFgLattice,IhklLattice)
 
-    ! now the maximum number of output reflections  
-    knd = 0
-    DO ind = 1,INFrames
-      DO jnd = 1, INhkl
+    !-3------------------------------------------------------------------
+    ! kinematic rocking curves  
+    DO ind = 1,INoOfHKLsAll
+      DO jnd = 1,INFrames
         
       END DO
     END DO
