@@ -404,8 +404,9 @@ MODULE crystallography_mod
     IMPLICIT NONE
     
     INTEGER(IKIND) :: IErr,ind,jnd,knd,Imax
-    INTEGER(IKIND), DIMENSION(:), ALLOCATABLE :: IAllAtomicNumber, RAllAnisoDW
-    REAL(RKIND),ALLOCATABLE :: RAllAtomPosition(:,:), RAllOccupancy(:), RAllIsoDW(:)
+    INTEGER(IKIND), DIMENSION(:), ALLOCATABLE :: IAllAtomicNumber, IUniqAtomicNumber
+    REAL(RKIND), ALLOCATABLE :: RAllAtomPosition(:,:), RAllOccupancy(:), RAllIsoDW(:), RAllAnisoDW
+    REAL(RKIND), ALLOCATABLE :: RUniqAtomPosition(:,:), RUniqOccupancy(:), RUniqIsoDW(:), RUniqAnisoDW
     REAL(RKIND) :: RScatteringFactor
     LOGICAL :: Lunique
     CHARACTER(2), DIMENSION(:), ALLOCATABLE :: SAllAtomName
