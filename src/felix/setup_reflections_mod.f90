@@ -273,7 +273,7 @@ MODULE setup_reflections_mod
     USE message_mod
 
     ! global parameters
-    USE IPARA, ONLY : INFrames,ISort,INhkl,IgOutList,Ihkl,IhklLattice
+    USE IPARA, ONLY : INFrames,ISort,INhkl,IgPoolList,IgOutList,Ihkl,IhklLattice,INoOfHKLsAll
     USE SPARA, ONLY : SPrintString
     USE RPARA, ONLY : RgO,RgMag,RgLatticeO,RgMagLattice
     USE CPARA, ONLY : CFg,CFgLattice

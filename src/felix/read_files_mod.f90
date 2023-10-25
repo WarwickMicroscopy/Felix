@@ -238,8 +238,9 @@ MODULE read_files_mod
   !! Major-Authors: Keith Evans (2014), Richard Beanland (2016)
   !!
   SUBROUTINE ReadHklFile(IErr)
-
-
+  USE MyNumbers
+  IMPLICIT NONE
+  INTEGER(IKIND) :: IErr
   END SUBROUTINE ReadHklFile
 
 
@@ -266,8 +267,7 @@ MODULE read_files_mod
     CHARACTER(1) :: SComma=',',SOpenBracket,SCloseBracket
     CHARACTER(100) :: SFormattedVectorX,SFormattedVectorY,SFormattedVectorZ   
     LOGICAL :: LBACK=.TRUE.   
-    INTEGER(IKIND) :: &
-          IOpenBracketPosition, ICloseBracketPosition, IFirstCommaPosition, &
+    INTEGER(IKIND) :: IOpenBracketPosition, ICloseBracketPosition, IFirstCommaPosition, &
           ILastCommaPosition
     
     ! Trim and adjustL bracket to ensure one character string
