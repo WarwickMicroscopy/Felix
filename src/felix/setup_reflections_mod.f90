@@ -273,7 +273,7 @@ MODULE setup_reflections_mod
     USE message_mod
 
     ! global parameters
-    USE IPARA, ONLY : INFrames,INhkl,IgOutList,Ihkl,IhklLattice
+    USE IPARA, ONLY : INFrames,ISort,INhkl,IgOutList,Ihkl,IhklLattice
     USE SPARA, ONLY : SPrintString
     USE RPARA, ONLY : RgO,RgMag,RgLatticeO,RgMagLattice
     USE CPARA, ONLY : CFg,CFgLattice
@@ -292,7 +292,7 @@ MODULE setup_reflections_mod
     IF(l_alert(IErr,"HKLlist","allocations 1")) RETURN
     IFullgList = RESHAPE(IgOutList,[ind])
     !now the list of unique reflections
-    Imin = MINVAL(IFullgList)-1
+    Imin = 0
     Imax = MAXVAL(IFullgList)
     ind = 0
     DO WHILE (Imin.LT.Imax)
@@ -308,7 +308,6 @@ MODULE setup_reflections_mod
     DEALLOCATE(IFullgList,IReducedgList)
     WRITE(SPrintString, FMT='(I5,A19)') ind, " output reflections"
     CALL message(LS,SPrintString)
-
 
     !-2a------------------------------------------------------------------
     ! Make reduced lists of hkl, g-vector, |g| and Fg so we can deallocate the reciprocal lattice

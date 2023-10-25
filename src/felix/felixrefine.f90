@@ -138,24 +138,24 @@ PROGRAM Felixrefine
     CALL system('mkdir ' // TRIM(ADJUSTL(subpath)))
     subpath = ""  !not sure if I need this, but getting some odd behaviour
     ! Folders per frame
-    DO knd = 1,INFrames
-      IF (knd.LT.10) THEN
-        WRITE(subpath, FMT="(A,A3,I1)") TRIM(ADJUSTL(path)), "/F_", knd
-      ELSE IF(knd.LT.100) THEN
-        WRITE(subpath, FMT="(A,A3,I2)") TRIM(ADJUSTL(path)), "/F_", knd
-      ELSE IF(knd.LT.1000) THEN
-        WRITE(subpath, FMT="(A,A3,I3)") TRIM(ADJUSTL(path)), "/F_", knd
-      ELSE
-        WRITE(subpath, FMT="(A,A3,I4)") TRIM(ADJUSTL(path)), "/F_", knd
-      END IF
+!    DO knd = 1,INFrames
+!      IF (knd.LT.10) THEN
+!        WRITE(subpath, FMT="(A,A3,I1)") TRIM(ADJUSTL(path)), "/F_", knd
+!      ELSE IF(knd.LT.100) THEN
+!        WRITE(subpath, FMT="(A,A3,I2)") TRIM(ADJUSTL(path)), "/F_", knd
+!      ELSE IF(knd.LT.1000) THEN
+!        WRITE(subpath, FMT="(A,A3,I3)") TRIM(ADJUSTL(path)), "/F_", knd
+!      ELSE
+!        WRITE(subpath, FMT="(A,A3,I4)") TRIM(ADJUSTL(path)), "/F_", knd
+!      END IF
 !      PRINT*,knd,subpath
-      CALL system('mkdir ' // TRIM(ADJUSTL(subpath)))
+!      CALL system('mkdir ' // TRIM(ADJUSTL(subpath)))
 !      DO ind = 1,IThicknessCount
 !        jnd = NINT(RInitialThickness +(ind-1)*RDeltaThickness)/10.0!in nm
 !        WRITE(subsubpath, FMT="(A,A,I4,A2)") TRIM(ADJUSTL(subpath)), "/", jnd, "nm"
 !        CALL system('mkdir ' // TRIM(ADJUSTL(subsubpath)))
 !      END DO
-    END DO
+!    END DO
   END IF
 
   !--------------------------------------------------------------------
