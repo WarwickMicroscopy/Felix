@@ -190,7 +190,7 @@ PROGRAM Felixrefine
   (TWOPI*RElectronMass*RElectronCharge*RVolume)
 
   !--------------------------------------------------------------------
-  ! allocations using the size of the beam pool specified in felix.inp, INhkl
+  ! allocations for the cRED frame series, INFrames & INhkl
   !--------------------------------------------------------------------
   ! List of g-vectors in the beam pool for each frame
   ALLOCATE(IgPoolList(INhkl,INFrames),STAT=IErr)
@@ -202,71 +202,12 @@ PROGRAM Felixrefine
   ! decided by RGOutLimit
   ALLOCATE(IgOutList(INhkl,INFrames),STAT=IErr)
   IF(l_alert(IErr,"felixrefine","allocate IgOutList")) CALL abort
-  ! RgPool is a list of g-vectors in the microscope ref frame,
-  ! units of 1/A (NB exp(-i*q.r),  physics negative convention)
-  ALLOCATE(RgPool(INhkl,ITHREE),STAT=IErr)
-  IF(l_alert(IErr,"felixrefine","allocate RgPool")) CALL abort
-  ! g-vector magnitudes
-  ! in reciprocal Angstrom units, in the Microscope reference frame
-  ALLOCATE(RgPoolMag(INhkl),STAT=IErr)
-  IF(l_alert(IErr,"felixrefine","allocate RgPoolMag")) CALL abort
-  ! g-vector components parallel to the surface unit normal
-  ALLOCATE(RgDotNorm(INhkl),STAT=IErr)
-  IF(l_alert(IErr,"felixrefine","allocate RgDotNorm")) CALL abort
-  ! Matrix of 2pi*g-vectors that corresponds to the Ug matrix
-  ALLOCATE(RgMatrix(INhkl,INhkl,ITHREE),STAT=IErr)
-  IF(l_alert(IErr,"felixrefine","allocate RgMatrix")) CALL abort
-  ! NB Rhkl are in INTEGER form [h,k,l] but are REAL to allow dot products etc.
-  ALLOCATE(Rhkl(INhkl,ITHREE),STAT=IErr)
-  IF(l_alert(IErr,"felixrefine","allocate Rhkl")) CALL abort
-  ! Deviation parameter for each hkl
-  ALLOCATE(RDevPara(INhkl),STAT=IErr)
-  ! what's this deviation parameter for?
-  ALLOCATE(RDevC(INhkl),STAT=IErr)
-  IF(l_alert(IErr,"felixrefine","allocate RDevC")) CALL abort
-  ! allocate Ug arrays
-  ALLOCATE(CUgMatNoAbs(INhkl,INhkl),STAT=IErr)! Ug Matrix without absorption
-  IF(l_alert(IErr,"felixrefine","allocate CUgMatNoAbs")) CALL abort
-  ALLOCATE(CUgMatPrime(INhkl,INhkl),STAT=IErr)! U'g Matrix of just absorption
-  IF(l_alert(IErr,"felixrefine","allocate CUgMatPrime")) CALL abort
-  ALLOCATE(CUgMat(INhkl,INhkl),STAT=IErr)! Ug+U'g Matrix, including absorption
-  IF(l_alert(IErr,"felixrefine","allocate CUgMat")) CALL abort
-  ! Matrix with numbers marking equivalent Ug's
-  ALLOCATE(ISymmetryRelations(INhkl,INhkl),STAT=IErr)
-  IF(l_alert(IErr,"felixrefine","allocate ISymmetryRelations")) CALL abort
 
-  !--------------------------------------------------------------------
-  ! set up unit cell 
-  ! total possible number of atoms/unit cell
-  IMaxPossibleNAtomsUnitCell=SIZE(RBasisAtomPosition,1)*SIZE(RSymVec,1)
-  ! over-allocate since actual size not known before calculation 
-  ! (atoms in special positions will be duplicated)
-  ! atoms, fractional unit cell
-  ALLOCATE(RAtomXYZ(IMaxPossibleNAtomsUnitCell,ITHREE),STAT=IErr)
-  IF(l_alert(IErr,"felixrefine","allocate RAtomXYZ")) CALL abort
-  ! atoms,in microscope reference frame, in Angstrom units
-  ALLOCATE(RAtomCoordinate(IMaxPossibleNAtomsUnitCell,ITHREE),STAT=IErr)
-  IF(l_alert(IErr,"felixrefine","allocate RAtomCoordinate")) CALL abort
-  ALLOCATE(SAtomLabel(IMaxPossibleNAtomsUnitCell),STAT=IErr) ! atom label
-  IF(l_alert(IErr,"felixrefine","allocate SAtomLabel")) CALL abort
-  ALLOCATE(SAtomName(IMaxPossibleNAtomsUnitCell),STAT=IErr) ! atom name
-  IF(l_alert(IErr,"felixrefine","allocate SAtomName")) CALL abort
-  ALLOCATE(RIsoDW(IMaxPossibleNAtomsUnitCell),STAT=IErr) ! Isotropic Debye-Waller factor
-  IF(l_alert(IErr,"felixrefine","allocate RIsoDW")) CALL abort
-  ALLOCATE(ROccupancy(IMaxPossibleNAtomsUnitCell),STAT=IErr)
-  IF(l_alert(IErr,"felixrefine","allocate ROccupancy")) CALL abort
-  ALLOCATE(IAtomicNumber(IMaxPossibleNAtomsUnitCell),STAT=IErr)
-  IF(l_alert(IErr,"felixrefine","allocate IAtomicNumber")) CALL abort
-  ! Anisotropic Debye-Waller factor, not yet functioning
-  ALLOCATE(IAnisoDW(IMaxPossibleNAtomsUnitCell),STAT=IErr)
-  IF(l_alert(IErr,"felixrefine","allocate IAnisoDW")) CALL abort
   !--------------------------------------------------------------------
   ! fill unit cell from basis and symmetry, then remove duplicates at special positions
   ! Mean inner potential & wavevector inside the crystal RBigK are also calculated here
   CALL UniqueAtomPositions(IErr)  ! in crystallography.f90
   IF(l_alert(IErr,"felixrefine","UniqueAtomPositions")) CALL abort
-  !?? RB could re-allocate RAtomCoordinate,SAtomName,RIsoDW,ROccupancy,
-  !?? IAtomicNumber,IAnisoDW to match INAtomsUnitCell?
 
   !--------------------------------------------------------------------
   ! From the unit cell we produce RaVecO, RbVecO, RcVecO in an orthogonal reference frame O
@@ -307,21 +248,55 @@ PROGRAM Felixrefine
 !    IF(l_alert(IErr,"felixrefine","SpecificReflectionDetermination")) CALL abort
 
   !--------------------------------------------------------------------
+  ! Allocations for the Bloch wave calculation
+  ! RgPool is a list of g-vectors in the microscope ref frame,
+  ! units of 1/A (NB exp(-i*q.r),  physics negative convention)
+!  ALLOCATE(RgPool(INhkl,ITHREE),STAT=IErr)
+!  IF(l_alert(IErr,"felixrefine","allocate RgPool")) CALL abort
+  ! g-vector magnitudes
+  ! in reciprocal Angstrom units, in the Microscope reference frame
+!  ALLOCATE(RgPoolMag(INhkl),STAT=IErr)
+!  IF(l_alert(IErr,"felixrefine","allocate RgPoolMag")) CALL abort
+  ! g-vector components parallel to the surface unit normal
+!  ALLOCATE(RgDotNorm(INhkl),STAT=IErr)
+!  IF(l_alert(IErr,"felixrefine","allocate RgDotNorm")) CALL abort
+  ! Matrix of 2pi*g-vectors that corresponds to the Ug matrix
+!  ALLOCATE(RgMatrix(INhkl,INhkl,ITHREE),STAT=IErr)
+!  IF(l_alert(IErr,"felixrefine","allocate RgMatrix")) CALL abort
+  ! NB Rhkl are in INTEGER form [h,k,l] but are REAL to allow dot products etc.
+!  ALLOCATE(Rhkl(INhkl,ITHREE),STAT=IErr)
+!  IF(l_alert(IErr,"felixrefine","allocate Rhkl")) CALL abort
+  ! Deviation parameter for each hkl
+!  ALLOCATE(RDevPara(INhkl),STAT=IErr)
+  ! what's this deviation parameter for?
+!  ALLOCATE(RDevC(INhkl),STAT=IErr)
+!  IF(l_alert(IErr,"felixrefine","allocate RDevC")) CALL abort
+  ! allocate Ug arrays
+!  ALLOCATE(CUgMatNoAbs(INhkl,INhkl),STAT=IErr)! Ug Matrix without absorption
+!  IF(l_alert(IErr,"felixrefine","allocate CUgMatNoAbs")) CALL abort
+!  ALLOCATE(CUgMatPrime(INhkl,INhkl),STAT=IErr)! U'g Matrix of just absorption
+!  IF(l_alert(IErr,"felixrefine","allocate CUgMatPrime")) CALL abort
+!  ALLOCATE(CUgMat(INhkl,INhkl),STAT=IErr)! Ug+U'g Matrix, including absorption
+!  IF(l_alert(IErr,"felixrefine","allocate CUgMat")) CALL abort
+  ! Matrix with numbers marking equivalent Ug's
+!  ALLOCATE(ISymmetryRelations(INhkl,INhkl),STAT=IErr)
+!  IF(l_alert(IErr,"felixrefine","allocate ISymmetryRelations")) CALL abort
+  !--------------------------------------------------------------------
   ! ImageInitialisation
   !--------------------------------------------------------------------
-  IPixelTotal = ISizeX*ISizeY
-  ALLOCATE(IPixelLocation(IPixelTotal,2),STAT=IErr)
-  IF(l_alert(IErr,"felixrefine","allocate IPixelLocation")) CALL abort
+!  IPixelTotal = ISizeX*ISizeY
+!  ALLOCATE(IPixelLocation(IPixelTotal,2),STAT=IErr)
+!  IF(l_alert(IErr,"felixrefine","allocate IPixelLocation")) CALL abort
   ! we keep track of where a calculation goes in the image using the
   ! IPixelLocation array.  Remember fortran indexing is [row,col]=[y,x]
-  lnd = 0
-  DO ind = 1,ISizeY
-    DO jnd = 1,ISizeX
-      lnd = lnd + 1
-      IPixelLocation(lnd,1) = ind
-      IPixelLocation(lnd,2) = jnd
-    END DO
-  END DO
+!  lnd = 0
+!  DO ind = 1,ISizeY
+!    DO jnd = 1,ISizeX
+!      lnd = lnd + 1
+!      IPixelLocation(lnd,1) = ind
+!      IPixelLocation(lnd,2) = jnd
+!    END DO
+!  END DO
 
   !--------------------------------------------------------------------
   ! finish off: deallocations for variables used in all frames

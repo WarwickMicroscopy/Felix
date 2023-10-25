@@ -105,7 +105,7 @@ MODULE setup_reflections_mod
     ALLOCATE(RTotalSgPool(INhkl*INFrames),STAT=IErr)
     IF(l_alert(IErr,"HKLmake","allocate ITotalgPool")) RETURN
     ALLOCATE(Inum(p),Ipos(p),STAT=IErr)
-    IF(l_alert(IErr,"HKLMake","allocate ILocalNhkl")) RETURN
+    IF(l_alert(IErr,"HKLMake","allocate MPI variables")) RETURN
     DO ind = 1,p
       Ipos(ind) = INhkl*INFrames*(ind-1)/p
       Inum(ind) = INhkl*(INFrames*ind/p - INFrames*(ind-1)/p)
@@ -145,12 +145,13 @@ MODULE setup_reflections_mod
             Inum,Ipos,MPI_INTEGER,root,MPI_COMM_WORLD,IErr)
     CALL MPI_GATHERV(RLocalSgPool,SIZE(RLocalSgPool),MPI_DOUBLE_PRECISION,RTotalSgPool,&
             Inum,Ipos,MPI_DOUBLE_PRECISION,root,MPI_COMM_WORLD,IErr)
-    !This brodcast is not strictly necessary but keeps all cores synchronised
+    !This broadcast is not strictly necessary but keeps all cores synchronised
     CALL MPI_BCAST(ITotalgPool,SIZE(ITotalgPool),MPI_INTEGER,root,MPI_COMM_WORLD,IErr)
     CALL MPI_BCAST(RTotalSgPool,SIZE(RTotalSgPool),MPI_DOUBLE_PRECISION,root,MPI_COMM_WORLD,IErr)
     IgPoolList = RESHAPE(ITotalgPool, (/INhkl,INFrames/) )
     RGPoolSg = RESHAPE(RTotalSgPool, (/INhkl,INFrames/) )
-
+    ! Clean up
+    DEALLOCATE(ILocalgPool,ITotalgPool,RLocalSgPool,RTotalSgPool,Inum,Ipos)
 
     !-2------------------------------------------------------------------
     ! Fill IgOutList & output as a text file
@@ -255,9 +256,6 @@ MODULE setup_reflections_mod
       DEALLOCATE(RSim)
     END IF
 
-    ! Clean up
-    DEALLOCATE(ILocalgPool,ITotalgPool,RLocalSgPool,RTotalSgPool,Inum,Ipos)
-
   END SUBROUTINE HKLmake
 
   !!$%%HKLList%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -286,7 +284,7 @@ MODULE setup_reflections_mod
     INTEGER(IKIND), DIMENSION(:), ALLOCATABLE :: IFullgList,IReducedgList,IUniquegList
 
     !--------------------------------------------------------------------
-    ! first get a list of all output reflections
+    ! first get a list of output reflections without duplicates, IUniquegList
     ind = INFrames*INhkl
     ALLOCATE(IFullgList(ind), STAT=IErr)  ! everything
     IF(l_alert(IErr,"HKLlist","allocate IFullgList")) RETURN
@@ -315,6 +313,9 @@ MODULE setup_reflections_mod
         
       END DO
     END DO
+    
+    ! Tidy up
+    DEALLOCATE(IFullgList,IReducedgList)
  
   END SUBROUTINE HKLList
   
