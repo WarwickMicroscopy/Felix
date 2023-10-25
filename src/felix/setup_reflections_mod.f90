@@ -59,9 +59,9 @@ MODULE setup_reflections_mod
     ! global inputs/outputs
     USE SPARA, ONLY : SPrintString,SChemicalFormula
     USE IPARA, ONLY : INhkl,IgOutList,IgPoolList,IhklLattice,INFrames,InLattice,ILN,IByteSize,ISort
-    USE RPARA, ONLY : RXDirO,RYDirO,RZDirO,RcrVecM,RLatMag,RFrameAngle,&
+    USE RPARA, ONLY : RXDirO,RYDirO,RZDirO,RcrVecM,RgMagLattice,RFrameAngle,&
         RBigK,RgLatticeO,RgPoolSg
-    USE CPARA, ONLY : CFg
+    USE CPARA, ONLY : CFgLattice
     USE Iconst
     USE IChannels, ONLY : IChOutIhkl,IChOutIM
     
@@ -82,7 +82,7 @@ MODULE setup_reflections_mod
     ! calculate reflection list frame by frame
     !--------------------------------------------------------------------
     ! In the subroutine ReciprocalLattice we generated all reciprocal lattice vectors
-    ! and put them in ascending order of magnitude RLatMag
+    ! and put them in ascending order of magnitude RgMagLattice
     ! with indices of IhklLattice and vector RgLatticeO in the orthogonal ref frame
     ! IgPoolList says which reflections are close to the Ewald sphere
     ! IgOutList says which reflections are to be saved (|g|<RGOutLimit)
@@ -121,16 +121,16 @@ MODULE setup_reflections_mod
         ! Calculate Sg by getting the vector k0, which is coplanar with k and g and
         ! corresponds to an incident beam at the Bragg condition
         ! First we need the vector component of k perpendicular to g, which we call p 
-        Rp = Rk - DOT_PRODUCT(Rk,RgLatticeO(jnd,:))*RgLatticeO(jnd,:)/(RLatMag(jnd)**2)
+        Rp = Rk - DOT_PRODUCT(Rk,RgLatticeO(jnd,:))*RgLatticeO(jnd,:)/(RgMagLattice(jnd)**2)
         ! and now make k0 by adding vectors parallel to g and p
         ! i.e. k0 = (p/|p|)*(k^2-g^2/4)^0.5 - g/2
-        Rk0 = SQRT(RBigK**2-QUARTER*RLatMag(jnd)**2)*Rp/SQRT(DOT_PRODUCT(Rp,Rp)) - &
+        Rk0 = SQRT(RBigK**2-QUARTER*RgMagLattice(jnd)**2)*Rp/SQRT(DOT_PRODUCT(Rp,Rp)) - &
               HALF*RgLatticeO(jnd,:)
         ! The angle phi between k and k0 is how far we are from the Bragg condition
         Rphi = ACOS(DOT_PRODUCT(Rk,Rk0)/(RBigK**2))
         ! and now Sg is 2g sin(phi/2), with the sign of K-|K+g|
         RKplusg = Rk + RgLatticeO(jnd,:)
-        RSg = TWO*RLatMag(jnd)*SIN(HALF*Rphi)*SIGN(ONE,RBigK-SQRT(DOT_PRODUCT(RKplusg,RKplusg)))
+        RSg = TWO*RgMagLattice(jnd)*SIN(HALF*Rphi)*SIGN(ONE,RBigK-SQRT(DOT_PRODUCT(RKplusg,RKplusg)))
         IF (ABS(RSg).LT.RDevLimit) THEN
           IF (knd.LE.INhkl) THEN ! while the beam pool isn't full
             ILocalgPool((ind-1)*INhkl+knd) = jnd  ! add the reflection to the list
@@ -183,13 +183,13 @@ MODULE setup_reflections_mod
           lnd = IgPoolList(knd,ind)
           RSg = RgPoolSg(knd,ind)
           ! Is this reflection small enough to be in the output list
-          IF (RLatMag(IgPoolList(knd,ind)).LT.RGOutLimit) THEN
+          IF (RgMagLattice(IgPoolList(knd,ind)).LT.RGOutLimit) THEN
           jnd = jnd + 1
             IgOutList(knd,ind) = IgPoolList(knd,ind)
           !END IF  !** remove comment to give all reflections, complements ##
             WRITE(fString,"(3(I3,1X),2X, F8.4,A1,F8.4,A3, F6.2,2X, F8.4)") &
-                  IhklLattice(lnd,:), REAL(CFg(lnd)),"+",AIMAG(CFg(lnd)),"i  ",&
-                  RLatMag(lnd)/TWOPI, RSg
+                  IhklLattice(lnd,:), REAL(CFgLattice(lnd)),"+",AIMAG(CFgLattice(lnd)),"i  ",&
+                  RgMagLattice(lnd)/TWOPI, RSg
             IF (my_rank.EQ.0) WRITE(IChOutIhkl,*) TRIM(ADJUSTL(fString))
           END IF  !## remove comment to give output reflections, complements ** 
         END IF
@@ -199,7 +199,6 @@ MODULE setup_reflections_mod
       IF (jnd.GT.IMaxNg) IMaxNg = jnd  ! update max number of outputs if necessary
     END DO
     IF (my_rank.EQ.0) CLOSE(IChOutIhkl,IOSTAT=IErr)
-
 
     !-3------------------------------------------------------------------
     ! Write a set of kinematic simulation frames
@@ -220,7 +219,7 @@ MODULE setup_reflections_mod
           IF (IgOutList(knd,ind).NE.0) THEN
             lnd = IgPoolList(knd,ind)  ! index of reflection in the reciprocal lattice
             Rg = RgLatticeO(lnd,:)  ! g-vector
-            RIkin = CFg(lnd)*CONJG(CFg(lnd))  ! simple kinematic intensity
+            RIkin = CFgLattice(lnd)*CONJG(CFgLattice(lnd))  ! simple kinematic intensity
             RSg = RgPoolSg(knd,ind)  !Sg
             ! x- and y-coords (NB swapped in the image!)
             Rp = RXDirO*COS(RAngle)-RZDirO*SIN(RAngle)  ! unit vector horizontal in the image
@@ -267,15 +266,17 @@ MODULE setup_reflections_mod
   SUBROUTINE HKLList( IErr )
 
     ! This procedure is called once in felixrefine setup
+    ! 1) get unique g's
+    ! 2) make a new list of unique g's and associated parameters
+    
     USE MyNumbers
     USE message_mod
 
     ! global parameters
-    USE IPARA, ONLY : INFrames,INhkl,IgOutList
+    USE IPARA, ONLY : INFrames,INhkl,IgOutList,Ihkl,IhklLattice
     USE SPARA, ONLY : SPrintString
-
-    ! global inputs
-    USE RPARA, ONLY : 
+    USE RPARA, ONLY : RgO,RgMag,RgLatticeO,RgMagLattice
+    USE CPARA, ONLY : CFg,CFgLattice
 
     IMPLICIT NONE
 
@@ -283,13 +284,12 @@ MODULE setup_reflections_mod
     INTEGER(IKIND) :: ind,jnd,knd,IErr,Imin,Imax
     INTEGER(IKIND), DIMENSION(:), ALLOCATABLE :: IFullgList,IReducedgList,IUniquegList
 
-    !--------------------------------------------------------------------
+    !1-------------------------------------------------------------------
     ! first get a list of output reflections without duplicates, IUniquegList
     ind = INFrames*INhkl
     ALLOCATE(IFullgList(ind), STAT=IErr)  ! everything
-    IF(l_alert(IErr,"HKLlist","allocate IFullgList")) RETURN
     ALLOCATE(IReducedgList(ind), STAT=IErr)  ! unique reflections in an oversize matrix
-    IF(l_alert(IErr,"HKLlist","allocate IReducedgList")) RETURN
+    IF(l_alert(IErr,"HKLlist","allocations 1")) RETURN
     IFullgList = RESHAPE(IgOutList,[ind])
     !now the list of unique reflections
     Imin = MINVAL(IFullgList)-1
@@ -301,11 +301,31 @@ MODULE setup_reflections_mod
         IReducedgList(ind) = Imin
     END DO
     ALLOCATE(IUniquegList(ind), STAT=IErr)
+    IF(l_alert(IErr,"HKLlist","allocations 2")) RETURN
     IUniquegList = IReducedgList(1:ind)
     IF(l_alert(IErr,"HKLlist","allocate IUniquegList")) RETURN
+    ! Tidy up
+    DEALLOCATE(IFullgList,IReducedgList)
     WRITE(SPrintString, FMT='(I5,A19)') ind, " output reflections"
     CALL message(LS,SPrintString)
- 
+
+
+    !-2a------------------------------------------------------------------
+    ! Make reduced lists of hkl, g-vector, |g| and Fg so we can deallocate the reciprocal lattice
+    ALLOCATE(Ihkl(ind,ITHREE), STAT=IErr)  ! Miller indices
+    ALLOCATE(RgO(ind,ITHREE), STAT=IErr)  ! g-vector, orthogonal frame
+    ALLOCATE(RgMag(ind), STAT=IErr)  ! |g|
+    ALLOCATE(CFg(ind), STAT=IErr)  ! Fg
+    IF(l_alert(IErr,"HKLlist","allocations 3")) RETURN
+    DO jnd = 1,ind
+      Ihkl(jnd,:) = IhklLattice(IUniquegList(jnd),:)
+      RgO(jnd,:) = RgLatticeO(IUniquegList(jnd),:)
+      RgMag(jnd) = RgMagLattice(IUniquegList(jnd))
+      CFg(jnd) = CFgLattice(IUniquegList(jnd))
+    END DO
+    ! Delete the reciprocal lattice
+    DEALLOCATE(Isort,RgLatticeO,RgMagLattice,CFgLattice,IhklLattice)
+
     ! now the maximum number of output reflections  
     knd = 0
     DO ind = 1,INFrames
@@ -314,8 +334,6 @@ MODULE setup_reflections_mod
       END DO
     END DO
     
-    ! Tidy up
-    DEALLOCATE(IFullgList,IReducedgList)
  
   END SUBROUTINE HKLList
   

@@ -168,7 +168,7 @@ MODULE IPara
   INTEGER(IKIND) :: ISizeX, ISizeY, IPixelCount, INFrames
   !Crystal Settings
   INTEGER(IKIND) :: IMaxPossibleNAtomsUnitCell, InLattice !no. of g-vectors in the reciprocal lattice
-  INTEGER(IKIND),DIMENSION(:,:), ALLOCATABLE :: IhklLattice, IgPoolList
+  INTEGER(IKIND),DIMENSION(:,:), ALLOCATABLE :: IhklLattice, IgPoolList, Ihkl
   !Name2Atom index
   INTEGER(IKIND), DIMENSION(:), ALLOCATABLE :: IBasisAtomicNumber,IAtomicNumber
   !Microscope Settings
@@ -222,9 +222,9 @@ MODULE RPara
   REAL(RKIND) :: RCellA,RCellB,RCellC,RVolume,RAlpha,RBeta,RGamma, &
        RDebyeWallerConstant,RAbsorptionPercentage
   REAL(RKIND), DIMENSION(:), ALLOCATABLE :: RBasisIsoDW, RBasisOccupancy, RIsoDW,&
-         ROccupancy,RLatMag
+         ROccupancy,RgMagLattice, RgMag
   REAL(RKIND), DIMENSION(:,:), ALLOCATABLE :: RSymVec,RBasisAtomPosition, RBasisAtomDelta,&
-       RAtomXYZ,RUniqueKey,RgLatticeO,RgPoolSg
+       RAtomXYZ,RUniqueKey, RgLatticeO, RgO, RgPoolSg
   REAL(RKIND), DIMENSION(:,:,:), ALLOCATABLE :: RSymMat
   !Microscope Parameters
   REAL(RKIND) :: RConvergenceAngle,RAcceleratingVoltage
@@ -394,7 +394,7 @@ MODULE CPara
   USE MyNumbers
 
   COMPLEX(CKIND),DIMENSION(:),ALLOCATABLE :: CAlphaWeightingCoefficients, CPsi0,CUniqueUg,CEigenValues,&
-                CGammaValues, CWaveFunctions,CFullWaveFunctions, CFg
+                CGammaValues, CWaveFunctions,CFullWaveFunctions, CFgLattice, CFg
   COMPLEX(CKIND), DIMENSION(:,:), ALLOCATABLE :: CUgMatNoAbs,CUgMatPrime,CUgMat,CUgSgMatrix,CEigenValuesChunk,&
                 CEigenVectors,CEigenValueDependentTerms,CInvertedEigenVectors,CBeamProjectionMatrix,&
                 CDummyBeamMatrix

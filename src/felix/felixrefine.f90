@@ -104,18 +104,18 @@ PROGRAM Felixrefine
   CALL read_cif(IErr) ! felix.cif ! some allocations are here
   IF(l_alert(IErr,"felixrefine","ReadCif")) CALL abort
 
-  CALL ReadHklFile(IErr) ! the list of hkl's to input/output
-  IF(l_alert(IErr,"felixrefine","ReadHklFile")) CALL abort
+!  CALL ReadHklFile(IErr) ! the list of hkl's to input/output
+!  IF(l_alert(IErr,"felixrefine","ReadHklFile")) CALL abort
   !--------------------------------------------------------------------
   ! allocations for arrays to track frame simulations
-  ALLOCATE(IhklsFrame(INoOfHKLsAll),STAT=IErr) ! Legacy list
-  IF(l_alert(IErr,"felixrefine","allocate IhklsFrame")) CALL abort
-  ALLOCATE(IhklsAll(INoOfHKLsAll),STAT=IErr)! List for full sim
-  IF(l_alert(IErr,"felixrefine","allocate IhklsAll")) CALL abort
-  ALLOCATE(ILiveList(INoOfHKLsAll),STAT=IErr)! List of current output reflections
-  IF(l_alert(IErr,"felixrefine","allocate ILiveList")) CALL abort
-  ALLOCATE(ILACBEDList(INoOfHKLsAll),STAT=IErr)! List of current output containers
-  IF(l_alert(IErr,"felixrefine","allocate ILACBEDList")) CALL abort
+!  ALLOCATE(IhklsFrame(INoOfHKLsAll),STAT=IErr) ! Legacy list
+!  IF(l_alert(IErr,"felixrefine","allocate IhklsFrame")) CALL abort
+!  ALLOCATE(IhklsAll(INoOfHKLsAll),STAT=IErr)! List for full sim
+!  IF(l_alert(IErr,"felixrefine","allocate IhklsAll")) CALL abort
+!  ALLOCATE(ILiveList(INoOfHKLsAll),STAT=IErr)! List of current output reflections
+!  IF(l_alert(IErr,"felixrefine","allocate ILiveList")) CALL abort
+!  ALLOCATE(ILACBEDList(INoOfHKLsAll),STAT=IErr)! List of current output containers
+!  IF(l_alert(IErr,"felixrefine","allocate ILACBEDList")) CALL abort
   !output tracking flags
   ILiveList = 0 ! links reflections, see write_outputs for all meanings of this flag
   ILACBEDList = 0! links a simulation to its output container
@@ -165,7 +165,7 @@ PROGRAM Felixrefine
   IF(l_alert(IErr,"felixrefine","SetScatteringFactors")) CALL abort
   ! returns global RScattFactors depending upon scattering method: Kirkland, Peng, etc.
 
-  ! Calculate wavevector magnitude k and relativistic mass
+  ! Calculate wave vector magnitude k and relativistic mass
   ! Electron Velocity in metres per second
   RElectronVelocity = &
         RSpeedOfLight*SQRT( ONE - ((RElectronMass*RSpeedOfLight**2) / &
@@ -231,6 +231,7 @@ PROGRAM Felixrefine
   ! List the hkl's in each frame
   CALL HKLMake(RDevLimit, RGOutLimit, IErr)  ! in setup_reflections.f90
   IF(l_alert(IErr,"felixrefine","HKLMake")) CALL abort
+  ! List the unique g's and make reduced arrays before deleting the reciprocal lattice to save memory
   CALL HKLList(IErr)
   IF(l_alert(IErr,"felixrefine","HKLList")) CALL abort
   

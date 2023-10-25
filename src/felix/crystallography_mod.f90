@@ -117,11 +117,11 @@ MODULE crystallography_mod
     USE RPARA, ONLY : RAlpha,RBeta,RGamma,RCellA,RCellB,RCellC,RXDirC_0,RZDirC_0,RAtomCoordinate,&
             RCurrentGMagnitude,RAtomXYZ
     USE SPARA, ONLY : SSpaceGroupName,SPrintString
-    USE CPARA, ONLY : CFg
+    USE CPARA, ONLY : CFgLattice
 
     ! global outputs
     USE RPARA, ONLY : RaVecO,RbVecO,RcVecO,RVolume,RarVecO,RbrVecO,RcrVecO,&
-            RXDirO,RYDirO,RZDirO,RarMag,RbrMag,RcrMag,RgLatticeO,RLatMag
+            RXDirO,RYDirO,RZDirO,RarMag,RbrMag,RcrMag,RgLatticeO,RgMagLattice
     USE IPARA, ONLY : IhklLattice,InLattice
 
     IMPLICIT NONE
@@ -210,7 +210,7 @@ MODULE crystallography_mod
 
     ! Now build the reciprocal lattice, from which we will take slices for
     ! each beam pool using HKLMake
-    ! IhklLattice is the list of Miller indices for the 3D lattice
+    ! IhklLattice is the list of Miller indices for the full 3D lattice
     ! RgLatticeO is the corresponding list of coordinates in reciprocal space
     ! maximum a*,b*,c* limit is determined by the G magnitude limit
     inda=NINT(RLatticeLimit/RarMag)
@@ -220,11 +220,11 @@ MODULE crystallography_mod
     ALLOCATE(Isort(InLattice), STAT=IErr)! Sorted index
     ALLOCATE(IhklLattice(InLattice, ITHREE), STAT=IErr)! Miller indices
     ALLOCATE(RgLatticeO(InLattice, ITHREE), STAT=IErr)! g-vector
-    ALLOCATE(RLatMag(InLattice), STAT=IErr)! magnitude
-    ALLOCATE(CFg(InLattice), STAT=IErr)! Structure factors
+    ALLOCATE(RgMagLattice(InLattice), STAT=IErr)! magnitude
+    ALLOCATE(CFgLattice(InLattice), STAT=IErr)! Structure factors
     
     ! Fill the lists
-    CFg = CZERO
+    CFgLattice = CZERO
     lnd = 0
     DO ind = -inda,inda
       DO jnd = -indb,indb
@@ -240,12 +240,12 @@ MODULE crystallography_mod
           Rg = ind*RarVecO + jnd*RbrVecO + knd*RcrVecO  ! g-vector
           RgLatticeO(lnd,:) = Rg
           RCurrentGMagnitude = SQRT(DOT_PRODUCT(Rg,Rg))  ! global variable, goes into scatt fac calc 
-          RLatMag(lnd) = RCurrentGMagnitude
+          RgMagLattice(lnd) = RCurrentGMagnitude
           ! Calculate structure factor
           DO mnd=1,INAtomsUnitCell
             ICurrentZ = IAtomicNumber(mnd)
             CALL AtomicScatteringFactor(Rfq,IErr)
-            CFg(lnd) = CFg(lnd)+Rfq*EXP(-CIMAGONE*DOT_PRODUCT(Rg,RAtomCoordinate(mnd,:)) )
+            CFgLattice(lnd) = CFgLattice(lnd)+Rfq*EXP(-CIMAGONE*DOT_PRODUCT(Rg,RAtomCoordinate(mnd,:)) )
           END DO
         END DO
       END DO
@@ -254,7 +254,7 @@ MODULE crystallography_mod
     ! Get ISort in ascending order of |g| (re-purposed HKLSort routine)
     ! Based on ShellSort from "Numerical Recipes", routine SHELL()
     ! This allows reflections to be accessed in ascending order of |g|
-    ! e.g. using CFg(ISort(i)) instead of CFg(i)
+    ! e.g. using CFgLattice(ISort(i)) instead of CFgLattice(i)
     IlogNB2=INT(LOG(REAL(InLattice))*ALN2I+LocalTINY)
     mnd = InLattice
     DO nnd=1,IlogNB2
@@ -264,7 +264,7 @@ MODULE crystallography_mod
         ind=jnd
 3       CONTINUE
         lnd=ind+mnd
-        IF( RLatMag(ISort(lnd)) .LT. RLatMag(ISort(ind))) THEN
+        IF( RgMagLattice(ISort(lnd)) .LT. RgMagLattice(ISort(ind))) THEN
           Iswap = ISort(ind) ! swap index
           ISort(ind) = ISort(lnd)
           ISort(lnd) = Iswap
