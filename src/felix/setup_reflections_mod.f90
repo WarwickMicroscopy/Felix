@@ -71,7 +71,7 @@ MODULE setup_reflections_mod
     INTEGER(IKIND) :: IErr,ind,jnd,knd,lnd,mnd,ISim,Ix,Iy,ILocalFrameMin,ILocalFrameMax,&
                       ILocalNFrames,IMaxNg
     INTEGER(IKIND), DIMENSION(:), ALLOCATABLE :: Inum,Ipos,ILocalgPool,ITotalgPool
-    REAL(RKIND) :: RAngle,Rk(ITHREE),Rk0(ITHREE),Rp(ITHREE),RSg,Rphi,Rg(ITHREE),Rmos,RIkin,&
+    REAL(RKIND) :: RAngle,Rk(ITHREE),Rk0(ITHREE),Rp(ITHREE),RSg,Rphi,Rg(ITHREE),RInst,RIkin,&
                    RKplusg(ITHREE)
     REAL(RKIND), DIMENSION(:,:), ALLOCATABLE :: RSim
     REAL(RKIND), DIMENSION(:), ALLOCATABLE :: RLocalSgPool,RTotalSgPool
@@ -202,47 +202,47 @@ MODULE setup_reflections_mod
 
     !-3------------------------------------------------------------------
     ! Write a set of kinematic simulation frames
-    IF(my_rank.EQ.0) THEN
-      ! image
-      ISim = 256_IKIND  ! NB HALF the output image size = output |g| limit/0.98
-      ALLOCATE(RSim(2*ISim,2*ISim),STAT=IErr)
-      IF(l_alert(IErr,"HKLmake","allocate RSim")) RETURN
-      ! Mosaicity - sets the FWHM  of a kinematic rocking curve
-      Rmos = 3000.0
-      DO ind = 1,INFrames
-        RAngle = REAL(ind-1)*DEG2RADIAN*RFrameAngle
-        RSim = ZERO
-        ! Direct beam
-        RSim(ISim-1:ISim+1,ISim-1:ISim+1) = 1
-        ! output g's
-        DO knd = 1, INhkl
-          IF (IgOutList(knd,ind).NE.0) THEN
-            lnd = IgPoolList(knd,ind)  ! index of reflection in the reciprocal lattice
-            Rg = RgLatticeO(lnd,:)  ! g-vector
-            RIkin = CFgLattice(lnd)*CONJG(CFgLattice(lnd))  ! simple kinematic intensity
-            RSg = RgPoolSg(knd,ind)  !Sg
-            ! x- and y-coords (NB swapped in the image!)
-            Rp = RXDirO*COS(RAngle)-RZDirO*SIN(RAngle)  ! unit vector horizontal in the image
-            ! position of the spot, 2% leeway to avoid going over the edge of the image
-            Ix = ISim-0.98*NINT(DOT_PRODUCT(Rg,Rp)*REAL(ISim)/RGOutLimit)  
-            Iy = ISim+0.98*NINT(DOT_PRODUCT(Rg,RYDirO)*REAL(ISim)/RGOutLimit)
-            RSim(Iy-1:Iy+1,Ix-1:Ix+1) = EXP(-RMos*RSg*RSg)*RIkin
-          END IF
-        END DO
-        ! write to disk
-        IF (ind.LT.10) THEN
-          WRITE(path, FMT="(A,A15,I1,A4)") TRIM(ADJUSTL(SChemicalFormula(1:ILN))),&
-                  "/Simulations/S_",ind,".bin"
-        ELSE IF (ind.LT.100) THEN
-          WRITE(path, FMT="(A,A15,I2,A4)") TRIM(ADJUSTL(SChemicalFormula(1:ILN))),&
-                  "/Simulations/S_",ind,".bin"
-        ELSE IF (ind.LT.1000) THEN
-          WRITE(path, FMT="(A,A15,I3,A4)") TRIM(ADJUSTL(SChemicalFormula(1:ILN))),&
-                  "/Simulations/S_",ind,".bin"
-        ELSE
-          WRITE(path, FMT="(A,A15,I4,A4)") TRIM(ADJUSTL(SChemicalFormula(1:ILN))),&
-                  "/Simulations/S_",ind,".bin"
+    ! image
+    ISim = 256_IKIND  ! NB HALF the output image size = output |g| limit/0.98
+    ALLOCATE(RSim(2*ISim,2*ISim),STAT=IErr)
+    IF(l_alert(IErr,"HKLmake","allocate RSim")) RETURN
+    ! Instrument broadening term - sets the FWHM  of a kinematic rocking curve
+    RInst = 3000.0
+    DO ind = 1,INFrames
+      RAngle = REAL(ind-1)*DEG2RADIAN*RFrameAngle
+      RSim = ZERO
+      ! Direct beam
+      RSim(ISim-1:ISim+1,ISim-1:ISim+1) = 1
+      ! output g's
+      DO knd = 1, INhkl
+        IF (IgOutList(knd,ind).NE.0) THEN
+          lnd = IgPoolList(knd,ind)  ! index of reflection in the reciprocal lattice
+          Rg = RgLatticeO(lnd,:)  ! g-vector
+          RIkin = CFgLattice(lnd)*CONJG(CFgLattice(lnd))  ! simple kinematic intensity
+          RSg = RgPoolSg(knd,ind)  !Sg
+          ! x- and y-coords (NB swapped in the image!)
+          Rp = RXDirO*COS(RAngle)-RZDirO*SIN(RAngle)  ! unit vector horizontal in the image
+          ! position of the spot, 2% leeway to avoid going over the edge of the image
+          Ix = ISim-0.98*NINT(DOT_PRODUCT(Rg,Rp)*REAL(ISim)/RGOutLimit)  
+          Iy = ISim+0.98*NINT(DOT_PRODUCT(Rg,RYDirO)*REAL(ISim)/RGOutLimit)
+          RSim(Iy-1:Iy+1,Ix-1:Ix+1) = EXP(-RInst*RSg*RSg)*RIkin
         END IF
+      END DO
+      ! write to disk
+      IF (ind.LT.10) THEN
+        WRITE(path, FMT="(A,A15,I1,A4)") TRIM(ADJUSTL(SChemicalFormula(1:ILN))),&
+                "/Simulations/S_",ind,".bin"
+      ELSE IF (ind.LT.100) THEN
+        WRITE(path, FMT="(A,A15,I2,A4)") TRIM(ADJUSTL(SChemicalFormula(1:ILN))),&
+                "/Simulations/S_",ind,".bin"
+      ELSE IF (ind.LT.1000) THEN
+        WRITE(path, FMT="(A,A15,I3,A4)") TRIM(ADJUSTL(SChemicalFormula(1:ILN))),&
+                "/Simulations/S_",ind,".bin"
+      ELSE
+        WRITE(path, FMT="(A,A15,I4,A4)") TRIM(ADJUSTL(SChemicalFormula(1:ILN))),&
+                "/Simulations/S_",ind,".bin"
+      END IF
+      IF(my_rank.EQ.0) THEN
         OPEN(UNIT=IChOutIM, STATUS= 'UNKNOWN', FILE=TRIM(ADJUSTL(path)),&
           FORM='UNFORMATTED',ACCESS='DIRECT',IOSTAT=IErr,RECL=2*ISim*IByteSize)
         IF(l_alert(IErr,"WriteIterationOutput","OPEN() output .bin file")) RETURN      
@@ -251,9 +251,10 @@ MODULE setup_reflections_mod
         END DO
         CLOSE(IChOutIM,IOSTAT=IErr) 
         IF(l_alert(IErr,"WriteIterationOutput","CLOSE() output .bin file")) RETURN
-      END DO
-      DEALLOCATE(RSim)
-    END IF
+      END IF
+    END DO
+    DEALLOCATE(RSim)
+    
 
   END SUBROUTINE HKLmake
 
@@ -267,7 +268,8 @@ MODULE setup_reflections_mod
 
     ! This procedure is called once in felixrefine setup
     ! 1) get unique g's in all pools
-    ! 2) make a new list of unique g's and associated parameters
+    ! 2) make a new list of unique g's and associated parameters and delete reciprocal lattice
+    ! 3) save a set of kinematic rocking curves
     
     USE MyNumbers
     USE message_mod
@@ -281,7 +283,7 @@ MODULE setup_reflections_mod
 
     IMPLICIT NONE
 
-    REAL(RKIND) :: Rmos,RIkin
+    REAL(RKIND) :: RInst,RIkin
     INTEGER(IKIND) :: ind,jnd,knd,lnd,Iy,IErr,Imin,Imax
     INTEGER(IKIND), DIMENSION(:), ALLOCATABLE :: IFullgList,IReducedgList,IUniquegList
     CHARACTER(200) :: path
@@ -353,10 +355,10 @@ MODULE setup_reflections_mod
 
     !-3------------------------------------------------------------------
     ! kinematic rocking curves  
-    RMos = 3000.0
+    RInst = 3000.0  ! instrument broadening term
     IF(my_rank.EQ.0) THEN
       CALL message(LS,dbg3,"Writing kinematic rocking curves")
-      path = SChemicalFormula(1:ILN) // "/hkl_rocks.txt"
+      path = SChemicalFormula(1:ILN) // "/hkl_K-rocks.txt"
       OPEN(UNIT=IChOutIhkl, ACTION='WRITE', POSITION='APPEND', STATUS= 'UNKNOWN', &
           FILE=TRIM(ADJUSTL(path)),IOSTAT=IErr)
       WRITE(IChOutIhkl,*) "List of kinematic rocking curves"
@@ -371,7 +373,7 @@ MODULE setup_reflections_mod
                 Iy = 0
               END IF
               RIkin = CFg(IgPoolList(jnd,knd))*CONJG(CFg(IgPoolList(jnd,knd))) * &
-                  EXP(-RMos*RgPoolSg(jnd,knd)*RgPoolSg(jnd,knd))
+                  EXP(-RInst*RgPoolSg(jnd,knd)*RgPoolSg(jnd,knd))
               WRITE(fString,"(I4,A3,F7.3)") knd," : ",RIkin
               WRITE(IChOutIhkl,*) TRIM(ADJUSTL(fString))
             END IF
