@@ -354,6 +354,7 @@ MODULE read_files_mod
       RInputHKLs(ILine,2) = REAL(k,RKIND)
       RInputHKLs(ILine,3) = REAL(l,RKIND)   
       CALL message ( LXL, dbg7, "RInputHKLs", NINT(RInputHKLs(ILine,:)) )
+!DBG      IF(my_rank.EQ.0)PRINT*,NINT(RInputHKLs(ILine,:))
     END DO
 
     RETURN

@@ -207,7 +207,7 @@ MODULE write_output_mod
     USE message_mod
     
     ! global inputs
-    USE IPARA, ONLY : ILN,IPixelCount,ISimFLAG,IOutPutReflections,INoOfLacbedPatterns,INhkl,IByteSize
+    USE IPARA, ONLY : ILN,IPixelCount,ISimFLAG,IOutputReflections,INoOfLacbedPatterns,INhkl,IByteSize
     USE SPARA, ONLY : SChemicalFormula
     USE RPARA, ONLY : Rhkl,RInitialThickness,RDeltaThickness,   RImageSimi
     USE IChannels, ONLY : IChOutWIImage, IChOut
@@ -240,7 +240,7 @@ MODULE write_output_mod
     ! Write Images to disk
     DO ind = 1,INoOfLacbedPatterns
       ! Make the hkl string e.g. -2-2+10
-      jnd=NINT(Rhkl(IOutPutReflections(ind),1))
+      jnd=NINT(Rhkl(IOutputReflections(ind),1))
       IF (ABS(jnd).LT.10) THEN
         WRITE(hString,"(SP,I2.1)") jnd
       ELSEIF (ABS(jnd).LT.100) THEN
@@ -248,7 +248,7 @@ MODULE write_output_mod
       ELSE
         WRITE(hString,"(SP,I4.1)") jnd
       ENDIF
-      jnd=NINT(Rhkl(IOutPutReflections(ind),2))
+      jnd=NINT(Rhkl(IOutputReflections(ind),2))
       IF (ABS(jnd).LT.10) THEN
         WRITE(kString,"(SP,I2.1)") jnd
       ELSEIF (ABS(jnd).LT.100) THEN
@@ -256,7 +256,7 @@ MODULE write_output_mod
       ELSE
         WRITE(kString,"(SP,I4.1)") jnd
       ENDIF
-      jnd=NINT(Rhkl(IOutPutReflections(ind),3))
+      jnd=NINT(Rhkl(IOutputReflections(ind),3))
       IF (ABS(jnd).LT.10) THEN
         WRITE(lString,"(SP,I2.1)") jnd
       ELSEIF (ABS(jnd).LT.100) THEN
@@ -305,7 +305,7 @@ MODULE write_output_mod
     USE message_mod
     
     ! global inputs
-    USE IPARA, ONLY : ILN,IPixelCount,ISimFLAG,IOutPutReflections,INoOfLacbedPatterns,INhkl,IByteSize
+    USE IPARA, ONLY : ILN,IPixelCount,ISimFLAG,IOutputReflections,INoOfLacbedPatterns,INhkl,IByteSize
     USE CPARA, ONLY : CUgMat
     USE RPARA, ONLY : Rhkl,RgPool, RImageSimi, RInitialThickness, RDeltaThickness
     USE SPARA, ONLY : SChemicalFormula
@@ -337,7 +337,7 @@ MODULE write_output_mod
     ! Write Images to disk
     DO ind = 1,INoOfLacbedPatterns
       ! Make the hkl string e.g. -2-2+10
-      jnd=NINT(Rhkl(IOutPutReflections(ind),1))
+      jnd=NINT(Rhkl(IOutputReflections(ind),1))
       IF (ABS(jnd).LT.10) THEN
         WRITE(hString,"(SP,I2.1)") jnd
       ELSEIF (ABS(jnd).LT.100) THEN
@@ -345,7 +345,7 @@ MODULE write_output_mod
       ELSE
         WRITE(hString,"(SP,I4.1)") jnd
       ENDIF
-      jnd=NINT(Rhkl(IOutPutReflections(ind),2))
+      jnd=NINT(Rhkl(IOutputReflections(ind),2))
       IF (ABS(jnd).LT.10) THEN
         WRITE(kString,"(SP,I2.1)") jnd
       ELSEIF (ABS(jnd).LT.100) THEN
@@ -353,7 +353,7 @@ MODULE write_output_mod
       ELSE
         WRITE(kString,"(SP,I4.1)") jnd
       ENDIF
-      jnd=NINT(Rhkl(IOutPutReflections(ind),3))
+      jnd=NINT(Rhkl(IOutputReflections(ind),3))
       IF (ABS(jnd).LT.10) THEN
         WRITE(lString,"(SP,I2.1)") jnd
       ELSEIF (ABS(jnd).LT.100) THEN
@@ -366,7 +366,7 @@ MODULE write_output_mod
       fullpath = TRIM(ADJUSTL(path))//"/"//TRIM(ADJUSTL(filename))
       CALL message ( LL, dbg6, fullpath )
       RImageToWrite = RImageSimi(:,:,ind,IThicknessIndex)
-!DBG    IF(my_rank.EQ.0)PRINT*,TRIM(ADJUSTL(fullpath))!DEBUG
+!DBG    IF(my_rank.EQ.0)PRINT*,TRIM(ADJUSTL(fullpath))
       ! Writes data to output image .bin files
       OPEN(UNIT=IChOutWIImage, STATUS= 'UNKNOWN', FILE=TRIM(ADJUSTL(fullpath)),&
           FORM='UNFORMATTED',ACCESS='DIRECT',IOSTAT=IErr,RECL=2*IPixelCount*IByteSize)
@@ -665,7 +665,7 @@ MODULE write_output_mod
 
     !global inputs
     USE RPara, ONLY : RImageExpi, RImageSimi, Rhkl, RInitialThickness, RDeltaThickness
-    USE IPara, ONLY : IPixelcount, IOutPutReflections, INoOfLacbedPatterns,ILN
+    USE IPara, ONLY : IPixelcount, IOutputReflections, INoOfLacbedPatterns,ILN
     USE Spara, ONLY : SChemicalFormula
     USE IChannels, ONLY : IChOutWIImage, IChOut
 
@@ -690,7 +690,7 @@ MODULE write_output_mod
       ! Make the path/filenames  
       WRITE(filename,"(A,A,I3.3,A1,I3.3,A1,SP,3(I2.1),A)")&
              SChemicalFormula(1:ILN),"_experi_",2*IPixelcount,"x",2*IPixelcount,&
-            "_",NINT(Rhkl(IOutPutReflections(ind),1:3)),'.bin'
+            "_",NINT(Rhkl(IOutputReflections(ind),1:3)),'.bin'
       fullpath=TRIM(path)//'/'//filename
 
       RImageToWrite = RImageExpi(:,:,ind)

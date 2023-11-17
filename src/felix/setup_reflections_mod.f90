@@ -72,10 +72,13 @@ MODULE setup_reflections_mod
 
     DO ind = 1,SIZE(RInputHKLs,DIM=1)
       DO jnd = 1,SIZE(Rhkl,DIM=1)
+        ! find the input hkl in the beam pool Rhkl
         IF(ABS(Rhkl(jnd,1)-RInputHKLs(ind,1)).LE.RTolerance.AND.&
            ABS(Rhkl(jnd,2)-RInputHKLs(ind,2)).LE.RTolerance.AND.&
            ABS(Rhkl(jnd,3)-RInputHKLs(ind,3)).LE.RTolerance) THEN
+!DBG          IF(my_rank.EQ.0)PRINT*,"input HKL", ind, RInputHKLs(ind,:)
           IFound = 0
+          ! check it's not already in the list
           DO knd = 1,IFind
             IF(ABS(Rhkl(IOutputReflections(knd),1)-RInputHKLs(ind,1)).LE.RTolerance.AND.&
                ABS(Rhkl(IOutputReflections(knd),2)-RInputHKLs(ind,2)).LE.RTolerance.AND.&
@@ -84,6 +87,7 @@ MODULE setup_reflections_mod
               EXIT
             END IF
           END DO
+          ! put the Rhkl index in IOutputReflections
           IF (IFound.EQ.0) THEN
             IFind = IFind +1
             IOutputReflections(IFind) = jnd

@@ -292,7 +292,7 @@ MODULE refinementcontrol_mod
     
     ! global inputs
     USE IPARA, ONLY : INoOfLacbedPatterns,ICorrelationFLAG,IPixelCount,IThicknessCount, &
-          IImageProcessingFLAG,IOutPutReflections
+          IImageProcessingFLAG,IOutputReflections
     USE RPARA, ONLY : RInitialThickness,RDeltaThickness,Rhkl, &
           RImageSimi, &   ! a main input - simulated images
           RImageExpi      ! a main input - experimental images to compare
@@ -365,7 +365,7 @@ MODULE refinementcontrol_mod
         END IF
         CALL message(LXL,dbg6,"For Pattern ",ind,", thickness ",jnd)
         CALL message(LXL,dbg6,"  the FoM = ",RImageCorrelation)
-!        WRITE(IChOut,FMT='(3I5.1,F13.9)') NINT(Rhkl(IOutPutReflections(ind),:)),RImageCorrelation
+!        WRITE(IChOut,FMT='(3I5.1,F13.9)') NINT(Rhkl(IOutputReflections(ind),:)),RImageCorrelation
 
         ! Determine which thickness matches best for each LACBED pattern
         ! which is later used to find the range of viable thicknesses 
