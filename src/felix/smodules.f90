@@ -163,7 +163,7 @@ MODULE IPara
        IWeightingFLAG,IRefineMethodFLAG,ICorrelationFLAG,IImageProcessingFLAG,&
        IByteSize
   !Minimum Reflections etc
-  INTEGER(IKIND) :: IMinStrongBeams,IMinWeakBeams
+  INTEGER(IKIND) :: IMinStrongBeams,IMinWeakBeams,ISort
   !Simulation size
   INTEGER(IKIND) :: ISizeX, ISizeY, IPixelCount, INFrames
   !Crystal Settings

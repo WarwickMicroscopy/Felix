@@ -38,7 +38,7 @@ MODULE crystallography_mod
   IMPLICIT NONE
   
   PRIVATE
-  PUBLIC :: ReciprocalLattice, CrystalOrientation, UniqueAtomPositions, gVectors
+  PUBLIC :: ReciprocalVectors, ReciprocalLattice, CrystalOrientation, UniqueAtomPositions, gVectors
 
   CONTAINS
 
@@ -98,40 +98,38 @@ MODULE crystallography_mod
     
     END SUBROUTINE gVectors
 
+
   !%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
   !>
-  !! Procedure-description: Creates list of reciprocal lattice vectors covering a 3D
-  !! volume in an orthogonal reference frame and sorts them in magnitude.  
+  !! Procedure-description: Creates basis reciprocal lattice vectors and initial
+  !! microscope reference frame, gives the number of reciprocal lattice points InLattice
+  !! that will be calculated later in the ReciprocalLattice subroutine
   !!
   !! Major-Authors: Richard Beanland (2023)
   !!
-  SUBROUTINE ReciprocalLattice(RLatticeLimit, IErr)
+  SUBROUTINE ReciprocalVectors(RLatticeLimit, IErr)
 
     USE MyNumbers
     USE MyMPI
     USE message_mod
-    USE ug_matrix_mod
 
     ! global inputs
-    USE IPARA, ONLY : IVolumeFLAG,INAtomsUnitCell,IAtomicNumber,ICurrentZ,ISort
-    USE RPARA, ONLY : RAlpha,RBeta,RGamma,RCellA,RCellB,RCellC,RXDirC_0,RZDirC_0,RAtomCoordinate,&
-            RCurrentGMagnitude,RAtomXYZ
+    USE IPARA, ONLY : IVolumeFLAG,INAtomsUnitCell
+    USE RPARA, ONLY : RAlpha,RBeta,RGamma,RCellA,RCellB,RCellC,RXDirC_0,RZDirC_0,&
+            RAtomCoordinate,RAtomXYZ
     USE SPARA, ONLY : SSpaceGroupName,SPrintString
-    USE CPARA, ONLY : CFgLattice
 
     ! global outputs
     USE RPARA, ONLY : RaVecO,RbVecO,RcVecO,RVolume,RarVecO,RbrVecO,RcrVecO,&
-            RXDirO,RYDirO,RZDirO,RarMag,RbrMag,RcrMag,RgLatticeO,RgMagLattice
-    USE IPARA, ONLY : IhklLattice,InLattice
+            RXDirO,RYDirO,RZDirO,RarMag,RbrMag,RcrMag
+    USE IPARA, ONLY : InLattice
 
     IMPLICIT NONE
 
-    INTEGER(IKIND) :: IErr,ind,jnd,knd,lnd,mnd,nnd,inda,indb,indc,ISel,IlogNB2,Iswap
-    REAL(RKIND) :: Rt,ALN2I,LocalTINY,Rg(ITHREE),RxAngle,Rfq
+    INTEGER(IKIND) :: IErr,ind,inda,indb,indc,
+    REAL(RKIND) :: Rt,RxAngle
     REAL(RKIND), DIMENSION(ITHREE,ITHREE) :: RTMatC2O
     REAL(RKIND), INTENT(IN) :: RLatticeLimit
-    COMPLEX(CKIND) :: Ct
-    PARAMETER (ALN2I=1.4426950D0, LocalTINY=1.D-5)
     
     !direct lattice vectors in an orthogonal reference frame, Angstrom units 
     ! a is parallel to [100]
@@ -203,28 +201,84 @@ MODULE crystallography_mod
           RcrVecO(ind) = ZERO
        END IF
     ENDDO
-    ! their magnitudes
+
+    ! Set up initial microscope reference frame
+    ! X, Y and Z are orthogonal vectors that defines the simulation
+    ! Also referred to as the microscope reference frame M.
+    ! The electron beam propagates along +Zm.
+    ! The alpha rotation axis is along Ym.  Positive alpha rotation moves the field
+    ! of view of the simulation along +Xm.
+    ! In the crystal reference frame we read in reciprocal vectors RXDirC_0 and RZDirC_0
+    ! These define Xm & Zm in the inital reference frame
+    ! RXDirO,RYDirO,RZDirO are UNIT reciprocal lattice vectors parallel to X,Y,Z
+    RXDirO = RXDirC_0(1)*RarVecO + RXDirC_0(2)*RbrVecO + RXDirC_0(3)*RcrVecO
+    RXDirO = RXDirO/SQRT(DOT_PRODUCT(RXDirO,RXDirO))
+    RZDirO = RZDirC_0(1)*RaVecO + RZDirC_0(2)*RbVecO + RZDirC_0(3)*RcVecO
+    RZDirO = RZDirO/SQRT(DOT_PRODUCT(RZDirO,RZDirO))
+    ! Check the input is sensible, i.e. Xm is perpendicular to Zm
+    RxAngle = ABS(180.0D0*ACOS(DOT_PRODUCT(RXDirO,RZDirO))/PI)
+    IF(ABS(RxAngle-90.0D0).GT.0.1)THEN! with a tolerance of 0.1 degrees
+      WRITE(SPrintString,"(A15,F5.1,A27)") "Error: X is at ",RxAngle," degrees to Z, should be 90"
+      CALL message(LS,SPrintString)
+      IErr = 1
+    ELSE!fine correction of x
+      ! take off any component parallel to z & renormalise
+      RXDirO = RXDirO - DOT_PRODUCT(RXDirO,RZDirO)*RZDirO
+      RXDirO = RXDirO/SQRT(DOT_PRODUCT(RXDirO,RXDirO))
+    END IF
+    RYDirO = CROSS(RZDirO,RXDirO)  ! the rotation axis
+    
+    ! Reciprocal vector magnitudes and size of the lattice
     RarMag=SQRT(DOT_PRODUCT(RarVecO,RarVecO))!magnitude of a*
     RbrMag=SQRT(DOT_PRODUCT(RbrVecO,RbrVecO))!magnitude of b*
     RcrMag=SQRT(DOT_PRODUCT(RcrVecO,RcrVecO))!magnitude of c*
-
-    ! Now build the reciprocal lattice, from which we will take slices for
-    ! each beam pool using HKLMake
-    ! IhklLattice is the list of Miller indices for the full 3D lattice
-    ! RgLatticeO is the corresponding list of coordinates in reciprocal space
-    ! maximum a*,b*,c* limit is determined by the G magnitude limit
     inda=NINT(RLatticeLimit/RarMag)
     indb=NINT(RLatticeLimit/RbrMag)
     indc=NINT(RLatticeLimit/RcrMag)
     InLattice = (2*inda+1)*(2*indb+1)*(2*indc+1)
-    ALLOCATE(Isort(InLattice), STAT=IErr)! Sorted index
-    ALLOCATE(IhklLattice(InLattice, ITHREE), STAT=IErr)! Miller indices
-    ALLOCATE(RgLatticeO(InLattice, ITHREE), STAT=IErr)! g-vector
-    ALLOCATE(RgMagLattice(InLattice), STAT=IErr)! magnitude
-    ALLOCATE(CFgLattice(InLattice), STAT=IErr)! Structure factors
+
+  END SUBROUTINE ReciprocalVectors
+
+
+  !%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+  !>
+  !! Procedure-description: Creates list of reciprocal lattice vectors covering a 3D
+  !! volume in an orthogonal reference frame and sorts them in magnitude.  
+  !!
+  !! Major-Authors: Richard Beanland (2023)
+  !!
+  SUBROUTINE ReciprocalLattice(RLatticeLimit, IErr)
+
+    USE MyNumbers
+    USE MyMPI
+    USE message_mod
+    USE ug_matrix_mod
+
+    ! global inputs
+    USE IPARA, ONLY : InLattice
+    USE RPARA, ONLY : RarVecO,RbrVecO,RcrVecO,RarMag,RbrMag,RcrMag,RCurrentGMagnitude,&
+        RLatticeLimit
+    USE SPARA, ONLY : SPrintString
+    USE CPARA, ONLY : CFgLattice
+
+    ! global outputs
+    USE RPARA, ONLY : RgLatticeO,RgMagLattice
+    USE IPARA, ONLY : ISort
+
+    IMPLICIT NONE
+
+    INTEGER(IKIND) :: IErr,ind,jnd,knd,lnd,mnd,nnd,inda,indb,indc,ISel,IlogNB2,Iswap
+    REAL(RKIND) :: ALN2I,LocalTINY,Rg(ITHREE),Rfq
+    PARAMETER (ALN2I=1.4426950D0, LocalTINY=1.D-5)
     
+    ! Build the reciprocal lattice, from which we will take slices for
+    ! each beam pool using HKLMake
+
     ! Fill the lists
     CFgLattice = CZERO
+    inda=NINT(RLatticeLimit/RarMag)
+    indb=NINT(RLatticeLimit/RbrMag)
+    indc=NINT(RLatticeLimit/RcrMag)
     lnd = 0
     DO ind = -inda,inda
       DO jnd = -indb,indb
@@ -232,7 +286,7 @@ MODULE crystallography_mod
           ! take out systematic absences from the lattice
           ! but keep forbidden reflections because they may appear through multiple scattering
           ISel = 0
-          CALL SelectionRules(ind, jnd, knd, ISel, IErr)
+          CALL SelectionRules(ind, jnd, knd, ISel, IErr)  ! in this module
           IF (ISel.EQ.0) CYCLE
           lnd = lnd + 1
           ISort(lnd) = lnd  ! we will sort this and use it as a dummy index
@@ -244,7 +298,7 @@ MODULE crystallography_mod
           ! Calculate structure factor
           DO mnd=1,INAtomsUnitCell
             ICurrentZ = IAtomicNumber(mnd)
-            CALL AtomicScatteringFactor(Rfq,IErr)
+            CALL AtomicScatteringFactor(Rfq,IErr)  ! in ug_matrix_mod
             CFgLattice(lnd) = CFgLattice(lnd)+Rfq*EXP(-CIMAGONE*DOT_PRODUCT(Rg,RAtomCoordinate(mnd,:)) )
           END DO
         END DO
@@ -273,32 +327,6 @@ MODULE crystallography_mod
         ENDIF
       ENDDO
     ENDDO
-
-    ! Set up initial microscope reference frame
-    ! X, Y and Z are orthogonal vectors that defines the simulation
-    ! Also referred to as the microscope reference frame M.
-    ! The electron beam propagates along +Zm.
-    ! The alpha rotation axis is along Ym.  Positive alpha rotation moves the field
-    ! of view of the simulation along +Xm.
-    ! In the crystal reference frame we read in reciprocal vectors RXDirC_0 and RZDirC_0
-    ! These define Xm & Zm in the inital reference frame
-    ! RXDirO,RYDirO,RZDirO are UNIT reciprocal lattice vectors parallel to X,Y,Z
-    RXDirO = RXDirC_0(1)*RarVecO + RXDirC_0(2)*RbrVecO + RXDirC_0(3)*RcrVecO
-    RXDirO = RXDirO/SQRT(DOT_PRODUCT(RXDirO,RXDirO))
-    RZDirO = RZDirC_0(1)*RaVecO + RZDirC_0(2)*RbVecO + RZDirC_0(3)*RcVecO
-    RZDirO = RZDirO/SQRT(DOT_PRODUCT(RZDirO,RZDirO))
-    ! Check the input is sensible, i.e. Xm is perpendicular to Zm
-    RxAngle = ABS(180.0D0*ACOS(DOT_PRODUCT(RXDirO,RZDirO))/PI)
-    IF(ABS(RxAngle-90.0D0).GT.0.1)THEN! with a tolerance of 0.1 degrees
-      WRITE(SPrintString,"(A15,F5.1,A27)") "Error: X is at ",RxAngle," degrees to Z, should be 90"
-      CALL message(LS,SPrintString)
-      IErr = 1
-    ELSE!fine correction of x
-      ! take off any component parallel to z & renormalise
-      RXDirO = RXDirO - DOT_PRODUCT(RXDirO,RZDirO)*RZDirO
-      RXDirO = RXDirO/SQRT(DOT_PRODUCT(RXDirO,RXDirO))
-    END IF
-    RYDirO = CROSS(RZDirO,RXDirO)  ! the rotation axis
 
   END SUBROUTINE ReciprocalLattice
 

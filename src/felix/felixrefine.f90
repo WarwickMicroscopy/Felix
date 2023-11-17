@@ -117,9 +117,9 @@ PROGRAM Felixrefine
 !  ALLOCATE(ILACBEDList(INoOfHKLsAll),STAT=IErr)! List of current output containers
 !  IF(l_alert(IErr,"felixrefine","allocate ILACBEDList")) CALL abort
   !output tracking flags
-  ILiveList = 0 ! links reflections, see write_outputs for all meanings of this flag
-  ILACBEDList = 0! links a simulation to its output container
-  ILACBEDFlag = 0! indicated whether a container is available (0) or in use (1)
+!  ILiveList = 0 ! links reflections, see write_outputs for all meanings of this flag
+!  ILACBEDList = 0! links a simulation to its output container
+!  ILACBEDFlag = 0! indicated whether a container is available (0) or in use (1)
 
   CALL ReadInpFile(IErr) ! felix.inp
   IF(l_alert(IErr,"felixrefine","ReadInpFile")) CALL abort
@@ -223,7 +223,19 @@ PROGRAM Felixrefine
   WRITE(SPrintString, FMT='(A33,F5.2,A5)') "Reciprocal lattice defined up to ",&
           RgPoolLimit/TWOPI," A^-1"
   CALL message(LS,SPrintString)
+  ! reciprocal vectors first - gives the size of the reciprocal lattice to be calculated
+  CALL ReciprocalVectors(RgPoolLimit, IErr)  ! in crystallography.f90
+  ! IhklLattice is the list of Miller indices for the full 3D lattice
+  ! RgLatticeO is the corresponding list of coordinates in reciprocal space
+  ! maximum a*,b*,c* limit is determined by the G magnitude limit
+  ALLOCATE(IhklLattice(InLattice, ITHREE), STAT=IErr)! Miller indices
+  ALLOCATE(RgLatticeO(InLattice, ITHREE), STAT=IErr)! g-vector
+  ALLOCATE(RgMagLattice(InLattice), STAT=IErr)! magnitude
+  ALLOCATE(CFgLattice(InLattice), STAT=IErr)! Structure factors
+  ALLOCATE(Isort(InLattice), STAT=IErr)! Sorted index
+
   CALL ReciprocalLattice(RgPoolLimit, IErr)  ! in crystallography.f90
+
   IF(l_alert(IErr,"felixrefine","ReciprocalLattice")) CALL abort
   WRITE(SPrintString, FMT='(A24,F5.2,A5)') "Experimental resolution ",&
           RgOutLimit/TWOPI," A^-1"
