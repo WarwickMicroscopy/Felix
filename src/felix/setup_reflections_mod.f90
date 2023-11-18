@@ -350,8 +350,6 @@ MODULE setup_reflections_mod
     END DO
     WRITE(SPrintString, FMT='(I5,A19)') lnd, " output reflections"
     CALL message(LS,SPrintString)
-    ! Delete the reciprocal lattice
-    DEALLOCATE(Isort,RgLatticeO,RgMagLattice,CFgLattice,IhklLattice)
 
     !-3------------------------------------------------------------------
     ! kinematic rocking curves  

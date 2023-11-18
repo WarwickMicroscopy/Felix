@@ -246,7 +246,8 @@ PROGRAM Felixrefine
   ! List the unique g's and make reduced arrays before deleting the reciprocal lattice to save memory
   CALL HKLList(IErr)
   IF(l_alert(IErr,"felixrefine","HKLList")) CALL abort
-  
+  ! Delete the reciprocal lattice
+  DEALLOCATE(Isort,RgLatticeO,RgMagLattice,CFgLattice,IhklLattice)  
   !--------------------------------------------------------------------
     
     CALL PrintEndTime( LS, IStartTime, "Frame" )

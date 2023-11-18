@@ -126,7 +126,7 @@ MODULE crystallography_mod
 
     IMPLICIT NONE
 
-    INTEGER(IKIND) :: IErr,ind,inda,indb,indc,
+    INTEGER(IKIND) :: IErr,ind,inda,indb,indc
     REAL(RKIND) :: Rt,RxAngle
     REAL(RKIND), DIMENSION(ITHREE,ITHREE) :: RTMatC2O
     REAL(RKIND), INTENT(IN) :: RLatticeLimit
@@ -255,9 +255,9 @@ MODULE crystallography_mod
     USE ug_matrix_mod
 
     ! global inputs
-    USE IPARA, ONLY : InLattice
+    USE IPARA, ONLY : InLattice,IhklLattice,ICurrentZ,INAtomsUnitCell,IAtomicNumber
     USE RPARA, ONLY : RarVecO,RbrVecO,RcrVecO,RarMag,RbrMag,RcrMag,RCurrentGMagnitude,&
-        RLatticeLimit
+        RLatticeLimit,RAtomCoordinate
     USE SPARA, ONLY : SPrintString
     USE CPARA, ONLY : CFgLattice
 
@@ -268,7 +268,7 @@ MODULE crystallography_mod
     IMPLICIT NONE
 
     INTEGER(IKIND) :: IErr,ind,jnd,knd,lnd,mnd,nnd,inda,indb,indc,ISel,IlogNB2,Iswap
-    REAL(RKIND) :: ALN2I,LocalTINY,Rg(ITHREE),Rfq
+    REAL(RKIND) :: ALN2I,LocalTINY,Rg(ITHREE),Rfq,RLatticeLimit
     PARAMETER (ALN2I=1.4426950D0, LocalTINY=1.D-5)
     
     ! Build the reciprocal lattice, from which we will take slices for
