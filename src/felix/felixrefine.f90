@@ -228,11 +228,11 @@ PROGRAM Felixrefine
   ! IhklLattice is the list of Miller indices for the full 3D lattice
   ! RgLatticeO is the corresponding list of coordinates in reciprocal space
   ! maximum a*,b*,c* limit is determined by the G magnitude limit
-  ALLOCATE(IhklLattice(InLattice, ITHREE), STAT=IErr)! Miller indices
-  ALLOCATE(RgLatticeO(InLattice, ITHREE), STAT=IErr)! g-vector
-  ALLOCATE(RgMagLattice(InLattice), STAT=IErr)! magnitude
-  ALLOCATE(CFgLattice(InLattice), STAT=IErr)! Structure factors
-  ALLOCATE(Isort(InLattice), STAT=IErr)! Sorted index
+!  ALLOCATE(IhklLattice(InLattice, ITHREE), STAT=IErr)! Miller indices
+!  ALLOCATE(RgLatticeO(InLattice, ITHREE), STAT=IErr)! g-vector
+!  ALLOCATE(RgMagLattice(InLattice), STAT=IErr)! magnitude
+!  ALLOCATE(CFgLattice(InLattice), STAT=IErr)! Structure factors
+!  ALLOCATE(Isort(InLattice), STAT=IErr)! Sorted index
 
   CALL ReciprocalLattice(RgPoolLimit, IErr)  ! in crystallography.f90
 
@@ -241,10 +241,10 @@ PROGRAM Felixrefine
           RgOutLimit/TWOPI," A^-1"
   CALL message(LS,SPrintString)
   ! List the hkl's in each frame and write to text file hkl_list.txt
-  CALL HKLMake(RDevLimit, RGOutLimit, IErr)  ! in setup_reflections.f90
+  CALL HKLMake(RDevLimit, RGOutLimit, RgPoolLimit, IErr)  ! in setup_reflections.f90
   IF(l_alert(IErr,"felixrefine","HKLMake")) CALL abort
   ! List the unique g's and make reduced arrays before deleting the reciprocal lattice to save memory
-  CALL HKLList(IErr)
+!  CALL HKLList(IErr)
   IF(l_alert(IErr,"felixrefine","HKLList")) CALL abort
   ! Delete the reciprocal lattice
   !DEALLOCATE(Isort,RgLatticeO,RgMagLattice,CFgLattice,IhklLattice)  

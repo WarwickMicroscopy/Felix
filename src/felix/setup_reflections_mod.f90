@@ -50,7 +50,7 @@ MODULE setup_reflections_mod
   !!
   !! Major-Authors: Richard Beanland (2023)
   !!  
-  SUBROUTINE HKLMake(RDevLimit, RGOutLimit, IErr)   
+  SUBROUTINE HKLMake(RDevLimit, RGOutLimit, RgPoolLimit, IErr)   
 
     USE MyNumbers
     USE message_mod
@@ -58,72 +58,186 @@ MODULE setup_reflections_mod
 
     ! global inputs/outputs
     USE SPARA, ONLY : SPrintString,SChemicalFormula
-    USE IPARA, ONLY : INhkl,IgOutList,IgPoolList,IhklLattice,INFrames,InLattice,ILN,IByteSize,ISort
+    USE IPARA, ONLY : INhkl,IgOutList,IgPoolList,IhklLattice,INFrames,ILN,IByteSize,ISort
     USE RPARA, ONLY : RXDirO,RYDirO,RZDirO,RarVecO,RbrVecO,RcrVecO,RarMag,RbrMag,RcrMag,RFrameAngle,RBigK,&
         RgLatticeO,RgPoolSg,RgMagLattice
-    USE CPARA, ONLY : CFgLattice
     USE Iconst
     USE IChannels, ONLY : IChOutIhkl,IChOutIM
     
     IMPLICIT NONE
 
-    REAL(RKIND),INTENT(IN) :: RDevLimit, RGOutLimit, RShell
-    INTEGER(IKIND) :: IErr,ind,jnd,knd,lnd,mnd,ISim,Ix,Iy,ILocalFrameMin,ILocalFrameMax,&
-                      ILocalNFrames,IMaxNg,inda, indb, indc,Ig(INFrames*INhkl,ITHREE),Ifound
+    REAL(RKIND),INTENT(IN) :: RDevLimit, RGOutLimit, RgPoolLimit
+    INTEGER(IKIND) :: IErr,ind,jnd,knd,lnd,mnd,nnd,ond,ISim,Ix,Iy,&
+            Ifull(INFrames),IMaxNg,inda,indb,indc,Ig(INFrames*INhkl,ITHREE),Ifound
     INTEGER(IKIND), DIMENSION(:), ALLOCATABLE :: Inum,Ipos,ILocalgPool,ITotalgPool
-    REAL(RKIND) :: RAngle,Rk(INFrames,ITHREE),Rk0(INFrames,ITHREE),Rp(INFrames,ITHREE),RSg,Rphi,Rg(ITHREE),RInst,RIkin,&
-                   RKplusg(ITHREE),RgMag
+    REAL(RKIND) :: RAngle,Rk(INFrames,ITHREE),Rk0(ITHREE),Rp(ITHREE),RSg,Rphi,Rg(ITHREE),RInst,RIkin,&
+                   RKplusg(ITHREE),RgMag,RShell,RgMin
     REAL(RKIND), DIMENSION(:,:), ALLOCATABLE :: RSim
     REAL(RKIND), DIMENSION(:), ALLOCATABLE :: RLocalSgPool,RTotalSgPool
+    COMPLEX :: CFg
     CHARACTER(200) :: path
     CHARACTER(100) :: fString
    
     !-1------------------------------------------------------------------
     ! calculate reflection list g by g
     !--------------------------------------------------------------------
-    ! this produces a list of g-vectors Ig and two flags indicating which frame they appear
-    ! in the beam pool and the output list
-    ! we make a matrix of the incident k-vectors for each frame
+    ! this produces a list of g-vectors Ig and fills IgPoolList,IgOutList giving
+    ! the beam pool and the output list
+    ! initialise variables
+    Rk = ZERO  ! list of incident beam k-vectors
+    Ig = 0  ! list of reflections (covers all beam pools)
+    IgPoolList = 0  ! index giving Ig for each beam pool (1 to INhkl,1 to INFrames)
+    IgOutList = 0  ! index giving Ig for each output (1 to INhkl,1 to INFrames)
+    IFull = 0  ! is the beam pool full
+    RgPoolSg = TEN  !Sg corresponding to Ig (1 to INhkl,1 to INFrames)
+    ! we make a list of the incident k-vectors for each frame
     DO ind = 1,INFrames
-      RAngle = REAL(ILocalFrameMin+ind-2)*DEG2RADIAN*RFrameAngle
-      ! Rk is the k-vector for the incident beam, which we write here in the orthogonal frame O
+      RAngle = REAL(ind-1)*DEG2RADIAN*RFrameAngle
+      ! Rkk is the k-vector for the incident beam, which we write here in the orthogonal frame O
       Rk(ind,:) = RBigK*(RZDirO*COS(RAngle)+RXDirO*SIN(RAngle))
       ! the 000 beam is the first g-vector in every frame
     END DO
-    Ig(1,:) = (/0,0,0/) 
-    lnd = 2  ! index counting g's as they are included in the list    
-    ! we work our way out in shells of 0.1 A^-1, starting with 2* the smallest reciprocal lattice vector
+    ! the 000 beam is the first g-vector in every frame
+    Ig(1,:) = (/0,0,0/)
+    IgPoolList(1,:) = 1
+    IgOutList(1,:) = 1
+    lnd = 1  ! index counting reflexions as they are added to the list Ig   
+    ! we work our way out in shells of the smallest reciprocal lattice vector
     RShell = MINVAL( (/RarMag,RbrMag,RcrMag/) )
     mnd = 1 ! shell count
-    inda=NINT(REAL(mnd)*RShell/RarMag)
-    indb=NINT(REAL(mnd)*RShell/RbrMag)
-    indc=NINT(REAL(mnd)*RShell/RcrMag)
+
+    ! start of the loop of incrementing shells
+1   inda = NINT(REAL(mnd)*RShell/RarMag)
+    indb = NINT(REAL(mnd)*RShell/RbrMag)
+    indc = NINT(REAL(mnd)*RShell/RcrMag)
+    RgMin = 666.666  ! smallest gMag checker set to initial large value 
     DO ind = -inda,inda
       DO jnd = -indb,indb
         DO knd = -indc,indc
-          Ifound = 0  ! flag to indicate this g-vector is active
+          Ifound = 1  ! flag to indicate this reflexion is active
           Rg = ind*RarVecO + jnd*RbrVecO + knd*RcrVecO
           RgMag = SQRT(DOT_PRODUCT(Rg,Rg))
-          ! Is this g-vector in the current shell
-          IF (RgMag.GT.REAL(mnd-1)*RShell.AND.RgMag.LE.REAL(mnd)*RShell.AND.RgMag.LE.RLatticeLimit)
+          ! Is this reflexion in the current shell
+          IF (RgMag.GT.REAL(mnd-1)*RShell .AND. RgMag.LE.REAL(mnd)*RShell .AND. &
+                  RgMag.LE.RgPoolLimit) THEN
+            ! is it the smallest g in this shell
+            IF (RgMag.LT.RgMin) RgMin = RgMag
+
             ! go through the frames and see if it appears
-            ! Calculate Sg by getting the vector k0, which is coplanar with k and g and
-            ! corresponds to an incident beam at the Bragg condition
-            ! First we need the vector component of k perpendicular to g, which we call p 
-            Rp = Rk - MATMUL(Rk,Rg)*Rg/RgMag
-            ! and now make k0 by adding vectors parallel to g and p
-            ! i.e. k0 = (p/|p|)*(k^2-g^2/4)^0.5 - g/2
-!            Rk0 = SQRT(RBigK**2-QUARTER*RgMag**2)*Rp/SQRT(DOT_PRODUCT(Rp,Rp)) - HALF*Rg
-            ! The angle phi between k and k0 is how far we are from the Bragg condition
-!            Rphi = ACOS(DOT_PRODUCT(Rk,Rk0)/(RBigK**2))
-            ! and now Sg is 2g sin(phi/2), with the sign of K-|K+g|
-!            RKplusg = Rk + Rg
-1            RSg = TWO*RgMag*SIN(HALF*Rphi)*SIGN(ONE,RBigK-SQRT(DOT_PRODUCT(RKplusg,RKplusg)))
+            ! probably a more elegant/faster way of doing this using matrices rather than a loop
+            DO nnd = 1,INFrames
+              ! Is the beam pool already full for this frame
+              IF (Ifull(nnd).EQ.1) CYCLE
+              ! Calculate Sg by getting the vector k0, which is coplanar with k and g and
+              ! corresponds to an incident beam at the Bragg condition
+              ! First we need the vector component of k perpendicular to g, which we call p 
+              Rp = Rk(nnd,:) - DOT_PRODUCT(Rk(nnd,:),Rg)*Rg/RgMag
+              ! and now make k0 by adding vectors parallel to g and p
+              ! i.e. k0 = (p/|p|)*(k^2-g^2/4)^0.5 - g/2
+              Rk0 = SQRT(RBigK**2-QUARTER*RgMag**2)*Rp/SQRT(DOT_PRODUCT(Rp,Rp)) - HALF*Rg
+              ! The angle phi between k and k0 is how far we are from the Bragg condition
+              Rphi = ACOS(DOT_PRODUCT(Rk(nnd,:),Rk0)/(RBigK**2))
+              ! and now Sg is 2g sin(phi/2), with the sign of K-|K+g|
+              RKplusg = Rk(nnd,:) + Rg
+              RSg = TWO*RgMag*SIN(HALF*Rphi)*SIGN(ONE,RBigK-SQRT(DOT_PRODUCT(RKplusg,RKplusg)))
+
+              ! now check to see if it qualifies for the beam pool and output
+              IF (ABS(RSg).LT.RDevLimit) THEN  ! it's in the beam pool for this frame
+                lnd = lnd+Ifound  ! increment the reflexion counter on the first occurrance only
+                Ifound = 0
+                Ig(lnd,:) = (/ind,jnd,knd/)  ! add it to the list of reflexions
+                ond = 2 !counter to find the next slot for the g pool
+2               IF (IgPoolList(ond,nnd).NE.0) THEN
+                  ond = ond + 1
+                  IF (ond.EQ.INhkl) THEN  ! we have filled the beam pool
+                    Ifull(nnd) = 1
+                    IF (my_rank.EQ.0)PRINT*,"Beam pool full for frame",nnd
+                  ELSE
+                    GOTO 2
+                  END IF
+                ELSE
+                  IgPoolList(ond,nnd) = lnd
+                  RgPoolSg(ond,nnd) = RSg
+                END IF
+                ond = 2 !counter to find the next slot for the output list
+                IF (ABS(RSg).LT.RDevLimit) THEN
+3                 IF (IgOutList(ond,nnd).NE.0) THEN
+                    ond = ond + 1
+                    GOTO 3
+                  ELSE
+                    IgOutList(ond,nnd) = lnd
+                  END IF
+                END IF
+              END IF
+            END DO
           END IF
         END DO
       END DO
     END DO
-    IF(my_rank.EQ.))PRINT*,Rp
+    IF (RgMin.GT.RgPoolLimit.AND.my_rank.EQ.0)PRINT*,"G-pool limit reached at",RgMin
+    IF (lnd.LT.INhkl.AND.RgMin.LE.RgPoolLimit) THEN
+      mnd = mnd + 1
+      GOTO 1
+    END IF
+
+    !-2------------------------------------------------------------------
+    ! Output as a text file
+    IF(my_rank.EQ.0) THEN
+      CALL message(LS,dbg3,"Writing hkl list and images")
+      path = SChemicalFormula(1:ILN) // "/hkl_list.txt"
+      OPEN(UNIT=IChOutIhkl, ACTION='WRITE', POSITION='APPEND', STATUS= 'UNKNOWN', &
+          FILE=TRIM(ADJUSTL(path)),IOSTAT=IErr)
+      WRITE(IChOutIhkl,*) "List of hkl in each frame"
+      WRITE(IChOutIhkl,*) "No: h k l  Fg  |g|  Sg"
+    END IF
+    DO ind = 1,INFrames
+      ! output to slurm if requested
+      CALL message(LM, "Reflection list:")
+      DO knd = 1, INhkl
+        IF (IgPoolList(knd,ind).NE.0) THEN
+          WRITE(SPrintString,'(I3,1X,I3,1X,I3)') Ig(IgPoolList(knd,ind),:)
+          CALL message(LM, SPrintString)
+        END IF
+      END DO
+      ! write reflections in each frame
+      ! h k l Fg(Re Im) |g| Sg
+      IF (my_rank.EQ.0) WRITE(IChOutIhkl,"(A6,I4)") "Frame ",ind
+      DO knd = 1, INhkl
+        IF (IgOutList(knd,ind).NE.0) THEN
+          lnd = IgOutList(knd,ind)
+          RSg = RgPoolSg(knd,ind)
+          Rg = Ig(lnd,1)*RarVecO + Ig(lnd,2)*RbrVecO + Ig(lnd,3)*RcrVecO
+          RgMag = SQRT(DOT_PRODUCT(Rg,Rg))
+          ! Calculate structure factor
+          CFg = CZERO
+          DO mnd=1,INAtomsUnitCell
+            ICurrentZ = IAtomicNumber(mnd)
+            CALL AtomicScatteringFactor(Rfq,IErr)  ! in ug_matrix_mod
+            CFg = CFg+Rfq*EXP(-CIMAGONE*DOT_PRODUCT(Rg,RAtomCoordinate(mnd,:)) ) * &
+            ! Isotropic D-W factor exp(-B sin(theta)^2/lamda^2) = exp(-Bg^2/16pi^2)
+            EXP(-RIsoDW(mnd)*RgMag**2/(FOURPI**2))
+          END DO
+
+          WRITE(fString,"(3(I3,1X),2X, F8.4,A1,F8.4,A3, F6.2,2X, F8.4)") &
+                  Ig(lnd,:), REAL(CFg),"+",AIMAG(CFg),"i  ",&
+                  RgMag/TWOPI, RSg
+            IF (my_rank.EQ.0) WRITE(IChOutIhkl,*) TRIM(ADJUSTL(fString))
+          END IF  !## remove comment to give output reflections, complements **
+        END IF
+      END DO
+!      WRITE(fString,"(A6,I3,A19)") "Total ",jnd," output reflections"
+!      IF (my_rank.EQ.0) WRITE(IChOutIhkl,*) TRIM(ADJUSTL(fString))
+!      IF (jnd.GT.IMaxNg) IMaxNg = jnd  ! update max number of outputs if necessary
+    END DO
+    IF (my_rank.EQ.0) CLOSE(IChOutIhkl,IOSTAT=IErr)
+
+!    DO ind = 1,lnd
+!      IF (my_rank.EQ.0)PRINT*,ind,":",Ig(ind,:)
+!    END DO
+!    DO ind = 1,InFrames
+!      IF (my_rank.EQ.0)PRINT*,ind,":",IgPoolList(:,ind)
+!    END DO
+
 
   END SUBROUTINE HKLmake
 

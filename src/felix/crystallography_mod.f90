@@ -122,7 +122,7 @@ MODULE crystallography_mod
     ! global outputs
     USE RPARA, ONLY : RaVecO,RbVecO,RcVecO,RVolume,RarVecO,RbrVecO,RcrVecO,&
             RXDirO,RYDirO,RZDirO,RarMag,RbrMag,RcrMag
-    USE IPARA, ONLY : inda,indb,indc
+!    USE IPARA, ONLY : inda,indb,indc
 
     IMPLICIT NONE
 
@@ -233,9 +233,9 @@ MODULE crystallography_mod
     RbrMag=SQRT(DOT_PRODUCT(RbrVecO,RbrVecO))!magnitude of b*
     RcrMag=SQRT(DOT_PRODUCT(RcrVecO,RcrVecO))!magnitude of c*
     ! Maximum Miller indices for a*,b*,c* for the reciprocal lattice
-    inda=NINT(RLatticeLimit/RarMag)
-    indb=NINT(RLatticeLimit/RbrMag)
-    indc=NINT(RLatticeLimit/RcrMag)
+!    inda=NINT(RLatticeLimit/RarMag)
+!    indb=NINT(RLatticeLimit/RbrMag)
+!    indc=NINT(RLatticeLimit/RcrMag)
 
   END SUBROUTINE ReciprocalVectors
 
@@ -255,7 +255,7 @@ MODULE crystallography_mod
     USE ug_matrix_mod
 
     ! global inputs
-    USE IPARA, ONLY : InLattice,IhklLattice,ICurrentZ,INAtomsUnitCell,IAtomicNumber
+    USE IPARA, ONLY : IhklLattice,ICurrentZ,INAtomsUnitCell,IAtomicNumber
     USE RPARA, ONLY : RarVecO,RbrVecO,RcrVecO,RarMag,RbrMag,RcrMag,RCurrentGMagnitude,&
         RLatticeLimit,RAtomCoordinate,RIsoDW
     USE SPARA, ONLY : SPrintString
@@ -275,60 +275,60 @@ MODULE crystallography_mod
     ! each beam pool using HKLMake
 
     ! Fill the lists
-    CFgLattice = CZERO
-    inda=NINT(RLatticeLimit/RarMag)
-    indb=NINT(RLatticeLimit/RbrMag)
-    indc=NINT(RLatticeLimit/RcrMag)
-    lnd = 0
-    DO ind = -inda,inda
-      DO jnd = -indb,indb
-        DO knd = -indc,indc
-          ! take out systematic absences from the lattice
-          ! but keep forbidden reflections because they may appear through multiple scattering
-          ISel = 0
-          CALL SelectionRules(ind, jnd, knd, ISel, IErr)  ! in this module
-          IF (ISel.EQ.0) CYCLE
-          lnd = lnd + 1
-          ISort(lnd) = lnd  ! we will sort this and use it as a dummy index
-          IhklLattice(lnd,:) = (/ ind, jnd, knd /) !Miller indices
-          Rg = ind*RarVecO + jnd*RbrVecO + knd*RcrVecO  ! g-vector
-          RgLatticeO(lnd,:) = Rg
-          RCurrentGMagnitude = SQRT(DOT_PRODUCT(Rg,Rg))  ! global variable, goes into scatt fac calc 
-          RgMagLattice(lnd) = RCurrentGMagnitude
-          ! Calculate structure factor
-          DO mnd=1,INAtomsUnitCell
-            ICurrentZ = IAtomicNumber(mnd)
-            CALL AtomicScatteringFactor(Rfq,IErr)  ! in ug_matrix_mod
-            CFgLattice(lnd) = CFgLattice(lnd)+Rfq*EXP(-CIMAGONE*DOT_PRODUCT(Rg,RAtomCoordinate(mnd,:)) ) * &
-            ! Isotropic D-W factor exp(-B sin(theta)^2/lamda^2) = exp(-Bg^2/16pi^2)
-            EXP(-RIsoDW(mnd)*RCurrentGMagnitude**2/(FOURPI**2))
-          END DO
-        END DO
-      END DO
-    END DO
+!    CFgLattice = CZERO
+!    inda=NINT(RLatticeLimit/RarMag)
+!    indb=NINT(RLatticeLimit/RbrMag)
+!    indc=NINT(RLatticeLimit/RcrMag)
+!    lnd = 0
+!    DO ind = -inda,inda
+!      DO jnd = -indb,indb
+!        DO knd = -indc,indc
+!          ! take out systematic absences from the lattice
+!          ! but keep forbidden reflections because they may appear through multiple scattering
+!          ISel = 0
+!          CALL SelectionRules(ind, jnd, knd, ISel, IErr)  ! in this module
+!          IF (ISel.EQ.0) CYCLE
+!          lnd = lnd + 1
+!          ISort(lnd) = lnd  ! we will sort this and use it as a dummy index
+!          IhklLattice(lnd,:) = (/ ind, jnd, knd /) !Miller indices
+!          Rg = ind*RarVecO + jnd*RbrVecO + knd*RcrVecO  ! g-vector
+!          RgLatticeO(lnd,:) = Rg
+!          RCurrentGMagnitude = SQRT(DOT_PRODUCT(Rg,Rg))  ! global variable, goes into scatt fac calc 
+!          RgMagLattice(lnd) = RCurrentGMagnitude
+!          ! Calculate structure factor
+!          DO mnd=1,INAtomsUnitCell
+!            ICurrentZ = IAtomicNumber(mnd)
+!            CALL AtomicScatteringFactor(Rfq,IErr)  ! in ug_matrix_mod
+!            CFgLattice(lnd) = CFgLattice(lnd)+Rfq*EXP(-CIMAGONE*DOT_PRODUCT(Rg,RAtomCoordinate(mnd,:)) ) * &
+!            ! Isotropic D-W factor exp(-B sin(theta)^2/lamda^2) = exp(-Bg^2/16pi^2)
+!            EXP(-RIsoDW(mnd)*RCurrentGMagnitude**2/(FOURPI**2))
+!          END DO
+!        END DO
+!      END DO
+!    END DO
     
     ! Get ISort in ascending order of |g| (re-purposed HKLSort routine)
     ! Based on ShellSort from "Numerical Recipes", routine SHELL()
     ! This allows reflections to be accessed in ascending order of |g|
     ! e.g. using CFgLattice(ISort(i)) instead of CFgLattice(i)
-    IlogNB2=INT(LOG(REAL(InLattice))*ALN2I+LocalTINY)
-    mnd = InLattice
-    DO nnd=1,IlogNB2
-      mnd=mnd/2
-      knd=InLattice-mnd
-      DO jnd=1,knd
-        ind=jnd
-3       CONTINUE
-        lnd=ind+mnd
-        IF( RgMagLattice(ISort(lnd)) .LT. RgMagLattice(ISort(ind))) THEN
-          Iswap = ISort(ind) ! swap index
-          ISort(ind) = ISort(lnd)
-          ISort(lnd) = Iswap
-          ind=ind-mnd
-          IF(ind.GE.1) GOTO 3
-        ENDIF
-      ENDDO
-    ENDDO
+ !   IlogNB2=INT(LOG(REAL(InLattice))*ALN2I+LocalTINY)
+ !   mnd = InLattice
+ !   DO nnd=1,IlogNB2
+ !     mnd=mnd/2
+ !     knd=InLattice-mnd
+ !     DO jnd=1,knd
+ !       ind=jnd
+!3       CONTINUE
+!        lnd=ind+mnd
+!        IF( RgMagLattice(ISort(lnd)) .LT. RgMagLattice(ISort(ind))) THEN
+!          Iswap = ISort(ind) ! swap index
+!          ISort(ind) = ISort(lnd)
+!          ISort(lnd) = Iswap
+!          ind=ind-mnd
+!          IF(ind.GE.1) GOTO 3
+!        ENDIF
+!      ENDDO
+!    ENDDO
 
   END SUBROUTINE ReciprocalLattice
 
