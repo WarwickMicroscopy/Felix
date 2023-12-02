@@ -371,7 +371,7 @@ MODULE setup_reflections_mod
                 Iy = 0
               END IF
               RIkin = CFg(IgPoolList(jnd,knd))*CONJG(CFg(IgPoolList(jnd,knd))) * &
-                  EXP(-RInst*RgPoolSg(jnd,knd)*RgPoolSg(jnd,knd))
+                  EXP(-RInst*RgPoolSg(jnd,knd)*RgPoolSg(jnd,knd)) ! Gaussian shape of reflection with Sg
               WRITE(fString,"(I4,A3,F7.3)") knd," : ",RIkin
               WRITE(IChOutIhkl,*) TRIM(ADJUSTL(fString))
             END IF

@@ -299,7 +299,9 @@ MODULE crystallography_mod
           DO mnd=1,INAtomsUnitCell
             ICurrentZ = IAtomicNumber(mnd)
             CALL AtomicScatteringFactor(Rfq,IErr)  ! in ug_matrix_mod
-            CFgLattice(lnd) = CFgLattice(lnd)+Rfq*EXP(-CIMAGONE*DOT_PRODUCT(Rg,RAtomCoordinate(mnd,:)) )
+            CFgLattice(lnd) = CFgLattice(lnd)+Rfq*EXP(-CIMAGONE*DOT_PRODUCT(Rg,RAtomCoordinate(mnd,:)) ) * &
+            ! Isotropic D-W factor exp(-B sin(theta)^2/lamda^2) = exp(-Bg^2/16pi^2)
+            EXP(-RIsoDW(mnd)*RCurrentGMagnitude**2/(FOURPI**2))
           END DO
         END DO
       END DO
