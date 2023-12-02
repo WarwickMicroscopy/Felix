@@ -240,7 +240,7 @@ PROGRAM Felixrefine
   WRITE(SPrintString, FMT='(A17,F5.2,A5)') "Resolution limit ",&
           RgOutLimit/TWOPI," A^-1"
   CALL message(LS,SPrintString)
-  ! List the hkl's in each frame
+  ! List the hkl's in each frame and write to text file hkl_list.txt
   CALL HKLMake(RDevLimit, RGOutLimit, IErr)  ! in setup_reflections.f90
   IF(l_alert(IErr,"felixrefine","HKLMake")) CALL abort
   ! List the unique g's and make reduced arrays before deleting the reciprocal lattice to save memory

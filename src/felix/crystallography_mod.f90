@@ -122,11 +122,11 @@ MODULE crystallography_mod
     ! global outputs
     USE RPARA, ONLY : RaVecO,RbVecO,RcVecO,RVolume,RarVecO,RbrVecO,RcrVecO,&
             RXDirO,RYDirO,RZDirO,RarMag,RbrMag,RcrMag
-    USE IPARA, ONLY : InLattice
+    USE IPARA, ONLY : inda,indb,indc
 
     IMPLICIT NONE
 
-    INTEGER(IKIND) :: IErr,ind,inda,indb,indc
+    INTEGER(IKIND) :: IErr,ind
     REAL(RKIND) :: Rt,RxAngle
     REAL(RKIND), DIMENSION(ITHREE,ITHREE) :: RTMatC2O
     REAL(RKIND), INTENT(IN) :: RLatticeLimit
@@ -232,10 +232,10 @@ MODULE crystallography_mod
     RarMag=SQRT(DOT_PRODUCT(RarVecO,RarVecO))!magnitude of a*
     RbrMag=SQRT(DOT_PRODUCT(RbrVecO,RbrVecO))!magnitude of b*
     RcrMag=SQRT(DOT_PRODUCT(RcrVecO,RcrVecO))!magnitude of c*
+    ! Maximum Miller indices for a*,b*,c* for the reciprocal lattice
     inda=NINT(RLatticeLimit/RarMag)
     indb=NINT(RLatticeLimit/RbrMag)
     indc=NINT(RLatticeLimit/RcrMag)
-    InLattice = (2*inda+1)*(2*indb+1)*(2*indc+1)
 
   END SUBROUTINE ReciprocalVectors
 

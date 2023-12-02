@@ -167,7 +167,7 @@ MODULE IPara
   !Simulation size
   INTEGER(IKIND) :: ISizeX, ISizeY, IPixelCount, INFrames
   !Crystal Settings
-  INTEGER(IKIND) :: IMaxPossibleNAtomsUnitCell, InLattice !no. of g-vectors in the reciprocal lattice
+  INTEGER(IKIND) :: IMaxPossibleNAtomsUnitCell
   INTEGER(IKIND),DIMENSION(:,:), ALLOCATABLE :: IhklLattice, IgPoolList, Ihkl
   !Name2Atom index
   INTEGER(IKIND), DIMENSION(:), ALLOCATABLE :: IBasisAtomicNumber,IAtomicNumber
