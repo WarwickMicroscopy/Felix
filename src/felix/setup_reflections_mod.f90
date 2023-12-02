@@ -148,8 +148,15 @@ MODULE setup_reflections_mod
     !This broadcast is not strictly necessary but keeps all cores synchronised
     CALL MPI_BCAST(ITotalgPool,SIZE(ITotalgPool),MPI_INTEGER,root,MPI_COMM_WORLD,IErr)
     CALL MPI_BCAST(RTotalSgPool,SIZE(RTotalSgPool),MPI_DOUBLE_PRECISION,root,MPI_COMM_WORLD,IErr)
-    IgPoolList = RESHAPE(ITotalgPool, (/INhkl,INFrames/) )
-    RGPoolSg = RESHAPE(RTotalSgPool, (/INhkl,INFrames/) )
+    !IgPoolList = RESHAPE(ITotalgPool, (/INhkl,INFrames/) )
+    !RGPoolSg = RESHAPE(RTotalSgPool, (/INhkl,INFrames/) )
+    knd = 1
+    DO ind = 1,INhkl
+      DO jnd = 1,INFrames
+        IgPoolList(ind,jnd) = ITotalgPool(knd)
+        RGPoolSg(ind,jnd) = RTotalSgPool(knd)
+      END DO
+    END DO
     ! Clean up
     DEALLOCATE(ILocalgPool,ITotalgPool,RLocalSgPool,RTotalSgPool,Inum,Ipos)
 
