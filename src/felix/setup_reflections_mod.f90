@@ -37,7 +37,7 @@ MODULE setup_reflections_mod
 
   IMPLICIT NONE
   PRIVATE
-  PUBLIC :: HKLMake,HKLList
+  PUBLIC :: HKLMake
 
   CONTAINS
   
@@ -55,7 +55,6 @@ MODULE setup_reflections_mod
     USE MyNumbers
     USE message_mod
     USE myMPI
-    USE ug_matrix_mod
     USE crystallography_mod
 
     ! global inputs/outputs
@@ -190,121 +189,11 @@ MODULE setup_reflections_mod
   !!  
   SUBROUTINE HKLList( IErr )
 
-    ! This procedure is called once in felixrefine setup
-    ! 1) get unique g's in all pools
-    ! 2) make a new list of unique g's and associated parameters and delete reciprocal lattice
-    ! 3) save a set of kinematic rocking curves
-    
-    USE MyNumbers
-    USE message_mod
+  USE MyNumbers
 
-    ! global parameters
-    USE IPARA, ONLY : ILN,INFrames,ISort,INhkl,IgPoolList,IgOutList,Ihkl,IhklLattice,INoOfHKLsAll
-    USE SPARA, ONLY : SPrintString,SChemicalFormula
-    USE RPARA, ONLY : RgO,RgMag,RgLatticeO,RgMagLattice,RgPoolSg
-    USE CPARA, ONLY : CFg,CFgLattice
-    USE IChannels, ONLY : IChOutIhkl
+  IMPLICIT NONE
 
-    IMPLICIT NONE
-
-    REAL(RKIND) :: RInst,RIkin
-    INTEGER(IKIND) :: ind,jnd,knd,lnd,Iy,IErr,Imin,Imax
-    INTEGER(IKIND), DIMENSION(:), ALLOCATABLE :: IFullgList,IReducedgList,IUniquegList
-    CHARACTER(200) :: path
-    CHARACTER(100) :: fString
-
-    !-1------------------------------------------------------------------
-    ! first get a list of pool reflections without duplicates, IUniquegList
-    ind = INFrames*INhkl
-    ALLOCATE(IFullgList(ind), STAT=IErr)  ! everything
-    ALLOCATE(IReducedgList(ind), STAT=IErr)  ! unique reflections in an oversize matrix
-    IF(l_alert(IErr,"HKLlist","allocations 1")) RETURN
-    IFullgList = RESHAPE(IgPoolList,[ind])
-    !now the list of unique reflections
-    Imin = 0
-    Imax = MAXVAL(IFullgList)
-    ind = 0
-    DO WHILE (Imin.LT.Imax)
-        ind = ind+1
-        Imin = MINVAL(IFullgList, MASK=IFullgList.GT.Imin)
-        IReducedgList(ind) = Imin
-    END DO
-    ALLOCATE(IUniquegList(ind), STAT=IErr)
-    IF(l_alert(IErr,"HKLlist","allocations 2")) RETURN
-    IUniquegList = IReducedgList(1:ind)
-    IF(l_alert(IErr,"HKLlist","allocate IUniquegList")) RETURN
-    ! Tidy up
-    DEALLOCATE(IFullgList,IReducedgList)
-    INoOfHKLsAll = ind
-    WRITE(SPrintString, FMT='(I5,A19)') ind, " pool reflections"
-    CALL message(LS,SPrintString)
-
-    !-2------------------------------------------------------------------
-    ! Make reduced lists of hkl, g-vector, |g| and Fg so we can deallocate the reciprocal lattice
-    ALLOCATE(Ihkl(INoOfHKLsAll,ITHREE), STAT=IErr)  ! Miller indices
-    ALLOCATE(RgO(INoOfHKLsAll,ITHREE), STAT=IErr)  ! g-vector, orthogonal frame
-    ALLOCATE(RgMag(INoOfHKLsAll), STAT=IErr)  ! |g|
-    ALLOCATE(CFg(INoOfHKLsAll), STAT=IErr)  ! Fg
-    IF(l_alert(IErr,"HKLlist","allocations 3")) RETURN
-    DO jnd = 1,INoOfHKLsAll
-      Ihkl(jnd,:) = IhklLattice(IUniquegList(jnd),:)
-      RgO(jnd,:) = RgLatticeO(IUniquegList(jnd),:)
-      RgMag(jnd) = RgMagLattice(IUniquegList(jnd))
-      CFg(jnd) = CFgLattice(IUniquegList(jnd))
-    END DO
-    ! Change the indices for IgPoolList and IgOutList
-    ! For a frame [j] and a given reflection in the beam pool [i,j],
-    ! we find hkl, g, |g| and Fg at the index given in IgPoolList[i,j].
-    ! IgOutList[i,j] gives the number of the output reflection.
-    lnd = 0  ! counter for output reflections
-    DO ind = 1,INoOfHKLsAll
-      Iy = 1  ! flag for counting
-      DO jnd = 1, INhkl
-        DO knd = 1, INFrames
-          IF (IgPoolList(jnd,knd).EQ.IUniquegList(ind)) IgPoolList(jnd,knd) = ind
-          IF (IgOutList(jnd,knd).EQ.IUniquegList(ind)) THEN
-            IF (Iy.EQ.1) THEN  ! we only count the first appearance
-              lnd = lnd + 1
-              Iy = 0
-            END IF
-            IgOutList(jnd,knd) = lnd
-          END IF
-        END DO
-      END DO
-    END DO
-    WRITE(SPrintString, FMT='(I5,A19)') lnd, " output reflections"
-    CALL message(LS,SPrintString)
-
-    !-3------------------------------------------------------------------
-    ! kinematic rocking curves  
-    RInst = 3000.0  ! instrument broadening term
-    IF(my_rank.EQ.0) THEN
-      CALL message(LS,dbg3,"Writing kinematic rocking curves")
-      path = SChemicalFormula(1:ILN) // "/hkl_K-rocks.txt"
-      OPEN(UNIT=IChOutIhkl, ACTION='WRITE', POSITION='APPEND', STATUS= 'UNKNOWN', &
-          FILE=TRIM(ADJUSTL(path)),IOSTAT=IErr)
-      WRITE(IChOutIhkl,*) "List of kinematic rocking curves"
-      DO ind = 1,lnd
-        Iy = 1
-        DO knd = 1,INFrames
-          DO jnd = 1,INhkl
-            IF (IgOutList(jnd,knd).EQ.ind) THEN
-              IF (Iy.EQ.1) THEN
-                WRITE(fString,"(3(I3,1X))") Ihkl(IgPoolList(jnd,knd),:)
-                WRITE(IChOutIhkl,*) TRIM(ADJUSTL(fString))
-                Iy = 0
-              END IF
-              RIkin = CFg(IgPoolList(jnd,knd))*CONJG(CFg(IgPoolList(jnd,knd))) * &
-                  EXP(-RInst*RgPoolSg(jnd,knd)*RgPoolSg(jnd,knd)) ! Gaussian shape of reflection with Sg
-              WRITE(fString,"(I4,A3,F7.3)") knd," : ",RIkin
-              WRITE(IChOutIhkl,*) TRIM(ADJUSTL(fString))
-            END IF
-          END DO
-        END DO    
-      END DO
-      CLOSE(IChOutIhkl,IOSTAT=IErr)
-    END IF
-    
+  INTEGER (IKIND) :: IErr
  
   END SUBROUTINE HKLList
   

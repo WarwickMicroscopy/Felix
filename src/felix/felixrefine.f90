@@ -193,7 +193,7 @@ PROGRAM Felixrefine
   ! allocations for the cRED frame series, INFrames & INhkl
   !--------------------------------------------------------------------
   ! Ig is the list of all reflexions (h,k,l) for the full cRED calculation
-  ALLOCATE(Ig(INFrames*INhkl,ITHREE)), STAT=IErr)! Miller indices
+  ALLOCATE(Ig(INFrames*INhkl,ITHREE), STAT=IErr)! Miller indices
   ! List of reflexions in the beam pool for each frame, an index in Ig
   ALLOCATE(IgPoolList(INhkl,INFrames),STAT=IErr)
   IF(l_alert(IErr,"felixrefine","allocate IgPoolList")) CALL abort

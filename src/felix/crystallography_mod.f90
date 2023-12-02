@@ -38,7 +38,7 @@ MODULE crystallography_mod
   IMPLICIT NONE
   
   PRIVATE
-  PUBLIC :: ReciprocalVectors, HKLSave, CrystalOrientation, UniqueAtomPositions, gVectors
+  PUBLIC :: ReciprocalVectors, HKLSave, CrystalOrientation, UniqueAtomPositions, gVectors, SelectionRules
 
   CONTAINS
 
@@ -258,7 +258,7 @@ MODULE crystallography_mod
     IMPLICIT NONE
 
     INTEGER(IKIND) :: IErr,ind,jnd,knd,lnd,mnd
-    REAL(RKIND) :: Rg(ITHREE),RgMag,Rfq
+    REAL(RKIND) :: Rg(ITHREE),RgMag,RSg,Rfq
     COMPLEX :: CFg
     CHARACTER(200) :: path
     CHARACTER(100) :: fString
