@@ -192,13 +192,15 @@ PROGRAM Felixrefine
   !--------------------------------------------------------------------
   ! allocations for the cRED frame series, INFrames & INhkl
   !--------------------------------------------------------------------
-  ! List of g-vectors in the beam pool for each frame
+  ! Ig is the list of all reflexions (h,k,l) for the full cRED calculation
+  ALLOCATE(Ig(INFrames*INhkl,ITHREE)), STAT=IErr)! Miller indices
+  ! List of reflexions in the beam pool for each frame, an index in Ig
   ALLOCATE(IgPoolList(INhkl,INFrames),STAT=IErr)
   IF(l_alert(IErr,"felixrefine","allocate IgPoolList")) CALL abort
-  ! List of Sg for each g in the beam pool for each frame
+  ! Values of Sg for each reflexion in the beam pool for each frame  *##* could be calculated on the fly to save memory
   ALLOCATE(RgPoolSg(INhkl,INFrames),STAT=IErr)
   IF(l_alert(IErr,"felixrefine","allocate IgPoolList")) CALL abort
-  ! Indices of g-vectors in IgPoolList to be output in each frame,
+  ! List of reflexions output in each frame, an index in Ig
   ! decided by RGOutLimit
   ALLOCATE(IgOutList(INhkl,INFrames),STAT=IErr)
   IF(l_alert(IErr,"felixrefine","allocate IgOutList")) CALL abort
@@ -213,40 +215,28 @@ PROGRAM Felixrefine
   ! From the unit cell we produce RaVecO, RbVecO, RcVecO in an orthogonal reference frame O
   ! with xO // a and zO perpendicular to the ab plane, in Angstrom units
   ! and reciprocal lattice vectors RarVecO, RbrVecO, RcrVecO in the same reference frame
+  CALL ReciprocalVectors(IErr)  ! in crystallography.f90
+
+  !--------------------------------------------------------------------
   ! Outer limit of g pool  ***This parameter will probably end up in a modified .inp file***
   RgPoolLimit = TWO*TWOPI  ! reciprocal Angstroms, multiplied by 2pi
   ! Deviation parameter limit, a reflection closer to Ewald than this is in the beam pool
   RDevLimit = 0.01*TWOPI  ! reciprocal Angstroms, multiplied by 2pi
   ! Output limit
   RGOutLimit = ONE*TWOPI  ! reciprocal Angstroms, multiplied by 2pi
-  ! Make the reciprocal lattice
   WRITE(SPrintString, FMT='(A33,F5.2,A5)') "Reciprocal lattice defined up to ",&
           RgPoolLimit/TWOPI," A^-1"
   CALL message(LS,SPrintString)
-  ! reciprocal vectors first - gives the size of the reciprocal lattice to be calculated
-  CALL ReciprocalVectors(RgPoolLimit, IErr)  ! in crystallography.f90
-  ! IhklLattice is the list of Miller indices for the full 3D lattice
-  ! RgLatticeO is the corresponding list of coordinates in reciprocal space
-  ! maximum a*,b*,c* limit is determined by the G magnitude limit
-!  ALLOCATE(IhklLattice(InLattice, ITHREE), STAT=IErr)! Miller indices
-!  ALLOCATE(RgLatticeO(InLattice, ITHREE), STAT=IErr)! g-vector
-!  ALLOCATE(RgMagLattice(InLattice), STAT=IErr)! magnitude
-!  ALLOCATE(CFgLattice(InLattice), STAT=IErr)! Structure factors
-!  ALLOCATE(Isort(InLattice), STAT=IErr)! Sorted index
-
-!  CALL ReciprocalLattice(RgPoolLimit, IErr)  ! in crystallography.f90
-!  IF(l_alert(IErr,"felixrefine","ReciprocalLattice")) CALL abort
   WRITE(SPrintString, FMT='(A17,F5.2,A5)') "Resolution limit ",&
           RgOutLimit/TWOPI," A^-1"
   CALL message(LS,SPrintString)
-  ! List the hkl's in each frame and write to text file hkl_list.txt
+  ! List the reflexions in each frame: calculate Ig,IgPoolList,IgOutList,RgPoolSg
   CALL HKLMake(RDevLimit, RGOutLimit, RgPoolLimit, IErr)  ! in setup_reflections.f90
   IF(l_alert(IErr,"felixrefine","HKLMake")) CALL abort
-  ! List the unique g's and make reduced arrays before deleting the reciprocal lattice to save memory
-!  CALL HKLList(IErr)
+  ! and write to text file hkl_list.txt
+  CALL HKLSave(IErr)  ! in crystallography.f90
   IF(l_alert(IErr,"felixrefine","HKLList")) CALL abort
-  ! Delete the reciprocal lattice
-  !DEALLOCATE(Isort,RgLatticeO,RgMagLattice,CFgLattice,IhklLattice)  
+
   !--------------------------------------------------------------------
     
     CALL PrintEndTime( LS, IStartTime, "Frame" )

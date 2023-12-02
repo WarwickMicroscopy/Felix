@@ -38,7 +38,7 @@ MODULE crystallography_mod
   IMPLICIT NONE
   
   PRIVATE
-  PUBLIC :: ReciprocalVectors, ReciprocalLattice, CrystalOrientation, UniqueAtomPositions, gVectors
+  PUBLIC :: ReciprocalVectors, HKLSave, CrystalOrientation, UniqueAtomPositions, gVectors
 
   CONTAINS
 
@@ -107,7 +107,7 @@ MODULE crystallography_mod
   !!
   !! Major-Authors: Richard Beanland (2023)
   !!
-  SUBROUTINE ReciprocalVectors(RLatticeLimit, IErr)
+  SUBROUTINE ReciprocalVectors(IErr)
 
     USE MyNumbers
     USE MyMPI
@@ -129,7 +129,6 @@ MODULE crystallography_mod
     INTEGER(IKIND) :: IErr,ind
     REAL(RKIND) :: Rt,RxAngle
     REAL(RKIND), DIMENSION(ITHREE,ITHREE) :: RTMatC2O
-    REAL(RKIND), INTENT(IN) :: RLatticeLimit
     
     !direct lattice vectors in an orthogonal reference frame, Angstrom units 
     ! a is parallel to [100]
@@ -232,22 +231,17 @@ MODULE crystallography_mod
     RarMag=SQRT(DOT_PRODUCT(RarVecO,RarVecO))!magnitude of a*
     RbrMag=SQRT(DOT_PRODUCT(RbrVecO,RbrVecO))!magnitude of b*
     RcrMag=SQRT(DOT_PRODUCT(RcrVecO,RcrVecO))!magnitude of c*
-    ! Maximum Miller indices for a*,b*,c* for the reciprocal lattice
-!    inda=NINT(RLatticeLimit/RarMag)
-!    indb=NINT(RLatticeLimit/RbrMag)
-!    indc=NINT(RLatticeLimit/RcrMag)
 
   END SUBROUTINE ReciprocalVectors
 
 
   !%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
   !>
-  !! Procedure-description: Creates list of reciprocal lattice vectors covering a 3D
-  !! volume in an orthogonal reference frame and sorts them in magnitude.  
+  !! Procedure-description: writes hkl_list.txt, the list of reflections in each frame
   !!
   !! Major-Authors: Richard Beanland (2023)
   !!
-  SUBROUTINE ReciprocalLattice(RLatticeLimit, IErr)
+  SUBROUTINE HKLSave(IErr)
 
     USE MyNumbers
     USE MyMPI
@@ -255,82 +249,72 @@ MODULE crystallography_mod
     USE ug_matrix_mod
 
     ! global inputs
-    USE IPARA, ONLY : IhklLattice,ICurrentZ,INAtomsUnitCell,IAtomicNumber
+    USE IPARA, ONLY : ILN,INFrames,INhkl,Ig,IGPoolList,IgOutList,ICurrentZ,INAtomsUnitCell,IAtomicNumber
     USE RPARA, ONLY : RarVecO,RbrVecO,RcrVecO,RarMag,RbrMag,RcrMag,RCurrentGMagnitude,&
-        RLatticeLimit,RAtomCoordinate,RIsoDW
-    USE SPARA, ONLY : SPrintString
-    USE CPARA, ONLY : CFgLattice
-
-    ! global outputs
-    USE RPARA, ONLY : RgLatticeO,RgMagLattice
-    USE IPARA, ONLY : ISort
+        RgPoolSg,RAtomCoordinate,RIsoDW
+    USE SPARA, ONLY : SPrintString,SChemicalFormula
+    USE IChannels, ONLY : IChOutIhkl,IChOutIM
 
     IMPLICIT NONE
 
-    INTEGER(IKIND) :: IErr,ind,jnd,knd,lnd,mnd,nnd,inda,indb,indc,ISel,IlogNB2,Iswap
-    REAL(RKIND) :: ALN2I,LocalTINY,Rg(ITHREE),Rfq,RLatticeLimit
-    PARAMETER (ALN2I=1.4426950D0, LocalTINY=1.D-5)
-    
-    ! Build the reciprocal lattice, from which we will take slices for
-    ! each beam pool using HKLMake
+    INTEGER(IKIND) :: IErr,ind,jnd,knd,lnd,mnd
+    REAL(RKIND) :: Rg(ITHREE),RgMag,Rfq
+    COMPLEX :: CFg
+    CHARACTER(200) :: path
+    CHARACTER(100) :: fString
 
-    ! Fill the lists
-!    CFgLattice = CZERO
-!    inda=NINT(RLatticeLimit/RarMag)
-!    indb=NINT(RLatticeLimit/RbrMag)
-!    indc=NINT(RLatticeLimit/RcrMag)
-!    lnd = 0
-!    DO ind = -inda,inda
-!      DO jnd = -indb,indb
-!        DO knd = -indc,indc
-!          ! take out systematic absences from the lattice
-!          ! but keep forbidden reflections because they may appear through multiple scattering
-!          ISel = 0
-!          CALL SelectionRules(ind, jnd, knd, ISel, IErr)  ! in this module
-!          IF (ISel.EQ.0) CYCLE
-!          lnd = lnd + 1
-!          ISort(lnd) = lnd  ! we will sort this and use it as a dummy index
-!          IhklLattice(lnd,:) = (/ ind, jnd, knd /) !Miller indices
-!          Rg = ind*RarVecO + jnd*RbrVecO + knd*RcrVecO  ! g-vector
-!          RgLatticeO(lnd,:) = Rg
-!          RCurrentGMagnitude = SQRT(DOT_PRODUCT(Rg,Rg))  ! global variable, goes into scatt fac calc 
-!          RgMagLattice(lnd) = RCurrentGMagnitude
-!          ! Calculate structure factor
-!          DO mnd=1,INAtomsUnitCell
-!            ICurrentZ = IAtomicNumber(mnd)
-!            CALL AtomicScatteringFactor(Rfq,IErr)  ! in ug_matrix_mod
-!            CFgLattice(lnd) = CFgLattice(lnd)+Rfq*EXP(-CIMAGONE*DOT_PRODUCT(Rg,RAtomCoordinate(mnd,:)) ) * &
-!            ! Isotropic D-W factor exp(-B sin(theta)^2/lamda^2) = exp(-Bg^2/16pi^2)
-!            EXP(-RIsoDW(mnd)*RCurrentGMagnitude**2/(FOURPI**2))
-!          END DO
-!        END DO
-!      END DO
-!    END DO
     
-    ! Get ISort in ascending order of |g| (re-purposed HKLSort routine)
-    ! Based on ShellSort from "Numerical Recipes", routine SHELL()
-    ! This allows reflections to be accessed in ascending order of |g|
-    ! e.g. using CFgLattice(ISort(i)) instead of CFgLattice(i)
- !   IlogNB2=INT(LOG(REAL(InLattice))*ALN2I+LocalTINY)
- !   mnd = InLattice
- !   DO nnd=1,IlogNB2
- !     mnd=mnd/2
- !     knd=InLattice-mnd
- !     DO jnd=1,knd
- !       ind=jnd
-!3       CONTINUE
-!        lnd=ind+mnd
-!        IF( RgMagLattice(ISort(lnd)) .LT. RgMagLattice(ISort(ind))) THEN
-!          Iswap = ISort(ind) ! swap index
-!          ISort(ind) = ISort(lnd)
-!          ISort(lnd) = Iswap
-!          ind=ind-mnd
-!          IF(ind.GE.1) GOTO 3
-!        ENDIF
-!      ENDDO
-!    ENDDO
+    ! Start output
+    IF(my_rank.EQ.0) THEN
+      CALL message(LS,dbg3,"Writing hkl list and images")
+      path = SChemicalFormula(1:ILN) // "/hkl_list.txt"
+      OPEN(UNIT=IChOutIhkl, ACTION='WRITE', POSITION='APPEND', STATUS= 'UNKNOWN', &
+          FILE=TRIM(ADJUSTL(path)),IOSTAT=IErr)
+      WRITE(IChOutIhkl,*) "List of hkl in each frame"
+      WRITE(IChOutIhkl,*) "No: h k l  Fg  |g|  Sg"
+    END IF
+    DO ind = 1,INFrames
+      ! output to slurm if requested
+      CALL message(LM, "Reflection list:")
+      DO knd = 1, INhkl
+        IF (IgPoolList(knd,ind).NE.0) THEN
+          WRITE(SPrintString,'(I3,1X,I3,1X,I3)') Ig(IgPoolList(knd,ind),:)
+          CALL message(LM, SPrintString)
+        END IF
+      END DO
+      ! write reflections in each frame
+      ! h k l Fg(Re Im) |g| Sg
+      IF (my_rank.EQ.0) WRITE(IChOutIhkl,"(A6,I4)") "Frame ",ind
+      DO knd = 1, INhkl
+        IF (IgOutList(knd,ind).NE.0) THEN
+          lnd = IgOutList(knd,ind)
+          RSg = RgPoolSg(knd,ind)
+          Rg = Ig(lnd,1)*RarVecO + Ig(lnd,2)*RbrVecO + Ig(lnd,3)*RcrVecO
+          RgMag = SQRT(DOT_PRODUCT(Rg,Rg))
+          ! Calculate structure factor
+          CFg = CZERO
+          DO mnd=1,INAtomsUnitCell
+            ICurrentZ = IAtomicNumber(mnd)
+            CALL AtomicScatteringFactor(Rfq,IErr)  ! in ug_matrix_mod
+            CFg = CFg+Rfq*EXP(-CIMAGONE*DOT_PRODUCT(Rg,RAtomCoordinate(mnd,:)) ) * &
+            ! Isotropic D-W factor exp(-B sin(theta)^2/lamda^2) = exp(-Bg^2/16pi^2)
+            EXP(-RIsoDW(mnd)*RgMag**2/(FOURPI**2))
+          END DO
 
-  END SUBROUTINE ReciprocalLattice
+          WRITE(fString,"(3(I3,1X),2X, F8.4,A1,F8.4,A3, F6.2,2X, F8.4)") &
+                  Ig(lnd,:), REAL(CFg),"+",AIMAG(CFg),"i  ",&
+                  RgMag/TWOPI, RSg
+          IF (my_rank.EQ.0) WRITE(IChOutIhkl,*) TRIM(ADJUSTL(fString))
+        END IF
+      END DO
+!      WRITE(fString,"(A6,I3,A19)") "Total ",jnd," output reflections"
+!      IF (my_rank.EQ.0) WRITE(IChOutIhkl,*) TRIM(ADJUSTL(fString))
+!      IF (jnd.GT.IMaxNg) IMaxNg = jnd  ! update max number of outputs if necessary
+    END DO
+    IF (my_rank.EQ.0) CLOSE(IChOutIhkl,IOSTAT=IErr)
+
+
+  END SUBROUTINE HKLSave
 
   !%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 

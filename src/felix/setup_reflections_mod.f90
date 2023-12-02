@@ -60,17 +60,17 @@ MODULE setup_reflections_mod
 
     ! global inputs/outputs
     USE SPARA, ONLY : SPrintString,SChemicalFormula
-    USE IPARA, ONLY : INhkl,ILN,IgOutList,IgPoolList,INFrames,ICurrentZ,INAtomsUnitCell,IAtomicNumber
+    USE IPARA, ONLY : INhkl,ILN,INFrames,ICurrentZ,INAtomsUnitCell,IAtomicNumber  ! inputs
+    USE IPARA, ONLY : Ig,IgOutList,IgPoolList  ! outputs
     USE RPARA, ONLY : RXDirO,RYDirO,RZDirO,RarVecO,RbrVecO,RcrVecO,RarMag,RbrMag,RcrMag,RFrameAngle,RBigK,&
-        RgPoolSg,RAtomCoordinate,RIsoDW
+        RAtomCoordinate,RIsoDW, RgPoolSg ! only RgPoolSg is an output
     USE Iconst
     USE IChannels, ONLY : IChOutIhkl,IChOutIM
     
     IMPLICIT NONE
 
     REAL(RKIND),INTENT(IN) :: RDevLimit, RGOutLimit, RgPoolLimit
-    INTEGER(IKIND) :: IErr,ind,jnd,knd,lnd,mnd,nnd,ond,ISel,&
-            Ifull(INFrames),IMaxNg,inda,indb,indc,Ig(INFrames*INhkl,ITHREE),Ifound
+    INTEGER(IKIND) :: IErr,ind,jnd,knd,lnd,mnd,nnd,ond,ISel,Ifull(INFrames),IMaxNg,inda,indb,indc,Ifound
     REAL(RKIND) :: RAngle,Rk(INFrames,ITHREE),Rk0(ITHREE),Rp(ITHREE),RSg,Rphi,Rg(ITHREE),RIkin,&
                    RKplusg(ITHREE),RgMag,RShell,RgMin,Rfq
     COMPLEX :: CFg
@@ -157,19 +157,14 @@ MODULE setup_reflections_mod
                   IF (ond.EQ.INhkl) THEN  ! we have filled the beam pool
                     Ifull(nnd) = 1
                     IF (my_rank.EQ.0)PRINT*,"Beam pool full for frame",nnd
+                    CYCLE
                   ELSE
                     GOTO 2
                   END IF
                 ELSE
                   IgPoolList(ond,nnd) = lnd
                   RgPoolSg(ond,nnd) = RSg
-                END IF
-                ond = 2 !counter to find the next slot for the output list
-                IF (ABS(RSg).LT.RGOutLimit) THEN
-3                 IF (IgOutList(ond,nnd).NE.0) THEN
-                    ond = ond + 1
-                    GOTO 3
-                  ELSE
+                  IF (ABS(RSg).LT.RGOutLimit) THEN
                     IgOutList(ond,nnd) = lnd
                   END IF
                 END IF
@@ -184,56 +179,6 @@ MODULE setup_reflections_mod
       mnd = mnd + 1
       GOTO 1
     END IF
-
-    !-2------------------------------------------------------------------
-    ! Output as a text file
-    IF(my_rank.EQ.0) THEN
-      CALL message(LS,dbg3,"Writing hkl list and images")
-      path = SChemicalFormula(1:ILN) // "/hkl_list.txt"
-      OPEN(UNIT=IChOutIhkl, ACTION='WRITE', POSITION='APPEND', STATUS= 'UNKNOWN', &
-          FILE=TRIM(ADJUSTL(path)),IOSTAT=IErr)
-      WRITE(IChOutIhkl,*) "List of hkl in each frame"
-      WRITE(IChOutIhkl,*) "No: h k l  Fg  |g|  Sg"
-    END IF
-    DO ind = 1,INFrames
-      ! output to slurm if requested
-      CALL message(LM, "Reflection list:")
-      DO knd = 1, INhkl
-        IF (IgPoolList(knd,ind).NE.0) THEN
-          WRITE(SPrintString,'(I3,1X,I3,1X,I3)') Ig(IgPoolList(knd,ind),:)
-          CALL message(LM, SPrintString)
-        END IF
-      END DO
-      ! write reflections in each frame
-      ! h k l Fg(Re Im) |g| Sg
-      IF (my_rank.EQ.0) WRITE(IChOutIhkl,"(A6,I4)") "Frame ",ind
-      DO knd = 1, INhkl
-        IF (IgOutList(knd,ind).NE.0) THEN
-          lnd = IgOutList(knd,ind)
-          RSg = RgPoolSg(knd,ind)
-          Rg = Ig(lnd,1)*RarVecO + Ig(lnd,2)*RbrVecO + Ig(lnd,3)*RcrVecO
-          RgMag = SQRT(DOT_PRODUCT(Rg,Rg))
-          ! Calculate structure factor
-          CFg = CZERO
-          DO mnd=1,INAtomsUnitCell
-            ICurrentZ = IAtomicNumber(mnd)
-            CALL AtomicScatteringFactor(Rfq,IErr)  ! in ug_matrix_mod
-            CFg = CFg+Rfq*EXP(-CIMAGONE*DOT_PRODUCT(Rg,RAtomCoordinate(mnd,:)) ) * &
-            ! Isotropic D-W factor exp(-B sin(theta)^2/lamda^2) = exp(-Bg^2/16pi^2)
-            EXP(-RIsoDW(mnd)*RgMag**2/(FOURPI**2))
-          END DO
-
-          WRITE(fString,"(3(I3,1X),2X, F8.4,A1,F8.4,A3, F6.2,2X, F8.4)") &
-                  Ig(lnd,:), REAL(CFg),"+",AIMAG(CFg),"i  ",&
-                  RgMag/TWOPI, RSg
-          IF (my_rank.EQ.0) WRITE(IChOutIhkl,*) TRIM(ADJUSTL(fString))
-        END IF
-      END DO
-!      WRITE(fString,"(A6,I3,A19)") "Total ",jnd," output reflections"
-!      IF (my_rank.EQ.0) WRITE(IChOutIhkl,*) TRIM(ADJUSTL(fString))
-!      IF (jnd.GT.IMaxNg) IMaxNg = jnd  ! update max number of outputs if necessary
-    END DO
-    IF (my_rank.EQ.0) CLOSE(IChOutIhkl,IOSTAT=IErr)
 
   END SUBROUTINE HKLmake
 

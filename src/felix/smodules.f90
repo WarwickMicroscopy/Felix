@@ -168,7 +168,7 @@ MODULE IPara
   INTEGER(IKIND) :: ISizeX, ISizeY, IPixelCount, INFrames
   !Crystal Settings
   INTEGER(IKIND) :: IMaxPossibleNAtomsUnitCell
-  INTEGER(IKIND),DIMENSION(:,:), ALLOCATABLE :: IhklLattice, IgPoolList, Ihkl
+  INTEGER(IKIND),DIMENSION(:,:), ALLOCATABLE :: Ig, IgPoolList, Ihkl
   !Name2Atom index
   INTEGER(IKIND), DIMENSION(:), ALLOCATABLE :: IBasisAtomicNumber,IAtomicNumber
   !Microscope Settings
