@@ -231,7 +231,7 @@ PROGRAM Felixrefine
           RgOutLimit/TWOPI," A^-1"
   CALL message(LS,SPrintString)
   ! List the reflexions in each frame: calculate Ig,IgPoolList,IgOutList,RgPoolSg
-  CALL HKLMake(RDevLimit, RGOutLimit, RgPoolLimit, IErr)  ! in setup_reflections.f90
+  CALL HKLMake(RDevLimit, RGOutLimit, RgPoolLimit, IErr)  ! in crystallography.f90
   IF(l_alert(IErr,"felixrefine","HKLMake")) CALL abort
   ! and write to text file hkl_list.txt
   CALL HKLSave(IErr)  ! in crystallography.f90
