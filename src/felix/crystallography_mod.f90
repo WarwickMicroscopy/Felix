@@ -257,7 +257,7 @@ MODULE crystallography_mod
     ! global inputs
     USE IPARA, ONLY : InLattice,IhklLattice,ICurrentZ,INAtomsUnitCell,IAtomicNumber
     USE RPARA, ONLY : RarVecO,RbrVecO,RcrVecO,RarMag,RbrMag,RcrMag,RCurrentGMagnitude,&
-        RLatticeLimit,RAtomCoordinate
+        RLatticeLimit,RAtomCoordinate,RIsoDW
     USE SPARA, ONLY : SPrintString
     USE CPARA, ONLY : CFgLattice
 

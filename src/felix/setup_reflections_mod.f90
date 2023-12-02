@@ -87,7 +87,7 @@ MODULE setup_reflections_mod
     ! IgPoolList says which reflections are close to the Ewald sphere
     ! IgOutList says which reflections are to be saved (|g|<RGOutLimit)
     IgPoolList = 0  ! Initialise lists to zero
-    RgPoolSg = ZERO
+    !RgPoolSg = ZERO
     Rk0 = ZERO
     !--------------------------------------------------------------------
     ! set up frame-parallel calculations
@@ -148,8 +148,6 @@ MODULE setup_reflections_mod
     !This broadcast is not strictly necessary but keeps all cores synchronised
     CALL MPI_BCAST(ITotalgPool,SIZE(ITotalgPool),MPI_INTEGER,root,MPI_COMM_WORLD,IErr)
     CALL MPI_BCAST(RTotalSgPool,SIZE(RTotalSgPool),MPI_DOUBLE_PRECISION,root,MPI_COMM_WORLD,IErr)
-    !IgPoolList = RESHAPE(ITotalgPool, (/INhkl,INFrames/) )
-    !RGPoolSg = RESHAPE(RTotalSgPool, (/INhkl,INFrames/) )
     knd = 1
     DO ind = 1,INhkl
       DO jnd = 1,INFrames
@@ -453,4 +451,5 @@ MODULE setup_reflections_mod
   END SUBROUTINE HKLSort
   
 END MODULE setup_reflections_mod
+
 

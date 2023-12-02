@@ -237,7 +237,7 @@ PROGRAM Felixrefine
   CALL ReciprocalLattice(RgPoolLimit, IErr)  ! in crystallography.f90
 
   IF(l_alert(IErr,"felixrefine","ReciprocalLattice")) CALL abort
-  WRITE(SPrintString, FMT='(A24,F5.2,A5)') "Experimental resolution ",&
+  WRITE(SPrintString, FMT='(A17,F5.2,A5)') "Resolution limit ",&
           RgOutLimit/TWOPI," A^-1"
   CALL message(LS,SPrintString)
   ! List the hkl's in each frame
@@ -247,7 +247,7 @@ PROGRAM Felixrefine
   CALL HKLList(IErr)
   IF(l_alert(IErr,"felixrefine","HKLList")) CALL abort
   ! Delete the reciprocal lattice
-  DEALLOCATE(Isort,RgLatticeO,RgMagLattice,CFgLattice,IhklLattice)  
+  !DEALLOCATE(Isort,RgLatticeO,RgMagLattice,CFgLattice,IhklLattice)  
   !--------------------------------------------------------------------
     
     CALL PrintEndTime( LS, IStartTime, "Frame" )
@@ -317,7 +317,7 @@ PROGRAM Felixrefine
   !--------------------------------------------------------------------
   DEALLOCATE(IgPoolList,STAT=IErr)
   DEALLOCATE(RgPoolSg,STAT=IErr)
-  DEALLOCATE(IgOutList,STAT=IErr)
+  !DEALLOCATE(IgOutList,STAT=IErr)
   DEALLOCATE(RgPoolMag,STAT=IErr)
   DEALLOCATE(RgPool,STAT=IErr)
   DEALLOCATE(RgMatrix,STAT=IErr)
