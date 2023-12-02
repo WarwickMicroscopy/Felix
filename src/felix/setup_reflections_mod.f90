@@ -55,10 +55,12 @@ MODULE setup_reflections_mod
     USE MyNumbers
     USE message_mod
     USE myMPI
+    USE ug_matrix_mod
+    USE crystallography_mod
 
     ! global inputs/outputs
-    USE SPARA, ONLY : SPrintString
-    USE IPARA, ONLY : INhkl,IgOutList,IgPoolList,INFrames,ICurrentZ,INAtomsUnitCell,IAtomicNumber
+    USE SPARA, ONLY : SPrintString,SChemicalFormula
+    USE IPARA, ONLY : INhkl,ILN,IgOutList,IgPoolList,INFrames,ICurrentZ,INAtomsUnitCell,IAtomicNumber
     USE RPARA, ONLY : RXDirO,RYDirO,RZDirO,RarVecO,RbrVecO,RcrVecO,RarMag,RbrMag,RcrMag,RFrameAngle,RBigK,&
         RgPoolSg,RAtomCoordinate,RIsoDW
     USE Iconst
@@ -67,7 +69,7 @@ MODULE setup_reflections_mod
     IMPLICIT NONE
 
     REAL(RKIND),INTENT(IN) :: RDevLimit, RGOutLimit, RgPoolLimit
-    INTEGER(IKIND) :: IErr,ind,jnd,knd,lnd,mnd,nnd,ond,&
+    INTEGER(IKIND) :: IErr,ind,jnd,knd,lnd,mnd,nnd,ond,ISel,&
             Ifull(INFrames),IMaxNg,inda,indb,indc,Ig(INFrames*INhkl,ITHREE),Ifound
     REAL(RKIND) :: RAngle,Rk(INFrames,ITHREE),Rk0(ITHREE),Rp(ITHREE),RSg,Rphi,Rg(ITHREE),RIkin,&
                    RKplusg(ITHREE),RgMag,RShell,RgMin,Rfq
@@ -110,6 +112,11 @@ MODULE setup_reflections_mod
     DO ind = -inda,inda
       DO jnd = -indb,indb
         DO knd = -indc,indc
+          ! take out systematic absences from the lattice
+          ! but keep forbidden reflections because they may appear through multiple scattering
+          ISel = 0
+          CALL SelectionRules(ind, jnd, knd, ISel, IErr)  ! in this module
+          IF (ISel.EQ.0) CYCLE
           Ifound = 1  ! flag to indicate this reflexion is active
           Rg = ind*RarVecO + jnd*RbrVecO + knd*RcrVecO
           RgMag = SQRT(DOT_PRODUCT(Rg,Rg))
@@ -117,7 +124,9 @@ MODULE setup_reflections_mod
           IF (RgMag.GT.REAL(mnd-1)*RShell .AND. RgMag.LE.REAL(mnd)*RShell .AND. &
                   RgMag.LE.RgPoolLimit) THEN
             ! is it the smallest g in this shell
-            IF (RgMag.LT.RgMin) RgMin = RgMag
+            IF (RgMag.LT.RgMin) THEN
+              RgMin = RgMag
+            END IF
 
             ! go through the frames and see if it appears
             ! probably a more elegant/faster way of doing this using matrices rather than a loop
@@ -217,8 +226,7 @@ MODULE setup_reflections_mod
           WRITE(fString,"(3(I3,1X),2X, F8.4,A1,F8.4,A3, F6.2,2X, F8.4)") &
                   Ig(lnd,:), REAL(CFg),"+",AIMAG(CFg),"i  ",&
                   RgMag/TWOPI, RSg
-            IF (my_rank.EQ.0) WRITE(IChOutIhkl,*) TRIM(ADJUSTL(fString))
-          END IF  !## remove comment to give output reflections, complements **
+          IF (my_rank.EQ.0) WRITE(IChOutIhkl,*) TRIM(ADJUSTL(fString))
         END IF
       END DO
 !      WRITE(fString,"(A6,I3,A19)") "Total ",jnd," output reflections"
