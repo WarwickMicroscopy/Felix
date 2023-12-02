@@ -57,23 +57,20 @@ MODULE setup_reflections_mod
     USE myMPI
 
     ! global inputs/outputs
-    USE SPARA, ONLY : SPrintString,SChemicalFormula
-    USE IPARA, ONLY : INhkl,IgOutList,IgPoolList,IhklLattice,INFrames,ILN,IByteSize,ISort
+    USE SPARA, ONLY : SPrintString
+    USE IPARA, ONLY : INhkl,IgOutList,IgPoolList,INFrames,ICurrentZ,INAtomsUnitCell,IAtomicNumber
     USE RPARA, ONLY : RXDirO,RYDirO,RZDirO,RarVecO,RbrVecO,RcrVecO,RarMag,RbrMag,RcrMag,RFrameAngle,RBigK,&
-        RgLatticeO,RgPoolSg,RgMagLattice
+        RgPoolSg,RAtomCoordinate,RIsoDW
     USE Iconst
     USE IChannels, ONLY : IChOutIhkl,IChOutIM
     
     IMPLICIT NONE
 
     REAL(RKIND),INTENT(IN) :: RDevLimit, RGOutLimit, RgPoolLimit
-    INTEGER(IKIND) :: IErr,ind,jnd,knd,lnd,mnd,nnd,ond,ISim,Ix,Iy,&
+    INTEGER(IKIND) :: IErr,ind,jnd,knd,lnd,mnd,nnd,ond,&
             Ifull(INFrames),IMaxNg,inda,indb,indc,Ig(INFrames*INhkl,ITHREE),Ifound
-    INTEGER(IKIND), DIMENSION(:), ALLOCATABLE :: Inum,Ipos,ILocalgPool,ITotalgPool
-    REAL(RKIND) :: RAngle,Rk(INFrames,ITHREE),Rk0(ITHREE),Rp(ITHREE),RSg,Rphi,Rg(ITHREE),RInst,RIkin,&
-                   RKplusg(ITHREE),RgMag,RShell,RgMin
-    REAL(RKIND), DIMENSION(:,:), ALLOCATABLE :: RSim
-    REAL(RKIND), DIMENSION(:), ALLOCATABLE :: RLocalSgPool,RTotalSgPool
+    REAL(RKIND) :: RAngle,Rk(INFrames,ITHREE),Rk0(ITHREE),Rp(ITHREE),RSg,Rphi,Rg(ITHREE),RIkin,&
+                   RKplusg(ITHREE),RgMag,RShell,RgMin,Rfq
     COMPLEX :: CFg
     CHARACTER(200) :: path
     CHARACTER(100) :: fString
@@ -81,9 +78,8 @@ MODULE setup_reflections_mod
     !-1------------------------------------------------------------------
     ! calculate reflection list g by g
     !--------------------------------------------------------------------
-    ! this produces a list of g-vectors Ig and fills IgPoolList,IgOutList giving
-    ! the beam pool and the output list
-    ! initialise variables
+    ! this produces a list of g-vectors Ig, their deviation parameters RgPoolSg, and fills IgPoolList, IgOutList
+    ! Initialise variables
     Rk = ZERO  ! list of incident beam k-vectors
     Ig = 0  ! list of reflections (covers all beam pools)
     IgPoolList = 0  ! index giving Ig for each beam pool (1 to INhkl,1 to INFrames)
@@ -160,7 +156,7 @@ MODULE setup_reflections_mod
                   RgPoolSg(ond,nnd) = RSg
                 END IF
                 ond = 2 !counter to find the next slot for the output list
-                IF (ABS(RSg).LT.RDevLimit) THEN
+                IF (ABS(RSg).LT.RGOutLimit) THEN
 3                 IF (IgOutList(ond,nnd).NE.0) THEN
                     ond = ond + 1
                     GOTO 3
@@ -230,14 +226,6 @@ MODULE setup_reflections_mod
 !      IF (jnd.GT.IMaxNg) IMaxNg = jnd  ! update max number of outputs if necessary
     END DO
     IF (my_rank.EQ.0) CLOSE(IChOutIhkl,IOSTAT=IErr)
-
-!    DO ind = 1,lnd
-!      IF (my_rank.EQ.0)PRINT*,ind,":",Ig(ind,:)
-!    END DO
-!    DO ind = 1,InFrames
-!      IF (my_rank.EQ.0)PRINT*,ind,":",IgPoolList(:,ind)
-!    END DO
-
 
   END SUBROUTINE HKLmake
 

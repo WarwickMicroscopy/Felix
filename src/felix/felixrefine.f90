@@ -234,9 +234,8 @@ PROGRAM Felixrefine
 !  ALLOCATE(CFgLattice(InLattice), STAT=IErr)! Structure factors
 !  ALLOCATE(Isort(InLattice), STAT=IErr)! Sorted index
 
-  CALL ReciprocalLattice(RgPoolLimit, IErr)  ! in crystallography.f90
-
-  IF(l_alert(IErr,"felixrefine","ReciprocalLattice")) CALL abort
+!  CALL ReciprocalLattice(RgPoolLimit, IErr)  ! in crystallography.f90
+!  IF(l_alert(IErr,"felixrefine","ReciprocalLattice")) CALL abort
   WRITE(SPrintString, FMT='(A17,F5.2,A5)') "Resolution limit ",&
           RgOutLimit/TWOPI," A^-1"
   CALL message(LS,SPrintString)
