@@ -56,7 +56,7 @@ PROGRAM Felixrefine
   ! local variable definitions
   IMPLICIT NONE
  
-  INTEGER(IKIND) :: IErr,ind,jnd,knd,lnd,mnd,IStartTime,IPlotRadius
+  INTEGER(IKIND) :: IErr,ind,jnd,knd,lnd,mnd,IStartTime,IPlotRadius,IOutFLAG
   INTEGER(4) :: IErr4
   REAL(RKIND) :: RGOutLimit,RgPoolLimit
 
@@ -194,10 +194,12 @@ PROGRAM Felixrefine
   !--------------------------------------------------------------------
   ! Ig is the list of all reflexions (h,k,l) for the full cRED calculation
   ALLOCATE(Ig(INFrames*INhkl,ITHREE), STAT=IErr)! Miller indices
+  ! RIkin gives their kinematic intensities
+  ALLOCATE(RIkin(INFrames*INhkl), STAT=IErr)
   ! List of reflexions in the beam pool for each frame, an index in Ig
   ALLOCATE(IgPoolList(INhkl,INFrames),STAT=IErr)
   IF(l_alert(IErr,"felixrefine","allocate IgPoolList")) CALL abort
-  ! Values of Sg for each reflexion in the beam pool for each frame  *##* could be calculated on the fly to save memory
+  ! Values of Sg for each reflexion in the beam pool for each frame
   ALLOCATE(RgPoolSg(INhkl,INFrames),STAT=IErr)
   IF(l_alert(IErr,"felixrefine","allocate IgPoolList")) CALL abort
   ! List of reflexions output in each frame, an index in Ig
@@ -221,9 +223,9 @@ PROGRAM Felixrefine
   ! Outer limit of g pool  ***This parameter will probably end up in a modified .inp file***
   RgPoolLimit = TWO*TWO*TWOPI  ! reciprocal Angstroms, multiplied by 2pi
   ! Deviation parameter limit, a reflection closer to Ewald than this is in the beam pool
-  RDevLimit = 0.01*TWOPI  ! reciprocal Angstroms, multiplied by 2pi
+  RDevLimit = 0.015*TWOPI  ! reciprocal Angstroms, multiplied by 2pi
   ! Output limit
-  RGOutLimit = ONE*TWOPI  ! reciprocal Angstroms, multiplied by 2pi
+  RGOutLimit = 1.2*TWOPI  ! reciprocal Angstroms, multiplied by 2pi
   WRITE(SPrintString, FMT='(A33,F5.2,A5)') "Reciprocal lattice defined up to ",&
           RgPoolLimit/TWOPI," A^-1"
   CALL message(LS,SPrintString)
@@ -234,7 +236,8 @@ PROGRAM Felixrefine
   CALL HKLMake(RDevLimit, RGOutLimit, RgPoolLimit, IErr)  ! in crystallography.f90
   IF(l_alert(IErr,"felixrefine","HKLMake")) CALL abort
   ! write to text file hkl_list.txt
-  CALL HKLSave(RGOutLimit, IErr)  ! in crystallography.f90
+  IOutFLAG = 1  ! sets the output 1=out, 2=pool
+  CALL HKLSave(IOutFLAG, IErr)  ! in crystallography.f90
   IF(l_alert(IErr,"felixrefine","HKLList")) CALL abort
   ! write simple frame images
   IPlotRadius = 256_IKIND

@@ -247,21 +247,23 @@ MODULE crystallography_mod
     USE MyNumbers
     USE message_mod
     USE myMPI
+    USE ug_matrix_mod
 
     ! global inputs/outputs
     USE SPARA, ONLY : SPrintString
-    USE IPARA, ONLY : INhkl,ILN,INFrames  ! inputs
+    USE IPARA, ONLY : INhkl,ILN,INFrames,ICurrentZ,INAtomsUnitCell,IAtomicNumber  ! inputs
     USE IPARA, ONLY : Ig,IgOutList,IgPoolList  ! outputs
     USE RPARA, ONLY : RXDirO,RYDirO,RZDirO,RarVecO,RbrVecO,RcrVecO,RarMag,RbrMag,RcrMag,RFrameAngle,RBigK,&
-          RgPoolSg ! only RgPoolSg is an output
+          RAtomCoordinate,RIsoDW,RgPoolSg,RIkin ! only RgPoolSg,RIkin are outputs
     USE Iconst
     
     IMPLICIT NONE
 
     REAL(RKIND),INTENT(IN) :: RDevLimit, RGOutLimit, RgPoolLimit
     INTEGER(IKIND) :: IErr,ind,jnd,knd,lnd,mnd,nnd,ond,ISel,Ifull(INFrames),IMaxNg,inda,indb,indc,Ifound
-    REAL(RKIND) :: RAngle,Rk(ITHREE),Rk0(ITHREE),Rp(ITHREE),RSg,Rphi,Rg(ITHREE),RIkin,&
-                   RKplusg(ITHREE),RgMag,RShell,RgMin
+    REAL(RKIND) :: RAngle,Rk(ITHREE),Rk0(ITHREE),Rp(ITHREE),RSg,Rphi,Rg(ITHREE),&
+                   RKplusg(ITHREE),RgMag,RShell,RgMin,Rfq
+    COMPLEX :: CFg
    
     !-1------------------------------------------------------------------
     ! calculate reflection list g by g
@@ -331,6 +333,16 @@ MODULE crystallography_mod
                 lnd = lnd+Ifound  ! increment the reflexion counter on the first occurrance only
                 Ifound = 0
                 Ig(lnd,:) = (/ind,jnd,knd/)  ! add it to the list of reflexions
+                ! Calculate structure factor
+                CFg = CZERO
+                DO ond=1,INAtomsUnitCell
+                  ICurrentZ = IAtomicNumber(ond)
+                  CALL AtomicScatteringFactor(Rfq,IErr)  ! in ug_matrix_mod
+                  CFg = CFg+Rfq*EXP(-CIMAGONE*DOT_PRODUCT(Rg,RAtomCoordinate(ond,:)) ) * &
+                  ! Isotropic D-W factor exp(-B sin(theta)^2/lamda^2) = exp(-Bg^2/16pi^2)
+                    EXP(-RIsoDW(ond)*RgMag**2/(FOURPI**2))
+                END DO
+                RIkin(lnd) = CFg*CONJG(CFg)
                 ond = 2 !counter to find the next slot for the g pool
 2               IF (IgPoolList(ond,nnd).NE.0) THEN
                   ond = ond + 1
@@ -341,10 +353,10 @@ MODULE crystallography_mod
                   ELSE
                     GOTO 2
                   END IF
-                ELSE
+                ELSE  ! we fill the next empty slot
                   IgPoolList(ond,nnd) = lnd
                   RgPoolSg(ond,nnd) = RSg
-                  IF (ABS(RSg).LT.RGOutLimit) THEN
+                  IF (RGmag.LT.RGOutLimit) THEN
                     IgOutList(ond,nnd) = lnd
                   END IF
                 END IF
@@ -368,7 +380,7 @@ MODULE crystallography_mod
   !!
   !! Major-Authors: Richard Beanland (2023)
   !!
-  SUBROUTINE HKLSave(RgOutLimit,IErr)
+  SUBROUTINE HKLSave(IOutFLAG,IErr)
 
     USE MyNumbers
     USE MyMPI
@@ -376,30 +388,35 @@ MODULE crystallography_mod
     USE ug_matrix_mod
 
     ! global inputs
-    USE IPARA, ONLY : ILN,INFrames,INhkl,Ig,IGPoolList,IgOutList,ICurrentZ,INAtomsUnitCell,&
-            IAtomicNumber
-    USE RPARA, ONLY : RarVecO,RbrVecO,RcrVecO,RgPoolSg,RAtomCoordinate,RIsoDW
+    USE IPARA, ONLY : ILN,INFrames,INhkl,Ig,IGPoolList,IgOutList,ICurrentZ,&
+            INAtomsUnitCell,IAtomicNumber
+    USE RPARA, ONLY : RarVecO,RbrVecO,RcrVecO,RgPoolSg,RIkin,RAtomCoordinate,RIsoDW
     USE SPARA, ONLY : SPrintString,SChemicalFormula
     USE IChannels, ONLY : IChOutIhkl
 
     IMPLICIT NONE
 
-    INTEGER(IKIND) :: IErr,ind,jnd,knd,lnd,mnd,ISim,Ix,Iy
-    REAL(RKIND) :: Rg(ITHREE),RgMag,RSg,Rfq,RSim(512,512),RAngle,RInst,Rp(ITHREE),RIkin
-    REAL(RKIND), INTENT(IN) :: RgOutLimit 
+    INTEGER(IKIND) :: IErr,ind,jnd,knd,lnd,mnd,ISim,Ix,Iy,Itest,IOutFLAG
+    REAL(RKIND) :: Rg(ITHREE),RgMag,RSg,Rfq,RSim(512,512),RAngle,RInst,Rp(ITHREE),RImax,RIg
     COMPLEX :: CFg
     CHARACTER(200) :: path
     CHARACTER(100) :: fString
 
-    !-1------------------------------------------------------------------
+    !--------------------------------------------------------------------
+    ! IOutFLAG sets the output:
+    ! 1 = output reflections
+    ! 2 = g-pool reflections
     ! write reflection lists and rocking curves to hkl_list
+    RImax = MAXVAL(RIkin)
     IF(my_rank.EQ.0) THEN
       CALL message(LS,dbg3,"Writing hkl list and images")
       path = SChemicalFormula(1:ILN) // "/hkl_list.txt"
       OPEN(UNIT=IChOutIhkl, ACTION='WRITE', POSITION='APPEND', STATUS= 'UNKNOWN', &
           FILE=TRIM(ADJUSTL(path)),IOSTAT=IErr)
       WRITE(IChOutIhkl,*) "List of hkl in each frame"
-      WRITE(IChOutIhkl,*) "No: h k l  Fg  |g|  Sg"
+      IF (IOutFLAG.EQ.1) WRITE(IChOutIhkl,*) "Output reflexions"
+      IF (IOutFLAG.NE.1) WRITE(IChOutIhkl,*) "Beam pool"
+      WRITE(IChOutIhkl,*) "No: h  k  l  I/Imax  Fg  |g|  Sg"
     END IF
     DO ind = 1,INFrames
       ! output to slurm if requested
@@ -411,10 +428,15 @@ MODULE crystallography_mod
         END IF
       END DO
       ! write reflections in each frame
-      ! h k l Fg(Re Im) |g| Sg
+      ! h k l  Ikin  Fg(Re Im)  |g|  Sg
       IF (my_rank.EQ.0) WRITE(IChOutIhkl,"(A6,I4)") "Frame ",ind
       DO knd = 1, INhkl
-        IF (IgOutList(knd,ind).NE.0) THEN
+        IF (IOutFLAG.EQ.1) THEN
+          Itest = IgOutList(knd,ind)
+        ELSE
+          Itest = IgPoolList(knd,ind)
+        END IF
+        IF (Itest.NE.0) THEN
           lnd = IgOutList(knd,ind)
           RSg = RgPoolSg(knd,ind)
           Rg = Ig(lnd,1)*RarVecO + Ig(lnd,2)*RbrVecO + Ig(lnd,3)*RcrVecO
@@ -428,9 +450,11 @@ MODULE crystallography_mod
             ! Isotropic D-W factor exp(-B sin(theta)^2/lamda^2) = exp(-Bg^2/16pi^2)
             EXP(-RIsoDW(mnd)*RgMag**2/(FOURPI**2))
           END DO
-
-          WRITE(fString,"(3(I3,1X),2X, F8.4,A1,F8.4,A3, F6.2,2X, F8.4)") &
-                  Ig(lnd,:), REAL(CFg),"+",AIMAG(CFg),"i  ",&
+          RIg = 100.0D0*RIkin(lnd)/RImax
+          IF (lnd.EQ.1) RIg = 100.0D0  ! 000 beam
+          IF (lnd.EQ.1) RSg = 0
+          WRITE(fString,"(I4,A3,3(I3,1X),2X, F5.1,A3, F8.4,1X,F8.4,A3, F6.2,2X, F8.4)") &
+                  lnd,":  ",Ig(lnd,:), RIg,"%  ", REAL(CFg),AIMAG(CFg),"i  ",&
                   RgMag/TWOPI, RSg
           IF (my_rank.EQ.0) WRITE(IChOutIhkl,*) TRIM(ADJUSTL(fString))
         END IF
@@ -441,13 +465,14 @@ MODULE crystallography_mod
     ! write frames for each reflexion
     DO ind = 1,INhkl*INFrames
       Rg = Ig(ind,:)
+      RIg = 100.0D0*RIkin(ind)/RImax
       IF (DOT_PRODUCT(Rg,Rg).GT.TINY) THEN  ! this reflexion is not zero
         IF (my_rank.EQ.0) WRITE(IChOutIhkl,"(A10,I4,2X,3(I3,1X))") "Reflexion ",ind,Ig(ind,:)
         DO jnd = 1,INFrames
           DO knd = 1,INhkl
             IF (IgOutList(knd,jnd).EQ.ind) THEN
               RSg = RgPoolSg(knd,jnd)
-              IF (my_rank.EQ.0) WRITE(IChOutIhkl,"(I4 ,2X, F8.4)") jnd,RSg
+              IF (my_rank.EQ.0) WRITE(IChOutIhkl,"(I4 ,2X, F5.1,A3, F8.4)") jnd,RIg,"%  ",RSg
             END IF
           END DO
         END DO
@@ -474,7 +499,8 @@ END SUBROUTINE HKLSave
     ! global inputs
     USE IPARA, ONLY : ILN,INFrames,INhkl,Ig,IgPoolList,IgOutList,ICurrentZ,INAtomsUnitCell,&
             IAtomicNumber,IByteSize
-    USE RPARA, ONLY : RarVecO,RbrVecO,RcrVecO,RgPoolSg,RAtomCoordinate,RIsoDW,RxDirO,RyDirO,RzDirO,RFrameAngle
+    USE RPARA, ONLY : RarVecO,RbrVecO,RcrVecO,RgPoolSg,RAtomCoordinate,RIsoDW,RxDirO,RyDirO,RzDirO,&
+            RFrameAngle,RIkin
     USE SPARA, ONLY : SPrintString,SChemicalFormula
     USE IChannels, ONLY : IChOutIM
 
@@ -482,7 +508,7 @@ END SUBROUTINE HKLSave
 
     INTEGER(IKIND) :: IErr,ind,jnd,knd,lnd,mnd,Ix,Iy
     INTEGER(IKIND), INTENT(IN) :: ISim
-    REAL(RKIND) :: Rg(ITHREE),RgMag,RSg,Rfq,RSim(2*ISim,2*ISim),RAngle,RInst,Rp(ITHREE),RIkin,RmaxI
+    REAL(RKIND) :: Rg(ITHREE),RgMag,RSg,Rfq,RSim(2*ISim,2*ISim),RAngle,RInst,Rp(ITHREE),RImax
     REAL(RKIND), INTENT(IN) :: RgOutLimit 
     COMPLEX :: CFg
     CHARACTER(200) :: path
@@ -492,39 +518,27 @@ END SUBROUTINE HKLSave
     ! Write a set of kinematic simulation frames
     ! Instrument broadening term - sets the FWHM  of a kinematic rocking curve
     RInst = 3000.0
+    RImax = MAXVAL(RIkin)
     DO ind = 1,INFrames
       RAngle = REAL(ind-1)*DEG2RADIAN*RFrameAngle
       RSim = ZERO
-      RmaxI = 0.0  ! max g in the image
       ! output g's
       DO knd = 2, INhkl
         IF (IgOutList(knd,ind).NE.0) THEN
           lnd = IgPoolList(knd,ind)  ! index of reflection in the reciprocal lattice
-!DBG      IF(my_rank.EQ.0)PRINT*,ind,":",Ig(lnd,:)
           Rg = Ig(lnd,1)*RarVecO + Ig(lnd,2)*RbrVecO + Ig(lnd,3)*RcrVecO  ! g-vector
           RgMag = SQRT(DOT_PRODUCT(Rg,Rg))
-          ! Calculate structure factor
-          CFg = CZERO
-          DO mnd=1,INAtomsUnitCell
-            ICurrentZ = IAtomicNumber(mnd)
-            CALL AtomicScatteringFactor(Rfq,IErr)  ! in ug_matrix_mod
-            CFg = CFg+Rfq*EXP(-CIMAGONE*DOT_PRODUCT(Rg,RAtomCoordinate(mnd,:)) ) * &
-            ! Isotropic D-W factor exp(-B sin(theta)^2/lamda^2) = exp(-Bg^2/16pi^2)
-            EXP(-RIsoDW(mnd)*RgMag**2/(FOURPI**2))
-          END DO
-          RIkin = CFg*CONJG(CFg)  ! simple kinematic intensity
-          !IF(RIkin.GT.RmaxI) RmaxI = RIkin
           RSg = RgPoolSg(knd,ind)  !Sg
           ! x- and y-coords (NB swapped in the image!)
           Rp = RXDirO*COS(RAngle)-RZDirO*SIN(RAngle)  ! unit vector horizontal in the image
           ! position of the spot, 2% leeway to avoid going over the edge of the image
           Ix = ISim-0.98*NINT(DOT_PRODUCT(Rg,Rp)*REAL(ISim)/RGOutLimit)  
           Iy = ISim+0.98*NINT(DOT_PRODUCT(Rg,RYDirO)*REAL(ISim)/RGOutLimit)
-          RSim(Iy-1:Iy+1,Ix-1:Ix+1) = RIkin*EXP(-RInst*RSg*RSg)
+          RSim(Iy-1:Iy+1,Ix-1:Ix+1) = RIkin(lnd)*EXP(-RInst*RSg*RSg)
         END IF
       END DO
       ! direct beam
-      RSim(ISim-1:ISim+1,ISim-1:ISim+1) = 100.0!RmaxI
+      RSim(ISim-1:ISim+1,ISim-1:ISim+1) = RImax
       ! write to disk - set up file name
       IF (ind.LT.10) THEN
         WRITE(path, FMT="(A,A15,I1,A4)") TRIM(ADJUSTL(SChemicalFormula(1:ILN))),&
