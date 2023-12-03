@@ -30,18 +30,21 @@
 !
 !%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
+!%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 !>
-!! Module-description: This defines lattice vectors as well as the fractional atomic coordinates
+!! Module-description: This defines lattice vectors, fractional atomic coordinates
+!! and the reflexions in a cRED experiment
 !!
 MODULE crystallography_mod
   
   IMPLICIT NONE
   
   PRIVATE
-  PUBLIC :: ReciprocalVectors, HKLSave, CrystalOrientation, UniqueAtomPositions, gVectors, HKLMake, HKLPlot
+  PUBLIC :: ReciprocalVectors, HKLSave, CrystalOrientation, UniqueAtomPositions, gVectors, HKLMake, HKLPlot, HKLSetup
 
   CONTAINS
-
+  
+  !$%%gVectors%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
   !>
   !! Procedure-description: Calculates g-vector matrices, global variables
   !!
@@ -99,11 +102,10 @@ MODULE crystallography_mod
     END SUBROUTINE gVectors
 
 
-  !%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+  !$%%ReciprocalVectors%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
   !>
   !! Procedure-description: Creates basis reciprocal lattice vectors and initial
-  !! microscope reference frame, gives the number of reciprocal lattice points InLattice
-  !! that will be calculated later in the ReciprocalLattice subroutine
+  !! microscope reference frame
   !!
   !! Major-Authors: Richard Beanland (2023)
   !!
@@ -235,7 +237,7 @@ MODULE crystallography_mod
   END SUBROUTINE ReciprocalVectors
 
 
-  !!$%%HKLMake%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+  !$%%HKLMake%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
   !>
   !! Procedure-description:
   !! Fills the beam pool list RgPoolList for each frame (global variable)
@@ -374,7 +376,7 @@ MODULE crystallography_mod
   END SUBROUTINE HKLmake
 
 
-  !%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+  !$%%HKLSave%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
   !>
   !! Procedure-description: writes hkl_list.txt, the list of reflections in each frame
   !!
@@ -482,10 +484,79 @@ MODULE crystallography_mod
 
 END SUBROUTINE HKLSave
 
-
-  !%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+  !$%%HKLSetup%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
   !>
-  !! Procedure-description: writes hkl_list.txt, the list of reflections in each frame
+  !! Procedure-description:
+  !! Finds the frame containing the Bragg condition for each output reflexion
+  !!
+  !! Major-Authors: Richard Beanland (2023)
+   SUBROUTINE HKLSetup(IErr)
+
+    USE MyNumbers
+    USE MyMPI
+    USE message_mod
+
+    ! global inputs
+    USE IPARA, ONLY : INFrames,INhkl,Ig,IGPoolList,IgOutList,ILN
+    USE RPARA, ONLY : RgPoolSg
+    USE SPARA, ONLY : SPrintString,SChemicalFormula
+    USE IChannels, ONLY : IChOutIhkl
+
+    IMPLICIT NONE
+
+    INTEGER(IKIND) :: IErr,ind,jnd,knd,lnd,Iframe(INFrames),Ineg,Ipos
+    REAL(RKIND) :: Rg(ITHREE),RSg(INFrames),RSgP,RSgN,RBragg(INhkl*INFrames)
+    CHARACTER(200) :: path
+    CHARACTER(100) :: fString 
+
+    ! work through the unique reflexion list, which is up to INhkl*INFrames long
+    ! but is in practice much shorter since reflexions appear in multiple frames
+    RBragg = ZERO  ! array with Bragg condition locations
+    DO ind = 2,INhkl*INFrames  ! start at 2 since 1 is 000
+      Rg = Ig(ind,:)  ! pick a g-vector
+      IF (DOT_PRODUCT(Rg,Rg).LE.TINY) CYCLE  ! this reflexion is zero, ignore
+      Iframe = 0  ! list of frame no.s for this reflexion
+      RSg = ZERO  ! corresponding Sg values
+      lnd = 0  ! counter for the Sg array
+      ! find which frames it appears in
+      DO jnd = 1,INFrames
+        DO knd = 1,INhkl
+          IF (IgOutList(knd,jnd).EQ.ind) THEN
+            lnd = lnd + 1
+            Iframe(lnd) = jnd
+            RSg(lnd) = RgPoolSg(knd,jnd)
+          END IF
+        END DO
+      END DO
+      ! now we have the frame by frame values of Sg for this reflexion
+      ! if we have captured the Bragg condition Sg will pass through zero
+      IF (MINVAL(RSg).GT.ZERO.OR.MAXVAL(RSg).LT.ZERO) CYCLE
+      Ineg = MAXLOC(RSg, DIM=1, MASK=RSg.LT.ZERO)  ! location of first -Sg
+      Ipos = MINLOC(RSg, DIM=1, MASK=RSg.GT.ZERO)  ! location of first +Sg
+      RBragg(ind) = HALF*(Iframe(Ineg)+Iframe(Ipos)) +&
+        (RSg(Ineg)+RSg(Ipos))/(ABS(RSg(Ineg))+ABS(RSg(Ipos)))
+    END DO
+    
+    ! write out the results
+    IF(my_rank.EQ.0) THEN
+      CALL message(LS,dbg3,"Writing Bragg locations")
+      path = SChemicalFormula(1:ILN) // "/Bragg_list.txt"
+      OPEN(UNIT=IChOutIhkl, ACTION='WRITE', POSITION='APPEND', STATUS= 'UNKNOWN', &
+          FILE=TRIM(ADJUSTL(path)),IOSTAT=IErr)
+      WRITE(IChOutIhkl,*) "Frame list of Bragg conditions"
+      WRITE(IChOutIhkl,*) "h k l  frame"
+      DO ind = 2,INhkl*INFrames
+        IF (ABS(RBragg(ind)).LE.TINY) CYCLE
+        WRITE(IChOutIhkl,"(3(I3,1X),2X,F6.2)") Ig(ind,:), RBragg(ind)
+      END DO
+      CLOSE(IChOutIhkl,IOSTAT=IErr)
+    END IF
+
+    END SUBROUTINE HKLSetup
+  
+  !$%%HKLPlot%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+  !>
+  !! Procedure-description: writes kinetic simulations of each frame S_1,S_2,...
   !!
   !! Major-Authors: Richard Beanland (2023)
   !!
@@ -567,6 +638,8 @@ END SUBROUTINE HKLSave
   
   END SUBROUTINE HKLPlot
   !%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+
 
   SUBROUTINE CrystalOrientation(IErr)
     USE MyNumbers
@@ -811,7 +884,7 @@ END SUBROUTINE HKLSave
   !>
   !! Procedure-description: Checks a g-vector Ih,Ik,Il
   !! against the selection rules for the global variable SSpaceGroupName
-  !! IFlag comes in as zero and goes out as 1 if it is an allowed reflection
+  !! IFlag comes in as zero and goes out as 1 if it is an allowed reflexion
   !!
   !! Major-Authors: Richard Beanland (2021)
   !!  
