@@ -219,7 +219,7 @@ PROGRAM Felixrefine
 
   !--------------------------------------------------------------------
   ! Outer limit of g pool  ***This parameter will probably end up in a modified .inp file***
-  RgPoolLimit = TWO*TWOPI  ! reciprocal Angstroms, multiplied by 2pi
+  RgPoolLimit = TWO*TWO*TWOPI  ! reciprocal Angstroms, multiplied by 2pi
   ! Deviation parameter limit, a reflection closer to Ewald than this is in the beam pool
   RDevLimit = 0.01*TWOPI  ! reciprocal Angstroms, multiplied by 2pi
   ! Output limit
