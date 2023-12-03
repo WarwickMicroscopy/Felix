@@ -505,13 +505,14 @@ END SUBROUTINE HKLSave
     IMPLICIT NONE
 
     INTEGER(IKIND) :: IErr,ind,jnd,knd,lnd,Iframe(INFrames),Ineg,Ipos
-    REAL(RKIND) :: Rg(ITHREE),RSg(INFrames),RSgP,RSgN,RBragg(INhkl*INFrames)
+    REAL(RKIND) :: Rg(ITHREE),RSg(INFrames),RSgP,RSgN,RBragg(INhkl*INFrames),RdSdF(INhkl*INFrames)
     CHARACTER(200) :: path
     CHARACTER(100) :: fString 
 
     ! work through the unique reflexion list, which is up to INhkl*INFrames long
     ! but is in practice much shorter since reflexions appear in multiple frames
     RBragg = ZERO  ! array with Bragg condition locations
+    RdSdF = ZERO  ! array with dSg/dFrame
     DO ind = 2,INhkl*INFrames  ! start at 2 since 1 is 000
       Rg = Ig(ind,:)  ! pick a g-vector
       IF (DOT_PRODUCT(Rg,Rg).LE.TINY) CYCLE  ! this reflexion is zero, ignore
@@ -533,6 +534,7 @@ END SUBROUTINE HKLSave
       IF (MINVAL(RSg).GT.ZERO.OR.MAXVAL(RSg).LT.ZERO) CYCLE
       Ineg = MAXLOC(RSg, DIM=1, MASK=RSg.LT.ZERO)  ! location of first -Sg
       Ipos = MINLOC(RSg, DIM=1, MASK=RSg.GT.ZERO)  ! location of first +Sg
+      RdSdF(ind) = RSg(Ipos)-RSg(Ineg)
       RBragg(ind) = HALF*(Iframe(Ineg)+Iframe(Ipos)) +&
         (RSg(Ineg)+RSg(Ipos))/(ABS(RSg(Ineg))+ABS(RSg(Ipos)))
     END DO
@@ -547,7 +549,7 @@ END SUBROUTINE HKLSave
       WRITE(IChOutIhkl,*) "h k l  frame"
       DO ind = 2,INhkl*INFrames
         IF (ABS(RBragg(ind)).LE.TINY) CYCLE
-        WRITE(IChOutIhkl,"(3(I3,1X),2X,F6.2)") Ig(ind,:), RBragg(ind)
+        WRITE(IChOutIhkl,"(3(I3,1X),2X,F6.2,2X,F8.4)") Ig(ind,:), RBragg(ind),  RdSdF(ind)
       END DO
       CLOSE(IChOutIhkl,IOSTAT=IErr)
     END IF
