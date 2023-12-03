@@ -517,7 +517,7 @@ END SUBROUTINE HKLSave
     !--------------------------------------------------------------------
     ! Write a set of kinematic simulation frames
     ! Instrument broadening term - sets the FWHM  of a kinematic rocking curve
-    RInst = 3000.0
+    RInst = 6000.0
     RImax = MAXVAL(RIkin)
     DO ind = 1,INFrames
       RAngle = REAL(ind-1)*DEG2RADIAN*RFrameAngle
