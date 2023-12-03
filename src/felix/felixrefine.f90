@@ -56,7 +56,7 @@ PROGRAM Felixrefine
   ! local variable definitions
   IMPLICIT NONE
  
-  INTEGER(IKIND) :: IErr,ind,jnd,knd,lnd,mnd,IStartTime
+  INTEGER(IKIND) :: IErr,ind,jnd,knd,lnd,mnd,IStartTime,IPlotRadius
   INTEGER(4) :: IErr4
   REAL(RKIND) :: RGOutLimit,RgPoolLimit
 
@@ -233,8 +233,12 @@ PROGRAM Felixrefine
   ! List the reflexions in each frame: calculate Ig,IgPoolList,IgOutList,RgPoolSg
   CALL HKLMake(RDevLimit, RGOutLimit, RgPoolLimit, IErr)  ! in crystallography.f90
   IF(l_alert(IErr,"felixrefine","HKLMake")) CALL abort
-  ! and write to text file hkl_list.txt
+  ! write to text file hkl_list.txt
   CALL HKLSave(IErr)  ! in crystallography.f90
+  IF(l_alert(IErr,"felixrefine","HKLList")) CALL abort
+  ! write simple frame images
+  IPlotRadius = 256_IKIND
+  CALL HKLPlot(IPlotRadius, RGOutLimit, IErr)  ! in crystallography.f90
   IF(l_alert(IErr,"felixrefine","HKLList")) CALL abort
 
   !--------------------------------------------------------------------

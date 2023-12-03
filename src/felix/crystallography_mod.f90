@@ -238,9 +238,7 @@ MODULE crystallography_mod
   !!$%%HKLMake%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
   !>
   !! Procedure-description:
-  !! 1) Fills the beam pool list RgPoolList for each frame (global variable)
-  !! 2) Fills the list of output reflections IgOutList & writes to hkl_list.txt
-  !! 3) Makes a set of simple kinematic frames
+  !! Fills the beam pool list RgPoolList for each frame (global variable)
   !!
   !! Major-Authors: Richard Beanland (2023)
   !!  
@@ -379,11 +377,10 @@ MODULE crystallography_mod
 
     ! global inputs
     USE IPARA, ONLY : ILN,INFrames,INhkl,Ig,IGPoolList,IgOutList,ICurrentZ,INAtomsUnitCell,&
-            IAtomicNumber,IByteSize
-    USE RPARA, ONLY : RarVecO,RbrVecO,RcrVecO,RarMag,RbrMag,RcrMag,RCurrentGMagnitude,&
-        RgPoolSg,RAtomCoordinate,RIsoDW,RxDirO,RyDirO,RzDirO,RFrameAngle
+            IAtomicNumber
+    USE RPARA, ONLY : RarVecO,RbrVecO,RcrVecO,RgPoolSg,RAtomCoordinate,RIsoDW
     USE SPARA, ONLY : SPrintString,SChemicalFormula
-    USE IChannels, ONLY : IChOutIhkl,IChOutIM
+    USE IChannels, ONLY : IChOutIhkl
 
     IMPLICIT NONE
 
@@ -458,9 +455,41 @@ MODULE crystallography_mod
     END DO 
     IF (my_rank.EQ.0) CLOSE(IChOutIhkl,IOSTAT=IErr)
 
-    !-2------------------------------------------------------------------
+END SUBROUTINE HKLSave
+
+
+  !%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+  !>
+  !! Procedure-description: writes hkl_list.txt, the list of reflections in each frame
+  !!
+  !! Major-Authors: Richard Beanland (2023)
+  !!
+  SUBROUTINE HKLPlot(ISim, RgOutLimit,IErr)
+
+    USE MyNumbers
+    USE MyMPI
+    USE message_mod
+    USE ug_matrix_mod
+
+    ! global inputs
+    USE IPARA, ONLY : ILN,INFrames,INhkl,Ig,IgPoolList,IgOutList,ICurrentZ,INAtomsUnitCell,&
+            IAtomicNumber,IByteSize
+    USE RPARA, ONLY : RarVecO,RbrVecO,RcrVecO,RgPoolSg,RAtomCoordinate,RIsoDW,RxDirO,RyDirO,RzDirO,RFrameAngle
+    USE SPARA, ONLY : SPrintString,SChemicalFormula
+    USE IChannels, ONLY : IChOutIM
+
+    IMPLICIT NONE
+
+    INTEGER(IKIND) :: IErr,ind,jnd,knd,lnd,mnd,Ix,Iy
+    INTEGER(IKIND), INTENT(IN) :: ISim
+    REAL(RKIND) :: Rg(ITHREE),RgMag,RSg,Rfq,RSim(2*ISim,2*ISim),RAngle,RInst,Rp(ITHREE),RIkin
+    REAL(RKIND), INTENT(IN) :: RgOutLimit 
+    COMPLEX :: CFg
+    CHARACTER(200) :: path
+    CHARACTER(100) :: fString
+
+    !--------------------------------------------------------------------
     ! Write a set of kinematic simulation frames
-    ISim = 256_IKIND  ! NB HALF the output image size = output |g| limit/0.98
     ! Instrument broadening term - sets the FWHM  of a kinematic rocking curve
     RInst = 3000.0
     DO ind = 1,INFrames
@@ -519,8 +548,7 @@ MODULE crystallography_mod
       END IF
     END DO
   
-  END SUBROUTINE HKLSave
-
+  END SUBROUTINE HKLPlot
   !%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
   SUBROUTINE CrystalOrientation(IErr)
