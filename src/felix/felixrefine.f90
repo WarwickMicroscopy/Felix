@@ -234,7 +234,7 @@ PROGRAM Felixrefine
   CALL HKLMake(RDevLimit, RGOutLimit, RgPoolLimit, IErr)  ! in crystallography.f90
   IF(l_alert(IErr,"felixrefine","HKLMake")) CALL abort
   ! write to text file hkl_list.txt
-  CALL HKLSave(IErr)  ! in crystallography.f90
+  CALL HKLSave(RGOutLimit, IErr)  ! in crystallography.f90
   IF(l_alert(IErr,"felixrefine","HKLList")) CALL abort
   ! write simple frame images
   IPlotRadius = 256_IKIND

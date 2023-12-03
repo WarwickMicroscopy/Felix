@@ -38,7 +38,7 @@ MODULE crystallography_mod
   IMPLICIT NONE
   
   PRIVATE
-  PUBLIC :: ReciprocalVectors, HKLSave, CrystalOrientation, UniqueAtomPositions, gVectors, HKLMake
+  PUBLIC :: ReciprocalVectors, HKLSave, CrystalOrientation, UniqueAtomPositions, gVectors, HKLMake, HKLPlot
 
   CONTAINS
 
@@ -316,7 +316,7 @@ MODULE crystallography_mod
               ! Calculate Sg by getting the vector k0, which is coplanar with k and g and
               ! corresponds to an incident beam at the Bragg condition
               ! First we need the vector component of k perpendicular to g, which we call p 
-              Rp = Rk - DOT_PRODUCT(Rk,Rg)*Rg/RgMag
+              Rp = Rk - DOT_PRODUCT(Rk,Rg)*Rg/(RgMag**2)
               ! and now make k0 by adding vectors parallel to g and p
               ! i.e. k0 = (p/|p|)*(k^2-g^2/4)^0.5 - g/2
               Rk0 = SQRT(RBigK**2-QUARTER*RgMag**2)*Rp/SQRT(DOT_PRODUCT(Rp,Rp)) - HALF*Rg
@@ -482,7 +482,7 @@ END SUBROUTINE HKLSave
 
     INTEGER(IKIND) :: IErr,ind,jnd,knd,lnd,mnd,Ix,Iy
     INTEGER(IKIND), INTENT(IN) :: ISim
-    REAL(RKIND) :: Rg(ITHREE),RgMag,RSg,Rfq,RSim(2*ISim,2*ISim),RAngle,RInst,Rp(ITHREE),RIkin
+    REAL(RKIND) :: Rg(ITHREE),RgMag,RSg,Rfq,RSim(2*ISim,2*ISim),RAngle,RInst,Rp(ITHREE),RIkin,RmaxI
     REAL(RKIND), INTENT(IN) :: RgOutLimit 
     COMPLEX :: CFg
     CHARACTER(200) :: path
@@ -495,14 +495,14 @@ END SUBROUTINE HKLSave
     DO ind = 1,INFrames
       RAngle = REAL(ind-1)*DEG2RADIAN*RFrameAngle
       RSim = ZERO
-      ! Direct beam
-      RSim(ISim-1:ISim+1,ISim-1:ISim+1) = 1
+      RmaxI = 0.0  ! max g in the image
       ! output g's
-      DO knd = 1, INhkl
+      DO knd = 2, INhkl
         IF (IgOutList(knd,ind).NE.0) THEN
           lnd = IgPoolList(knd,ind)  ! index of reflection in the reciprocal lattice
+!DBG      IF(my_rank.EQ.0)PRINT*,ind,":",Ig(lnd,:)
           Rg = Ig(lnd,1)*RarVecO + Ig(lnd,2)*RbrVecO + Ig(lnd,3)*RcrVecO  ! g-vector
-          IF(my_rank.EQ.0)PRINT*,knd,lnd,Rg
+          RgMag = SQRT(DOT_PRODUCT(Rg,Rg))
           ! Calculate structure factor
           CFg = CZERO
           DO mnd=1,INAtomsUnitCell
@@ -513,15 +513,18 @@ END SUBROUTINE HKLSave
             EXP(-RIsoDW(mnd)*RgMag**2/(FOURPI**2))
           END DO
           RIkin = CFg*CONJG(CFg)  ! simple kinematic intensity
+          !IF(RIkin.GT.RmaxI) RmaxI = RIkin
           RSg = RgPoolSg(knd,ind)  !Sg
           ! x- and y-coords (NB swapped in the image!)
           Rp = RXDirO*COS(RAngle)-RZDirO*SIN(RAngle)  ! unit vector horizontal in the image
           ! position of the spot, 2% leeway to avoid going over the edge of the image
           Ix = ISim-0.98*NINT(DOT_PRODUCT(Rg,Rp)*REAL(ISim)/RGOutLimit)  
           Iy = ISim+0.98*NINT(DOT_PRODUCT(Rg,RYDirO)*REAL(ISim)/RGOutLimit)
-          RSim(Iy-1:Iy+1,Ix-1:Ix+1) = EXP(-RInst*RSg*RSg)*RIkin
+          RSim(Iy-1:Iy+1,Ix-1:Ix+1) = RIkin*EXP(-RInst*RSg*RSg)
         END IF
       END DO
+      ! direct beam
+      RSim(ISim-1:ISim+1,ISim-1:ISim+1) = 100.0!RmaxI
       ! write to disk - set up file name
       IF (ind.LT.10) THEN
         WRITE(path, FMT="(A,A15,I1,A4)") TRIM(ADJUSTL(SChemicalFormula(1:ILN))),&
