@@ -254,7 +254,7 @@ MODULE crystallography_mod
     ! global inputs/outputs
     USE SPARA, ONLY : SPrintString
     USE IPARA, ONLY : INhkl,ILN,INFrames,ICurrentZ,INAtomsUnitCell,IAtomicNumber  ! inputs
-    USE IPARA, ONLY : Ig,IgOutList,IgPoolList  ! outputs
+    USE IPARA, ONLY : Ig,IgOutList,IgPoolList,INoOfhklsAll  ! outputs
     USE RPARA, ONLY : RXDirO,RYDirO,RZDirO,RarVecO,RbrVecO,RcrVecO,RarMag,RbrMag,RcrMag,RFrameAngle,RBigK,&
           RAtomCoordinate,RIsoDW,RgPoolSg,RIkin ! only RgPoolSg,RIkin are outputs
     USE Iconst
@@ -266,7 +266,7 @@ MODULE crystallography_mod
     REAL(RKIND) :: RAngle,Rk(ITHREE),Rk0(ITHREE),Rp(ITHREE),RSg,Rphi,Rg(ITHREE),&
                    RKplusg(ITHREE),RgMag,RShell,RgMin,Rfq
     COMPLEX :: CFg
-   
+
     !-1------------------------------------------------------------------
     ! calculate reflection list g by g
     !--------------------------------------------------------------------
@@ -332,7 +332,7 @@ MODULE crystallography_mod
 
               ! now check to see if it qualifies for the beam pool and output
               IF (ABS(RSg).LT.RDevLimit) THEN  ! it's in the beam pool for this frame
-                lnd = lnd+Ifound  ! increment the reflexion counter on the first occurrance only
+                lnd = lnd+Ifound  ! increment the reflexion counter on the first occurrence only
                 Ifound = 0
                 Ig(lnd,:) = (/ind,jnd,knd/)  ! add it to the list of reflexions
                 ! Calculate structure factor
@@ -346,11 +346,13 @@ MODULE crystallography_mod
                 END DO
                 RIkin(lnd) = CFg*CONJG(CFg)
                 ond = 2 !counter to find the next slot for the g pool
+                ! loop until we have a slot for this reflection
 2               IF (IgPoolList(ond,nnd).NE.0) THEN
                   ond = ond + 1
                   IF (ond.EQ.INhkl) THEN  ! we have filled the beam pool
                     Ifull(nnd) = 1
-                    IF (my_rank.EQ.0)PRINT*,"Beam pool full for frame",nnd
+                    WRITE(SPrintString, FMT='(A25,I)') "Beam pool full for frame ",nnd
+                    CALL message(LL,SPrintString)
                     CYCLE
                   ELSE
                     GOTO 2
@@ -368,10 +370,13 @@ MODULE crystallography_mod
         END DO
       END DO
     END DO
-    IF (lnd.LT.INhkl.AND.RgMin.LE.RgPoolLimit) THEN
+    ! increment shell until all beam pools are full
+    IF (RgMin.LE.RgPoolLimit) THEN
       mnd = mnd + 1
       GOTO 1
     END IF
+    INoOfhklsAll = lnd
+    CALL message(LS, dbg7, "Total number of reflexions in simulation = ",INoOfhklsAll)
 
   END SUBROUTINE HKLmake
 
@@ -455,7 +460,7 @@ MODULE crystallography_mod
           RIg = 100.0D0*RIkin(lnd)/RImax
           IF (lnd.EQ.1) RIg = 100.0D0  ! 000 beam
           IF (lnd.EQ.1) RSg = 0
-          WRITE(fString,"(I4,A3,3(I3,1X),2X, F5.1,A3, F8.4,1X,F8.4,A3, F6.2,2X, F8.4)") &
+          WRITE(fString,"(I6,A3,3(I3,1X),2X, F5.1,A3, F8.4,1X,F8.4,A3, F6.2,2X, F8.4)") &
                   lnd,":  ",Ig(lnd,:), RIg,"%  ", REAL(CFg),AIMAG(CFg),"i  ",&
                   RgMag/TWOPI, RSg
           IF (my_rank.EQ.0) WRITE(IChOutIhkl,*) TRIM(ADJUSTL(fString))
@@ -469,7 +474,7 @@ MODULE crystallography_mod
       Rg = Ig(ind,:)
       RIg = 100.0D0*RIkin(ind)/RImax
       IF (DOT_PRODUCT(Rg,Rg).GT.TINY) THEN  ! this reflexion is not zero
-        IF (my_rank.EQ.0) WRITE(IChOutIhkl,"(A10,I4,2X,3(I3,1X))") "Reflexion ",ind,Ig(ind,:)
+        IF (my_rank.EQ.0) WRITE(IChOutIhkl,"(A10,I6,2X,3(I3,1X))") "Reflexion ",ind,Ig(ind,:)
         DO jnd = 1,INFrames
           DO knd = 1,INhkl
             IF (IgOutList(knd,jnd).EQ.ind) THEN

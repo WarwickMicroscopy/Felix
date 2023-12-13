@@ -104,8 +104,6 @@ PROGRAM Felixrefine
   CALL read_cif(IErr) ! felix.cif ! some allocations are here
   IF(l_alert(IErr,"felixrefine","ReadCif")) CALL abort
 
-!  CALL ReadHklFile(IErr) ! the list of hkl's to input/output
-!  IF(l_alert(IErr,"felixrefine","ReadHklFile")) CALL abort
   !--------------------------------------------------------------------
   ! allocations for arrays to track frame simulations
 !  ALLOCATE(IhklsFrame(INoOfHKLsAll),STAT=IErr) ! Legacy list
@@ -235,17 +233,32 @@ PROGRAM Felixrefine
   ! List the reflexions in each frame: calculate Ig,IgPoolList,IgOutList,RgPoolSg
   CALL HKLMake(RDevLimit, RGOutLimit, RgPoolLimit, IErr)  ! in crystallography.f90
   IF(l_alert(IErr,"felixrefine","HKLMake")) CALL abort
+
+  CALL ReadHklFile(IErr) ! the list of hkl's to input/output
+  IF(l_alert(IErr,"felixrefine","ReadHklFile")) CALL abort
+  ! find which reflection in the full set Ig matches each IinputHKL 
+  DO ind = 1,INObservedHKL
+    knd = 0
+    DO jnd = 1,INoOfHKLsAll
+      IF(SUM(ABS(IinputHKL(ind,:)-Ig(ind,:))).EQ.0) THEN
+        IgObsList(ind) = jnd
+        knd = 1
+      END IF
+    END DO
+    IF (knd.EQ.0)PRINT*,IinputHKL(ind,:),"not found"
+  END DO
+
   ! write to text file hkl_list.txt
-  IOutFLAG = 1  ! sets the output 1=out, 2=pool
+  IOutFLAG = 1  ! sets the output in hkl_list.txt: 1=out, 2=pool
   CALL HKLSave(IOutFLAG, IErr)  ! in crystallography.f90
-  IF(l_alert(IErr,"felixrefine","HKLList")) CALL abort
+  IF(l_alert(IErr,"felixrefine","HKLSave")) CALL abort
+  ! get the frame for each Bragg condition
+  CALL HKLSetup(IErr)
+  IF(l_alert(IErr,"felixrefine","HKLSetup")) CALL abort
   ! write simple frame images
   IPlotRadius = 256_IKIND
   CALL HKLPlot(IPlotRadius, RGOutLimit, IErr)  ! in crystallography.f90
   IF(l_alert(IErr,"felixrefine","HKLPlot")) CALL abort
-  ! get the frame for each Bragg condition
-  CALL HKLSetup(IErr)
-  IF(l_alert(IErr,"felixrefine","HKLSetup")) CALL abort
 
   !--------------------------------------------------------------------
     

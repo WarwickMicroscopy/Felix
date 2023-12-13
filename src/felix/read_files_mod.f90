@@ -46,7 +46,7 @@ MODULE read_files_mod
   SUBROUTINE ReadInpFile ( IErr )
 
     !?? this should contain clear input information and be well documented
-    !?? github and other places should referance here
+    !?? github and other places should reference here
 
     USE MyNumbers
     USE message_mod
@@ -238,9 +238,73 @@ MODULE read_files_mod
   !! Major-Authors: Keith Evans (2014), Richard Beanland (2016)
   !!
   SUBROUTINE ReadHklFile(IErr)
-  USE MyNumbers
-  IMPLICIT NONE
-  INTEGER(IKIND) :: IErr
+    USE MyNumbers
+    USE message_mod
+
+    ! global outputs
+    USE RPARA, ONLY : RInputFrame
+    USE IPARA, ONLY : INObservedHKL,IinputHKL,IgObsList
+    ! global inputs
+    USE IChannels, ONLY : IChInp
+
+    IMPLICIT NONE
+  
+    INTEGER(IKIND) :: ind,IPos1,IPos2,h,k,l,IErr
+    REAL :: Rframe
+    CHARACTER(200) :: dummy1, dummy2  
+
+    OPEN(Unit = IChInp,FILE="felix.hkl",STATUS='OLD',ERR=10)
+    ind = 0
+    ! count the number of lines in felix.hkl:
+    DO
+      READ(UNIT= IChInp, END=5, FMT='(a)') dummy1
+      ind = ind + 1
+    ENDDO
+5   INObservedHKL = ind
+    CALL message ( LS, dbg7, "Number of experimental reflexions =", INObservedHKL)
+
+    ! hkl's of observed reflexions
+    ALLOCATE(IinputHKL(INObservedHKL,ITHREE),STAT=IErr)
+    IF(l_alert(IErr,"ReadHklFile","allocate IinputHKL")) RETURN
+    ! frame containing peak intensity for observed reflexions
+    ALLOCATE(RInputFrame(INObservedHKL),STAT=IErr)
+    IF(l_alert(IErr,"ReadHklFile","allocate RInputFrame")) RETURN
+    ! list matching observed reflexions to the complete set in the simulation, Ig
+    ALLOCATE(IgObsList(INObservedHKL),STAT=IErr)
+    IF(l_alert(IErr,"ReadHklFile","allocate RInputFrame")) RETURN
+
+    ! read in the hkls
+    REWIND(UNIT=IChInp) ! goes to beginning of felix.hkl file
+    DO ind = 1,INObservedHKL
+      ! Read hkl as a String
+      READ(UNIT= IChInp,FMT='(A)' ) dummy1
+      ! Scan String for h
+      IPos1 = SCAN(dummy1,'[')
+      IPos2 = SCAN(dummy1,',')
+      dummy2 = dummy1((IPos1+1):(IPos2-1))
+      READ(dummy2,'(I20)') IinputHKL(ind,1)
+      ! Scan String for k   
+      IPos1 = SCAN(dummy1((IPos2+1):),',') + IPos2
+      dummy2 = dummy1((IPos2+1):(IPos1-1))
+      READ(dummy2,'(I20)') IinputHKL(ind,2)
+      ! Scan String for l     
+      IPos2 = SCAN(dummy1((IPos1+1):),']') + IPos1
+      dummy2 = dummy1((IPos1+1):(IPos2-1))
+      READ(dummy2,'(I20)') IinputHKL(ind,3)
+      ! scan string for frame number
+      dummy2 = dummy1(IPos2+1:)
+      READ(dummy2,*) RInputFrame(ind)
+      CALL message ( LXL, dbg7, "InputHKL", IinputHKL(ind,:) )
+!DBG      IF(my_rank.EQ.0)PRINT*,IinputHKL(ind,:),RInputFrame(ind)
+    END DO
+
+    RETURN
+  
+10  CONTINUE
+    IErr=1
+    CALL message( LL, "felix.hkl not found")
+    RETURN
+
   END SUBROUTINE ReadHklFile
 
 

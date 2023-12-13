@@ -60,7 +60,7 @@ MODULE write_output_mod
     ! global inputs
     USE IPARA, ONLY : ILN,ISizeX,ISizeY,IhklsFrame,INoOfHKLsFrame,IOutputFLAG,&
             IhklsAll,ILiveList,ILACBEDList,ILACBEDFlag,IByteSize,INFrames,IThicknessCount
-    USE RPARA, ONLY : RInputHKLs,Rhkl, RImageSimi, RInitialThickness, RDeltaThickness,&
+    USE RPARA, ONLY : RInputHKL,Rhkl, RImageSimi, RInitialThickness, RDeltaThickness,&
             RTempImage,RDevC,RarVecM,RbrVecM,RcrVecM
     USE SPARA, ONLY : SChemicalFormula
     USE IChannels, ONLY : IChOutIM,IChOutRC,IChOutIhkl
@@ -84,7 +84,7 @@ MODULE write_output_mod
       ! this reflection is number ind in RImageSimi
       RImageToWrite = RImageSimi(:,:,ind,:)
       ! its index in the beam pool is IhklsFrame(ind), its g-vector is Rhkl(IhklsFrame(ind))
-      ! its index in the felix.hkl list is IhklsAll(ind), its g-vector is RInputHKLs(IhklsAll(ind))
+      ! its index in the felix.hkl list is IhklsAll(ind), its g-vector is RInputHKL(IhklsAll(ind))
       ! we track all requested reflections using ILiveList,
       ! this reflection is ILiveList(IhklsAll(ind))
       ! ILiveList = 0 not active
