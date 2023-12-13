@@ -151,13 +151,13 @@ MODULE read_files_mod
     ! Two comment lines 
     ILine= ILine+1; READ(IChInp,ERR=20,END=30,FMT='(A)')
     ILine= ILine+1; READ(IChInp,ERR=20,END=30,FMT='(A)')
-    ! INhkl
+    ! INhkl - the size of the beam pool
     ILine= ILine+1; READ(IChInp,'(27X,I15.1)',ERR=20,END=30) INhkl
     CALL message ( LXL, dbg3, "INhkl=",INhkl)
-    ! IMinStrongBeams
+    ! IMinStrongBeams - the reflections taken from the beam pool for the Bloch calculation
     ILine= ILine+1; READ(IChInp,'(27X,I15.1)',ERR=20,END=30) IMinStrongBeams
     CALL message ( LXL, dbg3, "IMinStrongBeams=",IMinStrongBeams)
-    ! IMinWeakBeams
+    ! IMinWeakBeams - more reflections from the beam pool added as peturbations
     ILine= ILine+1
     READ(IChInp,'(27X,I15.1)',ERR=20,END=30) IMinWeakBeams
     CALL message ( LXL, dbg3, "IMinWeakBeams=",IMinWeakBeams)
@@ -242,8 +242,8 @@ MODULE read_files_mod
     USE message_mod
 
     ! global outputs
-    USE RPARA, ONLY : RInputFrame
-    USE IPARA, ONLY : INObservedHKL,IinputHKL,IgObsList
+    USE RPARA, ONLY : RobsFrame
+    USE IPARA, ONLY : INObservedHKL,IobsHKL,IgObsList
     ! global inputs
     USE IChannels, ONLY : IChInp
 
@@ -264,14 +264,11 @@ MODULE read_files_mod
     CALL message ( LS, dbg7, "Number of experimental reflexions =", INObservedHKL)
 
     ! hkl's of observed reflexions
-    ALLOCATE(IinputHKL(INObservedHKL,ITHREE),STAT=IErr)
-    IF(l_alert(IErr,"ReadHklFile","allocate IinputHKL")) RETURN
+    ALLOCATE(IobsHKL(INObservedHKL,ITHREE),STAT=IErr)
+    IF(l_alert(IErr,"ReadHklFile","allocate IobsHKL")) RETURN
     ! frame containing peak intensity for observed reflexions
-    ALLOCATE(RInputFrame(INObservedHKL),STAT=IErr)
-    IF(l_alert(IErr,"ReadHklFile","allocate RInputFrame")) RETURN
-    ! list matching observed reflexions to the complete set in the simulation, Ig
-    ALLOCATE(IgObsList(INObservedHKL),STAT=IErr)
-    IF(l_alert(IErr,"ReadHklFile","allocate RInputFrame")) RETURN
+    ALLOCATE(RobsFrame(INObservedHKL),STAT=IErr)
+    IF(l_alert(IErr,"ReadHklFile","allocate RobsFrame")) RETURN
 
     ! read in the hkls
     REWIND(UNIT=IChInp) ! goes to beginning of felix.hkl file
@@ -282,20 +279,20 @@ MODULE read_files_mod
       IPos1 = SCAN(dummy1,'[')
       IPos2 = SCAN(dummy1,',')
       dummy2 = dummy1((IPos1+1):(IPos2-1))
-      READ(dummy2,'(I20)') IinputHKL(ind,1)
+      READ(dummy2,'(I20)') IobsHKL(ind,1)
       ! Scan String for k   
       IPos1 = SCAN(dummy1((IPos2+1):),',') + IPos2
       dummy2 = dummy1((IPos2+1):(IPos1-1))
-      READ(dummy2,'(I20)') IinputHKL(ind,2)
+      READ(dummy2,'(I20)') IobsHKL(ind,2)
       ! Scan String for l     
       IPos2 = SCAN(dummy1((IPos1+1):),']') + IPos1
       dummy2 = dummy1((IPos1+1):(IPos2-1))
-      READ(dummy2,'(I20)') IinputHKL(ind,3)
+      READ(dummy2,'(I20)') IobsHKL(ind,3)
       ! scan string for frame number
       dummy2 = dummy1(IPos2+1:)
-      READ(dummy2,*) RInputFrame(ind)
-      CALL message ( LXL, dbg7, "InputHKL", IinputHKL(ind,:) )
-!DBG      IF(my_rank.EQ.0)PRINT*,IinputHKL(ind,:),RInputFrame(ind)
+      READ(dummy2,*) RobsFrame(ind)
+      CALL message ( LXL, dbg7, "InputHKL", IobsHKL(ind,:) )
+!DBG      IF(my_rank.EQ.0)PRINT*,IobsHKL(ind,:),RobsFrame(ind)
     END DO
 
     RETURN

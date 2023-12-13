@@ -56,9 +56,9 @@ PROGRAM Felixrefine
   ! local variable definitions
   IMPLICIT NONE
  
-  INTEGER(IKIND) :: IErr,ind,jnd,knd,lnd,mnd,IStartTime,IPlotRadius,IOutFLAG
+  INTEGER(IKIND) :: IErr,ind,jnd,knd,lnd,mnd,nnd,IStartTime,IPlotRadius,IOutFLAG
   INTEGER(4) :: IErr4
-  REAL(RKIND) :: RGOutLimit,RgPoolLimit
+  REAL(RKIND) :: RGOutLimit,RgPoolLimit,RSg
 
   CHARACTER(40) :: my_rank_string
   CHARACTER(200) :: path,subpath,subsubpath
@@ -106,13 +106,13 @@ PROGRAM Felixrefine
 
   !--------------------------------------------------------------------
   ! allocations for arrays to track frame simulations
-!  ALLOCATE(IhklsFrame(INoOfHKLsAll),STAT=IErr) ! Legacy list
+!  ALLOCATE(IhklsFrame(INCalcHKL),STAT=IErr) ! Legacy list
 !  IF(l_alert(IErr,"felixrefine","allocate IhklsFrame")) CALL abort
-!  ALLOCATE(IhklsAll(INoOfHKLsAll),STAT=IErr)! List for full sim
+!  ALLOCATE(IhklsAll(INCalcHKL),STAT=IErr)! List for full sim
 !  IF(l_alert(IErr,"felixrefine","allocate IhklsAll")) CALL abort
-!  ALLOCATE(ILiveList(INoOfHKLsAll),STAT=IErr)! List of current output reflections
+!  ALLOCATE(ILiveList(INCalcHKL),STAT=IErr)! List of current output reflections
 !  IF(l_alert(IErr,"felixrefine","allocate ILiveList")) CALL abort
-!  ALLOCATE(ILACBEDList(INoOfHKLsAll),STAT=IErr)! List of current output containers
+!  ALLOCATE(ILACBEDList(INCalcHKL),STAT=IErr)! List of current output containers
 !  IF(l_alert(IErr,"felixrefine","allocate ILACBEDList")) CALL abort
   !output tracking flags
 !  ILiveList = 0 ! links reflections, see write_outputs for all meanings of this flag
@@ -219,7 +219,7 @@ PROGRAM Felixrefine
 
   !--------------------------------------------------------------------
   ! Outer limit of g pool  ***This parameter will probably end up in a modified .inp file***
-  RgPoolLimit = TWO*TWO*TWOPI  ! reciprocal Angstroms, multiplied by 2pi
+  RgPoolLimit = TWO*TWO*TWOPI  ! 4 reciprocal Angstroms, multiplied by 2pi
   ! Deviation parameter limit, a reflection closer to Ewald than this is in the beam pool
   RDevLimit = 0.015*TWOPI  ! reciprocal Angstroms, multiplied by 2pi
   ! Output limit
@@ -234,22 +234,67 @@ PROGRAM Felixrefine
   CALL HKLMake(RDevLimit, RGOutLimit, RgPoolLimit, IErr)  ! in crystallography.f90
   IF(l_alert(IErr,"felixrefine","HKLMake")) CALL abort
 
-  CALL ReadHklFile(IErr) ! the list of hkl's to input/output
+  ! the list of hkl's to input/output
+  CALL ReadHklFile(IErr) ! NB INObservedHKL set and RobsFrame and IobsHKL allocated here
   IF(l_alert(IErr,"felixrefine","ReadHklFile")) CALL abort
-  ! find which reflection in the full set Ig matches each IinputHKL 
+
+  ! list matching observed reflexions to the complete set in the simulation, Ig
+  ALLOCATE(IgObsList(INObservedHKL),STAT=IErr)
+  IF(l_alert(IErr,"Felixrefine","allocate IgObsList")) CALL abort
+  ! Equivalent to RobsFrame for calculated reflexions (i.e. when Sg=0) 
+  ALLOCATE(RCalcFrame(INObservedHKL),STAT=IErr)
+  IF(l_alert(IErr,"ReadHklFile","allocate RobsFrame")) CALL abort
+  RCalcFrame = -ONE
+
+  ! find which reflection in the full set Ig matches each IobsHKL 
   DO ind = 1,INObservedHKL
-    knd = 0
-    DO jnd = 1,INoOfHKLsAll
-      IF(SUM(ABS(IinputHKL(ind,:)-Ig(ind,:))).EQ.0) THEN
-        IgObsList(ind) = jnd
-        knd = 1
+!DBG    IF(my_rank.EQ.0)PRINT*,IobsHKL(ind,:)
+    knd = 0  ! flag to say we have a match in Ig
+    DO jnd = 2,INCalcHKL  ! start at 2 since 1 is always 000
+      IF(SUM(ABS(IobsHKL(ind,:)-Ig(jnd,:))).EQ.0) THEN
+        IgObsList(ind) = jnd  ! matching reflection is Ig(jnd)
+        WRITE(SPrintString, FMT='(3(I3,1X),A13,I6)') IobsHKL(ind,:),"is reflexion ",jnd
+        CALL message(LL,SPrintString)
+        ! find smallest Sg for this calculated reflexion
+        ! search is complicated here since a reflexion can appear in different locations
+        ! in each frame list, so we have to go through the full list looking for a match  
+        DO lnd = 1,INFrames
+          DO mnd = 1,INhkl
+            IF (IgOutList(mnd,lnd).EQ.jnd) THEN !we've found it in this frame
+              ! I think there must be a neater way of doing this
+              IF (knd.EQ.0) THEN  ! first frame
+                knd = 1
+                nnd = NINT(SIGN(ONE,RgPoolSg(mnd,lnd)))  ! +/-1 depending on sign of Sg
+                RSg = RgPoolSg(mnd,lnd)
+!DBG                IF(my_rank.EQ.0)PRINT*,"frame",lnd,"Sg=",RSg
+              ELSE
+                IF ((NINT(SIGN(ONE,RgPoolSg(mnd,lnd)))+nnd).EQ.0) THEN  ! we have passed through zero
+                  RCalcFrame(ind) = REAL(lnd)-ONE + (RSg/(RSg-RgPoolSg(mnd,lnd)))
+                  nnd = -nnd
+!DBG                  IF(my_rank.EQ.0)PRINT*,"Found",lnd,"Sg=",RgPoolSg(mnd,lnd),mnd
+                ELSE ! we haven't passed through zero, update Sg
+                  RSg = RgPoolSg(mnd,lnd)
+!DBG                  IF(my_rank.EQ.0)PRINT*,"Frame",lnd,"Sg=",RSg,mnd
+                END IF
+              END IF
+            END IF
+          END DO
+        END DO
+        IF (RCalcFrame(ind).GT.ZERO) THEN
+          WRITE(SPrintString, FMT='(3(I3,1X),A19,F6.2,A6,F6.2,A5)') &
+                IobsHKL(ind,:)," has Sg=0 at frame ",RCalcFrame(ind)," calc:",RobsFrame(ind)," expt"
+          CALL message(LS,SPrintString)
+        END IF
       END IF
     END DO
-    IF (knd.EQ.0)PRINT*,IinputHKL(ind,:),"not found"
+    IF (knd.EQ.0) THEN
+      WRITE(SPrintString, FMT='(3(I3,1X),A9)') IobsHKL(ind,:),"not found"
+      CALL message(LL,SPrintString)
+    END IF
   END DO
 
   ! write to text file hkl_list.txt
-  IOutFLAG = 1  ! sets the output in hkl_list.txt: 1=out, 2=pool
+  IOutFLAG = 2  ! sets the output in hkl_list.txt: 1=out, 2=pool
   CALL HKLSave(IOutFLAG, IErr)  ! in crystallography.f90
   IF(l_alert(IErr,"felixrefine","HKLSave")) CALL abort
   ! get the frame for each Bragg condition

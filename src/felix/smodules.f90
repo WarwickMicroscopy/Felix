@@ -168,7 +168,7 @@ MODULE IPara
   INTEGER(IKIND) :: ISizeX, ISizeY, IPixelCount, INFrames
   !Crystal Settings
   INTEGER(IKIND) :: IMaxPossibleNAtomsUnitCell
-  INTEGER(IKIND),DIMENSION(:,:), ALLOCATABLE :: Ig, IgPoolList, Ihkl,IinputHKL
+  INTEGER(IKIND),DIMENSION(:,:), ALLOCATABLE :: Ig, IgPoolList, Ihkl,IobsHKL
   !Name2Atom index
   INTEGER(IKIND), DIMENSION(:), ALLOCATABLE :: IBasisAtomicNumber,IAtomicNumber
   !Microscope Settings
@@ -179,7 +179,7 @@ MODULE IPara
   !Iterative Ug
   INTEGER(IKIND) :: INoofUgs
   !Exprimentally observed reflexions
-  INTEGER(IKIND) :: INoOfHKLsAll, INoOfHKLsFrame, INObservedHKL
+  INTEGER(IKIND) :: INCalcHKL, INoOfHKLsFrame, INObservedHKL
   INTEGER(IKIND), DIMENSION(:), ALLOCATABLE :: IgObsList
   !Beams from selection criteria
   INTEGER(IKIND) :: INhkl,nStrongBeams,nWeakBeams,nBeams,IHKLMAXValue
@@ -222,7 +222,7 @@ MODULE RPara
   !Crystallography
   REAL(RKIND) :: RCellA,RCellB,RCellC,RVolume,RAlpha,RBeta,RGamma, &
        RDebyeWallerConstant,RAbsorptionPercentage
-  REAL(RKIND), DIMENSION(:), ALLOCATABLE :: RBasisIsoDW, RBasisOccupancy, RIsoDW, RIkin,RInputFrame
+  REAL(RKIND), DIMENSION(:), ALLOCATABLE :: RBasisIsoDW, RBasisOccupancy, RIsoDW, RIkin,RobsFrame,RCalcFrame
   REAL(RKIND), DIMENSION(:), ALLOCATABLE :: ROccupancy,RgMagLattice, RgMag
   REAL(RKIND), DIMENSION(:,:), ALLOCATABLE :: RSymVec,RBasisAtomPosition, RBasisAtomDelta
   REAL(RKIND), DIMENSION(:,:), ALLOCATABLE :: RAtomXYZ,RUniqueKey, RgLatticeO, RgO, RgPoolSg
@@ -242,7 +242,7 @@ MODULE RPara
   REAL(RKIND) :: RCurrentB,RCurrentGMagnitude,RSprimeY,RPScale
   !HKL indices 
   REAL(RKIND), DIMENSION(:,:), ALLOCATABLE :: Rhkl 
-  REAL(RKIND), DIMENSION(:,:), ALLOCATABLE :: RInputHKL
+  REAL(RKIND), DIMENSION(:,:), ALLOCATABLE :: RobsHKL
   ! scattering factors
   REAL(RKIND), DIMENSION(:,:), ALLOCATABLE :: RScattFactors!,RPseudoAtom
   ! Crystallography 

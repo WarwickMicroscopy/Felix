@@ -254,7 +254,7 @@ MODULE crystallography_mod
     ! global inputs/outputs
     USE SPARA, ONLY : SPrintString
     USE IPARA, ONLY : INhkl,ILN,INFrames,ICurrentZ,INAtomsUnitCell,IAtomicNumber  ! inputs
-    USE IPARA, ONLY : Ig,IgOutList,IgPoolList,INoOfhklsAll  ! outputs
+    USE IPARA, ONLY : Ig,IgOutList,IgPoolList,INCalcHKL  ! outputs
     USE RPARA, ONLY : RXDirO,RYDirO,RZDirO,RarVecO,RbrVecO,RcrVecO,RarMag,RbrMag,RcrMag,RFrameAngle,RBigK,&
           RAtomCoordinate,RIsoDW,RgPoolSg,RIkin ! only RgPoolSg,RIkin are outputs
     USE Iconst
@@ -375,8 +375,8 @@ MODULE crystallography_mod
       mnd = mnd + 1
       GOTO 1
     END IF
-    INoOfhklsAll = lnd
-    CALL message(LS, dbg7, "Total number of reflexions in simulation = ",INoOfhklsAll)
+    INCalcHKL = lnd
+    CALL message(LS, dbg7, "Total number of reflexions in simulation = ",INCalcHKL)
 
   END SUBROUTINE HKLmake
 
@@ -397,7 +397,7 @@ MODULE crystallography_mod
     ! global inputs
     USE IPARA, ONLY : ILN,INFrames,INhkl,Ig,IGPoolList,IgOutList,ICurrentZ,&
             INAtomsUnitCell,IAtomicNumber
-    USE RPARA, ONLY : RarVecO,RbrVecO,RcrVecO,RgPoolSg,RIkin,RAtomCoordinate,RIsoDW
+    USE RPARA, ONLY : RarVecO,RbrVecO,RcrVecO,RgPoolSg,RIkin,RAtomCoordinate,RIsoDW,RCalcFrame
     USE SPARA, ONLY : SPrintString,SChemicalFormula
     USE IChannels, ONLY : IChOutIhkl
 
@@ -415,6 +415,7 @@ MODULE crystallography_mod
     ! 2 = g-pool reflections
     ! write reflection lists and rocking curves to hkl_list
     RImax = MAXVAL(RIkin)
+    
     IF(my_rank.EQ.0) THEN
       CALL message(LS,dbg3,"Writing hkl list and images")
       path = SChemicalFormula(1:ILN) // "/hkl_list.txt"
@@ -424,68 +425,66 @@ MODULE crystallography_mod
       IF (IOutFLAG.EQ.1) WRITE(IChOutIhkl,*) "Output reflexions"
       IF (IOutFLAG.NE.1) WRITE(IChOutIhkl,*) "Beam pool"
       WRITE(IChOutIhkl,*) "No: h  k  l  I/Imax  Fg  |g|  Sg"
-    END IF
-    DO ind = 1,INFrames
-      ! output to slurm if requested
-      CALL message(LM, "Reflection list:")
-      DO knd = 1, INhkl
-        IF (IgPoolList(knd,ind).NE.0) THEN
-          WRITE(SPrintString,'(I3,1X,I3,1X,I3)') Ig(IgPoolList(knd,ind),:)
-          CALL message(LM, SPrintString)
-        END IF
-      END DO
-      ! write reflections in each frame
-      ! h k l  Ikin  Fg(Re Im)  |g|  Sg
-      IF (my_rank.EQ.0) WRITE(IChOutIhkl,"(A6,I4)") "Frame ",ind
-      DO knd = 1, INhkl
-        IF (IOutFLAG.EQ.1) THEN
-          Itest = IgOutList(knd,ind)
-        ELSE
-          Itest = IgPoolList(knd,ind)
-        END IF
-        IF (Itest.NE.0) THEN
-          lnd = IgOutList(knd,ind)
-          RSg = RgPoolSg(knd,ind)
-          Rg = Ig(lnd,1)*RarVecO + Ig(lnd,2)*RbrVecO + Ig(lnd,3)*RcrVecO
-          RgMag = SQRT(DOT_PRODUCT(Rg,Rg))
-          ! Calculate structure factor
-          CFg = CZERO
-          DO mnd=1,INAtomsUnitCell
-            ICurrentZ = IAtomicNumber(mnd)
-            CALL AtomicScatteringFactor(Rfq,IErr)  ! in ug_matrix_mod
-            CFg = CFg+Rfq*EXP(-CIMAGONE*DOT_PRODUCT(Rg,RAtomCoordinate(mnd,:)) ) * &
-            ! Isotropic D-W factor exp(-B sin(theta)^2/lamda^2) = exp(-Bg^2/16pi^2)
-            EXP(-RIsoDW(mnd)*RgMag**2/(FOURPI**2))
-          END DO
-          RIg = 100.0D0*RIkin(lnd)/RImax
-          IF (lnd.EQ.1) RIg = 100.0D0  ! 000 beam
-          IF (lnd.EQ.1) RSg = 0
-          WRITE(fString,"(I6,A3,3(I3,1X),2X, F5.1,A3, F8.4,1X,F8.4,A3, F6.2,2X, F8.4)") &
+      DO ind = 1,INFrames
+        ! output to slurm if requested
+        CALL message(LM, "Reflection list:")
+        DO knd = 1, INhkl
+          IF (IgPoolList(knd,ind).NE.0) THEN
+            WRITE(SPrintString,'(I3,1X,I3,1X,I3)') Ig(IgPoolList(knd,ind),:)
+            CALL message(LM, SPrintString)
+          END IF
+        END DO
+        ! write reflections in each frame
+        ! h k l  Ikin  Fg(Re Im)  |g|  Sg
+        WRITE(IChOutIhkl,"(A6,I4)") "Frame ",ind
+        DO knd = 1, INhkl
+          IF (IOutFLAG.EQ.1) THEN
+            lnd = IgOutList(knd,ind)
+          ELSE
+            lnd = IgPoolList(knd,ind)
+          END IF
+          IF (lnd.NE.0) THEN
+            RSg = RgPoolSg(knd,ind)
+            Rg = Ig(lnd,1)*RarVecO + Ig(lnd,2)*RbrVecO + Ig(lnd,3)*RcrVecO
+            RgMag = SQRT(DOT_PRODUCT(Rg,Rg))
+            ! Calculate structure factor
+            CFg = CZERO
+            DO mnd=1,INAtomsUnitCell
+              ICurrentZ = IAtomicNumber(mnd)
+              CALL AtomicScatteringFactor(Rfq,IErr)  ! in ug_matrix_mod
+              CFg = CFg+Rfq*EXP(-CIMAGONE*DOT_PRODUCT(Rg,RAtomCoordinate(mnd,:)) ) * &
+              ! Isotropic D-W factor exp(-B sin(theta)^2/lamda^2) = exp(-Bg^2/16pi^2)
+              EXP(-RIsoDW(mnd)*RgMag**2/(FOURPI**2))
+            END DO
+            RIg = 100.0D0*RIkin(lnd)/RImax
+            IF (lnd.EQ.1) RIg = 100.0D0  ! 000 beam
+            IF (lnd.EQ.1) RSg = 0
+            WRITE(fString,"(I6,A3,3(I3,1X),2X, F5.1,A3, F8.4,1X,F8.4,A3, F6.2,2X, F8.4)") &
                   lnd,":  ",Ig(lnd,:), RIg,"%  ", REAL(CFg),AIMAG(CFg),"i  ",&
                   RgMag/TWOPI, RSg
-          IF (my_rank.EQ.0) WRITE(IChOutIhkl,*) TRIM(ADJUSTL(fString))
-        END IF
-      END DO
-!      IF (jnd.GT.IMaxNg) IMaxNg = jnd  ! update max number of outputs if necessary
-    END DO
-
-    ! write frames for each reflexion
-    DO ind = 1,INhkl*INFrames
-      Rg = Ig(ind,:)
-      RIg = 100.0D0*RIkin(ind)/RImax
-      IF (DOT_PRODUCT(Rg,Rg).GT.TINY) THEN  ! this reflexion is not zero
-        IF (my_rank.EQ.0) WRITE(IChOutIhkl,"(A10,I6,2X,3(I3,1X))") "Reflexion ",ind,Ig(ind,:)
-        DO jnd = 1,INFrames
-          DO knd = 1,INhkl
-            IF (IgOutList(knd,jnd).EQ.ind) THEN
-              RSg = RgPoolSg(knd,jnd)
-              IF (my_rank.EQ.0) WRITE(IChOutIhkl,"(I4 ,2X, F5.1,A3, F8.4)") jnd,RIg,"%  ",RSg
-            END IF
-          END DO
+            WRITE(IChOutIhkl,*) TRIM(ADJUSTL(fString))
+          END IF
         END DO
-      END IF
-    END DO 
-    IF (my_rank.EQ.0) CLOSE(IChOutIhkl,IOSTAT=IErr)
+      END DO
+
+      ! write frames for each reflexion
+      DO ind = 1,INhkl*INFrames
+        Rg = Ig(ind,:)
+        RIg = 100.0D0*RIkin(ind)/RImax
+        IF (DOT_PRODUCT(Rg,Rg).GT.TINY) THEN  ! this reflexion is not zero
+          WRITE(IChOutIhkl,"(A10,I6,2X,3(I3,1X))") "Reflexion ",ind,Ig(ind,:)
+          DO jnd = 1,INFrames
+            DO knd = 1,INhkl
+              IF (IgOutList(knd,jnd).EQ.ind) THEN
+                RSg = RgPoolSg(knd,jnd)
+                WRITE(IChOutIhkl,"(I4 ,2X, F5.1,A3, F8.4)") jnd,RIg,"%  ",RSg
+              END IF
+            END DO
+          END DO
+        END IF
+      END DO 
+      CLOSE(IChOutIhkl,IOSTAT=IErr)
+    END IF
 
 END SUBROUTINE HKLSave
 
