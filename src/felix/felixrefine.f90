@@ -58,7 +58,7 @@ PROGRAM Felixrefine
  
   INTEGER(IKIND) :: IErr,ind,jnd,knd,lnd,mnd,nnd,IStartTime,IPlotRadius,IOutFLAG,Imissing
   INTEGER(4) :: IErr4
-  REAL(RKIND) :: RGOutLimit,RgPoolLimit,RSg,RorientationFoM
+  REAL(RKIND) :: RGOutLimit,RgPoolLimit,RSg,RorientationFoM,Roffset
 
   CHARACTER(40) :: my_rank_string
   CHARACTER(200) :: path,subpath,subsubpath
@@ -307,12 +307,20 @@ PROGRAM Felixrefine
   ! figure of merit is in degrees per reflection
   RorientationFoM = RFrameAngle*RorientationFoM/jnd
   WRITE(SPrintString, FMT='(A30,F8.5)') "Orientation figure of merit = ",RorientationFoM
-  CALL message(LS,L,SPrintString)
+  CALL message(LS,SPrintString)
   IF (Imissing.GT.0) THEN
-    WRITE(SPrintString, FMT='(I4,A42)') Imissing," input reflexions not found in calculation"
-    CALL message(LS,L,SPrintString)
+    WRITE(SPrintString, FMT='(I,A42)') Imissing," input reflexions not found in calculation"
+    CALL message(LS,SPrintString)
   END IF
 
+  !--------------------------------------------------------------------
+  ! Orientation refinement
+  ! first, offset in initial frames
+  ind = 20! take average of first N offsets, N=20
+  Roffset = (SUM(RCalcFrame(1:ind))-SUM(RobsFrame(1:ind)))/REAL(ind)
+  IF(my_rank.EQ.0)PRINT*,Roffset
+  
+  !--------------------------------------------------------------------
   ! write to text file hkl_list.txt
   IOutFLAG = 2  ! sets the output in hkl_list.txt: 1=out, 2=pool
   CALL HKLSave(IOutFLAG, IErr)  ! in crystallography.f90
