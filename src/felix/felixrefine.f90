@@ -231,7 +231,7 @@ PROGRAM Felixrefine
 
   !--------------------------------------------------------------------
   ! The calculated reflexions in each frame: Ig,IgPoolList,IgOutList,RgPoolSg, set INcalcHKL
-  CALL HKLMake(RDevLimit, RGOutLimit, RgPoolLimit, IErr)  ! in crystallography.f90
+  CALL HKLmake(RDevLimit, RGOutLimit, RgPoolLimit, IErr)  ! in crystallography.f90
   IF(l_alert(IErr,"felixrefine","HKLMake")) CALL abort
   ! The observed reflexions & the frame of max intensity
   CALL ReadHklFile(IErr) ! NB INObservedHKL set and RobsFrame and IobsHKL allocated here
@@ -244,74 +244,9 @@ PROGRAM Felixrefine
   ! Equivalent to RobsFrame for calculated reflexions (i.e. when Sg=0) 
   ALLOCATE(RCalcFrame(INObservedHKL),STAT=IErr)
   IF(l_alert(IErr,"ReadHklFile","allocate RobsFrame")) CALL abort
-  RCalcFrame = -ONE  ! default value for a reflection not in the observed list
 
-  ! find which reflection in the full set Ig matches each IobsHKL 
-  DO ind = 1,INObservedHKL
-    knd = 0  ! flag to say we have a match in Ig
-    DO jnd = 2,INCalcHKL  ! start at 2 since 1 is always 000
-      IF(SUM(ABS(IobsHKL(ind,:)-Ig(jnd,:))).EQ.0) THEN
-        IgObsList(ind) = jnd  ! matching reflection is Ig(jnd)
-        WRITE(SPrintString, FMT='(3(I3,1X),A13,I6)') IobsHKL(ind,:),"is reflexion ",jnd
-        CALL message(LL,SPrintString)
-        ! find smallest Sg for this calculated reflexion
-        DO lnd = 1,INFrames
-          ! A reflexion can appear in a different location in each frame beam pool
-          ! sp we have to go through the full beam pool looking for a match  
-          DO mnd = 1,INhkl
-            IF (IgOutList(mnd,lnd).EQ.jnd) THEN !we've found it in this frame
-              ! I think there must be a neater way of doing this, but hey ho this works
-              IF (knd.EQ.0) THEN  ! this is the first frame it has been found
-                knd = 1
-                nnd = NINT(SIGN(ONE,RgPoolSg(mnd,lnd)))  ! +/-1 depending on sign of Sg
-                RSg = RgPoolSg(mnd,lnd)
-!DBG                IF(my_rank.EQ.0)PRINT*,"frame",lnd,"Sg=",RSg
-              ELSE
-                IF ((NINT(SIGN(ONE,RgPoolSg(mnd,lnd)))+nnd).EQ.0) THEN  ! we have passed through zero
-                  RCalcFrame(ind) = REAL(lnd)-ONE + (RSg/(RSg-RgPoolSg(mnd,lnd)))
-                  nnd = -nnd  ! ideally we'd stop when we get here, this is needed for the rest of the loop
-!DBG                  IF(my_rank.EQ.0)PRINT*,"Found",lnd,"Sg=",RgPoolSg(mnd,lnd),mnd
-                ELSE ! we haven't passed through zero, update Sg
-                  RSg = RgPoolSg(mnd,lnd)
-!DBG                  IF(my_rank.EQ.0)PRINT*,"Frame",lnd,"Sg=",RSg,mnd
-                END IF
-              END IF
-            END IF
-          END DO
-        END DO
-        IF (RCalcFrame(ind).GT.ZERO) THEN
-          WRITE(SPrintString, FMT='(3(I3,1X),A19,F6.2,A6,F6.2,A5)') &
-                IobsHKL(ind,:)," has Sg=0 at frame ",RCalcFrame(ind)," calc:",RobsFrame(ind)," expt"
-          CALL message(LL,SPrintString)
-        END IF
-      END IF
-    END DO
-    ! keep track of observed reflections not found in the calculation
-    IF (knd.EQ.0) THEN
-      WRITE(SPrintString, FMT='(3(I3,1X),A9)') IobsHKL(ind,:),"not found"
-      CALL message(LL,SPrintString)
-    END IF
-  END DO
-  ! calculate figure of merit for this orientation
-  RorientationFoM = ZERO
-  Imissing = 0  ! count of reflexions in felix.hkl that aren't found in the calculation
-  jnd = 0
-  DO ind = 1,INObservedHKL
-    IF (RCalcFrame(ind).GT.ZERO) THEN
-      RorientationFoM = RorientationFoM + ABS(RCalcFrame(ind)-RobsFrame(ind))
-      jnd = jnd +1
-    ELSE
-      Imissing = Imissing + 1
-    END IF
-  END DO
-  ! figure of merit is in degrees per reflection
-  RorientationFoM = RFrameAngle*RorientationFoM/jnd
-  WRITE(SPrintString, FMT='(A30,F8.5)') "Orientation figure of merit = ",RorientationFoM
-  CALL message(LS,SPrintString)
-  IF (Imissing.GT.0) THEN
-    WRITE(SPrintString, FMT='(I,A42)') Imissing," input reflexions not found in calculation"
-    CALL message(LS,SPrintString)
-  END IF
+  CALL HKLmatch(IErr)
+  IF(l_alert(IErr,"felixrefine","ReadHklFile")) CALL abort
 
   !--------------------------------------------------------------------
   ! Orientation refinement
@@ -326,8 +261,8 @@ PROGRAM Felixrefine
   CALL HKLSave(IOutFLAG, IErr)  ! in crystallography.f90
   IF(l_alert(IErr,"felixrefine","HKLSave")) CALL abort
   ! get the frame for each Bragg condition
-  CALL HKLSetup(IErr)
-  IF(l_alert(IErr,"felixrefine","HKLSetup")) CALL abort
+  !CALL HKLSetup(IErr)
+  !IF(l_alert(IErr,"felixrefine","HKLSetup")) CALL abort
   ! write simple frame images
   IPlotRadius = 256_IKIND
   CALL HKLPlot(IPlotRadius, RGOutLimit, IErr)  ! in crystallography.f90

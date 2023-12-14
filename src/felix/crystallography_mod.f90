@@ -40,7 +40,8 @@ MODULE crystallography_mod
   IMPLICIT NONE
   
   PRIVATE
-  PUBLIC :: ReciprocalVectors, HKLSave, CrystalOrientation, UniqueAtomPositions, gVectors, HKLMake, HKLPlot, HKLSetup
+  PUBLIC :: ReciprocalVectors, HKLSave, CrystalOrientation, UniqueAtomPositions, gVectors, &
+            HKLMake, HKLPlot, HKLmatch
 
   CONTAINS
   
@@ -237,14 +238,14 @@ MODULE crystallography_mod
   END SUBROUTINE ReciprocalVectors
 
 
-  !$%%HKLMake%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+  !$%%HKLmake%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
   !>
   !! Procedure-description:
   !! Fills the beam pool list RgPoolList for each frame (global variable)
   !!
   !! Major-Authors: Richard Beanland (2023)
   !!  
-  SUBROUTINE HKLMake(RDevLimit, RGOutLimit, RgPoolLimit, IErr)   
+  SUBROUTINE HKLmake(RDevLimit, RGOutLimit, RgPoolLimit, IErr)   
 
     USE MyNumbers
     USE message_mod
@@ -381,13 +382,107 @@ MODULE crystallography_mod
   END SUBROUTINE HKLmake
 
 
-  !$%%HKLSave%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+  !$%%HKLmatch%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+  !>
+  !! Procedure-description: matches observed and calculated reflections, gives figures of merit
+  !!
+  !! Major-Authors: Richard Beanland (2023)
+  !!
+  SUBROUTINE HKLmatch(IErr)
+
+    USE MyNumbers
+    USE MyMPI
+    USE message_mod
+    
+    ! global inputs
+    USE RPARA, ONLY : RCalcFrame,RgPoolSg,RobsFrame,RFrameAngle
+    USE IPARA, ONLY : IgObsList,INObservedHKL,INCalcHKL,IobsHKL,Ig,INFrames,INhkl
+    USE SPARA, ONLY : SPrintString    
+    ! global outputs
+    USE RPARA, ONLY : RorientationFoM
+    
+    IMPLICIT NONE
+
+    INTEGER(IKIND) :: IErr,ind,jnd,knd,lnd,mnd,nnd,Imissing
+    REAL(RKIND) ::RSg
+
+    RCalcFrame = -ONE  ! default value for a reflection not in the observed list
+    ! find which reflection in the full set Ig matches each IobsHKL 
+    DO ind = 1,INObservedHKL
+    knd = 0  ! flag to say we have a match in Ig
+      DO jnd = 2,INCalcHKL  ! start at 2 since 1 is always 000
+        IF(SUM(ABS(IobsHKL(ind,:)-Ig(jnd,:))).EQ.0) THEN
+          IgObsList(ind) = jnd  ! matching reflection is Ig(jnd)
+          WRITE(SPrintString, FMT='(3(I3,1X),A13,I6)') IobsHKL(ind,:),"is reflexion ",jnd
+          CALL message(LL,SPrintString)
+          ! find smallest Sg for this calculated reflexion
+          DO lnd = 1,INFrames
+            ! A reflexion can appear in a different location in each frame beam pool
+            ! sp we have to go through the full beam pool looking for a match  
+            DO mnd = 1,INhkl
+              IF (IgOutList(mnd,lnd).EQ.jnd) THEN !we've found it in this frame
+                ! I think there must be a neater way of doing this, but hey ho this works
+                IF (knd.EQ.0) THEN  ! this is the first frame it has been found
+                  knd = 1
+                  nnd = NINT(SIGN(ONE,RgPoolSg(mnd,lnd)))  ! +/-1 depending on sign of Sg
+                  RSg = RgPoolSg(mnd,lnd)
+!DBG                IF(my_rank.EQ.0)PRINT*,"frame",lnd,"Sg=",RSg
+                ELSE
+                  IF ((NINT(SIGN(ONE,RgPoolSg(mnd,lnd)))+nnd).EQ.0) THEN  ! we have passed through zero
+                    RCalcFrame(ind) = REAL(lnd)-ONE + (RSg/(RSg-RgPoolSg(mnd,lnd)))
+                    nnd = -nnd  ! ideally we'd stop when we get here, this is needed for the rest of the loop
+!DBG                  IF(my_rank.EQ.0)PRINT*,"Found",lnd,"Sg=",RgPoolSg(mnd,lnd),mnd
+                  ELSE ! we haven't passed through zero, update Sg
+                    RSg = RgPoolSg(mnd,lnd)
+!DBG                  IF(my_rank.EQ.0)PRINT*,"Frame",lnd,"Sg=",RSg,mnd
+                  END IF
+                END IF
+              END IF
+            END DO
+          END DO
+          IF (RCalcFrame(ind).GT.ZERO) THEN
+            WRITE(SPrintString, FMT='(3(I3,1X),A19,F6.2,A6,F6.2,A5)') &
+                IobsHKL(ind,:)," has Sg=0 at frame ",RCalcFrame(ind)," calc:",RobsFrame(ind)," expt"
+            CALL message(LL,SPrintString)
+          END IF
+        END IF
+      END DO
+      ! keep track of observed reflections not found in the calculation
+      IF (knd.EQ.0) THEN
+        WRITE(SPrintString, FMT='(3(I3,1X),A9)') IobsHKL(ind,:),"not found"
+        CALL message(LL,SPrintString)
+      END IF
+    END DO
+    ! calculate figure of merit for this orientation
+    RorientationFoM = ZERO
+    Imissing = 0  ! count of reflexions in felix.hkl that aren't found in the calculation
+    jnd = 0
+    DO ind = 1,INObservedHKL
+      IF (RCalcFrame(ind).GT.ZERO) THEN
+        RorientationFoM = RorientationFoM + ABS(RCalcFrame(ind)-RobsFrame(ind))
+        jnd = jnd +1
+      ELSE
+        Imissing = Imissing + 1
+      END IF
+    END DO
+    ! figure of merit is in degrees per reflection
+    RorientationFoM = RFrameAngle*RorientationFoM/jnd
+    WRITE(SPrintString, FMT='(A30,F7.5)') "Orientation figure of merit = ",RorientationFoM
+    CALL message(LS,SPrintString)
+    IF (Imissing.GT.0) THEN
+      WRITE(SPrintString, FMT='(A44,I4)') Imissing,"Input reflexions not found in calculation = "
+      CALL message(LS,SPrintString)
+    END IF
+
+  END SUBROUTINE HKLmatch
+  
+  !$%%HKLsave%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
   !>
   !! Procedure-description: writes hkl_list.txt, the list of reflections in each frame
   !!
   !! Major-Authors: Richard Beanland (2023)
   !!
-  SUBROUTINE HKLSave(IOutFLAG,IErr)
+  SUBROUTINE HKLsave(IOutFLAG,IErr)
 
     USE MyNumbers
     USE MyMPI
@@ -720,7 +815,6 @@ END SUBROUTINE HKLSave
   END SUBROUTINE CrystalOrientation
 
   !%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-
   !>
   !! Procedure-description: Calculates the full set of possible fractional atomic positions,
   !! the mean inner potential and wavevector in the material K
