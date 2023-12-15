@@ -40,7 +40,7 @@ MODULE crystallography_mod
   IMPLICIT NONE
   
   PRIVATE
-  PUBLIC :: ReciprocalVectors, HKLSave, CrystalOrientation, UniqueAtomPositions, gVectors, &
+  PUBLIC :: ReciprocalVectors, HKLSave, UniqueAtomPositions, gVectors, &
             HKLMake, HKLPlot, HKLmatch
 
   CONTAINS
@@ -741,7 +741,8 @@ END SUBROUTINE HKLSave
   !%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 
-
+  ! Looks like this is a redundant/unused subroutine that can be deleted?
+  ! Should atom coords be in the orthogonal frame or microscope frame?
   SUBROUTINE CrystalOrientation(IErr)
     USE MyNumbers
     USE MyMPI
