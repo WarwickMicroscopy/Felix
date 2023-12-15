@@ -58,7 +58,7 @@ PROGRAM Felixrefine
  
   INTEGER(IKIND) :: IErr,ind,jnd,knd,lnd,mnd,nnd,IStartTime,IPlotRadius,IOutFLAG,Imissing
   INTEGER(4) :: IErr4
-  REAL(RKIND) :: RGOutLimit,RgPoolLimit,RSg,RorientationFoM,Roffset
+  REAL(RKIND) :: RGOutLimit,RgPoolLimit,Roffset
 
   CHARACTER(40) :: my_rank_string
   CHARACTER(200) :: path,subpath,subsubpath
@@ -204,17 +204,6 @@ PROGRAM Felixrefine
   ! decided by RGOutLimit
   ALLOCATE(IgOutList(INhkl,INFrames),STAT=IErr)
   IF(l_alert(IErr,"felixrefine","allocate IgOutList")) CALL abort
-
-  !--------------------------------------------------------------------
-  ! fill unit cell from basis and symmetry, then remove duplicates at special positions
-  ! Mean inner potential & wavevector inside the crystal RBigK are also calculated here
-  CALL UniqueAtomPositions(IErr)  ! in crystallography.f90
-  IF(l_alert(IErr,"felixrefine","UniqueAtomPositions")) CALL abort
-  ! From the unit cell we produce RaVecO, RbVecO, RcVecO in an orthogonal reference frame O
-  ! with xO // a and zO perpendicular to the ab plane, in Angstrom units
-  ! and reciprocal lattice vectors RarVecO, RbrVecO, RcrVecO in the same reference frame
-  CALL ReciprocalVectors(IErr)  ! in crystallography.f90
-
   !--------------------------------------------------------------------
   ! Outer limit of g pool  ***This parameter will probably end up in a modified .inp file***
   RgPoolLimit = TWO*TWO*TWOPI  ! 4 reciprocal Angstroms, multiplied by 2pi
@@ -230,11 +219,22 @@ PROGRAM Felixrefine
   CALL message(LS,SPrintString)
 
   !--------------------------------------------------------------------
+  ! fill unit cell from basis and symmetry, then remove duplicates at special positions
+  ! Mean inner potential & wavevector inside the crystal RBigK are also calculated here
+  CALL UniqueAtomPositions(IErr)  ! in crystallography.f90
+  IF(l_alert(IErr,"felixrefine","UniqueAtomPositions")) CALL abort
+  !--------------------------------------------------------------------
+  ! From the unit cell we produce RaVecO, RbVecO, RcVecO in an orthogonal reference frame O
+  ! with xO // a and zO perpendicular to the ab plane, in Angstrom units
+  ! Also the reciprocal lattice vectors RarVecO, RbrVecO, RcrVecO
+  ! and fractional atomic coordinates RAtomCoordinate in the same reference frame
+  CALL ReciprocalVectors(IErr)  ! in crystallography.f90
+  IF(l_alert(IErr,"felixrefine","ReciprocalVectors")) CALL abort
   ! The calculated reflexions in each frame: Ig,IgPoolList,IgOutList,RgPoolSg, set INcalcHKL
   CALL HKLmake(RDevLimit, RGOutLimit, RgPoolLimit, IErr)  ! in crystallography.f90
   IF(l_alert(IErr,"felixrefine","HKLMake")) CALL abort
-  ! The observed reflexions & the frame of max intensity
-  CALL ReadHklFile(IErr) ! NB INObservedHKL set and RobsFrame and IobsHKL allocated here
+  ! The INObservedHKL observed reflexions & the frame of max intensity for each
+  CALL ReadHklFile(IErr) ! NB RobsFrame and IobsHKL allocated here
   IF(l_alert(IErr,"felixrefine","ReadHklFile")) CALL abort
 
   !--------------------------------------------------------------------
@@ -244,7 +244,6 @@ PROGRAM Felixrefine
   ! Equivalent to RobsFrame for calculated reflexions (i.e. when Sg=0) 
   ALLOCATE(RCalcFrame(INObservedHKL),STAT=IErr)
   IF(l_alert(IErr,"ReadHklFile","allocate RobsFrame")) CALL abort
-
   CALL HKLmatch(IErr)
   IF(l_alert(IErr,"felixrefine","ReadHklFile")) CALL abort
 

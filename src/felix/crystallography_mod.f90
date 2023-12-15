@@ -396,7 +396,7 @@ MODULE crystallography_mod
     
     ! global inputs
     USE RPARA, ONLY : RCalcFrame,RgPoolSg,RobsFrame,RFrameAngle
-    USE IPARA, ONLY : IgObsList,INObservedHKL,INCalcHKL,IobsHKL,Ig,INFrames,INhkl
+    USE IPARA, ONLY : IgObsList,IgOutList,INObservedHKL,INCalcHKL,IobsHKL,Ig,INFrames,INhkl
     USE SPARA, ONLY : SPrintString    
     ! global outputs
     USE RPARA, ONLY : RorientationFoM
@@ -470,7 +470,7 @@ MODULE crystallography_mod
     WRITE(SPrintString, FMT='(A30,F7.5)') "Orientation figure of merit = ",RorientationFoM
     CALL message(LS,SPrintString)
     IF (Imissing.GT.0) THEN
-      WRITE(SPrintString, FMT='(A44,I4)') Imissing,"Input reflexions not found in calculation = "
+      WRITE(SPrintString, FMT='(A44,I4)') "Input reflexions not found in calculation = ",Imissing
       CALL message(LS,SPrintString)
     END IF
 
