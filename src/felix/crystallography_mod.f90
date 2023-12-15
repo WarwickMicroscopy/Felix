@@ -203,6 +203,10 @@ MODULE crystallography_mod
           RcrVecO(ind) = ZERO
        END IF
     ENDDO
+    ! Reciprocal vector magnitudes and size of the lattice
+    RarMag=SQRT(DOT_PRODUCT(RarVecO,RarVecO))!magnitude of a*
+    RbrMag=SQRT(DOT_PRODUCT(RbrVecO,RbrVecO))!magnitude of b*
+    RcrMag=SQRT(DOT_PRODUCT(RcrVecO,RcrVecO))!magnitude of c*
 
     ! Set up initial microscope reference frame
     ! X, Y and Z are orthogonal vectors that defines the simulation
@@ -229,11 +233,6 @@ MODULE crystallography_mod
       RXDirO = RXDirO/SQRT(DOT_PRODUCT(RXDirO,RXDirO))
     END IF
     RYDirO = CROSS(RZDirO,RXDirO)  ! the rotation axis
-    
-    ! Reciprocal vector magnitudes and size of the lattice
-    RarMag=SQRT(DOT_PRODUCT(RarVecO,RarVecO))!magnitude of a*
-    RbrMag=SQRT(DOT_PRODUCT(RbrVecO,RbrVecO))!magnitude of b*
-    RcrMag=SQRT(DOT_PRODUCT(RcrVecO,RcrVecO))!magnitude of c*
 
   END SUBROUTINE ReciprocalVectors
 

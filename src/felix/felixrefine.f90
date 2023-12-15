@@ -56,9 +56,10 @@ PROGRAM Felixrefine
   ! local variable definitions
   IMPLICIT NONE
  
-  INTEGER(IKIND) :: IErr,ind,jnd,knd,lnd,mnd,nnd,IStartTime,IPlotRadius,IOutFLAG,Imissing
+  INTEGER(IKIND) :: IErr,ind,jnd,knd,lnd,mnd,nnd,IStartTime,IPlotRadius,IOutFLAG
   INTEGER(4) :: IErr4
   REAL(RKIND) :: RGOutLimit,RgPoolLimit,Roffset
+  REAL(RKIND), DIMENSION(ITHREE) :: RXNewO,RZNewO
 
   CHARACTER(40) :: my_rank_string
   CHARACTER(200) :: path,subpath,subsubpath
@@ -228,6 +229,7 @@ PROGRAM Felixrefine
   ! with xO // a and zO perpendicular to the ab plane, in Angstrom units
   ! Also the reciprocal lattice vectors RarVecO, RbrVecO, RcrVecO
   ! and fractional atomic coordinates RAtomCoordinate in the same reference frame
+  ! NB ***we will need to define microscope frame and transform RAtomCoordinate for Bloch waves***
   CALL ReciprocalVectors(IErr)  ! in crystallography.f90
   IF(l_alert(IErr,"felixrefine","ReciprocalVectors")) CALL abort
   ! The calculated reflexions in each frame: Ig,IgPoolList,IgOutList,RgPoolSg, set INcalcHKL
@@ -245,7 +247,7 @@ PROGRAM Felixrefine
   ALLOCATE(RCalcFrame(INObservedHKL),STAT=IErr)
   IF(l_alert(IErr,"ReadHklFile","allocate RobsFrame")) CALL abort
   CALL HKLmatch(IErr)
-  IF(l_alert(IErr,"felixrefine","ReadHklFile")) CALL abort
+  IF(l_alert(IErr,"felixrefine","HKLmatch")) CALL abort
 
   !--------------------------------------------------------------------
   ! Orientation refinement
@@ -253,7 +255,18 @@ PROGRAM Felixrefine
   ind = 20! take average of first N offsets, N=20
   Roffset = (SUM(RCalcFrame(1:ind))-SUM(RobsFrame(1:ind)))/REAL(ind)
   IF(my_rank.EQ.0)PRINT*,Roffset
-  
+  RXNewO = RXDirO*COS(Roffset*RFrameAngle*DEG2RADIAN) - RZDirO*SIN(Roffset*RFrameAngle*DEG2RADIAN)
+  RZNewO = RZDirO*COS(Roffset*RFrameAngle*DEG2RADIAN) + RXDirO*SIN(Roffset*RFrameAngle*DEG2RADIAN)
+  RXDirO = RXNewO
+  RZDirO = RZNewO
+  CALL HKLmake(RDevLimit, RGOutLimit, RgPoolLimit, IErr)  ! in crystallography.f90
+  IF(l_alert(IErr,"felixrefine","HKLMake")) CALL abort
+  CALL HKLmatch(IErr)
+  IF(l_alert(IErr,"felixrefine","HKLmatch")) CALL abort
+  ind = 20! take average of first N offsets, N=20
+  Roffset = (SUM(RCalcFrame(1:ind))-SUM(RobsFrame(1:ind)))/REAL(ind)
+  IF(my_rank.EQ.0)PRINT*,Roffset
+
   !--------------------------------------------------------------------
   ! write to text file hkl_list.txt
   IOutFLAG = 2  ! sets the output in hkl_list.txt: 1=out, 2=pool
