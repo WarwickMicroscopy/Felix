@@ -153,6 +153,9 @@ MODULE IPara
   USE MyNumbers
   USE IConst 
      
+  ! for rightsizing arrays
+  INTEGER(IKIND), DIMENSION(:), ALLOCATABLE :: Itemp1D 
+  INTEGER(IKIND), DIMENSION(:,:), ALLOCATABLE :: Itemp2D
   !Write Out
   INTEGER(IKIND) :: IMAXRBuffer,  IMAXCBuffer     
   !Input Flags
@@ -218,6 +221,9 @@ MODULE RPara
   USE RConst
   USE IConst
 
+  ! for rightsizing arrays
+  REAL(RKIND), DIMENSION(:), ALLOCATABLE :: Rtemp1D
+  REAL(RKIND), DIMENSION(:,:), ALLOCATABLE :: Rtemp2D
   !INPUT Section 
   !Crystallography
   REAL(RKIND) :: RCellA,RCellB,RCellC,RVolume,RAlpha,RBeta,RGamma, &

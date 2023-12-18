@@ -56,10 +56,12 @@ PROGRAM Felixrefine
   ! local variable definitions
   IMPLICIT NONE
  
-  INTEGER(IKIND) :: IErr,ind,jnd,knd,lnd,mnd,nnd,IStartTime,IPlotRadius,IOutFLAG
+  INTEGER(IKIND) :: IErr,ind,jnd,knd,lnd,mnd,nnd,IStartTime,IPlotRadius,IOutFLAG,&
+          INBatch,IBatchSize,IFrameStart,IFrameEnd
   INTEGER(4) :: IErr4
   REAL(RKIND) :: RGOutLimit,RgPoolLimit,Roffset
   REAL(RKIND), DIMENSION(ITHREE) :: RXNewO,RZNewO
+  REAL(RKIND), DIMENSION(:), ALLOCATABLE :: RdFdy
 
   CHARACTER(40) :: my_rank_string
   CHARACTER(200) :: path,subpath,subsubpath
@@ -189,7 +191,7 @@ PROGRAM Felixrefine
   (TWOPI*RElectronMass*RElectronCharge*RVolume)
 
   !--------------------------------------------------------------------
-  ! allocations for the cRED frame series, INFrames & INhkl
+  ! initial allocations for the cRED frame series, INFrames & INhkl
   !--------------------------------------------------------------------
   ! Ig is the list of all reflexions (h,k,l) for the full cRED calculation
   ALLOCATE(Ig(INFrames*INhkl,ITHREE), STAT=IErr)! Miller indices
@@ -232,12 +234,25 @@ PROGRAM Felixrefine
   ! NB ***we will need to define microscope frame and transform RAtomCoordinate for Bloch waves***
   CALL ReciprocalVectors(IErr)  ! in crystallography.f90
   IF(l_alert(IErr,"felixrefine","ReciprocalVectors")) CALL abort
-  ! The calculated reflexions in each frame: Ig,IgPoolList,IgOutList,RgPoolSg, set INcalcHKL
-  CALL HKLmake(RDevLimit, RGOutLimit, RgPoolLimit, IErr)  ! in crystallography.f90
-  IF(l_alert(IErr,"felixrefine","HKLMake")) CALL abort
+  
+  !--------------------------------------------------------------------
   ! The INObservedHKL observed reflexions & the frame of max intensity for each
   CALL ReadHklFile(IErr) ! NB RobsFrame and IobsHKL allocated here
   IF(l_alert(IErr,"felixrefine","ReadHklFile")) CALL abort
+  ! refine orientation using small batches of frames
+  IBatchSize = 20
+  INBatch = CEILING(REAL(INFrames)/REAL(Ibatchsize))
+  DO ind = 1,INBatch
+    IFrameEnd = (ind+1)*Ibatchsize
+    IF (IFrameEnd.GT.INFrames) IFrameEnd = INFrames
+    IFrameStart = IFrameEnd-IBatchSize
+    CALL HKLmake(RDevLimit, RGOutLimit, RgPoolLimit, IFrameStart, IFrameEnd, IErr)  ! in crystallography.f90
+  END DO
+
+
+  ! The calculated reflexions in each frame: Ig,IgPoolList,IgOutList,RgPoolSg, set INcalcHKL
+  CALL HKLmake(RDevLimit, RGOutLimit, RgPoolLimit, IErr)  ! in crystallography.f90
+  IF(l_alert(IErr,"felixrefine","HKLMake")) CALL abort
 
   !--------------------------------------------------------------------
   ! list matching observed reflexions to the complete set in the simulation, Ig
@@ -252,9 +267,27 @@ PROGRAM Felixrefine
   !--------------------------------------------------------------------
   ! Orientation refinement
   ! first, offset in initial frames
-  ind = 20! take average of first N offsets, N=20
-  Roffset = (SUM(RCalcFrame(1:ind))-SUM(RobsFrame(1:ind)))/REAL(ind)
-  IF(my_rank.EQ.0)PRINT*,Roffset
+  ind = 19! take average of first i+1 offsets
+  ALLOCATE(RdFdy(ind),STAT=IErr)  ! dF/dy, frame shift for change in y orientation
+  IF(l_alert(IErr,"Felixrefine","allocate RdFdy")) CALL abort
+  ! skip the first k reflexions
+  knd = 0
+!  IF(my_rank.EQ.0)PRINT*,RCalcFrame(1:ind)
+!  IF(my_rank.EQ.0)PRINT*,RObsFrame(1:ind)
+  jnd = 1
+  Roffset = ZERO
+  ! only count reflections that appear in both obs & calc
+  DO WHILE (jnd.LE.ind)
+    IF (RCalcFrame(jnd+knd).GT.ZERO) THEN
+      ! the difference in position of obs and calc
+      Roffset = Roffset + RCalcFrame(jnd+knd)-RobsFrame(jnd+knd)
+      ! dF/dy
+
+      jnd = jnd + 1
+    END IF
+  END DO
+  Roffset = Roffset/REAL(ind)
+!  IF(my_rank.EQ.0)PRINT*,jnd,Roffset
   RXNewO = RXDirO*COS(Roffset*RFrameAngle*DEG2RADIAN) - RZDirO*SIN(Roffset*RFrameAngle*DEG2RADIAN)
   RZNewO = RZDirO*COS(Roffset*RFrameAngle*DEG2RADIAN) + RXDirO*SIN(Roffset*RFrameAngle*DEG2RADIAN)
   RXDirO = RXNewO
@@ -263,9 +296,8 @@ PROGRAM Felixrefine
   IF(l_alert(IErr,"felixrefine","HKLMake")) CALL abort
   CALL HKLmatch(IErr)
   IF(l_alert(IErr,"felixrefine","HKLmatch")) CALL abort
-  ind = 20! take average of first N offsets, N=20
-  Roffset = (SUM(RCalcFrame(1:ind))-SUM(RobsFrame(1:ind)))/REAL(ind)
-  IF(my_rank.EQ.0)PRINT*,Roffset
+!  IF(my_rank.EQ.0)PRINT*,RCalcFrame(1:ind)
+!  IF(my_rank.EQ.0)PRINT*,RObsFrame(1:ind)
 
   !--------------------------------------------------------------------
   ! write to text file hkl_list.txt
