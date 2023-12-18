@@ -60,8 +60,9 @@ PROGRAM Felixrefine
           INBatch,IBatchSize,IFrameStart,IFrameEnd
   INTEGER(4) :: IErr4
   REAL(RKIND) :: RGOutLimit,RgPoolLimit,Roffset
-  REAL(RKIND), DIMENSION(ITHREE) :: RXNewO,RZNewO
-  REAL(RKIND), DIMENSION(:), ALLOCATABLE :: RdFdy
+  REAL(RKIND), DIMENSION(ITHREE) :: RXNewO,RZNewO,Rg,Rk,Rk0
+  REAL(RKIND), DIMENSION(:), ALLOCATABLE :: RCalcFrame,RgMag,Rphi
+  INTEGER(IKIND), DIMENSION(:), ALLOCATABLE :: IhklBatchList
 
   CHARACTER(40) :: my_rank_string
   CHARACTER(200) :: path,subpath,subsubpath
@@ -241,76 +242,107 @@ PROGRAM Felixrefine
   IF(l_alert(IErr,"felixrefine","ReadHklFile")) CALL abort
   ! refine orientation using small batches of frames
   IBatchSize = 20
-  INBatch = CEILING(REAL(INFrames)/REAL(Ibatchsize))
+  INBatch = CEILING(REAL(INFrames)/REAL(IBatchSize))
+  ALLOCATE(Itemp1D(INhkl),STAT=IErr)  ! max no of reflections in a frame = beam pool size INhkl
   DO ind = 1,INBatch
-    IFrameEnd = (ind+1)*Ibatchsize
+    ! set the frame numbers
+    IFrameEnd = (ind+1)*IBatchSize
     IF (IFrameEnd.GT.INFrames) IFrameEnd = INFrames
     IFrameStart = IFrameEnd-IBatchSize
-    CALL HKLmake(RDevLimit, RGOutLimit, RgPoolLimit, IFrameStart, IFrameEnd, IErr)  ! in crystallography.f90
+    ! get the reflexions in this batch
+    jnd = 0  ! reflexion counter
+    DO knd = 1,INObservedHKL
+      IF (RObsFrame(knd).GE.IFrameStart.AND.RObsFrame(knd).GE.IFrameEnd) THEN
+        jnd = jnd + 1
+        Itemp1D(jnd) = knd  ! index of reflection in IobsHKL
+      END IF
+    END DO
+    ALLOCATE(IhklBatchList(jnd),STAT=IErr)
+    ALLOCATE(RCalcFrame(jnd),STAT=IErr)
+    IhklBatchList = Itemp1D(1:jnd)
+    ! find calculated frame position for each
+    DO knd = 1,jnd  ! loop through g-vectors
+      ! the g-vector, in orthogonal reference frame O
+      Rg = IobsHKL(IhklBatchList(knd,1))*RarVecO + IobsHKL(IhklBatchList(knd,2))*RbrVecO + &
+           IobsHKL(IhklBatchList(knd,3))*RcrVecO
+      RgMag = SQRT(DOT_PRODUCT(Rg,Rg))
+      DO lnd = IFrameStart,IFrameEnd  ! loop through frames
+        RAngle = REAL(lnd-1)*DEG2RADIAN*RFrameAngle
+        Rk = RBigK*(RZDirO*COS(RAngle)+RXDirO*SIN(RAngle))  ! nominal k-vector
+        ! the vector component of k perpendicular to g, which we call p 
+        Rp = Rk - DOT_PRODUCT(Rk,Rg)*Rg/(RgMag**2)
+        ! now make k0 by adding vectors parallel to g and p
+        ! i.e. k0 = (p/|p|)*(k^2-g^2/4)^0.5 - g/2
+        Rk0 = SQRT(RBigK**2-QUARTER*RgMag**2)*Rp/SQRT(DOT_PRODUCT(Rp,Rp)) - HALF*Rg
+        ! The angle phi between k and k0 is how far we are from the Bragg condition
+        Rphi = ACOS(DOT_PRODUCT(Rk,Rk0)/(RBigK**2))
+IF(my_rank.EQ.0)PRINT*,ind,"::",IobsHKL(knd,:),":",Rphi
+        RCalcFrame(knd)
+      END DO
+    END DO
+    
+    
+    DEALLOCATE(IhklBatchList)
   END DO
-
+  DEALLOCATE(Ttemp1D)
 
   ! The calculated reflexions in each frame: Ig,IgPoolList,IgOutList,RgPoolSg, set INcalcHKL
-  CALL HKLmake(RDevLimit, RGOutLimit, RgPoolLimit, IErr)  ! in crystallography.f90
-  IF(l_alert(IErr,"felixrefine","HKLMake")) CALL abort
+!  CALL HKLmake(RDevLimit, RGOutLimit, RgPoolLimit, IErr)  ! in crystallography.f90
+!  IF(l_alert(IErr,"felixrefine","HKLMake")) CALL abort
 
   !--------------------------------------------------------------------
   ! list matching observed reflexions to the complete set in the simulation, Ig
-  ALLOCATE(IgObsList(INObservedHKL),STAT=IErr)
-  IF(l_alert(IErr,"Felixrefine","allocate IgObsList")) CALL abort
+!  ALLOCATE(IgObsList(INObservedHKL),STAT=IErr)
+!  IF(l_alert(IErr,"Felixrefine","allocate IgObsList")) CALL abort
   ! Equivalent to RobsFrame for calculated reflexions (i.e. when Sg=0) 
-  ALLOCATE(RCalcFrame(INObservedHKL),STAT=IErr)
-  IF(l_alert(IErr,"ReadHklFile","allocate RobsFrame")) CALL abort
-  CALL HKLmatch(IErr)
-  IF(l_alert(IErr,"felixrefine","HKLmatch")) CALL abort
+!  ALLOCATE(RCalcFrame(INObservedHKL),STAT=IErr)
+!  IF(l_alert(IErr,"ReadHklFile","allocate RobsFrame")) CALL abort
+!  CALL HKLmatch(IErr)
+!  IF(l_alert(IErr,"felixrefine","HKLmatch")) CALL abort
 
   !--------------------------------------------------------------------
   ! Orientation refinement
   ! first, offset in initial frames
-  ind = 19! take average of first i+1 offsets
-  ALLOCATE(RdFdy(ind),STAT=IErr)  ! dF/dy, frame shift for change in y orientation
-  IF(l_alert(IErr,"Felixrefine","allocate RdFdy")) CALL abort
+!  ind = 19! take average of first i+1 offsets
   ! skip the first k reflexions
-  knd = 0
+!  knd = 0
 !  IF(my_rank.EQ.0)PRINT*,RCalcFrame(1:ind)
 !  IF(my_rank.EQ.0)PRINT*,RObsFrame(1:ind)
-  jnd = 1
-  Roffset = ZERO
+!  jnd = 1
+!  Roffset = ZERO
   ! only count reflections that appear in both obs & calc
-  DO WHILE (jnd.LE.ind)
-    IF (RCalcFrame(jnd+knd).GT.ZERO) THEN
+!  DO WHILE (jnd.LE.ind)
+!    IF (RCalcFrame(jnd+knd).GT.ZERO) THEN
       ! the difference in position of obs and calc
-      Roffset = Roffset + RCalcFrame(jnd+knd)-RobsFrame(jnd+knd)
-      ! dF/dy
-
-      jnd = jnd + 1
-    END IF
-  END DO
-  Roffset = Roffset/REAL(ind)
+!      Roffset = Roffset + RCalcFrame(jnd+knd)-RobsFrame(jnd+knd)
+!      jnd = jnd + 1
+!    END IF
+!  END DO
+!  Roffset = Roffset/REAL(ind)
 !  IF(my_rank.EQ.0)PRINT*,jnd,Roffset
-  RXNewO = RXDirO*COS(Roffset*RFrameAngle*DEG2RADIAN) - RZDirO*SIN(Roffset*RFrameAngle*DEG2RADIAN)
-  RZNewO = RZDirO*COS(Roffset*RFrameAngle*DEG2RADIAN) + RXDirO*SIN(Roffset*RFrameAngle*DEG2RADIAN)
-  RXDirO = RXNewO
-  RZDirO = RZNewO
-  CALL HKLmake(RDevLimit, RGOutLimit, RgPoolLimit, IErr)  ! in crystallography.f90
-  IF(l_alert(IErr,"felixrefine","HKLMake")) CALL abort
-  CALL HKLmatch(IErr)
-  IF(l_alert(IErr,"felixrefine","HKLmatch")) CALL abort
+!  RXNewO = RXDirO*COS(Roffset*RFrameAngle*DEG2RADIAN) - RZDirO*SIN(Roffset*RFrameAngle*DEG2RADIAN)
+!  RZNewO = RZDirO*COS(Roffset*RFrameAngle*DEG2RADIAN) + RXDirO*SIN(Roffset*RFrameAngle*DEG2RADIAN)
+!  RXDirO = RXNewO
+!  RZDirO = RZNewO
+!  CALL HKLmake(RDevLimit, RGOutLimit, RgPoolLimit, IErr)  ! in crystallography.f90
+!  IF(l_alert(IErr,"felixrefine","HKLMake")) CALL abort
+!  CALL HKLmatch(IErr)
+!  IF(l_alert(IErr,"felixrefine","HKLmatch")) CALL abort
 !  IF(my_rank.EQ.0)PRINT*,RCalcFrame(1:ind)
 !  IF(my_rank.EQ.0)PRINT*,RObsFrame(1:ind)
 
   !--------------------------------------------------------------------
   ! write to text file hkl_list.txt
-  IOutFLAG = 2  ! sets the output in hkl_list.txt: 1=out, 2=pool
-  CALL HKLSave(IOutFLAG, IErr)  ! in crystallography.f90
-  IF(l_alert(IErr,"felixrefine","HKLSave")) CALL abort
+!  IOutFLAG = 2  ! sets the output in hkl_list.txt: 1=out, 2=pool
+!  CALL HKLSave(IOutFLAG, IErr)  ! in crystallography.f90
+!  IF(l_alert(IErr,"felixrefine","HKLSave")) CALL abort
   ! get the frame for each Bragg condition
   !CALL HKLSetup(IErr)
   !IF(l_alert(IErr,"felixrefine","HKLSetup")) CALL abort
   ! write simple frame images
-  IPlotRadius = 256_IKIND
-  CALL HKLPlot(IPlotRadius, RGOutLimit, IErr)  ! in crystallography.f90
-  IF(l_alert(IErr,"felixrefine","HKLPlot")) CALL abort
+!  IPlotRadius = 256_IKIND
+!  CALL HKLPlot(IPlotRadius, RGOutLimit, IErr)  ! in crystallography.f90
+!  IF(l_alert(IErr,"felixrefine","HKLPlot")) CALL abort
 
   !--------------------------------------------------------------------
     
