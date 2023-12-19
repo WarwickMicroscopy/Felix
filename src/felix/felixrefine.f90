@@ -59,9 +59,9 @@ PROGRAM Felixrefine
   INTEGER(IKIND) :: IErr,ind,jnd,knd,lnd,mnd,nnd,IStartTime,IPlotRadius,IOutFLAG,&
           INBatch,IBatchSize,IFrameStart,IFrameEnd
   INTEGER(4) :: IErr4
-  REAL(RKIND) :: RGOutLimit,RgPoolLimit,Roffset,RcBragg,RdBragg,RAngle
+  REAL(RKIND) :: RGOutLimit,RgPoolLimit,Roffset,RcBragg,RdBragg,ROmega,RdPhi
   REAL(RKIND), DIMENSION(ITHREE) :: RXNewO,RZNewO,Rg,Rk,Rkplusg
-  REAL(RKIND), DIMENSION(:), ALLOCATABLE :: RhklBatchFrame
+  REAL(RKIND), DIMENSION(:), ALLOCATABLE :: RhklBatchFrame, RhklBatchDeltaFrame
   INTEGER(IKIND), DIMENSION(:), ALLOCATABLE :: IhklBatchList
 
   CHARACTER(40) :: my_rank_string
@@ -284,15 +284,21 @@ PROGRAM Felixrefine
       DO knd = 1,INObservedHKL
         IF (RObsFrame(knd).GE.IFrameStart.AND.RObsFrame(knd).LE.IFrameEnd) THEN
           jnd = jnd + 1
-          Itemp1D(jnd) = knd  ! index of reflection in IobsHKL
+          Itemp1D(jnd) = knd  ! index of reflexion in IobsHKL
           WRITE(SPrintString, FMT='(A10,I4,A13,I2,A2,F7.2,A1)') &
                   "Reflexion ",knd," is in batch ",ind," (",RObsFrame(knd),")"
           CALL message(LL,SPrintString)
         END IF
       END DO
+      WRITE(SPrintString, FMT='(I3,A21,I3)') jnd," reflexions in batch ",ind
+      CALL message(LS,SPrintString)
       ALLOCATE(IhklBatchList(jnd),STAT=IErr)
       ALLOCATE(RhklBatchFrame(jnd),STAT=IErr)
+      ALLOCATE(RhklBatchDeltaFrame(jnd),STAT=IErr)
       IhklBatchList = Itemp1D(1:jnd)
+      ! start with frame offset (refinement of omega)
+      RXNewO = RXDirO  ! nominal orientation
+      RZNewO = RZDirO
       ROffset = ZERO
       ! find calculated frame position for each, finding the Bragg condition
       ! using the definition |K+g|=|K|, then calculate average offset.
@@ -305,13 +311,16 @@ PROGRAM Felixrefine
         Rg = IobsHKL(IhklBatchList(knd),1)*RarVecO + IobsHKL(IhklBatchList(knd),2)*RbrVecO + &
              IobsHKL(IhklBatchList(knd),3)*RcrVecO
         DO lnd = IFrameStart,IFrameEnd  ! loop through frames
-          RAngle = REAL(lnd-1)*DEG2RADIAN*RFrameAngle
-          Rkplusg = Rg + RBigK*(RZDirO*COS(RAngle)+RXDirO*SIN(RAngle))  ! K+g
+          ROmega = REAL(lnd-1)*DEG2RADIAN*RFrameAngle
+          Rkplusg = Rg + RBigK*(RZNewO*COS(ROmega)+RXNewO*SIN(ROmega))  ! K+g
           ! how far from Bragg condition 
           RdBragg = RBigK - SQRT(DOT_PRODUCT(Rkplusg,Rkplusg))
           IF (lnd.EQ.IFrameStart) mnd = NINT(SIGN(ONE,RdBragg))  ! sign of first frame
           IF (NINT(SIGN(ONE,RdBragg))+mnd.EQ.0) THEN  ! we have passed through zero
             RhklBatchFrame(knd) = REAL(lnd) - ONE + RdBragg/(RdBragg-RcBragg)
+            WRITE(SPrintString, FMT='(A10,I3,A6,F7.2,A6,F7.2)') "Reflexion ",IhklBatchList(knd),&
+                    ": obs ",RObsFrame(IhklBatchList(knd))," calc ",RhklBatchFrame(knd)
+            CALL message(LS,SPrintString)
             ROffset = ROffset + RhklBatchFrame(knd)-RObsFrame(IhklBatchList(knd))
             mnd = -mnd
             nnd = nnd + 1
@@ -322,43 +331,66 @@ PROGRAM Felixrefine
       ROffset = ROffset/REAL(nnd)
       WRITE(SPrintString, FMT='(A17,I3,A1,F7.2 )') "Offset for batch ",ind,"=",ROffset
       CALL message(LS,SPrintString)
-      ! now tweak x and z
+      ! the refined reference frame
+      RXNewO = RXDirO*COS(Roffset*RFrameAngle*DEG2RADIAN) - RZDirO*SIN(Roffset*RFrameAngle*DEG2RADIAN)
+      RZNewO = RZDirO*COS(Roffset*RFrameAngle*DEG2RADIAN) + RXDirO*SIN(Roffset*RFrameAngle*DEG2RADIAN)
+      WRITE(SPrintString, FMT='(I3,A21,I3)') jnd," Reflexions in batch ",ind
+      CALL message(LS,SPrintString)
+      DO knd = 1,jnd  ! loop through g-vectors
+        ! the g-vector, in orthogonal reference frame O
+        Rg = IobsHKL(IhklBatchList(knd),1)*RarVecO + IobsHKL(IhklBatchList(knd),2)*RbrVecO + &
+             IobsHKL(IhklBatchList(knd),3)*RcrVecO
+        DO lnd = IFrameStart,IFrameEnd  ! loop through frames
+          ROmega = REAL(lnd-1)*DEG2RADIAN*RFrameAngle
+          Rkplusg = Rg + RBigK*(RZNewO*COS(ROmega)+RXNewO*SIN(ROmega))  ! K+g
+          ! how far from Bragg condition 
+          RdBragg = RBigK - SQRT(DOT_PRODUCT(Rkplusg,Rkplusg))
+          IF (lnd.EQ.IFrameStart) mnd = NINT(SIGN(ONE,RdBragg))  ! sign of first frame
+          IF (NINT(SIGN(ONE,RdBragg))+mnd.EQ.0) THEN  ! we have passed through zero
+            RhklBatchFrame(knd) = REAL(lnd)-ONE+RdBragg/(RdBragg-RcBragg)
+            mnd = -mnd
+            WRITE(SPrintString, FMT='(A10,I3,A6,F7.2,A7,F7.2)') "Reflexion ",IhklBatchList(knd),&
+                ": obs ",RObsFrame(IhklBatchList(knd))," calca ",RhklBatchFrame(knd)
+            CALL message(LS,SPrintString)
+          END IF
+          RcBragg = RdBragg
+        END DO
+      END DO
+      ! now a small tweak about x
+      RdPhi = 0.1*DEG2RADIAN
+      RZNewO =  RZNewO*COS(RdPhi) + RYDirO*SIN(RdPhi)
+!IF(my_rank.EQ.0)PRINT*,jnd
+      DO knd = 1,jnd  ! loop through g-vectors
+!IF(my_rank.EQ.0)PRINT*,knd
+        ! the g-vector, in orthogonal reference frame O
+        Rg = IobsHKL(IhklBatchList(knd),1)*RarVecO + IobsHKL(IhklBatchList(knd),2)*RbrVecO + &
+             IobsHKL(IhklBatchList(knd),3)*RcrVecO
+        DO lnd = IFrameStart,IFrameEnd  ! loop through frames
+          ROmega = REAL(lnd-1)*DEG2RADIAN*RFrameAngle
+          Rkplusg = Rg + RBigK*(RZNewO*COS(ROmega)+RXNewO*SIN(ROmega))  ! K+g
+          ! how far from Bragg condition 
+          RdBragg = RBigK - SQRT(DOT_PRODUCT(Rkplusg,Rkplusg))
+          IF (lnd.EQ.IFrameStart) mnd = NINT(SIGN(ONE,RdBragg))  ! sign of first frame
+          IF (NINT(SIGN(ONE,RdBragg))+mnd.EQ.0) THEN  ! we have passed through zero
+!IF(my_rank.EQ.0)PRINT*,knd,lnd
+            RhklBatchDeltaFrame(knd) = RhklBatchFrame(knd)-REAL(lnd)+ONE-RdBragg/(RdBragg-RcBragg)
+            mnd = -mnd
+            WRITE(SPrintString, FMT='(A10,I3,A6,F7.2,A7,F7.2)') "Reflexion ",IhklBatchList(knd),&
+                ": obs ",RObsFrame(IhklBatchList(knd))," delta ",RhklBatchDeltaFrame(knd)
+            CALL message(LS,SPrintString)
+          END IF
+          RcBragg = RdBragg
+        END DO
+      END DO
+
+
       DEALLOCATE(IhklBatchList)
       DEALLOCATE(RhklBatchFrame)
+      DEALLOCATE(RhklBatchDeltaFrame)
     END DO
     DEALLOCATE(Itemp1D)
   END IF
   
-  ! Orientation refinement
-  ! first, offset in initial frames
-!  ind = 19! take average of first i+1 offsets
-  ! skip the first k reflexions
-!  knd = 0
-!  IF(my_rank.EQ.0)PRINT*,RCalcFrame(1:ind)
-!  IF(my_rank.EQ.0)PRINT*,RObsFrame(1:ind)
-!  jnd = 1
-!  Roffset = ZERO
-  ! only count reflections that appear in both obs & calc
-!  DO WHILE (jnd.LE.ind)
-!    IF (RCalcFrame(jnd+knd).GT.ZERO) THEN
-      ! the difference in position of obs and calc
-!      Roffset = Roffset + RCalcFrame(jnd+knd)-RobsFrame(jnd+knd)
-!      jnd = jnd + 1
-!    END IF
-!  END DO
-!  Roffset = Roffset/REAL(ind)
-!  IF(my_rank.EQ.0)PRINT*,jnd,Roffset
-!  RXNewO = RXDirO*COS(Roffset*RFrameAngle*DEG2RADIAN) - RZDirO*SIN(Roffset*RFrameAngle*DEG2RADIAN)
-!  RZNewO = RZDirO*COS(Roffset*RFrameAngle*DEG2RADIAN) + RXDirO*SIN(Roffset*RFrameAngle*DEG2RADIAN)
-!  RXDirO = RXNewO
-!  RZDirO = RZNewO
-!  CALL HKLmake(RDevLimit, RGOutLimit, RgPoolLimit, IErr)  ! in crystallography.f90
-!  IF(l_alert(IErr,"felixrefine","HKLMake")) CALL abort
-!  CALL HKLmatch(IErr)
-!  IF(l_alert(IErr,"felixrefine","HKLmatch")) CALL abort
-!  IF(my_rank.EQ.0)PRINT*,RCalcFrame(1:ind)
-!  IF(my_rank.EQ.0)PRINT*,RObsFrame(1:ind)
-
   !--------------------------------------------------------------------
   ! write to text file hkl_list.txt
 !  IOutFLAG = 2  ! sets the output in hkl_list.txt: 1=out, 2=pool
