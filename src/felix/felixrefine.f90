@@ -61,7 +61,8 @@ PROGRAM Felixrefine
   INTEGER(4) :: IErr4
   REAL(RKIND) :: RGOutLimit,RgPoolLimit,Roffset,RcBragg,RdBragg,ROmega,RdPhi
   REAL(RKIND), DIMENSION(ITHREE) :: RXNewO,RZNewO,Rg,Rk,Rkplusg
-
+  REAL(RKIND), DIMENSION(:), ALLOCATABLE :: RhklBatchBestFrame
+  
   CHARACTER(40) :: my_rank_string
   CHARACTER(200) :: path,subpath,subsubpath
 
@@ -292,68 +293,73 @@ PROGRAM Felixrefine
 
       ALLOCATE(RhklBatchFrame(jnd),STAT=IErr)
       ALLOCATE(RhklBatchDeltaFrame(jnd),STAT=IErr)
+      ALLOCATE(RhklBatchBestFrame(jnd),STAT=IErr)
       ! start with frame offset (refinement of omega)
       ! RxO,RyO,RzO are global variables passed to HKLbatch, used to calculate appearance
       ! of reflections
       RxO = RXDirO  ! nominal orientation
-      RyO = RZDirO
+      RyO = RYDirO
       RzO = RZDirO
-      ROffset = ZERO
-      ! find calculated frame position for each, finding the Bragg condition
-      ! using the definition |K+g|=|K|, then calculate average offset.
       ! redefine frame range to account for any significant offset
       IFrameStart = MAXVAL( (/1,IFrameStart-IBatchSize/) )
       IFrameEnd = MINVAL( (/INFrames,IFrameEnd+IBatchSize/) )
       ! Get the calculated frame locations for this batch of g-vectors
       CALL HKLbatch(IFrameStart,IFrameEnd,IErr)
       IF(l_alert(IErr,"felixrefine","HKLbatch")) CALL abort
-      ! calculate offset      
-      nnd = 0 ! count of Bragg conditions found
-      DO knd = 1,jnd  ! loop through g-vectors
-        ! If the reflection isn't found RhklBatchFrame(knd)=-1.0
-        IF (RhklBatchFrame(knd).GT.ZERO) THEN
+      ! calculate offset and output if required      
+      ROffset = ZERO
+      nnd = 0  ! counter for found reflections
+      DO knd = 1,jnd
+        ! If the reflection isn't found RhklBatchFrame(knd)=ZERO
+        IF (RhklBatchFrame(knd).GT.TINY) THEN
           WRITE(SPrintString, FMT='(A10,I3,A6,F7.2,A6,F7.2)') "Reflexion ",IhklBatchList(knd),&
                 ": obs ",RObsFrame(IhklBatchList(knd))," calc ",RhklBatchFrame(knd)
           ROffset = ROffset + RhklBatchFrame(knd)-RObsFrame(IhklBatchList(knd))
-            nnd = nnd + 1
+          nnd = nnd + 1
         ELSE
           WRITE(SPrintString, FMT='(A10,I3,A10)') "Reflexion ",IhklBatchList(knd)," not found"
         END IF
-        CALL message(LS,SPrintString)
+        CALL message(LL,SPrintString)
       END DO
       ROffset = ROffset/REAL(nnd)
       WRITE(SPrintString, FMT='(A17,I3,A1,F7.2 )') "Offset for batch ",ind,"=",ROffset
       CALL message(LS,SPrintString)
 
-      ! the refined reference frame
+      ! frames for the refined reference frame
       RxO = RXDirO*COS(Roffset*RFrameAngle*DEG2RADIAN) - RZDirO*SIN(Roffset*RFrameAngle*DEG2RADIAN)
       RzO = RZDirO*COS(Roffset*RFrameAngle*DEG2RADIAN) + RXDirO*SIN(Roffset*RFrameAngle*DEG2RADIAN)
       CALL HKLbatch(IFrameStart,IFrameEnd,IErr)
       IF(l_alert(IErr,"felixrefine","HKLbatch")) CALL abort
-      RhklBatchDeltaFrame = RhklBatchFrame
+      RhklBatchBestFrame = RhklBatchFrame
 
       ! now a small tweak about x
       RdPhi = 0.1*DEG2RADIAN
       RzO =  RzO*COS(RdPhi) + RyO*SIN(RdPhi)
       CALL HKLbatch(IFrameStart,IFrameEnd,IErr)
       IF(l_alert(IErr,"felixrefine","HKLbatch")) CALL abort
-      RhklBatchDeltaFrame = RhklBatchFrame - RhklBatchDeltaFrame
-      
-      DO knd = 1,jnd  ! loop through g-vectors
+      RhklBatchDeltaFrame = RhklBatchFrame - RhklBatchBestFrame
+      ! output if required
+      DO knd = 1,jnd
         ! If the reflection isn't found RhklBatchFrame(knd)=-1.0
         IF (RhklBatchFrame(knd).GT.ZERO) THEN
           WRITE(SPrintString, FMT='(A10,I3,A6,F7.2,A6,F7.2)') "Reflexion ",IhklBatchList(knd),&
-                ": obs ",RObsFrame(IhklBatchList(knd))," calc ",RhklBatchFrame(knd)
-          ROffset = ROffset + RhklBatchFrame(knd)-RObsFrame(IhklBatchList(knd))
+                ": obs ",RObsFrame(IhklBatchList(knd))," delta",RhklBatchDeltaFrame(knd)
         ELSE
           WRITE(SPrintString, FMT='(A10,I3,A10)') "Reflexion ",IhklBatchList(knd)," not found"
         END IF
-        CALL message(LS,SPrintString)
+        CALL message(LL,SPrintString)
       END DO
+
+      ! least squares fit to get optimum adjustment
+      RdPhi = DOT_PRODUCT((RhklBatchBestFrame-RObsFrame(IhklBatchList(:))),RhklBatchDeltaFrame)/ &
+              DOT_PRODUCT(RhklBatchDeltaFrame,RhklBatchDeltaFrame)
+      WRITE(SPrintString, FMT='(A10,F8.5)') "delta phi=",RdPhi
+      CALL message(LS,SPrintString)
 
       DEALLOCATE(IhklBatchList)
       DEALLOCATE(RhklBatchFrame)
       DEALLOCATE(RhklBatchDeltaFrame)
+      DEALLOCATE(RhklBatchBestFrame)
     END DO
     DEALLOCATE(Itemp1D)
   END IF

@@ -250,19 +250,20 @@ MODULE crystallography_mod
 
     ! global inputs/outputs
     USE IPARA, ONLY : IhklBatchList,IobsHKL
-    USE RPARA, ONLY : Rx0,RyO,RzO,RarVecO,RbrVecO,RcrVecO,RhklBatchFrame,RFrameAngle,RBigK
+    USE RPARA, ONLY : RxO,RyO,RzO,RarVecO,RbrVecO,RcrVecO,RhklBatchFrame,RFrameAngle,RBigK
     
     IMPLICIT NONE
 
-    REAL(RKIND),INTENT(IN) :: RDevLimit, RGOutLimit, RgPoolLimit
     INTEGER(IKIND),INTENT(IN) :: IFrameStart,IFrameEnd
     REAL(RKIND) :: ROmega,RcBragg,RdBragg
     REAL(RKIND), DIMENSION(ITHREE) :: Rg,Rkplusg
     INTEGER(IKIND) :: IErr,ind,jnd,knd,lnd,InGs
 
 
+    ! find calculated frame position for each, finding the Bragg condition
+    ! using the definition |K+g|=|K|.
     IF(IFrameStart.GE.IFrameEnd) IErr = 1 
-    RhklBatchFrame = -ONE  ! initialise the output array
+    RhklBatchFrame = ZERO  ! initialise the output array
     InGs = SIZE(IhklBatchList)  ! the number of g-vectors
     DO ind = 1,InGs
     ! the g-vector, in orthogonal reference frame O
