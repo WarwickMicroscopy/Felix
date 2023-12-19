@@ -61,8 +61,6 @@ PROGRAM Felixrefine
   INTEGER(4) :: IErr4
   REAL(RKIND) :: RGOutLimit,RgPoolLimit,Roffset,RcBragg,RdBragg,ROmega,RdPhi
   REAL(RKIND), DIMENSION(ITHREE) :: RXNewO,RZNewO,Rg,Rk,Rkplusg
-  REAL(RKIND), DIMENSION(:), ALLOCATABLE :: RhklBatchFrame, RhklBatchDeltaFrame
-  INTEGER(IKIND), DIMENSION(:), ALLOCATABLE :: IhklBatchList
 
   CHARACTER(40) :: my_rank_string
   CHARACTER(200) :: path,subpath,subsubpath
@@ -259,9 +257,6 @@ PROGRAM Felixrefine
     IOutFLAG = 2  ! sets the output in hkl_list.txt: 1=out, 2=pool
     CALL HKLSave(IOutFLAG, IErr)  ! in crystallography.f90
     IF(l_alert(IErr,"felixrefine","HKLSave")) CALL abort
-    ! get the frame for each Bragg condition
-    !CALL HKLSetup(IErr)
-    !IF(l_alert(IErr,"felixrefine","HKLSetup")) CALL abort
     ! write simple frame images
     IPlotRadius = 256_IKIND
     CALL HKLPlot(IPlotRadius, RGOutLimit, IErr)  ! in crystallography.f90
@@ -293,96 +288,68 @@ PROGRAM Felixrefine
       WRITE(SPrintString, FMT='(I3,A21,I3)') jnd," reflexions in batch ",ind
       CALL message(LS,SPrintString)
       ALLOCATE(IhklBatchList(jnd),STAT=IErr)
+      IhklBatchList = Itemp1D(1:jnd)
+
       ALLOCATE(RhklBatchFrame(jnd),STAT=IErr)
       ALLOCATE(RhklBatchDeltaFrame(jnd),STAT=IErr)
-      IhklBatchList = Itemp1D(1:jnd)
       ! start with frame offset (refinement of omega)
-      RXNewO = RXDirO  ! nominal orientation
-      RZNewO = RZDirO
+      ! RxO,RyO,RzO are global variables passed to HKLbatch, used to calculate appearance
+      ! of reflections
+      RxO = RXDirO  ! nominal orientation
+      RyO = RZDirO
+      RzO = RZDirO
       ROffset = ZERO
       ! find calculated frame position for each, finding the Bragg condition
       ! using the definition |K+g|=|K|, then calculate average offset.
       ! redefine frame range to account for any significant offset
       IFrameStart = MAXVAL( (/1,IFrameStart-IBatchSize/) )
       IFrameEnd = MINVAL( (/INFrames,IFrameEnd+IBatchSize/) )
+      ! Get the calculated frame locations for this batch of g-vectors
+      CALL HKLbatch(IFrameStart,IFrameEnd,IErr)
+      IF(l_alert(IErr,"felixrefine","HKLbatch")) CALL abort
+      ! calculate offset      
       nnd = 0 ! count of Bragg conditions found
       DO knd = 1,jnd  ! loop through g-vectors
-        ! the g-vector, in orthogonal reference frame O
-        Rg = IobsHKL(IhklBatchList(knd),1)*RarVecO + IobsHKL(IhklBatchList(knd),2)*RbrVecO + &
-             IobsHKL(IhklBatchList(knd),3)*RcrVecO
-        DO lnd = IFrameStart,IFrameEnd  ! loop through frames
-          ROmega = REAL(lnd-1)*DEG2RADIAN*RFrameAngle
-          Rkplusg = Rg + RBigK*(RZNewO*COS(ROmega)+RXNewO*SIN(ROmega))  ! K+g
-          ! how far from Bragg condition 
-          RdBragg = RBigK - SQRT(DOT_PRODUCT(Rkplusg,Rkplusg))
-          IF (lnd.EQ.IFrameStart) mnd = NINT(SIGN(ONE,RdBragg))  ! sign of first frame
-          IF (NINT(SIGN(ONE,RdBragg))+mnd.EQ.0) THEN  ! we have passed through zero
-            RhklBatchFrame(knd) = REAL(lnd) - ONE + RdBragg/(RdBragg-RcBragg)
-            WRITE(SPrintString, FMT='(A10,I3,A6,F7.2,A6,F7.2)') "Reflexion ",IhklBatchList(knd),&
-                    ": obs ",RObsFrame(IhklBatchList(knd))," calc ",RhklBatchFrame(knd)
-            CALL message(LS,SPrintString)
-            ROffset = ROffset + RhklBatchFrame(knd)-RObsFrame(IhklBatchList(knd))
-            mnd = -mnd
+        ! If the reflection isn't found RhklBatchFrame(knd)=-1.0
+        IF (RhklBatchFrame(knd).GT.ZERO) THEN
+          WRITE(SPrintString, FMT='(A10,I3,A6,F7.2,A6,F7.2)') "Reflexion ",IhklBatchList(knd),&
+                ": obs ",RObsFrame(IhklBatchList(knd))," calc ",RhklBatchFrame(knd)
+          ROffset = ROffset + RhklBatchFrame(knd)-RObsFrame(IhklBatchList(knd))
             nnd = nnd + 1
-          END IF
-          RcBragg = RdBragg
-        END DO
+        ELSE
+          WRITE(SPrintString, FMT='(A10,I3,A10)') "Reflexion ",IhklBatchList(knd)," not found"
+        END IF
+        CALL message(LS,SPrintString)
       END DO
       ROffset = ROffset/REAL(nnd)
       WRITE(SPrintString, FMT='(A17,I3,A1,F7.2 )') "Offset for batch ",ind,"=",ROffset
       CALL message(LS,SPrintString)
+
       ! the refined reference frame
-      RXNewO = RXDirO*COS(Roffset*RFrameAngle*DEG2RADIAN) - RZDirO*SIN(Roffset*RFrameAngle*DEG2RADIAN)
-      RZNewO = RZDirO*COS(Roffset*RFrameAngle*DEG2RADIAN) + RXDirO*SIN(Roffset*RFrameAngle*DEG2RADIAN)
-      WRITE(SPrintString, FMT='(I3,A21,I3)') jnd," Reflexions in batch ",ind
-      CALL message(LS,SPrintString)
-      DO knd = 1,jnd  ! loop through g-vectors
-        ! the g-vector, in orthogonal reference frame O
-        Rg = IobsHKL(IhklBatchList(knd),1)*RarVecO + IobsHKL(IhklBatchList(knd),2)*RbrVecO + &
-             IobsHKL(IhklBatchList(knd),3)*RcrVecO
-        DO lnd = IFrameStart,IFrameEnd  ! loop through frames
-          ROmega = REAL(lnd-1)*DEG2RADIAN*RFrameAngle
-          Rkplusg = Rg + RBigK*(RZNewO*COS(ROmega)+RXNewO*SIN(ROmega))  ! K+g
-          ! how far from Bragg condition 
-          RdBragg = RBigK - SQRT(DOT_PRODUCT(Rkplusg,Rkplusg))
-          IF (lnd.EQ.IFrameStart) mnd = NINT(SIGN(ONE,RdBragg))  ! sign of first frame
-          IF (NINT(SIGN(ONE,RdBragg))+mnd.EQ.0) THEN  ! we have passed through zero
-            RhklBatchFrame(knd) = REAL(lnd)-ONE+RdBragg/(RdBragg-RcBragg)
-            mnd = -mnd
-            WRITE(SPrintString, FMT='(A10,I3,A6,F7.2,A7,F7.2)') "Reflexion ",IhklBatchList(knd),&
-                ": obs ",RObsFrame(IhklBatchList(knd))," calca ",RhklBatchFrame(knd)
-            CALL message(LS,SPrintString)
-          END IF
-          RcBragg = RdBragg
-        END DO
-      END DO
+      RxO = RXDirO*COS(Roffset*RFrameAngle*DEG2RADIAN) - RZDirO*SIN(Roffset*RFrameAngle*DEG2RADIAN)
+      RzO = RZDirO*COS(Roffset*RFrameAngle*DEG2RADIAN) + RXDirO*SIN(Roffset*RFrameAngle*DEG2RADIAN)
+      CALL HKLbatch(IFrameStart,IFrameEnd,IErr)
+      IF(l_alert(IErr,"felixrefine","HKLbatch")) CALL abort
+      RhklBatchDeltaFrame = RhklBatchFrame
+
       ! now a small tweak about x
       RdPhi = 0.1*DEG2RADIAN
-      RZNewO =  RZNewO*COS(RdPhi) + RYDirO*SIN(RdPhi)
-!IF(my_rank.EQ.0)PRINT*,jnd
+      RzO =  RzO*COS(RdPhi) + RyO*SIN(RdPhi)
+      CALL HKLbatch(IFrameStart,IFrameEnd,IErr)
+      IF(l_alert(IErr,"felixrefine","HKLbatch")) CALL abort
+      RhklBatchDeltaFrame = RhklBatchFrame - RhklBatchDeltaFrame
+      
       DO knd = 1,jnd  ! loop through g-vectors
-!IF(my_rank.EQ.0)PRINT*,knd
-        ! the g-vector, in orthogonal reference frame O
-        Rg = IobsHKL(IhklBatchList(knd),1)*RarVecO + IobsHKL(IhklBatchList(knd),2)*RbrVecO + &
-             IobsHKL(IhklBatchList(knd),3)*RcrVecO
-        DO lnd = IFrameStart,IFrameEnd  ! loop through frames
-          ROmega = REAL(lnd-1)*DEG2RADIAN*RFrameAngle
-          Rkplusg = Rg + RBigK*(RZNewO*COS(ROmega)+RXNewO*SIN(ROmega))  ! K+g
-          ! how far from Bragg condition 
-          RdBragg = RBigK - SQRT(DOT_PRODUCT(Rkplusg,Rkplusg))
-          IF (lnd.EQ.IFrameStart) mnd = NINT(SIGN(ONE,RdBragg))  ! sign of first frame
-          IF (NINT(SIGN(ONE,RdBragg))+mnd.EQ.0) THEN  ! we have passed through zero
-!IF(my_rank.EQ.0)PRINT*,knd,lnd
-            RhklBatchDeltaFrame(knd) = RhklBatchFrame(knd)-REAL(lnd)+ONE-RdBragg/(RdBragg-RcBragg)
-            mnd = -mnd
-            WRITE(SPrintString, FMT='(A10,I3,A6,F7.2,A7,F7.2)') "Reflexion ",IhklBatchList(knd),&
-                ": obs ",RObsFrame(IhklBatchList(knd))," delta ",RhklBatchDeltaFrame(knd)
-            CALL message(LS,SPrintString)
-          END IF
-          RcBragg = RdBragg
-        END DO
+        ! If the reflection isn't found RhklBatchFrame(knd)=-1.0
+        IF (RhklBatchFrame(knd).GT.ZERO) THEN
+          WRITE(SPrintString, FMT='(A10,I3,A6,F7.2,A6,F7.2)') "Reflexion ",IhklBatchList(knd),&
+                ": obs ",RObsFrame(IhklBatchList(knd))," calc ",RhklBatchFrame(knd)
+          ROffset = ROffset + RhklBatchFrame(knd)-RObsFrame(IhklBatchList(knd))
+        ELSE
+          WRITE(SPrintString, FMT='(A10,I3,A10)') "Reflexion ",IhklBatchList(knd)," not found"
+        END IF
+        CALL message(LS,SPrintString)
       END DO
-
 
       DEALLOCATE(IhklBatchList)
       DEALLOCATE(RhklBatchFrame)

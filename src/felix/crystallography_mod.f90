@@ -41,7 +41,7 @@ MODULE crystallography_mod
   
   PRIVATE
   PUBLIC :: ReciprocalVectors, HKLSave, UniqueAtomPositions, gVectors, &
-            HKLMake, HKLPlot, HKLmatch
+            HKLMake, HKLPlot, HKLmatch, HKLbatch
 
   CONTAINS
   
@@ -101,7 +101,6 @@ MODULE crystallography_mod
     END DO
     
     END SUBROUTINE gVectors
-
 
   !$%%ReciprocalVectors%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
   !>
@@ -236,7 +235,56 @@ MODULE crystallography_mod
 
   END SUBROUTINE ReciprocalVectors
 
+  !$%%HKLbatch%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+  !>
+  !! Procedure-description:
+  !! gives the frame locations for a batch of reflexions
+  !!
+  !! Major-Authors: Richard Beanland (2023)
+  !!  
+  SUBROUTINE HKLbatch(IFrameStart,IFrameEnd, IErr)   
 
+    USE MyNumbers
+    USE message_mod
+    USE myMPI
+
+    ! global inputs/outputs
+    USE IPARA, ONLY : IhklBatchList,IobsHKL
+    USE RPARA, ONLY : Rx0,RyO,RzO,RarVecO,RbrVecO,RcrVecO,RhklBatchFrame,RFrameAngle,RBigK
+    
+    IMPLICIT NONE
+
+    REAL(RKIND),INTENT(IN) :: RDevLimit, RGOutLimit, RgPoolLimit
+    INTEGER(IKIND),INTENT(IN) :: IFrameStart,IFrameEnd
+    REAL(RKIND) :: ROmega,RcBragg,RdBragg
+    REAL(RKIND), DIMENSION(ITHREE) :: Rg,Rkplusg
+    INTEGER(IKIND) :: IErr,ind,jnd,knd,lnd,InGs
+
+
+    IF(IFrameStart.GE.IFrameEnd) IErr = 1 
+    RhklBatchFrame = -ONE  ! initialise the output array
+    InGs = SIZE(IhklBatchList)  ! the number of g-vectors
+    DO ind = 1,InGs
+    ! the g-vector, in orthogonal reference frame O
+      Rg = IobsHKL(IhklBatchList(ind),1)*RarVecO + IobsHKL(IhklBatchList(ind),2)*RbrVecO + &
+           IobsHKL(IhklBatchList(ind),3)*RcrVecO
+      DO jnd = IFrameStart,IFrameEnd  ! loop through frames
+        ROmega = REAL(jnd-1)*DEG2RADIAN*RFrameAngle
+        Rkplusg = Rg + RBigK*(RzO*COS(ROmega)+RxO*SIN(ROmega))  ! K+g
+        ! how far from Bragg condition 
+        RdBragg = RBigK - SQRT(DOT_PRODUCT(Rkplusg,Rkplusg))
+        IF (jnd.EQ.IFrameStart) knd = NINT(SIGN(ONE,RdBragg))  ! sign of first frame
+        IF (NINT(SIGN(ONE,RdBragg))+knd.EQ.0) THEN  ! we have passed through zero
+          RhklBatchFrame(ind) = REAL(jnd) - ONE + RdBragg/(RdBragg-RcBragg)
+          knd = -knd
+        END IF
+        RcBragg = RdBragg
+      END DO
+
+    END DO
+    
+  END SUBROUTINE HKLbatch
+  
   !$%%HKLmake%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
   !>
   !! Procedure-description:
@@ -379,7 +427,6 @@ MODULE crystallography_mod
     CALL message(LS, dbg7, "Total number of reflexions in simulation = ",INCalcHKL)
 
   END SUBROUTINE HKLmake
-
 
   !$%%HKLmatch%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
   !>
@@ -980,7 +1027,7 @@ END SUBROUTINE HKLSave
 
   END SUBROUTINE UniqueAtomPositions
 
-  !!$%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+  !!$%%SelectionRules%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
   !>
   !! Procedure-description: Checks a g-vector Ih,Ik,Il
   !! against the selection rules for the global variable SSpaceGroupName
