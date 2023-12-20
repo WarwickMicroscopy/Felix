@@ -41,7 +41,7 @@ MODULE crystallography_mod
   
   PRIVATE
   PUBLIC :: ReciprocalVectors, HKLSave, UniqueAtomPositions, gVectors, &
-            HKLMake, HKLPlot, HKLmatch, HKLbatch
+            HKLMake, HKLPlot, HKLmatch, BatchFrames
 
   CONTAINS
   
@@ -235,22 +235,22 @@ MODULE crystallography_mod
 
   END SUBROUTINE ReciprocalVectors
 
-  !$%%HKLbatch%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+  !$%%BatchFrames%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
   !>
   !! Procedure-description:
   !! gives the frame locations for a batch of reflexions
   !!
   !! Major-Authors: Richard Beanland (2023)
   !!  
-  SUBROUTINE HKLbatch(IFrameStart,IFrameEnd, IErr)   
+  SUBROUTINE BatchFrames(IFrameStart,IFrameEnd, IErr)   
 
     USE MyNumbers
     USE message_mod
     USE myMPI
 
     ! global inputs/outputs
-    USE IPARA, ONLY : IhklBatchList,IobsHKL
-    USE RPARA, ONLY : RxO,RyO,RzO,RarVecO,RbrVecO,RcrVecO,RhklBatchFrame,RFrameAngle,RBigK
+    USE IPARA, ONLY : IBhklList,IobsHKL
+    USE RPARA, ONLY : RxO,RyO,RzO,RarVecO,RbrVecO,RcrVecO,RBFrame,RFrameAngle,RBigK
     
     IMPLICIT NONE
 
@@ -263,12 +263,12 @@ MODULE crystallography_mod
     ! find calculated frame position for each, finding the Bragg condition
     ! using the definition |K+g|=|K|.
     IF(IFrameStart.GE.IFrameEnd) IErr = 1 
-    RhklBatchFrame = ZERO  ! initialise the output array
-    InGs = SIZE(IhklBatchList)  ! the number of g-vectors
+    RBFrame = ZERO  ! initialise the output array
+    InGs = SIZE(IBhklList)  ! the number of g-vectors
     DO ind = 1,InGs
     ! the g-vector, in orthogonal reference frame O
-      Rg = IobsHKL(IhklBatchList(ind),1)*RarVecO + IobsHKL(IhklBatchList(ind),2)*RbrVecO + &
-           IobsHKL(IhklBatchList(ind),3)*RcrVecO
+      Rg = IobsHKL(IBhklList(ind),1)*RarVecO + IobsHKL(IBhklList(ind),2)*RbrVecO + &
+           IobsHKL(IBhklList(ind),3)*RcrVecO
       DO jnd = IFrameStart,IFrameEnd  ! loop through frames
         ROmega = REAL(jnd-1)*DEG2RADIAN*RFrameAngle
         Rkplusg = Rg + RBigK*(RzO*COS(ROmega)+RxO*SIN(ROmega))  ! K+g
@@ -276,7 +276,7 @@ MODULE crystallography_mod
         RdBragg = RBigK - SQRT(DOT_PRODUCT(Rkplusg,Rkplusg))
         IF (jnd.EQ.IFrameStart) knd = NINT(SIGN(ONE,RdBragg))  ! sign of first frame
         IF (NINT(SIGN(ONE,RdBragg))+knd.EQ.0) THEN  ! we have passed through zero
-          RhklBatchFrame(ind) = REAL(jnd) - ONE + RdBragg/(RdBragg-RcBragg)
+          RBFrame(ind) = REAL(jnd) - ONE + RdBragg/(RdBragg-RcBragg)
           knd = -knd
         END IF
         RcBragg = RdBragg
@@ -284,7 +284,7 @@ MODULE crystallography_mod
 
     END DO
     
-  END SUBROUTINE HKLbatch
+  END SUBROUTINE BatchFrames
   
   !$%%HKLmake%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
   !>

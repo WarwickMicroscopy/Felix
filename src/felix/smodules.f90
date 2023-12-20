@@ -183,7 +183,7 @@ MODULE IPara
   INTEGER(IKIND) :: INoofUgs
   !Exprimentally observed reflexions
   INTEGER(IKIND) :: INCalcHKL, INoOfHKLsFrame, INObservedHKL
-  INTEGER(IKIND), DIMENSION(:), ALLOCATABLE :: IgObsList,IhklBatchList
+  INTEGER(IKIND), DIMENSION(:), ALLOCATABLE :: IgObsList,IBhklList
   !Beams from selection criteria
   INTEGER(IKIND) :: INhkl,nStrongBeams,nWeakBeams,nBeams,IHKLMAXValue
   INTEGER(IKIND), DIMENSION(:), ALLOCATABLE :: IBasisAnisoDW,IStrongBeamList, IAnisoDW
@@ -229,7 +229,7 @@ MODULE RPara
   REAL(RKIND) :: RCellA,RCellB,RCellC,RVolume,RAlpha,RBeta,RGamma, &
        RDebyeWallerConstant,RAbsorptionPercentage
   REAL(RKIND), DIMENSION(:), ALLOCATABLE :: RBasisIsoDW, RBasisOccupancy, RIsoDW, RIkin,RobsFrame,RCalcFrame
-  REAL(RKIND), DIMENSION(:), ALLOCATABLE :: ROccupancy,RhklBatchFrame,RhklBatchDeltaFrame
+  REAL(RKIND), DIMENSION(:), ALLOCATABLE :: ROccupancy,RBFrame,RBdFrame
   REAL(RKIND), DIMENSION(:,:), ALLOCATABLE :: RSymVec,RBasisAtomPosition, RBasisAtomDelta
   REAL(RKIND), DIMENSION(:,:), ALLOCATABLE :: RAtomXYZ,RUniqueKey,RgPoolSg
   REAL(RKIND), DIMENSION(:,:,:), ALLOCATABLE :: RSymMat
