@@ -233,7 +233,7 @@ MODULE crystallography_mod
     RYDirO = CROSS(RZDirO,RXDirO)  ! the rotation axis
     ! Nominal orientation matrices for all frames
     ROriMat = ZERO
-    DO ind = 1, NFrames
+    DO ind = 1, INFrames
       RAngle = REAL(ind-1)*DEG2RADIAN*RFrameAngle
       ROriMat(1,:,1) = RXDirO*COS(RAngle)-RZDirO*SIN(RAngle)
       ROriMat(1,:,2) = RYDirO
@@ -310,9 +310,9 @@ MODULE crystallography_mod
     ! global inputs/outputs
     USE SPARA, ONLY : SPrintString
     USE IPARA, ONLY : INhkl,ILN,INFrames,ICurrentZ,INAtomsUnitCell,IAtomicNumber  ! inputs
-    USE IPARA, ONLY : Ig,IgOutList,IgPoolList,INCalcHKL  ! outputs
+    USE IPARA, ONLY : Ig,IgOutList,IgPoolList,INCalcHKL,Itemp2D  ! outputs
     USE RPARA, ONLY : RXDirO,RYDirO,RZDirO,RarVecO,RbrVecO,RcrVecO,RarMag,RbrMag,RcrMag,RFrameAngle,RBigK,&
-          RAtomCoordinate,RIsoDW,RgPoolSg,RIkin ! only RgPoolSg,RIkin are outputs
+          RAtomCoordinate,RIsoDW,RgPoolSg,RIkin,Rtemp1D ! only RgPoolSg,RIkin are outputs
     USE Iconst
     
     IMPLICIT NONE
@@ -439,6 +439,7 @@ MODULE crystallography_mod
     ! Kinematic intensity F.F*
     ALLOCATE(RIkin(lnd), STAT=IErr)
     RIkin = Rtemp1D(1:lnd)
+    DEALLOCATE(Itemp2D,Rtemp1D)
     INCalcHKL = lnd
     CALL message(LS, dbg7, "Total number of reflexions in simulation = ",INCalcHKL)
 

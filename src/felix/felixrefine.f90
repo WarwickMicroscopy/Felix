@@ -242,12 +242,16 @@ PROGRAM Felixrefine
   IF(l_alert(IErr,"felixrefine","ReadHklFile")) CALL abort
   ! The calculated reflexions in each frame: Ig,IgPoolList,IgOutList,RgPoolSg, set INcalcHKL
   ! Allocations of Ig, RIkin in here
-  CALL HKLmake(RDevLimit, RGOutLimit, RgPoolLimit, IErr)  ! in crystallography.f90
-  IF(l_alert(IErr,"felixrefine","HKLMake")) CALL abort
+  ! CALL HKLmake(RDevLimit, RGOutLimit, RgPoolLimit, IErr)  ! in crystallography.f90
+  ! IF(l_alert(IErr,"felixrefine","HKLMake")) CALL abort
 
   !--------------------------------------------------------------------
   ! simulation only option
   IF (IOutputFLAG.LT.3) THEN
+    ! The calculated reflexions in each frame: Ig,IgPoolList,IgOutList,RgPoolSg, set INcalcHKL
+    ! Allocations of Ig, RIkin in here
+    CALL HKLmake(RDevLimit, RGOutLimit, RgPoolLimit, IErr)  ! in crystallography.f90
+    IF(l_alert(IErr,"felixrefine","HKLMake")) CALL abort
     ! list matching observed reflexions to the complete set in the simulation, Ig
     ALLOCATE(IgObsList(INObservedHKL),STAT=IErr)
     IF(l_alert(IErr,"Felixrefine","allocate IgObsList")) CALL abort
@@ -323,12 +327,12 @@ PROGRAM Felixrefine
       DO knd = 1,jnd
         ! If the reflection isn't found RBFrame(knd)=ZERO
         IF (RBFrame(knd).GT.TINY) THEN
-          WRITE(SPrintString, FMT='(A10,I3,A6,F7.2,A6,F7.2)') "Reflexion ",IBhklList(knd),&
+          WRITE(SPrintString, FMT='(A10,I4,A6,F8.2,A6,F8.2)') "Reflexion ",IBhklList(knd),&
                 ": obs ",RObsFrame(IBhklList(knd))," calc ",RBFrame(knd)
           ROffset = ROffset + RBFrame(knd)-RObsFrame(IBhklList(knd))
           nnd = nnd + 1
         ELSE
-          WRITE(SPrintString, FMT='(A10,I3,A10)') "Reflexion ",IBhklList(knd)," not found"
+          WRITE(SPrintString, FMT='(A10,I4,A10)') "Reflexion ",IBhklList(knd)," not found"
         END IF
         CALL message(LL,SPrintString)
       END DO
@@ -364,11 +368,11 @@ PROGRAM Felixrefine
       ! output if required
       DO knd = 1,jnd
         ! If the reflection isn't found RBFrame(knd)=ZERO
-        IF (RBFrame(knd).GT.TINY) THEN
-          WRITE(SPrintString, FMT='(A10,I3,A6,F7.2,A6,F7.2)') "Reflexion ",IBhklList(knd),&
+        IF (RBFrame(knd).GT.TINY.AND.my_rank.EQ.0) THEN
+          WRITE(SPrintString, FMT='(A10,I5,A6,F8.2,A6,F8.2)') "Reflexion ",IBhklList(knd),&
                 ": obs ",RObsFrame(IBhklList(knd))," delta",RBdFrame(knd)
         ELSE
-          WRITE(SPrintString, FMT='(A10,I3,A10)') "Reflexion ",IBhklList(knd)," not found"
+          WRITE(SPrintString, FMT='(A10,I5,A10)') "Reflexion ",IBhklList(knd)," not found"
         END IF
         CALL message(LL,SPrintString)
       END DO
@@ -408,11 +412,11 @@ PROGRAM Felixrefine
       ! output if required
       DO knd = 1,jnd
         ! If the reflection isn't found RBFrame(knd)=ZERO
-        IF (RBFrame(knd).GT.TINY) THEN
-          WRITE(SPrintString, FMT='(A10,I3,A6,F7.2,A6,F7.2)') "Reflexion ",IBhklList(knd),&
+        IF (RBFrame(knd).GT.TINY.AND.my_rank.EQ.0) THEN
+          WRITE(SPrintString, FMT='(A10,I5,A6,F8.2,A6,F8.2)') "Reflexion ",IBhklList(knd),&
                 ": obs ",RObsFrame(IBhklList(knd))," delta",RBdFrame(knd)
         ELSE
-          WRITE(SPrintString, FMT='(A10,I3,A10)') "Reflexion ",IBhklList(knd)," not found"
+          WRITE(SPrintString, FMT='(A10,I5,A10)') "Reflexion ",IBhklList(knd)," not found"
         END IF
         CALL message(LL,SPrintString)
       END DO
