@@ -116,20 +116,19 @@ MODULE crystallography_mod
     USE message_mod
 
     ! global inputs
-    USE IPARA, ONLY : IVolumeFLAG,INAtomsUnitCell
+    USE IPARA, ONLY : IVolumeFLAG,INAtomsUnitCell,INFrames
     USE RPARA, ONLY : RAlpha,RBeta,RGamma,RCellA,RCellB,RCellC,RXDirC_0,RZDirC_0,&
-            RAtomCoordinate,RAtomXYZ
+            RAtomCoordinate,RAtomXYZ,RFrameAngle
     USE SPARA, ONLY : SSpaceGroupName,SPrintString
 
     ! global outputs
     USE RPARA, ONLY : RaVecO,RbVecO,RcVecO,RVolume,RarVecO,RbrVecO,RcrVecO,&
-            RXDirO,RYDirO,RZDirO,RarMag,RbrMag,RcrMag
-!    USE IPARA, ONLY : inda,indb,indc
+            RXDirO,RYDirO,RZDirO,RarMag,RbrMag,RcrMag,ROriMat
 
     IMPLICIT NONE
 
     INTEGER(IKIND) :: IErr,ind
-    REAL(RKIND) :: Rt,RxAngle
+    REAL(RKIND) :: Rt,RAngle,RxAngle
     REAL(RKIND), DIMENSION(ITHREE,ITHREE) :: RTMatC2O
     
     !direct lattice vectors in an orthogonal reference frame, Angstrom units 
@@ -232,7 +231,15 @@ MODULE crystallography_mod
       RXDirO = RXDirO/SQRT(DOT_PRODUCT(RXDirO,RXDirO))
     END IF
     RYDirO = CROSS(RZDirO,RXDirO)  ! the rotation axis
-
+    ! Nominal orientation matrices for all frames
+    ROriMat = ZERO
+    DO ind = 1, NFrames
+      RAngle = REAL(ind-1)*DEG2RADIAN*RFrameAngle
+      ROriMat(1,:,1) = RXDirO*COS(RAngle)-RZDirO*SIN(RAngle)
+      ROriMat(1,:,2) = RYDirO
+      ROriMat(1,:,3) = RZDirO*COS(RAngle)+RXDirO*SIN(RAngle)
+    END DO
+    
   END SUBROUTINE ReciprocalVectors
 
   !$%%BatchFrames%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -321,13 +328,15 @@ MODULE crystallography_mod
     !--------------------------------------------------------------------
     ! this produces a list of g-vectors Ig, their deviation parameters RgPoolSg, and fills IgPoolList, IgOutList
     ! Initialise variables
-    Ig = 0  ! list of reflections (covers all beam pools)
+    ALLOCATE(Itemp2D(INFrames*INhkl,ITHREE), STAT=IErr)  ! Itemp2D will become Ig
+    ALLOCATE(Rtemp1D(INFrames*INhkl), STAT=IErr)  ! RTemp1D will become RIkin
+    Itemp2D = 0  ! list of reflections (covers all beam pools)
     IgPoolList = 0  ! index giving Ig for each beam pool (1 to INhkl,1 to INFrames)
     IgOutList = 0  ! index giving Ig for each output (1 to INhkl,1 to INFrames)
     IFull = 0  ! is the beam pool full
     RgPoolSg = TEN  !Sg corresponding to Ig (1 to INhkl,1 to INFrames)
     ! the 000 beam is the first g-vector in every frame
-    Ig(1,:) = (/0,0,0/)
+    Itemp2D(1,:) = (/0,0,0/)
     IgPoolList(1,:) = 1
     IgOutList(1,:) = 1
     lnd = 1  ! index counting reflexions as they are added to the list Ig   
@@ -383,17 +392,17 @@ MODULE crystallography_mod
               IF (ABS(RSg).LT.RDevLimit) THEN  ! it's in the beam pool for this frame
                 lnd = lnd+Ifound  ! increment the reflexion counter on the first occurrence only
                 Ifound = 0
-                Ig(lnd,:) = (/ind,jnd,knd/)  ! add it to the list of reflexions
+                Itemp2D(lnd,:) = (/ind,jnd,knd/)  ! add it to the list of reflexions
                 ! Calculate structure factor
                 CFg = CZERO
                 DO ond=1,INAtomsUnitCell
                   ICurrentZ = IAtomicNumber(ond)
                   CALL AtomicScatteringFactor(Rfq,IErr)  ! in ug_matrix_mod
                   CFg = CFg+Rfq*EXP(-CIMAGONE*DOT_PRODUCT(Rg,RAtomCoordinate(ond,:)) ) * &
-                  ! Isotropic D-W factor exp(-B sin(theta)^2/lamda^2) = exp(-Bg^2/16pi^2)
+                  ! Isotropic D-W factor exp(-B sin(theta)^2/lambda^2) = exp(-Bg^2/16pi^2)
                     EXP(-RIsoDW(ond)*RgMag**2/(FOURPI**2))
                 END DO
-                RIkin(lnd) = CFg*CONJG(CFg)
+                Rtemp1D(lnd) = CFg*CONJG(CFg)
                 ond = 2 !counter to find the next slot for the g pool
                 ! loop until we have a slot for this reflection
 2               IF (IgPoolList(ond,nnd).NE.0) THEN
@@ -424,6 +433,12 @@ MODULE crystallography_mod
       mnd = mnd + 1
       GOTO 1
     END IF
+    ! Ig is the list of all reflexions (h,k,l) for the full cRED calculation
+    ALLOCATE(Ig(lnd,ITHREE), STAT=IErr)
+    Ig = Itemp2D(1:lnd,:)
+    ! Kinematic intensity F.F*
+    ALLOCATE(RIkin(lnd), STAT=IErr)
+    RIkin = Rtemp1D(1:lnd)
     INCalcHKL = lnd
     CALL message(LS, dbg7, "Total number of reflexions in simulation = ",INCalcHKL)
 

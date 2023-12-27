@@ -155,7 +155,7 @@ MODULE IPara
      
   ! for rightsizing arrays
   INTEGER(IKIND), DIMENSION(:), ALLOCATABLE :: Itemp1D 
-  INTEGER(IKIND), DIMENSION(:,:), ALLOCATABLE :: Itemp2D
+  INTEGER(IKIND), DIMENSION(:,:), ALLOCATABLE :: Itemp2D,Itemp2Da
   !Write Out
   INTEGER(IKIND) :: IMAXRBuffer,  IMAXCBuffer     
   !Input Flags
@@ -232,7 +232,7 @@ MODULE RPara
   REAL(RKIND), DIMENSION(:), ALLOCATABLE :: ROccupancy,RBFrame,RBdFrame
   REAL(RKIND), DIMENSION(:,:), ALLOCATABLE :: RSymVec,RBasisAtomPosition, RBasisAtomDelta
   REAL(RKIND), DIMENSION(:,:), ALLOCATABLE :: RAtomXYZ,RUniqueKey,RgPoolSg
-  REAL(RKIND), DIMENSION(:,:,:), ALLOCATABLE :: RSymMat
+  REAL(RKIND), DIMENSION(:,:,:), ALLOCATABLE :: RSymMat,ROriMat
   !Microscope Parameters
   REAL(RKIND) :: RConvergenceAngle,RAcceleratingVoltage
   REAL(RKIND) :: RElectronVelocity,RElectronWaveLength, &

@@ -193,20 +193,21 @@ PROGRAM Felixrefine
   !--------------------------------------------------------------------
   ! initial allocations for the cRED frame series, INFrames & INhkl
   !--------------------------------------------------------------------
-  ! Ig is the list of all reflexions (h,k,l) for the full cRED calculation
-  ALLOCATE(Ig(INFrames*INhkl,ITHREE), STAT=IErr)! Miller indices
-  ! RIkin gives their kinematic intensities
-  ALLOCATE(RIkin(INFrames*INhkl), STAT=IErr)
+  ! NB Ig and RIkin allocated in HKLMake
   ! List of reflexions in the beam pool for each frame, an index in Ig
   ALLOCATE(IgPoolList(INhkl,INFrames),STAT=IErr)
   IF(l_alert(IErr,"felixrefine","allocate IgPoolList")) CALL abort
   ! Values of Sg for each reflexion in the beam pool for each frame
   ALLOCATE(RgPoolSg(INhkl,INFrames),STAT=IErr)
-  IF(l_alert(IErr,"felixrefine","allocate IgPoolList")) CALL abort
+  IF(l_alert(IErr,"felixrefine","allocate RgPoolSg")) CALL abort
   ! List of reflexions output in each frame, an index in Ig
   ! decided by RGOutLimit
   ALLOCATE(IgOutList(INhkl,INFrames),STAT=IErr)
   IF(l_alert(IErr,"felixrefine","allocate IgOutList")) CALL abort
+  ! Orientation matrix for each frame
+  ALLOCATE(ROriMat(INFrames,ITHREE,ITHREE),STAT=IErr)
+  IF(l_alert(IErr,"felixrefine","allocate ROriMat")) CALL abort
+  ! 
   !--------------------------------------------------------------------
   ! Outer limit of g pool  ***This parameter will probably end up in a modified .inp file***
   RgPoolLimit = TWO*TWO*TWOPI  ! 4 reciprocal Angstroms, multiplied by 2pi
@@ -227,25 +228,26 @@ PROGRAM Felixrefine
   CALL UniqueAtomPositions(IErr)  ! in crystallography.f90
   IF(l_alert(IErr,"felixrefine","UniqueAtomPositions")) CALL abort
   !--------------------------------------------------------------------
-  ! From the unit cell we produce RaVecO, RbVecO, RcVecO in an orthogonal reference frame O
+  ! From the unit cell we produce the orientation matrix for the first frame, ROriMat(1,:,:)
+  ! made of column vectors for a,b,c, i.e. RaVecO, RbVecO, RcVecO in an orthogonal reference frame O
   ! with xO // a and zO perpendicular to the ab plane, in Angstrom units
   ! Also the reciprocal lattice vectors RarVecO, RbrVecO, RcrVecO
   ! and fractional atomic coordinates RAtomCoordinate in the same reference frame
   ! NB ***we will need to define microscope frame and transform RAtomCoordinate for Bloch waves***
   CALL ReciprocalVectors(IErr)  ! in crystallography.f90
   IF(l_alert(IErr,"felixrefine","ReciprocalVectors")) CALL abort
-  
   !--------------------------------------------------------------------
   ! The INObservedHKL observed reflexions & the frame of max intensity for each
   CALL ReadHklFile(IErr) ! NB RobsFrame and IobsHKL allocated here
   IF(l_alert(IErr,"felixrefine","ReadHklFile")) CALL abort
+  ! The calculated reflexions in each frame: Ig,IgPoolList,IgOutList,RgPoolSg, set INcalcHKL
+  ! Allocations of Ig, RIkin in here
+  CALL HKLmake(RDevLimit, RGOutLimit, RgPoolLimit, IErr)  ! in crystallography.f90
+  IF(l_alert(IErr,"felixrefine","HKLMake")) CALL abort
 
   !--------------------------------------------------------------------
   ! simulation only option
   IF (IOutputFLAG.LT.3) THEN
-    ! The calculated reflexions in each frame: Ig,IgPoolList,IgOutList,RgPoolSg, set INcalcHKL
-    CALL HKLmake(RDevLimit, RGOutLimit, RgPoolLimit, IErr)  ! in crystallography.f90
-    IF(l_alert(IErr,"felixrefine","HKLMake")) CALL abort
     ! list matching observed reflexions to the complete set in the simulation, Ig
     ALLOCATE(IgObsList(INObservedHKL),STAT=IErr)
     IF(l_alert(IErr,"Felixrefine","allocate IgObsList")) CALL abort
@@ -268,8 +270,11 @@ PROGRAM Felixrefine
     IBatchSize = 20
     WRITE(SPrintString, FMT='(A37,I3,A7 )') "Orientation refinement on batches of ",IBatchSize," frames"
     CALL message(LS,SPrintString)
-    INBatch = CEILING(REAL(INFrames)/REAL(IBatchSize))
-    ALLOCATE(Itemp1D(INhkl*IBatchSize),STAT=IErr)  ! max no of reflections in a frame = beam pool size INhkl
+    INBatch = CEILING(REAL(INFrames)/REAL(IBatchSize))  ! the number of batches
+    ! calculate the hkl list for this batch of frames, IBhklList, using a
+    ! temporary array to begin with, since we don't know the size
+    ! NB the max no of reflections in each frame = beam pool size INhkl
+    ALLOCATE(Itemp1D(INhkl*IBatchSize),STAT=IErr)
     DO ind = 1,INBatch
       ! set the frame numbers
       IFrameEnd = ind*IBatchSize+1
