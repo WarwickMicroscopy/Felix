@@ -123,7 +123,7 @@ MODULE crystallography_mod
 
     ! global outputs
     USE RPARA, ONLY : RaVecO,RbVecO,RcVecO,RVolume,RarVecO,RbrVecO,RcrVecO,&
-            RXDirO,RYDirO,RZDirO,RarMag,RbrMag,RcrMag,ROriMat
+            RXDirO,RYDirO,RZDirO,RarMag,RbrMag,RcrMag,ROriMat,RRefOriMat
 
     IMPLICIT NONE
 
@@ -239,6 +239,8 @@ MODULE crystallography_mod
       ROriMat(ind,:,2) = RYDirO
       ROriMat(ind,:,3) = RZDirO*COS(RAngle)+RXDirO*SIN(RAngle)
     END DO
+    ! Refined orientation matrices, initialised at nominal values
+    RRefOriMat = ROriMat
     
   END SUBROUTINE ReciprocalVectors
 
@@ -249,7 +251,7 @@ MODULE crystallography_mod
   !!
   !! Major-Authors: Richard Beanland (2023)
   !!  
-  SUBROUTINE BatchFrames(IFrameLo,IFrameHi, IErr)   
+  SUBROUTINE BatchFrames(IFrameLo,IFrameHi,IrefFLAG, IErr)   
 
     USE MyNumbers
     USE message_mod
@@ -257,11 +259,11 @@ MODULE crystallography_mod
 
     ! global inputs/outputs
     USE IPARA, ONLY : IBhklList,IobsHKL
-    USE RPARA, ONLY : RxO,RyO,RzO,RarVecO,RbrVecO,RcrVecO,RBFrame,RFrameAngle,RBigK,ROriMat
+    USE RPARA, ONLY : RarVecO,RbrVecO,RcrVecO,RBFrame,RFrameAngle,RBigK,ROriMat,RrefOriMat
     
     IMPLICIT NONE
 
-    INTEGER(IKIND),INTENT(IN) :: IFrameLo,IFrameHi
+    INTEGER(IKIND),INTENT(IN) :: IFrameLo,IFrameHi,IrefFLAG
     REAL(RKIND) :: ROmega,RcBragg,RdBragg
     REAL(RKIND), DIMENSION(ITHREE) :: Rg,Rkplusg
     INTEGER(IKIND) :: IErr,ind,jnd,knd,lnd,InGs
@@ -277,7 +279,12 @@ MODULE crystallography_mod
       Rg = IobsHKL(IBhklList(ind),1)*RarVecO + IobsHKL(IBhklList(ind),2)*RbrVecO + &
            IobsHKL(IBhklList(ind),3)*RcrVecO
       DO jnd = IFrameLo,IFrameHi  ! loop through frames
-        Rkplusg = Rg + RBigK*ROriMat(jnd,:,3)  ! K+g
+        !using either nominal (0) or refined (1) orientation matrices
+        IF(IrefFLAG.EQ.0) THEN
+          Rkplusg = Rg + RBigK*ROriMat(jnd,:,3)  ! K+g
+        ELSE
+          Rkplusg = Rg + RBigK*RrefOriMat(jnd,:,3)  ! K+g
+        END IF
         ! how far from Bragg condition 
         RdBragg = RBigK - SQRT(DOT_PRODUCT(Rkplusg,Rkplusg))
         IF (jnd.EQ.IFrameLo) knd = NINT(SIGN(ONE,RdBragg))  ! sign of first frame
