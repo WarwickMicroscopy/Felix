@@ -271,11 +271,18 @@ PROGRAM Felixrefine
 
   ELSE  ! refine orientation using small batches of frames
 
-    IBatchSize = 20
+    ! Each frame has an orientation matrix given in ROriMat
+    ! We want a beam path that is a (piecewise) continuous path
+    ! through reciprocal space.  For each batch of frames we optimise the offset
+    ! (i.e. omega) and the rotation axis y (dy/dx, dy/dz). Optimised orientation
+    ! matrices are calculated using the first frame in the batch as a reference
+    ! and the rotation axis.  We make a continuous path by making the batches overlap
+    ! so each frame has its orientation calculated two ways and we take the mean 
+    IBatchSize = 20  ! *** THIS WILL BE AN INPUT IN AMENDED felix.inp ***
     WRITE(SPrintString, FMT='(A37,I3,A7 )') "Orientation refinement on batches of ",IBatchSize," frames"
     CALL message(LS,SPrintString)
     INBatch = CEILING(REAL(INFrames)/REAL(IBatchSize))  ! the number of batches
-    ! calculate the hkl list for this batch of frames, IBhklList, using a
+    ! get the observed hkl list for this batch of frames, IBhklList, using a
     ! temporary array to begin with, since we don't know the size
     ! NB the max no of reflections in each frame = beam pool size INhkl
     ALLOCATE(Itemp1D(INhkl*IBatchSize),STAT=IErr)
@@ -297,12 +304,13 @@ PROGRAM Felixrefine
       END DO
       WRITE(SPrintString, FMT='(I3,A21,I3)') jnd," reflexions in batch ",ind
       CALL message(LS,SPrintString)
-      ALLOCATE(IBhklList(jnd),STAT=IErr)
+      ALLOCATE(IBhklList(jnd),STAT=IErr)  ! hkl list for this batch of frames
       IBhklList = Itemp1D(1:jnd)
-
       ALLOCATE(RBFrame(jnd),STAT=IErr)  ! calculated frame positions for the reflexions in this batch
       ALLOCATE(RBdFrame(jnd),STAT=IErr) ! delta in frame position from a small change
       ALLOCATE(RBBestFrame(jnd),STAT=IErr)  ! best calculated frame positions so far
+      !--------------------------------------------------------------------
+      ! refine orientation 
       ! start with frame offset (refinement of omega)
       ! RxO,RyO,RzO are global variables passed to BatchFrames, used to calculate location
       ! of reflections
@@ -312,6 +320,8 @@ PROGRAM Felixrefine
       ! redefine frame range to account for any significant offset
       IFrameStart = MAXVAL( (/1,IFrameStart-IBatchSize/) )
       IFrameEnd = MINVAL( (/INFrames,IFrameEnd+IBatchSize/) )
+      IF(my_rank.EQ.0)PRINT*,ROriMat(IFrameStart,:,:)
+      CALL message(LS,"Orientation matrix",ROriMat(IFrameStart,:,:))
       ! Get the calculated frame locations RBFrame for this batch of g-vectors
       CALL BatchFrames(IFrameStart,IFrameEnd,IErr)
       IF(l_alert(IErr,"felixrefine","BatchFrames")) CALL abort
