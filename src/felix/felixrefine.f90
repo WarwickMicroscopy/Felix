@@ -61,7 +61,7 @@ PROGRAM Felixrefine
   INTEGER(4) :: IErr4
   REAL(RKIND) :: RGOutLimit,RgPoolLimit,Roffset,ROmega,RdPhi,RBFoM,RBestFoM
   REAL(RKIND), DIMENSION(ITHREE) :: RxBestO,RyBestO,RzBestO,Rg,Rk,Rkplusg
-  REAL(RKIND), DIMENSION(ITHREE,ITHREE) :: RdelMat
+  REAL(RKIND), DIMENSION(ITHREE,ITHREE) :: RdelMat
   REAL(RKIND), DIMENSION(:), ALLOCATABLE :: RBBestFrame
   
   CHARACTER(40) :: my_rank_string
@@ -316,7 +316,7 @@ PROGRAM Felixrefine
       ! redefine frame range to account for any significant offset
       IFrameLo = MAXVAL( (/1,IFrameStart-IBatchSize/) )
       IFrameHi = MINVAL( (/INFrames,IFrameEnd+IBatchSize/) )
-      CALL message(LS,"Frame",IFrameStart)
+      CALL message(LL,"Frame",IFrameStart)
       CALL message(LS,"Orientation matrix",ROriMat(IFrameStart,:,:))
       ! Get the calculated frame locations RBFrame for this batch of g-vectors
       ! we have to use the nominal values here because there can be a discontinuity
@@ -350,12 +350,14 @@ PROGRAM Felixrefine
       CALL message(LS,SPrintString)
 
       ! matrix to apply the offset, rotation about y
-      RdelMat(1,:) = (/COS(Roffset*RFrameAngle*DEG2RADIAN), 0, -SIN(Roffset*RFrameAngle*DEG2RADIAN))
-      RdelMat(2,:) = (0, 1, 0)
-      RdelMat(3,:) = (/SIN(Roffset*RFrameAngle*DEG2RADIAN), 0, COS(Roffset*RFrameAngle*DEG2RADIAN))
+      RdelMat(1,:) = (/ COS(Roffset*RFrameAngle*DEG2RADIAN), ZERO, -SIN(Roffset*RFrameAngle*DEG2RADIAN) /)
+      RdelMat(2,:) = (/ ZERO, ONE, ZERO /)
+      RdelMat(3,:) = (/ SIN(Roffset*RFrameAngle*DEG2RADIAN), ZERO, COS(Roffset*RFrameAngle*DEG2RADIAN) /)
+      CALL message(LS,"Transformation matrix",RdelMat)
       ! put into the set of refined orientation matrices
-      DO knd = IFrameLo,IFrameHi
+      DO knd = IFrameLo,IFrameHi
         RRefOriMat(knd,:,:) = MATMUL(RdelMat,ROriMat(knd,:,:))
+        CALL message(LS,"Orientation matrix",RRefOriMat(knd,:,:))
       END DO
 
       ! frames & FoM for the refined reference frame
@@ -364,7 +366,7 @@ PROGRAM Felixrefine
       IF(l_alert(IErr,"felixrefine","BatchFrames")) CALL abort
       RBFoM = THOUSAND*DEG2RADIAN*RFrameAngle*SUM(ABS(RBFrame-RObsFrame(IBhklList(:))))/jnd
       WRITE(SPrintString, FMT='(A22,F7.2)') "Batch figure of merit ",RBFoM
-      CALL message(LL,SPrintString)
+      CALL message(LS,SPrintString)
       IF (RBFoM.LT.RBestFoM) THEN
         RxBestO = RxO
         RyBestO = RyO
