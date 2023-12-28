@@ -423,7 +423,7 @@ CONTAINS
       IDim1 = SIZE(IMatrix,1)
       IDim2 = SIZE(IMatrix,2)
       IF (IDim2.GT.15) IDim2 = 15
-      WRITE(SFormatting,'(a,i3,a)') '(',IDim2,'(1x,i4))'
+      WRITE(SFormatting,'(a,i3,a)') '(',IDim2,'(1x,i6))'
       IF (IDim1.EQ.1) THEN
         WRITE(SPrintString,SFormatting) IMatrix(:,1:IDim2)
         CALL message1String ( MsgPriority, MsgTag, SMainMsg//TRIM(SPrintString) )

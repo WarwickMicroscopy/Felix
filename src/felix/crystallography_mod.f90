@@ -554,7 +554,7 @@ MODULE crystallography_mod
 
     ! global inputs
     USE IPARA, ONLY : ILN,INFrames,INhkl,Ig,IGPoolList,IgOutList,ICurrentZ,&
-            INAtomsUnitCell,IAtomicNumber
+            INAtomsUnitCell,IAtomicNumber,INCalcHKL
     USE RPARA, ONLY : RarVecO,RbrVecO,RcrVecO,RgPoolSg,RIkin,RAtomCoordinate,RIsoDW,RCalcFrame
     USE SPARA, ONLY : SPrintString,SChemicalFormula
     USE IChannels, ONLY : IChOutIhkl
@@ -626,7 +626,7 @@ MODULE crystallography_mod
       END DO
 
       ! write frames for each reflexion
-      DO ind = 1,INhkl*INFrames
+      DO ind = 1,INCalcHKL
         Rg = Ig(ind,:)
         RIg = 100.0D0*RIkin(ind)/RImax
         IF (DOT_PRODUCT(Rg,Rg).GT.TINY) THEN  ! this reflexion is not zero
