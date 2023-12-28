@@ -284,7 +284,7 @@ PROGRAM Felixrefine
       IFrameEnd = ind*IBatchSize+1
       IF (IFrameEnd.GT.INFrames) IFrameEnd = INFrames
       IFrameStart = IFrameEnd-IBatchSize
-      ! get the reflexions in this batch
+      ! get the observed reflexions in this batch
       jnd = 0  ! reflexion counter
       DO knd = 1,INObservedHKL
         IF (RObsFrame(knd).GE.IFrameStart.AND.RObsFrame(knd).LE.IFrameEnd) THEN
@@ -300,7 +300,7 @@ PROGRAM Felixrefine
       ALLOCATE(IBhklList(jnd),STAT=IErr)
       IBhklList = Itemp1D(1:jnd)
 
-      ALLOCATE(RBFrame(jnd),STAT=IErr)  ! calculated frame positions for this Batch
+      ALLOCATE(RBFrame(jnd),STAT=IErr)  ! calculated frame positions for the reflexions in this batch
       ALLOCATE(RBdFrame(jnd),STAT=IErr) ! delta in frame position from a small change
       ALLOCATE(RBBestFrame(jnd),STAT=IErr)  ! best calculated frame positions so far
       ! start with frame offset (refinement of omega)
