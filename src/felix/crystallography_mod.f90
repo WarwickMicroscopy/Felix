@@ -235,9 +235,9 @@ MODULE crystallography_mod
     ROriMat = ZERO
     DO ind = 1, INFrames
       RAngle = REAL(ind-1)*DEG2RADIAN*RFrameAngle
-      ROriMat(1,:,1) = RXDirO*COS(RAngle)-RZDirO*SIN(RAngle)
-      ROriMat(1,:,2) = RYDirO
-      ROriMat(1,:,3) = RZDirO*COS(RAngle)+RXDirO*SIN(RAngle)
+      ROriMat(ind,:,1) = RXDirO*COS(RAngle)-RZDirO*SIN(RAngle)
+      ROriMat(ind,:,2) = RYDirO
+      ROriMat(ind,:,3) = RZDirO*COS(RAngle)+RXDirO*SIN(RAngle)
     END DO
     
   END SUBROUTINE ReciprocalVectors

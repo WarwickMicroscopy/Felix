@@ -57,7 +57,7 @@ PROGRAM Felixrefine
   IMPLICIT NONE
  
   INTEGER(IKIND) :: IErr,ind,jnd,knd,lnd,mnd,nnd,IStartTime,IPlotRadius,IOutFLAG,&
-          INBatch,IBatchSize,IFrameStart,IFrameEnd
+          INBatch,IBatchSize,IFrameStart,IFrameEnd,IFrameLo,IFrameHi
   INTEGER(4) :: IErr4
   REAL(RKIND) :: RGOutLimit,RgPoolLimit,Roffset,ROmega,RdPhi,RBFoM,RBestFoM
   REAL(RKIND), DIMENSION(ITHREE) :: RxBestO,RyBestO,RzBestO,Rg,Rk,Rkplusg
@@ -318,12 +318,12 @@ PROGRAM Felixrefine
       RyO = RYDirO
       RzO = RZDirO
       ! redefine frame range to account for any significant offset
-      IFrameStart = MAXVAL( (/1,IFrameStart-IBatchSize/) )
-      IFrameEnd = MINVAL( (/INFrames,IFrameEnd+IBatchSize/) )
-      IF(my_rank.EQ.0)PRINT*,ROriMat(IFrameStart,:,:)
+      IFrameLo = MAXVAL( (/1,IFrameStart-IBatchSize/) )
+      IFrameHi = MINVAL( (/INFrames,IFrameEnd+IBatchSize/) )
+      CALL message(LS,"Frame",IFrameStart)
       CALL message(LS,"Orientation matrix",ROriMat(IFrameStart,:,:))
       ! Get the calculated frame locations RBFrame for this batch of g-vectors
-      CALL BatchFrames(IFrameStart,IFrameEnd,IErr)
+      CALL BatchFrames(IFrameLo,IFrameHi,IErr)
       IF(l_alert(IErr,"felixrefine","BatchFrames")) CALL abort
       ! figure of merit, angle deviation per reflexion in mrad
       RBFoM = THOUSAND*DEG2RADIAN*RFrameAngle*SUM(ABS(RBFrame-RObsFrame(IBhklList(:))))/jnd
