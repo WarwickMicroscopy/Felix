@@ -249,7 +249,7 @@ MODULE crystallography_mod
   !!
   !! Major-Authors: Richard Beanland (2023)
   !!  
-  SUBROUTINE BatchFrames(IFrameStart,IFrameEnd, IErr)   
+  SUBROUTINE BatchFrames(IFrameLo,IFrameHi, IErr)   
 
     USE MyNumbers
     USE message_mod
@@ -257,11 +257,11 @@ MODULE crystallography_mod
 
     ! global inputs/outputs
     USE IPARA, ONLY : IBhklList,IobsHKL
-    USE RPARA, ONLY : RxO,RyO,RzO,RarVecO,RbrVecO,RcrVecO,RBFrame,RFrameAngle,RBigK
+    USE RPARA, ONLY : RxO,RyO,RzO,RarVecO,RbrVecO,RcrVecO,RBFrame,RFrameAngle,RBigK,ROriMat
     
     IMPLICIT NONE
 
-    INTEGER(IKIND),INTENT(IN) :: IFrameStart,IFrameEnd
+    INTEGER(IKIND),INTENT(IN) :: IFrameLo,IFrameHi
     REAL(RKIND) :: ROmega,RcBragg,RdBragg
     REAL(RKIND), DIMENSION(ITHREE) :: Rg,Rkplusg
     INTEGER(IKIND) :: IErr,ind,jnd,knd,lnd,InGs
@@ -269,19 +269,18 @@ MODULE crystallography_mod
 
     ! find calculated frame position for each, finding the Bragg condition
     ! using the definition |K+g|=|K|.
-    IF(IFrameStart.GE.IFrameEnd) IErr = 1 
+    IF(IFrameLo.GE.IFrameHi) IErr = 1 
     RBFrame = ZERO  ! initialise the output array
     InGs = SIZE(IBhklList)  ! the number of g-vectors
     DO ind = 1,InGs
     ! the g-vector, in orthogonal reference frame O
       Rg = IobsHKL(IBhklList(ind),1)*RarVecO + IobsHKL(IBhklList(ind),2)*RbrVecO + &
            IobsHKL(IBhklList(ind),3)*RcrVecO
-      DO jnd = IFrameStart,IFrameEnd  ! loop through frames
-        ROmega = REAL(jnd-1)*DEG2RADIAN*RFrameAngle
-        Rkplusg = Rg + RBigK*(RzO*COS(ROmega)+RxO*SIN(ROmega))  ! K+g
+      DO jnd = IFrameLo,IFrameHi  ! loop through frames
+        Rkplusg = Rg + RBigK*ROriMat(jnd,:,3)  ! K+g
         ! how far from Bragg condition 
         RdBragg = RBigK - SQRT(DOT_PRODUCT(Rkplusg,Rkplusg))
-        IF (jnd.EQ.IFrameStart) knd = NINT(SIGN(ONE,RdBragg))  ! sign of first frame
+        IF (jnd.EQ.IFrameLo) knd = NINT(SIGN(ONE,RdBragg))  ! sign of first frame
         IF (NINT(SIGN(ONE,RdBragg))+knd.EQ.0) THEN  ! we have passed through zero
           RBFrame(ind) = REAL(jnd) - ONE + RdBragg/(RdBragg-RcBragg)
           knd = -knd
