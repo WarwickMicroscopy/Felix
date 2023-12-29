@@ -403,48 +403,47 @@ PROGRAM Felixrefine
         END DO
       END IF
 
-      ! RdPhi = 0.1*DEG2RADIAN  ! 0.1 degrees
-      ! RxO = RxBestO*COS(RdPhi) + RyBestO*SIN(RdPhi)
-      ! RyO = RyBestO*COS(RdPhi) - RxBestO*SIN(RdPhi)
-      ! RzO = RzBestO
-      ! CALL BatchFrames(IFrameStart,IFrameEnd,IErr)
-      ! IF(l_alert(IErr,"felixrefine","BatchFrames")) CALL abort
-      ! RBFoM = THOUSAND*DEG2RADIAN*RFrameAngle*SUM(ABS(RBFrame-RObsFrame(IBhklList(:))))/jnd
-      ! WRITE(SPrintString, FMT='(A21,F7.2)') "Test figure of merit ",RBFoM
-      ! CALL message(LL,SPrintString)
-      ! RBdFrame = (RBFrame - RBBestFrame)/0.1  ! divide by 0.1 to get change per degree 
-      ! ! output if required
-      ! DO knd = 1,jnd
-        ! ! If the reflection isn't found RBFrame(knd)=ZERO
-        ! IF (RBFrame(knd).GT.TINY.AND.my_rank.EQ.0) THEN
-          ! WRITE(SPrintString, FMT='(A10,I5,A6,F8.2,A6,F8.2)') "Reflexion ",IBhklList(knd),&
-                ! ": obs ",RObsFrame(IBhklList(knd))," delta",RBdFrame(knd)
-        ! ELSE
-          ! WRITE(SPrintString, FMT='(A10,I5,A10)') "Reflexion ",IBhklList(knd)," not found"
-        ! END IF
-        ! CALL message(LL,SPrintString)
-      ! END DO
-      ! ! least squares fit to get optimum adjustment
-      ! RdPhi = -DEG2RADIAN*DOT_PRODUCT((RBBestFrame-RObsFrame(IBhklList(:))),RBdFrame)/ &
-              ! DOT_PRODUCT(RBdFrame,RBdFrame)
-      ! WRITE(SPrintString, FMT='(A10,F7.2,A5)') "delta chi=",RdPhi*1000.0D0," mrad"
-      ! CALL message(LS,SPrintString)
-      ! RxO = RxBestO*COS(RdPhi) + RyBestO*SIN(RdPhi)
-      ! RyO = RyBestO*COS(RdPhi) - RxBestO*SIN(RdPhi)
-      ! RzO = RzBestO
-      ! CALL BatchFrames(IFrameStart,IFrameEnd,IErr)
-      ! IF(l_alert(IErr,"felixrefine","BatchFrames")) CALL abort
-      ! ! figure of merit
-      ! RBFoM = THOUSAND*DEG2RADIAN*RFrameAngle*SUM(ABS(RBFrame-RObsFrame(IBhklList(:))))/jnd
-      ! WRITE(SPrintString, FMT='(A22,F7.2)') "Final figure of merit ",RBFoM
-      ! CALL message(LS,SPrintString)
-      ! IF (RBFoM.LT.RBestFoM) THEN
-        ! RxBestO = RxO
-        ! RyBestO = RyO
-        ! RzBestO = RzO
-        ! RBBestFrame = RBFrame
-        ! RBestFoM = RBFoM
-      ! END IF
+      ! now a small test rotation about z
+      RdPhi = 0.1*DEG2RADIAN  ! 0.1 degrees
+      RdelMat(1,:) = (/ COS(RdPhi), -SIN(RdPhi), ZERO /)
+      RdelMat(2,:) = (/ SIN(RdPhi),  COS(RdPhi), ZERO /)
+      RdelMat(3,:) = (/ ZERO, ZERO, ONE /)
+      DO knd = IFrameLo,IFrameHi
+        RCurOMat(knd,:,:) = MATMUL(RdelMat,RCurOMat(knd,:,:))
+      END DO
+      CALL BatchFrames(IFrameLo,IFrameHi,IErr)
+      IF(l_alert(IErr,"felixrefine","BatchFrames")) CALL abort
+      ! undo the small rotation
+      RdelMat(1,:) = (/ COS(RdPhi), SIN(RdPhi), ZERO /)
+      RdelMat(2,:) = (/ -SIN(RdPhi),  COS(RdPhi), ZERO /)
+      DO knd = IFrameLo,IFrameHi
+        RCurOMat(knd,:,:) = MATMUL(RdelMat,RCurOMat(knd,:,:))
+      END DO
+      RBdFrame = (RBFrame - RBBestFrame)/0.1  ! divide by 0.1 to get change per degree 
+      ! least squares fit to get optimum adjustment
+      RdPhi = -DEG2RADIAN*DOT_PRODUCT((RBBestFrame-RObsFrame(IBhklList(:))),RBdFrame)/ &
+              DOT_PRODUCT(RBdFrame,RBdFrame)
+      WRITE(SPrintString, FMT='(A11,F7.2,A5)') "delta phi =",RdPhi*1000.0D0," mrad"
+      CALL message(LS,SPrintString)
+      ! update the refined orientation matrices
+      RdelMat(1,:) = (/ COS(RdPhi), -SIN(RdPhi), ZERO /)
+      RdelMat(2,:) = (/ SIN(RdPhi),  COS(RdPhi), ZERO /)
+      DO knd = IFrameLo,IFrameHi
+        RCurOMat(knd,:,:) = MATMUL(RdelMat,RCurOMat(knd,:,:))
+      END DO
+      CALL BatchFrames(IFrameStart,IFrameHi,IErr)
+      IF(l_alert(IErr,"felixrefine","BatchFrames")) CALL abort
+      IF (RFoM.LT.RBestFoM) THEN  ! accept the x-rotation
+        RBBestFrame = RBFrame
+        RBestFoM = RFoM
+        RBestOMat(IFrameStart:IFrameEnd,:,:) = RCurOMat(IFrameStart:IFrameEnd,:,:)
+      ELSE  ! undo it
+      RdelMat(1,:) = (/ COS(RdPhi), SIN(RdPhi), ZERO /)
+      RdelMat(2,:) = (/ -SIN(RdPhi),  COS(RdPhi), ZERO /)
+        DO knd = IFrameLo,IFrameHi
+          RCurOMat(knd,:,:) = MATMUL(RdelMat,RCurOMat(knd,:,:))
+        END DO
+      END IF
 
       DEALLOCATE(IBhklList)
       DEALLOCATE(RBFrame)
