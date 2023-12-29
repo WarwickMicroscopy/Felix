@@ -253,7 +253,7 @@ MODULE crystallography_mod
   !!
   !! Major-Authors: Richard Beanland (2023)
   !!  
-  SUBROUTINE BatchFrames(IFrameLo,IFrameHi,IrefFLAG, IErr)   
+  SUBROUTINE BatchFrames(IFrameLo,IFrameHi, IErr)   
 
     USE MyNumbers
     USE message_mod
@@ -261,32 +261,28 @@ MODULE crystallography_mod
 
     ! global inputs/outputs
     USE IPARA, ONLY : IBhklList,IobsHKL
-    USE RPARA, ONLY : RarVecO,RbrVecO,RcrVecO,RBFrame,RFrameAngle,RBigK,ROMat,RCurOMat
+    USE RPARA, ONLY : RarVecO,RbrVecO,RcrVecO,RBFrame,RObsFrame,RFrameAngle,RBigK,RCurOMat,RFoM
+    USE SPARA, ONLY : SPrintString
     
     IMPLICIT NONE
 
     INTEGER(IKIND),INTENT(IN) :: IFrameLo,IFrameHi,IrefFLAG
     REAL(RKIND) :: ROmega,RcBragg,RdBragg
     REAL(RKIND), DIMENSION(ITHREE) :: Rg,Rkplusg
-    INTEGER(IKIND) :: IErr,ind,jnd,knd,lnd,InGs
+    INTEGER(IKIND) :: IErr,ind,jnd,knd,lnd
 
 
-    ! find calculated frame position for each, finding the Bragg condition
-    ! using the definition |K+g|=|K|.
+    ! find calculated frame position RBFrame for each, finding the Bragg condition
+    ! using the definition |K+g|=|K| and the current orientation matrices RCurOMat
     IF(IFrameLo.GE.IFrameHi) IErr = 1 
     RBFrame = ZERO  ! initialise the output array
-    InGs = SIZE(IBhklList)  ! the number of g-vectors
-    DO ind = 1,InGs
+    DO ind = 1,SIZE(IBhklList)  ! the number of g-vectors
     ! the g-vector, in orthogonal reference frame O
-      Rg = IobsHKL(IBhklList(ind),1)*RarVecO + IobsHKL(IBhklList(ind),2)*RbrVecO + &
+      Rg = IobsHKL(IBhklList(ind),1)*RarVecO + &
+           IobsHKL(IBhklList(ind),2)*RbrVecO + &
            IobsHKL(IBhklList(ind),3)*RcrVecO
       DO jnd = IFrameLo,IFrameHi  ! loop through frames
-        !using either nominal (0) or current (1) orientation matrices
-        IF(IrefFLAG.EQ.0) THEN
-          Rkplusg = Rg + RBigK*ROMat(jnd,3,:)  ! K+g
-        ELSE
-          Rkplusg = Rg + RBigK*RCurOMat(jnd,3,:)  ! K+g
-        END IF
+        Rkplusg = Rg + RBigK*RCurOMat(jnd,3,:)  ! K+g
         ! how far from Bragg condition 
         RdBragg = RBigK - SQRT(DOT_PRODUCT(Rkplusg,Rkplusg))
         IF (jnd.EQ.IFrameLo) knd = NINT(SIGN(ONE,RdBragg))  ! sign of first frame
@@ -296,9 +292,21 @@ MODULE crystallography_mod
         END IF
         RcBragg = RdBragg
       END DO
-
+      ! output if needed - If the reflection isn't found RBFrame(ind)=ZERO
+      IF (RBFrame(ind).GT.TINY) THEN
+        WRITE(SPrintString, FMT='(A10,I4,A6,F8.2,A6,F8.2)') "Reflexion ",IBhklList(ind),&
+              ": obs ",RObsFrame(IBhklList(ind))," calc ",RBFrame(ind)
+      ELSE
+        WRITE(SPrintString, FMT='(A10,I4,A10)') "Reflexion ",IBhklList(ind)," not found"
+      END IF
+      CALL message(LL,SPrintString)
     END DO
-    
+
+    ! figure of merit, angle deviation per reflexion in mrad
+    RFoM = THOUSAND*DEG2RADIAN*RFrameAngle*SUM(ABS(RBFrame-RObsFrame(IBhklList(:))))/REAL(ind)
+    WRITE(SPrintString, FMT='(A16,F7.2)') "Figure of merit ",RFoM
+    CALL message(LS,SPrintString)
+      
   END SUBROUTINE BatchFrames
   
   !$%%HKLmake%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
