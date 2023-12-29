@@ -266,8 +266,8 @@ MODULE crystallography_mod
     
     IMPLICIT NONE
 
-    INTEGER(IKIND),INTENT(IN) :: IFrameLo,IFrameHi,IrefFLAG
-    REAL(RKIND) :: ROmega,RcBragg,RdBragg
+    INTEGER(IKIND),INTENT(IN) :: IFrameLo,IFrameHi
+    REAL(RKIND) :: ROmega,RcBragg,RdBragg,Rsum
     REAL(RKIND), DIMENSION(ITHREE) :: Rg,Rkplusg
     INTEGER(IKIND) :: IErr,ind,jnd,knd,lnd
 
@@ -276,6 +276,8 @@ MODULE crystallography_mod
     ! using the definition |K+g|=|K| and the current orientation matrices RCurOMat
     IF(IFrameLo.GE.IFrameHi) IErr = 1 
     RBFrame = ZERO  ! initialise the output array
+    lnd = 0  ! counter for found reflections
+    Rsum = ZERO  ! sum of differences between calc & obs frame position
     DO ind = 1,SIZE(IBhklList)  ! the number of g-vectors
     ! the g-vector, in orthogonal reference frame O
       Rg = IobsHKL(IBhklList(ind),1)*RarVecO + &
@@ -289,6 +291,8 @@ MODULE crystallography_mod
         IF (NINT(SIGN(ONE,RdBragg))+knd.EQ.0) THEN  ! we have passed through zero
           RBFrame(ind) = REAL(jnd) - ONE + RdBragg/(RdBragg-RcBragg)
           knd = -knd
+          Rsum = Rsum + ABS(RBFrame(ind)-RObsFrame(IBhklList(ind)))
+          lnd = lnd +1
         END IF
         RcBragg = RdBragg
       END DO
@@ -296,14 +300,15 @@ MODULE crystallography_mod
       IF (RBFrame(ind).GT.TINY) THEN
         WRITE(SPrintString, FMT='(A10,I4,A6,F8.2,A6,F8.2)') "Reflexion ",IBhklList(ind),&
               ": obs ",RObsFrame(IBhklList(ind))," calc ",RBFrame(ind)
+        CALL message(LL,SPrintString)
       ELSE
         WRITE(SPrintString, FMT='(A10,I4,A10)') "Reflexion ",IBhklList(ind)," not found"
+        CALL message(LM,SPrintString)
       END IF
-      CALL message(LL,SPrintString)
     END DO
 
     ! figure of merit, angle deviation per reflexion in mrad
-    RFoM = THOUSAND*DEG2RADIAN*RFrameAngle*SUM(ABS(RBFrame-RObsFrame(IBhklList(:))))/REAL(ind)
+    RFoM = THOUSAND*DEG2RADIAN*RFrameAngle*Rsum/REAL(lnd)
     WRITE(SPrintString, FMT='(A16,F7.2)') "Figure of merit ",RFoM
     CALL message(LS,SPrintString)
       
