@@ -63,7 +63,7 @@ PROGRAM Felixrefine
   REAL(RKIND), DIMENSION(ITHREE) :: RxBestO,RyBestO,RzBestO,Rg,Rk,Rkplusg
   REAL(RKIND), DIMENSION(ITHREE,ITHREE) :: RdelMat
   REAL(RKIND), DIMENSION(:), ALLOCATABLE :: RBBestFrame
-  
+
   CHARACTER(40) :: my_rank_string
   CHARACTER(200) :: path,subpath,subsubpath
 
@@ -207,6 +207,8 @@ PROGRAM Felixrefine
   IF(l_alert(IErr,"felixrefine","allocate IgOutList")) CALL abort
   ! Orientation matrix for each frame
   ALLOCATE(ROMat(INFrames,ITHREE,ITHREE),STAT=IErr)
+  ALLOCATE(RCurOMat(INFrames,ITHREE,ITHREE),STAT=IErr)
+  ALLOCATE(RBestOMat(INFrames,ITHREE,ITHREE),STAT=IErr)
   IF(l_alert(IErr,"felixrefine","allocate ROMat")) CALL abort
   ! 
   !--------------------------------------------------------------------
@@ -279,6 +281,8 @@ PROGRAM Felixrefine
     ! matrices are calculated using the first frame in the batch as a reference
     ! and the rotation axis.  We make a continuous path by making the batches overlap
     ! so each frame has its orientation calculated two ways and we take the mean 
+    ! There are 3 sets of orientation matrices:
+    ! ROMat=unrefined, RCurOMat=current, RBestOMat=best
     IBatchSize = 20  ! *** THIS WILL BE AN INPUT IN AMENDED felix.inp ***
     WRITE(SPrintString, FMT='(A37,I3,A7 )') "Orientation refinement on batches of ",IBatchSize," frames"
     CALL message(LS,SPrintString)
@@ -317,7 +321,7 @@ PROGRAM Felixrefine
       IFrameLo = MAXVAL( (/1,IFrameStart-IBatchSize/) )
       IFrameHi = MINVAL( (/INFrames,IFrameEnd+IBatchSize/) )
       CALL message(LL,"Frame",IFrameStart)
-      CALL message(LS,"Orientation matrix",ROMat(IFrameStart,:,:))
+      CALL message(LL,"Orientation matrix",ROMat(IFrameStart,:,:))
       ! Get the calculated frame locations RBFrame for this batch of g-vectors
       ! we have to use the nominal values here because there can be a discontinuity
       ! between refined/unrefined orientations at IFrameEnd
@@ -353,14 +357,12 @@ PROGRAM Felixrefine
       RdelMat(1,:) = (/ COS(Roffset*RFrameAngle*DEG2RADIAN), ZERO, -SIN(Roffset*RFrameAngle*DEG2RADIAN) /)
       RdelMat(2,:) = (/ ZERO, ONE, ZERO /)
       RdelMat(3,:) = (/ SIN(Roffset*RFrameAngle*DEG2RADIAN), ZERO, COS(Roffset*RFrameAngle*DEG2RADIAN) /)
-      CALL message(LS,"Transformation matrix",RdelMat)
-      ! put into the set of refined orientation matrices
+      CALL message(LL,"Transformation matrix",RdelMat)
+      ! update the refined orientation matrices
       DO knd = IFrameStart,IFrameEnd
-        RRefOMat(knd,:,:) = MATMUL(RdelMat,ROMat(knd,:,:))
-        CALL message(LS,"Orientation matrix",RRefOMat(knd,:,:))
+        RCurOMat(knd,:,:) = MATMUL(RdelMat,ROMat(knd,:,:))
       END DO
-
-      ! frames & FoM for the refined reference frame
+      ! Figure of Merit for the refined reference frame
       IrefFLAG = 1
       CALL BatchFrames(IFrameStart,IFrameEnd,IrefFLAG,IErr)
       IF(l_alert(IErr,"felixrefine","BatchFrames")) CALL abort
@@ -368,53 +370,59 @@ PROGRAM Felixrefine
       WRITE(SPrintString, FMT='(A22,F7.2)') "Batch figure of merit ",RBFoM
       CALL message(LS,SPrintString)
       IF (RBFoM.LT.RBestFoM) THEN
-        RxBestO = RxO
-        RyBestO = RyO
-        RzBestO = RzO
-        RBBestFrame = RBFrame
         RBestFoM = RBFoM
+        RBestOMat(IFrameStart:IFrameEnd,:,:) = RCurOMat(IFrameStart:IFrameEnd,:,:)
       END IF
 
-      ! ! now a small tweak about x
-      ! RdPhi = 0.1*DEG2RADIAN  ! 0.1 degrees
-      ! RxO = RxBestO
-      ! RyO = RyBestO*COS(RdPhi) - RzBestO*SIN(RdPhi)
-      ! RzO = RzBestO*COS(RdPhi) + RyBestO*SIN(RdPhi)
-      ! CALL BatchFrames(IFrameStart,IFrameEnd,IErr)
-      ! IF(l_alert(IErr,"felixrefine","BatchFrames")) CALL abort
-      ! RBdFrame = (RBFrame - RBBestFrame)/0.1  ! divide by 0.1 to get change per degree 
-      ! ! output if required
-      ! DO knd = 1,jnd
-        ! ! If the reflection isn't found RBFrame(knd)=ZERO
-        ! IF (RBFrame(knd).GT.TINY.AND.my_rank.EQ.0) THEN
-          ! WRITE(SPrintString, FMT='(A10,I5,A6,F8.2,A6,F8.2)') "Reflexion ",IBhklList(knd),&
-                ! ": obs ",RObsFrame(IBhklList(knd))," delta",RBdFrame(knd)
-        ! ELSE
-          ! WRITE(SPrintString, FMT='(A10,I5,A10)') "Reflexion ",IBhklList(knd)," not found"
-        ! END IF
-        ! CALL message(LL,SPrintString)
-      ! END DO
-      ! ! least squares fit to get optimum adjustment
-      ! RdPhi = DEG2RADIAN*DOT_PRODUCT((RBBestFrame-RObsFrame(IBhklList(:))),RBdFrame)/ &
-              ! DOT_PRODUCT(RBdFrame,RBdFrame)
-      ! WRITE(SPrintString, FMT='(A10,F7.2,A5)') "delta phi=",RdPhi*1000.0D0," mrad"
-      ! CALL message(LS,SPrintString)
-      ! RxO = RxBestO
-      ! RyO = RyBestO*COS(RdPhi) - RzBestO*SIN(RdPhi)
-      ! RzO = RzBestO*COS(RdPhi) + RyBestO*SIN(RdPhi)
-      ! CALL BatchFrames(IFrameStart,IFrameEnd,IErr)
-      ! IF(l_alert(IErr,"felixrefine","BatchFrames")) CALL abort
-      ! ! figure of merit
-      ! RBFoM = THOUSAND*DEG2RADIAN*RFrameAngle*SUM(ABS(RBFrame-RObsFrame(IBhklList(:))))/jnd
-      ! WRITE(SPrintString, FMT='(A22,F7.2)') "Batch figure of merit ",RBFoM
-      ! CALL message(LL,SPrintString)
-      ! IF (RBFoM.LT.RBestFoM) THEN
-        ! RxBestO = RxO 
-        ! RyBestO = RyO
-        ! RzBestO = RzO
-        ! RBBestFrame = RBFrame
-        ! RBestFoM = RBFoM
-      ! END IF
+      ! now a small tweak about x
+      RdPhi = 0.1*DEG2RADIAN  ! 0.1 degrees
+      RdelMat(1,:) = (/ ONE, ZERO, ZERO /)
+      RdelMat(2,:) = (/ ZERO,  COS(RdPhi), SIN(RdPhi) /)
+      RdelMat(3,:) = (/ ZERO, -SIN(RdPhi), COS(RdPhi) /)
+      DO knd = IFrameStart,IFrameEnd
+        RCurOMat(knd,:,:) = MATMUL(RdelMat,RBestOMat(knd,:,:))
+      END DO
+      CALL BatchFrames(IFrameStart,IFrameEnd,IrefFLAG,IErr)
+      IF(l_alert(IErr,"felixrefine","BatchFrames")) CALL abort
+      RBFoM = THOUSAND*DEG2RADIAN*RFrameAngle*SUM(ABS(RBFrame-RObsFrame(IBhklList(:))))/jnd
+      WRITE(SPrintString, FMT='(A21,F7.2)') "Test figure of merit ",RBFoM
+      CALL message(LS,SPrintString)
+
+      RBdFrame = (RBFrame - RBBestFrame)/0.1  ! divide by 0.1 to get change per degree 
+      ! output if required
+      DO knd = 1,jnd
+        ! If the reflection isn't found RBFrame(knd)=ZERO
+        IF (RBFrame(knd).GT.TINY.AND.my_rank.EQ.0) THEN
+          WRITE(SPrintString, FMT='(A10,I5,A6,F8.2,A6,F8.2)') "Reflexion ",IBhklList(knd),&
+                ": obs ",RObsFrame(IBhklList(knd))," delta",RBdFrame(knd)
+        ELSE
+          WRITE(SPrintString, FMT='(A10,I5,A10)') "Reflexion ",IBhklList(knd)," not found"
+        END IF
+        CALL message(LL,SPrintString)
+      END DO
+      ! least squares fit to get optimum adjustment
+      RdPhi = -DEG2RADIAN*DOT_PRODUCT((RBBestFrame-RObsFrame(IBhklList(:))),RBdFrame)/ &
+              DOT_PRODUCT(RBdFrame,RBdFrame)
+      WRITE(SPrintString, FMT='(A10,F7.2,A5)') "delta phi=",RdPhi*1000.0D0," mrad"
+      CALL message(LS,SPrintString)
+      ! update the refined orientation matrices
+      RdelMat(2,:) = (/ ZERO, COS(RdPhi), -SIN(RdPhi) /)
+      RdelMat(3,:) = (/ ZERO, SIN(RdPhi),  COS(RdPhi) /)
+      CALL message(LL,"Transformation matrix",RdelMat)
+      DO knd = IFrameStart,IFrameEnd
+        RCurOMat(knd,:,:) = MATMUL(RdelMat,RBestOMat(knd,:,:))
+      END DO
+      CALL BatchFrames(IFrameStart,IFrameEnd,IrefFLAG,IErr)
+      IF(l_alert(IErr,"felixrefine","BatchFrames")) CALL abort
+      ! figure of merit
+      RBFoM = THOUSAND*DEG2RADIAN*RFrameAngle*SUM(ABS(RBFrame-RObsFrame(IBhklList(:))))/jnd
+      WRITE(SPrintString, FMT='(A22,F7.2)') "Batch figure of merit ",RBFoM
+      CALL message(LS,SPrintString)
+      IF (RBFoM.LT.RBestFoM) THEN
+        RBBestFrame = RBFrame
+        RBestFoM = RBFoM
+        RBestOMat(IFrameStart:IFrameEnd,:,:) = RCurOMat(IFrameStart:IFrameEnd,:,:)
+      END IF
 
       ! ! now a small tweak about z
       ! RdPhi = 0.1*DEG2RADIAN  ! 0.1 degrees
