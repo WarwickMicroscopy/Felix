@@ -206,8 +206,8 @@ PROGRAM Felixrefine
   ALLOCATE(IgOutList(INhkl,INFrames),STAT=IErr)
   IF(l_alert(IErr,"felixrefine","allocate IgOutList")) CALL abort
   ! Orientation matrix for each frame
-  ALLOCATE(ROriMat(INFrames,ITHREE,ITHREE),STAT=IErr)
-  IF(l_alert(IErr,"felixrefine","allocate ROriMat")) CALL abort
+  ALLOCATE(ROMat(INFrames,ITHREE,ITHREE),STAT=IErr)
+  IF(l_alert(IErr,"felixrefine","allocate ROMat")) CALL abort
   ! 
   !--------------------------------------------------------------------
   ! Outer limit of g pool  ***This parameter will probably end up in a modified .inp file***
@@ -229,7 +229,7 @@ PROGRAM Felixrefine
   CALL UniqueAtomPositions(IErr)  ! in crystallography.f90
   IF(l_alert(IErr,"felixrefine","UniqueAtomPositions")) CALL abort
   !--------------------------------------------------------------------
-  ! From the unit cell we produce the orientation matrix for the first frame, ROriMat(1,:,:)
+  ! From the unit cell we produce the orientation matrix for the first frame, ROMat(1,:,:)
   ! made of column vectors for a,b,c, i.e. RaVecO, RbVecO, RcVecO in an orthogonal reference frame O
   ! with xO // a and zO perpendicular to the ab plane, in Angstrom units
   ! Also the reciprocal lattice vectors RarVecO, RbrVecO, RcrVecO
@@ -272,7 +272,7 @@ PROGRAM Felixrefine
 
   ELSE  ! refine orientation using small batches of frames
 
-    ! Each frame has an orientation matrix given in ROriMat
+    ! Each frame has an orientation matrix given in ROMat
     ! We want a beam path that is a (piecewise) continuous path
     ! through reciprocal space.  For each batch of frames we optimise the offset
     ! (i.e. omega) and the rotation axis y (dy/dx, dy/dz). Optimised orientation
@@ -317,7 +317,7 @@ PROGRAM Felixrefine
       IFrameLo = MAXVAL( (/1,IFrameStart-IBatchSize/) )
       IFrameHi = MINVAL( (/INFrames,IFrameEnd+IBatchSize/) )
       CALL message(LL,"Frame",IFrameStart)
-      CALL message(LS,"Orientation matrix",ROriMat(IFrameStart,:,:))
+      CALL message(LS,"Orientation matrix",ROMat(IFrameStart,:,:))
       ! Get the calculated frame locations RBFrame for this batch of g-vectors
       ! we have to use the nominal values here because there can be a discontinuity
       ! between refined/unrefined orientations at IFrameEnd
@@ -355,14 +355,14 @@ PROGRAM Felixrefine
       RdelMat(3,:) = (/ SIN(Roffset*RFrameAngle*DEG2RADIAN), ZERO, COS(Roffset*RFrameAngle*DEG2RADIAN) /)
       CALL message(LS,"Transformation matrix",RdelMat)
       ! put into the set of refined orientation matrices
-      DO knd = IFrameLo,IFrameHi
-        RRefOriMat(knd,:,:) = MATMUL(RdelMat,ROriMat(knd,:,:))
-        CALL message(LS,"Orientation matrix",RRefOriMat(knd,:,:))
+      DO knd = IFrameStart,IFrameEnd
+        RRefOMat(knd,:,:) = MATMUL(RdelMat,ROMat(knd,:,:))
+        CALL message(LS,"Orientation matrix",RRefOMat(knd,:,:))
       END DO
 
       ! frames & FoM for the refined reference frame
       IrefFLAG = 1
-      CALL BatchFrames(IFrameLo,IFrameHi,IrefFLAG,IErr)
+      CALL BatchFrames(IFrameStart,IFrameEnd,IrefFLAG,IErr)
       IF(l_alert(IErr,"felixrefine","BatchFrames")) CALL abort
       RBFoM = THOUSAND*DEG2RADIAN*RFrameAngle*SUM(ABS(RBFrame-RObsFrame(IBhklList(:))))/jnd
       WRITE(SPrintString, FMT='(A22,F7.2)') "Batch figure of merit ",RBFoM

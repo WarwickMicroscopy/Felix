@@ -123,7 +123,7 @@ MODULE crystallography_mod
 
     ! global outputs
     USE RPARA, ONLY : RaVecO,RbVecO,RcVecO,RVolume,RarVecO,RbrVecO,RcrVecO,&
-            RXDirO,RYDirO,RZDirO,RarMag,RbrMag,RcrMag,ROriMat,RRefOriMat
+            RXDirO,RYDirO,RZDirO,RarMag,RbrMag,RcrMag,ROMat,RRefOMat
 
     IMPLICIT NONE
 
@@ -232,15 +232,16 @@ MODULE crystallography_mod
     END IF
     RYDirO = CROSS(RZDirO,RXDirO)  ! the rotation axis
     ! Nominal orientation matrices for all frames
-    ROriMat = ZERO
+    ! matrix with x,y,z as rows
+    ROMat = ZERO
     DO ind = 1, INFrames
       RAngle = REAL(ind-1)*DEG2RADIAN*RFrameAngle
-      ROriMat(ind,:,1) = RXDirO*COS(RAngle)-RZDirO*SIN(RAngle)
-      ROriMat(ind,:,2) = RYDirO
-      ROriMat(ind,:,3) = RZDirO*COS(RAngle)+RXDirO*SIN(RAngle)
+      ROMat(ind,1,:) = RXDirO*COS(RAngle)-RZDirO*SIN(RAngle)
+      ROMat(ind,2,:) = RYDirO
+      ROMat(ind,3,:) = RZDirO*COS(RAngle)+RXDirO*SIN(RAngle)
     END DO
     ! Refined orientation matrices, initialised at nominal values
-    RRefOriMat = ROriMat
+    RRefOMat = ROMat
     
   END SUBROUTINE ReciprocalVectors
 
@@ -259,7 +260,7 @@ MODULE crystallography_mod
 
     ! global inputs/outputs
     USE IPARA, ONLY : IBhklList,IobsHKL
-    USE RPARA, ONLY : RarVecO,RbrVecO,RcrVecO,RBFrame,RFrameAngle,RBigK,ROriMat,RrefOriMat
+    USE RPARA, ONLY : RarVecO,RbrVecO,RcrVecO,RBFrame,RFrameAngle,RBigK,ROMat,RrefOMat
     
     IMPLICIT NONE
 
@@ -281,9 +282,9 @@ MODULE crystallography_mod
       DO jnd = IFrameLo,IFrameHi  ! loop through frames
         !using either nominal (0) or refined (1) orientation matrices
         IF(IrefFLAG.EQ.0) THEN
-          Rkplusg = Rg + RBigK*ROriMat(jnd,:,3)  ! K+g
+          Rkplusg = Rg + RBigK*ROMat(jnd,:,3)  ! K+g
         ELSE
-          Rkplusg = Rg + RBigK*RrefOriMat(jnd,:,3)  ! K+g
+          Rkplusg = Rg + RBigK*RrefOMat(jnd,:,3)  ! K+g
         END IF
         ! how far from Bragg condition 
         RdBragg = RBigK - SQRT(DOT_PRODUCT(Rkplusg,Rkplusg))
