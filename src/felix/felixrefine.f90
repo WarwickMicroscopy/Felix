@@ -315,26 +315,29 @@ PROGRAM Felixrefine
       ALLOCATE(RBdFrame(jnd),STAT=IErr) ! delta in frame position from a small change
       ALLOCATE(RBBestFrame(jnd),STAT=IErr)  ! best calculated frame positions so far
       !--------------------------------------------------------------------
-      ! refine orientation 
+      ! refine orientation matrices OMat
+      ! ROMat are the nominal (input) matrices
+      ! RCurOMat are the current (working) matrices
+      ! RBestOMat are the best matrices
       ! start with frame offset (refinement of omega)
-      ! expanded frame range to account for any significant offset - we search for
+      ! expanded Lo-Hi frame range to account for any significant offset - we search for
       ! matching calc & obs reflections in this range but only update orientations
       ! between IFrameStart & IFrameEnd
-      IFrameLo = MAXVAL( (/1,IFrameStart-IBatchSize/) )
-      IFrameHi = MINVAL( (/INFrames,IFrameEnd+IBatchSize/) )
+      IFrameLo = MAXVAL( (/1,IFrameStart-IBatchSize/) )  ! lowest frame no. is 1
+      IFrameHi = MINVAL( (/INFrames,IFrameEnd+IBatchSize/) )  ! highest frame no. is INFrames
       CALL message(LL,"Frame",IFrameStart)
       CALL message(LL,"Orientation matrix",ROMat(IFrameStart,:,:))
-      ! Get the calculated frame locations RBFrame for this batch of g-vectors
+      ! Get the figure of merit RFoM for this batch of g-vectors
       RCurOMat(IFrameLo:IFrameHi,:,:) = ROMat(IFrameLo:IFrameHi,:,:)
       CALL BatchFrames(IFrameLo,IFrameHi,IErr)
       IF(l_alert(IErr,"felixrefine","BatchFrames")) CALL abort
-      RBestFoM = RFoM
+      RBestFoM = RFoM  ! initial FoM for nominal orientation
 
       ! calculate offset     
       ROffset = ZERO
       nnd = 0  ! counter for found reflections
       DO knd = 1,jnd
-        IF (RBFrame(knd).GT.TINY) THEN
+        IF (RBFrame(knd).GT.TINY) THEN  ! RBFrame is calculated frame for reflexion knd
           ROffset = ROffset + RBFrame(knd)-RObsFrame(IBhklList(knd))
           nnd = nnd + 1
         END IF
@@ -366,42 +369,48 @@ PROGRAM Felixrefine
       RdelMat(1,:) = (/ ONE, ZERO, ZERO /)
       RdelMat(2,:) = (/ ZERO, COS(RdPhi), -SIN(RdPhi) /)
       RdelMat(3,:) = (/ ZERO, SIN(RdPhi),  COS(RdPhi) /)
+      CALL message(LS,"Orientation matrix",RCurOMat(IFrameLo,:,:))
       DO knd = IFrameLo,IFrameHi
         RCurOMat(knd,:,:) = MATMUL(RdelMat,RCurOMat(knd,:,:))
       END DO
       CALL BatchFrames(IFrameLo,IFrameHi,IErr)
       IF(l_alert(IErr,"felixrefine","BatchFrames")) CALL abort
-      ! undo the small rotation
+      ! undo the test rotation
       RdelMat(2,:) = (/ ZERO,  COS(RdPhi), SIN(RdPhi) /)
       RdelMat(3,:) = (/ ZERO, -SIN(RdPhi), COS(RdPhi) /)
       DO knd = IFrameLo,IFrameHi
         RCurOMat(knd,:,:) = MATMUL(RdelMat,RCurOMat(knd,:,:))
       END DO
+      CALL message(LS,"Orientation matrix",RCurOMat(IFrameLo,:,:))
+      IF(l_alert(IErr,"felixrefine","BatchFrames")) CALL abort
       RBdFrame = (RBFrame - RBBestFrame)/0.1  ! divide by 0.1 to get change per degree 
-      ! least squares fit to get optimum adjustment
+      ! least squares fit to get optimum rotation
       RdPhi = -DEG2RADIAN*DOT_PRODUCT((RBBestFrame-RObsFrame(IBhklList(:))),RBdFrame)/ &
               DOT_PRODUCT(RBdFrame,RBdFrame)
       WRITE(SPrintString, FMT='(A11,F7.2,A5)') "delta phi =",RdPhi*1000.0D0," mrad"
       CALL message(LS,SPrintString)
-      ! update the refined orientation matrices
+      ! rotation matrix for refined orientation
       RdelMat(2,:) = (/ ZERO, COS(RdPhi), -SIN(RdPhi) /)
       RdelMat(3,:) = (/ ZERO, SIN(RdPhi),  COS(RdPhi) /)
+      ! get the FoM for optimised rotation
       DO knd = IFrameLo,IFrameHi
         RCurOMat(knd,:,:) = MATMUL(RdelMat,RCurOMat(knd,:,:))
       END DO
       CALL BatchFrames(IFrameStart,IFrameHi,IErr)
       IF(l_alert(IErr,"felixrefine","BatchFrames")) CALL abort
+      ! if it's no better we should undo it using this rotation matrix
+      RdelMat(2,:) = (/ ZERO,  COS(RdPhi), SIN(RdPhi) /)
+      RdelMat(3,:) = (/ ZERO, -SIN(RdPhi), COS(RdPhi) /)
       IF (RFoM.LT.RBestFoM) THEN  ! accept the x-rotation
         RBBestFrame = RBFrame
         RBestFoM = RFoM
         RBestOMat(IFrameStart:IFrameEnd,:,:) = RCurOMat(IFrameStart:IFrameEnd,:,:)
-      ELSE  ! undo it
-        RdelMat(2,:) = (/ ZERO, COS(RdPhi), -SIN(RdPhi) /)
-        RdelMat(3,:) = (/ ZERO, SIN(RdPhi),  COS(RdPhi) /)
-        DO knd = IFrameLo,IFrameHi
-          RCurOMat(knd,:,:) = MATMUL(RdelMat,RCurOMat(knd,:,:))
-        END DO
-      END IF
+        ELSE  ! undo the rotation
+          DO knd = IFrameLo,IFrameHi
+            RCurOMat(knd,:,:) = MATMUL(RdelMat,RCurOMat(knd,:,:))
+          END DO
+        END IF
+      CALL message(LS,"Orientation matrix",RCurOMat(IFrameLo,:,:))
 
       ! now a small test rotation about z
       RdPhi = 0.1*DEG2RADIAN  ! 0.1 degrees
@@ -413,7 +422,7 @@ PROGRAM Felixrefine
       END DO
       CALL BatchFrames(IFrameLo,IFrameHi,IErr)
       IF(l_alert(IErr,"felixrefine","BatchFrames")) CALL abort
-      ! undo the small rotation
+      ! undo the test rotation
       RdelMat(1,:) = (/ COS(RdPhi), SIN(RdPhi), ZERO /)
       RdelMat(2,:) = (/ -SIN(RdPhi),  COS(RdPhi), ZERO /)
       DO knd = IFrameLo,IFrameHi
@@ -425,21 +434,23 @@ PROGRAM Felixrefine
               DOT_PRODUCT(RBdFrame,RBdFrame)
       WRITE(SPrintString, FMT='(A11,F7.2,A5)') "delta phi =",RdPhi*1000.0D0," mrad"
       CALL message(LS,SPrintString)
-      ! update the refined orientation matrices
+      ! rotation matrix for refined orientation
       RdelMat(1,:) = (/ COS(RdPhi), -SIN(RdPhi), ZERO /)
       RdelMat(2,:) = (/ SIN(RdPhi),  COS(RdPhi), ZERO /)
       DO knd = IFrameLo,IFrameHi
         RCurOMat(knd,:,:) = MATMUL(RdelMat,RCurOMat(knd,:,:))
       END DO
+      ! get the FoM for optimised rotation
       CALL BatchFrames(IFrameStart,IFrameHi,IErr)
       IF(l_alert(IErr,"felixrefine","BatchFrames")) CALL abort
+      ! if it's no better we should undo it using this rotation matrix
+      RdelMat(1,:) = (/ COS(RdPhi), SIN(RdPhi), ZERO /)
+      RdelMat(2,:) = (/ -SIN(RdPhi),  COS(RdPhi), ZERO /)
       IF (RFoM.LT.RBestFoM) THEN  ! accept the x-rotation
         RBBestFrame = RBFrame
         RBestFoM = RFoM
         RBestOMat(IFrameStart:IFrameEnd,:,:) = RCurOMat(IFrameStart:IFrameEnd,:,:)
       ELSE  ! undo it
-      RdelMat(1,:) = (/ COS(RdPhi), SIN(RdPhi), ZERO /)
-      RdelMat(2,:) = (/ -SIN(RdPhi),  COS(RdPhi), ZERO /)
         DO knd = IFrameLo,IFrameHi
           RCurOMat(knd,:,:) = MATMUL(RdelMat,RCurOMat(knd,:,:))
         END DO
