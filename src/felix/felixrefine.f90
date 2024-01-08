@@ -371,7 +371,7 @@ PROGRAM Felixrefine
         CALL BatchFrames(IFrameStart,IFrameHi,RdPhi,1, IErr)
         RBestOMat(IFrameStart:IFrameEnd,:,:) = RCurOMat(IFrameStart:IFrameEnd,:,:)
       END IF
-      CALL message(LS,"Orientation matrix",RCurOMat(IFrameLo,:,:))
+      !CALL message(LS,"Orientation matrix",RCurOMat(IFrameLo,:,:))
 
       ! a small test rotation about z
       CALL BatchFrames(IFrameLo,IFrameHi,0.1*DEG2RADIAN,-3,IErr)  ! 0.1 degrees
@@ -380,7 +380,7 @@ PROGRAM Felixrefine
       ! least squares fit to get optimum rotation
       RdPhi = -DEG2RADIAN*DOT_PRODUCT((RBBestFrame-RObsFrame(IBhklList(:))),RBdFrame)/ &
               DOT_PRODUCT(RBdFrame,RBdFrame)
-      WRITE(SPrintString, FMT='(A11,F7.2,A5)') "delta phi =",RdPhi*1000.0D0," mrad"
+      WRITE(SPrintString, FMT='(A11,F17.2,A5)') "delta phi =",RdPhi*1000.0D0," mrad"
       ! is it an improvement
       CALL BatchFrames(IFrameStart,IFrameHi,RdPhi,-3, IErr)
       IF(l_alert(IErr,"felixrefine","BatchFrames")) CALL abort
@@ -390,7 +390,7 @@ PROGRAM Felixrefine
         CALL BatchFrames(IFrameStart,IFrameHi,RdPhi,3, IErr)
         RBestOMat(IFrameStart:IFrameEnd,:,:) = RCurOMat(IFrameStart:IFrameEnd,:,:)
       END IF
-      CALL message(LS,"Orientation matrix",RCurOMat(IFrameLo,:,:))
+      !CALL message(LS,"Orientation matrix",RCurOMat(IFrameLo,:,:))
 
 
       DEALLOCATE(IBhklList)

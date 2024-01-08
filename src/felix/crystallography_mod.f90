@@ -330,17 +330,18 @@ MODULE crystallography_mod
 
     ! figure of merit, angle deviation per reflexion in mrad
     RFoM = THOUSAND*DEG2RADIAN*RFrameAngle*Rsum/REAL(lnd)
-    WRITE(SPrintString, FMT='(A16,F7.2)') "Figure of merit ",RFoM
-    CALL message(LS,SPrintString)
-
     ! undo rotation if needed
     IF (IAxis.LT.0) THEN
-      RdelMat = TRANSPOSE(RDdelMat)
+      RdelMat = TRANSPOSE(RdelMat)
       DO knd = IFrameLo,IFrameHi
         RCurOMat(knd,:,:) = MATMUL(RdelMat,RCurOMat(knd,:,:))
       END DO
+      WRITE(SPrintString, FMT='(A21,F7.2)') "Test figure of merit ",RFoM
+    ELSE
+      WRITE(SPrintString, FMT='(A16,F7.2)') "Figure of merit ",RFoM
     END IF
-    
+    CALL message(LS,SPrintString)
+
   END SUBROUTINE BatchFrames
   
   !$%%HKLmake%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
