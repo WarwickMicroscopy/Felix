@@ -253,7 +253,7 @@ MODULE crystallography_mod
   !!
   !! Major-Authors: Richard Beanland (2023)
   !!  
-  SUBROUTINE BatchFrames(IFrameLo,IFrameHi, IErr)   
+  SUBROUTINE BatchFrames(IFrameLo,IFrameHi,RdPhi,IAxis, IErr)   
 
     USE MyNumbers
     USE message_mod
@@ -266,15 +266,36 @@ MODULE crystallography_mod
     
     IMPLICIT NONE
 
-    INTEGER(IKIND),INTENT(IN) :: IFrameLo,IFrameHi
-    REAL(RKIND) :: ROmega,RcBragg,RdBragg,Rsum
+    INTEGER(IKIND),INTENT(IN) :: IFrameLo,IFrameHi,IAxis
+    REAL(RKIND) :: ROmega,RcBragg,RdBragg,Rsum,RdPhi
     REAL(RKIND), DIMENSION(ITHREE) :: Rg,Rkplusg
+    REAL(RKIND), DIMENSION(ITHREE,ITHREE) :: RdelMat
     INTEGER(IKIND) :: IErr,ind,jnd,knd,lnd
 
-
-    ! find calculated frame position RBFrame for each, finding the Bragg condition
-    ! using the definition |K+g|=|K| and the current orientation matrices RCurOMat
+    ! Apply a rotation of RdPhi about IAxis to the orientation matrices
+    ! in the range IFrameLo,IFrameHi, then find calculated frame position
+    ! RBFrame for each reflexion, using the Bragg condition definition |K+g|=|K|
+    ! give the figure of merit, and undo the rotation if it's a test (IAxis<0)
     IF(IFrameLo.GE.IFrameHi) IErr = 1 
+    IF(ABS(IAxis).EQ.1) THEN  ! rotation about x
+      RdelMat(1,:) = (/ ONE, ZERO, ZERO /)
+      RdelMat(2,:) = (/ ZERO, COS(RdPhi), -SIN(RdPhi) /)
+      RdelMat(3,:) = (/ ZERO, SIN(RdPhi),  COS(RdPhi) /)
+    END IF
+    IF(ABS(IAxis).EQ.2) THEN  ! rotation about y
+      RdelMat(1,:) = (/ COS(RdPhi), ZERO, -SIN(RdPhi) /)
+      RdelMat(2,:) = (/ ZERO, ONE, ZERO /)
+      RdelMat(3,:) = (/ SIN(RdPhi), ZERO, COS(RdPhi) /)
+    END IF
+    IF(ABS(IAxis).EQ.3) THEN  ! rotation about z
+      RdelMat(1,:) = (/ COS(RdPhi), -SIN(RdPhi), ZERO /)
+      RdelMat(2,:) = (/ SIN(RdPhi),  COS(RdPhi), ZERO /)
+      RdelMat(3,:) = (/ ZERO, ZERO, ONE /)
+    END IF
+    CALL message(LL,"Transformation matrix",RdelMat)
+    DO knd = IFrameLo,IFrameHi
+      RCurOMat(knd,:,:) = MATMUL(RdelMat,RCurOMat(knd,:,:))
+    END DO
     RBFrame = ZERO  ! initialise the output array
     lnd = 0  ! counter for found reflections
     Rsum = ZERO  ! sum of differences between calc & obs frame position
@@ -311,7 +332,15 @@ MODULE crystallography_mod
     RFoM = THOUSAND*DEG2RADIAN*RFrameAngle*Rsum/REAL(lnd)
     WRITE(SPrintString, FMT='(A16,F7.2)') "Figure of merit ",RFoM
     CALL message(LS,SPrintString)
-      
+
+    ! undo rotation if needed
+    IF (IAxis.LT.0) THEN
+      RdelMat = TRANSPOSE(RDdelMat)
+      DO knd = IFrameLo,IFrameHi
+        RCurOMat(knd,:,:) = MATMUL(RdelMat,RCurOMat(knd,:,:))
+      END DO
+    END IF
+    
   END SUBROUTINE BatchFrames
   
   !$%%HKLmake%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
