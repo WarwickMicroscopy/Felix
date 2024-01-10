@@ -315,6 +315,10 @@ PROGRAM Felixrefine
       ALLOCATE(RBBestFrame(jnd),STAT=IErr)  ! best calculated frame positions so far
       !--------------------------------------------------------------------
       ! refine orientation matrices OMat
+      ! reset the working reference frame to nominal values
+      RxO = RXDirO
+      RyO = RyDirO
+      RzO = RZDirO
       ! ROMat are the nominal (input) matrices
       ! RCurOMat are the current (working) matrices
       ! RBestOMat are the best matrices
@@ -357,9 +361,10 @@ PROGRAM Felixrefine
       END IF
 
       ! optimise rotation about z
-      CALL BatchFrames(IFrameLo,IFrameHi,0.1*DEG2RADIAN,-3,IErr)  ! 0.1 degrees
+      CALL message(LS,"z-axis optimisation")
+      CALL BatchFrames(IFrameLo,IFrameHi,DEG2RADIAN,-3,IErr)  ! 1 degrees
       IF(l_alert(IErr,"felixrefine","BatchFrames")) CALL abort
-      RBdFrame = (RBFrame - RBBestFrame)/0.1  ! divide by 0.1 to get change per degree 
+      RBdFrame = (RBFrame - RBBestFrame)  ! change per degree 
       ! least squares fit to get optimum rotation
       RdPhi = -DEG2RADIAN*DOT_PRODUCT((RBBestFrame-RObsFrame(IBhklList(:))),RBdFrame)/ &
               DOT_PRODUCT(RBdFrame,RBdFrame)
@@ -376,6 +381,7 @@ PROGRAM Felixrefine
       END IF
 
       ! optimise rotation about x
+      CALL message(LS,"x-axis optimisation")
       CALL BatchFrames(IFrameLo,IFrameHi,0.1*DEG2RADIAN,-1,IErr)  ! 0.1 degrees
       IF(l_alert(IErr,"felixrefine","BatchFrames")) CALL abort
       RBdFrame = (RBFrame - RBBestFrame)/0.1  ! divide by 0.1 to get change per degree 

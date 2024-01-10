@@ -261,7 +261,8 @@ MODULE crystallography_mod
 
     ! global inputs/outputs
     USE IPARA, ONLY : IBhklList,IobsHKL
-    USE RPARA, ONLY : RarVecO,RbrVecO,RcrVecO,RBFrame,RObsFrame,RFrameAngle,RBigK,RCurOMat,RFoM
+    USE RPARA, ONLY : RxO,RyO,RzO,RarVecO,RbrVecO,RcrVecO,RBFrame,RObsFrame,&
+            RFrameAngle,RBigK,RCurOMat,RFoM
     USE SPARA, ONLY : SPrintString
     
     IMPLICIT NONE
@@ -292,10 +293,20 @@ MODULE crystallography_mod
       RdelMat(2,:) = (/ SIN(RdPhi),  COS(RdPhi), ZERO /)
       RdelMat(3,:) = (/ ZERO, ZERO, ONE /)
     END IF
+    IF(my_rank.EQ.0)PRINT*,RCurOMat(IFrameLo,:,:)
     CALL message(LL,"Transformation matrix",RdelMat)
+    ! the transformation matrix is applied to the initial frame, from which
+    ! subsequent orientation matrices are calculated
+    RxO = MATMUL(RdelMat,RxO)
+    RyO = MATMUL(RdelMat,RyO)
+    RzO = MATMUL(RdelMat,RzO)
     DO knd = IFrameLo,IFrameHi
-      RCurOMat(knd,:,:) = MATMUL(RdelMat,RCurOMat(knd,:,:))
+      ROmega = REAL(knd-1)*DEG2RADIAN*RFrameAngle
+      RCurOMat(knd,1,:) = RxO*COS(ROmega)-RzO*SIN(ROmega)
+      RCurOMat(knd,2,:) = RyO
+      RCurOMat(knd,3,:) = RzO*COS(ROmega)+RxO*SIN(ROmega)
     END DO
+    IF(my_rank.EQ.0)PRINT*,RCurOMat(IFrameLo,:,:)
     RBFrame = ZERO  ! initialise the output array
     lnd = 0  ! counter for found reflections
     Rsum = ZERO  ! sum of differences between calc & obs frame position
@@ -310,6 +321,7 @@ MODULE crystallography_mod
         RdBragg = RBigK - SQRT(DOT_PRODUCT(Rkplusg,Rkplusg))
         IF (jnd.EQ.IFrameLo) knd = NINT(SIGN(ONE,RdBragg))  ! sign of first frame
         IF (NINT(SIGN(ONE,RdBragg))+knd.EQ.0) THEN  ! we have passed through zero
+          ! calculated frame position for this reflexion
           RBFrame(ind) = REAL(jnd) - ONE + RdBragg/(RdBragg-RcBragg)
           knd = -knd
           Rsum = Rsum + ABS(RBFrame(ind)-RObsFrame(IBhklList(ind)))
@@ -321,10 +333,10 @@ MODULE crystallography_mod
       IF (RBFrame(ind).GT.TINY) THEN
         WRITE(SPrintString, FMT='(A10,I4,A6,F8.2,A6,F8.2)') "Reflexion ",IBhklList(ind),&
               ": obs ",RObsFrame(IBhklList(ind))," calc ",RBFrame(ind)
-        CALL message(LL,SPrintString)
+        CALL message(LS,SPrintString)
       ELSE
         WRITE(SPrintString, FMT='(A10,I4,A10)') "Reflexion ",IBhklList(ind)," not found"
-        CALL message(LM,SPrintString)
+        CALL message(LS,SPrintString)
       END IF
     END DO
 
@@ -333,8 +345,14 @@ MODULE crystallography_mod
     ! undo rotation if needed
     IF (IAxis.LT.0) THEN
       RdelMat = TRANSPOSE(RdelMat)
+      RxO = MATMUL(RdelMat,RxO)
+      RyO = MATMUL(RdelMat,RyO)
+      RzO = MATMUL(RdelMat,RzO)
       DO knd = IFrameLo,IFrameHi
-        RCurOMat(knd,:,:) = MATMUL(RdelMat,RCurOMat(knd,:,:))
+        ROmega = REAL(knd-1)*DEG2RADIAN*RFrameAngle
+        RCurOMat(knd,1,:) = RxO*COS(ROmega)-RzO*SIN(ROmega)
+        RCurOMat(knd,2,:) = RyO
+        RCurOMat(knd,3,:) = RzO*COS(ROmega)+RxO*SIN(ROmega)
       END DO
       WRITE(SPrintString, FMT='(A21,F7.2)') "Test figure of merit ",RFoM
     ELSE
