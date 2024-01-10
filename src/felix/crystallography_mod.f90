@@ -128,7 +128,7 @@ MODULE crystallography_mod
     IMPLICIT NONE
 
     INTEGER(IKIND) :: IErr,ind
-    REAL(RKIND) :: Rt,RAngle,RxAngle
+    REAL(RKIND) :: Rt,ROmega,RxAngle
     REAL(RKIND), DIMENSION(ITHREE,ITHREE) :: RTMatC2O
     
     !direct lattice vectors in an orthogonal reference frame, Angstrom units 
@@ -148,9 +148,9 @@ MODULE crystallography_mod
 
     ! RTmatC2O transforms from crystal (implicit units) 
     ! to orthogonal O reference frame (Angstrom units)
-    RTMatC2O(:,1) = RaVecO(:)
-    RTMatC2O(:,2) = RbVecO(:)
-    RTMatC2O(:,3) = RcVecO(:)
+    RTMatC2O(:,1) = RaVecO
+    RTMatC2O(:,2) = RbVecO
+    RTMatC2O(:,3) = RcVecO
 
     ! Atom coordinates in the orthogonal reference frame
     DO ind=1,INAtomsUnitCell
@@ -231,14 +231,15 @@ MODULE crystallography_mod
       RXDirO = RXDirO/SQRT(DOT_PRODUCT(RXDirO,RXDirO))
     END IF
     RYDirO = CROSS(RZDirO,RXDirO)  ! the rotation axis
+    
     ! Nominal orientation matrices for all frames
     ! matrix with x,y,z as rows
     ROMat = ZERO
     DO ind = 1, INFrames
-      RAngle = REAL(ind-1)*DEG2RADIAN*RFrameAngle
-      ROMat(ind,1,:) = RXDirO*COS(RAngle)-RZDirO*SIN(RAngle)
+      ROmega = REAL(ind-1)*DEG2RADIAN*RFrameAngle
+      ROMat(ind,1,:) = RXDirO*COS(ROmega)-RZDirO*SIN(ROmega)
       ROMat(ind,2,:) = RYDirO
-      ROMat(ind,3,:) = RZDirO*COS(RAngle)+RXDirO*SIN(RAngle)
+      ROMat(ind,3,:) = RZDirO*COS(ROmega)+RXDirO*SIN(ROmega)
     END DO
     ! Refined orientation matrices, initialised at nominal values
     RCurOMat = ROMat
@@ -262,7 +263,7 @@ MODULE crystallography_mod
     ! global inputs/outputs
     USE IPARA, ONLY : IBhklList,IobsHKL
     USE RPARA, ONLY : RxO,RyO,RzO,RarVecO,RbrVecO,RcrVecO,RBFrame,RObsFrame,&
-            RFrameAngle,RBigK,RCurOMat,RFoM
+            RFrameAngle,RBigK,ROMat,RCurOMat,RFoM
     USE SPARA, ONLY : SPrintString
     
     IMPLICIT NONE
@@ -293,11 +294,13 @@ MODULE crystallography_mod
       RdelMat(2,:) = (/ SIN(RdPhi),  COS(RdPhi), ZERO /)
       RdelMat(3,:) = (/ ZERO, ZERO, ONE /)
     END IF
+    ! put into microscope reference frame
+    RdelMat = MATMUL(TRANSPOSE(ROMat(1,:,:)),MATMUL(RdelMat,ROMat(1,:,:)))
     IF(my_rank.EQ.0)PRINT*,RCurOMat(IFrameLo,:,:)
     CALL message(LL,"Transformation matrix",RdelMat)
     ! the transformation matrix is applied to the initial frame, from which
     ! subsequent orientation matrices are calculated
-    RxO = MATMUL(RdelMat,RxO)
+    RxO = MATMUL(RdelMat,RxO))
     RyO = MATMUL(RdelMat,RyO)
     RzO = MATMUL(RdelMat,RzO)
     DO knd = IFrameLo,IFrameHi
@@ -388,7 +391,7 @@ MODULE crystallography_mod
 
     REAL(RKIND),INTENT(IN) :: RDevLimit, RGOutLimit, RgPoolLimit
     INTEGER(IKIND) :: IErr,ind,jnd,knd,lnd,mnd,nnd,ond,ISel,Ifull(INFrames),IMaxNg,inda,indb,indc,Ifound
-    REAL(RKIND) :: RAngle,Rk(ITHREE),Rk0(ITHREE),Rp(ITHREE),RSg,Rphi,Rg(ITHREE),&
+    REAL(RKIND) :: ROmega,Rk(ITHREE),Rk0(ITHREE),Rp(ITHREE),RSg,Rphi,Rg(ITHREE),&
                    RKplusg(ITHREE),RgMag,RShell,RgMin,Rfq
     COMPLEX :: CFg
 
@@ -442,8 +445,8 @@ MODULE crystallography_mod
             DO nnd = 1,INFrames
               ! Is the beam pool already full for this frame
               IF (Ifull(nnd).EQ.1) CYCLE
-              RAngle = REAL(nnd-1)*DEG2RADIAN*RFrameAngle
-              Rk = RBigK*(RZDirO*COS(RAngle)+RXDirO*SIN(RAngle))
+              ROmega = REAL(nnd-1)*DEG2RADIAN*RFrameAngle
+              Rk = RBigK*(RZDirO*COS(ROmega)+RXDirO*SIN(ROmega))
               ! Calculate Sg by getting the vector k0, which is coplanar with k and g and
               ! corresponds to an incident beam at the Bragg condition
               ! First we need the vector component of k perpendicular to g, which we call p 
@@ -631,7 +634,7 @@ MODULE crystallography_mod
     IMPLICIT NONE
 
     INTEGER(IKIND) :: IErr,ind,jnd,knd,lnd,mnd,ISim,Ix,Iy,Itest,IOutFLAG
-    REAL(RKIND) :: Rg(ITHREE),RgMag,RSg,Rfq,RSim(512,512),RAngle,RInst,Rp(ITHREE),RImax,RIg
+    REAL(RKIND) :: Rg(ITHREE),RgMag,RSg,Rfq,RSim(512,512),ROmega,RInst,Rp(ITHREE),RImax,RIg
     COMPLEX :: CFg
     CHARACTER(200) :: path
     CHARACTER(100) :: fString
@@ -812,7 +815,7 @@ END SUBROUTINE HKLSave
 
     INTEGER(IKIND) :: IErr,ind,jnd,knd,lnd,mnd,Ix,Iy
     INTEGER(IKIND), INTENT(IN) :: ISim
-    REAL(RKIND) :: Rg(ITHREE),RgMag,RSg,Rfq,RSim(2*ISim,2*ISim),RAngle,RInst,Rp(ITHREE),RImax
+    REAL(RKIND) :: Rg(ITHREE),RgMag,RSg,Rfq,RSim(2*ISim,2*ISim),ROmega,RInst,Rp(ITHREE),RImax
     REAL(RKIND), INTENT(IN) :: RgOutLimit 
     COMPLEX :: CFg
     CHARACTER(200) :: path
@@ -824,7 +827,7 @@ END SUBROUTINE HKLSave
     RInst = 6000.0
     RImax = MAXVAL(RIkin)
     DO ind = 1,INFrames
-      RAngle = REAL(ind-1)*DEG2RADIAN*RFrameAngle
+      ROmega = REAL(ind-1)*DEG2RADIAN*RFrameAngle
       RSim = ZERO
       ! output g's
       DO knd = 2, INhkl
@@ -834,7 +837,7 @@ END SUBROUTINE HKLSave
           RgMag = SQRT(DOT_PRODUCT(Rg,Rg))
           RSg = RgPoolSg(knd,ind)  !Sg
           ! x- and y-coords (NB swapped in the image!)
-          Rp = RXDirO*COS(RAngle)-RZDirO*SIN(RAngle)  ! unit vector horizontal in the image
+          Rp = RXDirO*COS(ROmega)-RZDirO*SIN(ROmega)  ! unit vector horizontal in the image
           ! position of the spot, 2% leeway to avoid going over the edge of the image
           Ix = ISim-0.98*NINT(DOT_PRODUCT(Rg,Rp)*REAL(ISim)/RGOutLimit)  
           Iy = ISim+0.98*NINT(DOT_PRODUCT(Rg,RYDirO)*REAL(ISim)/RGOutLimit)
