@@ -354,7 +354,7 @@ PROGRAM Felixrefine
       ! get FoM for refined orientation
       CALL BatchFrames(IFrameLo,IFrameHi,Roffset*RFrameAngle*DEG2RADIAN,-2,IErr)
       IF (RFoM.LT.RBestFoM) THEN ! apply the offset to the current orientation matrices
-        CALL BatchFrames(IFrameLo,IFrameHi,Roffset*RFrameAngle*DEG2RADIAN,2,IErr)
+        CALL BatchFrames(IFrameLo,IFrameHi,-Roffset*RFrameAngle*DEG2RADIAN,2,IErr)
         RBestFoM = RFoM
         RBBestFrame = RBFrame
         RBestOMat(IFrameStart:IFrameEnd,:,:) = RCurOMat(IFrameStart:IFrameEnd,:,:)
@@ -362,9 +362,9 @@ PROGRAM Felixrefine
 
       ! optimise rotation about z
       CALL message(LS,"z-axis optimisation")
-      CALL BatchFrames(IFrameLo,IFrameHi,DEG2RADIAN,-3,IErr)  ! 1 degrees
+      CALL BatchFrames(IFrameLo,IFrameHi,0.1*DEG2RADIAN,-3,IErr)  ! 0.1 degrees
       IF(l_alert(IErr,"felixrefine","BatchFrames")) CALL abort
-      RBdFrame = (RBFrame - RBBestFrame)  ! change per degree 
+      RBdFrame = (RBFrame - RBBestFrame)/0.1  ! change per degree 
       ! least squares fit to get optimum rotation
       RdPhi = -DEG2RADIAN*DOT_PRODUCT((RBBestFrame-RObsFrame(IBhklList(:))),RBdFrame)/ &
               DOT_PRODUCT(RBdFrame,RBdFrame)

@@ -295,12 +295,12 @@ MODULE crystallography_mod
       RdelMat(3,:) = (/ ZERO, ZERO, ONE /)
     END IF
     ! put into microscope reference frame
-    RdelMat = MATMUL(TRANSPOSE(ROMat(1,:,:)),MATMUL(RdelMat,ROMat(1,:,:)))
+    RdelMat = MATMUL(ROMat(1,:,:),MATMUL(RdelMat,TRANSPOSE(ROMat(1,:,:))))
     IF(my_rank.EQ.0)PRINT*,RCurOMat(IFrameLo,:,:)
     CALL message(LL,"Transformation matrix",RdelMat)
     ! the transformation matrix is applied to the initial frame, from which
     ! subsequent orientation matrices are calculated
-    RxO = MATMUL(RdelMat,RxO))
+    RxO = MATMUL(RdelMat,RxO)
     RyO = MATMUL(RdelMat,RyO)
     RzO = MATMUL(RdelMat,RzO)
     DO knd = IFrameLo,IFrameHi
