@@ -60,7 +60,6 @@ PROGRAM Felixrefine
           INBatch,IBatchSize,IFrameStart,IFrameEnd,IFrameLo,IFrameHi
   INTEGER(4) :: IErr4
   REAL(RKIND) :: RGOutLimit,RgPoolLimit,Roffset,ROmega,RdPhi,RBestFoM
-  REAL(RKIND), DIMENSION(ITHREE) :: RxBestO,RyBestO,RzBestO,Rg,Rk,Rkplusg
   REAL(RKIND), DIMENSION(:), ALLOCATABLE :: RBBestFrame
 
   CHARACTER(40) :: my_rank_string
@@ -230,7 +229,7 @@ PROGRAM Felixrefine
   CALL UniqueAtomPositions(IErr)  ! in crystallography.f90
   IF(l_alert(IErr,"felixrefine","UniqueAtomPositions")) CALL abort
   !--------------------------------------------------------------------
-  ! From the unit cell we produce the orientation matrix for the first frame, ROMat(1,:,:)
+  ! From the unit cell we produce the nominal orientation matrices for the n frames, ROMat(1-n,:,:)
   ! made of column vectors for a,b,c, i.e. RaVecO, RbVecO, RcVecO in an orthogonal reference frame O
   ! with xO // a and zO perpendicular to the ab plane, in Angstrom units
   ! Also the reciprocal lattice vectors RarVecO, RbrVecO, RcrVecO
@@ -314,14 +313,8 @@ PROGRAM Felixrefine
       ALLOCATE(RBdFrame(jnd),STAT=IErr) ! delta in frame position from a small change
       ALLOCATE(RBBestFrame(jnd),STAT=IErr)  ! best calculated frame positions so far
       !--------------------------------------------------------------------
-      ! refine orientation matrices OMat
-      ! reset the working reference frame to nominal values
-      RxO = RXDirO
-      RyO = RyDirO
-      RzO = RZDirO
-      ! ROMat are the nominal (input) matrices
-      ! RCurOMat are the current (working) matrices
-      ! RBestOMat are the best matrices
+      ! refine z-orientation for each frame RFrameZ
+      ! nominal (input) values are the bottom row of ROMat
       ! start with frame offset (refinement of omega)
       ! expanded Lo-Hi frame range to account for any significant offset - we search for
       ! matching calc & obs reflections in this range but only update orientations
@@ -331,12 +324,11 @@ PROGRAM Felixrefine
       CALL message(LL,"Frame",IFrameStart)
       CALL message(LL,"Orientation matrix",ROMat(IFrameStart,:,:))
       ! Get the baseline figure of merit RFoM for this batch of g-vectors
-      RCurOMat = ROMat  ! reinitialise current matrices to nominal values
-      ! CurOMat is passed as a global variable in to BatchFrames, which works on the
-      ! range IFrameLo to IFrameHi, applying a rotation about an axis (1,2,3)
-      ! axis<0 only gives figure of merit (global variable RFoM), RCurOMat is unchanged
-      ! axis>0 gives RFoM & RCurOMat is modified by the rotation in the range of interest
-      CALL BatchFrames(IFrameLo,IFrameHi,ZERO,2,IErr)  ! start,end,angle,axis
+      ! RFrameZ is passed as a global variable to BatchFrames, which works on the
+      ! range IFrameLo to IFrameHi, applying a refinement type (1,2,3)
+      ! type<0 only gives figure of merit (global variable RFoM), RFrameZ is unchanged
+      ! type>0 gives RFoM & RFrameZ is modified by the refinement in the range of interest
+      CALL BatchFrames(IFrameLo,IFrameHi,ZERO,1,IErr)  ! start,end,angle,type
       RBestFoM = RFoM  ! initial FoM for nominal orientation
 
       ! calculate offset     
@@ -352,53 +344,33 @@ PROGRAM Felixrefine
       WRITE(SPrintString, FMT='(A7,F7.2,A7)') "Offset ",ROffset," frames"
       CALL message(LS,SPrintString)
       ! get FoM for refined orientation
-      CALL BatchFrames(IFrameLo,IFrameHi,Roffset*RFrameAngle*DEG2RADIAN,-2,IErr)
+      CALL BatchFrames(IFrameLo,IFrameHi,Roffset*RFrameAngle*DEG2RADIAN,-1,IErr)
       IF (RFoM.LT.RBestFoM) THEN ! apply the offset to the current orientation matrices
-        CALL BatchFrames(IFrameLo,IFrameHi,-Roffset*RFrameAngle*DEG2RADIAN,2,IErr)
+        CALL BatchFrames(IFrameLo,IFrameHi,-Roffset*RFrameAngle*DEG2RADIAN,1,IErr)
         RBestFoM = RFoM
         RBBestFrame = RBFrame
         RBestOMat(IFrameStart:IFrameEnd,:,:) = RCurOMat(IFrameStart:IFrameEnd,:,:)
       END IF
 
-      ! optimise rotation about z
-      CALL message(LS,"z-axis optimisation")
-      CALL BatchFrames(IFrameLo,IFrameHi,0.1*DEG2RADIAN,-3,IErr)  ! 0.1 degrees
-      IF(l_alert(IErr,"felixrefine","BatchFrames")) CALL abort
-      RBdFrame = (RBFrame - RBBestFrame)/0.1  ! change per degree 
-      ! least squares fit to get optimum rotation
-      RdPhi = -DEG2RADIAN*DOT_PRODUCT((RBBestFrame-RObsFrame(IBhklList(:))),RBdFrame)/ &
-              DOT_PRODUCT(RBdFrame,RBdFrame)
-      WRITE(SPrintString, FMT='(A11,F7.2,A5)') "delta phi =",RdPhi*1000.0D0," mrad"
-      CALL message(LS,SPrintString)
-      ! is it an improvement
-      CALL BatchFrames(IFrameStart,IFrameHi,RdPhi,-3, IErr)
-      IF(l_alert(IErr,"felixrefine","BatchFrames")) CALL abort
-      IF (RFoM.LT.RBestFoM) THEN  ! apply the rotation
-        CALL BatchFrames(IFrameStart,IFrameHi,RdPhi,3, IErr)
-        RBestFoM = RFoM
-        RBBestFrame = RBFrame
-        RBestOMat(IFrameStart:IFrameEnd,:,:) = RCurOMat(IFrameStart:IFrameEnd,:,:)
-      END IF
-
-      ! optimise rotation about x
-      CALL message(LS,"x-axis optimisation")
-      CALL BatchFrames(IFrameLo,IFrameHi,0.1*DEG2RADIAN,-1,IErr)  ! 0.1 degrees
-      IF(l_alert(IErr,"felixrefine","BatchFrames")) CALL abort
-      RBdFrame = (RBFrame - RBBestFrame)/0.1  ! divide by 0.1 to get change per degree 
-      ! least squares fit to get optimum rotation
-      RdPhi = -DEG2RADIAN*DOT_PRODUCT((RBBestFrame-RObsFrame(IBhklList(:))),RBdFrame)/ &
-              DOT_PRODUCT(RBdFrame,RBdFrame)
-      WRITE(SPrintString, FMT='(A11,F17.2,A5)') "delta phi =",RdPhi*1000.0D0," mrad"
-      CALL message(LS,SPrintString)
-      ! is it an improvement
-      CALL BatchFrames(IFrameStart,IFrameHi,RdPhi,-1, IErr)
-      IF(l_alert(IErr,"felixrefine","BatchFrames")) CALL abort
-      IF (RFoM.LT.RBestFoM) THEN  ! accept the x-rotation
-        RBBestFrame = RBFrame
-        RBestFoM = RFoM
-        CALL BatchFrames(IFrameStart,IFrameHi,RdPhi,1, IErr)
-        RBestOMat(IFrameStart:IFrameEnd,:,:) = RCurOMat(IFrameStart:IFrameEnd,:,:)
-      END IF
+      ! ! optimise rotation about x
+      ! CALL message(LS,"x-axis optimisation")
+      ! CALL BatchFrames(IFrameLo,IFrameHi,0.1*DEG2RADIAN,-1,IErr)  ! 0.1 degrees
+      ! IF(l_alert(IErr,"felixrefine","BatchFrames")) CALL abort
+      ! RBdFrame = (RBFrame - RBBestFrame)/0.1  ! divide by 0.1 to get change per degree 
+      ! ! least squares fit to get optimum rotation
+      ! RdPhi = -DEG2RADIAN*DOT_PRODUCT((RBBestFrame-RObsFrame(IBhklList(:))),RBdFrame)/ &
+              ! DOT_PRODUCT(RBdFrame,RBdFrame)
+      ! WRITE(SPrintString, FMT='(A11,F17.2,A5)') "delta phi =",RdPhi*1000.0D0," mrad"
+      ! CALL message(LS,SPrintString)
+      ! ! is it an improvement
+      ! CALL BatchFrames(IFrameStart,IFrameHi,RdPhi,-1, IErr)
+      ! IF(l_alert(IErr,"felixrefine","BatchFrames")) CALL abort
+      ! IF (RFoM.LT.RBestFoM) THEN  ! accept the x-rotation
+        ! RBBestFrame = RBFrame
+        ! RBestFoM = RFoM
+        ! CALL BatchFrames(IFrameStart,IFrameHi,RdPhi,1, IErr)
+        ! RBestOMat(IFrameStart:IFrameEnd,:,:) = RCurOMat(IFrameStart:IFrameEnd,:,:)
+      ! END IF
 
 
       DEALLOCATE(IBhklList)

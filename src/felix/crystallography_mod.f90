@@ -123,7 +123,7 @@ MODULE crystallography_mod
 
     ! global outputs
     USE RPARA, ONLY : RaVecO,RbVecO,RcVecO,RVolume,RarVecO,RbrVecO,RcrVecO,&
-            RXDirO,RYDirO,RZDirO,RarMag,RbrMag,RcrMag,ROMat,RCurOMat,RBestOMat
+            RXDirO,RYDirO,RZDirO,RarMag,RbrMag,RcrMag,ROMat,RFrameZ
 
     IMPLICIT NONE
 
@@ -240,10 +240,8 @@ MODULE crystallography_mod
       ROMat(ind,1,:) = RXDirO*COS(ROmega)-RZDirO*SIN(ROmega)
       ROMat(ind,2,:) = RYDirO
       ROMat(ind,3,:) = RZDirO*COS(ROmega)+RXDirO*SIN(ROmega)
+      RFrameZ(ind,:) = RZDirO*COS(ROmega)+RXDirO*SIN(ROmega)
     END DO
-    ! Refined orientation matrices, initialised at nominal values
-    RCurOMat = ROMat
-    RBestOMat = ROMat
 
   END SUBROUTINE ReciprocalVectors
 
@@ -254,7 +252,7 @@ MODULE crystallography_mod
   !!
   !! Major-Authors: Richard Beanland (2023)
   !!  
-  SUBROUTINE BatchFrames(IFrameLo,IFrameHi,RdPhi,IAxis, IErr)   
+  SUBROUTINE BatchFrames(IFrameLo,IFrameHi,RdPhi,Itype, IErr)   
 
     USE MyNumbers
     USE message_mod
@@ -262,54 +260,29 @@ MODULE crystallography_mod
 
     ! global inputs/outputs
     USE IPARA, ONLY : IBhklList,IobsHKL
-    USE RPARA, ONLY : RxO,RyO,RzO,RarVecO,RbrVecO,RcrVecO,RBFrame,RObsFrame,&
-            RFrameAngle,RBigK,ROMat,RCurOMat,RFoM
+    USE RPARA, ONLY : RarVecO,RbrVecO,RcrVecO,RBFrame,RObsFrame,&
+            RFrameAngle,RBigK,ROMat,RFoM,RFrameZ
     USE SPARA, ONLY : SPrintString
     
     IMPLICIT NONE
 
-    INTEGER(IKIND),INTENT(IN) :: IFrameLo,IFrameHi,IAxis
-    REAL(RKIND) :: ROmega,RcBragg,RdBragg,Rsum,RdPhi
-    REAL(RKIND), DIMENSION(ITHREE) :: Rg,Rkplusg
-    REAL(RKIND), DIMENSION(ITHREE,ITHREE) :: RdelMat
+    INTEGER(IKIND),INTENT(IN) :: IFrameLo,IFrameHi,Itype
+    REAL(RKIND) :: RcBragg,RdBragg,Rsum,RdPhi
+    REAL(RKIND), DIMENSION(ITHREE) :: Rg,Rkplusg,Rx0,Rz0
     INTEGER(IKIND) :: IErr,ind,jnd,knd,lnd
 
-    ! Apply a rotation of RdPhi about IAxis to the orientation matrices
+    ! Apply a refinement type Itype to RFrameZ
     ! in the range IFrameLo,IFrameHi, then find calculated frame position
     ! RBFrame for each reflexion, using the Bragg condition definition |K+g|=|K|
-    ! give the figure of merit, and undo the rotation if it's a test (IAxis<0)
-    IF(IFrameLo.GE.IFrameHi) IErr = 1 
-    IF(ABS(IAxis).EQ.1) THEN  ! rotation about x
-      RdelMat(1,:) = (/ ONE, ZERO, ZERO /)
-      RdelMat(2,:) = (/ ZERO, COS(RdPhi), -SIN(RdPhi) /)
-      RdelMat(3,:) = (/ ZERO, SIN(RdPhi),  COS(RdPhi) /)
+    ! give the figure of merit, and undo the rotation if it's a test (Itype<0)
+    IF(IFrameLo.GE.IFrameHi) IErr = 1
+    Rx0 = ROMat(1,1,:)
+    Rz0 = ROMat(1,3,:)
+    IF(ABS(Itype).EQ.1) THEN  ! offset
+      DO knd = IFrameLo,IFrameHi
+        RFrameZ(knd,:) = RFrameZ(knd,:)+RzO*COS(RdPhi)+RxO*SIN(RdPhi)
+      END DO
     END IF
-    IF(ABS(IAxis).EQ.2) THEN  ! rotation about y
-      RdelMat(1,:) = (/ COS(RdPhi), ZERO, -SIN(RdPhi) /)
-      RdelMat(2,:) = (/ ZERO, ONE, ZERO /)
-      RdelMat(3,:) = (/ SIN(RdPhi), ZERO, COS(RdPhi) /)
-    END IF
-    IF(ABS(IAxis).EQ.3) THEN  ! rotation about z
-      RdelMat(1,:) = (/ COS(RdPhi), -SIN(RdPhi), ZERO /)
-      RdelMat(2,:) = (/ SIN(RdPhi),  COS(RdPhi), ZERO /)
-      RdelMat(3,:) = (/ ZERO, ZERO, ONE /)
-    END IF
-    ! put into microscope reference frame
-    RdelMat = MATMUL(ROMat(1,:,:),MATMUL(RdelMat,TRANSPOSE(ROMat(1,:,:))))
-    IF(my_rank.EQ.0)PRINT*,RCurOMat(IFrameLo,:,:)
-    CALL message(LL,"Transformation matrix",RdelMat)
-    ! the transformation matrix is applied to the initial frame, from which
-    ! subsequent orientation matrices are calculated
-    RxO = MATMUL(RdelMat,RxO)
-    RyO = MATMUL(RdelMat,RyO)
-    RzO = MATMUL(RdelMat,RzO)
-    DO knd = IFrameLo,IFrameHi
-      ROmega = REAL(knd-1)*DEG2RADIAN*RFrameAngle
-      RCurOMat(knd,1,:) = RxO*COS(ROmega)-RzO*SIN(ROmega)
-      RCurOMat(knd,2,:) = RyO
-      RCurOMat(knd,3,:) = RzO*COS(ROmega)+RxO*SIN(ROmega)
-    END DO
-    IF(my_rank.EQ.0)PRINT*,RCurOMat(IFrameLo,:,:)
     RBFrame = ZERO  ! initialise the output array
     lnd = 0  ! counter for found reflections
     Rsum = ZERO  ! sum of differences between calc & obs frame position
@@ -319,7 +292,7 @@ MODULE crystallography_mod
            IobsHKL(IBhklList(ind),2)*RbrVecO + &
            IobsHKL(IBhklList(ind),3)*RcrVecO
       DO jnd = IFrameLo,IFrameHi  ! loop through frames
-        Rkplusg = Rg + RBigK*RCurOMat(jnd,3,:)  ! K+g
+        Rkplusg = Rg + RBigK*RFrameZ(jnd,:)  ! K+g
         ! how far from Bragg condition 
         RdBragg = RBigK - SQRT(DOT_PRODUCT(Rkplusg,Rkplusg))
         IF (jnd.EQ.IFrameLo) knd = NINT(SIGN(ONE,RdBragg))  ! sign of first frame
@@ -345,17 +318,10 @@ MODULE crystallography_mod
 
     ! figure of merit, angle deviation per reflexion in mrad
     RFoM = THOUSAND*DEG2RADIAN*RFrameAngle*Rsum/REAL(lnd)
-    ! undo rotation if needed
-    IF (IAxis.LT.0) THEN
-      RdelMat = TRANSPOSE(RdelMat)
-      RxO = MATMUL(RdelMat,RxO)
-      RyO = MATMUL(RdelMat,RyO)
-      RzO = MATMUL(RdelMat,RzO)
+    ! undo if needed
+    IF(ABS(Itype).EQ.-1) THEN  ! offset
       DO knd = IFrameLo,IFrameHi
-        ROmega = REAL(knd-1)*DEG2RADIAN*RFrameAngle
-        RCurOMat(knd,1,:) = RxO*COS(ROmega)-RzO*SIN(ROmega)
-        RCurOMat(knd,2,:) = RyO
-        RCurOMat(knd,3,:) = RzO*COS(ROmega)+RxO*SIN(ROmega)
+        RFrameZ(knd,:) = RFrameZ(knd,:)-RzO*COS(RdPhi)-RxO*SIN(RdPhi)
       END DO
       WRITE(SPrintString, FMT='(A21,F7.2)') "Test figure of merit ",RFoM
     ELSE
