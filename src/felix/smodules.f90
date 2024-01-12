@@ -243,7 +243,7 @@ MODULE RPara
        RInitialDebyeWallerFactor,RFinalDebyeWallerFactor,&
        RDeltaDebyeWallerFactor
   !Iterative Ugs
-  REAL(RKIND) :: RPercentageUgChange,RorientationFoM
+  REAL(RKIND) :: RPercentageUgChange,RorientationFoM,RFoM
   !Debye Waller Constant, g-vector magnitude, dummy [s'x s'y] for absorption calc
   REAL(RKIND) :: RCurrentB,RCurrentGMagnitude,RSprimeY,RPScale
   !HKL indices 

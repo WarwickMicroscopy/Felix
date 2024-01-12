@@ -253,7 +253,7 @@ MODULE crystallography_mod
   !!
   !! Major-Authors: Richard Beanland (2023)
   !!  
-  SUBROUTINE BatchFrames(IFrameLo,IFrameHi,IrefFLAG, IErr)   
+  SUBROUTINE BatchFrames(IFrameLo,IFrameHi,RdPhi,Itype, IErr)   
 
     USE MyNumbers
     USE message_mod
@@ -261,43 +261,86 @@ MODULE crystallography_mod
 
     ! global inputs/outputs
     USE IPARA, ONLY : IBhklList,IobsHKL
-    USE RPARA, ONLY : RarVecO,RbrVecO,RcrVecO,RBFrame,RFrameAngle,RBigK,ROMat,RCurOMat
+    USE RPARA, ONLY : RarVecO,RbrVecO,RcrVecO,RBFrame,RFrameAngle,RBigK,RCurOMat,RFoM
     
     IMPLICIT NONE
 
-    INTEGER(IKIND),INTENT(IN) :: IFrameLo,IFrameHi,IrefFLAG
-    REAL(RKIND) :: ROmega,RcBragg,RdBragg
+    INTEGER(IKIND),INTENT(IN) :: IFrameLo,IFrameHi,Itype
+    REAL(RKIND) :: ROmega,RcBragg,RdBragg,RdPhi
     REAL(RKIND), DIMENSION(ITHREE) :: Rg,Rkplusg
-    INTEGER(IKIND) :: IErr,ind,jnd,knd,lnd,InGs
+    REAL(RKIND), DIMENSION(ITHREE,ITHREE) :: RdelMat
+    INTEGER(IKIND) :: IErr,ind,jnd,knd,lnd
 
+
+    IF(IFrameLo.GE.IFrameHi) IErr = 1
+
+    ! apply the rotation etc. to the orientation matrices, depending on Itype
+    ! NB we expect RdPhi input to be in radians
+    IF(ABS(Itype).EQ.1) THEN  ! offset
+      ! matrix to apply the offset, rotation about y
+      RdelMat(1,:) = (/ COS(RdPhi), ZERO, -SIN(RdPhi) /)
+      RdelMat(2,:) = (/ ZERO, ONE, ZERO /)
+      RdelMat(3,:) = (/ SIN(RdPhi), ZERO, COS(RdPhi) /)
+      DO knd = IFrameLo,IFrameHi
+        RCurOMat(knd,:,:) = MATMUL(RdelMat,RCurOMat(knd,:,:))
+      END DO
+    END IF
+    IF(ABS(Itype).EQ.2) THEN  ! x rotation - displacement of beam path
+      ! matrix to apply the offset, rotation about x
+      RdelMat(1,:) = (/ ONE, ZERO, ZERO /)
+      RdelMat(2,:) = (/ ZERO,  COS(RdPhi), SIN(RdPhi) /)
+      RdelMat(3,:) = (/ ZERO, -SIN(RdPhi), COS(RdPhi) /)
+      DO knd = IFrameLo,IFrameHi
+        RCurOMat(knd,:,:) = MATMUL(RdelMat,RCurOMat(knd,:,:))
+      END DO
+    END IF
 
     ! find calculated frame position for each, finding the Bragg condition
     ! using the definition |K+g|=|K|.
-    IF(IFrameLo.GE.IFrameHi) IErr = 1 
     RBFrame = ZERO  ! initialise the output array
-    InGs = SIZE(IBhklList)  ! the number of g-vectors
-    DO ind = 1,InGs
+    lnd = 0  ! counter for found reflections
+    Rsum = ZERO  ! sum of differences between calc & obs frame position
+    DO ind = 1,SIZE(IBhklList)  ! the number of g-vectors
     ! the g-vector, in orthogonal reference frame O
-      Rg = IobsHKL(IBhklList(ind),1)*RarVecO + IobsHKL(IBhklList(ind),2)*RbrVecO + &
+      Rg = IobsHKL(IBhklList(ind),1)*RarVecO + &
+           IobsHKL(IBhklList(ind),2)*RbrVecO + &
            IobsHKL(IBhklList(ind),3)*RcrVecO
       DO jnd = IFrameLo,IFrameHi  ! loop through frames
-        !using either nominal (0) or current (1) orientation matrices
-        IF(IrefFLAG.EQ.0) THEN
-          Rkplusg = Rg + RBigK*ROMat(jnd,3,:)  ! K+g
-        ELSE
-          Rkplusg = Rg + RBigK*RCurOMat(jnd,3,:)  ! K+g
-        END IF
+        Rkplusg = Rg + RBigK*RFrameZ(jnd,:)  ! K+g
         ! how far from Bragg condition 
-        RdBragg = RBigK - SQRT(DOT_PRODUCT(Rkplusg,Rkplusg))
+        RdBragg = RBigK - SQRT(DOT_PRODUCT(Rkplusg,Rkplusg))
         IF (jnd.EQ.IFrameLo) knd = NINT(SIGN(ONE,RdBragg))  ! sign of first frame
         IF (NINT(SIGN(ONE,RdBragg))+knd.EQ.0) THEN  ! we have passed through zero
+          ! calculated frame position for this reflexion
           RBFrame(ind) = REAL(jnd) - ONE + RdBragg/(RdBragg-RcBragg)
           knd = -knd
+          Rsum = Rsum + ABS(RBFrame(ind)-RObsFrame(IBhklList(ind)))
+          lnd = lnd +1
         END IF
         RcBragg = RdBragg
       END DO
-
+      ! output if needed - If the reflection isn't found RBFrame(ind)=ZERO
+      IF (RBFrame(ind).GT.TINY) THEN
+        WRITE(SPrintString, FMT='(A10,I4,A6,F8.2,A6,F8.2)') "Reflexion ",IBhklList(ind),&
+              ": obs ",RObsFrame(IBhklList(ind))," calc ",RBFrame(ind)
+        CALL message(LS,SPrintString)
+      ELSE
+        WRITE(SPrintString, FMT='(A10,I4,A10)') "Reflexion ",IBhklList(ind)," not found"
+        CALL message(LS,SPrintString)
+      END IF
     END DO
+
+    ! figure of merit, angle deviation per reflexion in mrad
+    ! this only counts found reflexions, so if that changes FoMs will not be equivalent 
+    RFoM = THOUSAND*DEG2RADIAN*RFrameAngle*Rsum/REAL(lnd)
+    
+    ! undo if needed
+    IF(Itype.EQ.-1.OR.Itype.EQ.-2) THEN  ! undo the offset, rotation about y
+      RdelMat = TRANSPOSE(RdelMat)
+      DO knd = IFrameLo,IFrameHi
+        RCurOMat(knd,:,:) = MATMUL(RdelMat,RCurOMat(knd,:,:))
+      END DO
+    END IF
     
   END SUBROUTINE BatchFrames
   
@@ -489,7 +532,7 @@ MODULE crystallography_mod
           ! find smallest Sg for this calculated reflexion
           DO lnd = 1,INFrames
             ! A reflexion can appear in a different location in each frame beam pool
-            ! sp we have to go through the full beam pool looking for a match  
+            ! so we have to go through the full beam pool looking for a match  
             DO mnd = 1,INhkl
               IF (IgOutList(mnd,lnd).EQ.jnd) THEN !we've found it in this frame
                 ! I think there must be a neater way of doing this, but hey ho this works
