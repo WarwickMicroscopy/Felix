@@ -268,13 +268,14 @@ MODULE crystallography_mod
     IMPLICIT NONE
 
     INTEGER(IKIND),INTENT(IN) :: IFrameLo,IFrameHi,Itype
-    REAL(RKIND) :: ROmega,RcBragg,RdBragg,Rsum,RdPhi
+    REAL(RKIND) :: RdFi,RcBragg,RdBragg,Rsum,RdPhi
     REAL(RKIND), DIMENSION(ITHREE) :: Rg,Rkplusg
     REAL(RKIND), DIMENSION(ITHREE,ITHREE) :: RdelMat
+    REAL(RKIND), DIMENSION(:,:,:), ALLOCATABLE :: RTestOMat
     INTEGER(IKIND) :: IErr,ind,jnd,knd,lnd
 
     IF(IFrameLo.GE.IFrameHi) IErr = 1
-
+    ALLOCATE(RTestOMat(IFrameHi-IFrameLo+1,ITHREE,ITHREE),STAT=IErr)
     ! apply the rotation etc. to the orientation matrices, depending on Itype
     ! NB we expect RdPhi input to be in radians
     IF(ABS(Itype).EQ.1) THEN  ! offset
@@ -283,7 +284,7 @@ MODULE crystallography_mod
       RdelMat(2,:) = (/ ZERO, ONE, ZERO /)
       RdelMat(3,:) = (/ SIN(RdPhi), ZERO, COS(RdPhi) /)
       DO knd = IFrameLo,IFrameHi
-        RCurOMat(knd,:,:) = MATMUL(RdelMat,RCurOMat(knd,:,:))
+      RTestOMat(knd-IFrameLo+1,:,:) = MATMUL(RdelMat,RCurOMat(knd,:,:))
       END DO
     END IF
     IF(ABS(Itype).EQ.2) THEN  ! x rotation - displacement of beam path
@@ -292,7 +293,17 @@ MODULE crystallography_mod
       RdelMat(2,:) = (/ ZERO,  COS(RdPhi), SIN(RdPhi) /)
       RdelMat(3,:) = (/ ZERO, -SIN(RdPhi), COS(RdPhi) /)
       DO knd = IFrameLo,IFrameHi
-        RCurOMat(knd,:,:) = MATMUL(RdelMat,RCurOMat(knd,:,:))
+        RTestOMat(knd-IFrameLo+1,:,:) = MATMUL(RdelMat,RCurOMat(knd,:,:))
+      END DO
+    END IF
+    IF(ABS(Itype).EQ.3) THEN  ! twist of beam path
+      ! matrix to apply the offset, rotation about x
+      DO knd = IFrameLo,IFrameHi  ! which is applied linearly
+        RdFi = RdPhi*REAL(knd-(IFrameHi+IFrameLo)/2)/REAL(IFrameHi-IFrameLo)
+        RdelMat(1,:) = (/ ONE, ZERO, ZERO /)
+        RdelMat(2,:) = (/ ZERO,  COS(RdFi), SIN(RdFi) /)
+        RdelMat(3,:) = (/ ZERO, -SIN(RdFi), COS(RdFi) /)
+        RTestOMat(knd-IFrameLo+1,:,:) = MATMUL(RdelMat,RCurOMat(knd,:,:))
       END DO
     END IF
 
@@ -307,7 +318,7 @@ MODULE crystallography_mod
            IobsHKL(IBhklList(ind),2)*RbrVecO + &
            IobsHKL(IBhklList(ind),3)*RcrVecO
       DO jnd = IFrameLo,IFrameHi  ! loop through frames
-        Rkplusg = Rg + RBigK*RCurOMat(jnd,3,:)  ! K+g
+        Rkplusg = Rg + RBigK*RTestOMat(jnd-IFrameLo+1,3,:)  ! K+g
         ! how far from Bragg condition 
         RdBragg = RBigK - SQRT(DOT_PRODUCT(Rkplusg,Rkplusg))
         IF (jnd.EQ.IFrameLo) knd = NINT(SIGN(ONE,RdBragg))  ! sign of first frame
@@ -335,13 +346,13 @@ MODULE crystallography_mod
     ! this only counts found reflexions, so if that changes FoMs will not be equivalent 
     RFoM = THOUSAND*DEG2RADIAN*RFrameAngle*Rsum/REAL(lnd)
     
-    ! undo if needed
-    IF(Itype.EQ.-1.OR.Itype.EQ.-2) THEN  ! undo the offset, rotation about y
-      RdelMat = TRANSPOSE(RdelMat)
+    ! apply if needed (Itype is positive)
+    IF(Itype.GT.0) THEN
       DO knd = IFrameLo,IFrameHi
-        RCurOMat(knd,:,:) = MATMUL(RdelMat,RCurOMat(knd,:,:))
+        RCurOMat(knd,:,:) = RTestOMat(knd-IFrameLo+1,:,:)
       END DO
     END IF
+    DEALLOCATE(RTestOMat)
     
   END SUBROUTINE BatchFrames
   

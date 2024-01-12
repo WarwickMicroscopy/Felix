@@ -59,7 +59,7 @@ PROGRAM Felixrefine
   INTEGER(IKIND) :: IErr,ind,jnd,knd,lnd,mnd,nnd,IStartTime,IPlotRadius,IOutFLAG,&
           INBatch,IBatchSize,IFrameStart,IFrameEnd,IFrameLo,IFrameHi
   INTEGER(4) :: IErr4
-  REAL(RKIND) :: RGOutLimit,RgPoolLimit,Roffset,ROmega,RdPhi,RBFoM,RBestFoM
+  REAL(RKIND) :: RGOutLimit,RgPoolLimit,Roffset,ROmega,RdPhi,Rinc,RBestFoM
   REAL(RKIND), DIMENSION(ITHREE) :: RxBestO,RyBestO,RzBestO,Rg,Rk,Rkplusg
   REAL(RKIND), DIMENSION(:), ALLOCATABLE :: RBBestFrame
 
@@ -361,28 +361,32 @@ PROGRAM Felixrefine
         RBestOMat(IFrameStart:IFrameEnd,:,:) = RCurOMat(IFrameStart:IFrameEnd,:,:)
       END IF
 
-      ! test rotation of 0.1 degrees about x 
-      CALL BatchFrames(IFrameLo,IFrameHi,0.1*DEG2RADIAN,-2, IErr)
-      IF(l_alert(IErr,"felixrefine","BatchFrames")) CALL abort
-      RBdFrame = ZERO  ! changes in frame locations as a result of the test rotation
-      ! only non-zero when frame locations exist, & divide by 0.1 to get change per degree
-      WHERE (RBFrame*RBBestFrame.GT.TINY) RBdFrame = (RBFrame - RBBestFrame)/0.1 
-      ! least squares fit to get optimum rotation
-      RdPhi = DEG2RADIAN*DOT_PRODUCT((RBBestFrame-RObsFrame(IBhklList(:))),RBdFrame)/ &
-              DOT_PRODUCT(RBdFrame,RBdFrame)
-      WRITE(SPrintString, FMT='(A10,F7.2,A5)') "delta phi=",RdPhi*1000.0D0," mrad"
-      CALL message(LS,SPrintString)
-      ! FoM for the refined orientation matrices
-      CALL BatchFrames(IFrameLo,IFrameHi,RdPhi*DEG2RADIAN,-2, IErr)
-      IF(l_alert(IErr,"felixrefine","BatchFrames")) CALL abort
-      WRITE(SPrintString, FMT='(A26,F7.2)') "x-refined figure of merit ",RFoM
-      CALL message(LS,SPrintString)
-      IF (RFoM.LT.RBestFoM) THEN
-        RBestFoM = RFoM
-        RBBestFrame = RBFrame
-        CALL BatchFrames(IFrameLo,IFrameHi,RdPhi*DEG2RADIAN,2, IErr)
-        RBestOMat(IFrameStart:IFrameEnd,:,:) = RCurOMat(IFrameStart:IFrameEnd,:,:)
-      END IF
+      DO mnd = 2,3
+        ! refine by interpolation
+        lnd = 0  ! flag to say we're done
+        Rinc = 0.1  ! increment of adjustment
+        RdPhi = -Rinc  ! adjustment
+        DO WHILE (lnd.EQ.0)
+          RdPhi = RdPhi + Rinc
+          CALL BatchFrames(IFrameLo,IFrameHi,RdPhi*DEG2RADIAN,-mnd, IErr)
+          IF(l_alert(IErr,"felixrefine","BatchFrames")) CALL abort
+          WRITE(SPrintString, FMT='(F7.4,A20,F7.2)') RdPhi," figure of merit ",RFoM
+          CALL message(LL,SPrintString)
+          IF (RFoM.LE.RBestFoM) THEN
+            RBestFoM = RFoM
+          ELSE
+            RdPhi = RdPhi - Rinc
+            Rinc = -0.5*Rinc
+          END IF
+          ! if increment size is tiny, finish
+          IF (ABS(Rinc).LT.0.02) lnd = 1
+        END DO
+        CALL BatchFrames(IFrameLo,IFrameHi,RdPhi*DEG2RADIAN,mnd, IErr)
+        WRITE(SPrintString, FMT='(A10,F8.2,A5)') "delta phi=",RdPhi*DEG2RADIAN*1000.0D0," mrad"
+        CALL message(LL,SPrintString)
+        WRITE(SPrintString, FMT='(A24,F7.2)') "refined figure of merit ",RFoM
+        CALL message(LS,SPrintString)
+      END DO
 
       DEALLOCATE(IBhklList)
       DEALLOCATE(RBFrame)
