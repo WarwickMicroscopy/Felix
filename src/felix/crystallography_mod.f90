@@ -262,15 +262,15 @@ MODULE crystallography_mod
     ! global inputs/outputs
     USE IPARA, ONLY : IBhklList,IobsHKL
     USE RPARA, ONLY : RarVecO,RbrVecO,RcrVecO,RBFrame,RFrameAngle,RBigK,RCurOMat,RFoM
-    
+    USE SPARA, ONLY : SPrintString
+
     IMPLICIT NONE
 
     INTEGER(IKIND),INTENT(IN) :: IFrameLo,IFrameHi,Itype
-    REAL(RKIND) :: ROmega,RcBragg,RdBragg,RdPhi
+    REAL(RKIND) :: ROmega,RcBragg,RdBragg,Rsum,RdPhi
     REAL(RKIND), DIMENSION(ITHREE) :: Rg,Rkplusg
     REAL(RKIND), DIMENSION(ITHREE,ITHREE) :: RdelMat
     INTEGER(IKIND) :: IErr,ind,jnd,knd,lnd
-
 
     IF(IFrameLo.GE.IFrameHi) IErr = 1
 
@@ -306,9 +306,9 @@ MODULE crystallography_mod
            IobsHKL(IBhklList(ind),2)*RbrVecO + &
            IobsHKL(IBhklList(ind),3)*RcrVecO
       DO jnd = IFrameLo,IFrameHi  ! loop through frames
-        Rkplusg = Rg + RBigK*RFrameZ(jnd,:)  ! K+g
+        Rkplusg = Rg + RBigK*RCurOMat(jnd,3,:)  ! K+g
         ! how far from Bragg condition 
-        RdBragg = RBigK - SQRT(DOT_PRODUCT(Rkplusg,Rkplusg))
+        RdBragg = RBigK - SQRT(DOT_PRODUCT(Rkplusg,Rkplusg))
         IF (jnd.EQ.IFrameLo) knd = NINT(SIGN(ONE,RdBragg))  ! sign of first frame
         IF (NINT(SIGN(ONE,RdBragg))+knd.EQ.0) THEN  ! we have passed through zero
           ! calculated frame position for this reflexion
