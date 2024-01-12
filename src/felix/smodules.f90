@@ -228,7 +228,7 @@ MODULE RPara
   !Crystallography
   REAL(RKIND) :: RCellA,RCellB,RCellC,RVolume,RAlpha,RBeta,RGamma, &
        RDebyeWallerConstant,RAbsorptionPercentage
-  REAL(RKIND), DIMENSION(:), ALLOCATABLE :: RBasisIsoDW, RBasisOccupancy, RIsoDW, RIkin,RobsFrame,RCalcFrame
+  REAL(RKIND), DIMENSION(:), ALLOCATABLE :: RBasisIsoDW, RBasisOccupancy, RIsoDW, RIkin,RObsFrame,RCalcFrame
   REAL(RKIND), DIMENSION(:), ALLOCATABLE :: ROccupancy,RBFrame,RBdFrame
   REAL(RKIND), DIMENSION(:,:), ALLOCATABLE :: RSymVec,RBasisAtomPosition, RBasisAtomDelta
   REAL(RKIND), DIMENSION(:,:), ALLOCATABLE :: RAtomXYZ,RUniqueKey,RgPoolSg

@@ -261,7 +261,8 @@ MODULE crystallography_mod
 
     ! global inputs/outputs
     USE IPARA, ONLY : IBhklList,IobsHKL
-    USE RPARA, ONLY : RarVecO,RbrVecO,RcrVecO,RBFrame,RFrameAngle,RBigK,RCurOMat,RFoM
+    USE RPARA, ONLY : RarVecO,RbrVecO,RcrVecO,RBFrame,RFrameAngle,RBigK,&
+            RCurOMat,RFoM,RObsFrame
     USE SPARA, ONLY : SPrintString
 
     IMPLICIT NONE
@@ -323,10 +324,10 @@ MODULE crystallography_mod
       IF (RBFrame(ind).GT.TINY) THEN
         WRITE(SPrintString, FMT='(A10,I4,A6,F8.2,A6,F8.2)') "Reflexion ",IBhklList(ind),&
               ": obs ",RObsFrame(IBhklList(ind))," calc ",RBFrame(ind)
-        CALL message(LS,SPrintString)
+        CALL message(LL,SPrintString)
       ELSE
         WRITE(SPrintString, FMT='(A10,I4,A10)') "Reflexion ",IBhklList(ind)," not found"
-        CALL message(LS,SPrintString)
+        CALL message(LL,SPrintString)
       END IF
     END DO
 
@@ -509,7 +510,7 @@ MODULE crystallography_mod
     USE message_mod
     
     ! global inputs
-    USE RPARA, ONLY : RCalcFrame,RgPoolSg,RobsFrame,RFrameAngle
+    USE RPARA, ONLY : RCalcFrame,RgPoolSg,RObsFrame,RFrameAngle
     USE IPARA, ONLY : IgObsList,IgOutList,INObservedHKL,INCalcHKL,IobsHKL,Ig,INFrames,INhkl
     USE SPARA, ONLY : SPrintString    
     ! global outputs
@@ -556,7 +557,7 @@ MODULE crystallography_mod
           END DO
           IF (RCalcFrame(ind).GT.ZERO) THEN
             WRITE(SPrintString, FMT='(3(I3,1X),A19,F6.2,A6,F6.2,A5)') &
-                IobsHKL(ind,:)," has Sg=0 at frame ",RCalcFrame(ind)," calc:",RobsFrame(ind)," expt"
+                IobsHKL(ind,:)," has Sg=0 at frame ",RCalcFrame(ind)," calc:",RObsFrame(ind)," expt"
             CALL message(LL,SPrintString)
           END IF
         END IF
@@ -573,7 +574,7 @@ MODULE crystallography_mod
     jnd = 0
     DO ind = 1,INObservedHKL
       IF (RCalcFrame(ind).GT.ZERO) THEN
-        RorientationFoM = RorientationFoM + ABS(RCalcFrame(ind)-RobsFrame(ind))
+        RorientationFoM = RorientationFoM + ABS(RCalcFrame(ind)-RObsFrame(ind))
         jnd = jnd +1
       ELSE
         Imissing = Imissing + 1

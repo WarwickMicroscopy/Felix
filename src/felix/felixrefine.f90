@@ -240,7 +240,7 @@ PROGRAM Felixrefine
   IF(l_alert(IErr,"felixrefine","ReciprocalVectors")) CALL abort
   !--------------------------------------------------------------------
   ! The INObservedHKL observed reflexions & the frame of max intensity for each
-  CALL ReadHklFile(IErr) ! NB RobsFrame and IobsHKL allocated here
+  CALL ReadHklFile(IErr) ! NB RObsFrame and IobsHKL allocated here
   IF(l_alert(IErr,"felixrefine","ReadHklFile")) CALL abort
   ! The calculated reflexions in each frame: Ig,IgPoolList,IgOutList,RgPoolSg, set INcalcHKL
   ! Allocations of Ig, RIkin in here
@@ -257,9 +257,9 @@ PROGRAM Felixrefine
     ! list matching observed reflexions to the complete set in the simulation, Ig
     ALLOCATE(IgObsList(INObservedHKL),STAT=IErr)
     IF(l_alert(IErr,"Felixrefine","allocate IgObsList")) CALL abort
-    ! Equivalent to RobsFrame for calculated reflexions (i.e. when Sg=0) 
+    ! Equivalent to RObsFrame for calculated reflexions (i.e. when Sg=0) 
     ALLOCATE(RCalcFrame(INObservedHKL),STAT=IErr)
-    IF(l_alert(IErr,"ReadHklFile","allocate RobsFrame")) CALL abort
+    IF(l_alert(IErr,"ReadHklFile","allocate RObsFrame")) CALL abort
     CALL HKLmatch(IErr)
     IF(l_alert(IErr,"felixrefine","HKLmatch")) CALL abort
     ! write to text file hkl_list.txt
@@ -351,7 +351,7 @@ PROGRAM Felixrefine
       ! Figure of Merit for the refined reference frames 
       CALL BatchFrames(IFrameLo,IFrameHi,Roffset*RFrameAngle*DEG2RADIAN,-1, IErr)
       IF(l_alert(IErr,"felixrefine","BatchFrames")) CALL abort
-      WRITE(SPrintString, FMT='(A22,F7.2)') "Batch figure of merit ",RFoM
+      WRITE(SPrintString, FMT='(A31,F7.2)') "Offset-refined figure of merit ",RFoM
       CALL message(LS,SPrintString)
       IF (RFoM.LT.RBestFoM) THEN ! the refinement is better, apply it
         RBestFoM = RFoM
@@ -364,22 +364,20 @@ PROGRAM Felixrefine
       ! test rotation of 0.1 degrees about x 
       CALL BatchFrames(IFrameLo,IFrameHi,0.1*DEG2RADIAN,-2, IErr)
       IF(l_alert(IErr,"felixrefine","BatchFrames")) CALL abort
-      WRITE(SPrintString, FMT='(A23,F7.2)') "Test x figure of merit ",RFoM
-      CALL message(LS,SPrintString)
       RBdFrame = ZERO  ! changes in frame locations as a result of the test rotation
       ! only non-zero when frame locations exist, & divide by 0.1 to get change per degree
       WHERE (RBFrame*RBBestFrame.GT.TINY) RBdFrame = (RBFrame - RBBestFrame)/0.1 
       ! least squares fit to get optimum rotation
-      RdPhi = -DEG2RADIAN*DOT_PRODUCT((RBBestFrame-RObsFrame(IBhklList(:))),RBdFrame)/ &
+      RdPhi = DEG2RADIAN*DOT_PRODUCT((RBBestFrame-RObsFrame(IBhklList(:))),RBdFrame)/ &
               DOT_PRODUCT(RBdFrame,RBdFrame)
       WRITE(SPrintString, FMT='(A10,F7.2,A5)') "delta phi=",RdPhi*1000.0D0," mrad"
       CALL message(LS,SPrintString)
       ! FoM for the refined orientation matrices
       CALL BatchFrames(IFrameLo,IFrameHi,RdPhi*DEG2RADIAN,-2, IErr)
       IF(l_alert(IErr,"felixrefine","BatchFrames")) CALL abort
-      WRITE(SPrintString, FMT='(A22,F7.2)') "Batch figure of merit ",RFoM
+      WRITE(SPrintString, FMT='(A26,F7.2)') "x-refined figure of merit ",RFoM
       CALL message(LS,SPrintString)
-      IF (RBFoM.LT.RBestFoM) THEN
+      IF (RFoM.LT.RBestFoM) THEN
         RBestFoM = RFoM
         RBBestFrame = RBFrame
         CALL BatchFrames(IFrameLo,IFrameHi,RdPhi*DEG2RADIAN,2, IErr)
