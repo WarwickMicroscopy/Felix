@@ -227,12 +227,12 @@ MODULE RPara
   !INPUT Section 
   !Crystallography
   REAL(RKIND) :: RCellA,RCellB,RCellC,RVolume,RAlpha,RBeta,RGamma, &
-       RDebyeWallerConstant,RAbsorptionPercentage,RFoM
+       RDebyeWallerConstant,RAbsorptionPercentage
   REAL(RKIND), DIMENSION(:), ALLOCATABLE :: RBasisIsoDW, RBasisOccupancy, RIsoDW, RIkin,RobsFrame,RCalcFrame
   REAL(RKIND), DIMENSION(:), ALLOCATABLE :: ROccupancy,RBFrame,RBdFrame
   REAL(RKIND), DIMENSION(:,:), ALLOCATABLE :: RSymVec,RBasisAtomPosition, RBasisAtomDelta
-  REAL(RKIND), DIMENSION(:,:), ALLOCATABLE :: RAtomXYZ,RUniqueKey,RgPoolSg,RFrameZ
-  REAL(RKIND), DIMENSION(:,:,:), ALLOCATABLE :: RSymMat,ROMat
+  REAL(RKIND), DIMENSION(:,:), ALLOCATABLE :: RAtomXYZ,RUniqueKey,RgPoolSg
+  REAL(RKIND), DIMENSION(:,:,:), ALLOCATABLE :: RSymMat,ROMat,RCurOMat,RBestOMat
   !Microscope Parameters
   REAL(RKIND) :: RConvergenceAngle,RAcceleratingVoltage
   REAL(RKIND) :: RElectronVelocity,RElectronWaveLength, &
@@ -261,7 +261,7 @@ MODULE RPara
        RarVecO, RbrVecO, RcrVecO, &
        RarVecM, RbrVecM, RcrVecM, &
        RXDirC_0, RZDirC_0, RXDirC, RZDirC, &
-       RXDirO, RYDirO, RZDirO, RNormDirC,RNormDirM
+       RXDirO, RYDirO, RZDirO, RNormDirC,RNormDirM,RxO,RyO,RzO
   REAL(RKIND) :: RarMag, RbrMag, RcrMag
   REAL(RKIND), DIMENSION(:,:), ALLOCATABLE :: RAtomCoordinate
   REAL(RKIND) :: RBaseVec(ITHREE,ITHREE), &
@@ -271,6 +271,7 @@ MODULE RPara
   REAL(RKIND) RBigK, RDevLimit, RMeanInnerPotential, RScattFacToVolts, RDeltaK, RMinimumGMag, RGVectorMagnitude
   REAL(RKIND), DIMENSION(:), ALLOCATABLE :: RgPoolMag
   REAL(RKIND), DIMENSION(:,:), ALLOCATABLE :: RgPool
+  REAL(RKIND), DIMENSION(ITHREE,ITHREE) :: RTMat
   REAL(RKIND),DIMENSION(ITHREE) :: RGVector
   REAL(RKIND),DIMENSION(:),ALLOCATABLE :: RgDotNorm
   REAL(RKIND),DIMENSION(:), ALLOCATABLE :: RDevPara  ! deviation parameter for each g, for a given pixel

@@ -123,12 +123,12 @@ MODULE crystallography_mod
 
     ! global outputs
     USE RPARA, ONLY : RaVecO,RbVecO,RcVecO,RVolume,RarVecO,RbrVecO,RcrVecO,&
-            RXDirO,RYDirO,RZDirO,RarMag,RbrMag,RcrMag,ROMat,RFrameZ
+            RXDirO,RYDirO,RZDirO,RarMag,RbrMag,RcrMag,ROMat,RCurOMat,RBestOMat
 
     IMPLICIT NONE
 
     INTEGER(IKIND) :: IErr,ind
-    REAL(RKIND) :: Rt,ROmega,RxAngle
+    REAL(RKIND) :: Rt,RAngle,RxAngle
     REAL(RKIND), DIMENSION(ITHREE,ITHREE) :: RTMatC2O
     
     !direct lattice vectors in an orthogonal reference frame, Angstrom units 
@@ -148,9 +148,9 @@ MODULE crystallography_mod
 
     ! RTmatC2O transforms from crystal (implicit units) 
     ! to orthogonal O reference frame (Angstrom units)
-    RTMatC2O(:,1) = RaVecO
-    RTMatC2O(:,2) = RbVecO
-    RTMatC2O(:,3) = RcVecO
+    RTMatC2O(:,1) = RaVecO(:)
+    RTMatC2O(:,2) = RbVecO(:)
+    RTMatC2O(:,3) = RcVecO(:)
 
     ! Atom coordinates in the orthogonal reference frame
     DO ind=1,INAtomsUnitCell
@@ -231,17 +231,18 @@ MODULE crystallography_mod
       RXDirO = RXDirO/SQRT(DOT_PRODUCT(RXDirO,RXDirO))
     END IF
     RYDirO = CROSS(RZDirO,RXDirO)  ! the rotation axis
-    
     ! Nominal orientation matrices for all frames
     ! matrix with x,y,z as rows
     ROMat = ZERO
     DO ind = 1, INFrames
-      ROmega = REAL(ind-1)*DEG2RADIAN*RFrameAngle
-      ROMat(ind,1,:) = RXDirO*COS(ROmega)-RZDirO*SIN(ROmega)
+      RAngle = REAL(ind-1)*DEG2RADIAN*RFrameAngle
+      ROMat(ind,1,:) = RXDirO*COS(RAngle)-RZDirO*SIN(RAngle)
       ROMat(ind,2,:) = RYDirO
-      ROMat(ind,3,:) = RZDirO*COS(ROmega)+RXDirO*SIN(ROmega)
-      RFrameZ(ind,:) = RZDirO*COS(ROmega)+RXDirO*SIN(ROmega)
+      ROMat(ind,3,:) = RZDirO*COS(RAngle)+RXDirO*SIN(RAngle)
     END DO
+    ! Refined orientation matrices, initialised at nominal values
+    RCurOMat = ROMat
+    RBestOMat = ROMat
 
   END SUBROUTINE ReciprocalVectors
 
@@ -252,7 +253,7 @@ MODULE crystallography_mod
   !!
   !! Major-Authors: Richard Beanland (2023)
   !!  
-  SUBROUTINE BatchFrames(IFrameLo,IFrameHi,RdPhi,Itype, IErr)   
+  SUBROUTINE BatchFrames(IFrameLo,IFrameHi,IrefFLAG, IErr)   
 
     USE MyNumbers
     USE message_mod
@@ -260,75 +261,44 @@ MODULE crystallography_mod
 
     ! global inputs/outputs
     USE IPARA, ONLY : IBhklList,IobsHKL
-    USE RPARA, ONLY : RarVecO,RbrVecO,RcrVecO,RBFrame,RObsFrame,&
-            RFrameAngle,RBigK,ROMat,RFoM,RFrameZ
-    USE SPARA, ONLY : SPrintString
+    USE RPARA, ONLY : RarVecO,RbrVecO,RcrVecO,RBFrame,RFrameAngle,RBigK,ROMat,RCurOMat
     
     IMPLICIT NONE
 
-    INTEGER(IKIND),INTENT(IN) :: IFrameLo,IFrameHi,Itype
-    REAL(RKIND) :: RcBragg,RdBragg,Rsum,RdPhi
-    REAL(RKIND), DIMENSION(ITHREE) :: Rg,Rkplusg,Rx0,Rz0
-    INTEGER(IKIND) :: IErr,ind,jnd,knd,lnd
+    INTEGER(IKIND),INTENT(IN) :: IFrameLo,IFrameHi,IrefFLAG
+    REAL(RKIND) :: ROmega,RcBragg,RdBragg
+    REAL(RKIND), DIMENSION(ITHREE) :: Rg,Rkplusg
+    INTEGER(IKIND) :: IErr,ind,jnd,knd,lnd,InGs
 
-    ! Apply a refinement type Itype to RFrameZ
-    ! in the range IFrameLo,IFrameHi, then find calculated frame position
-    ! RBFrame for each reflexion, using the Bragg condition definition |K+g|=|K|
-    ! give the figure of merit, and undo the rotation if it's a test (Itype<0)
-    IF(IFrameLo.GE.IFrameHi) IErr = 1
-    Rx0 = ROMat(1,1,:)
-    Rz0 = ROMat(1,3,:)
-    IF(ABS(Itype).EQ.1) THEN  ! offset
-      DO knd = IFrameLo,IFrameHi
-        RFrameZ(knd,:) = RFrameZ(knd,:)+RzO*COS(RdPhi)+RxO*SIN(RdPhi)
-      END DO
-    END IF
+
+    ! find calculated frame position for each, finding the Bragg condition
+    ! using the definition |K+g|=|K|.
+    IF(IFrameLo.GE.IFrameHi) IErr = 1 
     RBFrame = ZERO  ! initialise the output array
-    lnd = 0  ! counter for found reflections
-    Rsum = ZERO  ! sum of differences between calc & obs frame position
-    DO ind = 1,SIZE(IBhklList)  ! the number of g-vectors
+    InGs = SIZE(IBhklList)  ! the number of g-vectors
+    DO ind = 1,InGs
     ! the g-vector, in orthogonal reference frame O
-      Rg = IobsHKL(IBhklList(ind),1)*RarVecO + &
-           IobsHKL(IBhklList(ind),2)*RbrVecO + &
+      Rg = IobsHKL(IBhklList(ind),1)*RarVecO + IobsHKL(IBhklList(ind),2)*RbrVecO + &
            IobsHKL(IBhklList(ind),3)*RcrVecO
       DO jnd = IFrameLo,IFrameHi  ! loop through frames
-        Rkplusg = Rg + RBigK*RFrameZ(jnd,:)  ! K+g
+        !using either nominal (0) or current (1) orientation matrices
+        IF(IrefFLAG.EQ.0) THEN
+          Rkplusg = Rg + RBigK*ROMat(jnd,3,:)  ! K+g
+        ELSE
+          Rkplusg = Rg + RBigK*RCurOMat(jnd,3,:)  ! K+g
+        END IF
         ! how far from Bragg condition 
         RdBragg = RBigK - SQRT(DOT_PRODUCT(Rkplusg,Rkplusg))
         IF (jnd.EQ.IFrameLo) knd = NINT(SIGN(ONE,RdBragg))  ! sign of first frame
         IF (NINT(SIGN(ONE,RdBragg))+knd.EQ.0) THEN  ! we have passed through zero
-          ! calculated frame position for this reflexion
           RBFrame(ind) = REAL(jnd) - ONE + RdBragg/(RdBragg-RcBragg)
           knd = -knd
-          Rsum = Rsum + ABS(RBFrame(ind)-RObsFrame(IBhklList(ind)))
-          lnd = lnd +1
         END IF
         RcBragg = RdBragg
       END DO
-      ! output if needed - If the reflection isn't found RBFrame(ind)=ZERO
-      IF (RBFrame(ind).GT.TINY) THEN
-        WRITE(SPrintString, FMT='(A10,I4,A6,F8.2,A6,F8.2)') "Reflexion ",IBhklList(ind),&
-              ": obs ",RObsFrame(IBhklList(ind))," calc ",RBFrame(ind)
-        CALL message(LS,SPrintString)
-      ELSE
-        WRITE(SPrintString, FMT='(A10,I4,A10)') "Reflexion ",IBhklList(ind)," not found"
-        CALL message(LS,SPrintString)
-      END IF
+
     END DO
-
-    ! figure of merit, angle deviation per reflexion in mrad
-    RFoM = THOUSAND*DEG2RADIAN*RFrameAngle*Rsum/REAL(lnd)
-    ! undo if needed
-    IF(ABS(Itype).EQ.-1) THEN  ! offset
-      DO knd = IFrameLo,IFrameHi
-        RFrameZ(knd,:) = RFrameZ(knd,:)-RzO*COS(RdPhi)-RxO*SIN(RdPhi)
-      END DO
-      WRITE(SPrintString, FMT='(A21,F7.2)') "Test figure of merit ",RFoM
-    ELSE
-      WRITE(SPrintString, FMT='(A16,F7.2)') "Figure of merit ",RFoM
-    END IF
-    CALL message(LS,SPrintString)
-
+    
   END SUBROUTINE BatchFrames
   
   !$%%HKLmake%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -357,7 +327,7 @@ MODULE crystallography_mod
 
     REAL(RKIND),INTENT(IN) :: RDevLimit, RGOutLimit, RgPoolLimit
     INTEGER(IKIND) :: IErr,ind,jnd,knd,lnd,mnd,nnd,ond,ISel,Ifull(INFrames),IMaxNg,inda,indb,indc,Ifound
-    REAL(RKIND) :: ROmega,Rk(ITHREE),Rk0(ITHREE),Rp(ITHREE),RSg,Rphi,Rg(ITHREE),&
+    REAL(RKIND) :: RAngle,Rk(ITHREE),Rk0(ITHREE),Rp(ITHREE),RSg,Rphi,Rg(ITHREE),&
                    RKplusg(ITHREE),RgMag,RShell,RgMin,Rfq
     COMPLEX :: CFg
 
@@ -411,8 +381,8 @@ MODULE crystallography_mod
             DO nnd = 1,INFrames
               ! Is the beam pool already full for this frame
               IF (Ifull(nnd).EQ.1) CYCLE
-              ROmega = REAL(nnd-1)*DEG2RADIAN*RFrameAngle
-              Rk = RBigK*(RZDirO*COS(ROmega)+RXDirO*SIN(ROmega))
+              RAngle = REAL(nnd-1)*DEG2RADIAN*RFrameAngle
+              Rk = RBigK*(RZDirO*COS(RAngle)+RXDirO*SIN(RAngle))
               ! Calculate Sg by getting the vector k0, which is coplanar with k and g and
               ! corresponds to an incident beam at the Bragg condition
               ! First we need the vector component of k perpendicular to g, which we call p 
@@ -600,7 +570,7 @@ MODULE crystallography_mod
     IMPLICIT NONE
 
     INTEGER(IKIND) :: IErr,ind,jnd,knd,lnd,mnd,ISim,Ix,Iy,Itest,IOutFLAG
-    REAL(RKIND) :: Rg(ITHREE),RgMag,RSg,Rfq,RSim(512,512),ROmega,RInst,Rp(ITHREE),RImax,RIg
+    REAL(RKIND) :: Rg(ITHREE),RgMag,RSg,Rfq,RSim(512,512),RAngle,RInst,Rp(ITHREE),RImax,RIg
     COMPLEX :: CFg
     CHARACTER(200) :: path
     CHARACTER(100) :: fString
@@ -781,7 +751,7 @@ END SUBROUTINE HKLSave
 
     INTEGER(IKIND) :: IErr,ind,jnd,knd,lnd,mnd,Ix,Iy
     INTEGER(IKIND), INTENT(IN) :: ISim
-    REAL(RKIND) :: Rg(ITHREE),RgMag,RSg,Rfq,RSim(2*ISim,2*ISim),ROmega,RInst,Rp(ITHREE),RImax
+    REAL(RKIND) :: Rg(ITHREE),RgMag,RSg,Rfq,RSim(2*ISim,2*ISim),RAngle,RInst,Rp(ITHREE),RImax
     REAL(RKIND), INTENT(IN) :: RgOutLimit 
     COMPLEX :: CFg
     CHARACTER(200) :: path
@@ -793,7 +763,7 @@ END SUBROUTINE HKLSave
     RInst = 6000.0
     RImax = MAXVAL(RIkin)
     DO ind = 1,INFrames
-      ROmega = REAL(ind-1)*DEG2RADIAN*RFrameAngle
+      RAngle = REAL(ind-1)*DEG2RADIAN*RFrameAngle
       RSim = ZERO
       ! output g's
       DO knd = 2, INhkl
@@ -803,7 +773,7 @@ END SUBROUTINE HKLSave
           RgMag = SQRT(DOT_PRODUCT(Rg,Rg))
           RSg = RgPoolSg(knd,ind)  !Sg
           ! x- and y-coords (NB swapped in the image!)
-          Rp = RXDirO*COS(ROmega)-RZDirO*SIN(ROmega)  ! unit vector horizontal in the image
+          Rp = RXDirO*COS(RAngle)-RZDirO*SIN(RAngle)  ! unit vector horizontal in the image
           ! position of the spot, 2% leeway to avoid going over the edge of the image
           Ix = ISim-0.98*NINT(DOT_PRODUCT(Rg,Rp)*REAL(ISim)/RGOutLimit)  
           Iy = ISim+0.98*NINT(DOT_PRODUCT(Rg,RYDirO)*REAL(ISim)/RGOutLimit)
