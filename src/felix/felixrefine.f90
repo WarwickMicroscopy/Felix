@@ -61,7 +61,7 @@ PROGRAM Felixrefine
   INTEGER(4) :: IErr4
   REAL(RKIND) :: RGOutLimit,RgPoolLimit,Roffset,ROmega,RdPhi,Rinc,RBestFoM
   REAL(RKIND), DIMENSION(ITHREE) :: RxBestO,RyBestO,RzBestO,Rg,Rk,Rkplusg
-  REAL(RKIND), DIMENSION(:), ALLOCATABLE :: RBBestFrame
+  !REAL(RKIND), DIMENSION(:), ALLOCATABLE :: RBBestFrame
 
   CHARACTER(40) :: my_rank_string
   CHARACTER(200) :: path,subpath,subsubpath
@@ -248,31 +248,8 @@ PROGRAM Felixrefine
   ! IF(l_alert(IErr,"felixrefine","HKLMake")) CALL abort
 
   !--------------------------------------------------------------------
-  ! simulation only option
-  IF (IOutputFLAG.LT.3) THEN
-    ! The calculated reflexions in each frame: Ig,IgPoolList,IgOutList,RgPoolSg, set INcalcHKL
-    ! Allocations of Ig, RIkin in here
-    CALL HKLmake(RDevLimit, RGOutLimit, RgPoolLimit, IErr)  ! in crystallography.f90
-    IF(l_alert(IErr,"felixrefine","HKLMake")) CALL abort
-    ! list matching observed reflexions to the complete set in the simulation, Ig
-    ALLOCATE(IgObsList(INObservedHKL),STAT=IErr)
-    IF(l_alert(IErr,"Felixrefine","allocate IgObsList")) CALL abort
-    ! Equivalent to RObsFrame for calculated reflexions (i.e. when Sg=0) 
-    ALLOCATE(RCalcFrame(INObservedHKL),STAT=IErr)
-    IF(l_alert(IErr,"ReadHklFile","allocate RObsFrame")) CALL abort
-    CALL HKLmatch(IErr)
-    IF(l_alert(IErr,"felixrefine","HKLmatch")) CALL abort
-    ! write to text file hkl_list.txt
-    IOutFLAG = 2  ! sets the output in hkl_list.txt: 1=out, 2=pool
-    CALL HKLSave(IOutFLAG, IErr)  ! in crystallography.f90
-    IF(l_alert(IErr,"felixrefine","HKLSave")) CALL abort
-    ! write simple frame images
-    IPlotRadius = 256_IKIND
-    CALL HKLPlot(IPlotRadius, RGOutLimit, IErr)  ! in crystallography.f90
-    IF(l_alert(IErr,"felixrefine","HKLPlot")) CALL abort
-
-  ELSE  ! refine orientation using small batches of frames
-
+  ! refine orientation using small batches of frames
+  IF (IOutputFLAG.GE.3) THEN
     ! Each frame has an orientation matrix given in ROMat
     ! We want a beam path that is a (piecewise) continuous path
     ! through reciprocal space.  For each batch of frames we optimise the offset
@@ -312,7 +289,7 @@ PROGRAM Felixrefine
       IBhklList = Itemp1D(1:jnd)
       ALLOCATE(RBFrame(jnd),STAT=IErr)  ! calculated frame positions for the reflexions in this batch
       ALLOCATE(RBdFrame(jnd),STAT=IErr) ! delta in frame position from a small change
-      ALLOCATE(RBBestFrame(jnd),STAT=IErr)  ! best calculated frame positions so far
+      !ALLOCATE(RBBestFrame(jnd),STAT=IErr)  ! best calculated frame positions so far
       !--------------------------------------------------------------------
       ! refine orientation - reset current orientation matrices to nominal values
       RCurOMat = ROMat
@@ -325,7 +302,7 @@ PROGRAM Felixrefine
       CALL BatchFrames(IFrameLo,IFrameHi,ZERO,-1, IErr)  ! start,end,angle,type (-ve = test only)
       IF(l_alert(IErr,"felixrefine","BatchFrames")) CALL abort
       RBestFoM = RFoM  ! best figure of merit
-      RBBestFrame = RBFrame  ! best frame locations
+      !RBBestFrame = RBFrame  ! best frame locations
       WRITE(SPrintString, FMT='(A24,F7.2)') "Initial figure of merit ",RFoM
       CALL message(LS,SPrintString)
 
@@ -346,16 +323,16 @@ PROGRAM Felixrefine
       END DO
       ROffset = ROffset/REAL(nnd)
       WRITE(SPrintString, FMT='(A7,F7.2,A7)') "Offset ",ROffset," frames"
-      CALL message(LS,SPrintString)
+      CALL message(LL,SPrintString)
 
       ! Figure of Merit for the refined reference frames 
       CALL BatchFrames(IFrameLo,IFrameHi,Roffset*RFrameAngle*DEG2RADIAN,-1, IErr)
       IF(l_alert(IErr,"felixrefine","BatchFrames")) CALL abort
       WRITE(SPrintString, FMT='(A31,F7.2)') "Offset-refined figure of merit ",RFoM
-      CALL message(LS,SPrintString)
+      CALL message(LL,SPrintString)
       IF (RFoM.LT.RBestFoM) THEN ! the refinement is better, apply it
         RBestFoM = RFoM
-        RBBestFrame = RBFrame
+        !RBBestFrame = RBFrame
         CALL BatchFrames(IFrameLo,IFrameHi,Roffset*RFrameAngle*DEG2RADIAN,1, IErr)
         ! update the frames in this batch to the best values
         RBestOMat(IFrameStart:IFrameEnd,:,:) = RCurOMat(IFrameStart:IFrameEnd,:,:)
@@ -374,6 +351,7 @@ PROGRAM Felixrefine
           CALL message(LL,SPrintString)
           IF (RFoM.LE.RBestFoM) THEN
             RBestFoM = RFoM
+            RBestOMat(IFrameStart:IFrameEnd,:,:) = RCurOMat(IFrameStart:IFrameEnd,:,:)
           ELSE
             RdPhi = RdPhi - Rinc
             Rinc = -0.5*Rinc
@@ -384,18 +362,41 @@ PROGRAM Felixrefine
         CALL BatchFrames(IFrameLo,IFrameHi,RdPhi*DEG2RADIAN,mnd, IErr)
         WRITE(SPrintString, FMT='(A10,F8.2,A5)') "delta phi=",RdPhi*DEG2RADIAN*1000.0D0," mrad"
         CALL message(LL,SPrintString)
-        WRITE(SPrintString, FMT='(A24,F7.2)') "refined figure of merit ",RFoM
-        CALL message(LS,SPrintString)
       END DO
+      WRITE(SPrintString, FMT='(A24,F7.2)') "refined figure of merit ",RFoM
+      CALL message(LS,SPrintString)
 
       DEALLOCATE(IBhklList)
       DEALLOCATE(RBFrame)
       DEALLOCATE(RBdFrame)
-      DEALLOCATE(RBBestFrame)
+      !DEALLOCATE(RBBestFrame)
     END DO
     DEALLOCATE(Itemp1D)
   END IF
-  
+
+  !--------------------------------------------------------------------
+  ! set up beam pools 
+  ! The calculated reflexions in each frame: Ig,IgPoolList,IgOutList,RgPoolSg, set INcalcHKL
+  ! Allocations of Ig, RIkin in here
+  CALL HKLmake(RDevLimit, RGOutLimit, RgPoolLimit, IErr)  ! in crystallography.f90
+  IF(l_alert(IErr,"felixrefine","HKLMake")) CALL abort
+  ! list matching observed reflexions to the complete set in the simulation, Ig
+  ALLOCATE(IgObsList(INObservedHKL),STAT=IErr)
+  IF(l_alert(IErr,"Felixrefine","allocate IgObsList")) CALL abort
+  ! Equivalent to RObsFrame for calculated reflexions (i.e. when Sg=0) 
+  ALLOCATE(RCalcFrame(INObservedHKL),STAT=IErr)
+  IF(l_alert(IErr,"ReadHklFile","allocate RObsFrame")) CALL abort
+  CALL HKLmatch(IErr)
+  IF(l_alert(IErr,"felixrefine","HKLmatch")) CALL abort
+  ! write to text file hkl_list.txt
+  IOutFLAG = 2  ! sets the output in hkl_list.txt: 1=out, 2=pool
+  CALL HKLSave(IOutFLAG, IErr)  ! in crystallography.f90
+  IF(l_alert(IErr,"felixrefine","HKLSave")) CALL abort
+  ! write simple frame images
+  IPlotRadius = 256_IKIND
+  CALL HKLPlot(IPlotRadius, RGOutLimit, IErr)  ! in crystallography.f90
+  IF(l_alert(IErr,"felixrefine","HKLPlot")) CALL abort
+
   !--------------------------------------------------------------------
   ! write to text file hkl_list.txt
 !  IOutFLAG = 2  ! sets the output in hkl_list.txt: 1=out, 2=pool

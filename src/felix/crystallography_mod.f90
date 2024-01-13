@@ -437,7 +437,8 @@ MODULE crystallography_mod
               ! Is the beam pool already full for this frame
               IF (Ifull(nnd).EQ.1) CYCLE
               RAngle = REAL(nnd-1)*DEG2RADIAN*RFrameAngle
-              Rk = RBigK*(RZDirO*COS(RAngle)+RXDirO*SIN(RAngle))
+              !Rk = RBigK*(RZDirO*COS(RAngle)+RXDirO*SIN(RAngle))
+              Rk = RBigK*RBestOMat(nnd,3,:)
               ! Calculate Sg by getting the vector k0, which is coplanar with k and g and
               ! corresponds to an incident beam at the Bragg condition
               ! First we need the vector component of k perpendicular to g, which we call p 
