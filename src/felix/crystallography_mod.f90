@@ -375,7 +375,7 @@ MODULE crystallography_mod
     USE IPARA, ONLY : INhkl,ILN,INFrames,ICurrentZ,INAtomsUnitCell,IAtomicNumber  ! inputs
     USE IPARA, ONLY : Ig,IgOutList,IgPoolList,INCalcHKL,Itemp2D  ! outputs
     USE RPARA, ONLY : RXDirO,RYDirO,RZDirO,RarVecO,RbrVecO,RcrVecO,RarMag,RbrMag,RcrMag,RFrameAngle,RBigK,&
-          RAtomCoordinate,RIsoDW,RgPoolSg,RIkin,Rtemp1D ! only RgPoolSg,RIkin are outputs
+          RAtomCoordinate,RIsoDW,RgPoolSg,RIkin,Rtemp1D,RBestOMat ! only RgPoolSg,RIkin are outputs
     USE Iconst
     
     IMPLICIT NONE

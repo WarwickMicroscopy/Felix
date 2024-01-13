@@ -130,15 +130,15 @@ PROGRAM Felixrefine
   !--------------------------------------------------------------------
   ! Set up output folders: frames, then thicknesses
   !--------------------------------------------------------------------
-!  IThicknessCount= NINT((RFinalThickness-RInitialThickness)/RDeltaThickness) + 1
-!  IF (my_rank.EQ.0) THEN
-!    path = SChemicalFormula(1:ILN)  ! main folder has chemical formula as name
-!    CALL system('mkdir ' // TRIM(ADJUSTL(path)))
-    ! Simulated frames
-!    WRITE(subpath, FMT="(A,A12)") TRIM(ADJUSTL(path)), "/Simulations"
-!    CALL system('mkdir ' // TRIM(ADJUSTL(subpath)))
-!    subpath = ""  !not sure if I need this, but getting some odd behaviour
-    ! Folders per frame
+  IThicknessCount= NINT((RFinalThickness-RInitialThickness)/RDeltaThickness) + 1
+  IF (my_rank.EQ.0) THEN
+    path = SChemicalFormula(1:ILN)  ! main folder has chemical formula as name
+    CALL system('mkdir ' // TRIM(ADJUSTL(path)))
+   ! Simulated frames
+    WRITE(subpath, FMT="(A,A12)") TRIM(ADJUSTL(path)), "/Simulations"
+    CALL system('mkdir ' // TRIM(ADJUSTL(subpath)))
+    subpath = ""  !not sure if I need this, but getting some odd behaviour
+   ! Folders per frame
 !    DO knd = 1,INFrames
 !      IF (knd.LT.10) THEN
 !        WRITE(subpath, FMT="(A,A3,I1)") TRIM(ADJUSTL(path)), "/F_", knd
@@ -157,7 +157,7 @@ PROGRAM Felixrefine
 !        CALL system('mkdir ' // TRIM(ADJUSTL(subsubpath)))
 !      END DO
 !    END DO
-!  END IF
+  END IF
 
   !--------------------------------------------------------------------
   ! set up scattering factors, k-space resolution
@@ -389,7 +389,7 @@ PROGRAM Felixrefine
   CALL HKLmatch(IErr)
   IF(l_alert(IErr,"felixrefine","HKLmatch")) CALL abort
   ! write to text file hkl_list.txt
-  IOutFLAG = 2  ! sets the output in hkl_list.txt: 1=out, 2=pool
+  IOutFLAG = 1  ! sets the output in hkl_list.txt: 1=out, 2=pool
   CALL HKLSave(IOutFLAG, IErr)  ! in crystallography.f90
   IF(l_alert(IErr,"felixrefine","HKLSave")) CALL abort
   ! write simple frame images
