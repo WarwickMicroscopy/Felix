@@ -295,10 +295,10 @@ MODULE read_files_mod
       READ(dummy2,'(I20)') IobsHKL(ind,3)
       ! scan string for frame number
       IPos1 = SCAN(dummy1((IPos2+1):),',') + IPos2
-      dummy2 = dummy1((IPos1+1):(IPos2-1))
+      dummy2 = dummy1((IPos2+1):(IPos1-1))
       READ(dummy2,*) RObsFrame(ind)
       ! scan string for Iobs
-      dummy2 = dummy1((IPos1+1):
+      dummy2 = dummy1((IPos1+1):)
       READ(dummy2,*) RIobs(ind)
       CALL message ( LXL, dbg7, "InputHKL", IobsHKL(ind,:) )
 !DBG      IF(my_rank.EQ.0)PRINT*,IobsHKL(ind,:),RObsFrame(ind)

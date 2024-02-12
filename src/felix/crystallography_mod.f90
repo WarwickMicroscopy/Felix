@@ -722,7 +722,7 @@ MODULE crystallography_mod
       OPEN(UNIT=IChOutIhkl, ACTION='WRITE', POSITION='APPEND', STATUS= 'UNKNOWN', &
           FILE=TRIM(ADJUSTL(path)),IOSTAT=IErr)
       DO jnd = 1, SIZE(IgObsList)
-        WRITE(IChOutIhkl,"(I5,3X,I4,1X,I4,1X,I4,2X, F10.2)") 
+        WRITE(IChOutIhkl,"(I5,3X,I4,1X,I4,1X,I4,2X, F10.2)") & 
              jnd, Ig(IgObsList(jnd),:), RIkin(IgObsList(jnd))
       END DO
       CLOSE(IChOutIhkl,IOSTAT=IErr)
