@@ -259,6 +259,7 @@ PROGRAM Felixrefine
     ! so each frame has its orientation calculated two ways and we take the mean 
     ! There are 3 sets of orientation matrices:
     ! ROMat=unrefined, RCurOMat=current, RBestOMat=best
+    RBestOMat = ROMat  ! initialse output with nominal values
     IBatchSize = 20  ! *** THIS WILL BE AN INPUT IN AMENDED felix.inp ***
     WRITE(SPrintString, FMT='(A37,I3,A7 )') "Orientation refinement on batches of ",IBatchSize," frames"
     CALL message(LS,SPrintString)
@@ -338,7 +339,13 @@ PROGRAM Felixrefine
         !RBBestFrame = RBFrame
         CALL BatchFrames(IFrameLo,IFrameHi,Roffset*RFrameAngle*DEG2RADIAN,1, IErr)
         ! update the frames in this batch to the best values
-        RBestOMat(IFrameStart:IFrameEnd,:,:) = RCurOMat(IFrameStart:IFrameEnd,:,:)
+        DO knd = IFrameStart,IFrameEnd
+          IF(ABS(SUM(RBestOMat(knd,:,:)-ROMat(knd,:,:))).LT.TINY) THEN!still nominal, replace
+            RBestOMat(knd,:,:) = RCurOMat(knd,:,:)
+          ELSE  ! it's been calculated once already, take the mean
+            RBestOMat(knd,:,:) = (RCurOMat(knd,:,:)+RBestOMat(knd,:,:))/2
+          END IF
+        END DO
       END IF
 
       DO mnd = 2,3
