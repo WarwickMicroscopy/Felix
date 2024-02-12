@@ -262,14 +262,15 @@ PROGRAM Felixrefine
     IBatchSize = 20  ! *** THIS WILL BE AN INPUT IN AMENDED felix.inp ***
     WRITE(SPrintString, FMT='(A37,I3,A7 )') "Orientation refinement on batches of ",IBatchSize," frames"
     CALL message(LS,SPrintString)
-    INBatch = CEILING(REAL(INFrames)/REAL(IBatchSize))  ! the number of batches
+    ! the number of batches, assuming overlapping caalculations
+    INBatch = 2*CEILING(REAL(INFrames)/REAL(IBatchSize))-1
     ! get the observed hkl list for this batch of frames, IBhklList, using a
     ! temporary array to begin with, since we don't know the size
     ! NB the max no of reflections in each frame = beam pool size INhkl
     ALLOCATE(Itemp1D(INhkl*IBatchSize),STAT=IErr)
     DO ind = 1,INBatch
       ! set the frame numbers
-      IFrameEnd = ind*IBatchSize+1
+      IFrameEnd = IBatchSize + (ind-1)*(IBatchSize/2) + 1
       IF (IFrameEnd.GT.INFrames) IFrameEnd = INFrames
       IFrameStart = IFrameEnd-IBatchSize
       ! get the observed reflexions in this batch
@@ -307,6 +308,8 @@ PROGRAM Felixrefine
       CALL message(LS,SPrintString)
 
       ! start with frame offset (refinement of omega)
+      ! which is just the mean difference between the observed frame location RObsFrame and
+      ! the calculated frame RBFrame
       ROffset = ZERO
       nnd = 0  ! counter for found reflections
       DO knd = 1,jnd
