@@ -233,10 +233,11 @@ PROGRAM Felixrefine
   ! From the unit cell we produce the orientation matrix for the first frame, ROMat(1,:,:)
   ! made of column vectors for a,b,c, i.e. RaVecO, RbVecO, RcVecO in an orthogonal reference frame O
   ! with xO // a and zO perpendicular to the ab plane, in Angstrom units
-  ! Also the reciprocal lattice vectors RarVecO, RbrVecO, RcrVecO
+  ! Also the reciprocal lattice vectors 1RarVecO, RbrVecO, RcrVecO
   ! and fractional atomic coordinates RAtomCoordinate in the same reference frame
   ! NB ***we will need to define microscope frame and transform RAtomCoordinate for Bloch waves***
   CALL ReciprocalVectors(IErr)  ! in crystallography.f90
+  RBestOMat = ROMat  ! initialise output with nominal values
   IF(l_alert(IErr,"felixrefine","ReciprocalVectors")) CALL abort
   !--------------------------------------------------------------------
   ! The INObservedHKL observed reflexions & the frame of max intensity for each
@@ -259,7 +260,6 @@ PROGRAM Felixrefine
     ! so each frame has its orientation calculated two ways and we take the mean 
     ! There are 3 sets of orientation matrices:
     ! ROMat=unrefined, RCurOMat=current, RBestOMat=best
-    RBestOMat = ROMat  ! initialse output with nominal values
     IBatchSize = 20  ! *** THIS WILL BE AN INPUT IN AMENDED felix.inp ***
     WRITE(SPrintString, FMT='(A37,I3,A7 )') "Orientation refinement on batches of ",IBatchSize," frames"
     CALL message(LS,SPrintString)
@@ -406,20 +406,10 @@ PROGRAM Felixrefine
   IPlotRadius = 256_IKIND
   CALL HKLPlot(IPlotRadius, RGOutLimit, IErr)  ! in crystallography.f90
   IF(l_alert(IErr,"felixrefine","HKLPlot")) CALL abort
-
   !--------------------------------------------------------------------
-  ! write to text file hkl_list.txt
-!  IOutFLAG = 2  ! sets the output in hkl_list.txt: 1=out, 2=pool
-!  CALL HKLSave(IOutFLAG, IErr)  ! in crystallography.f90
-!  IF(l_alert(IErr,"felixrefine","HKLSave")) CALL abort
   ! get the frame for each Bragg condition
   !CALL HKLSetup(IErr)
   !IF(l_alert(IErr,"felixrefine","HKLSetup")) CALL abort
-  ! write simple frame images
-!  IPlotRadius = 256_IKIND
-!  CALL HKLPlot(IPlotRadius, RGOutLimit, IErr)  ! in crystallography.f90
-!  IF(l_alert(IErr,"felixrefine","HKLPlot")) CALL abort
-
   !--------------------------------------------------------------------
     
     CALL PrintEndTime( LS, IStartTime, "Frame" )

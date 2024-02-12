@@ -386,10 +386,13 @@ MODULE crystallography_mod
                    RKplusg(ITHREE),RgMag,RShell,RgMin,Rfq
     COMPLEX :: CFg
 
-    !-1------------------------------------------------------------------
-    ! calculate reflection list g by g
     !--------------------------------------------------------------------
-    ! this produces a list of g-vectors Ig, their deviation parameters RgPoolSg, and fills IgPoolList, IgOutList
+    ! calculate reflexion list g by g
+    !--------------------------------------------------------------------
+    ! this produces a list of g-vectors Ig[1:ICalcHKL] that contains all beam pool reflections for all frames
+    ! their deviation parameters RgPoolSg[poolindex,frameindex]
+    ! IgPoolList[poolindex,frameindex], IgOutList[poolindex,frameindex] give the index of Ig for each frame
+    ! If a pool reflection isn't in the output its IgOutList = 0
     ! Initialise variables
     ALLOCATE(Itemp2D(INFrames*INhkl,ITHREE), STAT=IErr)  ! Itemp2D will become Ig
     ALLOCATE(Rtemp1D(INFrames*INhkl), STAT=IErr)  ! RTemp1D will become RIkin
@@ -533,10 +536,16 @@ MODULE crystallography_mod
     INTEGER(IKIND) :: IErr,ind,jnd,knd,lnd,mnd,nnd,Imissing
     REAL(RKIND) ::RSg
 
+    !--------------------------------------------------------------------
+    ! compare input & calculated reflexion list g by g
+    !--------------------------------------------------------------------
+    ! input reflexions are IobsHKL, here we find its index in the big list Ig
+    ! and put it in IgObsList
+    IgObsList = 0  ! initialise to zero - will stay zero if a reflexion is not in the calculated list
     RCalcFrame = -ONE  ! default value for a reflection not in the observed list
     ! find which reflection in the full set Ig matches each IobsHKL 
     DO ind = 1,INObservedHKL
-    knd = 0  ! flag to say we have a match in Ig
+      knd = 0  ! flag to say we have a match in Ig
       DO jnd = 2,INCalcHKL  ! start at 2 since 1 is always 000
         IF(SUM(ABS(IobsHKL(ind,:)-Ig(jnd,:))).EQ.0) THEN
           IgObsList(ind) = jnd  ! matching reflection is Ig(jnd)
@@ -618,7 +627,7 @@ MODULE crystallography_mod
 
     ! global inputs
     USE IPARA, ONLY : ILN,INFrames,INhkl,Ig,IGPoolList,IgOutList,ICurrentZ,&
-            INAtomsUnitCell,IAtomicNumber,INCalcHKL
+            INAtomsUnitCell,IAtomicNumber,INCalcHKL,IgObsList
     USE RPARA, ONLY : RarVecO,RbrVecO,RcrVecO,RgPoolSg,RIkin,RAtomCoordinate,RIsoDW,RCalcFrame
     USE SPARA, ONLY : SPrintString,SChemicalFormula
     USE IChannels, ONLY : IChOutIhkl
@@ -705,6 +714,16 @@ MODULE crystallography_mod
           END DO
         END IF
       END DO 
+      CLOSE(IChOutIhkl,IOSTAT=IErr)
+      
+      ! write cif-style hkl output
+      CALL message(LS,dbg3,"Writing cif")
+      path = SChemicalFormula(1:ILN) // "/" // SChemicalFormula(1:ILN) // ".hkl"
+      OPEN(UNIT=IChOutIhkl, ACTION='WRITE', POSITION='APPEND', STATUS= 'UNKNOWN', &
+          FILE=TRIM(ADJUSTL(path)),IOSTAT=IErr)
+      DO jnd = 1, SIZE(IgObsList)
+        WRITE(IChOutIhkl,"(I4,1X,I4,1X,I4,2X, F8.4)") Ig(IgObsList(jnd),:),RIkin(IgObsList(jnd))
+      END DO
       CLOSE(IChOutIhkl,IOSTAT=IErr)
     END IF
 

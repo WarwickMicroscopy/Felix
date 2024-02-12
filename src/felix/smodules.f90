@@ -222,7 +222,7 @@ MODULE RPara
   USE IConst
 
   ! for rightsizing arrays
-  REAL(RKIND), DIMENSION(:), ALLOCATABLE :: Rtemp1D
+  REAL(RKIND), DIMENSION(:), ALLOCATABLE :: Rtemp1D,Rtemp1Da
   REAL(RKIND), DIMENSION(:,:), ALLOCATABLE :: Rtemp2D
   !INPUT Section 
   !Crystallography
