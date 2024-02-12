@@ -407,10 +407,9 @@ PROGRAM Felixrefine
   CALL HKLPlot(IPlotRadius, RGOutLimit, IErr)  ! in crystallography.f90
   IF(l_alert(IErr,"felixrefine","HKLPlot")) CALL abort
   !--------------------------------------------------------------------
-  ! get the frame for each Bragg condition
-  !CALL HKLSetup(IErr)
-  !IF(l_alert(IErr,"felixrefine","HKLSetup")) CALL abort
-  !--------------------------------------------------------------------
+  ! Kinematic calculations and plots complete
+  ! we are now ready for dynamical calculations
+  ! output intensities 
     
     CALL PrintEndTime( LS, IStartTime, "Frame" )
     !CALL message(LS,dbg7,"Rhkl matrix: ",NINT(IgPoolList(ind,1:INhkl,:)))

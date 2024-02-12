@@ -244,7 +244,7 @@ MODULE read_files_mod
     USE message_mod
 
     ! global outputs
-    USE RPARA, ONLY : RObsFrame
+    USE RPARA, ONLY : RObsFrame,RIobs
     USE IPARA, ONLY : INObservedHKL,IobsHKL,IgObsList
     ! global inputs
     USE IChannels, ONLY : IChInp
@@ -271,6 +271,9 @@ MODULE read_files_mod
     ! frame containing peak intensity for observed reflexions
     ALLOCATE(RObsFrame(INObservedHKL),STAT=IErr)
     IF(l_alert(IErr,"ReadHklFile","allocate RObsFrame")) RETURN
+    ! Integrated intensity for observed reflexions
+    ALLOCATE(RIobs(INObservedHKL),STAT=IErr)
+    IF(l_alert(IErr,"ReadHklFile","allocate RObsFrame")) RETURN
 
     ! read in the hkls
     REWIND(UNIT=IChInp) ! goes to beginning of felix.hkl file
@@ -291,8 +294,12 @@ MODULE read_files_mod
       dummy2 = dummy1((IPos1+1):(IPos2-1))
       READ(dummy2,'(I20)') IobsHKL(ind,3)
       ! scan string for frame number
-      dummy2 = dummy1(IPos2+1:)
+      IPos1 = SCAN(dummy1((IPos2+1):),',') + IPos2
+      dummy2 = dummy1((IPos1+1):(IPos2-1))
       READ(dummy2,*) RObsFrame(ind)
+      ! scan string for Iobs
+      dummy2 = dummy1((IPos1+1):
+      READ(dummy2,*) RIobs(ind)
       CALL message ( LXL, dbg7, "InputHKL", IobsHKL(ind,:) )
 !DBG      IF(my_rank.EQ.0)PRINT*,IobsHKL(ind,:),RObsFrame(ind)
     END DO
