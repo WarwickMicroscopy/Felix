@@ -59,9 +59,9 @@ PROGRAM Felixrefine
   INTEGER(IKIND) :: IErr,ind,jnd,knd,lnd,mnd,nnd,IStartTime,IPlotRadius,IOutFLAG,&
           INBatch,IBatchSize,IFrameStart,IFrameEnd,IFrameLo,IFrameHi
   INTEGER(4) :: IErr4
-  REAL(RKIND) :: RGOutLimit,RgPoolLimit,Roffset,ROmega,RdPhi,Rinc,RBestFoM
+  REAL(RKIND) :: RGOutLimit,RgPoolLimit,Roffset,ROmega,RdPhi,Rinc,RBestFoM,RFobs
   REAL(RKIND), DIMENSION(ITHREE) :: RxBestO,RyBestO,RzBestO,Rg,Rk,Rkplusg
-  !REAL(RKIND), DIMENSION(:), ALLOCATABLE :: RBBestFrame
+  REAL(RKIND), DIMENSION(:), ALLOCATABLE :: RFkin,RFobs
 
   CHARACTER(40) :: my_rank_string
   CHARACTER(200) :: path,subpath,subsubpath
@@ -386,7 +386,14 @@ PROGRAM Felixrefine
 
   !--------------------------------------------------------------------
   ! set up beam pools 
-  ! The calculated reflexions in each frame: Ig,IgPoolList,IgOutList,RgPoolSg, set INcalcHKL
+  ! The calculated reflexions in each frame: Ig is the big list of all hkl's in all beam pools
+  ! IgObsList says which Ig corresponds to the input list in felix.hkl, i.e.
+  ! Ig[IgObsList[i]] = IobsHKL[i,:]
+  ! IgPoolList says which Ig's are in each beam pool, i.e. reflexion i in pool j 
+  ! has hkl = Ig[IgPoolList[i,j]] (& deviation parameter RgPoolSg[i,j]
+  ! IgOutList says a reflexion appears in the dynamical output intensities, 
+  ! i.e. reflexion i in pool j has IgOutList = 0 if not output, the index in Ig otherwise
+  ! NB The length of Ig is INcalcHKL, the length of IobsHKL is INObservedHKL
   ! Allocations of Ig, RIkin in here
   CALL HKLmake(RDevLimit, RGOutLimit, RgPoolLimit, IErr)  ! in crystallography.f90
   IF(l_alert(IErr,"felixrefine","HKLMake")) CALL abort
@@ -406,12 +413,30 @@ PROGRAM Felixrefine
   IPlotRadius = 256_IKIND
   CALL HKLPlot(IPlotRadius, RGOutLimit, IErr)  ! in crystallography.f90
   IF(l_alert(IErr,"felixrefine","HKLPlot")) CALL abort
+  ! Kinematic R-factor: Experimental intensities are RIobs
+  ! we compare the square root of integrated intensities, proportional to |Fhkl|
+  ALLOCATE(RFobs(INObservedHKL),STAT=IErr)
+  ALLOCATE(RFkin(INObservedHKL),STAT=IErr)
+  IF(l_alert(IErr,"felixrefine","allocate RgPool")) CALL abort
+  RFobs = SQRT(RIobs)  ! which we compare with reflections in RIkin as denoted by IgObsList
+  DO ind = 1,INObservedHKL
+    RFkin(ind) = SQRT(RIkin(IgObslist(ind)))
+  END DO
+  ! scaling factor
+  Rscale = DOT_PRODUCT(RFkin, RFobs)/DOT_PRODUCT(RFobs, RFobs)
+  RFobs = RFobs*Rscale
+  ! R-factor
+  R1 = SUM(ABS(RFkin-RFobs))/SUM(RFobs)
+  CALL message(LS, dbg7, "Kinematic R1 = ",R1)
   !--------------------------------------------------------------------
   ! Kinematic calculations and plots complete
   ! we are now ready for dynamical calculations
   ! output intensities 
     
-    CALL PrintEndTime( LS, IStartTime, "Frame" )
+  CALL PrintEndTime( LS, IStartTime, "Frame" )
+
+
+
     !CALL message(LS,dbg7,"Rhkl matrix: ",NINT(IgPoolList(ind,1:INhkl,:)))
 
     !--------------------------------------------------------------------
