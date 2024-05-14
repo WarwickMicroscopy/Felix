@@ -6,11 +6,11 @@
 !
 ! (C) 2013-17, all rights reserved
 !
-! Version: 1.2
-! Date: 30-08-2022
+! Version: 1.3
+! Date: 13-05-2024
 ! Time:    :TIME:
 ! Status:  :RLSTATUS:
-! Build: Surface normal correction
+! Build: g-vector limit
 ! Author:  r.beanland@warwick.ac.uk
 ! 
 !%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%

@@ -6,11 +6,11 @@
 !
 ! (C) 2013-19, all rights reserved
 !
-! Version: 1.2
-! Date: 30-08-2022
+! Version: 1.3
+! Date: 13-05-2024
 ! Time:    :TIME:
 ! Status:  :RLSTATUS:
-! Build: Surface normal correction 
+! Build: g-vector limit 
 ! Author:  r.beanland@warwick.ac.uk
 ! 
 !%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -60,7 +60,7 @@ MODULE read_files_mod
     USE RPARA, ONLY : RDebyeWallerConstant, RAbsorptionPercentage, RConvergenceAngle, &
           RZDirC, RXDirC, RNormDirC, RAcceleratingVoltage, RAcceptanceAngle, &
           RInitialThickness, RFinalThickness, RDeltaThickness, RBlurRadius, &
-          RSimplexLengthScale, RExitCriteria,RPrecision
+          RSimplexLengthScale, RExitCriteria, RPrecision, RgLimit
     USE SPARA, ONLY : SPrintString
     ! global inputs
     USE IChannels, ONLY : IChInp
@@ -136,7 +136,16 @@ MODULE read_files_mod
     ILine= ILine+1
     READ(IChInp,'(27X,I15.1)',ERR=20,END=30) IMinWeakBeams
     CALL message ( LXL, dbg3, "IMinWeakBeams=",IMinWeakBeams)
-    WRITE(SPrintString,FMT='(A19,I4,A19,I4,A13)') "Reflection pool of ",INhkl," with a minimum of ",IMinStrongBeams," strong beams"
+    ! g-vector limit in reciprocal Angstroms
+    ILine= ILine+1
+    READ(IChInp,'(27X,F18.9)',ERR=20,END=30) RgLimit
+    ! if RgLimit is zero or negative we use the reflection pool number as a limit
+    IF (RgLimit.LT.TINY) THEN
+      WRITE(SPrintString,FMT='(A19,I4,A19,I4,A13)') "Reflection pool of ",INhkl," with a minimum of ",IMinStrongBeams," strong beams"
+    ELSE
+      WRITE(SPrintString,FMT='(A8,I4,A31,F5.2,A21)') "Minimum ",IMinStrongBeams," strong beams, reflexion limit ",RgLimit," reciprocal Angstroms"
+      RgLimit = RgLimit*TWOPI
+    END IF
     CALL message ( LS, SPrintString)
 
     !--------------------------------------------------------------------

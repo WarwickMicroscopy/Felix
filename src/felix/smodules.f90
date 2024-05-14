@@ -6,11 +6,11 @@
 !
 ! (C) 2013-19, all rights reserved
 !
-! Version: 1.2
-! Date: 30-08-2022
+! Version: 1.3
+! Date: 13-05-2024
 ! Time:
 ! Status:  
-! Build: Surface normal correction   
+! Build: g-vector limit   
 ! Author:  r.beanland@warwick.ac.uk
 ! 
 !%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -50,8 +50,8 @@
 MODULE SConst
 
 ! the following three lines are now automatically generated via git tags
-!  CHARACTER(50), PARAMETER :: RStr= "Version: 1.2"
-!  CHARACTER(50), PARAMETER :: DStr= "Date: 30-08-2022"
+!  CHARACTER(50), PARAMETER :: RStr= "Version: 1.3"
+!  CHARACTER(50), PARAMETER :: DStr= "Date: 13-05-2024"
 !  CHARACTER(50), PARAMETER :: AStr= "Refinements B,C,D,F,H and S working, no HOLZ" 
   CHARACTER(8) SAllSpaceGrp(230)
 !NB needs more work here, does not have non-standard settings or modern versions
@@ -252,8 +252,8 @@ MODULE RPara
   REAL(RKIND) :: RInitialThickness,RFinalThickness,RDeltaThickness, &
        RInitialDebyeWallerFactor,RFinalDebyeWallerFactor,&
        RDeltaDebyeWallerFactor
-  !Iterative Ugs
-  REAL(RKIND) :: RPercentageUgChange
+  !outer limit of g-vector in beam pool (new in master v1.3)
+  REAL(RKIND) :: RgLimit
   !Debye Waller Constant, g-vector magnitude, dummy [s'x s'y] for absorption calc
   REAL(RKIND) :: RCurrentB,RCurrentGMagnitude,RSprimeY,RPScale
   !HKL indices 

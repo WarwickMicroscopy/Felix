@@ -6,11 +6,11 @@
 !
 ! (C) 2013-19, all rights reserved
 !
-! Version: 1.2
-! Date: 30-08-2022
+! Version: 1.3
+! Date: 13-05-2024
 ! Time:    :TIME:
 ! Status:  :RLSTATUS:
-! Build: Surface normal correction 
+! Build: g-vector limit 
 ! Author:  r.beanland@warwick.ac.uk
 ! 
 !%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -226,23 +226,15 @@ MODULE ug_matrix_mod
         ! find the position of this Ug in the matrix
         ILoc = MINLOC(ABS(ISymmetryRelations-jnd))
         RCurrentG = RgMatrix(ILoc(1),ILoc(2),:) ! g-vector, local variable
-        RCurrentGMagnitude = SQRT(DOT_PRODUCT(RgMatrix(ILoc(1),ILoc(2),:),RgMatrix(ILoc(1),ILoc(2),:)))!RgMatrixMagnitude(ILoc(1),ILoc(2)) ! g-vector magnitude
-        lnd=0 ! pseudoatom counter
+        RCurrentGMagnitude = SQRT(DOT_PRODUCT(RgMatrix(ILoc(1),ILoc(2),:),RgMatrix(ILoc(1),ILoc(2),:)))! g-vector magnitude
 
         ! Structure factor calculation for absorptive form factors
         DO knd=1,INAtomsUnitCell
           ICurrentZ = IAtomicNumber(knd) ! Atomic number, global variable
           RCurrentB = RIsoDW(knd) ! Debye-Waller constant, global variable
-!          IF (ICurrentZ.LT.105) THEN ! It's not a pseudoatom 
           ! Get absorptive form factor f'
           CALL AbsorptiveScatteringFactor(RfPrime,IErr) ! NB uses Kirkland scattering factors
           IF(l_alert(IErr,"Absorption","CALL AbsorptiveScatteringFactor")) RETURN
-!          ELSE ! It is a pseudoatom, proportional model 
-!            lnd=lnd+1
-!            CALL PseudoAtom(CFpseudo,ILoc(1),ILoc(2),lnd,IErr)
-!            RfPrime=CFpseudo*EXP(CIMAGONE*PI/2)*(RAbsorptionPercentage/HUNDRED)
-!            ! RfPrime=ZERO
-!          END IF
           ! Occupancy
           RfPrime=RfPrime*ROccupancy(knd)
           ! Debye Waller factor, isotropic only 
@@ -255,15 +247,6 @@ MODULE ug_matrix_mod
           CLocalUgPrime(ind-ILocalMin+1)=CLocalUgPrime(ind-ILocalMin+1)+CIMAGONE*RPreFactor*Rfprime * &
                 EXP(-CIMAGONE*DOT_PRODUCT(RCurrentG,RAtomCoordinate(knd,:)) )
         END DO
-        
-!old code, to be deleted        
-!        ! V'g in volts
-!        CVgPrime=CVgPrime*RScattFacToVolts
-!        ! Convert to U'g=V'g*(2*m*e/h^2)	  
-!        CLocalUgPrime(ind-ILocalMin+1) = CVgPrime*TWO*RElectronMass * &
-!              RRelativisticCorrection*RElectronCharge / &
-!              ((RPlanckConstant*RAngstromConversion)**2)
-
       END DO
 
       !--------------------------------------------------------------------  

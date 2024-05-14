@@ -6,11 +6,11 @@
 !
 ! (C) 2013-19, all rights reserved
 !
-! Version: 1.2/ 1.15 /
-! Date: 30-08-2022 16-01-2019
+! Version: 1.3/ 1.15 /
+! Date: 13-05-2024 16-01-2019
 ! Time:    :TIME:
 ! Status:  :RLSTATUS:
-! Build: Surface normal correction Mode F: test different lattice types" 
+! Build: g-vector limit Mode F: test different lattice types" 
 ! Author:  r.beanland@warwick.ac.uk
 ! 
 !%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%

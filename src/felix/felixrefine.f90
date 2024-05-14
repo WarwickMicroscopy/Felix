@@ -6,11 +6,11 @@
 !
 ! (C) 2013-19, all rights reserved
 !
-! Version: 1.2
-! Date: 30-08-2022
+! Version: 1.3
+! Date: 13-05-2024
 ! Time:    :TIME:
 ! Status:  :RLSTATUS:
-! Build: Surface normal correction 
+! Build: g-vector limit 
 ! Author:  r.beanland@warwick.ac.uk
 ! 
 !%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -65,7 +65,7 @@ PROGRAM Felixrefine
         INumFinalReflections,IThicknessIndex,IVariableType,IArrayIndex,&
         IAnisotropicDebyeWallerFactorElementNo,IStartTime,IStartTime2
   INTEGER(4) :: IErr4
-  REAL(RKIND) :: REmphasis,RGlimit,RLaueZoneGz,RMaxGMag,&
+  REAL(RKIND) :: REmphasis,RLaueZoneGz,RMaxGMag,&
         RPvecMag,RScale,RMaxUgStep,Rdx,RStandardDeviation,RMean,RGzUnitVec,&
         RMinLaueZoneValue,Rdf,RLastFit,RBestFit,RMaxLaueZoneValue,&
         RMaxAcceptanceGVecMag,RandomSign,RLaueZoneElectronWaveVectorMag,&
@@ -217,10 +217,10 @@ PROGRAM Felixrefine
 
   ! Fill the list of reflections Rhkl (global variable)
   ! NB Rhkl are in INTEGER form [h,k,l] but are REAL to allow dot products etc.
-  ALLOCATE(Rhkl(INhkl,ITHREE),STAT=IErr)
-  IF(l_alert(IErr,"felixrefine","allocate Rhkl")) CALL abort
-  RGlimit = 10.0*TWOPI    
-  CALL HKLMake(RGlimit,IErr)
+  ! ** now done in HKLMake ** ALLOCATE(Rhkl(INhkl,ITHREE),STAT=IErr)
+  !IF(l_alert(IErr,"felixrefine","allocate Rhkl")) CALL abort
+  ! make the beam pool, uses RgLimit    
+  CALL HKLMake(IErr)
   IF(l_alert(IErr,"felixrefine","HKLMake")) CALL abort
   CALL message(LL,dbg7,"Rhkl matrix: ",NINT(Rhkl(1:INhkl,:)))
 

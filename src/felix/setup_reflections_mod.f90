@@ -6,11 +6,11 @@
 !
 ! (C) 2013-17, all rights reserved
 !
-! Version: 1.2
-! Date: 30-08-2022
+! Version: 1.3
+! Date: 13-05-2024
 ! Time:    :TIME:
 ! Status:  :RLSTATUS:
-! Build: Surface normal correction
+! Build: g-vector limit
 ! Author:  r.beanland@warwick.ac.uk
 ! 
 !%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -177,7 +177,7 @@ MODULE setup_reflections_mod
   !!
   !! Major-Authors: Richard Beanland (2021)
   !!  
-  SUBROUTINE HKLMake(RGlimit, IErr)   
+  SUBROUTINE HKLMake(IErr)   
     ! This procedure is called once in felixrefine setup
 
     USE MyNumbers
@@ -185,25 +185,24 @@ MODULE setup_reflections_mod
     
     ! global output Rhkl, input reciprocal lattice vectors & wave vector
     USE RPARA, ONLY : RzDirC, Rhkl, RarVecM, RbrVecM, RcrVecM, RInputHKLs,&
-        RElectronWaveVectorMagnitude
+        RElectronWaveVectorMagnitude, RgLimit
       
     ! global inputs
-    USE SPARA, ONLY : SSpaceGroupName
-    USE IPARA, ONLY : INhkl,INoOfLacbedPatterns
+    USE SPARA, ONLY : SSpaceGroupName,SPrintString
+    USE IPARA, ONLY : INhkl,INoOfLacbedPatterns, IMinStrongBeams
     USE Iconst
     
     IMPLICIT NONE
 
-    REAL(RKIND),INTENT(IN) :: RGlimit   
     INTEGER(IKIND) :: IErr, ISel, Ih, Ik, Il, inda,indb,indc, jnd, knd,lnd
     REAL(RKIND) :: RarMag, RbrMag, RcrMag, RShell, RGtestMag, RDev
     REAL(RKIND),DIMENSION(ITHREE) :: Rk, RGtest, RGtestM, RGplusk 
-   
-    !The upper limit for g-vector magnitudes
-    !If the g-vectors we are counting are bigger than this there is something wrong
-    !probably the tolerance for proximity to the Ewald sphere needs increasing
-    !could be an input in felix.inp
-!    RGlimit = 20.0*TWOPI  ! reciprocal Angstroms * 2pi
+    REAL(RKIND),DIMENSION(66666,ITHREE) :: RhklTemp
+ 
+    ! The upper limit for g-vector magnitudes
+    ! <perhaps the tolerance for proximity to the Ewald sphere needs increasing
+    ! now a global variable and an input in felix.inp
+!    RgLimit = 10.0*TWOPI  ! reciprocal Angstroms * 2pi
     
     !the k-vector for the incident beam
     !we are working in the microscope reference frame so k is along z
@@ -217,15 +216,22 @@ MODULE setup_reflections_mod
     RShell=MINVAL( (/ RarMag,RbrMag,RcrMag /) )
 
     !first g is always 000
-    Rhkl(1,:)=(/ 0.0D0,0.0D0,0.0D0 /)
+    RhklTemp(1,:)=(/ 0.0D0,0.0D0,0.0D0 /)
     knd=1!number of reflections in the pool 
     lnd=0!number of the shell 
     !maximum a*,b*,c* limit is determined by the G magnitude limit
-    inda=NINT(RGlimit/RarMag)
-    indb=NINT(RGlimit/RbrMag)
-    indc=NINT(RGlimit/RcrMag)
+    inda=NINT(RgLimit/RarMag)
+    indb=NINT(RgLimit/RbrMag)
+    indc=NINT(RgLimit/RcrMag)
+    IF (RgLimit.LT.TINY) THEN
+      ! use the default value of 10A and INhkl will be the cutoff
+      RgLimit = 10.0*TWOPI
+    ELSE
+      ! make INhkl large and RgLimit will be the cutoff
+      INhkl = 66666
+    END IF
     !fill the Rhkl with beams near the Bragg condition
-    DO WHILE (knd.LT.INhkl .AND. REAL(lnd)*RShell.LT.RGlimit)
+    DO WHILE (knd.LT.INhkl .AND. REAL(lnd)*RShell.LT.RgLimit)
       !increment the shell
       lnd = lnd+1
 !DBG    IF(my_rank.EQ.0)PRINT*,REAL(lnd-1)*RShell,"to",REAL(lnd)*RShell
@@ -257,8 +263,8 @@ MODULE setup_reflections_mod
                     !need to check that we have space in Rhkl because the while doesn't
                     !kick in until we finish the do loops
                     knd=knd+1
-                    Rhkl(knd,:)=RGtest
-!DBG    IF(my_rank.EQ.0)PRINT*,NINT(Rhkl(knd,:)),knd
+                    RhklTemp(knd,:)=RGtest
+!DBG    IF(my_rank.EQ.0)PRINT*,NINT(RhklTemp(knd,:)),knd
                   END IF
                 END IF
               END IF
@@ -266,13 +272,23 @@ MODULE setup_reflections_mod
          END DO
       END DO
     END DO
-!DBG    IF(my_rank.EQ.0)PRINT*,"total ",knd,"reflections in the pool"
-    ! fill up any remaining beam pool places with an enormous g-vector, diabolically
-    ! the idea being that this g-vector will never be near any possible Ewald sphere
-    RGtest = REAL( (/ 666D0,666D0,666D0 /),RKIND )
-    DO jnd = knd+1, INhkl
-      Rhkl(jnd,:)=RGtest
-    END DO
+    !check to make sure we have enough beams
+    IF(knd.LE.IMinStrongBeams) THEN
+      WRITE(SPrintString, FMT='(A60)') "Beam pool is too small, please increase RgLimit! Quitting..."
+      CALL message(LS, SPrintString)
+      IErr = 1
+      !give some time to get the error message written before closing
+      IF(my_rank.EQ.0)PRINT*," "
+      CALL SLEEP(10)
+      RETURN
+    END IF
+    ! make the beam pool
+    INhkl = knd
+    WRITE(SPrintString, FMT='(A21,I5,A11)') "Using a beam pool of ",INhkl," reflexions"
+    CALL message( LS, SPrintString)
+    ALLOCATE(Rhkl(INhkl,ITHREE),STAT=IErr)
+    IF(l_alert(IErr,"HKLmake","allocate Rhkl")) RETURN
+    Rhkl = RhklTemp(1:INhkl,:)
 
     !now check that the required output hkl's are in this hkl list
     DO jnd = 1,INoOfLacbedPatterns
