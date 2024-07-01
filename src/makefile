@@ -20,7 +20,7 @@
 #%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 # For Warwick SCRTP:
 #
-# intel compiler: module load intel imkl imp
+# intel compiler: module load intel imkl impi
 # gfortran compiler: module load GCC/11.2.0 OpenMPI/4.1.1
 #%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
