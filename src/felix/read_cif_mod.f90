@@ -250,6 +250,10 @@ MODULE read_cif_mod
       IAtomCount= IAtomCount+1
       IF(loop_ .NEQV. .TRUE.) EXIT
     END DO
+
+    WRITE(SPrintString,FMT='(A11,I3)') "IAtomCount ", IAtomCount
+    CALL message( LS, dbg3, SPrintString)
+
     IF (ISimFLAG.EQ.0.AND.SIZE(IAtomsToRefine,DIM=1).GT.IAtomCount) THEN
       IErr=1; IF(l_alert(IErr,"ReadCif",&
             "Number of atomic sites to refine is larger than the number of atoms. "//&
@@ -327,7 +331,8 @@ MODULE read_cif_mod
       IF(IBasisAtomicNumber(ind).EQ.104) IBasisAtomicNumber(ind)=1
       IF (IBasisAtomicNumber(ind).EQ.0) THEN
         WRITE(SPrintString,'(A,I0,A,A)') &
-              "Could not find Z for atom", ind ,"with symbol", SBasisAtomName(ind)
+             "Could not find Z for atom ", ind ," with symbol ", &
+             SBasisAtomName(ind)
         IErr=1
         IF(l_alert(IErr,"ReadCif",SPrintString)) RETURN
       END IF
