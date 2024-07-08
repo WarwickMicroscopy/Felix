@@ -1,4 +1,6 @@
-# CSC module load commands
+# Avon: SCRTP module load commands 080724 
+# module load intel imkl impi GCC/11.3.0 OpenMPI/4.1.4 FFTW.MPI/3.3.10
+# SCRTP desktop
 # module load intel imkl impi
 
 # where are the libraries for the Linux platform located
@@ -43,7 +45,7 @@ LONGINTEGER=
 
 # -------------------------------
 # which PLATFORM dependent libraries to link
-LIBS= -qmkl=sequential -lfftw3
+LIBS= -mkl=sequential -lfftw3
 
 # -------------------------------
 # which fortran compiler is used
