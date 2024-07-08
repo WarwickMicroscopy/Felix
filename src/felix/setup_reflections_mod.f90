@@ -220,21 +220,25 @@ MODULE setup_reflections_mod
     knd=1!number of reflections in the pool 
     lnd=0!number of the shell 
     !maximum a*,b*,c* limit is determined by the G magnitude limit
-    inda=NINT(RgLimit/RarMag)
-    indb=NINT(RgLimit/RbrMag)
-    indc=NINT(RgLimit/RcrMag)
+    !IF(my_rank.eq.0) PRINT*, TINY,RgLimit, RgLimit.LT.TINY, TWOPI,RarMag, RbrMag, RcrMag
     IF (RgLimit.LT.TINY) THEN
       ! use the default value of 10A and INhkl will be the cutoff
-      RgLimit = 10.0*TWOPI
+       RgLimit = 10.0*TWOPI
+       !PRINT*,"in",RgLimit
     ELSE
       ! make INhkl large and RgLimit will be the cutoff
       INhkl = 66666
     END IF
+
+    inda=NINT(RgLimit/RarMag)
+    indb=NINT(RgLimit/RbrMag)
+    indc=NINT(RgLimit/RcrMag)
+
     !fill the Rhkl with beams near the Bragg condition
     DO WHILE (knd.LT.INhkl .AND. REAL(lnd)*RShell.LT.RgLimit)
       !increment the shell
       lnd = lnd+1
-!DBG    IF(my_rank.EQ.0)PRINT*,REAL(lnd-1)*RShell,"to",REAL(lnd)*RShell
+      !IF(my_rank.EQ.0)PRINT*,REAL(lnd-1)*RShell,"to",REAL(lnd)*RShell
       !Make a hkl
       DO Ih = -inda,inda
          DO Ik = -indb,indb
@@ -257,14 +261,14 @@ MODULE setup_reflections_mod
                   RDev=ABS(RElectronWaveVectorMagnitude-SQRT(DOT_PRODUCT(RGplusk,RGplusk)))/RGtestMag
                   ! Tolerance of 0.08 here is rather arbitrary, might need
                   ! revisiting
-!DBG    IF(my_rank.EQ.0)PRINT*,(/ Ih,Ik,Il /),RDev
+                  !IF(my_rank.EQ.0)PRINT*,(/ Ih,Ik,Il /),RDev
                   IF ((RDev-0.08D0).LT.TINY) THEN !it's near the ZOLZ 
                     !add it to the pool and increment the counter
                     !need to check that we have space in Rhkl because the while doesn't
                     !kick in until we finish the do loops
                     knd=knd+1
                     RhklTemp(knd,:)=RGtest
-!DBG    IF(my_rank.EQ.0)PRINT*,NINT(RhklTemp(knd,:)),knd
+                    !IF(my_rank.EQ.0)PRINT*,NINT(RhklTemp(knd,:)),knd
                   END IF
                 END IF
               END IF
