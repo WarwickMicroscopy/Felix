@@ -303,8 +303,10 @@ MODULE read_cif_mod
       ! checks on second letter of name
       SAtomChar2=TRIM(SBasisAtomName(ind)(2:2))
       ! remove numbers from single-letter elements (O,F etc.)
-      IF (SCAN(SAtomChar2,"1234567890+-()").GT.0) &
-              WRITE(SBasisAtomName(ind),'(A1,A1)') SBasisAtomName(ind)(1:1)," "
+      IF (SCAN(SAtomChar2,"1234567890+-()").GT.0) THEN
+         SAtomChar2= SBasisAtomName(ind)(1:1)
+         WRITE(SBasisAtomName(ind),'(A1,A1)') SAtomChar2," "
+      ENDIF
       SAtomChar2=TRIM(SBasisAtomName(ind)(2:2))
       IF (SAtomChar2.NE." ") THEN
         ! convert second letter to lower case
