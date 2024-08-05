@@ -99,7 +99,7 @@ MODULE read_cif_mod
     CHARACTER(62)  alphabetnum
     CHARACTER(2)   rs
     CHARACTER(1)   slash
-    CHARACTER(1)   SAtomChar2
+    CHARACTER(1)   SAtomChar2,SAtomChar3,SAtomChar4
     CHARACTER(40)  Stext
     REAL(RKIND),DIMENSION(:),ALLOCATABLE :: RPrint
     REAL          cela,celb,celc,siga,sigb,sigc
@@ -312,7 +312,8 @@ MODULE read_cif_mod
         ! convert second letter to lower case
         IF (SCAN(alphabet,SAtomChar2).LT.26) THEN
           SAtomChar2=SAlphabetarray(SCAN(alphabet,SAtomChar2)+26)
-          WRITE(SBasisAtomName(ind),'(A1,A1)') SBasisAtomName(ind)(1:1),SAtomChar2
+          SAtomChar3=SBasisAtomName(ind)(1:1)
+          WRITE(SBasisAtomName(ind),'(A1,A1)') SAtomChar3,SAtomChar2
         END IF
       END IF
       !checks on first letter of name
@@ -320,7 +321,8 @@ MODULE read_cif_mod
       ! convert first letter to upper case
       IF (SCAN(alphabet,SAtomChar2).GT.26) THEN
         SAtomChar2=SAlphabetarray(SCAN(alphabet,SAtomChar2)-26)
-        WRITE(SBasisAtomName(ind),'(A1,A1)') SAtomChar2,SBasisAtomName(ind)(2:2)
+        SAtomChar3=SBasisAtomName(ind)(2:2)
+        WRITE(SBasisAtomName(ind),'(A1,A1)') SAtomChar2,SAtomChar3
       END IF
       !get atomic number
       IBasisAtomicNumber(ind)=0
