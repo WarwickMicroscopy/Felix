@@ -432,7 +432,6 @@ MODULE read_files_mod
           WRITE(SImageExtension,'(A)') '.dm3'
       END SELECT
       WRITE(SFilePath ,'(A,A,A,A)') TRIM(SPath),SChemicalFormula(1:ILN),'_+0+0+0',TRIM(SImageExtension)
-
       ! check if corresponding _+0+0+0.img or _+0+0+0.dm3 image exists
       INQUIRE(FILE=TRIM(SFilePath) ,EXIST=LFileExist)
       IF(LFileExist) THEN
@@ -464,7 +463,6 @@ MODULE read_files_mod
             NINT(RInputHKLs(ind,1:3)), TRIM(SImageExtension)
       SFilePath  = TRIM(SPath)//SFilename
       CALL message(LL, dbg7, "SFilename = ", SFilePath )
-
       ! do corresponding read-in process for .img or .dm3
       SELECT CASE(IFileTypeID)
         CASE(1,3) ! .img
