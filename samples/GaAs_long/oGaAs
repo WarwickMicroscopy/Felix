@@ -1,0 +1,12 @@
+#!/bin/bash
+#SBATCH --nodes=2
+#SBATCH --ntasks-per-node=48
+#SBATCH --cpus-per-task=1
+#SBATCH --mem-per-cpu=3700
+#SBATCH --time=00:20:00
+
+module load intel/2021b FFTW/3.3.10
+
+cd ~/Felix/samples/GaAs_long
+
+srun ../../src/felix.INT64Nifort.d
