@@ -117,6 +117,7 @@ MODULE bloch_mod
     ! NB RDevPara is in units of (1/A)
     ! in the microscope ref frame(NB exp(i*s.r), physics convention)
     DO knd=1,INhkl
+      ! CALL message(LS,"BlochCC: working on %", REAL(knd)/REAL(INhkl)*100.D0)
       ! Version without small angle approximation
       ! Sg=(g/k)*[2(k^2-k0.k')]^0.5
       ! k0 is defined by the Bragg condition

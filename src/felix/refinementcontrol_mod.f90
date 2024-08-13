@@ -231,6 +231,10 @@ MODULE refinementcontrol_mod
     DO knd = ILocalPixelCountMin,ILocalPixelCountMax,1
       jnd = IPixelLocations(knd,1)
       ind = IPixelLocations(knd,2)
+
+      CALL message(LS,"Simulate: pixel-i", ind)
+      CALL message(LS,"Simulate: pixel-j", jnd)
+      
       ! fills array for each pixel number not x & y coordinates
       CALL BlochCoefficientCalculation(ind,jnd,knd,ILocalPixelCountMin, nBeams, RThickness,RKn, IErr)
       IF(l_alert(IErr,"Simulate","BlochCoefficientCalculation")) RETURN
