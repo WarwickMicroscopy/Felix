@@ -15,7 +15,7 @@ CPPFLAGS=-E
 # which C-compiler do we use
 CC=gcc
 # C compiler options
-CCFLAGS= -O -m64  -mcmodel=medium -fPIC
+CCFLAGS= -O -m64 -ffast-math -mcmodel=medium -fPIC
 #CCFLAGS= -g
 
 

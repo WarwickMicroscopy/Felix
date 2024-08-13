@@ -52,7 +52,7 @@ LIBS= -lopenblas -lfftw3 #-llapack
 # which fortran compiler is used
 F90=mpif90
 # its flags
-F90FLAGS= -O2 -m64 -DF90 \
+F90FLAGS= -O3 -m64 -ffast-math -march=native -DF90 \
 	  -ffree-line-length-none -fbounds-check \
 	  -fno-range-check -fimplicit-none
 #F90LAGS=  -g -fexternal-blas 
