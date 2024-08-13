@@ -227,13 +227,14 @@ MODULE refinementcontrol_mod
     RIndividualReflections = ZERO
 
     ! Simulation (different local pixels for each core)
-    CALL message(LS,"Bloch wave calculation...")
+    CALL message(LS,"Bloch wave calculation for each pixel ...")
     DO knd = ILocalPixelCountMin,ILocalPixelCountMax,1
       jnd = IPixelLocations(knd,1)
       ind = IPixelLocations(knd,2)
 
-      CALL message(LS,"Simulate: pixel-i", ind)
-      CALL message(LS,"Simulate: pixel-j", jnd)
+      CALL message(LS,"Simulate: %", REAL(knd-ILocalPixelCountMin+1)/REAL(ILocalPixelCountMAX-ILocalPixelCountMin+1)*100.D0)
+      !CALL message(LS,"Simulate: i", ind)
+      !CALL message(LS,"Simulate: j", jnd)
       
       ! fills array for each pixel number not x & y coordinates
       CALL BlochCoefficientCalculation(ind,jnd,knd,ILocalPixelCountMin, nBeams, RThickness,RKn, IErr)
