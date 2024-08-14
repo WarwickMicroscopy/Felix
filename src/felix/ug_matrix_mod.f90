@@ -605,7 +605,7 @@ MODULE ug_matrix_mod
       CALL message ( LS, SPrintString )
       CALL message ( LM, dbg3, "hkl: symmetry matrix" )
       DO ind =1,40
-        WRITE(SPrintString,FMT='(3(I4,1X),A2,1X,16(I4,1X))') NINT(Rhkl(ind,:)),": ",ISymmetryRelations(ind,1:16)
+        WRITE(SPrintString,FMT='(3(I5,1X),A2,1X,16(I5,1X))') NINT(Rhkl(ind,:)),": ",ISymmetryRelations(ind,1:16)
         CALL message ( LM,dbg3, SPrintString )
       END DO
 
