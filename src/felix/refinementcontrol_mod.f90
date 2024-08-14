@@ -232,7 +232,7 @@ MODULE refinementcontrol_mod
       jnd = IPixelLocations(knd,1)
       ind = IPixelLocations(knd,2)
 
-      CALL message(LS,"Simulate: %", REAL(knd-ILocalPixelCountMin+1)/REAL(ILocalPixelCountMAX-ILocalPixelCountMin+1)*100.D0)
+      CALL message(LS,"Simulate: pixel % at", REAL(knd-ILocalPixelCountMin+1)/REAL(ILocalPixelCountMAX-ILocalPixelCountMin+1)*100.D0)
       !CALL message(LS,"Simulate: i", ind)
       !CALL message(LS,"Simulate: j", jnd)
       
