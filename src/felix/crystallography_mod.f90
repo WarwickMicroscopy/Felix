@@ -539,10 +539,10 @@ MODULE crystallography_mod
     !--------------------------------------------------------------------
     ! compare input & calculated reflexion list g by g
     !--------------------------------------------------------------------
-    ! input reflexions are IobsHKL, here we find its index in the big list Ig
-    ! and put it in IgObsList
-    IgObsList = 0  ! initialise to zero - will stay zero if a reflexion is not in the calculated list
-    RCalcFrame = -ONE  ! default value for a reflection not in the observed list
+    ! input reflexions from felix.hkl are IobsHKL, here we find its index in the big list Ig
+    ! and put that in IgObsList
+    IgObsList = 0  ! initialise array to zero - will stay zero if a reflexion is not in the calculated list
+    RCalcFrame = -ONE  ! initialise array to default value for a reflection not in the observed list
     ! find which reflection in the full set Ig matches each IobsHKL 
     DO ind = 1,INObservedHKL
       knd = 0  ! flag to say we have a match in Ig
