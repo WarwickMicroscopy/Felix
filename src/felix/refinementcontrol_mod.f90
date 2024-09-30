@@ -222,7 +222,7 @@ MODULE refinementcontrol_mod
     INTEGER(IKIND) :: IErr, ind,jnd,knd,pnd,IIterationFLAG
 !    REAL(RKIND),DIMENSION(:,:),ALLOCATABLE :: RTempImage 
 	REAL(RKIND) :: RKn,RThickness
-	
+
     ! Reset simuation   
     RIndividualReflections = ZERO
 
@@ -240,7 +240,7 @@ MODULE refinementcontrol_mod
       CALL BlochCoefficientCalculation(ind,jnd,knd,ILocalPixelCountMin, nBeams, RThickness,RKn, IErr)
       IF(l_alert(IErr,"Simulate","BlochCoefficientCalculation")) RETURN
     END DO
-	
+
     !===================================== ! MPI gatherv into RSimulatedPatterns
     CALL MPI_GATHERV(RIndividualReflections,SIZE(RIndividualReflections),MPI_DOUBLE_PRECISION,&
          RSimulatedPatterns,ICount,IDisplacements,MPI_DOUBLE_PRECISION,&
@@ -450,8 +450,10 @@ MODULE refinementcontrol_mod
 
     REAL(RKIND),DIMENSION(INoOfVariables),INTENT(IN) :: RIndependentVariable
     INTEGER(IKIND),DIMENSION(10) :: IVariableCheck
+    INTEGER(IKIND),DIMENSION(SIZE(RBasisOccupancy)) :: ILinkedOccupancies
     INTEGER(IKIND) :: IVectorID,IAtomID,IErr,ind,jnd,knd,lnd,mnd
     REAL(RKIND),DIMENSION(3) :: RdeltaR!uncertainty in atom coords
+    REAL(RKIND) :: ROccSum
 
     !--------------------------------------------------------------------  
     ! first put independent variables back into the parameters 
@@ -488,7 +490,27 @@ MODULE refinementcontrol_mod
             
       CASE(3) ! C: occupancy
         IVariableCheck(3)=1
+        ! find the list of atoms on the refined site
+        ILinkedOccupancies = 0  ! a list of atoms on the same site, 1 indicates a match for the current atom
+        DO mnd = 1, SIZE(RBasisOccupancy)
+          IF (mnd.EQ.IAtomsToRefine(knd)) THEN
+            CYCLE  ! we don't check an atom against itself
+          END IF
+          IF (ABS(SUM(RBasisAtomPosition(mnd,:)-RBasisAtomPosition(IAtomsToRefine(knd),:))).LT.TINY) THEN
+              ILinkedOccupancies(mnd) = 1
+          END IF
+        END DO
+        ! we change the independent variable and adjust everything else to match
         RBasisOccupancy(IAtomsToRefine(knd))=RIndependentVariable(ind)
+        ! sum of other occupancies on the same site
+        ROccSum = DOT_PRODUCT(REAL(ILinkedOccupancies),RBasisOccupancy)
+        IF (ROccSum.GT.TINY) THEN ! there are other atoms on the site, normalise to 1
+          DO mnd = 1, SIZE(RBasisOccupancy)
+            IF (ILinkedOccupancies(mnd).EQ.1) THEN
+              RBasisOccupancy(mnd) = RBasisOccupancy(mnd)*(1-RIndependentVariable(ind))/ROccSum
+            END IF
+          END DO
+        END IF
         knd=knd+1
         
       CASE(4) ! D: iso DWF

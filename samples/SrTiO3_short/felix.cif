@@ -105,7 +105,8 @@ _atom_site_fract_y
 _atom_site_fract_z
 _atom_site_B_iso_or_equiv
 _atom_site_occupancy
-Sr1 Sr 1 a 0.0 0.0 0.0 0.4153 1.0
+Sr1 Sr 1 a 0.0 0.0 0.0 0.4153 0.5
+Pb1 Pb 1 a 0.0 0.0 0.0 0.4153 0.5
 Ti1 Ti 1 b 0.5 0.5 0.5 1.1035 1.0
 O1  O  3 c 0.0 0.5 0.5 0.8888 1.0
 #

@@ -38,14 +38,14 @@ RDeltaThickness           = 100.0
 RPrecision                = 0.00002
 
 #Refinement Specific Flags
-IRefineModeFLAG           = D
+IRefineModeFLAG           = C
 IWeightingFLAG            = 0
 IRefineMethodFLAG         = 3
 ICorrelationFLAG          = 2
 IImageProcessingFLAG      = 4
 RBlurRadius               = 0.0
 INoofUgs                  = 40
-IAtomicSites              = (1,2,3)
+IAtomicSites              = (1)
 IPrint                    = 0
 RSimplexLengthScale       = 0.1
 RExitCriteria             = 0.00005
