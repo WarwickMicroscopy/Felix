@@ -1,6 +1,5 @@
 # Avon: SCRTP module load commands
-# 090824 module load intel/2021b FFTW/3.3.1
-# 080724 module load intel imkl impi GCC/11.3.0 OpenMPI/4.1.4 FFTW.MPI/3.3.10
+# module load intel/2021b FFTW/3.3.10
 
 # SCRTP desktop
 # module load intel imkl impi
@@ -53,9 +52,9 @@ LIBS= -qmkl=sequential -lfftw3
 # which fortran compiler is used
 F90=mpiifort
 # its flags
-#F90FLAGS= -132 -r8 -u -C -g -traceback -check noarg_temp_created #orac debug
+F90FLAGS= -132 -r8 -u -C -g -traceback -check noarg_temp_created #orac debug
 #F90FLAGS= -O0 -fpp -r8 -g -132 -check all -warn all -fpe0 -traceback #debug 
-F90FLAGS = -O3 -r8 -u -traceback -static-intel # -ipo release
+#F90FLAGS = -O3 -r8 -u -traceback -static-intel # -ipo release
 #F77FLAGS = -r8 #debug
 
 # -------------------------------
