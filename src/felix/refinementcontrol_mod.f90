@@ -227,7 +227,7 @@ MODULE refinementcontrol_mod
     RIndividualReflections = ZERO
 
     ! Simulation (different local pixels for each core)
-    CALL message(LS,"Bloch wave calculation for each pixel ...")
+    CALL message(LS,"Bloch wave calculation...")
     DO knd = ILocalPixelCountMin,ILocalPixelCountMax,1
       jnd = IPixelLocations(knd,1)
       ind = IPixelLocations(knd,2)
@@ -448,7 +448,7 @@ MODULE refinementcontrol_mod
 
     IMPLICIT NONE
 
-    REAL(RKIND),DIMENSION(INoOfVariables),INTENT(IN) :: RIndependentVariable
+    REAL(RKIND),DIMENSION(INoOfVariables) :: RIndependentVariable
     INTEGER(IKIND),DIMENSION(10) :: IVariableCheck
     INTEGER(IKIND),DIMENSION(SIZE(RBasisOccupancy)) :: ILinkedOccupancies
     INTEGER(IKIND) :: IVectorID,IAtomID,IErr,ind,jnd,knd,lnd,mnd
@@ -490,6 +490,19 @@ MODULE refinementcontrol_mod
             
       CASE(3) ! C: occupancy
         IVariableCheck(3)=1
+        ! limit unphysical values
+        IF (RIndependentVariable(ind).GT.ONE) THEN  ! >1
+          RIndependentVariable(ind) = ONE
+          CALL message(LS,"Occupancy limited to 1.0")
+        END IF
+        IF (RIndependentVariable(ind).LT.ZERO) THEN  ! <0
+          RIndependentVariable(ind) = ZERO
+          CALL message(LS,"Occupancy has reached zero")
+        END IF
+!        IF (RIndependentVariable(ind).NE.RIndependentVariable(ind)) THEN  ! NaN
+!          RIndependentVariable(ind) = ZERO
+!          CALL message(LS,"Occupancy has reached zero")
+!        END IF
         ! find the list of atoms on the refined site
         ILinkedOccupancies = 0  ! a list of atoms on the same site, 1 indicates a match for the current atom
         DO mnd = 1, SIZE(RBasisOccupancy)
@@ -687,8 +700,9 @@ MODULE refinementcontrol_mod
             WRITE(SPrintString,FMT='(4X,A4,F7.4)') SBasisAtomLabel(jnd),RBasisOccupancy(jnd)
             !if it is being refined, change the output accordingly
             DO knd = 1,SIZE(IIndependentVariableAtom)
-              IF(IIndependentVariableType(knd).EQ.3.AND.jnd.EQ.IIndependentVariableAtom(knd))THEN!this atom is being refined
+              IF(jnd.EQ.IIndependentVariableAtom(knd))THEN
                 CALL UncertBrak(RBasisOccupancy(jnd),RIndependentDelta(knd),Sout,IErr)
+                IF(l_alert(IErr,"PrintVariables","UncertBrak")) RETURN
                 WRITE(SPrintString,FMT='(4X,A4,1X,A)') SBasisAtomLabel(jnd),TRIM(ADJUSTL(Sout))
               END IF
             END DO
@@ -702,7 +716,7 @@ MODULE refinementcontrol_mod
             WRITE(SPrintString,FMT='(A4,A4,F7.4)') "    ",SBasisAtomLabel(jnd),RBasisIsoDW(jnd)
             !if it is being refined, change the output accordingly
             DO knd = 1,SIZE(IIndependentVariableAtom)
-              IF(IIndependentVariableType(knd).EQ.4.AND.jnd.EQ.IIndependentVariableAtom(knd))THEN!this atom is being refined
+              IF(jnd.EQ.IIndependentVariableAtom(knd))THEN
                 CALL UncertBrak(RBasisIsoDW(jnd),RIndependentDelta(knd),Sout,IErr)
                 WRITE(SPrintString,FMT='(4X,A4,1X,A)') SBasisAtomLabel(jnd),TRIM(ADJUSTL(Sout))
               END IF
@@ -756,6 +770,7 @@ MODULE refinementcontrol_mod
         END SELECT
       END IF
     END DO
+    IF(l_alert(IErr,"PrintVariables"," .")) RETURN
 
   END SUBROUTINE PrintVariables
 

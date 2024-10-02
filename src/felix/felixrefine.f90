@@ -1206,7 +1206,7 @@ CONTAINS
           RIndependentDelta(ind)=RdeltaX
           !make a string for output
           CALL UncertBrak(RvarMin,RdeltaX,Sest,IErr)
-          IF(l_alert(IErr,"UncertBrak","SimulateAndFit")) RETURN
+          IF(l_alert(IErr,"MaxGradientRefinement","UncertBrak")) RETURN
           !We update RVar0 with the best points as we go along
           !But keep RCurrentVar the same so that the measurements of gradient
           !are accurate.  
@@ -1638,7 +1638,7 @@ CONTAINS
         ! make prediction and finish with this variable
         !--------------------------------------------------------------------
         IPrintFLAG=1
-        IF (RCurrentVar(ind).LE.TINY.AND.IVariableType.EQ.4) THEN
+        IF (RCurrentVar(ind).LE.TINY.AND.(IVariableType.EQ.4.OR.IVariableType.EQ.3)) THEN
           ! We reached zero D-W factor in convexity test, skip the prediction
           CALL message( LS, "Using zero Debye Waller factor, simulate and refine next variable" )
           Iter=Iter+1
@@ -1654,8 +1654,9 @@ CONTAINS
           jnd=MAXLOC(R3fit,1)!worst point
           knd=MINLOC(R3fit,1)!best point
           ! replace worst point with prediction and put into RIndependentVariable
-          ! checnk if we have reached zero D-W factor
-          IF (RvarMin.LT.ZERO.AND.IVariableType.EQ.4) RvarMin=ZERO
+          ! check if we have reached a zero
+          IF (RvarMin.LT.ZERO.AND.IVariableType.EQ.4) RvarMin=ZERO  ! DW factor
+          IF (RvarMin.LT.ZERO.AND.IVariableType.EQ.3) RvarMin=ZERO  ! occupancy
           RCurrentVar=RVar0+RPvec*(RvarMin-RVar0(ind))/RPvec(ind)
           !R3var(jnd)=RCurrentVar(ind)!do I need this?
           Iter=Iter+1
@@ -1804,19 +1805,25 @@ CONTAINS
   SUBROUTINE Parabo3(Rx,Ry,Rxv,Ryv,IErr)
     ! called twice in felixrefine, utility for MaxGradient/PairwiseRefinement
     
+    USE MyNumbers
     REAL(RKIND) :: Ra,Rb,Rc,Rd,Rxv,Ryv
     REAL(RKIND),DIMENSION(3) :: Rx,Ry
     INTEGER(IKIND) :: IErr
 
     !y=a*x^2+b*x+c a=Ra, b=Rb, c=Rc    
     Rd = Rx(1)*Rx(1)*(Rx(2)-Rx(3)) + Rx(2)*Rx(2)*(Rx(3)-Rx(1)) + Rx(3)*Rx(3)*(Rx(1)-Rx(2))
-    Ra =(Rx(1)*(Ry(3)-Ry(2)) + Rx(2)*(Ry(1)-Ry(3)) + Rx(3)*(Ry(2)-Ry(1)))/Rd
-    Rb =( Rx(1)*Rx(1)*(Ry(2)-Ry(3)) + Rx(2)*Rx(2)*(Ry(3)-Ry(1)) + &
+    IF (Rd.GT.TINY) THEN  ! we get zero Rd if all three inputs are the same
+      Ra =(Rx(1)*(Ry(3)-Ry(2)) + Rx(2)*(Ry(1)-Ry(3)) + Rx(3)*(Ry(2)-Ry(1)))/Rd
+      Rb =( Rx(1)*Rx(1)*(Ry(2)-Ry(3)) + Rx(2)*Rx(2)*(Ry(3)-Ry(1)) + &
           Rx(3)*Rx(3)*(Ry(1)-Ry(2)) )/Rd
-    Rc =(Rx(1)*Rx(1)*(Rx(2)*Ry(3)-Rx(3)*Ry(2)) + Rx(2)*Rx(2)*(Rx(3)*Ry(1)-Rx(1)*Ry(3))&
-        +Rx(3)*Rx(3)*(Rx(1)*Ry(2)-Rx(2)*Ry(1)))/Rd
-    Rxv = -Rb/(2*Ra);!x-coord
-    Ryv = Rc-Rb*Rb/(4*Ra)!y-coord
+      Rc =(Rx(1)*Rx(1)*(Rx(2)*Ry(3)-Rx(3)*Ry(2)) + Rx(2)*Rx(2)*(Rx(3)*Ry(1)-Rx(1)*Ry(3))&
+          +Rx(3)*Rx(3)*(Rx(1)*Ry(2)-Rx(2)*Ry(1)))/Rd
+      Rxv = -Rb/(2*Ra);!x-coord
+      Ryv = Rc-Rb*Rb/(4*Ra)!y-coord
+    ELSE
+      Rxv = Rx(1)
+      Ryv = Ry(1)
+    END IF
 
   END SUBROUTINE Parabo3 
 
@@ -1829,14 +1836,19 @@ CONTAINS
   !! 
   SUBROUTINE DeltaX(Rx,Ry,Rdx,Rdy,IErr)
 
+    USE MyNumbers
     REAL(RKIND) :: Ra,Rd,Rdx,Rdy
     REAL(RKIND),DIMENSION(3) :: Rx,Ry
     INTEGER(IKIND) :: IErr
 
     !y=a*x^2+b*x+c a=Ra, b=Rb, c=Rc    
     Rd = Rx(1)*Rx(1)*(Rx(2)-Rx(3)) + Rx(2)*Rx(2)*(Rx(3)-Rx(1)) + Rx(3)*Rx(3)*(Rx(1)-Rx(2))
-    Ra =(Rx(1)*(Ry(3)-Ry(2)) + Rx(2)*(Ry(1)-Ry(3)) + Rx(3)*(Ry(2)-Ry(1)))/Rd
-    Rdx = 0.5*SQRT(Rdy/Ra)
+    IF (Rd.GT.TINY) THEN  ! we get zero Rd if all three inputs are the same
+      Ra =(Rx(1)*(Ry(3)-Ry(2)) + Rx(2)*(Ry(1)-Ry(3)) + Rx(3)*(Ry(2)-Ry(1)))/Rd
+      Rdx = 0.5*SQRT(Rdy/Ra)
+    ELSE
+      Rdx = ZERO
+    END IF
 
   END SUBROUTINE DeltaX
 

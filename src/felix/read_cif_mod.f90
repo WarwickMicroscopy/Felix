@@ -103,7 +103,7 @@ MODULE read_cif_mod
     CHARACTER(40)  Stext
     REAL(RKIND),DIMENSION(:),ALLOCATABLE :: RPrint
     REAL          cela,celb,celc,siga,sigb,sigc
-    REAL          x,y,z,u,su,sx,sy,sz,B,sB,sOcc,Uso,suso,Occ
+    REAL          x,y,z,u,su,sx,sy,sz,B,sB,sOcc,Uso,suso,Occ,OccSum
     REAL          numb,sdev,dum
     REAL          xf(6),yf(6),zf(6),uij(6,6)
     INTEGER       i,j,nsite, iset, imark
@@ -118,10 +118,10 @@ MODULE read_cif_mod
     DATA          xf,yf,zf,uij/54*0./
     DATA          rs/'\\'/
 
-    INTEGER IAtomCount, ICommaPosLeft, ICommaPosRight, &
-         Ipos,Idpos, IoneI,IFRACminus, Inum,Idenom,IAtomID
+    INTEGER IErr, IAtomCount, ICommaPosLeft, ICommaPosRight, &
+         Ipos,Idpos, IoneI,IFRACminus, Inum,Idenom,IAtomID,ind,jnd,knd
+    INTEGER(IKIND),DIMENSION(:),ALLOCATABLE :: ILinkedOccupancies
     CHARACTER(32) Csym(ITHREE)
-    INTEGER IErr,ind,jnd
 
     ! fudge to deal with gfortran vs. g77
     slash = rs(1:1)
@@ -263,25 +263,16 @@ MODULE read_cif_mod
     !coordinates of the basis
     ALLOCATE(RBasisAtomPosition(IAtomCount,ITHREE),STAT=IErr)
     ALLOCATE(RBasisAtomDelta(IAtomCount,ITHREE),STAT=IErr)
-    IF(l_alert(IErr,"ReadCif","RBasisAtomPosition()")) RETURN
     ALLOCATE(SBasisAtomLabel(IAtomCount),STAT=IErr)
-    IF(l_alert(IErr,"ReadCif","SBasisAtomLabel()")) RETURN
     ALLOCATE(SBasisAtomName(IAtomCount),STAT=IErr)
-    IF(l_alert(IErr,"ReadCif","SBasisAtomName()")) RETURN
     ALLOCATE(IBasisAtomicNumber(IAtomCount),STAT=IErr)
-    IF(l_alert(IErr,"ReadCif","IBasisAtomicNumber()")) RETURN
     ALLOCATE(SWyckoffSymbol(IAtomCount),STAT=IErr)
-    IF(l_alert(IErr,"ReadCif","allocate SWyckoffSymbol")) RETURN
     ALLOCATE(RBasisIsoDW(IAtomCount),STAT=IErr)
-!   ALLOCATE(SBasisIsoDW(IAtomCount),STAT=IErr)
-    IF(l_alert(IErr,"ReadCif","RBasisIsoDW()")) RETURN
     ALLOCATE(RBasisOccupancy(IAtomCount),STAT=IErr)
-!    ALLOCATE(SBasisOccupancy(IAtomCount),STAT=IErr)
-    IF(l_alert(IErr,"ReadCif","RBasisOccupancy()")) RETURN
+    ALLOCATE(ILinkedOccupancies(IAtomCount),STAT=IErr)
     ALLOCATE(RAnisotropicDebyeWallerFactorTensor(IAtomCount,ITHREE,ITHREE),STAT=IErr)
-    IF(l_alert(IErr,"ReadCif","RAnisotropicDebyeWallerFactorTensor()")) RETURN
     ALLOCATE(IBasisAnisoDW(IAtomCount),STAT=IErr)
-    IF(l_alert(IErr,"ReadCif","IBasisAnisoDW()")) RETURN
+    IF(l_alert(IErr,"ReadCif","Allocation error")) RETURN
     !initialise variables
     IBasisAtomicNumber = 0
     RAnisotropicDebyeWallerFactorTensor = ZERO
@@ -367,7 +358,7 @@ MODULE read_cif_mod
           RBasisIsoDW(ind) = RDebyeWallerConstant
         END IF
       END IF
-      !occupancy is assumed to be 1.0 
+      ! if not given, occupancy is initially assumed to be 1.0 
       RBasisOccupancy(ind) = ONE
       f2 = numb_('_atom_site_occupancy',Occ, sOcc)
       IF(Occ.GT.TINY) RBasisOccupancy(ind) = Occ
@@ -380,6 +371,39 @@ MODULE read_cif_mod
       
       IF(loop_ .NEQV. .TRUE.) EXIT
     END DO
+
+    ! Occupancy check
+    ! LinkedOccupancies lists the unique basis atom sites
+    ILinkedOccupancies = 0
+    knd = 0
+    DO ind=1,IAtomCount
+    ! if ILinkedOccupancies = 0 it's a new atom
+      IF (ILinkedOccupancies(ind).EQ.0) THEN
+        knd = knd + 1
+        ILinkedOccupancies(ind) = knd
+        ! look for atoms on the same site
+        DO jnd = ind+1,IAtomCount
+          IF (ABS(SUM(RBasisAtomPosition(ind,:)-RBasisAtomPosition(jnd,:))).LT.TINY) THEN
+            ILinkedOccupancies(jnd) = knd
+          END IF
+        END DO
+      END IF
+    END DO
+    WRITE(SPrintString,'(I,A22,I3,A13)') IAtomCount," atoms in the basis on ",knd," unique sites"
+    CALL message( LS, TRIM(ADJUSTL(SPrintString)))
+    ! now go through this list and check site occupancies are <=1
+    DO ind=1,knd
+      OccSum = ZERO
+      DO jnd=1,IAtomCount
+        IF (ILinkedOccupancies(jnd).EQ.ind) THEN  
+          OccSum = OccSum + RBasisOccupancy(jnd)
+        END IF
+      END DO
+      IF (OccSum.GT.ONE) THEN  ! oops
+        IErr = 1
+      END IF
+    END DO
+    IF(l_alert(IErr,"ReadCif","site occupancy >1, aborting: please correct the .cif")) RETURN
 
 !    ! Anisotropic D-W factor
 !    DO ind=1,IAtomCount

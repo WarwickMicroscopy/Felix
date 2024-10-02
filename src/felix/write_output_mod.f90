@@ -54,7 +54,7 @@ MODULE write_output_mod
 
     USE MyNumbers
     USE MyMPI
-
+    USE message_mod
 
     IMPLICIT NONE
     INTEGER(IKIND), INTENT(OUT) :: IErr
@@ -67,13 +67,11 @@ MODULE write_output_mod
     !infinity and NaN check
     IF (ABS(Rval)-1.GT.ABS(Rval).OR.ABS(Rval).NE.ABS(Rval)) THEN
       IErr=1
-!      Sout=""
-      RETURN
+      IF(l_alert(IErr,"UncertBrak","refinement parameter inf or NaN")) RETURN
     END IF
     IF (ABS(Rerr)-1.GT.ABS(Rerr).OR.ABS(Rerr).NE.ABS(Rerr)) THEN
       IErr=1
-!      Sout=""
-      RETURN
+      IF(l_alert(IErr,"UncertBrak","uncertainty inf or NaN")) RETURN
     END IF
 
     !Zero check
@@ -83,7 +81,7 @@ MODULE write_output_mod
       !Check error is in expected limits
       IF (Rerr.GE.HUNDRED.OR.CEILING(Rerr*10000.0).LT.ONE) THEN
         IErr=1
-        RETURN
+        IF(l_alert(IErr,"UncertBrak","uncertainty out of range")) RETURN
       END IF
 
       !Find order of magnitude for error, Iord
@@ -516,7 +514,10 @@ MODULE write_output_mod
       WRITE(Sout,FMT='(F7.4)') RBasisOccupancy(jnd)
       DO ind = 1,SIZE(IIndependentVariableAtom)
         IF(IIndependentVariableType(ind).EQ.3.AND.jnd.EQ.IIndependentVariableAtom(ind))THEN
-          CALL UncertBrak(RBasisOccupancy(jnd),RIndependentDelta(ind),Sout,IErr)
+          IF(RBasisOccupancy(jnd).GT.TINY) THEN
+            CALL UncertBrak(RBasisOccupancy(jnd),RIndependentDelta(ind),Sout,IErr)
+            IF(l_alert(IErr,"WriteIterationCIF","UncertBrak")) RETURN
+          END IF
         END IF
       END DO
        String = TRIM(ADJUSTL(String)) // "  " // TRIM(ADJUSTL(Sout))
