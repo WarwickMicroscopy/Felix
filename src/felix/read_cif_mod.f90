@@ -252,7 +252,7 @@ MODULE read_cif_mod
     END DO
 
     WRITE(SPrintString,FMT='(A11,I3)') "IAtomCount ", IAtomCount
-    CALL message( LS, dbg3, SPrintString)
+    CALL message( LM, dbg3, SPrintString)
 
     IF (ISimFLAG.EQ.0.AND.SIZE(IAtomsToRefine,DIM=1).GT.IAtomCount) THEN
       IErr=1; IF(l_alert(IErr,"ReadCif",&
